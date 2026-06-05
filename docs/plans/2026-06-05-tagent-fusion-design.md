@@ -785,6 +785,64 @@ AIAgent（主，常驻）
 
 **不进 MVP**。M1+ 阶段实施。估时：1-2 周。
 
+### 16.4.1 Subagent 落地教训（来自 ta_agent 上一版实践）
+
+**来源**：`F:\ta_agent-worktrees\subagent-impl`（commit 历史 30+ 个，4 个 fix + 3 个 debug + 1 个 revert）
+
+TAgent 加 subagent 时必避 8 个坑：
+
+1. **事件流是头号 bug 源**
+   - 坑：曾有"两个 progress drain loop"互相抢事件，"raw progress loop 偷走 subagent 事件"
+   - 修复：合并成 **一个** progress drain loop
+   - TAgent 借鉴：**单例事件循环**，所有事件（普通 + subagent）走同一条管线
+
+2. **多 session 隔离是 P0 需求**
+   - 坑：SubAgentCard 没带 `parent_session_id`，结果 A session 看到 B session 的 subagent
+   - 修复：每个事件**必带** `parent_session_id`，前端按 session 过滤
+   - TAgent 借鉴：双模式本来就多 session，subagent 事件**强制带 session_id**
+
+3. **生命周期事件必须显式**
+   - 坑：只 emit 中间事件（tool 调用、progress），UI 永远不知道 subagent 何时完成
+   - 修复：加 `subagent_start` + `subagent_done` 两个边界事件
+   - TAgent 借鉴：6 个事件类型——start / tool / progress / text / done / log
+
+4. **流式 LLM 输出需要专门通道**
+   - 坑：subagent 跑时 UI 长时间黑屏（等所有 token 一起返回）
+   - 修复：加 `stream_callback` 参数贯穿整个 pipeline
+   - TAgent 借鉴：从一开始设计就支持 streaming，否则后改痛苦
+
+5. **Import 路径是 silent killer**
+   - 坑：用相对路径 `from ... import progress_hook` 与绝对路径 import 行为不一致
+   - 修复：统一用 top-level import `from apps.web.server import progress_hook`
+   - TAgent 借鉴：提前定**唯一**的 import 路径规范（codemod 跑一次）
+
+6. **Debug 阶段必然有 3-5 个临时 commit**
+   - 坑：发现事件丢了 → 加 console.log → 定位 → 改代码 → 删 log → commit
+   - 模式：3-4 个 debug commit + 1 个 `chore: revert debug-only commits`
+   - TAgent 借鉴：**接受这个**，不要一开始就追求"零临时 commit"
+
+7. **UI v1 几乎必然要 v2 重做**
+   - 坑：SubAgentCard v1 是独立卡片（与主消息流风格不一致）→ v2 改 Proma 折叠行风格
+   - 修复：接受 v1 是占位、计划 v2 重构
+   - TAgent 借鉴：MVP UI 走"能用就行"，P1 阶段按 Proma 风格统一
+
+8. **工具白名单必须显式**
+   - 坑：subagent 如果能用 `Agent` / `TaskOutput` / `TaskStop` 工具 → 递归
+   - 修复：subagent 的 `allowed_tools` 是 schema 字段（`SubAgentSpec.allowed_tools`）
+   - TAgent 借鉴：subagent schema 必含 `forbidden_tools` 字段
+
+**5 类 TA 模式 subagent 候选**（未来实施时）：
+
+| subagent_type | allowed_tools | 用途 |
+|---|---|---|
+| `analyzer` | `tagent__check_fbx_info`, `tagent__check_texture_info`, `tagent__analyze_assets` | 单个资产深度分析 |
+| `renderer` | `tagent__render_asset_preview` | 单个资产预览图渲染 |
+| `importer` | `tagent__ue5_import_asset` | 单个资产导入 UE5 |
+| `validator` | `tagent__check_naming`, `tagent__check_mesh_budget` | 单个资产规范检查 |
+| `renamer` | `tagent__suggest_rename`, `tagent__rename_asset` | 单个资产重命名 |
+
+每个都是 read-only 或单一职责，**避免递归和相互依赖**。
+
 ### 16.5 不借鉴
 - ❌ 群体智能多 agent 框架（AutoGen / CrewAI 范式）—— TAgent 单 agent 路线不需
 - ❌ Multi-channel Gateway —— TAgent Desktop + WebSocket 已实现
