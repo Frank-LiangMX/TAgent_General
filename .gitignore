@@ -102,3 +102,4 @@ release/*.yml
 sessions.bak/
 memory.bak/
 tag_store.bak/
+modelsettings.txt
