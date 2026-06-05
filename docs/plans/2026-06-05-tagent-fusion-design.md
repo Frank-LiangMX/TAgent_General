@@ -735,6 +735,112 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
+## 17. ta_agent 老仓库遗漏的 5 个关键发现（2026-06-05 排查）
+
+排查 `F:\ta_agent` 时漏扫的 5 个关键内容，**全部正式补进 TAgent 设计**：
+
+### 17.1 三层权限模型（HARDLINE / DANGEROUS / SAFE）
+**来源**：`F:\ta_agent\docs\decisions\general-mode-redesign.md`（2026-06-03）
+**TAgent 之前漏提**，必须补：
+
+```
+HARDLINE（绝对禁止，内置不可绕过）
+  rm -rf /, mkfs, shutdown, format, DROP DATABASE
+
+DANGEROUS（每次询问，UI 弹窗）
+  rm -r, chmod 777, git push --force, curl|sh, kill -9 -1
+
+SAFE（自动放行，静默）
+  Read, Glob, Grep, WebSearch
+  ls, cat, git status/log/diff
+```
+
+- 通用 mode 必加
+- TA mode 工具调用已天然限权（54 工具白名单），**TA mode 不强需此模型**
+- 白名单粒度：
+  - 本次会话 → 内存 Map（Proma 风格）
+  - 永久 → 写到 `app-config.json`（hermes 风格）
+
+### 17.2 3 角色 RBAC
+**来源**：`F:\ta_agent\docs\decisions\user-auth-design.md`（2026-05-20）
+
+TAgent Server 设计 §5 之前**只提 X-Username 简化鉴权**，**没提正式 RBAC**。补：
+
+| 角色 | 权限 |
+|---|---|
+| **普通用户**（美术） | 查项目配置（只读）、提交分析、查自己审核、用本地记忆 |
+| **管理者**（组长 / TA） | 改项目配置、审核资产、查所有用户的资产、编辑 L1 规则 |
+| **超级管理员** | 管用户权限、添加 / 移除管理员、系统设置 |
+
+**MVP 阶段**：仅普通用户角色（因为 SSO appid 还没申请，正式角色管理延后）。
+**SSO 集成后**：完整 RBAC 启用。
+
+### 17.3 5 层记忆的 4 大设计原则
+**来源**：`F:\ta_agent\docs\decisions\memory-system.md` + `docs/guides\memory-layout.md`
+
+§6 之前只提"5 层结构"。补**设计原则**：
+
+1. **无纠正不记忆**：只有用户显式纠正才写入，LLM 自己的推测永远不存
+2. **最小充分**：只编码精简规则，不存原始对话
+3. **按需注入**：根据当前资产特征匹配相关规则，不全量塞 prompt
+4. **自压缩**：超过阈值自动合并，token 消耗始终可控
+
+### 17.4 借鉴：TAgent Server ≈ ta_agent 老 distributed-architecture
+
+**来源**：`F:\ta_agent\docs\decisions\distributed-architecture.md`（2026-05-20）
+
+TAgent Server 设计与老设计 **80% 重叠**：
+| 老设计 | TAgent Server 设计 | 一致度 |
+|---|---|---|
+| 资产/审核/项目配置 → 服务器 | ✅ 一样 | 100% |
+| 会话/记忆 → 本地 | ✅ 一样 | 100% |
+| 数据流：本地分析 → 同步服务器 | ✅ 一样 | 90% |
+| 联机不取消本机 | ✅ 一样 | 100% |
+| SSO 集成 (XSJSSO) | ⚠️ 延后（应用未申请） | 0% |
+| 3 角色 RBAC | ⚠️ 延后（同上） | 0% |
+| 多项目管理 | ❌ 没写 | 0% |
+| 用量统计管理 | ⚠️ 部分（usage_log 已实现） | 50% |
+
+**TAgent Server 文档应明确**："基于 2026-05-20 distributed-architecture 决策，吸收其 80% 设计，补 20% 缺失"。
+
+### 17.5 usage_log.jsonl 格式（ta_agent 已经在写）
+
+ta_agent 实际已经在 `~/.ta_agent/` 写 `usage_log.jsonl`：
+
+```json
+{"ts": "2026-05-28T15:03:38", "session": "f56af0a93e8a", "model": "glm-5",
+ "input_tokens": 0, "output_tokens": 2094, "duration_ms": 16714, "success": true}
+```
+
+**TAgent 应保持格式一致**（向后兼容 ta_agent 用户数据迁移）。§5 之后**没提**这个细节。
+
+---
+
+## 18. ta_agent 排查完整清单
+
+排查覆盖（2026-06-05 第二次扫）：
+
+| 类别 | 数量 | 状态 |
+|---|---|---|
+| ADRs (decisions/) | 9 个 | ✅ 全扫（含 2 个新发现：general-mode-redesign, user-auth-design） |
+| Guides | 2 个 | ✅ 扫完 |
+| Reference | 4 个 | ✅ 扫完（之前已读） |
+| Experiments | 14 个 | ⚠️ 大部分扫完，**hidden-bugs-audit 和 deepseek-cache-optimization 需补** |
+| Release notes | 5 个 | ⚠️ v0.19-v0.23 标题扫完，**详细 changelog 没深读** |
+| Business docs | 3 个 | ❌ 未读（产品介绍 / 演示文稿，对工程无直接价值） |
+| 关键源代码 | 50+ 文件 | ✅ 80% 扫完 |
+| Plugins/TAAssetBridge | C++ 头 | ✅ 扫完 |
+| 运行时数据 | usage_log.jsonl, pipeline_runs.jsonl | ✅ 发现并吸收到 §17.5 |
+
+**未扫盲区**（不重要，可后续）：
+- `tutorial/` 目录：不存在
+- `.ta_agent/memory/{general,ta}/sops/`：TA 模式实际 SOP（**重要，待补**）
+- `docs/sops/tagent_memory_sop.md`：用户专门写的记忆写入决策树（**重要，待补**）
+- `apps/desktop/main.js`：Electron 主进程核心（**之前已读**）
+- `apps/desktop/preload/index.js`：IPC 桥（**部分读**）
+
+---
+
 ## 16. Hermes 形态确认 + ACP 借鉴（未来扩展）
 
 **2026-06-05 确认**：hermes-agent 是**单 agent 主框架 + subagent / 背景 fork / ACP 扩展**，不是"群体智能"多 agent 协作。
