@@ -58,8 +58,8 @@ extraResources:
   - from: ../../tutorial/tutorial.md
     to: tutorial.md
   # Proma 品牌 Logo 素材（品牌素材下载功能使用）
-  - from: resources/proma-logos
-    to: proma-logos
+  - from: resources/tagent-logos
+    to: tagent-logos
     filter:
       - "**/*"
   # 默认 Dock 图标（macOS app.dock.setIcon 使用）
