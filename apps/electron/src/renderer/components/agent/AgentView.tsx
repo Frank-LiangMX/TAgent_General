@@ -99,7 +99,7 @@ import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
-import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
 import { fileToBase64, formatFileNames, getFileParentPath } from '@/lib/file-utils'
 import { createClipboardPendingFile, createClipboardTextDraft, makeUniqueAttachmentName } from '@/lib/clipboard-text-attachment'
 
@@ -328,6 +328,18 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const agentModelId = sessionModelMap.get(sessionId) ?? defaultModelId
   const agentChannelIds = useAtomValue(agentChannelIdsAtom)
   const setAgentChannelIds = useSetAtom(agentChannelIdsAtom)
+  // Agent 模式：Claude Agent SDK 仅支持 Anthropic 协议。
+  // 在传给 ModelSelector 之前过滤掉非 Anthropic 兼容的渠道，
+  // 与 ChannelForm / ChannelSettings 保持一致。
+  const globalChannels = useAtomValue(channelsAtom)
+  const agentChannelIdsAgentSafe = React.useMemo(
+    () =>
+      agentChannelIds.filter((id) => {
+        const ch = globalChannels.find((c) => c.id === id)
+        return ch ? isAgentCompatibleProvider(ch.provider) : false
+      }),
+    [agentChannelIds, globalChannels],
+  )
   const [agentThinking, setAgentThinking] = useAtom(agentThinkingAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
@@ -458,8 +470,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   }, [pendingFiles])
 
   // 渠道已选但模型未选时，自动选择第一个可用模型
-  const globalChannels = useAtomValue(channelsAtom)
-
+  // （globalChannels 在 line 334 已声明）
   // 检查 Agent 渠道列表中是否存在可用的模型（渠道 enabled + 模型 enabled）
   const hasAvailableModel = React.useMemo(() => {
     // TAgent 官方渠道（商业版）：只要 enabled 且有可用模型，直接视为可用
@@ -468,7 +479,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     // 其他渠道：需在 agentChannelIds 白名单中
     if (!agentChannelIds || agentChannelIds.length === 0) return false
     return globalChannels.some(
-      (c) => c.enabled && agentChannelIds.includes(c.id) && c.models.some((m) => m.enabled),
+      (c) => c.enabled && agentChannelIds.includes(c.id) && isAgentCompatibleProvider(c.provider) && c.models.some((m) => m.enabled),
     )
   }, [globalChannels, agentChannelIds])
   React.useEffect(() => {
@@ -1840,7 +1851,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       key: 'model',
       node: (
         <ModelSelector
-          filterChannelIds={agentChannelIds}
+          filterChannelIds={agentChannelIdsAgentSafe}
           externalSelectedModel={externalSelectedModel}
           onModelSelect={handleModelSelect}
         />
