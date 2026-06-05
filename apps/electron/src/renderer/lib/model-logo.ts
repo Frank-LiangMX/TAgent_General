@@ -109,8 +109,8 @@ import MiniMaxLogo from '@/assets/models/minimax.png'
 // Xiaomi / MiMo
 import XiaomiLogo from '@/assets/models/xiaomi.png'
 
-// Proma
-import PromaLogo from '@/assets/models/proma.png'
+// TAgent
+import TAgentLogo from '@/assets/models/proma.png'
 
 // Cohere
 import CohereLogo from '@/assets/models/cohere.png'
@@ -121,7 +121,7 @@ import EmbeddingLogo from '@/assets/models/embedding.png'
 
 // ===== 供应商类型 =====
 
-import type { ProviderType } from '@proma/shared'
+import type { ProviderType } from '@tagent/shared'
 
 // ===== 正则匹配映射 =====
 
@@ -310,7 +310,7 @@ export function getProviderLogo(provider: ProviderType): string {
  * 服务（常以 /anthropic 结尾）不应被误判为 Claude（见 #659）。
  */
 const URL_LOGO_MAP: Array<[RegExp, string]> = [
-  [/proma\.cool/i, PromaLogo],
+  [/proma\.cool/i, TAgentLogo],
   [/moonshot\.cn|kimi/i, KimiLogo],
   [/bigmodel\.cn|zhipuai/i, ZhipuLogo],
   [/minimax/i, MiniMaxLogo],
@@ -364,7 +364,7 @@ export function getChannelLogo(channel: { provider: ProviderType; baseUrl: strin
  * 优先返回别名（name !== id），未找到则返回原始 modelId。
  * 用于将 SDK 返回的 model ID 转为用户友好的显示名称。
  */
-export function resolveModelDisplayName(modelId: string, channels: import('@proma/shared').Channel[]): string {
+export function resolveModelDisplayName(modelId: string, channels: import('@tagent/shared').Channel[]): string {
   for (const channel of channels) {
     for (const model of channel.models) {
       if (model.id === modelId && model.name && model.name !== model.id) {
@@ -376,4 +376,4 @@ export function resolveModelDisplayName(modelId: string, channels: import('@prom
 }
 
 /** 默认模型图标 */
-export { DefaultLogo, PromaLogo }
+export { DefaultLogo, TAgentLogo }

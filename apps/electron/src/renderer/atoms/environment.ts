@@ -9,7 +9,7 @@ import type {
   EnvironmentCheckResult,
   RuntimeStatus,
   InstallerManifest,
-} from '@proma/shared'
+} from '@tagent/shared'
 
 /**
  * 单个安装包的下载状态

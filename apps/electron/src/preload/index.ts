@@ -6,7 +6,7 @@
  */
 
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS } from '@proma/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS } from '@tagent/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
 import type {
   RuntimeStatus,
@@ -65,7 +65,7 @@ import type {
   GitHubReleaseListOptions,
   PermissionRequest,
   PermissionResponse,
-  PromaPermissionMode,
+  TAgentPermissionMode,
   AskUserRequest,
   AskUserResponse,
   ExitPlanModeResponse,
@@ -101,7 +101,7 @@ import type {
   WeChatBridgeState,
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
-} from '@proma/shared'
+} from '@tagent/shared'
 import type {
   UserProfile,
   AppSettings,
@@ -150,19 +150,19 @@ export interface ElectronAPI {
   getGitRepoStatus: (dirPath: string) => Promise<GitRepoStatus | null>
 
   /** 获取未暂存的变更文件列表 */
-  getUnstagedChanges: (dirPath: string, sessionPath?: string, workspaceFilesPath?: string, extraPaths?: string[], sessionId?: string) => Promise<import('@proma/shared').UnstagedChangesResult>
+  getUnstagedChanges: (dirPath: string, sessionPath?: string, workspaceFilesPath?: string, extraPaths?: string[], sessionId?: string) => Promise<import('@tagent/shared').UnstagedChangesResult>
   /** 获取单个文件的 diff */
-  getFileDiff: (input: import('@proma/shared').GetFileDiffInput) => Promise<string>
+  getFileDiff: (input: import('@tagent/shared').GetFileDiffInput) => Promise<string>
   /** 获取未追踪文件内容 */
-  getUntrackedContent: (input: import('@proma/shared').GetFileDiffInput) => Promise<string>
+  getUntrackedContent: (input: import('@tagent/shared').GetFileDiffInput) => Promise<string>
   /** 还原文件变更 */
-  revertFile: (input: import('@proma/shared').RevertFileInput) => Promise<void>
+  revertFile: (input: import('@tagent/shared').RevertFileInput) => Promise<void>
   /** 获取文件新旧版本内容 */
-  getDiffContents: (input: import('@proma/shared').GetFileDiffInput) => Promise<{ oldContent: string; newContent: string } | null>
+  getDiffContents: (input: import('@tagent/shared').GetFileDiffInput) => Promise<{ oldContent: string; newContent: string } | null>
   /** 列出 Git Worktree */
-  listWorktrees: (repoPath: string, sessionId: string) => Promise<import('@proma/shared').WorktreeInfo[]>
+  listWorktrees: (repoPath: string, sessionId: string) => Promise<import('@tagent/shared').WorktreeInfo[]>
   /** 获取 Worktree 相对于基准分支的全量变更 */
-  getWorktreeChanges: (worktreePath: string, baseBranch: string, sessionId: string) => Promise<import('@proma/shared').UnstagedChangesResult>
+  getWorktreeChanges: (worktreePath: string, baseBranch: string, sessionId: string) => Promise<import('@tagent/shared').UnstagedChangesResult>
   /** 在独立窗口打开当前文件预览 */
   openDetachedPreview: (input: DetachedPreviewWindowInput) => Promise<string | null>
   /** 获取独立预览窗口数据 */
@@ -502,7 +502,7 @@ export interface ElectronAPI {
   saveWorkspaceMcpConfig: (workspaceSlug: string, config: WorkspaceMcpConfig) => Promise<void>
 
   /** 测试 MCP 服务器连接 */
-  testMcpServer: (name: string, entry: import('@proma/shared').McpServerEntry) => Promise<{ success: boolean; message: string }>
+  testMcpServer: (name: string, entry: import('@tagent/shared').McpServerEntry) => Promise<{ success: boolean; message: string }>
 
   /** 获取工作区 Skill 列表（含活跃和不活跃） */
   getWorkspaceSkills: (workspaceSlug: string) => Promise<SkillMeta[]>
@@ -532,10 +532,10 @@ export interface ElectronAPI {
   writeSkillContent: (workspaceSlug: string, skillSlug: string, content: string) => Promise<void>
 
   /** 列出 Skill 目录下的子文件树（不含 SKILL.md） */
-  listSkillFiles: (workspaceSlug: string, skillSlug: string) => Promise<import('@proma/shared').SkillFileNode[]>
+  listSkillFiles: (workspaceSlug: string, skillSlug: string) => Promise<import('@tagent/shared').SkillFileNode[]>
 
   /** 读取 Skill 目录下的子文件内容 */
-  readSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string) => Promise<import('@proma/shared').SkillFileContent>
+  readSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string) => Promise<import('@tagent/shared').SkillFileContent>
 
   /** 写入 Skill 目录下的子文件内容（文本） */
   writeSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string, content: string) => Promise<void>
@@ -567,7 +567,7 @@ export interface ElectronAPI {
   respondPermission: (response: PermissionResponse) => Promise<void>
 
   /** 热切换指定会话的权限模式（运行中生效，仅影响该 session） */
-  updateSessionPermissionMode: (sessionId: string, mode: PromaPermissionMode) => Promise<void>
+  updateSessionPermissionMode: (sessionId: string, mode: TAgentPermissionMode) => Promise<void>
 
   /** 获取全局记忆配置 */
   getMemoryConfig: () => Promise<MemoryConfig>
@@ -661,11 +661,11 @@ export interface ElectronAPI {
   /** 获取工作区附加文件列表 */
   getWorkspaceAttachedFiles: (workspaceSlug: string) => Promise<string[]>
   /** 获取工作区 worktree 仓库配置列表 */
-  getWorktreeRepos: (workspaceSlug: string) => Promise<import('@proma/shared').WorkspaceWorktreeRepo[]>
+  getWorktreeRepos: (workspaceSlug: string) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
   /** 添加 worktree 仓库到工作区配置 */
-  addWorktreeRepo: (workspaceSlug: string, repo: import('@proma/shared').WorkspaceWorktreeRepo) => Promise<import('@proma/shared').WorkspaceWorktreeRepo[]>
+  addWorktreeRepo: (workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
   /** 从工作区配置移除 worktree 仓库 */
-  removeWorktreeRepo: (workspaceSlug: string, repoPath: string) => Promise<import('@proma/shared').WorkspaceWorktreeRepo[]>
+  removeWorktreeRepo: (workspaceSlug: string, repoPath: string) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
 
   // ===== Agent 文件系统操作 =====
 
@@ -685,37 +685,37 @@ export interface ElectronAPI {
   writeClipboardPreview: (filename: string, content: string) => Promise<string>
 
   /** 用系统默认应用打开任意文件（无工作区限制） */
-  systemOpenFile: (filePath: string, appName?: string, access?: import('@proma/shared').FileAccessOptions) => Promise<void>
+  systemOpenFile: (filePath: string, appName?: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
 
   /** 扫描系统中可用的编辑器应用（仅 macOS） */
-  scanEditors: () => Promise<import('@proma/shared').EditorApp[]>
+  scanEditors: () => Promise<import('@tagent/shared').EditorApp[]>
 
   /** 查询本机为该文件类型注册的默认打开应用（含图标 dataURL） */
-  getDefaultAppForFile: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<import('@proma/shared').DefaultAppInfo | null>
+  getDefaultAppForFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').DefaultAppInfo | null>
 
   /** 在系统文件管理器中显示文件 */
   showInFolder: (filePath: string) => Promise<void>
 
   /** 解析文件路径并读取内容（供内联预览使用） */
-  resolveAndReadFile: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<{ resolvedPath: string; content: string } | null>
+  resolveAndReadFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ resolvedPath: string; content: string } | null>
 
   /** 写入文本文件（供 Markdown 内联编辑使用） */
-  writeTextFile: (filePath: string, content: string, access?: import('@proma/shared').FileAccessOptions) => Promise<boolean>
+  writeTextFile: (filePath: string, content: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<boolean>
 
   /** 仅解析文件路径（供 PDF/图片等用 file:// 加载） */
-  resolveFilePath: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<import('@proma/shared').ResolvedFileUrl | null>
+  resolveFilePath: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').ResolvedFileUrl | null>
 
   /** 为内联 PDF 预览生成临时 HTML 文件，返回文件路径 */
-  preparePdfPreview: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<{ tmpHtmlUrl: string } | null>
+  preparePdfPreview: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ tmpHtmlUrl: string } | null>
 
   /** 读取文件为 base64（带路径校验，供内联图片预览等） */
-  readBinaryBase64: (filePath: string, access?: import('@proma/shared').FileAccessOptions, maxSize?: number) => Promise<string | null>
+  readBinaryBase64: (filePath: string, access?: import('@tagent/shared').FileAccessOptions, maxSize?: number) => Promise<string | null>
 
   /** DOCX 转 HTML（内联预览） */
-  docxToHtml: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<{ resolvedPath: string; html: string } | null>
+  docxToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ resolvedPath: string; html: string } | null>
 
   /** XLSX/PPTX 转 HTML（内联预览） */
-  officeToHtml: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<import('@proma/shared').OfficePreviewResult | null>
+  officeToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').OfficePreviewResult | null>
 
   /** 截图导出：将 HTML 渲染为 PNG 并复制到剪贴板或保存文件 */
   screenshotCapture: (input: { html: string; isDark: boolean; width?: number; mode: 'clipboard' | 'file'; css?: string; themeClass?: string }) => Promise<{ success: boolean; message: string; filePath?: string }>
@@ -727,19 +727,19 @@ export interface ElectronAPI {
   moveFile: (filePath: string, targetDir: string) => Promise<void>
 
   /** 列出附加目录内容 */
-  listAttachedDirectory: (dirPath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<FileEntry[]>
+  listAttachedDirectory: (dirPath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<FileEntry[]>
 
   /** 读取附加目录文件内容为 base64（限制在已附加目录范围内） */
   readAttachedFile: (filePath: string, sessionId?: string, workspaceSlug?: string) => Promise<string>
 
   /** 在文件管理器中显示附加目录文件 */
-  showAttachedInFolder: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => Promise<void>
+  showAttachedInFolder: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
 
   /** 重命名附加目录文件/目录（无工作区路径限制） */
-  renameAttachedFile: (filePath: string, newName: string, access?: import('@proma/shared').FileAccessOptions) => Promise<void>
+  renameAttachedFile: (filePath: string, newName: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
 
   /** 移动附加目录文件/目录（无工作区路径限制） */
-  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@proma/shared').FileAccessOptions) => Promise<void>
+  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
 
   /** 检查路径类型（文件 or 目录），用于拖拽检测 */
   checkPathsType: (paths: string[]) => Promise<{ directories: string[]; files: string[] }>
@@ -831,9 +831,9 @@ export interface ElectronAPI {
   // --- 多 Bot v2 API ---
 
   /** 获取多 Bot 配置 */
-  getFeishuMultiConfig: () => Promise<import('@proma/shared').FeishuMultiBotConfig>
+  getFeishuMultiConfig: () => Promise<import('@tagent/shared').FeishuMultiBotConfig>
   /** 保存单个 Bot 配置 */
-  saveFeishuBotConfig: (input: import('@proma/shared').FeishuBotConfigInput) => Promise<import('@proma/shared').FeishuBotConfig>
+  saveFeishuBotConfig: (input: import('@tagent/shared').FeishuBotConfigInput) => Promise<import('@tagent/shared').FeishuBotConfig>
   /** 获取单个 Bot 解密后的 App Secret */
   getDecryptedFeishuBotSecret: (botId: string) => Promise<string>
   /** 删除 Bot */
@@ -843,18 +843,18 @@ export interface ElectronAPI {
   /** 停止单个 Bot */
   stopFeishuBot: (botId: string) => Promise<void>
   /** 获取多 Bot 状态 */
-  getFeishuMultiStatus: () => Promise<import('@proma/shared').FeishuMultiBridgeState>
+  getFeishuMultiStatus: () => Promise<import('@tagent/shared').FeishuMultiBridgeState>
 
   // --- 扫码注册 ---
 
   /** 启动扫码注册流程，等待用户扫码 + 飞书确认后返回 App ID/Secret */
-  registerFeishuApp: () => Promise<import('@proma/shared').FeishuRegisterAppResult>
+  registerFeishuApp: () => Promise<import('@tagent/shared').FeishuRegisterAppResult>
   /** 取消正在进行的扫码注册流程 */
   cancelFeishuRegistration: () => Promise<void>
   /** 监听二维码 URL 生成 */
-  onFeishuRegisterQrcode: (callback: (payload: import('@proma/shared').FeishuRegisterAppQRCode) => void) => () => void
+  onFeishuRegisterQrcode: (callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void) => () => void
   /** 监听注册流程状态变化 */
-  onFeishuRegisterStatus: (callback: (payload: import('@proma/shared').FeishuRegisterAppStatus) => void) => () => void
+  onFeishuRegisterStatus: (callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void) => () => void
 
   // ===== 钉钉集成 =====
 
@@ -878,9 +878,9 @@ export interface ElectronAPI {
   // --- 钉钉多 Bot v2 API ---
 
   /** 获取多 Bot 配置 */
-  getDingTalkMultiConfig: () => Promise<import('@proma/shared').DingTalkMultiBotConfig>
+  getDingTalkMultiConfig: () => Promise<import('@tagent/shared').DingTalkMultiBotConfig>
   /** 保存单个 Bot 配置 */
-  saveDingTalkBotConfig: (input: import('@proma/shared').DingTalkBotConfigInput) => Promise<import('@proma/shared').DingTalkBotConfig>
+  saveDingTalkBotConfig: (input: import('@tagent/shared').DingTalkBotConfigInput) => Promise<import('@tagent/shared').DingTalkBotConfig>
   /** 获取单个 Bot 解密后的 Client Secret */
   getDecryptedDingTalkBotSecret: (botId: string) => Promise<string>
   /** 删除 Bot */
@@ -890,7 +890,7 @@ export interface ElectronAPI {
   /** 停止单个 Bot */
   stopDingTalkBot: (botId: string) => Promise<void>
   /** 获取多 Bot 状态 */
-  getDingTalkMultiStatus: () => Promise<import('@proma/shared').DingTalkMultiBridgeState>
+  getDingTalkMultiStatus: () => Promise<import('@tagent/shared').DingTalkMultiBridgeState>
 
   // ===== 微信集成 =====
 
@@ -1032,19 +1032,19 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_UNSTAGED_CHANGES, dirPath, sessionPath, workspaceFilesPath, extraPaths, sessionId)
   },
 
-  getFileDiff: (input: import('@proma/shared').GetFileDiffInput) => {
+  getFileDiff: (input: import('@tagent/shared').GetFileDiffInput) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_FILE_DIFF, input)
   },
 
-  getUntrackedContent: (input: import('@proma/shared').GetFileDiffInput) => {
+  getUntrackedContent: (input: import('@tagent/shared').GetFileDiffInput) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_UNTRACKED_CONTENT, input)
   },
 
-  revertFile: (input: import('@proma/shared').RevertFileInput) => {
+  revertFile: (input: import('@tagent/shared').RevertFileInput) => {
     return ipcRenderer.invoke(IPC_CHANNELS.REVERT_FILE, input)
   },
 
-  getDiffContents: (input: import('@proma/shared').GetFileDiffInput) => {
+  getDiffContents: (input: import('@tagent/shared').GetFileDiffInput) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_DIFF_CONTENTS, input)
   },
 
@@ -1496,7 +1496,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SAVE_MCP_CONFIG, workspaceSlug, config)
   },
 
-  testMcpServer: (name: string, entry: import('@proma/shared').McpServerEntry) => {
+  testMcpServer: (name: string, entry: import('@tagent/shared').McpServerEntry) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.TEST_MCP_SERVER, name, entry) as Promise<{ success: boolean; message: string }>
   },
 
@@ -1608,7 +1608,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.PERMISSION_RESPOND, response)
   },
 
-  updateSessionPermissionMode: (sessionId: string, mode: PromaPermissionMode) => {
+  updateSessionPermissionMode: (sessionId: string, mode: TAgentPermissionMode) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SESSION_PERMISSION_MODE, sessionId, mode)
   },
 
@@ -1748,7 +1748,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_WORKTREE_REPOS, workspaceSlug)
   },
 
-  addWorktreeRepo: (workspaceSlug: string, repo: import('@proma/shared').WorkspaceWorktreeRepo) => {
+  addWorktreeRepo: (workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.ADD_WORKTREE_REPO, workspaceSlug, repo)
   },
 
@@ -1777,7 +1777,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.WRITE_CLIPBOARD_PREVIEW, filename, content)
   },
 
-  systemOpenFile: (filePath: string, appName?: string, access?: import('@proma/shared').FileAccessOptions) => {
+  systemOpenFile: (filePath: string, appName?: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE, filePath, appName, access)
   },
 
@@ -1785,40 +1785,40 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(IPC_CHANNELS.SCAN_EDITORS)
   },
 
-  getDefaultAppForFile: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE, filePath, access) as Promise<import('@proma/shared').DefaultAppInfo | null>
+  getDefaultAppForFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE, filePath, access) as Promise<import('@tagent/shared').DefaultAppInfo | null>
   },
 
   showInFolder: (filePath: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SHOW_IN_FOLDER, filePath)
   },
 
-  resolveAndReadFile: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
+  resolveAndReadFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke('file:resolve-and-read', filePath, access) as Promise<{ resolvedPath: string; content: string } | null>
   },
 
-  writeTextFile: (filePath: string, content: string, access?: import('@proma/shared').FileAccessOptions) => {
+  writeTextFile: (filePath: string, content: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke('file:write-text', filePath, content, access) as Promise<boolean>
   },
 
-  resolveFilePath: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:resolve-path', filePath, access) as Promise<import('@proma/shared').ResolvedFileUrl | null>
+  resolveFilePath: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
+    return ipcRenderer.invoke('file:resolve-path', filePath, access) as Promise<import('@tagent/shared').ResolvedFileUrl | null>
   },
 
-  preparePdfPreview: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
+  preparePdfPreview: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke('file:prepare-pdf-preview', filePath, access) as Promise<{ tmpHtmlUrl: string } | null>
   },
 
-  readBinaryBase64: (filePath: string, access?: import('@proma/shared').FileAccessOptions, maxSize?: number) => {
+  readBinaryBase64: (filePath: string, access?: import('@tagent/shared').FileAccessOptions, maxSize?: number) => {
     return ipcRenderer.invoke('file:read-binary-base64', filePath, access, maxSize) as Promise<string | null>
   },
 
-  docxToHtml: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
+  docxToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke('file:docx-to-html', filePath, access) as Promise<{ resolvedPath: string; html: string } | null>
   },
 
-  officeToHtml: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:office-to-html', filePath, access) as Promise<import('@proma/shared').OfficePreviewResult | null>
+  officeToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
+    return ipcRenderer.invoke('file:office-to-html', filePath, access) as Promise<import('@tagent/shared').OfficePreviewResult | null>
   },
 
   screenshotCapture: (input: { html: string; isDark: boolean; width?: number; mode: 'clipboard' | 'file'; css?: string; themeClass?: string }) => {
@@ -1833,7 +1833,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.MOVE_FILE, filePath, targetDir)
   },
 
-  listAttachedDirectory: (dirPath: string, access?: import('@proma/shared').FileAccessOptions) => {
+  listAttachedDirectory: (dirPath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_ATTACHED_DIRECTORY, dirPath, access)
   },
 
@@ -1841,15 +1841,15 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.READ_ATTACHED_FILE, filePath, sessionId, workspaceSlug)
   },
 
-  showAttachedInFolder: (filePath: string, access?: import('@proma/shared').FileAccessOptions) => {
+  showAttachedInFolder: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SHOW_ATTACHED_IN_FOLDER, filePath, access)
   },
 
-  renameAttachedFile: (filePath: string, newName: string, access?: import('@proma/shared').FileAccessOptions) => {
+  renameAttachedFile: (filePath: string, newName: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.RENAME_ATTACHED_FILE, filePath, newName, access)
   },
 
-  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@proma/shared').FileAccessOptions) => {
+  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.MOVE_ATTACHED_FILE, filePath, targetDir, access)
   },
 
@@ -1973,7 +1973,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(FEISHU_IPC_CHANNELS.GET_MULTI_CONFIG)
   },
 
-  saveFeishuBotConfig: (input: import('@proma/shared').FeishuBotConfigInput) => {
+  saveFeishuBotConfig: (input: import('@tagent/shared').FeishuBotConfigInput) => {
     return ipcRenderer.invoke(FEISHU_IPC_CHANNELS.SAVE_BOT_CONFIG, input)
   },
 
@@ -2007,14 +2007,14 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(FEISHU_IPC_CHANNELS.REGISTER_APP_CANCEL)
   },
 
-  onFeishuRegisterQrcode: (callback: (payload: import('@proma/shared').FeishuRegisterAppQRCode) => void) => {
-    const listener = (_: unknown, payload: import('@proma/shared').FeishuRegisterAppQRCode) => callback(payload)
+  onFeishuRegisterQrcode: (callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void) => {
+    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppQRCode) => callback(payload)
     ipcRenderer.on(FEISHU_IPC_CHANNELS.REGISTER_APP_QRCODE, listener)
     return () => { ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_QRCODE, listener) }
   },
 
-  onFeishuRegisterStatus: (callback: (payload: import('@proma/shared').FeishuRegisterAppStatus) => void) => {
-    const listener = (_: unknown, payload: import('@proma/shared').FeishuRegisterAppStatus) => callback(payload)
+  onFeishuRegisterStatus: (callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void) => {
+    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppStatus) => callback(payload)
     ipcRenderer.on(FEISHU_IPC_CHANNELS.REGISTER_APP_STATUS, listener)
     return () => { ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_STATUS, listener) }
   },
@@ -2093,7 +2093,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(DINGTALK_IPC_CHANNELS.GET_MULTI_CONFIG)
   },
 
-  saveDingTalkBotConfig: (input: import('@proma/shared').DingTalkBotConfigInput) => {
+  saveDingTalkBotConfig: (input: import('@tagent/shared').DingTalkBotConfigInput) => {
     return ipcRenderer.invoke(DINGTALK_IPC_CHANNELS.SAVE_BOT_CONFIG, input)
   },
 

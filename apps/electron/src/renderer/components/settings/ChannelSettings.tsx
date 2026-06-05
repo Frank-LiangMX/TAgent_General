@@ -12,9 +12,9 @@ import { useAtom, useSetAtom } from 'jotai'
 import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@proma/shared'
-import type { Channel } from '@proma/shared'
-import { getChannelLogo, PromaLogo } from '@/lib/model-logo'
+import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
+import type { Channel } from '@tagent/shared'
+import { getChannelLogo, TAgentLogo } from '@/lib/model-logo'
 import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
@@ -224,7 +224,7 @@ export function ChannelSettings(): React.ReactElement {
         }
       >
         <SettingsCard>
-          <PromaProviderCard />
+          <TAgentProviderCard />
         </SettingsCard>
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
@@ -258,7 +258,7 @@ export function ChannelSettings(): React.ReactElement {
         description="启用 Agent 模式可用的供应商，支持同时开启多个渠道，在 Agent 模式下可直接切换"
       >
         <SettingsCard>
-          <PromaProviderCard />
+          <TAgentProviderCard />
         </SettingsCard>
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
@@ -385,18 +385,18 @@ function AgentProviderRow({ channel, enabled, onToggle }: AgentProviderRowProps)
   )
 }
 
-// ===== Proma 官方供应商推广卡片 =====
+// ===== TAgent 官方供应商推广卡片 =====
 
-function PromaProviderCard(): React.ReactElement {
+function TAgentProviderCard(): React.ReactElement {
   const handleDownload = (): void => {
     window.open('http://proma.cool/download', '_blank')
   }
 
   return (
     <SettingsRow
-      label="Proma"
-      icon={<img src={PromaLogo} alt="Proma" className="w-8 h-8 rounded" />}
-      description="Proma 官方供应｜稳定｜靠谱｜丝滑｜简单｜可用于 Agent"
+      label="TAgent"
+      icon={<img src={TAgentLogo} alt="TAgent" className="w-8 h-8 rounded" />}
+      description="TAgent 官方供应｜稳定｜靠谱｜丝滑｜简单｜可用于 Agent"
     >
       <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownload}>
         <ExternalLink size={13} />

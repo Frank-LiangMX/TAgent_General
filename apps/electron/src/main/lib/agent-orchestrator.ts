@@ -20,22 +20,22 @@ import { join, dirname } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { app } from 'electron'
-import type { AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, AgentStreamPayload, RewindSessionResult, SdkBeta, ProviderType } from '@proma/shared'
+import type { AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, AgentStreamPayload, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
 import {
-  PROMA_DEFAULT_PERMISSION_MODE,
-  PROMA_PERMISSION_MODE_CONFIG,
+  TAGENT_DEFAULT_PERMISSION_MODE,
+  TAGENT_PERMISSION_MODE_CONFIG,
   SAFE_TOOLS,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
-} from '@proma/shared'
-import type { PermissionRequest, PromaPermissionMode, AskUserRequest, ExitPlanModeRequest } from '@proma/shared'
+} from '@tagent/shared'
+import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest } from '@tagent/shared'
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
 import { isPromptTooLongError, isThinkingSignatureError, friendlyErrorMessage, mapSDKErrorToTypedError, extractErrorDetails, shouldKeepChannelOpen } from './adapters/claude-agent-adapter'
 import { isTransientNetworkError } from './error-patterns'
 import { AgentEventBus } from './agent-event-bus'
 import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
-import { getAdapter, fetchTitle, normalizeAnthropicBaseUrlForSdk, getPromaUserAgent } from '@proma/core'
+import { getAdapter, fetchTitle, normalizeAnthropicBaseUrlForSdk, getTAgentUserAgent } from '@tagent/core'
 import pkg from '../../../package.json' with { type: 'json' }
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
@@ -77,10 +77,10 @@ export interface SessionCallbacks {
 
 // ===== 工具函数 =====
 
-function sdkPermissionModeForPromaMode(mode: PromaPermissionMode): PromaPermissionMode {
-  // Proma 自己在 canUseTool 里实现完全自动。SDK 原生 bypassPermissions
+function sdkPermissionModeForTAgentMode(mode: TAgentPermissionMode): TAgentPermissionMode {
+  // TAgent 自己在 canUseTool 里实现完全自动。SDK 原生 bypassPermissions
   // 可能在 canUseTool 前直接放行 ExitPlanMode，绕过计划审批。
-  return mode === 'bypassPermissions' ? 'auto' : PROMA_PERMISSION_MODE_CONFIG[mode].sdkMode
+  return mode === 'bypassPermissions' ? 'auto' : TAGENT_PERMISSION_MODE_CONFIG[mode].sdkMode
 }
 
 /**
@@ -218,7 +218,7 @@ function getRetryDelayMs(attempt: number, elapsedRetryDelayMs: number): number {
  * 再沿父目录 `@anthropic-ai/` 找到同级的平台子包。
  *
  * 多种策略降级：createRequire → 全局 require → cwd/node_modules 手动查找
- * 打包环境下：asar 内的路径需要转换为 asar.unpacked 路径（即便 Proma 当前 `asar: false`
+ * 打包环境下：asar 内的路径需要转换为 asar.unpacked 路径（即便 TAgent 当前 `asar: false`
  * 兜底不伤人）。
  */
 function resolveSDKCliPath(): string {
@@ -515,7 +515,7 @@ export class AgentOrchestrator {
   private stoppedBySessions = new Set<string>()
 
   /** 运行中会话的当前权限模式（支持运行时动态切换） */
-  private sessionPermissionModes = new Map<string, PromaPermissionMode>()
+  private sessionPermissionModes = new Map<string, TAgentPermissionMode>()
 
   constructor(adapter: AgentProviderAdapter, eventBus: AgentEventBus) {
     this.adapter = adapter
@@ -572,13 +572,13 @@ export class AgentOrchestrator {
     }
 
     // 认证方式按 provider 分支
-    // - Kimi Coding Plan：只认 Bearer，通过 ANTHROPIC_CUSTOM_HEADERS 注入 Proma UA
+    // - Kimi Coding Plan：只认 Bearer，通过 ANTHROPIC_CUSTOM_HEADERS 注入 TAgent UA
     // - MiniMax Coding Plan：Claude Code 场景使用 Bearer（ANTHROPIC_AUTH_TOKEN）
     // - 通过 ANTHROPIC_AUTH_TOKEN 让 SDK 发 Authorization: Bearer
     // - 其它：ANTHROPIC_API_KEY（SDK 内部会同时带上 x-api-key 和 Bearer）
     if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
       sdkEnv.ANTHROPIC_AUTH_TOKEN = apiKey
-      sdkEnv.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getPromaUserAgent(pkg.version)}`
+      sdkEnv.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
     } else if (provider === 'minimax') {
       sdkEnv.ANTHROPIC_AUTH_TOKEN = apiKey
       sdkEnv.API_TIMEOUT_MS = '3000000'
@@ -892,7 +892,7 @@ export class AgentOrchestrator {
 
     const toPersist = accumulatedMessages.filter(
       (m) => m.type === 'assistant' || m.type === 'user' || m.type === 'result'
-        || (m.type === 'system' && ['compact_boundary', 'permission_denied'].includes((m as import('@proma/shared').SDKSystemMessage).subtype ?? ''))
+        || (m.type === 'system' && ['compact_boundary', 'permission_denied'].includes((m as import('@tagent/shared').SDKSystemMessage).subtype ?? ''))
     ).filter((m) => {
       // 过滤 SDK 内部生成的 user 文本消息（如 Skill 展开 prompt），与实时流过滤逻辑一致
       if (m.type === 'user') {
@@ -1066,11 +1066,11 @@ export class AgentOrchestrator {
     if (channel.provider === 'kimi-coding') {
       // Kimi Coding Plan：只用 Bearer + 必须带 User-Agent
       process.env.ANTHROPIC_AUTH_TOKEN = apiKey
-      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getPromaUserAgent(pkg.version)}`
+      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
     } else if (channel.provider === 'xiaomi-token-plan') {
       // 小米 Token Plan：Bearer + 必须带 User-Agent
       process.env.ANTHROPIC_AUTH_TOKEN = apiKey
-      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getPromaUserAgent(pkg.version)}`
+      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
     } else if (channel.provider === 'minimax') {
       // MiniMax Coding Plan：Claude Code 兼容配置使用 Bearer
       process.env.ANTHROPIC_AUTH_TOKEN = apiKey
@@ -1119,7 +1119,7 @@ export class AgentOrchestrator {
     let titleGenerationStarted = false
     let agentCwd: string | undefined
     let workspaceSlug: string | undefined
-    let workspace: import('@proma/shared').AgentWorkspace | undefined
+    let workspace: import('@tagent/shared').AgentWorkspace | undefined
 
     try {
       // 8. 动态导入 SDK
@@ -1151,7 +1151,7 @@ export class AgentOrchestrator {
               key: 'i',
               label: '报告问题',
               action: 'open_external',
-              payload: 'https://github.com/ErlichLiu/Proma/issues/new',
+              payload: 'https://github.com/ErlichLiu/TAgent/issues/new',
             },
           ],
           canRetry: false,
@@ -1280,8 +1280,8 @@ export class AgentOrchestrator {
       // 12. 读取应用设置并确定权限模式
       // 权限模式只属于当前 session；新会话默认完全自动模式。
       const appSettings = getSettings()
-      const initialPermissionMode: PromaPermissionMode = permissionModeOverride
-        ?? PROMA_DEFAULT_PERMISSION_MODE
+      const initialPermissionMode: TAgentPermissionMode = permissionModeOverride
+        ?? TAGENT_DEFAULT_PERMISSION_MODE
       // 注册到 Map，支持运行中动态切换
       this.sessionPermissionModes.set(sessionId, initialPermissionMode)
       console.log(`[Agent 编排] 权限模式: ${initialPermissionMode}${permissionModeOverride ? '（外部覆盖）' : ''}`)
@@ -1300,7 +1300,7 @@ export class AgentOrchestrator {
       }
 
       /** 读取当前会话的实时权限模式（支持运行中切换） */
-      const getPermissionMode = (): PromaPermissionMode =>
+      const getPermissionMode = (): TAgentPermissionMode =>
         this.sessionPermissionModes.get(sessionId) ?? initialPermissionMode
 
       // ExitPlanMode 拦截器：plan 模式下走 UI 审批流程
@@ -1425,7 +1425,7 @@ export class AgentOrchestrator {
             emitPlanModeChanged(false, 'permission')
             // 同步通知 SDK 侧切换权限模式
             if (this.adapter.setPermissionMode) {
-              this.adapter.setPermissionMode(sessionId, sdkPermissionModeForPromaMode(result.targetMode)).catch((err: unknown) => {
+              this.adapter.setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(result.targetMode)).catch((err: unknown) => {
                 console.warn(`[Agent 编排] SDK 权限模式切换失败:`, err)
               })
             }
@@ -1510,7 +1510,7 @@ export class AgentOrchestrator {
         sdkCliPath: cliPath,
         env: sdkEnv,
         ...(maxTurns != null && { maxTurns }),
-        sdkPermissionMode: sdkPermissionModeForPromaMode(initialPermissionMode),
+        sdkPermissionMode: sdkPermissionModeForTAgentMode(initialPermissionMode),
         // 当提供 canUseTool 回调时必须为 false，否则 CLI 同时收到
         // --allow-dangerously-skip-permissions 和 --permission-prompt-tool stdio
         // 两个矛盾的指令，导致 ExitPlanMode/AskUserQuestion 等交互式工具失败。
@@ -1518,9 +1518,9 @@ export class AgentOrchestrator {
         // Worker 子代理在 bypassPermissions 模式下也会被自动放行。
         allowDangerouslySkipPermissions: !canUseTool,
         canUseTool,
-        ...(sdkPermissionModeForPromaMode(initialPermissionMode) === 'auto' && { allowedTools: [...SAFE_TOOLS] }),
+        ...(sdkPermissionModeForTAgentMode(initialPermissionMode) === 'auto' && { allowedTools: [...SAFE_TOOLS] }),
         // claude_code preset 提供基础环境信息（platform/shell/OS/git/model/知识截止日期等）
-        // buildSystemPrompt 追加 Proma 特有指令（角色定义、SubAgent 策略、工作区信息等）
+        // buildSystemPrompt 追加 TAgent 特有指令（角色定义、SubAgent 策略、工作区信息等）
         systemPrompt: {
           type: 'preset',
           preset: 'claude_code',
@@ -1749,7 +1749,7 @@ export class AgentOrchestrator {
                 }
 
                 // Thinking signature 不兼容：通常由跨模型 resume 触发。
-                // 先自动清除 SDK resume 关系，改用 Proma 已持久化上下文重跑一次；再失败才展示用户提示。
+                // 先自动清除 SDK resume 关系，改用 TAgent 已持久化上下文重跑一次；再失败才展示用户提示。
                 if (
                   typedError.code === THINKING_SIGNATURE_ERROR_CODE &&
                   canTryThinkingSignatureRecovery(attempt)
@@ -1851,7 +1851,7 @@ export class AgentOrchestrator {
                 }
               }
             } else if (msg.type === 'system') {
-              const sysMsg = msg as import('@proma/shared').SDKSystemMessage
+              const sysMsg = msg as import('@tagent/shared').SDKSystemMessage
               if (sysMsg.subtype === 'compact_boundary' || sysMsg.subtype === 'permission_denied') {
                 accumulatedMessages.push(msg)
               }
@@ -2170,10 +2170,10 @@ export class AgentOrchestrator {
   /**
    * 运行中动态切换会话的权限模式
    *
-   * 同时更新 Proma 侧（canUseTool 闭包读取的 Map）和 SDK 侧（query.setPermissionMode）。
+   * 同时更新 TAgent 侧（canUseTool 闭包读取的 Map）和 SDK 侧（query.setPermissionMode）。
    * 典型场景：用户在 Agent 运行中通过 PermissionModeSelector 切换模式。
    */
-  async updateSessionPermissionMode(sessionId: string, mode: PromaPermissionMode): Promise<void> {
+  async updateSessionPermissionMode(sessionId: string, mode: TAgentPermissionMode): Promise<void> {
     if (!this.activeSessions.has(sessionId)) return
     this.sessionPermissionModes.set(sessionId, mode)
     this.eventBus.emit(sessionId, {
@@ -2182,7 +2182,7 @@ export class AgentOrchestrator {
     })
     // 同步通知 SDK 侧
     if (this.adapter.setPermissionMode) {
-      await this.adapter.setPermissionMode(sessionId, sdkPermissionModeForPromaMode(mode))
+      await this.adapter.setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(mode))
     }
     console.log(`[Agent 编排] 运行中权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
@@ -2193,7 +2193,7 @@ export class AgentOrchestrator {
    * 回退会话到指定消息点
    *
    * 1. 直接从 SDK JSONL 的 file-history-snapshot 恢复文件到目标时刻的状态
-   * 2. 截断 Proma JSONL 到 assistantMessageUuid（inclusive）
+   * 2. 截断 TAgent JSONL 到 assistantMessageUuid（inclusive）
    * 3. 记录 resumeAtMessageUuid，下次发消息时 SDK 从该点分支继续
    *
    * 文件恢复通过解析 SDK JSONL 中的快照完成，无需运行中的 Query。
@@ -2252,7 +2252,7 @@ export class AgentOrchestrator {
       fileRewindResult = { canRewind: false, error: '无法从 SDK session 中解析 user message UUID' }
     }
 
-    // 2. 截断 Proma JSONL
+    // 2. 截断 TAgent JSONL
     const kept = truncateSDKMessages(sessionId, assistantMessageUuid)
 
     // 3. 记录 resumeAtMessageUuid，下次发消息时 SDK 从此点继续

@@ -19,7 +19,7 @@
 import { existsSync, mkdirSync, chmodSync, rmSync, createWriteStream, readFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { createHash } from 'crypto'
-import type { PlatformArch, BunDownloadInfo } from '@proma/shared'
+import type { PlatformArch, BunDownloadInfo } from '@tagent/shared'
 
 /** Bun 下载 URL 基础路径 */
 const BUN_DOWNLOAD_BASE = 'https://github.com/oven-sh/bun/releases/download'
@@ -72,7 +72,7 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
 
   const response = await fetch(url, {
     headers: {
-      'User-Agent': 'Proma-Build-Script/1.0',
+      'User-Agent': 'TAgent-Build-Script/1.0',
     },
     redirect: 'follow',
   })
@@ -285,7 +285,7 @@ Bun 二进制下载脚本
  */
 async function main(): Promise<void> {
   console.log('='.repeat(60))
-  console.log('Proma Bun 二进制下载脚本')
+  console.log('TAgent Bun 二进制下载脚本')
   console.log('='.repeat(60))
 
   try {

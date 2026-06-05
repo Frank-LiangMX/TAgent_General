@@ -65,15 +65,15 @@ function registerEntry(path: string, isDirectory: boolean): string {
   return `proma-file://${token}`
 }
 
-export function registerPromaFilePath(path: string): string {
+export function registerTAgentFilePath(path: string): string {
   return registerEntry(path, false)
 }
 
-export function registerPromaDirectoryPath(path: string): string {
+export function registerTAgentDirectoryPath(path: string): string {
   return registerEntry(path, true)
 }
 
-export function handlePromaFileRequest(request: Request): Promise<Response> | Response {
+export function handleTAgentFileRequest(request: Request): Promise<Response> | Response {
   let url: URL
   try {
     url = new URL(request.url)

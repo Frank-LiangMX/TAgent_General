@@ -51,7 +51,7 @@ import type {
   ChatSendInput,
   FileAttachment,
   AttachmentSaveInput,
-} from '@proma/shared'
+} from '@tagent/shared'
 
 interface ChatViewProps {
   conversationId: string

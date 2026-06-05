@@ -5,7 +5,7 @@ import { existsSync } from 'fs'
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
 if (!app.isPackaged) {
-  app.setPath('userData', join(app.getPath('appData'), '@proma/electron-dev'))
+  app.setPath('userData', join(app.getPath('appData'), '@tagent/electron-dev'))
 }
 
 // 单实例锁：防止重复启动同一个版本（dev/prod 因 userData 已隔离，互不影响）
@@ -17,8 +17,8 @@ if (!app.isPackaged) {
 // second-instance 事件，由主实例负责显示窗口。
 if (!app.requestSingleInstanceLock()) {
   console.warn(
-    '[启动] 已有 Proma 进程持有单实例锁，本次启动将退出。\n' +
-      '  如果窗口未出现，可能旧进程已卡死。请运行 `killall Proma` 后重试。',
+    '[启动] 已有 TAgent 进程持有单实例锁，本次启动将退出。\n' +
+      '  如果窗口未出现，可能旧进程已卡死。请运行 `killall TAgent` 后重试。',
   )
   app.quit()
 } else {
@@ -58,7 +58,7 @@ function registerProtocolsAndHandlers(): void {
 
 
 import { getSettings, updateSettings } from './lib/settings-service'
-import { handlePromaFileRequest } from './lib/local-file-protocol'
+import { handleTAgentFileRequest } from './lib/local-file-protocol'
 
 // 处理 EPIPE 错误：当 stdout/stderr 管道被关闭时（如 electronmon 重启），忽略写入错误
 // 这在开发环境热重载时经常发生，不影响应用功能
@@ -108,7 +108,7 @@ import {
   shouldSuppressVoiceDictationActivate,
 } from './lib/voice-dictation-window'
 import { registerGlobalShortcut, unregisterAllGlobalShortcuts } from './lib/global-shortcut-service'
-import { setPromaVersion } from '@proma/core'
+import { setTAgentVersion } from '@tagent/core'
 import { TRAY_IPC_CHANNELS } from '../types'
 
 const MIGRATION_IPC_OPEN = 'migration:open-import-file'
@@ -411,12 +411,12 @@ app.whenReady().then(bootstrap).catch(handleBootstrapFailure)
  * 单点失败不应阻止窗口和托盘的创建（用户至少要能看到界面）。
  */
 async function bootstrap(): Promise<void> {
-  // 初始化 Proma 版本号（供 User-Agent 等全局标识使用）
-  setPromaVersion(app.getVersion())
+  // 初始化 TAgent 版本号（供 User-Agent 等全局标识使用）
+  setTAgentVersion(app.getVersion())
 
   // 注册自定义协议 proma-file:// 用于内联预览本地文件。
   // 协议只接受主进程签发的 opaque token，不解析 renderer 提供的绝对路径。
-  protocol.handle('proma-file', handlePromaFileRequest)
+  protocol.handle('proma-file', handleTAgentFileRequest)
 
   // 初始化运行时环境（Shell 环境 + Bun + Git 检测）
   // 必须在其他初始化之前执行，确保环境变量正确加载
@@ -548,11 +548,11 @@ function handleBootstrapFailure(err: unknown): void {
   try {
     const message = err instanceof Error ? (err.stack ?? err.message) : String(err)
     dialog.showErrorBox(
-      'Proma 启动遇到错误',
+      'TAgent 启动遇到错误',
       `部分功能可能不可用：\n\n${message}\n\n` +
         `日志位置：${app.getPath('logs')}\n\n` +
         `常见原因与排查：\n` +
-        `1. 旧版 Proma 进程未退出（终端运行 killall Proma 后重试）\n` +
+        `1. 旧版 TAgent 进程未退出（终端运行 killall TAgent 后重试）\n` +
         `2. ~/.proma/ 配置损坏（重命名 ~/.proma 后重启）\n` +
         `3. 系统 Keychain 无法解密保存的凭证（删除 ~/.proma/feishu.json 等后重新登录）\n\n` +
         `如需协助请到 GitHub Issues 反馈。`,

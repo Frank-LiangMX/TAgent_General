@@ -1,7 +1,7 @@
 /**
  * 文本输出服务
  *
- * 语音输入完成后优先写入 Proma 输入框，否则尝试写入当前光标位置。
+ * 语音输入完成后优先写入 TAgent 输入框，否则尝试写入当前光标位置。
  */
 
 import { BrowserWindow, clipboard } from 'electron'
@@ -10,13 +10,13 @@ import type { VoiceDictationCommitResult, VoiceDictationSettings } from '../../t
 import { getMainWindow } from '../index'
 import { pasteTextAtCurrentCursor } from './text-insertion-service'
 
-let targetWasPromaInput = false
+let targetWasTAgentInput = false
 
-/** 在显示语音浮窗前记录目标是否为 Proma 主窗口。 */
-export function captureVoiceDictationTarget(forcePromaInput?: boolean): boolean {
+/** 在显示语音浮窗前记录目标是否为 TAgent 主窗口。 */
+export function captureVoiceDictationTarget(forceTAgentInput?: boolean): boolean {
   const mainWindow = getMainWindow()
-  targetWasPromaInput = forcePromaInput ?? BrowserWindow.getFocusedWindow() === mainWindow
-  return targetWasPromaInput
+  targetWasTAgentInput = forceTAgentInput ?? BrowserWindow.getFocusedWindow() === mainWindow
+  return targetWasTAgentInput
 }
 
 export async function commitVoiceDictationText(
@@ -31,11 +31,11 @@ export async function commitVoiceDictationText(
   const mainWindow = getMainWindow()
   const shouldWriteProma =
     settings.outputMode === 'proma-input' ||
-    (settings.outputMode === 'auto' && targetWasPromaInput)
+    (settings.outputMode === 'auto' && targetWasTAgentInput)
 
   if (shouldWriteProma && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(VOICE_DICTATION_IPC_CHANNELS.INSERT_TEXT, { text: trimmed })
-    return { mode: 'proma-input', success: true, message: '已写入 Proma 输入框' }
+    return { mode: 'proma-input', success: true, message: '已写入 TAgent 输入框' }
   }
 
   if (settings.outputMode === 'auto') {

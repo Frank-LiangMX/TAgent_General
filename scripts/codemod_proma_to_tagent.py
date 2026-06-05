@@ -91,6 +91,8 @@ SCOPE_PATTERN = re.compile(r"@proma/([a-z0-9-]+)")
 TYPE_PREFIX_PATTERN = re.compile(r"\bProma([A-Z][a-zA-Z0-9]*)\b")
 BRAND_PATTERN = re.compile(r"\bProma\b")
 PACKAGE_NAME_PATTERN = re.compile(r"^(\s*\"name\"\s*:\s*)\"proma\"")
+CAMEL_MID_PATTERN = re.compile(r"([a-z\d])Proma([A-Z][a-zA-Z0-9]*)")
+UPPER_PATTERN = re.compile(r"\bPROMA_([A-Z_][A-Z0-9_]*)\b")
 
 
 def rule_scope(content: str, file: Path) -> Iterator[Change]:
@@ -120,6 +122,31 @@ def rule_brand(content: str, file: Path) -> Iterator[Change]:
         yield Change(file, line_no, before, after, "brand")
 
 
+def rule_camel_mid(content: str, file: Path) -> Iterator[Change]:
+    """camelCase mid-string Proma: isPromaXxx / getPromaXxx / setPromaXxx → isTAgentXxx / etc.
+
+    Matches lowercase/digit before Proma + PascalCase after.
+    Example: isPromaPermissionMode → isTAgentPermissionMode
+    """
+    for m in CAMEL_MID_PATTERN.finditer(content):
+        before = m.group(0)  # e.g., "isPromaPermissionMode"
+        after = m.group(1) + "TAgent" + m.group(2)  # e.g., "isTAgentPermissionMode"
+        line_no = content[: m.start()].count("\n") + 1
+        yield Change(file, line_no, before, after, "camel_mid")
+
+
+def rule_upper(content: str, file: Path) -> Iterator[Change]:
+    """UPPER_CASE constant: PROMA_PERMISSION_MODES → TAGENT_PERMISSION_MODES.
+
+    Only matches PROMA_ prefix in identifiers (not standalone 'PROMA' word).
+    """
+    for m in UPPER_PATTERN.finditer(content):
+        before = m.group(0)  # e.g., "PROMA_PERMISSION_MODES"
+        after = "TAGENT_" + m.group(1)  # e.g., "TAGENT_PERMISSION_MODES"
+        line_no = content[: m.start()].count("\n") + 1
+        yield Change(file, line_no, before, after, "upper")
+
+
 def rule_package_name(content: str, file: Path) -> Iterator[Change]:
     """package.json 的 "name": "proma" → "name": "tagent" """
     for m in PACKAGE_NAME_PATTERN.finditer(content):
@@ -136,14 +163,14 @@ def rule_package_name(content: str, file: Path) -> Iterator[Change]:
 # 需 --include-docs 标志才处理
 RULE_MAP = {
     # 源代码
-    ".ts": [rule_scope, rule_type_prefix, rule_brand],
-    ".tsx": [rule_scope, rule_type_prefix, rule_brand],
-    ".js": [rule_scope, rule_type_prefix, rule_brand],
-    ".jsx": [rule_scope, rule_type_prefix, rule_brand],
+    ".ts": [rule_scope, rule_type_prefix, rule_camel_mid, rule_upper, rule_brand],
+    ".tsx": [rule_scope, rule_type_prefix, rule_camel_mid, rule_upper, rule_brand],
+    ".js": [rule_scope, rule_type_prefix, rule_camel_mid, rule_upper, rule_brand],
+    ".jsx": [rule_scope, rule_type_prefix, rule_camel_mid, rule_upper, rule_brand],
     # 配置文件
     ".json": [rule_scope, rule_package_name],  # package.json 等
     # 文档（默认跳过，--include-docs 才处理）
-    ".md": [rule_scope, rule_type_prefix, rule_brand],
+    ".md": [rule_scope, rule_type_prefix, rule_camel_mid, rule_upper, rule_brand],
     ".html": [rule_brand],
     ".css": [rule_brand],
 }
@@ -329,6 +356,8 @@ def main() -> int:
     results: dict[str, RuleResult] = {
         "scope": RuleResult("scope"),
         "type_prefix": RuleResult("type_prefix"),
+        "camel_mid": RuleResult("camel_mid"),
+        "upper": RuleResult("upper"),
         "brand": RuleResult("brand"),
         "package_name": RuleResult("package_name"),
     }

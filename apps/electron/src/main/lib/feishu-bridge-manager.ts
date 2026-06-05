@@ -13,7 +13,7 @@ import type {
   FeishuTestResult,
   FeishuBotConfig,
   AgentSessionMeta,
-} from '@proma/shared'
+} from '@tagent/shared'
 import { FeishuBridge } from './feishu-bridge'
 import { getFeishuMultiBotConfig, getFeishuBotById } from './feishu-config'
 import { getSettings } from './settings-service'
@@ -126,7 +126,7 @@ class FeishuBridgeManager {
     return this.bridges
   }
 
-  /** 为桌面端 Proma Session 创建或恢复飞书镜像群。 */
+  /** 为桌面端 TAgent Session 创建或恢复飞书镜像群。 */
   async ensureSessionMirror(session: AgentSessionMeta): Promise<void> {
     const config = getFeishuMultiBotConfig()
     const bot = resolveSessionMirrorBot(getSettings().feishuSessionMirror, config.bots)

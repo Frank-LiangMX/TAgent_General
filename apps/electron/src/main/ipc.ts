@@ -9,7 +9,7 @@ import { join, resolve, sep, dirname } from 'node:path'
 import { existsSync, realpathSync, rmSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, isPromaPermissionMode } from '@proma/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, isTAgentPermissionMode } from '@tagent/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
 import type {
   QuickTaskSubmitInput,
@@ -69,7 +69,7 @@ import type {
   GitHubRelease,
   GitHubReleaseListOptions,
   PermissionResponse,
-  PromaPermissionMode,
+  TAgentPermissionMode,
   AskUserResponse,
   ExitPlanModeResponse,
   SystemPromptConfig,
@@ -107,11 +107,11 @@ import type {
   RevertFileInput,
   FileAccessOptions,
   ResolvedFileUrl,
-} from '@proma/shared'
+} from '@tagent/shared'
 import type { UserProfile, AppSettings } from '../types'
 import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
 import { getUnstagedChanges, getFileDiff, getUntrackedContent, revertFile, getDiffContents, listWorktrees, getWorktreeChanges } from './lib/git-diff-service'
-import { registerPromaFilePath } from './lib/local-file-protocol'
+import { registerTAgentFilePath } from './lib/local-file-protocol'
 import { registerUpdaterIpc } from './lib/updater/updater-ipc'
 import {
   listChannels,
@@ -368,7 +368,7 @@ function getBundledResourcesDir(): string {
  * 默认 App 探测结果按文件后缀缓存（含 null 负缓存），避免反复 spawn osascript / 注册表查询。
  * 进程级别一次会话足够，无需失效策略——用户切换默认 App 是低频行为，下次重启生效即可。
  */
-const defaultAppCache = new Map<string, import('@proma/shared').DefaultAppInfo | null>()
+const defaultAppCache = new Map<string, import('@tagent/shared').DefaultAppInfo | null>()
 
 function extOf(filePath: string): string {
   const base = filePath.split(/[\\/]/).pop() ?? ''
@@ -629,7 +629,7 @@ async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: st
 async function getDefaultAppInfoForFile(
   filePath: string,
   _options?: FileAccessOptions,
-): Promise<import('@proma/shared').DefaultAppInfo | null> {
+): Promise<import('@tagent/shared').DefaultAppInfo | null> {
   const { resolve } = await import('node:path')
   const absPath = resolve(filePath)
 
@@ -699,7 +699,7 @@ if let appUrl = NSWorkspace.shared.urlForApplication(toOpen: url) {
   console.log('[DefaultApp] iconDataUrl 长度:', iconDataUrl?.length)
   if (!iconDataUrl) return cacheNull(cacheKey)
 
-  const info: import('@proma/shared').DefaultAppInfo = { name: appName, appPath, iconDataUrl }
+  const info: import('@tagent/shared').DefaultAppInfo = { name: appName, appPath, iconDataUrl }
   defaultAppCache.set(cacheKey, info)
   return info
 }
@@ -938,7 +938,7 @@ export function registerIpcHandlers(): void {
   // 扫描系统中的编辑器应用（仅 macOS）
   ipcMain.handle(
     IPC_CHANNELS.SCAN_EDITORS,
-    async (): Promise<import('@proma/shared').EditorApp[]> => {
+    async (): Promise<import('@tagent/shared').EditorApp[]> => {
       if (process.platform !== 'darwin') return []
       const { existsSync } = await import('node:fs')
       const { homedir } = await import('node:os')
@@ -960,7 +960,7 @@ export function registerIpcHandlers(): void {
   // 查询某个文件在本机的默认打开应用信息（带图标）
   ipcMain.handle(
     IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE,
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@proma/shared').DefaultAppInfo | null> => {
+    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@tagent/shared').DefaultAppInfo | null> => {
       if (!filePath || typeof filePath !== 'string') return null
       try {
         const options = normalizeFileAccessOptions(access)
@@ -1891,7 +1891,7 @@ export function registerIpcHandlers(): void {
   // 测试 MCP 服务器连接
   ipcMain.handle(
     AGENT_IPC_CHANNELS.TEST_MCP_SERVER,
-    async (_, name: string, entry: import('@proma/shared').McpServerEntry): Promise<{ success: boolean; message: string }> => {
+    async (_, name: string, entry: import('@tagent/shared').McpServerEntry): Promise<{ success: boolean; message: string }> => {
       const { validateMcpServer } = await import('./lib/mcp-validator')
       const result = await validateMcpServer(name, entry)
       return {
@@ -2043,7 +2043,7 @@ export function registerIpcHandlers(): void {
   // 排队发送消息
   ipcMain.handle(
     AGENT_IPC_CHANNELS.QUEUE_MESSAGE,
-    async (event, input: import('@proma/shared').AgentQueueMessageInput): Promise<string> => {
+    async (event, input: import('@tagent/shared').AgentQueueMessageInput): Promise<string> => {
       return queueAgentMessage(input, event.sender)
     }
   )
@@ -2107,8 +2107,8 @@ export function registerIpcHandlers(): void {
   // 热切换指定会话的权限模式（运行中生效，不广播）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.UPDATE_SESSION_PERMISSION_MODE,
-    async (_, sessionId: string, mode: PromaPermissionMode): Promise<void> => {
-      if (!isPromaPermissionMode(mode)) {
+    async (_, sessionId: string, mode: TAgentPermissionMode): Promise<void> => {
+      if (!isTAgentPermissionMode(mode)) {
         throw new Error(`无效的权限模式: ${mode}`)
       }
       // 会话不存在时直接抛错（避免 updateAgentSessionMeta 的通用异常被降级为 warn）
@@ -2364,7 +2364,7 @@ export function registerIpcHandlers(): void {
   // 获取所有待处理的交互请求快照（渲染进程重载后恢复状态）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.GET_PENDING_REQUESTS,
-    async (): Promise<import('@proma/shared').PendingRequestsSnapshot> => {
+    async (): Promise<import('@tagent/shared').PendingRequestsSnapshot> => {
       return {
         permissions: permissionService.getPendingRequests(),
         askUsers: askUserService.getPendingRequests(),
@@ -2558,7 +2558,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.ADD_WORKTREE_REPO,
-    async (_, workspaceSlug: string, repo: import('@proma/shared').WorkspaceWorktreeRepo) => {
+    async (_, workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo) => {
       return addWorktreeRepo(workspaceSlug, repo)
     }
   )
@@ -2760,7 +2760,7 @@ export function registerIpcHandlers(): void {
         console.warn('[IPC] file:resolve-path 拒绝越界路径:', result)
         return null
       }
-      return result ? { url: registerPromaFilePath(result) } : null
+      return result ? { url: registerTAgentFilePath(result) } : null
     }
   )
 
@@ -2801,7 +2801,7 @@ export function registerIpcHandlers(): void {
   // XLSX/PPTX 转 HTML（内联预览使用 OOXML 解析）
   ipcMain.handle(
     'file:office-to-html',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@proma/shared').OfficePreviewResult | null> => {
+    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@tagent/shared').OfficePreviewResult | null> => {
       const { convertOfficeToHtml, resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const allowedBasePaths = getAllowedCandidateBasePaths(options)
@@ -3396,7 +3396,7 @@ export function registerIpcHandlers(): void {
   // 保存单个 Bot 配置
   ipcMain.handle(
     FEISHU_IPC_CHANNELS.SAVE_BOT_CONFIG,
-    async (_, input: import('@proma/shared').FeishuBotConfigInput) => {
+    async (_, input: import('@tagent/shared').FeishuBotConfigInput) => {
       const saved = saveFeishuBotConfig(input)
       // 配置变更后自动重启或停止（不阻塞保存结果）
       if (saved.enabled && saved.appId && saved.appSecret) {
@@ -3640,7 +3640,7 @@ export function registerIpcHandlers(): void {
   // 保存单个 Bot 配置
   ipcMain.handle(
     DINGTALK_IPC_CHANNELS.SAVE_BOT_CONFIG,
-    async (_, input: import('@proma/shared').DingTalkBotConfigInput) => {
+    async (_, input: import('@tagent/shared').DingTalkBotConfigInput) => {
       const saved = saveDingTalkBotConfig(input)
       // 配置变更后自动重启或停止（不阻塞保存结果）
       if (saved.enabled && saved.clientId && saved.clientSecret) {
@@ -4019,7 +4019,7 @@ export function registerIpcHandlers(): void {
     const result = await dialog.showOpenDialog({
       title: '选择迁移文件',
       filters: [
-        { name: 'Proma 迁移文件', extensions: ['proma-backup', 'proma-share'] },
+        { name: 'TAgent 迁移文件', extensions: ['proma-backup', 'proma-share'] },
         { name: '所有文件', extensions: ['*'] },
       ],
       properties: ['openFile'],
@@ -4035,7 +4035,7 @@ export function registerIpcHandlers(): void {
       title: '保存迁移文件',
       defaultPath: defaultName,
       filters: [
-        { name: mode === 'personal' ? 'Proma 个人备份' : 'Proma 分享包', extensions: [ext] },
+        { name: mode === 'personal' ? 'TAgent 个人备份' : 'TAgent 分享包', extensions: [ext] },
       ],
     })
     return result.canceled ? null : result.filePath

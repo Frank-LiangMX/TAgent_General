@@ -1,7 +1,7 @@
 /**
  * 配置路径工具
  *
- * 管理 Proma 应用的本地配置文件路径。
+ * 管理 TAgent 应用的本地配置文件路径。
  * 所有用户配置存储在 ~/.proma/ 目录下。
  */
 
@@ -15,7 +15,7 @@ import { homedir } from 'node:os'
  * 开发模式下返回 '.proma-dev'，正式版本返回 '.proma'。
  *
  * 检测优先级：
- * 1. PROMA_DEV=1 环境变量（显式覆盖）
+ * 1. TAGENT_DEV=1 环境变量（显式覆盖）
  * 2. Electron app.isPackaged（未打包 = 开发模式）
  * 3. 兜底 '.proma'
  */
@@ -23,7 +23,7 @@ let _configDirName: string | undefined
 
 export function getConfigDirName(): string {
   if (_configDirName === undefined) {
-    if (process.env.PROMA_DEV === '1') {
+    if (process.env.TAGENT_DEV === '1') {
       _configDirName = '.proma-dev'
     } else {
       try {
@@ -605,7 +605,7 @@ export function getAgentSessionWorkspacePath(workspaceSlug: string, sessionId: s
  * 获取 SDK 隔离配置目录路径
  *
  * 用于设置 CLAUDE_CONFIG_DIR 环境变量，让 SDK 读取独立的配置文件，
- * 而不是用户的 ~/.claude.json，实现 Proma 与 Claude Code CLI 的配置隔离。
+ * 而不是用户的 ~/.claude.json，实现 TAgent 与 Claude Code CLI 的配置隔离。
  *
  * 如果目录不存在则自动创建。
  *

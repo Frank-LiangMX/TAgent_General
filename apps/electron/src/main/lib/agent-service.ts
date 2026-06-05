@@ -14,7 +14,7 @@ import { join, dirname } from 'node:path'
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { BrowserWindow } from 'electron'
 import type { WebContents } from 'electron'
-import { AGENT_IPC_CHANNELS, MAX_ATTACHMENT_SIZE } from '@proma/shared'
+import { AGENT_IPC_CHANNELS, MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import type {
   AgentSendInput,
   AgentGenerateTitleInput,
@@ -24,9 +24,9 @@ import type {
   AgentStreamEvent,
   AgentStreamPayload,
   AgentQueueMessageInput,
-  PromaPermissionMode,
+  TAgentPermissionMode,
   AgentExternalRunSource,
-} from '@proma/shared'
+} from '@tagent/shared'
 import { ClaudeAgentAdapter, scanAndKillOrphanedClaudeSubprocesses } from './adapters/claude-agent-adapter'
 import { AgentEventBus } from './agent-event-bus'
 import { AgentOrchestrator } from './agent-orchestrator'
@@ -299,7 +299,7 @@ export function stopAgent(sessionId: string): void {
 export async function rewindAgentSession(
   sessionId: string,
   assistantMessageUuid: string,
-): Promise<import('@proma/shared').RewindSessionResult> {
+): Promise<import('@tagent/shared').RewindSessionResult> {
   return orchestrator.rewindSession(sessionId, assistantMessageUuid)
 }
 
@@ -328,9 +328,9 @@ export function killOrphanedClaudeSubprocesses(): void {
 /**
  * 运行中动态切换会话的权限模式
  *
- * 同时更新 Proma 侧（canUseTool 动态读取）和 SDK 侧（query.setPermissionMode）。
+ * 同时更新 TAgent 侧（canUseTool 动态读取）和 SDK 侧（query.setPermissionMode）。
  */
-export async function updateAgentPermissionMode(sessionId: string, mode: PromaPermissionMode): Promise<void> {
+export async function updateAgentPermissionMode(sessionId: string, mode: TAgentPermissionMode): Promise<void> {
   await orchestrator.updateSessionPermissionMode(sessionId, mode)
 }
 

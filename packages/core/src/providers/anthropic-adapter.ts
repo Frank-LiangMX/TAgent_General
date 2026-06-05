@@ -19,11 +19,11 @@
  *
  * Kimi Coding Plan 特殊要求：
  * - Base URL：`https://api.kimi.com/coding/v1`
- * - 必须发送 Proma 自有 User-Agent（服务端白名单校验）
- * - UA 格式：`Proma/<version> (+https://github.com/ErlichLiu/Proma)`
+ * - 必须发送 TAgent 自有 User-Agent（服务端白名单校验）
+ * - UA 格式：`TAgent/<version> (+https://github.com/ErlichLiu/TAgent)`
  */
 
-import type { ProviderType } from '@proma/shared'
+import type { ProviderType } from '@tagent/shared'
 import type {
   ProviderAdapter,
   ProviderRequest,
@@ -36,7 +36,7 @@ import type {
 } from './types.ts'
 import { normalizeAnthropicProviderUrl } from './url-utils.ts'
 import { detectThinkingCapability } from './thinking-capability.ts'
-import { getPromaUserAgent } from './user-agent.ts'
+import { getTAgentUserAgent } from './user-agent.ts'
 
 // ===== Anthropic 特有类型 =====
 
@@ -271,7 +271,7 @@ export class AnthropicAdapter implements ProviderAdapter {
    *
    * Kimi Coding Plan 要求：
    * - 只使用 Bearer（服务端校验 User-Agent 白名单）
-   * - User-Agent 使用 Proma 自有标识（通过 setPromaVersion 初始化）
+   * - User-Agent 使用 TAgent 自有标识（通过 setTAgentVersion 初始化）
    */
   private buildHeaders(apiKey: string): Record<string, string> {
     const base: Record<string, string> = {
@@ -280,12 +280,12 @@ export class AnthropicAdapter implements ProviderAdapter {
     }
     if (this.providerType === 'kimi-coding' || this.providerType === 'zhipu-coding') {
       base['Authorization'] = `Bearer ${apiKey}`
-      base['User-Agent'] = getPromaUserAgent()
+      base['User-Agent'] = getTAgentUserAgent()
       return base
     }
     if (this.providerType === 'xiaomi-token-plan') {
       base['Authorization'] = `Bearer ${apiKey}`
-      base['User-Agent'] = getPromaUserAgent()
+      base['User-Agent'] = getTAgentUserAgent()
       return base
     }
     if (this.providerType === 'minimax') {
@@ -367,9 +367,9 @@ export class AnthropicAdapter implements ProviderAdapter {
 
     const requestBody = JSON.stringify(body)
 
-    // 调试：开启 PROMA_DEBUG_REQUEST 时打印请求体，便于排查思考+工具场景的消息结构
+    // 调试：开启 TAGENT_DEBUG_REQUEST 时打印请求体，便于排查思考+工具场景的消息结构
     const procReq = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    if (procReq?.env?.PROMA_DEBUG_REQUEST) {
+    if (procReq?.env?.TAGENT_DEBUG_REQUEST) {
       console.log('[Request]', this.providerType, input.modelId, '→', requestBody.slice(0, 4000))
     }
 
@@ -385,9 +385,9 @@ export class AnthropicAdapter implements ProviderAdapter {
       const event = JSON.parse(jsonLine) as AnthropicSSEEvent
       const events: StreamEvent[] = []
 
-      // 调试：开启 PROMA_DEBUG_SSE 时打印原始事件，便于排查 Provider 的 SSE 格式差异
+      // 调试：开启 TAGENT_DEBUG_SSE 时打印原始事件，便于排查 Provider 的 SSE 格式差异
       const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      if (proc?.env?.PROMA_DEBUG_SSE) {
+      if (proc?.env?.TAGENT_DEBUG_SSE) {
         console.log('[SSE]', jsonLine.slice(0, 400))
       }
 

@@ -19,7 +19,7 @@ import {
   getDefaultSkillsDir,
   parseSkillVersion,
 } from './config-paths'
-import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, SkillImportSource, OtherWorkspaceSkillsGroup, WorkspaceCapabilities, SkillFileNode, SkillFileContent } from '@proma/shared'
+import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, SkillImportSource, OtherWorkspaceSkillsGroup, WorkspaceCapabilities, SkillFileNode, SkillFileContent } from '@tagent/shared'
 
 interface AgentWorkspacesIndex {
   version: number
@@ -1035,7 +1035,7 @@ function isNewerVersion(a: string, b: string): boolean {
 interface WorkspaceConfig {
   attachedDirectories?: string[]
   attachedFiles?: string[]
-  worktreeRepos?: import('@proma/shared').WorkspaceWorktreeRepo[]
+  worktreeRepos?: import('@tagent/shared').WorkspaceWorktreeRepo[]
 }
 
 function getWorkspaceConfigPath(workspaceSlug: string): string {
@@ -1135,13 +1135,13 @@ export function detachWorkspaceFile(workspaceSlug: string, filePath: string): st
 
 // ===== 工作区级 Worktree 仓库管理 =====
 
-export function getWorktreeRepos(workspaceSlug: string): import('@proma/shared').WorkspaceWorktreeRepo[] {
+export function getWorktreeRepos(workspaceSlug: string): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const repos = config.worktreeRepos ?? []
   return repos.sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
 }
 
-export function addWorktreeRepo(workspaceSlug: string, repo: import('@proma/shared').WorkspaceWorktreeRepo): import('@proma/shared').WorkspaceWorktreeRepo[] {
+export function addWorktreeRepo(workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const existing = config.worktreeRepos ?? []
 
@@ -1155,7 +1155,7 @@ export function addWorktreeRepo(workspaceSlug: string, repo: import('@proma/shar
   return updated
 }
 
-export function removeWorktreeRepo(workspaceSlug: string, repoPath: string): import('@proma/shared').WorkspaceWorktreeRepo[] {
+export function removeWorktreeRepo(workspaceSlug: string, repoPath: string): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const existing = config.worktreeRepos ?? []
   const updated = existing.filter((r) => r.repoPath !== repoPath)

@@ -38,7 +38,7 @@ import {
 import { previewPanelOpenMapAtom, previewFileMapAtom, type PreviewFile } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { detectIsWindows } from '@/lib/platform'
-import type { FileEntry, AgentPendingFile } from '@proma/shared'
+import type { FileEntry, AgentPendingFile } from '@tagent/shared'
 
 function getPathBasename(filePath: string): string {
   return filePath.split(/[\\/]/).filter(Boolean).pop() || filePath
@@ -108,7 +108,7 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
   const [selectedWorktreeMap, setSelectedWorktreeMap] = useAtom(agentSelectedWorktreeAtom)
   const selectedWorktreePath = selectedWorktreeMap.get(sessionId) ?? null
 
-  const handleWorktreeSelect = React.useCallback((worktree: import('@proma/shared').WorktreeInfo | null) => {
+  const handleWorktreeSelect = React.useCallback((worktree: import('@tagent/shared').WorktreeInfo | null) => {
     setSelectedWorktreeMap((prev) => {
       const m = new Map(prev)
       m.set(sessionId, worktree?.path ?? null)

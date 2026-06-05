@@ -1,4 +1,4 @@
-import type { SDKMessage } from '@proma/shared'
+import type { SDKMessage } from '@tagent/shared'
 import type { MessageGroup } from './SDKMessageRenderer'
 
 interface BuildLiveGroupSetOptions {

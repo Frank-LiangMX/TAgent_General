@@ -210,7 +210,7 @@ function positionAndShow(): void {
 
   setVoiceDictationBoundsWithoutSaving(getInitialVoiceDictationBounds())
 
-  // 语音浮窗只是系统级提示层，不应抢焦点或改变 Proma 主窗口前后台状态。
+  // 语音浮窗只是系统级提示层，不应抢焦点或改变 TAgent 主窗口前后台状态。
   voiceDictationWindow.showInactive()
   voiceDictationWindow.webContents.send(VOICE_DICTATION_IPC_CHANNELS.SHOWN)
 }
@@ -231,14 +231,14 @@ export function resizeVoiceDictationWindow(height: number): void {
 
 export function hideVoiceDictationWindow(): void {
   flushPendingVoiceDictationPositionSave()
-  suppressPromaActivationBriefly()
+  suppressTAgentActivationBriefly()
   if (voiceDictationWindow && !voiceDictationWindow.isDestroyed() && voiceDictationWindow.isVisible()) {
     voiceDictationWindow.hide()
   }
   voiceDictationTargetCaptured = false
 }
 
-function suppressPromaActivationBriefly(): void {
+function suppressTAgentActivationBriefly(): void {
   if (process.platform !== 'darwin') return
   suppressMainWindowActivateUntil = Date.now() + ACTIVATE_SUPPRESSION_MS
 }

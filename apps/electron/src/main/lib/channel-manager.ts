@@ -20,11 +20,11 @@ import type {
   FetchModelsInput,
   FetchModelsResult,
   ProviderType,
-} from '@proma/shared'
-import { PROVIDER_DEFAULT_URLS } from '@proma/shared'
+} from '@tagent/shared'
+import { PROVIDER_DEFAULT_URLS } from '@tagent/shared'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getPromaUserAgent } from '@proma/core'
+import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
 import pkg from '../../../package.json' with { type: 'json' }
 
 /** 当前配置版本 */
@@ -286,7 +286,7 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
       case 'google':
         return await testGoogle(channel.baseUrl, apiKey, proxyUrl)
       default:
-        return { success: false, message: `不支持的供应商: ${channel.provider}。你可能过去使用的是 Proma 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。` }
+        return { success: false, message: `不支持的供应商: ${channel.provider}。你可能过去使用的是 TAgent 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。` }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : '未知错误'
@@ -298,7 +298,7 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
  * 测试 Anthropic 兼容 API 连接（Anthropic / DeepSeek / Kimi API / Kimi Coding Plan / MiniMax）
  *
  * DeepSeek / Kimi 的 Anthropic API 端点无需 /v1 前缀。
- * Kimi Coding Plan 必须发送 Proma User-Agent，否则返回 403。
+ * Kimi Coding Plan 必须发送 TAgent User-Agent，否则返回 403。
  */
 async function testAnthropicCompatible(
   baseUrl: string,
@@ -340,10 +340,10 @@ async function testAnthropicCompatible(
   }
   if (provider === 'kimi-coding' || provider === 'zhipu-coding') {
     headers.Authorization = `Bearer ${apiKey}`
-    headers['User-Agent'] = getPromaUserAgent(pkg.version)
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'xiaomi-token-plan') {
     headers.Authorization = `Bearer ${apiKey}`
-    headers['User-Agent'] = getPromaUserAgent(pkg.version)
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'minimax') {
     headers.Authorization = `Bearer ${apiKey}`
   } else {
@@ -517,7 +517,7 @@ interface AnthropicModelItem {
  * 从 Anthropic 兼容 API 拉取模型列表（Anthropic / DeepSeek / Kimi API / Kimi Coding Plan / MiniMax）
  *
  * DeepSeek / Kimi 的 Anthropic API 端点无需 /v1 前缀。
- * Kimi Coding Plan 必须发送 Proma User-Agent。
+ * Kimi Coding Plan 必须发送 TAgent User-Agent。
  * 文档: https://docs.anthropic.com/en/api/models-list
  */
 async function fetchAnthropicCompatibleModels(
@@ -534,10 +534,10 @@ async function fetchAnthropicCompatibleModels(
   }
   if (provider === 'kimi-coding' || provider === 'zhipu-coding') {
     headers.Authorization = `Bearer ${apiKey}`
-    headers['User-Agent'] = getPromaUserAgent(pkg.version)
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'xiaomi-token-plan') {
     headers.Authorization = `Bearer ${apiKey}`
-    headers['User-Agent'] = getPromaUserAgent(pkg.version)
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'minimax') {
     headers.Authorization = `Bearer ${apiKey}`
   } else {

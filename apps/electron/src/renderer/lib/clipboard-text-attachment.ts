@@ -1,4 +1,4 @@
-import type { AgentPendingFile } from '@proma/shared'
+import type { AgentPendingFile } from '@tagent/shared'
 
 export interface ClipboardTextDraft {
   filename: string

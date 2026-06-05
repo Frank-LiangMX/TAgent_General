@@ -542,12 +542,12 @@ export type AgentEvent =
   // 模型确认（SDK 确认实际使用的模型）
   | { type: 'model_resolved'; model: string }
   // 权限模式变更（Plan → bypassPermissions 等）
-  | { type: 'permission_mode_changed'; mode: PromaPermissionMode }
+  | { type: 'permission_mode_changed'; mode: TAgentPermissionMode }
 
-// ===== Proma 内部事件（SDK 不覆盖的场景） =====
+// ===== TAgent 内部事件（SDK 不覆盖的场景） =====
 
-/** Proma 内部事件类型 */
-export type PromaEvent =
+/** TAgent 内部事件类型 */
+export type TAgentEvent =
   | { type: 'permission_request'; request: PermissionRequest }
   | { type: 'permission_resolved'; requestId: string; behavior: 'allow' | 'deny' }
   | { type: 'ask_user_request'; request: AskUserRequest }
@@ -558,7 +558,7 @@ export type PromaEvent =
   | { type: 'plan_mode_changed'; sessionId: string; active: boolean; source: AgentPlanModeChangeSource }
   | { type: 'retry'; status: 'starting' | 'attempt' | 'cleared' | 'failed'; attempt?: number; maxAttempts?: number; delaySeconds?: number; reason?: string; attemptData?: RetryAttempt; error?: TypedError }
   | { type: 'model_resolved'; model: string }
-  | { type: 'permission_mode_changed'; mode: PromaPermissionMode }
+  | { type: 'permission_mode_changed'; mode: TAgentPermissionMode }
   | { type: 'title_updated'; title: string }
   | { type: 'external_run_started'; source: AgentExternalRunSource; sessionId: string; title?: string; workspaceId?: string; modelId?: string; startedAt: number }
 
@@ -568,7 +568,7 @@ export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
 /** IPC 传输的统一 payload（替代 AgentEvent） */
 export type AgentStreamPayload =
   | { kind: 'sdk_message'; message: SDKMessage }
-  | { kind: 'proma_event'; event: PromaEvent }
+  | { kind: 'proma_event'; event: TAgentEvent }
 
 // ===== Agent 会话管理 =====
 
@@ -597,7 +597,7 @@ export interface AgentSessionMeta {
   attachedDirectories?: string[]
   /** 附加的外部文件路径列表（绝对路径，发送时以父目录作为 SDK additionalDirectories） */
   attachedFiles?: string[]
-  /** 分叉来源：源会话的 Proma 工作目录（SDK session 文件在此目录的项目空间中，首次 resume 后清除） */
+  /** 分叉来源：源会话的 TAgent 工作目录（SDK session 文件在此目录的项目空间中，首次 resume 后清除） */
   forkSourceDir?: string
   /** 分叉来源：源会话的 SDK session ID（用于 rewind 时读取源会话的 file-history-snapshot 和备份文件） */
   forkSourceSdkSessionId?: string
@@ -610,7 +610,7 @@ export interface AgentSessionMeta {
   /** 最后一次流式执行是否被用户主动中断 */
   stoppedByUser?: boolean
   /** 该会话当前的权限模式（持久化到磁盘，重启后恢复）。未设置时新会话默认 auto */
-  permissionMode?: PromaPermissionMode
+  permissionMode?: TAgentPermissionMode
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */
@@ -841,7 +841,7 @@ export interface AgentSendInput {
   /** 动态注入的 MCP 服务器（仅在本次会话中生效，如飞书群聊工具） */
   customMcpServers?: Record<string, Record<string, unknown>>
   /** 强制覆盖权限模式（飞书等无 UI 交互场景下强制 'bypassPermissions'） */
-  permissionModeOverride?: PromaPermissionMode
+  permissionModeOverride?: TAgentPermissionMode
   /** 用户通过 /skill:xxx 引用的 Skill slug 列表 */
   mentionedSkills?: string[]
   /** 用户通过 #mcp:xxx 引用的 MCP 服务器名称列表 */
@@ -884,7 +884,7 @@ export interface MoveSessionToWorkspaceInput {
 
 /** Fork（分叉）会话输入 */
 export interface ForkSessionInput {
-  /** Proma 会话 ID */
+  /** TAgent 会话 ID */
   sessionId: string
   /** SDK 消息 uuid（截断点，inclusive）。省略时复制全部历史 */
   upToMessageUuid?: string
@@ -892,7 +892,7 @@ export interface ForkSessionInput {
 
 /** 快照回退输入（同一会话内回退到指定点） */
 export interface RewindSessionInput {
-  /** Proma 会话 ID */
+  /** TAgent 会话 ID */
   sessionId: string
   /** 回退到哪条 assistant message（inclusive，截断该消息之后的一切） */
   assistantMessageUuid: string
@@ -1178,22 +1178,22 @@ export interface ExitPlanModeResponse {
 
 // ===== 权限系统类型 =====
 
-/** 当前 Proma 支持的权限模式，值直接映射 SDK 原生 permissionMode */
-export const PROMA_PERMISSION_MODES = ['auto', 'bypassPermissions', 'plan'] as const
+/** 当前 TAgent 支持的权限模式，值直接映射 SDK 原生 permissionMode */
+export const TAGENT_PERMISSION_MODES = ['auto', 'bypassPermissions', 'plan'] as const
 
-export type PromaPermissionMode = typeof PROMA_PERMISSION_MODES[number]
+export type TAgentPermissionMode = typeof TAGENT_PERMISSION_MODES[number]
 
-export const PROMA_DEFAULT_PERMISSION_MODE: PromaPermissionMode = 'bypassPermissions'
+export const TAGENT_DEFAULT_PERMISSION_MODE: TAgentPermissionMode = 'bypassPermissions'
 
-export interface PromaPermissionModeConfig {
+export interface TAgentPermissionModeConfig {
   /** 对应 Claude Agent SDK 的 permissionMode */
-  sdkMode: PromaPermissionMode
+  sdkMode: TAgentPermissionMode
   label: string
   description: string
 }
 
-/** Proma 权限模式的单一配置来源 */
-export const PROMA_PERMISSION_MODE_CONFIG = {
+/** TAgent 权限模式的单一配置来源 */
+export const TAGENT_PERMISSION_MODE_CONFIG = {
   auto: {
     sdkMode: 'auto',
     label: '自动审批',
@@ -1209,19 +1209,19 @@ export const PROMA_PERMISSION_MODE_CONFIG = {
     label: '计划模式',
     description: '仅规划不执行，查看工具使用计划',
   },
-} as const satisfies Record<PromaPermissionMode, PromaPermissionModeConfig>
+} as const satisfies Record<TAgentPermissionMode, TAgentPermissionModeConfig>
 
 /** 权限模式定义顺序（用于循环切换） */
-export const PROMA_PERMISSION_MODE_ORDER: readonly PromaPermissionMode[] = PROMA_PERMISSION_MODES
+export const TAGENT_PERMISSION_MODE_ORDER: readonly TAgentPermissionMode[] = TAGENT_PERMISSION_MODES
 
-export function isPromaPermissionMode(mode: string): mode is PromaPermissionMode {
-  return (PROMA_PERMISSION_MODES as readonly string[]).includes(mode)
+export function isTAgentPermissionMode(mode: string): mode is TAgentPermissionMode {
+  return (TAGENT_PERMISSION_MODES as readonly string[]).includes(mode)
 }
 
 /** 规范化权限模式：不匹配当前三种模式时统一回到默认自动审批 */
-export function migratePermissionMode(mode: string): PromaPermissionMode {
-  if (isPromaPermissionMode(mode)) return mode
-  return PROMA_DEFAULT_PERMISSION_MODE
+export function migratePermissionMode(mode: string): TAgentPermissionMode {
+  if (isTAgentPermissionMode(mode)) return mode
+  return TAGENT_DEFAULT_PERMISSION_MODE
 }
 
 /** 危险等级 */
@@ -1237,7 +1237,7 @@ export interface PermissionRequest {
   toolName: string
   /** 工具输入参数 */
   toolInput: Record<string, unknown>
-  /** 操作描述（人类可读，Proma 生成） */
+  /** 操作描述（人类可读，TAgent 生成） */
   description: string
   /** 具体命令（Bash 工具时有值��� */
   command?: string

@@ -98,8 +98,8 @@ import { AgentSessionProvider } from '@/contexts/session-context'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
-import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@proma/shared'
-import { MAX_ATTACHMENT_SIZE } from '@proma/shared'
+import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
+import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { fileToBase64, formatFileNames, getFileParentPath } from '@/lib/file-utils'
 import { createClipboardPendingFile, createClipboardTextDraft, makeUniqueAttachmentName } from '@/lib/clipboard-text-attachment'
 
@@ -140,7 +140,7 @@ function getUserTextFromSDKMessage(message: SDKMessage): string | null {
 // ===== 思考模式 Hover Popover =====
 
 interface AgentThinkingPopoverProps {
-  agentThinking: import('@proma/shared').ThinkingConfig | undefined
+  agentThinking: import('@tagent/shared').ThinkingConfig | undefined
   onToggle: () => void
 }
 
@@ -462,7 +462,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   // 检查 Agent 渠道列表中是否存在可用的模型（渠道 enabled + 模型 enabled）
   const hasAvailableModel = React.useMemo(() => {
-    // Proma 官方渠道（商业版）：只要 enabled 且有可用模型，直接视为可用
+    // TAgent 官方渠道（商业版）：只要 enabled 且有可用模型，直接视为可用
     const promaOfficial = globalChannels.find((c) => c.id === 'proma-official')
     if (promaOfficial?.enabled && promaOfficial.models.some((m) => m.enabled)) return true
     // 其他渠道：需在 agentChannelIds 白名单中
@@ -1241,7 +1241,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       const localUuid = crypto.randomUUID()
 
       // 1. 立即注入 liveMessages（作为普通用户消息显示）
-      const syntheticMsg: import('@proma/shared').SDKMessage = {
+      const syntheticMsg: import('@tagent/shared').SDKMessage = {
         type: 'user',
         uuid: localUuid,
         message: {
@@ -1249,7 +1249,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         },
         parent_tool_use_id: null,
         _createdAt: Date.now(),
-      } as unknown as import('@proma/shared').SDKMessage
+      } as unknown as import('@tagent/shared').SDKMessage
 
       store.set(liveMessagesMapAtom, (prev) => {
         const map = new Map(prev)
@@ -1545,7 +1545,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     const localUuid = crypto.randomUUID()
 
     // 1. 立即注入合成用户消息（/compact 气泡立刻可见，与普通发送路径一致）
-    const syntheticMsg: import('@proma/shared').SDKMessage = {
+    const syntheticMsg: import('@tagent/shared').SDKMessage = {
       type: 'user',
       uuid: localUuid,
       message: {
@@ -1553,7 +1553,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       },
       parent_tool_use_id: null,
       _createdAt: streamStartedAt,
-    } as unknown as import('@proma/shared').SDKMessage
+    } as unknown as import('@tagent/shared').SDKMessage
 
     store.set(liveMessagesMapAtom, (prev) => {
       const map = new Map(prev)

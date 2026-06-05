@@ -12,7 +12,7 @@ import { createRequire } from 'node:module'
 import { createHash } from 'node:crypto'
 import AdmZip from 'adm-zip'
 import { DOMParser } from '@xmldom/xmldom'
-import type { OfficePreviewResult } from '@proma/shared'
+import type { OfficePreviewResult } from '@tagent/shared'
 
 const require = createRequire(__filename)
 const PDFJS_PACKAGE = 'pdfjs-dist'
@@ -563,13 +563,13 @@ export async function preparePdfPreview(filePath: string, basePaths?: string[]):
   let standardFontDataUrl: string
   let registerFilePath: (path: string) => string
   try {
-    const { registerPromaDirectoryPath, registerPromaFilePath } = await import('./local-file-protocol')
-    registerFilePath = registerPromaFilePath
-    fileUrl = registerPromaFilePath(safePath)
-    pdfScriptUrl = registerPromaFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.min.mjs`))
-    pdfWorkerUrl = registerPromaFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.worker.min.mjs`))
+    const { registerTAgentDirectoryPath, registerTAgentFilePath } = await import('./local-file-protocol')
+    registerFilePath = registerTAgentFilePath
+    fileUrl = registerTAgentFilePath(safePath)
+    pdfScriptUrl = registerTAgentFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.min.mjs`))
+    pdfWorkerUrl = registerTAgentFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.worker.min.mjs`))
     const pdfPackageDir = dirname(require.resolve(`${PDFJS_PACKAGE}/package.json`))
-    standardFontDataUrl = `${registerPromaDirectoryPath(join(pdfPackageDir, 'standard_fonts'))}/`
+    standardFontDataUrl = `${registerTAgentDirectoryPath(join(pdfPackageDir, 'standard_fonts'))}/`
   } catch (err) {
     console.error('[file-preview] preparePdfPreview asset resolution failed:', err)
     return null

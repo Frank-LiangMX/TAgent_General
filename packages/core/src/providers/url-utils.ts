@@ -5,10 +5,10 @@
  * 所有 Anthropic URL 规范化逻辑统一收口在此文件，避免分散重复。
  */
 
-import type { ProviderType } from '@proma/shared'
+import type { ProviderType } from '@tagent/shared'
 
 /**
- * 规范化 Anthropic Base URL（用于 Proma Chat 直接调用 API）
+ * 规范化 Anthropic Base URL（用于 TAgent Chat 直接调用 API）
  *
  * 去除尾部斜杠，去除误填的 /messages 后缀，如果没有版本路径则追加 /v1。
  * 结果用于直接拼接 /messages 发起请求。
