@@ -543,14 +543,16 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
-## 12. 仍待澄清的问题
+## 12. 6 个开放问题（已全部拍板）
 
-1. **TA 模式 54 工具的命名空间化**：MCP 工具是否要加 `tagent__` 前缀避免与 Claude SDK 内置工具冲突？
-2. **OpenAI provider 的 cache 字段**：MVP 阶段不支持？后期加？
-3. **切模式时 Claude SDK session 续接**：是用 `sdkSessionId` resume（mode 切换 = 同一 session 续接），还是建新 session（mode 切换 = 全新 session）？
-4. **MVP 资产库是否支持写**：Proma 端只读？还是要支持审核/编辑？
-5. **Pipeline Editor 的 UI 重写工作量**：直接 drop TAgent 现有 React，用 Proma 设计系统重写？还是保留 TAgent 现有 node-editor 组件？
-6. **记忆 5 层的存储格式**：继续用 JSONL（与现有 TAgent 兼容）还是换 SQLite（更快但有迁移成本）？
+**2026-06-05 全部拍板**：
+
+1. **TA 模式 54 工具的命名空间化**：✅ **加 `tagent__` 前缀**（如 `tagent__analyze_assets`）。避免与 Claude SDK 内置工具冲突，保留未来扩展空间。
+2. **OpenAI provider 的 cache 字段**：✅ **MVP 支持**。Proma 已有实现零成本。OpenAI 下数字恒为 0（不报错不显示），但通用 + TA 模式行为一致。
+3. **切模式时 Claude SDK session 续接**：✅ **新建**（§5.3 已定）。原 session 归档，target 模式新 session + summary。
+4. **MVP 资产库是否支持写**：✅ **Proma 端只读，写走 ta_agent MCP**。避免并发冲突，Proma 不会有"脏写"。
+5. **Pipeline Editor 的 UI 重写工作量**：✅ **MVP 不做**。M2+ 阶段单独做。节省 6 周 UI 工作量。
+6. **记忆 5 层的存储格式**：✅ **混合方案**（md + JSONL + SQLite）。L0-L2 + L5 用 Markdown（人可读），L3 corrections 用 JSONL + rules.json（结构化 + 可回滚），L4 sessions 用 SQLite + FTS5（全文搜索）。
 
 ---
 
@@ -671,3 +673,119 @@ export const costBreakdownAtom = atom((get) => {
 
 - §4.1 组件清单：加 `UiToolExecutor`
 - §10 实施计划：P2 时间 +2-3 周
+
+---
+
+## 15. 未来功能：轻量级 Agent 监控前端
+
+**2026-06-05 拍板**：后加需求，**不进 MVP**。**不参考 hermes claw3d**（那个太重，3D 虚拟办公室不是我们要的）。
+
+### 15.1 形态
+- **内嵌 Tab** in TAgent Desktop（不是独立 web 应用）
+- 复用现有 React + Jotai + Tailwind
+- 加新 IPC channel: `monitor:stream`
+- **只读**（监控，不改）
+
+### 15.2 数据粒度：**按 session**
+- 活跃 session 卡片网格（每个 session = 一张卡）
+- 状态颜色：idle / running / error
+- 显示：mode（通用/TA）、provider、model、当前 tool、运行时长
+- 点击 → 展开看消息 log
+
+### 15.3 MVP 监控页 4 个 widget
+| Widget | 数据源 | 更新频率 |
+|---|---|---|
+| 活跃 session 卡片网格 | `agentSessionsAtom`（已有） | 实时订阅 |
+| 今日 cost 概览 | `useGlobalAgentListeners.ts:202` 已有 usage | 5s 聚合 |
+| 工具调用 timeline | tool call log（需 instrument） | 实时滚动 |
+| MCP server 状态 | 进程状态检测 | 10s 轮询 |
+
+### 15.4 数据流
+```
+[Proma main process]
+  ├─ ta_agent MCP server 输出（已有 stderr）
+  ├─ 工具调用日志（需 instrument）
+  └─ Session 状态变化（agent runner 已有）
+       ↓
+   内存聚合（最近 5 分钟事件，rolling buffer）
+       ↓
+   新 IPC channel: monitor:stream
+       ↓
+   Renderer 监控 Tab
+```
+
+### 15.5 实施时机
+- MVP 跑通后（M1+ 阶段）
+- 工具调用日志先 instrument，监控 UI 后做
+- 不写独立 web 应用，**全部进 Desktop**
+- 估时：1 周（基础 4 个 widget）+ 后续按需扩展
+
+### 15.6 不做的事
+- ❌ 3D 虚拟办公场景（claw3d 思路）
+- ❌ 多人 VR 互动
+- ❌ 用户头像
+- ❌ 写能力（监控 = 只读）
+- ❌ 独立部署（嵌进 Desktop 即可）
+- ❌ 引入 grafana / prometheus 等重型方案（Proma 规模不需要）
+
+### 15.7 与借鉴清单的关系
+- 与 hermes-desktop **claw3d 完全无关**（已 review 不借鉴）
+- 与 hermes-agent **Kanban 概念部分相关**（如果未来要做"任务管理"才用）
+- 当前阶段**只与 Proma 现有 instrumentation 复用**
+
+---
+
+## 16. Hermes 形态确认 + ACP 借鉴（未来扩展）
+
+**2026-06-05 确认**：hermes-agent 是**单 agent 主框架 + subagent / 背景 fork / ACP 扩展**，不是"群体智能"多 agent 协作。
+
+### 16.1 Hermes 形态
+```
+AIAgent（主，常驻）
+  ├─ Subagent 派生（临时，parallel workstreams）
+  ├─ Background Fork（daemon thread，定期 review）
+  ├─ ACP 适配（外部 peer 协议）
+  ├─ Batch Runner（multiprocessing 批处理）
+  └─ Multi-channel Gateway（Telegram/Discord/... 多前端）
+```
+
+### 16.2 TAgent 当前形态
+- **单 agent per mode**（通用模式 1 个，TA 模式 1 个）
+- **无 subagent**（MCP 工具可调，但 agent 不会派生子 agent）
+- **ACP 集成暂无**（编辑器和 TAgent 通信靠 MCP / WebSocket）
+
+### 16.3 ACP 集成（未来扩展，⭐ 高价值）
+**借鉴 hermes 的 acp_adapter/ 实现，让 TAgent 作为 ACP peer 暴露**。
+
+价值：
+- VS Code / Cursor / Zed 编辑器原生 @-mention TAgent
+- 编辑器里 inline ask / code action 直接调 TAgent
+- TAgent 进入"专业开发者工具"层级
+
+技术栈：
+- 参考 `hermes-agent/acp_adapter/` 实现
+- ACP 标准：[https://github.com/agentclientprotocol/agent-client-protocol](https://github.com/agentclientprotocol/agent-client-protocol)
+- TAgent 端实现 `acp_server.py`（Python，复用 ta_agent 代码）
+- 编辑器侧：主流编辑器已支持或正在支持 ACP
+
+**不进 MVP**。M2+ 阶段实施。估时：2-3 周。
+
+### 16.4 Subagent 派生（未来扩展，⭐ 高价值）
+**借鉴 hermes 的 subagent 思路，让 TAgent TA 模式能并行处理多个资产**。
+
+场景：
+- 用户："分析 D:\Assets\Batch01 的 100 个 FBX"
+- 主 agent 派生 8 个 subagent，并行处理（每 subagent 12-13 个文件）
+- 完成后合并结果写入 SQLite
+
+技术栈：
+- 用 Python multiprocessing（hermes 用同款）
+- subagent 用受限 tool set（只读 + 写特定 tag）
+- 主 agent 收所有 subagent 结果，合并
+
+**不进 MVP**。M1+ 阶段实施。估时：1-2 周。
+
+### 16.5 不借鉴
+- ❌ 群体智能多 agent 框架（AutoGen / CrewAI 范式）—— TAgent 单 agent 路线不需
+- ❌ Multi-channel Gateway —— TAgent Desktop + WebSocket 已实现
+- ❌ Batch Runner 独立工具 —— 可整合到 subagent 方案中
