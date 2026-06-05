@@ -1,0 +1,38 @@
+# CODEOWNERS — who must review changes to which files
+# Syntax: pattern @owner
+# Default owner: project owner (you)
+
+# Default
+*                                               @frank-danny
+
+# Architecture / Design
+/docs/plans/                                    @frank-danny
+/docs/decisions/                                @frank-danny
+/AGENTS.md                                      @frank-danny
+/.claude/CLAUDE.md                              @frank-danny
+/CHANGELOG.md                                   @frank-danny
+/CONTRIBUTING.md                                @frank-danny
+
+# TAgent Desktop (Proma-derived, TypeScript + Electron)
+/apps/electron/                                 @frank-danny
+/packages/core/                                 @frank-danny
+/packages/shared/                               @frank-danny
+/packages/ui/                                   @frank-danny
+
+# TAgent Server (Python + FastAPI + Postgres)
+/apps/server/                                   @frank-danny
+/packages/server/                               @frank-danny
+
+# MCP / Provider Adapter (cross-cutting)
+/packages/core/src/providers/                   @frank-danny
+/packages/core/src/mcp/                         @frank-danny
+
+# Memory system (5 layers)
+/packages/core/src/memory/                      @frank-danny
+/packages/ta-agent/memory/                      @frank-danny
+
+# CI / DevOps
+/.github/                                       @frank-danny
+/scripts/release/                               @frank-danny
+/pyproject.toml                                 @frank-danny
+/package.json                                   @frank-danny

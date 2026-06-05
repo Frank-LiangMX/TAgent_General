@@ -1,0 +1,32 @@
+                    GNU AFFERO GENERAL PUBLIC LICENSE
+                       Version 3, 19 November 2007
+
+ Copyright (C) 2026 Frank Danny
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+========================================================================
+
+TAgent is a derivative work combining:
+- Proma (https://github.com/proma-ai/proma) — AGPL-3.0
+- ta_agent (proprietary, owned by Frank Danny)
+
+Per AGPL-3.0 §5: "The GNU Affero General Public License requires the
+server-side source code of modified versions to be made available to
+all users of the corresponding network service."
+
+If you fork TAgent and deploy it as a network service, you must publish
+your modifications' source code.
+
+For full license text, see: https://www.gnu.org/licenses/agpl-3.0.txt
