@@ -39,6 +39,8 @@ interface ContextUsageBadgeProps {
   isCompacting: boolean
   isProcessing: boolean
   onCompact: () => void
+  /** P1-3: 客户端压缩 (LLM compact_session 失败时的 fallback) */
+  onClientCompact?: () => void
 }
 
 /** 格式化 token 数为可读字符串（如 1234 → "1.2k"） */
@@ -131,6 +133,7 @@ export function ContextUsageBadge({
   isCompacting,
   isProcessing,
   onCompact,
+  onClientCompact,
 }: ContextUsageBadgeProps): React.ReactElement | null {
   // 保留最近一次有效的 token 值，避免切换会话时闪烁消失
   const stableRef = React.useRef<{
@@ -317,6 +320,21 @@ export function ContextUsageBadge({
             <Minimize2 className="size-3.5" />
             {isProcessing ? '对话进行中' : '手动压缩'}
           </Button>
+          {/* P1-3: 客户端压缩 (LLM compact_session 失败时的 fallback) */}
+          {onClientCompact && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+              onClick={onClientCompact}
+              disabled={isProcessing}
+              title="客户端 drop_old_tool_results: 不调 LLM, 直接丢老 tool_use/tool_result 对"
+            >
+              <Minimize2 className="size-3" />
+              客户端压缩
+            </Button>
+          )}
         </div>
       </PopoverContent>
     </Popover>

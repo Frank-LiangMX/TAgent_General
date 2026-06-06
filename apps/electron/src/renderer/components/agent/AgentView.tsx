@@ -1616,6 +1616,29 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     })
   }, [sessionId, agentChannelId, agentModelId, currentWorkspaceId, streaming, setStreamingStates, store, permissionMode])
 
+  /**
+   * P1-3: 客户端压缩 (LLM compact_session tool 失败时的 fallback)
+   * 走 IPC 调 main 进程的 compactSession(), 直接改 session.jsonl
+   */
+  const handleClientCompact = React.useCallback(async (): Promise<void> => {
+    if (!sessionId) return
+    try {
+      const result = await window.electronAPI.compactSession(sessionId, {
+        strategy: 'drop_old_tool_results',
+      })
+      if (result.success) {
+        toast.success(
+          `客户端压缩: ${result.droppedCount} 条已压缩 (${result.beforeCount} -> ${result.afterCount})`
+        )
+      } else {
+        toast.error(`客户端压缩失败: ${result.message}`)
+      }
+    } catch (error) {
+      console.error('[AgentView] 客户端压缩失败:', error)
+      toast.error('客户端压缩请求失败')
+    }
+  }, [sessionId])
+
   /** 复制错误信息到剪贴板 */
   const handleCopyError = React.useCallback(async (): Promise<void> => {
     if (!agentError) return
@@ -1928,6 +1951,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           isCompacting={contextStatus.isCompacting}
           isProcessing={streaming}
           onCompact={handleCompact}
+          onClientCompact={handleClientCompact}
         />
       ),
     },
