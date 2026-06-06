@@ -761,6 +761,52 @@ export class AgentOrchestrator {
   }
 
   /**
+   * P1-3: 注入 SDK 内置 compact_session 工具
+   *
+   * 当 Claude Agent SDK 服务端 compaction 失败时 (9120caac 那类),
+   * Agent 主动调 compact_session 兜底压缩, 3 策略:
+   *   - drop_old_tool_results: 丢老 tool_use/tool_result 对
+   *   - keep_last_n: 保留最近 N 条 user+assistant
+   *   - summarize: M2+ 排期, 本期返回"未实现"提示
+   */
+  private async injectCompactSessionTool(
+    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+    mcpServers: Record<string, Record<string, unknown>>,
+    sessionId: string,
+  ): Promise<void> {
+    try {
+      const { z } = await import('zod')
+      const { compactSession } = await import('./agent-session-compactor')
+
+      const compactorServer = sdk.createSdkMcpServer({
+        name: 'tagent-compactor',
+        version: '1.0.0',
+        tools: [
+          sdk.tool(
+            'compact_session',
+            '主动压缩当前会话历史。当 SDK 服务端 compaction 失败时调用, 减少后续 context 占用。3 策略: drop_old_tool_results (丢老 tool 块, 保留文本) / keep_last_n (保留最近 N 条 user+assistant) / summarize (本期未实现)。',
+            {
+              strategy: z.enum(['drop_old_tool_results', 'keep_last_n', 'summarize']).describe('压缩策略'),
+              keepLastN: z.number().optional().describe('keep_last_n 策略专用: 保留最近 N 条 user+assistant, 默认 10'),
+            },
+            async (args) => {
+              const result = await compactSession(sessionId, {
+                strategy: args.strategy,
+                keepLastN: args.keepLastN,
+              })
+              return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+            },
+          ),
+        ],
+      })
+      mcpServers['tagent-compactor'] = compactorServer as unknown as Record<string, unknown>
+      console.log(`[Agent 编排] 已注入 P1-3 compact_session 工具 (tagent-compactor)`)
+    } catch (err) {
+      console.error(`[Agent 编排] 注入 compact_session 工具失败:`, err)
+    }
+  }
+
+  /**
    * 注入 SDK 内置生图工具（Nano Banana）
    */
   private async injectNanoBananaTools(
@@ -1255,6 +1301,7 @@ export class AgentOrchestrator {
       const mcpServers = this.buildMcpServers(workspaceSlug)
       await this.injectMemoryTools(sdk, mcpServers)
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
+      await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
 
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
