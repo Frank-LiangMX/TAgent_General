@@ -1078,6 +1078,236 @@ export const costBreakdownAtom = atom((get) => {
 - ✅ 切走时如果原模式 MCP server 还没启动完——等到启动完才能切
 - ✅ 同一时刻只有一个 mode 拥有 UI focus
 
+### 8.4 Context 管理机制（2026-06-06 补）
+
+排查 9120caac session（6.8MB / 2153 条消息）后，发现 TAgent 的 context 管理有 **4 个实际问题**。**注意**：9120caac 的报错 `400 (2013)` **不是** context 溢出（那是 `400 (2024)`），而是 model 名 `MiniMax-M3` 不被 `nengpa.com` 端点接受。**但 6.8MB 持久化历史怎么处理，是真问题**。
+
+#### 8.4.1 现状评估
+
+| 维度 | Chat 模式 | Agent 模式 |
+|---|---|---|
+| 裁剪单位 | **轮数**（user+assistant = 1 轮）| **消息条数** |
+| 配置入口 | 用户可设（ChatHeader 下拉）| ❌ 硬编码 `MAX_CONTEXT_MESSAGES = 20` |
+| 模型窗口感知 | ❌ 不感知 | ⚠️ 拿到 `contextWindow` 但**不参与决策**（只画圆环）|
+| 工具结果截断 | 客户端按字符 | `MAX_TOOL_SUMMARY_LENGTH = 200` 字符（**信息丢失**）|
+| 图片附件 | 走协议原始 bytes | `buildContextPrompt` **只取 text 块，图片整块丢** |
+| Auto-compact | ❌ 无 | ⚠️ 只靠 SDK（失败无 fallback）|
+| 用户主动压缩 | `/compact`-like 工具 | ❌ 无 |
+
+**核心问题**：
+- 9120caac **6.8MB / 2153 条** JSONL 写到磁盘
+- 用户重新打开 → `buildContextPrompt` 只取最后 20 条，**前 2133 条历史"消失"**
+- Agent 不知道用户上周做了什么，行为类似"失忆"
+
+#### 8.4.2 改进方案（7 项，按优先级）
+
+##### 🔴 P0-1: `buildContextPrompt` 接 `contextWindow`（agent-orchestrator.ts:318）
+
+**改前**（硬编码 20 条）：
+
+```ts
+const MAX_CONTEXT_MESSAGES = 20
+const recent = history.slice(-MAX_CONTEXT_MESSAGES)
+```
+
+**改后**（按模型窗口动态算）：
+
+```ts
+function computeMaxContextMessages(
+  contextWindow: number,        // SDK 返回的窗口
+  systemTokens: number,         // system prompt 占的 token
+  toolsTokens: number,          // 工具定义占的 token
+  reservedForOutput: number,    // 给模型留的 max_tokens
+): number {
+  const budget = contextWindow - systemTokens - toolsTokens - reservedForOutput
+  // 平均每消息 ~500 token（保守估计, 含图片 1500-5000）
+  return Math.max(5, Math.floor(budget / 500))
+}
+```
+
+##### 🔴 P0-2: Model 名验证（启动时 ping 一次）
+
+**场景**：用户在 channel 配置里写 `MiniMax-M3`，但端点只接受 `claude-3-5-sonnet-...`。
+
+**改前**：直接发请求 → 400 (2013) → 死。
+
+**改后**：ChannelManager 加 `validateChannel()`：
+
+```ts
+async function validateChannel(channel: Channel): Promise<ValidationResult> {
+  try {
+    const resp = await fetch(channel.baseUrl, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${channel.apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: channel.model,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'ping' }]
+      })
+    })
+    if (resp.status === 400) {
+      const body = await resp.json().catch(() => ({}))
+      return { ok: false, error: body.error?.message ?? 'model rejected' }
+    }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+```
+
+启动 App 时跑一遍，**model 不合法直接红字提示用户在设置里换**。
+
+##### 🟡 P1-1: Tool result 大块截断（按 token 算）
+
+**改前**（按字符，200 字符一刀切）：
+
+```ts
+const MAX_TOOL_SUMMARY_LENGTH = 200
+if (joined.length > MAX_TOOL_SUMMARY_LENGTH) {
+  return joined.slice(0, MAX_TOOL_SUMMARY_LENGTH) + '...'
+}
+```
+
+**改后**（按 token 估算 + 保留头尾）：
+
+```ts
+function summarizeToolResult(content: string, budgetTokens: number = 500): string {
+  const tokens = estimateTokens(content)
+  if (tokens <= budgetTokens) return content
+  
+  // 保留头 40% + 尾 60%（通常 tail 含关键结果）
+  const headRatio = 0.4
+  const headChars = Math.floor(budgetTokens * headRatio * 4)  // 粗估 1 token ≈ 4 chars
+  const tailChars = Math.floor(budgetTokens * (1 - headRatio) * 4)
+  return content.slice(0, headChars) + '\n... [truncated] ...\n' + content.slice(-tailChars)
+}
+```
+
+##### 🟡 P1-2: 图片附件 placeholder 注入
+
+**改前**（`buildContextPrompt` line 334-338 只取 text）：
+
+```ts
+const textParts = content
+  .filter((b) => b.type === 'text' && b.text)
+  .map((b) => b.text!)
+```
+
+**改后**（图片注入 placeholder）：
+
+```ts
+const textParts: string[] = []
+let imageCount = 0
+for (const b of content) {
+  if (b.type === 'text' && b.text) {
+    textParts.push(b.text)
+  } else if (b.type === 'image') {
+    imageCount++
+  }
+}
+if (imageCount > 0) {
+  textParts.push(`[本消息含 ${imageCount} 张图片]`)
+}
+```
+
+Agent 至少知道"那张图你看过"，不会再问"你之前发的图呢"。
+
+##### 🟡 P1-3: 客户端手动 compact 工具（fallback 兜底）
+
+**场景**：SDK 服务端 compaction 失败（9120caac 就是）。
+
+**改**：新增 LLM tool `compact_session`：
+
+```ts
+const compactSessionTool: ToolDefinition = {
+  name: 'compact_session',
+  description: '主动压缩当前会话历史。SDK 压缩失败时用，生成摘要替换最早的消息。',
+  input_schema: {
+    type: 'object',
+    properties: {
+      strategy: { type: 'string', enum: ['summarize', 'drop_old_tool_results', 'keep_last_n'] },
+      keepLastN: { type: 'number', default: 10 }
+    }
+  }
+}
+```
+
+`strategy: 'drop_old_tool_results'` 是最便宜的——只丢老 tool_use/tool_result 对，保留 user/assistant 文本。
+
+##### 🟢 P2-1: Nudges 提示"context 80% 满"
+
+复用 §6.5.4 Nudges 机制——加 1 个模式：
+
+| 模式 | 检测条件 | 候选动作 | 提示语 |
+|---|---|---|---|
+| context 接近上限 | `usage / contextWindow > 0.8` 且 < 0.95 | 主动 compact | "上下文已用 80%，要 compact 吗？" |
+| context 危险 | `usage / contextWindow > 0.95` | 强制切 session | "上下文将满，建议新建会话" |
+
+##### 🟢 P2-2: 圆环颜色预警
+
+`AgentView.tsx:1927` 的 context 圆环——按使用率换色：
+
+| 使用率 | 颜色 | 含义 |
+|---|---|---|
+| < 70% | 灰/绿 | 安全 |
+| 70-90% | 黄 | 接近阈值 |
+| > 90% | 红 | 危险，建议 compact |
+
+#### 8.4.3 与 Claude Code / Codex 对比（trade-off 诚实）
+
+| 维度 | Claude Code | Codex | TAgent (P0+P1 后) | TAgent (当前) |
+|---|---|---|---|---|
+| API 选型 | 真实 Anthropic | 真实 OpenAI | **任意兼容端点**（需用户配对）| 同 |
+| Model 名 | **固定** | **固定** | **用户配置**（启动需验证）| **未验证**（运行时炸）|
+| Auto-compact | ✅ 客户端 + 服务端 | ✅ 服务端 | ⚠️ 只靠 SDK | ⚠️ 只靠 SDK |
+| 手动 compact | `/compact` slash | 无 UI | **`compact_session` tool** | ❌ 无 |
+| Token 预算动态 | ✅ 实时 | ✅ 服务端 | ✅ P0-1 后 | ❌ 硬编码 20 |
+| Fallback 链 | haiku 自动切 | 无 | ❌ 仍无（可加）| ❌ |
+| 图片历史 | 完整 | N/A | ✅ P1-2 后 placeholder | ❌ 整块丢 |
+| Tool result | 服务端截断 | 服务端 | ✅ P1-1 后按 token 截 | ❌ 200 字符硬截 |
+
+**TAgent 接受"任意兼容端点"换更大的灵活性**——代价就是需要自己管 model 验证、compact fallback。**P0+P1 补完后，能 cover 90% Claude Code 的体验**。
+
+#### 8.4.4 与 §6.5 记忆系统的关系
+
+§6.5 谈的"记忆 5 层"是**长期跨 session 知识**。§8.4 谈的"context 管理"是**单 session 内 token 预算**。两者不冲突：
+
+| 维度 | §6.5 记忆 5 层 | §8.4 Context 管理 |
+|---|---|---|
+| 时间跨度 | 跨 session（数天-数月）| 单 session（数小时）|
+| 存储位置 | `~/.tagent/memory/L0-L5` | `~/.tagent/agent-sessions/{id}.jsonl` |
+| 写入触发 | Nudges / Reflect / 显式 | 每个 turn 自动（SDK）|
+| 读取触发 | system prompt 头部 | 直接进入 LLM 调用 |
+| 裁剪策略 | LRU + 上限 | **滚动窗口 + token 预算**（P0-1）|
+| 跨模式 | 默认隔离（L0 可选共享）| 通用模式专用，TA 模式独立 |
+
+**两者要协同**：§6.5 写的"prefetch" 内容（来自 L0/L1/L2/L5）会进 system prompt；§8.4 管的 conversation_history 进 user/assistant 消息区。**两者 token 总和必须 < contextWindow**——这就是为什么 P0-1 要算"系统 + 工具 + 历史 + 输出"的总预算。
+
+#### 8.4.5 实施成本
+
+| 优先级 | 工时 | 风险 |
+|---|---|---|
+| 🔴 P0-1 动态预算 | 半天 | 🟢 低（加 fallback 到原 20） |
+| 🔴 P0-2 model 验证 | 半天 | 🟢 低（启动时多 1 个 fetch） |
+| 🟡 P1-1 tool 截断 | 半天 | 🟢 低（只是展示） |
+| 🟡 P1-2 图片 placeholder | 1 天 | 🟢 低 |
+| 🟡 P1-3 compact tool | 2-3 天 | 🟡 中（要写 LLM tool + 实际压缩逻辑） |
+| 🟢 P2-1 nudges | 半天 | 🟢 低 |
+| 🟢 P2-2 圆环颜色 | 1 小时 | 🟢 低 |
+
+**总 ~ 1 周**。P0+P1 ~ 4 天，P2 ~ 半天。
+
+#### 8.4.6 触发 9120caac 那次具体报错的根因
+
+`400 (2013)` = `invalid_request_error`。
+
+**不是** context 溢出（`400 (2024)`），是 **model 名 `MiniMax-M3` 不被 `nengpa.com` 端点接受**。
+
+**P0-2 model 验证能 100% 防住**——启动时 ping 一次就知道这个 model 不能用，**用户根本进入不了会话**。
+
+**P0-1 动态预算是 P0-2 的兜底**——如果 model 配对了但用户硬塞了大附件导致真溢出，至少能优雅降级（自动切到少取 N 条）而不是整个 session 死掉。
+
 ---
 
 ## 9. 品牌替换（Proma → TAgent）
@@ -1155,7 +1385,7 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
-## 12. 11 个开放问题（已全部拍板）
+## 12. 12 个开放问题（已全部拍板）
 
 **2026-06-05 拍板 1-6, 2026-06-06 补拍 7-11**：
 
@@ -1170,6 +1400,7 @@ export const costBreakdownAtom = atom((get) => {
 9. **L 命名冲突解决**（2026-06-06 补）：✅ **记忆层保留 L0-L5**（与 hermes Honcho / GenericAgent 兼容），**§3.4 缓存分类改名 C1-C5**（C = Cache）。原因：§3.4 原本用 L1-L5 表示 5 类缓存目录（C1 持久数据 / C2 缓存 / C3 日志 / C4 临时 / C5 Electron 内部），与 §6 记忆层 L0-L5 同字母冲突（看到 "L1" 用户无法判断是缓存还是记忆）。改后 §3.4 树状图与 §3.4.3 对照表里的 L1-L5 全部改为 C1-C5；§6 全部不动。
 10. **记忆自进化机制**（2026-06-06 补）：详见 §6.5。**L0 双重表示**（global_view + peer_view，借鉴 Hermes Honcho 双层结构）；**自进化 4 机制**（Nudges 每 5 turn / Reflect 每日 03:00 + anti-echo 算法 / Scheduled Cleanup 每周日 04:00 / Self-Repair 每月 1 日）；**8 个生命周期事件**精确到桌面应用触发点（turn_start / turn_end / session_idle / session_end / session_switch / pre_compress / post_compress / subagent_done）；**5 层上限**（L0 50 条/视图 / L1 100 / L2 500 / L3 raw 1000 → 压缩 / L4 30 天热 / L5 20）；**跨模式隔离 UX**（L0 默认独立 + 可选共享开关；切模式弹 modal 问 L1 是否带）。TAgent 在 7 个自进化维度中 6 个领先 Hermes（除压缩外持平），但**全部是设计，0 实跑**——见 §6.4 的 1160 行待实现代码 + 后续 M2 排期。
 11. **Agent 工作区机制 + UI 重构**（2026-06-06 补）：详见 §3.5。**5 个核心概念**（工作区 / workspace-files / 附加工作区目录 / 附加工作区文件 / 会话附加目录）精确定义 + 读/写拆分的设计动机（不污染用户代码 + 跨会话共享）。**D 方案 v2 UI 布局**（左侧拆 2 列并排：Column 1 60% 工作区管理 + Column 2 40% 会话列表；中部 Chat/Agent；右侧 2 Tab 仅当前会话相关 = 会话文件 + 文件改动）。**删除**右侧"工作区文件" Tab（配置已搬左侧 Column 1）。**新增**"会话列表"组件（当前 TAgent 居然没有！用户只能从 Chat 顶部 dropdown 切）。**重命名**"附加工作区文件" → "附加文件"（避免和"工作区文件目录"混淆）。**实现成本** ~ 1.5-2 周（纯 UI 重构 + 1 个新组件，后端 API 0 改动）。**trade-off**：TAgent 用更高的学习曲线（5 个概念需解释）换 4 个独特能力（多工作区、附加多目录、跨 session 共享、Agent 内部笔记分离）。
+12. **Context 管理机制**（2026-06-06 补）：详见 §8.4。**根因澄清**：`9120caac.jsonl` 6.8MB / 2153 条报错 `400 (2013)` 不是 context 溢出（`400 (2024)` 才是），而是 model 名 `MiniMax-M3` 不被 `nengpa.com` 兼容端点接受。但 6.8MB 历史怎么处理是真问题。**7 项改进**：P0-1 动态 token 预算（`buildContextPrompt` 接 `contextWindow` 替代硬编码 20 条）；P0-2 启动时 model 名验证（ping 一次测试请求）；P1-1 tool result 按 token 截断（替代 200 字符硬截）；P1-2 图片附件 placeholder 注入（避免 buildContextPrompt 整块丢图片）；P1-3 客户端 `compact_session` 工具（fallback 兜底 SDK 压缩失败）；P2-1 Nudges 提示 context 80% 满；P2-2 圆环颜色预警（70% 黄 / 90% 红）。**总工时 ~ 1 周**（P0+P1 ~ 4 天）。**trade-off**：TAgent 接受"任意兼容端点"换更大灵活性，代价是 model 验证 + compact fallback 都得自己管——P0+P1 补完后能 cover 90% Claude Code 体验。
 
 ---
 
