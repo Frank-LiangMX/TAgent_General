@@ -78,6 +78,76 @@
 - **资产数据库 = 文件共享**（不是 API 调用）——Proma 用 better-sqlite3 直读，写权只在 ta_agent 侧
 - **模式状态隔离 = Jotai atom 命名空间**：`general.*` 与 `ta.*` 两套 atom tree 互不引用
 
+### 3.3 TA 模式数据目录布局（2026-06-06 拍板）
+
+**TA 模式的所有数据都集中在 `~/.tagent/ta/`**（跨平台统一根，与 TAgent 主配置 `~/.tagent/` 同级）。ta_agent MCP server 启动时通过环境变量 `TA_AGENT_DATA_DIR=~/.tagent/ta` 指向此目录（ta_agent 已有 `TA_AGENT_CONFIG_DIR` env 支持，见 `ta_agent/packages/core/project_config.py:363`，可复用）。
+
+```
+~/.tagent/ta/                          (跨平台统一根, macOS/Linux/Windows)
+├── tag_store/                        # 资产库（设计 §3.1 已定）
+│   └── tags.db                       # SQLite, TAgent UI 用 better-sqlite3 直读, ta_agent 拥有写权
+├── configs/                          # 静态配置（用户写的、不学习的）
+│   ├── app-config.json               # 工具路径：blender_path, llm_provider, llm_api_key
+│   └── project/
+│       └── {ProjectName}.yaml        # 资产规范 + 引擎路径：asset_types, naming_rules,
+│                                     #   mesh_budgets, texture_budgets, import_presets,
+│                                     #   source_paths.{blender,engine,models,textures}
+├── memory/                           # 5 层记忆（与通用模式分开, 详见 §6）
+│   ├── profile.md                    # L0 用户画像
+│   ├── preferences.md                # L1 用户偏好
+│   ├── insights.md                   # L2 核心洞察
+│   ├── corrections.jsonl             # L3 用户纠错
+│   ├── sessions.db                   # L4 历史会话 (SQLite + FTS5)
+│   └── knowledge.md                  # L5 领域知识
+├── ue5_bridge/                       # UE5 桥接配置（连接 / 凭据 / 状态）
+├── sessions/index.json               # 会话索引
+├── usage_log.jsonl                   # 用量日志（与 ta_agent 格式兼容, 见 §17.5）
+└── pipeline_runs.jsonl               # 流水线执行历史
+```
+
+**写权矩阵**（避免 §3.2 的"脏写"风险）：
+
+| 数据 | 写权 | 读权 | 说明 |
+|---|---|---|---|
+| `tag_store/tags.db` | **ta_agent MCP** | TAgent UI 直读 | 写权独占, 避免并发覆盖 |
+| `configs/app-config.json` | **TAgent UI** + ta_agent MCP | 双方都能读 | 用户改 blender_path 走 UI |
+| `configs/project/*.yaml` | **TAgent UI** + ta_agent MCP | 双方都能读 | 项目设置向导走 UI |
+| `memory/*` | **ta_agent MCP** | TAgent UI 展示 | AI 学来的知识, 不让用户直接编辑 |
+| `usage_log.jsonl` | **ta_agent MCP** | TAgent UI 展示 | 流水 append, 无冲突 |
+| `ue5_bridge/` | **TAgent UI** | ta_agent MCP 读 | 凭据/连接配置, 用户一次性设 |
+
+**与原 ta_agent 布局的差异**：
+
+| 旧 (`~/.ta_agent/`) | 新 (`~/.tagent/ta/`) | 差异 |
+|---|---|---|
+| `configs/` | `configs/` | 同名同结构, 直接搬 |
+| `tag_store/tags.db` | `tag_store/tags.db` | 同 |
+| `memory/{general,ta}/sops/` | `memory/` (TA 模式专用) | 不再拆 general/ta 模式目录, 因为整个根是 TA 模式专用 |
+| `ue5_bridge/` | `ue5_bridge/` | 同 |
+| `sessions/index.json` | `sessions/index.json` | 同 |
+| `usage_log.jsonl` | `usage_log.jsonl` | 格式不变, 路径变 |
+| `pipeline_runs.jsonl` | `pipeline_runs.jsonl` | 同 |
+
+**通用模式（chat/agent/scratch）的数据**继续在 `~/.tagent/` 根下（与 TA 模式完全分离）：
+
+```
+~/.tagent/
+├── channels.json, conversations/, agent-sessions/, agent-workspaces/  # 通用模式（Proma 原生）
+├── default-skills/, scratch-pad.md, settings.json, user-profile.json  # 通用模式设置
+├── memory/                                                            # 通用模式 5 层记忆（独立于 ta/）
+└── ta/                                                                # TA 模式专用（见上）
+```
+
+**与 §6 记忆 5 层的关系**：
+- §6 描述的 5 层是**通用模式**的记忆，在 `~/.tagent/memory/`
+- TA 模式有**自己独立**的 5 层记忆，在 `~/.tagent/ta/memory/`
+- 两套记忆**默认不共享**（与决策 #14 一致："L0 共享 = 默认不共享, 可手动开启"）
+
+**迁移策略**（M2 阶段, 不在 MVP 范围）：
+- 一次性脚本：`mv ~/.ta_agent/* ~/.tagent/ta/`
+- 检测：如果 `~/.ta_agent/configs/` 存在但 `~/.tagent/ta/configs/` 不存在, 启动时弹一次性迁移对话框
+- ta_agent MCP server 启动时检查 `TA_AGENT_DATA_DIR` 是否设置, 没有就 fallback 到 `~/.ta_agent/`（向后兼容老用户）
+
 ---
 
 ## 4. 核心组件
@@ -543,9 +613,9 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
-## 12. 6 个开放问题（已全部拍板）
+## 12. 7 个开放问题（已全部拍板）
 
-**2026-06-05 全部拍板**：
+**2026-06-05 拍板 1-6, 2026-06-06 补拍 7**：
 
 1. **TA 模式 54 工具的命名空间化**：✅ **加 `tagent__` 前缀**（如 `tagent__analyze_assets`）。避免与 Claude SDK 内置工具冲突，保留未来扩展空间。
 2. **OpenAI provider 的 cache 字段**：✅ **MVP 支持**。Proma 已有实现零成本。OpenAI 下数字恒为 0（不报错不显示），但通用 + TA 模式行为一致。
@@ -553,6 +623,7 @@ export const costBreakdownAtom = atom((get) => {
 4. **MVP 资产库是否支持写**：✅ **Proma 端只读，写走 ta_agent MCP**。避免并发冲突，Proma 不会有"脏写"。
 5. **Pipeline Editor 的 UI 重写工作量**：✅ **MVP 不做**。M2+ 阶段单独做。节省 6 周 UI 工作量。
 6. **记忆 5 层的存储格式**：✅ **混合方案**（md + JSONL + SQLite）。L0-L2 + L5 用 Markdown（人可读），L3 corrections 用 JSONL + rules.json（结构化 + 可回滚），L4 sessions 用 SQLite + FTS5（全文搜索）。
+7. **TA 模式数据目录布局**（2026-06-06 补）：✅ **`~/.tagent/ta/` 统一根**（跨平台）。详见 §3.3。资产库 / 静态配置 / 5 层记忆 / UE5 桥接 / 会话 / 用量日志全在 `ta/` 子目录下；通用模式（chat/agent）继续在 `~/.tagent/` 根下不混。ta_agent 启动时通过 `TA_AGENT_DATA_DIR=~/.tagent/ta` env 指向（已有 env 支持, 见 `ta_agent/packages/core/project_config.py:363`）。
 
 ---
 
