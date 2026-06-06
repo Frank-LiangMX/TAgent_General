@@ -157,6 +157,8 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   const [saving, setSaving] = React.useState(false)
   const [testing, setTesting] = React.useState(false)
   const [testResult, setTestResult] = React.useState<ChannelTestResult | null>(null)
+  const [validatingModel, setValidatingModel] = React.useState(false)
+  const [modelValidateResult, setModelValidateResult] = React.useState<ChannelTestResult | null>(null)
   const [fetchingModels, setFetchingModels] = React.useState(false)
   const [fetchResult, setFetchResult] = React.useState<FetchModelsResult | null>(null)
   const [apiKeyLoaded, setApiKeyLoaded] = React.useState(false)
@@ -375,6 +377,36 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
     }
   }
 
+  /**
+   * P0-2: 测试表单里第一个 enabled model 是不是真被该供应商接受
+   * 防止 9120caac 那类 model 名误配 → 400 (2013)
+   * vs handleTest (用 provider 默认 model) — 这个是测用户实际配的 model
+   */
+  const handleTestModel = async (): Promise<void> => {
+    if (!apiKey.trim() || !baseUrl.trim()) return
+    const targetModel = models.find((m) => m.enabled)?.id ?? models[0]?.id
+    if (!targetModel) {
+      setModelValidateResult({ success: false, message: '请先添加一个 model' })
+      return
+    }
+
+    setValidatingModel(true)
+    setModelValidateResult(null)
+    try {
+      const result = await window.electronAPI.validateChannelModel({
+        provider,
+        baseUrl,
+        apiKey,
+        model: targetModel,
+      })
+      setModelValidateResult(result)
+    } catch (error) {
+      setModelValidateResult({ success: false, message: '验证请求失败' })
+    } finally {
+      setValidatingModel(false)
+    }
+  }
+
   /** 执行创建渠道 */
   const doCreate = React.useCallback(async (): Promise<Channel | null> => {
     if (!name.trim() || !apiKey.trim()) return null
@@ -528,24 +560,47 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
           />
           {/* API Key + 测试连接同行 */}
           <div className="px-4 py-3 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="text-sm font-medium text-foreground">API Key</div>
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={handleTest}
-                disabled={testing || !apiKey.trim() || !baseUrl.trim()}
-                className="h-7 text-xs"
-              >
-                {testing ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Zap size={12} />
-                )}
-                <span>测试连接</span>
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={handleTestModel}
+                  disabled={validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0}
+                  className="h-7 text-xs"
+                  title="用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配"
+                >
+                  {validatingModel ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Zap size={12} />
+                  )}
+                  <span>测试 model</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={handleTest}
+                  disabled={testing || !apiKey.trim() || !baseUrl.trim()}
+                  className="h-7 text-xs"
+                >
+                  {testing ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Zap size={12} />
+                  )}
+                  <span>测试连接</span>
+                </Button>
+              </div>
             </div>
+            {modelValidateResult && (
+              <div className={`text-xs px-2 py-1.5 rounded ${modelValidateResult.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+                {modelValidateResult.message}
+              </div>
+            )}
             <div className="relative">
               <Input
                 type={showApiKey ? 'text' : 'password'}

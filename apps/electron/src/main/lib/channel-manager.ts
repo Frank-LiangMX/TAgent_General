@@ -302,15 +302,13 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
  *       (b) 渠道保存前/后即时验证
  *       (c) 用户主动触发"我刚换的 model 能用吗？"
  */
-export interface ChannelModelValidateInput {
+export async function validateChannelModel(input: {
   baseUrl: string
   apiKey: string
   model: string
-  provider: ProviderType
+  provider: import('@tagent/shared').ProviderType
   proxyUrl?: string
-}
-
-export async function validateChannelModel(input: ChannelModelValidateInput): Promise<ChannelTestResult> {
+}): Promise<ChannelTestResult> {
   if (!input.model || !input.model.trim()) {
     return { success: false, message: 'model 名称为空' }
   }

@@ -31,6 +31,7 @@ import type {
   ChannelCreateInput,
   ChannelUpdateInput,
   ChannelTestResult,
+  ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
   ConversationMeta,
@@ -123,7 +124,6 @@ import {
   testChannelDirect,
   fetchModels,
   validateChannelModel,
-  type ChannelModelValidateInput,
 } from './lib/channel-manager'
 import {
   listConversations,

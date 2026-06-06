@@ -177,6 +177,17 @@ export interface ChannelTestResult {
 }
 
 /**
+ * P0-2: 验证指定 model 名（防止 9120caac 那类 model 名误配导致 400 (2013)）
+ */
+export interface ChannelModelValidateInput {
+  baseUrl: string
+  apiKey: string
+  model: string
+  provider: ProviderType
+  proxyUrl?: string
+}
+
+/**
  * 拉取模型的输入参数（无需已保存的渠道，直接传入凭证）
  */
 export interface FetchModelsInput {
