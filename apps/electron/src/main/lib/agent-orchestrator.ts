@@ -284,63 +284,15 @@ function resolveSDKCliPath(): string {
 /** 最大回填消息条数（P0-1 fallback, 拿到 contextWindow 前用这个） */
 const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 
-/** 单条工具摘要默认字符预算（P1-1 改成按 token 算, 这里保留作为默认 fallback） */
-const MAX_TOOL_SUMMARY_LENGTH = 200
-
-/** 1 token ≈ 4 chars（粗估, 与 §8.4 P1-1 算法一致） */
-const CHARS_PER_TOKEN = 4
-
-/**
- * P1-1: 按 token 估算截断, 保留头尾（tail 通常含关键结果）
- *
- * @param content 原始工具摘要
- * @param budgetTokens token 预算（默认 500）
- * @returns 截断后字符串
- */
-function summarizeToolResult(content: string, budgetTokens: number = 500): string {
-  const tokens = Math.ceil(content.length / CHARS_PER_TOKEN)
-  if (tokens <= budgetTokens) return content
-
-  const headRatio = 0.4
-  const headChars = Math.floor(budgetTokens * headRatio * CHARS_PER_TOKEN)
-  const tailChars = Math.floor(budgetTokens * (1 - headRatio) * CHARS_PER_TOKEN)
-  return content.slice(0, headChars) + '\n... [truncated] ...\n' + content.slice(-tailChars)
-}
-
-/** 单消息平均 token 估算（含图片: 1500-5000, 纯文本: ~500） */
-const AVG_TOKENS_PER_MESSAGE = 500
-
-/**
- * P0-1: 缓存每个 session 已知的 context window
- *
- * 来源: Claude Agent SDK 的 `result.modelUsage[...].contextWindow`
- * 拿到后, buildContextPrompt 用它动态算能取多少条历史, 而非硬编码 20 条
- */
-const sessionContextWindowCache = new Map<string, number>()
-
-/** 设置 session 的 context window 缓存 */
-export function setSessionContextWindow(sessionId: string, contextWindow: number): void {
-  if (contextWindow > 0) {
-    sessionContextWindowCache.set(sessionId, contextWindow)
-  }
-}
-
-/** 读 session 的 context window 缓存, 没记录时返回 undefined */
-function getSessionContextWindow(sessionId: string): number | undefined {
-  return sessionContextWindowCache.get(sessionId)
-}
-
-/**
- * P0-1: 根据 context window 动态算能取多少条历史消息
- *
- * 预算 = contextWindow - system(prompt) - tools - reserved(给模型输出的 max_tokens)
- * @returns 至少 5 条, 最多按预算切
- */
-function computeMaxContextMessages(contextWindow: number, systemReservedTokens: number = 4000, outputReservedTokens: number = 8000): number {
-  const budget = contextWindow - systemReservedTokens - outputReservedTokens
-  if (budget <= 0) return 5  // 预算不够, 至少 5 条保命
-  return Math.max(5, Math.floor(budget / AVG_TOKENS_PER_MESSAGE))
-}
+// P0-1 / P1-1 工具函数（已提取到 agent-context-utils.ts 便于单测）
+import {
+  MAX_TOOL_SUMMARY_LENGTH,
+  CHARS_PER_TOKEN,
+  setSessionContextWindow,
+  getSessionContextWindow,
+  computeMaxContextMessages,
+  summarizeToolResult,
+} from './agent-context-utils'
 
 /**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要
