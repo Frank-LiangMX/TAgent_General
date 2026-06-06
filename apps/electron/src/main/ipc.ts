@@ -4019,7 +4019,7 @@ export function registerIpcHandlers(): void {
     const result = await dialog.showOpenDialog({
       title: '选择迁移文件',
       filters: [
-        { name: 'TAgent 迁移文件', extensions: ['proma-backup', 'proma-share'] },
+        { name: 'TAgent 迁移文件', extensions: ['tagent-backup', 'tagent-share'] },
         { name: '所有文件', extensions: ['*'] },
       ],
       properties: ['openFile'],
@@ -4029,7 +4029,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('migration:saveFileDialog', async (_, mode: string) => {
     const { dialog } = await import('electron')
-    const ext = mode === 'personal' ? 'proma-backup' : 'proma-share'
+    const ext = mode === 'personal' ? 'tagent-backup' : 'tagent-share'
     const defaultName = `proma-migration-${new Date().toISOString().slice(0, 10)}.${ext}`
     const result = await dialog.showSaveDialog({
       title: '保存迁移文件',

@@ -48,7 +48,7 @@ function registerProtocolsAndHandlers(): void {
   // Windows 文件关联：当用户双击文件时，新实例的参数会通过 second-instance 传给已有实例
   app.on('second-instance', (_event, argv) => {
     showAndFocusMainWindow()
-    const fileArg = argv.find((arg) => arg.endsWith('.proma-backup') || arg.endsWith('.proma-share'))
+    const fileArg = argv.find((arg) => arg.endsWith('.tagent-backup') || arg.endsWith('.tagent-share'))
     if (fileArg) {
       handleMigrationFileOpen(fileArg)
     }
@@ -115,7 +115,7 @@ const MIGRATION_IPC_OPEN = 'migration:open-import-file'
 
 /** 检查文件路径是否为迁移文件，如果是则通知渲染进程打开导入流程 */
 function handleMigrationFileOpen(filePath: string): void {
-  if (filePath.endsWith('.proma-backup') || filePath.endsWith('.proma-share')) {
+  if (filePath.endsWith('.tagent-backup') || filePath.endsWith('.tagent-share')) {
     sendToMainWindow(MIGRATION_IPC_OPEN, { filePath })
   }
 }
