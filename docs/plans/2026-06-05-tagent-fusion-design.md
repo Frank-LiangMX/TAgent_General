@@ -605,6 +605,259 @@ const switchModeTool: ToolDefinition = {
 | `apps/electron/src/main/lib/memory/streaming-scrubber.ts` | 借鉴 hermes | 过滤 `<memory-context>` 块 |
 | `apps/electron/src/renderer/components/memory/MemoryMonitor.tsx` | 借鉴 hermes | 可视化 memory 状态 |
 
+### 6.5 记忆自进化机制（2026-06-06 补）
+
+§6.1-6.4 定义了"是什么"。本节定义"什么时候写/读/清/反思"——把 §6 从静态分层升级为**动态自进化系统**。**L0 保持双视图**（借鉴 Honcho），**自进化 4 机制**（Nudges / Reflect / Scheduled Cleanup / Self-Repair），**8 个生命周期事件**精确到桌面应用触发点。
+
+#### 6.5.1 5 层 × 2 维度 全景表
+
+每层定义：**写什么 / 写触发 / 读触发 / 上限 / 超限处理**。
+
+| 层 | 文件 | 写触发 | 读触发 | 上限 | 超限 |
+|---|---|---|---|---|---|
+| **L0** 用户画像 | `L0_user.md`（双视图 YAML） | 显式记 + Nudge 命中 | 每 turn system prompt 头部 | 50 条/视图 | LRU 淘汰最久未引用 + 询问用户 |
+| **L1** 项目画像 | `L1_project.md` | 创建/加载项目 + Nudge 命中 | TA 模式每 turn | 100 条 | 标 stale，用户确认保留 |
+| **L2** 稳定事实 | `L2_facts.md` | 用户显式说 + 5+ 次出现自动建议 | 每 turn context | 500 条 | LLM 摘要合并相似条目 |
+| **L3** 纠错 + 规则 | `L3_corrections/raw.jsonl` + `rules.json` | 每次纠错（自动，无询问） | **优先于 L2 读** | raw 1000 → 触发压缩 | 聚类生成新 rule |
+| **L4** 历史会话 | `L4_sessions/{date}_{slug}.jsonl` + `L4_index.fts5` | session_end | 跨 session FTS5 搜索 | 30 天热 | > 30 天移 `archive/`，> 90 天标 old |
+| **L5** 提炼洞察 | `L5_insights.md` | 每日 Reflect | 高优先级 system prompt 节 | 20 条 | 最久未引用 + 反向引用失效则 archive |
+
+#### 6.5.2 L0 双重表示（借鉴 Hermes Honcho）
+
+```yaml
+# ~/.tagent/memory/L0_user.md
+---
+schema_version: 2
+last_updated: 2026-06-06T15:00:00+08:00
+last_referenced_at: 2026-06-06T16:30:00+08:00
+shared_with_ta_mode: true   # 决策开关（默认 false）
+---
+
+# Global View (Honcho global_tier) — 客观事实
+## 身份
+- Frank Danny，3 年游戏 TA 经验，专攻写实风格
+- 在北京，UTC+8 工作
+- 母语中文，技术文档混用英文
+
+## 设备 / 环境
+- Windows 11 Pro, 双屏 4K
+- Blender 4.2 装在 D:/Blender/
+- UE5 5.4 装在 D:/UE5/
+
+# Peer View (Honcho peer_tier, Agent 视角) — 主观判断
+## 用户偏好
+- 偏好简洁命名，不喜欢 emoji 后缀
+- 经常搞混 SK_/SM_，需要主动提示
+- 对 release notes 详细 changelog 感兴趣
+
+## 沟通风格
+- 直接给状态，不要客套
+- 喜欢结构化表格 (A/B/C/D 选项)
+- 不喜欢长篇大论
+- 凌晨也干活，但 Agent 该在关键决策点主动提示休息
+```
+
+**为什么双视图？** 借鉴 Honcho：peer_view 是 Agent 视角的"用户是什么样的人"，global_view 是客观事实。TA 模式跑 Blender 时用 global_view（要客观路径），日常对话用 peer_view（要理解沟通风格）。
+
+#### 6.5.3 8 个生命周期事件 — 桌面应用触发点
+
+| 事件 | 触发时机 | 桌面具体实现 | 调用 hook | 数据流 |
+|---|---|---|---|---|
+| **turn_start** | 每次 LLM 调用前 | SDK 收到 user 消息 | `nudge_check()` + `prefetch()` | nudge 评估 + L0/L1/L2/L5 注入 system prompt |
+| **turn_end** | assistant 消息后 | SDK 收到 assistant 消息 | `sync_turn()` | L4 append + fact_capture 评估 |
+| **session_idle** | 30 分钟无操作 | setTimeout 检测最后活动 | `extract_facts()` | L2 自动评估新事实 |
+| **session_end** | 窗口关闭 / app.quit() / 用户主动结束 | Electron `before-quit` + window close | `extract_facts()` + `summarize_to_L4()` | L2 + L4 写盘 |
+| **session_switch** | 切通用 ↔ TA Tab | `ModeManager.setActiveMode()` | `on_session_switch()` | 序列化当前 → 新 mode 建 session + 注入 summary |
+| **pre_compress** | context > 80k tokens | agent-orchestrator 检测 token 阈值 | `on_pre_compress()` | 抢救未入 L2/L3 的事实 |
+| **post_compress** | 压缩后回调 | 压缩完成事件 | re-inject L0/L1/L2/L5 | 重新注入 system prompt 头部 |
+| **subagent_done** | TA 模式 subagent 任务完成 | Claude SDK Task tool 完成回调 | `on_delegation()` | 父子对话观察 → L2 |
+
+#### 6.5.4 自进化机制 #1: Nudges（每 5 turn 检查）
+
+```
+Nudge 评估管线（每次 turn_start 触发，每 5 turn 实际跑）：
+
+input:  最近 5 turn 对话 + 现有 L0/L1/L2
+  ↓
+pattern_detector:
+  - 同一 user 行为 ≥3 次 → 候选 L0 (peer_view)
+  - 同一 user 表述 ≥2 次 → 候选 L2
+  - 用户纠正 LLM ≥1 次 → 候选 L3（自动写，不问）
+  - 加载项目 ≥2 次相似 → 候选 L1
+  ↓
+throttle_check（每层独立冷却）:
+  - L0: 5 turn 冷却
+  - L1: 10 turn 冷却
+  - L2: 3 turn 冷却
+  - L3: 20 turn 冷却
+  ↓
+candidate（≤3 条 / 批）
+  ↓
+LLM 改写成 user-friendly 提示:
+  "我注意到你总是不要 emoji 后缀，要我记住吗？"
+  ↓
+UI 弹 Nudge 通知（不打断对话，5s 自动消失）
+  ↓
+用户点"记" / "不记" / "稍后"
+  ↓
+[记] → append 到对应层
+[不记] → 写 "nudges/rejected.json"（防重复弹）
+[稍后] → 写 "nudges/deferred.json"，下个 Nudge 周期再问
+```
+
+**Nudge 4 模式**：
+
+| 模式 | 检测条件 | 候选层 | 提示语模板 |
+|---|---|---|---|
+| 行为重复 | 同一行为 ≥3 次 / 5 turn | L0 (peer_view) | "我注意到你总是 X，要我记住吗？" |
+| 事实重复 | 同一事实 ≥2 次跨 session | L2 | "我看到你反复提到 X，要我存为长期事实吗？" |
+| 显式纠正 | "不是 X，是 Y" 类语句 | L3 raw | "我把你这次的纠正记下来了"（**自动记，不问**）|
+| 项目重复 | 加载项目 ≥2 次相似 | L1 | "我看到你做项目都用 X 结构，要存为模板吗？" |
+
+#### 6.5.5 自进化机制 #2: Reflect（每日 03:00）
+
+```
+每日 03:00（或启动时 if 距上次 >36h 触发）：
+
+input:  最近 7 天 L2_facts + L4_sessions 摘要
+  ↓
+LLM 提炼（cheap 模型, max 500 tokens）:
+  - 跨 session 共性
+  - 抽象出"用户偏好 / 工作流规律 / 领域洞察"
+  ↓
+anti_echo_filter（防回音壁）:
+  - 每条 insight 必须引用 ≥2 条 L2 facts 或 ≥1 条 L4 session
+  - 无引用 → 丢弃
+  - 与现有 L5 重复 → 合并而非新增
+  ↓
+contradiction_check:
+  - 新 insight vs 现有 L5 矛盾？→ 写 L3 raw 而非 L5
+  ↓
+append L5_insights.md (max 20 条)
+  ↓
+通知用户（设置页红点）："提炼了 N 条新洞察"
+```
+
+**Anti-echo 算法**：
+
+```python
+def is_valid_insight(insight, l2_facts, l4_sessions, l5_existing):
+    citations = insight.get("citations", [])
+    l2_cites = [c for c in citations if c in l2_facts]
+    l4_cites = [c for c in citations if c in l4_sessions]
+    
+    # 必须有 ≥2 个 L2 引用 OR ≥1 个 L4 引用
+    if len(l2_cites) < 2 and len(l4_cites) < 1:
+        return False, "insufficient_citations"
+    
+    # 不与现有 L5 重复
+    if any(similar_to(c["text"], l5_existing) for c in citations):
+        return False, "duplicate_of_existing_L5"
+    
+    # 不与现有 L5 矛盾
+    if contradicts(c["text"], l5_existing):
+        return False, "contradicts_existing_L5"
+    
+    return True, "ok"
+```
+
+#### 6.5.6 自进化机制 #3: Scheduled Cleanup（每周日 04:00）
+
+```
+每周日 04:00（或启动时 if 距上次 >8 天）：
+
+1. L4 归档:
+   - sessions > 30 天: 移到 L4_sessions/archive/
+   - > 90 天: 标记 "old"（仍可搜，UI 加 "旧" 角标）
+
+2. L3 压缩:
+   - raw.jsonl > 1000 条 → 触发 LLM 聚类
+   - 相似纠错 ≥3 条 → 合并成 1 条 rule
+   - rules.json 版本号 +1
+
+3. FTS5 重建:
+   - DROP L4_index.fts5
+   - 重新扫描 L4_sessions/ → 重建索引
+   - 增量模式: 只扫新追加的文件
+
+4. LRU 标记:
+   - L0/L1/L2/L5 每条标 last_referenced_at
+   - 启动时读 system prompt 时更新
+   - 清理时优先删 last_referenced > 90 天的
+```
+
+#### 6.5.7 自进化机制 #4: Self-Repair（每月 1 日）
+
+```
+每月 1 日 04:00：
+
+1. L3 规则命中率统计:
+   - rules.json 每条 rule 在最近 30 天被引用次数
+   - 命中率 <10% → flag "low_value"，下次 Nudge 周期问用户
+   - 命中率 0% → 直接 archive（不删，标 stale）
+
+2. L5 洞察验证:
+   - 每条 L5 找原始 L2/L4 引用
+   - 原始引用被删除 → L5 也 archive
+
+3. L0 跨模式一致性:
+   - 如果 L0 在通用和 TA 模式都有，问用户是否同步
+   - 共享开关开了，对比两边，差异 >5 条 → 提示合并
+
+4. 报告输出:
+   - 写到 logs/reflect/monthly-{date}.log
+   - 设置页 "记忆健康" 显示摘要
+```
+
+#### 6.5.8 跨模式隔离 — 精确 UX 行为
+
+| 场景 | 默认行为 | 共享开关开后 |
+|---|---|---|
+| 通用模式看到 TA 模式 L0 | ❌ | ✅（L0_user.md 双向 sync）|
+| 通用模式搜到 TA 模式 L4 | ✅（FTS5 全文）| ✅ |
+| 通用模式看到 TA 模式 L2 | ❌ | ❌ |
+| 通用模式触发 L3 纠错 | ❌（TA 模式独有）| ❌ |
+| 切模式时 session | 旧 session 归档 + summary 注入新 mode 的 L4 | 同 |
+| 跨模式 Nudge | 独立 throttle | L0 共享时 Nudge 也共享 |
+
+**切模式 modal UX**：
+
+```
+用户切到 TA Tab:
+  ├─ 当前 session 序列化
+  ├─ 弹 modal: "已切到 TA 模式, 通用模式的 'X 项目命名规则' 是否带到 TA 模式？"
+  │   ├─ 用户选带 → copy L1 到 TA 的 L1
+  │   └─ 用户选不带 → 独立
+  └─ TA 模式启动新 session, 注入 summary
+```
+
+#### 6.5.9 TAgent vs Hermes — 触发时机对比
+
+| 事件 | Hermes（CLI）| TAgent（Electron）| 差异原因 |
+|---|---|---|---|
+| turn_start | 每次 LLM call | 每次 SDK message | 一致 |
+| session_end | CLI 退出 / `/reset` | 窗口关闭 / app.quit() / 30 分钟 idle | 桌面无明显 session 边界，靠 idle 推断 |
+| session_switch | `/resume /branch /new` | 切通用 ↔ TA Tab | 桌面无 CLI 命令，靠 Tab UI |
+| pre_compress | context 满 100k | context > 80k | 桌面更保守（多模态附件占 token 多）|
+| nudge | ❌ 无 | ✅ 每 5 turn | TAgent 创新 |
+| reflect | ❌ 无 | ✅ 每日 03:00 | TAgent 创新 |
+| scheduled cleanup | ⚠️ 间接（curator）| ✅ 每周日 04:00 | TAgent 显式化 |
+| self-repair | ❌ 无 | ✅ 每月 1 日 | TAgent 创新 |
+
+#### 6.5.10 自进化能力总评
+
+| 自进化维度 | TAgent 设计 | Hermes 实际 |
+|---|---|---|
+| 写触发 | 显式 + 模式检测 + 跨 session | 显式 sync_turn |
+| 主动询问 | ✅ Nudge | ❌ 无 |
+| 反思 | ✅ Reflect (L2/L4 → L5) | ❌ |
+| 压缩 | ✅ pre_compress hook | ✅ on_pre_compress hook |
+| 回滚 | ✅ L3 version | ❌ |
+| 健康检查 | ✅ 每月 self-repair | ❌ |
+| 跨模式 | ✅ 默认隔离 + L0 可选共享 | ❌ 单 profile |
+
+**TAgent 在 7 个维度中 6 个领先 Hermes**（除压缩外 Hermes 持平）。**全部是设计，0 实跑**——见 §6.4 1160 行待实现代码。
+
 ---
 
 ## 7. OpenAI 协议 + Token / 缓存
@@ -766,9 +1019,9 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
-## 12. 9 个开放问题（已全部拍板）
+## 12. 10 个开放问题（已全部拍板）
 
-**2026-06-05 拍板 1-6, 2026-06-06 补拍 7-9**：
+**2026-06-05 拍板 1-6, 2026-06-06 补拍 7-10**：
 
 1. **TA 模式 54 工具的命名空间化**：✅ **加 `tagent__` 前缀**（如 `tagent__analyze_assets`）。避免与 Claude SDK 内置工具冲突，保留未来扩展空间。
 2. **OpenAI provider 的 cache 字段**：✅ **MVP 支持**。Proma 已有实现零成本。OpenAI 下数字恒为 0（不报错不显示），但通用 + TA 模式行为一致。
@@ -779,6 +1032,7 @@ export const costBreakdownAtom = atom((get) => {
 7. **TA 模式数据目录布局**（2026-06-06 补）：✅ **`~/.tagent/ta/` 统一根**（跨平台）。详见 §3.3。资产库 / 静态配置 / 5 层记忆 / UE5 桥接 / 会话 / 用量日志全在 `ta/` 子目录下；通用模式（chat/agent）继续在 `~/.tagent/` 根下不混。ta_agent 启动时通过 `TA_AGENT_DATA_DIR=~/.tagent/ta` env 指向（已有 env 支持, 见 `ta_agent/packages/core/project_config.py:363`）。
 8. **缓存机制 + 目录规范**（2026-06-06 补）：✅ **A1 + B2 + C1 组合**。详见 §3.4。统一数据根在 `~/.tagent/`（现有数据保持位置，只新增 `cache/` `logs/` `tmp/` `electron-userdata/` 4 个子目录）；Electron userData 合并到 `~/.tagent[-dev]/electron-userdata/`（dev/prod 分别走 `~/.tagent-dev` / `~/.tagent`）；启动时 `cacheScanLRU()` 自动清理 1-7 天过期的派生缓存 + 临时文件。TA 模式与通用模式分账隔离（详见 §3.4.3 对照表），但都在同一个 `~/.tagent/` 根下。
 9. **L 命名冲突解决**（2026-06-06 补）：✅ **记忆层保留 L0-L5**（与 hermes Honcho / GenericAgent 兼容），**§3.4 缓存分类改名 C1-C5**（C = Cache）。原因：§3.4 原本用 L1-L5 表示 5 类缓存目录（C1 持久数据 / C2 缓存 / C3 日志 / C4 临时 / C5 Electron 内部），与 §6 记忆层 L0-L5 同字母冲突（看到 "L1" 用户无法判断是缓存还是记忆）。改后 §3.4 树状图与 §3.4.3 对照表里的 L1-L5 全部改为 C1-C5；§6 全部不动。
+10. **记忆自进化机制**（2026-06-06 补）：详见 §6.5。**L0 双重表示**（global_view + peer_view，借鉴 Hermes Honcho 双层结构）；**自进化 4 机制**（Nudges 每 5 turn / Reflect 每日 03:00 + anti-echo 算法 / Scheduled Cleanup 每周日 04:00 / Self-Repair 每月 1 日）；**8 个生命周期事件**精确到桌面应用触发点（turn_start / turn_end / session_idle / session_end / session_switch / pre_compress / post_compress / subagent_done）；**5 层上限**（L0 50 条/视图 / L1 100 / L2 500 / L3 raw 1000 → 压缩 / L4 30 天热 / L5 20）；**跨模式隔离 UX**（L0 默认独立 + 可选共享开关；切模式弹 modal 问 L1 是否带）。TAgent 在 7 个自进化维度中 6 个领先 Hermes（除压缩外持平），但**全部是设计，0 实跑**——见 §6.4 的 1160 行待实现代码 + 后续 M2 排期。
 
 ---
 
