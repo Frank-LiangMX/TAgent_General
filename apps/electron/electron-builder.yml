@@ -2,7 +2,7 @@
 # 文档: https://www.electron.build/configuration/configuration
 
 appId: com.tagent.app
-productName: Proma
+productName: TAgent
 copyright: Copyright © 2024-2026 Erlich Liu
 
 # Electron 版本（CI 环境 bun workspace 下无法自动检测，需显式指定）
@@ -45,7 +45,6 @@ files:
   # PDF 内联预览使用本地 PDF.js 资源，避免运行时依赖 CDN。
   - node_modules/pdfjs-dist/**/*
   # 排除 workspace 包的 symlink（代码已被 esbuild/Vite 打包到 dist/ 中）
-  - "!node_modules/@proma/**"
 
 # 通用额外资源
 extraResources:
@@ -57,7 +56,7 @@ extraResources:
   # 教程文件（教程查看器 + 欢迎对话使用）
   - from: ../../tutorial/tutorial.md
     to: tutorial.md
-  # Proma 品牌 Logo 素材（品牌素材下载功能使用）
+  # TAgent 品牌 Logo 素材（品牌素材下载功能使用）
   - from: resources/tagent-logos
     to: tagent-logos
     filter:
@@ -77,7 +76,7 @@ mac:
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.plist
   extendInfo:
-    NSMicrophoneUsageDescription: "Proma 需要访问麦克风，用于将你的语音实时转写为文本。"
+    NSMicrophoneUsageDescription: "TAgent 需要访问麦克风，用于将你的语音实时转写为文本。"
   fileAssociations:
     - ext: tagent-backup
       name: TAgent Personal Backup
@@ -137,4 +136,4 @@ nsis:
 publish:
   provider: github
   owner: ErlichLiu
-  repo: Proma
+  repo: tagent
