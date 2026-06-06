@@ -295,6 +295,186 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
 }
 
 /**
+ * 验证指定渠道的指定 model 名是否被该供应商接受。
+ *
+ * 发送极小请求（max_tokens=1）真正调用 model 名字，不像 testChannel 那样用 provider 默认 model 试探。
+ * 用于：(a) 启动时对 active channel 跑一遍，防止 9120caac 那类 model 名误配
+ *       (b) 渠道保存前/后即时验证
+ *       (c) 用户主动触发"我刚换的 model 能用吗？"
+ */
+export interface ChannelModelValidateInput {
+  baseUrl: string
+  apiKey: string
+  model: string
+  provider: ProviderType
+  proxyUrl?: string
+}
+
+export async function validateChannelModel(input: ChannelModelValidateInput): Promise<ChannelTestResult> {
+  if (!input.model || !input.model.trim()) {
+    return { success: false, message: 'model 名称为空' }
+  }
+  const proxyUrl = input.proxyUrl ?? (await getEffectiveProxyUrl())
+  try {
+    switch (input.provider) {
+      case 'anthropic':
+      case 'anthropic-compatible':
+      case 'deepseek':
+      case 'kimi-api':
+      case 'kimi-coding':
+      case 'zhipu-coding':
+      case 'minimax':
+      case 'xiaomi':
+      case 'xiaomi-token-plan':
+        return await validateAnthropicModel(input.baseUrl, input.apiKey, input.model.trim(), proxyUrl, input.provider)
+      case 'openai':
+      case 'zhipu':
+      case 'doubao':
+      case 'qwen':
+      case 'custom':
+        return await validateOpenAIModel(input.baseUrl, input.apiKey, input.model.trim(), proxyUrl)
+      case 'google':
+        return await validateGoogleModel(input.baseUrl, input.apiKey, input.model.trim(), proxyUrl)
+      default:
+        return { success: false, message: `不支持的供应商: ${input.provider}` }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '未知错误'
+    return { success: false, message: `验证失败: ${message}` }
+  }
+}
+
+async function validateAnthropicModel(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  proxyUrl: string | undefined,
+  provider: ProviderType,
+): Promise<ChannelTestResult> {
+  const url = normalizeAnthropicProviderUrl(baseUrl, provider)
+  const fetchFn = getFetchFn(proxyUrl)
+
+  const headers: Record<string, string> = {
+    'anthropic-version': '2023-06-01',
+    'content-type': 'application/json',
+  }
+  if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
+    headers.Authorization = `Bearer ${apiKey}`
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
+  } else if (provider === 'minimax') {
+    headers.Authorization = `Bearer ${apiKey}`
+  } else {
+    headers['x-api-key'] = apiKey
+    headers.Authorization = `Bearer ${apiKey}`
+  }
+
+  const response = await fetchFn(`${url}/messages`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'ping' }],
+    }),
+  })
+
+  if (response.ok) {
+    return { success: true, message: `model "${model}" 验证通过` }
+  }
+
+  // 4xx 错误: 解析 API 返回的具体原因
+  const errorBody = await response.text().catch(() => '')
+  if (response.status === 401) {
+    return { success: false, message: `API Key 无效: ${errorBody.slice(0, 200)}` }
+  }
+  if (response.status === 400 || response.status === 404) {
+    // 400 invalid params / 404 not found — 几乎可以确定是 model 名错
+    if (/model|not.found|invalid/i.test(errorBody)) {
+      return { success: false, message: `model "${model}" 不被该供应商接受。请到设置里换一个,或检查 baseUrl 是否正确。` }
+    }
+    return { success: false, message: `请求被拒绝: ${errorBody.slice(0, 200)}` }
+  }
+  return { success: false, message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}` }
+}
+
+async function validateOpenAIModel(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  proxyUrl: string | undefined,
+): Promise<ChannelTestResult> {
+  const url = normalizeBaseUrl(baseUrl)
+  const fetchFn = getFetchFn(proxyUrl)
+
+  const response = await fetchFn(`${url}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'ping' }],
+    }),
+  })
+
+  if (response.ok) {
+    return { success: true, message: `model "${model}" 验证通过` }
+  }
+
+  const errorBody = await response.text().catch(() => '')
+  if (response.status === 401) {
+    return { success: false, message: `API Key 无效: ${errorBody.slice(0, 200)}` }
+  }
+  if (response.status === 400 || response.status === 404) {
+    if (/model|not.found|invalid/i.test(errorBody)) {
+      return { success: false, message: `model "${model}" 不被该供应商接受。请到设置里换一个。` }
+    }
+    return { success: false, message: `请求被拒绝: ${errorBody.slice(0, 200)}` }
+  }
+  return { success: false, message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}` }
+}
+
+async function validateGoogleModel(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  proxyUrl: string | undefined,
+): Promise<ChannelTestResult> {
+  const url = normalizeBaseUrl(baseUrl)
+  const fetchFn = getFetchFn(proxyUrl)
+  // Google Gemini API: POST /v1beta/models/{model}:generateContent
+  const response = await fetchFn(
+    `${url}/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'ping' }] }],
+        generationConfig: { maxOutputTokens: 1 },
+      }),
+    },
+  )
+
+  if (response.ok) {
+    return { success: true, message: `model "${model}" 验证通过` }
+  }
+
+  const errorBody = await response.text().catch(() => '')
+  if (response.status === 400 || response.status === 404) {
+    if (/model|not.found|invalid/i.test(errorBody)) {
+      return { success: false, message: `model "${model}" 不被该供应商接受。请到设置里换一个。` }
+    }
+    return { success: false, message: `请求被拒绝: ${errorBody.slice(0, 200)}` }
+  }
+  if (response.status === 401 || response.status === 403) {
+    return { success: false, message: `API Key 无效: ${errorBody.slice(0, 200)}` }
+  }
+  return { success: false, message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}` }
+}
+
+/**
  * 测试 Anthropic 兼容 API 连接（Anthropic / DeepSeek / Kimi API / Kimi Coding Plan / MiniMax）
  *
  * DeepSeek / Kimi 的 Anthropic API 端点无需 /v1 前缀。

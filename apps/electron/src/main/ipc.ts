@@ -122,6 +122,8 @@ import {
   testChannel,
   testChannelDirect,
   fetchModels,
+  validateChannelModel,
+  type ChannelModelValidateInput,
 } from './lib/channel-manager'
 import {
   listConversations,
@@ -1034,6 +1036,14 @@ export function registerIpcHandlers(): void {
     CHANNEL_IPC_CHANNELS.TEST_DIRECT,
     async (_, input: FetchModelsInput): Promise<ChannelTestResult> => {
       return testChannelDirect(input)
+    }
+  )
+
+  // P0-2: 验证指定 model 名是否被供应商接受（防止 9120caac 那类 400 (2013)）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.VALIDATE_MODEL,
+    async (_, input: ChannelModelValidateInput): Promise<ChannelTestResult> => {
+      return validateChannelModel(input)
     }
   )
 

@@ -218,4 +218,6 @@ export const CHANNEL_IPC_CHANNELS = {
   FETCH_MODELS: 'channel:fetch-models',
   /** 直接测试连接（无需已保存渠道，传入明文凭证） */
   TEST_DIRECT: 'channel:test-direct',
+  /** 验证指定 model 名是否被供应商接受（P0-2, 防止 9120caac 那类 400 (2013)）*/
+  VALIDATE_MODEL: 'channel:validate-model',
 } as const
