@@ -395,16 +395,26 @@ function buildContextPrompt(
     .filter((m) => (m.type === 'user' || m.type === 'assistant'))
     .map((m) => {
       // 从 SDKMessage 的 message.content 中提取文本
-      const content = (m as { message?: { content?: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown> }> } }).message?.content
+      const content = (m as { message?: { content?: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown>; source?: { type?: string; media_type?: string; data?: string } }> } }).message?.content
       if (!Array.isArray(content)) return null
 
       const textParts = content
         .filter((b) => b.type === 'text' && b.text)
         .map((b) => b.text!)
       const text = textParts.join('\n')
-      if (!text) return null
 
-      let line = `[${m.type}]: ${text}`
+      // P1-2: 统计图片/文件附件块, 注入 placeholder
+      // 避免 buildContextPrompt 整块丢图片导致 Agent "失忆"
+      const imageCount = content.filter((b) => b.type === 'image').length
+      const imageNote = imageCount > 0
+        ? (imageCount === 1 ? ' [本消息含 1 张图片]' : ` [本消息含 ${imageCount} 张图片]`)
+        : ''
+
+      // 有文本 或 有图片 都注入（光图片消息也保留痕迹）
+      if (!text && imageCount === 0) return null
+      const displayText = text || '(无文本)'
+
+      let line = `[${m.type}]: ${displayText}${imageNote}`
       // assistant 消息附带工具活动摘要
       if (m.type === 'assistant') {
         const toolSummary = extractSDKToolSummary(content)
