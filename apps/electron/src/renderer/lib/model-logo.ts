@@ -110,7 +110,7 @@ import MiniMaxLogo from '@/assets/models/minimax.png'
 import XiaomiLogo from '@/assets/models/xiaomi.png'
 
 // TAgent
-import TAgentLogo from '@/assets/models/proma.png'
+import TAgentLogo from '@/assets/models/tagent.png'
 
 // Cohere
 import CohereLogo from '@/assets/models/cohere.png'

@@ -32,19 +32,19 @@ import { detectIsWindows } from '@/lib/platform'
 import type { ThemeMode, ThemeStyle, MarkdownFontSize } from '../../../types'
 
 // ===== Logo 资源导入（用于图标选择器） =====
-import promaBlackLogo from '@/assets/bots/tagent-logos/proma-black.png'
-import promaWhiteLogo from '@/assets/bots/tagent-logos/proma-white.png'
-import promaBlueLogo from '@/assets/bots/tagent-logos/proma-blue.png'
-import promaPurpleLogo from '@/assets/bots/tagent-logos/proma-purple.png'
-import promaGradientLogo from '@/assets/bots/tagent-logos/proma-gradient.png'
-import promaCoralLogo from '@/assets/bots/tagent-logos/proma-coral.png'
-import promaVeriPeriLogo from '@/assets/bots/tagent-logos/proma-veri-peri.png'
-import promaVivaMagentaLogo from '@/assets/bots/tagent-logos/proma-viva-magenta.png'
-import promaMochaMousseLogo from '@/assets/bots/tagent-logos/proma-mocha-mousse.png'
-import promaEmeraldLogo from '@/assets/bots/tagent-logos/proma-emerald.png'
-import proma8bitLogo from '@/assets/bots/tagent-logos/proma-8bit.png'
-import promaCyberpunkLogo from '@/assets/bots/tagent-logos/proma-cyberpunk.png'
-import promaFuturisticLogo from '@/assets/bots/tagent-logos/proma-futuristic.png'
+import tagentBlackLogo from '@/assets/bots/tagent-logos/tagent-black.png'
+import tagentWhiteLogo from '@/assets/bots/tagent-logos/tagent-white.png'
+import tagentBlueLogo from '@/assets/bots/tagent-logos/tagent-blue.png'
+import tagentPurpleLogo from '@/assets/bots/tagent-logos/tagent-purple.png'
+import tagentGradientLogo from '@/assets/bots/tagent-logos/tagent-gradient.png'
+import tagentCoralLogo from '@/assets/bots/tagent-logos/tagent-coral.png'
+import tagentVeriPeriLogo from '@/assets/bots/tagent-logos/tagent-veri-peri.png'
+import tagentVivaMagentaLogo from '@/assets/bots/tagent-logos/tagent-viva-magenta.png'
+import tagentMochaMousseLogo from '@/assets/bots/tagent-logos/tagent-mocha-mousse.png'
+import tagentEmeraldLogo from '@/assets/bots/tagent-logos/tagent-emerald.png'
+import tagent8bitLogo from '@/assets/bots/tagent-logos/tagent-8bit.png'
+import tagentCyberpunkLogo from '@/assets/bots/tagent-logos/tagent-cyberpunk.png'
+import tagentFuturisticLogo from '@/assets/bots/tagent-logos/tagent-futuristic.png'
 
 // ===== 主题预览图片导入 =====
 import themeCloudDancer from '@/assets/theme-previews/theme-cloud-dancer.webp'
@@ -148,19 +148,19 @@ interface IconVariant {
 
 const ICON_VARIANTS: readonly IconVariant[] = [
   { id: 'default', name: '默认', src: '', previewBg: 'bg-neutral-900' },
-  { id: 'black', name: '经典黑', src: promaBlackLogo, previewBg: 'bg-neutral-900' },
-  { id: 'white', name: '纯白版', src: promaWhiteLogo, previewBg: 'bg-white' },
-  { id: 'blue', name: '品牌蓝', src: promaBlueLogo, previewBg: 'bg-blue-900' },
-  { id: 'purple', name: '紫色版', src: promaPurpleLogo, previewBg: 'bg-purple-900' },
-  { id: 'gradient', name: '渐变版', src: promaGradientLogo, previewBg: 'bg-gradient-to-br from-blue-600 to-purple-600' },
-  { id: 'coral', name: '珊瑚橘', src: promaCoralLogo, previewBg: 'bg-[#FF6F61]' },
-  { id: 'veri-peri', name: '长春花蓝', src: promaVeriPeriLogo, previewBg: 'bg-[#6667AB]' },
-  { id: 'viva-magenta', name: '非凡洋红', src: promaVivaMagentaLogo, previewBg: 'bg-[#BB2649]' },
-  { id: 'mocha-mousse', name: '摩卡慕斯', src: promaMochaMousseLogo, previewBg: 'bg-[#A47764]' },
-  { id: 'emerald', name: '翡翠绿', src: promaEmeraldLogo, previewBg: 'bg-[#009473]' },
-  { id: '8bit', name: '8bit 像素', src: proma8bitLogo, previewBg: 'bg-[#1a1a2e]' },
-  { id: 'cyberpunk', name: '赛博朋克', src: promaCyberpunkLogo, previewBg: 'bg-[#0d0221]' },
-  { id: 'futuristic', name: '未来质感', src: promaFuturisticLogo, previewBg: 'bg-[#4a4a4a]' },
+  { id: 'black', name: '经典黑', src: tagentBlackLogo, previewBg: 'bg-neutral-900' },
+  { id: 'white', name: '纯白版', src: tagentWhiteLogo, previewBg: 'bg-white' },
+  { id: 'blue', name: '品牌蓝', src: tagentBlueLogo, previewBg: 'bg-blue-900' },
+  { id: 'purple', name: '紫色版', src: tagentPurpleLogo, previewBg: 'bg-purple-900' },
+  { id: 'gradient', name: '渐变版', src: tagentGradientLogo, previewBg: 'bg-gradient-to-br from-blue-600 to-purple-600' },
+  { id: 'coral', name: '珊瑚橘', src: tagentCoralLogo, previewBg: 'bg-[#FF6F61]' },
+  { id: 'veri-peri', name: '长春花蓝', src: tagentVeriPeriLogo, previewBg: 'bg-[#6667AB]' },
+  { id: 'viva-magenta', name: '非凡洋红', src: tagentVivaMagentaLogo, previewBg: 'bg-[#BB2649]' },
+  { id: 'mocha-mousse', name: '摩卡慕斯', src: tagentMochaMousseLogo, previewBg: 'bg-[#A47764]' },
+  { id: 'emerald', name: '翡翠绿', src: tagentEmeraldLogo, previewBg: 'bg-[#009473]' },
+  { id: '8bit', name: '8bit 像素', src: tagent8bitLogo, previewBg: 'bg-[#1a1a2e]' },
+  { id: 'cyberpunk', name: '赛博朋克', src: tagentCyberpunkLogo, previewBg: 'bg-[#0d0221]' },
+  { id: 'futuristic', name: '未来质感', src: tagentFuturisticLogo, previewBg: 'bg-[#4a4a4a]' },
 ] as const
 
 /** 根据平台返回缩放快捷键提示 */

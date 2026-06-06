@@ -15,24 +15,24 @@ import { Button } from '@/components/ui/button'
 // ===== Logo 资源导入 =====
 
 // 基础色系
-import promaBlackLogo from '@/assets/bots/tagent-logos/proma-black.png'
-import promaWhiteLogo from '@/assets/bots/tagent-logos/proma-white.png'
-import promaBlueLogo from '@/assets/bots/tagent-logos/proma-blue.png'
-import promaPurpleLogo from '@/assets/bots/tagent-logos/proma-purple.png'
-import promaGradientLogo from '@/assets/bots/tagent-logos/proma-gradient.png'
-import promaTransparentLogo from '@/assets/bots/tagent-logos/proma-transparent.png'
+import tagentBlackLogo from '@/assets/bots/tagent-logos/tagent-black.png'
+import tagentWhiteLogo from '@/assets/bots/tagent-logos/tagent-white.png'
+import tagentBlueLogo from '@/assets/bots/tagent-logos/tagent-blue.png'
+import tagentPurpleLogo from '@/assets/bots/tagent-logos/tagent-purple.png'
+import tagentGradientLogo from '@/assets/bots/tagent-logos/tagent-gradient.png'
+import tagentTransparentLogo from '@/assets/bots/tagent-logos/tagent-transparent.png'
 
 // 潘通年度色
-import promaCoralLogo from '@/assets/bots/tagent-logos/proma-coral.png'
-import promaVeriPeriLogo from '@/assets/bots/tagent-logos/proma-veri-peri.png'
-import promaVivaMagentaLogo from '@/assets/bots/tagent-logos/proma-viva-magenta.png'
-import promaMochaMousseLogo from '@/assets/bots/tagent-logos/proma-mocha-mousse.png'
-import promaEmeraldLogo from '@/assets/bots/tagent-logos/proma-emerald.png'
+import tagentCoralLogo from '@/assets/bots/tagent-logos/tagent-coral.png'
+import tagentVeriPeriLogo from '@/assets/bots/tagent-logos/tagent-veri-peri.png'
+import tagentVivaMagentaLogo from '@/assets/bots/tagent-logos/tagent-viva-magenta.png'
+import tagentMochaMousseLogo from '@/assets/bots/tagent-logos/tagent-mocha-mousse.png'
+import tagentEmeraldLogo from '@/assets/bots/tagent-logos/tagent-emerald.png'
 
 // 科技风格
-import proma8bitLogo from '@/assets/bots/tagent-logos/proma-8bit.png'
-import promaCyberpunkLogo from '@/assets/bots/tagent-logos/proma-cyberpunk.png'
-import promaFuturisticLogo from '@/assets/bots/tagent-logos/proma-futuristic.png'
+import tagent8bitLogo from '@/assets/bots/tagent-logos/tagent-8bit.png'
+import tagentCyberpunkLogo from '@/assets/bots/tagent-logos/tagent-cyberpunk.png'
+import tagentFuturisticLogo from '@/assets/bots/tagent-logos/tagent-futuristic.png'
 
 // ===== 类型 =====
 
@@ -53,48 +53,48 @@ const LOGO_VARIANTS: readonly LogoVariant[] = [
     id: 'black',
     name: '经典黑',
     description: '黑色背景，适合浅色界面',
-    src: promaBlackLogo,
-    resourcePath: 'tagent-logos/proma-black.png',
+    src: tagentBlackLogo,
+    resourcePath: 'tagent-logos/tagent-black.png',
     previewBg: 'bg-neutral-900',
   },
   {
     id: 'white',
     name: '纯白版',
     description: '白色背景，适合深色界面',
-    src: promaWhiteLogo,
-    resourcePath: 'tagent-logos/proma-white.png',
+    src: tagentWhiteLogo,
+    resourcePath: 'tagent-logos/tagent-white.png',
     previewBg: 'bg-white',
   },
   {
     id: 'blue',
     name: '品牌蓝',
     description: '深蓝背景，适合正式场合',
-    src: promaBlueLogo,
-    resourcePath: 'tagent-logos/proma-blue.png',
+    src: tagentBlueLogo,
+    resourcePath: 'tagent-logos/tagent-blue.png',
     previewBg: 'bg-blue-900',
   },
   {
     id: 'purple',
     name: '紫色版',
     description: '紫色调，个性风格',
-    src: promaPurpleLogo,
-    resourcePath: 'tagent-logos/proma-purple.png',
+    src: tagentPurpleLogo,
+    resourcePath: 'tagent-logos/tagent-purple.png',
     previewBg: 'bg-purple-900',
   },
   {
     id: 'gradient',
     name: '渐变版',
     description: '蓝紫渐变背景',
-    src: promaGradientLogo,
-    resourcePath: 'tagent-logos/proma-gradient.png',
+    src: tagentGradientLogo,
+    resourcePath: 'tagent-logos/tagent-gradient.png',
     previewBg: 'bg-gradient-to-br from-blue-600 to-purple-600',
   },
   {
     id: 'transparent',
     name: '透明底',
     description: '无背景，可叠加任意颜色',
-    src: promaTransparentLogo,
-    resourcePath: 'tagent-logos/proma-transparent.png',
+    src: tagentTransparentLogo,
+    resourcePath: 'tagent-logos/tagent-transparent.png',
     previewBg: 'bg-[repeating-conic-gradient(#e5e7eb_0%_25%,#fff_0%_50%)] bg-[length:16px_16px]',
   },
   // 潘通年度色
@@ -102,40 +102,40 @@ const LOGO_VARIANTS: readonly LogoVariant[] = [
     id: 'coral',
     name: '珊瑚橘',
     description: 'Pantone 2019 Living Coral',
-    src: promaCoralLogo,
-    resourcePath: 'tagent-logos/proma-coral.png',
+    src: tagentCoralLogo,
+    resourcePath: 'tagent-logos/tagent-coral.png',
     previewBg: 'bg-[#FF6F61]',
   },
   {
     id: 'veri-peri',
     name: '长春花蓝',
     description: 'Pantone 2022 Very Peri',
-    src: promaVeriPeriLogo,
-    resourcePath: 'tagent-logos/proma-veri-peri.png',
+    src: tagentVeriPeriLogo,
+    resourcePath: 'tagent-logos/tagent-veri-peri.png',
     previewBg: 'bg-[#6667AB]',
   },
   {
     id: 'viva-magenta',
     name: '非凡洋红',
     description: 'Pantone 2023 Viva Magenta',
-    src: promaVivaMagentaLogo,
-    resourcePath: 'tagent-logos/proma-viva-magenta.png',
+    src: tagentVivaMagentaLogo,
+    resourcePath: 'tagent-logos/tagent-viva-magenta.png',
     previewBg: 'bg-[#BB2649]',
   },
   {
     id: 'mocha-mousse',
     name: '摩卡慕斯',
     description: 'Pantone 2025 Mocha Mousse',
-    src: promaMochaMousseLogo,
-    resourcePath: 'tagent-logos/proma-mocha-mousse.png',
+    src: tagentMochaMousseLogo,
+    resourcePath: 'tagent-logos/tagent-mocha-mousse.png',
     previewBg: 'bg-[#A47764]',
   },
   {
     id: 'emerald',
     name: '翡翠绿',
     description: 'Pantone 2013 Emerald',
-    src: promaEmeraldLogo,
-    resourcePath: 'tagent-logos/proma-emerald.png',
+    src: tagentEmeraldLogo,
+    resourcePath: 'tagent-logos/tagent-emerald.png',
     previewBg: 'bg-[#009473]',
   },
   // 科技风格
@@ -143,24 +143,24 @@ const LOGO_VARIANTS: readonly LogoVariant[] = [
     id: '8bit',
     name: '8bit 像素风',
     description: '复古像素游戏风格',
-    src: proma8bitLogo,
-    resourcePath: 'tagent-logos/proma-8bit.png',
+    src: tagent8bitLogo,
+    resourcePath: 'tagent-logos/tagent-8bit.png',
     previewBg: 'bg-[#1a1a2e]',
   },
   {
     id: 'cyberpunk',
     name: '赛博朋克',
     description: '霓虹赛博风格',
-    src: promaCyberpunkLogo,
-    resourcePath: 'tagent-logos/proma-cyberpunk.png',
+    src: tagentCyberpunkLogo,
+    resourcePath: 'tagent-logos/tagent-cyberpunk.png',
     previewBg: 'bg-[#0d0221]',
   },
   {
     id: 'futuristic',
     name: '未来质感',
     description: '金属全息科技风',
-    src: promaFuturisticLogo,
-    resourcePath: 'tagent-logos/proma-futuristic.png',
+    src: tagentFuturisticLogo,
+    resourcePath: 'tagent-logos/tagent-futuristic.png',
     previewBg: 'bg-[#4a4a4a]',
   },
 ] as const
