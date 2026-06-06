@@ -1319,6 +1319,9 @@ export const AGENT_IPC_CHANNELS = {
   /** 生成 Agent 会话标题 */
   GENERATE_TITLE: 'agent:generate-title',
 
+  // P1-3: Context 压缩
+  /** 客户端主动压缩会话历史（SDK 压缩失败时的 fallback）*/
+  COMPACT_SESSION: 'agent:compact-session',
   // 消息发送
   /** 发送消息（触发 Agent 流式响应） */
   SEND_MESSAGE: 'agent:send-message',
@@ -1485,6 +1488,32 @@ export const AGENT_IPC_CHANNELS = {
   /** 获取所有待处理的交互请求快照 */
   GET_PENDING_REQUESTS: 'agent:get-pending-requests',
 } as const
+
+/**
+ * P1-3: 客户端压缩会话的输入参数
+ */
+export interface CompactSessionInput {
+  /** 压缩策略 */
+  strategy: 'drop_old_tool_results' | 'keep_last_n' | 'summarize'
+  /** keep_last_n 策略专用：保留最近 N 条 */
+  keepLastN?: number
+}
+
+/**
+ * P1-3: 客户端压缩会话的结果
+ */
+export interface CompactSessionResult {
+  /** 是否成功 */
+  success: boolean
+  /** 压缩前消息数 */
+  beforeCount: number
+  /** 压缩后消息数 */
+  afterCount: number
+  /** 删了多少条 */
+  droppedCount: number
+  /** 简要说明 */
+  message: string
+}
 
 /**
  * 待处理交互请求快照（用于渲染进程重载后恢复状态）
