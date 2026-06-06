@@ -8,7 +8,7 @@ import type {
 /**
  * 飞书流式卡片的运行时状态机。
  *
- * 把 AgentStreamPayload（sdk_message + proma_event）累积成一个结构化的
+ * 把 AgentStreamPayload（sdk_message + tagent_event）累积成一个结构化的
  * RunState，便于渲染层无时序地把状态转成 CardKit 2.0 JSON。设计参考
  * zara/feishu-claude-code-bridge `src/card/run-state.ts`，但消费的是
  * TAgent 的 SDKMessage 形态而非 claude CLI 的 stream-json。

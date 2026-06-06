@@ -198,7 +198,7 @@ export function AgentSettings(): React.ReactElement {
     )
   }
 
-  const configDirName = import.meta.env.DEV ? '.tagent-dev' : '.proma'
+  const configDirName = import.meta.env.DEV ? '.tagent-dev' : '.tagent'
 
   const buildMcpPrompt = (): string => {
     const configPath = `~/${configDirName}/agent-workspaces/${workspaceSlug}/mcp.json`

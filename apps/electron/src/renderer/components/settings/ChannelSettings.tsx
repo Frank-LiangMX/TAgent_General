@@ -389,7 +389,7 @@ function AgentProviderRow({ channel, enabled, onToggle }: AgentProviderRowProps)
 
 function TAgentProviderCard(): React.ReactElement {
   const handleDownload = (): void => {
-    window.open('http://proma.cool/download', '_blank')
+    window.open('http://tagent.cool/download', '_blank')
   }
 
   return (
