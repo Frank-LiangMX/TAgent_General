@@ -28,9 +28,9 @@ if (!app.requestSingleInstanceLock()) {
 
 function registerProtocolsAndHandlers(): void {
   // 注册自定义协议方案为"特权"（必须在 app ready 之前）
-  // 用于内联预览本地文件（renderer 用 iframe 加载 proma-file:// 资源）
+  // 用于内联预览本地文件（renderer 用 iframe 加载 tagent-file:// 资源）
   protocol.registerSchemesAsPrivileged([
-    { scheme: 'proma-file', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+    { scheme: 'tagent-file', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   ])
 
   // Windows: 禁用 LCD 次像素抗锯齿（ClearType），改用灰度 AA。
@@ -414,9 +414,9 @@ async function bootstrap(): Promise<void> {
   // 初始化 TAgent 版本号（供 User-Agent 等全局标识使用）
   setTAgentVersion(app.getVersion())
 
-  // 注册自定义协议 proma-file:// 用于内联预览本地文件。
+  // 注册自定义协议 tagent-file:// 用于内联预览本地文件。
   // 协议只接受主进程签发的 opaque token，不解析 renderer 提供的绝对路径。
-  protocol.handle('proma-file', handleTAgentFileRequest)
+  protocol.handle('tagent-file', handleTAgentFileRequest)
 
   // 初始化运行时环境（Shell 环境 + Bun + Git 检测）
   // 必须在其他初始化之前执行，确保环境变量正确加载
