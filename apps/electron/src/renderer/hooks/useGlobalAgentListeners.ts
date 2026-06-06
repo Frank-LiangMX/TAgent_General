@@ -127,7 +127,7 @@ function inferContextWindow(model?: string): number | undefined {
 }
 
 function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
-  if (payload.kind === 'proma_event') {
+  if (payload.kind === 'tagent_event') {
     const evt = payload.event
     switch (evt.type) {
       case 'permission_request':
@@ -586,7 +586,7 @@ export function useGlobalAgentListeners(): void {
         unstable_batchedUpdates(() => {
         const { sessionId, payload } = streamEvent
 
-        if (payload.kind === 'proma_event' && payload.event.type === 'external_run_started') {
+        if (payload.kind === 'tagent_event' && payload.event.type === 'external_run_started') {
           activateExternalAgentRun(payload.event)
         }
 

@@ -230,7 +230,7 @@ export function reduce(state: RunState, payload: AgentStreamPayload): RunState {
     return state
   }
 
-  if (payload.kind === 'proma_event') {
+  if (payload.kind === 'tagent_event') {
     const evt = payload.event
     if (evt.type === 'model_resolved') {
       return { ...state, meta: { ...state.meta, model: evt.model } }

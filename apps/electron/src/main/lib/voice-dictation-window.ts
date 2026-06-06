@@ -28,7 +28,7 @@ const POSITION_SAVE_DEBOUNCE_MS = 240
 const VOICE_DICTATION_PARTITION = 'voice-dictation'
 
 interface VoiceDictationToggleOptions {
-  targetIsProma?: boolean
+  targetIsTAgent?: boolean
 }
 
 export function createVoiceDictationWindow(): void {
@@ -109,13 +109,13 @@ export function toggleVoiceDictationWindow(options: VoiceDictationToggleOptions 
   }
 
   if (!win) {
-    captureTargetForNextSession(options.targetIsProma)
+    captureTargetForNextSession(options.targetIsTAgent)
     createVoiceDictationWindow()
     requestPositionAndShow()
     return
   }
 
-  captureTargetForNextSession(options.targetIsProma)
+  captureTargetForNextSession(options.targetIsTAgent)
   requestPositionAndShow()
 }
 
@@ -196,8 +196,8 @@ function flushPendingShowIfReady(): void {
   positionAndShow()
 }
 
-function captureTargetForNextSession(targetIsProma?: boolean): void {
-  captureVoiceDictationTarget(targetIsProma)
+function captureTargetForNextSession(targetIsTAgent?: boolean): void {
+  captureVoiceDictationTarget(targetIsTAgent)
   voiceDictationTargetCaptured = true
 }
 

@@ -29,13 +29,13 @@ export async function commitVoiceDictationText(
   }
 
   const mainWindow = getMainWindow()
-  const shouldWriteProma =
-    settings.outputMode === 'proma-input' ||
+  const shouldWriteTAgent =
+    settings.outputMode === 'tagent-input' ||
     (settings.outputMode === 'auto' && targetWasTAgentInput)
 
-  if (shouldWriteProma && mainWindow && !mainWindow.isDestroyed()) {
+  if (shouldWriteTAgent && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(VOICE_DICTATION_IPC_CHANNELS.INSERT_TEXT, { text: trimmed })
-    return { mode: 'proma-input', success: true, message: '已写入 TAgent 输入框' }
+    return { mode: 'tagent-input', success: true, message: '已写入 TAgent 输入框' }
   }
 
   if (settings.outputMode === 'auto') {

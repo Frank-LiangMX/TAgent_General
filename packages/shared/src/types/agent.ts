@@ -568,7 +568,7 @@ export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
 /** IPC 传输的统一 payload（替代 AgentEvent） */
 export type AgentStreamPayload =
   | { kind: 'sdk_message'; message: SDKMessage }
-  | { kind: 'proma_event'; event: TAgentEvent }
+  | { kind: 'tagent_event'; event: TAgentEvent }
 
 // ===== Agent 会话管理 =====
 

@@ -25,7 +25,7 @@ const ENDPOINT_OPTIONS = [
 const OUTPUT_OPTIONS = [
   { value: 'auto', label: '自动：TAgent 激活时写入对话框，否则写入当前光标' },
   { value: 'clipboard', label: '仅复制到剪贴板' },
-  { value: 'proma-input', label: '仅写入 TAgent 输入框' },
+  { value: 'tagent-input', label: '仅写入 TAgent 输入框' },
 ]
 
 const LANGUAGE_OPTIONS = [

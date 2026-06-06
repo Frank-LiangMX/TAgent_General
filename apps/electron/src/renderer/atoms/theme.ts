@@ -14,8 +14,8 @@ import { atom } from 'jotai'
 import type { ThemeMode, ThemeStyle } from '../../types'
 
 /** localStorage 缓存键 */
-const THEME_CACHE_KEY = 'proma-theme-mode'
-const THEME_STYLE_CACHE_KEY = 'proma-theme-style'
+const THEME_CACHE_KEY = 'tagent-theme-mode'
+const THEME_STYLE_CACHE_KEY = 'tagent-theme-style'
 
 /**
  * 从 localStorage 读取缓存的主题模式

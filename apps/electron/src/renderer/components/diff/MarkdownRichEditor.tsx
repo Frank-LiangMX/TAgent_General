@@ -189,15 +189,15 @@ export function MarkdownRichEditor({
         className={cn(
           'min-h-full flex-1',
           isEditable
-            ? '[&_.proma-mermaid-preview]:hidden [&_.proma-code-source-body]:block'
+            ? '[&_.tagent-mermaid-preview]:hidden [&_.tagent-code-source-body]:block'
             : [
-                '[&_.proma-code-block--mermaid]:overflow-visible',
-                '[&_.proma-code-block--mermaid]:rounded-none',
-                '[&_.proma-code-block--mermaid]:border-0',
-                '[&_.proma-code-block--mermaid]:bg-transparent',
-                '[&_.proma-code-block--mermaid_.proma-code-header]:hidden',
-                '[&_.proma-code-block--mermaid_.proma-mermaid-preview]:block',
-                '[&_.proma-code-block--mermaid_.proma-code-source-body]:hidden',
+                '[&_.tagent-code-block--mermaid]:overflow-visible',
+                '[&_.tagent-code-block--mermaid]:rounded-none',
+                '[&_.tagent-code-block--mermaid]:border-0',
+                '[&_.tagent-code-block--mermaid]:bg-transparent',
+                '[&_.tagent-code-block--mermaid_.tagent-code-header]:hidden',
+                '[&_.tagent-code-block--mermaid_.tagent-mermaid-preview]:block',
+                '[&_.tagent-code-block--mermaid_.tagent-code-source-body]:hidden',
               ],
         )}
       />

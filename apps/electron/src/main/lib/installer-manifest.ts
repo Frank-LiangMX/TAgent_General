@@ -7,7 +7,7 @@
 
 import type { InstallerManifest, InstallerSource } from '@tagent/shared'
 
-const TAGENT_API_BASE = 'https://api.proma.cool'
+const TAGENT_API_BASE = 'https://api.tagent.cool'
 const MANIFEST_URL = `${TAGENT_API_BASE}/api/v1/installers/manifest`
 const CACHE_TTL_MS = 5 * 60 * 1000
 
