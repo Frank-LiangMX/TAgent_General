@@ -284,8 +284,28 @@ function resolveSDKCliPath(): string {
 /** 最大回填消息条数（P0-1 fallback, 拿到 contextWindow 前用这个） */
 const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 
-/** 单条工具摘要最大字符数 */
+/** 单条工具摘要默认字符预算（P1-1 改成按 token 算, 这里保留作为默认 fallback） */
 const MAX_TOOL_SUMMARY_LENGTH = 200
+
+/** 1 token ≈ 4 chars（粗估, 与 §8.4 P1-1 算法一致） */
+const CHARS_PER_TOKEN = 4
+
+/**
+ * P1-1: 按 token 估算截断, 保留头尾（tail 通常含关键结果）
+ *
+ * @param content 原始工具摘要
+ * @param budgetTokens token 预算（默认 500）
+ * @returns 截断后字符串
+ */
+function summarizeToolResult(content: string, budgetTokens: number = 500): string {
+  const tokens = Math.ceil(content.length / CHARS_PER_TOKEN)
+  if (tokens <= budgetTokens) return content
+
+  const headRatio = 0.4
+  const headChars = Math.floor(budgetTokens * headRatio * CHARS_PER_TOKEN)
+  const tailChars = Math.floor(budgetTokens * (1 - headRatio) * CHARS_PER_TOKEN)
+  return content.slice(0, headChars) + '\n... [truncated] ...\n' + content.slice(-tailChars)
+}
 
 /** 单消息平均 token 估算（含图片: 1500-5000, 纯文本: ~500） */
 const AVG_TOKENS_PER_MESSAGE = 500
@@ -339,9 +359,8 @@ function extractSDKToolSummary(content: Array<{ type: string; name?: string; inp
   }
   if (summaries.length === 0) return ''
   const joined = summaries.join(' ')
-  return joined.length > MAX_TOOL_SUMMARY_LENGTH
-    ? joined.slice(0, MAX_TOOL_SUMMARY_LENGTH) + '...'
-    : joined
+  // P1-1: 用 token 估算 + 头尾保留, 替代之前 200 字符一刀切
+  return summarizeToolResult(joined, Math.ceil(MAX_TOOL_SUMMARY_LENGTH / CHARS_PER_TOKEN))
 }
 
 /**
