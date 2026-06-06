@@ -317,6 +317,8 @@ export interface RuntimeInitOptions {
   skipGitDetection?: boolean
   /** 是否跳过 Shell 环境检测（仅 Windows）*/
   skipShellDetection?: boolean
+  /** 是否跳过启动时渠道 model 名验证（P0-2, 默认 false）*/
+  skipChannelValidation?: boolean
 }
 
 /**

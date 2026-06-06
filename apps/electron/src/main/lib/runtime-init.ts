@@ -144,7 +144,73 @@ export async function initializeRuntime(options: RuntimeInitOptions = {}): Promi
     envLoaded: envLoaded ? '✅' : '⚠️ 未加载或不需要',
   })
 
+  // P0-2 启动时验证所有 enabled 渠道的 model 名字
+  // 防止 9120caac 那类 model 名误配导致所有会话 400 (2013)
+  // 注意: 此步骤网络不可用时会失败但不阻塞启动
+  if (!options.skipChannelValidation) {
+    void validateAllEnabledChannels().catch((err) => {
+      console.warn('[运行时初始化] 渠道验证失败（不阻塞启动）:', err)
+    })
+  }
+
   return runtimeStatus
+}
+
+/**
+ * P0-2: 启动时验证所有 enabled 渠道的 model 名
+ *
+ * 遍历 channels.json, 对每个 enabled 渠道调 validateChannelModel。
+ * 失败的结果写到 console + 状态文件,不抛异常(避免阻塞启动)。
+ */
+async function validateAllEnabledChannels(): Promise<void> {
+  try {
+    const { listChannels, decryptApiKey, validateChannelModel } = await import('./channel-manager')
+    const channels = listChannels().filter((c) => c.enabled)
+    if (channels.length === 0) {
+      console.log('[渠道验证] 没有 enabled 渠道,跳过')
+      return
+    }
+    console.log(`[渠道验证] 启动验证 ${channels.length} 个 enabled 渠道...`)
+    const results = await Promise.allSettled(
+      channels.map(async (c) => {
+        const modelId = c.models.find((m) => m.enabled)?.id ?? c.models[0]?.id
+        if (!modelId) {
+          return { channelId: c.id, name: c.name, status: 'no-model' as const }
+        }
+        const apiKey = decryptApiKey(c.id)
+        const result = await validateChannelModel({
+          baseUrl: c.baseUrl,
+          apiKey,
+          model: modelId,
+          provider: c.provider,
+        })
+        return { channelId: c.id, name: c.name, model: modelId, result }
+      }),
+    )
+    let pass = 0
+    let fail = 0
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        const v = r.value
+        if (v.status === 'no-model') {
+          console.warn(`[渠道验证] ⚠️ 渠道「${v.name}」没有配置 model`)
+          fail++
+        } else if (v.result.success) {
+          console.log(`[渠道验证] ✅ ${v.name} (${v.model}): ${v.result.message}`)
+          pass++
+        } else {
+          console.warn(`[渠道验证] ❌ ${v.name} (${v.model}): ${v.result.message}`)
+          fail++
+        }
+      } else {
+        console.warn(`[渠道验证] ❌ 验证异常:`, r.reason)
+        fail++
+      }
+    }
+    console.log(`[渠道验证] 启动完成: ${pass} 通过, ${fail} 失败`)
+  } catch (err) {
+    console.warn('[渠道验证] 启动时验证异常（不阻塞）:', err)
+  }
 }
 
 /**
