@@ -11,6 +11,7 @@
 
 import * as React from 'react'
 import { Loader2, Minimize2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,10 @@ const COMPACT_THRESHOLD_RATIO = 0.775
 const WARNING_RATIO = 0.80
 /** 危险阈值（直接占 contextWindow 90%, SDK 可能快撑不住） */
 const DANGER_RATIO = 0.90
+/** P2-1: Nudges 80% 触发阈值（contextWindow × 80%）*/
+const NUDGE_80_RATIO = 0.80
+/** P2-1: Nudges 90% 触发阈值 */
+const NUDGE_90_RATIO = 0.90
 /** Popover hover 关闭延迟（ms），与 AgentThinkingPopover 一致 */
 const HOVER_CLOSE_DELAY = 150
 
@@ -139,6 +144,10 @@ export function ContextUsageBadge({
     stableRef.current = { inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens, contextWindow }
   }
 
+  // P2-1: Nudges 阈值追踪 ref — 记录上次弹过的阈值, 避免重复弹
+  // 用 'none' / '80' / '90' 三个状态机
+  const lastNudgeFiredRef = React.useRef<'none' | '80' | '90'>('none')
+
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
 
@@ -176,6 +185,34 @@ export function ContextUsageBadge({
   const hasCurrent = inputTokens != null && inputTokens > 0
   const displayTokens = hasCurrent ? inputTokens : stable?.inputTokens
   const displayWindow = hasCurrent ? contextWindow : stable?.contextWindow
+
+  // P2-1: Context 80% / 90% 触发 Nudges toast (一次会话最多弹 1 次 80% + 1 次 90%)
+  React.useEffect(() => {
+    if (!displayWindow || !displayTokens) return
+    const ratio = displayTokens / displayWindow
+    if (ratio >= NUDGE_90_RATIO && lastNudgeFiredRef.current !== '90') {
+      lastNudgeFiredRef.current = '90'
+      toast.warning('上下文危险 (>90%)，建议立即压缩或新建会话', {
+        duration: 8000,
+        action: {
+          label: '手动压缩',
+          onClick: () => onCompact(),
+        },
+      })
+    } else if (ratio >= NUDGE_80_RATIO && lastNudgeFiredRef.current === 'none') {
+      lastNudgeFiredRef.current = '80'
+      toast('上下文已用 80%，建议压缩或开新会话', {
+        duration: 6000,
+        action: {
+          label: '手动压缩',
+          onClick: () => onCompact(),
+        },
+      })
+    } else if (ratio < NUDGE_80_RATIO && lastNudgeFiredRef.current !== 'none') {
+      // 用户已压缩 / 新建会话, 重置 ref 准备下次再弹
+      lastNudgeFiredRef.current = 'none'
+    }
+  }, [displayTokens, displayWindow, onCompact])
   const displayOutput = hasCurrent ? outputTokens : stable?.outputTokens
   const displayCacheRead = hasCurrent ? cacheReadTokens : stable?.cacheReadTokens
   const displayCacheCreation = hasCurrent ? cacheCreationTokens : stable?.cacheCreationTokens
