@@ -15,6 +15,8 @@ import type {
   ChannelCreateInput,
   ChannelUpdateInput,
   ChannelTestResult,
+  CompactSessionInput,
+  CompactSessionResult,
   ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
@@ -212,6 +214,9 @@ export interface ElectronAPI {
 
   /** P0-2: 验证指定 model 名是否被供应商接受（防 9120caac 那类 400 (2013)）*/
   validateChannelModel: (input: ChannelModelValidateInput) => Promise<ChannelTestResult>
+
+  /** P1-3: 客户端压缩会话历史（LLM compact_session tool 失败时的 fallback）*/
+  compactSession: (sessionId: string, input: CompactSessionInput) => Promise<CompactSessionResult>
 
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
@@ -1127,6 +1132,10 @@ const electronAPI: ElectronAPI = {
 
   validateChannelModel: (input: ChannelModelValidateInput) => {
     return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.VALIDATE_MODEL, input)
+  },
+
+  compactSession: (sessionId: string, input: CompactSessionInput) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.COMPACT_SESSION, sessionId, input)
   },
 
   fetchModels: (input: FetchModelsInput) => {
