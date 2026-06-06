@@ -281,11 +281,46 @@ function resolveSDKCliPath(): string {
   return binaryPath
 }
 
-/** 最大回填消息条数 */
-const MAX_CONTEXT_MESSAGES = 20
+/** 最大回填消息条数（P0-1 fallback, 拿到 contextWindow 前用这个） */
+const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 
 /** 单条工具摘要最大字符数 */
 const MAX_TOOL_SUMMARY_LENGTH = 200
+
+/** 单消息平均 token 估算（含图片: 1500-5000, 纯文本: ~500） */
+const AVG_TOKENS_PER_MESSAGE = 500
+
+/**
+ * P0-1: 缓存每个 session 已知的 context window
+ *
+ * 来源: Claude Agent SDK 的 `result.modelUsage[...].contextWindow`
+ * 拿到后, buildContextPrompt 用它动态算能取多少条历史, 而非硬编码 20 条
+ */
+const sessionContextWindowCache = new Map<string, number>()
+
+/** 设置 session 的 context window 缓存 */
+export function setSessionContextWindow(sessionId: string, contextWindow: number): void {
+  if (contextWindow > 0) {
+    sessionContextWindowCache.set(sessionId, contextWindow)
+  }
+}
+
+/** 读 session 的 context window 缓存, 没记录时返回 undefined */
+function getSessionContextWindow(sessionId: string): number | undefined {
+  return sessionContextWindowCache.get(sessionId)
+}
+
+/**
+ * P0-1: 根据 context window 动态算能取多少条历史消息
+ *
+ * 预算 = contextWindow - system(prompt) - tools - reserved(给模型输出的 max_tokens)
+ * @returns 至少 5 条, 最多按预算切
+ */
+function computeMaxContextMessages(contextWindow: number, systemReservedTokens: number = 4000, outputReservedTokens: number = 8000): number {
+  const budget = contextWindow - systemReservedTokens - outputReservedTokens
+  if (budget <= 0) return 5  // 预算不够, 至少 5 条保命
+  return Math.max(5, Math.floor(budget / AVG_TOKENS_PER_MESSAGE))
+}
 
 /**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要
@@ -314,8 +349,16 @@ function extractSDKToolSummary(content: Array<{ type: string; name?: string; inp
  *
  * 当 resume 不可用时，将最近消息拼接为上下文注入 prompt，
  * 让新 SDK 会话保留对话记忆。包含文本内容和工具活动摘要。
+ *
+ * P0-1: 优先用缓存的 contextWindow 动态算 max messages（替代硬编码 20）;
+ *      第一次调用时 SDK 还没回报窗口大小, fallback 到 MAX_CONTEXT_MESSAGES_FALLBACK。
  */
-function buildContextPrompt(sessionId: string, currentUserMessage: string, sessionHint?: { agentCwd: string }): string {
+function buildContextPrompt(
+  sessionId: string,
+  currentUserMessage: string,
+  sessionHint?: { agentCwd: string },
+  contextWindow?: number,
+): string {
   const allMessages = getAgentSessionSDKMessages(sessionId)
   if (allMessages.length === 0) return currentUserMessage
 
@@ -323,7 +366,12 @@ function buildContextPrompt(sessionId: string, currentUserMessage: string, sessi
   const history = allMessages.slice(0, -1)
   if (history.length === 0) return currentUserMessage
 
-  const recent = history.slice(-MAX_CONTEXT_MESSAGES)
+  // P0-1: 根据 contextWindow 动态算取多少条; 没拿到时 fallback
+  const effectiveContextWindow = contextWindow ?? getSessionContextWindow(sessionId)
+  const maxMessages = effectiveContextWindow
+    ? computeMaxContextMessages(effectiveContextWindow)
+    : MAX_CONTEXT_MESSAGES_FALLBACK
+  const recent = history.slice(-maxMessages)
   const lines = recent
     .filter((m) => (m.type === 'user' || m.type === 'assistant'))
     .map((m) => {
@@ -1269,12 +1317,14 @@ export class AgentOrchestrator {
         ? '/compact'
         : existingSdkSessionId
           ? contextualMessage
-          : buildContextPrompt(sessionId, contextualMessage, { agentCwd })
+          : buildContextPrompt(sessionId, contextualMessage, { agentCwd }, getSessionContextWindow(sessionId))
 
       if (existingSdkSessionId) {
         console.log(`[Agent 编排] 使用 resume 模式，SDK session ID: ${existingSdkSessionId}`)
       } else if (finalPrompt !== contextualMessage) {
-        console.log(`[Agent 编排] 无 resume，已回填历史上下文（最近 ${MAX_CONTEXT_MESSAGES} 条消息）`)
+        const cw = getSessionContextWindow(sessionId)
+        const maxN = cw ? computeMaxContextMessages(cw) : MAX_CONTEXT_MESSAGES_FALLBACK
+        console.log(`[Agent 编排] 无 resume，已回填历史上下文（最近 ${maxN} 条消息, 预算来源: ${cw ? `${cw} window` : 'fallback 20'}）`)
       }
 
       // 12. 读取应用设置并确定权限模式
@@ -1598,6 +1648,7 @@ export class AgentOrchestrator {
         },
         onContextWindow: (cw: number) => {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
+          setSessionContextWindow(sessionId, cw)  // P0-1
         },
       }
 
