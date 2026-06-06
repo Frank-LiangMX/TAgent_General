@@ -148,6 +148,159 @@
 - 检测：如果 `~/.ta_agent/configs/` 存在但 `~/.tagent/ta/configs/` 不存在, 启动时弹一次性迁移对话框
 - ta_agent MCP server 启动时检查 `TA_AGENT_DATA_DIR` 是否设置, 没有就 fallback 到 `~/.ta_agent/`（向后兼容老用户）
 
+### 3.4 缓存机制 + 目录规范（2026-06-06 拍板）
+
+**问题**：现状有 3 个不相关的根目录散在不同位置：
+- TAgent app data：`~/.tagent/`（TAgent 自己写）
+- Electron userData：dev `%APPDATA%@tagent\electron-dev/`、prod `%APPDATA%\TAgent\`（Electron 内部）
+- OS 临时：`%TEMP%\tagent-*\`（一次性临时）
+
+用户心智不统一，找配置要分头查 3 处。
+
+**决策 A1 + B2 + C1**（2026-06-06）：
+
+#### 3.4.1 统一数据根
+
+所有数据（不论 macOS/Linux/Windows）都在 `~/.tagent/` 根下，按"重要性 / 可重建性"分 4 类子目录：
+
+```
+~/.tagent/                            (跨平台统一根, 与 T2.4B 决策一致)
+│
+├── [现有数据, 见 §3.3 / config-paths.ts]  # channels, conversations, agent-sessions,
+│                                          # agent-workspaces, default-skills, scratch-pad,
+│                                          # settings.json, user-profile.json, memory/, ta/
+│
+├── cache/                             # L2 派生缓存 (可重建, 7 天 LRU 滚动)
+│   ├── general/                       # 通用模式缓存
+│   │   ├── http/                      # LLM API 响应缓存 (Cache-Control TTL, 默认 5min)
+│   │   ├── thumbnails/                # 附件 / 聊天图片缩略图
+│   │   ├── search-index/              # 全局搜索 FTS5 (跨对话)
+│   │   └── model-icons/               # 模型 logo 缓存
+│   ├── ta/                            # TA 模式缓存
+│   │   ├── thumbnails/                # 资产缩略图 (Blender 渲染产物)
+│   │   ├── blender-renders/           # Blender 渲染中间产物
+│   │   ├── fts5/                      # tag_store FTS5 镜像
+│   │   └── ue5-screenshots/           # UE5 桥接截图缓存
+│   └── shared/                        # 跨模式共享
+│       ├── installers/                # 自动更新下载的安装包 (安装后 24h 清)
+│       ├── tools/                     # 下载的 Bun 等运行时 binary
+│       └── http-common/               # 跨 Provider 共享的 HTTP 缓存
+│
+├── logs/                              # L3 日志 (单文件 50MB 滚动, 总 500MB 上限, 7-30 天)
+│   ├── main.log                       # 主进程
+│   ├── renderer.log                   # 渲染进程
+│   ├── ta-agent-stdout.log            # ta_agent MCP server stdout
+│   ├── ta-agent-stderr.log            # ta_agent MCP server stderr
+│   ├── updater.log                    # 自动更新
+│   └── crash/                         # 崩溃 dump
+│
+├── tmp/                               # L4 进程级临时 (1-3 天 LRU, 重启可清)
+│   ├── previews/                      # 通用模式: PDF/Office 预览 HTML
+│   ├── migration-import/              # 迁移解压临时
+│   ├── screenshots/                   # 截图 HTML 临时
+│   └── ta-blender/                    # TA 模式: Blender 临时文件
+│
+└── electron-userdata/                 # L5 Electron 内部 (OS 管, 别碰)
+    ├── Cache/                         # Chromium HTTP 缓存
+    ├── Code Cache/                    # V8 字节码缓存
+    ├── GPUCache/
+    ├── Local Storage/                 # devtools localStorage (不影响业务)
+    └── Session Storage/
+```
+
+#### 3.4.2 关键变更：B2 — 合并 Electron userData
+
+**现状**（散在 `%APPDATA%`）：
+
+```js
+// apps/electron/src/main/index.ts (dev)
+if (!app.isPackaged) {
+  app.setPath('userData', join(app.getPath('appData'), '@tagent/electron-dev'))
+}
+```
+dev: `%APPDATA%@tagent\electron-dev\`（Windows）/ `~/.config/@tagent/electron-dev/`（Linux）
+prod: 默认 = `%APPDATA%\TAgent\` / `~/.config/TAgent/`
+
+**改后**（指向 `~/.tagent/electron-userdata/`）：
+
+```js
+// apps/electron/src/main/index.ts
+import { homedir } from 'node:os'
+const baseDir = app.isPackaged
+  ? join(homedir(), '.tagent')
+  : join(homedir(), '.tagent-dev')
+app.setPath('userData', join(baseDir, 'electron-userdata'))
+```
+
+dev:  `~/.tagent-dev/electron-userdata/`
+prod: `~/.tagent/electron-userdata/`
+
+**数据丢失影响**：
+- 旧 Electron userData 在 `%APPDATA%` 下的 Chromium Session / GPU 缓存 / 自动更新状态会**丢失**
+- 但这些**全部可重建**（GPU 缓存下次启动自动重生成，Session 重新登录即可，自动更新会重新检测）
+- 真实损失 = 0（用户已经接受数据丢失原则）
+
+#### 3.4.3 TA 模式 vs 通用模式 — 缓存对照
+
+| 类别 | 通用模式 | TA 模式 | 共用 |
+|---|---|---|---|
+| **L1 数据** (永久) | `~/.tagent/{channels, conversations, agent-sessions, agent-workspaces, default-skills, scratch-pad, settings, user-profile, memory}/` | `~/.tagent/ta/{tag_store, configs, memory, ue5_bridge, sessions, usage_log, pipeline_runs}/` | — |
+| **L2 缓存** (7 天 LRU) | `cache/general/{http, thumbnails, search-index, model-icons}/` | `cache/ta/{thumbnails, blender-renders, fts5, ue5-screenshots}/` | `cache/shared/{installers, tools, http-common}/` |
+| **L3 日志** (滚动) | `logs/{main, renderer, updater}.log` | `logs/{ta-agent-stdout, ta-agent-stderr}.log` | `logs/crash/` |
+| **L4 临时** (1-3 天) | `tmp/{previews, screenshots}/` | `tmp/ta-blender/` | `tmp/migration-import/` |
+| **L5 Electron 内部** | — | — | `electron-userdata/{Cache, GPUCache, ...}/` |
+
+#### 3.4.4 缓存失效机制（C1：自动 LRU）
+
+启动时 `cacheScanLRU()` 自动执行（无 UI 提示）：
+
+| 缓存 | 失效触发 | 清理策略 |
+|---|---|---|
+| **缩略图** | 源文件 mtime 变化 | LRU 7 天，启动时扫描 `cache/*/thumbnails/`，删 >7 天的 |
+| **FTS5 索引** | 数据源写入 | 进程内写后触发 `INSERT INTO fts5`；不需失效清理 |
+| **HTTP 响应** | 显式 `Cache-Control` 头 | TTL 默认 5 分钟（可被 Provider 覆盖） |
+| **预览 HTML** | 一次性 | 启动时清 >24h 的；用户主动关闭后立即删 |
+| **安装包** | 用户"立即安装"后 | 安装成功后 24h 自动删；下载失败保留 7 天 |
+| **Blender 渲染** | 资产 hash 变化 | 跟随资产生命周期，不主动清 |
+| **日志** | 滚动写入 | 单文件 >50MB 或 >7 天滚动；总大小上限 500MB |
+| **tmp/** | 启动时 | 1-3 天 LRU 清理 |
+
+**实现**（`apps/electron/src/main/lib/cache-maintenance.ts` 新文件）：
+
+```ts
+export async function cacheScanLRU(): Promise<CleanupStats> {
+  const stats = { freedBytes: 0, deletedCount: 0, errors: [] }
+  const now = Date.now()
+  for (const [subdir, maxAgeMs] of [
+    ['cache/general/thumbnails', 7 * 86400_000],
+    ['cache/ta/thumbnails', 7 * 86400_000],
+    ['cache/shared/installers', 7 * 86400_000],
+    ['tmp/previews', 86400_000],
+    ['tmp/migration-import', 3 * 86400_000],
+    ['tmp/ta-blender', 3 * 86400_000],
+  ]) {
+    const fullPath = join(getConfigDir(), subdir)
+    if (!existsSync(fullPath)) continue
+    // ... 扫描 mtime, 删除过期
+  }
+  return stats
+}
+```
+
+启动时调用：`await cacheScanLRU()` 在 `initializeRuntime()` 之后。
+
+#### 3.4.5 已废弃路径（迁移后不留兼容）
+
+| 旧路径 | 状态 |
+|---|---|
+| `%TEMP%\tagent-preview\` | **改** `~/.tagent/tmp/previews/` |
+| `%TEMP%\tagent-installers\` | **改** `~/.tagent/cache/shared/installers/` |
+| `%TEMP%\tagent-import-{uuid}\` | **改** `~/.tagent/tmp/migration-import/` |
+| `%TEMP%\tagent-icon-{uuid}\` | **改** `~/.tagent/tmp/previews/` (合并) |
+| `%TEMP%\tagent-ss-{ts}.html` | **改** `~/.tagent/tmp/screenshots/` |
+| `%APPDATA%\TAgent\` (Electron) | **改** `~/.tagent/electron-userdata/` |
+| `%APPDATA%@tagent\electron-dev\` (Electron dev) | **改** `~/.tagent-dev/electron-userdata/` |
+
 ---
 
 ## 4. 核心组件
@@ -613,9 +766,9 @@ export const costBreakdownAtom = atom((get) => {
 
 ---
 
-## 12. 7 个开放问题（已全部拍板）
+## 12. 8 个开放问题（已全部拍板）
 
-**2026-06-05 拍板 1-6, 2026-06-06 补拍 7**：
+**2026-06-05 拍板 1-6, 2026-06-06 补拍 7-8**：
 
 1. **TA 模式 54 工具的命名空间化**：✅ **加 `tagent__` 前缀**（如 `tagent__analyze_assets`）。避免与 Claude SDK 内置工具冲突，保留未来扩展空间。
 2. **OpenAI provider 的 cache 字段**：✅ **MVP 支持**。Proma 已有实现零成本。OpenAI 下数字恒为 0（不报错不显示），但通用 + TA 模式行为一致。
@@ -624,6 +777,7 @@ export const costBreakdownAtom = atom((get) => {
 5. **Pipeline Editor 的 UI 重写工作量**：✅ **MVP 不做**。M2+ 阶段单独做。节省 6 周 UI 工作量。
 6. **记忆 5 层的存储格式**：✅ **混合方案**（md + JSONL + SQLite）。L0-L2 + L5 用 Markdown（人可读），L3 corrections 用 JSONL + rules.json（结构化 + 可回滚），L4 sessions 用 SQLite + FTS5（全文搜索）。
 7. **TA 模式数据目录布局**（2026-06-06 补）：✅ **`~/.tagent/ta/` 统一根**（跨平台）。详见 §3.3。资产库 / 静态配置 / 5 层记忆 / UE5 桥接 / 会话 / 用量日志全在 `ta/` 子目录下；通用模式（chat/agent）继续在 `~/.tagent/` 根下不混。ta_agent 启动时通过 `TA_AGENT_DATA_DIR=~/.tagent/ta` env 指向（已有 env 支持, 见 `ta_agent/packages/core/project_config.py:363`）。
+8. **缓存机制 + 目录规范**（2026-06-06 补）：✅ **A1 + B2 + C1 组合**。详见 §3.4。统一数据根在 `~/.tagent/`（现有数据保持位置，只新增 `cache/` `logs/` `tmp/` `electron-userdata/` 4 个子目录）；Electron userData 合并到 `~/.tagent[-dev]/electron-userdata/`（dev/prod 分别走 `~/.tagent-dev` / `~/.tagent`）；启动时 `cacheScanLRU()` 自动清理 1-7 天过期的派生缓存 + 临时文件。TA 模式与通用模式分账隔离（详见 §3.4.3 对照表），但都在同一个 `~/.tagent/` 根下。
 
 ---
 
