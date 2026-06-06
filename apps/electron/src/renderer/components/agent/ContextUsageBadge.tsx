@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils'
 const COMPACT_THRESHOLD_RATIO = 0.775
 /** 显示警告的阈值（压缩阈值的 80%） */
 const WARNING_RATIO = 0.80
+/** 危险阈值（直接占 contextWindow 90%, SDK 可能快撑不住） */
+const DANGER_RATIO = 0.90
 /** Popover hover 关闭延迟（ms），与 AgentThinkingPopover 一致 */
 const HOVER_CLOSE_DELAY = 150
 
@@ -49,8 +51,9 @@ function formatTokens(tokens: number): string {
 interface UsageRingProps {
   ratio: number
   isWarning: boolean
+  isDanger: boolean
 }
-function UsageRing({ ratio, isWarning }: UsageRingProps): React.ReactElement {
+function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactElement {
   const radius = 8
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(1, ratio))
@@ -63,7 +66,11 @@ function UsageRing({ ratio, isWarning }: UsageRingProps): React.ReactElement {
       viewBox="0 0 20 20"
       className={cn(
         'shrink-0 transition-colors',
-        isWarning ? 'text-amber-500 dark:text-amber-400' : 'text-foreground/70',
+        isDanger
+          ? 'text-red-500 dark:text-red-400'
+          : isWarning
+            ? 'text-amber-500 dark:text-amber-400'
+            : 'text-foreground/70',
       )}
       aria-hidden="true"
     >
@@ -185,6 +192,7 @@ export function ContextUsageBadge({
     : false
 
   const ratio = displayWindow ? displayTokens / displayWindow : 0
+  const isDanger = displayWindow ? ratio >= DANGER_RATIO : false
 
   // 纯输入 = 总上下文 - 缓存读取 - 缓存写入
   const pureInput = displayTokens - (displayCacheRead ?? 0) - (displayCacheCreation ?? 0)
@@ -208,15 +216,20 @@ export function ContextUsageBadge({
           size="icon"
           className={cn(
             'size-[36px] rounded-full',
-            isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-foreground/60 hover:text-foreground',
+            isDanger
+              ? 'text-red-600 dark:text-red-400'
+              : isWarning
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-foreground/60 hover:text-foreground',
           )}
+          title={isDanger ? '上下文危险 (>90%), 建议立即 compact' : isWarning ? '上下文接近阈值' : undefined}
           onMouseEnter={() => {
             cancelClose()
             setOpen(true)
           }}
           onMouseLeave={scheduleClose}
         >
-          <UsageRing ratio={ratio} isWarning={isWarning} />
+          <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
         </Button>
       </PopoverTrigger>
       <PopoverContent
