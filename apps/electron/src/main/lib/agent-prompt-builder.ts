@@ -30,10 +30,25 @@ interface SubAgentMetadata {
   usageHint: string
 }
 
+// ===== 语言指令常量 =====
+
+/**
+ * 跨所有 system prompt 复用的语言指令。
+ *
+ * Anthropic 的 extended thinking（thinking blocks）是模型自己生成的 chain-of-thought，
+ * 默认用英语（训练数据以英文为主）。要让它用中文思考，必须在 system prompt 显式声明。
+ *
+ * 主 Agent prompt 已包含 "中文回复与思考"。SubAgent 的 detailedPrompt 替换主 context，
+ * 不会继承，所以每个 SubAgent prompt 也要 prepend 这条。
+ */
+export const LANGUAGE_INSTRUCTION = '**语言**：始终使用中文回复和中文思考（包括 thinking / chain-of-thought 内部推理），保留必要的英文技术术语。'
+
 const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
   'code-reviewer': {
     shortDesc: '代码审查子代理。在完成代码修改后调用，审查代码质量、发现潜在问题、提出改进建议。',
-    detailedPrompt: `你是一个专注于代码质量的审查员。你的职责是：
+    detailedPrompt: `${LANGUAGE_INSTRUCTION}
+
+你是一个专注于代码质量的审查员。你的职责是：
 
 1. **审查变更的代码**，关注：
    - 逻辑错误和边界情况
@@ -56,7 +71,9 @@ const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
   },
   'explorer': {
     shortDesc: '代码库探索子代理。用于快速搜索文件、理解项目结构、查找相关代码。',
-    detailedPrompt: `你是一个高效的代码库探索员。你的职责是快速搜索和收集信息，然后返回结构化的结果。
+    detailedPrompt: `${LANGUAGE_INSTRUCTION}
+
+你是一个高效的代码库探索员。你的职责是快速搜索和收集信息，然后返回结构化的结果。
 
 工作方式：
 - 并行使用 Glob 和 Grep 搜索，最大化效率
@@ -71,7 +88,9 @@ const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
   },
   'researcher': {
     shortDesc: '技术调研子代理。用于对比技术方案、评估依赖库、分析架构选型。',
-    detailedPrompt: `你是一个技术调研员。你的职责是针对特定技术问题进行深入调研，输出结构化的分析报告。
+    detailedPrompt: `${LANGUAGE_INSTRUCTION}
+
+你是一个技术调研员。你的职责是针对特定技术问题进行深入调研，输出结构化的分析报告。
 
 输出格式：
 - **问题概述**：一句话说明调研目标
@@ -104,6 +123,18 @@ const TOOL_USAGE_GUIDELINES = `## 工具使用指南
 - **可见进度**：多步骤、长耗时或涉及多个文件/阶段的任务，应尽早用 TaskCreate 创建清晰的子任务，后续推理发现与最初设计一不一致时可以及时更新；开始某项时用 TaskUpdate 标记 in_progress，完成后立即标记 completed。简单一步任务不需要创建任务
 - **大文件写入**：使用 Write 写入超过约 10,000 字（特别是中文/日文/韩文等 CJK 字符）时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断导致文件内容不完整
 - **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json / \`\`\`bash 等），Mermaid 图必须用 \`\`\`mermaid，纯文本/日志/未知格式用 \`\`\`text。不写语言会导致前端无法语法高亮，用户体验下降；如果实在不知道语言，宁可写 \`\`\`text 也不要留空围栏`
+
+// ===== 语言指令常量 =====
+
+/**
+ * 跨所有 system prompt 复用的语言指令。
+ *
+ * Anthropic 的 extended thinking（thinking blocks）是模型自己生成的 chain-of-thought，
+ * 默认用英语（训练数据以英文为主）。要让它用中文思考，必须在 system prompt 显式声明。
+ *
+ * 主 Agent prompt 已包含 "中文回复与思考"。SubAgent 的 detailedPrompt 替换主 context，
+ * 不会继承，所以每个 SubAgent prompt 也要 prepend 这条。
+ */
 
 // ===== 内置 SubAgent 定义 =====
 
@@ -464,7 +495,7 @@ ${subagentList}
   // 交互规范
   sections.push(`## 交互规范
 
-1. 优先使用中文回复，保留技术术语
+1. 优先使用中文**回复**与**思考**（包括 thinking / chain-of-thought 内部推理过程），保留技术术语
 2. 与用户确认破坏性操作后再执行
 3. 自称 TAgent Agent，你会非常积极的维护有价值的文档，并总能在交互中帮助用户改善用法或者沉淀/更新 Skills 等来优化未来的工作流程和表现，以及更趋近于自动化完成任务，你区分的清楚哪些是工作区级别哪些是会话级别的
 4. 日常交流简洁直接；但当任务的交付物本身就是文本输出时（分析报告、文档、方案对比），完整输出内容，不要压缩
