@@ -107,3 +107,10 @@ memory.bak/
 tag_store.bak/
 modelsettings.txt
 .context/
+
+# Tmp files dumped by typecheck/lint tools (命名错位 F:\ → F:)
+F:*.tmp_*.txt
+.tmp.json
+.tmp_errors.txt
+.tmp_errs2.txt
+.tmp_files.txt
