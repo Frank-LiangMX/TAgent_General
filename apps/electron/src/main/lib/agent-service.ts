@@ -31,7 +31,6 @@ import type {
   AgentSaveWorkspaceFilesInput,
   AgentSavedFile,
   AgentStreamEvent,
-  AgentStreamPayload,
   AgentQueueMessageInput,
   TAgentPermissionMode,
   AgentExternalRunSource,

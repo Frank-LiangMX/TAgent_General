@@ -5,7 +5,7 @@
  * 仅在打包后的生产环境中工作。
  */
 
-import { BrowserWindow, app } from 'electron'
+import { BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
 import { UPDATER_IPC_CHANNELS } from './updater-types'

@@ -642,10 +642,10 @@ export async function preparePdfPreview(filePath: string, basePaths?: string[]):
       }).promise;
       await renderAll();
     } catch (err) {
-      container.innerHTML = '<div class="error">PDF 加载失败: ' + err.message + '<\\/div>';
+      container.innerHTML = '<div class="error">PDF 加载失败: ' + err.message + '</div>';
     }
-  <\/script>
-<\/body><\/html>`
+  </script>
+</body></html>`
   const tmpHtmlPath = writeTempHtml(html)
   const tmpHtmlUrl = registerFilePath(tmpHtmlPath)
   return { resolvedPath: safePath, tmpHtmlUrl }

@@ -35,7 +35,8 @@ const FLAG_SERVER_LAST_SEQUENCE = 0b0011
 const SERIALIZATION_NONE = 0b0000
 const SERIALIZATION_JSON = 0b0001
 
-const COMPRESSION_NONE = 0b0000
+// 当前 SDK 暂不启用压缩，预留常量便于未来扩展（避开 no-unused-vars）
+// const COMPRESSION_NONE = 0b0000
 const COMPRESSION_GZIP = 0b0001
 
 const ASYNC_ENDPOINT = 'wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async'

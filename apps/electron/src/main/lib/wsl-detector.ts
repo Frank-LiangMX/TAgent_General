@@ -181,7 +181,7 @@ export async function detectWsl(): Promise<WslStatus> {
       distros: parsed.distros,
       error: null,
     }
-  } catch (error) {
+  } catch {
     // 所有异常场景统一返回 WSL 未就绪
     console.warn('[WSL 检测] WSL 未就绪')
     return createWslNotReadyResult()

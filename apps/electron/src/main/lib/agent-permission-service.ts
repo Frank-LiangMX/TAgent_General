@@ -20,7 +20,6 @@ import {
 } from '@tagent/shared'
 
 import type {
-  TAgentPermissionMode,
   PermissionRequest,
   DangerLevel,
   AskUserRequest,

@@ -422,7 +422,7 @@ function compareSemver(a: string, b: string): number {
 // ===== Plugin Manifest（SDK 插件发现） =====
 
 /** 确保工作区包含 .claude-plugin/plugin.json，SDK 需要此文件发现 skills */
-export function ensurePluginManifest(workspaceSlug: string, workspaceName: string): void {
+export function ensurePluginManifest(workspaceSlug: string, _workspaceName: string): void {
   const wsPath = getAgentWorkspacePath(workspaceSlug)
   const pluginDir = join(wsPath, '.claude-plugin')
   const manifestPath = join(pluginDir, 'plugin.json')

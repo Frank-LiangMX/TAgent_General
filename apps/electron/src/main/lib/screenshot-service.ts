@@ -55,6 +55,7 @@ function ensureAppQuitHook(): void {
   if (_appQuitHookRegistered) return
   _appQuitHookRegistered = true
   // 进程退出前清理离屏窗口，避免 BrowserWindow 残留。lazy require 避免与 main 启动顺序耦合。
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { app } = require('electron') as typeof import('electron')
   app.on('before-quit', destroyScreenshotWindow)
 }

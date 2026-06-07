@@ -27,6 +27,7 @@ export function getConfigDirName(): string {
       _configDirName = '.tagent-dev'
     } else {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { app } = require('electron')
         _configDirName = app.isPackaged ? '.tagent' : '.tagent-dev'
       } catch {
@@ -465,6 +466,7 @@ function defaultSkillCopyFilter(src: string): boolean {
  *   （避免每次启动同步 4MB+ 文件阻塞主进程）
  */
 export function seedDefaultSkills(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { app } = require('electron')
   const bundledDir = app.isPackaged
     ? join(process.resourcesPath, 'default-skills')

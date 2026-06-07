@@ -14,7 +14,7 @@
 
 import { execSync, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
-import { join, dirname } from 'path'
+import { join } from 'path'
 
 import { app } from 'electron'
 

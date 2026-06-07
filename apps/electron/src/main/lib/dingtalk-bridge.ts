@@ -271,7 +271,7 @@ class DingTalkBridge {
       }
     } catch (error) {
       if (testClient) {
-        try { testClient.disconnect() } catch {}
+        try { testClient.disconnect() } catch { /* 关闭失败不影响测试结果 */ }
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
       return {

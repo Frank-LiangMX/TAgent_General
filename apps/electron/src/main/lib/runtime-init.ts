@@ -11,7 +11,7 @@
 
 import { detectBunRuntime } from './bun-finder'
 import { detectGitBash } from './git-bash-detector'
-import { detectGitRuntime, getGitRepoStatus } from './git-detector'
+import { detectGitRuntime } from './git-detector'
 import { detectNodeRuntime } from './node-detector'
 import { loadShellEnv } from './shell-env'
 import { detectWsl } from './wsl-detector'

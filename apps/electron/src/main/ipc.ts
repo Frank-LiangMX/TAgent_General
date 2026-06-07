@@ -2071,7 +2071,7 @@ export function registerIpcHandlers(): void {
   // 获取任务输出（保留接口，供未来扩展）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.GET_TASK_OUTPUT,
-    async (_, input: GetTaskOutputInput): Promise<GetTaskOutputResult> => {
+    async (_event, _input: GetTaskOutputInput): Promise<GetTaskOutputResult> => {
       try {
         // TODO: 实现通过 SDK 的 TaskOutput 获取任务输出
         console.warn('[IPC] GET_TASK_OUTPUT: 当前版本暂未实现，返回空输出')

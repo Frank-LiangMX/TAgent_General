@@ -40,7 +40,6 @@ import { getFeishuBotBindingsPath, getFeishuBotMetadataPath } from './config-pat
 import { renderCard as renderRunCard } from './feishu/card-renderer-v2'
 import {
   createInitialState,
-  finalizeIfRunning,
   markError,
   markInterrupted,
   reduce as reduceRunState,

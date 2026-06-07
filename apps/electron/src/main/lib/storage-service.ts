@@ -14,7 +14,6 @@ import { app } from 'electron'
 import { listAgentSessions } from './agent-session-manager'
 import { listAgentWorkspaces } from './agent-workspace-manager'
 import {
-  getConfigDir,
   getAgentSessionsDir,
   getSdkConfigDir,
   getAgentWorkspacesDir,

@@ -34,6 +34,15 @@ import { app } from 'electron'
 
 import { isPromptTooLongError, isThinkingSignatureError, friendlyErrorMessage, mapSDKErrorToTypedError, extractErrorDetails, shouldKeepChannelOpen } from './adapters/claude-agent-adapter'
 import { askUserService } from './agent-ask-user-service'
+import {
+  MAX_TOOL_SUMMARY_LENGTH,
+  CHARS_PER_TOKEN,
+  setSessionContextWindow,
+  getSessionContextWindow,
+  computeMaxContextMessages,
+  summarizeToolResult,
+  formatImagePlaceholder,
+} from './agent-context-utils'
 import { AgentEventBus } from './agent-event-bus'
 import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-plan-service'
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
@@ -54,7 +63,9 @@ import { getRuntimeStatus } from './runtime-init'
 import { getSettings } from './settings-service'
 import pkg from '../../../package.json' with { type: 'json' }
 
+import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
 import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
+import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest , AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
 
 
 // ===== 类型定义 =====
@@ -284,21 +295,6 @@ function resolveSDKCliPath(): string {
 
 /** 最大回填消息条数（P0-1 fallback, 拿到 contextWindow 前用这个） */
 const MAX_CONTEXT_MESSAGES_FALLBACK = 20
-
-// P0-1 / P1-1 工具函数（已提取到 agent-context-utils.ts 便于单测）
-import {
-  MAX_TOOL_SUMMARY_LENGTH,
-  CHARS_PER_TOKEN,
-  setSessionContextWindow,
-  getSessionContextWindow,
-  computeMaxContextMessages,
-  summarizeToolResult,
-  formatImagePlaceholder,
-} from './agent-context-utils'
-
-import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
-import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest , AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, AgentStreamPayload, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
-
 
 /**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要
