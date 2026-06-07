@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach } from 'bun:test'
 import {
   computeMaxContextMessages,
   summarizeToolResult,
+  formatImagePlaceholder,
   setSessionContextWindow,
   getSessionContextWindow,
   clearSessionContextWindow,
@@ -112,6 +113,26 @@ describe('summarizeToolResult (P1-1)', () => {
     const content = 'D'.repeat(MAX_TOOL_SUMMARY_LENGTH)  // 200 chars
     const out = summarizeToolResult(content, Math.ceil(MAX_TOOL_SUMMARY_LENGTH / CHARS_PER_TOKEN))  // budget 50 tokens = 200 chars
     expect(out).toBe(content)
+  })
+})
+
+describe('formatImagePlaceholder (P1-2)', () => {
+  test('Given 0 张图片 When format Then 返回空字符串 (无 placeholder)', () => {
+    expect(formatImagePlaceholder(0)).toBe('')
+  })
+
+  test('Given 1 张图片 When format Then 返回单数 placeholder', () => {
+    expect(formatImagePlaceholder(1)).toBe(' [本消息含 1 张图片]')
+  })
+
+  test('Given 多张图片 When format Then 返回复数 placeholder 含 N', () => {
+    expect(formatImagePlaceholder(2)).toBe(' [本消息含 2 张图片]')
+    expect(formatImagePlaceholder(5)).toBe(' [本消息含 5 张图片]')
+    expect(formatImagePlaceholder(100)).toBe(' [本消息含 100 张图片]')
+  })
+
+  test('Given 负数 (defensive) When format Then 返回空字符串', () => {
+    expect(formatImagePlaceholder(-1)).toBe('')
   })
 })
 

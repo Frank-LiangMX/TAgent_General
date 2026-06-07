@@ -292,6 +292,7 @@ import {
   getSessionContextWindow,
   computeMaxContextMessages,
   summarizeToolResult,
+  formatImagePlaceholder,
 } from './agent-context-utils'
 
 /**
@@ -358,9 +359,7 @@ function buildContextPrompt(
       // P1-2: 统计图片/文件附件块, 注入 placeholder
       // 避免 buildContextPrompt 整块丢图片导致 Agent "失忆"
       const imageCount = content.filter((b) => b.type === 'image').length
-      const imageNote = imageCount > 0
-        ? (imageCount === 1 ? ' [本消息含 1 张图片]' : ` [本消息含 ${imageCount} 张图片]`)
-        : ''
+      const imageNote = formatImagePlaceholder(imageCount)
 
       // 有文本 或 有图片 都注入（光图片消息也保留痕迹）
       if (!text && imageCount === 0) return null

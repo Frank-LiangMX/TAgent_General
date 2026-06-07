@@ -80,3 +80,19 @@ export function summarizeToolResult(content: string, budgetTokens: number = 500)
   const tailChars = Math.floor(budgetTokens * (1 - headRatio) * CHARS_PER_TOKEN)
   return content.slice(0, headChars) + '\n... [truncated] ...\n' + content.slice(-tailChars)
 }
+
+/**
+ * P1-2: 图片占位符文本
+ *
+ * 用于 buildContextPrompt: 统计消息内 image block 数量, 注入中文提示,
+ * 避免历史消息中的图片被整块丢弃后 Agent "失忆"。
+ *
+ * @param imageCount 图片块数量 (≥ 0)
+ * @returns placeholder 字符串 (imageCount=0 时返回 '')
+ */
+export function formatImagePlaceholder(imageCount: number): string {
+  if (imageCount <= 0) return ''
+  return imageCount === 1
+    ? ' [本消息含 1 张图片]'
+    : ` [本消息含 ${imageCount} 张图片]`
+}
