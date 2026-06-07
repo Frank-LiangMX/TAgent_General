@@ -110,7 +110,13 @@ export default [
       'import/no-default-export': 'off',
       // 没装 eslint-import-resolver-typescript, 解不了 Vite `@/` alias 和 .ts 路径
       'import/no-unresolved': 'off',
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      // Tiptap 扩展（@tiptap/extension-link、starter-kit 等）dual export：既作 default
+      // 又作 named（export { Link, Link as default }）。`import Link from '...'` 模式是
+      // 库作者推荐的用法，rule 误报直接关掉。
+      'import/no-named-as-default': 'off',
+      // 业务日志散落各处（main 进程、bridge、IPC handler），改 logger 是单独 refactor，
+      // 现阶段先关掉警告避免污染 lint 输出。运行错误日志请用 console.error/warn（已放开）。
+      'no-console': 'off',
     },
   }),
 

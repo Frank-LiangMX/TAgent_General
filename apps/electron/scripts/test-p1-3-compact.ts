@@ -36,11 +36,19 @@ function writeSessionFile(sessionId: string, messages: object[]): string {
   return filePath
 }
 
-function readSessionFile(sessionId: string): object[] {
+function readSessionFile(sessionId: string): SessionMessage[] {
   const filePath = join(tempDir, `${sessionId}.jsonl`)
   if (!existsSync(filePath)) return []
   const raw = readFileSync(filePath, 'utf-8')
-  return raw.trim().split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l))
+  return raw.trim().split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l) as SessionMessage)
+}
+
+/** compactSession 写入的 JSONL 单行结构（system/user/assistant + optional tool blocks） */
+interface SessionMessage {
+  type: 'system' | 'user' | 'assistant'
+  message: {
+    content: Array<{ type: string; text?: string }>
+  }
 }
 
 function cleanup(): void {
@@ -78,7 +86,7 @@ async function test1DropOldToolResults(): Promise<void> {
   const newMsgs = readSessionFile(sessionId)
   if (newMsgs.length !== 4) throw new Error(`Expected 4 msgs in file, got ${newMsgs.length}`)
 
-  const types = newMsgs.map((m: any) => m.type)
+  const types = newMsgs.map((m) => m.type)
   const expected = ['system', 'user', 'assistant', 'assistant']
   if (JSON.stringify(types) !== JSON.stringify(expected)) {
     throw new Error(`Expected types ${JSON.stringify(expected)}, got ${JSON.stringify(types)}`)
@@ -114,9 +122,9 @@ async function test2KeepLastN(): Promise<void> {
   if (newMsgs.length !== 3) throw new Error(`Expected 3 msgs in file, got ${newMsgs.length}`)
 
   // 第一个应该是 system, 然后是最后 2 条 (Q2, A2)
-  if ((newMsgs[0] as any).type !== 'system') throw new Error('First msg should be system')
-  if ((newMsgs[1] as any).message.content[0].text !== 'Q2') throw new Error('Second should be Q2')
-  if ((newMsgs[2] as any).message.content[0].text !== 'A2') throw new Error('Third should be A2')
+  if (newMsgs[0]!.type !== 'system') throw new Error('First msg should be system')
+  if (newMsgs[1]!.message.content[0]!.text !== 'Q2') throw new Error('Second should be Q2')
+  if (newMsgs[2]!.message.content[0]!.text !== 'A2') throw new Error('Third should be A2')
 
   console.log('  ✅ 断言全部通过')
 }
