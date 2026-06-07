@@ -10,6 +10,8 @@
  * - 支持推理内容：Gemini 2.5/3 系列通过 thinkingConfig 启用思考过程回显
  */
 
+import { normalizeBaseUrl } from './url-utils.ts'
+
 import type {
   ProviderAdapter,
   ProviderRequest,
@@ -20,7 +22,6 @@ import type {
   ToolDefinition,
   ContinuationMessage,
 } from './types.ts'
-import { normalizeBaseUrl } from './url-utils.ts'
 
 // ===== Google 特有类型 =====
 

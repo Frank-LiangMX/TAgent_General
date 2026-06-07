@@ -5,8 +5,9 @@
  * 移植自 proma-frontend 的 chat-view/copy-button.tsx。
  */
 
-import { useState, useCallback } from 'react'
 import { CopyIcon, CheckIcon } from 'lucide-react'
+import { useState, useCallback } from 'react'
+
 import { MessageAction } from '@/components/ai-elements/message'
 
 interface CopyButtonProps {

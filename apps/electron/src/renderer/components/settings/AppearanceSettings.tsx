@@ -5,15 +5,30 @@
  * 通过 Jotai atom 管理状态，持久化到 ~/.tagent/settings.json。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
 import { Check } from 'lucide-react'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsRow,
   SettingsSegmentedControl,
 } from './primitives'
+
+import type { ThemeMode, ThemeStyle, MarkdownFontSize } from '../../../types'
+
+// ===== 主题预览图片导入 =====
+import themeCloudDancer from '@/assets/theme-previews/theme-cloud-dancer.webp'
+import themeForestMorning from '@/assets/theme-previews/theme-forest-morning.webp'
+import themeForestNight from '@/assets/theme-previews/theme-forest-night.webp'
+import themeMorandiNight from '@/assets/theme-previews/theme-morandi-night.webp'
+import themeOceanDark from '@/assets/theme-previews/theme-ocean-dark.webp'
+import themeOceanLight from '@/assets/theme-previews/theme-ocean-light.webp'
+import {
+  markdownFontSizeAtom,
+  updateMarkdownFontSize,
+} from '@/atoms/markdown-font-size'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -22,20 +37,7 @@ import {
   updateThemeStyle,
   applyThemeToDOM,
 } from '@/atoms/theme'
-import {
-  markdownFontSizeAtom,
-  updateMarkdownFontSize,
-} from '@/atoms/markdown-font-size'
 import { cn } from '@/lib/utils'
-import type { ThemeMode, ThemeStyle, MarkdownFontSize } from '../../../types'
-
-// ===== 主题预览图片导入 =====
-import themeCloudDancer from '@/assets/theme-previews/theme-cloud-dancer.webp'
-import themeOceanLight from '@/assets/theme-previews/theme-ocean-light.webp'
-import themeForestMorning from '@/assets/theme-previews/theme-forest-morning.webp'
-import themeOceanDark from '@/assets/theme-previews/theme-ocean-dark.webp'
-import themeForestNight from '@/assets/theme-previews/theme-forest-night.webp'
-import themeMorandiNight from '@/assets/theme-previews/theme-morandi-night.webp'
 
 /** 主题选项 */
 const THEME_OPTIONS = [

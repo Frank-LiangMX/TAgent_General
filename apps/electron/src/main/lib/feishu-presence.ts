@@ -8,6 +8,7 @@
  */
 
 import { BrowserWindow, powerMonitor } from 'electron'
+
 import type { FeishuPresenceReport } from '@tagent/shared'
 
 /** 内部在场状态 */

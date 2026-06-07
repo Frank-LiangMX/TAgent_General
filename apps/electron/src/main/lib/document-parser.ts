@@ -11,6 +11,7 @@
 
 import { readFileSync } from 'node:fs'
 import { extname } from 'node:path'
+
 import { resolveAttachmentPath } from './config-paths'
 
 // ===== 文件类型分类 =====

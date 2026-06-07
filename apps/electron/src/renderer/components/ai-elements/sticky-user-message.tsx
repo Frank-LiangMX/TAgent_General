@@ -10,15 +10,18 @@
  * 匹配其 data-message-id 到 userMessages 数据列表，显示对应内容。
  */
 
-import * as React from 'react'
-import { FileText, FileImage, ChevronUp } from 'lucide-react'
-import { useStickToBottomContext } from 'use-stick-to-bottom'
 import { useAtomValue } from 'jotai'
-import { UserAvatar } from '@/components/chat/UserAvatar'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { stickyUserMessageEnabledAtom } from '@/atoms/ui-preferences'
+import { FileText, FileImage, ChevronUp } from 'lucide-react'
+import * as React from 'react'
+import { useStickToBottomContext } from 'use-stick-to-bottom'
+
 import { MessageResponse, remarkMentions } from './message'
+
 import type { RemarkPluginFn } from './message'
+
+import { stickyUserMessageEnabledAtom } from '@/atoms/ui-preferences'
+import { userProfileAtom } from '@/atoms/user-profile'
+import { UserAvatar } from '@/components/chat/UserAvatar'
 import { cn } from '@/lib/utils'
 
 /** 悬浮条专用 remark 插件（仅 mention，不保留换行） */

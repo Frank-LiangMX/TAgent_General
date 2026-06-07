@@ -9,7 +9,13 @@
  * 编辑模式下修改即时保存（auto-save），创建模式仍需手动提交。
  */
 
-import * as React from 'react'
+import { normalizeAnthropicProviderUrl } from '@tagent/core'
+import {
+  PROVIDER_DEFAULT_URLS,
+  PROVIDER_LABELS,
+  isAgentCompatibleProvider,
+} from '@tagent/shared'
+import { useSetAtom } from 'jotai'
 import {
   ArrowLeft,
   Eye,
@@ -23,17 +29,17 @@ import {
   Download,
   Search,
 } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { useSetAtom } from 'jotai'
-import { channelFormDirtyAtom } from '@/atoms/settings-tab'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+
 import {
-  PROVIDER_DEFAULT_URLS,
-  PROVIDER_LABELS,
-  isAgentCompatibleProvider,
-} from '@tagent/shared'
+  SettingsSection,
+  SettingsCard,
+  SettingsInput,
+  SettingsSelect,
+  SettingsToggle,
+} from './primitives'
+
 import type {
   Channel,
   ChannelCreateInput,
@@ -42,9 +48,8 @@ import type {
   FetchModelsResult,
   ProviderType,
 } from '@tagent/shared'
-import { normalizeAnthropicProviderUrl } from '@tagent/core'
-import { getProviderLogo } from '@/lib/model-logo'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
+import { channelFormDirtyAtom } from '@/atoms/settings-tab'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,13 +60,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsInput,
-  SettingsSelect,
-  SettingsToggle,
-} from './primitives'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { getProviderLogo } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+
 
 interface ChannelFormProps {
   /** 编辑模式下传入已有渠道，创建模式传 null */

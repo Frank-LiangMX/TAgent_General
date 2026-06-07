@@ -7,9 +7,15 @@
  * 使用 useStore() 直接操作 atoms，避免 React 订阅。
  */
 
+import { useStore } from 'jotai'
 import { useEffect } from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
-import { useStore } from 'jotai'
+import { toast } from 'sonner'
+
+import type { AgentStreamState } from '@/atoms/agent-atoms'
+import type { NotificationSoundType } from '@/types/settings'
+import type { AgentStreamEvent, AgentStreamCompletePayload, AgentEvent, AgentStreamPayload, SDKAssistantMessage, SDKUserMessage, SDKSystemMessage, SDKContentBlock, SDKUserContentBlock, TAgentEvent, AgentSessionMeta } from '@tagent/shared'
+
 import {
   agentStreamingStatesAtom,
   agentStreamErrorsAtom,
@@ -42,24 +48,19 @@ import {
   workingDoneSessionIdsAtom,
   agentSessionPathMapAtom,
   agentDiffRefreshVersionAtom,
-} from '@/atoms/agent-atoms'
+ agentDiffUnseenChangesAtom, agentDiffUnseenFilesAtom, agentDiffPanelTabAtom, agentSidePanelOpenAtom } from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
   notificationSoundsAtom,
   sendDesktopNotification,
 } from '@/atoms/notifications'
-import { appModeAtom } from '@/atoms/app-mode'
-import { tabsAtom, activeTabIdAtom, openTab, updateTabTitle } from '@/atoms/tab-atoms'
-import type { AgentStreamState } from '@/atoms/agent-atoms'
-import { agentDiffUnseenChangesAtom, agentDiffUnseenFilesAtom, agentDiffPanelTabAtom, agentSidePanelOpenAtom } from '@/atoms/agent-atoms'
 import { autoPreviewEnabledAtom, previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
-import type { NotificationSoundType } from '@/types/settings'
-import { toast } from 'sonner'
-import type { AgentStreamEvent, AgentStreamCompletePayload, AgentEvent, AgentStreamPayload, SDKAssistantMessage, SDKUserMessage, SDKSystemMessage, SDKContentBlock, SDKUserContentBlock, TAgentEvent, AgentSessionMeta } from '@tagent/shared'
-import { buildExternalAgentRunActivation } from '@/lib/external-agent-run'
+import { tabsAtom, activeTabIdAtom, openTab, updateTabTitle } from '@/atoms/tab-atoms'
 import { getAgentCompletionMarkers } from '@/lib/agent-completion-presence'
 import { getPlanModeChangeFromToolName, updatePlanModeSessionSet } from '@/lib/agent-plan-mode'
+import { buildExternalAgentRunActivation } from '@/lib/external-agent-run'
 
 /** 触发右侧文件浏览器自动定位的写入类工具集合 */
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Update'])

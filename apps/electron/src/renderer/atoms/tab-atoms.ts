@@ -8,14 +8,16 @@
 
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
-import {
-  streamingConversationIdsAtom,
-} from './chat-atoms'
+
 import {
   agentRunningSessionIdsAtom,
   agentSessionIndicatorMapAtom,
   unviewedCompletedSessionIdsAtom,
 } from './agent-atoms'
+import {
+  streamingConversationIdsAtom,
+} from './chat-atoms'
+
 import type { SessionIndicatorStatus } from './agent-atoms'
 import type { PreviewFile } from './preview-atoms'
 

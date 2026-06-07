@@ -10,15 +10,19 @@
  * - 文件选择对话框：Electron dialog → 小文件读取为 base64，大文件返回本地路径引用
  */
 
+import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, unlinkSync, existsSync, rmSync, statSync } from 'node:fs'
 import { extname, basename, join, isAbsolute, normalize } from 'node:path'
-import { randomUUID } from 'node:crypto'
+
+import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { dialog, BrowserWindow } from 'electron'
+
 import {
   getConfigDir,
   getConversationAttachmentsDir,
   resolveAttachmentPath,
 } from './config-paths'
+
 import type {
   FileAttachment,
   AttachmentSaveInput,
@@ -28,7 +32,7 @@ import type {
   FileDialogLargeFile,
   FileDialogSkippedFile,
 } from '@tagent/shared'
-import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+
 
 /** 支持的图片 MIME 类型 */
 const IMAGE_MIME_TYPES = new Set([

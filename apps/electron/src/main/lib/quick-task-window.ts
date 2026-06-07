@@ -5,9 +5,10 @@
  * 无边框 + 透明 + 置顶，失焦自动隐藏。
  */
 
-import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
-import { app } from 'electron'
+
+import { BrowserWindow, screen , app } from 'electron'
+
 
 /** 快速任务窗口单例 */
 let quickTaskWindow: BrowserWindow | null = null

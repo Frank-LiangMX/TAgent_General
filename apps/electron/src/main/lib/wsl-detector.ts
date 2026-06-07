@@ -11,7 +11,9 @@
  */
 
 import { execSync } from 'node:child_process'
+
 import iconv from 'iconv-lite'
+
 import type { WslStatus } from '@tagent/shared'
 
 /** WSL 不可用时返回的统一错误提示 */

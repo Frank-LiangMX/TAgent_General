@@ -5,13 +5,16 @@
  * 带 Shiki 语法高亮、行号、与 diff 视图一致的主题风格。
  */
 
-import * as React from 'react'
-import { useAtomValue } from 'jotai'
 import { File as PierreFile } from '@pierre/diffs/react'
-import type { FileContents } from '@pierre/diffs'
-import { resolvedThemeAtom } from '@/atoms/theme'
+import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
 import { CollapsibleResult } from './collapsible-result'
 import { createPierreFileCSS } from './pierre-styles'
+
+import type { FileContents } from '@pierre/diffs'
+
+import { resolvedThemeAtom } from '@/atoms/theme'
 
 function cheapHash(s: string): number {
   let h = 0

@@ -5,10 +5,11 @@
  * 凭据通过 getMemoryConfig() 从 memory.json 读取（Chat + Agent 共用）。
  */
 
-import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
-import type { ChatToolMeta } from '@tagent/shared'
 import { getMemoryConfig } from '../memory-service'
 import { searchMemory, addMemory, formatSearchResult } from '../memos-client'
+
+import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
+import type { ChatToolMeta } from '@tagent/shared'
 
 // ===== 工具元数据 =====
 

@@ -4,15 +4,18 @@
  * 通过主进程保存的 previewId 读取当前文件预览上下文，复用 DiffTabContent。
  */
 
-import * as React from 'react'
-import { AlertCircle, RefreshCw } from 'lucide-react'
 import { useSetAtom } from 'jotai'
+import { AlertCircle, RefreshCw } from 'lucide-react'
+import * as React from 'react'
+
+import { DefaultAppOpenButton } from './DefaultAppOpenButton'
+import { DiffTabContent } from './DiffTabContent'
+import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
+
 import type { DetachedPreviewWindowData } from '@tagent/shared'
+
 import { agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
-import { DiffTabContent } from './DiffTabContent'
-import { DefaultAppOpenButton } from './DefaultAppOpenButton'
-import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 function getPreviewId(): string | null {
   return new URLSearchParams(window.location.search).get('previewId')

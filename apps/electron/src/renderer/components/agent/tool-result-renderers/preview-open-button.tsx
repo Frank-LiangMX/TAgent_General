@@ -6,10 +6,11 @@
  * 点击后将文件内容在当前会话的临时预览标签页中打开。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
+import * as React from 'react'
+
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { cn } from '@/lib/utils'
 

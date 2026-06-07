@@ -9,17 +9,20 @@
  * 与该条分支对齐）。
  */
 
-import { useCallback } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { appModeAtom } from '@/atoms/app-mode'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
+import { useCallback } from 'react'
+
+import type { TabItem } from '@/atoms/tab-atoms'
+
 import {
   agentSessionsAtom,
   currentAgentSessionIdAtom,
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import type { TabItem } from '@/atoms/tab-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
+import { currentConversationIdAtom } from '@/atoms/chat-atoms'
+
 
 export type SyncActiveTabSideEffects = (newActiveTab: TabItem | null) => void
 

@@ -6,24 +6,28 @@
  * 底部：追加日期时间和用户名开关
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
 import { Plus, Trash2, Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsToggle,
 } from './primitives'
+
+import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
+
 import {
   promptConfigAtom,
   selectedPromptIdAtom,
   defaultPromptIdAtom,
 } from '@/atoms/system-prompt-atoms'
-import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+
 
 /** 防抖保存延迟 (ms) */
 const DEBOUNCE_DELAY = 500

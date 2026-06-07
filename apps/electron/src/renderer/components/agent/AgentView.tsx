@@ -13,43 +13,25 @@
  * 布局：AgentHeader | AgentMessages | AgentInput + 可选 FileBrowser 侧面板
  */
 
+import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import { Bot, CornerDownLeft, Square, Settings, Paperclip, FolderPlus, X, Copy, Check, Brain, Sparkles, Eye } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import { toast } from 'sonner'
-import { Bot, CornerDownLeft, Square, Settings, Paperclip, FolderPlus, X, Copy, Check, Brain, Sparkles, Eye } from 'lucide-react'
-import { AgentMessages } from './AgentMessages'
+
 import { AgentHeader } from './AgentHeader'
+import { AgentMessages } from './AgentMessages'
+import { AskUserBanner } from './AskUserBanner'
 import { ContextUsageBadge } from './ContextUsageBadge'
+import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
-import { AskUserBanner } from './AskUserBanner'
-import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
-import { ModelSelector } from '@/components/chat/ModelSelector'
-import { AttachmentPreviewItem } from '@/components/chat/AttachmentPreviewItem'
-import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
-import { RichTextInput } from '@/components/ai-elements/rich-text-input'
-import { SpeechButton } from '@/components/ai-elements/speech-button'
-import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Switch } from '@/components/ui/switch'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { cn } from '@/lib/utils'
-import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
-import { registerShortcut } from '@/lib/shortcut-registry'
-import { previewPanelOpenMapAtom, previewFileMapAtom, autoPreviewEnabledAtom, quotedSelectionMapAtom, currentQuotedSelectionAtom } from '@/atoms/preview-atoms'
+
+import type { AgentContextStatus } from '@/atoms/agent-atoms'
+import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
+
 import {
   agentStreamingStatesAtom,
   agentSessionStreamingStateAtomFamily,
@@ -90,18 +72,40 @@ import {
   finalizeStreamingActivities,
   agentProcessGroupsKeepExpandedAtom,
 } from '@/atoms/agent-atoms'
-import type { AgentContextStatus } from '@/atoms/agent-atoms'
-import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { channelsAtom, thinkingExpandedAtom } from '@/atoms/chat-atoms'
-import { useOpenSession } from '@/hooks/useOpenSession'
-import { AgentSessionProvider } from '@/contexts/session-context'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { previewPanelOpenMapAtom, previewFileMapAtom, autoPreviewEnabledAtom, quotedSelectionMapAtom, currentQuotedSelectionAtom } from '@/atoms/preview-atoms'
+import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
-import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
-import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
-import { fileToBase64, formatFileNames, getFileParentPath } from '@/lib/file-utils'
+import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
+import { RichTextInput } from '@/components/ai-elements/rich-text-input'
+import { SpeechButton } from '@/components/ai-elements/speech-button'
+import { AttachmentPreviewItem } from '@/components/chat/AttachmentPreviewItem'
+import { ModelSelector } from '@/components/chat/ModelSelector'
+import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { AgentSessionProvider } from '@/contexts/session-context'
+import { useOpenSession } from '@/hooks/useOpenSession'
 import { createClipboardPendingFile, createClipboardTextDraft, makeUniqueAttachmentName } from '@/lib/clipboard-text-attachment'
+import { fileToBase64, formatFileNames, getFileParentPath } from '@/lib/file-utils'
+import { getActiveAccelerator, getAcceleratorDisplay , registerShortcut } from '@/lib/shortcut-registry'
+import { cn } from '@/lib/utils'
+
+
 
 /** 稳定的空 SDKMessage 数组引用，避免 ?? [] 每次创建新引用 */
 const EMPTY_SDK_MESSAGES: SDKMessage[] = []

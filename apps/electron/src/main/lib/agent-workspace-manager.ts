@@ -6,10 +6,10 @@
  * - 工作区目录：~/.tagent/agent-workspaces/{slug}/（Agent 的 cwd）
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, cpSync, rmSync, mkdirSync, statSync, renameSync, openSync, readSync, closeSync } from 'node:fs'
-import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 import { randomUUID } from 'node:crypto'
+import { readFileSync, writeFileSync, existsSync, readdirSync, cpSync, rmSync, mkdirSync, statSync, renameSync, openSync, readSync, closeSync } from 'node:fs'
 import { join, resolve, relative, isAbsolute, dirname, basename } from 'node:path'
+
 import {
   getAgentWorkspacesIndexPath,
   getAgentWorkspacePath,
@@ -19,6 +19,8 @@ import {
   getDefaultSkillsDir,
   parseSkillVersion,
 } from './config-paths'
+import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
+
 import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, SkillImportSource, OtherWorkspaceSkillsGroup, WorkspaceCapabilities, SkillFileNode, SkillFileContent } from '@tagent/shared'
 
 interface AgentWorkspacesIndex {

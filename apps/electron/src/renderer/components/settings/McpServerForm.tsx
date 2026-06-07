@@ -5,11 +5,9 @@
  * 复用设置原语组件实现卡片化布局。
  */
 
-import * as React from 'react'
 import { ArrowLeft, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@tagent/shared'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
@@ -17,6 +15,13 @@ import {
   SettingsSelect,
   SettingsToggle,
 } from './primitives'
+
+import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@tagent/shared'
+
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
+
 
 /** 编辑中的服务器 */
 interface EditingServer {

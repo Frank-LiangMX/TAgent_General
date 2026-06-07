@@ -3,9 +3,11 @@
  */
 
 import * as React from 'react'
+
+import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
+
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
 
 interface SettingsTextareaProps {
   /** 标签文本 */

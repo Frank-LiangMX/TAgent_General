@@ -8,28 +8,20 @@
  * - 对话列表（新对话按钮 + 右键菜单 + 按 updatedAt 降序排列）
  */
 
-import * as React from 'react'
 import { useAtom, useSetAtom, useAtomValue, useStore } from 'jotai'
-import { toast } from 'sonner'
 import { Pin, PinOff, Settings, Plus, Trash2, Pencil, ChevronDown, ChevronRight, Plug, Zap, PanelLeftClose, PanelLeftOpen, ArrowRightLeft, Search, Archive, ArchiveRestore, ArrowLeft, Hammer, Bot, MessageSquare, MoreHorizontal, Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+
 import { ModeSwitcher } from './ModeSwitcher'
 import { SearchDialog } from './SearchDialog'
-import { UserAvatar } from '@/components/chat/UserAvatar'
+
+import type { ActiveView } from '@/atoms/active-view'
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
+
 import { activeViewAtom } from '@/atoms/active-view'
-import { appModeAtom, type AppMode } from '@/atoms/app-mode'
-import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
-import {
-  conversationsAtom,
-  currentConversationIdAtom,
-  selectedModelAtom,
-  streamingConversationIdsAtom,
-  conversationModelsAtom,
-  conversationContextLengthAtom,
-  conversationThinkingEnabledAtom,
-  conversationParallelModeAtom,
-} from '@/atoms/chat-atoms'
 import {
   agentSessionsAtom,
   agentSDKMessagesCacheAtom,
@@ -60,9 +52,24 @@ import {
   sessionPersistedPermissionModeAtom,
   sessionExistsAtom,
 } from '@/atoms/agent-atoms'
-import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import { appModeAtom, type AppMode } from '@/atoms/app-mode'
+import {
+  conversationsAtom,
+  currentConversationIdAtom,
+  selectedModelAtom,
+  streamingConversationIdsAtom,
+  conversationModelsAtom,
+  conversationContextLengthAtom,
+  conversationThinkingEnabledAtom,
+  conversationParallelModeAtom,
+} from '@/atoms/chat-atoms'
+import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
-import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
+import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
+import { sidebarViewModeAtom, agentSidebarTopHeightAtom } from '@/atoms/sidebar-atoms'
+import { promptConfigAtom, selectedPromptIdAtom, conversationPromptIdAtom } from '@/atoms/system-prompt-atoms'
 import {
   tabsAtom,
   activeTabIdAtom,
@@ -72,30 +79,19 @@ import {
   updateTabTitle,
   sessionViewStateMapAtom,
 } from '@/atoms/tab-atoms'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { sidebarViewModeAtom, agentSidebarTopHeightAtom } from '@/atoms/sidebar-atoms'
-import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
-import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
 import { workingSessionGroupsAtom, workingSessionIdsSetAtom } from '@/atoms/working-atoms'
-import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
-import { promptConfigAtom, selectedPromptIdAtom, conversationPromptIdAtom } from '@/atoms/system-prompt-atoms'
-import { useOpenSession } from '@/hooks/useOpenSession'
-import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
-import { WorkspaceSelector } from '@/components/agent/WorkspaceSelector'
 import { CollapsedWorkspacePopover } from '@/components/agent/CollapsedWorkspacePopover'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
+import { WorkspaceSelector } from '@/components/agent/WorkspaceSelector'
+import { UserAvatar } from '@/components/chat/UserAvatar'
+import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
   SessionMiniMapPopover,
   useSessionMiniMapHover,
   type SessionMiniMapType,
 } from '@/components/session-preview/SessionMiniMapPopover'
-import { detectIsMac } from '@/lib/platform'
-import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
-import {
-  replaceAgentSessionInFreshnessOrder,
-  sortAgentSessionsByUpdatedAtDesc,
-} from '@/lib/agent-session-list'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -120,8 +116,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import type { ActiveView } from '@/atoms/active-view'
-import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useOpenSession } from '@/hooks/useOpenSession'
+import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
+import {
+  replaceAgentSessionInFreshnessOrder,
+  sortAgentSessionsByUpdatedAtDesc,
+} from '@/lib/agent-session-list'
+import { detectIsMac } from '@/lib/platform'
+import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+import { cn } from '@/lib/utils'
 
 interface SidebarItemProps {
   icon: React.ReactNode
@@ -619,7 +623,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       .listAgentSessions()
       .then(setAgentSessions)
       .catch(console.error)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [setConversations, setUserProfile, setAgentSessions])
 
   // 窗口聚焦时重新同步列表，修复长时间后前后端不一致

@@ -10,8 +10,9 @@
  * 避免在每个调用点各写一份。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
+import * as React from 'react'
+
 import {
   activeTabAtom,
   sessionViewStateMapAtom,

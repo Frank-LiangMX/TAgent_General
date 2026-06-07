@@ -5,22 +5,12 @@
  * 切换按钮在面板关闭时显示活动指示点。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import { X, FolderOpen, ExternalLink, ChevronRight, MoreHorizontal, FolderSearch, Pencil, FolderInput, Info, FolderHeart, MessageSquarePlus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { FileBrowser, FileDropZone, FileTypeIcon, FileSearchBar, computeRevealAncestors, isPathUnderRoot, computeTreeRowLayout, AncestorGuides, STICKY_ROW_BASE_CLASS, canBeSticky } from '@/components/file-browser'
-import { DiffPanelTabBar } from '@/components/diff/DiffPanelTabBar'
-import { DiffChangesList } from '@/components/diff/DiffChangesList'
-import { WorktreeSelector } from '@/components/diff/WorktreeSelector'
+import * as React from 'react'
+
+import type { FileEntry, AgentPendingFile } from '@tagent/shared'
+
 import {
   agentSidePanelOpenAtom,
   workspaceFilesVersionAtom,
@@ -37,8 +27,21 @@ import {
 } from '@/atoms/agent-atoms'
 import { previewPanelOpenMapAtom, previewFileMapAtom, type PreviewFile } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { DiffChangesList } from '@/components/diff/DiffChangesList'
+import { DiffPanelTabBar } from '@/components/diff/DiffPanelTabBar'
+import { WorktreeSelector } from '@/components/diff/WorktreeSelector'
+import { FileBrowser, FileDropZone, FileTypeIcon, FileSearchBar, computeRevealAncestors, isPathUnderRoot, computeTreeRowLayout, AncestorGuides, STICKY_ROW_BASE_CLASS, canBeSticky } from '@/components/file-browser'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
-import type { FileEntry, AgentPendingFile } from '@tagent/shared'
+import { cn } from '@/lib/utils'
+
 
 function getPathBasename(filePath: string): string {
   return filePath.split(/[\\/]/).filter(Boolean).pop() || filePath
@@ -829,7 +832,7 @@ function AttachedDirTree({ dirPath, onDetach, selectedPaths, onSelect, refreshVe
         .then((items) => setChildren(items))
         .catch((err) => console.error('[AttachedDirTree] 刷新失败:', err))
     }
-  }, [refreshVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshVersion])  
 
   // ===== 自动定位：reveal target 命中时自动加载子项 + 展开 =====
   React.useEffect(() => {
@@ -852,7 +855,7 @@ function AttachedDirTree({ dirPath, onDetach, selectedPaths, onSelect, refreshVe
     }
     void run()
     return () => { cancelled = true }
-  }, [revealTs]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [revealTs])  
 
   const toggleExpand = async (): Promise<void> => {
     if (!expanded && !loaded) {
@@ -968,7 +971,7 @@ function AttachedDirItem({ entry, depth, selectedPaths, onSelect, refreshVersion
         .then((items) => setChildren(items))
         .catch((err) => console.error('[AttachedDirItem] 刷新子目录失败:', err))
     }
-  }, [refreshVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshVersion])  
 
   // ===== 自动定位：祖先目录自动展开 + 目标行滚动到中心 =====
   React.useEffect(() => {
@@ -1012,7 +1015,7 @@ function AttachedDirItem({ entry, depth, selectedPaths, onSelect, refreshVersion
 
     // 目标行：滚动到可视区中心（不打 flash，直接靠选中态高亮）
     if (isTarget) scrollToTarget()
-  }, [revealTs]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [revealTs])  
 
   const toggleDir = async (): Promise<void> => {
     if (!entry.isDirectory) return

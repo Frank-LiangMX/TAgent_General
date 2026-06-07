@@ -11,6 +11,7 @@
  */
 
 import { atom } from 'jotai'
+
 import type { ThemeMode, ThemeStyle } from '../../types'
 
 /** localStorage 缓存键 */

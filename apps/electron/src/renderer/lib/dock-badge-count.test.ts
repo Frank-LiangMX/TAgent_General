@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { calculateDockBadgeCount, countPendingRequests } from './dock-badge-count'
 
 describe('Dock 角标计数', () => {

@@ -5,9 +5,7 @@
  * 使用 Jotai atom 管理当前标签页状态。
  */
 
-import * as React from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { cn } from "@/lib/utils";
 import {
   Settings,
   Radio,
@@ -25,12 +23,29 @@ import {
   HardDriveDownload,
   HardDrive,
 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { settingsTabAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from "@/atoms/settings-tab";
+import * as React from "react";
+
+import { AboutSettings } from "./AboutSettings";
+import { AgentSettings } from "./AgentSettings";
+import { AppearanceSettings } from "./AppearanceSettings";
+import { BotHubSettings } from "./BotHubSettings";
+import { ChannelSettings } from "./ChannelSettings";
+import { GeneralSettings } from "./GeneralSettings";
+import { MigrationSettings } from "./MigrationSettings";
+import { PromptSettings } from "./PromptSettings";
+import { ProxySettings } from "./ProxySettings";
+import { ShortcutSettings } from "./ShortcutSettings";
+import { StorageSettings } from "./StorageSettings";
+import { ToolSettings } from "./ToolSettings";
+import { VoiceInputSettings } from "./VoiceInputSettings";
+import { TutorialViewer } from "../tutorial/TutorialViewer";
+
 import type { SettingsTab } from "@/atoms/settings-tab";
+
 import { appModeAtom } from "@/atoms/app-mode";
-import { hasUpdateAtom } from "@/atoms/updater";
 import { hasEnvironmentIssuesAtom } from "@/atoms/environment";
+import { settingsTabAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from "@/atoms/settings-tab";
+import { hasUpdateAtom } from "@/atoms/updater";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,20 +56,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChannelSettings } from "./ChannelSettings";
-import { GeneralSettings } from "./GeneralSettings";
-import { ProxySettings } from "./ProxySettings";
-import { AppearanceSettings } from "./AppearanceSettings";
-import { AboutSettings } from "./AboutSettings";
-import { AgentSettings } from "./AgentSettings";
-import { PromptSettings } from "./PromptSettings";
-import { ToolSettings } from "./ToolSettings";
-import { BotHubSettings } from "./BotHubSettings";
-import { TutorialViewer } from "../tutorial/TutorialViewer";
-import { ShortcutSettings } from "./ShortcutSettings";
-import { VoiceInputSettings } from "./VoiceInputSettings";
-import { MigrationSettings } from "./MigrationSettings";
-import { StorageSettings } from "./StorageSettings";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 /** 设置 Tab 定义 */
 interface TabItem {

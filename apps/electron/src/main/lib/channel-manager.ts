@@ -6,10 +6,18 @@
  * 数据持久化到 ~/.tagent/channels.json。
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { safeStorage } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
+import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
+import { PROVIDER_DEFAULT_URLS } from '@tagent/shared'
+import { safeStorage } from 'electron'
+
 import { getChannelsPath } from './config-paths'
+import { getFetchFn } from './proxy-fetch'
+import { getEffectiveProxyUrl } from './proxy-settings-service'
+import pkg from '../../../package.json' with { type: 'json' }
+
 import type {
   Channel,
   ChannelCreateInput,
@@ -21,11 +29,6 @@ import type {
   FetchModelsResult,
   ProviderType,
 } from '@tagent/shared'
-import { PROVIDER_DEFAULT_URLS } from '@tagent/shared'
-import { getFetchFn } from './proxy-fetch'
-import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
-import pkg from '../../../package.json' with { type: 'json' }
 
 /** 当前配置版本 */
 const CONFIG_VERSION = 1

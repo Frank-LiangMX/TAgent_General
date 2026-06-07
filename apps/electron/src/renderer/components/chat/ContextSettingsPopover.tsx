@@ -5,7 +5,13 @@
  * 简化版移植自 proma-frontend，去掉 Token 估算部分。
  */
 
+import { Settings2 } from 'lucide-react'
 import { useState } from 'react'
+
+import {
+  CONTEXT_LENGTH_OPTIONS,
+  type ContextLengthValue,
+} from '@/atoms/chat-atoms'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -18,13 +24,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
-import { Settings2 } from 'lucide-react'
-import {
-  CONTEXT_LENGTH_OPTIONS,
-  type ContextLengthValue,
-} from '@/atoms/chat-atoms'
 import { useConversationContextLength } from '@/hooks/useConversationSettings'
+import { cn } from '@/lib/utils'
 
 /** 上下文长度滑块标签 */
 function getContextLengthLabel(value: ContextLengthValue): string {

@@ -8,11 +8,12 @@
  * 4. 通过 Sonner 通知用户已完成切换
  */
 
-import * as React from 'react'
 import { useStore } from 'jotai'
-import { toast } from 'sonner'
 import { Bot, Loader2 } from 'lucide-react'
-import { MessageAction } from '@/components/ai-elements/message'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentChannelIdAtom,
   agentWorkspacesAtom,
@@ -20,9 +21,9 @@ import {
   currentAgentSessionIdAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
-import { activeViewAtom } from '@/atoms/active-view'
 import { appModeAtom } from '@/atoms/app-mode'
+import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
+import { MessageAction } from '@/components/ai-elements/message'
 
 interface MigrateToAgentButtonProps {
   /** 当前对话 ID */

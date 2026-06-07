@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { getPlanModeChangeFromToolName, updatePlanModeSessionSet } from './agent-plan-mode'
 
 describe('Agent 计划阶段状态', () => {

@@ -19,8 +19,9 @@
  * └─────────────────────────────────────────┘
  */
 
-import * as React from 'react'
 import { getDisplayName, highlightToTokens, onHighlighterReady } from '@tagent/core'
+import * as React from 'react'
+
 import type { HighlightToken, HighlightTokensResult } from '@tagent/core'
 
 /** react-markdown 传入的 <code> 元素 props */

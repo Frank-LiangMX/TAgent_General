@@ -7,7 +7,9 @@
  */
 
 import * as React from 'react'
+
 import { ChatToolBlock } from './ChatToolBlock'
+
 import type { ChatToolActivity } from '@tagent/shared'
 
 interface MergedActivity {

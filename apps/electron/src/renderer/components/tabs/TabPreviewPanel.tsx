@@ -7,14 +7,17 @@
  * 无搜索、无最小条目限制。
  */
 
+import { AlertTriangle } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle } from 'lucide-react'
+
+import type { TabMinimapItem } from '@/atoms/tab-atoms'
+
 import { UserAvatar } from '@/components/chat/UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
-import type { TabMinimapItem } from '@/atoms/tab-atoms'
+
 
 interface TabPreviewPanelProps {
   title: string
@@ -26,14 +29,14 @@ interface TabPreviewPanelProps {
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 const PREVIEW_MD_COMPONENTS = {
   pre: ({ children }: { children?: React.ReactNode }) => <pre className="text-[11px] opacity-70 truncate">{children}</pre>,
   code: ({ children }: { children?: React.ReactNode }) => <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>,
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 } as const
-/* eslint-enable @typescript-eslint/no-explicit-any */
+ 
 
 // ── 子组件 ──
 

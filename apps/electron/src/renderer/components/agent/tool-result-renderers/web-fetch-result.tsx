@@ -5,8 +5,10 @@
  */
 
 import * as React from 'react'
-import { MessageResponse } from '@/components/ai-elements/message'
+
 import { CollapsibleResult } from './collapsible-result'
+
+import { MessageResponse } from '@/components/ai-elements/message'
 
 interface WebFetchResultRendererProps {
   result: string

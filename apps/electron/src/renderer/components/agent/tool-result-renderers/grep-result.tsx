@@ -6,9 +6,11 @@
  */
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
-import { FileTypeIcon } from '@/components/file-browser'
+
 import { CollapsibleResult } from './collapsible-result'
+
+import { FileTypeIcon } from '@/components/file-browser'
+import { cn } from '@/lib/utils'
 
 interface GrepResultRendererProps {
   result: string

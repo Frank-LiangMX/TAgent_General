@@ -8,11 +8,13 @@
  * 照搬 conversation-manager.ts 的模式。
  */
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, unlinkSync, rmSync, renameSync, readdirSync, cpSync, copyFileSync, createReadStream } from 'node:fs'
-import { createInterface } from 'node:readline'
-import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 import { randomUUID } from 'node:crypto'
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, unlinkSync, rmSync, renameSync, readdirSync, cpSync, copyFileSync, createReadStream } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
+import { createInterface } from 'node:readline'
+
+import { getAgentWorkspace } from './agent-workspace-manager'
+import { clearNanoBananaAgentHistory } from './chat-tools/nano-banana-mcp'
 import {
   getAgentSessionsIndexPath,
   getAgentSessionsDir,
@@ -21,7 +23,9 @@ import {
   getAgentWorkspacePath,
   getSdkConfigDir,
 } from './config-paths'
-import { getAgentWorkspace } from './agent-workspace-manager'
+import { getConversationMessages } from './conversation-manager'
+import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
+
 
 // 在模块加载时一次性设置 SDK 配置目录，避免在 forkSession 等异步调用中临时修改/恢复
 // process.env 导致的并发安全问题（异步操作的 await 间隙其他代码可能读到错误值）
@@ -37,8 +41,7 @@ import type {
   AgentSessionReferenceSearchInput,
   AgentSessionReferenceSearchResult,
 } from '@tagent/shared'
-import { getConversationMessages } from './conversation-manager'
-import { clearNanoBananaAgentHistory } from './chat-tools/nano-banana-mcp'
+
 
 /**
  * 会话索引文件格式
@@ -1075,7 +1078,7 @@ export function rewindFilesFromSnapshot(
   const sdkConfigDir = getSdkConfigDir()
 
   // 1. 查找 SDK session JSONL（优先当前 session，找不到目标 UUID 时 fallback 到源会话）
-  let sessionFilePath = findSdkSessionJsonl(sdkSessionId, projectDir)
+  const sessionFilePath = findSdkSessionJsonl(sdkSessionId, projectDir)
   let effectiveSdkSessionId = sdkSessionId
   let isForkFallback = false
 

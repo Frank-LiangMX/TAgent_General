@@ -15,22 +15,10 @@
  * - 否则（首次搜索、修改了查询词等） → 触发搜索
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Search, X, MessageSquare, Bot, Archive, Loader2 } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
-import { searchDialogOpenAtom } from '@/atoms/search-atoms'
-import { conversationsAtom, channelsAtom } from '@/atoms/chat-atoms'
-import {
-  agentSessionsAtom,
-  agentWorkspacesAtom,
-  agentChannelIdAtom,
-  agentPendingPromptAtom,
-} from '@/atoms/agent-atoms'
-import { activeViewAtom } from '@/atoms/active-view'
-import { useOpenSession } from '@/hooks/useOpenSession'
-import { useCreateSession } from '@/hooks/useCreateSession'
+import * as React from 'react'
+
 import type {
   ChatMessage,
   MessageSearchResult,
@@ -42,6 +30,21 @@ import type {
   SDKContentBlock,
   SDKUserContentBlock,
 } from '@tagent/shared'
+
+import { activeViewAtom } from '@/atoms/active-view'
+import {
+  agentSessionsAtom,
+  agentWorkspacesAtom,
+  agentChannelIdAtom,
+  agentPendingPromptAtom,
+} from '@/atoms/agent-atoms'
+import { conversationsAtom, channelsAtom } from '@/atoms/chat-atoms'
+import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useCreateSession } from '@/hooks/useCreateSession'
+import { useOpenSession } from '@/hooks/useOpenSession'
+import { cn } from '@/lib/utils'
+
 
 /** 标题搜索结果项 */
 interface TitleResult {

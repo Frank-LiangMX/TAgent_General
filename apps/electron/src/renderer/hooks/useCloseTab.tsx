@@ -10,9 +10,15 @@
  * - 真正删除/归档时由侧边栏路径负责清理 per-session 状态
  */
 
+import { useAtom, useSetAtom , useStore } from 'jotai'
 import * as React from 'react'
-import { useAtom, useSetAtom } from 'jotai'
-import { useStore } from 'jotai'
+
+import {
+  agentSessionsAtom,
+  agentSessionIndicatorMapAtom,
+  unviewedCompletedSessionIdsAtom,
+  workingDoneSessionIdsAtom,
+} from '@/atoms/agent-atoms'
 import {
   tabsAtom,
   activeTabIdAtom,
@@ -20,12 +26,6 @@ import {
   isPreviewTab,
   sessionViewStateMapAtom,
 } from '@/atoms/tab-atoms'
-import {
-  agentSessionsAtom,
-  agentSessionIndicatorMapAtom,
-  unviewedCompletedSessionIdsAtom,
-  workingDoneSessionIdsAtom,
-} from '@/atoms/agent-atoms'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 
 interface UseCloseTabReturn {

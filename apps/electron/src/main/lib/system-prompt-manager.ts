@@ -7,11 +7,14 @@
 
 import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { getSystemPromptsPath } from './config-paths'
+
 import {
   BUILTIN_DEFAULT_ID,
   BUILTIN_DEFAULT_PROMPT,
 } from '@tagent/shared'
+
+import { getSystemPromptsPath } from './config-paths'
+
 import type {
   SystemPrompt,
   SystemPromptConfig,

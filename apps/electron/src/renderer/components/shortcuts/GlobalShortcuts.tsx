@@ -9,18 +9,10 @@
  * 4. 监听菜单 IPC 事件（Cmd+W 关闭标签）
  */
 
-import { useEffect, useCallback } from 'react'
 import { useAtomValue, useSetAtom, useAtom, useStore } from 'jotai'
-import { appModeAtom } from '@/atoms/app-mode'
-import { settingsOpenAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from '@/atoms/settings-tab'
-import { searchDialogOpenAtom } from '@/atoms/search-atoms'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  sidebarCollapsedAtom,
-  openTab,
-} from '@/atoms/tab-atoms'
-import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
+import { useEffect, useCallback } from 'react'
+
+import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentPendingPromptAtom,
   agentSessionDraftHtmlAtom,
@@ -32,6 +24,7 @@ import {
   agentWorkspacesAtom,
   agentAttachedFilesMapAtom,
 } from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
 import {
   chatPendingMessageAtom,
   conversationDraftsAtom,
@@ -39,15 +32,23 @@ import {
   currentConversationIdAtom,
   selectedModelAtom,
 } from '@/atoms/chat-atoms'
-import { activeViewAtom } from '@/atoms/active-view'
+import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+import { settingsOpenAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from '@/atoms/settings-tab'
+import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  sidebarCollapsedAtom,
+  openTab,
+} from '@/atoms/tab-atoms'
+import { useCloseTab } from '@/hooks/useCloseTab'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useShortcut } from '@/hooks/useShortcut'
-import { useCloseTab } from '@/hooks/useCloseTab'
+import { getFileParentPath } from '@/lib/file-utils'
 import {
   initShortcutRegistry,
   updateShortcutOverrides,
 } from '@/lib/shortcut-registry'
-import { getFileParentPath } from '@/lib/file-utils'
 
 /**
  * 快捷键初始化 + 全局 Handler 注册

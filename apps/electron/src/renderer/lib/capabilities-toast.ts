@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+
 import type { CapabilityChange } from '@tagent/shared'
 
 /** 变化类型 → 中文描述 */

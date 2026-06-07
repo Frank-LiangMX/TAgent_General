@@ -5,16 +5,21 @@
  * 用户流程：点击登录 → 显示二维码 → 扫码 → 自动连接。
  */
 
-import * as React from 'react'
 import { useAtom } from 'jotai'
-import { toast } from 'sonner'
 import { Loader2, Power, PowerOff, LogOut, QrCode, ExternalLink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { SettingsSection } from './primitives/SettingsSection'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+
 import { SettingsCard } from './primitives/SettingsCard'
 import { SettingsRow } from './primitives/SettingsRow'
-import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
+import { SettingsSection } from './primitives/SettingsSection'
+
+
 import type { WeChatBridgeStatus } from '@tagent/shared'
+
+import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
+import { Button } from '@/components/ui/button'
 
 /** 安全地用系统浏览器打开链接 */
 function openLink(url: string): void {

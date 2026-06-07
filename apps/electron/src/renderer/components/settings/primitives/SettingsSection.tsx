@@ -6,6 +6,7 @@
  */
 
 import * as React from 'react'
+
 import { SECTION_TITLE_CLASS, SECTION_DESCRIPTION_CLASS } from './SettingsUIConstants'
 
 interface SettingsSectionProps {

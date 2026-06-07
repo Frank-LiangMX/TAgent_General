@@ -5,14 +5,18 @@
  * 分别搜索会话目录和工作区文件目录，确保两边都使用相对路径。
  */
 
-import * as React from 'react'
 import { useSetAtom } from 'jotai'
 import { Search, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
+
 import { FileTypeIcon } from './FileTypeIcon'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { fileBrowserAutoRevealAtom } from '@/atoms/agent-atoms'
+
 import type { FileIndexEntry } from '@tagent/shared'
+
+import { fileBrowserAutoRevealAtom } from '@/atoms/agent-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 interface FileSearchBarProps {
   workspaceFilesPath: string | null

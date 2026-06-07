@@ -11,17 +11,19 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import type {
-  TAgentPermissionMode,
-  PermissionRequest,
-  DangerLevel,
-  AskUserRequest,
-} from '@tagent/shared'
+
 import {
   SAFE_TOOLS,
   isSafeBashCommand,
   isDangerousCommand,
   hasDangerousStructure,
+} from '@tagent/shared'
+
+import type {
+  TAgentPermissionMode,
+  PermissionRequest,
+  DangerLevel,
+  AskUserRequest,
 } from '@tagent/shared'
 
 /** SDK PermissionBehavior */

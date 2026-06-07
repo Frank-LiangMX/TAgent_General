@@ -5,16 +5,20 @@
  * Chat 和 Agent 模式共享同一份记忆配置。
  */
 
-import * as React from 'react'
 import { useSetAtom } from 'jotai'
-import { toast } from 'sonner'
 import { ExternalLink, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
-import type { MemoryConfig } from '@tagent/shared'
+import * as React from 'react'
+import { toast } from 'sonner'
+
 import { SettingsSection, SettingsCard } from './primitives'
+
+import type { MemoryConfig } from '@tagent/shared'
+
 import { chatToolsAtom } from '@/atoms/chat-tool-atoms'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+
 
 /** 刷新全局工具列表 atom */
 async function refreshChatTools(setter: (tools: Awaited<ReturnType<typeof window.electronAPI.getChatTools>>) => void): Promise<void> {

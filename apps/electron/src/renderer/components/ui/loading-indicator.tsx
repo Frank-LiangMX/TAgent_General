@@ -1,6 +1,8 @@
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+
 import { Spinner } from './spinner'
+
+import { cn } from '@/lib/utils'
 
 /**
  * 将时长格式化为易读形式

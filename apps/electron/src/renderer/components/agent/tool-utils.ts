@@ -3,7 +3,6 @@
  * 供 SDK 内容块、任务进度卡片等组件复用。
  */
 
-import type { LucideIcon } from 'lucide-react'
 import {
   BookOpen,
   Bot,
@@ -40,6 +39,8 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react'
+
+import type { LucideIcon } from 'lucide-react'
 
 /** 工具名称到图标组件的映射 */
 export const TOOL_ICONS: Record<string, LucideIcon> = {

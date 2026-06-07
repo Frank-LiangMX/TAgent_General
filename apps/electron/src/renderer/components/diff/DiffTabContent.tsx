@@ -5,24 +5,26 @@
  * previewOnly=false（默认）：显示 git diff（旧版本 vs 磁盘）
  */
 
-import * as React from 'react'
-import { Code2, Copy, Check, Eye, List, Pencil, RefreshCw, Save, X } from 'lucide-react'
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import DOMPurify from 'dompurify'
 import { File as PierreFile } from '@pierre/diffs/react'
+import DOMPurify from 'dompurify'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { Code2, Copy, Check, Eye, List, Pencil, RefreshCw, Save, X } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { agentDiffViewModeAtom, agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
-import { resolvedThemeAtom } from '@/atoms/theme'
-import { quotedSelectionMapAtom } from '@/atoms/preview-atoms'
-import { markdownTocOpenAtom } from '@/atoms/markdown-toc'
-import { useShortcut } from '@/hooks/useShortcut'
-import { initShortcutRegistry } from '@/lib/shortcut-registry'
+
 import { DiffView } from './DiffView'
 import { MarkdownRichEditor } from './MarkdownRichEditor'
-import { PreviewFindBar } from './PreviewFindBar'
 import { MarkdownToc } from './MarkdownToc'
+import { PreviewFindBar } from './PreviewFindBar'
+
+import { agentDiffViewModeAtom, agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
+import { markdownTocOpenAtom } from '@/atoms/markdown-toc'
+import { quotedSelectionMapAtom } from '@/atoms/preview-atoms'
+import { resolvedThemeAtom } from '@/atoms/theme'
 import { PIERRE_FILE_CSS } from '@/components/agent/tool-result-renderers/pierre-styles'
+import { useShortcut } from '@/hooks/useShortcut'
+import { initShortcutRegistry } from '@/lib/shortcut-registry'
+import { cn } from '@/lib/utils'
 
 const MD_EXTS = new Set(['.md', '.markdown'])
 const PLAIN_TEXT_EDIT_EXTS = new Set(['.txt', '.text', '.log'])
@@ -653,7 +655,7 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
 
     load()
     return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [filePath, dirPath, gitRoot, previewOnly, previewContentVersion, fileAccess, isPdf, isDocx, isOfficePreview, isLegacyOffice, isImage, sessionId, ext, getContentCacheKey])
 
   // refreshVersion 触发的静默刷新：仅 diff 模式、内容有变化时才更新 state
@@ -940,7 +942,7 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     }
     // 仅依赖 filePath/sessionId：切文件时执行 cleanup 触发 flush；
     // draft/editing/fileAccess 通过 ref 读取最新值
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [filePath, sessionId])
 
   return (

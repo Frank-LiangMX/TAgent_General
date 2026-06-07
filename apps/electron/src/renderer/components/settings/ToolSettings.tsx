@@ -5,16 +5,18 @@
  * 内嵌 MemorySettings（记忆工具）+ 联网搜索工具配置。
  */
 
-import * as React from 'react'
 import { useSetAtom, useAtomValue } from 'jotai'
-import { toast } from 'sonner'
 import { ExternalLink, Eye, EyeOff, Loader2, CheckCircle2, XCircle, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
+import * as React from 'react'
+import { toast } from 'sonner'
+
 import { MemorySettings } from './MemorySettings'
 import { SettingsSection, SettingsCard } from './primitives'
+
 import { chatToolsAtom } from '@/atoms/chat-tool-atoms'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 
 /** 刷新全局工具列表 atom */
 async function refreshChatTools(setter: (tools: Awaited<ReturnType<typeof window.electronAPI.getChatTools>>) => void): Promise<void> {

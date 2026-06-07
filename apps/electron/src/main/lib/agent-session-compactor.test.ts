@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+
 import { planDropOldToolResults, planKeepLastN } from './agent-session-compactor'
+
 import type { SDKMessageRow } from './agent-session-compactor'
 
 describe('planDropOldToolResults (P1-3)', () => {

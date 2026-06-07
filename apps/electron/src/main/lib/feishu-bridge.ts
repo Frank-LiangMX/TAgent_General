@@ -9,7 +9,71 @@
  * - Session 镜像：桌面发起的会话可同步为飞书群内流式卡片
  */
 
+import { writeFileSync, readFileSync, existsSync } from 'node:fs'
+
+import { FEISHU_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
+
+import { agentEventBus, runAgentHeadless, stopAgent } from './agent-service'
+import { createAgentSession, listAgentSessions, getAgentSessionMeta } from './agent-session-manager'
+import {
+  listAgentWorkspacesByUpdatedAt,
+  getAgentWorkspace,
+  getWorkspaceCapabilities,
+} from './agent-workspace-manager'
+import {
+  inferImageMediaType as inferImageMediaTypeShared,
+  saveImageToSession as saveImageToSessionShared,
+  saveFileToSession as saveFileToSessionShared,
+  inferExtension,
+  buildSessionFileTree,
+  buildFileTree,
+} from './bridge-attachment-utils'
+import {
+  listSwitchableChannels,
+  getEnabledModels,
+  resolveChannelByIndex,
+  resolveModelByIndex,
+  describeBindingModel,
+} from './bridge-model-utils'
+import { getFeishuBotBindingsPath, getFeishuBotMetadataPath } from './config-paths'
+import { renderCard as renderRunCard } from './feishu/card-renderer-v2'
+import {
+  createInitialState,
+  finalizeIfRunning,
+  markError,
+  markInterrupted,
+  reduce as reduceRunState,
+  type RunState,
+} from './feishu/card-run-state'
+import { CardStream } from './feishu/card-stream'
+import { resolveGroupMessageAccess } from './feishu/group-message-policy'
+import {
+  buildAgentUserMessage,
+  fetchQuotedMessage,
+  type BridgeContext,
+  type QuotedMessage,
+} from './feishu/prompt-builder'
+import { RunCoordinator } from './feishu/run-coordinator'
+import { ScopedQueue } from './feishu/scoped-queue'
+import { buildSessionMirrorGroupName } from './feishu/session-mirror'
+import { getDecryptedBotAppSecret } from './feishu-config'
+import {
+  buildAgentReplyCard,
+  buildErrorCard,
+  buildSessionListCard,
+  buildWorkspaceSwitchedCard,
+  buildWorkspaceListCard,
+  buildHelpCard,
+  buildChannelListCard,
+  buildModelListCard,
+  buildModelSwitchedCard,
+  accumulateToolStart,
+  splitLongContent,
+} from './feishu-message'
+import { getSettings } from './settings-service'
+
+import type { ToolSummary, FormattedAgentResult, WorkspaceListItem } from './feishu-message'
 import type {
   AgentStreamPayload,
   AgentSendInput,
@@ -27,67 +91,6 @@ import type {
   SDKAssistantMessage,
   SDKUserMessage,
 } from '@tagent/shared'
-import { FEISHU_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@tagent/shared'
-import { getDecryptedBotAppSecret } from './feishu-config'
-import { agentEventBus, runAgentHeadless, stopAgent } from './agent-service'
-import { createAgentSession, listAgentSessions, getAgentSessionMeta } from './agent-session-manager'
-import {
-  listAgentWorkspacesByUpdatedAt,
-  getAgentWorkspace,
-  getWorkspaceCapabilities,
-} from './agent-workspace-manager'
-import { getFeishuBotBindingsPath, getFeishuBotMetadataPath } from './config-paths'
-import { writeFileSync, readFileSync, existsSync } from 'node:fs'
-import {
-  inferImageMediaType as inferImageMediaTypeShared,
-  saveImageToSession as saveImageToSessionShared,
-  saveFileToSession as saveFileToSessionShared,
-  inferExtension,
-  buildSessionFileTree,
-  buildFileTree,
-} from './bridge-attachment-utils'
-import { getSettings } from './settings-service'
-import {
-  buildAgentReplyCard,
-  buildErrorCard,
-  buildSessionListCard,
-  buildWorkspaceSwitchedCard,
-  buildWorkspaceListCard,
-  buildHelpCard,
-  buildChannelListCard,
-  buildModelListCard,
-  buildModelSwitchedCard,
-  accumulateToolStart,
-  splitLongContent,
-} from './feishu-message'
-import {
-  listSwitchableChannels,
-  getEnabledModels,
-  resolveChannelByIndex,
-  resolveModelByIndex,
-  describeBindingModel,
-} from './bridge-model-utils'
-import type { ToolSummary, FormattedAgentResult, WorkspaceListItem } from './feishu-message'
-import { CardStream } from './feishu/card-stream'
-import {
-  createInitialState,
-  finalizeIfRunning,
-  markError,
-  markInterrupted,
-  reduce as reduceRunState,
-  type RunState,
-} from './feishu/card-run-state'
-import { renderCard as renderRunCard } from './feishu/card-renderer-v2'
-import { buildSessionMirrorGroupName } from './feishu/session-mirror'
-import { resolveGroupMessageAccess } from './feishu/group-message-policy'
-import { ScopedQueue } from './feishu/scoped-queue'
-import { RunCoordinator } from './feishu/run-coordinator'
-import {
-  buildAgentUserMessage,
-  fetchQuotedMessage,
-  type BridgeContext,
-  type QuotedMessage,
-} from './feishu/prompt-builder'
 
 // ===== 类型定义 =====
 

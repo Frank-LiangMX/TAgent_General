@@ -6,6 +6,9 @@
  */
 
 import * as React from 'react'
+
+import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
+
 import {
   Select,
   SelectContent,
@@ -13,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
 import { cn } from '@/lib/utils'
 
 /** 选项定义 */

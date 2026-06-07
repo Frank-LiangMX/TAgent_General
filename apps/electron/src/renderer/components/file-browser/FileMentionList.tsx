@@ -14,12 +14,15 @@
  * - 鼠标单击文件夹：展开/折叠；双击文件夹：选中并插入 @ 引用
  */
 
-import * as React from 'react'
-import { cn } from '@/lib/utils'
-import type { FileIndexEntry } from '@tagent/shared'
-import { FileTypeIcon } from './FileTypeIcon'
 import { ChevronRight, Folder } from 'lucide-react'
+import * as React from 'react'
+
+import { FileTypeIcon } from './FileTypeIcon'
+
+import type { FileIndexEntry } from '@tagent/shared'
+
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 // ===== Error Boundary =====
 

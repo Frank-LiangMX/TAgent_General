@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+
 import { buildAssistantTurnRenderItems, buildProcessGroupToolNames } from './ProcessBlockGroup'
+
 import type { SDKContentBlock } from '@tagent/shared'
 
 const tool = (id: string, name = 'Read'): SDKContentBlock => ({

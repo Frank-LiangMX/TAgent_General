@@ -1,5 +1,5 @@
-import type { AgentSessionMeta } from '@tagent/shared'
 import type { AgentStreamState } from '@/atoms/agent-atoms'
+import type { AgentSessionMeta } from '@tagent/shared'
 
 export interface ExternalAgentRunTab {
   id: string

@@ -9,22 +9,27 @@
  * 消息路由到 TAgent Agent，回复通过 iLink API 发送。
  */
 
+import * as crypto from 'node:crypto'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
+import { WECHAT_IPC_CHANNELS, WECHAT_ITEM_TYPE, WECHAT_MESSAGE_TYPE, WECHAT_MESSAGE_STATE } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
+import QRCode from 'qrcode'
+
+import { getAgentWorkspace } from './agent-workspace-manager'
+import { inferImageMediaType, saveImageToSession, saveFileToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
+import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
+import { getWeChatSyncPath } from './config-paths'
+import { getDecryptedCredentials, saveWeChatCredentials, clearWeChatCredentials, getWeChatConfig, updateWeChatDefaultWorkspace } from './wechat-config'
+
 import type {
   WeChatBridgeState,
   WeChatCredentials,
   WeChatIncomingMessage,
   WeChatMessageItem,
 } from '@tagent/shared'
-import { WECHAT_IPC_CHANNELS, WECHAT_ITEM_TYPE, WECHAT_MESSAGE_TYPE, WECHAT_MESSAGE_STATE } from '@tagent/shared'
-import { getDecryptedCredentials, saveWeChatCredentials, clearWeChatCredentials, getWeChatConfig, updateWeChatDefaultWorkspace } from './wechat-config'
-import { getWeChatSyncPath } from './config-paths'
-import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
-import { inferImageMediaType, saveImageToSession, saveFileToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
-import { getAgentWorkspace } from './agent-workspace-manager'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import * as crypto from 'node:crypto'
-import QRCode from 'qrcode'
+
+
 
 // ===== iLink API 常量 =====
 

@@ -6,15 +6,17 @@
  * MainArea 支持多标签页，Settings 视图为独立覆盖。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
+import * as React from 'react'
+
 import { LeftSidebar } from './LeftSidebar'
 import { RightSidePanel } from './RightSidePanel'
-import { MainArea } from '@/components/tabs/MainArea'
-import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
-import { appModeAtom } from '@/atoms/app-mode'
+
 import { agentSidePanelWidthAtom, currentAgentSessionIdAtom, currentSessionSidePanelOpenAtom } from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
+import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
+import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 

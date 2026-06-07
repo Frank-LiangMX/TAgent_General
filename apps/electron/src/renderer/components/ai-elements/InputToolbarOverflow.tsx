@@ -14,8 +14,9 @@
  *   （例如 ModelSelector 切换模型后宽度会变）。
  */
 
-import * as React from 'react'
 import { MoreHorizontal } from 'lucide-react'
+import * as React from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {

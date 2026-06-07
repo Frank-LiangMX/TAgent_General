@@ -13,12 +13,12 @@
  * 5. 在 Agent 输入区显示建议提示（prompt suggestion）
  */
 
-import * as React from 'react'
 import { useAtom, useStore } from 'jotai'
-import { toast } from 'sonner'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { pendingAgentRecommendationAtom } from '@/atoms/chat-atoms'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentChannelIdAtom,
   agentWorkspacesAtom,
@@ -27,9 +27,10 @@ import {
   currentAgentWorkspaceIdAtom,
   agentPromptSuggestionsAtom,
 } from '@/atoms/agent-atoms'
-import { activeViewAtom } from '@/atoms/active-view'
 import { appModeAtom } from '@/atoms/app-mode'
+import { pendingAgentRecommendationAtom } from '@/atoms/chat-atoms'
 import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
+import { Button } from '@/components/ui/button'
 
 export function AgentRecommendBanner(): React.ReactElement | null {
   const [recommendation, setRecommendation] = useAtom(pendingAgentRecommendationAtom)

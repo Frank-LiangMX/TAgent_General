@@ -8,16 +8,16 @@
  * - Chrome 风格等分宽度（溢出时可横向滚动）
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  tabIndicatorMapAtom,
-} from '@/atoms/tab-atoms'
-import type { TabItem } from '@/atoms/tab-atoms'
+import * as React from 'react'
+
+import { TabBarItem } from './TabBarItem'
+
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
+import type { TabItem } from '@/atoms/tab-atoms'
+
+
+
 import {
   agentSessionsAtom,
   agentWorkspacesAtom,
@@ -26,7 +26,12 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import { TabBarItem } from './TabBarItem'
+import { currentConversationIdAtom } from '@/atoms/chat-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  tabIndicatorMapAtom,
+} from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'

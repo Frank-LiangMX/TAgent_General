@@ -6,13 +6,14 @@
  * 点击后在当前会话的临时预览标签页中打开文件。
  */
 
-import * as React from 'react'
 import { useStore } from 'jotai'
-import { cn } from '@/lib/utils'
-import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
-import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
+import * as React from 'react'
+
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
+import { cn } from '@/lib/utils'
 
 /** 文件存在性缓存（模块级共享，避免重复 IPC）。key = filePath + basePaths */
 const fileExistsCache = new Map<string, boolean>()

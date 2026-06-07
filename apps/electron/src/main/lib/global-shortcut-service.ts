@@ -10,6 +10,7 @@
  */
 
 import { app, globalShortcut } from 'electron'
+
 import { getSettings } from './settings-service'
 
 /** 全局快捷键 ID → 回调映射 */

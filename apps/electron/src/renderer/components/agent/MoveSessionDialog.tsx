@@ -4,6 +4,10 @@
 
 import * as React from 'react'
 import { toast } from 'sonner'
+
+import type { AgentWorkspace, AgentSessionMeta } from '@tagent/shared'
+
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -19,8 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import type { AgentWorkspace, AgentSessionMeta } from '@tagent/shared'
 
 interface MoveSessionDialogProps {
   open: boolean

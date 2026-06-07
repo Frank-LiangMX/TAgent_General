@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, realpathSync, statSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+
 import { net } from 'electron'
 
 type RegisteredEntry = {

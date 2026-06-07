@@ -7,14 +7,15 @@
  * 3. Chat/Agent 模式切换 Tab
  */
 
-import * as React from 'react'
 import { useAtomValue, useAtom } from 'jotai'
 import { Lightbulb, MessageSquare, Bot, StickyNote } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { userProfileAtom } from '@/atoms/user-profile'
+import * as React from 'react'
+
 import { appModeAtom, type AppMode } from '@/atoms/app-mode'
 import { themeStyleAtom } from '@/atoms/theme'
+import { userProfileAtom } from '@/atoms/user-profile'
 import { getRandomTip, getPlatform, type Tip } from '@/lib/tips'
+import { cn } from '@/lib/utils'
 
 /** 根据小时返回时段问候 */
 function getGreeting(hour: number): string {

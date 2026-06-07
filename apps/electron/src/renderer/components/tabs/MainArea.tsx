@@ -6,16 +6,19 @@
  * 主体：左侧 TabContent + 右侧预览内容
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom, useAtom } from 'jotai'
-import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
-import { Panel } from '@/components/app-shell/Panel'
-import { WelcomeView } from '@/components/welcome/WelcomeView'
-import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
-import { PreviewPanel } from '@/components/diff/PreviewPanel'
-import { useTrackSessionView } from '@/hooks/useTrackSessionView'
+import * as React from 'react'
+
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
+
+import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
+import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
+import { Panel } from '@/components/app-shell/Panel'
+import { PreviewPanel } from '@/components/diff/PreviewPanel'
+import { WelcomeView } from '@/components/welcome/WelcomeView'
+import { useTrackSessionView } from '@/hooks/useTrackSessionView'
+
 
 export function MainArea(): React.ReactElement {
   // 记录每个会话上次停留的视图（对话 / 预览），供切回时重建预览 Tab

@@ -5,8 +5,9 @@
  * 点击 X 按钮可移除引用。
  */
 
-import * as React from 'react'
 import { X, Quote } from 'lucide-react'
+import * as React from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface QuotedSelectionChipProps {

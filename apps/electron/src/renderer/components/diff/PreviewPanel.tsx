@@ -5,30 +5,33 @@
  * Agent 修改文件时自动切换到最新修改的文件。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { Maximize2, X } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  previewPanelOpenMapAtom,
-  previewFileMapAtom,
-} from '@/atoms/preview-atoms'
+import * as React from 'react'
+
+import { DefaultAppOpenButton } from './DefaultAppOpenButton'
+import { DiffTabContent } from './DiffTabContent'
+import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
+
 import {
   agentSessionPathMapAtom,
   currentSessionSidePanelOpenAtom,
 } from '@/atoms/agent-atoms'
+import {
+  previewPanelOpenMapAtom,
+  previewFileMapAtom,
+} from '@/atoms/preview-atoms'
 import {
   activeTabIdAtom,
   getPreviewTabTitle,
   openTab,
   tabsAtom,
 } from '@/atoms/tab-atoms'
-import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
+import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
-import { DiffTabContent } from './DiffTabContent'
-import { DefaultAppOpenButton } from './DefaultAppOpenButton'
-import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
+
 
 interface PreviewPanelProps {
   sessionId: string

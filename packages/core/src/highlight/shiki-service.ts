@@ -11,6 +11,7 @@
  */
 
 import { createHighlighter, bundledLanguages } from 'shiki'
+
 import type { HighlighterGeneric, BundledLanguage, BundledTheme } from 'shiki'
 
 /** Shiki 高亮器实例类型 */

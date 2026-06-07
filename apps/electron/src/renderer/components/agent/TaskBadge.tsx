@@ -5,10 +5,13 @@
  * 点击后滚动到对应的实时工具调用。
  */
 
-import * as React from 'react'
 import { Loader2, Terminal, GitBranch } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import type { BackgroundTask } from '@/atoms/agent-atoms'
+
+import { cn } from '@/lib/utils'
+
 
 export interface TaskBadgeProps {
   task: BackgroundTask

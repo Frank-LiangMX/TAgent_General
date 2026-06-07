@@ -11,19 +11,22 @@
  * - 使用 CSS animate-pulse 替代 Shimmer/framer-motion
  */
 
+import { Brain, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import { Brain, ChevronDown } from 'lucide-react'
+
+import type { ComponentProps, ReactNode } from 'react'
+
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-import type { ComponentProps, ReactNode } from 'react'
+
 
 // ===== 上下文 =====
 

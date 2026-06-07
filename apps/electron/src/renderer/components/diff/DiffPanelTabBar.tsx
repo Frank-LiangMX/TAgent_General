@@ -4,12 +4,13 @@
  * 切换「会话文件」「工作区文件」和「代码改动」三个视图。最右侧有关闭按钮。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { PanelRightClose } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import * as React from 'react'
+
 import { agentDiffUnseenChangesAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 type DiffPanelTab = 'session' | 'workspace' | 'changes'
 

@@ -5,6 +5,8 @@
  * 复用 EnvironmentCheckPanel。
  */
 
+import { EnvironmentCheckPanel } from './EnvironmentCheckPanel'
+
 import {
   Dialog,
   DialogContent,
@@ -12,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { EnvironmentCheckPanel } from './EnvironmentCheckPanel'
 
 interface EnvironmentCheckDialogProps {
   open: boolean

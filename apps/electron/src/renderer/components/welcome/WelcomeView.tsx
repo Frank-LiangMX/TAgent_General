@@ -9,13 +9,14 @@
  * 发送第一条消息后 draft 标记自动移除，会话出现在侧边栏。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Loader2 } from 'lucide-react'
-import { appModeAtom } from '@/atoms/app-mode'
+import * as React from 'react'
+
 import { currentAgentWorkspaceIdAtom, agentSettingsReadyAtom } from '@/atoms/agent-atoms'
-import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
 import { useCreateSession } from '@/hooks/useCreateSession'
 
 export function WelcomeView(): React.ReactElement {

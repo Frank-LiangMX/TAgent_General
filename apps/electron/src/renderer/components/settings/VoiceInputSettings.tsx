@@ -2,10 +2,10 @@
  * VoiceInputSettings — 语音输入设置
  */
 
-import * as React from 'react'
 import { ExternalLink, Loader2, TestTube2, Mic, MicOff } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+
 import {
   SettingsCard,
   SettingsInput,
@@ -15,7 +15,10 @@ import {
   SettingsTextarea,
   SettingsToggle,
 } from './primitives'
+
 import type { VoiceDictationSettings, MicPermissionResult } from '../../../types'
+
+import { Button } from '@/components/ui/button'
 
 const ENDPOINT_OPTIONS = [
   { value: 'async', label: '双向流式优化版' },

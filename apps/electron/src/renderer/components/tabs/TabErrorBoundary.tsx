@@ -1,5 +1,5 @@
-import * as React from 'react'
 import { AlertTriangle, RotateCw } from 'lucide-react'
+import * as React from 'react'
 
 interface TabErrorBoundaryProps {
   sessionId: string

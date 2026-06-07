@@ -5,8 +5,6 @@
  * SKILL.md 由主面板管理，不出现在文件树里。
  */
 
-import * as React from 'react'
-import { toast } from 'sonner'
 import {
   ChevronDown,
   ChevronRight,
@@ -21,9 +19,14 @@ import {
   X,
   RefreshCw,
 } from 'lucide-react'
-import type { SkillFileNode, SkillFileContent } from '@tagent/shared'
-import { Button } from '@/components/ui/button'
+import * as React from 'react'
+import { toast } from 'sonner'
+
 import { SettingsCard } from './primitives'
+
+import type { SkillFileNode, SkillFileContent } from '@tagent/shared'
+
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface SkillFilesPanelProps {

@@ -6,8 +6,12 @@
  * 类似 ContextSettingsPopover 的交互方式。
  */
 
-import { useState } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
+import { Wrench, Brain, Globe, Settings, ImagePlus } from 'lucide-react'
+import { useState } from 'react'
+
+import { chatToolsAtom, hasActiveToolsAtom } from '@/atoms/chat-tool-atoms'
+import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -21,9 +25,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { Wrench, Brain, Globe, Settings, ImagePlus } from 'lucide-react'
-import { chatToolsAtom, hasActiveToolsAtom } from '@/atoms/chat-tool-atoms'
-import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
+
+
 
 /** 工具 ID 到图标的映射 */
 function getToolIcon(iconName?: string): React.ReactElement {

@@ -6,13 +6,14 @@
  * 长文档通过 pngjs 拼接分段截图。
  */
 
-import { BrowserWindow, clipboard, dialog, nativeImage, screen, type NativeImage } from 'electron'
 import { writeFileSync, unlinkSync } from 'node:fs'
-import { join } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { PNG } from 'pngjs'
+
 import { SCREENSHOT_LIMITS } from '@tagent/shared'
+import { BrowserWindow, clipboard, dialog, nativeImage, screen, type NativeImage } from 'electron'
+import { PNG } from 'pngjs'
 
 const SCREENSHOT_SCALE_CANDIDATES = [4, 3, 2, 1.5, 1]
 const SCREENSHOT_MAX_SEGMENT = 4000

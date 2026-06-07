@@ -7,8 +7,10 @@
 import { execSync, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import type { GitRuntimeStatus, GitRepoStatus } from '@tagent/shared'
+
 import { getGitForWindowsInstallPath } from './windows-env'
+
+import type { GitRuntimeStatus, GitRepoStatus } from '@tagent/shared'
 
 /**
  * 从系统 PATH 查找 Git

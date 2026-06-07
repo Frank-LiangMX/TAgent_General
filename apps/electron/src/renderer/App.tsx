@@ -1,15 +1,17 @@
-import * as React from 'react'
 import { useAtom, useStore } from 'jotai'
-import { AppShell } from './components/app-shell/AppShell'
-import { OnboardingView } from './components/onboarding/OnboardingView'
-import { TutorialBanner } from './components/tutorial/TutorialBanner'
-import { EnvironmentCheckDialog } from './components/environment/EnvironmentCheckDialog'
-import { MigrationImportDialog } from './components/migration/MigrationImportDialog'
-import { TooltipProvider } from './components/ui/tooltip'
-import { SettingsDialog } from './components/settings/SettingsDialog'
+import * as React from 'react'
+
 import { conversationsAtom } from './atoms/chat-atoms'
 import { environmentCheckDialogOpenAtom } from './atoms/environment'
 import { tabsAtom, activeTabIdAtom, openTab } from './atoms/tab-atoms'
+import { AppShell } from './components/app-shell/AppShell'
+import { EnvironmentCheckDialog } from './components/environment/EnvironmentCheckDialog'
+import { MigrationImportDialog } from './components/migration/MigrationImportDialog'
+import { OnboardingView } from './components/onboarding/OnboardingView'
+import { SettingsDialog } from './components/settings/SettingsDialog'
+import { TutorialBanner } from './components/tutorial/TutorialBanner'
+import { TooltipProvider } from './components/ui/tooltip'
+
 import type { AppShellContextType } from './contexts/AppShellContext'
 
 export default function App(): React.ReactElement {

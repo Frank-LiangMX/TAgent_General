@@ -9,19 +9,21 @@
  * 每个 DingTalkBridge 实例对应一个 Bot，由 DingTalkBridgeManager 管理。
  */
 
+import { DINGTALK_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
+
+import { getAgentWorkspace } from './agent-workspace-manager'
+import { inferImageMediaType, saveImageToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
+import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
+import { getDecryptedBotClientSecret } from './dingtalk-config'
+import { getSettings } from './settings-service'
+
 import type {
   DingTalkBridgeState,
   DingTalkBotBridgeState,
   DingTalkBotConfig,
   DingTalkTestResult,
 } from '@tagent/shared'
-import { DINGTALK_IPC_CHANNELS } from '@tagent/shared'
-import { getDecryptedBotClientSecret } from './dingtalk-config'
-import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
-import { inferImageMediaType, saveImageToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
-import { getAgentWorkspace } from './agent-workspace-manager'
-import { getSettings } from './settings-service'
 
 // ===== 类型声明 =====
 

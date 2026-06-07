@@ -6,6 +6,7 @@
  */
 
 import { DEFAULT_SHORTCUTS, SHORTCUT_MAP } from './shortcut-defaults'
+
 import type { ShortcutOverrides } from './shortcut-defaults'
 
 // ===== 平台检测 =====

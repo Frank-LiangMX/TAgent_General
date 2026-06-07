@@ -7,12 +7,10 @@
 
 import { createHash } from 'crypto'
 import { createWriteStream, existsSync, promises as fsp } from 'fs'
-import { get as httpsGet } from 'https'
 import { get as httpGet, IncomingMessage } from 'http'
+import { get as httpsGet } from 'https'
 import path from 'path'
 import { URL } from 'url'
-
-import { app, BrowserWindow, shell } from 'electron'
 
 import {
   INSTALLER_IPC_CHANNELS,
@@ -20,6 +18,8 @@ import {
   type InstallerProgressPayload,
   type InstallerSource,
 } from '@tagent/shared'
+import { app, BrowserWindow, shell } from 'electron'
+
 
 /** 已注册的可取消下载：key -> cancel() */
 const activeDownloads = new Map<string, () => void>()

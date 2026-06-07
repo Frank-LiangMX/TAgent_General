@@ -5,14 +5,16 @@
  * 避免两处实现漂移。重命名 / 删除 / 拖拽排序仅展开态需要，留在 WorkspaceSelector 内。
  */
 
-import * as React from 'react'
 import { useAtom } from 'jotai'
+import * as React from 'react'
 import { toast } from 'sonner'
+
+import type { AgentWorkspace } from '@tagent/shared'
+
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import type { AgentWorkspace } from '@tagent/shared'
 
 interface UseWorkspaceActionsResult {
   workspaces: AgentWorkspace[]

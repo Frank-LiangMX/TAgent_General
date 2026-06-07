@@ -8,26 +8,29 @@
  * - 触发按钮：模型 logo + 模型名 + Chevron
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { ChevronDown, Cpu, Search } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import * as React from 'react'
+
+import type { Channel, ModelOption } from '@tagent/shared'
+
 import {
   conversationsAtom,
   selectedModelAtom,
   channelsAtom,
   channelsLoadedAtom,
 } from '@/atoms/chat-atoms'
-import { useConversationModelOptional } from '@/hooks/useConversationSettings'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useConversationIdOptional } from '@/contexts/session-context'
+import { useConversationModelOptional } from '@/hooks/useConversationSettings'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
-import type { Channel, ModelOption } from '@tagent/shared'
+
 
 /** 从渠道列表构建扁平化的模型选项 */
 function buildModelOptions(channels: Channel[], filterChannelId?: string, filterChannelIds?: string[]): ModelOption[] {

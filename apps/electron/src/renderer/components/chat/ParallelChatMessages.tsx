@@ -9,11 +9,16 @@
  * 移植自 proma-frontend 的 parallel-chat-messages.tsx。
  */
 
-import { Fragment, useMemo, useRef, useEffect } from 'react'
 import { useAtomValue } from 'jotai'
 import { Loader2 } from 'lucide-react'
+import { Fragment, useMemo, useRef, useEffect } from 'react'
+
 import { ChatMessageItem, formatMessageTime } from './ChatMessageItem'
+
 import type { InlineEditSubmitPayload } from './ChatMessageItem'
+import type { ChatMessage } from '@tagent/shared'
+
+import { streamingModelAtom } from '@/atoms/chat-atoms'
 import { ContextDivider } from '@/components/ai-elements/context-divider'
 import {
   Message,
@@ -28,9 +33,8 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from '@/components/ai-elements/reasoning'
-import { streamingModelAtom } from '@/atoms/chat-atoms'
 import { getModelLogo } from '@/lib/model-logo'
-import type { ChatMessage } from '@tagent/shared'
+
 
 /** 消息段落（按分隔线分割） */
 interface MessageSegment {

@@ -5,17 +5,20 @@
  * 下方：语言等通用设置
  */
 
-import * as React from 'react'
+import data from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
 import { useAtom } from 'jotai'
 import { Camera, ImagePlus, Volume2 } from 'lucide-react'
-import Picker from '@emoji-mart/react'
-import data from '@emoji-mart/data'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsRow,
   SettingsToggle,
 } from './primitives'
+import { UserAvatar } from '../chat/UserAvatar'
+import { Button } from '../ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import {
   Select,
@@ -24,8 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { UserAvatar } from '../chat/UserAvatar'
-import { userProfileAtom } from '@/atoms/user-profile'
+
+import type { NotificationSoundId, NotificationSoundType, NotificationSoundSettings } from '@/types/settings'
+
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
@@ -41,9 +45,10 @@ import {
   stickyUserMessageEnabledAtom,
   updateStickyUserMessageEnabled,
 } from '@/atoms/ui-preferences'
+import { userProfileAtom } from '@/atoms/user-profile'
 import { cn } from '@/lib/utils'
-import { Button } from '../ui/button'
-import type { NotificationSoundId, NotificationSoundType, NotificationSoundSettings } from '@/types/settings'
+
+
 
 /** emoji-mart 选择回调的 emoji 对象类型 */
 interface EmojiMartEmoji {

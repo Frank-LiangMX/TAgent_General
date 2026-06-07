@@ -7,26 +7,17 @@
  * 支持：Markdown 快捷输入、图片粘贴、Todo 列表（- [ ] 触发）、代码高亮（lowlight）、数学公式（$..$ / $$..$$ 触发）、导出为 Markdown
  */
 
-import * as React from 'react'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import Placeholder from '@tiptap/extension-placeholder'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { useAtom, useAtomValue } from 'jotai'
 import { FileDown } from 'lucide-react'
-import { scratchPadContentAtom, scratchPadLoadedAtom, tabsAtom, activeTabIdAtom } from '@/atoms/tab-atoms'
+import * as React from 'react'
+
 import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import { lowlight } from '@/lib/lowlight'
-import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown-rich-text'
+import { scratchPadContentAtom, scratchPadLoadedAtom, tabsAtom, activeTabIdAtom } from '@/atoms/tab-atoms'
+import { SpeechButton } from '@/components/ai-elements/speech-button'
 import {
   MathBlock,
   MathInline,
@@ -38,7 +29,17 @@ import {
   createMarkdownImage,
   createMarkdownVideo,
 } from '@/components/diff/markdown-preview-extensions'
-import { SpeechButton } from '@/components/ai-elements/speech-button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { lowlight } from '@/lib/lowlight'
+import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown-rich-text'
 import {
   SCRATCH_PAD_VOICE_INPUT_ID,
   VOICE_DICTATION_INSERT_EVENT,
@@ -168,7 +169,7 @@ export function ScratchPadView(): React.ReactElement {
     if (latestContent && editor.getHTML() !== latestContent) {
       editor.commands.setContent(latestContent)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [loaded, editor])
 
   // ===== 语音输入路由 =====

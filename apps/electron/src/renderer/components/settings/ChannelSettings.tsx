@@ -7,17 +7,18 @@
  *    通过 Switch 开关启用多个 Agent 供应商
  */
 
-import * as React from 'react'
+import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useSetAtom } from 'jotai'
 import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
+import * as React from 'react'
+
+import { ChannelForm } from './ChannelForm'
+import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
+
 import type { Channel } from '@tagent/shared'
-import { getChannelLogo, TAgentLogo } from '@/lib/model-logo'
+
 import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
-import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +29,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ChannelForm } from './ChannelForm'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { getChannelLogo, TAgentLogo } from '@/lib/model-logo'
+
 
 /** 组件视图模式 */
 type ViewMode = 'list' | 'create' | 'edit'

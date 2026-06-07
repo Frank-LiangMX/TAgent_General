@@ -7,16 +7,9 @@
  * 参照 useGlobalAgentListeners 模式，使用 useStore() 直接操作 atoms。
  */
 
-import { useEffect } from 'react'
 import { useStore } from 'jotai'
-import {
-  streamingStatesAtom,
-  chatStreamErrorsAtom,
-  conversationsAtom,
-  chatMessageRefreshAtom,
-  pendingAgentRecommendationAtom,
-} from '@/atoms/chat-atoms'
-import { tabsAtom, updateTabTitle } from '@/atoms/tab-atoms'
+import { useEffect } from 'react'
+
 import type { ConversationStreamState } from '@/atoms/chat-atoms'
 import type {
   StreamChunkEvent,
@@ -26,6 +19,16 @@ import type {
   StreamToolActivityEvent,
   GenerateTitleInput,
 } from '@tagent/shared'
+
+import {
+  streamingStatesAtom,
+  chatStreamErrorsAtom,
+  conversationsAtom,
+  chatMessageRefreshAtom,
+  pendingAgentRecommendationAtom,
+} from '@/atoms/chat-atoms'
+import { tabsAtom, updateTabTitle } from '@/atoms/tab-atoms'
+
 
 /** 待生成标题的队列（按 conversationId 跟踪） */
 const pendingTitles = new Map<string, GenerateTitleInput>()

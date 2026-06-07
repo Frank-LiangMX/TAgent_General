@@ -10,13 +10,14 @@
  * 不依赖 SDKContentBlock 类型，直接接受扁平化 props。
  */
 
-import * as React from 'react'
 import { ChevronRight, XCircle, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { getToolIcon, extractFilePath } from '@/components/agent/tool-utils'
+import * as React from 'react'
+
 import { getToolPhrase } from '@/components/agent/tool-phrase'
 import { ToolResultRenderer } from '@/components/agent/tool-result-renderers'
 import { PreviewOpenButton } from '@/components/agent/tool-result-renderers/preview-open-button'
+import { getToolIcon, extractFilePath } from '@/components/agent/tool-utils'
+import { cn } from '@/lib/utils'
 
 export interface ChatToolBlockProps {
   toolName: string

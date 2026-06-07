@@ -6,11 +6,13 @@
  * 凭据存储在 ~/.tagent/chat-tools.json 的 toolCredentials 中。
  */
 
+import { randomUUID } from 'node:crypto'
+
+import { saveAttachment, readAttachmentAsBase64, isImageAttachment } from '../attachment-service'
+import { getToolCredentials } from '../chat-tool-config'
+
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta, FileAttachment } from '@tagent/shared'
-import { randomUUID } from 'node:crypto'
-import { getToolCredentials } from '../chat-tool-config'
-import { saveAttachment, readAttachmentAsBase64, isImageAttachment } from '../attachment-service'
 
 // ===== Gemini API 类型（REST API 使用 camelCase） =====
 

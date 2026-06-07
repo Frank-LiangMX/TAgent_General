@@ -6,11 +6,13 @@
  */
 
 import { describe, expect, test } from 'bun:test'
+
 import {
   createTrayMenuModel,
   TRAY_RECENT_LIMIT,
   TRAY_MORE_LIMIT,
 } from './tray-menu-model'
+
 import type { AgentSessionMeta, AgentWorkspace } from '@tagent/shared'
 
 // ============================================

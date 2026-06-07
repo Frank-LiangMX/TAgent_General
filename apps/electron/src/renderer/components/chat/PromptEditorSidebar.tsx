@@ -5,23 +5,25 @@
  * CRUD 逻辑复用 PromptSettings 的模式。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Plus, Trash2, Star, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
+import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
+
 import {
   promptConfigAtom,
   selectedPromptIdAtom,
   defaultPromptIdAtom,
   promptSidebarOpenAtom,
 } from '@/atoms/system-prompt-atoms'
-import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 /** 防抖保存延迟 (ms) */
 const DEBOUNCE_DELAY = 500

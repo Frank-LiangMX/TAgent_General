@@ -6,14 +6,15 @@
  * 管理「会话文件 / 工作区文件 / 代码改动」Tab 切换。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { appModeAtom } from '@/atoms/app-mode'
+import * as React from 'react'
+
 import {
   currentAgentSessionIdAtom,
   agentSessionPathMapAtom,
   agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
 import { SidePanel } from '@/components/agent/SidePanel'
 
 export function RightSidePanel({ width }: { width?: number }): React.ReactElement | null {

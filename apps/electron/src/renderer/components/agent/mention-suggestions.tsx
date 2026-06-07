@@ -5,14 +5,16 @@
  * 通过 MentionSuggestionConfig 注入差异部分（触发字符、数据获取、行渲染）。
  */
 
-import type React from 'react'
 import { ReactRenderer } from '@tiptap/react'
-import type { SuggestionOptions } from '@tiptap/suggestion'
 import { MessageSquareText, Sparkles, Server } from 'lucide-react'
-import { MentionList } from './MentionList'
-import type { MentionListRef } from './MentionList'
+
 import { createMentionPopup, positionPopup } from './mention-popup-utils'
+import { MentionList } from './MentionList'
+
+import type { MentionListRef } from './MentionList'
 import type { AgentSessionReferenceSearchResult } from '@tagent/shared'
+import type { SuggestionOptions } from '@tiptap/suggestion'
+import type React from 'react'
 
 // ===== 泛型工厂 =====
 

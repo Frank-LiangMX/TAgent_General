@@ -6,8 +6,10 @@
  */
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+
 import { LABEL_CLASS, DESCRIPTION_CLASS, ROW_CLASS } from './SettingsUIConstants'
+
+import { cn } from '@/lib/utils'
 
 interface SettingsRowProps {
   /** 行标签 */

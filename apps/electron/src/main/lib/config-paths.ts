@@ -5,9 +5,9 @@
  * 所有用户配置存储在 ~/.tagent/ 目录下。
  */
 
-import { join, basename } from 'node:path'
 import { mkdirSync, existsSync, cpSync, rmSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { join, basename } from 'node:path'
 
 /**
  * 获取配置目录名称

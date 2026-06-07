@@ -5,6 +5,7 @@
  */
 
 import { atom } from 'jotai'
+
 import type { ProxyConfig } from '@tagent/shared'
 
 /**

@@ -1,5 +1,7 @@
 import { test, expect, describe } from 'bun:test'
+
 import { diffCapabilities } from './capabilities-diff'
+
 import type { WorkspaceCapabilities } from '../types/agent'
 
 /** 构建测试用 WorkspaceCapabilities */

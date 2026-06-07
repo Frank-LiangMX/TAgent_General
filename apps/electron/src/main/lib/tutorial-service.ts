@@ -4,12 +4,15 @@
  * 负责读取教程内容和创建欢迎对话。
  */
 
+import { randomUUID } from 'node:crypto'
 import { readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+
 import { app } from 'electron'
-import { createConversation, appendMessage } from './conversation-manager'
+
 import { getConversationAttachmentsDir } from './config-paths'
+import { createConversation, appendMessage } from './conversation-manager'
+
 import type { ConversationMeta, FileAttachment, ChatMessage } from '@tagent/shared'
 
 /**

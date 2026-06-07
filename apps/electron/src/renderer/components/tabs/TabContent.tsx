@@ -5,14 +5,17 @@
  * 直接传递 sessionId/conversationId prop，无需桥接全局 atoms。
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
+import { TabErrorBoundary } from './TabErrorBoundary'
+
 import { tabsAtom } from '@/atoms/tab-atoms'
-import { ChatView } from '@/components/chat'
 import { AgentView } from '@/components/agent'
+import { ChatView } from '@/components/chat'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
 import { ScratchPadView } from '@/components/scratch-pad/ScratchPadView'
-import { TabErrorBoundary } from './TabErrorBoundary'
+
 
 export interface TabContentProps {
   tabId: string

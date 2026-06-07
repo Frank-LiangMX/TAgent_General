@@ -4,18 +4,13 @@
  * 挂载 React 应用，初始化主题系统。
  */
 
+import { diffCapabilities } from '@tagent/shared'
+import { useSetAtom, useAtomValue, useStore } from 'jotai'
 import React, { useEffect, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
-import { useSetAtom, useAtomValue, useStore } from 'jotai'
+import { toast } from 'sonner'
+
 import App from './App'
-import {
-  themeModeAtom,
-  themeStyleAtom,
-  systemIsDarkAtom,
-  resolvedThemeAtom,
-  applyThemeToDOM,
-  initializeTheme,
-} from './atoms/theme'
 import {
   agentChannelIdAtom,
   agentModelIdAtom,
@@ -33,40 +28,48 @@ import {
   dockBadgeCountAtom,
   unviewedCompletedSessionIdsAtom,
 } from './atoms/agent-atoms'
-import { updateStatusAtom, initializeUpdater } from './atoms/updater'
+import { appModeAtom } from './atoms/app-mode'
+import { currentConversationIdAtom, channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/chat-atoms'
+import { chatToolsAtom } from './atoms/chat-tool-atoms'
+import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
+import { feishuBotStatesAtom } from './atoms/feishu-atoms'
+import {
+  markdownFontSizeAtom,
+  initializeMarkdownFontSize,
+} from './atoms/markdown-font-size'
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
+import { tabsAtom, activeTabIdAtom, ensureScratchPadTab, getPersistableTabState, scratchPadContentAtom, scratchPadLoadedAtom, SCRATCH_PAD_ID } from './atoms/tab-atoms'
+import {
+  themeModeAtom,
+  themeStyleAtom,
+  systemIsDarkAtom,
+  resolvedThemeAtom,
+  applyThemeToDOM,
+  initializeTheme,
+} from './atoms/theme'
 import {
   stickyUserMessageEnabledAtom,
   initializeUiPreferences,
 } from './atoms/ui-preferences'
-import {
-  markdownFontSizeAtom,
-  initializeMarkdownFontSize,
-} from './atoms/markdown-font-size'
-import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
-import { useGlobalChatListeners } from './hooks/useGlobalChatListeners'
-import { tabsAtom, activeTabIdAtom, ensureScratchPadTab, getPersistableTabState, scratchPadContentAtom, scratchPadLoadedAtom, SCRATCH_PAD_ID } from './atoms/tab-atoms'
-import type { TabItem } from './atoms/tab-atoms'
-import { chatToolsAtom } from './atoms/chat-tool-atoms'
-import { feishuBotStatesAtom } from './atoms/feishu-atoms'
-import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
-import { currentConversationIdAtom, channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/chat-atoms'
-import { appModeAtom } from './atoms/app-mode'
-import type { FeishuBotBridgeState, FeishuBridgeState, DingTalkBotBridgeState, DingTalkBridgeState } from '@tagent/shared'
-import { Toaster } from './components/ui/sonner'
-import { toast } from 'sonner'
-import { diffCapabilities } from '@tagent/shared'
-import type { WorkspaceCapabilities } from '@tagent/shared'
-import { showCapabilityChangeToasts } from './lib/capabilities-toast'
+import { updateStatusAtom, initializeUpdater } from './atoms/updater'
 import { UpdateDialog } from './components/settings/UpdateDialog'
 import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
 import { TabSwitcher } from './components/tabs/TabSwitcher'
+import { Toaster } from './components/ui/sonner'
+import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
+import { useGlobalChatListeners } from './hooks/useGlobalChatListeners'
+import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
+
+import type { TabItem } from './atoms/tab-atoms'
+import type { FeishuBotBridgeState, FeishuBridgeState, DingTalkBotBridgeState, DingTalkBridgeState , WorkspaceCapabilities } from '@tagent/shared'
+
+
 import './styles/globals.css'
 import 'katex/dist/katex.min.css'
 
@@ -125,7 +128,7 @@ function ThemeInitializer(): null {
 
   useEffect(() => {
     applyThemeToDOM(themeMode, themeStyle, systemIsDark)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [themeSignature])
 
   return null

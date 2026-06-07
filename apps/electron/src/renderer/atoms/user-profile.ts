@@ -5,7 +5,9 @@
  */
 
 import { atom } from 'jotai'
+
 import { DEFAULT_USER_AVATAR, DEFAULT_USER_NAME } from '../../types'
+
 import type { UserProfile } from '../../types'
 
 /** 用户档案 */

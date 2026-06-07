@@ -8,10 +8,13 @@
  */
 
 import { watch, existsSync } from 'node:fs'
-import type { FSWatcher } from 'node:fs'
-import { BrowserWindow } from 'electron'
+
 import { CHAT_TOOL_IPC_CHANNELS } from '@tagent/shared'
+import { BrowserWindow } from 'electron'
+
 import { getChatToolsConfigPath } from './config-paths'
+
+import type { FSWatcher } from 'node:fs'
 
 /** debounce 延迟（ms） */
 const DEBOUNCE_MS = 500

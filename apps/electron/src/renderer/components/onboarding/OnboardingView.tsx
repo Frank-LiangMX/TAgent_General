@@ -8,22 +8,23 @@
  *  Step 2：Windows 环境检测（仅 Windows，其他平台自动跳过）
  */
 
-import { useMemo, useState } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { GraduationCap, ChevronRight, ChevronLeft, HardDriveDownload, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
+
+import { isShellEnvironmentOkAtom } from '@/atoms/environment'
+import { migrationImportDialogOpenAtom } from '@/atoms/migration-atoms'
+import { EnvironmentCheckPanel } from '@/components/environment/EnvironmentCheckPanel'
+import { TutorialViewer } from '@/components/tutorial/TutorialViewer'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { TutorialViewer } from '@/components/tutorial/TutorialViewer'
-import { EnvironmentCheckPanel } from '@/components/environment/EnvironmentCheckPanel'
-import { isShellEnvironmentOkAtom } from '@/atoms/environment'
 import { detectIsWindows } from '@/lib/platform'
-import { migrationImportDialogOpenAtom } from '@/atoms/migration-atoms'
 
 interface OnboardingViewProps {
   /** 完成回调（进入主界面） */

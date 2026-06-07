@@ -7,15 +7,16 @@
  * 必须放在 StickToBottom（Conversation）内部使用。
  */
 
+import { AlertTriangle, Search } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle, Search } from 'lucide-react'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
-import { Input } from '@/components/ui/input'
+
 import { UserAvatar } from '@/components/chat/UserAvatar'
-import { getModelLogo } from '@/lib/model-logo'
+import { Input } from '@/components/ui/input'
 import { useShortcut } from '@/hooks/useShortcut'
+import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
 export interface MinimapItem {
@@ -39,14 +40,14 @@ const MAX_BARS = 20
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- react-markdown components 类型复杂，使用内联对象即可 */
+ 
 const PREVIEW_MD_COMPONENTS = {
   pre: ({ children }: { children?: React.ReactNode }) => <pre className="text-[11px] opacity-70 truncate">{children}</pre>,
   code: ({ children }: { children?: React.ReactNode }) => <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>,
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 } as const
-/* eslint-enable @typescript-eslint/no-explicit-any */
+ 
 
 // ── 辅助函数 ──
 

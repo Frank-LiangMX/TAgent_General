@@ -5,17 +5,13 @@
  * 优先复用已打开会话写入的 tabMinimapCache；未打开时按需读取本地 JSONL。
  */
 
+import { useAtom, useAtomValue } from 'jotai'
+import { AlertTriangle, Bot, Loader2, MessageSquare } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { useAtom, useAtomValue } from 'jotai'
 import Markdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle, Bot, Loader2, MessageSquare } from 'lucide-react'
-import { UserAvatar } from '@/components/chat/UserAvatar'
-import { tabMinimapCacheAtom, type TabMinimapItem } from '@/atoms/tab-atoms'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { getModelLogo } from '@/lib/model-logo'
-import { cn } from '@/lib/utils'
+
 import type {
   ChatMessage,
   SDKAssistantMessage,
@@ -25,6 +21,13 @@ import type {
   SDKUserContentBlock,
   SDKUserMessage,
 } from '@tagent/shared'
+
+import { tabMinimapCacheAtom, type TabMinimapItem } from '@/atoms/tab-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
+import { UserAvatar } from '@/components/chat/UserAvatar'
+import { getModelLogo } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+
 
 export type SessionMiniMapType = 'chat' | 'agent'
 

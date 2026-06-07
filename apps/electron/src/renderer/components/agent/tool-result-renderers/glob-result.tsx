@@ -3,7 +3,9 @@
  */
 
 import * as React from 'react'
+
 import { CollapsibleResult } from './collapsible-result'
+
 import { FileTypeIcon } from '@/components/file-browser'
 
 interface GlobResultRendererProps {

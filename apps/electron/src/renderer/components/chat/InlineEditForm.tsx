@@ -8,15 +8,20 @@
  * - Enter 发送、Escape 取消
  */
 
-import * as React from 'react'
-import { Paperclip, SendHorizontal, X } from 'lucide-react'
-import { MessageAction } from '@/components/ai-elements/message'
-import { AttachmentPreviewItem } from './AttachmentPreviewItem'
-import { cn } from '@/lib/utils'
-import type { ChatMessage, FileAttachment } from '@tagent/shared'
 import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
-import { fileToBase64, formatFileNames } from '@/lib/file-utils'
+import { Paperclip, SendHorizontal, X } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
+
+import { AttachmentPreviewItem } from './AttachmentPreviewItem'
+
+import type { ChatMessage, FileAttachment } from '@tagent/shared'
+
+import { MessageAction } from '@/components/ai-elements/message'
+import { fileToBase64, formatFileNames } from '@/lib/file-utils'
+import { cn } from '@/lib/utils'
+
+
 
 interface NewInlineAttachment {
   filename: string

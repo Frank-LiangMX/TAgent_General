@@ -5,9 +5,11 @@
  * 通过 ConversationContext 获取 conversationId，避免 props 透传。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { useConversationId, useConversationIdOptional } from '@/contexts/session-context'
+import * as React from 'react'
+
+import type { SelectedModel, ContextLengthValue } from '@/atoms/chat-atoms'
+
 import {
   selectedModelAtom,
   contextLengthAtom,
@@ -17,11 +19,11 @@ import {
   conversationThinkingEnabledAtom,
   conversationParallelModeAtom,
 } from '@/atoms/chat-atoms'
-import type { SelectedModel, ContextLengthValue } from '@/atoms/chat-atoms'
 import {
   selectedPromptIdAtom,
   conversationPromptIdAtom,
 } from '@/atoms/system-prompt-atoms'
+import { useConversationId, useConversationIdOptional } from '@/contexts/session-context'
 
 // ===== 通用 Map 读写辅助 =====
 

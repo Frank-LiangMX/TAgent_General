@@ -5,6 +5,17 @@
  * 使用 includePartialMessages: false 获取完整 JSON 对象，无需逐 chunk 翻译。
  */
 
+import { spawn as spawnChild, execFileSync } from 'node:child_process'
+
+import {
+  THINKING_SIGNATURE_ERROR_MESSAGE,
+  THINKING_SIGNATURE_ERROR_TITLE,
+  isThinkingSignatureError as matchesThinkingSignatureError,
+} from '@tagent/shared'
+
+import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
+
+import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 import type {
   AgentQueryInput,
   AgentProviderAdapter,
@@ -19,14 +30,8 @@ import type {
   SDKMessage,
   TAgentPermissionMode,
 } from '@tagent/shared'
-import {
-  THINKING_SIGNATURE_ERROR_MESSAGE,
-  THINKING_SIGNATURE_ERROR_TITLE,
-  isThinkingSignatureError as matchesThinkingSignatureError,
-} from '@tagent/shared'
-import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
-import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
-import { spawn as spawnChild, execFileSync } from 'node:child_process'
+
+
 
 /** SDK Query 对象类型（从动态导入中推断） */
 type SDKQuery = ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>

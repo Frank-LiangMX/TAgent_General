@@ -6,6 +6,7 @@
  */
 
 import { ProxyAgent, fetch as undiciFetch } from 'undici'
+
 import type { RequestInfo, RequestInit } from 'undici'
 
 /**

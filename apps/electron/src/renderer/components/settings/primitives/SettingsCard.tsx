@@ -6,9 +6,11 @@
  */
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
-import { Separator } from '@/components/ui/separator'
+
 import { CARD_CLASS, DIVIDER_CLASS } from './SettingsUIConstants'
+
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 
 interface SettingsCardProps {
   /** 子内容 */

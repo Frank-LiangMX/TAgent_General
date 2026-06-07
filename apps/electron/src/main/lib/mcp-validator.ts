@@ -8,8 +8,9 @@
  * 避免配置错误的 MCP 服务器导致整个 Agent SDK 无法启动。
  */
 
-import { existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+
 import type { McpServerEntry } from '@tagent/shared'
 
 /**

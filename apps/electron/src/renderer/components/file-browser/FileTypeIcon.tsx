@@ -4,8 +4,8 @@
  * 封装 @react-symbols/icons，统一尺寸和样式。
  */
 
-import * as React from 'react'
 import { FileIcon, FolderIcon } from '@react-symbols/icons/utils'
+import * as React from 'react'
 
 interface FileTypeIconProps {
   /** 文件名或文件夹名（如 "index.ts"、"node_modules"） */

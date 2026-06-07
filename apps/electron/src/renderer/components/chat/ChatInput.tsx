@@ -12,37 +12,41 @@
  * - 卡片式容器样式
  */
 
-import * as React from 'react'
+import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { CornerDownLeft, Square, Brain, Paperclip } from 'lucide-react'
-import { ModelSelector } from './ModelSelector'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+import { AttachmentPreviewItem } from './AttachmentPreviewItem'
 import { ClearContextButton } from './ClearContextButton'
 import { ContextSettingsPopover } from './ContextSettingsPopover'
+import { ModelSelector } from './ModelSelector'
 import { ToolSelectorPopover } from './ToolSelectorPopover'
-import { AttachmentPreviewItem } from './AttachmentPreviewItem'
+
+import type { PendingAttachment } from '@/atoms/chat-atoms'
+
+import {
+  conversationDraftsAtom,
+} from '@/atoms/chat-atoms'
+import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
+import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
 import { RichTextInput } from '@/components/ai-elements/rich-text-input'
 import { SpeechButton } from '@/components/ai-elements/speech-button'
-import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
-import {
-  conversationDraftsAtom,
-} from '@/atoms/chat-atoms'
-import type { PendingAttachment } from '@/atoms/chat-atoms'
 import {
   useConversationModel,
   useConversationThinkingEnabled,
 } from '@/hooks/useConversationSettings'
-import { cn } from '@/lib/utils'
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
-import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
-import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import { toast } from 'sonner'
+import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+import { cn } from '@/lib/utils'
+
 
 interface ChatInputProps {
   /** 当前对话 ID */

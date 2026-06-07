@@ -6,8 +6,10 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
 import { getUserProfilePath } from './config-paths'
 import { DEFAULT_USER_AVATAR, DEFAULT_USER_NAME } from '../../types'
+
 import type { UserProfile } from '../../types'
 
 /**

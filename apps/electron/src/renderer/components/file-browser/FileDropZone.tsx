@@ -5,13 +5,14 @@
  * 拖错区域会给出引导提示。
  */
 
+import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+import { Paperclip, FolderPlus, Loader2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { Paperclip, FolderPlus, Loader2 } from 'lucide-react'
+
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
-import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+import { cn } from '@/lib/utils'
 
 interface FileDropZoneProps {
   workspaceSlug: string

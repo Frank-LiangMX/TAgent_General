@@ -11,38 +11,25 @@
  * - system 消息独立渲染
  */
 
-import * as React from 'react'
-import { Bot, Loader2, AlertTriangle, FileText, FileImage, Download, Split, Undo2, RotateCw, Plus, Minimize2, Wrench, Settings, ExternalLink, Quote } from 'lucide-react'
+import {
+  THINKING_SIGNATURE_ERROR_CODE,
+  THINKING_SIGNATURE_ERROR_TITLE,
+  THINKING_SIGNATURE_ERROR_MESSAGE,
+  isThinkingSignatureError,
+} from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { cn } from '@/lib/utils'
-import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { Bot, Loader2, AlertTriangle, FileText, FileImage, Download, Split, Undo2, RotateCw, Plus, Minimize2, Wrench, Settings, ExternalLink, Quote } from 'lucide-react'
+import * as React from 'react'
+
+import { DurationBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
-import { TaskProgressCard } from './TaskProgressCard'
-import { TurnFileChangesSummary } from './TurnFileChangesSummary'
 import { ProcessBlockGroup, buildAssistantTurnRenderItems, buildCompletedToolResultIds } from './ProcessBlockGroup'
 import { extractToolResultText, parseTaskCreateResult, TASK_TOOL_NAMES } from './task-progress'
+import { TaskProgressCard } from './TaskProgressCard'
 import { normalizeThinkTagsInContentBlocks } from './thinking-tag-parser'
-import { DurationBadge } from './AgentMessages'
-import {
-  Message,
-  MessageHeader,
-  MessageContent,
-  MessageActions,
-  MessageAction,
-  MessageResponse,
-  UserMessageContent,
-} from '@/components/ai-elements/message'
-import { UserAvatar } from '@/components/chat/UserAvatar'
-import { CopyButton } from '@/components/chat/CopyButton'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { formatMessageTime } from '@/components/chat/ChatMessageItem'
-import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { channelsAtom } from '@/atoms/chat-atoms'
-import { agentProcessGroupsKeepExpandedAtom } from '@/atoms/agent-atoms'
-import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
-import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
+import { TurnFileChangesSummary } from './TurnFileChangesSummary'
+
+import type { ToolActivity } from '@/atoms/agent-atoms'
 import type {
   SDKMessage,
   SDKAssistantMessage,
@@ -55,13 +42,29 @@ import type {
   SDKToolResultBlock,
   RecoveryAction,
 } from '@tagent/shared'
+
+import { agentProcessGroupsKeepExpandedAtom } from '@/atoms/agent-atoms'
+import { channelsAtom } from '@/atoms/chat-atoms'
+import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
+import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
+import { userProfileAtom } from '@/atoms/user-profile'
 import {
-  THINKING_SIGNATURE_ERROR_CODE,
-  THINKING_SIGNATURE_ERROR_TITLE,
-  THINKING_SIGNATURE_ERROR_MESSAGE,
-  isThinkingSignatureError,
-} from '@tagent/shared'
-import type { ToolActivity } from '@/atoms/agent-atoms'
+  Message,
+  MessageHeader,
+  MessageContent,
+  MessageActions,
+  MessageAction,
+  MessageResponse,
+  UserMessageContent,
+} from '@/components/ai-elements/message'
+import { formatMessageTime } from '@/components/chat/ChatMessageItem'
+import { CopyButton } from '@/components/chat/CopyButton'
+import { UserAvatar } from '@/components/chat/UserAvatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
 
 // ===== SDKMessageRenderer Props =====
 

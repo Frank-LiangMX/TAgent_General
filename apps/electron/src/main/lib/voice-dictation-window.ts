@@ -4,11 +4,13 @@
  * 独立于快速任务窗口，专注系统级语音听写。
  */
 
-import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
-import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
+
+import { app, BrowserWindow, screen } from 'electron'
+
 import { getSettings, updateSettings } from './settings-service'
 import { captureVoiceDictationTarget } from './text-output-service'
+import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
 
 let voiceDictationWindow: BrowserWindow | null = null
 let voiceDictationTargetCaptured = false

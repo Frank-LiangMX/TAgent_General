@@ -5,10 +5,12 @@
  * 移植自 proma-frontend 的 ai-elements/context-divider.tsx。
  */
 
+import { X } from 'lucide-react'
+
+import type { ComponentProps } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { X } from 'lucide-react'
-import type { ComponentProps } from 'react'
 
 export interface ContextDividerProps extends ComponentProps<'div'> {
   /** 分隔线对应的 messageId */

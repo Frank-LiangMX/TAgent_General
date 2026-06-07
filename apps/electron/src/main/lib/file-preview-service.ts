@@ -5,13 +5,15 @@
  * 供 PreviewPanel 内联面板使用。
  */
 
-import { basename, join, dirname, extname, resolve, posix as pathPosix } from 'node:path'
-import { readFileSync, readdirSync, statSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from 'node:fs'
-import { tmpdir, homedir } from 'node:os'
-import { createRequire } from 'node:module'
 import { createHash } from 'node:crypto'
-import AdmZip from 'adm-zip'
+import { readFileSync, readdirSync, statSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { tmpdir, homedir } from 'node:os'
+import { basename, join, dirname, extname, resolve, posix as pathPosix } from 'node:path'
+
 import { DOMParser } from '@xmldom/xmldom'
+import AdmZip from 'adm-zip'
+
 import type { OfficePreviewResult } from '@tagent/shared'
 
 const require = createRequire(__filename)

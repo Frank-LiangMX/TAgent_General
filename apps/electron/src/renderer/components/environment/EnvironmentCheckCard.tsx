@@ -7,7 +7,6 @@
  *  - openExternal: 打开外部链接（macOS / 高级用户的官方下载页）
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
 import {
   CheckCircle2,
@@ -18,13 +17,16 @@ import {
   Download,
   Rocket,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import * as React from 'react'
+
+import type { InstallerDownloadRequest } from '@tagent/shared'
+
 import {
   installerDownloadStatesAtom,
   installerManifestAtom,
   type InstallerDownloadState,
 } from '@/atoms/environment'
-import type { InstallerDownloadRequest } from '@tagent/shared'
+import { Button } from '@/components/ui/button'
 
 type CheckStatus = 'checking' | 'success' | 'warning' | 'error'
 

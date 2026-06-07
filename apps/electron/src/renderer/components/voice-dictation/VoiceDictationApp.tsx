@@ -2,14 +2,21 @@
  * VoiceDictationApp — 系统级语音输入浮窗
  */
 
-import * as React from 'react'
 import { Check, Clipboard, Loader2, Mic, Square, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import type { VoiceDictationCommitResult, VoiceDictationSettings, VoiceDictationStateEvent, VoiceDictationTranscriptEvent } from '../../../types'
+import * as React from 'react'
+
+import { useVoiceWindowLayout } from './use-voice-window-layout'
 import { CHUNK_BYTES, concatAudioBuffers, floatTo16BitPcm, splitChunk } from './voice-audio-utils'
 import { mergeVoiceDictationTranscript } from './voice-transcript-merge'
+
 import type { VoiceDictationTranscriptMergeState } from './voice-transcript-merge'
-import { useVoiceWindowLayout } from './use-voice-window-layout'
+import type { VoiceDictationCommitResult, VoiceDictationSettings, VoiceDictationStateEvent, VoiceDictationTranscriptEvent } from '../../../types'
+
+import { Button } from '@/components/ui/button'
+
+
+
+
 
 const MAX_QUEUED_CHUNKS = 60
 const STOP_COMMIT_TIMEOUT_MS = 1400

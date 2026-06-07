@@ -6,6 +6,7 @@
  */
 
 import { atom } from 'jotai'
+
 import type { ShortcutOverrides } from '@/lib/shortcut-defaults'
 
 /** 用户自定义快捷键覆盖（从 settings.json 加载） */

@@ -8,6 +8,7 @@
  */
 
 import { app, nativeImage } from 'electron'
+
 import { getMainWindow } from '../index'
 
 function createBadgeOverlay(count: number) {

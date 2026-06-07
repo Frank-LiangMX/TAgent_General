@@ -7,10 +7,11 @@
  * - hover 显示关闭按钮
  */
 
-import * as React from 'react'
 import { X, Paperclip } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { cn } from '@/lib/utils'
 
 interface AttachmentPreviewItemProps {
   /** 原始文件名 */

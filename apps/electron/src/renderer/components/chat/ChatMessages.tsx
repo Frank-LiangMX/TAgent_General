@@ -12,14 +12,28 @@
  * - 并排模式切换到 ParallelChatMessages
  */
 
-import * as React from 'react'
+import { useSmoothStream } from '@tagent/ui'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { Loader2 } from 'lucide-react'
-import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
+import * as React from 'react'
+import { useStickToBottomContext } from 'use-stick-to-bottom'
+
 import { ChatMessageItem, formatMessageTime } from './ChatMessageItem'
-import type { InlineEditSubmitPayload } from './ChatMessageItem'
 import { ChatToolActivityIndicator } from './ChatToolActivityIndicator'
 import { ParallelChatMessages } from './ParallelChatMessages'
+
+import type { InlineEditSubmitPayload } from './ChatMessageItem'
+import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
+import type { ChatMessage, ChatToolActivity } from '@tagent/shared'
+
+import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
+import { ContextDivider } from '@/components/ai-elements/context-divider'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation'
 import {
   Message,
   MessageHeader,
@@ -29,26 +43,16 @@ import {
   StreamingIndicator,
 } from '@/components/ai-elements/message'
 import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from '@/components/ai-elements/conversation'
-import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
-import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
-import { useStickToBottomContext } from 'use-stick-to-bottom'
-import { ContextDivider } from '@/components/ai-elements/context-divider'
-import {
   Reasoning,
   ReasoningTrigger,
   ReasoningContent,
 } from '@/components/ai-elements/reasoning'
-import { useSmoothStream } from '@tagent/ui'
-import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
+import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
+import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
 import { useConversationParallelMode } from '@/hooks/useConversationSettings'
+import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { getModelLogo } from '@/lib/model-logo'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
-import type { ChatMessage, ChatToolActivity } from '@tagent/shared'
+
 
 // ===== 滚动到顶部加载更多 =====
 

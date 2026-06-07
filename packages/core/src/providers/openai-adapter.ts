@@ -10,6 +10,8 @@
  * - 认证：Authorization: Bearer
  */
 
+import { normalizeBaseUrl } from './url-utils.ts'
+
 import type {
   ProviderAdapter,
   ProviderRequest,
@@ -20,7 +22,6 @@ import type {
   ToolDefinition,
   ContinuationMessage,
 } from './types.ts'
-import { normalizeBaseUrl } from './url-utils.ts'
 
 // ===== OpenAI 特有类型 =====
 

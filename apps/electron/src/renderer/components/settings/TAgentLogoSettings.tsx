@@ -5,8 +5,9 @@
  */
 
 import * as React from 'react'
-import { SettingsSection } from './primitives/SettingsSection'
+
 import { SettingsCard } from './primitives/SettingsCard'
+import { SettingsSection } from './primitives/SettingsSection'
 
 export function TAgentLogoSettings(): React.ReactElement {
   return (

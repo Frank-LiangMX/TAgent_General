@@ -1,6 +1,7 @@
-import { app, BrowserWindow, dialog, Menu, nativeTheme, protocol, screen, shell } from 'electron'
-import { join } from 'path'
 import { existsSync } from 'fs'
+import { join } from 'path'
+
+import { app, BrowserWindow, dialog, Menu, nativeTheme, protocol, screen, shell } from 'electron'
 
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
@@ -57,8 +58,13 @@ function registerProtocolsAndHandlers(): void {
 
 
 
-import { getSettings, updateSettings } from './lib/settings-service'
+import { registerIpcHandlers } from './ipc'
+import { TRAY_IPC_CHANNELS } from '../types'
+import { stopAllAgents, killOrphanedClaudeSubprocesses } from './lib/agent-service'
+import { upgradeDefaultSkillsInWorkspaces } from './lib/agent-workspace-manager'
+import { seedDefaultSkills } from './lib/config-paths'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
+import { getSettings, updateSettings } from './lib/settings-service'
 
 // 处理 EPIPE 错误：当 stdout/stderr 管道被关闭时（如 electronmon 重启），忽略写入错误
 // 这在开发环境热重载时经常发生，不影响应用功能
@@ -80,16 +86,20 @@ for (const key of Object.keys(process.env)) {
   }
 }
 
+import { initAutoUpdater, cleanupUpdater } from './lib/updater/auto-updater'
+import {
+  createVoiceDictationWindow,
+  toggleVoiceDictationWindow,
+  destroyVoiceDictationWindow,
+  shouldSuppressVoiceDictationActivate,
+} from './lib/voice-dictation-window'
+import { wechatBridge } from './lib/wechat-bridge'
+import { getWeChatConfig } from './lib/wechat-config'
+import { startWorkspaceWatcher, stopWorkspaceWatcher } from './lib/workspace-watcher'
 import { createApplicationMenu } from './menu'
-import { registerIpcHandlers } from './ipc'
 import { createTray, destroyTray, getTray } from './tray'
 import { initializeRuntime } from './lib/runtime-init'
-import { seedDefaultSkills } from './lib/config-paths'
-import { upgradeDefaultSkillsInWorkspaces } from './lib/agent-workspace-manager'
-import { stopAllAgents, killOrphanedClaudeSubprocesses } from './lib/agent-service'
 import { stopAllGenerations } from './lib/chat-service'
-import { initAutoUpdater, cleanupUpdater } from './lib/updater/auto-updater'
-import { startWorkspaceWatcher, stopWorkspaceWatcher } from './lib/workspace-watcher'
 import { startChatToolsWatcher, stopChatToolsWatcher } from './lib/chat-tools-watcher'
 import { getIsQuitting, setQuitting } from './lib/app-lifecycle'
 import { registerBridge, startAllBridges, stopAllBridges } from './lib/bridge-registry'
@@ -98,18 +108,11 @@ import { getFeishuMultiBotConfig } from './lib/feishu-config'
 import { stopFeishuSyncSleepBlocker, syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import { getDingTalkMultiBotConfig } from './lib/dingtalk-config'
-import { wechatBridge } from './lib/wechat-bridge'
-import { getWeChatConfig } from './lib/wechat-config'
 import { createQuickTaskWindow, toggleQuickTaskWindow, destroyQuickTaskWindow } from './lib/quick-task-window'
-import {
-  createVoiceDictationWindow,
-  toggleVoiceDictationWindow,
-  destroyVoiceDictationWindow,
-  shouldSuppressVoiceDictationActivate,
-} from './lib/voice-dictation-window'
 import { registerGlobalShortcut, unregisterAllGlobalShortcuts } from './lib/global-shortcut-service'
+
 import { setTAgentVersion } from '@tagent/core'
-import { TRAY_IPC_CHANNELS } from '../types'
+
 
 const MIGRATION_IPC_OPEN = 'migration:open-import-file'
 

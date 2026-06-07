@@ -5,8 +5,18 @@
  * 确保所有打开会话的入口都能正确同步 appMode 和 currentSessionId。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import * as React from 'react'
+
+import {
+  currentAgentSessionIdAtom,
+  agentSessionsAtom,
+  currentAgentWorkspaceIdAtom,
+  unviewedCompletedSessionIdsAtom,
+} from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
+import { currentConversationIdAtom } from '@/atoms/chat-atoms'
+import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
   tabsAtom,
   activeTabIdAtom,
@@ -15,15 +25,6 @@ import {
   sessionViewStateMapAtom,
   type TabType,
 } from '@/atoms/tab-atoms'
-import { previewFileMapAtom } from '@/atoms/preview-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
-import {
-  currentAgentSessionIdAtom,
-  agentSessionsAtom,
-  currentAgentWorkspaceIdAtom,
-  unviewedCompletedSessionIdsAtom,
-} from '@/atoms/agent-atoms'
 
 type OpenSessionFn = (type: TabType, sessionId: string, title: string) => void
 

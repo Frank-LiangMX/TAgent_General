@@ -7,7 +7,7 @@
  * - thinking: 默认展开，左上角 "Thinking" 标签 + 虚线边框内容区
  */
 
-import * as React from 'react'
+import { useAtomValue } from 'jotai'
 import {
   ChevronRight,
   ChevronDown,
@@ -17,17 +17,16 @@ import {
   Brain,
   MessageSquareText,
 } from 'lucide-react'
-import { useAtomValue } from 'jotai'
-import { thinkingExpandedAtom } from '@/atoms/chat-atoms'
-import { cn } from '@/lib/utils'
-import { MessageResponse } from '@/components/ai-elements/message'
-import { getToolIcon, extractFilePath } from './tool-utils'
+import * as React from 'react'
+
+import { formatDuration } from './AgentMessages'
 import { getToolPhrase } from './tool-phrase'
 import { ToolResultRenderer } from './tool-result-renderers'
 import { PreviewOpenButton } from './tool-result-renderers/preview-open-button'
 import { getTaskGetStatusLabel, parseTaskGetResult, type ParsedTaskGetResult } from './tool-result-renderers/task-get-result'
 import { parseTaskListResult, type ParsedTaskListItem } from './tool-result-renderers/task-list-result'
-import { formatDuration } from './AgentMessages'
+import { getToolIcon, extractFilePath } from './tool-utils'
+
 import type {
   SDKContentBlock,
   SDKMessage,
@@ -38,6 +37,10 @@ import type {
   SDKToolResultBlock,
   SDKSystemMessage,
 } from '@tagent/shared'
+
+import { thinkingExpandedAtom } from '@/atoms/chat-atoms'
+import { MessageResponse } from '@/components/ai-elements/message'
+import { cn } from '@/lib/utils'
 
 // ===== useToolResult Hook =====
 

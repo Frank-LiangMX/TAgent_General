@@ -1,7 +1,10 @@
-import * as React from 'react'
 import { GitBranch, ChevronDown, RefreshCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import type { WorktreeInfo, WorkspaceWorktreeRepo } from '@tagent/shared'
+
+import { cn } from '@/lib/utils'
+
 
 interface WorktreeSelectorProps {
   sessionId: string

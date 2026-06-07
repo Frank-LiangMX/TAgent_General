@@ -5,13 +5,15 @@
  */
 
 import { ipcMain } from 'electron'
-import { UPDATER_IPC_CHANNELS } from './updater-types'
-import type { UpdateStatus } from './updater-types'
+
 import {
   checkForUpdates,
   getUpdateStatus,
   quitAndInstall,
 } from './auto-updater'
+import { UPDATER_IPC_CHANNELS } from './updater-types'
+
+import type { UpdateStatus } from './updater-types'
 
 /** 注册更新 IPC 处理器 */
 export function registerUpdaterIpc(): void {

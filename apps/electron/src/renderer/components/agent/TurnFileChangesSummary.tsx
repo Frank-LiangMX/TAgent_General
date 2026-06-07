@@ -11,6 +11,7 @@
  */
 
 import * as React from 'react'
+
 import type {
   SDKMessage,
   SDKAssistantMessage,
@@ -18,6 +19,7 @@ import type {
   SDKToolUseBlock,
   SDKToolResultBlock,
 } from '@tagent/shared'
+
 import { FilePathChip } from '@/components/ai-elements/file-path-chip'
 
 const MUTATING_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])

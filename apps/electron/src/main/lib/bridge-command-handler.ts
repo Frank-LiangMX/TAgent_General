@@ -7,18 +7,16 @@
  * 飞书 Bridge 使用独立的卡片消息格式，暂不接入此模块。
  */
 
-import { BrowserWindow } from 'electron'
-import type { AgentStreamPayload } from '@tagent/shared'
 import { AGENT_IPC_CHANNELS } from '@tagent/shared'
+import { BrowserWindow } from 'electron'
+
+import { runAgentHeadless, agentEventBus, stopAgent, isAgentSessionActive } from './agent-service'
 import { createAgentSession, listAgentSessions, getAgentSessionMeta } from './agent-session-manager'
 import {
   listAgentWorkspacesByUpdatedAt,
   getAgentWorkspace,
   getWorkspaceCapabilities,
 } from './agent-workspace-manager'
-import { runAgentHeadless, agentEventBus, stopAgent, isAgentSessionActive } from './agent-service'
-import { getSettings } from './settings-service'
-import { resolveWorkspaceFilesDir } from './config-paths'
 import { buildAttachedFilesBlock, buildSessionFileTree, buildFileTree } from './bridge-attachment-utils'
 import {
   listSwitchableChannels,
@@ -27,6 +25,10 @@ import {
   resolveModelByIndex,
   describeBindingModel,
 } from './bridge-model-utils'
+import { resolveWorkspaceFilesDir } from './config-paths'
+import { getSettings } from './settings-service'
+
+import type { AgentStreamPayload } from '@tagent/shared'
 
 // ===== 接口定义 =====
 

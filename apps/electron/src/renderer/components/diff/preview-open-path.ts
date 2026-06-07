@@ -1,5 +1,5 @@
-import type { FileAccessOptions } from '@tagent/shared'
 import type { PreviewFile } from '@/atoms/preview-atoms'
+import type { FileAccessOptions } from '@tagent/shared'
 
 function isAbsoluteFilePath(filePath: string): boolean {
   return filePath.startsWith('/') || filePath.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(filePath)

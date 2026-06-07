@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import type { AgentSessionMeta } from '@tagent/shared'
+
 import { buildExternalAgentRunActivation } from './external-agent-run'
+
 import type { ExternalAgentRunTab } from './external-agent-run'
+import type { AgentSessionMeta } from '@tagent/shared'
 
 const session: AgentSessionMeta = {
   id: 'agent-1',

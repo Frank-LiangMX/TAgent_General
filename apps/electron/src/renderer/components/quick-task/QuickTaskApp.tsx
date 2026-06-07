@@ -5,10 +5,11 @@
  * 轻量级独立窗口：多行输入 + 附件粘贴 + 模式切换 + 默认模型展示。
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
+
+import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 
 /** 任务模式 */
 type TaskMode = 'chat' | 'agent'

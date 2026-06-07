@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { cn } from '@/lib/utils'
-import { useTocHeadings } from '@/hooks/useTocHeadings'
+
 import { useScrollSpy } from '@/hooks/useScrollSpy'
+import { useTocHeadings } from '@/hooks/useTocHeadings'
+import { cn } from '@/lib/utils'
 
 interface MarkdownTocProps {
   /** 预览滚动容器，标题提取与跳转都基于它 */

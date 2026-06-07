@@ -6,18 +6,21 @@
  * - 绑定管理：查看/管理所有活跃的飞书聊天绑定（群聊/单聊的工作区/会话分配）
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { toast } from 'sonner'
 import { Loader2, CheckCircle2, XCircle, ExternalLink, Users, User, Trash2, RefreshCw, Copy, Check, Power, PowerOff, Plus, ChevronRight, PlayCircle, QrCode, MessageSquare, AlertTriangle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+import { SettingsCard } from './primitives/SettingsCard'
+import { SettingsInput } from './primitives/SettingsInput'
+import { SettingsRow } from './primitives/SettingsRow'
+import { SettingsSecretInput } from './primitives/SettingsSecretInput'
+import { SettingsSection } from './primitives/SettingsSection'
+
+import type { FeishuTestResult, FeishuChatBinding, FeishuBotConfig, FeishuBotBridgeState, FeishuRegisterAppQRCode, FeishuRegisterAppStatus, FeishuSessionMirrorSettings, FeishuSessionSyncMode } from '@tagent/shared'
+
+import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
+import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -37,15 +41,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { SettingsSection } from './primitives/SettingsSection'
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsInput } from './primitives/SettingsInput'
-import { SettingsSecretInput } from './primitives/SettingsSecretInput'
-import { SettingsRow } from './primitives/SettingsRow'
-import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
-import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import type { FeishuTestResult, FeishuChatBinding, FeishuBotConfig, FeishuBotBridgeState, FeishuRegisterAppQRCode, FeishuRegisterAppStatus, FeishuSessionMirrorSettings, FeishuSessionSyncMode } from '@tagent/shared'
 
 // ===== 常量 =====
 

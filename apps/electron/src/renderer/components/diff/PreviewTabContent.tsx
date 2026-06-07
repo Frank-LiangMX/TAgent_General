@@ -4,21 +4,23 @@
  * 复用内联预览的 PreviewFile 状态和 DiffTabContent 编辑能力，但不参与 Tab 持久化。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
+import * as React from 'react'
+
+import { DefaultAppOpenButton } from './DefaultAppOpenButton'
+import { DiffTabContent } from './DiffTabContent'
+import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
+
 import {
   agentSessionPathMapAtom,
 } from '@/atoms/agent-atoms'
+import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
   createPreviewTabId,
   getFileBaseName,
   getPreviewTabTitle,
   tabsAtom,
 } from '@/atoms/tab-atoms'
-import { previewFileMapAtom } from '@/atoms/preview-atoms'
-import { DefaultAppOpenButton } from './DefaultAppOpenButton'
-import { DiffTabContent } from './DiffTabContent'
-import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 interface PreviewTabContentProps {
   sessionId: string

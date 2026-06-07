@@ -7,8 +7,9 @@
  * 纯数据逻辑，不耦合任何平台的消息呈现（卡片 / 纯文本由各 Bridge 自行拼装）。
  */
 
-import type { Channel, ChannelModel } from '@tagent/shared'
 import { listChannels, getChannelById } from './channel-manager'
+
+import type { Channel, ChannelModel } from '@tagent/shared'
 
 /**
  * Channel 数据源接口 — 抽象出 "如何拿到 channels 列表 + 单个 channel" 以便测试。

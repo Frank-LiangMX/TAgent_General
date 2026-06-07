@@ -7,8 +7,10 @@
 import { execSync, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import type { NodeRuntimeStatus } from '@tagent/shared'
+
 import { getNodeInstallPathFromRegistry } from './windows-env'
+
+import type { NodeRuntimeStatus } from '@tagent/shared'
 
 /**
  * 从系统 PATH 查找 Node.js

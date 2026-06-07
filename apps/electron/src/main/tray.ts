@@ -1,9 +1,11 @@
-import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
-import { join } from 'path'
 import { existsSync } from 'fs'
+import { join } from 'path'
+
+import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
+
+import { isAgentSessionActive } from './lib/agent-service'
 import { listAgentSessions } from './lib/agent-session-manager'
 import { listAgentWorkspaces } from './lib/agent-workspace-manager'
-import { isAgentSessionActive } from './lib/agent-service'
 import { createTrayMenuModel, type TrayRecentSessionItem } from './lib/tray-menu-model'
 
 let tray: Tray | null = null

@@ -13,15 +13,25 @@
  * 布局：三段式 ChatHeader | ChatMessages | ChatInput
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { AlertCircle, X } from 'lucide-react'
-import { ChatHeader } from './ChatHeader'
-import { ChatMessages } from './ChatMessages'
-import { ChatInput } from './ChatInput'
+import * as React from 'react'
+
 import { AgentRecommendBanner } from './AgentRecommendBanner'
+import { ChatHeader } from './ChatHeader'
+import { ChatInput } from './ChatInput'
+import { ChatMessages } from './ChatMessages'
 import { PromptEditorSidebar } from './PromptEditorSidebar'
+
 import type { InlineEditSubmitPayload } from './ChatMessageItem'
+import type { PendingAttachment, ChatPendingMessage } from '@/atoms/chat-atoms'
+import type {
+  ChatMessage,
+  ChatSendInput,
+  FileAttachment,
+  AttachmentSaveInput,
+} from '@tagent/shared'
+
 import {
   conversationsAtom,
   streamingStatesAtom,
@@ -32,9 +42,9 @@ import {
   chatPendingMessageAtom,
   INITIAL_MESSAGE_LIMIT,
 } from '@/atoms/chat-atoms'
-import type { PendingAttachment, ChatPendingMessage } from '@/atoms/chat-atoms'
-import { promptConfigAtom, promptSidebarOpenAtom, conversationPromptIdAtom, resolveSystemMessage, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
 import { activeToolIdsAtom } from '@/atoms/chat-tool-atoms'
+import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { promptConfigAtom, promptSidebarOpenAtom, conversationPromptIdAtom, resolveSystemMessage, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { ConversationProvider } from '@/contexts/session-context'
 import {
@@ -44,14 +54,8 @@ import {
   useConversationPromptId,
 } from '@/hooks/useConversationSettings'
 import { registerPendingTitle } from '@/hooks/useGlobalChatListeners'
-import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { cn } from '@/lib/utils'
-import type {
-  ChatMessage,
-  ChatSendInput,
-  FileAttachment,
-  AttachmentSaveInput,
-} from '@tagent/shared'
+
 
 interface ChatViewProps {
   conversationId: string

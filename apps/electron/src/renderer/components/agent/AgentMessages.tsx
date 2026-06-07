@@ -5,40 +5,45 @@
  * 流式输出通过 SDK 渲染路径（MessageGroupRenderer）展示工具活动。
  */
 
-import * as React from 'react'
+import { useSmoothStream } from '@tagent/ui'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
-import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
+import * as React from 'react'
+
+import { ContentBlock } from './ContentBlock'
+import { buildLiveGroupSet } from './live-group-set'
+import { groupIntoTurns, MessageGroupRenderer, getGroupId, getGroupPreview, extractUserText, parseAttachedFiles as sdkParseAttachedFiles, isImageFile as sdkIsImageFile, CompactingIndicator, buildHistoricalTaskSubjects, type MessageGroup } from './SDKMessageRenderer'
+import { parseThinkTagsFromText } from './thinking-tag-parser'
+
+import type { AgentStreamState } from '@/atoms/agent-atoms'
+import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
+import type { AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
+
+import { channelsAtom } from '@/atoms/chat-atoms'
+import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation'
 import {
   Message,
   MessageHeader,
   MessageContent,
   BasePathsProvider,
 } from '@/components/ai-elements/message'
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from '@/components/ai-elements/conversation'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
-import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
-import { useSmoothStream } from '@tagent/ui'
 import { formatMessageTime } from '@/components/chat/ChatMessageItem'
-import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
-import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
-import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { groupIntoTurns, MessageGroupRenderer, getGroupId, getGroupPreview, extractUserText, parseAttachedFiles as sdkParseAttachedFiles, isImageFile as sdkIsImageFile, CompactingIndicator, buildHistoricalTaskSubjects, type MessageGroup } from './SDKMessageRenderer'
-import { buildLiveGroupSet } from './live-group-set'
-import { ContentBlock } from './ContentBlock'
-import { parseThinkTagsFromText } from './thinking-tag-parser'
-import type { AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
-import type { AgentStreamState } from '@/atoms/agent-atoms'
+import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
+import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
+import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+
+
 
 function stableStringify(value: unknown): string {
   if (value == null || typeof value !== 'object') return JSON.stringify(value) ?? String(value)

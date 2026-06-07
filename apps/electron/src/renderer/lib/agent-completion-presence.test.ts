@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+
 import { getAgentCompletionMarkers, isAgentSessionActiveForCompletion } from './agent-completion-presence'
+
 import type { TabItem } from '@/atoms/tab-atoms'
 
 describe('Agent 完成归属判断', () => {

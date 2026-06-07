@@ -4,16 +4,17 @@
  * 通过主进程唤起系统级豆包流式语音输入浮窗。
  */
 
-import { useCallback } from 'react'
 import { MicIcon } from 'lucide-react'
+import { useCallback } from 'react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 interface SpeechButtonProps {
   /** @deprecated 语音结果统一由全局语音输入回填到当前输入框 */

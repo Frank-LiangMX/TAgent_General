@@ -5,13 +5,15 @@
  * 带 Shiki 语法高亮、行号，固定使用 unified 视图。
  */
 
-import * as React from 'react'
-import { useAtomValue } from 'jotai'
-import { FileDiff } from '@pierre/diffs/react'
 import { parseDiffFromFile, type FileContents, type FileDiffMetadata } from '@pierre/diffs'
-import { resolvedThemeAtom } from '@/atoms/theme'
-import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { FileDiff } from '@pierre/diffs/react'
+import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
 import { PIERRE_DIFF_CSS } from './pierre-styles'
+
+import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { resolvedThemeAtom } from '@/atoms/theme'
 
 function cheapHash(s: string): number {
   let h = 0

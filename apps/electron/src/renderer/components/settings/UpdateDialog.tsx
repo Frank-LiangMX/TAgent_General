@@ -7,10 +7,15 @@
  * 3. 下载完成 → 提供「立即重启」按钮
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
 import { RotateCw } from 'lucide-react'
+import * as React from 'react'
+
+import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+
 import type { GitHubRelease } from '@tagent/shared'
+
+import { updateStatusAtom } from '@/atoms/updater'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -21,8 +26,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
-import { updateStatusAtom } from '@/atoms/updater'
-import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
 export function UpdateDialog(): React.ReactElement | null {
   const updateStatus = useAtomValue(updateStatusAtom)

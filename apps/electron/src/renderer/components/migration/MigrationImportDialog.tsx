@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import {
   Upload,
@@ -8,6 +7,15 @@ import {
   Loader2,
   FolderOpen,
 } from 'lucide-react'
+import * as React from 'react'
+
+import type { WorkspaceImportPreviewItem } from '@/hooks/useMigrationImport'
+
+import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
+import {
+  migrationImportDialogOpenAtom,
+  migrationImportInitialFilePathAtom,
+} from '@/atoms/migration-atoms'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +23,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
-import {
-  migrationImportDialogOpenAtom,
-  migrationImportInitialFilePathAtom,
-} from '@/atoms/migration-atoms'
-import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { useMigrationImport } from '@/hooks/useMigrationImport'
-import type { WorkspaceImportPreviewItem } from '@/hooks/useMigrationImport'
+import { cn } from '@/lib/utils'
+
 
 export function MigrationImportDialog(): React.ReactElement {
   const [open, setOpen] = useAtom(migrationImportDialogOpenAtom)

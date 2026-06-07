@@ -6,16 +6,18 @@
  * - 消息存储：~/.tagent/conversations/{id}.jsonl（JSONL 格式，逐行追加）
  */
 
+import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, appendFileSync, existsSync, unlinkSync, createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
-import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
-import { randomUUID } from 'node:crypto'
+
+import { deleteConversationAttachments, deleteAttachment } from './attachment-service'
 import {
   getConversationsIndexPath,
   getConversationsDir,
   getConversationMessagesPath,
 } from './config-paths'
-import { deleteConversationAttachments, deleteAttachment } from './attachment-service'
+import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
+
 import type { ConversationMeta, ChatMessage, RecentMessagesResult, MessageSearchResult } from '@tagent/shared'
 
 /**

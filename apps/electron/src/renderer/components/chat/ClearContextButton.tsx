@@ -5,6 +5,10 @@
  * 移植自 proma-frontend 的 chat-view/clear-context-button.tsx。
  */
 
+import { Eraser } from 'lucide-react'
+
+import type { ComponentProps } from 'react'
+
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -12,8 +16,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { Eraser } from 'lucide-react'
-import type { ComponentProps } from 'react'
 
 export interface ClearContextButtonProps
   extends Omit<ComponentProps<typeof Button>, 'onClick'> {

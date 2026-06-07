@@ -5,6 +5,7 @@
  */
 
 import * as React from 'react'
+
 import { CollapsibleResult } from './collapsible-result'
 
 interface DefaultResultRendererProps {

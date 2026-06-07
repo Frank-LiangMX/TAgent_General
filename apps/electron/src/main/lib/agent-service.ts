@@ -10,11 +10,20 @@
  * 所有业务逻辑已委托给 AgentOrchestrator。
  */
 
-import { join, dirname } from 'node:path'
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { BrowserWindow } from 'electron'
-import type { WebContents } from 'electron'
+import { join, dirname } from 'node:path'
+
+
 import { AGENT_IPC_CHANNELS, MAX_ATTACHMENT_SIZE } from '@tagent/shared'
+import { BrowserWindow } from 'electron'
+
+
+import { ClaudeAgentAdapter, scanAndKillOrphanedClaudeSubprocesses } from './adapters/claude-agent-adapter'
+import { AgentEventBus } from './agent-event-bus'
+import { AgentOrchestrator } from './agent-orchestrator'
+import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
+import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
+
 import type {
   AgentSendInput,
   AgentGenerateTitleInput,
@@ -27,11 +36,7 @@ import type {
   TAgentPermissionMode,
   AgentExternalRunSource,
 } from '@tagent/shared'
-import { ClaudeAgentAdapter, scanAndKillOrphanedClaudeSubprocesses } from './adapters/claude-agent-adapter'
-import { AgentEventBus } from './agent-event-bus'
-import { AgentOrchestrator } from './agent-orchestrator'
-import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
-import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
+import type { WebContents } from 'electron'
 
 // ===== 实例创建 =====
 

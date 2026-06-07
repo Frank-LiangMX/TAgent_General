@@ -9,9 +9,22 @@
  * - streaming 最后一条：呼吸脉冲指示器
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
 import { AlertCircle, Pencil, RotateCcw, Trash2 } from 'lucide-react'
+import * as React from 'react'
+
+import { ChatToolActivityIndicator } from './ChatToolActivityIndicator'
+import { CopyButton } from './CopyButton'
+import { DeleteMessageDialog } from './DeleteMessageDialog'
+import { InlineEditForm } from './InlineEditForm'
+import { MigrateToAgentButton } from './MigrateToAgentButton'
+import { UserAvatar } from './UserAvatar'
+
+import type { InlineEditSubmitPayload } from './InlineEditForm'
+import type { ChatMessage } from '@tagent/shared'
+
+import { channelsAtom } from '@/atoms/chat-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
 import {
   Message,
   MessageHeader,
@@ -29,17 +42,8 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from '@/components/ai-elements/reasoning'
-import { CopyButton } from './CopyButton'
-import { MigrateToAgentButton } from './MigrateToAgentButton'
-import { DeleteMessageDialog } from './DeleteMessageDialog'
-import { InlineEditForm } from './InlineEditForm'
-import { UserAvatar } from './UserAvatar'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { channelsAtom } from '@/atoms/chat-atoms'
-import type { ChatMessage } from '@tagent/shared'
-import type { InlineEditSubmitPayload } from './InlineEditForm'
-import { ChatToolActivityIndicator } from './ChatToolActivityIndicator'
+
 
 // 重导出供外部使用
 export type { InlineEditSubmitPayload } from './InlineEditForm'

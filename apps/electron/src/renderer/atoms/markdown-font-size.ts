@@ -7,7 +7,9 @@
  */
 
 import { atom } from 'jotai'
+
 import { DEFAULT_MARKDOWN_FONT_SIZE } from '../../types'
+
 import type { MarkdownFontSize } from '../../types'
 
 /** 各档位对应的根字号（px） */

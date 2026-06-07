@@ -4,11 +4,13 @@
  * 显示 GitHub Release 历史版本列表
  */
 
-import * as React from 'react'
-import type { GitHubRelease } from '@tagent/shared'
 import { RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
-import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+import * as React from 'react'
+
 import { SettingsCard } from './primitives'
+import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+
+import type { GitHubRelease } from '@tagent/shared'
 
 /**
  * VersionHistory 组件

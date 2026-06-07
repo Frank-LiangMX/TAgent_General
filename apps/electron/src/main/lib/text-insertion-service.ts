@@ -4,10 +4,12 @@
  * 通过临时剪贴板 + 系统粘贴快捷键，把文本写入当前前台应用的光标位置。
  */
 
-import { clipboard, systemPreferences } from 'electron'
-import type { NativeImage } from 'electron'
 import { execFile } from 'child_process'
 import { setTimeout as sleep } from 'timers/promises'
+
+import { clipboard, systemPreferences } from 'electron'
+
+import type { NativeImage } from 'electron'
 
 const CLIPBOARD_READY_DELAY_MS = 80
 const CLIPBOARD_RESTORE_DELAY_MS = 10_000

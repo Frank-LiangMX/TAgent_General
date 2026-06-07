@@ -4,14 +4,17 @@
  * 显示所有未暂存文件，按目录分组，支持 hover 操作按钮。
  */
 
-import * as React from 'react'
-import { ChevronRight, Search, Undo2, X } from 'lucide-react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
-import { agentDiffUnseenFilesAtom, agentDiffDataAtom } from '@/atoms/agent-atoms'
+import { ChevronRight, Search, Undo2, X } from 'lucide-react'
+import * as React from 'react'
+
 import type { ChangedFileEntry, ChangeSource, UntrackedFileEntry } from '@tagent/shared'
+
+import { agentDiffUnseenFilesAtom, agentDiffDataAtom } from '@/atoms/agent-atoms'
+import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+
 
 /** 按目录分组后的数据结构 */
 interface FileGroup {

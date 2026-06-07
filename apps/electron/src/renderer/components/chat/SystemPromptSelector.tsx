@@ -4,20 +4,21 @@
  * ghost 按钮 + DropdownMenu 列表，与 Pin/Parallel 按钮风格统一。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { BookOpen, Check, Star, Pencil } from 'lucide-react'
+import * as React from 'react'
+
+import {
+  promptConfigAtom,
+  defaultPromptIdAtom,
+  promptSidebarOpenAtom,
+} from '@/atoms/system-prompt-atoms'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  promptConfigAtom,
-  defaultPromptIdAtom,
-  promptSidebarOpenAtom,
-} from '@/atoms/system-prompt-atoms'
 import { useConversationPromptId } from '@/hooks/useConversationSettings'
 import { cn } from '@/lib/utils'
 

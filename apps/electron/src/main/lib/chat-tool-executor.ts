@@ -5,17 +5,21 @@
  * 替代 chat-service.ts 中硬编码的 if/else 分支。
  */
 
-import type { ToolCall, ToolResult } from '@tagent/core'
-import type { WebContents } from 'electron'
-import type { FileAttachment } from '@tagent/shared'
 import { CHAT_IPC_CHANNELS } from '@tagent/shared'
-import { isMemoryToolCall, executeMemoryTool } from './chat-tools/memory-tool'
-import { isWebSearchToolCall, executeWebSearchTool } from './chat-tools/web-search-tool'
-import { isCustomHttpToolCall, executeHttpTool } from './chat-tools/http-tool-executor'
-import { isAgentRecommendToolCall, executeAgentRecommendTool } from './chat-tools/agent-recommend-tool'
-import { isNanoBananaToolCall, executeNanoBananaTool } from './chat-tools/nano-banana-tool'
-import type { NanoBananaContext } from './chat-tools/nano-banana-tool'
+
 import { getChatToolsConfig } from './chat-tool-config'
+import { isAgentRecommendToolCall, executeAgentRecommendTool } from './chat-tools/agent-recommend-tool'
+import { isCustomHttpToolCall, executeHttpTool } from './chat-tools/http-tool-executor'
+import { isMemoryToolCall, executeMemoryTool } from './chat-tools/memory-tool'
+import { isNanoBananaToolCall, executeNanoBananaTool } from './chat-tools/nano-banana-tool'
+import { isWebSearchToolCall, executeWebSearchTool } from './chat-tools/web-search-tool'
+
+import type { NanoBananaContext } from './chat-tools/nano-banana-tool'
+import type { ToolCall, ToolResult } from '@tagent/core'
+import type { FileAttachment } from '@tagent/shared'
+import type { WebContents } from 'electron'
+
+
 
 /** 工具执行上下文 */
 export interface ToolExecutionContext {

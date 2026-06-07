@@ -16,9 +16,10 @@
  * --force: 强制重新下载（即使已存在）
  */
 
+import { createHash } from 'crypto'
 import { existsSync, mkdirSync, chmodSync, rmSync, createWriteStream, readFileSync } from 'fs'
 import { join, dirname } from 'path'
-import { createHash } from 'crypto'
+
 import type { PlatformArch, BunDownloadInfo } from '@tagent/shared'
 
 /** Bun 下载 URL 基础路径 */

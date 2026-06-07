@@ -1,14 +1,12 @@
-import * as React from 'react'
+import Link from '@tiptap/extension-link'
+import Underline from '@tiptap/extension-underline'
+import { TextSelection } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import Link from '@tiptap/extension-link'
+import * as React from 'react'
 import { Markdown } from 'tiptap-markdown'
-import type { MarkdownStorage } from 'tiptap-markdown'
-import { TextSelection } from '@tiptap/pm/state'
-import type { FileAccessOptions } from '@tagent/shared'
-import { cn } from '@/lib/utils'
-import { MARKDOWN_RENDERER_VERSION, markdownToHtml } from '@/lib/markdown-rich-text'
+
+
 import {
   MathBlock,
   MathInline,
@@ -23,6 +21,12 @@ import {
 } from './markdown-preview-extensions'
 import { MarkdownEditorToolbar } from './MarkdownEditorToolbar'
 import { TableBubbleMenu } from './TableBubbleMenu'
+
+import type { FileAccessOptions } from '@tagent/shared'
+import type { MarkdownStorage } from 'tiptap-markdown'
+
+import { MARKDOWN_RENDERER_VERSION, markdownToHtml } from '@/lib/markdown-rich-text'
+import { cn } from '@/lib/utils'
 
 interface MarkdownRichEditorProps {
   value: string

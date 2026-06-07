@@ -7,8 +7,11 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
 import { safeStorage } from 'electron'
+
 import { getWeChatConfigPath } from './config-paths'
+
 import type { WeChatConfig, WeChatCredentials } from '@tagent/shared'
 
 /** 默认配置 */

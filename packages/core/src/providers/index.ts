@@ -5,11 +5,12 @@
  * 通过 ProviderType 查找对应的适配器实例。
  */
 
-import type { ProviderType } from '@tagent/shared'
-import type { ProviderAdapter } from './types.ts'
 import { AnthropicAdapter } from './anthropic-adapter.ts'
-import { OpenAIAdapter } from './openai-adapter.ts'
 import { GoogleAdapter } from './google-adapter.ts'
+import { OpenAIAdapter } from './openai-adapter.ts'
+
+import type { ProviderAdapter } from './types.ts'
+import type { ProviderType } from '@tagent/shared'
 
 // 导出所有类型和工具
 export * from './types.ts'

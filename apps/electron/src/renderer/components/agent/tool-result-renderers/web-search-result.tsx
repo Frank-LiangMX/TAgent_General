@@ -2,8 +2,9 @@
  * WebSearch 工具结果渲染器 — 搜索结果卡片
  */
 
-import * as React from 'react'
 import { Globe } from 'lucide-react'
+import * as React from 'react'
+
 import { CollapsibleResult } from './collapsible-result'
 
 interface WebSearchResultRendererProps {

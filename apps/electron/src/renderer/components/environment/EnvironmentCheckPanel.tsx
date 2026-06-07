@@ -5,18 +5,21 @@
  * 用于 Onboarding Step 2 和设置里的 EnvironmentCheckDialog 复用。
  */
 
-import * as React from 'react'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom, useSetAtom , useAtomValue } from 'jotai'
 import { Loader2, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import * as React from 'react'
+
 import { EnvironmentCheckCard } from './EnvironmentCheckCard'
+
 import {
   installerManifestAtom,
   runtimeStatusAtom,
   isShellEnvironmentOkAtom,
   isNodeJsOkAtom,
 } from '@/atoms/environment'
-import { useAtomValue } from 'jotai'
+import { Button } from '@/components/ui/button'
+
+
 
 interface EnvironmentCheckPanelProps {
   /** 首次挂载时是否自动跑一次检测（Onboarding 用），Dialog 场景可设 false */
@@ -61,7 +64,7 @@ export function EnvironmentCheckPanel({
         .then((m) => setManifest(m))
         .catch(() => {})
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   // ----- Shell 环境卡片 -----

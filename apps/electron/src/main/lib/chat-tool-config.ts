@@ -7,7 +7,9 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
 import { getChatToolsConfigPath } from './config-paths'
+
 import type { ChatToolsFileConfig, ChatToolState, ChatToolMeta } from '@tagent/shared'
 
 /** 默认配置 */

@@ -10,8 +10,9 @@
  */
 
 import { describe, expect, test, beforeEach, mock } from 'bun:test'
-import type { Channel, ChannelModel } from '@tagent/shared'
+
 import type { ChannelDataSource } from './bridge-model-utils'
+import type { Channel, ChannelModel } from '@tagent/shared'
 
 // bridge-model-utils.ts 通过 channel-manager.ts 间接依赖 'electron' (safeStorage)。
 // 单元测试不需要 channel-manager 的真实实现（用注入式 testDataSource 即可），

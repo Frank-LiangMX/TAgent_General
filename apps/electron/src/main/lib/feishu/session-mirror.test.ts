@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import type { FeishuBotConfig } from '@tagent/shared'
+
 import {
   buildSessionMirrorGroupName,
   normalizeFeishuSessionMirrorSettings,
   resolveSessionMirrorBot,
 } from './session-mirror'
+
+import type { FeishuBotConfig } from '@tagent/shared'
 
 const enabledBot: FeishuBotConfig = {
   id: 'bot-enabled',

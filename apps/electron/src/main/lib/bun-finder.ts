@@ -12,10 +12,12 @@
  * 3. 开发仓库 apps/electron/vendor/bun/{platform-arch}/（dev 用）
  */
 
+import { execSync, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import { join, dirname } from 'path'
-import { execSync, spawnSync } from 'child_process'
+
 import { app } from 'electron'
+
 import type { BunRuntimeStatus, PlatformArch } from '@tagent/shared'
 
 /**

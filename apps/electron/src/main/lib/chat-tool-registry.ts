@@ -8,29 +8,30 @@
  * 提供统一接口获取启用的工具定义和系统提示词。
  */
 
-import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
-import type { ChatToolInfo, ChatToolMeta } from '@tagent/shared'
 import { getChatToolsConfig } from './chat-tool-config'
-import {
-  MEMORY_TOOL_META,
-  MEMORY_TOOL_DEFINITIONS,
-  isMemoryAvailable,
-} from './chat-tools/memory-tool'
-import {
-  WEB_SEARCH_TOOL_META,
-  WEB_SEARCH_TOOL_DEFINITIONS,
-  isWebSearchAvailable,
-} from './chat-tools/web-search-tool'
 import {
   AGENT_RECOMMEND_TOOL_META,
   AGENT_RECOMMEND_TOOL_DEFINITIONS,
   isAgentRecommendAvailable,
 } from './chat-tools/agent-recommend-tool'
 import {
+  MEMORY_TOOL_META,
+  MEMORY_TOOL_DEFINITIONS,
+  isMemoryAvailable,
+} from './chat-tools/memory-tool'
+import {
   NANO_BANANA_TOOL_META,
   NANO_BANANA_TOOL_DEFINITIONS,
   isNanoBananaAvailable,
 } from './chat-tools/nano-banana-tool'
+import {
+  WEB_SEARCH_TOOL_META,
+  WEB_SEARCH_TOOL_DEFINITIONS,
+  isWebSearchAvailable,
+} from './chat-tools/web-search-tool'
+
+import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
+import type { ChatToolInfo, ChatToolMeta } from '@tagent/shared'
 
 // ===== 内置工具注册 =====
 

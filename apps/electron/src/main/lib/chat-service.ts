@@ -13,23 +13,27 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import type { WebContents } from 'electron'
-import { CHAT_IPC_CHANNELS } from '@tagent/shared'
-import type { ChatSendInput, ChatMessage, GenerateTitleInput, FileAttachment, ChatToolActivity } from '@tagent/shared'
+
 import {
   getAdapter,
   streamSSE,
   fetchTitle,
 } from '@tagent/core'
-import type { ImageAttachmentData, ContinuationMessage } from '@tagent/core'
-import { listChannels, decryptApiKey } from './channel-manager'
-import { appendMessage, updateConversationMeta, getConversationMessages } from './conversation-manager'
+import { CHAT_IPC_CHANNELS } from '@tagent/shared'
+
+
 import { readAttachmentAsBase64, isImageAttachment } from './attachment-service'
+import { listChannels, decryptApiKey } from './channel-manager'
+import { executeToolCalls } from './chat-tool-executor'
+import { getEnabledTools } from './chat-tool-registry'
+import { appendMessage, updateConversationMeta, getConversationMessages } from './conversation-manager'
 import { extractTextFromAttachment, isDocumentAttachment } from './document-parser'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { getEnabledTools } from './chat-tool-registry'
-import { executeToolCalls } from './chat-tool-executor'
+
+import type { ImageAttachmentData, ContinuationMessage } from '@tagent/core'
+import type { ChatSendInput, ChatMessage, GenerateTitleInput, FileAttachment, ChatToolActivity } from '@tagent/shared'
+import type { WebContents } from 'electron'
 
 /** 活跃的 AbortController 映射（conversationId → controller） */
 const activeControllers = new Map<string, AbortController>()

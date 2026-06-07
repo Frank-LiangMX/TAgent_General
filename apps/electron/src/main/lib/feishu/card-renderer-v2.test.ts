@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+
 import { renderCard } from './card-renderer-v2'
+
 import type { RunState, ToolEntry } from './card-run-state'
 
 interface CardNode {

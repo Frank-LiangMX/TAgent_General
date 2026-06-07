@@ -8,14 +8,15 @@
  * 4. 都没有则仅切换模式
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
+import { Bot, MessageSquare } from 'lucide-react'
+import * as React from 'react'
+
+import { agentSessionsAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { appModeAtom, type AppMode } from '@/atoms/app-mode'
 import { conversationsAtom, currentConversationIdAtom } from '@/atoms/chat-atoms'
-import { agentSessionsAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { tabsAtom } from '@/atoms/tab-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
-import { Bot, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const modes: { value: AppMode; label: string; icon: React.ReactNode }[] = [

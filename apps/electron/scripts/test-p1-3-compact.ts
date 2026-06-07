@@ -13,10 +13,11 @@
  */
 
 // === mock module (必须在所有 import 之前) ===
-import { mock } from 'bun:test'
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { mock } from 'bun:test'
 
 // tempDir 必须在 mock 之前, 因为 mock 闭包引用
 const tempDir = mkdtempSync(join(tmpdir(), 'tagent-p1-3-'))

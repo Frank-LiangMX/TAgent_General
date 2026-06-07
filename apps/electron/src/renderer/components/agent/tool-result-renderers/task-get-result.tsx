@@ -4,10 +4,13 @@
  * TaskGet 是只读查询，结果应更像“任务详情”而不是原始日志。
  */
 
-import * as React from 'react'
 import { CheckCircle2, Circle, Clock3, FileText, Layers3, XCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import { DefaultResultRenderer } from './default-result'
+
+import { cn } from '@/lib/utils'
+
 
 interface TaskGetResultRendererProps {
   result: string

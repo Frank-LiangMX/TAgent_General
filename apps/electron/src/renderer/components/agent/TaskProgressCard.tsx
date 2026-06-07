@@ -7,7 +7,6 @@
  * 数据来源：直接从 ToolActivity[] 中提取 task 相关活动并聚合状态。
  */
 
-import * as React from 'react'
 import {
   CheckCircle2,
   Loader2,
@@ -16,9 +15,15 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type { ToolActivity } from '@/atoms/agent-atoms'
+import * as React from 'react'
+
 import { aggregateTaskItems, type TaskItem } from './task-progress'
+
+import type { ToolActivity } from '@/atoms/agent-atoms'
+
+import { cn } from '@/lib/utils'
+
+
 
 // ===== 任务行 =====
 

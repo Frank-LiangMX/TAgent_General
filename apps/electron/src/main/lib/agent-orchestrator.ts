@@ -15,12 +15,12 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { homedir } from 'node:os'
-import { join, dirname } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { app } from 'electron'
-import type { AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, AgentStreamPayload, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
+import { homedir } from 'node:os'
+import { join, dirname } from 'node:path'
+
+import { getAdapter, fetchTitle, normalizeAnthropicBaseUrlForSdk, getTAgentUserAgent } from '@tagent/core'
 import {
   TAGENT_DEFAULT_PERMISSION_MODE,
   TAGENT_PERMISSION_MODE_CONFIG,
@@ -29,32 +29,33 @@ import {
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
 } from '@tagent/shared'
-import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest } from '@tagent/shared'
-import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
+import { app } from 'electron'
+
+
 import { isPromptTooLongError, isThinkingSignatureError, friendlyErrorMessage, mapSDKErrorToTypedError, extractErrorDetails, shouldKeepChannelOpen } from './adapters/claude-agent-adapter'
-import { isTransientNetworkError } from './error-patterns'
-import { AgentEventBus } from './agent-event-bus'
-import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
-import { getAdapter, fetchTitle, normalizeAnthropicBaseUrlForSdk, getTAgentUserAgent } from '@tagent/core'
-import pkg from '../../../package.json' with { type: 'json' }
-import { getFetchFn } from './proxy-fetch'
-import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { appendSDKMessages, updateAgentSessionMeta, getAgentSessionMeta, getAgentSessionMessages, getAgentSessionSDKMessages, truncateSDKMessages, resolveUserUuidFromSDK, rewindFilesFromSnapshot } from './agent-session-manager'
-import { getAgentWorkspace, getWorkspaceMcpConfig, ensurePluginManifest } from './agent-workspace-manager'
-import { getAgentWorkspacePath, getAgentSessionWorkspacePath, getSdkConfigDir, getWorkspaceFilesDir, getConfigDirName } from './config-paths'
-import { getWorkspaceAttachedDirectories, getWorkspaceAttachedFiles } from './agent-workspace-manager'
-import { getRuntimeStatus } from './runtime-init'
-import { getSettings } from './settings-service'
-import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
-import { permissionService } from './agent-permission-service'
-import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
 import { askUserService } from './agent-ask-user-service'
+import { AgentEventBus } from './agent-event-bus'
 import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-plan-service'
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
-import { getMemoryConfig } from './memory-service'
-import { searchMemory, addMemory, formatSearchResult } from './memos-client'
+import { permissionService } from './agent-permission-service'
+import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
+import { appendSDKMessages, updateAgentSessionMeta, getAgentSessionMeta, getAgentSessionMessages, getAgentSessionSDKMessages, truncateSDKMessages, resolveUserUuidFromSDK, rewindFilesFromSnapshot } from './agent-session-manager'
 import { validateToolInput } from './agent-tool-input-validator'
 import { estimateTokenCount, WRITE_CONTENT_TOKEN_THRESHOLD } from './agent-tool-token-estimator'
+import { getAgentWorkspace, getWorkspaceMcpConfig, ensurePluginManifest , getWorkspaceAttachedDirectories, getWorkspaceAttachedFiles } from './agent-workspace-manager'
+import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
+import { getAgentWorkspacePath, getAgentSessionWorkspacePath, getSdkConfigDir, getWorkspaceFilesDir, getConfigDirName } from './config-paths'
+import { isTransientNetworkError } from './error-patterns'
+import { getMemoryConfig } from './memory-service'
+import { searchMemory, addMemory, formatSearchResult } from './memos-client'
+import { getFetchFn } from './proxy-fetch'
+import { getEffectiveProxyUrl } from './proxy-settings-service'
+import { getRuntimeStatus } from './runtime-init'
+import { getSettings } from './settings-service'
+import pkg from '../../../package.json' with { type: 'json' }
+
+import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
+
 
 // ===== 类型定义 =====
 
@@ -248,13 +249,13 @@ function resolveSDKCliPath(): string {
   // 策略 2：全局 require（esbuild CJS bundle 可能保留）
   if (!binaryPath || !existsSync(binaryPath)) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const sdkEntryPath = require.resolve('@anthropic-ai/claude-agent-sdk')
       const anthropicDir = dirname(dirname(sdkEntryPath))
       binaryPath = join(anthropicDir, subpkg, binaryName)
       console.log(`[Agent 编排] SDK binary 路径 (require.resolve): ${binaryPath}`)
       if (!existsSync(binaryPath)) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+         
         const subpkgPackagePath = require.resolve(`${scopedSubpkg}/package.json`)
         binaryPath = join(dirname(subpkgPackagePath), binaryName)
         console.log(`[Agent 编排] SDK binary 路径 (require platform package): ${binaryPath}`)
@@ -294,6 +295,10 @@ import {
   summarizeToolResult,
   formatImagePlaceholder,
 } from './agent-context-utils'
+
+import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
+import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest , AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, AgentStreamPayload, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
+
 
 /**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要

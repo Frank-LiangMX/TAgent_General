@@ -8,12 +8,14 @@
  * 设计参考 Craft Agents OSS 的内联权限 UI。
  */
 
-import * as React from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { Shield, ShieldAlert, Check, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { allPendingPermissionRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import * as React from 'react'
+
 import type { DangerLevel } from '@tagent/shared'
+
+import { allPendingPermissionRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import { Button } from '@/components/ui/button'
 
 /** 危险等级对应的图标颜色 */
 const DANGER_ICON_STYLES: Record<DangerLevel, string> = {

@@ -5,8 +5,10 @@
  */
 
 import { safeStorage } from 'electron'
-import type { VoiceDictationSettings, VoiceDictationSettingsUpdate } from '../../types'
+
 import { getSettings, updateSettings } from './settings-service'
+
+import type { VoiceDictationSettings, VoiceDictationSettingsUpdate } from '../../types'
 
 const DEFAULT_VOICE_DICTATION_SETTINGS: VoiceDictationSettings = {
   enabled: false,

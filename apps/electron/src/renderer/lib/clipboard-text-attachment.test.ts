@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { createClipboardPendingFile, createClipboardTextDraft } from './clipboard-text-attachment'
 
 describe('长文本粘贴附件', () => {

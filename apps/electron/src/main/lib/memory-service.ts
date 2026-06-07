@@ -6,7 +6,9 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+
 import { getMemoryConfigPath } from './config-paths'
+
 import type { MemoryConfig } from '@tagent/shared'
 
 /** 默认记忆配置 */

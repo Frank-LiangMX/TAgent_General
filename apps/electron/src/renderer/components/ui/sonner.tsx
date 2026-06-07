@@ -1,5 +1,6 @@
 import { useAtomValue } from "jotai"
 import { Toaster as Sonner } from "sonner"
+
 import { resolvedThemeAtom } from "@/atoms/theme"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>

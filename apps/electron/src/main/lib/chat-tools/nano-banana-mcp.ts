@@ -9,8 +9,9 @@
 import { randomUUID } from 'node:crypto'
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import { extname, resolve, isAbsolute, join } from 'node:path'
-import { getToolState, getToolCredentials } from '../chat-tool-config'
+
 import { saveAttachment, isImageAttachment } from '../attachment-service'
+import { getToolState, getToolCredentials } from '../chat-tool-config'
 
 // ===== Gemini API 类型（REST API 使用 camelCase） =====
 
@@ -242,7 +243,7 @@ async function callGeminiAndBuildResult(
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- candidates[0] 已通过上方 length 检查
+   
   const parts = data.candidates![0]!.content.parts
   console.log(`[Nano Banana MCP] 响应包含 ${parts.length} 个 parts，类型:`,
     parts.map((p) => p.inlineData ? `image(${p.inlineData.mimeType})` : `text(${(p.text ?? '').slice(0, 30)})`))

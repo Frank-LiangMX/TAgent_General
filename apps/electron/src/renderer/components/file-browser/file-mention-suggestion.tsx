@@ -6,13 +6,16 @@
  * 弹窗底部锚定在光标上方，展开文件夹时向上生长。
  */
 
-import type React from 'react'
 import { ReactRenderer } from '@tiptap/react'
-import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 import { toast } from 'sonner'
+
 import { FileMentionList } from './FileMentionList'
+
 import type { FileMentionRef } from './FileMentionList'
 import type { FileIndexEntry, FileSearchResult } from '@tagent/shared'
+import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
+import type React from 'react'
+
 import { createMentionPopup, positionPopup } from '@/components/agent/mention-popup-utils'
 
 export function createFileMentionSuggestion(

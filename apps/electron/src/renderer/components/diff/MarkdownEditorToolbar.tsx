@@ -1,4 +1,4 @@
-import * as React from 'react'
+import { SCREENSHOT_LIMITS } from '@tagent/shared'
 import { useEditorState, type Editor } from '@tiptap/react'
 import {
   Bold,
@@ -22,12 +22,13 @@ import {
   Copy,
   Loader2,
 } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { SCREENSHOT_LIMITS } from '@tagent/shared'
+
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface MarkdownEditorToolbarProps {

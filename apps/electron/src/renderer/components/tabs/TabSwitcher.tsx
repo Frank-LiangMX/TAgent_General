@@ -4,11 +4,30 @@
  * 列表按 MRU（最近访问）顺序排列，键盘和鼠标共享同一套选择模型。
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ReactElement, ReactNode } from 'react'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
+import { Bot, MessageSquare } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { AgentSessionMeta, ConversationMeta } from '@tagent/shared'
-import { cn } from '@/lib/utils'
+import type { ReactElement, ReactNode } from 'react'
+
+import {
+  agentSessionIndicatorMapAtom,
+  agentSessionsAtom,
+  agentWorkspacesAtom,
+  currentAgentSessionIdAtom,
+  currentAgentWorkspaceIdAtom,
+  unviewedCompletedSessionIdsAtom,
+} from '@/atoms/agent-atoms'
+import { appModeAtom } from '@/atoms/app-mode'
+import {
+  conversationsAtom,
+  currentConversationIdAtom,
+  streamingConversationIdsAtom,
+} from '@/atoms/chat-atoms'
+import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
   activeTabIdAtom,
   activeSessionIdAtom,
@@ -18,25 +37,9 @@ import {
   tabMruAtom,
   tabsAtom,
 } from '@/atoms/tab-atoms'
-import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import { getInitialTabSwitchIndex, promoteTabMru } from '@/lib/tab-switching'
-import { appModeAtom } from '@/atoms/app-mode'
-import {
-  conversationsAtom,
-  currentConversationIdAtom,
-  streamingConversationIdsAtom,
-} from '@/atoms/chat-atoms'
-import {
-  agentSessionIndicatorMapAtom,
-  agentSessionsAtom,
-  agentWorkspacesAtom,
-  currentAgentSessionIdAtom,
-  currentAgentWorkspaceIdAtom,
-  unviewedCompletedSessionIdsAtom,
-} from '@/atoms/agent-atoms'
-import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
-import { Bot, MessageSquare } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 
 type SwitchSectionId = 'recent'
 type SwitchCandidateType = 'chat' | 'agent'

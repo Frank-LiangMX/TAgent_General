@@ -4,13 +4,15 @@
  * 显示 GitHub Release 的发布说明（Markdown 格式）
  */
 
+import { CodeBlock } from '@tagent/ui'
+import { ExternalLink } from 'lucide-react'
 import * as React from 'react'
-import type { GitHubRelease } from '@tagent/shared'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+import type { GitHubRelease } from '@tagent/shared'
+
 import { Badge } from '@/components/ui/badge'
-import { ExternalLink } from 'lucide-react'
-import { CodeBlock } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface ReleaseNotesViewerProps {

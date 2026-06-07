@@ -5,11 +5,15 @@
  * 切换工作区后持久化到 settings。
  */
 
-import * as React from 'react'
 import { useAtom } from 'jotai'
 import { FolderOpen, Plus, Pencil, Trash2, GripVertical } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+
+import type { AgentWorkspace } from '@tagent/shared'
+
+import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
+import { workspaceListHeightAtom } from '@/atoms/sidebar-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { workspaceListHeightAtom } from '@/atoms/sidebar-atoms'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
-import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import type { AgentWorkspace } from '@tagent/shared'
+import { cn } from '@/lib/utils'
 
 export function WorkspaceSelector(): React.ReactElement {
   const { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace } = useWorkspaceActions()

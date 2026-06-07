@@ -6,8 +6,10 @@
  */
 
 import { useEffect } from 'react'
-import { registerShortcut } from '@/lib/shortcut-registry'
+
 import type { ShortcutRegistrationOptions } from '@/lib/shortcut-registry'
+
+import { registerShortcut } from '@/lib/shortcut-registry'
 
 const DEFAULT_SHORTCUT_OPTIONS: ShortcutRegistrationOptions = {}
 

@@ -8,12 +8,16 @@
  * 导入时自动检测跨平台差异并提示用户处理路径映射。
  */
 
-import { existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, readdirSync, rmSync, type Dirent } from 'node:fs'
-import { join, resolve, relative, isAbsolute, sep } from 'node:path'
-import { homedir, platform, arch, tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, readdirSync, rmSync, type Dirent } from 'node:fs'
+import { homedir, platform, arch, tmpdir } from 'node:os'
+import { join, resolve, relative, isAbsolute, sep } from 'node:path'
+
 import AdmZip from 'adm-zip'
 import { safeStorage } from 'electron'
+
+import { listAgentWorkspaces, getAgentWorkspace, getAllWorkspaceSkills, getWorkspaceMcpConfig } from './agent-workspace-manager'
+import { listChannels, decryptApiKey } from './channel-manager'
 import {
   getConfigDir,
   getChannelsPath,
@@ -32,8 +36,7 @@ import {
   getUserProfilePath,
   getChatToolsConfigPath,
 } from './config-paths'
-import { listAgentWorkspaces, getAgentWorkspace, getAllWorkspaceSkills, getWorkspaceMcpConfig } from './agent-workspace-manager'
-import { listChannels, decryptApiKey } from './channel-manager'
+
 import type { AgentWorkspace } from '@tagent/shared'
 
 // ─── 类型定义 ────────────────────────────────────────────────────────────────

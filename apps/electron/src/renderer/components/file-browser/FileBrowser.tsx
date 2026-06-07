@@ -10,7 +10,6 @@
  * - 自动刷新
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
 import {
   ChevronRight,
@@ -23,8 +22,20 @@ import {
   Pencil,
   MessageSquarePlus,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import * as React from 'react'
+
+import { DefaultAppMenuItem } from './DefaultAppMenuItem'
+import { FileTypeIcon } from './FileTypeIcon'
+import {
+  computeTreeRowLayout,
+  AncestorGuides,
+  STICKY_ROW_BASE_CLASS,
+  canBeSticky,
+} from './tree-row-layout'
+
+import type { FileEntry } from '@tagent/shared'
+
+import { workspaceFilesVersionAtom, fileBrowserAutoRevealAtom, recentlyModifiedPathsAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,17 +54,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-import { workspaceFilesVersionAtom, fileBrowserAutoRevealAtom, recentlyModifiedPathsAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import type { FileEntry } from '@tagent/shared'
-import { FileTypeIcon } from './FileTypeIcon'
-import { DefaultAppMenuItem } from './DefaultAppMenuItem'
-import {
-  computeTreeRowLayout,
-  AncestorGuides,
-  STICKY_ROW_BASE_CLASS,
-  canBeSticky,
-} from './tree-row-layout'
+
+
 
 /** 计算目标路径相对 rootPath 的祖先目录集合（不含 rootPath 自身、含目标的所有上级） */
 export function computeRevealAncestors(rootPath: string, targetPath: string): Set<string> {
@@ -478,7 +483,7 @@ function FileTreeItem({
         .then((items) => setChildren(items))
         .catch((err) => console.error('[FileTreeItem] 刷新子目录失败:', err))
     }
-  }, [refreshVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshVersion])  
 
   // ===== Agent 自动定位：祖先目录自动展开 + 目标行滚动到中心 + 0.8s 高亮脉冲 =====
   React.useEffect(() => {
@@ -538,7 +543,7 @@ function FileTreeItem({
     }
 
     if (cleanups.length > 0) return () => { for (const c of cleanups) c() }
-  }, [revealTs]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [revealTs])  
 
   // 重命名编辑状态
   const [editName, setEditName] = React.useState('')

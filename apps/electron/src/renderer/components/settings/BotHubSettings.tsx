@@ -5,22 +5,24 @@
  * 支持飞书、钉钉、微信（WeClaw）三个平台。
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
-import { feishuBotStatesAtom } from '@/atoms/feishu-atoms'
-import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
-import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
-import { FeishuSettings } from './FeishuSettings'
-import { DingTalkSettings } from './DingTalkSettings'
-import { WeChatSettings } from './WeChatSettings'
+import * as React from 'react'
+
 import { BotDefaultSettings } from './BotDefaultSettings'
+import { DingTalkSettings } from './DingTalkSettings'
+import { FeishuSettings } from './FeishuSettings'
 import { TAgentLogoSettings } from './TAgentLogoSettings'
-import feishuLogo from '@/assets/bots/feishu.png'
+import { WeChatSettings } from './WeChatSettings'
+
 import dingtalkLogo from '@/assets/bots/dingding.png'
+import feishuLogo from '@/assets/bots/feishu.png'
 import wechatLogo from '@/assets/bots/wechat.png'
 import tagentLogo from '@/assets/models/tagent.png'
+import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
+import { feishuBotStatesAtom } from '@/atoms/feishu-atoms'
+import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 // ===== 类型 =====
 

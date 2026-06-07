@@ -1,6 +1,8 @@
 import { powerSaveBlocker } from 'electron'
-import type { AppSettings } from '../../types'
+
 import { FeishuSyncSleepBlocker } from './feishu/sleep-blocker'
+
+import type { AppSettings } from '../../types'
 import type { SleepBlockerAdapter, SleepBlockerType } from './feishu/sleep-blocker'
 
 const electronSleepBlocker: SleepBlockerAdapter = {

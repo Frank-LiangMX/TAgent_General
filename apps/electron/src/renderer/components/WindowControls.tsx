@@ -4,6 +4,7 @@
  */
 
 import * as React from 'react'
+
 import { detectIsWindows } from '@/lib/platform'
 
 export function WindowControls(): React.ReactElement | null {

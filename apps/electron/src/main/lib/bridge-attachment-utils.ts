@@ -7,6 +7,7 @@
 
 import { mkdirSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, resolve, basename, relative } from 'node:path'
+
 import { getAgentSessionWorkspacePath, resolveAgentSessionWorkspacePath } from './config-paths'
 
 /** 图片大小警告阈值 */

@@ -9,11 +9,12 @@
  * - 动态 per-message 上下文（buildDynamicContext）：注入到用户消息前，每次实时读取磁盘
  */
 
-import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
-import { getUserProfile } from './user-profile-service'
+import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
 import { getWorkspaceMcpConfig } from './agent-workspace-manager'
 import { getConfigDirName } from './config-paths'
-import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
+import { getUserProfile } from './user-profile-service'
+
+import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
 
 // ===== SubAgent 元数据（单一数据源） =====
 

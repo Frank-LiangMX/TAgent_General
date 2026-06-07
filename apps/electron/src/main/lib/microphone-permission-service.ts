@@ -7,6 +7,7 @@
  */
 
 import { systemPreferences } from 'electron'
+
 import type { MicPermissionResult } from '../../types'
 
 function getPlatform(): NodeJS.Platform {

@@ -5,10 +5,13 @@
  * 仅在打包后的生产环境中工作。
  */
 
-import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, app } from 'electron'
-import type { UpdateStatus } from './updater-types'
+import { autoUpdater } from 'electron-updater'
+
 import { UPDATER_IPC_CHANNELS } from './updater-types'
+
+import type { UpdateStatus } from './updater-types'
+
 
 /** 当前更新状态 */
 let currentStatus: UpdateStatus = { status: 'idle' }

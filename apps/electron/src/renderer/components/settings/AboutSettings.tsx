@@ -5,25 +5,29 @@
  * 检测到新版本后引导用户去 GitHub Releases 手动下载。
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { RefreshCw, Loader2, CheckCircle2, AlertCircle, Info, Terminal, ChevronDown, ChevronUp, ExternalLink, RotateCw } from 'lucide-react'
-import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsRow,
 } from './primitives'
-import { updateStatusAtom, updaterAvailableAtom, checkForUpdates } from '@/atoms/updater'
+import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+import { VersionHistory } from './VersionHistory'
+
+import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
+
 import {
   environmentCheckResultAtom,
   hasEnvironmentIssuesAtom,
 } from '@/atoms/environment'
+import { updateStatusAtom, updaterAvailableAtom, checkForUpdates } from '@/atoms/updater'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { ReleaseNotesViewer } from './ReleaseNotesViewer'
-import { VersionHistory } from './VersionHistory'
+
 
 /** 从 package.json 构建时由 Vite define 注入 */
 declare const __APP_VERSION__: string

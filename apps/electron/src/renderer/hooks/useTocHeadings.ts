@@ -1,4 +1,5 @@
 import * as React from 'react'
+
 import { createSlugger } from '../lib/slugify'
 
 export interface TocHeading {

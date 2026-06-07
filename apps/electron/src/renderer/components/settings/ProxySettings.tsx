@@ -5,18 +5,21 @@
  * 所有 AI API 请求（Chat + Agent）都会使用这里的代理配置。
  */
 
-import * as React from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { Globe, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsToggle,
   SettingsInput,
 } from './primitives'
+
+import type { ProxyMode } from '@tagent/shared'
+
 import { proxyConfigAtom, loadProxyConfigAtom, updateProxyConfigAtom } from '@/atoms/proxy-atoms'
 import { cn } from '@/lib/utils'
-import type { ProxyMode } from '@tagent/shared'
 
 export function ProxySettings(): React.ReactElement {
   const [config, setConfig] = useAtom(proxyConfigAtom)

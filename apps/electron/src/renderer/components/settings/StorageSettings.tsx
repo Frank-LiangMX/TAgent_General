@@ -4,14 +4,16 @@
  * 展示各数据类别的磁盘占用、孤儿数据检测、手动/自动清理。
  */
 
-import * as React from 'react'
 import { HardDrive, Trash2, RefreshCw, AlertTriangle } from 'lucide-react'
+import * as React from 'react'
+
 import {
   SettingsSection,
   SettingsCard,
   SettingsRow,
   SettingsToggle,
 } from './primitives'
+import { Button } from '../ui/button'
 import {
   Select,
   SelectContent,
@@ -19,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { Button } from '../ui/button'
+
 import { cn } from '@/lib/utils'
 
 interface StorageCategory {

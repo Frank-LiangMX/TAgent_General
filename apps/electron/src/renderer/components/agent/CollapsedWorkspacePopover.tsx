@@ -10,11 +10,12 @@
  * 悬停控制复用 ContextUsageBadge 中的 cancelClose / scheduleClose 模式。
  */
 
-import * as React from 'react'
 import { FolderOpen, Plus } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
+import { cn } from '@/lib/utils'
 
 /** Popover hover 关闭延迟（ms），与项目其他 hover popover 一致 */
 const HOVER_CLOSE_DELAY = 150

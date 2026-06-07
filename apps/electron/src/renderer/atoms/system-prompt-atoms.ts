@@ -7,14 +7,17 @@
  * - 解析后的最终 systemMessage
  */
 
-import { atom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
 import {
   BUILTIN_DEFAULT_ID,
   BUILTIN_DEFAULT_PROMPT,
 } from '@tagent/shared'
-import type { SystemPromptConfig, SystemPrompt } from '@tagent/shared'
+import { atom } from 'jotai'
+import { atomWithStorage } from 'jotai/utils'
+
 import { userProfileAtom } from './user-profile'
+
+import type { SystemPromptConfig, SystemPrompt } from '@tagent/shared'
+
 
 /** 提示词编辑侧栏是否打开 */
 export const promptSidebarOpenAtom = atom<boolean>(false)

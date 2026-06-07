@@ -17,28 +17,31 @@
  * - StreamingIndicator — 流式呼吸脉冲点
  */
 
+import { detectLanguage } from '@tagent/core'
+import { CodeBlock, MermaidBlock } from '@tagent/ui'
+import { ChevronDown, ChevronUp, Paperclip, FileText, Sparkles, Server, Download, MessageSquareText } from 'lucide-react'
 import * as React from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import { ChevronDown, ChevronUp, Paperclip, FileText, Sparkles, Server, Download, MessageSquareText } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { shouldInspectMermaidCodeBlock, shouldRenderMermaidCodeBlock } from '@/lib/mermaid-detection'
+
+import { FilePathChip, isAbsoluteFilePath, isRelativeFilePath } from './file-path-chip'
+
+import type { FileAttachment } from '@tagent/shared'
+import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { LoadingIndicator } from '@/components/ui/loading-indicator'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { LoadingIndicator } from '@/components/ui/loading-indicator'
-import { CodeBlock, MermaidBlock } from '@tagent/ui'
-import { detectLanguage } from '@tagent/core'
-import { FilePathChip, isAbsoluteFilePath, isRelativeFilePath } from './file-path-chip'
-import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'
-import type { FileAttachment } from '@tagent/shared'
+import { shouldInspectMermaidCodeBlock, shouldRenderMermaidCodeBlock } from '@/lib/mermaid-detection'
+import { cn } from '@/lib/utils'
 
 // ===== Message 根容器 =====
 

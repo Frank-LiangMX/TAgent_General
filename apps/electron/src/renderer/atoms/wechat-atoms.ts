@@ -5,6 +5,7 @@
  */
 
 import { atom } from 'jotai'
+
 import type { WeChatBridgeState } from '@tagent/shared'
 
 /** 微信 Bridge 连接状态 */

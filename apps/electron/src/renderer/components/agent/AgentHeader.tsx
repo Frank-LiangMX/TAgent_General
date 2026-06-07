@@ -5,13 +5,14 @@
  * 参照 ChatHeader 的编辑模式。
  */
 
-import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Pencil, Check, X, PanelRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import * as React from 'react'
+
 import { agentSessionsAtom, agentSidePanelOpenAtom, workspaceFilesVersionAtom } from '@/atoms/agent-atoms'
 import { tabsAtom, updateTabTitle } from '@/atoms/tab-atoms'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { replaceAgentSessionInFreshnessOrder } from '@/lib/agent-session-list'
 import { registerShortcut } from '@/lib/shortcut-registry'
 

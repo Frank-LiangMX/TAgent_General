@@ -5,11 +5,14 @@
  * 由设置面板"磁盘管理"Tab 和启动时自动清理逻辑调用。
  */
 
-import { existsSync, statSync, unlinkSync, rmSync } from 'node:fs'
-import { promises as fsPromises } from 'node:fs'
-import { join, basename } from 'node:path'
+import { existsSync, statSync, unlinkSync, rmSync , promises as fsPromises } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join, basename } from 'node:path'
+
 import { app } from 'electron'
+
+import { listAgentSessions } from './agent-session-manager'
+import { listAgentWorkspaces } from './agent-workspace-manager'
 import {
   getConfigDir,
   getAgentSessionsDir,
@@ -18,8 +21,6 @@ import {
   getAttachmentsDir,
   getConversationsDir,
 } from './config-paths'
-import { listAgentSessions } from './agent-session-manager'
-import { listAgentWorkspaces } from './agent-workspace-manager'
 
 // ─── 类型定义 ───
 

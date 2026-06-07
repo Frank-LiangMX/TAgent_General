@@ -4,13 +4,15 @@
  * 跨平台共享的默认设置（如默认工作区）和通用机器人命令说明。
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
+import * as React from 'react'
 import { toast } from 'sonner'
-import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import { SettingsSection } from './primitives/SettingsSection'
+
 import { SettingsCard } from './primitives/SettingsCard'
+import { SettingsSection } from './primitives/SettingsSection'
 import { SettingsSelect } from './primitives/SettingsSelect'
+
+import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
 
 export function BotDefaultSettings(): React.ReactElement {

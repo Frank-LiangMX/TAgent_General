@@ -8,10 +8,14 @@
  * - 恢复默认值
  */
 
-import * as React from 'react'
 import { useAtom } from 'jotai'
 import { RotateCcw } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
+
+import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-defaults'
+
+import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -19,12 +23,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
   DEFAULT_SHORTCUTS,
   SHORTCUT_CATEGORY_LABELS,
 } from '@/lib/shortcut-defaults'
-import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-defaults'
 import {
   getActiveAccelerator,
   getAcceleratorDisplay,

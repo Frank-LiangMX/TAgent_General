@@ -6,12 +6,12 @@
  * 支持外部图片、代码块高亮、链接跳转、内嵌视频。
  */
 
+import { CodeBlock } from '@tagent/ui'
+import { Loader2 } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import { Loader2 } from 'lucide-react'
-import { CodeBlock } from '@tagent/ui'
+import remarkGfm from 'remark-gfm'
 
 /** 视频块信息 */
 interface VideoBlock {

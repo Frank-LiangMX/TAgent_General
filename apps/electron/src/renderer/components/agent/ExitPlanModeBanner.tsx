@@ -10,7 +10,6 @@
  * 键盘：↑↓ 选择，Enter 确认，数字键快速选择。
  */
 
-import * as React from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import {
   Check,
@@ -20,9 +19,12 @@ import {
   Send,
   FileText,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { allPendingExitPlanRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import * as React from 'react'
+
 import type { ExitPlanModeAction, ExitPlanAllowedPrompt } from '@tagent/shared'
+
+import { allPendingExitPlanRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import { Button } from '@/components/ui/button'
 
 /** 选项定义 */
 interface PlanOption {

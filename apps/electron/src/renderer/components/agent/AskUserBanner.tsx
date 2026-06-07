@@ -5,14 +5,16 @@
  * 键盘：↑↓ 选择选项，Enter 确认当前问题（最后一题提交，否则翻页）。
  */
 
-import * as React from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { Send, X } from 'lucide-react'
+import * as React from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button } from '@/components/ui/button'
-import { allPendingAskUserRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+
 import type { AskUserQuestion } from '@tagent/shared'
+
+import { allPendingAskUserRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import { Button } from '@/components/ui/button'
 
 interface QuestionAnswer {
   selected: string[]

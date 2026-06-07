@@ -4,15 +4,18 @@
  * 显示对话标题（可点击编辑）+ 置顶按钮 + 并排模式切换按钮。
  */
 
-import * as React from 'react'
 import { useSetAtom } from 'jotai'
 import { Pencil, Check, X, Pin, Columns2 } from 'lucide-react'
-import { conversationsAtom } from '@/atoms/chat-atoms'
-import { useConversationParallelMode } from '@/hooks/useConversationSettings'
-import type { ConversationMeta } from '@tagent/shared'
+import * as React from 'react'
+
 import { SystemPromptSelector } from './SystemPromptSelector'
+
+import type { ConversationMeta } from '@tagent/shared'
+
+import { conversationsAtom } from '@/atoms/chat-atoms'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useConversationParallelMode } from '@/hooks/useConversationSettings'
 import { cn } from '@/lib/utils'
 
 interface ChatHeaderProps {

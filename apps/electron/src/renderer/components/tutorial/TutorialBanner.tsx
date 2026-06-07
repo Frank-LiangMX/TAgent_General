@@ -7,11 +7,12 @@
  * - 明确告知教程的下次访问位置：设置 > 教程
  */
 
-import * as React from 'react'
 import { useSetAtom } from 'jotai'
 import { GraduationCap, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import * as React from 'react'
+
 import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
+import { Button } from '@/components/ui/button'
 
 export function TutorialBanner(): React.ReactElement | null {
   const [visible, setVisible] = React.useState(false)

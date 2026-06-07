@@ -6,15 +6,20 @@
  * hover 预览面板由父级 TabBar 统一管理状态
  */
 
-import * as React from 'react'
-import { createPortal } from 'react-dom'
 import { useAtomValue } from 'jotai'
 import { FileText, StickyNote, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type { TabType, TabMinimapItem } from '@/atoms/tab-atoms'
-import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
+import * as React from 'react'
+import { createPortal } from 'react-dom'
+
 import { TabPreviewPanel } from './TabPreviewPanel'
+
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import type { TabType, TabMinimapItem } from '@/atoms/tab-atoms'
+
+import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
+import { cn } from '@/lib/utils'
+
+
 
 export interface TabBarItemProps {
   id: string

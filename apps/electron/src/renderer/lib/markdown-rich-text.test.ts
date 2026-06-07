@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { markdownToHtml } from './markdown-rich-text'
 
 describe('markdownToHtml rich preview blocks', () => {

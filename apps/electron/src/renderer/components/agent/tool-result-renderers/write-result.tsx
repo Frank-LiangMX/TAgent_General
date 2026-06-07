@@ -4,13 +4,16 @@
  * 新建文件时以 pierre diff 显示全部新增行（old 为空）。
  */
 
-import * as React from 'react'
-import { useAtomValue } from 'jotai'
 import { MultiFileDiff } from '@pierre/diffs/react'
+import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
+import { PIERRE_DIFF_CSS } from './pierre-styles'
+
 import type { FileContents } from '@pierre/diffs'
+
 import { resolvedThemeAtom } from '@/atoms/theme'
 import { FilePathChip } from '@/components/ai-elements/file-path-chip'
-import { PIERRE_DIFF_CSS } from './pierre-styles'
 
 function cheapHash(s: string): number {
   let h = 0

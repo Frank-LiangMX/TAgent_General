@@ -4,14 +4,155 @@
  * 负责注册主进程和渲染进程之间的通信处理器
  */
 
-import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
-import { join, resolve, sep, dirname } from 'node:path'
 import { existsSync, realpathSync, rmSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { join, resolve, sep, dirname } from 'node:path'
+
 import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, isTAgentPermissionMode } from '@tagent/shared'
-import type { CompactSessionInput, CompactSessionResult } from '@tagent/shared'
+import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
+
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
+import { askUserService } from './lib/agent-ask-user-service'
+import { exitPlanService } from './lib/agent-exit-plan-service'
+import { permissionService } from './lib/agent-permission-service'
+import { runAgent, stopAgent, generateAgentTitle, saveFilesToAgentSession, saveFilesToWorkspaceFiles, isAgentSessionActive, queueAgentMessage, updateAgentPermissionMode, rewindAgentSession } from './lib/agent-service'
+import {
+  listAgentSessions,
+  createAgentSession,
+  getAgentSessionMeta,
+  getAgentSessionSDKMessages,
+  updateAgentSessionMeta,
+  deleteAgentSession,
+  migrateChatToAgentSession,
+  moveSessionToWorkspace,
+  forkAgentSession,
+  autoArchiveAgentSessions,
+  cleanupStaleAttachedPaths,
+  searchAgentSessionMessages,
+  searchAgentSessionReferences,
+} from './lib/agent-session-manager'
+import {
+  listAgentWorkspaces,
+  createAgentWorkspace,
+  updateAgentWorkspace,
+  deleteAgentWorkspace,
+  reorderAgentWorkspaces,
+  ensureDefaultWorkspace,
+  getWorkspaceMcpConfig,
+  saveWorkspaceMcpConfig,
+  getAllWorkspaceSkills,
+  getOtherWorkspaceSkills,
+  getWorkspaceCapabilities,
+  getAgentWorkspace,
+  deleteWorkspaceSkill,
+  importSkillFromWorkspace,
+  updateSkillFromSource,
+  readWorkspaceSkillContent,
+  writeWorkspaceSkillContent,
+  toggleWorkspaceSkill,
+  listSkillFiles,
+  readSkillFile,
+  writeSkillFile,
+  createSkillEntry,
+  deleteSkillEntry,
+  renameSkillEntry,
+  getWorkspaceAttachedDirectories,
+  getWorkspaceAttachedFiles,
+  attachWorkspaceDirectory,
+  attachWorkspaceFile,
+  detachWorkspaceDirectory,
+  detachWorkspaceFile,
+  getWorktreeRepos,
+  addWorktreeRepo,
+  removeWorktreeRepo,
+  cleanupStaleWorkspaceAttachedPaths,
+} from './lib/agent-workspace-manager'
+import {
+  saveAttachment,
+  readAttachmentAsBase64,
+  deleteAttachment,
+  openFileDialog,
+} from './lib/attachment-service'
+import {
+  listChannels,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  decryptApiKey,
+  testChannel,
+  testChannelDirect,
+  fetchModels,
+  validateChannelModel,
+} from './lib/channel-manager'
+import { sendMessage, stopGeneration, generateTitle } from './lib/chat-service'
+import { updateToolState, updateToolCredentials, getToolCredentials, addCustomTool, deleteCustomTool } from './lib/chat-tool-config'
+import { getAllToolInfos } from './lib/chat-tool-registry'
+import { getAgentSessionWorkspacePath, getAgentWorkspacesDir, getWorkspaceSkillsDir, getWorkspaceFilesDir, getScratchPadPath } from './lib/config-paths'
+import {
+  listConversations,
+  createConversation,
+  getConversationMessages,
+  getRecentMessages,
+  updateConversationMeta,
+  deleteConversation,
+  deleteMessage,
+  truncateMessagesFrom,
+  updateContextDividers,
+  autoArchiveConversations,
+  searchConversationMessages,
+} from './lib/conversation-manager'
+import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
+import { getDingTalkConfig, saveDingTalkConfig, getDecryptedClientSecret, getDingTalkMultiBotConfig, saveDingTalkBotConfig, removeDingTalkBot, getDecryptedBotClientSecret } from './lib/dingtalk-config'
+import { setDockBadgeCount } from './lib/dock-badge-service'
+import { extractTextFromAttachment } from './lib/document-parser'
+import { checkEnvironment } from './lib/environment-checker'
+import { feishuBridgeManager } from './lib/feishu-bridge-manager'
+import {
+  getFeishuConfig,
+  saveFeishuConfig,
+  getDecryptedAppSecret,
+  getFeishuMultiBotConfig,
+  saveFeishuBotConfig,
+  removeFeishuBot,
+  getDecryptedBotAppSecret,
+} from './lib/feishu-config'
+import { presenceService } from './lib/feishu-presence'
+import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
+import { getUnstagedChanges, getFileDiff, getUntrackedContent, revertFile, getDiffContents, listWorktrees, getWorktreeChanges } from './lib/git-diff-service'
+import {
+  getLatestRelease,
+  listReleases as listGitHubReleases,
+  getReleaseByTag,
+} from './lib/github-release-service'
+import {
+  cancelInstallerDownload,
+  downloadInstaller,
+  launchInstaller,
+} from './lib/installer-downloader'
+import { fetchInstallerManifest, findInstallerSource } from './lib/installer-manifest'
+import { registerTAgentFilePath } from './lib/local-file-protocol'
+import { getMemoryConfig, setMemoryConfig } from './lib/memory-service'
+import { getProxySettings, saveProxySettings } from './lib/proxy-settings-service'
+import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
+import { getSettings, updateSettings } from './lib/settings-service'
+import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
+import {
+  getSystemPromptConfig,
+  createSystemPrompt,
+  updateSystemPrompt,
+  deleteSystemPrompt,
+  updateAppendSetting,
+  setDefaultPrompt,
+} from './lib/system-prompt-manager'
+import { detectSystemProxy } from './lib/system-proxy-detector'
+import { getTutorialContent, createWelcomeConversation } from './lib/tutorial-service'
+import { registerUpdaterIpc } from './lib/updater/updater-ipc'
+import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
+import { wechatBridge } from './lib/wechat-bridge'
+import { getWeChatConfig } from './lib/wechat-config'
+import { watchAttachedDirectory, unwatchAttachedDirectory } from './lib/workspace-watcher'
+
 import type {
   QuickTaskSubmitInput,
   VoiceDictationAudioChunkInput,
@@ -24,8 +165,9 @@ import type {
   VoiceDictationStopInput,
   VoiceDictationTestResult,
   MicPermissionResult,
-} from '../types'
-import type {
+ UserProfile, AppSettings } from '../types'
+import type { CleanupOptions } from './lib/storage-service'
+import type { CompactSessionInput, CompactSessionResult ,
   RuntimeStatus,
   GitRepoStatus,
   Channel,
@@ -110,148 +252,6 @@ import type {
   FileAccessOptions,
   ResolvedFileUrl,
 } from '@tagent/shared'
-import type { UserProfile, AppSettings } from '../types'
-import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
-import { getUnstagedChanges, getFileDiff, getUntrackedContent, revertFile, getDiffContents, listWorktrees, getWorktreeChanges } from './lib/git-diff-service'
-import { registerTAgentFilePath } from './lib/local-file-protocol'
-import { registerUpdaterIpc } from './lib/updater/updater-ipc'
-import {
-  listChannels,
-  createChannel,
-  updateChannel,
-  deleteChannel,
-  decryptApiKey,
-  testChannel,
-  testChannelDirect,
-  fetchModels,
-  validateChannelModel,
-} from './lib/channel-manager'
-import {
-  listConversations,
-  createConversation,
-  getConversationMessages,
-  getRecentMessages,
-  updateConversationMeta,
-  deleteConversation,
-  deleteMessage,
-  truncateMessagesFrom,
-  updateContextDividers,
-  autoArchiveConversations,
-  searchConversationMessages,
-} from './lib/conversation-manager'
-import { sendMessage, stopGeneration, generateTitle } from './lib/chat-service'
-import {
-  saveAttachment,
-  readAttachmentAsBase64,
-  deleteAttachment,
-  openFileDialog,
-} from './lib/attachment-service'
-import { extractTextFromAttachment } from './lib/document-parser'
-import { getTutorialContent, createWelcomeConversation } from './lib/tutorial-service'
-import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
-import { getSettings, updateSettings } from './lib/settings-service'
-import { setDockBadgeCount } from './lib/dock-badge-service'
-
-import { checkEnvironment } from './lib/environment-checker'
-import { fetchInstallerManifest, findInstallerSource } from './lib/installer-manifest'
-import {
-  cancelInstallerDownload,
-  downloadInstaller,
-  launchInstaller,
-} from './lib/installer-downloader'
-import { getProxySettings, saveProxySettings } from './lib/proxy-settings-service'
-import { detectSystemProxy } from './lib/system-proxy-detector'
-import {
-  listAgentSessions,
-  createAgentSession,
-  getAgentSessionMeta,
-  getAgentSessionSDKMessages,
-  updateAgentSessionMeta,
-  deleteAgentSession,
-  migrateChatToAgentSession,
-  moveSessionToWorkspace,
-  forkAgentSession,
-  autoArchiveAgentSessions,
-  cleanupStaleAttachedPaths,
-  searchAgentSessionMessages,
-  searchAgentSessionReferences,
-} from './lib/agent-session-manager'
-import { runAgent, stopAgent, generateAgentTitle, saveFilesToAgentSession, saveFilesToWorkspaceFiles, isAgentSessionActive, queueAgentMessage, updateAgentPermissionMode, rewindAgentSession } from './lib/agent-service'
-import { permissionService } from './lib/agent-permission-service'
-import { askUserService } from './lib/agent-ask-user-service'
-import { exitPlanService } from './lib/agent-exit-plan-service'
-import { getAgentSessionWorkspacePath, getAgentWorkspacesDir, getWorkspaceSkillsDir, getWorkspaceFilesDir, getScratchPadPath } from './lib/config-paths'
-import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
-import type { CleanupOptions } from './lib/storage-service'
-import {
-  listAgentWorkspaces,
-  createAgentWorkspace,
-  updateAgentWorkspace,
-  deleteAgentWorkspace,
-  reorderAgentWorkspaces,
-  ensureDefaultWorkspace,
-  getWorkspaceMcpConfig,
-  saveWorkspaceMcpConfig,
-  getAllWorkspaceSkills,
-  getOtherWorkspaceSkills,
-  getWorkspaceCapabilities,
-  getAgentWorkspace,
-  deleteWorkspaceSkill,
-  importSkillFromWorkspace,
-  updateSkillFromSource,
-  readWorkspaceSkillContent,
-  writeWorkspaceSkillContent,
-  toggleWorkspaceSkill,
-  listSkillFiles,
-  readSkillFile,
-  writeSkillFile,
-  createSkillEntry,
-  deleteSkillEntry,
-  renameSkillEntry,
-  getWorkspaceAttachedDirectories,
-  getWorkspaceAttachedFiles,
-  attachWorkspaceDirectory,
-  attachWorkspaceFile,
-  detachWorkspaceDirectory,
-  detachWorkspaceFile,
-  getWorktreeRepos,
-  addWorktreeRepo,
-  removeWorktreeRepo,
-  cleanupStaleWorkspaceAttachedPaths,
-} from './lib/agent-workspace-manager'
-import { getMemoryConfig, setMemoryConfig } from './lib/memory-service'
-import { getAllToolInfos } from './lib/chat-tool-registry'
-import { updateToolState, updateToolCredentials, getToolCredentials, addCustomTool, deleteCustomTool } from './lib/chat-tool-config'
-import {
-  getSystemPromptConfig,
-  createSystemPrompt,
-  updateSystemPrompt,
-  deleteSystemPrompt,
-  updateAppendSetting,
-  setDefaultPrompt,
-} from './lib/system-prompt-manager'
-import {
-  getLatestRelease,
-  listReleases as listGitHubReleases,
-  getReleaseByTag,
-} from './lib/github-release-service'
-import { watchAttachedDirectory, unwatchAttachedDirectory } from './lib/workspace-watcher'
-import {
-  getFeishuConfig,
-  saveFeishuConfig,
-  getDecryptedAppSecret,
-  getFeishuMultiBotConfig,
-  saveFeishuBotConfig,
-  removeFeishuBot,
-  getDecryptedBotAppSecret,
-} from './lib/feishu-config'
-import { feishuBridgeManager } from './lib/feishu-bridge-manager'
-import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
-import { presenceService } from './lib/feishu-presence'
-import { getDingTalkConfig, saveDingTalkConfig, getDecryptedClientSecret, getDingTalkMultiBotConfig, saveDingTalkBotConfig, removeDingTalkBot, getDecryptedBotClientSecret } from './lib/dingtalk-config'
-import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
-import { getWeChatConfig } from './lib/wechat-config'
-import { wechatBridge } from './lib/wechat-bridge'
 
 /** 文件浏览器中需要隐藏的系统文件 */
 const HIDDEN_FS_ENTRIES = new Set(['.DS_Store', 'Thumbs.db'])

@@ -5,16 +5,19 @@
  * 豆包要求的自定义鉴权 Header。
  */
 
-import type { BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { gzipSync, gunzipSync } from 'node:zlib'
+
 import WebSocket from 'ws'
+
+import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
+
 import type {
   VoiceDictationSettings,
   VoiceDictationTranscriptEvent,
   VoiceDictationStateEvent,
 } from '../../types'
-import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
+import type { BrowserWindow } from 'electron'
 
 const PROTOCOL_VERSION = 0b0001
 const HEADER_SIZE = 0b0001

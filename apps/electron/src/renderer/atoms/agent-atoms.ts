@@ -5,10 +5,12 @@
  * 模式照搬 chat-atoms.ts。
  */
 
+import { TAGENT_DEFAULT_PERMISSION_MODE } from '@tagent/shared'
 import { atom } from 'jotai'
 import { atomFamily, atomWithStorage } from 'jotai/utils'
+
 import type { AgentSessionMeta, AgentEvent, AgentWorkspace, AgentPendingFile, RetryAttempt, TAgentPermissionMode, PermissionRequest, AskUserRequest, ExitPlanModeRequest, ThinkingConfig, AgentEffort, SDKMessage, UnstagedChangesResult } from '@tagent/shared'
-import { TAGENT_DEFAULT_PERMISSION_MODE } from '@tagent/shared'
+
 import { calculateDockBadgeCount, countPendingRequests } from '@/lib/dock-badge-count'
 
 /** 活动状态 */

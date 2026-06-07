@@ -15,8 +15,10 @@
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import type { GitBashStatus } from '@tagent/shared'
+
 import { getGitForWindowsInstallPath } from './windows-env'
+
+import type { GitBashStatus } from '@tagent/shared'
 
 /**
  * 获取 Git for Windows 常见安装路径列表

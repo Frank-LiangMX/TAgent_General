@@ -8,10 +8,12 @@
  * 改为纯文本预览。
  */
 
-import * as React from 'react'
-import { useAtomValue } from 'jotai'
 import { MultiFileDiff } from '@pierre/diffs/react'
+import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
 import type { FileContents } from '@pierre/diffs'
+
 import { resolvedThemeAtom } from '@/atoms/theme'
 import './diff-scroll.css'
 

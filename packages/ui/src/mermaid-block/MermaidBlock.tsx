@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react'
+
 import type { DiagramColors, RenderOptions } from 'beautiful-mermaid'
 
 interface MermaidBlockProps {

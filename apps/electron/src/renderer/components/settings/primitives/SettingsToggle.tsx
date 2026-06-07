@@ -6,8 +6,10 @@
  */
 
 import * as React from 'react'
-import { Switch } from '@/components/ui/switch'
+
 import { LABEL_CLASS, DESCRIPTION_CLASS, ROW_CLASS } from './SettingsUIConstants'
+
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
 interface SettingsToggleProps {

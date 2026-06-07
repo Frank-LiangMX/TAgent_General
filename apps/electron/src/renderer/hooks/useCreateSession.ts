@@ -5,19 +5,22 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import {
-  conversationsAtom,
-  selectedModelAtom,
-} from '@/atoms/chat-atoms'
+
+import { useOpenSession } from './useOpenSession'
+
+import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
   agentChannelIdAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { activeViewAtom } from '@/atoms/active-view'
-import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
+import {
+  conversationsAtom,
+  selectedModelAtom,
+} from '@/atoms/chat-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
-import { useOpenSession } from './useOpenSession'
+import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
+
 
 interface CreateSessionOptions {
   /** 标记为草稿会话（不在侧边栏显示，发送首条消息后自动取消） */

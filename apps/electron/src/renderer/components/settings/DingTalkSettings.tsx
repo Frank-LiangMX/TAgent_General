@@ -5,15 +5,19 @@
  * 保存配置后自动启动 Stream 连接。
  */
 
-import * as React from 'react'
 import { useAtomValue } from 'jotai'
-import { toast } from 'sonner'
 import { Loader2, ExternalLink, Power, PowerOff, Plus, Trash2, CheckCircle2, XCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { SettingsSection } from './primitives/SettingsSection'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+
 import { SettingsCard } from './primitives/SettingsCard'
 import { SettingsInput } from './primitives/SettingsInput'
 import { SettingsSecretInput } from './primitives/SettingsSecretInput'
+import { SettingsSection } from './primitives/SettingsSection'
+
+import type { DingTalkBotConfig, DingTalkBotBridgeState, DingTalkBridgeStatus, DingTalkTestResult } from '@tagent/shared'
+
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import {
   AlertDialog,
@@ -26,8 +30,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { DingTalkBotConfig, DingTalkBotBridgeState, DingTalkBridgeStatus, DingTalkTestResult } from '@tagent/shared'
 
 /** 安全地用系统浏览器打开链接 */
 function openLink(url: string): void {

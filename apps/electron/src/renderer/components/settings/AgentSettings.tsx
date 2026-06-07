@@ -7,19 +7,19 @@
  * 3. 内置工具 — 只读展示内置工具状态
  */
 
-import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { Plus, Plug, Pencil, Trash2, Sparkles, FolderOpen, MessageSquare, ShieldCheck, ChevronDown, ChevronRight, Brain, ImagePlus, Search, RefreshCw, Save, X } from 'lucide-react'
-import { toast } from 'sonner'
+import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+import { McpServerForm } from './McpServerForm'
+import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
+import { SkillFilesPanel } from './SkillFilesPanel'
+
+import type { McpServerEntry, SkillMeta, OtherWorkspaceSkillsGroup, WorkspaceMcpConfig } from '@tagent/shared'
+
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,
@@ -29,13 +29,18 @@ import {
   agentPendingPromptAtom,
   workspaceCapabilitiesVersionAtom,
 } from '@/atoms/agent-atoms'
-import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
 import { appModeAtom } from '@/atoms/app-mode'
 import { chatToolsAtom } from '@/atoms/chat-tool-atoms'
-import type { McpServerEntry, SkillMeta, OtherWorkspaceSkillsGroup, WorkspaceMcpConfig } from '@tagent/shared'
-import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
-import { McpServerForm } from './McpServerForm'
-import { SkillFilesPanel } from './SkillFilesPanel'
+import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+
+
 
 // ===== Types =====
 

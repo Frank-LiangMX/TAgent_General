@@ -6,9 +6,12 @@
  */
 
 import * as React from 'react'
+
 import { TaskBadge } from './TaskBadge'
-import { cn } from '@/lib/utils'
+
 import type { BackgroundTask } from '@/atoms/agent-atoms'
+
+import { cn } from '@/lib/utils'
 
 export interface ActiveTasksBarProps {
   /** 当前会话 ID */
