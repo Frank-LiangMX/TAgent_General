@@ -97,6 +97,9 @@ release/*.yml
 *.temp
 .cache/
 .idea/
+# NSIS installer sidebars (not referenced by electron-builder.yml, kept locally for future use)
+apps/electron/resources/installer-sidebar.bmp
+apps/electron/resources/uninstaller-sidebar.bmp
 
 # ===== Memory / Session backups (when committed accidentally) =====
 sessions.bak/
