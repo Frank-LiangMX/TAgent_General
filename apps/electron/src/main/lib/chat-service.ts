@@ -64,11 +64,13 @@ function getImageAttachmentData(attachments?: FileAttachment[]): ImageAttachment
  * 将非图片附件的文本内容提取后，以结构化格式追加到消息文本后面。
  * 图片附件由适配器层单独处理，这里只处理文档类附件。
  *
+ * 导出供单测（chat-service.test.ts）
+ *
  * @param messageText 原始消息文本
  * @param attachments 消息的附件列表
  * @returns 包含文档文本的增强消息
  */
-async function enrichMessageWithDocuments(
+export async function enrichMessageWithDocuments(
   messageText: string,
   attachments?: FileAttachment[],
 ): Promise<string> {
@@ -103,8 +105,10 @@ async function enrichMessageWithDocuments(
  *
  * 遍历历史消息，对包含文档附件的用户消息进行文本增强。
  * 返回新的消息数组（不修改原始消息）。
+ *
+ * 导出供单测
  */
-async function enrichHistoryWithDocuments(
+export async function enrichHistoryWithDocuments(
   history: ChatMessage[],
 ): Promise<ChatMessage[]> {
   const enriched: ChatMessage[] = []
@@ -134,8 +138,10 @@ async function enrichHistoryWithDocuments(
  * 1. 分隔线过滤：仅保留最后一个分隔线之后的消息
  * 2. 轮数裁剪：按轮数（user+assistant = 1 轮）限制历史
  * 3. contextLength === 'infinite' 或 undefined 时保留全部
+ *
+ * 导出供单测（chat-service.test.ts）
  */
-function filterHistory(
+export function filterHistory(
   messageHistory: ChatMessage[],
   contextDividers?: string[],
   contextLength?: number | 'infinite',

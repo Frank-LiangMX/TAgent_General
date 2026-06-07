@@ -11,6 +11,8 @@ import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test'
 
 // channel-manager.ts 在模块顶部 import { safeStorage } from 'electron'，
 // electron 在测试运行时（非 Electron 主进程）加载不出来，所以先 mock 掉。
+// 注：bun test 跨文件复用模块缓存时，mock 必须覆盖所有可能的 electron 导出，
+// 否则下一个测试文件加载相同依赖时会因为 BrowserWindow 缺失报错。
 mock.module('electron', () => ({
   safeStorage: {
     isEncryptionAvailable: () => false,
@@ -18,6 +20,12 @@ mock.module('electron', () => ({
     decryptString: (b: Buffer) => b.toString('utf-8'),
   },
   app: { getPath: () => '/tmp' },
+  BrowserWindow: class {
+    static getAllWindows() { return [] }
+    static getFocusedWindow() { return null }
+  },
+  WebContents: class {},
+  dialog: { showOpenDialog: () => {} },
 }))
 
 const { validateChannelModel } = await import('./channel-manager')
