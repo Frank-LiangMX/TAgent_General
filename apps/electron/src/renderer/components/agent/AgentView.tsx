@@ -15,7 +15,7 @@
 
 import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { CornerDownLeft, Square, Settings, Paperclip, FolderPlus, X, Brain, Sparkles, Eye } from 'lucide-react'
+import { CornerDownLeft, Square, Settings, Paperclip, FolderPlus, X, Brain, Sparkles, Eye, Bot } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
@@ -29,7 +29,7 @@ import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 
-import type { AgentContextStatus } from '@/atoms/agent-atoms'
+import type { AgentContextStatus, SubagentEagerness } from '@/atoms/agent-atoms'
 import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
 
 import {
@@ -61,6 +61,7 @@ import {
   workspaceAttachedFilesMapAtom,
   liveMessagesMapAtom,
   agentThinkingAtom,
+  subagentEagernessAtom,
   stoppedByUserSessionsAtom,
   agentPlanModeSessionsAtom,
   agentPermissionModeMapAtom,
@@ -95,6 +96,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -218,6 +220,61 @@ function AgentThinkingPopover({ agentThinking, onToggle }: AgentThinkingPopoverP
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+/**
+ * SubAgent 派发积极性选择器
+ *
+ * 让用户控制主 Agent 派发 subagent 干批处理任务的积极性。
+ * 4 档：never / conservative（默认）/ balanced / aggressive。
+ */
+const SUBAGENT_EAGERNESS_LABELS: Record<SubagentEagerness, { label: string; desc: string }> = {
+  never:         { label: '从不派发',   desc: '主 Agent 干所有事' },
+  conservative:  { label: '保守（默认）', desc: '批量 ≥ 5 才派' },
+  balanced:      { label: '平衡',       desc: '批量 ≥ 3 即派' },
+  aggressive:    { label: '积极',       desc: '能派就派' },
+}
+
+interface SubagentEagernessSelectorProps {
+  value: SubagentEagerness
+  onChange: (v: SubagentEagerness) => void
+}
+
+function SubagentEagernessSelector({ value, onChange }: SubagentEagernessSelectorProps): React.ReactElement {
+  const current = SUBAGENT_EAGERNESS_LABELS[value]
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Select value={value} onValueChange={(v) => onChange(v as SubagentEagerness)}>
+          <SelectTrigger
+            className={cn(
+              'h-9 w-auto min-w-[110px] px-3 text-xs gap-1.5',
+              'border-border/50 bg-background/40 hover:bg-background/80',
+              value === 'aggressive' && 'border-amber-500/50 text-amber-600 dark:text-amber-400',
+              value === 'never' && 'border-muted text-muted-foreground',
+            )}
+          >
+            <Bot className="size-3.5" />
+            <SelectValue>{current!.label}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(SUBAGENT_EAGERNESS_LABELS) as SubagentEagerness[]).map((k) => (
+              <SelectItem key={k} value={k}>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm">{SUBAGENT_EAGERNESS_LABELS[k]!.label}</span>
+                  <span className="text-xs text-muted-foreground">{SUBAGENT_EAGERNESS_LABELS[k]!.desc}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p className="text-xs">主 Agent 派发 subagent 的积极性档位</p>
+        <p className="text-xs text-muted-foreground">改完即时生效，下次主 Agent 调用会按新档位派发</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -345,6 +402,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     [agentChannelIds, globalChannels],
   )
   const [agentThinking, setAgentThinking] = useAtom(agentThinkingAtom)
+  const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
   const globalWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
@@ -1884,6 +1942,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           }}
         />
       ),
+    },
+    {
+      key: 'subagent-eagerness',
+      node: <SubagentEagernessSelector value={subagentEagerness} onChange={(v) => {
+        setSubagentEagerness(v)
+        window.electronAPI.updateSettings({ subagentEagerness: v })
+      }} />,
     },
     { key: 'speech', node: <SpeechButton className="size-[36px] shrink-0 rounded-full" /> },
     {
