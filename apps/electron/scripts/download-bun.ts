@@ -17,7 +17,7 @@
  */
 
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, chmodSync, rmSync, createWriteStream, readFileSync } from 'fs'
+import { existsSync, mkdirSync, chmodSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 
 import type { PlatformArch, BunDownloadInfo } from '@tagent/shared'
