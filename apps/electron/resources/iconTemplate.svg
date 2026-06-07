@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    TAgent 托盘图标（macOS Template / Windows tray）
+    单色 + alpha mask 风格
+    设计：icosahedron 简化轮廓
+  -->
+  <g fill="#000000" fill-rule="evenodd">
+    <!-- 五边形主体 -->
+    <polygon points="16,4 28,12 23,24 9,24 4,12"/>
+    <!-- 内部细分线：中心到各顶点 -->
+    <polygon points="16,4 16,16 4,12" opacity="0.55"/>
+    <polygon points="16,4 16,16 28,12" opacity="0.55"/>
+    <polygon points="16,16 9,24 23,24" opacity="0.55"/>
+    <!-- 外轮廓描边（用 mask 留边）-->
+  </g>
+</svg>
