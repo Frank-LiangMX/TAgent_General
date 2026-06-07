@@ -204,6 +204,15 @@ export interface AppSettings {
   agentMaxBudgetUsd?: number
   /** Agent 最大轮次（0 或 undefined = SDK 默认） */
   agentMaxTurns?: number
+  /**
+   * 主 Agent 派发 SubAgent 的积极性档位
+   * - 'never'         绝不派发
+   * - 'conservative'  仅在「同类项 ≥ 5 + 耗时 > 5min + 可独立验证」时派（默认）
+   * - 'balanced'      「同类项 ≥ 3 或耗时 > 3min 或关键词触发」即派
+   * - 'aggressive'    任何能派的任务都派
+   * 默认 'conservative'，由用户设置页控制
+   */
+  subagentEagerness?: 'never' | 'conservative' | 'balanced' | 'aggressive'
   /** 教程推荐横幅是否已关闭 */
   tutorialBannerDismissed?: boolean
   /** 自动归档天数（0 = 禁用，默认 7） */

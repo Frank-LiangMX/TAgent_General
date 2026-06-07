@@ -1610,6 +1610,7 @@ export class AgentOrchestrator {
             memoryEnabled: (() => { const mc = getMemoryConfig(); return mc.enabled && !!mc.apiKey })(),
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
+            subagentEagerness: appSettings.subagentEagerness,
           }),
         },
         resumeSessionId: existingSdkSessionId,

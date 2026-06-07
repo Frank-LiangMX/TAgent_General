@@ -1002,14 +1002,16 @@ export const agentSettingsReadyAtom = atom(false)
 
 // ===== SubAgent 派发策略 =====
 
-/** 主 Agent 派发 SubAgent 的积极性档位（持久化到 localStorage） */
+/** 主 Agent 派发 SubAgent 的积极性档位（用户控制） */
 export type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggressive'
 
 /**
  * 默认 conservative — 跟 proma 历史行为一致，最稳。
+ *
+ * 存储路径：跟其他 Agent 设置一样走 `AppSettings` (写到 `~/.tagent/settings.json`)，
+ * 渲染端 AgentSettingsInitializer 启动时从主进程拉一次。
+ * 主进程 orchestrator 在 buildSystemPrompt 时直接读 `getSettings().subagentEagerness`。
+ *
  * 改档位后，Agent 主 prompt 会动态注入对应的派发策略段。
  */
-export const subagentEagernessAtom = atomWithStorage<SubagentEagerness>(
-  'tagent-subagent-eagerness',
-  'conservative',
-)
+export const subagentEagernessAtom = atom<SubagentEagerness>('conservative')

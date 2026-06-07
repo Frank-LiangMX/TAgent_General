@@ -27,6 +27,7 @@ export function getSettings(): AppSettings {
       environmentCheckSkipped: false,
       notificationsEnabled: true,
       feishuSessionMirror: { mode: 'off' },
+      subagentEagerness: 'conservative',
     }
   }
 
@@ -49,6 +50,7 @@ export function getSettings(): AppSettings {
       environmentCheckSkipped: false,
       notificationsEnabled: true,
       feishuSessionMirror: { mode: 'off' },
+      subagentEagerness: 'conservative',
     }
   }
 }
