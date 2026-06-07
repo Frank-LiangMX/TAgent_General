@@ -230,7 +230,7 @@ function AgentThinkingPopover({ agentThinking, onToggle }: AgentThinkingPopoverP
  */
 const SUBAGENT_EAGERNESS_LABELS: Record<SubagentEagerness, { label: string; desc: string }> = {
   never:         { label: '从不派发',   desc: '主 Agent 干所有事' },
-  conservative:  { label: '保守（默认）', desc: '批量 ≥ 5 才派' },
+  conservative:  { label: '保守', desc: '批量 ≥ 5 才派' },
   balanced:      { label: '平衡',       desc: '批量 ≥ 3 即派' },
   aggressive:    { label: '积极',       desc: '能派就派' },
 }
@@ -255,48 +255,49 @@ function SubagentEagernessSelector({ value, onChange }: SubagentEagernessSelecto
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn('size-[36px] rounded-full', colorClass)}
-          title="SubAgent 派发积极性"
-        >
-          <Bot className="size-5" />
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <PopoverTrigger asChild>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn('size-[36px] rounded-full', colorClass)}
+            >
+              <Bot className="size-5" />
+            </Button>
+          </TooltipTrigger>
+        </PopoverTrigger>
+        <TooltipContent side="bottom">
+          <p className="font-medium">{current!.label}</p>
+          <p className="text-xs text-muted-foreground">{current!.desc}</p>
+          <p className="text-xs text-muted-foreground mt-1">点击调整档位</p>
+        </TooltipContent>
+      </Tooltip>
       <PopoverContent
         side="top"
         align="center"
         sideOffset={8}
-        className="w-56 p-2"
+        className="w-auto min-w-[180px] p-2"
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="text-xs font-medium text-foreground/80 mb-2">SubAgent 派发积极性</div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           {(Object.keys(SUBAGENT_EAGERNESS_LABELS) as SubagentEagerness[]).map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => { onChange(k); setOpen(false) }}
               className={cn(
-                'flex items-center justify-between px-2.5 py-1.5 rounded-md text-left transition-colors',
+                'flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left transition-colors',
                 'hover:bg-accent hover:text-accent-foreground',
                 value === k && 'bg-accent/50',
               )}
             >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm">{SUBAGENT_EAGERNESS_LABELS[k]!.label}</span>
-                <span className="text-xs text-muted-foreground">{SUBAGENT_EAGERNESS_LABELS[k]!.desc}</span>
-              </div>
-              {value === k && (
-                <div className={cn('size-2 rounded-full', SUBAGENT_EAGERNESS_COLORS[k].replace('text-', 'bg-'))} />
-              )}
+              <span className="text-xs">{SUBAGENT_EAGERNESS_LABELS[k]!.label}</span>
+              <span className="text-[10px] text-muted-foreground">{SUBAGENT_EAGERNESS_LABELS[k]!.desc}</span>
             </button>
           ))}
         </div>
-        <div className="h-px bg-border my-2" />
-        <p className="text-[10px] text-muted-foreground">改完即时生效，下次主 Agent 调用会按新档位派发</p>
       </PopoverContent>
     </Popover>
   )
