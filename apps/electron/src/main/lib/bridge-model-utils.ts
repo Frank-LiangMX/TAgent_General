@@ -10,6 +10,22 @@
 import type { Channel, ChannelModel } from '@tagent/shared'
 import { listChannels, getChannelById } from './channel-manager'
 
+/**
+ * Channel 数据源接口 — 抽象出 "如何拿到 channels 列表 + 单个 channel" 以便测试。
+ *
+ * 生产路径用 listChannels / getChannelById 读 channels.json；
+ * 测试路径用 { listChannels, getChannelById } 注入内存数据。
+ */
+export interface ChannelDataSource {
+  listChannels: () => Channel[]
+  getChannelById: (id: string) => Channel | undefined
+}
+
+const defaultDataSource: ChannelDataSource = {
+  listChannels,
+  getChannelById,
+}
+
 /** 取渠道下启用的模型 */
 export function getEnabledModels(channel: Channel): ChannelModel[] {
   return channel.models.filter((m) => m.enabled)
@@ -19,13 +35,16 @@ export function getEnabledModels(channel: Channel): ChannelModel[] {
  * 列出「可切换」的渠道：已启用且至少有一个启用模型。
  * 过滤掉停用渠道和未配置（无可用模型）的渠道，避免用户切到用不了的渠道。
  */
-export function listSwitchableChannels(): Channel[] {
-  return listChannels().filter((c) => c.enabled && getEnabledModels(c).length > 0)
+export function listSwitchableChannels(ds: ChannelDataSource = defaultDataSource): Channel[] {
+  return ds.listChannels().filter((c) => c.enabled && getEnabledModels(c).length > 0)
 }
 
 /** 按 1 起始的序号解析可切换渠道，越界返回 undefined */
-export function resolveChannelByIndex(index: number): Channel | undefined {
-  const channels = listSwitchableChannels()
+export function resolveChannelByIndex(
+  index: number,
+  ds: ChannelDataSource = defaultDataSource,
+): Channel | undefined {
+  const channels = listSwitchableChannels(ds)
   if (!Number.isInteger(index) || index < 1 || index > channels.length) return undefined
   return channels[index - 1]
 }
@@ -50,8 +69,9 @@ export interface BindingModelDescription {
 export function describeBindingModel(
   channelId: string | undefined,
   modelId: string | undefined,
+  ds: ChannelDataSource = defaultDataSource,
 ): BindingModelDescription {
-  const channel = channelId ? getChannelById(channelId) : undefined
+  const channel = channelId ? ds.getChannelById(channelId) : undefined
   const model = channel && modelId ? channel.models.find((m) => m.id === modelId) : undefined
 
   const channelName = channel ? channel.name : channelId || '未设置'
