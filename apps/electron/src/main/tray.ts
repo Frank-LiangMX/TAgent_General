@@ -17,14 +17,14 @@ export interface TrayActions {
 
 /**
  * 获取托盘图标路径
- * 所有平台统一使用 Template 图标
+ * 使用专门生成的 iconTemplate.png（单色 + alpha，适配各平台）
  */
 function getTrayIconPath(): string {
   // dev: __dirname/resources（build:resources 拷贝产物）
   // prod: process.resourcesPath（electron-builder extraResources 产物）
   const resourcesDir = app.isPackaged
-    ? join(process.resourcesPath, 'tagent-logos')
-    : join(__dirname, 'resources/tagent-logos')
+    ? process.resourcesPath
+    : join(__dirname, 'resources')
   return join(resourcesDir, 'iconTemplate.png')
 }
 

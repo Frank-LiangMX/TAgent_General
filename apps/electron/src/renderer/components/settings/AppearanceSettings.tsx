@@ -8,7 +8,6 @@
 import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
 import { Check } from 'lucide-react'
-import { toast } from 'sonner'
 import {
   SettingsSection,
   SettingsCard,
@@ -28,23 +27,7 @@ import {
   updateMarkdownFontSize,
 } from '@/atoms/markdown-font-size'
 import { cn } from '@/lib/utils'
-import { detectIsWindows } from '@/lib/platform'
 import type { ThemeMode, ThemeStyle, MarkdownFontSize } from '../../../types'
-
-// ===== Logo 资源导入（用于图标选择器） =====
-import tagentBlackLogo from '@/assets/bots/tagent-logos/tagent-black.png'
-import tagentWhiteLogo from '@/assets/bots/tagent-logos/tagent-white.png'
-import tagentBlueLogo from '@/assets/bots/tagent-logos/tagent-blue.png'
-import tagentPurpleLogo from '@/assets/bots/tagent-logos/tagent-purple.png'
-import tagentGradientLogo from '@/assets/bots/tagent-logos/tagent-gradient.png'
-import tagentCoralLogo from '@/assets/bots/tagent-logos/tagent-coral.png'
-import tagentVeriPeriLogo from '@/assets/bots/tagent-logos/tagent-veri-peri.png'
-import tagentVivaMagentaLogo from '@/assets/bots/tagent-logos/tagent-viva-magenta.png'
-import tagentMochaMousseLogo from '@/assets/bots/tagent-logos/tagent-mocha-mousse.png'
-import tagentEmeraldLogo from '@/assets/bots/tagent-logos/tagent-emerald.png'
-import tagent8bitLogo from '@/assets/bots/tagent-logos/tagent-8bit.png'
-import tagentCyberpunkLogo from '@/assets/bots/tagent-logos/tagent-cyberpunk.png'
-import tagentFuturisticLogo from '@/assets/bots/tagent-logos/tagent-futuristic.png'
 
 // ===== 主题预览图片导入 =====
 import themeCloudDancer from '@/assets/theme-previews/theme-cloud-dancer.webp'
@@ -138,31 +121,6 @@ const STYLE_MASK_COLORS: Record<SpecialStyleId, { bg: string; text: string }> = 
   'slate-dark':   { bg: 'rgba(0,0,0,0.8)', text: 'hsl(18, 20%, 88%)' },
 }
 
-/** 图标变体定义 */
-interface IconVariant {
-  id: string
-  name: string
-  src: string
-  previewBg: string
-}
-
-const ICON_VARIANTS: readonly IconVariant[] = [
-  { id: 'default', name: '默认', src: '', previewBg: 'bg-neutral-900' },
-  { id: 'black', name: '经典黑', src: tagentBlackLogo, previewBg: 'bg-neutral-900' },
-  { id: 'white', name: '纯白版', src: tagentWhiteLogo, previewBg: 'bg-white' },
-  { id: 'blue', name: '品牌蓝', src: tagentBlueLogo, previewBg: 'bg-blue-900' },
-  { id: 'purple', name: '紫色版', src: tagentPurpleLogo, previewBg: 'bg-purple-900' },
-  { id: 'gradient', name: '渐变版', src: tagentGradientLogo, previewBg: 'bg-gradient-to-br from-blue-600 to-purple-600' },
-  { id: 'coral', name: '珊瑚橘', src: tagentCoralLogo, previewBg: 'bg-[#FF6F61]' },
-  { id: 'veri-peri', name: '长春花蓝', src: tagentVeriPeriLogo, previewBg: 'bg-[#6667AB]' },
-  { id: 'viva-magenta', name: '非凡洋红', src: tagentVivaMagentaLogo, previewBg: 'bg-[#BB2649]' },
-  { id: 'mocha-mousse', name: '摩卡慕斯', src: tagentMochaMousseLogo, previewBg: 'bg-[#A47764]' },
-  { id: 'emerald', name: '翡翠绿', src: tagentEmeraldLogo, previewBg: 'bg-[#009473]' },
-  { id: '8bit', name: '8bit 像素', src: tagent8bitLogo, previewBg: 'bg-[#1a1a2e]' },
-  { id: 'cyberpunk', name: '赛博朋克', src: tagentCyberpunkLogo, previewBg: 'bg-[#0d0221]' },
-  { id: 'futuristic', name: '未来质感', src: tagentFuturisticLogo, previewBg: 'bg-[#4a4a4a]' },
-] as const
-
 /** 根据平台返回缩放快捷键提示 */
 const isMac = navigator.userAgent.includes('Mac')
 const ZOOM_HINT = isMac
@@ -250,131 +208,7 @@ export function AppearanceSettings(): React.ReactElement {
           />
         </SettingsCard>
       </SettingsSection>
-
-      <AppIconPicker />
     </div>
-  )
-}
-
-/** 应用图标选择器 */
-function AppIconPicker(): React.ReactElement {
-  const [activeIcon, setActiveIcon] = React.useState<string>('default')
-  const [isLoading, setIsLoading] = React.useState(false)
-
-  // 初始化时读取当前设置
-  React.useEffect(() => {
-    window.electronAPI.getSettings().then((settings) => {
-      setActiveIcon(settings.appIconVariant ?? 'default')
-    })
-  }, [])
-
-  const isWindows = React.useMemo(() => detectIsWindows(), [])
-
-  const handleIconSelect = React.useCallback(async (variantId: string) => {
-    if (isWindows) {
-      toast.error('Windows 系统暂不支持更换应用图标')
-      return
-    }
-    if (variantId === activeIcon || isLoading) return
-    setIsLoading(true)
-    try {
-      const success = await window.electronAPI.setAppIcon(variantId)
-      if (success) {
-        setActiveIcon(variantId)
-        toast.success('应用图标已更换')
-      } else {
-        toast.error('图标切换失败')
-      }
-    } catch {
-      toast.error('图标切换失败')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [activeIcon, isLoading, isWindows])
-
-  return (
-    <SettingsSection
-      title="应用图标"
-      description="自定义 Dock 栏中的应用图标样式"
-    >
-      <SettingsCard divided={false}>
-        <div className="px-4 py-3">
-          <div className="grid grid-cols-7 gap-3">
-            {ICON_VARIANTS.map((variant) => (
-              <IconCard
-                key={variant.id}
-                variant={variant}
-                isSelected={activeIcon === variant.id}
-                onSelect={() => handleIconSelect(variant.id)}
-              />
-            ))}
-          </div>
-        </div>
-      </SettingsCard>
-    </SettingsSection>
-  )
-}
-
-/** 图标选项卡片 */
-function IconCard({
-  variant,
-  isSelected,
-  onSelect,
-}: {
-  variant: IconVariant
-  isSelected: boolean
-  onSelect: () => void
-}): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'relative flex flex-col items-center gap-1.5 rounded-lg p-2 transition-all',
-        isSelected
-          ? 'ring-2 ring-primary bg-primary/5'
-          : 'hover:bg-muted/50'
-      )}
-    >
-      <div
-        className={cn(
-          'w-12 h-12 rounded-xl overflow-hidden border border-border/50 flex items-center justify-center',
-          variant.previewBg,
-        )}
-      >
-        {variant.id === 'default' ? (
-          // 默认图标用 CSS 模拟 TAgent logo 形状
-          <div className="flex items-end gap-[2px] -rotate-12">
-            {[1, 0.85, 0.7, 0.55, 0.4, 0.25].map((opacity, i) => (
-              <div
-                key={i}
-                className="rounded-[1px]"
-                style={{
-                  width: i === 0 ? 4 : 3,
-                  height: i === 0 ? 14 : 14 - i * 1.5,
-                  backgroundColor: `rgba(255,255,255,${opacity})`,
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <img
-            src={variant.src}
-            alt={variant.name}
-            className="w-full h-full object-contain"
-            draggable={false}
-          />
-        )}
-      </div>
-      <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">
-        {variant.name}
-      </span>
-      {isSelected && (
-        <div className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-primary flex items-center justify-center">
-          <Check className="size-2.5 text-primary-foreground" />
-        </div>
-      )}
-    </button>
   )
 }
 

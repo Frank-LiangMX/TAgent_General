@@ -714,13 +714,11 @@ function cacheNull(key: string): null {
 
 /**
  * 解析应用图标变体的文件路径
+ * 当前仅保留主图标，所有变体请求统一回退到 icon.png
  */
-export function resolveAppIconPath(variantId: string): string | null {
+export function resolveAppIconPath(_variantId: string): string | null {
   const resourcesDir = getBundledResourcesDir()
-  if (!variantId || variantId === 'default') {
-    return join(resourcesDir, 'icon.png')
-  }
-  return join(resourcesDir, 'tagent-logos', `tagent-${variantId}.png`)
+  return join(resourcesDir, 'icon.png')
 }
 
 export function registerIpcHandlers(): void {
