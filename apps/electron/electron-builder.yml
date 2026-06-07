@@ -56,11 +56,6 @@ extraResources:
   # 教程文件（教程查看器 + 欢迎对话使用）
   - from: ../../tutorial/tutorial.md
     to: tutorial.md
-  # TAgent 品牌 Logo 素材（品牌素材下载功能使用）
-  - from: resources/tagent-logos
-    to: tagent-logos
-    filter:
-      - "**/*"
   # 默认 Dock 图标（macOS app.dock.setIcon 使用）
   - from: resources/icon.png
     to: icon.png
