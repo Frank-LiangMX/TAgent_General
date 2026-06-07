@@ -235,7 +235,7 @@ export function ChannelSettings(): React.ReactElement {
         ) : channels.length === 0 ? (
           <SettingsCard divided={false}>
             <div className="text-sm text-muted-foreground py-12 text-center">
-              还没有配置任何模型，点击上方"添加配置"开始
+              还没有配置任何模型，点击上方&ldquo;添加配置&rdquo;开始
             </div>
           </SettingsCard>
         ) : (

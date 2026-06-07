@@ -30,7 +30,7 @@ export interface ActiveTasksBarProps {
  * 只在有任务时显示，提供运行中任务的概览和快速导航。
  */
 export function ActiveTasksBar({
-  sessionId,
+  sessionId: _sessionId,
   tasks,
   onTaskClick,
   className,

@@ -986,7 +986,7 @@ export interface BackgroundTask {
  * 按 sessionId 隔离，每个会话独立管理后台任务。
  * 任务完成后从列表中移除（只显示运行中任务）。
  */
-export const backgroundTasksAtomFamily = atomFamily((sessionId: string) =>
+export const backgroundTasksAtomFamily = atomFamily((_sessionId: string) =>
   atom<BackgroundTask[]>([])
 )
 
@@ -999,3 +999,17 @@ export const stoppedByUserSessionsAtom = atom<Set<string>>(new Set<string>())
 
 /** AgentSettingsInitializer 是否已完成加载（渠道/工作区/设置全部就绪） */
 export const agentSettingsReadyAtom = atom(false)
+
+// ===== SubAgent 派发策略 =====
+
+/** 主 Agent 派发 SubAgent 的积极性档位（持久化到 localStorage） */
+export type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggressive'
+
+/**
+ * 默认 conservative — 跟 proma 历史行为一致，最稳。
+ * 改档位后，Agent 主 prompt 会动态注入对应的派发策略段。
+ */
+export const subagentEagernessAtom = atomWithStorage<SubagentEagerness>(
+  'tagent-subagent-eagerness',
+  'conservative',
+)

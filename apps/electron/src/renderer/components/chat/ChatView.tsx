@@ -44,7 +44,7 @@ import {
 } from '@/atoms/chat-atoms'
 import { activeToolIdsAtom } from '@/atoms/chat-tool-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
-import { promptConfigAtom, promptSidebarOpenAtom, conversationPromptIdAtom, resolveSystemMessage, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
+import { promptConfigAtom, promptSidebarOpenAtom, resolveSystemMessage } from '@/atoms/system-prompt-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { ConversationProvider } from '@/contexts/session-context'
 import {
@@ -79,7 +79,7 @@ function ChatViewInner({ conversationId }: ChatViewProps): React.ReactElement {
   const [inlineEditingMessageId, setInlineEditingMessageId] = React.useState<string | null>(null)
 
   // ===== Per-conversation hooks（分屏独立） =====
-  const [selectedModel, setSelectedModel] = useConversationModel()
+  const [selectedModel] = useConversationModel()
   const [contextLength] = useConversationContextLength()
   const [thinkingEnabled] = useConversationThinkingEnabled()
   const [conversationPromptId] = useConversationPromptId()

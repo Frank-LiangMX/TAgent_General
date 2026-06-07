@@ -353,7 +353,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
           setModels((prev) => [...prev, ...newModels])
         }
       }
-    } catch (error) {
+    } catch {
       setFetchResult({ success: false, message: '拉取模型请求失败', models: [] })
     } finally {
       setFetchingModels(false)
@@ -374,7 +374,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
         apiKey,
       })
       setTestResult(result)
-    } catch (error) {
+    } catch {
       setTestResult({ success: false, message: '测试请求失败' })
     } finally {
       setTesting(false)
@@ -404,7 +404,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
         model: targetModel,
       })
       setModelValidateResult(result)
-    } catch (error) {
+    } catch {
       setModelValidateResult({ success: false, message: '验证请求失败' })
     } finally {
       setValidatingModel(false)

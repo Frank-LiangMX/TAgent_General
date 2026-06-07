@@ -48,7 +48,6 @@ import {
   themeModeAtom,
   themeStyleAtom,
   systemIsDarkAtom,
-  resolvedThemeAtom,
   applyThemeToDOM,
   initializeTheme,
 } from './atoms/theme'

@@ -70,7 +70,7 @@ export function TabSwitcher(): ReactElement | null {
   const store = useStore()
   const tabs = useAtomValue(tabsAtom)
   const setTabs = useSetAtom(tabsAtom)
-  const activeTabId = useAtomValue(activeTabIdAtom)
+  const _activeTabId = useAtomValue(activeTabIdAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   // MRU 与 Ctrl+Tab 起始定位均按会话 ID 归一化：预览 Tab 复用其 owner 会话 ID，
   // 与候选列表（会话 ID）对齐，避免处于预览 Tab 时需按两下才能切换。

@@ -23,7 +23,7 @@ const STOP_COMMIT_TIMEOUT_MS = 1400
 const FINAL_COMMIT_DELAY_MS = 180
 
 export function VoiceDictationApp(): React.ReactElement {
-  const [sessionId, setSessionId] = React.useState<string | null>(null)
+  const [_sessionId, setSessionId] = React.useState<string | null>(null)
   const [status, setStatus] = React.useState<VoiceDictationStateEvent['status']>('idle')
   const [message, setMessage] = React.useState('按快捷键开始语音输入')
   const [transcript, setTranscript] = React.useState('')

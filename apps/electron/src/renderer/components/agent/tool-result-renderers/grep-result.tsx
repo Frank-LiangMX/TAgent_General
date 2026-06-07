@@ -104,10 +104,8 @@ export function GrepResultRenderer({ result, isError, input }: GrepResultRendere
 
   const totalMatches = groups.reduce((sum, g) => sum + g.matches.length, 0)
 
-  const renderGroups = React.useCallback((text: string): React.ReactNode => {
-    // 根据 text 长度决定显示多少（CollapsibleResult 会截断）
-    const visibleLines = text.split('\n').length
-
+  const renderGroups = React.useCallback((_text: string): React.ReactNode => {
+    // CollapsibleResult 会按可见行数截断显示
     return (
       <div className="space-y-2">
         {/* 统计 */}

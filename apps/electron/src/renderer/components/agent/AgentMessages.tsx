@@ -240,7 +240,7 @@ function RetryingNotice({ retrying }: { retrying: NonNullable<AgentStreamState['
 function RetryAttemptItem({
   attempt,
   isLatest,
-  isFailed,
+  isFailed: _isFailed,
 }: {
   attempt: RetryAttempt
   isLatest: boolean

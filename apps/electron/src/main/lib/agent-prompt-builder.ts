@@ -173,7 +173,12 @@ interface SystemPromptContext {
   claudeAvailable?: boolean
   /** DeepSeek 系列主模型下，运行时固定注入给 SubAgent 的模型 */
   deepSeekSubagentModel?: string
+  /** 用户对主 Agent 派发 SubAgent 的积极性（设置项，默认 conservative） */
+  subagentEagerness?: SubagentEagerness
 }
+
+/** 主 Agent 派发 SubAgent 的积极性档位 */
+type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggressive'
 
 /**
  * 构建完整的系统提示词
@@ -503,7 +508,69 @@ ${subagentList}
 5. **会话恢复**：每次收到新任务时，先检查会话级和工作区级两个 \`.context/\` 目录（note.md、todo.md）以及当前目录的 CLAUDE.md
 6. **自检习惯**：复杂任务执行过程中，定期回顾 CLAUDE.md 和两级 .context/ 中的内容，确保行为与已记录的规范和计划保持一致`)
 
+  // ===== SubAgent 派发策略（基于用户设置） =====
+  sections.push(buildSubagentDispatchStrategy(ctx.subagentEagerness ?? 'conservative'))
+
   return sections.join('\n\n')
+}
+
+/**
+ * 根据用户设置的积极性档位，生成主 Agent 派发 SubAgent 的策略段。
+ *
+ * 设计目标：让主 Agent 在面对"批量/重复/可独立验证"任务时更主动派 subagent
+ * 并行处理，而不是自己一条条做。把派发阈值从"模型内部判断"变成"prompt 显式规则"。
+ */
+function buildSubagentDispatchStrategy(eagerness: SubagentEagerness): string {
+  const labels: Record<SubagentEagerness, string> = {
+    never: '从不派发',
+    conservative: '保守（默认）',
+    balanced: '平衡',
+    aggressive: '积极',
+  }
+  const label = labels[eagerness]
+
+  const strategies: Record<SubagentEagerness, string> = {
+    never: `## SubAgent 派发策略（用户设定：${label}）
+
+**绝不派发 SubAgent**。所有任务主 Agent 自己做。
+- 任务长用 TaskCreate 跟踪，自己一步步推进
+- 不用 Agent/Task 工具派 subagent
+- 适合场景：debug、需要完全确定性、避免并行干扰`,
+
+    conservative: `## SubAgent 派发策略（用户设定：${label}）
+
+**只在同时满足 3 个条件**时派发 SubAgent：
+1. **同类项 ≥ 5**：连续遇到 5+ 个相同模式（5+ 个 unused import、5+ 个 model logo 改名、5+ 个 codemod）
+2. **耗时 > 5 分钟**：单个任务预计超过 5 分钟（批量 codemod、批量生成测试、批量重命名）
+3. **可独立验证**：任务有明确 pass/fail 标准（\`bun run lint 0 errors\`、\`bun test pass\`、\`grep 匹配\`）
+
+三个条件**都满足**才派 refactor-cleanup / test-writer / coder / explorer 等 subagent，自己验证完报告。
+不满足就 TaskCreate 跟踪自己干。
+**默认行为**，适合大多数用户。`,
+
+    balanced: `## SubAgent 派发策略（用户设定：${label}）
+
+**任一条件**触发即派发 SubAgent：
+1. **同类项 ≥ 3**（5 个 import 留着没清、3 个 model 改名）
+2. **耗时 > 3 分钟**（批量 codemod、批量生成测试、批量重写）
+3. **关键词触发**：用户 prompt 含"批量"、"全部"、"每个"、"所有"、"扫一遍"
+4. **可独立验证**
+
+识别到任一即派 subagent 干完报告。比自己一条条干省时间。
+**比 conservative 更激进**，适合需要加速的用户。`,
+
+    aggressive: `## SubAgent 派发策略（用户设定：${label}）
+
+**任何能派的任务都派**。最大化并行。
+- 看到 1+ 项就开始判断能否派
+- 关键词、复杂度、可验证性、文件数都是派发信号
+- 优先并行：能同时派多个 subagent 就同时派
+- 适合场景：算力够、不在乎成本、想最快完成
+
+**注意**：派太激进可能浪费 token，要权衡。但用户选了 aggressive 表明他接受这个权衡。`,
+  }
+
+  return strategies[eagerness]
 }
 
 // ===== 动态 Per-Message 上下文 =====

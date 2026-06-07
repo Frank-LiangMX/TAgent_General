@@ -314,7 +314,7 @@ function EnvironmentCard(): React.ReactElement {
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
               <strong>Windows 用户建议：</strong>
-              安装时请选择默认路径（C:\Program Files\...），并确保勾选"添加到 PATH"选项
+              安装时请选择默认路径（C:\Program Files\...），并确保勾选&ldquo;添加到 PATH&rdquo;选项
             </AlertDescription>
           </Alert>
         )}

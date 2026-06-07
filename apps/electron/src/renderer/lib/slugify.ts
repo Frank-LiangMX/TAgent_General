@@ -11,7 +11,7 @@ export function slugify(text: string): string {
   return text
     .trim()
     .toLowerCase()
-    .replace(/[\s　]+/g, '-')
+    .replace(/[\s　]+/g, '-') // eslint-disable-line no-irregular-whitespace -- U+3000 full-width space intentional
     // 去除标点/符号，保留 Unicode 字母数字、连字符、下划线
     .replace(/[^\p{L}\p{N}_-]+/gu, '')
     .replace(/-{2,}/g, '-')

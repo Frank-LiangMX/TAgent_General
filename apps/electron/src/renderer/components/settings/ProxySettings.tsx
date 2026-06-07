@@ -16,8 +16,6 @@ import {
   SettingsInput,
 } from './primitives'
 
-import type { ProxyMode } from '@tagent/shared'
-
 import { proxyConfigAtom, loadProxyConfigAtom, updateProxyConfigAtom } from '@/atoms/proxy-atoms'
 import { cn } from '@/lib/utils'
 
@@ -67,7 +65,7 @@ export function ProxySettings(): React.ReactElement {
           ? `检测到系统代理: ${result.proxyUrl}`
           : result.message,
       })
-    } catch (error) {
+    } catch {
       setDetectResult({
         success: false,
         message: '检测失败',

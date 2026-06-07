@@ -1,4 +1,4 @@
-import { useAtom, useSetAtom, useAtomValue } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import {
   Upload,
   AlertTriangle,

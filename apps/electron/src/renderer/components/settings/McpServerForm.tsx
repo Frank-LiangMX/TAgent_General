@@ -417,7 +417,7 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel }: McpS
               <div className="flex items-start gap-2 px-3 py-2 rounded-md text-sm bg-amber-500/10 text-amber-700 dark:text-amber-400">
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
                 <div className="text-xs">
-                  尚未测试连接。请先点击"测试连接"按钮验证配置是否正确。
+                  尚未测试连接。请先点击&ldquo;测试连接&rdquo;按钮验证配置是否正确。
                 </div>
               </div>
             )}

@@ -549,7 +549,7 @@ ${skillList}
             ) : serverEntries.length === 0 ? (
               <SettingsCard divided={false}>
                 <div className="text-sm text-muted-foreground py-12 text-center">
-                  还没有配置任何 MCP 服务器，点击上方"添加服务器"开始
+                  还没有配置任何 MCP 服务器，点击上方&ldquo;添加服务器&rdquo;开始
                 </div>
               </SettingsCard>
             ) : (

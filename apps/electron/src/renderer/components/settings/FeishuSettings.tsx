@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 
 import { SettingsCard } from './primitives/SettingsCard'
 import { SettingsInput } from './primitives/SettingsInput'
-import { SettingsRow } from './primitives/SettingsRow'
 import { SettingsSecretInput } from './primitives/SettingsSecretInput'
 import { SettingsSection } from './primitives/SettingsSection'
 
@@ -1189,7 +1188,7 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
                 <AlertDialogHeader>
                   <AlertDialogTitle>确认删除</AlertDialogTitle>
                   <AlertDialogDescription>
-                    删除 Bot "{bot.name}" 将同时断开连接并清除所有绑定。此操作不可撤销。
+                    删除 Bot &ldquo;{bot.name}&rdquo; 将同时断开连接并清除所有绑定。此操作不可撤销。
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -216,7 +216,7 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
   const [pdfSrc, setPdfSrc] = React.useState('')
   const [pdfZoom, setPdfZoom] = React.useState(100)
   const pdfIframeRef = React.useRef<HTMLIFrameElement>(null)
-  const [imagePath, setImagePath] = React.useState('')
+  const [_imagePath, setImagePath] = React.useState('')
   const [imageDataUrl, setImageDataUrl] = React.useState('')
   // 默认 25%：预览面板空间有限，先展示缩略全貌，用户可手动放大查看细节
   const [imageZoom, setImageZoom] = React.useState(0.25)
