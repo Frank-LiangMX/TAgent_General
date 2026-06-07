@@ -188,6 +188,36 @@ bun run build:resources   # 复制 resources/ 到 dist/
 - 注释和日志采用中文，保留专业术语
 - **路径别名**：`@/` → `apps/electron/src/renderer/`
 
+## UI 风格规范
+
+**工具栏按钮一致性**：
+- 所有工具栏按钮必须是 **36px 圆形按钮**（`size-[36px] rounded-full`）
+- 使用 `variant="ghost"` + `text-foreground/60 hover:text-foreground` 作为默认样式
+- 状态变化通过**图标颜色**体现，不用边框或背景
+
+**Popover vs Tooltip**：
+- Tooltip：hover 显示简短提示，用于无交互的预览
+- Popover：click 打开，用于有交互的设置面板
+- 两者可以组合：Tooltip 显示当前状态，点击打开 Popover 调整
+
+**Popover 内容样式**：
+- 标题用 `text-xs font-medium text-foreground/80`
+- 选项用 `text-xs`，描述用 `text-[10px] text-muted-foreground`
+- 选项布局：单行 `label + desc`，或两行紧凑排列
+- 宽度：`w-auto min-w-[180px]`，不要过宽
+
+**颜色语义**：
+- 默认/保守：`text-foreground/60`
+- 中性/信息：`text-blue-500 dark:text-blue-400`
+- 警告/积极：`text-amber-500 dark:text-amber-400`
+- 危险/停止：`text-red-500 dark:text-red-400`
+- 禁用/从无：`text-muted-foreground`
+
+**参考组件**：
+- `ContextUsageBadge`：圆形按钮 + Popover + 紧凑布局
+- `PermissionModeSelector`：圆形按钮 + Tooltip + 点击切换
+- `AgentThinkingPopover`：圆形按钮 + Popover + Switch 开关
+
 ## Agent SDK 集成架构
 
 基于 `@anthropic-ai/claude-agent-sdk@0.3.143` 实现 Agent 模式。
