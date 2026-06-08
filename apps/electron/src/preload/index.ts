@@ -126,6 +126,82 @@ import type {
   PendingRequestsSnapshot,
 } from '@tagent/shared'
 
+// 资产库相关类型（从主进程服务导出）
+interface ListAssetsParams {
+  type?: string
+  project?: string
+  reviewStatus?: string
+  offset?: number
+  limit?: number
+  orderBy?: 'name' | 'updated_at' | 'created_at'
+  orderDir?: 'ASC' | 'DESC'
+}
+
+interface ListAssetsResult {
+  assets: AssetRecord[]
+  total: number
+  hasMore: boolean
+}
+
+interface SearchAssetsParams {
+  query: string
+  type?: string
+  limit?: number
+}
+
+interface AssetRecord {
+  id: string
+  name: string
+  type: string
+  path: string
+  project?: string
+  status: string
+  tags?: string
+  metadata?: string
+  created_at: number
+  updated_at: number
+  analyzed_at?: number
+  review_status: string
+  review_notes?: string
+}
+
+interface AssetStoreStats {
+  totalAssets: number
+  byType: Record<string, number>
+  byReviewStatus: Record<string, number>
+  lastUpdatedAt: number | null
+}
+
+interface ReviewHistoryRecord {
+  id: number
+  asset_id: string
+  action: 'approve' | 'reject' | 'request_changes' | 'comment'
+  reviewer?: string
+  notes?: string
+  created_at: number
+}
+
+interface SessionMemoryRecord {
+  id: string
+  session_slug: string
+  title: string
+  summary: string
+  key_facts: string
+  tools_used: string
+  created_at: number
+  last_referenced_at: number
+  reference_count: number
+}
+
+interface MemoryLayerStats {
+  l0: { exists: boolean; lines: number; lastUpdated: number | null }
+  l1: { exists: boolean; lines: number; lastUpdated: number | null }
+  l2: { exists: boolean; lines: number; lastUpdated: number | null }
+  l3: { rawCount: number; rulesCount: number; lastUpdated: number | null }
+  l4: { sessions: number; oldestDate: number | null; newestDate: number | null }
+  l5: { exists: boolean; lines: number; lastUpdated: number | null }
+}
+
 
 /**
  * 暴露给渲染进程的 API 接口定义
@@ -512,6 +588,105 @@ export interface ElectronAPI {
 
   /** 测试 MCP 服务器连接 */
   testMcpServer: (name: string, entry: import('@tagent/shared').McpServerEntry) => Promise<{ success: boolean; message: string }>
+
+  /** 获取 TA MCP Server 状态 */
+  getTAMcpStatus: () => Promise<{ installed: boolean; configured: boolean; pythonVersion?: string; error?: string }>
+
+  /** 检查工作区是否配置了 TA MCP */
+  isTAMcpConfigured: (workspaceSlug: string) => Promise<boolean>
+
+  /** 为工作区启用 TA MCP */
+  enableTAMcp: (workspaceSlug: string) => Promise<boolean>
+
+  /** 为工作区禁用 TA MCP */
+  disableTAMcp: (workspaceSlug: string) => Promise<boolean>
+
+  // ===== ModeManager 模式管理 =====
+
+  /** 获取模式状态摘要 */
+  getModeStatus: () => Promise<{
+    activeMode: 'general' | 'ta'
+    isSwitching: boolean
+    generalTasks: number
+    taTasks: number
+    generalPaused: boolean
+    taPaused: boolean
+  }>
+
+  /** 切换模式 */
+  switchMode: (request: {
+    targetMode: 'general' | 'ta'
+    source: 'user-click' | 'switch-tool' | 'api'
+    force?: boolean
+    reason?: string
+    contextSummary?: string
+  }) => Promise<{
+    success: boolean
+    currentMode: 'general' | 'ta'
+    pausedTasks: Array<{ id: string; mode: 'general' | 'ta'; description: string }>
+    error?: string
+  }>
+
+  /** 注册后台任务 */
+  registerBackgroundTask: (task: { id: string; mode: 'general' | 'ta'; description: string }) => Promise<void>
+
+  /** 完成后台任务 */
+  completeBackgroundTask: (taskId: string, mode: 'general' | 'ta') => Promise<void>
+
+  /** 监听模式变化 */
+  onModeChanged: (callback: (data: { previousMode: string; currentMode: string }) => void) => () => void
+
+  /** 监听任务完成通知 */
+  onTaskNotification: (callback: (data: { mode: string; message: string }) => void) => () => void
+
+  // ===== 资产库 API =====
+
+  /** 初始化资产库服务 */
+  initAssetStore: () => Promise<{ success: boolean; dbExists: boolean; error?: string }>
+
+  /** 获取资产库状态 */
+  getAssetStoreStatus: () => Promise<{ available: boolean; dbPath: string | null }>
+
+  /** 列出资产 */
+  listAssets: (params?: ListAssetsParams) => Promise<ListAssetsResult>
+
+  /** 搜索资产 */
+  searchAssets: (params: SearchAssetsParams) => Promise<ListAssetsResult>
+
+  /** 获取资产详情 */
+  getAssetDetail: (assetId: string) => Promise<AssetRecord | null>
+
+  /** 获取资产库统计 */
+  getAssetStoreStats: () => Promise<AssetStoreStats>
+
+  /** 获取项目列表 */
+  listProjects: () => Promise<string[]>
+
+  /** 获取审核队列 */
+  getReviewQueue: (params?: { status?: 'pending' | 'approved' | 'rejected' | 'needs_review'; offset?: number; limit?: number }) => Promise<{ items: Array<AssetRecord & { reviewHistory?: ReviewHistoryRecord[] }>; total: number; hasMore: boolean }>
+
+  /** 获取审核统计 */
+  getReviewStats: () => Promise<{ pending: number; needsReview: number; approved: number; rejected: number }>
+
+  // ===== 记忆层管理 =====
+
+  /** 初始化记忆层服务 */
+  initMemoryLayers: () => Promise<{ success: boolean; error?: string }>
+
+  /** 获取记忆层统计 */
+  getMemoryStats: (mode: 'general' | 'ta') => Promise<MemoryLayerStats>
+
+  /** 搜索 L4 会话 */
+  searchMemorySessions: (mode: 'general' | 'ta', query: string, limit?: number) => Promise<SessionMemoryRecord[]>
+
+  /** 列出最近的 L4 会话 */
+  listRecentMemorySessions: (mode: 'general' | 'ta', limit?: number) => Promise<SessionMemoryRecord[]>
+
+  /** 获取 Markdown 层内容 */
+  getMemoryMdContent: (mode: 'general' | 'ta', layer: 'L0' | 'L1' | 'L2' | 'L5') => Promise<string | null>
+
+  /** 获取 L3 纠错记录 */
+  getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
 
   /** 获取工作区 Skill 列表（含活跃和不活跃） */
   getWorkspaceSkills: (workspaceSlug: string) => Promise<SkillMeta[]>
@@ -1517,6 +1692,28 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.TEST_MCP_SERVER, name, entry) as Promise<{ success: boolean; message: string }>
   },
 
+  // TA MCP Server
+  getTAMcpStatus: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_TA_MCP_STATUS) as Promise<{
+      installed: boolean
+      configured: boolean
+      pythonVersion?: string
+      error?: string
+    }>
+  },
+
+  isTAMcpConfigured: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED, workspaceSlug) as Promise<boolean>
+  },
+
+  enableTAMcp: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.ENABLE_TA_MCP, workspaceSlug) as Promise<boolean>
+  },
+
+  disableTAMcp: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DISABLE_TA_MCP, workspaceSlug) as Promise<boolean>
+  },
+
   getWorkspaceSkills: (workspaceSlug: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_SKILLS, workspaceSlug)
   },
@@ -2316,6 +2513,106 @@ const electronAPI: ElectronAPI = {
 
   migrationCancelImport: (tempDir: string) => {
     return ipcRenderer.invoke('migration:cancelImport', tempDir)
+  },
+
+  // ===== ModeManager 模式管理 =====
+
+  getModeStatus: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MODE_STATUS)
+  },
+
+  switchMode: (request: {
+    targetMode: 'general' | 'ta'
+    source: 'user-click' | 'switch-tool' | 'api'
+    force?: boolean
+    reason?: string
+    contextSummary?: string
+  }) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SWITCH_MODE, request)
+  },
+
+  registerBackgroundTask: (task: { id: string; mode: 'general' | 'ta'; description: string }) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.REGISTER_BACKGROUND_TASK, task)
+  },
+
+  completeBackgroundTask: (taskId: string, mode: 'general' | 'ta') => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.COMPLETE_BACKGROUND_TASK, taskId, mode)
+  },
+
+  onModeChanged: (callback: (data: { previousMode: string; currentMode: string }) => void) => {
+    const listener = (_: unknown, data: { previousMode: string; currentMode: string }): void => callback(data)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.MODE_CHANGED, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.MODE_CHANGED, listener) }
+  },
+
+  onTaskNotification: (callback: (data: { mode: string; message: string }) => void) => {
+    const listener = (_: unknown, data: { mode: string; message: string }): void => callback(data)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, listener) }
+  },
+
+  // ===== 资产库 API =====
+
+  initAssetStore: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INIT_ASSET_STORE)
+  },
+
+  getAssetStoreStatus: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATUS)
+  },
+
+  listAssets: (params?: ListAssetsParams) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_ASSETS, params)
+  },
+
+  searchAssets: (params: SearchAssetsParams) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SEARCH_ASSETS, params)
+  },
+
+  getAssetDetail: (assetId: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_ASSET_DETAIL, assetId)
+  },
+
+  getAssetStoreStats: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATS)
+  },
+
+  listProjects: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_PROJECTS)
+  },
+
+  getReviewQueue: (params?: { status?: 'pending' | 'approved' | 'rejected' | 'needs_review'; offset?: number; limit?: number }) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_REVIEW_QUEUE, params)
+  },
+
+  getReviewStats: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_REVIEW_STATS)
+  },
+
+  // ===== 记忆层管理 =====
+
+  initMemoryLayers: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INIT_MEMORY_LAYERS)
+  },
+
+  getMemoryStats: (mode: 'general' | 'ta') => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_STATS, mode)
+  },
+
+  searchMemorySessions: (mode: 'general' | 'ta', query: string, limit?: number) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SEARCH_MEMORY_SESSIONS, mode, query, limit)
+  },
+
+  listRecentMemorySessions: (mode: 'general' | 'ta', limit?: number) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_RECENT_MEMORY_SESSIONS, mode, limit)
+  },
+
+  getMemoryMdContent: (mode: 'general' | 'ta', layer: 'L0' | 'L1' | 'L2' | 'L5') => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_MD_CONTENT, mode, layer)
+  },
+
+  getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_CORRECTIONS, mode, limit)
   },
 }
 

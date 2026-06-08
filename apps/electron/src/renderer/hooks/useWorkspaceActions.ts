@@ -1,8 +1,9 @@
 /**
  * useWorkspaceActions — 工作区切换与创建的共享逻辑
  *
- * 抽离 WorkspaceSelector 与 CollapsedWorkspacePopover 共用的切换/创建逻辑，
- * 避免两处实现漂移。重命名 / 删除 / 拖拽排序仅展开态需要，留在 WorkspaceSelector 内。
+ * 抽离 WorkspaceSelector / WorkspaceManagerDialog 共用的切换/创建逻辑，
+ * 避免多处实现漂移。重命名 / 删除 / 拖拽排序仅 WorkspaceManagerDialog
+ * 内的弹窗需要，留在弹窗组件内。
  */
 
 import { useAtom } from 'jotai'

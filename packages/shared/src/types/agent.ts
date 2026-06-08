@@ -1487,6 +1487,66 @@ export const AGENT_IPC_CHANNELS = {
   // 待处理请求恢复（渲染进程重载后查询主进程状态）
   /** 获取所有待处理的交互请求快照 */
   GET_PENDING_REQUESTS: 'agent:get-pending-requests',
+
+  // TA MCP Server 管理
+  /** 获取 TA MCP Server 状态 */
+  GET_TA_MCP_STATUS: 'agent:get-ta-mcp-status',
+  /** 检查工作区是否配置了 TA MCP */
+  IS_TA_MCP_CONFIGURED: 'agent:is-ta-mcp-configured',
+  /** 为工作区启用 TA MCP */
+  ENABLE_TA_MCP: 'agent:enable-ta-mcp',
+  /** 为工作区禁用 TA MCP */
+  DISABLE_TA_MCP: 'agent:disable-ta-mcp',
+
+  // ModeManager 模式管理
+  /** 获取模式状态摘要 */
+  GET_MODE_STATUS: 'agent:get-mode-status',
+  /** 切换模式 */
+  SWITCH_MODE: 'agent:switch-mode',
+  /** 注册后台任务 */
+  REGISTER_BACKGROUND_TASK: 'agent:register-background-task',
+  /** 完成后台任务 */
+  COMPLETE_BACKGROUND_TASK: 'agent:complete-background-task',
+  /** 模式变化通知（主进程 → 渲染进程推送） */
+  MODE_CHANGED: 'agent:mode-changed',
+  /** 任务完成通知（主进程 → 渲染进程推送） */
+  TASK_NOTIFICATION: 'agent:task-notification',
+
+  // 资产库管理（TA 模式）
+  /** 初始化资产库服务 */
+  INIT_ASSET_STORE: 'agent:init-asset-store',
+  /** 获取资产库状态 */
+  GET_ASSET_STORE_STATUS: 'agent:get-asset-store-status',
+  /** 列出资产 */
+  LIST_ASSETS: 'agent:list-assets',
+  /** 搜索资产 */
+  SEARCH_ASSETS: 'agent:search-assets',
+  /** 获取资产详情 */
+  GET_ASSET_DETAIL: 'agent:get-asset-detail',
+  /** 获取资产库统计 */
+  GET_ASSET_STORE_STATS: 'agent:get-asset-store-stats',
+  /** 获取项目列表 */
+  LIST_PROJECTS: 'agent:list-projects',
+
+  // 审核队列（TA 模式）
+  /** 获取审核队列 */
+  GET_REVIEW_QUEUE: 'agent:get-review-queue',
+  /** 获取审核统计 */
+  GET_REVIEW_STATS: 'agent:get-review-stats',
+
+  // 记忆层管理（通用 + TA 模式）
+  /** 初始化记忆层服务 */
+  INIT_MEMORY_LAYERS: 'agent:init-memory-layers',
+  /** 获取记忆层统计 */
+  GET_MEMORY_STATS: 'agent:get-memory-stats',
+  /** 搜索 L4 会话 */
+  SEARCH_MEMORY_SESSIONS: 'agent:search-memory-sessions',
+  /** 列出最近的 L4 会话 */
+  LIST_RECENT_MEMORY_SESSIONS: 'agent:list-recent-memory-sessions',
+  /** 获取 Markdown 层内容 */
+  GET_MEMORY_MD_CONTENT: 'agent:get-memory-md-content',
+  /** 获取 L3 纠错记录 */
+  GET_MEMORY_CORRECTIONS: 'agent:get-memory-corrections',
 } as const
 
 /**

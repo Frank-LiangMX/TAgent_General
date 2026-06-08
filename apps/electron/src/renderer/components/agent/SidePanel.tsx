@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { X, FolderOpen, ExternalLink, ChevronRight, MoreHorizontal, FolderSearch, Pencil, FolderInput, Info, FolderHeart, MessageSquarePlus } from 'lucide-react'
+import { X, FolderOpen, ExternalLink, ChevronRight, MoreHorizontal, FolderSearch, Pencil, FolderInput, Info, MessageSquarePlus } from 'lucide-react'
 import * as React from 'react'
 
 import type { FileEntry, AgentPendingFile } from '@tagent/shared'
@@ -18,8 +18,6 @@ import {
   agentWorkspacesAtom,
   agentAttachedDirectoriesMapAtom,
   agentAttachedFilesMapAtom,
-  workspaceAttachedDirectoriesMapAtom,
-  workspaceAttachedFilesMapAtom,
   agentPendingFilesAtomFamily,
   agentDiffRefreshVersionAtom,
   fileBrowserAutoRevealAtom,
@@ -58,8 +56,8 @@ function getMediaTypeFromFilename(filename: string): string {
 interface SidePanelProps {
   sessionId: string
   sessionPath: string | null
-  activeTab: 'session' | 'workspace' | 'changes'
-  onTabChange: (tab: 'session' | 'workspace' | 'changes') => void
+  activeTab: 'session' | 'changes'
+  onTabChange: (tab: 'session' | 'changes') => void
   width?: number
 }
 
@@ -158,51 +156,15 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
   const setAttachedFilesMap = useSetAtom(agentAttachedFilesMapAtom)
   const attachedFiles = attachedFilesMap.get(sessionId) ?? []
 
-  // 附加目录列表（工作区级）
-  const wsAttachedDirsMap = useAtomValue(workspaceAttachedDirectoriesMapAtom)
-  const setWsAttachedDirsMap = useSetAtom(workspaceAttachedDirectoriesMapAtom)
-  const wsAttachedDirs = currentWorkspaceId ? (wsAttachedDirsMap.get(currentWorkspaceId) ?? []) : []
-  const wsAttachedFilesMap = useAtomValue(workspaceAttachedFilesMapAtom)
-  const setWsAttachedFilesMap = useSetAtom(workspaceAttachedFilesMapAtom)
-  const wsAttachedFiles = currentWorkspaceId ? (wsAttachedFilesMap.get(currentWorkspaceId) ?? []) : []
-
   const extraPathsMemo = React.useMemo(
-    () => [...attachedDirs, ...wsAttachedDirs],
-    [attachedDirs, wsAttachedDirs]
+    () => [...attachedDirs],
+    [attachedDirs]
   )
 
   const fileAccessPathsMemo = React.useMemo(
-    () => [...extraPathsMemo, ...attachedFiles, ...wsAttachedFiles],
-    [extraPathsMemo, attachedFiles, wsAttachedFiles]
+    () => [...extraPathsMemo, ...attachedFiles],
+    [extraPathsMemo, attachedFiles]
   )
-
-  // 加载工作区级附加目录
-  React.useEffect(() => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    window.electronAPI.getWorkspaceDirectories(workspaceSlug)
-      .then((dirs) => {
-        setWsAttachedDirsMap((prev) => {
-          const map = new Map(prev)
-          map.set(currentWorkspaceId, dirs)
-          return map
-        })
-      })
-      .catch(console.error)
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap])
-
-  // 加载工作区级附加文件
-  React.useEffect(() => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    window.electronAPI.getWorkspaceAttachedFiles(workspaceSlug)
-      .then((files) => {
-        setWsAttachedFilesMap((prev) => {
-          const map = new Map(prev)
-          map.set(currentWorkspaceId, files)
-          return map
-        })
-      })
-      .catch(console.error)
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
 
   // === 会话级：附加/移除目录 ===
 
@@ -275,81 +237,6 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
     }
   }, [sessionId, setAttachedFilesMap])
 
-  // === 工作区级：附加/移除目录 ===
-
-  const attachWorkspaceDir = React.useCallback(async (dirPath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    const updated = await window.electronAPI.attachWorkspaceDirectory({ workspaceSlug, directoryPath: dirPath })
-    setWsAttachedDirsMap((prev) => {
-      const map = new Map(prev)
-      map.set(currentWorkspaceId, updated)
-      return map
-    })
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap])
-
-  const handleAttachWorkspaceFolder = React.useCallback(async () => {
-    try {
-      const result = await window.electronAPI.openFolderDialog()
-      if (result) await attachWorkspaceDir(result.path)
-    } catch (error) {
-      console.error('[SidePanel] 附加工作区文件夹失败:', error)
-    }
-  }, [attachWorkspaceDir])
-
-  const handleWorkspaceFoldersDropped = React.useCallback(async (folderPaths: string[]) => {
-    for (const dirPath of folderPaths) {
-      try { await attachWorkspaceDir(dirPath) } catch (error) {
-        console.error('[SidePanel] 拖拽附加工作区文件夹失败:', error)
-      }
-    }
-  }, [attachWorkspaceDir])
-
-  const handleDetachWorkspaceDirectory = React.useCallback(async (dirPath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    try {
-      const updated = await window.electronAPI.detachWorkspaceDirectory({ workspaceSlug, directoryPath: dirPath })
-      setWsAttachedDirsMap((prev) => {
-        const map = new Map(prev)
-        if (updated.length > 0) { map.set(currentWorkspaceId, updated) } else { map.delete(currentWorkspaceId) }
-        return map
-      })
-    } catch (error) {
-      console.error('[SidePanel] 移除工作区附加目录失败:', error)
-    }
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap])
-
-  const attachWorkspaceFile = React.useCallback(async (filePath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    const updated = await window.electronAPI.attachWorkspaceFile({ workspaceSlug, filePath })
-    setWsAttachedFilesMap((prev) => {
-      const map = new Map(prev)
-      map.set(currentWorkspaceId, updated)
-      return map
-    })
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
-
-  const handleWorkspaceFilesAttached = React.useCallback(async (filePaths: string[]) => {
-    for (const filePath of filePaths) {
-      try { await attachWorkspaceFile(filePath) } catch (error) {
-        console.error('[SidePanel] 附加工作区文件失败:', error)
-      }
-    }
-  }, [attachWorkspaceFile])
-
-  const handleDetachWorkspaceFile = React.useCallback(async (filePath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    try {
-      const updated = await window.electronAPI.detachWorkspaceFile({ workspaceSlug, filePath })
-      setWsAttachedFilesMap((prev) => {
-        const map = new Map(prev)
-        if (updated.length > 0) { map.set(currentWorkspaceId, updated) } else { map.delete(currentWorkspaceId) }
-        return map
-      })
-    } catch (error) {
-      console.error('[SidePanel] 移除工作区附加文件失败:', error)
-    }
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
-
   // 文件上传完成后递增版本号，触发 FileBrowser 刷新
   const handleFilesUploaded = React.useCallback(() => {
     setFilesVersion((prev) => prev + 1)
@@ -381,22 +268,11 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
     return parts.length > 2 ? `.../${parts.slice(-2).join('/')}` : sessionPath
   }, [sessionPath])
 
-  // 工作区文件目录路径
-  const [workspaceFilesPath, setWorkspaceFilesPath] = React.useState<string | null>(null)
-  React.useEffect(() => {
-    if (!workspaceSlug) {
-      setWorkspaceFilesPath(null)
-      return
-    }
-    window.electronAPI.getWorkspaceFilesPath(workspaceSlug).then(setWorkspaceFilesPath).catch(() => setWorkspaceFilesPath(null))
-  }, [workspaceSlug])
-
   // RightSidePanel 完全由用户控制，不因 Agent 文件变更自动打开
 
   // 同步 basePaths ref（供 handleFilePreview 使用，避免 hooks 声明顺序问题）
-  basePathsRef.current = [sessionPath, workspaceFilesPath, ...fileAccessPathsMemo].filter(Boolean) as string[]
+  basePathsRef.current = [sessionPath, ...fileAccessPathsMemo].filter(Boolean) as string[]
   const hasSessionAttachedItems = attachedDirs.length > 0 || attachedFiles.length > 0
-  const hasWorkspaceAttachedItems = wsAttachedDirs.length > 0 || wsAttachedFiles.length > 0
 
   return (
     <div
@@ -432,7 +308,6 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
                 dirPath={sessionPath}
                 sessionId={sessionId}
                 sessionPath={sessionPath}
-                workspaceFilesPath={workspaceFilesPath || undefined}
                 extraPaths={extraPathsMemo}
                 refreshVersion={diffRefreshVersion}
                 selectedFilePath={selectedFilePath}
@@ -530,91 +405,7 @@ export function SidePanel({ sessionId, sessionPath, activeTab, onTabChange, widt
                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">等待会话初始化...</div>
               )}
             </div>
-          ) : (
-            <div className="flex-1 min-h-0 flex flex-col pt-0.5">
-              <div className="flex-1 min-h-0 flex flex-col mx-2 mb-2">
-                <div className="flex items-center gap-1 px-2 h-[32px] flex-shrink-0">
-                  <FolderHeart className="size-3 text-muted-foreground" />
-                  <span className="text-[11px] font-medium text-muted-foreground">工作区文件</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-3 text-muted-foreground/50 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[220px]">
-                      <p>工作区内所有会话可访问的文件和文件夹，每个新对话都可以自动读取</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="flex-1" />
-                  {workspaceFilesPath && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className={filePanelActionButtonClass}
-                          onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
-                        >
-                          <FolderSearch />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>在 Finder 中打开工作区文件目录</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-                <FileSearchBar
-                  workspaceFilesPath={workspaceFilesPath}
-                  sessionPath={null}
-                  sessionAttachedDirs={[]}
-                  workspaceAttachedDirs={wsAttachedDirs}
-                  placeholder="搜索工作区文件..."
-                  sessionId={sessionId}
-                  onFilePreview={handleFilePreview}
-                />
-                <div className="flex-1 min-h-0 overflow-y-auto pb-1 scrollbar-thin">
-                  {wsAttachedFiles.length > 0 && (
-                    <AttachedFilesSection
-                      attachedFiles={wsAttachedFiles}
-                      onDetach={handleDetachWorkspaceFile}
-                      onAddToChat={handleAddToChat}
-                      onFilePreview={handleFilePreview}
-                      allowedPaths={basePathsRef.current}
-                      sessionId={sessionId}
-                    />
-                  )}
-                  {wsAttachedDirs.length > 0 && (
-                    <AttachedDirsSection
-                      attachedDirs={wsAttachedDirs}
-                      onDetach={handleDetachWorkspaceDirectory}
-                      refreshVersion={filesVersion}
-                      onAddToChat={handleAddToChat}
-                      onFilePreview={handleFilePreview}
-                      allowedPaths={basePathsRef.current}
-                      sessionId={sessionId}
-                    />
-                  )}
-                  {workspaceFilesPath && (
-                    <>
-                      {hasWorkspaceAttachedItems && (
-                        <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">工作文件（存储于该工作区目录）</div>
-                      )}
-                      <FileBrowser rootPath={workspaceFilesPath} hideToolbar embedded hideEmpty={hasWorkspaceAttachedItems} onAddToChat={handleAddToChat} onFilePreview={handleFilePreview} />
-                    </>
-                  )}
-                  <FileDropZone
-                    workspaceSlug={workspaceSlug ?? ''}
-                    target="workspace"
-                    onFilesUploaded={handleFilesUploaded}
-                    onFilesAttached={handleWorkspaceFilesAttached}
-                    onAttachFolder={handleAttachWorkspaceFolder}
-                    onFoldersDropped={handleWorkspaceFoldersDropped}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
     </div>
   )

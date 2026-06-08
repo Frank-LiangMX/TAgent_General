@@ -13,6 +13,7 @@ import { isCustomHttpToolCall, executeHttpTool } from './chat-tools/http-tool-ex
 import { isMemoryToolCall, executeMemoryTool } from './chat-tools/memory-tool'
 import { isNanoBananaToolCall, executeNanoBananaTool } from './chat-tools/nano-banana-tool'
 import { isWebSearchToolCall, executeWebSearchTool } from './chat-tools/web-search-tool'
+import { isTAToolCall, executeTATool } from './ta-tools'
 
 import type { NanoBananaContext } from './chat-tools/nano-banana-tool'
 import type { ToolCall, ToolResult } from '@tagent/core'
@@ -33,6 +34,8 @@ export interface ToolExecutionContext {
   previousUserAttachments?: FileAttachment[]
   /** 前一轮助手消息的附件 */
   previousAssistantAttachments?: FileAttachment[]
+  /** 工作目录（TA 工具需要） */
+  cwd?: string
 }
 
 /**
@@ -67,6 +70,10 @@ export async function executeToolCalls(
         previousAssistantAttachments: context.previousAssistantAttachments,
       }
       result = await executeNanoBananaTool(tc, nanoBananaContext)
+    } else if (isTAToolCall(tc.name)) {
+      // TA 工具使用用户主目录作为默认 cwd
+      const cwd = context.cwd || require('os').homedir()
+      result = await executeTATool(tc, cwd)
     } else if (isCustomHttpToolCall(tc.name)) {
       const config = getChatToolsConfig()
       const meta = config.customTools.find((t) => t.id === tc.name)

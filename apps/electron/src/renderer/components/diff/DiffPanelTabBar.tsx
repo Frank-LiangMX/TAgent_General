@@ -12,7 +12,7 @@ import { agentDiffUnseenChangesAtom, currentAgentSessionIdAtom } from '@/atoms/a
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-type DiffPanelTab = 'session' | 'workspace' | 'changes'
+type DiffPanelTab = 'session' | 'changes'
 
 interface DiffPanelTabBarProps {
   activeTab: DiffPanelTab
@@ -74,19 +74,6 @@ export function DiffPanelTabBar({ activeTab, onTabChange, onClose }: DiffPanelTa
           )}
         >
           会话文件
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('workspace')}
-          className={cn(
-            'flex-1 px-3 h-[34px] rounded-t-lg text-xs transition-colors select-none cursor-pointer',
-            'border-t border-l border-r',
-            activeTab === 'workspace'
-              ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50',
-          )}
-        >
-          工作区文件
         </button>
         <button
           type="button"

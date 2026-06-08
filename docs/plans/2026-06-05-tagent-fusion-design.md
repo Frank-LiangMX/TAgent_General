@@ -29,7 +29,7 @@
 | 2 | 模式互斥 | **严格互斥 + 后台跑完提示**（无并发 bug，长任务切走仍跑完，红点提示） |
 | 3 | Provider 共享度 | **Provider/Channel/API Key 全局共享**，MCP/Skill 模式独立 |
 | 4 | Python 进程生命周期 | **进 TA 启，退 TA 后台保留，App 退出杀** |
-| 5 | Python 打包 | **ta_agent PyInstaller 后嵌进 Proma 安装包** |
+| 5 | Python 进程生命周期 / 安装方式 | **进 TA 启，退 TA 后台保留，App 退出杀**；**用户手动安装 Python + ta-agent-mcp**（不嵌入打包，2026-06-07 用户拍板：保持手动安装更灵活）|
 | 6 | TA UI 优先级 | **资产库先**（直读 SQLite，列表/详情/搜索） |
 | 7 | 跨模式切换 | **switch_mode 伪工具**：TA 模式 LLM 建议切到通用，反之亦然 |
 | 8 | 品牌 | **TAgent**（替换所有 Proma 字样） |
@@ -39,6 +39,7 @@
 | 12 | OpenAI 协议 | **MVP 用现有 12 Provider**，TA 模式走 Anthropic 兼容层 |
 | 13 | Token / 缓存 | **已有 input/output/cache 字段**，新增 cacheHitRate 派生 atom |
 | 14 | 模式间 L0 共享 | **默认不共享**，可手动开启"share user profile"开关 |
+| 15 | Agent 消息排队机制 | **默认排队，Shift+Enter 打断**：正常运行中发送消息 → 加入队列等待完成；Shift+Enter → 打断当前任务立即处理新消息（2026-06-07 用户拍板）|
 
 ---
 
@@ -1340,25 +1341,29 @@ const compactSessionTool: ToolDefinition = {
 
 ### 10.1 阶段划分
 
-| 阶段 | 内容 | 估时 |
-|---|---|---|
-| **P0 品牌替换** | `@proma/*` → `@tagent/*` 等 codemod | 3-5 天 |
-| **P0 ta_agent 加 MCP server mode** | mcp_server.py（~300 行）+ TAgent.spec 改 | 1 周 |
-| **P0 Python 嵌进 Proma 打包** | PyInstaller + electron-builder extraResources | 3 天 |
-| **P0 Proma 端 MCP 配置** | MCPManager 接 TAgent MCP server | 2 天 |
-| **P0 验证 54 工具可调通** | 集成测试 | 3 天 |
-| **P1 ModeManager + 顶层 Tab** | Jotai atoms + UI 切换 | 1 周 |
-| **P1 模式互斥 + 后台跑完** | ModeManager 锁 + PushNotification | 1 周 |
-| **P1 switch_mode 工具** | 两个 runner 内置 + Modal | 3 天 |
-| **P2 资产库 SQLite 直读 + UI** | better-sqlite3 + 列表/详情/搜索 | 2-3 周 |
-| **P2 记忆 5 层 + FTS5** | ta_agent memory/ 扩展 | 2-3 周 |
-| **P2 StreamingContextScrubber** | Proma + ta_agent | 3 天 |
-| **P2 审核队列 / 流水线 / 项目配置 UI** | Proma 设计系统重写 | 4-6 周 |
-| **P3 Token 统计 / Cache 命中率 UI** | 通用模式特有 | 1 周 |
-| **P3 Memory Monitor UI** | 借鉴 hermes | 1 周 |
-| **P3 反思 / Nudges / 清理** | hermes + GA 思路 | 2 周 |
+| 阶段 | 内容 | 估时 | 状态 |
+|---|---|---|---|
+| **P0 品牌替换** | `@proma/*` → `@tagent/*` 等 codemod | 3-5 天 | ✅ 已完成 |
+| **P0 ta_agent 加 MCP server mode** | mcp_server.py（~300 行）+ 5 个核心工具 | 1 周 | ✅ 已完成 |
+| **P0 Proma 端 MCP 配置** | IPC + Preload + UI 状态检测 | 2 天 | ✅ 已完成 |
+| **P0 验证工具可调通** | 集成测试（手动安装 Python 环境） | 3 天 | 🟡 待做 |
+| **P1 ModeManager + 顶层 Tab** | Jotai atoms + UI 切换 | 1 周 | ✅ 已完成 |
+| **P1 模式互斥 + 后台跑完** | ModeManager 锁 + PushNotification | 1 周 | 🟡 待做 |
+| **P1 switch_mode 工具** | 两个 runner 内置 + Modal | 3 天 | 🟡 待做 |
+| **P2 资产库 SQLite 直读 + UI** | better-sqlite3 + 列表/详情/搜索 | 2-3 周 | 🟡 待做 |
+| **P2 记忆 5 层 + FTS5** | ta_agent memory/ 扩展 | 2-3 周 | 🟡 待做 |
+| **P2 StreamingContextScrubber** | Proma + ta_agent | 3 天 | 🟡 待做 |
+| **P2 审核队列 / 流水线 / 项目配置 UI** | Proma 设计系统重写 | 4-6 周 | 🟡 待做 |
+| **P3 Token 统计 / Cache 命中率 UI** | 通用模式特有 | 1 周 | 🟡 待做 |
+| **P3 Memory Monitor UI** | 借鉴 hermes | 1 周 | 🟡 待做 |
+| **P3 反思 / Nudges / 清理** | hermes + GA 思路 | 2 周 | 🟡 待做 |
 
-**MVP = P0 全部 ≈ 2 周**（ta_agent MCP server 跑通 + Proma 端能调 54 工具 + 模式可切换 + 严格互斥）
+**设计变更（2026-06-07）**：
+- ~~"P0 Python 嵌进打包"~~ 已删除，改为用户手动安装 Python + ta-agent-mcp
+- 原因：用户选择"保持手动安装"方案，更灵活且避免打包体积膨胀
+- 影响：P0 阶段减少 3 天工作量，但需要用户自行安装 Python 环境
+
+**MVP = P0 全部 ≈ 1.5 周**（ta_agent MCP server 跑通 + Proma 端能调工具 + 模式可切换 + 严格互斥）
 
 ### 10.2 MVP 范围外的明确延后
 
@@ -1368,6 +1373,8 @@ const compactSessionTool: ToolDefinition = {
 - ❌ Skill self-improve（hermes 思路）
 - ❌ 跨模式 L0 共享开关（先默认独立）
 - ❌ agentskills.io 兼容（MVP 后再说）
+- ❌ **MCP 设置页面集成**（2026-06-07 用户提出：内置 MCP 分类展示 + 一键安装指引）
+- ❌ **Agent 对话智能引导**（2026-06-07 用户提出：检测 TA 相关意图 + 主动提示安装）
 
 ---
 

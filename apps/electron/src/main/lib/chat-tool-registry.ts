@@ -29,6 +29,13 @@ import {
   WEB_SEARCH_TOOL_DEFINITIONS,
   isWebSearchAvailable,
 } from './chat-tools/web-search-tool'
+import {
+  TA_TOOL_META,
+  TA_TOOL_DEFINITIONS,
+  isTAToolAvailable,
+  isTAToolCall,
+  executeTATool,
+} from './ta-tools'
 
 import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
 import type { ChatToolInfo, ChatToolMeta } from '@tagent/shared'
@@ -63,6 +70,11 @@ const BUILTIN_TOOLS: BuiltinToolEntry[] = [
     meta: NANO_BANANA_TOOL_META,
     getDefinitions: () => NANO_BANANA_TOOL_DEFINITIONS,
     checkAvailable: isNanoBananaAvailable,
+  },
+  {
+    meta: TA_TOOL_META,
+    getDefinitions: () => TA_TOOL_DEFINITIONS,
+    checkAvailable: isTAToolAvailable,
   },
 ]
 

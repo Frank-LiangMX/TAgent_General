@@ -4094,4 +4094,221 @@ export function registerIpcHandlers(): void {
       return win && !win.isDestroyed() ? win.isMaximized() : false
     }
   )
+
+  // ===== TA MCP Server 管理 =====
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_TA_MCP_STATUS,
+    async () => {
+      const { getTAMcpServerStatus } = await import('./lib/ta-mcp-service')
+      return getTAMcpServerStatus()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED,
+    async (_, workspaceSlug: string) => {
+      const { isTAMcpConfigured } = await import('./lib/ta-mcp-service')
+      return isTAMcpConfigured(workspaceSlug)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.ENABLE_TA_MCP,
+    async (_, workspaceSlug: string) => {
+      const { enableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
+      return enableTAMcpForWorkspace(workspaceSlug)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.DISABLE_TA_MCP,
+    async (_, workspaceSlug: string) => {
+      const { disableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
+      return disableTAMcpForWorkspace(workspaceSlug)
+    }
+  )
+
+  // ===== ModeManager 模式管理 =====
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MODE_STATUS,
+    async () => {
+      const { ModeManager } = await import('./lib/mode-manager')
+      return ModeManager.getStatusSummary()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SWITCH_MODE,
+    async (_, request: { targetMode: 'general' | 'ta'; source: 'user-click' | 'switch-tool' | 'api'; force?: boolean; reason?: string; contextSummary?: string }) => {
+      const { ModeManager } = await import('./lib/mode-manager')
+      return ModeManager.switchMode(request)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.REGISTER_BACKGROUND_TASK,
+    async (_, task: { id: string; mode: 'general' | 'ta'; description: string }) => {
+      const { ModeManager } = await import('./lib/mode-manager')
+      return ModeManager.registerBackgroundTask(task)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.COMPLETE_BACKGROUND_TASK,
+    async (_, taskId: string, mode: 'general' | 'ta') => {
+      const { ModeManager } = await import('./lib/mode-manager')
+      return ModeManager.completeBackgroundTask(taskId, mode)
+    }
+  )
+
+  // ModeManager 事件转发到 Renderer
+  const setupModeManagerForwarding = async (): Promise<void> => {
+    const { ModeManager } = await import('./lib/mode-manager')
+
+    ModeManager.on('mode-changed', (data: { previousMode: string; currentMode: string }) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) {
+        win.webContents.send(AGENT_IPC_CHANNELS.MODE_CHANGED, data)
+      }
+    })
+
+    ModeManager.on('task-notification', (data: { mode: string; message: string }) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) {
+        win.webContents.send(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, data)
+      }
+    })
+  }
+
+  // 在应用启动时调用
+  setupModeManagerForwarding().catch(console.error)
+
+  // ===== 资产库 IPC handlers =====
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.INIT_ASSET_STORE,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.initialize()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATUS,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return {
+        available: assetStoreService.isAvailable(),
+        dbPath: assetStoreService.getDbPath(),
+      }
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_ASSETS,
+    async (_, params) => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.listAssets(params)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SEARCH_ASSETS,
+    async (_, params) => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.searchAssets(params)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_ASSET_DETAIL,
+    async (_, assetId: string) => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.getAssetById(assetId)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATS,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.getStats()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_PROJECTS,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.listProjects()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_REVIEW_QUEUE,
+    async (_, params) => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.getReviewQueue(params)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_REVIEW_STATS,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.getReviewStats()
+    }
+  )
+
+  // ===== 记忆层 IPC handlers =====
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.INIT_MEMORY_LAYERS,
+    async () => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.initialize()
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MEMORY_STATS,
+    async (_, mode: 'general' | 'ta') => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.getStats(mode)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SEARCH_MEMORY_SESSIONS,
+    async (_, mode: 'general' | 'ta', query: string, limit?: number) => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.searchSessions(mode, query, limit)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_RECENT_MEMORY_SESSIONS,
+    async (_, mode: 'general' | 'ta', limit?: number) => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.listRecentSessions(mode, limit)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MEMORY_MD_CONTENT,
+    async (_, mode: 'general' | 'ta', layer: 'L0' | 'L1' | 'L2' | 'L5') => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.getMdContent(mode, layer)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MEMORY_CORRECTIONS,
+    async (_, mode: 'general' | 'ta', limit?: number) => {
+      const { memoryLayerService } = await import('./lib/memory-layer-service')
+      return memoryLayerService.getCorrections(mode, limit)
+    }
+  )
 }
