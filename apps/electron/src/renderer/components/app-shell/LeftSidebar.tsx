@@ -88,6 +88,7 @@ import { workingSessionGroupsAtom, workingSessionIdsSetAtom } from '@/atoms/work
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { SkillsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
+import { TASidebar } from '@/components/ta/TASidebar'
 import { UserAvatar } from '@/components/chat/UserAvatar'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
@@ -1098,16 +1099,11 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   // 内容始终渲染，仅在折叠态通过外层 pointer-events-none 屏蔽交互
 
   // ===== 展开状态：完整侧边栏 =====
-  // 根据 activeRailItem 渲染不同功能区内容
+  // 根据 topLevelMode + activeRailItem 渲染不同功能区内容
   const renderRailContent = () => {
-    // TA 模式的功能区由 MainArea 渲染，这里只处理通用模式
+    // TA 模式：LeftSidebar 内容由主区 TATabBar 决定（订阅 taActiveTabAtom）
     if (topLevelMode === 'ta') {
-      // TA 模式下显示 TA 功能面板内容
-      return (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
-          TA 功能区内容由主区域渲染
-        </div>
-      )
+      return <TASidebar />
     }
 
     // 通用模式根据 activeRailItem 渲染

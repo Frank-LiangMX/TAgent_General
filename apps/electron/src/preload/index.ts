@@ -491,11 +491,11 @@ export interface ElectronAPI {
 
   // ===== Agent 会话管理相关 =====
 
-  /** 获取 Agent 会话列表 */
-  listAgentSessions: () => Promise<AgentSessionMeta[]>
+  /** 获取 Agent 会话列表（可按 mode 过滤：'general' | 'ta'） */
+  listAgentSessions: (mode?: 'general' | 'ta') => Promise<AgentSessionMeta[]>
 
-  /** 创建 Agent 会话 */
-  createAgentSession: (title?: string, channelId?: string, workspaceId?: string) => Promise<AgentSessionMeta>
+  /** 创建 Agent 会话（可指定 mode：'general' | 'ta'，默认 'general'） */
+  createAgentSession: (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => Promise<AgentSessionMeta>
 
   /** 获取 Agent 会话 SDKMessage（Phase 4 新格式） */
   getAgentSessionSDKMessages: (id: string) => Promise<SDKMessage[]>
@@ -1568,12 +1568,12 @@ const electronAPI: ElectronAPI = {
   },
 
   // Agent 会话管理
-  listAgentSessions: () => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_SESSIONS)
+  listAgentSessions: (mode?: 'general' | 'ta') => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_SESSIONS, mode)
   },
 
-  createAgentSession: (title?: string, channelId?: string, workspaceId?: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_SESSION, title, channelId, workspaceId)
+  createAgentSession: (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_SESSION, title, channelId, workspaceId, mode)
   },
 
   getAgentSessionSDKMessages: (id: string) => {

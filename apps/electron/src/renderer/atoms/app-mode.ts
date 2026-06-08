@@ -39,3 +39,15 @@ export type RailItem = GeneralRailItem | TARailItem
  * - ta 模式默认 'assets'
  */
 export const activeRailItemAtom = atomWithStorage<RailItem>('tagent-active-rail-item', 'sessions')
+
+/**
+ * TA 模式主区 Tab。
+ * TA 模式下主区有 6 个 Tab：会话 / 资产库 / 审核 / 流水线 / 记忆 / 配置。
+ * TA 模式下 LeftSidebar 内容由当前激活的 Tab 决定（与通用模式不同，通用模式
+ * LeftSidebar 内容由 FunctionalRail 决定）。
+ *
+ * 与 activeRailItemAtom 的关系：TA 模式不再使用 activeRailItemAtom，避免双状态源。
+ */
+export type TAActiveTab = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
+
+export const taActiveTabAtom = atomWithStorage<TAActiveTab>('tagent-ta-active-tab', 'assets')

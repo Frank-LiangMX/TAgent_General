@@ -16,7 +16,7 @@ import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TATabBar, type TATabId } from './TATabBar'
 
-import { topLevelModeAtom } from '@/atoms/app-mode'
+import { topLevelModeAtom, taActiveTabAtom, type TAActiveTab } from '@/atoms/app-mode'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
 import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
 import { Panel } from '@/components/app-shell/Panel'
@@ -29,6 +29,7 @@ import { ReviewQueuePanel } from '@/components/ta/review/ReviewQueuePanel'
 import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
 import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
+import { TAWelcomePanel } from '@/components/ta/TAWelcomePanel'
 
 
 export function MainArea(): React.ReactElement {
@@ -47,10 +48,12 @@ export function MainArea(): React.ReactElement {
  * TA 模式主内容区域
  */
 function TAMainArea(): React.ReactElement {
-  const [activeTab, setActiveTab] = React.useState<TATabId>('assets')
+  const [activeTab, setActiveTab] = useAtom(taActiveTabAtom)
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'sessions':
+        return <TAWelcomePanel />
       case 'assets':
         return <AssetLibraryPanel />
       case 'review':

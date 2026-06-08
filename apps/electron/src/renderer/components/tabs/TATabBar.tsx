@@ -11,12 +11,12 @@
  * 支持点击切换，高亮当前 Tab。
  */
 
-import { Database, ClipboardCheck, GitBranch, Brain, Settings } from 'lucide-react'
+import { Database, ClipboardCheck, GitBranch, Brain, Settings, MessageSquare } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-export type TATabId = 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
+export type TATabId = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
 
 interface TATabItem {
   id: TATabId
@@ -25,6 +25,7 @@ interface TATabItem {
 }
 
 const TA_TABS: TATabItem[] = [
+  { id: 'sessions', label: '会话', icon: <MessageSquare size={14} /> },
   { id: 'assets', label: '资产库', icon: <Database size={14} /> },
   { id: 'review', label: '审核', icon: <ClipboardCheck size={14} /> },
   { id: 'pipeline', label: '流水线', icon: <GitBranch size={14} /> },

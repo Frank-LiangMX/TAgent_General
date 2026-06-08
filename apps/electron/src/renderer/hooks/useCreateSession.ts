@@ -5,6 +5,7 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
+import type { AgentSessionMeta } from '@tagent/shared'
 
 import { useOpenSession } from './useOpenSession'
 
@@ -27,13 +28,18 @@ interface CreateSessionOptions {
   draft?: boolean
   /** 覆盖默认渠道 ID（仅 Agent 会话） */
   channelId?: string
+  /**
+   * 顶层模式：'general'（默认）| 'ta'
+   * TA 模式创建的会话在 agent_sessions 中带 mode='ta' 标记，与通用模式数据隔离。
+   */
+  mode?: 'general' | 'ta'
 }
 
 interface CreateSessionActions {
   /** 创建新 Chat 对话并打开标签页 */
-  createChat: (options?: CreateSessionOptions) => Promise<string | undefined>
+  createChat: (options?: CreateSessionOptions) => Promise<{ id: string; title: string } | undefined>
   /** 创建新 Agent 会话并打开标签页 */
-  createAgent: (options?: CreateSessionOptions) => Promise<string | undefined>
+  createAgent: (options?: CreateSessionOptions) => Promise<AgentSessionMeta | undefined>
 }
 
 export function useCreateSession(): CreateSessionActions {
@@ -52,7 +58,7 @@ export function useCreateSession(): CreateSessionActions {
   const agentChannelId = useAtomValue(agentChannelIdAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
 
-  const createChat = async (options?: CreateSessionOptions): Promise<string | undefined> => {
+  const createChat = async (options?: CreateSessionOptions): Promise<{ id: string; title: string } | undefined> => {
     try {
       const meta = await window.electronAPI.createConversation(
         undefined,
@@ -68,19 +74,20 @@ export function useCreateSession(): CreateSessionActions {
       if (options?.draft) {
         setDraftSessionIds((prev: Set<string>) => { const next = new Set(prev); next.add(meta.id); return next })
       }
-      return meta.id
+      return { id: meta.id, title: meta.title }
     } catch (error) {
       console.error('[创建会话] 创建 Chat 对话失败:', error)
       return undefined
     }
   }
 
-  const createAgent = async (options?: CreateSessionOptions): Promise<string | undefined> => {
+  const createAgent = async (options?: CreateSessionOptions): Promise<AgentSessionMeta | undefined> => {
     try {
       const meta = await window.electronAPI.createAgentSession(
         undefined,
         options?.channelId ?? agentChannelId ?? undefined,
         currentWorkspaceId || undefined,
+        options?.mode,
       )
       setAgentSessions((prev) => [meta, ...prev])
       openSession('agent', meta.id, meta.title)
@@ -88,7 +95,7 @@ export function useCreateSession(): CreateSessionActions {
       if (options?.draft) {
         setDraftSessionIds((prev: Set<string>) => { const next = new Set(prev); next.add(meta.id); return next })
       }
-      return meta.id
+      return meta
     } catch (error) {
       console.error('[创建会话] 创建 Agent 会话失败:', error)
       return undefined

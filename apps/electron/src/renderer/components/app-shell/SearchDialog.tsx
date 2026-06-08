@@ -537,8 +537,9 @@ export function SearchDialog(): React.ReactElement {
 2. 找到相关会话后，给出会话标题、相关内容摘要，以及文件路径
 3. 按相关性排序，最相关的结果排在最前面`
 
-    const sessionId = await createAgent({ channelId })
-    if (!sessionId) return
+    const session = await createAgent({ channelId })
+    if (!session) return
+    const sessionId = session.id
 
     setAgentPendingPrompt({ sessionId, message: prompt })
     setOpen(false)

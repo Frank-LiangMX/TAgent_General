@@ -198,6 +198,14 @@ export interface AgentPendingPrompt {
 // ===== Atoms =====
 
 export const agentSessionsAtom = atom<AgentSessionMeta[]>([])
+
+/**
+ * 派生 atom：仅返回 TA 模式会话（mode === 'ta'）。
+ * 通用模式加载的所有会话（agentSessionsAtom）经过这个过滤后用于 TA 模式的会话列表。
+ */
+export const taSessionsAtom = atom<AgentSessionMeta[]>((get) => {
+  return get(agentSessionsAtom).filter((s) => s.mode === 'ta')
+})
 export const agentWorkspacesAtom = atom<AgentWorkspace[]>([])
 export const currentAgentWorkspaceIdAtom = atom<string | null>(null)
 /** 全局默认渠道 ID（新会话继承用，从 settings.json 加载） */

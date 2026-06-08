@@ -583,6 +583,15 @@ export interface AgentSessionMeta {
   id: string
   /** 会话标题 */
   title: string
+  /**
+   * 会话所属的顶层模式
+   * - 'general'：通用模式（Chat / Agent / 草稿本）
+   * - 'ta'：TA 模式（与通用模式数据隔离，但底层共用 agent-sessions 表）
+   *
+   * 旧记录默认 'general'。TA 模式下创建会话时显式置为 'ta'，
+   * 列表展示、tab 路由、system prompt 注入均依此字段分流。
+   */
+  mode?: 'general' | 'ta'
   /** 使用的渠道 ID */
   channelId?: string
   /** SDK 内部会话 ID（用于 resume 衔接上下文） */

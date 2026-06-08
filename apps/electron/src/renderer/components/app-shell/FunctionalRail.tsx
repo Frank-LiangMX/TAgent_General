@@ -232,7 +232,9 @@ export function FunctionalRail({
   }, [isSwitching, topLevelMode, setTopLevelMode])
 
   // 当前模式的功能区列表
-  const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
+  // TA 模式下不渲染功能区图标（主区 TATabBar 已经显示了资产库/审核/流水线/记忆/配置，
+  // 再在 rail 显示会造成双层入口重复）。TA 模式的功能区入口由主区 TATabBar 承担。
+  const railItems = topLevelMode === 'ta' ? [] : GENERAL_RAIL_ITEMS
 
   // 模式切换按钮配置
   const modeButtons = [

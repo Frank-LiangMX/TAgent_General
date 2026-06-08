@@ -1637,8 +1637,8 @@ export function registerIpcHandlers(): void {
   // 获取 Agent 会话列表
   ipcMain.handle(
     AGENT_IPC_CHANNELS.LIST_SESSIONS,
-    async (): Promise<AgentSessionMeta[]> => {
-      const sessions = listAgentSessions()
+    async (_, mode?: 'general' | 'ta'): Promise<AgentSessionMeta[]> => {
+      const sessions = listAgentSessions(mode)
       // 启动所有已有附加目录的文件监听
       for (const session of sessions) {
         if (session.attachedDirectories) {
@@ -1654,8 +1654,8 @@ export function registerIpcHandlers(): void {
   // 创建 Agent 会话
   ipcMain.handle(
     AGENT_IPC_CHANNELS.CREATE_SESSION,
-    async (_, title?: string, channelId?: string, workspaceId?: string): Promise<AgentSessionMeta> => {
-      const session = createAgentSession(title, channelId, workspaceId)
+    async (_, title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta'): Promise<AgentSessionMeta> => {
+      const session = createAgentSession(title, channelId, workspaceId, mode)
       feishuBridgeManager.ensureSessionMirror(session).catch((error) => {
         console.error('[飞书 Session 镜像] 新会话建群失败:', error)
       })

@@ -82,10 +82,18 @@ function writeIndex(index: AgentSessionsIndex): void {
 
 /**
  * 获取所有会话（按 updatedAt 降序）
+ *
+ * @param modeFilter 可选 mode 过滤：
+ *   - undefined / 不传：返回所有会话
+ *   - 'general'：仅返回通用模式会话
+ *   - 'ta'：仅返回 TA 模式会话
  */
-export function listAgentSessions(): AgentSessionMeta[] {
+export function listAgentSessions(modeFilter?: 'general' | 'ta'): AgentSessionMeta[] {
   const index = readIndex()
-  return index.sessions.sort((a, b) => b.updatedAt - a.updatedAt)
+  const filtered = modeFilter
+    ? index.sessions.filter((s) => (s.mode ?? 'general') === modeFilter)
+    : index.sessions
+  return filtered.sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
 /**
@@ -98,18 +106,24 @@ export function getAgentSessionMeta(id: string): AgentSessionMeta | undefined {
 
 /**
  * 创建新会话
+ *
+ * @param mode 顶层模式标记（'general' | 'ta'）。不传默认 'general'。
+ *   TA 模式会话在 listAgentSessions('ta') 时才会被列出，与通用模式数据隔离。
+ *   消息存储和 orchestrator 仍复用同一套。
  */
 export function createAgentSession(
   title?: string,
   channelId?: string,
   workspaceId?: string,
+  mode?: 'general' | 'ta',
 ): AgentSessionMeta {
   const index = readIndex()
   const now = Date.now()
 
   const meta: AgentSessionMeta = {
     id: randomUUID(),
-    title: title || '新 Agent 会话',
+    title: title || (mode === 'ta' ? 'TA 会话' : '新 Agent 会话'),
+    mode: mode ?? 'general',
     channelId,
     workspaceId,
     createdAt: now,
