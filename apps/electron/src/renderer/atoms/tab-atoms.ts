@@ -9,6 +9,9 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
+import { topLevelModeAtom } from '@/atoms/app-mode'
+import type { TopLevelMode } from '@/atoms/app-mode'
+
 import {
   agentRunningSessionIdsAtom,
   agentSessionIndicatorMapAtom,
@@ -86,11 +89,47 @@ export interface OpenTabRestore {
 
 // ===== 核心 Atoms =====
 
-/** 顶部入口列表：Scratch Pad + 当前会话 */
+/** 顶部入口列表：Scratch Pad + 当前会话（所有模式共享） */
 export const tabsAtom = atom<TabItem[]>([])
 
-/** 当前激活的标签 ID */
-export const activeTabIdAtom = atom<string | null>(null)
+/**
+ * 每个顶层模式各自的激活 tab ID。
+ * 切模式时从该 map 读取对应模式的上次激活 tab，互不干扰。
+ * 写入时通过 useSetActiveTabId 钩子同步设置。
+ */
+const initialActiveTabByMode: Map<TopLevelMode, string | null> = new Map<
+  TopLevelMode,
+  string | null
+>([
+  ['general', null],
+  ['ta', null],
+])
+export const activeTabIdByModeAtom = atom<Map<TopLevelMode, string | null>>(
+  initialActiveTabByMode
+)
+
+/**
+ * 当前激活的标签 ID（按当前顶层模式从 activeTabIdByModeAtom 派生）。
+ * 切模式时此 atom 自动切换到对应模式的 tab。
+ * TabBar / TabContent 等读取此 atom 即可获得当前模式激活的 tab。
+ *
+ * 写入时：同步设置 activeTabIdByModeAtom[当前 mode] = id，
+ * 这样所有现有 useSetAtom(activeTabIdAtom) 调用都自动按模式记忆。
+ */
+export const activeTabIdAtom = atom<string | null, [string | null], void>(
+  (get) => {
+    const mode = get(topLevelModeAtom)
+    return get(activeTabIdByModeAtom).get(mode) ?? null
+  },
+  (get, set, newId: string | null) => {
+    const mode = get(topLevelModeAtom)
+    set(activeTabIdByModeAtom, (prev: Map<TopLevelMode, string | null>) => {
+      const next = new Map(prev)
+      next.set(mode, newId)
+      return next
+    })
+  }
+)
 
 /** 标签页 MRU（最近使用）顺序，最近使用的 ID 排在前面 */
 export const tabMruAtom = atom<string[]>([])
