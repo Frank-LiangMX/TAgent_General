@@ -5,9 +5,9 @@
 
 ---
 
-## 当前状态（2026-06-08）
+## 当前状态（2026-06-09）
 
-**阶段**：P2 阶段开发中
+**阶段**：P2 阶段开发中，TA 模式 UI + 工具闭环
 
 **已完成**：
 - ✅ Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
@@ -71,6 +71,29 @@
   - AssetStoreService：只读模式 + WAL + FTS5 搜索
   - IPC 通道：INIT / STATUS / LIST / SEARCH / DETAIL / STATS / PROJECTS
   - AssetLibraryPanel：已接入真实数据，支持搜索/筛选/分页
+- ✅ **TA 模式 UI 重构 + 会话子系统**（2026-06-09，9 个 commit）
+  - **6 个 rail 入口**：会话/资产库/审核/流水线/记忆/配置（TA 模式 FunctionalRail 显示）
+  - **TASidebar 5 个模块概览面板**：资产计数 + 最近 5 个 / 审核 4 状态 + 最近 5 待审 / 流水线 4 状态 / 记忆 5 层计数 / 配置 3 入口
+  - **TA 会话数据隔离**：`AgentSessionMeta` 加 `mode: 'general' | 'ta'` 字段
+    - agent-sessions 索引持久化 mode，list/create IPC 透传 mode
+    - `taSessionsAtom` 派生 atom 过滤 `mode==='ta'`
+    - `filteredAgentSessions` 按 topLevelMode 过滤（通用/TA 各自只看自己的）
+  - **TA 会话区复用通用模式布局**：
+    - TA 模式选『会话』走 `GeneralMainArea` 路径（顶部 TabBar 含草稿/会话 tab）
+    - `tabsAtom` 按 mode 字段过滤，scratch tab 两边通用
+    - `useOpenSession` 接受 mode 参数，openTab 写入 mode
+  - **per-mode 状态记忆**：
+    - `activeTabIdByModeAtom` Map<TopLevelMode, string | null>，切模式时自动切换
+    - `activeRailItemAtom` 改为可写派生 atom，setter 路由到 generalRailItemAtom / taActiveTabAtom（独立 localStorage key）
+    - 删除老逻辑 effect（FunctionalRail 内 setActiveRailItem 重置被删）
+  - **TA 工具自动注入**（主进程）：
+    - `SystemPromptContext` 加 mode 字段，TA 模式 push TA 视角 section（命名/目录/数据隔离说明）
+    - `AgentOrchestrator.injectTATools` 新增：把 5 个 in-process ta-tools 包装成 SDK MCP server `tagent-ta`
+    - sendMessage 在 `getAgentSessionMeta(sessionId)?.mode === 'ta'` 时调 injectTATools
+  - **小修**：
+    - 隐藏工作区控件（TA 模式不显示 Briefcase Popover + 目录区顶部工作区 Popover）
+    - 会话列表项删除工作区名徽标
+    - 使用 `useCreateSession` 统一入口创建 TA 会话
 
 **进行中**：
 - 无
@@ -115,6 +138,23 @@
 ---
 
 ## 历史进度
+
+### 2026-06-09
+
+**产出**：TA 模式 UI 重构 + 会话子系统（9 个 commit）
+
+| 任务 | 内容 | Commit |
+|------|------|--------|
+| 侧边栏 rail 改造 | FunctionalRail TA 模式显示 6 个图标（会话/资产库/审核/流水线/记忆/配置），TATabBar 移到主区顶部 | `24fb6ea4` |
+| TA 会话存储 | `AgentSessionMeta` 加 `mode: 'general' \| 'ta'` 字段；list/create IPC 透传 mode；`taSessionsAtom` 派生过滤 | `24fb6ea4` |
+| TA 模式主区 | 5 个模块面板（资产/审核/流水线/记忆/配置）；TA 模式选『会话』走 `GeneralMainArea` 路径 | `f2265661` |
+| 模式独立 UI | 隐藏工作区控件（TA 模式不显示 Briefcase / 工作区 Popover） | `598745da` |
+| 模式独立数据 | 新建 TA 会话自动打 `mode='ta'`；通用模式过滤掉 TA 会话 | `664b5415`, `b424c6e1` |
+| per-mode 状态 | `activeTabIdByModeAtom` + `activeRailItemAtom` 改为按 mode 派生；独立 localStorage key | `9cb5090e`, `61dd34e1` |
+| 老逻辑清理 | 删除 FunctionalRail 内 `useEffect` 重置 rail（覆盖了 per-mode 记忆） | `704c97bd` |
+| UI 简化 | 会话列表项删除工作区名徽标 | `010952be` |
+| **TA 工具自动注入** | `injectTATools` 把 5 个 in-process ta-tools 包装成 SDK MCP server `tagent-ta`；`buildSystemPrompt` 在 `mode==='ta'` 时 push TA 视角 section | `38eadda0` |
+| **里程碑** | **TA 模式 UI / 数据隔离 / 工具注入 闭环** |
 
 ### 2026-06-08
 
@@ -256,10 +296,16 @@
 | 启动 hook | `main/lib/runtime-init.ts` |
 | 动态 token 预算 | `main/lib/agent-context-utils.ts` |
 | Agent 编排 | `main/lib/agent-orchestrator.ts` |
+| TA 工具集注入 | `main/lib/agent-orchestrator.ts` `injectTATools` |
 | TA 内置工具 | `main/lib/ta-tools/` |
+| TA system prompt | `main/lib/agent-prompt-builder.ts` `SystemPromptContext.mode` |
 | TA MCP Server | `ta-agent-mcp/` |
-| 顶层模式切换 | `renderer/components/app-shell/TopLevelModeTab.tsx` |
-| TA 模式 UI | `renderer/components/ta/` |
+| 顶层模式切换 | `renderer/atoms/app-mode.ts` `topLevelModeAtom` |
+| per-mode rail 记忆 | `renderer/atoms/app-mode.ts` `activeRailItemAtom` (派生) |
+| per-mode tab 记忆 | `renderer/atoms/tab-atoms.ts` `activeTabIdAtom` (派生) |
+| TA 会话数据隔离 | `renderer/atoms/agent-atoms.ts` `taSessionsAtom` |
+| 模式切换路由 | `renderer/components/tabs/MainArea.tsx` |
+| TA 模式 UI | `renderer/components/ta/` (TASidebar.* + TAWelcomePanel) |
 | 单测 | `main/lib/*.test.ts` |
 
 ---
@@ -277,6 +323,9 @@
 | 工作区 UI | D 方案 v2 |
 | **Python 安装方式** | **手动安装**（不嵌入打包，2026-06-07 拍板）|
 | **Agent 消息排队** | **默认排队，Shift+Enter 打断**（2026-06-07 拍板）|
+| **TA 模式会话数据隔离** | **同表不同 mode 字段**（`AgentSessionMeta.mode`），切模式互不可见（2026-06-09 拍板）|
+| **TA 模式 UI 与通用模式分离** | **TA 模式 FunctionalRail 单独 6 个图标**，主区 5 个模块面板（无 TabBar），左栏 5 个概览面板；通用模式不变（2026-06-09 拍板）|
+| **TA 会话区复用通用模式布局** | **TA 模式选『会话』走 GeneralMainArea 路径**（顶部 TabBar + 草稿/会话 tab），数据按 mode 隔离（2026-06-09 拍板）|
 
 ---
 
