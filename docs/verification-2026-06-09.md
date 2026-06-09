@@ -1,0 +1,114 @@
+# 2026-06-09 14:00 验证清单
+
+> **本会话产出（6 个 commit）**：
+> 1. `9cb5090e` per-mode tab 记忆
+> 2. `61dd34e1` per-mode rail 记忆
+> 3. `704c97bd` 删除老 effect
+> 4. `010952be` 会话列表去工作区名
+> 5. `38eadda0` TA 工具自动注入
+> 6. `67e482c5` 决策 #15 消息排队
+> 7. `7a8580f3` Chat/Agent 切换器迁到设置页
+
+## 启动
+
+```bash
+F:\TAgent_General\dev.bat
+```
+
+> **注意**：决策 #15 改了 `agent-orchestrator.ts`，**需要重启主进程**。
+> 用 `Ctrl+Shift+R` 或 `dev-stop.bat && dev.bat`。
+
+## 1. 决策 #15：Enter vs Shift+Enter
+
+| 步骤 | 预期 |
+|------|------|
+| Agent 模式开一个会话，发"复述一下 1+1" | 立即处理 |
+| 流式响应中**纯 Enter**发"再答 2+2" | 排队等 #1 完成再处理 #2 |
+| 流式响应中**Shift+Enter**发"打断" | 立即软中断 #1，#2 立刻处理 |
+
+**回退**：原行为（Enter 立即中断）= shift 永远勾上即可。
+
+## 2. TA 模式 UI
+
+| 步骤 | 预期 |
+|------|------|
+| 顶部 Tab 切到 **TA 模式** | FunctionalRail 显示 6 个图标（会话/资产库/审核/流水线/记忆/配置）|
+| 切回**通用模式** | FunctionalRail 回到通用图标 |
+| TA 模式点**会话** | LeftSidebar 显示 TA 会话列表（与通用模式同布局）|
+| TA 模式点**资产库/审核/流水线/记忆/配置** | 左侧显示对应模块概览面板（5 个 TASidebar）|
+| TA 模式**新建会话** | 自动打 `mode='ta'`（在通用模式会话列表里看不到）|
+
+## 3. TA 会话数据隔离
+
+| 步骤 | 预期 |
+|------|------|
+| TA 模式开 2 个会话 | LeftSidebar 列出 2 个 TA 会话 |
+| 切到通用模式 | **看不到**那 2 个 TA 会话 |
+| 通用模式开 1 个会话 | 切到 TA 模式**看不到** |
+| 通用模式 → Agent → 看会话列表 | 通用会话 1 个 |
+| 切 TA → 会话 | TA 会话 2 个 |
+
+## 4. per-mode 状态记忆
+
+| 步骤 | 预期 |
+|------|------|
+| 通用模式选**文件**功能区，文件树展开 | OK |
+| 切到 TA 模式 | TA 默认进**会话**（之前没设过）|
+| 切回通用模式 | 回到**文件**，文件树保持展开 |
+| TA 模式选**资产库** | OK |
+| 切到通用 | 通用仍是**文件**（没动）|
+| 切回 TA | TA 仍是**资产库** |
+
+## 5. TA 工具自动注入
+
+| 步骤 | 预期 |
+|------|------|
+| TA 模式建新会话，发"用 check_naming 检查 SM_Box_01" | Agent 调用 check_naming 工具，返回命名检查结果 |
+| 发"用 suggest_naming 给 Box_01 起个名" | 调用 suggest_naming |
+| 发"检查当前目录结构" | 调用 check_directory_structure |
+| 通用模式开新会话，发同样的话 | **不**调用 TA 工具（TA 工具只对 mode='ta' 注入）|
+
+> **看工具调用**：消息列表点 `→` 展开详情，能看到 tool_use 块。
+
+## 6. 设置页 Chat/Agent 切换
+
+| 步骤 | 预期 |
+|------|------|
+| `Cmd+,` 打开设置 | 顶部左侧出现 **"Chat \| Agent"** Segmented 控件 |
+| 当前是 Agent → 高亮 Agent 段 | OK |
+| 点击 **Chat 段** | 整个 LeftSidebar 切到 Chat 会话列表（设置面板不关）|
+| 点击 **Agent 段** | 切回 Agent 会话列表 |
+| 切到 TA 模式 → 打开设置 | 控件**消失**（TA 模式只跑 Agent）|
+
+## 7. 工作区控件隐藏
+
+| 步骤 | 预期 |
+|------|------|
+| 通用模式 | 工作区 Briefcase 按钮 + 目录区顶部工作区 Popover 都显示 |
+| TA 模式 | 两者都**隐藏** |
+
+## 8. 其他回归
+
+| 项 | 预期 |
+|----|------|
+| 启动速度 | 与之前持平 |
+| 创建 Chat 对话 | 正常 |
+| 创建 Agent 会话（通用）| 正常 |
+| 工作区切换 | 正常 |
+| FilesRailContent | 显示工作区文件树 |
+| SkillsRailContent | 显示 MCP 列表 + Skills 列表（点配置按钮打开设置 Agent tab）|
+| 折叠/展开 LeftSidebar | 平滑动画 |
+| Cmd+Shift+M 快捷键切 Chat/Agent | **仍工作**（保留给高级用户）|
+| TopLevelModeTab 顶层切换 | 正常 |
+
+## 如果遇到问题
+
+1. **工具没注入** → 看 console，确认 session.meta.mode === 'ta'
+2. **per-mode 记忆丢了** → 浏览器 localStorage 里看 `tagent-general-rail-item` / `tagent-ta-rail-item` / `tagent-active-tab-by-mode` 三个 key
+3. **决策 #15 不工作** → 确认主进程已重启（不是仅刷新 renderer）
+
+## 已知限制
+
+- `useCreateSession` 还在重构中（用户验收用，已经能跑）
+- TA 工具 `discover_conventions` / `load_conventions` 需要项目根有 `.tagentrc.json` 才返回有意义内容
+- TA 模式的 MCP Server 状态展示在 AgentSettings 的 MCP tab 里（不重复展示在 TA 主区）
