@@ -762,10 +762,13 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   /** 创建新 Agent 会话 */
   const handleNewAgentSession = async (): Promise<void> => {
     try {
+      // TA 模式创建的会话必须带 mode='ta' 标记，否则 TabBar 过滤后该 tab 不会显示
+      const sessionMode = topLevelMode === 'ta' ? 'ta' : 'general'
       const meta = await window.electronAPI.createAgentSession(
         undefined,
         agentChannelId || undefined,
         currentWorkspaceId || undefined,
+        sessionMode,
       )
       setAgentSessions((prev) => [meta, ...prev])
       // 从全局默认值初始化 per-session 渠道/模型配置
@@ -784,7 +787,7 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
         })
       }
       // 打开新标签页
-      openSession('agent', meta.id, meta.title)
+      openSession('agent', meta.id, meta.title, sessionMode)
       setActiveView('conversations')
       setActiveItem('all-chats')
     } catch (error) {
