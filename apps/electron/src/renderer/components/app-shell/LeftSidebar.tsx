@@ -21,7 +21,7 @@ import { SearchDialog } from './SearchDialog'
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
-import type { RailItem } from '@/atoms/app-mode'
+import type { RailItem, TARailItem } from '@/atoms/app-mode'
 
 import { activeViewAtom } from '@/atoms/active-view'
 import {
@@ -968,13 +968,15 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
     })
   }
 
-  /** Agent 会话按工作区过滤 + 排除归档（归档会话由底部 Popover 展示） */
+  /** Agent 会话按工作区过滤 + 排除归档（归档会话由底部 Popover 展示）
+   *  TA 模式下额外按 mode='ta' 过滤，与通用模式数据隔离 */
   const filteredAgentSessions = React.useMemo(
     () => {
       const byWorkspace = agentSessions.filter((s) => s.workspaceId === currentWorkspaceId && !draftSessionIds.has(s.id))
-      return sortAgentSessionsByUpdatedAtDesc(byWorkspace.filter((s) => !s.archived))
+      const byMode = topLevelMode === 'ta' ? byWorkspace.filter((s) => s.mode === 'ta') : byWorkspace
+      return sortAgentSessionsByUpdatedAtDesc(byMode.filter((s) => !s.archived))
     },
-    [agentSessions, currentWorkspaceId, draftSessionIds]
+    [agentSessions, currentWorkspaceId, draftSessionIds, topLevelMode]
   )
 
   const railRecentItems = React.useMemo(() => {
@@ -1101,9 +1103,40 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   // ===== 展开状态：完整侧边栏 =====
   // 根据 topLevelMode + activeRailItem 渲染不同功能区内容
   const renderRailContent = () => {
-    // TA 模式：LeftSidebar 内容由主区 TATabBar 决定（订阅 taActiveTabAtom）
+    // TA 模式：根据 activeRailItem 渲染。选中『会话』走通用 SessionsRailContent
+    // （数据被 filteredAgentSessions 按 mode='ta' 过滤，自动数据隔离）；
+    // 其他 5 个模块走 TASidebar 的概览面板。
     if (topLevelMode === 'ta') {
-      return <TASidebar />
+      if (activeRailItem === 'sessions') {
+        return (
+          <SessionsRailContent
+            mode={mode}
+            pinnedExpanded={pinnedExpanded}
+            setPinnedExpanded={setPinnedExpanded}
+            pinnedConversations={pinnedConversations}
+            conversationGroups={conversationGroups}
+            activeSessionId={activeSessionId}
+            streamingIds={streamingIds}
+            filteredAgentSessions={filteredAgentSessions}
+            agentIndicatorMap={agentIndicatorMap}
+            workingSessionIds={workingSessionIds}
+            handleSelectConversation={handleSelectConversation}
+            handleRequestDelete={handleRequestDelete}
+            handleRename={handleRename}
+            handleTogglePin={handleTogglePin}
+            handleToggleArchive={handleToggleArchive}
+            handleSelectAgentSession={handleSelectAgentSession}
+            handleAgentRename={handleAgentRename}
+            handleTogglePinAgent={handleTogglePinAgent}
+            handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
+            handleToggleArchiveAgent={handleToggleArchiveAgent}
+            handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
+            handleRequestMove={handleRequestMove}
+            workspaceNameMap={workspaceNameMap}
+          />
+        )
+      }
+      return <TASidebar activeRailItem={activeRailItem as TARailItem} />
     }
 
     // 通用模式根据 activeRailItem 渲染
@@ -1171,14 +1204,17 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
       {/* macOS 需要避开左上角红绿灯；边栏覆盖全局标题栏拖拽层，因此留白自身也要可拖拽。 */}
       <div className={cn('w-full flex-shrink-0 titlebar-drag-region', isMac ? 'h-[30px]' : 'h-1')} />
 
-      {/* 功能区标题：静态文字标识当前选中内容。收起/展开目录区走 Cmd+B 快捷键或悬停在功能区顶部按钮 */}
-      <div className="titlebar-drag-region flex items-center px-3 h-8">
-        <span className="text-xs font-medium text-muted-foreground">
-          {activeRailItem === 'sessions' && '会话'}
-          {activeRailItem === 'files' && '文件'}
-          {activeRailItem === 'skills' && 'Skills'}
-        </span>
-      </div>
+      {/* 功能区标题：静态文字标识当前选中内容。
+          通用模式：会话/文件/Skills；TA 模式：标题由 TASidebar 内部渲染，避免重复。 */}
+      {topLevelMode !== 'ta' && (
+        <div className="titlebar-drag-region flex items-center px-3 h-8">
+          <span className="text-xs font-medium text-muted-foreground">
+            {activeRailItem === 'sessions' && '会话'}
+            {activeRailItem === 'files' && '文件'}
+            {activeRailItem === 'skills' && 'Skills'}
+          </span>
+        </div>
+      )}
 
       {/* 工作区选择（仅 Agent 模式 + 目录区展开时）：目录区折叠时由功能区的 Briefcase 按钮承担 */}
       {mode === 'agent' && !isSidebarCollapsed && (

@@ -14,9 +14,13 @@ import * as React from 'react'
 
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
-import { TATabBar, type TATabId } from './TATabBar'
 
-import { topLevelModeAtom, taActiveTabAtom, type TAActiveTab } from '@/atoms/app-mode'
+import {
+  topLevelModeAtom,
+  activeRailItemAtom,
+  appModeAtom,
+  type TARailItem,
+} from '@/atoms/app-mode'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
 import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
 import { Panel } from '@/components/app-shell/Panel'
@@ -29,13 +33,26 @@ import { ReviewQueuePanel } from '@/components/ta/review/ReviewQueuePanel'
 import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
 import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
-import { TAWelcomePanel } from '@/components/ta/TAWelcomePanel'
 
 
 export function MainArea(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
+  const activeRailItem = useAtomValue(activeRailItemAtom) as TARailItem
+  const setAppMode = useSetAtom(appModeAtom)
 
-  // TA 模式使用独立渲染逻辑
+  // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
+  React.useEffect(() => {
+    if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
+      setAppMode('agent')
+    }
+  }, [topLevelMode, activeRailItem, setAppMode])
+
+  // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
+  if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
+    return <GeneralMainArea />
+  }
+
+  // TA 模式其他模块（资产/审核/流水线/记忆/配置）使用独立渲染逻辑
   if (topLevelMode === 'ta') {
     return <TAMainArea />
   }
@@ -45,15 +62,13 @@ export function MainArea(): React.ReactElement {
 }
 
 /**
- * TA 模式主内容区域
+ * TA 模式主内容区域（仅处理 5 个模块面板；『会话』走 GeneralMainArea）
  */
 function TAMainArea(): React.ReactElement {
-  const [activeTab, setActiveTab] = useAtom(taActiveTabAtom)
+  const activeTab = useAtomValue(activeRailItemAtom) as TARailItem
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'sessions':
-        return <TAWelcomePanel />
       case 'assets':
         return <AssetLibraryPanel />
       case 'review':
@@ -74,11 +89,8 @@ function TAMainArea(): React.ReactElement {
       variant="grow"
       className="bg-content-area rounded-2xl shadow-xl"
     >
-      <div className="flex flex-col min-h-0 h-full relative overflow-hidden">
-        <TATabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        <div className="flex-1 min-h-0 overflow-hidden">
-          {renderContent()}
-        </div>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {renderContent()}
       </div>
     </Panel>
   )

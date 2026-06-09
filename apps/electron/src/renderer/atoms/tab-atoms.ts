@@ -45,6 +45,13 @@ export interface TabItem {
   sessionId: string
   /** 标签页显示标题 */
   title: string
+  /**
+   * 顶层模式标记（仅 agent/scratch/preview 类型有意义，chat 类型不涉及）。
+   * - 'general'：通用模式会话，TA 模式 TabBar 不显示
+   * - 'ta'：TA 模式会话，通用模式 TabBar 不显示
+   * 旧记录 / chat 类型会话不设此字段 → 视为 'general'。
+   */
+  mode?: 'general' | 'ta'
 }
 
 /** Tab 持久化数据（保存到 settings.json） */
@@ -229,7 +236,7 @@ export function getPersistableTabState(
  *  restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
 export function openTab(
   tabs: TabItem[],
-  item: { type: TabType; sessionId: string; title: string },
+  item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
   restore?: OpenTabRestore,
 ): { tabs: TabItem[]; activeTabId: string } {
   const scratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID) ?? createScratchPadTab()
@@ -267,6 +274,7 @@ export function openTab(
     type: item.type,
     sessionId: item.sessionId,
     title: item.title,
+    mode: item.mode ?? 'general',
   }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。

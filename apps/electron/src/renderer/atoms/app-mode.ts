@@ -28,8 +28,11 @@ export const appModeAtom = atomWithStorage<AppMode>('tagent-app-mode', 'agent')
 /** 通用模式下的功能区类型 */
 export type GeneralRailItem = 'sessions' | 'files' | 'skills'
 
-/** TA模式下的功能区类型 */
-export type TARailItem = 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
+/**
+ * TA 模式下的功能区类型（含「会话」入口）。
+ * TA 模式点击「会话」图标 → 主区显示 TA 会话面板，TA 会话数据与通用模式隔离。
+ */
+export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
 
 /** 所有功能区类型 */
 export type RailItem = GeneralRailItem | TARailItem
@@ -41,12 +44,8 @@ export type RailItem = GeneralRailItem | TARailItem
 export const activeRailItemAtom = atomWithStorage<RailItem>('tagent-active-rail-item', 'sessions')
 
 /**
- * TA 模式主区 Tab。
- * TA 模式下主区有 6 个 Tab：会话 / 资产库 / 审核 / 流水线 / 记忆 / 配置。
- * TA 模式下 LeftSidebar 内容由当前激活的 Tab 决定（与通用模式不同，通用模式
- * LeftSidebar 内容由 FunctionalRail 决定）。
- *
- * 与 activeRailItemAtom 的关系：TA 模式不再使用 activeRailItemAtom，避免双状态源。
+ * TA 模式主区 Tab（与 FunctionalRail 的 TA_RAIL_ITEMS 对应）。
+ * TA 模式下主区 Tab 和 rail 图标同步选中状态。
  */
 export type TAActiveTab = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
 

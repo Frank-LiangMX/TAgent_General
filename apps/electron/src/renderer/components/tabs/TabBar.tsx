@@ -25,7 +25,7 @@ import {
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
+import { appModeAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 import {
   tabsAtom,
@@ -37,7 +37,14 @@ import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 export function TabBar(): React.ReactElement {
-  const tabs = useAtomValue(tabsAtom)
+  const allTabs = useAtomValue(tabsAtom)
+  const topLevelMode = useAtomValue(topLevelModeAtom)
+  // 按顶层模式过滤 tabs：通用模式只显示 mode==='general'，TA 模式只显示 mode==='ta'。
+  // scratch 类型的 tab 在两个模式都显示。
+  const tabs = React.useMemo(
+    () => allTabs.filter((t) => t.type === 'scratch' || (t.mode ?? 'general') === topLevelMode),
+    [allTabs, topLevelMode],
+  )
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
 

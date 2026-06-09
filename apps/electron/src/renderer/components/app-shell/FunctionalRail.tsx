@@ -86,6 +86,7 @@ const TA_RAIL_ITEMS: Array<{
   icon: React.ReactNode
   description: string
 }> = [
+  { id: 'sessions', label: '会话', icon: <MessageSquare size={17} />, description: 'TA 会话（与通用模式数据隔离）' },
   { id: 'assets', label: '资产库', icon: <Database size={17} />, description: '资产库管理' },
   { id: 'review', label: '审核', icon: <ClipboardCheck size={17} />, description: '审核队列' },
   { id: 'pipeline', label: '流水线', icon: <GitBranch size={17} />, description: '流水线管理' },
@@ -232,9 +233,7 @@ export function FunctionalRail({
   }, [isSwitching, topLevelMode, setTopLevelMode])
 
   // 当前模式的功能区列表
-  // TA 模式下不渲染功能区图标（主区 TATabBar 已经显示了资产库/审核/流水线/记忆/配置，
-  // 再在 rail 显示会造成双层入口重复）。TA 模式的功能区入口由主区 TATabBar 承担。
-  const railItems = topLevelMode === 'ta' ? [] : GENERAL_RAIL_ITEMS
+  const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
 
   // 模式切换按钮配置
   const modeButtons = [

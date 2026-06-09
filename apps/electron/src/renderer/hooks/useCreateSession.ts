@@ -90,7 +90,7 @@ export function useCreateSession(): CreateSessionActions {
         options?.mode,
       )
       setAgentSessions((prev) => [meta, ...prev])
-      openSession('agent', meta.id, meta.title)
+      openSession('agent', meta.id, meta.title, options?.mode)
       setActiveView('conversations')
       if (options?.draft) {
         setDraftSessionIds((prev: Set<string>) => { const next = new Set(prev); next.add(meta.id); return next })

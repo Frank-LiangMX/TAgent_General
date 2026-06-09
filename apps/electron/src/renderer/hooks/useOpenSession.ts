@@ -26,7 +26,12 @@ import {
   type TabType,
 } from '@/atoms/tab-atoms'
 
-type OpenSessionFn = (type: TabType, sessionId: string, title: string) => void
+type OpenSessionFn = (
+  type: TabType,
+  sessionId: string,
+  title: string,
+  mode?: 'general' | 'ta'
+) => void
 
 export function useOpenSession(): OpenSessionFn {
   const store = useStore()
@@ -40,7 +45,11 @@ export function useOpenSession(): OpenSessionFn {
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
 
   return React.useCallback(
-    (type: TabType, sessionId: string, title: string): void => {
+    (type: TabType, sessionId: string, title: string, mode?: 'general' | 'ta'): void => {
+      // 优先用调用方传入的 mode（新建场景），否则从 agentSessionsAtom 查（已存在场景）
+      const session = agentSessions.find((s) => s.id === sessionId)
+      const resolvedMode = mode ?? session?.mode ?? 'general'
+
       // 切回 agent 会话时，若该会话上次开着预览 Tab 则一并重建并回到上次视图
       const restore = type === 'agent'
         ? buildOpenTabRestore(
@@ -49,7 +58,7 @@ export function useOpenSession(): OpenSessionFn {
             store.get(previewFileMapAtom),
           )
         : undefined
-      const result = openTab(tabs, { type, sessionId, title }, restore)
+      const result = openTab(tabs, { type, sessionId, title, mode: resolvedMode }, restore)
       setTabs(result.tabs)
       setActiveTabId(result.activeTabId)
 
@@ -69,7 +78,6 @@ export function useOpenSession(): OpenSessionFn {
         })
 
         // 同步 workspaceId，确保与 TabBar 切换行为一致
-        const session = agentSessions.find((s) => s.id === sessionId)
         if (session?.workspaceId) {
           setCurrentAgentWorkspaceId(session.workspaceId)
           window.electronAPI.updateSettings({

@@ -1,33 +1,28 @@
 /**
- * TASidebar — TA 模式 LeftSidebar 主内容容器
+ * TASidebar — TA 模式 LeftSidebar 主内容容器（仅 5 个模块面板）
  *
- * 根据 taActiveTabAtom 渲染对应模块的概览面板：
- * - sessions → TASidebarSessions（TA 会话列表 + 新建）
+ * 根据 activeRailItem（来自 FunctionalRail 图标点击）渲染对应模块的概览面板：
  * - assets   → TASidebarAssets（资产库概览）
  * - review   → TASidebarReview（审核队列概览）
  * - pipeline → TASidebarPipeline（流水线概览）
  * - memory   → TASidebarMemory（记忆 5 层概览）
  * - config   → TASidebarConfig（配置概览）
  *
- * 与通用模式 LeftSidebar 不同的关键点：
- * 1. 通用模式 LeftSidebar 内容由 activeRailItem 决定；TA 模式由 taActiveTab 决定。
- * 2. TA 模式没有"功能区切换器"概念（FunctionalRail 上已隐藏 5 个 TA 图标），
- *    主区 TATabBar 是唯一的导航。
+ * 选中『会话』由 LeftSidebar 路由到 SessionsRailContent（沿用通用模式完整布局，
+ *  数据通过 filteredAgentSessions 按 mode='ta' 过滤实现隔离）。
  */
 
-import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
-import { taActiveTabAtom } from '@/atoms/app-mode'
+import type { TARailItem } from '@/atoms/app-mode'
 
 import { TASidebarAssets } from './TASidebar.Assets'
 import { TASidebarReview } from './TASidebar.Review'
 import { TASidebarPipeline } from './TASidebar.Pipeline'
 import { TASidebarMemory } from './TASidebar.Memory'
 import { TASidebarConfig } from './TASidebar.Config'
-import { TASidebarSessions } from './TASidebar.Sessions'
 
-const TITLES: Record<string, string> = {
+const TITLES: Record<TARailItem, string> = {
   sessions: '会话',
   assets: '资产库',
   review: '审核',
@@ -36,9 +31,12 @@ const TITLES: Record<string, string> = {
   config: '配置',
 }
 
-export function TASidebar(): React.ReactElement {
-  const activeTab = useAtomValue(taActiveTabAtom)
-  const title = TITLES[activeTab] ?? 'TA'
+interface TASidebarProps {
+  activeRailItem: TARailItem
+}
+
+export function TASidebar({ activeRailItem }: TASidebarProps): React.ReactElement {
+  const title = TITLES[activeRailItem] ?? 'TA'
 
   return (
     <div className="flex flex-col h-full">
@@ -47,14 +45,14 @@ export function TASidebar(): React.ReactElement {
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
       </div>
 
-      {/* 内容区 */}
+      {/* 内容区：选中『会话』由 LeftSidebar 直接渲染 SessionsRailContent，
+          此处只渲染 5 个模块概览面板。 */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        {activeTab === 'sessions' && <TASidebarSessions />}
-        {activeTab === 'assets' && <TASidebarAssets />}
-        {activeTab === 'review' && <TASidebarReview />}
-        {activeTab === 'pipeline' && <TASidebarPipeline />}
-        {activeTab === 'memory' && <TASidebarMemory />}
-        {activeTab === 'config' && <TASidebarConfig />}
+        {activeRailItem === 'assets' && <TASidebarAssets />}
+        {activeRailItem === 'review' && <TASidebarReview />}
+        {activeRailItem === 'pipeline' && <TASidebarPipeline />}
+        {activeRailItem === 'memory' && <TASidebarMemory />}
+        {activeRailItem === 'config' && <TASidebarConfig />}
       </div>
     </div>
   )
