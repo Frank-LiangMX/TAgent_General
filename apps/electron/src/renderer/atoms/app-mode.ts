@@ -11,6 +11,7 @@
  * - scratch: 草稿本模式
  */
 
+import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
 /** 顶层模式：通用 / TA */
@@ -37,16 +38,38 @@ export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory
 /** 所有功能区类型 */
 export type RailItem = GeneralRailItem | TARailItem
 
-/** 功能区 atom，根据 topLevelMode 自动切换默认值
- * - general 模式默认 'sessions'
- * - ta 模式默认 'assets'
- */
-export const activeRailItemAtom = atomWithStorage<RailItem>('tagent-active-rail-item', 'sessions')
+/** 通用模式功能区选中（持久化到 localStorage） */
+export const generalRailItemAtom = atomWithStorage<GeneralRailItem>(
+  'tagent-general-rail-item',
+  'sessions'
+)
+
+/** TA 模式功能区选中（持久化到 localStorage） */
+export const taActiveTabAtom = atomWithStorage<TARailItem>(
+  'tagent-ta-rail-item',
+  'sessions'
+)
 
 /**
- * TA 模式主区 Tab（与 FunctionalRail 的 TA_RAIL_ITEMS 对应）。
- * TA 模式下主区 Tab 和 rail 图标同步选中状态。
+ * 当前激活的功能区（按 topLevelMode 派生）。
+ * - general 模式读 generalRailItemAtom
+ * - ta 模式读 taActiveTabAtom
+ *
+ * 切模式时自动切换到对应模式上次选中的功能区（各自独立持久化）。
+ * 写入时同步设置对应 atom（setter 根据当前模式路由）。
  */
-export type TAActiveTab = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
-
-export const taActiveTabAtom = atomWithStorage<TAActiveTab>('tagent-ta-active-tab', 'assets')
+export const activeRailItemAtom = atom<RailItem, [RailItem], void>(
+  (get) => {
+    const mode = get(topLevelModeAtom)
+    if (mode === 'ta') return get(taActiveTabAtom)
+    return get(generalRailItemAtom)
+  },
+  (get, set, newItem: RailItem) => {
+    const mode = get(topLevelModeAtom)
+    if (mode === 'ta') {
+      set(taActiveTabAtom, newItem as TARailItem)
+    } else {
+      set(generalRailItemAtom, newItem as GeneralRailItem)
+    }
+  }
+)
