@@ -972,11 +972,11 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   }
 
   /** Agent 会话按工作区过滤 + 排除归档（归档会话由底部 Popover 展示）
-   *  TA 模式下额外按 mode='ta' 过滤，与通用模式数据隔离 */
+   *  + 按顶层模式隔离：通用模式只显示 mode='general'，TA 模式只显示 mode='ta' */
   const filteredAgentSessions = React.useMemo(
     () => {
       const byWorkspace = agentSessions.filter((s) => s.workspaceId === currentWorkspaceId && !draftSessionIds.has(s.id))
-      const byMode = topLevelMode === 'ta' ? byWorkspace.filter((s) => s.mode === 'ta') : byWorkspace
+      const byMode = byWorkspace.filter((s) => (s.mode ?? 'general') === topLevelMode)
       return sortAgentSessionsByUpdatedAtDesc(byMode.filter((s) => !s.archived))
     },
     [agentSessions, currentWorkspaceId, draftSessionIds, topLevelMode]
