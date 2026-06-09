@@ -367,7 +367,6 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
     () => workspaces.find((w) => w.id === currentWorkspaceId)?.name ?? null,
     [workspaces, currentWorkspaceId],
   )
-  const setMode = useSetAtom(appModeAtom)
 
   // 工作区能力（MCP + Skill 计数）
   const [capabilities, setCapabilities] = React.useState<WorkspaceCapabilities | null>(null)

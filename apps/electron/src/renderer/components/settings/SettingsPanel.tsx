@@ -5,7 +5,7 @@
  * 使用 Jotai atom 管理当前标签页状态。
  */
 
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   Settings,
   Radio,
@@ -22,6 +22,8 @@ import {
   Mic,
   HardDriveDownload,
   HardDrive,
+  MessageSquare,
+  BotMessageSquare,
 } from "lucide-react";
 import * as React from "react";
 
@@ -42,7 +44,7 @@ import { TutorialViewer } from "../tutorial/TutorialViewer";
 
 import type { SettingsTab } from "@/atoms/settings-tab";
 
-import { appModeAtom } from "@/atoms/app-mode";
+import { appModeAtom, topLevelModeAtom, type AppMode } from "@/atoms/app-mode";
 import { hasEnvironmentIssuesAtom } from "@/atoms/environment";
 import { settingsTabAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from "@/atoms/settings-tab";
 import { hasUpdateAtom } from "@/atoms/updater";
@@ -159,8 +161,15 @@ export function SettingsPanel({
   const channelFormDirty = useAtomValue(channelFormDirtyAtom);
   const [closeRequested, setCloseRequested] = useAtom(settingsCloseRequestedAtom);
   const appMode = useAtomValue(appModeAtom);
+  const setAppMode = useSetAtom(appModeAtom);
+  const topLevelMode = useAtomValue(topLevelModeAtom);
   const hasUpdate = useAtomValue(hasUpdateAtom);
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom);
+
+  // Chat/Agent 模式互斥：scratch 归入 agent 段（草稿本质属于 agent 路径）
+  const effectiveAppMode: 'chat' | 'agent' = appMode === 'chat' ? 'chat' : 'agent'
+  // TA 模式只跑 Agent 子模式，TA 模式下隐藏切换器
+  const showModeSwitcher = topLevelMode !== 'ta'
 
   /** 统一的退出拦截对话框状态 */
   type PendingAction = { type: 'tab'; tabId: SettingsTab } | { type: 'close' } | null
@@ -242,9 +251,20 @@ export function SettingsPanel({
     <div className="flex flex-col h-full">
       {/* 顶部 Header 栏 */}
       <div className="h-12 flex items-center justify-between px-5 border-b border-border/50 flex-shrink-0">
-        <h2 className="text-sm font-medium text-foreground">
-          {activeTabLabel}
-        </h2>
+        <div className="flex items-center gap-3 min-w-0">
+          {showModeSwitcher && (
+            <SettingsModeSwitcher
+              mode={effectiveAppMode}
+              onChange={(m) => {
+                const next: AppMode = m === 'agent' ? 'agent' : 'chat'
+                if (next !== appMode) setAppMode(next)
+              }}
+            />
+          )}
+          <h2 className="text-sm font-medium text-foreground truncate">
+            {activeTabLabel}
+          </h2>
+        </div>
         {onClose && (
           <button
             onClick={handleClose}
@@ -304,4 +324,56 @@ export function SettingsPanel({
       </AlertDialog>
     </div>
   );
+}
+
+/** Chat / Agent 模式切换控件（SegmentedControl） */
+function SettingsModeSwitcher({
+  mode,
+  onChange,
+}: {
+  mode: 'chat' | 'agent'
+  onChange: (mode: 'chat' | 'agent') => void
+}): React.ReactElement {
+  return (
+    <div
+      className="relative flex items-center rounded-md bg-muted/60 p-0.5 text-xs select-none"
+      role="tablist"
+      aria-label="App mode"
+    >
+      <div
+        className={cn(
+          'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out',
+          mode === 'chat' ? 'translate-x-0' : 'translate-x-full',
+        )}
+      />
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'chat'}
+        onClick={() => onChange('chat')}
+        className={cn(
+          'relative z-[1] flex items-center gap-1 px-2.5 py-1 rounded-[5px] transition-colors',
+          mode === 'chat' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
+        )}
+        title="Chat 模式 — 普通对话"
+      >
+        <MessageSquare size={12} />
+        <span className="font-medium">Chat</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'agent'}
+        onClick={() => onChange('agent')}
+        className={cn(
+          'relative z-[1] flex items-center gap-1 px-2.5 py-1 rounded-[5px] transition-colors',
+          mode === 'agent' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
+        )}
+        title="Agent 模式 — 工具调用 / 工作区"
+      >
+        <BotMessageSquare size={12} />
+        <span className="font-medium">Agent</span>
+      </button>
+    </div>
+  )
 }
