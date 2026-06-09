@@ -75,8 +75,13 @@ interface RichTextInputProps {
   value: string
   /** 值变更回调 */
   onChange: (markdown: string) => void
-  /** 提交回调（Enter 键） */
-  onSubmit: () => void
+  /**
+   * 提交回调（Enter 键）
+   * @param opts.shiftKey Shift 是否按住（用于『排队 vs 打断』决策：决策 #15）
+   *   - true：用户按住 Shift 触发 Enter，期望"打断当前 turn 立即注入"
+   *   - false：用户纯 Enter，期望"排队等当前 turn 完成"
+   */
+  onSubmit: (opts?: { shiftKey: boolean }) => void
   /** 粘贴文件回调（拦截粘贴的文件） */
   onPasteFiles?: (files: File[]) => void
   /** 粘贴超长文本回调（由调用方决定是否转换为附件） */
@@ -419,7 +424,7 @@ export function RichTextInput({
 
           if (isSend) {
             event.preventDefault()
-            onSubmitRef.current()
+            onSubmitRef.current({ shiftKey: hasShift })
             return true
           }
 

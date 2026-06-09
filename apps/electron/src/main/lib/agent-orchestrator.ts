@@ -2477,12 +2477,17 @@ export class AgentOrchestrator {
     uuids.add(uuid)
     this.queuedMessageUuids.set(sessionId, uuids)
 
-    // 构造 SDKUserMessage 并注入（强制 'now' 优先级）
+    // 决策 #15：纯 Enter 排队（priority: 'next'），Shift+Enter 打断（priority: 'now'）
+    //  - opts?.interrupt: true  → 'now' 立即注入并软中断当前 turn
+    //  - opts?.interrupt: false → 'next' 等当前 turn 完成后才处理
+    const priority: 'now' | 'next' = opts?.interrupt ? 'now' : 'next'
+
+    // 构造 SDKUserMessage 并注入
     const sdkMessage = {
       type: 'user' as const,
       message: { role: 'user' as const, content: text },
       parent_tool_use_id: null,
-      priority: 'now' as const,
+      priority,
       uuid,
       session_id: sessionId,
     }
@@ -2500,7 +2505,7 @@ export class AgentOrchestrator {
       }
 
       await this.adapter.sendQueuedMessage(sessionId, sdkMessage)
-      console.log(`[Agent 编排] 追加消息已注入: sessionId=${sessionId}, uuid=${uuid}, interrupt=${!!opts?.interrupt}`)
+      console.log(`[Agent 编排] 追加消息已注入: sessionId=${sessionId}, uuid=${uuid}, priority=${priority} (interrupt=${!!opts?.interrupt})`)
 
       // 立即持久化到 JSONL
       const persistMsg: SDKMessage = {

@@ -1313,7 +1313,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   }, [agentChannelId, agentModelId])
 
   /** 发送消息 */
-  const handleSend = React.useCallback(async (): Promise<void> => {
+  const handleSend = React.useCallback(async (submitOpts?: { shiftKey: boolean }): Promise<void> => {
+    // 决策 #15：Shift+Enter = 打断当前 turn 立即注入；纯 Enter = 排队等当前 turn 完成
+    const wantsInterrupt = submitOpts?.shiftKey ?? false
     const text = inputContent.trim()
     // 如果输入为空但有建议，使用建议内容
     const effectiveText = text || suggestion || ''
@@ -1364,12 +1366,14 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         return map
       })
 
-      // 3. 异步发送到后端（立即软中断当前 turn，再注入消息作为新一轮输入）
+      // 3. 异步发送到后端
+      //    - 纯 Enter（wantsInterrupt=false）：排队等当前 turn 完成后处理
+      //    - Shift+Enter（wantsInterrupt=true）：立即软中断当前 turn 并注入
       window.electronAPI.queueAgentMessage({
         sessionId,
         userMessage: effectiveText,
         uuid: localUuid,
-        interrupt: true,
+        interrupt: wantsInterrupt,
       }).catch((error) => {
         console.error('[AgentView] 追加消息失败:', error)
         toast.error('追加消息失败', { description: String(error) })
