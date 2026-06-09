@@ -199,15 +199,6 @@ export function FunctionalRail({
     }
   }, [setTopLevelMode, topLevelMode])
 
-  // 模式切换时自动切换功能区
-  React.useEffect(() => {
-    if (topLevelMode === 'ta') {
-      setActiveRailItem('assets')
-    } else {
-      setActiveRailItem('sessions')
-    }
-  }, [topLevelMode, setActiveRailItem])
-
   // 切换模式
   const handleModeSwitch = React.useCallback(async (targetMode: TopLevelMode) => {
     if (isSwitching || targetMode === topLevelMode) return
