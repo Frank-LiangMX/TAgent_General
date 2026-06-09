@@ -130,9 +130,10 @@
 ### 后续优化（不进 MVP）
 | 任务 | 状态 | 备注 |
 |------|------|------|
+| ✅ Agent 消息排队机制 | **已完成** | Enter 排队 / Shift+Enter 打断（决策 #15，2026-06-09 实现）|
+| ✅ Chat/Agent 切换器迁移 | **已完成** | SettingsPanel 顶部 SegmentedControl（2026-06-09）|
 | 🔵 MCP 设置页面集成 | 规划中 | 内置 MCP 分类展示 + 一键安装指引 |
 | 🔵 Agent 对话智能引导 | 规划中 | 检测 TA 相关意图 + 主动提示安装 |
-| 🔵 Agent 消息排队机制 | 规划中 | 默认排队，Shift+Enter 打断（决策 #15）|
 | 🔵 `/btw` 侧面提问 | 规划中 | 并行提问、覆盖层显示、不进历史（预估 2-3 天）|
 
 ---
@@ -141,7 +142,7 @@
 
 ### 2026-06-09
 
-**产出**：TA 模式 UI 重构 + 会话子系统（9 个 commit）
+**产出**：TA 模式 UI 重构 + 会话子系统 + 决策 #15 落地 + Chat/Agent 切换器迁移（共 13 个 commit）
 
 | 任务 | 内容 | Commit |
 |------|------|--------|
@@ -154,7 +155,11 @@
 | 老逻辑清理 | 删除 FunctionalRail 内 `useEffect` 重置 rail（覆盖了 per-mode 记忆） | `704c97bd` |
 | UI 简化 | 会话列表项删除工作区名徽标 | `010952be` |
 | **TA 工具自动注入** | `injectTATools` 把 5 个 in-process ta-tools 包装成 SDK MCP server `tagent-ta`；`buildSystemPrompt` 在 `mode==='ta'` 时 push TA 视角 section | `38eadda0` |
-| **里程碑** | **TA 模式 UI / 数据隔离 / 工具注入 闭环** |
+| **决策 #15 落地** | Enter → priority='next' 排队；Shift+Enter → priority='now' + interrupt 软中断 | `67e482c5` |
+| **Chat/Agent 切换器** | SettingsPanel 顶部加 SegmentedControl；TA 模式隐藏；LeftSidebar 删死变量 | `7a8580f3` |
+| **验证清单** | `docs/verification-2026-06-09.md` 完整回归手册 | `10babab3` |
+| **ESLint 清理** | import order 规范化（25 文件）+ LeftSidebar/FunctionalRail import-type 修复 | `8352a7f1` |
+| **里程碑** | **TA 模式 UI / 数据隔离 / 工具注入 闭环** + **决策 #15 实现** + **Chat/Agent 切换器迁移** |
 
 ### 2026-06-08
 
@@ -296,16 +301,19 @@
 | 启动 hook | `main/lib/runtime-init.ts` |
 | 动态 token 预算 | `main/lib/agent-context-utils.ts` |
 | Agent 编排 | `main/lib/agent-orchestrator.ts` |
+| 消息排队（决策 #15）| `main/lib/agent-orchestrator.ts` `queueMessage`（priority: 'now' \| 'next'）|
 | TA 工具集注入 | `main/lib/agent-orchestrator.ts` `injectTATools` |
 | TA 内置工具 | `main/lib/ta-tools/` |
 | TA system prompt | `main/lib/agent-prompt-builder.ts` `SystemPromptContext.mode` |
 | TA MCP Server | `ta-agent-mcp/` |
 | 顶层模式切换 | `renderer/atoms/app-mode.ts` `topLevelModeAtom` |
+| Chat/Agent 切换 | `renderer/components/settings/SettingsPanel.tsx` `SettingsModeSwitcher` |
 | per-mode rail 记忆 | `renderer/atoms/app-mode.ts` `activeRailItemAtom` (派生) |
 | per-mode tab 记忆 | `renderer/atoms/tab-atoms.ts` `activeTabIdAtom` (派生) |
 | TA 会话数据隔离 | `renderer/atoms/agent-atoms.ts` `taSessionsAtom` |
 | 模式切换路由 | `renderer/components/tabs/MainArea.tsx` |
 | TA 模式 UI | `renderer/components/ta/` (TASidebar.* + TAWelcomePanel) |
+| 验证清单 | `docs/verification-2026-06-09.md` |
 | 单测 | `main/lib/*.test.ts` |
 
 ---
@@ -322,10 +330,11 @@
 | context 验证 | 启动时 + UI 双触发 |
 | 工作区 UI | D 方案 v2 |
 | **Python 安装方式** | **手动安装**（不嵌入打包，2026-06-07 拍板）|
-| **Agent 消息排队** | **默认排队，Shift+Enter 打断**（2026-06-07 拍板）|
+| **Agent 消息排队** | **默认排队，Shift+Enter 打断**（2026-06-07 拍板，2026-06-09 实现）|
 | **TA 模式会话数据隔离** | **同表不同 mode 字段**（`AgentSessionMeta.mode`），切模式互不可见（2026-06-09 拍板）|
 | **TA 模式 UI 与通用模式分离** | **TA 模式 FunctionalRail 单独 6 个图标**，主区 5 个模块面板（无 TabBar），左栏 5 个概览面板；通用模式不变（2026-06-09 拍板）|
 | **TA 会话区复用通用模式布局** | **TA 模式选『会话』走 GeneralMainArea 路径**（顶部 TabBar + 草稿/会话 tab），数据按 mode 隔离（2026-06-09 拍板）|
+| **Chat/Agent 切换器位置** | **SettingsPanel 顶部 SegmentedControl**（不在 LeftSidebar，2026-06-09 拍板）|
 
 ---
 
