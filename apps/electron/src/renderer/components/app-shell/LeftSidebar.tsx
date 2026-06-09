@@ -2016,11 +2016,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                   <Pin size={11} className="flex-shrink-0 text-primary/60" />
                 )}
                 <span className="truncate flex-1 min-w-0">{session.title}</span>
-                {workspaceName && (
-                  <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-primary/10 text-[10px] leading-4 workspace-badge font-medium truncate max-w-[80px]">
-                    {workspaceName}
-                  </span>
-                )}
                 <span className="flex-shrink-0 text-[10px] text-foreground/35 tabular-nums">
                   {formatSessionTime(session.updatedAt)}
                 </span>
