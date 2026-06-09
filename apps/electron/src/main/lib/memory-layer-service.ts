@@ -14,10 +14,11 @@
  * - TA 模式: ~/.tagent/ta/memory/
  */
 
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
 import Database from 'better-sqlite3'
 import { app } from 'electron'
-import * as path from 'node:path'
-import * as fs from 'node:fs'
 
 /**
  * 记忆模式：通用 / TA

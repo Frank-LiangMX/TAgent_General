@@ -8,8 +8,8 @@ import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { getWorkspaceMcpPath, getConfigDir } from './config-paths'
 import { getAgentWorkspace } from './agent-workspace-manager'
+import { getWorkspaceMcpPath, getConfigDir } from './config-paths'
 
 import type { WorkspaceMcpConfig } from '@tagent/shared'
 

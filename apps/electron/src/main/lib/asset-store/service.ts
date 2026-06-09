@@ -8,10 +8,11 @@
  * - 提供列表、搜索、详情查询
  */
 
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
 import Database from 'better-sqlite3'
 import { app } from 'electron'
-import * as path from 'node:path'
-import * as fs from 'node:fs'
 
 import { initializeAssetStoreDb, type AssetRecord, type AssetType, type ReviewStatus, type ReviewHistoryRecord } from './schema'
 

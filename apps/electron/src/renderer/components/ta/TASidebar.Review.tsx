@@ -5,9 +5,9 @@
  * 底部：最近 5 条待审核记录
  */
 
+import { useSetAtom } from 'jotai'
 import { ClipboardCheck } from 'lucide-react'
 import * as React from 'react'
-import { useSetAtom } from 'jotai'
 
 import { taActiveTabAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'

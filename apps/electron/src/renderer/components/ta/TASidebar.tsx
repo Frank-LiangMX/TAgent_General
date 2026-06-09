@@ -14,13 +14,14 @@
 
 import * as React from 'react'
 
-import type { TARailItem } from '@/atoms/app-mode'
 
 import { TASidebarAssets } from './TASidebar.Assets'
-import { TASidebarReview } from './TASidebar.Review'
-import { TASidebarPipeline } from './TASidebar.Pipeline'
-import { TASidebarMemory } from './TASidebar.Memory'
 import { TASidebarConfig } from './TASidebar.Config'
+import { TASidebarMemory } from './TASidebar.Memory'
+import { TASidebarPipeline } from './TASidebar.Pipeline'
+import { TASidebarReview } from './TASidebar.Review'
+
+import type { TARailItem } from '@/atoms/app-mode'
 
 const TITLES: Record<TARailItem, string> = {
   sessions: '会话',

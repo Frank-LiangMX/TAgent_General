@@ -7,8 +7,8 @@
  * - 发现结构问题
  */
 
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'

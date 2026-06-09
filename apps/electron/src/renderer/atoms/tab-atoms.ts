@@ -9,8 +9,6 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
-import { topLevelModeAtom } from '@/atoms/app-mode'
-import type { TopLevelMode } from '@/atoms/app-mode'
 
 import {
   agentRunningSessionIdsAtom,
@@ -23,6 +21,9 @@ import {
 
 import type { SessionIndicatorStatus } from './agent-atoms'
 import type { PreviewFile } from './preview-atoms'
+import type { TopLevelMode } from '@/atoms/app-mode'
+
+import { topLevelModeAtom } from '@/atoms/app-mode'
 
 // ===== 类型定义 =====
 

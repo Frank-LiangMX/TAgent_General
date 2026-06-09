@@ -6,9 +6,9 @@
  * 静态跳转到主区的方式。后续若把配置提升为 atom，可在此处显示。
  */
 
+import { useSetAtom } from 'jotai'
 import { Settings } from 'lucide-react'
 import * as React from 'react'
-import { useSetAtom } from 'jotai'
 
 import { taActiveTabAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'

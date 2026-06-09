@@ -5,9 +5,11 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import type { AgentSessionMeta } from '@tagent/shared'
 
 import { useOpenSession } from './useOpenSession'
+
+import type { AgentSessionMeta } from '@tagent/shared'
+
 
 import { activeViewAtom } from '@/atoms/active-view'
 import {

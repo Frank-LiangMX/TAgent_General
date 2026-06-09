@@ -21,7 +21,6 @@ import { toast } from 'sonner'
 import type { AgentWorkspace } from '@tagent/shared'
 
 import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { cn } from '@/lib/utils'
 
 interface WorkspaceManagerDialogProps {

@@ -25,14 +25,14 @@ import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-
 import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
+import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
+import { AssetLibraryPanel } from '@/components/ta/asset-library/AssetLibraryPanel'
+import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
+import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
+import { ReviewQueuePanel } from '@/components/ta/review/ReviewQueuePanel'
 import { WelcomeView } from '@/components/welcome/WelcomeView'
 import { useTrackSessionView } from '@/hooks/useTrackSessionView'
 
-import { AssetLibraryPanel } from '@/components/ta/asset-library/AssetLibraryPanel'
-import { ReviewQueuePanel } from '@/components/ta/review/ReviewQueuePanel'
-import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
-import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
-import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
 
 
 export function MainArea(): React.ReactElement {

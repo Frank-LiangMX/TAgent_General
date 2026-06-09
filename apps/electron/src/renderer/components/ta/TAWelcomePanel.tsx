@@ -12,14 +12,14 @@
  * 3. 通用模式的 AgentView 渲染该 session（自动注入 TA system prompt 和工具集）
  */
 
+import { useSetAtom } from 'jotai'
 import { MessageSquare, ArrowRight } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
-import { useOpenSession } from '@/hooks/useOpenSession'
-import { useCreateSession } from '@/hooks/useCreateSession'
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { useSetAtom } from 'jotai'
+import { Button } from '@/components/ui/button'
+import { useCreateSession } from '@/hooks/useCreateSession'
+import { useOpenSession } from '@/hooks/useOpenSession'
 
 export function TAWelcomePanel(): React.ReactElement {
   const setTopLevelMode = useSetAtom(topLevelModeAtom)

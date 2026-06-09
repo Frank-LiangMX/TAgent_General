@@ -11,7 +11,7 @@
  */
 
 import { useAtom, useSetAtom, useAtomValue, useStore } from 'jotai'
-import { Pin, PinOff, Settings, Plus, Trash2, Pencil, ChevronDown, ChevronRight, ArrowRightLeft, Search, Archive, ArchiveRestore, ArrowLeft, Hammer, Bot, MessageSquare, MoreHorizontal, Check, FolderOpen, Info } from 'lucide-react'
+import { Pin, PinOff, Plus, Trash2, Pencil, ChevronDown, ChevronRight, ArrowRightLeft, Search, Archive, ArchiveRestore, Hammer, MoreHorizontal, Check, FolderOpen } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -20,9 +20,10 @@ import { SearchDialog } from './SearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
 import type { RailItem, TARailItem } from '@/atoms/app-mode'
+import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
 
+import { appModeAtom, type AppMode, topLevelModeAtom } from '@/atoms/app-mode'
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
@@ -54,7 +55,6 @@ import {
   sessionPersistedPermissionModeAtom,
   sessionExistsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, type AppMode, topLevelModeAtom } from '@/atoms/app-mode'
 import {
   conversationsAtom,
   currentConversationIdAtom,
@@ -71,7 +71,6 @@ import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-ato
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
 // sidebarViewModeAtom 已不再使用：归档会话由底部 Popover 展示，不再切换整页视图
-
 import { promptConfigAtom, selectedPromptIdAtom, conversationPromptIdAtom } from '@/atoms/system-prompt-atoms'
 import {
   tabsAtom,
@@ -85,10 +84,10 @@ import {
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { workingSessionGroupsAtom, workingSessionIdsSetAtom } from '@/atoms/working-atoms'
+import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { SkillsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
-import { TASidebar } from '@/components/ta/TASidebar'
 import { UserAvatar } from '@/components/chat/UserAvatar'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
@@ -96,6 +95,7 @@ import {
   useSessionMiniMapHover,
   type SessionMiniMapType,
 } from '@/components/session-preview/SessionMiniMapPopover'
+import { TASidebar } from '@/components/ta/TASidebar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -120,12 +120,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
-import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
   replaceAgentSessionInFreshnessOrder,
   sortAgentSessionsByUpdatedAtDesc,
@@ -240,63 +239,6 @@ interface RailRecentItem {
   status: SessionIndicatorStatus
   pinned: boolean
   workspaceName?: string
-}
-
-function RailRecentButton({
-  item,
-  onSelect,
-}: {
-  item: RailRecentItem
-  onSelect: (item: RailRecentItem) => void
-}): React.ReactElement {
-  const preview = useSessionMiniMapHover()
-
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            ref={preview.setAnchorRef}
-            type="button"
-            aria-label={`打开${item.type === 'agent' ? 'Agent 会话' : 'Chat 对话'}：${item.title}`}
-            onClick={() => onSelect(item)}
-            onMouseEnter={preview.handleMouseEnter}
-            onMouseLeave={preview.handleMouseLeave}
-            className={cn(
-              'relative size-10 flex items-center justify-center overflow-hidden rounded-[12px] transition-colors titlebar-no-drag',
-              item.active
-                ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                : 'text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground/80'
-            )}
-          >
-            <span
-              className={cn(
-                'absolute inset-y-0 left-0 w-0 border-l-[3px] rounded-l-[12px] pointer-events-none',
-                RAIL_STATUS_CLASS[item.status]
-              )}
-            />
-            <span className="text-[13px] font-semibold leading-none">{item.initial}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right">
-          {item.type === 'agent' ? 'Agent' : 'Chat'} · {item.title}
-        </TooltipContent>
-      </Tooltip>
-      <SessionMiniMapPopover
-        target={{
-          type: item.type,
-          sessionId: item.id,
-          title: item.title,
-          workspaceName: item.workspaceName,
-        }}
-        anchorRef={preview.anchorRef}
-        open={preview.isOpen}
-        isLeaving={preview.isLeaving}
-        onMouseEnter={preview.handlePanelMouseEnter}
-        onMouseLeave={preview.handlePanelMouseLeave}
-      />
-    </>
-  )
 }
 
 function SidebarWindowDragStrip({ height }: { height: number }): React.ReactElement {

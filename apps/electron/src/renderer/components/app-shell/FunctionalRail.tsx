@@ -32,22 +32,18 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-import type { GeneralRailItem, TARailItem, RailItem } from '@/atoms/app-mode'
-import {
-  topLevelModeAtom,
-  appModeAtom,
-  activeRailItemAtom,
-  type TopLevelMode,
-} from '@/atoms/app-mode'
-import { UserAvatar } from '@/components/chat/UserAvatar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import { hasUpdateAtom } from '@/atoms/updater'
+import type { GeneralRailItem, TARailItem, RailItem, TopLevelMode } from '@/atoms/app-mode'
+import { topLevelModeAtom, appModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
+
+import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
+import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
+import { UserAvatar } from '@/components/chat/UserAvatar'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'

@@ -8,11 +8,12 @@
  * - 资产预算
  */
 
-import { BlenderPathConfig } from './BlenderPathConfig'
-import { NamingRulesConfig } from './NamingRulesConfig'
-import { BudgetConfig } from './BudgetConfig'
-
 import * as React from 'react'
+
+import { BlenderPathConfig } from './BlenderPathConfig'
+import { BudgetConfig } from './BudgetConfig'
+import { NamingRulesConfig } from './NamingRulesConfig'
+
 
 export function TAConfigPanel(): React.ReactElement {
   return (

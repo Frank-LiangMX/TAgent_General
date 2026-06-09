@@ -5,12 +5,12 @@
  * 底部：最近 5 个资产列表
  */
 
+import { useSetAtom } from 'jotai'
 import { Database, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
 import { taActiveTabAtom } from '@/atoms/app-mode'
-import { useSetAtom } from 'jotai'
+import { Button } from '@/components/ui/button'
 
 interface AssetRecord {
   id: string

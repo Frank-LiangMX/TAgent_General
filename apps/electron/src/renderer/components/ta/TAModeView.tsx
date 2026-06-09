@@ -7,17 +7,18 @@
  * - MCP Server 状态指示器
  */
 
+import { useAtomValue } from 'jotai'
 import { Database, ClipboardCheck, GitBranch, Settings, Loader2, Brain } from 'lucide-react'
 import * as React from 'react'
 
 import { AssetLibraryPanel } from './asset-library/AssetLibraryPanel'
-import { ReviewQueuePanel } from './review/ReviewQueuePanel'
-import { PipelinePanel } from './pipeline/PipelinePanel'
 import { TAConfigPanel } from './config/TAConfigPanel'
-import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
+import { PipelinePanel } from './pipeline/PipelinePanel'
+import { ReviewQueuePanel } from './review/ReviewQueuePanel'
+
 import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
+import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
 import { cn } from '@/lib/utils'
-import { useAtomValue } from 'jotai'
 
 type TATabId = 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
 

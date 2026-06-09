@@ -150,7 +150,7 @@ export function AssetLibraryPanel(): React.ReactElement {
     return () => {
       mounted = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   // 加载资产列表

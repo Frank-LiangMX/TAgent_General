@@ -8,8 +8,9 @@
  * - 完成后的 PushNotification 通知
  */
 
-import { BrowserWindow, Notification } from 'electron'
 import { EventEmitter } from 'events'
+
+import { BrowserWindow, Notification } from 'electron'
 
 /** 顶层模式 */
 export type TopLevelMode = 'general' | 'ta'

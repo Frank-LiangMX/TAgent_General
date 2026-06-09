@@ -5,9 +5,9 @@
  * 真实流水线数据接入后只需替换数据源。
  */
 
+import { useSetAtom } from 'jotai'
 import { GitBranch } from 'lucide-react'
 import * as React from 'react'
-import { useSetAtom } from 'jotai'
 
 import { taActiveTabAtom } from '@/atoms/app-mode'
 

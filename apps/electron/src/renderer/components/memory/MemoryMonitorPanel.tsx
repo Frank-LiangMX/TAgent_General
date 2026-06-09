@@ -10,13 +10,13 @@
  * - L5 提炼洞察
  */
 
+import { useAtomValue } from 'jotai'
 import { User, FolderTree, Lightbulb, AlertTriangle, History, Sparkles, Loader2, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
+import { topLevelModeAtom } from '@/atoms/app-mode'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { topLevelModeAtom } from '@/atoms/app-mode'
-import { useAtomValue } from 'jotai'
 
 interface MemoryLayerStats {
   l0: { exists: boolean; lines: number; lastUpdated: number | null }

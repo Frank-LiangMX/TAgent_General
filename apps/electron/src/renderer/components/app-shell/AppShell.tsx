@@ -20,6 +20,7 @@ import { LeftSidebar } from './LeftSidebar'
 import { RightSidePanel } from './RightSidePanel'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+
 import {
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
@@ -30,12 +31,12 @@ import {
   unviewedCompletedSessionIdsAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
+import { appModeAtom, topLevelModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
 import { conversationsAtom, streamingConversationIdsAtom } from '@/atoms/chat-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
-import { appModeAtom, topLevelModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import { sidebarCollapsedAtom, activeSessionIdAtom } from '@/atoms/tab-atoms'
+import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { WorkspaceManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
