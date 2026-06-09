@@ -326,8 +326,8 @@ export function FunctionalRail({
         })}
       </div>
 
-      {/* 工作区管理 Popover（仅 Agent 模式 + 目录区折叠时显示，展开时由目录区顶端 Popover 承担） */}
-      {appMode === 'agent' && sidebarCollapsed && (
+      {/* 工作区管理 Popover（仅通用模式 + Agent 子模式 + 目录区折叠时显示，展开时由目录区顶端 Popover 承担） */}
+      {appMode === 'agent' && topLevelMode === 'general' && sidebarCollapsed && (
         <>
           <div className="my-3 h-px w-8 bg-border/70" />
           <div className="flex flex-col items-center gap-1.5">

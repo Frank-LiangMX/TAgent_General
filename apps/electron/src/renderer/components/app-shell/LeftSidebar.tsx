@@ -1216,8 +1216,8 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
         </div>
       )}
 
-      {/* 工作区选择（仅 Agent 模式 + 目录区展开时）：目录区折叠时由功能区的 Briefcase 按钮承担 */}
-      {mode === 'agent' && !isSidebarCollapsed && (
+      {/* 工作区选择（仅通用模式 + Agent 子模式 + 目录区展开时）：目录区折叠时由功能区的 Briefcase 按钮承担 */}
+      {mode === 'agent' && topLevelMode === 'general' && !isSidebarCollapsed && (
         <div className="px-3 pb-1 flex-shrink-0">
           <Popover>
             <PopoverTrigger asChild>
