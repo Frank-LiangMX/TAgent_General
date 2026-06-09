@@ -175,6 +175,12 @@ interface SystemPromptContext {
   deepSeekSubagentModel?: string
   /** 用户对主 Agent 派发 SubAgent 的积极性（设置项，默认 conservative） */
   subagentEagerness?: SubagentEagerness
+  /**
+   * 顶层模式标记（来自 AgentSessionMeta.mode）。
+   * - 'ta'：TA 模式会话，自动注入 TA 工具集相关 system prompt（命名规范、目录结构等）
+   * - 'general' 或不传：通用模式，不注入
+   */
+  mode?: 'general' | 'ta'
 }
 
 /** 主 Agent 派发 SubAgent 的积极性档位 */
@@ -444,6 +450,19 @@ ${subagentList}
 - 自然地运用记忆，就像你本来就记得，不要提及"记忆系统"、"检索"等内部概念
 - 宁可少记也不要记一堆没用的，保持记忆都是有温度的、有价值的共同经历
 - 搜索时用简短精准的查询词`)
+  }
+
+  // TA 模式会话：注入 TA 工具集相关指引（命名规范、目录结构等）
+  if (ctx.mode === 'ta') {
+    sections.push(`## 技术美术（TA）视角
+
+你当前处于 TA 模式会话。适用场景：
+- 资产命名是否符合项目规范（角色_动作.类型.fbx、贴图压缩格式等）
+- 资产目录结构是否符合约定（Assets/Characters/Hero/...）
+- 项目内的命名规则、目录约定、资产分类
+- 调用 check_naming / suggest_naming / check_directory_structure / discover_conventions / load_conventions 等 TA 工具前，先理解用户当前任务的领域（角色、场景、UI、特效等）再调用，不要盲目套用规则。
+
+数据隔离：TA 会话的所有消息、记忆、上下文与通用模式完全隔离——不会污染通用 Agent 会话，也不会被通用会话看到。`)
   }
 
   // 文档输出与知识管理

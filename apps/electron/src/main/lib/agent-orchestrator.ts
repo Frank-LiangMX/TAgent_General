@@ -807,6 +807,87 @@ export class AgentOrchestrator {
   }
 
   /**
+   * 注入 TA 工具集（命名规范、目录检查等）
+   *
+   * 仅当 Agent 会话 mode==='ta' 时由 sendMessage 显式调用。
+   * 把 ta-tools 的 in-process 执行器包装成 SDK MCP server 暴露给 Claude。
+   */
+  private async injectTATools(
+    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+    mcpServers: Record<string, Record<string, unknown>>,
+    sessionId: string,
+    agentCwd?: string,
+  ): Promise<void> {
+    try {
+      const { z } = await import('zod')
+      const taTools = await import('./ta-tools')
+
+      // 把 ToolCall 包装出来：执行器拿 ToolCall，回传 ToolResult
+      const wrap = (toolName: string) =>
+        async (args: Record<string, unknown>) => {
+          const toolCall = {
+            id: `ta-${toolName}-${Date.now()}`,
+            name: toolName,
+            arguments: args,
+          } as Parameters<typeof taTools.executeTATool>[0]
+          const result = await taTools.executeTATool(toolCall, agentCwd ?? process.cwd())
+          return { content: [{ type: 'text' as const, text: result.content }] }
+        }
+
+      const taServer = sdk.createSdkMcpServer({
+        name: 'tagent-ta',
+        version: '1.0.0',
+        tools: [
+          sdk.tool(
+            'check_naming',
+            '检查资产命名是否符合 TA 命名规范（UE5 资产必须大写开头，mesh/texture/material 等类型有特定前缀后缀）',
+            {
+              name: z.string().describe('要检查的资产名称'),
+              assetType: z.enum(['mesh', 'texture', 'material', 'skeleton', 'animation']).optional()
+                .describe('资产类型，不传则自动检测'),
+            },
+            wrap('check_naming'),
+          ),
+          sdk.tool(
+            'suggest_naming',
+            '根据用户描述的资产用途，生成符合 TA 命名规范的资产名建议',
+            {
+              description: z.string().describe('资产用途描述（如：英雄角色基础模型、UI 主按钮贴图）'),
+              assetType: z.enum(['mesh', 'texture', 'material', 'skeleton', 'animation']).optional()
+                .describe('资产类型'),
+            },
+            wrap('suggest_naming'),
+          ),
+          sdk.tool(
+            'check_directory_structure',
+            '检查指定目录的目录结构是否符合项目 TA 规范',
+            {
+              dirPath: z.string().describe('要检查的目录绝对路径'),
+            },
+            wrap('check_directory_structure'),
+          ),
+          sdk.tool(
+            'discover_conventions',
+            '发现项目中的 TA 规范配置文件（.tagent/conventions.yaml 等）',
+            {},
+            wrap('discover_conventions'),
+          ),
+          sdk.tool(
+            'load_conventions',
+            '加载并返回项目 TA 规范内容（命名规则、目录结构、预算阈值等）',
+            {},
+            wrap('load_conventions'),
+          ),
+        ],
+      })
+      mcpServers['tagent-ta'] = taServer as unknown as Record<string, unknown>
+      console.log(`[Agent 编排] 已注入 TA 工具集 (tagent-ta) for session ${sessionId}`)
+    } catch (err) {
+      console.error(`[Agent 编排] 注入 TA 工具集失败:`, err)
+    }
+  }
+
+  /**
    * 注入 SDK 内置生图工具（Nano Banana）
    */
   private async injectNanoBananaTools(
@@ -1303,6 +1384,11 @@ export class AgentOrchestrator {
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
       await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
 
+      // TA 模式：注入 TA 工具集（命名规范、目录检查等）
+      if (getAgentSessionMeta(sessionId)?.mode === 'ta') {
+        await this.injectTATools(sdk, mcpServers, sessionId, agentCwd)
+      }
+
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
         Object.assign(mcpServers, customMcpServers)
@@ -1611,6 +1697,7 @@ export class AgentOrchestrator {
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
             subagentEagerness: appSettings.subagentEagerness,
+            mode: getAgentSessionMeta(sessionId)?.mode,
           }),
         },
         resumeSessionId: existingSdkSessionId,
