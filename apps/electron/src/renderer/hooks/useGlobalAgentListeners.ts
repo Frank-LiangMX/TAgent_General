@@ -129,6 +129,8 @@ function inferContextWindow(model?: string): number | undefined {
   if (m.includes('minimax-m3')) return 1_000_000
   // 小米 MiMo：v2.5 / v2.5-pro / v2-pro 为 1M（omni / flash 仍走默认 200k）
   if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return 1_000_000
+  // 智谱 GLM 系列：GLM-4 / GLM-5 均为 128k 上下文
+  if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5')) return 128_000
   return 200_000
 }
 
@@ -925,10 +927,32 @@ export function useGlobalAgentListeners(): void {
                 })
                 return map
               })
+
+              // 同步更新 streamingStates 的 inputTokens/contextWindow（用于 ContextUsageBadge）
+              // 解决中转站不返回 usage_update 的问题
+              // 注意：这里用 sessionTokenStatsAtom 的累计值替换，而非累加，
+              // 因为 usage_update 事件是替换式的，保持一致
+              store.set(agentStreamingStatesAtom, (prev) => {
+                const state = prev.get(sessionId)
+                if (!state) return prev
+                const map = new Map(prev)
+                // 从 sessionTokenStatsAtom 获取累计值，确保与 usage_update 语义一致
+                const tokenStats = store.get(sessionTokenStatsAtom).get(sessionId)
+                map.set(sessionId, {
+                  ...state,
+                  inputTokens: tokenStats?.totalInputTokens ?? state.inputTokens,
+                  outputTokens: tokenStats?.totalOutputTokens ?? state.outputTokens,
+                  cacheReadTokens: tokenStats?.totalCacheReadTokens ?? state.cacheReadTokens,
+                  cacheCreationTokens: tokenStats?.totalCacheCreationTokens ?? state.cacheCreationTokens,
+                  // contextWindow 如果已有则保留，否则从 usage 获取
+                  contextWindow: state.contextWindow ?? usage.contextWindow,
+                })
+                return map
+              })
             }
           } else if (event.type === 'usage_update') {
-            // 流式过程中的 usage_update — 当前数据可能为 0，忽略
-            // 实际累计在 complete 事件中进行
+            // 流式过程中的 usage_update — 用于实时显示进度
+            // 注意：中转站可能不返回此数据，依赖 complete 事件兜底
           }
         }
         }) // unstable_batchedUpdates
