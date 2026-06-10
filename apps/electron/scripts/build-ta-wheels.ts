@@ -10,15 +10,15 @@
 
 import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const APPS_DIR = resolve(__dirname, '..')
-const TA_AGENT_MCP_DIR = resolve(APPS_DIR, '..', 'ta-agent-mcp')
+const APPS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const TA_AGENT_MCP_DIR = resolve(APPS_DIR, '..', '..', 'ta-agent-mcp')
 const WHEELS_DIR = join(APPS_DIR, 'ta-agent-mcp-wheels', `${process.platform}-${process.arch}`)
 
 /** Python 包列表（与 ta-agent-mcp/pyproject.toml dependencies 保持一致） */
 const TA_AGENT_MCP_DEPS = [
-  'ta-agent-mcp',
   'mcp',
   'trimesh',
   'pillow',
@@ -33,14 +33,18 @@ const PLATFORM_TAGS: Record<string, string[]> = {
   linux: ['manylinux2014_x86_64', 'manylinux_2_17_x86_64'],
 }
 
-/** 检查 Python 是否可用 */
+/** 检查 Python 是否可用，返回 python.exe 的完整路径 */
 function findPython(): string | null {
-  for (const cmd of ['python', 'python3']) {
+  for (const cmd of ['python', 'python3', 'py']) {
     try {
-      const out = execSync(`${cmd} --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
-      if (/Python 3\.\d+/.test(out)) {
+      // 用 `--version` 探测存在性 + 解析绝对路径
+      const out = execSync(`${cmd} -c "import sys; print(sys.executable)"`, {
+        encoding: 'utf-8',
+        timeout: 5000,
+      }).trim()
+      if (out && /python\d?\.exe$/i.test(out)) {
         console.log(`  使用 Python: ${cmd} → ${out}`)
-        return cmd
+        return out
       }
     } catch {
       /* try next */
@@ -51,17 +55,10 @@ function findPython(): string | null {
 
 /** 解析 ta-agent-mcp 自身的依赖（递归） */
 function resolveDeps(python: string, packageName: string): string[] {
-  try {
-    // 用 pip 的 dependency resolution 反查所有需要的包
-    const output = execSync(
-      `${python} -m pip install --dry-run --quiet --report - ${packageName} 2>/dev/null || true`,
-      { encoding: 'utf-8', timeout: 60000, cwd: TA_AGENT_MCP_DIR }
-    )
-    // 简化：直接用上面写死的列表（ta-agent-mcp 自己的 deps 已知）
-    return [packageName, ...TA_AGENT_MCP_DEPS.filter((d) => d !== packageName)]
-  } catch {
-    return [packageName, ...TA_AGENT_MCP_DEPS.filter((d) => d !== packageName)]
-  }
+  // ta-agent-mcp 本身不发布到 PyPI，只下载它的 deps
+  void python
+  void packageName
+  return TA_AGENT_MCP_DEPS
 }
 
 async function main(): Promise<void> {
@@ -89,9 +86,10 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  // 用包名 + 递归 deps
+  // ta-agent-mcp 本身只在本地源码里（不发布到 PyPI），其他依赖走 PyPI
   const allPackages = resolveDeps(python, 'ta-agent-mcp')
   console.log(`  待下载包: ${allPackages.join(', ')}`)
+  console.log('  （ta-agent-mcp 本身从本地源码安装，wheelhouse 只放它的 deps）')
 
   // 为当前平台下载 wheels
   for (const tag of tags) {
@@ -115,11 +113,13 @@ async function main(): Promise<void> {
 
     console.log(`  下载 ${tag} 的 wheels 到 ${platformDir}...`)
     try {
-      execSync(`${python} ${args.map((a) => `"${a}"`).join(' ')}`, {
-        encoding: 'utf-8',
-        timeout: 300_000, // 5 min
+      // bun 在 Windows 上 spawn + shell: true 都会触发 uv_spawn cmd.exe 的 ENOENT。
+      // execSync 不走 shell，能直接调 .exe 路径。
+      const cmd = `${python} ${args.map((a) => `"${a}"`).join(' ')}`
+      execSync(cmd, {
         cwd: TA_AGENT_MCP_DIR,
         stdio: 'inherit',
+        timeout: 300_000,
       })
     } catch (e) {
       console.error(`[build-ta-wheels] 下载 ${tag} 失败:`, e instanceof Error ? e.message : String(e))
