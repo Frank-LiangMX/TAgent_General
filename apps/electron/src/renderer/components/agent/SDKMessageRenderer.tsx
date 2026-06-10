@@ -1111,6 +1111,14 @@ function ErrorMessage({ message, onRetry, onRetryInNewSession, onCompact }: Erro
       case 'retry_in_new_session':
         onRetryInNewSession?.()
         break
+      case 'ta_install':
+        // 触发 TA 模式页面打开安装对话框
+        window.dispatchEvent(new CustomEvent('tagent:ta-install-request'))
+        break
+      case 'open_ta_settings':
+        // 跳转到 TA 模式（通过 custom event 通知主 shell）
+        window.dispatchEvent(new CustomEvent('tagent:open-ta-mode'))
+        break
       default:
         console.warn('[ErrorMessage] 未处理的 recovery action:', action)
     }

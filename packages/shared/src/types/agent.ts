@@ -378,6 +378,7 @@ export type ErrorCode =
   | 'api_key_decrypt_failed'
   | 'claude_binary_not_found'
   | 'session_busy'
+  | 'ta_dependency_missing'
   | 'unknown_error'
 
 /** 恢复操作 */
@@ -1506,6 +1507,14 @@ export const AGENT_IPC_CHANNELS = {
   ENABLE_TA_MCP: 'agent:enable-ta-mcp',
   /** 为工作区禁用 TA MCP */
   DISABLE_TA_MCP: 'agent:disable-ta-mcp',
+  /** 一键安装 TA MCP Server（返回流式日志通过 TA_INSTALL_LOG 推送） */
+  INSTALL_TA_MCP: 'agent:install-ta-mcp',
+  /** 取消正在进行的安装 */
+  CANCEL_TA_MCP_INSTALL: 'agent:cancel-ta-mcp-install',
+  /** 获取当前安装状态 */
+  GET_TA_INSTALL_PROGRESS: 'agent:get-ta-install-progress',
+  /** 安装日志推流通道（webContents.send） */
+  TA_INSTALL_LOG: 'agent:ta-install-log',
 
   // ModeManager 模式管理
   /** 获取模式状态摘要 */

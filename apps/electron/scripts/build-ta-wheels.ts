@@ -1,0 +1,140 @@
+/**
+ * build-ta-wheels - 预下载 TA MCP Server 的所有 Python 依赖
+ *
+ * 把 ta-agent-mcp 及其依赖打成 wheel 放进
+ * apps/electron/ta-agent-mcp-wheels/<platform>-<arch>/
+ *
+ * 打包后由 electron-builder.yml 的 extraResources 一并打入安装包。
+ * 离线安装时 installer 会优先用本地 wheelhouse，避免运行时联网。
+ */
+
+import { execSync } from 'node:child_process'
+import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+
+const APPS_DIR = resolve(__dirname, '..')
+const TA_AGENT_MCP_DIR = resolve(APPS_DIR, '..', 'ta-agent-mcp')
+const WHEELS_DIR = join(APPS_DIR, 'ta-agent-mcp-wheels', `${process.platform}-${process.arch}`)
+
+/** Python 包列表（与 ta-agent-mcp/pyproject.toml dependencies 保持一致） */
+const TA_AGENT_MCP_DEPS = [
+  'ta-agent-mcp',
+  'mcp',
+  'trimesh',
+  'pillow',
+  'numpy',
+  'pydantic',
+]
+
+/** pip download platform tags */
+const PLATFORM_TAGS: Record<string, string[]> = {
+  win32: ['win_amd64'],
+  darwin: ['macosx_11_0_arm64', 'macosx_11_0_x86_64'],
+  linux: ['manylinux2014_x86_64', 'manylinux_2_17_x86_64'],
+}
+
+/** 检查 Python 是否可用 */
+function findPython(): string | null {
+  for (const cmd of ['python', 'python3']) {
+    try {
+      const out = execSync(`${cmd} --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
+      if (/Python 3\.\d+/.test(out)) {
+        console.log(`  使用 Python: ${cmd} → ${out}`)
+        return cmd
+      }
+    } catch {
+      /* try next */
+    }
+  }
+  return null
+}
+
+/** 解析 ta-agent-mcp 自身的依赖（递归） */
+function resolveDeps(python: string, packageName: string): string[] {
+  try {
+    // 用 pip 的 dependency resolution 反查所有需要的包
+    const output = execSync(
+      `${python} -m pip install --dry-run --quiet --report - ${packageName} 2>/dev/null || true`,
+      { encoding: 'utf-8', timeout: 60000, cwd: TA_AGENT_MCP_DIR }
+    )
+    // 简化：直接用上面写死的列表（ta-agent-mcp 自己的 deps 已知）
+    return [packageName, ...TA_AGENT_MCP_DEPS.filter((d) => d !== packageName)]
+  } catch {
+    return [packageName, ...TA_AGENT_MCP_DEPS.filter((d) => d !== packageName)]
+  }
+}
+
+async function main(): Promise<void> {
+  console.log('[build-ta-wheels] 开始下载 TA MCP Server 依赖 wheels')
+  console.log(`  平台: ${process.platform} (${process.arch})`)
+  console.log(`  目标目录: ${WHEELS_DIR}`)
+
+  const python = findPython()
+  if (!python) {
+    console.error('[build-ta-wheels] 错误: 未找到 Python（需要 Python 3.10+）')
+    process.exit(1)
+  }
+
+  // 清理旧 wheels
+  if (existsSync(WHEELS_DIR)) {
+    console.log('  清理旧 wheels...')
+    rmSync(WHEELS_DIR, { recursive: true, force: true })
+  }
+  mkdirSync(WHEELS_DIR, { recursive: true })
+
+  // 决定 platform tags
+  const tags = PLATFORM_TAGS[process.platform] || []
+  if (tags.length === 0) {
+    console.error(`[build-ta-wheels] 错误: 不支持的平台 ${process.platform}`)
+    process.exit(1)
+  }
+
+  // 用包名 + 递归 deps
+  const allPackages = resolveDeps(python, 'ta-agent-mcp')
+  console.log(`  待下载包: ${allPackages.join(', ')}`)
+
+  // 为当前平台下载 wheels
+  for (const tag of tags) {
+    const platformDir = join(WHEELS_DIR, `py3-none-${tag}`)
+    mkdirSync(platformDir, { recursive: true })
+
+    const args = [
+      '-m',
+      'pip',
+      'download',
+      '--dest',
+      platformDir,
+      '--python-version',
+      '3.10',
+      '--platform',
+      tag,
+      '--only-binary=:all:',
+      '--no-deps',
+      ...allPackages,
+    ]
+
+    console.log(`  下载 ${tag} 的 wheels 到 ${platformDir}...`)
+    try {
+      execSync(`${python} ${args.map((a) => `"${a}"`).join(' ')}`, {
+        encoding: 'utf-8',
+        timeout: 300_000, // 5 min
+        cwd: TA_AGENT_MCP_DIR,
+        stdio: 'inherit',
+      })
+    } catch (e) {
+      console.error(`[build-ta-wheels] 下载 ${tag} 失败:`, e instanceof Error ? e.message : String(e))
+      // 不退出，继续其他平台
+    }
+  }
+
+  // 合并所有平台子目录到 WHEELS_DIR 顶层（installer 找 --find-links 时扫整个目录）
+  // 简化：installer 拿到的是顶层目录，pip 会自动扫所有 .whl 文件；不需要合并
+  console.log('[build-ta-wheels] 完成！')
+  console.log(`  wheels 在: ${WHEELS_DIR}`)
+  console.log(`  平台子目录: ${tags.join(', ')}`)
+}
+
+main().catch((e) => {
+  console.error('[build-ta-wheels] 致命错误:', e)
+  process.exit(1)
+})

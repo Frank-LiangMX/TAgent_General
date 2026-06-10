@@ -5,19 +5,23 @@
  * - 左侧 Tab 导航（资产库 / 审核 / 流水线 / 配置）
  * - 右侧内容区域
  * - MCP Server 状态指示器
+ * - 一键安装 TA MCP Server 对话框
  */
 
 import { useAtomValue } from 'jotai'
-import { Database, ClipboardCheck, GitBranch, Settings, Loader2, Brain } from 'lucide-react'
+import { Database, ClipboardCheck, GitBranch, Settings, Loader2, Brain, Download, X, Circle } from 'lucide-react'
+import { toast } from 'sonner'
 import * as React from 'react'
 
 import { AssetLibraryPanel } from './asset-library/AssetLibraryPanel'
 import { TAConfigPanel } from './config/TAConfigPanel'
 import { PipelinePanel } from './pipeline/PipelinePanel'
 import { ReviewQueuePanel } from './review/ReviewQueuePanel'
+import { TAInstallDialog } from './TAInstallDialog'
 
 import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type TATabId = 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
@@ -41,6 +45,7 @@ export function TAModeView(): React.ReactElement {
   const [activeTab, setActiveTab] = React.useState<TATabId>('assets')
   const [mcpStatus, setMcpStatus] = React.useState<TAMcpStatus | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
+  const [installDialogOpen, setInstallDialogOpen] = React.useState(false)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
 
@@ -86,6 +91,31 @@ export function TAModeView(): React.ReactElement {
       mounted = false
     }
   }, [workspaceSlug])
+
+  // 安装完成后由 dialog 回调通知，重新检查状态
+  const handleInstallComplete = React.useCallback(
+    async (success: boolean) => {
+      if (!success) return
+      // 重新拉状态：installed 应变为 true，跳到"未配置"或"运行中"
+      if (workspaceSlug) {
+        try {
+          const status = await window.electronAPI.getTAMcpStatus()
+          const configured = await window.electronAPI.isTAMcpConfigured(workspaceSlug)
+          setMcpStatus({ ...status, configured })
+        } catch (error) {
+          console.error('[TA Mode] 安装后刷新状态失败:', error)
+        }
+      }
+    },
+    [workspaceSlug]
+  )
+
+  // 监听全局事件：Agent 拦截到 TA 工具不可用时，弹安装对话框
+  React.useEffect(() => {
+    const handler = () => setInstallDialogOpen(true)
+    window.addEventListener('tagent:ta-install-request', handler)
+    return () => window.removeEventListener('tagent:ta-install-request', handler)
+  }, [])
 
   // 启用 TA MCP
   const handleEnableMcp = React.useCallback(async () => {
@@ -151,14 +181,23 @@ export function TAModeView(): React.ReactElement {
                 </button>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-red-500" />
                   <span className="text-xs text-foreground/80">未安装</span>
                 </div>
                 {mcpStatus?.error && (
-                  <div className="text-xs text-muted-foreground">{mcpStatus.error}</div>
+                  <div className="text-xs text-muted-foreground break-all">{mcpStatus.error}</div>
                 )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full h-7 text-xs gap-1.5"
+                  onClick={() => setInstallDialogOpen(true)}
+                >
+                  <Download size={12} />
+                  一键安装
+                </Button>
               </div>
             )}
             {mcpStatus?.pythonVersion && (
@@ -176,6 +215,13 @@ export function TAModeView(): React.ReactElement {
         {activeTab === 'memory' && <MemoryMonitorPanel />}
         {activeTab === 'config' && <TAConfigPanel />}
       </div>
+
+      {/* 安装对话框 */}
+      <TAInstallDialog
+        open={installDialogOpen}
+        onOpenChange={setInstallDialogOpen}
+        onComplete={handleInstallComplete}
+      />
     </div>
   )
 }

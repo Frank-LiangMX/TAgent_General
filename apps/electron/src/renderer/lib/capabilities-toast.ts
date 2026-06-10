@@ -43,3 +43,23 @@ export function showCapabilityChangeToasts(changes: CapabilityChange[]): void {
     toast.info(`工作区配置已更新：${parts.join('、')}`)
   }
 }
+
+/**
+ * 显示 TA MCP 缺失 toast，附带"立即安装"按钮
+ *
+ * Agent 在 canUseTool 拦截到 tagent__* 工具不可用时，触发此 toast。
+ * 用户点击"立即安装"后，渲染 install dialog 并跳到 TA 模式页。
+ */
+export function showTAMcpMissingToast(): void {
+  toast.error('TA MCP 未就绪：ta-agent-mcp Python 包未安装', {
+    description: '点击「立即安装」自动下载依赖（约 1-2 分钟）',
+    duration: Infinity, // 不自动消失
+    action: {
+      label: '立即安装',
+      onClick: () => {
+        // 触发自定义事件，TA 模式页面监听后弹 dialog
+        window.dispatchEvent(new CustomEvent('tagent:ta-install-request'))
+      },
+    },
+  })
+}

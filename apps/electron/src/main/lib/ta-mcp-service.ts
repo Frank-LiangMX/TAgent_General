@@ -10,6 +10,7 @@ import { join } from 'node:path'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { getWorkspaceMcpPath, getConfigDir } from './config-paths'
+import type { InstallLogChunk } from './ta-mcp-installer'
 
 import type { WorkspaceMcpConfig } from '@tagent/shared'
 
@@ -41,17 +42,31 @@ export interface TAMcpServerStatus {
 /**
  * 检测 Python 环境
  *
- * 优先级：python > python3
+ * 优先级：项目 venv > 系统 python > 系统 python3
  */
-function detectPython(): { path: string; version: string } | null {
-  const commands = ['python', 'python3']
+function detectPython(): { path: string; version: string; source: 'venv' | 'system' } | null {
+  // 1. 优先项目 venv（如果存在且可用）
+  const venvPy = getVenvPython()
+  if (venvPy) {
+    try {
+      const versionOutput = execSync(`"${venvPy}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
+      const match = versionOutput.match(/Python (\d+\.\d+\.\d+)/i)
+      if (match) {
+        return { path: venvPy, version: match[1]!, source: 'venv' }
+      }
+    } catch {
+      // venv 损坏，继续走系统 python
+    }
+  }
 
+  // 2. 兜底：系统 python
+  const commands = ['python', 'python3']
   for (const cmd of commands) {
     try {
       const version = execSync(`${cmd} --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
       const match = version.match(/Python (\d+\.\d+\.\d+)/i)
       if (match) {
-        return { path: cmd, version: match[1]! }
+        return { path: cmd, version: match[1]!, source: 'system' }
       }
     } catch {
       // 继续尝试下一个命令
@@ -214,4 +229,95 @@ export function disableTAMcpForWorkspace(workspaceSlug: string): boolean {
     console.error(`[TA MCP] 禁用失败:`, error)
     return false
   }
+}
+
+// =====================================================================
+// venv 管理 + 一键安装委托
+// =====================================================================
+
+/**
+ * venv 目录
+ *
+ * 全局共享：~/.tagent[-dev]/ta/venv/
+ */
+export function getVenvPath(): string {
+  return join(getConfigDir(), 'ta', 'venv')
+}
+
+/**
+ * 跨平台 venv python 可执行文件路径
+ */
+export function getVenvPython(): string | null {
+  const dir = getVenvPath()
+  const exe = process.platform === 'win32' ? join(dir, 'Scripts', 'python.exe') : join(dir, 'bin', 'python')
+  return existsSync(exe) ? exe : null
+}
+
+/** venv 状态 */
+export interface VenvStatus {
+  exists: boolean
+  healthy: boolean
+  pythonPath: string | null
+  pythonVersion?: string
+  reason?: 'missing' | 'corrupted' | 'package_missing'
+}
+
+/**
+ * 检查 venv 状态
+ *
+ * - exists: venv 目录是否存在
+ * - healthy: venv 存在且能 import ta_agent_mcp
+ * - reason: 不健康时的具体原因
+ */
+export function getVenvStatus(): VenvStatus {
+  const py = getVenvPython()
+  if (!py) {
+    return { exists: false, healthy: false, pythonPath: null, reason: 'missing' }
+  }
+
+  // 检查 venv 是否能正常运行
+  try {
+    const versionOutput = execSync(`"${py}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
+    const versionMatch = versionOutput.match(/Python (\d+\.\d+\.\d+)/i)
+    if (!versionMatch) {
+      return { exists: true, healthy: false, pythonPath: py, reason: 'corrupted' }
+    }
+    const version = versionMatch[1]!
+
+    // 检查包是否安装
+    try {
+      execSync(`"${py}" -c "import ta_agent_mcp"`, { encoding: 'utf-8', timeout: 5000 })
+      return { exists: true, healthy: true, pythonPath: py, pythonVersion: version }
+    } catch {
+      return { exists: true, healthy: false, pythonPath: py, pythonVersion: version, reason: 'package_missing' }
+    }
+  } catch {
+    return { exists: true, healthy: false, pythonPath: py, reason: 'corrupted' }
+  }
+}
+
+/**
+ * 安装入口（委托给 installer）
+ */
+export async function installTAMcpServer(
+  onLog: (chunk: InstallLogChunk) => void,
+  options: { forceOnline?: boolean } = {}
+): Promise<{ success: boolean; error?: string }> {
+  const { taMcpInstaller } = await import('./ta-mcp-installer')
+  return taMcpInstaller.install(onLog, options)
+}
+
+/** 获取当前安装任务状态 */
+export function getInstallState(): 'idle' | 'running' | 'success' | 'failed' | 'cancelled' {
+  // 动态 import 避免循环依赖
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
+  return taMcpInstaller.getState()
+}
+
+/** 取消当前安装 */
+export function cancelTAMcpInstall(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
+  taMcpInstaller.cancel()
 }

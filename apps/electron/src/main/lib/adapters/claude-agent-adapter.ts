@@ -449,6 +449,22 @@ export function mapSDKErrorToTypedError(
     }
   }
 
+  // TA MCP 依赖缺失检测
+  // 错误信息中含 "ModuleNotFoundError: No module named 'ta_agent_mcp'" 时，提示用户去 TA 模式一键安装
+  if (/No module named ['"]ta_agent_mcp['"]|ModuleNotFoundError.*ta_agent_mcp/i.test(detailedMessage)) {
+    return {
+      code: 'ta_dependency_missing' as ErrorCode,
+      title: 'TA MCP 依赖缺失',
+      message: 'TA MCP Server 的 Python 包未安装。点击下方「一键安装」自动配置。',
+      actions: [
+        { key: 'i', label: '一键安装', action: 'ta_install' },
+        { key: 'o', label: '打开 TA 设置', action: 'open_ta_settings' },
+      ],
+      canRetry: false,
+      originalError,
+    }
+  }
+
   const mapped = errorMap[errorCode] || {
     code: 'unknown_error' as ErrorCode,
     title: '',

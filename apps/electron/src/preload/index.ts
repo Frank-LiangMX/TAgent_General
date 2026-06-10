@@ -608,6 +608,26 @@ export interface ElectronAPI {
   /** 为工作区禁用 TA MCP */
   disableTAMcp: (workspaceSlug: string) => Promise<boolean>
 
+  /**
+   * 一键安装 TA MCP Server
+   *
+   * 启动后台安装任务，日志通过 onTAInstallLog 推流。
+   * 返回 { success, error } 表示启动结果（不是安装结果）。
+   */
+  installTAMcp: (options?: { forceOnline?: boolean }) => Promise<{ success: boolean; error?: string }>
+
+  /** 取消正在进行的安装 */
+  cancelTAInstall: () => Promise<boolean>
+
+  /** 获取当前安装状态 */
+  getTAInstallProgress: () => Promise<{ state: 'idle' | 'running' | 'success' | 'failed' | 'cancelled' }>
+
+  /**
+   * 订阅安装日志（流式）
+   * @returns unsubscribe 函数
+   */
+  onTAInstallLog: (cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void) => () => void
+
   // ===== ModeManager 模式管理 =====
 
   /** 获取模式状态摘要 */
@@ -1751,6 +1771,33 @@ const electronAPI: ElectronAPI = {
 
   disableTAMcp: (workspaceSlug: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DISABLE_TA_MCP, workspaceSlug) as Promise<boolean>
+  },
+
+  installTAMcp: (options?: { forceOnline?: boolean }) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INSTALL_TA_MCP, options || {}) as Promise<{
+      success: boolean
+      error?: string
+    }>
+  },
+
+  cancelTAInstall: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CANCEL_TA_MCP_INSTALL) as Promise<boolean>
+  },
+
+  getTAInstallProgress: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_TA_INSTALL_PROGRESS) as Promise<{
+      state: 'idle' | 'running' | 'success' | 'failed' | 'cancelled'
+    }>
+  },
+
+  onTAInstallLog: (
+    cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void
+  ) => {
+    const handler = (_: unknown, chunk: { phase: string; stream: string; text: string; ts: number }) => cb(chunk)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, handler)
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, handler)
+    }
   },
 
   getWorkspaceSkills: (workspaceSlug: string) => {

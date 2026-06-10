@@ -1553,6 +1553,30 @@ export class AgentOrchestrator {
           return validationFailure
         }
 
+        // ── TA 工具前置守卫：ta-agent-mcp 未安装时拒绝 ──
+        if (toolName.startsWith('tagent__')) {
+          try {
+            const { getVenvStatus } = await import('./ta-mcp-service')
+            const venvStatus = getVenvStatus()
+            if (!venvStatus.healthy) {
+              const reasonText =
+                venvStatus.reason === 'package_missing'
+                  ? 'ta-agent-mcp 包未安装'
+                  : venvStatus.reason === 'corrupted'
+                    ? 'Python 虚拟环境损坏'
+                    : 'Python 虚拟环境不存在'
+              console.warn(`[Agent canUseTool] TA 工具不可用: ${reasonText}, tool=${toolName}`)
+              return {
+                behavior: 'deny' as const,
+                message: `[ta_dep_missing] ${reasonText}。请到 TA 模式页面点击「一键安装」完成配置。`,
+              }
+            }
+          } catch (e) {
+            // 检测失败时不阻断工具调用（避免误伤）
+            console.error('[Agent canUseTool] TA venv 状态检查异常:', e)
+          }
+        }
+
         // ── Write 大文件 token 截断防护 ──
         if (toolName === 'Write' && typeof input.content === 'string') {
           const estimatedTokens = estimateTokenCount(input.content)

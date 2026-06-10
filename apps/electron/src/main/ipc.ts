@@ -4129,6 +4129,35 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // 一键安装 TA MCP Server（推流日志通过 TA_INSTALL_LOG 推给 renderer）
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.INSTALL_TA_MCP,
+    async (event, options?: { forceOnline?: boolean }) => {
+      const { installTAMcpServer } = await import('./lib/ta-mcp-service')
+      return installTAMcpServer(
+        (chunk) => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, chunk)
+          }
+        },
+        options || {}
+      )
+    }
+  )
+
+  // 取消正在进行的安装
+  ipcMain.handle(AGENT_IPC_CHANNELS.CANCEL_TA_MCP_INSTALL, async () => {
+    const { cancelTAMcpInstall } = await import('./lib/ta-mcp-service')
+    cancelTAMcpInstall()
+    return true
+  })
+
+  // 获取安装任务当前状态
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_TA_INSTALL_PROGRESS, async () => {
+    const { getInstallState } = await import('./lib/ta-mcp-service')
+    return { state: getInstallState() }
+  })
+
   // ===== ModeManager 模式管理 =====
 
   ipcMain.handle(
