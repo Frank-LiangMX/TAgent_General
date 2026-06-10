@@ -13,7 +13,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-import type { ModelUsageStats, TimeRangeStats, UsageCallRecord, UsageStatsOverview } from '@tagent/shared'
+import type { ModelUsageStats, TimeRangeStats, UsageCallRecord, UsageStatsOverview, SessionTokenStats } from '@tagent/shared'
 
 import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
 
@@ -277,6 +277,60 @@ class UsageStatsService {
       totalCostUsd: rangeData.cost,
       byModel: filteredModels,
     }
+  }
+
+  /**
+   * 获取单个会话的 Token 统计
+   * 用于恢复历史会话的统计数据显示
+   */
+  getSessionTokenStats(sessionId: string): SessionTokenStats {
+    const sessionsDir = getAgentSessionsDir()
+    const filePath = path.join(sessionsDir, `${sessionId}.jsonl`)
+
+    const result: SessionTokenStats = {
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheReadTokens: 0,
+      totalCacheCreationTokens: 0,
+      totalCostUsd: 0,
+      turnCount: 0,
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return result
+    }
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8')
+      const lines = content.split('\n').filter((line) => line.trim())
+
+      for (const line of lines) {
+        let msg: SessionMessage
+        try {
+          msg = JSON.parse(line)
+        } catch {
+          continue
+        }
+
+        // result 消息包含最终 usage
+        if (msg.type === 'result') {
+          if (msg.usage) {
+            result.totalInputTokens += msg.usage.input_tokens || 0
+            result.totalOutputTokens += msg.usage.output_tokens || 0
+            result.totalCacheReadTokens += msg.usage.cache_read_input_tokens || 0
+            result.totalCacheCreationTokens += msg.usage.cache_creation_input_tokens || 0
+          }
+          if (msg.total_cost_usd) {
+            result.totalCostUsd += msg.total_cost_usd
+          }
+          result.turnCount++
+        }
+      }
+    } catch {
+      // ignore file read errors
+    }
+
+    return result
   }
 }
 

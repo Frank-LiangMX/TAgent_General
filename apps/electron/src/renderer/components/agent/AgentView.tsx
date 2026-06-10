@@ -73,6 +73,7 @@ import {
   allPendingExitPlanRequestsAtom,
   finalizeStreamingActivities,
   agentProcessGroupsKeepExpandedAtom,
+  sessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom, thinkingExpandedAtom } from '@/atoms/chat-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
@@ -866,6 +867,47 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         console.error(error)
         setMessagesLoaded(true)
       })
+
+    // 加载会话的 Token 统计（用于恢复历史会话的统计显示）
+    window.electronAPI.getSessionTokenStats(sessionId)
+      .then((stats) => {
+        if (cancelled) return
+        // 填充 sessionTokenStatsAtom（用于 TokenStatsPanel）
+        store.set(sessionTokenStatsAtom, (prev) => {
+          const map = new Map(prev)
+          map.set(sessionId, stats)
+          return map
+        })
+        // 填充 streamingStates 的 inputTokens/contextWindow（用于 ContextUsageBadge）
+        // 只有当 streamingStates 中没有数据时才填充（避免覆盖实时流式数据）
+        setStreamingStates((prev) => {
+          const state = prev.get(sessionId)
+          // 如果已有数据或正在运行，不覆盖
+          if (state?.inputTokens !== undefined || state?.running) return prev
+          // 如果统计中有输入 token，填充到 streamingStates
+          if (stats.totalInputTokens > 0) {
+            const map = new Map(prev)
+            map.set(sessionId, {
+              running: false,
+              content: '',
+              toolActivities: [],
+              inputTokens: stats.totalInputTokens,
+              outputTokens: stats.totalOutputTokens,
+              cacheReadTokens: stats.totalCacheReadTokens,
+              cacheCreationTokens: stats.totalCacheCreationTokens,
+              costUsd: stats.totalCostUsd,
+              contextWindow: undefined, // contextWindow 需要从模型配置推断，这里无法获取
+            })
+            return map
+          }
+          return prev
+        })
+      })
+      .catch((error) => {
+        // Token 统计加载失败不影响消息显示
+        console.warn('[AgentView] 加载 Token 统计失败:', error)
+      })
+
     return () => { cancelled = true }
   }, [sessionId, refreshVersion, setStreamingStates, setLiveMessagesMap, setMessagesCache, store])
 

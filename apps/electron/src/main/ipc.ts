@@ -4385,4 +4385,12 @@ export function registerIpcHandlers(): void {
       return usageStatsService.getOverview()
     }
   )
+
+  ipcMain.handle(
+    USAGE_STATS_IPC_CHANNELS.GET_SESSION_TOKEN_STATS,
+    async (_event, sessionId: string) => {
+      const { usageStatsService } = await import('./lib/usage-stats-service')
+      return usageStatsService.getSessionTokenStats(sessionId)
+    }
+  )
 }

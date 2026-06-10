@@ -15,6 +15,16 @@ export interface UsageCallRecord {
   costUsd: number
 }
 
+/** 会话 Token 统计 */
+export interface SessionTokenStats {
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalCacheReadTokens: number
+  totalCacheCreationTokens: number
+  totalCostUsd: number
+  turnCount: number
+}
+
 /** 模型使用统计 */
 export interface ModelUsageStats {
   modelId: string
@@ -61,4 +71,6 @@ export interface UsageStatsOverview {
 export const USAGE_STATS_IPC_CHANNELS = {
   /** 获取使用统计总览 */
   GET_OVERVIEW: 'usage-stats:get-overview',
+  /** 获取单个会话的 Token 统计 */
+  GET_SESSION_TOKEN_STATS: 'usage-stats:get-session-token-stats',
 } as const
