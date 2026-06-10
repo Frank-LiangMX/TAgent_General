@@ -59,6 +59,8 @@ export function TokenStatsPanel(): React.ReactElement | null {
 
   // 计算缓存节省的 token
   const cacheSavedTokens = stats.totalCacheReadTokens
+  // 是否有缓存数据（支持 prompt caching 的模型）
+  const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
@@ -79,14 +81,16 @@ export function TokenStatsPanel(): React.ReactElement | null {
       {/* 分隔线 */}
       <div className="h-3 w-px bg-border/50" />
 
-      {/* 缓存命中率 */}
-      <StatItem
-        icon={<Database size={12} />}
-        label="缓存命中"
-        value={formatHitRate(cacheHitRate)}
-        highlight={cacheHitRate !== null && cacheHitRate > 0.5}
-        tooltip={cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined}
-      />
+      {/* 缓存命中率 — 仅当模型支持 prompt caching 时显示 */}
+      {hasCacheData && (
+        <StatItem
+          icon={<Database size={12} />}
+          label="缓存命中"
+          value={formatHitRate(cacheHitRate)}
+          highlight={cacheHitRate !== null && cacheHitRate > 0.5}
+          tooltip={cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined}
+        />
+      )}
 
       {/* 费用 */}
       {stats.totalCostUsd > 0 && (

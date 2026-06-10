@@ -901,23 +901,20 @@ export function useGlobalAgentListeners(): void {
             store.set(agentPlanModeSessionsAtom, (prev: Set<string>) =>
               updatePlanModeSessionSet(prev, sessionId, event.mode === 'plan')
             )
-          } else if (event.type === 'usage_update') {
-            // 累计 token 统计（P3 阶段）
+          } else if (event.type === 'complete') {
+            // 累计 token 统计（P3 阶段）— usage 数据在 complete 事件中
             const usage = event.usage
-            store.set(sessionTokenStatsAtom, (prev) => {
-              const map = new Map(prev)
-              const current = map.get(sessionId) ?? {
-                totalInputTokens: 0,
-                totalOutputTokens: 0,
-                totalCacheReadTokens: 0,
-                totalCacheCreationTokens: 0,
-                totalCostUsd: 0,
-                turnCount: 0,
-              }
-              // 只有当 inputTokens 变化时才累计（表示新的一轮）
-              // 避免同一轮内多次 usage_update 导致重复累计
-              const prevInput = store.get(agentStreamingStatesAtom).get(sessionId)?.inputTokens
-              if (prevInput !== usage.inputTokens) {
+            if (usage) {
+              store.set(sessionTokenStatsAtom, (prev) => {
+                const map = new Map(prev)
+                const current = map.get(sessionId) ?? {
+                  totalInputTokens: 0,
+                  totalOutputTokens: 0,
+                  totalCacheReadTokens: 0,
+                  totalCacheCreationTokens: 0,
+                  totalCostUsd: 0,
+                  turnCount: 0,
+                }
                 map.set(sessionId, {
                   totalInputTokens: current.totalInputTokens + usage.inputTokens,
                   totalOutputTokens: current.totalOutputTokens + (usage.outputTokens ?? 0),
@@ -926,9 +923,12 @@ export function useGlobalAgentListeners(): void {
                   totalCostUsd: current.totalCostUsd + (usage.costUsd ?? 0),
                   turnCount: current.turnCount + 1,
                 })
-              }
-              return map
-            })
+                return map
+              })
+            }
+          } else if (event.type === 'usage_update') {
+            // 流式过程中的 usage_update — 当前数据可能为 0，忽略
+            // 实际累计在 complete 事件中进行
           }
         }
         }) // unstable_batchedUpdates
