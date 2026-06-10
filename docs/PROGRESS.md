@@ -5,7 +5,7 @@
 
 ---
 
-## 当前状态（2026-06-09）
+## 当前状态（2026-06-10）
 
 **阶段**：P2 阶段开发中，TA 模式 UI + 工具闭环
 
@@ -31,6 +31,25 @@
   - `tagent__check_texture_info` - 纹理信息检查
   - `tagent__check_texture_batch` - 批量纹理检查
   - `tagent__analyze_assets` - 资产分类分析
+- ✅ **TA MCP Server 一键安装 + Agent 拦截**（2026-06-10）
+  - 红灯状态加"一键安装"按钮（`TAInstallDialog`）
+  - 全局共享 venv：`~/.tagent[-dev]/ta/venv/`
+  - 流式日志 + 5 步进度 + 可取消
+  - 离线 wheelhouse 失败自动 fallback 在线
+  - Agent canUseTool 前置守卫 + typedError `ta_dependency_missing`
+  - `build-ta-wheels` 脚本 + `electron-builder.yml` extraResources
+  - 端到端验证通过（venv 创建 → pip 升级 → ta-agent-mcp 安装 → import 验证）
+- ✅ **资产扫描支持 UE/Unity 工程**（2026-06-10）
+  - `.uasset` 按命名约定细分 (BP_→blueprint, MI_/M_→material, T_→texture, SM_/SK_→mesh, A_→level)
+  - `.umap` 归到 level；`.prefab`/`.unity` 归到 level
+  - 跳过构建产物目录（binaries/intermediate/library/temp/obj/logs 等）
+  - 16/16 单元测试通过
+- ✅ **修复 better-sqlite3 dlopen 失败**（2026-06-10）
+  - esbuild 加 `--external:better-sqlite3`
+  - electron-builder 列入 `node_modules/better-sqlite3/**/*`
+- ✅ **修复资产库初始化后转圈 bug**（2026-06-10）
+  - `setIsLoading(false)` 移到 finally 块
+  - 成功路径补上 loadAssets / loadStats / loadProjects
 - ✅ P1 顶层模式切换 UI **已完成**
   - `TopLevelModeTab` 组件 - 通用/TA 切换
   - `topLevelModeAtom` - 支持 general/ta 顶层模式
@@ -42,9 +61,12 @@
   - `TAConfigPanel` - 配置面板（命名规则 + 预算配置）
 - ✅ TA MCP Server 集成 **已完成**
   - IPC 通道：`GET_TA_MCP_STATUS` / `IS_TA_MCP_CONFIGURED` / `ENABLE_TA_MCP` / `DISABLE_TA_MCP`
-  - 后端服务：`ta-mcp-service.ts`（Python 环境检测 + MCP 配置管理）
+  - **新增** `INSTALL_TA_MCP` / `CANCEL_TA_MCP_INSTALL` / `GET_TA_INSTALL_PROGRESS` / `TA_INSTALL_LOG`
+  - 后端服务：`ta-mcp-service.ts`（Python 环境检测 + venv 管理 + MCP 配置管理）
+  - **新增** `ta-mcp-installer.ts`（installer 状态机 + 流式日志 + 取消）
   - Preload API：`getTAMcpStatus` / `isTAMcpConfigured` / `enableTAMcp` / `disableTAMcp`
-  - UI 状态显示：运行中（绿）/ 未配置（黄）/ 未安装（红）+ 一键启用按钮
+  - **新增** `installTAMcp` / `cancelTAInstall` / `getTAInstallProgress` / `onTAInstallLog`
+  - UI 状态显示：运行中（绿）/ 未配置（黄）/ 未安装（红）+ 一键启用 / 一键安装按钮
 - ✅ P0 验证工具可调通 **已完成**（2026-06-08）
   - 添加 `__main__.py` 支持 `python -m ta_agent_mcp` 启动
   - 工具调用测试通过：`tagent__check_mesh_budget` 返回正确结果
