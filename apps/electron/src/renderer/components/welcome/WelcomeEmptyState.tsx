@@ -3,18 +3,19 @@
  *
  * 在没有会话时展示：
  * 1. 个性化时段问候
- * 2. 平台感知的小 Tips
+ * 2. 与当前模式相关的操作提示（随模式切换变化）
  * 3. Chat/Agent 模式切换 Tab
+ * 4. 主操作按钮
  */
 
 import { useAtomValue, useAtom } from 'jotai'
-import { Lightbulb, MessageSquare, Bot, StickyNote } from 'lucide-react'
+import { MessageSquare, Bot, StickyNote, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-import { appModeAtom, type AppMode } from '@/atoms/app-mode'
+import { appModeAtom, topLevelModeAtom, type AppMode } from '@/atoms/app-mode'
 import { themeStyleAtom } from '@/atoms/theme'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { getRandomTip, getPlatform, type Tip } from '@/lib/tips'
+import { useCreateSession } from '@/hooks/useCreateSession'
 import { cn } from '@/lib/utils'
 
 /** 根据小时返回时段问候 */
@@ -32,70 +33,120 @@ const MODE_CONFIG: Record<AppMode, { icon: React.ReactNode; label: string }> = {
   scratch: { icon: <StickyNote size={15} />, label: 'Scratch Pad' },
 }
 
+/** 与模式相关的操作提示 — 索引稳定，随模式切换 */
+const MODE_TIPS: Record<string, string> = {
+  agent: '附加文件夹让 Agent 访问你的项目',
+  chat: '点击输入栏右侧切换模型和渠道',
+  ta: '选择工作区来配置项目资产规范',
+}
+
 export function WelcomeEmptyState(): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const [mode, setMode] = useAtom(appModeAtom)
+  const topLevelMode = useAtomValue(topLevelModeAtom)
   const themeStyle = useAtomValue(themeStyleAtom)
-
-  // 稳定的随机 Tip（组件挂载时选一条）
-  const [tip] = React.useState<Tip>(() => getRandomTip(getPlatform()))
+  const { createChat, createAgent } = useCreateSession()
+  const [creating, setCreating] = React.useState(false)
 
   const hour = new Date().getHours()
   const greeting = getGreeting(hour)
   const displayName = userProfile.userName || '用户'
 
-  // 森息晨光主题下选中按钮使用主色
   const selectedColor = themeStyle === 'forest-light' ? '#3f8361' : undefined
+  const isTAMode = topLevelMode === 'ta'
+  const primaryLabel = isTAMode
+    ? '新建 TA 会话'
+    : mode === 'chat'
+      ? '开始新对话'
+      : '开始新 Agent 会话'
 
-  /** 切换模式：仅切换模式，不创建新会话 */
+  const tipKey = isTAMode ? 'ta' : mode
+  const tipText = MODE_TIPS[tipKey] ?? MODE_TIPS['agent']!
+
+  /** 切换模式 */
   const handleModeSwitch = React.useCallback((targetMode: AppMode): void => {
     if (targetMode === mode) return
     setMode(targetMode)
   }, [mode, setMode])
 
+  /** 创建新会话 */
+  const handleStart = React.useCallback(async (): Promise<void> => {
+    if (creating) return
+    setCreating(true)
+    try {
+      if (isTAMode) {
+        await createAgent({ mode: 'ta' })
+      } else if (mode === 'chat') {
+        await createChat()
+      } else {
+        await createAgent({ mode: 'general' })
+      }
+    } finally {
+      setCreating(false)
+    }
+  }, [creating, isTAMode, mode, createAgent, createChat])
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 px-4">
-      {/* 问候语 */}
-      <h1 className="text-[26px] font-semibold tracking-tight text-foreground">
+    <div className="flex h-full flex-col items-center justify-center px-4">
+      {/* 问候语 — hero */}
+      <h1 className="text-[30px] font-semibold tracking-tight text-foreground">
         {displayName}，{greeting}
       </h1>
 
-      {/* Tips */}
-      <div className="flex items-center gap-2.5 rounded-full bg-muted/50 px-4 py-2 text-[13px] text-muted-foreground">
-        <Lightbulb size={14} className="flex-shrink-0 text-amber-500/80" />
-        <span>{tip.text}</span>
-      </div>
+      {/* 操作提示 — supporting */}
+      <p className="mt-2.5 text-[13px] text-muted-foreground">{tipText}</p>
 
-      {/* 模式切换 Tab */}
-      <div className="relative flex rounded-xl bg-muted/60 p-1">
-        {/* 滑动背景指示器 */}
-        <div
-          className={cn(
-            'absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-background shadow-sm transition-transform duration-300 ease-in-out',
-            mode === 'agent' ? 'translate-x-0' : 'translate-x-full',
-          )}
-        />
-        {(['agent', 'chat'] as const).map((m) => {
-          const config = MODE_CONFIG[m]
-          const isSelected = mode === m
-          return (
-            <button
-              key={m}
-              onClick={() => handleModeSwitch(m)}
-              style={isSelected && selectedColor ? { color: selectedColor } : undefined}
-              className={cn(
-                'relative z-[1] flex items-center gap-1.5 rounded-lg px-5 py-1.5 text-[13px] font-medium transition-colors duration-200',
-                isSelected
-                  ? 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {config.icon}
-              {config.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* 呼吸空间 — 信息区与操作区分离 */}
+      <div className="h-14" />
+
+      {/* 模式切换 Tab — 仅非 TA 模式 */}
+      {!isTAMode && (
+        <div className="relative flex rounded-xl bg-muted/60 p-1">
+          <div
+            className={cn(
+              'absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-background shadow-sm transition-transform duration-300 ease-in-out',
+              mode === 'agent' ? 'translate-x-0' : 'translate-x-full',
+            )}
+          />
+          {(['agent', 'chat'] as const).map((m) => {
+            const config = MODE_CONFIG[m]
+            const isSelected = mode === m
+            return (
+              <button
+                key={m}
+                onClick={() => handleModeSwitch(m)}
+                style={isSelected && selectedColor ? { color: selectedColor } : undefined}
+                className={cn(
+                  'relative z-[1] flex items-center gap-1.5 rounded-lg px-5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                  isSelected
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {config.icon}
+                {config.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* 主按钮 */}
+      <button
+        type="button"
+        onClick={() => { void handleStart() }}
+        disabled={creating}
+        className={cn(
+          'mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-60',
+        )}
+      >
+        {creating
+          ? <Loader2 size={16} className="animate-spin" />
+          : isTAMode || mode === 'agent'
+            ? <Bot size={16} />
+            : <MessageSquare size={16} />}
+        {primaryLabel}
+      </button>
     </div>
   )
 }

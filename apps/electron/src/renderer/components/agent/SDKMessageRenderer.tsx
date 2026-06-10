@@ -994,13 +994,13 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
   return (
     <Message from="user">
       <div className="flex items-start gap-2.5 mb-2.5">
-        <UserAvatar avatar={userProfile.avatar} size={35} />
-        <div className="flex flex-col justify-between h-[35px]">
+        <div className="flex flex-col justify-between h-[35px] items-end">
           <span className="text-sm font-semibold text-foreground/60 leading-none">{userProfile.userName}</span>
           {meta.createdAt && (
             <span className="text-[10px] text-foreground/[0.38] leading-none">{formatMessageTime(meta.createdAt)}</span>
           )}
         </div>
+        <UserAvatar avatar={userProfile.avatar} size={35} />
       </div>
       <MessageContent>
         {/* 引用文件 Chip */}
@@ -1030,7 +1030,7 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
         {text && <UserMessageContent>{text}</UserMessageContent>}
       </MessageContent>
       {text && (
-        <MessageActions className="pl-[46px] mt-0.5">
+        <MessageActions className="mt-0.5 justify-end">
           <CopyButton content={text} />
         </MessageActions>
       )}

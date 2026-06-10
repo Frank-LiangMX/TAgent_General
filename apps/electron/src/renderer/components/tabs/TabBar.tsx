@@ -20,31 +20,23 @@ import type { TabItem } from '@/atoms/tab-atoms'
 
 import {
   agentSessionsAtom,
-  agentWorkspacesAtom,
   currentAgentSessionIdAtom,
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, topLevelModeAtom } from '@/atoms/app-mode'
+import { appModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 import {
-  tabsAtom,
   activeTabIdAtom,
   tabIndicatorMapAtom,
+  visibleTabsAtom,
 } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 export function TabBar(): React.ReactElement {
-  const allTabs = useAtomValue(tabsAtom)
-  const topLevelMode = useAtomValue(topLevelModeAtom)
-  // 按顶层模式过滤 tabs：通用模式只显示 mode==='general'，TA 模式只显示 mode==='ta'。
-  // scratch 类型的 tab 在两个模式都显示。
-  const tabs = React.useMemo(
-    () => allTabs.filter((t) => t.type === 'scratch' || (t.mode ?? 'general') === topLevelMode),
-    [allTabs, topLevelMode],
-  )
+  const tabs = useAtomValue(visibleTabsAtom)
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
 
@@ -54,23 +46,11 @@ export function TabBar(): React.ReactElement {
   const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
-  const agentWorkspaces = useAtomValue(agentWorkspacesAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
 
   // 统一关闭逻辑：关闭当前会话入口并回到 Scratch Pad，不停止后台 Agent
   const { requestClose } = useCloseTab()
-
-  const workspaceNameBySessionId = React.useMemo(() => {
-    const workspaceNameMap = new Map(agentWorkspaces.map((workspace) => [workspace.id, workspace.name]))
-    const sessionWorkspaceNameMap = new Map<string, string>()
-    for (const session of agentSessions) {
-      if (!session.workspaceId) continue
-      const workspaceName = workspaceNameMap.get(session.workspaceId)
-      if (workspaceName) sessionWorkspaceNameMap.set(session.id, workspaceName)
-    }
-    return sessionWorkspaceNameMap
-  }, [agentSessions, agentWorkspaces])
 
   // 拖拽状态
   const dragState = React.useRef<{
@@ -153,7 +133,6 @@ export function TabBar(): React.ReactElement {
         tabs={tabs}
         activeTabId={activeTabId}
         streamingMap={indicatorMap}
-        workspaceNameBySessionId={workspaceNameBySessionId}
         onActivate={handleActivate}
         onClose={requestClose}
         onDragStart={handleDragStart}
@@ -167,7 +146,6 @@ function TabBarInner({
   tabs,
   activeTabId,
   streamingMap,
-  workspaceNameBySessionId,
   onActivate,
   onClose,
   onDragStart,
@@ -175,7 +153,6 @@ function TabBarInner({
   tabs: TabItem[]
   activeTabId: string | null
   streamingMap: Map<string, SessionIndicatorStatus>
-  workspaceNameBySessionId: Map<string, string>
   onActivate: (tabId: string) => void
   onClose: (tabId: string) => void
   onDragStart: (tabId: string, e: React.PointerEvent) => void
@@ -272,7 +249,6 @@ function TabBarInner({
             id={tab.id}
             type={tab.type}
             title={tab.title}
-            workspaceName={tab.type === 'agent' ? workspaceNameBySessionId.get(tab.sessionId) : undefined}
             isActive={tab.id === activeTabId}
             isStreaming={streamingMap.get(tab.id) ?? 'idle'}
             isHovered={hoveredTabId === tab.id}

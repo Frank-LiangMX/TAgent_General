@@ -81,6 +81,10 @@ interface ModelSelectorProps {
   externalSelectedModel?: { channelId: string; modelId: string } | null
   /** 外部选择回调 */
   onModelSelect?: (option: ModelOption) => void
+  /** 隐藏触发按钮中的模型 logo，只显示文字 */
+  hideLogo?: boolean
+  /** 紧凑模式：Cpu 图标 + 模型名 pill，用于嵌入 trailing 区域 */
+  compact?: boolean
 }
 
 export function ModelSelector({
@@ -88,6 +92,8 @@ export function ModelSelector({
   filterChannelIds,
   externalSelectedModel,
   onModelSelect,
+  hideLogo = false,
+  compact = false,
 }: ModelSelectorProps = {}): React.ReactElement {
   const [conversationModel, setConversationModel] = useConversationModelOptional()
   const conversationId = useConversationIdOptional()
@@ -229,25 +235,40 @@ export function ModelSelector({
   return (
     <>
       {/* 触发按钮 */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-      >
-        {displayModelInfo ? (
-          <img
-            src={getModelLogo(displayModelInfo.modelId, displayModelInfo.provider)}
-            alt={displayModelInfo.modelName}
-            className="size-4 rounded object-cover"
-          />
-        ) : (
+      {compact ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        >
           <Cpu className="size-3.5" />
-        )}
-        <span className="max-w-[200px] truncate">
-          {displayModelInfo ? displayModelInfo.modelName : '选择模型'}
-        </span>
-        <ChevronDown className="size-3" />
-      </button>
+          <span className="max-w-[120px] truncate">
+            {displayModelInfo ? displayModelInfo.modelName : '模型'}
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        >
+          {!hideLogo && (
+            displayModelInfo ? (
+              <img
+                src={getModelLogo(displayModelInfo.modelId, displayModelInfo.provider)}
+                alt={displayModelInfo.modelName}
+                className="size-4 rounded object-cover"
+              />
+            ) : (
+              <Cpu className="size-3.5" />
+            )
+          )}
+          <span className="max-w-[200px] truncate">
+            {displayModelInfo ? displayModelInfo.modelName : '选择模型'}
+          </span>
+          <ChevronDown className="size-3" />
+        </button>
+      )}
 
       {/* 模型选择 Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>

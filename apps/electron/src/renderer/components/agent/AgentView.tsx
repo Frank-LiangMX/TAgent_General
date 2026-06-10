@@ -15,7 +15,7 @@
 
 import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { CornerDownLeft, Square, Settings, Paperclip, FolderPlus, X, Brain, Sparkles, Eye, Bot } from 'lucide-react'
+import { ArrowUp, Square, Settings, Paperclip, FolderPlus, Plus, MicIcon, X, Brain, Sparkles, Eye, Bot } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
@@ -81,7 +81,6 @@ import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
 import { RichTextInput } from '@/components/ai-elements/rich-text-input'
-import { SpeechButton } from '@/components/ai-elements/speech-button'
 import { AttachmentPreviewItem } from '@/components/chat/AttachmentPreviewItem'
 import { ModelSelector } from '@/components/chat/ModelSelector'
 import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
@@ -297,6 +296,73 @@ function SubagentEagernessSelector({ value, onChange }: SubagentEagernessSelecto
               <span className="text-[10px] text-muted-foreground">{SUBAGENT_EAGERNESS_LABELS[k]!.desc}</span>
             </button>
           ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** 输入增强合并按钮（附件/文件夹/语音） */
+interface InputMorePopoverProps {
+  onAttachFile: () => void
+  onAttachFolder: () => void
+  onSpeech: () => void
+}
+
+function InputMorePopover({ onAttachFile, onAttachFolder, onSpeech }: InputMorePopoverProps): React.ReactElement {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip>
+        <PopoverTrigger asChild>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-[36px] rounded-full text-foreground/60 hover:text-foreground"
+            >
+              <Plus className="size-5" />
+            </Button>
+          </TooltipTrigger>
+        </PopoverTrigger>
+        <TooltipContent side="bottom">
+          <p>添加附件或语音</p>
+        </TooltipContent>
+      </Tooltip>
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={8}
+        className="w-auto min-w-[160px] p-2"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="flex flex-col gap-0.5">
+          <button
+            type="button"
+            onClick={() => { onAttachFile(); setOpen(false) }}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Paperclip className="size-4 text-foreground/70" />
+            <span className="text-xs">添加附件</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { onAttachFolder(); setOpen(false) }}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <FolderPlus className="size-4 text-foreground/70" />
+            <span className="text-xs">添加文件夹</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { onSpeech(); setOpen(false) }}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <MicIcon className="size-4 text-foreground/70" />
+            <span className="text-xs">语音输入</span>
+          </button>
         </div>
       </PopoverContent>
     </Popover>
@@ -1095,6 +1161,21 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       toast.error('附加文件夹失败')
     }
   }, [sessionId, setAttachedDirsMap])
+
+  /** 语音输入 */
+  const handleSpeech = React.useCallback(async (): Promise<void> => {
+    try {
+      const settings = await window.electronAPI.getVoiceDictationSettings()
+      if (!settings.enabled) {
+        toast.info('请先在设置中打开语音输入开关')
+        return
+      }
+      await window.electronAPI.toggleVoiceDictation()
+    } catch (error) {
+      console.error('[AgentView] 唤起语音输入失败:', error)
+      toast.error('唤起语音输入失败')
+    }
+  }, [])
 
   /** 移除待发送文件 */
   const handleRemoveFile = React.useCallback((id: string): void => {
@@ -1947,12 +2028,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   const inputToolbarItems = React.useMemo<ToolbarItem[]>(() => [
     {
-      key: 'model',
+      key: 'input-more',
       node: (
-        <ModelSelector
-          filterChannelIds={agentChannelIdsAgentSafe}
-          externalSelectedModel={externalSelectedModel}
-          onModelSelect={handleModelSelect}
+        <InputMorePopover
+          onAttachFile={handleOpenFileDialog}
+          onAttachFolder={handleAttachFolder}
+          onSpeech={handleSpeech}
         />
       ),
     },
@@ -1978,49 +2059,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         setSubagentEagerness(v)
         window.electronAPI.updateSettings({ subagentEagerness: v })
       }} />,
-    },
-    { key: 'speech', node: <SpeechButton className="size-[36px] shrink-0 rounded-full" /> },
-    {
-      key: 'attach-file',
-      node: (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-[36px] shrink-0 rounded-full text-foreground/60 hover:text-foreground"
-              onClick={handleOpenFileDialog}
-            >
-              <Paperclip className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            <p>添加附件</p>
-          </TooltipContent>
-        </Tooltip>
-      ),
-    },
-    {
-      key: 'attach-folder',
-      node: (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-[36px] shrink-0 rounded-full text-foreground/60 hover:text-foreground"
-              onClick={handleAttachFolder}
-            >
-              <FolderPlus className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            <p>附加文件夹</p>
-          </TooltipContent>
-        </Tooltip>
-      ),
     },
     {
       key: 'context-usage',
@@ -2050,14 +2088,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       ),
     },
   ], [
-    agentChannelIds,
-    externalSelectedModel,
-    handleModelSelect,
     sessionId,
     agentThinking,
     setAgentThinking,
     handleOpenFileDialog,
     handleAttachFolder,
+    handleSpeech,
     contextStatus.inputTokens,
     contextStatus.outputTokens,
     contextStatus.cacheReadTokens,
@@ -2072,45 +2108,56 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     setProcessGroupsKeepExpanded,
   ])
 
-  const inputTrailingNode = streaming && !hasTextInput ? (
-    <Tooltip>
-      <TooltipTrigger asChild>
+  const inputTrailingNode = (
+    <>
+      <ModelSelector
+        filterChannelIds={agentChannelIdsAgentSafe}
+        externalSelectedModel={externalSelectedModel}
+        onModelSelect={handleModelSelect}
+        hideLogo
+        compact
+      />
+      {streaming && !hasTextInput ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-[36px] rounded-full text-destructive hover:!text-[hsl(0,75%,55%)] hover:!bg-[var(--stop-hover-bg)]"
+              onClick={handleStop}
+            >
+              <Square className="size-[16px]" fill="currentColor" strokeWidth={0} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>停止 Agent ({getAcceleratorDisplay(getActiveAccelerator('stop-generation'))})</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-[36px] rounded-full text-destructive hover:!text-[hsl(0,75%,55%)] hover:!bg-[var(--stop-hover-bg)]"
-          onClick={handleStop}
+          className={cn(
+            'size-[36px] rounded-full',
+            canSend
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              : 'text-foreground/30 cursor-not-allowed'
+          )}
+          onClick={handleSend}
+          disabled={!canSend}
         >
-          <Square className="size-[16px]" fill="currentColor" strokeWidth={0} />
+          <ArrowUp className="size-5" />
         </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        <p>停止 Agent ({getAcceleratorDisplay(getActiveAccelerator('stop-generation'))})</p>
-      </TooltipContent>
-    </Tooltip>
-  ) : (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={cn(
-        'size-[36px] rounded-full',
-        canSend
-          ? 'text-primary hover:bg-primary/10'
-          : 'text-foreground/30 cursor-not-allowed'
       )}
-      onClick={handleSend}
-      disabled={!canSend}
-    >
-      <CornerDownLeft className="size-[22px]" />
-    </Button>
+    </>
   )
 
   return (
     <>
     <AgentSessionProvider sessionId={sessionId}>
-      <div className="flex flex-col h-full flex-1 min-w-0 max-w-[min(72rem,100%)] mx-auto">
+      <div className="flex flex-col h-full flex-1 min-w-0 mx-auto">
         {/* Agent Header */}
         <AgentHeader sessionId={sessionId} />
 

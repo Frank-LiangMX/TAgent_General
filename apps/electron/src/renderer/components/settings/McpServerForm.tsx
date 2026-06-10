@@ -36,6 +36,8 @@ interface McpServerFormProps {
   workspaceSlug: string
   onSaved: () => void
   onCancel: () => void
+  /** 隐藏内置标题栏（外部自行渲染固定顶栏时使用） */
+  hideTitleBar?: boolean
 }
 
 /** 传输类型选项 */
@@ -76,7 +78,7 @@ function serializeKeyValueText(record: Record<string, string> | undefined, separ
     .join('\n')
 }
 
-export function McpServerForm({ server, workspaceSlug, onSaved, onCancel }: McpServerFormProps): React.ReactElement {
+export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTitleBar }: McpServerFormProps): React.ReactElement {
   const isEdit = server !== null
   const isBuiltin = server?.entry.isBuiltin === true
 
@@ -244,24 +246,26 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel }: McpS
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 标题栏 + 操作按钮 */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" type="button" onClick={onCancel}>
-          <ArrowLeft size={18} />
-        </Button>
-        <h3 className="text-lg font-medium text-foreground flex-1">
-          {isEdit ? '编辑 MCP 服务器' : '添加 MCP 服务器'}
-        </h3>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" type="button" onClick={onCancel}>
-            取消
+      {/* 标题栏 + 操作按钮（hideTitleBar 时由外部渲染） */}
+      {!hideTitleBar && (
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" type="button" onClick={onCancel}>
+            <ArrowLeft size={18} />
           </Button>
-          <Button size="sm" type="submit" disabled={saving || !canSubmit()}>
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            <span>{isEdit ? '保存修改' : '创建服务器'}</span>
-          </Button>
+          <h3 className="text-lg font-medium text-foreground flex-1">
+            {isEdit ? '编辑 MCP 服务器' : '添加 MCP 服务器'}
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" type="button" onClick={onCancel}>
+              取消
+            </Button>
+            <Button size="sm" type="submit" disabled={saving || !canSubmit()}>
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              <span>{isEdit ? '保存修改' : '创建服务器'}</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 基本信息 */}
       <SettingsSection title="基本信息">

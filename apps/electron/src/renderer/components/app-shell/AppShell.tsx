@@ -20,6 +20,7 @@ import { LeftSidebar } from './LeftSidebar'
 import { RightSidePanel } from './RightSidePanel'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import type { AgentSessionMeta } from '@tagent/shared'
 
 import {
   agentSidePanelWidthAtom,
@@ -58,6 +59,13 @@ function getRailInitial(title: string): string {
   return title.trim().slice(0, 1).toUpperCase() || '·'
 }
 
+function isAgentSessionInMode(
+  session: AgentSessionMeta,
+  topLevelMode: 'general' | 'ta',
+): boolean {
+  return (session.mode ?? 'general') === topLevelMode
+}
+
 export interface AppShellProps {
   /** Context 值，用于传递给子组件 */
   contextValue: AppShellContextType
@@ -68,6 +76,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(currentSessionSidePanelOpenAtom)
+  const activeRailItem = useAtomValue(activeRailItemAtom)
   const showRightPanel = topLevelMode === 'general' && appMode === 'agent' && !!currentSessionId
   const isWindows = React.useMemo(() => detectIsWindows(), [])
   const isMac = React.useMemo(() => detectIsMac(), [])
@@ -75,7 +84,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   // 侧边栏折叠状态
   const [sidebarCollapsed, setSidebarCollapsed] = useAtom(sidebarCollapsedAtom)
-  const activeRailItem = useAtomValue(activeRailItemAtom)
+  const showLeftSidebar = activeRailItem !== 'files' && activeRailItem !== 'skills'
 
   // 会话列表状态（用于 FunctionalRail 最近会话入口）
   const conversations = useAtomValue(conversationsAtom)
@@ -136,9 +145,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   // 计算最近会话列表（用于 FunctionalRail）
   const railRecentItems = React.useMemo(() => {
-    if (topLevelMode !== 'general') return []
-
-    if (appMode === 'chat') {
+    if (topLevelMode === 'general' && appMode === 'chat') {
       return conversations
         .filter((c) => !c.archived && !draftSessionIds.has(c.id))
         .sort((a, b) => {
@@ -161,11 +168,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         }))
     }
 
-    // Agent 模式
+    // Agent 会话按顶层模式隔离：通用模式只看 general/旧会话，TA 模式只看 ta 会话。
     return agentSessions
       .filter((session) =>
         !session.archived
         && !draftSessionIds.has(session.id)
+        && isAgentSessionInMode(session, topLevelMode)
         && (!currentWorkspaceId || session.workspaceId === currentWorkspaceId)
       )
       .sort((a, b) => {
@@ -238,17 +246,18 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             onNewSession={handleNewSession}
             onSearch={handleSearch}
             sidebarCollapsed={sidebarCollapsed}
-            topLevelMode={topLevelMode}
           />
 
-          {/* LeftSidebar：功能区内容，根据 activeRailItem 显示不同内容。始终挂载，折叠动画在 LeftSidebar 内部通过 width/opacity transition 实现 */}
-          <div className="relative">
-            <LeftSidebar
-              activeRailItem={activeRailItem}
-              collapsed={sidebarCollapsed}
-              onCollapsedChange={setSidebarCollapsed}
-            />
-          </div>
+          {/* Files 页不显示 sidebar，直接把内容交给主区单栏展示 */}
+          {showLeftSidebar && (
+            <div className="relative">
+              <LeftSidebar
+                activeRailItem={activeRailItem}
+                collapsed={sidebarCollapsed}
+                onCollapsedChange={setSidebarCollapsed}
+              />
+            </div>
+          )}
         </div>
 
         {/* 工作区管理弹窗（全局可见） */}

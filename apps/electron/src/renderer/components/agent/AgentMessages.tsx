@@ -38,7 +38,7 @@ import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { formatMessageTime } from '@/components/chat/ChatMessageItem'
 import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
+
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
@@ -117,9 +117,13 @@ interface AgentMessagesProps {
   onCompact?: () => void
 }
 
-/** 空状态引导 — 使用 WelcomeEmptyState */
+/** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
 function EmptyState(): React.ReactElement {
-  return <WelcomeEmptyState />
+  return (
+    <div className="flex h-full items-center justify-center">
+      <p className="text-sm text-muted-foreground/60">输入消息开始对话</p>
+    </div>
+  )
 }
 
 function AssistantLogo({ model }: { model?: string }): React.ReactElement {

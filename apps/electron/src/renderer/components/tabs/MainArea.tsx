@@ -19,10 +19,18 @@ import {
   topLevelModeAtom,
   activeRailItemAtom,
   appModeAtom,
+  selectedCapabilityAtom,
   type TARailItem,
 } from '@/atoms/app-mode'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
-import { tabsAtom, activeTabIdAtom, activeTabAtom } from '@/atoms/tab-atoms'
+import {
+  activeTabIdAtom,
+  activeTabAtom,
+  visibleSessionTabsAtom,
+  visibleTabsAtom,
+} from '@/atoms/tab-atoms'
+import { WorkspaceFilesMainView } from '@/components/agent/WorkspaceFilesMainView'
+import { SkillsMainView } from '@/components/agent/SkillsMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
@@ -37,8 +45,9 @@ import { useTrackSessionView } from '@/hooks/useTrackSessionView'
 
 export function MainArea(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
-  const activeRailItem = useAtomValue(activeRailItemAtom) as TARailItem
+  const activeRailItem = useAtomValue(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
+  const setSelectedCapability = useSetAtom(selectedCapabilityAtom)
 
   // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
   React.useEffect(() => {
@@ -46,6 +55,13 @@ export function MainArea(): React.ReactElement {
       setAppMode('agent')
     }
   }, [topLevelMode, activeRailItem, setAppMode])
+
+  // 离开 skills 功能区时清除选中
+  React.useEffect(() => {
+    if (activeRailItem !== 'skills') {
+      setSelectedCapability(null)
+    }
+  }, [activeRailItem, setSelectedCapability])
 
   // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
   if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
@@ -55,6 +71,14 @@ export function MainArea(): React.ReactElement {
   // TA 模式其他模块（资产/审核/流水线/记忆/配置）使用独立渲染逻辑
   if (topLevelMode === 'ta') {
     return <TAMainArea />
+  }
+
+  if (activeRailItem === 'files') {
+    return <WorkspaceFilesMainView />
+  }
+
+  if (activeRailItem === 'skills') {
+    return <SkillsMainView />
   }
 
   // 通用模式使用原有逻辑
@@ -103,15 +127,21 @@ function GeneralMainArea(): React.ReactElement {
   // 记录每个会话上次停留的视图（对话 / 预览），供切回时重建预览 Tab
   useTrackSessionView()
 
-  const tabs = useAtomValue(tabsAtom)
+  const tabs = useAtomValue(visibleTabsAtom)
+  const sessionTabs = useAtomValue(visibleSessionTabsAtom)
   const activeTabId = useAtomValue(activeTabIdAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const activeTab = useAtomValue(activeTabAtom)
+  const appMode = useAtomValue(appModeAtom)
+  const activeRailItem = useAtomValue(activeRailItemAtom)
+
+  // Skills rail → 主区域显示能力详情/空态，由详情视图内部决定是否有选中项
 
   // Tab 内容渲染降级为非紧急：TabBar 立即高亮新 tab，主区域昂贵渲染（含 PreviewPanel 中
   // DiffTabContent → ProseMirror editor mount + Shiki tokenize）让出主线程，避免点击 tab
   // 后必须等主区域渲染完才能看到 tab 切换效果
-  const deferredActiveTabId = React.useDeferredValue(activeTabId)
+  const contentTabId = activeTab?.id ?? null
+  const deferredActiveTabId = React.useDeferredValue(contentTabId)
 
   const previewOpenMap = useAtomValue(previewPanelOpenMapAtom)
   const [splitRatio, setSplitRatio] = useAtom(previewSplitRatioAtom)
@@ -120,6 +150,7 @@ function GeneralMainArea(): React.ReactElement {
   const previewOpen =
     activeTab?.type === 'agent' && (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
+  const showSessionWelcome = appMode !== 'scratch' && sessionTabs.length === 0
 
   // 关闭动画状态：当 previewOpen 从 true → false 时，播放退出动画再移除 DOM
   // 在 render 阶段同步派生 closing，避免中间帧出现 flex: 1 1 auto 导致左侧瞬间跳到 100% 宽
@@ -182,16 +213,11 @@ function GeneralMainArea(): React.ReactElement {
   }, [splitRatio, setSplitRatio])
 
   React.useEffect(() => {
-    if (tabs.length === 0) {
-      console.warn('[FLASH-DEBUG] MainArea: tabs.length === 0, showing WelcomeView!', new Error().stack)
-    }
-  }, [tabs.length])
-
-  React.useEffect(() => {
-    if (tabs.length > 0 && !activeTabId) {
+    if (showSessionWelcome) return
+    if (tabs.length > 0 && (!activeTabId || !activeTab)) {
       setActiveTabId(tabs[0]!.id)
     }
-  }, [tabs, activeTabId, setActiveTabId])
+  }, [showSessionWelcome, tabs, activeTabId, activeTab, setActiveTabId])
 
   // 关闭动画期间右侧面板的定位样式（脱离 flex 流，保持原宽度，translateX 向右滑出）
   const closingOverlayStyle: React.CSSProperties | undefined = closing
@@ -227,8 +253,8 @@ function GeneralMainArea(): React.ReactElement {
           className="flex flex-col min-w-0 h-full"
           style={leftFlexStyle}
         >
-          <TabBar />
-          {tabs.length === 0 ? (
+          {!showSessionWelcome && <TabBar />}
+          {showSessionWelcome || tabs.length === 0 ? (
             <WelcomeView />
           ) : deferredActiveTabId ? (
             <div className="flex-1 min-h-0 titlebar-no-drag">

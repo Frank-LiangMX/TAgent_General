@@ -169,7 +169,8 @@ export const scratchPadLoadedAtom = atom<boolean>(false)
 export const activeTabAtom = atom<TabItem | null>((get) => {
   const activeId = get(activeTabIdAtom)
   if (!activeId) return null
-  return get(tabsAtom).find((t) => t.id === activeId) ?? null
+  const mode = get(topLevelModeAtom)
+  return get(tabsAtom).find((t) => t.id === activeId && isTabVisibleInMode(t, mode)) ?? null
 })
 
 /**
@@ -245,6 +246,19 @@ export function getPreviewTabTitle(filePath: string): string {
 export function isPreviewTab(tab: TabItem): boolean {
   return tab.type === 'preview' || tab.id.startsWith(PREVIEW_TAB_PREFIX)
 }
+
+export function isTabVisibleInMode(tab: TabItem, mode: TopLevelMode): boolean {
+  return tab.type === 'scratch' || (tab.mode ?? 'general') === mode
+}
+
+export const visibleTabsAtom = atom<TabItem[]>((get) => {
+  const mode = get(topLevelModeAtom)
+  return get(tabsAtom).filter((tab) => isTabVisibleInMode(tab, mode))
+})
+
+export const visibleSessionTabsAtom = atom<TabItem[]>((get) => {
+  return get(visibleTabsAtom).filter((tab) => tab.type === 'chat' || tab.type === 'agent')
+})
 
 function isSessionTab(tab: TabItem): boolean {
   return tab.type === 'chat' || tab.type === 'agent'

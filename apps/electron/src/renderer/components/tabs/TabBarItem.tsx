@@ -1,13 +1,13 @@
 /**
  * TabBarItem — 单个标签页 UI
  *
- * 显示：标题 + 工作区标签 + 流式指示器 + 关闭按钮
+ * 显示：入口类型 + 标题 + 流式指示器 + 关闭按钮
  * 支持：点击聚焦、中键关闭、拖拽重排
  * hover 预览面板由父级 TabBar 统一管理状态
  */
 
 import { useAtomValue } from 'jotai'
-import { FileText, StickyNote, X } from 'lucide-react'
+import { FileText, MessageSquare, StickyNote, X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
@@ -25,7 +25,6 @@ export interface TabBarItemProps {
   id: string
   type: TabType
   title: string
-  workspaceName?: string
   isActive: boolean
   isStreaming: SessionIndicatorStatus
   /** 是否显示 hover 预览面板（由父级管理） */
@@ -50,7 +49,6 @@ export function TabBarItem({
   id,
   type,
   title,
-  workspaceName,
   isActive,
   isStreaming,
   isHovered,
@@ -94,18 +92,20 @@ export function TabBarItem({
   }
 
   const isScratch = type === 'scratch'
-  const indicatorColor = isScratch
+  const statusLineClass = isScratch
     ? undefined
     : isStreaming !== 'idle'
     ? isStreaming === 'completed'
-      ? 'border-green-500'
+      ? 'bg-emerald-500'
       : isStreaming === 'blocked'
-        ? 'border-orange-500'
-        : 'border-blue-500'
+        ? 'bg-orange-500'
+        : 'bg-blue-500 animate-pulse'
     : undefined
   const previewItems = minimapCache.get(id) ?? []
   // 当前 active Tab 不显示预览面板
   const showPreview = isHovered && !isActive
+  const isAgentSession = type === 'agent'
+  const isChatSession = type === 'chat'
 
   // Scratch Pad 是固定草稿入口
   if (isScratch) {
@@ -132,6 +132,12 @@ export function TabBarItem({
         >
           <StickyNote className="size-3.5" />
           <span className="truncate">草稿</span>
+          {isActive && (
+            <span
+              className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-primary"
+              aria-hidden="true"
+            />
+          )}
         </button>
       </div>
     )
@@ -166,12 +172,11 @@ export function TabBarItem({
         {isNarrow ? (
           <span className="flex-1" />
         ) : (
-          <span className="flex-1 min-w-0 truncate text-left">{title}</span>
-        )}
-
-        {workspaceName && !isNarrow && (
-          <span className="shrink-0 px-1.5 py-0 rounded-full bg-primary/10 text-[10px] leading-4 workspace-badge font-medium truncate max-w-[86px]">
-            {workspaceName}
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+            {(isAgentSession || isChatSession) && (
+              <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <span className="min-w-0 truncate">{title}</span>
           </span>
         )}
 
@@ -194,12 +199,11 @@ export function TabBarItem({
         </span>
         )}
 
-        {/* 状态包边 */}
-        {indicatorColor && (
+        {(isActive || statusLineClass) && (
           <span
             className={cn(
-              'absolute inset-0 rounded-t-lg border-t-2 border-l-2 border-r-2 border-b-0 pointer-events-none',
-              indicatorColor,
+              'absolute inset-x-3 bottom-0 h-[2px] rounded-full',
+              statusLineClass ?? 'bg-primary',
             )}
             aria-hidden="true"
           />

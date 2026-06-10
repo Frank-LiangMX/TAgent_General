@@ -48,7 +48,7 @@ import {
   ReasoningContent,
 } from '@/components/ai-elements/reasoning'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
-import { WelcomeEmptyState } from '@/components/welcome/WelcomeEmptyState'
+
 import { useConversationParallelMode } from '@/hooks/useConversationSettings'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { getModelLogo } from '@/lib/model-logo'
@@ -160,9 +160,13 @@ interface ChatMessagesProps {
   onLoadMore?: () => Promise<void>
 }
 
-/** 空状态引导 — 使用 WelcomeEmptyState */
+/** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
 function EmptyState(): React.ReactElement {
-  return <WelcomeEmptyState />
+  return (
+    <div className="flex h-full items-center justify-center">
+      <p className="text-sm text-muted-foreground/60">输入消息开始对话</p>
+    </div>
+  )
 }
 
 export function ChatMessages({

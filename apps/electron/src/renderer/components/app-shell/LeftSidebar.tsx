@@ -230,6 +230,24 @@ function getRailInitial(title: string): string {
   return title.trim().slice(0, 1).toUpperCase() || '·'
 }
 
+function getSessionLeftAccent(
+  indicatorStatus: SessionIndicatorStatus,
+  active: boolean,
+): SessionLeftAccent | undefined {
+  if (indicatorStatus === 'blocked') return 'orange'
+  if (indicatorStatus === 'running') return 'blue'
+  if (indicatorStatus === 'completed') return 'green'
+  if (active) return 'primary'
+  return undefined
+}
+
+function isAgentSessionInTopLevelMode(
+  session: AgentSessionMeta,
+  topLevelMode: 'general' | 'ta',
+): boolean {
+  return (session.mode ?? 'general') === topLevelMode
+}
+
 interface RailRecentItem {
   id: string
   title: string
@@ -291,6 +309,10 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
 
   // Agent 模式状态
   const [agentSessions, setAgentSessions] = useAtom(agentSessionsAtom)
+  const currentModeAgentSessions = React.useMemo(
+    () => agentSessions.filter((session) => isAgentSessionInTopLevelMode(session, topLevelMode)),
+    [agentSessions, topLevelMode],
+  )
   const [currentAgentSessionId, setCurrentAgentSessionId] = useAtom(currentAgentSessionIdAtom)
   const agentIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
   const unviewedCompletedSessionIds = useAtomValue(unviewedCompletedSessionIdsAtom)
@@ -459,8 +481,8 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
 
   /** 已归档 Agent 会话数量（当前工作区） */
   const archivedAgentSessionCount = React.useMemo(
-    () => agentSessions.filter((s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId)).length,
-    [agentSessions, currentWorkspaceId]
+    () => currentModeAgentSessions.filter((s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId)).length,
+    [currentModeAgentSessions, currentWorkspaceId]
   )
 
   /** 归档的 Chat 对话列表（按 updatedAt 倒序，不分组供 Popover 平铺） */
@@ -473,10 +495,10 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
 
   /** 归档的 Agent 会话列表（按 updatedAt 倒序，平铺） */
   const archivedAgentSessionsList = React.useMemo(
-    () => agentSessions
+    () => currentModeAgentSessions
       .filter((s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId) && !draftSessionIds.has(s.id))
       .sort((a, b) => b.updatedAt - a.updatedAt),
-    [agentSessions, currentWorkspaceId, draftSessionIds],
+    [currentModeAgentSessions, currentWorkspaceId, draftSessionIds],
   )
 
   // 初始加载对话列表 + 用户档案 + Agent 会话
@@ -916,11 +938,11 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
    *  + 按顶层模式隔离：通用模式只显示 mode='general'，TA 模式只显示 mode='ta' */
   const filteredAgentSessions = React.useMemo(
     () => {
-      const byWorkspace = agentSessions.filter((s) => s.workspaceId === currentWorkspaceId && !draftSessionIds.has(s.id))
+      const byWorkspace = currentModeAgentSessions.filter((s) => s.workspaceId === currentWorkspaceId && !draftSessionIds.has(s.id))
       const byMode = byWorkspace.filter((s) => (s.mode ?? 'general') === topLevelMode)
       return sortAgentSessionsByUpdatedAtDesc(byMode.filter((s) => !s.archived))
     },
-    [agentSessions, currentWorkspaceId, draftSessionIds, topLevelMode]
+    [currentModeAgentSessions, currentWorkspaceId, draftSessionIds, topLevelMode]
   )
 
   const railRecentItems = React.useMemo(() => {
@@ -949,7 +971,7 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
         }))
     }
 
-    return agentSessions
+    return currentModeAgentSessions
       .filter((session) =>
         !session.archived
         && !draftSessionIds.has(session.id)
@@ -985,7 +1007,7 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   }, [
     mode,
     conversations,
-    agentSessions,
+    currentModeAgentSessions,
     draftSessionIds,
     currentWorkspaceId,
     activeSessionId,
@@ -1160,8 +1182,8 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
         </div>
       )}
 
-      {/* 工作区选择（仅通用模式 + Agent 子模式 + 目录区展开时）：目录区折叠时由功能区的 Briefcase 按钮承担 */}
-      {mode === 'agent' && topLevelMode === 'general' && !isSidebarCollapsed && (
+      {/* 工作区选择（仅通用模式 + Agent 子模式 + 目录区展开时；Skills 视图里不再显示） */}
+      {mode === 'agent' && topLevelMode === 'general' && !isSidebarCollapsed && activeRailItem !== 'skills' && (
         <div className="px-3 pb-1 flex-shrink-0">
           <Popover>
             <PopoverTrigger asChild>
@@ -1341,15 +1363,19 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
                     </div>
                   ) : (
                     <div className="flex flex-col gap-0.5">
-                      {archivedAgentSessionsList.map((session) => (
-                        <AgentSessionItem
-                          key={session.id}
-                          session={session}
-                          active={session.id === activeSessionId}
-                          indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
-                          isInWorkingSection={workingSessionIds.has(session.id)}
-                          showPinIcon={!!session.pinned}
-                          workspaceName={session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined}
+                  {archivedAgentSessionsList.map((session) => (
+                    <AgentSessionItem
+                      key={session.id}
+                      session={session}
+                      active={session.id === activeSessionId}
+                      indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                      isInWorkingSection={workingSessionIds.has(session.id)}
+                      leftAccent={getSessionLeftAccent(
+                        agentIndicatorMap.get(session.id) ?? 'idle',
+                        session.id === activeSessionId,
+                      )}
+                      showPinIcon={!!session.pinned}
+                      workspaceName={session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined}
                           onSelect={handleSelectAgentSession}
                           onConfirmDone={handleConfirmWorkingDoneAgent}
                           onRequestDelete={handleRequestDelete}
@@ -1515,6 +1541,10 @@ function SessionsRailContent({
               active={session.id === activeSessionId}
               indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
               isInWorkingSection={workingSessionIds.has(session.id)}
+              leftAccent={getSessionLeftAccent(
+                agentIndicatorMap.get(session.id) ?? 'idle',
+                session.id === activeSessionId,
+              )}
               showPinIcon={!!session.pinned}
               workspaceName={session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined}
               onSelect={handleSelectAgentSession}
@@ -1751,11 +1781,12 @@ const ConversationItem = React.memo(function ConversationItem({
 // ===== Agent 会话列表项 =====
 
 /** 会话行左侧状态色块的颜色 — 与 SessionIndicatorStatus 呼应 */
-type SessionLeftAccent = 'orange' | 'blue' | 'green'
+type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary'
 const SESSION_LEFT_ACCENT_CLASS: Record<SessionLeftAccent, string> = {
   orange: 'border-orange-500',
   blue: 'border-blue-500',
   green: 'border-green-500',
+  primary: 'border-primary',
 }
 
 interface AgentSessionItemProps {
@@ -1923,6 +1954,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           }}
           className={cn(
             'group relative w-full flex items-center gap-2 px-3 py-[7px] rounded-md transition-colors duration-100 titlebar-no-drag text-left',
+            leftAccent && 'pl-5',
             active
               ? 'session-item-selected bg-primary/10 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
               : 'hover:bg-primary/5'
@@ -1931,7 +1963,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           {leftAccent && (
             <span
               className={cn(
-                'absolute inset-y-0 left-0 w-0 border-l-[3px] rounded-l-md pointer-events-none',
+                'absolute left-1 top-2 bottom-2 w-0 border-l-[3px] rounded-full pointer-events-none',
                 SESSION_LEFT_ACCENT_CLASS[leftAccent]
               )}
             />

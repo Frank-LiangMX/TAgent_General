@@ -38,6 +38,14 @@ export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory
 /** 所有功能区类型 */
 export type RailItem = GeneralRailItem | TARailItem
 
+/** 能力详情选中项（sidebar 列表点击后，主区域展示详情） */
+export interface CapabilitySelection {
+  type: 'skill' | 'mcp'
+  key: string
+}
+
+export const selectedCapabilityAtom = atom<CapabilitySelection | null>(null)
+
 /** 通用模式功能区选中（持久化到 localStorage） */
 export const generalRailItemAtom = atomWithStorage<GeneralRailItem>(
   'tagent-general-rail-item',

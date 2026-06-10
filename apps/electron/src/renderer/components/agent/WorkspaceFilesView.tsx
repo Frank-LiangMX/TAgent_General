@@ -38,6 +38,8 @@ import { cn } from '@/lib/utils'
 interface WorkspaceFilesViewProps {
   /** 唯一标识，用于 host 端的 React key（切换工作区时强制重建） */
   workspaceKey: string
+  /** 布局模式：sidebar 保持紧凑，main 走宽屏主区布局 */
+  layout?: 'sidebar' | 'main'
 }
 
 const actionButtonClass = 'h-6 w-6 flex-shrink-0 rounded-md text-muted-foreground/75 hover:bg-accent/70 hover:text-foreground [&_svg]:size-3.5'
@@ -46,10 +48,11 @@ function getPathBasename(filePath: string): string {
   return filePath.split(/[\\/]/).filter(Boolean).pop() || filePath
 }
 
-export function WorkspaceFilesView({ workspaceKey }: WorkspaceFilesViewProps): React.ReactElement {
+export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: WorkspaceFilesViewProps): React.ReactElement {
   // 当前工作区
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
+  const workspaceName = workspaces.find((w) => w.id === currentWorkspaceId)?.name ?? '工作区'
   const workspaceSlug = workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null
 
   // 工作区级附加目录 / 文件
@@ -206,54 +209,120 @@ export function WorkspaceFilesView({ workspaceKey }: WorkspaceFilesViewProps): R
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col pt-0.5 mx-2 mb-2" key={workspaceKey}>
+    <div
+      className={cn(
+        'min-h-0',
+        layout === 'main'
+          ? 'flex h-full flex-col gap-5 px-6 pb-6 pt-10 xl:px-8'
+          : 'flex-1 flex flex-col pt-0.5 mx-2 mb-2',
+      )}
+      key={workspaceKey}
+    >
       {/* Header */}
-      <div className="flex items-center gap-1 px-2 h-[32px] flex-shrink-0">
-        <FolderOpen className="size-3 text-muted-foreground" />
-        <span className="text-[11px] font-medium text-muted-foreground">工作区文件</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Info className="size-3 text-muted-foreground/50 cursor-help" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-[220px]">
-            <p>工作区内所有会话可访问的文件和文件夹，每个新对话都可以自动读取</p>
-          </TooltipContent>
-        </Tooltip>
-        <span className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0" title={workspaceFilesPath ?? ''}>
-          {breadcrumb}
-        </span>
-        {workspaceFilesPath && (
+      {layout === 'main' ? (
+        <div className="rounded-3xl border border-border/60 bg-card/90 px-5 py-4 shadow-sm shadow-foreground/5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                <FolderOpen className="size-3.5" />
+                <span>工作区文件</span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold text-foreground">{workspaceName}</h2>
+                <span className="rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  main view
+                </span>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                这里直接承接文件功能区的内容，但用更宽的主区排版展示，避免和 sidebar 共享同一套紧凑样式。
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {workspaceFilesPath && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
+                    >
+                      <FolderSearch size={14} />
+                      <span className="ml-1">打开目录</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>在 Finder 中打开工作区文件目录</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <MiniStat label="附加目录" value={String(wsAttachedDirs.length)} />
+            <MiniStat label="附加文件" value={String(wsAttachedFiles.length)} />
+            <MiniStat label="工作区路径" value={breadcrumb || '未就绪'} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1 px-2 h-[32px] flex-shrink-0">
+          <FolderOpen className="size-3 text-muted-foreground" />
+          <span className="text-[11px] font-medium text-muted-foreground">工作区文件</span>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={actionButtonClass}
-                onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
-              >
-                <FolderSearch />
-              </Button>
+              <Info className="size-3 text-muted-foreground/50 cursor-help" />
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>在 Finder 中打开工作区文件目录</p>
+            <TooltipContent side="bottom" className="max-w-[220px]">
+              <p>工作区内所有会话可访问的文件和文件夹，每个新对话都可以自动读取</p>
             </TooltipContent>
           </Tooltip>
-        )}
-      </div>
+          <span className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0" title={workspaceFilesPath ?? ''}>
+            {breadcrumb}
+          </span>
+          {workspaceFilesPath && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={actionButtonClass}
+                  onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
+                >
+                  <FolderSearch />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>在 Finder 中打开工作区文件目录</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
 
       {/* 搜索栏 */}
-      <FileSearchBar
-        workspaceFilesPath={workspaceFilesPath}
-        sessionPath={null}
-        sessionAttachedDirs={[]}
-        workspaceAttachedDirs={wsAttachedDirs}
-        placeholder="搜索工作区文件..."
-        onFilePreview={handleFilePreview}
-      />
+      <div className={layout === 'main' ? 'rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-sm shadow-foreground/5' : ''}>
+        <FileSearchBar
+          workspaceFilesPath={workspaceFilesPath}
+          sessionPath={null}
+          sessionAttachedDirs={[]}
+          workspaceAttachedDirs={wsAttachedDirs}
+          placeholder="搜索工作区文件..."
+          onFilePreview={handleFilePreview}
+        />
+      </div>
 
       {/* 文件列表 */}
-      <div className="flex-1 min-h-0 overflow-y-auto pb-1 scrollbar-thin">
+      <div
+        className={cn(
+          'min-h-0 overflow-y-auto pb-1 scrollbar-thin',
+          layout === 'main'
+            ? 'flex-1 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-sm shadow-foreground/5'
+            : 'flex-1',
+        )}
+      >
         {wsAttachedFiles.length > 0 && (
           <AttachedFilesSection
             attachedFiles={wsAttachedFiles}
@@ -292,6 +361,15 @@ export function WorkspaceFilesView({ workspaceKey }: WorkspaceFilesViewProps): R
           onFoldersDropped={handleFoldersDropped}
         />
       </div>
+    </div>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/35 px-3 py-1.5 text-xs text-foreground/80">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums text-foreground">{value}</span>
     </div>
   )
 }

@@ -120,8 +120,6 @@ export interface FunctionalRailProps {
   onSearch?: () => void
   /** 目录区是否折叠（控制高频操作和最近会话的显示） */
   sidebarCollapsed?: boolean
-  /** 当前顶层模式（控制 TA 模式下不显示高频操作/最近会话） */
-  topLevelMode?: TopLevelMode
 }
 
 export function FunctionalRail({
@@ -131,13 +129,10 @@ export function FunctionalRail({
   onNewSession,
   onSearch,
   sidebarCollapsed = false,
-  topLevelMode: topLevelModeProp,
 }: FunctionalRailProps): React.ReactElement {
   const [topLevelMode, setTopLevelMode] = useAtom(topLevelModeAtom)
   const [activeRailItem, setActiveRailItem] = useAtom(activeRailItemAtom)
   const appMode = useAtomValue(appModeAtom)
-  // 优先用 prop 传入的顶层模式（避免短暂不一致），无 prop 时回退到 atom
-  const effectiveTopLevelMode = topLevelModeProp ?? topLevelMode
   const isMac = React.useMemo(() => detectIsMac(), [])
 
   const hasUpdate = useAtomValue(hasUpdateAtom)
@@ -158,6 +153,8 @@ export function FunctionalRail({
     () => (currentWorkspaceName?.trim().slice(0, 1).toUpperCase() || '·'),
     [currentWorkspaceName],
   )
+
+  // 工作区能力数据（折叠态 Skills Popover 使用）
 
   const [modeStatus, setModeStatus] = React.useState<ModeStatusSummary | null>(null)
   const [isSwitching, setIsSwitching] = React.useState(false)
@@ -280,14 +277,13 @@ export function FunctionalRail({
                   type="button"
                   onClick={() => handleModeSwitch(value)}
                   disabled={isSwitching}
-                  className={cn(
+                className={cn(
                     'relative size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
                     isActive
                       ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
                       : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75',
                     isSwitching && 'opacity-50 cursor-not-allowed'
                   )}
-                  title={description}
                 >
                   {isSwitching && isActive ? <Loader2 size={14} className="animate-spin" /> : icon}
                   {/* 后台任务数量 */}
@@ -298,7 +294,7 @@ export function FunctionalRail({
                   )}
                   {/* 暂停指示器 */}
                   {isPaused && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500" title="已暂停" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500" />
                   )}
                 </button>
               </TooltipTrigger>
@@ -394,37 +390,38 @@ export function FunctionalRail({
 
       {/* 功能区切换按钮 */}
       <div className="flex flex-col items-center gap-1.5">
-        {railItems.map((item) => (
-          <Tooltip key={item.id}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setActiveRailItem(item.id)}
-                className={cn(
-                  'size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
-                  activeRailItem === item.id
-                    ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                    : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75'
-                )}
-                title={item.description}
-              >
-                {item.icon}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <div className="text-xs">
-                <div className="font-medium">{item.label}</div>
-                <div className="text-muted-foreground">{item.description}</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+        {railItems.map((item) => {
+          return (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setActiveRailItem(item.id)}
+                  className={cn(
+                    'size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
+                    activeRailItem === item.id
+                      ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+                      : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75'
+                  )}
+                >
+                  {item.icon}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <div className="text-xs">
+                  <div className="font-medium">{item.label}</div>
+                  <div className="text-muted-foreground">{item.description}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )
+        })}
       </div>
 
       <div className="my-3 h-px w-8 bg-border/70" />
 
-      {/* 高频操作：仅在通用模式 + 目录区折叠时显示（避免与目录区内容重复） */}
-      {effectiveTopLevelMode === 'general' && sidebarCollapsed && (
+      {/* 高频操作：目录区折叠时显示（避免与展开后的目录区内容重复） */}
+      {sidebarCollapsed && (
         <div className="flex flex-col items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -458,8 +455,8 @@ export function FunctionalRail({
         </div>
       )}
 
-      {/* 最近会话入口：仅在通用模式 + 目录区折叠时显示（避免与目录区会话列表重复） */}
-      {effectiveTopLevelMode === 'general' && sidebarCollapsed && recentItems.length > 0 && (
+      {/* 最近会话入口：目录区折叠时显示当前顶层模式下的最近会话（父组件已按模式过滤） */}
+      {sidebarCollapsed && recentItems.length > 0 && (
         <>
           <div className="my-3 h-px w-8 bg-border/70" />
           <div className="flex-1 min-h-0 w-full overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -501,8 +498,8 @@ export function FunctionalRail({
         </>
       )}
 
-      {/* 填充剩余空间（不在通用模式时、或通用模式但目录区展开时需要 flex-1 撑开） */}
-      {(effectiveTopLevelMode !== 'general' || !sidebarCollapsed) && <div className="flex-1" />}
+      {/* 填充剩余空间（无最近会话或目录区展开时撑开底部头像） */}
+      {(!sidebarCollapsed || recentItems.length === 0) && <div className="flex-1" />}
 
       {/* 用户头像（点击打开设置） */}
       <div className="pt-3 pb-1">

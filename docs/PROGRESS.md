@@ -94,6 +94,15 @@
     - 隐藏工作区控件（TA 模式不显示 Briefcase Popover + 目录区顶部工作区 Popover）
     - 会话列表项删除工作区名徽标
     - 使用 `useCreateSession` 统一入口创建 TA 会话
+- ✅ **Agent 页面 UI 首轮收敛**（2026-06-09，未提交）
+  - 无当前打开会话时显示引导页，不再继续显示上一次会话内容
+  - 欢迎页不复用 `草稿` 语义；草稿只保留在 Scratch tab
+  - Header 改为轻量状态栏，不显示会话标题 / 工作区 / “会话”文字
+  - 顶部 Tab 用图标 + 标题承载会话定位，去除工作区 badge 和整块描边，改用底部状态横条
+  - LeftSidebar / FunctionalRail 折叠态会话列表按通用 / TA 模式过滤
+  - Rail 折叠态 TA / 通用模式添加与搜索按钮保持一致
+  - 左侧 Agent 会话竖条语义收敛：active=主题色，running=蓝色，blocked=橙色，completed=绿色，manual working 不显示蓝条
+  - 设计记录见 `docs/plans/2026-06-09-agent-ui-optimization-plan.md`
 
 **进行中**：
 - 无

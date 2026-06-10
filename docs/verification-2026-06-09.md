@@ -101,6 +101,23 @@ F:\TAgent_General\dev.bat
 | Cmd+Shift+M 快捷键切 Chat/Agent | **仍工作**（保留给高级用户）|
 | TopLevelModeTab 顶层切换 | 正常 |
 
+## 9. Agent 页面 UI 首轮收敛
+
+| 步骤 | 预期 |
+|------|------|
+| 当前模式没有打开 Agent / Chat 会话时进入会话区 | 显示引导页，不显示上一次会话内容 |
+| 查看欢迎页入口 | 不显示 `草稿` 标签；草稿只出现在 Scratch tab |
+| 通用模式折叠 LeftSidebar | Rail 会话列表只显示通用会话 |
+| TA 模式折叠 LeftSidebar | Rail 会话列表只显示 TA 会话 |
+| TA 模式折叠 LeftSidebar | 添加和搜索按钮与通用模式一致可见 |
+| 打开一个 Agent 会话 | Header 不显示会话标题、工作区或“会话”文字 |
+| 查看顶部 Tab | Agent / Chat tab 显示图标 + 标题，不显示工作区 badge |
+| 当前 tab idle | 底部横条为主题色，不使用整块描边 |
+| Agent 会话 running | 顶部 Tab 底部横条显示蓝色状态动画，左侧列表竖条显示蓝色 |
+| Agent 会话 blocked / completed | 左侧列表竖条分别显示橙色 / 绿色 |
+| Agent 会话仅 manual working | 不显示蓝色竖条 |
+| 没有当前选中会话 | 左侧列表不出现 active 主题色竖条 |
+
 ## 如果遇到问题
 
 1. **工具没注入** → 看 console，确认 session.meta.mode === 'ta'
