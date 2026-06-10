@@ -2,6 +2,19 @@
  * Usage Stats Types - 使用统计类型定义
  */
 
+/** 单次调用记录 */
+export interface UsageCallRecord {
+  sessionId: string
+  sessionTitle: string
+  modelId: string
+  timestamp: number
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheCreationTokens: number
+  costUsd: number
+}
+
 /** 模型使用统计 */
 export interface ModelUsageStats {
   modelId: string
@@ -40,6 +53,8 @@ export interface UsageStatsOverview {
     month: TimeRangeStats
     all: TimeRangeStats
   }
+  /** 最近调用记录（按时间倒序） */
+  recentCalls: UsageCallRecord[]
 }
 
 /** 使用统计 IPC 通道常量 */

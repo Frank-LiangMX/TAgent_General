@@ -5,6 +5,7 @@
  * - 按模型聚合 token 消耗
  * - 按时间范围统计
  * - 总费用统计
+ * - 单次调用记录
  *
  * 数据来源: ~/.tagent/agent-sessions/{id}.jsonl
  */
@@ -12,49 +13,9 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-import { app } from 'electron'
+import type { ModelUsageStats, TimeRangeStats, UsageCallRecord, UsageStatsOverview } from '@tagent/shared'
 
 import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
-
-/** 模型使用统计 */
-export interface ModelUsageStats {
-  modelId: string
-  sessions: number
-  totalInputTokens: number
-  totalOutputTokens: number
-  totalCacheReadTokens: number
-  totalCacheCreationTokens: number
-  totalCostUsd: number
-  avgInputPerSession: number
-  avgOutputPerSession: number
-}
-
-/** 时间范围统计 */
-export interface TimeRangeStats {
-  period: 'today' | 'week' | 'month' | 'all'
-  sessions: number
-  totalInputTokens: number
-  totalOutputTokens: number
-  totalCostUsd: number
-  byModel: ModelUsageStats[]
-}
-
-/** 使用统计总览 */
-export interface UsageStatsOverview {
-  totalSessions: number
-  totalInputTokens: number
-  totalOutputTokens: number
-  totalCacheReadTokens: number
-  totalCacheCreationTokens: number
-  totalCostUsd: number
-  byModel: ModelUsageStats[]
-  byTimeRange: {
-    today: TimeRangeStats
-    week: TimeRangeStats
-    month: TimeRangeStats
-    all: TimeRangeStats
-  }
-}
 
 /** JSONL 消息类型（简化版，只提取需要的字段） */
 interface SessionMessage {
@@ -82,6 +43,7 @@ interface SessionMessage {
 /** 会话索引项 */
 interface SessionIndexItem {
   id: string
+  title?: string
   createdAt?: number
   updatedAt?: number
 }
@@ -115,6 +77,9 @@ class UsageStatsService {
       costUsd: number
     }>()
 
+    // 单次调用记录
+    const callRecords: UsageCallRecord[] = []
+
     // 时间范围统计
     const now = Date.now()
     const dayMs = 24 * 60 * 60 * 1000
@@ -142,6 +107,7 @@ class UsageStatsService {
         // 获取会话创建时间
         const sessionMeta = sessionIndex.find((s) => s.id === sessionId)
         const sessionCreatedAt = sessionMeta?.createdAt || 0
+        const sessionTitle = sessionMeta?.title || '未命名会话'
 
         try {
           const content = fs.readFileSync(filePath, 'utf-8')
@@ -153,6 +119,7 @@ class UsageStatsService {
           let sessionCacheReadTokens = 0
           let sessionCacheCreationTokens = 0
           let sessionCostUsd = 0
+          let sessionTimestamp = sessionCreatedAt
 
           for (const line of lines) {
             let msg: SessionMessage
@@ -176,6 +143,10 @@ class UsageStatsService {
               }
               if (msg.total_cost_usd) {
                 sessionCostUsd += msg.total_cost_usd
+              }
+              // 使用消息时间戳
+              if (msg._createdAt) {
+                sessionTimestamp = msg._createdAt
               }
             }
           }
@@ -214,12 +185,28 @@ class UsageStatsService {
                 range.cost += sessionCostUsd
               }
             }
+
+            // 添加单次调用记录
+            callRecords.push({
+              sessionId,
+              sessionTitle,
+              modelId: sessionModelId,
+              timestamp: sessionTimestamp,
+              inputTokens: sessionInputTokens,
+              outputTokens: sessionOutputTokens,
+              cacheReadTokens: sessionCacheReadTokens,
+              cacheCreationTokens: sessionCacheCreationTokens,
+              costUsd: sessionCostUsd,
+            })
           }
         } catch {
           // ignore file read errors
         }
       }
     }
+
+    // 按时间倒序排列
+    callRecords.sort((a, b) => b.timestamp - a.timestamp)
 
     // 转换模型统计为数组
     const byModel: ModelUsageStats[] = []
@@ -258,6 +245,7 @@ class UsageStatsService {
       totalCostUsd,
       byModel,
       byTimeRange,
+      recentCalls: callRecords.slice(0, 100), // 最近 100 条记录
     }
   }
 

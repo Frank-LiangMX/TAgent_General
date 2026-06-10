@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent Settings — macOS Style</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sys-blue: #007AFF;
+      --sys-green: #34C759;
+      --sys-orange: #FF9500;
+      --sys-red: #FF3B30;
+      --sys-purple: #AF52DE;
+      --sys-teal: #5AC8FA;
+      --sys-gray: #8E8E93;
+      --sys-pink: #FF2D55;
+
+      --bg-window: #FFFFFF;
+      --bg-sidebar: rgba(246, 246, 246, 0.88);
+      --bg-content: #FFFFFF;
+      --bg-group: #F5F5F7;
+      --bg-hover: rgba(0, 0, 0, 0.04);
+      --bg-selected: rgba(0, 122, 255, 0.1);
+      --bg-input: #FFFFFF;
+      --bg-toggle-off: rgba(0, 0, 0, 0.12);
+      --border-color: rgba(0, 0, 0, 0.1);
+      --border-group: rgba(0, 0, 0, 0.08);
+      --text-primary: #1D1D1F;
+      --text-secondary: rgba(0, 0, 0, 0.55);
+      --text-tertiary: rgba(0, 0, 0, 0.35);
+      --text-selected: #007AFF;
+      --shadow-popover: 0 6px 30px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+      --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+    }
+
+    .dark {
+      --bg-window: #1E1E1E;
+      --bg-sidebar: rgba(40, 40, 40, 0.8);
+      --bg-content: #282828;
+      --bg-group: rgba(255, 255, 255, 0.04);
+      --bg-hover: rgba(255, 255, 255, 0.06);
+      --bg-selected: rgba(10, 132, 255, 0.15);
+      --bg-input: rgba(255, 255, 255, 0.06);
+      --bg-toggle-off: rgba(255, 255, 255, 0.15);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-group: rgba(255, 255, 255, 0.06);
+      --text-primary: #F5F5F7;
+      --text-secondary: rgba(255, 255, 255, 0.55);
+      --text-tertiary: rgba(255, 255, 255, 0.3);
+      --text-selected: #0A84FF;
+      --shadow-popover: 0 6px 30px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+      --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                   "Helvetica Neue", "Segoe UI", sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+      color: var(--text-primary);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+    /* ========== Shell ========== */
+    .shell {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      background: var(--bg-window);
+    }
+
+    /* ========== Settings Sidebar ========== */
+    .settings-sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg-sidebar);
+      border-right: 0.5px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+
+    .settings-sidebar-header {
+      padding: 40px 16px 12px;
+    }
+
+    .settings-sidebar-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .settings-search {
+      margin: 8px 16px 12px;
+      height: 28px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border-color);
+      background: var(--bg-input);
+      padding: 0 8px 0 28px;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+      width: calc(100% - 32px);
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .settings-search::placeholder { color: var(--text-tertiary); }
+    .settings-search:focus {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.2);
+    }
+
+    .settings-search-wrap { position: relative; }
+    .settings-search-icon {
+      position: absolute;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    .settings-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 10px 10px;
+    }
+
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 100ms ease;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .settings-nav-item:hover { background: var(--bg-hover); }
+    .settings-nav-item.selected {
+      background: var(--bg-selected);
+      color: var(--text-selected);
+    }
+
+    .settings-nav-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .settings-nav-icon svg { width: 14px; height: 14px; }
+
+    .settings-nav-icon.blue { background: var(--sys-blue); color: #fff; }
+    .settings-nav-icon.green { background: var(--sys-green); color: #fff; }
+    .settings-nav-icon.orange { background: var(--sys-orange); color: #fff; }
+    .settings-nav-icon.purple { background: var(--sys-purple); color: #fff; }
+    .settings-nav-icon.red { background: var(--sys-red); color: #fff; }
+    .settings-nav-icon.teal { background: var(--sys-teal); color: #fff; }
+    .settings-nav-icon.gray { background: var(--sys-gray); color: #fff; }
+    .settings-nav-icon.pink { background: var(--sys-pink); color: #fff; }
+
+    /* ========== Content Area ========== */
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 32px 32px;
+    }
+
+    .settings-content-inner {
+      max-width: 600px;
+    }
+
+    .settings-section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    /* ========== Settings Group ========== */
+    .settings-group {
+      background: var(--bg-group);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      gap: 12px;
+      border-bottom: 0.5px solid var(--border-group);
+    }
+
+    .settings-row:last-child { border-bottom: none; }
+
+    .settings-row-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .settings-row-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .settings-row-label .desc {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 1px;
+    }
+
+    .settings-row-value {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ========== Toggle Switch (macOS style) ========== */
+    .toggle {
+      width: 38px;
+      height: 22px;
+      border-radius: 11px;
+      background: var(--bg-toggle-off);
+      position: relative;
+      cursor: pointer;
+      transition: background 200ms ease;
+      flex-shrink: 0;
+    }
+
+    .toggle.on { background: var(--sys-green); }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px;
+      left: 2px;
+      transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .toggle.on::after { transform: translateX(16px); }
+
+    /* ========== Select (macOS style) ========== */
+    .mac-select {
+      appearance: none;
+      background: var(--bg-input);
+      border: 0.5px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 24px 4px 8px;
+      font-size: 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238E8E93' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .mac-select:focus {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.15);
+    }
+
+    /* ========== Input (macOS style) ========== */
+    .mac-input {
+      background: var(--bg-input);
+      border: 0.5px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      outline: none;
+      width: 180px;
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .mac-input:focus {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.15);
+    }
+
+    /* ========== API Key Input ========== */
+    .api-key-input {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .api-key-input .mac-input {
+      width: 200px;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 11px;
+    }
+
+    .api-key-toggle {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .api-key-toggle:hover { color: var(--text-secondary); }
+
+    /* ========== Section Header ========== */
+    .section-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      margin-top: 24px;
+    }
+
+    .section-header:first-child { margin-top: 0; }
+
+    /* ========== Color Swatch ========== */
+    .color-swatches {
+      display: flex;
+      gap: 8px;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 150ms, transform 150ms;
+    }
+
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: var(--text-primary); }
+
+    /* ========== Theme Toggle ========== */
+    .theme-toggle {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border-color);
+      background: var(--bg-content);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: transform 150ms ease;
+    }
+
+    .theme-toggle:hover { transform: scale(1.08); }
+    .theme-toggle svg { width: 16px; height: 16px; }
+
+    .comparison-badge {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 16px;
+      background: var(--bg-content);
+      border: 0.5px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    /* ========== Slider ========== */
+    .mac-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg-toggle-off);
+      outline: none;
+    }
+
+    .mac-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 0.5px solid rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+    }
+
+    /* ========== Badge ========== */
+    .pro-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, var(--sys-purple), var(--sys-pink));
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Settings Sidebar -->
+  <div class="settings-sidebar">
+    <div class="settings-sidebar-header">
+      <div class="settings-sidebar-title">设置</div>
+    </div>
+
+    <div class="settings-search-wrap">
+      <svg class="settings-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="settings-search" type="text" placeholder="搜索设置..." />
+    </div>
+
+    <div class="settings-nav">
+      <div class="settings-nav-item selected" data-section="general">
+        <div class="settings-nav-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09"/></svg>
+        </div>
+        <span>通用</span>
+      </div>
+      <div class="settings-nav-item" data-section="channels">
+        <div class="settings-nav-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <span>渠道管理</span>
+      </div>
+      <div class="settings-nav-item" data-section="agent">
+        <div class="settings-nav-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <span>Agent 配置</span>
+      </div>
+      <div class="settings-nav-item" data-section="mcp">
+        <div class="settings-nav-icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16l4-4-4-4"/><path d="M6 8l-4 4 4 4"/><path d="M14.5 4l-5 16"/></svg>
+        </div>
+        <span>MCP Server</span>
+      </div>
+      <div class="settings-nav-item" data-section="memory">
+        <div class="settings-nav-icon teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <span>记忆系统</span>
+      </div>
+      <div class="settings-nav-item" data-section="appearance">
+        <div class="settings-nav-icon pink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.04-.23-.29-.38-.63-.38-1.04 0-.83.67-1.5 1.5-1.5H16c3.05 0 5.5-2.45 5.5-5.5 0-1.14-.35-2.2-.96-3.07C20.07 5.51 16.34 2 12 2z"/></svg>
+        </div>
+        <span>外观</span>
+      </div>
+      <div class="settings-nav-item" data-section="shortcuts">
+        <div class="settings-nav-icon gray">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></svg>
+        </div>
+        <span>快捷键</span>
+      </div>
+      <div class="settings-nav-item" data-section="about">
+        <div class="settings-nav-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </div>
+        <span>关于 TAgent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Content -->
+  <div class="settings-content">
+    <div class="settings-content-inner">
+      <div class="settings-section-title">通用</div>
+
+      <div class="section-header">启动</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-label">
+            登录时自动启动
+            <div class="desc">系统登录后自动打开 TAgent</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            隐藏到菜单栏
+            <div class="desc">关闭窗口后保持后台运行</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">启动时恢复上次会话</div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="section-header">默认模型</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-label">Chat 默认模型</div>
+          <select class="mac-select">
+            <option>claude-sonnet-4-6</option>
+            <option>claude-opus-4-7</option>
+            <option>claude-haiku-4-5</option>
+            <option>gpt-4o</option>
+            <option>deepseek-r1</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">Agent 默认模型</div>
+          <select class="mac-select">
+            <option>claude-sonnet-4-6</option>
+            <option>claude-opus-4-7</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            最大上下文窗口
+            <div class="desc">超出时自动压缩历史消息</div>
+          </div>
+          <select class="mac-select">
+            <option>200K tokens</option>
+            <option>128K tokens</option>
+            <option>64K tokens</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-header">权限</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-label">
+            默认权限模式
+            <div class="desc">Agent 工具调用的默认权限级别</div>
+          </div>
+          <select class="mac-select">
+            <option>确认执行</option>
+            <option>自动批准读取</option>
+            <option>全自动 (危险)</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">允许执行 Shell 命令</div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">允许文件系统写入</div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="section-header">数据</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-label">
+            数据目录
+            <div class="desc">所有会话、配置和缓存存储位置</div>
+          </div>
+          <div class="settings-row-value">
+            <span style="font-family:'SF Mono','Menlo',monospace;font-size:11px;opacity:0.6">~/.tagent/</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            Token 使用统计
+            <div class="desc">跟踪各 Provider 的 Token 消耗</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            Cache 命中率显示
+            <div class="desc">在状态栏显示 Prompt Cache 命中率</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="section-header">更新</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-label">自动检查更新</div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            更新通道
+            <div class="desc">稳定版经过充分测试，预览版包含最新功能</div>
+          </div>
+          <select class="mac-select">
+            <option>稳定版</option>
+            <option>预览版</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="comparison-badge">macOS Settings Style — 点击右下角切换深色/浅色</div>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+  <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+  <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+</button>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    html.classList.toggle('dark');
+    document.getElementById('theme-icon-moon').style.display = isDark ? 'none' : 'block';
+    document.getElementById('theme-icon-sun').style.display = isDark ? 'block' : 'none';
+  }
+
+  document.querySelectorAll('.settings-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+    });
+  });
+</script>
+</body>
+</html>

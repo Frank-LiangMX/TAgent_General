@@ -5,14 +5,16 @@
  * - 按模型聚合的 token 消耗
  * - 按时间范围的统计（今日/本周/本月/全部）
  * - 总费用统计
+ * - 最近调用记录列表
  */
 
-import { BarChart3, Coins, Database, Zap, TrendingUp, Calendar, RefreshCw, Loader2 } from 'lucide-react'
+import { BarChart3, Coins, Database, Zap, TrendingUp, Calendar, RefreshCw, Loader2, Clock, ExternalLink } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import type { UsageStatsOverview, ModelUsageStats, TimeRangeStats } from '@tagent/shared'
+import type { UsageStatsOverview, ModelUsageStats, TimeRangeStats, UsageCallRecord } from '@tagent/shared'
 
+import { useOpenSession } from '@/hooks/useOpenSession'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -41,10 +43,27 @@ function formatModelName(modelId: string): string {
   return modelId
 }
 
+/** 格式化时间 */
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return '刚刚'
+  if (diffMins < 60) return `${diffMins} 分钟前`
+  if (diffHours < 24) return `${diffHours} 小时前`
+  if (diffDays < 7) return `${diffDays} 天前`
+  return date.toLocaleDateString('zh-CN')
+}
+
 export function UsageStatsSettings(): React.ReactElement {
   const [stats, setStats] = React.useState<UsageStatsOverview | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [activeTimeRange, setActiveTimeRange] = React.useState<'today' | 'week' | 'month' | 'all'>('all')
+  const openSession = useOpenSession()
 
   const loadStats = React.useCallback(async () => {
     setIsLoading(true)
@@ -162,6 +181,30 @@ export function UsageStatsSettings(): React.ReactElement {
           </div>
         </div>
 
+        {/* 最近调用记录 */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Clock size={16} />
+            最近调用记录
+          </h3>
+
+          {stats.recentCalls.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-8">
+              暂无调用记录
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {stats.recentCalls.slice(0, 20).map((record, index) => (
+                <CallRecordCard
+                  key={`${record.sessionId}-${index}`}
+                  record={record}
+                  onOpenSession={() => openSession('agent', record.sessionId, record.sessionTitle)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 模型使用统计表格 */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">按模型统计</h3>
@@ -221,6 +264,65 @@ function OverviewCard({ icon, label, value, subLabel, highlight }: OverviewCardP
       </div>
       {subLabel && (
         <div className="text-xs text-muted-foreground mt-1">{subLabel}</div>
+      )}
+    </div>
+  )
+}
+
+interface CallRecordCardProps {
+  record: UsageCallRecord
+  onOpenSession: () => void
+}
+
+function CallRecordCard({ record, onOpenSession }: CallRecordCardProps): React.ReactElement {
+  return (
+    <div
+      className="p-3 rounded-lg border border-border hover:border-border/80 hover:bg-muted/30 transition-colors cursor-pointer"
+      onClick={onOpenSession}
+    >
+      {/* 会话标题 + 时间 */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium truncate max-w-[200px]">
+            {record.sessionTitle}
+          </span>
+          <ExternalLink size={12} className="text-muted-foreground" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {formatTime(record.timestamp)}
+        </span>
+      </div>
+
+      {/* 模型 */}
+      <div className="text-xs text-muted-foreground mb-2">
+        {formatModelName(record.modelId)}
+      </div>
+
+      {/* Token 统计 */}
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div>
+          <span className="text-muted-foreground">输入:</span>
+          <span className="font-medium tabular-nums ml-1">{formatTokens(record.inputTokens)}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">输出:</span>
+          <span className="font-medium tabular-nums ml-1">{formatTokens(record.outputTokens)}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">费用:</span>
+          <span className="font-medium tabular-nums ml-1">{formatCost(record.costUsd)}</span>
+        </div>
+      </div>
+
+      {/* 缓存统计（如有） */}
+      {record.cacheReadTokens > 0 && (
+        <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-1 text-xs">
+          <Database size={10} className="text-emerald-500" />
+          <span className="text-emerald-600 font-medium tabular-nums">
+            {formatTokens(record.cacheReadTokens)}
+          </span>
+          <span className="text-muted-foreground">缓存节省</span>
+        </div>
       )}
     </div>
   )

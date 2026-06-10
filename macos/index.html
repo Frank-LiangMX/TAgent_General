@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — macOS Style Preview</title>
+  <style>
+    /* ========== Reset & Base ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* macOS System Colors — Light */
+      --sys-blue: #007AFF;
+      --sys-blue-hover: #0062CC;
+      --sys-green: #34C759;
+      --sys-orange: #FF9500;
+      --sys-red: #FF3B30;
+      --sys-purple: #AF52DE;
+      --sys-teal: #5AC8FA;
+      --sys-yellow: #FFCC00;
+      --sys-gray: #8E8E93;
+
+      /* Light Theme */
+      --bg-window: #FFFFFF;
+      --bg-sidebar: rgba(246, 246, 246, 0.85);
+      --bg-toolbar: rgba(246, 246, 246, 0.8);
+      --bg-content: #FFFFFF;
+      --bg-hover: rgba(0, 0, 0, 0.04);
+      --bg-selected: rgba(0, 122, 255, 0.12);
+      --bg-input: #FFFFFF;
+      --border-color: rgba(0, 0, 0, 0.12);
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --text-primary: #1D1D1F;
+      --text-secondary: rgba(0, 0, 0, 0.55);
+      --text-tertiary: rgba(0, 0, 0, 0.35);
+      --text-selected: #007AFF;
+      --shadow-popover: 0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+      --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+      --rail-icon: #8E8E93;
+      --rail-icon-active: #007AFF;
+      --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+      --msg-user-bg: #007AFF;
+      --msg-user-text: #FFFFFF;
+      --msg-assistant-bg: rgba(0, 0, 0, 0.03);
+      --msg-assistant-text: #1D1D1F;
+      --code-bg: rgba(0, 0, 0, 0.04);
+      --badge-bg: rgba(0, 122, 255, 0.1);
+      --badge-text: #007AFF;
+      --status-bar-bg: rgba(246, 246, 246, 0.75);
+    }
+
+    .dark {
+      --bg-window: #1E1E1E;
+      --bg-sidebar: rgba(40, 40, 40, 0.78);
+      --bg-toolbar: rgba(40, 40, 40, 0.72);
+      --bg-content: #282828;
+      --bg-hover: rgba(255, 255, 255, 0.06);
+      --bg-selected: rgba(10, 132, 255, 0.18);
+      --bg-input: rgba(255, 255, 255, 0.06);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --text-primary: #F5F5F7;
+      --text-secondary: rgba(255, 255, 255, 0.55);
+      --text-tertiary: rgba(255, 255, 255, 0.3);
+      --text-selected: #0A84FF;
+      --shadow-popover: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+      --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.2);
+      --rail-icon: rgba(255, 255, 255, 0.4);
+      --rail-icon-active: #0A84FF;
+      --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+      --msg-user-bg: #0A84FF;
+      --msg-user-text: #FFFFFF;
+      --msg-assistant-bg: rgba(255, 255, 255, 0.04);
+      --msg-assistant-text: #F5F5F7;
+      --code-bg: rgba(255, 255, 255, 0.06);
+      --badge-bg: rgba(10, 132, 255, 0.15);
+      --badge-text: #0A84FF;
+      --status-bar-bg: rgba(40, 40, 40, 0.72);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                   "Helvetica Neue", "Segoe UI", sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: var(--text-primary);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ========== Scrollbar ========== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb); }
+
+    /* ========== Shell Layout ========== */
+    .shell {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      background: var(--bg-window);
+    }
+
+    /* ========== Functional Rail ========== */
+    .rail {
+      width: 52px;
+      min-width: 52px;
+      background: var(--bg-sidebar);
+      border-right: 0.5px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+      gap: 2px;
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+
+    .rail-top-spacer { height: 32px; }
+
+    .rail-divider {
+      width: 20px;
+      height: 0.5px;
+      background: var(--border-color);
+      margin: 4px 0;
+    }
+
+    .rail-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--rail-icon);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 120ms ease, color 120ms ease;
+      position: relative;
+    }
+
+    .rail-btn:hover { background: var(--bg-hover); }
+    .rail-btn.active {
+      background: var(--bg-selected);
+      color: var(--rail-icon-active);
+    }
+
+    .rail-btn svg { width: 18px; height: 18px; }
+
+    .rail-spacer { flex: 1; }
+
+    .rail-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sys-blue), var(--sys-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ========== Sidebar ========== */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--bg-sidebar);
+      border-right: 0.5px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+
+    .sidebar-header {
+      padding: 36px 12px 8px 12px;
+    }
+
+    .sidebar-search {
+      width: 100%;
+      height: 28px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border-color);
+      background: var(--bg-input);
+      padding: 0 8px 0 28px;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .sidebar-search::placeholder { color: var(--text-tertiary); }
+    .sidebar-search:focus {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.2);
+    }
+
+    .sidebar-search-wrap {
+      position: relative;
+    }
+
+    .sidebar-search-icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 16px 12px 4px 12px;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px 8px 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 100ms ease;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .sidebar-item:hover { background: var(--bg-hover); }
+    .sidebar-item.selected {
+      background: var(--bg-selected);
+      color: var(--text-selected);
+    }
+
+    .sidebar-item-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .sidebar-item.selected .sidebar-item-icon { opacity: 1; }
+
+    .sidebar-item-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-item-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 500;
+    }
+
+    .sidebar-bottom {
+      padding: 8px;
+      border-top: 0.5px solid var(--border-subtle);
+    }
+
+    .sidebar-new-btn {
+      width: 100%;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px dashed var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+
+    .sidebar-new-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--sys-blue);
+      color: var(--text-selected);
+    }
+
+    /* ========== Main Area ========== */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-content);
+      min-width: 0;
+    }
+
+    /* ========== Toolbar (Unified Titlebar) ========== */
+    .toolbar {
+      height: 52px;
+      min-height: 52px;
+      background: var(--bg-toolbar);
+      border-bottom: 0.5px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+
+    .toolbar-traffic-light-spacer {
+      width: 78px;
+      flex-shrink: 0;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .traffic-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .traffic-light.close { background: #FF5F57; }
+    .traffic-light.minimize { background: #FEBC2E; }
+    .traffic-light.maximize { background: #28C840; }
+
+    .traffic-light:hover::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar-tabs {
+      display: flex;
+      gap: 2px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .toolbar-tab {
+      height: 28px;
+      padding: 0 14px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .toolbar-tab:hover { background: var(--bg-hover); }
+    .toolbar-tab.active {
+      background: var(--bg-selected);
+      color: var(--text-selected);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .toolbar-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .toolbar-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .toolbar-btn svg { width: 15px; height: 15px; }
+
+    /* ========== Chat Area ========== */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 0;
+    }
+
+    .chat-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ========== Messages ========== */
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 100%;
+    }
+
+    .message-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .message-avatar.user {
+      background: linear-gradient(135deg, var(--sys-blue), var(--sys-purple));
+      color: #fff;
+    }
+
+    .message-avatar.assistant {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .message-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .message-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .message-content {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-primary);
+    }
+
+    .message-content p { margin-bottom: 8px; }
+    .message-content p:last-child { margin-bottom: 0; }
+
+    .message-content code {
+      font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+      font-size: 12px;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .message-content pre {
+      background: var(--code-bg);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      overflow-x: auto;
+      font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .message-content .file-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      background: var(--bg-hover);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+      color: var(--text-selected);
+    }
+
+    /* ========== Tool Call ========== */
+    .tool-call {
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 0.5px solid var(--border-subtle);
+      overflow: hidden;
+    }
+
+    .tool-call-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg-hover);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .tool-call-header svg { width: 12px; height: 12px; }
+
+    .tool-call-status {
+      margin-left: auto;
+      font-size: 11px;
+    }
+
+    .tool-call-status.done { color: var(--sys-green); }
+    .tool-call-status.running { color: var(--sys-orange); }
+
+    .tool-call-body {
+      padding: 8px 10px;
+      font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ========== Input Area ========== */
+    .input-area {
+      padding: 12px 24px 16px 24px;
+      border-top: 0.5px solid var(--border-subtle);
+      background: var(--bg-content);
+    }
+
+    .input-container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .input-box {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      background: var(--bg-input);
+      border: 0.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 12px;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.15);
+    }
+
+    .input-box textarea {
+      flex: 1;
+      border: none;
+      background: transparent;
+      resize: none;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      font-family: inherit;
+      outline: none;
+      min-height: 20px;
+      max-height: 120px;
+    }
+
+    .input-box textarea::placeholder { color: var(--text-tertiary); }
+
+    .input-actions {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .input-action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .input-action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .send-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--sys-blue);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 120ms ease, opacity 120ms ease;
+    }
+
+    .send-btn:hover { background: var(--sys-blue-hover); }
+    .send-btn:disabled { opacity: 0.4; cursor: default; }
+    .send-btn svg { width: 14px; height: 14px; }
+
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 6px;
+    }
+
+    /* ========== Status Bar ========== */
+    .status-bar {
+      height: 24px;
+      min-height: 24px;
+      background: var(--status-bar-bg);
+      border-top: 0.5px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+    }
+
+    .status-bar-left, .status-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-dot.connected { background: var(--sys-green); }
+    .status-dot.disconnected { background: var(--sys-gray); }
+
+    /* ========== Agent Mode Specific ========== */
+    .agent-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-hover);
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .agent-status-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .agent-status-text { color: var(--text-secondary); }
+
+    .agent-token-info {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .token-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .token-badge-value { color: var(--text-secondary); font-weight: 500; }
+
+    /* ========== Popover Demo ========== */
+    .popover-demo {
+      position: absolute;
+      top: 56px;
+      right: 16px;
+      width: 260px;
+      background: var(--bg-content);
+      border: 0.5px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: var(--shadow-popover);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .popover-header {
+      padding: 10px 12px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .popover-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background 80ms ease;
+    }
+
+    .popover-item:hover { background: var(--bg-hover); }
+
+    .popover-item .check {
+      width: 14px;
+      color: var(--sys-blue);
+      font-size: 12px;
+    }
+
+    .popover-item .shortcut {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .popover-divider {
+      height: 0.5px;
+      background: var(--border-subtle);
+      margin: 4px 0;
+    }
+
+    /* ========== Theme Toggle ========== */
+    .theme-toggle {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border-color);
+      background: var(--bg-content);
+      box-shadow: var(--shadow-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.08);
+    }
+
+    .theme-toggle svg { width: 16px; height: 16px; }
+
+    /* ========== Comparison Badge ========== */
+    .comparison-badge {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 16px;
+      background: var(--bg-content);
+      border: 0.5px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: var(--shadow-card);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    /* ========== Animations ========== */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message { animation: fadeIn 200ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+
+    /* ========== Empty State ========== */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .empty-state-icon {
+      width: 48px;
+      height: 48px;
+      opacity: 0.3;
+    }
+
+    .empty-state-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-desc {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      text-align: center;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ===== Functional Rail ===== -->
+  <div class="rail">
+    <div class="rail-top-spacer"></div>
+
+    <button class="rail-btn active" title="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </button>
+
+    <button class="rail-btn" title="Agent">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+    </button>
+
+    <button class="rail-btn" title="TA 模式">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+
+    <div class="rail-divider"></div>
+
+    <button class="rail-btn" title="文件浏览">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+    </button>
+
+    <div class="rail-spacer"></div>
+
+    <button class="rail-btn" title="设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+
+    <div class="rail-avatar">F</div>
+  </div>
+
+  <!-- ===== Sidebar ===== -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-search-wrap">
+        <svg class="sidebar-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="sidebar-search" type="text" placeholder="搜索对话..." />
+      </div>
+    </div>
+
+    <div class="sidebar-section-title">今天</div>
+
+    <div class="sidebar-list">
+      <div class="sidebar-item selected">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">React 组件重构方案讨论</span>
+        <span class="sidebar-item-badge">3</span>
+      </div>
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">Electron IPC 通信优化</span>
+      </div>
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span class="sidebar-item-text">Agent 会话 — Pipeline 开发</span>
+        <span class="sidebar-item-badge" style="background:rgba(52,199,89,0.12);color:#34C759;">运行中</span>
+      </div>
+
+      <div class="sidebar-section-title">昨天</div>
+
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">Tailwind 主题系统设计</span>
+      </div>
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">TypeScript 类型体操挑战</span>
+      </div>
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span class="sidebar-item-text">Agent 会话 — 调试 MCP 连接</span>
+      </div>
+
+      <div class="sidebar-section-title">过去 7 天</div>
+
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">Bun 运行时兼容性测试</span>
+      </div>
+      <div class="sidebar-item">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-item-text">Jotai 状态管理最佳实践</span>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="sidebar-new-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        新对话
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Main Area ===== -->
+  <div class="main-area">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-traffic-light-spacer">
+        <div class="traffic-lights">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+        </div>
+      </div>
+
+      <div class="toolbar-tabs">
+        <button class="toolbar-tab active">对话</button>
+        <button class="toolbar-tab">Agent</button>
+        <button class="toolbar-tab">Scratch</button>
+      </div>
+
+      <div class="toolbar-actions">
+        <button class="toolbar-btn" title="模型选择">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <button class="toolbar-btn" title="上下文">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+        </button>
+        <button class="toolbar-btn" title="更多">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area">
+      <div class="chat-container">
+        <!-- Agent Status -->
+        <div class="agent-status-bar">
+          <svg class="agent-status-icon" viewBox="0 0 24 24" fill="none" stroke="var(--sys-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span class="agent-status-text">Claude Sonnet 4.6 · Agent 模式</span>
+          <div class="agent-token-info">
+            <span class="token-badge">输入 <span class="token-badge-value">2.4k</span></span>
+            <span class="token-badge">输出 <span class="token-badge-value">1.8k</span></span>
+            <span class="token-badge">Cache <span class="token-badge-value" style="color:var(--sys-green)">87%</span></span>
+          </div>
+        </div>
+
+        <!-- User Message -->
+        <div class="message">
+          <div class="message-avatar user">F</div>
+          <div class="message-body">
+            <div class="message-header">
+              <span class="message-name">你</span>
+              <span class="message-time">14:32</span>
+            </div>
+            <div class="message-content">
+              <p>帮我把 <code>AppShell.tsx</code> 的布局从浮动卡片改为 macOS 原生风格。要求：</p>
+              <p>1. 去掉外层渐变背景和内层圆角面板</p>
+              <p>2. 侧边栏和主区域之间用分隔线替代间隙</p>
+              <p>3. 圆角从 <code>rounded-2xl</code> 降为 <code>rounded-lg</code></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assistant Message -->
+        <div class="message">
+          <div class="message-avatar assistant">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="message-body">
+            <div class="message-header">
+              <span class="message-name">TAgent</span>
+              <span class="message-time">14:32</span>
+            </div>
+            <div class="message-content">
+              <p>好的，我来改造 <span class="file-ref">AppShell.tsx</span> 的布局。核心思路是让窗口本身成为内容容器，而不是在窗口内嵌套浮动面板。</p>
+
+              <!-- Tool Call -->
+              <div class="tool-call">
+                <div class="tool-call-header">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                  </svg>
+                  Read
+                  <span style="opacity:0.5">AppShell.tsx</span>
+                  <span class="tool-call-status done">完成</span>
+                </div>
+              </div>
+
+              <div class="tool-call">
+                <div class="tool-call-header">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                  </svg>
+                  Edit
+                  <span style="opacity:0.5">AppShell.tsx</span>
+                  <span class="tool-call-status running">执行中...</span>
+                </div>
+              </div>
+
+              <p>主要改动：</p>
+              <pre>// 改造前
+&lt;div className="bg-gradient-to-br from-zinc-50 to-zinc-100 p-2"&gt;
+  &lt;div className="rounded-2xl shadow-xl bg-background"&gt;
+
+// 改造后 — macOS 风格
+&lt;div className="bg-background"&gt;
+  &lt;div className="border-r border-border/50"&gt;</pre>
+
+              <p>分隔线用 <code>border-r</code> 替代了 <code>p-2</code> 间隙 + <code>shadow-xl</code>，视觉更干净也更符合 macOS 原生应用的布局语言。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-container">
+        <div class="input-box">
+          <textarea rows="1" placeholder="输入消息... (⌘ + Enter 发送)"></textarea>
+          <div class="input-actions">
+            <button class="input-action-btn" title="附件">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+          </div>
+          <button class="send-btn" title="发送">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-hint">⌘ Enter 发送 · ⌘ Shift Enter 换行</div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-bar-left">
+        <div class="status-indicator">
+          <div class="status-dot connected"></div>
+          <span>已连接</span>
+        </div>
+        <span>Anthropic · claude-sonnet-4-6</span>
+      </div>
+      <div class="status-bar-right">
+        <span>UTF-8</span>
+        <span>Agent 模式</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Badge -->
+<div class="comparison-badge">macOS Style Preview — 点击右下角切换深色/浅色</div>
+
+<!-- Theme Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+  <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+  <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+</button>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    html.classList.toggle('dark');
+    document.getElementById('theme-icon-moon').style.display = isDark ? 'none' : 'block';
+    document.getElementById('theme-icon-sun').style.display = isDark ? 'block' : 'none';
+  }
+
+  // Auto-resize textarea
+  document.querySelector('.input-box textarea').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // Tab switching
+  document.querySelectorAll('.toolbar-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.toolbar-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Sidebar item selection
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+    });
+  });
+
+  // Rail button switching
+  document.querySelectorAll('.rail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
