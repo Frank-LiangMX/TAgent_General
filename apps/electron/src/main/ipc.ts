@@ -4196,6 +4196,14 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.handle(
+    AGENT_IPC_CHANNELS.CREATE_ASSET_STORE_DATABASE,
+    async () => {
+      const { assetStoreService } = await import('./lib/asset-store')
+      return assetStoreService.createDatabase()
+    }
+  )
+
+  ipcMain.handle(
     AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATUS,
     async () => {
       const { assetStoreService } = await import('./lib/asset-store')

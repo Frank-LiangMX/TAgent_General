@@ -651,6 +651,9 @@ export interface ElectronAPI {
   /** 初始化资产库服务 */
   initAssetStore: () => Promise<{ success: boolean; dbExists: boolean; error?: string }>
 
+  /** 创建资产库数据库（如果不存在） */
+  createAssetStoreDatabase: () => Promise<{ success: boolean; error?: string }>
+
   /** 获取资产库状态 */
   getAssetStoreStatus: () => Promise<{ available: boolean; dbPath: string | null }>
 
@@ -2591,6 +2594,10 @@ const electronAPI: ElectronAPI = {
 
   initAssetStore: () => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INIT_ASSET_STORE)
+  },
+
+  createAssetStoreDatabase: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_ASSET_STORE_DATABASE)
   },
 
   getAssetStoreStatus: () => {

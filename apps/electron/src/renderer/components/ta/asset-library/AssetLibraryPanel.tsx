@@ -5,8 +5,9 @@
  * 从 SQLite 数据库直读资产数据。
  */
 
-import { Search, Filter, Plus, Folder, Image, Box, Music, FileText, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Search, Filter, Plus, Folder, Image, Box, Music, FileText, Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react'
 import * as React from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -246,17 +247,49 @@ export function AssetLibraryPanel(): React.ReactElement {
     }
   }, [selectedType, selectedProject, storeStatus?.available, loadAssets])
 
+  // 初始化资产库数据库
+  const handleCreateDatabase = React.useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const result = await window.electronAPI.createAssetStoreDatabase()
+      if (result.success) {
+        toast.success('资产库已初始化')
+        // 重新加载
+        const initResult = await window.electronAPI.initAssetStore()
+        if (initResult.success && initResult.dbExists) {
+          const status = await window.electronAPI.getAssetStoreStatus()
+          setStoreStatus(status)
+        }
+      } else {
+        toast.error(`初始化失败: ${result.error || '未知错误'}`)
+        setIsLoading(false)
+      }
+    } catch (error) {
+      toast.error('初始化失败')
+      setIsLoading(false)
+    }
+  }, [])
+
   // 渲染空状态
   if (!isLoading && !storeStatus?.available) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
         <AlertCircle size={48} className="mb-4 opacity-30" />
         <p className="text-sm font-medium mb-2">资产库未初始化</p>
-        <p className="text-xs text-center max-w-md">
-          请先运行 TA Agent MCP Server 初始化资产库。
+        <p className="text-xs text-center max-w-md mb-4">
+          数据库尚未创建，点击下方按钮初始化资产库。
           <br />
           数据库位置: ~/.tagent/ta/tag_store/tags.db
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={handleCreateDatabase}
+        >
+          <Database size={14} />
+          初始化资产库
+        </Button>
       </div>
     )
   }

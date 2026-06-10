@@ -148,6 +148,48 @@ class AssetStoreService {
   }
 
   /**
+   * 创建资产库数据库（如果不存在）
+   *
+   * 用于 UI 初始化，无需运行 MCP Server
+   *
+   * @returns 是否成功创建
+   */
+  createDatabase(): { success: boolean; error?: string } {
+    try {
+      const dbPath = getAssetStoreDbPath()
+
+      // 如果数据库已存在，直接返回
+      if (fs.existsSync(dbPath)) {
+        return { success: true }
+      }
+
+      // 确保目录存在
+      const dbDir = path.dirname(dbPath)
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true })
+      }
+
+      // 创建数据库并初始化 schema
+      const db = new Database(dbPath)
+
+      // 初始化 schema（写模式）
+      initializeAssetStoreDb(db, false)
+
+      // 关闭写连接
+      db.close()
+
+      console.log('[AssetStoreService] 数据库已创建:', dbPath)
+
+      // 重新初始化服务（只读模式）
+      return this.initialize()
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.error('[AssetStoreService] 创建数据库失败:', error)
+      return { success: false, error: msg }
+    }
+  }
+
+  /**
    * 列出资产
    */
   listAssets(params: ListAssetsParams = {}): ListAssetsResult {

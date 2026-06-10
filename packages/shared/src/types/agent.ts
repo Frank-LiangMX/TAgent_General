@@ -1524,6 +1524,8 @@ export const AGENT_IPC_CHANNELS = {
   // 资产库管理（TA 模式）
   /** 初始化资产库服务 */
   INIT_ASSET_STORE: 'agent:init-asset-store',
+  /** 创建资产库数据库（如果不存在） */
+  CREATE_ASSET_STORE_DATABASE: 'agent:create-asset-store-database',
   /** 获取资产库状态 */
   GET_ASSET_STORE_STATUS: 'agent:get-asset-store-status',
   /** 列出资产 */
