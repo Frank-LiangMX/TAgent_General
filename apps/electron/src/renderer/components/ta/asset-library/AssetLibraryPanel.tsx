@@ -254,21 +254,26 @@ export function AssetLibraryPanel(): React.ReactElement {
       const result = await window.electronAPI.createAssetStoreDatabase()
       if (result.success) {
         toast.success('资产库已初始化')
-        // 重新加载
+        // 重新初始化服务（以只读模式打开新创建的数据库）
         const initResult = await window.electronAPI.initAssetStore()
         if (initResult.success && initResult.dbExists) {
           const status = await window.electronAPI.getAssetStoreStatus()
           setStoreStatus(status)
+          // 主动加载资产列表，让视图立即切换
+          await Promise.all([loadAssets(), loadStats(), loadProjects()])
+        } else {
+          toast.error('数据库已创建，但重新打开失败')
         }
       } else {
         toast.error(`初始化失败: ${result.error || '未知错误'}`)
-        setIsLoading(false)
       }
     } catch (error) {
-      toast.error('初始化失败')
+      const msg = error instanceof Error ? error.message : String(error)
+      toast.error(`初始化失败: ${msg}`)
+    } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [loadAssets, loadStats, loadProjects])
 
   // 渲染空状态
   if (!isLoading && !storeStatus?.available) {
