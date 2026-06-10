@@ -1,43 +1,78 @@
 /**
  * TASidebarPipeline — 流水线概览
  *
- * 当前 PipelinePanel 仍是 mock 数据，所以概览也展示 mock 状态。
- * 真实流水线数据接入后只需替换数据源。
+ * 显示流水线运行状态统计和最近任务。
+ * 数据来源: ~/.tagent/ta/pipeline_runs.jsonl
  */
 
 import { useSetAtom } from 'jotai'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import { taActiveTabAtom } from '@/atoms/app-mode'
 
-interface PipelineSummary {
-  running: number
-  pending: number
-  completed: number
-  failed: number
-}
+import type { PipelineRun, PipelineSummary } from '@tagent/shared'
 
 export function TASidebarPipeline(): React.ReactElement {
   const setActiveTab = useSetAtom(taActiveTabAtom)
+  const [summary, setSummary] = React.useState<PipelineSummary | null>(null)
+  const [recentPipelines, setRecentPipelines] = React.useState<PipelineRun[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
 
-  // 当前 PipelinePanel 还没有真实 IPC，概览展示静态提示
-  const summary: PipelineSummary = { running: 0, pending: 0, completed: 0, failed: 0 }
+  React.useEffect(() => {
+    let mounted = true
+    async function load() {
+      setIsLoading(true)
+      try {
+        const [summaryResult, listResult] = await Promise.all([
+          window.electronAPI.getPipelineSummary(),
+          window.electronAPI.listPipelineRuns({ limit: 5 }),
+        ])
+        if (!mounted) return
+        setSummary(summaryResult)
+        setRecentPipelines(listResult)
+      } catch (error) {
+        console.error('[TASidebarPipeline] 加载失败:', error)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
+  const displaySummary = summary ?? { running: 0, pending: 0, completed: 0, failed: 0, cancelled: 0, total: 0 }
 
   return (
     <div className="px-3 py-3 flex flex-col gap-3">
       {/* 状态卡 */}
       <div className="grid grid-cols-2 gap-2">
-        <StatCard label="运行中" value={summary.running} color="blue" />
-        <StatCard label="等待中" value={summary.pending} color="amber" />
-        <StatCard label="已完成" value={summary.completed} color="emerald" />
-        <StatCard label="失败" value={summary.failed} color="red" />
+        <StatCard label="运行中" value={displaySummary.running} color="blue" />
+        <StatCard label="等待中" value={displaySummary.pending} color="amber" />
+        <StatCard label="已完成" value={displaySummary.completed} color="emerald" />
+        <StatCard label="失败" value={displaySummary.failed} color="red" />
       </div>
 
-      {/* 占位提示 */}
-      <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-3 text-[11px] text-muted-foreground leading-relaxed">
-        流水线模块当前为占位数据，真实 IPC 接入后此处自动显示运行中的任务列表。
-      </div>
+      {/* 最近任务 */}
+      {!isLoading && recentPipelines.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">最近任务</div>
+          {recentPipelines.slice(0, 3).map((pipeline) => (
+            <div
+              key={pipeline.id}
+              className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-md bg-muted/30"
+            >
+              {pipeline.status === 'running' && (
+                <Loader2 size={12} className="text-blue-500 animate-spin" />
+              )}
+              <span className="truncate flex-1">{pipeline.name}</span>
+              <span className="text-muted-foreground text-[10px]">
+                {pipeline.status === 'running' ? '运行中' : pipeline.status === 'completed' ? '已完成' : pipeline.status === 'failed' ? '失败' : pipeline.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 跳到主区按钮 */}
       <button
@@ -63,6 +98,7 @@ function StatCard({ label, value, color }: {
     emerald: 'text-emerald-500',
     red: 'text-red-500',
   }[color]
+
   return (
     <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>

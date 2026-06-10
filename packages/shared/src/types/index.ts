@@ -50,3 +50,6 @@ export * from './dingtalk'
 
 // 微信集成相关类型
 export * from './wechat'
+
+// Pipeline 流水线相关类型
+export * from './pipeline'

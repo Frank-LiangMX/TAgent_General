@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, isTAgentPermissionMode } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, isTAgentPermissionMode } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
@@ -4309,6 +4309,71 @@ export function registerIpcHandlers(): void {
     async (_, mode: 'general' | 'ta', limit?: number) => {
       const { memoryLayerService } = await import('./lib/memory-layer-service')
       return memoryLayerService.getCorrections(mode, limit)
+    }
+  )
+
+  // ===== Pipeline 流水线相关 =====
+
+  // 获取流水线列表
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.LIST,
+    async (_, query?: import('@tagent/shared').PipelineListQuery) => {
+      const { listPipelineRuns } = await import('./lib/pipeline-service')
+      return listPipelineRuns(query)
+    }
+  )
+
+  // 获取单个流水线
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.GET,
+    async (_, id: string) => {
+      const { getPipelineRun } = await import('./lib/pipeline-service')
+      return getPipelineRun(id)
+    }
+  )
+
+  // 创建流水线
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.CREATE,
+    async (_, request: import('@tagent/shared').CreatePipelineRunRequest) => {
+      const { createPipelineRun } = await import('./lib/pipeline-service')
+      return createPipelineRun(request)
+    }
+  )
+
+  // 更新流水线
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.UPDATE,
+    async (_, id: string, request: import('@tagent/shared').UpdatePipelineRunRequest) => {
+      const { updatePipelineRun } = await import('./lib/pipeline-service')
+      return updatePipelineRun(id, request)
+    }
+  )
+
+  // 取消流水线
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.CANCEL,
+    async (_, id: string) => {
+      const { cancelPipelineRun } = await import('./lib/pipeline-service')
+      return cancelPipelineRun(id)
+    }
+  )
+
+  // 获取流水线统计摘要
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.SUMMARY,
+    async () => {
+      const { getPipelineSummary } = await import('./lib/pipeline-service')
+      return getPipelineSummary()
+    }
+  )
+
+  // 清理已完成的流水线记录
+  ipcMain.handle(
+    PIPELINE_IPC_CHANNELS.CLEANUP,
+    async (_, daysToKeep?: number) => {
+      const { cleanupPipelineRuns } = await import('./lib/pipeline-service')
+      return cleanupPipelineRuns(daysToKeep)
     }
   )
 }

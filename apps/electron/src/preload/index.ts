@@ -5,7 +5,7 @@
  * 使用上下文隔离确保安全性
  */
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS , QUICK_TASK_IPC_CHANNELS, TRAY_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS } from '../types'
@@ -107,6 +107,11 @@ import type {
   AgentMessageSearchResult,
   AgentSessionReferenceSearchInput,
   AgentSessionReferenceSearchResult,
+  PipelineRun,
+  PipelineListQuery,
+  CreatePipelineRunRequest,
+  UpdatePipelineRunRequest,
+  PipelineSummary,
   DetachedPreviewWindowData,
   DetachedPreviewWindowInput,
   FeishuConfig,
@@ -687,6 +692,29 @@ export interface ElectronAPI {
 
   /** 获取 L3 纠错记录 */
   getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
+
+  // ===== Pipeline 流水线管理 =====
+
+  /** 获取流水线列表 */
+  listPipelineRuns: (query?: PipelineListQuery) => Promise<PipelineRun[]>
+
+  /** 获取单个流水线 */
+  getPipelineRun: (id: string) => Promise<PipelineRun | null>
+
+  /** 创建流水线 */
+  createPipelineRun: (request: CreatePipelineRunRequest) => Promise<PipelineRun>
+
+  /** 更新流水线状态 */
+  updatePipelineRun: (id: string, request: UpdatePipelineRunRequest) => Promise<PipelineRun | null>
+
+  /** 取消流水线 */
+  cancelPipelineRun: (id: string) => Promise<PipelineRun | null>
+
+  /** 获取流水线统计摘要 */
+  getPipelineSummary: () => Promise<PipelineSummary>
+
+  /** 清理已完成的流水线记录 */
+  cleanupPipelineRuns: (daysToKeep?: number) => Promise<number>
 
   /** 获取工作区 Skill 列表（含活跃和不活跃） */
   getWorkspaceSkills: (workspaceSlug: string) => Promise<SkillMeta[]>
@@ -2613,6 +2641,36 @@ const electronAPI: ElectronAPI = {
 
   getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_CORRECTIONS, mode, limit)
+  },
+
+  // ===== Pipeline 流水线管理 =====
+
+  listPipelineRuns: (query?: PipelineListQuery) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.LIST, query) as Promise<PipelineRun[]>
+  },
+
+  getPipelineRun: (id: string) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.GET, id) as Promise<PipelineRun | null>
+  },
+
+  createPipelineRun: (request: CreatePipelineRunRequest) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.CREATE, request) as Promise<PipelineRun>
+  },
+
+  updatePipelineRun: (id: string, request: UpdatePipelineRunRequest) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.UPDATE, id, request) as Promise<PipelineRun | null>
+  },
+
+  cancelPipelineRun: (id: string) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.CANCEL, id) as Promise<PipelineRun | null>
+  },
+
+  getPipelineSummary: () => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.SUMMARY) as Promise<PipelineSummary>
+  },
+
+  cleanupPipelineRuns: (daysToKeep?: number) => {
+    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.CLEANUP, daysToKeep) as Promise<number>
   },
 }
 
