@@ -53,3 +53,6 @@ export * from './wechat'
 
 // Pipeline 流水线相关类型
 export * from './pipeline'
+
+// 使用统计相关类型
+export * from './usage-stats'

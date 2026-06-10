@@ -10,7 +10,8 @@
       "Bash(npx skills *)",
       "Bash(bun run *)",
       "WebSearch",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(find *)"
     ]
   }
 }

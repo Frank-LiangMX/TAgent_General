@@ -24,6 +24,7 @@ import {
   HardDrive,
   MessageSquare,
   BotMessageSquare,
+  BarChart3,
 } from "lucide-react";
 import * as React from "react";
 
@@ -39,6 +40,7 @@ import { ProxySettings } from "./ProxySettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { StorageSettings } from "./StorageSettings";
 import { ToolSettings } from "./ToolSettings";
+import { UsageStatsSettings } from "./UsageStatsSettings";
 import { VoiceInputSettings } from "./VoiceInputSettings";
 import { TutorialViewer } from "../tutorial/TutorialViewer";
 
@@ -110,6 +112,7 @@ const VOICE_INPUT_TAB: TabItem = {
 
 /** 尾部 Tabs */
 const TAIL_TABS: TabItem[] = [
+  { id: "usage-stats", label: "使用统计", icon: <BarChart3 size={16} /> },
   { id: "migration", label: "数据迁移", icon: <HardDriveDownload size={16} /> },
   { id: "storage", label: "磁盘管理", icon: <HardDrive size={16} /> },
   { id: "appearance", label: "外观设置", icon: <Palette size={16} /> },
@@ -147,6 +150,8 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
       return <MigrationSettings />;
     case "storage":
       return <StorageSettings />;
+    case "usage-stats":
+      return <UsageStatsSettings />;
   }
 }
 
