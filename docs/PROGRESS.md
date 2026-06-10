@@ -151,6 +151,18 @@
 
 ## 历史进度
 
+### 2026-06-10（续三）
+
+**产出**：Token 统计持久化 + Context 圆圈修复
+
+| 任务 | 内容 |
+|------|------|
+| Token 统计持久化 | `getSessionTokenStats` IPC 从 JSONL 恢复历史统计 |
+| AgentView 加载统计 | 打开会话时自动填充 `sessionTokenStatsAtom` |
+| Context 圆圈修复 | `complete` 事件同步更新 `streamingStates.inputTokens` |
+| 模型 ID 提取修复 | 从 `assistant` 消息提取 `_channelModelId` |
+| ContextWindow 推断 | 扩展主流模型支持（GLM/GPT-4o/Qwen/Gemini/Llama 等）|
+
 ### 2026-06-10（续二）
 
 **产出**：使用统计页面完成
@@ -362,6 +374,10 @@
 | TA 会话数据隔离 | `renderer/atoms/agent-atoms.ts` `taSessionsAtom` |
 | 模式切换路由 | `renderer/components/tabs/MainArea.tsx` |
 | TA 模式 UI | `renderer/components/ta/` (TASidebar.* + TAWelcomePanel) |
+| Token 统计 | `renderer/atoms/agent-atoms.ts` `sessionTokenStatsAtom` |
+| Context 圆圈 | `renderer/components/agent/ContextUsageBadge.tsx` |
+| 使用统计服务 | `main/lib/usage-stats-service.ts` |
+| 使用统计页面 | `renderer/components/settings/UsageStatsSettings.tsx` |
 | 验证清单 | `docs/verification-2026-06-09.md` |
 | 单测 | `main/lib/*.test.ts` |
 
