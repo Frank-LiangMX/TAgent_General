@@ -142,6 +142,7 @@
 | ✅ Agent 消息排队机制 | **已完成** | Enter 排队 / Shift+Enter 打断（决策 #15，2026-06-09 实现）|
 | ✅ Chat/Agent 切换器迁移 | **已完成** | SettingsPanel 顶部 SegmentedControl（2026-06-09）|
 | ✅ **P3 Token 统计 / Cache 命中率 UI** | **已完成** | TokenStatsPanel + 累计 atoms（2026-06-10）|
+| ✅ **使用统计页面** | **已完成** | UsageStatsSettings + 按模型/时间范围统计（2026-06-10）|
 | 🔵 MCP 设置页面集成 | 规划中 | 内置 MCP 分类展示 + 一键安装指引 |
 | 🔵 Agent 对话智能引导 | 规划中 | 检测 TA 相关意图 + 主动提示安装 |
 | 🔵 `/btw` 侧面提问 | 规划中 | 并行提问、覆盖层显示、不进历史（预估 2-3 天）|
@@ -149,6 +150,19 @@
 ---
 
 ## 历史进度
+
+### 2026-06-10（续二）
+
+**产出**：使用统计页面完成
+
+| 任务 | 内容 |
+|------|------|
+| UsageStatsService | 从会话文件统计 token 使用（按模型聚合）|
+| UsageStatsSettings | 设置页新增"使用统计"Tab |
+| 时间范围筛选 | 今日/本周/本月/全部 |
+| 模型统计卡片 | 每个模型的 token 消耗、费用、缓存节省 |
+| IPC + Preload | `USAGE_STATS_IPC_CHANNELS.GET_OVERVIEW` |
+| **里程碑** | **P3 阶段两项任务完成** |
 
 ### 2026-06-10（续）
 
