@@ -129,12 +129,13 @@ class UsageStatsService {
               continue
             }
 
-            // 提取模型 ID
-            const modelId = msg._channelModelId || msg.message?.model || 'unknown'
+            // 从 assistant 消息提取模型 ID（_channelModelId 是注入到 assistant 消息中的）
+            if (msg.type === 'assistant' && msg._channelModelId) {
+              sessionModelId = msg._channelModelId
+            }
 
             // result 消息包含最终 usage
             if (msg.type === 'result') {
-              sessionModelId = modelId
               if (msg.usage) {
                 sessionInputTokens += msg.usage.input_tokens || 0
                 sessionOutputTokens += msg.usage.output_tokens || 0
@@ -152,7 +153,10 @@ class UsageStatsService {
           }
 
           // 累计统计
-          if (sessionModelId && sessionInputTokens > 0) {
+          if (sessionInputTokens > 0) {
+            // 使用 sessionModelId，如果没有则标记为 unknown
+            const effectiveModelId = sessionModelId || 'unknown'
+
             totalInputTokens += sessionInputTokens
             totalOutputTokens += sessionOutputTokens
             totalCacheReadTokens += sessionCacheReadTokens
@@ -160,7 +164,7 @@ class UsageStatsService {
             totalCostUsd += sessionCostUsd
 
             // 按模型聚合
-            const modelStats = modelStatsMap.get(sessionModelId) || {
+            const modelStats = modelStatsMap.get(effectiveModelId) || {
               sessions: new Set<string>(),
               inputTokens: 0,
               outputTokens: 0,
@@ -174,7 +178,7 @@ class UsageStatsService {
             modelStats.cacheReadTokens += sessionCacheReadTokens
             modelStats.cacheCreationTokens += sessionCacheCreationTokens
             modelStats.costUsd += sessionCostUsd
-            modelStatsMap.set(sessionModelId, modelStats)
+            modelStatsMap.set(effectiveModelId, modelStats)
 
             // 时间范围统计
             for (const [key, range] of Object.entries(timeRanges)) {
@@ -190,7 +194,7 @@ class UsageStatsService {
             callRecords.push({
               sessionId,
               sessionTitle,
-              modelId: sessionModelId,
+              modelId: effectiveModelId,
               timestamp: sessionTimestamp,
               inputTokens: sessionInputTokens,
               outputTokens: sessionOutputTokens,
