@@ -48,7 +48,12 @@ import {
   workingDoneSessionIdsAtom,
   agentSessionPathMapAtom,
   agentDiffRefreshVersionAtom,
- agentDiffUnseenChangesAtom, agentDiffUnseenFilesAtom, agentDiffPanelTabAtom, agentSidePanelOpenAtom } from '@/atoms/agent-atoms'
+  agentDiffUnseenChangesAtom,
+  agentDiffUnseenFilesAtom,
+  agentDiffPanelTabAtom,
+  agentSidePanelOpenAtom,
+  sessionTokenStatsAtom,
+} from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
   notificationsEnabledAtom,
@@ -896,6 +901,34 @@ export function useGlobalAgentListeners(): void {
             store.set(agentPlanModeSessionsAtom, (prev: Set<string>) =>
               updatePlanModeSessionSet(prev, sessionId, event.mode === 'plan')
             )
+          } else if (event.type === 'usage_update') {
+            // 累计 token 统计（P3 阶段）
+            const usage = event.usage
+            store.set(sessionTokenStatsAtom, (prev) => {
+              const map = new Map(prev)
+              const current = map.get(sessionId) ?? {
+                totalInputTokens: 0,
+                totalOutputTokens: 0,
+                totalCacheReadTokens: 0,
+                totalCacheCreationTokens: 0,
+                totalCostUsd: 0,
+                turnCount: 0,
+              }
+              // 只有当 inputTokens 变化时才累计（表示新的一轮）
+              // 避免同一轮内多次 usage_update 导致重复累计
+              const prevInput = store.get(agentStreamingStatesAtom).get(sessionId)?.inputTokens
+              if (prevInput !== usage.inputTokens) {
+                map.set(sessionId, {
+                  totalInputTokens: current.totalInputTokens + usage.inputTokens,
+                  totalOutputTokens: current.totalOutputTokens + (usage.outputTokens ?? 0),
+                  totalCacheReadTokens: current.totalCacheReadTokens + (usage.cacheReadTokens ?? 0),
+                  totalCacheCreationTokens: current.totalCacheCreationTokens + (usage.cacheCreationTokens ?? 0),
+                  totalCostUsd: current.totalCostUsd + (usage.costUsd ?? 0),
+                  turnCount: current.turnCount + 1,
+                })
+              }
+              return map
+            })
           }
         }
         }) // unstable_batchedUpdates

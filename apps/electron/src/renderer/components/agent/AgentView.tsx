@@ -28,6 +28,7 @@ import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
+import { TokenStatsPanel } from './TokenStatsPanel'
 
 import type { AgentContextStatus, SubagentEagerness } from '@/atoms/agent-atoms'
 import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
@@ -2303,6 +2304,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           </div>
         </div>
         )}
+
+        {/* Token 统计面板 — 仅通用模式显示 */}
+        <TokenStatsPanel />
       </div>
     </AgentSessionProvider>
 

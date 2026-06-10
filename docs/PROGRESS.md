@@ -141,6 +141,7 @@
 |------|------|------|
 | ✅ Agent 消息排队机制 | **已完成** | Enter 排队 / Shift+Enter 打断（决策 #15，2026-06-09 实现）|
 | ✅ Chat/Agent 切换器迁移 | **已完成** | SettingsPanel 顶部 SegmentedControl（2026-06-09）|
+| ✅ **P3 Token 统计 / Cache 命中率 UI** | **已完成** | TokenStatsPanel + 累计 atoms（2026-06-10）|
 | 🔵 MCP 设置页面集成 | 规划中 | 内置 MCP 分类展示 + 一键安装指引 |
 | 🔵 Agent 对话智能引导 | 规划中 | 检测 TA 相关意图 + 主动提示安装 |
 | 🔵 `/btw` 侧面提问 | 规划中 | 并行提问、覆盖层显示、不进历史（预估 2-3 天）|
@@ -148,6 +149,19 @@
 ---
 
 ## 历史进度
+
+### 2026-06-10（续）
+
+**产出**：P3 Token 统计 / Cache 命中率 UI 完成
+
+| 任务 | 内容 |
+|------|------|
+| 累计 token atoms | `sessionTokenStatsAtom` + `currentSessionTokenStatsAtom` |
+| 缓存命中率 atom | `cacheHitRateAtom`（派生：cacheRead / totalInput）|
+| 成本明细 atom | `costBreakdownAtom`（待模型定价数据细化）|
+| TokenStatsPanel | 会话页底部显示输入/输出/缓存命中/费用/轮数（通用模式专用）|
+| usage_update 累计 | `useGlobalAgentListeners` 内累计 token 统计 |
+| **里程碑** | **P3 阶段首项任务完成** |
 
 ### 2026-06-10
 

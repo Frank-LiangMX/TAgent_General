@@ -830,6 +830,87 @@ export const agentContextStatusAtom = atom<AgentContextStatus>((get) => {
   }
 })
 
+// ============================================================================
+// Token 统计与缓存命中率（P3 阶段）
+// ============================================================================
+
+/** 会话级别的累计 token 统计 */
+export interface SessionTokenStats {
+  /** 累计输入 token（含缓存读取） */
+  totalInputTokens: number
+  /** 累计输出 token */
+  totalOutputTokens: number
+  /** 累计缓存读取 token */
+  totalCacheReadTokens: number
+  /** 累计缓存写入 token */
+  totalCacheCreationTokens: number
+  /** 累计费用（美元） */
+  totalCostUsd: number
+  /** 累计 turn 数 */
+  turnCount: number
+}
+
+/** 所有会话的累计 token 统计 Map — 以 sessionId 为 key */
+export const sessionTokenStatsAtom = atom<Map<string, SessionTokenStats>>(new Map())
+
+/** 当前会话的累计 token 统计（派生） */
+export const currentSessionTokenStatsAtom = atom<SessionTokenStats>((get) => {
+  const currentId = get(currentAgentSessionIdAtom)
+  if (!currentId) {
+    return {
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheReadTokens: 0,
+      totalCacheCreationTokens: 0,
+      totalCostUsd: 0,
+      turnCount: 0,
+    }
+  }
+  return get(sessionTokenStatsAtom).get(currentId) ?? {
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    totalCacheReadTokens: 0,
+    totalCacheCreationTokens: 0,
+    totalCostUsd: 0,
+    turnCount: 0,
+  }
+})
+
+/** 缓存命中率（派生）— cacheReadTokens / totalInputTokens */
+export const cacheHitRateAtom = atom<number | null>((get) => {
+  const stats = get(currentSessionTokenStatsAtom)
+  if (stats.totalInputTokens === 0) return null
+  return stats.totalCacheReadTokens / stats.totalInputTokens
+})
+
+/** 成本明细（派生）— 按 input/output/cache 分解 */
+export interface CostBreakdown {
+  /** 输入成本（不含缓存） */
+  inputCostUsd: number
+  /** 输出成本 */
+  outputCostUsd: number
+  /** 缓存读取成本（节省的成本） */
+  cacheReadCostUsd: number
+  /** 缓存写入成本 */
+  cacheCreationCostUsd: number
+  /** 总成本 */
+  totalCostUsd: number
+}
+
+/** 成本明细派生 atom */
+export const costBreakdownAtom = atom<CostBreakdown>((get) => {
+  const stats = get(currentSessionTokenStatsAtom)
+  // TODO: 按模型定价计算实际成本，这里先用总成本作为占位
+  // 目前 SDK 只返回 totalCostUsd，没有细分成本
+  return {
+    inputCostUsd: 0, // 待模型定价数据
+    outputCostUsd: 0, // 待模型定价数据
+    cacheReadCostUsd: 0, // 待模型定价数据
+    cacheCreationCostUsd: 0, // 待模型定价数据
+    totalCostUsd: stats.totalCostUsd,
+  }
+})
+
 /**
  * Agent 流式错误消息 Map — 以 sessionId 为 key
  * 错误发生时写入，下次发送或手动关闭时清除
