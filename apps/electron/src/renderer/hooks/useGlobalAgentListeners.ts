@@ -111,26 +111,66 @@ function uniqueTruthyPaths(paths: Array<string | null | undefined>): string[] {
  * 按模型名推断 contextWindow。SDK 流式过程中不返回此字段，
  * 只有 result 消息的 modelUsage 才带（且部分渠道不返回）。
  * 这里提供一个按模型家族的 fallback，保证进度环永远有分母可用。
+ *
+ * 数据来源（2025-06）：
+ * - Claude Opus/Sonnet 4.x: 1M
+ * - Claude Haiku: 200K
+ * - GPT-4o/GPT-4-turbo: 128K
+ * - o1/o3: 200K
+ * - DeepSeek V4: 1M
+ * - Gemini 2.0 Flash: 1M, Pro: 2M
+ * - GLM-4/GLM-5: 128K
+ * - Qwen 2.5: 128K
+ * - Llama 4 Scout: 10M, Maverick: 1M
+ * - Mistral Large: 128K
  */
 function inferContextWindow(model?: string): number | undefined {
   if (!model) return undefined
   const m = model.toLowerCase()
-  // Claude Haiku 为 200k
-  if (m.includes('claude-haiku')) return 200_000
-  // Claude Sonnet 4.6、Opus 4.6 / 4.7 / 4.8、DeepSeek V4 系列均为 1M 上下文
+
+  // === 10M 超大上下文 ===
+  if (m.includes('llama-4-scout') || m.includes('llama4-scout') || m.includes('scout')) return 10_000_000
+
+  // === 2M 大上下文 ===
+  if (m.includes('gemini-2') && m.includes('pro')) return 2_000_000
+  if (m.includes('gemini-2.0-pro') || m.includes('gemini-2.5-pro')) return 2_000_000
+
+  // === 1M 上下文 ===
+  // Claude Sonnet/Opus 4.x
   if (
-    m.includes('claude-sonnet-4-6') ||
-    m.includes('claude-opus-4-6') ||
-    m.includes('claude-opus-4-7') ||
-    m.includes('claude-opus-4-8')
+    m.includes('claude-sonnet-4') ||
+    m.includes('claude-opus-4') ||
+    m.includes('claude-sonnet4') ||
+    m.includes('claude-opus4')
   ) return 1_000_000
-  if (m.includes('deepseek-v4')) return 1_000_000
-  // MiniMax M3 为 1M 上下文
+  // DeepSeek V4
+  if (m.includes('deepseek-v4') || m.includes('deepseek-v3')) return 1_000_000
+  // Gemini 2.0 Flash
+  if (m.includes('gemini-2') && m.includes('flash')) return 1_000_000
+  // Llama 4 Maverick
+  if (m.includes('llama-4-maverick') || m.includes('llama4-maverick') || m.includes('maverick')) return 1_000_000
+  // MiniMax M3
   if (m.includes('minimax-m3')) return 1_000_000
-  // 小米 MiMo：v2.5 / v2.5-pro / v2-pro 为 1M（omni / flash 仍走默认 200k）
+  // 小米 MiMo
   if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return 1_000_000
-  // 智谱 GLM 系列：GLM-4 / GLM-5 均为 128k 上下文
+
+  // === 200K 上下文 ===
+  // Claude Haiku
+  if (m.includes('claude-haiku')) return 200_000
+  // OpenAI o1/o3 系列
+  if (m.includes('openai-o1') || m.includes('openai-o3') || m.includes('/o1') || m.includes('/o3')) return 200_000
+
+  // === 128K 上下文 ===
+  // GPT-4o / GPT-4-turbo
+  if (m.includes('gpt-4o') || m.includes('gpt-4-turbo') || m.includes('gpt4o') || m.includes('gpt4-turbo')) return 128_000
+  // 智谱 GLM 系列
   if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5')) return 128_000
+  // 阿里 Qwen 2.5
+  if (m.includes('qwen-2.5') || m.includes('qwen2.5') || m.includes('qwen-2') || m.includes('qwen2')) return 128_000
+  // Mistral Large
+  if (m.includes('mistral-large') || m.includes('mistral large')) return 128_000
+
+  // === 默认值 ===
   return 200_000
 }
 
