@@ -133,7 +133,7 @@
 | ✅ P2 TA 模式 UI 框架 | 已完成 | 4 个面板 Mock 数据 |
 | ✅ P2 ReviewQueue 连接真实数据 | 已完成 | IPC + Preload + UI 接入 SQLite |
 | ✅ P2 记忆 5 层 + FTS5 基础实现 | 已完成 | MemoryLayerService + MemoryMonitorPanel UI |
-| 🟡 P2 Pipeline 连接真实数据 | 待做 | 需要 pipeline_runs.jsonl 解析服务（工作量较大，MVP 可暂缓）|
+| ✅ P2 Pipeline 连接真实数据 | **已完成** | PipelineService + IPC + UI 接入 JSONL（2026-06-10）|
 | 🟡 P2 记忆自进化机制 | 待做 | Nudges / Reflect / Scheduled Cleanup（后续阶段）|
 
 ### 后续优化（不进 MVP）
@@ -148,6 +148,18 @@
 ---
 
 ## 历史进度
+
+### 2026-06-10
+
+**产出**：P2 Pipeline 流水线数据接入完成
+
+| 任务 | 内容 | Commit |
+|------|------|--------|
+| Pipeline Schema | `PipelineRun` 类型定义 + `PIPELINE_IPC_CHANNELS` 常量 | `4d8c9651` |
+| PipelineService | 读取/写入/追加 `pipeline_runs.jsonl`，支持 CRUD 和统计 | `4d8c9651` |
+| IPC + Preload | 7 个 IPC 处理器 + Preload API | `4d8c9651` |
+| UI 连接 | `PipelinePanel` 和 `TASidebar.Pipeline` 接入真实数据 | `4d8c9651` |
+| **里程碑** | **P2 阶段 5/6 任务完成，仅剩记忆自进化** |
 
 ### 2026-06-09
 
