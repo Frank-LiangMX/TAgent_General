@@ -123,7 +123,7 @@ export interface LiquidGlassFilterProps {
 export function LiquidGlassFilter({
   id = 'liquid-glass-filter',
   displacementScale = 25,
-  edgeThickness = 0.25,
+  edgeThickness = 0.40,
   displacementStrength = 0.5,
   mapWidth = 256,
   mapHeight = 256,
@@ -184,7 +184,7 @@ export function LiquidGlassFilterBtw({
     <LiquidGlassFilter
       id={id}
       displacementScale={35}
-      edgeThickness={0.30}
+      edgeThickness={0.45}
       displacementStrength={0.6}
       mapWidth={360}
       mapHeight={280}
