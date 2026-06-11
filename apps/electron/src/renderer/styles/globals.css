@@ -1651,7 +1651,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: hsl(var(--accent) / 0.42);
+  background: hsl(var(--background) / 0.35);
   border: 1px solid hsl(var(--border) / 0.50);
   color: hsl(var(--foreground));
   backdrop-filter: blur(8px) saturate(120%);
@@ -1685,7 +1685,7 @@
 }
 
 .btw-input-glass:focus-within {
-  background: hsl(var(--accent) / 0.50);
+  background: hsl(var(--background) / 0.45);
   border-color: hsl(var(--border) / 0.65);
   box-shadow:
     0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.22),
@@ -1702,7 +1702,7 @@
 .theme-ocean-dark .btw-input-glass,
 .theme-forest-dark .btw-input-glass,
 .theme-slate-dark .btw-input-glass {
-  background: hsl(var(--accent) / 0.42);
+  background: hsl(var(--background) / 0.25);
   border-color: hsl(var(--border) / 0.50);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.22),
@@ -1713,7 +1713,7 @@
 .theme-ocean-dark .btw-input-glass:focus-within,
 .theme-forest-dark .btw-input-glass:focus-within,
 .theme-slate-dark .btw-input-glass:focus-within {
-  background: hsl(var(--accent) / 0.50);
+  background: hsl(var(--background) / 0.34);
   border-color: hsl(var(--border) / 0.65);
   box-shadow:
     0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.34),
@@ -1740,7 +1740,7 @@
 .btw-panel-glass {
   position: relative;
   isolation: isolate;
-  background: hsl(var(--accent) / 0.50);
+  background: hsl(var(--background) / 0.38);
   border: 1px solid hsl(var(--border) / 0.50);
   backdrop-filter: blur(8px) saturate(120%);
   -webkit-backdrop-filter: blur(8px) saturate(120%);
@@ -1788,11 +1788,11 @@
 .theme-ocean-dark .btw-panel-glass,
 .theme-forest-dark .btw-panel-glass,
 .theme-slate-dark .btw-panel-glass {
-  background: hsl(var(--accent) / 0.50);
-  border-color: hsl(var(--border) / 0.50);
+  background: hsl(var(--background) / 0.26);
+  border-color: hsl(var(--border) / 0.46);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 hsl(var(--foreground) / 0.08);
+    0 10px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 hsl(var(--foreground) / 0.07);
 }
 
 .dark .btw-panel-glass::before,
@@ -1800,10 +1800,10 @@
 .theme-forest-dark .btw-panel-glass::before,
 .theme-slate-dark .btw-panel-glass::before {
   background:
-    radial-gradient(120% 80% at 18% -18%, hsl(var(--foreground) / 0.30), transparent 44%),
-    radial-gradient(80% 70% at 92% 12%, rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.06), transparent 52%),
-    linear-gradient(118deg, hsl(var(--foreground) / 0.18), transparent 31%, transparent 68%, hsl(var(--foreground) / 0.08));
-  opacity: 0.96;
+    radial-gradient(120% 80% at 18% -18%, hsl(var(--foreground) / 0.18), transparent 44%),
+    radial-gradient(80% 70% at 92% 12%, rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.04), transparent 52%),
+    linear-gradient(118deg, hsl(var(--foreground) / 0.10), transparent 31%, transparent 68%, hsl(var(--foreground) / 0.05));
+  opacity: 0.86;
   mix-blend-mode: screen;
 }
 
@@ -1811,10 +1811,10 @@
 .theme-ocean-dark .btw-panel-glass::after,
 .theme-forest-dark .btw-panel-glass::after,
 .theme-slate-dark .btw-panel-glass::after {
-  border-color: hsl(var(--foreground) / 0.16);
+  border-color: hsl(var(--foreground) / 0.12);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.24),
-    inset 1px 0 0 hsl(var(--foreground) / 0.12),
+    inset 0 1px 0 hsl(var(--foreground) / 0.16),
+    inset 1px 0 0 hsl(var(--foreground) / 0.08),
     inset -1px 0 0 hsl(var(--background) / 0.08),
-    inset 0 -1px 0 hsl(var(--background) / 0.22);
+    inset 0 -1px 0 hsl(var(--background) / 0.18);
 }

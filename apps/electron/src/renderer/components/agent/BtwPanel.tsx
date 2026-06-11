@@ -275,7 +275,7 @@ export function BtwPanel(): React.ReactElement | null {
 
         {/* Input */}
         <div className="p-3 shrink-0">
-          <div className="btw-input-glass flex items-end gap-2 rounded-xl bg-accent/50 backdrop-blur-sm border border-border/50 shadow-sm p-1.5 transition-colors focus-within:bg-accent/60 focus-within:border-border/70">
+          <div className="btw-input-glass flex items-end gap-2 rounded-xl bg-background/35 dark:bg-background/25 backdrop-blur-sm border border-border/50 shadow-sm p-1.5 transition-colors focus-within:bg-background/45 dark:focus-within:bg-background/34 focus-within:border-border/70">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
