@@ -183,7 +183,7 @@ export function BtwPanel(): React.ReactElement | null {
       {/* 面板 — 液态玻璃效果，弹性展开/收缩动画 */}
       <div
         className={cn(
-          'btw-panel-glass',
+          'btw-panel-liquid',
           'absolute w-[360px] flex flex-col overflow-hidden z-50',
           'bottom-full right-0 mb-2',
           'origin-bottom-right',

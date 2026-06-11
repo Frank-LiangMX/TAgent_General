@@ -61,6 +61,7 @@ import { UpdateDialog } from './components/settings/UpdateDialog'
 import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
 import { TabSwitcher } from './components/tabs/TabSwitcher'
 import { Toaster } from './components/ui/sonner'
+import { LiquidGlassFilter } from './components/ui/liquid-glass-filter'
 import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
 import { useGlobalChatListeners } from './hooks/useGlobalChatListeners'
 import { showCapabilityChangeToasts } from './lib/capabilities-toast'
@@ -870,6 +871,10 @@ if (isQuickTaskWindow) {
   // ===== 主窗口：完整渲染 =====
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
+      {/* SVG 滤镜定义 — 全局液态玻璃效果 */}
+      <LiquidGlassFilter id="liquid-glass-filter" displacementScale={10} aberrationIntensity={0.35} />
+      <LiquidGlassFilter id="liquid-glass-btw" displacementScale={12} aberrationIntensity={0.4} />
+
       <ThemeInitializer />
       <AgentSettingsInitializer />
       <NotificationsInitializer />

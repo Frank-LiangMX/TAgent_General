@@ -4,7 +4,7 @@
  * 工具内容 token 估算（CJK / ASCII / 其他），用于 canUseTool 拦截大文件写入。
  */
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'vitest'
 
 import {
   isCjkCodePoint,

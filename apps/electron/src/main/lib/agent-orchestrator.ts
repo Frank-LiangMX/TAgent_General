@@ -1269,6 +1269,42 @@ export class AgentOrchestrator {
     appendSDKMessages(sessionId, [userSDKMsg])
     callbacks.onRunStarted?.({ startedAt: streamStartedAt })
 
+    // 5.5 Nudge 检测（每 5 turn 检查记忆模式）
+    try {
+      const { nudgeService } = await import('./nudge-service')
+      const sessionMode = sessionMeta?.mode === 'ta' ? 'ta' : 'general'
+      // 获取最近 5 turn 的用户消息
+      const recentMsgs = getAgentSessionSDKMessages(sessionId)
+        .slice(-10) // 最近 10 条（约 5 turn）
+        .filter((m): m is SDKMessage & { type: 'user' | 'assistant' } => m.type === 'user' || m.type === 'assistant')
+        .map((m) => {
+          const msg = m.message as { content?: string | Array<{ type: string; text?: string }> } | undefined
+          const content = typeof msg?.content === 'string'
+            ? msg.content
+            : Array.isArray(msg?.content)
+              ? (msg.content as Array<{ type: string; text?: string }>).filter(b => b.type === 'text').map(b => b.text || '').join('')
+              : ''
+          return {
+            role: m.type as 'user' | 'assistant',
+            content,
+          }
+        })
+      const nudgeCandidates = nudgeService.onTurnStart(sessionId, recentMsgs, sessionMode)
+      if (nudgeCandidates.length > 0) {
+        // 通过 IPC 推送 Nudge 候选项到渲染进程
+        const { BrowserWindow } = await import('electron')
+        const win = BrowserWindow.getAllWindows()[0]
+        if (win && !win.isDestroyed()) {
+          win.webContents.send('memory:nudge-event', {
+            type: 'nudge_candidates',
+            nudges: nudgeCandidates,
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('[Agent 编排] Nudge 检测失败:', e)
+    }
+
     // 6. 状态初始化
     const accumulatedMessages: SDKMessage[] = []
     let resolvedModel = modelId || DEFAULT_MODEL_ID
@@ -1339,6 +1375,29 @@ export class AgentOrchestrator {
             console.log(`[Agent 编排] 无 sdkSessionId，将作为新会话启动（回填历史上下文）`)
           }
         }
+      }
+
+      // 9.3.5 TA 意图检测（通用模式下检测 TA 相关话题，提示安装）
+      try {
+        if (getAgentSessionMeta(sessionId)?.mode !== 'ta' && workspaceSlug) {
+          const { checkAndGeneratePrompt } = await import('./ta-intent-service')
+          // 获取最近消息用于意图检测
+          const recentAgentMsgs = getAgentSessionMessages(sessionId).slice(-5)
+          const taPrompt = checkAndGeneratePrompt(sessionId, workspaceSlug, recentAgentMsgs)
+          if (taPrompt) {
+            const { BrowserWindow } = await import('electron')
+            const win = BrowserWindow.getAllWindows()[0]
+            if (win && !win.isDestroyed()) {
+              win.webContents.send('agent:ta-intent-prompt', {
+                prompt: taPrompt.prompt,
+                confidence: taPrompt.confidence,
+                reason: taPrompt.reason,
+              })
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Agent 编排] TA 意图检测失败:', e)
       }
 
       // 9.4.1 Fork session JSONL 迁移已在 forkAgentSession 中完成，

@@ -1788,6 +1788,162 @@
   animation: btw-panel-collapse 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* ===== 液态玻璃效果 (SVG Filter) ===== */
+/*
+ * 真正的液态玻璃折射效果
+ * 使用 SVG feDisplacementMap 实现边缘折射 + 色差
+ * 仅 Chromium 内核支持 backdrop-filter: url(#svg-filter)
+ */
+
+/* 液态玻璃面板 - 应用 SVG 滤镜 */
+.liquid-glass-panel {
+  position: relative;
+  isolation: isolate;
+  /* 核心：SVG 滤镜 + 模糊 */
+  backdrop-filter: url(#liquid-glass-filter) blur(16px);
+  -webkit-backdrop-filter: url(#liquid-glass-filter) blur(16px);
+  /* 半透明背景 */
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.55) 0%,
+    hsl(var(--background) / 0.45) 50%,
+    hsl(var(--background) / 0.50) 100%
+  );
+  /* 边框 */
+  border: 1px solid hsl(var(--border) / 0.40);
+  border-top-color: hsl(var(--foreground) / 0.06);
+  border-left-color: hsl(var(--foreground) / 0.04);
+  border-radius: 20px;
+  /* 阴影 */
+  box-shadow:
+    0 4px 24px hsl(var(--foreground) / 0.08),
+    0 12px 48px hsl(var(--foreground) / 0.06),
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.03);
+}
+
+/* 边缘高光层 */
+.liquid-glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* 边缘径向渐变高光 */
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, hsl(var(--primary) / 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 85% 90%, hsl(var(--primary) / 0.05), transparent 45%);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* 内边框高光 */
+.liquid-glass-panel::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-bottom-color: hsl(var(--background) / 0.20);
+  border-right-color: hsl(var(--background) / 0.15);
+  pointer-events: none;
+}
+
+.liquid-glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题调整 */
+.dark .liquid-glass-panel {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.60) 0%,
+    hsl(var(--background) / 0.52) 50%,
+    hsl(var(--background) / 0.55) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.08);
+  border-top-color: hsl(var(--foreground) / 0.12);
+  box-shadow:
+    0 4px 32px hsl(var(--foreground) / 0.12),
+    0 16px 64px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--foreground) / 0.15),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.dark .liquid-glass-panel::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, hsl(var(--primary) / 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 85% 90%, hsl(var(--primary) / 0.08), transparent 45%);
+}
+
+/* ===== BTW 面板液态玻璃版 ===== */
+.btw-panel-liquid {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: url(#liquid-glass-filter) blur(20px);
+  -webkit-backdrop-filter: url(#liquid-glass-filter) blur(20px);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.48) 0%,
+    hsl(var(--background) / 0.38) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.06);
+  border-top-color: hsl(var(--foreground) / 0.10);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px hsl(var(--foreground) / 0.10),
+    0 24px 64px hsl(var(--foreground) / 0.06),
+    inset 0 1px 0 hsl(var(--foreground) / 0.12);
+}
+
+.btw-panel-liquid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.10), transparent 45%),
+    radial-gradient(ellipse 60% 40% at 90% 95%, hsl(var(--primary) / 0.06), transparent 40%);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.btw-panel-liquid::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid hsl(var(--foreground) / 0.10);
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+  pointer-events: none;
+}
+
+.btw-panel-liquid > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .btw-panel-liquid {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.52) 0%,
+    hsl(var(--background) / 0.42) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.10);
+  border-top-color: hsl(var(--foreground) / 0.14);
+  box-shadow:
+    0 8px 40px hsl(var(--foreground) / 0.14),
+    0 32px 80px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--foreground) / 0.18);
+}
+
+.dark .btw-panel-liquid::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.14), transparent 45%),
+    radial-gradient(ellipse 60% 40% at 90% 95%, hsl(var(--primary) / 0.08), transparent 40%);
+}
+
 /* Direct frosted-glass override for the BTW panel shell. */
 .btw-panel-glass {
   position: relative;

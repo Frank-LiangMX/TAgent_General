@@ -5,15 +5,15 @@
 
 ---
 
-## 当前状态（2026-06-10）
+## 当前状态（2026-06-11）
 
-**阶段**：P2 阶段开发中，TA 模式 UI + 工具闭环
+**阶段**：P2 阶段完成，所有后续优化任务已完成
 
 **已完成**：
 - ✅ Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
 - ✅ §8.4 Context 管理 **7/7 项全部实现**
 - ✅ ESLint 9 升级 + 434 warnings 清理
-- ✅ 305 个单元测试
+- ✅ **305 个单元测试**（vitest 配置修复，2026-06-11）
 - ✅ 图标清理（删除 proma 旧 logo 变体，重画 icon.svg）
 - ✅ dev-stop.bat + dev.bat 修复（中文乱码问题）
 - ✅ 文档更新（CLAUDE.md 品牌/命名修正，PROGRESS.md 创建）
@@ -156,7 +156,7 @@
 | ✅ P2 ReviewQueue 连接真实数据 | 已完成 | IPC + Preload + UI 接入 SQLite |
 | ✅ P2 记忆 5 层 + FTS5 基础实现 | 已完成 | MemoryLayerService + MemoryMonitorPanel UI |
 | ✅ P2 Pipeline 连接真实数据 | **已完成** | PipelineService + IPC + UI 接入 JSONL（2026-06-10）|
-| 🟡 P2 记忆自进化机制 | 待做 | Nudges / Reflect / Scheduled Cleanup（后续阶段）|
+| ✅ P2 记忆自进化机制 | **已完成** | NudgeService + ReflectService + ScheduledCleanupService（2026-06-11）|
 
 ### 后续优化（不进 MVP）
 | 任务 | 状态 | 备注 |
@@ -165,13 +165,97 @@
 | ✅ Chat/Agent 切换器迁移 | **已完成** | SettingsPanel 顶部 SegmentedControl（2026-06-09）|
 | ✅ **P3 Token 统计 / Cache 命中率 UI** | **已完成** | TokenStatsPanel + 累计 atoms（2026-06-10）|
 | ✅ **使用统计页面** | **已完成** | UsageStatsSettings + 按模型/时间范围统计（2026-06-10）|
-| 🔵 MCP 设置页面集成 | 规划中 | 内置 MCP 分类展示 + 一键安装指引 |
-| 🔵 Agent 对话智能引导 | 规划中 | 检测 TA 相关意图 + 主动提示安装 |
-| 🔵 `/btw` 侧面提问 | 规划中 | 并行提问、覆盖层显示、不进历史（预估 2-3 天）|
+| ✅ **MCP 设置页面集成** | **已完成** | BuiltinMcpRecommendations 组件 + 分类展示 + 一键安装（2026-06-11）|
+| ✅ **Agent 对话智能引导** | **已完成** | TA 意图检测 + toast 提示 + 引导安装（2026-06-11）|
+| ✅ **`/btw` 侧面提问** | **已完成** | 上下文共享（20 轮 history）+ 分叉到新会话 + 浮窗触发（流式期间/旁注按钮）+ 不进历史（2026-06-11）|
 
 ---
 
 ## 历史进度
+
+### 2026-06-11（续四）
+
+**产出**：测试框架修复 — `bun:test` → `vitest` 迁移
+
+| 任务 | 内容 |
+|------|------|
+| vitest.config.ts | 新建配置文件，添加路径别名 (`@/` → renderer, `@tagent/*`) |
+| bun:test → vitest | 22 个测试文件 import 从 `bun:test` 改为 `vitest` |
+| mock.module → vi.mock | 3 个文件（chat-service/channel-manager/bridge-model-utils）从 Bun mock API 迁移到 vitest |
+| mock() → vi.fn() | channel-manager.test.ts 中 Bun mock 函数改为 vitest vi.fn() |
+| **验证** | **22/22 测试文件通过，305 个测试全部绿色** |
+
+### 2026-06-11（续三）
+
+**产出**：`/btw` 侧面提问功能完成
+
+| 任务 | 内容 |
+|------|------|
+| BtwMessage 类型 | 侧面提问消息类型定义 |
+| BTW_IPC_CHANNELS | IPC 通道常量 |
+| btw-atoms | 侧面提问状态管理 atoms |
+| BtwPanel | 浮窗组件，显示对话界面 |
+| BtwFloatingTrigger | AI 流式期间在输入框上方显示"旁注"按钮，结束后 8 秒内仍可见 |
+| AgentView 集成 | 检测 `/btw` 前缀自动发送；点击旁注按钮打开面板 |
+| btw-service | 后端流式请求处理，不写入会话历史，复用主会话渠道/模型 |
+| useGlobalAgentListeners | 监听流式事件更新消息 |
+| **UI 优化** | 右侧浮窗 `top-[10vh] bottom-[10vh]`，毛玻璃 `bg-background/70 backdrop-blur-xl`，`scrollbar-thin` 复合界面滚动条，`rounded-[17px]` 圆角（不与窗口控制按钮重合）|
+| **上下文共享** | 主会话 SDKMessage → ChatMessage 转换器；sendBtwMessage 接收 `sourceSessionId` 拉最近 20 轮作为 LLM history；tool_use 降级文字、tool_result 跳过 |
+| **Fork 到新会话** | BtwPanel Header 分叉按钮（`↗` 图标）；点击后 createAgentSession + sendAgentMessage 注入"父会话 &session: 引用 + btw Q&A"作为新会话 initial user message |
+| **里程碑** | **后续优化全部完成 + 对齐 Claude Code `/btw` 原生语义** |
+
+**Claude Code 原生定义对比**（参考其官方文档）：
+
+| 维度 | Claude Code 原生 | 当前实现 |
+|------|------------------|----------|
+| 上下文可见性 | **共享主会话完整 messages** | ✅ **最近 20 轮（user/assistant 文本）** |
+| 模型/渠道 | 复用主会话 | ✅ 复用 |
+| 工具访问 | 无 | ✅ 无 |
+| 不写历史 | ✅ dismissible overlay | ✅ 浮窗 |
+| 并行于主 turn | ✅ 流式中也能开 | ✅ 架构级并行（独立 AbortController + 独立 fetch）|
+| 分叉到新会话 | `f` 键分叉到新会话 | ✅ **Header `↗` 按钮 + createAgentSession + mentionedSessionIds 继承** |
+| 提示缓存复用 | ✅ 复用父 cache | ⚠️ 每次新 request（无 cache 复用）|
+
+> 全部核心语义已对齐 Claude Code，仅"提示缓存复用"待优化（需把父 session 的 cache key 透传到 btw 请求，复杂且依赖具体供应商实现）。
+
+### 2026-06-11（续二）
+
+**产出**：Agent 对话智能引导完成
+
+| 任务 | 内容 |
+|------|------|
+| ta-intent-service | 意图检测服务，识别 TA 关键词（mesh、texture、FBX、命名规范等）|
+| 置信度分级 | 强/中/弱三级，弱匹配不提示减少干扰 |
+| 会话级标记 | 避免重复提示同一会话 |
+| agent-orchestrator 集成 | workspaceSlug 赋值后检测，发送 IPC 事件 |
+| useGlobalAgentListeners | 监听事件，显示 toast 引导用户前往 TA 模式或设置 |
+| **里程碑** | **后续优化第 5 项完成** |
+
+### 2026-06-11（续）
+
+**产出**：MCP 设置页面集成完成
+
+| 任务 | 内容 |
+|------|------|
+| BuiltinMcpRecommendations | 推荐组件，分通用/TA 专用两类展示 |
+| 内置 MCP 列表 | context7、github、sequential-thinking、puppeteer、filesystem、ta-agent-mcp |
+| 一键安装 | 点击安装按钮自动填充表单，用户只需测试连接后启用 |
+| AgentSettings 集成 | MCP Tab 分"推荐 MCP"和"已配置 MCP"两区域 |
+| **里程碑** | **后续优化第 4 项完成** |
+
+### 2026-06-11
+
+**产出**：P2 记忆自进化机制完成
+
+| 任务 | 内容 |
+|------|------|
+| NudgeService | 每 5 turn 检测用户行为模式（行为重复/事实重复/显式纠正）|
+| Nudge IPC + Preload | `GET_PENDING_NUDGES` / `RESPOND_NUDGE` / `onNudgeEvent` |
+| NudgeToast | 用户友好的 toast 通知组件，支持"记住"/"不记"操作 |
+| ReflectService | 每日 03:00（或启动时 >36h）提炼洞察写入 L5 |
+| ScheduledCleanupService | 每周日 04:00（或启动时 >8 天）归档 L4 / 压缩 L3 / LRU 标记 |
+| 主进程集成 | 在 bootstrap 中初始化所有记忆服务 |
+| **里程碑** | **P2 阶段全部完成** |
 
 ### 2026-06-10（续三）
 
@@ -263,7 +347,7 @@
 |------|------|
 | 功能调研 | Claude Code `/btw` 功能分析（来源：hubwiz 博客）|
 | 源码检查 | Claude Code 开源仓库无核心实现，需自行开发 |
-| 功能设计 | 并行提问 + 覆盖层显示 + 不进历史 + 无工具访问 |
+| 功能设计 | 覆盖层显示 + 不进历史 + 无工具访问 + 复用主会话渠道/模型 |
 | 预估工时 | 2-3 天 |
 
 ### 2026-06-07（续三）

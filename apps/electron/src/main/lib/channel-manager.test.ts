@@ -7,13 +7,11 @@
  * 详见 docs/plans/2026-06-05-tagent-fusion-design.md §8.4 P0-2
  */
 
-import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest'
 
 // channel-manager.ts 在模块顶部 import { safeStorage } from 'electron'，
 // electron 在测试运行时（非 Electron 主进程）加载不出来，所以先 mock 掉。
-// 注：bun test 跨文件复用模块缓存时，mock 必须覆盖所有可能的 electron 导出，
-// 否则下一个测试文件加载相同依赖时会因为 BrowserWindow 缺失报错。
-mock.module('electron', () => ({
+vi.mock('electron', () => ({
   safeStorage: {
     isEncryptionAvailable: () => false,
     encryptString: (s: string) => Buffer.from(s, 'utf-8'),
@@ -56,7 +54,7 @@ afterEach(() => {
 /** 装一个会按 status 序列返回响应的 mock fetch */
 function installMockFetch(responses: Array<{ status: number; body?: string }>) {
   let idx = 0
-  globalThis.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url
     fetchCalls.push({ url, init: init ?? {} })
     const r = responses[Math.min(idx, responses.length - 1)]!
@@ -67,7 +65,7 @@ function installMockFetch(responses: Array<{ status: number; body?: string }>) {
 
 /** 装一个抛错的 mock fetch (网络层失败) */
 function installMockFetchThrow(message: string) {
-  globalThis.fetch = mock(async () => {
+  globalThis.fetch = vi.fn(async () => {
     throw new Error(message)
   }) as unknown as typeof globalThis.fetch
 }
@@ -329,7 +327,7 @@ describe('validateChannelModel - 网络层异常', () => {
   })
 
   test('Given fetch 抛非 Error 对象 When validate Then 返回失败 + "未知错误"', async () => {
-    globalThis.fetch = mock(async () => {
+    globalThis.fetch = vi.fn(async () => {
       throw 'string-not-error'  // eslint-disable-line @typescript-eslint/no-throw-literal
     }) as unknown as typeof globalThis.fetch
     const r = await validateChannelModel(ANTHROPIC_INPUT)
