@@ -1151,7 +1151,7 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   return (
     <div
       className={cn(
-        'relative h-full flex flex-col bg-background rounded-2xl shadow-xl overflow-hidden',
+        'panel-glass relative h-full flex flex-col overflow-hidden',
         'transition-[width,opacity,margin-left] duration-300 ease-in-out',
         isSidebarCollapsed
           ? 'opacity-0 pointer-events-none ml-0'

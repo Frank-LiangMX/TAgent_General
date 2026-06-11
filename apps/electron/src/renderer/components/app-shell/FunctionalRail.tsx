@@ -236,7 +236,7 @@ export function FunctionalRail({
   ]
 
   return (
-    <div className="relative h-full flex flex-col items-center bg-background rounded-2xl shadow-xl px-2 py-2" style={{ width: 60, flexShrink: 0 }}>
+    <div className="rail-glass relative h-full flex flex-col items-center px-2 py-2" style={{ width: 60, flexShrink: 0 }}>
       {/* macOS 红绿灯避让 */}
       <div className={cn('w-full flex-shrink-0 titlebar-drag-region', isMac ? 'h-[50px]' : 'h-2')} />
 
@@ -249,7 +249,7 @@ export function FunctionalRail({
                 type="button"
                 aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
                 onClick={onToggleSidebar}
-                className="size-10 flex items-center justify-center rounded-[12px] text-foreground/60 bg-muted hover:bg-foreground/[0.08] hover:text-foreground transition-colors titlebar-no-drag"
+                className="button-glass size-10 flex items-center justify-center rounded-[12px] text-foreground/60 hover:text-foreground titlebar-no-drag"
               >
                 {sidebarCollapsed
                   ? <PanelLeftOpen size={17} />
@@ -278,10 +278,9 @@ export function FunctionalRail({
                   onClick={() => handleModeSwitch(value)}
                   disabled={isSwitching}
                 className={cn(
-                    'relative size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
-                    isActive
-                      ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                      : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75',
+                    'button-glass relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
+                    isActive && 'active',
+                    !isActive && 'text-foreground/45 hover:text-foreground/75',
                     isSwitching && 'opacity-50 cursor-not-allowed'
                   )}
                 >
@@ -312,7 +311,7 @@ export function FunctionalRail({
       {/* 工作区管理 Popover（仅通用模式 + Agent 子模式 + 目录区折叠时显示，展开时由目录区顶端 Popover 承担） */}
       {appMode === 'agent' && topLevelMode === 'general' && sidebarCollapsed && (
         <>
-          <div className="my-3 h-px w-8 bg-border/70" />
+          <div className="glass-divider my-3 w-8" />
           <div className="flex flex-col items-center gap-1.5">
             <Popover>
               <PopoverTrigger asChild>
@@ -386,11 +385,12 @@ export function FunctionalRail({
         </>
       )}
 
-      <div className="my-3 h-px w-8 bg-border/70" />
+      <div className="glass-divider my-3 w-8" />
 
       {/* 功能区切换按钮 */}
       <div className="flex flex-col items-center gap-1.5">
         {railItems.map((item) => {
+          const isActive = activeRailItem === item.id
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
@@ -398,10 +398,9 @@ export function FunctionalRail({
                   type="button"
                   onClick={() => setActiveRailItem(item.id)}
                   className={cn(
-                    'size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
-                    activeRailItem === item.id
-                      ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                      : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75'
+                    'button-glass size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
+                    isActive && 'active',
+                    !isActive && 'text-foreground/45 hover:text-foreground/75'
                   )}
                 >
                   {item.icon}
@@ -418,7 +417,7 @@ export function FunctionalRail({
         })}
       </div>
 
-      <div className="my-3 h-px w-8 bg-border/70" />
+      <div className="glass-divider my-3 w-8" />
 
       {/* 高频操作：目录区折叠时显示（避免与展开后的目录区内容重复） */}
       {sidebarCollapsed && (
@@ -458,7 +457,7 @@ export function FunctionalRail({
       {/* 最近会话入口：目录区折叠时显示当前顶层模式下的最近会话（父组件已按模式过滤） */}
       {sidebarCollapsed && recentItems.length > 0 && (
         <>
-          <div className="my-3 h-px w-8 bg-border/70" />
+          <div className="glass-divider my-3 w-8" />
           <div className="flex-1 min-h-0 w-full overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex flex-col items-center gap-1.5 pb-2">
               {recentItems.map((item) => (

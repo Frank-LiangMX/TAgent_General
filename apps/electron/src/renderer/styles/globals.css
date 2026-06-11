@@ -1870,3 +1870,353 @@
     inset -1px 0 0 hsl(var(--background) / 0.08),
     inset 0 -1px 0 hsl(var(--background) / 0.18);
 }
+
+/* ===== 主布局精致玻璃卡片风格 ===== */
+/*
+ * 不追求真正的 backdrop-filter 模糊（在 Electron 中效果有限）
+ * 重点：渐变背景 + 边框高光 + 内阴影 + 主题色微光
+ */
+
+/**
+ * shell-bg - 外壳背景
+ * 微妙的径向渐变，为主题色在角落提供微光
+ */
+.shell-glass {
+  position: relative;
+  background:
+    radial-gradient(ellipse 100% 70% at 0% 0%, hsl(var(--primary) / 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.03) 0%, transparent 40%),
+    hsl(var(--background));
+}
+
+.dark .shell-glass {
+  background:
+    radial-gradient(ellipse 100% 70% at 0% 0%, hsl(var(--primary) / 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.04) 0%, transparent 40%),
+    hsl(var(--background));
+}
+
+/**
+ * panel-glass - 主面板精致卡片
+ * 半透明渐变背景 + 顶部高光边框 + 内阴影层次
+ */
+.panel-glass {
+  position: relative;
+  isolation: isolate;
+  /* 渐变背景：从上到下略微变深，模拟光照 */
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.88) 0%,
+    hsl(var(--background) / 0.82) 100%
+  );
+  /* 边框：顶部高光 + 其他边暗 */
+  border: 1px solid hsl(var(--border) / 0.50);
+  border-top-color: hsl(var(--foreground) / 0.08);
+  border-radius: 20px;
+  /* 多层阴影：外阴影 + 内高光 + 内底阴影 */
+  box-shadow:
+    0 1px 3px hsl(var(--foreground) / 0.04),
+    0 4px 12px hsl(var(--foreground) / 0.06),
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.02);
+}
+
+/* 主题色微光层（对角） */
+.panel-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.03) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+.panel-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题：更强的光影对比 */
+.dark .panel-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.85) 0%,
+    hsl(var(--background) / 0.78) 100%
+  );
+  border-color: hsl(var(--border) / 0.35);
+  border-top-color: hsl(var(--foreground) / 0.12);
+  box-shadow:
+    0 1px 4px hsl(var(--foreground) / 0.06),
+    0 6px 20px hsl(var(--foreground) / 0.10),
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.03);
+}
+
+.dark .panel-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+/* 主题色覆盖 */
+.theme-ocean-light .panel-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(205 35% 98% / 0.88) 0%,
+    hsl(205 30% 96% / 0.82) 100%
+  );
+  border-color: hsl(205 50% 50% / 0.15);
+  border-top-color: hsl(205 50% 50% / 0.25);
+}
+
+.theme-forest-light .panel-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(140 20% 98% / 0.88) 0%,
+    hsl(140 15% 96% / 0.82) 100%
+  );
+  border-color: hsl(150 35% 38% / 0.15);
+  border-top-color: hsl(150 35% 38% / 0.25);
+}
+
+.theme-ocean-dark .panel-glass {
+  border-top-color: hsl(205 87% 24% / 0.30);
+}
+
+.theme-forest-dark .panel-glass {
+  border-top-color: hsl(150 35% 38% / 0.30);
+}
+
+/**
+ * rail-glass - FunctionalRail 专用
+ * 竖向布局，更紧凑的视觉效果
+ */
+.rail-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.86) 0%,
+    hsl(var(--background) / 0.80) 100%
+  );
+  border: 1px solid hsl(var(--border) / 0.45);
+  border-top-color: hsl(var(--foreground) / 0.07);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 3px hsl(var(--foreground) / 0.03),
+    0 4px 10px hsl(var(--foreground) / 0.05),
+    inset 0 1px 0 hsl(var(--foreground) / 0.06);
+}
+
+.rail-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+.rail-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .rail-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.82) 0%,
+    hsl(var(--background) / 0.76) 100%
+  );
+  border-color: hsl(var(--border) / 0.30);
+  border-top-color: hsl(var(--foreground) / 0.10);
+  box-shadow:
+    0 1px 4px hsl(var(--foreground) / 0.05),
+    0 5px 16px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--foreground) / 0.08);
+}
+
+.dark .rail-glass::before {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary) / 0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+.theme-ocean-light .rail-glass {
+  border-top-color: hsl(205 50% 50% / 0.20);
+}
+
+.theme-forest-light .rail-glass {
+  border-top-color: hsl(150 35% 38% / 0.20);
+}
+
+/**
+ * content-glass - 主内容区
+ * 更亮的背景，作为内容画布
+ */
+.content-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--content-area) / 0.92) 0%,
+    hsl(var(--content-area) / 0.86) 100%
+  );
+  border: 1px solid hsl(var(--border) / 0.40);
+  border-top-color: hsl(var(--foreground) / 0.05);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.02),
+    0 3px 8px hsl(var(--foreground) / 0.04),
+    inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.content-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.02) 0%,
+    transparent 25%,
+    transparent 75%,
+    hsl(var(--primary) / 0.01) 100%
+  );
+  pointer-events: none;
+}
+
+.content-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .content-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--content-area) / 0.88) 0%,
+    hsl(var(--content-area) / 0.80) 100%
+  );
+  border-color: hsl(var(--border) / 0.25);
+  border-top-color: hsl(var(--foreground) / 0.08);
+  box-shadow:
+    0 1px 3px hsl(var(--foreground) / 0.04),
+    0 4px 12px hsl(var(--foreground) / 0.06),
+    inset 0 1px 0 hsl(var(--foreground) / 0.06);
+}
+
+.dark .content-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 25%,
+    transparent 75%,
+    hsl(var(--primary) / 0.03) 100%
+  );
+}
+
+.theme-ocean-light .content-glass {
+  border-top-color: hsl(205 50% 50% / 0.12);
+}
+
+.theme-forest-light .content-glass {
+  border-top-color: hsl(150 35% 38% / 0.12);
+}
+
+/**
+ * button-glass - 按钮精致卡片
+ */
+.button-glass {
+  background: hsl(var(--background) / 0.70);
+  border: 1px solid hsl(var(--border) / 0.35);
+  border-top-color: hsl(var(--foreground) / 0.05);
+  transition: all 0.15s ease;
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.button-glass:hover {
+  background: hsl(var(--background) / 0.80);
+  border-color: hsl(var(--border) / 0.45);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06);
+}
+
+.button-glass.active {
+  background: hsl(var(--primary) / 0.08);
+  border-color: hsl(var(--primary) / 0.25);
+  border-top-color: hsl(var(--primary) / 0.30);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 1px 2px hsl(var(--foreground) / 0.04);
+}
+
+.dark .button-glass {
+  background: hsl(var(--background) / 0.55);
+  border-color: hsl(var(--border) / 0.25);
+  border-top-color: hsl(var(--foreground) / 0.07);
+}
+
+.dark .button-glass:hover {
+  background: hsl(var(--background) / 0.68);
+  border-color: hsl(var(--border) / 0.38);
+}
+
+.dark .button-glass.active {
+  background: hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.35);
+  border-top-color: hsl(var(--primary) / 0.40);
+}
+
+/**
+ * glass-divider - 分隔线
+ */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.55) 20%,
+    hsl(var(--border) / 0.70) 50%,
+    hsl(var(--border) / 0.55) 80%,
+    transparent 100%
+  );
+}
+
+.dark .glass-divider {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.40) 20%,
+    hsl(var(--border) / 0.55) 50%,
+    hsl(var(--border) / 0.40) 80%,
+    transparent 100%
+  );
+}
+
+/* 降级样式 */
+@media (prefers-reduced-motion: reduce) {
+  .panel-glass::before,
+  .rail-glass::before,
+  .content-glass::before {
+    display: none;
+  }
+}

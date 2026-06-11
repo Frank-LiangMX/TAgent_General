@@ -111,7 +111,7 @@ function TAMainArea(): React.ReactElement {
   return (
     <Panel
       variant="grow"
-      className="bg-content-area rounded-2xl shadow-xl"
+      className="content-glass"
     >
       <div className="flex-1 min-h-0 overflow-hidden">
         {renderContent()}
@@ -242,7 +242,7 @@ function GeneralMainArea(): React.ReactElement {
   return (
     <Panel
       variant="grow"
-      className="bg-content-area rounded-2xl shadow-xl"
+      className="content-glass"
     >
       <div className="flex flex-1 min-h-0 relative overflow-hidden" data-split-container>
         {/* 左侧：TabBar + TabContent（始终保持在同一 DOM 位置，避免 Tab 切换时 unmount）

@@ -235,7 +235,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       {/* Windows 自定义窗口控制按钮（最小化/最大化/关闭） */}
       <WindowControls />
 
-      <div className="shell-bg h-screen w-screen flex overflow-hidden bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
+      <div className="shell-glass shell-bg h-screen w-screen flex overflow-hidden">
         {/* 左侧：FunctionalRail + LeftSidebar */}
         <div className="p-2 pr-0 relative z-[60] flex items-stretch gap-0">
           {/* FunctionalRail：60px 固定宽度，功能区切换 */}
