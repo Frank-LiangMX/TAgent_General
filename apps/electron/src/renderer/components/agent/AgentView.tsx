@@ -23,6 +23,8 @@ import { toast } from 'sonner'
 import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
 import { AskUserBanner } from './AskUserBanner'
+import { BtwPanel } from './BtwPanel'
+import { BtwFloatingTrigger } from './BtwFloatingTrigger'
 import { ContextUsageBadge } from './ContextUsageBadge'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { PermissionBanner } from './PermissionBanner'
@@ -76,6 +78,14 @@ import {
   sessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom, thinkingExpandedAtom } from '@/atoms/chat-atoms'
+import {
+  btwOpenAtom,
+  btwMessagesAtom,
+  btwStreamingAtom,
+  btwChannelIdAtom,
+  btwModelIdAtom,
+  btwSourceSessionIdAtom,
+} from '@/atoms/btw-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { previewPanelOpenMapAtom, previewFileMapAtom, autoPreviewEnabledAtom, quotedSelectionMapAtom, currentQuotedSelectionAtom } from '@/atoms/preview-atoms'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
@@ -1441,6 +1451,47 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     // 决策 #15：Shift+Enter = 打断当前 turn 立即注入；纯 Enter = 排队等当前 turn 完成
     const wantsInterrupt = submitOpts?.shiftKey ?? false
     const text = inputContent.trim()
+
+    // /btw 侧面提问检测
+    if (text.startsWith('/btw ') || text === '/btw') {
+      const btwQuestion = text.startsWith('/btw ') ? text.slice(5).trim() : ''
+      if (!btwQuestion) {
+        toast.info('请在 /btw 后输入问题', { description: '例如：/btw 什么是 PBR 材质？' })
+        return
+      }
+      if (!agentChannelId || !hasAvailableModel) {
+        toast.warning('请先配置 API 渠道')
+        return
+      }
+      // 打开侧面提问面板
+      store.set(btwOpenAtom, true)
+      store.set(btwChannelIdAtom, agentChannelId)
+      store.set(btwModelIdAtom, agentModelId || null)
+      // 写入父会话 ID，主进程会拉主会话最近 20 轮作为 LLM history
+      store.set(btwSourceSessionIdAtom, sessionId)
+      // 自动发送第一条消息
+      const userMsg = { id: crypto.randomUUID(), role: 'user' as const, content: btwQuestion, createdAt: Date.now() }
+      const assistantMsg = { id: crypto.randomUUID(), role: 'assistant' as const, content: '', createdAt: Date.now(), streaming: true }
+      store.set(btwMessagesAtom, [userMsg, assistantMsg])
+      store.set(btwStreamingAtom, true)
+      setInputContent('')
+      setInputHtmlContent('')
+      window.electronAPI.sendBtwMessage({
+        channelId: agentChannelId,
+        modelId: agentModelId || '',
+        message: btwQuestion,
+        messageId: assistantMsg.id,
+        sourceSessionId: sessionId,
+      }).catch((err) => {
+        console.error('[AgentView] BTW 发送失败:', err)
+        store.set(btwMessagesAtom, (prev) =>
+          prev.map((m) => m.id === assistantMsg.id ? { ...m, streaming: false, content: '发送失败' } : m)
+        )
+        store.set(btwStreamingAtom, false)
+      })
+      return
+    }
+
     // 如果输入为空但有建议，使用建议内容
     const effectiveText = text || suggestion || ''
     const pendingFilesSnapshot = pendingFilesRef.current
@@ -2200,7 +2251,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   return (
     <>
     <AgentSessionProvider sessionId={sessionId}>
-      <div className="flex flex-col h-full flex-1 min-w-0 mx-auto">
+      <div className="relative flex flex-col h-full flex-1 min-w-0">
         {/* Agent Header */}
         <AgentHeader sessionId={sessionId} />
 
@@ -2234,10 +2285,15 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
         {/* 输入区域 — 交互横幅显示时隐藏，由横幅替代 */}
         {!hasBannerOverlay && (
-        <div className="px-2.5 pb-2.5 md:px-[18px] md:pb-[18px]" data-input-mode="agent">
+        <div className="relative px-2.5 pb-2.5 md:px-[18px] md:pb-[18px]" data-input-mode="agent">
+          {/* 侧面提问按钮 + 面板 — 在输入框正上方右侧 */}
+          <div className="absolute bottom-full right-[18px] mb-2 z-50">
+            <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
+            <BtwPanel />
+          </div>
           <div
             className={cn(
-              'rounded-[17px] border-[0.5px] border-border bg-background/70 backdrop-blur-sm transition-all duration-200',
+              'relative rounded-[17px] border-[0.5px] border-border bg-background/70 backdrop-blur-sm transition-all duration-200',
               (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
               isDragOver && 'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
             )}
@@ -2246,6 +2302,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             onDrop={handleDrop}
           >
             {(isPlanMode || isPermissionPlanMode) && !isDragOver && <PlanModeDashedBorder />}
+
             {/* 无 Agent 渠道或无可用模型提示 */}
             {(!agentChannelId || !hasAvailableModel) && (
               <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">

@@ -813,9 +813,235 @@
   background-color: hsl(151 40% 45%) !important;   /* 更亮的绿 */
 }
 
-/* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== */
+/* ===== 液态玻璃（Btw 面板） — Liquid Glass (macOS Sonoma 风格) ===== */
+/*
+ * 真正的 Liquid Glass 区别于普通 Glassmorphism 的关键：
+ * 1. **边缘折射渐隐**：用 mask-image 在边缘做柔和透明度衰减，让玻璃看起来"被压弯"
+ * 2. **环境光叠加层**：内嵌 ::before 伪元素 + radial-gradient 模拟光线穿透
+ * 3. **多通道 backdrop-filter**：blur + saturate(180%) + brightness 提升
+ * 4. **多层 inset shadow**：精确还原玻璃边缘的内反光
+ * 5. **specular highlight**：顶部 1px 高光带模拟光源反射
+ *
+ * 性能：blur(28px) saturate(180%) 在中端 GPU 上仍可保持 60fps，
+ *     但建议在大面板（>500x500）上谨慎使用，必要时降到 blur(16px)。
+ */
+.btw-glass {
+  /* 半透明白色底层（浅色主题：水洗感；深色主题会被下面的 dark 覆盖为暗色） */
+  background-color: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(105%);
+  backdrop-filter: blur(28px) saturate(180%) brightness(105%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 20px;
+  isolation: isolate;
 
-/* 默认亮色主题 */
+  /* 多层阴影：内边光 + 外发光 + 立体悬浮 */
+  box-shadow:
+    /* 玻璃边缘内反光：顶部最强高光 */
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.6),
+    /* 左侧内反光 */
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.35),
+    /* 底部内阴影（玻璃厚度感）*/
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.04),
+    /* 右侧轻微内阴影（光从左上来） */
+    inset -1px 0 0 0 rgba(0, 0, 0, 0.03),
+    /* 外悬浮阴影 1：主投影 */
+    0 20px 40px -12px rgba(0, 0, 0, 0.18),
+    /* 外悬浮阴影 2：近距投影 */
+    0 8px 16px -4px rgba(0, 0, 0, 0.10),
+    /* 外悬浮阴影 3：极细外描边光晕 */
+    0 0 0 0.5px rgba(255, 255, 255, 0.4);
+}
+
+/* 环境光叠加层：用 ::before 模拟光线穿透玻璃 */
+.btw-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    /* 左上光源：暖色高光 */
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.05) 40%,
+      transparent 70%
+    ),
+    /* 右下环境光：冷色微调 */
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      rgba(100, 150, 255, 0.08) 0%,
+      transparent 60%
+    );
+  /* 边缘折射渐隐 — Liquid Glass 核心效果 */
+  mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0.95) 70%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0.95) 70%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* 顶部 spec 高光：模拟光源在玻璃顶部的反射带 */
+.btw-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 深色主题：玻璃更暗、内反光更亮（增强层次感） */
+.dark .btw-glass,
+.theme-ocean-dark .btw-glass,
+.theme-forest-dark .btw-glass,
+.theme-slate-dark .btw-glass {
+  background-color: rgba(20, 20, 30, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
+    inset -1px 0 0 0 rgba(0, 0, 0, 0.15),
+    0 20px 40px -12px rgba(0, 0, 0, 0.45),
+    0 8px 16px -4px rgba(0, 0, 0, 0.25),
+    0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+.dark .btw-glass::before,
+.theme-ocean-dark .btw-glass::before,
+.theme-forest-dark .btw-glass::before,
+.theme-slate-dark .btw-glass::before {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      rgba(180, 200, 255, 0.18) 0%,
+      rgba(180, 200, 255, 0.03) 40%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      rgba(100, 120, 200, 0.12) 0%,
+      transparent 60%
+    );
+}
+
+.dark .btw-glass::after,
+.theme-ocean-dark .btw-glass::after,
+.theme-forest-dark .btw-glass::after,
+.theme-slate-dark .btw-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 100%
+  );
+}
+
+/* 减少动画偏好：禁用环境光叠加层（节省渲染）*/
+@media (prefers-reduced-motion: reduce) {
+  .btw-glass::before,
+  .btw-glass::after {
+    display: none;
+  }
+}
+
+/* ===== BTW 面板液态玻璃效果 ===== */
+/*
+ * 液态玻璃（Liquid Glass）设计要点：
+ * 1. **高透明度**：背景透明度 < 0.15，确保能清晰看到后方内容
+ * 2. **强模糊**：blur(48px) 创造柔和的磨砂质感
+ * 3. **主题色融合**：使用 CSS 变量 --primary 融入主题色
+ * 4. **内发光**：顶部高光带 + 边缘微光模拟玻璃折射
+ * 5. **动态渐变**：对角渐变增加深度感
+ */
+.btw-panel-glass {
+  /* 主题色 RGB 值（默认蓝色，会被主题覆盖） */
+  --glass-primary-r: 59;
+  --glass-primary-g: 130;
+  --glass-primary-b: 246;
+
+  /* 高透明度渐变背景，融合主题色 */
+  background: linear-gradient(
+    135deg,
+    rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.06) 0%,
+    rgba(255, 255, 255, 0.08) 35%,
+    rgba(255, 255, 255, 0.05) 65%,
+    rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.04) 100%
+  );
+  /* 强模糊创造磨砂玻璃质感 */
+  backdrop-filter: blur(48px) saturate(200%) brightness(1.02);
+  -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(1.02);
+  /* 半透明边框 */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  /* 多层阴影：内高光 + 外投影 + 边缘光晕 */
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.03),
+    0 20px 40px -10px rgba(0, 0, 0, 0.15),
+    0 8px 16px -4px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 亮色主题：使用主题色变量 */
+.theme-ocean-light .btw-panel-glass {
+  --glass-primary-r: 64;
+  --glass-primary-g: 138;
+  --glass-primary-b: 191;
+}
+.theme-forest-light .btw-panel-glass {
+  --glass-primary-r: 34;
+  --glass-primary-g: 139;
+  --glass-primary-b: 94;
+}
+.theme-slate-light .btw-panel-glass {
+  --glass-primary-r: 100;
+  --glass-primary-g: 116;
+  --glass-primary-b: 139;
+}
+
+/* 深色主题：更暗的玻璃，更强的内发光 */
+.dark .btw-panel-glass,
+.theme-ocean-dark .btw-panel-glass,
+.theme-forest-dark .btw-panel-glass,
+.theme-slate-dark .btw-panel-glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 35%,
+    rgba(255, 255, 255, 0.03) 65%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.1),
+    0 20px 40px -10px rgba(0, 0, 0, 0.4),
+    0 8px 16px -4px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== *//* 默认亮色主题 */
 .scroll-progress-thumb {
   background-color: hsl(var(--foreground) / 0.14);
 }
