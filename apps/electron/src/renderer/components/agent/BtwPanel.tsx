@@ -179,17 +179,14 @@ export function BtwPanel(): React.ReactElement | null {
   }
 
   return (
-    <>
-      {/* 面板 — 液态玻璃效果，弹性展开/收缩动画 */}
-      <div
-        className={cn(
-          'btw-panel-liquid',
-          'absolute w-[360px] flex flex-col overflow-hidden z-50',
-          'bottom-full right-0 mb-2',
-          'origin-bottom-right',
-          isClosing ? 'btw-panel-exit' : 'btw-panel-enter'
-        )}
-      >
+    <div
+      className={cn(
+        'btw-panel-glass',
+        'absolute w-[360px] max-h-[min(70vh,520px)] flex flex-col overflow-hidden z-50',
+        'bottom-full right-0 mb-2',
+        isClosing ? 'btw-panel-exit' : 'btw-panel-enter'
+      )}
+    >
         {/* Header */}
         <div className="flex items-center justify-between pl-4 pr-3 pt-3 pb-2.5 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -331,7 +328,6 @@ export function BtwPanel(): React.ReactElement | null {
             </Button>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   )
 }

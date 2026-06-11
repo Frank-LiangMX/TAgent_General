@@ -965,80 +965,126 @@
   }
 }
 
-/* ===== BTW 面板液态玻璃效果 ===== */
-/*
- * 液态玻璃（Liquid Glass）设计要点：
- * 1. **高透明度**：背景透明度 < 0.15，确保能清晰看到后方内容
- * 2. **强模糊**：blur(48px) 创造柔和的磨砂质感
- * 3. **主题色融合**：使用 CSS 变量 --primary 融入主题色
- * 4. **内发光**：顶部高光带 + 边缘微光模拟玻璃折射
- * 5. **动态渐变**：对角渐变增加深度感
+/* ===== BTW 面板 — 统一毛玻璃（与 .btw-glass 同一视觉语言）=====
+ * 整面同一材质：blur + 半透明底 + 极淡环境光
+ * 边缘厚度仅用 1px 级 inset 阴影与顶光暗示，不用厚环带
  */
 .btw-panel-glass {
-  /* 主题色 RGB 值（默认蓝色，会被主题覆盖） */
-  --glass-primary-r: 59;
-  --glass-primary-g: 130;
-  --glass-primary-b: 246;
-
-  /* 高透明度渐变背景，融合主题色 */
-  background: linear-gradient(
-    135deg,
-    rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.06) 0%,
-    rgba(255, 255, 255, 0.08) 35%,
-    rgba(255, 255, 255, 0.05) 65%,
-    rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.04) 100%
-  );
-  /* 强模糊创造磨砂玻璃质感 */
-  backdrop-filter: blur(48px) saturate(200%) brightness(1.02);
-  -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(1.02);
-  /* 半透明边框 */
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  isolation: isolate;
   border-radius: 20px;
-  /* 多层阴影：内高光 + 外投影 + 边缘光晕 */
+  background-color: hsl(var(--background) / 0.44);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
+  backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
   box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.03),
-    0 20px 40px -10px rgba(0, 0, 0, 0.15),
-    0 8px 16px -4px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 1px 0 0 hsl(var(--foreground) / 0.04),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.05),
+    inset -1px 0 0 hsl(var(--foreground) / 0.03),
+    0 12px 32px hsl(var(--foreground) / 0.10),
+    0 4px 10px hsl(var(--foreground) / 0.05);
 }
 
-/* 亮色主题：使用主题色变量 */
-.theme-ocean-light .btw-panel-glass {
-  --glass-primary-r: 64;
-  --glass-primary-g: 138;
-  --glass-primary-b: 191;
+/* 整面环境光：大半径渐变，边缘自然变亮/变暗，无硬分界 */
+.btw-panel-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.07), transparent 58%),
+    radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.06), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, hsl(var(--primary) / 0.05), transparent 55%);
 }
-.theme-forest-light .btw-panel-glass {
-  --glass-primary-r: 34;
-  --glass-primary-g: 139;
-  --glass-primary-b: 94;
+
+/* 顶部 1px 镜面高光 */
+.btw-panel-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.18) 50%,
+    transparent 100%
+  );
 }
+
+.btw-panel-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+html:not(.dark) .btw-panel-glass,
+.theme-ocean-light .btw-panel-glass,
+.theme-forest-light .btw-panel-glass,
 .theme-slate-light .btw-panel-glass {
-  --glass-primary-r: 100;
-  --glass-primary-g: 116;
-  --glass-primary-b: 139;
+  background-color: hsl(var(--background) / 0.52);
+  border-color: hsl(var(--foreground) / 0.07);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.14),
+    inset 1px 0 0 hsl(var(--foreground) / 0.06),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.04),
+    0 12px 32px hsl(var(--foreground) / 0.08),
+    0 4px 10px hsl(var(--foreground) / 0.04);
 }
 
-/* 深色主题：更暗的玻璃，更强的内发光 */
+html:not(.dark) .btw-panel-glass::after,
+.theme-ocean-light .btw-panel-glass::after,
+.theme-forest-light .btw-panel-glass::after,
+.theme-slate-light .btw-panel-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+}
+
 .dark .btw-panel-glass,
 .theme-ocean-dark .btw-panel-glass,
 .theme-forest-dark .btw-panel-glass,
 .theme-slate-dark .btw-panel-glass {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.02) 35%,
-    rgba(255, 255, 255, 0.03) 65%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: hsl(var(--background) / 0.32);
+  border-color: hsl(var(--foreground) / 0.09);
   box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.1),
-    0 20px 40px -10px rgba(0, 0, 0, 0.4),
-    0 8px 16px -4px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.03);
+    inset 0 1px 0 hsl(var(--foreground) / 0.14),
+    inset 1px 0 0 hsl(var(--foreground) / 0.06),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.14),
+    inset -1px 0 0 hsl(var(--foreground) / 0.10),
+    0 14px 36px rgba(0, 0, 0, 0.26),
+    0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.dark .btw-panel-glass::before,
+.theme-ocean-dark .btw-panel-glass::before,
+.theme-forest-dark .btw-panel-glass::before,
+.theme-slate-dark .btw-panel-glass::before {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.10), transparent 58%),
+    radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.08), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, hsl(var(--primary) / 0.08), transparent 55%);
+}
+
+.dark .btw-panel-glass::after,
+.theme-ocean-dark .btw-panel-glass::after,
+.theme-forest-dark .btw-panel-glass::after,
+.theme-slate-dark .btw-panel-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 100%
+  );
 }
 
 /* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== *//* 默认亮色主题 */
@@ -1722,6 +1768,17 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
+  .btw-panel-glass {
+    background: hsl(var(--background) / 0.94);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .btw-panel-glass::before,
+  .btw-panel-glass::after {
+    display: none;
+  }
+
   .btw-input-glass {
     background: hsl(var(--background) / 0.96);
     backdrop-filter: none;
@@ -1750,31 +1807,21 @@
 @keyframes btw-panel-expand {
   0% {
     opacity: 0;
-    transform: scale(0.85) translateY(12px);
   }
-  50% {
-    opacity: 0.9;
-    /* 略微 overshoot，增加弹性感 */
-    transform: scale(1.03) translateY(-2px);
-  }
-  70% {
-    /* 回弹 settle */
-    transform: scale(0.98) translateY(1px);
+  55% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }
 
 @keyframes btw-panel-collapse {
   0% {
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
   100% {
     opacity: 0;
-    transform: scale(0.85) translateY(12px);
   }
 }
 
@@ -1788,417 +1835,30 @@
   animation: btw-panel-collapse 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* ===== 液态玻璃效果 (SVG Filter) ===== */
-/*
- * 真正的液态玻璃折射效果
- * 使用 SVG feDisplacementMap 实现边缘折射 + 色差
- * 仅 Chromium 内核支持 backdrop-filter: url(#svg-filter)
- *
- * 浅色模式：依赖边框高光 + 阴影对比（折射效果感知弱）
- * 深色模式：SVG 滤镜折射 + 高对比边框
- */
-
-/* 液态玻璃面板 - 应用 SVG 滤镜 */
-.liquid-glass-panel {
-  position: relative;
-  isolation: isolate;
-  /* 核心：SVG 滤镜 + 模糊 */
-  backdrop-filter: url(#liquid-glass-filter) blur(16px);
-  -webkit-backdrop-filter: url(#liquid-glass-filter) blur(16px);
-  /* 半透明背景 */
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.55) 0%,
-    hsl(var(--background) / 0.45) 50%,
-    hsl(var(--background) / 0.50) 100%
-  );
-  /* 边框 */
-  border: 1px solid hsl(var(--border) / 0.40);
-  border-top-color: hsl(var(--foreground) / 0.06);
-  border-left-color: hsl(var(--foreground) / 0.04);
-  border-radius: 20px;
-  /* 阴影 */
-  box-shadow:
-    0 4px 24px hsl(var(--foreground) / 0.08),
-    0 12px 48px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.10),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.03);
-}
-
-/* 边缘高光层 */
-.liquid-glass-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  /* 边缘径向渐变高光 */
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 10%, hsl(var(--primary) / 0.08), transparent 50%),
-    radial-gradient(ellipse 50% 30% at 85% 90%, hsl(var(--primary) / 0.05), transparent 45%);
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-
-/* 内边框高光 */
-.liquid-glass-panel::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  border: 1px solid hsl(var(--foreground) / 0.08);
-  border-bottom-color: hsl(var(--background) / 0.20);
-  border-right-color: hsl(var(--background) / 0.15);
-  pointer-events: none;
-}
-
-.liquid-glass-panel > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ===== 浅色模式：白色高光边框 ===== */
-/* 参考 rdev/liquid-glass-react：边框用独立层 + mask 技术，颜色是白色而非 foreground */
-html:not(.dark) .liquid-glass-panel,
-.theme-ocean-light .liquid-glass-panel,
-.theme-forest-light .liquid-glass-panel,
-.theme-slate-light .liquid-glass-panel {
-  /* 更低的背景不透明度，增加通透感 */
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.62) 0%,
-    hsl(var(--background) / 0.55) 50%,
-    hsl(var(--background) / 0.58) 100%
-  );
-  /* 移除传统 border，改用伪元素 */
-  border: none;
-  /* 强化阴影 */
-  box-shadow:
-    0 2px 8px hsl(var(--foreground) / 0.06),
-    0 8px 24px hsl(var(--foreground) / 0.10),
-    0 16px 48px hsl(var(--foreground) / 0.06);
-}
-
-/* 浅色模式高光层 - 白色渐变 */
-html:not(.dark) .liquid-glass-panel::before,
-.theme-ocean-light .liquid-glass-panel::before,
-.theme-forest-light .liquid-glass-panel::before,
-.theme-slate-light .liquid-glass-panel::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 15% 5%, hsl(var(--primary) / 0.10), transparent 45%),
-    radial-gradient(ellipse 50% 35% at 90% 95%, hsl(var(--primary) / 0.06), transparent 40%);
-  mix-blend-mode: soft-light;
-}
-
-/* 浅色模式边框层 - 白色高光，使用 mask 技术 */
-html:not(.dark) .liquid-glass-panel::after,
-.theme-ocean-light .liquid-glass-panel::after,
-.theme-forest-light .liquid-glass-panel::after,
-.theme-slate-light .liquid-glass-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  /* mask 技术只显示边框 */
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  /* 白色高光渐变边框 */
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.6) 35%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(255, 255, 255, 0.6) 65%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  /* 内阴影增加立体感 */
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.8),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.05);
-  pointer-events: none;
-}
-
-/* 深色主题调整 - 降低不透明度让折射更明显 */
-.dark .liquid-glass-panel {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.40) 0%,
-    hsl(var(--background) / 0.32) 50%,
-    hsl(var(--background) / 0.35) 100%
-  );
-  border-color: hsl(var(--foreground) / 0.08);
-  border-top-color: hsl(var(--foreground) / 0.12);
-  box-shadow:
-    0 4px 32px hsl(var(--foreground) / 0.12),
-    0 16px 64px hsl(var(--foreground) / 0.08),
-    inset 0 1px 0 hsl(var(--foreground) / 0.15),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.04);
-}
-
-.dark .liquid-glass-panel::before {
-  background:
-    /* 折射条纹 */
-    linear-gradient(
-      55deg,
-      transparent 0%,
-      hsl(var(--foreground) / 0.04) 8%,
-      transparent 16%,
-      hsl(var(--foreground) / 0.03) 24%,
-      transparent 32%
-    ),
-    radial-gradient(ellipse 60% 40% at 20% 10%, hsl(var(--primary) / 0.12), transparent 50%),
-    radial-gradient(ellipse 50% 30% at 85% 90%, hsl(var(--primary) / 0.08), transparent 45%);
-}
-
-/* ===== BTW 面板液态玻璃版 ===== */
-.btw-panel-liquid {
-  position: relative;
-  isolation: isolate;
-  backdrop-filter: url(#liquid-glass-btw) blur(20px);
-  -webkit-backdrop-filter: url(#liquid-glass-btw) blur(20px);
-  background: linear-gradient(
-    145deg,
-    hsl(var(--background) / 0.48) 0%,
-    hsl(var(--background) / 0.38) 100%
-  );
-  border: 1px solid hsl(var(--foreground) / 0.06);
-  border-top-color: hsl(var(--foreground) / 0.10);
-  border-radius: 20px;
-  box-shadow:
-    0 8px 32px hsl(var(--foreground) / 0.10),
-    0 24px 64px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.12);
-}
-
-.btw-panel-liquid::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.10), transparent 45%),
-    radial-gradient(ellipse 60% 40% at 90% 95%, hsl(var(--primary) / 0.06), transparent 40%);
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-
-.btw-panel-liquid::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  border: 1px solid hsl(var(--foreground) / 0.10);
-  border-bottom-color: transparent;
-  border-right-color: transparent;
-  pointer-events: none;
-}
-
-.btw-panel-liquid > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ===== BTW 面板浅色模式：液态玻璃 ===== */
-html:not(.dark) .btw-panel-liquid,
-.theme-ocean-light .btw-panel-liquid,
-.theme-forest-light .btw-panel-liquid,
-.theme-slate-light .btw-panel-liquid {
-  /* 低不透明度让折射更明显 */
-  background: hsl(var(--background) / 0.15);
-  /* SVG 滤镜 + 模糊 */
-  backdrop-filter: url(#liquid-glass-btw) blur(20px) saturate(140%);
-  -webkit-backdrop-filter: url(#liquid-glass-btw) blur(20px) saturate(140%);
-  /* 移除边框 */
-  border: none;
-  /* 阴影 */
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 16px 48px rgba(0, 0, 0, 0.04);
-}
-
-/* 浅色模式高光层 */
-html:not(.dark) .btw-panel-liquid::before,
-.theme-ocean-light .btw-panel-liquid::before,
-.theme-forest-light .btw-panel-liquid::before,
-.theme-slate-light .btw-panel-liquid::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.08), transparent 45%);
-  pointer-events: none;
-  mix-blend-mode: soft-light;
-}
-
-/* 浅色模式边框层 - 白色微光 */
-html:not(.dark) .btw-panel-liquid::after,
-.theme-ocean-light .btw-panel-liquid::after,
-.theme-forest-light .btw-panel-liquid::after,
-.theme-slate-light .btw-panel-liquid::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.4) 30%,
-    rgba(255, 255, 255, 0.6) 50%,
-    rgba(255, 255, 255, 0.4) 70%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  pointer-events: none;
-}
-
-/* ===== BTW 面板深色模式 ===== */
-.dark .btw-panel-liquid {
-  /* 极低不透明度让 SVG 滤镜折射效果更明显 */
-  background: hsl(var(--background) / 0.15);
-  border: none;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.25),
-    0 32px 80px rgba(0, 0, 0, 0.15);
-}
-
-/* 深色模式高光层 - 主题色边缘光晕 */
-.dark .btw-panel-liquid::before {
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.12), transparent 45%),
-    radial-gradient(ellipse 60% 40% at 90% 95%, hsl(var(--primary) / 0.06), transparent 40%);
-}
-
-/* 深色模式边框 - 白色微光 */
-.dark .btw-panel-liquid::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.15) 30%,
-    rgba(255, 255, 255, 0.25) 50%,
-    rgba(255, 255, 255, 0.15) 70%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  pointer-events: none;
-}
-
-/* Direct frosted-glass override for the BTW panel shell. */
-.btw-panel-glass {
-  position: relative;
-  isolation: isolate;
-  background: hsl(var(--background) / 0.38);
-  border: 1px solid hsl(var(--border) / 0.50);
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  box-shadow:
-    0 8px 24px hsl(var(--foreground) / 0.10),
-    inset 0 1px 0 hsl(var(--background) / 0.24);
-}
-
-.btw-panel-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(120% 80% at 18% -18%, hsl(var(--background) / 0.72), transparent 44%),
-    radial-gradient(80% 70% at 92% 12%, rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.07), transparent 52%),
-    linear-gradient(118deg, hsl(var(--background) / 0.34), transparent 31%, transparent 68%, hsl(var(--background) / 0.18));
-  opacity: 0.92;
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-
-.btw-panel-glass::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  z-index: 0;
-  border-radius: inherit;
-  border: 1px solid hsl(var(--background) / 0.34);
-  box-shadow:
-    inset 0 1px 0 hsl(var(--background) / 0.56),
-    inset 1px 0 0 hsl(var(--background) / 0.20),
-    inset -1px 0 0 hsl(var(--foreground) / 0.04),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.06);
-  pointer-events: none;
-}
-
-.btw-panel-glass > * {
-  position: relative;
-  z-index: 1;
-}
-
-.dark .btw-panel-glass,
-.theme-ocean-dark .btw-panel-glass,
-.theme-forest-dark .btw-panel-glass,
-.theme-slate-dark .btw-panel-glass {
-  background: hsl(var(--background) / 0.26);
-  border-color: hsl(var(--border) / 0.46);
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 hsl(var(--foreground) / 0.07);
-}
-
-.dark .btw-panel-glass::before,
-.theme-ocean-dark .btw-panel-glass::before,
-.theme-forest-dark .btw-panel-glass::before,
-.theme-slate-dark .btw-panel-glass::before {
-  background:
-    radial-gradient(120% 80% at 18% -18%, hsl(var(--foreground) / 0.18), transparent 44%),
-    radial-gradient(80% 70% at 92% 12%, rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.04), transparent 52%),
-    linear-gradient(118deg, hsl(var(--foreground) / 0.10), transparent 31%, transparent 68%, hsl(var(--foreground) / 0.05));
-  opacity: 0.86;
-  mix-blend-mode: screen;
-}
-
-.dark .btw-panel-glass::after,
-.theme-ocean-dark .btw-panel-glass::after,
-.theme-forest-dark .btw-panel-glass::after,
-.theme-slate-dark .btw-panel-glass::after {
-  border-color: hsl(var(--foreground) / 0.12);
-  box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.16),
-    inset 1px 0 0 hsl(var(--foreground) / 0.08),
-    inset -1px 0 0 hsl(var(--background) / 0.08),
-    inset 0 -1px 0 hsl(var(--background) / 0.18);
-}
-
 /* ===== 主布局精致玻璃卡片风格 ===== */
-/*
- * 不追求真正的 backdrop-filter 模糊（在 Electron 中效果有限）
- * 重点：渐变背景 + 边框高光 + 内阴影 + 主题色微光
- */
 
 /**
  * shell-bg - 外壳背景
- * 微妙的径向渐变，为主题色在角落提供微光
+ * 多重彩色光斑+渐变叠加，让液态玻璃折射效果可见
  */
 .shell-glass {
   position: relative;
   background:
-    radial-gradient(ellipse 100% 70% at 0% 0%, hsl(var(--primary) / 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.03) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 50% at 20% 25%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, hsl(var(--primary) / 0.10) 0%, transparent 45%),
+    radial-gradient(ellipse 55% 45% at 15% 80%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 85% 85%, hsl(var(--primary) / 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 50% 50%, hsl(var(--primary) / 0.06) 0%, transparent 60%),
     hsl(var(--background));
 }
 
 .dark .shell-glass {
   background:
-    radial-gradient(ellipse 100% 70% at 0% 0%, hsl(var(--primary) / 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.04) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 50% at 20% 25%, hsl(var(--primary) / 0.20) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, hsl(var(--primary) / 0.15) 0%, transparent 45%),
+    radial-gradient(ellipse 55% 45% at 15% 80%, hsl(var(--primary) / 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 85% 85%, hsl(var(--primary) / 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 50% 50%, hsl(var(--primary) / 0.08) 0%, transparent 60%),
     hsl(var(--background));
 }
 
@@ -2206,28 +1866,27 @@ html:not(.dark) .btw-panel-liquid::after,
  * panel-glass - 主面板精致卡片
  * 半透明渐变背景 + 顶部高光边框 + 内阴影层次
  */
+/* ===== 主布局面板液态玻璃（恢复原状：不用 filter）=====
+ * 主面板保持原有用 ::before/::after + background 渐变的方式
+ * 之前用 backdrop-filter 没效果是因为它被 CSS 链吃掉了
+ * 现在保留原始的精致卡片样式
+ */
 .panel-glass {
   position: relative;
   isolation: isolate;
-  /* 渐变背景：从上到下略微变深，模拟光照 */
   background: linear-gradient(
-    to bottom,
-    hsl(var(--background) / 0.88) 0%,
-    hsl(var(--background) / 0.82) 100%
+    135deg,
+    hsl(var(--background) / 0.20) 0%,
+    hsl(var(--background) / 0.10) 100%
   );
-  /* 边框：顶部高光 + 其他边暗 */
-  border: 1px solid hsl(var(--border) / 0.50);
-  border-top-color: hsl(var(--foreground) / 0.08);
+  border: 1px solid hsl(var(--foreground) / 0.10);
   border-radius: 20px;
-  /* 多层阴影：外阴影 + 内高光 + 内底阴影 */
   box-shadow:
-    0 1px 3px hsl(var(--foreground) / 0.04),
-    0 4px 12px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.08),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.02);
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.04);
 }
 
-/* 主题色微光层（对角） */
+/* 主题色微光层 */
 .panel-glass::before {
   content: '';
   position: absolute;
@@ -2235,10 +1894,31 @@ html:not(.dark) .btw-panel-liquid::after,
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    hsl(var(--primary) / 0.03) 0%,
+    hsl(var(--primary) / 0.06) 0%,
     transparent 30%,
     transparent 70%,
-    hsl(var(--primary) / 0.02) 100%
+    hsl(var(--primary) / 0.04) 100%
+  );
+  pointer-events: none;
+}
+
+/* 白色边框层 */
+.panel-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;
 }
@@ -2248,63 +1928,43 @@ html:not(.dark) .btw-panel-liquid::after,
   z-index: 1;
 }
 
-/* 深色主题：更强的光影对比 */
+/* 深色主题 */
 .dark .panel-glass {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--background) / 0.85) 0%,
-    hsl(var(--background) / 0.78) 100%
-  );
-  border-color: hsl(var(--border) / 0.35);
-  border-top-color: hsl(var(--foreground) / 0.12);
+  background: hsl(var(--background) / 0.12);
   box-shadow:
-    0 1px 4px hsl(var(--foreground) / 0.06),
-    0 6px 20px hsl(var(--foreground) / 0.10),
-    inset 0 1px 0 hsl(var(--foreground) / 0.10),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.03);
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.08);
 }
 
 .dark .panel-glass::before {
   background: linear-gradient(
     135deg,
-    hsl(var(--primary) / 0.06) 0%,
+    hsl(var(--primary) / 0.08) 0%,
     transparent 30%,
     transparent 70%,
-    hsl(var(--primary) / 0.04) 100%
+    hsl(var(--primary) / 0.05) 100%
   );
 }
 
 /* 主题色覆盖 */
 .theme-ocean-light .panel-glass {
-  background: linear-gradient(
-    to bottom,
-    hsl(205 35% 98% / 0.88) 0%,
-    hsl(205 30% 96% / 0.82) 100%
-  );
-  border-color: hsl(205 50% 50% / 0.15);
-  border-top-color: hsl(205 50% 50% / 0.25);
+  background: hsl(205 35% 98% / 0.18);
 }
 
 .theme-forest-light .panel-glass {
-  background: linear-gradient(
-    to bottom,
-    hsl(140 20% 98% / 0.88) 0%,
-    hsl(140 15% 96% / 0.82) 100%
-  );
-  border-color: hsl(150 35% 38% / 0.15);
-  border-top-color: hsl(150 35% 38% / 0.25);
+  background: hsl(140 25% 98% / 0.18);
 }
 
 .theme-ocean-dark .panel-glass {
-  border-top-color: hsl(205 87% 24% / 0.30);
+  background: hsl(210 35% 11% / 0.15);
 }
 
 .theme-forest-dark .panel-glass {
-  border-top-color: hsl(150 35% 38% / 0.30);
+  background: hsl(150 30% 11% / 0.15);
 }
 
 /**
- * rail-glass - FunctionalRail 专用
+ * rail-glass - FunctionalRail 专用液态玻璃
  * 竖向布局，更紧凑的视觉效果
  */
 .rail-glass {
@@ -2312,18 +1972,17 @@ html:not(.dark) .btw-panel-liquid::after,
   isolation: isolate;
   background: linear-gradient(
     to bottom,
-    hsl(var(--background) / 0.86) 0%,
-    hsl(var(--background) / 0.80) 100%
+    hsl(var(--background) / 0.20) 0%,
+    hsl(var(--background) / 0.10) 100%
   );
-  border: 1px solid hsl(var(--border) / 0.45);
-  border-top-color: hsl(var(--foreground) / 0.07);
+  border: 1px solid hsl(var(--foreground) / 0.10);
   border-radius: 20px;
   box-shadow:
-    0 1px 3px hsl(var(--foreground) / 0.03),
-    0 4px 10px hsl(var(--foreground) / 0.05),
-    inset 0 1px 0 hsl(var(--foreground) / 0.06);
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
+/* 主题色微光层 */
 .rail-glass::before {
   content: '';
   position: absolute;
@@ -2339,23 +1998,38 @@ html:not(.dark) .btw-panel-liquid::after,
   pointer-events: none;
 }
 
+/* 白色边框层 */
+.rail-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 40%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.15) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
 .rail-glass > * {
   position: relative;
   z-index: 1;
 }
 
+/* 深色主题 */
 .dark .rail-glass {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--background) / 0.82) 0%,
-    hsl(var(--background) / 0.76) 100%
-  );
-  border-color: hsl(var(--border) / 0.30);
-  border-top-color: hsl(var(--foreground) / 0.10);
+  background: hsl(var(--background) / 0.15);
   box-shadow:
-    0 1px 4px hsl(var(--foreground) / 0.05),
-    0 5px 16px hsl(var(--foreground) / 0.08),
-    inset 0 1px 0 hsl(var(--foreground) / 0.08);
+    0 2px 16px rgba(0, 0, 0, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .dark .rail-glass::before {
@@ -2368,16 +2042,17 @@ html:not(.dark) .btw-panel-liquid::after,
   );
 }
 
+/* 主题覆盖 */
 .theme-ocean-light .rail-glass {
-  border-top-color: hsl(205 50% 50% / 0.20);
+  background: hsl(205 35% 98% / 0.22);
 }
 
 .theme-forest-light .rail-glass {
-  border-top-color: hsl(150 35% 38% / 0.20);
+  background: hsl(140 25% 98% / 0.22);
 }
 
 /**
- * content-glass - 主内容区
+ * content-glass - 主内容区液态玻璃
  * 更亮的背景，作为内容画布
  */
 .content-glass {
@@ -2385,18 +2060,17 @@ html:not(.dark) .btw-panel-liquid::after,
   isolation: isolate;
   background: linear-gradient(
     to bottom,
-    hsl(var(--content-area) / 0.92) 0%,
-    hsl(var(--content-area) / 0.86) 100%
+    hsl(var(--content-area) / 0.18) 0%,
+    hsl(var(--content-area) / 0.10) 100%
   );
-  border: 1px solid hsl(var(--border) / 0.40);
-  border-top-color: hsl(var(--foreground) / 0.05);
+  border: 1px solid hsl(var(--foreground) / 0.08);
   border-radius: 20px;
   box-shadow:
-    0 1px 2px hsl(var(--foreground) / 0.02),
-    0 3px 8px hsl(var(--foreground) / 0.04),
-    inset 0 1px 0 hsl(var(--foreground) / 0.04);
+    0 2px 16px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.03);
 }
 
+/* 主题色微光层 */
 .content-glass::before {
   content: '';
   position: absolute;
@@ -2404,10 +2078,31 @@ html:not(.dark) .btw-panel-liquid::after,
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    hsl(var(--primary) / 0.02) 0%,
+    hsl(var(--primary) / 0.03) 0%,
     transparent 25%,
     transparent 75%,
-    hsl(var(--primary) / 0.01) 100%
+    hsl(var(--primary) / 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+/* 白色边框层 */
+.content-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.18) 35%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.18) 65%,
+    rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;
 }
@@ -2417,36 +2112,31 @@ html:not(.dark) .btw-panel-liquid::after,
   z-index: 1;
 }
 
+/* 深色主题 */
 .dark .content-glass {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--content-area) / 0.88) 0%,
-    hsl(var(--content-area) / 0.80) 100%
-  );
-  border-color: hsl(var(--border) / 0.25);
-  border-top-color: hsl(var(--foreground) / 0.08);
+  background: hsl(var(--content-area) / 0.15);
   box-shadow:
-    0 1px 3px hsl(var(--foreground) / 0.04),
-    0 4px 12px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.06);
+    0 2px 20px rgba(0, 0, 0, 0.10),
+    0 12px 36px rgba(0, 0, 0, 0.06);
 }
 
 .dark .content-glass::before {
   background: linear-gradient(
     135deg,
-    hsl(var(--primary) / 0.04) 0%,
+    hsl(var(--primary) / 0.05) 0%,
     transparent 25%,
     transparent 75%,
     hsl(var(--primary) / 0.03) 100%
   );
 }
 
+/* 主题覆盖 */
 .theme-ocean-light .content-glass {
-  border-top-color: hsl(205 50% 50% / 0.12);
+  background: hsl(205 35% 98% / 0.22);
 }
 
 .theme-forest-light .content-glass {
-  border-top-color: hsl(150 35% 38% / 0.12);
+  background: hsl(140 25% 98% / 0.22);
 }
 
 /**
