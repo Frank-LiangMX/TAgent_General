@@ -43,6 +43,7 @@ export function BtwPanel(): React.ReactElement | null {
 
   const [input, setInput] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const [isClosing, setIsClosing] = React.useState(false)
 
   // 自动滚动到底部
   React.useEffect(() => {
@@ -52,9 +53,14 @@ export function BtwPanel(): React.ReactElement | null {
     }
   }, [messages, open])
 
-  // 关闭面板
+  // 关闭面板 — 带动画
   const handleClose = () => {
-    setOpen(false)
+    setIsClosing(true)
+    // 等待收缩动画完成后再真正关闭
+    setTimeout(() => {
+      setOpen(false)
+      setIsClosing(false)
+    }, 280) // 与 btw-panel-collapse 动画时长一致
   }
 
   // 分叉到新会话：把当前 btw Q&A 作为新 Agent 会话的第一组消息
@@ -114,7 +120,7 @@ export function BtwPanel(): React.ReactElement | null {
   }, [streaming, messages, channelId, modelId, sourceSessionId, openSession, setOpen, setMessages])
 
   // 不显示条件：open=false 直接返回 null（必须在所有 Hook 调用之后）
-  if (!open) return null
+  if (!open && !isClosing) return null
 
   // 发送消息
   const handleSend = async () => {
@@ -174,17 +180,14 @@ export function BtwPanel(): React.ReactElement | null {
 
   return (
     <>
-      {/* 面板 — 液态玻璃效果，从按钮位置向上展开 */}
+      {/* 面板 — 液态玻璃效果，弹性展开/收缩动画 */}
       <div
         className={cn(
           'btw-panel-glass',
           'absolute w-[360px] flex flex-col overflow-hidden z-50',
           'bottom-full right-0 mb-2',
           'origin-bottom-right',
-          'transition-all duration-300 ease-out',
-          open
-            ? 'scale-100 opacity-100 translate-y-0'
-            : 'scale-90 opacity-0 translate-y-4 pointer-events-none'
+          isClosing ? 'btw-panel-exit' : 'btw-panel-enter'
         )}
       >
         {/* Header */}

@@ -1736,6 +1736,58 @@
   }
 }
 
+/* ===== BTW 面板弹性动画 ===== */
+/*
+ * 弹性展开动画：使用 cubic-bezier(0.34, 1.56, 0.64, 1)
+ * - 0.34: 缓慢开始，积蓄能量
+ * - 1.56: 超过目标值（ overshoot），产生弹性
+ * - 0.64: 快速回弹
+ * - 1: 平滑结束
+ *
+ * 收缩动画：使用 cubic-bezier(0.4, 0, 0.2, 1)
+ * - 平滑、无弹性的自然消退
+ */
+@keyframes btw-panel-expand {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+  50% {
+    opacity: 0.9;
+    /* 略微 overshoot，增加弹性感 */
+    transform: scale(1.03) translateY(-2px);
+  }
+  70% {
+    /* 回弹 settle */
+    transform: scale(0.98) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes btw-panel-collapse {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+}
+
+/* 面板展开动画类 */
+.btw-panel-enter {
+  animation: btw-panel-expand 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 面板收缩动画类 */
+.btw-panel-exit {
+  animation: btw-panel-collapse 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Direct frosted-glass override for the BTW panel shell. */
 .btw-panel-glass {
   position: relative;
