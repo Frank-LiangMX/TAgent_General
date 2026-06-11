@@ -1857,17 +1857,17 @@
 }
 
 /* ===== 浅色模式：强化边框与阴影 ===== */
-/* 浅色模式下折射效果感知弱，通过强化边框高光和阴影对比来模拟玻璃质感 */
+/* 浅色模式下折射效果感知弱，通过折射条纹 + 边框高光模拟玻璃质感 */
 html:not(.dark) .liquid-glass-panel,
 .theme-ocean-light .liquid-glass-panel,
 .theme-forest-light .liquid-glass-panel,
 .theme-slate-light .liquid-glass-panel {
-  /* 更高的背景不透明度 */
+  /* 降低不透明度增加通透感 */
   background: linear-gradient(
     135deg,
-    hsl(var(--background) / 0.75) 0%,
-    hsl(var(--background) / 0.68) 50%,
-    hsl(var(--background) / 0.72) 100%
+    hsl(var(--background) / 0.62) 0%,
+    hsl(var(--background) / 0.55) 50%,
+    hsl(var(--background) / 0.58) 100%
   );
   /* 更强的边框对比 */
   border: 1px solid hsl(var(--foreground) / 0.12);
@@ -1882,14 +1882,33 @@ html:not(.dark) .liquid-glass-panel,
     inset 0 -1px 0 hsl(var(--foreground) / 0.05);
 }
 
-/* 浅色模式高光层 - 更明显 */
+/* 浅色模式高光层 - 液态玻璃折射条纹 */
 html:not(.dark) .liquid-glass-panel::before,
 .theme-ocean-light .liquid-glass-panel::before,
 .theme-forest-light .liquid-glass-panel::before,
 .theme-slate-light .liquid-glass-panel::before {
   background:
-    radial-gradient(ellipse 70% 50% at 15% 5%, hsl(var(--primary) / 0.15), transparent 45%),
-    radial-gradient(ellipse 50% 35% at 90% 95%, hsl(var(--primary) / 0.10), transparent 40%);
+    /* 主折射条纹 */
+    linear-gradient(
+      55deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.025) 8%,
+      transparent 16%,
+      hsl(var(--foreground) / 0.02) 24%,
+      transparent 32%,
+      hsl(var(--foreground) / 0.015) 40%,
+      transparent 48%
+    ),
+    /* 边缘折射 */
+    linear-gradient(
+      -35deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.03) 5%,
+      transparent 10%
+    ),
+    radial-gradient(ellipse 70% 50% at 15% 5%, hsl(var(--primary) / 0.12), transparent 45%),
+    radial-gradient(ellipse 50% 35% at 90% 95%, hsl(var(--primary) / 0.08), transparent 40%);
+  mix-blend-mode: soft-light;
 }
 
 /* 浅色模式内边框 - 更强的高光 */
@@ -1904,13 +1923,13 @@ html:not(.dark) .liquid-glass-panel::after,
   border-right-color: transparent;
 }
 
-/* 深色主题调整 */
+/* 深色主题调整 - 降低不透明度让折射更明显 */
 .dark .liquid-glass-panel {
   background: linear-gradient(
     135deg,
-    hsl(var(--background) / 0.60) 0%,
-    hsl(var(--background) / 0.52) 50%,
-    hsl(var(--background) / 0.55) 100%
+    hsl(var(--background) / 0.40) 0%,
+    hsl(var(--background) / 0.32) 50%,
+    hsl(var(--background) / 0.35) 100%
   );
   border-color: hsl(var(--foreground) / 0.08);
   border-top-color: hsl(var(--foreground) / 0.12);
@@ -1923,6 +1942,15 @@ html:not(.dark) .liquid-glass-panel::after,
 
 .dark .liquid-glass-panel::before {
   background:
+    /* 折射条纹 */
+    linear-gradient(
+      55deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.04) 8%,
+      transparent 16%,
+      hsl(var(--foreground) / 0.03) 24%,
+      transparent 32%
+    ),
     radial-gradient(ellipse 60% 40% at 20% 10%, hsl(var(--primary) / 0.12), transparent 50%),
     radial-gradient(ellipse 50% 30% at 85% 90%, hsl(var(--primary) / 0.08), transparent 45%);
 }
@@ -1980,11 +2008,11 @@ html:not(.dark) .btw-panel-liquid,
 .theme-ocean-light .btw-panel-liquid,
 .theme-forest-light .btw-panel-liquid,
 .theme-slate-light .btw-panel-liquid {
-  /* 更高背景不透明度，增加遮盖力 */
+  /* 更低背景不透明度，增加通透感 */
   background: linear-gradient(
     145deg,
-    hsl(var(--background) / 0.82) 0%,
-    hsl(var(--background) / 0.75) 100%
+    hsl(var(--background) / 0.65) 0%,
+    hsl(var(--background) / 0.58) 100%
   );
   /* 强化边框对比 */
   border: 1px solid hsl(var(--foreground) / 0.16);
@@ -1999,15 +2027,37 @@ html:not(.dark) .btw-panel-liquid,
     inset 0 -1px 0 hsl(var(--foreground) / 0.06);
 }
 
-/* 浅色模式高光层 - 更明显 */
+/* 浅色模式高光层 - 模拟液态玻璃折射条纹 */
 html:not(.dark) .btw-panel-liquid::before,
 .theme-ocean-light .btw-panel-liquid::before,
 .theme-forest-light .btw-panel-liquid::before,
 .theme-slate-light .btw-panel-liquid::before {
+  /* 液态玻璃特有的光线弯曲条纹效果 */
   background:
-    radial-gradient(ellipse 90% 70% at 12% 3%, hsl(var(--primary) / 0.18), transparent 40%),
-    radial-gradient(ellipse 65% 45% at 92% 97%, hsl(var(--primary) / 0.12), transparent 35%);
-  mix-blend-mode: soft-light; /* 浅色用 soft-light 更自然 */
+    /* 主折射条纹 - 顶部斜向 */
+    linear-gradient(
+      55deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.02) 8%,
+      transparent 16%,
+      hsl(var(--foreground) / 0.015) 24%,
+      transparent 32%,
+      hsl(var(--foreground) / 0.01) 40%,
+      transparent 48%
+    ),
+    /* 边缘折射条纹 - 左侧 */
+    linear-gradient(
+      -35deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.025) 5%,
+      transparent 10%,
+      hsl(var(--foreground) / 0.02) 15%,
+      transparent 20%
+    ),
+    /* 主题色高光区域 */
+    radial-gradient(ellipse 90% 70% at 12% 3%, hsl(var(--primary) / 0.12), transparent 40%),
+    radial-gradient(ellipse 65% 45% at 92% 97%, hsl(var(--primary) / 0.08), transparent 35%);
+  mix-blend-mode: soft-light;
 }
 
 /* 浅色模式内边框 - 强化顶部高光 */
@@ -2024,10 +2074,11 @@ html:not(.dark) .btw-panel-liquid::after,
 
 /* ===== BTW 面板深色模式 ===== */
 .dark .btw-panel-liquid {
+  /* 低不透明度让 SVG 滤镜折射效果更明显 */
   background: linear-gradient(
     145deg,
-    hsl(var(--background) / 0.52) 0%,
-    hsl(var(--background) / 0.42) 100%
+    hsl(var(--background) / 0.35) 0%,
+    hsl(var(--background) / 0.28) 100%
   );
   border-color: hsl(var(--foreground) / 0.10);
   border-top-color: hsl(var(--foreground) / 0.14);
@@ -2038,7 +2089,16 @@ html:not(.dark) .btw-panel-liquid::after,
 }
 
 .dark .btw-panel-liquid::before {
+  /* 深色模式也加入折射条纹 */
   background:
+    linear-gradient(
+      55deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.03) 8%,
+      transparent 16%,
+      hsl(var(--foreground) / 0.02) 24%,
+      transparent 32%
+    ),
     radial-gradient(ellipse 80% 60% at 15% 5%, hsl(var(--primary) / 0.14), transparent 45%),
     radial-gradient(ellipse 60% 40% at 90% 95%, hsl(var(--primary) / 0.08), transparent 40%);
 }
