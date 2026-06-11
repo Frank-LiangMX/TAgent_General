@@ -122,9 +122,9 @@ export interface LiquidGlassFilterProps {
  */
 export function LiquidGlassFilter({
   id = 'liquid-glass-filter',
-  displacementScale = 15,
-  edgeThickness = 0.15,
-  displacementStrength = 0.3,
+  displacementScale = 25,
+  edgeThickness = 0.12,
+  displacementStrength = 0.5,
   mapWidth = 256,
   mapHeight = 256,
 }: LiquidGlassFilterProps): React.ReactElement {
@@ -183,9 +183,9 @@ export function LiquidGlassFilterBtw({
   return (
     <LiquidGlassFilter
       id={id}
-      displacementScale={20}
-      edgeThickness={0.12}
-      displacementStrength={0.35}
+      displacementScale={35}
+      edgeThickness={0.10}
+      displacementStrength={0.6}
       mapWidth={360}
       mapHeight={280}
     />
