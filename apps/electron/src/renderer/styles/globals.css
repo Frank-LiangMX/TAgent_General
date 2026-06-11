@@ -1856,71 +1856,67 @@
   z-index: 1;
 }
 
-/* ===== 浅色模式：强化边框与阴影 ===== */
-/* 浅色模式下折射效果感知弱，通过折射条纹 + 边框高光模拟玻璃质感 */
+/* ===== 浅色模式：白色高光边框 ===== */
+/* 参考 rdev/liquid-glass-react：边框用独立层 + mask 技术，颜色是白色而非 foreground */
 html:not(.dark) .liquid-glass-panel,
 .theme-ocean-light .liquid-glass-panel,
 .theme-forest-light .liquid-glass-panel,
 .theme-slate-light .liquid-glass-panel {
-  /* 降低不透明度增加通透感 */
+  /* 更低的背景不透明度，增加通透感 */
   background: linear-gradient(
     135deg,
     hsl(var(--background) / 0.62) 0%,
     hsl(var(--background) / 0.55) 50%,
     hsl(var(--background) / 0.58) 100%
   );
-  /* 更强的边框对比 */
-  border: 1px solid hsl(var(--foreground) / 0.12);
-  border-top-color: hsl(var(--foreground) / 0.18);
-  border-left-color: hsl(var(--foreground) / 0.14);
+  /* 移除传统 border，改用伪元素 */
+  border: none;
   /* 强化阴影 */
   box-shadow:
     0 2px 8px hsl(var(--foreground) / 0.06),
     0 8px 24px hsl(var(--foreground) / 0.10),
-    0 16px 48px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.20),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.05);
+    0 16px 48px hsl(var(--foreground) / 0.06);
 }
 
-/* 浅色模式高光层 - 液态玻璃折射条纹 */
+/* 浅色模式高光层 - 白色渐变 */
 html:not(.dark) .liquid-glass-panel::before,
 .theme-ocean-light .liquid-glass-panel::before,
 .theme-forest-light .liquid-glass-panel::before,
 .theme-slate-light .liquid-glass-panel::before {
   background:
-    /* 主折射条纹 */
-    linear-gradient(
-      55deg,
-      transparent 0%,
-      hsl(var(--foreground) / 0.025) 8%,
-      transparent 16%,
-      hsl(var(--foreground) / 0.02) 24%,
-      transparent 32%,
-      hsl(var(--foreground) / 0.015) 40%,
-      transparent 48%
-    ),
-    /* 边缘折射 */
-    linear-gradient(
-      -35deg,
-      transparent 0%,
-      hsl(var(--foreground) / 0.03) 5%,
-      transparent 10%
-    ),
-    radial-gradient(ellipse 70% 50% at 15% 5%, hsl(var(--primary) / 0.12), transparent 45%),
-    radial-gradient(ellipse 50% 35% at 90% 95%, hsl(var(--primary) / 0.08), transparent 40%);
+    radial-gradient(ellipse 70% 50% at 15% 5%, hsl(var(--primary) / 0.10), transparent 45%),
+    radial-gradient(ellipse 50% 35% at 90% 95%, hsl(var(--primary) / 0.06), transparent 40%);
   mix-blend-mode: soft-light;
 }
 
-/* 浅色模式内边框 - 更强的高光 */
+/* 浅色模式边框层 - 白色高光，使用 mask 技术 */
 html:not(.dark) .liquid-glass-panel::after,
 .theme-ocean-light .liquid-glass-panel::after,
 .theme-forest-light .liquid-glass-panel::after,
 .theme-slate-light .liquid-glass-panel::after {
-  border-color: hsl(var(--foreground) / 0.15);
-  border-top-color: hsl(var(--foreground) / 0.22);
-  border-left-color: hsl(var(--foreground) / 0.18);
-  border-bottom-color: transparent;
-  border-right-color: transparent;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* mask 技术只显示边框 */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  /* 白色高光渐变边框 */
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 35%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.6) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  /* 内阴影增加立体感 */
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+  pointer-events: none;
 }
 
 /* 深色主题调整 - 降低不透明度让折射更明显 */
@@ -2011,65 +2007,57 @@ html:not(.dark) .btw-panel-liquid,
   /* 更低背景不透明度，增加通透感 */
   background: linear-gradient(
     145deg,
-    hsl(var(--background) / 0.65) 0%,
-    hsl(var(--background) / 0.58) 100%
+    hsl(var(--background) / 0.62) 0%,
+    hsl(var(--background) / 0.55) 100%
   );
-  /* 强化边框对比 */
-  border: 1px solid hsl(var(--foreground) / 0.16);
-  border-top-color: hsl(var(--foreground) / 0.25);
-  border-left-color: hsl(var(--foreground) / 0.20);
-  /* 强化阴影层次 */
+  /* 移除传统 border */
+  border: none;
+  /* 强化阴影 */
   box-shadow:
     0 4px 16px hsl(var(--foreground) / 0.08),
     0 12px 40px hsl(var(--foreground) / 0.12),
-    0 24px 64px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(var(--foreground) / 0.28),
-    inset 0 -1px 0 hsl(var(--foreground) / 0.06);
+    0 24px 64px hsl(var(--foreground) / 0.06);
 }
 
-/* 浅色模式高光层 - 模拟液态玻璃折射条纹 */
+/* 浅色模式高光层 */
 html:not(.dark) .btw-panel-liquid::before,
 .theme-ocean-light .btw-panel-liquid::before,
 .theme-forest-light .btw-panel-liquid::before,
 .theme-slate-light .btw-panel-liquid::before {
-  /* 液态玻璃特有的光线弯曲条纹效果 */
   background:
-    /* 主折射条纹 - 顶部斜向 */
-    linear-gradient(
-      55deg,
-      transparent 0%,
-      hsl(var(--foreground) / 0.02) 8%,
-      transparent 16%,
-      hsl(var(--foreground) / 0.015) 24%,
-      transparent 32%,
-      hsl(var(--foreground) / 0.01) 40%,
-      transparent 48%
-    ),
-    /* 边缘折射条纹 - 左侧 */
-    linear-gradient(
-      -35deg,
-      transparent 0%,
-      hsl(var(--foreground) / 0.025) 5%,
-      transparent 10%,
-      hsl(var(--foreground) / 0.02) 15%,
-      transparent 20%
-    ),
-    /* 主题色高光区域 */
-    radial-gradient(ellipse 90% 70% at 12% 3%, hsl(var(--primary) / 0.12), transparent 40%),
-    radial-gradient(ellipse 65% 45% at 92% 97%, hsl(var(--primary) / 0.08), transparent 35%);
+    radial-gradient(ellipse 90% 70% at 12% 3%, hsl(var(--primary) / 0.10), transparent 40%),
+    radial-gradient(ellipse 65% 45% at 92% 97%, hsl(var(--primary) / 0.06), transparent 35%);
   mix-blend-mode: soft-light;
 }
 
-/* 浅色模式内边框 - 强化顶部高光 */
+/* 浅色模式边框层 - 白色高光，使用 mask 技术 */
 html:not(.dark) .btw-panel-liquid::after,
 .theme-ocean-light .btw-panel-liquid::after,
 .theme-forest-light .btw-panel-liquid::after,
 .theme-slate-light .btw-panel-liquid::after {
-  border-color: hsl(var(--foreground) / 0.20);
-  border-top-color: hsl(var(--foreground) / 0.30);
-  border-left-color: hsl(var(--foreground) / 0.24);
-  border-bottom-color: transparent;
-  border-right-color: transparent;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* mask 技术只显示边框 */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  /* 白色高光渐变边框 */
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.5) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  /* 内阴影增加立体感 */
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.03);
+  pointer-events: none;
 }
 
 /* ===== BTW 面板深色模式 ===== */
