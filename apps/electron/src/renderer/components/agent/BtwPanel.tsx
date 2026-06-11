@@ -275,14 +275,14 @@ export function BtwPanel(): React.ReactElement | null {
 
         {/* Input */}
         <div className="p-3 shrink-0">
-          <div className="flex items-end gap-2 rounded-xl bg-white/20 dark:bg-white/10 backdrop-blur-sm p-1.5 transition-colors focus-within:bg-white/30 dark:focus-within:bg-white/15">
+          <div className="btw-input-glass flex items-end gap-2 rounded-xl bg-accent/50 backdrop-blur-sm border border-border/50 shadow-sm p-1.5 transition-colors focus-within:bg-accent/60 focus-within:border-border/70">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="输入问题..."
               rows={1}
-              className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-sm leading-relaxed placeholder:text-foreground/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
+              className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/45 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
               disabled={streaming}
               onInput={(e) => {
                 const target = e.currentTarget
