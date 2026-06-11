@@ -11,7 +11,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare } from 'lucide-react'
+import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -174,15 +174,6 @@ export function BtwPanel(): React.ReactElement | null {
 
   return (
     <>
-      {/* 遮罩层 — 点击关闭，z-index 低于面板 */}
-      <div
-        className={cn(
-          'fixed inset-0 transition-opacity duration-300',
-          open ? 'opacity-100 z-40' : 'opacity-0 pointer-events-none z-[-1]'
-        )}
-        onClick={handleClose}
-      />
-
       {/* 面板 — 液态玻璃效果，从按钮位置向上展开 */}
       <div
         className={cn(
@@ -190,7 +181,7 @@ export function BtwPanel(): React.ReactElement | null {
           'absolute w-[360px] flex flex-col overflow-hidden z-50',
           'bottom-full right-0 mb-2',
           'origin-bottom-right',
-          'transition-all duration-300',
+          'transition-all duration-300 ease-out',
           open
             ? 'scale-100 opacity-100 translate-y-0'
             : 'scale-90 opacity-0 translate-y-4 pointer-events-none'
@@ -204,26 +195,54 @@ export function BtwPanel(): React.ReactElement | null {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-medium text-sm leading-tight text-foreground/90">侧面提问</span>
-              <span className="text-[11px] text-foreground/50 leading-tight">点击面板外关闭</span>
+              <span className="text-[11px] text-foreground/50 leading-tight">不进入主对话历史</span>
             </div>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
-                onClick={handleFork}
-                disabled={streaming || messages.length === 0}
-                aria-label="分叉到新会话"
-              >
-                <ArrowUpRightFromSquare size={14} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">分叉到新会话（继承主会话上下文）</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            {/* 关闭按钮 — 向下箭头，点击收缩关闭 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'h-7 w-7 rounded-lg text-foreground/50 hover:text-foreground',
+                    'hover:bg-white/20 dark:hover:bg-white/10',
+                    'transition-all duration-200',
+                    'group'
+                  )}
+                  onClick={handleClose}
+                  aria-label="关闭面板"
+                >
+                  <ChevronDown
+                    size={16}
+                    className="transition-transform duration-200 group-hover:translate-y-0.5"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">关闭</p>
+              </TooltipContent>
+            </Tooltip>
+            {/* 分叉按钮 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+                  onClick={handleFork}
+                  disabled={streaming || messages.length === 0}
+                  aria-label="分叉到新会话"
+                >
+                  <ArrowUpRightFromSquare size={14} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">分叉到新会话（继承主会话上下文）</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Messages — 有内容时才显示滚动条 */}
