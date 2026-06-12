@@ -111,6 +111,7 @@ export function ConversationScrollButton({
         'border-[0.5px] border-border',
         className
       )}
+      data-conversation-scroll-btn
       onClick={handleScrollToBottom}
       type="button"
       variant="outline"

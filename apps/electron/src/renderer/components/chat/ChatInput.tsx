@@ -356,11 +356,10 @@ export function ChatInput({ conversationId, streaming, pendingAttachments, onSet
   )
 
   return (
-    <div className="px-2.5 pb-2.5 md:px-[18px] md:pb-[18px]" data-input-mode="chat">
-        {/* 卡片式输入容器 — 对标 Cherry Studio: border-radius 17px, 0.5px border */}
+    <div className="session-input-dock px-2.5 pb-1 md:px-[18px] md:pb-2.5" data-input-mode="chat">
         <div
           className={cn(
-            'rounded-[17px] border-[0.5px] border-border bg-background/70 backdrop-blur-sm transition-all duration-200',
+            'session-glass chat-input-glass transition-all duration-200',
             'focus-within:border-foreground/20',
             isDragOver && 'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
           )}

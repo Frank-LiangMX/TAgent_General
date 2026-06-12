@@ -358,7 +358,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
         {hovered && (
           <div
             className={cn(
-              'mr-1 w-[280px] rounded-lg border bg-popover shadow-xl origin-top-right flex flex-col overflow-hidden pointer-events-auto',
+              'session-glass-surface session-glass-popover mr-1 w-[280px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
               isLeaving
                 ? 'animate-out fade-out-0 zoom-out-95 duration-75'
                 : 'animate-in fade-in-0 zoom-in-95 duration-150'

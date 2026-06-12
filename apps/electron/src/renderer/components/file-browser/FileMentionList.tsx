@@ -41,7 +41,7 @@ class MentionErrorBoundary extends React.Component<
     if (this.state.error) {
       console.error('[FileMentionList] render error:', this.state.error)
       return (
-        <div className="rounded-lg border bg-popover p-2 shadow-lg text-[11px] text-muted-foreground">
+        <div className="session-glass-surface session-glass-popover p-2 text-[11px] text-muted-foreground">
           无匹配文件
         </div>
       )
@@ -303,7 +303,7 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
     // 无匹配结果
     if (!hasResults) {
       return (
-        <div className="rounded-lg border bg-popover p-2 shadow-lg text-[11px] text-muted-foreground">
+        <div className="session-glass-surface session-glass-popover p-2 text-[11px] text-muted-foreground">
           无匹配文件
         </div>
       )
@@ -314,7 +314,7 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
         <MentionErrorBoundary>
       <div
         ref={containerRef}
-        className="rounded-lg border bg-popover shadow-lg overflow-y-auto max-h-[360px] min-w-[260px]"
+        className="session-glass-surface session-glass-popover overflow-y-auto max-h-[360px] min-w-[260px]"
       >
         {/* 会话文件 */}
         {hasSession && (

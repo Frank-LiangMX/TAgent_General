@@ -115,6 +115,8 @@ interface AgentMessagesProps {
   onFork?: (upToMessageUuid: string) => void
   onRewind?: (assistantMessageUuid: string) => void
   onCompact?: () => void
+  /** 底部悬浮输入框模式：为消息列表预留底部空间 */
+  floatingInput?: boolean
 }
 
 /** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
@@ -402,7 +404,7 @@ function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.Rea
   )
 }
 
-export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persistedSDKMessages, streaming, streamState, liveMessages, sessionPath, attachedDirs, stoppedByUser, onRetry, onRetryInNewSession, onFork, onRewind, onCompact }: AgentMessagesProps): React.ReactElement {
+export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persistedSDKMessages, streaming, streamState, liveMessages, sessionPath, attachedDirs, stoppedByUser, onRetry, onRetryInNewSession, onFork, onRewind, onCompact, floatingInput }: AgentMessagesProps): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
   const channels = useAtomValue(channelsAtom)
@@ -619,7 +621,7 @@ export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persi
     <BasePathsProvider basePaths={attachedDirs}>
     <Conversation resize={ready && !transitioning ? 'smooth' : 'instant'} className={ready ? (skipFadeIn ? 'opacity-100' : 'opacity-100 transition-opacity duration-200') : 'opacity-0'}>
       <ScrollPositionManager id={sessionId} ready={ready} />
-      <ConversationContent>
+      <ConversationContent className={floatingInput ? 'conversation-floating-input' : undefined}>
         {!hasContent && !streaming ? (
           <EmptyState />
         ) : (

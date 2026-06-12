@@ -81,7 +81,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps): React.ReactEl
       pluginKey="tableBubbleMenu"
       shouldShow={({ editor: ed }) => shouldShowTableMenu(ed)}
     >
-      <div className="flex items-center gap-0.5 rounded-lg border bg-popover px-1 py-0.5 shadow-md">
+      <div className="session-glass-surface session-glass-popover flex items-center gap-0.5 px-1 py-0.5">
         <TableButton icon={ArrowUpFromLine} label="上方插入行" onClick={() => editor.chain().focus().addRowBefore().run()} />
         <TableButton icon={ArrowDownFromLine} label="下方插入行" onClick={() => editor.chain().focus().addRowAfter().run()} />
         <TableButton icon={ArrowLeftFromLine} label="左侧插入列" onClick={() => editor.chain().focus().addColumnBefore().run()} />

@@ -22,6 +22,10 @@ import {
   agentWorkspacesAtom,
 } from '@/atoms/agent-atoms'
 import {
+  workspaceSelectedDirectoryAtom,
+  workspaceSelectedFileAtom,
+} from '@/atoms/workspace-explorer'
+import {
   FileBrowser,
   FileDropZone,
   FileTypeIcon,
@@ -38,8 +42,8 @@ import { cn } from '@/lib/utils'
 interface WorkspaceFilesViewProps {
   /** 唯一标识，用于 host 端的 React key（切换工作区时强制重建） */
   workspaceKey: string
-  /** 布局模式：sidebar 保持紧凑，main 走宽屏主区布局 */
-  layout?: 'sidebar' | 'main'
+  /** sidebar = 侧栏紧凑；navigator = 主从布局导航器；main = 宽屏（遗留） */
+  layout?: 'sidebar' | 'navigator' | 'main'
 }
 
 const actionButtonClass = 'h-6 w-6 flex-shrink-0 rounded-md text-muted-foreground/75 hover:bg-accent/70 hover:text-foreground [&_svg]:size-3.5'
@@ -104,11 +108,31 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
 
   const filesVersion = useAtomValue(workspaceFilesVersionAtom)
   const setFilesVersion = useSetAtom(workspaceFilesVersionAtom)
+  const isNavigator = layout === 'navigator'
+  const [selectedFile, setSelectedFile] = useAtom(workspaceSelectedFileAtom)
+  const setSelectedDirectory = useSetAtom(workspaceSelectedDirectoryAtom)
 
-  // 目录区无 preview tab，不打开文件预览窗口；点击文件通过 openFile 走 OS
-  const handleFilePreview = React.useCallback((filePath: string) => {
+  const handleOpenInOs = React.useCallback((filePath: string) => {
     window.electronAPI.openFile(filePath).catch(console.error)
   }, [])
+
+  const handleInspectFile = React.useCallback((filePath: string) => {
+    setSelectedFile(filePath)
+    setSelectedDirectory(null)
+  }, [setSelectedFile, setSelectedDirectory])
+
+  const handleInspectDirectory = React.useCallback((dirPath: string) => {
+    setSelectedDirectory(dirPath)
+    setSelectedFile(null)
+  }, [setSelectedDirectory, setSelectedFile])
+
+  const handleFileActivate = React.useCallback((filePath: string) => {
+    if (isNavigator) {
+      handleInspectFile(filePath)
+      return
+    }
+    handleOpenInOs(filePath)
+  }, [handleInspectFile, handleOpenInOs, isNavigator])
 
   // 附加 / 移除目录
   const attachWorkspaceDir = React.useCallback(async (dirPath: string) => {
@@ -214,12 +238,19 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
         'min-h-0',
         layout === 'main'
           ? 'flex h-full flex-col gap-5 px-6 pb-6 pt-10 xl:px-8'
-          : 'flex-1 flex flex-col pt-0.5 mx-2 mb-2',
+          : layout === 'navigator'
+            ? 'flex h-full min-h-0 flex-1 flex-col'
+            : 'flex-1 flex flex-col pt-0.5 mx-2 mb-2',
       )}
       key={workspaceKey}
     >
       {/* Header */}
-      {layout === 'main' ? (
+      {layout === 'navigator' ? (
+        <div className="flex h-9 shrink-0 items-center gap-1.5 border-b border-border/40 px-3">
+          <FolderOpen size={12} className="shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate text-[11px] font-medium text-foreground">{workspaceName}</span>
+        </div>
+      ) : layout === 'main' ? (
         <div className="rounded-3xl border border-border/60 bg-card/90 px-5 py-4 shadow-sm shadow-foreground/5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
@@ -303,14 +334,17 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
       )}
 
       {/* 搜索栏 */}
-      <div className={layout === 'main' ? 'rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-sm shadow-foreground/5' : ''}>
+      <div className={cn(
+        layout === 'main' ? 'rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-sm shadow-foreground/5' : '',
+        layout === 'navigator' && 'shrink-0 border-b border-border/40 px-2 py-2',
+      )}>
         <FileSearchBar
           workspaceFilesPath={workspaceFilesPath}
           sessionPath={null}
           sessionAttachedDirs={[]}
           workspaceAttachedDirs={wsAttachedDirs}
           placeholder="搜索工作区文件..."
-          onFilePreview={handleFilePreview}
+          onFilePreview={handleFileActivate}
         />
       </div>
 
@@ -327,7 +361,7 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
           <AttachedFilesSection
             attachedFiles={wsAttachedFiles}
             onDetach={handleDetachFile}
-            onFilePreview={handleFilePreview}
+            onFilePreview={handleFileActivate}
           />
         )}
         {wsAttachedDirs.length > 0 && (
@@ -335,7 +369,9 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
             attachedDirs={wsAttachedDirs}
             onDetach={handleDetachDirectory}
             refreshVersion={filesVersion}
-            onFilePreview={handleFilePreview}
+            onFilePreview={handleFileActivate}
+            inspectMode={isNavigator}
+            onDirectoryInspect={handleInspectDirectory}
           />
         )}
         {workspaceFilesPath && (
@@ -348,7 +384,11 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
               hideToolbar
               embedded
               hideEmpty={hasAttachedItems}
-              onFilePreview={handleFilePreview}
+              onFilePreview={handleOpenInOs}
+              inspectMode={isNavigator}
+              onFileInspect={handleInspectFile}
+              onDirectoryInspect={handleInspectDirectory}
+              inspectPath={isNavigator ? selectedFile : null}
             />
           </>
         )}
@@ -421,9 +461,18 @@ interface AttachedDirsSectionProps {
   onDetach: (dirPath: string) => void
   refreshVersion: number
   onFilePreview?: (filePath: string) => void
+  inspectMode?: boolean
+  onDirectoryInspect?: (dirPath: string) => void
 }
 
-function AttachedDirsSection({ attachedDirs, onDetach, refreshVersion, onFilePreview }: AttachedDirsSectionProps): React.ReactElement {
+function AttachedDirsSection({
+  attachedDirs,
+  onDetach,
+  refreshVersion,
+  onFilePreview,
+  inspectMode,
+  onDirectoryInspect,
+}: AttachedDirsSectionProps): React.ReactElement {
   const [selectedPaths, setSelectedPaths] = React.useState<Set<string>>(new Set())
 
   const handleSelect = React.useCallback((path: string, ctrlKey: boolean) => {
@@ -449,6 +498,8 @@ function AttachedDirsSection({ attachedDirs, onDetach, refreshVersion, onFilePre
           onSelect={handleSelect}
           refreshVersion={refreshVersion}
           onFilePreview={onFilePreview}
+          inspectMode={inspectMode}
+          onDirectoryInspect={onDirectoryInspect}
         />
       ))}
     </div>
@@ -462,9 +513,20 @@ interface AttachedDirTreeProps {
   onSelect: (path: string, ctrlKey: boolean) => void
   refreshVersion: number
   onFilePreview?: (filePath: string) => void
+  inspectMode?: boolean
+  onDirectoryInspect?: (dirPath: string) => void
 }
 
-function AttachedDirTree({ dirPath, onDetach, selectedPaths, onSelect, refreshVersion, onFilePreview }: AttachedDirTreeProps): React.ReactElement {
+function AttachedDirTree({
+  dirPath,
+  onDetach,
+  selectedPaths,
+  onSelect,
+  refreshVersion,
+  onFilePreview,
+  inspectMode,
+  onDirectoryInspect,
+}: AttachedDirTreeProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
   const [children, setChildren] = React.useState<FileEntry[]>([])
   const [loaded, setLoaded] = React.useState(false)
@@ -506,7 +568,10 @@ function AttachedDirTree({ dirPath, onDetach, selectedPaths, onSelect, refreshVe
           isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50',
         )}
         style={{ paddingLeft }}
-        onClick={toggleExpand}
+        onClick={() => {
+          if (inspectMode) onDirectoryInspect?.(dirPath)
+          void toggleExpand()
+        }}
       >
         <ChevronRight
           className={cn(
@@ -549,6 +614,8 @@ function AttachedDirTree({ dirPath, onDetach, selectedPaths, onSelect, refreshVe
               selectedPaths={selectedPaths}
               onSelect={onSelect}
               onFilePreview={onFilePreview}
+              inspectMode={inspectMode}
+              onDirectoryInspect={onDirectoryInspect}
             />
           ))}
         </div>
@@ -563,9 +630,19 @@ interface AttachedDirItemProps {
   selectedPaths: Set<string>
   onSelect: (path: string, ctrlKey: boolean) => void
   onFilePreview?: (filePath: string) => void
+  inspectMode?: boolean
+  onDirectoryInspect?: (dirPath: string) => void
 }
 
-function AttachedDirItem({ entry, depth, selectedPaths, onSelect, onFilePreview }: AttachedDirItemProps): React.ReactElement {
+function AttachedDirItem({
+  entry,
+  depth,
+  selectedPaths,
+  onSelect,
+  onFilePreview,
+  inspectMode,
+  onDirectoryInspect,
+}: AttachedDirItemProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
   const [children, setChildren] = React.useState<FileEntry[]>([])
   const [loaded, setLoaded] = React.useState(false)
@@ -590,6 +667,7 @@ function AttachedDirItem({ entry, depth, selectedPaths, onSelect, onFilePreview 
     onSelect(entry.path, isMulti)
     if (isMulti) return
     if (entry.isDirectory) {
+      if (inspectMode) onDirectoryInspect?.(entry.path)
       void toggleDir()
     } else {
       onFilePreview?.(entry.path)
@@ -652,6 +730,8 @@ function AttachedDirItem({ entry, depth, selectedPaths, onSelect, onFilePreview 
               selectedPaths={selectedPaths}
               onSelect={onSelect}
               onFilePreview={onFilePreview}
+              inspectMode={inspectMode}
+              onDirectoryInspect={onDirectoryInspect}
             />
           ))}
         </div>

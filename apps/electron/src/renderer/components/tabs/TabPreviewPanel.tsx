@@ -79,7 +79,7 @@ export function TabPreviewPanel({ title, items, isLeaving }: TabPreviewPanelProp
   return (
     <div
       className={cn(
-        'w-[280px] rounded-lg border bg-popover shadow-xl origin-top flex flex-col overflow-hidden',
+        'session-glass-surface session-glass-popover w-[280px] origin-top flex flex-col overflow-hidden',
         isLeaving
           ? 'animate-out fade-out-0 zoom-out-95 duration-75'
           : 'animate-in fade-in-0 zoom-in-95 duration-150'
@@ -87,7 +87,7 @@ export function TabPreviewPanel({ title, items, isLeaving }: TabPreviewPanelProp
       style={{ maxHeight: 'min(420px, 60vh)' }}
     >
       {/* 标题栏 */}
-      <div className="relative z-10 flex items-center justify-between px-3 py-2 border-b shrink-0 bg-popover">
+      <div className="relative z-10 flex items-center justify-between px-3 py-2 border-b shrink-0 bg-muted/30">
         <span className="text-xs font-medium text-popover-foreground/90 truncate flex-1 min-w-0">
           {title}
         </span>

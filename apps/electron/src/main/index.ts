@@ -269,7 +269,8 @@ function createWindow(): void {
   const titleBarOptions = isMac
     ? {
         titleBarStyle: 'hiddenInset' as const,
-        trafficLightPosition: { x: 18, y: 18 },
+        /* 与 shell p-2 + NavIsland chrome 左翼对齐 */
+        trafficLightPosition: { x: 16, y: 16 },
         vibrancy: 'under-window' as const,
         visualEffectState: 'followWindow' as const,
       }
@@ -300,7 +301,7 @@ function createWindow(): void {
   // Load the renderer
   const isDev = !app.isPackaged
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.loadURL('http://127.0.0.1:5173')
     mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'))

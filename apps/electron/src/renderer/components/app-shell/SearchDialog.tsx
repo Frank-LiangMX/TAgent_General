@@ -297,7 +297,7 @@ function SearchResultSessionPreview({ target, committedQuery }: SearchResultSess
 
   return (
     <div className="absolute right-2 top-2 bottom-2 z-20 w-[286px] pointer-events-none">
-      <div className="h-full max-h-[380px] rounded-lg border bg-popover shadow-xl overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150">
+      <div className="session-glass-surface session-glass-popover h-full max-h-[380px] overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150">
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b">
           <div className="min-w-0 flex items-center gap-2">
             <SearchResultIcon result={target.result} />

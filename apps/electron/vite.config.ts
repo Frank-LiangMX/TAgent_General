@@ -21,6 +21,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '127.0.0.1', // 显式绑定 IPv4，避免 Electron 内部 localhost 解析为 IPv6 失败
     port: 5173,
     strictPort: true, // 确保使用指定端口，如被占用则报错
     open: false,

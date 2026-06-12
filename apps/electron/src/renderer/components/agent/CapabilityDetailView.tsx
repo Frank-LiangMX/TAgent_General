@@ -73,7 +73,13 @@ function rebuildSkillMd(content: string, patch: { name?: string; description?: s
   return `---\n${fm}\n---\n\n${newBody}`
 }
 
-export function CapabilityDetailView(): React.ReactElement {
+interface CapabilityDetailViewProps {
+  /** inspector：主从布局主区，隐藏返回按钮（选中在侧栏） */
+  variant?: 'default' | 'inspector'
+}
+
+export function CapabilityDetailView({ variant = 'default' }: CapabilityDetailViewProps): React.ReactElement {
+  const hideBackButton = variant === 'inspector'
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
@@ -98,12 +104,14 @@ export function CapabilityDetailView(): React.ReactElement {
           skillSlug={selectedCapability.key}
           workspaceSlug={workspaceSlug}
           onBack={handleBack}
+          hideBackButton={hideBackButton}
         />
       ) : (
         <McpCapabilityDetail
           serverName={selectedCapability.key}
           workspaceSlug={workspaceSlug}
           onBack={handleBack}
+          hideBackButton={hideBackButton}
         />
       )}
     </div>
@@ -114,10 +122,12 @@ function SkillCapabilityDetail({
   skillSlug,
   workspaceSlug,
   onBack,
+  hideBackButton,
 }: {
   skillSlug: string
   workspaceSlug: string
   onBack: () => void
+  hideBackButton?: boolean
 }): React.ReactElement {
   const [content, setContent] = React.useState<string | null>(null)
   const [loadingContent, setLoadingContent] = React.useState(false)
@@ -210,7 +220,7 @@ function SkillCapabilityDetail({
   }
 
   if (!skill) {
-    return <CapabilityNotFound type="Skill" name={skillSlug} onBack={onBack} />
+    return <CapabilityNotFound type="Skill" name={skillSlug} onBack={onBack} hideBackButton={hideBackButton} />
   }
 
   const metaTags = [
@@ -226,14 +236,16 @@ function SkillCapabilityDetail({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onBack}
-                className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <ArrowLeft size={12} className="mr-1.5" />
-                返回
-              </button>
+              {!hideBackButton ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <ArrowLeft size={12} className="mr-1.5" />
+                  返回
+                </button>
+              ) : null}
               <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 Skill
               </span>
@@ -380,10 +392,12 @@ function McpCapabilityDetail({
   serverName,
   workspaceSlug,
   onBack,
+  hideBackButton,
 }: {
   serverName: string
   workspaceSlug: string
   onBack: () => void
+  hideBackButton?: boolean
 }): React.ReactElement {
   const [loading, setLoading] = React.useState(true)
   const [isEditing, setIsEditing] = React.useState(false)
@@ -466,7 +480,7 @@ function McpCapabilityDetail({
   }
 
   if (!entry) {
-    return <CapabilityNotFound type="MCP Server" name={serverName} onBack={onBack} />
+    return <CapabilityNotFound type="MCP Server" name={serverName} onBack={onBack} hideBackButton={hideBackButton} />
   }
 
   const envCount = entry.env ? Object.keys(entry.env).length : 0
@@ -478,14 +492,16 @@ function McpCapabilityDetail({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onBack}
-                className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <ArrowLeft size={12} className="mr-1.5" />
-                返回
-              </button>
+              {!hideBackButton ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <ArrowLeft size={12} className="mr-1.5" />
+                  返回
+                </button>
+              ) : null}
               <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 MCP
               </span>
@@ -750,10 +766,12 @@ function CapabilityNotFound({
   type,
   name,
   onBack,
+  hideBackButton,
 }: {
   type: string
   name: string
   onBack: () => void
+  hideBackButton?: boolean
 }): React.ReactElement {
   return (
     <div className="flex h-full items-center justify-center p-6">
@@ -762,13 +780,15 @@ function CapabilityNotFound({
           {type}「{name}」未找到
         </p>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">可能是它已经被删除，或者列表还没有刷新。</p>
-        <button
-          type="button"
-          onClick={onBack}
-          className="mt-4 inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-background px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-        >
-          返回列表
-        </button>
+        {!hideBackButton ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-4 inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-background px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            返回列表
+          </button>
+        ) : null}
       </div>
     </div>
   )

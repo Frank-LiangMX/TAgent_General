@@ -17,7 +17,10 @@ import * as React from 'react'
 
 import { FunctionalRail } from './FunctionalRail'
 import { LeftSidebar } from './LeftSidebar'
+import { NavIsland } from './NavIsland'
 import { RightSidePanel } from './RightSidePanel'
+
+import { NAV_SIDEBAR_INSPECTOR_WIDTH, NAV_SIDEBAR_WIDTH } from '@/lib/platform'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { AgentSessionMeta } from '@tagent/shared'
@@ -44,7 +47,12 @@ import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
 import { useOpenSession } from '@/hooks/useOpenSession'
-import { detectIsWindows, detectIsMac } from '@/lib/platform'
+import {
+  detectIsMac,
+  detectIsWindows,
+  NAV_MAC_CHROME_HEIGHT,
+  SHELL_EDGE_PADDING,
+} from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 const MIN_RIGHT_PANEL_WIDTH = 300
@@ -84,7 +92,33 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   // 侧边栏折叠状态
   const [sidebarCollapsed, setSidebarCollapsed] = useAtom(sidebarCollapsedAtom)
-  const showLeftSidebar = activeRailItem !== 'files' && activeRailItem !== 'skills'
+  /** 通用模式三种 Rail 均保留侧栏翼，避免切到文件/Skills 时浮岛宽度突变 */
+  const showLeftSidebar =
+    topLevelMode === 'general'
+      ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills'
+      : true
+
+  // 仅会话页允许折叠；切到其他功能区时自动展开侧栏翼
+  React.useEffect(() => {
+    if (activeRailItem !== 'sessions' && sidebarCollapsed) {
+      setSidebarCollapsed(false)
+    }
+  }, [activeRailItem, sidebarCollapsed, setSidebarCollapsed])
+
+  const handleToggleSidebar = React.useCallback(() => {
+    if (sidebarCollapsed) {
+      setSidebarCollapsed(false)
+      return
+    }
+    if (activeRailItem === 'sessions') {
+      setSidebarCollapsed(true)
+    }
+  }, [activeRailItem, sidebarCollapsed, setSidebarCollapsed])
+
+  const navSidebarWidth =
+    topLevelMode === 'general' && (activeRailItem === 'files' || activeRailItem === 'skills')
+      ? NAV_SIDEBAR_INSPECTOR_WIDTH
+      : NAV_SIDEBAR_WIDTH
 
   // 会话列表状态（用于 FunctionalRail 最近会话入口）
   const conversations = useAtomValue(conversationsAtom)
@@ -227,9 +261,14 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           表现为"按钮要双击才响应"。 */}
       <div
         className={cn(
-          'titlebar-drag-region fixed top-0 left-0 h-[50px] z-50',
-          isWindows ? 'right-[126px]' : 'right-0'
+          'titlebar-drag-region fixed top-0 left-0 z-50',
+          isWindows ? 'right-[126px]' : 'right-0',
         )}
+        style={{
+          height: isMac
+            ? SHELL_EDGE_PADDING + NAV_MAC_CHROME_HEIGHT
+            : 50,
+        }}
       />
 
       {/* Windows 自定义窗口控制按钮（最小化/最大化/关闭） */}
@@ -237,27 +276,30 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
       <div className="shell-glass shell-bg h-screen w-screen flex overflow-hidden">
         {/* 左侧：FunctionalRail + LeftSidebar */}
-        <div className="p-2 pr-0 relative z-[60] flex items-stretch gap-0">
-          {/* FunctionalRail：60px 固定宽度，功能区切换 */}
-          <FunctionalRail
-            onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
-            recentItems={railRecentItems}
-            onRecentItemSelect={handleRecentItemSelect}
-            onNewSession={handleNewSession}
-            onSearch={handleSearch}
-            sidebarCollapsed={sidebarCollapsed}
-          />
-
-          {/* Files 页不显示 sidebar，直接把内容交给主区单栏展示 */}
-          {showLeftSidebar && (
-            <div className="relative">
+        <div className="p-2 pr-0 relative z-[60] flex items-stretch">
+          <NavIsland
+            showSidebar={showLeftSidebar}
+            sidebarExpanded={showLeftSidebar && !sidebarCollapsed}
+            sidebarWidth={navSidebarWidth}
+          >
+            <FunctionalRail
+              onToggleSidebar={handleToggleSidebar}
+              recentItems={railRecentItems}
+              onRecentItemSelect={handleRecentItemSelect}
+              onNewSession={handleNewSession}
+              onSearch={handleSearch}
+              sidebarCollapsed={sidebarCollapsed}
+            />
+            {showLeftSidebar && (
               <LeftSidebar
                 activeRailItem={activeRailItem}
                 collapsed={sidebarCollapsed}
                 onCollapsedChange={setSidebarCollapsed}
+                onToggleSidebar={handleToggleSidebar}
+                width={navSidebarWidth}
               />
-            </div>
-          )}
+            )}
+          </NavIsland>
         </div>
 
         {/* 工作区管理弹窗（全局可见） */}

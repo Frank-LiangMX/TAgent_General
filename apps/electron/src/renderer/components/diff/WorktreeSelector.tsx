@@ -110,7 +110,7 @@ export function WorktreeSelector({
       </div>
 
       {isOpen && (
-        <div className="absolute left-2 right-2 top-full mt-0.5 z-50 bg-popover border border-border rounded-md shadow-md py-1 max-h-[240px] overflow-y-auto">
+        <div className="session-glass-surface session-glass-popover absolute left-2 right-2 top-full mt-0.5 z-50 py-1 max-h-[240px] overflow-y-auto">
           <button
             onClick={() => {
               onSelect(null)

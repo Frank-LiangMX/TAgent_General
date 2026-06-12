@@ -22,6 +22,7 @@ import { ChatHeader } from './ChatHeader'
 import { ChatInput } from './ChatInput'
 import { ChatMessages } from './ChatMessages'
 import { PromptEditorSidebar } from './PromptEditorSidebar'
+import { SessionFloatingLayout } from '@/components/layout/SessionFloatingLayout'
 
 import type { InlineEditSubmitPayload } from './ChatMessageItem'
 import type { PendingAttachment, ChatPendingMessage } from '@/atoms/chat-atoms'
@@ -565,63 +566,64 @@ function ChatViewInner({ conversationId }: ChatViewProps): React.ReactElement {
         {/* Header 在 max-w 外，按钮可到达最右侧 */}
         <ChatHeader conversation={conversation} />
         <div className="flex flex-col flex-1 w-full max-w-[min(72rem,100%)] mx-auto overflow-hidden min-h-0">
-          {/* 中间：消息区域 */}
-          <ChatMessages
-            conversationId={conversationId}
-            messages={messages}
-            messagesLoaded={messagesLoaded}
-            streaming={isStreaming}
-            streamingContent={streamingContent}
-            streamingReasoning={streamingReasoning}
-            streamingModel={streamingModel}
-            startedAt={streamState?.startedAt}
-            toolActivities={toolActivities}
-            contextDividers={contextDividers}
-            hasMore={hasMoreMessages}
-            onDeleteMessage={handleDeleteMessage}
-            onResendMessage={handleResendMessage}
-            onStartInlineEdit={handleStartInlineEdit}
-            onSubmitInlineEdit={handleSubmitInlineEdit}
-            onCancelInlineEdit={handleCancelInlineEdit}
-            inlineEditingMessageId={inlineEditingMessageId}
-            onDeleteDivider={handleDeleteDivider}
-            onLoadMore={handleLoadMore}
-          />
-
-          {/* 错误提示 */}
-          {chatError && (
-            <div className="mx-4 mb-2 px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
-              <AlertCircle className="size-4 shrink-0" />
-              <span className="flex-1 break-all">{chatError}</span>
-              <button
-                type="button"
-                className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
-                onClick={() => {
-                  setChatStreamErrors((prev) => {
-                    const map = new Map(prev)
-                    map.delete(conversationId)
-                    return map
-                  })
-                }}
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Agent 模式推荐横幅 */}
-          <AgentRecommendBanner />
-
-          {/* 底部：输入框 */}
-          <ChatInput
-            conversationId={conversationId}
-            streaming={isStreaming}
-            pendingAttachments={pendingAttachments}
-            onSetPendingAttachments={setPendingAttachments}
-            onSend={handleSend}
-            onStop={handleStop}
-            onClearContext={handleClearContext}
-          />
+          <SessionFloatingLayout
+            bottom={
+              <>
+                {chatError && (
+                  <div className="mx-4 mb-2 px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+                    <AlertCircle className="size-4 shrink-0" />
+                    <span className="flex-1 break-all">{chatError}</span>
+                    <button
+                      type="button"
+                      className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+                      onClick={() => {
+                        setChatStreamErrors((prev) => {
+                          const map = new Map(prev)
+                          map.delete(conversationId)
+                          return map
+                        })
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                )}
+                <AgentRecommendBanner />
+                <ChatInput
+                  conversationId={conversationId}
+                  streaming={isStreaming}
+                  pendingAttachments={pendingAttachments}
+                  onSetPendingAttachments={setPendingAttachments}
+                  onSend={handleSend}
+                  onStop={handleStop}
+                  onClearContext={handleClearContext}
+                />
+              </>
+            }
+          >
+            <ChatMessages
+              conversationId={conversationId}
+              messages={messages}
+              messagesLoaded={messagesLoaded}
+              streaming={isStreaming}
+              streamingContent={streamingContent}
+              streamingReasoning={streamingReasoning}
+              streamingModel={streamingModel}
+              startedAt={streamState?.startedAt}
+              toolActivities={toolActivities}
+              contextDividers={contextDividers}
+              hasMore={hasMoreMessages}
+              onDeleteMessage={handleDeleteMessage}
+              onResendMessage={handleResendMessage}
+              onStartInlineEdit={handleStartInlineEdit}
+              onSubmitInlineEdit={handleSubmitInlineEdit}
+              onCancelInlineEdit={handleCancelInlineEdit}
+              inlineEditingMessageId={inlineEditingMessageId}
+              onDeleteDivider={handleDeleteDivider}
+              onLoadMore={handleLoadMore}
+              floatingInput
+            />
+          </SessionFloatingLayout>
         </div>
       </div>
 

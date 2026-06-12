@@ -100,9 +100,29 @@ interface FileBrowserProps {
   onAddToChat?: (entry: FileEntry) => void
   /** 单击文件时在内联预览面板中显示（替代外部窗口预览） */
   onFilePreview?: (filePath: string) => void
+  /**
+   * 检视模式：单击文件仅选中并回调 onFileInspect，双击才触发 onFilePreview。
+   * 用于工作区文件 Navigator → Inspector 主从布局。
+   */
+  inspectMode?: boolean
+  onFileInspect?: (filePath: string) => void
+  onDirectoryInspect?: (dirPath: string) => void
+  /** 外部检视选中路径（高亮同步） */
+  inspectPath?: string | null
 }
 
-export function FileBrowser({ rootPath, hideToolbar, embedded, hideEmpty, onAddToChat, onFilePreview }: FileBrowserProps): React.ReactElement {
+export function FileBrowser({
+  rootPath,
+  hideToolbar,
+  embedded,
+  hideEmpty,
+  onAddToChat,
+  onFilePreview,
+  inspectMode,
+  onFileInspect,
+  onDirectoryInspect,
+  inspectPath,
+}: FileBrowserProps): React.ReactElement {
   const [entries, setEntries] = React.useState<FileEntry[]>([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -181,6 +201,11 @@ export function FileBrowser({ rootPath, hideToolbar, embedded, hideEmpty, onAddT
   React.useEffect(() => {
     loadRoot()
   }, [loadRoot, filesVersion])
+
+  React.useEffect(() => {
+    if (!inspectMode || !inspectPath) return
+    setSelectedPaths(new Set([inspectPath]))
+  }, [inspectMode, inspectPath])
 
   /** 选中项 */
   const handleSelect = React.useCallback((entry: FileEntry, event: React.MouseEvent) => {
@@ -339,6 +364,9 @@ export function FileBrowser({ rootPath, hideToolbar, embedded, hideEmpty, onAddT
           onClearSelection={() => setSelectedPaths(new Set())}
           onAddToChat={onAddToChat}
           onFilePreview={onFilePreview}
+          inspectMode={inspectMode}
+          onFileInspect={onFileInspect}
+          onDirectoryInspect={onDirectoryInspect}
         />
       ))}
     </div>
@@ -443,6 +471,9 @@ interface FileTreeItemProps {
   onClearSelection: () => void
   onAddToChat?: (entry: FileEntry) => void
   onFilePreview?: (filePath: string) => void
+  inspectMode?: boolean
+  onFileInspect?: (filePath: string) => void
+  onDirectoryInspect?: (dirPath: string) => void
 }
 
 function FileTreeItem({
@@ -469,6 +500,9 @@ function FileTreeItem({
   onClearSelection,
   onAddToChat,
   onFilePreview,
+  inspectMode,
+  onFileInspect,
+  onDirectoryInspect,
 }: FileTreeItemProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
   const [children, setChildren] = React.useState<FileEntry[]>([])
@@ -589,7 +623,17 @@ function FileTreeItem({
     if (isMulti) return
     if (entry.isDirectory) {
       void toggleDir()
+      if (inspectMode) onDirectoryInspect?.(entry.path)
+    } else if (inspectMode) {
+      onFileInspect?.(entry.path)
     } else {
+      onFilePreview?.(entry.path)
+    }
+  }
+
+  const handleDoubleClick = (e: React.MouseEvent): void => {
+    e.stopPropagation()
+    if (!entry.isDirectory) {
       onFilePreview?.(entry.path)
     }
   }
@@ -702,6 +746,7 @@ function FileTreeItem({
           zIndex: isSticky ? stickyZIndex : undefined,
         }}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
       >
         {/* sticky 行祖先链竖线，逻辑见 tree-row-layout.tsx 的 AncestorGuides */}
         {isSticky && <AncestorGuides depth={depth} isSelected={isSelected} />}
@@ -876,6 +921,9 @@ function FileTreeItem({
               onClearSelection={onClearSelection}
               onAddToChat={onAddToChat}
               onFilePreview={onFilePreview}
+              inspectMode={inspectMode}
+              onFileInspect={onFileInspect}
+              onDirectoryInspect={onDirectoryInspect}
             />
           ))}
         </div>
