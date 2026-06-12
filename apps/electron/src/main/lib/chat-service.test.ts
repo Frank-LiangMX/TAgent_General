@@ -10,13 +10,13 @@
  * 详见 docs/plans/2026-06-05-tagent-fusion-design.md §8.4
  */
 
-import { describe, expect, test, mock } from 'bun:test'
+import { describe, expect, test, vi } from 'vitest'
 
 // chat-service.ts 顶部 import 了 'electron' (WebContents) 和
 // 几个 fs/JSONL 模块，测试运行时拉不起来。mock 掉只测试我们关心的纯逻辑。
 // 注意：mock 必须覆盖所有 chat-service 传递依赖中可能出现的 electron 导出
 // （attachment-service 用 BrowserWindow/dialog, chat-tool-executor 也用 BrowserWindow）
-mock.module('electron', () => ({
+vi.mock('electron', () => ({
   WebContents: class {},
   BrowserWindow: class {
     static getAllWindows() { return [] }
@@ -32,7 +32,7 @@ mock.module('electron', () => ({
 }))
 
 // 文档解析器我们也 mock 掉，只测 chat-service 的注入逻辑（不测解析器本身）
-mock.module('./document-parser', () => ({
+vi.mock('./document-parser', () => ({
   isDocumentAttachment: (mediaType: string) =>
     mediaType.startsWith('text/') ||
     mediaType === 'application/pdf' ||

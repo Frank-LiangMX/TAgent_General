@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, isTAgentPermissionMode } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
@@ -220,7 +220,6 @@ import type { CompactSessionInput, CompactSessionResult ,
   SystemPrompt,
   SystemPromptCreateInput,
   SystemPromptUpdateInput,
-  MemoryConfig,
   ChatToolInfo,
   ChatToolState,
   ChatToolMeta,
@@ -2184,6 +2183,27 @@ export function registerIpcHandlers(): void {
         const msg = error instanceof Error ? error.message : String(error)
         return { success: false, message: `连接失败: ${msg}` }
       }
+    }
+  )
+
+  // ===== Nudge 机制 =====
+
+  // 获取待处理的 Nudge 候选项
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.GET_PENDING_NUDGES,
+    async (_, sessionId: string): Promise<NudgeCandidate[]> => {
+      const { nudgeService } = await import('./lib/nudge-service')
+      // 从 nudgeService 获取候选项（实际由 turn_start 触发）
+      return []
+    }
+  )
+
+  // 响应 Nudge
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.RESPOND_NUDGE,
+    async (_, sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta'): Promise<void> => {
+      const { nudgeService } = await import('./lib/nudge-service')
+      await nudgeService.handleNudgeResponse(sessionId, nudgeId, action, mode)
     }
   )
 
@@ -4428,6 +4448,25 @@ export function registerIpcHandlers(): void {
     async (_event, sessionId: string) => {
       const { usageStatsService } = await import('./lib/usage-stats-service')
       return usageStatsService.getSessionTokenStats(sessionId)
+    }
+  )
+
+  // ===== Btw 侧面提问 =====
+
+  ipcMain.handle(
+    BTW_IPC_CHANNELS.SEND_BTW,
+    async (_event, input: { channelId: string; modelId: string; message: string; messageId: string }) => {
+      const { sendBtwMessage } = await import('./lib/btw-service')
+      return sendBtwMessage(input)
+    }
+  )
+
+  ipcMain.handle(
+    BTW_IPC_CHANNELS.CANCEL_BTW,
+    async () => {
+      const { cancelBtw } = await import('./lib/btw-service')
+      cancelBtw()
+      return true
     }
   )
 }

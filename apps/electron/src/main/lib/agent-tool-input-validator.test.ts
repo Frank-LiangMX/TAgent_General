@@ -4,7 +4,7 @@
  * 工具参数校验：拦截 canUseTool 阶段的缺参调用。
  */
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'vitest'
 
 import {
   validateToolInput,

@@ -23,7 +23,7 @@ import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { RailItem, TARailItem } from '@/atoms/app-mode'
 import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
 
-import { appModeAtom, type AppMode, topLevelModeAtom } from '@/atoms/app-mode'
+import { appModeAtom, selectedCapabilityAtom, type AppMode, topLevelModeAtom } from '@/atoms/app-mode'
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
@@ -88,6 +88,7 @@ import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { SkillsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
+import { SidebarCollapseButton } from '@/components/app-shell/SidebarCollapseButton'
 import { UserAvatar } from '@/components/chat/UserAvatar'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
@@ -171,6 +172,8 @@ export interface LeftSidebarProps {
   collapsed?: boolean
   /** 折叠状态变更回调 */
   onCollapsedChange?: (collapsed: boolean) => void
+  /** 切换折叠（仅会话页可收起） */
+  onToggleSidebar?: () => void
 }
 
 /** 侧边栏导航项标识 */
@@ -269,7 +272,36 @@ function SidebarWindowDragStrip({ height }: { height: number }): React.ReactElem
   )
 }
 
-export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onCollapsedChange }: LeftSidebarProps): React.ReactElement | null {
+/** 与 Rail 首个按钮（size-10）齐平的顶栏控件样式 */
+const SIDEBAR_TOP_CONTROL_CLASS =
+  'h-10 rounded-[12px] border border-border/40 bg-primary/5 text-[11px] text-foreground/70 transition-colors duration-100 hover:border-border/70 hover:bg-primary/10 titlebar-no-drag'
+
+/** 侧栏顶栏行：对齐 Rail 的 py-2 +（Win h-2）+ size-10 */
+function SidebarTopControlsRow({
+  isMac,
+  children,
+}: {
+  isMac: boolean
+  children: React.ReactNode
+}): React.ReactElement {
+  return (
+    <div className="relative shrink-0 px-3">
+      {!isMac ? <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} /> : null}
+      {!isMac ? <div className="h-2 shrink-0" aria-hidden /> : null}
+      <div className="flex h-10 items-center gap-1.5 pb-1 pt-2">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function LeftSidebar({
+  width,
+  activeRailItem = 'sessions',
+  collapsed,
+  onCollapsedChange,
+  onToggleSidebar,
+}: LeftSidebarProps): React.ReactElement | null {
   const [activeView, setActiveView] = useAtom(activeViewAtom)
   const setSettingsTab = useSetAtom(settingsTabAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
@@ -451,6 +483,32 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
       .then(setCapabilities)
       .catch(console.error)
   }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
+
+  const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
+
+  // 进入 Skills / 切换工作区时：校验选中项，无效则自动选中第一项
+  React.useEffect(() => {
+    if (topLevelMode !== 'general' || activeRailItem !== 'skills' || !capabilities) {
+      return
+    }
+    if (selectedCapability) {
+      const stillValid = selectedCapability.type === 'mcp'
+        ? capabilities.mcpServers.some((s) => s.name === selectedCapability.key)
+        : capabilities.skills.some((s) => s.slug === selectedCapability.key)
+      if (stillValid) return
+    }
+    const firstMcp = capabilities.mcpServers[0]
+    if (firstMcp) {
+      setSelectedCapability({ type: 'mcp', key: firstMcp.name })
+      return
+    }
+    const firstSkill = capabilities.skills[0]
+    if (firstSkill) {
+      setSelectedCapability({ type: 'skill', key: firstSkill.slug })
+    } else {
+      setSelectedCapability(null)
+    }
+  }, [topLevelMode, activeRailItem, capabilities, selectedCapability, setSelectedCapability, currentWorkspaceSlug])
 
   /** 置顶对话列表（排除 draft，归档由底部 Popover 展示） */
   const pinnedConversations = React.useMemo(
@@ -1151,54 +1209,40 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
   return (
     <div
       className={cn(
-        'relative h-full flex flex-col bg-background rounded-2xl shadow-xl overflow-hidden',
-        'transition-[width,opacity,margin-left] duration-300 ease-in-out',
-        isSidebarCollapsed
-          ? 'opacity-0 pointer-events-none ml-0'
-          : 'opacity-100 ml-2',
+        'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
+        'transition-[width,opacity] duration-300 ease-in-out',
+        isSidebarCollapsed && 'w-0 min-w-0 opacity-0 pointer-events-none overflow-hidden',
       )}
       style={{
         width: isSidebarCollapsed ? 0 : (width ?? 240),
-        minWidth: 0,
-        flexShrink: 0,
       }}
     >
-      <SidebarWindowDragStrip
-        height={isMac ? SIDEBAR_DRAG_STRIP_HEIGHT.expandedMac : SIDEBAR_DRAG_STRIP_HEIGHT.expanded}
-      />
+      {/* Win：无顶栏控件时仍保留拖拽条（如 Skills） */}
+      {!isMac
+        && !isSidebarCollapsed
+        && activeRailItem !== 'sessions'
+        && activeRailItem !== 'files' ? (
+        <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} />
+      ) : null}
 
-      {/* macOS 需要避开左上角红绿灯；边栏覆盖全局标题栏拖拽层，因此留白自身也要可拖拽。 */}
-      <div className={cn('w-full flex-shrink-0 titlebar-drag-region', isMac ? 'h-[30px]' : 'h-1')} />
-
-      {/* 功能区标题：静态文字标识当前选中内容。
-          通用模式：会话/文件/Skills；TA 模式：标题由 TASidebar 内部渲染，避免重复。 */}
-      {topLevelMode !== 'ta' && (
-        <div className="titlebar-drag-region flex items-center px-3 h-8">
-          <span className="text-xs font-medium text-muted-foreground">
-            {activeRailItem === 'sessions' && '会话'}
-            {activeRailItem === 'files' && '文件'}
-            {activeRailItem === 'skills' && 'Skills'}
-          </span>
-        </div>
-      )}
-
-      {/* 工作区选择（仅通用模式 + Agent 子模式 + 目录区展开时；Skills 视图里不再显示） */}
-      {mode === 'agent' && topLevelMode === 'general' && !isSidebarCollapsed && activeRailItem !== 'skills' && (
-        <div className="px-3 pb-1 flex-shrink-0">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
-              >
-                <span className="flex items-center gap-1.5 min-w-0">
-                  <FolderOpen size={12} className="flex-shrink-0 text-foreground/40" />
-                  <span className="truncate font-medium">
-                    {currentWorkspaceName ?? '选择工作区'}
+      {/* 会话页顶栏：工作区选择 + 右侧折叠按钮 */}
+      {!isSidebarCollapsed && activeRailItem === 'sessions' && onToggleSidebar ? (
+        <SidebarTopControlsRow isMac={isMac}>
+          {mode === 'agent' && topLevelMode === 'general' ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className={cn(SIDEBAR_TOP_CONTROL_CLASS, 'flex min-w-0 flex-1 items-center justify-between gap-1.5 px-2.5')}
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <FolderOpen size={12} className="shrink-0 text-foreground/40" />
+                    <span className="truncate font-medium">
+                      {currentWorkspaceName ?? '选择工作区'}
+                    </span>
                   </span>
-                </span>
-                <ChevronDown size={12} className="flex-shrink-0 text-foreground/40" />
-              </button>
-            </PopoverTrigger>
+                  <ChevronDown size={12} className="shrink-0 text-foreground/40" />
+                </button>
+              </PopoverTrigger>
             <PopoverContent
               side="bottom"
               align="start"
@@ -1251,9 +1295,93 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
                 )}
               </div>
             </PopoverContent>
+            </Popover>
+          ) : (
+            <div className="min-w-0 flex-1" aria-hidden />
+          )}
+          <SidebarCollapseButton
+            collapsed={false}
+            placement="sidebar"
+            onClick={onToggleSidebar}
+          />
+        </SidebarTopControlsRow>
+      ) : null}
+
+      {/* 文件页：仅工作区选择（不可折叠） */}
+      {!isSidebarCollapsed
+        && activeRailItem === 'files'
+        && mode === 'agent'
+        && topLevelMode === 'general' ? (
+        <SidebarTopControlsRow isMac={isMac}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(SIDEBAR_TOP_CONTROL_CLASS, 'flex w-full items-center justify-between gap-1.5 px-2.5')}
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <FolderOpen size={12} className="shrink-0 text-foreground/40" />
+                  <span className="truncate font-medium">
+                    {currentWorkspaceName ?? '选择工作区'}
+                  </span>
+                </span>
+                <ChevronDown size={12} className="shrink-0 text-foreground/40" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="bottom"
+              align="start"
+              sideOffset={4}
+              className="w-64 overflow-hidden p-0"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-foreground/50">
+                  切换工作区
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceManagerOpen(true)}
+                  className="text-[11px] text-primary/70 transition-colors hover:text-primary titlebar-no-drag"
+                >
+                  管理 →
+                </button>
+              </div>
+              <div className="max-h-[50vh] overflow-y-auto p-1 scrollbar-thin">
+                {workspaces.length === 0 ? (
+                  <div className="py-3 text-center text-[12px] text-foreground/40">
+                    暂无工作区
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-0.5">
+                    {workspaces.map((ws) => {
+                      const isActive = ws.id === currentWorkspaceId
+                      return (
+                        <button
+                          key={ws.id}
+                          type="button"
+                          onClick={() => selectWorkspace(ws.id)}
+                          className={cn(
+                            'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors duration-100',
+                            isActive
+                              ? 'bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+                              : 'text-foreground/70 hover:bg-foreground/[0.04]',
+                          )}
+                        >
+                          <FolderOpen size={13} className="shrink-0 text-foreground/40" />
+                          <span className="min-w-0 flex-1 truncate font-medium">{ws.name}</span>
+                          {isActive ? (
+                            <Check size={12} className="shrink-0 text-primary" />
+                          ) : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
           </Popover>
-        </div>
-      )}
+        </SidebarTopControlsRow>
+      ) : null}
 
       {/* 新对话/新会话按钮 + 搜索按钮（仅会话功能区显示） */}
       {activeRailItem === 'sessions' && (
@@ -1279,8 +1407,13 @@ export function LeftSidebar({ width, activeRailItem = 'sessions', collapsed, onC
         </div>
       )}
 
-      {/* 功能区内容 */}
-      {renderRailContent()}
+      {/* 功能区内容：切换 Rail 时淡入，避免侧栏翼内容突变生硬 */}
+      <div
+        key={activeRailItem}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200"
+      >
+        {renderRailContent()}
+      </div>
 
       {/* 已归档 Popover 入口：固定在底部，点击展开成完整列表（不切换整页 viewMode） */}
       {activeRailItem === 'sessions' && (
@@ -1565,7 +1698,7 @@ function SessionsRailContent({
 
 /** 文件功能区内容 —— 工作区文件树（已从 RightSidePanel 迁出） */
 function FilesRailContent({ workspaceKey }: { workspaceKey: string }): React.ReactElement {
-  return <WorkspaceFilesView workspaceKey={workspaceKey} />
+  return <WorkspaceFilesView workspaceKey={workspaceKey} layout="navigator" />
 }
 
 /** Skills 功能区内容 —— MCP server 列表 + Skills 列表 + 能力计数 */
@@ -1693,16 +1826,16 @@ const ConversationItem = React.memo(function ConversationItem({
             startEdit()
           }}
           className={cn(
-            'group relative w-full flex items-center gap-2 px-3 py-[7px] rounded-md transition-colors duration-100 titlebar-no-drag text-left',
+            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-all duration-150 titlebar-no-drag text-left',
             active
-              ? 'session-item-selected bg-primary/10 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-              : 'hover:bg-primary/5'
+              ? 'session-item-selected session-glass session-glass-sidebar'
+              : 'rounded-md hover:bg-primary/5'
           )}
         >
           {/* 流式状态左侧竖线条（与 Agent 保持一致） */}
           {streaming && (
             <span
-              className="absolute left-1 top-1.5 bottom-1.5 w-[2px] rounded-full bg-blue-500 animate-pulse pointer-events-none"
+              className="session-sidebar-accent left-1.5 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500 animate-pulse pointer-events-none"
               aria-hidden="true"
             />
           )}
@@ -1783,10 +1916,10 @@ const ConversationItem = React.memo(function ConversationItem({
 /** 会话行左侧状态色块的颜色 — 与 SessionIndicatorStatus 呼应 */
 type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary'
 const SESSION_LEFT_ACCENT_CLASS: Record<SessionLeftAccent, string> = {
-  orange: 'border-orange-500',
-  blue: 'border-blue-500',
-  green: 'border-green-500',
-  primary: 'border-primary',
+  orange: 'bg-orange-500',
+  blue: 'bg-blue-500',
+  green: 'bg-green-500',
+  primary: 'bg-primary',
 }
 
 interface AgentSessionItemProps {
@@ -1953,17 +2086,17 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             startEdit()
           }}
           className={cn(
-            'group relative w-full flex items-center gap-2 px-3 py-[7px] rounded-md transition-colors duration-100 titlebar-no-drag text-left',
+            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-all duration-150 titlebar-no-drag text-left',
             leftAccent && 'pl-5',
             active
-              ? 'session-item-selected bg-primary/10 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-              : 'hover:bg-primary/5'
+              ? 'session-item-selected session-glass session-glass-sidebar'
+              : 'rounded-md hover:bg-primary/5'
           )}
         >
           {leftAccent && (
             <span
               className={cn(
-                'absolute left-1 top-2 bottom-2 w-0 border-l-[3px] rounded-full pointer-events-none',
+                'session-sidebar-accent left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
                 SESSION_LEFT_ACCENT_CLASS[leftAccent]
               )}
             />

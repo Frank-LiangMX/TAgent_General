@@ -31,6 +31,7 @@ import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
+import { SessionFloatingLayout } from '@/components/layout/SessionFloatingLayout'
 
 import type { AgentContextStatus, SubagentEagerness } from '@/atoms/agent-atoms'
 import type { AgentSendInput, AgentPendingFile, FileDialogLargeFile, ModelOption, SDKMessage } from '@tagent/shared'
@@ -2255,48 +2256,22 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         {/* Agent Header */}
         <AgentHeader sessionId={sessionId} />
 
-        {/* 消息区域 */}
-        <AgentMessages
-          sessionId={sessionId}
-          sessionModelId={agentModelId || undefined}
-          messagesLoaded={messagesLoaded}
-          persistedSDKMessages={persistedSDKMessages}
-          streaming={streaming}
-          streamState={streamState}
-          liveMessages={liveMessages}
-          sessionPath={sessionPath}
-          attachedDirs={allAttachedDirs}
-          stoppedByUser={stoppedByUser}
-          onRetry={handleRetry}
-          onRetryInNewSession={handleRetryInNewSession}
-          onFork={handleFork}
-          onRewind={handleRewindRequest}
-          onCompact={handleCompact}
-        />
-
-        {/* 权限请求横幅 */}
-        <PermissionBanner sessionId={sessionId} />
-
-        {/* AskUserQuestion 交互式问答横幅 */}
-        <AskUserBanner sessionId={sessionId} />
-
-        {/* ExitPlanMode 计划审批横幅 */}
-        <ExitPlanModeBanner sessionId={sessionId} />
-
-        {/* 输入区域 — 交互横幅显示时隐藏，由横幅替代 */}
-        {!hasBannerOverlay && (
-        <div className="relative px-2.5 pb-2.5 md:px-[18px] md:pb-[18px]" data-input-mode="agent">
-          {/* 侧面提问按钮 + 面板 — 在输入框正上方右侧 */}
-          <div className="absolute bottom-full right-[18px] mb-2 z-50">
-            <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
-            <BtwPanel />
-          </div>
-          <div
-            className={cn(
-              'relative rounded-[17px] border-[0.5px] border-border bg-background/70 backdrop-blur-sm transition-all duration-200',
-              (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
-              isDragOver && 'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
-            )}
+        <SessionFloatingLayout
+          bottom={
+            <>
+              <PermissionBanner sessionId={sessionId} />
+              {!hasBannerOverlay && (
+              <div className="session-input-dock relative px-2.5 pb-1 md:px-[18px] md:pb-2.5" data-input-mode="agent">
+                <div className="absolute bottom-full right-[18px] mb-2 z-50">
+                  <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
+                  <BtwPanel />
+                </div>
+                <div
+                  className={cn(
+                    'session-glass chat-input-glass transition-all duration-200',
+                    (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
+                    isDragOver && 'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                  )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -2400,9 +2375,33 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
             {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
             <InputToolbarOverflow items={inputToolbarItems} trailing={inputTrailingNode} />
-          </div>
-        </div>
-        )}
+                </div>
+              </div>
+              )}
+              <AskUserBanner sessionId={sessionId} />
+              <ExitPlanModeBanner sessionId={sessionId} />
+            </>
+          }
+        >
+          <AgentMessages
+            sessionId={sessionId}
+            sessionModelId={agentModelId || undefined}
+            messagesLoaded={messagesLoaded}
+            persistedSDKMessages={persistedSDKMessages}
+            streaming={streaming}
+            streamState={streamState}
+            liveMessages={liveMessages}
+            sessionPath={sessionPath}
+            attachedDirs={allAttachedDirs}
+            stoppedByUser={stoppedByUser}
+            onRetry={handleRetry}
+            onRetryInNewSession={handleRetryInNewSession}
+            onFork={handleFork}
+            onRewind={handleRewindRequest}
+            onCompact={handleCompact}
+            floatingInput
+          />
+        </SessionFloatingLayout>
 
         {/* Token 统计面板 — 仅通用模式显示 */}
         <TokenStatsPanel />

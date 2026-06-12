@@ -248,7 +248,7 @@ export function FileSearchBar({
 
       {/* 结果浮层（绝对定位，不影响布局） */}
       {isOpen && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border bg-popover shadow-lg overflow-hidden">
+        <div className="session-glass-surface session-glass-popover absolute left-0 right-0 top-full mt-1 z-50 overflow-hidden">
           <div className="max-h-[200px] overflow-y-auto scrollbar-thin">
             {/* 会话文件分组 */}
             {sessionResults.length > 0 && (

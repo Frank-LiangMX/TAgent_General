@@ -269,7 +269,8 @@ function createWindow(): void {
   const titleBarOptions = isMac
     ? {
         titleBarStyle: 'hiddenInset' as const,
-        trafficLightPosition: { x: 18, y: 18 },
+        /* 与 shell p-2 + NavIsland chrome 左翼对齐 */
+        trafficLightPosition: { x: 16, y: 16 },
         vibrancy: 'under-window' as const,
         visualEffectState: 'followWindow' as const,
       }
@@ -300,7 +301,7 @@ function createWindow(): void {
   // Load the renderer
   const isDev = !app.isPackaged
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.loadURL('http://127.0.0.1:5173')
     mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'))
@@ -475,6 +476,16 @@ async function bootstrap(): Promise<void> {
 
   // 启动 Chat 工具配置文件监听（Agent 创建工具后自动通知渲染进程）
   safeRun('startChatToolsWatcher', startChatToolsWatcher)
+
+  // 初始化记忆自进化服务
+  safeRun('initializeMemoryServices', () => {
+    const { memoryLayerService } = require('./lib/memory-layer-service')
+    const { reflectService } = require('./lib/reflect-service')
+    const { scheduledCleanupService } = require('./lib/scheduled-cleanup-service')
+    memoryLayerService.initialize()
+    reflectService.initialize()
+    scheduledCleanupService.initialize()
+  })
 
   // 生产环境下初始化自动更新
   if (app.isPackaged && mainWindow) {

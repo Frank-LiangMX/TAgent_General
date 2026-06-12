@@ -92,11 +92,9 @@ export function BtwFloatingTrigger({
             size="sm"
             onClick={handleClick}
             className={cn(
-              'gap-1.5 h-6 px-2.5',
-              'text-muted-foreground hover:text-primary',
-              'bg-background/70 backdrop-blur-sm',
-              'border border-dashed border-muted-foreground/25 hover:border-primary/50',
-              'rounded-md',
+              'gap-1.5 h-6 px-2.5 rounded-md',
+              'session-glass session-glass-chip session-glass-chip-dashed',
+              'text-foreground/55 dark:text-foreground/68 hover:text-primary',
               'shadow-none hover:shadow-sm',
               'transition-all duration-200'
             )}

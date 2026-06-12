@@ -14,6 +14,7 @@ import {
   SettingsCard,
   SettingsRow,
   SettingsSegmentedControl,
+  SettingsToggle,
 } from './primitives'
 
 import type { ThemeMode, ThemeStyle, MarkdownFontSize } from '../../../types'
@@ -25,6 +26,10 @@ import themeForestNight from '@/assets/theme-previews/theme-forest-night.webp'
 import themeMorandiNight from '@/assets/theme-previews/theme-morandi-night.webp'
 import themeOceanDark from '@/assets/theme-previews/theme-ocean-dark.webp'
 import themeOceanLight from '@/assets/theme-previews/theme-ocean-light.webp'
+import {
+  advancedMaterialEnabledAtom,
+  updateAdvancedMaterialEnabled,
+} from '@/atoms/advanced-material'
 import {
   markdownFontSizeAtom,
   updateMarkdownFontSize,
@@ -134,6 +139,7 @@ export function AppearanceSettings(): React.ReactElement {
   const [themeStyle, setThemeStyle] = useAtom(themeStyleAtom)
   const systemIsDark = useAtomValue(systemIsDarkAtom)
   const [markdownFontSize, setMarkdownFontSize] = useAtom(markdownFontSizeAtom)
+  const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
 
   /** 切换主题模式 */
   const handleThemeChange = React.useCallback((value: string) => {
@@ -164,6 +170,12 @@ export function AppearanceSettings(): React.ReactElement {
     setMarkdownFontSize(size)
     updateMarkdownFontSize(size)
   }, [setMarkdownFontSize])
+
+  /** 切换高级材质（高透 / 磨砂玻璃） */
+  const handleAdvancedMaterialChange = React.useCallback((checked: boolean) => {
+    setAdvancedMaterialEnabled(checked)
+    void updateAdvancedMaterialEnabled(checked)
+  }, [setAdvancedMaterialEnabled])
 
   return (
     <div className="space-y-6">
@@ -207,6 +219,13 @@ export function AppearanceSettings(): React.ReactElement {
             value={markdownFontSize}
             onValueChange={handleMarkdownFontSizeChange}
             options={MARKDOWN_FONT_SIZE_OPTIONS}
+          />
+
+          <SettingsToggle
+            label="高级材质"
+            description="开启为高透玻璃；关闭为轻量磨砂（适度模糊 + 半透明），无折射伪元素，低配机更流畅"
+            checked={advancedMaterialEnabled}
+            onCheckedChange={handleAdvancedMaterialChange}
           />
         </SettingsCard>
       </SettingsSection>

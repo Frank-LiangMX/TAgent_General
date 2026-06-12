@@ -55,6 +55,7 @@ import {
   sessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
+import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
@@ -1200,6 +1201,77 @@ export function useGlobalAgentListeners(): void {
         .catch(console.error)
     })
 
+    // ===== 5. Nudge 事件 =====
+    const cleanupNudge = window.electronAPI.onNudgeEvent((event) => {
+      if (event.type === 'nudge_candidates' && event.nudge) {
+        // 获取当前会话的 mode
+        const sessions = store.get(agentSessionsAtom)
+        const currentSession = sessions.find((s) => s.id === store.get(currentAgentSessionIdAtom))
+        const mode = currentSession?.mode === 'ta' ? 'ta' : 'general'
+        // 显示 Nudge toast
+        import('@/components/memory/NudgeToast').then(({ showNudgeToast }) => {
+          showNudgeToast(event.nudge, store.get(currentAgentSessionIdAtom) || '', mode)
+        }).catch(console.error)
+      }
+    })
+
+    // ===== 5.5 TA 意图提示事件 =====
+    const cleanupTAIntent = window.electronAPI.onTAIntentPrompt((event) => {
+      // 显示提示 toast，引导用户前往 TA 模式或 Agent 设置
+      toast.info('TA 工具建议', {
+        description: event.prompt,
+        duration: 8000,
+        action: event.reason === 'not_installed' ? {
+          label: '前往 TA 模式',
+          onClick: () => {
+            // 切换到 TA 模式
+            import('@/atoms/app-mode').then(({ topLevelModeAtom }) => {
+              store.set(topLevelModeAtom, 'ta')
+            }).catch(console.error)
+          },
+        } : {
+          label: '前往设置',
+          onClick: () => {
+            // 打开 Agent 设置（MCP 在 Agent 设置内）
+            store.set(settingsOpenAtom, true)
+            store.set(settingsTabAtom, 'agent')
+          },
+        },
+      })
+    })
+
+    // ===== 5.6 BTW 侧面提问事件 =====
+    const cleanupBtw = window.electronAPI.onBtwEvent((event) => {
+      import('@/atoms/btw-atoms').then(({ btwMessagesAtom, btwStreamingAtom }) => {
+        if (event.type === 'text' && event.text) {
+          // 追加文本到对应消息
+          store.set(btwMessagesAtom, (prev) =>
+            prev.map((m) =>
+              m.id === event.messageId ? { ...m, content: m.content + event.text } : m
+            )
+          )
+        } else if (event.type === 'complete') {
+          // 标记流式结束
+          store.set(btwMessagesAtom, (prev) =>
+            prev.map((m) =>
+              m.id === event.messageId ? { ...m, streaming: false } : m
+            )
+          )
+          store.set(btwStreamingAtom, false)
+        } else if (event.type === 'error') {
+          // 处理错误
+          store.set(btwMessagesAtom, (prev) =>
+            prev.map((m) =>
+              m.id === event.messageId
+                ? { ...m, streaming: false, content: m.content || `错误: ${event.error}` }
+                : m
+            )
+          )
+          store.set(btwStreamingAtom, false)
+        }
+      }).catch(console.error)
+    })
+
     // 定期清理 60s 前的「最近修改」标记，避免 atom 无限增长
     const pruneTimer = setInterval(() => {
       const cutoff = Date.now() - RECENTLY_MODIFIED_TTL_MS
@@ -1290,6 +1362,9 @@ export function useGlobalAgentListeners(): void {
       cleanupComplete()
       cleanupError()
       cleanupTitleUpdated()
+      cleanupNudge()
+      cleanupTAIntent()
+      cleanupBtw()
       clearInterval(pruneTimer)
       window.removeEventListener('focus', onWindowFocus)
     }

@@ -9,7 +9,7 @@
  * 测试时把内存数据作为 ds 传入，避免跨文件 mock.module 泄漏。
  */
 
-import { describe, expect, test, beforeEach, mock } from 'bun:test'
+import { describe, expect, test, beforeEach, vi } from 'vitest'
 
 import type { ChannelDataSource } from './bridge-model-utils'
 import type { Channel, ChannelModel } from '@tagent/shared'
@@ -17,7 +17,7 @@ import type { Channel, ChannelModel } from '@tagent/shared'
 // bridge-model-utils.ts 通过 channel-manager.ts 间接依赖 'electron' (safeStorage)。
 // 单元测试不需要 channel-manager 的真实实现（用注入式 testDataSource 即可），
 // 但模块加载阶段仍然会拉 electron，所以也要 mock 掉。
-mock.module('electron', () => ({
+vi.mock('electron', () => ({
   safeStorage: {
     isEncryptionAvailable: () => false,
     encryptString: (s: string) => Buffer.from(s, 'utf-8'),

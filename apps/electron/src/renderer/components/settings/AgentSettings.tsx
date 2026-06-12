@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
 import { McpServerForm } from './McpServerForm'
+import { BuiltinMcpRecommendations } from './BuiltinMcpRecommendations'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 import { SkillFilesPanel } from './SkillFilesPanel'
 
@@ -521,8 +522,27 @@ ${skillList}
 
         {/* ===== MCP Tab ===== */}
         <TabsContent value="mcp" className="mt-4 space-y-4">
+          {/* 推荐 MCP */}
+          <SettingsSection title="推荐 MCP" description="常用 MCP 服务器，一键安装">
+            <BuiltinMcpRecommendations
+              installedMcps={serverEntries.map(([name]) => name)}
+              workspaceSlug={workspaceSlug}
+              onInstall={(mcp) => {
+                // 构建默认配置并打开编辑表单
+                const entry: McpServerEntry = {
+                  type: 'stdio',
+                  command: mcp.installCommand,
+                  args: mcp.installArgs,
+                  enabled: false,
+                }
+                setEditingServer({ name: mcp.name, entry })
+                setViewMode('create')
+              }}
+            />
+          </SettingsSection>
+
           <SettingsSection
-            title="MCP 服务器"
+            title="已配置 MCP"
             description={`当前工作区: ${currentWorkspace.name}`}
             action={
               <div className="flex items-center gap-2">
@@ -548,8 +568,8 @@ ${skillList}
               <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
             ) : serverEntries.length === 0 ? (
               <SettingsCard divided={false}>
-                <div className="text-sm text-muted-foreground py-12 text-center">
-                  还没有配置任何 MCP 服务器，点击上方&ldquo;添加服务器&rdquo;开始
+                <div className="text-sm text-muted-foreground py-8 text-center">
+                  还没有配置任何 MCP 服务器，点击上方&ldquo;推荐 MCP&rdquo;区域的安装按钮快速添加
                 </div>
               </SettingsCard>
             ) : (

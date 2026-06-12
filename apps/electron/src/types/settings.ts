@@ -168,6 +168,9 @@ export type MarkdownFontSize = 'small' | 'medium' | 'large'
 /** 默认 Markdown 字号档位 */
 export const DEFAULT_MARKDOWN_FONT_SIZE: MarkdownFontSize = 'medium'
 
+/** 默认启用高级材质（高透玻璃）；关闭时为低透磨砂玻璃 */
+export const DEFAULT_ADVANCED_MATERIAL_ENABLED = true
+
 /** 应用设置 */
 export interface AppSettings {
   /** 主题模式 */
@@ -225,6 +228,8 @@ export interface AppSettings {
   stickyUserMessageEnabled?: boolean
   /** Markdown 预览字号档位（默认 'medium'，对应 15px） */
   markdownFontSize?: MarkdownFontSize
+  /** 高级材质：true = 高透玻璃，false = 低透磨砂玻璃 */
+  advancedMaterialEnabled?: boolean
   /** 上次是否在 Scratch Pad 页（用于重启恢复） */
   scratchPadActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */

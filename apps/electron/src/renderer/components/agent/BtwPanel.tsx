@@ -11,7 +11,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare } from 'lucide-react'
+import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -43,6 +43,7 @@ export function BtwPanel(): React.ReactElement | null {
 
   const [input, setInput] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const [isClosing, setIsClosing] = React.useState(false)
 
   // 自动滚动到底部
   React.useEffect(() => {
@@ -52,9 +53,14 @@ export function BtwPanel(): React.ReactElement | null {
     }
   }, [messages, open])
 
-  // 关闭面板
+  // 关闭面板 — 带动画
   const handleClose = () => {
-    setOpen(false)
+    setIsClosing(true)
+    // 等待收缩动画完成后再真正关闭
+    setTimeout(() => {
+      setOpen(false)
+      setIsClosing(false)
+    }, 280) // 与 btw-panel-collapse 动画时长一致
   }
 
   // 分叉到新会话：把当前 btw Q&A 作为新 Agent 会话的第一组消息
@@ -114,7 +120,7 @@ export function BtwPanel(): React.ReactElement | null {
   }, [streaming, messages, channelId, modelId, sourceSessionId, openSession, setOpen, setMessages])
 
   // 不显示条件：open=false 直接返回 null（必须在所有 Hook 调用之后）
-  if (!open) return null
+  if (!open && !isClosing) return null
 
   // 发送消息
   const handleSend = async () => {
@@ -173,29 +179,14 @@ export function BtwPanel(): React.ReactElement | null {
   }
 
   return (
-    <>
-      {/* 遮罩层 — 点击关闭，z-index 低于面板 */}
-      <div
-        className={cn(
-          'fixed inset-0 transition-opacity duration-300',
-          open ? 'opacity-100 z-40' : 'opacity-0 pointer-events-none z-[-1]'
-        )}
-        onClick={handleClose}
-      />
-
-      {/* 面板 — 液态玻璃效果，从按钮位置向上展开 */}
-      <div
-        className={cn(
-          'btw-panel-glass',
-          'absolute w-[360px] flex flex-col overflow-hidden z-50',
-          'bottom-full right-0 mb-2',
-          'origin-bottom-right',
-          'transition-all duration-300',
-          open
-            ? 'scale-100 opacity-100 translate-y-0'
-            : 'scale-90 opacity-0 translate-y-4 pointer-events-none'
-        )}
-      >
+    <div
+      className={cn(
+        'btw-panel-glass',
+        'absolute w-[360px] max-h-[min(70vh,520px)] flex flex-col overflow-hidden z-50',
+        'bottom-full right-0 mb-2',
+        isClosing ? 'btw-panel-exit' : 'btw-panel-enter'
+      )}
+    >
         {/* Header */}
         <div className="flex items-center justify-between pl-4 pr-3 pt-3 pb-2.5 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -204,26 +195,54 @@ export function BtwPanel(): React.ReactElement | null {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-medium text-sm leading-tight text-foreground/90">侧面提问</span>
-              <span className="text-[11px] text-foreground/50 leading-tight">点击面板外关闭</span>
+              <span className="text-[11px] text-foreground/50 leading-tight">不进入主对话历史</span>
             </div>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
-                onClick={handleFork}
-                disabled={streaming || messages.length === 0}
-                aria-label="分叉到新会话"
-              >
-                <ArrowUpRightFromSquare size={14} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">分叉到新会话（继承主会话上下文）</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            {/* 关闭按钮 — 向下箭头，点击收缩关闭 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'h-7 w-7 rounded-lg text-foreground/50 hover:text-foreground',
+                    'hover:bg-white/20 dark:hover:bg-white/10',
+                    'transition-all duration-200',
+                    'group'
+                  )}
+                  onClick={handleClose}
+                  aria-label="关闭面板"
+                >
+                  <ChevronDown
+                    size={16}
+                    className="transition-transform duration-200 group-hover:translate-y-0.5"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">关闭</p>
+              </TooltipContent>
+            </Tooltip>
+            {/* 分叉按钮 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+                  onClick={handleFork}
+                  disabled={streaming || messages.length === 0}
+                  aria-label="分叉到新会话"
+                >
+                  <ArrowUpRightFromSquare size={14} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">分叉到新会话（继承主会话上下文）</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Messages — 有内容时才显示滚动条 */}
@@ -275,14 +294,14 @@ export function BtwPanel(): React.ReactElement | null {
 
         {/* Input */}
         <div className="p-3 shrink-0">
-          <div className="flex items-end gap-2 rounded-xl bg-white/20 dark:bg-white/10 backdrop-blur-sm p-1.5 transition-colors focus-within:bg-white/30 dark:focus-within:bg-white/15">
+          <div className="btw-input-glass flex items-end gap-2 rounded-xl bg-background/35 dark:bg-background/25 backdrop-blur-sm border border-border/50 shadow-sm p-1.5 transition-colors focus-within:bg-background/45 dark:focus-within:bg-background/34 focus-within:border-border/70">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="输入问题..."
               rows={1}
-              className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-sm leading-relaxed placeholder:text-foreground/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
+              className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/45 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
               disabled={streaming}
               onInput={(e) => {
                 const target = e.currentTarget
@@ -309,7 +328,6 @@ export function BtwPanel(): React.ReactElement | null {
             </Button>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   )
 }

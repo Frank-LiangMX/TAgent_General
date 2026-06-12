@@ -28,7 +28,66 @@ export const MEMORY_IPC_CHANNELS = {
   SET_CONFIG: 'memory:set-config',
   /** 测试记忆连接 */
   TEST_CONNECTION: 'memory:test-connection',
+  // ===== Nudge 相关 =====
+  /** 获取待处理的 Nudge 候选项 */
+  GET_PENDING_NUDGES: 'memory:get-pending-nudges',
+  /** 响应 Nudge */
+  RESPOND_NUDGE: 'memory:respond-nudge',
+  /** Nudge 事件通知 */
+  NUdge_EVENT: 'memory:nudge-event',
 } as const
+
+/**
+ * TA 意图检测 IPC 通道常量
+ */
+export const TA_INTENT_IPC_CHANNELS = {
+  /** TA 意图提示事件 */
+  TA_INTENT_PROMPT: 'agent:ta-intent-prompt',
+} as const
+
+/**
+ * Btw (By The Way) IPC 通道常量
+ */
+export const BTW_IPC_CHANNELS = {
+  /** 发送侧面提问 */
+  SEND_BTW: 'btw:send',
+  /** 侧面提问流式事件 */
+  BTW_EVENT: 'btw:event',
+  /** 取消侧面提问 */
+  CANCEL_BTW: 'btw:cancel',
+} as const
+
+// ===== Nudge 类型 =====
+
+/** Nudge 类型 */
+export type NudgeType = 'behavior_repeat' | 'fact_repeat' | 'correction' | 'project_repeat'
+
+/** Nudge 候选项 */
+export interface NudgeCandidate {
+  id: string
+  type: NudgeType
+  targetLayer: 'L0' | 'L1' | 'L2' | 'L3'
+  pattern: string
+  evidence: string[]
+  suggestedContent: string
+  userMessage: string
+}
+
+// ===== Btw (By The Way) 侧面提问 =====
+
+/** 侧面提问消息 */
+export interface BtwMessage {
+  /** 消息 ID */
+  id: string
+  /** 角色 */
+  role: 'user' | 'assistant'
+  /** 内容 */
+  content: string
+  /** 创建时间 */
+  createdAt: number
+  /** 是否在流式输出 */
+  streaming?: boolean
+}
 
 // ===== Agent 工作区 =====
 

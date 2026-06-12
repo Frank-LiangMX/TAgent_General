@@ -68,7 +68,7 @@ function MentionListInner<T>(
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border bg-popover p-2 shadow-lg text-[11px] text-muted-foreground w-[280px]">
+      <div className="session-glass-surface session-glass-popover p-2 text-[11px] text-muted-foreground w-[280px]">
         {emptyText}
       </div>
     )
@@ -77,7 +77,7 @@ function MentionListInner<T>(
   return (
     <div
       ref={containerRef}
-      className="rounded-lg border bg-popover shadow-lg overflow-y-auto max-h-[240px] w-[280px]"
+      className="session-glass-surface session-glass-popover overflow-y-auto max-h-[240px] w-[280px]"
     >
       {items.map((item, index) => (
         <button

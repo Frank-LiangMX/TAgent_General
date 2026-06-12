@@ -32,7 +32,11 @@ import {
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
-import { detectIsWindows } from '@/lib/platform'
+import {
+  detectIsMac,
+  detectIsWindows,
+  NAV_MAC_TABBAR_TOP_INSET,
+} from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 export function TabBar(): React.ReactElement {
@@ -51,6 +55,7 @@ export function TabBar(): React.ReactElement {
 
   // 统一关闭逻辑：关闭当前会话入口并回到 Scratch Pad，不停止后台 Agent
   const { requestClose } = useCloseTab()
+  const isMac = React.useMemo(() => detectIsMac(), [])
 
   // 拖拽状态
   const dragState = React.useRef<{
@@ -125,10 +130,30 @@ export function TabBar(): React.ReactElement {
     document.addEventListener('pointerup', handleUp)
   }, [tabs])
 
-  if (tabs.length === 0) return <div className="h-[34px] titlebar-drag-region" />
+  if (tabs.length === 0) {
+    return (
+      <div className="flex flex-col shrink-0">
+        {isMac ? (
+          <div
+            className="titlebar-drag-region shrink-0"
+            style={{ height: NAV_MAC_TABBAR_TOP_INSET }}
+            aria-hidden
+          />
+        ) : null}
+        <div className="h-[34px] titlebar-drag-region" />
+      </div>
+    )
+  }
 
   return (
     <>
+      {isMac ? (
+        <div
+          className="titlebar-drag-region shrink-0"
+          style={{ height: NAV_MAC_TABBAR_TOP_INSET }}
+          aria-hidden
+        />
+      ) : null}
       <TabBarInner
         tabs={tabs}
         activeTabId={activeTabId}

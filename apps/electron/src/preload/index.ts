@@ -131,6 +131,7 @@ import type {
   WeChatBridgeState,
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
+  NudgeCandidate,
 } from '@tagent/shared'
 
 // 资产库相关类型（从主进程服务导出）
@@ -820,6 +821,40 @@ export interface ElectronAPI {
 
   /** 测试记忆连接 */
   testMemoryConnection: () => Promise<{ success: boolean; message: string }>
+
+  // ===== Nudge 机制 =====
+
+  /** 获取待处理的 Nudge 候选项 */
+  getPendingNudges: (sessionId: string) => Promise<NudgeCandidate[]>
+
+  /** 响应 Nudge */
+  respondNudge: (sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta') => Promise<void>
+
+  /** 监听 Nudge 事件 */
+  onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => () => void
+
+  // ===== TA 意图检测 =====
+
+  /** 监听 TA 意图提示事件 */
+  onTAIntentPrompt: (callback: (event: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => void) => () => void
+
+  // ===== Btw 侧面提问 =====
+
+  /** 发送侧面提问（带主会话上下文共享：sourceSessionId 可选） */
+  sendBtwMessage: (input: {
+    channelId: string
+    modelId: string
+    message: string
+    messageId: string
+    sourceSessionId?: string
+    contextTurns?: number
+  }) => Promise<void>
+
+  /** 监听侧面提问事件 */
+  onBtwEvent: (callback: (event: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => void) => () => void
+
+  /** 取消侧面提问 */
+  cancelBtw: () => Promise<void>
 
   // ===== Chat 工具管理 =====
 
@@ -1922,6 +1957,54 @@ const electronAPI: ElectronAPI = {
 
   testMemoryConnection: () => {
     return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.TEST_CONNECTION)
+  },
+
+  // Nudge 机制
+  getPendingNudges: (sessionId: string) => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.GET_PENDING_NUDGES, sessionId)
+  },
+
+  respondNudge: (sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta') => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.RESPOND_NUDGE, sessionId, nudgeId, action, mode)
+  },
+
+  onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { type: string; nudge: NudgeCandidate }) => callback(data)
+    ipcRenderer.on(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
+    return () => ipcRenderer.removeListener(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
+  },
+
+  // TA 意图检测
+  onTAIntentPrompt: (callback: (event: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => void) => {
+    const { TA_INTENT_IPC_CHANNELS } = require('@tagent/shared')
+    const handler = (_event: Electron.IpcRendererEvent, data: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => callback(data)
+    ipcRenderer.on(TA_INTENT_IPC_CHANNELS.TA_INTENT_PROMPT, handler)
+    return () => ipcRenderer.removeListener(TA_INTENT_IPC_CHANNELS.TA_INTENT_PROMPT, handler)
+  },
+
+  // Btw 侧面提问
+  sendBtwMessage: (input: {
+    channelId: string
+    modelId: string
+    message: string
+    messageId: string
+    sourceSessionId?: string
+    contextTurns?: number
+  }) => {
+    const { BTW_IPC_CHANNELS } = require('@tagent/shared')
+    return ipcRenderer.invoke(BTW_IPC_CHANNELS.SEND_BTW, input)
+  },
+
+  onBtwEvent: (callback: (event: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => void) => {
+    const { BTW_IPC_CHANNELS } = require('@tagent/shared')
+    const handler = (_event: Electron.IpcRendererEvent, data: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => callback(data)
+    ipcRenderer.on(BTW_IPC_CHANNELS.BTW_EVENT, handler)
+    return () => ipcRenderer.removeListener(BTW_IPC_CHANNELS.BTW_EVENT, handler)
+  },
+
+  cancelBtw: () => {
+    const { BTW_IPC_CHANNELS } = require('@tagent/shared')
+    return ipcRenderer.invoke(BTW_IPC_CHANNELS.CANCEL_BTW)
   },
 
   // Chat 工具管理

@@ -22,6 +22,10 @@ import {
   selectedCapabilityAtom,
   type TARailItem,
 } from '@/atoms/app-mode'
+import {
+  workspaceSelectedDirectoryAtom,
+  workspaceSelectedFileAtom,
+} from '@/atoms/workspace-explorer'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
 import {
   activeTabIdAtom,
@@ -48,6 +52,8 @@ export function MainArea(): React.ReactElement {
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
   const setSelectedCapability = useSetAtom(selectedCapabilityAtom)
+  const setSelectedFile = useSetAtom(workspaceSelectedFileAtom)
+  const setSelectedDirectory = useSetAtom(workspaceSelectedDirectoryAtom)
 
   // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
   React.useEffect(() => {
@@ -62,6 +68,14 @@ export function MainArea(): React.ReactElement {
       setSelectedCapability(null)
     }
   }, [activeRailItem, setSelectedCapability])
+
+  // 离开 files 功能区时清除文件检视选中
+  React.useEffect(() => {
+    if (activeRailItem !== 'files') {
+      setSelectedFile(null)
+      setSelectedDirectory(null)
+    }
+  }, [activeRailItem, setSelectedFile, setSelectedDirectory])
 
   // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
   if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
@@ -111,7 +125,7 @@ function TAMainArea(): React.ReactElement {
   return (
     <Panel
       variant="grow"
-      className="bg-content-area rounded-2xl shadow-xl"
+      className="content-glass"
     >
       <div className="flex-1 min-h-0 overflow-hidden">
         {renderContent()}
@@ -242,7 +256,7 @@ function GeneralMainArea(): React.ReactElement {
   return (
     <Panel
       variant="grow"
-      className="bg-content-area rounded-2xl shadow-xl"
+      className="content-glass"
     >
       <div className="flex flex-1 min-h-0 relative overflow-hidden" data-split-container>
         {/* 左侧：TabBar + TabContent（始终保持在同一 DOM 位置，避免 Tab 切换时 unmount）

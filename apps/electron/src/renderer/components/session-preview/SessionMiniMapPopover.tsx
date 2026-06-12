@@ -417,7 +417,7 @@ function SessionMiniMapPopoverContent({
     >
       <div
         className={cn(
-          'session-minimap-popover h-full rounded-xl bg-popover shadow-xl ring-1 ring-black/[0.05] dark:ring-white/[0.08] flex flex-col overflow-hidden',
+          'session-minimap-popover session-glass-surface session-glass-popover h-full rounded-xl flex flex-col overflow-hidden',
           isLeaving ? 'session-minimap-popover-exit' : 'session-minimap-popover-enter',
         )}
       >
@@ -437,7 +437,7 @@ function SessionMiniMapPopoverContent({
           </span>
         </div>
 
-        <div className="relative flex-1 min-h-0 overflow-hidden bg-popover p-1.5">
+        <div className="relative flex-1 min-h-0 overflow-hidden p-1.5">
           {loading && (
             <div className="absolute inset-1.5 rounded-md bg-muted/30 p-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'vitest'
 
 import { getAgentCompletionMarkers, isAgentSessionActiveForCompletion } from './agent-completion-presence'
 

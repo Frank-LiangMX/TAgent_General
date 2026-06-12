@@ -35,6 +35,10 @@ import { chatToolsAtom } from './atoms/chat-tool-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
 import {
+  advancedMaterialEnabledAtom,
+  initializeAdvancedMaterial,
+} from './atoms/advanced-material'
+import {
   markdownFontSizeAtom,
   initializeMarkdownFontSize,
 } from './atoms/markdown-font-size'
@@ -414,6 +418,19 @@ function MarkdownFontSizeInitializer(): null {
   useEffect(() => {
     initializeMarkdownFontSize(setMarkdownFontSize)
   }, [setMarkdownFontSize])
+
+  return null
+}
+
+/**
+ * 高级材质初始化：高透玻璃 / 低透磨砂
+ */
+function AdvancedMaterialInitializer(): null {
+  const setAdvancedMaterialEnabled = useSetAtom(advancedMaterialEnabledAtom)
+
+  useEffect(() => {
+    void initializeAdvancedMaterial(setAdvancedMaterialEnabled)
+  }, [setAdvancedMaterialEnabled])
 
   return null
 }
@@ -861,6 +878,7 @@ if (isQuickTaskWindow) {
       <React.StrictMode>
         <ThemeInitializer />
         <MarkdownFontSizeInitializer />
+        <AdvancedMaterialInitializer />
         <DetachedPreviewApp />
         <Toaster position="top-right" />
       </React.StrictMode>
@@ -876,6 +894,7 @@ if (isQuickTaskWindow) {
       <DockBadgeInitializer />
       <UiPreferencesInitializer />
       <MarkdownFontSizeInitializer />
+      <AdvancedMaterialInitializer />
       <ChatListenersInitializer />
       <AgentListenersInitializer />
       <ChatToolInitializer />

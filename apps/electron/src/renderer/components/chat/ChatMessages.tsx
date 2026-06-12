@@ -158,6 +158,8 @@ interface ChatMessagesProps {
   onDeleteDivider?: (messageId: string) => void
   /** 加载更多历史消息回调 */
   onLoadMore?: () => Promise<void>
+  /** 底部悬浮输入框模式：为消息列表预留底部空间 */
+  floatingInput?: boolean
 }
 
 /** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
@@ -189,6 +191,7 @@ export function ChatMessages({
   inlineEditingMessageId,
   onDeleteDivider,
   onLoadMore,
+  floatingInput,
 }: ChatMessagesProps): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
@@ -372,7 +375,7 @@ export function ChatMessages({
         loading={loadingMore}
         onLoadMore={handleLoadMore}
       />
-      <ConversationContent>
+      <ConversationContent className={floatingInput ? 'conversation-floating-input' : undefined}>
         {messages.length === 0 && !streaming ? (
           <EmptyState />
         ) : (

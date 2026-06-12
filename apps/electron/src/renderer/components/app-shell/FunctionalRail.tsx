@@ -22,8 +22,6 @@ import {
   GitBranch,
   Brain,
   Settings,
-  PanelLeftOpen,
-  PanelLeftClose,
   Plus,
   Search,
   Loader2,
@@ -45,6 +43,7 @@ import { UserAvatar } from '@/components/chat/UserAvatar'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
+import { SidebarCollapseButton } from '@/components/app-shell/SidebarCollapseButton'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -236,32 +235,20 @@ export function FunctionalRail({
   ]
 
   return (
-    <div className="relative h-full flex flex-col items-center bg-background rounded-2xl shadow-xl px-2 py-2" style={{ width: 60, flexShrink: 0 }}>
-      {/* macOS 红绿灯避让 */}
-      <div className={cn('w-full flex-shrink-0 titlebar-drag-region', isMac ? 'h-[50px]' : 'h-2')} />
+    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-2 py-2 shrink-0">
+      {/* macOS 顶栏由 NavIsland chrome 统一避让红绿灯 */}
+      {!isMac ? <div className="w-full flex-shrink-0 h-2" aria-hidden /> : null}
 
-      {/* 切换目录区：展开态显示 [>>] 折叠、折叠态显示 [<<] 展开 */}
-      {onToggleSidebar && (
+      {/* 折叠态：展开按钮固定在 Rail 顶部（展开后移至侧栏工作区行右侧） */}
+      {onToggleSidebar && sidebarCollapsed ? (
         <div className="mb-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
-                onClick={onToggleSidebar}
-                className="size-10 flex items-center justify-center rounded-[12px] text-foreground/60 bg-muted hover:bg-foreground/[0.08] hover:text-foreground transition-colors titlebar-no-drag"
-              >
-                {sidebarCollapsed
-                  ? <PanelLeftOpen size={17} />
-                  : <PanelLeftClose size={17} />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {sidebarCollapsed ? '展开侧边栏' : `收起侧边栏 (${navigator.platform.includes('Mac') ? '⌘B' : 'Ctrl+B'})`}
-            </TooltipContent>
-          </Tooltip>
+          <SidebarCollapseButton
+            collapsed
+            placement="rail"
+            onClick={onToggleSidebar}
+          />
         </div>
-      )}
+      ) : null}
 
       {/* 模式切换按钮 */}
       <div className="flex flex-col items-center gap-1.5">
@@ -278,10 +265,10 @@ export function FunctionalRail({
                   onClick={() => handleModeSwitch(value)}
                   disabled={isSwitching}
                 className={cn(
-                    'relative size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
+                    'relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag transition-all duration-150',
                     isActive
-                      ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                      : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75',
+                      ? 'session-glass session-glass-rail text-foreground'
+                      : 'button-glass text-foreground/50 dark:text-foreground/68 hover:text-foreground/75 dark:hover:text-foreground/88',
                     isSwitching && 'opacity-50 cursor-not-allowed'
                   )}
                 >
@@ -312,14 +299,14 @@ export function FunctionalRail({
       {/* 工作区管理 Popover（仅通用模式 + Agent 子模式 + 目录区折叠时显示，展开时由目录区顶端 Popover 承担） */}
       {appMode === 'agent' && topLevelMode === 'general' && sidebarCollapsed && (
         <>
-          <div className="my-3 h-px w-8 bg-border/70" />
+          <div className="glass-divider my-3 w-8" />
           <div className="flex flex-col items-center gap-1.5">
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   aria-label="切换工作区"
-                  className="relative size-10 flex items-center justify-center rounded-[12px] text-foreground/55 bg-primary/5 hover:bg-primary/10 hover:text-foreground/75 transition-colors titlebar-no-drag border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
+                  className="button-glass button-glass-dashed relative size-10 flex items-center justify-center rounded-[12px] text-foreground/60 dark:text-foreground/75 hover:text-foreground titlebar-no-drag transition-all duration-150"
                 >
                   <Briefcase size={16} />
                   {currentWorkspaceName && (
@@ -386,11 +373,12 @@ export function FunctionalRail({
         </>
       )}
 
-      <div className="my-3 h-px w-8 bg-border/70" />
+      <div className="glass-divider my-3 w-8" />
 
       {/* 功能区切换按钮 */}
       <div className="flex flex-col items-center gap-1.5">
         {railItems.map((item) => {
+          const isActive = activeRailItem === item.id
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
@@ -398,10 +386,10 @@ export function FunctionalRail({
                   type="button"
                   onClick={() => setActiveRailItem(item.id)}
                   className={cn(
-                    'size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
-                    activeRailItem === item.id
-                      ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                      : 'text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground/75'
+                    'size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag transition-all duration-150',
+                    isActive
+                      ? 'session-glass session-glass-rail text-foreground'
+                      : 'button-glass text-foreground/50 dark:text-foreground/68 hover:text-foreground/75 dark:hover:text-foreground/88'
                   )}
                 >
                   {item.icon}
@@ -418,7 +406,7 @@ export function FunctionalRail({
         })}
       </div>
 
-      <div className="my-3 h-px w-8 bg-border/70" />
+      <div className="glass-divider my-3 w-8" />
 
       {/* 高频操作：目录区折叠时显示（避免与展开后的目录区内容重复） */}
       {sidebarCollapsed && (
@@ -429,7 +417,7 @@ export function FunctionalRail({
                 type="button"
                 aria-label={appMode === 'agent' ? '新建 Agent 会话' : '新建 Chat 对话'}
                 onClick={onNewSession}
-                className="size-10 flex items-center justify-center rounded-[12px] text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors titlebar-no-drag border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
+                className="button-glass button-glass-dashed size-10 flex items-center justify-center rounded-[12px] text-foreground/60 dark:text-foreground/75 hover:text-foreground titlebar-no-drag transition-all duration-150"
               >
                 <Plus size={16} />
               </button>
@@ -445,7 +433,7 @@ export function FunctionalRail({
                 type="button"
                 aria-label="搜索"
                 onClick={onSearch}
-                className="size-10 flex items-center justify-center rounded-[12px] text-foreground/45 bg-primary/5 hover:bg-primary/10 hover:text-foreground/70 transition-colors titlebar-no-drag border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
+                className="button-glass button-glass-dashed size-10 flex items-center justify-center rounded-[12px] text-foreground/60 dark:text-foreground/75 hover:text-foreground titlebar-no-drag transition-all duration-150"
               >
                 <Search size={16} />
               </button>
@@ -458,7 +446,7 @@ export function FunctionalRail({
       {/* 最近会话入口：目录区折叠时显示当前顶层模式下的最近会话（父组件已按模式过滤） */}
       {sidebarCollapsed && recentItems.length > 0 && (
         <>
-          <div className="my-3 h-px w-8 bg-border/70" />
+          <div className="glass-divider my-3 w-8" />
           <div className="flex-1 min-h-0 w-full overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex flex-col items-center gap-1.5 pb-2">
               {recentItems.map((item) => (
@@ -468,21 +456,21 @@ export function FunctionalRail({
                       type="button"
                       onClick={() => onRecentItemSelect?.(item)}
                       className={cn(
-                        'relative size-10 flex items-center justify-center rounded-[12px] transition-colors titlebar-no-drag',
+                        'relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag transition-all duration-150',
                         item.active
-                          ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                          : 'text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground/80'
+                          ? 'session-glass session-glass-rail text-foreground'
+                          : 'button-glass text-foreground/55 dark:text-foreground/65 hover:text-foreground/80 dark:hover:text-foreground/88'
                       )}
                     >
-                      <span className="text-[13px] font-semibold leading-none">{item.initial}</span>
+                      <span className="relative z-[1] text-[13px] font-semibold leading-none">{item.initial}</span>
                       {/* 状态指示器 */}
                       {item.status !== 'idle' && (
                         <span
                           className={cn(
-                            'absolute inset-y-0 left-0 w-0 border-l-[3px] rounded-l-[12px] pointer-events-none',
-                            item.status === 'running' && 'border-blue-500 animate-pulse',
-                            item.status === 'blocked' && 'border-orange-500',
-                            item.status === 'completed' && 'border-emerald-500'
+                            'session-sidebar-accent left-0.5 top-1.5 bottom-1.5 w-[3px] rounded-full pointer-events-none',
+                            item.status === 'running' && 'bg-blue-500 animate-pulse',
+                            item.status === 'blocked' && 'bg-orange-500',
+                            item.status === 'completed' && 'bg-emerald-500'
                           )}
                         />
                       )}

@@ -1,8 +1,5 @@
 /**
- * SkillsPanel - 工作区 MCP Servers & Skills 列表
- *
- * LeftSidebar 在 activeRailItem === 'skills' 时展示的概览列表。
- * 这里负责把能力条目组织成更清晰的分组、状态和选中态，并把右侧详情页的入口做得更稳。
+ * SkillsPanel - 工作区 MCP & Skills 导航列表（Navigator 翼）
  */
 
 import { useAtom } from 'jotai'
@@ -22,10 +19,10 @@ import type { WorkspaceCapabilities } from '@tagent/shared'
 import { selectedCapabilityAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 
+type SkillsFilter = 'all' | 'mcp' | 'skills'
+
 interface SkillsPanelProps {
-  /** 工作区能力数据，null 表示尚未加载 */
   capabilities: WorkspaceCapabilities | null
-  /** 右上角“配置”按钮回调，默认打开 settings agent tab */
   onConfigure?: () => void
 }
 
@@ -34,310 +31,189 @@ export function SkillsPanel({
   onConfigure,
 }: SkillsPanelProps): React.ReactElement {
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
+  const [filter, setFilter] = React.useState<SkillsFilter>('all')
 
   const enabledMcpCount = capabilities?.mcpServers.filter((s) => s.enabled).length ?? 0
   const totalMcpCount = capabilities?.mcpServers.length ?? 0
   const enabledSkillCount = capabilities?.skills.filter((s) => s.enabled).length ?? 0
   const totalSkillCount = capabilities?.skills.length ?? 0
 
+  const showMcp = filter === 'all' || filter === 'mcp'
+  const showSkills = filter === 'all' || filter === 'skills'
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-foreground">MCP & Skills</h3>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-              {capabilities
-                ? `${enabledMcpCount}/${totalMcpCount} MCP · ${enabledSkillCount}/${totalSkillCount} Skills`
-                : '正在同步工作区能力'}
-            </p>
-          </div>
-
-          {onConfigure && (
-            <button
-              type="button"
-              onClick={onConfigure}
-              className="inline-flex h-8 items-center justify-center rounded-full border border-border/70 bg-muted/40 px-3 text-[11px] font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-              title="配置 MCP 与 Skills"
-            >
-              <Settings2 size={14} className="mr-1.5" />
-              配置
-            </button>
-          )}
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3">
+        <div className="min-w-0">
+          <span className="text-[11px] font-medium text-foreground">MCP & Skills</span>
+          <span className="ml-2 text-[10px] tabular-nums text-muted-foreground">
+            {capabilities
+              ? `${enabledMcpCount + enabledSkillCount}/${totalMcpCount + totalSkillCount}`
+              : '…'}
+          </span>
         </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <StatChip
-            icon={<Plug size={12} />}
-            label="MCP"
-            value={capabilities ? `${enabledMcpCount}/${totalMcpCount}` : '...'}
-          />
-          <StatChip
-            icon={<Zap size={12} />}
-            label="Skills"
-            value={capabilities ? `${enabledSkillCount}/${totalSkillCount}` : '...'}
-          />
-        </div>
+        {onConfigure ? (
+          <button
+            type="button"
+            onClick={onConfigure}
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+            title="配置 MCP 与 Skills"
+          >
+            <Settings2 size={14} />
+          </button>
+        ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
-        <CapabilityGroup
-          icon={<Plug size={12} />}
-          label="MCP servers"
-          count={totalMcpCount}
-          activeCount={enabledMcpCount}
-        />
-        {capabilities === null ? (
-          <SkeletonRows rows={2} />
-        ) : capabilities.mcpServers.length === 0 ? (
-          <EmptyHint
-            icon={<Plug size={14} />}
-            title="暂无 MCP"
-            text="这里还没有配置任何 MCP 服务器。"
-          />
-        ) : (
-          <div className="mb-4 flex flex-col gap-1.5">
-            {capabilities.mcpServers.map((server) => (
-              <McpServerItem
-                key={server.name}
-                name={server.name}
-                enabled={server.enabled}
-                type={server.type}
-                selected={selectedCapability?.type === 'mcp' && selectedCapability.key === server.name}
-                onClick={() => setSelectedCapability({ type: 'mcp', key: server.name })}
-              />
-            ))}
-          </div>
-        )}
+      <div className="flex shrink-0 gap-1 border-b border-border/40 px-2 py-1.5">
+        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>全部</FilterChip>
+        <FilterChip active={filter === 'mcp'} onClick={() => setFilter('mcp')}>
+          MCP {totalMcpCount > 0 ? `(${totalMcpCount})` : ''}
+        </FilterChip>
+        <FilterChip active={filter === 'skills'} onClick={() => setFilter('skills')}>
+          Skills {totalSkillCount > 0 ? `(${totalSkillCount})` : ''}
+        </FilterChip>
+      </div>
 
-        <CapabilityGroup
-          icon={<Sparkles size={12} />}
-          label="Skills"
-          count={totalSkillCount}
-          activeCount={enabledSkillCount}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-thin">
         {capabilities === null ? (
-          <SkeletonRows rows={3} />
-        ) : capabilities.skills.length === 0 ? (
-          <EmptyHint
-            icon={<Sparkles size={14} />}
-            title="暂无 Skills"
-            text="导入或创建后，这里会显示可用的工作区 Skills。"
-          />
+          <SkeletonRows rows={5} />
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {capabilities.skills.map((skill) => (
-              <SkillItem
-                key={skill.slug}
-                slug={skill.slug}
-                name={skill.name}
-                description={skill.description}
-                enabled={skill.enabled}
-                hasUpdate={skill.hasUpdate}
-                selected={selectedCapability?.type === 'skill' && selectedCapability.key === skill.slug}
-                onClick={() => setSelectedCapability({ type: 'skill', key: skill.slug })}
-              />
-            ))}
-          </div>
+          <>
+            {showMcp ? (
+              <section className="mb-1">
+                {capabilities.mcpServers.length === 0 ? (
+                  <EmptyRow icon={<Plug size={12} />} text="暂无 MCP" />
+                ) : (
+                  capabilities.mcpServers.map((server) => (
+                    <NavigatorRow
+                      key={server.name}
+                      icon={server.enabled ? <CircleCheck size={12} /> : <CircleDashed size={12} />}
+                      iconClassName={server.enabled ? 'text-emerald-500' : 'text-muted-foreground/50'}
+                      title={server.name}
+                      subtitle={server.type}
+                      selected={selectedCapability?.type === 'mcp' && selectedCapability.key === server.name}
+                      onClick={() => setSelectedCapability({ type: 'mcp', key: server.name })}
+                    />
+                  ))
+                )}
+              </section>
+            ) : null}
+
+            {showSkills ? (
+              <section>
+                {capabilities.skills.length === 0 ? (
+                  <EmptyRow icon={<Sparkles size={12} />} text="暂无 Skills" />
+                ) : (
+                  capabilities.skills.map((skill) => (
+                    <NavigatorRow
+                      key={skill.slug}
+                      icon={<Zap size={12} />}
+                      iconClassName={skill.enabled ? 'text-amber-500' : 'text-muted-foreground/50'}
+                      title={skill.name}
+                      subtitle={skill.description ?? skill.slug}
+                      badge={skill.hasUpdate ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                          <RotateCw size={9} />
+                          更新
+                        </span>
+                      ) : undefined}
+                      selected={selectedCapability?.type === 'skill' && selectedCapability.key === skill.slug}
+                      onClick={() => setSelectedCapability({ type: 'skill', key: skill.slug })}
+                    />
+                  ))
+                )}
+              </section>
+            ) : null}
+          </>
         )}
       </div>
     </div>
   )
 }
 
-function StatChip({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}): React.ReactElement {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/35 px-3 py-2">
-      <span className="text-foreground/45">{icon}</span>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
-        <div className="text-xs font-medium text-foreground tabular-nums">{value}</div>
-      </div>
-    </div>
-  )
-}
-
-function CapabilityGroup({
-  icon,
-  label,
-  count,
-  activeCount,
-}: {
-  icon: React.ReactNode
-  label: string
-  count: number
-  activeCount: number
-}): React.ReactElement {
-  return (
-    <div className="mb-2 flex items-center justify-between px-1">
-      <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-        <span className="text-foreground/40">{icon}</span>
-        <span className="tracking-[0.18em] uppercase">{label}</span>
-      </div>
-      <div className="rounded-full border border-border/60 bg-muted/35 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
-        {activeCount}/{count}
-      </div>
-    </div>
-  )
-}
-
-function McpServerItem({
-  name,
-  enabled,
-  type,
-  selected,
+function FilterChip({
+  active,
   onClick,
+  children,
 }: {
-  name: string
-  enabled: boolean
-  type: string
-  selected?: boolean
-  onClick?: () => void
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
 }): React.ReactElement {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'group w-full rounded-xl border px-3 py-2.5 text-left transition-all duration-200',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-        selected
-          ? 'border-primary/25 bg-primary/8 shadow-sm shadow-primary/5'
-          : enabled
-            ? 'border-border/60 bg-background/70 hover:border-border hover:bg-muted/35'
-            : 'border-border/40 bg-muted/20 hover:border-border hover:bg-muted/35',
+        'rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
+        active
+          ? 'bg-foreground/8 text-foreground'
+          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
       )}
     >
-      <div className="flex items-start gap-2.5">
-        <span
-          className={cn(
-            'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border',
-            enabled
-              ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-600'
-              : 'border-border/60 bg-muted text-muted-foreground',
-          )}
-        >
-          {enabled ? <CircleCheck size={12} /> : <CircleDashed size={12} />}
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">{name}</span>
-            <span className="shrink-0 rounded-full border border-border/60 bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {type}
-            </span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span>{enabled ? '已启用' : '已禁用'}</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span className="truncate">点击查看详情</span>
-          </div>
-        </div>
-      </div>
+      {children}
     </button>
   )
 }
 
-function SkillItem({
-  slug: _slug,
-  name,
-  description,
-  enabled,
-  hasUpdate,
-  selected,
-  onClick,
-}: {
-  slug: string
-  name: string
-  description?: string
-  enabled: boolean
-  hasUpdate?: boolean
-  selected?: boolean
-  onClick?: () => void
-}): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group w-full rounded-xl border px-3 py-2.5 text-left transition-all duration-200',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-        selected
-          ? 'border-primary/25 bg-primary/8 shadow-sm shadow-primary/5'
-          : enabled
-            ? 'border-border/60 bg-background/70 hover:border-border hover:bg-muted/35'
-            : 'border-border/40 bg-muted/20 hover:border-border hover:bg-muted/35',
-      )}
-    >
-      <div className="flex items-start gap-2.5">
-        <span
-          className={cn(
-            'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border',
-            enabled
-              ? 'border-amber-500/15 bg-amber-500/10 text-amber-600'
-              : 'border-border/60 bg-muted text-muted-foreground',
-          )}
-        >
-          <Zap size={12} />
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">{name}</span>
-            {hasUpdate && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                <RotateCw size={10} />
-                更新
-              </span>
-            )}
-          </div>
-          <div className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
-            {description ?? '暂无描述'}
-          </div>
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground/80">
-            <span>{enabled ? '已启用' : '已禁用'}</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span className="truncate">点击查看详情</span>
-          </div>
-        </div>
-      </div>
-    </button>
-  )
-}
-
-function EmptyHint({
+function NavigatorRow({
   icon,
+  iconClassName,
   title,
-  text,
+  subtitle,
+  badge,
+  selected,
+  onClick,
 }: {
   icon: React.ReactNode
+  iconClassName?: string
   title: string
-  text: string
+  subtitle?: string
+  badge?: React.ReactNode
+  selected?: boolean
+  onClick?: () => void
 }): React.ReactElement {
   return (
-    <div className="mb-4 rounded-2xl border border-dashed border-border/70 bg-muted/20 px-3 py-4 text-center">
-      <div className="mx-auto flex size-9 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground">
-        {icon}
-      </div>
-      <div className="mt-3 text-sm font-medium text-foreground">{title}</div>
-      <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{text}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group relative flex w-full items-start gap-2 px-3 py-2 text-left transition-colors',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
+        selected ? 'bg-accent/70' : 'hover:bg-accent/40',
+      )}
+    >
+      {selected ? (
+        <span className="absolute bottom-1 left-0 top-1 w-0.5 rounded-full bg-primary" aria-hidden />
+      ) : null}
+      <span className={cn('mt-0.5 shrink-0', iconClassName)}>{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-xs font-medium text-foreground">{title}</span>
+          {badge}
+        </span>
+        {subtitle ? (
+          <span className="mt-0.5 line-clamp-1 text-[10px] leading-4 text-muted-foreground">{subtitle}</span>
+        ) : null}
+      </span>
+    </button>
+  )
+}
+
+function EmptyRow({ icon, text }: { icon: React.ReactNode; text: string }): React.ReactElement {
+  return (
+    <div className="flex items-center gap-2 px-3 py-3 text-[11px] text-muted-foreground">
+      <span className="text-muted-foreground/50">{icon}</span>
+      {text}
     </div>
   )
 }
 
 function SkeletonRows({ rows }: { rows: number }): React.ReactElement {
   return (
-    <div className="mb-4 flex flex-col gap-2">
+    <div className="flex flex-col gap-1 px-2 py-2">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-[66px] rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+        <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/30" />
       ))}
     </div>
   )

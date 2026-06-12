@@ -2,7 +2,7 @@
  * TA 内置工具单元测试
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'vitest'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
