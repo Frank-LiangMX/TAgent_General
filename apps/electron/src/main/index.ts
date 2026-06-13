@@ -269,8 +269,8 @@ function createWindow(): void {
   const titleBarOptions = isMac
     ? {
         titleBarStyle: 'hiddenInset' as const,
-        /* 与 shell p-2 + NavIsland chrome 左翼对齐 */
-        trafficLightPosition: { x: 16, y: 16 },
+        /* macOS 系统默认位置:贴近窗口左上角,让 60px Rail 能容纳 3 个红绿灯按钮(总宽 ~56px,终点 x≈64) */
+        trafficLightPosition: { x: 8, y: 20 },
         vibrancy: 'under-window' as const,
         visualEffectState: 'followWindow' as const,
       }

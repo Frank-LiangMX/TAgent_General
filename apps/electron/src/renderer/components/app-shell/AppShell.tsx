@@ -50,8 +50,6 @@ import { useOpenSession } from '@/hooks/useOpenSession'
 import {
   detectIsMac,
   detectIsWindows,
-  NAV_MAC_CHROME_HEIGHT,
-  SHELL_EDGE_PADDING,
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -255,23 +253,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   return (
     <AppShellProvider value={contextValue}>
-      {/* 可拖动标题栏区域，用于窗口拖动。
-          Windows 上必须避开右上角的 WindowControls 区域（buttons ~118px + 8px buffer = 126px），
-          否则 drag-region 与按钮区的 hitmask 重叠会让 OS 把单击当成标题栏点击，
-          表现为"按钮要双击才响应"。 */}
-      <div
-        className={cn(
-          'titlebar-drag-region fixed top-0 left-0 z-50',
-          isWindows ? 'right-[126px]' : 'right-0',
-        )}
-        style={{
-          height: isMac
-            ? SHELL_EDGE_PADDING + NAV_MAC_CHROME_HEIGHT
-            : 50,
-        }}
-      />
+      {/* 窗口拖动区由 NavIsland 内部 chrome(左侧栏顶部)和 TabBar 自身覆盖,这里不再加全宽 fixed 区域
+          ——之前的 60px 跨全宽 fixed 拖拽区被主区域 z-60 覆盖,既看不见也撑出了主区域上方的视觉空行。 */}
 
-      {/* Windows 自定义窗口控制按钮（最小化/最大化/关闭） */}
+      {/* Windows 自定义窗口控制按钮(最小化/最大化/关闭) */}
       <WindowControls />
 
       <div className="shell-glass shell-bg h-screen w-screen flex overflow-hidden">
