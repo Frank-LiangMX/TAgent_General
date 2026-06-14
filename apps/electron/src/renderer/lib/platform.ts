@@ -1,3 +1,12 @@
+import {
+  NAV_MAC_CHROME_HEIGHT,
+  NAV_RAIL_WIDTH,
+  NAV_SIDEBAR_INSPECTOR_WIDTH,
+  NAV_SIDEBAR_WIDTH,
+  SHELL_EDGE_PADDING,
+  TAB_BAR_HEIGHT,
+} from '@tagent/shared'
+
 export function detectIsWindows(): boolean {
   const platform =
     typeof navigator !== 'undefined' &&
@@ -18,17 +27,14 @@ export function detectIsMac(): boolean {
   return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || '')
 }
 
-/** 导航 Rail 固定宽度 */
-export const NAV_RAIL_WIDTH = 60
+export {
+  NAV_MAC_CHROME_HEIGHT,
+  NAV_RAIL_WIDTH,
+  NAV_SIDEBAR_INSPECTOR_WIDTH,
+  NAV_SIDEBAR_WIDTH,
+  SHELL_EDGE_PADDING,
+  TAB_BAR_HEIGHT,
+}
 
-/** 会话侧栏翼默认宽度 */
-export const NAV_SIDEBAR_WIDTH = 240
-
-/** 文件 / Skills 检视侧栏翼宽度 */
-export const NAV_SIDEBAR_INSPECTOR_WIDTH = 280
-
-/** macOS 导航岛 chrome 高度（仅左侧栏顶部,用于避让红绿灯按钮） */
-export const NAV_MAC_CHROME_HEIGHT = 38
-
-/** TabBar 内容区高度 */
-export const TAB_BAR_HEIGHT = 34
+/** macOS 主区 TabBar 上方留白，与导航岛 chrome 底边对齐 */
+export const NAV_MAC_TABBAR_TOP_INSET = NAV_MAC_CHROME_HEIGHT - TAB_BAR_HEIGHT

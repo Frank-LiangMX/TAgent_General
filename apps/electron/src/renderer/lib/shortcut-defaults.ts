@@ -67,14 +67,6 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
     category: 'app',
   },
   {
-    id: 'toggle-sidebar',
-    name: '切换侧边栏',
-    description: '显示或隐藏左侧边栏',
-    defaultMac: 'Cmd+B',
-    defaultWin: 'Ctrl+B',
-    category: 'app',
-  },
-  {
     id: 'toggle-mode',
     name: '切换模式',
     description: '在 Chat 和 Agent 模式之间切换',
@@ -107,11 +99,11 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
     category: 'navigation',
   },
 
-  // 编辑级（输入框格式化，仅 macOS — Cmd+B/S 被全局快捷键占用）
+  // 编辑级（输入框格式化，仅 macOS — Cmd+B 留给未来其他用途，目前用 Ctrl+B 避免占用 Cmd 组合）
   {
     id: 'editor-bold',
     name: '加粗 / 取消加粗',
-    description: '输入框中切换文字加粗（因 Cmd+B 已用于切换侧边栏）',
+    description: '输入框中切换文字加粗（macOS 用 Ctrl+B,避免占用 Cmd 组合）',
     defaultMac: 'Ctrl+B',
     defaultWin: '',
     category: 'edit',

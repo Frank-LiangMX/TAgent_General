@@ -18,8 +18,8 @@ import { cn } from '@/lib/utils'
 export const NAV_SIDEBAR_DEFAULT_WIDTH = NAV_SIDEBAR_WIDTH
 
 interface NavIslandProps {
+  /** 是否展开 Sidebar(收起时仅显示 Rail) */
   showSidebar: boolean
-  sidebarExpanded: boolean
   sidebarWidth?: number
   children: React.ReactNode
 }
@@ -39,12 +39,11 @@ function NavIslandMacChrome(): React.ReactElement {
 
 export function NavIsland({
   showSidebar,
-  sidebarExpanded,
   sidebarWidth = NAV_SIDEBAR_DEFAULT_WIDTH,
   children,
 }: NavIslandProps): React.ReactElement {
   const isMac = React.useMemo(() => detectIsMac(), [])
-  const wingOpen = showSidebar && sidebarExpanded
+  const wingOpen = showSidebar
   const islandWidth =
     wingOpen ? NAV_RAIL_WIDTH + sidebarWidth : NAV_RAIL_WIDTH
 

@@ -7,8 +7,6 @@
  */
 
 import { atom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
-
 
 import {
   agentRunningSessionIdsAtom,
@@ -141,12 +139,6 @@ export const tabMruAtom = atom<string[]>([])
  * 切走会话时预览 Tab 被 openTab 丢弃，切回时据此重建并回到上次视图。
  */
 export const sessionViewStateMapAtom = atom<Map<string, SessionViewState>>(new Map())
-
-/** 侧边栏是否收起（持久化） */
-export const sidebarCollapsedAtom = atomWithStorage<boolean>(
-  'tagent-sidebar-collapsed',
-  false,
-)
 
 /** Tab 迷你地图缓存（每个 Tab 的消息预览列表，在消息组件中填充） */
 export interface TabMinimapItem {

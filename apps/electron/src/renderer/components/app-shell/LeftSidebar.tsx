@@ -20,11 +20,8 @@ import { SearchDialog } from './SearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import type { RailItem, TARailItem } from '@/atoms/app-mode'
 import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@tagent/shared'
 
-import { appModeAtom, selectedCapabilityAtom, type AppMode, topLevelModeAtom } from '@/atoms/app-mode'
-import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
   agentSDKMessagesCacheAtom,
@@ -55,6 +52,8 @@ import {
   sessionPersistedPermissionModeAtom,
   sessionExistsAtom,
 } from '@/atoms/agent-atoms'
+import { activeViewAtom } from '@/atoms/active-view'
+import { appModeAtom, selectedCapabilityAtom, type AppMode, topLevelModeAtom, type RailItem, type TARailItem } from '@/atoms/app-mode'
 import {
   conversationsAtom,
   currentConversationIdAtom,
@@ -76,20 +75,17 @@ import {
   tabsAtom,
   activeTabIdAtom,
   activeSessionIdAtom,
-  sidebarCollapsedAtom,
   closeTab,
   updateTabTitle,
   sessionViewStateMapAtom,
 } from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { workingSessionGroupsAtom, workingSessionIdsSetAtom } from '@/atoms/working-atoms'
+import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { SkillsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
-import { SidebarCollapseButton } from '@/components/app-shell/SidebarCollapseButton'
-import { UserAvatar } from '@/components/chat/UserAvatar'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
   SessionMiniMapPopover,
@@ -168,12 +164,6 @@ export interface LeftSidebarProps {
   width?: number
   /** 当前激活的功能区 */
   activeRailItem?: RailItem
-  /** 是否折叠 */
-  collapsed?: boolean
-  /** 折叠状态变更回调 */
-  onCollapsedChange?: (collapsed: boolean) => void
-  /** 切换折叠（仅会话页可收起） */
-  onToggleSidebar?: () => void
 }
 
 /** 侧边栏导航项标识 */
@@ -215,23 +205,12 @@ function groupByDate<T extends { updatedAt: number }>(items: T[]): Array<{ label
   return groups
 }
 
-const RAIL_STATUS_CLASS: Record<SessionIndicatorStatus, string> = {
-  idle: 'hidden',
-  running: 'border-blue-500 animate-pulse',
-  blocked: 'border-orange-500',
-  completed: 'border-emerald-500',
-}
-
 const SIDEBAR_DRAG_STRIP_HEIGHT = {
   collapsedMac: 50,
   expandedMac: 30,
   collapsed: 8,
   expanded: 4,
 } as const
-
-function getRailInitial(title: string): string {
-  return title.trim().slice(0, 1).toUpperCase() || '·'
-}
 
 function getSessionLeftAccent(
   indicatorStatus: SessionIndicatorStatus,
@@ -251,17 +230,6 @@ function isAgentSessionInTopLevelMode(
   return (session.mode ?? 'general') === topLevelMode
 }
 
-interface RailRecentItem {
-  id: string
-  title: string
-  type: SessionMiniMapType
-  initial: string
-  active: boolean
-  status: SessionIndicatorStatus
-  pinned: boolean
-  workspaceName?: string
-}
-
 function SidebarWindowDragStrip({ height }: { height: number }): React.ReactElement {
   return (
     <div
@@ -276,7 +244,7 @@ function SidebarWindowDragStrip({ height }: { height: number }): React.ReactElem
 const SIDEBAR_TOP_CONTROL_CLASS =
   'h-10 rounded-[12px] border border-border/40 bg-primary/5 text-[11px] text-foreground/70 transition-colors duration-100 hover:border-border/70 hover:bg-primary/10 titlebar-no-drag'
 
-/** 侧栏顶栏行：对齐 Rail 的 py-2 +（Win h-2）+ size-10 */
+/** 侧栏顶栏行：与 Rail 首行共用 nav-island-body-start + nav-island-header-row */
 function SidebarTopControlsRow({
   isMac,
   children,
@@ -285,10 +253,10 @@ function SidebarTopControlsRow({
   children: React.ReactNode
 }): React.ReactElement {
   return (
-    <div className="relative shrink-0 px-3">
+    <div className="relative shrink-0 px-3 nav-island-body-start">
       {!isMac ? <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} /> : null}
       {!isMac ? <div className="h-2 shrink-0" aria-hidden /> : null}
-      <div className="flex h-10 items-center gap-1.5 pb-1 pt-2">
+      <div className="nav-island-header-row gap-1.5">
         {children}
       </div>
     </div>
@@ -298,9 +266,6 @@ function SidebarTopControlsRow({
 export function LeftSidebar({
   width,
   activeRailItem = 'sessions',
-  collapsed,
-  onCollapsedChange,
-  onToggleSidebar,
 }: LeftSidebarProps): React.ReactElement | null {
   const [activeView, setActiveView] = useAtom(activeViewAtom)
   const setSettingsTab = useSetAtom(settingsTabAtom)
@@ -328,16 +293,6 @@ export function LeftSidebar({
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom)
   const promptConfig = useAtomValue(promptConfigAtom)
   const setSelectedPromptId = useSetAtom(selectedPromptIdAtom)
-
-  // 侧边栏折叠状态（现在由外部控制，但也支持内部切换）
-  const [sidebarCollapsedState, setSidebarCollapsedState] = useAtom(sidebarCollapsedAtom)
-  const isSidebarCollapsed = collapsed ?? sidebarCollapsedState
-
-  const handleToggleCollapsed = React.useCallback(() => {
-    const newValue = !isSidebarCollapsed
-    setSidebarCollapsedState(newValue)
-    onCollapsedChange?.(newValue)
-  }, [isSidebarCollapsed, setSidebarCollapsedState, onCollapsedChange])
 
   // Agent 模式状态
   const [agentSessions, setAgentSessions] = useAtom(agentSessionsAtom)
@@ -373,7 +328,6 @@ export function LeftSidebar({
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   // 会话高亮按"激活 Tab 所属会话"判定：预览 Tab 激活时其 owner 会话仍保持高亮
   const activeSessionId = useAtomValue(activeSessionIdAtom)
-  const [sidebarCollapsed, setSidebarCollapsed] = useAtom(sidebarCollapsedAtom)
   const openSession = useOpenSession()
   const syncActiveTabSideEffects = useSyncActiveTabSideEffects()
   const store = useStore()
@@ -1003,79 +957,6 @@ export function LeftSidebar({
     [currentModeAgentSessions, currentWorkspaceId, draftSessionIds, topLevelMode]
   )
 
-  const railRecentItems = React.useMemo(() => {
-    if (mode === 'chat') {
-      return conversations
-        .filter((c) => !c.archived && !draftSessionIds.has(c.id))
-        .sort((a, b) => {
-          const activeDelta = Number(b.id === activeSessionId) - Number(a.id === activeSessionId)
-          if (activeDelta !== 0) return activeDelta
-          const streamingDelta = Number(streamingIds.has(b.id)) - Number(streamingIds.has(a.id))
-          if (streamingDelta !== 0) return streamingDelta
-          const pinnedDelta = Number(!!b.pinned) - Number(!!a.pinned)
-          if (pinnedDelta !== 0) return pinnedDelta
-          return b.updatedAt - a.updatedAt
-        })
-        .slice(0, 5)
-        .map((conversation) => ({
-          id: conversation.id,
-          title: conversation.title,
-          type: 'chat' as const,
-          initial: getRailInitial(conversation.title),
-          active: conversation.id === activeSessionId,
-          status: streamingIds.has(conversation.id) ? 'running' as const : 'idle' as const,
-          pinned: !!conversation.pinned,
-          workspaceName: undefined,
-        }))
-    }
-
-    return currentModeAgentSessions
-      .filter((session) =>
-        !session.archived
-        && !draftSessionIds.has(session.id)
-        && (!currentWorkspaceId || session.workspaceId === currentWorkspaceId)
-      )
-      .sort((a, b) => {
-        const statusA = agentIndicatorMap.get(a.id) ?? (unviewedCompletedSessionIds.has(a.id) ? 'completed' : 'idle')
-        const statusB = agentIndicatorMap.get(b.id) ?? (unviewedCompletedSessionIds.has(b.id) ? 'completed' : 'idle')
-        const priority = (session: AgentSessionMeta, status: SessionIndicatorStatus): number => {
-          if (session.id === activeSessionId) return 0
-          if (status === 'blocked') return 1
-          if (status === 'running') return 2
-          if (workingSessionIds.has(session.id)) return 3
-          if (session.pinned) return 4
-          if (status === 'completed') return 5
-          return 6
-        }
-        const priorityDelta = priority(a, statusA) - priority(b, statusB)
-        if (priorityDelta !== 0) return priorityDelta
-        return b.updatedAt - a.updatedAt
-      })
-      .slice(0, 5)
-      .map((session) => ({
-        id: session.id,
-        title: session.title,
-        type: 'agent' as const,
-        initial: getRailInitial(session.title),
-        active: session.id === activeSessionId,
-        status: agentIndicatorMap.get(session.id) ?? (unviewedCompletedSessionIds.has(session.id) ? 'completed' as const : 'idle' as const),
-        pinned: !!session.pinned,
-        workspaceName: session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined,
-      }))
-  }, [
-    mode,
-    conversations,
-    currentModeAgentSessions,
-    draftSessionIds,
-    currentWorkspaceId,
-    activeSessionId,
-    streamingIds,
-    agentIndicatorMap,
-    unviewedCompletedSessionIds,
-    workingSessionIds,
-    workspaceNameMap,
-  ])
-
   // 删除确认弹窗（collapsed/expanded 共享）
   const deleteDialog = (
     <AlertDialog
@@ -1211,22 +1092,20 @@ export function LeftSidebar({
       className={cn(
         'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
         'transition-[width,opacity] duration-300 ease-in-out',
-        isSidebarCollapsed && 'w-0 min-w-0 opacity-0 pointer-events-none overflow-hidden',
       )}
       style={{
-        width: isSidebarCollapsed ? 0 : (width ?? 240),
+        width: width ?? 240,
       }}
     >
       {/* Win：无顶栏控件时仍保留拖拽条（如 Skills） */}
       {!isMac
-        && !isSidebarCollapsed
         && activeRailItem !== 'sessions'
         && activeRailItem !== 'files' ? (
         <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} />
       ) : null}
 
-      {/* 会话页顶栏：工作区选择 + 右侧折叠按钮 */}
-      {!isSidebarCollapsed && activeRailItem === 'sessions' && onToggleSidebar ? (
+      {/* 会话页顶栏：工作区选择(折叠按钮已移除) */}
+      {activeRailItem === 'sessions' ? (
         <SidebarTopControlsRow isMac={isMac}>
           {mode === 'agent' && topLevelMode === 'general' ? (
             <Popover>
@@ -1299,17 +1178,11 @@ export function LeftSidebar({
           ) : (
             <div className="min-w-0 flex-1" aria-hidden />
           )}
-          <SidebarCollapseButton
-            collapsed={false}
-            placement="sidebar"
-            onClick={onToggleSidebar}
-          />
         </SidebarTopControlsRow>
       ) : null}
 
-      {/* 文件页：仅工作区选择（不可折叠） */}
-      {!isSidebarCollapsed
-        && activeRailItem === 'files'
+      {/* 文件页：仅工作区选择 */}
+      {activeRailItem === 'files'
         && mode === 'agent'
         && topLevelMode === 'general' ? (
         <SidebarTopControlsRow isMac={isMac}>
@@ -1385,10 +1258,10 @@ export function LeftSidebar({
 
       {/* 新对话/新会话按钮 + 搜索按钮（仅会话功能区显示） */}
       {activeRailItem === 'sessions' && (
-        <div className="px-3 pt-2 flex items-center gap-1.5">
+        <div className="nav-island-action-row px-3 gap-1.5">
           <button
             onClick={mode === 'agent' ? handleNewAgentSession : handleNewConversation}
-            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
           >
             <Plus size={14} />
             <span>{mode === 'agent' ? '新会话' : '新对话'}</span>
@@ -1410,7 +1283,10 @@ export function LeftSidebar({
       {/* 功能区内容：切换 Rail 时淡入，避免侧栏翼内容突变生硬 */}
       <div
         key={activeRailItem}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200"
+        className={cn(
+          'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200',
+          activeRailItem !== 'sessions' && activeRailItem !== 'files' && 'nav-island-body-start',
+        )}
       >
         {renderRailContent()}
       </div>

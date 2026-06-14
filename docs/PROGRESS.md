@@ -1,7 +1,26 @@
 # TAgent 项目进度追踪
 
-> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态
-> **设计文档**：`docs/plans/2026-06-05-tagent-fusion-design.md`
+> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态  
+> **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`  
+> **进行中**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
+
+---
+
+## 进行中（2026-06-13）
+
+**Ask 档位统一 Composer**（设计已 Accepted，代码未开始）
+
+| 项 | 状态 |
+|----|------|
+| ADR | ✅ [`docs/decisions/0002-ask-mode-composer.md`](decisions/0002-ask-mode-composer.md) |
+| 实施设计 | ✅ [`docs/plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md) |
+| 建议分支 | `feature/ask-mode-composer` |
+| P0 核心 Ask 链路 | ⬜ 未开始 |
+| P1 引导升级 + 横幅 | ⬜ 未开始 |
+| P2 导航统一 / 藏 Chat | ⬜ 未开始 |
+| P3 删 Chat UI 栈 | ⬜ 未开始 |
+
+**新 Agent 实施前必读**：设计文档 **§0 Handoff** + **§8 PR 顺序** + **§9～10 任务清单**。
 
 ---
 

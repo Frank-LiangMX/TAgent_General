@@ -2,6 +2,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 
 import { setTAgentVersion } from '@tagent/core'
+import { getMacTrafficLightPosition } from '@tagent/shared'
 import { app, BrowserWindow, dialog, Menu, protocol, screen, shell } from 'electron'
 
 import { TRAY_IPC_CHANNELS } from '../types'
@@ -269,8 +270,8 @@ function createWindow(): void {
   const titleBarOptions = isMac
     ? {
         titleBarStyle: 'hiddenInset' as const,
-        /* macOS 系统默认位置:贴近窗口左上角,让 60px Rail 能容纳 3 个红绿灯按钮(总宽 ~56px,终点 x≈64) */
-        trafficLightPosition: { x: 8, y: 20 },
+        /* 与 @tagent/shared layout：shell p-2 + rail 内边距，整组按钮落在 60px Rail 内 */
+        trafficLightPosition: getMacTrafficLightPosition(),
         vibrancy: 'under-window' as const,
         visualEffectState: 'followWindow' as const,
       }

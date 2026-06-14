@@ -1993,6 +1993,9 @@ html:not(.dark) .btw-panel-glass::after,
 .nav-island-glass {
   position: relative;
   isolation: isolate;
+  --nav-island-pt: 8px;
+  --nav-island-row-h: 40px;
+  --nav-island-gap: 6px;
   background: linear-gradient(
     135deg,
     hsl(var(--background) / 0.20) 0%,
@@ -2128,19 +2131,53 @@ html:not(.dark) .btw-panel-glass::after,
   min-width: 0;
 }
 
-/* macOS 顶栏：左翼红绿灯安全区 + 右翼侧栏标题（与主区 TabBar 同高 52px） */
+/* Rail / Sidebar 首行顶距与行高对齐（跨平台共用） */
+.nav-island-body-start {
+  padding-top: var(--nav-island-pt);
+  box-sizing: border-box;
+}
+
+.nav-island-header-row {
+  display: flex;
+  align-items: center;
+  height: var(--nav-island-row-h);
+  min-height: var(--nav-island-row-h);
+  box-sizing: border-box;
+}
+
+.nav-island-action-row {
+  display: flex;
+  align-items: center;
+  padding-top: var(--nav-island-gap);
+  min-height: var(--nav-island-row-h);
+  box-sizing: border-box;
+}
+
+/* macOS 顶栏：左翼红绿灯安全区 + 右翼侧栏标题（与主区 TabBar 同高语义） */
 .nav-island-chrome {
   border-bottom: 1px solid hsl(var(--foreground) / 0.06);
 }
 
 .nav-island-chrome-lights {
   width: var(--nav-rail-width, 60px);
+  box-sizing: border-box;
+  padding-left: 8px;
   -webkit-app-region: drag;
   app-region: drag;
 }
 
 .dark .nav-island-chrome {
   border-bottom-color: hsl(var(--foreground) / 0.08);
+}
+
+/* macOS：略减小左上圆角，避免系统红绿灯视觉上「挂」在弧角外侧 */
+.nav-island-glass--mac {
+  border-top-left-radius: 14px;
+}
+
+.nav-island-glass--mac::before,
+.nav-island-glass--mac::after {
+  border-top-left-radius: 14px;
 }
 
 /* 翼线仅在 body 内，不穿过 chrome 行 */

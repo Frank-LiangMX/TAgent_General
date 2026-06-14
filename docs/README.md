@@ -18,6 +18,7 @@
 |---|---|
 | [`plans/2026-06-05-tagent-fusion-design.md`](plans/2026-06-05-tagent-fusion-design.md) | TAgent Desktop 完整设计（13 节） |
 | [`plans/2026-06-05-tagent-server-design.md`](plans/2026-06-05-tagent-server-design.md) | TAgent Server 完整设计（12 节） |
+| [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md) | **Ask 档位统一 Composer**（替代 Chat 模式，实施清单） |
 
 ## 架构决策
 
@@ -25,6 +26,7 @@
 |---|---|
 | [`decisions/0000-template.md`](decisions/0000-template.md) | ADR 模板 |
 | [`decisions/0001-fusion-architecture.md`](decisions/0001-fusion-architecture.md) | 融合架构（Proma + ta_agent） |
+| [`decisions/0002-ask-mode-composer.md`](decisions/0002-ask-mode-composer.md) | Ask / Agent Composer 档位（替代独立 Chat 模式） |
 
 ## 流程规范
 

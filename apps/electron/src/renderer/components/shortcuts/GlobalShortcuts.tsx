@@ -24,7 +24,7 @@ import {
   agentWorkspacesAtom,
   agentAttachedFilesMapAtom,
 } from '@/atoms/agent-atoms'
-import { activeRailItemAtom, appModeAtom } from '@/atoms/app-mode'
+import { appModeAtom } from '@/atoms/app-mode'
 import {
   chatPendingMessageAtom,
   conversationDraftsAtom,
@@ -38,7 +38,6 @@ import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-at
 import {
   tabsAtom,
   activeTabIdAtom,
-  sidebarCollapsedAtom,
   openTab,
 } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
@@ -61,8 +60,6 @@ export function GlobalShortcuts(): null {
   const channelFormDirty = useAtomValue(channelFormDirtyAtom)
   const setSettingsCloseRequested = useSetAtom(settingsCloseRequestedAtom)
   const [searchOpen, setSearchOpen] = useAtom(searchDialogOpenAtom)
-  const [sidebarCollapsed, setSidebarCollapsed] = useAtom(sidebarCollapsedAtom)
-  const activeRailItem = useAtomValue(activeRailItemAtom)
   const setShortcutOverrides = useSetAtom(shortcutOverridesAtom)
   const shortcutOverrides = useAtomValue(shortcutOverridesAtom)
   const setSendWithCmdEnter = useSetAtom(sendWithCmdEnterAtom)
@@ -148,20 +145,6 @@ export function GlobalShortcuts(): null {
         createChat({ draft: true })
       }
     }, [appMode, createAgent, createChat]),
-  )
-
-  // Cmd+B → 切换侧边栏（仅会话页可收起）
-  useShortcut(
-    'toggle-sidebar',
-    useCallback(() => {
-      if (sidebarCollapsed) {
-        setSidebarCollapsed(false)
-        return
-      }
-      if (activeRailItem === 'sessions') {
-        setSidebarCollapsed(true)
-      }
-    }, [activeRailItem, sidebarCollapsed, setSidebarCollapsed]),
   )
 
   // Cmd+Shift+M → 切换模式
