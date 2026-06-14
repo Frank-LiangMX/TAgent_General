@@ -39,7 +39,7 @@ export interface TATabBarProps {
 
 export function TATabBar({ activeTab, onTabChange }: TATabBarProps): React.ReactElement {
   return (
-    <div className="flex items-end h-[34px] tabbar-bg relative">
+    <div className="flex items-end h-[34px] tabbar-bg content-shell-chrome-bleed relative shrink-0">
       {/* 拖拽区域 */}
       <div className="absolute inset-0 titlebar-drag-region" />
 

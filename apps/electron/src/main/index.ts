@@ -39,8 +39,21 @@ import { createTray, destroyTray, getTray } from './tray'
 
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
-if (!app.isPackaged) {
+const isDevBuild = !app.isPackaged
+if (isDevBuild) {
   app.setPath('userData', join(app.getPath('appData'), '@tagent/electron-dev'))
+}
+
+// 开发模式：electronmon 重启 / 终端 SIGTERM 时真正退出，避免 Dock 残留多个 Electron
+if (isDevBuild) {
+  const gracefulDevExit = (): void => {
+    if (!getIsQuitting()) {
+      setQuitting()
+      app.quit()
+    }
+  }
+  process.on('SIGTERM', gracefulDevExit)
+  process.on('SIGINT', gracefulDevExit)
 }
 
 // 单实例锁：防止重复启动同一个版本（dev/prod 因 userData 已隔离，互不影响）
@@ -53,7 +66,7 @@ if (!app.isPackaged) {
 if (!app.requestSingleInstanceLock()) {
   console.warn(
     '[启动] 已有 TAgent 进程持有单实例锁，本次启动将退出。\n' +
-      '  如果窗口未出现，可能旧进程已卡死。请运行 `killall TAgent` 后重试。',
+      '  如果窗口未出现，可能旧进程已卡死。请运行 `bun run dev-stop` 后重试。',
   )
   app.quit()
 } else {
@@ -349,8 +362,8 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // macOS: 点击关闭按钮时隐藏窗口+应用，而不是退出
-  // 同时隐藏应用（类似 Cmd+H），确保点击 Dock 图标时 macOS 能正确触发 activate 事件
+  // macOS: 点击关闭按钮时隐藏窗口+应用，而不是退出（正式版）
+  // 开发模式：关窗即退出，避免 electronmon 热重载后 Dock 残留多个 Electron
   if (process.platform === 'darwin') {
     mainWindow.on('close', (event) => {
       if (!getIsQuitting()) {
@@ -360,6 +373,12 @@ function createWindow(): void {
           windowStateSaveTimer = null
         }
         saveMainWindowState()
+
+        if (!app.isPackaged) {
+          setQuitting()
+          return
+        }
+
         event.preventDefault()
         mainWindow?.hide()
         app.hide()
@@ -444,12 +463,12 @@ async function bootstrap(): Promise<void> {
   if (process.platform === 'darwin' && app.dock) {
     await app.dock.show()
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { resolveAppIconPath } = require('./ipc')
+    const { resolveAppIconPath, setMacDockIcon } = require('./ipc')
     const settings = getSettings()
     const variantId = settings.appIconVariant
     const dockIconPath = resolveAppIconPath(variantId ?? 'default')
     if (dockIconPath && existsSync(dockIconPath)) {
-      app.dock.setIcon(dockIconPath)
+      setMacDockIcon(dockIconPath)
     }
   }
 

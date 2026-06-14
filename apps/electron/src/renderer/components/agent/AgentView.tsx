@@ -2482,7 +2482,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                 </div>
               )}
               {!hasBannerOverlay && (
-              <div className="session-input-dock relative px-2.5 pb-1 md:px-[18px] md:pb-2.5" data-input-mode="agent">
+              <div className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5" data-input-mode="agent">
                 <div className="absolute bottom-full right-[18px] mb-2 z-50">
                   <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
                   <BtwPanel />

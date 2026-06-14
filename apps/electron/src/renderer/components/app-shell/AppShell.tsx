@@ -31,7 +31,7 @@ import { WorkspaceManagerDialog } from '@/components/agent/WorkspaceManagerDialo
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
-import { NAV_SIDEBAR_WIDTH } from '@/lib/platform'
+import { NAV_RAIL_WIDTH, NAV_SIDEBAR_WIDTH, SHELL_EDGE_PADDING } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 const MIN_RIGHT_PANEL_WIDTH = 300
@@ -61,6 +61,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       : true
 
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
+  const navIslandWidth = showLeftSidebar
+    ? NAV_RAIL_WIDTH + navSidebarWidth
+    : NAV_RAIL_WIDTH
+  /** 底板向左延伸：铺满整块 Nav 浮岛（Rail + Sidebar）下方，与侧栏一体悬浮 */
+  const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
 
@@ -113,8 +118,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       <WindowControls />
 
       <div className="shell-glass shell-bg h-screen w-screen flex overflow-hidden">
-        {/* 左侧：FunctionalRail + LeftSidebar */}
-        <div className="p-2 pr-0 relative z-[60] flex items-stretch">
+        {/* 左侧 Nav 浮岛（叠在底板之上） */}
+        <div className="p-2 pr-0 relative z-[70] flex shrink-0 items-stretch self-stretch">
           <NavIsland
             showSidebar={showLeftSidebar}
             sidebarWidth={navSidebarWidth}
@@ -135,10 +140,37 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           onOpenChange={setWorkspaceManagerOpen}
         />
 
-        {/* 中间容器：relative z-[60] 使其在 z-50 拖动区域之上 */}
+        {/* 主区域底板 + 内容（左侧无圆角，侧栏视觉上悬浮其上） */}
         <div className="flex-1 min-w-0 p-2 relative z-[60]">
-          {/* 通用模式和 TA 模式都使用 MainArea */}
-          <MainArea />
+          <div
+            className="content-main-shell relative h-full min-h-0"
+            style={{
+              ['--content-base-inset-left' as string]: `${contentBaseInsetLeft}px`,
+              ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
+              ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
+            }}
+          >
+            <div className="content-base-plate content-base-plate--body" aria-hidden />
+            <div
+              className="content-base-plate-frame content-base-plate-edge content-base-plate-edge--tone"
+              aria-hidden
+            />
+            <div
+              className="content-base-plate-frame content-base-plate-edge content-base-plate-edge--glint"
+              aria-hidden
+            />
+            <div
+              className="content-base-plate-frame content-base-plate-hairline content-base-plate-hairline--tone"
+              aria-hidden
+            />
+            <div
+              className="content-base-plate-frame content-base-plate-hairline content-base-plate-hairline--glint"
+              aria-hidden
+            />
+            <div className="content-main-foreground relative z-[1] h-full min-h-0">
+              <MainArea />
+            </div>
+          </div>
         </div>
 
         {/* 右侧边栏：Agent 文件面板，仅在通用模式 Agent 子模式下显示 */}

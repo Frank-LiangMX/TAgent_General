@@ -71,7 +71,7 @@ export function TabBarItem({
     if (!el) return
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0]
-      if (entry) setIsNarrow(entry.contentRect.width < 72)
+      if (entry) setIsNarrow(entry.contentRect.width < 60)
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -119,7 +119,7 @@ export function TabBarItem({
           ref={buttonRef}
           type="button"
           className={cn(
-            'group relative flex items-center justify-center gap-1.5 min-w-[82px] px-3 h-[34px]',
+            'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[34px]',
             'rounded-t-lg text-xs transition-colors select-none cursor-pointer',
             'border-t border-l border-r border-transparent',
             isActive
@@ -145,7 +145,7 @@ export function TabBarItem({
 
   return (
     <div
-      className="relative min-w-[120px] max-w-[200px] flex-[1_0_120px] titlebar-no-drag"
+      className="relative min-w-[96px] max-w-[160px] flex-[1_0_96px] titlebar-no-drag"
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
@@ -153,7 +153,7 @@ export function TabBarItem({
         ref={buttonRef}
         type="button"
         className={cn(
-          'group relative flex items-center gap-1.5 px-3 h-[34px] w-full',
+          'group relative flex items-center gap-1.5 px-2.5 h-[34px] w-full',
           'rounded-t-lg text-xs transition-colors select-none cursor-pointer',
           'border-t border-l border-r border-transparent',
           isActive

@@ -50,7 +50,7 @@ export function NavIsland({
   return (
     <div
       className={cn(
-        'nav-island-glass relative flex h-full flex-col overflow-hidden flex-shrink-0',
+        'nav-island-glass nav-island-glass--float relative flex h-full flex-col overflow-hidden flex-shrink-0',
         'transition-[width] duration-300 ease-in-out',
         wingOpen && 'nav-island-glass--expanded',
         isMac && 'nav-island-glass--mac',

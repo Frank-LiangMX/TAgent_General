@@ -320,6 +320,148 @@
     --dashed-border: 15 25% 68% / 0.30;
     --dashed-border-hover: 15 25% 68% / 0.45;
   }
+
+  /* ===== 爱马仕橙 ===== */
+
+  /* 暖陶（浅色） - 温暖米陶色调 */
+  .theme-orange-light {
+    --background: 30 35% 93%;
+    --foreground: 22 35% 18%;
+    --content-area: 30 30% 96%;
+    --muted: 28 30% 88%;
+    --muted-foreground: 22 15% 42%;
+    --border: 28 30% 80%;
+    --primary: 20 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 25% 90%;
+    --secondary-foreground: 22 30% 22%;
+    --accent: 30 30% 85%;
+    --accent-foreground: 20 70% 30%;
+    --ring: 20 80% 50%;
+    --card: 30 30% 97%;
+    --card-foreground: 22 35% 18%;
+    --input: 30 28% 92%;
+    --popover: 30 30% 97%;
+    --popover-foreground: 22 35% 18%;
+    --dialog: 0 0% 100%;
+    --dialog-foreground: 22 35% 18%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --tooltip: 22 40% 18%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 22 20% 70%;
+    --code-bg: 20 35% 14%;
+    --dashed-border: 20 80% 50% / 0.35;
+    --dashed-border-hover: 20 80% 50% / 0.50;
+    --glass-ambient: 30 30% 92%;
+    --glass-rim: 28 25% 84%;
+    --shell-blob: 22 45% 78%;
+  }
+
+  /* 深铜（深色） - 暗陶铜色调 */
+  .theme-orange-dark {
+    --background: 18 25% 13%;
+    --foreground: 28 30% 88%;
+    --content-area: 18 30% 8%;
+    --muted: 18 22% 15%;
+    --muted-foreground: 25 15% 55%;
+    --border: 18 22% 19%;
+    --primary: 20 75% 55%;
+    --primary-foreground: 18 35% 10%;
+    --secondary: 18 20% 15%;
+    --secondary-foreground: 28 30% 88%;
+    --accent: 20 30% 20%;
+    --accent-foreground: 22 70% 70%;
+    --ring: 20 75% 55%;
+    --card: 18 28% 11%;
+    --card-foreground: 28 30% 88%;
+    --input: 18 22% 14%;
+    --popover: 18 28% 11%;
+    --popover-foreground: 28 30% 88%;
+    --dialog: 18 20% 16%;
+    --dialog-foreground: 28 30% 88%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 20 30% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 22 20% 65%;
+    --code-bg: 18 30% 6%;
+    --dashed-border: 20 75% 55% / 0.35;
+    --dashed-border-hover: 20 75% 55% / 0.50;
+  }
+
+  /* ===== 紫藤色系 ===== */
+
+  /* 藤息晨光（浅色） - 紫藤淡雅 */
+  .theme-purple-light {
+    --background: 280 25% 92%;
+    --foreground: 280 30% 22%;
+    --content-area: 285 30% 96%;
+    --muted: 280 25% 88%;
+    --muted-foreground: 280 15% 45%;
+    --border: 280 25% 82%;
+    --primary: 280 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 285 25% 90%;
+    --secondary-foreground: 280 30% 25%;
+    --accent: 280 30% 85%;
+    --accent-foreground: 280 60% 35%;
+    --ring: 280 65% 55%;
+    --card: 285 30% 97%;
+    --card-foreground: 280 30% 22%;
+    --input: 280 25% 92%;
+    --popover: 285 30% 97%;
+    --popover-foreground: 280 30% 22%;
+    --dialog: 0 0% 100%;
+    --dialog-foreground: 280 30% 22%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --tooltip: 280 35% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 280 20% 70%;
+    --code-bg: 280 30% 14%;
+    --dashed-border: 280 65% 55% / 0.35;
+    --dashed-border-hover: 280 65% 55% / 0.50;
+    --glass-ambient: 285 25% 92%;
+    --glass-rim: 280 20% 84%;
+    --shell-blob: 280 45% 80%;
+  }
+
+  /* 藤息夜语（深色） - 紫藤夜色 */
+  .theme-purple-dark {
+    --background: 280 22% 14%;
+    --foreground: 285 25% 88%;
+    --content-area: 280 28% 8%;
+    --muted: 280 20% 15%;
+    --muted-foreground: 280 15% 55%;
+    --border: 280 20% 19%;
+    --primary: 280 70% 65%;
+    --primary-foreground: 280 35% 10%;
+    --secondary: 280 18% 16%;
+    --secondary-foreground: 285 25% 88%;
+    --accent: 285 30% 22%;
+    --accent-foreground: 280 70% 75%;
+    --ring: 280 70% 65%;
+    --card: 280 25% 11%;
+    --card-foreground: 285 25% 88%;
+    --input: 280 20% 14%;
+    --popover: 280 25% 11%;
+    --popover-foreground: 285 25% 88%;
+    --dialog: 280 18% 16%;
+    --dialog-foreground: 285 25% 88%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 280 30% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 280 20% 65%;
+    --code-bg: 280 30% 6%;
+    --dashed-border: 280 70% 65% / 0.35;
+    --dashed-border-hover: 280 70% 65% / 0.50;
+  }
 }
 
 @layer base {
@@ -2175,6 +2317,345 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 /**
+ * content-main-shell - 主内容区容器（底板 + 内容层）
+ */
+.content-main-shell {
+  --content-plate-radius: 20px;
+  --content-base-fade-width: 280px;
+  /* 顶/底横线：自右（主区）向左渐隐，在 Nav 浮岛前消失 */
+  --content-plate-hairline-tone: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    hsl(var(--foreground) / 0.04) var(--content-base-inset-left, 0px),
+    hsl(var(--foreground) / 0.08) calc(var(--content-base-inset-left, 0px) + 36px),
+    hsl(var(--foreground) / 0.11) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+  --content-plate-hairline-glint: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    rgba(255, 255, 255, 0.06) var(--content-base-inset-left, 0px),
+    rgba(255, 255, 255, 0.14) calc(var(--content-base-inset-left, 0px) + 36px),
+    rgba(255, 255, 255, 0.26) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+}
+
+/* 内容层：顶/底 chrome 向左延伸至 Sidebar 右缘，中间内容区保留右侧圆角裁切 */
+.content-main-foreground {
+  min-height: 0;
+}
+
+.content-main-body {
+  border-radius: 0 var(--content-plate-radius) var(--content-plate-radius) 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.content-main-foreground .tabbar-bg {
+  background-color: transparent;
+}
+
+/* TabBar / 底部输入 dock：越过主区左 padding，与 Nav 浮岛右缘对齐 */
+.content-shell-chrome-bleed {
+  box-sizing: border-box;
+  width: calc(100% + var(--content-chrome-bleed-left, 0px));
+  margin-left: calc(-1 * var(--content-chrome-bleed-left, 0px));
+  padding-left: var(--content-chrome-bleed-left, 0px);
+}
+
+/* 底栏输入 dock：左侧与 Sidebar 对齐，内容区保留原有内边距 */
+.content-main-shell .session-input-dock.content-shell-chrome-bleed {
+  padding-left: calc(var(--content-chrome-bleed-left, 0px) + 10px);
+  padding-right: 10px;
+}
+
+@media (min-width: 768px) {
+  .content-main-shell .session-input-dock.content-shell-chrome-bleed {
+    padding-right: 18px;
+  }
+}
+
+/* 主区底板：左侧开口画布，右侧圆角 */
+.content-base-plate--body,
+.content-base-plate-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: calc(-1 * var(--content-base-inset-left, 0px));
+  --content-plate-radius: 20px;
+  border-radius: 0 var(--content-plate-radius) var(--content-plate-radius) 0;
+  pointer-events: none;
+}
+
+.content-base-plate--body {
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
+  border: none;
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.03) 0%,
+      hsl(var(--content-area) / 0.07) calc(var(--content-base-fade-width) * 0.45),
+      hsl(var(--content-area) / 0.14) calc(var(--content-base-fade-width) * 0.78),
+      hsl(var(--content-area) / 0.18) var(--content-base-fade-width)
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--content-area) / 0.18) 0%,
+      hsl(var(--content-area) / 0.10) 100%
+    );
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: left 300ms ease-in-out;
+}
+
+/* 描边/分割线叠在 TabBar 之上，避免选中标签盖住顶线 */
+.content-base-plate-frame {
+  z-index: 2;
+}
+
+.content-base-plate--body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    hsl(var(--background) / 1) 0%,
+    hsl(var(--background) / 0.94) calc(var(--content-base-inset-left, 0px) * 0.12),
+    hsl(var(--background) / 0.82) calc(var(--content-base-fade-width) * 0.22),
+    hsl(var(--background) / 0.52) calc(var(--content-base-fade-width) * 0.48),
+    hsl(var(--background) / 0.22) calc(var(--content-base-fade-width) * 0.72),
+    hsl(var(--background) / 0.06) calc(var(--content-base-fade-width) * 0.9),
+    transparent var(--content-base-fade-width)
+  );
+}
+
+.content-base-plate--body::after {
+  display: none;
+}
+
+/*
+ * content-base-plate-edge - 仅右侧竖边（圆角由 border-radius 自然过渡）
+ */
+.content-base-plate-edge {
+  border-style: solid;
+  border-width: 0 1px 0 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.content-base-plate-edge--tone {
+  border-color: hsl(var(--foreground) / 0.11);
+}
+
+.content-base-plate-edge--glint {
+  border-color: rgba(255, 255, 255, 0.30);
+  opacity: 0.42;
+}
+
+/*
+ * content-base-plate-hairline - 顶/底横线（在 Nav 浮岛接触前渐隐）
+ */
+.content-base-plate-hairline {
+  background-repeat: no-repeat;
+  background-size: 100% 1px, 100% 1px;
+  background-position: top center, bottom center;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0px,
+    #000 calc(100% - var(--content-plate-radius)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0px,
+    #000 calc(100% - var(--content-plate-radius)),
+    transparent 100%
+  );
+}
+
+.content-base-plate-hairline--tone {
+  background-image: var(--content-plate-hairline-tone), var(--content-plate-hairline-tone);
+}
+
+.content-base-plate-hairline--glint {
+  background-image: var(--content-plate-hairline-glint), var(--content-plate-hairline-glint);
+  opacity: 0.42;
+}
+
+.dark .content-base-plate--body {
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.02) 0%,
+      hsl(var(--content-area) / 0.05) calc(var(--content-base-fade-width) * 0.45),
+      hsl(var(--content-area) / 0.10) calc(var(--content-base-fade-width) * 0.78),
+      hsl(var(--content-area) / 0.15) var(--content-base-fade-width)
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--content-area) / 0.15) 0%,
+      hsl(var(--content-area) / 0.08) 100%
+    );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-base-plate--body::before {
+  background: linear-gradient(
+    to right,
+    hsl(var(--background) / 0.98) 0%,
+    hsl(var(--background) / 0.9) calc(var(--content-base-inset-left, 0px) * 0.12),
+    hsl(var(--background) / 0.78) calc(var(--content-base-fade-width) * 0.22),
+    hsl(var(--background) / 0.46) calc(var(--content-base-fade-width) * 0.48),
+    hsl(var(--background) / 0.18) calc(var(--content-base-fade-width) * 0.72),
+    hsl(var(--background) / 0.05) calc(var(--content-base-fade-width) * 0.9),
+    transparent var(--content-base-fade-width)
+  );
+}
+
+.dark .content-base-plate-edge--tone {
+  border-color: hsl(var(--foreground) / 0.15);
+}
+
+.dark .content-base-plate-edge--glint {
+  border-color: rgba(255, 255, 255, 0.16);
+  opacity: 0.38;
+}
+
+.dark .content-main-shell {
+  --content-plate-hairline-tone: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    hsl(var(--foreground) / 0.05) var(--content-base-inset-left, 0px),
+    hsl(var(--foreground) / 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    hsl(var(--foreground) / 0.15) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+  --content-plate-hairline-glint: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    rgba(255, 255, 255, 0.05) var(--content-base-inset-left, 0px),
+    rgba(255, 255, 255, 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    rgba(255, 255, 255, 0.14) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+}
+
+.dark .content-base-plate-hairline--glint {
+  opacity: 0.34;
+}
+
+/* 主区内容层透明，视觉由底板承担 */
+.content-main-shell .content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.content-main-shell .content-glass::before,
+.content-main-shell .content-glass::after {
+  display: none;
+}
+
+html.material-frosted .content-main-shell .content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Nav 浮岛：更强悬浮 + 玻璃质感（叠在底板之上，尺寸不变） */
+.nav-island-glass.nav-island-glass--float {
+  -webkit-backdrop-filter: blur(24px) saturate(1.45);
+  backdrop-filter: blur(24px) saturate(1.45);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.82) 0%,
+    hsl(var(--background) / 0.66) 46%,
+    hsl(var(--background) / 0.58) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.78);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.50),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.10),
+    0 28px 64px rgba(0, 0, 0, 0.09);
+}
+
+.nav-island-glass.nav-island-glass--float::before {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.09) 0%,
+    rgba(255, 255, 255, 0.06) 22%,
+    transparent 52%,
+    hsl(var(--primary) / 0.05) 100%
+  );
+}
+
+.nav-island-glass.nav-island-glass--float::after {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.30) 26%,
+    rgba(255, 255, 255, 0.52) 50%,
+    rgba(255, 255, 255, 0.28) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.dark .nav-island-glass.nav-island-glass--float {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.56) 0%,
+    hsl(var(--background) / 0.42) 46%,
+    hsl(var(--background) / 0.34) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.52);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 14px 40px rgba(0, 0, 0, 0.20),
+    0 32px 76px rgba(0, 0, 0, 0.16);
+}
+
+.dark .nav-island-glass.nav-island-glass--float::before {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 22%,
+    transparent 52%,
+    hsl(var(--primary) / 0.07) 100%
+  );
+}
+
+.dark .nav-island-glass.nav-island-glass--float::after {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.10) 26%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+
+/**
  * rail-glass - FunctionalRail 专用液态玻璃
  * 竖向布局，更紧凑的视觉效果
  */
@@ -3165,6 +3646,7 @@ html.material-frosted .panel-glass::before,
 html.material-frosted .rail-glass::before,
 html.material-frosted .nav-island-glass::before,
 html.material-frosted .content-glass::before,
+html.material-frosted .content-base-plate--body::before,
 html.material-frosted .btw-panel-glass::before,
 html.material-frosted .btw-input-glass::before,
 html.material-frosted .btw-glass::before {
@@ -3337,12 +3819,89 @@ html.material-frosted .nav-island-glass {
     0 2px 12px rgba(0, 0, 0, 0.07);
 }
 
+html.material-frosted .nav-island-glass.nav-island-glass--float {
+  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
+  backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
+  background: hsl(var(--background) / var(--material-opacity-elevated));
+  border-color: hsl(var(--glass-rim) / 0.68);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.06),
+    0 4px 14px rgba(0, 0, 0, 0.09),
+    0 16px 40px rgba(0, 0, 0, 0.10),
+    0 30px 68px rgba(0, 0, 0, 0.08);
+}
+
 html.material-frosted .content-glass {
   -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
   backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
   background: hsl(var(--content-area) / var(--material-opacity-surface));
   border-color: hsl(var(--border) / 0.5);
   box-shadow: none;
+}
+
+html.material-frosted .content-base-plate--body {
+  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.03) 0%,
+      hsl(var(--content-area) / 0.22) calc(var(--content-base-fade-width) * 0.5),
+      hsl(var(--content-area) / var(--material-opacity-surface)) var(--content-base-fade-width)
+    );
+  box-shadow: none;
+  transition: left 300ms ease-in-out;
+}
+
+html.material-frosted .content-base-plate-edge--tone {
+  border-color: hsl(var(--glass-rim) / 0.58);
+}
+
+html.material-frosted .content-base-plate-edge--glint {
+  border-color: var(--material-edge-inset);
+  opacity: 0.32;
+}
+
+html.material-frosted .content-base-plate-hairline--tone {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      hsl(var(--glass-rim) / 0.22) var(--content-base-inset-left, 0px),
+      hsl(var(--glass-rim) / 0.42) calc(var(--content-base-inset-left, 0px) + 36px),
+      hsl(var(--glass-rim) / 0.55) calc(var(--content-base-inset-left, 0px) + 64px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      hsl(var(--glass-rim) / 0.22) var(--content-base-inset-left, 0px),
+      hsl(var(--glass-rim) / 0.42) calc(var(--content-base-inset-left, 0px) + 36px),
+      hsl(var(--glass-rim) / 0.55) calc(var(--content-base-inset-left, 0px) + 64px)
+    );
+}
+
+html.material-frosted .content-base-plate-hairline--glint {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      var(--material-edge-ring-mid) var(--content-base-inset-left, 0px),
+      var(--material-edge-ring-peak) calc(var(--content-base-inset-left, 0px) + 36px),
+      var(--material-edge-inset) calc(var(--content-base-inset-left, 0px) + 64px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      var(--material-edge-ring-mid) var(--content-base-inset-left, 0px),
+      var(--material-edge-ring-peak) calc(var(--content-base-inset-left, 0px) + 36px),
+      var(--material-edge-inset) calc(var(--content-base-inset-left, 0px) + 64px)
+    );
+  opacity: 0.3;
 }
 
 html.material-frosted .btw-panel-glass {

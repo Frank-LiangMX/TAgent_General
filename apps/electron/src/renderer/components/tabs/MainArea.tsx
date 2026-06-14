@@ -268,6 +268,7 @@ function GeneralMainArea(): React.ReactElement {
           style={leftFlexStyle}
         >
           {!showSessionWelcome && <TabBar />}
+          <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1">
           {showSessionWelcome || tabs.length === 0 ? (
             <WelcomeView />
           ) : deferredActiveTabId ? (
@@ -275,6 +276,7 @@ function GeneralMainArea(): React.ReactElement {
               <TabContent tabId={deferredActiveTabId} />
             </div>
           ) : null}
+          </div>
         </div>
 
         {/* 右侧：预览面板。关闭动画期间脱离 flex 流，向右滑出 */}

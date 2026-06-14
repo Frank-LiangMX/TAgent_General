@@ -1,0 +1,787 @@
+/**
+ * appearance-overrides.css
+ *
+ * TAgent 外观设置页品牌样式覆盖
+ *
+ * 设计原则：
+ *  - 主题卡 hover/selected 各自用主题色，**无任何模糊蒙版**
+ *  - 动画全部一次性：entry 一次 / 角标 snap 一次 / 中心脉冲一次
+ *  - 品牌色板紧凑、占位小
+ *  - 页面三段式：slim header / 皮肤 / 排版与材质
+ */
+
+/* =============================================================
+ *  1. TAgent 品牌色变量（仅作用于品牌签名区，不影响主题 token）
+ * ============================================================= */
+
+:root {
+  --tagent-brand: hsl(195 90% 55%);
+  --tagent-brand-soft: hsl(195 90% 55% / 0.15);
+  --tagent-brand-glow: hsl(195 90% 55% / 0.45);
+  --tagent-brand-foreground: hsl(195 20% 12%);
+}
+
+.dark {
+  --tagent-brand-foreground: hsl(195 30% 95%);
+}
+
+/* =============================================================
+ *  2. 主题色 token（每个主题卡拥有自己的 --theme-* 变量）
+ *  hover/selected 用 var(--theme-glow)
+ * ============================================================= */
+
+.tagent-style-card[data-style='slate-light']   { --theme-glow: hsl(28 35% 60%);   --theme-soft: hsl(28 35% 60% / 0.3);   }
+.tagent-style-card[data-style='ocean-light']   { --theme-glow: hsl(205 70% 55%);  --theme-soft: hsl(205 70% 55% / 0.3);  }
+.tagent-style-card[data-style='forest-light']  { --theme-glow: hsl(140 45% 48%);  --theme-soft: hsl(140 45% 48% / 0.3);  }
+.tagent-style-card[data-style='orange-light']  { --theme-glow: hsl(20 85% 55%);   --theme-soft: hsl(20 85% 55% / 0.32);  }
+.tagent-style-card[data-style='purple-light']  { --theme-glow: hsl(280 70% 62%);  --theme-soft: hsl(280 70% 62% / 0.3);  }
+.tagent-style-card[data-style='slate-dark']    { --theme-glow: hsl(280 20% 60%);  --theme-soft: hsl(280 20% 60% / 0.3);  }
+.tagent-style-card[data-style='ocean-dark']    { --theme-glow: hsl(220 65% 55%);  --theme-soft: hsl(220 65% 55% / 0.35); }
+.tagent-style-card[data-style='forest-dark']   { --theme-glow: hsl(165 55% 50%);  --theme-soft: hsl(165 55% 50% / 0.35); }
+.tagent-style-card[data-style='orange-dark']   { --theme-glow: hsl(20 75% 55%);   --theme-soft: hsl(20 75% 55% / 0.35);  }
+.tagent-style-card[data-style='purple-dark']   { --theme-glow: hsl(280 60% 60%);  --theme-soft: hsl(280 60% 60% / 0.35); }
+
+/* =============================================================
+ *  3. 关键帧定义（全部一次性，forwards 保留终态）
+ * ============================================================= */
+
+@keyframes tagent-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tagent-sweep-once {
+  0%   { transform: translateX(-30%); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+
+@keyframes tagent-pulse-ring {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(7); opacity: 0; }
+}
+
+@keyframes tagent-corner-snap {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* =============================================================
+ *  4. Slim 品牌签名 header（紧凑、含内联色板）
+ * ============================================================= */
+
+.tagent-slim-header {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      var(--tagent-brand-soft) 0%,
+      transparent 60%
+    ),
+    hsl(var(--card) / 0.6);
+  border: 1px solid hsl(var(--border) / 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  animation: tagent-fade-up 0.5s ease-out 1 backwards;
+}
+
+.tagent-slim-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      hsl(var(--foreground) / 0.05) 1px,
+      transparent 0
+    );
+  background-size: 14px 14px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.tagent-slim-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    var(--tagent-brand-glow) 50%,
+    transparent 100%
+  );
+  filter: blur(16px);
+  pointer-events: none;
+  animation: tagent-sweep-once 1.6s ease-out 0.2s 1 backwards;
+}
+
+.tagent-slim-header-left {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.tagent-slim-header-logo {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 0.5rem;
+  display: grid;
+  place-items: center;
+  background: var(--tagent-brand);
+  color: var(--tagent-brand-foreground);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 0 0 1px hsl(var(--background) / 0.6) inset,
+    0 4px 12px -6px var(--tagent-brand-glow);
+  flex-shrink: 0;
+}
+
+.tagent-slim-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.tagent-slim-header-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tagent-slim-header-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  background: var(--tagent-brand-soft);
+  color: var(--tagent-brand);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tagent-slim-header-subtitle {
+  font-size: 0.65rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagent-slim-header-palette {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.tagent-slim-header-palette-label {
+  font-size: 0.6rem;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  margin-right: 0.1rem;
+}
+
+.tagent-slim-palette-chip {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border: 1px solid hsl(var(--border) / 0.5);
+  background: var(--tagent-chip-bg);
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+}
+
+.tagent-slim-palette-chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.tagent-slim-palette-chip:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 10px -3px var(--tagent-chip-glow);
+}
+
+.tagent-slim-palette-chip[data-selected='true'] {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px var(--tagent-chip-glow),
+    0 4px 10px -3px var(--tagent-chip-glow);
+}
+
+.tagent-slim-palette-chip[data-selected='true'] .tagent-slim-palette-tick {
+  position: relative;
+  z-index: 1;
+  color: white;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+/* =============================================================
+ *  5. 主题预览（纯 CSS 渐变 + 噪点 + 装饰符号）
+ * ============================================================= */
+
+.tagent-theme-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tagent-theme-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 80px 80px;
+  mix-blend-mode: overlay;
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tagent-theme-preview::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tagent-theme-cloud-dancer {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.85) 0%, transparent 38%),
+    radial-gradient(circle at 75% 70%, rgba(255, 250, 240, 0.55) 0%, transparent 35%),
+    linear-gradient(160deg, hsl(28 30% 90%) 0%, hsl(28 25% 78%) 50%, hsl(18 20% 68%) 100%);
+}
+
+.tagent-theme-ocean-light {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 40%),
+    radial-gradient(ellipse at 20% 90%, rgba(255, 240, 200, 0.35) 0%, transparent 35%),
+    linear-gradient(180deg, hsl(205 70% 78%) 0%, hsl(205 65% 55%) 50%, hsl(210 60% 40%) 100%);
+}
+
+.tagent-theme-forest-light {
+  background:
+    radial-gradient(circle at 70% 30%, rgba(255, 245, 200, 0.6) 0%, transparent 35%),
+    radial-gradient(ellipse at 0% 100%, rgba(60, 120, 80, 0.5) 0%, transparent 40%),
+    linear-gradient(160deg, hsl(80 35% 70%) 0%, hsl(120 30% 50%) 50%, hsl(150 30% 32%) 100%);
+}
+
+.tagent-theme-ocean-dark {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(140, 180, 255, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(80, 60, 140, 0.5) 0%, transparent 45%),
+    linear-gradient(180deg, hsl(220 50% 25%) 0%, hsl(230 55% 15%) 60%, hsl(240 60% 8%) 100%);
+}
+
+.tagent-theme-forest-dark {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(180, 220, 200, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 20% 100%, rgba(20, 50, 40, 0.7) 0%, transparent 50%),
+    linear-gradient(170deg, hsl(150 35% 25%) 0%, hsl(160 40% 15%) 50%, hsl(170 50% 8%) 100%);
+}
+
+.tagent-theme-morandi-night {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(200, 180, 200, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(120, 100, 130, 0.4) 0%, transparent 40%),
+    linear-gradient(155deg, hsl(280 12% 35%) 0%, hsl(260 15% 22%) 50%, hsl(240 18% 12%) 100%);
+}
+
+.tagent-theme-terracotta-dawn {
+  background:
+    radial-gradient(circle at 70% 25%, rgba(255, 230, 180, 0.7) 0%, transparent 40%),
+    radial-gradient(circle at 25% 85%, rgba(180, 60, 30, 0.45) 0%, transparent 40%),
+    linear-gradient(165deg, hsl(35 70% 70%) 0%, hsl(22 75% 55%) 50%, hsl(15 70% 38%) 100%);
+}
+
+.tagent-theme-terracotta-night {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(255, 160, 80, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 30% 100%, rgba(60, 20, 10, 0.7) 0%, transparent 50%),
+    linear-gradient(170deg, hsl(20 55% 30%) 0%, hsl(15 50% 18%) 50%, hsl(12 55% 8%) 100%);
+}
+
+.tagent-theme-wisteria-dawn {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 240, 255, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at 75% 75%, rgba(150, 80, 180, 0.45) 0%, transparent 40%),
+    linear-gradient(160deg, hsl(295 50% 82%) 0%, hsl(280 55% 60%) 50%, hsl(270 55% 38%) 100%);
+}
+
+.tagent-theme-wisteria-night {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(190, 140, 220, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 25% 95%, rgba(40, 15, 60, 0.7) 0%, transparent 50%),
+    linear-gradient(170deg, hsl(280 40% 22%) 0%, hsl(275 45% 14%) 50%, hsl(270 50% 7%) 100%);
+}
+
+.tagent-theme-deco {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.tagent-theme-deco svg {
+  width: 32%;
+  height: auto;
+  opacity: 0.55;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+/* =============================================================
+ *  6. 主题风格卡（5 列 × 2 行 = 10 张）
+ *  hover/selected 只改 border + 角标 + 中心脉冲，不叠任何模糊蒙版
+ * ============================================================= */
+
+.tagent-style-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  animation: tagent-fade-up 0.5s ease-out 0.1s 1 backwards;
+}
+
+.tagent-style-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border) / 0.5);
+  cursor: pointer;
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--card) / 0.4);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  outline: none;
+}
+
+.tagent-style-card:hover {
+  border-color: var(--theme-soft);
+  transform: translateY(-1px);
+}
+
+.tagent-style-card[data-selected='true'] {
+  border-color: var(--theme-glow);
+  box-shadow:
+    0 0 0 1px var(--theme-soft),
+    0 6px 16px -8px var(--theme-glow);
+}
+
+/* 选中时一次性中心圆环脉冲（无任何模糊蒙版） */
+.tagent-style-card[data-selected='true'] .tagent-card-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--theme-glow);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 8px var(--theme-soft);
+  animation: tagent-pulse-ring 0.85s ease-out 1 forwards;
+}
+
+.tagent-style-card[data-selected='true'] .tagent-card-pulse-2 {
+  animation-delay: 0.18s;
+}
+
+/* 4 角 L 形角标（持久显示，snap 一次） */
+.tagent-corner {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-color: var(--theme-glow);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0;
+  z-index: 6;
+  filter: drop-shadow(0 0 2px var(--theme-soft));
+}
+
+.tagent-style-card[data-selected='true'] .tagent-corner {
+  animation: tagent-corner-snap 0.35s ease-out 1 forwards;
+}
+
+.tagent-corner-tl {
+  top: 4px; left: 4px;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+  transform-origin: top left;
+}
+.tagent-corner-tr {
+  top: 4px; right: 4px;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+  transform-origin: top right;
+}
+.tagent-corner-bl {
+  bottom: 22px; left: 4px;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+  transform-origin: bottom left;
+}
+.tagent-corner-br {
+  bottom: 22px; right: 4px;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+  transform-origin: bottom right;
+}
+
+.tagent-style-card[data-selected='true'] .tagent-corner-tl { animation-delay: 0s; }
+.tagent-style-card[data-selected='true'] .tagent-corner-tr { animation-delay: 0.05s; }
+.tagent-style-card[data-selected='true'] .tagent-corner-bl { animation-delay: 0.1s; }
+.tagent-style-card[data-selected='true'] .tagent-corner-br { animation-delay: 0.15s; }
+
+/* TAgent 风格 tag（hover/selected 时显示） */
+.tagent-theme-watermark {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 7;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--theme-glow);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tagent-style-card:hover .tagent-theme-watermark,
+.tagent-style-card[data-selected='true'] .tagent-theme-watermark {
+  opacity: 1;
+}
+
+.tagent-style-card .tagent-style-preview-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.tagent-style-card-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  position: relative;
+  z-index: 4;
+}
+
+.tagent-style-card-label-tag {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--theme-glow);
+  font-weight: 600;
+}
+
+/* =============================================================
+ *  7. 阅读字号滑杆
+ * ============================================================= */
+
+.tagent-font-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 12rem;
+  user-select: none;
+  animation: tagent-fade-up 0.5s ease-out 0.2s 1 backwards;
+}
+
+.tagent-font-slider-preview {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  line-height: 1.1;
+  font-size: 0.95rem;
+  transition: font-size 0.18s ease;
+  min-height: 1.2em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.tagent-font-slider-preview-label {
+  font-size: 0.625rem;
+  color: var(--tagent-brand);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.tagent-font-slider-track {
+  position: relative;
+  width: 100%;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.tagent-font-slider-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: hsl(var(--muted) / 0.8);
+  box-shadow: inset 0 1px 1px hsl(var(--foreground) / 0.06);
+}
+
+.tagent-font-slider-fill {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--tagent-brand) 0%, var(--tagent-brand-glow) 100%);
+  box-shadow: 0 0 8px var(--tagent-brand-glow);
+  transition: width 0.18s ease;
+}
+
+.tagent-font-slider-stop {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--background));
+  border: 1.5px solid hsl(var(--muted-foreground) / 0.4);
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+}
+
+.tagent-font-slider-stop[data-active='true'] {
+  background: var(--tagent-brand);
+  border-color: var(--tagent-brand);
+  box-shadow: 0 0 8px var(--tagent-brand-glow);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.tagent-font-slider-thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: hsl(var(--background));
+  border: 2px solid var(--tagent-brand);
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 0 0 4px var(--tagent-brand-soft),
+    0 2px 6px hsl(var(--foreground) / 0.1);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.tagent-font-slider:hover .tagent-font-slider-thumb,
+.tagent-font-slider.dragging .tagent-font-slider-thumb {
+  box-shadow:
+    0 0 0 6px var(--tagent-brand-soft),
+    0 2px 8px hsl(var(--foreground) / 0.15);
+}
+
+.tagent-font-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.625rem;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.tagent-font-slider-labels span[data-active='true'] {
+  color: var(--tagent-brand);
+  font-weight: 700;
+}
+
+/* =============================================================
+ *  8. 高级材质对比
+ * ============================================================= */
+
+.tagent-material-pair {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  animation: tagent-fade-up 0.5s ease-out 0.3s 1 backwards;
+}
+
+.tagent-material-tile {
+  position: relative;
+  min-width: 5rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border) / 0.6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  background: hsl(var(--card) / 0.4);
+}
+
+.tagent-material-tile:hover {
+  border-color: var(--tagent-brand-soft);
+  transform: translateY(-1px);
+}
+
+.tagent-material-tile[data-selected='true'] {
+  border-color: var(--tagent-brand);
+  background: var(--tagent-brand-soft);
+  box-shadow:
+    0 0 0 1px var(--tagent-brand-soft),
+    0 4px 12px -6px var(--tagent-brand-glow);
+}
+
+.tagent-material-preview {
+  height: 1.75rem;
+  border-radius: 0.3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.tagent-material-preview-glass {
+  background:
+    radial-gradient(circle at 25% 30%, hsl(195 90% 60% / 0.7) 0%, transparent 50%),
+    radial-gradient(circle at 75% 70%, hsl(265 85% 65% / 0.6) 0%, transparent 50%),
+    linear-gradient(135deg, hsl(220 25% 25% / 0.5) 0%, hsl(220 25% 15% / 0.3) 100%);
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  border: 1px solid hsl(var(--background) / 0.18);
+}
+
+.tagent-material-preview-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, hsl(var(--background) / 0.18) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.tagent-material-preview-frosted {
+  background: linear-gradient(135deg, hsl(220 15% 35% / 0.6) 0%, hsl(220 15% 25% / 0.4) 100%);
+  backdrop-filter: blur(4px) saturate(110%);
+  -webkit-backdrop-filter: blur(4px) saturate(110%);
+  border: 1px solid hsl(var(--border) / 0.4);
+}
+
+.tagent-material-name {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  line-height: 1.1;
+}
+
+.tagent-material-tag {
+  font-size: 0.55rem;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tagent-material-tile[data-selected='true'] .tagent-material-tag {
+  color: var(--tagent-brand);
+  font-weight: 600;
+}
+
+/* =============================================================
+ *  9. 界面缩放 keycap
+ * ============================================================= */
+
+.tagent-keycaps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tagent-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(180deg, hsl(var(--background) / 0.95) 0%, hsl(var(--muted) / 0.85) 100%);
+  border: 1px solid var(--tagent-brand-soft);
+  box-shadow:
+    0 1px 0 hsl(var(--foreground) / 0.06),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.04);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--tagent-brand);
+  letter-spacing: -0.02em;
+}
+
+.tagent-keycap-sep {
+  font-size: 0.6rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0 0.05rem;
+}
+
+.dark .tagent-keycap {
+  background: linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--muted) / 0.7) 100%);
+}

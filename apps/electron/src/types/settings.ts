@@ -154,7 +154,7 @@ export interface ShortcutOverrides {
 export type ThemeMode = 'light' | 'dark' | 'system' | 'special'
 
 /** 特殊风格主题 */
-export type ThemeStyle = 'default' | 'ocean-light' | 'ocean-dark' | 'forest-light' | 'forest-dark' | 'slate-light' | 'slate-dark'
+export type ThemeStyle = 'default' | 'ocean-light' | 'ocean-dark' | 'forest-light' | 'forest-dark' | 'slate-light' | 'slate-dark' | 'orange-light' | 'orange-dark' | 'purple-light' | 'purple-dark'
 
 /** 默认主题模式 */
 export const DEFAULT_THEME_MODE: ThemeMode = 'dark'
@@ -170,6 +170,12 @@ export const DEFAULT_MARKDOWN_FONT_SIZE: MarkdownFontSize = 'medium'
 
 /** 默认启用高级材质（高透玻璃）；关闭时为低透磨砂玻璃 */
 export const DEFAULT_ADVANCED_MATERIAL_ENABLED = true
+
+/** TAgent 品牌色（仅影响品牌签名/装饰元素高亮，不影响主题 token） */
+export type TAgentBrand = 'cyan' | 'violet' | 'amber' | 'forest' | 'slate'
+
+/** 默认 TAgent 品牌色 */
+export const DEFAULT_TAGENT_BRAND: TAgentBrand = 'cyan'
 
 /** 应用设置 */
 export interface AppSettings {
@@ -230,6 +236,8 @@ export interface AppSettings {
   markdownFontSize?: MarkdownFontSize
   /** 高级材质：true = 高透玻璃，false = 低透磨砂玻璃 */
   advancedMaterialEnabled?: boolean
+  /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
+  tagentBrand?: TAgentBrand
   /** 上次是否在 Scratch Pad 页（用于重启恢复） */
   scratchPadActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */

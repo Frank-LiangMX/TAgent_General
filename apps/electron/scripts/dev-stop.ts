@@ -1,50 +1,19 @@
 /**
  * 停止本地开发环境：Vite、esbuild watch、electronmon、Electron 等残留进程。
- * 跨平台实现，替代 pkill / 手动 killall。
  */
 import { execSync } from 'node:child_process'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+
+import {
+  killUnixByPattern,
+  killUnixProjectElectron,
+  killWinByCommandLine,
+  killWinByImage,
+  killWinProjectElectron,
+  repoRoot,
+  rootMarkers,
+} from './dev-kill-shared'
 
 const isWin = process.platform === 'win32'
-const electronRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
-const repoRoot = join(electronRoot, '..', '..')
-
-function escapeForPkill(pattern: string): string {
-  return pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-const rootMarkers = [electronRoot, repoRoot].map(escapeForPkill)
-
-function killUnixByPattern(pattern: string): void {
-  try {
-    execSync(`pkill -f '${pattern.replace(/'/g, "'\\''")}' 2>/dev/null`, { stdio: 'ignore' })
-  } catch {
-    // 无匹配进程
-  }
-}
-
-function killWinByImage(name: string): void {
-  try {
-    execSync(`taskkill /F /IM ${name} 2>nul`, { stdio: 'ignore' })
-  } catch {
-    // 无匹配进程
-  }
-}
-
-function killWinByCommandLine(fragment: string): void {
-  const escaped = fragment.replace(/\\/g, '\\\\').replace(/'/g, "''")
-  const ps = [
-    'Get-CimInstance Win32_Process |',
-    `Where-Object { $_.CommandLine -like '*${escaped}*' } |`,
-    'ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
-  ].join(' ')
-  try {
-    execSync(`powershell.exe -NoProfile -NonInteractive -Command "${ps}"`, { stdio: 'ignore' })
-  } catch {
-    // 无匹配进程
-  }
-}
 
 function killDevPort(): void {
   if (isWin) {
@@ -100,12 +69,15 @@ function stopUnix(): void {
     killUnixByPattern(`${marker}.*run dev`)
   }
 
+  // electronmon 退出后 Electron 主进程常会留在 Dock，必须单独清理
+  killUnixProjectElectron()
+
   killDevPort()
 }
 
 function stopWindows(): void {
   killWinByImage('electronmon.exe')
-  killWinByImage('electron.exe')
+  killWinProjectElectron()
 
   const fragments = [
     'dist\\main.cjs',
@@ -114,6 +86,7 @@ function stopWindows(): void {
     'concurrently',
     'run-electronmon',
     'apps\\electron',
+    repoRoot,
   ]
   for (const fragment of fragments) {
     killWinByCommandLine(fragment)

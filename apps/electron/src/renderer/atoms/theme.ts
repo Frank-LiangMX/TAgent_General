@@ -39,7 +39,7 @@ function getCachedThemeMode(): ThemeMode {
 function getCachedThemeStyle(): ThemeStyle {
   try {
     const cached = localStorage.getItem(THEME_STYLE_CACHE_KEY)
-    if (cached === 'default' || cached === 'ocean-light' || cached === 'ocean-dark' || cached === 'forest-light' || cached === 'forest-dark' || cached === 'slate-light' || cached === 'slate-dark') {
+    if (cached === 'default' || cached === 'ocean-light' || cached === 'ocean-dark' || cached === 'forest-light' || cached === 'forest-dark' || cached === 'slate-light' || cached === 'slate-dark' || cached === 'orange-light' || cached === 'orange-dark' || cached === 'purple-light' || cached === 'purple-dark') {
       return cached
     }
   } catch {
@@ -101,6 +101,10 @@ const ALL_THEME_STYLE_CLASSES = [
   'theme-forest-dark',
   'theme-slate-light',
   'theme-slate-dark',
+  'theme-orange-light',
+  'theme-orange-dark',
+  'theme-purple-light',
+  'theme-purple-dark',
 ] as const
 
 /**

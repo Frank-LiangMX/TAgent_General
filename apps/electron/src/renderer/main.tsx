@@ -57,6 +57,10 @@ import {
   initializeTheme,
 } from './atoms/theme'
 import {
+  tagentBrandAtom,
+  initializeTAgentBrand,
+} from './atoms/tagent-brand'
+import {
   stickyUserMessageEnabledAtom,
   initializeUiPreferences,
 } from './atoms/ui-preferences'
@@ -431,6 +435,19 @@ function AdvancedMaterialInitializer(): null {
   useEffect(() => {
     void initializeAdvancedMaterial(setAdvancedMaterialEnabled)
   }, [setAdvancedMaterialEnabled])
+
+  return null
+}
+
+/**
+ * TAgent 品牌色初始化
+ */
+function TAgentBrandInitializer(): null {
+  const setTAgentBrand = useSetAtom(tagentBrandAtom)
+
+  useEffect(() => {
+    void initializeTAgentBrand(setTAgentBrand)
+  }, [setTAgentBrand])
 
   return null
 }
@@ -874,6 +891,7 @@ if (isQuickTaskWindow) {
         <ThemeInitializer />
         <MarkdownFontSizeInitializer />
         <AdvancedMaterialInitializer />
+        <TAgentBrandInitializer />
         <DetachedPreviewApp />
         <Toaster position="top-right" />
       </React.StrictMode>
@@ -890,6 +908,7 @@ if (isQuickTaskWindow) {
       <UiPreferencesInitializer />
       <MarkdownFontSizeInitializer />
       <AdvancedMaterialInitializer />
+      <TAgentBrandInitializer />
       <AgentListenersInitializer />
       <AskListenersInitializer />
       <ChatToolInitializer />

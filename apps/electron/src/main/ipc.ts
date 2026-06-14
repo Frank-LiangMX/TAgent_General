@@ -102,6 +102,7 @@ import {
   searchConversationMessages,
 } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
+import { setMacDockIconFromPng } from './lib/dock-icon-mac'
 import { getDingTalkConfig, saveDingTalkConfig, getDecryptedClientSecret, getDingTalkMultiBotConfig, saveDingTalkBotConfig, removeDingTalkBot, getDecryptedBotClientSecret } from './lib/dingtalk-config'
 import { setDockBadgeCount } from './lib/dock-badge-service'
 import { extractTextFromAttachment } from './lib/document-parser'
@@ -717,6 +718,11 @@ function cacheNull(key: string): null {
 export function resolveAppIconPath(_variantId: string): string | null {
   const resourcesDir = getBundledResourcesDir()
   return join(resourcesDir, 'icon.png')
+}
+
+/** macOS Dock：运行时套 squircle，不修改 resources 图标文件 */
+export function setMacDockIcon(iconPath: string): boolean {
+  return setMacDockIconFromPng(iconPath)
 }
 
 export function registerIpcHandlers(): void {
@@ -1498,9 +1504,9 @@ export function registerIpcHandlers(): void {
           return false
         }
 
-        // macOS: 设置 Dock 图标
+        // macOS: 设置 Dock 图标（squircle 蒙版）
         if (process.platform === 'darwin' && app.dock) {
-          app.dock.setIcon(iconPath)
+          setMacDockIcon(iconPath)
         }
 
         // 持久化到设置
