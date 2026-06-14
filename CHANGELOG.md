@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Ask 档位 Composer** — Agent 输入区 Ask 档位（轻量对话，权限边界 + 引导切换 Agent），替代独立 Chat 模式
+- **ComposerModeSelector** — 输入区档位切换器（Ask/Agent），对标 Cursor Ask/Agent
+- **AgentSwitchBanner** — Ask 模式下引导升级到 Agent 的横幅（自 AgentRecommendBanner 改造）
+- **suggest_agent_switch 工具** — Ask 模式专用工具，引导用户切换到 Agent 档位
+- **Ask 消息存储** — `{sessionId}.ask.jsonl` 与 SDK JSONL 并列，不污染 Agent resume
+- **时间线合并渲染** — AgentMessages 混合展示 SDK 消息与 Ask 消息
 - Project governance scaffolding (this changelog, AGENTS.md, CONTRIBUTING.md, etc.)
 - Design docs:
   - `docs/plans/2026-06-05-tagent-fusion-design.md` — TAgent Desktop (13 sections)
@@ -32,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - (none yet)
+
+### Removed
+- **独立 Chat 模式 UI** — `ChatView`、`components/chat/` 目录、`appMode: 'chat'`、`TabType: 'chat'`（历史对话可导出）
+- **Chat 发送路径 IPC** — `CHAT_IPC_CHANNELS.SEND_MESSAGE`、`STOP_GENERATION`、`GENERATE_TITLE`（附件 API 保留）
+- **Chat 监听器** — `useGlobalChatListeners.ts`（已删除）
 
 ### Fixed
 - (none yet)

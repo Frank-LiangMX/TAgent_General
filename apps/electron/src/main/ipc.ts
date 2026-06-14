@@ -85,7 +85,6 @@ import {
   fetchModels,
   validateChannelModel,
 } from './lib/channel-manager'
-import { sendMessage, stopGeneration, generateTitle } from './lib/chat-service'
 import { updateToolState, updateToolCredentials, getToolCredentials, addCustomTool, deleteCustomTool } from './lib/chat-tool-config'
 import { getAllToolInfos } from './lib/chat-tool-registry'
 import { getAgentSessionWorkspacePath, getAgentWorkspacesDir, getWorkspaceSkillsDir, getWorkspaceFilesDir, getScratchPadPath } from './lib/config-paths'
@@ -1169,24 +1168,6 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  // 发送消息（触发 AI 流式响应）
-  // 注意：通过 event.sender 获取 webContents 用于推送流式事件
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.SEND_MESSAGE,
-    async (event, input: ChatSendInput): Promise<void> => {
-      await sendMessage(input, event.sender)
-    }
-  )
-
-  // 中止生成
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.STOP_GENERATION,
-    async (_, conversationId: string): Promise<void> => {
-      stopGeneration(conversationId)
-    }
-  )
-
-  // 删除消息
   ipcMain.handle(
     CHAT_IPC_CHANNELS.DELETE_MESSAGE,
     async (_, conversationId: string, messageId: string): Promise<ChatMessage[]> => {
@@ -1216,14 +1197,6 @@ export function registerIpcHandlers(): void {
     CHAT_IPC_CHANNELS.UPDATE_CONTEXT_DIVIDERS,
     async (_, conversationId: string, dividers: string[]): Promise<ConversationMeta> => {
       return updateContextDividers(conversationId, dividers)
-    }
-  )
-
-  // 生成对话标题
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.GENERATE_TITLE,
-    async (_, input: GenerateTitleInput): Promise<string | null> => {
-      return generateTitle(input)
     }
   )
 

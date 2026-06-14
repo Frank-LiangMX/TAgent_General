@@ -1,7 +1,8 @@
 /**
- * useCreateSession — 共享的创建 Chat 对话 / Agent 会话逻辑
+ * useCreateSession — 创建 Agent 会话逻辑
  *
  * 从 LeftSidebar 提取，供 WelcomeView 模式切换和侧边栏共同使用。
+ * P3: Chat 创建已退役，createChat 保留用于迁移兼容。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -61,26 +62,9 @@ export function useCreateSession(): CreateSessionActions {
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
 
   const createChat = async (options?: CreateSessionOptions): Promise<{ id: string; title: string } | undefined> => {
-    try {
-      const meta = await window.electronAPI.createConversation(
-        undefined,
-        selectedModel?.modelId,
-        selectedModel?.channelId,
-      )
-      setConversations((prev) => [meta, ...prev])
-      openSession('chat', meta.id, meta.title)
-      setActiveView('conversations')
-      if (promptConfig.defaultPromptId) {
-        setSelectedPromptId(promptConfig.defaultPromptId)
-      }
-      if (options?.draft) {
-        setDraftSessionIds((prev: Set<string>) => { const next = new Set(prev); next.add(meta.id); return next })
-      }
-      return { id: meta.id, title: meta.title }
-    } catch (error) {
-      console.error('[创建会话] 创建 Chat 对话失败:', error)
-      return undefined
-    }
+    // P3: Chat 模式已退役，此函数保留用于向后兼容但不再创建 Chat 会话
+    console.warn('[createChat] Chat 模式已退役，请使用 createAgent')
+    return undefined
   }
 
   const createAgent = async (options?: CreateSessionOptions): Promise<AgentSessionMeta | undefined> => {

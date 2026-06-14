@@ -21,7 +21,7 @@ import type { RemarkPluginFn } from './message'
 
 import { stickyUserMessageEnabledAtom } from '@/atoms/ui-preferences'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { cn } from '@/lib/utils'
 
 /** 悬浮条专用 remark 插件（仅 mention，不保留换行） */

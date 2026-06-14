@@ -2,7 +2,7 @@
  * BtwFloatingTrigger - 侧面提问悬浮触发按钮
  *
  * 嵌在主输入框右上角，绝对定位浮出。
- * 主输入框获取焦点时按钮淡出让位（不打扰打字）。
+ * Normal 状态：圆形图标按钮；Hover 状态：展开显示"旁注"文字。
  *
  * 使用方式：作为 AgentView 主输入框容器的子元素渲染，
  * 父容器需要 `position: relative`。
@@ -26,15 +26,13 @@ import {
   agentSessionModelMapAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface BtwFloatingTriggerProps {
   /** 当前会话 ID */
   sessionId: string
-  /** 是否正在流式输出（保留参数以备未来用） */
-  streaming: boolean
+  /** 是否正在流式输出 */
+  streaming?: boolean
 }
 
 export function BtwFloatingTrigger({
@@ -76,39 +74,23 @@ export function BtwFloatingTrigger({
   }
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={handleClick}
       className={cn(
-        'transition-all duration-300',
-        open && 'opacity-0 scale-90 pointer-events-none'  /* 面板打开时缩小淡出 */
+        'group inline-flex items-center justify-center rounded-full shrink-0',
+        'bg-muted/50 hover:bg-muted/70',
+        'text-foreground/50 hover:text-foreground/70',
+        'transition-all duration-200 ease-out',
+        // 默认圆形仅图标；hover 展开文字（文字用 hidden 避免挤偏图标居中）
+        'size-[28px] hover:w-auto hover:min-w-[28px] hover:justify-start hover:px-2 hover:gap-1.5',
       )}
-      style={{
-        transitionTimingFunction: open ? 'cubic-bezier(0.4, 0, 0.2, 1)' : 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }}
+      title="旁注：快速提问，不进入主对话历史"
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClick}
-            className={cn(
-              'gap-1.5 h-6 px-2.5 rounded-md',
-              'session-glass session-glass-chip session-glass-chip-dashed',
-              'text-foreground/55 dark:text-foreground/68 hover:text-primary',
-              'shadow-none hover:shadow-sm',
-              'transition-all duration-200'
-            )}
-          >
-            <MessageCircle size={12} />
-            <span className="text-[11px]">旁注</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[200px]">
-          <p className="text-xs">
-            快速提问，不进入主对话历史
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </div>
+      <MessageCircle size={14} className="shrink-0" aria-hidden />
+      <span className="hidden text-[11px] leading-none whitespace-nowrap group-hover:inline">
+        旁注
+      </span>
+    </button>
   )
 }

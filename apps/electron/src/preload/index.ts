@@ -353,13 +353,7 @@ export interface ElectronAPI {
   /** 创建欢迎对话（含教程附件） */
   createWelcomeConversation: () => Promise<ConversationMeta | null>
 
-  // ===== 消息发送 =====
-
-  /** 发送消息（触发 AI 流式响应） */
-  sendMessage: (input: ChatSendInput) => Promise<void>
-
-  /** 中止生成 */
-  stopGeneration: (conversationId: string) => Promise<void>
+  // ===== 消息管理 =====
 
   /** 删除指定消息 */
   deleteMessage: (conversationId: string, messageId: string) => Promise<ChatMessage[]>
@@ -373,9 +367,6 @@ export interface ElectronAPI {
 
   /** 更新上下文分隔线 */
   updateContextDividers: (conversationId: string, dividers: string[]) => Promise<ConversationMeta>
-
-  /** 生成对话标题 */
-  generateTitle: (input: GenerateTitleInput) => Promise<string | null>
 
   // ===== 附件管理相关 =====
 
@@ -1504,15 +1495,7 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.CREATE_WELCOME_CONVERSATION)
   },
 
-  // 消息发送
-  sendMessage: (input: ChatSendInput) => {
-    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.SEND_MESSAGE, input)
-  },
-
-  stopGeneration: (conversationId: string) => {
-    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.STOP_GENERATION, conversationId)
-  },
-
+  // 消息管理
   deleteMessage: (conversationId: string, messageId: string) => {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.DELETE_MESSAGE, conversationId, messageId)
   },
@@ -1532,10 +1515,6 @@ const electronAPI: ElectronAPI = {
 
   updateContextDividers: (conversationId: string, dividers: string[]) => {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.UPDATE_CONTEXT_DIVIDERS, conversationId, dividers)
-  },
-
-  generateTitle: (input: GenerateTitleInput) => {
-    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.GENERATE_TITLE, input)
   },
 
   // 附件管理

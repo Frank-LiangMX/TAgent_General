@@ -29,7 +29,7 @@ import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
@@ -191,10 +191,8 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     type="button"
                     onClick={() => setActiveRailItem(item.id)}
                     className={cn(
-                      'size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag transition-all duration-150',
-                      isActive
-                        ? 'session-glass session-glass-rail text-foreground'
-                        : 'button-glass text-foreground/50 dark:text-foreground/68 hover:text-foreground/75 dark:hover:text-foreground/88',
+                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
+                      isActive && 'rail-island-btn--active',
                     )}
                   >
                     {item.icon}
@@ -230,10 +228,8 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                   onClick={() => handleModeSwitch(value)}
                   disabled={isSwitching}
                   className={cn(
-                    'relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag transition-all duration-150',
-                    isActive
-                      ? 'session-glass session-glass-rail text-foreground'
-                      : 'button-glass text-foreground/50 dark:text-foreground/68 hover:text-foreground/75 dark:hover:text-foreground/88',
+                    'rail-island-btn relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
+                    isActive && 'rail-island-btn--active',
                     isSwitching && 'opacity-50 cursor-not-allowed',
                   )}
                 >

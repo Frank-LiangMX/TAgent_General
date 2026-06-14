@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm'
 
 import type { TabMinimapItem } from '@/atoms/tab-atoms'
 
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 

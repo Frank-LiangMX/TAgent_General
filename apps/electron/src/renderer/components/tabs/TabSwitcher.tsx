@@ -2,14 +2,15 @@
  * TabSwitcher — Ctrl+Tab 会话快速切换器
  *
  * 列表按 MRU（最近访问）顺序排列，键盘和鼠标共享同一套选择模型。
+ * 注：Chat 模式已退役，仅切换 Agent 会话。
  */
 
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { Bot, MessageSquare } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import type { AgentSessionMeta, ConversationMeta } from '@tagent/shared'
+import type { AgentSessionMeta } from '@tagent/shared'
 import type { ReactElement, ReactNode } from 'react'
 
 import {
@@ -20,12 +21,6 @@ import {
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
-import {
-  conversationsAtom,
-  currentConversationIdAtom,
-  streamingConversationIdsAtom,
-} from '@/atoms/chat-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
@@ -42,7 +37,7 @@ import { cn } from '@/lib/utils'
 
 
 type SwitchSectionId = 'recent'
-type SwitchCandidateType = 'chat' | 'agent'
+type SwitchCandidateType = 'agent'
 
 interface SwitchCandidate {
   id: string
@@ -78,16 +73,12 @@ export function TabSwitcher(): ReactElement | null {
   const tabMru = useAtomValue(tabMruAtom)
   const setTabMru = useSetAtom(tabMruAtom)
 
-  const conversations = useAtomValue(conversationsAtom)
-  const streamingConversationIds = useAtomValue(streamingConversationIdsAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
   const agentWorkspaces = useAtomValue(agentWorkspacesAtom)
   const agentIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
   const unviewedCompletedIds = useAtomValue(unviewedCompletedSessionIdsAtom)
   const draftSessionIds = useAtomValue(draftSessionIdsAtom)
 
-  const setAppMode = useSetAtom(appModeAtom)
-  const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
@@ -116,25 +107,13 @@ export function TabSwitcher(): ReactElement | null {
       }
     }
 
-    const chatCandidates = conversations
-      .filter((conversation) => !conversation.archived && !draftSessionIds.has(conversation.id))
-      .map((conversation: ConversationMeta): SwitchCandidate => ({
-        id: conversation.id,
-        type: 'chat',
-        title: conversation.title || '新对话',
-        updatedAt: conversation.updatedAt,
-        status: streamingConversationIds.has(conversation.id) ? 'running' : 'idle',
-      }))
-
     const agentCandidates = agentSessions
       .filter((session) => !session.archived && !draftSessionIds.has(session.id))
       .map(buildAgentCandidate)
 
-    const allCandidates = [...chatCandidates, ...agentCandidates]
-
     // 按 MRU 排序：在 MRU 列表中的按 MRU 顺序，不在的按 updatedAt 追加到末尾
     const mruIndex = new Map(tabMru.map((id, i) => [id, i]))
-    allCandidates.sort((a, b) => {
+    agentCandidates.sort((a, b) => {
       const ai = mruIndex.get(a.id)
       const bi = mruIndex.get(b.id)
       if (ai !== undefined && bi !== undefined) return ai - bi
@@ -144,26 +123,24 @@ export function TabSwitcher(): ReactElement | null {
     })
 
     const sections: SwitchSection[] = []
-    if (allCandidates.length > 0) {
+    if (agentCandidates.length > 0) {
       sections.push({
         id: 'recent',
         title: '最近访问',
         description: '按访问顺序排列',
-        candidates: allCandidates,
+        candidates: agentCandidates,
       })
     }
 
     return {
       sections,
-      candidates: allCandidates,
+      candidates: agentCandidates,
     }
   }, [
     agentIndicatorMap,
     agentSessions,
     agentWorkspaces,
-    conversations,
     draftSessionIds,
-    streamingConversationIds,
     tabMru,
     unviewedCompletedIds,
   ])
@@ -202,15 +179,13 @@ export function TabSwitcher(): ReactElement | null {
   const activateCandidate = useCallback(
     (candidate: SwitchCandidate): void => {
       // 切回 agent 会话时，若该会话上次开着预览 Tab 则一并重建并回到上次视图
-      const restore = candidate.type === 'agent'
-        ? buildOpenTabRestore(
-            candidate.id,
-            store.get(sessionViewStateMapAtom),
-            store.get(previewFileMapAtom),
-          )
-        : undefined
+      const restore = buildOpenTabRestore(
+        candidate.id,
+        store.get(sessionViewStateMapAtom),
+        store.get(previewFileMapAtom),
+      )
       const nextTab = openTab(tabsRef.current, {
-        type: candidate.type,
+        type: 'agent',
         sessionId: candidate.id,
         title: candidate.title,
       }, restore)
@@ -225,16 +200,7 @@ export function TabSwitcher(): ReactElement | null {
         return next
       })
 
-      if (candidate.type === 'chat') {
-        setAppMode('chat')
-        setCurrentConversationId(candidate.id)
-        setCurrentAgentSessionId(null)
-        return
-      }
-
-      setAppMode('agent')
       setCurrentAgentSessionId(candidate.id)
-      setCurrentConversationId(null)
 
       setUnviewedCompleted((prev) => {
         if (!prev.has(candidate.id)) return prev
@@ -252,13 +218,12 @@ export function TabSwitcher(): ReactElement | null {
     },
     [
       setActiveTabId,
-      setAppMode,
       setCurrentAgentSessionId,
       setCurrentAgentWorkspaceId,
-      setCurrentConversationId,
       setTabMru,
       setTabs,
       setUnviewedCompleted,
+      store,
     ],
   )
 
@@ -475,17 +440,8 @@ function SwitcherCandidateRow({
         />
       )}
       <span className="w-auto px-2 shrink-0 text-[10px] leading-4 rounded-full bg-foreground/[0.06] text-foreground/45 font-medium flex items-center gap-1">
-        {candidate.type === 'agent' ? (
-          <>
-            <Bot className="size-2.5" />
-            Agent
-          </>
-        ) : (
-          <>
-            <MessageSquare className="size-2.5" />
-            Chat
-          </>
-        )}
+        <Bot className="size-2.5" />
+        Agent
       </span>
       <span className="flex-1 min-w-0 truncate">{candidate.title}</span>
       {candidate.workspaceName && (

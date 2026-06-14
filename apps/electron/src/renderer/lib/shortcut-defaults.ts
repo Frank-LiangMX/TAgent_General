@@ -68,8 +68,8 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   },
   {
     id: 'toggle-mode',
-    name: '切换模式',
-    description: '在 Chat 和 Agent 模式之间切换',
+    name: '切换 Composer 档位',
+    description: '在 Ask 和 Agent 档位之间切换',
     defaultMac: 'Cmd+Shift+M',
     defaultWin: 'Ctrl+Shift+M',
     category: 'app',

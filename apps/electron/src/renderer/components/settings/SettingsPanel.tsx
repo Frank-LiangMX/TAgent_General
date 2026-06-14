@@ -3,6 +3,8 @@
  *
  * 顶部 Header（标题 + 关闭按钮）+ 下方（左侧导航 + 右侧 ScrollArea 内容区域）。
  * 使用 Jotai atom 管理当前标签页状态。
+ *
+ * 注：Chat/Agent 模式切换已移至 Composer 档位，此处不再展示切换器。
  */
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -22,8 +24,6 @@ import {
   Mic,
   HardDriveDownload,
   HardDrive,
-  MessageSquare,
-  BotMessageSquare,
   BarChart3,
 } from "lucide-react";
 import * as React from "react";
@@ -46,7 +46,7 @@ import { TutorialViewer } from "../tutorial/TutorialViewer";
 
 import type { SettingsTab } from "@/atoms/settings-tab";
 
-import { appModeAtom, topLevelModeAtom, type AppMode } from "@/atoms/app-mode";
+import { topLevelModeAtom } from "@/atoms/app-mode";
 import { hasEnvironmentIssuesAtom } from "@/atoms/environment";
 import { settingsTabAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from "@/atoms/settings-tab";
 import { hasUpdateAtom } from "@/atoms/updater";
@@ -165,16 +165,8 @@ export function SettingsPanel({
   const [activeTab, setActiveTab] = useAtom(settingsTabAtom);
   const channelFormDirty = useAtomValue(channelFormDirtyAtom);
   const [closeRequested, setCloseRequested] = useAtom(settingsCloseRequestedAtom);
-  const appMode = useAtomValue(appModeAtom);
-  const setAppMode = useSetAtom(appModeAtom);
-  const topLevelMode = useAtomValue(topLevelModeAtom);
   const hasUpdate = useAtomValue(hasUpdateAtom);
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom);
-
-  // Chat/Agent 模式互斥：scratch 归入 agent 段（草稿本质属于 agent 路径）
-  const effectiveAppMode: 'chat' | 'agent' = appMode === 'chat' ? 'chat' : 'agent'
-  // TA 模式只跑 Agent 子模式，TA 模式下隐藏切换器
-  const showModeSwitcher = topLevelMode !== 'ta'
 
   /** 统一的退出拦截对话框状态 */
   type PendingAction = { type: 'tab'; tabId: SettingsTab } | { type: 'close' } | null
@@ -224,30 +216,17 @@ export function SettingsPanel({
     }
   }, [closeRequested, activeTab, setCloseRequested])
 
-  // Agent 模式时在渠道后插入 Agent Tab，工具 tab 两种模式都显示
-  const tabs = React.useMemo(() => {
-    if (appMode === "agent") {
-      return [
-        ...BASE_TABS,
-        AGENT_TAB,
-        TOOLS_TAB,
-        VOICE_INPUT_TAB,
-        BOTS_TAB,
-        TUTORIAL_TAB,
-        SHORTCUTS_TAB,
-        ...TAIL_TABS,
-      ];
-    }
-    return [
-      ...BASE_TABS,
-      TOOLS_TAB,
-      VOICE_INPUT_TAB,
-      BOTS_TAB,
-      TUTORIAL_TAB,
-      SHORTCUTS_TAB,
-      ...TAIL_TABS,
-    ];
-  }, [appMode]);
+  // 统一显示 Agent 模式的 tabs（Chat 模式已退役）
+  const tabs = React.useMemo(() => [
+    ...BASE_TABS,
+    AGENT_TAB,
+    TOOLS_TAB,
+    VOICE_INPUT_TAB,
+    BOTS_TAB,
+    TUTORIAL_TAB,
+    SHORTCUTS_TAB,
+    ...TAIL_TABS,
+  ], []);
 
   // 当前 tab 标题
   const activeTabLabel = tabs.find((t) => t.id === activeTab)?.label ?? "设置";
@@ -257,15 +236,6 @@ export function SettingsPanel({
       {/* 顶部 Header 栏 */}
       <div className="h-12 flex items-center justify-between px-5 border-b border-border/50 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          {showModeSwitcher && (
-            <SettingsModeSwitcher
-              mode={effectiveAppMode}
-              onChange={(m) => {
-                const next: AppMode = m === 'agent' ? 'agent' : 'chat'
-                if (next !== appMode) setAppMode(next)
-              }}
-            />
-          )}
           <h2 className="text-sm font-medium text-foreground truncate">
             {activeTabLabel}
           </h2>
@@ -329,56 +299,4 @@ export function SettingsPanel({
       </AlertDialog>
     </div>
   );
-}
-
-/** Chat / Agent 模式切换控件（SegmentedControl） */
-function SettingsModeSwitcher({
-  mode,
-  onChange,
-}: {
-  mode: 'chat' | 'agent'
-  onChange: (mode: 'chat' | 'agent') => void
-}): React.ReactElement {
-  return (
-    <div
-      className="relative flex items-center rounded-md bg-muted/60 p-0.5 text-xs select-none"
-      role="tablist"
-      aria-label="App mode"
-    >
-      <div
-        className={cn(
-          'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out',
-          mode === 'chat' ? 'translate-x-0' : 'translate-x-full',
-        )}
-      />
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'chat'}
-        onClick={() => onChange('chat')}
-        className={cn(
-          'relative z-[1] flex items-center gap-1 px-2.5 py-1 rounded-[5px] transition-colors',
-          mode === 'chat' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
-        )}
-        title="Chat 模式 — 普通对话"
-      >
-        <MessageSquare size={12} />
-        <span className="font-medium">Chat</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'agent'}
-        onClick={() => onChange('agent')}
-        className={cn(
-          'relative z-[1] flex items-center gap-1 px-2.5 py-1 rounded-[5px] transition-colors',
-          mode === 'agent' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
-        )}
-        title="Agent 模式 — 工具调用 / 工作区"
-      >
-        <BotMessageSquare size={12} />
-        <span className="font-medium">Agent</span>
-      </button>
-    </div>
-  )
 }

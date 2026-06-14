@@ -1,19 +1,19 @@
 /**
- * WelcomeEmptyState — 对话/会话空状态引导
+ * WelcomeEmptyState — 会话空状态引导
  *
  * 在没有会话时展示：
  * 1. 个性化时段问候
- * 2. 与当前模式相关的操作提示（随模式切换变化）
- * 3. Chat/Agent 模式切换 Tab
- * 4. 主操作按钮
+ * 2. Agent 相关操作提示
+ * 3. 主操作按钮（新建 Agent 会话）
+ *
+ * 注：Chat/Agent 模式切换已移至 Composer 档位，此处不再展示 Tab。
  */
 
-import { useAtomValue, useAtom } from 'jotai'
-import { MessageSquare, Bot, StickyNote, Loader2 } from 'lucide-react'
+import { useAtomValue } from 'jotai'
+import { Bot, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-import { appModeAtom, topLevelModeAtom, type AppMode } from '@/atoms/app-mode'
-import { themeStyleAtom } from '@/atoms/theme'
+import { topLevelModeAtom } from '@/atoms/app-mode'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { cn } from '@/lib/utils'
@@ -26,65 +26,44 @@ function getGreeting(hour: number): string {
   return '晚上好'
 }
 
-/** 模式配置 */
-const MODE_CONFIG: Record<AppMode, { icon: React.ReactNode; label: string }> = {
-  chat: { icon: <MessageSquare size={15} />, label: 'Chat' },
-  agent: { icon: <Bot size={15} />, label: 'Agent' },
-  scratch: { icon: <StickyNote size={15} />, label: 'Scratch Pad' },
-}
-
-/** 与模式相关的操作提示 — 索引稳定，随模式切换 */
+/** 与模式相关的操作提示 */
 const MODE_TIPS: Record<string, string> = {
   agent: '附加文件夹让 Agent 访问你的项目',
-  chat: '点击输入栏右侧切换模型和渠道',
   ta: '选择工作区来配置项目资产规范',
 }
 
 export function WelcomeEmptyState(): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
-  const [mode, setMode] = useAtom(appModeAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
-  const themeStyle = useAtomValue(themeStyleAtom)
-  const { createChat, createAgent } = useCreateSession()
+  const { createAgent } = useCreateSession()
   const [creating, setCreating] = React.useState(false)
 
   const hour = new Date().getHours()
   const greeting = getGreeting(hour)
   const displayName = userProfile.userName || '用户'
 
-  const selectedColor = themeStyle === 'forest-light' ? '#3f8361' : undefined
   const isTAMode = topLevelMode === 'ta'
   const primaryLabel = isTAMode
     ? '新建 TA 会话'
-    : mode === 'chat'
-      ? '开始新对话'
-      : '开始新 Agent 会话'
+    : '开始新 Agent 会话'
 
-  const tipKey = isTAMode ? 'ta' : mode
+  const tipKey = isTAMode ? 'ta' : 'agent'
   const tipText = MODE_TIPS[tipKey] ?? MODE_TIPS['agent']!
 
-  /** 切换模式 */
-  const handleModeSwitch = React.useCallback((targetMode: AppMode): void => {
-    if (targetMode === mode) return
-    setMode(targetMode)
-  }, [mode, setMode])
-
-  /** 创建新会话 */
+  /** 创建新 Agent 会话 */
   const handleStart = React.useCallback(async (): Promise<void> => {
     if (creating) return
     setCreating(true)
     try {
       if (isTAMode) {
         await createAgent({ mode: 'ta' })
-      } else if (mode === 'chat') {
-        await createChat()
       } else {
         await createAgent({ mode: 'general' })
       }
     } finally {
       setCreating(false)
     }
-  }, [creating, isTAMode, mode, createAgent, createChat])
+  }, [creating, isTAMode, createAgent])
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4">
@@ -99,38 +78,6 @@ export function WelcomeEmptyState(): React.ReactElement {
       {/* 呼吸空间 — 信息区与操作区分离 */}
       <div className="h-14" />
 
-      {/* 模式切换 Tab — 仅非 TA 模式 */}
-      {!isTAMode && (
-        <div className="relative flex rounded-xl bg-muted/60 p-1">
-          <div
-            className={cn(
-              'absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-background shadow-sm transition-transform duration-300 ease-in-out',
-              mode === 'agent' ? 'translate-x-0' : 'translate-x-full',
-            )}
-          />
-          {(['agent', 'chat'] as const).map((m) => {
-            const config = MODE_CONFIG[m]
-            const isSelected = mode === m
-            return (
-              <button
-                key={m}
-                onClick={() => handleModeSwitch(m)}
-                style={isSelected && selectedColor ? { color: selectedColor } : undefined}
-                className={cn(
-                  'relative z-[1] flex items-center gap-1.5 rounded-lg px-5 py-1.5 text-[13px] font-medium transition-colors duration-200',
-                  isSelected
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {config.icon}
-                {config.label}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
       {/* 主按钮 */}
       <button
         type="button"
@@ -142,9 +89,7 @@ export function WelcomeEmptyState(): React.ReactElement {
       >
         {creating
           ? <Loader2 size={16} className="animate-spin" />
-          : isTAMode || mode === 'agent'
-            ? <Bot size={16} />
-            : <MessageSquare size={16} />}
+          : <Bot size={16} />}
         {primaryLabel}
       </button>
     </div>

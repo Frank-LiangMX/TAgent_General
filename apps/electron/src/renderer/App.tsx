@@ -1,7 +1,7 @@
 import { useAtom, useStore } from 'jotai'
 import * as React from 'react'
 
-import { conversationsAtom } from './atoms/chat-atoms'
+import { agentSessionsAtom } from './atoms/agent-atoms'
 import { environmentCheckDialogOpenAtom } from './atoms/environment'
 import { tabsAtom, activeTabIdAtom, openTab } from './atoms/tab-atoms'
 import { AppShell } from './components/app-shell/AppShell'
@@ -46,21 +46,21 @@ export default function App(): React.ReactElement {
     initialize()
   }, [])
 
-  // 完成 onboarding 回调：创建欢迎对话
+  // 完成 onboarding 回调：创建欢迎 Agent 会话（P3: Chat 已退役）
   const handleOnboardingComplete = async () => {
     setShowOnboarding(false)
 
     try {
-      const meta = await window.electronAPI.createWelcomeConversation()
+      const meta = await window.electronAPI.createAgentSession()
       if (meta) {
-        // 添加到对话列表
-        const conversations = store.get(conversationsAtom)
-        store.set(conversationsAtom, [meta, ...conversations])
+        // 添加到 Agent 会话列表
+        const sessions = store.get(agentSessionsAtom)
+        store.set(agentSessionsAtom, [meta, ...sessions])
 
-        // 打开对话标签页
+        // 打开 Agent 标签页
         const tabs = store.get(tabsAtom)
         const result = openTab(tabs, {
-          type: 'chat',
+          type: 'agent',
           sessionId: meta.id,
           title: meta.title,
         })
@@ -68,7 +68,7 @@ export default function App(): React.ReactElement {
         store.set(activeTabIdAtom, result.activeTabId)
       }
     } catch (error) {
-      console.error('[App] 创建欢迎对话失败:', error)
+      console.error('[App] 创建欢迎会话失败:', error)
     }
   }
 

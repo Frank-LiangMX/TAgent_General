@@ -24,12 +24,12 @@ import type {
 
 import { tabMinimapCacheAtom, type TabMinimapItem } from '@/atoms/tab-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
 
-export type SessionMiniMapType = 'chat' | 'agent'
+export type SessionMiniMapType = 'agent'  // P3: chat 已退役
 
 export interface SessionMiniMapTarget {
   type: SessionMiniMapType
@@ -335,9 +335,8 @@ function ItemIcon({ item, type }: { item: TabMinimapItem; type: SessionMiniMapTy
   if (item.role === 'status') {
     return <AlertTriangle className="size-4 shrink-0 mt-0.5 text-muted-foreground/60" />
   }
-  return type === 'chat'
-    ? <MessageSquare className="size-4 shrink-0 mt-0.5 text-muted-foreground/60" />
-    : <Bot className="size-4 shrink-0 mt-0.5 text-muted-foreground/60" />
+  // P3: chat 已退役，仅处理 agent 类型
+  return <Bot className="size-4 shrink-0 mt-0.5 text-muted-foreground/60" />
 }
 
 export function SessionMiniMapPopover(props: SessionMiniMapPopoverProps): React.ReactElement | null {
@@ -382,9 +381,8 @@ function SessionMiniMapPopoverContent({
 
     const load = async (): Promise<void> => {
       try {
-        const nextItems = target.type === 'chat'
-          ? buildChatMinimapItems(await window.electronAPI.getConversationMessages(target.sessionId), userProfile.avatar)
-          : buildAgentMinimapItems(await window.electronAPI.getAgentSessionSDKMessages(target.sessionId), userProfile.avatar)
+        // P3: chat 已退役，仅处理 agent 类型
+        const nextItems = buildAgentMinimapItems(await window.electronAPI.getAgentSessionSDKMessages(target.sessionId), userProfile.avatar)
         if (cancelled) return
         setItems(nextItems)
         setCache((prev) => {

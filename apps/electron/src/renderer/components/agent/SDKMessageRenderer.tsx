@@ -57,9 +57,9 @@ import {
   MessageResponse,
   UserMessageContent,
 } from '@/components/ai-elements/message'
-import { formatMessageTime } from '@/components/chat/ChatMessageItem'
-import { CopyButton } from '@/components/chat/CopyButton'
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { formatMessageTime } from '@/lib/time-utils'
+import { CopyButton } from '@/components/shared/CopyButton'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'

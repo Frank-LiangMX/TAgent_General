@@ -2,7 +2,7 @@
  * AppShell - 应用主布局容器
  *
  * 布局结构：
- * - 左侧：FunctionalRail（60px 固定，功能区切换）+ LeftSidebar（240/280px，功能区内容）
+ * - 左侧：FunctionalRail（60px 固定，功能区切换）+ LeftSidebar（240px，功能区内容）
  * - 中间：MainArea（TabBar + TabContent）
  * - 右侧：RightSidePanel（可折叠，仅 Agent 模式会话文件面板）
  *
@@ -31,7 +31,7 @@ import { WorkspaceManagerDialog } from '@/components/agent/WorkspaceManagerDialo
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
-import { NAV_SIDEBAR_INSPECTOR_WIDTH, NAV_SIDEBAR_WIDTH } from '@/lib/platform'
+import { NAV_SIDEBAR_WIDTH } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 const MIN_RIGHT_PANEL_WIDTH = 300
@@ -54,16 +54,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const showRightPanel = topLevelMode === 'general' && appMode === 'agent' && !!currentSessionId
 
-  /** 通用模式三种 Rail 均保留侧栏翼，避免切到文件/Skills 时浮岛宽度突变 */
+  /** 通用模式三种 Rail 共用同一侧栏宽度，切换功能区时浮岛不跳变 */
   const showLeftSidebar =
     topLevelMode === 'general'
       ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills'
       : true
 
-  const navSidebarWidth =
-    topLevelMode === 'general' && (activeRailItem === 'files' || activeRailItem === 'skills')
-      ? NAV_SIDEBAR_INSPECTOR_WIDTH
-      : NAV_SIDEBAR_WIDTH
+  const navSidebarWidth = NAV_SIDEBAR_WIDTH
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
 

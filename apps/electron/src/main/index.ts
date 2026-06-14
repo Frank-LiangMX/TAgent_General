@@ -333,8 +333,8 @@ function createWindow(): void {
 
   // 拦截页面内导航，外部链接用系统浏览器打开，防止 Electron 窗口被覆盖
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    // 允许开发模式下的 Vite HMR 热重载
-    if (isDev && url.startsWith('http://localhost:')) return
+    // 允许开发模式下的 Vite HMR 热重载（同时支持 localhost 和 127.0.0.1）
+    if (isDev && (url.startsWith('http://localhost:') || url.startsWith('http://127.0.0.1:'))) return
     event.preventDefault()
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url)

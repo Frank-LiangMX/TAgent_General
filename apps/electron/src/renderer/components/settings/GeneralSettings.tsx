@@ -17,7 +17,7 @@ import {
   SettingsRow,
   SettingsToggle,
 } from './primitives'
-import { UserAvatar } from '../chat/UserAvatar'
+import { UserAvatar } from '../shared/UserAvatar'
 import { Button } from '../ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import {

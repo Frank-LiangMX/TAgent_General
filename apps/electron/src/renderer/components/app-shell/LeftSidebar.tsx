@@ -281,8 +281,6 @@ export function LeftSidebar({
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
   /** 待迁移会话 ID，非空时显示迁移对话框 */
   const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
-  /** 置顶区域展开/收起 */
-  const [pinnedExpanded, setPinnedExpanded] = React.useState(true)
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
   const streamingIds = useAtomValue(streamingConversationIdsAtom)
@@ -464,45 +462,16 @@ export function LeftSidebar({
     }
   }, [topLevelMode, activeRailItem, capabilities, selectedCapability, setSelectedCapability, currentWorkspaceSlug])
 
-  /** 置顶对话列表（排除 draft，归档由底部 Popover 展示） */
-  const pinnedConversations = React.useMemo(
-    () => conversations.filter((c) => c.pinned && !draftSessionIds.has(c.id)),
-    [conversations, draftSessionIds]
-  )
-
   /** Working 区域状态（已不用于目录区分组，但保留状态供其他模块用） */
   const workingSessionIds = useAtomValue(workingSessionIdsSetAtom)
 
   /** 置顶 Agent 会话列表已废弃：目录区不再拆"工作中/置顶"两组，
    * 全部会话（含 pinned/working）统一按 updatedAt 倒序平铺。 */
 
-  /** 对话按日期分组（排除归档，归档会话由底部 Popover 展示） */
-  const conversationGroups = React.useMemo(
-    () => {
-      const filtered = conversations.filter((c) => !c.archived && !c.pinned && !draftSessionIds.has(c.id))
-      return groupByDate(filtered)
-    },
-    [conversations, draftSessionIds]
-  )
-
-  /** 已归档对话数量 */
-  const archivedConversationCount = React.useMemo(
-    () => conversations.filter((c) => c.archived).length,
-    [conversations]
-  )
-
   /** 已归档 Agent 会话数量（当前工作区） */
   const archivedAgentSessionCount = React.useMemo(
     () => currentModeAgentSessions.filter((s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId)).length,
     [currentModeAgentSessions, currentWorkspaceId]
-  )
-
-  /** 归档的 Chat 对话列表（按 updatedAt 倒序，不分组供 Popover 平铺） */
-  const archivedConversations = React.useMemo(
-    () => conversations
-      .filter((c) => c.archived && !draftSessionIds.has(c.id))
-      .sort((a, b) => b.updatedAt - a.updatedAt),
-    [conversations, draftSessionIds],
   )
 
   /** 归档的 Agent 会话列表（按 updatedAt 倒序，平铺） */
@@ -544,113 +513,16 @@ export function LeftSidebar({
 
   /** 处理导航项点击 */
   const handleItemClick = (item: SidebarItemId): void => {
-    if (item === 'pinned') {
-      // 置顶按钮仅切换展开/收起，不改变 activeView
-      setPinnedExpanded((prev) => !prev)
-      return
-    }
     setActiveItem(item)
     setActiveView(ITEM_TO_VIEW[item])
   }
 
-  /** 创建新对话（继承当前选中的模型/渠道） */
-  const handleNewConversation = async (): Promise<void> => {
-    try {
-      const meta = await window.electronAPI.createConversation(
-        undefined,
-        selectedModel?.modelId,
-        selectedModel?.channelId,
-      )
-      setConversations((prev) => [meta, ...prev])
-      // 打开新标签页
-      openSession('chat', meta.id, meta.title)
-      // 确保在对话视图
-      setActiveView('conversations')
-      setActiveItem('all-chats')
-      // 根据默认提示词重置选中
-      if (promptConfig.defaultPromptId) {
-        setSelectedPromptId(promptConfig.defaultPromptId)
-      }
-    } catch (error) {
-      console.error('[侧边栏] 创建对话失败:', error)
-    }
-  }
-
-  /** 选择对话（打开或聚焦标签页） */
-  const handleSelectConversation = React.useCallback((id: string, title: string): void => {
-    openSession('chat', id, title)
-    setActiveView('conversations')
-    setActiveItem('all-chats')
-  }, [openSession, setActiveView])
-
-  /** 请求删除对话（弹出确认框） */
+  /** 请求删除会话（Agent 共用，弹出确认框） */
   const handleRequestDelete = React.useCallback((id: string): void => {
     setPendingDeleteId(id)
   }, [])
 
-  /** 重命名对话标题 */
-  const handleRename = React.useCallback(async (id: string, newTitle: string): Promise<void> => {
-    try {
-      const updated = await window.electronAPI.updateConversationTitle(id, newTitle)
-      setConversations((prev) =>
-        prev.map((c) => (c.id === updated.id ? updated : c))
-      )
-      // 同步更新标签页标题
-      setTabs((prev) => updateTabTitle(prev, id, newTitle))
-    } catch (error) {
-      console.error('[侧边栏] 重命名对话失败:', error)
-    }
-  }, [setConversations, setTabs])
-
-  /** 切换对话置顶状态 */
-  const handleTogglePin = React.useCallback(async (id: string): Promise<void> => {
-    try {
-      const original = store.get(conversationsAtom).find((c) => c.id === id)
-      const updated = await window.electronAPI.togglePinConversation(id)
-      setConversations((prev) =>
-        prev.map((c) => (c.id === updated.id ? updated : c))
-      )
-      // 归档会话被置顶时会自动取消归档
-      if (original?.archived && updated.pinned && !updated.archived) {
-        toast.success('已取消归档并置顶')
-      }
-    } catch (error) {
-      console.error('[侧边栏] 切换置顶失败:', error)
-    }
-  }, [store, setConversations])
-
-  /** 切换对话归档状态 */
-  const handleToggleArchive = React.useCallback(async (id: string): Promise<void> => {
-    try {
-      const updated = await window.electronAPI.toggleArchiveConversation(id)
-      setConversations((prev) =>
-        prev.map((c) => (c.id === updated.id ? updated : c))
-      )
-      // 归档时自动关闭该对话的标签页，并同步新激活标签的副作用
-      // （appMode、currentXxxId 等），避免文件面板/工具栏等 per-tab
-      // 状态被遗留为旧值或被错误地置 null。
-      if (updated.archived) {
-        const currentTabs = store.get(tabsAtom)
-        const currentActiveTabId = store.get(activeTabIdAtom)
-        const wasActive = currentActiveTabId === id
-        const tabResult = closeTab(currentTabs, currentActiveTabId, id)
-        setTabs(tabResult.tabs)
-        setActiveTabId(tabResult.activeTabId)
-        cleanupMapAtoms(id)
-        if (wasActive) {
-          const newActiveTab = tabResult.activeTabId
-            ? tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null
-            : null
-          syncActiveTabSideEffects(newActiveTab)
-        }
-      }
-      toast.success(updated.archived ? '已归档' : '已取消归档')
-    } catch (error) {
-      console.error('[侧边栏] 切换归档失败:', error)
-    }
-  }, [store, setConversations, setTabs, setActiveTabId, cleanupMapAtoms, syncActiveTabSideEffects])
-
-  /** 确认删除对话 */
+  /** 确认删除会话（Agent / 历史 Chat 共用） */
   const handleConfirmDelete = async (): Promise<void> => {
     if (!pendingDeleteId) return
 
@@ -1015,21 +887,11 @@ export function LeftSidebar({
       if (activeRailItem === 'sessions') {
         return (
           <SessionsRailContent
-            mode={mode}
-            pinnedExpanded={pinnedExpanded}
-            setPinnedExpanded={setPinnedExpanded}
-            pinnedConversations={pinnedConversations}
-            conversationGroups={conversationGroups}
             activeSessionId={activeSessionId}
-            streamingIds={streamingIds}
             filteredAgentSessions={filteredAgentSessions}
             agentIndicatorMap={agentIndicatorMap}
             workingSessionIds={workingSessionIds}
-            handleSelectConversation={handleSelectConversation}
             handleRequestDelete={handleRequestDelete}
-            handleRename={handleRename}
-            handleTogglePin={handleTogglePin}
-            handleToggleArchive={handleToggleArchive}
             handleSelectAgentSession={handleSelectAgentSession}
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
@@ -1059,21 +921,11 @@ export function LeftSidebar({
       default:
         return (
           <SessionsRailContent
-            mode={mode}
-            pinnedExpanded={pinnedExpanded}
-            setPinnedExpanded={setPinnedExpanded}
-            pinnedConversations={pinnedConversations}
-            conversationGroups={conversationGroups}
             activeSessionId={activeSessionId}
-            streamingIds={streamingIds}
             filteredAgentSessions={filteredAgentSessions}
             agentIndicatorMap={agentIndicatorMap}
             workingSessionIds={workingSessionIds}
-            handleSelectConversation={handleSelectConversation}
             handleRequestDelete={handleRequestDelete}
-            handleRename={handleRename}
-            handleTogglePin={handleTogglePin}
-            handleToggleArchive={handleToggleArchive}
             handleSelectAgentSession={handleSelectAgentSession}
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
@@ -1256,15 +1108,15 @@ export function LeftSidebar({
         </SidebarTopControlsRow>
       ) : null}
 
-      {/* 新对话/新会话按钮 + 搜索按钮（仅会话功能区显示） */}
+      {/* 新会话按钮 + 搜索按钮（仅 Agent 会话功能区显示） */}
       {activeRailItem === 'sessions' && (
         <div className="nav-island-action-row px-3 gap-1.5">
           <button
-            onClick={mode === 'agent' ? handleNewAgentSession : handleNewConversation}
+            onClick={handleNewAgentSession}
             className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
           >
             <Plus size={14} />
-            <span>{mode === 'agent' ? '新会话' : '新对话'}</span>
+            <span>新会话</span>
           </button>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1294,55 +1146,6 @@ export function LeftSidebar({
       {/* 已归档 Popover 入口：固定在底部，点击展开成完整列表（不切换整页 viewMode） */}
       {activeRailItem === 'sessions' && (
         <div className="px-3 pb-1 flex-shrink-0">
-          {mode === 'chat' && archivedConversationCount > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-foreground/40 hover:bg-foreground/[0.04] hover:text-foreground/60 transition-colors titlebar-no-drag"
-                >
-                  <Archive size={13} className="text-foreground/30" />
-                  <span>已归档 ({archivedConversationCount})</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="start"
-                sideOffset={6}
-                className="w-72 p-0 overflow-hidden"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-              >
-                <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
-                  <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
-                    已归档对话 · {archivedConversationCount}
-                  </span>
-                </div>
-                <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
-                  {archivedConversations.length === 0 ? (
-                    <div className="py-3 text-center text-[12px] text-foreground/40">
-                      暂无已归档对话
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      {archivedConversations.map((conv) => (
-                        <ConversationItem
-                          key={conv.id}
-                          conversation={conv}
-                          active={conv.id === activeSessionId}
-                          streaming={streamingIds.has(conv.id)}
-                          showPinIcon={!!conv.pinned}
-                          onSelect={handleSelectConversation}
-                          onRequestDelete={handleRequestDelete}
-                          onRename={handleRename}
-                          onTogglePin={handleTogglePin}
-                          onToggleArchive={handleToggleArchive}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
           {mode === 'agent' && archivedAgentSessionCount > 0 && (
             <Popover>
               <PopoverTrigger asChild>
@@ -1413,23 +1216,13 @@ export function LeftSidebar({
 
 // ===== 功能区内容组件 =====
 
-/** 会话功能区内容 */
+/** 会话功能区内容（仅 Agent 会话） */
 function SessionsRailContent({
-  mode,
-  pinnedExpanded,
-  setPinnedExpanded,
-  pinnedConversations,
-  conversationGroups,
   activeSessionId,
-  streamingIds,
   filteredAgentSessions,
   agentIndicatorMap,
   workingSessionIds,
-  handleSelectConversation,
   handleRequestDelete,
-  handleRename,
-  handleTogglePin,
-  handleToggleArchive,
   handleSelectAgentSession,
   handleAgentRename,
   handleTogglePinAgent,
@@ -1439,21 +1232,11 @@ function SessionsRailContent({
   handleRequestMove,
   workspaceNameMap,
 }: {
-  mode: AppMode
-  pinnedExpanded: boolean
-  setPinnedExpanded: (v: boolean) => void
-  pinnedConversations: ConversationMeta[]
-  conversationGroups: Array<{ label: string; items: ConversationMeta[] }>
   activeSessionId: string | null
-  streamingIds: Set<string>
   filteredAgentSessions: AgentSessionMeta[]
   agentIndicatorMap: Map<string, SessionIndicatorStatus>
   workingSessionIds: Set<string>
-  handleSelectConversation: (id: string, title: string) => void
   handleRequestDelete: (id: string) => void
-  handleRename: (id: string, newTitle: string) => Promise<void>
-  handleTogglePin: (id: string) => Promise<void>
-  handleToggleArchive: (id: string) => Promise<void>
   handleSelectAgentSession: (id: string, title: string) => void
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
@@ -1463,77 +1246,6 @@ function SessionsRailContent({
   handleRequestMove: (id: string) => void
   workspaceNameMap: Map<string, string>
 }): React.ReactElement {
-  // Chat 模式：导航菜单（置顶区域）
-  if (mode === 'chat') {
-    return (
-      <>
-        <div className="flex flex-col gap-1 pt-3 px-3">
-          <SidebarItem
-            icon={<Pin size={16} />}
-            label="置顶对话"
-            suffix={
-              pinnedConversations.length > 0 ? (
-                pinnedExpanded
-                  ? <ChevronDown size={14} className="text-foreground/40" />
-                  : <ChevronRight size={14} className="text-foreground/40" />
-              ) : undefined
-            }
-            onClick={() => setPinnedExpanded(!pinnedExpanded)}
-          />
-        </div>
-
-        {/* 置顶对话区域 */}
-        {pinnedExpanded && pinnedConversations.length > 0 && (
-          <div className="px-3 pt-1 pb-1">
-            <div className="flex flex-col gap-0.5 pl-1 border-l-2 border-primary/20 ml-2">
-              {pinnedConversations.map((conv) => (
-                <ConversationItem
-                  key={`pinned-${conv.id}`}
-                  conversation={conv}
-                  active={conv.id === activeSessionId}
-                  streaming={streamingIds.has(conv.id)}
-                  showPinIcon={false}
-                  onSelect={handleSelectConversation}
-                  onRequestDelete={handleRequestDelete}
-                  onRename={handleRename}
-                  onTogglePin={handleTogglePin}
-                  onToggleArchive={handleToggleArchive}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 对话列表 */}
-        <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3 scrollbar-thin titlebar-no-drag">
-          {conversationGroups.map((group) => (
-            <div key={group.label} className="mb-1">
-              <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
-                {group.label}
-              </div>
-              <div className="flex flex-col gap-0.5">
-                {group.items.map((conv) => (
-                  <ConversationItem
-                    key={conv.id}
-                    conversation={conv}
-                    active={conv.id === activeSessionId}
-                    streaming={streamingIds.has(conv.id)}
-                    showPinIcon={!!conv.pinned}
-                    onSelect={handleSelectConversation}
-                    onRequestDelete={handleRequestDelete}
-                    onRename={handleRename}
-                    onTogglePin={handleTogglePin}
-                    onToggleArchive={handleToggleArchive}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </>
-    )
-  }
-
   // Agent 模式
   return (
     <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag">
@@ -1773,7 +1485,7 @@ const ConversationItem = React.memo(function ConversationItem({
       </ContextMenuContent>
       <SessionMiniMapPopover
         target={{
-          type: 'chat',
+          type: 'agent',  // P3: chat 已退役，此组件为遗留代码
           sessionId: conversation.id,
           title: conversation.title,
         }}

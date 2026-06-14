@@ -2094,39 +2094,6 @@ html:not(.dark) .btw-panel-glass::after,
   );
 }
 
-/* 从 Rail 右缘向右延伸的上下翼线 */
-.nav-island-wing-line {
-  position: absolute;
-  left: var(--nav-rail-width, 60px);
-  right: 10px;
-  height: 1px;
-  pointer-events: none;
-  z-index: 3;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--glass-shine, var(--foreground)) / 0.42) 0%,
-    hsl(var(--foreground) / 0.14) 35%,
-    hsl(var(--foreground) / 0.08) 100%
-  );
-}
-
-.nav-island-wing-line--top {
-  top: 0;
-}
-
-.nav-island-wing-line--bottom {
-  bottom: 0;
-}
-
-.dark .nav-island-wing-line {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--foreground) / 0.22) 0%,
-    hsl(var(--foreground) / 0.12) 40%,
-    hsl(var(--foreground) / 0.06) 100%
-  );
-}
-
 .nav-island-sidebar {
   min-width: 0;
 }
@@ -2155,7 +2122,27 @@ html:not(.dark) .btw-panel-glass::after,
 
 /* macOS 顶栏：左翼红绿灯安全区 + 右翼侧栏标题（与主区 TabBar 同高语义） */
 .nav-island-chrome {
-  border-bottom: 1px solid hsl(var(--foreground) / 0.06);
+  position: relative;
+  border-bottom: none;
+}
+
+/* 底部分隔线：中间实、两侧渐隐（与 glass-divider 同语言） */
+.nav-island-chrome::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.08) 18%,
+    hsl(var(--foreground) / 0.14) 50%,
+    hsl(var(--foreground) / 0.08) 82%,
+    transparent 100%
+  );
 }
 
 .nav-island-chrome-lights {
@@ -2166,8 +2153,15 @@ html:not(.dark) .btw-panel-glass::after,
   app-region: drag;
 }
 
-.dark .nav-island-chrome {
-  border-bottom-color: hsl(var(--foreground) / 0.08);
+.dark .nav-island-chrome::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.10) 18%,
+    hsl(var(--foreground) / 0.16) 50%,
+    hsl(var(--foreground) / 0.10) 82%,
+    transparent 100%
+  );
 }
 
 /* macOS：略减小左上圆角，避免系统红绿灯视觉上「挂」在弧角外侧 */
@@ -2178,11 +2172,6 @@ html:not(.dark) .btw-panel-glass::after,
 .nav-island-glass--mac::before,
 .nav-island-glass--mac::after {
   border-top-left-radius: 14px;
-}
-
-/* 翼线仅在 body 内，不穿过 chrome 行 */
-.nav-island-body .nav-island-wing-line {
-  left: var(--nav-rail-width, 60px);
 }
 
 /**
@@ -2488,6 +2477,69 @@ html:not(.dark) .btw-panel-glass::after,
 
 .session-glass-rail {
   border-radius: 12px;
+}
+
+/* Rail 功能区按钮：默认扁平，选中浮岛 + 主题描边 */
+.rail-island-btn {
+  color: hsl(var(--foreground) / 0.40);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.72);
+  background: hsl(var(--foreground) / 0.05);
+}
+
+.rail-island-btn--active {
+  color: hsl(var(--foreground));
+  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+}
+
+/* 浅色：勿用 --primary 描边（默认主题 primary 近黑），改用 glass-rim */
+html:not(.dark) .rail-island-btn--active {
+  border-color: hsl(var(--glass-rim) / 0.82);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.92) 0%,
+    hsl(var(--background) / 0.74) 52%,
+    hsl(var(--background) / 0.66) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.72),
+    0 4px 14px -5px rgba(0, 0, 0, 0.05),
+    0 2px 8px -4px rgba(0, 0, 0, 0.04);
+}
+
+.dark .rail-island-btn {
+  color: hsl(var(--foreground) / 0.46);
+}
+
+.dark .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.84);
+  background: hsl(var(--foreground) / 0.07);
+}
+
+.dark .rail-island-btn--active {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.45);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.22) 0%,
+    hsl(var(--background) / 0.56) 52%,
+    hsl(var(--background) / 0.48) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--primary) / 0.26),
+    0 4px 16px -6px hsl(var(--primary) / 0.32),
+    0 2px 10px -4px rgba(0, 0, 0, 0.35);
 }
 
 .session-glass-chip {

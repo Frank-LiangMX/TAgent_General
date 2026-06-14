@@ -63,12 +63,6 @@ export function NavIsland({
       {isMac ? <NavIslandMacChrome /> : null}
 
       <div className="nav-island-body relative flex min-h-0 flex-1 flex-row">
-        {wingOpen ? (
-          <>
-            <div className="nav-island-wing-line nav-island-wing-line--top" aria-hidden />
-            <div className="nav-island-wing-line nav-island-wing-line--bottom" aria-hidden />
-          </>
-        ) : null}
         {children}
       </div>
     </div>

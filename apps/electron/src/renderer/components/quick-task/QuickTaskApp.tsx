@@ -2,7 +2,8 @@
  * QuickTaskApp — 快速任务窗口根组件
  *
  * 当 URL 含 ?window=quick-task 时渲染此组件（替代主 App）。
- * 轻量级独立窗口：多行输入 + 附件粘贴 + 模式切换 + 默认模型展示。
+ * 轻量级独立窗口：多行输入 + 附件粘贴 + 默认模型展示。
+ * P3: Chat 模式已退役，仅支持 Agent 模式。
  */
 
 import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
@@ -11,8 +12,8 @@ import { toast } from 'sonner'
 
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 
-/** 任务模式 */
-type TaskMode = 'chat' | 'agent'
+/** 任务模式（P3: chat 已退役） */
+type TaskMode = 'agent'
 
 /** 待上传附件（仅在快速任务窗口内使用） */
 interface QuickAttachment {
@@ -32,7 +33,7 @@ interface ModelInfo {
 }
 
 export function QuickTaskApp(): React.ReactElement {
-  const [mode, setMode] = useState<TaskMode>('agent')
+  const [mode] = useState<TaskMode>('agent')  // P3: 固定为 agent
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<QuickAttachment[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -47,10 +48,10 @@ export function QuickTaskApp(): React.ReactElement {
     document.documentElement.style.background = 'transparent'
   }, [])
 
-  // 加载默认模型信息
+  // 加载默认模型信息（P3: 仅 agent 模式）
   useEffect(() => {
     loadModelInfo()
-  }, [mode])
+  }, [])
 
   async function loadModelInfo(): Promise<void> {
     try {
@@ -59,28 +60,13 @@ export function QuickTaskApp(): React.ReactElement {
         window.electronAPI.listChannels(),
       ])
 
-      if (mode === 'agent') {
-        const channelId = settings.agentChannelId
-        const modelId = settings.agentModelId
-        if (channelId && modelId) {
-          const channel = channels.find((c) => c.id === channelId)
-          if (channel) {
-            setModelInfo({ channelName: channel.name, modelId })
-            return
-          }
-        }
-      } else {
-        // Chat 模式读取 localStorage 中的 selectedModel
-        const raw = localStorage.getItem('tagent-selected-model')
-        if (raw) {
-          try {
-            const selected = JSON.parse(raw) as { channelId: string; modelId: string }
-            const channel = channels.find((c) => c.id === selected.channelId)
-            if (channel) {
-              setModelInfo({ channelName: channel.name, modelId: selected.modelId })
-              return
-            }
-          } catch { /* 忽略解析错误 */ }
+      const channelId = settings.agentChannelId
+      const modelId = settings.agentModelId
+      if (channelId && modelId) {
+        const channel = channels.find((c) => c.id === channelId)
+        if (channel) {
+          setModelInfo({ channelName: channel.name, modelId })
+          return
         }
       }
       setModelInfo(null)
@@ -120,26 +106,12 @@ export function QuickTaskApp(): React.ReactElement {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }, [text])
 
-  // 全局键盘事件
+  // 全局键盘事件（P3: 已移除模式切换快捷键）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault()
         window.electronAPI.hideQuickTask()
-        return
-      }
-
-      const isMac = navigator.userAgent.includes('Mac')
-      const mod = isMac ? e.metaKey : e.ctrlKey
-
-      if (mod && e.key === '1') {
-        e.preventDefault()
-        setMode('chat')
-        return
-      }
-      if (mod && e.key === '2') {
-        e.preventDefault()
-        setMode('agent')
         return
       }
     }
@@ -199,7 +171,7 @@ export function QuickTaskApp(): React.ReactElement {
     }
     if (rejectedLargeFiles.length > 0) {
       toast.error(`以下文件超过 100MB，已跳过：${formatFileNames(rejectedLargeFiles)}`, {
-        description: mode === 'chat' ? 'Chat 附件暂不支持大文件。' : '无法取得本地路径，不能作为附加文件引用。',
+        description: '无法取得本地路径，不能作为附加文件引用。',
       })
     }
     if (newAttachments.length > 0) {
@@ -250,21 +222,16 @@ export function QuickTaskApp(): React.ReactElement {
     e.target.value = '' // 允许重复选择同一文件
   }, [addFiles])
 
-  // 提交任务
+  // 提交任务（P3: 仅 Agent 模式）
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim()
     if ((!trimmed && attachments.length === 0) || isSubmitting) return
-    const pathOnlyAttachments = attachments.filter((att) => att.sourcePath && !att.base64)
-    if (mode === 'chat' && pathOnlyAttachments.length > 0) {
-      toast.error(`Chat 暂不支持大文件附加，已保留在快速任务窗口：${formatFileNames(pathOnlyAttachments.map((att) => att.filename))}`)
-      return
-    }
 
     setIsSubmitting(true)
     try {
       await window.electronAPI.submitQuickTask({
         text: trimmed,
-        mode,
+        mode: 'agent',
         files: attachments.map(({ filename, mediaType, base64, sourcePath, size }) => ({
           filename, mediaType, base64, sourcePath, size,
         })),
@@ -276,7 +243,7 @@ export function QuickTaskApp(): React.ReactElement {
     } finally {
       setIsSubmitting(false)
     }
-  }, [text, mode, attachments, isSubmitting])
+  }, [text, attachments, isSubmitting])
 
   // Enter 提交，Shift+Enter 换行
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -296,34 +263,13 @@ export function QuickTaskApp(): React.ReactElement {
       onDrop={handleDrop}
     >
       <div className={`quick-task-container flex w-full flex-col rounded-2xl bg-background transition-colors ${isDragOver ? 'ring-2 ring-primary/50' : ''}`}>
-        {/* 顶栏：模式切换 + 模型信息 */}
+        {/* 顶栏：模型信息（P3: 已移除模式切换） */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <div className="flex items-center gap-2">
-            {/* 模式切换器 */}
-            <div className="flex gap-0.5 rounded-lg bg-muted/60 p-0.5">
-              <button
-                type="button"
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  mode === 'chat'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setMode('chat')}
-              >
-                Chat
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  mode === 'agent'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setMode('agent')}
-              >
-                Agent
-              </button>
-            </div>
+            {/* 模式标签 */}
+            <span className="rounded-md px-2.5 py-1 text-xs font-medium bg-primary/10 text-primary">
+              Agent
+            </span>
 
             {/* 模型信息 */}
             {modelInfo && (
@@ -335,8 +281,6 @@ export function QuickTaskApp(): React.ReactElement {
 
           {/* 快捷键提示 */}
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground/40">
-            <span>⌘1 Chat</span>
-            <span>⌘2 Agent</span>
             <span>Esc 关闭</span>
           </div>
         </div>
@@ -349,7 +293,7 @@ export function QuickTaskApp(): React.ReactElement {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={mode === 'agent' ? '向 TAgent 描述你的任务，Enter 发送...' : '向 TAgent 发送消息，Enter 发送...'}
+            placeholder="向 TAgent 描述你的任务，Enter 发送..."
             className="w-full resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 leading-relaxed"
             style={{ minHeight: '60px', maxHeight: '160px' }}
             disabled={isSubmitting}

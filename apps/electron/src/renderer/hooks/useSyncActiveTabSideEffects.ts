@@ -44,13 +44,7 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         return
       }
 
-      if (newActiveTab.type === 'chat') {
-        setAppMode('chat')
-        setCurrentConversationId(newActiveTab.sessionId)
-        setCurrentAgentSessionId(null)
-        return
-      }
-
+      // P3: chat 已退役，仅处理 scratch / agent / preview
       if (newActiveTab.type === 'scratch') {
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
         setCurrentConversationId(null)

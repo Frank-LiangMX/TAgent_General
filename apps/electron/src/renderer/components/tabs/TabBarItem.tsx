@@ -105,7 +105,7 @@ export function TabBarItem({
   // 当前 active Tab 不显示预览面板
   const showPreview = isHovered && !isActive
   const isAgentSession = type === 'agent'
-  const isChatSession = type === 'chat'
+  // P3: chat 已退役
 
   // Scratch Pad 是固定草稿入口
   if (isScratch) {
@@ -173,7 +173,7 @@ export function TabBarItem({
           <span className="flex-1" />
         ) : (
           <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-            {(isAgentSession || isChatSession) && (
+            {isAgentSession && (
               <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
             )}
             <span className="min-w-0 truncate">{title}</span>

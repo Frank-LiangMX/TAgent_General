@@ -17,8 +17,8 @@ import { atomWithStorage } from 'jotai/utils'
 /** 顶层模式：通用 / TA */
 export type TopLevelMode = 'general' | 'ta'
 
-/** 子模式：仅在 general 模式下有效 */
-export type AppMode = 'chat' | 'agent' | 'scratch'
+/** 子模式：仅在 general 模式下有效（P3 已退役 chat） */
+export type AppMode = 'agent' | 'scratch'
 
 /** 顶层模式 atom，自动持久化到 localStorage */
 export const topLevelModeAtom = atomWithStorage<TopLevelMode>('tagent-top-level-mode', 'general')

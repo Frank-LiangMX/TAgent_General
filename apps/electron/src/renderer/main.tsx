@@ -67,7 +67,6 @@ import { TabSwitcher } from './components/tabs/TabSwitcher'
 import { Toaster } from './components/ui/sonner'
 import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
 import { useGlobalAskListeners } from './hooks/useGlobalAskListeners'
-import { useGlobalChatListeners } from './hooks/useGlobalChatListeners'
 import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
 
@@ -437,17 +436,6 @@ function AdvancedMaterialInitializer(): null {
 }
 
 /**
- * Chat IPC 监听器初始化组件
- *
- * 全局挂载，永不销毁。确保 Chat 流式事件
- * 在页面切换时不丢失。
- */
-function ChatListenersInitializer(): null {
-  useGlobalChatListeners()
-  return null
-}
-
-/**
  * Agent IPC 监听器初始化组件
  *
  * 全局挂载，永不销毁。确保 Agent 流式事件、权限请求
@@ -663,7 +651,8 @@ function TabStatePersistenceInitializer(): null {
           'sessionId' in t &&
           'type' in t &&
           'title' in t &&
-          (t.type === 'chat' || t.type === 'agent') &&
+          // P3: chat 已退役，仅恢复 agent 类型
+          t.type === 'agent' &&
           validSessionIds.has(t.sessionId),
       )
       if (validTabs.length === 0) {
@@ -691,15 +680,10 @@ function TabStatePersistenceInitializer(): null {
       store.set(tabsAtom, ensureScratchPadTab(activeTab ? [activeTab] : []))
       store.set(activeTabIdAtom, restoredActiveTabId)
 
-      // 同步 appMode 和 currentSessionId
+      // 同步 appMode 和 currentSessionId（P3: chat 已退役）
       if (activeTab) {
-        if (activeTab.type === 'chat') {
-          store.set(appModeAtom, 'chat')
-          store.set(currentConversationIdAtom, activeTab.sessionId)
-        } else {
-          store.set(appModeAtom, 'agent')
-          store.set(currentAgentSessionIdAtom, activeTab.sessionId)
-        }
+        store.set(appModeAtom, 'agent')
+        store.set(currentAgentSessionIdAtom, activeTab.sessionId)
       }
 
       console.log(`[TabRestore] 已恢复当前会话入口，历史标签 ${validTabs.length} 个已收敛到左侧列表`)
@@ -906,7 +890,6 @@ if (isQuickTaskWindow) {
       <UiPreferencesInitializer />
       <MarkdownFontSizeInitializer />
       <AdvancedMaterialInitializer />
-      <ChatListenersInitializer />
       <AgentListenersInitializer />
       <AskListenersInitializer />
       <ChatToolInitializer />

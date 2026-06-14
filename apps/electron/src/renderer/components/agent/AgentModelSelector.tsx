@@ -1,11 +1,8 @@
 /**
- * ModelSelector - 模型选择器（Dialog + Command 搜索）
+ * AgentModelSelector - Agent 模型选择器
  *
- * 现代化设计：
- * - 大尺寸 Dialog，宽敞易读
- * - 按渠道分组，灰色背景供应商标题行
- * - 选中项左侧绿色竖条高亮
- * - 触发按钮：模型 logo + 模型名 + Chevron
+ * 从 ModelSelector 简化而来，仅用于 Agent 模式。
+ * P3: Chat 模式已退役，移除 Chat 相关依赖。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -15,19 +12,16 @@ import * as React from 'react'
 import type { Channel, ModelOption } from '@tagent/shared'
 
 import {
-  conversationsAtom,
-  selectedModelAtom,
-  channelsAtom,
-  channelsLoadedAtom,
-} from '@/atoms/chat-atoms'
+  agentChannelIdAtom,
+  agentModelIdAtom,
+} from '@/atoms/agent-atoms'
+import { channelsAtom, channelsLoadedAtom } from '@/atoms/chat-atoms'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useConversationIdOptional } from '@/contexts/session-context'
-import { useConversationModelOptional } from '@/hooks/useConversationSettings'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
@@ -71,13 +65,13 @@ function groupByChannel(options: ModelOption[]): Map<string, ModelOption[]> {
   return groups
 }
 
-/** ModelSelector 可选属性 */
-interface ModelSelectorProps {
+/** AgentModelSelector 属性 */
+interface AgentModelSelectorProps {
   /** 仅显示此渠道的模型 */
   filterChannelId?: string
   /** 仅显示这些渠道的模型（多渠道过滤） */
   filterChannelIds?: string[]
-  /** 外部选中模型（不传则用内部 selectedModelAtom） */
+  /** 外部选中模型（不传则用内部 atom） */
   externalSelectedModel?: { channelId: string; modelId: string } | null
   /** 外部选择回调 */
   onModelSelect?: (option: ModelOption) => void
@@ -87,26 +81,26 @@ interface ModelSelectorProps {
   compact?: boolean
 }
 
-export function ModelSelector({
+export function AgentModelSelector({
   filterChannelId,
   filterChannelIds,
   externalSelectedModel,
   onModelSelect,
   hideLogo = false,
   compact = false,
-}: ModelSelectorProps = {}): React.ReactElement {
-  const [conversationModel, setConversationModel] = useConversationModelOptional()
-  const conversationId = useConversationIdOptional()
-  const setConversations = useSetAtom(conversationsAtom)
-  const setGlobalModel = useSetAtom(selectedModelAtom)
+}: AgentModelSelectorProps = {}): React.ReactElement {
+  const channelId = useAtomValue(agentChannelIdAtom)
+  const modelId = useAtomValue(agentModelIdAtom)
+  const setChannelId = useSetAtom(agentChannelIdAtom)
+  const setModelId = useSetAtom(agentModelIdAtom)
   const channels = useAtomValue(channelsAtom)
   const channelsLoaded = useAtomValue(channelsLoadedAtom)
   const setChannels = useSetAtom(channelsAtom)
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
 
-  // 外部模型优先 → per-conversation 模型
-  const selectedModel = externalSelectedModel !== undefined ? externalSelectedModel : conversationModel
+  // 外部模型优先
+  const selectedModel = externalSelectedModel !== undefined ? externalSelectedModel : { channelId, modelId }
 
   // 每次打开 Dialog 时刷新渠道列表，确保最新
   React.useEffect(() => {
@@ -126,14 +120,14 @@ export function ModelSelector({
     const query = search.toLowerCase()
     const filtered = new Map<string, ModelOption[]>()
 
-    for (const [channelId, options] of grouped.entries()) {
+    for (const [chId, options] of grouped.entries()) {
       const matchedOptions = options.filter(
         (o) =>
           o.modelName.toLowerCase().includes(query) ||
           o.channelName.toLowerCase().includes(query)
       )
       if (matchedOptions.length > 0) {
-        filtered.set(channelId, matchedOptions)
+        filtered.set(chId, matchedOptions)
       }
     }
 
@@ -167,7 +161,7 @@ export function ModelSelector({
 
   // 查找当前选中的模型信息
   const currentModelInfo = React.useMemo(() => {
-    if (!selectedModel) return null
+    if (!selectedModel?.channelId || !selectedModel?.modelId) return null
     return modelOptions.find(
       (o) => o.channelId === selectedModel.channelId && o.modelId === selectedModel.modelId
     ) ?? null
@@ -178,32 +172,16 @@ export function ModelSelector({
   if (currentModelInfo) stableModelInfoRef.current = currentModelInfo
   const displayModelInfo = currentModelInfo ?? stableModelInfoRef.current
 
-  /** 选择模型并持久化到当前对话 */
+  /** 选择模型 */
   const handleSelect = (option: ModelOption): void => {
     if (onModelSelect) {
       onModelSelect(option)
       setOpen(false)
       return
     }
-
-    // Chat 模式：写入 per-conversation Map + 同步全局默认值
-    if (setConversationModel) {
-      setConversationModel({ channelId: option.channelId, modelId: option.modelId })
-    }
-    setGlobalModel({ channelId: option.channelId, modelId: option.modelId })
+    setChannelId(option.channelId)
+    setModelId(option.modelId)
     setOpen(false)
-
-    // 将模型/渠道选择保存到当前对话元数据
-    if (conversationId) {
-      window.electronAPI
-        .updateConversationModel(conversationId, option.modelId, option.channelId)
-        .then((updated) => {
-          setConversations((prev) =>
-            prev.map((c) => (c.id === updated.id ? updated : c))
-          )
-        })
-        .catch(console.error)
-    }
   }
 
   /** 搜索框键盘导航 */
@@ -300,17 +278,17 @@ export function ModelSelector({
             ) : (
               (() => {
                 let flatIndex = 0
-                return Array.from(filteredGrouped.entries()).map(([channelId, options]) => {
+                return Array.from(filteredGrouped.entries()).map(([chId, options]) => {
                 const first = options[0]
                 if (!first) return null
 
                 return (
-                  <div key={channelId}>
+                  <div key={chId}>
                     {/* 供应商标题行 - 灰色背景 */}
                     <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border/30">
                       <img
                         src={(() => {
-                          const ch = channels.find((c) => c.id === channelId)
+                          const ch = channels.find((c) => c.id === chId)
                           return ch ? getChannelLogo(ch) : DefaultLogo
                         })()}
                         alt={first.channelName}

@@ -1,8 +1,8 @@
 /**
  * TabContent — 标签内容渲染器
  *
- * 根据标签类型渲染参数化的 ChatView 或 AgentView。
- * 直接传递 sessionId/conversationId prop，无需桥接全局 atoms。
+ * 根据标签类型渲染参数化的 AgentView 或其他视图。
+ * P3: Chat 模式已退役，不再渲染 ChatView。
  */
 
 import { useAtomValue } from 'jotai'
@@ -12,7 +12,6 @@ import { TabErrorBoundary } from './TabErrorBoundary'
 
 import { tabsAtom } from '@/atoms/tab-atoms'
 import { AgentView } from '@/components/agent'
-import { ChatView } from '@/components/chat'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
 import { ScratchPadView } from '@/components/scratch-pad/ScratchPadView'
 
@@ -44,14 +43,6 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
     return <ScratchPadView />
   }
 
-  if (tab.type === 'chat') {
-    return (
-      <TabErrorBoundary key={tab.sessionId} sessionId={tab.sessionId}>
-        <ChatView conversationId={tab.sessionId} />
-      </TabErrorBoundary>
-    )
-  }
-
   if (tab.type === 'preview') {
     return (
       <TabErrorBoundary key={tab.id} sessionId={tab.sessionId}>
@@ -60,6 +51,7 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
     )
   }
 
+  // agent 类型（P3: chat 已退役，不再支持）
   return (
     <TabErrorBoundary key={tab.sessionId} sessionId={tab.sessionId}>
       <AgentView sessionId={tab.sessionId} />

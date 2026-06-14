@@ -5,7 +5,7 @@
  * - 手动触发搜索（点击搜索按钮 / 在输入框按 Enter）
  * - 标题匹配 + 消息内容匹配统一渲染，匹配文字高亮
  * - 键盘导航（上下箭头选择 + Enter 打开结果 + Esc 关闭）
- * - 同时搜索 Chat 和 Agent 模式
+ * - 仅搜索 Agent 会话
  *
  * 为什么手动触发：随着用户历史对话变多，自动搜索每次按键都会扫描全量 JSONL，
  * 主进程被 IO 阻塞导致整体卡顿。改成手动触发后只在用户确认意图时执行一次。
@@ -16,12 +16,10 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Search, X, MessageSquare, Bot, Archive, Loader2 } from 'lucide-react'
+import { Search, X, Bot, Archive, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import type {
-  ChatMessage,
-  MessageSearchResult,
   AgentMessageSearchResult,
   SDKMessage,
   SDKAssistantMessage,
@@ -38,7 +36,6 @@ import {
   agentChannelIdAtom,
   agentPendingPromptAtom,
 } from '@/atoms/agent-atoms'
-import { conversationsAtom, channelsAtom } from '@/atoms/chat-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useCreateSession } from '@/hooks/useCreateSession'
@@ -50,7 +47,7 @@ import { cn } from '@/lib/utils'
 interface TitleResult {
   id: string
   title: string
-  type: 'chat' | 'agent'
+  type: 'agent'
   archived?: boolean
   updatedAt: number
 }
@@ -59,7 +56,7 @@ interface TitleResult {
 interface ContentResult {
   id: string
   title: string
-  type: 'chat' | 'agent'
+  type: 'agent'
   messageId: string
   snippet: string
   matchStart: number
@@ -141,11 +138,7 @@ function HighlightSnippet({ snippet, matchStart, matchLength }: {
 }
 
 function SearchResultIcon({ result }: { result: SearchResult }): React.ReactElement {
-  return result.type === 'chat' ? (
-    <MessageSquare size={14} className="flex-shrink-0 text-foreground/40" />
-  ) : (
-    <Bot size={14} className="flex-shrink-0 text-blue-500/70" />
-  )
+  return <Bot size={14} className="flex-shrink-0 text-blue-500/70" />
 }
 
 function normalizePreviewText(text: string): string {
@@ -171,17 +164,6 @@ function sdkBlockText(block: SDKContentBlock | SDKUserContentBlock): string {
     return block.is_error ? '工具结果出错' : '工具返回结果'
   }
   return ''
-}
-
-function buildChatPreviewItems(messages: ChatMessage[], matchMessageId?: string): SessionPreviewItem[] {
-  return messages
-    .map((message) => ({
-      id: message.id,
-      role: message.role === 'user' ? 'user' as const : message.role === 'assistant' ? 'assistant' as const : 'status' as const,
-      preview: normalizePreviewText(message.content).slice(0, 220),
-      matched: message.id === matchMessageId,
-    }))
-    .filter((item) => item.preview.length > 0)
 }
 
 function buildAgentPreviewItems(messages: SDKMessage[], matchMessageId?: string): SessionPreviewItem[] {
@@ -271,9 +253,7 @@ function SearchResultSessionPreview({ target, committedQuery }: SearchResultSess
     const load = async (): Promise<void> => {
       try {
         const matchMessageId = isContentResult(target.result) ? target.result.messageId : undefined
-        const nextItems = target.result.type === 'chat'
-          ? buildChatPreviewItems(await window.electronAPI.getConversationMessages(target.result.id), matchMessageId)
-          : buildAgentPreviewItems(await window.electronAPI.getAgentSessionSDKMessages(target.result.id), matchMessageId)
+        const nextItems = buildAgentPreviewItems(await window.electronAPI.getAgentSessionSDKMessages(target.result.id), matchMessageId)
         if (cancelled) return
         cacheRef.current.set(key, nextItems)
         setItems(nextItems)
@@ -372,10 +352,8 @@ function SearchResultSessionPreview({ target, committedQuery }: SearchResultSess
 
 export function SearchDialog(): React.ReactElement {
   const [open, setOpen] = useAtom(searchDialogOpenAtom)
-  const conversations = useAtomValue(conversationsAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
   const agentWorkspaces = useAtomValue(agentWorkspacesAtom)
-  const channels = useAtomValue(channelsAtom)
   const currentAgentChannelId = useAtomValue(agentChannelIdAtom)
   const setAgentPendingPrompt = useSetAtom(agentPendingPromptAtom)
   const setActiveView = useSetAtom(activeViewAtom)
@@ -459,39 +437,19 @@ export function SearchDialog(): React.ReactElement {
     setPreviewTarget(null)
 
     const qLower = q.toLowerCase()
-    const titles: TitleResult[] = [
-      ...conversations
-        .filter((c) => c.title.toLowerCase().includes(qLower))
-        .map((c) => ({ id: c.id, title: c.title, type: 'chat' as const, archived: c.archived, updatedAt: c.updatedAt })),
-      ...agentSessions
-        .filter((s) => s.title.toLowerCase().includes(qLower))
-        .map((s) => ({ id: s.id, title: s.title, type: 'agent' as const, archived: s.archived, updatedAt: s.updatedAt })),
-    ]
+    const titles: TitleResult[] = agentSessions
+      .filter((s) => s.title.toLowerCase().includes(qLower))
+      .map((s) => ({ id: s.id, title: s.title, type: 'agent' as const, archived: s.archived, updatedAt: s.updatedAt }))
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, 20)
 
     setTitleResults(titles)
 
     try {
-      const [chatResults, agentResults] = await Promise.all([
-        window.electronAPI.searchConversationMessages(q),
-        window.electronAPI.searchAgentSessionMessages(q),
-      ])
+      const agentResults = await window.electronAPI.searchAgentSessionMessages(q)
       if (token !== searchTokenRef.current) return
 
       const titleIds = new Set(titles.map((t) => t.id))
-      const chatContent: ContentResult[] = (chatResults as MessageSearchResult[])
-        .filter((r) => !titleIds.has(r.conversationId))
-        .map((r) => ({
-          id: r.conversationId,
-          title: r.conversationTitle,
-          type: 'chat' as const,
-          messageId: r.messageId,
-          snippet: r.snippet,
-          matchStart: r.matchStart,
-          matchLength: r.matchLength,
-          archived: r.archived,
-        }))
       const agentContent: ContentResult[] = (agentResults as AgentMessageSearchResult[])
         .filter((r) => !titleIds.has(r.sessionId))
         .map((r) => ({
@@ -505,23 +463,20 @@ export function SearchDialog(): React.ReactElement {
           archived: r.archived,
         }))
 
-      setContentResults([...chatContent, ...agentContent])
+      setContentResults(agentContent)
     } catch (error) {
       console.error('[搜索] 内容搜索失败:', error)
       if (token === searchTokenRef.current) setContentResults([])
     } finally {
       if (token === searchTokenRef.current) setLoading(false)
     }
-  }, [query, conversations, agentSessions])
+  }, [query, agentSessions])
 
   const handleAgentSearch = React.useCallback(async () => {
     const q = query.trim()
     if (!q) return
 
-    const deepseekChannel = channels.find(
-      (c) => c.enabled && c.models.some((m) => m.id === 'deepseek-v4-flash' && m.enabled)
-    )
-    const channelId = deepseekChannel?.id ?? currentAgentChannelId ?? undefined
+    const channelId = currentAgentChannelId ?? undefined
 
     const configDir = import.meta.env.DEV ? '.tagent-dev' : '.tagent'
     const prompt = `请帮我在 TAgent 的全部会话历史中搜索与以下描述相关的内容：
@@ -529,7 +484,6 @@ export function SearchDialog(): React.ReactElement {
 "${q}"
 
 搜索范围：
-- Chat 会话消息文件：~/${configDir}/conversations/ 目录下所有 .jsonl 文件
 - Agent 会话消息文件：~/${configDir}/agent-sessions/ 目录下所有 .jsonl 文件
 
 要求：
@@ -544,7 +498,7 @@ export function SearchDialog(): React.ReactElement {
     setAgentPendingPrompt({ sessionId, message: prompt })
     setOpen(false)
     setActiveView('conversations')
-  }, [query, channels, currentAgentChannelId, createAgent, setAgentPendingPrompt, setOpen, setActiveView])
+  }, [query, currentAgentChannelId, createAgent, setAgentPendingPrompt, setOpen, setActiveView])
 
   // 全部结果列表（标题在前、内容在后）
   const allResults = React.useMemo<SearchResult[]>(
@@ -552,21 +506,15 @@ export function SearchDialog(): React.ReactElement {
     [titleResults, contentResults]
   )
 
-  // 导航到对话/会话
+  // 导航到会话
   const navigateToResult = React.useCallback((result: TitleResult | ContentResult) => {
     setOpen(false)
     setActiveView('conversations')
 
-    if (result.type === 'chat') {
-      const conv = conversations.find((c) => c.id === result.id)
-      const title = conv?.title ?? result.title
-      openSession('chat', result.id, title)
-    } else {
-      const session = agentSessions.find((s) => s.id === result.id)
-      const title = session?.title ?? result.title
-      openSession('agent', result.id, title)
-    }
-  }, [setOpen, setActiveView, openSession, conversations, agentSessions])
+    const session = agentSessions.find((s) => s.id === result.id)
+    const title = session?.title ?? result.title
+    openSession('agent', result.id, title)
+  }, [setOpen, setActiveView, openSession, agentSessions])
 
   /**
    * Enter 键语义：

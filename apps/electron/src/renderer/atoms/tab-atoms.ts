@@ -25,8 +25,8 @@ import { topLevelModeAtom } from '@/atoms/app-mode'
 
 // ===== 类型定义 =====
 
-/** 标签页类型（Settings 不作为 Tab，保留独立视图） */
-export type TabType = 'chat' | 'agent' | 'scratch' | 'preview'
+/** 标签页类型（Settings 不作为 Tab，保留独立视图；P3 已退役 chat） */
+export type TabType = 'agent' | 'scratch' | 'preview'
 
 /** Scratch Pad 专用的固定 sessionId */
 export const SCRATCH_PAD_ID = '__scratch-pad__'
@@ -43,15 +43,15 @@ export interface TabItem {
   id: string
   /** 标签页类型 */
   type: TabType
-  /** Chat conversationId 或 Agent sessionId */
+  /** Agent sessionId */
   sessionId: string
   /** 标签页显示标题 */
   title: string
   /**
-   * 顶层模式标记（仅 agent/scratch/preview 类型有意义，chat 类型不涉及）。
+   * 顶层模式标记（仅 agent/scratch/preview 类型有意义）。
    * - 'general'：通用模式会话，TA 模式 TabBar 不显示
    * - 'ta'：TA 模式会话，通用模式 TabBar 不显示
-   * 旧记录 / chat 类型会话不设此字段 → 视为 'general'。
+   * 旧记录不设此字段 → 视为 'general'。
    */
   mode?: 'general' | 'ta'
 }
@@ -178,32 +178,28 @@ export const activeSessionIdAtom = atom<string | null>((get) => {
 /** 标签是否在流式输出中（派生，从现有流式 atoms 计算） */
 export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
   const tabs = get(tabsAtom)
-  const chatStreaming = get(streamingConversationIdsAtom)
   const agentRunning = get(agentRunningSessionIdsAtom)
   const map = new Map<string, boolean>()
   for (const tab of tabs) {
     if (tab.type === 'scratch') continue
-    if (tab.type === 'chat') {
-      map.set(tab.id, chatStreaming.has(tab.sessionId))
-    } else if (tab.type === 'agent') {
+    // P3: chat 已退役，仅处理 agent 类型
+    if (tab.type === 'agent') {
       map.set(tab.id, agentRunning.has(tab.sessionId))
     }
   }
   return map
 })
 
-/** 标签页指示点状态（chat 用 running/idle，agent 用完整 SessionIndicatorStatus） */
+/** 标签页指示点状态（agent 用完整 SessionIndicatorStatus） */
 export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((get) => {
   const tabs = get(tabsAtom)
-  const chatStreaming = get(streamingConversationIdsAtom)
   const agentIndicator = get(agentSessionIndicatorMapAtom)
   const unviewedCompletedIds = get(unviewedCompletedSessionIdsAtom)
   const map = new Map<string, SessionIndicatorStatus>()
   for (const tab of tabs) {
     if (tab.type === 'scratch') continue
-    if (tab.type === 'chat') {
-      map.set(tab.id, chatStreaming.has(tab.sessionId) ? 'running' : 'idle')
-    } else if (tab.type === 'agent') {
+    // P3: chat 已退役，仅处理 agent 类型
+    if (tab.type === 'agent') {
       const status = agentIndicator.get(tab.sessionId)
         ?? (unviewedCompletedIds.has(tab.sessionId) ? 'completed' : 'idle')
       map.set(tab.id, status)
@@ -249,11 +245,11 @@ export const visibleTabsAtom = atom<TabItem[]>((get) => {
 })
 
 export const visibleSessionTabsAtom = atom<TabItem[]>((get) => {
-  return get(visibleTabsAtom).filter((tab) => tab.type === 'chat' || tab.type === 'agent')
+  return get(visibleTabsAtom).filter((tab) => tab.type === 'agent')
 })
 
 function isSessionTab(tab: TabItem): boolean {
-  return tab.type === 'chat' || tab.type === 'agent'
+  return tab.type === 'agent'
 }
 
 function getPersistentTabs(tabs: TabItem[]): TabItem[] {

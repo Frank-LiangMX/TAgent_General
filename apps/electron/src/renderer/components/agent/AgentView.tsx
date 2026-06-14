@@ -15,7 +15,7 @@
 
 import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { ArrowUp, Square, Settings, Paperclip, FolderPlus, Plus, MicIcon, X, Brain, Sparkles, Eye, Bot, MessageCircle } from 'lucide-react'
+import { ArrowUp, Square, Settings, Paperclip, FolderPlus, Plus, MicIcon, X, Brain, Sparkles, Eye, Bot, MessageSquareText } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
@@ -100,8 +100,8 @@ import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { InputToolbarOverflow, type ToolbarItem } from '@/components/ai-elements/InputToolbarOverflow'
 import { RichTextInput } from '@/components/ai-elements/rich-text-input'
-import { AttachmentPreviewItem } from '@/components/chat/AttachmentPreviewItem'
-import { ModelSelector } from '@/components/chat/ModelSelector'
+import { AttachmentPreviewItem } from '@/components/shared/AttachmentPreviewItem'
+import { AgentModelSelector } from './AgentModelSelector'
 import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
 import {
   AlertDialog,
@@ -2419,7 +2419,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   const inputTrailingNode = (
     <>
-      <ModelSelector
+      <AgentModelSelector
         filterChannelIds={agentChannelIdsAgentSafe}
         externalSelectedModel={externalSelectedModel}
         onModelSelect={handleModelSelect}
@@ -2477,7 +2477,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
               <AgentSwitchBanner />
               {composerMode === 'ask' && !hasBannerOverlay && (
                 <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
-                  <MessageCircle className="size-3.5" />
+                  <MessageSquareText className="size-3.5" />
                   <span>Ask 档位：仅对话，不修改文件或执行命令</span>
                 </div>
               )}

@@ -68,10 +68,8 @@ export function TabBar(): React.ReactElement {
     const tab = tabs.find((t) => t.id === tabId)
     if (!tab) return
 
-    if (tab.type === 'chat') {
-      setAppMode('chat')
-      setCurrentConversationId(tab.sessionId)
-    } else if (tab.type === 'agent' || tab.type === 'preview') {
+    // P3: chat 类型已退役，仅处理 agent/preview/scratch
+    if (tab.type === 'agent' || tab.type === 'preview') {
       setAppMode('agent')
       setCurrentAgentSessionId(tab.sessionId)
 

@@ -13,7 +13,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
 
-import { UserAvatar } from '@/components/chat/UserAvatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Input } from '@/components/ui/input'
 import { useShortcut } from '@/hooks/useShortcut'
 import { getModelLogo } from '@/lib/model-logo'
