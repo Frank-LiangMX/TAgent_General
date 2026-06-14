@@ -5,7 +5,7 @@
  * 使用上下文隔离确保安全性
  */
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS , QUICK_TASK_IPC_CHANNELS, TRAY_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS } from '../types'
@@ -132,6 +132,14 @@ import type {
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
   NudgeCandidate,
+  AskMessage,
+  AskSendInput,
+  AskStreamChunkEvent,
+  AskStreamReasoningEvent,
+  AskStreamCompleteEvent,
+  AskStreamErrorEvent,
+  AskStreamSwitchSuggestionEvent,
+  ComposerMode,
 } from '@tagent/shared'
 
 // 资产库相关类型（从主进程服务导出）
@@ -855,6 +863,41 @@ export interface ElectronAPI {
 
   /** 取消侧面提问 */
   cancelBtw: () => Promise<void>
+
+  // ===== Ask 档位（Composer Ask/Agent）=====
+
+  /** 获取会话的 Ask 消息列表（从 ask.jsonl 读取） */
+  getAskMessages: (agentSessionId: string) => Promise<AskMessage[]>
+
+  /** 发送 Ask 消息（触发流式） */
+  sendAskMessage: (input: AskSendInput) => Promise<void>
+
+  /** 中止当前会话的 Ask 生成 */
+  stopAskGeneration: (agentSessionId: string) => Promise<void>
+
+  /** 删除单条 Ask 消息 */
+  deleteAskMessage: (agentSessionId: string, messageId: string) => Promise<AskMessage[]>
+
+  /** 获取会话的 Composer 档位（per-session 持久化） */
+  getComposerMode: (agentSessionId: string) => Promise<ComposerMode>
+
+  /** 设置会话的 Composer 档位 */
+  setComposerMode: (agentSessionId: string, mode: ComposerMode) => Promise<void>
+
+  /** 订阅 Ask 流式内容片段事件 */
+  onAskStreamChunk: (callback: (event: AskStreamChunkEvent) => void) => () => void
+
+  /** 订阅 Ask 流式推理片段事件 */
+  onAskStreamReasoning: (callback: (event: AskStreamReasoningEvent) => void) => () => void
+
+  /** 订阅 Ask 流式完成事件 */
+  onAskStreamComplete: (callback: (event: AskStreamCompleteEvent) => void) => () => void
+
+  /** 订阅 Ask 流式错误事件 */
+  onAskStreamError: (callback: (event: AskStreamErrorEvent) => void) => () => void
+
+  /** 订阅 Ask 升级引导事件（suggest_agent_switch 工具结果触发） */
+  onAskStreamSwitchSuggestion: (callback: (event: AskStreamSwitchSuggestionEvent) => void) => () => void
 
   // ===== Chat 工具管理 =====
 
@@ -2005,6 +2048,61 @@ const electronAPI: ElectronAPI = {
   cancelBtw: () => {
     const { BTW_IPC_CHANNELS } = require('@tagent/shared')
     return ipcRenderer.invoke(BTW_IPC_CHANNELS.CANCEL_BTW)
+  },
+
+  // Ask 档位
+  getAskMessages: (agentSessionId: string) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.GET_MESSAGES, agentSessionId)
+  },
+
+  sendAskMessage: (input: AskSendInput) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.SEND_MESSAGE, input)
+  },
+
+  stopAskGeneration: (agentSessionId: string) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.STOP_GENERATION, agentSessionId)
+  },
+
+  deleteAskMessage: (agentSessionId: string, messageId: string) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.DELETE_MESSAGE, agentSessionId, messageId)
+  },
+
+  getComposerMode: (agentSessionId: string) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.GET_COMPOSER_MODE, agentSessionId)
+  },
+
+  setComposerMode: (agentSessionId: string, mode: ComposerMode) => {
+    return ipcRenderer.invoke(ASK_IPC_CHANNELS.SET_COMPOSER_MODE, agentSessionId, mode)
+  },
+
+  onAskStreamChunk: (callback: (event: AskStreamChunkEvent) => void) => {
+    const listener = (_: unknown, event: AskStreamChunkEvent): void => callback(event)
+    ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_CHUNK, listener)
+    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_CHUNK, listener) }
+  },
+
+  onAskStreamReasoning: (callback: (event: AskStreamReasoningEvent) => void) => {
+    const listener = (_: unknown, event: AskStreamReasoningEvent): void => callback(event)
+    ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_REASONING, listener)
+    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_REASONING, listener) }
+  },
+
+  onAskStreamComplete: (callback: (event: AskStreamCompleteEvent) => void) => {
+    const listener = (_: unknown, event: AskStreamCompleteEvent): void => callback(event)
+    ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_COMPLETE, listener)
+    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_COMPLETE, listener) }
+  },
+
+  onAskStreamError: (callback: (event: AskStreamErrorEvent) => void) => {
+    const listener = (_: unknown, event: AskStreamErrorEvent): void => callback(event)
+    ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_ERROR, listener)
+    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_ERROR, listener) }
+  },
+
+  onAskStreamSwitchSuggestion: (callback: (event: AskStreamSwitchSuggestionEvent) => void) => {
+    const listener = (_: unknown, event: AskStreamSwitchSuggestionEvent): void => callback(event)
+    ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_SWITCH_SUGGESTION, listener)
+    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_SWITCH_SUGGESTION, listener) }
   },
 
   // Chat 工具管理

@@ -24,6 +24,9 @@ export * from './chat'
 // Agent 相关类型
 export * from './agent'
 
+// Ask 档位相关类型
+export * from './ask'
+
 // Agent Provider 适配器接口
 export * from './agent-provider'
 

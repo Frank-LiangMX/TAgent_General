@@ -6,7 +6,7 @@
  */
 
 import { useSmoothStream } from '@tagent/ui'
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
@@ -14,12 +14,14 @@ import { ContentBlock } from './ContentBlock'
 import { buildLiveGroupSet } from './live-group-set'
 import { groupIntoTurns, MessageGroupRenderer, getGroupId, getGroupPreview, extractUserText, parseAttachedFiles as sdkParseAttachedFiles, isImageFile as sdkIsImageFile, CompactingIndicator, buildHistoricalTaskSubjects, type MessageGroup } from './SDKMessageRenderer'
 import { parseThinkTagsFromText } from './thinking-tag-parser'
+import { AskMessageItem } from './AskMessageItem'
 
 import type { AgentStreamState } from '@/atoms/agent-atoms'
 import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
-import type { AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
+import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 
 import { channelsAtom } from '@/atoms/chat-atoms'
+import { askMessagesMapAtom, currentAskMessagesAtom, currentAskRefreshVersionAtom, currentAskStreamStateAtom } from '@/atoms/ask-atoms'
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
@@ -55,6 +57,43 @@ function stableStringify(value: unknown): string {
 /** 消息对象引用 → 稳定 key 缓存，避免内容相同的消息产生重复 key */
 const stableKeyCache = new WeakMap<object, string>()
 let stableKeyFallbackCounter = 0
+
+/**
+ * 合并本地 Ask 消息与主进程拉取的 Ask 消息
+ *
+ * 规则：
+ * 1. 用 id 去重
+ * 2. 当本地有流式中累积的内容（content 更长），优先用本地版本
+ * 3. 当主进程版本有 durationMs / partial / error 字段，本地缺失时补齐
+ */
+function mergeAskMessages(local: AskMessage[], fetched: AskMessage[]): AskMessage[] {
+  const byId = new Map<string, AskMessage>()
+
+  for (const m of fetched) {
+    byId.set(m.id, m)
+  }
+  for (const m of local) {
+    const fetchedVersion = byId.get(m.id)
+    if (!fetchedVersion) {
+      byId.set(m.id, m)
+      continue
+    }
+    // 合并：取 content/reasoning 较长的那一个
+    const useLocalContent = (m.content?.length ?? 0) > (fetchedVersion.content?.length ?? 0)
+    byId.set(m.id, {
+      ...fetchedVersion,
+      content: useLocalContent ? m.content : fetchedVersion.content,
+      reasoning: m.reasoning?.length
+        ? m.reasoning
+        : (fetchedVersion.reasoning ?? m.reasoning),
+      durationMs: m.durationMs ?? fetchedVersion.durationMs,
+      partial: m.partial ?? fetchedVersion.partial,
+      error: m.error ?? fetchedVersion.error,
+    })
+  }
+
+  return Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt)
+}
 
 function getSDKMessageStableKey(message: SDKMessage): string {
   const record = message as Record<string, unknown>
@@ -408,11 +447,34 @@ export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persi
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
   const channels = useAtomValue(channelsAtom)
+  const store = useStore()
   /** 淡入控制：切换会话时先隐藏，等布局完成后再显示。 */
   const [ready, setReady] = React.useState(false)
   // 空会话无需淡入过渡（无消息则无滚动位置问题）
   const [skipFadeIn, setSkipFadeIn] = React.useState(false)
   const prevSessionIdRef = React.useRef<string | null>(null)
+
+  // 拉取初始 Ask 消息（会话切换 + 流式完成后 refreshVersion 触发）
+  const askRefreshVersion = useAtomValue(currentAskRefreshVersionAtom)
+  React.useEffect(() => {
+    if (!sessionId) return
+    let cancelled = false
+    void window.electronAPI.getAskMessages(sessionId).then((messages) => {
+      if (cancelled) return
+      store.set(askMessagesMapAtom, (prev) => {
+        const map = new Map(prev)
+        // 合并：保留流式中累积的（content 更长）以避免覆盖
+        const current = map.get(sessionId) ?? []
+        const merged = mergeAskMessages(current, messages)
+        map.set(sessionId, merged)
+        return map
+      })
+    }).catch((err) => {
+      console.warn('[AgentMessages] 拉取 Ask 消息失败:', err)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, askRefreshVersion])
 
   React.useEffect(() => {
     if (sessionId !== prevSessionIdRef.current) {
@@ -617,6 +679,68 @@ export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persi
     ? allGroups.some((g) => g.type === 'assistant-turn' && liveGroupSet.has(g))
     : (liveMessages != null && liveMessages.some((m) => (m as { type: string }).type === 'assistant'))
 
+  // ===== Ask 档位时间线合并 =====
+  const askMessages = useAtomValue(currentAskMessagesAtom)
+  const askStreamState = useAtomValue(currentAskStreamStateAtom)
+
+  /** 时间线条目：SDK group 或 Ask 消息 */
+  type TimelineEntry =
+    | { kind: 'sdk'; group: MessageGroup; id: string; createdAt: number }
+    | { kind: 'ask'; message: AskMessage; id: string; createdAt: number }
+
+  /** 合并 SDK + Ask，按 createdAt 排序 */
+  const mergedTimeline = React.useMemo<TimelineEntry[]>(() => {
+    const entries: TimelineEntry[] = []
+
+    // SDK groups
+    for (const group of allGroups) {
+      let createdAt = Date.now()
+      let id: string
+      if (group.type === 'user') {
+        const c = (group.message.message as { content?: Array<{ type: string; text?: string }> })?.content
+        const firstText = c?.find((b) => b.type === 'text' && b.text)?.text
+        // 从 message 抽 _createdAt 优先
+        const userMsg = group.message as { _createdAt?: number; uuid?: string }
+        if (typeof userMsg._createdAt === 'number') {
+          createdAt = userMsg._createdAt
+        } else if (firstText) {
+          // 退化：截前 30 字符作为稳定 id（不会用于 React key，只是排序）
+          createdAt = Date.now()
+        }
+        id = userMsg.uuid ?? getGroupId(group)
+      } else if (group.type === 'assistant-turn') {
+        createdAt = group.createdAt ?? Date.now()
+        id = getGroupId(group)
+      } else {
+        // system
+        const sysMsg = group.message as { _createdAt?: number; uuid?: string }
+        if (typeof sysMsg._createdAt === 'number') {
+          createdAt = sysMsg._createdAt
+        }
+        id = sysMsg.uuid ?? getGroupId(group)
+      }
+      entries.push({ kind: 'sdk', group, id, createdAt })
+    }
+
+    // Ask messages
+    for (const msg of askMessages) {
+      if (!msg.content.trim() && !msg.attachments?.length) continue
+      entries.push({ kind: 'ask', message: msg, id: msg.id, createdAt: msg.createdAt })
+    }
+
+    // 按 createdAt 稳定排序（同时间戳时 SDK 优先以保留原有 minimap 顺序）
+    entries.sort((a, b) => {
+      const da = a.createdAt
+      const db = b.createdAt
+      if (da !== db) return da - db
+      // 稳定排序：同时间戳时让 SDK 在前（保持与原 allGroups 顺序一致）
+      if (a.kind === b.kind) return 0
+      return a.kind === 'sdk' ? -1 : 1
+    })
+
+    return entries
+  }, [allGroups, askMessages])
+
   return (
     <BasePathsProvider basePaths={attachedDirs}>
     <Conversation resize={ready && !transitioning ? 'smooth' : 'instant'} className={ready ? (skipFadeIn ? 'opacity-100' : 'opacity-100 transition-opacity duration-200') : 'opacity-0'}>
@@ -626,16 +750,32 @@ export function AgentMessages({ sessionId, sessionModelId, messagesLoaded, persi
           <EmptyState />
         ) : (
           <>
-            {/* 统一消息渲染（持久化 + 实时合并为一个列表，确保 system 消息位置正确） */}
-            {allGroups.map((group, idx) => {
+            {/* 统一消息渲染（持久化 + 实时 + Ask 合并为一个列表，确保 system 消息位置正确） */}
+            {mergedTimeline.map((entry, idx) => {
+              if (entry.kind === 'ask') {
+                // Ask 消息：AssistantTurn 中可能的最后一个，isStreaming 由 ask 流式状态判定
+                const isAskStreaming = askStreamState?.running
+                  && askStreamState.messageId === entry.message.id
+                return (
+                  <AskMessageItem
+                    key={`ask:${entry.id}`}
+                    message={entry.message}
+                    isStreaming={!!isAskStreaming}
+                    sessionId={sessionId}
+                  />
+                )
+              }
+
+              // SDK group：原有渲染逻辑
+              const group = entry.group
               const isLive = liveGroupSet.has(group)
               const isErrorGroup = group.type === 'assistant-turn'
                 && group.assistantMessages.some((m) => !!m.error)
               const shouldDisableActions = isLive && !isErrorGroup
-              // 仅在最后一个 assistant-turn 上显示"已被用户中断" badge
+              // 仅在最后一个 SDK assistant-turn 上显示"已被用户中断" badge
               const isLastAssistantTurn = !streaming && stoppedByUser
                 && group.type === 'assistant-turn'
-                && idx === allGroups.findLastIndex((g) => g.type === 'assistant-turn')
+                && idx === mergedTimeline.findLastIndex((e) => e.kind === 'sdk' && e.group.type === 'assistant-turn')
               return (
                 <MessageGroupRenderer
                   key={getGroupId(group)}

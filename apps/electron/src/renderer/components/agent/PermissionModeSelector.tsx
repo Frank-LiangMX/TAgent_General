@@ -34,9 +34,11 @@ const MODE_COLORS: Record<TAgentPermissionMode, string> = {
 
 interface PermissionModeSelectorProps {
   sessionId: string
+  /** 禁用切换（Ask 档位下不适用） */
+  disabled?: boolean
 }
 
-export function PermissionModeSelector({ sessionId }: PermissionModeSelectorProps): React.ReactElement | null {
+export function PermissionModeSelector({ sessionId, disabled = false }: PermissionModeSelectorProps): React.ReactElement | null {
   const [modeMap, setModeMap] = useAtom(agentPermissionModeMapAtom)
   const setPlanModeSessions = useSetAtom(agentPlanModeSessionsAtom)
   const defaultMode = useAtomValue(agentDefaultPermissionModeAtom)
@@ -61,6 +63,7 @@ export function PermissionModeSelector({ sessionId }: PermissionModeSelectorProp
 
   /** 切换到指定模式（乐观更新 + 失败回滚） */
   const selectMode = React.useCallback(async (nextMode: TAgentPermissionMode) => {
+    if (disabled) return
     const prevMode = mode
 
     setOpen(false)
@@ -89,11 +92,37 @@ export function PermissionModeSelector({ sessionId }: PermissionModeSelectorProp
         updatePlanModeSessionSet(prev, sessionId, prevMode === 'plan')
       )
     }
-  }, [mode, sessionId, setModeMap, setPlanModeSessions])
+  }, [disabled, mode, sessionId, setModeMap, setPlanModeSessions])
 
   const config = TAGENT_PERMISSION_MODE_CONFIG[mode]
   const Icon = MODE_ICONS[mode]
   const colorClass = MODE_COLORS[mode]
+
+  if (disabled) {
+    // Ask 档位下：纯展示（不接收点击），Tooltip 文案改为说明
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={config.label}
+              disabled
+              className={cn('size-[36px] rounded-full opacity-40 cursor-not-allowed', colorClass)}
+            >
+              <Icon className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[220px]">
+            <p className="font-medium">Ask 档位不适用</p>
+            <p className="text-xs text-muted-foreground mt-0.5">权限模式是 Agent 档位的概念，Ask 不能写文件或执行命令</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

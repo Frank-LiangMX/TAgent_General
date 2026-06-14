@@ -4,6 +4,8 @@
  * 包含 Agent SDK 集成所需的事件类型、会话管理、消息持久化和 IPC 通道常量。
  */
 
+import type { ComposerMode } from './ask'
+
 // ===== 记忆配置 =====
 
 /** 全局记忆配置（MemOS Cloud） */
@@ -680,6 +682,14 @@ export interface AgentSessionMeta {
   stoppedByUser?: boolean
   /** 该会话当前的权限模式（持久化到磁盘，重启后恢复）。未设置时新会话默认 auto */
   permissionMode?: TAgentPermissionMode
+  /**
+   * Composer 档位（per-session 持久化）
+   * - 'ask'：输入区 Ask 档位，只对话，不能写文件/执行命令
+   * - 'agent'：输入区 Agent 档位，可动手（默认）
+   * 留空时新会话使用 DEFAULT_COMPOSER_MODE（'agent'）
+   * @see docs/plans/2026-06-13-ask-mode-unification-design.md §4.1
+   */
+  lastComposerMode?: ComposerMode
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */

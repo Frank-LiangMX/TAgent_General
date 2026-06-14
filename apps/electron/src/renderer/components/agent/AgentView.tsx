@@ -15,13 +15,16 @@
 
 import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { ArrowUp, Square, Settings, Paperclip, FolderPlus, Plus, MicIcon, X, Brain, Sparkles, Eye, Bot } from 'lucide-react'
+import { ArrowUp, Square, Settings, Paperclip, FolderPlus, Plus, MicIcon, X, Brain, Sparkles, Eye, Bot, MessageCircle } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
 
 import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
+import { AgentSwitchBanner } from './AgentSwitchBanner'
+import { ComposerModeSelector } from './ComposerModeSelector'
+import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
 import { BtwPanel } from './BtwPanel'
 import { BtwFloatingTrigger } from './BtwFloatingTrigger'
@@ -88,6 +91,9 @@ import {
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { currentComposerModeAtom, composerModeMapAtom, composerModeSyncedSessionsAtom } from '@/atoms/composer-atoms'
+import { askMessagesMapAtom, askStreamingStatesAtom } from '@/atoms/ask-atoms'
+import { isLikelyAgentIntent } from '@/lib/ask-heuristic'
 import { previewPanelOpenMapAtom, previewFileMapAtom, autoPreviewEnabledAtom, quotedSelectionMapAtom, currentQuotedSelectionAtom } from '@/atoms/preview-atoms'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
@@ -320,9 +326,15 @@ interface InputMorePopoverProps {
   onAttachFile: () => void
   onAttachFolder: () => void
   onSpeech: () => void
+  /**
+   * 禁用文件/文件夹附件（Ask 档位下）
+   * - true: 附件/文件夹项灰掉但仍可见，语音项正常
+   * - false: 全部正常
+   */
+  disableAttachments?: boolean
 }
 
-function InputMorePopover({ onAttachFile, onAttachFolder, onSpeech }: InputMorePopoverProps): React.ReactElement {
+function InputMorePopover({ onAttachFile, onAttachFolder, onSpeech, disableAttachments = false }: InputMorePopoverProps): React.ReactElement {
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -354,16 +366,18 @@ function InputMorePopover({ onAttachFile, onAttachFolder, onSpeech }: InputMoreP
         <div className="flex flex-col gap-0.5">
           <button
             type="button"
-            onClick={() => { onAttachFile(); setOpen(false) }}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => { if (!disableAttachments) { onAttachFile(); setOpen(false) } }}
+            disabled={disableAttachments}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <Paperclip className="size-4 text-foreground/70" />
             <span className="text-xs">添加附件</span>
           </button>
           <button
             type="button"
-            onClick={() => { onAttachFolder(); setOpen(false) }}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => { if (!disableAttachments) { onAttachFolder(); setOpen(false) } }}
+            disabled={disableAttachments}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <FolderPlus className="size-4 text-foreground/70" />
             <span className="text-xs">添加文件夹</span>
@@ -546,6 +560,32 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       })
     }
   }, [sessionId, defaultChannelId, defaultModelId, setSessionChannelMap, setSessionModelMap])
+
+  // 从主进程拉取该会话的 Composer 档位（持久化到 AgentSessionMeta.lastComposerMode）
+  // 并写入 composerModeMapAtom 作为本地缓存。syncSet 内幂等守卫。
+  const setComposerModeMap = useSetAtom(composerModeMapAtom)
+  const addComposerModeSynced = useSetAtom(composerModeSyncedSessionsAtom)
+  React.useEffect(() => {
+    if (!sessionId) return
+    let cancelled = false
+    void window.electronAPI.getComposerMode(sessionId).then((mode) => {
+      if (cancelled) return
+      setComposerModeMap((prev) => {
+        if (prev.has(sessionId)) return prev
+        const next = new Map(prev)
+        next.set(sessionId, mode)
+        return next
+      })
+      addComposerModeSynced((prev) => {
+        const next = new Set(prev)
+        next.add(sessionId)
+        return next
+      })
+    }).catch((err) => {
+      console.warn('[AgentView] 拉取 Composer 档位失败:', err)
+    })
+    return () => { cancelled = true }
+  }, [sessionId, setComposerModeMap, addComposerModeSynced])
 
   const contextStatus: AgentContextStatus = {
     isCompacting: streamState?.isCompacting ?? false,
@@ -1493,6 +1533,31 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       return
     }
 
+    // ===== Ask 档位分支 =====
+    // Composer 档位 = ask：路由到 ask-service，不写 SDK JSONL
+    if (composerMode === 'ask') {
+      if (!messagesLoaded || !text || !agentChannelId || !hasAvailableModel) return
+
+      // Ask 模式暂不支持附件（P1 完善）
+      if (pendingFilesRef.current.length > 0) {
+        toast.info('Ask 档位暂不支持附件', {
+          description: '请先移除附件，或切到 Agent 档位发送',
+        })
+        return
+      }
+
+      // 启发式检测：消息看起来需要 Agent 才能完成 → 弹确认框
+      if (isLikelyAgentIntent(text)) {
+        setHeuristicDialog({ open: true, pendingText: text })
+        return
+      }
+
+      // 无启发式命中 → 直接走 Ask 发送
+      void performAskSend(text)
+      return
+    }
+    // ===== /Ask 档位分支 =====
+
     // 如果输入为空但有建议，使用建议内容
     const effectiveText = text || suggestion || ''
     const pendingFilesSnapshot = pendingFilesRef.current
@@ -2028,6 +2093,150 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   /** 快照回退：同一会话内回退到指定消息点，恢复文件 + 截断对话 */
   const [rewindTargetUuid, setRewindTargetUuid] = React.useState<string | null>(null)
 
+  // ===== Ask 档位启发式对话框状态 =====
+  const [heuristicDialog, setHeuristicDialog] = React.useState<{
+    open: boolean
+    pendingText: string
+  }>({ open: false, pendingText: '' })
+
+  /**
+   * 实际执行 Ask 发送（无附件；附件场景在 handleSend 早返回）
+   * 提到组件级 useCallback 以便 handleHeuristicChoice 直接调用
+   */
+  const performAskSend = React.useCallback(async (content: string): Promise<void> => {
+    if (!agentChannelId) return
+
+    // 清理输入
+    setInputContent('')
+    setInputHtmlContent('')
+    setPromptSuggestions((prev) => {
+      if (!prev.has(sessionId)) return prev
+      const map = new Map(prev)
+      map.delete(sessionId)
+      return map
+    })
+
+    // 乐观插入 user message
+    const askStartedAt = Date.now()
+    const optimisticUserId = crypto.randomUUID()
+    store.set(askMessagesMapAtom, (prev) => {
+      const map = new Map(prev)
+      const current = map.get(sessionId) ?? []
+      const optimisticUser = {
+        id: optimisticUserId,
+        role: 'user' as const,
+        content,
+        createdAt: askStartedAt,
+        channelId: agentChannelId,
+        modelId: agentModelId ?? undefined,
+      }
+      map.set(sessionId, [...current, optimisticUser])
+      return map
+    })
+
+    // 初始化 ask 流式状态
+    store.set(askStreamingStatesAtom, (prev) => {
+      const map = new Map(prev)
+      map.set(sessionId, {
+        running: true,
+        messageId: null,
+        content: '',
+        reasoning: '',
+        startedAt: askStartedAt,
+      })
+      return map
+    })
+
+    // 取消 draft 标记
+    setDraftSessionIds((prev: Set<string>) => {
+      if (!prev.has(sessionId)) return prev
+      const next = new Set(prev)
+      next.delete(sessionId)
+      return next
+    })
+
+    // 真实发送
+    window.electronAPI.sendAskMessage({
+      agentSessionId: sessionId,
+      content,
+      channelId: agentChannelId,
+      modelId: agentModelId || '',
+      startedAt: askStartedAt,
+    }).catch((error) => {
+      console.error('[AgentView] Ask 发送失败:', error)
+      store.set(askStreamingStatesAtom, (prev) => {
+        const map = new Map(prev)
+        const current = map.get(sessionId)
+        if (current) {
+          map.set(sessionId, { ...current, running: false })
+        }
+        return map
+      })
+      toast.error('Ask 发送失败', { description: String(error) })
+    })
+  }, [sessionId, agentChannelId, agentModelId, store, setInputContent, setInputHtmlContent, setPromptSuggestions, setDraftSessionIds])
+
+  /**
+   * 处理用户对启发式对话框的选择
+   * - switch: 切到 Agent 档位并通过 sendAgentMessage 发送
+   * - ask: 继续在 Ask 档位发送
+   * - cancel: 关闭对话框，不发送
+   */
+  const handleHeuristicChoice = React.useCallback(async (choice: AskHeuristicChoice): Promise<void> => {
+    const text = heuristicDialog.pendingText
+    setHeuristicDialog({ open: false, pendingText: '' })
+
+    if (choice === 'cancel') return
+
+    if (choice === 'switch') {
+      // 切到 Agent 档位（乐观更新 + IPC 落盘）
+      store.set(composerModeMapAtom, (prev) => {
+        const next = new Map(prev)
+        next.set(sessionId, 'agent')
+        return next
+      })
+      store.set(composerModeSyncedSessionsAtom, (prev) => {
+        const next = new Set(prev)
+        next.add(sessionId)
+        return next
+      })
+      try {
+        await window.electronAPI.setComposerMode(sessionId, 'agent')
+      } catch (err) {
+        console.warn('[AgentView] setComposerMode 失败:', err)
+      }
+
+      // 切到 Agent 后通过 sendAgentMessage 发送
+      const streamStartedAt = Date.now()
+      const input: AgentSendInput = {
+        sessionId,
+        userMessage: text,
+        channelId: agentChannelId!,
+        modelId: agentModelId || undefined,
+        startedAt: streamStartedAt,
+      }
+
+      setInputContent('')
+      setInputHtmlContent('')
+      setPromptSuggestions((prev) => {
+        if (!prev.has(sessionId)) return prev
+        const map = new Map(prev)
+        map.delete(sessionId)
+        return map
+      })
+
+      window.electronAPI.sendAgentMessage(input).catch((error) => {
+        console.error('[AgentView] 切换档位后 Agent 发送失败:', error)
+        toast.error('Agent 发送失败', { description: String(error) })
+      })
+      return
+    }
+
+    // choice === 'ask'：继续在 Ask 档位发送
+    if (!agentChannelId || !hasAvailableModel) return
+    void performAskSend(text)
+  }, [heuristicDialog.pendingText, sessionId, agentChannelId, agentModelId, hasAvailableModel, store, setInputContent, setInputHtmlContent, setPromptSuggestions, performAskSend])
+
   const handleRewindRequest = React.useCallback((assistantMessageUuid: string): void => {
     setRewindTargetUuid(assistantMessageUuid)
   }, [])
@@ -2121,6 +2330,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const hasTextInput = inputContent.trim().length > 0
   const canSend = messagesLoaded && (hasTextInput || pendingFiles.length > 0 || !!suggestion) && agentChannelId !== null && hasAvailableModel && (!streaming || hasTextInput)
 
+  /** 当前 Composer 档位（per-session，从本地缓存读） */
+  const composerMode = useAtomValue(currentComposerModeAtom)
+
   const inputToolbarItems = React.useMemo<ToolbarItem[]>(() => [
     {
       key: 'input-more',
@@ -2129,10 +2341,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           onAttachFile={handleOpenFileDialog}
           onAttachFolder={handleAttachFolder}
           onSpeech={handleSpeech}
+          disableAttachments={composerMode === 'ask'}
         />
       ),
     },
-    { key: 'permission-mode', node: <PermissionModeSelector sessionId={sessionId} /> },
+    { key: 'permission-mode', node: <PermissionModeSelector sessionId={sessionId} disabled={composerMode === 'ask'} /> },
+    { key: 'composer-mode', node: <ComposerModeSelector /> },
     {
       key: 'thinking',
       node: (
@@ -2260,6 +2474,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           bottom={
             <>
               <PermissionBanner sessionId={sessionId} />
+              <AgentSwitchBanner />
+              {composerMode === 'ask' && !hasBannerOverlay && (
+                <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
+                  <MessageCircle className="size-3.5" />
+                  <span>Ask 档位：仅对话，不修改文件或执行命令</span>
+                </div>
+              )}
               {!hasBannerOverlay && (
               <div className="session-input-dock relative px-2.5 pb-1 md:px-[18px] md:pb-2.5" data-input-mode="agent">
                 <div className="absolute bottom-full right-[18px] mb-2 z-50">
@@ -2351,9 +2572,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
               longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
               placeholder={
                 agentChannelId && hasAvailableModel
-                  ? sendWithCmdEnter
-                    ? '输入消息... (⌘/Ctrl+Enter 发送，Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
-                    : '输入消息... (Enter 发送，Shift+Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
+                  ? composerMode === 'ask'
+                    ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
+                    : sendWithCmdEnter
+                      ? '输入消息... (⌘/Ctrl+Enter 发送，Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
+                      : '输入消息... (Enter 发送，Shift+Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
                   : !agentChannelId
                     ? '请先在设置中选择 Agent 供应商'
                     : '暂无可用模型，请先在设置中启用渠道'
@@ -2431,6 +2654,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Ask 档位启发式对话框：检测到动手意图关键词时弹出 */}
+    <AskHeuristicDialog
+      open={heuristicDialog.open}
+      messagePreview={heuristicDialog.pendingText}
+      onChoice={handleHeuristicChoice}
+    />
     </>
   )
 }

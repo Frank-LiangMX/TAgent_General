@@ -66,6 +66,7 @@ import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
 import { TabSwitcher } from './components/tabs/TabSwitcher'
 import { Toaster } from './components/ui/sonner'
 import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
+import { useGlobalAskListeners } from './hooks/useGlobalAskListeners'
 import { useGlobalChatListeners } from './hooks/useGlobalChatListeners'
 import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
@@ -454,6 +455,16 @@ function ChatListenersInitializer(): null {
  */
 function AgentListenersInitializer(): null {
   useGlobalAgentListeners()
+  return null
+}
+
+/**
+ * Ask IPC 监听器初始化组件
+ *
+ * 全局挂载，永不销毁。Ask 档位流式事件在页面切换时也不丢失。
+ */
+function AskListenersInitializer(): null {
+  useGlobalAskListeners()
   return null
 }
 
@@ -897,6 +908,7 @@ if (isQuickTaskWindow) {
       <AdvancedMaterialInitializer />
       <ChatListenersInitializer />
       <AgentListenersInitializer />
+      <AskListenersInitializer />
       <ChatToolInitializer />
       <UpdaterInitializer />
       <FeishuInitializer />

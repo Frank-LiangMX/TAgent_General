@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
@@ -4467,6 +4467,67 @@ export function registerIpcHandlers(): void {
       const { cancelBtw } = await import('./lib/btw-service')
       cancelBtw()
       return true
+    }
+  )
+
+  // ===== Ask 档位（Composer Ask/Agent 切换） =====
+
+  // 获取 Ask 消息列表
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.GET_MESSAGES,
+    async (_event, agentSessionId: string): Promise<import('@tagent/shared').AskMessage[]> => {
+      const { getAgentSessionAskMessages } = await import('./lib/ask-message-store')
+      return getAgentSessionAskMessages(agentSessionId)
+    }
+  )
+
+  // 发送 Ask 消息
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.SEND_MESSAGE,
+    async (event, input: import('@tagent/shared').AskSendInput): Promise<void> => {
+      const { sendAskMessage } = await import('./lib/ask-service')
+      await sendAskMessage(input, event.sender)
+    }
+  )
+
+  // 中止 Ask 生成
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.STOP_GENERATION,
+    async (_event, agentSessionId: string): Promise<void> => {
+      const { stopAskGeneration } = await import('./lib/ask-service')
+      stopAskGeneration(agentSessionId)
+    }
+  )
+
+  // 删除单条 Ask 消息（P1 留位）
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.DELETE_MESSAGE,
+    async (_event, agentSessionId: string, messageId: string): Promise<import('@tagent/shared').AskMessage[]> => {
+      const { deleteAskMessage } = await import('./lib/ask-message-store')
+      return deleteAskMessage(agentSessionId, messageId)
+    }
+  )
+
+  // 获取会话 Composer 档位
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.GET_COMPOSER_MODE,
+    async (_event, agentSessionId: string): Promise<import('@tagent/shared').ComposerMode> => {
+      const { getAgentSessionMeta } = await import('./lib/agent-session-manager')
+      const { DEFAULT_COMPOSER_MODE } = await import('@tagent/shared')
+      const meta = getAgentSessionMeta(agentSessionId)
+      return meta?.lastComposerMode ?? DEFAULT_COMPOSER_MODE
+    }
+  )
+
+  // 设置会话 Composer 档位
+  ipcMain.handle(
+    ASK_IPC_CHANNELS.SET_COMPOSER_MODE,
+    async (_event, agentSessionId: string, mode: import('@tagent/shared').ComposerMode): Promise<void> => {
+      const { updateAgentSessionMeta, getAgentSessionMeta } = await import('./lib/agent-session-manager')
+      if (!getAgentSessionMeta(agentSessionId)) {
+        throw new Error(`Agent 会话不存在: ${agentSessionId}`)
+      }
+      updateAgentSessionMeta(agentSessionId, { lastComposerMode: mode })
     }
   )
 }

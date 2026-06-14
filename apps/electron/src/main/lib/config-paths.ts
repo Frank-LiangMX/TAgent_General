@@ -241,6 +241,19 @@ export function getAgentSessionMessagesPath(id: string): string {
 }
 
 /**
+ * 获取指定 Agent 会话的 Ask 消息文件路径
+ *
+ * Ask 消息存到独立的 `.ask.jsonl` 文件，与 SDK JSONL 并列。
+ * 不参与 SDK resume，避免污染上下文。
+ *
+ * @param id Agent 会话 ID
+ * @returns ~/.tagent/agent-sessions/{id}.ask.jsonl
+ */
+export function getAgentSessionAskMessagesPath(id: string): string {
+  return join(getAgentSessionsDir(), `${id}.ask.jsonl`)
+}
+
+/**
  * 获取 Agent 工作区索引文件路径
  *
  * @returns ~/.tagent/agent-workspaces.json
