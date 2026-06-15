@@ -10,18 +10,14 @@
  * - 未匹配到时返回默认图标
  */
 
-// ===== 模型图标导入 =====
-
-import type { ProviderType } from '@tagent/shared'
-
 // Claude / Anthropic
+import type { ProviderType } from '@tagent/shared'
 import ClaudeLogo from '@/assets/models/claude.png'
 import CodestralLogo from '@/assets/models/codestral.png'
 import CohereLogo from '@/assets/models/cohere.png'
 // OpenAI / GPT 系列
 import DeepGeminiLogo from '@/assets/models/deepgemini.png'
 import DeepSeekLogo from '@/assets/models/deepseek.png'
-import DefaultLogo from '@/assets/models/default.png'
 import DoubaoLogo from '@/assets/models/doubao.png'
 import EmbeddingLogo from '@/assets/models/embedding.png'
 import GeminiLogo from '@/assets/models/gemini.png'
@@ -52,7 +48,6 @@ import QwenGeminiLogo from '@/assets/models/qwengemini.png'
 import SeedGeminiLogo from '@/assets/models/seedgemini.png'
 import SparkDeskLogo from '@/assets/models/sparkdesk.png'
 import StepLogo from '@/assets/models/step.png'
-import TAgentLogo from '@/assets/models/tagent.png'
 import WenxinLogo from '@/assets/models/wenxin.png'
 import XiaomiLogo from '@/assets/models/xiaomi.png'
 import YiLogo from '@/assets/models/yi.png'
@@ -200,7 +195,7 @@ const MODEL_LOGO_MAP: Record<string, string> = {
  */
 const PROVIDER_LOGO_MAP: Record<ProviderType, string> = {
   anthropic: ClaudeLogo,
-  'anthropic-compatible': DefaultLogo,
+  'anthropic-compatible': ClaudeLogo,
   openai: OpenAILogo,
   deepseek: DeepSeekLogo,
   google: GeminiLogo,
@@ -213,7 +208,7 @@ const PROVIDER_LOGO_MAP: Record<ProviderType, string> = {
   qwen: QwenLogo,
   xiaomi: XiaomiLogo,
   'xiaomi-token-plan': XiaomiLogo,
-  custom: DefaultLogo,
+  custom: OpenAILogo,
 }
 
 // ===== 公共 API =====
@@ -251,7 +246,7 @@ export function getModelLogoById(modelId: string): string | undefined {
 export function getModelLogo(modelId: string, provider?: ProviderType): string {
   return getModelLogoById(modelId)
     ?? (provider ? PROVIDER_LOGO_MAP[provider] : undefined)
-    ?? DefaultLogo
+    ?? ClaudeLogo
 }
 
 /**
@@ -260,7 +255,7 @@ export function getModelLogo(modelId: string, provider?: ProviderType): string {
  * @param provider 供应商类型
  */
 export function getProviderLogo(provider: ProviderType): string {
-  return PROVIDER_LOGO_MAP[provider] ?? DefaultLogo
+  return PROVIDER_LOGO_MAP[provider] ?? ClaudeLogo
 }
 
 /**
@@ -274,7 +269,6 @@ export function getProviderLogo(provider: ProviderType): string {
  * 服务（常以 /anthropic 结尾）不应被误判为 Claude（见 #659）。
  */
 const URL_LOGO_MAP: Array<[RegExp, string]> = [
-  [/tagent\.cool/i, TAgentLogo],
   [/moonshot\.cn|kimi/i, KimiLogo],
   [/bigmodel\.cn|zhipuai/i, ZhipuLogo],
   [/minimax/i, MiniMaxLogo],
@@ -339,5 +333,5 @@ export function resolveModelDisplayName(modelId: string, channels: import('@tage
   return modelId
 }
 
-/** 默认模型图标 */
-export { DefaultLogo, TAgentLogo }
+/** 通用占位图标（保留导出以兼容旧 import） */
+export const DefaultLogo = ClaudeLogo

@@ -1,15 +1,14 @@
 /**
  * ChannelSettings - 渠道配置页
  *
- * 分为两个区块：
- * 1. 渠道管理 — 所有渠道列表 + 添加/编辑/删除（渠道同时用于 Chat 和 Agent）
- * 2. Agent 供应商 — 从已启用的 Anthropic 兼容渠道（Anthropic / DeepSeek / Kimi / MiniMax）中
- *    通过 Switch 开关启用多个 Agent 供应商
+ * 单一列表：每个渠道一个启用开关。
+ * Agent 模式自动从已启用 ∩ Anthropic 兼容的渠道中筛选，
+ * agentChannelIds 设置项保留用于向后兼容，但由主开关联动派生。
  */
 
 import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useSetAtom } from 'jotai'
-import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as React from 'react'
 
 import { ChannelForm } from './ChannelForm'
@@ -31,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { getChannelLogo, TAgentLogo } from '@/lib/model-logo'
+import { getChannelLogo } from '@/lib/model-logo'
 
 
 /** 组件视图模式 */
@@ -145,7 +144,7 @@ export function ChannelSettings(): React.ReactElement {
     }
   }
 
-  /** 切换渠道启用状态 */
+  /** 切换渠道启用状态（主开关） */
   const handleToggle = async (channel: Channel): Promise<void> => {
     try {
       const savedChannel = await window.electronAPI.updateChannel(channel.id, { enabled: !channel.enabled })
@@ -158,29 +157,6 @@ export function ChannelSettings(): React.ReactElement {
     } catch (error) {
       console.error('[渠道设置] 切换渠道状态失败:', error)
     }
-  }
-
-  /** 切换 Agent 供应商开关 */
-  const handleToggleAgentProvider = async (channelId: string, enabled: boolean): Promise<void> => {
-    const newIds = enabled
-      ? [...agentChannelIds, channelId]
-      : agentChannelIds.filter((id) => id !== channelId)
-
-    setAgentChannelIds(newIds)
-
-    // 如果关闭的是当前选中的渠道，清空选择
-    if (!enabled && agentChannelId === channelId) {
-      setAgentChannelId(null)
-      setAgentModelId(null)
-      await window.electronAPI.updateSettings({
-        agentChannelIds: newIds,
-        agentChannelId: undefined,
-        agentModelId: undefined,
-      }).catch(console.error)
-      return
-    }
-
-    await window.electronAPI.updateSettings({ agentChannelIds: newIds }).catch(console.error)
   }
 
   /** 表单保存回调 */
@@ -208,18 +184,13 @@ export function ChannelSettings(): React.ReactElement {
     )
   }
 
-  // Agent 兼容渠道（已启用）：Anthropic / DeepSeek / Kimi API / Kimi Coding Plan / MiniMax
-  const agentCapableChannels = channels.filter(
-    (c) => isAgentCompatibleProvider(c.provider) && c.enabled
-  )
-
   // 列表视图
   return (
     <div className="space-y-8">
       {/* 区块一：模型配置 */}
       <SettingsSection
         title="模型配置"
-        description="管理 AI 供应商连接，配置 API Key 和可用模型。Anthropic 渠道同时可用于 Agent 模式"
+        description="管理 AI 供应商连接，配置 API Key 和可用模型。启用的 Anthropic 兼容渠道可在 Agent 模式使用"
         action={
           <Button size="sm" onClick={() => setViewMode('create')}>
             <Plus size={16} />
@@ -227,9 +198,6 @@ export function ChannelSettings(): React.ReactElement {
           </Button>
         }
       >
-        <SettingsCard>
-          <TAgentProviderCard />
-        </SettingsCard>
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
         ) : channels.length === 0 ? (
@@ -250,36 +218,6 @@ export function ChannelSettings(): React.ReactElement {
                 }}
                 onDelete={() => handleDeleteRequest(channel)}
                 onToggle={() => handleToggle(channel)}
-              />
-            ))}
-          </SettingsCard>
-        )}
-      </SettingsSection>
-
-      {/* 区块二：Agent 供应商 */}
-      <SettingsSection
-        title="Agent 供应商"
-        description="启用 Agent 模式可用的供应商，支持同时开启多个渠道，在 Agent 模式下可直接切换"
-      >
-        <SettingsCard>
-          <TAgentProviderCard />
-        </SettingsCard>
-        {loading ? (
-          <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
-        ) : agentCapableChannels.length === 0 ? (
-          <SettingsCard divided={false}>
-            <div className="text-sm text-muted-foreground py-8 text-center">
-              暂无可用的 Anthropic 兼容渠道，请先在上方添加 Anthropic / DeepSeek / Kimi / MiniMax 渠道并启用
-            </div>
-          </SettingsCard>
-        ) : (
-          <SettingsCard>
-            {agentCapableChannels.map((channel) => (
-              <AgentProviderRow
-                key={channel.id}
-                channel={channel}
-                enabled={agentChannelIds.includes(channel.id)}
-                onToggle={(enabled) => handleToggleAgentProvider(channel.id, enabled)}
               />
             ))}
           </SettingsCard>
@@ -316,10 +254,11 @@ interface ChannelRowProps {
 
 function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
   const enabledCount = channel.models.filter((m) => m.enabled).length
+  const isAgentCapable = isAgentCompatibleProvider(channel.provider)
   const description = [
     PROVIDER_LABELS[channel.provider],
     enabledCount > 0 ? `${enabledCount} 个模型已启用` : undefined,
-    isAgentCompatibleProvider(channel.provider) ? '可用于 Agent' : undefined,
+    isAgentCapable ? '可用于 Agent' : undefined,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -354,58 +293,6 @@ function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): R
           onCheckedChange={onToggle}
         />
       </div>
-    </SettingsRow>
-  )
-}
-
-// ===== Agent 供应商行子组件 =====
-
-interface AgentProviderRowProps {
-  channel: Channel
-  enabled: boolean
-  onToggle: (enabled: boolean) => void
-}
-
-function AgentProviderRow({ channel, enabled, onToggle }: AgentProviderRowProps): React.ReactElement {
-  const enabledCount = channel.models.filter((m) => m.enabled).length
-  const description = [
-    PROVIDER_LABELS[channel.provider],
-    enabledCount > 0 ? `${enabledCount} 个模型可用` : undefined,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-
-  return (
-    <SettingsRow
-      label={channel.name}
-      icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
-      description={description}
-    >
-      <Switch
-        checked={enabled}
-        onCheckedChange={onToggle}
-      />
-    </SettingsRow>
-  )
-}
-
-// ===== TAgent 官方供应商推广卡片 =====
-
-function TAgentProviderCard(): React.ReactElement {
-  const handleDownload = (): void => {
-    window.open('http://tagent.cool/download', '_blank')
-  }
-
-  return (
-    <SettingsRow
-      label="TAgent"
-      icon={<img src={TAgentLogo} alt="TAgent" className="w-8 h-8 rounded" />}
-      description="TAgent 官方供应｜稳定｜靠谱｜丝滑｜简单｜可用于 Agent"
-    >
-      <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownload}>
-        <ExternalLink size={13} />
-        <span>下载后启动</span>
-      </Button>
     </SettingsRow>
   )
 }

@@ -807,13 +807,16 @@
     0 1px 3px 0 rgb(0 0 0 / 0.06);
 }
 
-/* 设置卡片样式：只有默认深色主题用透明，其他都用卡片背景 */
+/* 设置卡片样式：透明背景 + 微弱边框，融入 shell-glass 底板
+ * （旧版用 hsl(var(--card)) 在浅色主题里偏白、和 shell-glass 底板对比太硬） */
 .settings-card {
-  background: hsl(var(--card));
+  background: hsl(var(--background) / 0.5);
+  border: 1px solid hsl(var(--border) / 0.5);
   box-shadow:
     0 1px 2px 0 rgb(0 0 0 / 0.03),
     0 1px 3px 0 rgb(0 0 0 / 0.06);
 }
+.dark .settings-card,
 .dark:not([class*="theme-"]) .settings-card {
   background: transparent;
   box-shadow: none;
@@ -832,7 +835,21 @@
 }
 
 /* 隐藏 Webkit 滚动条上下小箭头（increment/decrement buttons） */
-::-webkit-scrollbar-button {
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button,
+*:focus::-webkit-scrollbar-button,
+*:hover::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* 更强力的兜底：把所有伪元素滚动条按钮都禁用 */
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:double-button,
+::-webkit-scrollbar-button:corner-present {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -4019,7 +4036,104 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
 @media (prefers-reduced-motion: reduce) {
   .panel-glass::before,
   .rail-glass::before,
-  .content-glass::before {
+  .content-glass::before,
+  .settings-glass::before,
+  .settings-glass::after {
     display: none;
+  }
+}
+
+/* =============================================================
+ *  settings-glass - 设置面板玻璃态浮岛
+ *  与主界面 panel-glass / nav-island-glass 同源：半透明渐变 +
+ *  主题色微光 + 顶部 1px 高光描边。
+ *  半径 16px（比主面板略小，更紧凑）、阴影更克制。
+ * ============================================================= */
+.settings-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.22) 0%,
+    hsl(var(--background) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.03);
+}
+
+/* 主题色微光层（极轻，5% 透明度） */
+.settings-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 35%,
+    transparent 65%,
+    hsl(var(--primary) / 0.03) 100%
+  );
+}
+
+/* 顶部 1px 高光描边（白边） */
+.settings-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 60%
+  );
+}
+
+.settings-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题：更厚的玻璃感 + 更深阴影 */
+.dark .settings-glass {
+  background: hsl(var(--background) / 0.10);
+  box-shadow:
+    0 3px 16px rgba(0, 0, 0, 0.14),
+    0 12px 36px rgba(0, 0, 0, 0.08);
+}
+
+.dark .settings-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 35%,
+    transparent 65%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+.dark .settings-glass::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 30%,
+    transparent 60%
+  );
+}
+
+/* 降透明度偏好 */
+@media (prefers-reduced-transparency: reduce) {
+  .settings-glass {
+    background: hsl(var(--background) / 0.85);
   }
 }

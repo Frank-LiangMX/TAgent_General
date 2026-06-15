@@ -17,7 +17,6 @@ import { WeChatSettings } from './WeChatSettings'
 import dingtalkLogo from '@/assets/bots/dingding.png'
 import feishuLogo from '@/assets/bots/feishu.png'
 import wechatLogo from '@/assets/bots/wechat.png'
-import tagentLogo from '@/assets/models/tagent.png'
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from '@/atoms/feishu-atoms'
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
@@ -70,7 +69,7 @@ const PLATFORMS: readonly BotPlatformDef[] = [
   {
     id: 'logos',
     name: '品牌素材',
-    iconSrc: tagentLogo,
+    iconChar: '◆',
     iconBgClass: 'bg-muted',
   },
 ] as const
