@@ -5,7 +5,7 @@
  * 使用上下文隔离确保安全性
  */
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS , QUICK_TASK_IPC_CHANNELS, TRAY_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS } from '../types'
@@ -1081,6 +1081,17 @@ export interface ElectronAPI {
 
   /** 设置默认提示词 */
   setDefaultPrompt: (id: string | null) => Promise<void>
+
+  // ===== SOUL.md 人格定义 =====
+
+  /** 获取 SOUL.md 内容 */
+  getSoulContent: () => Promise<{ content: string; isDefault: boolean }>
+
+  /** 保存 SOUL.md 内容 */
+  saveSoulContent: (content: string) => Promise<void>
+
+  /** 重置为默认内容 */
+  resetSoulDefault: () => Promise<string>
 
   // ===== 自动更新 =====
 
@@ -2348,6 +2359,19 @@ const electronAPI: ElectronAPI = {
 
   setDefaultPrompt: (id: string | null) => {
     return ipcRenderer.invoke(SYSTEM_PROMPT_IPC_CHANNELS.SET_DEFAULT, id)
+  },
+
+  // SOUL.md 人格定义
+  getSoulContent: () => {
+    return ipcRenderer.invoke(SOUL_IPC_CHANNELS.GET_CONTENT)
+  },
+
+  saveSoulContent: (content: string) => {
+    return ipcRenderer.invoke(SOUL_IPC_CHANNELS.SAVE_CONTENT, content)
+  },
+
+  resetSoulDefault: () => {
+    return ipcRenderer.invoke(SOUL_IPC_CHANNELS.RESET_DEFAULT)
   },
 
   // 自动更新

@@ -9,12 +9,107 @@
  * - 动态 per-message 上下文（buildDynamicContext）：注入到用户消息前，每次实时读取磁盘
  */
 
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
 import { getWorkspaceMcpConfig } from './agent-workspace-manager'
-import { getConfigDirName } from './config-paths'
+import { getConfigDirName, getSoulPath, getTaSoulPath } from './config-paths'
 import { getUserProfile } from './user-profile-service'
 
 import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
+
+// ===== SOUL.md 默认内容 =====
+
+/**
+ * 默认 SOUL.md 内容
+ *
+ * 当用户没有自定义 SOUL.md 时使用此默认人格定义。
+ */
+export const DEFAULT_SOUL_MD = `# TAgent Agent
+
+你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手，由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。
+
+## 风格
+- 使用中文回复和思考，保留必要的英文技术术语
+- 简洁直接，避免冗余
+- 发现问题直接指出，不要粉饰
+
+## 避免
+- 过度客套和废话
+- 模棱两可的建议
+- 炒作性语言
+`
+
+/**
+ * SOUL.md 最大字符数限制
+ *
+ * 防止文件过长导致 token 消耗过大或被截断。
+ */
+const MAX_SOUL_LENGTH = 2000
+
+/**
+ * 检查内容是否包含可疑的 prompt injection 模式
+ */
+function containsInjectionPattern(content: string): boolean {
+  const suspiciousPatterns = [
+    /\{\{.*?\}\}/,           // {{ template }}
+    /\$\{.*?\}/,             // ${ variable }
+    /<%.*?%>/,               // <% erb %>
+    /ignore\s+previous/i,    // "ignore previous" attack
+    /system\s*:/i,           // fake system prompt
+  ]
+
+  return suspiciousPatterns.some(pattern => pattern.test(content))
+}
+
+/**
+ * 加载 SOUL.md 内容
+ *
+ * 优先级：
+ * 1. 模式级 SOUL.md（通用模式 ~/.tagent/SOUL.md，TA 模式 ~/.tagent/ta/SOUL.md）
+ * 2. 内置默认 DEFAULT_SOUL_MD
+ *
+ * @param mode 当前模式（'general' | 'ta'）
+ * @returns SOUL.md 内容，如果文件不存在或无效则返回 null
+ */
+function loadSoulMd(mode?: 'general' | 'ta'): string | null {
+  const soulPath = mode === 'ta' ? getTaSoulPath() : getSoulPath()
+
+  if (!existsSync(soulPath)) {
+    // 首次运行：创建默认 SOUL.md
+    try {
+      writeFileSync(soulPath, DEFAULT_SOUL_MD, 'utf-8')
+      console.log(`[SOUL] 已创建默认 SOUL.md: ${soulPath}`)
+    } catch (err) {
+      console.warn('[SOUL] 创建默认 SOUL.md 失败:', err)
+    }
+    return null // 使用内置默认
+  }
+
+  try {
+    const content = readFileSync(soulPath, 'utf-8').trim()
+
+    // 空文件：跳过
+    if (!content) {
+      return null
+    }
+
+    // 长度限制：警告但仍然使用
+    if (content.length > MAX_SOUL_LENGTH) {
+      console.warn(`[SOUL] SOUL.md 超过 ${MAX_SOUL_LENGTH} 字符 (${content.length})，可能被截断`)
+    }
+
+    // 安全检查：检测可疑模式
+    if (containsInjectionPattern(content)) {
+      console.warn('[SOUL] SOUL.md 包含可疑模式，已忽略')
+      return null
+    }
+
+    return content
+  } catch (err) {
+    console.warn('[SOUL] 读取 SOUL.md 失败:', err)
+    return null
+  }
+}
 
 // ===== SubAgent 元数据（单一数据源） =====
 
@@ -201,10 +296,13 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   const sections: string[] = []
 
-  // Agent 角色定义
-  sections.push(`# TAgent Agent
-
-你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手，由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。`)
+  // SOUL.md 人格定义（优先级：用户自定义 > 内置默认）
+  const soul = loadSoulMd(ctx.mode)
+  if (soul) {
+    sections.push(soul)
+  } else {
+    sections.push(DEFAULT_SOUL_MD)
+  }
 
   // 工具使用指南（复用常量）
   sections.push(TOOL_USAGE_GUIDELINES)

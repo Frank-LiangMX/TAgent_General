@@ -40,6 +40,7 @@
 | 13 | Token / 缓存 | **已有 input/output/cache 字段**，新增 cacheHitRate 派生 atom |
 | 14 | 模式间 L0 共享 | **默认不共享**，可手动开启"share user profile"开关 |
 | 15 | Agent 消息排队机制 | **默认排队，Shift+Enter 打断**：正常运行中发送消息 → 加入队列等待完成；Shift+Enter → 打断当前任务立即处理新消息（2026-06-07 用户拍板）|
+| 16 | SOUL 人格机制 | **实现 SOUL.md 人格定义系统**，借鉴 Hermes，用户可自定义 Agent 性格/语气（2026-06-15 用户拍板，详见 §19）|
 
 ---
 
@@ -102,7 +103,7 @@
 │   └── knowledge.md                  # L5 领域知识
 ├── ue5_bridge/                       # UE5 桥接配置（连接 / 凭据 / 状态）
 ├── sessions/index.json               # 会话索引
-├── usage_log.jsonl                   # 用量日志（与 ta_agent 格式兼容, 见 §17.5）
+├── usage_log.jsonl                   # 用量日志（与 ta_agent 格式兼容, 见 §19.10）
 └── pipeline_runs.jsonl               # 流水线执行历史
 ```
 
@@ -1658,17 +1659,6 @@ TAgent Server 设计与老设计 **80% 重叠**：
 
 **TAgent Server 文档应明确**："基于 2026-05-20 distributed-architecture 决策，吸收其 80% 设计，补 20% 缺失"。
 
-### 17.5 usage_log.jsonl 格式（ta_agent 已经在写）
-
-ta_agent 实际已经在 `~/.ta_agent/` 写 `usage_log.jsonl`：
-
-```json
-{"ts": "2026-05-28T15:03:38", "session": "f56af0a93e8a", "model": "glm-5",
- "input_tokens": 0, "output_tokens": 2094, "duration_ms": 16714, "success": true}
-```
-
-**TAgent 应保持格式一致**（向后兼容 ta_agent 用户数据迁移）。§5 之后**没提**这个细节。
-
 ---
 
 ## 18. ta_agent 排查完整清单
@@ -1685,7 +1675,7 @@ ta_agent 实际已经在 `~/.ta_agent/` 写 `usage_log.jsonl`：
 | Business docs | 3 个 | ❌ 未读（产品介绍 / 演示文稿，对工程无直接价值） |
 | 关键源代码 | 50+ 文件 | ✅ 80% 扫完 |
 | Plugins/TAAssetBridge | C++ 头 | ✅ 扫完 |
-| 运行时数据 | usage_log.jsonl, pipeline_runs.jsonl | ✅ 发现并吸收到 §17.5 |
+| 运行时数据 | usage_log.jsonl, pipeline_runs.jsonl | ✅ 发现并吸收到 §19.10 |
 
 **未扫盲区**（不重要，可后续）：
 - `tutorial/` 目录：不存在
@@ -1808,3 +1798,244 @@ TAgent 加 subagent 时必避 8 个坑：
 - ❌ 群体智能多 agent 框架（AutoGen / CrewAI 范式）—— TAgent 单 agent 路线不需
 - ❌ Multi-channel Gateway —— TAgent Desktop + WebSocket 已实现
 - ❌ Batch Runner 独立工具 —— 可整合到 subagent 方案中
+
+---
+
+## 19. SOUL 机制 — Agent 人格定义系统
+
+> **状态**：Draft v0.1  
+> **日期**：2026-06-15  
+> **决策**：2026-06-15 用户确认实施
+
+### 19.1 背景与动机
+
+**问题**：当前 TAgent Agent 的身份定义硬编码在 `agent-prompt-builder.ts` 第 205-207 行：
+
+```typescript
+sections.push(`# TAgent Agent
+
+你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手...`)
+```
+
+用户无法自定义 Agent 的：
+- 性格和语气（严肃/友好/直接/委婉）
+- 沟通风格（简洁/详细/技术性/通俗性）
+- 应对不确定性的方式
+
+**借鉴**：Hermes-agent 的 `SOUL.md` 机制（详见 `F:\hermes-agent\docker\SOUL.md`）
+
+| 特性 | Hermes SOUL.md |
+|------|----------------|
+| 位置 | `~/.hermes/SOUL.md`（全局单文件） |
+| 用途 | 定义 Agent 的性格、语气、沟通风格 |
+| 加载时机 | 每次 session 启动时，作为系统 prompt 第一条 |
+| 热更新 | 编辑后下次 session 自动生效，无需重启 |
+
+### 19.2 与现有系统的关系
+
+| 组件 | 用途 | 与 SOUL.md 的区别 |
+|------|------|-------------------|
+| **SOUL.md** | Agent 身份/人格/风格 | "Agent 是谁，怎么说话" |
+| **L0_user.md** | 用户画像 | "用户是谁，有什么偏好" |
+| **提示词管理** | Chat 模式的系统提示词 | Chat 专用，可多条；SOUL.md 影响所有模式 |
+| **AGENTS.md / CLAUDE.md** | 项目规则/编码规范 | "项目怎么做"；SOUL.md 是"Agent 怎么做人" |
+
+**核心区别**：
+- SOUL.md = **Agent 身份**（"你是怎样的助手"）
+- L0_user.md = **用户画像**（"用户是谁"）
+- 两者互补，不是替代
+
+### 19.3 设计方案
+
+#### 19.3.1 文件位置与优先级
+
+采用**三层优先级**设计，支持未来扩展：
+
+```
+优先级 1（最高）：工作区级 SOUL.md
+  ~/.tagent/agent-workspaces/{workspace-slug}/workspace-files/SOUL.md
+
+优先级 2（中间）：模式级 SOUL.md
+  ~/.tagent/SOUL.md           # 通用模式
+  ~/.tagent/ta/SOUL.md        # TA 模式
+
+优先级 3（最低）：内置默认
+  硬编码在 agent-prompt-builder.ts
+```
+
+**MVP 范围**：只实现优先级 2（模式级），暂不实现工作区级。
+
+#### 19.3.2 加载逻辑
+
+```typescript
+// agent-prompt-builder.ts 修改
+
+function loadSoulMd(mode?: 'general' | 'ta'): string | null {
+  // 1. 尝试模式级路径
+  const modePath = mode === 'ta' 
+    ? path.join(getTAgentDataDir(), 'ta', 'SOUL.md')
+    : path.join(getTAgentDataDir(), 'SOUL.md')
+  
+  if (fs.existsSync(modePath)) {
+    const content = fs.readFileSync(modePath, 'utf-8').trim()
+    if (content && !containsInjectionPattern(content)) {
+      return content
+    }
+  }
+  
+  // 2. Fallback：内置默认
+  return null  // 调用方使用硬编码默认
+}
+
+export function buildSystemPrompt(ctx: SystemPromptContext): string {
+  const sections: string[] = []
+  
+  // 替换原硬编码身份定义
+  const soul = loadSoulMd(ctx.mode)
+  if (soul) {
+    sections.push(soul)
+  } else {
+    sections.push(DEFAULT_SOUL_MD)  // 内置默认
+  }
+  
+  // ... 后续 sections 不变
+}
+```
+
+#### 19.3.3 默认 SOUL.md 内容
+
+```markdown
+# TAgent Agent
+
+你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手，由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。
+
+## 风格
+- 使用中文回复和思考，保留必要的英文技术术语
+- 简洁直接，避免冗余
+- 发现问题直接指出，不要粉饰
+
+## 避免
+- 过度客套和废话
+- 模棱两可的建议
+- 炒作性语言
+```
+
+### 19.4 预设模板
+
+提供 4-5 个快捷模板，用户可一键应用：
+
+| 模板名 | 风格描述 |
+|--------|----------|
+| **务实工程师** | 直接、精准、不绕弯子 |
+| **研究伙伴** | 探索性、区分推测与证据 |
+| **耐心老师** | 解释清晰、用例子、不假设先验知识 |
+| **严格评审** | 直接指出问题、正确性优先 |
+| **自定义** | 用户完全自己写 |
+
+模板内容见实现时定义。
+
+### 19.5 UI 设计
+
+#### 19.5.1 入口位置
+
+**设置面板新增独立 Tab**："人格设置"（放在"提示词管理"之后）
+
+```typescript
+// SettingsPanel.tsx
+const SOUL_TAB: TabItem = {
+  id: "soul",
+  label: "人格设置",
+  icon: <Sparkles size={16} />,
+};
+```
+
+#### 19.5.2 界面布局
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 人格设置                                                        │
+│ 自定义 TAgent Agent 的性格、语气和沟通风格                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 什么是人格设置？                                             │ │
+│ │ SOUL.md 定义了 Agent 的身份和风格...                        │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 人格定义                                           [重置]   │ │
+│ │ ┌─────────────────────────────────────────────────────────┐ │ │
+│ │ │ [Textarea: 编辑 SOUL.md 内容]                           │ │ │
+│ │ │                                                         │ │ │
+│ │ │ 字数: 156 / 2000                                       │ │ │
+│ │ └─────────────────────────────────────────────────────────┘ │ │
+│ │                                             [保存]          │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 预设模板                                                    │ │
+│ │ [务实工程师] [研究伙伴] [耐心老师] [严格评审]               │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 19.5.3 交互设计
+
+| 操作 | 行为 |
+|------|------|
+| **编辑** | Textarea 实时编辑，显示字数统计 |
+| **保存** | 写入 `~/.tagent/SOUL.md`（或 `ta/SOUL.md`） |
+| **重置** | 恢复为内置默认内容 |
+| **应用模板** | 一键填充对应模板内容 |
+| **生效时机** | 保存后，下次新建会话生效（当前会话不变） |
+
+### 19.6 安全考虑
+
+| 风险 | 缓解措施 |
+|------|----------|
+| Prompt injection | 扫描 `{{ }}`、`${ }`、`<%` 等模板模式，拒绝执行 |
+| 文件过长截断 | 限制最大 2000 字符，超出时 UI 警告 |
+| 编码问题 | 强制 UTF-8，读取时指定编码 |
+
+### 19.7 实现步骤
+
+| # | 任务 | 位置 | 工时 |
+|---|------|------|------|
+| 1 | 添加 `getSoulPath()` 路径函数 | `config-paths.ts` | 0.5h |
+| 2 | 修改 `buildSystemPrompt()` 加载 SOUL.md | `agent-prompt-builder.ts` | 1h |
+| 3 | 首次运行自动生成默认 SOUL.md | `agent-prompt-builder.ts` | 0.5h |
+| 4 | 新增 IPC 接口（读写 SOUL.md） | `ipc.ts` + preload | 1h |
+| 5 | 新增 `SoulSettings.tsx` 组件 | 新文件 | 2h |
+| 6 | 集成到设置面板 Tab | `SettingsPanel.tsx` | 0.5h |
+| 7 | 单元测试 | 新测试文件 | 1h |
+| **总计** | | | **~1 天** |
+
+### 19.8 未来扩展（不进 MVP）
+
+| 扩展项 | 描述 | 触发条件 |
+|--------|------|----------|
+| 工作区级 SOUL.md | 每个工作区可独立定义人格 | 用户反馈需要项目级人格 |
+| 模式分立 UI | 设置页切换通用/TA 模式分别编辑 | TA 模式需要独立人格 |
+| 人格预览 | 保存前预览效果（模拟对话） | 用户反馈需要试看效果 |
+| 人格分享 | 导出/导入 SOUL.md | 社区需求 |
+
+### 19.9 决策记录
+
+| # | 决策 | 选择 | 拍板日期 |
+|---|------|------|----------|
+| 1 | MVP 范围 | 只做模式级，不做工作区级 | 2026-06-15 |
+| 2 | UI 位置 | 设置面板独立 Tab | 2026-06-15 |
+| 3 | 预设模板 | 4-5 个快捷模板 | 2026-06-15 |
+| 4 | 生效时机 | 下次新建会话生效 | 2026-06-15 |
+
+### 19.10 usage_log.jsonl 格式（ta_agent 已经在写）
+
+ta_agent 实际已经在 `~/.ta_agent/` 写 `usage_log.jsonl`：
+
+```json
+{"ts": "2026-05-28T15:03:38", "session": "f56af0a93e8a", "model": "glm-5",
+ "input_tokens": 0, "output_tokens": 2094, "duration_ms": 16714, "success": true}
+```
+
+**TAgent 应保持格式一致**（向后兼容 ta_agent 用户数据迁移）。§5 之后**没提**这个细节。

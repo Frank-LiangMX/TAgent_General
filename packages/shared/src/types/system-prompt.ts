@@ -140,3 +140,13 @@ export const SYSTEM_PROMPT_IPC_CHANNELS = {
   /** 设置默认提示词 */
   SET_DEFAULT: 'system-prompt:set-default',
 } as const
+
+/** SOUL.md 人格定义 IPC 通道常量 */
+export const SOUL_IPC_CHANNELS = {
+  /** 获取 SOUL.md 内容 */
+  GET_CONTENT: 'soul:get-content',
+  /** 保存 SOUL.md 内容 */
+  SAVE_CONTENT: 'soul:save-content',
+  /** 重置为默认内容 */
+  RESET_DEFAULT: 'soul:reset-default',
+} as const

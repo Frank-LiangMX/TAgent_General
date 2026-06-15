@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
@@ -3322,6 +3322,54 @@ export function registerIpcHandlers(): void {
     SYSTEM_PROMPT_IPC_CHANNELS.SET_DEFAULT,
     async (_, id: string | null): Promise<void> => {
       return setDefaultPrompt(id)
+    }
+  )
+
+  // ===== SOUL.md 人格定义 =====
+
+  // 获取 SOUL.md 内容
+  ipcMain.handle(
+    SOUL_IPC_CHANNELS.GET_CONTENT,
+    async (): Promise<{ content: string; isDefault: boolean }> => {
+      const { existsSync, readFileSync } = require('node:fs')
+      const { getSoulPath } = require('./lib/config-paths')
+
+      const soulPath = getSoulPath()
+      if (existsSync(soulPath)) {
+        const content = readFileSync(soulPath, 'utf-8').trim()
+        return { content, isDefault: false }
+      }
+      // 返回默认内容
+      const { DEFAULT_SOUL_MD } = require('./lib/agent-prompt-builder')
+      return { content: DEFAULT_SOUL_MD, isDefault: true }
+    }
+  )
+
+  // 保存 SOUL.md 内容
+  ipcMain.handle(
+    SOUL_IPC_CHANNELS.SAVE_CONTENT,
+    async (_, content: string): Promise<void> => {
+      const { writeFileSync } = require('node:fs')
+      const { getSoulPath } = require('./lib/config-paths')
+
+      const soulPath = getSoulPath()
+      writeFileSync(soulPath, content, 'utf-8')
+      console.log(`[SOUL] 已保存 SOUL.md: ${soulPath}`)
+    }
+  )
+
+  // 重置为默认内容
+  ipcMain.handle(
+    SOUL_IPC_CHANNELS.RESET_DEFAULT,
+    async (): Promise<string> => {
+      const { writeFileSync } = require('node:fs')
+      const { getSoulPath } = require('./lib/config-paths')
+      const { DEFAULT_SOUL_MD } = require('./lib/agent-prompt-builder')
+
+      const soulPath = getSoulPath()
+      writeFileSync(soulPath, DEFAULT_SOUL_MD, 'utf-8')
+      console.log(`[SOUL] 已重置 SOUL.md 为默认内容`)
+      return DEFAULT_SOUL_MD
     }
   )
 

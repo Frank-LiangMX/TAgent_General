@@ -645,3 +645,30 @@ export function getSdkConfigDir(): string {
 export function getScratchPadPath(): string {
   return join(getConfigDir(), 'scratch-pad.md')
 }
+
+/**
+ * 获取 SOUL.md 人格定义文件路径
+ *
+ * SOUL.md 定义 Agent 的身份、性格和沟通风格。
+ * 存放在配置目录根下，所有模式共享（MVP 只实现模式级）。
+ *
+ * @returns ~/.tagent/SOUL.md
+ */
+export function getSoulPath(): string {
+  return join(getConfigDir(), 'SOUL.md')
+}
+
+/**
+ * 获取 TA 模式专用的 SOUL.md 人格定义文件路径
+ *
+ * @returns ~/.tagent/ta/SOUL.md
+ */
+export function getTaSoulPath(): string {
+  const taDir = join(getConfigDir(), 'ta')
+
+  if (!existsSync(taDir)) {
+    mkdirSync(taDir, { recursive: true })
+  }
+
+  return join(taDir, 'SOUL.md')
+}
