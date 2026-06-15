@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TAgent 教程 · 双模式 Agent 桌面应用</title>
+<meta name="description" content="TAgent 是一个双模式 Agent 桌面应用，融合通用 Agent 能力与游戏 TA 领域专业工具链。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-0: #07080d;
+    --bg-1: #0c0e16;
+    --bg-2: #11141f;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-strong: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text-0: #f5f7fb;
+    --text-1: #c8cee0;
+    --text-2: #8b93a8;
+    --text-3: #5a6178;
+    --accent-1: #7c5cff;   /* violet */
+    --accent-2: #22d3ee;   /* cyan */
+    --accent-3: #f472b6;   /* pink */
+    --accent-4: #34d399;   /* emerald */
+    --gradient-1: linear-gradient(135deg, #7c5cff 0%, #22d3ee 50%, #34d399 100%);
+    --gradient-2: linear-gradient(135deg, #f472b6 0%, #7c5cff 100%);
+    --gradient-3: linear-gradient(135deg, #22d3ee 0%, #34d399 100%);
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 24px;
+    --shadow-glow: 0 20px 60px -20px rgba(124, 92, 255, 0.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-0);
+    color: var(--text-0);
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ Aurora background ============ */
+  .aurora {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .aurora::before,
+  .aurora::after {
+    content: '';
+    position: absolute;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.45;
+    animation: float 20s ease-in-out infinite;
+  }
+  .aurora::before {
+    background: radial-gradient(circle, #7c5cff 0%, transparent 60%);
+    top: -20vw;
+    left: -10vw;
+  }
+  .aurora::after {
+    background: radial-gradient(circle, #22d3ee 0%, transparent 60%);
+    bottom: -20vw;
+    right: -10vw;
+    animation-delay: -10s;
+  }
+  .aurora .blob-3 {
+    position: absolute;
+    width: 40vw;
+    height: 40vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f472b6 0%, transparent 60%);
+    filter: blur(100px);
+    opacity: 0.25;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: float 25s ease-in-out infinite reverse;
+  }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(8vw, -6vw) scale(1.1); }
+    66% { transform: translate(-6vw, 4vw) scale(0.95); }
+  }
+
+  /* ============ Layout ============ */
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ============ Nav ============ */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(7, 8, 13, 0.6);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: var(--text-0);
+  }
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--gradient-1);
+    display: grid;
+    place-items: center;
+    color: #07080d;
+    font-weight: 800;
+    font-size: 14px;
+    box-shadow: 0 4px 16px -4px rgba(124, 92, 255, 0.6);
+  }
+  .nav-links {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--text-1);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .nav-links a:hover {
+    color: var(--text-0);
+    background: var(--surface);
+  }
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--text-0);
+    color: var(--bg-0);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.3);
+  }
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+  }
+
+  /* ============ Hero ============ */
+  .hero {
+    position: relative;
+    padding: 120px 0 100px;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--text-1);
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+  .badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-4);
+    box-shadow: 0 0 8px var(--accent-4);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 80px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+  .hero h1 .grad {
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: grad-shift 6s ease infinite;
+  }
+  @keyframes grad-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .hero .lede {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text-1);
+    max-width: 680px;
+    margin: 0 auto 40px;
+  }
+  .hero-cta {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--gradient-1);
+    color: #07080d;
+    box-shadow: var(--shadow-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 70px -20px rgba(124, 92, 255, 0.6);
+  }
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text-0);
+    border-color: var(--border-strong);
+    backdrop-filter: blur(10px);
+  }
+  .btn-ghost:hover {
+    background: var(--surface-strong);
+    transform: translateY(-2px);
+  }
+  .arrow { transition: transform 0.2s ease; }
+  .btn:hover .arrow { transform: translateX(3px); }
+
+  /* ============ Section base ============ */
+  section {
+    padding: 100px 0;
+    position: relative;
+  }
+  .section-eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(32px, 4.5vw, 48px);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+  }
+  .section-subtitle {
+    color: var(--text-1);
+    font-size: 17px;
+    max-width: 640px;
+  }
+  .section-head {
+    text-align: center;
+    margin: 0 auto 60px;
+    max-width: 720px;
+  }
+  .section-head .section-subtitle { margin: 0 auto; }
+
+  /* ============ Feature grid (intro) ============ */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .feature-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+  }
+  .feature-card > * { position: relative; z-index: 1; }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+  }
+  .feature-card:hover::before { opacity: 0.08; }
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    color: var(--accent-2);
+  }
+  .feature-card:nth-child(2) .feature-icon { color: var(--accent-3); }
+  .feature-card:nth-child(3) .feature-icon { color: var(--accent-4); }
+  .feature-card h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .feature-card p {
+    color: var(--text-1);
+    font-size: 14.5px;
+  }
+
+  /* ============ Install steps ============ */
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: all 0.3s ease;
+  }
+  .step:hover {
+    border-color: var(--border-strong);
+    transform: translateX(4px);
+  }
+  .step-num {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--gradient-1);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 18px;
+    color: #07080d;
+    box-shadow: 0 4px 16px -4px rgba(124, 92, 255, 0.5);
+  }
+  .step-content h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .step-content p {
+    color: var(--text-1);
+    font-size: 15px;
+  }
+  .step-code {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-2);
+  }
+  .step-tip {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: rgba(124, 92, 255, 0.08);
+    border-left: 2px solid var(--accent-1);
+    border-radius: 4px;
+    color: var(--text-1);
+    font-size: 13.5px;
+  }
+
+  /* ============ Mode tabs ============ */
+  .modes-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1;
+    min-width: 140px;
+    padding: 18px 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-2);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-0); }
+  .tab.active { color: var(--text-0); }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-1);
+  }
+  .tab.active .tab-icon { color: var(--accent-2); }
+  .tab-icon {
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--text-3);
+    transition: color 0.2s ease;
+  }
+  .tab-panel { display: none; padding: 40px; }
+  .tab-panel.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .panel-sub {
+    color: var(--text-2);
+    font-size: 14px;
+    margin-bottom: 24px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+  .panel-item {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+  }
+  .panel-item h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-0);
+    margin-bottom: 4px;
+  }
+  .panel-item p {
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .panel-item .icon { color: var(--accent-2); margin-right: 6px; }
+
+  /* ============ Concepts row (Skills/MCP/Workspace/SubAgent) ============ */
+  .concepts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .concept {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all 0.3s ease;
+  }
+  .concept:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+  }
+  .concept-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    background: var(--surface-strong);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+  }
+  .concept h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .concept p {
+    color: var(--text-1);
+    font-size: 14px;
+  }
+
+  /* ============ Feishu / callout ============ */
+  .callout {
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.12) 0%, rgba(34, 211, 238, 0.08) 100%);
+    border: 1px solid rgba(124, 92, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .callout::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(124, 92, 255, 0.15), transparent 30%);
+    animation: rotate 8s linear infinite;
+  }
+  .callout > * { position: relative; z-index: 1; }
+  @keyframes rotate {
+    to { transform: rotate(360deg); }
+  }
+  .callout h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .callout p {
+    color: var(--text-1);
+    font-size: 16px;
+    max-width: 560px;
+    margin: 0 auto 28px;
+  }
+
+  /* ============ Footer ============ */
+  footer {
+    padding: 60px 0 40px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .footer-meta {
+    color: var(--text-2);
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  .footer-meta a {
+    color: var(--text-0);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--text-3);
+  }
+  .footer-meta a:hover { border-bottom-color: var(--accent-2); }
+  .footer-copy {
+    color: var(--text-3);
+    font-size: 13px;
+  }
+
+  /* ============ Scroll reveal ============ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 640px) {
+    section { padding: 70px 0; }
+    .hero { padding: 80px 0 60px; }
+    .step { grid-template-columns: 1fr; gap: 16px; }
+    .tab-panel { padding: 28px 20px; }
+    .callout { padding: 32px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora">
+  <div class="blob-3"></div>
+</div>
+
+<nav>
+  <div class="container nav-inner">
+    <a class="logo" href="#top">
+      <span class="logo-mark">T</span>
+      <span>TAgent</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#intro">简介</a></li>
+      <li><a href="#install">安装</a></li>
+      <li><a href="#modes">模式</a></li>
+      <li><a href="#concepts">概念</a></li>
+      <li><a href="#feishu">飞书</a></li>
+    </ul>
+    <a class="nav-cta" href="https://github.com/Frank-LiangMX/TAgent_General/releases" target="_blank" rel="noopener">
+      下载 v1.0.0
+      <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="container">
+    <div class="badge">
+      <span class="dot"></span>
+      v1.0.0 · 开源 · 双模式 Agent
+    </div>
+    <h1>一个桌面应用，<br/><span class="grad">通用 + TA 双引擎</span></h1>
+    <p class="lede">
+      TAgent 融合通用 Agent 框架（Claude Agent SDK · MCP · Skills · SubAgent）与游戏 TA 领域专业工具链（54 个工具 · 资产库 · 流水线）。一个 App，两套工作流。
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/Frank-LiangMX/TAgent_General/releases" target="_blank" rel="noopener">
+        立即下载
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/Frank-LiangMX/TAgent_General" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.9 1.2 1.9 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.3 3 .1 3.3.8.8 1.2 1.9 1.2 3.2 0 4.7-2.9 5.7-5.6 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
+        GitHub 仓库
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- INTRO -->
+<section id="intro">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">什么是 TAgent</span>
+      <h2 class="section-title">两种模式，一种生产力</h2>
+      <p class="section-subtitle">通用模式覆盖日常 AI 协作的所有场景，TA 模式深度集成游戏技术美术工作流，两者独立运行，记忆 / 工具 / 会话完全隔离。</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+        <h3>通用 Agent 模式</h3>
+        <p>基于 Claude Agent SDK，集成 MCP 工具调用、Skills 技能包、SubAgent 委派、记忆与联网能力，覆盖日常 AI 协作全场景。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>TA 领域模式</h3>
+        <p>54 个游戏 TA 工具 + SQLite 资产库 + 审核流水线 + Blender / UE5 集成，把领域 Know-how 直接灌给 Agent。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>飞书远程协同</h3>
+        <p>手机端群聊 / 私聊直接派任务，Agent 在 PC 端处理后回传结果。通勤路上也能推进 PR 和深度研究。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">快速开始</span>
+      <h2 class="section-title">5 分钟完成安装与配置</h2>
+      <p class="section-subtitle">下载 → 安装依赖 → 配置渠道 → 开始使用，跟着四步走即可。</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>下载并安装 TAgent</h3>
+          <p>从 GitHub Releases 页面下载最新安装包。Windows 用户推荐安装到 C 盘，对 Agent 执行更友好。</p>
+          <span class="step-code">github.com/Frank-LiangMX/TAgent_General/releases</span>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>安装 Node JS 和 Git</h3>
+          <p>首次启动后按引导流程默认完成即可。Windows 用户务必安装到 C 盘，并勾选安装流程中的 <code>Add to Path</code> 选项。</p>
+          <div class="step-tip">提示：Node JS ≥ 18，Git ≥ 2.30 即可，无需额外配置。</div>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>配置 AI 渠道</h3>
+          <p>设置 → 渠道 → 添加渠道。Agent 模式要求渠道支持 <code>Anthropic</code> 协议，填写 <code>BaseUrl</code> 和 <code>API KEY</code> 后点 <code>测试链接</code> 验证。</p>
+          <div class="step-tip">推荐：DeepSeek、SiliconFlow、官方 Anthropic、月之暗面等任选其一。</div>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>启用记忆和联网（可选）</h3>
+          <p>MemOS 提供每月免费 5 万次记忆存储 / 2 万次调用；Tavily 提供每月 1000 次免费联网。设置 → 工具 完成配置后，在 Chat 模式右上角打开对应开关。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section id="modes">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">三种模式</span>
+      <h2 class="section-title">按场景选对模式</h2>
+      <p class="section-subtitle">Chat 适合轻量问答，Agent 适合长程任务，TA 模式专攻游戏技术美术。三者共享基础设施，独立配置。</p>
+    </div>
+    <div class="modes-wrap reveal">
+      <div class="tab-bar" role="tablist">
+        <button class="tab active" data-tab="chat" role="tab">
+          <span class="tab-icon">●</span>Chat 模式
+        </button>
+        <button class="tab" data-tab="agent" role="tab">
+          <span class="tab-icon">●</span>Agent 模式
+        </button>
+        <button class="tab" data-tab="ta" role="tab">
+          <span class="tab-icon">●</span>TA 模式
+        </button>
+      </div>
+
+      <div class="tab-panel active" data-panel="chat">
+        <h3 class="panel-title">轻量问答 · 快速交互</h3>
+        <p class="panel-sub">file:read · streaming · context-window</p>
+        <p style="color: var(--text-1);">适合学习、好奇问答、简单查询、聊天。文件仅可读取，无法修改或产出。</p>
+        <div class="panel-grid">
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>文件解析</h4>
+            <p>PDF、Word、Markdown、图片</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>剪贴板粘贴</h4>
+            <p>图片和文本直接粘贴到输入框</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>思考模式</h4>
+            <p>需要模型本身支持</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>记忆 / 联网</h4>
+            <p>配置后打开对应开关</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>上下文调整</h4>
+            <p>越短越省 tokens</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>系统提示词</h4>
+            <p>内置 + 自定义 + 快速切换</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="agent">
+        <h3 class="panel-title">长程任务 · 工具编排</h3>
+        <p class="panel-sub">claude-agent-sdk · mcp · skills · subagent</p>
+        <p style="color: var(--text-1);">基于 Claude Agent SDK，调度 MCP 工具、Skills 技能、SubAgent 子代理，适合文件编辑、深度研究、PR 处理、PPT 文档生成。</p>
+        <div class="panel-grid">
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>Skills 技能包</h4>
+            <p>渐进式披露，节省 tokens</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>MCP 协议</h4>
+            <p>对接 Gmail / 飞书 / GitHub</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>工作区</h4>
+            <p>按工作类型独立配置</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>SubAgent</h4>
+            <p>explorer / researcher / reviewer</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>文件系统</h4>
+            <p>读取参考 + 产出文件</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>@ 文件</h4>
+            <p>精确指定上下文</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="ta">
+        <h3 class="panel-title">游戏 TA · 领域专家</h3>
+        <p class="panel-sub">54 tools · asset-library · blender · ue5</p>
+        <p style="color: var(--text-1);">面向游戏技术美术，集成 54 个领域工具（FBX 处理、贴图优化、命名规范、资产审核），直读 SQLite 资产库，与 Blender / UE5 无缝对接。</p>
+        <div class="panel-grid">
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>54 个领域工具</h4>
+            <p>FBX / 贴图 / 命名 / 审核</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>资产库</h4>
+            <p>SQLite · 列表 / 详情 / 搜索</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>审核流程</h4>
+            <p>质量检查 + 规范验证</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>流水线</h4>
+            <p>自动化批量处理</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>Blender 集成</h4>
+            <p>Python API 桥接</p>
+          </div>
+          <div class="panel-item">
+            <h4><span class="icon">▸</span>UE5 桥接</h4>
+            <p>运行时命令通道</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONCEPTS -->
+<section id="concepts">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">核心概念</span>
+      <h2 class="section-title">用好 Agent 之前，先理解这四个概念</h2>
+      <p class="section-subtitle">这四个概念构成了 TAgent 的能力底座，理解后可以自己组合出无限工作流。</p>
+    </div>
+    <div class="concepts">
+      <div class="concept reveal">
+        <span class="concept-tag">Skills</span>
+        <h3>技能包</h3>
+        <p>渐进式披露的技能包，把一类工作的处理流程和判断标准结构化地交给 Agent。写一次，无限复用。</p>
+      </div>
+      <div class="concept reveal">
+        <span class="concept-tag">MCP</span>
+        <h3>模型上下文协议</h3>
+        <p>把外部服务（Gmail、飞书、GitHub）包装成 Agent 可调用的标准工具，自然语言对话即可完成安装。</p>
+      </div>
+      <div class="concept reveal">
+        <span class="concept-tag">Workspace</span>
+        <h3>工作区</h3>
+        <p>按工作类型拆分独立配置。处理 GitHub PR 一个区，处理 Gmail 另一个区，配置互不干扰。</p>
+      </div>
+      <div class="concept reveal">
+        <span class="concept-tag">SubAgent</span>
+        <h3>子代理</h3>
+        <p>复杂任务委派给专家子代理（探索 / 调研 / 审查），主 Agent 调度并展示全过程。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEISHU -->
+<section id="feishu">
+  <div class="container">
+    <div class="callout reveal">
+      <h2>不在电脑前，也能用 TAgent</h2>
+      <p>通过飞书远程连接你的 TAgent Agent。手机端群聊或私聊直接派任务，处理结果自动回传。典型场景：通勤做深度研究、远程处理 PR、紧急修复 Bug。</p>
+      <a class="btn btn-primary" href="https://github.com/Frank-LiangMX/TAgent_General" target="_blank" rel="noopener">
+        查看配置文档
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p class="footer-meta">
+      开源地址：<a href="https://github.com/Frank-LiangMX/TAgent_General" target="_blank" rel="noopener">github.com/Frank-LiangMX/TAgent_General</a>
+    </p>
+    <p class="footer-copy">© 2026 TAgent · 由 LiangMX 维护 · MIT License</p>
+  </div>
+</footer>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector(`.tab-panel[data-panel="${target}"]`).classList.add('active');
+    });
+  });
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Smooth scroll for nav
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href');
+      if (id.length > 1) {
+        const el = document.querySelector(id);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

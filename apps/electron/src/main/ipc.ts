@@ -146,7 +146,7 @@ import {
   setDefaultPrompt,
 } from './lib/system-prompt-manager'
 import { detectSystemProxy } from './lib/system-proxy-detector'
-import { getTutorialContent, createWelcomeConversation } from './lib/tutorial-service'
+import { getTutorialContent, getTutorialHtmlPath, createWelcomeConversation } from './lib/tutorial-service'
 import { registerUpdaterIpc } from './lib/updater/updater-ipc'
 import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
 import { wechatBridge } from './lib/wechat-bridge'
@@ -896,21 +896,7 @@ export function registerIpcHandlers(): void {
   )
 
   // 在系统默认浏览器中打开外部链接
-  ipcMain.handle(
-    IPC_CHANNELS.OPEN_EXTERNAL,
-    async (_, url: string): Promise<void> => {
-      if (!url || typeof url !== 'string') {
-        console.warn('[IPC] shell:open-external 收到无效的 URL')
-        return
-      }
-      // 仅允许 http/https 协议，防止安全风险
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        console.warn('[IPC] shell:open-external 仅支持 http/https 协议:', url)
-        return
-      }
-      await shell.openExternal(url)
-    }
-  )
+  // —— 旧 handler 已迁移到下方合并版本（含 tutorial:// 哨兵支持） ——
 
   // 用系统默认应用打开任意文件（appName 需在 KNOWN_EDITORS 白名单内）
   ipcMain.handle(
@@ -1163,6 +1149,36 @@ export function registerIpcHandlers(): void {
     CHAT_IPC_CHANNELS.GET_TUTORIAL_CONTENT,
     async (): Promise<string | null> => {
       return getTutorialContent()
+    }
+  )
+
+  // 在系统默认浏览器中打开本地教程页面（resources/index.html）
+  // 教程已改为独立 HTML 页面，渲染端只发语义动作，路径与 file:// 协议由主进程拼接
+  ipcMain.handle(
+    IPC_CHANNELS.OPEN_EXTERNAL,
+    async (_, url: string): Promise<{ opened: boolean; reason?: string }> => {
+      // 渲染端传入 'tutorial://' 哨兵 → 替换为本地教程页面
+      if (url === 'tutorial://') {
+        const htmlPath = getTutorialHtmlPath()
+        if (!htmlPath) {
+          return { opened: false, reason: '教程文件不存在' }
+        }
+        // Windows 路径需 toFileURL 规范化（处理空格、中文）
+        const { pathToFileURL } = await import('node:url')
+        await shell.openExternal(pathToFileURL(htmlPath).toString())
+        return { opened: true }
+      }
+      // 其他 URL 走原 http/https 逻辑
+      if (!url || typeof url !== 'string') {
+        console.warn('[IPC] shell:open-external 收到无效的 URL')
+        return { opened: false, reason: '无效 URL' }
+      }
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.warn('[IPC] shell:open-external 仅支持 http/https 协议:', url)
+        return { opened: false, reason: '不支持的协议' }
+      }
+      await shell.openExternal(url)
+      return { opened: true }
     }
   )
 

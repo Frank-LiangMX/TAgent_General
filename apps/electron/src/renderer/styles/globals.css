@@ -831,6 +831,13 @@
   display: none;
 }
 
+/* 隐藏 Webkit 滚动条上下小箭头（increment/decrement buttons） */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* 纤细滚动条 */
 .scrollbar-thin,
 .scrollbar-thin > * {
@@ -857,6 +864,45 @@
 }
 .scrollbar-thin::-webkit-scrollbar-corner,
 .scrollbar-thin > *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 滚动时才显示的滚动条 */
+.scrollbar-autohide,
+.scrollbar-autohide > * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+.scrollbar-autohide:hover,
+.scrollbar-autohide > *:hover {
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+.scrollbar-autohide::-webkit-scrollbar,
+.scrollbar-autohide > *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-autohide::-webkit-scrollbar-track,
+.scrollbar-autohide > *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-autohide::-webkit-scrollbar-thumb,
+.scrollbar-autohide > *::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb,
+.scrollbar-autohide > *:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb:hover,
+.scrollbar-autohide > *:hover::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+.scrollbar-autohide::-webkit-scrollbar-corner,
+.scrollbar-autohide > *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -1251,10 +1297,17 @@ html:not(.dark) .btw-panel-glass::after,
 
 /* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== *//* 默认亮色主题 */
 .scroll-progress-thumb {
-  background-color: hsl(var(--foreground) / 0.14);
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+/* 隐藏滚动条上下小箭头（Webkit 浏览器为可滚动区域自动渲染） */
+.scroll-progress-container::-webkit-scrollbar-button,
+.scroll-progress-container > *::-webkit-scrollbar-button {
+  display: none;
 }
 .scroll-progress-thumb:hover {
-  background-color: hsl(var(--foreground) / 0.25);
+  background-color: hsl(var(--foreground) / 0.20);
 }
 .scroll-progress-thumb-active {
   background-color: hsl(var(--foreground) / 0.32) !important;
@@ -1262,10 +1315,10 @@ html:not(.dark) .btw-panel-glass::after,
 
 /* 默认深色主题 */
 .dark:not([class*="theme-"]) .scroll-progress-thumb {
-  background-color: hsl(var(--foreground) / 0.12);
+  background-color: transparent;
 }
 .dark:not([class*="theme-"]) .scroll-progress-thumb:hover {
-  background-color: hsl(var(--foreground) / 0.22);
+  background-color: hsl(var(--foreground) / 0.18);
 }
 .dark:not([class*="theme-"]) .scroll-progress-thumb-active {
   background-color: hsl(var(--foreground) / 0.30) !important;
@@ -2144,7 +2197,7 @@ html:not(.dark) .btw-panel-glass::after,
     hsl(var(--background) / 0.10) 100%
   );
   border: 1px solid hsl(var(--foreground) / 0.10);
-  border-radius: 20px;
+  border-radius: var(--nav-island-outer-radius, 20px);
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.08),
     0 12px 40px rgba(0, 0, 0, 0.04);
@@ -2308,12 +2361,17 @@ html:not(.dark) .btw-panel-glass::after,
 
 /* macOS：略减小左上圆角，避免系统红绿灯视觉上「挂」在弧角外侧 */
 .nav-island-glass--mac {
-  border-top-left-radius: 14px;
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px);
 }
 
 .nav-island-glass--mac::before,
 .nav-island-glass--mac::after {
-  border-top-left-radius: 14px;
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px);
+}
+
+/* Windows：无 vibrancy 时强化圆角裁切，避免底板直角从半透明玻璃下透出 */
+.shell-glass--win .nav-island-glass.nav-island-glass--float {
+  contain: paint;
 }
 
 /**
@@ -2347,7 +2405,11 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 .content-main-body {
-  border-radius: 0 var(--content-plate-radius) var(--content-plate-radius) 0;
+  border-radius:
+    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
+    var(--content-plate-radius)
+    var(--content-plate-radius)
+    var(--nav-island-outer-radius, var(--content-plate-radius));
   overflow: hidden;
   flex: 1 1 auto;
   min-height: 0;
@@ -2377,7 +2439,7 @@ html:not(.dark) .btw-panel-glass::after,
   }
 }
 
-/* 主区底板：左侧开口画布，右侧圆角 */
+/* 主区底板：左侧与 Nav 浮岛左缘圆角对齐，右侧圆角 */
 .content-base-plate--body,
 .content-base-plate-frame {
   position: absolute;
@@ -2386,7 +2448,11 @@ html:not(.dark) .btw-panel-glass::after,
   right: 0;
   left: calc(-1 * var(--content-base-inset-left, 0px));
   --content-plate-radius: 20px;
-  border-radius: 0 var(--content-plate-radius) var(--content-plate-radius) 0;
+  border-radius:
+    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
+    var(--content-plate-radius)
+    var(--content-plate-radius)
+    var(--nav-island-outer-radius, var(--content-plate-radius));
   pointer-events: none;
 }
 
@@ -2471,13 +2537,15 @@ html:not(.dark) .btw-panel-glass::after,
   background-position: top center, bottom center;
   -webkit-mask-image: linear-gradient(
     90deg,
-    #000 0px,
+    transparent 0px,
+    #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
     #000 calc(100% - var(--content-plate-radius)),
     transparent 100%
   );
   mask-image: linear-gradient(
     90deg,
-    #000 0px,
+    transparent 0px,
+    #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
     #000 calc(100% - var(--content-plate-radius)),
     transparent 100%
   );

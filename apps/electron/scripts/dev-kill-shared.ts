@@ -13,7 +13,15 @@ function escapeForPkill(pattern: string): string {
   return pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/** Unix pkill 用（已转义） */
 export const rootMarkers = [electronRoot, repoRoot].map(escapeForPkill)
+
+/** Windows 命令行匹配用（原始路径） */
+export const winRootPaths = [electronRoot, repoRoot]
+
+function escapePsLike(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "''")
+}
 
 export function killUnixByPattern(pattern: string): void {
   try {
@@ -40,7 +48,7 @@ export function killWinByImage(name: string): void {
 }
 
 export function killWinByCommandLine(fragment: string): void {
-  const escaped = fragment.replace(/\\/g, '\\\\').replace(/'/g, "''")
+  const escaped = escapePsLike(fragment)
   const ps = [
     'Get-CimInstance Win32_Process |',
     `Where-Object { $_.CommandLine -like '*${escaped}*' } |`,
@@ -53,14 +61,34 @@ export function killWinByCommandLine(fragment: string): void {
   }
 }
 
-/** Windows：按命令行清理本仓库 Electron */
+/** Windows：命令行须同时包含项目路径与所有片段（避免误杀 Vite / 当前 dev 会话） */
+export function killWinByScopedCommandLine(rootPath: string, ...fragments: string[]): void {
+  const root = escapePsLike(rootPath.replace(/\//g, '\\'))
+  const conditions = [
+    `$_.CommandLine -like '*${root}*'`,
+    ...fragments.map((f) => `$_.CommandLine -like '*${escapePsLike(f.replace(/\//g, '\\'))}*'`),
+  ]
+  const ps = [
+    'Get-CimInstance Win32_Process |',
+    `Where-Object { ${conditions.join(' -and ')} } |`,
+    'ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+  ].join(' ')
+  try {
+    execSync(`powershell.exe -NoProfile -NonInteractive -Command "${ps}"`, { stdio: 'ignore' })
+  } catch {
+    // 无匹配进程
+  }
+}
+
+/** Windows：按命令行清理本仓库 Electron（仅 electron / electronmon，不扫整个项目目录） */
 export function killWinProjectElectron(): void {
-  const fragments = [
+  const electronFragments = [
     'node_modules\\electron\\dist\\electron.exe',
     'electronmon\\src\\hook.js',
-    'TAgent_General',
   ]
-  for (const fragment of fragments) {
-    killWinByCommandLine(fragment)
+  for (const root of winRootPaths) {
+    for (const fragment of electronFragments) {
+      killWinByScopedCommandLine(root, fragment)
+    }
   }
 }

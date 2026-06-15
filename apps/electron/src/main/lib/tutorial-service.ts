@@ -30,6 +30,27 @@ function getTutorialFilePath(): string {
 }
 
 /**
+ * 获取教程网页路径
+ *
+ * 教程现在是独立 HTML 页面（resources/index.html），
+ * 设置面板通过 openExternal 调起系统浏览器打开。
+ */
+export function getTutorialHtmlPath(): string | null {
+  let filePath: string
+  if (app.isPackaged) {
+    filePath = join(process.resourcesPath, 'index.html')
+  } else {
+    filePath = join(app.getAppPath(), '../../tutorial/index.html')
+  }
+
+  if (!existsSync(filePath)) {
+    console.warn('[教程服务] 教程网页文件不存在:', filePath)
+    return null
+  }
+  return filePath
+}
+
+/**
  * 读取教程内容
  *
  * @returns 教程 markdown 文本，读取失败返回 null

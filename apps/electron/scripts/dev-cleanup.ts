@@ -5,10 +5,11 @@
 import {
   killUnixByPattern,
   killUnixProjectElectron,
-  killWinByCommandLine,
   killWinByImage,
+  killWinByScopedCommandLine,
   killWinProjectElectron,
   rootMarkers,
+  winRootPaths,
 } from './dev-kill-shared'
 
 const isWin = process.platform === 'win32'
@@ -31,9 +32,11 @@ function cleanupWindows(): void {
   killWinByImage('electronmon.exe')
   killWinProjectElectron()
 
-  const fragments = ['dist\\main.cjs', 'run-electronmon', 'esbuild']
-  for (const fragment of fragments) {
-    killWinByCommandLine(fragment)
+  for (const root of winRootPaths) {
+    killWinByScopedCommandLine(root, 'dist\\main.cjs')
+    killWinByScopedCommandLine(root, 'esbuild', 'main.cjs')
+    killWinByScopedCommandLine(root, 'esbuild', 'preload.cjs')
+    killWinByScopedCommandLine(root, 'run-electronmon')
   }
 }
 

@@ -8,6 +8,12 @@ export const SHELL_EDGE_PADDING = 8
 /** 导航 Rail 宽度 */
 export const NAV_RAIL_WIDTH = 60
 
+/** 导航浮岛外轮廓圆角（与 content 底板左缘对齐） */
+export const NAV_ISLAND_OUTER_RADIUS = 20
+
+/** macOS 导航浮岛左上角圆角（避让红绿灯） */
+export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = 14
+
 /** macOS 导航岛顶栏 chrome 行高度（避让红绿灯；与底部分隔线间距） */
 export const NAV_MAC_CHROME_HEIGHT = 32
 

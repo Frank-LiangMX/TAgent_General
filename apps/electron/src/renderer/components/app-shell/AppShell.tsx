@@ -31,7 +31,14 @@ import { WorkspaceManagerDialog } from '@/components/agent/WorkspaceManagerDialo
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
-import { NAV_RAIL_WIDTH, NAV_SIDEBAR_WIDTH, SHELL_EDGE_PADDING } from '@/lib/platform'
+import {
+  detectIsMac,
+  NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
+  NAV_ISLAND_OUTER_RADIUS,
+  NAV_RAIL_WIDTH,
+  NAV_SIDEBAR_WIDTH,
+  SHELL_EDGE_PADDING,
+} from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 const MIN_RIGHT_PANEL_WIDTH = 300
@@ -47,6 +54,7 @@ export interface AppShellProps {
 }
 
 export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
+  const isMac = React.useMemo(() => detectIsMac(), [])
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
@@ -117,7 +125,16 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       {/* Windows 自定义窗口控制按钮(最小化/最大化/关闭) */}
       <WindowControls />
 
-      <div className="shell-glass shell-bg h-screen w-screen flex overflow-hidden">
+      <div
+        className={cn(
+          'shell-glass shell-bg h-screen w-screen flex overflow-hidden',
+          isMac ? 'shell-glass--mac' : 'shell-glass--win',
+        )}
+        style={{
+          ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
+          ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
+        }}
+      >
         {/* 左侧 Nav 浮岛（叠在底板之上） */}
         <div className="p-2 pr-0 relative z-[70] flex shrink-0 items-stretch self-stretch">
           <NavIsland

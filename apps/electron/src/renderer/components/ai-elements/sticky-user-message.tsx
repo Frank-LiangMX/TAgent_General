@@ -20,8 +20,6 @@ import { MessageResponse, remarkMentions } from './message'
 import type { RemarkPluginFn } from './message'
 
 import { stickyUserMessageEnabledAtom } from '@/atoms/ui-preferences'
-import { userProfileAtom } from '@/atoms/user-profile'
-import { UserAvatar } from '@/components/shared/UserAvatar'
 import { cn } from '@/lib/utils'
 
 /** 悬浮条专用 remark 插件（仅 mention，不保留换行） */
@@ -49,7 +47,6 @@ interface StickyUserMessageProps {
 
 export function StickyUserMessage({ userMessages }: StickyUserMessageProps): React.ReactElement {
   const { scrollRef, stopScroll, state: stickyState } = useStickToBottomContext()
-  const userProfile = useAtomValue(userProfileAtom)
   const stickyEnabled = useAtomValue(stickyUserMessageEnabledAtom)
 
   // 当前悬浮展示的消息
@@ -157,22 +154,18 @@ export function StickyUserMessage({ userMessages }: StickyUserMessageProps): Rea
           onClick={scrollToOriginal}
         >
           <div className="px-3.5 py-2.5">
-            {/* 头部：头像 + 用户名 + 提示 */}
-            <div className="flex items-center gap-2 mb-1">
-              <UserAvatar avatar={userProfile.avatar} size={18} />
-              <span className="text-xs font-medium text-foreground/60">{userProfile.userName}</span>
-              <ChevronUp className="size-3 text-muted-foreground ml-auto" />
-            </div>
-
             {/* 文本内容：最多两行，支持 Markdown 渲染 */}
             {stickyMessage?.text && (
-              <div className="text-sm text-foreground/80 line-clamp-2 leading-relaxed">
-                <MessageResponse
-                  className="prose-p:my-0 prose-p:inline prose-headings:my-0 prose-headings:text-sm prose-pre:hidden prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
-                  remarkPlugins={STICKY_REMARK_PLUGINS}
-                >
-                  {stripCodeBlocks(stickyMessage.text)}
-                </MessageResponse>
+              <div className="flex items-start gap-2">
+                <ChevronUp className="size-3 text-muted-foreground mt-1.5 shrink-0 cursor-pointer hover:text-foreground/70 transition-colors" onClick={scrollToOriginal} />
+                <div className="text-xs text-foreground/80 line-clamp-2 leading-relaxed flex-1 min-w-0">
+                  <MessageResponse
+                    className="prose-p:my-0 prose-p:inline prose-headings:my-0 prose-headings:text-sm prose-pre:hidden prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
+                    remarkPlugins={STICKY_REMARK_PLUGINS}
+                  >
+                    {stripCodeBlocks(stickyMessage.text)}
+                  </MessageResponse>
+                </div>
               </div>
             )}
 

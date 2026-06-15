@@ -27,7 +27,7 @@ export type ConversationProps = ComponentProps<typeof StickToBottom>
 export function Conversation({ className, ...props }: ConversationProps): React.ReactElement {
   return (
     <StickToBottom
-      className={cn('relative flex-1 overflow-y-hidden scrollbar-none', className)}
+      className={cn('relative flex-1 overflow-y-hidden', className)}
       initial="instant"
       resize="smooth"
       role="log"
@@ -43,6 +43,7 @@ export type ConversationContentProps = ComponentProps<typeof StickToBottom.Conte
 export function ConversationContent({ className, ...props }: ConversationContentProps): React.ReactElement {
   return (
     <StickToBottom.Content
+      scrollClassName="scrollbar-autohide"
       className={cn('flex flex-col gap-1 py-4 px-8', className)}
       {...props}
     />

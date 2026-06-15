@@ -58,6 +58,9 @@ extraResources:
   # 教程文件（教程查看器 + 欢迎对话使用）
   - from: ../../tutorial/tutorial.md
     to: tutorial.md
+  # 教程网页（设置面板的"在浏览器中打开教程"入口）
+  - from: ../../tutorial/index.html
+    to: index.html
   # 默认 Dock 图标（macOS app.dock.setIcon 使用）
   - from: resources/icon.png
     to: icon.png

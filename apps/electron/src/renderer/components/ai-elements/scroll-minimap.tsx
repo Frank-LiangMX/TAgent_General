@@ -376,9 +376,9 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
             </div>
 
             {/* 搜索框 */}
-            <div className="px-2 py-1.5 border-b shrink-0">
+            <div className="px-3 py-2 border-b shrink-0">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
                 <Input
                   ref={searchInputRef}
                   placeholder="搜索消息..."
@@ -389,13 +389,13 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
                     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
                     setIsLeaving(false)
                   }}
-                  className="h-7 text-xs pl-7"
+                  className="h-7 text-xs pl-8 rounded-lg"
                 />
               </div>
             </div>
 
             {/* 消息列表 */}
-            <div ref={listRef} className="overflow-y-auto flex-1 p-1.5 space-y-0.5 scrollbar-thin">
+            <div ref={listRef} className="overflow-y-auto flex-1 p-2 space-y-1 scrollbar-thin">
               {filteredItems.length === 0 ? (
                 <div className="py-6 text-center text-xs text-muted-foreground">
                   未找到匹配消息
@@ -407,7 +407,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
                     type="button"
                     data-minimap-visible={item.id === anchorId ? 'true' : undefined}
                     className={cn(
-                      'flex items-start gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent',
+                      'flex items-start gap-2 w-full rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-accent',
                       visibleIds.has(item.id) && 'bg-accent/50'
                     )}
                     onClick={() => scrollToMessage(item.id)}
@@ -423,10 +423,10 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
           </div>
         )}
 
-        {/* ── 迷你地图横杠（紧凑排列）—— 只有这里触发面板展开 ── */}
+        {/* ── 迷你地图格子（紧凑排列）—— 只有这里触发面板展开 ── */}
         <div
           className="relative mt-3 flex-shrink-0 pointer-events-auto"
-          style={{ width: 24, height: barCount * 6 }}
+          style={{ width: 14, height: barCount * 8 }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -441,12 +441,12 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
               <div
                 key={i}
                 className={cn(
-                  'absolute left-1 h-[2px] w-[20px] rounded-full transition-colors',
+                  'absolute left-0 h-[5px] w-[14px] rounded-md transition-colors',
                   isVisible
                     ? 'bg-primary dark:bg-primary/70 minimap-visible-indicator'
                     : hasUser
-                      ? 'bg-primary/25 dark:bg-primary/15'
-                      : 'bg-primary/40 dark:bg-primary/25'
+                      ? 'bg-primary/30 dark:bg-primary/20'
+                      : 'bg-primary/50 dark:bg-primary/35'
                 )}
                 style={{ top: `${top}%` }}
               />
