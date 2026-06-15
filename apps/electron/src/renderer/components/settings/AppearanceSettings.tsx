@@ -64,16 +64,15 @@ const READING_FONT_SIZE_OPTIONS = [
 interface BrandSwatch {
   id: TAgentBrand
   name: string
-  gradient: string
-  glow: string
+  solid: string
 }
 
 const BRAND_SWATCHES: readonly BrandSwatch[] = [
-  { id: 'cyan',   name: '焕蓝', gradient: 'linear-gradient(135deg, hsl(195 90% 60%), hsl(185 80% 50%))', glow: 'hsl(195 90% 55% / 0.5)' },
-  { id: 'violet', name: '锐紫', gradient: 'linear-gradient(135deg, hsl(265 85% 65%), hsl(295 80% 60%))', glow: 'hsl(265 85% 65% / 0.5)' },
-  { id: 'amber',  name: '橙陶', gradient: 'linear-gradient(135deg, hsl(28 95% 60%), hsl(8 90% 55%))',   glow: 'hsl(28 95% 55% / 0.5)' },
-  { id: 'forest', name: '森绿', gradient: 'linear-gradient(135deg, hsl(150 60% 50%), hsl(170 55% 40%))', glow: 'hsl(150 60% 45% / 0.5)' },
-  { id: 'slate',  name: '晶灰', gradient: 'linear-gradient(135deg, hsl(220 15% 60%), hsl(200 12% 45%))', glow: 'hsl(220 15% 55% / 0.5)' },
+  { id: 'cyan',   name: '焕蓝', solid: 'hsl(195 90% 55%)' },
+  { id: 'violet', name: '锐紫', solid: 'hsl(265 85% 65%)' },
+  { id: 'amber',  name: '橙陶', solid: 'hsl(28 95% 55%)'  },
+  { id: 'forest', name: '森绿', solid: 'hsl(150 60% 45%)' },
+  { id: 'slate',  name: '晶灰', solid: 'hsl(220 15% 55%)' },
 ]
 
 /** 特殊风格 ID（排除 default） */
@@ -91,17 +90,17 @@ interface SpecialStyle {
 
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
   // 第一行：亮色（按列对应：col 1 slate, col 2 ocean, col 3 forest, col 4 orange, col 5 purple）
-  { id: 'slate-light',  name: '云朵舞者', tag: 'Clay',     variant: 'light', previewClass: 'tagent-theme-cloud-dancer',     deco: 'cloud' },
-  { id: 'ocean-light',  name: '晴空碧海', tag: 'Toon',     variant: 'light', previewClass: 'tagent-theme-ocean-light',      deco: 'wave'  },
-  { id: 'forest-light', name: '森息晨光', tag: 'Foliage',  variant: 'light', previewClass: 'tagent-theme-forest-light',     deco: 'leaf'  },
-  { id: 'orange-light', name: '陶息晨光', tag: 'Albedo',   variant: 'light', previewClass: 'tagent-theme-terracotta-dawn', deco: 'sun'   },
-  { id: 'purple-light', name: '藤息晨光', tag: 'Sheen',    variant: 'light', previewClass: 'tagent-theme-wisteria-dawn',  deco: 'flower'},
+  { id: 'slate-light',  name: '云絮悠然', tag: 'Clay',     variant: 'light', previewClass: 'tagent-theme-cloud-dancer',     deco: 'cloud' },
+  { id: 'ocean-light',  name: '碧海晴空', tag: 'Toon',     variant: 'light', previewClass: 'tagent-theme-ocean-light',      deco: 'wave'  },
+  { id: 'forest-light', name: '翠林晨光', tag: 'Foliage',  variant: 'light', previewClass: 'tagent-theme-forest-light',     deco: 'leaf'  },
+  { id: 'orange-light', name: '琥珀晨曦', tag: 'Albedo',   variant: 'light', previewClass: 'tagent-theme-terracotta-dawn', deco: 'sun'   },
+  { id: 'purple-light', name: '紫藤晓露', tag: 'Sheen',    variant: 'light', previewClass: 'tagent-theme-wisteria-dawn',  deco: 'flower'},
   // 第二行：暗色（与第一行同列对应）
-  { id: 'slate-dark',   name: '莫兰迪夜', tag: 'PBR',      variant: 'dark',  previewClass: 'tagent-theme-morandi-night',    deco: 'gem'   },
-  { id: 'ocean-dark',   name: '苍穹暮色', tag: 'Volume',   variant: 'dark',  previewClass: 'tagent-theme-ocean-dark',       deco: 'star'  },
-  { id: 'forest-dark',  name: '森息夜语', tag: 'SSS',      variant: 'dark',  previewClass: 'tagent-theme-forest-dark',      deco: 'moon'  },
-  { id: 'orange-dark',  name: '陶息夜语', tag: 'Burn',     variant: 'dark',  previewClass: 'tagent-theme-terracotta-night', deco: 'flame' },
-  { id: 'purple-dark',  name: '藤息夜语', tag: 'Velvet',   variant: 'dark',  previewClass: 'tagent-theme-wisteria-night',  deco: 'orb'   },
+  { id: 'slate-dark',   name: '石板暮霭', tag: 'PBR',      variant: 'dark',  previewClass: 'tagent-theme-morandi-night',    deco: 'gem'   },
+  { id: 'ocean-dark',   name: '深海夜潮', tag: 'Volume',   variant: 'dark',  previewClass: 'tagent-theme-ocean-dark',       deco: 'star'  },
+  { id: 'forest-dark',  name: '青苔夜语', tag: 'SSS',      variant: 'dark',  previewClass: 'tagent-theme-forest-dark',      deco: 'moon'  },
+  { id: 'orange-dark',  name: '熔金夜韵', tag: 'Burn',     variant: 'dark',  previewClass: 'tagent-theme-terracotta-night', deco: 'flame' },
+  { id: 'purple-dark',  name: '幽兰梦语', tag: 'Velvet',   variant: 'dark',  previewClass: 'tagent-theme-wisteria-night',  deco: 'orb'   },
 ]
 
 /** 根据平台返回缩放快捷键提示 */
@@ -130,14 +129,33 @@ export function AppearanceSettings(): React.ReactElement {
     }
   }, [setThemeMode, setThemeStyle, systemIsDark])
 
-  /** 选择风格库中的风格 */
+  /** 选择风格库中的风格（自动联动签名色） */
   const handleStyleSelect = React.useCallback((style: ThemeStyle) => {
     setThemeMode('special')
     setThemeStyle(style)
     updateThemeMode('special')
     updateThemeStyle(style)
     applyThemeToDOM('special', style, systemIsDark)
-  }, [setThemeMode, setThemeStyle, systemIsDark])
+
+    // 根据主题色系自动联动签名色
+    const styleToBrand: Record<string, TAgentBrand> = {
+      'slate-light': 'slate',
+      'slate-dark': 'slate',
+      'ocean-light': 'cyan',
+      'ocean-dark': 'cyan',
+      'forest-light': 'forest',
+      'forest-dark': 'forest',
+      'orange-light': 'amber',
+      'orange-dark': 'amber',
+      'purple-light': 'violet',
+      'purple-dark': 'violet',
+    }
+    const matchedBrand = styleToBrand[style]
+    if (matchedBrand && matchedBrand !== tagentBrand) {
+      setTagentBrand(matchedBrand)
+      void updateTAgentBrand(matchedBrand)
+    }
+  }, [setThemeMode, setThemeStyle, systemIsDark, tagentBrand, setTagentBrand])
 
   /** 切换阅读字号 */
   const handleMarkdownFontSizeChange = React.useCallback((value: string) => {
@@ -256,7 +274,7 @@ interface TAgentSlimHeaderProps {
   onBrandChange: (brand: TAgentBrand) => void
 }
 
-/** 紧凑头部：左侧 logo+标题，右侧 5 个色板内联 */
+/** 紧凑头部：左侧 logo+标题，右侧签名色行内选择 */
 function TAgentSlimHeader({ brand, onBrandChange }: TAgentSlimHeaderProps): React.ReactElement {
   return (
     <div className="tagent-slim-header">
@@ -273,10 +291,9 @@ function TAgentSlimHeader({ brand, onBrandChange }: TAgentSlimHeaderProps): Reac
         </div>
       </div>
 
-      <div className="tagent-slim-header-palette" role="radiogroup" aria-label="品牌签名色">
-        <span className="tagent-slim-header-palette-label">签名色</span>
+      <div className="tagent-brand-palette" role="radiogroup" aria-label="品牌签名色">
         {BRAND_SWATCHES.map((swatch) => (
-          <SlimPaletteChip
+          <BrandChip
             key={swatch.id}
             swatch={swatch}
             isSelected={brand === swatch.id}
@@ -288,33 +305,28 @@ function TAgentSlimHeader({ brand, onBrandChange }: TAgentSlimHeaderProps): Reac
   )
 }
 
-interface SlimPaletteChipProps {
+interface BrandChipProps {
   swatch: BrandSwatch
   isSelected: boolean
   onSelect: () => void
 }
 
-/** 紧凑色板 chip */
-function SlimPaletteChip({ swatch, isSelected, onSelect }: SlimPaletteChipProps): React.ReactElement {
+/** 签名色 chip：纯色圆点 + 名称，选中态仅边框 */
+function BrandChip({ swatch, isSelected, onSelect }: BrandChipProps): React.ReactElement {
   return (
     <button
       type="button"
       onClick={onSelect}
-      title={swatch.name}
       aria-label={swatch.name}
       aria-pressed={isSelected}
       data-selected={isSelected}
-      className="tagent-slim-palette-chip"
-      style={
-        {
-          '--tagent-chip-bg': swatch.gradient,
-          '--tagent-chip-glow': swatch.glow,
-        } as React.CSSProperties
-      }
+      className="tagent-brand-chip"
     >
-      {isSelected && (
-        <Check className="tagent-slim-palette-tick size-2.5" strokeWidth={3} />
-      )}
+      <span
+        className="tagent-brand-chip-dot"
+        style={{ background: swatch.solid }}
+      />
+      <span className="tagent-brand-chip-label">{swatch.name}</span>
     </button>
   )
 }

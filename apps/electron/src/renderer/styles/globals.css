@@ -807,20 +807,243 @@
     0 1px 3px 0 rgb(0 0 0 / 0.06);
 }
 
-/* 设置卡片样式：透明背景 + 微弱边框，融入 shell-glass 底板
- * （旧版用 hsl(var(--card)) 在浅色主题里偏白、和 shell-glass 底板对比太硬） */
+/* 设置卡片样式：高透 Liquid Glass 效果
+ * 借鉴 liquid-glass-vue 的 overLight 概念，更清透
+ */
 .settings-card {
-  background: hsl(var(--background) / 0.5);
-  border: 1px solid hsl(var(--border) / 0.5);
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid hsl(var(--border) / 0.4);
+  -webkit-backdrop-filter: blur(12px) saturate(130%) brightness(105%);
+  backdrop-filter: blur(12px) saturate(130%) brightness(105%);
+  border-radius: 0.75rem;
   box-shadow:
-    0 1px 2px 0 rgb(0 0 0 / 0.03),
-    0 1px 3px 0 rgb(0 0 0 / 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 1px 0 0 rgba(255, 255, 255, 0.18),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
 }
+
+/* 卡片顶部高光 */
+.settings-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 .dark .settings-card,
 .dark:not([class*="theme-"]) .settings-card {
+  background: rgba(12, 12, 20, 0.28);
+  border: 1px solid hsl(var(--border) / 0.2);
+  -webkit-backdrop-filter: blur(14px) saturate(125%) brightness(0.96);
+  backdrop-filter: blur(14px) saturate(125%) brightness(0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 1px 0 0 rgba(255, 255, 255, 0.02),
+    0 3px 12px -4px rgba(0, 0, 0, 0.12);
+}
+
+.dark .settings-card::after,
+.dark:not([class*="theme-"]) .settings-card::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+}
+
+/* 设置页右侧内容区：无背景，直接显示在 shell-glass 底板上
+ * 左侧导航是圆角浮岛，右侧是透明，内容直接铺在底板
+ */
+.settings-content-glass {
+  position: relative;
   background: transparent;
+  border: none;
+  border-radius: 0;
   box-shadow: none;
-  border: 1px solid hsl(var(--border) / 0.3);
+}
+
+.dark .settings-content-glass,
+.dark:not([class*="theme-"]) .settings-content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 列表滑动选中态 — 侧栏会话 / 设置 Tab 共用 */
+.list-slide-host {
+  position: relative;
+}
+
+.list-slide-indicator {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  will-change: top, left, width, height, opacity, transform;
+}
+
+/* 跨组切换淡出层叠在按钮之上 */
+.list-slide-indicator--exit {
+  z-index: 2;
+}
+
+/* 滑动选中：行本身透明，露出背后滑动的玻璃指示器（需压住 theme 的 session-item-selected !important） */
+.list-slide-host .session-item-selected.list-slide-item--ghost,
+.list-slide-host .session-item-selected.session-item-selected--ghost,
+.list-slide-host .list-slide-item--selected.list-slide-item--ghost {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 旧的设置 Tab 指示器类名 — 与 list-slide-indicator 等价，保留兼容 */
+.settings-tab-indicator {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  will-change: top, left, width, height, opacity, transform;
+}
+
+.settings-tab-indicator--exit {
+  z-index: 2;
+}
+
+/* 设置页内容切换淡入动画 */
+@keyframes settings-content-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-settings-content-in {
+  animation: settings-content-in 0.35s ease-out;
+}
+
+/* 按钮点击缩放反馈：轻微收缩 */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* 设置页输入框聚焦发光效果 */
+.settings-card input:focus,
+.settings-card textarea:focus,
+.settings-card select:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 12px -4px var(--tagent-brand-glow);
+}
+
+/* 会话输入框聚焦发光效果 */
+.chat-input-glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 16px -4px var(--tagent-brand-glow);
+  transition: box-shadow 0.2s ease;
+}
+
+.dark .chat-input-glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 12px -4px var(--tagent-brand-glow);
+}
+
+/* 旧的选中态样式（保留作为备用） */
+.settings-tab-active {
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(108%);
+  backdrop-filter: blur(12px) saturate(140%) brightness(108%);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    backdrop-filter 0.25s ease;
+  animation: settings-tab-glass-in 0.3s ease-out;
+}
+
+.settings-tab-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+@keyframes settings-tab-glass-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dark .settings-tab-active {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(130%) brightness(1.02);
+  backdrop-filter: blur(14px) saturate(130%) brightness(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 2px 6px -2px rgba(0, 0, 0, 0.12);
+}
+
+.dark .settings-tab-active::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
 }
 
 /* 隐藏滚动条但保留滚动功能 */
@@ -1188,6 +1411,116 @@
   .btw-glass::after {
     display: none;
   }
+}
+
+/* ===== Liquid Glass 高透模式变体 =====
+ * 借鉴 liquid-glass-vue 的 overLight 概念
+ * 用于浅色背景上的轻量玻璃效果：
+ *   - 降低模糊强度（16px vs 28px）
+ *   - 提高背景透明度
+ *   - 减少磨砂感，更清透
+ *   - 微弱色差效果（aberration 模拟）
+ */
+.btw-glass--light {
+  background-color: rgba(255, 255, 255, 0.28);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(108%);
+  backdrop-filter: blur(16px) saturate(140%) brightness(108%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  isolation: isolate;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.02),
+    0 8px 24px -8px rgba(0, 0, 0, 0.08),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
+}
+
+.btw-glass--light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 15% 0%,
+      rgba(255, 255, 255, 0.25) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 95% 95%,
+      rgba(80, 120, 200, 0.05) 0%,
+      transparent 60%
+    );
+  mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 1) 35%,
+    rgba(0, 0, 0, 0.9) 65%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 1) 35%,
+    rgba(0, 0, 0, 0.9) 65%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+.btw-glass--light::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 高透模式深色主题：保持清透感 */
+.dark .btw-glass--light {
+  background-color: rgba(15, 15, 25, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.15),
+    0 8px 24px -8px rgba(0, 0, 0, 0.25),
+    0 2px 8px -2px rgba(0, 0, 0, 0.12);
+}
+
+.dark .btw-glass--light::before {
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 15% 0%,
+      rgba(160, 180, 255, 0.12) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 95% 95%,
+      rgba(80, 100, 180, 0.08) 0%,
+      transparent 60%
+    );
+}
+
+.dark .btw-glass--light::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
 }
 
 /* ===== BTW 面板 — 统一毛玻璃（与 .btw-glass 同一视觉语言）=====
@@ -3039,6 +3372,20 @@ html.material-frosted .content-main-shell .content-glass {
 
 .session-glass-sidebar {
   border-radius: 10px;
+}
+
+/* 与玻璃底板同步滑动的左侧状态竖条（仅会话列表） */
+.sidebar-session-slide-accent {
+  pointer-events: none;
+  will-change: top, height, left, background-color;
+  z-index: 2 !important;
+}
+
+/* 非当前选中行上的状态竖条：淡入淡出，避免与滑动竖条抢戏 */
+.session-sidebar-accent--inline {
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .session-glass-rail {

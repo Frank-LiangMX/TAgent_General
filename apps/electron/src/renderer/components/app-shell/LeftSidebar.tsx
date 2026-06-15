@@ -120,6 +120,13 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useOpenSession } from '@/hooks/useOpenSession'
+import { sessionListItemSelector, useSessionListSlideIndicator } from '@/hooks/useSessionListSlideIndicator'
+import {
+  LIST_SLIDE_HOST_CLASS,
+  LIST_SLIDE_INDICATOR_CLASS,
+  LIST_SLIDE_ITEM_GHOST_CLASS,
+  LIST_SLIDE_ITEM_SELECTED_CLASS,
+} from '@/lib/list-slide-selection'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import {
@@ -333,14 +340,14 @@ export function LeftSidebar({
   // 搜索状态（归档会话已从主列表分离，由底部 Popover 独立展示）
   const setSearchDialogOpen = useSetAtom(searchDialogOpenAtom)
 
-  // 当 activeTabId 变化时，自动滚动侧边栏使选中项可见
+  // 选中会话变化时，自动滚动侧栏使对应项可见
   React.useEffect(() => {
-    if (!activeTabId) return
+    if (!activeSessionId) return
     requestAnimationFrame(() => {
-      const el = document.querySelector('.session-item-selected')
+      const el = document.querySelector(sessionListItemSelector(activeSessionId))
       el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     })
-  }, [activeTabId])
+  }, [activeSessionId])
 
   // per-conversation/session Map atoms（删除时清理）
   const setConvModels = useSetAtom(conversationModelsAtom)
@@ -1246,6 +1253,16 @@ function SessionsRailContent({
   handleRequestMove: (id: string) => void
   workspaceNameMap: Map<string, string>
 }): React.ReactElement {
+  const listRef = React.useRef<HTMLDivElement>(null)
+  const sessionLayoutKey = filteredAgentSessions.map((session) => session.id).join('|')
+  const { plateStyle, accentStyle } = useSessionListSlideIndicator(listRef, activeSessionId, sessionLayoutKey)
+  const activeAccent = activeSessionId
+    ? getSessionLeftAccent(
+        agentIndicatorMap.get(activeSessionId) ?? 'idle',
+        true,
+      )
+    : undefined
+
   // Agent 模式
   return (
     <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag">
@@ -1254,18 +1271,42 @@ function SessionsRailContent({
           暂无会话，点击上方"+新会话"创建
         </div>
       ) : (
-        <div className="flex flex-col gap-0.5">
+        <div ref={listRef} className={cn('relative', LIST_SLIDE_HOST_CLASS)}>
+          <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+            {plateStyle && (
+              <div
+                className={LIST_SLIDE_INDICATOR_CLASS}
+                style={plateStyle}
+              />
+            )}
+            {accentStyle && activeAccent && (
+              <div
+                className={cn(
+                  'sidebar-session-slide-accent session-sidebar-accent rounded-full',
+                  SESSION_LEFT_ACCENT_CLASS[activeAccent],
+                  activeAccent === 'blue' && 'animate-pulse',
+                )}
+                style={accentStyle}
+              />
+            )}
+          </div>
+          <div className="relative z-10 flex flex-col gap-0.5">
           {filteredAgentSessions.map((session) => (
             <AgentSessionItem
               key={session.id}
               session={session}
               active={session.id === activeSessionId}
+              useListSlideIndicator
               indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
               isInWorkingSection={workingSessionIds.has(session.id)}
-              leftAccent={getSessionLeftAccent(
-                agentIndicatorMap.get(session.id) ?? 'idle',
-                session.id === activeSessionId,
-              )}
+              leftAccent={
+                session.id === activeSessionId
+                  ? undefined
+                  : getSessionLeftAccent(
+                      agentIndicatorMap.get(session.id) ?? 'idle',
+                      false,
+                    )
+              }
               showPinIcon={!!session.pinned}
               workspaceName={session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined}
               onSelect={handleSelectAgentSession}
@@ -1278,6 +1319,7 @@ function SessionsRailContent({
               onToggleArchive={handleToggleArchiveAgent}
             />
           ))}
+          </div>
         </div>
       )}
     </div>
@@ -1525,6 +1567,8 @@ interface AgentSessionItemProps {
   disableMiniMap?: boolean
   /** 工作区名称 Badge（跨工作区列表时显示） */
   workspaceName?: string
+  /** 父级列表绘制滑动指示器时，本项不再铺选中玻璃底 */
+  useListSlideIndicator?: boolean
   onSelect: (id: string, title: string) => void
   onConfirmDone: (id: string) => Promise<void>
   onRequestDelete: (id: string) => void
@@ -1561,6 +1605,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   showConfirmDone,
   disableMiniMap,
   workspaceName,
+  useListSlideIndicator = false,
   onSelect,
   onConfirmDone,
   onRequestDelete,
@@ -1664,6 +1709,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
       <ContextMenuTrigger asChild>
         <div
           ref={preview.setAnchorRef}
+          data-session-list-id={session.id}
           role="button"
           tabIndex={0}
           onClick={() => onSelect(session.id, session.title)}
@@ -1674,18 +1720,26 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             startEdit()
           }}
           className={cn(
-            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-all duration-150 titlebar-no-drag text-left',
-            leftAccent && 'pl-5',
+            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-colors duration-150 titlebar-no-drag text-left',
+            (leftAccent || (useListSlideIndicator && active)) && 'pl-5',
             active
-              ? 'session-item-selected session-glass session-glass-sidebar'
+              ? useListSlideIndicator
+                ? cn(
+                    'session-item-selected session-item-selected--ghost',
+                    LIST_SLIDE_ITEM_SELECTED_CLASS,
+                    LIST_SLIDE_ITEM_GHOST_CLASS,
+                    'rounded-[10px] z-10',
+                  )
+                : 'session-item-selected session-glass session-glass-sidebar'
               : 'rounded-md hover:bg-primary/5'
           )}
         >
           {leftAccent && (
             <span
               className={cn(
-                'session-sidebar-accent left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
-                SESSION_LEFT_ACCENT_CLASS[leftAccent]
+                'session-sidebar-accent session-sidebar-accent--inline left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
+                SESSION_LEFT_ACCENT_CLASS[leftAccent],
+                leftAccent === 'blue' && 'animate-pulse',
               )}
             />
           )}

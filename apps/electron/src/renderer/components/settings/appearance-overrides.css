@@ -69,22 +69,23 @@
 }
 
 /* =============================================================
- *  4. Slim 品牌签名 header（紧凑、含内联色板）
+ *  4. Slim 品牌签名 header（高透 Liquid Glass）
  * ============================================================= */
 
 .tagent-slim-header {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
-  background:
-    linear-gradient(
-      135deg,
-      var(--tagent-brand-soft) 0%,
-      transparent 60%
-    ),
-    hsl(var(--card) / 0.6);
-  border: 1px solid hsl(var(--border) / 0.4);
+  background: rgba(255, 255, 255, 0.24);
+  border: 1px solid hsl(var(--border) / 0.35);
+  -webkit-backdrop-filter: blur(14px) saturate(135%) brightness(106%);
+  backdrop-filter: blur(14px) saturate(135%) brightness(106%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 4px 16px -4px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -92,37 +93,82 @@
   animation: tagent-fade-up 0.5s ease-out 1 backwards;
 }
 
+/* 环境光叠加层 */
 .tagent-slim-header::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(
-      circle at 1px 1px,
-      hsl(var(--foreground) / 0.05) 1px,
-      transparent 0
-    );
-  background-size: 14px 14px;
+  border-radius: inherit;
   pointer-events: none;
-  opacity: 0.6;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse 50% 35% at 8% 0%,
+      rgba(255, 255, 255, 0.18) 0%,
+      transparent 45%
+    );
+  mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 1) 40%,
+    rgba(0, 0, 0, 0.85) 60%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 1) 40%,
+    rgba(0, 0, 0, 0.85) 60%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
 }
 
+/* 顶部高光 */
 .tagent-slim-header::after {
   content: '';
   position: absolute;
   top: 0;
-  left: -30%;
-  width: 50%;
-  height: 100%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
   background: linear-gradient(
-    100deg,
+    90deg,
     transparent 0%,
-    var(--tagent-brand-glow) 50%,
+    rgba(255, 255, 255, 0.45) 50%,
     transparent 100%
   );
-  filter: blur(16px);
+  border-radius: inherit;
   pointer-events: none;
-  animation: tagent-sweep-once 1.6s ease-out 0.2s 1 backwards;
+  z-index: 0;
+}
+
+.dark .tagent-slim-header {
+  background: rgba(12, 12, 20, 0.3);
+  border: 1px solid hsl(var(--border) / 0.18);
+  -webkit-backdrop-filter: blur(16px) saturate(130%) brightness(0.96);
+  backdrop-filter: blur(16px) saturate(130%) brightness(0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 1px 0 0 rgba(255, 255, 255, 0.02),
+    0 6px 20px -6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .tagent-slim-header::before {
+  background:
+    radial-gradient(
+      ellipse 50% 35% at 8% 0%,
+      rgba(160, 180, 255, 0.06) 0%,
+      transparent 45%
+    );
+}
+
+.dark .tagent-slim-header::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
 }
 
 .tagent-slim-header-left {
@@ -146,9 +192,6 @@
   font-weight: 700;
   font-size: 0.7rem;
   letter-spacing: 0.04em;
-  box-shadow:
-    0 0 0 1px hsl(var(--background) / 0.6) inset,
-    0 4px 12px -6px var(--tagent-brand-glow);
   flex-shrink: 0;
 }
 
@@ -191,65 +234,67 @@
   text-overflow: ellipsis;
 }
 
-.tagent-slim-header-palette {
+/* =============================================================
+ *  4b. 签名色面板（时尚克制风格）
+ * ============================================================= */
+
+.tagent-brand-palette {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   flex-shrink: 0;
 }
 
-.tagent-slim-header-palette-label {
-  font-size: 0.6rem;
-  color: hsl(var(--muted-foreground));
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 500;
-  margin-right: 0.1rem;
-}
-
-.tagent-slim-palette-chip {
-  position: relative;
-  width: 1.5rem;
-  height: 1.5rem;
+.tagent-brand-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
+  border: 1px solid transparent;
+  background: transparent;
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  border: 1px solid hsl(var(--border) / 0.5);
-  background: var(--tagent-chip-bg);
-  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  overflow: hidden;
+  transition: all 0.15s ease;
 }
 
-.tagent-slim-palette-chip::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, transparent 55%);
-  pointer-events: none;
+.tagent-brand-chip:hover {
+  background: hsl(var(--muted) / 0.4);
 }
 
-.tagent-slim-palette-chip:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 4px 10px -3px var(--tagent-chip-glow);
+.tagent-brand-chip:focus-visible {
+  outline: 2px solid var(--tagent-brand);
+  outline-offset: 2px;
 }
 
-.tagent-slim-palette-chip[data-selected='true'] {
-  border-color: transparent;
-  box-shadow:
-    0 0 0 2px var(--tagent-chip-glow),
-    0 4px 10px -3px var(--tagent-chip-glow);
+.tagent-brand-chip[data-selected='true'] {
+  border-color: hsl(var(--border) / 0.8);
+  background: hsl(var(--muted) / 0.25);
 }
 
-.tagent-slim-palette-chip[data-selected='true'] .tagent-slim-palette-tick {
-  position: relative;
-  z-index: 1;
-  color: white;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+.tagent-brand-chip-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.tagent-brand-chip[data-selected='true'] .tagent-brand-chip-dot {
+  transform: scale(1.1);
+}
+
+.tagent-brand-chip-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.15s ease;
+}
+
+.tagent-brand-chip[data-selected='true'] .tagent-brand-chip-label {
+  color: hsl(var(--foreground));
+  font-weight: 600;
 }
 
 /* =============================================================

@@ -60,6 +60,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  LIST_SLIDE_HOST_CLASS,
+  LIST_SLIDE_INDICATOR_CLASS,
+  LIST_SLIDE_INDICATOR_EXIT_CLASS,
+  LIST_SLIDE_ITEM_GHOST_CLASS,
+  LIST_SLIDE_ITEM_SELECTED_CLASS,
+  LIST_SLIDE_TRANSITION,
+} from "@/lib/list-slide-selection";
 import { cn } from "@/lib/utils";
 
 /** 设置 Tab 定义 */
@@ -106,6 +114,218 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
   }
 }
 
+function getTabGroup(tabId: SettingsTab): TabItem['group'] | null {
+  return ALL_TABS.find((tab) => tab.id === tabId)?.group ?? null
+}
+
+// ============================================================
+// TabGroup：组内指示器（淡入/滑动）+ 跨组离开时淡出
+// ============================================================
+
+const FADE_OUT_MS = 480;
+const FADE_IN_TRANSITION = 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)';
+const FADE_OUT_TRANSITION = 'opacity 0.45s ease-out';
+
+interface TabGroupProps {
+  groupLabel: string;
+  tabs: TabItem[];
+  activeTab: SettingsTab;
+  /** 同组 slide，跨组 fade，首屏/无切换 idle */
+  indicatorMotion: 'slide' | 'fade' | 'idle';
+  /** 跨组切换当帧传入正在离开的 tab，由本组播放淡出 */
+  exitTabId: SettingsTab | null;
+  onTabChange: (tabId: SettingsTab) => void;
+  hasUpdate: boolean;
+  hasEnvironmentIssues: boolean;
+}
+
+function measureButtonInContainer(
+  container: HTMLElement,
+  button: HTMLButtonElement,
+): React.CSSProperties {
+  const containerRect = container.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+
+  return {
+    display: 'block',
+    position: 'absolute',
+    left: 0,
+    width: buttonRect.width,
+    height: buttonRect.height,
+    top: buttonRect.top - containerRect.top,
+  };
+}
+
+function TabGroup({
+  groupLabel,
+  tabs,
+  activeTab,
+  indicatorMotion,
+  exitTabId,
+  onTabChange,
+  hasUpdate,
+  hasEnvironmentIssues,
+}: TabGroupProps): React.ReactElement {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = React.useState<React.CSSProperties>({ display: 'none' });
+  const [exitIndicatorStyle, setExitIndicatorStyle] = React.useState<React.CSSProperties | null>(null);
+  /** 避免 fade→idle 重渲染时对同一 tab 再播一遍动画 */
+  const lastSettledTabRef = React.useRef<SettingsTab | null>(null);
+
+  // 当前组内选中项：滑动 / 淡入（相对容器定位，left:0 —— 原先效果好的实现）
+  React.useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
+    if (activeIndex === -1) {
+      setIndicatorStyle({ display: 'none' });
+      lastSettledTabRef.current = null;
+      return;
+    }
+
+    const activeButton = containerRef.current.querySelector<HTMLButtonElement>(
+      `[data-tab-id="${activeTab}"]`,
+    );
+    if (!activeButton) return;
+
+    const baseStyle = measureButtonInContainer(containerRef.current, activeButton);
+    const settledStyle: React.CSSProperties = {
+      ...baseStyle,
+      opacity: 1,
+      transform: 'scale(1)',
+      transition: 'none',
+    };
+
+    if (indicatorMotion === 'idle') {
+      if (lastSettledTabRef.current === activeTab) return;
+      setIndicatorStyle(settledStyle);
+      lastSettledTabRef.current = activeTab;
+      return;
+    }
+
+    if (indicatorMotion === 'slide') {
+      setIndicatorStyle({
+        ...baseStyle,
+        opacity: 1,
+        transform: 'scale(1)',
+        transition: LIST_SLIDE_TRANSITION,
+      });
+      lastSettledTabRef.current = activeTab;
+      return;
+    }
+
+    setIndicatorStyle({
+      ...baseStyle,
+      opacity: 0,
+      transform: 'scale(0.85)',
+      transition: 'none',
+    });
+
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setIndicatorStyle({
+          ...baseStyle,
+          opacity: 1,
+          transform: 'scale(1)',
+          transition: FADE_IN_TRANSITION,
+        });
+        lastSettledTabRef.current = activeTab;
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [activeTab, tabs, indicatorMotion]);
+
+  // 跨组离开：仅在本组 tab 上淡出（只改 opacity，避免 scale 错位）
+  React.useLayoutEffect(() => {
+    if (!exitTabId || !tabs.some((tab) => tab.id === exitTabId)) return;
+    if (!containerRef.current) return;
+
+    const exitButton = containerRef.current.querySelector<HTMLButtonElement>(
+      `[data-tab-id="${exitTabId}"]`,
+    );
+    if (!exitButton) return;
+
+    const baseStyle = measureButtonInContainer(containerRef.current, exitButton);
+    setExitIndicatorStyle({
+      ...baseStyle,
+      opacity: 1,
+      transition: 'none',
+    });
+
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setExitIndicatorStyle({
+          ...baseStyle,
+          opacity: 0,
+          transition: FADE_OUT_TRANSITION,
+        });
+      });
+    });
+
+    const timer = window.setTimeout(() => {
+      setExitIndicatorStyle(null);
+    }, FADE_OUT_MS);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      // 不在 cleanup 里清 timer，避免 exitTabId 到期时打断淡出
+    };
+  }, [exitTabId, tabs]);
+
+  return (
+    <div>
+      <div className="px-2 pt-1 pb-0.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+        {groupLabel}
+      </div>
+      <div ref={containerRef} className={cn('relative', LIST_SLIDE_HOST_CLASS)}>
+        {/* 指示器单独一层，避免占位触发 space-y 给首个按钮加 margin */}
+        <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+          {exitIndicatorStyle && (
+            <div
+              className={cn(LIST_SLIDE_INDICATOR_CLASS, LIST_SLIDE_INDICATOR_EXIT_CLASS)}
+              style={exitIndicatorStyle}
+            />
+          )}
+          {indicatorStyle.display !== 'none' && indicatorStyle.width !== undefined && (
+            <div className={LIST_SLIDE_INDICATOR_CLASS} style={indicatorStyle} />
+          )}
+        </div>
+        <div className="relative z-10 space-y-0.5">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              data-tab-id={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors duration-150 cursor-pointer text-left relative z-10",
+                isActive
+                  ? cn(LIST_SLIDE_ITEM_SELECTED_CLASS, LIST_SLIDE_ITEM_GHOST_CLASS, "text-foreground")
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]",
+              )}
+            >
+              <span className="shrink-0">{tab.icon}</span>
+              <span className="truncate flex-1">{tab.label}</span>
+              {tab.id === "about" && (hasUpdate || hasEnvironmentIssues) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+              )}
+            </button>
+          );
+        })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SettingsPanelProps {
   onClose?: () => void;
 }
@@ -121,6 +341,49 @@ export function SettingsPanel({
 
   const [highlightItemId, setHighlightItemId] = React.useState<string | null>(null)
   const contentRef = React.useRef<HTMLDivElement>(null)
+  const prevActiveTabRef = React.useRef<SettingsTab | null>(null)
+  const [exitTabId, setExitTabId] = React.useState<SettingsTab | null>(null)
+  const exitClearTimerRef = React.useRef<number | null>(null)
+
+  const prevTab = prevActiveTabRef.current
+  const prevGroup = prevTab ? getTabGroup(prevTab) : null
+  const activeGroup = getTabGroup(activeTab)
+  const isTabChange = prevTab !== null && prevTab !== activeTab
+  const isIntraGroupSwitch =
+    isTabChange &&
+    prevGroup === activeGroup
+  const indicatorMotion: 'slide' | 'fade' | 'idle' = !isTabChange
+    ? 'idle'
+    : isIntraGroupSwitch
+      ? 'slide'
+      : 'fade'
+
+  const scheduleExitFade = React.useCallback((leavingTab: SettingsTab, nextTab: SettingsTab) => {
+    const leavingGroup = getTabGroup(leavingTab)
+    const nextGroup = getTabGroup(nextTab)
+    if (!leavingGroup || !nextGroup || leavingGroup === nextGroup) return
+
+    if (exitClearTimerRef.current !== null) {
+      window.clearTimeout(exitClearTimerRef.current)
+    }
+    setExitTabId(leavingTab)
+    exitClearTimerRef.current = window.setTimeout(() => {
+      setExitTabId(null)
+      exitClearTimerRef.current = null
+    }, FADE_OUT_MS)
+  }, [])
+
+  React.useEffect(() => {
+    prevActiveTabRef.current = activeTab
+  }, [activeTab])
+
+  React.useEffect(() => {
+    return () => {
+      if (exitClearTimerRef.current !== null) {
+        window.clearTimeout(exitClearTimerRef.current)
+      }
+    }
+  }, [])
 
   type PendingAction = { type: 'tab'; tabId: SettingsTab } | { type: 'close' } | null
   const [pendingAction, setPendingAction] = React.useState<PendingAction>(null)
@@ -129,6 +392,7 @@ export function SettingsPanel({
   const executePendingAction = (): void => {
     if (!pendingAction) return
     if (pendingAction.type === 'tab') {
+      scheduleExitFade(activeTab, pendingAction.tabId)
       setActiveTab(pendingAction.tabId)
     } else {
       onClose?.()
@@ -146,6 +410,7 @@ export function SettingsPanel({
       setPendingAction({ type: 'tab', tabId })
       return
     }
+    scheduleExitFade(activeTab, tabId)
     setActiveTab(tabId)
     setHighlightItemId(null)
   }
@@ -165,6 +430,7 @@ export function SettingsPanel({
         setHighlightItemId(itemId ?? null)
         return
       }
+      scheduleExitFade(activeTab, tab)
       setActiveTab(tab)
     }
     if (itemId) {
@@ -215,42 +481,25 @@ export function SettingsPanel({
                 const groupTabs = ALL_TABS.filter(t => t.group === group.key)
                 if (groupTabs.length === 0) return null
                 return (
-                  <div key={group.key}>
-                    <div className="px-2 pt-1 pb-0.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-                      {group.label}
-                    </div>
-                    <div className="space-y-0.5">
-                      {groupTabs.map((tab) => {
-                        const isActive = activeTab === tab.id
-                        return (
-                          <button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.id)}
-                            className={cn(
-                              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 cursor-pointer text-left",
-                              isActive
-                                ? "bg-foreground/[0.06] text-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]",
-                            )}
-                          >
-                            <span className="shrink-0">{tab.icon}</span>
-                            <span className="truncate flex-1">{tab.label}</span>
-                            {tab.id === "about" && (hasUpdate || hasEnvironmentIssues) && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
+                  <TabGroup
+                    key={group.key}
+                    groupLabel={group.label}
+                    tabs={groupTabs}
+                    activeTab={activeTab}
+                    indicatorMotion={indicatorMotion}
+                    exitTabId={exitTabId}
+                    onTabChange={handleTabChange}
+                    hasUpdate={hasUpdate}
+                    hasEnvironmentIssues={hasEnvironmentIssues}
+                  />
                 )
               })}
             </nav>
           </ScrollArea>
         </aside>
 
-        {/* 右侧 - 开放页面（不用卡片，直接铺开；与主区 TabBar 后内容区一致） */}
-        <section className="relative flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+        {/* 右侧 - 开放页面（玻璃感内容区） */}
+        <section className="settings-content-glass relative flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           {/* 顶部栏：左侧搜索（铺满）+ 右侧关闭按钮 */}
           <div className="flex items-center gap-2 h-9 px-4 shrink-0">
             <SettingsSearch onNavigate={handleSearchNavigate} fullWidth />
@@ -267,7 +516,11 @@ export function SettingsPanel({
 
           {/* 内容区 */}
           <ScrollArea className="flex-1 min-h-0">
-            <div ref={contentRef} className="px-6 py-4 max-w-2xl">
+            <div
+              ref={contentRef}
+              key={activeTab}
+              className="px-6 py-4 max-w-2xl animate-settings-content-in"
+            >
               {renderTabContent(activeTab)}
             </div>
           </ScrollArea>
