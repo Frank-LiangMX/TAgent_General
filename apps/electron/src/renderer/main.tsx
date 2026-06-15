@@ -31,7 +31,6 @@ import {
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
 import { currentConversationIdAtom, channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/chat-atoms'
-import { chatToolsAtom } from './atoms/chat-tool-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
 import {
@@ -474,37 +473,6 @@ function AskListenersInitializer(): null {
 }
 
 /**
- * Chat 工具初始化组件
- *
- * 启动时从主进程加载所有工具信息到 atom。
- * 订阅 chat-tools.json 文件变更通知，自动刷新工具列表。
- */
-function ChatToolInitializer(): null {
-  const setChatTools = useSetAtom(chatToolsAtom)
-
-  useEffect(() => {
-    window.electronAPI.getChatTools()
-      .then(setChatTools)
-      .catch((err: unknown) => console.error('[ChatToolInitializer] 加载工具列表失败:', err))
-  }, [setChatTools])
-
-  // 订阅自定义工具配置变更
-  useEffect(() => {
-    const cleanup = window.electronAPI.onCustomToolChanged(() => {
-      window.electronAPI.getChatTools()
-        .then((tools) => {
-          setChatTools(tools)
-          toast.success('Chat 工具已更新')
-        })
-        .catch((err: unknown) => console.error('[ChatToolInitializer] 刷新工具列表失败:', err))
-    })
-    return cleanup
-  }, [setChatTools])
-
-  return null
-}
-
-/**
  * 飞书集成初始化组件
  *
  * - 订阅飞书 Bridge 状态变化
@@ -911,7 +879,6 @@ if (isQuickTaskWindow) {
       <TAgentBrandInitializer />
       <AgentListenersInitializer />
       <AskListenersInitializer />
-      <ChatToolInitializer />
       <UpdaterInitializer />
       <FeishuInitializer />
       <DingTalkInitializer />

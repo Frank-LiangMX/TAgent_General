@@ -43,7 +43,7 @@ export type ConversationContentProps = ComponentProps<typeof StickToBottom.Conte
 export function ConversationContent({ className, ...props }: ConversationContentProps): React.ReactElement {
   return (
     <StickToBottom.Content
-      scrollClassName="scrollbar-autohide"
+      scrollClassName="scrollbar-thin"
       className={cn('flex flex-col gap-1 py-4 px-8', className)}
       {...props}
     />

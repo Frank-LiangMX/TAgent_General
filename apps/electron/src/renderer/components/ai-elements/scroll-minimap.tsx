@@ -456,7 +456,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
       </div>
 
       {/* ── 滚动进度条 ── */}
-      <div className="relative ml-[4px] py-4 flex-shrink-0 pointer-events-auto" style={{ width: 7 }}>
+      <div className="relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto" style={{ width: 7 }}>
         <div
           ref={trackRef}
           className="relative h-full rounded-full cursor-pointer"

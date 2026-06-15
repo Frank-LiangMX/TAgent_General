@@ -115,7 +115,7 @@ const BUILTIN_MCPS: Omit<BuiltinMcpInfo, 'installed' | 'canInstall' | 'installin
     envHints: [
       { key: 'TA_AGENT_DATA_DIR', description: 'TA 数据目录，默认 ~/.tagent/ta/', required: false },
     ],
-    docsUrl: 'https://github.com/ErlichLiu/TAgent/tree/main/ta-agent-mcp',
+    docsUrl: 'https://github.com/Frank-LiangMX/TAgent_General/tree/main/ta-agent-mcp',
   },
 ]
 
