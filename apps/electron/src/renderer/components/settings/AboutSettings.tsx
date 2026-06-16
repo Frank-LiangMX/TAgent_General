@@ -341,7 +341,7 @@ function EnvironmentSection(): React.ReactElement {
           <StatusGridItem
             name="Shell"
             ok={shellOk}
-            version={runtimeStatus?.shell?.gitBash?.version ?? runtimeStatus?.shell?.wsl?.version}
+            version={runtimeStatus?.shell?.gitBash?.version?.toString() ?? runtimeStatus?.shell?.wsl?.version?.toString() ?? undefined}
             hide={!runtimeStatus?.shell}
           />
         </div>
@@ -402,7 +402,7 @@ function EnvironmentSection(): React.ReactElement {
                 version={runtimeStatus.shell.gitBash?.version ?? undefined}
                 requirement="Git for Windows 自带"
                 action={{ type: 'download', installerId: 'git-for-windows' }}
-                statusText={runtimeStatus.shell.gitBash?.available ? runtimeStatus.shell.gitBash.path : '未安装'}
+                statusText={runtimeStatus.shell.gitBash?.available ? (runtimeStatus.shell.gitBash.path ?? undefined) : '未安装'}
               />
               <EnvironmentCheckCard
                 name="WSL"

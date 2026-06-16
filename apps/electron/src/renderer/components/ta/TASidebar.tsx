@@ -30,6 +30,8 @@ const TITLES: Record<TARailItem, string> = {
   pipeline: '流水线',
   memory: '记忆',
   config: '配置',
+  skills: '技能',
+  scratch: '草稿',
 }
 
 interface TASidebarProps {

@@ -111,6 +111,9 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
     case "shortcuts": return <ShortcutSettings />;
     case "voice-input": return <VoiceInputSettings />;
     case "insights": return <InsightsSettings />;
+    case "agent": return <GeneralSettings />;
+    case "tutorial": return <GeneralSettings />;
+    default: return <GeneralSettings />;
   }
 }
 

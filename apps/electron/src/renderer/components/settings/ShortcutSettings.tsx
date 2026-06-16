@@ -100,7 +100,7 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
     }
   }, [normalizeKey, isStandaloneKeyAllowed, finishCapture])
 
-  const handleSave = async (): void => {
+  const handleSave = async (): Promise<void> => {
     if (!pendingKeys || conflict || saving) return
     setSaving(true)
     try {
@@ -140,7 +140,7 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
           </button>
           <button
             onClick={handleSave}
-            disabled={!pendingKeys || conflict || saving}
+            disabled={!!(!pendingKeys || conflict || saving)}
             className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded hover:bg-primary/90 disabled:opacity-50"
           >
             {saving ? '保存中...' : '保存'}

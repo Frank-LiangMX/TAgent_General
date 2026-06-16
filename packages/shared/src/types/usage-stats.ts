@@ -2,6 +2,9 @@
  * Usage Stats Types - 使用统计类型定义
  */
 
+/** 时间范围 */
+export type TimeRange = 'today' | 'week' | 'month' | 'all'
+
 /** 单次调用记录 */
 export interface UsageCallRecord {
   sessionId: string
@@ -74,3 +77,25 @@ export const USAGE_STATS_IPC_CHANNELS = {
   /** 获取单个会话的 Token 统计 */
   GET_SESSION_TOKEN_STATS: 'usage-stats:get-session-token-stats',
 } as const
+
+/** 存储类别 */
+export interface StorageCategory {
+  key: string
+  label: string
+  bytes: number
+  orphanBytes: number
+  hasOrphans: boolean
+}
+
+/** 存储统计 */
+export interface StorageStats {
+  totalBytes: number
+  categories: StorageCategory[]
+}
+
+/** 清理结果 */
+export interface CleanupResult {
+  freedBytes: number
+  deletedCount: number
+  errors?: string[]
+}
