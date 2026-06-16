@@ -210,15 +210,6 @@ export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((ge
 
 // ===== 操作函数 =====
 
-function createScratchPadTab(): TabItem {
-  return {
-    id: SCRATCH_PAD_ID,
-    type: 'scratch',
-    sessionId: SCRATCH_PAD_ID,
-    title: SCRATCH_PAD_TITLE,
-  }
-}
-
 export function createPreviewTabId(sessionId: string): string {
   return `${PREVIEW_TAB_PREFIX}${sessionId}`
 }
@@ -274,16 +265,18 @@ export function getPersistableTabState(
   }
 }
 
-/** 打开或聚焦会话入口：始终用目标会话替换当前会话，避免顶部累积多个 Tab。
- *  restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
+/** 打开或聚焦会话入口。
+ * 草稿标签页不再常驻，由用户主动打开。
+ * restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
 export function openTab(
   tabs: TabItem[],
   item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
   restore?: OpenTabRestore,
 ): { tabs: TabItem[]; activeTabId: string } {
-  const scratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID) ?? createScratchPadTab()
-
   if (item.type === 'scratch') {
+    // 检查是否已存在草稿 tab
+    const existingScratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID)
+    const scratchTab = existingScratchTab ?? createScratchPadTab()
     return {
       tabs: [scratchTab],
       activeTabId: SCRATCH_PAD_ID,
@@ -305,7 +298,7 @@ export function openTab(
     }
 
     return {
-      tabs: [scratchTab, ownerAgentTab, previewTab],
+      tabs: [ownerAgentTab, previewTab],
       activeTabId: previewTab.id,
     }
   }
@@ -328,13 +321,13 @@ export function openTab(
       title: restore.previewTitle,
     }
     return {
-      tabs: [scratchTab, sessionTab, previewTab],
+      tabs: [sessionTab, previewTab],
       activeTabId: restore.lastView === 'preview' ? previewTab.id : sessionTab.id,
     }
   }
 
   return {
-    tabs: [scratchTab, sessionTab],
+    tabs: [sessionTab],
     activeTabId: sessionTab.id,
   }
 }
@@ -359,15 +352,12 @@ export function buildOpenTabRestore(
   }
 }
 
-/** 关闭标签页（scratch tab 不可关闭） */
+/** 关闭标签页 */
 export function closeTab(
   tabs: TabItem[],
   activeTabId: string | null,
   tabId: string,
 ): { tabs: TabItem[]; activeTabId: string | null } {
-  // Scratch Pad 不可关闭
-  if (tabId === SCRATCH_PAD_ID) return { tabs, activeTabId }
-
   const tabIndex = tabs.findIndex((t) => t.id === tabId)
   if (tabIndex === -1) return { tabs, activeTabId }
   const closingTab = tabs[tabIndex]!
@@ -415,13 +405,12 @@ export function updateTabTitle(
   )
 }
 
-/** 确保 Scratch Pad 标签存在并位于首位，同时只保留一个会话入口 */
-export function ensureScratchPadTab(tabs: TabItem[]): TabItem[] {
-  const scratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID)
-  const sessionTab = tabs.filter((t) => t.id !== SCRATCH_PAD_ID && !isPreviewTab(t)).at(-1)
-  if (scratchTab) {
-    return sessionTab ? [scratchTab, sessionTab] : [scratchTab]
+/** 创建 Scratch Pad 标签 */
+export function createScratchPadTab(): TabItem {
+  return {
+    id: SCRATCH_PAD_ID,
+    type: 'scratch',
+    sessionId: SCRATCH_PAD_ID,
+    title: SCRATCH_PAD_TITLE,
   }
-  const newTab = createScratchPadTab()
-  return sessionTab ? [newTab, sessionTab] : [newTab]
 }

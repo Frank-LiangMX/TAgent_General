@@ -1,5 +1,5 @@
 /**
- * Shared utility functions for proma
+ * Shared utility functions for TAgent
  */
 
 // Placeholder - will be expanded as needed

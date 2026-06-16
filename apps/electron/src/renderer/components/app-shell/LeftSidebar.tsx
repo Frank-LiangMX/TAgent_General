@@ -924,6 +924,9 @@ export function LeftSidebar({
             onConfigure={() => { setSettingsTab('agent'); setSettingsOpen(true) }}
           />
         )
+      case 'scratch':
+        // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
+        return null
       case 'sessions':
       default:
         return (

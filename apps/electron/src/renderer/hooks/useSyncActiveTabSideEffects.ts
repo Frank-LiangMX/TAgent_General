@@ -20,7 +20,7 @@ import {
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
+import { activeRailItemAtom, appModeAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 
 
@@ -32,6 +32,8 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
+  const setActiveRailItem = useSetAtom(activeRailItemAtom)
+  const topLevelMode = useAtomValue(topLevelModeAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
   const appMode = useAtomValue(appModeAtom)
 
@@ -46,6 +48,10 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
 
       // P3: chat 已退役，仅处理 scratch / agent / preview
       if (newActiveTab.type === 'scratch') {
+        setAppMode('scratch')
+        if (topLevelMode === 'general') {
+          setActiveRailItem('scratch')
+        }
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
         setCurrentConversationId(null)
         if (appMode !== 'agent') {
@@ -56,6 +62,9 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
 
       // Agent / 会话预览
       setAppMode('agent')
+      if (topLevelMode === 'general') {
+        setActiveRailItem('sessions')
+      }
       setCurrentAgentSessionId(newActiveTab.sessionId)
       setCurrentConversationId(null)
 
@@ -83,6 +92,8 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
       setCurrentAgentSessionId,
       setCurrentAgentWorkspaceId,
       setUnviewedCompleted,
+      setActiveRailItem,
+      topLevelMode,
       agentSessions,
     ],
   )

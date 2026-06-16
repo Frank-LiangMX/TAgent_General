@@ -233,9 +233,9 @@ async function getBunVersion(): Promise<string> {
   const pkgFile = Bun.file(pkgPath)
   const pkg = await pkgFile.json()
 
-  const version = pkg.proma?.bun?.version
+  const version = pkg.tagent?.bun?.version
   if (!version) {
-    throw new Error('package.json 中未配置 proma.bun.version')
+    throw new Error('package.json 中未配置 tagent.bun.version')
   }
 
   return version

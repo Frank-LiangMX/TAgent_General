@@ -1,0 +1,119 @@
+# electron-builder 配置 - Linux 专用
+# 文档: https://www.electron.build/configuration/configuration
+
+appId: com.tagent.app
+productName: TAgent
+copyright: Copyright © 2024-2026 Erlich Liu
+
+# Electron 版本
+electronVersion: 39.5.1
+
+# 目录配置
+directories:
+  output: out
+  buildResources: resources
+
+# 压缩配置
+compression: normal
+
+# ASAR 打包配置
+asar: true
+asarUnpack:
+  - "node_modules/@anthropic-ai/**"
+
+# 跳过 npm install
+npmRebuild: false
+
+# 通用文件配置
+files:
+  - dist/**/*
+  - "!dist/resources/**"
+  - package.json
+  - node_modules/@anthropic-ai/claude-agent-sdk/**/*
+  # Linux SDK native binary
+  - node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/**/*
+  - node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64/**/*
+  # PDF 内联预览
+  - node_modules/pdfjs-dist/**/*
+  # SQLite 原生模块
+  - node_modules/better-sqlite3/**/*
+
+# 通用额外资源
+extraResources:
+  - from: default-skills
+    to: default-skills
+    filter:
+      - "**/*"
+  - from: ../../tutorial/tutorial.md
+    to: tutorial.md
+  - from: ../../tutorial/index.html
+    to: index.html
+  - from: resources/icon.png
+    to: icon.png
+  - from: ta-agent-mcp-wheels
+    to: ta-agent-mcp-wheels
+    filter:
+      - "**/*"
+
+# ============================================
+# Linux 配置
+# ============================================
+linux:
+  icon: resources/icon.png
+  category: Development
+  synopsis: TAgent - General AI Agent Desktop App
+  description: TAgent 是一个集成通用 AI Agent 的桌面应用，支持 Claude Agent SDK、工作区管理、Skills 和 MCP。
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+    - target: tar.gz
+      arch:
+        - x64
+        - arm64
+  mimeTypes:
+    - application/x-tagent-backup
+    - application/x-tagent-share
+  fileAssociations:
+    - ext: tagent-backup
+      name: TAgent Personal Backup
+      mimeType: application/x-tagent-backup
+    - ext: tagent-share
+      name: TAgent Share Package
+      mimeType: application/x-tagent-share
+
+# AppImage 配置
+appImage:
+  systemIntegration: ask
+
+# deb 配置
+deb:
+  priority: optional
+  compression: xz
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libdrm2
+    - libgbm1
+    - libxcb-dri3-0
+
+# tar.gz 配置
+tar:
+  compression: xz
+
+# ============================================
+# 发布配置
+# ============================================
+publish:
+  provider: github
+  owner: ErlichLiu
+  repo: tagent

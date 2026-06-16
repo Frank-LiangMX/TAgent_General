@@ -95,6 +95,11 @@ export function MainArea(): React.ReactElement {
     return <SkillsMainView />
   }
 
+  // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
+  if (activeRailItem === 'scratch') {
+    return <GeneralMainArea />
+  }
+
   // 通用模式使用原有逻辑
   return <GeneralMainArea />
 }

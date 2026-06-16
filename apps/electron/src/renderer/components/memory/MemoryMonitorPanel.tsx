@@ -183,7 +183,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
 
       {/* 底部提示 */}
       <div className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
-        记忆由 ta_agent MCP Server 维护，Proma 端只读
+        记忆由 ta_agent MCP Server 维护，TAgent 端只读
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ import {
   currentAgentWorkspaceIdAtom,
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
+import { appModeAtom, activeRailItemAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 import {
   activeTabIdAtom,
@@ -45,6 +45,8 @@ export function TabBar(): React.ReactElement {
   // Tab 切换时同步 sidebar 状态
   const appMode = useAtomValue(appModeAtom)
   const setAppMode = useSetAtom(appModeAtom)
+  const setActiveRailItem = useSetAtom(activeRailItemAtom)
+  const topLevelMode = useAtomValue(topLevelModeAtom)
   const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
@@ -72,6 +74,9 @@ export function TabBar(): React.ReactElement {
     if (tab.type === 'agent' || tab.type === 'preview') {
       setAppMode('agent')
       setCurrentAgentSessionId(tab.sessionId)
+      if (topLevelMode === 'general') {
+        setActiveRailItem('sessions')
+      }
 
       // 用户打开查看后只清除未读角标；是否完成由用户通过对勾确认。
       setUnviewedCompleted((prev) => {
@@ -89,13 +94,17 @@ export function TabBar(): React.ReactElement {
         }).catch(console.error)
       }
     } else if (tab.type === 'scratch') {
+      setAppMode('scratch')
+      if (topLevelMode === 'general') {
+        setActiveRailItem('scratch')
+      }
       // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
       setCurrentConversationId(null)
       if (appMode !== 'agent') {
         setCurrentAgentSessionId(null)
       }
     }
-  }, [setActiveTabId, tabs, agentSessions, appMode, setAppMode, setCurrentConversationId, setCurrentAgentSessionId, setCurrentAgentWorkspaceId, setUnviewedCompleted])
+  }, [setActiveTabId, tabs, agentSessions, appMode, setAppMode, setCurrentConversationId, setCurrentAgentSessionId, setCurrentAgentWorkspaceId, setUnviewedCompleted, setActiveRailItem, topLevelMode])
 
   const handleDragStart = React.useCallback((tabId: string, e: React.PointerEvent) => {
     if (e.button !== 0) return // 只处理左键

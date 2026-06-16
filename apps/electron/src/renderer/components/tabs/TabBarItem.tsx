@@ -78,8 +78,6 @@ export function TabBarItem({
   }, [])
 
   const handleMouseDown = (e: React.MouseEvent): void => {
-    // Scratch Pad 不可中键关闭
-    if (type === 'scratch') return
     if (e.button === 1) {
       e.preventDefault()
       onMiddleClick()
@@ -107,7 +105,7 @@ export function TabBarItem({
   const isAgentSession = type === 'agent'
   // P3: chat 已退役
 
-  // Scratch Pad 是固定草稿入口
+  // Scratch Pad 显示草稿图标
   if (isScratch) {
     return (
       <div
@@ -132,6 +130,22 @@ export function TabBarItem({
         >
           <StickyNote className="size-3.5" />
           <span className="truncate">草稿</span>
+          {/* 关闭按钮 */}
+          <span
+            role="button"
+            tabIndex={-1}
+            className={cn(
+              'size-4 rounded-sm flex items-center justify-center shrink-0',
+              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
+              isActive && 'opacity-60',
+            )}
+            onClick={handleCloseClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleCloseClick(e as unknown as React.MouseEvent)
+            }}
+          >
+            <X className="size-2.5" />
+          </span>
           {isActive && (
             <span
               className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-primary"

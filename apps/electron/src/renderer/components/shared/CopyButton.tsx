@@ -2,7 +2,7 @@
  * CopyButton - 复制消息内容按钮
  *
  * 使用 MessageAction + Copy/Check 图标切换。
- * 移植自 proma-frontend 的 chat-view/copy-button.tsx。
+ * 移植自旧项目的 chat-view/copy-button.tsx。
  */
 
 import { CopyIcon, CheckIcon } from 'lucide-react'

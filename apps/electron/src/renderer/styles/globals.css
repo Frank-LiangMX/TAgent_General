@@ -808,15 +808,15 @@
 }
 
 /* 设置卡片样式：高透 Liquid Glass 效果
- * 借鉴 liquid-glass-vue 的 overLight 概念，更清透
+ * 浅色主题下不使用 brightness，避免 shell-glass 光斑在动画切换时产生跳变
  */
 .settings-card {
   position: relative;
   isolation: isolate;
   background: rgba(255, 255, 255, 0.22);
   border: 1px solid hsl(var(--border) / 0.4);
-  -webkit-backdrop-filter: blur(12px) saturate(130%) brightness(105%);
-  backdrop-filter: blur(12px) saturate(130%) brightness(105%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  backdrop-filter: blur(12px) saturate(130%);
   border-radius: 0.75rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
@@ -4483,4 +4483,30 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
   .settings-glass {
     background: hsl(var(--background) / 0.85);
   }
+}
+
+/* Emoji Mart 选择器样式修复 - 去除多余滚动区域 */
+em-emoji-picker {
+  --em-rgb-background: transparent !important;
+  border: none !important;
+}
+
+em-emoji-picker .overflow-y-auto {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+em-emoji-picker .overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 2px;
+}
+
+/* 修复 emoji picker 内部滚轮滚动问题 */
+[data-radix-popper-content-wrapper] em-emoji-picker,
+[data-radix-popper-content-wrapper] em-emoji-picker * {
+  overscroll-behavior: contain;
 }

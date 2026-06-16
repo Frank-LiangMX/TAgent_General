@@ -1095,7 +1095,7 @@ export const agentSettingsReadyAtom = atom(false)
 export type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggressive'
 
 /**
- * 默认 conservative — 跟 proma 历史行为一致，最稳。
+ * 默认 conservative — 跟 TAgent 历史行为一致，最稳。
  *
  * 存储路径：跟其他 Agent 设置一样走 `AppSettings` (写到 `~/.tagent/settings.json`)，
  * 渲染端 AgentSettingsInitializer 启动时从主进程拉一次。

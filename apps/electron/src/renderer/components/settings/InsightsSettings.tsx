@@ -350,57 +350,61 @@ export function InsightsSettings(): React.ReactElement {
 
       {/* ===== Bento Grid: 详细数据 ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 grid-flow-dense">
-        {/* 存储类别（横跨 2 列） */}
+        {/* 存储类别（横跨 4 列） */}
         <BentoCard
-          className="col-span-1 sm:col-span-2"
+          className="col-span-1 sm:col-span-2 lg:col-span-4"
           icon={<Database size={14} />}
           title="存储分布"
           subtitle={storage ? `共 ${formatBytes(storage.totalBytes)}` : ''}
         >
-          {storage && <StorageBar categories={sortedStorageCategories} totalBytes={storage.totalBytes} />}
           {storage && (
-            <div className="mt-3 space-y-1.5">
-              {sortedStorageCategories.slice(0, 5).map((cat, i) => (
-                <StorageCategoryRow
-                  key={cat.key}
-                  label={STORAGE_CATEGORY_LABELS[cat.key] ?? cat.label}
-                  bytes={cat.bytes}
-                  totalBytes={storage.totalBytes}
-                  hasOrphans={cat.hasOrphans}
-                  orphanBytes={cat.orphanBytes}
-                  colorIndex={i}
-                />
-              ))}
+            <div className="space-y-3">
+              {/* 存储条 */}
+              <StorageBar categories={sortedStorageCategories} totalBytes={storage.totalBytes} />
+
+              {/* 类别列表 - 每行 3 个 */}
+              <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
+                {sortedStorageCategories.map((cat, i) => (
+                  <StorageCategoryRow
+                    key={cat.key}
+                    label={STORAGE_CATEGORY_LABELS[cat.key] ?? cat.label}
+                    bytes={cat.bytes}
+                    totalBytes={storage.totalBytes}
+                    hasOrphans={cat.hasOrphans}
+                    orphanBytes={cat.orphanBytes}
+                    colorIndex={i}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </BentoCard>
 
-        {/* 自动清理 */}
+        {/* 自动清理（横跨 2 列） */}
         <BentoCard
-          className="col-span-1"
+          className="col-span-1 sm:col-span-2"
           icon={<Sparkles size={14} />}
           title="自动清理"
           subtitle="保持系统整洁"
         >
-          <div className="space-y-3 mt-1">
+          <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="text-xs text-foreground">启动清理临时</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">预览/安装缓存</div>
+              <div>
+                <div className="text-sm text-foreground">启动清理临时</div>
+                <div className="text-xs text-muted-foreground">预览/安装缓存</div>
               </div>
               <Switch
                 checked={autoCleanupTemp}
                 onCheckedChange={handleAutoCleanupTempChange}
-                className="scale-75 origin-right"
               />
             </div>
             <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="text-xs text-foreground">归档会话清理</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">超过指定天数</div>
+              <div>
+                <div className="text-sm text-foreground">归档会话清理</div>
+                <div className="text-xs text-muted-foreground">超过指定天数</div>
               </div>
               <Select value={String(autoCleanupDays)} onValueChange={handleAutoCleanupDaysChange}>
-                <SelectTrigger className="h-6 w-[78px] text-[10px]">
+                <SelectTrigger className="h-8 w-[90px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -414,14 +418,14 @@ export function InsightsSettings(): React.ReactElement {
           </div>
         </BentoCard>
 
-        {/* 手动清理 */}
+        {/* 手动清理（横跨 2 列） */}
         <BentoCard
-          className="col-span-1"
+          className="col-span-1 sm:col-span-2"
           icon={<Trash2 size={14} />}
           title="手动清理"
-          subtitle={hasOrphans ? `${formatBytes(totalOrphanBytes)} 孤儿` : '数据整洁'}
+          subtitle={hasOrphans ? `${formatBytes(totalOrphanBytes)} 可释放` : '数据整洁'}
         >
-          <div className="space-y-1.5 mt-1">
+          <div className="grid grid-cols-2 gap-3 mt-2">
             <CleanupAction
               label="临时文件"
               onClick={handleCleanTemp}
@@ -628,22 +632,15 @@ function StorageCategoryRow({
 }): React.ReactElement {
   const pct = totalBytes > 0 ? (bytes / totalBytes) * 100 : 0
   return (
-    <div className="flex items-center gap-2 text-[11px]">
+    <div className="flex items-center gap-1.5 text-[11px] min-w-0">
       <span
         className={cn(
-          'inline-block h-1.5 w-1.5 rounded-full shrink-0',
+          'inline-block h-2 w-2 rounded-full shrink-0',
           STORAGE_PALETTE[colorIndex % STORAGE_PALETTE.length],
         )}
       />
-      <span className="text-foreground flex-1 truncate">{label}</span>
-      {hasOrphans && (
-        <span className="flex items-center gap-0.5 text-amber-500">
-          <AlertTriangle size={9} />
-          <span className="tabular-nums">{formatBytes(orphanBytes)}</span>
-        </span>
-      )}
-      <span className="text-muted-foreground tabular-nums">{formatBytes(bytes)}</span>
-      <span className="text-muted-foreground/50 tabular-nums w-10 text-right">{pct.toFixed(0)}%</span>
+      <span className="text-foreground truncate">{label}</span>
+      <span className="text-muted-foreground tabular-nums shrink-0 ml-auto">{formatBytes(bytes)}</span>
     </div>
   )
 }
@@ -729,15 +726,15 @@ function CleanupAction({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        'w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] transition-colors',
+        'flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-colors',
         variant === 'primary'
-          ? 'bg-primary/10 text-primary hover:bg-primary/15'
-          : 'bg-muted/40 text-foreground hover:bg-muted',
+          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+          : 'bg-muted/50 text-foreground hover:bg-muted',
         'disabled:opacity-50',
       )}
     >
+      {loading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
       <span className="font-medium">{label}</span>
-      {loading ? <Loader2 size={11} className="animate-spin" /> : <ChevronRight size={11} className="opacity-60" />}
     </button>
   )
 }

@@ -3,6 +3,8 @@
 > **单文件持续更新** — 新 Agent 读此文件即可了解项目状态  
 > **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`  
 > **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
+> **新增规划**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（上游能力对齐 + 开发 Agent 实施手册）
+> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
 
 ---
 

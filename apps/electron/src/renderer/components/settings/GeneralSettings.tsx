@@ -1,24 +1,19 @@
 /**
  * GeneralSettings - 通用设置页
  *
- * 顶部：用户档案编辑（头像 + 用户名）
- * 下方：语言等通用设置
+ * TAgent 风格设计：
+ * - 顶部：用户档案（紧凑卡片）
+ * - 中部：设置网格布局（2列）
+ * - 信息密度更高，去除冗余描述
  */
 
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { useAtom } from 'jotai'
-import { Camera, ImagePlus, Volume2 } from 'lucide-react'
+import { Camera, ImagePlus, Volume2, BellRing, Clock, StickyNote, Globe, Check, X } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsRow,
-  SettingsToggle,
-} from './primitives'
 import { UserAvatar } from '../shared/UserAvatar'
-import { Button } from '../ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import {
   Select,
@@ -27,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { Switch } from '../ui/switch'
 
 import type { NotificationSoundId, NotificationSoundType, NotificationSoundSettings } from '@/types/settings'
 
@@ -48,16 +44,10 @@ import {
 import { userProfileAtom } from '@/atoms/user-profile'
 import { cn } from '@/lib/utils'
 
-
-
-/** emoji-mart 选择回调的 emoji 对象类型 */
 interface EmojiMartEmoji {
   id: string
   name: string
   native: string
-  unified: string
-  keywords: string[]
-  shortcodes: string
 }
 
 export function GeneralSettings(): React.ReactElement {
@@ -70,16 +60,28 @@ export function GeneralSettings(): React.ReactElement {
   const [nameInput, setNameInput] = React.useState(userProfile.userName)
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false)
   const [archiveAfterDays, setArchiveAfterDays] = React.useState<number>(7)
+  const [isDarkMode, setIsDarkMode] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // 加载归档天数设置
+  // 监听主题变化
+  React.useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+    checkDarkMode()
+
+    // 监听 class 变化
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
   React.useEffect(() => {
     window.electronAPI.getSettings().then((settings) => {
       setArchiveAfterDays(settings.archiveAfterDays ?? 7)
     }).catch(console.error)
   }, [])
 
-  /** 更新归档天数 */
   const handleArchiveDaysChange = async (value: string): Promise<void> => {
     const days = parseInt(value, 10)
     setArchiveAfterDays(days)
@@ -90,7 +92,6 @@ export function GeneralSettings(): React.ReactElement {
     }
   }
 
-  /** 更新头像 */
   const handleAvatarChange = async (avatar: string): Promise<void> => {
     try {
       const updated = await window.electronAPI.updateUserProfile({ avatar })
@@ -101,11 +102,9 @@ export function GeneralSettings(): React.ReactElement {
     }
   }
 
-  /** 上传图片作为头像 */
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0]
     if (!file) return
-
     const reader = new FileReader()
     reader.onload = async () => {
       const dataUrl = reader.result as string
@@ -115,11 +114,9 @@ export function GeneralSettings(): React.ReactElement {
     e.target.value = ''
   }
 
-  /** 保存用户名 */
   const handleSaveName = async (): Promise<void> => {
     const trimmed = nameInput.trim()
     if (!trimmed) return
-
     try {
       const updated = await window.electronAPI.updateUserProfile({ userName: trimmed })
       setUserProfile(updated)
@@ -129,138 +126,151 @@ export function GeneralSettings(): React.ReactElement {
     }
   }
 
-  /** 用户名编辑键盘事件 */
-  const handleNameKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter') {
-      handleSaveName()
-    } else if (e.key === 'Escape') {
-      setNameInput(userProfile.userName)
-      setIsEditingName(false)
-    }
-  }
-
   return (
-    <div className="space-y-6">
-      {/* 用户档案区域 */}
-      <SettingsSection
-        title="用户档案"
-        description="设置你的头像和显示名称"
-      >
-        <SettingsCard>
-          <div className="flex items-center gap-5 px-4 py-4">
-            {/* 头像 + Popover emoji 选择器 */}
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <div className="relative group/avatar cursor-pointer">
-                  <UserAvatar avatar={userProfile.avatar} size={64} />
-                  {/* 编辑覆盖层 */}
-                  <div
-                    className={cn(
-                      'absolute inset-0 rounded-[20%] flex items-center justify-center',
-                      'bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity'
-                    )}
-                  >
-                    <Camera className="size-5 text-white" />
-                  </div>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent
-                side="right"
-                align="start"
-                sideOffset={12}
-                className="w-auto p-0 border-none shadow-xl"
-              >
-                <Picker
-                  data={data}
-                  onEmojiSelect={(emoji: EmojiMartEmoji) => handleAvatarChange(emoji.native)}
-                  locale="zh"
-                  theme="auto"
-                  previewPosition="none"
-                  skinTonePosition="search"
-                  perLine={8}
-                />
-                {/* 上传自定义图片 */}
-                <div className="px-3 p-2">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      'w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px]',
-                      'text-foreground/60 hover:text-foreground hover:bg-foreground/[0.06] transition-colors'
-                    )}
-                  >
-                    <ImagePlus className="size-4" />
-                    上传自定义图片
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/gif,image/webp"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* 用户名 */}
-            <div className="flex-1 min-w-0">
-              {isEditingName ? (
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onBlur={handleSaveName}
-                  onKeyDown={handleNameKeyDown}
-                  maxLength={30}
-                  autoFocus
-                  className={cn(
-                    'text-lg font-semibold text-foreground bg-transparent border-b-2 border-primary',
-                    'outline-none w-full max-w-[200px] pb-0.5'
-                  )}
-                />
-              ) : (
-                <button
-                  onClick={() => {
-                    setNameInput(userProfile.userName)
-                    setIsEditingName(true)
-                  }}
-                  className="text-lg font-semibold text-foreground hover:text-primary transition-colors text-left"
-                >
-                  {userProfile.userName}
-                </button>
-              )}
-              <p className="text-[12px] text-foreground/40 mt-0.5">
-                点击头像更换，点击名字编辑
-              </p>
+    <div className="space-y-5">
+      {/* 用户档案 - 紧凑行 */}
+      <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/40 border border-border/30">
+        <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <PopoverTrigger asChild>
+            <div className="relative group/avatar cursor-pointer shrink-0">
+              <UserAvatar avatar={userProfile.avatar} size={48} />
+              <div className="absolute inset-0 rounded-[20%] flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                <Camera className="size-4 text-white" />
+              </div>
             </div>
-          </div>
-        </SettingsCard>
-      </SettingsSection>
-
-      {/* 通用设置 */}
-      <SettingsSection
-        title="通用设置"
-        description="应用的基本配置"
-      >
-        <SettingsCard>
-          <SettingsRow
-            label="语言"
-            description="更多语言支持即将推出"
+          </PopoverTrigger>
+          <PopoverContent
+            side="right"
+            align="start"
+            sideOffset={8}
+            className="w-auto p-0 border-none shadow-xl overflow-hidden"
+            onWheel={(e) => e.stopPropagation()}
           >
-            <span className="text-[13px] text-foreground/40">简体中文</span>
-          </SettingsRow>
-          <SettingsToggle
-            label="桌面通知"
-            description="Agent 完成任务或需要操作时发送通知"
-            checked={notificationsEnabled}
-            onCheckedChange={(checked) => {
-              setNotificationsEnabled(checked)
-              updateNotificationsEnabled(checked)
-            }}
-          />
-          <SettingsToggle
-            label="通知提示音"
-            description="阻塞操作（权限确认、问题回答、计划审批）触发时播放提示音"
+            <Picker
+              data={data}
+              onEmojiSelect={(emoji: EmojiMartEmoji) => handleAvatarChange(emoji.native)}
+              locale="zh"
+              theme={isDarkMode ? 'dark' : 'light'}
+              previewPosition="none"
+              skinTonePosition="none"
+              perLine={8}
+              maxFrequentRows={2}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <ImagePlus className="size-3.5" />
+              上传图片
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </PopoverContent>
+        </Popover>
+
+        <div className="flex-1 min-w-0">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName()
+                  if (e.key === 'Escape') { setNameInput(userProfile.userName); setIsEditingName(false) }
+                }}
+                maxLength={30}
+                autoFocus
+                className="text-base font-medium bg-transparent border-b border-primary outline-none w-[140px]"
+              />
+              <button onClick={handleSaveName} className="p-1 hover:bg-muted rounded">
+                <Check className="size-3.5 text-primary" />
+              </button>
+              <button onClick={() => { setNameInput(userProfile.userName); setIsEditingName(false) }} className="p-1 hover:bg-muted rounded">
+                <X className="size-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setNameInput(userProfile.userName); setIsEditingName(true) }}
+              className="text-base font-medium text-foreground hover:text-primary transition-colors"
+            >
+              {userProfile.userName}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 设置网格 - 2列布局 */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* 语言 */}
+        <SettingTile
+          icon={<Globe className="size-4" />}
+          label="语言"
+          value="简体中文"
+        />
+
+        {/* 自动归档 */}
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Clock className="size-4 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-foreground">自动归档</div>
+          </div>
+          <Select value={String(archiveAfterDays)} onValueChange={handleArchiveDaysChange}>
+            <SelectTrigger className="w-[80px] h-7 text-xs bg-transparent border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">禁用</SelectItem>
+              <SelectItem value="7">7天</SelectItem>
+              <SelectItem value="14">14天</SelectItem>
+              <SelectItem value="30">30天</SelectItem>
+              <SelectItem value="60">60天</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 桌面通知 */}
+        <SettingToggleTile
+          icon={<BellRing className="size-4" />}
+          label="桌面通知"
+          checked={notificationsEnabled}
+          onToggle={(checked) => {
+            setNotificationsEnabled(checked)
+            updateNotificationsEnabled(checked)
+          }}
+        />
+
+        {/* 消息置顶条 */}
+        <SettingToggleTile
+          icon={<StickyNote className="size-4" />}
+          label="消息置顶条"
+          checked={stickyUserMessageEnabled}
+          onToggle={(checked) => {
+            setStickyUserMessageEnabled(checked)
+            updateStickyUserMessageEnabled(checked)
+          }}
+        />
+      </div>
+
+      {/* 通知音效 - 展开 */}
+      <div className="rounded-lg bg-muted/30 border border-border/30 overflow-hidden">
+        {/* 音效开关 */}
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/30">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <Volume2 className="size-4 text-purple-600" />
+            </div>
+            <div className="text-sm font-medium text-foreground">通知提示音</div>
+          </div>
+          <Switch
             checked={notificationSoundEnabled}
             disabled={!notificationsEnabled}
             onCheckedChange={(checked) => {
@@ -268,91 +278,123 @@ export function GeneralSettings(): React.ReactElement {
               updateNotificationSoundEnabled(checked)
             }}
           />
-          <SoundPicker
-            label="任务完成音效"
+        </div>
+
+        {/* 音效选择器 */}
+        <div className={cn(
+          'px-3 py-2 space-y-2',
+          (!notificationsEnabled || !notificationSoundEnabled) && 'opacity-50 pointer-events-none'
+        )}>
+          <SoundRow
+            label="任务完成"
             type="taskComplete"
             sounds={notificationSounds}
-            disabled={!notificationsEnabled || !notificationSoundEnabled}
             onSoundChange={async (type, soundId) => {
               const newSounds = await updateNotificationSound(type, soundId, notificationSounds)
               setNotificationSounds(newSounds)
             }}
           />
-          <SoundPicker
-            label="权限审批音效"
+          <SoundRow
+            label="权限审批"
             type="permissionRequest"
             sounds={notificationSounds}
-            disabled={!notificationsEnabled || !notificationSoundEnabled}
             onSoundChange={async (type, soundId) => {
               const newSounds = await updateNotificationSound(type, soundId, notificationSounds)
               setNotificationSounds(newSounds)
             }}
           />
-          <SoundPicker
-            label="计划审批音效"
+          <SoundRow
+            label="计划审批"
             type="exitPlanMode"
             sounds={notificationSounds}
-            disabled={!notificationsEnabled || !notificationSoundEnabled}
             onSoundChange={async (type, soundId) => {
               const newSounds = await updateNotificationSound(type, soundId, notificationSounds)
               setNotificationSounds(newSounds)
             }}
           />
-          <SettingsRow
-            label="自动归档"
-            description="超过指定天数未更新的对话将自动归档（置顶对话除外）"
-          >
-            <Select value={String(archiveAfterDays)} onValueChange={handleArchiveDaysChange}>
-              <SelectTrigger className="w-[120px] h-8 text-[13px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">禁用</SelectItem>
-                <SelectItem value="7">7 天</SelectItem>
-                <SelectItem value="14">14 天</SelectItem>
-                <SelectItem value="30">30 天</SelectItem>
-                <SelectItem value="60">60 天</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingsRow>
-          <SettingsToggle
-            label="消息悬浮置顶条"
-            description="滚动浏览对话时，在顶部显示最近的用户消息摘要"
-            checked={stickyUserMessageEnabled}
-            onCheckedChange={(checked) => {
-              setStickyUserMessageEnabled(checked)
-              updateStickyUserMessageEnabled(checked)
-            }}
-          />
-        </SettingsCard>
-      </SettingsSection>
+        </div>
+      </div>
     </div>
   )
 }
 
-// ===== SoundPicker 内部组件 =====
+// ===== 子组件 =====
 
-interface SoundPickerProps {
+interface SettingTileProps {
+  icon: React.ReactNode
+  label: string
+  value: string
+}
+
+function SettingTile({ icon, label, value }: SettingTileProps): React.ReactElement {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-foreground">{label}</div>
+      </div>
+      <span className="text-xs text-muted-foreground">{value}</span>
+    </div>
+  )
+}
+
+interface SettingToggleTileProps {
+  icon: React.ReactNode
+  label: string
+  checked: boolean
+  onToggle: (checked: boolean) => void
+}
+
+function SettingToggleTile({ icon, label, checked, onToggle }: SettingToggleTileProps): React.ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(!checked)}
+      className={cn(
+        'flex items-center gap-3 p-3 rounded-lg transition-colors text-left w-full',
+        checked ? 'bg-muted/50 border border-border/50' : 'bg-muted/30 hover:bg-muted/50'
+      )}
+    >
+      <div className={cn(
+        'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+        checked ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
+      )}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-foreground">{label}</div>
+      </div>
+      <div className={cn(
+        'w-4 h-4 rounded-full flex items-center justify-center shrink-0',
+        checked ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+      )}>
+        {checked && <Check className="size-2.5 text-white" />}
+      </div>
+    </button>
+  )
+}
+
+interface SoundRowProps {
   label: string
   type: NotificationSoundType
   sounds: NotificationSoundSettings
-  disabled: boolean
   onSoundChange: (type: NotificationSoundType, soundId: NotificationSoundId) => void
 }
 
-/** 单个场景的通知音选择器（下拉 + 试听按钮） */
-function SoundPicker({ label, type, sounds, disabled, onSoundChange }: SoundPickerProps): React.ReactElement {
+function SoundRow({ label, type, sounds, onSoundChange }: SoundRowProps): React.ReactElement {
   const currentId = sounds[type] ?? DEFAULT_NOTIFICATION_SOUNDS[type]
 
   return (
-    <SettingsRow label={label}>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-center gap-1.5">
         <Select
           value={currentId}
-          onValueChange={(value) => onSoundChange(type, value as NotificationSoundId)}
-          disabled={disabled}
+          onValueChange={(v) => onSoundChange(type, v as NotificationSoundId)}
         >
-          <SelectTrigger className="w-[130px] h-8 text-[13px]">
+          <SelectTrigger className="w-[90px] h-6 text-xs bg-transparent border-border/50">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -362,17 +404,15 @@ function SoundPicker({ label, type, sounds, disabled, onSoundChange }: SoundPick
             <SelectItem value="none">无</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          disabled={disabled || currentId === 'none'}
+        <button
+          type="button"
           onClick={() => playNotificationSound(currentId)}
-          title="试听"
+          disabled={currentId === 'none'}
+          className="p-1 rounded hover:bg-muted disabled:opacity-50"
         >
-          <Volume2 size={14} />
-        </Button>
+          <Volume2 className="size-3 text-muted-foreground" />
+        </button>
       </div>
-    </SettingsRow>
+    </div>
   )
 }

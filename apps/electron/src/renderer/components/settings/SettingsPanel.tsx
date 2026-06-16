@@ -519,7 +519,7 @@ export function SettingsPanel({
             <div
               ref={contentRef}
               key={activeTab}
-              className="px-6 py-4 max-w-2xl animate-settings-content-in"
+              className="px-6 py-4 max-w-2xl mx-auto animate-settings-content-in"
             >
               {renderTabContent(activeTab)}
             </div>

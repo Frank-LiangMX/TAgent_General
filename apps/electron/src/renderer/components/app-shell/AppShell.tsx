@@ -66,7 +66,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const showLeftSidebar =
     topLevelMode === 'general'
       ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills'
-      : true
+      : activeRailItem !== 'scratch'
 
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
   const navIslandWidth = showLeftSidebar

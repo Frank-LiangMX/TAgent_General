@@ -27,13 +27,22 @@ export const topLevelModeAtom = atomWithStorage<TopLevelMode>('tagent-top-level-
 export const appModeAtom = atomWithStorage<AppMode>('tagent-app-mode', 'agent')
 
 /** 通用模式下的功能区类型 */
-export type GeneralRailItem = 'sessions' | 'files' | 'skills'
+export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'scratch'
 
 /**
  * TA 模式下的功能区类型（含「会话」入口）。
  * TA 模式点击「会话」图标 → 主区显示 TA 会话面板，TA 会话数据与通用模式隔离。
+ * 另外，skills/scratch 作为双模式常驻入口，也允许在 TA 模式激活。
  */
-export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
+export type TARailItem =
+  | 'sessions'
+  | 'assets'
+  | 'review'
+  | 'pipeline'
+  | 'memory'
+  | 'config'
+  | 'skills'
+  | 'scratch'
 
 /** 所有功能区类型 */
 export type RailItem = GeneralRailItem | TARailItem

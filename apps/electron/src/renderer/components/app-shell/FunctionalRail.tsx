@@ -8,7 +8,7 @@
  * - 用户头像
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   Layers,
   Palette,
@@ -21,12 +21,20 @@ import {
   Brain,
   Settings,
   Loader2,
+  StickyNote,
 } from 'lucide-react'
 import * as React from 'react'
 
-import { topLevelModeAtom, activeRailItemAtom, type GeneralRailItem, type TARailItem, type TopLevelMode } from '@/atoms/app-mode'
+import { topLevelModeAtom, activeRailItemAtom, appModeAtom, type GeneralRailItem, type TARailItem, type TopLevelMode } from '@/atoms/app-mode'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  openTab,
+  SCRATCH_PAD_ID,
+  SCRATCH_PAD_TITLE,
+} from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { UserAvatar } from '@/components/shared/UserAvatar'
@@ -52,6 +60,21 @@ const GENERAL_RAIL_ITEMS: Array<{
     label: '文件',
     icon: <FolderOpen size={17} />,
     description: '工作区文件树',
+  },
+]
+
+/** 双模式常驻功能区（Rail 顶端） */
+const COMMON_TOP_RAIL_ITEMS: Array<{
+  id: 'scratch' | 'skills'
+  label: string
+  icon: React.ReactNode
+  description: string
+}> = [
+  {
+    id: 'scratch',
+    label: '草稿',
+    icon: <StickyNote size={17} />,
+    description: '草稿本',
   },
   {
     id: 'skills',
@@ -94,6 +117,8 @@ export interface FunctionalRailProps {
 export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement {
   const [topLevelMode, setTopLevelMode] = useAtom(topLevelModeAtom)
   const [activeRailItem, setActiveRailItem] = useAtom(activeRailItemAtom)
+  const setAppMode = useSetAtom(appModeAtom)
+  const store = useStore()
   const isMac = React.useMemo(() => detectIsMac(), [])
 
   const hasUpdate = useAtomValue(hasUpdateAtom)
@@ -159,6 +184,26 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     }
   }, [isSwitching, topLevelMode, setTopLevelMode])
 
+  /** 处理 Rail 按钮点击：草稿按钮点击时直接打开草稿 Tab 并同步 rail 选中态 */
+  const handleRailItemClick = React.useCallback((item: { id: string }) => {
+    if (item.id === 'scratch') {
+      setActiveRailItem('scratch')
+      // 打开草稿 Tab
+      const currentTabs = store.get(tabsAtom)
+      const { tabs: newTabs, activeTabId: newActiveTabId } = openTab(currentTabs, {
+        type: 'scratch',
+        sessionId: SCRATCH_PAD_ID,
+        title: SCRATCH_PAD_TITLE,
+      })
+      store.set(tabsAtom, newTabs)
+      store.set(activeTabIdAtom, newActiveTabId)
+      // 设置 appMode 为 scratch，确保主区域正确渲染
+      setAppMode('scratch')
+    } else {
+      setActiveRailItem(item.id as GeneralRailItem | TARailItem)
+    }
+  }, [store, setActiveRailItem, setAppMode])
+
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
 
   const modeButtons = [
@@ -182,6 +227,34 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
 
       <div className="nav-island-body-start w-full flex flex-col items-center">
         <div className="flex flex-col items-center gap-1.5 w-full">
+          {COMMON_TOP_RAIL_ITEMS.map((item) => {
+            const isActive = activeRailItem === item.id
+            return (
+              <Tooltip key={item.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleRailItemClick(item)}
+                    className={cn(
+                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
+                      isActive && 'rail-island-btn--active',
+                    )}
+                  >
+                    {item.icon}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div className="text-xs">
+                    <div className="font-medium">{item.label}</div>
+                    <div className="text-muted-foreground">{item.description}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+
+          <div className="glass-divider my-0.5 w-8 shrink-0" />
+
           {railItems.map((item) => {
             const isActive = activeRailItem === item.id
             return (
@@ -189,7 +262,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setActiveRailItem(item.id)}
+                    onClick={() => handleRailItemClick(item)}
                     className={cn(
                       'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
                       isActive && 'rail-island-btn--active',
