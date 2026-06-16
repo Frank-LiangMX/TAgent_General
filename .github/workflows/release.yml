@@ -9,6 +9,7 @@ jobs:
   build-desktop:
     name: Build Desktop (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -32,11 +33,16 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Remove npmrc (Unix)
+        if: runner.os != 'Windows'
+        run: rm -f .npmrc
+
+      - name: Remove npmrc (Windows)
+        if: runner.os == 'Windows'
+        run: del .npmrc || echo "File not found"
+
       - name: Install dependencies
-        run: |
-          # CI 环境使用官方源，避免镜像同步问题
-          rm -f .npmrc
-          bun install
+        run: bun install
 
       - name: Setup Linux symlinks
         if: runner.os == 'Linux'
