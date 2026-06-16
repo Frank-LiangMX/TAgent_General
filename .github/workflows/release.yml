@@ -7,10 +7,19 @@ on:
 
 jobs:
   build-desktop:
-    name: Build Desktop (electron-builder)
+    name: Build Desktop (${{ matrix.os }})
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            platform: mac
+            workdir: apps/electron
+          - os: windows-latest
+            platform: win
+            workdir: apps/electron
+          - os: ubuntu-latest
+            platform: linux
+            workdir: apps/electron-linux
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -33,42 +42,42 @@ jobs:
           chmod +x setup-symlinks.sh
           ./setup-symlinks.sh
 
-      - name: Build desktop
+      - name: Build
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            cd apps/electron-linux
-          else
-            cd apps/electron
-          fi
+          cd ${{ matrix.workdir }}
           bun run build
 
       - name: Package (electron-builder)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            cd apps/electron-linux
-          else
-            cd apps/electron
-          fi
-          npx electron-builder
+          cd ${{ matrix.workdir }}
+          npx electron-builder --${{ matrix.platform }}
 
-      - name: Upload desktop installer (macOS/Windows)
-        if: runner.os != 'Linux'
+      - name: Upload artifacts (macOS)
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-installer-${{ matrix.os }}
+          name: desktop-macos
           path: |
             apps/electron/out/*.dmg
             apps/electron/out/*.zip
+          retention-days: 90
+
+      - name: Upload artifacts (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
             apps/electron/out/*.exe
           retention-days: 90
 
-      - name: Upload desktop installer (Linux)
+      - name: Upload artifacts (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-installer-${{ matrix.os }}
+          name: desktop-linux
           path: |
             apps/electron-linux/out/*.AppImage
             apps/electron-linux/out/*.deb
@@ -83,6 +92,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts/
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/ || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -91,6 +104,4 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
-            artifacts/desktop-installer-ubuntu-latest/*
-            artifacts/desktop-installer-macos-latest/*
-            artifacts/desktop-installer-windows-latest/*
+            artifacts/**
