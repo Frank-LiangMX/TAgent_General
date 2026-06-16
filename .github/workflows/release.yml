@@ -33,7 +33,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          # CI 环境使用官方源，避免镜像同步问题
+          rm -f .npmrc
+          bun install
 
       - name: Setup Linux symlinks
         if: runner.os == 'Linux'
