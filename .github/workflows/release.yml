@@ -22,6 +22,9 @@ jobs:
             platform: linux
             workdir: apps/electron-linux
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -33,35 +36,27 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Remove npmrc (Unix)
-        if: runner.os != 'Windows'
-        run: rm -f .npmrc
-
-      - name: Remove npmrc (Windows)
-        if: runner.os == 'Windows'
-        run: del .npmrc || echo "File not found"
-
       - name: Install dependencies
-        run: bun install
+        run: |
+          rm -f .npmrc
+          bun install
 
       - name: Setup Linux symlinks
         if: runner.os == 'Linux'
+        working-directory: apps/electron-linux
         run: |
-          cd apps/electron-linux
           chmod +x setup-symlinks.sh
           ./setup-symlinks.sh
 
       - name: Build
-        run: |
-          cd ${{ matrix.workdir }}
-          bun run build
+        working-directory: ${{ matrix.workdir }}
+        run: bun run build
 
       - name: Package (electron-builder)
+        working-directory: ${{ matrix.workdir }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd ${{ matrix.workdir }}
-          npx electron-builder --${{ matrix.platform }}
+        run: npx electron-builder --${{ matrix.platform }}
 
       - name: Upload artifacts (macOS)
         if: runner.os == 'macOS'
@@ -104,7 +99,7 @@ jobs:
           merge-multiple: true
 
       - name: List artifacts
-        run: ls -la artifacts/ || true
+        run: ls -laR artifacts/ || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
