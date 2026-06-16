@@ -53,21 +53,44 @@ jobs:
 
       - name: Build desktop
         run: |
-          cd apps/electron
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            cd apps/electron-linux
+          else
+            cd apps/electron
+          fi
           bun run build
 
       - name: Package (electron-builder)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd apps/electron
-          bun run dist
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            cd apps/electron-linux
+          else
+            cd apps/electron
+          fi
+          npx electron-builder
 
-      - name: Upload desktop installer
+      - name: Upload desktop installer (macOS/Windows)
+        if: runner.os != 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: desktop-installer-${{ matrix.os }}
-          path: apps/electron/release/electron/latest/*.{exe,dmg,deb,AppImage}
+          path: |
+            apps/electron/out/*.dmg
+            apps/electron/out/*.zip
+            apps/electron/out/*.exe
+          retention-days: 90
+
+      - name: Upload desktop installer (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-installer-${{ matrix.os }}
+          path: |
+            apps/electron-linux/out/*.AppImage
+            apps/electron-linux/out/*.deb
+            apps/electron-linux/out/*.tar.gz
           retention-days: 90
 
   build-server:
