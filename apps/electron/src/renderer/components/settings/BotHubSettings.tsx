@@ -1,18 +1,21 @@
 /**
- * BotHubSettings - 多平台机器人连接设置 Hub
+ * BotHubSettings - 远程平台集成 Hub
  *
- * 左侧平台选择栏 + 右侧配置面板。
- * 支持飞书、钉钉、微信（WeClaw）三个平台。
+ * 采用卡片网格布局设计：
+ * - 顶部：标题 + 已连接状态
+ * - 中部：平台状态卡片网格（点击切换）
+ * - 底部：选中平台的详细配置内容
  */
 
 import { useAtomValue } from 'jotai'
+import { Bot, Cable, Settings, Diamond } from 'lucide-react'
 import * as React from 'react'
 
-import { BotDefaultSettings } from './BotDefaultSettings'
 import { DingTalkSettings } from './DingTalkSettings'
 import { FeishuSettings } from './FeishuSettings'
-import { TAgentLogoSettings } from './TAgentLogoSettings'
 import { WeChatSettings } from './WeChatSettings'
+import { BotDefaultSettings } from './BotDefaultSettings'
+import { WpsSettings } from './WpsSettings'
 
 import dingtalkLogo from '@/assets/bots/dingding.png'
 import feishuLogo from '@/assets/bots/feishu.png'
@@ -20,90 +23,84 @@ import wechatLogo from '@/assets/bots/wechat.png'
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from '@/atoms/feishu-atoms'
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { wpsBridgeStateAtom } from '@/atoms/wps-atoms'
 import { cn } from '@/lib/utils'
 
 // ===== 类型 =====
 
-type BotPlatformId = 'feishu' | 'dingtalk' | 'wechat' | 'defaults' | 'logos'
+type PlatformId = 'feishu' | 'wechat' | 'dingtalk' | 'wps' | 'defaults'
 
-interface BotPlatformDef {
-  id: BotPlatformId
+interface PlatformDef {
+  id: PlatformId
   name: string
-  /** Logo 图片 src（有图片时使用） */
+  description: string
   iconSrc?: string
-  /** 无图片时显示的字符 */
-  iconChar?: string
   iconBgClass: string
-  iconTextClass?: string
+  accentColor: string
+  Icon?: typeof Bot
 }
 
 // ===== 平台定义 =====
 
-const PLATFORMS: readonly BotPlatformDef[] = [
+const PLATFORMS: readonly PlatformDef[] = [
   {
     id: 'feishu',
     name: '飞书',
+    description: '企业协作平台',
     iconSrc: feishuLogo,
-    iconBgClass: 'bg-blue-500/15',
+    iconBgClass: 'bg-blue-500/10',
+    accentColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     id: 'wechat',
     name: '微信',
+    description: '扫码登录控制',
     iconSrc: wechatLogo,
-    iconBgClass: 'bg-green-500/15',
+    iconBgClass: 'bg-green-500/10',
+    accentColor: 'text-green-600 dark:text-green-400',
   },
   {
     id: 'dingtalk',
     name: '钉钉',
+    description: '多 Bot 管理',
     iconSrc: dingtalkLogo,
-    iconBgClass: 'bg-orange-500/15',
+    iconBgClass: 'bg-orange-500/10',
+    accentColor: 'text-orange-600 dark:text-orange-400',
   },
+  {
+    id: 'wps',
+    name: 'WPS 协作',
+    description: 'WPS365 远程连通',
+    iconBgClass: 'bg-violet-500/10',
+    accentColor: 'text-violet-600 dark:text-violet-400',
+    Icon: Diamond,
+  },
+]
+
+const OTHER_CARDS: readonly PlatformDef[] = [
   {
     id: 'defaults',
-    name: '用法',
-    iconChar: '⚙',
+    name: '用法设置',
+    description: '默认行为配置',
     iconBgClass: 'bg-muted',
-    iconTextClass: 'text-muted-foreground',
+    accentColor: 'text-muted-foreground',
+    Icon: Settings,
   },
-  {
-    id: 'logos',
-    name: '品牌素材',
-    iconChar: '◆',
-    iconBgClass: 'bg-muted',
-  },
-] as const
+]
 
-/** 连接状态颜色映射 */
-const BRIDGE_STATUS_COLORS = {
-  disconnected: 'bg-gray-400',
-  connecting: 'bg-yellow-400 animate-pulse',
-  connected: 'bg-green-500',
-  error: 'bg-red-500',
+/** 连接状态配置 */
+const STATUS_CONFIG = {
+  disconnected: { color: 'bg-slate-400', label: '未连接', dotClass: 'bg-slate-400' },
+  connecting: { color: 'bg-amber-400', label: '连接中', dotClass: 'bg-amber-400 animate-pulse' },
+  connected: { color: 'bg-emerald-500', label: '已连接', dotClass: 'bg-emerald-500' },
+  error: { color: 'bg-red-500', label: '错误', dotClass: 'bg-red-500' },
+  waiting_scan: { color: 'bg-amber-400', label: '等待扫码', dotClass: 'bg-amber-400 animate-pulse' },
+  scanned: { color: 'bg-blue-400', label: '已扫码', dotClass: 'bg-blue-400 animate-pulse' },
 } as const
 
-// ===== 子组件 =====
+// ===== 工具函数 =====
 
-/** 平台连接状态指示点 */
-function PlatformStatusDot({ platformId }: { platformId: BotPlatformId }): React.ReactElement | null {
-  const feishuBotStates = useAtomValue(feishuBotStatesAtom)
-  const dingtalkBotStates = useAtomValue(dingtalkBotStatesAtom)
-  const wechatState = useAtomValue(wechatBridgeStateAtom)
-
-  if (platformId === 'defaults' || platformId === 'logos') return null
-
-  const statusMap: Record<string, string> = {
-    feishu: getPlatformStatus(feishuBotStates),
-    dingtalk: getPlatformStatus(dingtalkBotStates),
-    wechat: wechatState.status,
-  }
-  const status = statusMap[platformId] ?? 'disconnected'
-  const colorClass = BRIDGE_STATUS_COLORS[status as keyof typeof BRIDGE_STATUS_COLORS] ?? 'bg-gray-400'
-
-  return <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', colorClass)} />
-}
-
-/** 从多 Bot 状态推导平台级状态：任一 connected → connected，否则按 error > connecting > disconnected 优先级 */
+/** 从多 Bot 状态推导平台级状态 */
 function getPlatformStatus(states: Record<string, { status: string }>): string {
   const values = Object.values(states)
   if (values.length === 0) return 'disconnected'
@@ -113,96 +110,149 @@ function getPlatformStatus(states: Record<string, { status: string }>): string {
   return 'disconnected'
 }
 
-/** 左侧平台选择项 */
-function PlatformSidebarItem({
+// ===== 子组件 =====
+
+/** 平台状态卡片 */
+function PlatformCard({
   platform,
-  isActive,
+  status,
   onClick,
+  isActive,
 }: {
-  platform: BotPlatformDef
-  isActive: boolean
+  platform: PlatformDef
+  status?: string
   onClick: () => void
+  isActive: boolean
 }): React.ReactElement {
+  const statusConfig = status ? (STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.disconnected) : null
+  const isConnected = status === 'connected'
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-left',
+        'group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 text-center cursor-pointer',
+        'border border-transparent',
         isActive
-          ? 'bg-muted text-foreground'
-          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          ? 'bg-muted/60 border-border/50 shadow-sm'
+          : 'bg-muted/30 hover:bg-muted/50 hover:border-border/30',
       )}
     >
-      {/* 平台图标 */}
-      {platform.iconSrc ? (
-        <div className="flex items-center justify-center w-8 h-8 flex-shrink-0">
-          <img src={platform.iconSrc} alt={platform.name} className="w-8 h-8 rounded-lg object-contain" />
-        </div>
-      ) : (
-        <div className={cn(
-          'flex items-center justify-center w-8 h-8 rounded-lg text-base flex-shrink-0',
-          platform.iconBgClass,
-          platform.iconTextClass,
-        )}>
-          {platform.iconChar}
+      {/* 状态指示点（仅平台卡片） */}
+      {statusConfig && (
+        <div className="absolute top-2.5 right-2.5">
+          <span className={cn('w-2 h-2 rounded-full block', statusConfig.dotClass)} />
         </div>
       )}
 
-      {/* 名称 */}
-      <span className="text-sm flex-1 min-w-0 truncate">
-        {platform.name}
-      </span>
+      {/* 图标 */}
+      <div className={cn('flex items-center justify-center w-11 h-11 rounded-xl mb-2.5', platform.iconBgClass)}>
+        {platform.iconSrc ? (
+          <img src={platform.iconSrc} alt={platform.name} className="w-7 h-7 object-contain" />
+        ) : platform.Icon ? (
+          <platform.Icon className="w-5 h-5 text-muted-foreground" />
+        ) : (
+          <Bot className="w-5 h-5 text-muted-foreground" />
+        )}
+      </div>
 
-      {/* 状态点 */}
-      <PlatformStatusDot platformId={platform.id} />
+      {/* 平台名称 */}
+      <div className="text-sm font-medium text-foreground">{platform.name}</div>
+
+      {/* 描述或状态 */}
+      <div className={cn('text-xs mt-0.5', isConnected ? platform.accentColor : 'text-muted-foreground')}>
+        {statusConfig ? statusConfig.label : platform.description}
+      </div>
     </button>
   )
 }
 
 /** 根据平台 ID 渲染对应设置组件 */
-function renderPlatformPanel(id: BotPlatformId): React.ReactElement {
+function renderPlatformPanel(id: PlatformId): React.ReactElement {
   switch (id) {
     case 'feishu':
       return <FeishuSettings />
-    case 'dingtalk':
-      return <DingTalkSettings />
     case 'wechat':
       return <WeChatSettings />
+    case 'dingtalk':
+      return <DingTalkSettings />
+    case 'wps':
+      return <WpsSettings />
     case 'defaults':
       return <BotDefaultSettings />
-    case 'logos':
-      return <TAgentLogoSettings />
   }
 }
 
 // ===== 主组件 =====
 
 export function BotHubSettings(): React.ReactElement {
-  const [selectedPlatform, setSelectedPlatform] = React.useState<BotPlatformId>('feishu')
+  const [selectedPlatform, setSelectedPlatform] = React.useState<PlatformId>('feishu')
+
+  // 获取各平台状态
+  const feishuBotStates = useAtomValue(feishuBotStatesAtom)
+  const dingtalkBotStates = useAtomValue(dingtalkBotStatesAtom)
+  const wechatState = useAtomValue(wechatBridgeStateAtom)
+  const wpsState = useAtomValue(wpsBridgeStateAtom)
+
+  const platformStatuses = React.useMemo(() => ({
+    feishu: getPlatformStatus(feishuBotStates),
+    dingtalk: getPlatformStatus(dingtalkBotStates),
+    wechat: wechatState.status,
+    wps: wpsState.status,
+  }), [feishuBotStates, dingtalkBotStates, wechatState.status, wpsState.status])
+
+  const connectedCount = Object.values(platformStatuses).filter((s) => s === 'connected').length
 
   return (
-    <div className="flex -mx-6 -my-4 h-full">
-      {/* 左侧平台选择栏 */}
-      <div className="w-[140px] border-r border-border/50 py-3 px-2 flex-shrink-0">
-        <div className="space-y-0.5">
-          {PLATFORMS.map((p) => (
-            <PlatformSidebarItem
-              key={p.id}
-              platform={p}
-              isActive={selectedPlatform === p.id}
-              onClick={() => setSelectedPlatform(p.id)}
-            />
-          ))}
+    <div className="space-y-6 -mx-6 -my-4 px-6 py-4">
+      {/* 标题区 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Cable className="w-5 h-5" />
+            远程平台
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            连接第三方平台，在飞书、微信、钉钉中使用 TAgent
+          </p>
         </div>
+        {connectedCount > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {connectedCount} 个平台已连接
+          </div>
+        )}
       </div>
 
-      {/* 右侧内容面板 */}
-      <ScrollArea className="flex-1 min-w-0">
-        <div className="px-6 py-4">
-          {renderPlatformPanel(selectedPlatform)}
-        </div>
-      </ScrollArea>
+      {/* 平台卡片网格 */}
+      <div className="grid grid-cols-5 gap-3">
+        {PLATFORMS.map((platform) => (
+          <PlatformCard
+            key={platform.id}
+            platform={platform}
+            status={platformStatuses[platform.id as 'feishu' | 'dingtalk' | 'wechat' | 'wps']}
+            onClick={() => setSelectedPlatform(platform.id)}
+            isActive={selectedPlatform === platform.id}
+          />
+        ))}
+        {OTHER_CARDS.map((card) => (
+          <PlatformCard
+            key={card.id}
+            platform={card}
+            onClick={() => setSelectedPlatform(card.id)}
+            isActive={selectedPlatform === card.id}
+          />
+        ))}
+      </div>
+
+      {/* 分隔线 */}
+      <div className="border-t border-border/50" />
+
+      {/* 内容面板 */}
+      <div className="min-h-[400px]">
+        {renderPlatformPanel(selectedPlatform)}
+      </div>
     </div>
   )
 }

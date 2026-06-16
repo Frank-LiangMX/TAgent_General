@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, WPS_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
@@ -137,6 +137,8 @@ import { getProxySettings, saveProxySettings } from './lib/proxy-settings-servic
 import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
+import { wpsBridge } from './lib/wps-bridge'
+import { getDecryptedWpsSecretKey, getWpsConfig, saveWpsConfig } from './lib/wps-config'
 import {
   getSystemPromptConfig,
   createSystemPrompt,
@@ -3824,6 +3826,65 @@ export function registerIpcHandlers(): void {
     async (): Promise<WeChatBridgeState> => {
       return wechatBridge.getStatus()
     }
+  )
+
+  // ===== WPS 协作集成 =====
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.GET_CONFIG,
+    async (): Promise<import('@tagent/shared').WpsConfig> => {
+      return getWpsConfig()
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.GET_DECRYPTED_SECRET,
+    async (): Promise<string> => {
+      return getDecryptedWpsSecretKey()
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.SAVE_CONFIG,
+    async (_, input: import('@tagent/shared').WpsConfigInput): Promise<import('@tagent/shared').WpsConfig> => {
+      const saved = saveWpsConfig(input)
+      if (saved.enabled && saved.appId && getDecryptedWpsSecretKey()) {
+        await wpsBridge.start().catch((error) => {
+          console.error('[WPS IPC] 配置保存后启动失败:', error)
+        })
+      } else {
+        wpsBridge.stop()
+      }
+      return saved
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.TEST_CONNECTION,
+    async (_, appId: string, secretKey: string, apiUrl: string): Promise<import('@tagent/shared').WpsTestResult> => {
+      return wpsBridge.testConnection(appId, secretKey, apiUrl)
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.START_BRIDGE,
+    async (): Promise<void> => {
+      await wpsBridge.start()
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.STOP_BRIDGE,
+    async (): Promise<void> => {
+      wpsBridge.stop()
+    },
+  )
+
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.GET_STATUS,
+    async (): Promise<import('@tagent/shared').WpsBridgeState> => {
+      return wpsBridge.getStatus()
+    },
   )
 
   console.log('[IPC] IPC 处理器注册完成')

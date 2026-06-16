@@ -33,6 +33,7 @@ import { appModeAtom } from './atoms/app-mode'
 import { currentConversationIdAtom, channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/chat-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
+import { wpsBridgeStateAtom } from './atoms/wps-atoms'
 import {
   advancedMaterialEnabledAtom,
   initializeAdvancedMaterial,
@@ -47,7 +48,7 @@ import {
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
-import { tabsAtom, activeTabIdAtom, ensureScratchPadTab, getPersistableTabState, scratchPadContentAtom, scratchPadLoadedAtom, SCRATCH_PAD_ID } from './atoms/tab-atoms'
+import { tabsAtom, activeTabIdAtom, getPersistableTabState, scratchPadContentAtom, scratchPadLoadedAtom, SCRATCH_PAD_ID } from './atoms/tab-atoms'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -74,7 +75,14 @@ import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
 
 import type { TabItem } from './atoms/tab-atoms'
-import type { FeishuBotBridgeState, FeishuBridgeState, DingTalkBotBridgeState, DingTalkBridgeState , WorkspaceCapabilities } from '@tagent/shared'
+import type {
+  FeishuBotBridgeState,
+  FeishuBridgeState,
+  DingTalkBotBridgeState,
+  DingTalkBridgeState,
+  WpsBridgeState,
+  WorkspaceCapabilities,
+} from '@tagent/shared'
 
 
 import './styles/globals.css'
@@ -576,6 +584,25 @@ function DingTalkInitializer(): null {
   return null
 }
 
+function WpsInitializer(): null {
+  const store = useStore()
+
+  useEffect(() => {
+    window.electronAPI.getWpsStatus()
+      .then((status: WpsBridgeState) => {
+        store.set(wpsBridgeStateAtom, status)
+      })
+      .catch((err: unknown) => console.error('[WpsInitializer] 加载状态失败:', err))
+
+    const off = window.electronAPI.onWpsStatusChanged((state) => {
+      store.set(wpsBridgeStateAtom, state)
+    })
+    return () => off()
+  }, [store])
+
+  return null
+}
+
 /**
  * 标签页持久化组件
  *
@@ -662,7 +689,7 @@ function TabStatePersistenceInitializer(): null {
       }
 
       const activeTab = validTabs.find((t) => t.id === restoredActiveTabId) ?? validTabs[0] ?? null
-      store.set(tabsAtom, ensureScratchPadTab(activeTab ? [activeTab] : []))
+      store.set(tabsAtom, activeTab ? [activeTab] : [])
       store.set(activeTabIdAtom, restoredActiveTabId)
 
       // 同步 appMode 和 currentSessionId（P3: chat 已退役）
@@ -731,42 +758,26 @@ function TabStatePersistenceInitializer(): null {
 /**
  * Scratch Pad 初始化和持久化组件
  *
- * 启动时注入 scratch tab 到 tabsAtom 首位，
  * 从磁盘加载 scratch-pad.md 内容，自动保存到磁盘。
+ * 草稿标签页不再常驻，由用户点击 Rail 草稿按钮主动打开。
  */
 function ScratchPadPersistence(): null {
   const store = useStore()
   const loadedRef = useRef(false)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
-  // 启动：加载文件内容、注入 scratch tab、恢复激活状态
+  // 启动：加载文件内容
   useEffect(() => {
     const init = async (): Promise<void> => {
       try {
         // 加载 scratch-pad.md 内容（磁盘存的是 markdown，转为 HTML 给编辑器用）
-        const [settings, loadedMd] = await Promise.all([
-          window.electronAPI.getSettings(),
-          window.electronAPI.loadScratchPad ? window.electronAPI.loadScratchPad() : Promise.resolve(''),
-        ])
+        const loadedMd = window.electronAPI.loadScratchPad
+          ? await window.electronAPI.loadScratchPad()
+          : ''
 
         const loadedHtml = loadedMd ? markdownToHtml(loadedMd) : ''
         store.set(scratchPadContentAtom, loadedHtml)
         store.set(scratchPadLoadedAtom, true)
-
-        // 将 scratch tab 注入首位
-        const currentTabs = store.get(tabsAtom)
-        const newTabs = ensureScratchPadTab(currentTabs)
-
-        // 如果 tabs 数组变了（新增了 scratch tab），写入 store
-        if (newTabs.length > currentTabs.length || newTabs[0]?.id !== currentTabs[0]?.id) {
-          store.set(tabsAtom, newTabs)
-        }
-
-        // 恢复 scratch 激活状态：如果上次关闭时在 scratch 页，则激活它
-        // 不改变 appMode，保留原有的 chat/agent 侧边栏状态
-        if (settings.scratchPadActive) {
-          store.set(activeTabIdAtom, SCRATCH_PAD_ID)
-        }
 
         console.log('[ScratchPad] 初始化完成，已加载内容:', !!loadedMd)
       } catch (err) {
@@ -882,6 +893,7 @@ if (isQuickTaskWindow) {
       <UpdaterInitializer />
       <FeishuInitializer />
       <DingTalkInitializer />
+      <WpsInitializer />
       <TabStatePersistenceInitializer />
       <ScratchPadPersistence />
       <GlobalShortcuts />

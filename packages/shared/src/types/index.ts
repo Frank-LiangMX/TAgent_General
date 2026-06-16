@@ -1,5 +1,5 @@
 /**
- * Shared type definitions for proma
+ * Shared type definitions for TAgent
  */
 
 // Placeholder types - will be expanded as needed
@@ -53,6 +53,9 @@ export * from './dingtalk'
 
 // 微信集成相关类型
 export * from './wechat'
+
+// WPS 协作集成相关类型
+export * from './wps'
 
 // Pipeline 流水线相关类型
 export * from './pipeline'

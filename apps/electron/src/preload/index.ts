@@ -5,7 +5,7 @@
  * 使用上下文隔离确保安全性
  */
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS } from '@tagent/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, WPS_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS , QUICK_TASK_IPC_CHANNELS, TRAY_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS } from '../types'
@@ -129,6 +129,10 @@ import type {
   DingTalkTestResult,
   WeChatConfig,
   WeChatBridgeState,
+  WpsConfig,
+  WpsConfigInput,
+  WpsBridgeState,
+  WpsTestResult,
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
   NudgeCandidate,
@@ -1231,6 +1235,16 @@ export interface ElectronAPI {
   getWeChatStatus: () => Promise<WeChatBridgeState>
   /** 订阅微信 Bridge 状态变化 */
   onWeChatStatusChanged: (callback: (state: WeChatBridgeState) => void) => () => void
+
+  // ===== WPS 协作集成 =====
+  getWpsConfig: () => Promise<WpsConfig>
+  getDecryptedWpsSecret: () => Promise<string>
+  saveWpsConfig: (input: WpsConfigInput) => Promise<WpsConfig>
+  testWpsConnection: (appId: string, secretKey: string, apiUrl: string) => Promise<WpsTestResult>
+  startWpsBridge: () => Promise<void>
+  stopWpsBridge: () => Promise<void>
+  getWpsStatus: () => Promise<WpsBridgeState>
+  onWpsStatusChanged: (callback: (state: WpsBridgeState) => void) => () => void
 
   /** 订阅菜单关闭标签页事件（Cmd+W 被菜单拦截后转发） */
   onMenuCloseTab: (callback: () => void) => () => void
@@ -2533,6 +2547,42 @@ const electronAPI: ElectronAPI = {
     const listener = (_event: Electron.IpcRendererEvent, state: WeChatBridgeState): void => callback(state)
     ipcRenderer.on(WECHAT_IPC_CHANNELS.STATUS_CHANGED, listener)
     return () => { ipcRenderer.removeListener(WECHAT_IPC_CHANNELS.STATUS_CHANGED, listener) }
+  },
+
+  // ===== WPS 协作集成 =====
+
+  getWpsConfig: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.GET_CONFIG)
+  },
+
+  getDecryptedWpsSecret: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.GET_DECRYPTED_SECRET)
+  },
+
+  saveWpsConfig: (input: WpsConfigInput) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.SAVE_CONFIG, input)
+  },
+
+  testWpsConnection: (appId: string, secretKey: string, apiUrl: string) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.TEST_CONNECTION, appId, secretKey, apiUrl)
+  },
+
+  startWpsBridge: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.START_BRIDGE)
+  },
+
+  stopWpsBridge: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.STOP_BRIDGE)
+  },
+
+  getWpsStatus: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.GET_STATUS)
+  },
+
+  onWpsStatusChanged: (callback: (state: WpsBridgeState) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: WpsBridgeState): void => callback(state)
+    ipcRenderer.on(WPS_IPC_CHANNELS.STATUS_CHANGED, listener)
+    return () => { ipcRenderer.removeListener(WPS_IPC_CHANNELS.STATUS_CHANGED, listener) }
   },
 
   // ===== 钉钉集成 =====

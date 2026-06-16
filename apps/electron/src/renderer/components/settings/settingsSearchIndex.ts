@@ -101,11 +101,12 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
   {
     tabId: 'bots',
     tabLabel: '远程连接',
-    tabDescription: '飞书 / 钉钉 / 微信 Bot Bridge',
+    tabDescription: '飞书 / 钉钉 / 微信 / WPS 协作远程连通',
     items: [
       { id: 'feishu-config', title: '飞书 Bot', description: '飞书 Bridge 配置', keywords: ['feishu', 'lark'] },
       { id: 'dingtalk-config', title: '钉钉 Bot', description: '钉钉 Bridge 配置', keywords: ['dingtalk'] },
       { id: 'wechat-config', title: '微信 Bot', description: '微信 Bridge 配置', keywords: ['wechat', 'wx'] },
+      { id: 'wps-config', title: 'WPS 协作', description: 'WPS365 回调与 Bridge 配置', keywords: ['wps', 'xiezuo', '协作', 'wps365'] },
     ],
   },
   {

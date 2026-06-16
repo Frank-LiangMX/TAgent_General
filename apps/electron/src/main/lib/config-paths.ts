@@ -540,6 +540,15 @@ export function getWeChatConfigPath(): string {
 }
 
 /**
+ * 获取 WPS 协作配置文件路径
+ *
+ * @returns ~/.tagent/wps.json
+ */
+export function getWpsConfigPath(): string {
+  return join(getConfigDir(), 'wps.json')
+}
+
+/**
  * 获取微信长轮询同步游标路径
  *
  * @returns ~/.tagent/wechat-sync.json

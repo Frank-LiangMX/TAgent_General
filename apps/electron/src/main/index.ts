@@ -25,6 +25,8 @@ import { createQuickTaskWindow, toggleQuickTaskWindow, destroyQuickTaskWindow } 
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { initAutoUpdater, cleanupUpdater } from './lib/updater/auto-updater'
+import { wpsBridge } from './lib/wps-bridge'
+import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import {
   createVoiceDictationWindow,
   toggleVoiceDictationWindow,
@@ -165,6 +167,16 @@ registerBridge({
   },
   start: () => wechatBridge.start(),
   stop: () => wechatBridge.stop(),
+})
+
+registerBridge({
+  name: 'WPS 协作 Bridge',
+  shouldAutoStart: () => {
+    const config = getWpsConfig()
+    return !!(config.enabled && config.appId && getDecryptedWpsSecretKey())
+  },
+  start: () => wpsBridge.start(),
+  stop: () => wpsBridge.stop(),
 })
 
 let mainWindow: BrowserWindow | null = null
