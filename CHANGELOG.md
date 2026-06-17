@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release CI now pins Windows/Python runner tooling and writes Linux renderer output inside the Linux app package directory.
 - Linux release renderer builds now resolve shared HTML inputs through the real source tree instead of symlinked paths.
 - Linux packaging no longer uses deprecated or invalid electron-builder options that fail schema validation.
+- Linux deb packaging now includes required homepage metadata and flat artifact file names.
+- Linux release packaging now builds x64 artifacts only, matching the release workflow matrix.
 
 ### Security
 
