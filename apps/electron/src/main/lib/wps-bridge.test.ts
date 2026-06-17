@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 
 import { calculateEventSignature, verifyEventSignature } from './wps-crypto'
 import { parseWpsMessage } from './wps-message-parser'
