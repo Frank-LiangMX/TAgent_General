@@ -56,11 +56,16 @@ jobs:
         run: |
           rm -f .npmrc
           # 临时禁用 lockfile 中的镜像地址（保留 bun.lock 结构，重写 npm 解析域名）
+          # macOS 用 BSD sed (需要 -i '')，Linux 用 GNU sed (直接 -i)
           if [ -f bun.lock ]; then
-            sed -i 's|https://registry\.npmmirror\.com|https://registry.npmjs.org|g' bun.lock
-            sed -i 's|https://npmmirror\.com/mirrors/electron/|https://github.com/electron/electron/releases/download/|g' bun.lock
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              sed -i '' 's|https://registry\.npmmirror\.com|https://registry.npmjs.org|g' bun.lock
+              sed -i '' 's|https://npmmirror\.com/mirrors/electron/|https://github.com/electron/electron/releases/download/|g' bun.lock
+            else
+              sed -i 's|https://registry\.npmmirror\.com|https://registry.npmjs.org|g' bun.lock
+              sed -i 's|https://npmmirror\.com/mirrors/electron/|https://github.com/electron/electron/releases/download/|g' bun.lock
+            fi
           fi
-          # 让 bun install 在 Linux 上同时拉 linux-x64 / linux-arm64 native 二进制
           echo "Configured to use official registry"
 
       - name: Install dependencies
