@@ -1,6 +1,6 @@
 # dev-kill-all.ps1
 # 清理 TAgent dev 残留进程（electron / electronmon / vite / esbuild / bun + 5173 端口）
-# dev-stop.bat 调用此脚本，避开 cmd 的二次 PowerShell 变量转义
+# scripts/dev/dev-stop.bat 调用此脚本，避开 cmd 的二次 PowerShell 变量转义
 
 $processes = @('electron', 'electronmon', 'vite', 'esbuild', 'bun')
 foreach ($name in $processes) {

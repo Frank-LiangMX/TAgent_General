@@ -1,6 +1,7 @@
 @echo off
 setlocal EnableExtensions
-cd /d "%~dp0"
+set "TAGENT_ROOT=%~dp0..\.."
+cd /d "%TAGENT_ROOT%"
 
 set "BUN_INSTALL=%USERPROFILE%\.bun"
 set "PATH=%BUN_INSTALL%\bin;%PATH%"
