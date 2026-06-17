@@ -9,9 +9,9 @@ import logging
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
-from .tools import mesh, texture, asset, tag_store
+from .tools import asset, mesh, tag_store, texture
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -78,6 +78,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
         # 格式化输出
         import json
+
         return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False, indent=2))]
 
     except Exception as e:

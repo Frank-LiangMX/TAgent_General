@@ -9,7 +9,10 @@ export default defineConfig({
   base: './',
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src/renderer'),
+      // @/* 指向 src/*（包含 src/renderer/ 和 src/types/）
+      '@': resolve(__dirname, 'src'),
+      // @/renderer/* 显式指向 src/renderer/*（用于渲染层代码）
+      '@/renderer': resolve(__dirname, 'src/renderer'),
       '@tagent/shared': resolve(__dirname, '../../packages/shared/src'),
       '@tagent/core': resolve(__dirname, '../../packages/core/src'),
       '@tagent/ui': resolve(__dirname, '../../packages/ui/src'),

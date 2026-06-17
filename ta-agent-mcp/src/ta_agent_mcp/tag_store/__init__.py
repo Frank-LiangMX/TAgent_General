@@ -10,16 +10,16 @@ Schema 与 TAgent UI 的 schema.ts 保持一致：
 - review_history：审核历史
 """
 
+import json
 import os
 import sqlite3
-import uuid
-import json
 import time
-from typing import Optional, List, Dict, Any
+import uuid
 from pathlib import Path
-
+from typing import Any, Dict, List, Optional
 
 # ===== 数据库路径 =====
+
 
 def get_tag_store_path() -> Path:
     """
@@ -31,20 +31,21 @@ def get_tag_store_path() -> Path:
     可通过环境变量 TA_AGENT_DATA_DIR 覆盖
     """
     # 环境变量覆盖
-    data_dir = os.environ.get('TA_AGENT_DATA_DIR')
+    data_dir = os.environ.get("TA_AGENT_DATA_DIR")
     if data_dir:
-        return Path(data_dir) / 'tag_store' / 'tags.db'
+        return Path(data_dir) / "tag_store" / "tags.db"
 
     # 默认路径
     home = Path.home()
     # 检测开发模式（通过环境变量或目录存在性）
-    is_dev = os.environ.get('TAGENT_DEV_MODE') == 'true' or (home / '.tagent-dev').exists()
-    base_dir = home / ('tagent-dev' if is_dev else 'tagent') / 'ta'
+    is_dev = os.environ.get("TAGENT_DEV_MODE") == "true" or (home / ".tagent-dev").exists()
+    base_dir = home / ("tagent-dev" if is_dev else "tagent") / "ta"
 
-    return base_dir / 'tag_store' / 'tags.db'
+    return base_dir / "tag_store" / "tags.db"
 
 
 # ===== 数据库初始化 =====
+
 
 def init_database(db_path: Path) -> sqlite3.Connection:
     """
@@ -65,10 +66,10 @@ def init_database(db_path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path))
 
     # 设置 WAL 模式（支持并发读写）
-    conn.execute('PRAGMA journal_mode = WAL')
+    conn.execute("PRAGMA journal_mode = WAL")
 
     # 创建 assets 表
-    conn.execute('''
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS assets (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -84,17 +85,17 @@ def init_database(db_path: Path) -> sqlite3.Connection:
             review_status TEXT DEFAULT 'pending',
             review_notes TEXT
         )
-    ''')
+    """)
 
     # 创建索引
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_assets_project ON assets(project)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_assets_status ON assets(status)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_assets_updated_at ON assets(updated_at DESC)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_assets_review_status ON assets(review_status)')
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_project ON assets(project)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_status ON assets(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_updated_at ON assets(updated_at DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_review_status ON assets(review_status)")
 
     # 创建 FTS5 全文搜索索引
-    conn.execute('''
+    conn.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS assets_fts USING fts5(
             name,
             path,
@@ -103,34 +104,34 @@ def init_database(db_path: Path) -> sqlite3.Connection:
             content='assets',
             content_rowid='rowid'
         )
-    ''')
+    """)
 
     # 创建 FTS5 同步触发器
-    conn.execute('''
+    conn.execute("""
         CREATE TRIGGER IF NOT EXISTS assets_ai AFTER INSERT ON assets BEGIN
             INSERT INTO assets_fts(rowid, name, path, tags, metadata)
             VALUES (new.rowid, new.name, new.path, new.tags, new.metadata);
         END
-    ''')
+    """)
 
-    conn.execute('''
+    conn.execute("""
         CREATE TRIGGER IF NOT EXISTS assets_ad AFTER DELETE ON assets BEGIN
             INSERT INTO assets_fts(assets_fts, rowid, name, path, tags, metadata)
             VALUES ('delete', old.rowid, old.name, old.path, old.tags, old.metadata);
         END
-    ''')
+    """)
 
-    conn.execute('''
+    conn.execute("""
         CREATE TRIGGER IF NOT EXISTS assets_au AFTER UPDATE ON assets BEGIN
             INSERT INTO assets_fts(assets_fts, rowid, name, path, tags, metadata)
             VALUES ('delete', old.rowid, old.name, old.path, old.tags, old.metadata);
             INSERT INTO assets_fts(rowid, name, path, tags, metadata)
             VALUES (new.rowid, new.name, new.path, new.tags, new.metadata);
         END
-    ''')
+    """)
 
     # 创建 review_history 表
-    conn.execute('''
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS review_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             asset_id TEXT NOT NULL,
@@ -140,9 +141,11 @@ def init_database(db_path: Path) -> sqlite3.Connection:
             created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
             FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
         )
-    ''')
+    """)
 
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_review_history_asset_id ON review_history(asset_id)')
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_review_history_asset_id ON review_history(asset_id)"
+    )
 
     conn.commit()
 
@@ -161,12 +164,13 @@ def get_connection() -> sqlite3.Connection:
         return init_database(db_path)
 
     conn = sqlite3.connect(str(db_path))
-    conn.execute('PRAGMA journal_mode = WAL')
+    conn.execute("PRAGMA journal_mode = WAL")
 
     return conn
 
 
 # ===== 资产操作 =====
+
 
 def save_asset(
     name: str,
@@ -175,7 +179,7 @@ def save_asset(
     project: Optional[str] = None,
     tags: Optional[List[str]] = None,
     metadata: Optional[Dict[str, Any]] = None,
-    asset_id: Optional[str] = None
+    asset_id: Optional[str] = None,
 ) -> str:
     """
     保存资产到数据库
@@ -206,7 +210,8 @@ def save_asset(
     metadata_str = json.dumps(metadata) if metadata else None
 
     # 插入或更新
-    conn.execute('''
+    conn.execute(
+        """
         INSERT INTO assets (id, name, type, path, project, tags, metadata, created_at, updated_at, analyzed_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
@@ -218,7 +223,9 @@ def save_asset(
             metadata = excluded.metadata,
             updated_at = excluded.updated_at,
             analyzed_at = excluded.analyzed_at
-    ''', (asset_id, name, type, path, project, tags_str, metadata_str, now, now, now))
+    """,
+        (asset_id, name, type, path, project, tags_str, metadata_str, now, now, now),
+    )
 
     conn.commit()
     conn.close()
@@ -242,15 +249,16 @@ def save_assets_batch(assets: List[Dict[str, Any]]) -> int:
     count = 0
 
     for asset in assets:
-        asset_id = asset.get('id') or str(uuid.uuid4())
-        name = asset['name']
-        type = asset.get('type', 'other')
-        path = asset['path']
-        project = asset.get('project')
-        tags_str = json.dumps(asset.get('tags')) if asset.get('tags') else None
-        metadata_str = json.dumps(asset.get('metadata')) if asset.get('metadata') else None
+        asset_id = asset.get("id") or str(uuid.uuid4())
+        name = asset["name"]
+        type = asset.get("type", "other")
+        path = asset["path"]
+        project = asset.get("project")
+        tags_str = json.dumps(asset.get("tags")) if asset.get("tags") else None
+        metadata_str = json.dumps(asset.get("metadata")) if asset.get("metadata") else None
 
-        conn.execute('''
+        conn.execute(
+            """
             INSERT INTO assets (id, name, type, path, project, tags, metadata, created_at, updated_at, analyzed_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
@@ -262,7 +270,9 @@ def save_assets_batch(assets: List[Dict[str, Any]]) -> int:
                 metadata = excluded.metadata,
                 updated_at = excluded.updated_at,
                 analyzed_at = excluded.analyzed_at
-        ''', (asset_id, name, type, path, project, tags_str, metadata_str, now, now, now))
+        """,
+            (asset_id, name, type, path, project, tags_str, metadata_str, now, now, now),
+        )
 
         count += 1
 
@@ -286,13 +296,23 @@ def update_asset(asset_id: str, **kwargs) -> bool:
     conn = get_connection()
 
     # 构建更新语句
-    valid_fields = ['name', 'type', 'path', 'project', 'status', 'tags', 'metadata', 'review_status', 'review_notes']
+    valid_fields = [
+        "name",
+        "type",
+        "path",
+        "project",
+        "status",
+        "tags",
+        "metadata",
+        "review_status",
+        "review_notes",
+    ]
     updates = {}
 
     for field in valid_fields:
         if field in kwargs:
             value = kwargs[field]
-            if field in ['tags', 'metadata'] and value is not None:
+            if field in ["tags", "metadata"] and value is not None:
                 value = json.dumps(value)
             updates[field] = value
 
@@ -301,10 +321,10 @@ def update_asset(asset_id: str, **kwargs) -> bool:
         return False
 
     # 添加 updated_at
-    updates['updated_at'] = int(time.time() * 1000)
+    updates["updated_at"] = int(time.time() * 1000)
 
     # 构建 SQL
-    sql = 'UPDATE assets SET ' + ', '.join(f'{k} = ?' for k in updates.keys()) + ' WHERE id = ?'
+    sql = "UPDATE assets SET " + ", ".join(f"{k} = ?" for k in updates.keys()) + " WHERE id = ?"
     values = list(updates.values()) + [asset_id]
 
     conn.execute(sql, values)
@@ -327,7 +347,7 @@ def delete_asset(asset_id: str) -> bool:
     Returns:
         是否成功
     """
-    return update_asset(asset_id, status='deleted')
+    return update_asset(asset_id, status="deleted")
 
 
 def get_asset_by_id(asset_id: str) -> Optional[Dict[str, Any]]:
@@ -342,7 +362,7 @@ def get_asset_by_id(asset_id: str) -> Optional[Dict[str, Any]]:
     """
     conn = get_connection()
 
-    cursor = conn.execute('SELECT * FROM assets WHERE id = ?', (asset_id,))
+    cursor = conn.execute("SELECT * FROM assets WHERE id = ?", (asset_id,))
     row = cursor.fetchone()
 
     conn.close()
@@ -357,7 +377,7 @@ def list_assets(
     project: Optional[str] = None,
     review_status: Optional[str] = None,
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
 ) -> List[Dict[str, Any]]:
     """
     列出资产
@@ -378,15 +398,15 @@ def list_assets(
     params = []
 
     if type:
-        conditions.append('type = ?')
+        conditions.append("type = ?")
         params.append(type)
 
     if project:
-        conditions.append('project = ?')
+        conditions.append("project = ?")
         params.append(project)
 
     if review_status:
-        conditions.append('review_status = ?')
+        conditions.append("review_status = ?")
         params.append(review_status)
 
     sql = f"SELECT * FROM assets WHERE {' AND '.join(conditions)} ORDER BY updated_at DESC LIMIT ? OFFSET ?"
@@ -401,9 +421,7 @@ def list_assets(
 
 
 def count_assets(
-    type: Optional[str] = None,
-    project: Optional[str] = None,
-    review_status: Optional[str] = None
+    type: Optional[str] = None, project: Optional[str] = None, review_status: Optional[str] = None
 ) -> int:
     """
     统计资产数量
@@ -422,15 +440,15 @@ def count_assets(
     params = []
 
     if type:
-        conditions.append('type = ?')
+        conditions.append("type = ?")
         params.append(type)
 
     if project:
-        conditions.append('project = ?')
+        conditions.append("project = ?")
         params.append(project)
 
     if review_status:
-        conditions.append('review_status = ?')
+        conditions.append("review_status = ?")
         params.append(review_status)
 
     sql = f"SELECT COUNT(*) FROM assets WHERE {' AND '.join(conditions)}"
@@ -445,16 +463,29 @@ def count_assets(
 
 def _row_to_dict(row: tuple) -> Dict[str, Any]:
     """将数据库行转换为字典"""
-    columns = ['id', 'name', 'type', 'path', 'project', 'status', 'tags', 'metadata',
-               'created_at', 'updated_at', 'analyzed_at', 'review_status', 'review_notes']
+    columns = [
+        "id",
+        "name",
+        "type",
+        "path",
+        "project",
+        "status",
+        "tags",
+        "metadata",
+        "created_at",
+        "updated_at",
+        "analyzed_at",
+        "review_status",
+        "review_notes",
+    ]
 
     result = {}
     for i, col in enumerate(columns):
         value = row[i]
-        if col in ['tags', 'metadata'] and value:
+        if col in ["tags", "metadata"] and value:
             try:
                 value = json.loads(value)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 pass
         result[col] = value
 
@@ -462,6 +493,7 @@ def _row_to_dict(row: tuple) -> Dict[str, Any]:
 
 
 # ===== 数据库状态 =====
+
 
 def get_db_status() -> Dict[str, Any]:
     """
@@ -473,8 +505,8 @@ def get_db_status() -> Dict[str, Any]:
     db_path = get_tag_store_path()
 
     result = {
-        'db_path': str(db_path),
-        'exists': db_path.exists(),
+        "db_path": str(db_path),
+        "exists": db_path.exists(),
     }
 
     if db_path.exists():
@@ -483,18 +515,22 @@ def get_db_status() -> Dict[str, Any]:
 
             # 统计
             cursor = conn.execute("SELECT COUNT(*) FROM assets WHERE status = 'active'")
-            result['total_assets'] = cursor.fetchone()[0]
+            result["total_assets"] = cursor.fetchone()[0]
 
             # 按类型统计
-            cursor = conn.execute("SELECT type, COUNT(*) FROM assets WHERE status = 'active' GROUP BY type")
-            result['by_type'] = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor = conn.execute(
+                "SELECT type, COUNT(*) FROM assets WHERE status = 'active' GROUP BY type"
+            )
+            result["by_type"] = {row[0]: row[1] for row in cursor.fetchall()}
 
             # 按审核状态统计
-            cursor = conn.execute("SELECT review_status, COUNT(*) FROM assets WHERE status = 'active' GROUP BY review_status")
-            result['by_review_status'] = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor = conn.execute(
+                "SELECT review_status, COUNT(*) FROM assets WHERE status = 'active' GROUP BY review_status"
+            )
+            result["by_review_status"] = {row[0]: row[1] for row in cursor.fetchall()}
 
             conn.close()
         except Exception as e:
-            result['error'] = str(e)
+            result["error"] = str(e)
 
     return result

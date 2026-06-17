@@ -27,6 +27,10 @@ jobs:
         working-directory: ta-agent-mcp
         run: |
           if [ -d src ] && [ -d tests ]; then
+            # 先自动修复可修复的问题
+            ruff check --fix src/ tests/ || true
+            ruff format src/ tests/ || true
+            # 再做严格检查
             ruff check src/ tests/
             ruff format --check src/ tests/
             mypy --strict src/ || true

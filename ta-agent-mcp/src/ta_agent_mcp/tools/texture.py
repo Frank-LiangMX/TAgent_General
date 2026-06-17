@@ -5,10 +5,11 @@
 """
 
 import os
-from typing import Optional, List
+from typing import Optional
+
 from mcp.types import Tool
 
-from ..utils.output import format_result, format_error
+from ..utils.output import format_error, format_result
 
 # ===== 工具定义 =====
 
@@ -18,17 +19,14 @@ CHECK_TEXTURE_INFO_TOOL = Tool(
     inputSchema={
         "type": "object",
         "properties": {
-            "file_path": {
-                "type": "string",
-                "description": "Path to the texture file"
-            },
+            "file_path": {"type": "string", "description": "Path to the texture file"},
             "max_size": {
                 "type": "integer",
-                "description": "Maximum allowed texture size (default: 4096)"
-            }
+                "description": "Maximum allowed texture size (default: 4096)",
+            },
         },
-        "required": ["file_path"]
-    }
+        "required": ["file_path"],
+    },
 )
 
 CHECK_TEXTURE_BATCH_TOOL = Tool(
@@ -37,21 +35,15 @@ CHECK_TEXTURE_BATCH_TOOL = Tool(
     inputSchema={
         "type": "object",
         "properties": {
-            "directory": {
-                "type": "string",
-                "description": "Directory containing texture files"
-            },
-            "recursive": {
-                "type": "boolean",
-                "description": "Search recursively (default: false)"
-            },
+            "directory": {"type": "string", "description": "Directory containing texture files"},
+            "recursive": {"type": "boolean", "description": "Search recursively (default: false)"},
             "max_size": {
                 "type": "integer",
-                "description": "Maximum allowed texture size (default: 4096)"
-            }
+                "description": "Maximum allowed texture size (default: 4096)",
+            },
         },
-        "required": ["directory"]
-    }
+        "required": ["directory"],
+    },
 )
 
 # ===== 纹理规范 =====
@@ -73,6 +65,7 @@ TEXTURE_TYPE_PATTERNS = {
 
 # ===== 工具实现 =====
 
+
 def detect_texture_type(filename: str) -> str:
     """根据文件名检测纹理类型"""
     name = os.path.splitext(filename)[0].upper()
@@ -82,14 +75,13 @@ def detect_texture_type(filename: str) -> str:
                 return tex_type
     return "unknown"
 
+
 def is_power_of_two(n: int) -> bool:
     """检查是否为 2 的幂"""
     return (n & (n - 1)) == 0
 
-async def check_texture_info(
-    file_path: str,
-    max_size: Optional[int] = 4096
-) -> dict:
+
+async def check_texture_info(file_path: str, max_size: Optional[int] = 4096) -> dict:
     """
     分析单个纹理文件
 
@@ -137,7 +129,7 @@ async def check_texture_info(
             color_info = {
                 "mode": mode,
                 "channels": len(img.getbands()),
-                "bands": list(img.getbands())
+                "bands": list(img.getbands()),
             }
 
             # 针对不同纹理类型的建议
@@ -167,9 +159,9 @@ async def check_texture_info(
                     "is_pot": is_power_of_two(width) and is_power_of_two(height),
                     "is_square": width == height,
                     "issues": issues if issues else None,
-                    "suggestions": suggestions if suggestions else None
+                    "suggestions": suggestions if suggestions else None,
                 },
-                message="✅ 纹理检查通过" if not issues else "⚠️ 发现问题"
+                message="✅ 纹理检查通过" if not issues else "⚠️ 发现问题",
             )
 
     except Exception as e:
@@ -177,9 +169,7 @@ async def check_texture_info(
 
 
 async def check_texture_batch(
-    directory: str,
-    recursive: bool = False,
-    max_size: Optional[int] = 4096
+    directory: str, recursive: bool = False, max_size: Optional[int] = 4096
 ) -> dict:
     """
     批量分析纹理文件
@@ -196,7 +186,18 @@ async def check_texture_batch(
         return format_error(f"目录不存在: {directory}")
 
     # 支持的纹理格式
-    texture_extensions = {'.png', '.jpg', '.jpeg', '.tga', '.bmp', '.tif', '.tiff', '.webp', '.exr', '.hdr'}
+    texture_extensions = {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tga",
+        ".bmp",
+        ".tif",
+        ".tiff",
+        ".webp",
+        ".exr",
+        ".hdr",
+    }
 
     # 收集纹理文件
     texture_files = []
@@ -211,10 +212,7 @@ async def check_texture_batch(
                 texture_files.append(os.path.join(directory, f))
 
     if not texture_files:
-        return format_result(
-            data={"count": 0, "textures": []},
-            message="未找到纹理文件"
-        )
+        return format_result(data={"count": 0, "textures": []}, message="未找到纹理文件")
 
     # 分析每个纹理
     results = []
@@ -227,13 +225,15 @@ async def check_texture_batch(
             total_size += result["data"]["file_size_mb"]
             if result["data"].get("issues"):
                 issues_count += 1
-            results.append({
-                "file": result["data"]["file"],
-                "type": result["data"]["type"],
-                "dimensions": result["data"]["dimensions"],
-                "format": result["data"]["format"],
-                "issues": result["data"].get("issues")
-            })
+            results.append(
+                {
+                    "file": result["data"]["file"],
+                    "type": result["data"]["type"],
+                    "dimensions": result["data"]["dimensions"],
+                    "format": result["data"]["format"],
+                    "issues": result["data"].get("issues"),
+                }
+            )
 
     # 统计信息
     type_stats = {}
@@ -250,7 +250,7 @@ async def check_texture_batch(
             "issues_count": issues_count,
             "type_distribution": type_stats,
             "textures": results[:20],  # 只返回前 20 个详细信息
-            "truncated": len(results) > 20
+            "truncated": len(results) > 20,
         },
-        message=f"分析完成: {len(results)} 个纹理, {issues_count} 个问题"
+        message=f"分析完成: {len(results)} 个纹理, {issues_count} 个问题",
     )

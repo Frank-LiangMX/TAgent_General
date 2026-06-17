@@ -2,7 +2,7 @@
 输出格式化工具
 """
 
-from typing import Any, Optional, List
+from typing import List, Optional
 
 
 def format_result(data: dict, message: Optional[str] = None) -> dict:
@@ -16,10 +16,7 @@ def format_result(data: dict, message: Optional[str] = None) -> dict:
     Returns:
         格式化的结果字典
     """
-    result = {
-        "success": True,
-        "data": data
-    }
+    result = {"success": True, "data": data}
     if message:
         result["message"] = message
     return result
@@ -36,10 +33,7 @@ def format_error(error: str, details: Optional[dict] = None) -> dict:
     Returns:
         格式化的错误字典
     """
-    result = {
-        "success": False,
-        "error": error
-    }
+    result = {"success": False, "error": error}
     if details:
         result["details"] = details
     return result
@@ -56,11 +50,4 @@ def format_list(items: List[dict], title: str = "Items") -> dict:
     Returns:
         格式化的列表结果
     """
-    return {
-        "success": True,
-        "data": {
-            "title": title,
-            "count": len(items),
-            "items": items
-        }
-    }
+    return {"success": True, "data": {"title": title, "count": len(items), "items": items}}

@@ -6,44 +6,39 @@
 """
 
 import os
-from typing import Optional, List
+from typing import Optional
+
 from mcp.types import Tool
 
-from ..utils.output import format_result, format_error
-from ..tag_store import save_assets_batch, get_db_status
+from ..tag_store import get_db_status, save_assets_batch
+from ..utils.output import format_error, format_result
 
 # ===== 工具定义 =====
 
 ANALYZE_ASSETS_TOOL = Tool(
     name="tagent__analyze_assets",
-    description="Analyze assets in a directory and classify by type (mesh, texture, material, animation). Optionally save results to asset database.",
+    description=(
+        "Analyze assets in a directory and classify by type "
+        "(mesh, texture, material, animation). Optionally save results to asset database."
+    ),
     inputSchema={
         "type": "object",
         "properties": {
-            "directory": {
-                "type": "string",
-                "description": "Directory to analyze"
-            },
-            "recursive": {
-                "type": "boolean",
-                "description": "Search recursively (default: true)"
-            },
+            "directory": {"type": "string", "description": "Directory to analyze"},
+            "recursive": {"type": "boolean", "description": "Search recursively (default: true)"},
             "output_format": {
                 "type": "string",
                 "enum": ["summary", "detailed", "json"],
-                "description": "Output format (default: summary)"
+                "description": "Output format (default: summary)",
             },
             "save_to_db": {
                 "type": "boolean",
-                "description": "Save analyzed assets to database (default: false)"
+                "description": "Save analyzed assets to database (default: false)",
             },
-            "project": {
-                "type": "string",
-                "description": "Project name for saved assets"
-            }
+            "project": {"type": "string", "description": "Project name for saved assets"},
         },
-        "required": ["directory"]
-    }
+        "required": ["directory"],
+    },
 )
 
 # ===== 资产类型定义 =====
@@ -52,29 +47,57 @@ ANALYZE_ASSETS_TOOL = Tool(
 ASSET_EXTENSIONS = {
     "mesh": {
         # 通用模型
-        '.fbx', '.obj', '.gltf', '.glb', '.blend', '.max', '.ma', '.mb', '.bvh',
+        ".fbx",
+        ".obj",
+        ".gltf",
+        ".glb",
+        ".blend",
+        ".max",
+        ".ma",
+        ".mb",
+        ".bvh",
     },
     "texture": {
-        '.png', '.jpg', '.jpeg', '.tga', '.bmp', '.tif', '.tiff',
-        '.webp', '.exr', '.hdr', '.psd',
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tga",
+        ".bmp",
+        ".tif",
+        ".tiff",
+        ".webp",
+        ".exr",
+        ".hdr",
+        ".psd",
     },
     "material": {
-        '.mat', '.mtl', '.sbs', '.sbsar',
+        ".mat",
+        ".mtl",
+        ".sbs",
+        ".sbsar",
         # Unity 材质
-        '.shader',
+        ".shader",
     },
-    "animation": {'.anim', '.bip'},
-    "audio": {'.wav', '.mp3', '.ogg', '.aac', '.flac'},
-    "video": {'.mp4', '.mov', '.avi', '.webm', '.mkv'},
+    "animation": {".anim", ".bip"},
+    "audio": {".wav", ".mp3", ".ogg", ".aac", ".flac"},
+    "video": {".mp4", ".mov", ".avi", ".webm", ".mkv"},
     "script": {
-        '.py', '.lua', '.cs', '.cpp', '.h', '.hpp', '.c', '.cc',
+        ".py",
+        ".lua",
+        ".cs",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".c",
+        ".cc",
     },
-    "config": {'.json', '.yaml', '.yml', '.xml', '.ini', '.toml'},
+    "config": {".json", ".yaml", ".yml", ".xml", ".ini", ".toml"},
     "level": {
         # Unity 场景
-        '.unity', '.prefab',
+        ".unity",
+        ".prefab",
     },
-    "other": set()
+    "other": set(),
 }
 
 # UE `.uasset` 根据命名约定的细分（UE 资产标准前缀）
@@ -82,19 +105,33 @@ ASSET_EXTENSIONS = {
 #   https://docs.unrealengine.com/5.0/en-US/asset-naming-conventions-in-unreal-engine/
 UE_UASSET_PREFIX_TYPE = {
     # blueprint
-    'bp': 'blueprint', 'blueprint': 'blueprint', 'abl': 'blueprint',
+    "bp": "blueprint",
+    "blueprint": "blueprint",
+    "abl": "blueprint",
     # material
-    'm': 'material', 'mi': 'material', 'mat': 'material',
+    "m": "material",
+    "mi": "material",
+    "mat": "material",
     # texture
-    't': 'texture', 'tex': 'texture', 'tc': 'texture',
+    "t": "texture",
+    "tex": "texture",
+    "tc": "texture",
     # mesh
-    'sm': 'mesh', 'sk': 'mesh', 'skm': 'mesh', 'skt': 'mesh',
+    "sm": "mesh",
+    "sk": "mesh",
+    "skm": "mesh",
+    "skt": "mesh",
     # level / actor
-    'a': 'level', 'am': 'level', 'l': 'level',
+    "a": "level",
+    "am": "level",
+    "l": "level",
     # particle
-    'p': 'blueprint',  # Niagara / Cascade system 多数以 P_ 开头，归到 blueprint
+    "p": "blueprint",  # Niagara / Cascade system 多数以 P_ 开头，归到 blueprint
     # sound
-    'sfx': 'audio', 's': 'audio', 'sn': 'audio', 'us': 'audio',
+    "sfx": "audio",
+    "s": "audio",
+    "sn": "audio",
+    "us": "audio",
 }
 
 
@@ -102,11 +139,11 @@ def classify_unreal_uasset(filename: str) -> str:
     """根据 UE 资产命名约定推断 .uasset 类型"""
     # 去掉扩展名，按 _ 切分首段
     base = os.path.splitext(filename)[0]
-    parts = base.split('_', 1)
+    parts = base.split("_", 1)
     if len(parts) < 2 or not parts[0]:
-        return 'mesh'  # 默认归 mesh（保守）
+        return "mesh"  # 默认归 mesh（保守）
     prefix = parts[0].lower()
-    return UE_UASSET_PREFIX_TYPE.get(prefix, 'mesh')
+    return UE_UASSET_PREFIX_TYPE.get(prefix, "mesh")
 
 
 def classify_file(filename: str) -> str:
@@ -114,11 +151,11 @@ def classify_file(filename: str) -> str:
     ext = os.path.splitext(filename)[1].lower()
 
     # .umap 是 UE 关卡
-    if ext == '.umap':
-        return 'level'
+    if ext == ".umap":
+        return "level"
 
     # .uasset 需要按命名约定细分
-    if ext == '.uasset':
+    if ext == ".uasset":
         return classify_unreal_uasset(filename)
 
     # 其余按扩展名表查找
@@ -127,32 +164,52 @@ def classify_file(filename: str) -> str:
             return asset_type
     return "other"
 
+
 # ===== 忽略目录（递归时跳过） =====
 
 # UE: Content/Plugins/Config 等是真正的资产目录；Library/Intermediate/Saved/DerivedDataCache 是构建产物
 # Unity: Assets/ 是真正的资产目录；Library/Temp/obj/Logs 是构建/导入产物
 IGNORE_DIRS = {
     # Unreal Engine
-    'binaries', 'intermediate', 'saved', 'deriveddatacache',
-    'plugins',  # 第三方插件通常不归到主项目
+    "binaries",
+    "intermediate",
+    "saved",
+    "deriveddatacache",
+    "plugins",  # 第三方插件通常不归到主项目
     # Unity
-    'library', 'temp', 'obj', 'logs', 'memorycaptures',
+    "library",
+    "temp",
+    "obj",
+    "logs",
+    "memorycaptures",
     # 通用
-    'node_modules', '.git', '.svn', '.hg', '__pycache__',
-    '.cache', '.next', '.nuxt', 'dist', 'build',
-    '.idea', '.vscode', '.vs',
+    "node_modules",
+    ".git",
+    ".svn",
+    ".hg",
+    "__pycache__",
+    ".cache",
+    ".next",
+    ".nuxt",
+    "dist",
+    "build",
+    ".idea",
+    ".vscode",
+    ".vs",
     # macOS / Windows 系统
-    '.ds_store', 'thumbs.db',
+    ".ds_store",
+    "thumbs.db",
 }
 
 # ===== 工具实现 =====
+
 
 async def analyze_assets(
     directory: str,
     recursive: bool = True,
     output_format: str = "summary",
     save_to_db: bool = False,
-    project: Optional[str] = None
+    project: Optional[str] = None,
 ) -> dict:
     """
     分析目录中的资产
@@ -190,10 +247,7 @@ async def analyze_assets(
                 files.append(full_path)
 
     if not files:
-        return format_result(
-            data={"count": 0},
-            message="目录为空"
-        )
+        return format_result(data={"count": 0}, message="目录为空")
 
     # 分类统计
     type_counts = {}
@@ -223,15 +277,15 @@ async def analyze_assets(
 
         # 收集待保存的资产
         if save_to_db:
-            assets_to_save.append({
-                'name': filename,
-                'type': asset_type,
-                'path': file_path,
-                'project': project,
-                'metadata': {
-                    'size': size
+            assets_to_save.append(
+                {
+                    "name": filename,
+                    "type": asset_type,
+                    "path": file_path,
+                    "project": project,
+                    "metadata": {"size": size},
                 }
-            })
+            )
 
     # 计算总大小
     total_size = sum(type_sizes.values())
@@ -254,7 +308,7 @@ async def analyze_assets(
         "total_files": len(files),
         "total_size": format_size(total_size),
         "total_size_mb": round(total_size_mb, 2),
-        "by_type": {}
+        "by_type": {},
     }
 
     for asset_type in sorted(type_counts.keys()):
@@ -262,7 +316,7 @@ async def analyze_assets(
             "count": type_counts[asset_type],
             "size": format_size(type_sizes.get(asset_type, 0)),
             "size_mb": round(type_sizes.get(asset_type, 0) / (1024 * 1024), 2),
-            "percentage": round(type_counts[asset_type] / len(files) * 100, 1)
+            "percentage": round(type_counts[asset_type] / len(files) * 100, 1),
         }
 
         if output_format == "detailed":
@@ -279,9 +333,9 @@ async def analyze_assets(
     naming_issues = []
     for file_path in files[:20]:
         filename = os.path.basename(file_path)
-        if ' ' in filename:
+        if " " in filename:
             naming_issues.append(f"'{filename}' 包含空格")
-        if filename.startswith('.'):
+        if filename.startswith("."):
             naming_issues.append(f"'{filename}' 隐藏文件")
 
     if naming_issues:
@@ -302,5 +356,6 @@ async def analyze_assets(
 
     return format_result(
         data=result_data,
-        message=f"发现 {len(files)} 个文件, 总计 {format_size(total_size)}" + (f", 已保存 {saved_count} 个到数据库" if saved_count > 0 else "")
+        message=f"发现 {len(files)} 个文件, 总计 {format_size(total_size)}"
+        + (f", 已保存 {saved_count} 个到数据库" if saved_count > 0 else ""),
     )

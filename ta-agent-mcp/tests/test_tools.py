@@ -3,13 +3,10 @@ TA Agent MCP Server 测试
 """
 
 import pytest
-import os
-import tempfile
-from pathlib import Path
 
-from ta_agent_mcp.tools.mesh import check_mesh_budget, check_fbx_info
-from ta_agent_mcp.tools.texture import check_texture_info, check_texture_batch, detect_texture_type
 from ta_agent_mcp.tools.asset import analyze_assets, classify_file
+from ta_agent_mcp.tools.mesh import check_fbx_info, check_mesh_budget
+from ta_agent_mcp.tools.texture import check_texture_info, detect_texture_type
 
 
 class TestTextureTools:

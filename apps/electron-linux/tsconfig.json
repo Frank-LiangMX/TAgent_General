@@ -1,9 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/renderer/*"],
+      "@/*": ["src/*"],
+      "@/renderer/*": ["src/renderer/*"],
+      "@/types/*": ["src/types/*"],
       "@tagent/shared": ["../../packages/shared/src"],
       "@tagent/core": ["../../packages/core/src"],
       "@tagent/ui": ["../../packages/ui/src"]
