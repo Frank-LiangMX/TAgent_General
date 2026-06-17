@@ -41,6 +41,7 @@ release/
 .tagent/
 tagent-running-data/
 tagent-dist/
+.kunsdd/
 *.spec.bak
 __pycache__/
 *.pyc
