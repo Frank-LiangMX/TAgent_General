@@ -86,10 +86,6 @@ linux:
       name: TAgent Share Package
       mimeType: application/x-tagent-share
 
-# AppImage 配置
-appImage:
-  systemIntegration: ask
-
 # deb 配置
 deb:
   priority: optional
@@ -105,10 +101,6 @@ deb:
     - libdrm2
     - libgbm1
     - libxcb-dri3-0
-
-# tar.gz 配置
-tar:
-  compression: xz
 
 # ============================================
 # 发布配置
