@@ -115,5 +115,5 @@ tar:
 # ============================================
 publish:
   provider: github
-  owner: ErlichLiu
-  repo: tagent
+  owner: Frank-LiangMX
+  repo: TAgent_General
