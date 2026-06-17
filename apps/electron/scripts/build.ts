@@ -284,7 +284,8 @@ function main(): void {
     if (platform === 'mac') {
       builderArgs.push(`--config.mac.target=${opts.format}`)
     } else if (platform === 'win') {
-      builderArgs.push(`--config.win.target.target=${opts.format}`)
+      // win.target 数组形式：nsis / portable
+      builderArgs.push(`--config.win.target=${opts.format}`)
     } else if (platform === 'linux') {
       builderArgs.push('--' + opts.format.toLowerCase())
     }

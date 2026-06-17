@@ -135,7 +135,7 @@ export function TabBar(): React.ReactElement {
   }, [tabs])
 
   if (tabs.length === 0) {
-    return <div className="h-[34px] titlebar-drag-region" />
+    return <div className="h-[34px] titlebar-drag-region relative z-[10]" />
   }
 
   return (
@@ -246,11 +246,11 @@ function TabBarInner({
           注意：不要把 titlebar-no-drag 加到下面的整条 flex 容器上，否则标签右侧空白会再次失去拖拽能力。
           Windows 上背景拖拽层避开右上角 WindowControls 区域（126px），防止 hitmask 重叠。
           需要交互的单个 Tab 会在 TabBarItem 内部自己声明 titlebar-no-drag。 */}
-      <div className={cn("absolute inset-0 titlebar-drag-region", isWindows && "right-[126px]")} />
+      <div className={cn("absolute inset-0 z-[10] titlebar-drag-region", isWindows && "right-[126px]")} />
 
       <div
         ref={scrollRef}
-        className={cn("relative flex items-end flex-1 min-w-0 overflow-x-auto scrollbar-none", isWindows && "pr-[126px]")}
+        className={cn("relative z-[2] flex items-end flex-1 min-w-0 overflow-x-auto scrollbar-none", isWindows && "pr-[126px]")}
       >
         {tabs.map((tab) => (
           <TabBarItem
