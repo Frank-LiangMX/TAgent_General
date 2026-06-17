@@ -1,6 +1,8 @@
 ﻿@echo off
 setlocal
 
+set "TAGENT_ROOT=%~dp0..\.."
+
 REM ============================================
 REM TAgent dev startup script
 REM 1. Clean old dev processes
@@ -13,7 +15,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process electron,ele
 
 echo.
 echo === [2/3] Sync resources to dist ===
-cd /d "%~dp0\apps\electron"
+cd /d "%TAGENT_ROOT%\apps\electron"
 call bun run build:resources
 if errorlevel 1 (
   echo [X] build:resources failed
@@ -22,5 +24,5 @@ if errorlevel 1 (
 
 echo.
 echo === [3/3] Starting dev server ===
-cd /d "%~dp0"
+cd /d "%TAGENT_ROOT%"
 bun run dev

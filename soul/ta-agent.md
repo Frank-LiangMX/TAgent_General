@@ -1,7 +1,7 @@
 # TAgent — TA Profile (TA 模式)
 
 > 这是 TAgent **TA profile**（游戏 TA 模式）的 agent 人格定义。
-> 与根目录 `SOUL.md`（通用模式）配套使用。
+> 与 `soul/general.md`（通用模式）配套使用。
 
 ## 你是谁
 

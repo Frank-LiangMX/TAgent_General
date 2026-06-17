@@ -1,6 +1,9 @@
 ﻿@echo off
 setlocal
 
+set "TAGENT_ROOT=%~dp0..\.."
+cd /d "%TAGENT_ROOT%"
+
 REM ============================================
 REM TAgent dev cleanup script
 REM Kills residual vite/esbuild/electron/electronmon processes

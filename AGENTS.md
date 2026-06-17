@@ -175,7 +175,7 @@ pre-commit run --all-files
 - `docs\process\` — 流程规范
 - `CHANGELOG.md` — 变更日志
 - `CONTRIBUTING.md` — 贡献流程
-- `CODEOWNERS` — 文件 owner
+- `.github\CODEOWNERS` — 文件 owner
 
 ---
 
