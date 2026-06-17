@@ -3,6 +3,7 @@
 
 appId: com.tagent.app
 productName: TAgent
+artifactName: '${productName}-${version}-${os}-${arch}.${ext}'
 copyright: Copyright © 2024-2026 Erlich Liu
 
 # Electron 版本
@@ -67,14 +68,12 @@ linux:
     - target: AppImage
       arch:
         - x64
-        - arm64
     - target: deb
       arch:
         - x64
     - target: tar.gz
       arch:
         - x64
-        - arm64
   mimeTypes:
     - application/x-tagent-backup
     - application/x-tagent-share

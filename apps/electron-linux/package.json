@@ -2,6 +2,7 @@
   "name": "@tagent/electron-linux",
   "version": "1.0.0",
   "description": "TAgent - General AI Agent Desktop App for Linux",
+  "homepage": "https://github.com/Frank-LiangMX/TAgent_General",
   "main": "dist/main.cjs",
   "author": {
     "name": "ErlichLiu",
