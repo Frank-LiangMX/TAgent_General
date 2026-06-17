@@ -34,7 +34,7 @@ jobs:
               apps/electron/out/*.zip
               apps/electron/out/*.blockmap
               apps/electron/out/*.yml
-          - os: windows-latest
+          - os: windows-2022
             package_args: --win
             workdir: apps/electron
             artifact: desktop-windows
@@ -67,6 +67,10 @@ jobs:
         with:
           node-version: '20'
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       # 删除国内 npm 镜像，CI 国际网络用官方源
       - name: Use official npm registry
         run: |
@@ -85,6 +89,9 @@ jobs:
           echo "Configured to use official registry"
 
       - name: Install dependencies
+        env:
+          PYTHON: python
+          npm_config_python: python
         run: |
           bun install --no-frozen-lockfile
 

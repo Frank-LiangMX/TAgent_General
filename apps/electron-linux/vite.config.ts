@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: resolve(__dirname, '../../dist/renderer'),
+    outDir: resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
