@@ -64,6 +64,10 @@ secrets/
 .DS_Store
 Thumbs.db
 
+# ===== Agent Tools =====
+.agents/
+.claude/settings.local.json
+
 # ===== Logs =====
 *.log
 logs/
