@@ -8,18 +8,18 @@ The App Sandbox restricts your app to a container directory and limits access to
 
 ### What the Sandbox Restricts
 
-| Resource | Default Access | How to Enable |
-|----------|---------------|---------------|
-| File system | App container only | Entitlements + user consent |
-| Network | None | `network.client` / `network.server` |
-| Camera | None | `device.camera` + usage description |
-| Microphone | None | `device.microphone` + usage description |
-| Location | None | `personal-information.location` |
-| Contacts | None | `personal-information.addressbook` |
-| Calendar | None | `personal-information.calendars` |
-| USB | None | `device.usb` |
-| Printing | None | `print` |
-| Apple Events | None | `automation.apple-events` |
+| Resource     | Default Access     | How to Enable                           |
+| ------------ | ------------------ | --------------------------------------- |
+| File system  | App container only | Entitlements + user consent             |
+| Network      | None               | `network.client` / `network.server`     |
+| Camera       | None               | `device.camera` + usage description     |
+| Microphone   | None               | `device.microphone` + usage description |
+| Location     | None               | `personal-information.location`         |
+| Contacts     | None               | `personal-information.addressbook`      |
+| Calendar     | None               | `personal-information.calendars`        |
+| USB          | None               | `device.usb`                            |
+| Printing     | None               | `print`                                 |
+| Apple Events | None               | `automation.apple-events`               |
 
 ### Container Directory
 
@@ -55,6 +55,7 @@ if response == .OK {
 ```
 
 **Entitlement required:**
+
 ```xml
 <key>com.apple.security.files.user-selected.read-only</key><true/>
 <!-- or for read-write: -->
@@ -115,6 +116,7 @@ class BookmarkManager {
 ```
 
 **Entitlement required:**
+
 ```xml
 <key>com.apple.security.files.bookmarks.app-scope</key><true/>
 <!-- For sharing bookmarks between apps: -->
@@ -203,13 +205,13 @@ For direct distribution (outside Mac App Store), you can use temporary exception
 
 ## Common Sandbox Rejection Reasons
 
-| Issue | Solution |
-|-------|----------|
-| Accessing files without user consent | Use NSOpenPanel or security-scoped bookmarks |
-| Network access without entitlement | Add `network.client` entitlement |
-| Writing outside container | Use Powerbox (panels) or bookmarks |
-| Apple Events without entitlement | Add `automation.apple-events` + target app in Info.plist |
-| Hardcoded paths (e.g., `~/Desktop`) | Use system APIs (`FileManager.urls(for:)`) |
+| Issue                                | Solution                                                 |
+| ------------------------------------ | -------------------------------------------------------- |
+| Accessing files without user consent | Use NSOpenPanel or security-scoped bookmarks             |
+| Network access without entitlement   | Add `network.client` entitlement                         |
+| Writing outside container            | Use Powerbox (panels) or bookmarks                       |
+| Apple Events without entitlement     | Add `automation.apple-events` + target app in Info.plist |
+| Hardcoded paths (e.g., `~/Desktop`)  | Use system APIs (`FileManager.urls(for:)`)               |
 
 ## Testing Sandbox
 

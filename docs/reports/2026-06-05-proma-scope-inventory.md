@@ -11,34 +11,34 @@
 
 **总计**：**385 个引用**，分布在 **181 个文件**中
 
-| Scope | 出现次数 | 备注 |
-|---|---|---|
-| `@proma/shared` | 313 | **最常用**，所有包的类型源头 |
-| `@proma/core` | 33 | Provider Adapter / 高亮 / 类型 |
-| `@proma/electron` | 22 | Electron 主进程 API |
-| `@proma/ui` | 15 | 共享 React 组件 |
-| `@proma/electron-dev` | 2 | 仅 dev 环境用 |
+| Scope                 | 出现次数 | 备注                           |
+| --------------------- | -------- | ------------------------------ |
+| `@proma/shared`       | 313      | **最常用**，所有包的类型源头   |
+| `@proma/core`         | 33       | Provider Adapter / 高亮 / 类型 |
+| `@proma/electron`     | 22       | Electron 主进程 API            |
+| `@proma/ui`           | 15       | 共享 React 组件                |
+| `@proma/electron-dev` | 2        | 仅 dev 环境用                  |
 
 ### 1.1 各包名（package.json 的 `name` 字段）现状
 
-| 包 | 当前 name | 改名目标 |
-|---|---|---|
-| 根 package.json | `proma` | `tagent` |
-| `packages/shared` | `@proma/shared` | `@tagent/shared` |
-| `packages/core` | `@proma/core` | `@tagent/core` |
-| `packages/ui` | `@proma/ui` | `@tagent/ui` |
-| `apps/electron` | `@proma/electron` | `@tagent/electron` |
+| 包                | 当前 name         | 改名目标           |
+| ----------------- | ----------------- | ------------------ |
+| 根 package.json   | `proma`           | `tagent`           |
+| `packages/shared` | `@proma/shared`   | `@tagent/shared`   |
+| `packages/core`   | `@proma/core`     | `@tagent/core`     |
+| `packages/ui`     | `@proma/ui`       | `@tagent/ui`       |
+| `apps/electron`   | `@proma/electron` | `@tagent/electron` |
 
 ### 1.2 需 codemod 改动的文件类型
 
-| 文件类型 | 数量（估算） | 改动内容 |
-|---|---|---|
-| `*.ts` / `*.tsx` | ~150 | import 路径 + 类型前缀 |
-| `package.json` | 5 | name 字段 |
-| `bun.lock` | 1 | 锁文件里所有 `@proma/*` 条目 |
-| `tsconfig.json` / `tsconfig.*.json` | ~5 | paths 字段（如果用） |
-| `CLAUDE.md` / `AGENTS.md` | 2 | 工程描述 |
-| README* | 2-3 | 项目名 / 描述 |
+| 文件类型                            | 数量（估算） | 改动内容                     |
+| ----------------------------------- | ------------ | ---------------------------- |
+| `*.ts` / `*.tsx`                    | ~150         | import 路径 + 类型前缀       |
+| `package.json`                      | 5            | name 字段                    |
+| `bun.lock`                          | 1            | 锁文件里所有 `@proma/*` 条目 |
+| `tsconfig.json` / `tsconfig.*.json` | ~5           | paths 字段（如果用）         |
+| `CLAUDE.md` / `AGENTS.md`           | 2            | 工程描述                     |
+| README\*                            | 2-3          | 项目名 / 描述                |
 
 ---
 
@@ -48,28 +48,28 @@
 
 ### 2.1 出现频率最高的"派生名"
 
-| 形式 | 数量 | 含义 |
-|---|---|---|
-| `Proma`（独立词） | 184 | 主要品牌名 |
-| `PromaLogo` | 1 | 组件名 |
-| `PromaLogoSettings` | 1 | 设置项 |
+| 形式                | 数量 | 含义       |
+| ------------------- | ---- | ---------- |
+| `Proma`（独立词）   | 184  | 主要品牌名 |
+| `PromaLogo`         | 1    | 组件名     |
+| `PromaLogoSettings` | 1    | 设置项     |
 
 ### 2.2 出现最频繁的文件（按 count）
 
-| 文件 | Proma 出现次数 | 类型 |
-|---|---|---|
-| `apps/electron/src/main/lib/agent-orchestrator.ts` | 16 | 核心 agent 编排 |
-| `apps/electron/src/main/index.ts` | 10 | 主进程入口 |
-| `apps/electron/src/main/ipc.ts` | 9 | IPC 桥 |
-| `apps/electron/src/main/lib/agent-prompt-builder.ts` | 9 | system prompt 构建 |
-| `apps/electron/src/main/lib/agent-session-manager.ts` | 7 | session 管理 |
-| `apps/electron/src/main/lib/channel-manager.ts` | 6 | 渠道管理 |
-| `apps/electron/src/main/lib/chat-service.ts` | 6 | 聊天服务 |
-| `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts` | 4 | Claude SDK 适配 |
-| `apps/electron/src/main/lib/agent-exit-plan-service.ts` | 4 | ExitPlan 模式 |
-| `apps/electron/src/main/lib/git-diff-service.ts` | 11 | git diff 服务 |
-| `apps/electron/src/main/lib/agent-permission-service.ts` | 1 | 权限服务 |
-| `apps/electron/src/main/lib/bridge-command-handler.ts` | 3 | bridge 命令处理 |
+| 文件                                                          | Proma 出现次数 | 类型               |
+| ------------------------------------------------------------- | -------------- | ------------------ |
+| `apps/electron/src/main/lib/agent-orchestrator.ts`            | 16             | 核心 agent 编排    |
+| `apps/electron/src/main/index.ts`                             | 10             | 主进程入口         |
+| `apps/electron/src/main/ipc.ts`                               | 9              | IPC 桥             |
+| `apps/electron/src/main/lib/agent-prompt-builder.ts`          | 9              | system prompt 构建 |
+| `apps/electron/src/main/lib/agent-session-manager.ts`         | 7              | session 管理       |
+| `apps/electron/src/main/lib/channel-manager.ts`               | 6              | 渠道管理           |
+| `apps/electron/src/main/lib/chat-service.ts`                  | 6              | 聊天服务           |
+| `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts` | 4              | Claude SDK 适配    |
+| `apps/electron/src/main/lib/agent-exit-plan-service.ts`       | 4              | ExitPlan 模式      |
+| `apps/electron/src/main/lib/git-diff-service.ts`              | 11             | git diff 服务      |
+| `apps/electron/src/main/lib/agent-permission-service.ts`      | 1              | 权限服务           |
+| `apps/electron/src/main/lib/bridge-command-handler.ts`        | 3              | bridge 命令处理    |
 
 ### 2.3 需特别关注的"硬品牌"位置
 
@@ -88,12 +88,14 @@
 ## 3. 风险点
 
 ### 3.1 ⚠️ 高风险
+
 - **`bun.lock`**：Bun 锁文件含所有 `@proma/*` 包的 URL 路径。codemod 后必须 `bun install` 重新生成，**不能直接文本替换**。
 - **`apps/electron/package-lock.json` / 嵌套 lock**：同上，npm 锁文件。
 - **`node_modules/`**：在 `.gitignore` 中，codemod 不应动。
 - **commit history**：含旧 commit 的 brand 字样，**不重写历史**（仓库通常不允许）。
 
 ### 3.2 ⚠️ 中风险
+
 - **GitHub Actions workflows**：CI 脚本可能 hardcode `proma` 字样。
 - **electron-builder 配置**：`productName` / `appId` / `artifactName`。
 - **测试文件**：`.test.ts` / `test_*.py` 文件可能含 brand assertion。
@@ -103,6 +105,7 @@
 - **Markdown 文件**：文档里的 `proma` 不影响功能但破坏一致性。
 
 ### 3.3 ✅ 低风险
+
 - `apps/electron/scripts/dist.ts` 等纯打包脚本
 - 测试 fixtures
 
@@ -126,12 +129,12 @@ bun add -d jscodeshift @types/jscodeshift
 
 ### 4.2 阶段（4 个 commit，与设计文档 §10 对齐）
 
-| commit | 内容 | 风险 | 影响 |
-|---|---|---|---|
-| 1 | 仅本报告（read-only 探察） | 零 | 仅 docs/ 新增 |
-| 2 | 写 codemod.py 脚本，**不跑** | 零 | 仅 scripts/ 新增 |
-| 3 | 复制 F:\Proma → F:\TAgent_General_rename_test\，跑 codemod，typecheck | 中 | 副本可删 |
-| 4 | 真在 F:\Proma 上跑 codemod，commit | **高** | 改源文件 |
+| commit | 内容                                                                  | 风险   | 影响             |
+| ------ | --------------------------------------------------------------------- | ------ | ---------------- |
+| 1      | 仅本报告（read-only 探察）                                            | 零     | 仅 docs/ 新增    |
+| 2      | 写 codemod.py 脚本，**不跑**                                          | 零     | 仅 scripts/ 新增 |
+| 3      | 复制 F:\Proma → F:\TAgent_General_rename_test\，跑 codemod，typecheck | 中     | 副本可删         |
+| 4      | 真在 F:\Proma 上跑 codemod，commit                                    | **高** | 改源文件         |
 
 ### 4.3 验收标准
 

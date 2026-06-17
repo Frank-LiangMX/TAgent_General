@@ -157,7 +157,10 @@ export function StickyUserMessage({ userMessages }: StickyUserMessageProps): Rea
             {/* 文本内容：最多两行，支持 Markdown 渲染 */}
             {stickyMessage?.text && (
               <div className="flex items-start gap-2">
-                <ChevronUp className="size-3 text-muted-foreground mt-1.5 shrink-0 cursor-pointer hover:text-foreground/70 transition-colors" onClick={scrollToOriginal} />
+                <ChevronUp
+                  className="size-3 text-muted-foreground mt-1.5 shrink-0 cursor-pointer hover:text-foreground/70 transition-colors"
+                  onClick={scrollToOriginal}
+                />
                 <div className="text-xs text-foreground/80 line-clamp-2 leading-relaxed flex-1 min-w-0">
                   <MessageResponse
                     className="prose-p:my-0 prose-p:inline prose-headings:my-0 prose-headings:text-sm prose-pre:hidden prose-ul:my-0 prose-ol:my-0 prose-li:my-0"

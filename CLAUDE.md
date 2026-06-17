@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **重要提示：**
+
 - 当功能发生变化时，请保持此文件和 `README.md` 同步更新。请更新文档以反映当前状态，但是需要经过我的允许后再修改。
 - 所有的注释和日志优先采用中文，保留必要的专业术语部分。
 - 所有的依赖包的安装都要先进行搜索，综合判断依赖采用的版本，而不是默认采用某个版本。
@@ -15,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目概述
 
 TAgent 是一个集成通用 AI Agent 的桌面应用，采用 Electron 架构。
+
 - **品牌约束**：代码/文档/git 提交中永远用 **TAgent**，不用 Proma
 - **数据目录**：`~/.tagent/`（开发模式 `~/.tagent-dev/`）
 - **包命名**：`@tagent/*` 作用域
@@ -73,6 +75,7 @@ bun run build:resources   # 复制 resources/ 到 dist/
 ## 运行时环境
 
 使用 Bun 代替 Node.js/npm/pnpm：
+
 - `bun install` 安装依赖，`bun run <script>` 运行脚本
 - `bun test` 运行测试（内置测试运行器）
 - Bun 自动加载 .env 文件（无需 dotenv）
@@ -80,21 +83,21 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 ## 技术栈
 
-| 层级 | 技术 | 版本 |
-|------|------|------|
-| **运行时** | Bun | 1.2.5+ |
-| **语言** | TypeScript | 5.0.0+ |
-| **桌面框架** | Electron | 39.5.1 |
-| **前端框架** | React | 18.3.1 |
-| **状态管理** | Jotai | 2.17.1 |
-| **UI 组件** | Radix UI | 最新 |
-| **样式** | Tailwind CSS | 3.4.17 |
-| **富文本编辑器** | TipTap | 3.19.0 |
-| **代码高亮** | Shiki | 3.22.0 |
-| **构建工具** | Vite | 6.0.3 |
-| **打包工具** | esbuild | 0.24.0+ |
-| **分发工具** | Electron Builder | 25.1.8 |
-| **Agent SDK** | @anthropic-ai/claude-agent-sdk | 0.3.143 |
+| 层级             | 技术                           | 版本    |
+| ---------------- | ------------------------------ | ------- |
+| **运行时**       | Bun                            | 1.2.5+  |
+| **语言**         | TypeScript                     | 5.0.0+  |
+| **桌面框架**     | Electron                       | 39.5.1  |
+| **前端框架**     | React                          | 18.3.1  |
+| **状态管理**     | Jotai                          | 2.17.1  |
+| **UI 组件**      | Radix UI                       | 最新    |
+| **样式**         | Tailwind CSS                   | 3.4.17  |
+| **富文本编辑器** | TipTap                         | 3.19.0  |
+| **代码高亮**     | Shiki                          | 3.22.0  |
+| **构建工具**     | Vite                           | 6.0.3   |
+| **打包工具**     | esbuild                        | 0.24.0+ |
+| **分发工具**     | Electron Builder               | 25.1.8  |
+| **Agent SDK**    | @anthropic-ai/claude-agent-sdk | 0.3.143 |
 
 ## 核心架构
 
@@ -119,36 +122,36 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 ### 主进程服务层（`main/lib/`）
 
-| 服务 | 职责 |
-|------|------|
-| `agent-orchestrator.ts` | Agent 核心编排：并发守卫、渠道查找、环境构建、消息持久化、事件流处理 |
-| `agent-session-manager.ts` | Agent 会话管理：SDK 消息持久化、会话元数据 CRUD |
-| `agent-prompt-builder.ts` | Agent 系统提示词构建 |
-| `agent-workspace-manager.ts` | 工作区管理：MCP Server 配置、Skills 配置 |
-| `chat-service.ts` | Chat 流式调用编排 |
-| `channel-manager.ts` | 渠道管理：渠道 CRUD、API Key 加密 |
+| 服务                         | 职责                                                                 |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `agent-orchestrator.ts`      | Agent 核心编排：并发守卫、渠道查找、环境构建、消息持久化、事件流处理 |
+| `agent-session-manager.ts`   | Agent 会话管理：SDK 消息持久化、会话元数据 CRUD                      |
+| `agent-prompt-builder.ts`    | Agent 系统提示词构建                                                 |
+| `agent-workspace-manager.ts` | 工作区管理：MCP Server 配置、Skills 配置                             |
+| `chat-service.ts`            | Chat 流式调用编排                                                    |
+| `channel-manager.ts`         | 渠道管理：渠道 CRUD、API Key 加密                                    |
 
 ### AI Provider 适配器（`packages/core/src/providers/`）
 
 基于适配器模式的多 Provider 支持：
 
-| Provider | 适配器 | API 协议 |
-|----------|--------|----------|
-| **Anthropic** | `anthropic-adapter.ts` | Messages API |
-| **OpenAI** | `openai-adapter.ts` | Chat Completions |
-| **DeepSeek** | `anthropic-adapter.ts` | Anthropic 兼容 |
-| **智谱 AI** | `openai-adapter.ts` | OpenAI 兼容 |
-| **Google** | `google-adapter.ts` | Generative Language API |
-| **Custom** | `openai-adapter.ts` | 自定义端点 |
+| Provider      | 适配器                 | API 协议                |
+| ------------- | ---------------------- | ----------------------- |
+| **Anthropic** | `anthropic-adapter.ts` | Messages API            |
+| **OpenAI**    | `openai-adapter.ts`    | Chat Completions        |
+| **DeepSeek**  | `anthropic-adapter.ts` | Anthropic 兼容          |
+| **智谱 AI**   | `openai-adapter.ts`    | OpenAI 兼容             |
+| **Google**    | `google-adapter.ts`    | Generative Language API |
+| **Custom**    | `openai-adapter.ts`    | 自定义端点              |
 
 ### Jotai 状态管理（`renderer/atoms/`）
 
-| Atom 文件 | 管理的状态 |
-|-----------|-----------|
-| `chat-atoms.ts` | 对话列表、当前消息、流式状态、模型选择 |
+| Atom 文件        | 管理的状态                                         |
+| ---------------- | -------------------------------------------------- |
+| `chat-atoms.ts`  | 对话列表、当前消息、流式状态、模型选择             |
 | `agent-atoms.ts` | Agent 会话列表、当前会话、工作区选择、权限请求队列 |
-| `app-mode.ts` | 应用模式（Chat / Agent） |
-| `theme.ts` | 主题模式 |
+| `app-mode.ts`    | 应用模式（Chat / Agent）                           |
+| `theme.ts`       | 主题模式                                           |
 
 ### 本地文件存储（`~/.tagent/`）
 
@@ -191,22 +194,26 @@ bun run build:resources   # 复制 resources/ 到 dist/
 ## UI 风格规范
 
 **工具栏按钮一致性**：
+
 - 所有工具栏按钮必须是 **36px 圆形按钮**（`size-[36px] rounded-full`）
 - 使用 `variant="ghost"` + `text-foreground/60 hover:text-foreground` 作为默认样式
 - 状态变化通过**图标颜色**体现，不用边框或背景
 
 **Popover vs Tooltip**：
+
 - Tooltip：hover 显示简短提示，用于无交互的预览
 - Popover：click 打开，用于有交互的设置面板
 - 两者可以组合：Tooltip 显示当前状态，点击打开 Popover 调整
 
 **Popover 内容样式**：
+
 - 标题用 `text-xs font-medium text-foreground/80`
 - 选项用 `text-xs`，描述用 `text-[10px] text-muted-foreground`
 - 选项布局：单行 `label + desc`，或两行紧凑排列
 - 宽度：`w-auto min-w-[180px]`，不要过宽
 
 **颜色语义**：
+
 - 默认/保守：`text-foreground/60`
 - 中性/信息：`text-blue-500 dark:text-blue-400`
 - 警告/积极：`text-amber-500 dark:text-amber-400`
@@ -214,6 +221,7 @@ bun run build:resources   # 复制 resources/ 到 dist/
 - 禁用/从无：`text-muted-foreground`
 
 **参考组件**：
+
 - `ContextUsageBadge`：圆形按钮 + Popover + 紧凑布局
 - `PermissionModeSelector`：圆形按钮 + Tooltip + 点击切换
 - `AgentThinkingPopover`：圆形按钮 + Popover + Switch 开关
@@ -262,12 +270,14 @@ React UI 更新
 **当前阶段**：MVP 设计已拍板，实施进行中
 
 **已完成**（截至 2026-06-06）：
+
 - Tier 1+2 品牌清理（全清 "proma" 标识）
 - §8.4 Context 管理 6/7 项实现
 - ESLint 9 升级 + 434 warnings 清理
 - 93 个单元测试
 
 **剩余任务**：
+
 - 🟡 P1-3 客户端 `compact_session` 工具（最大件）
 - 🟢 功能验证 + 单测补充
 
@@ -288,6 +298,7 @@ React UI 更新
 5. **问用户确认** — 重大改动前先问
 
 **第一句话建议**：
+
 ```
 我已读完 CLAUDE.md 和 .context/PROGRESS.md，了解项目当前状态。
 请问接下来需要我做什么？

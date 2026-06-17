@@ -86,7 +86,7 @@ export async function fetchInstallerManifest(force = false): Promise<InstallerMa
   try {
     const response = await fetch(MANIFEST_URL, {
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'User-Agent': 'TAgent-Desktop-App',
       },
     })
@@ -104,10 +104,7 @@ export async function fetchInstallerManifest(force = false): Promise<InstallerMa
     console.log(`[Installer Manifest] 远程清单获取成功，共 ${data.installers.length} 项`)
     return data
   } catch (error) {
-    console.warn(
-      `[Installer Manifest] 远程清单获取失败，降级到内置 fallback:`,
-      error,
-    )
+    console.warn(`[Installer Manifest] 远程清单获取失败，降级到内置 fallback:`, error)
     // 不缓存 fallback，下一次仍然先试远程
     return BUILTIN_FALLBACK
   }
@@ -119,7 +116,7 @@ export async function fetchInstallerManifest(force = false): Promise<InstallerMa
 export function findInstallerSource(
   manifest: InstallerManifest,
   id: string,
-  arch: 'x64' | 'arm64',
+  arch: 'x64' | 'arm64'
 ): InstallerSource | undefined {
   return manifest.installers.find((s) => s.id === id && s.arch === arch)
 }

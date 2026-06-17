@@ -47,9 +47,7 @@ export function renderCard(state: RunState, opts: RenderOptions = {}): object {
     elements.push(reasoningPanel(state.reasoning.content, state.reasoning.active))
   }
 
-  const visibleBlocks = showToolCalls
-    ? state.blocks
-    : state.blocks.filter((b) => b.kind !== 'tool')
+  const visibleBlocks = showToolCalls ? state.blocks : state.blocks.filter((b) => b.kind !== 'tool')
 
   for (const group of groupBlocks(visibleBlocks)) {
     if (group.kind === 'text') {
@@ -91,7 +89,8 @@ export function renderCard(state: RunState, opts: RenderOptions = {}): object {
   if (opts.header) {
     card.header = {
       title: { tag: 'plain_text', content: opts.header },
-      template: state.terminal === 'error' ? 'red' : state.terminal === 'running' ? 'blue' : 'default',
+      template:
+        state.terminal === 'error' ? 'red' : state.terminal === 'running' ? 'blue' : 'default',
     }
   }
 
@@ -207,9 +206,9 @@ function footerStatus(status: Exclude<FooterStatus, null>, blocks: Block[]): obj
   if (status === 'thinking') return noteMd('正在思考')
   if (status === 'streaming') return noteMd('正在输出')
   // tool_running：找到最新运行中的工具，把名字带上让用户知道具体在调什么
-  const runningTool = [...blocks].reverse().find(
-    (b) => b.kind === 'tool' && b.tool.status === 'running',
-  )
+  const runningTool = [...blocks]
+    .reverse()
+    .find((b) => b.kind === 'tool' && b.tool.status === 'running')
   if (runningTool && runningTool.kind === 'tool') {
     return noteMd(`正在调用 \`${runningTool.tool.name}\``)
   }

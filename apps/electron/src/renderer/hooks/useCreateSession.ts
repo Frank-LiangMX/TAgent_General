@@ -11,20 +11,15 @@ import { useOpenSession } from './useOpenSession'
 
 import type { AgentSessionMeta } from '@tagent/shared'
 
-
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
   agentChannelIdAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import {
-  conversationsAtom,
-  selectedModelAtom,
-} from '@/atoms/chat-atoms'
+import { conversationsAtom, selectedModelAtom } from '@/atoms/chat-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
-
 
 interface CreateSessionOptions {
   /** 标记为草稿会话（不在侧边栏显示，发送首条消息后自动取消） */
@@ -61,25 +56,33 @@ export function useCreateSession(): CreateSessionActions {
   const agentChannelId = useAtomValue(agentChannelIdAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
 
-  const createChat = async (options?: CreateSessionOptions): Promise<{ id: string; title: string } | undefined> => {
+  const createChat = async (
+    options?: CreateSessionOptions
+  ): Promise<{ id: string; title: string } | undefined> => {
     // P3: Chat 模式已退役，此函数保留用于向后兼容但不再创建 Chat 会话
     console.warn('[createChat] Chat 模式已退役，请使用 createAgent')
     return undefined
   }
 
-  const createAgent = async (options?: CreateSessionOptions): Promise<AgentSessionMeta | undefined> => {
+  const createAgent = async (
+    options?: CreateSessionOptions
+  ): Promise<AgentSessionMeta | undefined> => {
     try {
       const meta = await window.electronAPI.createAgentSession(
         undefined,
         options?.channelId ?? agentChannelId ?? undefined,
         currentWorkspaceId || undefined,
-        options?.mode,
+        options?.mode
       )
       setAgentSessions((prev) => [meta, ...prev])
       openSession('agent', meta.id, meta.title, options?.mode)
       setActiveView('conversations')
       if (options?.draft) {
-        setDraftSessionIds((prev: Set<string>) => { const next = new Set(prev); next.add(meta.id); return next })
+        setDraftSessionIds((prev: Set<string>) => {
+          const next = new Set(prev)
+          next.add(meta.id)
+          return next
+        })
       }
       return meta
     } catch (error) {

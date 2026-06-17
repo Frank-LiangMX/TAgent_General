@@ -11,12 +11,14 @@
 ## 1. 目标
 
 为 TAgent Desktop 提供**公司内网部署的 metadata 同步服务**：
+
 - 多个员工的 TA 模式共享资产元数据
 - SSO 复用公司现有账号体系
 - 资产文件仍由 SVN 管理，server **不碰文件**
 - Local 优先，server 是 metadata 权威源
 
 **不是目标**：
+
 - ❌ 替换 SVN
 - ❌ 上传 / 存储资产文件本体
 - ❌ 多人协作编辑（实时合并 / OT / CRDT）
@@ -26,18 +28,18 @@
 
 ## 2. 已拍板的关键决策
 
-| # | 决策点 | 选择 |
-|---|---|---|
-| 1 | 鉴权 | **复用公司内部 SSO**（`intranet-xsjsso.seasungame.com`，AES 加密本地配置） |
-| 2 | 同步范型 | **Server 是 metadata 权威源**（client push → server 确认 → 通知其他 client pull） |
-| 3 | 资产文件 | **不上传**（SVN 管文件本体） |
-| 4 | 资产 ID | **SVN 路径 + 文件 hash 前缀**（`"Assets/Hero/SK_Hero_01.fbx::a3f2e1"`，本地可独立算） |
-| 5 | 项目结构 | **独立项目**（与 TAgent Desktop 并行） |
-| 6 | Server 形态 | **Python FastAPI + Postgres + Docker**（公司内网单机部署） |
-| 7 | 实时性 | **WebSocket 推送变更通知**（不是轮询） |
-| 8 | 冲突解决 | **Server-wins**（按 metadata updated_at；状态机强顺序） |
-| 9 | Sync 位置 | **嵌入 TAgent Desktop 主进程**（不独立打包，共享 Python 虚拟环境） |
-| 10 | 通用模式 | **不参与**（通用模式永远离线） |
+| #   | 决策点      | 选择                                                                                  |
+| --- | ----------- | ------------------------------------------------------------------------------------- |
+| 1   | 鉴权        | **复用公司内部 SSO**（`intranet-xsjsso.seasungame.com`，AES 加密本地配置）            |
+| 2   | 同步范型    | **Server 是 metadata 权威源**（client push → server 确认 → 通知其他 client pull）     |
+| 3   | 资产文件    | **不上传**（SVN 管文件本体）                                                          |
+| 4   | 资产 ID     | **SVN 路径 + 文件 hash 前缀**（`"Assets/Hero/SK_Hero_01.fbx::a3f2e1"`，本地可独立算） |
+| 5   | 项目结构    | **独立项目**（与 TAgent Desktop 并行）                                                |
+| 6   | Server 形态 | **Python FastAPI + Postgres + Docker**（公司内网单机部署）                            |
+| 7   | 实时性      | **WebSocket 推送变更通知**（不是轮询）                                                |
+| 8   | 冲突解决    | **Server-wins**（按 metadata updated_at；状态机强顺序）                               |
+| 9   | Sync 位置   | **嵌入 TAgent Desktop 主进程**（不独立打包，共享 Python 虚拟环境）                    |
+| 10  | 通用模式    | **不参与**（通用模式永远离线）                                                        |
 
 ---
 
@@ -86,12 +88,14 @@
 ```
 
 **Server 不存储**：
+
 - ❌ 资产文件本体（FBX / 贴图）—— SVN 管
 - ❌ 资产文件夹结构 —— 推算自 svn_path
 - ❌ 用户表 —— 复用 SSO
 - ❌ 项目成员表 —— 复用 SSO 用户组
 
 **Server 存储**：
+
 - ✅ Asset metadata（tags、分类、审核状态、关联关系）
 - ✅ Convention 文档（带版本）
 - ✅ Preview 缩略图（小文件）
@@ -149,6 +153,7 @@ TAgent Desktop (Electron)
 ```
 
 **为什么用 TS 调 Python，而不是直接 Python daemon**：
+
 - TAgent Desktop 主进程已是 TS，main 进程管理 Electron
 - SyncEngine 是个 TS 模块，**调用** ta_agent 已有 Python 代码（通过 IPC 或 subprocess）
 - 不需要新开 daemon 进程（OS 进程数 -1）
@@ -166,7 +171,7 @@ CREATE TABLE asset_metadata (
   svn_path           TEXT NOT NULL UNIQUE,   -- SVN 相对路径
   file_hash          TEXT,                   -- 完整 hash (冲突检测)
   file_size          BIGINT,
-  
+
   -- 业务字段 (从 ta_agent AssetTags 迁过来)
   asset_name         TEXT,
   asset_type         TEXT,                   -- static_mesh / skeletal_mesh / texture / animation / material
@@ -174,29 +179,29 @@ CREATE TABLE asset_metadata (
   subcategory        TEXT,
   style              TEXT,
   condition          TEXT,
-  
+
   -- 三层 tags (JSONB, 灵活)
   geometry_tags      JSONB DEFAULT '{}',
   texture_tags       JSONB DEFAULT '{}',
   material_tags      JSONB DEFAULT '{}',
   visual_tags        JSONB DEFAULT '{}',
-  
+
   -- 审核状态
   review_status      TEXT DEFAULT 'pending',  -- pending / approved / rejected / imported
   review_confidence  REAL,
   reviewer_id        TEXT,
   reviewed_at        TIMESTAMPTZ,
-  
+
   -- 元数据
   created_by_user    TEXT NOT NULL,           -- SSO user_id
   created_at         TIMESTAMPTZ DEFAULT NOW(),
   updated_by_user    TEXT NOT NULL,
   updated_at         TIMESTAMPTZ DEFAULT NOW(),
-  
+
   -- 软删除
   deleted_at         TIMESTAMPTZ,
   deleted_by_user    TEXT,
-  
+
   -- 防冲突
   version            BIGINT NOT NULL DEFAULT 1  -- 每次更新 +1, 用于乐观锁
 );
@@ -212,6 +217,7 @@ CREATE INDEX idx_asset_review ON asset_metadata(review_status);
 ```
 
 **asset_id 怎么算**（客户端本地）：
+
 ```python
 import hashlib
 
@@ -303,6 +309,7 @@ async def current_user(token: str = Depends(oauth2_scheme)) -> dict:
 ### 6.2 同步端点（核心）
 
 #### `POST /api/sync/push`
+
 ```python
 class PushRequest(BaseModel):
     device_id: str
@@ -336,6 +343,7 @@ class Conflict(BaseModel):
 ```
 
 #### `GET /api/sync/pull`
+
 ```
 GET /api/sync/pull?since_cursor=<int>&limit=<int=100>
 
@@ -358,6 +366,7 @@ Response:
 ```
 
 #### `GET /api/sync/full`（首次接入 / 长期断网后）
+
 ```
 GET /api/sync/full?since=<iso_date>&tables=asset_metadata,convention_versions
 
@@ -367,26 +376,31 @@ Response: 同 push 格式, 但 server 把所有变更打包返回
 ### 6.3 资源端点
 
 #### `GET /api/asset/search?q=...&type=...&category=...&limit=50`
+
 ```
 使用 Postgres tsvector 全文搜索 + 业务字段过滤
 ```
 
 #### `GET /api/asset/{asset_id}`
+
 ```
 返回单个 asset_metadata 完整记录 + preview_url
 ```
 
 #### `POST /api/asset` （创建，等同 push 一个 create）
+
 ```
 通常 push 已经够用。POST 用于 UI 主动操作。
 ```
 
 #### `GET /api/convention/{project_id}?file_path=...`
+
 ```
 返回当前发布版本的规范内容
 ```
 
 #### `POST /api/convention/{project_id}/publish`
+
 ```
 发布新版本
 {
@@ -397,6 +411,7 @@ Response: 同 push 格式, 但 server 把所有变更打包返回
 ```
 
 #### `GET /api/project/list`
+
 ```
 返回当前用户能访问的项目列表 (从 SSO groups 映射)
 ```
@@ -404,6 +419,7 @@ Response: 同 push 格式, 但 server 把所有变更打包返回
 ### 6.4 WebSocket
 
 #### `WS /ws/sync?token=<token>`
+
 ```
 连接时验 token
 连接后订阅当前用户能访问的所有项目的变更
@@ -472,11 +488,11 @@ client 收到后:
 
 ### 7.4 冲突场景
 
-| 场景 | 检测 | 解决 |
-|---|---|---|
-| A 改 tag, B 同时改 tag | push 时 version 不匹配 | server-wins, A 收到 conflicts[] |
-| A 审核通过, B 同时改状态 | push 时状态机违例 | 拒绝 B, 返回 conflict |
-| A 删, B 同时改 | push 时 server 是 deleted | B 收到 conflict, B 选择是否恢复 |
+| 场景                             | 检测                            | 解决                              |
+| -------------------------------- | ------------------------------- | --------------------------------- |
+| A 改 tag, B 同时改 tag           | push 时 version 不匹配          | server-wins, A 收到 conflicts[]   |
+| A 审核通过, B 同时改状态         | push 时状态机违例               | 拒绝 B, 返回 conflict             |
+| A 删, B 同时改                   | push 时 server 是 deleted       | B 收到 conflict, B 选择是否恢复   |
 | A 改名 (svn_path 变了), B 改 tag | asset_id 变了, B 的旧 ID 不存在 | B 收到 conflict, 提示资产已重命名 |
 
 ### 7.5 离线场景
@@ -501,11 +517,13 @@ client 收到后:
 **2026-06-05 决策**：MVP 阶段**不接 SSO**。理由：TAgent 自己的 `appid/appsecret/aes_key/aes_iv` 还没向 SSO 管理员申请，现有 truedepth 的凭证（`appid="blender"`）不能用在 TAgent 上。
 
 **MVP 简化鉴权**：
+
 - 每个 API 请求带 `X-Username: <工号>` 头
 - Server 不验证（内网信任）
 - 业务代码用 `Depends(current_user)`，鉴权实现可后续替换
 
 **升级到 SSO 路径**（M1+ 阶段）：
+
 1. 找 SSO 管理员申请 TAgent 的 appid（`tagent-desktop` 和 `tagent-server`）
 2. 拿到 `appsecret / aes_key / aes_iv`
 3. 复用 truedepth 的 SSO 客户端代码（抽出 `tagent_sso` Python 包）
@@ -515,6 +533,7 @@ client 收到后:
 业务代码（API 端点）零修改，只需改 auth 层。
 
 **详细 SSO 集成方案**（已讨论，**待 SSO appid 申请下来后**再实施）：
+
 - 借鉴 `C:\Users\liangmingxuan\AppData\Roaming\Blender Foundation\Blender\4.3\extensions\user_default\truedepth\account_auth.py` 的 XSJSSO 模式
 - 复用其 AES-CBC 密码加密 + xsjsso_md5 签名
 - 12 小时 token 失效
@@ -527,16 +546,16 @@ client 收到后:
 
 ### 9.1 阶段
 
-| 阶段 | 内容 | 估时 |
-|---|---|---|
-| **S0 设计细化** | 本设计文档细化、Postgres schema 评审、SSO 客户端复用代码抽出 | 1 周 |
-| **S1 TAgent Server 基础** | FastAPI 骨架 + Postgres + Docker + Alembic 迁移 | 1 周 |
-| **S2 鉴权 + API 骨架** | SSO 集成、auth 依赖、project/asset/convention 基础 CRUD | 1.5 周 |
-| **S3 同步协议** | push/pull/full 端点 + 冲突解决 + audit_log | 1.5 周 |
-| **S4 WebSocket** | 实时推送 + 客户端订阅 | 0.5 周 |
-| **S5 TAgent Desktop SyncEngine** | 嵌入 TS SyncEngine + SSO 登录 UI + 状态栏 | 2 周 |
-| **S6 集成测试** | 多客户端同步、断网/重连、冲突场景 | 1 周 |
-| **合计** | | **8-9 周** |
+| 阶段                             | 内容                                                         | 估时       |
+| -------------------------------- | ------------------------------------------------------------ | ---------- |
+| **S0 设计细化**                  | 本设计文档细化、Postgres schema 评审、SSO 客户端复用代码抽出 | 1 周       |
+| **S1 TAgent Server 基础**        | FastAPI 骨架 + Postgres + Docker + Alembic 迁移              | 1 周       |
+| **S2 鉴权 + API 骨架**           | SSO 集成、auth 依赖、project/asset/convention 基础 CRUD      | 1.5 周     |
+| **S3 同步协议**                  | push/pull/full 端点 + 冲突解决 + audit_log                   | 1.5 周     |
+| **S4 WebSocket**                 | 实时推送 + 客户端订阅                                        | 0.5 周     |
+| **S5 TAgent Desktop SyncEngine** | 嵌入 TS SyncEngine + SSO 登录 UI + 状态栏                    | 2 周       |
+| **S6 集成测试**                  | 多客户端同步、断网/重连、冲突场景                            | 1 周       |
+| **合计**                         |                                                              | **8-9 周** |
 
 ### 9.2 MVP 边界
 
@@ -550,29 +569,29 @@ client 收到后:
 
 ### 9.3 与 TAgent Desktop 实施的关系
 
-| 阶段 | TAgent Desktop 端 | TAgent Server 端 |
-|---|---|---|
-| P0 品牌替换 + ta_agent MCP server | ✅ 必做 | — |
-| P1 ModeManager + 模式切换 | ✅ 必做 | — |
-| P2 资产库 SQLite 直读 | ✅ 必做 | — |
-| S0-S4 Server 基础 | — | ✅ 必做 |
-| S5 Desktop 加 SyncEngine | ✅ Server 端必须先好 | ✅ |
-| S6 集成测试 | ✅ 一起做 | ✅ 一起做 |
+| 阶段                              | TAgent Desktop 端    | TAgent Server 端 |
+| --------------------------------- | -------------------- | ---------------- |
+| P0 品牌替换 + ta_agent MCP server | ✅ 必做              | —                |
+| P1 ModeManager + 模式切换         | ✅ 必做              | —                |
+| P2 资产库 SQLite 直读             | ✅ 必做              | —                |
+| S0-S4 Server 基础                 | —                    | ✅ 必做          |
+| S5 Desktop 加 SyncEngine          | ✅ Server 端必须先好 | ✅               |
+| S6 集成测试                       | ✅ 一起做            | ✅ 一起做        |
 
 ---
 
 ## 10. 风险与缓解
 
-| 风险 | 影响 | 缓解 |
-|---|---|---|
-| SSO 服务挂了 | 整 server 不可用 | TAgent Desktop 降级纯本地 |
-| Postgres 写满了 / 备份失败 | 数据丢失 | 每日 pg_dump + 30 天滚动 |
-| WebSocket 长连不稳 | 推送延迟 | 客户端 30s 心跳 + 断线重连 + 60s 强制 pull |
-| 网络分区下多人改冲突 | 数据不一致 | server-wins + audit_log 可追溯 |
-| 客户端时钟漂移导致 updated_at 错 | 冲突解决错 | server 写 `server_updated_at`, 客户端不参与 |
-| 预览图 blob 大量占用 | 存储满 | 缩略图限 256KB, 每日清理孤儿 |
-| 员工离职 SSO 关停 | 其 push token 失效 | 自动清理 sync_state 标记 |
-| 大批量首次同步卡 | 用户体验差 | 分页 + 进度条 + 后台跑 |
+| 风险                             | 影响               | 缓解                                        |
+| -------------------------------- | ------------------ | ------------------------------------------- |
+| SSO 服务挂了                     | 整 server 不可用   | TAgent Desktop 降级纯本地                   |
+| Postgres 写满了 / 备份失败       | 数据丢失           | 每日 pg_dump + 30 天滚动                    |
+| WebSocket 长连不稳               | 推送延迟           | 客户端 30s 心跳 + 断线重连 + 60s 强制 pull  |
+| 网络分区下多人改冲突             | 数据不一致         | server-wins + audit_log 可追溯              |
+| 客户端时钟漂移导致 updated_at 错 | 冲突解决错         | server 写 `server_updated_at`, 客户端不参与 |
+| 预览图 blob 大量占用             | 存储满             | 缩略图限 256KB, 每日清理孤儿                |
+| 员工离职 SSO 关停                | 其 push token 失效 | 自动清理 sync_state 标记                    |
+| 大批量首次同步卡                 | 用户体验差         | 分页 + 进度条 + 后台跑                      |
 
 ---
 

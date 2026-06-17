@@ -9,7 +9,6 @@ import { useSetAtom } from 'jotai'
 import { Search, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-
 import { FileTypeIcon } from './FileTypeIcon'
 
 import type { FileIndexEntry } from '@tagent/shared'
@@ -59,13 +58,16 @@ export function FileSearchBar({
   const hasAnyRoot = !!workspaceFilesPath || !!sessionPath
 
   /** 将搜索结果的相对路径转为绝对路径，供 FileBrowser 自动定位使用 */
-  const resolveAbsolutePath = React.useCallback((entry: FileIndexEntry): string => {
-    if (entry.path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(entry.path)) return entry.path
-    const base = entry.source === 'workspace' ? workspaceFilesPath : sessionPath
-    if (!base) return entry.path
-    const sep = base.includes('\\') && !base.includes('/') ? '\\' : '/'
-    return `${base.replace(/[\\/]+$/, '')}${sep}${entry.path}`
-  }, [workspaceFilesPath, sessionPath])
+  const resolveAbsolutePath = React.useCallback(
+    (entry: FileIndexEntry): string => {
+      if (entry.path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(entry.path)) return entry.path
+      const base = entry.source === 'workspace' ? workspaceFilesPath : sessionPath
+      if (!base) return entry.path
+      const sep = base.includes('\\') && !base.includes('/') ? '\\' : '/'
+      return `${base.replace(/[\\/]+$/, '')}${sep}${entry.path}`
+    },
+    [workspaceFilesPath, sessionPath]
+  )
 
   // 防抖搜索 — 分别搜索两个目录
   React.useEffect(() => {
@@ -105,25 +107,29 @@ export function FileSearchBar({
 
         if (workspaceFilesPath) {
           searches.push(
-            window.electronAPI.searchWorkspaceFiles(
-              workspaceFilesPath,
-              trimmed,
-              30,
-              workspaceAttachedDirs.length > 0 ? workspaceAttachedDirs : undefined,
-            ).then((r) => r.entries.map((e) => ({ ...e, source: 'workspace' as const })))
-            .catch(() => [] as FileIndexEntry[]),
+            window.electronAPI
+              .searchWorkspaceFiles(
+                workspaceFilesPath,
+                trimmed,
+                30,
+                workspaceAttachedDirs.length > 0 ? workspaceAttachedDirs : undefined
+              )
+              .then((r) => r.entries.map((e) => ({ ...e, source: 'workspace' as const })))
+              .catch(() => [] as FileIndexEntry[])
           )
         }
 
         if (sessionPath) {
           searches.push(
-            window.electronAPI.searchWorkspaceFiles(
-              sessionPath,
-              trimmed,
-              30,
-              sessionAttachedDirs.length > 0 ? sessionAttachedDirs : undefined,
-            ).then((r) => r.entries.map((e) => ({ ...e, source: 'session' as const })))
-            .catch(() => [] as FileIndexEntry[]),
+            window.electronAPI
+              .searchWorkspaceFiles(
+                sessionPath,
+                trimmed,
+                30,
+                sessionAttachedDirs.length > 0 ? sessionAttachedDirs : undefined
+              )
+              .then((r) => r.entries.map((e) => ({ ...e, source: 'session' as const })))
+              .catch(() => [] as FileIndexEntry[])
           )
         }
 
@@ -157,7 +163,14 @@ export function FileSearchBar({
       if (debounceRef.current) clearTimeout(debounceRef.current)
       abortRef.current?.abort()
     }
-  }, [query, workspaceFilesPath, sessionPath, sessionAttachedDirs, workspaceAttachedDirs, hasAnyRoot])
+  }, [
+    query,
+    workspaceFilesPath,
+    sessionPath,
+    sessionAttachedDirs,
+    workspaceAttachedDirs,
+    hasAnyRoot,
+  ])
 
   // 点击外部关闭
   React.useEffect(() => {
@@ -171,54 +184,68 @@ export function FileSearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
-  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
-    // 忽略 IME 组合输入期间的按键（如中文输入法敲回车确认候选词）
-    if (e.nativeEvent.isComposing) return
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      // 忽略 IME 组合输入期间的按键（如中文输入法敲回车确认候选词）
+      if (e.nativeEvent.isComposing) return
 
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      setIsOpen(false)
-      dismissedRef.current = true
-      inputRef.current?.blur()
-      return
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedIndex((prev) => (results.length > 0 ? (prev + 1) % results.length : 0))
-      return
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSelectedIndex((prev) => (results.length > 0 ? (prev - 1 + results.length) % results.length : 0))
-      return
-    }
-    if (e.key === 'Enter' && isOpen && results.length > 0) {
-      e.preventDefault()
-      const entry = results[selectedIndex]
-      if (entry) {
-        const absPath = resolveAbsolutePath(entry)
-        if (sessionId) setAutoReveal({ sessionId, path: absPath, ts: Date.now(), select: true })
-        // 文件才打开预览；文件夹仅在文件树中定位+选中
-        if (entry.type === 'file') onFilePreview?.(absPath)
+      if (e.key === 'Escape') {
+        e.preventDefault()
         setIsOpen(false)
         dismissedRef.current = true
         inputRef.current?.blur()
+        return
       }
-    }
-  }, [results, selectedIndex, isOpen, onFilePreview, sessionId, setAutoReveal, resolveAbsolutePath])
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex((prev) => (results.length > 0 ? (prev + 1) % results.length : 0))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex((prev) =>
+          results.length > 0 ? (prev - 1 + results.length) % results.length : 0
+        )
+        return
+      }
+      if (e.key === 'Enter' && isOpen && results.length > 0) {
+        e.preventDefault()
+        const entry = results[selectedIndex]
+        if (entry) {
+          const absPath = resolveAbsolutePath(entry)
+          if (sessionId) setAutoReveal({ sessionId, path: absPath, ts: Date.now(), select: true })
+          // 文件才打开预览；文件夹仅在文件树中定位+选中
+          if (entry.type === 'file') onFilePreview?.(absPath)
+          setIsOpen(false)
+          dismissedRef.current = true
+          inputRef.current?.blur()
+        }
+      }
+    },
+    [results, selectedIndex, isOpen, onFilePreview, sessionId, setAutoReveal, resolveAbsolutePath]
+  )
 
-  const handleClick = React.useCallback((entry: FileIndexEntry) => {
-    const absPath = resolveAbsolutePath(entry)
-    if (sessionId) setAutoReveal({ sessionId, path: absPath, ts: Date.now(), select: true })
-    // 文件才打开预览；文件夹仅在文件树中定位+选中
-    if (entry.type === 'file') onFilePreview?.(absPath)
-    setIsOpen(false)
-    dismissedRef.current = true
-    inputRef.current?.blur()
-  }, [onFilePreview, sessionId, setAutoReveal, resolveAbsolutePath])
+  const handleClick = React.useCallback(
+    (entry: FileIndexEntry) => {
+      const absPath = resolveAbsolutePath(entry)
+      if (sessionId) setAutoReveal({ sessionId, path: absPath, ts: Date.now(), select: true })
+      // 文件才打开预览；文件夹仅在文件树中定位+选中
+      if (entry.type === 'file') onFilePreview?.(absPath)
+      setIsOpen(false)
+      dismissedRef.current = true
+      inputRef.current?.blur()
+    },
+    [onFilePreview, sessionId, setAutoReveal, resolveAbsolutePath]
+  )
 
-  const sessionResults = React.useMemo(() => results.filter((e) => e.source === 'session'), [results])
-  const workspaceResults = React.useMemo(() => results.filter((e) => e.source === 'workspace'), [results])
+  const sessionResults = React.useMemo(
+    () => results.filter((e) => e.source === 'session'),
+    [results]
+  )
+  const workspaceResults = React.useMemo(
+    () => results.filter((e) => e.source === 'workspace'),
+    [results]
+  )
 
   if (!hasAnyRoot) return null
 
@@ -331,19 +358,15 @@ function ResultItem({
           type="button"
           className={cn(
             'w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors',
-            isSelected ? 'bg-accent' : 'hover:bg-accent/40',
+            isSelected ? 'bg-accent' : 'hover:bg-accent/40'
           )}
           onClick={() => onClick(entry)}
           onMouseEnter={onHover}
         >
           <FileTypeIcon name={entry.name} isDirectory={entry.type === 'dir'} size={12} />
-          <span className="text-[11px] font-medium truncate max-w-[90px]">
-            {entry.name}
-          </span>
+          <span className="text-[11px] font-medium truncate max-w-[90px]">{entry.name}</span>
           {dirPath && (
-            <span
-              className="text-[10px] text-muted-foreground/55 truncate flex-1 min-w-0"
-            >
+            <span className="text-[10px] text-muted-foreground/55 truncate flex-1 min-w-0">
               {dirPath}
             </span>
           )}

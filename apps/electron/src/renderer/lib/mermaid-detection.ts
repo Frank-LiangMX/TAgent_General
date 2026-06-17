@@ -40,7 +40,7 @@ const MERMAID_START_KEYWORDS = [
 
 const MERMAID_START_PATTERN = new RegExp(
   `^(?:${MERMAID_START_KEYWORDS.map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
-  'i',
+  'i'
 )
 // graph / flowchart / flowchart-elk 后必须跟方向（TB/TD/BT/RL/LR），是 mermaid 强制语法。
 // 这样 "graph of results"、"flowchart for the pipeline" 等普通文本不会被误判为图。
@@ -57,7 +57,12 @@ export function isMermaidLanguage(language: string): boolean {
 export function looksLikeMermaidDefinition(code: string): boolean {
   for (const line of code.trimStart().split(/\r?\n/)) {
     const candidate = line.trim()
-    if (!candidate || MERMAID_DIRECTIVE_PATTERN.test(candidate) || MERMAID_COMMENT_PATTERN.test(candidate)) continue
+    if (
+      !candidate ||
+      MERMAID_DIRECTIVE_PATTERN.test(candidate) ||
+      MERMAID_COMMENT_PATTERN.test(candidate)
+    )
+      continue
     return MERMAID_DIRECTED_PATTERN.test(candidate) || MERMAID_START_PATTERN.test(candidate)
   }
   return false

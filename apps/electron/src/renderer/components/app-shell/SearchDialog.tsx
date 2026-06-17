@@ -42,7 +42,6 @@ import { useCreateSession } from '@/hooks/useCreateSession'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
-
 /** 标题搜索结果项 */
 interface TitleResult {
   id: string
@@ -117,7 +116,11 @@ function HighlightText({ text, query }: { text: string; query: string }): React.
 }
 
 /** 高亮 snippet 中的匹配部分（使用预计算位置） */
-function HighlightSnippet({ snippet, matchStart, matchLength }: {
+function HighlightSnippet({
+  snippet,
+  matchStart,
+  matchLength,
+}: {
   snippet: string
   matchStart: number
   matchLength: number
@@ -166,14 +169,19 @@ function sdkBlockText(block: SDKContentBlock | SDKUserContentBlock): string {
   return ''
 }
 
-function buildAgentPreviewItems(messages: SDKMessage[], matchMessageId?: string): SessionPreviewItem[] {
+function buildAgentPreviewItems(
+  messages: SDKMessage[],
+  matchMessageId?: string
+): SessionPreviewItem[] {
   const items: SessionPreviewItem[] = []
 
   for (const message of messages) {
     if (message.type === 'assistant') {
       const assistant = message as SDKAssistantMessage
       const blocks = Array.isArray(assistant.message?.content) ? assistant.message.content : []
-      const preview = normalizePreviewText(blocks.map(sdkBlockText).filter(Boolean).join(' ')).slice(0, 220)
+      const preview = normalizePreviewText(
+        blocks.map(sdkBlockText).filter(Boolean).join(' ')
+      ).slice(0, 220)
       if (preview) {
         items.push({
           id: assistant.uuid ?? `assistant-${items.length}`,
@@ -188,7 +196,9 @@ function buildAgentPreviewItems(messages: SDKMessage[], matchMessageId?: string)
     if (message.type === 'user') {
       const user = message as SDKUserMessage
       const blocks = Array.isArray(user.message?.content) ? user.message.content : []
-      const preview = normalizePreviewText(blocks.map(sdkBlockText).filter(Boolean).join(' ')).slice(0, 220)
+      const preview = normalizePreviewText(
+        blocks.map(sdkBlockText).filter(Boolean).join(' ')
+      ).slice(0, 220)
       if (preview) {
         items.push({
           id: user.uuid ?? `user-${items.length}`,
@@ -202,13 +212,14 @@ function buildAgentPreviewItems(messages: SDKMessage[], matchMessageId?: string)
 
     if (message.type === 'system') {
       const system = message as SDKSystemMessage
-      const preview = system.subtype === 'compact_boundary'
-        ? '上下文已压缩'
-        : system.subtype === 'compacting'
-          ? '正在压缩上下文...'
-          : system.subtype === 'permission_denied'
-            ? '自动审批已拒绝操作'
-            : ''
+      const preview =
+        system.subtype === 'compact_boundary'
+          ? '上下文已压缩'
+          : system.subtype === 'compacting'
+            ? '正在压缩上下文...'
+            : system.subtype === 'permission_denied'
+              ? '自动审批已拒绝操作'
+              : ''
       if (preview) {
         items.push({
           id: `${system.subtype ?? 'system'}-${items.length}`,
@@ -223,7 +234,10 @@ function buildAgentPreviewItems(messages: SDKMessage[], matchMessageId?: string)
   return items
 }
 
-function SearchResultSessionPreview({ target, committedQuery }: SearchResultSessionPreviewProps): React.ReactElement | null {
+function SearchResultSessionPreview({
+  target,
+  committedQuery,
+}: SearchResultSessionPreviewProps): React.ReactElement | null {
   const [items, setItems] = React.useState<SessionPreviewItem[]>([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -253,7 +267,10 @@ function SearchResultSessionPreview({ target, committedQuery }: SearchResultSess
     const load = async (): Promise<void> => {
       try {
         const matchMessageId = isContentResult(target.result) ? target.result.messageId : undefined
-        const nextItems = buildAgentPreviewItems(await window.electronAPI.getAgentSessionSDKMessages(target.result.id), matchMessageId)
+        const nextItems = buildAgentPreviewItems(
+          await window.electronAPI.getAgentSessionSDKMessages(target.result.id),
+          matchMessageId
+        )
         if (cancelled) return
         cacheRef.current.set(key, nextItems)
         setItems(nextItems)
@@ -366,11 +383,14 @@ export function SearchDialog(): React.ReactElement {
     return map
   }, [agentWorkspaces])
 
-  const getAgentWorkspaceName = React.useCallback((sessionId: string): string | undefined => {
-    const session = agentSessions.find((s) => s.id === sessionId)
-    if (!session?.workspaceId) return undefined
-    return workspaceNameMap.get(session.workspaceId)
-  }, [agentSessions, workspaceNameMap])
+  const getAgentWorkspaceName = React.useCallback(
+    (sessionId: string): string | undefined => {
+      const session = agentSessions.find((s) => s.id === sessionId)
+      if (!session?.workspaceId) return undefined
+      return workspaceNameMap.get(session.workspaceId)
+    },
+    [agentSessions, workspaceNameMap]
+  )
 
   // query：输入框当前值（实时跟随用户）
   // committedQuery：用户已确认提交的搜索词（点击/回车后才更新），用于结果展示与高亮
@@ -439,7 +459,13 @@ export function SearchDialog(): React.ReactElement {
     const qLower = q.toLowerCase()
     const titles: TitleResult[] = agentSessions
       .filter((s) => s.title.toLowerCase().includes(qLower))
-      .map((s) => ({ id: s.id, title: s.title, type: 'agent' as const, archived: s.archived, updatedAt: s.updatedAt }))
+      .map((s) => ({
+        id: s.id,
+        title: s.title,
+        type: 'agent' as const,
+        archived: s.archived,
+        updatedAt: s.updatedAt,
+      }))
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, 20)
 
@@ -507,14 +533,17 @@ export function SearchDialog(): React.ReactElement {
   )
 
   // 导航到会话
-  const navigateToResult = React.useCallback((result: TitleResult | ContentResult) => {
-    setOpen(false)
-    setActiveView('conversations')
+  const navigateToResult = React.useCallback(
+    (result: TitleResult | ContentResult) => {
+      setOpen(false)
+      setActiveView('conversations')
 
-    const session = agentSessions.find((s) => s.id === result.id)
-    const title = session?.title ?? result.title
-    openSession('agent', result.id, title)
-  }, [setOpen, setActiveView, openSession, agentSessions])
+      const session = agentSessions.find((s) => s.id === result.id)
+      const title = session?.title ?? result.title
+      openSession('agent', result.id, title)
+    },
+    [setOpen, setActiveView, openSession, agentSessions]
+  )
 
   /**
    * Enter 键语义：
@@ -522,25 +551,28 @@ export function SearchDialog(): React.ReactElement {
    * - 用户改了搜索词、或还没搜过 → 触发搜索
    * - 否则（搜索词未变且有结果）→ 打开当前选中项
    */
-  const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      if (isComposingRef.current) return
-      e.preventDefault()
-      const trimmed = query.trim()
-      const isQueryDirty = trimmed !== committedQuery
-      if (isQueryDirty || !hasSearched) {
-        void runSearch()
-      } else if (allResults[selectedIndex]) {
-        navigateToResult(allResults[selectedIndex]!)
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        if (isComposingRef.current) return
+        e.preventDefault()
+        const trimmed = query.trim()
+        const isQueryDirty = trimmed !== committedQuery
+        if (isQueryDirty || !hasSearched) {
+          void runSearch()
+        } else if (allResults[selectedIndex]) {
+          navigateToResult(allResults[selectedIndex]!)
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex((prev) => Math.min(prev + 1, allResults.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex((prev) => Math.max(prev - 1, 0))
       }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedIndex((prev) => Math.min(prev + 1, allResults.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSelectedIndex((prev) => Math.max(prev - 1, 0))
-    }
-  }, [query, committedQuery, hasSearched, allResults, selectedIndex, runSearch, navigateToResult])
+    },
+    [query, committedQuery, hasSearched, allResults, selectedIndex, runSearch, navigateToResult]
+  )
 
   // 自动滚动选中项到可视区域
   React.useEffect(() => {
@@ -632,116 +664,65 @@ export function SearchDialog(): React.ReactElement {
         </div>
 
         {/* 搜索结果 */}
-        <div
-          className="relative"
-          onMouseLeave={() => setPreviewTarget(null)}
-        >
+        <div className="relative" onMouseLeave={() => setPreviewTarget(null)}>
           <div ref={listRef} className="max-h-[400px] overflow-y-auto scrollbar-thin">
-          {!hasSearched && (
-            <div className="py-12 text-center text-[13px] text-foreground/40">
-              {trimmedQuery.length === 0
-                ? '输入关键词后按 Enter 或点击搜索'
-                : trimmedQuery.length < 2
-                  ? '关键词至少需要 2 个字符'
-                  : '按 Enter 或点击搜索开始查找'}
-            </div>
-          )}
-
-          {hasSearched && loading && allResults.length === 0 && (
-            <div className="py-12 flex items-center justify-center gap-2 text-[13px] text-foreground/40">
-              <Loader2 size={14} className="animate-spin" />
-              <span>正在搜索...</span>
-            </div>
-          )}
-
-          {hasSearched && !loading && allResults.length === 0 && (
-            <div className="py-8 flex flex-col items-center gap-3 text-[13px] text-foreground/40">
-              <span>未找到匹配结果</span>
-              <button
-                onClick={() => void handleAgentSearch()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
-              >
-                <Bot size={12} />
-                <span>试试 Agent 搜索</span>
-              </button>
-            </div>
-          )}
-
-          {/* 标题匹配区域 */}
-          {titleResults.length > 0 && (
-            <div className="py-1 animate-in fade-in duration-150">
-              <div className="px-4 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
-                标题匹配
+            {!hasSearched && (
+              <div className="py-12 text-center text-[13px] text-foreground/40">
+                {trimmedQuery.length === 0
+                  ? '输入关键词后按 Enter 或点击搜索'
+                  : trimmedQuery.length < 2
+                    ? '关键词至少需要 2 个字符'
+                    : '按 Enter 或点击搜索开始查找'}
               </div>
-              {titleResults.map((result, idx) => (
+            )}
+
+            {hasSearched && loading && allResults.length === 0 && (
+              <div className="py-12 flex items-center justify-center gap-2 text-[13px] text-foreground/40">
+                <Loader2 size={14} className="animate-spin" />
+                <span>正在搜索...</span>
+              </div>
+            )}
+
+            {hasSearched && !loading && allResults.length === 0 && (
+              <div className="py-8 flex flex-col items-center gap-3 text-[13px] text-foreground/40">
+                <span>未找到匹配结果</span>
                 <button
-                  key={`title-${result.id}`}
-                  data-index={idx}
-                  onClick={() => navigateToResult(result)}
-                  onMouseEnter={() => {
-                    setSelectedIndex(idx)
-                    setPreviewTarget({ result })
-                  }}
-                  className={cn(
-                    'w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors',
-                    selectedIndex === idx
-                      ? 'bg-primary/10'
-                      : 'hover:bg-foreground/[0.04]',
-                    result.archived && 'opacity-60'
-                  )}
+                  onClick={() => void handleAgentSearch()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
                 >
-                  <SearchResultIcon result={result} />
-                  <span className="flex-1 min-w-0 truncate text-[13px] text-foreground/80">
-                    <HighlightText text={result.title} query={committedQuery} />
-                  </span>
-                  {result.type === 'agent' && (() => {
-                    const wsName = getAgentWorkspaceName(result.id)
-                    return wsName ? (
-                      <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-foreground/[0.06] text-[10px] leading-4 text-foreground/40 font-medium truncate max-w-[80px]">
-                        {wsName}
-                      </span>
-                    ) : null
-                  })()}
-                  {result.archived && (
-                    <Archive size={12} className="flex-shrink-0 text-foreground/30" />
-                  )}
+                  <Bot size={12} />
+                  <span>试试 Agent 搜索</span>
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* 内容匹配区域 */}
-          {(contentResults.length > 0 || (loading && hasSearched && titleResults.length > 0)) && (
-            <div className="py-1 border-t border-border/30 animate-in fade-in duration-150">
-              <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-[11px] font-medium text-foreground/40 select-none">
-                <span>消息内容匹配</span>
-                {loading && <Loader2 size={12} className="animate-spin text-foreground/30" />}
               </div>
-              {contentResults.map((result, i) => {
-                const globalIdx = titleResults.length + i
-                return (
+            )}
+
+            {/* 标题匹配区域 */}
+            {titleResults.length > 0 && (
+              <div className="py-1 animate-in fade-in duration-150">
+                <div className="px-4 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
+                  标题匹配
+                </div>
+                {titleResults.map((result, idx) => (
                   <button
-                    key={`content-${result.id}-${result.messageId}`}
-                    data-index={globalIdx}
+                    key={`title-${result.id}`}
+                    data-index={idx}
                     onClick={() => navigateToResult(result)}
                     onMouseEnter={() => {
-                      setSelectedIndex(globalIdx)
+                      setSelectedIndex(idx)
                       setPreviewTarget({ result })
                     }}
                     className={cn(
-                      'w-full flex flex-col gap-0.5 px-4 py-2 text-left transition-colors',
-                      selectedIndex === globalIdx
-                        ? 'bg-primary/10'
-                        : 'hover:bg-foreground/[0.04]',
+                      'w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors',
+                      selectedIndex === idx ? 'bg-primary/10' : 'hover:bg-foreground/[0.04]',
                       result.archived && 'opacity-60'
                     )}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <SearchResultIcon result={result} />
-                      <span className="flex-1 min-w-0 truncate text-[13px] text-foreground/80">
-                        {result.title}
-                      </span>
-                      {result.type === 'agent' && (() => {
+                    <SearchResultIcon result={result} />
+                    <span className="flex-1 min-w-0 truncate text-[13px] text-foreground/80">
+                      <HighlightText text={result.title} query={committedQuery} />
+                    </span>
+                    {result.type === 'agent' &&
+                      (() => {
                         const wsName = getAgentWorkspaceName(result.id)
                         return wsName ? (
                           <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-foreground/[0.06] text-[10px] leading-4 text-foreground/40 font-medium truncate max-w-[80px]">
@@ -749,28 +730,73 @@ export function SearchDialog(): React.ReactElement {
                           </span>
                         ) : null
                       })()}
-                      {result.archived && (
-                        <Archive size={12} className="flex-shrink-0 text-foreground/30" />
-                      )}
-                    </div>
-                    <div className="pl-[22px] text-[12px] text-foreground/50 truncate">
-                      <HighlightSnippet
-                        snippet={result.snippet}
-                        matchStart={result.matchStart}
-                        matchLength={result.matchLength}
-                      />
-                    </div>
+                    {result.archived && (
+                      <Archive size={12} className="flex-shrink-0 text-foreground/30" />
+                    )}
                   </button>
-                )
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+
+            {/* 内容匹配区域 */}
+            {(contentResults.length > 0 || (loading && hasSearched && titleResults.length > 0)) && (
+              <div className="py-1 border-t border-border/30 animate-in fade-in duration-150">
+                <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-[11px] font-medium text-foreground/40 select-none">
+                  <span>消息内容匹配</span>
+                  {loading && <Loader2 size={12} className="animate-spin text-foreground/30" />}
+                </div>
+                {contentResults.map((result, i) => {
+                  const globalIdx = titleResults.length + i
+                  return (
+                    <button
+                      key={`content-${result.id}-${result.messageId}`}
+                      data-index={globalIdx}
+                      onClick={() => navigateToResult(result)}
+                      onMouseEnter={() => {
+                        setSelectedIndex(globalIdx)
+                        setPreviewTarget({ result })
+                      }}
+                      className={cn(
+                        'w-full flex flex-col gap-0.5 px-4 py-2 text-left transition-colors',
+                        selectedIndex === globalIdx
+                          ? 'bg-primary/10'
+                          : 'hover:bg-foreground/[0.04]',
+                        result.archived && 'opacity-60'
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <SearchResultIcon result={result} />
+                        <span className="flex-1 min-w-0 truncate text-[13px] text-foreground/80">
+                          {result.title}
+                        </span>
+                        {result.type === 'agent' &&
+                          (() => {
+                            const wsName = getAgentWorkspaceName(result.id)
+                            return wsName ? (
+                              <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-foreground/[0.06] text-[10px] leading-4 text-foreground/40 font-medium truncate max-w-[80px]">
+                                {wsName}
+                              </span>
+                            ) : null
+                          })()}
+                        {result.archived && (
+                          <Archive size={12} className="flex-shrink-0 text-foreground/30" />
+                        )}
+                      </div>
+                      <div className="pl-[22px] text-[12px] text-foreground/50 truncate">
+                        <HighlightSnippet
+                          snippet={result.snippet}
+                          matchStart={result.matchStart}
+                          matchLength={result.matchLength}
+                        />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          <SearchResultSessionPreview
-            target={previewTarget}
-            committedQuery={committedQuery}
-          />
+          <SearchResultSessionPreview target={previewTarget} committedQuery={committedQuery} />
         </div>
 
         {/* 底部快捷键提示 */}

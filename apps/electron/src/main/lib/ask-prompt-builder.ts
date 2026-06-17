@@ -10,8 +10,8 @@
  * 与 btw-service 共用 convertSDKMessagesToChatHistory 抽取逻辑。
  */
 
-import { convertSDKMessagesToChatHistory } from './btw-service'
 import { getAgentSessionSDKMessages } from './agent-session-manager'
+import { convertSDKMessagesToChatHistory } from './btw-service'
 
 /** Ask 默认上下文轮数（与 BTW 对齐，20 轮） */
 export const ASK_DEFAULT_CONTEXT_TURNS = 20
@@ -65,7 +65,7 @@ export const ASK_PERMISSION_CONTRACT = `<ask_mode_contract>
  * 构建 Ask 上下文 prompt（动态部分：上下文窗口说明 + 历史摘要）
  */
 function buildContextPrompt(agentSessionId: string, maxContextTurns: number): string {
-  let contextLines: string[] = []
+  const contextLines: string[] = []
 
   try {
     const sdkMessages = getAgentSessionSDKMessages(agentSessionId)
@@ -75,7 +75,9 @@ function buildContextPrompt(agentSessionId: string, maxContextTurns: number): st
       const summary = lastN
         .map((m) => `[${m.role}] ${m.content.slice(0, 800)}${m.content.length > 800 ? '…' : ''}`)
         .join('\n\n')
-      contextLines.push(`<agent_session_history agentSessionId="${agentSessionId}">\n以下是该 Agent 会话最近 ${maxContextTurns} 轮对话（用于上下文理解，Ask 不能直接复用这些工具调用）：\n\n${summary}\n</agent_session_history>`)
+      contextLines.push(
+        `<agent_session_history agentSessionId="${agentSessionId}">\n以下是该 Agent 会话最近 ${maxContextTurns} 轮对话（用于上下文理解，Ask 不能直接复用这些工具调用）：\n\n${summary}\n</agent_session_history>`
+      )
     }
   } catch (err) {
     console.warn(`[Ask Prompt] 读取主会话上下文失败:`, err)
@@ -94,10 +96,7 @@ export function buildAskSystemPrompt(agentSessionId: string, override?: string):
 
   const contextPrompt = buildContextPrompt(agentSessionId, ASK_DEFAULT_CONTEXT_TURNS)
 
-  return [
-    ASK_PERMISSION_CONTRACT,
-    contextPrompt,
-  ].filter(Boolean).join('\n\n')
+  return [ASK_PERMISSION_CONTRACT, contextPrompt].filter(Boolean).join('\n\n')
 }
 
 /**
@@ -106,7 +105,7 @@ export function buildAskSystemPrompt(agentSessionId: string, override?: string):
 export function buildAskSystemPromptWithHistory(
   sdkMessages: ReadonlyArray<unknown>,
   maxContextTurns: number,
-  override?: string,
+  override?: string
 ): string {
   if (override && override.trim()) {
     return override
@@ -115,7 +114,7 @@ export function buildAskSystemPromptWithHistory(
   // 将 SDKMessage[] 视为 unknown[] 交给 convertSDKMessagesToChatHistory
   const history = convertSDKMessagesToChatHistory(
     sdkMessages as Parameters<typeof convertSDKMessagesToChatHistory>[0],
-    maxContextTurns,
+    maxContextTurns
   )
   let contextPrompt = ''
   if (history.length > 0) {
@@ -135,4 +134,5 @@ export function buildAskSystemPromptWithHistory(
  * 单独发到对话开头，避免影响 LLM 行为（让契约在 system prompt 里约束 LLM，而不是用户消息里）。
  * 保留此函数供后续 UI 提示用。
  */
-export const ASK_MODE_GREETING_HINT = '当前为 Ask 档位：只对话，不修改文件或执行命令。需要动手请切到 Agent 档位。'
+export const ASK_MODE_GREETING_HINT =
+  '当前为 Ask 档位：只对话，不修改文件或执行命令。需要动手请切到 Agent 档位。'

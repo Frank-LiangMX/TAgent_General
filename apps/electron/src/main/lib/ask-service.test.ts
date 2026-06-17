@@ -16,9 +16,18 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 vi.mock('./btw-service', () => ({
   convertSDKMessagesToChatHistory: (messages: ReadonlyArray<unknown>, maxTurns: number) => {
     // 简化版：把 SDKMessage[] 转成 ChatMessage[]
-    const result: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: number }> = []
+    const result: Array<{
+      id: string
+      role: 'user' | 'assistant'
+      content: string
+      createdAt: number
+    }> = []
     for (const m of messages) {
-      const r = m as { type?: string; message?: { content?: Array<{ type: string; text?: string }> }; uuid?: string }
+      const r = m as {
+        type?: string
+        message?: { content?: Array<{ type: string; text?: string }> }
+        uuid?: string
+      }
       if (r.type !== 'user' && r.type !== 'assistant') continue
       const text = (r.message?.content ?? [])
         .filter((b) => b.type === 'text' && b.text)
@@ -41,8 +50,14 @@ vi.mock('./chat-tool-config', () => ({
   getChatToolsConfig: () => ({ toolStates: {}, customTools: [] }),
 }))
 
-const { buildAskSystemPromptWithHistory, ASK_PERMISSION_CONTRACT } = await import('./ask-prompt-builder')
-const { isSuggestAgentSwitchToolCall, SUGGEST_AGENT_SWITCH_TOOL_NAMES, SUGGEST_AGENT_SWITCH_TOOL_DEFINITION, getAskEnabledTools } = await import('./ask-tool-policy')
+const { buildAskSystemPromptWithHistory, ASK_PERMISSION_CONTRACT } =
+  await import('./ask-prompt-builder')
+const {
+  isSuggestAgentSwitchToolCall,
+  SUGGEST_AGENT_SWITCH_TOOL_NAMES,
+  SUGGEST_AGENT_SWITCH_TOOL_DEFINITION,
+  getAskEnabledTools,
+} = await import('./ask-tool-policy')
 const askStore = await import('./ask-message-store')
 
 // ============================================
@@ -194,23 +209,53 @@ describe('ask-message-store JSONL CRUD', () => {
   })
 
   test('多条消息按追加顺序保留', () => {
-    askStore.appendAskMessage('test-session-3', { id: 'a', role: 'user', content: '1', createdAt: 1 })
-    askStore.appendAskMessage('test-session-3', { id: 'b', role: 'assistant', content: '2', createdAt: 2 })
-    askStore.appendAskMessage('test-session-3', { id: 'c', role: 'user', content: '3', createdAt: 3 })
+    askStore.appendAskMessage('test-session-3', {
+      id: 'a',
+      role: 'user',
+      content: '1',
+      createdAt: 1,
+    })
+    askStore.appendAskMessage('test-session-3', {
+      id: 'b',
+      role: 'assistant',
+      content: '2',
+      createdAt: 2,
+    })
+    askStore.appendAskMessage('test-session-3', {
+      id: 'c',
+      role: 'user',
+      content: '3',
+      createdAt: 3,
+    })
     const got = askStore.getAgentSessionAskMessages('test-session-3')
     expect(got.map((m) => m.id)).toEqual(['a', 'b', 'c'])
   })
 
   test('deleteAskMessage 移除指定消息并返回剩余', () => {
-    askStore.appendAskMessage('test-session-4', { id: 'a', role: 'user', content: '1', createdAt: 1 })
-    askStore.appendAskMessage('test-session-4', { id: 'b', role: 'assistant', content: '2', createdAt: 2 })
+    askStore.appendAskMessage('test-session-4', {
+      id: 'a',
+      role: 'user',
+      content: '1',
+      createdAt: 1,
+    })
+    askStore.appendAskMessage('test-session-4', {
+      id: 'b',
+      role: 'assistant',
+      content: '2',
+      createdAt: 2,
+    })
     const remaining = askStore.deleteAskMessage('test-session-4', 'a')
     expect(remaining.map((m) => m.id)).toEqual(['b'])
     expect(askStore.getAgentSessionAskMessages('test-session-4').map((m) => m.id)).toEqual(['b'])
   })
 
   test('rewriteAskMessages 覆盖整条 JSONL', () => {
-    askStore.appendAskMessage('test-session-5', { id: 'old', role: 'user', content: 'old', createdAt: 0 })
+    askStore.appendAskMessage('test-session-5', {
+      id: 'old',
+      role: 'user',
+      content: 'old',
+      createdAt: 0,
+    })
     const newMessages = [
       { id: 'x', role: 'user' as const, content: 'x', createdAt: 1 },
       { id: 'y', role: 'assistant' as const, content: 'y', createdAt: 2 },
@@ -221,13 +266,23 @@ describe('ask-message-store JSONL CRUD', () => {
   })
 
   test('rewriteAskMessages 空数组会清空文件', () => {
-    askStore.appendAskMessage('test-session-6', { id: 'a', role: 'user', content: '1', createdAt: 1 })
+    askStore.appendAskMessage('test-session-6', {
+      id: 'a',
+      role: 'user',
+      content: '1',
+      createdAt: 1,
+    })
     askStore.rewriteAskMessages('test-session-6', [])
     expect(askStore.getAgentSessionAskMessages('test-session-6')).toEqual([])
   })
 
   test('deleteAskMessagesFile 清理文件', () => {
-    askStore.appendAskMessage('test-session-7', { id: 'a', role: 'user', content: '1', createdAt: 1 })
+    askStore.appendAskMessage('test-session-7', {
+      id: 'a',
+      role: 'user',
+      content: '1',
+      createdAt: 1,
+    })
     askStore.deleteAskMessagesFile('test-session-7')
     expect(askStore.getAgentSessionAskMessages('test-session-7')).toEqual([])
   })
@@ -237,7 +292,11 @@ describe('ask-message-store JSONL CRUD', () => {
 import { afterAll } from 'vitest'
 afterAll(() => {
   if (tmpDir) {
-    try { rmSync(tmpDir, { recursive: true, force: true }) } catch { /* ignore */ }
+    try {
+      rmSync(tmpDir, { recursive: true, force: true })
+    } catch {
+      /* ignore */
+    }
   }
   if (originalGetConfigDir) {
     vi.restoreAllMocks()

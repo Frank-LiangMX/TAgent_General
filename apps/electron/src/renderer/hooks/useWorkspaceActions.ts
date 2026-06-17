@@ -12,10 +12,7 @@ import { toast } from 'sonner'
 
 import type { AgentWorkspace } from '@tagent/shared'
 
-import {
-  agentWorkspacesAtom,
-  currentAgentWorkspaceIdAtom,
-} from '@/atoms/agent-atoms'
+import { agentWorkspacesAtom, currentAgentWorkspaceIdAtom } from '@/atoms/agent-atoms'
 
 interface UseWorkspaceActionsResult {
   workspaces: AgentWorkspace[]
@@ -37,7 +34,7 @@ export function useWorkspaceActions(): UseWorkspaceActionsResult {
       setCurrentWorkspaceId(workspaceId)
       window.electronAPI.updateSettings({ agentWorkspaceId: workspaceId }).catch(console.error)
     },
-    [currentWorkspaceId, setCurrentWorkspaceId],
+    [currentWorkspaceId, setCurrentWorkspaceId]
   )
 
   const createWorkspace = React.useCallback(
@@ -61,7 +58,7 @@ export function useWorkspaceActions(): UseWorkspaceActionsResult {
         createInFlightRef.current = false
       }
     },
-    [setWorkspaces, setCurrentWorkspaceId],
+    [setWorkspaces, setCurrentWorkspaceId]
   )
 
   return { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace }

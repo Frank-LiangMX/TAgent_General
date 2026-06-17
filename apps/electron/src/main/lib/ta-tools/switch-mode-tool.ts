@@ -23,7 +23,12 @@ export const SWITCH_MODE_TOOL_META: ChatToolMeta = {
   params: [
     { name: 'target_mode', type: 'string', description: '目标模式: general 或 ta', required: true },
     { name: 'reason', type: 'string', description: '为什么建议切换（1 句话）', required: true },
-    { name: 'context_summary', type: 'string', description: '到目前为止的关键上下文（3-5 句）', required: true },
+    {
+      name: 'context_summary',
+      type: 'string',
+      description: '到目前为止的关键上下文（3-5 句）',
+      required: true,
+    },
   ],
   icon: 'ArrowRightLeft',
   category: 'builtin',

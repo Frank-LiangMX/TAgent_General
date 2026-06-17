@@ -11,6 +11,7 @@ import ReactDOM from 'react-dom/client'
 import { toast } from 'sonner'
 
 import App from './App'
+import { advancedMaterialEnabledAtom, initializeAdvancedMaterial } from './atoms/advanced-material'
 import {
   agentChannelIdAtom,
   agentModelIdAtom,
@@ -30,25 +31,30 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
-import { currentConversationIdAtom, channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/chat-atoms'
+import {
+  currentConversationIdAtom,
+  channelsAtom,
+  channelsLoadedAtom,
+  selectedModelAtom,
+} from './atoms/chat-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
-import { wpsBridgeStateAtom } from './atoms/wps-atoms'
-import {
-  advancedMaterialEnabledAtom,
-  initializeAdvancedMaterial,
-} from './atoms/advanced-material'
-import {
-  markdownFontSizeAtom,
-  initializeMarkdownFontSize,
-} from './atoms/markdown-font-size'
+import { markdownFontSizeAtom, initializeMarkdownFontSize } from './atoms/markdown-font-size'
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
-import { tabsAtom, activeTabIdAtom, getPersistableTabState, scratchPadContentAtom, scratchPadLoadedAtom, SCRATCH_PAD_ID } from './atoms/tab-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  getPersistableTabState,
+  scratchPadContentAtom,
+  scratchPadLoadedAtom,
+  SCRATCH_PAD_ID,
+} from './atoms/tab-atoms'
+import { tagentBrandAtom, initializeTAgentBrand } from './atoms/tagent-brand'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -56,15 +62,9 @@ import {
   applyThemeToDOM,
   initializeTheme,
 } from './atoms/theme'
-import {
-  tagentBrandAtom,
-  initializeTAgentBrand,
-} from './atoms/tagent-brand'
-import {
-  stickyUserMessageEnabledAtom,
-  initializeUiPreferences,
-} from './atoms/ui-preferences'
+import { stickyUserMessageEnabledAtom, initializeUiPreferences } from './atoms/ui-preferences'
 import { updateStatusAtom, initializeUpdater } from './atoms/updater'
+import { wpsBridgeStateAtom } from './atoms/wps-atoms'
 import { UpdateDialog } from './components/settings/UpdateDialog'
 import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
 import { TabSwitcher } from './components/tabs/TabSwitcher'
@@ -84,14 +84,15 @@ import type {
   WorkspaceCapabilities,
 } from '@tagent/shared'
 
-
 import './styles/globals.css'
 import 'katex/dist/katex.min.css'
 
 // ===== 窗口类型检测 =====
 const isQuickTaskWindow = new URLSearchParams(window.location.search).get('window') === 'quick-task'
-const isVoiceDictationWindow = new URLSearchParams(window.location.search).get('window') === 'voice-dictation'
-const isDetachedPreviewWindow = new URLSearchParams(window.location.search).get('window') === 'detached-preview'
+const isVoiceDictationWindow =
+  new URLSearchParams(window.location.search).get('window') === 'voice-dictation'
+const isDetachedPreviewWindow =
+  new URLSearchParams(window.location.search).get('window') === 'detached-preview'
 
 /**
  * 主题初始化组件
@@ -143,7 +144,6 @@ function ThemeInitializer(): null {
 
   useEffect(() => {
     applyThemeToDOM(themeMode, themeStyle, systemIsDark)
-     
   }, [themeSignature])
 
   return null
@@ -184,97 +184,120 @@ function AgentSettingsInitializer(): null {
 
   useEffect(() => {
     // 并行加载渠道列表和设置，确保两者都就绪后再验证渠道有效性
-    Promise.all([
-      window.electronAPI.listChannels(),
-      window.electronAPI.getSettings(),
-    ]).then(([channels, settings]) => {
-      // 缓存渠道列表
-      setChannels(channels)
-      setChannelsLoaded(true)
+    Promise.all([window.electronAPI.listChannels(), window.electronAPI.getSettings()])
+      .then(([channels, settings]) => {
+        // 缓存渠道列表
+        setChannels(channels)
+        setChannelsLoaded(true)
 
-      const channelIds = new Set(channels.map((c) => c.id))
+        const channelIds = new Set(channels.map((c) => c.id))
 
-      // 验证 Chat 模式的全局默认模型（localStorage 持久化的可能指向已删除渠道）
-      const chatModel = store.get(selectedModelAtom)
-      if (chatModel && !channelIds.has(chatModel.channelId)) {
-        console.warn('[AgentSettings] Chat selectedModel 指向已删除的渠道，清除')
-        store.set(selectedModelAtom, null)
-      }
-
-      // 验证并加载 Agent 渠道/模型
-      if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
-        setAgentChannelId(settings.agentChannelId)
-      } else if (settings.agentChannelId && !channelIds.has(settings.agentChannelId)) {
-        // 渠道已删除，清除无效设置
-        console.warn('[AgentSettings] agentChannelId 指向已删除的渠道，清除')
-        window.electronAPI.updateSettings({ agentChannelId: undefined, agentModelId: undefined }).catch(console.error)
-      }
-      if (settings.agentModelId && (!settings.agentChannelId || channelIds.has(settings.agentChannelId))) {
-        setAgentModelId(settings.agentModelId)
-      }
-
-      // 加载 Agent 启用渠道列表，过滤已删除的渠道
-      if (settings.agentChannelIds && settings.agentChannelIds.length > 0) {
-        const validIds = settings.agentChannelIds.filter((id) => channelIds.has(id))
-        setAgentChannelIds(validIds)
-        // 如果有渠道被清理，持久化更新后的列表
-        if (validIds.length !== settings.agentChannelIds.length) {
-          console.warn('[AgentSettings] 清理了已删除的 agentChannelIds')
-          window.electronAPI.updateSettings({ agentChannelIds: validIds }).catch(console.error)
+        // 验证 Chat 模式的全局默认模型（localStorage 持久化的可能指向已删除渠道）
+        const chatModel = store.get(selectedModelAtom)
+        if (chatModel && !channelIds.has(chatModel.channelId)) {
+          console.warn('[AgentSettings] Chat selectedModel 指向已删除的渠道，清除')
+          store.set(selectedModelAtom, null)
         }
-      } else if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
-        // 迁移：旧版本只有 agentChannelId，自动转为数组
-        const migrated = [settings.agentChannelId]
-        setAgentChannelIds(migrated)
-        window.electronAPI.updateSettings({ agentChannelIds: migrated }).catch(console.error)
-      }
 
-      // 兜底：agentChannelId 存在但不在 agentChannelIds 白名单中，自动修复不一致
-      if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
-        const currentIds = settings.agentChannelIds?.filter((id) => channelIds.has(id)) ?? []
-        if (!currentIds.includes(settings.agentChannelId)) {
-          const fixedIds = [...currentIds, settings.agentChannelId]
-          setAgentChannelIds(fixedIds)
-          window.electronAPI.updateSettings({ agentChannelIds: fixedIds }).catch(console.error)
+        // 验证并加载 Agent 渠道/模型
+        if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
+          setAgentChannelId(settings.agentChannelId)
+        } else if (settings.agentChannelId && !channelIds.has(settings.agentChannelId)) {
+          // 渠道已删除，清除无效设置
+          console.warn('[AgentSettings] agentChannelId 指向已删除的渠道，清除')
+          window.electronAPI
+            .updateSettings({ agentChannelId: undefined, agentModelId: undefined })
+            .catch(console.error)
         }
-      }
-
-      if (settings.agentThinking) {
-        setThinking(settings.agentThinking)
-      }
-      if (settings.agentEffort) {
-        setEffort(settings.agentEffort)
-      }
-      if (settings.agentMaxBudgetUsd != null) {
-        setMaxBudget(settings.agentMaxBudgetUsd)
-      }
-      if (settings.agentMaxTurns != null) {
-        setMaxTurns(settings.agentMaxTurns)
-      }
-      if (settings.subagentEagerness) {
-        setSubagentEagerness(settings.subagentEagerness)
-      }
-
-      // 加载工作区列表并恢复上次选中的工作区
-      window.electronAPI.listAgentWorkspaces().then((workspaces) => {
-        setAgentWorkspaces(workspaces)
-        if (settings.agentWorkspaceId) {
-          // 验证工作区仍然存在
-          const exists = workspaces.some((w) => w.id === settings.agentWorkspaceId)
-          setCurrentWorkspaceId(exists ? settings.agentWorkspaceId! : workspaces[0]?.id ?? null)
-        } else if (workspaces.length > 0) {
-          setCurrentWorkspaceId(workspaces[0]!.id)
+        if (
+          settings.agentModelId &&
+          (!settings.agentChannelId || channelIds.has(settings.agentChannelId))
+        ) {
+          setAgentModelId(settings.agentModelId)
         }
-        setAgentSettingsReady(true)
-      }).catch((err) => {
+
+        // 加载 Agent 启用渠道列表，过滤已删除的渠道
+        if (settings.agentChannelIds && settings.agentChannelIds.length > 0) {
+          const validIds = settings.agentChannelIds.filter((id) => channelIds.has(id))
+          setAgentChannelIds(validIds)
+          // 如果有渠道被清理，持久化更新后的列表
+          if (validIds.length !== settings.agentChannelIds.length) {
+            console.warn('[AgentSettings] 清理了已删除的 agentChannelIds')
+            window.electronAPI.updateSettings({ agentChannelIds: validIds }).catch(console.error)
+          }
+        } else if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
+          // 迁移：旧版本只有 agentChannelId，自动转为数组
+          const migrated = [settings.agentChannelId]
+          setAgentChannelIds(migrated)
+          window.electronAPI.updateSettings({ agentChannelIds: migrated }).catch(console.error)
+        }
+
+        // 兜底：agentChannelId 存在但不在 agentChannelIds 白名单中，自动修复不一致
+        if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
+          const currentIds = settings.agentChannelIds?.filter((id) => channelIds.has(id)) ?? []
+          if (!currentIds.includes(settings.agentChannelId)) {
+            const fixedIds = [...currentIds, settings.agentChannelId]
+            setAgentChannelIds(fixedIds)
+            window.electronAPI.updateSettings({ agentChannelIds: fixedIds }).catch(console.error)
+          }
+        }
+
+        if (settings.agentThinking) {
+          setThinking(settings.agentThinking)
+        }
+        if (settings.agentEffort) {
+          setEffort(settings.agentEffort)
+        }
+        if (settings.agentMaxBudgetUsd != null) {
+          setMaxBudget(settings.agentMaxBudgetUsd)
+        }
+        if (settings.agentMaxTurns != null) {
+          setMaxTurns(settings.agentMaxTurns)
+        }
+        if (settings.subagentEagerness) {
+          setSubagentEagerness(settings.subagentEagerness)
+        }
+
+        // 加载工作区列表并恢复上次选中的工作区
+        window.electronAPI
+          .listAgentWorkspaces()
+          .then((workspaces) => {
+            setAgentWorkspaces(workspaces)
+            if (settings.agentWorkspaceId) {
+              // 验证工作区仍然存在
+              const exists = workspaces.some((w) => w.id === settings.agentWorkspaceId)
+              setCurrentWorkspaceId(
+                exists ? settings.agentWorkspaceId! : (workspaces[0]?.id ?? null)
+              )
+            } else if (workspaces.length > 0) {
+              setCurrentWorkspaceId(workspaces[0]!.id)
+            }
+            setAgentSettingsReady(true)
+          })
+          .catch((err) => {
+            console.error(err)
+            setAgentSettingsReady(true) // 即使出错也标记就绪，避免永远阻塞
+          })
+      })
+      .catch((err) => {
         console.error(err)
         setAgentSettingsReady(true) // 即使出错也标记就绪，避免永远阻塞
       })
-    }).catch((err) => {
-      console.error(err)
-      setAgentSettingsReady(true) // 即使出错也标记就绪，避免永远阻塞
-    })
-  }, [setAgentChannelId, setAgentModelId, setAgentChannelIds, setAgentWorkspaces, setCurrentWorkspaceId, setThinking, setEffort, setMaxBudget, setMaxTurns, setSubagentEagerness, setChannels, setChannelsLoaded, setAgentSettingsReady])
+  }, [
+    setAgentChannelId,
+    setAgentModelId,
+    setAgentChannelIds,
+    setAgentWorkspaces,
+    setCurrentWorkspaceId,
+    setThinking,
+    setEffort,
+    setMaxBudget,
+    setMaxTurns,
+    setSubagentEagerness,
+    setChannels,
+    setChannelsLoaded,
+    setAgentSettingsReady,
+  ])
 
   // 工作区切换时重置能力缓存，预加载基线
   useEffect(() => {
@@ -492,17 +515,21 @@ function FeishuInitializer(): null {
 
   useEffect(() => {
     // 加载初始多 Bot 状态
-    window.electronAPI.getFeishuMultiStatus?.()
+    window.electronAPI
+      .getFeishuMultiStatus?.()
       .then((multiState: { bots: Record<string, FeishuBotBridgeState> }) => {
         store.set(feishuBotStatesAtom, multiState.bots)
       })
       .catch(() => {
         // 回退：使用旧 API 获取单 Bot 状态
-        window.electronAPI.getFeishuStatus()
+        window.electronAPI
+          .getFeishuStatus()
           .then((state: FeishuBridgeState) => {
             const s = state as FeishuBotBridgeState
             const botId = s.botId ?? 'default'
-            store.set(feishuBotStatesAtom, { [botId]: { ...s, botId, botName: s.botName ?? '飞书助手' } })
+            store.set(feishuBotStatesAtom, {
+              [botId]: { ...s, botId, botName: s.botName ?? '飞书助手' },
+            })
           })
           .catch((err: unknown) => console.error('[FeishuInitializer] 加载状态失败:', err))
       })
@@ -519,11 +546,16 @@ function FeishuInitializer(): null {
 
     // 定期上报在场状态（5 秒间隔 + 焦点变化时即时上报）
     const reportPresence = (): void => {
-      const activeSessionId = store.get(currentAgentSessionIdAtom) ?? store.get(currentConversationIdAtom)
-      window.electronAPI.reportFeishuPresence({
-        activeSessionId,
-        lastInteractionAt: Date.now(),
-      }).catch(() => { /* 忽略 */ })
+      const activeSessionId =
+        store.get(currentAgentSessionIdAtom) ?? store.get(currentConversationIdAtom)
+      window.electronAPI
+        .reportFeishuPresence({
+          activeSessionId,
+          lastInteractionAt: Date.now(),
+        })
+        .catch(() => {
+          /* 忽略 */
+        })
     }
     const interval = setInterval(reportPresence, 5000)
     window.addEventListener('focus', reportPresence)
@@ -551,17 +583,21 @@ function DingTalkInitializer(): null {
 
   useEffect(() => {
     // 加载初始多 Bot 状态
-    window.electronAPI.getDingTalkMultiStatus?.()
+    window.electronAPI
+      .getDingTalkMultiStatus?.()
       .then((multiState: { bots: Record<string, DingTalkBotBridgeState> }) => {
         store.set(dingtalkBotStatesAtom, multiState.bots)
       })
       .catch(() => {
         // 回退：使用旧 API 获取单 Bot 状态
-        window.electronAPI.getDingTalkStatus()
+        window.electronAPI
+          .getDingTalkStatus()
           .then((state: DingTalkBridgeState) => {
             const s = state as DingTalkBotBridgeState
             const botId = s.botId ?? 'default'
-            store.set(dingtalkBotStatesAtom, { [botId]: { ...s, botId, botName: s.botName ?? '钉钉助手' } })
+            store.set(dingtalkBotStatesAtom, {
+              [botId]: { ...s, botId, botName: s.botName ?? '钉钉助手' },
+            })
           })
           .catch((err: unknown) => console.error('[DingTalkInitializer] 加载状态失败:', err))
       })
@@ -588,7 +624,8 @@ function WpsInitializer(): null {
   const store = useStore()
 
   useEffect(() => {
-    window.electronAPI.getWpsStatus()
+    window.electronAPI
+      .getWpsStatus()
       .then((status: WpsBridgeState) => {
         store.set(wpsBridgeStateAtom, status)
       })
@@ -641,66 +678,73 @@ function TabStatePersistenceInitializer(): null {
       window.electronAPI.getSettings(),
       window.electronAPI.listConversations(),
       window.electronAPI.listAgentSessions(),
-    ]).then(([settings, conversations, agentSessions]) => {
-      const tabState = settings.tabState
-      if (!tabState?.tabs?.length) {
-        restoredRef.current = true
-        return
-      }
-
-      // 构建有效 sessionId 集合
-      const validSessionIds = new Set([
-        ...conversations.map((c) => c.id),
-        ...agentSessions.map((s) => s.id),
-      ])
-
-      // 过滤 diff 类型 Tab（不持久化），同时过滤掉已被删除的会话
-      const validTabs = tabState.tabs.filter(
-        (t): t is TabItem =>
-          typeof t === 'object' &&
-          t !== null &&
-          'id' in t &&
-          'sessionId' in t &&
-          'type' in t &&
-          'title' in t &&
-          // P3: chat 已退役，仅恢复 agent 类型
-          t.type === 'agent' &&
-          validSessionIds.has(t.sessionId),
-      )
-      if (validTabs.length === 0) {
-        restoredRef.current = true
-        return
-      }
-
-      const validTabIds = new Set(validTabs.map((t) => t.id))
-
-      // 恢复 activeTabId（校验有效性）
-      let restoredActiveTabId: string | null = null
-      if (tabState.activeTabId && validTabIds.has(tabState.activeTabId)) {
-        restoredActiveTabId = tabState.activeTabId
-      } else {
-        // 向后兼容：从旧版 splitLayout 结构中恢复原焦点面板的 activeTabId
-        const legacyId = extractLegacyActiveTabId(tabState)
-        if (legacyId && validTabIds.has(legacyId)) {
-          restoredActiveTabId = legacyId
-        } else {
-          restoredActiveTabId = validTabs[0]?.id ?? null
+    ])
+      .then(([settings, conversations, agentSessions]) => {
+        const tabState = settings.tabState
+        if (!tabState?.tabs?.length) {
+          restoredRef.current = true
+          return
         }
-      }
 
-      const activeTab = validTabs.find((t) => t.id === restoredActiveTabId) ?? validTabs[0] ?? null
-      store.set(tabsAtom, activeTab ? [activeTab] : [])
-      store.set(activeTabIdAtom, restoredActiveTabId)
+        // 构建有效 sessionId 集合
+        const validSessionIds = new Set([
+          ...conversations.map((c) => c.id),
+          ...agentSessions.map((s) => s.id),
+        ])
 
-      // 同步 appMode 和 currentSessionId（P3: chat 已退役）
-      if (activeTab) {
-        store.set(appModeAtom, 'agent')
-        store.set(currentAgentSessionIdAtom, activeTab.sessionId)
-      }
+        // 过滤 diff 类型 Tab（不持久化），同时过滤掉已被删除的会话
+        const validTabs = tabState.tabs.filter(
+          (t): t is TabItem =>
+            typeof t === 'object' &&
+            t !== null &&
+            'id' in t &&
+            'sessionId' in t &&
+            'type' in t &&
+            'title' in t &&
+            // P3: chat 已退役，仅恢复 agent 类型
+            t.type === 'agent' &&
+            validSessionIds.has(t.sessionId)
+        )
+        if (validTabs.length === 0) {
+          restoredRef.current = true
+          return
+        }
 
-      console.log(`[TabRestore] 已恢复当前会话入口，历史标签 ${validTabs.length} 个已收敛到左侧列表`)
-    }).catch((err) => console.error('[TabRestore] 恢复标签页失败:', err))
-      .finally(() => { restoredRef.current = true })
+        const validTabIds = new Set(validTabs.map((t) => t.id))
+
+        // 恢复 activeTabId（校验有效性）
+        let restoredActiveTabId: string | null = null
+        if (tabState.activeTabId && validTabIds.has(tabState.activeTabId)) {
+          restoredActiveTabId = tabState.activeTabId
+        } else {
+          // 向后兼容：从旧版 splitLayout 结构中恢复原焦点面板的 activeTabId
+          const legacyId = extractLegacyActiveTabId(tabState)
+          if (legacyId && validTabIds.has(legacyId)) {
+            restoredActiveTabId = legacyId
+          } else {
+            restoredActiveTabId = validTabs[0]?.id ?? null
+          }
+        }
+
+        const activeTab =
+          validTabs.find((t) => t.id === restoredActiveTabId) ?? validTabs[0] ?? null
+        store.set(tabsAtom, activeTab ? [activeTab] : [])
+        store.set(activeTabIdAtom, restoredActiveTabId)
+
+        // 同步 appMode 和 currentSessionId（P3: chat 已退役）
+        if (activeTab) {
+          store.set(appModeAtom, 'agent')
+          store.set(currentAgentSessionIdAtom, activeTab.sessionId)
+        }
+
+        console.log(
+          `[TabRestore] 已恢复当前会话入口，历史标签 ${validTabs.length} 个已收敛到左侧列表`
+        )
+      })
+      .catch((err) => console.error('[TabRestore] 恢复标签页失败:', err))
+      .finally(() => {
+        restoredRef.current = true
+      })
   }, [store])
 
   // 自动保存：监听 tabsAtom / activeTabIdAtom 变化，防抖写入 settings.json
@@ -711,9 +755,11 @@ function TabStatePersistenceInitializer(): null {
       const tabs = store.get(tabsAtom)
       const activeTabId = store.get(activeTabIdAtom)
       const persistableTabState = getPersistableTabState(tabs, activeTabId)
-      window.electronAPI.updateSettings({
-        tabState: persistableTabState,
-      }).catch(console.error)
+      window.electronAPI
+        .updateSettings({
+          tabState: persistableTabState,
+        })
+        .catch(console.error)
     }
 
     const debouncedSave = (): void => {
@@ -796,9 +842,12 @@ function ScratchPadPersistence(): null {
       const html = store.get(scratchPadContentAtom)
       if (window.electronAPI.saveScratchPad) {
         const md = htmlToMarkdown(html)
-        window.electronAPI.saveScratchPad(md).then((ok) => {
-          if (!ok) console.error('[ScratchPad] 保存失败')
-        }).catch(console.error)
+        window.electronAPI
+          .saveScratchPad(md)
+          .then((ok) => {
+            if (!ok) console.error('[ScratchPad] 保存失败')
+          })
+          .catch(console.error)
       }
     }
 
@@ -833,9 +882,11 @@ function ScratchPadPersistence(): null {
     const unsub = store.sub(activeTabIdAtom, () => {
       const activeTabId = store.get(activeTabIdAtom)
       const isScratchActive = activeTabId === SCRATCH_PAD_ID
-      window.electronAPI.updateSettings({
-        scratchPadActive: isScratchActive,
-      }).catch(() => {})
+      window.electronAPI
+        .updateSettings({
+          scratchPadActive: isScratchActive,
+        })
+        .catch(() => {})
     })
     return unsub
   }, [store])

@@ -5,7 +5,7 @@
  * 用于可折叠/展开的内容区域。
  */
 
-import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
+import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
 
 const Collapsible = CollapsiblePrimitive.Root
 

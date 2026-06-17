@@ -226,12 +226,15 @@ export function getDecryptedAppSecret(): string {
 }
 
 /** @deprecated */
-export function updateFeishuConfigPartial(updates: Partial<Omit<FeishuConfig, 'appId' | 'appSecret'>>): FeishuConfig {
+export function updateFeishuConfigPartial(
+  updates: Partial<Omit<FeishuConfig, 'appId' | 'appSecret'>>
+): FeishuConfig {
   const multi = readRawConfig()
   const first = multi.bots[0]
   if (first) {
     if (updates.enabled !== undefined) first.enabled = updates.enabled
-    if (updates.defaultWorkspaceId !== undefined) first.defaultWorkspaceId = updates.defaultWorkspaceId
+    if (updates.defaultWorkspaceId !== undefined)
+      first.defaultWorkspaceId = updates.defaultWorkspaceId
     writeMultiConfig(multi)
   }
   return getFeishuConfig()

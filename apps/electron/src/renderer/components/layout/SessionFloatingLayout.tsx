@@ -44,9 +44,7 @@ export function SessionFloatingLayout({
       ref={bodyRef}
       className={cn('session-body relative flex flex-1 min-h-0 min-w-0 flex-col', className)}
     >
-      <div className="absolute inset-0 flex min-h-0 min-w-0 flex-col">
-        {children}
-      </div>
+      <div className="absolute inset-0 flex min-h-0 min-w-0 flex-col">{children}</div>
 
       <div
         ref={bottomRef}

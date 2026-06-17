@@ -46,7 +46,10 @@ export function TASidebarAssets(): React.ReactElement {
           window.electronAPI.getReviewStats(),
         ])
         if (!mounted) return
-        setStats({ total: statsResult.totalAssets, pending: reviewStats.pending + reviewStats.needsReview })
+        setStats({
+          total: statsResult.totalAssets,
+          pending: reviewStats.pending + reviewStats.needsReview,
+        })
         setRecent((listResult.assets as unknown as AssetRecord[]) ?? [])
       } catch (error) {
         console.error('[TASidebarAssets] 加载失败:', error)
@@ -55,7 +58,9 @@ export function TASidebarAssets(): React.ReactElement {
       }
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   return (
@@ -92,9 +97,7 @@ export function TASidebarAssets(): React.ReactElement {
           {isLoading ? (
             <div className="text-[12px] text-muted-foreground/60 text-center py-3">加载中...</div>
           ) : recent.length === 0 ? (
-            <div className="text-[12px] text-muted-foreground/60 text-center py-3">
-              暂无资产
-            </div>
+            <div className="text-[12px] text-muted-foreground/60 text-center py-3">暂无资产</div>
           ) : (
             recent.map((a) => (
               <button

@@ -12,7 +12,6 @@ import type { BackgroundTask } from '@/atoms/agent-atoms'
 
 import { cn } from '@/lib/utils'
 
-
 export interface TaskBadgeProps {
   task: BackgroundTask
   onClick: () => void
@@ -100,17 +99,13 @@ export function TaskBadge({ task, onClick }: TaskBadgeProps): React.ReactElement
       <Icon className="size-3 text-muted-foreground" />
 
       {/* 类型标签 */}
-      <span className="text-muted-foreground">
-        {task.type === 'shell' ? 'Shell' : 'Task'}
-      </span>
+      <span className="text-muted-foreground">{task.type === 'shell' ? 'Shell' : 'Task'}</span>
 
       {/* 任务 ID（缩短） */}
       <span className="font-mono opacity-80">{shortenId(task.id)}</span>
 
       {/* 耗时 */}
-      <span className="tabular-nums text-muted-foreground">
-        {formatElapsed(displayElapsed)}
-      </span>
+      <span className="tabular-nums text-muted-foreground">{formatElapsed(displayElapsed)}</span>
     </button>
   )
 }

@@ -71,7 +71,10 @@ function scrollCacheKey(sessionId: string, filePath: string): string {
 }
 
 /** 获取缓存的滚动位置 */
-export function getPreviewScrollPosition(sessionId: string, filePath: string): { top: number; left: number } | undefined {
+export function getPreviewScrollPosition(
+  sessionId: string,
+  filePath: string
+): { top: number; left: number } | undefined {
   return scrollPositionCache.get(scrollCacheKey(sessionId, filePath))
 }
 
@@ -129,7 +132,10 @@ function isSelectionInside(container: HTMLElement, selection: Selection): boolea
 }
 
 /** 获取容器内的选区：先查光 DOM，再遍历缓存的 ShadowRoot 集合 */
-function getDeepSelection(container: HTMLElement, shadowRoots?: Set<ShadowRoot> | null): { text: string } | null {
+function getDeepSelection(
+  container: HTMLElement,
+  shadowRoots?: Set<ShadowRoot> | null
+): { text: string } | null {
   const docSel = document.getSelection()
   if (docSel && !docSel.isCollapsed && docSel.rangeCount > 0) {
     if (isSelectionInside(container, docSel)) {
@@ -155,7 +161,9 @@ function getDeepSelection(container: HTMLElement, shadowRoots?: Set<ShadowRoot> 
   // 兜底：无缓存时递归遍历（组件初始化瞬间可能命中一次）
   function walk(node: Node): { text: string } | null {
     if (node instanceof HTMLElement && node.shadowRoot) {
-      const shadowSel = (node.shadowRoot as { getSelection?: () => Selection | null }).getSelection?.()
+      const shadowSel = (
+        node.shadowRoot as { getSelection?: () => Selection | null }
+      ).getSelection?.()
       if (shadowSel && !shadowSel.isCollapsed && shadowSel.rangeCount > 0) {
         const text = shadowSel.toString().trim()
         if (text) return { text }
@@ -199,7 +207,18 @@ interface DiffTabContentProps {
   baseRef?: string
 }
 
-export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewOnly, readOnly, basePaths, onEmptyDiff, toolbarActions, baseRef }: DiffTabContentProps): React.ReactElement {
+export function DiffTabContent({
+  filePath,
+  dirPath,
+  sessionId,
+  gitRoot,
+  previewOnly,
+  readOnly,
+  basePaths,
+  onEmptyDiff,
+  toolbarActions,
+  baseRef,
+}: DiffTabContentProps): React.ReactElement {
   const [viewMode, setViewMode] = useAtom(agentDiffViewModeAtom)
   const [oldContent, setOldContent] = React.useState('')
   const [newContent, setNewContent] = React.useState('')
@@ -207,7 +226,9 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
   const [markdownSourceMode, setMarkdownSourceMode] = React.useState(false)
   const [markdownDraft, setMarkdownDraft] = React.useState('')
   const [markdownSaving, setMarkdownSaving] = React.useState(false)
-  const [autosaveStatus, setAutosaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [autosaveStatus, setAutosaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle'
+  )
   const lastSavedDraftRef = React.useRef('')
   const autosaveTimerRef = React.useRef<number | null>(null)
   const [docxHtml, setDocxHtml] = React.useState('')
@@ -253,26 +274,41 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     'file-find',
     React.useCallback(() => setFindOpen(true), []),
     true,
-    FILE_FIND_SHORTCUT_OPTIONS,
+    FILE_FIND_SHORTCUT_OPTIONS
   )
 
-  const findContentKey = React.useMemo(() => JSON.stringify({
-    filePath,
-    previewOnly: Boolean(previewOnly),
-    viewMode,
-    loading,
-    newLength: newContent.length,
-    oldLength: oldContent.length,
-    docxLength: docxHtml.length,
-    officeLength: officeHtml.length,
-    markdownEditing,
-    markdownSourceMode,
-  }), [docxHtml.length, filePath, loading, markdownEditing, markdownSourceMode, newContent.length, officeHtml.length, oldContent.length, previewOnly, viewMode])
+  const findContentKey = React.useMemo(
+    () =>
+      JSON.stringify({
+        filePath,
+        previewOnly: Boolean(previewOnly),
+        viewMode,
+        loading,
+        newLength: newContent.length,
+        oldLength: oldContent.length,
+        docxLength: docxHtml.length,
+        officeLength: officeHtml.length,
+        markdownEditing,
+        markdownSourceMode,
+      }),
+    [
+      docxHtml.length,
+      filePath,
+      loading,
+      markdownEditing,
+      markdownSourceMode,
+      newContent.length,
+      officeHtml.length,
+      oldContent.length,
+      previewOnly,
+      viewMode,
+    ]
+  )
 
   // 目录提取只需在「文件本身或其内容」变化时重建，避免 loading/编辑态切换造成的抖动
   const tocContentKey = React.useMemo(
     () => JSON.stringify({ filePath, previewContentVersion, newLength: newContent.length }),
-    [filePath, previewContentVersion, newContent.length],
+    [filePath, previewContentVersion, newContent.length]
   )
 
   // ===== 选中文本引用（Quoted Selection）=====
@@ -303,7 +339,11 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
       dismissTruncationToast()
       // 若焦点在 ProseMirror 编辑器（输入框），保留 Chip；否则清除
       const activeEl = document.activeElement
-      if (activeEl && (activeEl.closest?.('.ProseMirror') || activeEl.closest?.('[data-input-mode]'))) return
+      if (
+        activeEl &&
+        (activeEl.closest?.('.ProseMirror') || activeEl.closest?.('[data-input-mode]'))
+      )
+        return
       setQuotedSelectionMap((prev) => {
         const m = new Map(prev)
         if (!m.has(sessionId)) return prev
@@ -431,35 +471,50 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     }
   }, [previewOnly, handleSelectionCapture, dismissTruncationToast])
 
-  const fileAccess = React.useMemo(() => ({
-    sessionId,
-    candidateBasePaths: basePaths,
-  }), [sessionId, basePaths])
+  const fileAccess = React.useMemo(
+    () => ({
+      sessionId,
+      candidateBasePaths: basePaths,
+    }),
+    [sessionId, basePaths]
+  )
 
-  const contentCacheScope = React.useMemo(() => JSON.stringify({
-    dirPath,
-    gitRoot: gitRoot ?? '',
-    basePaths: basePaths ?? [],
-  }), [basePaths, dirPath, gitRoot])
+  const contentCacheScope = React.useMemo(
+    () =>
+      JSON.stringify({
+        dirPath,
+        gitRoot: gitRoot ?? '',
+        basePaths: basePaths ?? [],
+      }),
+    [basePaths, dirPath, gitRoot]
+  )
 
-  const getContentCacheKey = React.useCallback((mode: 'preview' | 'diff', version: number) => (
-    `${sessionId}:${mode}:${filePath}@v${version}:${contentCacheScope}`
-  ), [contentCacheScope, filePath, sessionId])
+  const getContentCacheKey = React.useCallback(
+    (mode: 'preview' | 'diff', version: number) =>
+      `${sessionId}:${mode}:${filePath}@v${version}:${contentCacheScope}`,
+    [contentCacheScope, filePath, sessionId]
+  )
 
   // PierreFile props 缓存，避免每次渲染创建新对象导致内部重新高亮
-  const pierreFile = React.useMemo(() => ({
-    name: filePath.split('/').pop() ?? filePath,
-    contents: newContent,
-    cacheKey: `${filePath}:${newContent.length}:${previewContentVersion}`,
-  }), [filePath, newContent, previewContentVersion])
+  const pierreFile = React.useMemo(
+    () => ({
+      name: filePath.split('/').pop() ?? filePath,
+      contents: newContent,
+      cacheKey: `${filePath}:${newContent.length}:${previewContentVersion}`,
+    }),
+    [filePath, newContent, previewContentVersion]
+  )
 
-  const pierreOptions = React.useMemo(() => ({
-    theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
-    disableFileHeader: true,
-    overflow: 'scroll' as const,
-    themeType: theme as 'light' | 'dark' | 'system',
-    unsafeCSS: PIERRE_FILE_CSS,
-  }), [theme])
+  const pierreOptions = React.useMemo(
+    () => ({
+      theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
+      disableFileHeader: true,
+      overflow: 'scroll' as const,
+      themeType: theme as 'light' | 'dark' | 'system',
+      unsafeCSS: PIERRE_FILE_CSS,
+    }),
+    [theme]
+  )
   const markdownFileAccess = React.useMemo(() => {
     const candidateBasePaths: string[] = []
     const slash = filePath.lastIndexOf('/')
@@ -596,11 +651,21 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
               if (resolved) {
                 setImagePath(filePath)
                 setImageDataUrl(resolved.url)
-                cacheSet(cacheKey, { oldContent: '', newContent: '', imagePath: filePath, imageDataUrl: resolved.url })
+                cacheSet(cacheKey, {
+                  oldContent: '',
+                  newContent: '',
+                  imagePath: filePath,
+                  imageDataUrl: resolved.url,
+                })
               } else {
                 setImagePath('')
                 setImageDataUrl('')
-                cacheSet(cacheKey, { oldContent: '', newContent: '', imagePath: '', imageDataUrl: '' })
+                cacheSet(cacheKey, {
+                  oldContent: '',
+                  newContent: '',
+                  imagePath: '',
+                  imageDataUrl: '',
+                })
               }
               return
             }
@@ -619,7 +684,12 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
               const text = result?.text ?? ''
               setOfficeHtml(html)
               setOfficeText(text)
-              cacheSet(cacheKey, { oldContent: '', newContent: '', officeHtml: html, officeText: text })
+              cacheSet(cacheKey, {
+                oldContent: '',
+                newContent: '',
+                officeHtml: html,
+                officeText: text,
+              })
               return
             }
             if (isLegacyOffice) {
@@ -629,7 +699,13 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
             if (cancelled) return
             content = result?.content ?? ''
           } else {
-            const result = await window.electronAPI.getDiffContents({ dirPath, filePath, gitRoot, sessionId, baseRef })
+            const result = await window.electronAPI.getDiffContents({
+              dirPath,
+              filePath,
+              gitRoot,
+              sessionId,
+              baseRef,
+            })
             if (cancelled) return
             content = result?.newContent ?? ''
             old = result?.oldContent ?? ''
@@ -654,9 +730,25 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     }
 
     load()
-    return () => { cancelled = true }
-     
-  }, [filePath, dirPath, gitRoot, previewOnly, previewContentVersion, fileAccess, isPdf, isDocx, isOfficePreview, isLegacyOffice, isImage, sessionId, ext, getContentCacheKey])
+    return () => {
+      cancelled = true
+    }
+  }, [
+    filePath,
+    dirPath,
+    gitRoot,
+    previewOnly,
+    previewContentVersion,
+    fileAccess,
+    isPdf,
+    isDocx,
+    isOfficePreview,
+    isLegacyOffice,
+    isImage,
+    sessionId,
+    ext,
+    getContentCacheKey,
+  ])
 
   // refreshVersion 触发的静默刷新：仅 diff 模式、内容有变化时才更新 state
   const prevRefreshRef = React.useRef(-1)
@@ -673,7 +765,12 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     let cancelled = false
     async function refresh() {
       try {
-        const result = await window.electronAPI.getDiffContents({ dirPath, filePath, gitRoot, sessionId })
+        const result = await window.electronAPI.getDiffContents({
+          dirPath,
+          filePath,
+          gitRoot,
+          sessionId,
+        })
         if (cancelled || !result) return
         const newC = result.newContent ?? ''
         const oldC = result.oldContent ?? ''
@@ -689,7 +786,9 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
       }
     }
     refresh()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [refreshVersion, previewOnly, filePath, dirPath, gitRoot, sessionId, getContentCacheKey])
 
   // diff 模式：内容加载完成后若新旧一致（无差异），通知父组件关闭预览面板
@@ -727,7 +826,21 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
       toastedPreviewFailRef.current = key
       toast.warning(message)
     }
-  }, [previewOnly, loading, filePath, ext, isLegacyOffice, isPdf, pdfSrc, isDocx, docxHtml, isOfficePreview, officeHtml, isImage, imageDataUrl])
+  }, [
+    previewOnly,
+    loading,
+    filePath,
+    ext,
+    isLegacyOffice,
+    isPdf,
+    pdfSrc,
+    isDocx,
+    docxHtml,
+    isOfficePreview,
+    officeHtml,
+    isImage,
+    imageDataUrl,
+  ])
 
   // scrollPosition persistent: module-level Map keyed by sessionId:filePath
   // content changes (refreshVersion bump) → delete stored position;
@@ -779,7 +892,7 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
 
   const handleCopy = React.useCallback(async () => {
     try {
-      const copyText = markdownEditing ? markdownDraft : (isOfficePreview ? officeText : newContent)
+      const copyText = markdownEditing ? markdownDraft : isOfficePreview ? officeText : newContent
       await navigator.clipboard.writeText(copyText)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -798,7 +911,9 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
   }, [isEditableText, newContent])
 
   // ref 形式的 persist：避免 callback / effect 因 refreshVersion 频繁变化而重建
-  const persistRef = React.useRef<(draft: string, fp: string, fa: typeof fileAccess) => Promise<boolean>>(async () => false)
+  const persistRef = React.useRef<
+    (draft: string, fp: string, fa: typeof fileAccess) => Promise<boolean>
+  >(async () => false)
 
   const exitMarkdownEdit = React.useCallback(() => {
     // 退出前 flush 待保存的草稿，避免用户在 debounce 窗口内退出时丢失输入。
@@ -821,41 +936,43 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
   // 接收显式参数（不依赖闭包），保证切换文件后 flush 用旧文件路径。
   // 同一份 draft 重复触发会被 `draft === lastSavedDraftRef.current` 短路，
   // 因此 autosave timer 与 unmount cleanup 偶发的双重 fire 不会真的写两次。
-  const persistMarkdownDraft = React.useCallback(async (
-    draft: string,
-    fp: string,
-    fa: typeof fileAccess,
-  ): Promise<boolean> => {
-    if (draft === lastSavedDraftRef.current) return true
-    setAutosaveStatus('saving')
-    try {
-      const ok = await window.electronAPI.writeTextFile(fp, draft, fa)
-      if (!ok) {
+  const persistMarkdownDraft = React.useCallback(
+    async (draft: string, fp: string, fa: typeof fileAccess): Promise<boolean> => {
+      if (draft === lastSavedDraftRef.current) return true
+      setAutosaveStatus('saving')
+      try {
+        const ok = await window.electronAPI.writeTextFile(fp, draft, fa)
+        if (!ok) {
+          setAutosaveStatus('error')
+          return false
+        }
+        lastSavedDraftRef.current = draft
+        // 仅当当前展示的仍是这个文件时，才同步 UI state，避免覆盖刚切到的新文件
+        if (fp === filePathRef.current) {
+          lastNewContentRef.current = draft
+          lastOldContentRef.current = ''
+          setOldContent('')
+          setNewContent(draft)
+          cacheSet(getContentCacheKey('preview', refreshVersion + 1), {
+            oldContent: '',
+            newContent: draft,
+          })
+          setRefreshVersionMap((prev) => {
+            const m = new Map(prev)
+            m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
+            return m
+          })
+          setAutosaveStatus('saved')
+        }
+        return true
+      } catch (err) {
+        console.error('[DiffTabContent] Markdown save failed:', err)
         setAutosaveStatus('error')
         return false
       }
-      lastSavedDraftRef.current = draft
-      // 仅当当前展示的仍是这个文件时，才同步 UI state，避免覆盖刚切到的新文件
-      if (fp === filePathRef.current) {
-        lastNewContentRef.current = draft
-        lastOldContentRef.current = ''
-        setOldContent('')
-        setNewContent(draft)
-        cacheSet(getContentCacheKey('preview', refreshVersion + 1), { oldContent: '', newContent: draft })
-        setRefreshVersionMap((prev) => {
-          const m = new Map(prev)
-          m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
-          return m
-        })
-        setAutosaveStatus('saved')
-      }
-      return true
-    } catch (err) {
-      console.error('[DiffTabContent] Markdown save failed:', err)
-      setAutosaveStatus('error')
-      return false
-    }
-  }, [getContentCacheKey, refreshVersion, sessionId, setRefreshVersionMap])
+    },
+    [getContentCacheKey, refreshVersion, sessionId, setRefreshVersionMap]
+  )
 
   const saveMarkdownEdit = React.useCallback(async () => {
     if (!isEditableText || markdownSaving) return
@@ -942,7 +1059,6 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
     }
     // 仅依赖 filePath/sessionId：切文件时执行 cleanup 触发 flush；
     // draft/editing/fileAccess 通过 ref 读取最新值
-     
   }, [filePath, sessionId])
 
   return (
@@ -955,23 +1071,37 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
         {!previewOnly && (
           <div
             className="relative flex rounded-lg bg-muted p-0.5 shrink-0 ml-auto cursor-pointer select-none"
-            onClick={() => setViewMode((v) => v === 'split' ? 'unified' : 'split')}
+            onClick={() => setViewMode((v) => (v === 'split' ? 'unified' : 'split'))}
           >
             <div
               className={cn(
                 'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-md bg-background shadow-sm transition-transform duration-200 ease-in-out',
-                viewMode === 'unified' ? 'translate-x-full' : 'translate-x-0',
+                viewMode === 'unified' ? 'translate-x-full' : 'translate-x-0'
               )}
             />
-            <span className={cn('relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
-              viewMode === 'split' ? 'text-foreground' : 'text-muted-foreground')}>分栏</span>
-            <span className={cn('relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
-              viewMode === 'unified' ? 'text-foreground' : 'text-muted-foreground')}>统一</span>
+            <span
+              className={cn(
+                'relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
+                viewMode === 'split' ? 'text-foreground' : 'text-muted-foreground'
+              )}
+            >
+              分栏
+            </span>
+            <span
+              className={cn(
+                'relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
+                viewMode === 'unified' ? 'text-foreground' : 'text-muted-foreground'
+              )}
+            >
+              统一
+            </span>
           </div>
         )}
 
-        {previewOnly && isEditableText && !readOnly && (
-          markdownEditing ? (
+        {previewOnly &&
+          isEditableText &&
+          !readOnly &&
+          (markdownEditing ? (
             <div className="ml-auto flex items-center gap-1">
               {isMarkdown && (
                 <button
@@ -981,7 +1111,11 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
                   className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 disabled:opacity-50 shrink-0"
                   title={markdownSourceMode ? '切换到富文本编辑' : '切换到源码编辑'}
                 >
-                  {markdownSourceMode ? <Eye className="size-3.5" /> : <Code2 className="size-3.5" />}
+                  {markdownSourceMode ? (
+                    <Eye className="size-3.5" />
+                  ) : (
+                    <Code2 className="size-3.5" />
+                  )}
                 </button>
               )}
               <button
@@ -1001,7 +1135,9 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
                   'p-1 rounded hover:bg-foreground/[0.06] disabled:opacity-50 shrink-0 transition-colors duration-300',
                   autosaveStatus === 'saved' && 'text-green-500 hover:text-green-500',
                   autosaveStatus === 'error' && 'text-red-500 hover:text-red-500',
-                  autosaveStatus !== 'saved' && autosaveStatus !== 'error' && 'text-foreground/40 hover:text-foreground/60',
+                  autosaveStatus !== 'saved' &&
+                    autosaveStatus !== 'error' &&
+                    'text-foreground/40 hover:text-foreground/60'
                 )}
                 title={
                   autosaveStatus === 'error'
@@ -1023,12 +1159,17 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
             >
               <Pencil className="size-3.5" />
             </button>
-          )
-        )}
+          ))}
 
-        <button type="button" onClick={handleCopy}
-          className={cn("p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0", previewOnly && !isEditableText && "ml-auto")}
-          title="复制文件内容">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={cn(
+            'p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0',
+            previewOnly && !isEditableText && 'ml-auto'
+          )}
+          title="复制文件内容"
+        >
           {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
         </button>
 
@@ -1047,7 +1188,7 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
             onClick={() => setTocOpen((v) => !v)}
             className={cn(
               'p-1 rounded hover:bg-foreground/[0.06] shrink-0',
-              tocOpen ? 'text-foreground/70' : 'text-foreground/40 hover:text-foreground/60',
+              tocOpen ? 'text-foreground/70' : 'text-foreground/40 hover:text-foreground/60'
             )}
             title={tocOpen ? '隐藏目录' : '显示目录'}
           >
@@ -1071,89 +1212,142 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
           contentKey={tocContentKey}
           enabled={Boolean(isMarkdown && !markdownEditing && tocOpen)}
         />
-        <div ref={scrollContainerRef} onScroll={handleScroll} className="h-full flex-1 min-w-0 overflow-auto scrollbar-thin relative">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="h-full flex-1 min-w-0 overflow-auto scrollbar-thin relative"
+        >
           {loading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-[12px]">加载中...</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground text-[12px]">
+              加载中...
+            </div>
           ) : previewOnly ? (
             isPdf ? (
               pdfSrc ? (
                 <div className="relative h-full">
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-filter backdrop-blur-sm border border-border/30 shadow-sm">
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
-                    onClick={() => pdfIframeRef.current?.contentWindow?.postMessage({ type: 'pdf-zoom', direction: 'out' }, '*')}
-                  >−</button>
-                  <span className="text-xs text-muted-foreground min-w-[40px] text-center font-mono">{pdfZoom}%</span>
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
-                    onClick={() => pdfIframeRef.current?.contentWindow?.postMessage({ type: 'pdf-zoom', direction: 'in' }, '*')}
-                  >+</button>
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-filter backdrop-blur-sm border border-border/30 shadow-sm">
+                    <button
+                      type="button"
+                      className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
+                      onClick={() =>
+                        pdfIframeRef.current?.contentWindow?.postMessage(
+                          { type: 'pdf-zoom', direction: 'out' },
+                          '*'
+                        )
+                      }
+                    >
+                      −
+                    </button>
+                    <span className="text-xs text-muted-foreground min-w-[40px] text-center font-mono">
+                      {pdfZoom}%
+                    </span>
+                    <button
+                      type="button"
+                      className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
+                      onClick={() =>
+                        pdfIframeRef.current?.contentWindow?.postMessage(
+                          { type: 'pdf-zoom', direction: 'in' },
+                          '*'
+                        )
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                  <iframe
+                    ref={pdfIframeRef}
+                    src={pdfSrc}
+                    className="w-full h-full border-0"
+                    title={filePath.split('/').pop() || 'PDF'}
+                  />
                 </div>
-                <iframe
-                  ref={pdfIframeRef}
-                  src={pdfSrc}
-                  className="w-full h-full border-0"
-                  title={filePath.split('/').pop() || 'PDF'}
-                />
-              </div>
               ) : null
             ) : isImage ? (
               imageDataUrl ? (
                 <div className="relative h-full">
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm">
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
-                    onClick={() => setImageZoom((z) => Math.max(0.1, z / 1.5))}
-                  >−</button>
-                  <span className="text-xs text-muted-foreground min-w-[40px] text-center font-mono">{Math.round(imageZoom * 100)}%</span>
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
-                    onClick={() => setImageZoom((z) => Math.min(5, z * 1.5))}
-                  >+</button>
-                </div>
-                <div
-                  ref={imageContainerRef}
-                  className="h-full overflow-auto p-4 pt-12"
-                  style={{ cursor: imageZoom > 1 ? (imageDragging.current ? 'grabbing' : 'grab') : 'default' }}
-                  onMouseDown={(e) => {
-                    if (imageZoom <= 1 || e.button !== 0) return
-                    imageDragging.current = true
-                    imageDragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: e.currentTarget.scrollLeft, scrollTop: e.currentTarget.scrollTop }
-                    e.currentTarget.style.cursor = 'grabbing'
-                    const target = e.currentTarget
-                    const onMove = (ev: MouseEvent) => {
-                      if (!imageDragging.current) return
-                      target.scrollLeft = imageDragStart.current.scrollLeft - (ev.clientX - imageDragStart.current.x)
-                      target.scrollTop = imageDragStart.current.scrollTop - (ev.clientY - imageDragStart.current.y)
-                    }
-                    const onUp = () => {
-                      imageDragging.current = false
-                      target.style.cursor = 'grab'
-                      document.removeEventListener('mousemove', onMove)
-                      document.removeEventListener('mouseup', onUp)
-                    }
-                    document.addEventListener('mousemove', onMove)
-                    document.addEventListener('mouseup', onUp)
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '100%', minHeight: '100%', width: imageNaturalSize.w > 0 ? imageNaturalSize.w * imageZoom : undefined, height: imageNaturalSize.h > 0 ? imageNaturalSize.h * imageZoom : undefined }}>
-                    <img
-                      src={imageDataUrl}
-                      alt={filePath.split('/').pop() || 'Image'}
-                      draggable={false}
-                      onLoad={(e) => {
-                        const img = e.currentTarget
-                        setImageNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm">
+                    <button
+                      type="button"
+                      className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
+                      onClick={() => setImageZoom((z) => Math.max(0.1, z / 1.5))}
+                    >
+                      −
+                    </button>
+                    <span className="text-xs text-muted-foreground min-w-[40px] text-center font-mono">
+                      {Math.round(imageZoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
+                      onClick={() => setImageZoom((z) => Math.min(5, z * 1.5))}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div
+                    ref={imageContainerRef}
+                    className="h-full overflow-auto p-4 pt-12"
+                    style={{
+                      cursor:
+                        imageZoom > 1 ? (imageDragging.current ? 'grabbing' : 'grab') : 'default',
+                    }}
+                    onMouseDown={(e) => {
+                      if (imageZoom <= 1 || e.button !== 0) return
+                      imageDragging.current = true
+                      imageDragStart.current = {
+                        x: e.clientX,
+                        y: e.clientY,
+                        scrollLeft: e.currentTarget.scrollLeft,
+                        scrollTop: e.currentTarget.scrollTop,
+                      }
+                      e.currentTarget.style.cursor = 'grabbing'
+                      const target = e.currentTarget
+                      const onMove = (ev: MouseEvent) => {
+                        if (!imageDragging.current) return
+                        target.scrollLeft =
+                          imageDragStart.current.scrollLeft -
+                          (ev.clientX - imageDragStart.current.x)
+                        target.scrollTop =
+                          imageDragStart.current.scrollTop - (ev.clientY - imageDragStart.current.y)
+                      }
+                      const onUp = () => {
+                        imageDragging.current = false
+                        target.style.cursor = 'grab'
+                        document.removeEventListener('mousemove', onMove)
+                        document.removeEventListener('mouseup', onUp)
+                      }
+                      document.addEventListener('mousemove', onMove)
+                      document.addEventListener('mouseup', onUp)
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '100%',
+                        minHeight: '100%',
+                        width: imageNaturalSize.w > 0 ? imageNaturalSize.w * imageZoom : undefined,
+                        height: imageNaturalSize.h > 0 ? imageNaturalSize.h * imageZoom : undefined,
                       }}
-                      style={{ width: imageNaturalSize.w > 0 ? imageNaturalSize.w * imageZoom : '100%', height: imageNaturalSize.h > 0 ? imageNaturalSize.h * imageZoom : 'auto', maxWidth: imageZoom <= 1 ? '100%' : 'none' }}
-                    />
+                    >
+                      <img
+                        src={imageDataUrl}
+                        alt={filePath.split('/').pop() || 'Image'}
+                        draggable={false}
+                        onLoad={(e) => {
+                          const img = e.currentTarget
+                          setImageNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+                        }}
+                        style={{
+                          width: imageNaturalSize.w > 0 ? imageNaturalSize.w * imageZoom : '100%',
+                          height: imageNaturalSize.h > 0 ? imageNaturalSize.h * imageZoom : 'auto',
+                          maxWidth: imageZoom <= 1 ? '100%' : 'none',
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
               ) : null
             ) : isDocx ? (
               docxHtml ? (
@@ -1238,7 +1432,12 @@ export function DiffTabContent({ filePath, dirPath, sessionId, gitRoot, previewO
               </pre>
             )
           ) : (
-            <DiffView oldContent={oldContent} newContent={newContent} filePath={filePath} viewMode={viewMode} />
+            <DiffView
+              oldContent={oldContent}
+              newContent={newContent}
+              filePath={filePath}
+              viewMode={viewMode}
+            />
           )}
         </div>
       </div>

@@ -8,7 +8,11 @@
 
 import { atom } from 'jotai'
 
-import type { NotificationSoundId, NotificationSoundType, NotificationSoundSettings } from '@/types/settings'
+import type {
+  NotificationSoundId,
+  NotificationSoundType,
+  NotificationSoundSettings,
+} from '@/types/settings'
 
 // ===== 音频资源导入 =====
 import soundDingDong from '@/assets/sound/ding-dong.mp3'

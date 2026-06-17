@@ -37,7 +37,9 @@ export function VersionHistory(): React.ReactElement {
       let errorMessage = err instanceof Error ? err.message : '加载失败'
       // 过滤掉 Electron IPC 的英文前缀，只保留中文错误信息
       // IPC 错误格式: "Error invoking remote method 'xxx': Error: 中文错误信息"
-      const ipcPrefixMatch = errorMessage.match(/Error invoking remote method[^:]*:\s*Error:\s*(.+)/s)
+      const ipcPrefixMatch = errorMessage.match(
+        /Error invoking remote method[^:]*:\s*Error:\s*(.+)/s
+      )
       if (ipcPrefixMatch && ipcPrefixMatch[1]) {
         errorMessage = ipcPrefixMatch[1].trim()
       }
@@ -54,7 +56,7 @@ export function VersionHistory(): React.ReactElement {
 
   // 切换展开/折叠
   const toggleExpand = (id: number): void => {
-    setExpandedIds(prev => {
+    setExpandedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
         next.delete(id)
@@ -120,11 +122,7 @@ export function VersionHistory(): React.ReactElement {
                         <span className="text-sm font-medium font-mono truncate">
                           {release.tag_name}
                         </span>
-                        {isLatest && (
-                          <span className="text-xs text-primary font-medium">
-                            最新
-                          </span>
-                        )}
+                        {isLatest && <span className="text-xs text-primary font-medium">最新</span>}
                       </div>
                       {release.name && release.name !== release.tag_name && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -146,11 +144,7 @@ export function VersionHistory(): React.ReactElement {
                 {/* Release Notes（展开时显示） */}
                 {isExpanded && (
                   <div className="mt-4 pt-4 border-t">
-                    <ReleaseNotesViewer
-                      release={release}
-                      showHeader={false}
-                      compact
-                    />
+                    <ReleaseNotesViewer release={release} showHeader={false} compact />
                   </div>
                 )}
               </div>

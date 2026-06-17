@@ -32,14 +32,11 @@ const PATH_SEP = ';'
  */
 export function readRegistryValue(key: string, valueName: string): string | null {
   try {
-    const output = execSync(
-      `reg query "${key}" /v "${valueName}"`,
-      {
-        encoding: 'utf-8',
-        timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      },
-    )
+    const output = execSync(`reg query "${key}" /v "${valueName}"`, {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
 
     const escaped = valueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const match = output.match(new RegExp(`${escaped}\\s+REG_\\w+\\s+(.+)`, 'i'))
@@ -169,7 +166,7 @@ export async function loadWindowsEnv(): Promise<ShellEnvResult> {
     // 读取系统 PATH
     const systemPath = readRegistryValue(
       'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment',
-      'Path',
+      'Path'
     )
     if (systemPath) {
       const added = mergeRegistryPath(systemPath)

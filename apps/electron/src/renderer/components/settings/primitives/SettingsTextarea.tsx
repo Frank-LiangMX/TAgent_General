@@ -42,24 +42,17 @@ export function SettingsTextarea({
     <div className="px-4 py-3 space-y-2">
       <div>
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       <Textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className={cn(
-          'resize-y',
-          error && 'border-destructive focus-visible:ring-destructive',
-        )}
+        className={cn('resize-y', error && 'border-destructive focus-visible:ring-destructive')}
         style={{ minHeight }}
       />
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }

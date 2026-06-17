@@ -17,9 +17,7 @@ export const MEMORY_TOOL_META: ChatToolMeta = {
   id: 'memory',
   name: '记忆',
   description: '跨会话记忆能力，记住用户偏好和重要信息',
-  params: [
-    { name: 'query', type: 'string', description: '搜索查询', required: true },
-  ],
+  params: [{ name: 'query', type: 'string', description: '搜索查询', required: true }],
   icon: 'Brain',
   category: 'builtin',
   executorType: 'builtin',
@@ -47,7 +45,8 @@ export const MEMORY_TOOL_META: ChatToolMeta = {
 export const MEMORY_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'recall_memory',
-    description: 'Search user memories (facts and preferences). Use this to recall relevant context about the user before responding.',
+    description:
+      'Search user memories (facts and preferences). Use this to recall relevant context about the user before responding.',
     parameters: {
       type: 'object',
       properties: {
@@ -58,7 +57,8 @@ export const MEMORY_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: 'add_memory',
-    description: 'Store a conversation message pair for long-term memory. Call this after meaningful exchanges worth remembering.',
+    description:
+      'Store a conversation message pair for long-term memory. Call this after meaningful exchanges worth remembering.',
     parameters: {
       type: 'object',
       properties: {

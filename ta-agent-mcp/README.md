@@ -14,6 +14,7 @@ Technical Artist (TA) 领域 MCP Server，为 TAgent 提供游戏资产分析和
 ### TAgent 内（推荐）
 
 TAgent 桌面端已集成一键安装：
+
 1. 打开 TAgent → 切换到 TA 模式
 2. 左下角 MCP Server 状态为红灯时，点击"一键安装"
 3. 安装过程约 1-2 分钟，结束后红灯变黄
@@ -44,12 +45,12 @@ TAgent 用户无需手动配置。手动使用者可在 MCP 配置中添加：
 
 ## 工具列表
 
-| 工具名 | 功能 | 依赖 |
-|--------|------|------|
-| `tagent__check_mesh_budget` | 多边形预算检查 | trimesh |
-| `tagent__check_texture_info` | 纹理信息检查 | Pillow |
-| `tagent__check_texture_batch` | 批量纹理检查 | Pillow |
-| `tagent__analyze_assets` | 资产分类分析（支持 .uasset / .umap / .prefab / .unity） | — |
+| 工具名                        | 功能                                                    | 依赖    |
+| ----------------------------- | ------------------------------------------------------- | ------- |
+| `tagent__check_mesh_budget`   | 多边形预算检查                                          | trimesh |
+| `tagent__check_texture_info`  | 纹理信息检查                                            | Pillow  |
+| `tagent__check_texture_batch` | 批量纹理检查                                            | Pillow  |
+| `tagent__analyze_assets`      | 资产分类分析（支持 .uasset / .umap / .prefab / .unity） | —       |
 
 ## 资产分类
 

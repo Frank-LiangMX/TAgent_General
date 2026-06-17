@@ -101,9 +101,7 @@ export function ReviewQueuePanel(): React.ReactElement {
       {/* 审核列表 */}
       <div className="flex-1 overflow-y-auto p-4">
         {items.length === 0 ? (
-          <div className="text-center text-muted-foreground text-sm py-8">
-            暂无待审核资产
-          </div>
+          <div className="text-center text-muted-foreground text-sm py-8">暂无待审核资产</div>
         ) : (
           <div className="space-y-3">
             {items.map((item) => (
@@ -129,7 +127,12 @@ function ReviewCard({ item }: ReviewCardProps): React.ReactElement {
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
       {/* 状态图标 */}
-      <div className={cn('size-8 rounded-full flex items-center justify-center bg-muted', statusConfig.color)}>
+      <div
+        className={cn(
+          'size-8 rounded-full flex items-center justify-center bg-muted',
+          statusConfig.color
+        )}
+      >
         {statusConfig.icon}
       </div>
 

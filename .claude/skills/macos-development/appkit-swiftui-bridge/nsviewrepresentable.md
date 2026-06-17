@@ -38,6 +38,7 @@ struct MyAppKitView: NSViewRepresentable {
 ## The Coordinator Pattern
 
 The coordinator is a long-lived object that survives SwiftUI view re-creation. Use it for:
+
 - **Delegation**: AppKit delegate callbacks
 - **Target-action**: Button targets, gesture recognizers
 - **Observation**: KVO, NotificationCenter

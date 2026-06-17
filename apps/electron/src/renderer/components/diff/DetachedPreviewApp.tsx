@@ -39,7 +39,8 @@ export function DetachedPreviewApp(): React.ReactElement {
       return
     }
 
-    window.electronAPI.getDetachedPreviewData(previewId)
+    window.electronAPI
+      .getDetachedPreviewData(previewId)
       .then((payload) => {
         if (!payload) {
           setError('预览数据已失效')
@@ -95,16 +96,13 @@ export function DetachedPreviewApp(): React.ReactElement {
             {data.filePath}
           </div>
         </div>
-        <DefaultAppOpenButton
-          filePath={defaultAppTargetPath}
-          access={defaultAppAccess}
-        />
+        <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
         <button
           type="button"
           onClick={handleRefresh}
           className={cn(
             'size-7 flex items-center justify-center rounded-md text-muted-foreground',
-            'hover:bg-muted/60 hover:text-foreground transition-colors',
+            'hover:bg-muted/60 hover:text-foreground transition-colors'
           )}
           title="刷新预览"
         >

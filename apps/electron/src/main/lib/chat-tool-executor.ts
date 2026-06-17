@@ -8,7 +8,10 @@
 import { CHAT_IPC_CHANNELS } from '@tagent/shared'
 
 import { getChatToolsConfig } from './chat-tool-config'
-import { isAgentRecommendToolCall, executeAgentRecommendTool } from './chat-tools/agent-recommend-tool'
+import {
+  isAgentRecommendToolCall,
+  executeAgentRecommendTool,
+} from './chat-tools/agent-recommend-tool'
 import { isCustomHttpToolCall, executeHttpTool } from './chat-tools/http-tool-executor'
 import { isMemoryToolCall, executeMemoryTool } from './chat-tools/memory-tool'
 import { isNanoBananaToolCall, executeNanoBananaTool } from './chat-tools/nano-banana-tool'
@@ -19,8 +22,6 @@ import type { NanoBananaContext } from './chat-tools/nano-banana-tool'
 import type { ToolCall, ToolResult } from '@tagent/core'
 import type { FileAttachment } from '@tagent/shared'
 import type { WebContents } from 'electron'
-
-
 
 /** 工具执行上下文 */
 export interface ToolExecutionContext {
@@ -49,7 +50,7 @@ export interface ToolExecutionContext {
  */
 export async function executeToolCalls(
   toolCalls: ToolCall[],
-  context: ToolExecutionContext,
+  context: ToolExecutionContext
 ): Promise<ToolResult[]> {
   const results: ToolResult[] = []
 

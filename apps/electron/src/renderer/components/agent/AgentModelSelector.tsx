@@ -11,29 +11,25 @@ import * as React from 'react'
 
 import type { Channel, ModelOption } from '@tagent/shared'
 
-import {
-  agentChannelIdAtom,
-  agentModelIdAtom,
-} from '@/atoms/agent-atoms'
+import { agentChannelIdAtom, agentModelIdAtom } from '@/atoms/agent-atoms'
 import { channelsAtom, channelsLoadedAtom } from '@/atoms/chat-atoms'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
-
 /** 从渠道列表构建扁平化的模型选项 */
-function buildModelOptions(channels: Channel[], filterChannelId?: string, filterChannelIds?: string[]): ModelOption[] {
+function buildModelOptions(
+  channels: Channel[],
+  filterChannelId?: string,
+  filterChannelIds?: string[]
+): ModelOption[] {
   const options: ModelOption[] = []
 
   for (const channel of channels) {
     if (!channel.enabled) continue
     if (filterChannelId && channel.id !== filterChannelId) continue
-    if (filterChannelIds && filterChannelIds.length > 0 && !filterChannelIds.includes(channel.id)) continue
+    if (filterChannelIds && filterChannelIds.length > 0 && !filterChannelIds.includes(channel.id))
+      continue
 
     for (const model of channel.models) {
       if (!model.enabled) continue
@@ -100,7 +96,8 @@ export function AgentModelSelector({
   const [search, setSearch] = React.useState('')
 
   // 外部模型优先
-  const selectedModel = externalSelectedModel !== undefined ? externalSelectedModel : { channelId, modelId }
+  const selectedModel =
+    externalSelectedModel !== undefined ? externalSelectedModel : { channelId, modelId }
 
   // 每次打开 Dialog 时刷新渠道列表，确保最新
   React.useEffect(() => {
@@ -110,7 +107,10 @@ export function AgentModelSelector({
     }
   }, [open, setChannels])
 
-  const modelOptions = React.useMemo(() => buildModelOptions(channels, filterChannelId, filterChannelIds), [channels, filterChannelId, filterChannelIds])
+  const modelOptions = React.useMemo(
+    () => buildModelOptions(channels, filterChannelId, filterChannelIds),
+    [channels, filterChannelId, filterChannelIds]
+  )
   const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
 
   // 搜索过滤
@@ -123,8 +123,7 @@ export function AgentModelSelector({
     for (const [chId, options] of grouped.entries()) {
       const matchedOptions = options.filter(
         (o) =>
-          o.modelName.toLowerCase().includes(query) ||
-          o.channelName.toLowerCase().includes(query)
+          o.modelName.toLowerCase().includes(query) || o.channelName.toLowerCase().includes(query)
       )
       if (matchedOptions.length > 0) {
         filtered.set(chId, matchedOptions)
@@ -162,9 +161,11 @@ export function AgentModelSelector({
   // 查找当前选中的模型信息
   const currentModelInfo = React.useMemo(() => {
     if (!selectedModel?.channelId || !selectedModel?.modelId) return null
-    return modelOptions.find(
-      (o) => o.channelId === selectedModel.channelId && o.modelId === selectedModel.modelId
-    ) ?? null
+    return (
+      modelOptions.find(
+        (o) => o.channelId === selectedModel.channelId && o.modelId === selectedModel.modelId
+      ) ?? null
+    )
   }, [selectedModel, modelOptions])
 
   // 保持上次有效的模型信息，避免渠道未加载时闪烁"选择模型"
@@ -230,8 +231,8 @@ export function AgentModelSelector({
           onClick={() => setOpen(true)}
           className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
         >
-          {!hideLogo && (
-            displayModelInfo ? (
+          {!hideLogo &&
+            (displayModelInfo ? (
               <img
                 src={getModelLogo(displayModelInfo.modelId, displayModelInfo.provider)}
                 alt={displayModelInfo.modelName}
@@ -239,8 +240,7 @@ export function AgentModelSelector({
               />
             ) : (
               <Cpu className="size-3.5" />
-            )
-          )}
+            ))}
           <span className="max-w-[200px] truncate">
             {displayModelInfo ? displayModelInfo.modelName : '选择模型'}
           </span>
@@ -272,75 +272,75 @@ export function AgentModelSelector({
           {/* 模型列表 */}
           <div className="max-h-[420px] overflow-y-auto">
             {filteredGrouped.size === 0 ? (
-              <div className="py-10 text-center text-sm text-muted-foreground">
-                未找到模型
-              </div>
+              <div className="py-10 text-center text-sm text-muted-foreground">未找到模型</div>
             ) : (
               (() => {
                 let flatIndex = 0
                 return Array.from(filteredGrouped.entries()).map(([chId, options]) => {
-                const first = options[0]
-                if (!first) return null
+                  const first = options[0]
+                  if (!first) return null
 
-                return (
-                  <div key={chId}>
-                    {/* 供应商标题行 - 灰色背景 */}
-                    <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border/30">
-                      <img
-                        src={(() => {
-                          const ch = channels.find((c) => c.id === chId)
-                          return ch ? getChannelLogo(ch) : DefaultLogo
-                        })()}
-                        alt={first.channelName}
-                        className="size-5 rounded object-cover"
-                      />
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {first.channelName}
-                      </span>
+                  return (
+                    <div key={chId}>
+                      {/* 供应商标题行 - 灰色背景 */}
+                      <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border/30">
+                        <img
+                          src={(() => {
+                            const ch = channels.find((c) => c.id === chId)
+                            return ch ? getChannelLogo(ch) : DefaultLogo
+                          })()}
+                          alt={first.channelName}
+                          className="size-5 rounded object-cover"
+                        />
+                        <span className="text-sm font-medium text-muted-foreground">
+                          {first.channelName}
+                        </span>
+                      </div>
+
+                      {/* 该渠道下的模型列表 */}
+                      {options.map((option) => {
+                        const isSelected =
+                          selectedModel?.channelId === option.channelId &&
+                          selectedModel?.modelId === option.modelId
+                        const currentFlatIndex = flatIndex++
+                        const isHighlighted = currentFlatIndex === highlightIndex
+
+                        return (
+                          <button
+                            key={`${option.channelId}:${option.modelId}`}
+                            ref={(el) => {
+                              if (el) itemRefs.current.set(currentFlatIndex, el)
+                              else itemRefs.current.delete(currentFlatIndex)
+                            }}
+                            type="button"
+                            onClick={() => handleSelect(option)}
+                            onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                            className={cn(
+                              'flex items-center gap-3 w-[calc(100%-1rem)] px-4 py-1.5 mx-2 rounded-lg text-left transition-colors',
+                              'hover:bg-accent',
+                              isHighlighted && 'bg-accent',
+                              isSelected && 'bg-foreground/10 border-l-3 border-l-primary'
+                            )}
+                          >
+                            <img
+                              src={getModelLogo(option.modelId, option.provider)}
+                              alt={option.modelName}
+                              className="size-5 rounded object-cover flex-shrink-0"
+                            />
+                            <span
+                              className={cn(
+                                'flex-1 text-sm truncate',
+                                isSelected ? 'font-medium text-foreground' : 'text-foreground/80'
+                              )}
+                            >
+                              {option.modelName}
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
-
-                    {/* 该渠道下的模型列表 */}
-                    {options.map((option) => {
-                      const isSelected =
-                        selectedModel?.channelId === option.channelId &&
-                        selectedModel?.modelId === option.modelId
-                      const currentFlatIndex = flatIndex++
-                      const isHighlighted = currentFlatIndex === highlightIndex
-
-                      return (
-                        <button
-                          key={`${option.channelId}:${option.modelId}`}
-                          ref={(el) => {
-                            if (el) itemRefs.current.set(currentFlatIndex, el)
-                            else itemRefs.current.delete(currentFlatIndex)
-                          }}
-                          type="button"
-                          onClick={() => handleSelect(option)}
-                          onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
-                          className={cn(
-                            'flex items-center gap-3 w-[calc(100%-1rem)] px-4 py-1.5 mx-2 rounded-lg text-left transition-colors',
-                            'hover:bg-accent',
-                            isHighlighted && 'bg-accent',
-                            isSelected && 'bg-foreground/10 border-l-3 border-l-primary'
-                          )}
-                        >
-                          <img
-                            src={getModelLogo(option.modelId, option.provider)}
-                            alt={option.modelName}
-                            className="size-5 rounded object-cover flex-shrink-0"
-                          />
-                          <span className={cn(
-                            'flex-1 text-sm truncate',
-                            isSelected ? 'font-medium text-foreground' : 'text-foreground/80'
-                          )}>
-                            {option.modelName}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )
-              })
+                  )
+                })
               })()
             )}
           </div>

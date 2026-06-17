@@ -17,12 +17,15 @@ What is the change that we're proposing or have agreed to implement?
 What becomes easier or more difficult because of this change?
 
 ### Positive
+
 - ...
 
 ### Negative
+
 - ...
 
 ### Neutral
+
 - ...
 
 ## Alternatives Considered
@@ -30,10 +33,12 @@ What becomes easier or more difficult because of this change?
 What other options did we look at?
 
 ### Option A: <name>
+
 - Pros: ...
 - Cons: ...
 
 ### Option B: <name>
+
 - Pros: ...
 - Cons: ...
 

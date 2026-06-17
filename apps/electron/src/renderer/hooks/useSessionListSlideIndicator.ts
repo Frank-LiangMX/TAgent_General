@@ -1,9 +1,6 @@
 import * as React from 'react'
 
-import {
-  LIST_SLIDE_ACCENT_TRANSITION,
-  LIST_SLIDE_TRANSITION,
-} from '@/lib/list-slide-selection'
+import { LIST_SLIDE_ACCENT_TRANSITION, LIST_SLIDE_TRANSITION } from '@/lib/list-slide-selection'
 
 /** @deprecated 使用 LIST_SLIDE_TRANSITION */
 export const SESSION_LIST_SLIDE_TRANSITION = LIST_SLIDE_TRANSITION
@@ -34,7 +31,7 @@ const EMPTY_STYLES: SessionListSlideStyles = {
 
 function measureSessionListItem(
   container: HTMLElement,
-  sessionId: string,
+  sessionId: string
 ): SessionListIndicatorMetrics | null {
   const item = container.querySelector<HTMLElement>(sessionListItemSelector(sessionId))
   if (!item) return null
@@ -58,7 +55,7 @@ function rowMetricsToAccentMetrics(row: SessionListIndicatorMetrics): SessionLis
 
 function metricsToPlateStyle(
   metrics: SessionListIndicatorMetrics,
-  transition: string,
+  transition: string
 ): React.CSSProperties {
   return {
     display: 'block',
@@ -73,7 +70,7 @@ function metricsToPlateStyle(
 
 function metricsToAccentStyle(
   metrics: SessionListIndicatorMetrics,
-  transition: string,
+  transition: string
 ): React.CSSProperties {
   return {
     display: 'block',
@@ -88,7 +85,7 @@ function metricsToAccentStyle(
 
 function buildSlideStyles(
   rowMetrics: SessionListIndicatorMetrics,
-  animate: boolean,
+  animate: boolean
 ): SessionListSlideStyles {
   const plateTransition = animate ? LIST_SLIDE_TRANSITION : 'none'
   const accentTransition = animate ? LIST_SLIDE_ACCENT_TRANSITION : 'none'
@@ -105,27 +102,30 @@ function buildSlideStyles(
 export function useSessionListSlideIndicator(
   containerRef: React.RefObject<HTMLElement | null>,
   activeSessionId: string | null,
-  layoutKey = '',
+  layoutKey = ''
 ): SessionListSlideStyles {
   const prevActiveSessionRef = React.useRef<string | null>(null)
   const lastSettledSessionRef = React.useRef<string | null>(null)
   const lastLayoutKeyRef = React.useRef(layoutKey)
   const [styles, setStyles] = React.useState<SessionListSlideStyles>(EMPTY_STYLES)
 
-  const applyMetrics = React.useCallback((animate: boolean) => {
-    const container = containerRef.current
-    if (!container || !activeSessionId) {
-      setStyles(EMPTY_STYLES)
-      lastSettledSessionRef.current = null
-      return
-    }
+  const applyMetrics = React.useCallback(
+    (animate: boolean) => {
+      const container = containerRef.current
+      if (!container || !activeSessionId) {
+        setStyles(EMPTY_STYLES)
+        lastSettledSessionRef.current = null
+        return
+      }
 
-    const metrics = measureSessionListItem(container, activeSessionId)
-    if (!metrics) return
+      const metrics = measureSessionListItem(container, activeSessionId)
+      if (!metrics) return
 
-    setStyles(buildSlideStyles(metrics, animate))
-    lastSettledSessionRef.current = activeSessionId
-  }, [activeSessionId, containerRef])
+      setStyles(buildSlideStyles(metrics, animate))
+      lastSettledSessionRef.current = activeSessionId
+    },
+    [activeSessionId, containerRef]
+  )
 
   React.useLayoutEffect(() => {
     const prevSession = prevActiveSessionRef.current

@@ -31,6 +31,7 @@ Conduct comprehensive UI/UX reviews of macOS applications, focusing on design co
 ## How to Conduct Reviews
 
 ### Step 1: Understand the Application
+
 - Ask about the app's purpose and target audience
 - Identify the UI framework (SwiftUI, AppKit, or hybrid)
 - Understand the minimum macOS version supported
@@ -39,6 +40,7 @@ Conduct comprehensive UI/UX reviews of macOS applications, focusing on design co
 ### Step 2: Systematic UI Audit
 
 Review the interface against each module's guidelines:
+
 - Liquid Glass design implementation (see liquid-glass-design.md)
 - macOS Tahoe HIG compliance (see macos-tahoe-hig.md)
 - SwiftUI patterns for macOS (see swiftui-macos.md)
@@ -48,6 +50,7 @@ Review the interface against each module's guidelines:
 ### Step 3: Provide Structured Feedback
 
 For each UI issue found:
+
 1. **Issue**: Clearly describe the problem
 2. **Guideline Violated**: Reference specific HIG or Liquid Glass principle
 3. **Impact**: Explain effect on user experience
@@ -57,6 +60,7 @@ For each UI issue found:
 ### Step 4: Prioritize Recommendations
 
 Categorize feedback:
+
 - 🔴 **Critical**: Breaks platform conventions, accessibility failures
 - 🟡 **Important**: Inconsistent with HIG, poor UX
 - 🟢 **Nice-to-have**: Polish improvements, advanced features
@@ -66,6 +70,7 @@ Categorize feedback:
 Before completing review, ensure you've checked:
 
 ### Visual Design
+
 - [ ] Follows Liquid Glass design principles
 - [ ] Transparent menu bar implementation
 - [ ] Proper use of depth and hierarchy
@@ -75,6 +80,7 @@ Before completing review, ensure you've checked:
 - [ ] Animation quality and smoothness
 
 ### Layout & Navigation
+
 - [ ] Proper window chrome and toolbar design
 - [ ] Navigation patterns (NavigationSplitView, tabs)
 - [ ] Responsive to window resizing
@@ -83,6 +89,7 @@ Before completing review, ensure you've checked:
 - [ ] Menu bar organization
 
 ### Controls & Interactions
+
 - [ ] Platform-appropriate controls
 - [ ] Proper button styles and placement
 - [ ] Form design and validation
@@ -91,6 +98,7 @@ Before completing review, ensure you've checked:
 - [ ] Context menus
 
 ### Accessibility
+
 - [ ] VoiceOver support
 - [ ] Keyboard navigation
 - [ ] Focus indicators
@@ -99,12 +107,14 @@ Before completing review, ensure you've checked:
 - [ ] Accessibility labels and hints
 
 ### Performance
+
 - [ ] Smooth animations (60fps)
 - [ ] Responsive UI updates
 - [ ] No SwiftUI layout bugs (Tahoe-specific issues)
 - [ ] Proper NSHostingView usage (if hybrid)
 
 ### Platform Integration
+
 - [ ] System appearance (light/dark mode)
 - [ ] Accent color support
 - [ ] Spotlight integration
@@ -151,30 +161,36 @@ Load these modules as needed during review:
 # UI Review: [App Name]
 
 ## Summary
+
 Brief overview of the app and its current UI state.
 
 ## Critical Issues 🔴
+
 1. **VoiceOver Cannot Navigate Main List**
    - Guideline: Accessibility - VoiceOver support required
    - Impact: App unusable for blind users
    - Fix: [code example with accessibility labels]
 
 ## Important Issues 🟡
+
 1. **Window Toolbar Not Following Tahoe HIG**
    - Guideline: macOS Tahoe HIG - Toolbar design
    - Impact: Feels out of place on macOS 26
    - Fix: [code example with proper toolbar]
 
 ## Suggestions 🟢
+
 1. **Consider Adding Liquid Glass Transparency**
    - Guideline: Liquid Glass - Visual hierarchy
    - Benefit: More native macOS 26 appearance
    - Example: [code example]
 
 ## Overall Assessment
+
 [Summary and priority recommendations]
 
 ## Tahoe-Specific Considerations
+
 [Any macOS 26-specific issues or opportunities]
 ```
 
@@ -198,6 +214,7 @@ Brief overview of the app and its current UI state.
 ## Screenshot Analysis
 
 If provided with screenshots:
+
 - Analyze visual hierarchy and spacing
 - Check color contrast and accessibility
 - Verify alignment and consistency

@@ -12,20 +12,18 @@
 
 import { randomUUID } from 'node:crypto'
 
-import type {
-  AskUserRequest,
-  AskUserQuestion,
-  AskUserQuestionOption,
-} from '@tagent/shared'
+import type { AskUserRequest, AskUserQuestion, AskUserQuestionOption } from '@tagent/shared'
 
 /** canUseTool 返回的权限结果 */
-type PermissionResult = {
-  behavior: 'allow'
-  updatedInput: Record<string, unknown>
-} | {
-  behavior: 'deny'
-  message: string
-}
+type PermissionResult =
+  | {
+      behavior: 'allow'
+      updatedInput: Record<string, unknown>
+    }
+  | {
+      behavior: 'deny'
+      message: string
+    }
 
 /** 待处理的 AskUser 请求 */
 interface PendingAskUser {
@@ -52,7 +50,7 @@ export class AgentAskUserService {
     sessionId: string,
     input: Record<string, unknown>,
     signal: AbortSignal,
-    sendToRenderer: (request: AskUserRequest) => void,
+    sendToRenderer: (request: AskUserRequest) => void
   ): Promise<PermissionResult> {
     const questions = this.parseQuestions(input)
 
@@ -68,12 +66,16 @@ export class AgentAskUserService {
     return new Promise<PermissionResult>((resolve) => {
       this.pendingRequests.set(request.requestId, { resolve, request })
 
-      signal.addEventListener('abort', () => {
-        if (this.pendingRequests.has(request.requestId)) {
-          this.pendingRequests.delete(request.requestId)
-          resolve({ behavior: 'deny', message: '操作已中止' })
-        }
-      }, { once: true })
+      signal.addEventListener(
+        'abort',
+        () => {
+          if (this.pendingRequests.has(request.requestId)) {
+            this.pendingRequests.delete(request.requestId)
+            resolve({ behavior: 'deny', message: '操作已中止' })
+          }
+        },
+        { once: true }
+      )
     })
   }
 
@@ -134,11 +136,13 @@ export class AgentAskUserService {
     return rawQuestions.map((q: unknown): AskUserQuestion => {
       const raw = q as Record<string, unknown>
       const options = Array.isArray(raw.options)
-        ? (raw.options as Array<Record<string, unknown>>).map((o): AskUserQuestionOption => ({
-            label: typeof o.label === 'string' ? o.label : '',
-            description: typeof o.description === 'string' ? o.description : undefined,
-            preview: typeof o.preview === 'string' ? o.preview.slice(0, 10_000) : undefined,
-          }))
+        ? (raw.options as Array<Record<string, unknown>>).map(
+            (o): AskUserQuestionOption => ({
+              label: typeof o.label === 'string' ? o.label : '',
+              description: typeof o.description === 'string' ? o.description : undefined,
+              preview: typeof o.preview === 'string' ? o.preview.slice(0, 10_000) : undefined,
+            })
+          )
         : []
 
       return {

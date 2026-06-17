@@ -20,13 +20,8 @@ import remarkMath from 'remark-math'
 
 import type { ComponentProps, ReactNode } from 'react'
 
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-
 
 // ===== 上下文 =====
 
@@ -185,10 +180,7 @@ export const ReasoningTrigger = React.memo(function ReasoningTrigger({
           <Brain className="size-4" />
           {getThinkingMessage(isStreaming, duration)}
           <ChevronDown
-            className={cn(
-              'size-4 transition-transform',
-              isOpen ? 'rotate-180' : 'rotate-0'
-            )}
+            className={cn('size-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')}
           />
         </>
       )}
@@ -204,7 +196,11 @@ interface ReasoningContentProps extends ComponentProps<typeof CollapsibleContent
 }
 
 export const ReasoningContent = React.memo(
-  function ReasoningContent({ className, children, ...props }: ReasoningContentProps): React.ReactElement {
+  function ReasoningContent({
+    className,
+    children,
+    ...props
+  }: ReasoningContentProps): React.ReactElement {
     return (
       <CollapsibleContent
         className={cn(

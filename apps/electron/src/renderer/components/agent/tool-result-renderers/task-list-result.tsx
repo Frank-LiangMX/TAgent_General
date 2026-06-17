@@ -9,7 +9,6 @@ import { DefaultResultRenderer } from './default-result'
 
 import { cn } from '@/lib/utils'
 
-
 interface TaskListResultRendererProps {
   result: string
   isError: boolean
@@ -59,7 +58,10 @@ function parseJsonTaskList(text: string): ParsedTaskListItem[] | null {
 
 function parseTextTaskList(text: string): ParsedTaskListItem[] | null {
   const items: ParsedTaskListItem[] = []
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
 
   for (const line of lines) {
     const match = /^#?([A-Za-z0-9._-]+)\s+\[([A-Za-z0-9_-]+)\]\s+(.+)$/.exec(line)
@@ -128,7 +130,10 @@ function statusMeta(status: string): {
   }
 }
 
-export function TaskListResultRenderer({ result, isError }: TaskListResultRendererProps): React.ReactElement {
+export function TaskListResultRenderer({
+  result,
+  isError,
+}: TaskListResultRendererProps): React.ReactElement {
   const tasks = React.useMemo(() => parseTaskListResult(result), [result])
 
   if (isError) return <DefaultResultRenderer result={result} isError />
@@ -152,23 +157,32 @@ export function TaskListResultRenderer({ result, isError }: TaskListResultRender
           const StatusIcon = meta.icon
 
           return (
-            <div key={task.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2">
+            <div
+              key={task.id}
+              className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2"
+            >
               <span className="rounded-sm border border-border/50 bg-background/40 px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground">
                 #{task.id}
               </span>
-              <span className={cn(
-                'inline-flex items-center gap-1 rounded-full bg-background/45 px-2 py-0.5 text-[11px] font-medium',
-                meta.className,
-              )}>
-                <StatusIcon className={cn('size-3', task.status === 'in_progress' && 'animate-pulse')} />
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full bg-background/45 px-2 py-0.5 text-[11px] font-medium',
+                  meta.className
+                )}
+              >
+                <StatusIcon
+                  className={cn('size-3', task.status === 'in_progress' && 'animate-pulse')}
+                />
                 {meta.label}
               </span>
-              <span className={cn(
-                'truncate text-[13px]',
-                task.status === 'completed'
-                  ? 'text-muted-foreground/65 line-through'
-                  : 'text-foreground/85',
-              )}>
+              <span
+                className={cn(
+                  'truncate text-[13px]',
+                  task.status === 'completed'
+                    ? 'text-muted-foreground/65 line-through'
+                    : 'text-foreground/85'
+                )}
+              >
                 {task.subject}
               </span>
             </div>

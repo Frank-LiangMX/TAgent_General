@@ -14,13 +14,18 @@ import { WPS_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
 import { BridgeCommandHandler } from './bridge-command-handler'
+import {
+  getDecryptedWpsEncryptKey,
+  getDecryptedWpsSecretKey,
+  getWpsConfig,
+  updateWpsDefaultWorkspace,
+} from './wps-config'
 import { decryptEventData, generateKso1AuthHeader, verifyEventSignature } from './wps-crypto'
-import { getDecryptedWpsEncryptKey, getDecryptedWpsSecretKey, getWpsConfig, updateWpsDefaultWorkspace } from './wps-config'
 import { parseWpsMessage } from './wps-message-parser'
 import { wpsOAuthTokenManager } from './wps-oauth'
 
-import type { Server, IncomingMessage, ServerResponse } from 'node:http'
 import type { WpsBridgeState, WpsTestResult } from '@tagent/shared'
+import type { Server, IncomingMessage, ServerResponse } from 'node:http'
 
 const MAX_BODY_SIZE = 2 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 20_000
@@ -151,14 +156,16 @@ class WpsBridge {
     const encryptedData = this.readString(parsed.encrypted_data)
     const time = this.readNumber(parsed.time)
     if (signature && nonce && encryptedData && time > 0) {
-      if (!verifyEventSignature(config.appId, secretKey, topic, nonce, time, encryptedData, signature)) {
+      if (
+        !verifyEventSignature(config.appId, secretKey, topic, nonce, time, encryptedData, signature)
+      ) {
         console.warn('[WPS Bridge] 事件签名校验失败，已忽略')
         return
       }
     }
 
     const eventData = encryptedData
-      ? JSON.parse(decryptEventData(encryptKey, encryptedData, nonce)) as Record<string, unknown>
+      ? (JSON.parse(decryptEventData(encryptKey, encryptedData, nonce)) as Record<string, unknown>)
       : (parsed.data as Record<string, unknown> | undefined)
     if (!eventData) return
 
@@ -201,7 +208,15 @@ class WpsBridge {
     const body = JSON.stringify(payload)
     const path = '/v7/messages/create'
     const date = new Date().toUTCString()
-    const signature = generateKso1AuthHeader(appId, 'POST', path, 'application/json', date, body, secretKey)
+    const signature = generateKso1AuthHeader(
+      appId,
+      'POST',
+      path,
+      'application/json',
+      date,
+      body,
+      secretKey
+    )
 
     const response = await fetch(`${apiUrl}${path}`, {
       method: 'POST',

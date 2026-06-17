@@ -16,7 +16,9 @@ export interface DockBadgeCountInput {
 }
 
 /** 统计按会话分组的待处理请求数量 */
-export function countPendingRequests<T>(requestsBySession: ReadonlyMap<string, readonly T[]>): number {
+export function countPendingRequests<T>(
+  requestsBySession: ReadonlyMap<string, readonly T[]>
+): number {
   let total = 0
   for (const requests of requestsBySession.values()) {
     total += requests.length
@@ -28,9 +30,9 @@ export function countPendingRequests<T>(requestsBySession: ReadonlyMap<string, r
 export function calculateDockBadgeCount(input: DockBadgeCountInput): number {
   return Math.max(
     0,
-    input.unviewedCompletedCount
-      + input.pendingPermissionCount
-      + input.pendingAskUserCount
-      + input.pendingExitPlanCount,
+    input.unviewedCompletedCount +
+      input.pendingPermissionCount +
+      input.pendingAskUserCount +
+      input.pendingExitPlanCount
   )
 }

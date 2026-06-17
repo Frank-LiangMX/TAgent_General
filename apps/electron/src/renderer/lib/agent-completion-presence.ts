@@ -28,14 +28,19 @@ export function isAgentSessionActiveForCompletion({
 
   const activeTab = activeTabId ? tabs.find((tab) => tab.id === activeTabId) : null
   if (activeTab) {
-    return (activeTab.type === 'agent' || activeTab.type === 'preview') && activeTab.sessionId === sessionId
+    return (
+      (activeTab.type === 'agent' || activeTab.type === 'preview') &&
+      activeTab.sessionId === sessionId
+    )
   }
 
   return currentAgentSessionId === sessionId
 }
 
 /** 计算 Agent 完成后应写入哪些侧边栏标记 */
-export function getAgentCompletionMarkers(input: AgentCompletionPresenceInput): AgentCompletionMarkers {
+export function getAgentCompletionMarkers(
+  input: AgentCompletionPresenceInput
+): AgentCompletionMarkers {
   const isActiveSession = isAgentSessionActiveForCompletion(input)
   return {
     markUnviewedCompleted: !isActiveSession,

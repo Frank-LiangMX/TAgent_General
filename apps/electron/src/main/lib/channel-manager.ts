@@ -118,7 +118,7 @@ export function listChannels(): Channel[] {
 
   // 首次使用：如果没有 DeepSeek 渠道，自动创建预设
   const hasDeepSeek = config.channels.some(
-    (c) => c.provider === 'deepseek' || c.baseUrl.includes('api.deepseek.com'),
+    (c) => c.provider === 'deepseek' || c.baseUrl.includes('api.deepseek.com')
   )
   if (!hasDeepSeek) {
     const now = Date.now()
@@ -289,7 +289,10 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
       case 'google':
         return await testGoogle(channel.baseUrl, apiKey, proxyUrl)
       default:
-        return { success: false, message: `不支持的供应商: ${channel.provider}。你可能过去使用的是 TAgent 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。` }
+        return {
+          success: false,
+          message: `不支持的供应商: ${channel.provider}。你可能过去使用的是 TAgent 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。`,
+        }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : '未知错误'
@@ -327,7 +330,13 @@ export async function validateChannelModel(input: {
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-        return await validateAnthropicModel(input.baseUrl, input.apiKey, input.model.trim(), proxyUrl, input.provider)
+        return await validateAnthropicModel(
+          input.baseUrl,
+          input.apiKey,
+          input.model.trim(),
+          proxyUrl,
+          input.provider
+        )
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -350,7 +359,7 @@ async function validateAnthropicModel(
   apiKey: string,
   model: string,
   proxyUrl: string | undefined,
-  provider: ProviderType,
+  provider: ProviderType
 ): Promise<ChannelTestResult> {
   const url = normalizeAnthropicProviderUrl(baseUrl, provider)
   const fetchFn = getFetchFn(proxyUrl)
@@ -359,7 +368,11 @@ async function validateAnthropicModel(
     'anthropic-version': '2023-06-01',
     'content-type': 'application/json',
   }
-  if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
+  if (
+    provider === 'kimi-coding' ||
+    provider === 'zhipu-coding' ||
+    provider === 'xiaomi-token-plan'
+  ) {
     headers.Authorization = `Bearer ${apiKey}`
     headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'minimax') {
@@ -391,7 +404,10 @@ async function validateAnthropicModel(
   if (response.status === 400 || response.status === 404) {
     // 400 invalid params / 404 not found — 几乎可以确定是 model 名错
     if (/model|not.found|invalid/i.test(errorBody)) {
-      return { success: false, message: `model "${model}" 不被该供应商接受。请到设置里换一个,或检查 baseUrl 是否正确。` }
+      return {
+        success: false,
+        message: `model "${model}" 不被该供应商接受。请到设置里换一个,或检查 baseUrl 是否正确。`,
+      }
     }
     return { success: false, message: `请求被拒绝: ${errorBody.slice(0, 200)}` }
   }
@@ -402,7 +418,7 @@ async function validateOpenAIModel(
   baseUrl: string,
   apiKey: string,
   model: string,
-  proxyUrl: string | undefined,
+  proxyUrl: string | undefined
 ): Promise<ChannelTestResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
@@ -441,7 +457,7 @@ async function validateGoogleModel(
   baseUrl: string,
   apiKey: string,
   model: string,
-  proxyUrl: string | undefined,
+  proxyUrl: string | undefined
 ): Promise<ChannelTestResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
@@ -455,7 +471,7 @@ async function validateGoogleModel(
         contents: [{ parts: [{ text: 'ping' }] }],
         generationConfig: { maxOutputTokens: 1 },
       }),
-    },
+    }
   )
 
   if (response.ok) {
@@ -485,7 +501,7 @@ async function testAnthropicCompatible(
   baseUrl: string,
   apiKey: string,
   proxyUrl?: string,
-  provider: ProviderType = 'anthropic',
+  provider: ProviderType = 'anthropic'
 ): Promise<ChannelTestResult> {
   const url = normalizeAnthropicProviderUrl(baseUrl, provider)
   const fetchFn = getFetchFn(proxyUrl)
@@ -558,7 +574,11 @@ async function testAnthropicCompatible(
 /**
  * 测试 OpenAI 兼容 API 连接（OpenAI / Custom）
  */
-async function testOpenAICompatible(baseUrl: string, apiKey: string, proxyUrl?: string): Promise<ChannelTestResult> {
+async function testOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl?: string
+): Promise<ChannelTestResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
 
@@ -584,7 +604,11 @@ async function testOpenAICompatible(baseUrl: string, apiKey: string, proxyUrl?: 
 /**
  * 测试 Google Generative AI API 连接
  */
-async function testGoogle(baseUrl: string, apiKey: string, proxyUrl?: string): Promise<ChannelTestResult> {
+async function testGoogle(
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl?: string
+): Promise<ChannelTestResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
 
@@ -666,7 +690,12 @@ export async function fetchModels(input: FetchModelsInput): Promise<FetchModelsR
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-        return await fetchAnthropicCompatibleModels(input.baseUrl, input.apiKey, proxyUrl, input.provider)
+        return await fetchAnthropicCompatibleModels(
+          input.baseUrl,
+          input.apiKey,
+          proxyUrl,
+          input.provider
+        )
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -705,7 +734,7 @@ async function fetchAnthropicCompatibleModels(
   baseUrl: string,
   apiKey: string,
   proxyUrl?: string,
-  provider: ProviderType = 'anthropic',
+  provider: ProviderType = 'anthropic'
 ): Promise<FetchModelsResult> {
   const url = normalizeAnthropicProviderUrl(baseUrl, provider)
   const fetchFn = getFetchFn(proxyUrl)
@@ -733,15 +762,23 @@ async function fetchAnthropicCompatibleModels(
 
   if (response.status === 401) {
     const text = await response.text().catch(() => '')
-    return { success: false, message: `API Key 无效${text ? `: ${text.slice(0, 150)}` : ''}`, models: [] }
+    return {
+      success: false,
+      message: `API Key 无效${text ? `: ${text.slice(0, 150)}` : ''}`,
+      models: [],
+    }
   }
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
-    return { success: false, message: `请求失败 (${response.status}): ${text.slice(0, 200)}`, models: [] }
+    return {
+      success: false,
+      message: `请求失败 (${response.status}): ${text.slice(0, 200)}`,
+      models: [],
+    }
   }
 
-  const data = await response.json() as { data?: AnthropicModelItem[] }
+  const data = (await response.json()) as { data?: AnthropicModelItem[] }
   const items = data.data ?? []
 
   const models: ChannelModel[] = items.map((item) => ({
@@ -771,7 +808,11 @@ interface OpenAIModelItem {
  * API: GET {baseUrl}/models
  * 通用 OpenAI 兼容格式，适用于大部分第三方供应商。
  */
-async function fetchOpenAICompatibleModels(baseUrl: string, apiKey: string, proxyUrl?: string): Promise<FetchModelsResult> {
+async function fetchOpenAICompatibleModels(
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl?: string
+): Promise<FetchModelsResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
 
@@ -788,10 +829,14 @@ async function fetchOpenAICompatibleModels(baseUrl: string, apiKey: string, prox
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
-    return { success: false, message: `请求失败 (${response.status}): ${text.slice(0, 200)}`, models: [] }
+    return {
+      success: false,
+      message: `请求失败 (${response.status}): ${text.slice(0, 200)}`,
+      models: [],
+    }
   }
 
-  const data = await response.json() as { data?: OpenAIModelItem[] }
+  const data = (await response.json()) as { data?: OpenAIModelItem[] }
   const items = data.data ?? []
 
   const models: ChannelModel[] = items.map((item) => ({
@@ -826,7 +871,11 @@ interface GoogleModelItem {
  * API: GET /v1beta/models?key={apiKey}
  * 仅返回支持 generateContent 的模型（排除纯 embedding 模型）。
  */
-async function fetchGoogleModels(baseUrl: string, apiKey: string, proxyUrl?: string): Promise<FetchModelsResult> {
+async function fetchGoogleModels(
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl?: string
+): Promise<FetchModelsResult> {
   const url = normalizeBaseUrl(baseUrl)
   const fetchFn = getFetchFn(proxyUrl)
 
@@ -840,10 +889,14 @@ async function fetchGoogleModels(baseUrl: string, apiKey: string, proxyUrl?: str
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
-    return { success: false, message: `请求失败 (${response.status}): ${text.slice(0, 200)}`, models: [] }
+    return {
+      success: false,
+      message: `请求失败 (${response.status}): ${text.slice(0, 200)}`,
+      models: [],
+    }
   }
 
-  const data = await response.json() as { models?: GoogleModelItem[] }
+  const data = (await response.json()) as { models?: GoogleModelItem[] }
   const items = data.models ?? []
 
   // 过滤出支持 generateContent 的模型（排除纯 embedding 模型）

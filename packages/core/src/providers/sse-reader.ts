@@ -10,7 +10,13 @@
  * - 累积工具调用信息（tool use 支持）
  */
 
-import type { ProviderAdapter, ProviderRequest, StreamEventCallback, ThinkingBlock, ToolCall } from './types.ts'
+import type {
+  ProviderAdapter,
+  ProviderRequest,
+  StreamEventCallback,
+  ThinkingBlock,
+  ToolCall,
+} from './types.ts'
 
 // ===== 流式请求 =====
 
@@ -66,7 +72,7 @@ const SSE_RETRY_MAX_DELAY_MS = 8_000
 class HTTPError extends Error {
   constructor(
     message: string,
-    readonly status: number,
+    readonly status: number
   ) {
     super(message)
     this.name = 'HTTPError'
@@ -96,7 +102,9 @@ function getSSERetryDelayMs(attempt: number, elapsedRetryDelayMs: number): numbe
  */
 function isRetriableError(error: unknown): boolean {
   if (error instanceof HTTPError) {
-    return error.status === 408 || error.status === 425 || error.status === 429 || error.status >= 500
+    return (
+      error.status === 408 || error.status === 425 || error.status === 429 || error.status >= 500
+    )
   }
   return true
 }
@@ -189,7 +197,10 @@ async function runStreamAttempt(options: StreamSSEOptions): Promise<StreamSSERes
   // 2. 错误检查
   if (!response.ok) {
     const text = await response.text().catch(() => '')
-    throw new HTTPError(`${adapter.providerType} API 错误 (${response.status}): ${text.slice(0, 300)}`, response.status)
+    throw new HTTPError(
+      `${adapter.providerType} API 错误 (${response.status}): ${text.slice(0, 300)}`,
+      response.status
+    )
   }
 
   if (!response.body) {
@@ -205,7 +216,10 @@ async function runStreamAttempt(options: StreamSSEOptions): Promise<StreamSSERes
   let buffer = ''
 
   // 工具调用追踪
-  const pendingToolCalls = new Map<string, { id: string; name: string; args: string; metadata?: Record<string, unknown> }>()
+  const pendingToolCalls = new Map<
+    string,
+    { id: string; name: string; args: string; metadata?: Record<string, unknown> }
+  >()
   let currentToolCallId: string | undefined
 
   // 思考块追踪（Anthropic 协议：每个 thinking 块由多个 thinking_delta + signature_delta 组成）
@@ -332,7 +346,7 @@ async function runStreamAttempt(options: StreamSSEOptions): Promise<StreamSSERes
 export async function fetchTitle(
   request: ProviderRequest,
   adapter: ProviderAdapter,
-  fetchFn: typeof globalThis.fetch = fetch,
+  fetchFn: typeof globalThis.fetch = fetch
 ): Promise<string | null> {
   try {
     console.log('[fetchTitle] 发送请求:', {

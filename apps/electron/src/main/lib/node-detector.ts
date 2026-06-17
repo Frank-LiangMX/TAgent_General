@@ -55,25 +55,23 @@ function findNodePath(): string | null {
       commonPaths.push(
         join(scoop, 'apps', 'nodejs', 'current', 'node.exe'),
         join(scoop, 'apps', 'nodejs-lts', 'current', 'node.exe'),
-        join(scoop, 'shims', 'node.exe'),
+        join(scoop, 'shims', 'node.exe')
       )
     }
     if (localAppData) {
       commonPaths.push(
         join(localAppData, 'scoop', 'apps', 'nodejs', 'current', 'node.exe'),
-        join(localAppData, 'scoop', 'apps', 'nodejs-lts', 'current', 'node.exe'),
+        join(localAppData, 'scoop', 'apps', 'nodejs-lts', 'current', 'node.exe')
       )
     }
 
     // Chocolatey 默认位置
-    commonPaths.push(
-      'C:\\ProgramData\\chocolatey\\bin\\node.exe',
-    )
+    commonPaths.push('C:\\ProgramData\\chocolatey\\bin\\node.exe')
 
     // 官方安装器默认位置
     commonPaths.push(
       join(programFiles, 'nodejs', 'node.exe'),
-      'C:\\Program Files (x86)\\nodejs\\node.exe',
+      'C:\\Program Files (x86)\\nodejs\\node.exe'
     )
 
     for (const path of commonPaths) {

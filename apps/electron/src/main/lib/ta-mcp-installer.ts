@@ -59,7 +59,9 @@ function venvDir(): string {
 /** 跨平台 venv python 路径 */
 function venvPythonPath(): string {
   const dir = venvDir()
-  return process.platform === 'win32' ? join(dir, 'Scripts', 'python.exe') : join(dir, 'bin', 'python')
+  return process.platform === 'win32'
+    ? join(dir, 'Scripts', 'python.exe')
+    : join(dir, 'bin', 'python')
 }
 
 /** wheelhouse 目录（dev 走仓库根；packaged 走 process.resourcesPath） */
@@ -94,8 +96,11 @@ class TAMcpInstaller {
     this.cancelled = false
 
     const ts = () => Date.now()
-    const log = (phase: InstallLogChunk['phase'], stream: InstallLogChunk['stream'], text: string) =>
-      onLog({ phase, stream, text, ts: ts() })
+    const log = (
+      phase: InstallLogChunk['phase'],
+      stream: InstallLogChunk['stream'],
+      text: string
+    ) => onLog({ phase, stream, text, ts: ts() })
 
     try {
       // 0. 清理旧的（可能损坏的）venv，确保干净状态
@@ -113,7 +118,9 @@ class TAMcpInstaller {
       log('creating_venv', 'system', '正在创建 Python 虚拟环境...')
       const sysPython = await this.findSystemPython()
       if (!sysPython) {
-        throw new Error('未找到系统 Python（需要 Python 3.10+）。请先安装 Python 并确保 python 在 PATH 中。')
+        throw new Error(
+          '未找到系统 Python（需要 Python 3.10+）。请先安装 Python 并确保 python 在 PATH 中。'
+        )
       }
       log('creating_venv', 'system', `使用 Python: ${sysPython}`)
       await this.runStream(
@@ -135,7 +142,16 @@ class TAMcpInstaller {
       // 3. 升级 pip
       log('upgrading_pip', 'system', '升级 venv pip...')
       await this.runStream(
-        [venvPythonPath(), '-m', 'pip', 'install', '--upgrade', 'pip', '--disable-pip-version-check', '--no-input'],
+        [
+          venvPythonPath(),
+          '-m',
+          'pip',
+          'install',
+          '--upgrade',
+          'pip',
+          '--disable-pip-version-check',
+          '--no-input',
+        ],
         (s, t) => log('upgrading_pip', s, t),
         STEP_TIMEOUT.upgrading_pip
       )
@@ -259,7 +275,9 @@ class TAMcpInstaller {
     return new Promise((resolve, reject) => {
       // Windows 或路径含空格时用 shell + 双引号
       const useShell = process.platform === 'win32' || cmd.some((c) => /\s/.test(c))
-      const command = useShell ? cmd.map((c) => (/[\s"]/.test(c) ? `"${c.replace(/"/g, '\\"')}"` : c)).join(' ') : cmd[0]!
+      const command = useShell
+        ? cmd.map((c) => (/[\s"]/.test(c) ? `"${c.replace(/"/g, '\\"')}"` : c)).join(' ')
+        : cmd[0]!
       const args = useShell ? [] : cmd.slice(1)
 
       let stdoutBuf = ''

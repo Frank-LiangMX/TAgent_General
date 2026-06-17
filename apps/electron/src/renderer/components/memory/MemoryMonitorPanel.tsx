@@ -11,7 +11,16 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { User, FolderTree, Lightbulb, AlertTriangle, History, Sparkles, Loader2, RefreshCw } from 'lucide-react'
+import {
+  User,
+  FolderTree,
+  Lightbulb,
+  AlertTriangle,
+  History,
+  Sparkles,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { topLevelModeAtom } from '@/atoms/app-mode'
@@ -67,7 +76,8 @@ const LAYERS: LayerConfig[] = [
     description: '用户纠正 + 规则',
     icon: <AlertTriangle size={18} />,
     color: 'text-red-500',
-    format: (s) => `${(s as { rawCount: number; rulesCount: number }).rawCount} 条 / ${(s as { rawCount: number; rulesCount: number }).rulesCount} 规则`,
+    format: (s) =>
+      `${(s as { rawCount: number; rulesCount: number }).rawCount} 条 / ${(s as { rawCount: number; rulesCount: number }).rulesCount} 规则`,
   },
   {
     key: 'l4',
@@ -148,9 +158,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
     <div className="h-full flex flex-col">
       {/* 顶部统计 */}
       <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="text-sm font-medium">
-          {mode === 'general' ? '通用模式' : 'TA 模式'}记忆
-        </div>
+        <div className="text-sm font-medium">{mode === 'general' ? '通用模式' : 'TA 模式'}记忆</div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">共 {totalLines} 条</span>
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={loadData}>
@@ -164,9 +172,10 @@ export function MemoryMonitorPanel(): React.ReactElement {
         <div className="space-y-3">
           {LAYERS.map((layer) => {
             const layerStats = stats?.[layer.key]
-            const exists = layer.key === 'l3' || layer.key === 'l4'
-              ? true
-              : (layerStats as { exists: boolean })?.exists
+            const exists =
+              layer.key === 'l3' || layer.key === 'l4'
+                ? true
+                : (layerStats as { exists: boolean })?.exists
 
             return (
               <LayerCard
@@ -197,15 +206,23 @@ interface LayerCardProps {
 }
 
 function LayerCard({ layer, stats, exists }: LayerCardProps): React.ReactElement {
-  const isEmpty = !exists || (layer.key !== 'l3' && layer.key !== 'l4' && !(stats as { exists: boolean })?.exists)
+  const isEmpty =
+    !exists || (layer.key !== 'l3' && layer.key !== 'l4' && !(stats as { exists: boolean })?.exists)
 
   return (
-    <div className={cn(
-      'flex items-center gap-3 p-3 rounded-lg border border-border',
-      isEmpty && 'opacity-50'
-    )}>
+    <div
+      className={cn(
+        'flex items-center gap-3 p-3 rounded-lg border border-border',
+        isEmpty && 'opacity-50'
+      )}
+    >
       {/* 图标 */}
-      <div className={cn('size-10 rounded-full flex items-center justify-center bg-muted', layer.color)}>
+      <div
+        className={cn(
+          'size-10 rounded-full flex items-center justify-center bg-muted',
+          layer.color
+        )}
+      >
         {layer.icon}
       </div>
 
@@ -217,12 +234,8 @@ function LayerCard({ layer, stats, exists }: LayerCardProps): React.ReactElement
 
       {/* 统计 */}
       <div className="text-right">
-        <div className="text-sm font-medium">
-          {stats ? layer.format(stats) : '-'}
-        </div>
-        {isEmpty && (
-          <div className="text-xs text-muted-foreground">未初始化</div>
-        )}
+        <div className="text-sm font-medium">{stats ? layer.format(stats) : '-'}</div>
+        {isEmpty && <div className="text-xs text-muted-foreground">未初始化</div>}
       </div>
     </div>
   )

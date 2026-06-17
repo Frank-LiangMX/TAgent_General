@@ -4,16 +4,17 @@
 
 ## 1. 总览
 
-| 语言 | 格式化 | Lint | 类型检查 |
-|---|---|---|---|
-| Python | `ruff format` | `ruff check` | `mypy --strict` |
-| TypeScript | `prettier` | `eslint` | `tsc --noEmit` |
-| Markdown | `prettier` | — | — |
-| YAML | `prettier` | — | — |
+| 语言       | 格式化        | Lint         | 类型检查        |
+| ---------- | ------------- | ------------ | --------------- |
+| Python     | `ruff format` | `ruff check` | `mypy --strict` |
+| TypeScript | `prettier`    | `eslint`     | `tsc --noEmit`  |
+| Markdown   | `prettier`    | —            | —               |
+| YAML       | `prettier`    | —            | —               |
 
 ## 2. Python (ta_agent + TAgent Server)
 
 ### 2.1 ruff（替代 black + flake8 + isort）
+
 - **速度**：Rust 实现，10-100x 比 flake8
 - **覆盖面**：PEP 8 + import 排序 + 安全 + 复杂度
 
@@ -29,6 +30,7 @@ ruff check src/
 ```
 
 ### 2.2 mypy（类型检查）
+
 - **必须通过** `--strict` 模式
 - 公共 API 必须有完整 type hints
 - 测试代码可以 `Any` 容忍
@@ -38,6 +40,7 @@ mypy --strict src/
 ```
 
 ### 2.3 pyproject.toml 配置示例
+
 ```toml
 [tool.ruff]
 line-length = 100
@@ -73,6 +76,7 @@ disallow_untyped_defs = true
 ```
 
 ### 2.4 命名
+
 - 模块：`snake_case.py`
 - 类：`PascalCase`
 - 函数 / 变量：`snake_case`
@@ -80,13 +84,15 @@ disallow_untyped_defs = true
 - 私有：`_leading_underscore`
 
 ### 2.5 注释 / Docstring
+
 - Google 风格 docstring
-- 行内注释解释 *为什么*（不是 *什么*）
+- 行内注释解释 _为什么_（不是 _什么_）
 - 复杂逻辑必须有 # reason 注释
 
 ## 3. TypeScript (TAgent Desktop)
 
 ### 3.1 Prettier（格式化）
+
 - 配置文件：`.prettierrc.json`
 - 不允许任何分歧（统一风格）
 
@@ -103,6 +109,7 @@ disallow_untyped_defs = true
 ```
 
 ### 3.2 ESLint（lint）
+
 - 用 `@typescript-eslint`
 - 配置文件：`.eslintrc.cjs`
 
@@ -126,6 +133,7 @@ module.exports = {
 ```
 
 ### 3.3 tsc（类型检查）
+
 - **必须 0 error**
 - 推荐 `strict: true`
 
@@ -146,6 +154,7 @@ module.exports = {
 ```
 
 ### 3.4 命名
+
 - 类 / 组件 / 类型：`PascalCase`
 - 函数 / 变量：`camelCase`
 - 常量：`UPPER_SNAKE_CASE`
@@ -204,18 +213,21 @@ repos:
 ```
 
 ### 5.1 安装
+
 ```bash
 pip install pre-commit
 pre-commit install
 ```
 
 ### 5.2 手动跑
+
 ```bash
 pre-commit run --all-files    # 全量
 pre-commit run                # 已 staged
 ```
 
 ### 5.3 跳过 hooks（紧急）
+
 ```bash
 git commit --no-verify -m "emergency fix"
 ```
@@ -245,6 +257,7 @@ CI 跑相同检查（与 pre-commit 一致），失败 = 不可 merge。
 ## 7. 不允许的代码
 
 ### 7.1 Python
+
 - ❌ `print()` 调试（用 `logger.debug()`）
 - ❌ `except: pass`（lint 会失败）
 - ❌ `assert` 在生产代码（用 `if not: raise`）
@@ -252,6 +265,7 @@ CI 跑相同检查（与 pre-commit 一致），失败 = 不可 merge。
 - ❌ 全局可变状态（除非是常量）
 
 ### 7.2 TypeScript
+
 - ❌ `any`（用 `unknown` + narrowing）
 - ❌ `console.log` 调试（用真 logger）
 - ❌ `// @ts-ignore` 不带 reason

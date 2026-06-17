@@ -30,7 +30,9 @@ export type MemoryMode = 'general' | 'ta'
  */
 function getMemoryDir(mode: MemoryMode): string {
   const isDev = !app.isPackaged
-  const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+  const baseDir = isDev
+    ? path.join(app.getPath('home'), '.tagent-dev')
+    : path.join(app.getPath('home'), '.tagent')
   return mode === 'general' ? path.join(baseDir, 'memory') : path.join(baseDir, 'ta', 'memory')
 }
 
@@ -152,17 +154,23 @@ class MemoryLayerService {
     // L0 用户画像
     const l0Path = path.join(dir, 'L0_user.md')
     const l0Exists = fs.existsSync(l0Path)
-    const l0Stats = l0Exists ? this.getMdFileStats(l0Path) : { exists: false, lines: 0, lastUpdated: null }
+    const l0Stats = l0Exists
+      ? this.getMdFileStats(l0Path)
+      : { exists: false, lines: 0, lastUpdated: null }
 
     // L1 项目画像
     const l1Path = path.join(dir, 'L1_project.md')
     const l1Exists = fs.existsSync(l1Path)
-    const l1Stats = l1Exists ? this.getMdFileStats(l1Path) : { exists: false, lines: 0, lastUpdated: null }
+    const l1Stats = l1Exists
+      ? this.getMdFileStats(l1Path)
+      : { exists: false, lines: 0, lastUpdated: null }
 
     // L2 稳定事实
     const l2Path = path.join(dir, 'L2_facts.md')
     const l2Exists = fs.existsSync(l2Path)
-    const l2Stats = l2Exists ? this.getMdFileStats(l2Path) : { exists: false, lines: 0, lastUpdated: null }
+    const l2Stats = l2Exists
+      ? this.getMdFileStats(l2Path)
+      : { exists: false, lines: 0, lastUpdated: null }
 
     // L3 纠错记录
     const l3RawPath = path.join(dir, 'corrections.jsonl')
@@ -181,7 +189,9 @@ class MemoryLayerService {
     // L5 提炼洞察
     const l5Path = path.join(dir, 'L5_insights.md')
     const l5Exists = fs.existsSync(l5Path)
-    const l5Stats = l5Exists ? this.getMdFileStats(l5Path) : { exists: false, lines: 0, lastUpdated: null }
+    const l5Stats = l5Exists
+      ? this.getMdFileStats(l5Path)
+      : { exists: false, lines: 0, lastUpdated: null }
 
     return {
       l0: { exists: l0Exists, ...l0Stats },
@@ -198,7 +208,9 @@ class MemoryLayerService {
    */
   private getMdFileStats(filePath: string): { lines: number; lastUpdated: number } {
     const content = fs.readFileSync(filePath, 'utf-8')
-    const lines = content.split('\n').filter((line) => line.trim() && !line.startsWith('#') && !line.startsWith('---')).length
+    const lines = content
+      .split('\n')
+      .filter((line) => line.trim() && !line.startsWith('#') && !line.startsWith('---')).length
     const lastUpdated = fs.statSync(filePath).mtimeMs
     return { lines, lastUpdated }
   }
@@ -227,7 +239,11 @@ class MemoryLayerService {
   /**
    * 获取 L4 会话统计
    */
-  private getL4Stats(mode: MemoryMode): { sessions: number; oldestDate: number | null; newestDate: number | null } {
+  private getL4Stats(mode: MemoryMode): {
+    sessions: number
+    oldestDate: number | null
+    newestDate: number | null
+  } {
     const db = this.getL4Db(mode)
     if (!db) {
       return { sessions: 0, oldestDate: null, newestDate: null }
@@ -237,7 +253,9 @@ class MemoryLayerService {
       const countStmt = db.prepare('SELECT COUNT(*) as count FROM sessions')
       const countResult = countStmt.get() as { count: number }
 
-      const dateStmt = db.prepare('SELECT MIN(created_at) as oldest, MAX(created_at) as newest FROM sessions')
+      const dateStmt = db.prepare(
+        'SELECT MIN(created_at) as oldest, MAX(created_at) as newest FROM sessions'
+      )
       const dateResult = dateStmt.get() as { oldest: number | null; newest: number | null }
 
       return {
@@ -262,7 +280,9 @@ class MemoryLayerService {
 
     try {
       // 检查 FTS5 表是否存在
-      const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions_fts'")
+      const tableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions_fts'"
+      )
       const tableExists = tableCheck.get()
       if (!tableExists) {
         // FTS5 表不存在，fallback 到 LIKE 搜索
@@ -288,7 +308,11 @@ class MemoryLayerService {
   /**
    * LIKE 搜索（fallback）
    */
-  private searchSessionsFallback(mode: MemoryMode, query: string, limit: number): SessionMemoryRecord[] {
+  private searchSessionsFallback(
+    mode: MemoryMode,
+    query: string,
+    limit: number
+  ): SessionMemoryRecord[] {
     const db = this.getL4Db(mode)
     if (!db) {
       return []
@@ -330,7 +354,14 @@ class MemoryLayerService {
    */
   getMdContent(mode: MemoryMode, layer: 'L0' | 'L1' | 'L2' | 'L5'): string | null {
     const dir = getMemoryDir(mode)
-    const fileName = layer === 'L0' ? 'L0_user.md' : layer === 'L1' ? 'L1_project.md' : layer === 'L2' ? 'L2_facts.md' : 'L5_insights.md'
+    const fileName =
+      layer === 'L0'
+        ? 'L0_user.md'
+        : layer === 'L1'
+          ? 'L1_project.md'
+          : layer === 'L2'
+            ? 'L2_facts.md'
+            : 'L5_insights.md'
     const filePath = path.join(dir, fileName)
 
     if (!fs.existsSync(filePath)) {
@@ -343,7 +374,10 @@ class MemoryLayerService {
   /**
    * 获取 L3 纠错记录
    */
-  getCorrections(mode: MemoryMode, limit: number = 50): Array<{ timestamp: number; correction: string; context: string }> {
+  getCorrections(
+    mode: MemoryMode,
+    limit: number = 50
+  ): Array<{ timestamp: number; correction: string; context: string }> {
     const dir = getMemoryDir(mode)
     const filePath = path.join(dir, 'corrections.jsonl')
 
@@ -353,7 +387,10 @@ class MemoryLayerService {
 
     try {
       const content = fs.readFileSync(filePath, 'utf-8')
-      const lines = content.split('\n').filter((line) => line.trim()).slice(-limit)
+      const lines = content
+        .split('\n')
+        .filter((line) => line.trim())
+        .slice(-limit)
       return lines.map((line) => JSON.parse(line))
     } catch {
       return []

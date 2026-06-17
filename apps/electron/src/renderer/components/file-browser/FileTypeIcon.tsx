@@ -28,14 +28,34 @@ export const FileTypeIcon = React.memo(function FileTypeIcon({
 }: FileTypeIconProps): React.ReactElement {
   if (isDirectory) {
     return (
-      <span className={className} style={{ width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span
+        className={className}
+        style={{
+          width: size,
+          height: size,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
         <FolderIcon folderName={name} width={size} height={size} />
       </span>
     )
   }
 
   return (
-    <span className={className} style={{ width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <span
+      className={className}
+      style={{
+        width: size,
+        height: size,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
       <FileIcon fileName={name} autoAssign width={size} height={size} />
     </span>
   )

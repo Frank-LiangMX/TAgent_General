@@ -82,9 +82,14 @@ function extractCodeInfo(children: React.ReactNode): { language: string; code: s
 // ===== SVG 图标路径常量 =====
 
 const ICON_ATTRS = {
-  width: 14, height: 14, viewBox: '0 0 24 24',
-  fill: 'none', stroke: 'currentColor', strokeWidth: 2,
-  strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  width: 14,
+  height: 14,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
 }
 
 const copyIconPath = (
@@ -105,7 +110,10 @@ interface CodeLineProps {
 }
 
 /** 单行代码渲染（memo 避免已稳定行重复渲染） */
-const CodeLine = React.memo(function CodeLine({ tokens, rawLine }: CodeLineProps): React.ReactElement {
+const CodeLine = React.memo(function CodeLine({
+  tokens,
+  rawLine,
+}: CodeLineProps): React.ReactElement {
   // token 覆盖的字符数
   const tokenLen = tokens.reduce((sum, t) => sum + t.content.length, 0)
 
@@ -117,9 +125,7 @@ const CodeLine = React.memo(function CodeLine({ tokens, rawLine }: CodeLineProps
         </span>
       ))}
       {/* 流式输出时可能有 token 尚未覆盖的尾部文本 */}
-      {tokenLen < rawLine.length && (
-        <span>{rawLine.slice(tokenLen)}</span>
-      )}
+      {tokenLen < rawLine.length && <span>{rawLine.slice(tokenLen)}</span>}
     </span>
   )
 })
@@ -143,8 +149,8 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
   const rawLines = React.useMemo(() => trimmedCode.split('\n'), [trimmedCode])
 
   // ---- 节流 token 高亮 ----
-  const [tokenResult, setTokenResult] = React.useState<HighlightTokensResult | null>(
-    () => highlightToTokens({ code: trimmedCode, language: langOrText })
+  const [tokenResult, setTokenResult] = React.useState<HighlightTokensResult | null>(() =>
+    highlightToTokens({ code: trimmedCode, language: langOrText })
   )
   const pendingCodeRef = React.useRef(trimmedCode)
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -232,10 +238,7 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
           {rawLines.map((rawLine, i) => (
             <React.Fragment key={i}>
               {i > 0 && '\n'}
-              <CodeLine
-                tokens={tokenResult?.lines[i] ?? []}
-                rawLine={rawLine}
-              />
+              <CodeLine tokens={tokenResult?.lines[i] ?? []} rawLine={rawLine} />
             </React.Fragment>
           ))}
         </code>

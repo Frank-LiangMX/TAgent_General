@@ -17,23 +17,42 @@ import { resolveAttachmentPath } from './config-paths'
 // ===== 文件类型分类 =====
 
 /** officeparser 支持的格式 */
-const OFFICE_EXTENSIONS = new Set([
-  '.docx', '.xlsx', '.pptx',
-  '.odt', '.odp', '.ods',
-])
+const OFFICE_EXTENSIONS = new Set(['.docx', '.xlsx', '.pptx', '.odt', '.odp', '.ods'])
 
 /** 纯文本格式（直接 UTF-8 读取） */
 const TEXT_EXTENSIONS = new Set([
-  '.txt', '.md', '.csv', '.json', '.xml', '.html',
-  '.js', '.ts', '.py', '.yaml', '.yml', '.toml',
-  '.log', '.ini', '.cfg', '.conf', '.sh', '.bat',
-  '.css', '.scss', '.less', '.sql', '.graphql',
-  '.env', '.gitignore', '.dockerfile',
+  '.txt',
+  '.md',
+  '.csv',
+  '.json',
+  '.xml',
+  '.html',
+  '.js',
+  '.ts',
+  '.py',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.log',
+  '.ini',
+  '.cfg',
+  '.conf',
+  '.sh',
+  '.bat',
+  '.css',
+  '.scss',
+  '.less',
+  '.sql',
+  '.graphql',
+  '.env',
+  '.gitignore',
+  '.dockerfile',
 ])
 
 /** 所有支持文档解析的扩展名（不含图片） */
 const SUPPORTED_DOCUMENT_EXTENSIONS = new Set([
-  '.pdf', '.doc',
+  '.pdf',
+  '.doc',
   ...OFFICE_EXTENSIONS,
   ...TEXT_EXTENSIONS,
 ])

@@ -45,7 +45,7 @@ function findGitPath(): string | null {
     if (regInstallPath) {
       commonPaths.push(
         join(regInstallPath, 'cmd', 'git.exe'),
-        join(regInstallPath, 'bin', 'git.exe'),
+        join(regInstallPath, 'bin', 'git.exe')
       )
     }
 
@@ -58,27 +58,25 @@ function findGitPath(): string | null {
       commonPaths.push(
         join(scoop, 'apps', 'git', 'current', 'cmd', 'git.exe'),
         join(scoop, 'apps', 'git', 'current', 'bin', 'git.exe'),
-        join(scoop, 'shims', 'git.exe'),
+        join(scoop, 'shims', 'git.exe')
       )
     }
     if (localAppData) {
       commonPaths.push(
         join(localAppData, 'scoop', 'apps', 'git', 'current', 'cmd', 'git.exe'),
-        join(localAppData, 'scoop', 'apps', 'git', 'current', 'bin', 'git.exe'),
+        join(localAppData, 'scoop', 'apps', 'git', 'current', 'bin', 'git.exe')
       )
     }
 
     // Chocolatey 默认位置
-    commonPaths.push(
-      'C:\\ProgramData\\chocolatey\\bin\\git.exe',
-    )
+    commonPaths.push('C:\\ProgramData\\chocolatey\\bin\\git.exe')
 
     // 官方安装器默认位置
     commonPaths.push(
       join(programFiles, 'Git', 'cmd', 'git.exe'),
       join(programFiles, 'Git', 'bin', 'git.exe'),
       'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
-      'C:\\Program Files (x86)\\Git\\bin\\git.exe',
+      'C:\\Program Files (x86)\\Git\\bin\\git.exe'
     )
 
     for (const path of commonPaths) {
@@ -248,7 +246,7 @@ export function detectGitBashWindows(): string | null {
   if (regInstallPath) {
     commonPaths.push(
       join(regInstallPath, 'bin', 'bash.exe'),
-      join(regInstallPath, 'usr', 'bin', 'bash.exe'),
+      join(regInstallPath, 'usr', 'bin', 'bash.exe')
     )
   }
 
@@ -260,13 +258,13 @@ export function detectGitBashWindows(): string | null {
   if (scoop) {
     commonPaths.push(
       join(scoop, 'apps', 'git', 'current', 'bin', 'bash.exe'),
-      join(scoop, 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe'),
+      join(scoop, 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe')
     )
   }
   if (localAppData) {
     commonPaths.push(
       join(localAppData, 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe'),
-      join(localAppData, 'scoop', 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe'),
+      join(localAppData, 'scoop', 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe')
     )
   }
 
@@ -274,7 +272,7 @@ export function detectGitBashWindows(): string | null {
   commonPaths.push(
     join(programFiles, 'Git', 'bin', 'bash.exe'),
     'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
-    join(programFiles, 'Git', 'usr', 'bin', 'bash.exe'),
+    join(programFiles, 'Git', 'usr', 'bin', 'bash.exe')
   )
 
   for (const path of commonPaths) {

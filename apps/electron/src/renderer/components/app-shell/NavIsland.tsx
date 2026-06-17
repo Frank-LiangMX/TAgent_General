@@ -44,8 +44,7 @@ export function NavIsland({
 }: NavIslandProps): React.ReactElement {
   const isMac = React.useMemo(() => detectIsMac(), [])
   const wingOpen = showSidebar
-  const islandWidth =
-    wingOpen ? NAV_RAIL_WIDTH + sidebarWidth : NAV_RAIL_WIDTH
+  const islandWidth = wingOpen ? NAV_RAIL_WIDTH + sidebarWidth : NAV_RAIL_WIDTH
 
   return (
     <div
@@ -53,7 +52,7 @@ export function NavIsland({
         'nav-island-glass nav-island-glass--float relative flex h-full flex-col overflow-hidden flex-shrink-0',
         'transition-[width] duration-300 ease-in-out',
         wingOpen && 'nav-island-glass--expanded',
-        isMac && 'nav-island-glass--mac',
+        isMac && 'nav-island-glass--mac'
       )}
       style={{
         width: islandWidth,
@@ -62,9 +61,7 @@ export function NavIsland({
     >
       {isMac ? <NavIslandMacChrome /> : null}
 
-      <div className="nav-island-body relative flex min-h-0 flex-1 flex-row">
-        {children}
-      </div>
+      <div className="nav-island-body relative flex min-h-0 flex-1 flex-row">{children}</div>
     </div>
   )
 }

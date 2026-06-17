@@ -32,7 +32,6 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { getChannelLogo } from '@/lib/model-logo'
 
-
 /** 组件视图模式 */
 type ViewMode = 'list' | 'create' | 'edit'
 
@@ -76,39 +75,39 @@ export function ChannelSettings(): React.ReactElement {
     loadChannels()
   }, [loadChannels])
 
-  const syncAgentChannelEligibility = React.useCallback(async (
-    channel: Channel,
-    eligible: boolean,
-  ): Promise<void> => {
-    const currentIds = agentChannelIdsRef.current
+  const syncAgentChannelEligibility = React.useCallback(
+    async (channel: Channel, eligible: boolean): Promise<void> => {
+      const currentIds = agentChannelIdsRef.current
 
-    if (eligible) {
-      if (currentIds.includes(channel.id)) return
-      const newIds = [...currentIds, channel.id]
+      if (eligible) {
+        if (currentIds.includes(channel.id)) return
+        const newIds = [...currentIds, channel.id]
+        agentChannelIdsRef.current = newIds
+        setAgentChannelIds(newIds)
+        await window.electronAPI.updateSettings({ agentChannelIds: newIds }).catch(console.error)
+        return
+      }
+
+      if (!currentIds.includes(channel.id)) return
+      const newIds = currentIds.filter((id) => id !== channel.id)
       agentChannelIdsRef.current = newIds
       setAgentChannelIds(newIds)
-      await window.electronAPI.updateSettings({ agentChannelIds: newIds }).catch(console.error)
-      return
-    }
 
-    if (!currentIds.includes(channel.id)) return
-    const newIds = currentIds.filter((id) => id !== channel.id)
-    agentChannelIdsRef.current = newIds
-    setAgentChannelIds(newIds)
+      const updates: Parameters<typeof window.electronAPI.updateSettings>[0] = {
+        agentChannelIds: newIds,
+      }
+      if (agentChannelIdRef.current === channel.id) {
+        agentChannelIdRef.current = null
+        setAgentChannelId(null)
+        setAgentModelId(null)
+        updates.agentChannelId = undefined
+        updates.agentModelId = undefined
+      }
 
-    const updates: Parameters<typeof window.electronAPI.updateSettings>[0] = {
-      agentChannelIds: newIds,
-    }
-    if (agentChannelIdRef.current === channel.id) {
-      agentChannelIdRef.current = null
-      setAgentChannelId(null)
-      setAgentModelId(null)
-      updates.agentChannelId = undefined
-      updates.agentModelId = undefined
-    }
-
-    await window.electronAPI.updateSettings(updates).catch(console.error)
-  }, [setAgentChannelIds, setAgentChannelId, setAgentModelId])
+      await window.electronAPI.updateSettings(updates).catch(console.error)
+    },
+    [setAgentChannelIds, setAgentChannelId, setAgentModelId]
+  )
 
   /** 删除渠道（通过弹窗确认） */
   const handleDeleteRequest = (channel: Channel): void => {
@@ -147,10 +146,12 @@ export function ChannelSettings(): React.ReactElement {
   /** 切换渠道启用状态（主开关） */
   const handleToggle = async (channel: Channel): Promise<void> => {
     try {
-      const savedChannel = await window.electronAPI.updateChannel(channel.id, { enabled: !channel.enabled })
+      const savedChannel = await window.electronAPI.updateChannel(channel.id, {
+        enabled: !channel.enabled,
+      })
       await syncAgentChannelEligibility(
         savedChannel,
-        savedChannel.enabled && isAgentCompatibleProvider(savedChannel.provider),
+        savedChannel.enabled && isAgentCompatibleProvider(savedChannel.provider)
       )
 
       await loadChannels()
@@ -225,7 +226,12 @@ export function ChannelSettings(): React.ReactElement {
       </SettingsSection>
 
       {/* 删除确认弹窗 */}
-      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确定删除渠道？</AlertDialogTitle>
@@ -288,10 +294,7 @@ function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): R
         </button>
 
         {/* 启用/关闭开关 */}
-        <Switch
-          checked={channel.enabled}
-          onCheckedChange={onToggle}
-        />
+        <Switch checked={channel.enabled} onCheckedChange={onToggle} />
       </div>
     </SettingsRow>
   )

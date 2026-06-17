@@ -218,23 +218,14 @@ function DownloadAction({ installerId, toolName }: { installerId: string; toolNa
       <div className="mt-1.5 space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <span>
-            下载中 {pct}%（{formatBytes(state.downloaded ?? 0)} /{' '}
-            {formatBytes(state.total ?? 0)}）
+            下载中 {pct}%（{formatBytes(state.downloaded ?? 0)} / {formatBytes(state.total ?? 0)}）
           </span>
           <span>{formatBytes(state.speed ?? 0)}/s</span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${pct}%` }}
-          />
+          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCancel}
-          className="h-6 text-[11px]"
-        >
+        <Button variant="ghost" size="sm" onClick={handleCancel} className="h-6 text-[11px]">
           取消下载
         </Button>
       </div>

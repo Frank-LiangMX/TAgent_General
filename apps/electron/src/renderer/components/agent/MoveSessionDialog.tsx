@@ -83,9 +83,7 @@ export function MoveSessionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>迁移到其他工作区</DialogTitle>
-          <DialogDescription>
-            选择目标工作区，会话将完整迁移过去。
-          </DialogDescription>
+          <DialogDescription>选择目标工作区，会话将完整迁移过去。</DialogDescription>
         </DialogHeader>
 
         {availableWorkspaces.length === 0 ? (

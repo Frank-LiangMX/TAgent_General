@@ -192,6 +192,4 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
 ]
 
 /** 按 ID 索引的快捷键 Map（用于快速查找） */
-export const SHORTCUT_MAP = new Map(
-  DEFAULT_SHORTCUTS.map((s) => [s.id, s]),
-)
+export const SHORTCUT_MAP = new Map(DEFAULT_SHORTCUTS.map((s) => [s.id, s]))

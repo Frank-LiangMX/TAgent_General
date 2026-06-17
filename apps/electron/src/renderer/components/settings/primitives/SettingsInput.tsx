@@ -51,9 +51,7 @@ export function SettingsInput({
     <div className="px-4 py-3 space-y-2">
       <div>
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       <Input
         type={type}
@@ -65,9 +63,7 @@ export function SettingsInput({
         disabled={disabled}
         className={cn(error && 'border-destructive focus-visible:ring-destructive')}
       />
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }

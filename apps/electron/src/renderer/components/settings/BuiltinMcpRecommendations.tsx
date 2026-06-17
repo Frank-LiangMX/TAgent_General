@@ -133,7 +133,7 @@ export function BuiltinMcpRecommendations({
   const taMcps = BUILTIN_MCPS.filter((m) => m.category === 'ta')
 
   // 带状态的 MCP
-  const mcpWithStatus = (mcp: typeof BUILTIN_MCPS[0]): BuiltinMcpInfo => ({
+  const mcpWithStatus = (mcp: (typeof BUILTIN_MCPS)[0]): BuiltinMcpInfo => ({
     ...mcp,
     installed: installedMcps.includes(mcp.name),
     canInstall: true, // 简化版：全部可安装

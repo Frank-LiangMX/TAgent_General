@@ -6,7 +6,15 @@
  */
 
 import { createHash } from 'node:crypto'
-import { readFileSync, readdirSync, statSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from 'node:fs'
+import {
+  readFileSync,
+  readdirSync,
+  statSync,
+  mkdirSync,
+  existsSync,
+  writeFileSync,
+  unlinkSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir, homedir } from 'node:os'
 import { basename, join, dirname, extname, resolve, posix as pathPosix } from 'node:path'
@@ -53,9 +61,16 @@ export function cleanPreviewTmpDir(): number {
   let count = 0
   try {
     for (const f of readdirSync(dir)) {
-      try { unlinkSync(join(dir, f)); count++ } catch { /* skip */ }
+      try {
+        unlinkSync(join(dir, f))
+        count++
+      } catch {
+        /* skip */
+      }
     }
-  } catch { /* skip */ }
+  } catch {
+    /* skip */
+  }
   return count
 }
 
@@ -65,7 +80,17 @@ export function cleanPreviewTmpDir(): number {
  * 在目录中递归搜索指定文件名
  */
 function searchFileInDir(dir: string, targetName: string, maxDepth = 8): string | null {
-  const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.next', '__pycache__', '.venv', 'build', '.cache', 'target'])
+  const SKIP_DIRS = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '.next',
+    '__pycache__',
+    '.venv',
+    'build',
+    '.cache',
+    'target',
+  ])
   let scanned = 0
   const MAX_SCANNED = 500
 
@@ -85,7 +110,9 @@ function searchFileInDir(dir: string, targetName: string, maxDepth = 8): string 
           if (found) return found
         }
       }
-    } catch { /* permission denied etc */ }
+    } catch {
+      /* permission denied etc */
+    }
     return null
   }
 
@@ -242,9 +269,11 @@ function parseSharedStrings(zip: AdmZip): string[] {
   if (!sharedXml) return []
 
   const doc = parseXml(sharedXml)
-  return getElementsByLocalName(doc, 'si').map((si) => (
-    getElementsByLocalName(si, 't').map((node) => node.textContent ?? '').join('')
-  ))
+  return getElementsByLocalName(doc, 'si').map((si) =>
+    getElementsByLocalName(si, 't')
+      .map((node) => node.textContent ?? '')
+      .join('')
+  )
 }
 
 function isDateNumFmtId(numFmtId: number): boolean {
@@ -332,10 +361,16 @@ function columnNameFromIndex(index: number): string {
   return name
 }
 
-function getXlsxCellText(cell: Element, sharedStrings: string[], dateStyleIndexes: Set<number>): string {
+function getXlsxCellText(
+  cell: Element,
+  sharedStrings: string[],
+  dateStyleIndexes: Set<number>
+): string {
   const type = cell.getAttribute('t')
   if (type === 'inlineStr') {
-    return getElementsByLocalName(cell, 't').map((node) => node.textContent ?? '').join('')
+    return getElementsByLocalName(cell, 't')
+      .map((node) => node.textContent ?? '')
+      .join('')
   }
 
   const value = getFirstTextByLocalName(cell, 'v')
@@ -343,7 +378,7 @@ function getXlsxCellText(cell: Element, sharedStrings: string[], dateStyleIndexe
 
   if (type === 's') {
     const sharedIndex = Number(value)
-    return Number.isInteger(sharedIndex) ? sharedStrings[sharedIndex] ?? '' : ''
+    return Number.isInteger(sharedIndex) ? (sharedStrings[sharedIndex] ?? '') : ''
   }
   if (type === 'b') return value === '1' ? 'TRUE' : 'FALSE'
 
@@ -359,7 +394,7 @@ function parseXlsxSheetRows(
   zip: AdmZip,
   sheetPath: string,
   sharedStrings: string[],
-  dateStyleIndexes: Set<number>,
+  dateStyleIndexes: Set<number>
 ): { rows: string[][]; truncatedRows: boolean; truncatedColumns: boolean } {
   const sheetXml = readZipText(zip, sheetPath)
   if (!sheetXml) return { rows: [], truncatedRows: false, truncatedColumns: false }
@@ -399,15 +434,19 @@ function renderXlsxTable(rows: string[][]): string {
   }
 
   const columnCount = Math.max(...rows.map((row) => row.length), 1)
-  const headerCells = Array.from({ length: columnCount }, (_, index) => (
-    `<th>${escapeHtml(columnNameFromIndex(index))}</th>`
-  )).join('')
-  const bodyRows = rows.map((row, rowIndex) => {
-    const cells = Array.from({ length: columnCount }, (_, index) => (
-      `<td>${escapeHtml(row[index] ?? '')}</td>`
-    )).join('')
-    return `<tr><th class="office-row-heading">${rowIndex + 1}</th>${cells}</tr>`
-  }).join('')
+  const headerCells = Array.from(
+    { length: columnCount },
+    (_, index) => `<th>${escapeHtml(columnNameFromIndex(index))}</th>`
+  ).join('')
+  const bodyRows = rows
+    .map((row, rowIndex) => {
+      const cells = Array.from(
+        { length: columnCount },
+        (_, index) => `<td>${escapeHtml(row[index] ?? '')}</td>`
+      ).join('')
+      return `<tr><th class="office-row-heading">${rowIndex + 1}</th>${cells}</tr>`
+    })
+    .join('')
 
   return `<div class="office-table-wrap"><table><thead><tr><th></th>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`
 }
@@ -440,7 +479,9 @@ function convertXlsxToHtml(filePath: string, resolvedPath: string): OfficePrevie
     truncatedColumns ||= parsed.truncatedColumns
     textParts.push(`[${name}]`)
     textParts.push(...parsed.rows.map((row) => row.join('\t')))
-    htmlParts.push(`<section class="office-sheet"><h3>${escapeHtml(name)}</h3>${renderXlsxTable(parsed.rows)}</section>`)
+    htmlParts.push(
+      `<section class="office-sheet"><h3>${escapeHtml(name)}</h3>${renderXlsxTable(parsed.rows)}</section>`
+    )
   })
 
   if (htmlParts.length === 0) {
@@ -453,9 +494,10 @@ function convertXlsxToHtml(filePath: string, resolvedPath: string): OfficePrevie
     truncatedRows ? `每个工作表最多显示 ${MAX_XLSX_ROWS} 行` : null,
     truncatedColumns ? `每行最多显示 ${MAX_XLSX_COLUMNS} 列` : null,
   ].filter(Boolean)
-  const noticeHtml = notices.length > 0
-    ? `<div class="office-preview-notice">${escapeHtml(notices.join('，'))}</div>`
-    : ''
+  const noticeHtml =
+    notices.length > 0
+      ? `<div class="office-preview-notice">${escapeHtml(notices.join('，'))}</div>`
+      : ''
   const title = escapeHtml(basename(filePath))
   const html = `<div class="office-preview office-preview-spreadsheet"><div class="office-preview-title">${title}</div>${noticeHtml}${htmlParts.join('')}</div>`
 
@@ -474,12 +516,13 @@ function getPptxSlidePaths(zip: AdmZip): string[] {
     const doc = parseXml(presentationXml)
     const slidePaths = getElementsByLocalName(doc, 'sldId')
       .map((slide) => slide.getAttribute('r:id') ?? slide.getAttribute('id'))
-      .map((relationshipId) => relationshipId ? relationships.get(relationshipId) : undefined)
+      .map((relationshipId) => (relationshipId ? relationships.get(relationshipId) : undefined))
       .filter((path): path is string => Boolean(path))
     if (slidePaths.length > 0) return slidePaths
   }
 
-  return zip.getEntries()
+  return zip
+    .getEntries()
     .map((entry) => entry.entryName)
     .filter((entryName) => /^ppt\/slides\/slide\d+\.xml$/.test(entryName))
     .sort((a, b) => {
@@ -495,7 +538,12 @@ function getPptxSlideText(zip: AdmZip, slidePath: string): string[] {
 
   const doc = parseXml(slideXml)
   return getElementsByLocalName(doc, 'p')
-    .map((paragraph) => getElementsByLocalName(paragraph, 't').map((textNode) => textNode.textContent ?? '').join('').trim())
+    .map((paragraph) =>
+      getElementsByLocalName(paragraph, 't')
+        .map((textNode) => textNode.textContent ?? '')
+        .join('')
+        .trim()
+    )
     .filter(Boolean)
 }
 
@@ -504,20 +552,27 @@ function convertPptxToHtml(filePath: string, resolvedPath: string): OfficePrevie
   const slidePaths = getPptxSlidePaths(zip)
   const visibleSlidePaths = slidePaths.slice(0, MAX_PPTX_SLIDES)
   const textParts: string[] = []
-  const slideHtml = visibleSlidePaths.map((slidePath, index) => {
-    const lines = getPptxSlideText(zip, slidePath)
-    textParts.push(`幻灯片 ${index + 1}`)
-    textParts.push(...lines)
-    const title = lines[0] || '（无标题）'
-    const body = lines.length > 1
-      ? `<ul>${lines.slice(1).map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
-      : '<div class="office-empty">这页没有更多可提取文本</div>'
-    return `<section class="office-slide"><div class="office-slide-index">幻灯片 ${index + 1}</div><h3>${escapeHtml(title)}</h3>${body}</section>`
-  }).join('')
+  const slideHtml = visibleSlidePaths
+    .map((slidePath, index) => {
+      const lines = getPptxSlideText(zip, slidePath)
+      textParts.push(`幻灯片 ${index + 1}`)
+      textParts.push(...lines)
+      const title = lines[0] || '（无标题）'
+      const body =
+        lines.length > 1
+          ? `<ul>${lines
+              .slice(1)
+              .map((line) => `<li>${escapeHtml(line)}</li>`)
+              .join('')}</ul>`
+          : '<div class="office-empty">这页没有更多可提取文本</div>'
+      return `<section class="office-slide"><div class="office-slide-index">幻灯片 ${index + 1}</div><h3>${escapeHtml(title)}</h3>${body}</section>`
+    })
+    .join('')
 
-  const noticeHtml = slidePaths.length > MAX_PPTX_SLIDES
-    ? `<div class="office-preview-notice">仅显示前 ${MAX_PPTX_SLIDES} 页幻灯片</div>`
-    : ''
+  const noticeHtml =
+    slidePaths.length > MAX_PPTX_SLIDES
+      ? `<div class="office-preview-notice">仅显示前 ${MAX_PPTX_SLIDES} 页幻灯片</div>`
+      : ''
   const emptyHtml = slideHtml || '<div class="office-empty">这个 PPTX 没有可提取的文本内容</div>'
   const title = escapeHtml(basename(filePath))
   const html = `<div class="office-preview office-preview-presentation"><div class="office-preview-title">${title}</div>${noticeHtml}${emptyHtml}</div>`
@@ -533,7 +588,10 @@ function convertPptxToHtml(filePath: string, resolvedPath: string): OfficePrevie
 // ─── 导出：内联预览 API ───
 
 /** 解析文件路径并读取内容（供内联文本/代码预览使用） */
-export function resolveAndReadFile(filePath: string, basePaths?: string[]): { resolvedPath: string; content: string } | null {
+export function resolveAndReadFile(
+  filePath: string,
+  basePaths?: string[]
+): { resolvedPath: string; content: string } | null {
   const safePath = resolveTargetPath(filePath, basePaths)
   if (!existsSync(safePath)) return null
   try {
@@ -553,7 +611,10 @@ export function resolveFilePath(filePath: string, basePaths?: string[]): string 
 }
 
 /** 为内联 PDF 预览生成临时 HTML 文件（使用 tagent-file:// 加载 PDF，无体积膨胀） */
-export async function preparePdfPreview(filePath: string, basePaths?: string[]): Promise<{ resolvedPath: string; tmpHtmlUrl: string } | null> {
+export async function preparePdfPreview(
+  filePath: string,
+  basePaths?: string[]
+): Promise<{ resolvedPath: string; tmpHtmlUrl: string } | null> {
   const safePath = resolveTargetPath(filePath, basePaths)
   if (!existsSync(safePath)) return null
   const st = statSync(safePath)
@@ -565,11 +626,14 @@ export async function preparePdfPreview(filePath: string, basePaths?: string[]):
   let standardFontDataUrl: string
   let registerFilePath: (path: string) => string
   try {
-    const { registerTAgentDirectoryPath, registerTAgentFilePath } = await import('./local-file-protocol')
+    const { registerTAgentDirectoryPath, registerTAgentFilePath } =
+      await import('./local-file-protocol')
     registerFilePath = registerTAgentFilePath
     fileUrl = registerTAgentFilePath(safePath)
     pdfScriptUrl = registerTAgentFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.min.mjs`))
-    pdfWorkerUrl = registerTAgentFilePath(require.resolve(`${PDFJS_PACKAGE}/build/pdf.worker.min.mjs`))
+    pdfWorkerUrl = registerTAgentFilePath(
+      require.resolve(`${PDFJS_PACKAGE}/build/pdf.worker.min.mjs`)
+    )
     const pdfPackageDir = dirname(require.resolve(`${PDFJS_PACKAGE}/package.json`))
     standardFontDataUrl = `${registerTAgentDirectoryPath(join(pdfPackageDir, 'standard_fonts'))}/`
   } catch (err) {
@@ -652,7 +716,10 @@ export async function preparePdfPreview(filePath: string, basePaths?: string[]):
 }
 
 /** 将 DOCX 文件转换为 HTML（供内联预览使用） */
-export async function convertDocxToHtml(filePath: string, basePaths?: string[]): Promise<{ resolvedPath: string; html: string } | null> {
+export async function convertDocxToHtml(
+  filePath: string,
+  basePaths?: string[]
+): Promise<{ resolvedPath: string; html: string } | null> {
   const safePath = resolveTargetPath(filePath, basePaths)
   if (!existsSync(safePath)) return null
   try {
@@ -667,20 +734,30 @@ export async function convertDocxToHtml(filePath: string, basePaths?: string[]):
   }
 }
 
-function renderOfficeTextFallback(filePath: string, text: string, kind: OfficePreviewResult['kind']): string {
+function renderOfficeTextFallback(
+  filePath: string,
+  text: string,
+  kind: OfficePreviewResult['kind']
+): string {
   const title = escapeHtml(basename(filePath))
   const paragraphs = text
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-  const body = paragraphs.length > 0
-    ? paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`).join('')
-    : '<div class="office-empty">没有可提取的文本内容</div>'
+  const body =
+    paragraphs.length > 0
+      ? paragraphs
+          .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+          .join('')
+      : '<div class="office-empty">没有可提取的文本内容</div>'
   return `<div class="office-preview office-preview-${kind}"><div class="office-preview-title">${title}</div>${body}</div>`
 }
 
 /** 将 XLSX/PPTX 转成可内联展示的 HTML 预览 */
-export async function convertOfficeToHtml(filePath: string, basePaths?: string[]): Promise<OfficePreviewResult | null> {
+export async function convertOfficeToHtml(
+  filePath: string,
+  basePaths?: string[]
+): Promise<OfficePreviewResult | null> {
   const safePath = resolveTargetPath(filePath, basePaths)
   if (!existsSync(safePath)) return null
 

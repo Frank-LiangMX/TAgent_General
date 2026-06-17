@@ -133,9 +133,7 @@ const DUMMY_THOUGHT_SIGNATURE = 'skip_thought_signature_validator'
 
 /** 检查对话历史中是否存在 thoughtSignature */
 function historyHasThoughtSignature(history: GeminiContent[]): boolean {
-  return history.some((c) =>
-    c.parts.some((p) => p.thoughtSignature || p.thought_signature),
-  )
+  return history.some((c) => c.parts.some((p) => p.thoughtSignature || p.thought_signature))
 }
 
 /**
@@ -145,7 +143,7 @@ function buildGeminiRequest(
   prompt: string,
   referenceImageParts: GeminiPart[],
   history: GeminiContent[],
-  options: { aspectRatio?: string; imageSize?: string; numberOfImages?: number },
+  options: { aspectRatio?: string; imageSize?: string; numberOfImages?: number }
 ): Record<string, unknown> {
   // 多轮对话中 model 响应含 thoughtSignature 时，新 user 的 text part 也必须带签名
   const needsSignature = history.length > 0 && historyHasThoughtSignature(history)
@@ -158,10 +156,7 @@ function buildGeminiRequest(
     },
   ]
 
-  const contents: GeminiContent[] = [
-    ...history,
-    { role: 'user', parts: userParts },
-  ]
+  const contents: GeminiContent[] = [...history, { role: 'user', parts: userParts }]
 
   const generationConfig: Record<string, unknown> = {
     responseModalities: ['TEXT', 'IMAGE'],
@@ -188,7 +183,13 @@ function buildGeminiRequest(
 async function callGeminiAndBuildResult(
   prompt: string,
   sessionId: string,
-  options: { aspectRatio?: string; imageSize?: string; referenceImagePaths?: string[]; cwd?: string; numberOfImages?: number },
+  options: {
+    aspectRatio?: string
+    imageSize?: string
+    referenceImagePaths?: string[]
+    cwd?: string
+    numberOfImages?: number
+  }
 ): Promise<McpToolResult> {
   const credentials = getToolCredentials('nano-banana')
   const baseUrl = credentials.baseUrl?.trim() || DEFAULT_BASE_URL
@@ -213,7 +214,9 @@ async function callGeminiAndBuildResult(
   })
   const url = `${baseUrl}/v1beta/models/${model}:generateContent?key=${credentials.apiKey}`
 
-  console.log(`[Nano Banana MCP] 调用 Gemini API: model=${model}, prompt="${prompt.slice(0, 50)}..."`)
+  console.log(
+    `[Nano Banana MCP] 调用 Gemini API: model=${model}, prompt="${prompt.slice(0, 50)}..."`
+  )
 
   const response = await fetch(url, {
     method: 'POST',
@@ -225,7 +228,12 @@ async function callGeminiAndBuildResult(
     const errorText = await response.text()
     console.error(`[Nano Banana MCP] API 请求失败 (${response.status}):`, errorText)
     return {
-      content: [{ type: 'text' as const, text: `Gemini API 请求失败 (${response.status}): ${errorText.slice(0, 200)}` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Gemini API 请求失败 (${response.status}): ${errorText.slice(0, 200)}`,
+        },
+      ],
     }
   }
 
@@ -243,10 +251,13 @@ async function callGeminiAndBuildResult(
     }
   }
 
-   
   const parts = data.candidates![0]!.content.parts
-  console.log(`[Nano Banana MCP] 响应包含 ${parts.length} 个 parts，类型:`,
-    parts.map((p) => p.inlineData ? `image(${p.inlineData.mimeType})` : `text(${(p.text ?? '').slice(0, 30)})`))
+  console.log(
+    `[Nano Banana MCP] 响应包含 ${parts.length} 个 parts，类型:`,
+    parts.map((p) =>
+      p.inlineData ? `image(${p.inlineData.mimeType})` : `text(${(p.text ?? '').slice(0, 30)})`
+    )
+  )
 
   const mcpContent: McpContent[] = []
   const textParts: string[] = []
@@ -299,19 +310,24 @@ async function callGeminiAndBuildResult(
   }
 
   // 更新会话历史（保留原始 parts 含 thoughtSignature，多轮编辑必需）
-  const userContent: GeminiContent = { role: 'user', parts: [...referenceImageParts, { text: prompt }] }
+  const userContent: GeminiContent = {
+    role: 'user',
+    parts: [...referenceImageParts, { text: prompt }],
+  }
   const modelContent: GeminiContent = { role: 'model', parts }
   const updatedHistory = [...history, userContent, modelContent]
   sessionHistory.set(sessionId, updatedHistory)
 
   // 在图片内容块之后追加文本摘要
   const imageCount = mcpContent.filter((c) => c.type === 'image').length
-  const pathInfo = savedWorkspacePaths.length > 0
-    ? `\n图片已保存到工作目录:\n${savedWorkspacePaths.map((p) => `- ${p}`).join('\n')}`
-    : ''
-  const summaryText = imageCount > 0
-    ? `图片已生成（${imageCount} 张）${pathInfo}\n${textParts.join('\n')}`
-    : textParts.join('\n') || '未生成图片内容'
+  const pathInfo =
+    savedWorkspacePaths.length > 0
+      ? `\n图片已保存到工作目录:\n${savedWorkspacePaths.map((p) => `- ${p}`).join('\n')}`
+      : ''
+  const summaryText =
+    imageCount > 0
+      ? `图片已生成（${imageCount} 张）${pathInfo}\n${textParts.join('\n')}`
+      : textParts.join('\n') || '未生成图片内容'
 
   mcpContent.push({ type: 'text' as const, text: summaryText })
 
@@ -329,7 +345,7 @@ export async function injectNanoBananaMcpServer(
   sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
   mcpServers: Record<string, Record<string, unknown>>,
   sessionId: string,
-  agentCwd?: string,
+  agentCwd?: string
 ): Promise<void> {
   // 检查工具是否启用且有凭据
   const toolState = getToolState('nano-banana')
@@ -346,11 +362,32 @@ export async function injectNanoBananaMcpServer(
         'generate_image',
         'Generate or edit images using AI (Gemini Image Generation). Supports text-to-image, reference image editing, and iterative multi-turn editing. Use English prompts for best results. Previous generations are automatically used as context for subsequent calls. When the user uploads images (listed in <attached_files>) or mentions image files via @file:{path}, pass their absolute file paths via referenceImagePaths to use them as reference for editing.',
         {
-          prompt: z.string().describe('Detailed description of the image to generate or the edits to make. English descriptions work best.'),
-          referenceImagePaths: z.array(z.string()).optional().describe('File paths of reference images for editing. Can be absolute paths or relative paths (resolved from cwd). Extract from <attached_files> entries or @file:{path} mentions when the user wants to edit uploaded/referenced images.'),
-          aspectRatio: z.enum(['1:1', '16:9', '4:3', '9:16', '3:4']).optional().describe('Aspect ratio (default 1:1)'),
-          imageSize: z.enum(['auto', '1K', '2K', '4K']).optional().describe('Resolution (default auto)'),
-          numberOfImages: z.number().int().min(1).max(4).optional().describe('Number of images to generate (1-4, default 1)'),
+          prompt: z
+            .string()
+            .describe(
+              'Detailed description of the image to generate or the edits to make. English descriptions work best.'
+            ),
+          referenceImagePaths: z
+            .array(z.string())
+            .optional()
+            .describe(
+              'File paths of reference images for editing. Can be absolute paths or relative paths (resolved from cwd). Extract from <attached_files> entries or @file:{path} mentions when the user wants to edit uploaded/referenced images.'
+            ),
+          aspectRatio: z
+            .enum(['1:1', '16:9', '4:3', '9:16', '3:4'])
+            .optional()
+            .describe('Aspect ratio (default 1:1)'),
+          imageSize: z
+            .enum(['auto', '1K', '2K', '4K'])
+            .optional()
+            .describe('Resolution (default auto)'),
+          numberOfImages: z
+            .number()
+            .int()
+            .min(1)
+            .max(4)
+            .optional()
+            .describe('Number of images to generate (1-4, default 1)'),
         },
         async (args) => {
           try {
@@ -366,7 +403,7 @@ export async function injectNanoBananaMcpServer(
             console.error(`[Nano Banana MCP] 执行失败:`, error)
             return { content: [{ type: 'text' as const, text: `图片生成失败: ${msg}` }] }
           }
-        },
+        }
       ),
     ],
   })

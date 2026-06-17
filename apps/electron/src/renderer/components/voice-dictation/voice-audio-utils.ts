@@ -36,7 +36,10 @@ export function concatAudioBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   return output.buffer
 }
 
-export function splitChunk(buffer: ArrayBuffer, size: number): { chunk: ArrayBuffer | null; rest: ArrayBuffer } {
+export function splitChunk(
+  buffer: ArrayBuffer,
+  size: number
+): { chunk: ArrayBuffer | null; rest: ArrayBuffer } {
   if (buffer.byteLength < size) return { chunk: null, rest: buffer }
   return {
     chunk: buffer.slice(0, size),

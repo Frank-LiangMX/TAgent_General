@@ -18,7 +18,10 @@ const isWin = process.platform === 'win32'
 function killDevPort(): void {
   if (isWin) {
     try {
-      const out = execSync('netstat -ano | findstr :5173', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      const out = execSync('netstat -ano | findstr :5173', {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
       const pids = new Set<string>()
       for (const line of out.split('\n')) {
         const parts = line.trim().split(/\s+/)
@@ -39,7 +42,10 @@ function killDevPort(): void {
   }
 
   try {
-    const pids = execSync('lsof -ti:5173', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    const pids = execSync('lsof -ti:5173', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
       .trim()
       .split('\n')
       .filter(Boolean)

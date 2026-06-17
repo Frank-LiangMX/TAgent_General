@@ -69,9 +69,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       : activeRailItem !== 'scratch'
 
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
-  const navIslandWidth = showLeftSidebar
-    ? NAV_RAIL_WIDTH + navSidebarWidth
-    : NAV_RAIL_WIDTH
+  const navIslandWidth = showLeftSidebar ? NAV_RAIL_WIDTH + navSidebarWidth : NAV_RAIL_WIDTH
   /** 底板向左延伸：铺满整块 Nav 浮岛（Rail + Sidebar）下方，与侧栏一体悬浮 */
   const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
 
@@ -88,34 +86,37 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     }
   }, [clampedRightPanelWidth, rightPanelWidth, setRightPanelWidth])
 
-  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    dragging.current = true
-    const startX = e.clientX
-    const startWidth = clampedRightPanelWidth
-    let rafId = 0
+  const handleMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      dragging.current = true
+      const startX = e.clientX
+      const startWidth = clampedRightPanelWidth
+      let rafId = 0
 
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!dragging.current) return
-      if (rafId) return
-      rafId = requestAnimationFrame(() => {
-        rafId = 0
-        const delta = startX - ev.clientX
-        const newWidth = clampRightPanelWidth(startWidth + delta)
-        setRightPanelWidth(newWidth)
-      })
-    }
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!dragging.current) return
+        if (rafId) return
+        rafId = requestAnimationFrame(() => {
+          rafId = 0
+          const delta = startX - ev.clientX
+          const newWidth = clampRightPanelWidth(startWidth + delta)
+          setRightPanelWidth(newWidth)
+        })
+      }
 
-    const onMouseUp = () => {
-      dragging.current = false
-      if (rafId) cancelAnimationFrame(rafId)
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-    }
+      const onMouseUp = () => {
+        dragging.current = false
+        if (rafId) cancelAnimationFrame(rafId)
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+      }
 
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-  }, [clampedRightPanelWidth, setRightPanelWidth])
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [clampedRightPanelWidth, setRightPanelWidth]
+  )
 
   return (
     <AppShellProvider value={contextValue}>
@@ -128,7 +129,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       <div
         className={cn(
           'shell-glass shell-bg h-screen w-screen flex overflow-hidden',
-          isMac ? 'shell-glass--mac' : 'shell-glass--win',
+          isMac ? 'shell-glass--mac' : 'shell-glass--win'
         )}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
@@ -137,16 +138,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       >
         {/* 左侧 Nav 浮岛（叠在底板之上） */}
         <div className="p-2 pr-0 relative z-[70] flex shrink-0 items-stretch self-stretch">
-          <NavIsland
-            showSidebar={showLeftSidebar}
-            sidebarWidth={navSidebarWidth}
-          >
+          <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth}>
             <FunctionalRail />
             {showLeftSidebar && (
-              <LeftSidebar
-                activeRailItem={activeRailItem}
-                width={navSidebarWidth}
-              />
+              <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
             )}
           </NavIsland>
         </div>
@@ -192,7 +187,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         {/* 右侧边栏：Agent 文件面板，仅在通用模式 Agent 子模式下显示 */}
         {showRightPanel && (
-          <div className={cn('relative z-[60] flex items-stretch transition-[padding] duration-300 ease-in-out', isPanelOpen ? 'p-2 pl-0' : 'p-0')}>
+          <div
+            className={cn(
+              'relative z-[60] flex items-stretch transition-[padding] duration-300 ease-in-out',
+              isPanelOpen ? 'p-2 pl-0' : 'p-0'
+            )}
+          >
             {/* 拖拽手柄 — 绝对定位，居中于主区域和右侧面板的缝隙 */}
             {isPanelOpen && (
               <div

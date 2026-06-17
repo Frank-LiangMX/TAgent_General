@@ -45,11 +45,7 @@ export function UserAvatar({
         style={{ width: size, height: size }}
         onClick={onClick}
       >
-        <img
-          src={avatar}
-          alt="用户头像"
-          className="size-full object-cover"
-        />
+        <img src={avatar} alt="用户头像" className="size-full object-cover" />
       </div>
     )
   }

@@ -100,9 +100,7 @@ class DingTalkBridgeManager {
 
     for (const bot of config.bots) {
       const bridge = this.bridges.get(bot.id)
-      const status: DingTalkBridgeState = bridge
-        ? bridge.getStatus()
-        : { status: 'disconnected' }
+      const status: DingTalkBridgeState = bridge ? bridge.getStatus() : { status: 'disconnected' }
 
       bots[bot.id] = {
         ...status,

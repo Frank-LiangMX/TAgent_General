@@ -10,11 +10,7 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Plus, Trash2, Star } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsToggle,
-} from './primitives'
+import { SettingsSection, SettingsCard, SettingsToggle } from './primitives'
 
 import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
 
@@ -27,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-
 
 /** 防抖保存延迟 (ms) */
 const DEBOUNCE_DELAY = 500
@@ -51,9 +46,12 @@ export function PromptSettings(): React.ReactElement {
 
   /** 初始加载配置 */
   React.useEffect(() => {
-    window.electronAPI.getSystemPromptConfig().then((cfg) => {
-      setConfig(cfg)
-    }).catch(console.error)
+    window.electronAPI
+      .getSystemPromptConfig()
+      .then((cfg) => {
+        setConfig(cfg)
+      })
+      .catch(console.error)
   }, [setConfig])
 
   /** 选中提示词变化时，同步编辑字段 */
@@ -197,9 +195,7 @@ export function PromptSettings(): React.ReactElement {
         <SettingsSection title="提示词内容">
           <SettingsCard divided={false} className="p-4 space-y-3">
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">
-                名称
-              </label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">名称</label>
               <Input
                 value={editName}
                 onChange={(e) => handleNameChange(e.target.value)}
@@ -209,9 +205,7 @@ export function PromptSettings(): React.ReactElement {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">
-                内容
-              </label>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">内容</label>
               <Textarea
                 value={editContent}
                 onChange={(e) => handleContentChange(e.target.value)}
@@ -277,19 +271,17 @@ function PromptListItem({
       {/* 名称 + 标记 */}
       <div className="flex-1 min-w-0 flex items-center gap-1.5">
         <span className="text-sm font-medium truncate">{prompt.name}</span>
-        {prompt.isBuiltin && (
-          <span className="text-xs text-muted-foreground shrink-0">(内置)</span>
-        )}
-        {isDefault && (
-          <Star className="size-3.5 text-amber-500 fill-amber-500 shrink-0" />
-        )}
+        {prompt.isBuiltin && <span className="text-xs text-muted-foreground shrink-0">(内置)</span>}
+        {isDefault && <Star className="size-3.5 text-amber-500 fill-amber-500 shrink-0" />}
       </div>
 
       {/* 操作按钮 — 始终占位，hover 时显示 */}
-      <div className={cn(
-        'flex items-center gap-1 shrink-0 transition-opacity',
-        isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      )}>
+      <div
+        className={cn(
+          'flex items-center gap-1 shrink-0 transition-opacity',
+          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
         {!isDefault && (
           <Button
             variant="ghost"

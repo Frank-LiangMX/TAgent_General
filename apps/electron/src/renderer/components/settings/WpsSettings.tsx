@@ -42,25 +42,27 @@ export function WpsSettings(): React.ReactElement {
 
   React.useEffect(() => {
     let mounted = true
-    Promise.all([window.electronAPI.getWpsConfig(), window.electronAPI.getWpsStatus()]).then(([config, status]) => {
-      if (!mounted) return
-      setForm({
-        enabled: config.enabled,
-        appId: config.appId,
-        secretKey: '',
-        encryptKey: '',
-        apiUrl: config.apiUrl,
-        callbackPort: config.callbackPort,
-        callbackPath: config.callbackPath,
-        defaultWorkspaceId: config.defaultWorkspaceId ?? '',
+    Promise.all([window.electronAPI.getWpsConfig(), window.electronAPI.getWpsStatus()])
+      .then(([config, status]) => {
+        if (!mounted) return
+        setForm({
+          enabled: config.enabled,
+          appId: config.appId,
+          secretKey: '',
+          encryptKey: '',
+          apiUrl: config.apiUrl,
+          callbackPort: config.callbackPort,
+          callbackPath: config.callbackPath,
+          defaultWorkspaceId: config.defaultWorkspaceId ?? '',
+        })
+        setBridgeState(status)
+        setLoaded(true)
       })
-      setBridgeState(status)
-      setLoaded(true)
-    }).catch((error: unknown) => {
-      console.error('[WPS 设置] 加载配置失败:', error)
-      toast.error(`加载 WPS 配置失败: ${error instanceof Error ? error.message : String(error)}`)
-      if (mounted) setLoaded(true)
-    })
+      .catch((error: unknown) => {
+        console.error('[WPS 设置] 加载配置失败:', error)
+        toast.error(`加载 WPS 配置失败: ${error instanceof Error ? error.message : String(error)}`)
+        if (mounted) setLoaded(true)
+      })
     return () => {
       mounted = false
     }
@@ -94,7 +96,11 @@ export function WpsSettings(): React.ReactElement {
     }
     setTesting(true)
     try {
-      const result = await window.electronAPI.testWpsConnection(form.appId.trim(), form.secretKey, form.apiUrl.trim())
+      const result = await window.electronAPI.testWpsConnection(
+        form.appId.trim(),
+        form.secretKey,
+        form.apiUrl.trim()
+      )
       if (result.success) toast.success(result.message)
       else toast.error(result.message)
     } finally {
@@ -150,7 +156,9 @@ export function WpsSettings(): React.ReactElement {
               <span className={`h-2 w-2 rounded-full ${statusMeta.dot}`} />
               <span className="text-sm text-muted-foreground">{statusMeta.label}</span>
               {bridgeState.callbackUrl && (
-                <span className="text-xs text-muted-foreground/80">监听地址: {bridgeState.callbackUrl}</span>
+                <span className="text-xs text-muted-foreground/80">
+                  监听地址: {bridgeState.callbackUrl}
+                </span>
               )}
             </div>
           </SettingsRow>
@@ -209,7 +217,9 @@ export function WpsSettings(): React.ReactElement {
               label="回调端口"
               type="number"
               value={String(form.callbackPort)}
-              onChange={(value) => setForm((prev) => ({ ...prev, callbackPort: Number(value || '19086') }))}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, callbackPort: Number(value || '19086') }))
+              }
             />
           </SettingsRow>
 
@@ -226,7 +236,11 @@ export function WpsSettings(): React.ReactElement {
       <SettingsSection title="操作" description="保存后可直接测试与启停">
         <div className="flex items-center gap-2">
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
             保存
           </Button>
           <Button variant="outline" onClick={handleTest} disabled={testing}>
@@ -252,8 +266,12 @@ export function WpsSettings(): React.ReactElement {
         <SettingsCard divided={false}>
           <div className="space-y-2 px-4 py-4 text-sm text-muted-foreground">
             <p>1) 回调地址需要指向可公网访问的服务（开发阶段可先用内网穿透）。</p>
-            <p>2) 本地监听地址：<code>{callbackUrl}</code></p>
-            <p>3) 回调路径默认是 <code>/open/receive</code>，需与你在开放平台配置保持一致。</p>
+            <p>
+              2) 本地监听地址：<code>{callbackUrl}</code>
+            </p>
+            <p>
+              3) 回调路径默认是 <code>/open/receive</code>，需与你在开放平台配置保持一致。
+            </p>
             <p>4) 当前实现为文本消息链路，图片/文件会在下一迭代补齐。</p>
             <Button variant="outline" size="sm" onClick={handleCopyCallbackUrl}>
               <Copy className="mr-1.5 h-3.5 w-3.5" />

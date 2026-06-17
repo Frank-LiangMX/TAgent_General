@@ -23,7 +23,11 @@ import StarterKit from '@tiptap/starter-kit'
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { useState, useEffect, useRef, useMemo } from 'react'
 
-import { createSkillMentionSuggestion, createMcpMentionSuggestion, createSessionMentionSuggestion } from '@/components/agent/mention-suggestions'
+import {
+  createSkillMentionSuggestion,
+  createMcpMentionSuggestion,
+  createSessionMentionSuggestion,
+} from '@/components/agent/mention-suggestions'
 import { createFileMentionSuggestion } from '@/components/file-browser/file-mention-suggestion'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { lowlight } from '@/lib/lowlight'
@@ -204,30 +208,45 @@ export function RichTextInput({
   workspaceSlugRef.current = workspaceSlug ?? null
 
   // 是否启用 Mention 功能：Agent 首帧可能尚未拿到路径/slug/id，但扩展必须先注册。
-  const hasMentionSupport = enableMentions ?? (workspacePath !== undefined || workspaceSlug !== undefined || workspaceId !== undefined)
+  const hasMentionSupport =
+    enableMentions ??
+    (workspacePath !== undefined || workspaceSlug !== undefined || workspaceId !== undefined)
 
   // Mention Suggestion 配置（稳定引用，不随 workspacePath 变化重建）
   const mentionSuggestion = useMemo(
-    () => createFileMentionSuggestion(workspacePathRef, mentionActiveRef, attachedDirsRef, mentionItemCountRef, sessionAttachedDirsRef),
-    [],
+    () =>
+      createFileMentionSuggestion(
+        workspacePathRef,
+        mentionActiveRef,
+        attachedDirsRef,
+        mentionItemCountRef,
+        sessionAttachedDirsRef
+      ),
+    []
   )
 
   // Skill Suggestion 配置（/ 触发）
   const skillSuggestion = useMemo(
     () => createSkillMentionSuggestion(workspaceSlugRef, mentionActiveRef, mentionItemCountRef),
-    [],
+    []
   )
 
   // MCP Suggestion 配置（# 触发）
   const mcpSuggestion = useMemo(
     () => createMcpMentionSuggestion(workspaceSlugRef, mentionActiveRef, mentionItemCountRef),
-    [],
+    []
   )
 
   // Agent 会话引用 Suggestion（& 触发）
   const sessionSuggestion = useMemo(
-    () => createSessionMentionSuggestion(workspaceIdRef, currentSessionIdRef, mentionActiveRef, mentionItemCountRef),
-    [],
+    () =>
+      createSessionMentionSuggestion(
+        workspaceIdRef,
+        currentSessionIdRef,
+        mentionActiveRef,
+        mentionItemCountRef
+      ),
+    []
   )
 
   const editor = useEditor({
@@ -260,49 +279,47 @@ export function RichTextInput({
       }),
       // Mention 扩展：启用时注册，路径/slug 后续通过 ref 异步更新
       // @ 引用文件、/ 触发 Skill、# 触发 MCP
-      ...(hasMentionSupport ? [
-        Mention.extend({
-          addAttributes() {
-            return {
-              ...this.parent?.(),
-              mentionSuggestionChar: {
-                default: '@',
-                parseHTML: (el: HTMLElement) => el.getAttribute('data-mention-suggestion-char') || '@',
-                renderHTML: (attrs: Record<string, string>) => ({
-                  'data-mention-suggestion-char': attrs.mentionSuggestionChar,
-                }),
+      ...(hasMentionSupport
+        ? [
+            Mention.extend({
+              addAttributes() {
+                return {
+                  ...this.parent?.(),
+                  mentionSuggestionChar: {
+                    default: '@',
+                    parseHTML: (el: HTMLElement) =>
+                      el.getAttribute('data-mention-suggestion-char') || '@',
+                    renderHTML: (attrs: Record<string, string>) => ({
+                      'data-mention-suggestion-char': attrs.mentionSuggestionChar,
+                    }),
+                  },
+                }
               },
-            }
-          },
-        }).configure({
-          HTMLAttributes: {},
-          renderHTML({ node, suggestion }) {
-            const char = suggestion?.char ?? node.attrs.mentionSuggestionChar ?? '@'
-            const label = node.attrs.label ?? node.attrs.id
-            let chipClass = 'mention-chip'
-            if (char === '/') chipClass = 'skill-mention-chip'
-            else if (char === '#') chipClass = 'mcp-mention-chip'
-            else if (char === '&') chipClass = 'session-mention-chip'
-            return [
-              'span',
-              {
-                'data-type': 'mention',
-                'data-id': node.attrs.id,
-                'data-label': node.attrs.label,
-                'data-mention-suggestion-char': char,
-                class: chipClass,
+            }).configure({
+              HTMLAttributes: {},
+              renderHTML({ node, suggestion }) {
+                const char = suggestion?.char ?? node.attrs.mentionSuggestionChar ?? '@'
+                const label = node.attrs.label ?? node.attrs.id
+                let chipClass = 'mention-chip'
+                if (char === '/') chipClass = 'skill-mention-chip'
+                else if (char === '#') chipClass = 'mcp-mention-chip'
+                else if (char === '&') chipClass = 'session-mention-chip'
+                return [
+                  'span',
+                  {
+                    'data-type': 'mention',
+                    'data-id': node.attrs.id,
+                    'data-label': node.attrs.label,
+                    'data-mention-suggestion-char': char,
+                    class: chipClass,
+                  },
+                  `${char === '@' ? '@' : ''}${label}`,
+                ]
               },
-              `${char === '@' ? '@' : ''}${label}`,
-            ]
-          },
-          suggestions: [
-            mentionSuggestion,
-            skillSuggestion,
-            mcpSuggestion,
-            sessionSuggestion,
-          ],
-        }),
-      ] : []),
+              suggestions: [mentionSuggestion, skillSuggestion, mcpSuggestion, sessionSuggestion],
+            }),
+          ]
+        : []),
     ],
     content: value || '',
     editable: !disabled,
@@ -360,11 +377,9 @@ export function RichTextInput({
         const html = event.clipboardData?.getData('text/html') ?? ''
         // 预处理 HTML：将 <div> 替换为 <p>，避免 htmlToMarkdown 对 <div> 不分段导致换行丢失
         const text = html
-          ? (htmlToMarkdown(
-              html
-                .replace(/<div\b[^>]*>/gi, '<p>')
-                .replace(/<\/div>/gi, '</p>')
-            ).trim() || plainText)
+          ? htmlToMarkdown(
+              html.replace(/<div\b[^>]*>/gi, '<p>').replace(/<\/div>/gi, '</p>')
+            ).trim() || plainText
           : plainText
         if (
           threshold &&
@@ -420,7 +435,7 @@ export function RichTextInput({
           }
 
           // 判断是发送还是换行
-          const isSend = cmdEnterMode ? hasCmd : (!hasShift && !hasCmd)
+          const isSend = cmdEnterMode ? hasCmd : !hasShift && !hasCmd
 
           if (isSend) {
             event.preventDefault()
@@ -542,7 +557,7 @@ export function RichTextInput({
       } else {
         const html = controllerValue
           .split(/\n\n+/)
-          .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+          .map((para) => `<p>${para.replace(/\n/g, '<br>')}</p>`)
           .join('')
         editor.commands.setContent(html)
         lastEditorValueRef.current = controllerValue
@@ -606,9 +621,7 @@ export function RichTextInput({
     <div
       className={cn(
         'rich-text-input relative w-full overflow-y-auto scrollbar-thin transition-[max-height] duration-200 ease-in-out',
-        isManuallyCollapsed
-          ? 'max-h-[52px]'
-          : isExpanded ? 'max-h-[500px]' : 'max-h-[200px]',
+        isManuallyCollapsed ? 'max-h-[52px]' : isExpanded ? 'max-h-[500px]' : 'max-h-[200px]',
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}

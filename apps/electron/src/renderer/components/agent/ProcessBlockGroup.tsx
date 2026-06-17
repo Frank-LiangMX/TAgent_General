@@ -1,7 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
-
 import { getToolDisplayName, getToolIcon } from './tool-utils'
 
 import type {
@@ -70,7 +69,7 @@ function getTrailingTextStartIndex(blocks: SDKContentBlock[]): number | null {
 function areToolsBeforeIndexCompleted(
   blocks: SDKContentBlock[],
   endIndex: number,
-  completedToolResultIds: Set<string> | undefined,
+  completedToolResultIds: Set<string> | undefined
 ): boolean {
   if (!completedToolResultIds) return false
 
@@ -90,32 +89,39 @@ function areToolsBeforeIndexCompleted(
 
 export function buildAssistantTurnRenderItems(
   blocks: SDKContentBlock[],
-  options: BuildAssistantTurnRenderItemsOptions = {},
+  options: BuildAssistantTurnRenderItemsOptions = {}
 ): AssistantTurnRenderItem[] {
   if (blocks.length === 0) return []
 
   // 流式阶段最后的 text 还不稳定，后续工具调用可能会把它变成中间过程。
   // 只有当前面所有工具都有结果时，才把尾部 text 视作交付输出提前外置，降低完成瞬间的跳动。
-  const hasProcessBlock = blocks.some((block) => block.type === 'tool_use' || block.type === 'thinking')
+  const hasProcessBlock = blocks.some(
+    (block) => block.type === 'tool_use' || block.type === 'thinking'
+  )
   const trailingTextStartIndex = getTrailingTextStartIndex(blocks)
-  const canSplitStreamingFinalOutput = options.isStreaming
-    && hasProcessBlock
-    && trailingTextStartIndex !== null
-    && trailingTextStartIndex > 0
-    && areToolsBeforeIndexCompleted(blocks, trailingTextStartIndex, options.completedToolResultIds)
+  const canSplitStreamingFinalOutput =
+    options.isStreaming &&
+    hasProcessBlock &&
+    trailingTextStartIndex !== null &&
+    trailingTextStartIndex > 0 &&
+    areToolsBeforeIndexCompleted(blocks, trailingTextStartIndex, options.completedToolResultIds)
 
   if (options.isStreaming && hasProcessBlock && !canSplitStreamingFinalOutput) {
-    return [{
-      type: 'process-group',
-      items: blocks.map((block, index) => ({ block, index })),
-    }]
+    return [
+      {
+        type: 'process-group',
+        items: blocks.map((block, index) => ({ block, index })),
+      },
+    ]
   }
 
   if (trailingTextStartIndex === null) {
-    return [{
-      type: 'process-group',
-      items: blocks.map((block, index) => ({ block, index })),
-    }]
+    return [
+      {
+        type: 'process-group',
+        items: blocks.map((block, index) => ({ block, index })),
+      },
+    ]
   }
 
   const items: AssistantTurnRenderItem[] = []
@@ -169,7 +175,12 @@ export function buildProcessGroupToolNames(blocks: SDKContentBlock[]): string[] 
   return toolNames
 }
 
-export function ProcessBlockGroup({ blocks, isStreaming, keepExpandedAfterComplete, children }: ProcessBlockGroupProps): React.ReactElement {
+export function ProcessBlockGroup({
+  blocks,
+  isStreaming,
+  keepExpandedAfterComplete,
+  children,
+}: ProcessBlockGroupProps): React.ReactElement {
   const shouldExpandByDefault = !!isStreaming || keepExpandedAfterComplete
   const [expanded, setExpanded] = React.useState(shouldExpandByDefault)
   const [shouldRenderContent, setShouldRenderContent] = React.useState(shouldExpandByDefault)
@@ -214,13 +225,17 @@ export function ProcessBlockGroup({ blocks, isStreaming, keepExpandedAfterComple
 
       for (let second = PROCESS_GROUP_AUTO_COLLAPSE_COUNTDOWN_SECONDS - 1; second >= 1; second--) {
         const elapsed = (PROCESS_GROUP_AUTO_COLLAPSE_COUNTDOWN_SECONDS - second) * 1000
-        autoCollapseTimersRef.current.push(window.setTimeout(() => setCollapseCountdown(second), elapsed))
+        autoCollapseTimersRef.current.push(
+          window.setTimeout(() => setCollapseCountdown(second), elapsed)
+        )
       }
 
-      autoCollapseTimersRef.current.push(window.setTimeout(() => {
-        setCollapseCountdown(null)
-        setExpanded(false)
-      }, PROCESS_GROUP_AUTO_COLLAPSE_COUNTDOWN_SECONDS * 1000))
+      autoCollapseTimersRef.current.push(
+        window.setTimeout(() => {
+          setCollapseCountdown(null)
+          setExpanded(false)
+        }, PROCESS_GROUP_AUTO_COLLAPSE_COUNTDOWN_SECONDS * 1000)
+      )
     }, PROCESS_GROUP_AUTO_COLLAPSE_SOUND_DELAY_MS)
     autoCollapseTimersRef.current.push(soundDelayTimer)
 
@@ -233,14 +248,14 @@ export function ProcessBlockGroup({ blocks, isStreaming, keepExpandedAfterComple
       return
     }
 
-    const timer = window.setTimeout(() => setShouldRenderContent(false), PROCESS_GROUP_COLLAPSE_DURATION_MS)
+    const timer = window.setTimeout(
+      () => setShouldRenderContent(false),
+      PROCESS_GROUP_COLLAPSE_DURATION_MS
+    )
     return () => window.clearTimeout(timer)
   }, [expanded])
 
-  const summary = React.useMemo(
-    () => buildProcessGroupSummary(blocks),
-    [blocks],
-  )
+  const summary = React.useMemo(() => buildProcessGroupSummary(blocks), [blocks])
   const toolNames = React.useMemo(() => buildProcessGroupToolNames(blocks), [blocks])
   const visibleToolNames = toolNames.slice(0, MAX_PROCESS_GROUP_ICONS)
   const hiddenToolCount = Math.max(0, toolNames.length - visibleToolNames.length)
@@ -251,7 +266,7 @@ export function ProcessBlockGroup({ blocks, isStreaming, keepExpandedAfterComple
         type="button"
         className={cn(
           'flex max-w-full items-center gap-2 py-0.5 text-left transition-opacity group',
-          'hover:opacity-70',
+          'hover:opacity-70'
         )}
         onClick={() => {
           userToggledRef.current = true
@@ -263,7 +278,7 @@ export function ProcessBlockGroup({ blocks, isStreaming, keepExpandedAfterComple
         <ChevronRight
           className={cn(
             'size-3 shrink-0 text-muted-foreground/40 transition-transform duration-150',
-            expanded && 'rotate-90',
+            expanded && 'rotate-90'
           )}
         />
         <span className="min-w-0 truncate text-[14px] text-muted-foreground">{summary}</span>

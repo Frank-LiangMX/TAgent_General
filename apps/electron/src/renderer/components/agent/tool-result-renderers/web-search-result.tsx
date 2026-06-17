@@ -51,7 +51,10 @@ function parseSearchResults(text: string): SearchResult[] | null {
         results.push({
           title: titleLine.replace(/^\d+\.\s*/, '').replace(/\*\*/g, ''),
           url: urlMatch?.[1] ?? urlLine,
-          snippet: lines.filter((l) => l !== urlLine && l !== titleLine).join(' ').slice(0, 200),
+          snippet: lines
+            .filter((l) => l !== urlLine && l !== titleLine)
+            .join(' ')
+            .slice(0, 200),
         })
       }
     }
@@ -60,7 +63,10 @@ function parseSearchResults(text: string): SearchResult[] | null {
   return results.length > 0 ? results : null
 }
 
-export function WebSearchResultRenderer({ result, isError }: WebSearchResultRendererProps): React.ReactElement {
+export function WebSearchResultRenderer({
+  result,
+  isError,
+}: WebSearchResultRendererProps): React.ReactElement {
   if (isError) {
     return (
       <pre className="rounded-md p-3 text-[12px] font-mono text-destructive/80 bg-destructive/5 whitespace-pre-wrap break-all overflow-x-auto">
@@ -87,9 +93,7 @@ export function WebSearchResultRenderer({ result, isError }: WebSearchResultRend
 
   return (
     <div className="space-y-2">
-      <div className="text-[11px] text-muted-foreground/60">
-        {searchResults.length} 条结果
-      </div>
+      <div className="text-[11px] text-muted-foreground/60">{searchResults.length} 条结果</div>
       {searchResults.map((item, i) => (
         <div key={i} className="rounded-md bg-muted/20 p-2.5 space-y-1">
           <div className="flex items-center gap-1.5">
@@ -99,9 +103,7 @@ export function WebSearchResultRenderer({ result, isError }: WebSearchResultRend
             </span>
           </div>
           {item.url && (
-            <div className="text-[11px] text-primary/60 font-mono truncate">
-              {item.url}
-            </div>
+            <div className="text-[11px] text-primary/60 font-mono truncate">{item.url}</div>
           )}
           {item.snippet && (
             <div className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-2">

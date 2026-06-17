@@ -19,7 +19,7 @@ compression: normal
 # ASAR 打包配置
 asar: true
 asarUnpack:
-  - "node_modules/@anthropic-ai/**"
+  - 'node_modules/@anthropic-ai/**'
 
 # 跳过 npm install
 npmRebuild: false
@@ -27,7 +27,7 @@ npmRebuild: false
 # 通用文件配置
 files:
   - dist/**/*
-  - "!dist/resources/**"
+  - '!dist/resources/**'
   - package.json
   - node_modules/@anthropic-ai/claude-agent-sdk/**/*
   # Linux SDK native binary
@@ -43,7 +43,7 @@ extraResources:
   - from: default-skills
     to: default-skills
     filter:
-      - "**/*"
+      - '**/*'
   - from: ../../tutorial/tutorial.md
     to: tutorial.md
   - from: ../../tutorial/index.html
@@ -53,7 +53,7 @@ extraResources:
   - from: ta-agent-mcp-wheels
     to: ta-agent-mcp-wheels
     filter:
-      - "**/*"
+      - '**/*'
 
 # ============================================
 # Linux 配置

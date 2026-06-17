@@ -24,9 +24,7 @@ export interface TrayActions {
 function getTrayIconPath(): string {
   // dev: __dirname/resources（build:resources 拷贝产物）
   // prod: process.resourcesPath（electron-builder extraResources 产物）
-  const resourcesDir = app.isPackaged
-    ? process.resourcesPath
-    : join(__dirname, 'resources')
+  const resourcesDir = app.isPackaged ? process.resourcesPath : join(__dirname, 'resources')
   return join(resourcesDir, 'iconTemplate.png')
 }
 
@@ -53,7 +51,7 @@ function getDefaultTrayActions(): TrayActions {
 
 function createRecentSessionMenuItem(
   item: TrayRecentSessionItem,
-  actions: TrayActions,
+  actions: TrayActions
 ): Electron.MenuItemConstructorOptions {
   return {
     label: item.title,
@@ -65,32 +63,28 @@ function createRecentSessionMenuItem(
 function buildTrayMenu(actions: TrayActions): Menu {
   const sessions = listAgentSessions()
   const runningSessionIds = new Set(
-    sessions
-      .filter((session) => isAgentSessionActive(session.id))
-      .map((session) => session.id)
+    sessions.filter((session) => isAgentSessionActive(session.id)).map((session) => session.id)
   )
   const model = createTrayMenuModel(sessions, listAgentWorkspaces(), runningSessionIds)
-  const runningItems = model.runningSessions.map((item) => createRecentSessionMenuItem(item, actions))
+  const runningItems = model.runningSessions.map((item) =>
+    createRecentSessionMenuItem(item, actions)
+  )
   const recentItems = model.recentSessions.map((item) => createRecentSessionMenuItem(item, actions))
   const moreItems = model.moreSessions.map((item) => createRecentSessionMenuItem(item, actions))
 
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(runningItems.length > 0
-      ? [
-          { label: '运行中', enabled: false },
-          ...runningItems,
-          { type: 'separator' as const },
-        ]
+      ? [{ label: '运行中', enabled: false }, ...runningItems, { type: 'separator' as const }]
       : []),
     { label: '最近', enabled: false },
-    ...(recentItems.length > 0
-      ? recentItems
-      : [{ label: '暂无最近会话', enabled: false }]),
+    ...(recentItems.length > 0 ? recentItems : [{ label: '暂无最近会话', enabled: false }]),
     ...(moreItems.length > 0
-      ? [{
-          label: '更多',
-          submenu: moreItems,
-        }]
+      ? [
+          {
+            label: '更多',
+            submenu: moreItems,
+          },
+        ]
       : []),
     { type: 'separator' },
     {

@@ -7,17 +7,13 @@
  * - 解析后的最终 systemMessage
  */
 
-import {
-  BUILTIN_DEFAULT_ID,
-  BUILTIN_DEFAULT_PROMPT,
-} from '@tagent/shared'
+import { BUILTIN_DEFAULT_ID, BUILTIN_DEFAULT_PROMPT } from '@tagent/shared'
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
 import { userProfileAtom } from './user-profile'
 
 import type { SystemPromptConfig, SystemPrompt } from '@tagent/shared'
-
 
 /** 提示词编辑侧栏是否打开 */
 export const promptSidebarOpenAtom = atom<boolean>(false)
@@ -36,9 +32,7 @@ export const selectedPromptIdAtom = atomWithStorage<string>(
 )
 
 /** 提示词列表（派生只读） */
-export const promptListAtom = atom<SystemPrompt[]>(
-  (get) => get(promptConfigAtom).prompts
-)
+export const promptListAtom = atom<SystemPrompt[]>((get) => get(promptConfigAtom).prompts)
 
 /** 默认提示词 ID（派生只读） */
 export const defaultPromptIdAtom = atom<string | undefined>(
@@ -87,7 +81,7 @@ export const conversationPromptIdAtom = atom<Map<string, string>>(new Map())
 export function resolveSystemMessage(
   promptId: string,
   config: SystemPromptConfig,
-  userName: string,
+  userName: string
 ): string | undefined {
   const prompt = config.prompts.find((p) => p.id === promptId)
   if (!prompt) return undefined

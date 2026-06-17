@@ -33,38 +33,45 @@
 ## Reviewer Checklist
 
 ### 正确性
-- [ ] 代码确实解决了 *why*
+
+- [ ] 代码确实解决了 _why_
 - [ ] 边界条件覆盖（空输入 / 并发 / Unicode）
 - [ ] 错误处理完整
 - [ ] 公共 API 行为不变
 
 ### 测试
+
 - [ ] 单元测试覆盖新功能
 - [ ] 覆盖率 ≥ 80%
 - [ ] 集成测试（如果跨模块）
 
 ### 设计
+
 - [ ] 符合 `AGENTS.md` §3-5 硬性约束
 - [ ] 不违反双模式隔离
 - [ ] 不动"绝对边界"
 
 ### 代码风格
+
 - [ ] 通过 ruff / eslint / prettier
 - [ ] 命名一致
 - [ ] 没有重复代码
 - [ ] 没有死代码
 
 ### 文档
+
 - [ ] CHANGELOG.md 更新
 - [ ] 公共 API 改动 → README
 - [ ] 架构变更 → ADR
 
 ### 安全
+
 - [ ] 不引入 CVE
 - [ ] 凭证不写入代码
 - [ ] 无注入漏洞
 
 ### 性能
+
 - [ ] 无 N+1
 - [ ] 无不必要大循环
 - [ ] 资源正确释放
@@ -84,7 +91,7 @@
 
 <!-- GitHub auto-assigns CODEOWNERS. Manual: @user1 @user2 -->
 
-| Reviewer | Status |
-|---|---|
+| Reviewer   | Status       |
+| ---------- | ------------ |
 | @reviewer1 | ⏳ / ✅ / ❌ |
 | @reviewer2 | ⏳ / ✅ / ❌ |

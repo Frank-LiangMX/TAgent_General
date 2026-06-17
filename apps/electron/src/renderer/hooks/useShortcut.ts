@@ -24,7 +24,7 @@ export function useShortcut(
   id: string,
   callback: () => void,
   enabled = true,
-  options?: ShortcutRegistrationOptions,
+  options?: ShortcutRegistrationOptions
 ): void {
   const shortcutOptions = options ?? DEFAULT_SHORTCUT_OPTIONS
   useEffect(() => {

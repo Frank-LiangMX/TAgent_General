@@ -22,7 +22,7 @@ export class CardStream {
     private readonly client: lark.Client,
     private readonly cardId: string,
     public readonly messageId: string,
-    public readonly chatId: string,
+    public readonly chatId: string
   ) {}
 
   private sequence = 1
@@ -39,14 +39,16 @@ export class CardStream {
     client: lark.Client,
     chatId: string,
     initialCard: object,
-    opts: { replyToMessageId?: string; replyInThread?: boolean } = {},
+    opts: { replyToMessageId?: string; replyInThread?: boolean } = {}
   ): Promise<CardStream> {
     const created = await client.cardkit.v1.card.create({
       data: { type: 'card_json', data: JSON.stringify(initialCard) },
     })
     const cardId = created.data?.card_id
     if (!cardId) {
-      throw new Error(`cardkit.card.create 未返回 card_id: ${JSON.stringify(created).slice(0, 200)}`)
+      throw new Error(
+        `cardkit.card.create 未返回 card_id: ${JSON.stringify(created).slice(0, 200)}`
+      )
     }
 
     const content = JSON.stringify({ type: 'card', data: { card_id: cardId } })

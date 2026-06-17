@@ -135,7 +135,9 @@ class FeishuBridgeManager {
 
     const bridge = this.bridges.get(bot.id)
     if (!bridge || bridge.getStatus().status !== 'connected') {
-      console.warn(`[飞书 Session 镜像] Bot "${bot.name}" 未连接，跳过 session=${session.id.slice(0, 8)}`)
+      console.warn(
+        `[飞书 Session 镜像] Bot "${bot.name}" 未连接，跳过 session=${session.id.slice(0, 8)}`
+      )
       return
     }
 

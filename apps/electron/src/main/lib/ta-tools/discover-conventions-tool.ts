@@ -19,9 +19,7 @@ export const DISCOVER_CONVENTIONS_TOOL_META: ChatToolMeta = {
   id: 'ta_discover_conventions',
   name: '发现规范配置',
   description: '扫描项目中的规范配置文件',
-  params: [
-    { name: 'directory', type: 'string', description: '项目根目录', required: true },
-  ],
+  params: [{ name: 'directory', type: 'string', description: '项目根目录', required: true }],
   icon: 'Search',
   category: 'builtin',
   executorType: 'builtin',
@@ -32,7 +30,8 @@ export const DISCOVER_CONVENTIONS_TOOL_META: ChatToolMeta = {
 export const DISCOVER_CONVENTIONS_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'discover_conventions',
-    description: 'Discover convention/config files in a project. Finds naming conventions, editor configs, style guides, and project documentation.',
+    description:
+      'Discover convention/config files in a project. Finds naming conventions, editor configs, style guides, and project documentation.',
     parameters: {
       type: 'object',
       properties: {
@@ -57,10 +56,20 @@ const CONVENTION_FILE_PATTERNS: ConventionFile[] = [
   // TA 专用配置
   { path: 'ta-config.json', type: 'ta-config', description: 'TA 规范配置文件', exists: false },
   { path: 'naming-convention.json', type: 'naming', description: '命名规范配置', exists: false },
-  { path: 'directory-structure.json', type: 'structure', description: '目录结构规范', exists: false },
+  {
+    path: 'directory-structure.json',
+    type: 'structure',
+    description: '目录结构规范',
+    exists: false,
+  },
 
   // 编辑器配置
-  { path: '.editorconfig', type: 'editor', description: 'EditorConfig 跨编辑器配置', exists: false },
+  {
+    path: '.editorconfig',
+    type: 'editor',
+    description: 'EditorConfig 跨编辑器配置',
+    exists: false,
+  },
   { path: '.clang-format', type: 'format', description: 'Clang-Format 代码格式化', exists: false },
   { path: '.prettierrc', type: 'format', description: 'Prettier 格式化配置', exists: false },
   { path: '.eslintrc', type: 'lint', description: 'ESLint 配置', exists: false },
@@ -76,7 +85,12 @@ const CONVENTION_FILE_PATTERNS: ConventionFile[] = [
   { path: 'package.json', type: 'project', description: 'Node.js 项目配置', exists: false },
   { path: 'tsconfig.json', type: 'project', description: 'TypeScript 配置', exists: false },
   { path: '.gitignore', type: 'git', description: 'Git 忽略规则', exists: false },
-  { path: '.github/CONTRIBUTING.md', type: 'github', description: 'GitHub 贡献指南', exists: false },
+  {
+    path: '.github/CONTRIBUTING.md',
+    type: 'github',
+    description: 'GitHub 贡献指南',
+    exists: false,
+  },
 ]
 
 // ===== 发现逻辑 =====
@@ -106,7 +120,11 @@ function discoverConventions(directory: string, includeHidden: boolean = true): 
 
     if (fs.existsSync(fullPath)) {
       found.push({ ...pattern, exists: true })
-    } else if (pattern.type === 'ta-config' || pattern.type === 'naming' || pattern.type === 'docs') {
+    } else if (
+      pattern.type === 'ta-config' ||
+      pattern.type === 'naming' ||
+      pattern.type === 'docs'
+    ) {
       missing.push({ ...pattern, exists: false })
     }
   }
@@ -117,7 +135,7 @@ function discoverConventions(directory: string, includeHidden: boolean = true): 
     for (const entry of entries) {
       if (entry.isFile() && entry.name.endsWith('.json')) {
         // 检查是否已在预定义列表中
-        if (!CONVENTION_FILE_PATTERNS.some(p => p.path === entry.name)) {
+        if (!CONVENTION_FILE_PATTERNS.some((p) => p.path === entry.name)) {
           const fullPath = path.join(directory, entry.name)
           try {
             const content = fs.readFileSync(fullPath, 'utf-8')
@@ -144,14 +162,14 @@ function discoverConventions(directory: string, includeHidden: boolean = true): 
 
   // 3. 生成建议
   if (missing.length > 0) {
-    const taConfigs = missing.filter(f => f.type === 'ta-config' || f.type === 'naming')
+    const taConfigs = missing.filter((f) => f.type === 'ta-config' || f.type === 'naming')
     if (taConfigs.length > 0) {
-      suggestions.push(`建议创建 ${taConfigs.map(f => f.path).join(' 或 ')} 来定义 TA 规范`)
+      suggestions.push(`建议创建 ${taConfigs.map((f) => f.path).join(' 或 ')} 来定义 TA 规范`)
     }
 
-    const docs = missing.filter(f => f.type === 'docs')
+    const docs = missing.filter((f) => f.type === 'docs')
     if (docs.length > 0) {
-      suggestions.push(`建议添加 ${docs.map(f => f.path).join(', ')} 来记录项目规范`)
+      suggestions.push(`建议添加 ${docs.map((f) => f.path).join(', ')} 来记录项目规范`)
     }
   }
 
@@ -167,28 +185,30 @@ function discoverConventions(directory: string, includeHidden: boolean = true): 
  */
 function hasConventionFields(json: Record<string, unknown>): boolean {
   const conventionKeywords = [
-    'naming', 'prefix', 'suffix', 'convention',
-    'structure', 'directory', 'format',
-    'style', 'lint', 'config',
+    'naming',
+    'prefix',
+    'suffix',
+    'convention',
+    'structure',
+    'directory',
+    'format',
+    'style',
+    'lint',
+    'config',
   ]
 
   const keys = Object.keys(json).join(' ').toLowerCase()
-  return conventionKeywords.some(kw => keys.includes(kw))
+  return conventionKeywords.some((kw) => keys.includes(kw))
 }
 
 // ===== 工具执行 =====
 
-export function executeDiscoverConventions(
-  toolCall: ToolCall,
-  cwd: string
-): ToolResult {
+export function executeDiscoverConventions(toolCall: ToolCall, cwd: string): ToolResult {
   const directory = toolCall.arguments.directory as string
   const includeHidden = (toolCall.arguments.includeHidden as boolean) ?? true
 
   // 处理相对路径
-  const absolutePath = path.isAbsolute(directory)
-    ? directory
-    : path.resolve(cwd, directory)
+  const absolutePath = path.isAbsolute(directory) ? directory : path.resolve(cwd, directory)
 
   const result = discoverConventions(absolutePath, includeHidden)
 

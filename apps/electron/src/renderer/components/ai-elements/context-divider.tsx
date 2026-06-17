@@ -26,21 +26,13 @@ export function ContextDivider({
   ...props
 }: ContextDividerProps): React.ReactElement {
   return (
-    <div
-      className={cn(
-        'relative flex items-center justify-center py-2',
-        className
-      )}
-      {...props}
-    >
+    <div className={cn('relative flex items-center justify-center py-2', className)} {...props}>
       {/* 左侧虚线 */}
       <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
 
       {/* 中间文字和关闭按钮 */}
       <div className="mx-3 flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground select-none">
-          清除上下文
-        </span>
+        <span className="text-xs text-muted-foreground select-none">清除上下文</span>
         <Button
           type="button"
           variant="ghost"

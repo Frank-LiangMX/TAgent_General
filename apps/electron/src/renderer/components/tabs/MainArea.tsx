@@ -22,10 +22,6 @@ import {
   selectedCapabilityAtom,
   type TARailItem,
 } from '@/atoms/app-mode'
-import {
-  workspaceSelectedDirectoryAtom,
-  workspaceSelectedFileAtom,
-} from '@/atoms/workspace-explorer'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
 import {
   activeTabIdAtom,
@@ -33,8 +29,12 @@ import {
   visibleSessionTabsAtom,
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
-import { WorkspaceFilesMainView } from '@/components/agent/WorkspaceFilesMainView'
+import {
+  workspaceSelectedDirectoryAtom,
+  workspaceSelectedFileAtom,
+} from '@/atoms/workspace-explorer'
 import { SkillsMainView } from '@/components/agent/SkillsMainView'
+import { WorkspaceFilesMainView } from '@/components/agent/WorkspaceFilesMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
@@ -44,8 +44,6 @@ import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
 import { ReviewQueuePanel } from '@/components/ta/review/ReviewQueuePanel'
 import { WelcomeView } from '@/components/welcome/WelcomeView'
 import { useTrackSessionView } from '@/hooks/useTrackSessionView'
-
-
 
 export function MainArea(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
@@ -128,13 +126,8 @@ function TAMainArea(): React.ReactElement {
   }
 
   return (
-    <Panel
-      variant="grow"
-      className="content-glass"
-    >
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {renderContent()}
-      </div>
+    <Panel variant="grow" className="content-glass">
+      <div className="flex-1 min-h-0 overflow-hidden">{renderContent()}</div>
     </Panel>
   )
 }
@@ -195,41 +188,50 @@ function GeneralMainArea(): React.ReactElement {
 
   const showPreview = (previewOpen || closing) && previewSessionId
 
-  const handlePreviewDragStart = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    previewDragging.current = true
-    const startX = e.clientX
-    const startRatio = splitRatio
-    const containerEl = (e.currentTarget as HTMLElement).closest('[data-split-container]') as HTMLElement | null
-    const containerWidth = containerEl?.clientWidth ?? 1
-    let rafId = 0
+  const handlePreviewDragStart = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      previewDragging.current = true
+      const startX = e.clientX
+      const startRatio = splitRatio
+      const containerEl = (e.currentTarget as HTMLElement).closest(
+        '[data-split-container]'
+      ) as HTMLElement | null
+      const containerWidth = containerEl?.clientWidth ?? 1
+      let rafId = 0
 
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'col-resize'
-    document.querySelectorAll('iframe').forEach((f) => { (f as HTMLElement).style.pointerEvents = 'none' })
-
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!previewDragging.current) return
-      if (rafId) return
-      rafId = requestAnimationFrame(() => {
-        rafId = 0
-        const delta = ev.clientX - startX
-        const newRatio = Math.max(0.3, Math.min(0.8, startRatio + delta / containerWidth))
-        setSplitRatio(newRatio)
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+      document.querySelectorAll('iframe').forEach((f) => {
+        ;(f as HTMLElement).style.pointerEvents = 'none'
       })
-    }
-    const onMouseUp = () => {
-      previewDragging.current = false
-      if (rafId) cancelAnimationFrame(rafId)
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-      document.querySelectorAll('iframe').forEach((f) => { (f as HTMLElement).style.pointerEvents = '' })
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-    }
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-  }, [splitRatio, setSplitRatio])
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!previewDragging.current) return
+        if (rafId) return
+        rafId = requestAnimationFrame(() => {
+          rafId = 0
+          const delta = ev.clientX - startX
+          const newRatio = Math.max(0.3, Math.min(0.8, startRatio + delta / containerWidth))
+          setSplitRatio(newRatio)
+        })
+      }
+      const onMouseUp = () => {
+        previewDragging.current = false
+        if (rafId) cancelAnimationFrame(rafId)
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+        document.querySelectorAll('iframe').forEach((f) => {
+          ;(f as HTMLElement).style.pointerEvents = ''
+        })
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+      }
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [splitRatio, setSplitRatio]
+  )
 
   React.useEffect(() => {
     if (showSessionWelcome) return
@@ -254,33 +256,28 @@ function GeneralMainArea(): React.ReactElement {
 
   // 左侧容器宽度：预览打开时固定占 splitRatio；其他情况（含 closing 动画期间）
   // 直接 1 1 auto 占满——closing 时右侧 absolute 脱离 flex 流，所以左侧自然占 100%。
-  const leftFlexStyle: React.CSSProperties = (previewOpen && previewSessionId)
-    ? { flex: `0 0 calc(${splitRatio * 100}% - 4px)` }
-    : { flex: '1 1 auto' }
+  const leftFlexStyle: React.CSSProperties =
+    previewOpen && previewSessionId
+      ? { flex: `0 0 calc(${splitRatio * 100}% - 4px)` }
+      : { flex: '1 1 auto' }
 
   return (
-    <Panel
-      variant="grow"
-      className="content-glass"
-    >
+    <Panel variant="grow" className="content-glass">
       <div className="flex flex-1 min-h-0 relative overflow-hidden" data-split-container>
         {/* 左侧：TabBar + TabContent（始终保持在同一 DOM 位置，避免 Tab 切换时 unmount）
             注：宽度变化不用 transition——文字逐帧 reflow 会导致行末字符抖动，
             视觉上像"内容从右向左推送"。让左侧瞬间变宽，由右侧 absolute 滑出动画
             覆盖期内呈现"被剥离"的视觉效果。 */}
-        <div
-          className="flex flex-col min-w-0 h-full"
-          style={leftFlexStyle}
-        >
+        <div className="flex flex-col min-w-0 h-full" style={leftFlexStyle}>
           {!showSessionWelcome && <TabBar />}
           <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1">
-          {showSessionWelcome || tabs.length === 0 ? (
-            <WelcomeView />
-          ) : deferredActiveTabId ? (
-            <div className="flex-1 min-h-0 titlebar-no-drag">
-              <TabContent tabId={deferredActiveTabId} />
-            </div>
-          ) : null}
+            {showSessionWelcome || tabs.length === 0 ? (
+              <WelcomeView />
+            ) : deferredActiveTabId ? (
+              <div className="flex-1 min-h-0 titlebar-no-drag">
+                <TabContent tabId={deferredActiveTabId} />
+              </div>
+            ) : null}
           </div>
         </div>
 

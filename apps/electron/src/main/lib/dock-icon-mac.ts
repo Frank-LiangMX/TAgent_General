@@ -45,7 +45,7 @@ export function createMacDockIconFromPng(pngPath: string): NativeImage | null {
   const maskedBitmap = applyMacSquircleMaskToBitmap(
     normalized.toBitmap({ scaleFactor: 1.0 }),
     MAC_DOCK_CANVAS_SIZE,
-    MAC_DOCK_CANVAS_SIZE,
+    MAC_DOCK_CANVAS_SIZE
   )
   const maskedFull = nativeImage.createFromBuffer(maskedBitmap, {
     width: MAC_DOCK_CANVAS_SIZE,
@@ -64,7 +64,7 @@ export function createMacDockIconFromPng(pngPath: string): NativeImage | null {
     scaled.toBitmap({ scaleFactor: 1.0 }),
     contentSize,
     contentSize,
-    MAC_DOCK_CANVAS_SIZE,
+    MAC_DOCK_CANVAS_SIZE
   )
 
   const dockIcon = nativeImage.createFromBuffer(canvas, {

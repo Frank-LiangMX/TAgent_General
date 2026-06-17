@@ -3,7 +3,7 @@ import type { AgentSessionMeta } from '@tagent/shared'
 
 export interface ExternalAgentRunTab {
   id: string
-  type: 'agent' | 'scratch' | 'preview'  // P3: chat 已退役
+  type: 'agent' | 'scratch' | 'preview' // P3: chat 已退役
   sessionId: string
   title: string
 }
@@ -29,15 +29,22 @@ export interface ExternalAgentRunActivation {
 }
 
 export function buildExternalAgentRunActivation(
-  input: ExternalAgentRunActivationInput,
+  input: ExternalAgentRunActivationInput
 ): ExternalAgentRunActivation {
   const session = input.sessions.find((item) => item.id === input.sessionId)
   const title = input.title ?? session?.title ?? '新 Agent 会话'
   const tabsWithoutPreview = input.tabs.filter((tab) => tab.type !== 'preview')
-  const existingTab = tabsWithoutPreview.find((tab) => tab.type === 'agent' && tab.sessionId === input.sessionId)
+  const existingTab = tabsWithoutPreview.find(
+    (tab) => tab.type === 'agent' && tab.sessionId === input.sessionId
+  )
   const tabs = existingTab
-    ? (tabsWithoutPreview.length === input.tabs.length ? input.tabs : tabsWithoutPreview)
-    : [...tabsWithoutPreview, { id: input.sessionId, type: 'agent' as const, sessionId: input.sessionId, title }]
+    ? tabsWithoutPreview.length === input.tabs.length
+      ? input.tabs
+      : tabsWithoutPreview
+    : [
+        ...tabsWithoutPreview,
+        { id: input.sessionId, type: 'agent' as const, sessionId: input.sessionId, title },
+      ]
   const activeTabId = existingTab?.id ?? input.sessionId
 
   return {

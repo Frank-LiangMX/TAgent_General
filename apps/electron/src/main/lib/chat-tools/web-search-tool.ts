@@ -16,9 +16,7 @@ export const WEB_SEARCH_TOOL_META: ChatToolMeta = {
   id: 'web-search',
   name: '联网搜索',
   description: '实时搜索互联网获取最新信息',
-  params: [
-    { name: 'query', type: 'string', description: '搜索查询', required: true },
-  ],
+  params: [{ name: 'query', type: 'string', description: '搜索查询', required: true }],
   icon: 'Globe',
   category: 'builtin',
   executorType: 'builtin',
@@ -41,7 +39,8 @@ export const WEB_SEARCH_TOOL_META: ChatToolMeta = {
 export const WEB_SEARCH_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'web_search',
-    description: 'Search the internet for real-time information. Use this when the user asks about current events, recent data, or information you are unsure about.',
+    description:
+      'Search the internet for real-time information. Use this when the user asks about current events, recent data, or information you are unsure about.',
     parameters: {
       type: 'object',
       properties: {
@@ -133,7 +132,7 @@ export async function executeWebSearchTool(toolCall: ToolCall): Promise<ToolResu
       }
     }
 
-    const data = await response.json() as TavilySearchResponse
+    const data = (await response.json()) as TavilySearchResponse
     return {
       toolCallId: toolCall.id,
       content: formatSearchResults(data),

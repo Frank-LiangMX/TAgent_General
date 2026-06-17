@@ -30,9 +30,18 @@ interface UseSmoothStreamReturn {
 }
 
 /** 多语言字符分割器（正确处理中文、日文等多字节字符） */
-const segmenter = new Intl.Segmenter(
-  ['en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'de-DE', 'fr-FR', 'es-ES', 'pt-PT', 'ru-RU'],
-)
+const segmenter = new Intl.Segmenter([
+  'en-US',
+  'zh-CN',
+  'zh-TW',
+  'ja-JP',
+  'ko-KR',
+  'de-DE',
+  'fr-FR',
+  'es-ES',
+  'pt-PT',
+  'ru-RU',
+])
 
 /** 用 Intl.Segmenter 将文本拆分为字符数组 */
 function segmentText(text: string): string[] {
@@ -124,54 +133,57 @@ export function useSmoothStream({
   }, [isStreaming, content])
 
   // 渲染循环
-  const renderLoop = useCallback((currentTime: number) => {
-    const queue = chunkQueueRef.current
+  const renderLoop = useCallback(
+    (currentTime: number) => {
+      const queue = chunkQueueRef.current
 
-    // 队列为空
-    if (queue.length === 0) {
-      if (streamDoneRef.current) {
-        // 流结束 + 队列空 → 同步最终内容并停止
+      // 队列为空
+      if (queue.length === 0) {
+        if (streamDoneRef.current) {
+          // 流结束 + 队列空 → 同步最终内容并停止
+          if (displayedRef.current !== prevContentRef.current) {
+            displayedRef.current = prevContentRef.current
+            setDisplayedContent(displayedRef.current)
+          }
+          rafRef.current = null
+          return
+        }
+        // 流未结束但队列空 → 等下一帧
+        rafRef.current = requestAnimationFrame(renderLoop)
+        return
+      }
+
+      // 最小延迟控制
+      if (currentTime - lastRenderTimeRef.current < minDelay) {
+        rafRef.current = requestAnimationFrame(renderLoop)
+        return
+      }
+      lastRenderTimeRef.current = currentTime
+
+      // 动态计算本帧渲染字符数：除数越大缓冲越深、输出越匀
+      // 流式中 /8 保持较深缓冲（牺牲少许延迟换取丝滑），结束后 /4 加速排空
+      const divisor = streamDoneRef.current ? 4 : 8
+      const count = Math.max(1, Math.floor(queue.length / divisor))
+
+      // 取出字符并更新
+      const chars = queue.splice(0, count)
+      displayedRef.current += chars.join('')
+      setDisplayedContent(displayedRef.current)
+
+      // 队列未空或流未结束 → 继续
+      if (queue.length > 0 || !streamDoneRef.current) {
+        rafRef.current = requestAnimationFrame(renderLoop)
+      } else {
+        // 队列刚排空 + 流已结束 → 同步最终内容并停止
         if (displayedRef.current !== prevContentRef.current) {
           displayedRef.current = prevContentRef.current
           setDisplayedContent(displayedRef.current)
         }
         rafRef.current = null
-        return
       }
-      // 流未结束但队列空 → 等下一帧
-      rafRef.current = requestAnimationFrame(renderLoop)
-      return
-    }
-
-    // 最小延迟控制
-    if (currentTime - lastRenderTimeRef.current < minDelay) {
-      rafRef.current = requestAnimationFrame(renderLoop)
-      return
-    }
-    lastRenderTimeRef.current = currentTime
-
-    // 动态计算本帧渲染字符数：除数越大缓冲越深、输出越匀
-    // 流式中 /8 保持较深缓冲（牺牲少许延迟换取丝滑），结束后 /4 加速排空
-    const divisor = streamDoneRef.current ? 4 : 8
-    const count = Math.max(1, Math.floor(queue.length / divisor))
-
-    // 取出字符并更新
-    const chars = queue.splice(0, count)
-    displayedRef.current += chars.join('')
-    setDisplayedContent(displayedRef.current)
-
-    // 队列未空或流未结束 → 继续
-    if (queue.length > 0 || !streamDoneRef.current) {
-      rafRef.current = requestAnimationFrame(renderLoop)
-    } else {
-      // 队列刚排空 + 流已结束 → 同步最终内容并停止
-      if (displayedRef.current !== prevContentRef.current) {
-        displayedRef.current = prevContentRef.current
-        setDisplayedContent(displayedRef.current)
-      }
-      rafRef.current = null
-    }
-  }, [minDelay])
+    },
+    [minDelay]
+  )
 
   // 启动/重启渲染循环（流结束后也继续运行直到队列排空）
   useEffect(() => {

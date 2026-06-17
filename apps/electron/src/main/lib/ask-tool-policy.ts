@@ -21,27 +21,26 @@
 
 import { getChatToolsConfig } from './chat-tool-config'
 
-import type { AskMessage, ChatToolActivity } from '@tagent/shared'
 import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
+import type { AskMessage, ChatToolActivity } from '@tagent/shared'
 
 // ===== suggest_agent_switch 工具定义（必开） =====
 
 export const SUGGEST_AGENT_SWITCH_TOOL_DEFINITION: ToolDefinition = {
   name: 'suggest_agent_switch',
   description:
-    'Proactively suggest switching the Composer to Agent mode when the user\'s task requires file operations, command execution, MCP, Skills, or any other capability beyond pure conversation. Call this BEFORE responding in those cases. Do NOT use this for tasks that can be fully answered in Ask mode.',
+    "Proactively suggest switching the Composer to Agent mode when the user's task requires file operations, command execution, MCP, Skills, or any other capability beyond pure conversation. Call this BEFORE responding in those cases. Do NOT use this for tasks that can be fully answered in Ask mode.",
   parameters: {
     type: 'object',
     properties: {
       reason: {
         type: 'string',
         description:
-          'Specific explanation of how Agent mode can better help the user achieve the goal (in the user\'s language)',
+          "Specific explanation of how Agent mode can better help the user achieve the goal (in the user's language)",
       },
       suggestedPrompt: {
         type: 'string',
-        description:
-          'Suggested initial prompt for Agent mode, summarizing the user\'s core task',
+        description: "Suggested initial prompt for Agent mode, summarizing the user's core task",
       },
     },
     required: ['reason', 'suggestedPrompt'],

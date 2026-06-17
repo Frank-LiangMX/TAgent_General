@@ -95,9 +95,7 @@ export function LoadingIndicator({
       {animated ? (
         <Spinner size={size} className={spinnerClassName} />
       ) : (
-        <span className="inline-flex items-center justify-center w-[1em] h-[1em]">
-          ●
-        </span>
+        <span className="inline-flex items-center justify-center w-[1em] h-[1em]">●</span>
       )}
 
       {/* 标签 */}

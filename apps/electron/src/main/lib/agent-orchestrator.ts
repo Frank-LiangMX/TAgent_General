@@ -20,7 +20,12 @@ import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 
-import { getAdapter, fetchTitle, normalizeAnthropicBaseUrlForSdk, getTAgentUserAgent } from '@tagent/core'
+import {
+  getAdapter,
+  fetchTitle,
+  normalizeAnthropicBaseUrlForSdk,
+  getTAgentUserAgent,
+} from '@tagent/core'
 import {
   TAGENT_DEFAULT_PERMISSION_MODE,
   TAGENT_PERMISSION_MODE_CONFIG,
@@ -31,8 +36,14 @@ import {
 } from '@tagent/shared'
 import { app } from 'electron'
 
-
-import { isPromptTooLongError, isThinkingSignatureError, friendlyErrorMessage, mapSDKErrorToTypedError, extractErrorDetails, shouldKeepChannelOpen } from './adapters/claude-agent-adapter'
+import {
+  isPromptTooLongError,
+  isThinkingSignatureError,
+  friendlyErrorMessage,
+  mapSDKErrorToTypedError,
+  extractErrorDetails,
+  shouldKeepChannelOpen,
+} from './adapters/claude-agent-adapter'
 import { askUserService } from './agent-ask-user-service'
 import {
   MAX_TOOL_SUMMARY_LENGTH,
@@ -48,12 +59,33 @@ import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-pla
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
-import { appendSDKMessages, updateAgentSessionMeta, getAgentSessionMeta, getAgentSessionMessages, getAgentSessionSDKMessages, truncateSDKMessages, resolveUserUuidFromSDK, rewindFilesFromSnapshot } from './agent-session-manager'
+import {
+  appendSDKMessages,
+  updateAgentSessionMeta,
+  getAgentSessionMeta,
+  getAgentSessionMessages,
+  getAgentSessionSDKMessages,
+  truncateSDKMessages,
+  resolveUserUuidFromSDK,
+  rewindFilesFromSnapshot,
+} from './agent-session-manager'
 import { validateToolInput } from './agent-tool-input-validator'
 import { estimateTokenCount, WRITE_CONTENT_TOKEN_THRESHOLD } from './agent-tool-token-estimator'
-import { getAgentWorkspace, getWorkspaceMcpConfig, ensurePluginManifest , getWorkspaceAttachedDirectories, getWorkspaceAttachedFiles } from './agent-workspace-manager'
+import {
+  getAgentWorkspace,
+  getWorkspaceMcpConfig,
+  ensurePluginManifest,
+  getWorkspaceAttachedDirectories,
+  getWorkspaceAttachedFiles,
+} from './agent-workspace-manager'
 import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
-import { getAgentWorkspacePath, getAgentSessionWorkspacePath, getSdkConfigDir, getWorkspaceFilesDir, getConfigDirName } from './config-paths'
+import {
+  getAgentWorkspacePath,
+  getAgentSessionWorkspacePath,
+  getSdkConfigDir,
+  getWorkspaceFilesDir,
+  getConfigDirName,
+} from './config-paths'
 import { isTransientNetworkError } from './error-patterns'
 import { getMemoryConfig } from './memory-service'
 import { searchMemory, addMemory, formatSearchResult } from './memos-client'
@@ -65,8 +97,24 @@ import pkg from '../../../package.json' with { type: 'json' }
 
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
 import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
-import type { PermissionRequest, TAgentPermissionMode, AskUserRequest, ExitPlanModeRequest , AgentSendInput, AgentMessage, AgentGenerateTitleInput, AgentProviderAdapter, AgentSessionMeta, TypedError, RetryAttempt, SDKMessage, SDKAssistantMessage, RewindSessionResult, SdkBeta, ProviderType } from '@tagent/shared'
-
+import type {
+  PermissionRequest,
+  TAgentPermissionMode,
+  AskUserRequest,
+  ExitPlanModeRequest,
+  AgentSendInput,
+  AgentMessage,
+  AgentGenerateTitleInput,
+  AgentProviderAdapter,
+  AgentSessionMeta,
+  TypedError,
+  RetryAttempt,
+  SDKMessage,
+  SDKAssistantMessage,
+  RewindSessionResult,
+  SdkBeta,
+  ProviderType,
+} from '@tagent/shared'
 
 // ===== 类型定义 =====
 
@@ -80,7 +128,10 @@ export interface SessionCallbacks {
   /** 发送流式错误 */
   onError: (error: string) => void
   /** 发送流式完成（携带已持久化的消息列表） */
-  onComplete: (messages?: AgentMessage[], opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }) => void
+  onComplete: (
+    messages?: AgentMessage[],
+    opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
+  ) => void
   /** 发送标题更新 */
   onTitleUpdated: (title: string) => void
   /** 用户消息已持久化，外部入口可据此通知前端切到实时会话 */
@@ -149,7 +200,7 @@ function extractApiError(stderr: string): { statusCode: number; message: string 
 /** 可自动重试的 TypedError 错误码 */
 const AUTO_RETRYABLE_ERROR_CODES: ReadonlySet<string> = new Set([
   'rate_limited',
-  'provider_error',      // overloaded 映射为 provider_error
+  'provider_error', // overloaded 映射为 provider_error
   'service_error',
   'service_unavailable',
   'network_error',
@@ -164,7 +215,7 @@ function isAutoRetryableTypedError(error: TypedError): boolean {
 function isAutoRetryableCatchError(
   apiError: { statusCode: number; message: string } | null,
   rawErrorMessage?: string,
-  stderr?: string,
+  stderr?: string
 ): boolean {
   if (apiError) {
     // 529 是 Anthropic 的过载状态码，通常很快恢复；与 429 / 5xx 一并重试。
@@ -260,13 +311,11 @@ function resolveSDKCliPath(): string {
   // 策略 2：全局 require（esbuild CJS bundle 可能保留）
   if (!binaryPath || !existsSync(binaryPath)) {
     try {
-       
       const sdkEntryPath = require.resolve('@anthropic-ai/claude-agent-sdk')
       const anthropicDir = dirname(dirname(sdkEntryPath))
       binaryPath = join(anthropicDir, subpkg, binaryName)
       console.log(`[Agent 编排] SDK binary 路径 (require.resolve): ${binaryPath}`)
       if (!existsSync(binaryPath)) {
-         
         const subpkgPackagePath = require.resolve(`${scopedSubpkg}/package.json`)
         binaryPath = join(dirname(subpkgPackagePath), binaryName)
         console.log(`[Agent 编排] SDK binary 路径 (require platform package): ${binaryPath}`)
@@ -301,7 +350,9 @@ const MAX_CONTEXT_MESSAGES_FALLBACK = 20
  *
  * 扫描 tool_use 块，提取工具名称和关键参数，帮助新 SDK 会话理解之前做过什么。
  */
-function extractSDKToolSummary(content: Array<{ type: string; name?: string; input?: Record<string, unknown> }>): string {
+function extractSDKToolSummary(
+  content: Array<{ type: string; name?: string; input?: Record<string, unknown> }>
+): string {
   const summaries: string[] = []
   for (const block of content) {
     if (block.type === 'tool_use' && block.name) {
@@ -330,7 +381,7 @@ function buildContextPrompt(
   sessionId: string,
   currentUserMessage: string,
   sessionHint?: { agentCwd: string },
-  contextWindow?: number,
+  contextWindow?: number
 ): string {
   const allMessages = getAgentSessionSDKMessages(sessionId)
   if (allMessages.length === 0) return currentUserMessage
@@ -346,15 +397,25 @@ function buildContextPrompt(
     : MAX_CONTEXT_MESSAGES_FALLBACK
   const recent = history.slice(-maxMessages)
   const lines = recent
-    .filter((m) => (m.type === 'user' || m.type === 'assistant'))
+    .filter((m) => m.type === 'user' || m.type === 'assistant')
     .map((m) => {
       // 从 SDKMessage 的 message.content 中提取文本
-      const content = (m as { message?: { content?: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown>; source?: { type?: string; media_type?: string; data?: string } }> } }).message?.content
+      const content = (
+        m as {
+          message?: {
+            content?: Array<{
+              type: string
+              text?: string
+              name?: string
+              input?: Record<string, unknown>
+              source?: { type?: string; media_type?: string; data?: string }
+            }>
+          }
+        }
+      ).message?.content
       if (!Array.isArray(content)) return null
 
-      const textParts = content
-        .filter((b) => b.type === 'text' && b.text)
-        .map((b) => b.text!)
+      const textParts = content.filter((b) => b.type === 'text' && b.text).map((b) => b.text!)
       const text = textParts.join('\n')
 
       // P1-2: 统计图片/文件附件块, 注入 placeholder
@@ -385,7 +446,9 @@ function buildContextPrompt(
     ? `\n<session_info>\nSession ID: ${sessionId}\nSession CWD: ${sessionHint.agentCwd}\nNote: 上方为近期对话摘要。如需更多上下文，可读取 ~/${getConfigDirName()}/agent-sessions/${sessionId}.jsonl 获取完整历史。\n</session_info>\n`
     : ''
 
-  console.log(`[Agent 编排] buildContextPrompt: 读取 ${allMessages.length} 条消息，注入 ${lines.length} 条历史${sessionHint ? '（含 session 元信息）' : ''}`)
+  console.log(
+    `[Agent 编排] buildContextPrompt: 读取 ${allMessages.length} 条消息，注入 ${lines.length} 条历史${sessionHint ? '（含 session 元信息）' : ''}`
+  )
   return `<conversation_history>${sessionInfoBlock}\n${lines.join('\n')}\n</conversation_history>\n\n${currentUserMessage}`
 }
 
@@ -399,7 +462,7 @@ function buildContextPrompt(
 function buildRecoveryPrompt(
   sessionId: string,
   currentUserMessage: string,
-  sessionHint: { agentCwd: string },
+  sessionHint: { agentCwd: string }
 ): string {
   const meta = getAgentSessionMeta(sessionId)
   const title = meta ? escapeContextAttr(meta.title) : sessionId
@@ -429,7 +492,7 @@ function escapeContextAttr(value: string): string {
 function buildReferencedSessionsPrompt(
   currentSessionId: string,
   mentionedSessionIds?: string[],
-  workspaceId?: string,
+  workspaceId?: string
 ): string {
   const uniqueIds = [...new Set((mentionedSessionIds ?? []).filter(Boolean))]
   if (uniqueIds.length === 0) return ''
@@ -448,8 +511,8 @@ function buildReferencedSessionsPrompt(
     const historyPath = `~/${getConfigDirName()}/agent-sessions/${referencedSessionId}.jsonl`
     sessionBlocks.push(
       `<session id="${referencedSessionId}" title="${title}" updatedAt="${meta.updatedAt}">\n` +
-      `History path: ${historyPath}\n` +
-      '</session>',
+        `History path: ${historyPath}\n` +
+        '</session>'
     )
   }
 
@@ -459,7 +522,8 @@ function buildReferencedSessionsPrompt(
 }
 
 /** 标题生成 Prompt */
-const TITLE_PROMPT = '根据用户的第一条消息，生成一个简短的对话标题（10字以内）。只输出标题，不要有任何其他内容、标点符号或引号。\n\n用户消息：'
+const TITLE_PROMPT =
+  '根据用户的第一条消息，生成一个简短的对话标题（10字以内）。只输出标题，不要有任何其他内容、标点符号或引号。\n\n用户消息：'
 
 /** 标题最大长度 */
 const MAX_TITLE_LENGTH = 20
@@ -572,7 +636,7 @@ export class AgentOrchestrator {
   private async buildSdkEnv(
     apiKey: string,
     baseUrl: string | undefined,
-    provider: ProviderType,
+    provider: ProviderType
   ): Promise<Record<string, string | undefined>> {
     const DEFAULT_ANTHROPIC_URL = 'https://api.anthropic.com'
 
@@ -605,7 +669,11 @@ export class AgentOrchestrator {
     // - MiniMax Coding Plan：Claude Code 场景使用 Bearer（ANTHROPIC_AUTH_TOKEN）
     // - 通过 ANTHROPIC_AUTH_TOKEN 让 SDK 发 Authorization: Bearer
     // - 其它：ANTHROPIC_API_KEY（SDK 内部会同时带上 x-api-key 和 Bearer）
-    if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
+    if (
+      provider === 'kimi-coding' ||
+      provider === 'zhipu-coding' ||
+      provider === 'xiaomi-token-plan'
+    ) {
       sdkEnv.ANTHROPIC_AUTH_TOKEN = apiKey
       sdkEnv.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
     } else if (provider === 'minimax') {
@@ -639,7 +707,9 @@ export class AgentOrchestrator {
           console.log(`[Agent 编排] 配置 Shell 环境: Git Bash (${shellStatus.gitBash.path})`)
         } else if (shellStatus.wsl?.available) {
           sdkEnv.CLAUDE_CODE_SHELL = 'wsl'
-          console.log(`[Agent 编排] 配置 Shell 环境: WSL ${shellStatus.wsl.version} (${shellStatus.wsl.defaultDistro})`)
+          console.log(
+            `[Agent 编排] 配置 Shell 环境: WSL ${shellStatus.wsl.version} (${shellStatus.wsl.defaultDistro})`
+          )
         } else {
           console.warn('[Agent 编排] Windows 平台未检测到可用的 Shell 环境（Git Bash / WSL）')
         }
@@ -664,7 +734,9 @@ export class AgentOrchestrator {
   /**
    * 构建工作区 MCP 服务器配置
    */
-  private buildMcpServers(workspaceSlug: string | undefined): Record<string, Record<string, unknown>> {
+  private buildMcpServers(
+    workspaceSlug: string | undefined
+  ): Record<string, Record<string, unknown>> {
     const mcpServers: Record<string, Record<string, unknown>> = {}
     if (!workspaceSlug) return mcpServers
 
@@ -708,7 +780,7 @@ export class AgentOrchestrator {
    */
   private async injectMemoryTools(
     sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
-    mcpServers: Record<string, Record<string, unknown>>,
+    mcpServers: Record<string, Record<string, unknown>>
   ): Promise<void> {
     const memoryConfig = getMemoryConfig()
     const memUserId = memoryConfig.userId?.trim() || 'tagent-user'
@@ -723,16 +795,19 @@ export class AgentOrchestrator {
           sdk.tool(
             'recall_memory',
             'Search user memories (facts and preferences) from MemOS Cloud. Use this to recall relevant context about the user.',
-            { query: z.string().describe('Search query for memory retrieval'), limit: z.number().optional().describe('Max results (default 6)') },
+            {
+              query: z.string().describe('Search query for memory retrieval'),
+              limit: z.number().optional().describe('Max results (default 6)'),
+            },
             async (args) => {
               const result = await searchMemory(
                 { apiKey: memoryConfig.apiKey, userId: memUserId, baseUrl: memoryConfig.baseUrl },
                 args.query,
-                args.limit,
+                args.limit
               )
               return { content: [{ type: 'text' as const, text: formatSearchResult(result) }] }
             },
-            { annotations: { readOnlyHint: true } },
+            { annotations: { readOnlyHint: true } }
           ),
           sdk.tool(
             'add_memory',
@@ -746,10 +821,10 @@ export class AgentOrchestrator {
             async (args) => {
               await addMemory(
                 { apiKey: memoryConfig.apiKey, userId: memUserId, baseUrl: memoryConfig.baseUrl },
-                args,
+                args
               )
               return { content: [{ type: 'text' as const, text: 'Memory stored successfully.' }] }
-            },
+            }
           ),
         ],
       })
@@ -772,7 +847,7 @@ export class AgentOrchestrator {
   private async injectCompactSessionTool(
     sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
     mcpServers: Record<string, Record<string, unknown>>,
-    sessionId: string,
+    sessionId: string
   ): Promise<void> {
     try {
       const { z } = await import('zod')
@@ -786,8 +861,13 @@ export class AgentOrchestrator {
             'compact_session',
             '主动压缩当前会话历史。当 SDK 服务端 compaction 失败时调用, 减少后续 context 占用。3 策略: drop_old_tool_results (丢老 tool 块, 保留文本) / keep_last_n (保留最近 N 条 user+assistant) / summarize (本期未实现)。',
             {
-              strategy: z.enum(['drop_old_tool_results', 'keep_last_n', 'summarize']).describe('压缩策略'),
-              keepLastN: z.number().optional().describe('keep_last_n 策略专用: 保留最近 N 条 user+assistant, 默认 10'),
+              strategy: z
+                .enum(['drop_old_tool_results', 'keep_last_n', 'summarize'])
+                .describe('压缩策略'),
+              keepLastN: z
+                .number()
+                .optional()
+                .describe('keep_last_n 策略专用: 保留最近 N 条 user+assistant, 默认 10'),
             },
             async (args) => {
               const result = await compactSession(sessionId, {
@@ -795,7 +875,7 @@ export class AgentOrchestrator {
                 keepLastN: args.keepLastN,
               })
               return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
-            },
+            }
           ),
         ],
       })
@@ -816,23 +896,22 @@ export class AgentOrchestrator {
     sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
     mcpServers: Record<string, Record<string, unknown>>,
     sessionId: string,
-    agentCwd?: string,
+    agentCwd?: string
   ): Promise<void> {
     try {
       const { z } = await import('zod')
       const taTools = await import('./ta-tools')
 
       // 把 ToolCall 包装出来：执行器拿 ToolCall，回传 ToolResult
-      const wrap = (toolName: string) =>
-        async (args: Record<string, unknown>) => {
-          const toolCall = {
-            id: `ta-${toolName}-${Date.now()}`,
-            name: toolName,
-            arguments: args,
-          } as Parameters<typeof taTools.executeTATool>[0]
-          const result = await taTools.executeTATool(toolCall, agentCwd ?? process.cwd())
-          return { content: [{ type: 'text' as const, text: result.content }] }
-        }
+      const wrap = (toolName: string) => async (args: Record<string, unknown>) => {
+        const toolCall = {
+          id: `ta-${toolName}-${Date.now()}`,
+          name: toolName,
+          arguments: args,
+        } as Parameters<typeof taTools.executeTATool>[0]
+        const result = await taTools.executeTATool(toolCall, agentCwd ?? process.cwd())
+        return { content: [{ type: 'text' as const, text: result.content }] }
+      }
 
       const taServer = sdk.createSdkMcpServer({
         name: 'tagent-ta',
@@ -843,20 +922,26 @@ export class AgentOrchestrator {
             '检查资产命名是否符合 TA 命名规范（UE5 资产必须大写开头，mesh/texture/material 等类型有特定前缀后缀）',
             {
               name: z.string().describe('要检查的资产名称'),
-              assetType: z.enum(['mesh', 'texture', 'material', 'skeleton', 'animation']).optional()
+              assetType: z
+                .enum(['mesh', 'texture', 'material', 'skeleton', 'animation'])
+                .optional()
                 .describe('资产类型，不传则自动检测'),
             },
-            wrap('check_naming'),
+            wrap('check_naming')
           ),
           sdk.tool(
             'suggest_naming',
             '根据用户描述的资产用途，生成符合 TA 命名规范的资产名建议',
             {
-              description: z.string().describe('资产用途描述（如：英雄角色基础模型、UI 主按钮贴图）'),
-              assetType: z.enum(['mesh', 'texture', 'material', 'skeleton', 'animation']).optional()
+              description: z
+                .string()
+                .describe('资产用途描述（如：英雄角色基础模型、UI 主按钮贴图）'),
+              assetType: z
+                .enum(['mesh', 'texture', 'material', 'skeleton', 'animation'])
+                .optional()
                 .describe('资产类型'),
             },
-            wrap('suggest_naming'),
+            wrap('suggest_naming')
           ),
           sdk.tool(
             'check_directory_structure',
@@ -864,19 +949,19 @@ export class AgentOrchestrator {
             {
               dirPath: z.string().describe('要检查的目录绝对路径'),
             },
-            wrap('check_directory_structure'),
+            wrap('check_directory_structure')
           ),
           sdk.tool(
             'discover_conventions',
             '发现项目中的 TA 规范配置文件（.tagent/conventions.yaml 等）',
             {},
-            wrap('discover_conventions'),
+            wrap('discover_conventions')
           ),
           sdk.tool(
             'load_conventions',
             '加载并返回项目 TA 规范内容（命名规则、目录结构、预算阈值等）',
             {},
-            wrap('load_conventions'),
+            wrap('load_conventions')
           ),
         ],
       })
@@ -894,7 +979,7 @@ export class AgentOrchestrator {
     sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
     mcpServers: Record<string, Record<string, unknown>>,
     sessionId: string,
-    agentCwd?: string,
+    agentCwd?: string
   ): Promise<void> {
     try {
       const { injectNanoBananaMcpServer } = await import('./chat-tools/nano-banana-mcp')
@@ -911,7 +996,11 @@ export class AgentOrchestrator {
    */
   async generateTitle(input: AgentGenerateTitleInput): Promise<string | null> {
     const { userMessage, channelId, modelId } = input
-    console.log('[Agent 标题生成] 开始生成标题:', { channelId, modelId, userMessage: userMessage.slice(0, 50) })
+    console.log('[Agent 标题生成] 开始生成标题:', {
+      channelId,
+      modelId,
+      userMessage: userMessage.slice(0, 50),
+    })
 
     try {
       const channels = listChannels()
@@ -938,7 +1027,10 @@ export class AgentOrchestrator {
         return null
       }
 
-      const cleaned = title.trim().replace(/^["'""''「《]+|["'""''」》]+$/g, '').trim()
+      const cleaned = title
+        .trim()
+        .replace(/^["'""''「《]+|["'""''」》]+$/g, '')
+        .trim()
       const result = cleaned.slice(0, MAX_TITLE_LENGTH) || null
 
       console.log(`[Agent 标题生成] 生成标题成功: "${result}"`)
@@ -959,7 +1051,7 @@ export class AgentOrchestrator {
     userMessage: string,
     channelId: string,
     modelId: string,
-    callbacks: SessionCallbacks,
+    callbacks: SessionCallbacks
   ): Promise<void> {
     try {
       const meta = getAgentSessionMeta(sessionId)
@@ -990,7 +1082,7 @@ export class AgentOrchestrator {
     contextualMessage: string,
     agentCwd: string,
     accumulatedMessages: SDKMessage[],
-    queryStartedAt: number,
+    queryStartedAt: number
   ): string {
     return this.prepareResumeFallbackRecovery(
       sessionId,
@@ -1000,7 +1092,7 @@ export class AgentOrchestrator {
       accumulatedMessages,
       queryStartedAt,
       '检测到 session-not-found 错误，清除 sdkSessionId 并切换到上下文回填模式',
-      'Session 已失效，切换到上下文回填模式',
+      'Session 已失效，切换到上下文回填模式'
     )
   }
 
@@ -1019,14 +1111,18 @@ export class AgentOrchestrator {
     accumulatedMessages: SDKMessage[],
     queryStartedAt: number,
     logMessage: string,
-    retryReason: string,
+    retryReason: string
   ): string {
     console.log(`[Agent 编排] ${logMessage}`)
     // 先持久化当前已累积的消息，确保 JSONL 文件包含最新内容
     this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
     accumulatedMessages.length = 0
     // 清除失效的 SDK session，新 SDK 会话产生的 sdkSessionId 会通过 onSessionId 回调自动保存
-    try { updateAgentSessionMeta(sessionId, { sdkSessionId: undefined }) } catch { /* 忽略 */ }
+    try {
+      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+    } catch {
+      /* 忽略 */
+    }
     queryOptions.resumeSessionId = undefined
     queryOptions.resumeSessionAt = undefined
     queryOptions.prompt = buildRecoveryPrompt(sessionId, contextualMessage, { agentCwd })
@@ -1042,22 +1138,32 @@ export class AgentOrchestrator {
   private persistSDKMessages(
     sessionId: string,
     accumulatedMessages: SDKMessage[],
-    durationMs?: number,
+    durationMs?: number
   ): void {
     if (accumulatedMessages.length === 0) return
 
-    const toPersist = accumulatedMessages.filter(
-      (m) => m.type === 'assistant' || m.type === 'user' || m.type === 'result'
-        || (m.type === 'system' && ['compact_boundary', 'permission_denied'].includes((m as import('@tagent/shared').SDKSystemMessage).subtype ?? ''))
-    ).filter((m) => {
-      // 过滤 SDK 内部生成的 user 文本消息（如 Skill 展开 prompt），与实时流过滤逻辑一致
-      if (m.type === 'user') {
-        const content = (m as { message?: { content?: Array<{ type: string }> } }).message?.content
-        const hasToolResult = Array.isArray(content) && content.some((b) => b.type === 'tool_result')
-        if (!hasToolResult) return false
-      }
-      return true
-    })
+    const toPersist = accumulatedMessages
+      .filter(
+        (m) =>
+          m.type === 'assistant' ||
+          m.type === 'user' ||
+          m.type === 'result' ||
+          (m.type === 'system' &&
+            ['compact_boundary', 'permission_denied'].includes(
+              (m as import('@tagent/shared').SDKSystemMessage).subtype ?? ''
+            ))
+      )
+      .filter((m) => {
+        // 过滤 SDK 内部生成的 user 文本消息（如 Skill 展开 prompt），与实时流过滤逻辑一致
+        if (m.type === 'user') {
+          const content = (m as { message?: { content?: Array<{ type: string }> } }).message
+            ?.content
+          const hasToolResult =
+            Array.isArray(content) && content.some((b) => b.type === 'tool_result')
+          if (!hasToolResult) return false
+        }
+        return true
+      })
 
     if (toPersist.length === 0) return
 
@@ -1083,7 +1189,19 @@ export class AgentOrchestrator {
    * 通过 EventBus 分发 AgentEvent，通过 callbacks 发送控制信号。
    */
   async sendMessage(input: AgentSendInput, callbacks: SessionCallbacks): Promise<void> {
-    const { sessionId, userMessage, channelId, modelId, workspaceId, additionalDirectories, customMcpServers, permissionModeOverride, mentionedSkills, mentionedMcpServers, mentionedSessionIds } = input
+    const {
+      sessionId,
+      userMessage,
+      channelId,
+      modelId,
+      workspaceId,
+      additionalDirectories,
+      customMcpServers,
+      permissionModeOverride,
+      mentionedSkills,
+      mentionedMcpServers,
+      mentionedSessionIds,
+    } = input
     const stderrChunks: string[] = []
 
     // 0. 并发保护
@@ -1095,7 +1213,11 @@ export class AgentOrchestrator {
     }
 
     // 0.5 清除上一轮中断标记
-    try { updateAgentSessionMeta(sessionId, { stoppedByUser: false }) } catch { /* 会话可能已删除 */ }
+    try {
+      updateAgentSessionMeta(sessionId, { stoppedByUser: false })
+    } catch {
+      /* 会话可能已删除 */
+    }
 
     // 环境 / 配置类错误的统一上报：持久化为 TypedError 消息，由 SDKMessageRenderer 渲染
     const reportPreflightError = (typedError: TypedError) => {
@@ -1116,7 +1238,9 @@ export class AgentOrchestrator {
         _errorCanRetry: typedError.canRetry,
         _errorActions: typedError.actions,
       } as unknown as SDKMessage
-      try { appendSDKMessages(sessionId, [errorSDKMsg]) } catch (e) {
+      try {
+        appendSDKMessages(sessionId, [errorSDKMsg])
+      } catch (e) {
         console.error('[Agent 编排] 持久化 preflight error 失败:', e)
       }
       callbacks.onError(errorContent)
@@ -1140,7 +1264,12 @@ export class AgentOrchestrator {
           ],
           actions: [
             { key: 'e', label: '打开环境检测', action: 'open_environment_check' },
-            { key: 'g', label: '去官方下载 Git', action: 'open_external', payload: 'https://git-scm.com/download/win' },
+            {
+              key: 'g',
+              label: '去官方下载 Git',
+              action: 'open_external',
+              payload: 'https://git-scm.com/download/win',
+            },
           ],
           canRetry: false,
         })
@@ -1155,9 +1284,7 @@ export class AgentOrchestrator {
         code: 'channel_not_found',
         title: '渠道不存在',
         message: '当前会话引用的渠道已被删除或不可用，请在设置中重新选择。',
-        actions: [
-          { key: 's', label: '打开渠道设置', action: 'open_channel_settings' },
-        ],
+        actions: [{ key: 's', label: '打开渠道设置', action: 'open_channel_settings' }],
         canRetry: false,
       })
       return
@@ -1171,9 +1298,7 @@ export class AgentOrchestrator {
         code: 'api_key_decrypt_failed',
         title: 'API Key 解密失败',
         message: '无法解密此渠道的 API Key，可能是系统密钥环异常。请到设置中重新填写 API Key。',
-        actions: [
-          { key: 's', label: '打开渠道设置', action: 'open_channel_settings' },
-        ],
+        actions: [{ key: 's', label: '打开渠道设置', action: 'open_channel_settings' }],
         canRetry: false,
       })
       return
@@ -1197,7 +1322,7 @@ export class AgentOrchestrator {
     }
     const completeRun = (
       messages?: AgentMessage[],
-      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string },
+      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
     ): void => {
       releaseActiveRun()
       callbacks.onComplete(messages, opts)
@@ -1205,7 +1330,7 @@ export class AgentOrchestrator {
     const failRun = (
       error: string,
       messages?: AgentMessage[],
-      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string },
+      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
     ): void => {
       releaseActiveRun()
       callbacks.onError(error)
@@ -1238,7 +1363,10 @@ export class AgentOrchestrator {
       process.env.ANTHROPIC_BASE_URL = normalizeAnthropicBaseUrlForSdk(channel.baseUrl)
     }
 
-    const modelRouting = resolveAgentModelRouting({ modelId: modelId || DEFAULT_MODEL_ID, provider: channel.provider })
+    const modelRouting = resolveAgentModelRouting({
+      modelId: modelId || DEFAULT_MODEL_ID,
+      provider: channel.provider,
+    })
     const sdkEnv = await this.buildSdkEnv(apiKey, channel.baseUrl, channel.provider)
     applyAgentModelRoutingToEnv(sdkEnv, modelRouting)
 
@@ -1255,7 +1383,9 @@ export class AgentOrchestrator {
       console.log(`[Agent 编排] 检测到回退 resume: resumeSessionAt=${rewindResumeAt}`)
     }
 
-    console.log(`[Agent 编排] Resume 状态: sdkSessionId=${existingSdkSessionId || '无'}, tagent sessionId=${sessionId}`)
+    console.log(
+      `[Agent 编排] Resume 状态: sdkSessionId=${existingSdkSessionId || '无'}, tagent sessionId=${sessionId}`
+    )
 
     // 5. 持久化用户消息（SDKMessage 格式）
     const userSDKMsg: SDKMessage = {
@@ -1276,14 +1406,23 @@ export class AgentOrchestrator {
       // 获取最近 5 turn 的用户消息
       const recentMsgs = getAgentSessionSDKMessages(sessionId)
         .slice(-10) // 最近 10 条（约 5 turn）
-        .filter((m): m is SDKMessage & { type: 'user' | 'assistant' } => m.type === 'user' || m.type === 'assistant')
+        .filter(
+          (m): m is SDKMessage & { type: 'user' | 'assistant' } =>
+            m.type === 'user' || m.type === 'assistant'
+        )
         .map((m) => {
-          const msg = m.message as { content?: string | Array<{ type: string; text?: string }> } | undefined
-          const content = typeof msg?.content === 'string'
-            ? msg.content
-            : Array.isArray(msg?.content)
-              ? (msg.content as Array<{ type: string; text?: string }>).filter(b => b.type === 'text').map(b => b.text || '').join('')
-              : ''
+          const msg = m.message as
+            | { content?: string | Array<{ type: string; text?: string }> }
+            | undefined
+          const content =
+            typeof msg?.content === 'string'
+              ? msg.content
+              : Array.isArray(msg?.content)
+                ? (msg.content as Array<{ type: string; text?: string }>)
+                    .filter((b) => b.type === 'text')
+                    .map((b) => b.text || '')
+                    .join('')
+                : ''
           return {
             role: m.type as 'user' | 'assistant',
             content,
@@ -1328,10 +1467,7 @@ export class AgentOrchestrator {
           title: 'Claude 核心未就绪',
           message:
             '应用安装包里缺少 Claude Agent SDK 的核心可执行文件（claude.exe）。这通常是打包时未包含当前平台的 SDK 组件导致。请重新下载最新安装包，或提交 issue 告知我们。',
-          details: [
-            `缺失文件: ${cliPath}`,
-            `需要的子包: ${subpkg}`,
-          ],
+          details: [`缺失文件: ${cliPath}`, `需要的子包: ${subpkg}`],
           actions: [
             {
               key: 'd',
@@ -1352,7 +1488,7 @@ export class AgentOrchestrator {
       }
 
       console.log(
-        `[Agent 编排] 启动 SDK — binary: ${cliPath}, 模型: ${modelId || DEFAULT_MODEL_ID}, resume: ${existingSdkSessionId ?? '无'}`,
+        `[Agent 编排] 启动 SDK — binary: ${cliPath}, 模型: ${modelId || DEFAULT_MODEL_ID}, resume: ${existingSdkSessionId ?? '无'}`
       )
 
       // 确定 Agent 工作目录
@@ -1412,7 +1548,9 @@ export class AgentOrchestrator {
         let sdkProjectSettings: Record<string, unknown> = {}
         try {
           sdkProjectSettings = JSON.parse(readFileSync(settingsPath, 'utf-8'))
-        } catch { /* 文件不存在或解析失败 */ }
+        } catch {
+          /* 文件不存在或解析失败 */
+        }
         let needsWrite = false
         if (sdkProjectSettings.plansDirectory !== '.context') {
           sdkProjectSettings.plansDirectory = '.context'
@@ -1434,7 +1572,9 @@ export class AgentOrchestrator {
       // 导致 listSessions 始终返回 0 个会话，误杀有效的 resume。
       // SDK 本身会优雅处理无效的 resume ID（回退为新会话），无需预验证。
       if (existingSdkSessionId) {
-        console.log(`[Agent 编排] 将直接使用已保存的 sdkSessionId 进行 resume: ${existingSdkSessionId}`)
+        console.log(
+          `[Agent 编排] 将直接使用已保存的 sdkSessionId 进行 resume: ${existingSdkSessionId}`
+        )
       }
 
       // 10. 构建 MCP 服务器配置 + 记忆工具 + 生图工具 + 自定义工具
@@ -1451,7 +1591,9 @@ export class AgentOrchestrator {
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
         Object.assign(mcpServers, customMcpServers)
-        console.log(`[Agent 编排] 已合并 ${Object.keys(customMcpServers).length} 个自定义 MCP 服务器`)
+        console.log(
+          `[Agent 编排] 已合并 ${Object.keys(customMcpServers).length} 个自定义 MCP 服务器`
+        )
       }
 
       // 11. 构建动态上下文和最终 prompt
@@ -1463,24 +1605,30 @@ export class AgentOrchestrator {
 
       // 11.5 注入 mention 引用指令（Skill/MCP/会话）— 仅影响 prompt，不影响持久化
       let enrichedMessage = userMessage
-      const referencedSessionsBlock = buildReferencedSessionsPrompt(sessionId, mentionedSessionIds, workspaceId)
+      const referencedSessionsBlock = buildReferencedSessionsPrompt(
+        sessionId,
+        mentionedSessionIds,
+        workspaceId
+      )
       if (referencedSessionsBlock) {
         enrichedMessage = `${referencedSessionsBlock}\n\n${enrichedMessage}`
-        console.log(`[Agent 编排] 注入 referenced_sessions: ${mentionedSessionIds?.length ?? 0} sessions`)
+        console.log(
+          `[Agent 编排] 注入 referenced_sessions: ${mentionedSessionIds?.length ?? 0} sessions`
+        )
       }
       if (mentionedSkills?.length || mentionedMcpServers?.length) {
         const toolLines: string[] = ['用户在消息中明确引用了以下工具，请在本次回复中主动调用：']
         for (const slug of mentionedSkills ?? []) {
-          const qualifiedName = workspaceSlug
-            ? `tagent-workspace-${workspaceSlug}:${slug}`
-            : slug
+          const qualifiedName = workspaceSlug ? `tagent-workspace-${workspaceSlug}:${slug}` : slug
           toolLines.push(`- Skill: ${qualifiedName}（请立即调用此 Skill）`)
         }
         for (const name of mentionedMcpServers ?? []) {
           toolLines.push(`- MCP 服务器: ${name}（请使用此 MCP 服务器的工具来完成任务）`)
         }
         enrichedMessage = `<mentioned_tools>\n${toolLines.join('\n')}\n</mentioned_tools>\n\n${userMessage}`
-        console.log(`[Agent 编排] 注入 mentioned_tools: ${mentionedSkills?.length ?? 0} skills, ${mentionedMcpServers?.length ?? 0} MCP`)
+        console.log(
+          `[Agent 编排] 注入 mentioned_tools: ${mentionedSkills?.length ?? 0} skills, ${mentionedMcpServers?.length ?? 0} MCP`
+        )
       }
 
       const contextualMessage = `${dynamicCtx}\n\n${enrichedMessage}`
@@ -1490,26 +1638,38 @@ export class AgentOrchestrator {
         ? '/compact'
         : existingSdkSessionId
           ? contextualMessage
-          : buildContextPrompt(sessionId, contextualMessage, { agentCwd }, getSessionContextWindow(sessionId))
+          : buildContextPrompt(
+              sessionId,
+              contextualMessage,
+              { agentCwd },
+              getSessionContextWindow(sessionId)
+            )
 
       if (existingSdkSessionId) {
         console.log(`[Agent 编排] 使用 resume 模式，SDK session ID: ${existingSdkSessionId}`)
       } else if (finalPrompt !== contextualMessage) {
         const cw = getSessionContextWindow(sessionId)
         const maxN = cw ? computeMaxContextMessages(cw) : MAX_CONTEXT_MESSAGES_FALLBACK
-        console.log(`[Agent 编排] 无 resume，已回填历史上下文（最近 ${maxN} 条消息, 预算来源: ${cw ? `${cw} window` : 'fallback 20'}）`)
+        console.log(
+          `[Agent 编排] 无 resume，已回填历史上下文（最近 ${maxN} 条消息, 预算来源: ${cw ? `${cw} window` : 'fallback 20'}）`
+        )
       }
 
       // 12. 读取应用设置并确定权限模式
       // 权限模式只属于当前 session；新会话默认完全自动模式。
       const appSettings = getSettings()
-      const initialPermissionMode: TAgentPermissionMode = permissionModeOverride
-        ?? TAGENT_DEFAULT_PERMISSION_MODE
+      const initialPermissionMode: TAgentPermissionMode =
+        permissionModeOverride ?? TAGENT_DEFAULT_PERMISSION_MODE
       // 注册到 Map，支持运行中动态切换
       this.sessionPermissionModes.set(sessionId, initialPermissionMode)
-      console.log(`[Agent 编排] 权限模式: ${initialPermissionMode}${permissionModeOverride ? '（外部覆盖）' : ''}`)
+      console.log(
+        `[Agent 编排] 权限模式: ${initialPermissionMode}${permissionModeOverride ? '（外部覆盖）' : ''}`
+      )
 
-      const emitPlanModeChanged = (active: boolean, source: 'initial' | 'tool' | 'permission'): void => {
+      const emitPlanModeChanged = (
+        active: boolean,
+        source: 'initial' | 'tool' | 'permission'
+      ): void => {
         this.eventBus.emit(sessionId, {
           kind: 'tagent_event',
           event: { type: 'plan_mode_changed', sessionId, active, source },
@@ -1518,7 +1678,10 @@ export class AgentOrchestrator {
 
       // 当初始模式为 plan 时，通知渲染进程展示计划模式 UI（如「Agent 正在规划」横幅）
       if (initialPermissionMode === 'plan') {
-        this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'enter_plan_mode', sessionId } })
+        this.eventBus.emit(sessionId, {
+          kind: 'tagent_event',
+          event: { type: 'enter_plan_mode', sessionId },
+        })
         emitPlanModeChanged(true, 'initial')
       }
 
@@ -1527,14 +1690,20 @@ export class AgentOrchestrator {
         this.sessionPermissionModes.get(sessionId) ?? initialPermissionMode
 
       // ExitPlanMode 拦截器：plan 模式下走 UI 审批流程
-      const handleExitPlanMode = (toolInput: Record<string, unknown>, signal: AbortSignal): Promise<ExitPlanPermissionResult> => {
+      const handleExitPlanMode = (
+        toolInput: Record<string, unknown>,
+        signal: AbortSignal
+      ): Promise<ExitPlanPermissionResult> => {
         return exitPlanService.handleExitPlanMode(
           sessionId,
           toolInput,
           signal,
           (request: ExitPlanModeRequest) => {
-            this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'exit_plan_mode_request', request } })
-          },
+            this.eventBus.emit(sessionId, {
+              kind: 'tagent_event',
+              event: { type: 'exit_plan_mode_request', request },
+            })
+          }
         )
       }
 
@@ -1542,12 +1711,19 @@ export class AgentOrchestrator {
       const autoCanUseTool = permissionService.createCanUseTool(
         sessionId,
         (request: PermissionRequest) => {
-          this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'permission_request', request } })
+          this.eventBus.emit(sessionId, {
+            kind: 'tagent_event',
+            event: { type: 'permission_request', request },
+          })
         },
-        (sid, toolInput, signal, sendAskUser) => askUserService.handleAskUserQuestion(sid, toolInput, signal, sendAskUser),
+        (sid, toolInput, signal, sendAskUser) =>
+          askUserService.handleAskUserQuestion(sid, toolInput, signal, sendAskUser),
         (request: AskUserRequest) => {
-          this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'ask_user_request', request } })
-        },
+          this.eventBus.emit(sessionId, {
+            kind: 'tagent_event',
+            event: { type: 'ask_user_request', request },
+          })
+        }
       )
 
       /**
@@ -1559,16 +1735,29 @@ export class AgentOrchestrator {
         if (/(?<![0-9&])>/.test(command)) return false
         // 破坏性文件操作
         if (/\b(rm|rmdir)\s/.test(command)) return false
-        if (/\bsed\s+[^|&;]*-i/.test(command)) return false  // sed -i 原地编辑
+        if (/\bsed\s+[^|&;]*-i/.test(command)) return false // sed -i 原地编辑
         if (/\b(chmod|chown|chattr|truncate)\s/.test(command)) return false
         if (/\b(mv|cp)\s/.test(command)) return false
         if (/\b(mkdir|touch|mktemp)\s/.test(command)) return false
         // 包管理器写操作
-        if (/\b(npm|pnpm|yarn|bun)\s+(install|i\b|add|remove|uninstall|update|upgrade|link|unlink)\b/.test(command)) return false
+        if (
+          /\b(npm|pnpm|yarn|bun)\s+(install|i\b|add|remove|uninstall|update|upgrade|link|unlink)\b/.test(
+            command
+          )
+        )
+          return false
         if (/\bpip[23]?\s+(install|uninstall|upgrade)\b/.test(command)) return false
-        if (/\b(apt|apt-get|brew|yum|dnf)\s+(install|remove|purge|uninstall|upgrade)\b/.test(command)) return false
+        if (
+          /\b(apt|apt-get|brew|yum|dnf)\s+(install|remove|purge|uninstall|upgrade)\b/.test(command)
+        )
+          return false
         // Git 写操作
-        if (/\bgit\s+(commit|push|checkout\s+-[bB]|branch\s+-[mMdD]|merge\b|rebase\b|reset\b|stash\s+(drop|pop)\b|add\b|apply\b|cherry-pick\b)/.test(command)) return false
+        if (
+          /\bgit\s+(commit|push|checkout\s+-[bB]|branch\s+-[mMdD]|merge\b|rebase\b|reset\b|stash\s+(drop|pop)\b|add\b|apply\b|cherry-pick\b)/.test(
+            command
+          )
+        )
+          return false
         // 进程控制
         if (/\b(kill|killall|pkill)\s/.test(command)) return false
         // 脚本执行（具有潜在副作用，如 node script.js / python main.py）
@@ -1578,14 +1767,31 @@ export class AgentOrchestrator {
 
       // Plan 模式下允许的只读工具（不包含 Write/Edit/Bash 等写操作）
       const PLAN_MODE_ALLOWED_TOOLS = new Set([
-        'Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch',
-        'Agent', 'TodoRead', 'TodoWrite', 'TaskOutput',
-        'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
-        'ListMcpResourcesTool', 'ReadMcpResourceTool',
+        'Read',
+        'Glob',
+        'Grep',
+        'WebSearch',
+        'WebFetch',
+        'Agent',
+        'TodoRead',
+        'TodoWrite',
+        'TaskOutput',
+        'TaskCreate',
+        'TaskUpdate',
+        'TaskList',
+        'TaskGet',
+        'ListMcpResourcesTool',
+        'ReadMcpResourceTool',
       ])
       const DEFERRED_OR_PROACTIVE_TOOLS = new Set([
-        'REPL', 'Workflow', 'ScheduleWakeup', 'Monitor', 'PushNotification',
-        'CronCreate', 'CronDelete', 'RemoteTrigger',
+        'REPL',
+        'Workflow',
+        'ScheduleWakeup',
+        'Monitor',
+        'PushNotification',
+        'CronCreate',
+        'CronDelete',
+        'RemoteTrigger',
       ])
 
       /** Plan 模式是否已被 Agent 进入（初始 plan 模式时天然为 true，其他模式需 EnterPlanMode 触发） */
@@ -1602,7 +1808,11 @@ export class AgentOrchestrator {
       }
 
       // 动态 canUseTool：每次调用读取当前权限模式，支持运行中切换
-      const canUseTool = async (toolName: string, input: Record<string, unknown>, options: CanUseToolOptions): Promise<PermissionResult> => {
+      const canUseTool = async (
+        toolName: string,
+        input: Record<string, unknown>,
+        options: CanUseToolOptions
+      ): Promise<PermissionResult> => {
         const currentMode = getPermissionMode()
 
         // ── 参数校验守卫（所有模式、所有工具，优先于权限检查） ──
@@ -1641,7 +1851,7 @@ export class AgentOrchestrator {
           const estimatedTokens = estimateTokenCount(input.content)
           if (estimatedTokens > WRITE_CONTENT_TOKEN_THRESHOLD) {
             console.warn(
-              `[Agent 工具验证] Write 内容过大: tokens≈${estimatedTokens}, chars=${input.content.length}, file=${String(input.file_path)}`,
+              `[Agent 工具验证] Write 内容过大: tokens≈${estimatedTokens}, chars=${input.content.length}, file=${String(input.file_path)}`
             )
             return {
               behavior: 'deny' as const,
@@ -1663,7 +1873,9 @@ export class AgentOrchestrator {
 
         // ExitPlanMode：无论当前权限模式是什么，都必须让用户确认计划。
         if (toolName === 'ExitPlanMode') {
-          console.log(`[canUseTool] ExitPlanMode: signal.aborted=${options.signal.aborted}, planModeEntered=${planModeEntered}, mode=${currentMode}`)
+          console.log(
+            `[canUseTool] ExitPlanMode: signal.aborted=${options.signal.aborted}, planModeEntered=${planModeEntered}, mode=${currentMode}`
+          )
           const result = await handleExitPlanMode(input, options.signal)
           if (result.behavior === 'allow' && 'targetMode' in result && result.targetMode) {
             // 更新 Map，后续 canUseTool 调用使用新模式
@@ -1672,9 +1884,11 @@ export class AgentOrchestrator {
             emitPlanModeChanged(false, 'permission')
             // 同步通知 SDK 侧切换权限模式
             if (this.adapter.setPermissionMode) {
-              this.adapter.setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(result.targetMode)).catch((err: unknown) => {
-                console.warn(`[Agent 编排] SDK 权限模式切换失败:`, err)
-              })
+              this.adapter
+                .setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(result.targetMode))
+                .catch((err: unknown) => {
+                  console.warn(`[Agent 编排] SDK 权限模式切换失败:`, err)
+                })
             }
           }
           return result
@@ -1684,17 +1898,25 @@ export class AgentOrchestrator {
         if (toolName === 'EnterPlanMode') {
           planModeEntered = true
           emitPlanModeChanged(true, 'tool')
-          this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'enter_plan_mode', sessionId } })
+          this.eventBus.emit(sessionId, {
+            kind: 'tagent_event',
+            event: { type: 'enter_plan_mode', sessionId },
+          })
           return { behavior: 'allow' as const, updatedInput: input }
         }
 
         // AskUserQuestion：始终走交互式问答流程，不受权限模式影响
         if (toolName === 'AskUserQuestion') {
           return askUserService.handleAskUserQuestion(
-            sessionId, input, options.signal,
+            sessionId,
+            input,
+            options.signal,
             (request: AskUserRequest) => {
-              this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'ask_user_request', request } })
-            },
+              this.eventBus.emit(sessionId, {
+                kind: 'tagent_event',
+                event: { type: 'ask_user_request', request },
+              })
+            }
           )
         }
 
@@ -1722,17 +1944,27 @@ export class AgentOrchestrator {
               if (isBashCommandReadOnly(command)) {
                 return { behavior: 'allow' as const, updatedInput: input }
               }
-              return { behavior: 'deny' as const, message: '计划模式下不允许执行写操作，请在计划审批通过后再执行' }
+              return {
+                behavior: 'deny' as const,
+                message: '计划模式下不允许执行写操作，请在计划审批通过后再执行',
+              }
             }
             // MCP 工具（以 mcp__ 开头）允许调用（调研用）
             if (toolName.startsWith('mcp__')) {
               return { behavior: 'allow' as const, updatedInput: input }
             }
             if (DEFERRED_OR_PROACTIVE_TOOLS.has(toolName)) {
-              return { behavior: 'deny' as const, message: '计划模式下不允许启动后台、定时、通知或脚本执行能力，请在计划审批通过后再执行' }
+              return {
+                behavior: 'deny' as const,
+                message:
+                  '计划模式下不允许启动后台、定时、通知或脚本执行能力，请在计划审批通过后再执行',
+              }
             }
             // 其余工具拒绝
-            return { behavior: 'deny' as const, message: '计划模式下不允许执行写操作，请在计划审批通过后再执行' }
+            return {
+              behavior: 'deny' as const,
+              message: '计划模式下不允许执行写操作，请在计划审批通过后再执行',
+            }
           }
 
           case 'auto':
@@ -1746,9 +1978,10 @@ export class AgentOrchestrator {
       // 13. 构建 Adapter 查询选项
       // 检测用户选用的模型是否为 Claude 系列，决定 SubAgent 是否使用独立模型分层
       const claudeAvailable = (modelId || DEFAULT_MODEL_ID).toLowerCase().includes('claude')
-      const maxTurns = appSettings.agentMaxTurns && appSettings.agentMaxTurns > 0
-        ? appSettings.agentMaxTurns
-        : undefined
+      const maxTurns =
+        appSettings.agentMaxTurns && appSettings.agentMaxTurns > 0
+          ? appSettings.agentMaxTurns
+          : undefined
       const queryOptions: ClaudeAgentQueryOptions = {
         sessionId,
         prompt: finalPrompt,
@@ -1765,7 +1998,9 @@ export class AgentOrchestrator {
         // Worker 子代理在 bypassPermissions 模式下也会被自动放行。
         allowDangerouslySkipPermissions: !canUseTool,
         canUseTool,
-        ...(sdkPermissionModeForTAgentMode(initialPermissionMode) === 'auto' && { allowedTools: [...SAFE_TOOLS] }),
+        ...(sdkPermissionModeForTAgentMode(initialPermissionMode) === 'auto' && {
+          allowedTools: [...SAFE_TOOLS],
+        }),
         // claude_code preset 提供基础环境信息（platform/shell/OS/git/model/知识截止日期等）
         // buildSystemPrompt 追加 TAgent 特有指令（角色定义、SubAgent 策略、工作区信息等）
         systemPrompt: {
@@ -1776,7 +2011,10 @@ export class AgentOrchestrator {
             workspaceSlug,
             sessionId,
             permissionMode: initialPermissionMode,
-            memoryEnabled: (() => { const mc = getMemoryConfig(); return mc.enabled && !!mc.apiKey })(),
+            memoryEnabled: (() => {
+              const mc = getMemoryConfig()
+              return mc.enabled && !!mc.apiKey
+            })(),
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
             subagentEagerness: appSettings.subagentEagerness,
@@ -1787,7 +2025,9 @@ export class AgentOrchestrator {
         // 回退后 resume：从指定消息处继续（SDK 在同一 JSONL 内创建分支）
         ...(rewindResumeAt && { resumeSessionAt: rewindResumeAt }),
         ...(Object.keys(mcpServers).length > 0 && { mcpServers }),
-        ...(workspaceSlug && { plugins: [{ type: 'local' as const, path: getAgentWorkspacePath(workspaceSlug) }] }),
+        ...(workspaceSlug && {
+          plugins: [{ type: 'local' as const, path: getAgentWorkspacePath(workspaceSlug) }],
+        }),
         // 合并附加目录：用户当次输入 + 会话级 + 工作区级（详见 collectAttachedDirectories）
         ...(() => {
           const allDirs = collectAttachedDirectories({
@@ -1802,9 +2042,10 @@ export class AgentOrchestrator {
         // SDK 0.2.52+ 新增选项（从 settings 读取）
         ...(appSettings.agentThinking && { thinking: appSettings.agentThinking }),
         effort: appSettings.agentEffort ?? 'high',
-        ...(appSettings.agentMaxBudgetUsd != null && appSettings.agentMaxBudgetUsd > 0 && {
-          maxBudgetUsd: appSettings.agentMaxBudgetUsd,
-        }),
+        ...(appSettings.agentMaxBudgetUsd != null &&
+          appSettings.agentMaxBudgetUsd > 0 && {
+            maxBudgetUsd: appSettings.agentMaxBudgetUsd,
+          }),
         // 1M context window: 支持的模型自动启用 beta（Claude: Sonnet 4+ / Opus 4.6+ / 4.7 / 4.8、DeepSeek V4 系列）
         // 未启用时 SDK 默认 200K 并在约 150K 触发压缩；启用后上限提升至 1M
         ...(supports1MContext(modelId || DEFAULT_MODEL_ID) && {
@@ -1835,19 +2076,27 @@ export class AgentOrchestrator {
           // SDK 初始化完成后立即触发标题生成，使多会话并发时用户能快速区分
           if (!titleGenerationStarted) {
             titleGenerationStarted = true
-            this.autoGenerateTitle(sessionId, userMessage, channelId, resolvedModel, callbacks)
-              .catch((err) => console.error('[Agent 编排] 标题生成未捕获异常:', err))
+            this.autoGenerateTitle(
+              sessionId,
+              userMessage,
+              channelId,
+              resolvedModel,
+              callbacks
+            ).catch((err) => console.error('[Agent 编排] 标题生成未捕获异常:', err))
           }
         },
         onModelResolved: (model: string) => {
           resolvedModel = model
           console.log(`[Agent 编排] SDK 确认模型: ${resolvedModel}`)
           // 通知渲染进程更新流式状态中的模型信息
-          this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'model_resolved', model } })
+          this.eventBus.emit(sessionId, {
+            kind: 'tagent_event',
+            event: { type: 'model_resolved', model },
+          })
         },
         onContextWindow: (cw: number) => {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
-          setSessionContextWindow(sessionId, cw)  // P0-1
+          setSessionContextWindow(sessionId, cw) // P0-1
         },
       }
 
@@ -1883,7 +2132,9 @@ export class AgentOrchestrator {
             const retryAttempt = Math.max(1, attempt - 1 - invisibleRecoveryAttempts)
             const delayMs = getRetryDelayMs(retryAttempt, retryDelayElapsedMs)
             if (delayMs <= 0) {
-              console.log(`[Agent 编排] 自动重试等待预算已耗尽 (${MAX_AUTO_RETRY_WAIT_MS}ms)，停止重试`)
+              console.log(
+                `[Agent 编排] 自动重试等待预算已耗尽 (${MAX_AUTO_RETRY_WAIT_MS}ms)，停止重试`
+              )
               break
             }
             retryDelayElapsedMs += delayMs
@@ -1899,7 +2150,14 @@ export class AgentOrchestrator {
 
             this.eventBus.emit(sessionId, {
               kind: 'tagent_event',
-              event: { type: 'retry', status: 'starting', attempt: retryAttempt, maxAttempts: MAX_AUTO_RETRIES, delaySeconds: delaySec, reason: lastRetryableError ?? '未知错误' },
+              event: {
+                type: 'retry',
+                status: 'starting',
+                attempt: retryAttempt,
+                maxAttempts: MAX_AUTO_RETRIES,
+                delaySeconds: delaySec,
+                reason: lastRetryableError ?? '未知错误',
+              },
             })
             this.eventBus.emit(sessionId, {
               kind: 'tagent_event',
@@ -1913,8 +2171,15 @@ export class AgentOrchestrator {
             if (!this.activeSessions.has(sessionId)) {
               const wasStoppedByUser = this.consumeStoppedByUser(sessionId)
               this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
-              try { updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser }) } catch { /* 会话可能已删除 */ }
-              completeRun(getAgentSessionMessages(sessionId), { stoppedByUser: wasStoppedByUser, startedAt: streamStartedAt })
+              try {
+                updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser })
+              } catch {
+                /* 会话可能已删除 */
+              }
+              completeRun(getAgentSessionMessages(sessionId), {
+                stoppedByUser: wasStoppedByUser,
+                startedAt: streamStartedAt,
+              })
               return
             }
           }
@@ -1941,18 +2206,22 @@ export class AgentOrchestrator {
               pendingNext = queryIterator.next()
             }
 
-            const racePromises: Array<Promise<{ kind: string; result: IteratorResult<SDKMessage> | null }>> = [
-              pendingNext.then((r) => ({ kind: 'event' as const, result: r })),
-            ]
+            const racePromises: Array<
+              Promise<{ kind: string; result: IteratorResult<SDKMessage> | null }>
+            > = [pendingNext.then((r) => ({ kind: 'event' as const, result: r }))]
             if (drainTimeoutPromise) {
-              racePromises.push(drainTimeoutPromise.then(() => ({ kind: 'drain_timeout' as const, result: null })))
+              racePromises.push(
+                drainTimeoutPromise.then(() => ({ kind: 'drain_timeout' as const, result: null }))
+              )
             }
 
             const raceResult = await Promise.race(racePromises)
 
             if (raceResult.kind === 'drain_timeout') {
               // 安全网：channel.close() 后 SDK 仍未在超时内关闭 iterator，强制退出
-              console.warn(`[Agent 编排] drain timeout: SDK iterator 在 result 后 ${RESULT_DRAIN_TIMEOUT_MS}ms 内未关闭，强制退出`)
+              console.warn(
+                `[Agent 编排] drain timeout: SDK iterator 在 result 后 ${RESULT_DRAIN_TIMEOUT_MS}ms 内未关闭，强制退出`
+              )
               pendingNext?.catch(() => {})
               pendingNext = null
               queryIterator.return?.(undefined as never).catch(() => {})
@@ -1971,7 +2240,11 @@ export class AgentOrchestrator {
               const assistantMsg = msg as SDKAssistantMessage
               if (!assistantMsg.isReplay) {
                 for (const block of assistantMsg.message.content) {
-                  if (block.type === 'tool_use' && 'name' in block && typeof block.name === 'string') {
+                  if (
+                    block.type === 'tool_use' &&
+                    'name' in block &&
+                    typeof block.name === 'string'
+                  ) {
                     syncPlanModeFromToolUse(block.name)
                   }
                 }
@@ -1982,18 +2255,35 @@ export class AgentOrchestrator {
             if (msg.type === 'assistant') {
               const assistantMsg = msg as SDKAssistantMessage
               if (assistantMsg.error) {
-                const { detailedMessage, originalError } = extractErrorDetails(assistantMsg as unknown as Parameters<typeof extractErrorDetails>[0])
+                const { detailedMessage, originalError } = extractErrorDetails(
+                  assistantMsg as unknown as Parameters<typeof extractErrorDetails>[0]
+                )
                 let errorCode = assistantMsg.error.errorType || 'unknown_error'
                 if (isPromptTooLongError(detailedMessage, originalError)) {
                   errorCode = 'prompt_too_long'
                 }
-                const typedError = mapSDKErrorToTypedError(errorCode, friendlyErrorMessage(detailedMessage), originalError)
+                const typedError = mapSDKErrorToTypedError(
+                  errorCode,
+                  friendlyErrorMessage(detailedMessage),
+                  originalError
+                )
 
                 // Session 不存在错误：清除 sdkSessionId，切换到上下文回填模式重试
-                if (isSessionNotFoundError(detailedMessage, originalError) && existingSdkSessionId && canAutoRetry(attempt)) {
+                if (
+                  isSessionNotFoundError(detailedMessage, originalError) &&
+                  existingSdkSessionId &&
+                  canAutoRetry(attempt)
+                ) {
                   existingSdkSessionId = undefined
                   capturedSdkSessionId = undefined
-                  lastRetryableError = this.prepareSessionNotFoundRecovery(sessionId, queryOptions, contextualMessage, agentCwd, accumulatedMessages, queryStartedAt)
+                  lastRetryableError = this.prepareSessionNotFoundRecovery(
+                    sessionId,
+                    queryOptions,
+                    contextualMessage,
+                    agentCwd,
+                    accumulatedMessages,
+                    queryStartedAt
+                  )
                   shouldRetryFromError = true
                   break
                 }
@@ -2017,7 +2307,7 @@ export class AgentOrchestrator {
                     accumulatedMessages,
                     queryStartedAt,
                     '检测到 thinking signature 不兼容，清除 sdkSessionId 并切换到上下文回填模式',
-                    '思考签名不兼容，切换到上下文回填模式',
+                    '思考签名不兼容，切换到上下文回填模式'
                   )
                   stderrChunks.length = 0
                   shouldRetryFromError = true
@@ -2029,8 +2319,14 @@ export class AgentOrchestrator {
                   lastRetryableError = typedError.title
                     ? `${typedError.title}: ${typedError.message}`
                     : typedError.message
-                  console.log(`[Agent 编排] 可重试错误 (assistant error): ${typedError.code} - ${lastRetryableError}`)
-                  this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
+                  console.log(
+                    `[Agent 编排] 可重试错误 (assistant error): ${typedError.code} - ${lastRetryableError}`
+                  )
+                  this.persistSDKMessages(
+                    sessionId,
+                    accumulatedMessages,
+                    Date.now() - queryStartedAt
+                  )
                   accumulatedMessages.length = 0
                   // 与 catch 路径（isAutoRetryableCatchError）和思考签名回填路径保持一致：
                   // 重试前清空已累积的 stderr，避免 25 次重试上限内字符串无限增长
@@ -2043,8 +2339,8 @@ export class AgentOrchestrator {
                 this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
 
                 const errorContent = typedError.title
-                    ? `${typedError.title}: ${typedError.message}`
-                    : typedError.message
+                  ? `${typedError.title}: ${typedError.message}`
+                  : typedError.message
                 const errorSDKMsg: SDKMessage = {
                   type: 'assistant',
                   message: {
@@ -2060,19 +2356,35 @@ export class AgentOrchestrator {
                   _errorActions: typedError.actions,
                 } as unknown as SDKMessage
                 appendSDKMessages(sessionId, [errorSDKMsg])
-                console.log(`[Agent 编排] 已保存 TypedError 消息: ${typedError.code} - ${typedError.title}`)
+                console.log(
+                  `[Agent 编排] 已保存 TypedError 消息: ${typedError.code} - ${typedError.title}`
+                )
 
                 // 如果之前有重试记录，发送 retry_failed
                 if (retryAttemptsScheduled > 0 && lastRetryableError) {
                   this.eventBus.emit(sessionId, {
                     kind: 'tagent_event',
-                    event: { type: 'retry', status: 'failed', attemptData: { attempt: retryAttemptsScheduled, timestamp: Date.now(), reason: lastRetryableError, errorMessage: typedError.message, delaySeconds: 0 } },
+                    event: {
+                      type: 'retry',
+                      status: 'failed',
+                      attemptData: {
+                        attempt: retryAttemptsScheduled,
+                        timestamp: Date.now(),
+                        reason: lastRetryableError,
+                        errorMessage: typedError.message,
+                        delaySeconds: 0,
+                      },
+                    },
                   })
                 }
 
                 // 透传归一化后的错误消息到前端，避免 SDK 原始 API Error 直接暴露给用户。
                 this.eventBus.emit(sessionId, { kind: 'sdk_message', message: errorSDKMsg })
-                try { updateAgentSessionMeta(sessionId, {}) } catch { /* 忽略 */ }
+                try {
+                  updateAgentSessionMeta(sessionId, {})
+                } catch {
+                  /* 忽略 */
+                }
                 completeRun(getAgentSessionMessages(sessionId), { startedAt: streamStartedAt })
                 return
               }
@@ -2087,15 +2399,17 @@ export class AgentOrchestrator {
               if (!msgRecord.isReplay) {
                 if (msg.type === 'user') {
                   // 仅累积包含 tool_result 的 user 消息（跳过 SDK 重新发出的初始用户消息）
-                  const content = (msg as { message?: { content?: Array<{ type: string }> } }).message?.content
-                  const hasToolResult = Array.isArray(content) && content.some((b) => b.type === 'tool_result')
+                  const content = (msg as { message?: { content?: Array<{ type: string }> } })
+                    .message?.content
+                  const hasToolResult =
+                    Array.isArray(content) && content.some((b) => b.type === 'tool_result')
                   if (hasToolResult) {
                     accumulatedMessages.push(msg)
                   }
                 } else {
                   // 为 assistant 消息注入渠道 modelId，确保持久化后能正确匹配模型显示名
                   if (msg.type === 'assistant' && modelId) {
-                    (msg as Record<string, unknown>)._channelModelId = modelId
+                    ;(msg as Record<string, unknown>)._channelModelId = modelId
                   }
                   accumulatedMessages.push(msg)
                 }
@@ -2118,17 +2432,18 @@ export class AgentOrchestrator {
               const resultTerminalReason = (msg as { terminal_reason?: string }).terminal_reason
               const keepChannelOpen = shouldKeepChannelOpen(resultTerminalReason)
               // 分类打点：跟踪线上哪种 terminal_reason 最常见，配合 deferred_tool_use 回填决策
-              const hasDeferredTool = (msg as { deferred_tool_use?: unknown }).deferred_tool_use != null
+              const hasDeferredTool =
+                (msg as { deferred_tool_use?: unknown }).deferred_tool_use != null
               console.log(
                 `[Agent 编排] result 到达: sessionId=${sessionId}, subtype=${capturedResultSubtype ?? 'unknown'}, ` +
-                `terminal_reason=${resultTerminalReason ?? 'undefined'}, keepChannelOpen=${keepChannelOpen}` +
-                (hasDeferredTool ? ', hasDeferredTool=true' : ''),
+                  `terminal_reason=${resultTerminalReason ?? 'undefined'}, keepChannelOpen=${keepChannelOpen}` +
+                  (hasDeferredTool ? ', hasDeferredTool=true' : '')
               )
               if (!keepChannelOpen && !drainTimeoutPromise) {
                 // 启动 drain 超时安全网：adapter 层 channel.close() 应让 iterator 自然关闭，
                 // 此处仅在极端情况下（如 SDK 版本不兼容）保护事件循环不无限挂起
                 drainTimeoutPromise = new Promise((resolve) =>
-                  setTimeout(() => resolve('drain_timeout'), RESULT_DRAIN_TIMEOUT_MS),
+                  setTimeout(() => resolve('drain_timeout'), RESULT_DRAIN_TIMEOUT_MS)
                 )
               }
             }
@@ -2138,8 +2453,10 @@ export class AgentOrchestrator {
             // 初始用户消息已通过前端乐观注入显示，无需 SDK 重复推送
             let shouldEmit = true
             if (msg.type === 'user') {
-              const content = (msg as { message?: { content?: Array<{ type: string }> } }).message?.content
-              const hasToolResult = Array.isArray(content) && content.some((b) => b.type === 'tool_result')
+              const content = (msg as { message?: { content?: Array<{ type: string }> } }).message
+                ?.content
+              const hasToolResult =
+                Array.isArray(content) && content.some((b) => b.type === 'tool_result')
               if (!hasToolResult) {
                 shouldEmit = false
               }
@@ -2161,7 +2478,10 @@ export class AgentOrchestrator {
 
           // 正常完成 — 如果之前有重试，发送 retry_cleared
           if (!wasStoppedByUser && retryAttemptsScheduled > 0) {
-            this.eventBus.emit(sessionId, { kind: 'tagent_event', event: { type: 'retry', status: 'cleared' } })
+            this.eventBus.emit(sessionId, {
+              kind: 'tagent_event',
+              event: { type: 'retry', status: 'cleared' },
+            })
             console.log(`[Agent 编排] 重试成功，已在第 ${attempt} 次尝试后恢复`)
           }
           retrySucceeded = true
@@ -2169,22 +2489,36 @@ export class AgentOrchestrator {
           // 15. 持久化 assistant 消息
           this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
 
-          try { updateAgentSessionMeta(sessionId, wasStoppedByUser ? { stoppedByUser: true } : {}) } catch { /* 忽略 */ }
+          try {
+            updateAgentSessionMeta(sessionId, wasStoppedByUser ? { stoppedByUser: true } : {})
+          } catch {
+            /* 忽略 */
+          }
 
           // Plan 模式：Agent 完成规划后注入"接受计划"建议
-          if (initialPermissionMode === 'plan' && planModeEntered && this.activeSessions.has(sessionId)) {
+          if (
+            initialPermissionMode === 'plan' &&
+            planModeEntered &&
+            this.activeSessions.has(sessionId)
+          ) {
             this.eventBus.emit(sessionId, {
               kind: 'sdk_message',
-              message: { type: 'prompt_suggestion', suggestion: '请执行该计划' } as unknown as SDKMessage,
+              message: {
+                type: 'prompt_suggestion',
+                suggestion: '请执行该计划',
+              } as unknown as SDKMessage,
             })
             console.log(`[Agent 编排] Plan 模式：已注入计划确认建议`)
           }
 
           // 发送完成信号
-          completeRun(getAgentSessionMessages(sessionId), { stoppedByUser: wasStoppedByUser, startedAt: streamStartedAt, resultSubtype: capturedResultSubtype })
+          completeRun(getAgentSessionMessages(sessionId), {
+            stoppedByUser: wasStoppedByUser,
+            startedAt: streamStartedAt,
+            resultSubtype: capturedResultSubtype,
+          })
 
-          break  // 成功完成，退出重试循环
-
+          break // 成功完成，退出重试循环
         } catch (error) {
           // 打印 stderr
           const fullStderr = stderrChunks.join('').trim()
@@ -2201,8 +2535,15 @@ export class AgentOrchestrator {
             console.log(`[Agent 编排] 会话 ${sessionId} 已被用户中止`)
             this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
             // 持久化中断状态到会话 meta
-            try { updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser }) } catch { /* 会话可能已删除 */ }
-            completeRun(getAgentSessionMessages(sessionId), { stoppedByUser: wasStoppedByUser, startedAt: streamStartedAt })
+            try {
+              updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser })
+            } catch {
+              /* 会话可能已删除 */
+            }
+            completeRun(getAgentSessionMessages(sessionId), {
+              stoppedByUser: wasStoppedByUser,
+              startedAt: streamStartedAt,
+            })
             return
           }
 
@@ -2212,12 +2553,23 @@ export class AgentOrchestrator {
           const rawErrorMessage = error instanceof Error ? error.message : ''
 
           // Session 不存在错误：清除 sdkSessionId，切换到上下文回填模式重试
-          if (isSessionNotFoundError(rawErrorMessage, stderrOutput) && existingSdkSessionId && canAutoRetry(attempt)) {
+          if (
+            isSessionNotFoundError(rawErrorMessage, stderrOutput) &&
+            existingSdkSessionId &&
+            canAutoRetry(attempt)
+          ) {
             existingSdkSessionId = undefined
             capturedSdkSessionId = undefined
-            lastRetryableError = this.prepareSessionNotFoundRecovery(sessionId, queryOptions, contextualMessage, agentCwd, accumulatedMessages, queryStartedAt)
+            lastRetryableError = this.prepareSessionNotFoundRecovery(
+              sessionId,
+              queryOptions,
+              contextualMessage,
+              agentCwd,
+              accumulatedMessages,
+              queryStartedAt
+            )
             stderrChunks.length = 0
-            continue  // 进入下一次 retry 循环
+            continue // 进入下一次 retry 循环
           }
 
           // Thinking signature 不兼容：先自动清除 SDK resume 关系并用上下文回填重跑一次。
@@ -2238,23 +2590,30 @@ export class AgentOrchestrator {
               accumulatedMessages,
               queryStartedAt,
               '检测到 thinking signature 不兼容，清除 sdkSessionId 并切换到上下文回填模式',
-              '思考签名不兼容，切换到上下文回填模式',
+              '思考签名不兼容，切换到上下文回填模式'
             )
             stderrChunks.length = 0
-            continue  // 进入下一次 retry 循环
+            continue // 进入下一次 retry 循环
           }
 
           // 判断是否可重试
-          if (isAutoRetryableCatchError(apiError, rawErrorMessage, stderrOutput) && canAutoRetry(attempt)) {
+          if (
+            isAutoRetryableCatchError(apiError, rawErrorMessage, stderrOutput) &&
+            canAutoRetry(attempt)
+          ) {
             lastRetryableError = apiError
               ? `API Error ${apiError.statusCode}: ${apiError.message}`
-              : (error instanceof Error ? error.message : '未知错误')
-            console.log(`[Agent 编排] 可重试错误 (catch, attempt ${attempt}/${MAX_AUTO_RETRIES}): ${lastRetryableError}`)
+              : error instanceof Error
+                ? error.message
+                : '未知错误'
+            console.log(
+              `[Agent 编排] 可重试错误 (catch, attempt ${attempt}/${MAX_AUTO_RETRIES}): ${lastRetryableError}`
+            )
             // 保存部分内容
             this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
             accumulatedMessages.length = 0
             stderrChunks.length = 0
-            continue  // 进入下一次 retry 循环
+            continue // 进入下一次 retry 循环
           }
 
           // 不可重试 — 走原有终止逻辑
@@ -2273,7 +2632,9 @@ export class AgentOrchestrator {
 
           let userFacingError: string
           if (apiError) {
-            userFacingError = friendlyErrorMessage(`API 错误 (${apiError.statusCode}):\n${apiError.message}`)
+            userFacingError = friendlyErrorMessage(
+              `API 错误 (${apiError.statusCode}):\n${apiError.message}`
+            )
           } else {
             userFacingError = friendlyErrorMessage(errorMessage)
           }
@@ -2284,14 +2645,14 @@ export class AgentOrchestrator {
             const isPromptTooLong = isPromptTooLongError(
               userFacingError,
               error instanceof Error ? (error.stack ?? error.message) : String(error),
-              stderrOutput,
+              stderrOutput
             )
             const isThinkingSignature = isThinkingSignatureError(
               apiError?.message ?? '',
               userFacingError,
               rawErrorMessage,
               error instanceof Error ? (error.stack ?? error.message) : String(error),
-              stderrOutput,
+              stderrOutput
             )
             const errorCode = isPromptTooLong
               ? 'prompt_too_long'
@@ -2338,11 +2699,23 @@ export class AgentOrchestrator {
           if (retryAttemptsScheduled > 0 && lastRetryableError) {
             this.eventBus.emit(sessionId, {
               kind: 'tagent_event',
-              event: { type: 'retry', status: 'failed', attemptData: { attempt: retryAttemptsScheduled, timestamp: Date.now(), reason: lastRetryableError, errorMessage: userFacingError, delaySeconds: 0 } },
+              event: {
+                type: 'retry',
+                status: 'failed',
+                attemptData: {
+                  attempt: retryAttemptsScheduled,
+                  timestamp: Date.now(),
+                  reason: lastRetryableError,
+                  errorMessage: userFacingError,
+                  delaySeconds: 0,
+                },
+              },
             })
           }
 
-          failRun(userFacingError, getAgentSessionMessages(sessionId), { startedAt: streamStartedAt })
+          failRun(userFacingError, getAgentSessionMessages(sessionId), {
+            startedAt: streamStartedAt,
+          })
 
           // 根据错误类型决定是否保留 sdkSessionId
           const shouldClearSession = !apiError || apiError.statusCode >= 500
@@ -2350,7 +2723,9 @@ export class AgentOrchestrator {
             try {
               updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
               console.log(`[Agent 编排] 已清除失效的 sdkSessionId`)
-            } catch { /* 忽略 */ }
+            } catch {
+              /* 忽略 */
+            }
           } else if (existingSdkSessionId && !shouldClearSession) {
             console.log(`[Agent 编排] 保留 sdkSessionId (API 错误 ${apiError?.statusCode})`)
           }
@@ -2361,12 +2736,23 @@ export class AgentOrchestrator {
 
       // 重试循环结束（达到最大次数仍失败）
       if (!retrySucceeded && lastRetryableError) {
-        const retryFailureMessage = retryDelayElapsedMs >= MAX_AUTO_RETRY_WAIT_MS
-          ? '重试等待已达到 5 分钟后仍然失败'
-          : `重试 ${retryAttemptsScheduled || MAX_AUTO_RETRIES} 次后仍然失败`
+        const retryFailureMessage =
+          retryDelayElapsedMs >= MAX_AUTO_RETRY_WAIT_MS
+            ? '重试等待已达到 5 分钟后仍然失败'
+            : `重试 ${retryAttemptsScheduled || MAX_AUTO_RETRIES} 次后仍然失败`
         this.eventBus.emit(sessionId, {
           kind: 'tagent_event',
-          event: { type: 'retry', status: 'failed', attemptData: { attempt: retryAttemptsScheduled || MAX_AUTO_RETRIES, timestamp: Date.now(), reason: lastRetryableError, errorMessage: retryFailureMessage, delaySeconds: 0 } },
+          event: {
+            type: 'retry',
+            status: 'failed',
+            attemptData: {
+              attempt: retryAttemptsScheduled || MAX_AUTO_RETRIES,
+              timestamp: Date.now(),
+              reason: lastRetryableError,
+              errorMessage: retryFailureMessage,
+              delaySeconds: 0,
+            },
+          },
         })
 
         // 保存错误消息
@@ -2384,9 +2770,12 @@ export class AgentOrchestrator {
         } as unknown as SDKMessage
         appendSDKMessages(sessionId, [retryErrorSDKMsg])
 
-        failRun(`${retryFailureMessage}: ${lastRetryableError}`, getAgentSessionMessages(sessionId), { startedAt: streamStartedAt })
+        failRun(
+          `${retryFailureMessage}: ${lastRetryableError}`,
+          getAgentSessionMessages(sessionId),
+          { startedAt: streamStartedAt }
+        )
       }
-
     } finally {
       // 只在 generation 匹配时才清理，防止旧流的 finally 误删新流的注册
       releaseActiveRun()
@@ -2428,7 +2817,12 @@ export class AgentOrchestrator {
     this.sessionPermissionModes.set(sessionId, mode)
     this.eventBus.emit(sessionId, {
       kind: 'tagent_event',
-      event: { type: 'plan_mode_changed', sessionId, active: mode === 'plan', source: 'permission' },
+      event: {
+        type: 'plan_mode_changed',
+        sessionId,
+        active: mode === 'plan',
+        source: 'permission',
+      },
     })
     // 同步通知 SDK 侧
     if (this.adapter.setPermissionMode) {
@@ -2451,7 +2845,7 @@ export class AgentOrchestrator {
    */
   async rewindSession(
     sessionId: string,
-    assistantMessageUuid: string,
+    assistantMessageUuid: string
   ): Promise<RewindSessionResult> {
     // 0. 阻止运行中会话回退（JSONL 并发写入会损坏文件）
     if (this.activeSessions.has(sessionId)) {
@@ -2473,11 +2867,26 @@ export class AgentOrchestrator {
         projectDir = getAgentSessionWorkspacePath(ws.slug, sessionMeta.id)
       }
     }
-    const userMessageUuid = resolveUserUuidFromSDK(sessionMeta.sdkSessionId, assistantMessageUuid, projectDir, sessionMeta.forkSourceSdkSessionId)
-    console.log(`[Agent 编排] 回退: 解析 user uuid=${userMessageUuid || '未找到'} (assistant uuid=${assistantMessageUuid}, forkSource=${sessionMeta.forkSourceSdkSessionId ?? 'none'})`)
+    const userMessageUuid = resolveUserUuidFromSDK(
+      sessionMeta.sdkSessionId,
+      assistantMessageUuid,
+      projectDir,
+      sessionMeta.forkSourceSdkSessionId
+    )
+    console.log(
+      `[Agent 编排] 回退: 解析 user uuid=${userMessageUuid || '未找到'} (assistant uuid=${assistantMessageUuid}, forkSource=${sessionMeta.forkSourceSdkSessionId ?? 'none'})`
+    )
 
     // 1. 文件恢复：直接从 SDK JSONL 的 file-history-snapshot 恢复，无需临时 Query
-    let fileRewindResult: { canRewind: boolean; error?: string; filesChanged?: string[]; insertions?: number; deletions?: number } | undefined
+    let fileRewindResult:
+      | {
+          canRewind: boolean
+          error?: string
+          filesChanged?: string[]
+          insertions?: number
+          deletions?: number
+        }
+      | undefined
     if (userMessageUuid === '__LAST_TURN__') {
       // 最后一个 turn：当前文件系统已是该 turn 完成后的状态，无需回退文件
       console.log(`[Agent 编排] 回退: 最后一个 turn，跳过文件恢复`)
@@ -2490,12 +2899,22 @@ export class AgentOrchestrator {
         // 收集附加目录（必须与 sendMessage 中传给 SDK 的 additionalDirectories 一致，
         // 否则会话级 attachedDirectories 内的文件会因路径越界检查被静默跳过）
         const rewindAttachedDirs = collectAttachedDirectories({ sessionMeta, workspaceSlug })
-        console.log(`[Agent 编排] 回退: 直接从 snapshot 恢复文件 (cwd=${cwd}, forkSource=${sessionMeta.forkSourceSdkSessionId ?? 'none'}, attachedDirs=${rewindAttachedDirs.length})`)
-        fileRewindResult = rewindFilesFromSnapshot(sessionMeta.sdkSessionId, userMessageUuid, cwd, projectDir, sessionMeta.forkSourceSdkSessionId, rewindAttachedDirs)
+        console.log(
+          `[Agent 编排] 回退: 直接从 snapshot 恢复文件 (cwd=${cwd}, forkSource=${sessionMeta.forkSourceSdkSessionId ?? 'none'}, attachedDirs=${rewindAttachedDirs.length})`
+        )
+        fileRewindResult = rewindFilesFromSnapshot(
+          sessionMeta.sdkSessionId,
+          userMessageUuid,
+          cwd,
+          projectDir,
+          sessionMeta.forkSourceSdkSessionId,
+          rewindAttachedDirs
+        )
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err)
         console.warn('[Agent 编排] 文件恢复失败，继续截断对话:', errMsg)
-        if (err instanceof Error && err.stack) console.warn('[Agent 编排] 文件恢复错误堆栈:', err.stack)
+        if (err instanceof Error && err.stack)
+          console.warn('[Agent 编排] 文件恢复错误堆栈:', err.stack)
         fileRewindResult = { canRewind: false, error: errMsg }
       }
     } else {
@@ -2508,7 +2927,9 @@ export class AgentOrchestrator {
     // 3. 记录 resumeAtMessageUuid，下次发消息时 SDK 从此点继续
     updateAgentSessionMeta(sessionId, { resumeAtMessageUuid: assistantMessageUuid })
 
-    console.log(`[Agent 编排] 回退完成: sessionId=${sessionId}, 保留 ${kept.length} 条消息, 文件恢复=${fileRewindResult?.canRewind ?? '跳过'}`)
+    console.log(
+      `[Agent 编排] 回退完成: sessionId=${sessionId}, 保留 ${kept.length} 条消息, 文件恢复=${fileRewindResult?.canRewind ?? '跳过'}`
+    )
 
     return {
       remainingMessages: kept.length,
@@ -2543,7 +2964,7 @@ export class AgentOrchestrator {
     text: string,
     _priority?: string,
     presetUuid?: string,
-    opts?: { interrupt?: boolean },
+    opts?: { interrupt?: boolean }
   ): Promise<string> {
     if (!this.activeSessions.has(sessionId)) {
       throw new Error(`[Agent 编排] 会话未运行，无法追加消息: ${sessionId}`)
@@ -2588,7 +3009,9 @@ export class AgentOrchestrator {
       }
 
       await this.adapter.sendQueuedMessage(sessionId, sdkMessage)
-      console.log(`[Agent 编排] 追加消息已注入: sessionId=${sessionId}, uuid=${uuid}, priority=${priority} (interrupt=${!!opts?.interrupt})`)
+      console.log(
+        `[Agent 编排] 追加消息已注入: sessionId=${sessionId}, uuid=${uuid}, priority=${priority} (interrupt=${!!opts?.interrupt})`
+      )
 
       // 立即持久化到 JSONL
       const persistMsg: SDKMessage = {

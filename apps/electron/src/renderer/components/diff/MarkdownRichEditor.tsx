@@ -6,7 +6,6 @@ import StarterKit from '@tiptap/starter-kit'
 import * as React from 'react'
 import { Markdown } from 'tiptap-markdown'
 
-
 import {
   MathBlock,
   MathInline,
@@ -73,37 +72,40 @@ export function MarkdownRichEditor({
   disabledRef.current = disabled
   shikiThemeRef.current = shikiTheme
 
-  const extensions = React.useMemo(() => [
-    createMarkdownImage(fileAccessRef),
-    createMarkdownVideo(fileAccessRef),
-    RawHtmlBlock,
-    RawHtmlInline,
-    MathBlock,
-    MathInline,
-    TaskList,
-    TaskItem,
-    ...tableExtensions,
-    createShikiCodeBlock(shikiThemeRef),
-    StarterKit.configure({
-      codeBlock: false,
-      link: false,
-      underline: false,
-    }),
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      autolink: true,
-      linkOnPaste: true,
-      HTMLAttributes: {
-        class: 'text-primary underline',
-      },
-    }),
-    Markdown.configure({
-      html: true,
-      tightLists: true,
-      bulletListMarker: '-',
-    }),
-  ], [])
+  const extensions = React.useMemo(
+    () => [
+      createMarkdownImage(fileAccessRef),
+      createMarkdownVideo(fileAccessRef),
+      RawHtmlBlock,
+      RawHtmlInline,
+      MathBlock,
+      MathInline,
+      TaskList,
+      TaskItem,
+      ...tableExtensions,
+      createShikiCodeBlock(shikiThemeRef),
+      StarterKit.configure({
+        codeBlock: false,
+        link: false,
+        underline: false,
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+      Markdown.configure({
+        html: true,
+        tightLists: true,
+        bulletListMarker: '-',
+      }),
+    ],
+    []
+  )
 
   const initialHtml = React.useMemo(() => markdownToHtml(value), [value])
   const editor = useEditor({
@@ -120,7 +122,7 @@ export function MarkdownRichEditor({
           '[&_code]:bg-muted [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.875em]',
           '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
           '[&_table_p]:my-0',
-          '[&_input[type=checkbox]]:accent-primary',
+          '[&_input[type=checkbox]]:accent-primary'
         ),
       },
       handleKeyDown: (_view, event) => {
@@ -202,7 +204,7 @@ export function MarkdownRichEditor({
                 '[&_.tagent-code-block--mermaid_.tagent-code-header]:hidden',
                 '[&_.tagent-code-block--mermaid_.tagent-mermaid-preview]:block',
                 '[&_.tagent-code-block--mermaid_.tagent-code-source-body]:hidden',
-              ],
+              ]
         )}
       />
       {editing && editor && <TableBubbleMenu editor={editor} />}

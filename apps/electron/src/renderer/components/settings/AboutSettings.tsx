@@ -30,17 +30,13 @@ import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
 import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
 
-import {
-  environmentCheckResultAtom,
-  hasEnvironmentIssuesAtom,
-} from '@/atoms/environment'
+import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { updateStatusAtom, updaterAvailableAtom, checkForUpdates } from '@/atoms/updater'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
 
 /** 从 package.json 构建时由 Vite define 注入 */
 declare const __APP_VERSION__: string
@@ -187,7 +183,13 @@ function CheckUpdateButton(): React.ReactElement | null {
   }
 
   return (
-    <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleCheck} disabled={isChecking}>
+    <Button
+      variant="secondary"
+      size="sm"
+      className="gap-1.5"
+      onClick={handleCheck}
+      disabled={isChecking}
+    >
       {isChecking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
       {isChecking ? '检查中…' : '检查更新'}
     </Button>
@@ -256,22 +258,60 @@ function UpdateSection(): React.ReactElement | null {
   )
 }
 
-function UpdateStatusBadge({ status, version }: { status: string; version?: string }): React.ReactElement {
+function UpdateStatusBadge({
+  status,
+  version,
+}: {
+  status: string
+  version?: string
+}): React.ReactElement {
   switch (status) {
     case 'checking':
-      return <Badge variant="secondary" className="text-xs">检查中…</Badge>
+      return (
+        <Badge variant="secondary" className="text-xs">
+          检查中…
+        </Badge>
+      )
     case 'available':
-      return <Badge variant="default" className="text-xs gap-1"><ExternalLink size={10} />v{version} 可用</Badge>
+      return (
+        <Badge variant="default" className="text-xs gap-1">
+          <ExternalLink size={10} />v{version} 可用
+        </Badge>
+      )
     case 'downloading':
-      return <Badge variant="secondary" className="text-xs"><Loader2 size={10} className="animate-spin" />下载中</Badge>
+      return (
+        <Badge variant="secondary" className="text-xs">
+          <Loader2 size={10} className="animate-spin" />
+          下载中
+        </Badge>
+      )
     case 'downloaded':
-      return <Badge variant="default" className="text-xs gap-1"><CheckCircle2 size={10} />就绪</Badge>
+      return (
+        <Badge variant="default" className="text-xs gap-1">
+          <CheckCircle2 size={10} />
+          就绪
+        </Badge>
+      )
     case 'not-available':
-      return <Badge variant="outline" className="text-xs gap-1"><CheckCircle2 size={10} className="text-emerald-500" />已是最新</Badge>
+      return (
+        <Badge variant="outline" className="text-xs gap-1">
+          <CheckCircle2 size={10} className="text-emerald-500" />
+          已是最新
+        </Badge>
+      )
     case 'error':
-      return <Badge variant="destructive" className="text-xs gap-1"><AlertCircle size={10} />检查失败</Badge>
+      return (
+        <Badge variant="destructive" className="text-xs gap-1">
+          <AlertCircle size={10} />
+          检查失败
+        </Badge>
+      )
     default:
-      return <Badge variant="outline" className="text-xs">未检查</Badge>
+      return (
+        <Badge variant="outline" className="text-xs">
+          未检查
+        </Badge>
+      )
   }
 }
 
@@ -324,24 +364,24 @@ function EnvironmentSection(): React.ReactElement {
       <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-foreground">运行环境</span>
-          {hasIssues && <Badge variant="destructive" className="text-xs">!</Badge>}
+          {hasIssues && (
+            <Badge variant="destructive" className="text-xs">
+              !
+            </Badge>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <StatusGridItem
-            name="Node.js"
-            ok={nodejsOk}
-            version={result?.nodejs.version}
-          />
-          <StatusGridItem
-            name="Git"
-            ok={gitOk}
-            version={result?.git.version}
-          />
+          <StatusGridItem name="Node.js" ok={nodejsOk} version={result?.nodejs.version} />
+          <StatusGridItem name="Git" ok={gitOk} version={result?.git.version} />
           <StatusGridItem
             name="Shell"
             ok={shellOk}
-            version={runtimeStatus?.shell?.gitBash?.version?.toString() ?? runtimeStatus?.shell?.wsl?.version?.toString() ?? undefined}
+            version={
+              runtimeStatus?.shell?.gitBash?.version?.toString() ??
+              runtimeStatus?.shell?.wsl?.version?.toString() ??
+              undefined
+            }
             hide={!runtimeStatus?.shell}
           />
         </div>
@@ -365,7 +405,11 @@ function EnvironmentSection(): React.ReactElement {
               onClick={handleCheck}
               disabled={isChecking}
             >
-              {isChecking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              {isChecking ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <RefreshCw size={12} />
+              )}
               {isChecking ? '检测中' : '重新检测'}
             </Button>
           </div>
@@ -378,10 +422,21 @@ function EnvironmentSection(): React.ReactElement {
           {/* Node.js */}
           <EnvironmentCheckCard
             name="Node.js"
-            status={!result ? 'checking' : nodejsOk ? (result.nodejs.meetsRecommended ? 'success' : 'warning') : 'error'}
+            status={
+              !result
+                ? 'checking'
+                : nodejsOk
+                  ? result.nodejs.meetsRecommended
+                    ? 'success'
+                    : 'warning'
+                  : 'error'
+            }
             version={result?.nodejs.version}
             requirement="推荐 22 LTS，最低 18 LTS"
-            action={{ type: 'openExternal', url: result?.nodejs.downloadUrl || 'https://nodejs.org/' }}
+            action={{
+              type: 'openExternal',
+              url: result?.nodejs.downloadUrl || 'https://nodejs.org/',
+            }}
           />
 
           {/* Git */}
@@ -390,7 +445,10 @@ function EnvironmentSection(): React.ReactElement {
             status={!result ? 'checking' : gitOk ? 'success' : 'error'}
             version={result?.git.version}
             requirement="版本 >= 2.0"
-            action={{ type: 'openExternal', url: result?.git.downloadUrl || 'https://git-scm.com/' }}
+            action={{
+              type: 'openExternal',
+              url: result?.git.downloadUrl || 'https://git-scm.com/',
+            }}
           />
 
           {/* Shell（仅 Windows） */}
@@ -402,15 +460,30 @@ function EnvironmentSection(): React.ReactElement {
                 version={runtimeStatus.shell.gitBash?.version ?? undefined}
                 requirement="Git for Windows 自带"
                 action={{ type: 'download', installerId: 'git-for-windows' }}
-                statusText={runtimeStatus.shell.gitBash?.available ? (runtimeStatus.shell.gitBash.path ?? undefined) : '未安装'}
+                statusText={
+                  runtimeStatus.shell.gitBash?.available
+                    ? (runtimeStatus.shell.gitBash.path ?? undefined)
+                    : '未安装'
+                }
               />
               <EnvironmentCheckCard
                 name="WSL"
                 status={runtimeStatus.shell.wsl?.available ? 'success' : 'error'}
-                version={runtimeStatus.shell.wsl?.version ? `WSL ${runtimeStatus.shell.wsl.version}` : undefined}
+                version={
+                  runtimeStatus.shell.wsl?.version
+                    ? `WSL ${runtimeStatus.shell.wsl.version}`
+                    : undefined
+                }
                 requirement="WSL 1 或 WSL 2"
-                action={{ type: 'openExternal', url: 'https://learn.microsoft.com/zh-cn/windows/wsl/install' }}
-                statusText={runtimeStatus.shell.wsl?.available ? `${runtimeStatus.shell.wsl.defaultDistro || '未设置'}` : '未安装'}
+                action={{
+                  type: 'openExternal',
+                  url: 'https://learn.microsoft.com/zh-cn/windows/wsl/install',
+                }}
+                statusText={
+                  runtimeStatus.shell.wsl?.available
+                    ? `${runtimeStatus.shell.wsl.defaultDistro || '未设置'}`
+                    : '未安装'
+                }
               />
             </>
           )}
@@ -430,7 +503,12 @@ function EnvironmentSection(): React.ReactElement {
   )
 }
 
-function StatusGridItem({ name, ok, version, hide }: {
+function StatusGridItem({
+  name,
+  ok,
+  version,
+  hide,
+}: {
   name: string
   ok?: boolean
   version?: string

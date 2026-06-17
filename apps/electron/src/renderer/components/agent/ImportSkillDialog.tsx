@@ -12,8 +12,20 @@ import type { OtherWorkspaceSkillsGroup, SkillMeta } from '@tagent/shared'
 
 import { SettingsCard } from '@/components/settings/primitives'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface ImportSkillDialogProps {
   /** 是否打开 */
@@ -46,7 +58,8 @@ export function ImportSkillDialog({
     if (!open || !workspaceSlug) return
     let alive = true
     setLoading(true)
-    window.electronAPI.getOtherWorkspaceSkills(workspaceSlug)
+    window.electronAPI
+      .getOtherWorkspaceSkills(workspaceSlug)
       .then((groups) => {
         if (alive) setOtherWorkspaces(groups)
       })
@@ -65,7 +78,7 @@ export function ImportSkillDialog({
   // 过滤掉已安装的
   const installedSlugs = React.useMemo(
     () => new Set(currentSkills.map((s) => s.slug)),
-    [currentSkills],
+    [currentSkills]
   )
 
   const availableWorkspaces = React.useMemo(
@@ -76,14 +89,16 @@ export function ImportSkillDialog({
           skills: workspace.skills.filter((skill) => !installedSlugs.has(skill.slug)),
         }))
         .filter((workspace) => workspace.skills.length > 0),
-    [otherWorkspaces, installedSlugs],
+    [otherWorkspaces, installedSlugs]
   )
 
   const [selectedWorkspaceSlug, setSelectedWorkspaceSlug] = React.useState('')
 
   const selectedWorkspace = React.useMemo(
-    () => availableWorkspaces.find((workspace) => workspace.workspaceSlug === selectedWorkspaceSlug) ?? null,
-    [availableWorkspaces, selectedWorkspaceSlug],
+    () =>
+      availableWorkspaces.find((workspace) => workspace.workspaceSlug === selectedWorkspaceSlug) ??
+      null,
+    [availableWorkspaces, selectedWorkspaceSlug]
   )
 
   React.useEffect(() => {
@@ -94,7 +109,7 @@ export function ImportSkillDialog({
     setSelectedWorkspaceSlug((current) =>
       availableWorkspaces.some((workspace) => workspace.workspaceSlug === current)
         ? current
-        : availableWorkspaces[0]?.workspaceSlug ?? '',
+        : (availableWorkspaces[0]?.workspaceSlug ?? '')
     )
   }, [availableWorkspaces, open])
 
@@ -156,14 +171,18 @@ export function ImportSkillDialog({
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <div className="truncate text-sm font-medium text-foreground">{skill.name}</div>
+                                  <div className="truncate text-sm font-medium text-foreground">
+                                    {skill.name}
+                                  </div>
                                   {skill.version ? (
                                     <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                                       v{skill.version}
                                     </span>
                                   ) : null}
                                 </div>
-                                <div className="mt-1 text-xs text-muted-foreground">{skill.slug}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  {skill.slug}
+                                </div>
                               </div>
                             </div>
                             <div className="line-clamp-3 min-h-[40px] text-sm leading-6 text-muted-foreground">

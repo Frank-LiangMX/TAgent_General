@@ -28,10 +28,7 @@ export function RailInspectorHeader({
 }: RailInspectorHeaderProps): React.ReactElement {
   return (
     <div
-      className={cn(
-        'flex shrink-0 flex-col gap-2 border-b border-border/50 px-5 py-4',
-        className,
-      )}
+      className={cn('flex shrink-0 flex-col gap-2 border-b border-border/50 px-5 py-4', className)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -52,12 +49,18 @@ export function RailInspectorHeader({
               ))}
             </nav>
           ) : null}
-          <h2 className="truncate text-base font-semibold tracking-tight text-foreground">{title}</h2>
+          <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+            {title}
+          </h2>
           {description ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{description}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+              {description}
+            </p>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
     </div>
   )

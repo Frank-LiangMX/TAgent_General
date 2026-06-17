@@ -56,10 +56,9 @@ describe('Agent 过程块折叠分组', () => {
   })
 
   test('given streaming turn with trailing text when grouping then keeps the whole turn inside process group', () => {
-    const items = buildAssistantTurnRenderItems([
-      tool('tool-1'),
-      text('可能还是中间说明'),
-    ], { isStreaming: true })
+    const items = buildAssistantTurnRenderItems([tool('tool-1'), text('可能还是中间说明')], {
+      isStreaming: true,
+    })
 
     expect(items).toHaveLength(1)
     expect(items[0]?.type).toBe('process-group')
@@ -69,10 +68,10 @@ describe('Agent 过程块折叠分组', () => {
   })
 
   test('given streaming turn with completed tools before trailing text when grouping then keeps final output outside process group', () => {
-    const items = buildAssistantTurnRenderItems([
-      tool('tool-1'),
-      text('最终输出'),
-    ], { isStreaming: true, completedToolResultIds: new Set(['tool-1']) })
+    const items = buildAssistantTurnRenderItems([tool('tool-1'), text('最终输出')], {
+      isStreaming: true,
+      completedToolResultIds: new Set(['tool-1']),
+    })
 
     expect(items.map((item) => item.type)).toEqual(['process-group', 'block'])
     if (items[0]?.type === 'process-group') {
@@ -84,10 +83,7 @@ describe('Agent 过程块折叠分组', () => {
   })
 
   test('given keep expanded after complete when grouping then still keeps final output outside process group', () => {
-    const items = buildAssistantTurnRenderItems([
-      tool('tool-1'),
-      text('最终输出'),
-    ])
+    const items = buildAssistantTurnRenderItems([tool('tool-1'), text('最终输出')])
 
     expect(items.map((item) => item.type)).toEqual(['process-group', 'block'])
     expect(items[0]?.type).toBe('process-group')
@@ -97,19 +93,14 @@ describe('Agent 过程块折叠分组', () => {
   })
 
   test('given pure text streaming turn when grouping then keeps text as normal output', () => {
-    const items = buildAssistantTurnRenderItems([
-      text('普通回答'),
-    ], { isStreaming: true })
+    const items = buildAssistantTurnRenderItems([text('普通回答')], { isStreaming: true })
 
     expect(items).toHaveLength(1)
     expect(items[0]?.type).toBe('block')
   })
 
   test('given process only turn when grouping then folds the whole turn', () => {
-    const items = buildAssistantTurnRenderItems([
-      thinking(),
-      tool('tool-1'),
-    ])
+    const items = buildAssistantTurnRenderItems([thinking(), tool('tool-1')])
 
     expect(items).toHaveLength(1)
     expect(items[0]?.type).toBe('process-group')
@@ -121,10 +112,10 @@ describe('Agent 过程块折叠分组', () => {
   test('given streaming turn with only thinking before trailing text when grouping then keeps the whole turn inside process group', () => {
     // 仅有 thinking + 尾部 text 时，工具调用可能稍后才出现，
     // 不应把这段尾部 text 提前外置——避免后续完成瞬间从外部又跳回过程组。
-    const items = buildAssistantTurnRenderItems([
-      thinking(),
-      text('暂时的回答片段'),
-    ], { isStreaming: true, completedToolResultIds: new Set() })
+    const items = buildAssistantTurnRenderItems([thinking(), text('暂时的回答片段')], {
+      isStreaming: true,
+      completedToolResultIds: new Set(),
+    })
 
     expect(items).toHaveLength(1)
     expect(items[0]?.type).toBe('process-group')

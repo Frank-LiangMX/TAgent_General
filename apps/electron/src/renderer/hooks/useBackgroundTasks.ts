@@ -10,10 +10,7 @@
 import { useAtom } from 'jotai'
 import { useCallback } from 'react'
 
-import {
-  backgroundTasksAtomFamily,
-  type BackgroundTask,
-} from '@/atoms/agent-atoms'
+import { backgroundTasksAtomFamily, type BackgroundTask } from '@/atoms/agent-atoms'
 
 export interface UseBackgroundTasksResult {
   /** 当前会话的后台任务列表 */

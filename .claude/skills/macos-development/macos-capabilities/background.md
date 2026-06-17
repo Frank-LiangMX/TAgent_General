@@ -159,6 +159,7 @@ func handleRefresh(_ task: BGAppRefreshTask) {
 ```
 
 **Info.plist requirement:**
+
 ```xml
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>

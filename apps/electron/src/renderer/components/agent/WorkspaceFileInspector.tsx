@@ -5,13 +5,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import {
-  ExternalLink,
-  File,
-  FolderOpen,
-  FolderSearch,
-  Loader2,
-} from 'lucide-react'
+import { ExternalLink, File, FolderOpen, FolderSearch, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -24,8 +18,8 @@ import {
   workspaceSelectedFileAtom,
 } from '@/atoms/workspace-explorer'
 import { isImageFile } from '@/components/agent/SDKMessageRenderer'
-import { FileTypeIcon } from '@/components/file-browser'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
+import { FileTypeIcon } from '@/components/file-browser'
 import { Button } from '@/components/ui/button'
 const TEXT_PREVIEW_MAX_BYTES = 256 * 1024
 
@@ -48,9 +42,7 @@ export function WorkspaceFileInspector(): React.ReactElement {
   const workspaces = useAtomValue(agentWorkspacesAtom)
   const workspace = workspaces.find((w) => w.id === currentWorkspaceId) ?? null
   const wsAttachedDirsMap = useAtomValue(workspaceAttachedDirectoriesMapAtom)
-  const attachedDirs = currentWorkspaceId
-    ? (wsAttachedDirsMap.get(currentWorkspaceId) ?? [])
-    : []
+  const attachedDirs = currentWorkspaceId ? (wsAttachedDirsMap.get(currentWorkspaceId) ?? []) : []
 
   const selectedFile = useAtomValue(workspaceSelectedFileAtom)
   const selectedDirectory = useAtomValue(workspaceSelectedDirectoryAtom)
@@ -62,9 +54,12 @@ export function WorkspaceFileInspector(): React.ReactElement {
       setWorkspaceFilesPath(null)
       return
     }
-    window.electronAPI.getWorkspaceFilesPath(workspace.slug).then(setWorkspaceFilesPath).catch(() => {
-      setWorkspaceFilesPath(null)
-    })
+    window.electronAPI
+      .getWorkspaceFilesPath(workspace.slug)
+      .then(setWorkspaceFilesPath)
+      .catch(() => {
+        setWorkspaceFilesPath(null)
+      })
   }, [workspace?.slug])
 
   if (!workspace) {
@@ -149,7 +144,9 @@ function FileInspector({
       setResolvedPath(filePath)
       setImageSrc(`file://${filePath.replace(/\\/g, '/')}`)
       setLoading(false)
-      return () => { alive = false }
+      return () => {
+        alive = false
+      }
     }
 
     window.electronAPI
@@ -176,7 +173,9 @@ function FileInspector({
         if (alive) setLoading(false)
       })
 
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [filePath, candidateBasePaths, isImage])
 
   const crumbs = buildPathCrumbs(filePath, workspaceName)
@@ -187,7 +186,7 @@ function FileInspector({
         crumbs={crumbs}
         title={fileName}
         description={resolvedPath ?? filePath}
-        actions={(
+        actions={
           <>
             <Button
               type="button"
@@ -210,7 +209,7 @@ function FileInspector({
               <span className="ml-1.5">在文件夹中显示</span>
             </Button>
           </>
-        )}
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
@@ -264,14 +263,19 @@ function DirectoryInspector({
   const [loading, setLoading] = React.useState(true)
   const [entries, setEntries] = React.useState<{ name: string; isDirectory: boolean }[]>([])
 
-  const isAttached = attachedDirs.some((d) => dirPath === d || dirPath.startsWith(`${d}/`) || dirPath.startsWith(`${d}\\`))
+  const isAttached = attachedDirs.some(
+    (d) => dirPath === d || dirPath.startsWith(`${d}/`) || dirPath.startsWith(`${d}\\`)
+  )
 
   React.useEffect(() => {
     let alive = true
     setLoading(true)
 
     const listPromise = isAttached
-      ? window.electronAPI.listAttachedDirectory(dirPath, { sessionId: '', candidateBasePaths: undefined })
+      ? window.electronAPI.listAttachedDirectory(dirPath, {
+          sessionId: '',
+          candidateBasePaths: undefined,
+        })
       : window.electronAPI.listDirectory(dirPath)
 
     listPromise
@@ -288,7 +292,9 @@ function DirectoryInspector({
         if (alive) setLoading(false)
       })
 
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [dirPath, isAttached])
 
   const crumbs = buildPathCrumbs(dirPath, workspaceName)
@@ -301,7 +307,7 @@ function DirectoryInspector({
         crumbs={crumbs}
         title={dirName}
         description={dirPath}
-        actions={(
+        actions={
           <Button
             type="button"
             variant="outline"
@@ -312,7 +318,7 @@ function DirectoryInspector({
             <FolderOpen size={14} />
             <span className="ml-1.5">打开目录</span>
           </Button>
-        )}
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">

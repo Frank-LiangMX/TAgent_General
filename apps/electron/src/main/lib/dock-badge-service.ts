@@ -21,7 +21,7 @@ function createBadgeOverlay(count: number) {
 </svg>`
 
   return nativeImage.createFromDataURL(
-    `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`,
+    `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
   )
 }
 
@@ -29,9 +29,7 @@ function createBadgeOverlay(count: number) {
  * 设置应用角标数量。传入 0 会清除角标。
  */
 export function setDockBadgeCount(count: number): boolean {
-  const normalizedCount = Number.isFinite(count)
-    ? Math.max(0, Math.floor(count))
-    : 0
+  const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
 
   if (process.platform === 'darwin' || process.platform === 'linux') {
     return app.setBadgeCount(normalizedCount)

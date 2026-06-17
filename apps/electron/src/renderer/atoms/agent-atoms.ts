@@ -9,7 +9,21 @@ import { TAGENT_DEFAULT_PERMISSION_MODE } from '@tagent/shared'
 import { atom } from 'jotai'
 import { atomFamily, atomWithStorage } from 'jotai/utils'
 
-import type { AgentSessionMeta, AgentEvent, AgentWorkspace, AgentPendingFile, RetryAttempt, TAgentPermissionMode, PermissionRequest, AskUserRequest, ExitPlanModeRequest, ThinkingConfig, AgentEffort, SDKMessage, UnstagedChangesResult } from '@tagent/shared'
+import type {
+  AgentSessionMeta,
+  AgentEvent,
+  AgentWorkspace,
+  AgentPendingFile,
+  RetryAttempt,
+  TAgentPermissionMode,
+  PermissionRequest,
+  AskUserRequest,
+  ExitPlanModeRequest,
+  ThinkingConfig,
+  AgentEffort,
+  SDKMessage,
+  UnstagedChangesResult,
+} from '@tagent/shared'
 
 import { calculateDockBadgeCount, countPendingRequests } from '@/lib/dock-badge-count'
 
@@ -46,9 +60,9 @@ export interface ActivityGroup {
  * 用于 complete、handleStop、STREAM_COMPLETE 等多个终态入口的兜底清理。
  * 当所有项已处于终态时返回原引用，避免不必要的 React 重渲染。
  */
-export function finalizeStreamingActivities(
-  toolActivities: ToolActivity[],
-): { toolActivities: ToolActivity[] } {
+export function finalizeStreamingActivities(toolActivities: ToolActivity[]): {
+  toolActivities: ToolActivity[]
+} {
   const hasUnfinishedTools = toolActivities.some((ta) => !ta.done)
 
   return {
@@ -187,7 +201,6 @@ export function isActivityGroup(item: ActivityGroup | ToolActivity): item is Act
   return 'parent' in item && 'children' in item
 }
 
-
 /** 待自动发送的 Agent 提示（从设置页"对话完成配置"触发） */
 export interface AgentPendingPrompt {
   sessionId: string
@@ -225,7 +238,7 @@ export const agentStreamingStatesAtom = atom<Map<string, AgentStreamState>>(new 
 /** Agent 流式结束后是否保持过程组展开，默认收起以降低结果阅读干扰 */
 export const agentProcessGroupsKeepExpandedAtom = atomWithStorage<boolean>(
   'tagent-agent-process-groups-keep-expanded',
-  false,
+  false
 )
 
 /**
@@ -237,7 +250,7 @@ export const agentProcessGroupsKeepExpandedAtom = atomWithStorage<boolean>(
  * jotai 自动跳过通知。
  */
 export const agentSessionStreamingStateAtomFamily = atomFamily((sessionId: string) =>
-  atom((get) => get(agentStreamingStatesAtom).get(sessionId)),
+  atom((get) => get(agentStreamingStatesAtom).get(sessionId))
 )
 
 /**
@@ -264,7 +277,11 @@ export const agentSessionPendingFilesAtom = atom<Map<string, AgentPendingFile[]>
 export const agentPendingFilesAtomFamily = atomFamily((sessionId: string) =>
   atom(
     (get) => get(agentSessionPendingFilesAtom).get(sessionId) ?? [],
-    (_get, set, update: AgentPendingFile[] | ((prev: AgentPendingFile[]) => AgentPendingFile[])) => {
+    (
+      _get,
+      set,
+      update: AgentPendingFile[] | ((prev: AgentPendingFile[]) => AgentPendingFile[])
+    ) => {
       set(agentSessionPendingFilesAtom, (prev) => {
         const current = prev.get(sessionId) ?? []
         const next = typeof update === 'function' ? update(current) : update
@@ -276,8 +293,8 @@ export const agentPendingFilesAtomFamily = atomFamily((sessionId: string) =>
         }
         return map
       })
-    },
-  ),
+    }
+  )
 )
 
 /** 工作区能力版本号 — 每次修改 MCP/Skills 后自增，触发侧边栏重新获取 */
@@ -361,7 +378,9 @@ export const RECENTLY_MODIFIED_TTL_MS = 60_000
 // ===== 权限系统 Atoms =====
 
 /** 新会话默认权限模式 */
-export const agentDefaultPermissionModeAtom = atom<TAgentPermissionMode>(TAGENT_DEFAULT_PERMISSION_MODE)
+export const agentDefaultPermissionModeAtom = atom<TAgentPermissionMode>(
+  TAGENT_DEFAULT_PERMISSION_MODE
+)
 
 /** Per-session 权限模式 Map — sessionId → TAgentPermissionMode */
 export const agentPermissionModeMapAtom = atom<Map<string, TAgentPermissionMode>>(new Map())
@@ -375,7 +394,7 @@ export const sessionPersistedPermissionModeAtom = atomFamily((sessionId: string)
   atom((get) => {
     const sessions = get(agentSessionsAtom)
     return sessions.find((s) => s.id === sessionId)?.permissionMode
-  }),
+  })
 )
 
 /** 按 sessionId 派生该 session 是否存在于列表中（冷启动判断用） */
@@ -383,7 +402,7 @@ export const sessionExistsAtom = atomFamily((sessionId: string) =>
   atom((get) => {
     const sessions = get(agentSessionsAtom)
     return sessions.some((s) => s.id === sessionId)
-  }),
+  })
 )
 
 /** Agent 思考模式 */
@@ -399,9 +418,13 @@ export const agentMaxBudgetUsdAtom = atom<number | undefined>(undefined)
 export const agentMaxTurnsAtom = atom<number | undefined>(undefined)
 
 /** 待处理的权限请求 Map — 以 sessionId 为 key，切换会话时保留状态 */
-export const allPendingPermissionRequestsAtom = atom<Map<string, readonly PermissionRequest[]>>(new Map())
+export const allPendingPermissionRequestsAtom = atom<Map<string, readonly PermissionRequest[]>>(
+  new Map()
+)
 
-type PermissionRequestsUpdate = readonly PermissionRequest[] | ((prev: readonly PermissionRequest[]) => readonly PermissionRequest[])
+type PermissionRequestsUpdate =
+  | readonly PermissionRequest[]
+  | ((prev: readonly PermissionRequest[]) => readonly PermissionRequest[])
 
 /** 当前会话的权限请求队列（派生读写原子） */
 export const pendingPermissionRequestsAtom = atom(
@@ -427,7 +450,9 @@ export const pendingPermissionRequestsAtom = atom(
 /** 待处理的 AskUser 请求 Map — 以 sessionId 为 key，切换会话时保留状态 */
 export const allPendingAskUserRequestsAtom = atom<Map<string, readonly AskUserRequest[]>>(new Map())
 
-type AskUserRequestsUpdate = readonly AskUserRequest[] | ((prev: readonly AskUserRequest[]) => readonly AskUserRequest[])
+type AskUserRequestsUpdate =
+  | readonly AskUserRequest[]
+  | ((prev: readonly AskUserRequest[]) => readonly AskUserRequest[])
 
 /** 当前会话的 AskUser 请求队列（派生读写原子） */
 export const pendingAskUserRequestsAtom = atom(
@@ -451,7 +476,9 @@ export const pendingAskUserRequestsAtom = atom(
 )
 
 /** 待处理的 ExitPlanMode 请求 Map — 以 sessionId 为 key */
-export const allPendingExitPlanRequestsAtom = atom<Map<string, readonly ExitPlanModeRequest[]>>(new Map())
+export const allPendingExitPlanRequestsAtom = atom<Map<string, readonly ExitPlanModeRequest[]>>(
+  new Map()
+)
 
 /** 当前处于 Plan 模式的会话 ID 集合 */
 export const agentPlanModeSessionsAtom = atom<Set<string>>(new Set<string>())
@@ -520,7 +547,9 @@ export const workingDoneSessionIdsAtom = atom<Set<string>>(new Set<string>())
 let lastIndicatorSignature = ''
 let lastIndicatorMap = new Map<string, SessionIndicatorStatus>()
 
-function getStableIndicatorMap(entries: Array<[string, SessionIndicatorStatus]>): Map<string, SessionIndicatorStatus> {
+function getStableIndicatorMap(
+  entries: Array<[string, SessionIndicatorStatus]>
+): Map<string, SessionIndicatorStatus> {
   entries.sort(([a], [b]) => a.localeCompare(b))
   const signature = entries.map(([id, status]) => `${id}:${status}`).join('|')
   if (signature === lastIndicatorSignature) return lastIndicatorMap
@@ -554,9 +583,10 @@ export const agentSessionIndicatorMapAtom = atom<Map<string, SessionIndicatorSta
 
   for (const [id, state] of streamStates) {
     if (!state.running) continue
-    const hasBlock = (pendingPerms.get(id)?.length ?? 0) > 0
-      || (pendingAskUser.get(id)?.length ?? 0) > 0
-      || (pendingExitPlan.get(id)?.length ?? 0) > 0
+    const hasBlock =
+      (pendingPerms.get(id)?.length ?? 0) > 0 ||
+      (pendingAskUser.get(id)?.length ?? 0) > 0 ||
+      (pendingExitPlan.get(id)?.length ?? 0) > 0
     map.set(id, hasBlock ? 'blocked' : 'running')
   }
 
@@ -572,10 +602,7 @@ export const agentSessionIndicatorMapAtom = atom<Map<string, SessionIndicatorSta
 /**
  * 处理 AgentEvent 并更新流式状态（纯函数）
  */
-export function applyAgentEvent(
-  prev: AgentStreamState,
-  event: AgentEvent,
-): AgentStreamState {
+export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): AgentStreamState {
   switch (event.type) {
     case 'text_delta':
       // 开始接收文本 - 清除重试状态（重试成功）
@@ -592,7 +619,12 @@ export function applyAgentEvent(
           ...prev,
           toolActivities: prev.toolActivities.map((t) =>
             t.toolUseId === event.toolUseId
-              ? { ...t, input: event.input, intent: event.intent || t.intent, displayName: event.displayName || t.displayName }
+              ? {
+                  ...t,
+                  input: event.input,
+                  intent: event.intent || t.intent,
+                  displayName: event.displayName || t.displayName,
+                }
               : t
           ),
           // 开始工具调用 - 清除重试状态（重试成功）
@@ -601,15 +633,18 @@ export function applyAgentEvent(
       }
       return {
         ...prev,
-        toolActivities: [...prev.toolActivities, {
-          toolUseId: event.toolUseId,
-          toolName: event.toolName,
-          input: event.input,
-          intent: event.intent,
-          displayName: event.displayName,
-          done: false,
-          parentToolUseId: event.parentToolUseId,
-        }],
+        toolActivities: [
+          ...prev.toolActivities,
+          {
+            toolUseId: event.toolUseId,
+            toolName: event.toolName,
+            input: event.input,
+            intent: event.intent,
+            displayName: event.displayName,
+            done: false,
+            parentToolUseId: event.parentToolUseId,
+          },
+        ],
         // 开始工具调用 - 清除重试状态（重试成功）
         retrying: undefined,
       }
@@ -620,7 +655,13 @@ export function applyAgentEvent(
         ...prev,
         toolActivities: prev.toolActivities.map((t) =>
           t.toolUseId === event.toolUseId
-            ? { ...t, result: event.result, isError: event.isError, done: true, imageAttachments: event.imageAttachments }
+            ? {
+                ...t,
+                result: event.result,
+                isError: event.isError,
+                done: true,
+                imageAttachments: event.imageAttachments,
+              }
             : t
         ),
       }
@@ -641,9 +682,7 @@ export function applyAgentEvent(
         return {
           ...prev,
           toolActivities: prev.toolActivities.map((t) =>
-            t.toolUseId === event.toolUseId
-              ? { ...t, elapsedSeconds: event.elapsedSeconds! }
-              : t
+            t.toolUseId === event.toolUseId ? { ...t, elapsedSeconds: event.elapsedSeconds! } : t
           ),
         }
       }
@@ -716,8 +755,12 @@ export function applyAgentEvent(
         ...prev,
         inputTokens: event.usage.inputTokens,
         ...(event.usage.outputTokens != null && { outputTokens: event.usage.outputTokens }),
-        ...(event.usage.cacheReadTokens != null && { cacheReadTokens: event.usage.cacheReadTokens }),
-        ...(event.usage.cacheCreationTokens != null && { cacheCreationTokens: event.usage.cacheCreationTokens }),
+        ...(event.usage.cacheReadTokens != null && {
+          cacheReadTokens: event.usage.cacheReadTokens,
+        }),
+        ...(event.usage.cacheCreationTokens != null && {
+          cacheCreationTokens: event.usage.cacheCreationTokens,
+        }),
         ...(event.usage.costUsd != null && { costUsd: event.usage.costUsd }),
         ...(event.usage.contextWindow && { contextWindow: event.usage.contextWindow }),
       }
@@ -866,14 +909,16 @@ export const currentSessionTokenStatsAtom = atom<SessionTokenStats>((get) => {
       turnCount: 0,
     }
   }
-  return get(sessionTokenStatsAtom).get(currentId) ?? {
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalCacheReadTokens: 0,
-    totalCacheCreationTokens: 0,
-    totalCostUsd: 0,
-    turnCount: 0,
-  }
+  return (
+    get(sessionTokenStatsAtom).get(currentId) ?? {
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheReadTokens: 0,
+      totalCacheCreationTokens: 0,
+      totalCostUsd: 0,
+      turnCount: 0,
+    }
+  )
 })
 
 /** 缓存命中率（派生）— cacheReadTokens / totalInputTokens */
@@ -944,7 +989,7 @@ export const agentSDKMessagesCacheAtom = atom<Map<string, SDKMessage[]>>(new Map
 export function setSessionMessagesCache(
   prev: Map<string, SDKMessage[]>,
   sessionId: string,
-  messages: SDKMessage[],
+  messages: SDKMessage[]
 ): Map<string, SDKMessage[]> {
   const next = new Map(prev)
   next.delete(sessionId)
@@ -972,7 +1017,7 @@ export const agentSessionDraftsAtom = atom<Map<string, string>>(new Map())
 
 /** 单个 session 的 markdown 草稿派生 atom — 按 sessionId 切片订阅 */
 export const agentSessionDraftAtomFamily = atomFamily((sessionId: string) =>
-  atom((get) => get(agentSessionDraftsAtom).get(sessionId) ?? ''),
+  atom((get) => get(agentSessionDraftsAtom).get(sessionId) ?? '')
 )
 
 /**
@@ -983,7 +1028,7 @@ export const agentSessionDraftHtmlAtom = atom<Map<string, string>>(new Map())
 
 /** 单个 session 的 HTML 草稿派生 atom — 按 sessionId 切片订阅 */
 export const agentSessionDraftHtmlAtomFamily = atomFamily((sessionId: string) =>
-  atom((get) => get(agentSessionDraftHtmlAtom).get(sessionId) ?? ''),
+  atom((get) => get(agentSessionDraftHtmlAtom).get(sessionId) ?? '')
 )
 
 /**

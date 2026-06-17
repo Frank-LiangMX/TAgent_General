@@ -296,6 +296,7 @@ let testViewModel = ArticleViewModel(repository: MockArticleRepository())
 **Definition**: Every piece of knowledge must have a single, unambiguous representation.
 
 ### Code Duplication
+
 ```swift
 // ❌ BAD: Repeated validation logic
 func createUser(name: String, email: String) throws {
@@ -342,6 +343,7 @@ func updateUser(name: String, email: String) throws {
 ```
 
 ### SwiftUI View Duplication
+
 ```swift
 // ❌ BAD: Repeated UI components
 struct ProfileView: View {
@@ -396,6 +398,7 @@ struct ProfileView: View {
 ```
 
 ### Configuration Duplication
+
 ```swift
 // ❌ BAD: Hardcoded values everywhere
 class NetworkManager {
@@ -445,6 +448,7 @@ class NetworkManager {
 ## Clean Architecture
 
 ### Layer Separation
+
 ```swift
 // Domain Layer - Business logic, no framework dependencies
 struct Article {
@@ -522,6 +526,7 @@ class ArticleViewModel: ObservableObject {
 ## Dependency Injection
 
 ### Constructor Injection (Preferred)
+
 ```swift
 // ✅ GOOD: Dependencies injected via initializer
 class ArticleService {
@@ -542,6 +547,7 @@ class ArticleService {
 ```
 
 ### Property Injection (Use Sparingly)
+
 ```swift
 // Use for SwiftUI Environment
 struct ArticleListView: View {
@@ -566,6 +572,7 @@ extension EnvironmentValues {
 ```
 
 ### Service Locator (Avoid When Possible)
+
 ```swift
 // ⚠️ Use sparingly - hides dependencies
 class ServiceLocator {

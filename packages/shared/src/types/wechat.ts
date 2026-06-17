@@ -36,10 +36,10 @@ export interface WeChatConfig {
 /** 微信 Bridge 连接状态 */
 export type WeChatBridgeStatus =
   | 'disconnected'
-  | 'waiting_scan'    // 等待用户扫码
-  | 'scanned'         // 已扫码，等待确认
-  | 'connecting'      // 正在建立长轮询
-  | 'connected'       // 长轮询运行中
+  | 'waiting_scan' // 等待用户扫码
+  | 'scanned' // 已扫码，等待确认
+  | 'connecting' // 正在建立长轮询
+  | 'connected' // 长轮询运行中
   | 'error'
 
 /** 微信 Bridge 状态详情 */

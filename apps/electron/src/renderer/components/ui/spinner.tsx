@@ -26,18 +26,14 @@ export function Spinner({
   ...props
 }: SpinnerProps): React.ReactElement {
   const sizeClasses = {
-    sm: 'text-sm',      // 14px → spinner 约 21px
+    sm: 'text-sm', // 14px → spinner 约 21px
     default: 'text-base', // 16px → spinner 约 24px
-    lg: 'text-lg',      // 18px → spinner 约 27px
+    lg: 'text-lg', // 18px → spinner 约 27px
   }
 
   return (
     <div
-      className={cn(
-        'spinner text-muted-foreground',
-        sizeClasses[size],
-        className
-      )}
+      className={cn('spinner text-muted-foreground', sizeClasses[size], className)}
       role="status"
       aria-label="加载中"
       {...props}

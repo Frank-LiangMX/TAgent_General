@@ -14,7 +14,7 @@ import type { TocHeading } from './useTocHeadings'
  */
 export function useScrollSpy(
   containerRef: React.RefObject<HTMLElement>,
-  headings: TocHeading[],
+  headings: TocHeading[]
 ): string | null {
   const [activeId, setActiveId] = React.useState<string | null>(null)
 
@@ -55,7 +55,7 @@ export function useScrollSpy(
         }
         recompute()
       },
-      { root: container, rootMargin: '0px 0px -70% 0px', threshold: 0 },
+      { root: container, rootMargin: '0px 0px -70% 0px', threshold: 0 }
     )
 
     for (const h of headings) observer.observe(h.el)

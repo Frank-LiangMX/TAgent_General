@@ -23,7 +23,6 @@ import {
 import { activeRailItemAtom, appModeAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 
-
 export type SyncActiveTabSideEffects = (newActiveTab: TabItem | null) => void
 
 export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
@@ -80,9 +79,11 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
       const session = agentSessions.find((s) => s.id === newActiveTab.sessionId)
       if (session?.workspaceId) {
         setCurrentAgentWorkspaceId(session.workspaceId)
-        window.electronAPI.updateSettings({
-          agentWorkspaceId: session.workspaceId,
-        }).catch(console.error)
+        window.electronAPI
+          .updateSettings({
+            agentWorkspaceId: session.workspaceId,
+          })
+          .catch(console.error)
       }
     },
     [
@@ -95,6 +96,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
       setActiveRailItem,
       topLevelMode,
       agentSessions,
-    ],
+    ]
   )
 }

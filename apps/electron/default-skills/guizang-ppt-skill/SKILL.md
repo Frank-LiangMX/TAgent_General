@@ -1,7 +1,7 @@
 ---
 name: guizang-ppt-skill
 description: 生成横向翻页网页 PPT（单 HTML 文件），含 WebGL 背景、章节幕封、数据大字报、图片网格等模板。提供两种风格：① "电子杂志 × 电子墨水"（衬线 + 流体背景 + 暖色） ② "瑞士国际主义"（无衬线 + 网格点阵 + IKB/柠檬黄/柠檬绿/安全橙高亮）。当用户需要制作分享 / 演讲 / 发布会风格的网页 PPT，或提到"杂志风 PPT"、"瑞士风 PPT"、"Swiss Style"、"horizontal swipe deck"时使用。
-version: "1.0.0"
+version: '1.0.0'
 ---
 
 # Magazine Web Ppt
@@ -16,7 +16,7 @@ version: "1.0.0"
 - **衬线标题（Noto Serif SC + Playfair Display）+ 非衬线正文 + 等宽元数据**
 - 适合：人文分享、行业观察、商业发布、需要"杂志感"的演讲
 - 模板：`assets/template.html` · 主题色：`references/themes.md` · 布局：`references/layouts.md`
-- 美学锚点：像 *Monocle* 杂志贴上了代码
+- 美学锚点：像 _Monocle_ 杂志贴上了代码
 
 ### 风格 B · 瑞士国际主义（Swiss Style）
 
@@ -32,12 +32,14 @@ version: "1.0.0"
 ## 何时使用
 
 **合适的场景**：
+
 - 线下分享 / 行业内部讲话 / 私享会
 - AI 新产品发布 / demo day
 - 带有强烈个人风格的演讲
 - 需要"一次做完，不用翻页工具"的网页版 slides
 
 **不合适的场景**：
+
 - 大段表格数据、图表叠加（用常规 PPT）
 - 培训课件（信息密度不够）
 - 需要多人协作编辑（这是静态 HTML）
@@ -57,27 +59,27 @@ version: "1.0.0"
 
 #### 7 问澄清清单
 
-| # | 问题 | 为什么要问 |
-|---|------|-----------|
-| 1 | **风格 A 还是 B?**(电子杂志风 / 瑞士国际主义风) | **必须先问**,决定用哪个 template + layouts + themes 文件 |
-| 2 | **受众是谁?分享场景?**(行业内部 / 商业发布 / demo day / 私享会) | 决定语言风格和深度 |
-| 3 | **分享时长?** | 15 分钟 ≈ 10 页,30 分钟 ≈ 20 页,45 分钟 ≈ 25-30 页 |
-| 4 | **有没有原始素材?**(文档 / 数据 / 旧 PPT / 文章链接) | 有素材就基于素材,没有就帮他搭 |
-| 5 | **有没有图片?放在哪?** | 详见下方"图片约定" |
-| 6 | **想要哪套主题色?** | 杂志风 5 套(`themes.md`) / 瑞士风 4 套(`themes-swiss.md`),挑一 |
-| 7 | **有没有硬约束?**(必须包含 XX 数据 / 不能出现 YY) | 避免返工 |
+| #   | 问题                                                            | 为什么要问                                                     |
+| --- | --------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1   | **风格 A 还是 B?**(电子杂志风 / 瑞士国际主义风)                 | **必须先问**,决定用哪个 template + layouts + themes 文件       |
+| 2   | **受众是谁?分享场景?**(行业内部 / 商业发布 / demo day / 私享会) | 决定语言风格和深度                                             |
+| 3   | **分享时长?**                                                   | 15 分钟 ≈ 10 页,30 分钟 ≈ 20 页,45 分钟 ≈ 25-30 页             |
+| 4   | **有没有原始素材?**(文档 / 数据 / 旧 PPT / 文章链接)            | 有素材就基于素材,没有就帮他搭                                  |
+| 5   | **有没有图片?放在哪?**                                          | 详见下方"图片约定"                                             |
+| 6   | **想要哪套主题色?**                                             | 杂志风 5 套(`themes.md`) / 瑞士风 4 套(`themes-swiss.md`),挑一 |
+| 7   | **有没有硬约束?**(必须包含 XX 数据 / 不能出现 YY)               | 避免返工                                                       |
 
 #### 风格选择参考(问题 1)
 
-| 如果用户说... | 推荐风格 |
-|---|---|
-| "杂志感" / "人文" / "Monocle 风" / 不指定 | **A · 电子杂志风** |
-| "瑞士风" / "Swiss Style" / "Helvetica" / "极简" / "网格" / "信息图" / "数据驱动" | **B · 瑞士国际主义风** |
-| 内容是 AI 产品 / 技术 / 工程 / 数据汇报 | B 更合适 |
-| 内容是行业观察 / 人文 / 故事 / 文化 | A 更合适 |
-| 用户给了大量 KPI 数字 / 路线图 / 流程 | B 更合适(`Data Hero` 布局是瑞士风专长) |
-| 用户给了大量纪实照片 / 人文图片 | A 更合适(图片网格、左文右图是杂志风专长) |
-| 用户需要 GPT-M 2.0 生成截图再设计 / 信息图 / 证据墙 | B 也很合适(P23/P24 是瑞士风图片专用版式) |
+| 如果用户说...                                                                    | 推荐风格                                 |
+| -------------------------------------------------------------------------------- | ---------------------------------------- |
+| "杂志感" / "人文" / "Monocle 风" / 不指定                                        | **A · 电子杂志风**                       |
+| "瑞士风" / "Swiss Style" / "Helvetica" / "极简" / "网格" / "信息图" / "数据驱动" | **B · 瑞士国际主义风**                   |
+| 内容是 AI 产品 / 技术 / 工程 / 数据汇报                                          | B 更合适                                 |
+| 内容是行业观察 / 人文 / 故事 / 文化                                              | A 更合适                                 |
+| 用户给了大量 KPI 数字 / 路线图 / 流程                                            | B 更合适(`Data Hero` 布局是瑞士风专长)   |
+| 用户给了大量纪实照片 / 人文图片                                                  | A 更合适(图片网格、左文右图是杂志风专长) |
+| 用户需要 GPT-M 2.0 生成截图再设计 / 信息图 / 证据墙                              | B 也很合适(P23/P24 是瑞士风图片专用版式) |
 
 #### 大纲协助(如果用户没有大纲)
 
@@ -151,8 +153,8 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 拷贝后立刻改掉以下占位符，否则浏览器 Tab 会显示"[必填] 替换为 PPT 标题"这种尴尬文字：
 
-| 位置 | 原始 | 需改为 |
-|------|------|--------|
+| 位置      | 原始                                  | 需改为                                                  |
+| --------- | ------------------------------------- | ------------------------------------------------------- |
 | `<title>` | `[必填] 替换为 PPT 标题 · Deck Title` | 实际 deck 标题(如 `一种新的工作方式 · Luke Wroblewski`) |
 
 每次拷贝完 template.html 第一件事:grep 一下"[必填]" 确认全部替换完。
@@ -161,21 +163,23 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 本 skill **只允许从 5 套精心调配的预设里选一套**,不接受用户自定义 hex 值——颜色搭配错了画面瞬间变丑,保护美学比给自由更重要。
 
-| # | 主题 | 适合 |
-|---|------|------|
-| 1 | 🖋 墨水经典 | 通用 / 商业发布 / 不知道选啥的默认 |
-| 2 | 🌊 靛蓝瓷 | 科技 / 研究 / 数据 / 技术发布会 |
-| 3 | 🌿 森林墨 | 自然 / 可持续 / 文化 / 非虚构 |
-| 4 | 🍂 牛皮纸 | 怀旧 / 人文 / 文学 / 独立杂志 |
-| 5 | 🌙 沙丘 | 艺术 / 设计 / 创意 / 画廊 |
+| #   | 主题        | 适合                               |
+| --- | ----------- | ---------------------------------- |
+| 1   | 🖋 墨水经典 | 通用 / 商业发布 / 不知道选啥的默认 |
+| 2   | 🌊 靛蓝瓷   | 科技 / 研究 / 数据 / 技术发布会    |
+| 3   | 🌿 森林墨   | 自然 / 可持续 / 文化 / 非虚构      |
+| 4   | 🍂 牛皮纸   | 怀旧 / 人文 / 文学 / 独立杂志      |
+| 5   | 🌙 沙丘     | 艺术 / 设计 / 创意 / 画廊          |
 
 **操作**:
+
 1. 基于内容主题推荐一套,或直接问用户选哪一套
 2. 打开 `references/themes.md`,找到对应主题的 `:root` 块
 3. **整体替换** `assets/template.html`(已拷贝版本)开头 `:root{` 块里标有"主题色"注释的那几行(`--ink` / `--ink-rgb` / `--paper` / `--paper-rgb` / `--paper-tint` / `--ink-tint`)
 4. 其他 CSS 都走 `var(--...)`,无需任何其他改动
 
 **硬规则**:
+
 - 一份 deck 只用一套主题,不要中途换色
 - 不要接受用户给的任意 hex 值——委婉拒绝并展示 5 套让选
 - 不要混搭(例如 ink 取墨水经典、paper 取沙丘)——会彻底违和
@@ -187,6 +191,7 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 **这是所有生成问题的源头**。layouts 骨架使用了很多类名,如果模板的 `<style>` 里没有对应定义,浏览器会 fallback 到默认样式——大标题字体错、卡片挤成一团、pipeline 糊成一行、图片堆到页面底部。
 
 **两种风格类名互不通用**(再次强调):
+
 - 风格 A 模板里有 `h-hero`(衬线)、`stat-card`、`grid-2-7-5`、`frame` 等
 - 风格 B 模板里有 `h-hero`(无衬线)、`kpi-hero`、`accent-block`、`span-N`、`dots`、`grid-12` 等
 - 同名 class 在两个模板里**视觉表现完全不同**(例:风格 A 的 `h-hero` 是 Noto Serif SC 衬线,风格 B 的 `h-hero` 是 Inter 无衬线)
@@ -204,6 +209,7 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 `h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / `kicker` / `meta-row` / `stat-card` / `stat-label` / `stat-nb` / `stat-unit` / `stat-note` / `pipeline-section` / `pipeline-label` / `pipeline` / `step` / `step-nb` / `step-title` / `step-desc` / `grid-2-7-5` / `grid-2-6-6` / `grid-2-8-4` / `grid-3-3` / `grid-6` / `grid-3` / `grid-4` / `frame` / `frame-img` / `img-cap` / `callout` / `callout-src` / `chrome` / `foot`
 
 **风格 B 常见容易遗漏的类**(2026-05 重构后):
+
 - 画布:`canvas-card` / `chrome-min`
 - 排版:`h-hero`(无衬线 7.4vw weight 200) / `h-statement`(9.6vw) / `h-xl` / `h-md` / `t-cat`(SemiBold 600 小标) / `t-meta`(mono uppercase) / `lead` / `num-mega` / `mono`
 - 卡片(四类互斥):`card-ink` / `card-accent` / `card-fill` / `card-outlined`
@@ -235,18 +241,18 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 **风格 A** → `references/layouts.md`:
 
-| Layout | 用途 |
-|---|---|
-| 1. 开场封面 | 第 1 页 |
-| 2. 章节幕封 | 每幕开场 |
-| 3. 数据大字报 | 抛硬数据 |
-| 4. 左文右图(Quote + Image) | 身份反差 / 故事 |
-| 5. 图片网格 | 多图对比 / 截图实证 |
-| 6. 两列流水线(Pipeline) | 工作流程 |
-| 7. 悬念收束 / 问题页 | 幕末 / 收尾 |
-| 8. 大引用页(Big Quote) | 衬线金句 / takeaway |
-| 9. 并列对比(Before / After) | 旧模式 vs 新模式 |
-| 10. 图文混排(Lead Image + Side Text) | 信息密集的图文页 |
+| Layout                               | 用途                |
+| ------------------------------------ | ------------------- |
+| 1. 开场封面                          | 第 1 页             |
+| 2. 章节幕封                          | 每幕开场            |
+| 3. 数据大字报                        | 抛硬数据            |
+| 4. 左文右图(Quote + Image)           | 身份反差 / 故事     |
+| 5. 图片网格                          | 多图对比 / 截图实证 |
+| 6. 两列流水线(Pipeline)              | 工作流程            |
+| 7. 悬念收束 / 问题页                 | 幕末 / 收尾         |
+| 8. 大引用页(Big Quote)               | 衬线金句 / takeaway |
+| 9. 并列对比(Before / After)          | 旧模式 vs 新模式    |
+| 10. 图文混排(Lead Image + Side Text) | 信息密集的图文页    |
 
 **风格 B** → 先读 `references/swiss-layout-lock.md`,再读 `references/layouts-swiss.md`。
 
@@ -261,36 +267,37 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 原始 22 个正文版式如下:
 
-| Layout | 用途 |
-|---|---|
-| S01 Index Cover | 原始索引封面 |
-| S02 Vertical Timeline + KPI | 演化对比 / 年代变迁 |
-| S03 Split Statement | 核心论点 / 左右分屏 |
-| S04 Six Cells | 6 项概念定义 |
-| S05 Three Layers | 三层架构 |
-| S06 KPI Tower | 4 项数据视觉化高度差 |
-| S07 H-Bar Chart | 5-10 项排名比较 |
-| S08 Duo Compare | Before/After 对照 |
-| S09 Dot Matrix Statement | 大引述 / statement |
-| S10 Split Closing | 收束页 |
-| S11 Horizontal Timeline | 4-7 步流程 |
-| S12 Manifesto + Ink Banner | 阶段性结论 |
-| S13 Three Forces | 3 个对等概念深化 |
-| S14 Loop Form | 自学闭环 / 自动化 |
-| S15 Matrix + Hero Stat | 8-12 项矩阵 + 总数据 |
-| S16 Multi-card Brief | 6 项快讯小卡 |
-| S17 System Diagram | 三层架构 / 生态地图 |
-| S18 Why Now | 三论点 + 数据支撑 |
-| S19 Four Cards | 4 项等权特性 |
-| S20 Stacked KPI Ledger | 纵向账单数据 |
-| S21 Tech Spec Sheet | 产品规格 / benchmark |
-| S22 Image Hero | 21:9 顶图 + 标题块 + 三列 KPI |
+| Layout                      | 用途                          |
+| --------------------------- | ----------------------------- |
+| S01 Index Cover             | 原始索引封面                  |
+| S02 Vertical Timeline + KPI | 演化对比 / 年代变迁           |
+| S03 Split Statement         | 核心论点 / 左右分屏           |
+| S04 Six Cells               | 6 项概念定义                  |
+| S05 Three Layers            | 三层架构                      |
+| S06 KPI Tower               | 4 项数据视觉化高度差          |
+| S07 H-Bar Chart             | 5-10 项排名比较               |
+| S08 Duo Compare             | Before/After 对照             |
+| S09 Dot Matrix Statement    | 大引述 / statement            |
+| S10 Split Closing           | 收束页                        |
+| S11 Horizontal Timeline     | 4-7 步流程                    |
+| S12 Manifesto + Ink Banner  | 阶段性结论                    |
+| S13 Three Forces            | 3 个对等概念深化              |
+| S14 Loop Form               | 自学闭环 / 自动化             |
+| S15 Matrix + Hero Stat      | 8-12 项矩阵 + 总数据          |
+| S16 Multi-card Brief        | 6 项快讯小卡                  |
+| S17 System Diagram          | 三层架构 / 生态地图           |
+| S18 Why Now                 | 三论点 + 数据支撑             |
+| S19 Four Cards              | 4 项等权特性                  |
+| S20 Stacked KPI Ledger      | 纵向账单数据                  |
+| S21 Tech Spec Sheet         | 产品规格 / benchmark          |
+| S22 Image Hero              | 21:9 顶图 + 标题块 + 三列 KPI |
 
 **登记扩展**:`S08 + Swiss Map Component` 用于地点、人物住所、路线、城市关系。它不是新 layout,而是 S08 右侧插槽的 MapLibre 地图组件;必须按 `references/swiss-map-component.md` 的点位、连线、卡片和右上角缩放/拖动控制实现。
 
 选对应 layout,粘过去,改文案和图片路径即可。**务必先完成 3.0 预检**。
 
 **风格 B 版式多样性硬规则**:
+
 - 7-8 页 deck 至少使用 **6 个不同 S 编号版式**;10 页以上至少使用 8 个不同版式。
 - 如果用户说"测试模板 / 看看效果 / 多一点版式",必须覆盖:一个封面、一个收尾、至少 1 个对比或时间线(S08/S11/S02)、至少 1 个结构图(S14/S17/S15)、至少 1 个图片版式(S22 或 S15/S16 图片格改造)。
 - 不允许连续 3 页使用同一种主体结构,例如连续三页 `head + grid + card`。
@@ -301,19 +308,20 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 永远用**标准比例**,不要用原图奇葩比例(如 `2592/1798`):
 
-| 场景 | 推荐比例 |
-|------|---------|
-| S22 顶部主图 | **21:9**;照片关键主体放中央安全区 |
-| S15/S16 多图格 | 统一 21:9 或统一 16:10,不能混用 |
-| 左文右图 主图(风格 A) | 16:10 或 4:3 + `max-height:56vh` |
-| 图片网格(风格 A) | **固定 `height:26vh`**,不用 aspect-ratio |
-| 左小图 + 右文字 | 1:1 或 3:2 |
-| 全屏主视觉 | 16:9 + `max-height:64vh` |
-| 图文混排小插图 | 3:2 或 3:4 |
+| 场景                  | 推荐比例                                 |
+| --------------------- | ---------------------------------------- |
+| S22 顶部主图          | **21:9**;照片关键主体放中央安全区        |
+| S15/S16 多图格        | 统一 21:9 或统一 16:10,不能混用          |
+| 左文右图 主图(风格 A) | 16:10 或 4:3 + `max-height:56vh`         |
+| 图片网格(风格 A)      | **固定 `height:26vh`**,不用 aspect-ratio |
+| 左小图 + 右文字       | 1:1 或 3:2                               |
+| 全屏主视觉            | 16:9 + `max-height:64vh`                 |
+| 图文混排小插图        | 3:2 或 3:4                               |
 
 **默认不要让图片 `align-self:end`**——会滑到页面底部,很容易碰到分页组件。用 grid 容器 + `align-items:start`(template 已预设)让图片贴顶即可;只有风格 B 的 P23 可以用 `.swiss-img-split.align-image-bottom`,因为模板已经给它内置了 `--nav-safe-bottom` 安全区。
 
 **风格 B 瑞士风额外规则**:
+
 - 单张大图用 S22;多图测试用 S15/S16 的原始卡片网格改造,不要用未登记的 P23/P24
 - 生成图片前先写 `data-image-slot`:例如 `s22-hero-21x9` / `s15-grid-21x9` / `s16-brief-21x9`
 - S22 配图默认生成 21:9,提示词必须包含 `subject centered in the safe middle area`;照片容器用 `object-position:center 35%`,不要用 `top center`
@@ -328,12 +336,12 @@ cp "<SKILL_ROOT>/assets/template-swiss.html" "项目/XXX/ppt/index.html"
 
 中文方块字视觉面积大,不能直接套英文 hero 的 6.8-7vw。写中文大标题前先分档:
 
-| 标题形态 | 推荐字号 |
-|---|---|
-| 1 行,≤ 8 个中文字符 | `min(6.4vw,11.2vh)` |
-| 2 行,每行≤ 8 个中文字符 | `min(5.8vw,10.2vh)` |
-| 2 行,任一行 9-12 个中文字符 | `min(5.2vw,9.2vh)` |
-| 3 行或更长 | 优先改写标题;不得已用 `min(4.6vw,8.2vh)` |
+| 标题形态                    | 推荐字号                                 |
+| --------------------------- | ---------------------------------------- |
+| 1 行,≤ 8 个中文字符         | `min(6.4vw,11.2vh)`                      |
+| 2 行,每行≤ 8 个中文字符     | `min(5.8vw,10.2vh)`                      |
+| 2 行,任一行 9-12 个中文字符 | `min(5.2vw,9.2vh)`                       |
+| 3 行或更长                  | 优先改写标题;不得已用 `min(4.6vw,8.2vh)` |
 
 如果标题挤占了图片或正文区域,先压缩标题文案,再降字号;不要靠把下方内容推到底来硬塞。
 
@@ -431,6 +439,7 @@ guizang-ppt-skill/
 ```
 
 **加载顺序建议**：
+
 1. 先读完 `SKILL.md`(这个文件)了解整体
 2. Step 1 需求澄清**第一问**先确定风格 A 还是 B,然后:
    - 风格 A:读 `themes.md` 帮用户选一套主题色
@@ -478,13 +487,15 @@ guizang-ppt-skill/
 本 skill 的两种风格分别参考了：
 
 **风格 A · 电子杂志风**:
+
 - 歸藏 "一人公司：被 AI 折叠的组织" 分享（2026-04-22，27 页）
-- *Monocle* 杂志的版式
+- _Monocle_ 杂志的版式
 - YC 总裁 Garry Tan "Thin Harness, Fat Skills" 那篇博客的 demo
 
 **风格 B · 瑞士国际主义风**:
+
 - Massimo Vignelli 的 NYC Subway / Unimark 系统
-- *Helvetica Forever* 的字体设计语言
+- _Helvetica Forever_ 的字体设计语言
 - Josef Müller-Brockmann 的网格系统经典著作
 - 当代设计:Acne Studios / Off-White / IKEA / Beck Design
 

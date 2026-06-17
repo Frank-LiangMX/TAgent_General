@@ -29,25 +29,27 @@ Guide developers through implementing macOS platform capabilities correctly, wit
 
 ## Quick Decision Guide
 
-| Need | Solution | Module |
-|------|----------|--------|
-| Persist user-selected folder access | Security-scoped bookmarks | sandboxing.md |
-| Share content to other apps | Share Extension | extensions.md |
-| Utility that lives in the menu bar | MenuBarExtra | menubar.md |
-| App launches at login | Login Item (ServiceManagement) | background.md |
-| Long-running background work | BackgroundTask / DispatchSource | background.md |
-| Custom Finder integration | Finder Sync Extension | extensions.md |
-| Network filtering/proxy | System Extension | extensions.md |
-| Inter-process communication | XPC Service | extensions.md |
+| Need                                | Solution                        | Module        |
+| ----------------------------------- | ------------------------------- | ------------- |
+| Persist user-selected folder access | Security-scoped bookmarks       | sandboxing.md |
+| Share content to other apps         | Share Extension                 | extensions.md |
+| Utility that lives in the menu bar  | MenuBarExtra                    | menubar.md    |
+| App launches at login               | Login Item (ServiceManagement)  | background.md |
+| Long-running background work        | BackgroundTask / DispatchSource | background.md |
+| Custom Finder integration           | Finder Sync Extension           | extensions.md |
+| Network filtering/proxy             | System Extension                | extensions.md |
+| Inter-process communication         | XPC Service                     | extensions.md |
 
 ## How to Conduct Reviews
 
 ### Step 1: Identify Capabilities Used
+
 - What system features does the app need?
 - Is it sandboxed (required for Mac App Store)?
 - What entitlements are required?
 
 ### Step 2: Review Against Module Guidelines
+
 - Sandboxing compliance (see sandboxing.md)
 - Extension architecture (see extensions.md)
 - Menu bar implementation (see menubar.md)
@@ -56,6 +58,7 @@ Guide developers through implementing macOS platform capabilities correctly, wit
 ### Step 3: Provide Structured Feedback
 
 For each issue found:
+
 1. **Issue**: Describe the capability problem
 2. **Impact**: Rejection, crash, security risk, user confusion
 3. **Fix**: Correct implementation with entitlements and code

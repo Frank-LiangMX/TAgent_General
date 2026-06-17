@@ -20,15 +20,17 @@ import type {
 } from '@tagent/shared'
 
 /** ExitPlanMode 审批结果（扩展 SDK PermissionResult，附加 targetMode） */
-export type ExitPlanPermissionResult = {
-  behavior: 'allow'
-  updatedInput: Record<string, unknown>
-  /** 用户选择的目标权限模式 */
-  targetMode?: TAgentPermissionMode
-} | {
-  behavior: 'deny'
-  message: string
-}
+export type ExitPlanPermissionResult =
+  | {
+      behavior: 'allow'
+      updatedInput: Record<string, unknown>
+      /** 用户选择的目标权限模式 */
+      targetMode?: TAgentPermissionMode
+    }
+  | {
+      behavior: 'deny'
+      message: string
+    }
 
 /** 待处理的 ExitPlanMode 请求 */
 interface PendingExitPlan {
@@ -61,9 +63,11 @@ export class AgentExitPlanService {
     sessionId: string,
     input: Record<string, unknown>,
     signal: AbortSignal,
-    sendToRenderer: (request: ExitPlanModeRequest) => void,
+    sendToRenderer: (request: ExitPlanModeRequest) => void
   ): Promise<ExitPlanPermissionResult> {
-    console.log(`[ExitPlanService] handleExitPlanMode 开始: sessionId=${sessionId}, signal.aborted=${signal.aborted}`)
+    console.log(
+      `[ExitPlanService] handleExitPlanMode 开始: sessionId=${sessionId}, signal.aborted=${signal.aborted}`
+    )
     const allowedPrompts = this.parseAllowedPrompts(input)
 
     const request: ExitPlanModeRequest = {
@@ -78,13 +82,17 @@ export class AgentExitPlanService {
     return new Promise<ExitPlanPermissionResult>((resolve) => {
       this.pendingRequests.set(request.requestId, { resolve, request, toolInput: input })
 
-      signal.addEventListener('abort', () => {
-        if (this.pendingRequests.has(request.requestId)) {
-          console.warn(`[ExitPlanService] AbortSignal 触发，deny: requestId=${request.requestId}`)
-          this.pendingRequests.delete(request.requestId)
-          resolve({ behavior: 'deny', message: '操作已中止' })
-        }
-      }, { once: true })
+      signal.addEventListener(
+        'abort',
+        () => {
+          if (this.pendingRequests.has(request.requestId)) {
+            console.warn(`[ExitPlanService] AbortSignal 触发，deny: requestId=${request.requestId}`)
+            this.pendingRequests.delete(request.requestId)
+            resolve({ behavior: 'deny', message: '操作已中止' })
+          }
+        },
+        { once: true }
+      )
     })
   }
 
@@ -93,7 +101,9 @@ export class AgentExitPlanService {
    *
    * @returns { sessionId, targetMode } 用于通知编排层；未找到返回 null
    */
-  respondToExitPlanMode(response: ExitPlanModeResponse): { sessionId: string; targetMode: TAgentPermissionMode | null } | null {
+  respondToExitPlanMode(
+    response: ExitPlanModeResponse
+  ): { sessionId: string; targetMode: TAgentPermissionMode | null } | null {
     const pending = this.pendingRequests.get(response.requestId)
     if (!pending) return null
 
@@ -173,10 +183,12 @@ export class AgentExitPlanService {
 
     return raw
       .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
-      .map((item): ExitPlanAllowedPrompt => ({
-        tool: typeof item.tool === 'string' ? item.tool as 'Bash' : 'Bash',
-        prompt: typeof item.prompt === 'string' ? item.prompt : '',
-      }))
+      .map(
+        (item): ExitPlanAllowedPrompt => ({
+          tool: typeof item.tool === 'string' ? (item.tool as 'Bash') : 'Bash',
+          prompt: typeof item.prompt === 'string' ? item.prompt : '',
+        })
+      )
       .filter((item) => item.prompt.length > 0)
   }
 }

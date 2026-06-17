@@ -12,6 +12,7 @@
 
 // Claude / Anthropic
 import type { ProviderType } from '@tagent/shared'
+
 import ClaudeLogo from '@/assets/models/claude.png'
 import CodestralLogo from '@/assets/models/codestral.png'
 import CohereLogo from '@/assets/models/cohere.png'
@@ -80,7 +81,6 @@ import ZhipuLogo from '@/assets/models/zhipu.png'
 // Embedding
 
 // ===== 供应商类型 =====
-
 
 // ===== 正则匹配映射 =====
 
@@ -244,9 +244,9 @@ export function getModelLogoById(modelId: string): string | undefined {
  * @param provider 供应商类型（可选）
  */
 export function getModelLogo(modelId: string, provider?: ProviderType): string {
-  return getModelLogoById(modelId)
-    ?? (provider ? PROVIDER_LOGO_MAP[provider] : undefined)
-    ?? ClaudeLogo
+  return (
+    getModelLogoById(modelId) ?? (provider ? PROVIDER_LOGO_MAP[provider] : undefined) ?? ClaudeLogo
+  )
 }
 
 /**
@@ -322,7 +322,10 @@ export function getChannelLogo(channel: { provider: ProviderType; baseUrl: strin
  * 优先返回别名（name !== id），未找到则返回原始 modelId。
  * 用于将 SDK 返回的 model ID 转为用户友好的显示名称。
  */
-export function resolveModelDisplayName(modelId: string, channels: import('@tagent/shared').Channel[]): string {
+export function resolveModelDisplayName(
+  modelId: string,
+  channels: import('@tagent/shared').Channel[]
+): string {
   for (const channel of channels) {
     for (const model of channel.models) {
       if (model.id === modelId && model.name && model.name !== model.id) {

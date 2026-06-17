@@ -46,13 +46,17 @@ interface WorkspaceFilesViewProps {
   layout?: 'sidebar' | 'navigator' | 'main'
 }
 
-const actionButtonClass = 'h-6 w-6 flex-shrink-0 rounded-md text-muted-foreground/75 hover:bg-accent/70 hover:text-foreground [&_svg]:size-3.5'
+const actionButtonClass =
+  'h-6 w-6 flex-shrink-0 rounded-md text-muted-foreground/75 hover:bg-accent/70 hover:text-foreground [&_svg]:size-3.5'
 
 function getPathBasename(filePath: string): string {
   return filePath.split(/[\\/]/).filter(Boolean).pop() || filePath
 }
 
-export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: WorkspaceFilesViewProps): React.ReactElement {
+export function WorkspaceFilesView({
+  workspaceKey,
+  layout = 'sidebar',
+}: WorkspaceFilesViewProps): React.ReactElement {
   // 当前工作区
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
@@ -66,12 +70,15 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
 
   const wsAttachedFilesMap = useAtomValue(workspaceAttachedFilesMapAtom)
   const setWsAttachedFilesMap = useSetAtom(workspaceAttachedFilesMapAtom)
-  const wsAttachedFiles = currentWorkspaceId ? (wsAttachedFilesMap.get(currentWorkspaceId) ?? []) : []
+  const wsAttachedFiles = currentWorkspaceId
+    ? (wsAttachedFilesMap.get(currentWorkspaceId) ?? [])
+    : []
 
   // 加载工作区级附加目录
   React.useEffect(() => {
     if (!workspaceSlug || !currentWorkspaceId) return
-    window.electronAPI.getWorkspaceDirectories(workspaceSlug)
+    window.electronAPI
+      .getWorkspaceDirectories(workspaceSlug)
       .then((dirs) => {
         setWsAttachedDirsMap((prev) => {
           const map = new Map(prev)
@@ -85,7 +92,8 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
   // 加载工作区级附加文件
   React.useEffect(() => {
     if (!workspaceSlug || !currentWorkspaceId) return
-    window.electronAPI.getWorkspaceAttachedFiles(workspaceSlug)
+    window.electronAPI
+      .getWorkspaceAttachedFiles(workspaceSlug)
       .then((files) => {
         setWsAttachedFilesMap((prev) => {
           const map = new Map(prev)
@@ -103,7 +111,10 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
       setWorkspaceFilesPath(null)
       return
     }
-    window.electronAPI.getWorkspaceFilesPath(workspaceSlug).then(setWorkspaceFilesPath).catch(() => setWorkspaceFilesPath(null))
+    window.electronAPI
+      .getWorkspaceFilesPath(workspaceSlug)
+      .then(setWorkspaceFilesPath)
+      .catch(() => setWorkspaceFilesPath(null))
   }, [workspaceSlug])
 
   const filesVersion = useAtomValue(workspaceFilesVersionAtom)
@@ -116,34 +127,49 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
     window.electronAPI.openFile(filePath).catch(console.error)
   }, [])
 
-  const handleInspectFile = React.useCallback((filePath: string) => {
-    setSelectedFile(filePath)
-    setSelectedDirectory(null)
-  }, [setSelectedFile, setSelectedDirectory])
+  const handleInspectFile = React.useCallback(
+    (filePath: string) => {
+      setSelectedFile(filePath)
+      setSelectedDirectory(null)
+    },
+    [setSelectedFile, setSelectedDirectory]
+  )
 
-  const handleInspectDirectory = React.useCallback((dirPath: string) => {
-    setSelectedDirectory(dirPath)
-    setSelectedFile(null)
-  }, [setSelectedDirectory, setSelectedFile])
+  const handleInspectDirectory = React.useCallback(
+    (dirPath: string) => {
+      setSelectedDirectory(dirPath)
+      setSelectedFile(null)
+    },
+    [setSelectedDirectory, setSelectedFile]
+  )
 
-  const handleFileActivate = React.useCallback((filePath: string) => {
-    if (isNavigator) {
-      handleInspectFile(filePath)
-      return
-    }
-    handleOpenInOs(filePath)
-  }, [handleInspectFile, handleOpenInOs, isNavigator])
+  const handleFileActivate = React.useCallback(
+    (filePath: string) => {
+      if (isNavigator) {
+        handleInspectFile(filePath)
+        return
+      }
+      handleOpenInOs(filePath)
+    },
+    [handleInspectFile, handleOpenInOs, isNavigator]
+  )
 
   // 附加 / 移除目录
-  const attachWorkspaceDir = React.useCallback(async (dirPath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    const updated = await window.electronAPI.attachWorkspaceDirectory({ workspaceSlug, directoryPath: dirPath })
-    setWsAttachedDirsMap((prev) => {
-      const map = new Map(prev)
-      map.set(currentWorkspaceId, updated)
-      return map
-    })
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap])
+  const attachWorkspaceDir = React.useCallback(
+    async (dirPath: string) => {
+      if (!workspaceSlug || !currentWorkspaceId) return
+      const updated = await window.electronAPI.attachWorkspaceDirectory({
+        workspaceSlug,
+        directoryPath: dirPath,
+      })
+      setWsAttachedDirsMap((prev) => {
+        const map = new Map(prev)
+        map.set(currentWorkspaceId, updated)
+        return map
+      })
+    },
+    [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap]
+  )
 
   const handleAttachFolder = React.useCallback(async () => {
     try {
@@ -154,60 +180,90 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
     }
   }, [attachWorkspaceDir])
 
-  const handleFoldersDropped = React.useCallback(async (folderPaths: string[]) => {
-    for (const dirPath of folderPaths) {
-      try { await attachWorkspaceDir(dirPath) } catch (error) {
-        console.error('[WorkspaceFilesView] 拖拽附加文件夹失败:', error)
+  const handleFoldersDropped = React.useCallback(
+    async (folderPaths: string[]) => {
+      for (const dirPath of folderPaths) {
+        try {
+          await attachWorkspaceDir(dirPath)
+        } catch (error) {
+          console.error('[WorkspaceFilesView] 拖拽附加文件夹失败:', error)
+        }
       }
-    }
-  }, [attachWorkspaceDir])
+    },
+    [attachWorkspaceDir]
+  )
 
-  const handleDetachDirectory = React.useCallback(async (dirPath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    try {
-      const updated = await window.electronAPI.detachWorkspaceDirectory({ workspaceSlug, directoryPath: dirPath })
-      setWsAttachedDirsMap((prev) => {
-        const map = new Map(prev)
-        if (updated.length > 0) { map.set(currentWorkspaceId, updated) } else { map.delete(currentWorkspaceId) }
-        return map
-      })
-    } catch (error) {
-      console.error('[WorkspaceFilesView] 移除附加目录失败:', error)
-    }
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap])
+  const handleDetachDirectory = React.useCallback(
+    async (dirPath: string) => {
+      if (!workspaceSlug || !currentWorkspaceId) return
+      try {
+        const updated = await window.electronAPI.detachWorkspaceDirectory({
+          workspaceSlug,
+          directoryPath: dirPath,
+        })
+        setWsAttachedDirsMap((prev) => {
+          const map = new Map(prev)
+          if (updated.length > 0) {
+            map.set(currentWorkspaceId, updated)
+          } else {
+            map.delete(currentWorkspaceId)
+          }
+          return map
+        })
+      } catch (error) {
+        console.error('[WorkspaceFilesView] 移除附加目录失败:', error)
+      }
+    },
+    [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap]
+  )
 
   // 附加 / 移除文件
-  const attachWorkspaceFile = React.useCallback(async (filePath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    const updated = await window.electronAPI.attachWorkspaceFile({ workspaceSlug, filePath })
-    setWsAttachedFilesMap((prev) => {
-      const map = new Map(prev)
-      map.set(currentWorkspaceId, updated)
-      return map
-    })
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
-
-  const handleFilesAttached = React.useCallback(async (filePaths: string[]) => {
-    for (const filePath of filePaths) {
-      try { await attachWorkspaceFile(filePath) } catch (error) {
-        console.error('[WorkspaceFilesView] 附加文件失败:', error)
-      }
-    }
-  }, [attachWorkspaceFile])
-
-  const handleDetachFile = React.useCallback(async (filePath: string) => {
-    if (!workspaceSlug || !currentWorkspaceId) return
-    try {
-      const updated = await window.electronAPI.detachWorkspaceFile({ workspaceSlug, filePath })
+  const attachWorkspaceFile = React.useCallback(
+    async (filePath: string) => {
+      if (!workspaceSlug || !currentWorkspaceId) return
+      const updated = await window.electronAPI.attachWorkspaceFile({ workspaceSlug, filePath })
       setWsAttachedFilesMap((prev) => {
         const map = new Map(prev)
-        if (updated.length > 0) { map.set(currentWorkspaceId, updated) } else { map.delete(currentWorkspaceId) }
+        map.set(currentWorkspaceId, updated)
         return map
       })
-    } catch (error) {
-      console.error('[WorkspaceFilesView] 移除附加文件失败:', error)
-    }
-  }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
+    },
+    [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap]
+  )
+
+  const handleFilesAttached = React.useCallback(
+    async (filePaths: string[]) => {
+      for (const filePath of filePaths) {
+        try {
+          await attachWorkspaceFile(filePath)
+        } catch (error) {
+          console.error('[WorkspaceFilesView] 附加文件失败:', error)
+        }
+      }
+    },
+    [attachWorkspaceFile]
+  )
+
+  const handleDetachFile = React.useCallback(
+    async (filePath: string) => {
+      if (!workspaceSlug || !currentWorkspaceId) return
+      try {
+        const updated = await window.electronAPI.detachWorkspaceFile({ workspaceSlug, filePath })
+        setWsAttachedFilesMap((prev) => {
+          const map = new Map(prev)
+          if (updated.length > 0) {
+            map.set(currentWorkspaceId, updated)
+          } else {
+            map.delete(currentWorkspaceId)
+          }
+          return map
+        })
+      } catch (error) {
+        console.error('[WorkspaceFilesView] 移除附加文件失败:', error)
+      }
+    },
+    [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap]
+  )
 
   // 拖拽上传完成后递增版本号，触发 FileBrowser 刷新
   const handleFilesUploaded = React.useCallback(() => {
@@ -240,7 +296,7 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
           ? 'flex h-full flex-col gap-5 px-6 pb-6 pt-10 xl:px-8'
           : layout === 'navigator'
             ? 'flex h-full min-h-0 flex-1 flex-col'
-            : 'flex-1 flex flex-col pt-0.5 mx-2 mb-2',
+            : 'flex-1 flex flex-col pt-0.5 mx-2 mb-2'
       )}
       key={workspaceKey}
     >
@@ -248,7 +304,9 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
       {layout === 'navigator' ? (
         <div className="flex h-9 shrink-0 items-center gap-1.5 border-b border-border/40 px-3">
           <FolderOpen size={12} className="shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate text-[11px] font-medium text-foreground">{workspaceName}</span>
+          <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
+            {workspaceName}
+          </span>
         </div>
       ) : layout === 'main' ? (
         <div className="rounded-3xl border border-border/60 bg-card/90 px-5 py-4 shadow-sm shadow-foreground/5">
@@ -265,7 +323,8 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
                 </span>
               </div>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                这里直接承接文件功能区的内容，但用更宽的主区排版展示，避免和 sidebar 共享同一套紧凑样式。
+                这里直接承接文件功能区的内容，但用更宽的主区排版展示，避免和 sidebar
+                共享同一套紧凑样式。
               </p>
             </div>
 
@@ -277,7 +336,9 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
+                      onClick={() =>
+                        window.electronAPI.openFile(workspaceFilesPath).catch(console.error)
+                      }
                     >
                       <FolderSearch size={14} />
                       <span className="ml-1">打开目录</span>
@@ -309,7 +370,10 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
               <p>工作区内所有会话可访问的文件和文件夹，每个新对话都可以自动读取</p>
             </TooltipContent>
           </Tooltip>
-          <span className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0" title={workspaceFilesPath ?? ''}>
+          <span
+            className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0"
+            title={workspaceFilesPath ?? ''}
+          >
             {breadcrumb}
           </span>
           {workspaceFilesPath && (
@@ -320,7 +384,9 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
                   variant="ghost"
                   size="icon"
                   className={actionButtonClass}
-                  onClick={() => window.electronAPI.openFile(workspaceFilesPath).catch(console.error)}
+                  onClick={() =>
+                    window.electronAPI.openFile(workspaceFilesPath).catch(console.error)
+                  }
                 >
                   <FolderSearch />
                 </Button>
@@ -334,10 +400,14 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
       )}
 
       {/* 搜索栏 */}
-      <div className={cn(
-        layout === 'main' ? 'rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-sm shadow-foreground/5' : '',
-        layout === 'navigator' && 'shrink-0 border-b border-border/40 px-2 py-2',
-      )}>
+      <div
+        className={cn(
+          layout === 'main'
+            ? 'rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-sm shadow-foreground/5'
+            : '',
+          layout === 'navigator' && 'shrink-0 border-b border-border/40 px-2 py-2'
+        )}
+      >
         <FileSearchBar
           workspaceFilesPath={workspaceFilesPath}
           sessionPath={null}
@@ -354,7 +424,7 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
           'min-h-0 overflow-y-auto pb-1 scrollbar-thin',
           layout === 'main'
             ? 'flex-1 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-sm shadow-foreground/5'
-            : 'flex-1',
+            : 'flex-1'
         )}
       >
         {wsAttachedFiles.length > 0 && (
@@ -377,7 +447,9 @@ export function WorkspaceFilesView({ workspaceKey, layout = 'sidebar' }: Workspa
         {workspaceFilesPath && (
           <>
             {hasAttachedItems && (
-              <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">工作文件（存储于该工作区目录）</div>
+              <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
+                工作文件（存储于该工作区目录）
+              </div>
             )}
             <FileBrowser
               rootPath={workspaceFilesPath}
@@ -422,10 +494,16 @@ interface AttachedFilesSectionProps {
   onFilePreview?: (filePath: string) => void
 }
 
-function AttachedFilesSection({ attachedFiles, onDetach, onFilePreview }: AttachedFilesSectionProps): React.ReactElement {
+function AttachedFilesSection({
+  attachedFiles,
+  onDetach,
+  onFilePreview,
+}: AttachedFilesSectionProps): React.ReactElement {
   return (
     <div className="pt-2.5 pb-1 flex-shrink-0">
-      <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3">附加文件（Agent 可以按原路径读取）</div>
+      <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3">
+        附加文件（Agent 可以按原路径读取）
+      </div>
       {attachedFiles.map((filePath) => {
         const name = getPathBasename(filePath)
         const entry: FileEntry = { name, path: filePath, isDirectory: false }
@@ -437,13 +515,18 @@ function AttachedFilesSection({ attachedFiles, onDetach, onFilePreview }: Attach
           >
             <span className="w-3.5 flex-shrink-0" />
             <FileTypeIcon name={name} isDirectory={false} />
-            <span className="text-xs truncate flex-1" title={filePath}>{name}</span>
+            <span className="text-xs truncate flex-1" title={filePath}>
+              {name}
+            </span>
             <Button
               type="button"
               variant="ghost"
               size="icon"
               className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-              onClick={(e) => { e.stopPropagation(); void onDetach(filePath) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                void onDetach(filePath)
+              }}
             >
               <X className="size-3" />
             </Button>
@@ -479,7 +562,11 @@ function AttachedDirsSection({
     setSelectedPaths((prev) => {
       if (ctrlKey) {
         const next = new Set(prev)
-        if (next.has(path)) { next.delete(path) } else { next.add(path) }
+        if (next.has(path)) {
+          next.delete(path)
+        } else {
+          next.add(path)
+        }
         return next
       }
       return new Set([path])
@@ -488,7 +575,9 @@ function AttachedDirsSection({
 
   return (
     <div className="pt-2.5 pb-1 flex-shrink-0">
-      <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3">附加目录（Agent 可以读取并操作此外部文件夹）</div>
+      <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3">
+        附加目录（Agent 可以读取并操作此外部文件夹）
+      </div>
       {attachedDirs.map((dir) => (
         <AttachedDirTree
           key={dir}
@@ -536,7 +625,8 @@ function AttachedDirTree({
   // 目录区不需要 sessionId 校验，传空字符串即可
   React.useEffect(() => {
     if (expanded && loaded) {
-      window.electronAPI.listAttachedDirectory(dirPath, { sessionId: '', candidateBasePaths: undefined })
+      window.electronAPI
+        .listAttachedDirectory(dirPath, { sessionId: '', candidateBasePaths: undefined })
         .then((items) => setChildren(items))
         .catch((err) => console.error('[WorkspaceFilesView/AttachedDirTree] 刷新失败:', err))
     }
@@ -545,7 +635,10 @@ function AttachedDirTree({
   const toggleExpand = async (): Promise<void> => {
     if (!expanded && !loaded) {
       try {
-        const items = await window.electronAPI.listAttachedDirectory(dirPath, { sessionId: '', candidateBasePaths: undefined })
+        const items = await window.electronAPI.listAttachedDirectory(dirPath, {
+          sessionId: '',
+          candidateBasePaths: undefined,
+        })
         setChildren(items)
         setLoaded(true)
       } catch (err) {
@@ -565,7 +658,7 @@ function AttachedDirTree({
         className={cn(
           'relative flex h-8 items-center gap-1 pr-2 text-sm cursor-pointer group transition-colors',
           isSticky && cn(STICKY_ROW_BASE_CLASS, 'top-0 z-10'),
-          isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50',
+          isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50'
         )}
         style={{ paddingLeft }}
         onClick={() => {
@@ -576,17 +669,22 @@ function AttachedDirTree({
         <ChevronRight
           className={cn(
             'size-3.5 text-muted-foreground flex-shrink-0 transition-transform duration-150',
-            expanded && 'rotate-90',
+            expanded && 'rotate-90'
           )}
         />
         <FileTypeIcon name={dirName} isDirectory isOpen={expanded} />
-        <span className="text-xs truncate flex-1" title={dirPath}>{dirName}</span>
+        <span className="text-xs truncate flex-1" title={dirPath}>
+          {dirName}
+        </span>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-          onClick={(e) => { e.stopPropagation(); onDetach() }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDetach()
+          }}
         >
           <X className="size-3" />
         </Button>
@@ -652,7 +750,10 @@ function AttachedDirItem({
     if (!entry.isDirectory) return
     if (!expanded && !loaded) {
       try {
-        const items = await window.electronAPI.listAttachedDirectory(entry.path, { sessionId: '', candidateBasePaths: undefined })
+        const items = await window.electronAPI.listAttachedDirectory(entry.path, {
+          sessionId: '',
+          candidateBasePaths: undefined,
+        })
         setChildren(items)
         setLoaded(true)
       } catch (err) {
@@ -684,7 +785,7 @@ function AttachedDirItem({
         className={cn(
           'relative flex h-8 items-center gap-1 pr-2 text-sm cursor-pointer group transition-colors',
           isSticky && STICKY_ROW_BASE_CLASS,
-          isSelected ? 'bg-accent' : isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50',
+          isSelected ? 'bg-accent' : isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50'
         )}
         style={{
           paddingLeft,
@@ -698,7 +799,7 @@ function AttachedDirItem({
           <ChevronRight
             className={cn(
               'size-3.5 text-muted-foreground flex-shrink-0 transition-transform duration-150',
-              expanded && 'rotate-90',
+              expanded && 'rotate-90'
             )}
           />
         ) : (

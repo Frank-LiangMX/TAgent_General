@@ -14,7 +14,13 @@ import * as path from 'node:path'
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 
-import { initializeAssetStoreDb, type AssetRecord, type AssetType, type ReviewStatus, type ReviewHistoryRecord } from './schema'
+import {
+  initializeAssetStoreDb,
+  type AssetRecord,
+  type AssetType,
+  type ReviewStatus,
+  type ReviewHistoryRecord,
+} from './schema'
 
 /**
  * 资产库数据库路径
@@ -25,7 +31,9 @@ import { initializeAssetStoreDb, type AssetRecord, type AssetType, type ReviewSt
  */
 function getAssetStoreDbPath(): string {
   const isDev = !app.isPackaged
-  const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+  const baseDir = isDev
+    ? path.join(app.getPath('home'), '.tagent-dev')
+    : path.join(app.getPath('home'), '.tagent')
   return path.join(baseDir, 'ta', 'tag_store', 'tags.db')
 }
 
@@ -234,7 +242,9 @@ class AssetStoreService {
     const total = countResult.total
 
     // 查询列表
-    const validOrderBy = ['name', 'updated_at', 'created_at'].includes(orderBy) ? orderBy : 'updated_at'
+    const validOrderBy = ['name', 'updated_at', 'created_at'].includes(orderBy)
+      ? orderBy
+      : 'updated_at'
     const validOrderDir = orderDir === 'ASC' ? 'ASC' : 'DESC'
 
     const listStmt = this.db.prepare(`
@@ -321,7 +331,10 @@ class AssetStoreService {
     const { query, type, limit = 50 } = params
     const searchPattern = `%${query}%`
 
-    const conditions: string[] = ["status = 'active'", "(name LIKE ? OR path LIKE ? OR tags LIKE ?)"]
+    const conditions: string[] = [
+      "status = 'active'",
+      '(name LIKE ? OR path LIKE ? OR tags LIKE ?)',
+    ]
     const bindParams: (string | number)[] = [searchPattern, searchPattern, searchPattern]
 
     if (type) {
@@ -374,7 +387,9 @@ class AssetStoreService {
     }
 
     // 总数
-    const totalStmt = this.db.prepare("SELECT COUNT(*) as total FROM assets WHERE status = 'active'")
+    const totalStmt = this.db.prepare(
+      "SELECT COUNT(*) as total FROM assets WHERE status = 'active'"
+    )
     const totalResult = totalStmt.get() as { total: number }
     const totalAssets = totalResult.total
 
@@ -449,7 +464,11 @@ class AssetStoreService {
     status?: 'pending' | 'approved' | 'rejected' | 'needs_review'
     offset?: number
     limit?: number
-  }): { items: Array<AssetRecord & { reviewHistory?: ReviewHistoryRecord[] }>; total: number; hasMore: boolean } {
+  }): {
+    items: Array<AssetRecord & { reviewHistory?: ReviewHistoryRecord[] }>
+    total: number
+    hasMore: boolean
+  } {
     if (!this.db) {
       return { items: [], total: 0, hasMore: false }
     }

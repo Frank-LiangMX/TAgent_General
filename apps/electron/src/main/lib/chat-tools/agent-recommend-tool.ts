@@ -17,7 +17,12 @@ export const AGENT_RECOMMEND_TOOL_META: ChatToolMeta = {
   description: '智能识别适合 Agent 模式的任务，推荐用户切换',
   params: [
     { name: 'reason', type: 'string', description: '推荐理由', required: true },
-    { name: 'suggestedPrompt', type: 'string', description: '建议的 Agent 初始提示词', required: true },
+    {
+      name: 'suggestedPrompt',
+      type: 'string',
+      description: '建议的 Agent 初始提示词',
+      required: true,
+    },
   ],
   icon: 'Sparkles',
   category: 'builtin',
@@ -74,17 +79,20 @@ Agent 模式拥有以下 Chat 模式不具备的能力：
 export const AGENT_RECOMMEND_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'suggest_agent_mode',
-    description: 'Proactively recommend switching to Agent mode when the task involves research, coding, file operations, command execution, content creation, data analysis, or any multi-step work. Call this before responding whenever the task would meaningfully benefit from Agent capabilities.',
+    description:
+      'Proactively recommend switching to Agent mode when the task involves research, coding, file operations, command execution, content creation, data analysis, or any multi-step work. Call this before responding whenever the task would meaningfully benefit from Agent capabilities.',
     parameters: {
       type: 'object',
       properties: {
         reason: {
           type: 'string',
-          description: 'Specific explanation of how Agent mode can better help the user achieve their goal',
+          description:
+            'Specific explanation of how Agent mode can better help the user achieve their goal',
         },
         suggestedPrompt: {
           type: 'string',
-          description: 'Suggested initial prompt for the Agent session, summarizing the user\'s core task',
+          description:
+            "Suggested initial prompt for the Agent session, summarizing the user's core task",
         },
       },
       required: ['reason', 'suggestedPrompt'],

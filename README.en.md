@@ -91,19 +91,19 @@ Proma supports Doubao-powered streaming voice input, both inside Proma and acros
 
 ## Supported Providers
 
-| Provider | Chat | Agent | Protocol |
-| --- | --- | --- | --- |
-| Anthropic | Supported | Supported | Anthropic Messages API |
-| DeepSeek | Supported | Supported | Anthropic-compatible protocol |
-| Kimi API | Supported | Supported | Anthropic-compatible protocol |
+| Provider         | Chat      | Agent     | Protocol                                                  |
+| ---------------- | --------- | --------- | --------------------------------------------------------- |
+| Anthropic        | Supported | Supported | Anthropic Messages API                                    |
+| DeepSeek         | Supported | Supported | Anthropic-compatible protocol                             |
+| Kimi API         | Supported | Supported | Anthropic-compatible protocol                             |
 | Kimi Coding Plan | Supported | Supported | Anthropic-compatible protocol with dedicated auth headers |
-| OpenAI | Supported | Not yet | Chat Completions |
-| Google | Supported | Not yet | Gemini Generative Language API |
-| Zhipu AI | Supported | Supported | Anthropic-compatible protocol |
-| MiniMax | Supported | Supported | Anthropic-compatible protocol |
-| Doubao | Supported | Supported | Anthropic-compatible protocol |
-| Qwen | Supported | Supported | Anthropic-compatible protocol |
-| Custom endpoint | Supported | Not yet | OpenAI-compatible protocol |
+| OpenAI           | Supported | Not yet   | Chat Completions                                          |
+| Google           | Supported | Not yet   | Gemini Generative Language API                            |
+| Zhipu AI         | Supported | Supported | Anthropic-compatible protocol                             |
+| MiniMax          | Supported | Supported | Anthropic-compatible protocol                             |
+| Doubao           | Supported | Supported | Anthropic-compatible protocol                             |
+| Qwen             | Supported | Supported | Anthropic-compatible protocol                             |
+| Custom endpoint  | Supported | Not yet   | OpenAI-compatible protocol                                |
 
 > **Kimi Coding Plan users**: Proma is officially whitelisted by Kimi. Using Proma with your Kimi Coding Plan subscription will not trigger any third-party client ban policy.
 
@@ -151,12 +151,12 @@ proma-v2/
 
 Current package versions:
 
-| Package | Version | Responsibility |
-| --- | --- | --- |
-| `@proma/electron` | `0.9.12` | Electron desktop app |
-| `@proma/shared` | `0.1.17` | shared types, IPC constants, config, utilities |
-| `@proma/core` | `0.2.9` | Provider Adapters, SSE, Shiki highlighting |
-| `@proma/ui` | `0.1.3` | shared React UI components |
+| Package           | Version  | Responsibility                                 |
+| ----------------- | -------- | ---------------------------------------------- |
+| `@proma/electron` | `0.9.12` | Electron desktop app                           |
+| `@proma/shared`   | `0.1.17` | shared types, IPC constants, config, utilities |
+| `@proma/core`     | `0.2.9`  | Provider Adapters, SSE, Shiki highlighting     |
+| `@proma/ui`       | `0.1.3`  | shared React UI components                     |
 
 Common commands:
 
@@ -195,19 +195,19 @@ bun run dist:fast
 
 ## Tech Stack
 
-| Layer | Technology |
-| --- | --- |
-| Runtime | Bun |
-| Desktop | Electron 39 |
-| Frontend | React 18 + TypeScript |
-| State | Jotai |
-| Styling | Tailwind CSS + Radix UI |
-| Rich text input | TipTap |
+| Layer                      | Technology                                 |
+| -------------------------- | ------------------------------------------ |
+| Runtime                    | Bun                                        |
+| Desktop                    | Electron 39                                |
+| Frontend                   | React 18 + TypeScript                      |
+| State                      | Jotai                                      |
+| Styling                    | Tailwind CSS + Radix UI                    |
+| Rich text input            | TipTap                                     |
 | Markdown / diagrams / math | React Markdown + Beautiful Mermaid + KaTeX |
-| Code highlighting | Shiki |
-| Build | Vite + esbuild |
-| Distribution | electron-builder |
-| Agent SDK | `@anthropic-ai/claude-agent-sdk@0.3.143` |
+| Code highlighting          | Shiki                                      |
+| Build                      | Vite + esbuild                             |
+| Distribution               | electron-builder                           |
+| Agent SDK                  | `@anthropic-ai/claude-agent-sdk@0.3.143`   |
 
 ## Architecture
 

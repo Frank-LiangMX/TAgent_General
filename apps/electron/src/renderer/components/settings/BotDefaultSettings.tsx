@@ -23,15 +23,18 @@ export function BotDefaultSettings(): React.ReactElement {
 
   // 加载当前设置
   React.useEffect(() => {
-    window.electronAPI.getSettings().then((settings) => {
-      setDefaultWorkspaceId(settings.agentWorkspaceId ?? '')
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    window.electronAPI
+      .getSettings()
+      .then((settings) => {
+        setDefaultWorkspaceId(settings.agentWorkspaceId ?? '')
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
   const workspaceOptions = React.useMemo(
     () => workspaces.map((w) => ({ value: w.id, label: w.name })),
-    [workspaces],
+    [workspaces]
   )
 
   const handleSave = React.useCallback(async () => {
@@ -45,14 +48,12 @@ export function BotDefaultSettings(): React.ReactElement {
     }
   }, [defaultWorkspaceId])
 
-  if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">加载中...</div>
+  if (loading)
+    return <div className="py-8 text-center text-muted-foreground text-sm">加载中...</div>
 
   return (
     <>
-      <SettingsSection
-        title="默认配置"
-        description="所有机器人平台发起新会话时使用的默认设置"
-      >
+      <SettingsSection title="默认配置" description="所有机器人平台发起新会话时使用的默认设置">
         <SettingsCard>
           {workspaceOptions.length > 0 ? (
             <SettingsSelect
@@ -103,9 +104,7 @@ export function BotDefaultSettings(): React.ReactElement {
               <code className="text-foreground/80 font-mono">/now</code>
               <span>查看当前状态（工作区、会话、模型、MCP、Skills）</span>
             </div>
-            <p className="pt-2 text-xs">
-              直接发送文本会自动创建新会话或发送到当前绑定的会话。
-            </p>
+            <p className="pt-2 text-xs">直接发送文本会自动创建新会话或发送到当前绑定的会话。</p>
           </div>
         </SettingsCard>
       </SettingsSection>

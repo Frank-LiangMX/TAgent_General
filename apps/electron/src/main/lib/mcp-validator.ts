@@ -34,7 +34,7 @@ export interface McpValidationResult {
  */
 export async function validateMcpServer(
   name: string,
-  entry: McpServerEntry,
+  entry: McpServerEntry
 ): Promise<McpValidationResult> {
   // stdio 类型：检查命令是否存在
   if (entry.type === 'stdio') {
@@ -125,7 +125,7 @@ async function isCommandAvailable(command: string): Promise<boolean> {
  * @returns 验证结果数组
  */
 export async function validateMcpServers(
-  servers: Record<string, McpServerEntry>,
+  servers: Record<string, McpServerEntry>
 ): Promise<McpValidationResult[]> {
   const results: McpValidationResult[] = []
 

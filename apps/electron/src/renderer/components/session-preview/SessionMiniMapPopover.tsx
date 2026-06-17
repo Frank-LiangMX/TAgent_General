@@ -28,8 +28,7 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
-
-export type SessionMiniMapType = 'agent'  // P3: chat 已退役
+export type SessionMiniMapType = 'agent' // P3: chat 已退役
 
 export interface SessionMiniMapTarget {
   type: SessionMiniMapType
@@ -72,12 +71,17 @@ const PREVIEW_MD_COMPONENTS: Components = {
   ol: ({ children }) => <ol className="my-0 pl-3">{children}</ol>,
   li: ({ children }) => <li className="my-0">{children}</li>,
   pre: ({ children }) => <pre className="my-0 truncate text-[11px] opacity-70">{children}</pre>,
-  code: ({ children }) => <code className="rounded bg-muted/50 px-0.5 text-[11px]">{children}</code>,
+  code: ({ children }) => (
+    <code className="rounded bg-muted/50 px-0.5 text-[11px]">{children}</code>
+  ),
   img: () => null,
   a: ({ children }) => <span>{children}</span>,
 }
 
-export function useSessionMiniMapHover(delayMs = 300, disabled = false): UseSessionMiniMapHoverReturn {
+export function useSessionMiniMapHover(
+  delayMs = 300,
+  disabled = false
+): UseSessionMiniMapHoverReturn {
   const anchorRef = React.useRef<HTMLElement | null>(null)
   const [isOpen, setIsOpen] = React.useState(false)
   const [isLeaving, setIsLeaving] = React.useState(false)
@@ -174,7 +178,12 @@ function buildChatMinimapItems(messages: ChatMessage[], userAvatar?: string): Ta
   return messages
     .map((message) => ({
       id: message.id,
-      role: message.role === 'user' ? 'user' as const : message.role === 'assistant' ? 'assistant' as const : 'status' as const,
+      role:
+        message.role === 'user'
+          ? ('user' as const)
+          : message.role === 'assistant'
+            ? ('assistant' as const)
+            : ('status' as const),
       preview: normalizePreviewText(message.content).slice(0, 220),
       avatar: message.role === 'user' ? userAvatar : undefined,
       model: message.model,
@@ -189,7 +198,9 @@ function buildAgentMinimapItems(messages: SDKMessage[], userAvatar?: string): Ta
     if (message.type === 'assistant') {
       const assistant = message as SDKAssistantMessage
       const blocks = Array.isArray(assistant.message?.content) ? assistant.message.content : []
-      const preview = normalizePreviewText(blocks.map(sdkBlockText).filter(Boolean).join(' ')).slice(0, 220)
+      const preview = normalizePreviewText(
+        blocks.map(sdkBlockText).filter(Boolean).join(' ')
+      ).slice(0, 220)
       if (!preview) continue
       items.push({
         id: assistant.uuid ?? `assistant-${items.length}`,
@@ -203,7 +214,9 @@ function buildAgentMinimapItems(messages: SDKMessage[], userAvatar?: string): Ta
     if (message.type === 'user') {
       const user = message as SDKUserMessage
       const blocks = Array.isArray(user.message?.content) ? user.message.content : []
-      const preview = normalizePreviewText(blocks.map(sdkBlockText).filter(Boolean).join(' ')).slice(0, 220)
+      const preview = normalizePreviewText(
+        blocks.map(sdkBlockText).filter(Boolean).join(' ')
+      ).slice(0, 220)
       if (!preview) continue
       items.push({
         id: user.uuid ?? `user-${items.length}`,
@@ -216,13 +229,14 @@ function buildAgentMinimapItems(messages: SDKMessage[], userAvatar?: string): Ta
 
     if (message.type === 'system') {
       const system = message as SDKSystemMessage
-      const preview = system.subtype === 'compact_boundary'
-        ? '上下文已压缩'
-        : system.subtype === 'compacting'
-          ? '正在压缩上下文...'
-          : system.subtype === 'permission_denied'
-            ? '自动审批已拒绝操作'
-            : ''
+      const preview =
+        system.subtype === 'compact_boundary'
+          ? '上下文已压缩'
+          : system.subtype === 'compacting'
+            ? '正在压缩上下文...'
+            : system.subtype === 'permission_denied'
+              ? '自动审批已拒绝操作'
+              : ''
       if (preview) {
         items.push({
           id: `${system.subtype ?? 'system'}-${items.length}`,
@@ -239,9 +253,13 @@ function buildAgentMinimapItems(messages: SDKMessage[], userAvatar?: string): Ta
 function usePopoverPosition(
   anchorRef: React.MutableRefObject<HTMLElement | null>,
   open: boolean,
-  preferredHeight: number,
+  preferredHeight: number
 ): { top: number; left: number; height: number } | null {
-  const [position, setPosition] = React.useState<{ top: number; left: number; height: number } | null>(null)
+  const [position, setPosition] = React.useState<{
+    top: number
+    left: number
+    height: number
+  } | null>(null)
 
   React.useLayoutEffect(() => {
     if (!open) {
@@ -316,7 +334,13 @@ function PreviewText({ text }: { text: string }): React.ReactElement {
   )
 }
 
-function ItemIcon({ item, type }: { item: TabMinimapItem; type: SessionMiniMapType }): React.ReactElement {
+function ItemIcon({
+  item,
+  type,
+}: {
+  item: TabMinimapItem
+  type: SessionMiniMapType
+}): React.ReactElement {
   if (item.role === 'user' && item.avatar) {
     return <UserAvatar avatar={item.avatar} size={16} className="mt-0.5" />
   }
@@ -339,7 +363,9 @@ function ItemIcon({ item, type }: { item: TabMinimapItem; type: SessionMiniMapTy
   return <Bot className="size-4 shrink-0 mt-0.5 text-muted-foreground/60" />
 }
 
-export function SessionMiniMapPopover(props: SessionMiniMapPopoverProps): React.ReactElement | null {
+export function SessionMiniMapPopover(
+  props: SessionMiniMapPopoverProps
+): React.ReactElement | null {
   if (!props.open) return null
   return <SessionMiniMapPopoverContent {...props} />
 }
@@ -361,8 +387,8 @@ function SessionMiniMapPopoverContent({
   const preferredHeight = getPreferredPanelHeight({ loading, error, itemCount: items.length })
   const position = usePopoverPosition(anchorRef, open, preferredHeight)
   const renderedItems = React.useMemo(
-    () => items.length > MAX_RENDERED_ITEMS ? items.slice(-MAX_RENDERED_ITEMS) : items,
-    [items],
+    () => (items.length > MAX_RENDERED_ITEMS ? items.slice(-MAX_RENDERED_ITEMS) : items),
+    [items]
   )
 
   React.useEffect(() => {
@@ -382,7 +408,10 @@ function SessionMiniMapPopoverContent({
     const load = async (): Promise<void> => {
       try {
         // P3: chat 已退役，仅处理 agent 类型
-        const nextItems = buildAgentMinimapItems(await window.electronAPI.getAgentSessionSDKMessages(target.sessionId), userProfile.avatar)
+        const nextItems = buildAgentMinimapItems(
+          await window.electronAPI.getAgentSessionSDKMessages(target.sessionId),
+          userProfile.avatar
+        )
         if (cancelled) return
         setItems(nextItems)
         setCache((prev) => {
@@ -409,14 +438,19 @@ function SessionMiniMapPopoverContent({
   return createPortal(
     <div
       className="fixed z-[9999] titlebar-no-drag transition-[top,height] duration-150 ease-out"
-      style={{ top: position.top, left: position.left, width: PANEL_WIDTH, height: position.height }}
+      style={{
+        top: position.top,
+        left: position.left,
+        width: PANEL_WIDTH,
+        height: position.height,
+      }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       <div
         className={cn(
           'session-minimap-popover session-glass-surface session-glass-popover h-full rounded-xl flex flex-col overflow-hidden',
-          isLeaving ? 'session-minimap-popover-exit' : 'session-minimap-popover-enter',
+          isLeaving ? 'session-minimap-popover-exit' : 'session-minimap-popover-enter'
         )}
       >
         <div className="flex items-center justify-between gap-2 px-3 py-2 shrink-0 bg-muted/35 border-b border-border/35">
@@ -457,11 +491,15 @@ function SessionMiniMapPopoverContent({
           )}
 
           {!loading && error && (
-            <div className="h-full rounded-md bg-muted/30 flex items-center justify-center px-4 text-center text-xs text-muted-foreground">{error}</div>
+            <div className="h-full rounded-md bg-muted/30 flex items-center justify-center px-4 text-center text-xs text-muted-foreground">
+              {error}
+            </div>
           )}
 
           {!loading && !error && items.length === 0 && (
-            <div className="h-full rounded-md bg-muted/30 flex items-center justify-center px-4 text-center text-xs text-muted-foreground">暂无可预览内容</div>
+            <div className="h-full rounded-md bg-muted/30 flex items-center justify-center px-4 text-center text-xs text-muted-foreground">
+              暂无可预览内容
+            </div>
           )}
 
           {!loading && !error && items.length > 0 && (
@@ -477,7 +515,7 @@ function SessionMiniMapPopoverContent({
                       className={cn(
                         'w-fit max-w-full rounded-md py-1',
                         item.role === 'assistant' ? 'px-0' : 'px-2',
-                        getMessageBubbleClass(item),
+                        getMessageBubbleClass(item)
                       )}
                     >
                       <PreviewText text={item.preview} />
@@ -490,6 +528,6 @@ function SessionMiniMapPopoverContent({
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   )
 }

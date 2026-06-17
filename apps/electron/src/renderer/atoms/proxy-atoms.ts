@@ -30,15 +30,12 @@ export const loadProxyConfigAtom = atom(null, async (get, set) => {
 /**
  * 更新代理配置
  */
-export const updateProxyConfigAtom = atom(
-  null,
-  async (get, set, config: ProxyConfig) => {
-    try {
-      await window.electronAPI.updateProxySettings(config)
-      set(proxyConfigAtom, config)
-    } catch (error) {
-      console.error('[代理配置] 更新失败:', error)
-      throw error
-    }
+export const updateProxyConfigAtom = atom(null, async (get, set, config: ProxyConfig) => {
+  try {
+    await window.electronAPI.updateProxySettings(config)
+    set(proxyConfigAtom, config)
+  } catch (error) {
+    console.error('[代理配置] 更新失败:', error)
+    throw error
   }
-)
+})

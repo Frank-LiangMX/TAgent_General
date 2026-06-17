@@ -21,8 +21,6 @@ import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@tage
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-
-
 /** 编辑中的服务器 */
 interface EditingServer {
   name: string
@@ -71,20 +69,31 @@ function parseKeyValueText(text: string, separator: '=' | ':'): Record<string, s
 /**
  * 将 Record 序列化为多行 key=value / key: value 文本
  */
-function serializeKeyValueText(record: Record<string, string> | undefined, separator: '=' | ':'): string {
+function serializeKeyValueText(
+  record: Record<string, string> | undefined,
+  separator: '=' | ':'
+): string {
   if (!record) return ''
   return Object.entries(record)
     .map(([key, value]) => `${key}${separator}${separator === ':' ? ' ' : ''}${value}`)
     .join('\n')
 }
 
-export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTitleBar }: McpServerFormProps): React.ReactElement {
+export function McpServerForm({
+  server,
+  workspaceSlug,
+  onSaved,
+  onCancel,
+  hideTitleBar,
+}: McpServerFormProps): React.ReactElement {
   const isEdit = server !== null
   const isBuiltin = server?.entry.isBuiltin === true
 
   // 表单状态
   const [name, setName] = React.useState(server?.name ?? '')
-  const [transportType, setTransportType] = React.useState<McpTransportType>(server?.entry.type ?? 'stdio')
+  const [transportType, setTransportType] = React.useState<McpTransportType>(
+    server?.entry.type ?? 'stdio'
+  )
   const [enabled, setEnabled] = React.useState(server?.entry.enabled ?? false) // 默认关闭
 
   // stdio 字段
@@ -97,7 +106,9 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
 
   // http/sse 字段
   const [url, setUrl] = React.useState(server?.entry.url ?? '')
-  const [headersText, setHeadersText] = React.useState(serializeKeyValueText(server?.entry.headers, ':'))
+  const [headersText, setHeadersText] = React.useState(
+    serializeKeyValueText(server?.entry.headers, ':')
+  )
 
   // UI 状态
   const [saving, setSaving] = React.useState(false)
@@ -134,12 +145,13 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
       // 保留内置标记
       ...(isBuiltin && { isBuiltin: true }),
       // 保存测试结果
-      ...(includeTestResult && testResult && {
-        lastTestResult: {
-          ...testResult,
-          timestamp: Date.now(),
-        },
-      }),
+      ...(includeTestResult &&
+        testResult && {
+          lastTestResult: {
+            ...testResult,
+            timestamp: Date.now(),
+          },
+        }),
     }
 
     if (transportType === 'stdio') {
@@ -214,7 +226,9 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
       const entry = buildEntry(true) // 保存时包含测试结果
 
       // 日志记录实际保存的状态
-      console.log(`[MCP 表单] 保存 MCP: ${serverName}, enabled: ${entry.enabled}, testResult: ${testResult?.success}`)
+      console.log(
+        `[MCP 表单] 保存 MCP: ${serverName}, enabled: ${entry.enabled}, testResult: ${testResult?.success}`
+      )
 
       const newConfig: WorkspaceMcpConfig = {
         servers: {
@@ -275,11 +289,26 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
             <div className="px-4 py-3 text-sm bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-md mx-4 mt-3">
               <div className="font-medium">内置记忆服务 (MemOS Cloud)</div>
               <div className="text-xs mt-1 opacity-90">
-                前往 <a href="https://memos-dashboard.openmem.net/apikeys/" target="_blank" rel="noopener noreferrer" className="underline">memos-dashboard.openmem.net</a> 注册并获取 API Key 和 User ID，填入下方环境变量后启用。
+                前往{' '}
+                <a
+                  href="https://memos-dashboard.openmem.net/apikeys/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  memos-dashboard.openmem.net
+                </a>{' '}
+                注册并获取 API Key 和 User ID，填入下方环境变量后启用。
               </div>
               <div className="text-xs mt-2 opacity-80 space-y-0.5">
-                <div><code className="font-mono">MEMOS_API_KEY</code> — 你的 API 密钥，在控制台 API Keys 页面生成</div>
-                <div><code className="font-mono">MEMOS_USER_ID</code> — 你的用户 ID，在控制台个人设置中查看</div>
+                <div>
+                  <code className="font-mono">MEMOS_API_KEY</code> — 你的 API 密钥，在控制台 API
+                  Keys 页面生成
+                </div>
+                <div>
+                  <code className="font-mono">MEMOS_USER_ID</code> — 你的用户
+                  ID，在控制台个人设置中查看
+                </div>
               </div>
             </div>
           )}
@@ -323,7 +352,9 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
               <div className="px-4 py-3 space-y-2">
                 <div>
                   <div className="text-sm font-medium text-foreground">环境变量</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">每行一个，格式: KEY=VALUE</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    每行一个，格式: KEY=VALUE
+                  </div>
                 </div>
                 <textarea
                   value={envText}
@@ -358,7 +389,9 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
               <div className="px-4 py-3 space-y-2">
                 <div>
                   <div className="text-sm font-medium text-foreground">请求头</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">每行一个，格式: Key: Value</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    每行一个，格式: Key: Value
+                  </div>
                 </div>
                 <textarea
                   value={headersText}
@@ -376,9 +409,7 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-foreground">连接测试</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  必须测试成功后才能启用
-                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">必须测试成功后才能启用</div>
               </div>
               <Button
                 type="button"
@@ -408,9 +439,7 @@ export function McpServerForm({ server, workspaceSlug, onSaved, onCancel, hideTi
                   <XCircle size={16} className="mt-0.5 shrink-0" />
                 )}
                 <div className="flex-1">
-                  <div className="font-medium">
-                    {testResult.success ? '测试成功' : '测试失败'}
-                  </div>
+                  <div className="font-medium">{testResult.success ? '测试成功' : '测试失败'}</div>
                   <div className="text-xs mt-0.5 opacity-90">{testResult.message}</div>
                 </div>
               </div>

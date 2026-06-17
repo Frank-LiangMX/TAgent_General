@@ -6,17 +6,30 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Loader2, ExternalLink, Power, PowerOff, Plus, Trash2, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  Loader2,
+  ExternalLink,
+  Power,
+  PowerOff,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-
 
 import { SettingsCard } from './primitives/SettingsCard'
 import { SettingsInput } from './primitives/SettingsInput'
 import { SettingsSecretInput } from './primitives/SettingsSecretInput'
 import { SettingsSection } from './primitives/SettingsSection'
 
-import type { DingTalkBotConfig, DingTalkBotBridgeState, DingTalkBridgeStatus, DingTalkTestResult } from '@tagent/shared'
+import type {
+  DingTalkBotConfig,
+  DingTalkBotBridgeState,
+  DingTalkBridgeStatus,
+  DingTalkTestResult,
+} from '@tagent/shared'
 
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import {
@@ -76,21 +89,27 @@ export function DingTalkSettings(): React.ReactElement {
       try {
         const oldConfig = await window.electronAPI.getDingTalkConfig()
         if (oldConfig.clientId) {
-          setBots([{
-            id: 'legacy',
-            name: '钉钉助手',
-            enabled: oldConfig.enabled,
-            clientId: oldConfig.clientId,
-            clientSecret: oldConfig.clientSecret,
-          }])
+          setBots([
+            {
+              id: 'legacy',
+              name: '钉钉助手',
+              enabled: oldConfig.enabled,
+              clientId: oldConfig.clientId,
+              clientSecret: oldConfig.clientSecret,
+            },
+          ])
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
-  React.useEffect(() => { loadBots() }, [loadBots])
+  React.useEffect(() => {
+    loadBots()
+  }, [loadBots])
 
   const handleAddBot = React.useCallback(async () => {
     try {
@@ -158,12 +177,13 @@ export function DingTalkSettings(): React.ReactElement {
             {/* 步骤 1 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">1</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  1
+                </span>
                 <span className="font-medium text-foreground">创建企业内部应用</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                前往{' '}
-                <Link href="https://open-dev.dingtalk.com">钉钉开放平台</Link>
+                前往 <Link href="https://open-dev.dingtalk.com">钉钉开放平台</Link>
                 ，点击「创建应用」，选择「企业内部开发」，填写应用信息。
               </p>
             </div>
@@ -171,7 +191,9 @@ export function DingTalkSettings(): React.ReactElement {
             {/* 步骤 2 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">2</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  2
+                </span>
                 <span className="font-medium text-foreground">获取凭证</span>
               </div>
               <p className="pl-7 text-muted-foreground">
@@ -185,12 +207,14 @@ export function DingTalkSettings(): React.ReactElement {
             {/* 步骤 3 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">3</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  3
+                </span>
                 <span className="font-medium text-foreground">添加机器人能力并保存连接</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                在「应用能力」中启用机器人功能。
-                然后回到 TAgent，<span className="text-foreground font-medium">先点击「保存配置」</span>，
+                在「应用能力」中启用机器人功能。 然后回到 TAgent，
+                <span className="text-foreground font-medium">先点击「保存配置」</span>，
                 确认状态变为「已连接」后，再去钉钉后台配置事件订阅（选择 Stream 模式）。
               </p>
             </div>
@@ -198,7 +222,9 @@ export function DingTalkSettings(): React.ReactElement {
             {/* 步骤 4 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">4</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  4
+                </span>
                 <span className="font-medium text-foreground">配置权限并发布</span>
               </div>
               <p className="pl-7 text-muted-foreground">
@@ -209,8 +235,8 @@ export function DingTalkSettings(): React.ReactElement {
 
             {/* 提示 */}
             <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
-              <span className="font-medium">重要：</span>配置事件订阅前，必须先在 TAgent 中保存凭证并确认 Stream 连接成功，
-              否则钉钉后台会提示「Stream 模式接入失败」。
+              <span className="font-medium">重要：</span>配置事件订阅前，必须先在 TAgent
+              中保存凭证并确认 Stream 连接成功， 否则钉钉后台会提示「Stream 模式接入失败」。
             </div>
           </div>
         </SettingsCard>
@@ -239,12 +265,18 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
   // 加载已有 secret（使用 bot-specific API）
   React.useEffect(() => {
     if (bot.clientSecret && bot.id) {
-      window.electronAPI.getDecryptedDingTalkBotSecret?.(bot.id)
-        .then((s: string) => { if (s) setClientSecret(s) })
+      window.electronAPI
+        .getDecryptedDingTalkBotSecret?.(bot.id)
+        .then((s: string) => {
+          if (s) setClientSecret(s)
+        })
         .catch(() => {
           // 回退到旧 API（兼容迁移前的首个 Bot）
-          window.electronAPI.getDecryptedDingTalkSecret?.()
-            .then((s: string) => { if (s) setClientSecret(s) })
+          window.electronAPI
+            .getDecryptedDingTalkSecret?.()
+            .then((s: string) => {
+              if (s) setClientSecret(s)
+            })
             .catch(() => {})
         })
     }
@@ -275,10 +307,16 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
     setTesting(true)
     setTestResult(null)
     try {
-      const result = await window.electronAPI.testDingTalkConnection(clientId.trim(), clientSecret.trim())
+      const result = await window.electronAPI.testDingTalkConnection(
+        clientId.trim(),
+        clientSecret.trim()
+      )
       setTestResult(result)
     } catch (err) {
-      setTestResult({ success: false, message: `测试失败: ${err instanceof Error ? err.message : String(err)}` })
+      setTestResult({
+        success: false,
+        message: `测试失败: ${err instanceof Error ? err.message : String(err)}`,
+      })
     } finally {
       setTesting(false)
     }
@@ -319,18 +357,38 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
         <div className="flex items-center gap-3">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig.color}`} />
           <span className="font-medium text-sm">{bot.name || '未命名 Bot'}</span>
-          <span className="text-xs text-muted-foreground">{bot.clientId ? bot.clientId.slice(0, 12) + '...' : '未配置'}</span>
+          <span className="text-xs text-muted-foreground">
+            {bot.clientId ? bot.clientId.slice(0, 12) + '...' : '未配置'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {isConnected ? (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleToggle() }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggle()
+              }}
+            >
               <PowerOff size={14} className="mr-1" />
               停止
             </Button>
           ) : bot.clientId ? (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleToggle() }}
-              disabled={state?.status === 'connecting'}>
-              {state?.status === 'connecting' ? <Loader2 size={14} className="animate-spin mr-1" /> : <Power size={14} className="mr-1" />}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggle()
+              }}
+              disabled={state?.status === 'connecting'}
+            >
+              {state?.status === 'connecting' ? (
+                <Loader2 size={14} className="animate-spin mr-1" />
+              ) : (
+                <Power size={14} className="mr-1" />
+              )}
               启动
             </Button>
           ) : null}
@@ -361,8 +419,12 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           />
 
           <div className="flex items-center gap-3">
-            <Button size="sm" variant="outline" onClick={handleTest}
-              disabled={testing || !clientId.trim() || !clientSecret.trim()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleTest}
+              disabled={testing || !clientId.trim() || !clientSecret.trim()}
+            >
               {testing && <Loader2 size={14} className="animate-spin" />}
               <span>{testing ? '测试中...' : '测试连接'}</span>
             </Button>
@@ -392,14 +454,19 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           </div>
 
           {testResult && (
-            <div className={cn(
-              'p-3 rounded-lg flex items-start gap-2 text-sm',
-              testResult.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'
-            )}>
-              {testResult.success
-                ? <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
-                : <XCircle size={16} className="flex-shrink-0 mt-0.5" />
-              }
+            <div
+              className={cn(
+                'p-3 rounded-lg flex items-start gap-2 text-sm',
+                testResult.success
+                  ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                  : 'bg-red-500/10 text-red-700 dark:text-red-400'
+              )}
+            >
+              {testResult.success ? (
+                <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
+              ) : (
+                <XCircle size={16} className="flex-shrink-0 mt-0.5" />
+              )}
               <span>{testResult.message}</span>
             </div>
           )}

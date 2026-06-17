@@ -26,9 +26,7 @@ export function EnvironmentCheckDialog({ open, onOpenChange }: EnvironmentCheckD
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>环境检测</DialogTitle>
-          <DialogDescription>
-            检查并修复 TAgent 运行所需的 Windows 本地环境
-          </DialogDescription>
+          <DialogDescription>检查并修复 TAgent 运行所需的 Windows 本地环境</DialogDescription>
         </DialogHeader>
         <EnvironmentCheckPanel autoDetectOnMount={open} />
       </DialogContent>

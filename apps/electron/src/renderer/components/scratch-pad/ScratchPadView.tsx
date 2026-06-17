@@ -16,7 +16,12 @@ import { FileDown } from 'lucide-react'
 import * as React from 'react'
 
 import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import { scratchPadContentAtom, scratchPadLoadedAtom, tabsAtom, activeTabIdAtom } from '@/atoms/tab-atoms'
+import {
+  scratchPadContentAtom,
+  scratchPadLoadedAtom,
+  tabsAtom,
+  activeTabIdAtom,
+} from '@/atoms/tab-atoms'
 import { SpeechButton } from '@/components/ai-elements/speech-button'
 import {
   MathBlock,
@@ -56,26 +61,29 @@ export function ScratchPadView(): React.ReactElement {
   const contentRef = React.useRef(content)
   contentRef.current = content
 
-  const extensions = React.useMemo(() => [
-    StarterKit.configure({
-      heading: { levels: [1, 2, 3] },
-      codeBlock: false, // 用 CodeBlockLowlight 替代：支持 ``` 触发、可编辑、可删除
-    }),
-    Placeholder.configure({
-      placeholder: '在此随意书写… 支持 Markdown 快捷输入',
-    }),
-    CodeBlockLowlight.configure({ lowlight }),
-    // ScratchPad 无会话/文件上下文，传 null 跳过路径解析（仅支持 data-URL / 外链 / file: 协议）
-    createMarkdownImage(null),
-    createMarkdownVideo(null),
-    RawHtmlBlock,
-    RawHtmlInline,
-    MathBlock,
-    MathInline,
-    TaskList,
-    TaskItem,
-    ...tableExtensions,
-  ], [])
+  const extensions = React.useMemo(
+    () => [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        codeBlock: false, // 用 CodeBlockLowlight 替代：支持 ``` 触发、可编辑、可删除
+      }),
+      Placeholder.configure({
+        placeholder: '在此随意书写… 支持 Markdown 快捷输入',
+      }),
+      CodeBlockLowlight.configure({ lowlight }),
+      // ScratchPad 无会话/文件上下文，传 null 跳过路径解析（仅支持 data-URL / 外链 / file: 协议）
+      createMarkdownImage(null),
+      createMarkdownVideo(null),
+      RawHtmlBlock,
+      RawHtmlInline,
+      MathBlock,
+      MathInline,
+      TaskList,
+      TaskItem,
+      ...tableExtensions,
+    ],
+    []
+  )
 
   const editor = useEditor({
     extensions,
@@ -96,7 +104,7 @@ export function ScratchPadView(): React.ReactElement {
 
   const currentWorkspace = React.useMemo(
     () => workspaces.find((w) => w.id === currentWorkspaceId) ?? null,
-    [workspaces, currentWorkspaceId],
+    [workspaces, currentWorkspaceId]
   )
 
   const activeSessionId = React.useMemo(() => {
@@ -128,7 +136,10 @@ export function ScratchPadView(): React.ReactElement {
       try {
         let dirPath: string | null = null
         if (target === 'session' && activeSessionId && currentWorkspaceId) {
-          dirPath = await window.electronAPI.getAgentSessionPath(currentWorkspaceId, activeSessionId)
+          dirPath = await window.electronAPI.getAgentSessionPath(
+            currentWorkspaceId,
+            activeSessionId
+          )
         } else if (target === 'workspace' && currentWorkspace?.slug) {
           dirPath = await window.electronAPI.getWorkspaceFilesPath(currentWorkspace.slug)
         }
@@ -138,7 +149,7 @@ export function ScratchPadView(): React.ReactElement {
         console.error('[ScratchPad] 导出失败:', err)
       }
     },
-    [editor, activeSessionId, currentWorkspaceId, currentWorkspace],
+    [editor, activeSessionId, currentWorkspaceId, currentWorkspace]
   )
 
   const handleBrowseExport = React.useCallback(async () => {
@@ -169,7 +180,6 @@ export function ScratchPadView(): React.ReactElement {
     if (latestContent && editor.getHTML() !== latestContent) {
       editor.commands.setContent(latestContent)
     }
-     
   }, [loaded, editor])
 
   // ===== 语音输入路由 =====
@@ -220,10 +230,14 @@ export function ScratchPadView(): React.ReactElement {
             if (!file) return
             const reader = new FileReader()
             reader.onload = () => {
-              editor.chain().focus().insertContent({
-                type: 'markdownImage',
-                attrs: { src: reader.result as string, alt: '', title: '' },
-              }).run()
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'markdownImage',
+                  attrs: { src: reader.result as string, alt: '', title: '' },
+                })
+                .run()
             }
             reader.readAsDataURL(file)
             return
@@ -299,36 +313,34 @@ export function ScratchPadView(): React.ReactElement {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
-          <DropdownMenuContent align="end" side="top" className="min-w-[240px] z-[9999]">
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-              导出为 Markdown
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => handleExport('session')}
-              disabled={!activeSessionId}
-              className="flex flex-col items-start"
-            >
-              <span className="text-xs">保存到会话目录</span>
-              <span className="text-[10px] text-muted-foreground">
-                {activeSessionTitle ?? '无活跃会话'}
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => handleExport('workspace')}
-              disabled={!currentWorkspace}
-              className="flex flex-col items-start"
-            >
-              <span className="text-xs">保存到工作区目录</span>
-              <span className="text-[10px] text-muted-foreground">
-                {currentWorkspace?.name ?? '无当前工作区'}
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleBrowseExport}>
-              浏览选择位置...
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+            <DropdownMenuContent align="end" side="top" className="min-w-[240px] z-[9999]">
+              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                导出为 Markdown
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => handleExport('session')}
+                disabled={!activeSessionId}
+                className="flex flex-col items-start"
+              >
+                <span className="text-xs">保存到会话目录</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {activeSessionTitle ?? '无活跃会话'}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleExport('workspace')}
+                disabled={!currentWorkspace}
+                className="flex flex-col items-start"
+              >
+                <span className="text-xs">保存到工作区目录</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {currentWorkspace?.name ?? '无当前工作区'}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={handleBrowseExport}>浏览选择位置...</DropdownMenuItem>
+            </DropdownMenuContent>
           </DropdownMenuPortal>
         </DropdownMenu>
       </div>

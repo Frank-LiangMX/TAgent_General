@@ -14,7 +14,11 @@ import * as React from 'react'
 
 import type { DangerLevel } from '@tagent/shared'
 
-import { allPendingPermissionRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import {
+  allPendingPermissionRequestsAtom,
+  agentStreamingStatesAtom,
+  finalizeStreamingActivities,
+} from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
 
 /** 危险等级对应的图标颜色 */
@@ -55,7 +59,8 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         (e.target instanceof HTMLElement && e.target.isContentEditable)
-      ) return
+      )
+        return
       if (e.key === 'Enter') {
         e.preventDefault()
         respondRef.current?.('allow')
@@ -122,9 +127,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
   respondRef.current = respond
 
   return (
-    <div
-      className="mx-4 mb-3 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
-    >
+    <div className="mx-4 mb-3 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
       {/* 头部 */}
       <div className="flex items-center justify-between px-3 py-2">
         <div className="flex items-center gap-2">
@@ -133,9 +136,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
             {isDangerous ? '危险操作需要确认' : '需要确认'}
           </span>
           {requests.length > 1 && (
-            <span className="text-xs text-muted-foreground">
-              (+{requests.length - 1})
-            </span>
+            <span className="text-xs text-muted-foreground">(+{requests.length - 1})</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
@@ -156,9 +157,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
       {/* 命令/操作内容 */}
       <div className="px-3 pb-2 space-y-1.5">
         {/* SDK 可读标题（优先展示，描述操作意图） */}
-        {request.sdkTitle && (
-          <p className="text-xs text-foreground">{request.sdkTitle}</p>
-        )}
+        {request.sdkTitle && <p className="text-xs text-foreground">{request.sdkTitle}</p>}
         {/* SDK 详细描述（与标题不同时才展示） */}
         {request.sdkDescription && request.sdkDescription !== request.sdkTitle && (
           <p className="text-xs text-muted-foreground">{request.sdkDescription}</p>
@@ -173,17 +172,13 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
             {JSON.stringify(request.toolInput, null, 2)}
           </pre>
         ) : !request.sdkTitle ? (
-          <p className="text-xs text-muted-foreground">
-            {request.description}
-          </p>
+          <p className="text-xs text-muted-foreground">{request.description}</p>
         ) : null}
       </div>
 
       {/* 操作按钮 */}
       <div className="flex items-center justify-end gap-1.5 px-3 pb-2.5">
-        <span className="text-[10px] text-muted-foreground/40 mr-auto">
-          Enter 允许
-        </span>
+        <span className="text-[10px] text-muted-foreground/40 mr-auto">Enter 允许</span>
         <Button
           variant="ghost"
           size="sm"

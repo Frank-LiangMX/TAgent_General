@@ -66,16 +66,24 @@ function highlightPattern(text: string, pattern: string): React.ReactNode {
     const regex = new RegExp(`(${pattern})`, 'gi')
     const parts = text.split(regex)
     return parts.map((part, i) =>
-      regex.test(part)
-        ? <mark key={i} className="bg-yellow-300/30 text-yellow-200 rounded-sm px-0.5">{part}</mark>
-        : part,
+      regex.test(part) ? (
+        <mark key={i} className="bg-yellow-300/30 text-yellow-200 rounded-sm px-0.5">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
     )
   } catch {
     return text
   }
 }
 
-export function GrepResultRenderer({ result, isError, input }: GrepResultRendererProps): React.ReactElement {
+export function GrepResultRenderer({
+  result,
+  isError,
+  input,
+}: GrepResultRendererProps): React.ReactElement {
   const pattern = typeof input.pattern === 'string' ? input.pattern : ''
 
   if (isError) {
@@ -104,46 +112,51 @@ export function GrepResultRenderer({ result, isError, input }: GrepResultRendere
 
   const totalMatches = groups.reduce((sum, g) => sum + g.matches.length, 0)
 
-  const renderGroups = React.useCallback((_text: string): React.ReactNode => {
-    // CollapsibleResult 会按可见行数截断显示
-    return (
-      <div className="space-y-2">
-        {/* 统计 */}
-        <div className="text-[11px] text-muted-foreground/60">
-          {totalMatches} 个匹配，{groups.length} 个文件
-        </div>
-
-        {groups.map((group) => (
-          <div key={group.file} className="rounded-md overflow-hidden bg-zinc-900 dark:bg-zinc-950">
-            {/* 文件头 */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 text-[11px]">
-              <FileTypeIcon name={group.file.split('/').pop() || group.file} isDirectory={false} size={12} />
-              <span className="font-mono text-zinc-300">{group.file}</span>
-              <span className="text-zinc-500">({group.matches.length})</span>
-            </div>
-            {/* 匹配行 */}
-            <div className="font-mono text-[12px]">
-              {group.matches.map((m, i) => (
-                <div key={i} className="flex px-3 py-0.5 hover:bg-zinc-800/30">
-                  <span className="shrink-0 w-10 text-right pr-3 select-none text-zinc-500 text-[11px]">
-                    {m.line}
-                  </span>
-                  <span className={cn('flex-1 whitespace-pre-wrap break-all text-zinc-200')}>
-                    {highlightPattern(m.content, pattern)}
-                  </span>
-                </div>
-              ))}
-            </div>
+  const renderGroups = React.useCallback(
+    (_text: string): React.ReactNode => {
+      // CollapsibleResult 会按可见行数截断显示
+      return (
+        <div className="space-y-2">
+          {/* 统计 */}
+          <div className="text-[11px] text-muted-foreground/60">
+            {totalMatches} 个匹配，{groups.length} 个文件
           </div>
-        ))}
-      </div>
-    )
-  }, [groups, pattern, totalMatches])
 
-  return (
-    <CollapsibleResult
-      content={result}
-      renderContent={renderGroups}
-    />
+          {groups.map((group) => (
+            <div
+              key={group.file}
+              className="rounded-md overflow-hidden bg-zinc-900 dark:bg-zinc-950"
+            >
+              {/* 文件头 */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 text-[11px]">
+                <FileTypeIcon
+                  name={group.file.split('/').pop() || group.file}
+                  isDirectory={false}
+                  size={12}
+                />
+                <span className="font-mono text-zinc-300">{group.file}</span>
+                <span className="text-zinc-500">({group.matches.length})</span>
+              </div>
+              {/* 匹配行 */}
+              <div className="font-mono text-[12px]">
+                {group.matches.map((m, i) => (
+                  <div key={i} className="flex px-3 py-0.5 hover:bg-zinc-800/30">
+                    <span className="shrink-0 w-10 text-right pr-3 select-none text-zinc-500 text-[11px]">
+                      {m.line}
+                    </span>
+                    <span className={cn('flex-1 whitespace-pre-wrap break-all text-zinc-200')}>
+                      {highlightPattern(m.content, pattern)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    [groups, pattern, totalMatches]
   )
+
+  return <CollapsibleResult content={result} renderContent={renderGroups} />
 }

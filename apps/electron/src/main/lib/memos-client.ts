@@ -36,7 +36,7 @@ export interface MemorySearchResult {
 async function callApi(
   credentials: MemosCredentials,
   path: string,
-  body: Record<string, unknown>,
+  body: Record<string, unknown>
 ): Promise<unknown> {
   if (!credentials.apiKey) throw new Error('MEMOS_API_KEY not set')
 
@@ -84,7 +84,7 @@ function extractData(result: unknown): Record<string, unknown> | null {
 export async function searchMemory(
   credentials: MemosCredentials,
   query: string,
-  limit = 6,
+  limit = 6
 ): Promise<MemorySearchResult> {
   const result = await callApi(credentials, '/search/memory', {
     user_id: credentials.userId,
@@ -102,17 +102,21 @@ export async function searchMemory(
   const prefs = (data.preference_detail_list as Array<Record<string, unknown>>) ?? []
 
   return {
-    facts: memories.map((item) => ({
-      id: String(item.id ?? ''),
-      text: String(item.memory_value || item.memory_key || ''),
-      createTime: item.create_time ? String(item.create_time) : undefined,
-      confidence: typeof item.confidence === 'number' ? item.confidence : undefined,
-    })).filter((f) => f.text),
-    preferences: prefs.map((item) => ({
-      id: String(item.id ?? ''),
-      text: String(item.preference || ''),
-      type: item.preference_type ? String(item.preference_type) : undefined,
-    })).filter((p) => p.text),
+    facts: memories
+      .map((item) => ({
+        id: String(item.id ?? ''),
+        text: String(item.memory_value || item.memory_key || ''),
+        createTime: item.create_time ? String(item.create_time) : undefined,
+        confidence: typeof item.confidence === 'number' ? item.confidence : undefined,
+      }))
+      .filter((f) => f.text),
+    preferences: prefs
+      .map((item) => ({
+        id: String(item.id ?? ''),
+        text: String(item.preference || ''),
+        type: item.preference_type ? String(item.preference_type) : undefined,
+      }))
+      .filter((p) => p.text),
   }
 }
 
@@ -152,7 +156,7 @@ export async function addMemory(
     assistantMessage?: string
     conversationId?: string
     tags?: string[]
-  },
+  }
 ): Promise<void> {
   const messages: Array<{ role: string; content: string }> = [
     { role: 'user', content: params.userMessage },

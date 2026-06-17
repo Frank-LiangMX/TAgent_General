@@ -43,12 +43,14 @@ describe('外部 Agent 运行激活', () => {
     const currentStreamState = {
       running: true,
       content: '已有输出',
-      toolActivities: [{
-        toolUseId: 'tool-1',
-        toolName: 'Bash',
-        input: {},
-        done: false,
-      }],
+      toolActivities: [
+        {
+          toolUseId: 'tool-1',
+          toolName: 'Bash',
+          input: {},
+          done: false,
+        },
+      ],
       model: 'old-model',
     }
 

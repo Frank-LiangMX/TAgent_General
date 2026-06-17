@@ -160,7 +160,7 @@ async function triggerMacPaste(): Promise<void> {
   await execFileAsync(
     '/usr/bin/osascript',
     ['-e', 'tell application "System Events" to keystroke "v" using command down'],
-    MAC_PASTE_TIMEOUT_MS,
+    MAC_PASTE_TIMEOUT_MS
   )
 }
 
@@ -175,7 +175,7 @@ async function triggerWindowsPaste(): Promise<void> {
       '-Command',
       WINDOWS_SEND_INPUT_SCRIPT,
     ],
-    WINDOWS_PASTE_TIMEOUT_MS,
+    WINDOWS_PASTE_TIMEOUT_MS
   )
 }
 

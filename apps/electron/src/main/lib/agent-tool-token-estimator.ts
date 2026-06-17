@@ -16,13 +16,13 @@ export const WRITE_CONTENT_TOKEN_THRESHOLD = 16_000
  */
 export function isCjkCodePoint(cp: number): boolean {
   return (
-    (cp >= 0x4E00 && cp <= 0x9FFF) ||   // CJK Unified Ideographs
-    (cp >= 0x3000 && cp <= 0x303F) ||   // CJK Symbols and Punctuation
-    (cp >= 0xFF00 && cp <= 0xFFEF) ||   // Fullwidth Forms
-    (cp >= 0xAC00 && cp <= 0xD7AF) ||   // Hangul Syllables
-    (cp >= 0x3040 && cp <= 0x30FF) ||   // Hiragana + Katakana
-    (cp >= 0x3400 && cp <= 0x4DBF) ||   // CJK Extension A
-    (cp >= 0x20000 && cp <= 0x2A6DF)    // CJK Extension B (supplementary)
+    (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified Ideographs
+    (cp >= 0x3000 && cp <= 0x303f) || // CJK Symbols and Punctuation
+    (cp >= 0xff00 && cp <= 0xffef) || // Fullwidth Forms
+    (cp >= 0xac00 && cp <= 0xd7af) || // Hangul Syllables
+    (cp >= 0x3040 && cp <= 0x30ff) || // Hiragana + Katakana
+    (cp >= 0x3400 && cp <= 0x4dbf) || // CJK Extension A
+    (cp >= 0x20000 && cp <= 0x2a6df) // CJK Extension B (supplementary)
   )
 }
 

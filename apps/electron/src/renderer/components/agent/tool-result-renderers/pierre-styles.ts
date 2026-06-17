@@ -106,7 +106,9 @@ export const PIERRE_FILE_CSS = `
  */
 export function createPierreFileCSS(lineNumberStart: number, maxLineNumber: number): string {
   const safeStart = Number.isFinite(lineNumberStart) ? Math.max(1, Math.floor(lineNumberStart)) : 1
-  const safeMax = Number.isFinite(maxLineNumber) ? Math.max(safeStart, Math.floor(maxLineNumber)) : safeStart
+  const safeMax = Number.isFinite(maxLineNumber)
+    ? Math.max(safeStart, Math.floor(maxLineNumber))
+    : safeStart
   const minWidth = `${Math.max(3, String(safeMax).length)}ch`
 
   if (safeStart === 1) {

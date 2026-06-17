@@ -21,12 +21,14 @@ import { getFeishuMultiBotConfig } from './lib/feishu-config'
 import { stopFeishuSyncSleepBlocker, syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { registerGlobalShortcut, unregisterAllGlobalShortcuts } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
-import { createQuickTaskWindow, toggleQuickTaskWindow, destroyQuickTaskWindow } from './lib/quick-task-window'
+import {
+  createQuickTaskWindow,
+  toggleQuickTaskWindow,
+  destroyQuickTaskWindow,
+} from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { initAutoUpdater, cleanupUpdater } from './lib/updater/auto-updater'
-import { wpsBridge } from './lib/wps-bridge'
-import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import {
   createVoiceDictationWindow,
   toggleVoiceDictationWindow,
@@ -36,6 +38,8 @@ import {
 import { wechatBridge } from './lib/wechat-bridge'
 import { getWeChatConfig } from './lib/wechat-config'
 import { startWorkspaceWatcher, stopWorkspaceWatcher } from './lib/workspace-watcher'
+import { wpsBridge } from './lib/wps-bridge'
+import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import { createApplicationMenu } from './menu'
 import { createTray, destroyTray, getTray } from './tray'
 
@@ -68,7 +72,7 @@ if (isDevBuild) {
 if (!app.requestSingleInstanceLock()) {
   console.warn(
     '[启动] 已有 TAgent 进程持有单实例锁，本次启动将退出。\n' +
-      '  如果窗口未出现，可能旧进程已卡死。请运行 `bun run dev-stop` 后重试。',
+      '  如果窗口未出现，可能旧进程已卡死。请运行 `bun run dev-stop` 后重试。'
   )
   app.quit()
 } else {
@@ -80,7 +84,16 @@ function registerProtocolsAndHandlers(): void {
   // 注册自定义协议方案为"特权"（必须在 app ready 之前）
   // 用于内联预览本地文件（renderer 用 iframe 加载 tagent-file:// 资源）
   protocol.registerSchemesAsPrivileged([
-    { scheme: 'tagent-file', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+    {
+      scheme: 'tagent-file',
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: true,
+        stream: true,
+      },
+    },
   ])
 
   // Windows: 禁用 LCD 次像素抗锯齿（ClearType），改用灰度 AA。
@@ -98,14 +111,14 @@ function registerProtocolsAndHandlers(): void {
   // Windows 文件关联：当用户双击文件时，新实例的参数会通过 second-instance 传给已有实例
   app.on('second-instance', (_event, argv) => {
     showAndFocusMainWindow()
-    const fileArg = argv.find((arg) => arg.endsWith('.tagent-backup') || arg.endsWith('.tagent-share'))
+    const fileArg = argv.find(
+      (arg) => arg.endsWith('.tagent-backup') || arg.endsWith('.tagent-share')
+    )
     if (fileArg) {
       handleMigrationFileOpen(fileArg)
     }
   })
 }
-
-
 
 // 处理 EPIPE 错误：当 stdout/stderr 管道被关闭时（如 electronmon 重启），忽略写入错误
 // 这在开发环境热重载时经常发生，不影响应用功能
@@ -126,7 +139,6 @@ for (const key of Object.keys(process.env)) {
     delete process.env[key]
   }
 }
-
 
 const MIGRATION_IPC_OPEN = 'migration:open-import-file'
 
@@ -359,7 +371,8 @@ function createWindow(): void {
   // 拦截页面内导航，外部链接用系统浏览器打开，防止 Electron 窗口被覆盖
   mainWindow.webContents.on('will-navigate', (event, url) => {
     // 允许开发模式下的 Vite HMR 热重载（同时支持 localhost 和 127.0.0.1）
-    if (isDev && (url.startsWith('http://localhost:') || url.startsWith('http://127.0.0.1:'))) return
+    if (isDev && (url.startsWith('http://localhost:') || url.startsWith('http://127.0.0.1:')))
+      return
     event.preventDefault()
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url)
@@ -535,15 +548,15 @@ async function bootstrap(): Promise<void> {
 
   // 注册全局快捷键
   safeRun('registerGlobalShortcut:quick-task', () =>
-    registerGlobalShortcut('quick-task', toggleQuickTaskWindow),
+    registerGlobalShortcut('quick-task', toggleQuickTaskWindow)
   )
   safeRun('registerGlobalShortcut:show-main-window', () =>
-    registerGlobalShortcut('show-main-window', showAndFocusMainWindow),
+    registerGlobalShortcut('show-main-window', showAndFocusMainWindow)
   )
   safeRun('registerGlobalShortcut:voice-dictation', () =>
     registerGlobalShortcut('voice-dictation', () => {
       toggleVoiceDictationWindow({ targetIsTAgent: mainWindow?.isFocused() === true })
-    }),
+    })
   )
 
   // 启动所有已注册的 Bridge（飞书/钉钉/微信等）
@@ -600,7 +613,7 @@ function handleBootstrapFailure(err: unknown): void {
         `1. 旧版 TAgent 进程未退出（终端运行 killall TAgent 后重试）\n` +
         `2. ~/.tagent/ 配置损坏（重命名 ~/.tagent 后重启）\n` +
         `3. 系统 Keychain 无法解密保存的凭证（删除 ~/.tagent/feishu.json 等后重新登录）\n\n` +
-        `如需协助请到 GitHub Issues 反馈。`,
+        `如需协助请到 GitHub Issues 反馈。`
     )
   } catch {
     /* dialog 也失败，无能为力 */

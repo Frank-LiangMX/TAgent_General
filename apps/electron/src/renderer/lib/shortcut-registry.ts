@@ -11,8 +11,7 @@ import type { ShortcutOverrides } from './shortcut-defaults'
 
 // ===== 平台检测 =====
 
-const isMac =
-  typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
+const isMac = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
 
 // ===== 注册表状态 =====
 
@@ -92,8 +91,7 @@ function parseAccelerator(accelerator: string): ParsedAccelerator {
   const isModifierOnly = parts.length > 0 && parts.every(isModifierName)
   const key = isModifierOnly ? '' : normalizeKeyName(parts[parts.length - 1] ?? '')
   const modifiers = (isModifierOnly ? parts : parts.slice(0, -1)).map((m) => m.toLowerCase())
-  const hasCmdOrCtrl =
-    modifiers.includes('cmdorctrl') || modifiers.includes('commandorcontrol')
+  const hasCmdOrCtrl = modifiers.includes('cmdorctrl') || modifiers.includes('commandorcontrol')
 
   return {
     cmd:
@@ -102,10 +100,7 @@ function parseAccelerator(accelerator: string): ParsedAccelerator {
       modifiers.includes('meta') ||
       modifiers.includes('super') ||
       (isMac && hasCmdOrCtrl),
-    ctrl:
-      modifiers.includes('ctrl') ||
-      modifiers.includes('control') ||
-      (!isMac && hasCmdOrCtrl),
+    ctrl: modifiers.includes('ctrl') || modifiers.includes('control') || (!isMac && hasCmdOrCtrl),
     shift: modifiers.includes('shift'),
     alt: modifiers.includes('alt') || modifiers.includes('option'),
     key,
@@ -212,7 +207,7 @@ export function initShortcutRegistry(): void {
 export function registerShortcut(
   id: string,
   callback: () => void,
-  options: ShortcutRegistrationOptions = {},
+  options: ShortcutRegistrationOptions = {}
 ): () => void {
   if (!handlers.has(id)) {
     handlers.set(id, new Set())
@@ -288,10 +283,7 @@ export function getAcceleratorDisplay(accelerator: string | null): string {
  *
  * @returns 冲突的快捷键 ID，无冲突返回 null
  */
-export function checkConflict(
-  accelerator: string,
-  excludeId?: string,
-): string | null {
+export function checkConflict(accelerator: string, excludeId?: string): string | null {
   const parsed = parseAccelerator(accelerator)
   for (const def of DEFAULT_SHORTCUTS) {
     if (excludeId && def.id === excludeId) continue

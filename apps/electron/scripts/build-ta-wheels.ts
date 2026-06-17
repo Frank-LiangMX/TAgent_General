@@ -18,13 +18,7 @@ const TA_AGENT_MCP_DIR = resolve(APPS_DIR, '..', '..', 'ta-agent-mcp')
 const WHEELS_DIR = join(APPS_DIR, 'ta-agent-mcp-wheels', `${process.platform}-${process.arch}`)
 
 /** Python 包列表（与 ta-agent-mcp/pyproject.toml dependencies 保持一致） */
-const TA_AGENT_MCP_DEPS = [
-  'mcp',
-  'trimesh',
-  'pillow',
-  'numpy',
-  'pydantic',
-]
+const TA_AGENT_MCP_DEPS = ['mcp', 'trimesh', 'pillow', 'numpy', 'pydantic']
 
 /** pip download platform tags */
 const PLATFORM_TAGS: Record<string, string[]> = {
@@ -122,7 +116,10 @@ async function main(): Promise<void> {
         timeout: 300_000,
       })
     } catch (e) {
-      console.error(`[build-ta-wheels] 下载 ${tag} 失败:`, e instanceof Error ? e.message : String(e))
+      console.error(
+        `[build-ta-wheels] 下载 ${tag} 失败:`,
+        e instanceof Error ? e.message : String(e)
+      )
       // 不退出，继续其他平台
     }
   }

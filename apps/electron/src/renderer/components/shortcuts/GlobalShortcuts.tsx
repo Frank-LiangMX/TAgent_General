@@ -25,7 +25,6 @@ import {
   agentAttachedFilesMapAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import {
   chatPendingMessageAtom,
   conversationDraftsAtom,
@@ -33,22 +32,20 @@ import {
   currentConversationIdAtom,
   selectedModelAtom,
 } from '@/atoms/chat-atoms'
+import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
-import { settingsOpenAtom, channelFormDirtyAtom, settingsCloseRequestedAtom } from '@/atoms/settings-tab'
-import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
-  tabsAtom,
-  activeTabIdAtom,
-  openTab,
-} from '@/atoms/tab-atoms'
+  settingsOpenAtom,
+  channelFormDirtyAtom,
+  settingsCloseRequestedAtom,
+} from '@/atoms/settings-tab'
+import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
+import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useShortcut } from '@/hooks/useShortcut'
 import { getFileParentPath } from '@/lib/file-utils'
-import {
-  initShortcutRegistry,
-  updateShortcutOverrides,
-} from '@/lib/shortcut-registry'
+import { initShortcutRegistry, updateShortcutOverrides } from '@/lib/shortcut-registry'
 
 /**
  * 快捷键初始化 + 全局 Handler 注册
@@ -79,13 +76,16 @@ export function GlobalShortcuts(): null {
   useEffect(() => {
     initShortcutRegistry()
 
-    window.electronAPI.getSettings().then((settings) => {
-      if (settings.shortcutOverrides) {
-        setShortcutOverrides(settings.shortcutOverrides)
-        updateShortcutOverrides(settings.shortcutOverrides)
-      }
-      setSendWithCmdEnter(settings.sendWithCmdEnter ?? false)
-    }).catch(console.error)
+    window.electronAPI
+      .getSettings()
+      .then((settings) => {
+        if (settings.shortcutOverrides) {
+          setShortcutOverrides(settings.shortcutOverrides)
+          updateShortcutOverrides(settings.shortcutOverrides)
+        }
+        setSendWithCmdEnter(settings.sendWithCmdEnter ?? false)
+      })
+      .catch(console.error)
   }, [setShortcutOverrides, setSendWithCmdEnter])
 
   // 配置变更时同步到注册表
@@ -113,7 +113,16 @@ export function GlobalShortcuts(): null {
 
     if (!activeTabId) return
     requestClose(activeTabId)
-  }, [settingsOpen, setSettingsOpen, channelFormDirty, setSettingsCloseRequested, searchOpen, setSearchOpen, activeTabId, requestClose])
+  }, [
+    settingsOpen,
+    setSettingsOpen,
+    channelFormDirty,
+    setSettingsCloseRequested,
+    searchOpen,
+    setSearchOpen,
+    activeTabId,
+    requestClose,
+  ])
 
   // 监听菜单 IPC 事件（Cmd+W 被 Electron 菜单拦截后通过 IPC 转发）
   useEffect(() => {
@@ -129,13 +138,13 @@ export function GlobalShortcuts(): null {
   // Cmd+, → 打开设置
   useShortcut(
     'open-settings',
-    useCallback(() => setSettingsOpen(true), [setSettingsOpen]),
+    useCallback(() => setSettingsOpen(true), [setSettingsOpen])
   )
 
   // Cmd+Shift+F / Ctrl+Shift+F → 全局搜索
   useShortcut(
     'global-search',
-    useCallback(() => setSearchOpen(true), [setSearchOpen]),
+    useCallback(() => setSearchOpen(true), [setSearchOpen])
   )
 
   // Cmd+N → 新建 Agent 会话
@@ -143,7 +152,7 @@ export function GlobalShortcuts(): null {
     'new-session',
     useCallback(() => {
       createAgent({ draft: true })
-    }, [createAgent]),
+    }, [createAgent])
   )
 
   // Cmd+Shift+M → 切换 Composer 档位
@@ -164,7 +173,7 @@ export function GlobalShortcuts(): null {
       } catch (error) {
         console.error('[GlobalShortcuts] 切换 Composer 档位失败:', error)
       }
-    }, [currentComposerMode, currentAgentSessionId, setComposerModeMap]),
+    }, [currentComposerMode, currentAgentSessionId, setComposerModeMap])
   )
 
   // Cmd+K → 清除上下文（通过 CustomEvent 分发到 ChatInput）
@@ -172,7 +181,7 @@ export function GlobalShortcuts(): null {
     'clear-context',
     useCallback(() => {
       window.dispatchEvent(new CustomEvent('tagent:clear-context'))
-    }, []),
+    }, [])
   )
 
   // Cmd+L → 聚焦输入框（通过 CustomEvent 分发到 ChatInput/AgentView）
@@ -180,7 +189,7 @@ export function GlobalShortcuts(): null {
     'focus-input',
     useCallback(() => {
       window.dispatchEvent(new CustomEvent('tagent:focus-input'))
-    }, []),
+    }, [])
   )
 
   // Cmd+Shift+Backspace → 停止 Agent（通过 CustomEvent 分发到 ChatView/AgentView）
@@ -188,7 +197,7 @@ export function GlobalShortcuts(): null {
     'stop-generation',
     useCallback(() => {
       window.dispatchEvent(new CustomEvent('tagent:stop-generation'))
-    }, []),
+    }, [])
   )
 
   // ===== 快速任务窗口 → 创建会话并自动发送 =====
@@ -205,11 +214,7 @@ export function GlobalShortcuts(): null {
         // Agent 模式：创建会话 + 保存附件到 session 目录
         const channelId = store.get(agentChannelIdAtom) || undefined
         const workspaceId = store.get(currentAgentWorkspaceIdAtom) || undefined
-        const meta = await window.electronAPI.createAgentSession(
-          undefined,
-          channelId,
-          workspaceId,
-        )
+        const meta = await window.electronAPI.createAgentSession(undefined, channelId, workspaceId)
         // 更新 atom 状态
         store.set(agentSessionsAtom, (prev) => [meta, ...prev])
         store.set(currentAgentSessionIdAtom, meta.id)
@@ -239,10 +244,12 @@ export function GlobalShortcuts(): null {
                 if (parentPath) additionalDirectories.add(parentPath)
               }
 
-              const filesToSave = data.files.filter((f) => f.base64).map((f) => ({
-                filename: f.filename,
-                data: f.base64!,
-              }))
+              const filesToSave = data.files
+                .filter((f) => f.base64)
+                .map((f) => ({
+                  filename: f.filename,
+                  data: f.base64!,
+                }))
               if (filesToSave.length > 0) {
                 const saved = await window.electronAPI.saveFilesToAgentSession({
                   workspaceSlug: workspace.slug,
@@ -276,7 +283,9 @@ export function GlobalShortcuts(): null {
         store.set(agentPendingPromptAtom, {
           sessionId: meta.id,
           message: fileReferences + data.text,
-          ...(additionalDirectories.size > 0 && { additionalDirectories: Array.from(additionalDirectories) }),
+          ...(additionalDirectories.size > 0 && {
+            additionalDirectories: Array.from(additionalDirectories),
+          }),
         })
       } catch (error) {
         console.error('[快速任务] 创建会话失败:', error)
@@ -292,10 +301,12 @@ export function GlobalShortcuts(): null {
       const trimmed = text.trim()
       if (!trimmed) return
 
-      const insertedAtCursor = !window.dispatchEvent(new CustomEvent('tagent:insert-voice-dictation-text', {
-        cancelable: true,
-        detail: { text: trimmed },
-      }))
+      const insertedAtCursor = !window.dispatchEvent(
+        new CustomEvent('tagent:insert-voice-dictation-text', {
+          cancelable: true,
+          detail: { text: trimmed },
+        })
+      )
       if (insertedAtCursor) {
         window.dispatchEvent(new CustomEvent('tagent:focus-input'))
         return
@@ -305,7 +316,10 @@ export function GlobalShortcuts(): null {
       const activeTabId = store.get(activeTabIdAtom)
       const activeTab = tabs.find((tab) => tab.id === activeTabId)
       // P3: chat 已退役，fallback 永远是 agent
-      const fallbackTarget = { type: 'agent' as const, sessionId: store.get(currentAgentSessionIdAtom) }
+      const fallbackTarget = {
+        type: 'agent' as const,
+        sessionId: store.get(currentAgentSessionIdAtom),
+      }
       const target = activeTab ?? fallbackTarget
 
       if (!target.sessionId) return
@@ -350,9 +364,11 @@ export function GlobalShortcuts(): null {
 
         if (session.workspaceId) {
           store.set(currentAgentWorkspaceIdAtom, session.workspaceId)
-          window.electronAPI.updateSettings({
-            agentWorkspaceId: session.workspaceId,
-          }).catch(console.error)
+          window.electronAPI
+            .updateSettings({
+              agentWorkspaceId: session.workspaceId,
+            })
+            .catch(console.error)
         }
 
         const currentTabs = store.get(tabsAtom)

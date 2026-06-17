@@ -24,12 +24,15 @@ interface AskHeuristicDialogProps {
   onChoice: (choice: AskHeuristicChoice) => void
 }
 
-export function AskHeuristicDialog({ open, messagePreview, onChoice }: AskHeuristicDialogProps): React.ReactElement | null {
+export function AskHeuristicDialog({
+  open,
+  messagePreview,
+  onChoice,
+}: AskHeuristicDialogProps): React.ReactElement | null {
   if (!open) return null
 
-  const truncated = messagePreview.length > 200
-    ? messagePreview.slice(0, 200) + '…'
-    : messagePreview
+  const truncated =
+    messagePreview.length > 200 ? messagePreview.slice(0, 200) + '…' : messagePreview
 
   return (
     <div
@@ -60,12 +63,15 @@ export function AskHeuristicDialog({ open, messagePreview, onChoice }: AskHeuris
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-          Ask 档位只能对话，不能写文件或执行命令。检测到你的消息含"动手意图"关键词（修改文件 / 运行命令 / 写代码…），建议切到 Agent 档位。
+          Ask 档位只能对话，不能写文件或执行命令。检测到你的消息含"动手意图"关键词（修改文件 /
+          运行命令 / 写代码…），建议切到 Agent 档位。
         </p>
 
         <div className="rounded-md bg-muted/50 px-3 py-2 mb-4 max-h-32 overflow-y-auto">
           <div className="text-[10px] font-medium text-muted-foreground mb-1">消息预览</div>
-          <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words">{truncated}</div>
+          <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
+            {truncated}
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2">

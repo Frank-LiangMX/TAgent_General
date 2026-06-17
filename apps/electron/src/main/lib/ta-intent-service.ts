@@ -13,32 +13,96 @@ import type { AgentMessage } from '@tagent/shared'
 /** TA 相关关键词（中文+英文） */
 const TA_KEYWORDS = [
   // 模型相关
-  'mesh', '模型', 'polygon', '多边形', '顶点', 'vertex', '面数', 'poly count',
+  'mesh',
+  '模型',
+  'polygon',
+  '多边形',
+  '顶点',
+  'vertex',
+  '面数',
+  'poly count',
   // 材质纹理
-  'texture', '纹理', '贴图', 'material', '材质', 'shader', '着色器',
-  'uv', 'uv展开', 'uv mapping', 'pbr', 'normal map', '法线贴图',
+  'texture',
+  '纹理',
+  '贴图',
+  'material',
+  '材质',
+  'shader',
+  '着色器',
+  'uv',
+  'uv展开',
+  'uv mapping',
+  'pbr',
+  'normal map',
+  '法线贴图',
   // FBX/导入导出
-  'fbx', 'obj', 'gltf', 'glb', '导入模型', '导出模型', 'import', 'export',
+  'fbx',
+  'obj',
+  'gltf',
+  'glb',
+  '导入模型',
+  '导出模型',
+  'import',
+  'export',
   // 引擎相关
-  'unity', 'ue', 'ue4', 'ue5', 'unreal', '虚幻', 'prefab', '蓝图', 'blueprint',
-  'asset', '资产', '资源管理', 'asset bundle',
+  'unity',
+  'ue',
+  'ue4',
+  'ue5',
+  'unreal',
+  '虚幻',
+  'prefab',
+  '蓝图',
+  'blueprint',
+  'asset',
+  '资产',
+  '资源管理',
+  'asset bundle',
   // 命名规范
-  '命名', 'naming', '命名规范', 'naming convention', '命名规则',
+  '命名',
+  'naming',
+  '命名规范',
+  'naming convention',
+  '命名规则',
   // 目录结构
-  '目录结构', 'directory', 'folder structure', '项目结构', 'project structure',
+  '目录结构',
+  'directory',
+  'folder structure',
+  '项目结构',
+  'project structure',
   // LOD/优化
-  'lod', 'level of detail', '优化', 'optimization', '性能优化', 'performance',
+  'lod',
+  'level of detail',
+  '优化',
+  'optimization',
+  '性能优化',
+  'performance',
   // 动画/骨骼
-  'rig', '骨骼', 'skeleton', 'animation', '动画', 'skinned', '蒙皮',
+  'rig',
+  '骨骼',
+  'skeleton',
+  'animation',
+  '动画',
+  'skinned',
+  '蒙皮',
   // 技术美术
-  'ta', 'technical artist', '技术美术', 'tech art',
+  'ta',
+  'technical artist',
+  '技术美术',
+  'tech art',
 ]
 
 /** 强匹配关键词（命中即判定为 TA 意图） */
 const STRONG_KEYWORDS = [
-  'ta-agent-mcp', 'tagent', 'ta mcp', 'ta 工具',
-  'check_mesh_budget', 'check_fbx_info', 'check_texture_info',
-  '命名规范检查', '目录结构检查',
+  'ta-agent-mcp',
+  'tagent',
+  'ta mcp',
+  'ta 工具',
+  'check_mesh_budget',
+  'check_fbx_info',
+  'check_texture_info',
+  '命名规范检查',
+  '目录结构检查',
 ]
 
 /** 会话级已提示记录 */
@@ -47,7 +111,11 @@ const sessionPrompted = new Set<string>()
 /**
  * 检测用户消息是否包含 TA 相关意图
  */
-export function detectTAIntent(userMessage: string): { hasIntent: boolean; matchedKeywords: string[]; confidence: 'strong' | 'medium' | 'weak' } {
+export function detectTAIntent(userMessage: string): {
+  hasIntent: boolean
+  matchedKeywords: string[]
+  confidence: 'strong' | 'medium' | 'weak'
+} {
   const lowerMsg = userMessage.toLowerCase()
 
   // 强匹配：直接命中技术术语
@@ -91,7 +159,10 @@ export function detectTAIntent(userMessage: string): { hasIntent: boolean; match
  * 2. TA MCP 未安装或未启用
  * 3. 本次会话未提示过
  */
-export function shouldPromptTAMcp(sessionId: string, workspaceSlug: string): {
+export function shouldPromptTAMcp(
+  sessionId: string,
+  workspaceSlug: string
+): {
   shouldPrompt: boolean
   reason: 'not_installed' | 'not_configured' | null
   status: { installed: boolean; configured: boolean } | null
@@ -112,13 +183,21 @@ export function shouldPromptTAMcp(sessionId: string, workspaceSlug: string): {
   const status = getTAMcpServerStatus()
 
   if (!status.installed) {
-    return { shouldPrompt: true, reason: 'not_installed', status: { installed: false, configured: false } }
+    return {
+      shouldPrompt: true,
+      reason: 'not_installed',
+      status: { installed: false, configured: false },
+    }
   }
 
   // 检查工作区配置
   const configured = isTAMcpConfigured(workspaceSlug)
   if (!configured) {
-    return { shouldPrompt: true, reason: 'not_configured', status: { installed: true, configured: false } }
+    return {
+      shouldPrompt: true,
+      reason: 'not_configured',
+      status: { installed: true, configured: false },
+    }
   }
 
   return { shouldPrompt: false, reason: null, status: { installed: true, configured: true } }
@@ -146,8 +225,12 @@ export function clearSessionPrompted(sessionId: string): void {
 export function checkAndGeneratePrompt(
   sessionId: string,
   workspaceSlug: string,
-  recentMessages: AgentMessage[],
-): { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' } | null {
+  recentMessages: AgentMessage[]
+): {
+  prompt: string
+  confidence: 'strong' | 'medium' | 'weak'
+  reason: 'not_installed' | 'not_configured'
+} | null {
   // 获取最近一条用户消息
   const lastUserMsg = [...recentMessages].reverse().find((m) => m.role === 'user')
   if (!lastUserMsg || typeof lastUserMsg.content !== 'string') {

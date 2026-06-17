@@ -31,8 +31,6 @@ import type {
   TAgentPermissionMode,
 } from '@tagent/shared'
 
-
-
 /** SDK Query 对象类型（从动态导入中推断） */
 type SDKQuery = ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>
 
@@ -69,14 +67,18 @@ function createMessageChannel(signal: AbortSignal): MessageChannel {
 
   // abort 时标记结束，唤醒可能阻塞的 generator
   if (!done) {
-    signal.addEventListener('abort', () => {
-      done = true
-      if (resolver) {
-        const r = resolver
-        resolver = null
-        r()
-      }
-    }, { once: true })
+    signal.addEventListener(
+      'abort',
+      () => {
+        done = true
+        if (resolver) {
+          const r = resolver
+          resolver = null
+          r()
+        }
+      },
+      { once: true }
+    )
   }
 
   async function* generator(): AsyncGenerator<SDKUserMessage> {
@@ -85,7 +87,9 @@ function createMessageChannel(signal: AbortSignal): MessageChannel {
         yield queue.shift()!
       } else {
         // 等待新消息入队或 abort 信号
-        await new Promise<void>((resolve) => { resolver = resolve })
+        await new Promise<void>((resolve) => {
+          resolver = resolve
+        })
       }
     }
     // 排空剩余消息
@@ -135,7 +139,7 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   canUseTool?: (
     toolName: string,
     input: Record<string, unknown>,
-    options: CanUseToolOptions,
+    options: CanUseToolOptions
   ) => Promise<PermissionResult>
   /** 只读工具白名单 */
   allowedTools?: string[]
@@ -216,9 +220,7 @@ export function friendlyErrorMessage(raw: string): string {
   for (const { pattern, message } of FRIENDLY_ERROR_MESSAGES) {
     if (pattern.test(sample)) return message
   }
-  return isLong
-    ? sample + `\n\n[错误详情过长 (${(raw.length / 1024).toFixed(0)}KB)，已截断]`
-    : raw
+  return isLong ? sample + `\n\n[错误详情过长 (${(raw.length / 1024).toFixed(0)}KB)，已截断]` : raw
 }
 
 // ============================================================================
@@ -298,7 +300,7 @@ function extractHttpStatusFromErrorText(...messages: string[]): number | null {
 export function mapSDKErrorToTypedError(
   errorCode: string,
   detailedMessage: string,
-  originalError: string,
+  originalError: string
 ): TypedError {
   if (isThinkingSignatureError(detailedMessage, originalError)) {
     return {
@@ -315,80 +317,83 @@ export function mapSDKErrorToTypedError(
     }
   }
 
-  const errorMap: Record<string, { code: ErrorCode; title: string; message: string; canRetry: boolean }> = {
-    'authentication_failed': {
+  const errorMap: Record<
+    string,
+    { code: ErrorCode; title: string; message: string; canRetry: boolean }
+  > = {
+    authentication_failed: {
       code: 'invalid_api_key',
       title: '认证失败',
       message: '无法通过 API 认证，API Key 可能无效或已过期',
       canRetry: true,
     },
-    'billing_error': {
+    billing_error: {
       code: 'billing_error',
       title: '账单错误',
       message: '您的账户存在账单问题',
       canRetry: false,
     },
-    'model_not_found': {
+    model_not_found: {
       code: 'invalid_model',
       title: '模型不可用',
       message: '当前渠道无法使用所选模型，请检查模型名称或切换模型',
       canRetry: false,
     },
-    'invalid_request': {
+    invalid_request: {
       code: 'invalid_request',
       title: '请求无效',
       message: 'API 请求参数无效，请检查当前渠道与模型配置',
       canRetry: false,
     },
-    'rate_limit': {
+    rate_limit: {
       code: 'rate_limited',
       title: '请求频率限制',
       message: '请求过于频繁，请稍后再试',
       canRetry: true,
     },
-    'rate_limited': {
+    rate_limited: {
       code: 'rate_limited',
       title: '请求频率限制',
       message: '请求过于频繁，请稍后再试',
       canRetry: true,
     },
-    'overloaded': {
+    overloaded: {
       code: 'provider_error',
       title: '服务繁忙',
       message: 'API 服务当前过载，请稍后再试',
       canRetry: true,
     },
-    'provider_error': {
+    provider_error: {
       code: 'provider_error',
       title: '服务繁忙',
       message: 'API 服务当前过载或暂时异常，请稍后再试',
       canRetry: true,
     },
-    'service_error': {
+    service_error: {
       code: 'service_error',
       title: '服务错误',
       message: 'API 服务暂时异常，请稍后再试',
       canRetry: true,
     },
-    'api_error': {
+    api_error: {
       code: 'service_error',
       title: '服务错误',
       message: 'API 服务暂时异常，请稍后再试',
       canRetry: true,
     },
-    'service_unavailable': {
+    service_unavailable: {
       code: 'service_unavailable',
       title: '服务暂时不可用',
       message: 'API 服务暂时不可用，请稍后再试',
       canRetry: true,
     },
-    'server_error': {
+    server_error: {
       code: 'service_error',
       title: '服务错误',
       message: 'API 服务暂时异常，请稍后再试',
       canRetry: true,
     },
-    'prompt_too_long': {
+    prompt_too_long: {
       code: 'prompt_too_long',
       title: '上下文过长',
       message: '当前对话的上下文已超出模型限制，请压缩上下文或开启新会话',
@@ -400,8 +405,9 @@ export function mapSDKErrorToTypedError(
   // assistant.error 路径下，SDK 常常把这类错误标记为 errorType='unknown'，
   // 这里从 detailedMessage / originalError 兜底匹配，归类为可重试的 network_error。
   const looksLikeNetwork =
-    (!errorMap[errorCode]) &&
-    (TRANSIENT_NETWORK_PATTERN.test(detailedMessage ?? '') || TRANSIENT_NETWORK_PATTERN.test(originalError ?? ''))
+    !errorMap[errorCode] &&
+    (TRANSIENT_NETWORK_PATTERN.test(detailedMessage ?? '') ||
+      TRANSIENT_NETWORK_PATTERN.test(originalError ?? ''))
   if (looksLikeNetwork) {
     return {
       code: 'network_error',
@@ -426,19 +432,29 @@ export function mapSDKErrorToTypedError(
     return {
       code: isRateLimited
         ? 'rate_limited'
-        : (isOverloaded ? 'provider_error' : (isUnavailable ? 'service_unavailable' : 'service_error')),
+        : isOverloaded
+          ? 'provider_error'
+          : isUnavailable
+            ? 'service_unavailable'
+            : 'service_error',
       title: isRateLimited
         ? '请求频率限制'
-        : (isOverloaded ? '服务繁忙' : (isUnavailable ? '服务暂时不可用' : (isBadGateway ? '网关异常' : '服务错误'))),
-      message: detailedMessage || (
-        isRateLimited
+        : isOverloaded
+          ? '服务繁忙'
+          : isUnavailable
+            ? '服务暂时不可用'
+            : isBadGateway
+              ? '网关异常'
+              : '服务错误',
+      message:
+        detailedMessage ||
+        (isRateLimited
           ? '请求过于频繁，请稍后再试'
           : isOverloaded
             ? 'API 服务当前过载 (529)，通常很快恢复'
             : isBadGateway
               ? 'API 网关暂时异常 (502)，通常很快恢复'
-              : `API 服务暂时异常 (${httpStatus})，请稍后再试`
-      ),
+              : `API 服务暂时异常 (${httpStatus})，请稍后再试`),
       actions: [
         { key: 's', label: '设置', action: 'settings' },
         { key: 'r', label: '重试', action: 'retry' },
@@ -451,7 +467,9 @@ export function mapSDKErrorToTypedError(
 
   // TA MCP 依赖缺失检测
   // 错误信息中含 "ModuleNotFoundError: No module named 'ta_agent_mcp'" 时，提示用户去 TA 模式一键安装
-  if (/No module named ['"]ta_agent_mcp['"]|ModuleNotFoundError.*ta_agent_mcp/i.test(detailedMessage)) {
+  if (
+    /No module named ['"]ta_agent_mcp['"]|ModuleNotFoundError.*ta_agent_mcp/i.test(detailedMessage)
+  ) {
     return {
       code: 'ta_dependency_missing' as ErrorCode,
       title: 'TA MCP 依赖缺失',
@@ -479,7 +497,9 @@ export function mapSDKErrorToTypedError(
     actions: [
       { key: 's', label: '设置', action: 'settings' },
       ...(mapped.canRetry ? [{ key: 'r', label: '重试', action: 'retry' }] : []),
-      ...(mapped.code === 'prompt_too_long' ? [{ key: 'c', label: '压缩上下文', action: 'compact' }] : []),
+      ...(mapped.code === 'prompt_too_long'
+        ? [{ key: 'c', label: '压缩上下文', action: 'compact' }]
+        : []),
     ],
     canRetry: mapped.canRetry,
     retryDelayMs: mapped.canRetry ? 1000 : undefined,
@@ -488,7 +508,10 @@ export function mapSDKErrorToTypedError(
 }
 
 /** 从 assistant 错误消息中提取详细信息 */
-export function extractErrorDetails(msg: { error?: { message: string }; message?: { content?: Array<Record<string, unknown>> } }): { detailedMessage: string; originalError: string } {
+export function extractErrorDetails(msg: {
+  error?: { message: string }
+  message?: { content?: Array<Record<string, unknown>> }
+}): { detailedMessage: string; originalError: string } {
   let detailedMessage = msg.error?.message ?? '未知错误'
   let originalError = msg.error?.message ?? '未知错误'
 
@@ -600,7 +623,6 @@ function scheduleForceKill(sessionId: string, pid: number): void {
 }
 
 export class ClaudeAgentAdapter implements AgentProviderAdapter {
-
   abort(sessionId: string): void {
     // 先调用 query.close() 强制终止 CLI 子进程及其所有子进程（包括正在运行的 bash 命令）
     const query = activeQueries.get(sessionId)
@@ -724,9 +746,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         ...(options.allowedTools && { allowedTools: options.allowedTools }),
         ...(options.resumeSessionId ? { resume: options.resumeSessionId } : {}),
         ...(options.resumeSessionAt && { resumeSessionAt: options.resumeSessionAt }),
-        ...(options.mcpServers && Object.keys(options.mcpServers).length > 0 && {
-          mcpServers: options.mcpServers as Record<string, import('@anthropic-ai/claude-agent-sdk').McpServerConfig>,
-        }),
+        ...(options.mcpServers &&
+          Object.keys(options.mcpServers).length > 0 && {
+            mcpServers: options.mcpServers as Record<
+              string,
+              import('@anthropic-ai/claude-agent-sdk').McpServerConfig
+            >,
+          }),
         ...(options.plugins && { plugins: options.plugins }),
         ...(options.onStderr && { stderr: options.onStderr }),
 
@@ -735,7 +761,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         ...(options.effort && { effort: options.effort }),
         ...(options.agents && { agents: options.agents }),
         ...(options.agent && { agent: options.agent }),
-        ...(options.enableFileCheckpointing != null && { enableFileCheckpointing: options.enableFileCheckpointing }),
+        ...(options.enableFileCheckpointing != null && {
+          enableFileCheckpointing: options.enableFileCheckpointing,
+        }),
         ...(options.disallowedTools && { disallowedTools: options.disallowedTools }),
         ...(options.fallbackModel && { fallbackModel: options.fallbackModel }),
         ...(options.maxBudgetUsd != null && { maxBudgetUsd: options.maxBudgetUsd }),
@@ -744,9 +772,10 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         ...(options.persistSession != null && { persistSession: options.persistSession }),
         ...(options.forkSession != null && { forkSession: options.forkSession }),
         ...(options.sdkSessionId && { sessionId: options.sdkSessionId }),
-        ...(options.additionalDirectories && options.additionalDirectories.length > 0 && {
-          additionalDirectories: options.additionalDirectories,
-        }),
+        ...(options.additionalDirectories &&
+          options.additionalDirectories.length > 0 && {
+            additionalDirectories: options.additionalDirectories,
+          }),
         // 强制顺序执行工具，防止并发 tool_use 导致 400 错误
         // 根因：多个 tool_use 并发时若结果未完整批量提交会触发 invalid_request_error
         toolUseConcurrency: 1,
@@ -754,7 +783,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         // 自定义 spawn：记录 PID 以供 abort/dispose 做 force-kill 兜底（Issue #357）
         // 注意：一旦提供 spawnClaudeCodeProcess，SDK 会完全绕过 spawnLocalProcess，
         // 因此 options.stderr 回调需要在这里手动转发，否则 extractApiError / 重试判断全部失效
-        spawnClaudeCodeProcess: (spawnOpts: import('@anthropic-ai/claude-agent-sdk').SpawnOptions) => {
+        spawnClaudeCodeProcess: (
+          spawnOpts: import('@anthropic-ai/claude-agent-sdk').SpawnOptions
+        ) => {
           const child = spawnChild(spawnOpts.command, spawnOpts.args, {
             cwd: spawnOpts.cwd,
             env: spawnOpts.env,
@@ -766,7 +797,11 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           if (options.onStderr) {
             const onStderr = options.onStderr
             child.stderr?.on('data', (chunk: Buffer) => {
-              try { onStderr(chunk.toString()) } catch { /* 用户回调异常不影响流 */ }
+              try {
+                onStderr(chunk.toString())
+              } catch {
+                /* 用户回调异常不影响流 */
+              }
             })
           } else {
             // 即便上层不关心，也要 resume() 流否则缓冲会阻塞
@@ -885,7 +920,10 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     if (readyPromise) {
       let timeoutHandle: ReturnType<typeof setTimeout> | undefined
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error('[Claude 适配器] 等待 SDK 初始化超时，请稍后重试')), QUERY_READY_TIMEOUT_MS)
+        timeoutHandle = setTimeout(
+          () => reject(new Error('[Claude 适配器] 等待 SDK 初始化超时，请稍后重试')),
+          QUERY_READY_TIMEOUT_MS
+        )
       })
       try {
         await Promise.race([readyPromise, timeoutPromise])
@@ -900,7 +938,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     }
     // 通过消息通道入队，generator 会自动 yield 给 SDK
     channel.enqueue(message as import('@anthropic-ai/claude-agent-sdk').SDKUserMessage)
-    console.log(`[Claude 适配器] 队列消息已注入: sessionId=${sessionId}, uuid=${message.uuid}, priority=${message.priority}`)
+    console.log(
+      `[Claude 适配器] 队列消息已注入: sessionId=${sessionId}, uuid=${message.uuid}, priority=${message.priority}`
+    )
   }
 
   /**
@@ -931,9 +971,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       console.warn(`[Claude 适配器] 无活跃查询，跳过权限模式切换: ${sessionId}`)
       return
     }
-    await (query as ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>).setPermissionMode(
-      mode as import('@anthropic-ai/claude-agent-sdk').PermissionMode,
-    )
+    await (
+      query as ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>
+    ).setPermissionMode(mode as import('@anthropic-ai/claude-agent-sdk').PermissionMode)
     console.log(`[Claude 适配器] 权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
 }
@@ -964,7 +1004,7 @@ export function scanAndKillOrphanedClaudeSubprocesses(): void {
           '-Command',
           `Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${parentPid} -and $_.CommandLine -like '*claude-agent-sdk*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`,
         ],
-        { stdio: 'ignore', timeout: SCAN_TIMEOUT_MS },
+        { stdio: 'ignore', timeout: SCAN_TIMEOUT_MS }
       )
     } else {
       let childPids: string

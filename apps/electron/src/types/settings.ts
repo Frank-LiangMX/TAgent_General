@@ -4,13 +4,27 @@
  * 主题模式、IPC 通道等设置相关定义。
  */
 
-import type { EnvironmentCheckResult, ThinkingConfig, AgentEffort, FeishuSessionMirrorSettings } from '@tagent/shared'
+import type {
+  EnvironmentCheckResult,
+  ThinkingConfig,
+  AgentEffort,
+  FeishuSessionMirrorSettings,
+} from '@tagent/shared'
 
 /** 通知音场景类型 */
 export type NotificationSoundType = 'taskComplete' | 'permissionRequest' | 'exitPlanMode'
 
 /** 可选通知音 ID */
-export type NotificationSoundId = 'ding' | 'ding-dong' | 'discord' | 'done' | 'down-power' | 'food' | 'lite' | 'quiet' | 'none'
+export type NotificationSoundId =
+  | 'ding'
+  | 'ding-dong'
+  | 'discord'
+  | 'done'
+  | 'down-power'
+  | 'food'
+  | 'lite'
+  | 'quiet'
+  | 'none'
 
 /** 各场景通知音配置 */
 export interface NotificationSoundSettings {
@@ -154,7 +168,18 @@ export interface ShortcutOverrides {
 export type ThemeMode = 'light' | 'dark' | 'system' | 'special'
 
 /** 特殊风格主题 */
-export type ThemeStyle = 'default' | 'ocean-light' | 'ocean-dark' | 'forest-light' | 'forest-dark' | 'slate-light' | 'slate-dark' | 'orange-light' | 'orange-dark' | 'purple-light' | 'purple-dark'
+export type ThemeStyle =
+  | 'default'
+  | 'ocean-light'
+  | 'ocean-dark'
+  | 'forest-light'
+  | 'forest-dark'
+  | 'slate-light'
+  | 'slate-dark'
+  | 'orange-light'
+  | 'orange-dark'
+  | 'purple-light'
+  | 'purple-dark'
 
 /** 默认主题模式 */
 export const DEFAULT_THEME_MODE: ThemeMode = 'dark'

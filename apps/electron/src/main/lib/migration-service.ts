@@ -9,14 +9,28 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, readdirSync, rmSync, type Dirent } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  cpSync,
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  rmSync,
+  type Dirent,
+} from 'node:fs'
 import { homedir, platform, arch, tmpdir } from 'node:os'
 import { join, resolve, relative, isAbsolute, sep } from 'node:path'
 
 import AdmZip from 'adm-zip'
 import { safeStorage } from 'electron'
 
-import { listAgentWorkspaces, getAgentWorkspace, getAllWorkspaceSkills, getWorkspaceMcpConfig } from './agent-workspace-manager'
+import {
+  listAgentWorkspaces,
+  getAgentWorkspace,
+  getAllWorkspaceSkills,
+  getWorkspaceMcpConfig,
+} from './agent-workspace-manager'
 import { listChannels, decryptApiKey } from './channel-manager'
 import {
   getConfigDir,
@@ -207,8 +221,12 @@ export async function getExportPreview(workspaceId: string): Promise<ExportPrevi
 
   if (workspace) {
     // 统计 Agent 会话
-    const sessionsIndex = readJsonSafe<{ sessions: Array<{ workspaceId: string }> }>(getAgentSessionsIndexPath())
-    agentSessionCount = (sessionsIndex?.sessions ?? []).filter((s) => s.workspaceId === workspaceId).length
+    const sessionsIndex = readJsonSafe<{ sessions: Array<{ workspaceId: string }> }>(
+      getAgentSessionsIndexPath()
+    )
+    agentSessionCount = (sessionsIndex?.sessions ?? []).filter(
+      (s) => s.workspaceId === workspaceId
+    ).length
 
     // 统计 Chat 对话（全量，不按工作区过滤）
     const convIndex = readJsonSafe<{ conversations: unknown[] }>(getConversationsIndexPath())
@@ -217,7 +235,9 @@ export async function getExportPreview(workspaceId: string): Promise<ExportPrevi
     // 统计 Skills
     const skillsDir = getWorkspaceSkillsDir(workspace.slug)
     if (existsSync(skillsDir)) {
-      skillCount = readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).length
+      skillCount = readdirSync(skillsDir, { withFileTypes: true }).filter((e) =>
+        e.isDirectory()
+      ).length
     }
 
     // 检查 MCP
@@ -305,7 +325,11 @@ export async function exportDataV2(options: ExportOptionsV2): Promise<ExportResu
   const allWorkspaces = listAgentWorkspaces()
   const wsMap = new Map(allWorkspaces.map((w) => [w.id, w]))
 
-  let targetWorkspaces: Array<{ workspace: AgentWorkspace; skillSlugs?: string[]; mcpServerNames?: string[] }>
+  let targetWorkspaces: Array<{
+    workspace: AgentWorkspace
+    skillSlugs?: string[]
+    mcpServerNames?: string[]
+  }>
 
   if (workspaceSelections && workspaceSelections.length > 0) {
     targetWorkspaces = workspaceSelections
@@ -321,13 +345,15 @@ export async function exportDataV2(options: ExportOptionsV2): Promise<ExportResu
 
   if (targetWorkspaces.length === 0) throw new Error('没有可导出的工作区')
 
-  const workspaceEntries: WorkspaceExportEntry[] = targetWorkspaces.map(({ workspace, skillSlugs, mcpServerNames }) => ({
-    workspaceId: workspace.id,
-    workspaceName: workspace.name,
-    workspaceSlug: workspace.slug,
-    skillSlugs: skillSlugs ?? 'all',
-    mcpServerNames: mcpServerNames ?? 'all',
-  }))
+  const workspaceEntries: WorkspaceExportEntry[] = targetWorkspaces.map(
+    ({ workspace, skillSlugs, mcpServerNames }) => ({
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      workspaceSlug: workspace.slug,
+      skillSlugs: skillSlugs ?? 'all',
+      mcpServerNames: mcpServerNames ?? 'all',
+    })
+  )
 
   const manifest: MigrationManifestV2 = {
     mode,
@@ -344,7 +370,12 @@ export async function exportDataV2(options: ExportOptionsV2): Promise<ExportResu
   zip.addFile('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2), 'utf-8'))
 
   if (components.includes('sessions')) {
-    _addSessionsMultiWorkspace(zip, targetWorkspaces.map((t) => t.workspace), sessionIds, warnings)
+    _addSessionsMultiWorkspace(
+      zip,
+      targetWorkspaces.map((t) => t.workspace),
+      sessionIds,
+      warnings
+    )
   }
 
   if (components.includes('skills')) {
@@ -371,10 +402,18 @@ export async function exportDataV2(options: ExportOptionsV2): Promise<ExportResu
   return buildExportResult(outputPath, warnings)
 }
 
-function _addSessions(zip: AdmZip, workspace: AgentWorkspace, filterIds: string[] | undefined, warnings: string[]) {
+function _addSessions(
+  zip: AdmZip,
+  workspace: AgentWorkspace,
+  filterIds: string[] | undefined,
+  warnings: string[]
+) {
   const sessionsIndexPath = getAgentSessionsIndexPath()
   if (existsSync(sessionsIndexPath)) {
-    const index = readJsonSafe<{ version: number; sessions: Array<{ id: string; workspaceId: string }> }>(sessionsIndexPath)
+    const index = readJsonSafe<{
+      version: number
+      sessions: Array<{ id: string; workspaceId: string }>
+    }>(sessionsIndexPath)
     const sessions = (index?.sessions ?? []).filter((s) => s.workspaceId === workspace.id)
     const targets = filterIds ? sessions.filter((s) => filterIds.includes(s.id)) : sessions
     const exportedIds = new Set<string>()
@@ -393,15 +432,22 @@ function _addSessions(zip: AdmZip, workspace: AgentWorkspace, filterIds: string[
 
     if (index) {
       const filtered = { ...index, sessions: index.sessions.filter((s) => exportedIds.has(s.id)) }
-      zip.addFile('sessions/agent-sessions-index.json', Buffer.from(JSON.stringify(filtered, null, 2), 'utf-8'))
+      zip.addFile(
+        'sessions/agent-sessions-index.json',
+        Buffer.from(JSON.stringify(filtered, null, 2), 'utf-8')
+      )
     }
   }
 
   const convIndexPath = getConversationsIndexPath()
   if (existsSync(convIndexPath)) {
-    const index = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(convIndexPath)
+    const index = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(
+      convIndexPath
+    )
     const conversations = index?.conversations ?? []
-    const targets = filterIds ? conversations.filter((c) => filterIds.includes(c.id)) : conversations
+    const targets = filterIds
+      ? conversations.filter((c) => filterIds.includes(c.id))
+      : conversations
 
     for (const conv of targets) {
       const msgPath = getConversationMessagesPath(conv.id)
@@ -409,16 +455,27 @@ function _addSessions(zip: AdmZip, workspace: AgentWorkspace, filterIds: string[
         zip.addLocalFile(msgPath, 'sessions/chat')
       }
     }
-    zip.addFile('sessions/conversations-index.json', Buffer.from(JSON.stringify({ ...index, conversations: targets }, null, 2), 'utf-8'))
+    zip.addFile(
+      'sessions/conversations-index.json',
+      Buffer.from(JSON.stringify({ ...index, conversations: targets }, null, 2), 'utf-8')
+    )
   }
 }
 
-function _addSessionsMultiWorkspace(zip: AdmZip, workspaces: AgentWorkspace[], filterIds: string[] | undefined, warnings: string[]) {
+function _addSessionsMultiWorkspace(
+  zip: AdmZip,
+  workspaces: AgentWorkspace[],
+  filterIds: string[] | undefined,
+  warnings: string[]
+) {
   const wsIds = new Set(workspaces.map((w) => w.id))
 
   const sessionsIndexPath = getAgentSessionsIndexPath()
   if (existsSync(sessionsIndexPath)) {
-    const index = readJsonSafe<{ version: number; sessions: Array<{ id: string; workspaceId: string }> }>(sessionsIndexPath)
+    const index = readJsonSafe<{
+      version: number
+      sessions: Array<{ id: string; workspaceId: string }>
+    }>(sessionsIndexPath)
     const sessions = (index?.sessions ?? []).filter((s) => wsIds.has(s.workspaceId))
     const targets = filterIds ? sessions.filter((s) => filterIds.includes(s.id)) : sessions
     const exportedIds = new Set<string>()
@@ -440,15 +497,22 @@ function _addSessionsMultiWorkspace(zip: AdmZip, workspaces: AgentWorkspace[], f
 
     if (index) {
       const filtered = { ...index, sessions: index.sessions.filter((s) => exportedIds.has(s.id)) }
-      zip.addFile('sessions/agent-sessions-index.json', Buffer.from(JSON.stringify(filtered, null, 2), 'utf-8'))
+      zip.addFile(
+        'sessions/agent-sessions-index.json',
+        Buffer.from(JSON.stringify(filtered, null, 2), 'utf-8')
+      )
     }
   }
 
   const convIndexPath = getConversationsIndexPath()
   if (existsSync(convIndexPath)) {
-    const index = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(convIndexPath)
+    const index = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(
+      convIndexPath
+    )
     const conversations = index?.conversations ?? []
-    const targets = filterIds ? conversations.filter((c) => filterIds.includes(c.id)) : conversations
+    const targets = filterIds
+      ? conversations.filter((c) => filterIds.includes(c.id))
+      : conversations
 
     for (const conv of targets) {
       const msgPath = getConversationMessagesPath(conv.id)
@@ -456,7 +520,10 @@ function _addSessionsMultiWorkspace(zip: AdmZip, workspaces: AgentWorkspace[], f
         zip.addLocalFile(msgPath, 'sessions/chat')
       }
     }
-    zip.addFile('sessions/conversations-index.json', Buffer.from(JSON.stringify({ ...index, conversations: targets }, null, 2), 'utf-8'))
+    zip.addFile(
+      'sessions/conversations-index.json',
+      Buffer.from(JSON.stringify({ ...index, conversations: targets }, null, 2), 'utf-8')
+    )
   }
 }
 
@@ -474,7 +541,10 @@ function _addMcp(zip: AdmZip, workspace: AgentWorkspace, mode: MigrationMode) {
   if (mode === 'share') {
     const config = readJsonSafe<Record<string, unknown>>(mcpPath)
     if (config) {
-      zip.addFile('config/mcp.json', Buffer.from(JSON.stringify(_scrubMcpCredentials(config), null, 2), 'utf-8'))
+      zip.addFile(
+        'config/mcp.json',
+        Buffer.from(JSON.stringify(_scrubMcpCredentials(config), null, 2), 'utf-8')
+      )
     }
   } else {
     zip.addLocalFile(mcpPath, 'config')
@@ -506,15 +576,24 @@ function _addChannels(zip: AdmZip, mode: MigrationMode) {
   if (mode === 'personal') {
     const channels = listChannels()
     const decrypted = channels.map((ch) => {
-      try { return { ...ch, apiKey: decryptApiKey(ch.id) } }
-      catch { return { ...ch, apiKey: '' } }
+      try {
+        return { ...ch, apiKey: decryptApiKey(ch.id) }
+      } catch {
+        return { ...ch, apiKey: '' }
+      }
     })
     const config = readJsonSafe<{ version: number }>(channelsPath) ?? { version: 1 }
-    zip.addFile('config/channels.json', Buffer.from(JSON.stringify({ ...config, channels: decrypted }, null, 2), 'utf-8'))
+    zip.addFile(
+      'config/channels.json',
+      Buffer.from(JSON.stringify({ ...config, channels: decrypted }, null, 2), 'utf-8')
+    )
   } else {
     const channels = listChannels().map((ch) => ({ ...ch, apiKey: '' }))
     const config = readJsonSafe<{ version: number }>(channelsPath) ?? { version: 1 }
-    zip.addFile('config/channels.json', Buffer.from(JSON.stringify({ ...config, channels }, null, 2), 'utf-8'))
+    zip.addFile(
+      'config/channels.json',
+      Buffer.from(JSON.stringify({ ...config, channels }, null, 2), 'utf-8')
+    )
   }
 }
 
@@ -523,9 +602,16 @@ function _addChatTools(zip: AdmZip, mode: MigrationMode) {
   if (!existsSync(toolsPath)) return
 
   if (mode === 'share') {
-    const config = readJsonSafe<{ toolStates?: unknown; toolCredentials?: unknown; customTools?: unknown }>(toolsPath)
+    const config = readJsonSafe<{
+      toolStates?: unknown
+      toolCredentials?: unknown
+      customTools?: unknown
+    }>(toolsPath)
     if (config) {
-      zip.addFile('config/chat-tools.json', Buffer.from(JSON.stringify({ ...config, toolCredentials: {} }, null, 2), 'utf-8'))
+      zip.addFile(
+        'config/chat-tools.json',
+        Buffer.from(JSON.stringify({ ...config, toolCredentials: {} }, null, 2), 'utf-8')
+      )
     }
   } else {
     zip.addLocalFile(toolsPath, 'config')
@@ -537,19 +623,32 @@ function _addWorkspaceConfig(zip: AdmZip, workspace: AgentWorkspace) {
   if (existsSync(configPath)) {
     zip.addLocalFile(configPath, 'config', 'workspace-config.json')
   }
-  zip.addFile('config/workspace-meta.json', Buffer.from(JSON.stringify(workspace, null, 2), 'utf-8'))
+  zip.addFile(
+    'config/workspace-meta.json',
+    Buffer.from(JSON.stringify(workspace, null, 2), 'utf-8')
+  )
 }
 
 // ─── v2 导出辅助函数 ─────────────────────────────────────────────────────────
 
-function _addSkillsV2(zip: AdmZip, workspace: AgentWorkspace, selectedSlugs: string[] | undefined, warnings: string[]) {
+function _addSkillsV2(
+  zip: AdmZip,
+  workspace: AgentWorkspace,
+  selectedSlugs: string[] | undefined,
+  warnings: string[]
+) {
   const prefix = `workspaces/${workspace.slug}`
   const skillsDir = getWorkspaceSkillsDir(workspace.slug)
   if (existsSync(skillsDir)) {
     for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue
       if (selectedSlugs && !selectedSlugs.includes(entry.name)) continue
-      _addDirToZip(zip, join(skillsDir, entry.name), `${prefix}/skills/active/${entry.name}`, warnings)
+      _addDirToZip(
+        zip,
+        join(skillsDir, entry.name),
+        `${prefix}/skills/active/${entry.name}`,
+        warnings
+      )
     }
   }
   const inactiveDir = getInactiveSkillsDir(workspace.slug)
@@ -557,12 +656,22 @@ function _addSkillsV2(zip: AdmZip, workspace: AgentWorkspace, selectedSlugs: str
     for (const entry of readdirSync(inactiveDir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue
       if (selectedSlugs && !selectedSlugs.includes(entry.name)) continue
-      _addDirToZip(zip, join(inactiveDir, entry.name), `${prefix}/skills/inactive/${entry.name}`, warnings)
+      _addDirToZip(
+        zip,
+        join(inactiveDir, entry.name),
+        `${prefix}/skills/inactive/${entry.name}`,
+        warnings
+      )
     }
   }
 }
 
-function _addMcpV2(zip: AdmZip, workspace: AgentWorkspace, mode: MigrationMode, selectedNames?: string[]) {
+function _addMcpV2(
+  zip: AdmZip,
+  workspace: AgentWorkspace,
+  mode: MigrationMode,
+  selectedNames?: string[]
+) {
   const prefix = `workspaces/${workspace.slug}`
   const mcpPath = getWorkspaceMcpPath(workspace.slug)
   if (!existsSync(mcpPath)) return
@@ -591,7 +700,10 @@ function _addWorkspaceConfigV2(zip: AdmZip, workspace: AgentWorkspace) {
     const content = readFileSync(configPath, 'utf-8')
     zip.addFile(`${prefix}/config/workspace-config.json`, Buffer.from(content, 'utf-8'))
   }
-  zip.addFile(`${prefix}/config/workspace-meta.json`, Buffer.from(JSON.stringify(workspace, null, 2), 'utf-8'))
+  zip.addFile(
+    `${prefix}/config/workspace-meta.json`,
+    Buffer.from(JSON.stringify(workspace, null, 2), 'utf-8')
+  )
 }
 
 function _addPersonalFiles(zip: AdmZip) {
@@ -620,7 +732,9 @@ export async function parseImportFile(filePath: string): Promise<ImportPreview |
     throw new Error('无效的迁移文件：缺少 manifest.json')
   }
 
-  const rawManifest = readJsonSafe<MigrationManifest & { workspaces?: WorkspaceExportEntry[] }>(manifestPath)
+  const rawManifest = readJsonSafe<MigrationManifest & { workspaces?: WorkspaceExportEntry[] }>(
+    manifestPath
+  )
   if (!rawManifest) {
     rmSync(tempDir, { recursive: true, force: true })
     throw new Error('无法解析 manifest.json')
@@ -649,11 +763,15 @@ export async function parseImportFile(filePath: string): Promise<ImportPreview |
       const wsDir = join(workspacesDir, entry.workspaceSlug)
       const skillsDir = join(wsDir, 'skills/active')
       const skillNames = existsSync(skillsDir)
-        ? readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+        ? readdirSync(skillsDir, { withFileTypes: true })
+            .filter((e) => e.isDirectory())
+            .map((e) => e.name)
         : []
 
       const mcpPath = join(wsDir, 'config/mcp.json')
-      const mcpConfig = existsSync(mcpPath) ? readJsonSafe<{ servers?: Record<string, unknown> }>(mcpPath) : null
+      const mcpConfig = existsSync(mcpPath)
+        ? readJsonSafe<{ servers?: Record<string, unknown> }>(mcpPath)
+        : null
       const mcpServerNames = mcpConfig?.servers ? Object.keys(mcpConfig.servers) : []
 
       const localWs = localBySlug.get(entry.workspaceSlug)
@@ -711,7 +829,9 @@ export async function parseImportFile(filePath: string): Promise<ImportPreview |
   const manifest = rawManifest as MigrationManifest
   const skillsDir = join(tempDir, 'skills/active')
   const skillNames: string[] = existsSync(skillsDir)
-    ? readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+    ? readdirSync(skillsDir, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
     : []
 
   const hasMcp = existsSync(join(tempDir, 'config/mcp.json'))
@@ -729,11 +849,16 @@ export async function parseImportFile(filePath: string): Promise<ImportPreview |
   }
 }
 
-function _checkAttachedDirectories(tempDir: string, manifest: MigrationManifest): PathCheckResult[] {
+function _checkAttachedDirectories(
+  tempDir: string,
+  manifest: MigrationManifest
+): PathCheckResult[] {
   const configPath = join(tempDir, 'config/workspace-config.json')
   if (!existsSync(configPath)) return []
 
-  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(configPath)
+  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(
+    configPath
+  )
   const attachedPaths = [...(config?.attachedDirectories ?? []), ...(config?.attachedFiles ?? [])]
   if (attachedPaths.length === 0) return []
 
@@ -754,16 +879,24 @@ function _checkAttachedDirectories(tempDir: string, manifest: MigrationManifest)
   })
 }
 
-function _checkAttachedDirectoriesV2(tempDir: string, manifest: MigrationManifestV2): PathCheckResult[] {
+function _checkAttachedDirectoriesV2(
+  tempDir: string,
+  manifest: MigrationManifestV2
+): PathCheckResult[] {
   const currentHome = homedir()
   const allResults: PathCheckResult[] = []
   const seen = new Set<string>()
 
   for (const wsEntry of manifest.workspaces) {
-    const configPath = join(tempDir, `workspaces/${wsEntry.workspaceSlug}/config/workspace-config.json`)
+    const configPath = join(
+      tempDir,
+      `workspaces/${wsEntry.workspaceSlug}/config/workspace-config.json`
+    )
     if (!existsSync(configPath)) continue
 
-    const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(configPath)
+    const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(
+      configPath
+    )
     const attachedPaths = [...(config?.attachedDirectories ?? []), ...(config?.attachedFiles ?? [])]
     if (attachedPaths.length === 0) continue
 
@@ -785,7 +918,9 @@ function _checkAttachedDirectoriesV2(tempDir: string, manifest: MigrationManifes
 
 // ─── 导入（确认执行）────────────────────────────────────────────────────────
 
-export async function confirmImport(options: ConfirmImportOptions | ConfirmImportOptionsV2): Promise<{ success: boolean }> {
+export async function confirmImport(
+  options: ConfirmImportOptions | ConfirmImportOptionsV2
+): Promise<{ success: boolean }> {
   const { tempDir, manifest, pathMappings } = options
 
   try {
@@ -794,17 +929,22 @@ export async function confirmImport(options: ConfirmImportOptions | ConfirmImpor
     }
 
     // v1.0 原有逻辑
-    const { targetWorkspaceId, createNewWorkspace, newWorkspaceName, conflictResolution } = options as ConfirmImportOptions
+    const { targetWorkspaceId, createNewWorkspace, newWorkspaceName, conflictResolution } =
+      options as ConfirmImportOptions
     const overwrite = conflictResolution === 'overwrite'
     let targetWorkspace: AgentWorkspace | undefined
     if (createNewWorkspace) {
       const { createAgentWorkspace } = await import('./agent-workspace-manager')
-      targetWorkspace = createAgentWorkspace(newWorkspaceName ?? (manifest as MigrationManifest).workspaceName)
+      targetWorkspace = createAgentWorkspace(
+        newWorkspaceName ?? (manifest as MigrationManifest).workspaceName
+      )
     } else if (targetWorkspaceId) {
       targetWorkspace = getAgentWorkspace(targetWorkspaceId)
     } else {
       const workspaces = listAgentWorkspaces()
-      targetWorkspace = workspaces.find((w) => w.slug === (manifest as MigrationManifest).workspaceSlug) ?? workspaces[0]
+      targetWorkspace =
+        workspaces.find((w) => w.slug === (manifest as MigrationManifest).workspaceSlug) ??
+        workspaces[0]
     }
 
     if (!targetWorkspace) throw new Error('无法确定目标工作区')
@@ -928,9 +1068,13 @@ async function _importSessions(tempDir: string, targetWorkspace: AgentWorkspace)
   // Agent sessions index 合并
   const importedIndexPath = join(tempDir, 'sessions/agent-sessions-index.json')
   if (existsSync(importedIndexPath)) {
-    const imported = readJsonSafe<{ sessions: Array<{ id: string; workspaceId: string }> }>(importedIndexPath)
+    const imported = readJsonSafe<{ sessions: Array<{ id: string; workspaceId: string }> }>(
+      importedIndexPath
+    )
     const currentIndexPath = getAgentSessionsIndexPath()
-    const current = readJsonSafe<{ version: number; sessions: Array<Record<string, unknown>> }>(currentIndexPath) ?? { version: 1, sessions: [] }
+    const current = readJsonSafe<{ version: number; sessions: Array<Record<string, unknown>> }>(
+      currentIndexPath
+    ) ?? { version: 1, sessions: [] }
     const currentIds = new Set(current.sessions.map((s) => s['id']))
 
     for (const s of imported?.sessions ?? []) {
@@ -972,7 +1116,9 @@ async function _importSessions(tempDir: string, targetWorkspace: AgentWorkspace)
   if (existsSync(importedConvIndexPath)) {
     const imported = readJsonSafe<{ conversations: Array<{ id: string }> }>(importedConvIndexPath)
     const currentIndexPath = getConversationsIndexPath()
-    const current = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(currentIndexPath) ?? { version: 1, conversations: [] }
+    const current = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(
+      currentIndexPath
+    ) ?? { version: 1, conversations: [] }
     const currentIds = new Set(current.conversations.map((c) => c.id))
 
     for (const c of imported?.conversations ?? []) {
@@ -988,7 +1134,9 @@ function _importSkills(tempDir: string, targetWorkspace: AgentWorkspace, overwri
   const activeDir = join(tempDir, 'skills/active')
   if (existsSync(activeDir)) {
     const targetSkillsDir = getWorkspaceSkillsDir(targetWorkspace.slug)
-    for (const skillName of readdirSync(activeDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)) {
+    for (const skillName of readdirSync(activeDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)) {
       const src = join(activeDir, skillName)
       const dest = join(targetSkillsDir, skillName)
       if (existsSync(dest)) {
@@ -1021,11 +1169,15 @@ function _importChannels(tempDir: string, mode: MigrationMode) {
   const srcChannels = join(tempDir, 'config/channels.json')
   if (!existsSync(srcChannels)) return
 
-  const imported = readJsonSafe<{ version: number; channels: Array<Record<string, unknown>> }>(srcChannels)
+  const imported = readJsonSafe<{ version: number; channels: Array<Record<string, unknown>> }>(
+    srcChannels
+  )
   if (!imported) return
 
   const currentPath = getChannelsPath()
-  const current = readJsonSafe<{ version: number; channels: Array<Record<string, unknown>> }>(currentPath) ?? { version: 1, channels: [] }
+  const current = readJsonSafe<{ version: number; channels: Array<Record<string, unknown>> }>(
+    currentPath
+  ) ?? { version: 1, channels: [] }
   const currentIds = new Set(current.channels.map((c) => c['id']))
 
   for (const ch of imported.channels) {
@@ -1054,7 +1206,11 @@ function _importChatTools(tempDir: string) {
   const srcTools = join(tempDir, 'config/chat-tools.json')
   if (!existsSync(srcTools)) return
 
-  const imported = readJsonSafe<{ toolStates?: Record<string, unknown>; toolCredentials?: Record<string, unknown>; customTools?: unknown[] }>(srcTools)
+  const imported = readJsonSafe<{
+    toolStates?: Record<string, unknown>
+    toolCredentials?: Record<string, unknown>
+    customTools?: unknown[]
+  }>(srcTools)
   if (!imported) return
 
   const currentPath = getChatToolsConfigPath()
@@ -1063,7 +1219,12 @@ function _importChatTools(tempDir: string) {
     return
   }
 
-  const current = readJsonSafe<{ toolStates?: Record<string, unknown>; toolCredentials?: Record<string, unknown>; customTools?: unknown[] }>(currentPath) ?? {}
+  const current =
+    readJsonSafe<{
+      toolStates?: Record<string, unknown>
+      toolCredentials?: Record<string, unknown>
+      customTools?: unknown[]
+    }>(currentPath) ?? {}
   // 合并 toolStates（不覆盖已有）
   const merged = {
     ...current,
@@ -1073,11 +1234,17 @@ function _importChatTools(tempDir: string) {
   writeFileSync(currentPath, JSON.stringify(merged, null, 2), 'utf-8')
 }
 
-function _importWorkspaceConfig(tempDir: string, targetWorkspace: AgentWorkspace, pathMappings: Record<string, string | null>) {
+function _importWorkspaceConfig(
+  tempDir: string,
+  targetWorkspace: AgentWorkspace,
+  pathMappings: Record<string, string | null>
+) {
   const srcConfig = join(tempDir, 'config/workspace-config.json')
   if (!existsSync(srcConfig)) return
 
-  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(srcConfig)
+  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(
+    srcConfig
+  )
   if (!config?.attachedDirectories && !config?.attachedFiles) return
 
   // 应用路径映射
@@ -1106,7 +1273,8 @@ function _importWorkspaceConfig(tempDir: string, targetWorkspace: AgentWorkspace
   // 写入目标工作区 config
   const destConfigPath = join(getAgentWorkspacePath(targetWorkspace.slug), 'config.json')
   const existingConfig = existsSync(destConfigPath)
-    ? readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(destConfigPath) ?? {}
+    ? (readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(destConfigPath) ??
+      {})
     : {}
   const merged = {
     ...existingConfig,
@@ -1135,7 +1303,12 @@ function _importPersonalFiles(tempDir: string) {
 
 // ─── v2 导入辅助函数 ─────────────────────────────────────────────────────────
 
-function _importSkillsV2(tempDir: string, sourceSlug: string, targetWorkspace: AgentWorkspace, overwrite = false) {
+function _importSkillsV2(
+  tempDir: string,
+  sourceSlug: string,
+  targetWorkspace: AgentWorkspace,
+  overwrite = false
+) {
   const activeDir = join(tempDir, `workspaces/${sourceSlug}/skills/active`)
   if (existsSync(activeDir)) {
     const targetSkillsDir = getWorkspaceSkillsDir(targetWorkspace.slug)
@@ -1165,7 +1338,12 @@ function _importSkillsV2(tempDir: string, sourceSlug: string, targetWorkspace: A
   }
 }
 
-function _importMcpV2(tempDir: string, sourceSlug: string, targetWorkspace: AgentWorkspace, overwrite = false) {
+function _importMcpV2(
+  tempDir: string,
+  sourceSlug: string,
+  targetWorkspace: AgentWorkspace,
+  overwrite = false
+) {
   const srcMcp = join(tempDir, `workspaces/${sourceSlug}/config/mcp.json`)
   if (!existsSync(srcMcp)) return
 
@@ -1187,12 +1365,14 @@ function _importWorkspaceConfigV2(
   tempDir: string,
   sourceSlug: string,
   targetWorkspace: AgentWorkspace,
-  pathMappings: Record<string, string | null>,
+  pathMappings: Record<string, string | null>
 ) {
   const srcConfig = join(tempDir, `workspaces/${sourceSlug}/config/workspace-config.json`)
   if (!existsSync(srcConfig)) return
 
-  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(srcConfig)
+  const config = readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(
+    srcConfig
+  )
   if (!config?.attachedDirectories && !config?.attachedFiles) return
 
   const newDirs: string[] = []
@@ -1218,7 +1398,8 @@ function _importWorkspaceConfigV2(
 
   const destConfigPath = join(getAgentWorkspacePath(targetWorkspace.slug), 'config.json')
   const existingConfig = existsSync(destConfigPath)
-    ? readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(destConfigPath) ?? {}
+    ? (readJsonSafe<{ attachedDirectories?: string[]; attachedFiles?: string[] }>(destConfigPath) ??
+      {})
     : {}
   const merged = {
     ...existingConfig,
@@ -1231,7 +1412,7 @@ function _importWorkspaceConfigV2(
 async function _importSessionsV2(
   tempDir: string,
   wsIdMap: Map<string, AgentWorkspace>,
-  fallbackWorkspace: AgentWorkspace,
+  fallbackWorkspace: AgentWorkspace
 ) {
   const agentDir = join(tempDir, 'sessions/agent')
   const agentSessionsDir = getAgentSessionsDir()
@@ -1247,9 +1428,13 @@ async function _importSessionsV2(
 
   const importedIndexPath = join(tempDir, 'sessions/agent-sessions-index.json')
   if (existsSync(importedIndexPath)) {
-    const imported = readJsonSafe<{ sessions: Array<{ id: string; workspaceId: string }> }>(importedIndexPath)
+    const imported = readJsonSafe<{ sessions: Array<{ id: string; workspaceId: string }> }>(
+      importedIndexPath
+    )
     const currentIndexPath = getAgentSessionsIndexPath()
-    const current = readJsonSafe<{ version: number; sessions: Array<Record<string, unknown>> }>(currentIndexPath) ?? { version: 1, sessions: [] }
+    const current = readJsonSafe<{ version: number; sessions: Array<Record<string, unknown>> }>(
+      currentIndexPath
+    ) ?? { version: 1, sessions: [] }
     const currentIds = new Set(current.sessions.map((s) => s['id']))
 
     for (const s of imported?.sessions ?? []) {
@@ -1287,7 +1472,9 @@ async function _importSessionsV2(
   if (existsSync(importedConvIndexPath)) {
     const imported = readJsonSafe<{ conversations: Array<{ id: string }> }>(importedConvIndexPath)
     const currentIndexPath = getConversationsIndexPath()
-    const current = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(currentIndexPath) ?? { version: 1, conversations: [] }
+    const current = readJsonSafe<{ version: number; conversations: Array<{ id: string }> }>(
+      currentIndexPath
+    ) ?? { version: 1, conversations: [] }
     const currentIds = new Set(current.conversations.map((c) => c.id))
 
     for (const c of imported?.conversations ?? []) {
@@ -1343,7 +1530,10 @@ function _addDirToZip(zip: AdmZip, srcDir: string, zipPrefix: string, warnings: 
       try {
         zip.addLocalFile(fullPath, zipPrefix)
       } catch (error) {
-        addExportWarning(warnings, `已跳过无法读取的备份项目: ${fullPath} (${formatErrorMessage(error)})`)
+        addExportWarning(
+          warnings,
+          `已跳过无法读取的备份项目: ${fullPath} (${formatErrorMessage(error)})`
+        )
       }
     }
   }
@@ -1355,7 +1545,11 @@ function _safeExtractAll(zip: AdmZip, targetDir: string): void {
   for (const entry of zip.getEntries()) {
     const entryPath = resolve(targetDir, entry.entryName)
     const relativeEntryPath = relative(resolvedTarget, entryPath)
-    if (relativeEntryPath === '..' || relativeEntryPath.startsWith(`..${sep}`) || isAbsolute(relativeEntryPath)) {
+    if (
+      relativeEntryPath === '..' ||
+      relativeEntryPath.startsWith(`..${sep}`) ||
+      isAbsolute(relativeEntryPath)
+    ) {
       throw new Error(`迁移文件包含非法路径，已拒绝解压: ${entry.entryName}`)
     }
   }

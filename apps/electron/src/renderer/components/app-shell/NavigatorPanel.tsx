@@ -25,9 +25,7 @@ export function NavigatorPanel({
   return (
     <Panel variant="shrink" width={width} className="bg-background border-r border-border">
       <PanelHeader title={title} />
-      <div className="flex-1 overflow-y-auto">
-        {children}
-      </div>
+      <div className="flex-1 overflow-y-auto">{children}</div>
     </Panel>
   )
 }

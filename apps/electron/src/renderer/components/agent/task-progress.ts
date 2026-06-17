@@ -54,7 +54,9 @@ export function extractToolResultText(content: unknown): string | undefined {
   return text || undefined
 }
 
-export function parseTaskCreateResult(result: string | undefined): { id: string; subject?: string } | null {
+export function parseTaskCreateResult(
+  result: string | undefined
+): { id: string; subject?: string } | null {
   if (!result) return null
 
   const json = parseJsonObject(result) as TaskCreateOutput | null
@@ -70,7 +72,12 @@ export function parseTaskCreateResult(result: string | undefined): { id: string;
 }
 
 function toTaskStatus(value: unknown, fallback: TaskItemStatus = 'pending'): TaskItemStatus {
-  if (value === 'pending' || value === 'in_progress' || value === 'completed' || value === 'deleted') {
+  if (
+    value === 'pending' ||
+    value === 'in_progress' ||
+    value === 'completed' ||
+    value === 'deleted'
+  ) {
     return value
   }
   return fallback
@@ -96,7 +103,7 @@ function taskIdFromInput(input: Record<string, unknown>): string | undefined {
 export function aggregateTaskItems(
   activities: ToolActivity[],
   streamEnded: boolean,
-  historicalTaskSubjects?: Map<string, string>,
+  historicalTaskSubjects?: Map<string, string>
 ): TaskItem[] {
   const taskMap = new Map<string, TaskItem>()
   let todoAutoId = 0
@@ -135,16 +142,20 @@ export function aggregateTaskItems(
       }
     } else if (activity.toolName === 'TaskCreate') {
       const id = taskCreateIdMap.get(activity.toolUseId) ?? activity.toolUseId
-      const subject = typeof activity.input.subject === 'string'
-        ? activity.input.subject
-        : taskCreateSubjectMap.get(id)
-          ?? (typeof activity.input.description === 'string' ? activity.input.description : '未命名任务')
+      const subject =
+        typeof activity.input.subject === 'string'
+          ? activity.input.subject
+          : (taskCreateSubjectMap.get(id) ??
+            (typeof activity.input.description === 'string'
+              ? activity.input.description
+              : '未命名任务'))
 
       taskMap.set(id, {
         id,
         subject,
         status: 'pending',
-        activeForm: typeof activity.input.activeForm === 'string' ? activity.input.activeForm : undefined,
+        activeForm:
+          typeof activity.input.activeForm === 'string' ? activity.input.activeForm : undefined,
       })
     } else if (activity.toolName === 'TaskUpdate') {
       const taskId = taskIdFromInput(activity.input)
@@ -158,16 +169,20 @@ export function aggregateTaskItems(
           ...existing,
           status,
           ...(typeof activity.input.subject === 'string' && { subject: activity.input.subject }),
-          ...(typeof activity.input.activeForm === 'string' && { activeForm: activity.input.activeForm }),
+          ...(typeof activity.input.activeForm === 'string' && {
+            activeForm: activity.input.activeForm,
+          }),
         })
       } else {
         taskMap.set(taskId, {
           id: taskId,
-          subject: typeof activity.input.subject === 'string'
-            ? activity.input.subject
-            : historicalTaskSubjects?.get(taskId) ?? `任务 #${taskId}`,
+          subject:
+            typeof activity.input.subject === 'string'
+              ? activity.input.subject
+              : (historicalTaskSubjects?.get(taskId) ?? `任务 #${taskId}`),
           status,
-          activeForm: typeof activity.input.activeForm === 'string' ? activity.input.activeForm : undefined,
+          activeForm:
+            typeof activity.input.activeForm === 'string' ? activity.input.activeForm : undefined,
         })
       }
     }

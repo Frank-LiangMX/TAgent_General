@@ -57,7 +57,9 @@ class ReflectService {
    */
   private getMemoryDir(mode: MemoryMode): string {
     const isDev = !app.isPackaged
-    const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+    const baseDir = isDev
+      ? path.join(app.getPath('home'), '.tagent-dev')
+      : path.join(app.getPath('home'), '.tagent')
     return mode === 'general' ? path.join(baseDir, 'memory') : path.join(baseDir, 'ta', 'memory')
   }
 
@@ -144,7 +146,9 @@ class ReflectService {
 
     const delay = next3AM.getTime() - now.getTime()
 
-    console.log(`[ReflectService] 下次运行时间: ${next3AM.toISOString()}, 距今 ${Math.round(delay / 1000 / 60)} 分钟`)
+    console.log(
+      `[ReflectService] 下次运行时间: ${next3AM.toISOString()}, 距今 ${Math.round(delay / 1000 / 60)} 分钟`
+    )
 
     this.timerId = setTimeout(() => {
       this.runReflect('general').catch(console.error)
@@ -251,9 +255,7 @@ class ReflectService {
     const sessions = memoryLayerService.listRecentSessions(mode, 50)
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
 
-    return sessions
-      .filter((s) => s.created_at > cutoff)
-      .map((s) => `${s.title}: ${s.summary}`)
+    return sessions.filter((s) => s.created_at > cutoff).map((s) => `${s.title}: ${s.summary}`)
   }
 
   /**
@@ -261,7 +263,11 @@ class ReflectService {
    *
    * 生产环境应调用 LLM 进行提炼
    */
-  private extractInsights(l2Facts: string[], l4Sessions: string[], existingInsights: string[]): string[] {
+  private extractInsights(
+    l2Facts: string[],
+    l4Sessions: string[],
+    existingInsights: string[]
+  ): string[] {
     const insights: string[] = []
 
     // 简化版：从事实中提取关键词模式

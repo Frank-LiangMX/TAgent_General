@@ -54,9 +54,7 @@ export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 8
 export function getMacTrafficLightPosition(): { x: number; y: number } {
   const x = SHELL_EDGE_PADDING + NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
   const y =
-    Math.max(
-      6,
-      Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2),
-    ) + NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
+    Math.max(6, Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2)) +
+    NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
   return { x, y }
 }

@@ -19,8 +19,12 @@ import { describe, expect, test, vi } from 'vitest'
 vi.mock('electron', () => ({
   WebContents: class {},
   BrowserWindow: class {
-    static getAllWindows() { return [] }
-    static getFocusedWindow() { return null }
+    static getAllWindows() {
+      return []
+    }
+    static getFocusedWindow() {
+      return null
+    }
   },
   dialog: { showOpenDialog: () => {} },
   app: { getPath: () => '/tmp' },
@@ -78,17 +82,14 @@ describe('filterHistory - 第一层（空消息过滤）', () => {
   test('Given 含空 assistant 消息 When filter Then 空消息被移除', () => {
     const out = filterHistory([
       user('u1', 'hi'),
-      asst('a1', '   '),  // 全空白内容
+      asst('a1', '   '), // 全空白内容
       asst('a2', 'real answer'),
     ])
     expect(out.map((m) => m.id)).toEqual(['u1', 'a2'])
   })
 
   test('Given user 消息内容为空 When filter Then 保留 (空 user 仍要送，filter 只管 assistant)', () => {
-    const out = filterHistory([
-      user('u1', ''),
-      asst('a1', 'reply'),
-    ])
+    const out = filterHistory([user('u1', ''), asst('a1', 'reply')])
     expect(out).toHaveLength(2)
   })
 })
@@ -102,7 +103,7 @@ describe('filterHistory - 第二层（分隔线过滤）', () => {
         user('u2', 'divider msg'),
         asst('a2', 'new answer after divider'),
       ],
-      ['u2'],
+      ['u2']
     )
     expect(out.map((m) => m.id)).toEqual(['a2'])
   })
@@ -117,7 +118,7 @@ describe('filterHistory - 第二层（分隔线过滤）', () => {
         user('u3', 'c'),
         asst('a3', 'C'),
       ],
-      ['u1', 'u2'],  // 取 u2 为最后分隔线
+      ['u1', 'u2'] // 取 u2 为最后分隔线
     )
     expect(out.map((m) => m.id)).toEqual(['a2', 'u3', 'a3'])
   })
@@ -125,7 +126,7 @@ describe('filterHistory - 第二层（分隔线过滤）', () => {
   test('Given 分隔线 ID 不存在 When filter Then 保留全部 (找不到就不裁)', () => {
     const out = filterHistory(
       [user('u1', 'a'), asst('a1', 'A'), user('u2', 'b')],
-      ['non-existent-id'],
+      ['non-existent-id']
     )
     expect(out).toHaveLength(3)
   })
@@ -153,18 +154,14 @@ describe('filterHistory - 第三层（轮数裁剪）', () => {
         asst('a3', 'A3'),
       ],
       undefined,
-      2,
+      2
     )
     // 从后往前数 2 轮：u2 算第 1 轮，u3 算第 2 轮 → 保留 u2 a2 u3 a3
     expect(out.map((m) => m.id)).toEqual(['u2', 'a2', 'u3', 'a3'])
   })
 
   test('Given contextLength 超过总轮数 When filter Then 全部保留', () => {
-    const out = filterHistory(
-      [user('u1', 'a'), asst('a1', 'A')],
-      undefined,
-      100,
-    )
+    const out = filterHistory([user('u1', 'a'), asst('a1', 'A')], undefined, 100)
     expect(out).toHaveLength(2)
   })
 
@@ -172,7 +169,7 @@ describe('filterHistory - 第三层（轮数裁剪）', () => {
     const out = filterHistory(
       [user('u1', 'a'), asst('a1', 'A'), user('u2', 'b'), asst('a2', 'B')],
       undefined,
-      1,
+      1
     )
     expect(out.map((m) => m.id)).toEqual(['u2', 'a2'])
   })
@@ -181,7 +178,7 @@ describe('filterHistory - 第三层（轮数裁剪）', () => {
     const out = filterHistory(
       [user('u1', 'a'), asst('a1', 'A'), user('u2', 'b')],
       undefined,
-      'infinite',
+      'infinite'
     )
     expect(out).toHaveLength(3)
   })
@@ -206,7 +203,7 @@ describe('filterHistory - 多层组合', () => {
         asst('a4', 'A4'),
       ],
       ['u2'],
-      2,
+      2
     )
     // 先按 u2 切：u2 a2 u3 a3 u4 a4
     // 再按 2 轮切：u3 a3 u4 a4
@@ -217,14 +214,14 @@ describe('filterHistory - 多层组合', () => {
     const out = filterHistory(
       [
         user('u1', 'a'),
-        asst('a1', ''),         // 空 assistant 应被第一步过滤
-        asst('a1b', 'A'),       // 占位 id
+        asst('a1', ''), // 空 assistant 应被第一步过滤
+        asst('a1b', 'A'), // 占位 id
         user('u2', 'b'),
         asst('a2', 'B'),
         user('u3', 'c'),
       ],
       ['u1'],
-      1,
+      1
     )
     // 第一步：去掉 asst('a1', '') → u1 a1b u2 a2 u3
     // 第二步：u1 是分隔线 → 去掉 u1，剩 a1b u2 a2 u3
@@ -332,7 +329,7 @@ describe('enrichHistoryWithDocuments', () => {
     expect(out[0]!.role).toBe('user')
     expect(out[0]!.content).toContain('read')
     expect(out[0]!.content).toContain('<file name="ok.txt">')
-    expect(out[0]!.attachments).toBeDefined()  // 不动 attachments 字段
+    expect(out[0]!.attachments).toBeDefined() // 不动 attachments 字段
   })
 
   test('Given assistant 消息含附件 (异常 case) When enrich Then 不处理 (只处理 user)', async () => {
@@ -345,7 +342,7 @@ describe('enrichHistoryWithDocuments', () => {
       },
     ]
     const out = await enrichHistoryWithDocuments(history as never)
-    expect(out[0]!.content).toBe('reply')  // assistant 不被增强
+    expect(out[0]!.content).toBe('reply') // assistant 不被增强
   })
 
   test('Given 多条混合消息 When enrich Then 只增强有文档附件的 user 消息', async () => {
@@ -361,10 +358,10 @@ describe('enrichHistoryWithDocuments', () => {
       { id: 'a2', role: 'assistant' as const, content: 'A2' },
     ]
     const out = await enrichHistoryWithDocuments(history as never)
-    expect(out[0]!.content).toBe('q1')                          // 不动
-    expect(out[1]!.content).toBe('A1')                          // 不动
-    expect(out[2]!.content).toContain('q2')                     // 增强
-    expect(out[2]!.content).toContain('<file name="ok.txt">')    // 增强
-    expect(out[3]!.content).toBe('A2')                          // 不动
+    expect(out[0]!.content).toBe('q1') // 不动
+    expect(out[1]!.content).toBe('A1') // 不动
+    expect(out[2]!.content).toContain('q2') // 增强
+    expect(out[2]!.content).toContain('<file name="ok.txt">') // 增强
+    expect(out[3]!.content).toBe('A2') // 不动
   })
 })

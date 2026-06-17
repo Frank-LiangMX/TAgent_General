@@ -5,7 +5,6 @@ import type { WorktreeInfo, WorkspaceWorktreeRepo } from '@tagent/shared'
 
 import { cn } from '@/lib/utils'
 
-
 interface WorktreeSelectorProps {
   sessionId: string
   workspaceSlug: string
@@ -90,12 +89,14 @@ export function WorktreeSelector({
             'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs',
             'hover:bg-accent/50 transition-colors',
             'text-muted-foreground hover:text-foreground',
-            selectedWorktree && 'text-foreground font-medium',
+            selectedWorktree && 'text-foreground font-medium'
           )}
         >
           <GitBranch className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate max-w-[160px]">{displayLabel}</span>
-          <ChevronDown className={cn('w-3 h-3 shrink-0 transition-transform', isOpen && 'rotate-180')} />
+          <ChevronDown
+            className={cn('w-3 h-3 shrink-0 transition-transform', isOpen && 'rotate-180')}
+          />
         </button>
         <button
           onClick={(e) => {
@@ -118,7 +119,7 @@ export function WorktreeSelector({
             }}
             className={cn(
               'w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors',
-              !selectedPath && 'bg-accent/30 font-medium',
+              !selectedPath && 'bg-accent/30 font-medium'
             )}
           >
             会话改动
@@ -139,7 +140,7 @@ export function WorktreeSelector({
                   }}
                   className={cn(
                     'w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors flex items-center gap-2',
-                    selectedPath === wt.path && 'bg-accent/30 font-medium',
+                    selectedPath === wt.path && 'bg-accent/30 font-medium'
                   )}
                 >
                   <GitBranch className="w-3 h-3 shrink-0 text-muted-foreground" />

@@ -24,20 +24,23 @@ import {
   type AskStreamReasoningEvent,
   type AskStreamSwitchSuggestionEvent,
   type ChatToolActivity,
+  ChatMessage as SharedChatMessage,
 } from '@tagent/shared'
 
-import { getChannelById, decryptApiKey } from './channel-manager'
+import { getAgentSessionSDKMessages, updateAgentSessionMeta } from './agent-session-manager'
 import { appendAskMessage, getAgentSessionAskMessages } from './ask-message-store'
 import { buildAskSystemPrompt } from './ask-prompt-builder'
-import { isSuggestAgentSwitchToolCall, SUGGEST_AGENT_SWITCH_TOOL_NAMES, getAskEnabledTools } from './ask-tool-policy'
-import { getAgentSessionSDKMessages } from './agent-session-manager'
+import {
+  isSuggestAgentSwitchToolCall,
+  SUGGEST_AGENT_SWITCH_TOOL_NAMES,
+  getAskEnabledTools,
+} from './ask-tool-policy'
 import { convertSDKMessagesToChatHistory } from './btw-service'
+import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { updateAgentSessionMeta } from './agent-session-manager'
 
 import type { StreamRequestInput, ToolCall, ToolResult } from '@tagent/core'
-import type { ChatMessage as SharedChatMessage } from '@tagent/shared'
 import type { WebContents } from 'electron'
 
 /** Ask 上下文轮数（与 BTW 对齐） */
@@ -58,7 +61,7 @@ function buildStreamInput(
   modelId: string,
   userMessage: string,
   systemMessage: string,
-  history: SharedChatMessage[],
+  history: SharedChatMessage[]
 ): StreamRequestInput {
   return {
     baseUrl,
@@ -127,13 +130,14 @@ function executeSuggestAgentSwitch(toolCall: ToolCall): ToolResult {
 /**
  * 发送 Ask 消息并流式返回 AI 响应
  */
-export async function sendAskMessage(
-  input: AskSendInput,
-  webContents: WebContents,
-): Promise<void> {
+export async function sendAskMessage(input: AskSendInput, webContents: WebContents): Promise<void> {
   const {
-    agentSessionId, content, channelId, modelId,
-    systemPromptOverride, startedAt: inputStartedAt,
+    agentSessionId,
+    content,
+    channelId,
+    modelId,
+    systemPromptOverride,
+    startedAt: inputStartedAt,
   } = input
 
   // 1. 解析渠道
@@ -196,7 +200,7 @@ export async function sendAskMessage(
       modelId,
       content,
       systemMessage,
-      history,
+      history
     )
 
     // 9. 推 STREAM_CHUNK 起始空事件（带 messageId，前端在流式开始时就建好 bubble）
@@ -218,7 +222,7 @@ export async function sendAskMessage(
     const pushToolResult = (tc: ToolCall, tr: ToolResult): void => {
       // 替换最后一个 start
       const idx = accumulatedToolActivities.findIndex(
-        (a) => a.toolCallId === tc.id && a.type === 'start',
+        (a) => a.toolCallId === tc.id && a.type === 'start'
       )
       if (idx >= 0) {
         accumulatedToolActivities[idx] = {
@@ -285,7 +289,13 @@ export async function sendAskMessage(
     }
 
     // 10. 启动流式
-    const { content: finalContent, reasoning: finalReasoning, thinkingBlocks: _thinkingBlocks, toolCalls, stopReason } = await streamSSE({
+    const {
+      content: finalContent,
+      reasoning: finalReasoning,
+      thinkingBlocks: _thinkingBlocks,
+      toolCalls,
+      stopReason,
+    } = await streamSSE({
       request: adapter.buildStreamRequest({
         ...streamInput,
         tools,
@@ -313,9 +323,9 @@ export async function sendAskMessage(
                 suggestedPrompt?: string
               }
               if (
-                parsed.type === 'agent_switch_suggestion'
-                && parsed.reason
-                && parsed.suggestedPrompt
+                parsed.type === 'agent_switch_suggestion' &&
+                parsed.reason &&
+                parsed.suggestedPrompt
               ) {
                 const event: AskStreamSwitchSuggestionEvent = {
                   agentSessionId,

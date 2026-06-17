@@ -14,7 +14,6 @@ import { BlenderPathConfig } from './BlenderPathConfig'
 import { BudgetConfig } from './BudgetConfig'
 import { NamingRulesConfig } from './NamingRulesConfig'
 
-
 export function TAConfigPanel(): React.ReactElement {
   return (
     <div className="h-full overflow-y-auto p-4">

@@ -13,11 +13,7 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Check } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsSegmentedControl,
-} from './primitives'
+import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primitives'
 
 import type { MarkdownFontSize, TAgentBrand, ThemeMode, ThemeStyle } from '../../../types'
 
@@ -27,14 +23,8 @@ import {
   advancedMaterialEnabledAtom,
   updateAdvancedMaterialEnabled,
 } from '@/atoms/advanced-material'
-import {
-  markdownFontSizeAtom,
-  updateMarkdownFontSize,
-} from '@/atoms/markdown-font-size'
-import {
-  tagentBrandAtom,
-  updateTAgentBrand,
-} from '@/atoms/tagent-brand'
+import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
+import { tagentBrandAtom, updateTAgentBrand } from '@/atoms/tagent-brand'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -68,11 +58,11 @@ interface BrandSwatch {
 }
 
 const BRAND_SWATCHES: readonly BrandSwatch[] = [
-  { id: 'cyan',   name: '焕蓝', solid: 'hsl(195 90% 55%)' },
+  { id: 'cyan', name: '焕蓝', solid: 'hsl(195 90% 55%)' },
   { id: 'violet', name: '锐紫', solid: 'hsl(265 85% 65%)' },
-  { id: 'amber',  name: '橙陶', solid: 'hsl(28 95% 55%)'  },
+  { id: 'amber', name: '橙陶', solid: 'hsl(28 95% 55%)' },
   { id: 'forest', name: '森绿', solid: 'hsl(150 60% 45%)' },
-  { id: 'slate',  name: '晶灰', solid: 'hsl(220 15% 55%)' },
+  { id: 'slate', name: '晶灰', solid: 'hsl(220 15% 55%)' },
 ]
 
 /** 特殊风格 ID（排除 default） */
@@ -90,17 +80,87 @@ interface SpecialStyle {
 
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
   // 第一行：亮色（按列对应：col 1 slate, col 2 ocean, col 3 forest, col 4 orange, col 5 purple）
-  { id: 'slate-light',  name: '云絮悠然', tag: 'Clay',     variant: 'light', previewClass: 'tagent-theme-cloud-dancer',     deco: 'cloud' },
-  { id: 'ocean-light',  name: '碧海晴空', tag: 'Toon',     variant: 'light', previewClass: 'tagent-theme-ocean-light',      deco: 'wave'  },
-  { id: 'forest-light', name: '翠林晨光', tag: 'Foliage',  variant: 'light', previewClass: 'tagent-theme-forest-light',     deco: 'leaf'  },
-  { id: 'orange-light', name: '琥珀晨曦', tag: 'Albedo',   variant: 'light', previewClass: 'tagent-theme-terracotta-dawn', deco: 'sun'   },
-  { id: 'purple-light', name: '紫藤晓露', tag: 'Sheen',    variant: 'light', previewClass: 'tagent-theme-wisteria-dawn',  deco: 'flower'},
+  {
+    id: 'slate-light',
+    name: '云絮悠然',
+    tag: 'Clay',
+    variant: 'light',
+    previewClass: 'tagent-theme-cloud-dancer',
+    deco: 'cloud',
+  },
+  {
+    id: 'ocean-light',
+    name: '碧海晴空',
+    tag: 'Toon',
+    variant: 'light',
+    previewClass: 'tagent-theme-ocean-light',
+    deco: 'wave',
+  },
+  {
+    id: 'forest-light',
+    name: '翠林晨光',
+    tag: 'Foliage',
+    variant: 'light',
+    previewClass: 'tagent-theme-forest-light',
+    deco: 'leaf',
+  },
+  {
+    id: 'orange-light',
+    name: '琥珀晨曦',
+    tag: 'Albedo',
+    variant: 'light',
+    previewClass: 'tagent-theme-terracotta-dawn',
+    deco: 'sun',
+  },
+  {
+    id: 'purple-light',
+    name: '紫藤晓露',
+    tag: 'Sheen',
+    variant: 'light',
+    previewClass: 'tagent-theme-wisteria-dawn',
+    deco: 'flower',
+  },
   // 第二行：暗色（与第一行同列对应）
-  { id: 'slate-dark',   name: '石板暮霭', tag: 'PBR',      variant: 'dark',  previewClass: 'tagent-theme-morandi-night',    deco: 'gem'   },
-  { id: 'ocean-dark',   name: '深海夜潮', tag: 'Volume',   variant: 'dark',  previewClass: 'tagent-theme-ocean-dark',       deco: 'star'  },
-  { id: 'forest-dark',  name: '青苔夜语', tag: 'SSS',      variant: 'dark',  previewClass: 'tagent-theme-forest-dark',      deco: 'moon'  },
-  { id: 'orange-dark',  name: '熔金夜韵', tag: 'Burn',     variant: 'dark',  previewClass: 'tagent-theme-terracotta-night', deco: 'flame' },
-  { id: 'purple-dark',  name: '幽兰梦语', tag: 'Velvet',   variant: 'dark',  previewClass: 'tagent-theme-wisteria-night',  deco: 'orb'   },
+  {
+    id: 'slate-dark',
+    name: '石板暮霭',
+    tag: 'PBR',
+    variant: 'dark',
+    previewClass: 'tagent-theme-morandi-night',
+    deco: 'gem',
+  },
+  {
+    id: 'ocean-dark',
+    name: '深海夜潮',
+    tag: 'Volume',
+    variant: 'dark',
+    previewClass: 'tagent-theme-ocean-dark',
+    deco: 'star',
+  },
+  {
+    id: 'forest-dark',
+    name: '青苔夜语',
+    tag: 'SSS',
+    variant: 'dark',
+    previewClass: 'tagent-theme-forest-dark',
+    deco: 'moon',
+  },
+  {
+    id: 'orange-dark',
+    name: '熔金夜韵',
+    tag: 'Burn',
+    variant: 'dark',
+    previewClass: 'tagent-theme-terracotta-night',
+    deco: 'flame',
+  },
+  {
+    id: 'purple-dark',
+    name: '幽兰梦语',
+    tag: 'Velvet',
+    variant: 'dark',
+    previewClass: 'tagent-theme-wisteria-night',
+    deco: 'orb',
+  },
 ]
 
 /** 根据平台返回缩放快捷键提示 */
@@ -118,77 +178,86 @@ export function AppearanceSettings(): React.ReactElement {
   const [tagentBrand, setTagentBrand] = useAtom(tagentBrandAtom)
 
   /** 切换皮肤 */
-  const handleThemeChange = React.useCallback((value: string) => {
-    const mode = value as ThemeMode
-    setThemeMode(mode)
-    updateThemeMode(mode)
-    if (mode !== 'special') {
-      setThemeStyle('default')
-      updateThemeStyle('default')
-      applyThemeToDOM(mode, 'default', systemIsDark)
-    }
-  }, [setThemeMode, setThemeStyle, systemIsDark])
+  const handleThemeChange = React.useCallback(
+    (value: string) => {
+      const mode = value as ThemeMode
+      setThemeMode(mode)
+      updateThemeMode(mode)
+      if (mode !== 'special') {
+        setThemeStyle('default')
+        updateThemeStyle('default')
+        applyThemeToDOM(mode, 'default', systemIsDark)
+      }
+    },
+    [setThemeMode, setThemeStyle, systemIsDark]
+  )
 
   /** 选择风格库中的风格（自动联动签名色） */
-  const handleStyleSelect = React.useCallback((style: ThemeStyle) => {
-    setThemeMode('special')
-    setThemeStyle(style)
-    updateThemeMode('special')
-    updateThemeStyle(style)
-    applyThemeToDOM('special', style, systemIsDark)
+  const handleStyleSelect = React.useCallback(
+    (style: ThemeStyle) => {
+      setThemeMode('special')
+      setThemeStyle(style)
+      updateThemeMode('special')
+      updateThemeStyle(style)
+      applyThemeToDOM('special', style, systemIsDark)
 
-    // 根据主题色系自动联动签名色
-    const styleToBrand: Record<string, TAgentBrand> = {
-      'slate-light': 'slate',
-      'slate-dark': 'slate',
-      'ocean-light': 'cyan',
-      'ocean-dark': 'cyan',
-      'forest-light': 'forest',
-      'forest-dark': 'forest',
-      'orange-light': 'amber',
-      'orange-dark': 'amber',
-      'purple-light': 'violet',
-      'purple-dark': 'violet',
-    }
-    const matchedBrand = styleToBrand[style]
-    if (matchedBrand && matchedBrand !== tagentBrand) {
-      setTagentBrand(matchedBrand)
-      void updateTAgentBrand(matchedBrand)
-    }
-  }, [setThemeMode, setThemeStyle, systemIsDark, tagentBrand, setTagentBrand])
+      // 根据主题色系自动联动签名色
+      const styleToBrand: Record<string, TAgentBrand> = {
+        'slate-light': 'slate',
+        'slate-dark': 'slate',
+        'ocean-light': 'cyan',
+        'ocean-dark': 'cyan',
+        'forest-light': 'forest',
+        'forest-dark': 'forest',
+        'orange-light': 'amber',
+        'orange-dark': 'amber',
+        'purple-light': 'violet',
+        'purple-dark': 'violet',
+      }
+      const matchedBrand = styleToBrand[style]
+      if (matchedBrand && matchedBrand !== tagentBrand) {
+        setTagentBrand(matchedBrand)
+        void updateTAgentBrand(matchedBrand)
+      }
+    },
+    [setThemeMode, setThemeStyle, systemIsDark, tagentBrand, setTagentBrand]
+  )
 
   /** 切换阅读字号 */
-  const handleMarkdownFontSizeChange = React.useCallback((value: string) => {
-    const size = value as MarkdownFontSize
-    setMarkdownFontSize(size)
-    updateMarkdownFontSize(size)
-  }, [setMarkdownFontSize])
+  const handleMarkdownFontSizeChange = React.useCallback(
+    (value: string) => {
+      const size = value as MarkdownFontSize
+      setMarkdownFontSize(size)
+      updateMarkdownFontSize(size)
+    },
+    [setMarkdownFontSize]
+  )
 
   /** 切换高级材质 */
-  const handleAdvancedMaterialChange = React.useCallback((checked: boolean) => {
-    setAdvancedMaterialEnabled(checked)
-    void updateAdvancedMaterialEnabled(checked)
-  }, [setAdvancedMaterialEnabled])
+  const handleAdvancedMaterialChange = React.useCallback(
+    (checked: boolean) => {
+      setAdvancedMaterialEnabled(checked)
+      void updateAdvancedMaterialEnabled(checked)
+    },
+    [setAdvancedMaterialEnabled]
+  )
 
   /** 切换品牌色 */
-  const handleBrandChange = React.useCallback((brand: TAgentBrand) => {
-    setTagentBrand(brand)
-    void updateTAgentBrand(brand)
-  }, [setTagentBrand])
+  const handleBrandChange = React.useCallback(
+    (brand: TAgentBrand) => {
+      setTagentBrand(brand)
+      void updateTAgentBrand(brand)
+    },
+    [setTagentBrand]
+  )
 
   return (
     <div className="space-y-4">
       {/* Slim 头部：logo + 标题 + 5 色色板内联 */}
-      <TAgentSlimHeader
-        brand={tagentBrand}
-        onBrandChange={handleBrandChange}
-      />
+      <TAgentSlimHeader brand={tagentBrand} onBrandChange={handleBrandChange} />
 
       {/* TAgent 皮肤 + 风格库 */}
-      <SettingsSection
-        title="TAgent 皮肤"
-        description="浅色 / 深色 / 跟随系统 / 风格库 6 选 1"
-      >
+      <SettingsSection title="TAgent 皮肤" description="浅色 / 深色 / 跟随系统 / 风格库 6 选 1">
         <SettingsCard>
           <SettingsSegmentedControl
             label="皮肤模式"
@@ -216,10 +285,7 @@ export function AppearanceSettings(): React.ReactElement {
       </SettingsSection>
 
       {/* 排版与材质 */}
-      <SettingsSection
-        title="排版与材质"
-        description="字号、缩放、玻璃质感"
-      >
+      <SettingsSection title="排版与材质" description="字号、缩放、玻璃质感">
         <SettingsCard>
           {/* 界面缩放 */}
           <div className="flex items-center justify-between px-4 py-3">
@@ -238,10 +304,7 @@ export function AppearanceSettings(): React.ReactElement {
                 调整 AI 回复与 Markdown 编辑器的正文字号
               </div>
             </div>
-            <FontSizeSlider
-              value={markdownFontSize}
-              onChange={handleMarkdownFontSizeChange}
-            />
+            <FontSizeSlider value={markdownFontSize} onChange={handleMarkdownFontSizeChange} />
           </div>
 
           {/* 高级材质 */}
@@ -279,7 +342,9 @@ function TAgentSlimHeader({ brand, onBrandChange }: TAgentSlimHeaderProps): Reac
   return (
     <div className="tagent-slim-header">
       <div className="tagent-slim-header-left">
-        <div className="tagent-slim-header-logo" aria-hidden="true">TA</div>
+        <div className="tagent-slim-header-logo" aria-hidden="true">
+          TA
+        </div>
         <div className="tagent-slim-header-text">
           <div className="tagent-slim-header-title">
             TAgent 视觉签名
@@ -322,10 +387,7 @@ function BrandChip({ swatch, isSelected, onSelect }: BrandChipProps): React.Reac
       data-selected={isSelected}
       className="tagent-brand-chip"
     >
-      <span
-        className="tagent-brand-chip-dot"
-        style={{ background: swatch.solid }}
-      />
+      <span className="tagent-brand-chip-dot" style={{ background: swatch.solid }} />
       <span className="tagent-brand-chip-label">{swatch.name}</span>
     </button>
   )
@@ -355,9 +417,10 @@ function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.React
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
         isSelected ? 'focus-visible:ring-2' : 'focus-visible:ring-1'
       )}
-      style={isSelected
-        ? { '--tw-ring-color': 'var(--theme-glow)' } as React.CSSProperties
-        : { '--tw-ring-color': 'var(--theme-soft)' } as React.CSSProperties
+      style={
+        isSelected
+          ? ({ '--tw-ring-color': 'var(--theme-glow)' } as React.CSSProperties)
+          : ({ '--tw-ring-color': 'var(--theme-soft)' } as React.CSSProperties)
       }
     >
       <div className="tagent-style-preview-wrap">
@@ -384,7 +447,9 @@ function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.React
 
       <div className="tagent-style-card-label">
         <span>{style.name}</span>
-        <span className="tagent-style-card-label-tag">{style.variant === 'light' ? '亮' : '暗'}</span>
+        <span className="tagent-style-card-label-tag">
+          {style.variant === 'light' ? '亮' : '暗'}
+        </span>
       </div>
     </button>
   )
@@ -430,12 +495,7 @@ const DECO_PATHS: Record<SpecialStyle['deco'], React.ReactElement> = {
       <circle cx="24" cy="32" r="1.2" />
     </g>
   ),
-  moon: (
-    <path
-      d="M28 8 A14 14 0 1 0 28 32 A10 10 0 1 1 28 8 Z"
-      fill="currentColor"
-    />
-  ),
+  moon: <path d="M28 8 A14 14 0 1 0 28 32 A10 10 0 1 1 28 8 Z" fill="currentColor" />,
   gem: (
     <path
       d="M20 6 L32 16 L20 34 L8 16 Z M20 6 L20 34 M8 16 L32 16"
@@ -478,7 +538,15 @@ const DECO_PATHS: Record<SpecialStyle['deco'], React.ReactElement> = {
   ),
   orb: (
     <g>
-      <circle cx="20" cy="20" r="11" stroke="currentColor" strokeWidth="1.8" fill="none" opacity="0.7" />
+      <circle
+        cx="20"
+        cy="20"
+        r="11"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill="none"
+        opacity="0.7"
+      />
       <circle cx="20" cy="20" r="4" fill="currentColor" />
     </g>
   ),
@@ -508,9 +576,7 @@ function ThemePreview({ previewClass, deco }: ThemePreviewProps): React.ReactEle
 
 /** 界面缩放 keycap 提示 */
 function ZoomKeycapHint(): React.ReactElement {
-  const prefix = isMac
-    ? [{ label: '⌘' }]
-    : [{ label: 'Ctrl' }]
+  const prefix = isMac ? [{ label: '⌘' }] : [{ label: 'Ctrl' }]
 
   const steps = [
     { op: '+', desc: '放大' },
@@ -553,16 +619,19 @@ function FontSizeSlider({ value, onChange }: FontSizePreviewProps): React.ReactE
   const samplePx = value === 'small' ? 13 : value === 'large' ? 17 : 15
   const activeLabel = READING_FONT_SIZE_OPTIONS[safeIndex]?.label ?? '中'
 
-  const pickByClientX = React.useCallback((clientX: number): void => {
-    const rect = trackRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
-    const nearest = Math.round(ratio * (valueCount - 1))
-    const target = READING_FONT_SIZE_OPTIONS[nearest]
-    if (target && target.value !== value) {
-      onChange(target.value)
-    }
-  }, [onChange, value, valueCount])
+  const pickByClientX = React.useCallback(
+    (clientX: number): void => {
+      const rect = trackRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+      const nearest = Math.round(ratio * (valueCount - 1))
+      const target = READING_FONT_SIZE_OPTIONS[nearest]
+      if (target && target.value !== value) {
+        onChange(target.value)
+      }
+    },
+    [onChange, value, valueCount]
+  )
 
   React.useEffect(() => {
     if (!dragging) return

@@ -23,7 +23,7 @@ export function createFileMentionSuggestion(
   mentionActiveRef: React.MutableRefObject<boolean>,
   attachedDirsRef?: React.RefObject<string[]>,
   mentionItemCountRef?: React.MutableRefObject<number>,
-  sessionAttachedDirsRef?: React.RefObject<string[]>,
+  sessionAttachedDirsRef?: React.RefObject<string[]>
 ): Omit<SuggestionOptions<FileIndexEntry>, 'editor'> {
   let lastResult: FileSearchResult | null = null
   let missingWorkspaceToastShown = false
@@ -39,7 +39,8 @@ export function createFileMentionSuggestion(
         console.warn('[FileMention] workspacePath is null, mention disabled')
         if (!missingWorkspaceToastShown) {
           toast.warning('暂时无法引用文件', {
-            description: '当前 Agent 会话没有可用的工作区路径。请在顶部选择工作区，或新建 Agent 会话后重试。',
+            description:
+              '当前 Agent 会话没有可用的工作区路径。请在顶部选择工作区，或新建 Agent 会话后重试。',
           })
           missingWorkspaceToastShown = true
         }
@@ -56,11 +57,11 @@ export function createFileMentionSuggestion(
           query ?? '',
           200,
           additionalPaths.length > 0 ? additionalPaths : undefined,
-          sessionPaths.length > 0 ? sessionPaths : undefined,
+          sessionPaths.length > 0 ? sessionPaths : undefined
         )
         lastResult = result
         return result.entries
-      } catch(e) {
+      } catch (e) {
         console.error('[FileMention] search failed:', e)
         lastResult = null
         return []

@@ -57,9 +57,7 @@ export function TutorialBanner(): React.ReactElement | null {
   return (
     <div
       className={`fixed bottom-6 right-6 z-[100] w-[340px] transition-all duration-500 ease-out ${
-        visible
-          ? 'translate-x-0 opacity-100'
-          : 'translate-x-8 opacity-0 pointer-events-none'
+        visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0 pointer-events-none'
       }`}
     >
       <div className="relative rounded-2xl bg-gradient-to-br from-primary/5 via-background to-primary/10 border border-primary/15 shadow-lg shadow-primary/5 backdrop-blur-sm p-5">
@@ -84,11 +82,7 @@ export function TutorialBanner(): React.ReactElement | null {
 
         {/* 操作按钮 */}
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleLearnNow}
-            className="flex-1 h-8 text-xs"
-          >
+          <Button size="sm" onClick={handleLearnNow} className="flex-1 h-8 text-xs">
             立即学习
           </Button>
           <Button

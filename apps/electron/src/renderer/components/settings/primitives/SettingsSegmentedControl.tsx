@@ -44,9 +44,7 @@ export function SettingsSegmentedControl({
     <div className="px-4 py-3 space-y-2">
       <div>
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       <div className="inline-flex rounded-lg bg-muted p-1 gap-0.5">
         {options.map((option) => (

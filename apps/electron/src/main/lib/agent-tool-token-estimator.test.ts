@@ -19,19 +19,19 @@ import {
 describe('isCjkCodePoint', () => {
   describe('CJK Unified Ideographs (basic block)', () => {
     test('中 (U+4E2D) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x4E2D)).toBe(true)
+      expect(isCjkCodePoint(0x4e2d)).toBe(true)
     })
     test('边界 0x4E00 When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x4E00)).toBe(true)
+      expect(isCjkCodePoint(0x4e00)).toBe(true)
     })
     test('边界 0x9FFF When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x9FFF)).toBe(true)
+      expect(isCjkCodePoint(0x9fff)).toBe(true)
     })
     test('低于下界 0x4DFF When check Then 不是', () => {
-      expect(isCjkCodePoint(0x4DFF)).toBe(false)
+      expect(isCjkCodePoint(0x4dff)).toBe(false)
     })
     test('高于上界 0xA000 When check Then 不是', () => {
-      expect(isCjkCodePoint(0xA000)).toBe(false)
+      expect(isCjkCodePoint(0xa000)).toBe(false)
     })
   })
 
@@ -43,31 +43,31 @@ describe('isCjkCodePoint', () => {
       expect(isCjkCodePoint(0x3000)).toBe(true)
     })
     test('下界外 U+2FFF When check Then 不是', () => {
-      expect(isCjkCodePoint(0x2FFF)).toBe(false)
+      expect(isCjkCodePoint(0x2fff)).toBe(false)
     })
   })
 
   describe('Fullwidth Forms (U+FF00-FFEF)', () => {
     test('全角 A (U+FF21) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0xFF21)).toBe(true)
+      expect(isCjkCodePoint(0xff21)).toBe(true)
     })
     test('全角数字 １ (U+FF11) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0xFF11)).toBe(true)
+      expect(isCjkCodePoint(0xff11)).toBe(true)
     })
     test('上界外 U+FFF0 When check Then 不是', () => {
-      expect(isCjkCodePoint(0xFFF0)).toBe(false)
+      expect(isCjkCodePoint(0xfff0)).toBe(false)
     })
   })
 
   describe('Hangul Syllables (U+AC00-D7AF)', () => {
     test('한 (U+D55C) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0xD55C)).toBe(true)
+      expect(isCjkCodePoint(0xd55c)).toBe(true)
     })
     test('가 (U+AC00) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0xAC00)).toBe(true)
+      expect(isCjkCodePoint(0xac00)).toBe(true)
     })
     test('下界外 U+ABFF When check Then 不是', () => {
-      expect(isCjkCodePoint(0xABFF)).toBe(false)
+      expect(isCjkCodePoint(0xabff)).toBe(false)
     })
   })
 
@@ -76,10 +76,10 @@ describe('isCjkCodePoint', () => {
       expect(isCjkCodePoint(0x3042)).toBe(true)
     })
     test('ア (U+30A2) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x30A2)).toBe(true)
+      expect(isCjkCodePoint(0x30a2)).toBe(true)
     })
     test('下界外 U+2FFF When check Then 不是 (2FFF 不在 3040-30FF 也不在 3000-303F 之外)', () => {
-      expect(isCjkCodePoint(0x2FFF)).toBe(false)
+      expect(isCjkCodePoint(0x2fff)).toBe(false)
     })
 
     test('上界外 U+3100 When check Then 不是', () => {
@@ -92,10 +92,10 @@ describe('isCjkCodePoint', () => {
       expect(isCjkCodePoint(0x3400)).toBe(true)
     })
     test('扩展 A 字符 (U+4DB5) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x4DB5)).toBe(true)
+      expect(isCjkCodePoint(0x4db5)).toBe(true)
     })
     test('下界外 U+33FF When check Then 不是', () => {
-      expect(isCjkCodePoint(0x33FF)).toBe(false)
+      expect(isCjkCodePoint(0x33ff)).toBe(false)
     })
   })
 
@@ -104,10 +104,10 @@ describe('isCjkCodePoint', () => {
       expect(isCjkCodePoint(0x20000)).toBe(true)
     })
     test('扩展 B 字符 (U+2A6D6) When check Then 是 CJK', () => {
-      expect(isCjkCodePoint(0x2A6D6)).toBe(true)
+      expect(isCjkCodePoint(0x2a6d6)).toBe(true)
     })
     test('下界外 U+1FFFF When check Then 不是', () => {
-      expect(isCjkCodePoint(0x1FFFF)).toBe(false)
+      expect(isCjkCodePoint(0x1ffff)).toBe(false)
     })
   })
 
@@ -116,13 +116,13 @@ describe('isCjkCodePoint', () => {
       expect(isCjkCodePoint(0x0041)).toBe(false)
     })
     test('Latin-1 é (U+00E9) When check Then 不是', () => {
-      expect(isCjkCodePoint(0x00E9)).toBe(false)
+      expect(isCjkCodePoint(0x00e9)).toBe(false)
     })
     test('希腊字母 α (U+03B1) When check Then 不是', () => {
-      expect(isCjkCodePoint(0x03B1)).toBe(false)
+      expect(isCjkCodePoint(0x03b1)).toBe(false)
     })
     test('emoji 😀 (U+1F600) When check Then 不是 (不是 CJK 范围)', () => {
-      expect(isCjkCodePoint(0x1F600)).toBe(false)
+      expect(isCjkCodePoint(0x1f600)).toBe(false)
     })
     test('NULL (U+0000) When check Then 不是', () => {
       expect(isCjkCodePoint(0x0000)).toBe(false)
@@ -202,7 +202,7 @@ describe('estimateTokenCount', () => {
     })
 
     test('Given 全角空格 (U+3000) When estimate Then 按 1.5/char 算 (CJK 范围)', () => {
-      expect(estimateTokenCount('　')).toBe(2)  // ceil(1 * 1.5)
+      expect(estimateTokenCount('　')).toBe(2) // ceil(1 * 1.5)
     })
   })
 
@@ -226,7 +226,7 @@ describe('estimateTokenCount', () => {
     test('Given 扩展 B 字符 (supplementary plane) When iterate 用 for...of Then 正确按 1 char 算', () => {
       // U+20000 是 4 字节 UTF-8，但 JS string 用 for...of 按 code point 迭代为 1 char
       const extB = String.fromCodePoint(0x20000)
-      expect(extB.length).toBe(2)  // UTF-16 长度 = 2
+      expect(extB.length).toBe(2) // UTF-16 长度 = 2
       // for...of 迭代 1 次 (1 code point)
       // 1 CJK * 1.5 = 1.5 → ceil = 2
       expect(estimateTokenCount(extB)).toBe(2)

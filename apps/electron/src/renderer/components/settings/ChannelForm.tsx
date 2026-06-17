@@ -10,11 +10,7 @@
  */
 
 import { normalizeAnthropicProviderUrl } from '@tagent/core'
-import {
-  PROVIDER_DEFAULT_URLS,
-  PROVIDER_LABELS,
-  isAgentCompatibleProvider,
-} from '@tagent/shared'
+import { PROVIDER_DEFAULT_URLS, PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
 import { useSetAtom } from 'jotai'
 import {
   ArrowLeft,
@@ -66,7 +62,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { getProviderLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
-
 interface ChannelFormProps {
   /** 编辑模式下传入已有渠道，创建模式传 null */
   channel: Channel | null
@@ -76,7 +71,23 @@ interface ChannelFormProps {
 }
 
 /** 所有可选供应商 */
-const PROVIDER_OPTIONS: ProviderType[] = ['anthropic', 'anthropic-compatible', 'openai', 'custom', 'deepseek', 'google', 'kimi-api', 'kimi-coding', 'zhipu', 'zhipu-coding', 'minimax', 'doubao', 'qwen', 'xiaomi', 'xiaomi-token-plan']
+const PROVIDER_OPTIONS: ProviderType[] = [
+  'anthropic',
+  'anthropic-compatible',
+  'openai',
+  'custom',
+  'deepseek',
+  'google',
+  'kimi-api',
+  'kimi-coding',
+  'zhipu',
+  'zhipu-coding',
+  'minimax',
+  'doubao',
+  'qwen',
+  'xiaomi',
+  'xiaomi-token-plan',
+]
 
 /** 供应商选项（用于 SettingsSelect） */
 const PROVIDER_SELECT_OPTIONS = PROVIDER_OPTIONS.map((p) => ({
@@ -138,7 +149,12 @@ function isAgentEligibleChannel(channel: Pick<Channel, 'provider' | 'enabled'>):
   return channel.enabled && isAgentCompatibleProvider(channel.provider)
 }
 
-export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCancel }: ChannelFormProps): React.ReactElement {
+export function ChannelForm({
+  channel,
+  onSaved,
+  onAgentEligibilityChange,
+  onCancel,
+}: ChannelFormProps): React.ReactElement {
   const isEdit = channel !== null
 
   // 表单状态
@@ -162,7 +178,9 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   const [testing, setTesting] = React.useState(false)
   const [testResult, setTestResult] = React.useState<ChannelTestResult | null>(null)
   const [validatingModel, setValidatingModel] = React.useState(false)
-  const [modelValidateResult, setModelValidateResult] = React.useState<ChannelTestResult | null>(null)
+  const [modelValidateResult, setModelValidateResult] = React.useState<ChannelTestResult | null>(
+    null
+  )
   const [fetchingModels, setFetchingModels] = React.useState(false)
   const [fetchResult, setFetchResult] = React.useState<FetchModelsResult | null>(null)
   const [apiKeyLoaded, setApiKeyLoaded] = React.useState(false)
@@ -178,13 +196,16 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   /** 编辑模式下加载明文 API Key */
   React.useEffect(() => {
     if (isEdit && channel && !apiKeyLoaded) {
-      window.electronAPI.decryptApiKey(channel.id).then((key) => {
-        setApiKey(key)
-        setApiKeyLoaded(true)
-      }).catch((error) => {
-        console.error('[模型配置表单] 解密 API Key 失败:', error)
-        setApiKeyLoaded(true)
-      })
+      window.electronAPI
+        .decryptApiKey(channel.id)
+        .then((key) => {
+          setApiKey(key)
+          setApiKeyLoaded(true)
+        })
+        .catch((error) => {
+          console.error('[模型配置表单] 解密 API Key 失败:', error)
+          setApiKeyLoaded(true)
+        })
     }
   }, [isEdit, channel, apiKeyLoaded])
 
@@ -194,57 +215,65 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   const initializedRef = React.useRef(false)
 
   /** 执行 auto-save */
-  const doAutoSave = React.useCallback(async (
-    currentModels: ChannelModel[],
-    currentName: string,
-    currentProvider: ProviderType,
-    currentBaseUrl: string,
-    currentApiKey: string,
-    currentEnabled: boolean,
-  ) => {
-    if (!isEdit || !channel) return
-    try {
-      const savedChannel = await window.electronAPI.updateChannel(channel.id, {
-        name: currentName,
-        provider: currentProvider,
-        baseUrl: currentBaseUrl,
-        apiKey: currentApiKey || undefined,
-        models: currentModels,
-        enabled: currentEnabled,
-      })
-      const eligible = isAgentEligibleChannel(savedChannel)
-      if (eligible !== lastAgentEligibleRef.current) {
-        lastAgentEligibleRef.current = eligible
-        await onAgentEligibilityChange?.(savedChannel, eligible)
+  const doAutoSave = React.useCallback(
+    async (
+      currentModels: ChannelModel[],
+      currentName: string,
+      currentProvider: ProviderType,
+      currentBaseUrl: string,
+      currentApiKey: string,
+      currentEnabled: boolean
+    ) => {
+      if (!isEdit || !channel) return
+      try {
+        const savedChannel = await window.electronAPI.updateChannel(channel.id, {
+          name: currentName,
+          provider: currentProvider,
+          baseUrl: currentBaseUrl,
+          apiKey: currentApiKey || undefined,
+          models: currentModels,
+          enabled: currentEnabled,
+        })
+        const eligible = isAgentEligibleChannel(savedChannel)
+        if (eligible !== lastAgentEligibleRef.current) {
+          lastAgentEligibleRef.current = eligible
+          await onAgentEligibilityChange?.(savedChannel, eligible)
+        }
+        toast.success('已保存', { id: 'auto-save-success' })
+      } catch (error) {
+        console.error('[模型配置表单] auto-save 失败:', error)
+        toast.error('自动保存失败，请检查后手动重试', { id: 'auto-save-error' })
       }
-      toast.success('已保存', { id: 'auto-save-success' })
-    } catch (error) {
-      console.error('[模型配置表单] auto-save 失败:', error)
-      toast.error('自动保存失败，请检查后手动重试', { id: 'auto-save-error' })
-    }
-  }, [isEdit, channel, onAgentEligibilityChange])
+    },
+    [isEdit, channel, onAgentEligibilityChange]
+  )
 
   /** 触发防抖 auto-save */
-  const scheduleAutoSave = React.useCallback((
-    nextModels: ChannelModel[],
-    nextName: string,
-    nextProvider: ProviderType,
-    nextBaseUrl: string,
-    nextApiKey: string,
-    nextEnabled: boolean,
-  ) => {
-    if (!isEdit || !initializedRef.current) return
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
-    autoSaveTimerRef.current = setTimeout(() => {
-      doAutoSave(nextModels, nextName, nextProvider, nextBaseUrl, nextApiKey, nextEnabled)
-    }, AUTO_SAVE_DELAY)
-  }, [isEdit, doAutoSave])
+  const scheduleAutoSave = React.useCallback(
+    (
+      nextModels: ChannelModel[],
+      nextName: string,
+      nextProvider: ProviderType,
+      nextBaseUrl: string,
+      nextApiKey: string,
+      nextEnabled: boolean
+    ) => {
+      if (!isEdit || !initializedRef.current) return
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+      autoSaveTimerRef.current = setTimeout(() => {
+        doAutoSave(nextModels, nextName, nextProvider, nextBaseUrl, nextApiKey, nextEnabled)
+      }, AUTO_SAVE_DELAY)
+    },
+    [isEdit, doAutoSave]
+  )
 
   // API Key 加载完成后标记初始化
   React.useEffect(() => {
     if (isEdit && apiKeyLoaded) {
       // 延迟标记，避免加载时触发
-      const t = setTimeout(() => { initializedRef.current = true }, 100)
+      const t = setTimeout(() => {
+        initializedRef.current = true
+      }, 100)
       return () => clearTimeout(t)
     }
     if (!isEdit) {
@@ -255,7 +284,9 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   // 监听字段变化触发 auto-save
   React.useEffect(() => {
     scheduleAutoSave(models, name, provider, baseUrl, apiKey, enabled)
-    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
   }, [models, name, provider, baseUrl, apiKey, enabled, scheduleAutoSave])
 
   // 切换供应商时自动更新 Base URL，Anthropic 兼容渠道自动添加预设模型
@@ -272,17 +303,11 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
           { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', enabled: true },
         ])
       } else if (p === 'kimi-api') {
-        setModels([
-          { id: 'kimi-k2.6', name: 'Kimi K2.6', enabled: true },
-        ])
+        setModels([{ id: 'kimi-k2.6', name: 'Kimi K2.6', enabled: true }])
       } else if (p === 'kimi-coding') {
-        setModels([
-          { id: 'kimi-for-coding', name: 'Kimi for Coding', enabled: true },
-        ])
+        setModels([{ id: 'kimi-for-coding', name: 'Kimi for Coding', enabled: true }])
       } else if (p === 'zhipu' || p === 'zhipu-coding') {
-        setModels([
-          { id: 'glm-5.1', name: 'GLM-5.1', enabled: true },
-        ])
+        setModels([{ id: 'glm-5.1', name: 'GLM-5.1', enabled: true }])
       } else if (p === 'minimax') {
         setModels([
           { id: 'MiniMax-M3', name: 'MiniMax-M3', enabled: true },
@@ -322,9 +347,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
 
   /** 切换模型启用状态（点击可用模型 → 启用，点击已启用模型 → 禁用） */
   const handleToggleModel = (modelId: string): void => {
-    setModels((prev) =>
-      prev.map((m) => (m.id === modelId ? { ...m, enabled: !m.enabled } : m))
-    )
+    setModels((prev) => prev.map((m) => (m.id === modelId ? { ...m, enabled: !m.enabled } : m)))
   }
 
   /** 从供应商 API 拉取可用模型列表 */
@@ -485,7 +508,9 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
   // 同步表单 dirty 状态到全局 atom（供 SettingsPanel 拦截侧边栏导航）
   React.useEffect(() => {
     setChannelFormDirty(isDirty)
-    return () => { setChannelFormDirty(false) }
+    return () => {
+      setChannelFormDirty(false)
+    }
   }, [isDirty, setChannelFormDirty])
 
   // 拦截窗口关闭（Cmd+W / Alt+F4 / 点击窗口 X）
@@ -514,12 +539,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
     <div className="space-y-6">
       {/* 标题栏 */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handleBack}
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
           <ArrowLeft size={18} />
         </Button>
         <h3 className="text-lg font-medium text-foreground flex-1">
@@ -572,7 +592,9 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
                   size="sm"
                   type="button"
                   onClick={handleTestModel}
-                  disabled={validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0}
+                  disabled={
+                    validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
+                  }
                   className="h-7 text-xs"
                   title="用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配"
                 >
@@ -591,17 +613,15 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
                   disabled={testing || !apiKey.trim() || !baseUrl.trim()}
                   className="h-7 text-xs"
                 >
-                  {testing ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
-                    <Zap size={12} />
-                  )}
+                  {testing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                   <span>测试连接</span>
                 </Button>
               </div>
             </div>
             {modelValidateResult && (
-              <div className={`text-xs px-2 py-1.5 rounded ${modelValidateResult.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+              <div
+                className={`text-xs px-2 py-1.5 rounded ${modelValidateResult.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
+              >
                 {modelValidateResult.message}
               </div>
             )}
@@ -624,10 +644,12 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
               </button>
             </div>
             {testResult && (
-              <div className={cn(
-                'flex items-center gap-1.5 text-xs',
-                testResult.success ? 'text-emerald-600' : 'text-destructive'
-              )}>
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 text-xs',
+                  testResult.success ? 'text-emerald-600' : 'text-destructive'
+                )}
+              >
                 {testResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                 <span>{testResult.message}</span>
               </div>
@@ -655,10 +677,7 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
           ) : (
             <div className="divide-y divide-border/50">
               {enabledModels.map((model) => (
-                <div
-                  key={model.id}
-                  className="flex items-center gap-2 px-4 py-2.5 group"
-                >
+                <div key={model.id} className="flex items-center gap-2 px-4 py-2.5 group">
                   <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
                   <span className="text-sm text-foreground flex-1">
                     {model.name}
@@ -704,10 +723,12 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
       >
         {/* 拉取结果提示 */}
         {fetchResult && (
-          <div className={cn(
-            'flex items-center gap-1.5 text-xs px-1',
-            fetchResult.success ? 'text-emerald-600' : 'text-destructive'
-          )}>
+          <div
+            className={cn(
+              'flex items-center gap-1.5 text-xs px-1',
+              fetchResult.success ? 'text-emerald-600' : 'text-destructive'
+            )}
+          >
             {fetchResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
             <span>{fetchResult.message}</span>
           </div>
@@ -718,7 +739,10 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
           {models.filter((m) => !m.enabled).length > 5 && (
             <div className="px-4 pt-3 pb-1">
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   value={modelFilter}
                   onChange={(e) => setModelFilter(e.target.value)}
@@ -755,7 +779,10 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
                   </span>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleRemoveModel(model.id) }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemoveModel(model.id)
+                    }}
                     className="p-0.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                     title="删除"
                   >
@@ -772,11 +799,13 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
               )}
 
               {/* 无可用模型提示 */}
-              {!modelFilter.trim() && models.filter((m) => !m.enabled).length === 0 && models.length > 0 && (
-                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  所有模型已启用
-                </div>
-              )}
+              {!modelFilter.trim() &&
+                models.filter((m) => !m.enabled).length === 0 &&
+                models.length > 0 && (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    所有模型已启用
+                  </div>
+                )}
             </div>
           </ScrollArea>
 
@@ -837,7 +866,13 @@ export function ChannelForm({ channel, onSaved, onAgentEligibilityChange, onCanc
               onClick={handleSaveAndClose}
               disabled={saving || !name.trim() || !apiKey.trim()}
             >
-              {saving ? <><Loader2 size={14} className="animate-spin" /> 保存中...</> : '保存并关闭'}
+              {saving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> 保存中...
+                </>
+              ) : (
+                '保存并关闭'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

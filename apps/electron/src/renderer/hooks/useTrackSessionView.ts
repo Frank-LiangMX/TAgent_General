@@ -13,11 +13,7 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
-import {
-  activeTabAtom,
-  sessionViewStateMapAtom,
-  type SessionView,
-} from '@/atoms/tab-atoms'
+import { activeTabAtom, sessionViewStateMapAtom, type SessionView } from '@/atoms/tab-atoms'
 
 export function useTrackSessionView(): void {
   const activeTab = useAtomValue(activeTabAtom)

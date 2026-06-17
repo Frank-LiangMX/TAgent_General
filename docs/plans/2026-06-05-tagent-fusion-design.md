@@ -12,6 +12,7 @@
 将 `F:\ta_agent`（自研 Python 游戏 TA 领域 Agent，54 个工具 + 资产库 + 语义搜索 + 三层记忆 + Blender/UE5 集成）的能力**重构融合**进 Proma 框架的产物——一个名为 **TAgent** 的 Electron 桌面应用（沿用 ta_agent 的品牌）。
 
 融合后产品具备**两种顶层模式**：
+
 - **通用模式**：Proma 现有能力（12 Provider + Claude Agent SDK + MCP + Skill + 飞书/钉钉/微信 Bridge + 完整 UI/设计系统）
 - **TA 模式**：TAgent 工具链（54 领域工具 + 资产库 + 审核 + 流水线 + 项目配置）
 
@@ -23,24 +24,24 @@
 
 ## 2. 已拍板的关键决策
 
-| # | 决策点 | 选择 |
-|---|---|---|
-| 1 | 顶层 Tab 切换 | **通用 / TA** 两 Tab；进"通用"后还是 Proma 现有 chat/agent/scratch |
-| 2 | 模式互斥 | **严格互斥 + 后台跑完提示**（无并发 bug，长任务切走仍跑完，红点提示） |
-| 3 | Provider 共享度 | **Provider/Channel/API Key 全局共享**，MCP/Skill 模式独立 |
-| 4 | Python 进程生命周期 | **进 TA 启，退 TA 后台保留，App 退出杀** |
-| 5 | Python 进程生命周期 / 安装方式 | **进 TA 启，退 TA 后台保留，App 退出杀**；**用户手动安装 Python + ta-agent-mcp**（不嵌入打包，2026-06-07 用户拍板：保持手动安装更灵活）|
-| 6 | TA UI 优先级 | **资产库先**（直读 SQLite，列表/详情/搜索） |
-| 7 | 跨模式切换 | **switch_mode 伪工具**：TA 模式 LLM 建议切到通用，反之亦然 |
-| 8 | 品牌 | **TAgent**（替换所有 Proma 字样） |
-| 9 | 前端 | **Proma 现有 React + 设计系统**（改底层逻辑） |
-| 10 | 旧数据 | **不迁移** |
-| 11 | 记忆结构 | **5 层 + 借鉴 hermes-agent / GenericAgent**（详见 §6） |
-| 12 | OpenAI 协议 | **MVP 用现有 12 Provider**，TA 模式走 Anthropic 兼容层 |
-| 13 | Token / 缓存 | **已有 input/output/cache 字段**，新增 cacheHitRate 派生 atom |
-| 14 | 模式间 L0 共享 | **默认不共享**，可手动开启"share user profile"开关 |
-| 15 | Agent 消息排队机制 | **默认排队，Shift+Enter 打断**：正常运行中发送消息 → 加入队列等待完成；Shift+Enter → 打断当前任务立即处理新消息（2026-06-07 用户拍板）|
-| 16 | SOUL 人格机制 | **实现 SOUL.md 人格定义系统**，借鉴 Hermes，用户可自定义 Agent 性格/语气（2026-06-15 用户拍板，详见 §19）|
+| #   | 决策点                         | 选择                                                                                                                                    |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 顶层 Tab 切换                  | **通用 / TA** 两 Tab；进"通用"后还是 Proma 现有 chat/agent/scratch                                                                      |
+| 2   | 模式互斥                       | **严格互斥 + 后台跑完提示**（无并发 bug，长任务切走仍跑完，红点提示）                                                                   |
+| 3   | Provider 共享度                | **Provider/Channel/API Key 全局共享**，MCP/Skill 模式独立                                                                               |
+| 4   | Python 进程生命周期            | **进 TA 启，退 TA 后台保留，App 退出杀**                                                                                                |
+| 5   | Python 进程生命周期 / 安装方式 | **进 TA 启，退 TA 后台保留，App 退出杀**；**用户手动安装 Python + ta-agent-mcp**（不嵌入打包，2026-06-07 用户拍板：保持手动安装更灵活） |
+| 6   | TA UI 优先级                   | **资产库先**（直读 SQLite，列表/详情/搜索）                                                                                             |
+| 7   | 跨模式切换                     | **switch_mode 伪工具**：TA 模式 LLM 建议切到通用，反之亦然                                                                              |
+| 8   | 品牌                           | **TAgent**（替换所有 Proma 字样）                                                                                                       |
+| 9   | 前端                           | **Proma 现有 React + 设计系统**（改底层逻辑）                                                                                           |
+| 10  | 旧数据                         | **不迁移**                                                                                                                              |
+| 11  | 记忆结构                       | **5 层 + 借鉴 hermes-agent / GenericAgent**（详见 §6）                                                                                  |
+| 12  | OpenAI 协议                    | **MVP 用现有 12 Provider**，TA 模式走 Anthropic 兼容层                                                                                  |
+| 13  | Token / 缓存                   | **已有 input/output/cache 字段**，新增 cacheHitRate 派生 atom                                                                           |
+| 14  | 模式间 L0 共享                 | **默认不共享**，可手动开启"share user profile"开关                                                                                      |
+| 15  | Agent 消息排队机制             | **默认排队，Shift+Enter 打断**：正常运行中发送消息 → 加入队列等待完成；Shift+Enter → 打断当前任务立即处理新消息（2026-06-07 用户拍板）  |
+| 16  | SOUL 人格机制                  | **实现 SOUL.md 人格定义系统**，借鉴 Hermes，用户可自定义 Agent 性格/语气（2026-06-15 用户拍板，详见 §19）                               |
 
 ---
 
@@ -76,6 +77,7 @@
 ```
 
 ### 3.2 关键边界
+
 - **进程数恒定 2**（Proma + ta_agent），无第三个
 - **资产数据库 = 文件共享**（不是 API 调用）——Proma 用 better-sqlite3 直读，写权只在 ta_agent 侧
 - **模式状态隔离 = Jotai atom 命名空间**：`general.*` 与 `ta.*` 两套 atom tree 互不引用
@@ -109,26 +111,26 @@
 
 **写权矩阵**（避免 §3.2 的"脏写"风险）：
 
-| 数据 | 写权 | 读权 | 说明 |
-|---|---|---|---|
-| `tag_store/tags.db` | **ta_agent MCP** | TAgent UI 直读 | 写权独占, 避免并发覆盖 |
-| `configs/app-config.json` | **TAgent UI** + ta_agent MCP | 双方都能读 | 用户改 blender_path 走 UI |
-| `configs/project/*.yaml` | **TAgent UI** + ta_agent MCP | 双方都能读 | 项目设置向导走 UI |
-| `memory/*` | **ta_agent MCP** | TAgent UI 展示 | AI 学来的知识, 不让用户直接编辑 |
-| `usage_log.jsonl` | **ta_agent MCP** | TAgent UI 展示 | 流水 append, 无冲突 |
-| `ue5_bridge/` | **TAgent UI** | ta_agent MCP 读 | 凭据/连接配置, 用户一次性设 |
+| 数据                      | 写权                         | 读权            | 说明                            |
+| ------------------------- | ---------------------------- | --------------- | ------------------------------- |
+| `tag_store/tags.db`       | **ta_agent MCP**             | TAgent UI 直读  | 写权独占, 避免并发覆盖          |
+| `configs/app-config.json` | **TAgent UI** + ta_agent MCP | 双方都能读      | 用户改 blender_path 走 UI       |
+| `configs/project/*.yaml`  | **TAgent UI** + ta_agent MCP | 双方都能读      | 项目设置向导走 UI               |
+| `memory/*`                | **ta_agent MCP**             | TAgent UI 展示  | AI 学来的知识, 不让用户直接编辑 |
+| `usage_log.jsonl`         | **ta_agent MCP**             | TAgent UI 展示  | 流水 append, 无冲突             |
+| `ue5_bridge/`             | **TAgent UI**                | ta_agent MCP 读 | 凭据/连接配置, 用户一次性设     |
 
 **与原 ta_agent 布局的差异**：
 
-| 旧 (`~/.ta_agent/`) | 新 (`~/.tagent/ta/`) | 差异 |
-|---|---|---|
-| `configs/` | `configs/` | 同名同结构, 直接搬 |
-| `tag_store/tags.db` | `tag_store/tags.db` | 同 |
+| 旧 (`~/.ta_agent/`)         | 新 (`~/.tagent/ta/`)    | 差异                                                 |
+| --------------------------- | ----------------------- | ---------------------------------------------------- |
+| `configs/`                  | `configs/`              | 同名同结构, 直接搬                                   |
+| `tag_store/tags.db`         | `tag_store/tags.db`     | 同                                                   |
 | `memory/{general,ta}/sops/` | `memory/` (TA 模式专用) | 不再拆 general/ta 模式目录, 因为整个根是 TA 模式专用 |
-| `ue5_bridge/` | `ue5_bridge/` | 同 |
-| `sessions/index.json` | `sessions/index.json` | 同 |
-| `usage_log.jsonl` | `usage_log.jsonl` | 格式不变, 路径变 |
-| `pipeline_runs.jsonl` | `pipeline_runs.jsonl` | 同 |
+| `ue5_bridge/`               | `ue5_bridge/`           | 同                                                   |
+| `sessions/index.json`       | `sessions/index.json`   | 同                                                   |
+| `usage_log.jsonl`           | `usage_log.jsonl`       | 格式不变, 路径变                                     |
+| `pipeline_runs.jsonl`       | `pipeline_runs.jsonl`   | 同                                                   |
 
 **通用模式（chat/agent/scratch）的数据**继续在 `~/.tagent/` 根下（与 TA 模式完全分离）：
 
@@ -141,11 +143,13 @@
 ```
 
 **与 §6 记忆 5 层的关系**：
+
 - §6 描述的 5 层是**通用模式**的记忆，在 `~/.tagent/memory/`
 - TA 模式有**自己独立**的 5 层记忆，在 `~/.tagent/ta/memory/`
 - 两套记忆**默认不共享**（与决策 #14 一致："L0 共享 = 默认不共享, 可手动开启"）
 
 **迁移策略**（M2 阶段, 不在 MVP 范围）：
+
 - 一次性脚本：`mv ~/.ta_agent/* ~/.tagent/ta/`
 - 检测：如果 `~/.ta_agent/configs/` 存在但 `~/.tagent/ta/configs/` 不存在, 启动时弹一次性迁移对话框
 - ta_agent MCP server 启动时检查 `TA_AGENT_DATA_DIR` 是否设置, 没有就 fallback 到 `~/.ta_agent/`（向后兼容老用户）
@@ -153,6 +157,7 @@
 ### 3.4 缓存机制 + 目录规范（2026-06-06 拍板）
 
 **问题**：现状有 3 个不相关的根目录散在不同位置：
+
 - TAgent app data：`~/.tagent/`（TAgent 自己写）
 - Electron userData：dev `%APPDATA%@tagent\electron-dev/`、prod `%APPDATA%\TAgent\`（Electron 内部）
 - OS 临时：`%TEMP%\tagent-*\`（一次性临时）
@@ -220,6 +225,7 @@ if (!app.isPackaged) {
   app.setPath('userData', join(app.getPath('appData'), '@tagent/electron-dev'))
 }
 ```
+
 dev: `%APPDATA%@tagent\electron-dev\`（Windows）/ `~/.config/@tagent/electron-dev/`（Linux）
 prod: 默认 = `%APPDATA%\TAgent\` / `~/.config/TAgent/`
 
@@ -228,44 +234,43 @@ prod: 默认 = `%APPDATA%\TAgent\` / `~/.config/TAgent/`
 ```js
 // apps/electron/src/main/index.ts
 import { homedir } from 'node:os'
-const baseDir = app.isPackaged
-  ? join(homedir(), '.tagent')
-  : join(homedir(), '.tagent-dev')
+const baseDir = app.isPackaged ? join(homedir(), '.tagent') : join(homedir(), '.tagent-dev')
 app.setPath('userData', join(baseDir, 'electron-userdata'))
 ```
 
-dev:  `~/.tagent-dev/electron-userdata/`
+dev: `~/.tagent-dev/electron-userdata/`
 prod: `~/.tagent/electron-userdata/`
 
 **数据丢失影响**：
+
 - 旧 Electron userData 在 `%APPDATA%` 下的 Chromium Session / GPU 缓存 / 自动更新状态会**丢失**
 - 但这些**全部可重建**（GPU 缓存下次启动自动重生成，Session 重新登录即可，自动更新会重新检测）
 - 真实损失 = 0（用户已经接受数据丢失原则）
 
 #### 3.4.3 TA 模式 vs 通用模式 — 缓存对照
 
-| 类别 | 通用模式 | TA 模式 | 共用 |
-|---|---|---|---|
-| **C1 数据** (永久) | `~/.tagent/{channels, conversations, agent-sessions, agent-workspaces, default-skills, scratch-pad, settings, user-profile, memory}/` | `~/.tagent/ta/{tag_store, configs, memory, ue5_bridge, sessions, usage_log, pipeline_runs}/` | — |
-| **C2 缓存** (7 天 LRU) | `cache/general/{http, thumbnails, search-index, model-icons}/` | `cache/ta/{thumbnails, blender-renders, fts5, ue5-screenshots}/` | `cache/shared/{installers, tools, http-common}/` |
-| **C3 日志** (滚动) | `logs/{main, renderer, updater}.log` | `logs/{ta-agent-stdout, ta-agent-stderr}.log` | `logs/crash/` |
-| **C4 临时** (1-3 天) | `tmp/{previews, screenshots}/` | `tmp/ta-blender/` | `tmp/migration-import/` |
-| **C5 Electron 内部** | — | — | `electron-userdata/{Cache, GPUCache, ...}/` |
+| 类别                   | 通用模式                                                                                                                              | TA 模式                                                                                      | 共用                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| **C1 数据** (永久)     | `~/.tagent/{channels, conversations, agent-sessions, agent-workspaces, default-skills, scratch-pad, settings, user-profile, memory}/` | `~/.tagent/ta/{tag_store, configs, memory, ue5_bridge, sessions, usage_log, pipeline_runs}/` | —                                                |
+| **C2 缓存** (7 天 LRU) | `cache/general/{http, thumbnails, search-index, model-icons}/`                                                                        | `cache/ta/{thumbnails, blender-renders, fts5, ue5-screenshots}/`                             | `cache/shared/{installers, tools, http-common}/` |
+| **C3 日志** (滚动)     | `logs/{main, renderer, updater}.log`                                                                                                  | `logs/{ta-agent-stdout, ta-agent-stderr}.log`                                                | `logs/crash/`                                    |
+| **C4 临时** (1-3 天)   | `tmp/{previews, screenshots}/`                                                                                                        | `tmp/ta-blender/`                                                                            | `tmp/migration-import/`                          |
+| **C5 Electron 内部**   | —                                                                                                                                     | —                                                                                            | `electron-userdata/{Cache, GPUCache, ...}/`      |
 
 #### 3.4.4 缓存失效机制（C1：自动 LRU）
 
 启动时 `cacheScanLRU()` 自动执行（无 UI 提示）：
 
-| 缓存 | 失效触发 | 清理策略 |
-|---|---|---|
-| **缩略图** | 源文件 mtime 变化 | LRU 7 天，启动时扫描 `cache/*/thumbnails/`，删 >7 天的 |
-| **FTS5 索引** | 数据源写入 | 进程内写后触发 `INSERT INTO fts5`；不需失效清理 |
-| **HTTP 响应** | 显式 `Cache-Control` 头 | TTL 默认 5 分钟（可被 Provider 覆盖） |
-| **预览 HTML** | 一次性 | 启动时清 >24h 的；用户主动关闭后立即删 |
-| **安装包** | 用户"立即安装"后 | 安装成功后 24h 自动删；下载失败保留 7 天 |
-| **Blender 渲染** | 资产 hash 变化 | 跟随资产生命周期，不主动清 |
-| **日志** | 滚动写入 | 单文件 >50MB 或 >7 天滚动；总大小上限 500MB |
-| **tmp/** | 启动时 | 1-3 天 LRU 清理 |
+| 缓存             | 失效触发                | 清理策略                                               |
+| ---------------- | ----------------------- | ------------------------------------------------------ |
+| **缩略图**       | 源文件 mtime 变化       | LRU 7 天，启动时扫描 `cache/*/thumbnails/`，删 >7 天的 |
+| **FTS5 索引**    | 数据源写入              | 进程内写后触发 `INSERT INTO fts5`；不需失效清理        |
+| **HTTP 响应**    | 显式 `Cache-Control` 头 | TTL 默认 5 分钟（可被 Provider 覆盖）                  |
+| **预览 HTML**    | 一次性                  | 启动时清 >24h 的；用户主动关闭后立即删                 |
+| **安装包**       | 用户"立即安装"后        | 安装成功后 24h 自动删；下载失败保留 7 天               |
+| **Blender 渲染** | 资产 hash 变化          | 跟随资产生命周期，不主动清                             |
+| **日志**         | 滚动写入                | 单文件 >50MB 或 >7 天滚动；总大小上限 500MB            |
+| **tmp/**         | 启动时                  | 1-3 天 LRU 清理                                        |
 
 **实现**（`apps/electron/src/main/lib/cache-maintenance.ts` 新文件）：
 
@@ -293,15 +298,15 @@ export async function cacheScanLRU(): Promise<CleanupStats> {
 
 #### 3.4.5 已废弃路径（迁移后不留兼容）
 
-| 旧路径 | 状态 |
-|---|---|
-| `%TEMP%\tagent-preview\` | **改** `~/.tagent/tmp/previews/` |
-| `%TEMP%\tagent-installers\` | **改** `~/.tagent/cache/shared/installers/` |
-| `%TEMP%\tagent-import-{uuid}\` | **改** `~/.tagent/tmp/migration-import/` |
-| `%TEMP%\tagent-icon-{uuid}\` | **改** `~/.tagent/tmp/previews/` (合并) |
-| `%TEMP%\tagent-ss-{ts}.html` | **改** `~/.tagent/tmp/screenshots/` |
-| `%APPDATA%\TAgent\` (Electron) | **改** `~/.tagent/electron-userdata/` |
-| `%APPDATA%@tagent\electron-dev\` (Electron dev) | **改** `~/.tagent-dev/electron-userdata/` |
+| 旧路径                                          | 状态                                        |
+| ----------------------------------------------- | ------------------------------------------- |
+| `%TEMP%\tagent-preview\`                        | **改** `~/.tagent/tmp/previews/`            |
+| `%TEMP%\tagent-installers\`                     | **改** `~/.tagent/cache/shared/installers/` |
+| `%TEMP%\tagent-import-{uuid}\`                  | **改** `~/.tagent/tmp/migration-import/`    |
+| `%TEMP%\tagent-icon-{uuid}\`                    | **改** `~/.tagent/tmp/previews/` (合并)     |
+| `%TEMP%\tagent-ss-{ts}.html`                    | **改** `~/.tagent/tmp/screenshots/`         |
+| `%APPDATA%\TAgent\` (Electron)                  | **改** `~/.tagent/electron-userdata/`       |
+| `%APPDATA%@tagent\electron-dev\` (Electron dev) | **改** `~/.tagent-dev/electron-userdata/`   |
 
 ### 3.5 Agent 工作区机制 + UI 布局（2026-06-06 拍板, D 方案 v2）
 
@@ -309,20 +314,20 @@ TAgent 的 "工作区" 是抽象的**多项目容器**——与 Codex / Claude C
 
 #### 3.5.1 5 个核心概念精确定义
 
-| # | 概念 | 物理位置 | 谁拥有 | 跨 session | 用途 |
-|---|---|---|---|---|---|
-| **① 工作区** (Workspace) | `~/.tagent/agent-workspaces.json` + slug 目录 | TAgent | ✅ 跨 session | 项目容器（多项目并行）|
-| **② workspace-files/** | `~/.tagent/agent-workspaces/{slug}/workspace-files/` | Agent | ✅ 跨 session | **Agent 的内部笔记**（不污染用户代码）|
-| **③ 附加工作区目录** (Attached dir) | 外部真实目录（如 `D:/MyGame/`）| 用户 | ✅ 跨 session | **Claude Code cwd 等价物**（Agent 读 / 写用户的真实代码）|
-| **④' 附加工作区文件** (Attached file) | 外部真实单文件 | 用户 | ✅ 跨 session | 精细化权限（只暴露 1 个文件而不是整个项目）|
-| **⑤ 会话附加目录** (Session attached) | 外部真实目录 | 用户 | ❌ 仅当前 session | 会话级临时附加（不污染工作区配置）|
+| #                                     | 概念                                                 | 物理位置 | 谁拥有            | 跨 session                                                | 用途 |
+| ------------------------------------- | ---------------------------------------------------- | -------- | ----------------- | --------------------------------------------------------- | ---- |
+| **① 工作区** (Workspace)              | `~/.tagent/agent-workspaces.json` + slug 目录        | TAgent   | ✅ 跨 session     | 项目容器（多项目并行）                                    |
+| **② workspace-files/**                | `~/.tagent/agent-workspaces/{slug}/workspace-files/` | Agent    | ✅ 跨 session     | **Agent 的内部笔记**（不污染用户代码）                    |
+| **③ 附加工作区目录** (Attached dir)   | 外部真实目录（如 `D:/MyGame/`）                      | 用户     | ✅ 跨 session     | **Claude Code cwd 等价物**（Agent 读 / 写用户的真实代码） |
+| **④' 附加工作区文件** (Attached file) | 外部真实单文件                                       | 用户     | ✅ 跨 session     | 精细化权限（只暴露 1 个文件而不是整个项目）               |
+| **⑤ 会话附加目录** (Session attached) | 外部真实目录                                         | 用户     | ❌ 仅当前 session | 会话级临时附加（不污染工作区配置）                        |
 
 **读 / 写方向的核心约束**（设计的灵魂）：
 
-| 方向 | 落在哪 | 目的 |
-|---|---|---|
-| Agent **读**用户代码 | ③ ④' ⑤（外部附加）| 看到真实项目 |
-| Agent **写**自己的笔记 | ② workspace-files/（内部）| 跨会话共享 + 不污染 git 仓库 |
+| 方向                   | 落在哪                     | 目的                         |
+| ---------------------- | -------------------------- | ---------------------------- |
+| Agent **读**用户代码   | ③ ④' ⑤（外部附加）         | 看到真实项目                 |
+| Agent **写**自己的笔记 | ② workspace-files/（内部） | 跨会话共享 + 不污染 git 仓库 |
 
 **为什么这么分**：避免两个错——(a) Agent 笔记写到用户代码里污染 git；(b) Agent 只看自己笔记见不到真实项目。
 
@@ -343,6 +348,7 @@ TAgent **当前**的 UI 布局违反"作用域"心智：
 ```
 
 **3 大问题**：
+
 1. **会话列表缺位**——用户想切会话只能在 Chat 顶部的 dropdown，1 击切不到
 2. **"工作区文件" Tab 错位**——这是工作区配置，不该在右侧"会话上下文"区
 3. **"附加目录"入口不显**——SidePanel.tsx:288 的"附加文件夹"按钮藏在右侧 Tab 里，新用户找不到
@@ -377,65 +383,65 @@ TAgent **当前**的 UI 布局违反"作用域"心智：
 
 **4 个区域职责清晰**：
 
-| 区域 | 内容 | 作用域 |
-|---|---|---|
-| **左侧 Column 1** (60%) | 工作区管理：列表 + 附加目录/文件 + workspace-files 树 + 新建/删除 | 工作区级（低频交互）|
-| **左侧 Column 2** (40%) | 当前工作区的会话列表 | 会话级（高频交互）|
-| **中部** | Chat / Agent 主交互区 | 当前会话 |
-| **右侧** | 会话文件 + 文件改动（**仅当前会话相关**）| 会话级（伴随）|
+| 区域                    | 内容                                                              | 作用域               |
+| ----------------------- | ----------------------------------------------------------------- | -------------------- |
+| **左侧 Column 1** (60%) | 工作区管理：列表 + 附加目录/文件 + workspace-files 树 + 新建/删除 | 工作区级（低频交互） |
+| **左侧 Column 2** (40%) | 当前工作区的会话列表                                              | 会话级（高频交互）   |
+| **中部**                | Chat / Agent 主交互区                                             | 当前会话             |
+| **右侧**                | 会话文件 + 文件改动（**仅当前会话相关**）                         | 会话级（伴随）       |
 
 **5 概念 → UI 区域映射**：
 
-| 概念 | 落点 |
-|---|---|
-| ① 工作区列表 | 左侧 Column 1 |
-| ② workspace-files/ | 左侧 Column 1 树视图（可展开）|
-| ③ 附加工作区目录 | 左侧 Column 1 "+附加" 按钮 |
-| ④' 附加工作区文件 | 左侧 Column 1 "+附加文件" 按钮 |
-| ⑤ 会话附加目录 | 右侧 Tab "会话文件"（保持现状，会话级）|
+| 概念               | 落点                                    |
+| ------------------ | --------------------------------------- |
+| ① 工作区列表       | 左侧 Column 1                           |
+| ② workspace-files/ | 左侧 Column 1 树视图（可展开）          |
+| ③ 附加工作区目录   | 左侧 Column 1 "+附加" 按钮              |
+| ④' 附加工作区文件  | 左侧 Column 1 "+附加文件" 按钮          |
+| ⑤ 会话附加目录     | 右侧 Tab "会话文件"（保持现状，会话级） |
 
 **命名清理**（顺手做）：**"附加工作区文件"** 重命名为 **"附加文件"**（避免和"工作区文件目录"混淆）；**右侧"工作区文件" Tab 删除**（配置已搬左侧）。
 
 #### 3.5.4 与 hermes-desktop / Codex / Claude Code 对比
 
-| 维度 | **TAgent D 方案 v2** | hermes-desktop | Codex CLI | Claude Code |
-|---|---|---|---|---|
-| 工作区概念 | ✅ 多工作区（抽象容器）| ❌ 无（用 profile）| ❌ 单 cwd | ❌ 单 cwd |
-| 工作区配置 UI | 左侧 Column 1（专门区域）| ❌ 无 | ❌ 无 | ❌ 无 |
-| 会话列表 | 左侧 Column 2（专门区域）| 独立全屏 view | ❌ 无 | ❌ 无 |
-| 切换会话 | 1 击（左侧 1 选）| 2 击（点 Sessions tab → 选）| `--resume` 命令 | `--continue` flag |
-| 附加多目录 | ✅ per-workspace | ❌ 无 | ❌ 单 cwd | ❌ 单 cwd |
-| 跨 session 共享 | ✅（workspace-files/）| ⚠️ 全局 memory 间接 | ❌ 无 | ⚠️ CLAUDE.md 加载 |
-| Agent 写自己的笔记 | ✅ workspace-files/ | ✅ memory 体系 | ❌ 无 | ❌ 无 |
-| 文件面板 | 右侧（仅会话相关）| ❌ 无 | 内置 diff view | 内置 diff view |
-| 配置触达成本 | 中（左侧 1 击）| ❌ 配置分散 | ❌ 无此概念 | ❌ 无此概念 |
-| 学习曲线 | 中（多概念需解释）| **低**（扁平 nav）| **最低**（`cd` 就用）| **最低**（`cd` 就用）|
+| 维度               | **TAgent D 方案 v2**      | hermes-desktop               | Codex CLI             | Claude Code           |
+| ------------------ | ------------------------- | ---------------------------- | --------------------- | --------------------- |
+| 工作区概念         | ✅ 多工作区（抽象容器）   | ❌ 无（用 profile）          | ❌ 单 cwd             | ❌ 单 cwd             |
+| 工作区配置 UI      | 左侧 Column 1（专门区域） | ❌ 无                        | ❌ 无                 | ❌ 无                 |
+| 会话列表           | 左侧 Column 2（专门区域） | 独立全屏 view                | ❌ 无                 | ❌ 无                 |
+| 切换会话           | 1 击（左侧 1 选）         | 2 击（点 Sessions tab → 选） | `--resume` 命令       | `--continue` flag     |
+| 附加多目录         | ✅ per-workspace          | ❌ 无                        | ❌ 单 cwd             | ❌ 单 cwd             |
+| 跨 session 共享    | ✅（workspace-files/）    | ⚠️ 全局 memory 间接          | ❌ 无                 | ⚠️ CLAUDE.md 加载     |
+| Agent 写自己的笔记 | ✅ workspace-files/       | ✅ memory 体系               | ❌ 无                 | ❌ 无                 |
+| 文件面板           | 右侧（仅会话相关）        | ❌ 无                        | 内置 diff view        | 内置 diff view        |
+| 配置触达成本       | 中（左侧 1 击）           | ❌ 配置分散                  | ❌ 无此概念           | ❌ 无此概念           |
+| 学习曲线           | 中（多概念需解释）        | **低**（扁平 nav）           | **最低**（`cd` 就用） | **最低**（`cd` 就用） |
 
 **核心 trade-off**：TAgent 用更高的学习曲线换 4 个独特能力（多工作区、附加多目录、跨 session 共享、Agent 内部笔记分离）。
 
 #### 3.5.5 实现成本评估
 
-| 改动 | 位置 | 难度 | 工时 |
-|---|---|---|---|
-| 左侧 Sidebar 拆成 2 列布局 | `LeftSidebar.tsx` | 🟡 | 1-2 天 |
-| 新建"会话列表"组件（Column 2）| **新文件** | 🟡 | 2-3 天 |
-| Column 1 加树视图（workspace-files/）| 复用 FileBrowser 组件 | 🟢 | 1 天 |
-| Column 1 加"+附加"按钮（3 个：目录/文件/工作区）| 复用 SidePanel 里 attach 逻辑 | 🟢 | 1 天 |
-| 右侧"工作区文件" Tab 删除 | `DiffPanelTabBar.tsx` | 🟢 | 半天 |
-| 右侧"会话文件" 重命名"会话文件/附加" | UI 文本 + 类型 | 🟢 | 半天 |
-| FileDropZone 4 个动作重新分配 | 部分移到左侧 Column 1 | 🟢 | 1 天 |
-| 会话列表 atom (per workspace session list) | `agent-atoms.ts` | 🟢 | 半天 |
-| Onboarding 引导（"先创建工作区"）| 新增 | 🟡 | 1-2 天 |
+| 改动                                             | 位置                          | 难度 | 工时   |
+| ------------------------------------------------ | ----------------------------- | ---- | ------ |
+| 左侧 Sidebar 拆成 2 列布局                       | `LeftSidebar.tsx`             | 🟡   | 1-2 天 |
+| 新建"会话列表"组件（Column 2）                   | **新文件**                    | 🟡   | 2-3 天 |
+| Column 1 加树视图（workspace-files/）            | 复用 FileBrowser 组件         | 🟢   | 1 天   |
+| Column 1 加"+附加"按钮（3 个：目录/文件/工作区） | 复用 SidePanel 里 attach 逻辑 | 🟢   | 1 天   |
+| 右侧"工作区文件" Tab 删除                        | `DiffPanelTabBar.tsx`         | 🟢   | 半天   |
+| 右侧"会话文件" 重命名"会话文件/附加"             | UI 文本 + 类型                | 🟢   | 半天   |
+| FileDropZone 4 个动作重新分配                    | 部分移到左侧 Column 1         | 🟢   | 1 天   |
+| 会话列表 atom (per workspace session list)       | `agent-atoms.ts`              | 🟢   | 半天   |
+| Onboarding 引导（"先创建工作区"）                | 新增                          | 🟡   | 1-2 天 |
 
 **总成本 ~ 1.5-2 周**（纯 UI 重构 + 一个新组件"会话列表"）。**后端 API 0 改动**（`attachWorkspaceDirectory` / `attachWorkspaceFile` / `listAgentWorkspaces` 都不变）。
 
 #### 3.5.6 与 §3.3 / §3.4 的关系
 
-| 章节 | 关注点 | 本节关注点 |
-|---|---|---|
-| §3.3 TA 模式数据布局 | **TA 模式**的 `ta/` 目录结构 | Agent 工作区数据（**通用模式**）|
-| §3.4 缓存 + 目录规范 | 5 类缓存目录（C1-C5）| UI 区域划分 |
-| §3.5 本节 | — | **5 概念 + UI 布局 + 重构决策** |
+| 章节                 | 关注点                       | 本节关注点                       |
+| -------------------- | ---------------------------- | -------------------------------- |
+| §3.3 TA 模式数据布局 | **TA 模式**的 `ta/` 目录结构 | Agent 工作区数据（**通用模式**） |
+| §3.4 缓存 + 目录规范 | 5 类缓存目录（C1-C5）        | UI 区域划分                      |
+| §3.5 本节            | —                            | **5 概念 + UI 布局 + 重构决策**  |
 
 3 节互补：§3.3 管 TA 数据，§3.4 管缓存，§3.5 管 Agent 工作区 UI。
 
@@ -522,7 +528,8 @@ ta_agent MCP Server (Python, PyInstaller bundle)
 ```typescript
 const switchModeTool: ToolDefinition = {
   name: 'switch_mode',
-  description: '建议将当前对话切换到另一个模式继续。target_mode: "general" 用于代码/写工具/办公；"ta" 用于游戏资产/TA 工作流。',
+  description:
+    '建议将当前对话切换到另一个模式继续。target_mode: "general" 用于代码/写工具/办公；"ta" 用于游戏资产/TA 工作流。',
   input_schema: {
     type: 'object',
     properties: {
@@ -536,6 +543,7 @@ const switchModeTool: ToolDefinition = {
 ```
 
 **调用流程**：
+
 1. LLM 在 TA 模式调 `switch_mode({target_mode:'general', reason, context_summary})`
 2. Renderer 捕获，弹 modal
 3. 用户确认 → 序列化当前 session → 在 general 模式建新 session → 切 Tab → 新 session 自动开始
@@ -611,7 +619,7 @@ const switchModeTool: ToolDefinition = {
   │     ├─ 列表查询：SELECT * FROM assets ORDER BY updated_at DESC LIMIT 50
   │     └─ 全文搜索：MATCH query（FTS5 索引）
   └─→ 写入路径：只走 ta_agent MCP server（analyze_assets / save_* 工具）
-  
+
 并发安全：
   ├─ WAL 模式 + 短事务
   ├─ Proma 端用 readonly pragma
@@ -635,14 +643,14 @@ const switchModeTool: ToolDefinition = {
 
 ### 5.7 错误处理边界
 
-| 错误类型 | 来源 | 处理 |
-|---|---|---|
-| ta_agent MCP 进程崩溃 | Python 崩溃 / OOM | MCPManager 检测 stdio EOF → 自动重启一次 → 第二次失败弹"重试 / 切到通用模式" |
-| MCP 工具调用超时 | Blender 渲染 / UE5 卡死 | 单工具 5 分钟硬超时，cancel tool_call，isError=true |
-| SQLite 锁冲突 | ta_agent 写 + Proma 读 | Proma readonly pragma，ta_agent 队列化；冲突时 Proma 重试 1 次 |
-| 模式切换时任务未完成 | 切到通用但 TA 有任务 | 任务保留在后台跑，完成后用 PushNotification 通知 |
-| OpenAI provider 缓存字段缺失 | 某些端点不发 cache | `cacheReadTokens = null` → cacheHitRateAtom 返回 null，不显示不报错 |
-| switch_mode 用户取消 | 用户点取消 | 工具返回 `{cancelled:true}`，LLM 据此调整 |
+| 错误类型                     | 来源                    | 处理                                                                         |
+| ---------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| ta_agent MCP 进程崩溃        | Python 崩溃 / OOM       | MCPManager 检测 stdio EOF → 自动重启一次 → 第二次失败弹"重试 / 切到通用模式" |
+| MCP 工具调用超时             | Blender 渲染 / UE5 卡死 | 单工具 5 分钟硬超时，cancel tool_call，isError=true                          |
+| SQLite 锁冲突                | ta_agent 写 + Proma 读  | Proma readonly pragma，ta_agent 队列化；冲突时 Proma 重试 1 次               |
+| 模式切换时任务未完成         | 切到通用但 TA 有任务    | 任务保留在后台跑，完成后用 PushNotification 通知                             |
+| OpenAI provider 缓存字段缺失 | 某些端点不发 cache      | `cacheReadTokens = null` → cacheHitRateAtom 返回 null，不显示不报错          |
+| switch_mode 用户取消         | 用户点取消              | 工具返回 `{cancelled:true}`，LLM 据此调整                                    |
 
 ---
 
@@ -693,21 +701,21 @@ const switchModeTool: ToolDefinition = {
 
 ### 6.2 与 TAgent 现状对比
 
-| 维度 | TAgent 现状 | 融合后 | 主要借鉴 | 改动量 |
-|---|---|---|---|---|
-| 层数 | 3 层 (L0/L1/L2) | **5 层 (L0-L4 + L5 insights)** | GenericAgent L4 + hermes L0 | 新增 L0/L4/L5 |
-| Provider 抽象 | 5 个方法 Protocol | **13 个 hook（7 核心 + 6 可选）** | hermes | 扩展 `provider.py` |
-| 激活方式 | 显式工具调用 | **显式 + Periodic Nudges** | hermes | 新增 `nudges.py` |
-| 检索 | feature dict 子串匹配 | **FTS5 全文 + 语义** | hermes | 新增 FTS5 |
-| 跨 session | ❌ 无 | **✅ L4_sessions.fts5** | hermes + GA | 新增 L4 |
-| 用户建模 | ❌ 无 | **✅ L0_user.md（Honcho 思路）** | hermes | 新增 L0 |
-| 事实 vs 洞察 | 单一 facts | **L2 raw facts + L5 insights** | GenericAgent | 新增 L5 |
-| 反思 | ❌ 无 | **✅ reflect/ 周期 LLM 自我 review** | GenericAgent | 新增 `reflect.py` |
-| 自动维护 | ❌ 手动 | **✅ scheduled_tasks.json** | GenericAgent | 新增 `scheduled_cleanup.py` |
-| 流式隔离 | 无 | **✅ StreamingContextScrubber** | hermes | 新增 scrubber |
-| Skill 标准 | 自定义 | **agentskills.io 兼容** | hermes | 改 skill 格式 |
-| 多 provider | 仅 builtin | **可挂 honcho/mem0/hindsight** | hermes | 预留接口 |
-| Session 切换 | 重建 | **on_session_switch 钩子** | hermes | 新增钩子 |
+| 维度          | TAgent 现状           | 融合后                               | 主要借鉴                    | 改动量                      |
+| ------------- | --------------------- | ------------------------------------ | --------------------------- | --------------------------- |
+| 层数          | 3 层 (L0/L1/L2)       | **5 层 (L0-L4 + L5 insights)**       | GenericAgent L4 + hermes L0 | 新增 L0/L4/L5               |
+| Provider 抽象 | 5 个方法 Protocol     | **13 个 hook（7 核心 + 6 可选）**    | hermes                      | 扩展 `provider.py`          |
+| 激活方式      | 显式工具调用          | **显式 + Periodic Nudges**           | hermes                      | 新增 `nudges.py`            |
+| 检索          | feature dict 子串匹配 | **FTS5 全文 + 语义**                 | hermes                      | 新增 FTS5                   |
+| 跨 session    | ❌ 无                 | **✅ L4_sessions.fts5**              | hermes + GA                 | 新增 L4                     |
+| 用户建模      | ❌ 无                 | **✅ L0_user.md（Honcho 思路）**     | hermes                      | 新增 L0                     |
+| 事实 vs 洞察  | 单一 facts            | **L2 raw facts + L5 insights**       | GenericAgent                | 新增 L5                     |
+| 反思          | ❌ 无                 | **✅ reflect/ 周期 LLM 自我 review** | GenericAgent                | 新增 `reflect.py`           |
+| 自动维护      | ❌ 手动               | **✅ scheduled_tasks.json**          | GenericAgent                | 新增 `scheduled_cleanup.py` |
+| 流式隔离      | 无                    | **✅ StreamingContextScrubber**      | hermes                      | 新增 scrubber               |
+| Skill 标准    | 自定义                | **agentskills.io 兼容**              | hermes                      | 改 skill 格式               |
+| 多 provider   | 仅 builtin            | **可挂 honcho/mem0/hindsight**       | hermes                      | 预留接口                    |
+| Session 切换  | 重建                  | **on_session_switch 钩子**           | hermes                      | 新增钩子                    |
 
 ### 6.3 模式隔离下的 memory
 
@@ -723,25 +731,25 @@ const switchModeTool: ToolDefinition = {
 
 **ta_agent 端**（`F:\ta_agent\packages\tools\memory\`）：
 
-| 新增/修改 | 路径 | 行数 |
-|---|---|---|
-| 新增 | `L0_user.py` | ~120 |
-| 新增 | `L4_session_log.py` | ~200 |
-| 新增 | `L5_insight.py` | ~80 |
-| 新增 | `fts5_index.py` | ~150 |
-| 新增 | `nudges.py` | ~100 |
-| 新增 | `reflect.py` | ~120 |
-| 新增 | `scheduled_cleanup.py` | ~100 |
-| 扩展 | `provider.py`（5→13 个方法） | +60 |
-| 扩展 | `file_provider.py`（接 L0/L4/L5） | +200 |
-| 扩展 | `memory_tools.py` | +80 |
+| 新增/修改 | 路径                              | 行数 |
+| --------- | --------------------------------- | ---- |
+| 新增      | `L0_user.py`                      | ~120 |
+| 新增      | `L4_session_log.py`               | ~200 |
+| 新增      | `L5_insight.py`                   | ~80  |
+| 新增      | `fts5_index.py`                   | ~150 |
+| 新增      | `nudges.py`                       | ~100 |
+| 新增      | `reflect.py`                      | ~120 |
+| 新增      | `scheduled_cleanup.py`            | ~100 |
+| 扩展      | `provider.py`（5→13 个方法）      | +60  |
+| 扩展      | `file_provider.py`（接 L0/L4/L5） | +200 |
+| 扩展      | `memory_tools.py`                 | +80  |
 
 **Proma 端**：
 
-| 新增 | 路径 | 作用 |
-|---|---|---|
-| `apps/electron/src/main/lib/memory/streaming-scrubber.ts` | 借鉴 hermes | 过滤 `<memory-context>` 块 |
-| `apps/electron/src/renderer/components/memory/MemoryMonitor.tsx` | 借鉴 hermes | 可视化 memory 状态 |
+| 新增                                                             | 路径        | 作用                       |
+| ---------------------------------------------------------------- | ----------- | -------------------------- |
+| `apps/electron/src/main/lib/memory/streaming-scrubber.ts`        | 借鉴 hermes | 过滤 `<memory-context>` 块 |
+| `apps/electron/src/renderer/components/memory/MemoryMonitor.tsx` | 借鉴 hermes | 可视化 memory 状态         |
 
 ### 6.5 记忆自进化机制（2026-06-06 补）
 
@@ -751,14 +759,14 @@ const switchModeTool: ToolDefinition = {
 
 每层定义：**写什么 / 写触发 / 读触发 / 上限 / 超限处理**。
 
-| 层 | 文件 | 写触发 | 读触发 | 上限 | 超限 |
-|---|---|---|---|---|---|
-| **L0** 用户画像 | `L0_user.md`（双视图 YAML） | 显式记 + Nudge 命中 | 每 turn system prompt 头部 | 50 条/视图 | LRU 淘汰最久未引用 + 询问用户 |
-| **L1** 项目画像 | `L1_project.md` | 创建/加载项目 + Nudge 命中 | TA 模式每 turn | 100 条 | 标 stale，用户确认保留 |
-| **L2** 稳定事实 | `L2_facts.md` | 用户显式说 + 5+ 次出现自动建议 | 每 turn context | 500 条 | LLM 摘要合并相似条目 |
-| **L3** 纠错 + 规则 | `L3_corrections/raw.jsonl` + `rules.json` | 每次纠错（自动，无询问） | **优先于 L2 读** | raw 1000 → 触发压缩 | 聚类生成新 rule |
-| **L4** 历史会话 | `L4_sessions/{date}_{slug}.jsonl` + `L4_index.fts5` | session_end | 跨 session FTS5 搜索 | 30 天热 | > 30 天移 `archive/`，> 90 天标 old |
-| **L5** 提炼洞察 | `L5_insights.md` | 每日 Reflect | 高优先级 system prompt 节 | 20 条 | 最久未引用 + 反向引用失效则 archive |
+| 层                 | 文件                                                | 写触发                         | 读触发                     | 上限                | 超限                                |
+| ------------------ | --------------------------------------------------- | ------------------------------ | -------------------------- | ------------------- | ----------------------------------- |
+| **L0** 用户画像    | `L0_user.md`（双视图 YAML）                         | 显式记 + Nudge 命中            | 每 turn system prompt 头部 | 50 条/视图          | LRU 淘汰最久未引用 + 询问用户       |
+| **L1** 项目画像    | `L1_project.md`                                     | 创建/加载项目 + Nudge 命中     | TA 模式每 turn             | 100 条              | 标 stale，用户确认保留              |
+| **L2** 稳定事实    | `L2_facts.md`                                       | 用户显式说 + 5+ 次出现自动建议 | 每 turn context            | 500 条              | LLM 摘要合并相似条目                |
+| **L3** 纠错 + 规则 | `L3_corrections/raw.jsonl` + `rules.json`           | 每次纠错（自动，无询问）       | **优先于 L2 读**           | raw 1000 → 触发压缩 | 聚类生成新 rule                     |
+| **L4** 历史会话    | `L4_sessions/{date}_{slug}.jsonl` + `L4_index.fts5` | session_end                    | 跨 session FTS5 搜索       | 30 天热             | > 30 天移 `archive/`，> 90 天标 old |
+| **L5** 提炼洞察    | `L5_insights.md`                                    | 每日 Reflect                   | 高优先级 system prompt 节  | 20 条               | 最久未引用 + 反向引用失效则 archive |
 
 #### 6.5.2 L0 双重表示（借鉴 Hermes Honcho）
 
@@ -768,9 +776,8 @@ const switchModeTool: ToolDefinition = {
 schema_version: 2
 last_updated: 2026-06-06T15:00:00+08:00
 last_referenced_at: 2026-06-06T16:30:00+08:00
-shared_with_ta_mode: true   # 决策开关（默认 false）
+shared_with_ta_mode: true # 决策开关（默认 false）
 ---
-
 # Global View (Honcho global_tier) — 客观事实
 ## 身份
 - Frank Danny，3 年游戏 TA 经验，专攻写实风格
@@ -799,16 +806,16 @@ shared_with_ta_mode: true   # 决策开关（默认 false）
 
 #### 6.5.3 8 个生命周期事件 — 桌面应用触发点
 
-| 事件 | 触发时机 | 桌面具体实现 | 调用 hook | 数据流 |
-|---|---|---|---|---|
-| **turn_start** | 每次 LLM 调用前 | SDK 收到 user 消息 | `nudge_check()` + `prefetch()` | nudge 评估 + L0/L1/L2/L5 注入 system prompt |
-| **turn_end** | assistant 消息后 | SDK 收到 assistant 消息 | `sync_turn()` | L4 append + fact_capture 评估 |
-| **session_idle** | 30 分钟无操作 | setTimeout 检测最后活动 | `extract_facts()` | L2 自动评估新事实 |
-| **session_end** | 窗口关闭 / app.quit() / 用户主动结束 | Electron `before-quit` + window close | `extract_facts()` + `summarize_to_L4()` | L2 + L4 写盘 |
-| **session_switch** | 切通用 ↔ TA Tab | `ModeManager.setActiveMode()` | `on_session_switch()` | 序列化当前 → 新 mode 建 session + 注入 summary |
-| **pre_compress** | context > 80k tokens | agent-orchestrator 检测 token 阈值 | `on_pre_compress()` | 抢救未入 L2/L3 的事实 |
-| **post_compress** | 压缩后回调 | 压缩完成事件 | re-inject L0/L1/L2/L5 | 重新注入 system prompt 头部 |
-| **subagent_done** | TA 模式 subagent 任务完成 | Claude SDK Task tool 完成回调 | `on_delegation()` | 父子对话观察 → L2 |
+| 事件               | 触发时机                             | 桌面具体实现                          | 调用 hook                               | 数据流                                         |
+| ------------------ | ------------------------------------ | ------------------------------------- | --------------------------------------- | ---------------------------------------------- |
+| **turn_start**     | 每次 LLM 调用前                      | SDK 收到 user 消息                    | `nudge_check()` + `prefetch()`          | nudge 评估 + L0/L1/L2/L5 注入 system prompt    |
+| **turn_end**       | assistant 消息后                     | SDK 收到 assistant 消息               | `sync_turn()`                           | L4 append + fact_capture 评估                  |
+| **session_idle**   | 30 分钟无操作                        | setTimeout 检测最后活动               | `extract_facts()`                       | L2 自动评估新事实                              |
+| **session_end**    | 窗口关闭 / app.quit() / 用户主动结束 | Electron `before-quit` + window close | `extract_facts()` + `summarize_to_L4()` | L2 + L4 写盘                                   |
+| **session_switch** | 切通用 ↔ TA Tab                      | `ModeManager.setActiveMode()`         | `on_session_switch()`                   | 序列化当前 → 新 mode 建 session + 注入 summary |
+| **pre_compress**   | context > 80k tokens                 | agent-orchestrator 检测 token 阈值    | `on_pre_compress()`                     | 抢救未入 L2/L3 的事实                          |
+| **post_compress**  | 压缩后回调                           | 压缩完成事件                          | re-inject L0/L1/L2/L5                   | 重新注入 system prompt 头部                    |
+| **subagent_done**  | TA 模式 subagent 任务完成            | Claude SDK Task tool 完成回调         | `on_delegation()`                       | 父子对话观察 → L2                              |
 
 #### 6.5.4 自进化机制 #1: Nudges（每 5 turn 检查）
 
@@ -845,12 +852,12 @@ UI 弹 Nudge 通知（不打断对话，5s 自动消失）
 
 **Nudge 4 模式**：
 
-| 模式 | 检测条件 | 候选层 | 提示语模板 |
-|---|---|---|---|
-| 行为重复 | 同一行为 ≥3 次 / 5 turn | L0 (peer_view) | "我注意到你总是 X，要我记住吗？" |
-| 事实重复 | 同一事实 ≥2 次跨 session | L2 | "我看到你反复提到 X，要我存为长期事实吗？" |
-| 显式纠正 | "不是 X，是 Y" 类语句 | L3 raw | "我把你这次的纠正记下来了"（**自动记，不问**）|
-| 项目重复 | 加载项目 ≥2 次相似 | L1 | "我看到你做项目都用 X 结构，要存为模板吗？" |
+| 模式     | 检测条件                 | 候选层         | 提示语模板                                     |
+| -------- | ------------------------ | -------------- | ---------------------------------------------- |
+| 行为重复 | 同一行为 ≥3 次 / 5 turn  | L0 (peer_view) | "我注意到你总是 X，要我记住吗？"               |
+| 事实重复 | 同一事实 ≥2 次跨 session | L2             | "我看到你反复提到 X，要我存为长期事实吗？"     |
+| 显式纠正 | "不是 X，是 Y" 类语句    | L3 raw         | "我把你这次的纠正记下来了"（**自动记，不问**） |
+| 项目重复 | 加载项目 ≥2 次相似       | L1             | "我看到你做项目都用 X 结构，要存为模板吗？"    |
 
 #### 6.5.5 自进化机制 #2: Reflect（每日 03:00）
 
@@ -883,19 +890,19 @@ def is_valid_insight(insight, l2_facts, l4_sessions, l5_existing):
     citations = insight.get("citations", [])
     l2_cites = [c for c in citations if c in l2_facts]
     l4_cites = [c for c in citations if c in l4_sessions]
-    
+
     # 必须有 ≥2 个 L2 引用 OR ≥1 个 L4 引用
     if len(l2_cites) < 2 and len(l4_cites) < 1:
         return False, "insufficient_citations"
-    
+
     # 不与现有 L5 重复
     if any(similar_to(c["text"], l5_existing) for c in citations):
         return False, "duplicate_of_existing_L5"
-    
+
     # 不与现有 L5 矛盾
     if contradicts(c["text"], l5_existing):
         return False, "contradicts_existing_L5"
-    
+
     return True, "ok"
 ```
 
@@ -949,14 +956,14 @@ def is_valid_insight(insight, l2_facts, l4_sessions, l5_existing):
 
 #### 6.5.8 跨模式隔离 — 精确 UX 行为
 
-| 场景 | 默认行为 | 共享开关开后 |
-|---|---|---|
-| 通用模式看到 TA 模式 L0 | ❌ | ✅（L0_user.md 双向 sync）|
-| 通用模式搜到 TA 模式 L4 | ✅（FTS5 全文）| ✅ |
-| 通用模式看到 TA 模式 L2 | ❌ | ❌ |
-| 通用模式触发 L3 纠错 | ❌（TA 模式独有）| ❌ |
-| 切模式时 session | 旧 session 归档 + summary 注入新 mode 的 L4 | 同 |
-| 跨模式 Nudge | 独立 throttle | L0 共享时 Nudge 也共享 |
+| 场景                    | 默认行为                                    | 共享开关开后               |
+| ----------------------- | ------------------------------------------- | -------------------------- |
+| 通用模式看到 TA 模式 L0 | ❌                                          | ✅（L0_user.md 双向 sync） |
+| 通用模式搜到 TA 模式 L4 | ✅（FTS5 全文）                             | ✅                         |
+| 通用模式看到 TA 模式 L2 | ❌                                          | ❌                         |
+| 通用模式触发 L3 纠错    | ❌（TA 模式独有）                           | ❌                         |
+| 切模式时 session        | 旧 session 归档 + summary 注入新 mode 的 L4 | 同                         |
+| 跨模式 Nudge            | 独立 throttle                               | L0 共享时 Nudge 也共享     |
 
 **切模式 modal UX**：
 
@@ -971,28 +978,28 @@ def is_valid_insight(insight, l2_facts, l4_sessions, l5_existing):
 
 #### 6.5.9 TAgent vs Hermes — 触发时机对比
 
-| 事件 | Hermes（CLI）| TAgent（Electron）| 差异原因 |
-|---|---|---|---|
-| turn_start | 每次 LLM call | 每次 SDK message | 一致 |
-| session_end | CLI 退出 / `/reset` | 窗口关闭 / app.quit() / 30 分钟 idle | 桌面无明显 session 边界，靠 idle 推断 |
-| session_switch | `/resume /branch /new` | 切通用 ↔ TA Tab | 桌面无 CLI 命令，靠 Tab UI |
-| pre_compress | context 满 100k | context > 80k | 桌面更保守（多模态附件占 token 多）|
-| nudge | ❌ 无 | ✅ 每 5 turn | TAgent 创新 |
-| reflect | ❌ 无 | ✅ 每日 03:00 | TAgent 创新 |
-| scheduled cleanup | ⚠️ 间接（curator）| ✅ 每周日 04:00 | TAgent 显式化 |
-| self-repair | ❌ 无 | ✅ 每月 1 日 | TAgent 创新 |
+| 事件              | Hermes（CLI）          | TAgent（Electron）                   | 差异原因                              |
+| ----------------- | ---------------------- | ------------------------------------ | ------------------------------------- |
+| turn_start        | 每次 LLM call          | 每次 SDK message                     | 一致                                  |
+| session_end       | CLI 退出 / `/reset`    | 窗口关闭 / app.quit() / 30 分钟 idle | 桌面无明显 session 边界，靠 idle 推断 |
+| session_switch    | `/resume /branch /new` | 切通用 ↔ TA Tab                      | 桌面无 CLI 命令，靠 Tab UI            |
+| pre_compress      | context 满 100k        | context > 80k                        | 桌面更保守（多模态附件占 token 多）   |
+| nudge             | ❌ 无                  | ✅ 每 5 turn                         | TAgent 创新                           |
+| reflect           | ❌ 无                  | ✅ 每日 03:00                        | TAgent 创新                           |
+| scheduled cleanup | ⚠️ 间接（curator）     | ✅ 每周日 04:00                      | TAgent 显式化                         |
+| self-repair       | ❌ 无                  | ✅ 每月 1 日                         | TAgent 创新                           |
 
 #### 6.5.10 自进化能力总评
 
-| 自进化维度 | TAgent 设计 | Hermes 实际 |
-|---|---|---|
-| 写触发 | 显式 + 模式检测 + 跨 session | 显式 sync_turn |
-| 主动询问 | ✅ Nudge | ❌ 无 |
-| 反思 | ✅ Reflect (L2/L4 → L5) | ❌ |
-| 压缩 | ✅ pre_compress hook | ✅ on_pre_compress hook |
-| 回滚 | ✅ L3 version | ❌ |
-| 健康检查 | ✅ 每月 self-repair | ❌ |
-| 跨模式 | ✅ 默认隔离 + L0 可选共享 | ❌ 单 profile |
+| 自进化维度 | TAgent 设计                  | Hermes 实际             |
+| ---------- | ---------------------------- | ----------------------- |
+| 写触发     | 显式 + 模式检测 + 跨 session | 显式 sync_turn          |
+| 主动询问   | ✅ Nudge                     | ❌ 无                   |
+| 反思       | ✅ Reflect (L2/L4 → L5)      | ❌                      |
+| 压缩       | ✅ pre_compress hook         | ✅ on_pre_compress hook |
+| 回滚       | ✅ L3 version                | ❌                      |
+| 健康检查   | ✅ 每月 self-repair          | ❌                      |
+| 跨模式     | ✅ 默认隔离 + L0 可选共享    | ❌ 单 profile           |
 
 **TAgent 在 7 个维度中 6 个领先 Hermes**（除压缩外 Hermes 持平）。**全部是设计，0 实跑**——见 §6.4 1160 行待实现代码。
 
@@ -1002,15 +1009,16 @@ def is_valid_insight(insight, l2_facts, l4_sessions, l5_existing):
 
 ### 7.1 OpenAI 覆盖度
 
-| 层级 | 现状 | TAgent |
-|---|---|---|
-| Chat（裸对话） | ✅ Proma 12 Provider 含 OpenAI、Zhipu、Doubao、Qwen、custom | 保留，零改造 |
-| Agent（自主循环） | ⚠️ Claude Agent SDK 走 Anthropic 协议，但通过 `ANTHROPIC_BASE_URL` 指向 OpenAI 兼容端点**已跑通** | 通用 / TA 模式都能选 OpenAI provider；TAgent 54 工具通过 MCP 注入 |
-| 真·OpenAI Agent SDK | ❌ 当前没接 `@openai/codex-sdk` | **不进 MVP**；要做需 1-2 周独立工作 |
+| 层级                | 现状                                                                                              | TAgent                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Chat（裸对话）      | ✅ Proma 12 Provider 含 OpenAI、Zhipu、Doubao、Qwen、custom                                       | 保留，零改造                                                      |
+| Agent（自主循环）   | ⚠️ Claude Agent SDK 走 Anthropic 协议，但通过 `ANTHROPIC_BASE_URL` 指向 OpenAI 兼容端点**已跑通** | 通用 / TA 模式都能选 OpenAI provider；TAgent 54 工具通过 MCP 注入 |
+| 真·OpenAI Agent SDK | ❌ 当前没接 `@openai/codex-sdk`                                                                   | **不进 MVP**；要做需 1-2 周独立工作                               |
 
 ### 7.2 Token / 缓存命中率
 
 **Proma 现状**（已读代码确认）：
+
 - `AgentStreamState` 已有：`inputTokens` / `outputTokens` / `cacheReadTokens` / `cacheCreationTokens`
 - 数据源：`useGlobalAgentListeners.ts:202-211` 从 Anthropic SDK `usage` 事件抓
 - **缺**：未计算 `cacheHitRate` 派生字段，未在 UI 显眼展示
@@ -1036,6 +1044,7 @@ export const costBreakdownAtom = atom((get) => {
 **UI**：通用模式会话页底部加"成本/缓存"小卡片。TA 模式不显示。
 
 **OpenAI 兼容端点的 cache**：
+
 - Anthropic 原生：`cache_read_input_tokens` + `cache_creation_input_tokens` ✅
 - OpenAI 原生：需读 `usage.cached_tokens`（OpenAI Responses API）— `openai-adapter.ts` MVP 后可加
 
@@ -1061,17 +1070,17 @@ export const costBreakdownAtom = atom((get) => {
 
 ### 8.2 命名空间隔离
 
-| 资源 | 通用模式 | TA 模式 | 共享 |
-|---|---|---|---|
-| System Prompt | 通用 | TAgent | ❌ |
-| 工具集 | Claude SDK 内置 + 通用 MCP | TAgent 54 工具 + 通用 MCP（部分） | 部分 MCP 共享 |
-| 记忆 5 层 | general\memory\ | ta\memory\ | ❌（L0 可选共享） |
-| 会话 | general\sessions\ | ta\sessions\ | ❌ |
-| Skill 列表 | general\skills\ | ta\skills\ | ❌ |
-| Channel 配置 | 全局 | 全局 | ✅ |
-| API Key | 全局 | 全局 | ✅ |
-| Provider 选择 | lastSelected | lastSelected | ✅（各自记忆） |
-| MCP server 配置 | 启用列表 A | 启用列表 B | ❌（各自启用列表） |
+| 资源            | 通用模式                   | TA 模式                           | 共享               |
+| --------------- | -------------------------- | --------------------------------- | ------------------ |
+| System Prompt   | 通用                       | TAgent                            | ❌                 |
+| 工具集          | Claude SDK 内置 + 通用 MCP | TAgent 54 工具 + 通用 MCP（部分） | 部分 MCP 共享      |
+| 记忆 5 层       | general\memory\            | ta\memory\                        | ❌（L0 可选共享）  |
+| 会话            | general\sessions\          | ta\sessions\                      | ❌                 |
+| Skill 列表      | general\skills\            | ta\skills\                        | ❌                 |
+| Channel 配置    | 全局                       | 全局                              | ✅                 |
+| API Key         | 全局                       | 全局                              | ✅                 |
+| Provider 选择   | lastSelected               | lastSelected                      | ✅（各自记忆）     |
+| MCP server 配置 | 启用列表 A                 | 启用列表 B                        | ❌（各自启用列表） |
 
 ### 8.3 跨模式切换的限制
 
@@ -1086,17 +1095,18 @@ export const costBreakdownAtom = atom((get) => {
 
 #### 8.4.1 现状评估
 
-| 维度 | Chat 模式 | Agent 模式 |
-|---|---|---|
-| 裁剪单位 | **轮数**（user+assistant = 1 轮）| **消息条数** |
-| 配置入口 | 用户可设（ChatHeader 下拉）| ❌ 硬编码 `MAX_CONTEXT_MESSAGES = 20` |
-| 模型窗口感知 | ❌ 不感知 | ⚠️ 拿到 `contextWindow` 但**不参与决策**（只画圆环）|
-| 工具结果截断 | 客户端按字符 | `MAX_TOOL_SUMMARY_LENGTH = 200` 字符（**信息丢失**）|
-| 图片附件 | 走协议原始 bytes | `buildContextPrompt` **只取 text 块，图片整块丢** |
-| Auto-compact | ❌ 无 | ⚠️ 只靠 SDK（失败无 fallback）|
-| 用户主动压缩 | `/compact`-like 工具 | ❌ 无 |
+| 维度         | Chat 模式                         | Agent 模式                                           |
+| ------------ | --------------------------------- | ---------------------------------------------------- |
+| 裁剪单位     | **轮数**（user+assistant = 1 轮） | **消息条数**                                         |
+| 配置入口     | 用户可设（ChatHeader 下拉）       | ❌ 硬编码 `MAX_CONTEXT_MESSAGES = 20`                |
+| 模型窗口感知 | ❌ 不感知                         | ⚠️ 拿到 `contextWindow` 但**不参与决策**（只画圆环） |
+| 工具结果截断 | 客户端按字符                      | `MAX_TOOL_SUMMARY_LENGTH = 200` 字符（**信息丢失**） |
+| 图片附件     | 走协议原始 bytes                  | `buildContextPrompt` **只取 text 块，图片整块丢**    |
+| Auto-compact | ❌ 无                             | ⚠️ 只靠 SDK（失败无 fallback）                       |
+| 用户主动压缩 | `/compact`-like 工具              | ❌ 无                                                |
 
 **核心问题**：
+
 - 9120caac **6.8MB / 2153 条** JSONL 写到磁盘
 - 用户重新打开 → `buildContextPrompt` 只取最后 20 条，**前 2133 条历史"消失"**
 - Agent 不知道用户上周做了什么，行为类似"失忆"
@@ -1116,10 +1126,10 @@ const recent = history.slice(-MAX_CONTEXT_MESSAGES)
 
 ```ts
 function computeMaxContextMessages(
-  contextWindow: number,        // SDK 返回的窗口
-  systemTokens: number,         // system prompt 占的 token
-  toolsTokens: number,          // 工具定义占的 token
-  reservedForOutput: number,    // 给模型留的 max_tokens
+  contextWindow: number, // SDK 返回的窗口
+  systemTokens: number, // system prompt 占的 token
+  toolsTokens: number, // 工具定义占的 token
+  reservedForOutput: number // 给模型留的 max_tokens
 ): number {
   const budget = contextWindow - systemTokens - toolsTokens - reservedForOutput
   // 平均每消息 ~500 token（保守估计, 含图片 1500-5000）
@@ -1140,12 +1150,12 @@ async function validateChannel(channel: Channel): Promise<ValidationResult> {
   try {
     const resp = await fetch(channel.baseUrl, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${channel.apiKey}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${channel.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: channel.model,
         max_tokens: 1,
-        messages: [{ role: 'user', content: 'ping' }]
-      })
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
     })
     if (resp.status === 400) {
       const body = await resp.json().catch(() => ({}))
@@ -1177,10 +1187,10 @@ if (joined.length > MAX_TOOL_SUMMARY_LENGTH) {
 function summarizeToolResult(content: string, budgetTokens: number = 500): string {
   const tokens = estimateTokens(content)
   if (tokens <= budgetTokens) return content
-  
+
   // 保留头 40% + 尾 60%（通常 tail 含关键结果）
   const headRatio = 0.4
-  const headChars = Math.floor(budgetTokens * headRatio * 4)  // 粗估 1 token ≈ 4 chars
+  const headChars = Math.floor(budgetTokens * headRatio * 4) // 粗估 1 token ≈ 4 chars
   const tailChars = Math.floor(budgetTokens * (1 - headRatio) * 4)
   return content.slice(0, headChars) + '\n... [truncated] ...\n' + content.slice(-tailChars)
 }
@@ -1191,9 +1201,7 @@ function summarizeToolResult(content: string, budgetTokens: number = 500): strin
 **改前**（`buildContextPrompt` line 334-338 只取 text）：
 
 ```ts
-const textParts = content
-  .filter((b) => b.type === 'text' && b.text)
-  .map((b) => b.text!)
+const textParts = content.filter((b) => b.type === 'text' && b.text).map((b) => b.text!)
 ```
 
 **改后**（图片注入 placeholder）：
@@ -1229,9 +1237,9 @@ const compactSessionTool: ToolDefinition = {
     type: 'object',
     properties: {
       strategy: { type: 'string', enum: ['summarize', 'drop_old_tool_results', 'keep_last_n'] },
-      keepLastN: { type: 'number', default: 10 }
-    }
-  }
+      keepLastN: { type: 'number', default: 10 },
+    },
+  },
 }
 ```
 
@@ -1241,33 +1249,33 @@ const compactSessionTool: ToolDefinition = {
 
 复用 §6.5.4 Nudges 机制——加 1 个模式：
 
-| 模式 | 检测条件 | 候选动作 | 提示语 |
-|---|---|---|---|
-| context 接近上限 | `usage / contextWindow > 0.8` 且 < 0.95 | 主动 compact | "上下文已用 80%，要 compact 吗？" |
-| context 危险 | `usage / contextWindow > 0.95` | 强制切 session | "上下文将满，建议新建会话" |
+| 模式             | 检测条件                                | 候选动作       | 提示语                            |
+| ---------------- | --------------------------------------- | -------------- | --------------------------------- |
+| context 接近上限 | `usage / contextWindow > 0.8` 且 < 0.95 | 主动 compact   | "上下文已用 80%，要 compact 吗？" |
+| context 危险     | `usage / contextWindow > 0.95`          | 强制切 session | "上下文将满，建议新建会话"        |
 
 ##### 🟢 P2-2: 圆环颜色预警
 
 `AgentView.tsx:1927` 的 context 圆环——按使用率换色：
 
-| 使用率 | 颜色 | 含义 |
-|---|---|---|
-| < 70% | 灰/绿 | 安全 |
-| 70-90% | 黄 | 接近阈值 |
-| > 90% | 红 | 危险，建议 compact |
+| 使用率 | 颜色  | 含义               |
+| ------ | ----- | ------------------ |
+| < 70%  | 灰/绿 | 安全               |
+| 70-90% | 黄    | 接近阈值           |
+| > 90%  | 红    | 危险，建议 compact |
 
 #### 8.4.3 与 Claude Code / Codex 对比（trade-off 诚实）
 
-| 维度 | Claude Code | Codex | TAgent (P0+P1 后) | TAgent (当前) |
-|---|---|---|---|---|
-| API 选型 | 真实 Anthropic | 真实 OpenAI | **任意兼容端点**（需用户配对）| 同 |
-| Model 名 | **固定** | **固定** | **用户配置**（启动需验证）| **未验证**（运行时炸）|
-| Auto-compact | ✅ 客户端 + 服务端 | ✅ 服务端 | ⚠️ 只靠 SDK | ⚠️ 只靠 SDK |
-| 手动 compact | `/compact` slash | 无 UI | **`compact_session` tool** | ❌ 无 |
-| Token 预算动态 | ✅ 实时 | ✅ 服务端 | ✅ P0-1 后 | ❌ 硬编码 20 |
-| Fallback 链 | haiku 自动切 | 无 | ❌ 仍无（可加）| ❌ |
-| 图片历史 | 完整 | N/A | ✅ P1-2 后 placeholder | ❌ 整块丢 |
-| Tool result | 服务端截断 | 服务端 | ✅ P1-1 后按 token 截 | ❌ 200 字符硬截 |
+| 维度           | Claude Code        | Codex       | TAgent (P0+P1 后)              | TAgent (当前)          |
+| -------------- | ------------------ | ----------- | ------------------------------ | ---------------------- |
+| API 选型       | 真实 Anthropic     | 真实 OpenAI | **任意兼容端点**（需用户配对） | 同                     |
+| Model 名       | **固定**           | **固定**    | **用户配置**（启动需验证）     | **未验证**（运行时炸） |
+| Auto-compact   | ✅ 客户端 + 服务端 | ✅ 服务端   | ⚠️ 只靠 SDK                    | ⚠️ 只靠 SDK            |
+| 手动 compact   | `/compact` slash   | 无 UI       | **`compact_session` tool**     | ❌ 无                  |
+| Token 预算动态 | ✅ 实时            | ✅ 服务端   | ✅ P0-1 后                     | ❌ 硬编码 20           |
+| Fallback 链    | haiku 自动切       | 无          | ❌ 仍无（可加）                | ❌                     |
+| 图片历史       | 完整               | N/A         | ✅ P1-2 后 placeholder         | ❌ 整块丢              |
+| Tool result    | 服务端截断         | 服务端      | ✅ P1-1 后按 token 截          | ❌ 200 字符硬截        |
 
 **TAgent 接受"任意兼容端点"换更大的灵活性**——代价就是需要自己管 model 验证、compact fallback。**P0+P1 补完后，能 cover 90% Claude Code 的体验**。
 
@@ -1275,28 +1283,28 @@ const compactSessionTool: ToolDefinition = {
 
 §6.5 谈的"记忆 5 层"是**长期跨 session 知识**。§8.4 谈的"context 管理"是**单 session 内 token 预算**。两者不冲突：
 
-| 维度 | §6.5 记忆 5 层 | §8.4 Context 管理 |
-|---|---|---|
-| 时间跨度 | 跨 session（数天-数月）| 单 session（数小时）|
+| 维度     | §6.5 记忆 5 层           | §8.4 Context 管理                     |
+| -------- | ------------------------ | ------------------------------------- |
+| 时间跨度 | 跨 session（数天-数月）  | 单 session（数小时）                  |
 | 存储位置 | `~/.tagent/memory/L0-L5` | `~/.tagent/agent-sessions/{id}.jsonl` |
-| 写入触发 | Nudges / Reflect / 显式 | 每个 turn 自动（SDK）|
-| 读取触发 | system prompt 头部 | 直接进入 LLM 调用 |
-| 裁剪策略 | LRU + 上限 | **滚动窗口 + token 预算**（P0-1）|
-| 跨模式 | 默认隔离（L0 可选共享）| 通用模式专用，TA 模式独立 |
+| 写入触发 | Nudges / Reflect / 显式  | 每个 turn 自动（SDK）                 |
+| 读取触发 | system prompt 头部       | 直接进入 LLM 调用                     |
+| 裁剪策略 | LRU + 上限               | **滚动窗口 + token 预算**（P0-1）     |
+| 跨模式   | 默认隔离（L0 可选共享）  | 通用模式专用，TA 模式独立             |
 
 **两者要协同**：§6.5 写的"prefetch" 内容（来自 L0/L1/L2/L5）会进 system prompt；§8.4 管的 conversation_history 进 user/assistant 消息区。**两者 token 总和必须 < contextWindow**——这就是为什么 P0-1 要算"系统 + 工具 + 历史 + 输出"的总预算。
 
 #### 8.4.5 实施成本
 
-| 优先级 | 工时 | 风险 |
-|---|---|---|
-| 🔴 P0-1 动态预算 | 半天 | 🟢 低（加 fallback 到原 20） |
-| 🔴 P0-2 model 验证 | 半天 | 🟢 低（启动时多 1 个 fetch） |
-| 🟡 P1-1 tool 截断 | 半天 | 🟢 低（只是展示） |
-| 🟡 P1-2 图片 placeholder | 1 天 | 🟢 低 |
-| 🟡 P1-3 compact tool | 2-3 天 | 🟡 中（要写 LLM tool + 实际压缩逻辑） |
-| 🟢 P2-1 nudges | 半天 | 🟢 低 |
-| 🟢 P2-2 圆环颜色 | 1 小时 | 🟢 低 |
+| 优先级                   | 工时   | 风险                                  |
+| ------------------------ | ------ | ------------------------------------- |
+| 🔴 P0-1 动态预算         | 半天   | 🟢 低（加 fallback 到原 20）          |
+| 🔴 P0-2 model 验证       | 半天   | 🟢 低（启动时多 1 个 fetch）          |
+| 🟡 P1-1 tool 截断        | 半天   | 🟢 低（只是展示）                     |
+| 🟡 P1-2 图片 placeholder | 1 天   | 🟢 低                                 |
+| 🟡 P1-3 compact tool     | 2-3 天 | 🟡 中（要写 LLM tool + 实际压缩逻辑） |
+| 🟢 P2-1 nudges           | 半天   | 🟢 低                                 |
+| 🟢 P2-2 圆环颜色         | 1 小时 | 🟢 低                                 |
 
 **总 ~ 1 周**。P0+P1 ~ 4 天，P2 ~ 半天。
 
@@ -1316,19 +1324,20 @@ const compactSessionTool: ToolDefinition = {
 
 ### 9.1 替换范围（基于 Proma 现状 ~435 .ts/.tsx 文件）
 
-| 类别 | 范围 | 工作量 |
-|---|---|---|
-| npm scope | `@proma/*` → `@tagent/*`（5 个包） | codemod 跑一遍 |
-| 类型前缀 | `PromaPermissionMode` → `TAgentPermissionMode` 等 | codemod 跑一遍 |
-| 路径常量 | `~/.proma/` → `~/.tagent/` | 全局替换 |
-| 环境变量 | `PROMA_*` → `TAGENT_*` | 全局替换 |
-| 用户可见字符串 | "Proma" → "TAgent"（设置面板、about 对话框、托盘菜单） | 手动 + codemod |
-| electron-builder | `appId`、`productName` | 手动 |
-| 文档 | AGENTS.md、CLAUDE.md、README | 手动 |
+| 类别             | 范围                                                   | 工作量         |
+| ---------------- | ------------------------------------------------------ | -------------- |
+| npm scope        | `@proma/*` → `@tagent/*`（5 个包）                     | codemod 跑一遍 |
+| 类型前缀         | `PromaPermissionMode` → `TAgentPermissionMode` 等      | codemod 跑一遍 |
+| 路径常量         | `~/.proma/` → `~/.tagent/`                             | 全局替换       |
+| 环境变量         | `PROMA_*` → `TAGENT_*`                                 | 全局替换       |
+| 用户可见字符串   | "Proma" → "TAgent"（设置面板、about 对话框、托盘菜单） | 手动 + codemod |
+| electron-builder | `appId`、`productName`                                 | 手动           |
+| 文档             | AGENTS.md、CLAUDE.md、README                           | 手动           |
 
 ### 9.2 替换策略
 
 用 `jscodeshift` 分批跑：
+
 1. 阶段 1：scope 替换（`@proma/` → `@tagent/`）+ 类型前缀（`Proma` → `TAgent`）
 2. 阶段 2：路径常量 + 环境变量
 3. 阶段 3：用户可见字符串 + electron-builder 配置
@@ -1342,24 +1351,25 @@ const compactSessionTool: ToolDefinition = {
 
 ### 10.1 阶段划分
 
-| 阶段 | 内容 | 估时 | 状态 |
-|---|---|---|---|
-| **P0 品牌替换** | `@proma/*` → `@tagent/*` 等 codemod | 3-5 天 | ✅ 已完成 |
-| **P0 ta_agent 加 MCP server mode** | mcp_server.py（~300 行）+ 5 个核心工具 | 1 周 | ✅ 已完成 |
-| **P0 Proma 端 MCP 配置** | IPC + Preload + UI 状态检测 | 2 天 | ✅ 已完成 |
-| **P0 验证工具可调通** | 集成测试（手动安装 Python 环境） | 3 天 | 🟡 待做 |
-| **P1 ModeManager + 顶层 Tab** | Jotai atoms + UI 切换 | 1 周 | ✅ 已完成 |
-| **P1 模式互斥 + 后台跑完** | ModeManager 锁 + PushNotification | 1 周 | 🟡 待做 |
-| **P1 switch_mode 工具** | 两个 runner 内置 + Modal | 3 天 | 🟡 待做 |
-| **P2 资产库 SQLite 直读 + UI** | better-sqlite3 + 列表/详情/搜索 | 2-3 周 | 🟡 待做 |
-| **P2 记忆 5 层 + FTS5** | ta_agent memory/ 扩展 | 2-3 周 | 🟡 待做 |
-| **P2 StreamingContextScrubber** | Proma + ta_agent | 3 天 | 🟡 待做 |
-| **P2 审核队列 / 流水线 / 项目配置 UI** | Proma 设计系统重写 | 4-6 周 | 🟡 待做 |
-| **P3 Token 统计 / Cache 命中率 UI** | 通用模式特有 | 1 周 | 🟡 待做 |
-| **P3 Memory Monitor UI** | 借鉴 hermes | 1 周 | 🟡 待做 |
-| **P3 反思 / Nudges / 清理** | hermes + GA 思路 | 2 周 | 🟡 待做 |
+| 阶段                                   | 内容                                   | 估时   | 状态      |
+| -------------------------------------- | -------------------------------------- | ------ | --------- |
+| **P0 品牌替换**                        | `@proma/*` → `@tagent/*` 等 codemod    | 3-5 天 | ✅ 已完成 |
+| **P0 ta_agent 加 MCP server mode**     | mcp_server.py（~300 行）+ 5 个核心工具 | 1 周   | ✅ 已完成 |
+| **P0 Proma 端 MCP 配置**               | IPC + Preload + UI 状态检测            | 2 天   | ✅ 已完成 |
+| **P0 验证工具可调通**                  | 集成测试（手动安装 Python 环境）       | 3 天   | 🟡 待做   |
+| **P1 ModeManager + 顶层 Tab**          | Jotai atoms + UI 切换                  | 1 周   | ✅ 已完成 |
+| **P1 模式互斥 + 后台跑完**             | ModeManager 锁 + PushNotification      | 1 周   | 🟡 待做   |
+| **P1 switch_mode 工具**                | 两个 runner 内置 + Modal               | 3 天   | 🟡 待做   |
+| **P2 资产库 SQLite 直读 + UI**         | better-sqlite3 + 列表/详情/搜索        | 2-3 周 | 🟡 待做   |
+| **P2 记忆 5 层 + FTS5**                | ta_agent memory/ 扩展                  | 2-3 周 | 🟡 待做   |
+| **P2 StreamingContextScrubber**        | Proma + ta_agent                       | 3 天   | 🟡 待做   |
+| **P2 审核队列 / 流水线 / 项目配置 UI** | Proma 设计系统重写                     | 4-6 周 | 🟡 待做   |
+| **P3 Token 统计 / Cache 命中率 UI**    | 通用模式特有                           | 1 周   | 🟡 待做   |
+| **P3 Memory Monitor UI**               | 借鉴 hermes                            | 1 周   | 🟡 待做   |
+| **P3 反思 / Nudges / 清理**            | hermes + GA 思路                       | 2 周   | 🟡 待做   |
 
 **设计变更（2026-06-07）**：
+
 - ~~"P0 Python 嵌进打包"~~ 已删除，改为用户手动安装 Python + ta-agent-mcp
 - 原因：用户选择"保持手动安装"方案，更灵活且避免打包体积膨胀
 - 影响：P0 阶段减少 3 天工作量，但需要用户自行安装 Python 环境
@@ -1381,15 +1391,15 @@ const compactSessionTool: ToolDefinition = {
 
 ## 11. 风险与缓解
 
-| 风险 | 影响 | 缓解 |
-|---|---|---|
-| ta_agent 54 工具的 schema 翻译到 MCP 协议有偏差 | 工具调用失败 | MVP 阶段跑通 5-10 个核心工具先验证 |
-| better-sqlite3 + ta_agent sqlite3 并发写冲突 | 数据损坏 | Proma readonly pragma + ta_agent WAL + 队列化写 |
-| 切模式时 task 状态丢失 | 用户体验差 | 后台跑完 + 红点 + PushNotification |
-| Codemod 替换不彻底 | 编译失败 | 全量 typecheck + grep 兜底验证 |
-| PyInstaller 打包后体积爆炸 | 下载体验差 | UPX 关闭 + 评估 trimesh 等可选模块 |
-| TAgent system prompt 注入太长 | token 浪费 | 启动时分块 + 按需召回 |
-| TA 模式 54 工具 vs Claude SDK 内置工具的冲突 | 工具名冲突 | 工具命名空间化（`tagent__analyze_assets`） |
+| 风险                                            | 影响         | 缓解                                            |
+| ----------------------------------------------- | ------------ | ----------------------------------------------- |
+| ta_agent 54 工具的 schema 翻译到 MCP 协议有偏差 | 工具调用失败 | MVP 阶段跑通 5-10 个核心工具先验证              |
+| better-sqlite3 + ta_agent sqlite3 并发写冲突    | 数据损坏     | Proma readonly pragma + ta_agent WAL + 队列化写 |
+| 切模式时 task 状态丢失                          | 用户体验差   | 后台跑完 + 红点 + PushNotification              |
+| Codemod 替换不彻底                              | 编译失败     | 全量 typecheck + grep 兜底验证                  |
+| PyInstaller 打包后体积爆炸                      | 下载体验差   | UPX 关闭 + 评估 trimesh 等可选模块              |
+| TAgent system prompt 注入太长                   | token 浪费   | 启动时分块 + 按需召回                           |
+| TA 模式 54 工具 vs Claude SDK 内置工具的冲突    | 工具名冲突   | 工具命名空间化（`tagent__analyze_assets`）      |
 
 ---
 
@@ -1435,6 +1445,7 @@ const compactSessionTool: ToolDefinition = {
 ## 14. TA 模式工具粒度（20 LLM + 45 UI）
 
 **核心问题**（2026-06-05 用户提出）：ta_agent 现有 65 个工具（47 core + 9 UE5 + 6 MCP + 3 plugin）全部作为 LLM tool 会：
+
 - 污染 system prompt（每次带 ~3000 token 工具 schema）
 - LLM 选择困难
 - 大量"读/管理/单属性 setter"类工具本应是 UI 而非 LLM tool
@@ -1445,45 +1456,45 @@ const compactSessionTool: ToolDefinition = {
 
 按"LLM 决策驱动的工作流节点"选取：
 
-| # | 工具名 | 作用 | 工作流位置 |
-|---|---|---|---|
-| 1 | `analyze_assets` | 扫描 + 解析 + 推断 全流程 | **起点** |
-| 2 | `run_ai_inference` | 单独跑 AI 推断 | 分析后 |
-| 3 | `search_assets` | 语义搜索资产库 | 任意时刻 |
-| 4 | `check_naming` | 命名规范检查 | 入库前 |
-| 5 | `record_correction` | 记录用户纠正 | 反馈 |
-| 6 | `append_profile_fact` | 追加事实到 L2 | 长期记忆 |
-| 7 | `memory_read_facts` | 读 L2 facts | 上下文 |
-| 8 | `memory_read_sop` | 读 L2 SOP | 上下文 |
-| 9 | `discover_conventions` | 扫描项目规范 | 项目接入 |
-| 10 | `load_conventions` | 加载规范到上下文 | 项目接入 |
-| 11 | `intake_approved` | 一键入库已审核 | 终点 |
-| 12 | `ue5_import_asset` | 导入到 UE5 | 终点 |
-| 13 | `ue5_configure_asset` ⭐ | 合并原 5 个 setter | UE5 后处理 |
-| 14 | `submit_review` | 提交审核 | 中间 |
-| 15 | `batch_approve` | 批量通过 | 中间 |
-| 16 | `check_fbx_info` | 单文件深度解析 | 排查 |
-| 17 | `check_texture_batch` | 贴图批量检查 | 排查 |
-| 18 | `check_mesh_budget` | 面数预算 | 排查 |
-| 19 | `get_memory_stats` | L0-L5 状态总览 | 调试 |
-| 20 | `ue5_get_asset_info` | 读 UE5 资产信息 | 调试 |
+| #   | 工具名                   | 作用                      | 工作流位置 |
+| --- | ------------------------ | ------------------------- | ---------- |
+| 1   | `analyze_assets`         | 扫描 + 解析 + 推断 全流程 | **起点**   |
+| 2   | `run_ai_inference`       | 单独跑 AI 推断            | 分析后     |
+| 3   | `search_assets`          | 语义搜索资产库            | 任意时刻   |
+| 4   | `check_naming`           | 命名规范检查              | 入库前     |
+| 5   | `record_correction`      | 记录用户纠正              | 反馈       |
+| 6   | `append_profile_fact`    | 追加事实到 L2             | 长期记忆   |
+| 7   | `memory_read_facts`      | 读 L2 facts               | 上下文     |
+| 8   | `memory_read_sop`        | 读 L2 SOP                 | 上下文     |
+| 9   | `discover_conventions`   | 扫描项目规范              | 项目接入   |
+| 10  | `load_conventions`       | 加载规范到上下文          | 项目接入   |
+| 11  | `intake_approved`        | 一键入库已审核            | 终点       |
+| 12  | `ue5_import_asset`       | 导入到 UE5                | 终点       |
+| 13  | `ue5_configure_asset` ⭐ | 合并原 5 个 setter        | UE5 后处理 |
+| 14  | `submit_review`          | 提交审核                  | 中间       |
+| 15  | `batch_approve`          | 批量通过                  | 中间       |
+| 16  | `check_fbx_info`         | 单文件深度解析            | 排查       |
+| 17  | `check_texture_batch`    | 贴图批量检查              | 排查       |
+| 18  | `check_mesh_budget`      | 面数预算                  | 排查       |
+| 19  | `get_memory_stats`       | L0-L5 状态总览            | 调试       |
+| 20  | `ue5_get_asset_info`     | 读 UE5 资产信息           | 调试       |
 
 ### 14.2 UI 直达的工具（45 个）
 
 **MCP server 仍然暴露全部 65 个**（保留向后兼容），但 Proma 端只把上面 20 个注册为 LLM tool；剩下 45 个由 UI 直接调用，**不经过 LLM**。
 
-| UI 类别 | 工具 | UI 形态 |
-|---|---|---|
-| **资产库** | `list_assets` / `get_asset_detail` / `count_assets` | 资产列表/详情面板 |
-| **审核** | `get_pending_reviews` / `get_review_detail` | 审核面板 |
-| **文件 / FS** | `workspace_read_file` / `workspace_write_file` / `workspace_list_dir` / `scan_directory` / `check_file_info` | 文件浏览器（沿用 Proma 现有） |
-| **目录 / 命名** | `check_directory_structure` / `suggest_naming` / `suggest_rename` / `rename_asset` / `batch_rename` / `move_asset` / `create_directory` | 命名 / 重命名对话框 |
-| **资产编辑** | `update_asset` / `update_asset_type` | 资产属性编辑表单 |
-| **预览 / 报告** | `render_asset_preview` / `generate_report` | 预览图 + 报告生成按钮 |
-| **项目配置** | `check_project_config` / `list_project_configs` / `create_project_config` / `load_project_config` / `add_custom_rule` | 项目设置向导 |
-| **UE5 桥接** | `ue5_ping` / `ue5_check_plugin` / `ue5_set_material` / `ue5_set_nanite` / `ue5_set_lod_group` / `ue5_set_metadata` / `ue5_create_collision` | UE5 桥接面板（含"测试连接""配置资产属性"等按钮；后 5 个 setter 在 UI 走 `ue5_configure_asset`） |
-| **MCP 管理** | `mcp_list_servers` / `mcp_add_server` / `mcp_remove_server` / `mcp_toggle_server` / `mcp_reload_servers` / `mcp_test_connection` | MCP 管理面板 |
-| **环境检查** | `check_blender` | 设置页状态卡片 |
+| UI 类别         | 工具                                                                                                                                        | UI 形态                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **资产库**      | `list_assets` / `get_asset_detail` / `count_assets`                                                                                         | 资产列表/详情面板                                                                               |
+| **审核**        | `get_pending_reviews` / `get_review_detail`                                                                                                 | 审核面板                                                                                        |
+| **文件 / FS**   | `workspace_read_file` / `workspace_write_file` / `workspace_list_dir` / `scan_directory` / `check_file_info`                                | 文件浏览器（沿用 Proma 现有）                                                                   |
+| **目录 / 命名** | `check_directory_structure` / `suggest_naming` / `suggest_rename` / `rename_asset` / `batch_rename` / `move_asset` / `create_directory`     | 命名 / 重命名对话框                                                                             |
+| **资产编辑**    | `update_asset` / `update_asset_type`                                                                                                        | 资产属性编辑表单                                                                                |
+| **预览 / 报告** | `render_asset_preview` / `generate_report`                                                                                                  | 预览图 + 报告生成按钮                                                                           |
+| **项目配置**    | `check_project_config` / `list_project_configs` / `create_project_config` / `load_project_config` / `add_custom_rule`                       | 项目设置向导                                                                                    |
+| **UE5 桥接**    | `ue5_ping` / `ue5_check_plugin` / `ue5_set_material` / `ue5_set_nanite` / `ue5_set_lod_group` / `ue5_set_metadata` / `ue5_create_collision` | UE5 桥接面板（含"测试连接""配置资产属性"等按钮；后 5 个 setter 在 UI 走 `ue5_configure_asset`） |
+| **MCP 管理**    | `mcp_list_servers` / `mcp_add_server` / `mcp_remove_server` / `mcp_toggle_server` / `mcp_reload_servers` / `mcp_test_connection`            | MCP 管理面板                                                                                    |
+| **环境检查**    | `check_blender`                                                                                                                             | 设置页状态卡片                                                                                  |
 
 ### 14.3 关键架构决策：UI 直达 MCP 的路径
 
@@ -1500,6 +1511,7 @@ const compactSessionTool: ToolDefinition = {
 ```
 
 **关键点**：
+
 - UI 工具调用**完全绕过 Claude Agent SDK**
 - Main process 复用 MCPManager 的 client（不必新建连接）
 - 错误处理：直接捕获异常 → 弹 toast
@@ -1507,23 +1519,23 @@ const compactSessionTool: ToolDefinition = {
 
 ### 14.4 收益
 
-| 维度 | 数值 |
-|---|---|
-| LLM tool schema token | 从 ~3000 → ~1500（节省 50%） |
-| LLM 选择准确度 | 提高（少即是多） |
-| UI 响应 | 直接调，**0 LLM 延迟** |
-| 误操作风险 | UI 按钮 = 用户主动，避免 LLM 误调 |
-| UI 工作量 | **+2-3 周**（45 个按钮/面板） |
+| 维度                  | 数值                              |
+| --------------------- | --------------------------------- |
+| LLM tool schema token | 从 ~3000 → ~1500（节省 50%）      |
+| LLM 选择准确度        | 提高（少即是多）                  |
+| UI 响应               | 直接调，**0 LLM 延迟**            |
+| 误操作风险            | UI 按钮 = 用户主动，避免 LLM 误调 |
+| UI 工作量             | **+2-3 周**（45 个按钮/面板）     |
 
 ### 14.5 实施调整
 
-| 阶段 | 调整 |
-|---|---|
-| P0 `mcp_server.py` | **不变**（仍暴露 65 函数） |
-| P0 LLM tool 注册 | **新增** `ta_mode_llm_tools.json`（白名单 20 个） |
-| P0 MCP 客户端 | **扩展**：增加 `UiToolExecutor` 类 |
-| P1 UI 工具调用基础设施 | 新增 `useUiTool` hook + IPC channel |
-| P2 UI 工作量 | **从 4-6 周增到 7-9 周**（多出 45 个 UI 元素） |
+| 阶段                   | 调整                                              |
+| ---------------------- | ------------------------------------------------- |
+| P0 `mcp_server.py`     | **不变**（仍暴露 65 函数）                        |
+| P0 LLM tool 注册       | **新增** `ta_mode_llm_tools.json`（白名单 20 个） |
+| P0 MCP 客户端          | **扩展**：增加 `UiToolExecutor` 类                |
+| P1 UI 工具调用基础设施 | 新增 `useUiTool` hook + IPC channel               |
+| P2 UI 工作量           | **从 4-6 周增到 7-9 周**（多出 45 个 UI 元素）    |
 
 ### 14.6 受影响的设计章节
 
@@ -1537,26 +1549,30 @@ const compactSessionTool: ToolDefinition = {
 **2026-06-05 拍板**：后加需求，**不进 MVP**。**不参考 hermes claw3d**（那个太重，3D 虚拟办公室不是我们要的）。
 
 ### 15.1 形态
+
 - **内嵌 Tab** in TAgent Desktop（不是独立 web 应用）
 - 复用现有 React + Jotai + Tailwind
 - 加新 IPC channel: `monitor:stream`
 - **只读**（监控，不改）
 
 ### 15.2 数据粒度：**按 session**
+
 - 活跃 session 卡片网格（每个 session = 一张卡）
 - 状态颜色：idle / running / error
 - 显示：mode（通用/TA）、provider、model、当前 tool、运行时长
 - 点击 → 展开看消息 log
 
 ### 15.3 MVP 监控页 4 个 widget
-| Widget | 数据源 | 更新频率 |
-|---|---|---|
-| 活跃 session 卡片网格 | `agentSessionsAtom`（已有） | 实时订阅 |
-| 今日 cost 概览 | `useGlobalAgentListeners.ts:202` 已有 usage | 5s 聚合 |
-| 工具调用 timeline | tool call log（需 instrument） | 实时滚动 |
-| MCP server 状态 | 进程状态检测 | 10s 轮询 |
+
+| Widget                | 数据源                                      | 更新频率 |
+| --------------------- | ------------------------------------------- | -------- |
+| 活跃 session 卡片网格 | `agentSessionsAtom`（已有）                 | 实时订阅 |
+| 今日 cost 概览        | `useGlobalAgentListeners.ts:202` 已有 usage | 5s 聚合  |
+| 工具调用 timeline     | tool call log（需 instrument）              | 实时滚动 |
+| MCP server 状态       | 进程状态检测                                | 10s 轮询 |
 
 ### 15.4 数据流
+
 ```
 [Proma main process]
   ├─ ta_agent MCP server 输出（已有 stderr）
@@ -1571,12 +1587,14 @@ const compactSessionTool: ToolDefinition = {
 ```
 
 ### 15.5 实施时机
+
 - MVP 跑通后（M1+ 阶段）
 - 工具调用日志先 instrument，监控 UI 后做
 - 不写独立 web 应用，**全部进 Desktop**
 - 估时：1 周（基础 4 个 widget）+ 后续按需扩展
 
 ### 15.6 不做的事
+
 - ❌ 3D 虚拟办公场景（claw3d 思路）
 - ❌ 多人 VR 互动
 - ❌ 用户头像
@@ -1585,6 +1603,7 @@ const compactSessionTool: ToolDefinition = {
 - ❌ 引入 grafana / prometheus 等重型方案（Proma 规模不需要）
 
 ### 15.7 与借鉴清单的关系
+
 - 与 hermes-desktop **claw3d 完全无关**（已 review 不借鉴）
 - 与 hermes-agent **Kanban 概念部分相关**（如果未来要做"任务管理"才用）
 - 当前阶段**只与 Proma 现有 instrumentation 复用**
@@ -1596,6 +1615,7 @@ const compactSessionTool: ToolDefinition = {
 排查 `F:\ta_agent` 时漏扫的 5 个关键内容，**全部正式补进 TAgent 设计**：
 
 ### 17.1 三层权限模型（HARDLINE / DANGEROUS / SAFE）
+
 **来源**：`F:\ta_agent\docs\decisions\general-mode-redesign.md`（2026-06-03）
 **TAgent 之前漏提**，必须补：
 
@@ -1618,20 +1638,22 @@ SAFE（自动放行，静默）
   - 永久 → 写到 `app-config.json`（hermes 风格）
 
 ### 17.2 3 角色 RBAC
+
 **来源**：`F:\ta_agent\docs\decisions\user-auth-design.md`（2026-05-20）
 
 TAgent Server 设计 §5 之前**只提 X-Username 简化鉴权**，**没提正式 RBAC**。补：
 
-| 角色 | 权限 |
-|---|---|
-| **普通用户**（美术） | 查项目配置（只读）、提交分析、查自己审核、用本地记忆 |
+| 角色                    | 权限                                                 |
+| ----------------------- | ---------------------------------------------------- |
+| **普通用户**（美术）    | 查项目配置（只读）、提交分析、查自己审核、用本地记忆 |
 | **管理者**（组长 / TA） | 改项目配置、审核资产、查所有用户的资产、编辑 L1 规则 |
-| **超级管理员** | 管用户权限、添加 / 移除管理员、系统设置 |
+| **超级管理员**          | 管用户权限、添加 / 移除管理员、系统设置              |
 
 **MVP 阶段**：仅普通用户角色（因为 SSO appid 还没申请，正式角色管理延后）。
 **SSO 集成后**：完整 RBAC 启用。
 
 ### 17.3 5 层记忆的 4 大设计原则
+
 **来源**：`F:\ta_agent\docs\decisions\memory-system.md` + `docs/guides\memory-layout.md`
 
 §6 之前只提"5 层结构"。补**设计原则**：
@@ -1665,19 +1687,20 @@ TAgent Server 设计与老设计 **80% 重叠**：
 
 排查覆盖（2026-06-05 第二次扫）：
 
-| 类别 | 数量 | 状态 |
-|---|---|---|
-| ADRs (decisions/) | 9 个 | ✅ 全扫（含 2 个新发现：general-mode-redesign, user-auth-design） |
-| Guides | 2 个 | ✅ 扫完 |
-| Reference | 4 个 | ✅ 扫完（之前已读） |
-| Experiments | 14 个 | ⚠️ 大部分扫完，**hidden-bugs-audit 和 deepseek-cache-optimization 需补** |
-| Release notes | 5 个 | ⚠️ v0.19-v0.23 标题扫完，**详细 changelog 没深读** |
-| Business docs | 3 个 | ❌ 未读（产品介绍 / 演示文稿，对工程无直接价值） |
-| 关键源代码 | 50+ 文件 | ✅ 80% 扫完 |
-| Plugins/TAAssetBridge | C++ 头 | ✅ 扫完 |
-| 运行时数据 | usage_log.jsonl, pipeline_runs.jsonl | ✅ 发现并吸收到 §19.10 |
+| 类别                  | 数量                                 | 状态                                                                     |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------------ |
+| ADRs (decisions/)     | 9 个                                 | ✅ 全扫（含 2 个新发现：general-mode-redesign, user-auth-design）        |
+| Guides                | 2 个                                 | ✅ 扫完                                                                  |
+| Reference             | 4 个                                 | ✅ 扫完（之前已读）                                                      |
+| Experiments           | 14 个                                | ⚠️ 大部分扫完，**hidden-bugs-audit 和 deepseek-cache-optimization 需补** |
+| Release notes         | 5 个                                 | ⚠️ v0.19-v0.23 标题扫完，**详细 changelog 没深读**                       |
+| Business docs         | 3 个                                 | ❌ 未读（产品介绍 / 演示文稿，对工程无直接价值）                         |
+| 关键源代码            | 50+ 文件                             | ✅ 80% 扫完                                                              |
+| Plugins/TAAssetBridge | C++ 头                               | ✅ 扫完                                                                  |
+| 运行时数据            | usage_log.jsonl, pipeline_runs.jsonl | ✅ 发现并吸收到 §19.10                                                   |
 
 **未扫盲区**（不重要，可后续）：
+
 - `tutorial/` 目录：不存在
 - `.ta_agent/memory/{general,ta}/sops/`：TA 模式实际 SOP（**重要，待补**）
 - `docs/sops/tagent_memory_sop.md`：用户专门写的记忆写入决策树（**重要，待补**）
@@ -1691,6 +1714,7 @@ TAgent Server 设计与老设计 **80% 重叠**：
 **2026-06-05 确认**：hermes-agent 是**单 agent 主框架 + subagent / 背景 fork / ACP 扩展**，不是"群体智能"多 agent 协作。
 
 ### 16.1 Hermes 形态
+
 ```
 AIAgent（主，常驻）
   ├─ Subagent 派生（临时，parallel workstreams）
@@ -1701,19 +1725,23 @@ AIAgent（主，常驻）
 ```
 
 ### 16.2 TAgent 当前形态
+
 - **单 agent per mode**（通用模式 1 个，TA 模式 1 个）
 - **无 subagent**（MCP 工具可调，但 agent 不会派生子 agent）
 - **ACP 集成暂无**（编辑器和 TAgent 通信靠 MCP / WebSocket）
 
 ### 16.3 ACP 集成（未来扩展，⭐ 高价值）
+
 **借鉴 hermes 的 acp_adapter/ 实现，让 TAgent 作为 ACP peer 暴露**。
 
 价值：
+
 - VS Code / Cursor / Zed 编辑器原生 @-mention TAgent
 - 编辑器里 inline ask / code action 直接调 TAgent
 - TAgent 进入"专业开发者工具"层级
 
 技术栈：
+
 - 参考 `hermes-agent/acp_adapter/` 实现
 - ACP 标准：[https://github.com/agentclientprotocol/agent-client-protocol](https://github.com/agentclientprotocol/agent-client-protocol)
 - TAgent 端实现 `acp_server.py`（Python，复用 ta_agent 代码）
@@ -1722,14 +1750,17 @@ AIAgent（主，常驻）
 **不进 MVP**。M2+ 阶段实施。估时：2-3 周。
 
 ### 16.4 Subagent 派生（未来扩展，⭐ 高价值）
+
 **借鉴 hermes 的 subagent 思路，让 TAgent TA 模式能并行处理多个资产**。
 
 场景：
+
 - 用户："分析 D:\Assets\Batch01 的 100 个 FBX"
 - 主 agent 派生 8 个 subagent，并行处理（每 subagent 12-13 个文件）
 - 完成后合并结果写入 SQLite
 
 技术栈：
+
 - 用 Python multiprocessing（hermes 用同款）
 - subagent 用受限 tool set（只读 + 写特定 tag）
 - 主 agent 收所有 subagent 结果，合并
@@ -1784,17 +1815,18 @@ TAgent 加 subagent 时必避 8 个坑：
 
 **5 类 TA 模式 subagent 候选**（未来实施时）：
 
-| subagent_type | allowed_tools | 用途 |
-|---|---|---|
-| `analyzer` | `tagent__check_fbx_info`, `tagent__check_texture_info`, `tagent__analyze_assets` | 单个资产深度分析 |
-| `renderer` | `tagent__render_asset_preview` | 单个资产预览图渲染 |
-| `importer` | `tagent__ue5_import_asset` | 单个资产导入 UE5 |
-| `validator` | `tagent__check_naming`, `tagent__check_mesh_budget` | 单个资产规范检查 |
-| `renamer` | `tagent__suggest_rename`, `tagent__rename_asset` | 单个资产重命名 |
+| subagent_type | allowed_tools                                                                    | 用途               |
+| ------------- | -------------------------------------------------------------------------------- | ------------------ |
+| `analyzer`    | `tagent__check_fbx_info`, `tagent__check_texture_info`, `tagent__analyze_assets` | 单个资产深度分析   |
+| `renderer`    | `tagent__render_asset_preview`                                                   | 单个资产预览图渲染 |
+| `importer`    | `tagent__ue5_import_asset`                                                       | 单个资产导入 UE5   |
+| `validator`   | `tagent__check_naming`, `tagent__check_mesh_budget`                              | 单个资产规范检查   |
+| `renamer`     | `tagent__suggest_rename`, `tagent__rename_asset`                                 | 单个资产重命名     |
 
 每个都是 read-only 或单一职责，**避免递归和相互依赖**。
 
 ### 16.5 不借鉴
+
 - ❌ 群体智能多 agent 框架（AutoGen / CrewAI 范式）—— TAgent 单 agent 路线不需
 - ❌ Multi-channel Gateway —— TAgent Desktop + WebSocket 已实现
 - ❌ Batch Runner 独立工具 —— 可整合到 subagent 方案中
@@ -1818,29 +1850,31 @@ sections.push(`# TAgent Agent
 ```
 
 用户无法自定义 Agent 的：
+
 - 性格和语气（严肃/友好/直接/委婉）
 - 沟通风格（简洁/详细/技术性/通俗性）
 - 应对不确定性的方式
 
 **借鉴**：Hermes-agent 的 `SOUL.md` 机制（详见 `F:\hermes-agent\docker\SOUL.md`）
 
-| 特性 | Hermes SOUL.md |
-|------|----------------|
-| 位置 | `~/.hermes/SOUL.md`（全局单文件） |
-| 用途 | 定义 Agent 的性格、语气、沟通风格 |
+| 特性     | Hermes SOUL.md                              |
+| -------- | ------------------------------------------- |
+| 位置     | `~/.hermes/SOUL.md`（全局单文件）           |
+| 用途     | 定义 Agent 的性格、语气、沟通风格           |
 | 加载时机 | 每次 session 启动时，作为系统 prompt 第一条 |
-| 热更新 | 编辑后下次 session 自动生效，无需重启 |
+| 热更新   | 编辑后下次 session 自动生效，无需重启       |
 
 ### 19.2 与现有系统的关系
 
-| 组件 | 用途 | 与 SOUL.md 的区别 |
-|------|------|-------------------|
-| **SOUL.md** | Agent 身份/人格/风格 | "Agent 是谁，怎么说话" |
-| **L0_user.md** | 用户画像 | "用户是谁，有什么偏好" |
-| **提示词管理** | Chat 模式的系统提示词 | Chat 专用，可多条；SOUL.md 影响所有模式 |
-| **AGENTS.md / CLAUDE.md** | 项目规则/编码规范 | "项目怎么做"；SOUL.md 是"Agent 怎么做人" |
+| 组件                      | 用途                  | 与 SOUL.md 的区别                        |
+| ------------------------- | --------------------- | ---------------------------------------- |
+| **SOUL.md**               | Agent 身份/人格/风格  | "Agent 是谁，怎么说话"                   |
+| **L0_user.md**            | 用户画像              | "用户是谁，有什么偏好"                   |
+| **提示词管理**            | Chat 模式的系统提示词 | Chat 专用，可多条；SOUL.md 影响所有模式  |
+| **AGENTS.md / CLAUDE.md** | 项目规则/编码规范     | "项目怎么做"；SOUL.md 是"Agent 怎么做人" |
 
 **核心区别**：
+
 - SOUL.md = **Agent 身份**（"你是怎样的助手"）
 - L0_user.md = **用户画像**（"用户是谁"）
 - 两者互补，不是替代
@@ -1872,32 +1906,33 @@ sections.push(`# TAgent Agent
 
 function loadSoulMd(mode?: 'general' | 'ta'): string | null {
   // 1. 尝试模式级路径
-  const modePath = mode === 'ta' 
-    ? path.join(getTAgentDataDir(), 'ta', 'SOUL.md')
-    : path.join(getTAgentDataDir(), 'SOUL.md')
-  
+  const modePath =
+    mode === 'ta'
+      ? path.join(getTAgentDataDir(), 'ta', 'SOUL.md')
+      : path.join(getTAgentDataDir(), 'SOUL.md')
+
   if (fs.existsSync(modePath)) {
     const content = fs.readFileSync(modePath, 'utf-8').trim()
     if (content && !containsInjectionPattern(content)) {
       return content
     }
   }
-  
+
   // 2. Fallback：内置默认
-  return null  // 调用方使用硬编码默认
+  return null // 调用方使用硬编码默认
 }
 
 export function buildSystemPrompt(ctx: SystemPromptContext): string {
   const sections: string[] = []
-  
+
   // 替换原硬编码身份定义
   const soul = loadSoulMd(ctx.mode)
   if (soul) {
     sections.push(soul)
   } else {
-    sections.push(DEFAULT_SOUL_MD)  // 内置默认
+    sections.push(DEFAULT_SOUL_MD) // 内置默认
   }
-  
+
   // ... 后续 sections 不变
 }
 ```
@@ -1910,11 +1945,13 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手，由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。
 
 ## 风格
+
 - 使用中文回复和思考，保留必要的英文技术术语
 - 简洁直接，避免冗余
 - 发现问题直接指出，不要粉饰
 
 ## 避免
+
 - 过度客套和废话
 - 模棱两可的建议
 - 炒作性语言
@@ -1924,13 +1961,13 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
 提供 4-5 个快捷模板，用户可一键应用：
 
-| 模板名 | 风格描述 |
-|--------|----------|
-| **务实工程师** | 直接、精准、不绕弯子 |
-| **研究伙伴** | 探索性、区分推测与证据 |
-| **耐心老师** | 解释清晰、用例子、不假设先验知识 |
-| **严格评审** | 直接指出问题、正确性优先 |
-| **自定义** | 用户完全自己写 |
+| 模板名         | 风格描述                         |
+| -------------- | -------------------------------- |
+| **务实工程师** | 直接、精准、不绕弯子             |
+| **研究伙伴**   | 探索性、区分推测与证据           |
+| **耐心老师**   | 解释清晰、用例子、不假设先验知识 |
+| **严格评审**   | 直接指出问题、正确性优先         |
+| **自定义**     | 用户完全自己写                   |
 
 模板内容见实现时定义。
 
@@ -1982,60 +2019,67 @@ const SOUL_TAB: TabItem = {
 
 #### 19.5.3 交互设计
 
-| 操作 | 行为 |
-|------|------|
-| **编辑** | Textarea 实时编辑，显示字数统计 |
-| **保存** | 写入 `~/.tagent/SOUL.md`（或 `ta/SOUL.md`） |
-| **重置** | 恢复为内置默认内容 |
-| **应用模板** | 一键填充对应模板内容 |
-| **生效时机** | 保存后，下次新建会话生效（当前会话不变） |
+| 操作         | 行为                                        |
+| ------------ | ------------------------------------------- |
+| **编辑**     | Textarea 实时编辑，显示字数统计             |
+| **保存**     | 写入 `~/.tagent/SOUL.md`（或 `ta/SOUL.md`） |
+| **重置**     | 恢复为内置默认内容                          |
+| **应用模板** | 一键填充对应模板内容                        |
+| **生效时机** | 保存后，下次新建会话生效（当前会话不变）    |
 
 ### 19.6 安全考虑
 
-| 风险 | 缓解措施 |
-|------|----------|
+| 风险             | 缓解措施                                        |
+| ---------------- | ----------------------------------------------- |
 | Prompt injection | 扫描 `{{ }}`、`${ }`、`<%` 等模板模式，拒绝执行 |
-| 文件过长截断 | 限制最大 2000 字符，超出时 UI 警告 |
-| 编码问题 | 强制 UTF-8，读取时指定编码 |
+| 文件过长截断     | 限制最大 2000 字符，超出时 UI 警告              |
+| 编码问题         | 强制 UTF-8，读取时指定编码                      |
 
 ### 19.7 实现步骤
 
-| # | 任务 | 位置 | 工时 |
-|---|------|------|------|
-| 1 | 添加 `getSoulPath()` 路径函数 | `config-paths.ts` | 0.5h |
-| 2 | 修改 `buildSystemPrompt()` 加载 SOUL.md | `agent-prompt-builder.ts` | 1h |
-| 3 | 首次运行自动生成默认 SOUL.md | `agent-prompt-builder.ts` | 0.5h |
-| 4 | 新增 IPC 接口（读写 SOUL.md） | `ipc.ts` + preload | 1h |
-| 5 | 新增 `SoulSettings.tsx` 组件 | 新文件 | 2h |
-| 6 | 集成到设置面板 Tab | `SettingsPanel.tsx` | 0.5h |
-| 7 | 单元测试 | 新测试文件 | 1h |
-| **总计** | | | **~1 天** |
+| #        | 任务                                    | 位置                      | 工时      |
+| -------- | --------------------------------------- | ------------------------- | --------- |
+| 1        | 添加 `getSoulPath()` 路径函数           | `config-paths.ts`         | 0.5h      |
+| 2        | 修改 `buildSystemPrompt()` 加载 SOUL.md | `agent-prompt-builder.ts` | 1h        |
+| 3        | 首次运行自动生成默认 SOUL.md            | `agent-prompt-builder.ts` | 0.5h      |
+| 4        | 新增 IPC 接口（读写 SOUL.md）           | `ipc.ts` + preload        | 1h        |
+| 5        | 新增 `SoulSettings.tsx` 组件            | 新文件                    | 2h        |
+| 6        | 集成到设置面板 Tab                      | `SettingsPanel.tsx`       | 0.5h      |
+| 7        | 单元测试                                | 新测试文件                | 1h        |
+| **总计** |                                         |                           | **~1 天** |
 
 ### 19.8 未来扩展（不进 MVP）
 
-| 扩展项 | 描述 | 触发条件 |
-|--------|------|----------|
-| 工作区级 SOUL.md | 每个工作区可独立定义人格 | 用户反馈需要项目级人格 |
-| 模式分立 UI | 设置页切换通用/TA 模式分别编辑 | TA 模式需要独立人格 |
-| 人格预览 | 保存前预览效果（模拟对话） | 用户反馈需要试看效果 |
-| 人格分享 | 导出/导入 SOUL.md | 社区需求 |
+| 扩展项           | 描述                           | 触发条件               |
+| ---------------- | ------------------------------ | ---------------------- |
+| 工作区级 SOUL.md | 每个工作区可独立定义人格       | 用户反馈需要项目级人格 |
+| 模式分立 UI      | 设置页切换通用/TA 模式分别编辑 | TA 模式需要独立人格    |
+| 人格预览         | 保存前预览效果（模拟对话）     | 用户反馈需要试看效果   |
+| 人格分享         | 导出/导入 SOUL.md              | 社区需求               |
 
 ### 19.9 决策记录
 
-| # | 决策 | 选择 | 拍板日期 |
-|---|------|------|----------|
-| 1 | MVP 范围 | 只做模式级，不做工作区级 | 2026-06-15 |
-| 2 | UI 位置 | 设置面板独立 Tab | 2026-06-15 |
-| 3 | 预设模板 | 4-5 个快捷模板 | 2026-06-15 |
-| 4 | 生效时机 | 下次新建会话生效 | 2026-06-15 |
+| #   | 决策     | 选择                     | 拍板日期   |
+| --- | -------- | ------------------------ | ---------- |
+| 1   | MVP 范围 | 只做模式级，不做工作区级 | 2026-06-15 |
+| 2   | UI 位置  | 设置面板独立 Tab         | 2026-06-15 |
+| 3   | 预设模板 | 4-5 个快捷模板           | 2026-06-15 |
+| 4   | 生效时机 | 下次新建会话生效         | 2026-06-15 |
 
 ### 19.10 usage_log.jsonl 格式（ta_agent 已经在写）
 
 ta_agent 实际已经在 `~/.ta_agent/` 写 `usage_log.jsonl`：
 
 ```json
-{"ts": "2026-05-28T15:03:38", "session": "f56af0a93e8a", "model": "glm-5",
- "input_tokens": 0, "output_tokens": 2094, "duration_ms": 16714, "success": true}
+{
+  "ts": "2026-05-28T15:03:38",
+  "session": "f56af0a93e8a",
+  "model": "glm-5",
+  "input_tokens": 0,
+  "output_tokens": 2094,
+  "duration_ms": 16714,
+  "success": true
+}
 ```
 
 **TAgent 应保持格式一致**（向后兼容 ta_agent 用户数据迁移）。§5 之后**没提**这个细节。

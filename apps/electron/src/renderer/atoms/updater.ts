@@ -17,7 +17,14 @@ export interface DownloadProgress {
 
 /** 更新状态 */
 export interface UpdateStatus {
-  status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error'
+  status:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'downloading'
+    | 'downloaded'
+    | 'not-available'
+    | 'error'
   version?: string
   releaseNotes?: string
   progress?: DownloadProgress
@@ -44,9 +51,7 @@ export const updaterAvailableAtom = atom<boolean>(() => {
  * 订阅主进程推送的更新状态变化事件。
  * 返回清理函数。
  */
-export function initializeUpdater(
-  setStatus: (status: UpdateStatus) => void,
-): () => void {
+export function initializeUpdater(setStatus: (status: UpdateStatus) => void): () => void {
   const updater = window.electronAPI?.updater
   if (!updater) {
     // updater 不可用（开源构建），直接返回空清理函数
@@ -54,9 +59,12 @@ export function initializeUpdater(
   }
 
   // 获取初始状态
-  updater.getStatus().then(setStatus).catch(() => {
-    // IPC 调用失败（updater 主进程端未注册），保持 idle
-  })
+  updater
+    .getStatus()
+    .then(setStatus)
+    .catch(() => {
+      // IPC 调用失败（updater 主进程端未注册），保持 idle
+    })
 
   // 订阅状态变化
   const cleanup = updater.onStatusChanged(setStatus)

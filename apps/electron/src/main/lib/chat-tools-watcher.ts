@@ -55,7 +55,11 @@ export function startChatToolsWatcher(): void {
     // 配置文件被外部工具替换/删除时即可能触发。
     watcher.on('error', (err) => {
       console.error('[Chat 工具监听] 运行时错误，关闭监听:', err)
-      try { watcher?.close() } catch { /* 已关闭 */ }
+      try {
+        watcher?.close()
+      } catch {
+        /* 已关闭 */
+      }
       watcher = null
     })
 

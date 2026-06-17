@@ -7,7 +7,14 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, appendFileSync, existsSync, unlinkSync, createReadStream } from 'node:fs'
+import {
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  existsSync,
+  unlinkSync,
+  createReadStream,
+} from 'node:fs'
 import { createInterface } from 'node:readline'
 
 import { deleteConversationAttachments, deleteAttachment } from './attachment-service'
@@ -18,7 +25,12 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-import type { ConversationMeta, ChatMessage, RecentMessagesResult, MessageSearchResult } from '@tagent/shared'
+import type {
+  ConversationMeta,
+  ChatMessage,
+  RecentMessagesResult,
+  MessageSearchResult,
+} from '@tagent/shared'
 
 /**
  * 对话索引文件格式
@@ -76,7 +88,7 @@ export function listConversations(): ConversationMeta[] {
 export function createConversation(
   title?: string,
   modelId?: string,
-  channelId?: string,
+  channelId?: string
 ): ConversationMeta {
   const index = readIndex()
   const now = Date.now()
@@ -206,7 +218,8 @@ export function saveConversationMessages(id: string, messages: ChatMessage[]): v
   const filePath = getConversationMessagesPath(id)
 
   try {
-    const content = messages.map((msg) => JSON.stringify(msg)).join('\n') + (messages.length > 0 ? '\n' : '')
+    const content =
+      messages.map((msg) => JSON.stringify(msg)).join('\n') + (messages.length > 0 ? '\n' : '')
     writeFileSync(filePath, content, 'utf-8')
   } catch (error) {
     console.error(`[对话管理] 保存消息失败 (${id}):`, error)
@@ -223,7 +236,18 @@ export function saveConversationMessages(id: string, messages: ChatMessage[]): v
  */
 export function updateConversationMeta(
   id: string,
-  updates: Partial<Pick<ConversationMeta, 'title' | 'modelId' | 'channelId' | 'contextDividers' | 'contextLength' | 'pinned' | 'archived'>>,
+  updates: Partial<
+    Pick<
+      ConversationMeta,
+      | 'title'
+      | 'modelId'
+      | 'channelId'
+      | 'contextDividers'
+      | 'contextLength'
+      | 'pinned'
+      | 'archived'
+    >
+  >
 ): ConversationMeta {
   const index = readIndex()
   const idx = index.conversations.findIndex((c) => c.id === id)
@@ -329,7 +353,7 @@ export function deleteMessage(conversationId: string, messageId: string): ChatMe
 export function truncateMessagesFrom(
   conversationId: string,
   messageId: string,
-  preserveFirstMessageAttachments = false,
+  preserveFirstMessageAttachments = false
 ): ChatMessage[] {
   const messages = getConversationMessages(conversationId)
   const startIndex = messages.findIndex((msg) => msg.id === messageId)
@@ -365,7 +389,10 @@ export function truncateMessagesFrom(
  * @param dividers 新的分隔线消息 ID 列表
  * @returns 更新后的对话元数据
  */
-export function updateContextDividers(conversationId: string, dividers: string[]): ConversationMeta {
+export function updateContextDividers(
+  conversationId: string,
+  dividers: string[]
+): ConversationMeta {
   return updateConversationMeta(conversationId, { contextDividers: dividers })
 }
 
@@ -448,7 +475,12 @@ async function findFirstMatchInJsonl(
   filePath: string,
   queryLower: string,
   queryLength: number
-): Promise<{ messageId: string; role: ChatMessage['role']; snippet: string; matchStart: number } | null> {
+): Promise<{
+  messageId: string
+  role: ChatMessage['role']
+  snippet: string
+  matchStart: number
+} | null> {
   const stream = createReadStream(filePath, { encoding: 'utf-8' })
   const rl = createInterface({ input: stream, crlfDelay: Infinity })
 
@@ -469,7 +501,8 @@ async function findFirstMatchInJsonl(
 
       const snippetStart = Math.max(0, matchIndex - 40)
       const snippetEnd = Math.min(msg.content.length, matchIndex + queryLength + 40)
-      const snippet = (snippetStart > 0 ? '...' : '') +
+      const snippet =
+        (snippetStart > 0 ? '...' : '') +
         msg.content.slice(snippetStart, snippetEnd) +
         (snippetEnd < msg.content.length ? '...' : '')
       const matchStart = matchIndex - snippetStart + (snippetStart > 0 ? 3 : 0)

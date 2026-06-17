@@ -34,7 +34,9 @@ export function TASidebarMemory(): React.ReactElement {
       }
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const layers: Array<{ key: string; label: string; value: string }> = [
@@ -49,8 +51,7 @@ export function TASidebarMemory(): React.ReactElement {
   return (
     <div className="px-3 py-3 flex flex-col gap-3">
       <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-        <Brain size={12} />
-        5 层记忆（TA 模式）
+        <Brain size={12} />5 层记忆（TA 模式）
       </div>
 
       {isLoading ? (
@@ -58,10 +59,7 @@ export function TASidebarMemory(): React.ReactElement {
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {layers.map((l) => (
-            <div
-              key={l.key}
-              className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5"
-            >
+            <div key={l.key} className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
               <div className="text-[10px] text-muted-foreground">{l.label}</div>
               <div className="text-sm font-semibold text-foreground mt-1">{l.value}</div>
             </div>

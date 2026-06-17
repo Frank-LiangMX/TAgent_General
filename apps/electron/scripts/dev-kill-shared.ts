@@ -34,7 +34,9 @@ export function killUnixByPattern(pattern: string): void {
 /** 清理本仓库 Electron 主进程（Dock 里显示为 Electron） */
 export function killUnixProjectElectron(): void {
   for (const marker of rootMarkers) {
-    killUnixByPattern(`${marker}.*node_modules/electron/dist/Electron\\.app/Contents/MacOS/Electron`)
+    killUnixByPattern(
+      `${marker}.*node_modules/electron/dist/Electron\\.app/Contents/MacOS/Electron`
+    )
     killUnixByPattern(`${marker}.*electronmon/src/hook\\.js`)
   }
 }

@@ -27,9 +27,7 @@ export class RunCoordinator {
   private readonly waiters: Array<() => void> = []
 
   constructor(maxConcurrent: number | (() => number)) {
-    this.maxConcurrent = typeof maxConcurrent === 'function'
-      ? maxConcurrent
-      : () => maxConcurrent
+    this.maxConcurrent = typeof maxConcurrent === 'function' ? maxConcurrent : () => maxConcurrent
   }
 
   /** 当前是否已有该 scope 的 run。 */

@@ -152,7 +152,11 @@ function markMatchesInTextNode(node: Text, matcher: RegExp): HTMLElement[] {
   return marks
 }
 
-function applyHighlights(container: HTMLElement, query: string, options: FindOptions): HTMLElement[] {
+function applyHighlights(
+  container: HTMLElement,
+  query: string,
+  options: FindOptions
+): HTMLElement[] {
   cleanupHighlights(container)
   const matcher = buildMatcher(query, options)
   if (!matcher) return []
@@ -161,11 +165,10 @@ function applyHighlights(container: HTMLElement, query: string, options: FindOpt
   for (const root of collectSearchRoots(container)) {
     injectShadowStyle(root)
     const textNodes: Text[] = []
-    const walker = document.createTreeWalker(
-      root,
-      NodeFilter.SHOW_TEXT,
-      { acceptNode: (node) => shouldSkipTextNode(node as Text) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT },
-    )
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) =>
+        shouldSkipTextNode(node as Text) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    })
     while (walker.nextNode()) {
       textNodes.push(walker.currentNode as Text)
     }
@@ -193,7 +196,13 @@ function setActiveMatch(marks: HTMLElement[], activeIndex: number): void {
   })
 }
 
-export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, onOpenChange }: PreviewFindBarProps): React.ReactElement | null {
+export function PreviewFindBar({
+  open,
+  rootRef,
+  contentKey,
+  unsupportedReason,
+  onOpenChange,
+}: PreviewFindBarProps): React.ReactElement | null {
   const [query, setQuery] = React.useState('')
   const [caseSensitive, setCaseSensitive] = React.useState(false)
   const [wholeWord, setWholeWord] = React.useState(false)
@@ -210,24 +219,30 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
    * 在执行 DOM 改动期间临时暂停 MutationObserver，避免自反触发回调。
    * disconnect 期间的 mutation 不会进入 observer 队列，结束后直接 reconnect 即可。
    */
-  const withObserverPaused = React.useCallback((fn: () => void) => {
-    const obs = observerRef.current
-    const root = rootRef.current
-    obs?.disconnect()
-    try {
-      fn()
-    } finally {
-      if (obs && root) {
-        obs.observe(root, { childList: true, subtree: true, characterData: true })
+  const withObserverPaused = React.useCallback(
+    (fn: () => void) => {
+      const obs = observerRef.current
+      const root = rootRef.current
+      obs?.disconnect()
+      try {
+        fn()
+      } finally {
+        if (obs && root) {
+          obs.observe(root, { childList: true, subtree: true, characterData: true })
+        }
       }
-    }
-  }, [rootRef])
+    },
+    [rootRef]
+  )
 
-  const options = React.useMemo<FindOptions>(() => ({
-    caseSensitive,
-    wholeWord,
-    regex,
-  }), [caseSensitive, wholeWord, regex])
+  const options = React.useMemo<FindOptions>(
+    () => ({
+      caseSensitive,
+      wholeWord,
+      regex,
+    }),
+    [caseSensitive, wholeWord, regex]
+  )
 
   const clearMarks = React.useCallback(() => {
     withObserverPaused(() => {
@@ -261,11 +276,12 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
     withObserverPaused(() => {
       marks = applyHighlights(root, trimmed, options)
     })
-    const nextActiveIndex = marks.length === 0
-      ? -1
-      : activeIndexRef.current >= 0
-        ? Math.min(activeIndexRef.current, marks.length - 1)
-        : 0
+    const nextActiveIndex =
+      marks.length === 0
+        ? -1
+        : activeIndexRef.current >= 0
+          ? Math.min(activeIndexRef.current, marks.length - 1)
+          : 0
     if (nextActiveIndex >= 0) {
       withObserverPaused(() => setActiveMatch(marks, nextActiveIndex))
     }
@@ -345,30 +361,33 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
     clearMarks()
   }, [clearMarks, onOpenChange])
 
-  const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      close()
-      return
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      if (e.shiftKey) goToPrevious()
-      else goToNext()
-    }
-  }, [close, goToNext, goToPrevious])
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        close()
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (e.shiftKey) goToPrevious()
+        else goToNext()
+      }
+    },
+    [close, goToNext, goToPrevious]
+  )
 
   if (!open) return null
 
   const statusText = unsupportedReason
     ? unsupportedReason
     : regexInvalid
-    ? '表达式无效'
-    : query.trim()
-      ? matchCount > 0
-        ? `${activeIndex + 1}/${matchCount}`
-        : '无结果'
-      : ''
+      ? '表达式无效'
+      : query.trim()
+        ? matchCount > 0
+          ? `${activeIndex + 1}/${matchCount}`
+          : '无结果'
+        : ''
 
   return (
     <div
@@ -393,7 +412,10 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
         type="button"
         onClick={() => setCaseSensitive((v) => !v)}
         disabled={Boolean(unsupportedReason)}
-        className={cn('h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground', caseSensitive && 'bg-primary/15 text-primary')}
+        className={cn(
+          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+          caseSensitive && 'bg-primary/15 text-primary'
+        )}
         title="区分大小写"
         aria-label="区分大小写"
         aria-pressed={caseSensitive}
@@ -404,7 +426,10 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
         type="button"
         onClick={() => setWholeWord((v) => !v)}
         disabled={Boolean(unsupportedReason)}
-        className={cn('h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground', wholeWord && 'bg-primary/15 text-primary')}
+        className={cn(
+          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+          wholeWord && 'bg-primary/15 text-primary'
+        )}
         title="全词匹配"
         aria-label="全词匹配"
         aria-pressed={wholeWord}
@@ -415,7 +440,10 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
         type="button"
         onClick={() => setRegex((v) => !v)}
         disabled={Boolean(unsupportedReason)}
-        className={cn('h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground', regex && 'bg-primary/15 text-primary')}
+        className={cn(
+          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+          regex && 'bg-primary/15 text-primary'
+        )}
         title="使用正则表达式"
         aria-label="使用正则表达式"
         aria-pressed={regex}
@@ -425,7 +453,11 @@ export function PreviewFindBar({ open, rootRef, contentKey, unsupportedReason, o
       <span
         role="status"
         aria-live="polite"
-        className={cn('min-w-[38px] text-center text-[12px] text-muted-foreground', unsupportedReason && 'min-w-[112px] text-left', regexInvalid && 'text-destructive')}
+        className={cn(
+          'min-w-[38px] text-center text-[12px] text-muted-foreground',
+          unsupportedReason && 'min-w-[112px] text-left',
+          regexInvalid && 'text-destructive'
+        )}
       >
         {statusText}
       </span>

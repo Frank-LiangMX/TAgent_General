@@ -37,9 +37,10 @@ function getWindowTitle(input: DetachedPreviewWindowInput): string {
 }
 
 function centerBoundsNearSource(sourceWindow?: BrowserWindow | null): Rectangle {
-  const display = sourceWindow && !sourceWindow.isDestroyed()
-    ? screen.getDisplayMatching(sourceWindow.getBounds())
-    : screen.getPrimaryDisplay()
+  const display =
+    sourceWindow && !sourceWindow.isDestroyed()
+      ? screen.getDisplayMatching(sourceWindow.getBounds())
+      : screen.getPrimaryDisplay()
   const { x, y, width: screenWidth, height: screenHeight } = display.workArea
   const width = Math.max(640, Math.min(1100, Math.floor(screenWidth * 0.88)))
   const height = Math.max(480, Math.min(760, Math.floor(screenHeight * 0.86)))
@@ -70,7 +71,7 @@ function installDetachedPreviewShortcuts(win: BrowserWindow): void {
 
 export function openDetachedPreviewWindow(
   input: DetachedPreviewWindowInput,
-  sourceWindow?: BrowserWindow | null,
+  sourceWindow?: BrowserWindow | null
 ): string | null {
   if (!input.sessionId || !input.filePath || !input.dirPath) return null
 

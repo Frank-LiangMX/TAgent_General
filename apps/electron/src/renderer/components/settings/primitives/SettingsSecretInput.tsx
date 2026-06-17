@@ -44,9 +44,7 @@ export function SettingsSecretInput({
     <div className="px-4 py-3 space-y-2">
       <div>
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       <div className="relative">
         <Input

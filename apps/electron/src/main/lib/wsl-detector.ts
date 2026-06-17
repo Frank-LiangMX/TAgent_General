@@ -25,9 +25,10 @@ const WSL_NOT_READY_ERROR = 'WSL 未就绪，如已安装 Git Bash 可不安装'
  */
 function smartDecode(buffer: Buffer): string {
   // 检测 UTF-16 LE BOM (FF FE) 或特征（大量 00 字节间隔）
-  const isUtf16Le = buffer.length > 2 &&
-    ((buffer[0] === 0xFF && buffer[1] === 0xFE) ||
-     (buffer.length > 4 && buffer[1] === 0x00 && buffer[3] === 0x00))
+  const isUtf16Le =
+    buffer.length > 2 &&
+    ((buffer[0] === 0xff && buffer[1] === 0xfe) ||
+      (buffer.length > 4 && buffer[1] === 0x00 && buffer[3] === 0x00))
 
   if (isUtf16Le) {
     try {
@@ -75,14 +76,14 @@ function parseWslListOutput(output: string): {
   defaultDistro: string | null
   distros: string[]
 } {
-  const lines = output.split('\n').map((line) => line.trim()).filter(Boolean)
+  const lines = output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 
   // 跳过标题行（包含 "NAME", "STATE", "VERSION"）
   const dataLines = lines.filter(
-    (line) =>
-      !line.includes('NAME') &&
-      !line.includes('STATE') &&
-      !line.includes('VERSION'),
+    (line) => !line.includes('NAME') && !line.includes('STATE') && !line.includes('VERSION')
   )
 
   let defaultDistro: string | null = null
@@ -171,7 +172,7 @@ export async function detectWsl(): Promise<WslStatus> {
     }
 
     console.log(
-      `[WSL 检测] 找到 WSL ${parsed.version || '未知版本'}: ${parsed.distros.join(', ')} (默认: ${parsed.defaultDistro || '未设置'})`,
+      `[WSL 检测] 找到 WSL ${parsed.version || '未知版本'}: ${parsed.distros.join(', ')} (默认: ${parsed.defaultDistro || '未设置'})`
     )
 
     return {

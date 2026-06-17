@@ -9,167 +9,32 @@ import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep, dirname } from 'node:path'
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, WPS_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, BTW_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS, isTAgentPermissionMode, type NudgeCandidate, type MemoryConfig } from '@tagent/shared'
-import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
-
-import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, QUICK_TASK_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS } from '../types'
-import { askUserService } from './lib/agent-ask-user-service'
-import { exitPlanService } from './lib/agent-exit-plan-service'
-import { permissionService } from './lib/agent-permission-service'
-import { runAgent, stopAgent, generateAgentTitle, saveFilesToAgentSession, saveFilesToWorkspaceFiles, isAgentSessionActive, queueAgentMessage, updateAgentPermissionMode, rewindAgentSession } from './lib/agent-service'
 import {
-  listAgentSessions,
-  createAgentSession,
-  getAgentSessionMeta,
-  getAgentSessionSDKMessages,
-  updateAgentSessionMeta,
-  deleteAgentSession,
-  migrateChatToAgentSession,
-  moveSessionToWorkspace,
-  forkAgentSession,
-  autoArchiveAgentSessions,
-  cleanupStaleAttachedPaths,
-  searchAgentSessionMessages,
-  searchAgentSessionReferences,
-} from './lib/agent-session-manager'
-import {
-  listAgentWorkspaces,
-  createAgentWorkspace,
-  updateAgentWorkspace,
-  deleteAgentWorkspace,
-  reorderAgentWorkspaces,
-  ensureDefaultWorkspace,
-  getWorkspaceMcpConfig,
-  saveWorkspaceMcpConfig,
-  getAllWorkspaceSkills,
-  getOtherWorkspaceSkills,
-  getWorkspaceCapabilities,
-  getAgentWorkspace,
-  deleteWorkspaceSkill,
-  importSkillFromWorkspace,
-  updateSkillFromSource,
-  readWorkspaceSkillContent,
-  writeWorkspaceSkillContent,
-  toggleWorkspaceSkill,
-  listSkillFiles,
-  readSkillFile,
-  writeSkillFile,
-  createSkillEntry,
-  deleteSkillEntry,
-  renameSkillEntry,
-  getWorkspaceAttachedDirectories,
-  getWorkspaceAttachedFiles,
-  attachWorkspaceDirectory,
-  attachWorkspaceFile,
-  detachWorkspaceDirectory,
-  detachWorkspaceFile,
-  getWorktreeRepos,
-  addWorktreeRepo,
-  removeWorktreeRepo,
-  cleanupStaleWorkspaceAttachedPaths,
-} from './lib/agent-workspace-manager'
-import {
-  saveAttachment,
-  readAttachmentAsBase64,
-  deleteAttachment,
-  openFileDialog,
-} from './lib/attachment-service'
-import {
-  listChannels,
-  createChannel,
-  updateChannel,
-  deleteChannel,
-  decryptApiKey,
-  testChannel,
-  testChannelDirect,
-  fetchModels,
-  validateChannelModel,
-} from './lib/channel-manager'
-import { updateToolState, updateToolCredentials, getToolCredentials, addCustomTool, deleteCustomTool } from './lib/chat-tool-config'
-import { getAllToolInfos } from './lib/chat-tool-registry'
-import { getAgentSessionWorkspacePath, getAgentWorkspacesDir, getWorkspaceSkillsDir, getWorkspaceFilesDir, getScratchPadPath } from './lib/config-paths'
-import {
-  listConversations,
-  createConversation,
-  getConversationMessages,
-  getRecentMessages,
-  updateConversationMeta,
-  deleteConversation,
-  deleteMessage,
-  truncateMessagesFrom,
-  updateContextDividers,
-  autoArchiveConversations,
-  searchConversationMessages,
-} from './lib/conversation-manager'
-import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
-import { setMacDockIconFromPng } from './lib/dock-icon-mac'
-import { getDingTalkConfig, saveDingTalkConfig, getDecryptedClientSecret, getDingTalkMultiBotConfig, saveDingTalkBotConfig, removeDingTalkBot, getDecryptedBotClientSecret } from './lib/dingtalk-config'
-import { setDockBadgeCount } from './lib/dock-badge-service'
-import { extractTextFromAttachment } from './lib/document-parser'
-import { checkEnvironment } from './lib/environment-checker'
-import { feishuBridgeManager } from './lib/feishu-bridge-manager'
-import {
-  getFeishuConfig,
-  saveFeishuConfig,
-  getDecryptedAppSecret,
-  getFeishuMultiBotConfig,
-  saveFeishuBotConfig,
-  removeFeishuBot,
-  getDecryptedBotAppSecret,
-} from './lib/feishu-config'
-import { presenceService } from './lib/feishu-presence'
-import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
-import { getUnstagedChanges, getFileDiff, getUntrackedContent, revertFile, getDiffContents, listWorktrees, getWorktreeChanges } from './lib/git-diff-service'
-import {
-  getLatestRelease,
-  listReleases as listGitHubReleases,
-  getReleaseByTag,
-} from './lib/github-release-service'
-import {
-  cancelInstallerDownload,
-  downloadInstaller,
-  launchInstaller,
-} from './lib/installer-downloader'
-import { fetchInstallerManifest, findInstallerSource } from './lib/installer-manifest'
-import { registerTAgentFilePath } from './lib/local-file-protocol'
-import { getMemoryConfig, setMemoryConfig } from './lib/memory-service'
-import { getProxySettings, saveProxySettings } from './lib/proxy-settings-service'
-import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
-import { getSettings, updateSettings } from './lib/settings-service'
-import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
-import { wpsBridge } from './lib/wps-bridge'
-import { getDecryptedWpsSecretKey, getWpsConfig, saveWpsConfig } from './lib/wps-config'
-import {
-  getSystemPromptConfig,
-  createSystemPrompt,
-  updateSystemPrompt,
-  deleteSystemPrompt,
-  updateAppendSetting,
-  setDefaultPrompt,
-} from './lib/system-prompt-manager'
-import { detectSystemProxy } from './lib/system-proxy-detector'
-import { getTutorialContent, getTutorialHtmlPath, createWelcomeConversation } from './lib/tutorial-service'
-import { registerUpdaterIpc } from './lib/updater/updater-ipc'
-import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
-import { wechatBridge } from './lib/wechat-bridge'
-import { getWeChatConfig } from './lib/wechat-config'
-import { watchAttachedDirectory, unwatchAttachedDirectory } from './lib/workspace-watcher'
-
-import type {
-  QuickTaskSubmitInput,
-  VoiceDictationAudioChunkInput,
-  VoiceDictationCommitInput,
-  VoiceDictationCommitResult,
-  VoiceDictationResizeInput,
-  VoiceDictationSettings,
-  VoiceDictationSettingsUpdate,
-  VoiceDictationStartInput,
-  VoiceDictationStopInput,
-  VoiceDictationTestResult,
-  MicPermissionResult,
- UserProfile, AppSettings } from '../types'
-import type { CleanupOptions } from './lib/storage-service'
-import type { CompactSessionInput, CompactSessionResult ,
+  IPC_CHANNELS,
+  CHANNEL_IPC_CHANNELS,
+  CHAT_IPC_CHANNELS,
+  AGENT_IPC_CHANNELS,
+  ENVIRONMENT_IPC_CHANNELS,
+  INSTALLER_IPC_CHANNELS,
+  PROXY_IPC_CHANNELS,
+  GITHUB_RELEASE_IPC_CHANNELS,
+  SYSTEM_PROMPT_IPC_CHANNELS,
+  MEMORY_IPC_CHANNELS,
+  CHAT_TOOL_IPC_CHANNELS,
+  FEISHU_IPC_CHANNELS,
+  DINGTALK_IPC_CHANNELS,
+  WECHAT_IPC_CHANNELS,
+  WPS_IPC_CHANNELS,
+  PIPELINE_IPC_CHANNELS,
+  USAGE_STATS_IPC_CHANNELS,
+  BTW_IPC_CHANNELS,
+  ASK_IPC_CHANNELS,
+  SOUL_IPC_CHANNELS,
+  isTAgentPermissionMode,
+  type NudgeCandidate,
+  type MemoryConfig,
+  CompactSessionInput,
+  CompactSessionResult,
   RuntimeStatus,
   GitRepoStatus,
   Channel,
@@ -253,14 +118,233 @@ import type { CompactSessionInput, CompactSessionResult ,
   FileAccessOptions,
   ResolvedFileUrl,
 } from '@tagent/shared'
+import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
+
+import {
+  USER_PROFILE_IPC_CHANNELS,
+  SETTINGS_IPC_CHANNELS,
+  SCRATCH_PAD_IPC_CHANNELS,
+  QUICK_TASK_IPC_CHANNELS,
+  VOICE_DICTATION_IPC_CHANNELS,
+  APP_ICON_IPC_CHANNELS,
+  DOCK_BADGE_IPC_CHANNELS,
+  STORAGE_IPC_CHANNELS,
+} from '../types'
+import { askUserService } from './lib/agent-ask-user-service'
+import { exitPlanService } from './lib/agent-exit-plan-service'
+import { permissionService } from './lib/agent-permission-service'
+import {
+  runAgent,
+  stopAgent,
+  generateAgentTitle,
+  saveFilesToAgentSession,
+  saveFilesToWorkspaceFiles,
+  isAgentSessionActive,
+  queueAgentMessage,
+  updateAgentPermissionMode,
+  rewindAgentSession,
+} from './lib/agent-service'
+import {
+  listAgentSessions,
+  createAgentSession,
+  getAgentSessionMeta,
+  getAgentSessionSDKMessages,
+  updateAgentSessionMeta,
+  deleteAgentSession,
+  migrateChatToAgentSession,
+  moveSessionToWorkspace,
+  forkAgentSession,
+  autoArchiveAgentSessions,
+  cleanupStaleAttachedPaths,
+  searchAgentSessionMessages,
+  searchAgentSessionReferences,
+} from './lib/agent-session-manager'
+import {
+  listAgentWorkspaces,
+  createAgentWorkspace,
+  updateAgentWorkspace,
+  deleteAgentWorkspace,
+  reorderAgentWorkspaces,
+  ensureDefaultWorkspace,
+  getWorkspaceMcpConfig,
+  saveWorkspaceMcpConfig,
+  getAllWorkspaceSkills,
+  getOtherWorkspaceSkills,
+  getWorkspaceCapabilities,
+  getAgentWorkspace,
+  deleteWorkspaceSkill,
+  importSkillFromWorkspace,
+  updateSkillFromSource,
+  readWorkspaceSkillContent,
+  writeWorkspaceSkillContent,
+  toggleWorkspaceSkill,
+  listSkillFiles,
+  readSkillFile,
+  writeSkillFile,
+  createSkillEntry,
+  deleteSkillEntry,
+  renameSkillEntry,
+  getWorkspaceAttachedDirectories,
+  getWorkspaceAttachedFiles,
+  attachWorkspaceDirectory,
+  attachWorkspaceFile,
+  detachWorkspaceDirectory,
+  detachWorkspaceFile,
+  getWorktreeRepos,
+  addWorktreeRepo,
+  removeWorktreeRepo,
+  cleanupStaleWorkspaceAttachedPaths,
+} from './lib/agent-workspace-manager'
+import {
+  saveAttachment,
+  readAttachmentAsBase64,
+  deleteAttachment,
+  openFileDialog,
+} from './lib/attachment-service'
+import {
+  listChannels,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  decryptApiKey,
+  testChannel,
+  testChannelDirect,
+  fetchModels,
+  validateChannelModel,
+} from './lib/channel-manager'
+import {
+  updateToolState,
+  updateToolCredentials,
+  getToolCredentials,
+  addCustomTool,
+  deleteCustomTool,
+} from './lib/chat-tool-config'
+import { getAllToolInfos } from './lib/chat-tool-registry'
+import {
+  getAgentSessionWorkspacePath,
+  getAgentWorkspacesDir,
+  getWorkspaceSkillsDir,
+  getWorkspaceFilesDir,
+  getScratchPadPath,
+} from './lib/config-paths'
+import {
+  listConversations,
+  createConversation,
+  getConversationMessages,
+  getRecentMessages,
+  updateConversationMeta,
+  deleteConversation,
+  deleteMessage,
+  truncateMessagesFrom,
+  updateContextDividers,
+  autoArchiveConversations,
+  searchConversationMessages,
+} from './lib/conversation-manager'
+import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
+import {
+  getDingTalkConfig,
+  saveDingTalkConfig,
+  getDecryptedClientSecret,
+  getDingTalkMultiBotConfig,
+  saveDingTalkBotConfig,
+  removeDingTalkBot,
+  getDecryptedBotClientSecret,
+} from './lib/dingtalk-config'
+import { setDockBadgeCount } from './lib/dock-badge-service'
+import { setMacDockIconFromPng } from './lib/dock-icon-mac'
+import { extractTextFromAttachment } from './lib/document-parser'
+import { checkEnvironment } from './lib/environment-checker'
+import { feishuBridgeManager } from './lib/feishu-bridge-manager'
+import {
+  getFeishuConfig,
+  saveFeishuConfig,
+  getDecryptedAppSecret,
+  getFeishuMultiBotConfig,
+  saveFeishuBotConfig,
+  removeFeishuBot,
+  getDecryptedBotAppSecret,
+} from './lib/feishu-config'
+import { presenceService } from './lib/feishu-presence'
+import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
+import {
+  getUnstagedChanges,
+  getFileDiff,
+  getUntrackedContent,
+  revertFile,
+  getDiffContents,
+  listWorktrees,
+  getWorktreeChanges,
+} from './lib/git-diff-service'
+import {
+  getLatestRelease,
+  listReleases as listGitHubReleases,
+  getReleaseByTag,
+} from './lib/github-release-service'
+import {
+  cancelInstallerDownload,
+  downloadInstaller,
+  launchInstaller,
+} from './lib/installer-downloader'
+import { fetchInstallerManifest, findInstallerSource } from './lib/installer-manifest'
+import { registerTAgentFilePath } from './lib/local-file-protocol'
+import { getMemoryConfig, setMemoryConfig } from './lib/memory-service'
+import { getProxySettings, saveProxySettings } from './lib/proxy-settings-service'
+import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
+import { getSettings, updateSettings } from './lib/settings-service'
+import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
+import {
+  getSystemPromptConfig,
+  createSystemPrompt,
+  updateSystemPrompt,
+  deleteSystemPrompt,
+  updateAppendSetting,
+  setDefaultPrompt,
+} from './lib/system-prompt-manager'
+import { detectSystemProxy } from './lib/system-proxy-detector'
+import {
+  getTutorialContent,
+  getTutorialHtmlPath,
+  createWelcomeConversation,
+} from './lib/tutorial-service'
+import { registerUpdaterIpc } from './lib/updater/updater-ipc'
+import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
+import { wechatBridge } from './lib/wechat-bridge'
+import { getWeChatConfig } from './lib/wechat-config'
+import { watchAttachedDirectory, unwatchAttachedDirectory } from './lib/workspace-watcher'
+import { wpsBridge } from './lib/wps-bridge'
+import { getDecryptedWpsSecretKey, getWpsConfig, saveWpsConfig } from './lib/wps-config'
+
+import type {
+  QuickTaskSubmitInput,
+  VoiceDictationAudioChunkInput,
+  VoiceDictationCommitInput,
+  VoiceDictationCommitResult,
+  VoiceDictationResizeInput,
+  VoiceDictationSettings,
+  VoiceDictationSettingsUpdate,
+  VoiceDictationStartInput,
+  VoiceDictationStopInput,
+  VoiceDictationTestResult,
+  MicPermissionResult,
+  UserProfile,
+  AppSettings,
+} from '../types'
+import type { CleanupOptions } from './lib/storage-service'
 
 /** 文件浏览器中需要隐藏的系统文件 */
 const HIDDEN_FS_ENTRIES = new Set(['.DS_Store', 'Thumbs.db'])
 
 /** 已知编辑器应用名称白名单（macOS） */
 const KNOWN_EDITORS = [
-  'Visual Studio Code', 'Cursor', 'Sublime Text', 'Windsurf',
-  'Zed', 'CotEditor', 'IntelliJ IDEA', 'Xcode', 'TextEdit',
+  'Visual Studio Code',
+  'Cursor',
+  'Sublime Text',
+  'Windsurf',
+  'Zed',
+  'CotEditor',
+  'IntelliJ IDEA',
+  'Xcode',
+  'TextEdit',
 ]
 
 /**
@@ -279,10 +363,7 @@ function realpathOrResolve(path: string): string {
 }
 
 function getAuthorizedRoots(options?: FileAccessOptions): string[] {
-  const roots: string[] = [
-    getAgentWorkspacesDir(),
-    join(tmpdir(), 'tagent-preview'),
-  ]
+  const roots: string[] = [getAgentWorkspacesDir(), join(tmpdir(), 'tagent-preview')]
 
   const workspaceSlugs = new Set<string>()
 
@@ -328,7 +409,9 @@ function isPathAllowed(filePath: string, options?: FileAccessOptions): boolean {
   return getAuthorizedRoots(options).some((root) => isUnderRoot(resolved, root))
 }
 
-function normalizeFileAccessOptions(value?: FileAccessOptions | string[]): FileAccessOptions | undefined {
+function normalizeFileAccessOptions(
+  value?: FileAccessOptions | string[]
+): FileAccessOptions | undefined {
   if (!value || Array.isArray(value) || typeof value !== 'object') return undefined
   return {
     sessionId: typeof value.sessionId === 'string' ? value.sessionId : undefined,
@@ -404,24 +487,41 @@ async function getMacAppIconViaSips(appPath: string): Promise<string> {
   const plistPath = join(appPath, 'Contents', 'Info.plist')
   let iconName: string | null = null
   if (existsSync(plistPath)) {
-    const r = await runCmd('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleIconFile', plistPath], { timeoutMs: 2000 })
+    const r = await runCmd(
+      '/usr/libexec/PlistBuddy',
+      ['-c', 'Print :CFBundleIconFile', plistPath],
+      { timeoutMs: 2000 }
+    )
     if (r.status === 0) iconName = r.stdout.trim()
   }
   const candidates: string[] = []
-  if (iconName) candidates.push(join(resourcesDir, iconName.endsWith('.icns') ? iconName : `${iconName}.icns`))
-  candidates.push(join(resourcesDir, 'AppIcon.icns'), join(resourcesDir, 'app.icns'), join(resourcesDir, 'icon.icns'))
+  if (iconName)
+    candidates.push(join(resourcesDir, iconName.endsWith('.icns') ? iconName : `${iconName}.icns`))
+  candidates.push(
+    join(resourcesDir, 'AppIcon.icns'),
+    join(resourcesDir, 'app.icns'),
+    join(resourcesDir, 'icon.icns')
+  )
   const icnsPath = candidates.find((p) => existsSync(p))
   if (!icnsPath) return ''
 
   const tmp = mkdtempSync(join(tmpdir(), 'tagent-icon-'))
   const outPath = join(tmp, 'icon.png')
   try {
-    const r = await runCmd('sips', ['-s', 'format', 'png', '-Z', '64', icnsPath, '--out', outPath], { timeoutMs: 4000 })
+    const r = await runCmd(
+      'sips',
+      ['-s', 'format', 'png', '-Z', '64', icnsPath, '--out', outPath],
+      { timeoutMs: 4000 }
+    )
     if (r.status !== 0 || !existsSync(outPath)) return ''
     const buf = readFileSync(outPath)
     return `data:image/png;base64,${buf.toString('base64')}`
   } finally {
-    try { if (existsSync(outPath)) unlinkSync(outPath) } catch { /* ignore */ }
+    try {
+      if (existsSync(outPath)) unlinkSync(outPath)
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -429,7 +529,7 @@ async function getMacAppIconViaSips(appPath: string): Promise<string> {
 async function runCmd(
   bin: string,
   args: string[],
-  opts: { timeoutMs?: number; stdin?: string } = {},
+  opts: { timeoutMs?: number; stdin?: string } = {}
 ): Promise<{ status: number | null; stdout: string }> {
   const { spawn } = await import('node:child_process')
   const { timeoutMs = 4000, stdin } = opts
@@ -446,14 +546,20 @@ async function runCmd(
       resolvePromise({ status, stdout })
     }
     const timer = setTimeout(() => {
-      try { child.kill('SIGKILL') } catch { /* ignore */ }
+      try {
+        child.kill('SIGKILL')
+      } catch {
+        /* ignore */
+      }
       finish(null)
     }, timeoutMs)
     child.on('error', () => finish(null))
     child.on('close', (code) => finish(code))
     if (child.stdout) {
       child.stdout.setEncoding('utf8')
-      child.stdout.on('data', (chunk: string) => { stdout += chunk })
+      child.stdout.on('data', (chunk: string) => {
+        stdout += chunk
+      })
     }
     if (stdin !== undefined && child.stdin) {
       child.stdin.end(stdin)
@@ -471,8 +577,10 @@ function parseWindowsRegistryValue(stdout: string): string {
 
 function expandWindowsEnvPath(filePath: string): string {
   return filePath.replace(/%([^%]+)%/g, (token, name: string) => {
-    const foundKey = Object.keys(process.env).find((key) => key.toLowerCase() === name.toLowerCase())
-    return foundKey ? process.env[foundKey] ?? token : token
+    const foundKey = Object.keys(process.env).find(
+      (key) => key.toLowerCase() === name.toLowerCase()
+    )
+    return foundKey ? (process.env[foundKey] ?? token) : token
   })
 }
 
@@ -500,7 +608,9 @@ async function getWindowsDefaultAppCommand(progId: string): Promise<string> {
   return (ftypeResult.stdout || '').split('=').slice(1).join('=').trim()
 }
 
-async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: string; appName: string; isUwp?: boolean } | null> {
+async function getWindowsDefaultAppInfo(
+  filePath: string
+): Promise<{ appPath: string; appName: string; isUwp?: boolean } | null> {
   const ext = extOf(filePath)
   // ext 来自渲染进程的 filePath，必须严格校验：cmd /c "assoc ${ext}" 中 & | > < 等会触发命令链
   if (!/^\.[a-zA-Z0-9]+$/.test(ext)) {
@@ -532,19 +642,25 @@ async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: st
     const mruOrder = mruLine?.split(/\s+REG_SZ\s+/)[1]?.trim() ?? ''
     if (mruOrder) {
       const firstKey = mruOrder[0]
-      const exeLine = mruResult.stdout.split(/\r?\n/).find((l) => new RegExp(`\\s+${firstKey}\\s+REG_SZ\\s+`).test(l))
+      const exeLine = mruResult.stdout
+        .split(/\r?\n/)
+        .find((l) => new RegExp(`\\s+${firstKey}\\s+REG_SZ\\s+`).test(l))
       const exeName = exeLine?.split(/\s+REG_SZ\s+/)[1]?.trim() ?? ''
       if (exeName && /^[a-zA-Z0-9 _.+()-]+\.exe$/i.test(exeName)) {
         // 从 App Paths 把 exe 名转成 progId（取 exe 对应的 HKCR 下注册的 ProgId）
         // 直接用 exe 名（去掉 .exe）当 appName，appPath 从 App Paths 查
         const appName = exeName.replace(/\.exe$/i, '')
         const apResult = await runCmd('reg', [
-          'query', `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${exeName}`, '/ve',
+          'query',
+          `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${exeName}`,
+          '/ve',
         ])
         let exePath = parseWindowsRegistryValue(apResult.stdout)
         if (!exePath) {
           const apResult2 = await runCmd('reg', [
-            'query', `HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${exeName}`, '/ve',
+            'query',
+            `HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${exeName}`,
+            '/ve',
           ])
           exePath = parseWindowsRegistryValue(apResult2.stdout)
         }
@@ -578,19 +694,27 @@ async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: st
   // 从 Application 子键读 ApplicationName 作为 appName
   if (progId.startsWith('AppX')) {
     const nameResult = await runCmd('reg', [
-      'query', `HKCR\\${progId}\\Application`, '/v', 'ApplicationName',
+      'query',
+      `HKCR\\${progId}\\Application`,
+      '/v',
+      'ApplicationName',
     ])
     let appName = parseWindowsRegistryValue(nameResult.stdout)
     // ApplicationName 通常是资源引用 "@{...?ms-resource://...}"，取最后一段
     if (appName.startsWith('@{')) {
       const appIdResult = await runCmd('reg', [
-        'query', `HKCR\\${progId}\\Application`, '/v', 'AppUserModelId',
+        'query',
+        `HKCR\\${progId}\\Application`,
+        '/v',
+        'AppUserModelId',
       ])
       const appUserModelId = parseWindowsRegistryValue(appIdResult.stdout)
       // AppUserModelId 形如 "Microsoft.ZuneVideo_8wekyb3d8bbwe!Microsoft.ZuneVideo"
       // 取 ! 之后的部分作为名字，再去掉前缀
       const parts = appUserModelId.split('!')
-      appName = (parts[1] ?? parts[0] ?? '').replace(/^Microsoft\./, '').replace(/^Windows\./, '') || 'UWP App'
+      appName =
+        (parts[1] ?? parts[0] ?? '').replace(/^Microsoft\./, '').replace(/^Windows\./, '') ||
+        'UWP App'
     }
     console.log('[DefaultApp] UWP app, appName=%s', appName)
     return { appPath: '', appName, isUwp: true }
@@ -607,20 +731,30 @@ async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: st
     // AppUserModelId 字段（非 UWP 也可能有，如 Quark）
     const appModelResult = await runCmd('reg', ['query', `HKCR\\${progId}`, '/v', 'AppUserModelId'])
     const appModelId = parseWindowsRegistryValue(appModelResult.stdout)
-    const candidateAppName = (appModelId || rootName || '').replace(/\s+(HTML?\s+)?(Document|File)$/i, '').trim()
+    const candidateAppName = (appModelId || rootName || '')
+      .replace(/\s+(HTML?\s+)?(Document|File)$/i, '')
+      .trim()
     if (!candidateAppName || !/^[a-zA-Z0-9 _.+-]+$/.test(candidateAppName)) return null
     // 从 App Paths 找 exe（应用注册了 App Paths 就能找到）
     const appPathsResult = await runCmd('reg', [
-      'query', `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${candidateAppName}.exe`, '/ve',
+      'query',
+      `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${candidateAppName}.exe`,
+      '/ve',
     ])
     let exePath = parseWindowsRegistryValue(appPathsResult.stdout)
     if (!exePath) {
       const appPathsResult2 = await runCmd('reg', [
-        'query', `HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${candidateAppName}.exe`, '/ve',
+        'query',
+        `HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${candidateAppName}.exe`,
+        '/ve',
       ])
       exePath = parseWindowsRegistryValue(appPathsResult2.stdout)
     }
-    console.log('[DefaultApp] App Paths fallback: candidateAppName=%s exePath=%s', candidateAppName, exePath)
+    console.log(
+      '[DefaultApp] App Paths fallback: candidateAppName=%s exePath=%s',
+      candidateAppName,
+      exePath
+    )
     if (!exePath) return null
     const base = exePath.split(/[\\/]/).pop() || ''
     return { appPath: exePath, appName: base.replace(/\.exe$/i, '') }
@@ -632,7 +766,7 @@ async function getWindowsDefaultAppInfo(filePath: string): Promise<{ appPath: st
 
 async function getDefaultAppInfoForFile(
   filePath: string,
-  _options?: FileAccessOptions,
+  _options?: FileAccessOptions
 ): Promise<import('@tagent/shared').DefaultAppInfo | null> {
   const { resolve } = await import('node:path')
   const absPath = resolve(filePath)
@@ -688,18 +822,33 @@ if let appUrl = NSWorkspace.shared.urlForApplication(toOpen: url) {
     const desktopPath = candidates.find((p) => existsSync(p))
     if (!desktopPath) return cacheNull(cacheKey)
     const text = readFileSync(desktopPath, 'utf8')
-    const execLine = text.split('\n').find((l) => l.startsWith('Exec='))?.slice(5) || ''
-    const nameLine = text.split('\n').find((l) => l.startsWith('Name='))?.slice(5) || ''
+    const execLine =
+      text
+        .split('\n')
+        .find((l) => l.startsWith('Exec='))
+        ?.slice(5) || ''
+    const nameLine =
+      text
+        .split('\n')
+        .find((l) => l.startsWith('Name='))
+        ?.slice(5) || ''
     appPath = execLine.split(/\s+/)[0] || ''
     appName = nameLine || (appPath.split('/').pop() ?? '')
   }
 
   if (!appPath || !appName) {
-    console.log('[DefaultApp] appPath 或 appName 为空，返回 null. appPath=%s appName=%s', appPath, appName)
+    console.log(
+      '[DefaultApp] appPath 或 appName 为空，返回 null. appPath=%s appName=%s',
+      appPath,
+      appName
+    )
     return cacheNull(cacheKey)
   }
 
-  const iconDataUrl = await getAppIconDataUrl(appPath).catch((e) => { console.warn('[DefaultApp] getAppIconDataUrl 失败:', e); return '' })
+  const iconDataUrl = await getAppIconDataUrl(appPath).catch((e) => {
+    console.warn('[DefaultApp] getAppIconDataUrl 失败:', e)
+    return ''
+  })
   console.log('[DefaultApp] iconDataUrl 长度:', iconDataUrl?.length)
   if (!iconDataUrl) return cacheNull(cacheKey)
 
@@ -733,20 +882,14 @@ export function registerIpcHandlers(): void {
   // ===== 运行时相关 =====
 
   // 获取运行时状态
-  ipcMain.handle(
-    IPC_CHANNELS.GET_RUNTIME_STATUS,
-    async (): Promise<RuntimeStatus | null> => {
-      return getRuntimeStatus()
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.GET_RUNTIME_STATUS, async (): Promise<RuntimeStatus | null> => {
+    return getRuntimeStatus()
+  })
 
   // 重新初始化运行时（用户安装完 Git/Node 后触发，Windows 场景常用）
-  ipcMain.handle(
-    IPC_CHANNELS.REINIT_RUNTIME,
-    async (): Promise<RuntimeStatus> => {
-      return reinitializeRuntime()
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.REINIT_RUNTIME, async (): Promise<RuntimeStatus> => {
+    return reinitializeRuntime()
+  })
 
   // 获取指定目录的 Git 仓库状态
   ipcMain.handle(
@@ -764,7 +907,14 @@ export function registerIpcHandlers(): void {
   // 获取未暂存的变更文件列表
   ipcMain.handle(
     IPC_CHANNELS.GET_UNSTAGED_CHANGES,
-    async (_, dirPath: string, sessionPath?: string, workspaceFilesPath?: string, extraPaths?: string[], sessionId?: string) => {
+    async (
+      _,
+      dirPath: string,
+      sessionPath?: string,
+      workspaceFilesPath?: string,
+      extraPaths?: string[],
+      sessionId?: string
+    ) => {
       if (!dirPath || typeof dirPath !== 'string') {
         console.warn('[IPC] git:get-unstaged-changes 收到无效的目录路径')
         return { isGitRepo: false, files: [], untrackedFiles: [], gitRootNames: [] }
@@ -773,81 +923,79 @@ export function registerIpcHandlers(): void {
       if (!ensurePathAllowed(dirPath, access)) {
         return { isGitRepo: false, files: [], untrackedFiles: [], gitRootNames: [] }
       }
-      const allowedSessionPath = sessionPath && isPathAllowed(sessionPath, access) ? sessionPath : undefined
-      const allowedWorkspaceFilesPath = workspaceFilesPath && isPathAllowed(workspaceFilesPath, access) ? workspaceFilesPath : undefined
+      const allowedSessionPath =
+        sessionPath && isPathAllowed(sessionPath, access) ? sessionPath : undefined
+      const allowedWorkspaceFilesPath =
+        workspaceFilesPath && isPathAllowed(workspaceFilesPath, access)
+          ? workspaceFilesPath
+          : undefined
       const allowedExtraPaths = extraPaths?.filter((p) => isPathAllowed(p, access))
-      return getUnstagedChanges(dirPath, allowedSessionPath, allowedWorkspaceFilesPath, allowedExtraPaths)
+      return getUnstagedChanges(
+        dirPath,
+        allowedSessionPath,
+        allowedWorkspaceFilesPath,
+        allowedExtraPaths
+      )
     }
   )
 
   // 获取单个文件的 diff
-  ipcMain.handle(
-    IPC_CHANNELS.GET_FILE_DIFF,
-    async (_, input: GetFileDiffInput) => {
-      const { dirPath, filePath, gitRoot, sessionId } = input
-      if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
-        console.warn('[IPC] git:get-file-diff 收到无效参数')
-        return ''
-      }
-      const access = normalizeFileAccessOptions({ sessionId })
-      if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access))) return ''
-      return getFileDiff(dirPath, filePath, gitRoot)
+  ipcMain.handle(IPC_CHANNELS.GET_FILE_DIFF, async (_, input: GetFileDiffInput) => {
+    const { dirPath, filePath, gitRoot, sessionId } = input
+    if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
+      console.warn('[IPC] git:get-file-diff 收到无效参数')
+      return ''
     }
-  )
+    const access = normalizeFileAccessOptions({ sessionId })
+    if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access)))
+      return ''
+    return getFileDiff(dirPath, filePath, gitRoot)
+  })
 
   // 获取未追踪文件内容
-  ipcMain.handle(
-    IPC_CHANNELS.GET_UNTRACKED_CONTENT,
-    async (_, input: GetFileDiffInput) => {
-      const { dirPath, filePath, gitRoot, sessionId } = input
-      if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
-        console.warn('[IPC] git:get-untracked-content 收到无效参数')
-        return ''
-      }
-      const access = normalizeFileAccessOptions({ sessionId })
-      if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access))) return ''
-      return getUntrackedContent(dirPath, filePath, gitRoot)
+  ipcMain.handle(IPC_CHANNELS.GET_UNTRACKED_CONTENT, async (_, input: GetFileDiffInput) => {
+    const { dirPath, filePath, gitRoot, sessionId } = input
+    if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
+      console.warn('[IPC] git:get-untracked-content 收到无效参数')
+      return ''
     }
-  )
+    const access = normalizeFileAccessOptions({ sessionId })
+    if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access)))
+      return ''
+    return getUntrackedContent(dirPath, filePath, gitRoot)
+  })
 
   // 还原文件变更
-  ipcMain.handle(
-    IPC_CHANNELS.REVERT_FILE,
-    async (_, input: RevertFileInput) => {
-      const { dirPath, filePath, gitRoot, sessionId } = input
-      if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
-        console.warn('[IPC] git:revert-file 收到无效参数')
-        return
-      }
-      const access = normalizeFileAccessOptions({ sessionId })
-      if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access))) return
-      await revertFile(dirPath, filePath, gitRoot)
+  ipcMain.handle(IPC_CHANNELS.REVERT_FILE, async (_, input: RevertFileInput) => {
+    const { dirPath, filePath, gitRoot, sessionId } = input
+    if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
+      console.warn('[IPC] git:revert-file 收到无效参数')
+      return
     }
-  )
+    const access = normalizeFileAccessOptions({ sessionId })
+    if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access)))
+      return
+    await revertFile(dirPath, filePath, gitRoot)
+  })
 
   // 获取文件新旧版本内容
-  ipcMain.handle(
-    IPC_CHANNELS.GET_DIFF_CONTENTS,
-    async (_, input: GetFileDiffInput) => {
-      const { dirPath, filePath, gitRoot, sessionId } = input
-      if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
-        console.warn('[IPC] git:get-diff-contents 收到无效参数')
-        return null
-      }
-      const access = normalizeFileAccessOptions({ sessionId })
-      if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access))) return null
-      return getDiffContents(dirPath, filePath, gitRoot, input.baseRef)
+  ipcMain.handle(IPC_CHANNELS.GET_DIFF_CONTENTS, async (_, input: GetFileDiffInput) => {
+    const { dirPath, filePath, gitRoot, sessionId } = input
+    if (!dirPath || !filePath || typeof dirPath !== 'string' || typeof filePath !== 'string') {
+      console.warn('[IPC] git:get-diff-contents 收到无效参数')
+      return null
     }
-  )
+    const access = normalizeFileAccessOptions({ sessionId })
+    if (!ensurePathAllowed(dirPath, access) || (gitRoot && !ensurePathAllowed(gitRoot, access)))
+      return null
+    return getDiffContents(dirPath, filePath, gitRoot, input.baseRef)
+  })
 
   // 列出 Git Worktree（只读取 worktree 元信息，不涉及文件内容，跳过路径安全检查）
-  ipcMain.handle(
-    IPC_CHANNELS.LIST_WORKTREES,
-    async (_, repoPath: string, _sessionId: string) => {
-      if (!repoPath || typeof repoPath !== 'string') return []
-      return await listWorktrees(repoPath)
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.LIST_WORKTREES, async (_, repoPath: string, _sessionId: string) => {
+    if (!repoPath || typeof repoPath !== 'string') return []
+    return await listWorktrees(repoPath)
+  })
 
   // 获取 Worktree 相对于基准分支的全量变更
   ipcMain.handle(
@@ -868,7 +1016,12 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     IPC_CHANNELS.OPEN_DETACHED_PREVIEW,
     async (event, input: DetachedPreviewWindowInput): Promise<string | null> => {
-      if (!input || typeof input.sessionId !== 'string' || typeof input.filePath !== 'string' || typeof input.dirPath !== 'string') {
+      if (
+        !input ||
+        typeof input.sessionId !== 'string' ||
+        typeof input.filePath !== 'string' ||
+        typeof input.dirPath !== 'string'
+      ) {
         console.warn('[IPC] preview:open-detached 收到无效参数')
         return null
       }
@@ -879,19 +1032,26 @@ export function registerIpcHandlers(): void {
   )
 
   // 获取独立预览窗口数据
-  ipcMain.handle(
-    IPC_CHANNELS.GET_DETACHED_PREVIEW_DATA,
-    async (_, previewId: string) => {
-      if (!previewId || typeof previewId !== 'string') return null
-      const { getDetachedPreviewWindowData } = await import('./lib/detached-preview-window')
-      return getDetachedPreviewWindowData(previewId)
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.GET_DETACHED_PREVIEW_DATA, async (_, previewId: string) => {
+    if (!previewId || typeof previewId !== 'string') return null
+    const { getDetachedPreviewWindowData } = await import('./lib/detached-preview-window')
+    return getDetachedPreviewWindowData(previewId)
+  })
 
   // 截图导出
   ipcMain.handle(
     IPC_CHANNELS.SCREENSHOT_CAPTURE,
-    async (_, input: { html: string; isDark: boolean; width?: number; mode: 'clipboard' | 'file'; css?: string; themeClass?: string }) => {
+    async (
+      _,
+      input: {
+        html: string
+        isDark: boolean
+        width?: number
+        mode: 'clipboard' | 'file'
+        css?: string
+        themeClass?: string
+      }
+    ) => {
       const { captureScreenshot } = await import('./lib/screenshot-service')
       return captureScreenshot(input)
     }
@@ -903,7 +1063,12 @@ export function registerIpcHandlers(): void {
   // 用系统默认应用打开任意文件（appName 需在 KNOWN_EDITORS 白名单内）
   ipcMain.handle(
     IPC_CHANNELS.SYSTEM_OPEN_FILE,
-    async (_, filePath: string, appName?: string, access?: FileAccessOptions | string[]): Promise<void> => {
+    async (
+      _,
+      filePath: string,
+      appName?: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<void> => {
       const { resolve } = await import('node:path')
       const absPath = resolve(filePath)
       const options = normalizeFileAccessOptions(access)
@@ -938,9 +1103,10 @@ export function registerIpcHandlers(): void {
       const home = homedir()
 
       const editors = KNOWN_EDITORS.map((name) => {
-        const searchPaths = name === 'Xcode' || name === 'TextEdit'
-          ? [`/Applications/${name}.app`]
-          : [`/Applications/${name}.app`, `${home}/Applications/${name}.app`]
+        const searchPaths =
+          name === 'Xcode' || name === 'TextEdit'
+            ? [`/Applications/${name}.app`]
+            : [`/Applications/${name}.app`, `${home}/Applications/${name}.app`]
         return { name, paths: searchPaths }
       })
 
@@ -953,7 +1119,11 @@ export function registerIpcHandlers(): void {
   // 查询某个文件在本机的默认打开应用信息（带图标）
   ipcMain.handle(
     IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE,
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@tagent/shared').DefaultAppInfo | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<import('@tagent/shared').DefaultAppInfo | null> => {
       if (!filePath || typeof filePath !== 'string') return null
       try {
         const options = normalizeFileAccessOptions(access)
@@ -963,7 +1133,12 @@ export function registerIpcHandlers(): void {
         }
         console.log('[IPC] get-default-app-for-file 收到请求:', filePath)
         const result = await getDefaultAppInfoForFile(filePath, options)
-        console.log('[IPC] get-default-app-for-file 返回:', result ? `name=${result.name} appPath=${result.appPath} iconLen=${result.iconDataUrl?.length}` : 'null')
+        console.log(
+          '[IPC] get-default-app-for-file 返回:',
+          result
+            ? `name=${result.name} appPath=${result.appPath} iconLen=${result.iconDataUrl?.length}`
+            : 'null'
+        )
         return result
       } catch (err) {
         console.warn('[IPC] shell:get-default-app-for-file 失败:', err)
@@ -975,12 +1150,9 @@ export function registerIpcHandlers(): void {
   // ===== 渠道管理相关 =====
 
   // 获取所有渠道（apiKey 保持加密态）
-  ipcMain.handle(
-    CHANNEL_IPC_CHANNELS.LIST,
-    async (): Promise<Channel[]> => {
-      return listChannels()
-    }
-  )
+  ipcMain.handle(CHANNEL_IPC_CHANNELS.LIST, async (): Promise<Channel[]> => {
+    return listChannels()
+  })
 
   // 创建渠道
   ipcMain.handle(
@@ -999,12 +1171,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除渠道
-  ipcMain.handle(
-    CHANNEL_IPC_CHANNELS.DELETE,
-    async (_, id: string): Promise<void> => {
-      return deleteChannel(id)
-    }
-  )
+  ipcMain.handle(CHANNEL_IPC_CHANNELS.DELETE, async (_, id: string): Promise<void> => {
+    return deleteChannel(id)
+  })
 
   // 解密 API Key（仅在用户查看时调用）
   ipcMain.handle(
@@ -1049,12 +1218,9 @@ export function registerIpcHandlers(): void {
   // ===== 对话管理相关 =====
 
   // 获取对话列表
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.LIST_CONVERSATIONS,
-    async (): Promise<ConversationMeta[]> => {
-      return listConversations()
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.LIST_CONVERSATIONS, async (): Promise<ConversationMeta[]> => {
+    return listConversations()
+  })
 
   // 创建对话
   ipcMain.handle(
@@ -1065,12 +1231,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 获取对话消息
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.GET_MESSAGES,
-    async (_, id: string): Promise<ChatMessage[]> => {
-      return getConversationMessages(id)
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.GET_MESSAGES, async (_, id: string): Promise<ChatMessage[]> => {
+    return getConversationMessages(id)
+  })
 
   // 获取对话最近 N 条消息（分页加载）
   ipcMain.handle(
@@ -1097,29 +1260,23 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除对话
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.DELETE_CONVERSATION,
-    async (_, id: string): Promise<void> => {
-      return deleteConversation(id)
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.DELETE_CONVERSATION, async (_, id: string): Promise<void> => {
+    return deleteConversation(id)
+  })
 
   // 切换对话置顶状态
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.TOGGLE_PIN,
-    async (_, id: string): Promise<ConversationMeta> => {
-      const conversations = listConversations()
-      const current = conversations.find((c) => c.id === id)
-      if (!current) throw new Error(`对话不存在: ${id}`)
-      const newPinned = !current.pinned
-      // 置顶时自动取消归档
-      const updates: Partial<ConversationMeta> = { pinned: newPinned }
-      if (newPinned && current.archived) {
-        updates.archived = false
-      }
-      return updateConversationMeta(id, updates)
+  ipcMain.handle(CHAT_IPC_CHANNELS.TOGGLE_PIN, async (_, id: string): Promise<ConversationMeta> => {
+    const conversations = listConversations()
+    const current = conversations.find((c) => c.id === id)
+    if (!current) throw new Error(`对话不存在: ${id}`)
+    const newPinned = !current.pinned
+    // 置顶时自动取消归档
+    const updates: Partial<ConversationMeta> = { pinned: newPinned }
+    if (newPinned && current.archived) {
+      updates.archived = false
     }
-  )
+    return updateConversationMeta(id, updates)
+  })
 
   // 切换对话归档状态
   ipcMain.handle(
@@ -1139,20 +1296,14 @@ export function registerIpcHandlers(): void {
   )
 
   // 搜索对话消息内容
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.SEARCH_MESSAGES,
-    async (_, query: string) => {
-      return searchConversationMessages(query)
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.SEARCH_MESSAGES, async (_, query: string) => {
+    return searchConversationMessages(query)
+  })
 
   // 获取教程内容
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.GET_TUTORIAL_CONTENT,
-    async (): Promise<string | null> => {
-      return getTutorialContent()
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.GET_TUTORIAL_CONTENT, async (): Promise<string | null> => {
+    return getTutorialContent()
+  })
 
   // 在系统默认浏览器中打开本地教程页面（resources/index.html）
   // 教程已改为独立 HTML 页面，渲染端只发语义动作，路径与 file:// 协议由主进程拼接
@@ -1206,12 +1357,12 @@ export function registerIpcHandlers(): void {
       _,
       conversationId: string,
       messageId: string,
-      preserveFirstMessageAttachments?: boolean,
+      preserveFirstMessageAttachments?: boolean
     ): Promise<ChatMessage[]> => {
       return truncateMessagesFrom(
         conversationId,
         messageId,
-        preserveFirstMessageAttachments ?? false,
+        preserveFirstMessageAttachments ?? false
       )
     }
   )
@@ -1252,7 +1403,14 @@ export function registerIpcHandlers(): void {
 
       const win = BrowserWindow.fromWebContents(event.sender)
       const ext = pathExtname(defaultFilename).replace('.', '').toLowerCase()
-      const filterMap: Record<string, string> = { jpg: 'JPEG', jpeg: 'JPEG', png: 'PNG', gif: 'GIF', webp: 'WebP', bmp: 'BMP' }
+      const filterMap: Record<string, string> = {
+        jpg: 'JPEG',
+        jpeg: 'JPEG',
+        png: 'PNG',
+        gif: 'GIF',
+        webp: 'WebP',
+        bmp: 'BMP',
+      }
       const filterName = filterMap[ext] ?? 'Image'
 
       const result = await dialog.showSaveDialog(win ?? BrowserWindow.getFocusedWindow()!, {
@@ -1293,7 +1451,13 @@ export function registerIpcHandlers(): void {
 
       const win = BrowserWindow.fromWebContents(event.sender)
       const ext = pathExtname(defaultFilename).replace('.', '').toLowerCase()
-      const filterMap: Record<string, string> = { jpg: 'JPEG', jpeg: 'JPEG', png: 'PNG', gif: 'GIF', webp: 'WebP' }
+      const filterMap: Record<string, string> = {
+        jpg: 'JPEG',
+        jpeg: 'JPEG',
+        png: 'PNG',
+        gif: 'GIF',
+        webp: 'WebP',
+      }
       const filterName = filterMap[ext] ?? 'Image'
 
       const result = await dialog.showSaveDialog(win ?? BrowserWindow.getFocusedWindow()!, {
@@ -1320,12 +1484,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 打开文件选择对话框
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.OPEN_FILE_DIALOG,
-    async (): Promise<FileDialogResult> => {
-      return openFileDialog()
-    }
-  )
+  ipcMain.handle(CHAT_IPC_CHANNELS.OPEN_FILE_DIALOG, async (): Promise<FileDialogResult> => {
+    return openFileDialog()
+  })
 
   // 提取附件文档的文本内容
   ipcMain.handle(
@@ -1338,12 +1499,9 @@ export function registerIpcHandlers(): void {
   // ===== 用户档案相关 =====
 
   // 获取用户档案
-  ipcMain.handle(
-    USER_PROFILE_IPC_CHANNELS.GET,
-    async (): Promise<UserProfile> => {
-      return getUserProfile()
-    }
-  )
+  ipcMain.handle(USER_PROFILE_IPC_CHANNELS.GET, async (): Promise<UserProfile> => {
+    return getUserProfile()
+  })
 
   // 更新用户档案
   ipcMain.handle(
@@ -1356,12 +1514,9 @@ export function registerIpcHandlers(): void {
   // ===== 应用设置相关 =====
 
   // 获取应用设置
-  ipcMain.handle(
-    SETTINGS_IPC_CHANNELS.GET,
-    async (): Promise<AppSettings> => {
-      return getSettings()
-    }
-  )
+  ipcMain.handle(SETTINGS_IPC_CHANNELS.GET, async (): Promise<AppSettings> => {
+    return getSettings()
+  })
 
   // 更新应用设置
   ipcMain.handle(
@@ -1389,28 +1544,22 @@ export function registerIpcHandlers(): void {
   )
 
   // 同步更新应用设置（用于 beforeunload 场景）
-  ipcMain.on(
-    SETTINGS_IPC_CHANNELS.UPDATE_SYNC,
-    (event, updates: Partial<AppSettings>) => {
-      try {
-        const result = updateSettings(updates)
-        if (updates.feishuSessionMirror !== undefined) {
-          syncFeishuSyncSleepBlocker(result)
-        }
-        event.returnValue = true
-      } catch {
-        event.returnValue = false
+  ipcMain.on(SETTINGS_IPC_CHANNELS.UPDATE_SYNC, (event, updates: Partial<AppSettings>) => {
+    try {
+      const result = updateSettings(updates)
+      if (updates.feishuSessionMirror !== undefined) {
+        syncFeishuSyncSleepBlocker(result)
       }
+      event.returnValue = true
+    } catch {
+      event.returnValue = false
     }
-  )
+  })
 
   // 获取系统主题（是否深色模式）
-  ipcMain.handle(
-    SETTINGS_IPC_CHANNELS.GET_SYSTEM_THEME,
-    async (): Promise<boolean> => {
-      return nativeTheme.shouldUseDarkColors
-    }
-  )
+  ipcMain.handle(SETTINGS_IPC_CHANNELS.GET_SYSTEM_THEME, async (): Promise<boolean> => {
+    return nativeTheme.shouldUseDarkColors
+  })
 
   // 监听系统主题变化，推送给所有渲染进程窗口
   nativeTheme.on('updated', () => {
@@ -1424,48 +1573,39 @@ export function registerIpcHandlers(): void {
   // ===== Scratch Pad 持久化 =====
 
   // 从磁盘加载 scratch-pad.md
-  ipcMain.handle(
-    SCRATCH_PAD_IPC_CHANNELS.LOAD,
-    async (): Promise<string> => {
-      const path = getScratchPadPath()
-      try {
-        if (!existsSync(path)) return ''
-        return readFileSync(path, 'utf-8')
-      } catch (err) {
-        console.error('[ScratchPad] 加载失败:', err)
-        return ''
-      }
+  ipcMain.handle(SCRATCH_PAD_IPC_CHANNELS.LOAD, async (): Promise<string> => {
+    const path = getScratchPadPath()
+    try {
+      if (!existsSync(path)) return ''
+      return readFileSync(path, 'utf-8')
+    } catch (err) {
+      console.error('[ScratchPad] 加载失败:', err)
+      return ''
     }
-  )
+  })
 
   // 异步保存 scratch-pad.md
-  ipcMain.handle(
-    SCRATCH_PAD_IPC_CHANNELS.SAVE,
-    async (_, content: string): Promise<boolean> => {
-      const path = getScratchPadPath()
-      try {
-        await writeFile(path, content, 'utf-8')
-        return true
-      } catch (err) {
-        console.error('[ScratchPad] 保存失败:', err)
-        return false
-      }
+  ipcMain.handle(SCRATCH_PAD_IPC_CHANNELS.SAVE, async (_, content: string): Promise<boolean> => {
+    const path = getScratchPadPath()
+    try {
+      await writeFile(path, content, 'utf-8')
+      return true
+    } catch (err) {
+      console.error('[ScratchPad] 保存失败:', err)
+      return false
     }
-  )
+  })
 
   // 同步保存 scratch-pad.md（beforeunload 场景）
-  ipcMain.on(
-    SCRATCH_PAD_IPC_CHANNELS.SAVE_SYNC,
-    (event, content: string) => {
-      try {
-        writeFileSync(getScratchPadPath(), content, 'utf-8')
-        event.returnValue = true
-      } catch (err) {
-        console.error('[ScratchPad] 同步保存失败:', err)
-        event.returnValue = false
-      }
+  ipcMain.on(SCRATCH_PAD_IPC_CHANNELS.SAVE_SYNC, (event, content: string) => {
+    try {
+      writeFileSync(getScratchPadPath(), content, 'utf-8')
+      event.returnValue = true
+    } catch (err) {
+      console.error('[ScratchPad] 同步保存失败:', err)
+      event.returnValue = false
     }
-  )
+  })
 
   // 导出为 Markdown 到指定目录
   ipcMain.handle(
@@ -1511,65 +1651,53 @@ export function registerIpcHandlers(): void {
 
   // ===== 应用图标切换 =====
 
-  ipcMain.handle(
-    APP_ICON_IPC_CHANNELS.SET,
-    async (_, variantId: string): Promise<boolean> => {
-      try {
-        // 解析图标文件路径
-        const iconPath = resolveAppIconPath(variantId)
-        if (!iconPath || !existsSync(iconPath)) {
-          console.warn('[图标] 图标文件不存在:', iconPath)
-          return false
-        }
-
-        // macOS: 设置 Dock 图标（squircle 蒙版）
-        if (process.platform === 'darwin' && app.dock) {
-          setMacDockIcon(iconPath)
-        }
-
-        // 持久化到设置
-        await updateSettings({ appIconVariant: variantId })
-        console.log(`[图标] 已切换到: ${variantId}`)
-        return true
-      } catch (error) {
-        console.error('[图标] 切换失败:', error)
+  ipcMain.handle(APP_ICON_IPC_CHANNELS.SET, async (_, variantId: string): Promise<boolean> => {
+    try {
+      // 解析图标文件路径
+      const iconPath = resolveAppIconPath(variantId)
+      if (!iconPath || !existsSync(iconPath)) {
+        console.warn('[图标] 图标文件不存在:', iconPath)
         return false
       }
+
+      // macOS: 设置 Dock 图标（squircle 蒙版）
+      if (process.platform === 'darwin' && app.dock) {
+        setMacDockIcon(iconPath)
+      }
+
+      // 持久化到设置
+      await updateSettings({ appIconVariant: variantId })
+      console.log(`[图标] 已切换到: ${variantId}`)
+      return true
+    } catch (error) {
+      console.error('[图标] 切换失败:', error)
+      return false
     }
-  )
+  })
 
   // ===== Dock/Launcher 角标 =====
 
-  ipcMain.handle(
-    DOCK_BADGE_IPC_CHANNELS.SET_COUNT,
-    async (_, count: number): Promise<boolean> => {
-      return setDockBadgeCount(count)
-    }
-  )
+  ipcMain.handle(DOCK_BADGE_IPC_CHANNELS.SET_COUNT, async (_, count: number): Promise<boolean> => {
+    return setDockBadgeCount(count)
+  })
 
   // ===== 环境检测相关 =====
 
   // 执行环境检测
-  ipcMain.handle(
-    ENVIRONMENT_IPC_CHANNELS.CHECK,
-    async (): Promise<EnvironmentCheckResult> => {
-      const result = await checkEnvironment()
-      // 自动保存检测结果到设置
-      await updateSettings({
-        lastEnvironmentCheck: result,
-      })
-      return result
-    }
-  )
+  ipcMain.handle(ENVIRONMENT_IPC_CHANNELS.CHECK, async (): Promise<EnvironmentCheckResult> => {
+    const result = await checkEnvironment()
+    // 自动保存检测结果到设置
+    await updateSettings({
+      lastEnvironmentCheck: result,
+    })
+    return result
+  })
 
   // ===== 第三方安装包（Git / Node.js）相关 =====
 
-  ipcMain.handle(
-    INSTALLER_IPC_CHANNELS.MANIFEST,
-    async (): Promise<InstallerManifest> => {
-      return fetchInstallerManifest()
-    }
-  )
+  ipcMain.handle(INSTALLER_IPC_CHANNELS.MANIFEST, async (): Promise<InstallerManifest> => {
+    return fetchInstallerManifest()
+  })
 
   ipcMain.handle(
     INSTALLER_IPC_CHANNELS.DOWNLOAD,
@@ -1588,29 +1716,20 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    INSTALLER_IPC_CHANNELS.CANCEL,
-    async (_event, key: string): Promise<boolean> => {
-      return cancelInstallerDownload(key)
-    }
-  )
+  ipcMain.handle(INSTALLER_IPC_CHANNELS.CANCEL, async (_event, key: string): Promise<boolean> => {
+    return cancelInstallerDownload(key)
+  })
 
-  ipcMain.handle(
-    INSTALLER_IPC_CHANNELS.LAUNCH,
-    async (_event, filePath: string): Promise<void> => {
-      await launchInstaller(filePath)
-    }
-  )
+  ipcMain.handle(INSTALLER_IPC_CHANNELS.LAUNCH, async (_event, filePath: string): Promise<void> => {
+    await launchInstaller(filePath)
+  })
 
   // ===== 代理配置相关 =====
 
   // 获取代理配置
-  ipcMain.handle(
-    PROXY_IPC_CHANNELS.GET_SETTINGS,
-    async (): Promise<ProxyConfig> => {
-      return getProxySettings()
-    }
-  )
+  ipcMain.handle(PROXY_IPC_CHANNELS.GET_SETTINGS, async (): Promise<ProxyConfig> => {
+    return getProxySettings()
+  })
 
   // 更新代理配置
   ipcMain.handle(
@@ -1621,12 +1740,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 检测系统代理
-  ipcMain.handle(
-    PROXY_IPC_CHANNELS.DETECT_SYSTEM,
-    async (): Promise<SystemProxyDetectResult> => {
-      return detectSystemProxy()
-    }
-  )
+  ipcMain.handle(PROXY_IPC_CHANNELS.DETECT_SYSTEM, async (): Promise<SystemProxyDetectResult> => {
+    return detectSystemProxy()
+  })
 
   // ===== Agent 会话管理相关 =====
 
@@ -1650,7 +1766,13 @@ export function registerIpcHandlers(): void {
   // 创建 Agent 会话
   ipcMain.handle(
     AGENT_IPC_CHANNELS.CREATE_SESSION,
-    async (_, title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta'): Promise<AgentSessionMeta> => {
+    async (
+      _,
+      title?: string,
+      channelId?: string,
+      workspaceId?: string,
+      mode?: 'general' | 'ta'
+    ): Promise<AgentSessionMeta> => {
       const session = createAgentSession(title, channelId, workspaceId, mode)
       feishuBridgeManager.ensureSessionMirror(session).catch((error) => {
         console.error('[飞书 Session 镜像] 新会话建群失败:', error)
@@ -1693,19 +1815,16 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除 Agent 会话
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.DELETE_SESSION,
-    async (_, id: string): Promise<void> => {
-      // 清理权限服务中该会话的白名单
-      permissionService.clearSessionWhitelist(id)
-      permissionService.clearSessionPending(id)
-      // 清理 AskUser 服务中的待处理请求
-      askUserService.clearSessionPending(id)
-      // 清理 ExitPlanMode 服务中的待处理请求
-      exitPlanService.clearSessionPending(id)
-      return deleteAgentSession(id)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.DELETE_SESSION, async (_, id: string): Promise<void> => {
+    // 清理权限服务中该会话的白名单
+    permissionService.clearSessionWhitelist(id)
+    permissionService.clearSessionPending(id)
+    // 清理 AskUser 服务中的待处理请求
+    askUserService.clearSessionPending(id)
+    // 清理 ExitPlanMode 服务中的待处理请求
+    exitPlanService.clearSessionPending(id)
+    return deleteAgentSession(id)
+  })
 
   // 迁移 Chat 对话记录到 Agent 会话
   ipcMain.handle(
@@ -1781,12 +1900,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 搜索 Agent 会话消息内容
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.SEARCH_MESSAGES,
-    async (_, query: string) => {
-      return searchAgentSessionMessages(query)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.SEARCH_MESSAGES, async (_, query: string) => {
+    return searchAgentSessionMessages(query)
+  })
 
   // 搜索当前工作区可引用的 Agent 会话
   ipcMain.handle(
@@ -1824,10 +1940,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     AGENT_IPC_CHANNELS.REWIND_SESSION,
     async (_, input: RewindSessionInput): Promise<RewindSessionResult> => {
-      return rewindAgentSession(
-        input.sessionId,
-        input.assistantMessageUuid,
-      )
+      return rewindAgentSession(input.sessionId, input.assistantMessageUuid)
     }
   )
 
@@ -1837,12 +1950,9 @@ export function registerIpcHandlers(): void {
   ensureDefaultWorkspace()
 
   // 获取 Agent 工作区列表
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.LIST_WORKSPACES,
-    async (): Promise<AgentWorkspace[]> => {
-      return listAgentWorkspaces()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.LIST_WORKSPACES, async (): Promise<AgentWorkspace[]> => {
+    return listAgentWorkspaces()
+  })
 
   // 创建 Agent 工作区
   ipcMain.handle(
@@ -1861,12 +1971,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除 Agent 工作区
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.DELETE_WORKSPACE,
-    async (_, id: string): Promise<void> => {
-      return deleteAgentWorkspace(id)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.DELETE_WORKSPACE, async (_, id: string): Promise<void> => {
+    return deleteAgentWorkspace(id)
+  })
 
   // 重排工作区顺序
   ipcMain.handle(
@@ -1905,12 +2012,16 @@ export function registerIpcHandlers(): void {
   // 测试 MCP 服务器连接
   ipcMain.handle(
     AGENT_IPC_CHANNELS.TEST_MCP_SERVER,
-    async (_, name: string, entry: import('@tagent/shared').McpServerEntry): Promise<{ success: boolean; message: string }> => {
+    async (
+      _,
+      name: string,
+      entry: import('@tagent/shared').McpServerEntry
+    ): Promise<{ success: boolean; message: string }> => {
       const { validateMcpServer } = await import('./lib/mcp-validator')
       const result = await validateMcpServer(name, entry)
       return {
         success: result.valid,
-        message: result.valid ? '连接成功' : (result.reason || '连接失败'),
+        message: result.valid ? '连接成功' : result.reason || '连接失败',
       }
     }
   )
@@ -1948,12 +2059,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 获取其他工作区的 Skill 列表
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_OTHER_WORKSPACE_SKILLS,
-    async (_, currentSlug: string) => {
-      return getOtherWorkspaceSkills(currentSlug)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_OTHER_WORKSPACE_SKILLS, async (_, currentSlug: string) => {
+    return getOtherWorkspaceSkills(currentSlug)
+  })
 
   // 从其他工作区导入 Skill
   ipcMain.handle(
@@ -2003,14 +2111,26 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.WRITE_SKILL_FILE,
-    async (_, workspaceSlug: string, skillSlug: string, relativePath: string, content: string): Promise<void> => {
+    async (
+      _,
+      workspaceSlug: string,
+      skillSlug: string,
+      relativePath: string,
+      content: string
+    ): Promise<void> => {
       writeSkillFile(workspaceSlug, skillSlug, relativePath, content)
     }
   )
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.CREATE_SKILL_ENTRY,
-    async (_, workspaceSlug: string, skillSlug: string, relativePath: string, type: 'file' | 'directory'): Promise<void> => {
+    async (
+      _,
+      workspaceSlug: string,
+      skillSlug: string,
+      relativePath: string,
+      type: 'file' | 'directory'
+    ): Promise<void> => {
       createSkillEntry(workspaceSlug, skillSlug, relativePath, type)
     }
   )
@@ -2024,7 +2144,13 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.RENAME_SKILL_ENTRY,
-    async (_, workspaceSlug: string, skillSlug: string, fromRelative: string, toRelative: string): Promise<void> => {
+    async (
+      _,
+      workspaceSlug: string,
+      skillSlug: string,
+      fromRelative: string,
+      toRelative: string
+    ): Promise<void> => {
       renameSkillEntry(workspaceSlug, skillSlug, fromRelative, toRelative)
     }
   )
@@ -2044,13 +2170,10 @@ export function registerIpcHandlers(): void {
   )
 
   // 中止 Agent 执行
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.STOP_AGENT,
-    async (_, sessionId: string): Promise<void> => {
-      feishuBridgeManager.stopSessionMirrorRun(sessionId)
-      stopAgent(sessionId)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.STOP_AGENT, async (_, sessionId: string): Promise<void> => {
+    feishuBridgeManager.stopSessionMirrorRun(sessionId)
+    stopAgent(sessionId)
+  })
 
   // ===== Agent 队列消息 =====
 
@@ -2095,28 +2218,28 @@ export function registerIpcHandlers(): void {
       if (sessionId) {
         event.sender.send(AGENT_IPC_CHANNELS.STREAM_EVENT, {
           sessionId,
-          payload: { kind: 'tagent_event', event: { type: 'permission_resolved', requestId, behavior } },
+          payload: {
+            kind: 'tagent_event',
+            event: { type: 'permission_resolved', requestId, behavior },
+          },
         })
       }
     }
   )
 
   // 停止任务
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.STOP_TASK,
-    async (_, input: StopTaskInput): Promise<void> => {
-      try {
-        if (input.type === 'shell') {
-          console.warn('[IPC] STOP_TASK: Shell 任务停止功能待实现')
-        } else {
-          console.warn('[IPC] STOP_TASK: Agent 任务暂不支持单独停止')
-        }
-      } catch (error) {
-        console.error('[IPC] 停止任务失败:', error)
-        throw error
+  ipcMain.handle(AGENT_IPC_CHANNELS.STOP_TASK, async (_, input: StopTaskInput): Promise<void> => {
+    try {
+      if (input.type === 'shell') {
+        console.warn('[IPC] STOP_TASK: Shell 任务停止功能待实现')
+      } else {
+        console.warn('[IPC] STOP_TASK: Agent 任务暂不支持单独停止')
       }
+    } catch (error) {
+      console.error('[IPC] 停止任务失败:', error)
+      throw error
     }
-  )
+  })
 
   // 热切换指定会话的权限模式（运行中生效，不广播）
   ipcMain.handle(
@@ -2147,19 +2270,13 @@ export function registerIpcHandlers(): void {
   )
 
   // 全局记忆配置
-  ipcMain.handle(
-    MEMORY_IPC_CHANNELS.GET_CONFIG,
-    async (): Promise<MemoryConfig> => {
-      return getMemoryConfig()
-    }
-  )
+  ipcMain.handle(MEMORY_IPC_CHANNELS.GET_CONFIG, async (): Promise<MemoryConfig> => {
+    return getMemoryConfig()
+  })
 
-  ipcMain.handle(
-    MEMORY_IPC_CHANNELS.SET_CONFIG,
-    async (_, config: MemoryConfig): Promise<void> => {
-      setMemoryConfig(config)
-    }
-  )
+  ipcMain.handle(MEMORY_IPC_CHANNELS.SET_CONFIG, async (_, config: MemoryConfig): Promise<void> => {
+    setMemoryConfig(config)
+  })
 
   ipcMain.handle(
     MEMORY_IPC_CHANNELS.TEST_CONNECTION,
@@ -2171,11 +2288,18 @@ export function registerIpcHandlers(): void {
       try {
         const { searchMemory } = await import('./lib/memos-client')
         const result = await searchMemory(
-          { apiKey: config.apiKey, userId: config.userId?.trim() || 'tagent-user', baseUrl: config.baseUrl },
+          {
+            apiKey: config.apiKey,
+            userId: config.userId?.trim() || 'tagent-user',
+            baseUrl: config.baseUrl,
+          },
           'test connection',
-          1,
+          1
         )
-        return { success: true, message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好` }
+        return {
+          success: true,
+          message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好`,
+        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
         return { success: false, message: `连接失败: ${msg}` }
@@ -2198,7 +2322,13 @@ export function registerIpcHandlers(): void {
   // 响应 Nudge
   ipcMain.handle(
     MEMORY_IPC_CHANNELS.RESPOND_NUDGE,
-    async (_, sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta'): Promise<void> => {
+    async (
+      _,
+      sessionId: string,
+      nudgeId: string,
+      action: 'accept' | 'reject' | 'defer',
+      mode: 'general' | 'ta'
+    ): Promise<void> => {
       const { nudgeService } = await import('./lib/nudge-service')
       await nudgeService.handleNudgeResponse(sessionId, nudgeId, action, mode)
     }
@@ -2207,12 +2337,9 @@ export function registerIpcHandlers(): void {
   // ===== Chat 工具管理 =====
 
   // 获取所有工具信息
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.GET_ALL_TOOLS,
-    async (): Promise<ChatToolInfo[]> => {
-      return getAllToolInfos()
-    }
-  )
+  ipcMain.handle(CHAT_TOOL_IPC_CHANNELS.GET_ALL_TOOLS, async (): Promise<ChatToolInfo[]> => {
+    return getAllToolInfos()
+  })
 
   // 获取工具凭据
   ipcMain.handle(
@@ -2267,11 +2394,18 @@ export function registerIpcHandlers(): void {
         try {
           const { searchMemory } = await import('./lib/memos-client')
           const result = await searchMemory(
-            { apiKey: config.apiKey, userId: config.userId?.trim() || 'tagent-user', baseUrl: config.baseUrl },
+            {
+              apiKey: config.apiKey,
+              userId: config.userId?.trim() || 'tagent-user',
+              baseUrl: config.baseUrl,
+            },
             'test connection',
-            1,
+            1
           )
-          return { success: true, message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好` }
+          return {
+            success: true,
+            message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好`,
+          }
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error)
           return { success: false, message: `连接失败: ${msg}` }
@@ -2326,7 +2460,10 @@ export function registerIpcHandlers(): void {
           })
           if (!response.ok) {
             const errorText = await response.text()
-            return { success: false, message: `API 请求失败 (${response.status}): ${errorText.slice(0, 200)}` }
+            return {
+              success: false,
+              message: `API 请求失败 (${response.status}): ${errorText.slice(0, 200)}`,
+            }
           }
           return { success: true, message: `连接成功，模型 ${model} 可用` }
         } catch (error) {
@@ -2370,7 +2507,10 @@ export function registerIpcHandlers(): void {
         // 通知渲染进程请求已处理
         event.sender.send(AGENT_IPC_CHANNELS.STREAM_EVENT, {
           sessionId,
-          payload: { kind: 'tagent_event', event: { type: 'exit_plan_mode_resolved', requestId: response.requestId } },
+          payload: {
+            kind: 'tagent_event',
+            event: { type: 'exit_plan_mode_resolved', requestId: response.requestId },
+          },
         })
 
         // 如果用户选择了新的权限模式，通知渲染进程更新 UI
@@ -2381,12 +2521,18 @@ export function registerIpcHandlers(): void {
             try {
               updateAgentSessionMeta(sessionId, { permissionMode: targetMode })
             } catch (err) {
-              console.warn(`[IPC] ExitPlanMode 持久化 session 权限模式失败: sessionId=${sessionId}`, err)
+              console.warn(
+                `[IPC] ExitPlanMode 持久化 session 权限模式失败: sessionId=${sessionId}`,
+                err
+              )
             }
           }
           event.sender.send(AGENT_IPC_CHANNELS.STREAM_EVENT, {
             sessionId,
-            payload: { kind: 'tagent_event', event: { type: 'permission_mode_changed', mode: targetMode } },
+            payload: {
+              kind: 'tagent_event',
+              event: { type: 'permission_mode_changed', mode: targetMode },
+            },
           })
           console.log(`[IPC] ExitPlanMode 权限模式切换: ${targetMode}`)
         }
@@ -2584,12 +2730,9 @@ export function registerIpcHandlers(): void {
 
   // ===== Worktree 仓库配置管理 =====
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_WORKTREE_REPOS,
-    async (_, workspaceSlug: string) => {
-      return getWorktreeRepos(workspaceSlug)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_WORKTREE_REPOS, async (_, workspaceSlug: string) => {
+    return getWorktreeRepos(workspaceSlug)
+  })
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.ADD_WORKTREE_REPO,
@@ -2661,39 +2804,33 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除文件或目录
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.DELETE_FILE,
-    async (_, filePath: string): Promise<void> => {
-      const { rmSync } = await import('node:fs')
-      const { resolve } = await import('node:path')
+  ipcMain.handle(AGENT_IPC_CHANNELS.DELETE_FILE, async (_, filePath: string): Promise<void> => {
+    const { rmSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
 
-      // 安全校验：路径必须在 agent-workspaces 目录下
-      const safePath = resolve(filePath)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot)) {
-        throw new Error('访问路径超出 Agent 工作区范围')
-      }
-
-      rmSync(safePath, { recursive: true, force: true })
-      console.log(`[Agent 文件] 已删除: ${safePath}`)
+    // 安全校验：路径必须在 agent-workspaces 目录下
+    const safePath = resolve(filePath)
+    const workspacesRoot = resolve(getAgentWorkspacesDir())
+    if (!safePath.startsWith(workspacesRoot)) {
+      throw new Error('访问路径超出 Agent 工作区范围')
     }
-  )
+
+    rmSync(safePath, { recursive: true, force: true })
+    console.log(`[Agent 文件] 已删除: ${safePath}`)
+  })
 
   // 用系统默认应用打开文件
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.OPEN_FILE,
-    async (_, filePath: string): Promise<void> => {
-      const { resolve } = await import('node:path')
+  ipcMain.handle(AGENT_IPC_CHANNELS.OPEN_FILE, async (_, filePath: string): Promise<void> => {
+    const { resolve } = await import('node:path')
 
-      const safePath = resolve(filePath)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot)) {
-        throw new Error('访问路径超出 Agent 工作区范围')
-      }
-
-      await shell.openPath(safePath)
+    const safePath = resolve(filePath)
+    const workspacesRoot = resolve(getAgentWorkspacesDir())
+    if (!safePath.startsWith(workspacesRoot)) {
+      throw new Error('访问路径超出 Agent 工作区范围')
     }
-  )
+
+    await shell.openPath(safePath)
+  })
 
   // 将剪贴板文本写入临时预览文件
   ipcMain.handle(
@@ -2733,25 +2870,26 @@ export function registerIpcHandlers(): void {
   )
 
   // 在系统文件管理器中显示文件
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.SHOW_IN_FOLDER,
-    async (_, filePath: string): Promise<void> => {
-      const { resolve } = await import('node:path')
+  ipcMain.handle(AGENT_IPC_CHANNELS.SHOW_IN_FOLDER, async (_, filePath: string): Promise<void> => {
+    const { resolve } = await import('node:path')
 
-      const safePath = resolve(filePath)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot)) {
-        throw new Error('访问路径超出 Agent 工作区范围')
-      }
-
-      shell.showItemInFolder(safePath)
+    const safePath = resolve(filePath)
+    const workspacesRoot = resolve(getAgentWorkspacesDir())
+    if (!safePath.startsWith(workspacesRoot)) {
+      throw new Error('访问路径超出 Agent 工作区范围')
     }
-  )
+
+    shell.showItemInFolder(safePath)
+  })
 
   // 解析文件路径并读取内容（供内联预览使用）
   ipcMain.handle(
     'file:resolve-and-read',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<{ resolvedPath: string; content: string } | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<{ resolvedPath: string; content: string } | null> => {
       const { resolveAndReadFile, resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const allowedBasePaths = getAllowedCandidateBasePaths(options)
@@ -2768,7 +2906,12 @@ export function registerIpcHandlers(): void {
   // 写入文本文件（供 Markdown 内联编辑使用）
   ipcMain.handle(
     'file:write-text',
-    async (_, filePath: string, content: string, access?: FileAccessOptions | string[]): Promise<boolean> => {
+    async (
+      _,
+      filePath: string,
+      content: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<boolean> => {
       if (typeof content !== 'string') return false
       const { writeFileSync } = await import('node:fs')
       const { resolveFilePath } = await import('./lib/file-preview-service')
@@ -2787,7 +2930,11 @@ export function registerIpcHandlers(): void {
   // 仅解析文件路径（供 PDF/图片等用 file:// 加载）
   ipcMain.handle(
     'file:resolve-path',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<ResolvedFileUrl | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<ResolvedFileUrl | null> => {
       const { resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const result = resolveFilePath(filePath, getAllowedCandidateBasePaths(options))
@@ -2802,7 +2949,11 @@ export function registerIpcHandlers(): void {
   // 为内联 PDF 预览生成临时 HTML 文件，返回文件路径
   ipcMain.handle(
     'file:prepare-pdf-preview',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<{ tmpHtmlUrl: string } | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<{ tmpHtmlUrl: string } | null> => {
       const { preparePdfPreview, resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const allowedBasePaths = getAllowedCandidateBasePaths(options)
@@ -2819,7 +2970,11 @@ export function registerIpcHandlers(): void {
   // DOCX 转 HTML（内联预览使用 mammoth）
   ipcMain.handle(
     'file:docx-to-html',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<{ resolvedPath: string; html: string } | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<{ resolvedPath: string; html: string } | null> => {
       const { convertDocxToHtml, resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const allowedBasePaths = getAllowedCandidateBasePaths(options)
@@ -2836,7 +2991,11 @@ export function registerIpcHandlers(): void {
   // XLSX/PPTX 转 HTML（内联预览使用 OOXML 解析）
   ipcMain.handle(
     'file:office-to-html',
-    async (_, filePath: string, access?: FileAccessOptions | string[]): Promise<import('@tagent/shared').OfficePreviewResult | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<import('@tagent/shared').OfficePreviewResult | null> => {
       const { convertOfficeToHtml, resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
       const allowedBasePaths = getAllowedCandidateBasePaths(options)
@@ -2852,7 +3011,12 @@ export function registerIpcHandlers(): void {
   // 读取文件为 base64（带路径校验，供内联图片预览等使用）
   ipcMain.handle(
     'file:read-binary-base64',
-    async (_, filePath: string, access?: FileAccessOptions | string[], maxSize?: number): Promise<string | null> => {
+    async (
+      _,
+      filePath: string,
+      access?: FileAccessOptions | string[],
+      maxSize?: number
+    ): Promise<string | null> => {
       const { readFileSync, statSync } = await import('node:fs')
       const { resolveFilePath } = await import('./lib/file-preview-service')
       const options = normalizeFileAccessOptions(access)
@@ -2871,7 +3035,12 @@ export function registerIpcHandlers(): void {
       const { renameSync } = await import('node:fs')
       const { resolve, dirname, join, sep } = await import('node:path')
 
-      if (newName.includes('/') || newName.includes('\\') || newName.includes('..') || newName.includes(sep)) {
+      if (
+        newName.includes('/') ||
+        newName.includes('\\') ||
+        newName.includes('..') ||
+        newName.includes(sep)
+      ) {
         throw new Error('文件名不能包含路径分隔符或 ".."')
       }
 
@@ -2992,8 +3161,9 @@ export function registerIpcHandlers(): void {
       const resolvedAllowedFiles = await Promise.all(
         allowedFiles.map((file) => realpath(resolve(file)).catch(() => resolve(file)))
       )
-      const isAllowed = resolvedAllowedDirs.some((dir) => safePath.startsWith(dir + sep) || safePath === dir)
-        || resolvedAllowedFiles.some((file) => safePath === file)
+      const isAllowed =
+        resolvedAllowedDirs.some((dir) => safePath.startsWith(dir + sep) || safePath === dir) ||
+        resolvedAllowedFiles.some((file) => safePath === file)
       if (!isAllowed) {
         throw new Error('访问路径不在允许范围内')
       }
@@ -3030,11 +3200,21 @@ export function registerIpcHandlers(): void {
   // 重命名附加目录文件/目录
   ipcMain.handle(
     AGENT_IPC_CHANNELS.RENAME_ATTACHED_FILE,
-    async (_, filePath: string, newName: string, access?: FileAccessOptions | string[]): Promise<void> => {
+    async (
+      _,
+      filePath: string,
+      newName: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<void> => {
       const { renameSync } = await import('node:fs')
       const { resolve, dirname, join, sep } = await import('node:path')
 
-      if (newName.includes('/') || newName.includes('\\') || newName.includes('..') || newName.includes(sep)) {
+      if (
+        newName.includes('/') ||
+        newName.includes('\\') ||
+        newName.includes('..') ||
+        newName.includes(sep)
+      ) {
         throw new Error('文件名不能包含路径分隔符或 ".."')
       }
       const safePath = resolve(filePath)
@@ -3051,7 +3231,12 @@ export function registerIpcHandlers(): void {
   // 移动附加目录文件/目录
   ipcMain.handle(
     AGENT_IPC_CHANNELS.MOVE_ATTACHED_FILE,
-    async (_, filePath: string, targetDir: string, access?: FileAccessOptions | string[]): Promise<void> => {
+    async (
+      _,
+      filePath: string,
+      targetDir: string,
+      access?: FileAccessOptions | string[]
+    ): Promise<void> => {
       const { renameSync } = await import('node:fs')
       const { resolve, basename, join } = await import('node:path')
 
@@ -3093,18 +3278,45 @@ export function registerIpcHandlers(): void {
   // 搜索工作区文件（用于 @ 引用，递归扫描，支持附加目录）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.SEARCH_WORKSPACE_FILES,
-    async (_, rootPath: string, query: string, limit = 20, additionalPaths?: string[], sessionPaths?: string[]): Promise<FileSearchResult> => {
+    async (
+      _,
+      rootPath: string,
+      query: string,
+      limit = 20,
+      additionalPaths?: string[],
+      sessionPaths?: string[]
+    ): Promise<FileSearchResult> => {
       const { readdirSync, statSync } = await import('node:fs')
       const { resolve, relative, basename } = await import('node:path')
 
       const safeRoot = resolve(rootPath)
-      const ignoreDirs = new Set(['node_modules', '.git', 'dist', '.next', '__pycache__', '.venv', 'build', '.cache'])
-      const ignoreFiles = new Set(['.DS_Store', '.Spotlight-V100', '.Trashes', 'Thumbs.db', 'desktop.ini'])
+      const ignoreDirs = new Set([
+        'node_modules',
+        '.git',
+        'dist',
+        '.next',
+        '__pycache__',
+        '.venv',
+        'build',
+        '.cache',
+      ])
+      const ignoreFiles = new Set([
+        '.DS_Store',
+        '.Spotlight-V100',
+        '.Trashes',
+        'Thumbs.db',
+        'desktop.ini',
+      ])
       const BROWSE_LIMIT_PER_GROUP = 2000
       const BROWSE_TOTAL_CAP = 3000
 
       // 按来源分组收集文件
-      type Entry = { name: string; path: string; type: 'file' | 'dir'; source: 'session' | 'workspace' }
+      type Entry = {
+        name: string
+        path: string
+        type: 'file' | 'dir'
+        source: 'session' | 'workspace'
+      }
       const rootEntries: Entry[] = []
       const workspaceEntries: Entry[] = []
 
@@ -3114,7 +3326,7 @@ export function registerIpcHandlers(): void {
         baseRoot: string,
         target: Entry[],
         useAbsPath: boolean,
-        source: 'session' | 'workspace',
+        source: 'session' | 'workspace'
       ): void {
         if (depth > 10) return
         try {
@@ -3141,7 +3353,11 @@ export function registerIpcHandlers(): void {
         }
       }
 
-      function addAttachedPath(pathValue: string, target: Entry[], source: 'session' | 'workspace'): void {
+      function addAttachedPath(
+        pathValue: string,
+        target: Entry[],
+        source: 'session' | 'workspace'
+      ): void {
         try {
           const attachedPath = resolve(pathValue)
           const name = basename(attachedPath)
@@ -3235,7 +3451,8 @@ export function registerIpcHandlers(): void {
         const sessionSlice = rootEntries.slice(0, maxPerGroup)
         const workspaceSlice = workspaceEntries.slice(0, maxPerGroup)
         const combined = [...sessionSlice, ...workspaceSlice]
-        const capped = combined.length > BROWSE_TOTAL_CAP ? combined.slice(0, BROWSE_TOTAL_CAP) : combined
+        const capped =
+          combined.length > BROWSE_TOTAL_CAP ? combined.slice(0, BROWSE_TOTAL_CAP) : combined
         return {
           entries: capped,
           total: rootEntries.length + workspaceEntries.length,
@@ -3258,12 +3475,9 @@ export function registerIpcHandlers(): void {
       } else {
         const sessionQuota = Math.max(
           sessionMatched.length > 0 ? 1 : 0,
-          Math.round(limit * sessionMatched.length / totalMatched),
+          Math.round((limit * sessionMatched.length) / totalMatched)
         )
-        const workspaceQuota = Math.max(
-          workspaceMatched.length > 0 ? 1 : 0,
-          limit - sessionQuota,
-        )
+        const workspaceQuota = Math.max(workspaceMatched.length > 0 ? 1 : 0, limit - sessionQuota)
         sessionSlice = sessionMatched.slice(0, sessionQuota)
         workspaceSlice = workspaceMatched.slice(0, workspaceQuota)
       }
@@ -3280,12 +3494,9 @@ export function registerIpcHandlers(): void {
   // ===== 系统提示词管理 =====
 
   // 获取系统提示词配置
-  ipcMain.handle(
-    SYSTEM_PROMPT_IPC_CHANNELS.GET_CONFIG,
-    async (): Promise<SystemPromptConfig> => {
-      return getSystemPromptConfig()
-    }
-  )
+  ipcMain.handle(SYSTEM_PROMPT_IPC_CHANNELS.GET_CONFIG, async (): Promise<SystemPromptConfig> => {
+    return getSystemPromptConfig()
+  })
 
   // 创建提示词
   ipcMain.handle(
@@ -3304,12 +3515,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除提示词
-  ipcMain.handle(
-    SYSTEM_PROMPT_IPC_CHANNELS.DELETE,
-    async (_, id: string): Promise<void> => {
-      return deleteSystemPrompt(id)
-    }
-  )
+  ipcMain.handle(SYSTEM_PROMPT_IPC_CHANNELS.DELETE, async (_, id: string): Promise<void> => {
+    return deleteSystemPrompt(id)
+  })
 
   // 更新追加日期时间和用户名开关
   ipcMain.handle(
@@ -3348,32 +3556,26 @@ export function registerIpcHandlers(): void {
   )
 
   // 保存 SOUL.md 内容
-  ipcMain.handle(
-    SOUL_IPC_CHANNELS.SAVE_CONTENT,
-    async (_, content: string): Promise<void> => {
-      const { writeFileSync } = require('node:fs')
-      const { getSoulPath } = require('./lib/config-paths')
+  ipcMain.handle(SOUL_IPC_CHANNELS.SAVE_CONTENT, async (_, content: string): Promise<void> => {
+    const { writeFileSync } = require('node:fs')
+    const { getSoulPath } = require('./lib/config-paths')
 
-      const soulPath = getSoulPath()
-      writeFileSync(soulPath, content, 'utf-8')
-      console.log(`[SOUL] 已保存 SOUL.md: ${soulPath}`)
-    }
-  )
+    const soulPath = getSoulPath()
+    writeFileSync(soulPath, content, 'utf-8')
+    console.log(`[SOUL] 已保存 SOUL.md: ${soulPath}`)
+  })
 
   // 重置为默认内容
-  ipcMain.handle(
-    SOUL_IPC_CHANNELS.RESET_DEFAULT,
-    async (): Promise<string> => {
-      const { writeFileSync } = require('node:fs')
-      const { getSoulPath } = require('./lib/config-paths')
-      const { DEFAULT_SOUL_MD } = require('./lib/agent-prompt-builder')
+  ipcMain.handle(SOUL_IPC_CHANNELS.RESET_DEFAULT, async (): Promise<string> => {
+    const { writeFileSync } = require('node:fs')
+    const { getSoulPath } = require('./lib/config-paths')
+    const { DEFAULT_SOUL_MD } = require('./lib/agent-prompt-builder')
 
-      const soulPath = getSoulPath()
-      writeFileSync(soulPath, DEFAULT_SOUL_MD, 'utf-8')
-      console.log(`[SOUL] 已重置 SOUL.md 为默认内容`)
-      return DEFAULT_SOUL_MD
-    }
-  )
+    const soulPath = getSoulPath()
+    writeFileSync(soulPath, DEFAULT_SOUL_MD, 'utf-8')
+    console.log(`[SOUL] 已重置 SOUL.md 为默认内容`)
+    return DEFAULT_SOUL_MD
+  })
 
   // ===== GitHub Release =====
 
@@ -3406,20 +3608,14 @@ export function registerIpcHandlers(): void {
   // --- 旧 API（向后兼容，操作 bots[0]）---
 
   // 获取飞书配置
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_CONFIG,
-    async (): Promise<FeishuConfig> => {
-      return getFeishuConfig()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_CONFIG, async (): Promise<FeishuConfig> => {
+    return getFeishuConfig()
+  })
 
   // 获取解密后的 App Secret
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_DECRYPTED_SECRET,
-    async (): Promise<string> => {
-      return getDecryptedAppSecret()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_DECRYPTED_SECRET, async (): Promise<string> => {
+    return getDecryptedAppSecret()
+  })
 
   // 保存飞书配置（旧格式，操作 bots[0]）
   ipcMain.handle(
@@ -3441,40 +3637,28 @@ export function registerIpcHandlers(): void {
   )
 
   // 启动飞书 Bridge（旧格式，启动所有 Bot）
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.START_BRIDGE,
-    async (): Promise<void> => {
-      await feishuBridgeManager.startAll()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.START_BRIDGE, async (): Promise<void> => {
+    await feishuBridgeManager.startAll()
+  })
 
   // 停止飞书 Bridge（旧格式，停止所有 Bot）
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.STOP_BRIDGE,
-    async (): Promise<void> => {
-      feishuBridgeManager.stopAll()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.STOP_BRIDGE, async (): Promise<void> => {
+    feishuBridgeManager.stopAll()
+  })
 
   // 获取飞书 Bridge 状态（旧格式，返回第一个 Bot 状态）
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_STATUS,
-    async (): Promise<FeishuBridgeState> => {
-      const states = feishuBridgeManager.getStates()
-      const first = Object.values(states.bots)[0]
-      return first ?? { status: 'disconnected', activeBindings: 0 }
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_STATUS, async (): Promise<FeishuBridgeState> => {
+    const states = feishuBridgeManager.getStates()
+    const first = Object.values(states.bots)[0]
+    return first ?? { status: 'disconnected', activeBindings: 0 }
+  })
 
   // --- 新 API（多 Bot v2）---
 
   // 获取多 Bot 配置
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_MULTI_CONFIG,
-    async () => {
-      return getFeishuMultiBotConfig()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_MULTI_CONFIG, async () => {
+    return getFeishuMultiBotConfig()
+  })
 
   // 保存单个 Bot 配置
   ipcMain.handle(
@@ -3494,45 +3678,30 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除 Bot
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.REMOVE_BOT,
-    async (_, botId: string) => {
-      feishuBridgeManager.stopBot(botId)
-      return removeFeishuBot(botId)
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.REMOVE_BOT, async (_, botId: string) => {
+    feishuBridgeManager.stopBot(botId)
+    return removeFeishuBot(botId)
+  })
 
   // 获取单个 Bot 解密 Secret
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_BOT_DECRYPTED_SECRET,
-    async (_, botId: string) => {
-      return getDecryptedBotAppSecret(botId)
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_BOT_DECRYPTED_SECRET, async (_, botId: string) => {
+    return getDecryptedBotAppSecret(botId)
+  })
 
   // 启动单个 Bot
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.START_BOT,
-    async (_, botId: string) => {
-      await feishuBridgeManager.startBot(botId)
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.START_BOT, async (_, botId: string) => {
+    await feishuBridgeManager.startBot(botId)
+  })
 
   // 停止单个 Bot
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.STOP_BOT,
-    async (_, botId: string) => {
-      feishuBridgeManager.stopBot(botId)
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.STOP_BOT, async (_, botId: string) => {
+    feishuBridgeManager.stopBot(botId)
+  })
 
   // 获取多 Bot 状态
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.GET_MULTI_STATUS,
-    async () => {
-      return feishuBridgeManager.getStates()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.GET_MULTI_STATUS, async () => {
+    return feishuBridgeManager.getStates()
+  })
 
   // 测试飞书连接
   ipcMain.handle(
@@ -3543,12 +3712,9 @@ export function registerIpcHandlers(): void {
   )
 
   // 获取活跃绑定列表
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.LIST_BINDINGS,
-    async (): Promise<FeishuChatBinding[]> => {
-      return feishuBridgeManager.listAllBindings()
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.LIST_BINDINGS, async (): Promise<FeishuChatBinding[]> => {
+    return feishuBridgeManager.listAllBindings()
+  })
 
   // 更新绑定（工作区/会话）
   ipcMain.handle(
@@ -3600,7 +3766,11 @@ export function registerIpcHandlers(): void {
           onQRCodeReady: async (info) => {
             if (event.sender.isDestroyed()) return
             try {
-              const dataUrl = await QRCode.toDataURL(info.url, { width: 280, margin: 2, errorCorrectionLevel: 'M' })
+              const dataUrl = await QRCode.toDataURL(info.url, {
+                width: 280,
+                margin: 2,
+                errorCorrectionLevel: 'M',
+              })
               if (event.sender.isDestroyed()) return
               const payload: FeishuRegisterAppQRCode = {
                 url: info.url,
@@ -3642,31 +3812,22 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    FEISHU_IPC_CHANNELS.REGISTER_APP_CANCEL,
-    async (): Promise<void> => {
-      activeRegisterAbort?.abort()
-      activeRegisterAbort = null
-    }
-  )
+  ipcMain.handle(FEISHU_IPC_CHANNELS.REGISTER_APP_CANCEL, async (): Promise<void> => {
+    activeRegisterAbort?.abort()
+    activeRegisterAbort = null
+  })
 
   // ===== 钉钉集成 =====
 
   // 获取钉钉配置（旧 API，向后兼容）
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_CONFIG,
-    async (): Promise<DingTalkConfig> => {
-      return getDingTalkConfig()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_CONFIG, async (): Promise<DingTalkConfig> => {
+    return getDingTalkConfig()
+  })
 
   // 获取解密后的 Client Secret（旧 API，向后兼容）
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_DECRYPTED_SECRET,
-    async (): Promise<string> => {
-      return getDecryptedClientSecret()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_DECRYPTED_SECRET, async (): Promise<string> => {
+    return getDecryptedClientSecret()
+  })
 
   // 保存钉钉配置（旧 API，向后兼容）
   ipcMain.handle(
@@ -3685,40 +3846,28 @@ export function registerIpcHandlers(): void {
   )
 
   // 启动钉钉 Bridge（旧 API，启动第一个 Bot）
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.START_BRIDGE,
-    async (): Promise<void> => {
-      await dingtalkBridgeManager.startAll()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.START_BRIDGE, async (): Promise<void> => {
+    await dingtalkBridgeManager.startAll()
+  })
 
   // 停止钉钉 Bridge（旧 API，停止所有 Bot）
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.STOP_BRIDGE,
-    async (): Promise<void> => {
-      dingtalkBridgeManager.stopAll()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.STOP_BRIDGE, async (): Promise<void> => {
+    dingtalkBridgeManager.stopAll()
+  })
 
   // 获取钉钉 Bridge 状态（旧 API，返回第一个 Bot 状态）
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_STATUS,
-    async (): Promise<DingTalkBridgeState> => {
-      const states = dingtalkBridgeManager.getStates()
-      const first = Object.values(states.bots)[0]
-      return first ?? { status: 'disconnected' }
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_STATUS, async (): Promise<DingTalkBridgeState> => {
+    const states = dingtalkBridgeManager.getStates()
+    const first = Object.values(states.bots)[0]
+    return first ?? { status: 'disconnected' }
+  })
 
   // --- 钉钉多 Bot v2 API ---
 
   // 获取多 Bot 配置
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_MULTI_CONFIG,
-    async () => {
-      return getDingTalkMultiBotConfig()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_MULTI_CONFIG, async () => {
+    return getDingTalkMultiBotConfig()
+  })
 
   // 保存单个 Bot 配置
   ipcMain.handle(
@@ -3738,95 +3887,62 @@ export function registerIpcHandlers(): void {
   )
 
   // 删除 Bot
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.REMOVE_BOT,
-    async (_, botId: string) => {
-      dingtalkBridgeManager.stopBot(botId)
-      return removeDingTalkBot(botId)
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.REMOVE_BOT, async (_, botId: string) => {
+    dingtalkBridgeManager.stopBot(botId)
+    return removeDingTalkBot(botId)
+  })
 
   // 获取单个 Bot 解密 Secret
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_BOT_DECRYPTED_SECRET,
-    async (_, botId: string) => {
-      return getDecryptedBotClientSecret(botId)
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_BOT_DECRYPTED_SECRET, async (_, botId: string) => {
+    return getDecryptedBotClientSecret(botId)
+  })
 
   // 启动单个 Bot
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.START_BOT,
-    async (_, botId: string) => {
-      await dingtalkBridgeManager.startBot(botId)
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.START_BOT, async (_, botId: string) => {
+    await dingtalkBridgeManager.startBot(botId)
+  })
 
   // 停止单个 Bot
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.STOP_BOT,
-    async (_, botId: string) => {
-      dingtalkBridgeManager.stopBot(botId)
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.STOP_BOT, async (_, botId: string) => {
+    dingtalkBridgeManager.stopBot(botId)
+  })
 
   // 获取多 Bot 状态
-  ipcMain.handle(
-    DINGTALK_IPC_CHANNELS.GET_MULTI_STATUS,
-    async () => {
-      return dingtalkBridgeManager.getStates()
-    }
-  )
+  ipcMain.handle(DINGTALK_IPC_CHANNELS.GET_MULTI_STATUS, async () => {
+    return dingtalkBridgeManager.getStates()
+  })
 
   // ===== 微信集成 =====
 
   // 获取微信配置
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.GET_CONFIG,
-    async (): Promise<WeChatConfig> => {
-      return getWeChatConfig()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.GET_CONFIG, async (): Promise<WeChatConfig> => {
+    return getWeChatConfig()
+  })
 
   // 开始扫码登录
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.START_LOGIN,
-    async (): Promise<void> => {
-      await wechatBridge.startLogin()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.START_LOGIN, async (): Promise<void> => {
+    await wechatBridge.startLogin()
+  })
 
   // 登出
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.LOGOUT,
-    async (): Promise<void> => {
-      wechatBridge.logout()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.LOGOUT, async (): Promise<void> => {
+    wechatBridge.logout()
+  })
 
   // 启动 Bridge（用已有凭证）
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.START_BRIDGE,
-    async (): Promise<void> => {
-      await wechatBridge.start()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.START_BRIDGE, async (): Promise<void> => {
+    await wechatBridge.start()
+  })
 
   // 停止 Bridge
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.STOP_BRIDGE,
-    async (): Promise<void> => {
-      wechatBridge.stop()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.STOP_BRIDGE, async (): Promise<void> => {
+    wechatBridge.stop()
+  })
 
   // 获取 Bridge 状态
-  ipcMain.handle(
-    WECHAT_IPC_CHANNELS.GET_STATUS,
-    async (): Promise<WeChatBridgeState> => {
-      return wechatBridge.getStatus()
-    }
-  )
+  ipcMain.handle(WECHAT_IPC_CHANNELS.GET_STATUS, async (): Promise<WeChatBridgeState> => {
+    return wechatBridge.getStatus()
+  })
 
   // ===== WPS 协作集成 =====
 
@@ -3834,19 +3950,19 @@ export function registerIpcHandlers(): void {
     WPS_IPC_CHANNELS.GET_CONFIG,
     async (): Promise<import('@tagent/shared').WpsConfig> => {
       return getWpsConfig()
-    },
+    }
   )
 
-  ipcMain.handle(
-    WPS_IPC_CHANNELS.GET_DECRYPTED_SECRET,
-    async (): Promise<string> => {
-      return getDecryptedWpsSecretKey()
-    },
-  )
+  ipcMain.handle(WPS_IPC_CHANNELS.GET_DECRYPTED_SECRET, async (): Promise<string> => {
+    return getDecryptedWpsSecretKey()
+  })
 
   ipcMain.handle(
     WPS_IPC_CHANNELS.SAVE_CONFIG,
-    async (_, input: import('@tagent/shared').WpsConfigInput): Promise<import('@tagent/shared').WpsConfig> => {
+    async (
+      _,
+      input: import('@tagent/shared').WpsConfigInput
+    ): Promise<import('@tagent/shared').WpsConfig> => {
       const saved = saveWpsConfig(input)
       if (saved.enabled && saved.appId && getDecryptedWpsSecretKey()) {
         await wpsBridge.start().catch((error) => {
@@ -3856,35 +3972,34 @@ export function registerIpcHandlers(): void {
         wpsBridge.stop()
       }
       return saved
-    },
+    }
   )
 
   ipcMain.handle(
     WPS_IPC_CHANNELS.TEST_CONNECTION,
-    async (_, appId: string, secretKey: string, apiUrl: string): Promise<import('@tagent/shared').WpsTestResult> => {
+    async (
+      _,
+      appId: string,
+      secretKey: string,
+      apiUrl: string
+    ): Promise<import('@tagent/shared').WpsTestResult> => {
       return wpsBridge.testConnection(appId, secretKey, apiUrl)
-    },
+    }
   )
 
-  ipcMain.handle(
-    WPS_IPC_CHANNELS.START_BRIDGE,
-    async (): Promise<void> => {
-      await wpsBridge.start()
-    },
-  )
+  ipcMain.handle(WPS_IPC_CHANNELS.START_BRIDGE, async (): Promise<void> => {
+    await wpsBridge.start()
+  })
 
-  ipcMain.handle(
-    WPS_IPC_CHANNELS.STOP_BRIDGE,
-    async (): Promise<void> => {
-      wpsBridge.stop()
-    },
-  )
+  ipcMain.handle(WPS_IPC_CHANNELS.STOP_BRIDGE, async (): Promise<void> => {
+    wpsBridge.stop()
+  })
 
   ipcMain.handle(
     WPS_IPC_CHANNELS.GET_STATUS,
     async (): Promise<import('@tagent/shared').WpsBridgeState> => {
       return wpsBridge.getStatus()
-    },
+    }
   )
 
   console.log('[IPC] IPC 处理器注册完成')
@@ -3901,7 +4016,9 @@ export function registerIpcHandlers(): void {
         const archivedChats = autoArchiveConversations(days)
         const archivedSessions = autoArchiveAgentSessions(days)
         if (archivedChats + archivedSessions > 0) {
-          console.log(`[自动归档] 已归档 ${archivedChats} 个对话, ${archivedSessions} 个 Agent 会话`)
+          console.log(
+            `[自动归档] 已归档 ${archivedChats} 个对话, ${archivedSessions} 个 Agent 会话`
+          )
         }
       }
     } catch (error) {
@@ -3949,7 +4066,9 @@ export function registerIpcHandlers(): void {
       if (settings.autoCleanupTempOnStart !== false) {
         const result = await cleanupTempFiles()
         if (result.freedBytes > 0) {
-          console.log(`[存储清理] 启动时清理了 ${(result.freedBytes / 1024 / 1024).toFixed(1)} MB 临时文件`)
+          console.log(
+            `[存储清理] 启动时清理了 ${(result.freedBytes / 1024 / 1024).toFixed(1)} MB 临时文件`
+          )
         }
       }
       const archiveDays = settings.autoCleanupArchivedDays ?? 0
@@ -3960,7 +4079,9 @@ export function registerIpcHandlers(): void {
           archivedBeforeDays: archiveDays,
         })
         if (result.freedBytes > 0) {
-          console.log(`[存储清理] 启动时清理了 ${(result.freedBytes / 1024 / 1024).toFixed(1)} MB 归档数据`)
+          console.log(
+            `[存储清理] 启动时清理了 ${(result.freedBytes / 1024 / 1024).toFixed(1)} MB 归档数据`
+          )
         }
       }
     } catch (e) {
@@ -3994,13 +4115,10 @@ export function registerIpcHandlers(): void {
   )
 
   // 隐藏快速任务窗口
-  ipcMain.handle(
-    QUICK_TASK_IPC_CHANNELS.HIDE,
-    async (): Promise<void> => {
-      const { hideQuickTaskWindow } = await import('./lib/quick-task-window')
-      hideQuickTaskWindow()
-    }
-  )
+  ipcMain.handle(QUICK_TASK_IPC_CHANNELS.HIDE, async (): Promise<void> => {
+    const { hideQuickTaskWindow } = await import('./lib/quick-task-window')
+    hideQuickTaskWindow()
+  })
 
   // 重新注册全局快捷键（设置中修改快捷键后调用）
   ipcMain.handle(
@@ -4024,7 +4142,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     VOICE_DICTATION_IPC_CHANNELS.UPDATE_SETTINGS,
     async (_, updates: VoiceDictationSettingsUpdate): Promise<VoiceDictationSettings> => {
-      const { updateVoiceDictationSettings } = await import('./lib/voice-dictation-settings-service')
+      const { updateVoiceDictationSettings } =
+        await import('./lib/voice-dictation-settings-service')
       return updateVoiceDictationSettings(updates)
     }
   )
@@ -4039,14 +4158,11 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    VOICE_DICTATION_IPC_CHANNELS.TOGGLE,
-    async (event): Promise<void> => {
-      const { toggleVoiceDictationWindow } = await import('./lib/voice-dictation-window')
-      const sourceWindow = BrowserWindow.fromWebContents(event.sender)
-      toggleVoiceDictationWindow({ targetIsTAgent: !!sourceWindow })
-    }
-  )
+  ipcMain.handle(VOICE_DICTATION_IPC_CHANNELS.TOGGLE, async (event): Promise<void> => {
+    const { toggleVoiceDictationWindow } = await import('./lib/voice-dictation-window')
+    const sourceWindow = BrowserWindow.fromWebContents(event.sender)
+    toggleVoiceDictationWindow({ targetIsTAgent: !!sourceWindow })
+  })
 
   ipcMain.handle(
     VOICE_DICTATION_IPC_CHANNELS.START,
@@ -4092,13 +4208,10 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    VOICE_DICTATION_IPC_CHANNELS.HIDE,
-    async (): Promise<void> => {
-      const { hideVoiceDictationWindow } = await import('./lib/voice-dictation-window')
-      hideVoiceDictationWindow()
-    }
-  )
+  ipcMain.handle(VOICE_DICTATION_IPC_CHANNELS.HIDE, async (): Promise<void> => {
+    const { hideVoiceDictationWindow } = await import('./lib/voice-dictation-window')
+    hideVoiceDictationWindow()
+  })
 
   ipcMain.handle(
     VOICE_DICTATION_IPC_CHANNELS.RESIZE,
@@ -4185,87 +4298,60 @@ export function registerIpcHandlers(): void {
 
   // ===== 窗口控制（Windows 自定义标题栏按钮）=====
 
-  ipcMain.handle(
-    IPC_CHANNELS.WINDOW_MINIMIZE,
-    async (event) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (win && !win.isDestroyed()) win.minimize()
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) win.minimize()
+  })
 
-  ipcMain.handle(
-    IPC_CHANNELS.WINDOW_MAXIMIZE,
-    async (event) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (win && !win.isDestroyed()) {
-        win.isMaximized() ? win.unmaximize() : win.maximize()
-      }
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MAXIMIZE, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) {
+      win.isMaximized() ? win.unmaximize() : win.maximize()
     }
-  )
+  })
 
-  ipcMain.handle(
-    IPC_CHANNELS.WINDOW_CLOSE,
-    async (event) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (win && !win.isDestroyed()) win.close()
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) win.close()
+  })
 
-  ipcMain.handle(
-    IPC_CHANNELS.WINDOW_IS_MAXIMIZED,
-    async (event) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      return win && !win.isDestroyed() ? win.isMaximized() : false
-    }
-  )
+  ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win && !win.isDestroyed() ? win.isMaximized() : false
+  })
 
   // ===== TA MCP Server 管理 =====
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_TA_MCP_STATUS,
-    async () => {
-      const { getTAMcpServerStatus } = await import('./lib/ta-mcp-service')
-      return getTAMcpServerStatus()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_TA_MCP_STATUS, async () => {
+    const { getTAMcpServerStatus } = await import('./lib/ta-mcp-service')
+    return getTAMcpServerStatus()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED,
-    async (_, workspaceSlug: string) => {
-      const { isTAMcpConfigured } = await import('./lib/ta-mcp-service')
-      return isTAMcpConfigured(workspaceSlug)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED, async (_, workspaceSlug: string) => {
+    const { isTAMcpConfigured } = await import('./lib/ta-mcp-service')
+    return isTAMcpConfigured(workspaceSlug)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.ENABLE_TA_MCP,
-    async (_, workspaceSlug: string) => {
-      const { enableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
-      return enableTAMcpForWorkspace(workspaceSlug)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.ENABLE_TA_MCP, async (_, workspaceSlug: string) => {
+    const { enableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
+    return enableTAMcpForWorkspace(workspaceSlug)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.DISABLE_TA_MCP,
-    async (_, workspaceSlug: string) => {
-      const { disableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
-      return disableTAMcpForWorkspace(workspaceSlug)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.DISABLE_TA_MCP, async (_, workspaceSlug: string) => {
+    const { disableTAMcpForWorkspace } = await import('./lib/ta-mcp-service')
+    return disableTAMcpForWorkspace(workspaceSlug)
+  })
 
   // 一键安装 TA MCP Server（推流日志通过 TA_INSTALL_LOG 推给 renderer）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.INSTALL_TA_MCP,
     async (event, options?: { forceOnline?: boolean }) => {
       const { installTAMcpServer } = await import('./lib/ta-mcp-service')
-      return installTAMcpServer(
-        (chunk) => {
-          if (!event.sender.isDestroyed()) {
-            event.sender.send(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, chunk)
-          }
-        },
-        options || {}
-      )
+      return installTAMcpServer((chunk) => {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, chunk)
+        }
+      }, options || {})
     }
   )
 
@@ -4284,17 +4370,23 @@ export function registerIpcHandlers(): void {
 
   // ===== ModeManager 模式管理 =====
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_MODE_STATUS,
-    async () => {
-      const { ModeManager } = await import('./lib/mode-manager')
-      return ModeManager.getStatusSummary()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_MODE_STATUS, async () => {
+    const { ModeManager } = await import('./lib/mode-manager')
+    return ModeManager.getStatusSummary()
+  })
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.SWITCH_MODE,
-    async (_, request: { targetMode: 'general' | 'ta'; source: 'user-click' | 'switch-tool' | 'api'; force?: boolean; reason?: string; contextSummary?: string }) => {
+    async (
+      _,
+      request: {
+        targetMode: 'general' | 'ta'
+        source: 'user-click' | 'switch-tool' | 'api'
+        force?: boolean
+        reason?: string
+        contextSummary?: string
+      }
+    ) => {
       const { ModeManager } = await import('./lib/mode-manager')
       return ModeManager.switchMode(request)
     }
@@ -4340,106 +4432,70 @@ export function registerIpcHandlers(): void {
 
   // ===== 资产库 IPC handlers =====
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.INIT_ASSET_STORE,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.initialize()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.INIT_ASSET_STORE, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.initialize()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.CREATE_ASSET_STORE_DATABASE,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.createDatabase()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.CREATE_ASSET_STORE_DATABASE, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.createDatabase()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATUS,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return {
-        available: assetStoreService.isAvailable(),
-        dbPath: assetStoreService.getDbPath(),
-      }
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATUS, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return {
+      available: assetStoreService.isAvailable(),
+      dbPath: assetStoreService.getDbPath(),
     }
-  )
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.LIST_ASSETS,
-    async (_, params) => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.listAssets(params)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.LIST_ASSETS, async (_, params) => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.listAssets(params)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.SEARCH_ASSETS,
-    async (_, params) => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.searchAssets(params)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.SEARCH_ASSETS, async (_, params) => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.searchAssets(params)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_ASSET_DETAIL,
-    async (_, assetId: string) => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.getAssetById(assetId)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_ASSET_DETAIL, async (_, assetId: string) => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.getAssetById(assetId)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATS,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.getStats()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_ASSET_STORE_STATS, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.getStats()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.LIST_PROJECTS,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.listProjects()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.LIST_PROJECTS, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.listProjects()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_REVIEW_QUEUE,
-    async (_, params) => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.getReviewQueue(params)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_REVIEW_QUEUE, async (_, params) => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.getReviewQueue(params)
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_REVIEW_STATS,
-    async () => {
-      const { assetStoreService } = await import('./lib/asset-store')
-      return assetStoreService.getReviewStats()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_REVIEW_STATS, async () => {
+    const { assetStoreService } = await import('./lib/asset-store')
+    return assetStoreService.getReviewStats()
+  })
 
   // ===== 记忆层 IPC handlers =====
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.INIT_MEMORY_LAYERS,
-    async () => {
-      const { memoryLayerService } = await import('./lib/memory-layer-service')
-      return memoryLayerService.initialize()
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.INIT_MEMORY_LAYERS, async () => {
+    const { memoryLayerService } = await import('./lib/memory-layer-service')
+    return memoryLayerService.initialize()
+  })
 
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.GET_MEMORY_STATS,
-    async (_, mode: 'general' | 'ta') => {
-      const { memoryLayerService } = await import('./lib/memory-layer-service')
-      return memoryLayerService.getStats(mode)
-    }
-  )
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_MEMORY_STATS, async (_, mode: 'general' | 'ta') => {
+    const { memoryLayerService } = await import('./lib/memory-layer-service')
+    return memoryLayerService.getStats(mode)
+  })
 
   ipcMain.handle(
     AGENT_IPC_CHANNELS.SEARCH_MEMORY_SESSIONS,
@@ -4485,13 +4541,10 @@ export function registerIpcHandlers(): void {
   )
 
   // 获取单个流水线
-  ipcMain.handle(
-    PIPELINE_IPC_CHANNELS.GET,
-    async (_, id: string) => {
-      const { getPipelineRun } = await import('./lib/pipeline-service')
-      return getPipelineRun(id)
-    }
-  )
+  ipcMain.handle(PIPELINE_IPC_CHANNELS.GET, async (_, id: string) => {
+    const { getPipelineRun } = await import('./lib/pipeline-service')
+    return getPipelineRun(id)
+  })
 
   // 创建流水线
   ipcMain.handle(
@@ -4512,40 +4565,28 @@ export function registerIpcHandlers(): void {
   )
 
   // 取消流水线
-  ipcMain.handle(
-    PIPELINE_IPC_CHANNELS.CANCEL,
-    async (_, id: string) => {
-      const { cancelPipelineRun } = await import('./lib/pipeline-service')
-      return cancelPipelineRun(id)
-    }
-  )
+  ipcMain.handle(PIPELINE_IPC_CHANNELS.CANCEL, async (_, id: string) => {
+    const { cancelPipelineRun } = await import('./lib/pipeline-service')
+    return cancelPipelineRun(id)
+  })
 
   // 获取流水线统计摘要
-  ipcMain.handle(
-    PIPELINE_IPC_CHANNELS.SUMMARY,
-    async () => {
-      const { getPipelineSummary } = await import('./lib/pipeline-service')
-      return getPipelineSummary()
-    }
-  )
+  ipcMain.handle(PIPELINE_IPC_CHANNELS.SUMMARY, async () => {
+    const { getPipelineSummary } = await import('./lib/pipeline-service')
+    return getPipelineSummary()
+  })
 
   // 清理已完成的流水线记录
-  ipcMain.handle(
-    PIPELINE_IPC_CHANNELS.CLEANUP,
-    async (_, daysToKeep?: number) => {
-      const { cleanupPipelineRuns } = await import('./lib/pipeline-service')
-      return cleanupPipelineRuns(daysToKeep)
-    }
-  )
+  ipcMain.handle(PIPELINE_IPC_CHANNELS.CLEANUP, async (_, daysToKeep?: number) => {
+    const { cleanupPipelineRuns } = await import('./lib/pipeline-service')
+    return cleanupPipelineRuns(daysToKeep)
+  })
 
   // 使用统计
-  ipcMain.handle(
-    USAGE_STATS_IPC_CHANNELS.GET_OVERVIEW,
-    async () => {
-      const { usageStatsService } = await import('./lib/usage-stats-service')
-      return usageStatsService.getOverview()
-    }
-  )
+  ipcMain.handle(USAGE_STATS_IPC_CHANNELS.GET_OVERVIEW, async () => {
+    const { usageStatsService } = await import('./lib/usage-stats-service')
+    return usageStatsService.getOverview()
+  })
 
   ipcMain.handle(
     USAGE_STATS_IPC_CHANNELS.GET_SESSION_TOKEN_STATS,
@@ -4559,20 +4600,20 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     BTW_IPC_CHANNELS.SEND_BTW,
-    async (_event, input: { channelId: string; modelId: string; message: string; messageId: string }) => {
+    async (
+      _event,
+      input: { channelId: string; modelId: string; message: string; messageId: string }
+    ) => {
       const { sendBtwMessage } = await import('./lib/btw-service')
       return sendBtwMessage(input)
     }
   )
 
-  ipcMain.handle(
-    BTW_IPC_CHANNELS.CANCEL_BTW,
-    async () => {
-      const { cancelBtw } = await import('./lib/btw-service')
-      cancelBtw()
-      return true
-    }
-  )
+  ipcMain.handle(BTW_IPC_CHANNELS.CANCEL_BTW, async () => {
+    const { cancelBtw } = await import('./lib/btw-service')
+    cancelBtw()
+    return true
+  })
 
   // ===== Ask 档位（Composer Ask/Agent 切换） =====
 
@@ -4606,7 +4647,11 @@ export function registerIpcHandlers(): void {
   // 删除单条 Ask 消息（P1 留位）
   ipcMain.handle(
     ASK_IPC_CHANNELS.DELETE_MESSAGE,
-    async (_event, agentSessionId: string, messageId: string): Promise<import('@tagent/shared').AskMessage[]> => {
+    async (
+      _event,
+      agentSessionId: string,
+      messageId: string
+    ): Promise<import('@tagent/shared').AskMessage[]> => {
       const { deleteAskMessage } = await import('./lib/ask-message-store')
       return deleteAskMessage(agentSessionId, messageId)
     }
@@ -4626,8 +4671,13 @@ export function registerIpcHandlers(): void {
   // 设置会话 Composer 档位
   ipcMain.handle(
     ASK_IPC_CHANNELS.SET_COMPOSER_MODE,
-    async (_event, agentSessionId: string, mode: import('@tagent/shared').ComposerMode): Promise<void> => {
-      const { updateAgentSessionMeta, getAgentSessionMeta } = await import('./lib/agent-session-manager')
+    async (
+      _event,
+      agentSessionId: string,
+      mode: import('@tagent/shared').ComposerMode
+    ): Promise<void> => {
+      const { updateAgentSessionMeta, getAgentSessionMeta } =
+        await import('./lib/agent-session-manager')
       if (!getAgentSessionMeta(agentSessionId)) {
         throw new Error(`Agent 会话不存在: ${agentSessionId}`)
       }

@@ -7,7 +7,20 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, existsSync, readdirSync, cpSync, rmSync, mkdirSync, statSync, renameSync, openSync, readSync, closeSync } from 'node:fs'
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+  cpSync,
+  rmSync,
+  mkdirSync,
+  statSync,
+  renameSync,
+  openSync,
+  readSync,
+  closeSync,
+} from 'node:fs'
 import { join, resolve, relative, isAbsolute, dirname, basename } from 'node:path'
 
 import {
@@ -21,7 +34,16 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, SkillImportSource, OtherWorkspaceSkillsGroup, WorkspaceCapabilities, SkillFileNode, SkillFileContent } from '@tagent/shared'
+import type {
+  AgentWorkspace,
+  WorkspaceMcpConfig,
+  SkillMeta,
+  SkillImportSource,
+  OtherWorkspaceSkillsGroup,
+  WorkspaceCapabilities,
+  SkillFileNode,
+  SkillFileContent,
+} from '@tagent/shared'
 
 interface AgentWorkspacesIndex {
   version: number
@@ -206,10 +228,7 @@ export function createAgentWorkspace(name: string): AgentWorkspace {
 }
 
 /** 更新工作区名称（slug 和目录不变） */
-export function updateAgentWorkspace(
-  id: string,
-  updates: { name: string },
-): AgentWorkspace {
+export function updateAgentWorkspace(id: string, updates: { name: string }): AgentWorkspace {
   const index = readIndex()
   const idx = index.workspaces.findIndex((w) => w.id === id)
 
@@ -249,7 +268,9 @@ export function deleteAgentWorkspace(id: string): void {
   const removed = index.workspaces.splice(idx, 1)[0]!
   writeIndex(index)
 
-  console.log(`[Agent 工作区] 已删除工作区索引: ${removed.name} (slug: ${removed.slug}，目录已保留)`)
+  console.log(
+    `[Agent 工作区] 已删除工作区索引: ${removed.name} (slug: ${removed.slug}，目录已保留)`
+  )
 }
 
 /** 确保默认工作区存在，首次启动时自动创建（slug: default） */
@@ -332,11 +353,11 @@ export function upgradeDefaultSkillsInWorkspaces(): void {
         if (compareSemver(info.version, currentVer) > 0) {
           if (safeReplaceSkillDir(info.sourcePath, activePath)) {
             console.log(
-              `[Agent 工作区] 已升级默认 Skill: ${workspace.slug}/${slug} (active, ${currentVer} → ${info.version})`,
+              `[Agent 工作区] 已升级默认 Skill: ${workspace.slug}/${slug} (active, ${currentVer} → ${info.version})`
             )
           } else {
             console.warn(
-              `[Agent 工作区] 升级默认 Skill 失败 (${workspace.slug}/${slug}, active)，跳过`,
+              `[Agent 工作区] 升级默认 Skill 失败 (${workspace.slug}/${slug}, active)，跳过`
             )
           }
         }
@@ -348,11 +369,11 @@ export function upgradeDefaultSkillsInWorkspaces(): void {
         if (compareSemver(info.version, currentVer) > 0) {
           if (safeReplaceSkillDir(info.sourcePath, inactivePath)) {
             console.log(
-              `[Agent 工作区] 已升级默认 Skill: ${workspace.slug}/${slug} (inactive, ${currentVer} → ${info.version})`,
+              `[Agent 工作区] 已升级默认 Skill: ${workspace.slug}/${slug} (inactive, ${currentVer} → ${info.version})`
             )
           } else {
             console.warn(
-              `[Agent 工作区] 升级默认 Skill 失败 (${workspace.slug}/${slug}, inactive)，跳过`,
+              `[Agent 工作区] 升级默认 Skill 失败 (${workspace.slug}/${slug}, inactive)，跳过`
             )
           }
         }
@@ -500,12 +521,19 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
 
     if (!indented) {
       const colonIdx = line.indexOf(':')
-      if (colonIdx === -1) { currentKey = ''; continue }
+      if (colonIdx === -1) {
+        currentKey = ''
+        continue
+      }
 
       const key = line.slice(0, colonIdx).trim()
       const raw = line.slice(colonIdx + 1).trim()
 
-      if (!validKeys.has(key)) { currentKey = ''; isFolded = false; continue }
+      if (!validKeys.has(key)) {
+        currentKey = ''
+        isFolded = false
+        continue
+      }
 
       if (raw === '|' || raw === '>') {
         currentKey = key
@@ -519,7 +547,10 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
       entries[key] = raw.replace(/^["']|["']$/g, '')
     } else if (currentKey) {
       const text = line.trim()
-      if (!text) { if (entries[currentKey]) entries[currentKey] += '\n'; continue }
+      if (!text) {
+        if (entries[currentKey]) entries[currentKey] += '\n'
+        continue
+      }
       const sep = isFolded ? ' ' : '\n'
       entries[currentKey] = entries[currentKey] ? entries[currentKey] + sep + text : text
     }
@@ -568,7 +599,9 @@ function scanSkillsInDir(dir: string, enabled: boolean): SkillMeta[] {
     const entries = readdirSync(dir, { withFileTypes: true })
 
     for (const entry of entries) {
-      const isDir = entry.isDirectory() || (entry.isSymbolicLink() && statSync(join(dir, entry.name)).isDirectory())
+      const isDir =
+        entry.isDirectory() ||
+        (entry.isSymbolicLink() && statSync(join(dir, entry.name)).isDirectory())
       if (!isDir) continue
 
       const skillMdPath = join(dir, entry.name, 'SKILL.md')
@@ -609,7 +642,11 @@ export function getAllWorkspaceSkills(workspaceSlug: string): SkillMeta[] {
 }
 
 /** 在 skills/ 和 skills-inactive/ 之间移动来切换启用/禁用 */
-export function toggleWorkspaceSkill(workspaceSlug: string, skillSlug: string, enabled: boolean): void {
+export function toggleWorkspaceSkill(
+  workspaceSlug: string,
+  skillSlug: string,
+  enabled: boolean
+): void {
   const activeDir = getWorkspaceSkillsDir(workspaceSlug)
   const inactiveDir = getInactiveSkillsDir(workspaceSlug)
 
@@ -662,7 +699,7 @@ export function getOtherWorkspaceSkills(currentSlug: string): OtherWorkspaceSkil
 export function importSkillFromWorkspace(
   targetSlug: string,
   sourceSlug: string,
-  skillSlug: string,
+  skillSlug: string
 ): SkillMeta {
   const sourcePath = resolveSkillDir(sourceSlug, skillSlug)
 
@@ -709,10 +746,7 @@ export function importSkillFromWorkspace(
  * - 源不存在：抛出错误，不修改目标
  * - 本地已禁用（skills-inactive）：在 inactive 目录中原地更新，保留 enabled 状态
  */
-export function updateSkillFromSource(
-  targetSlug: string,
-  skillSlug: string,
-): SkillMeta {
+export function updateSkillFromSource(targetSlug: string, skillSlug: string): SkillMeta {
   const activeDir = getWorkspaceSkillsDir(targetSlug)
   const inactiveDir = getInactiveSkillsDir(targetSlug)
 
@@ -733,7 +767,9 @@ export function updateSkillFromSource(
 
   const sourcePath = resolveSkillDir(existingSource.sourceWorkspaceSlug, skillSlug)
   if (!sourcePath) {
-    throw new Error(`源工作区中不再存在 Skill: ${skillSlug}（来源: ${existingSource.sourceWorkspaceName}）`)
+    throw new Error(
+      `源工作区中不再存在 Skill: ${skillSlug}（来源: ${existingSource.sourceWorkspaceName}）`
+    )
   }
 
   if (!existsSync(join(sourcePath, 'SKILL.md'))) {
@@ -754,7 +790,9 @@ export function updateSkillFromSource(
   renameSync(tmpPath, targetPath)
 
   // 更新来源元数据（保留原始 importedAt）
-  const sourceWorkspace = listAgentWorkspaces().find((w) => w.slug === existingSource.sourceWorkspaceSlug)
+  const sourceWorkspace = listAgentWorkspaces().find(
+    (w) => w.slug === existingSource.sourceWorkspaceSlug
+  )
   const updatedSource: SkillImportSource = {
     sourceWorkspaceSlug: existingSource.sourceWorkspaceSlug,
     sourceWorkspaceName: sourceWorkspace?.name ?? existingSource.sourceWorkspaceName,
@@ -808,7 +846,11 @@ export function readWorkspaceSkillContent(workspaceSlug: string, skillSlug: stri
   return readFileSync(mdPath, 'utf-8')
 }
 
-export function writeWorkspaceSkillContent(workspaceSlug: string, skillSlug: string, content: string): void {
+export function writeWorkspaceSkillContent(
+  workspaceSlug: string,
+  skillSlug: string,
+  content: string
+): void {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
   writeFileSync(join(dir, 'SKILL.md'), content, 'utf-8')
@@ -823,7 +865,11 @@ const SKILL_FILE_SIZE_LIMIT = 10 * 1024 * 1024
 const SKILL_TREE_MAX_DEPTH = 8
 
 /** 把相对路径限制在 Skill 根目录内，并拒绝直接覆盖 SKILL.md */
-function resolveSkillChildPath(skillDir: string, relativePath: string, opts: { allowSkillMd?: boolean } = {}): string {
+function resolveSkillChildPath(
+  skillDir: string,
+  relativePath: string,
+  opts: { allowSkillMd?: boolean } = {}
+): string {
   if (typeof relativePath !== 'string' || relativePath.length === 0) {
     throw new Error('相对路径不能为空')
   }
@@ -838,7 +884,9 @@ function resolveSkillChildPath(skillDir: string, relativePath: string, opts: { a
   }
   // 用 lowercase 比较，避免 macOS/Windows 的大小写不敏感文件系统上 skill.md/Skill.MD 绕过保护
   if (!opts.allowSkillMd && rel.split(/[\\/]/).join('/').toLowerCase() === 'skill.md') {
-    throw new Error('SKILL.md 由专用接口管理，请通过 readWorkspaceSkillContent / writeWorkspaceSkillContent')
+    throw new Error(
+      'SKILL.md 由专用接口管理，请通过 readWorkspaceSkillContent / writeWorkspaceSkillContent'
+    )
   }
   return resolved
 }
@@ -915,7 +963,11 @@ export function listSkillFiles(workspaceSlug: string, skillSlug: string): SkillF
   return buildSkillFileTree(dir, dir, 0)
 }
 
-export function readSkillFile(workspaceSlug: string, skillSlug: string, relativePath: string): SkillFileContent {
+export function readSkillFile(
+  workspaceSlug: string,
+  skillSlug: string,
+  relativePath: string
+): SkillFileContent {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
   const abs = resolveSkillChildPath(dir, relativePath)
@@ -936,7 +988,12 @@ export function readSkillFile(workspaceSlug: string, skillSlug: string, relative
   }
 }
 
-export function writeSkillFile(workspaceSlug: string, skillSlug: string, relativePath: string, content: string): void {
+export function writeSkillFile(
+  workspaceSlug: string,
+  skillSlug: string,
+  relativePath: string,
+  content: string
+): void {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
   const abs = resolveSkillChildPath(dir, relativePath)
@@ -964,7 +1021,7 @@ export function createSkillEntry(
   workspaceSlug: string,
   skillSlug: string,
   relativePath: string,
-  type: 'file' | 'directory',
+  type: 'file' | 'directory'
 ): void {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
@@ -983,10 +1040,16 @@ export function createSkillEntry(
     }
     writeFileSync(abs, '', 'utf-8')
   }
-  console.log(`[Agent 工作区] 已创建 Skill 子${type === 'directory' ? '目录' : '文件'}: ${workspaceSlug}/${skillSlug}/${relativePath}`)
+  console.log(
+    `[Agent 工作区] 已创建 Skill 子${type === 'directory' ? '目录' : '文件'}: ${workspaceSlug}/${skillSlug}/${relativePath}`
+  )
 }
 
-export function deleteSkillEntry(workspaceSlug: string, skillSlug: string, relativePath: string): void {
+export function deleteSkillEntry(
+  workspaceSlug: string,
+  skillSlug: string,
+  relativePath: string
+): void {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
   const abs = resolveSkillChildPath(dir, relativePath)
@@ -1001,7 +1064,7 @@ export function renameSkillEntry(
   workspaceSlug: string,
   skillSlug: string,
   fromRelative: string,
-  toRelative: string,
+  toRelative: string
 ): void {
   const dir = resolveSkillDir(workspaceSlug, skillSlug)
   if (!dir) throw new Error(`Skill 不存在: ${workspaceSlug}/${skillSlug}`)
@@ -1018,7 +1081,9 @@ export function renameSkillEntry(
     mkdirSync(parent, { recursive: true })
   }
   renameSync(fromAbs, toAbs)
-  console.log(`[Agent 工作区] Skill 子项重命名: ${workspaceSlug}/${skillSlug}: ${fromRelative} → ${toRelative}`)
+  console.log(
+    `[Agent 工作区] Skill 子项重命名: ${workspaceSlug}/${skillSlug}: ${fromRelative} → ${toRelative}`
+  )
 }
 
 /** 简单 semver 比较：a 是否比 b 更新 */
@@ -1062,7 +1127,13 @@ function readWorkspaceConfig(workspaceSlug: string): WorkspaceConfig {
         ? data.attachedFiles.filter((file): file is string => typeof file === 'string')
         : undefined,
       worktreeRepos: Array.isArray(data.worktreeRepos)
-        ? data.worktreeRepos.filter((r) => r && typeof r.name === 'string' && typeof r.repoPath === 'string' && typeof r.worktreesPath === 'string')
+        ? data.worktreeRepos.filter(
+            (r) =>
+              r &&
+              typeof r.name === 'string' &&
+              typeof r.repoPath === 'string' &&
+              typeof r.worktreesPath === 'string'
+          )
         : undefined,
     }
   } catch {
@@ -1137,13 +1208,18 @@ export function detachWorkspaceFile(workspaceSlug: string, filePath: string): st
 
 // ===== 工作区级 Worktree 仓库管理 =====
 
-export function getWorktreeRepos(workspaceSlug: string): import('@tagent/shared').WorkspaceWorktreeRepo[] {
+export function getWorktreeRepos(
+  workspaceSlug: string
+): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const repos = config.worktreeRepos ?? []
   return repos.sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
 }
 
-export function addWorktreeRepo(workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo): import('@tagent/shared').WorkspaceWorktreeRepo[] {
+export function addWorktreeRepo(
+  workspaceSlug: string,
+  repo: import('@tagent/shared').WorkspaceWorktreeRepo
+): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const existing = config.worktreeRepos ?? []
 
@@ -1153,11 +1229,16 @@ export function addWorktreeRepo(workspaceSlug: string, repo: import('@tagent/sha
 
   const updated = [...existing, repo]
   writeWorkspaceConfig(workspaceSlug, { ...config, worktreeRepos: updated })
-  console.log(`[Agent 工作区] 已添加 worktree 仓库: ${repo.name} (${repo.repoPath}) → ${workspaceSlug}`)
+  console.log(
+    `[Agent 工作区] 已添加 worktree 仓库: ${repo.name} (${repo.repoPath}) → ${workspaceSlug}`
+  )
   return updated
 }
 
-export function removeWorktreeRepo(workspaceSlug: string, repoPath: string): import('@tagent/shared').WorkspaceWorktreeRepo[] {
+export function removeWorktreeRepo(
+  workspaceSlug: string,
+  repoPath: string
+): import('@tagent/shared').WorkspaceWorktreeRepo[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const existing = config.worktreeRepos ?? []
   const updated = existing.filter((r) => r.repoPath !== repoPath)

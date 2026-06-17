@@ -80,14 +80,17 @@ class NudgeService {
   private pendingNudges: Map<string, NudgeCandidate[]> = new Map()
 
   /** Nudge 结果回调 */
-  private nudgeCallbacks: Map<string, (nudge: NudgeCandidate, result: NudgeResult) => void> = new Map()
+  private nudgeCallbacks: Map<string, (nudge: NudgeCandidate, result: NudgeResult) => void> =
+    new Map()
 
   /**
    * 获取记忆目录路径
    */
   private getMemoryDir(mode: MemoryMode): string {
     const isDev = !app.isPackaged
-    const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+    const baseDir = isDev
+      ? path.join(app.getPath('home'), '.tagent-dev')
+      : path.join(app.getPath('home'), '.tagent')
     return mode === 'general' ? path.join(baseDir, 'memory') : path.join(baseDir, 'ta', 'memory')
   }
 
@@ -102,7 +105,7 @@ class NudgeService {
   onTurnStart(
     sessionId: string,
     recentMessages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    mode: MemoryMode,
+    mode: MemoryMode
   ): NudgeCandidate[] {
     // 增加 turn 计数
     const currentTurn = (this.sessionTurnCounts.get(sessionId) || 0) + 1
@@ -138,7 +141,7 @@ class NudgeService {
    */
   private detectPatterns(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    mode: MemoryMode,
+    mode: MemoryMode
   ): PatternMatch[] {
     const patterns: PatternMatch[] = []
     const userMessages = messages.filter((m) => m.role === 'user').map((m) => m.content)
@@ -211,7 +214,10 @@ class NudgeService {
     const patterns: PatternMatch[] = []
 
     // 提取事实性表述（包含"是"、"叫"、"在"等）
-    const factPatterns = [/我[的之][^\s]{1,20}是[^\s]{1,20}/g, /(名字|邮箱|账号|地址)[^\s]{0,5}[是为][^\s]{1,20}/g]
+    const factPatterns = [
+      /我[的之][^\s]{1,20}是[^\s]{1,20}/g,
+      /(名字|邮箱|账号|地址)[^\s]{0,5}[是为][^\s]{1,20}/g,
+    ]
 
     for (const regex of factPatterns) {
       const matches = new Map<string, string[]>()
@@ -246,7 +252,9 @@ class NudgeService {
   /**
    * 检测显式纠正
    */
-  private detectCorrections(messages: Array<{ role: 'user' | 'assistant'; content: string }>): PatternMatch[] {
+  private detectCorrections(
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>
+  ): PatternMatch[] {
     const patterns: PatternMatch[] = []
 
     // 检测纠正模式
@@ -386,7 +394,7 @@ class NudgeService {
     sessionId: string,
     nudgeId: string,
     action: 'accept' | 'reject' | 'defer',
-    mode: MemoryMode,
+    mode: MemoryMode
   ): Promise<void> {
     const candidates = this.pendingNudges.get(sessionId)
     if (!candidates) return
@@ -537,7 +545,10 @@ class NudgeService {
   /**
    * 注册 Nudge 回调
    */
-  registerCallback(sessionId: string, callback: (nudge: NudgeCandidate, result: NudgeResult) => void): void {
+  registerCallback(
+    sessionId: string,
+    callback: (nudge: NudgeCandidate, result: NudgeResult) => void
+  ): void {
     this.nudgeCallbacks.set(sessionId, callback)
   }
 

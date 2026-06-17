@@ -86,7 +86,7 @@ function buildImageBlocks(imageData: ImageAttachmentData[]): OpenAIContentBlock[
  */
 function buildMessageContent(
   text: string,
-  imageData: ImageAttachmentData[],
+  imageData: ImageAttachmentData[]
 ): string | OpenAIContentBlock[] {
   if (imageData.length === 0) return text
 
@@ -116,7 +116,7 @@ function toOpenAIMessages(input: StreamRequestInput): OpenAIMessage[] {
   for (const msg of history) {
     if (msg.role === 'system') continue
 
-    const role = msg.role === 'assistant' ? 'assistant' as const : 'user' as const
+    const role = msg.role === 'assistant' ? ('assistant' as const) : ('user' as const)
 
     // 历史用户消息的附件也需要转换为多模态内容
     if (msg.role === 'user' && msg.attachments && msg.attachments.length > 0) {
@@ -158,7 +158,7 @@ function toOpenAITools(tools: ToolDefinition[]): Array<Record<string, unknown>> 
  */
 function appendContinuationMessages(
   messages: OpenAIMessage[],
-  continuationMessages: ContinuationMessage[],
+  continuationMessages: ContinuationMessage[]
 ): void {
   for (const contMsg of continuationMessages) {
     if (contMsg.role === 'assistant') {
@@ -211,7 +211,7 @@ export class OpenAIAdapter implements ProviderAdapter {
     return {
       url: `${url}/chat/completions`,
       headers: {
-        'Authorization': `Bearer ${input.apiKey}`,
+        Authorization: `Bearer ${input.apiKey}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify(bodyObj),
@@ -273,7 +273,7 @@ export class OpenAIAdapter implements ProviderAdapter {
     return {
       url: `${url}/chat/completions`,
       headers: {
-        'Authorization': `Bearer ${input.apiKey}`,
+        Authorization: `Bearer ${input.apiKey}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify({

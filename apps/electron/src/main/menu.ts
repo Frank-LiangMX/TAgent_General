@@ -47,7 +47,9 @@ export function createApplicationMenu(): Menu {
             }
           },
         },
-        ...(isMac ? [] : [{ type: 'separator' as const }, { role: 'quit' as const, label: '退出' }]),
+        ...(isMac
+          ? []
+          : [{ type: 'separator' as const }, { role: 'quit' as const, label: '退出' }]),
       ],
     },
 
@@ -67,7 +69,11 @@ export function createApplicationMenu(): Menu {
               { role: 'delete' as const, label: '删除' },
               { role: 'selectAll' as const, label: '全选' },
             ]
-          : [{ role: 'delete' as const, label: '删除' }, { type: 'separator' as const }, { role: 'selectAll' as const, label: '全选' }]),
+          : [
+              { role: 'delete' as const, label: '删除' },
+              { type: 'separator' as const },
+              { role: 'selectAll' as const, label: '全选' },
+            ]),
       ],
     },
 

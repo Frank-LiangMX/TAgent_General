@@ -249,7 +249,8 @@ export function getToolPhrase(toolName: string, input: Record<string, unknown>):
     case 'REPL': {
       const description = input.description
       const code = input.code
-      if (typeof description === 'string' && description.trim()) return phrase(`执行 REPL ${truncate(description, 50)}`)
+      if (typeof description === 'string' && description.trim())
+        return phrase(`执行 REPL ${truncate(description, 50)}`)
       if (typeof code === 'string') return phrase(`执行 REPL ${truncate(code, 50)}`)
       return phrase('执行 REPL')
     }
@@ -391,14 +392,29 @@ function phrase(label: string): ToolPhrase {
 /** 从 input 中提取第一个有意义的字符串值作为摘要 */
 function extractFirstMeaningfulValue(input: Record<string, unknown>): string | null {
   // 优先检查常见的描述性字段
-  const priorityKeys = ['description', 'prompt', 'query', 'command', 'name', 'subject', 'path', 'file_path', 'url']
+  const priorityKeys = [
+    'description',
+    'prompt',
+    'query',
+    'command',
+    'name',
+    'subject',
+    'path',
+    'file_path',
+    'url',
+  ]
   for (const key of priorityKeys) {
     const value = input[key]
     if (typeof value === 'string' && value.length > 0) return value
   }
   // 回退到第一个非下划线开头的字符串值
   for (const [key, value] of Object.entries(input)) {
-    if (!key.startsWith('_') && typeof value === 'string' && value.length > 0 && value.length < 200) {
+    if (
+      !key.startsWith('_') &&
+      typeof value === 'string' &&
+      value.length > 0 &&
+      value.length < 200
+    ) {
       return value
     }
   }

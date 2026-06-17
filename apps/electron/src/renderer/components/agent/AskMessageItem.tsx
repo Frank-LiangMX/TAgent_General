@@ -12,18 +12,14 @@ import { useAtomValue } from 'jotai'
 import { Bot } from 'lucide-react'
 import * as React from 'react'
 
+import type { AskMessage } from '@tagent/shared'
+
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { askStreamErrorsAtom } from '@/atoms/ask-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
-import {
-  Message,
-  MessageContent,
-  MessageHeader,
-} from '@/components/ai-elements/message'
+import { Message, MessageContent, MessageHeader } from '@/components/ai-elements/message'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
-
-import type { AskMessage } from '@tagent/shared'
 
 interface AskMessageItemProps {
   message: AskMessage
@@ -59,11 +55,7 @@ function AssistantLogo({ model }: { model?: string }): React.ReactElement {
 
 /** 简单 Markdown-lite 渲染（不引入完整 MD 解析器） */
 function PlainContent({ text }: { text: string }): React.ReactElement {
-  return (
-    <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-      {text}
-    </div>
-  )
+  return <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text}</div>
 }
 
 export const AskMessageItem = React.memo(function AskMessageItem({
@@ -143,12 +135,14 @@ export const AskMessageItem = React.memo(function AskMessageItem({
 
           {/* 中止 / 错误标记 */}
           {message.partial && (
-            <div className={cn(
-              'mt-2 text-xs px-2 py-1 rounded-md inline-block',
-              message.error
-                ? 'bg-destructive/10 text-destructive'
-                : 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-            )}>
+            <div
+              className={cn(
+                'mt-2 text-xs px-2 py-1 rounded-md inline-block',
+                message.error
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+              )}
+            >
               {message.error ? `出错：${message.error}` : '已被用户中止'}
             </div>
           )}

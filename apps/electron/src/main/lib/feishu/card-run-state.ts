@@ -65,9 +65,7 @@ export function createInitialState(): RunState {
 }
 
 function closeStreamingText(blocks: Block[]): Block[] {
-  return blocks.map((b) =>
-    b.kind === 'text' && b.streaming ? { ...b, streaming: false } : b,
-  )
+  return blocks.map((b) => (b.kind === 'text' && b.streaming ? { ...b, streaming: false } : b))
 }
 
 function appendText(state: RunState, delta: string): RunState {
@@ -124,7 +122,12 @@ function stringifyToolResult(content: unknown): string {
     return content
       .map((c) => {
         if (typeof c === 'string') return c
-        if (c && typeof c === 'object' && 'text' in c && typeof (c as { text: string }).text === 'string') {
+        if (
+          c &&
+          typeof c === 'object' &&
+          'text' in c &&
+          typeof (c as { text: string }).text === 'string'
+        ) {
           return (c as { text: string }).text
         }
         try {

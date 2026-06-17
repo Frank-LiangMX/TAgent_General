@@ -35,7 +35,12 @@ import {
 
 import type { FileEntry } from '@tagent/shared'
 
-import { workspaceFilesVersionAtom, fileBrowserAutoRevealAtom, recentlyModifiedPathsAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import {
+  workspaceFilesVersionAtom,
+  fileBrowserAutoRevealAtom,
+  recentlyModifiedPathsAtom,
+  currentAgentSessionIdAtom,
+} from '@/atoms/agent-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,8 +61,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-
-
 
 /** 计算目标路径相对 rootPath 的祖先目录集合（不含 rootPath 自身、含目标的所有上级） */
 export function computeRevealAncestors(rootPath: string, targetPath: string): Set<string> {
@@ -137,8 +140,11 @@ export function FileBrowser({
     return autoReveal
   }, [autoReveal, rootPath])
   const revealAncestors = React.useMemo(
-    () => revealForThisRoot ? computeRevealAncestors(rootPath, revealForThisRoot.path) : new Set<string>(),
-    [revealForThisRoot, rootPath],
+    () =>
+      revealForThisRoot
+        ? computeRevealAncestors(rootPath, revealForThisRoot.path)
+        : new Set<string>(),
+    [revealForThisRoot, rootPath]
   )
   const revealTarget = revealForThisRoot?.path ?? null
   const revealTs = revealForThisRoot?.ts ?? 0
@@ -249,35 +255,41 @@ export function FileBrowser({
   }, [])
 
   /** 执行重命名 */
-  const handleRename = React.useCallback(async (filePath: string, newName: string): Promise<string | null> => {
-    // 同名检查
-    const parentDir = filePath.substring(0, filePath.lastIndexOf('/'))
-    try {
-      const siblings = await window.electronAPI.listDirectory(parentDir)
-      const conflict = siblings.some((s) => s.name === newName && s.path !== filePath)
-      if (conflict) {
-        return '同名文件已存在'
+  const handleRename = React.useCallback(
+    async (filePath: string, newName: string): Promise<string | null> => {
+      // 同名检查
+      const parentDir = filePath.substring(0, filePath.lastIndexOf('/'))
+      try {
+        const siblings = await window.electronAPI.listDirectory(parentDir)
+        const conflict = siblings.some((s) => s.name === newName && s.path !== filePath)
+        if (conflict) {
+          return '同名文件已存在'
+        }
+      } catch {
+        // 无法列出目录，跳过检查
       }
-    } catch {
-      // 无法列出目录，跳过检查
-    }
 
-    try {
-      await window.electronAPI.renameFile(filePath, newName)
-      await loadRoot()
-      setRenamingPath(null)
-      setSelectedPaths(new Set())
-      return null
-    } catch (err) {
-      return err instanceof Error ? err.message : '重命名失败'
-    }
-  }, [loadRoot])
+      try {
+        await window.electronAPI.renameFile(filePath, newName)
+        await loadRoot()
+        setRenamingPath(null)
+        setSelectedPaths(new Set())
+        return null
+      } catch (err) {
+        return err instanceof Error ? err.message : '重命名失败'
+      }
+    },
+    [loadRoot]
+  )
 
   /** 触发删除（支持多选） */
-  const handleRequestDelete = React.useCallback((entry: FileEntry) => {
-    setDeleteTarget(entry)
-    setDeleteCount(selectedCount > 1 ? selectedCount : 1)
-  }, [selectedCount])
+  const handleRequestDelete = React.useCallback(
+    (entry: FileEntry) => {
+      setDeleteTarget(entry)
+      setDeleteCount(selectedCount > 1 ? selectedCount : 1)
+    },
+    [selectedCount]
+  )
 
   /** 执行删除 */
   const handleDelete = React.useCallback(async () => {
@@ -300,27 +312,30 @@ export function FileBrowser({
   }, [deleteTarget, selectedPaths, loadRoot])
 
   /** 移动文件 */
-  const handleMove = React.useCallback(async (entry: FileEntry) => {
-    setMoving(true)
-    try {
-      const result = await window.electronAPI.openFolderDialog()
-      if (!result) return
+  const handleMove = React.useCallback(
+    async (entry: FileEntry) => {
+      setMoving(true)
+      try {
+        const result = await window.electronAPI.openFolderDialog()
+        if (!result) return
 
-      if (selectedPaths.size > 1) {
-        for (const path of selectedPaths) {
-          await window.electronAPI.moveFile(path, result.path)
+        if (selectedPaths.size > 1) {
+          for (const path of selectedPaths) {
+            await window.electronAPI.moveFile(path, result.path)
+          }
+        } else {
+          await window.electronAPI.moveFile(entry.path, result.path)
         }
-      } else {
-        await window.electronAPI.moveFile(entry.path, result.path)
+        setSelectedPaths(new Set())
+        await loadRoot()
+      } catch (err) {
+        console.error('[FileBrowser] 移动失败:', err)
+      } finally {
+        setMoving(false)
       }
-      setSelectedPaths(new Set())
-      await loadRoot()
-    } catch (err) {
-      console.error('[FileBrowser] 移动失败:', err)
-    } finally {
-      setMoving(false)
-    }
-  }, [selectedPaths, loadRoot])
+    },
+    [selectedPaths, loadRoot]
+  )
 
   // 显示根路径最后两段作为面包屑
   const breadcrumb = React.useMemo(() => {
@@ -330,13 +345,9 @@ export function FileBrowser({
 
   const fileTree = (
     <div className="py-1" onClick={handleBackgroundClick}>
-      {error && (
-        <div className="px-3 py-2 text-xs text-destructive">{error}</div>
-      )}
+      {error && <div className="px-3 py-2 text-xs text-destructive">{error}</div>}
       {!error && entries.length === 0 && !loading && !hideEmpty && (
-        <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-          目录为空
-        </div>
+        <div className="px-3 py-4 text-xs text-muted-foreground text-center">目录为空</div>
       )}
       {entries.map((entry) => (
         <FileTreeItem
@@ -404,20 +415,23 @@ export function FileBrowser({
       )}
 
       {/* 文件树 */}
-      {embedded ? fileTree : (
-        <ScrollArea className="flex-1">
-          {fileTree}
-        </ScrollArea>
-      )}
+      {embedded ? fileTree : <ScrollArea className="flex-1">{fileTree}</ScrollArea>}
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteCount > 1 ? (
-                <>确定要删除选中的 <strong>{deleteCount}</strong> 个项目吗？</>
+                <>
+                  确定要删除选中的 <strong>{deleteCount}</strong> 个项目吗？
+                </>
               ) : (
                 <>
                   确定要删除 <strong>{deleteTarget?.name}</strong> 吗？
@@ -429,7 +443,10 @@ export function FileBrowser({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               删除
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -513,11 +530,12 @@ function FileTreeItem({
   // 当 refreshVersion 变化时，已展开的文件夹自动重新加载子项
   React.useEffect(() => {
     if (expanded && childrenLoaded && entry.isDirectory) {
-      window.electronAPI.listDirectory(entry.path)
+      window.electronAPI
+        .listDirectory(entry.path)
         .then((items) => setChildren(items))
         .catch((err) => console.error('[FileTreeItem] 刷新子目录失败:', err))
     }
-  }, [refreshVersion])  
+  }, [refreshVersion])
 
   // ===== Agent 自动定位：祖先目录自动展开 + 目标行滚动到中心 + 0.8s 高亮脉冲 =====
   React.useEffect(() => {
@@ -557,7 +575,9 @@ function FileTreeItem({
         if (isTarget) scrollToTarget()
       }
       void run()
-      cleanups.push(() => { cancelled = true })
+      cleanups.push(() => {
+        cancelled = true
+      })
     }
 
     // 目标行：滚动到可视区中心 + 高亮脉冲
@@ -576,8 +596,11 @@ function FileTreeItem({
       }
     }
 
-    if (cleanups.length > 0) return () => { for (const c of cleanups) c() }
-  }, [revealTs])  
+    if (cleanups.length > 0)
+      return () => {
+        for (const c of cleanups) c()
+      }
+  }, [revealTs])
 
   // 重命名编辑状态
   const [editName, setEditName] = React.useState('')
@@ -604,7 +627,9 @@ function FileTreeItem({
             try {
               const retryItems = await window.electronAPI.listDirectory(entry.path)
               if (retryItems.length > 0) setChildren(retryItems)
-            } catch { /* 静默忽略 */ }
+            } catch {
+              /* 静默忽略 */
+            }
           }, 800)
         }
       } catch (err) {
@@ -733,12 +758,8 @@ function FileTreeItem({
           'relative flex h-8 items-center gap-1 pr-2 text-sm cursor-pointer group transition-colors',
           isSticky && STICKY_ROW_BASE_CLASS,
           // sticky 行 hover 用不透明色，避免下方滚动内容透出；普通行保持半透明柔和感
-          isSelected
-            ? 'bg-accent'
-            : isSticky
-              ? 'hover:bg-accent'
-              : 'hover:bg-accent/50',
-          flash && 'file-browser-row-flash',
+          isSelected ? 'bg-accent' : isSticky ? 'hover:bg-accent' : 'hover:bg-accent/50',
+          flash && 'file-browser-row-flash'
         )}
         style={{
           paddingLeft,
@@ -762,7 +783,7 @@ function FileTreeItem({
           <ChevronRight
             className={cn(
               'size-3.5 text-muted-foreground flex-shrink-0 transition-transform duration-150',
-              expanded && 'rotate-90',
+              expanded && 'rotate-90'
             )}
           />
         ) : (
@@ -778,13 +799,16 @@ function FileTreeItem({
             <input
               ref={renameInputRef}
               value={editName}
-              onChange={(e) => { setEditName(e.target.value); setRenameError(null) }}
+              onChange={(e) => {
+                setEditName(e.target.value)
+                setRenameError(null)
+              }}
               onKeyDown={handleRenameKeyDown}
               onBlur={handleBlur}
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 'w-full bg-transparent text-xs border-b outline-none py-0.5',
-                renameError ? 'border-destructive' : 'border-primary/50',
+                renameError ? 'border-destructive' : 'border-primary/50'
               )}
               maxLength={255}
             />
@@ -806,23 +830,24 @@ function FileTreeItem({
         >
           {/* 悬浮/选中状态：三点菜单 */}
           {showMenu && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
-                  !isSelected && 'invisible group-hover:visible focus-visible:visible data-[state=open]:visible',
-                )}
-                title="更多操作"
-                aria-label="更多操作"
-                onClick={(e) => {
-                  if (!isSelected) onSelect(entry, e)
-                }}
-              >
-                <MoreHorizontal className="size-3.5" />
-              </button>
-            </DropdownMenuTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
+                    !isSelected &&
+                      'invisible group-hover:visible focus-visible:visible data-[state=open]:visible'
+                  )}
+                  title="更多操作"
+                  aria-label="更多操作"
+                  onClick={(e) => {
+                    if (!isSelected) onSelect(entry, e)
+                  }}
+                >
+                  <MoreHorizontal className="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
                 {onAddToChat && !entry.isDirectory && menuSelectedCount === 1 && (
                   <DropdownMenuItem
@@ -851,7 +876,9 @@ function FileTreeItem({
                 <DropdownMenuItem
                   className="text-xs py-1 [&>svg]:size-3.5"
                   disabled={moving}
-                  onSelect={() => { void onMove(entry) }}
+                  onSelect={() => {
+                    void onMove(entry)
+                  }}
                 >
                   <FolderInput />
                   {menuSelectedCount > 1 ? `移动选中 (${menuSelectedCount})` : '移动到...'}
@@ -874,7 +901,7 @@ function FileTreeItem({
                   {menuSelectedCount > 1 ? `删除选中 (${menuSelectedCount})` : '删除'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu>
           )}
         </div>
       </div>

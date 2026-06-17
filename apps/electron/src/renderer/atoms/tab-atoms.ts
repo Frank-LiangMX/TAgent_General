@@ -13,9 +13,7 @@ import {
   agentSessionIndicatorMapAtom,
   unviewedCompletedSessionIdsAtom,
 } from './agent-atoms'
-import {
-  streamingConversationIdsAtom,
-} from './chat-atoms'
+import { streamingConversationIdsAtom } from './chat-atoms'
 
 import type { SessionIndicatorStatus } from './agent-atoms'
 import type { PreviewFile } from './preview-atoms'
@@ -103,9 +101,7 @@ const initialActiveTabByMode: Map<TopLevelMode, string | null> = new Map<
   ['general', null],
   ['ta', null],
 ])
-export const activeTabIdByModeAtom = atom<Map<TopLevelMode, string | null>>(
-  initialActiveTabByMode
-)
+export const activeTabIdByModeAtom = atom<Map<TopLevelMode, string | null>>(initialActiveTabByMode)
 
 /**
  * 当前激活的标签 ID（按当前顶层模式从 activeTabIdByModeAtom 派生）。
@@ -200,8 +196,9 @@ export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((ge
     if (tab.type === 'scratch') continue
     // P3: chat 已退役，仅处理 agent 类型
     if (tab.type === 'agent') {
-      const status = agentIndicator.get(tab.sessionId)
-        ?? (unviewedCompletedIds.has(tab.sessionId) ? 'completed' : 'idle')
+      const status =
+        agentIndicator.get(tab.sessionId) ??
+        (unviewedCompletedIds.has(tab.sessionId) ? 'completed' : 'idle')
       map.set(tab.id, status)
     }
   }
@@ -249,15 +246,17 @@ function getPersistentTabs(tabs: TabItem[]): TabItem[] {
 
 export function getPersistableTabState(
   tabs: TabItem[],
-  activeTabId: string | null,
+  activeTabId: string | null
 ): PersistedTabState {
   const persistentTabs = getPersistentTabs(tabs)
   const activeTab = activeTabId ? tabs.find((tab) => tab.id === activeTabId) : null
-  const persistentActiveTabId = activeTab && isPreviewTab(activeTab)
-    ? persistentTabs.find((tab) => tab.sessionId === activeTab.sessionId && tab.type === 'agent')?.id
-      ?? persistentTabs.at(-1)?.id
-      ?? null
-    : activeTabId
+  const persistentActiveTabId =
+    activeTab && isPreviewTab(activeTab)
+      ? (persistentTabs.find((tab) => tab.sessionId === activeTab.sessionId && tab.type === 'agent')
+          ?.id ??
+        persistentTabs.at(-1)?.id ??
+        null)
+      : activeTabId
 
   return {
     tabs: persistentTabs,
@@ -271,7 +270,7 @@ export function getPersistableTabState(
 export function openTab(
   tabs: TabItem[],
   item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
-  restore?: OpenTabRestore,
+  restore?: OpenTabRestore
 ): { tabs: TabItem[]; activeTabId: string } {
   if (item.type === 'scratch') {
     // 检查是否已存在草稿 tab
@@ -284,7 +283,9 @@ export function openTab(
   }
 
   if (item.type === 'preview') {
-    const ownerAgentTab = tabs.find((t) => t.type === 'agent' && t.sessionId === item.sessionId) ?? {
+    const ownerAgentTab = tabs.find(
+      (t) => t.type === 'agent' && t.sessionId === item.sessionId
+    ) ?? {
       id: item.sessionId,
       type: 'agent' as const,
       sessionId: item.sessionId,
@@ -340,7 +341,7 @@ export function openTab(
 export function buildOpenTabRestore(
   sessionId: string,
   viewStateMap: Map<string, SessionViewState>,
-  previewFileMap: Map<string, PreviewFile | null>,
+  previewFileMap: Map<string, PreviewFile | null>
 ): OpenTabRestore | undefined {
   const viewState = viewStateMap.get(sessionId)
   const previewFile = previewFileMap.get(sessionId)
@@ -356,7 +357,7 @@ export function buildOpenTabRestore(
 export function closeTab(
   tabs: TabItem[],
   activeTabId: string | null,
-  tabId: string,
+  tabId: string
 ): { tabs: TabItem[]; activeTabId: string | null } {
   const tabIndex = tabs.findIndex((t) => t.id === tabId)
   if (tabIndex === -1) return { tabs, activeTabId }
@@ -380,11 +381,7 @@ export function closeTab(
 }
 
 /** 重排标签顺序（当前只保留 Scratch + 当前会话，保留函数用于兼容旧调用） */
-export function reorderTabs(
-  tabs: TabItem[],
-  fromIndex: number,
-  toIndex: number,
-): TabItem[] {
+export function reorderTabs(tabs: TabItem[], fromIndex: number, toIndex: number): TabItem[] {
   if (fromIndex === toIndex) return tabs
   // Scratch 不可移出第 0 位
   if (tabs[0]?.id === SCRATCH_PAD_ID && (fromIndex === 0 || toIndex === 0)) return tabs
@@ -395,14 +392,8 @@ export function reorderTabs(
 }
 
 /** 更新标签标题 */
-export function updateTabTitle(
-  tabs: TabItem[],
-  sessionId: string,
-  title: string,
-): TabItem[] {
-  return tabs.map((t) =>
-    t.sessionId === sessionId && !isPreviewTab(t) ? { ...t, title } : t
-  )
+export function updateTabTitle(tabs: TabItem[], sessionId: string, title: string): TabItem[] {
+  return tabs.map((t) => (t.sessionId === sessionId && !isPreviewTab(t) ? { ...t, title } : t))
 }
 
 /** 创建 Scratch Pad 标签 */

@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { getAgentCompletionMarkers, isAgentSessionActiveForCompletion } from './agent-completion-presence'
+import {
+  getAgentCompletionMarkers,
+  isAgentSessionActiveForCompletion,
+} from './agent-completion-presence'
 
 import type { TabItem } from '@/atoms/tab-atoms'
 
@@ -46,13 +49,15 @@ describe('Agent 完成归属判断', () => {
   })
 
   test('Given Tab 状态尚未恢复但 currentAgentSessionId 匹配 When Agent 完成 Then 使用兼容判断', () => {
-    expect(isAgentSessionActiveForCompletion({
-      tabs: [],
-      activeTabId: null,
-      currentAgentSessionId: 'agent-1',
-      sessionId: 'agent-1',
-      documentHasFocus: true,
-    })).toBe(true)
+    expect(
+      isAgentSessionActiveForCompletion({
+        tabs: [],
+        activeTabId: null,
+        currentAgentSessionId: 'agent-1',
+        sessionId: 'agent-1',
+        documentHasFocus: true,
+      })
+    ).toBe(true)
   })
 
   test('Given 当前激活的就是该 Agent Tab 但窗口在后台 When Agent 完成 Then 视为未查看并入账角标', () => {

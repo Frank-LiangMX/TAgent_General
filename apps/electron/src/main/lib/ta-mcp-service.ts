@@ -10,8 +10,8 @@ import { join } from 'node:path'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { getWorkspaceMcpPath, getConfigDir } from './config-paths'
-import type { InstallLogChunk } from './ta-mcp-installer'
 
+import type { InstallLogChunk } from './ta-mcp-installer'
 import type { WorkspaceMcpConfig } from '@tagent/shared'
 
 /** TA MCP Server 名称 */
@@ -49,7 +49,10 @@ function detectPython(): { path: string; version: string; source: 'venv' | 'syst
   const venvPy = getVenvPython()
   if (venvPy) {
     try {
-      const versionOutput = execSync(`"${venvPy}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim()
+      const versionOutput = execSync(`"${venvPy}" --version`, {
+        encoding: 'utf-8',
+        timeout: 5000,
+      }).trim()
       const match = versionOutput.match(/Python (\d+\.\d+\.\d+)/i)
       if (match) {
         return { path: venvPy, version: match[1]!, source: 'venv' }
@@ -127,7 +130,11 @@ export function getTAMcpServerStatus(): TAMcpServerStatus {
  *
  * 用于添加到工作区 mcp.json
  */
-export function getTAMcpServerEntry(): { command: string; args: string[]; env?: Record<string, string> } {
+export function getTAMcpServerEntry(): {
+  command: string
+  args: string[]
+  env?: Record<string, string>
+} {
   // 使用 Python 模块方式启动
   const python = detectPython()
   const pythonPath = python?.path || 'python'
@@ -151,7 +158,7 @@ export function isTAMcpConfigured(workspaceSlug: string): boolean {
   try {
     const raw = require('fs').readFileSync(mcpPath, 'utf-8')
     const config = JSON.parse(raw) as WorkspaceMcpConfig
-    return !!(config.servers?.[TA_MCP_SERVER_NAME]?.enabled)
+    return !!config.servers?.[TA_MCP_SERVER_NAME]?.enabled
   } catch {
     return false
   }
@@ -249,7 +256,8 @@ export function getVenvPath(): string {
  */
 export function getVenvPython(): string | null {
   const dir = getVenvPath()
-  const exe = process.platform === 'win32' ? join(dir, 'Scripts', 'python.exe') : join(dir, 'bin', 'python')
+  const exe =
+    process.platform === 'win32' ? join(dir, 'Scripts', 'python.exe') : join(dir, 'bin', 'python')
   return existsSync(exe) ? exe : null
 }
 
@@ -289,7 +297,13 @@ export function getVenvStatus(): VenvStatus {
       execSync(`"${py}" -c "import ta_agent_mcp"`, { encoding: 'utf-8', timeout: 5000 })
       return { exists: true, healthy: true, pythonPath: py, pythonVersion: version }
     } catch {
-      return { exists: true, healthy: false, pythonPath: py, pythonVersion: version, reason: 'package_missing' }
+      return {
+        exists: true,
+        healthy: false,
+        pythonPath: py,
+        pythonVersion: version,
+        reason: 'package_missing',
+      }
     }
   } catch {
     return { exists: true, healthy: false, pythonPath: py, reason: 'corrupted' }

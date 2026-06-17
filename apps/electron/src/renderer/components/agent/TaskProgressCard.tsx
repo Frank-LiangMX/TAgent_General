@@ -7,14 +7,7 @@
  * 数据来源：直接从 ToolActivity[] 中提取 task 相关活动并聚合状态。
  */
 
-import {
-  CheckCircle2,
-  Loader2,
-  Circle,
-  ListTodo,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react'
+import { CheckCircle2, Loader2, Circle, ListTodo, ChevronDown, ChevronUp } from 'lucide-react'
 import * as React from 'react'
 
 import { aggregateTaskItems, type TaskItem } from './task-progress'
@@ -22,8 +15,6 @@ import { aggregateTaskItems, type TaskItem } from './task-progress'
 import type { ToolActivity } from '@/atoms/agent-atoms'
 
 import { cn } from '@/lib/utils'
-
-
 
 // ===== 任务行 =====
 
@@ -40,20 +31,14 @@ function TaskRow({ item }: TaskRowProps): React.ReactElement {
       className={cn(
         'flex items-center gap-1.5 text-[13px] py-[3px]',
         'transition-colors duration-200',
-        isCompleted && 'opacity-50',
+        isCompleted && 'opacity-50'
       )}
     >
       {/* 状态图标 */}
       <span className="flex items-center justify-center size-2.5 shrink-0">
-        {item.status === 'pending' && (
-          <Circle className="size-2.5 text-muted-foreground/40" />
-        )}
-        {isInProgress && (
-          <Loader2 className="size-2 animate-spin text-blue-500" />
-        )}
-        {isCompleted && (
-          <CheckCircle2 className="size-2.5 text-green-500" />
-        )}
+        {item.status === 'pending' && <Circle className="size-2.5 text-muted-foreground/40" />}
+        {isInProgress && <Loader2 className="size-2 animate-spin text-blue-500" />}
+        {isCompleted && <CheckCircle2 className="size-2.5 text-green-500" />}
       </span>
 
       {/* 任务文字 */}
@@ -62,7 +47,7 @@ function TaskRow({ item }: TaskRowProps): React.ReactElement {
           'truncate flex-1',
           isCompleted && 'text-muted-foreground line-through',
           isInProgress && 'text-foreground/90',
-          !isCompleted && !isInProgress && 'text-muted-foreground',
+          !isCompleted && !isInProgress && 'text-muted-foreground'
         )}
       >
         {isInProgress && item.activeForm ? item.activeForm : item.subject}
@@ -73,7 +58,13 @@ function TaskRow({ item }: TaskRowProps): React.ReactElement {
 
 // ===== 进度条 =====
 
-function ProgressBar({ completed, total }: { completed: number; total: number }): React.ReactElement | null {
+function ProgressBar({
+  completed,
+  total,
+}: {
+  completed: number
+  total: number
+}): React.ReactElement | null {
   if (total <= 1) return null
   const percent = Math.round((completed / total) * 100)
 
@@ -108,8 +99,16 @@ interface TaskProgressCardProps {
   historicalTaskSubjects?: Map<string, string>
 }
 
-export function TaskProgressCard({ activities, animate = false, streamEnded = false, historicalTaskSubjects }: TaskProgressCardProps): React.ReactElement | null {
-  const items = React.useMemo(() => aggregateTaskItems(activities, streamEnded, historicalTaskSubjects), [activities, streamEnded, historicalTaskSubjects])
+export function TaskProgressCard({
+  activities,
+  animate = false,
+  streamEnded = false,
+  historicalTaskSubjects,
+}: TaskProgressCardProps): React.ReactElement | null {
+  const items = React.useMemo(
+    () => aggregateTaskItems(activities, streamEnded, historicalTaskSubjects),
+    [activities, streamEnded, historicalTaskSubjects]
+  )
   const [expanded, setExpanded] = React.useState(false)
 
   if (items.length === 0) return null
@@ -122,16 +121,11 @@ export function TaskProgressCard({ activities, animate = false, streamEnded = fa
   return (
     <div className={cn('my-1', animate && 'animate-in fade-in duration-200')}>
       {/* 虚线边框容器 */}
-      <div
-        className="rounded-lg bg-muted/40 px-3.5 py-3"
-        style={dashedBorderStyle}
-      >
+      <div className="rounded-lg bg-muted/40 px-3.5 py-3" style={dashedBorderStyle}>
         {/* 标题行 */}
         <div className="flex items-center gap-1.5 mb-1.5">
           <ListTodo className="size-3.5 text-muted-foreground" />
-          <span className="text-[13px] font-medium text-muted-foreground">
-            任务进度
-          </span>
+          <span className="text-[13px] font-medium text-muted-foreground">任务进度</span>
           <span className="text-[11px] text-muted-foreground/50 tabular-nums">
             {completedCount}/{totalCount}
           </span>

@@ -8,7 +8,8 @@ import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 
 const VIDEO_EXT_RE = /\.(mp4|webm|ogg|ogv|mov|m4v)(?:[?#].*)?$/i
 const PREVIEW_BLOCK_RE = /^<div\s+[^>]*data-type=(["'])(?:raw-html-block|math-block)\1/i
-const DETAILS_BLOCK_RE = /<details(\s[^>]*)?>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi
+const DETAILS_BLOCK_RE =
+  /<details(\s[^>]*)?>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi
 const STANDALONE_HTML_MEDIA_RE = /^\s*<(?:img|video)\b[^>]*(?:\/?>|>.*?<\/video>)\s*$/i
 
 export const MARKDOWN_RENDERER_VERSION = 3
@@ -88,7 +89,8 @@ function isPreviewBlockHtml(value: string): boolean {
 function addMathSupport(md: MarkdownIt): void {
   md.inline.ruler.after('escape', 'math_inline', (state: StateInline, silent: boolean) => {
     const start = state.pos
-    if (state.src.charCodeAt(start) !== 0x24 || state.src.charCodeAt(start + 1) === 0x24) return false
+    if (state.src.charCodeAt(start) !== 0x24 || state.src.charCodeAt(start + 1) === 0x24)
+      return false
 
     let end = start + 1
     while ((end = state.src.indexOf('$', end)) !== -1) {
@@ -105,50 +107,53 @@ function addMathSupport(md: MarkdownIt): void {
     return true
   })
 
-  md.block.ruler.after('blockquote', 'math_block', (state: StateBlock, startLine: number, endLine: number, silent: boolean) => {
-    const start = state.bMarks[startLine]! + state.tShift[startLine]!
-    const max = state.eMarks[startLine]!
-    const firstLine = state.src.slice(start, max)
-    if (!firstLine.startsWith('$$')) return false
+  md.block.ruler.after(
+    'blockquote',
+    'math_block',
+    (state: StateBlock, startLine: number, endLine: number, silent: boolean) => {
+      const start = state.bMarks[startLine]! + state.tShift[startLine]!
+      const max = state.eMarks[startLine]!
+      const firstLine = state.src.slice(start, max)
+      if (!firstLine.startsWith('$$')) return false
 
-    if (silent) return true
+      if (silent) return true
 
-    let nextLine = startLine + 1
-    let content = firstLine.slice(2)
-    const sameLineEnd = content.lastIndexOf('$$')
-    if (sameLineEnd > 0) {
-      content = content.slice(0, sameLineEnd)
-    } else {
-      const lines: string[] = []
-      if (content.trim()) lines.push(content)
-      for (; nextLine < endLine; nextLine++) {
-        const lineStart = state.bMarks[nextLine]! + state.tShift[nextLine]!
-        const lineMax = state.eMarks[nextLine]!
-        const line = state.src.slice(lineStart, lineMax)
-        const end = line.indexOf('$$')
-        if (end >= 0) {
-          lines.push(line.slice(0, end))
-          nextLine += 1
-          break
+      let nextLine = startLine + 1
+      let content = firstLine.slice(2)
+      const sameLineEnd = content.lastIndexOf('$$')
+      if (sameLineEnd > 0) {
+        content = content.slice(0, sameLineEnd)
+      } else {
+        const lines: string[] = []
+        if (content.trim()) lines.push(content)
+        for (; nextLine < endLine; nextLine++) {
+          const lineStart = state.bMarks[nextLine]! + state.tShift[nextLine]!
+          const lineMax = state.eMarks[nextLine]!
+          const line = state.src.slice(lineStart, lineMax)
+          const end = line.indexOf('$$')
+          if (end >= 0) {
+            lines.push(line.slice(0, end))
+            nextLine += 1
+            break
+          }
+          lines.push(line)
         }
-        lines.push(line)
+        content = lines.join('\n')
       }
-      content = lines.join('\n')
-    }
 
-    const token = state.push('math_block', 'math', 0)
-    token.block = true
-    token.content = content.trim()
-    state.line = nextLine
-    return true
-  }, { alt: ['paragraph', 'reference', 'blockquote', 'list'] })
+      const token = state.push('math_block', 'math', 0)
+      token.block = true
+      token.content = content.trim()
+      state.line = nextLine
+      return true
+    },
+    { alt: ['paragraph', 'reference', 'blockquote', 'list'] }
+  )
 
-  md.renderer.rules.math_inline = (tokens, idx) => (
+  md.renderer.rules.math_inline = (tokens, idx) =>
     `<span data-type="math-inline" data-latex="${escapeAttr(tokens[idx]?.content ?? '')}"></span>`
-  )
-  md.renderer.rules.math_block = (tokens, idx) => (
+  md.renderer.rules.math_block = (tokens, idx) =>
     `<div data-type="math-block" data-latex="${escapeAttr(tokens[idx]?.content ?? '')}"></div>\n`
-  )
 }
 
 const markdownIt = new MarkdownIt({
@@ -164,9 +169,10 @@ markdownIt.core.ruler.after('inline', 'emoji_shortcode', (state: StateCore) => {
     if (token.type !== 'inline' || !token.children) continue
     for (const child of token.children) {
       if (child.type !== 'text') continue
-      child.content = child.content.replace(/:([a-z0-9_+-]+):/gi, (raw: string, name: string) => (
-        EMOJI_SHORTCODES[name] ?? raw
-      ))
+      child.content = child.content.replace(
+        /:([a-z0-9_+-]+):/gi,
+        (raw: string, name: string) => EMOJI_SHORTCODES[name] ?? raw
+      )
     }
   }
 })
@@ -178,9 +184,8 @@ markdownIt.renderer.rules.html_block = (tokens, idx) => {
   return `<div data-type="raw-html-block" data-markdown="${escapeAttr(content)}" data-html="${escapeAttr(content)}"></div>\n`
 }
 
-markdownIt.renderer.rules.html_inline = (tokens, idx) => (
+markdownIt.renderer.rules.html_inline = (tokens, idx) =>
   `<span data-type="raw-html-inline" data-html="${escapeAttr(tokens[idx]?.content ?? '')}"></span>`
-)
 
 markdownIt.renderer.rules.image = (tokens, idx) => {
   const token = tokens[idx]
@@ -211,12 +216,15 @@ markdownIt.renderer.rules.fence = (tokens, idx) => {
 }
 
 function wrapMarkdownDetailsBlocks(markdown: string): string {
-  return markdown.replace(DETAILS_BLOCK_RE, (raw: string, attrs = '', summary: string, body: string) => {
-    const bodyMarkdown = body.trim()
-    const bodyHtml = bodyMarkdown ? markdownIt.render(bodyMarkdown) : ''
-    const detailsHtml = `<details${attrs}><summary>${summary.trim()}</summary>${bodyHtml}</details>`
-    return `<div data-type="raw-html-block" data-markdown="${escapeAttr(raw.trim())}" data-html="${escapeAttr(detailsHtml)}"></div>`
-  })
+  return markdown.replace(
+    DETAILS_BLOCK_RE,
+    (raw: string, attrs = '', summary: string, body: string) => {
+      const bodyMarkdown = body.trim()
+      const bodyHtml = bodyMarkdown ? markdownIt.render(bodyMarkdown) : ''
+      const detailsHtml = `<details${attrs}><summary>${summary.trim()}</summary>${bodyHtml}</details>`
+      return `<div data-type="raw-html-block" data-markdown="${escapeAttr(raw.trim())}" data-html="${escapeAttr(detailsHtml)}"></div>`
+    }
+  )
 }
 
 function splitMarkdownCodeRegions(markdown: string): Array<{ text: string; code: boolean }> {
@@ -278,9 +286,13 @@ function normalizeMarkdownLinePrefixes(markdown: string): string {
 
 function preprocessMarkdown(markdown: string): string {
   return splitMarkdownCodeRegions(markdown)
-    .map((chunk) => chunk.code
-      ? chunk.text
-      : wrapMarkdownDetailsBlocks(separateStandaloneHtmlMediaBlocks(normalizeMarkdownLinePrefixes(chunk.text))))
+    .map((chunk) =>
+      chunk.code
+        ? chunk.text
+        : wrapMarkdownDetailsBlocks(
+            separateStandaloneHtmlMediaBlocks(normalizeMarkdownLinePrefixes(chunk.text))
+          )
+    )
     .join('')
 }
 
@@ -292,11 +304,14 @@ function enhanceMarkdownHtml(html: string): string {
 
   for (const li of Array.from(root.querySelectorAll('li'))) {
     const first = li.firstChild
-    const textNode = first?.nodeType === Node.TEXT_NODE
-      ? first
-      : first instanceof HTMLElement && first.tagName.toLowerCase() === 'p' && first.firstChild?.nodeType === Node.TEXT_NODE
-        ? first.firstChild
-        : null
+    const textNode =
+      first?.nodeType === Node.TEXT_NODE
+        ? first
+        : first instanceof HTMLElement &&
+            first.tagName.toLowerCase() === 'p' &&
+            first.firstChild?.nodeType === Node.TEXT_NODE
+          ? first.firstChild
+          : null
     const text = textNode?.textContent ?? ''
     const match = text.match(/^\s*\[([ xX])\]\s*/)
     if (!match || !textNode) continue
@@ -335,7 +350,9 @@ export function htmlToMarkdown(html: string): string {
     const el = node as HTMLElement
     const tagName = el.tagName.toLowerCase()
     const childContext = tagName === 'pre' || tagName === 'code' ? 'code' : 'normal'
-    const children = Array.from(el.childNodes).map((child) => processNode(child, childContext)).join('')
+    const children = Array.from(el.childNodes)
+      .map((child) => processNode(child, childContext))
+      .join('')
 
     switch (tagName) {
       case 'div':
@@ -395,53 +412,73 @@ export function htmlToMarkdown(html: string): string {
       }
       case 'ul':
         if (el.getAttribute('data-type') === 'taskList') {
-          return Array.from(el.children)
-            .map((li) => {
-              const checked = li.getAttribute('data-checked') === 'true' ? 'x' : ' '
-              return `- [${checked}] ${processNode(li).trim()}`
-            })
-            .join('\n') + '\n'
+          return (
+            Array.from(el.children)
+              .map((li) => {
+                const checked = li.getAttribute('data-checked') === 'true' ? 'x' : ' '
+                return `- [${checked}] ${processNode(li).trim()}`
+              })
+              .join('\n') + '\n'
+          )
         }
-        return Array.from(el.children)
-          .map((li) => `- ${processNode(li).trim()}`)
-          .join('\n') + '\n'
+        return (
+          Array.from(el.children)
+            .map((li) => `- ${processNode(li).trim()}`)
+            .join('\n') + '\n'
+        )
       case 'ol':
-        return Array.from(el.children)
-          .map((li, i) => `${i + 1}. ${processNode(li).trim()}`)
-          .join('\n') + '\n'
+        return (
+          Array.from(el.children)
+            .map((li, i) => `${i + 1}. ${processNode(li).trim()}`)
+            .join('\n') + '\n'
+        )
       case 'li':
         return children
       case 'table': {
-        const rows = Array.from(el.querySelectorAll('tr')).map((row) =>
-          Array.from(row.children).map((cell) => processNode(cell).trim().replace(/\n+/g, ' '))
-        ).filter((row) => row.length > 0)
+        const rows = Array.from(el.querySelectorAll('tr'))
+          .map((row) =>
+            Array.from(row.children).map((cell) => processNode(cell).trim().replace(/\n+/g, ' '))
+          )
+          .filter((row) => row.length > 0)
         if (rows.length === 0) return ''
         const columnCount = Math.max(...rows.map((row) => row.length))
-        const normalize = (row: string[]) => Array.from({ length: columnCount }, (_, i) => row[i] ?? '')
+        const normalize = (row: string[]) =>
+          Array.from({ length: columnCount }, (_, i) => row[i] ?? '')
         const [head, ...body] = rows.map(normalize)
         if (!head) return ''
-        return [
-          `| ${head.join(' | ')} |`,
-          `| ${head.map(() => '---').join(' | ')} |`,
-          ...body.map((row) => `| ${row.join(' | ')} |`),
-        ].join('\n') + '\n'
+        return (
+          [
+            `| ${head.join(' | ')} |`,
+            `| ${head.map(() => '---').join(' | ')} |`,
+            ...body.map((row) => `| ${row.join(' | ')} |`),
+          ].join('\n') + '\n'
+        )
       }
       case 'th':
       case 'td':
         return children
       case 'blockquote':
-        return children
-          .replace(/\n+$/, '')
-          .split('\n')
-          .map((line) => `> ${line}`)
-          .join('\n') + '\n'
-      case 'h1': return `# ${children}\n`
-      case 'h2': return `## ${children}\n`
-      case 'h3': return `### ${children}\n`
-      case 'h4': return `#### ${children}\n`
-      case 'h5': return `##### ${children}\n`
-      case 'h6': return `###### ${children}\n`
-      case 'hr': return '---\n'
+        return (
+          children
+            .replace(/\n+$/, '')
+            .split('\n')
+            .map((line) => `> ${line}`)
+            .join('\n') + '\n'
+        )
+      case 'h1':
+        return `# ${children}\n`
+      case 'h2':
+        return `## ${children}\n`
+      case 'h3':
+        return `### ${children}\n`
+      case 'h4':
+        return `#### ${children}\n`
+      case 'h5':
+        return `##### ${children}\n`
+      case 'h6':
+        return `###### ${children}\n`
+      case 'hr':
+        return '---\n'
       case 'span': {
         if (el.getAttribute('data-type') === 'raw-html-inline') {
           return el.getAttribute('data-html') || ''
@@ -460,7 +497,8 @@ export function htmlToMarkdown(html: string): string {
         }
         return children
       }
-      default: return children
+      default:
+        return children
     }
   }
 

@@ -12,7 +12,6 @@ import { UPDATER_IPC_CHANNELS } from './updater-types'
 
 import type { UpdateStatus } from './updater-types'
 
-
 /** 当前更新状态 */
 let currentStatus: UpdateStatus = { status: 'idle' }
 
@@ -104,9 +103,7 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
     setStatus({
       status: 'available',
       version: info.version,
-      releaseNotes: typeof info.releaseNotes === 'string'
-        ? info.releaseNotes
-        : undefined,
+      releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
     })
   })
 
@@ -151,10 +148,13 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
   }, 10_000)
 
   // 每 4 小时自动检查一次
-  checkInterval = setInterval(() => {
-    console.log('[更新] 定时自动检查更新')
-    checkForUpdates()
-  }, 4 * 60 * 60 * 1000)
+  checkInterval = setInterval(
+    () => {
+      console.log('[更新] 定时自动检查更新')
+      checkForUpdates()
+    },
+    4 * 60 * 60 * 1000
+  )
 
   // 窗口关闭时清理定时器
   mainWindow.on('closed', () => {

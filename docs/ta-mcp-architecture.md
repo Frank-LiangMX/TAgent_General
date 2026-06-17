@@ -39,11 +39,11 @@ TAgent Desktop App (Electron/TypeScript)
 
 为避免与 Claude SDK 内置工具冲突，TA 工具加 `tagent__` 前缀：
 
-| 原名 | MCP 名称 |
-|------|----------|
-| `check_mesh_budget` | `tagent__check_mesh_budget` |
+| 原名                 | MCP 名称                     |
+| -------------------- | ---------------------------- |
+| `check_mesh_budget`  | `tagent__check_mesh_budget`  |
 | `check_texture_info` | `tagent__check_texture_info` |
-| `analyze_assets` | `tagent__analyze_assets` |
+| `analyze_assets`     | `tagent__analyze_assets`     |
 
 **TS 内置工具不加前缀**（因为它们是 TAgent 自带的）
 
@@ -152,6 +152,7 @@ UE5 同理。
 ### 5.1 MCP 配置界面
 
 TAgent 已有 MCP 管理界面（`AgentSettings.tsx`），用户可：
+
 1. 添加 ta-agent-mcp server
 2. 配置启动参数
 3. 启用/禁用
@@ -163,12 +164,12 @@ TA 模式激活时，自动检查并加载 ta-agent-mcp：
 ```typescript
 // agent-workspace-manager.ts
 const TA_MCP_CONFIG = {
-  "ta-agent-mcp": {
-    command: "python",
-    args: ["-m", "ta_agent_mcp"],
-    cwd: path.join(getTaDataDir(), "mcp-servers", "ta-agent-mcp"),
-    env: { TA_AGENT_DATA_DIR: getTaDataDir() }
-  }
+  'ta-agent-mcp': {
+    command: 'python',
+    args: ['-m', 'ta_agent_mcp'],
+    cwd: path.join(getTaDataDir(), 'mcp-servers', 'ta-agent-mcp'),
+    env: { TA_AGENT_DATA_DIR: getTaDataDir() },
+  },
 }
 
 // 激活 TA 模式时合并配置
@@ -202,15 +203,18 @@ pip install -e .
 ### 6.2 生产打包方案
 
 **方案 A：用户自备 Python**
+
 - 用户需自行安装 Python 3.11+ 和依赖
 - TAgent 提供安装引导
 
 **方案 B：内嵌 Python（PyInstaller）**
+
 - 打包独立 exe/app
 - 体积 +150MB
 - 开箱即用
 
 **方案 C：可选下载**
+
 - TA MCP 作为独立插件包
 - 用户在设置页一键下载安装
 
@@ -260,14 +264,14 @@ async def call_tool(name, arguments):
 
 ## 8. 工作量估算
 
-| 任务 | 工时 |
-|------|------|
-| TS 内置工具（8 个）| 2-3 天 |
-| ta-agent-mcp 框架搭建 | 1 天 |
+| 任务                  | 工时   |
+| --------------------- | ------ |
+| TS 内置工具（8 个）   | 2-3 天 |
+| ta-agent-mcp 框架搭建 | 1 天   |
 | mesh/texture 工具迁移 | 2-3 天 |
-| 资产分析工具迁移 | 2-3 天 |
-| Blender/UE5 集成 | 3-5 天 |
-| 打包与安装流程 | 1-2 天 |
-| 测试与文档 | 2 天 |
+| 资产分析工具迁移      | 2-3 天 |
+| Blender/UE5 集成      | 3-5 天 |
+| 打包与安装流程        | 1-2 天 |
+| 测试与文档            | 2 天   |
 
 **总计**：~2-3 周

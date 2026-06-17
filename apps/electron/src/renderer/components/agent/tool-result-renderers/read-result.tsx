@@ -38,11 +38,7 @@ interface NormalizedReadContent {
 
 function getInputStartLine(input: Record<string, unknown>): number {
   const candidate =
-    input.offset ??
-    input.start_line ??
-    input.startLine ??
-    input.line_number ??
-    input.lineNumber
+    input.offset ?? input.start_line ?? input.startLine ?? input.line_number ?? input.lineNumber
   const lineNumber =
     typeof candidate === 'number'
       ? candidate
@@ -53,7 +49,10 @@ function getInputStartLine(input: Record<string, unknown>): number {
   return Number.isFinite(lineNumber) ? Math.max(1, Math.floor(lineNumber)) : 1
 }
 
-function parseCatNumberedContent(text: string, expectedStartLine: number): NormalizedReadContent | null {
+function parseCatNumberedContent(
+  text: string,
+  expectedStartLine: number
+): NormalizedReadContent | null {
   const lines = text.split('\n')
   const strippedLines: string[] = []
   let firstLineNumber: number | null = null
@@ -81,9 +80,7 @@ function parseCatNumberedContent(text: string, expectedStartLine: number): Norma
   if (firstLineNumber === null) return null
 
   const lineNumberOffset =
-    firstLineNumber === 1 && expectedStartLine > 1
-      ? expectedStartLine - firstLineNumber
-      : 0
+    firstLineNumber === 1 && expectedStartLine > 1 ? expectedStartLine - firstLineNumber : 0
 
   return {
     contents: strippedLines.join('\n'),
@@ -104,52 +101,55 @@ function normalizeReadContent(text: string, startLine: number): NormalizedReadCo
   }
 }
 
-export function ReadResultRenderer({ result, isError, input }: ReadResultRendererProps): React.ReactElement {
+export function ReadResultRenderer({
+  result,
+  isError,
+  input,
+}: ReadResultRendererProps): React.ReactElement {
   const theme = useAtomValue(resolvedThemeAtom)
-  const filePath = typeof input.file_path === 'string'
-    ? input.file_path
-    : typeof input.filePath === 'string'
-      ? (input.filePath as string)
-      : ''
+  const filePath =
+    typeof input.file_path === 'string'
+      ? input.file_path
+      : typeof input.filePath === 'string'
+        ? (input.filePath as string)
+        : ''
 
   const inputStartLine = getInputStartLine(input)
 
   // Claude Agent SDK Read 工具返回带行号的内容（如 "    1\tcontent" / "1 content"）。
   // 渲染前剥离行号避免双行号，再用 unsafeCSS 把 Pierre gutter 调整回真实起始行。
-  const renderCode = React.useCallback((text: string): React.ReactNode => {
-    if (isError) {
+  const renderCode = React.useCallback(
+    (text: string): React.ReactNode => {
+      if (isError) {
+        return (
+          <pre className="rounded-md p-3 text-[12px] font-mono text-destructive/80 bg-destructive/5 whitespace-pre-wrap break-all overflow-x-auto">
+            {text}
+          </pre>
+        )
+      }
+
+      const normalized = normalizeReadContent(text, inputStartLine)
+      const file: FileContents = {
+        name: filePath || 'file',
+        contents: normalized.contents,
+        cacheKey: `read:${filePath}:${normalized.lineNumberStart}:${cheapHash(normalized.contents)}`,
+      }
+      const options = {
+        theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
+        disableFileHeader: true,
+        overflow: 'scroll' as const,
+        themeType: theme as 'light' | 'dark' | 'system',
+        unsafeCSS: createPierreFileCSS(normalized.lineNumberStart, normalized.maxLineNumber),
+      }
+
       return (
-        <pre className="rounded-md p-3 text-[12px] font-mono text-destructive/80 bg-destructive/5 whitespace-pre-wrap break-all overflow-x-auto">
-          {text}
-        </pre>
+        <div className="rounded-md overflow-x-hidden overflow-y-auto bg-content-area max-h-[400px]">
+          <PierreFile file={file} options={options} />
+        </div>
       )
-    }
-
-    const normalized = normalizeReadContent(text, inputStartLine)
-    const file: FileContents = {
-      name: filePath || 'file',
-      contents: normalized.contents,
-      cacheKey: `read:${filePath}:${normalized.lineNumberStart}:${cheapHash(normalized.contents)}`,
-    }
-    const options = {
-      theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
-      disableFileHeader: true,
-      overflow: 'scroll' as const,
-      themeType: theme as 'light' | 'dark' | 'system',
-      unsafeCSS: createPierreFileCSS(normalized.lineNumberStart, normalized.maxLineNumber),
-    }
-
-    return (
-      <div className="rounded-md overflow-x-hidden overflow-y-auto bg-content-area max-h-[400px]">
-        <PierreFile file={file} options={options} />
-      </div>
-    )
-  }, [isError, filePath, inputStartLine, theme])
-
-  return (
-    <CollapsibleResult
-      content={result}
-      renderContent={renderCode}
-    />
+    },
+    [isError, filePath, inputStartLine, theme]
   )
+
+  return <CollapsibleResult content={result} renderContent={renderCode} />
 }

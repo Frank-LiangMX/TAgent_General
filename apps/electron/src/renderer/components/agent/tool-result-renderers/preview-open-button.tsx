@@ -19,7 +19,10 @@ interface PreviewOpenButtonProps {
   className?: string
 }
 
-export function PreviewOpenButton({ filePath, className }: PreviewOpenButtonProps): React.ReactElement | null {
+export function PreviewOpenButton({
+  filePath,
+  className,
+}: PreviewOpenButtonProps): React.ReactElement | null {
   const sessionId = useAtomValue(currentAgentSessionIdAtom)
   const store = useStore()
   const setPreviewFile = useSetAtom(previewFileMapAtom)
@@ -56,7 +59,7 @@ export function PreviewOpenButton({ filePath, className }: PreviewOpenButtonProp
         'hover:text-foreground/70 hover:bg-muted/50',
         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
         'transition-colors duration-150 cursor-pointer',
-        className,
+        className
       )}
       onClick={(e) => {
         e.stopPropagation()

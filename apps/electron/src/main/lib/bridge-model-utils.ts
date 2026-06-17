@@ -43,7 +43,7 @@ export function listSwitchableChannels(ds: ChannelDataSource = defaultDataSource
 /** 按 1 起始的序号解析可切换渠道，越界返回 undefined */
 export function resolveChannelByIndex(
   index: number,
-  ds: ChannelDataSource = defaultDataSource,
+  ds: ChannelDataSource = defaultDataSource
 ): Channel | undefined {
   const channels = listSwitchableChannels(ds)
   if (!Number.isInteger(index) || index < 1 || index > channels.length) return undefined
@@ -70,7 +70,7 @@ export interface BindingModelDescription {
 export function describeBindingModel(
   channelId: string | undefined,
   modelId: string | undefined,
-  ds: ChannelDataSource = defaultDataSource,
+  ds: ChannelDataSource = defaultDataSource
 ): BindingModelDescription {
   const channel = channelId ? ds.getChannelById(channelId) : undefined
   const model = channel && modelId ? channel.models.find((m) => m.id === modelId) : undefined

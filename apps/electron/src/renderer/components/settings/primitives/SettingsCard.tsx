@@ -34,9 +34,7 @@ export function SettingsCard({
         ? childArray.map((child, index) => (
             <React.Fragment key={index}>
               {child}
-              {index < childArray.length - 1 && (
-                <Separator className={DIVIDER_CLASS} />
-              )}
+              {index < childArray.length - 1 && <Separator className={DIVIDER_CLASS} />}
             </React.Fragment>
           ))
         : children}

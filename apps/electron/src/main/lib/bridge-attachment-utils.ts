@@ -31,14 +31,25 @@ export function inferImageMediaType(buffer: Buffer): string {
   if (buffer.length < 4) return 'image/jpeg'
 
   // JPEG: FF D8 FF
-  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg'
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg'
   // PNG: 89 50 4E 47
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'image/png'
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47)
+    return 'image/png'
   // GIF: 47 49 46 38
-  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return 'image/gif'
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38)
+    return 'image/gif'
   // WebP: 52 49 46 46 ... 57 45 42 50
-  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-      buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer.length >= 12 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
     return 'image/webp'
   }
 
@@ -82,7 +93,7 @@ export function saveImageToSession(
   sessionId: string,
   fileNameHint: string,
   mediaType: string,
-  data: Buffer,
+  data: Buffer
 ): string {
   const sessionDir = getAgentSessionWorkspacePath(workspaceSlug, sessionId)
   const ext = inferExtension(mediaType)
@@ -106,7 +117,7 @@ export function saveFileToSession(
   workspaceSlug: string,
   sessionId: string,
   fileName: string,
-  data: Buffer,
+  data: Buffer
 ): string {
   const sessionDir = getAgentSessionWorkspacePath(workspaceSlug, sessionId)
   const targetPath = join(sessionDir, sanitizeFileName(fileName))
@@ -126,7 +137,7 @@ export function saveFileToSession(
  */
 export function buildAttachedFilesBlock(refs: Array<{ label: string; path: string }>): string {
   if (refs.length === 0) return ''
-  const lines = refs.map(r => `- ${r.label}: ${r.path}`)
+  const lines = refs.map((r) => `- ${r.label}: ${r.path}`)
   return `<attached_files>\n${lines.join('\n')}\n</attached_files>\n\n`
 }
 
@@ -146,9 +157,9 @@ interface FileTreeOptions {
 }
 
 // 树形连接符。用全角空格（U+3000）做对齐，避免飞书 markdown 折叠连续半角空格。
-const TREE_BRANCH = '├─　'   // 非末尾节点
-const TREE_LAST = '└─　'     // 末尾节点
-const TREE_VERTICAL = '│　'  // 祖先分支延续
+const TREE_BRANCH = '├─　' // 非末尾节点
+const TREE_LAST = '└─　' // 末尾节点
+const TREE_VERTICAL = '│　' // 祖先分支延续
 const TREE_BLANK = '　　' // 祖先分支已结束
 
 /** 触达条目上限时的提示文案 */
@@ -160,7 +171,7 @@ function walkFileTree(
   ancestorPrefix: string,
   opts: Required<FileTreeOptions>,
   out: string[],
-  counter: { count: number; truncated: boolean },
+  counter: { count: number; truncated: boolean }
 ): void {
   if (depth > opts.maxDepth) return
   if (counter.truncated) return
@@ -239,7 +250,7 @@ export function buildFileTree(rootDir: string, options: FileTreeOptions = {}): s
 export function buildSessionFileTree(
   workspaceSlug: string,
   sessionId: string,
-  options: FileTreeOptions = {},
+  options: FileTreeOptions = {}
 ): string[] {
   const sessionDir = resolveAgentSessionWorkspacePath(workspaceSlug, sessionId)
   return buildFileTree(sessionDir, options)

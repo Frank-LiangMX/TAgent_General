@@ -61,7 +61,7 @@ export function useGlobalAskListeners(): void {
       messageId: string,
       createdAt: number,
       channelId: string,
-      modelId: string,
+      modelId: string
     ): void => {
       store.set(askMessagesMapAtom, (prev) => {
         const map = new Map(prev)
@@ -125,72 +125,70 @@ export function useGlobalAskListeners(): void {
       })
 
       // 首次收到 delta 时确保 assistant 消息存在
-      getOrCreateAssistantMessage(
-        agentSessionId,
-        messageId,
-        Date.now(),
-        '',
-        '',
-      )
+      getOrCreateAssistantMessage(agentSessionId, messageId, Date.now(), '', '')
       appendDeltaToMessage(agentSessionId, messageId, delta)
     })
 
     // ===== 2. 流式推理 =====
-    const cleanupReasoning = window.electronAPI.onAskStreamReasoning((event: AskStreamReasoningEvent) => {
-      const { agentSessionId, delta } = event
-      store.set(askStreamingStatesAtom, (prev) => {
-        const map = new Map(prev)
-        const current = map.get(agentSessionId)
-        if (!current) return prev
-        map.set(agentSessionId, {
-          ...current,
-          reasoning: current.reasoning + delta,
-        })
-        return map
-      })
-    })
-
-    // ===== 3. 流式完成 =====
-    const cleanupComplete = window.electronAPI.onAskStreamComplete((event: AskStreamCompleteEvent) => {
-      const { agentSessionId, messageId, stoppedByUser, durationMs } = event
-
-      // 标记流式结束
-      store.set(askStreamingStatesAtom, (prev) => {
-        const map = new Map(prev)
-        map.delete(agentSessionId)
-        return map
-      })
-
-      // 更新最后的 assistant 消息（如果存在）
-      if (messageId) {
-        store.set(askMessagesMapAtom, (prev) => {
+    const cleanupReasoning = window.electronAPI.onAskStreamReasoning(
+      (event: AskStreamReasoningEvent) => {
+        const { agentSessionId, delta } = event
+        store.set(askStreamingStatesAtom, (prev) => {
           const map = new Map(prev)
-          const current = map.get(agentSessionId) ?? []
-          const idx = current.findIndex((m) => m.id === messageId)
-          if (idx >= 0) {
-            const next = [...current]
-            next[idx] = {
-              ...next[idx]!,
-              durationMs,
-              partial: stoppedByUser ? true : next[idx]!.partial,
-            }
-            map.set(agentSessionId, next)
-            return map
-          }
-          return prev
+          const current = map.get(agentSessionId)
+          if (!current) return prev
+          map.set(agentSessionId, {
+            ...current,
+            reasoning: current.reasoning + delta,
+          })
+          return map
         })
       }
+    )
 
-      // 递增 refresh 版本号，触发 AskMessageItem 重新拉取持久化消息
-      store.set(askMessageRefreshAtom, (prev) => {
-        const map = new Map(prev)
-        map.set(agentSessionId, (prev.get(agentSessionId) ?? 0) + 1)
-        return map
-      })
+    // ===== 3. 流式完成 =====
+    const cleanupComplete = window.electronAPI.onAskStreamComplete(
+      (event: AskStreamCompleteEvent) => {
+        const { agentSessionId, messageId, stoppedByUser, durationMs } = event
 
-      // 拉取最新的持久化消息（覆盖本地乐观状态）
-      void refreshAskMessages(agentSessionId)
-    })
+        // 标记流式结束
+        store.set(askStreamingStatesAtom, (prev) => {
+          const map = new Map(prev)
+          map.delete(agentSessionId)
+          return map
+        })
+
+        // 更新最后的 assistant 消息（如果存在）
+        if (messageId) {
+          store.set(askMessagesMapAtom, (prev) => {
+            const map = new Map(prev)
+            const current = map.get(agentSessionId) ?? []
+            const idx = current.findIndex((m) => m.id === messageId)
+            if (idx >= 0) {
+              const next = [...current]
+              next[idx] = {
+                ...next[idx]!,
+                durationMs,
+                partial: stoppedByUser ? true : next[idx]!.partial,
+              }
+              map.set(agentSessionId, next)
+              return map
+            }
+            return prev
+          })
+        }
+
+        // 递增 refresh 版本号，触发 AskMessageItem 重新拉取持久化消息
+        store.set(askMessageRefreshAtom, (prev) => {
+          const map = new Map(prev)
+          map.set(agentSessionId, (prev.get(agentSessionId) ?? 0) + 1)
+          return map
+        })
+
+        // 拉取最新的持久化消息（覆盖本地乐观状态）
+        void refreshAskMessages(agentSessionId)
+      }
+    )
 
     // ===== 4. 流式错误 =====
     const cleanupError = window.electronAPI.onAskStreamError((event: AskStreamErrorEvent) => {
@@ -229,7 +227,7 @@ export function useGlobalAskListeners(): void {
         void currentSessionId
         void agentSessionId // 也可在此检查
         store.set(pendingAgentSwitchSuggestionAtom, suggestion)
-      },
+      }
     )
 
     return () => {

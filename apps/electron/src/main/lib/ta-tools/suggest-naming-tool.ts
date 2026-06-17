@@ -30,13 +30,25 @@ export const SUGGEST_NAMING_TOOL_META: ChatToolMeta = {
 export const SUGGEST_NAMING_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'suggest_naming',
-    description: 'Generate TA-compliant naming suggestions for an asset. Returns multiple options with prefixes and suffixes.',
+    description:
+      'Generate TA-compliant naming suggestions for an asset. Returns multiple options with prefixes and suffixes.',
     parameters: {
       type: 'object',
       properties: {
-        baseName: { type: 'string', description: 'Base name describing the asset purpose (e.g., "CharacterHero", "WallStone")' },
-        assetType: { type: 'string', description: 'Asset type', enum: ['mesh', 'texture', 'material', 'skeleton', 'animation'] },
-        variant: { type: 'string', description: 'Variant type (e.g., "LOD0", "Damaged", "BaseColor")' },
+        baseName: {
+          type: 'string',
+          description:
+            'Base name describing the asset purpose (e.g., "CharacterHero", "WallStone")',
+        },
+        assetType: {
+          type: 'string',
+          description: 'Asset type',
+          enum: ['mesh', 'texture', 'material', 'skeleton', 'animation'],
+        },
+        variant: {
+          type: 'string',
+          description: 'Variant type (e.g., "LOD0", "Damaged", "BaseColor")',
+        },
       },
       required: ['baseName', 'assetType'],
     },
@@ -94,19 +106,18 @@ function generateSuggestions(
   // 1. 规范化 baseName：移除空格、转大写
   const cleanBaseName = baseName
     .replace(/[^a-zA-Z0-9_]/g, '')
-    .replace(/^[a-z]/, c => c.toUpperCase())
+    .replace(/^[a-z]/, (c) => c.toUpperCase())
 
   // 2. 获取前缀选项
   const prefixes = PREFIX_TEMPLATES[assetType] || ['']
 
   // 3. 获取后缀选项
-  const suffixes = variant
-    ? [`_${variant}`]
-    : (VARIANT_SUFFIXES[assetType] || [''])
+  const suffixes = variant ? [`_${variant}`] : VARIANT_SUFFIXES[assetType] || ['']
 
   // 4. 生成组合建议
   for (const prefix of prefixes) {
-    for (const suffix of suffixes.slice(0, 3)) { // 每个前缀最多 3 个后缀变体
+    for (const suffix of suffixes.slice(0, 3)) {
+      // 每个前缀最多 3 个后缀变体
       const fullName = `${prefix}${cleanBaseName}${suffix}`
       suggestions.push({
         name: fullName,
@@ -143,15 +154,15 @@ function describeNaming(prefix: string, base: string, suffix: string, type: stri
 
   if (prefix) {
     const prefixMeaning: Record<string, string> = {
-      'SM_': 'Static Mesh',
-      'BP_': 'Blueprint',
-      'T_': 'Texture',
-      'T_BC_': 'BaseColor Texture',
-      'T_N_': 'Normal Texture',
-      'M_': 'Material',
-      'MI_': 'Material Instance',
-      'SK_': 'Skeleton',
-      'A_': 'Animation',
+      SM_: 'Static Mesh',
+      BP_: 'Blueprint',
+      T_: 'Texture',
+      T_BC_: 'BaseColor Texture',
+      T_N_: 'Normal Texture',
+      M_: 'Material',
+      MI_: 'Material Instance',
+      SK_: 'Skeleton',
+      A_: 'Animation',
     }
     parts.push(`${prefix} = ${prefixMeaning[prefix] || type} 前缀`)
   }

@@ -13,12 +13,13 @@
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 
-
 import { AGENT_IPC_CHANNELS, MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
-
-import { ClaudeAgentAdapter, scanAndKillOrphanedClaudeSubprocesses } from './adapters/claude-agent-adapter'
+import {
+  ClaudeAgentAdapter,
+  scanAndKillOrphanedClaudeSubprocesses,
+} from './adapters/claude-agent-adapter'
 import { AgentEventBus } from './agent-event-bus'
 import { AgentOrchestrator } from './agent-orchestrator'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
@@ -87,9 +88,11 @@ function isMainRendererWindow(win: BrowserWindow): boolean {
   const url = win.webContents.getURL()
   if (!url) return false
   if (url.startsWith('data:')) return false
-  return !url.includes('window=quick-task')
-    && !url.includes('window=voice-dictation')
-    && !url.includes('window=detached-preview')
+  return (
+    !url.includes('window=quick-task') &&
+    !url.includes('window=voice-dictation') &&
+    !url.includes('window=detached-preview')
+  )
 }
 
 function getMainRendererWebContents(): WebContents | null {
@@ -105,7 +108,10 @@ eventBus.use((sessionId, payload, next) => {
     try {
       wc.send(AGENT_IPC_CHANNELS.STREAM_EVENT, { sessionId, payload } as AgentStreamEvent)
     } catch (err) {
-      console.error(`[EventBus] wc.send 失败: sessionId=${sessionId}, payload.kind=${(payload as Record<string, unknown>)?.kind}`, err)
+      console.error(
+        `[EventBus] wc.send 失败: sessionId=${sessionId}, payload.kind=${(payload as Record<string, unknown>)?.kind}`,
+        err
+      )
     }
   }
   next()
@@ -118,16 +124,15 @@ eventBus.use((sessionId, payload, next) => {
  *
  * 注册 webContents 到 EventBus 映射，委托给 Orchestrator。
  */
-export async function runAgent(
-  input: AgentSendInput,
-  webContents: WebContents,
-): Promise<void> {
+export async function runAgent(input: AgentSendInput, webContents: WebContents): Promise<void> {
   // 更新 webContents 映射（允许覆盖 — 由 orchestrator.activeSessions 处理真正的并发保护）
   registerWebContents(input.sessionId, webContents)
   // 开始新一轮执行时清除"完成未确认"标记
   try {
     updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: false })
-  } catch { /* 新会话可能尚未写入索引 */ }
+  } catch {
+    /* 新会话可能尚未写入索引 */
+  }
   try {
     await orchestrator.sendMessage(input, {
       onError: (error) => {
@@ -142,7 +147,9 @@ export async function runAgent(
         // 持久化"完成但未确认"状态，确保重启后仍显示在工作中列表
         try {
           updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: true })
-        } catch { /* 会话可能已被删除 */ }
+        } catch {
+          /* 会话可能已被删除 */
+        }
         if (!webContents.isDestroyed()) {
           webContents.send(AGENT_IPC_CHANNELS.STREAM_COMPLETE, {
             sessionId: input.sessionId,
@@ -202,11 +209,12 @@ export async function runAgentHeadless(
     onComplete: () => void
     onTitleUpdated: (title: string) => void
     source?: AgentExternalRunSource
-  },
+  }
 ): Promise<void> {
   // 尝试注册主窗口 webContents，让流式事件同步推送到桌面端
   const wc = getMainRendererWebContents()
-  const runInput: AgentSendInput = input.startedAt != null ? input : { ...input, startedAt: Date.now() }
+  const runInput: AgentSendInput =
+    input.startedAt != null ? input : { ...input, startedAt: Date.now() }
   const startedAt = runInput.startedAt!
   if (wc) {
     registerWebContents(runInput.sessionId, wc)
@@ -273,8 +281,16 @@ export async function runAgentHeadless(
     callbacks.onError(errorMessage)
     callbacks.onComplete()
     if (wc && !wc.isDestroyed()) {
-      wc.send(AGENT_IPC_CHANNELS.STREAM_ERROR, { sessionId: runInput.sessionId, error: errorMessage })
-      wc.send(AGENT_IPC_CHANNELS.STREAM_COMPLETE, { sessionId: runInput.sessionId, messages: [], stoppedByUser: false, startedAt })
+      wc.send(AGENT_IPC_CHANNELS.STREAM_ERROR, {
+        sessionId: runInput.sessionId,
+        error: errorMessage,
+      })
+      wc.send(AGENT_IPC_CHANNELS.STREAM_COMPLETE, {
+        sessionId: runInput.sessionId,
+        messages: [],
+        stoppedByUser: false,
+        startedAt,
+      })
     }
   } finally {
     if (!orchestrator.isActive(runInput.sessionId)) {
@@ -302,7 +318,7 @@ export function stopAgent(sessionId: string): void {
  */
 export async function rewindAgentSession(
   sessionId: string,
-  assistantMessageUuid: string,
+  assistantMessageUuid: string
 ): Promise<import('@tagent/shared').RewindSessionResult> {
   return orchestrator.rewindSession(sessionId, assistantMessageUuid)
 }
@@ -334,7 +350,10 @@ export function killOrphanedClaudeSubprocesses(): void {
  *
  * 同时更新 TAgent 侧（canUseTool 动态读取）和 SDK 侧（query.setPermissionMode）。
  */
-export async function updateAgentPermissionMode(sessionId: string, mode: TAgentPermissionMode): Promise<void> {
+export async function updateAgentPermissionMode(
+  sessionId: string,
+  mode: TAgentPermissionMode
+): Promise<void> {
   await orchestrator.updateSessionPermissionMode(sessionId, mode)
 }
 
@@ -347,15 +366,11 @@ export async function updateAgentPermissionMode(sessionId: string, mode: TAgentP
  */
 export async function queueAgentMessage(
   input: AgentQueueMessageInput,
-  _webContents: WebContents,
+  _webContents: WebContents
 ): Promise<string> {
-  return orchestrator.queueMessage(
-    input.sessionId,
-    input.userMessage,
-    undefined,
-    input.uuid,
-    { interrupt: input.interrupt },
-  )
+  return orchestrator.queueMessage(input.sessionId, input.userMessage, undefined, input.uuid, {
+    interrupt: input.interrupt,
+  })
 }
 
 // ===== 文件操作 =====
@@ -393,7 +408,9 @@ export function saveFilesToAgentSession(input: AgentSaveFilesInput): AgentSavedF
     // 防御性检查：base64 字符串长度估算是否超 100MB 限制
     // base64 编码膨胀率约 4/3，data.length * 0.75 ≈ 原始字节数
     if (file.data.length * 0.75 > MAX_ATTACHMENT_SIZE) {
-      console.warn(`[Agent 服务] 文件超过 100MB 限制，跳过: ${file.filename} (预估 ${(file.data.length * 0.75 / 1024 / 1024).toFixed(1)}MB)`)
+      console.warn(
+        `[Agent 服务] 文件超过 100MB 限制，跳过: ${file.filename} (预估 ${((file.data.length * 0.75) / 1024 / 1024).toFixed(1)}MB)`
+      )
       continue
     }
 
@@ -439,7 +456,9 @@ export function saveFilesToWorkspaceFiles(input: AgentSaveWorkspaceFilesInput): 
     mkdirSync(dirname(targetPath), { recursive: true })
 
     if (file.data.length * 0.75 > MAX_ATTACHMENT_SIZE) {
-      console.warn(`[Agent 服务] 工作区文件超过 100MB 限制，跳过: ${file.filename} (预估 ${(file.data.length * 0.75 / 1024 / 1024).toFixed(1)}MB)`)
+      console.warn(
+        `[Agent 服务] 工作区文件超过 100MB 限制，跳过: ${file.filename} (预估 ${((file.data.length * 0.75) / 1024 / 1024).toFixed(1)}MB)`
+      )
       continue
     }
 

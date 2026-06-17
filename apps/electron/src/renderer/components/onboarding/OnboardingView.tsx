@@ -17,12 +17,7 @@ import { EnvironmentCheckPanel } from '@/components/environment/EnvironmentCheck
 import { TutorialViewer } from '@/components/tutorial/TutorialViewer'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { detectIsWindows } from '@/lib/platform'
 
 interface OnboardingViewProps {
@@ -123,10 +118,7 @@ export function OnboardingView({ onComplete }: OnboardingViewProps) {
               上一步
             </Button>
             <div className="flex gap-3">
-              <Button
-                onClick={handleFinish}
-                variant={shellOk ? 'default' : 'outline'}
-              >
+              <Button onClick={handleFinish} variant={shellOk ? 'default' : 'outline'}>
                 {shellOk ? '开始使用' : '稍后处理（进入主界面）'}
               </Button>
             </div>

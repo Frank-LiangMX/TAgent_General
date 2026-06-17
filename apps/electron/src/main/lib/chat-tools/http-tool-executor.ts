@@ -33,7 +33,7 @@ export function isCustomHttpToolCall(toolName: string): boolean {
 function replaceTemplatePlaceholders(
   template: string,
   args: Record<string, unknown>,
-  urlEncode: boolean,
+  urlEncode: boolean
 ): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, paramName: string) => {
     const value = args[paramName]
@@ -101,7 +101,7 @@ export async function executeHttpTool(toolCall: ToolCall, meta: ChatToolMeta): P
  */
 async function executeHttpRequest(
   args: Record<string, unknown>,
-  config: ChatToolHttpConfig,
+  config: ChatToolHttpConfig
 ): Promise<unknown> {
   // URL 占位符替换（URL 编码）
   const url = replaceTemplatePlaceholders(config.urlTemplate, args, true)

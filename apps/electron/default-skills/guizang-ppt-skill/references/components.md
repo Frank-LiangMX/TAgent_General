@@ -26,10 +26,16 @@
 每一页都是一个 `<section class="slide ...">`。必须包含 `data-theme` 属性（`light` 或 `dark`），JS 翻页时会根据这个属性切换背景。
 
 ```html
-<section class="slide light" data-theme="light">   <!-- 浅色页 -->
-<section class="slide dark" data-theme="dark">     <!-- 深色页 -->
-<section class="slide light hero" data-theme="light">  <!-- Hero 页：浅色 + 薄遮罩透出 WebGL -->
-<section class="slide dark hero" data-theme="dark">    <!-- Hero 页：深色 + 薄遮罩 -->
+<section class="slide light" data-theme="light">
+  <!-- 浅色页 -->
+  <section class="slide dark" data-theme="dark">
+    <!-- 深色页 -->
+    <section class="slide light hero" data-theme="light">
+      <!-- Hero 页：浅色 + 薄遮罩透出 WebGL -->
+      <section class="slide dark hero" data-theme="dark"><!-- Hero 页：深色 + 薄遮罩 --></section>
+    </section>
+  </section>
+</section>
 ```
 
 **light vs dark 的使用：交替使用**，每 2-3 页切换一次主题，避免连续超过 3 页同色。翻页时 WebGL 背景会自动在两个 shader 之间渐变过渡。
@@ -42,27 +48,29 @@
 
 字体分工是本模板最重要的规则，严禁混用。
 
-| Class | 用途 | 字体 |
-|---|---|---|
-| `.display` | 超大号英文（Hero 页） | Playfair Display 700, 11vw |
-| `.display-zh` | 超大号中文标题 | Noto Serif SC 700, 7.8vw |
-| `.h1-zh` | 页面主标题 | Noto Serif SC 700, 4.6vw |
-| `.h2-zh` | 副标题 | Noto Serif SC 600, 3.2vw |
-| `.h3-zh` | 流水线步骤标题 | Noto Serif SC 500, 1.9vw |
-| `.lead` | 引导段（比 body 大） | Noto Serif SC 400, 1.9vw |
-| `.body-zh` | **正文/描述（非衬线）** | Noto Sans SC 400, 1.22vw |
-| `.body-serif` | 正文（衬线） | Noto Serif SC 400, 1.3vw |
-| `.kicker` | 小节提示（标题上方） | IBM Plex Mono, 12px uppercase |
-| `.meta` | 元信息标签 | IBM Plex Mono, 0.88vw uppercase |
-| `.big-num` | 巨型数字 | Playfair Display 800, 10vw |
-| `.mid-num` | 中号数字 | Playfair Display 700, 5.5vw |
+| Class         | 用途                    | 字体                            |
+| ------------- | ----------------------- | ------------------------------- |
+| `.display`    | 超大号英文（Hero 页）   | Playfair Display 700, 11vw      |
+| `.display-zh` | 超大号中文标题          | Noto Serif SC 700, 7.8vw        |
+| `.h1-zh`      | 页面主标题              | Noto Serif SC 700, 4.6vw        |
+| `.h2-zh`      | 副标题                  | Noto Serif SC 600, 3.2vw        |
+| `.h3-zh`      | 流水线步骤标题          | Noto Serif SC 500, 1.9vw        |
+| `.lead`       | 引导段（比 body 大）    | Noto Serif SC 400, 1.9vw        |
+| `.body-zh`    | **正文/描述（非衬线）** | Noto Sans SC 400, 1.22vw        |
+| `.body-serif` | 正文（衬线）            | Noto Serif SC 400, 1.3vw        |
+| `.kicker`     | 小节提示（标题上方）    | IBM Plex Mono, 12px uppercase   |
+| `.meta`       | 元信息标签              | IBM Plex Mono, 0.88vw uppercase |
+| `.big-num`    | 巨型数字                | Playfair Display 800, 10vw      |
+| `.mid-num`    | 中号数字                | Playfair Display 700, 5.5vw     |
 
 **核心规则**：
+
 - **衬线**（`serif-zh` / `serif-en`）：标题、重点金句、数字 —— 用于"视觉重音"
 - **非衬线**（`sans-zh`）：正文描述、大段阅读内容 —— 用于"信息密度"
 - **等宽**（`mono`）：kicker、meta、foot 的英文标签 —— 用于"装饰节奏"
 
 **强调技巧**：
+
 - `<em class="en">英文词</em>` —— 把英文词渲染成 Playfair Display 斜体（很好看）
 - `<em style="opacity:.65">短语</em>` —— 让标题后半段淡出，制造节奏
 
@@ -91,6 +99,7 @@
 ```
 
 **规则**：
+
 - `chrome.right` 总是放页码 `NN / TOTAL` （TOTAL 为总页数）
 - `foot.title` 是中文说明，`foot.right` 是英文 act 标记
 - chrome 和 foot 共同构成杂志感的"页眉页脚"
@@ -103,12 +112,13 @@
 
 ```html
 <div class="callout" style="max-width:80vw">
-  <div class="q-big">"这东西在三年前，<br>需要一个十人团队做一年。"</div>
+  <div class="q-big">"这东西在三年前，<br />需要一个十人团队做一年。"</div>
   <span class="cite">— 一个观察者的判断</span>
 </div>
 ```
 
 变体：
+
 - 不带 cite：去掉 `<span class="cite">` 即可
 - 带英文金句：`<em class="en">"Thin Harness, Fat Skills."</em>`
 - 在 hero 页使用：外层加 `style="position:relative;z-index:2"`（避免被背景遮罩盖住）
@@ -133,6 +143,7 @@
 三段式结构：`.m` 等宽小标签 → `.n` 巨型数字 → `.l` 描述说明。数字后的单位用 `<em>` 缩小到 0.4em，opacity 0.5。
 
 **常用布局容器**：
+
 - `.grid-6` — 3×2 网格（最常用，6 个 stat）
 - `.grid-4` — 2×2 网格（4 个 stat）
 - `.grid-3` — 3 等分单行（3 个 stat / pillar）
@@ -152,19 +163,17 @@
 ```
 
 可选第四行（补充说明）：
+
 ```html
-<div class="body-zh" style="font-size:max(11px,.8vw);opacity:.5;margin-top:.6vh">
-  含小绿书同步
-</div>
+<div class="body-zh" style="font-size:max(11px,.8vw);opacity:.5;margin-top:.6vh">含小绿书同步</div>
 ```
 
 **"Also On" 变体**（补充平台）：
+
 ```html
 <div class="plat" style="border-top-style:dashed;opacity:.72">
   <div class="sub">Also On</div>
-  <div class="body-zh" style="font-weight:600;margin-top:.8vh">
-    B 站　·　知乎
-  </div>
+  <div class="body-zh" style="font-weight:600;margin-top:.8vh">B 站　·　知乎</div>
 </div>
 ```
 
@@ -196,19 +205,23 @@
 <div class="grid-3">
   <div class="pillar">
     <div class="ic">01</div>
-    <div class="t">三层<br>文档体系</div>
-    <div class="d">CLAUDE.md<br>+ 项目知识库<br>+ 护栏文件</div>
+    <div class="t">三层<br />文档体系</div>
+    <div class="d">CLAUDE.md<br />+ 项目知识库<br />+ 护栏文件</div>
   </div>
   <!-- ... 更多 pillar ... -->
 </div>
 ```
 
 **带图标的 pillar（用于强调性页面）**：
+
 ```html
-<div class="pillar" style="padding:4vh 2vw;border:1px solid currentColor;border-color:rgba(10,10,11,.2)">
+<div
+  class="pillar"
+  style="padding:4vh 2vw;border:1px solid currentColor;border-color:rgba(10,10,11,.2)"
+>
   <div class="ic"><i data-lucide="compass" class="ico-lg"></i></div>
   <div class="t">判断力</div>
-  <div class="d">决策和方向的权威。<br>取舍、品味、方向感。</div>
+  <div class="d">决策和方向的权威。<br />取舍、品味、方向感。</div>
 </div>
 ```
 
@@ -219,12 +232,14 @@
 ## Tag & Kicker
 
 **Kicker** 是标题上方的小提示文字（等宽、全大写、小字号）：
+
 ```html
 <div class="kicker">过去 64 天 · 开发篇</div>
 <div class="h1-zh">一个人，做了什么。</div>
 ```
 
 **Tag** 是独立的标签胶囊（带边框）：
+
 ```html
 <div style="display:flex;gap:1.6vw;flex-wrap:wrap">
   <div class="tag">早上 10 点起床</div>
@@ -244,7 +259,7 @@
 ```html
 <figure class="tile">
   <div class="frame-img" style="height:26vh">
-    <img src="图片素材/xxx.png" alt="说明">
+    <img src="图片素材/xxx.png" alt="说明" />
   </div>
   <figcaption class="frame-cap">
     <span class="pf">推特 · Twitter</span>
@@ -265,6 +280,7 @@
    - 严禁裁剪左右和顶部 —— 这是图片的核心身份信息区。
 
 3. **网格里多张图时，用内联 grid 而不是 `grid-3`**：
+
    ```html
    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1vh 1.2vw">
      <figure class="tile">...</figure>
@@ -299,8 +315,10 @@
 ### 图片占位（设计阶段占位符）
 
 图片还没有就位时，用虚线框占位：
+
 ```html
-<div class="img-slot r-4x3">  <!-- r-4x3 / r-16x9(default) / r-3x2 / r-1x1 -->
+<div class="img-slot r-4x3">
+  <!-- r-4x3 / r-16x9(default) / r-3x2 / r-1x1 -->
   <span class="plus">+</span>
   <span class="label">GitHub 截图位置</span>
 </div>
@@ -313,9 +331,12 @@
 **严禁使用 emoji**。用 Lucide via CDN（template.html 已引入）。
 
 ```html
-<i data-lucide="compass" class="ico-lg"></i>     <!-- 大图标（pillar 用） -->
-<i data-lucide="target" class="ico-md"></i>      <!-- 中图标（列表项用） -->
-<i data-lucide="check-circle" class="ico-sm"></i>  <!-- 小图标（inline 用） -->
+<i data-lucide="compass" class="ico-lg"></i>
+<!-- 大图标（pillar 用） -->
+<i data-lucide="target" class="ico-md"></i>
+<!-- 中图标（列表项用） -->
+<i data-lucide="check-circle" class="ico-sm"></i>
+<!-- 小图标（inline 用） -->
 ```
 
 **常用 Lucide 图标名**（按含义分组）：
@@ -330,6 +351,7 @@
 - 方向类：`arrow-right`, `arrow-up-right`, `corner-down-right`
 
 **图标与文字 inline 组合**：
+
 ```html
 <div class="h3-zh" style="display:flex;align-items:center;gap:.8em">
   <i data-lucide="target" class="ico-md"></i>
@@ -361,8 +383,7 @@
 行内短语的"荧光笔"效果：
 
 ```html
-<span class="hi">不是</span>
-<span class="hi">一次性爆发</span>
+<span class="hi">不是</span> <span class="hi">一次性爆发</span>
 ```
 
 在文字底部生成一条半透明高亮条。深色主题用亮条，浅色主题用暗条（CSS 已处理）。
@@ -381,12 +402,17 @@
 
 ```js
 // template 里的核心加载器(不用改)
-let motion;
-try { motion = await import('./assets/motion.min.js'); }
-catch(e1) {
-  try { motion = await import('https://cdn.jsdelivr.net/npm/motion@11.11.17/+esm'); }
-  catch(e2) {
-    document.querySelectorAll('[data-anim]').forEach(el=>{el.style.opacity='1';el.style.transform='none'});
+let motion
+try {
+  motion = await import('./assets/motion.min.js')
+} catch (e1) {
+  try {
+    motion = await import('https://cdn.jsdelivr.net/npm/motion@11.11.17/+esm')
+  } catch (e2) {
+    document.querySelectorAll('[data-anim]').forEach((el) => {
+      el.style.opacity = '1'
+      el.style.transform = 'none'
+    })
   }
 }
 ```
@@ -398,23 +424,23 @@ catch(e1) {
 ```html
 <!-- 1. 在 section 上选 recipe(可选,默认 cascade / hero 自动) -->
 <section class="slide light" data-animate="quote">
-
-<!-- 2. 在需要入场的元素上加 data-anim(可选值:left/right/line/step/divider) -->
-<h1 class="h-xl" data-anim>大标题</h1>
-<div class="stat-card" data-anim>...</div>
-<div data-anim="left">左列内容</div>
-<span data-anim="line" style="display:block">引用第一行</span>
+  <!-- 2. 在需要入场的元素上加 data-anim(可选值:left/right/line/step/divider) -->
+  <h1 class="h-xl" data-anim>大标题</h1>
+  <div class="stat-card" data-anim>...</div>
+  <div data-anim="left">左列内容</div>
+  <span data-anim="line" style="display:block">引用第一行</span>
+</section>
 ```
 
 ### 5 种 recipe 一览
 
-| recipe | 触发方式 | 行为 | 代表布局 |
-|---|---|---|---|
-| `cascade`(默认) | 不加 `data-animate` 即为此值 | 所有 `data-anim` 逐个 stagger 淡入,75ms/step | Layout 3 / 4 / 5 / 10 |
-| `hero` | `.hero` slide 自动用此值 | 慢节奏 stagger,仪式感更强,160ms/step | Layout 1 / 2 / 7 |
-| `quote` | `data-animate="quote"` | 其他元素先出,`data-anim="line"` 的行 550ms 间隔逐句揭示 | Layout 8 |
-| `directional` | `data-animate="directional"` | `data-anim="left"` 从左滑入 → divider → `data-anim="right"` 从右滑入 | Layout 9 |
-| `pipeline` | `data-animate="pipeline"` | 翻到此页 step 保持 15% 透明;按 →/空格/滚轮逐个点亮,最后一步才放行翻页 | Layout 6 |
+| recipe          | 触发方式                     | 行为                                                                  | 代表布局              |
+| --------------- | ---------------------------- | --------------------------------------------------------------------- | --------------------- |
+| `cascade`(默认) | 不加 `data-animate` 即为此值 | 所有 `data-anim` 逐个 stagger 淡入,75ms/step                          | Layout 3 / 4 / 5 / 10 |
+| `hero`          | `.hero` slide 自动用此值     | 慢节奏 stagger,仪式感更强,160ms/step                                  | Layout 1 / 2 / 7      |
+| `quote`         | `data-animate="quote"`       | 其他元素先出,`data-anim="line"` 的行 550ms 间隔逐句揭示               | Layout 8              |
+| `directional`   | `data-animate="directional"` | `data-anim="left"` 从左滑入 → divider → `data-anim="right"` 从右滑入  | Layout 9              |
+| `pipeline`      | `data-animate="pipeline"`    | 翻到此页 step 保持 15% 透明;按 →/空格/滚轮逐个点亮,最后一步才放行翻页 | Layout 6              |
 
 ### 给 slide 选 recipe 的决策树
 

@@ -15,7 +15,9 @@ const electronSleepBlocker: SleepBlockerAdapter = {
 
 const blocker = new FeishuSyncSleepBlocker(electronSleepBlocker)
 
-export function syncFeishuSyncSleepBlocker(settings: Pick<AppSettings, 'feishuSessionMirror'>): void {
+export function syncFeishuSyncSleepBlocker(
+  settings: Pick<AppSettings, 'feishuSessionMirror'>
+): void {
   try {
     blocker.sync(settings)
   } catch (error) {

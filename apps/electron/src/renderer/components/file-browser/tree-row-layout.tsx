@@ -61,7 +61,10 @@ interface AncestorGuidesProps {
  * 自己的子项引导线不在这里绘制——交给下方子项容器（或下层 sticky 子行的祖先线）。
  * 选中态下用 accent-foreground/30 替代 border/70，避免被 bg-accent 不透明背景吃掉对比度。
  */
-export function AncestorGuides({ depth, isSelected }: AncestorGuidesProps): React.ReactElement | null {
+export function AncestorGuides({
+  depth,
+  isSelected,
+}: AncestorGuidesProps): React.ReactElement | null {
   if (depth <= 0) return null
   return (
     <>
@@ -71,7 +74,7 @@ export function AncestorGuides({ depth, isSelected }: AncestorGuidesProps): Reac
           aria-hidden="true"
           className={cn(
             'pointer-events-none absolute top-0 bottom-0 w-px',
-            isSelected ? 'bg-accent-foreground/30' : 'bg-border/70',
+            isSelected ? 'bg-accent-foreground/30' : 'bg-border/70'
           )}
           style={{ left: TREE_ROW_HORIZONTAL_MARGIN + 8 + i * TREE_INDENT_WIDTH + 7 }}
         />

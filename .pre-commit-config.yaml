@@ -17,8 +17,8 @@ repos:
       - id: mypy
         files: ^packages/(ta-agent|server)/.*\.py$
         additional_dependencies:
-          - "pydantic>=2.6.0"
-          - "types-Pillow"
+          - 'pydantic>=2.6.0'
+          - 'types-Pillow'
         args: [--strict, --ignore-missing-imports]
 
   # ===== TypeScript (TAgent Desktop) =====
@@ -37,8 +37,8 @@ repos:
         types: [file]
         additional_dependencies:
           - eslint@9.9.0
-          - "@typescript-eslint/parser@8.0.0"
-          - "@typescript-eslint/eslint-plugin@8.0.0"
+          - '@typescript-eslint/parser@8.0.0'
+          - '@typescript-eslint/eslint-plugin@8.0.0'
 
   # ===== General file checks =====
   - repo: https://github.com/pre-commit/pre-commit-hooks

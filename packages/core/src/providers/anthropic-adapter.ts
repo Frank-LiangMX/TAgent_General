@@ -126,7 +126,7 @@ function buildImageBlocks(imageData: ImageAttachmentData[]): AnthropicContentBlo
  */
 function buildMessageContent(
   text: string,
-  imageData: ImageAttachmentData[],
+  imageData: ImageAttachmentData[]
 ): string | AnthropicContentBlock[] {
   if (imageData.length === 0) return text
 
@@ -150,16 +150,14 @@ function buildMessageContent(
  * 所以 history 只发 `text`；thinking 块仅在**当前这次 send 的续接消息**里回传
  * （见 appendContinuationMessages，那里用刚抓到的带签名的块）。
  */
-function toAnthropicMessages(
-  input: StreamRequestInput,
-): AnthropicMessage[] {
+function toAnthropicMessages(input: StreamRequestInput): AnthropicMessage[] {
   const { history, userMessage, attachments, readImageAttachments } = input
 
   // 历史消息转换
   const messages: AnthropicMessage[] = history
     .filter((msg) => msg.role !== 'system')
     .map((msg) => {
-      const role = msg.role === 'assistant' ? 'assistant' as const : 'user' as const
+      const role = msg.role === 'assistant' ? ('assistant' as const) : ('user' as const)
 
       // 历史用户消息的附件也需要转换为多模态内容
       if (msg.role === 'user' && msg.attachments && msg.attachments.length > 0) {
@@ -205,7 +203,7 @@ function toAnthropicTools(tools: ToolDefinition[]): Array<Record<string, unknown
 function appendContinuationMessages(
   messages: AnthropicMessage[],
   continuationMessages: ContinuationMessage[],
-  thinkingEnabled: boolean,
+  thinkingEnabled: boolean
 ): void {
   for (const contMsg of continuationMessages) {
     if (contMsg.role === 'assistant') {
@@ -369,7 +367,8 @@ export class AnthropicAdapter implements ProviderAdapter {
     const requestBody = JSON.stringify(body)
 
     // 调试：开启 TAGENT_DEBUG_REQUEST 时打印请求体，便于排查思考+工具场景的消息结构
-    const procReq = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    const procReq = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process
     if (procReq?.env?.TAGENT_DEBUG_REQUEST) {
       console.log('[Request]', this.providerType, input.modelId, '→', requestBody.slice(0, 4000))
     }
@@ -387,7 +386,8 @@ export class AnthropicAdapter implements ProviderAdapter {
       const events: StreamEvent[] = []
 
       // 调试：开启 TAGENT_DEBUG_SSE 时打印原始事件，便于排查 Provider 的 SSE 格式差异
-      const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+        .process
       if (proc?.env?.TAGENT_DEBUG_SSE) {
         console.log('[SSE]', jsonLine.slice(0, 400))
       }
@@ -421,7 +421,7 @@ export class AnthropicAdapter implements ProviderAdapter {
           // 工具参数 JSON 增量
           events.push({
             type: 'tool_call_delta',
-            toolCallId: '',  // SSE reader 通过 currentToolCallId 关联
+            toolCallId: '', // SSE reader 通过 currentToolCallId 关联
             argumentsDelta: event.delta.partial_json,
           })
         } else if (event.delta?.text) {

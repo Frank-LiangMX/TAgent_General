@@ -19,8 +19,6 @@ import type { TabType, TabMinimapItem } from '@/atoms/tab-atoms'
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { cn } from '@/lib/utils'
 
-
-
 export interface TabBarItemProps {
   id: string
   type: TabType
@@ -93,12 +91,12 @@ export function TabBarItem({
   const statusLineClass = isScratch
     ? undefined
     : isStreaming !== 'idle'
-    ? isStreaming === 'completed'
-      ? 'bg-emerald-500'
-      : isStreaming === 'blocked'
-        ? 'bg-orange-500'
-        : 'bg-blue-500 animate-pulse'
-    : undefined
+      ? isStreaming === 'completed'
+        ? 'bg-emerald-500'
+        : isStreaming === 'blocked'
+          ? 'bg-orange-500'
+          : 'bg-blue-500 animate-pulse'
+      : undefined
   const previewItems = minimapCache.get(id) ?? []
   // 当前 active Tab 不显示预览面板
   const showPreview = isHovered && !isActive
@@ -122,7 +120,7 @@ export function TabBarItem({
             'border-t border-l border-r border-transparent',
             isActive
               ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           )}
           onClick={onActivate}
           onMouseDown={handleMouseDown}
@@ -137,11 +135,12 @@ export function TabBarItem({
             className={cn(
               'size-4 rounded-sm flex items-center justify-center shrink-0',
               'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
-              isActive && 'opacity-60',
+              isActive && 'opacity-60'
             )}
             onClick={handleCloseClick}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') handleCloseClick(e as unknown as React.MouseEvent)
+              if (e.key === 'Enter' || e.key === ' ')
+                handleCloseClick(e as unknown as React.MouseEvent)
             }}
           >
             <X className="size-2.5" />
@@ -172,7 +171,7 @@ export function TabBarItem({
           'border-t border-l border-r border-transparent',
           isActive
             ? 'bg-content-area text-foreground border-border/50'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
         )}
         onClick={onActivate}
         onMouseDown={handleMouseDown}
@@ -196,28 +195,29 @@ export function TabBarItem({
 
         {/* 关闭按钮（scratch 类型不显示） */}
         {!isScratch && (
-        <span
-          role="button"
-          tabIndex={-1}
-          className={cn(
-            'size-4 rounded-sm flex items-center justify-center shrink-0',
-            'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
-            isActive && 'opacity-60',
-          )}
-          onClick={handleCloseClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') handleCloseClick(e as unknown as React.MouseEvent)
-          }}
-        >
-          <X className="size-2.5" />
-        </span>
+          <span
+            role="button"
+            tabIndex={-1}
+            className={cn(
+              'size-4 rounded-sm flex items-center justify-center shrink-0',
+              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
+              isActive && 'opacity-60'
+            )}
+            onClick={handleCloseClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ')
+                handleCloseClick(e as unknown as React.MouseEvent)
+            }}
+          >
+            <X className="size-2.5" />
+          </span>
         )}
 
         {(isActive || statusLineClass) && (
           <span
             className={cn(
               'absolute inset-x-3 bottom-0 h-[2px] rounded-full',
-              statusLineClass ?? 'bg-primary',
+              statusLineClass ?? 'bg-primary'
             )}
             aria-hidden="true"
           />

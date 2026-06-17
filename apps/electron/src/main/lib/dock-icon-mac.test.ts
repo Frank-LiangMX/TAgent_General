@@ -41,6 +41,8 @@ describe('macOS Dock squircle 蒙版', () => {
 
   it('内容缩放小于满幅', () => {
     expect(MAC_DOCK_CONTENT_SCALE).toBeLessThan(1)
-    expect(Math.round(MAC_DOCK_CANVAS_SIZE * MAC_DOCK_CONTENT_SCALE)).toBeLessThan(MAC_DOCK_CANVAS_SIZE)
+    expect(Math.round(MAC_DOCK_CANVAS_SIZE * MAC_DOCK_CONTENT_SCALE)).toBeLessThan(
+      MAC_DOCK_CANVAS_SIZE
+    )
   })
 })

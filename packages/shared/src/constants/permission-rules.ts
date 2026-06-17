@@ -7,14 +7,14 @@
 
 /** 始终安全的工具（免询问） */
 export const SAFE_TOOLS: readonly string[] = [
-  'Read',            // 文件读取
-  'Glob',            // 文件名搜索
-  'Grep',            // 内容搜索
-  'WebSearch',       // 网络搜索
-  'WebFetch',        // 网页获取
-  'TodoRead',        // Todo 列表读取
-  'TodoWrite',       // Todo 列表写入（无安全风险）
-  'TaskOutput',      // 后台任务输出
+  'Read', // 文件读取
+  'Glob', // 文件名搜索
+  'Grep', // 内容搜索
+  'WebSearch', // 网络搜索
+  'WebFetch', // 网页获取
+  'TodoRead', // Todo 列表读取
+  'TodoWrite', // Todo 列表写入（无安全风险）
+  'TaskOutput', // 后台任务输出
   // 注意：AskUserQuestion 不在此列表 — 由 canUseTool 拦截并展示交互式 UI
 ]
 
@@ -49,17 +49,29 @@ export const SAFE_BASH_PATTERNS: readonly RegExp[] = [
 
 /** 危险命令前缀（需特别标记⚠️） */
 export const DANGEROUS_COMMANDS: readonly string[] = [
-  'rm', 'rmdir',
-  'sudo', 'su',
-  'chmod', 'chown',
+  'rm',
+  'rmdir',
+  'sudo',
+  'su',
+  'chmod',
+  'chown',
   'mv',
   'dd',
-  'kill', 'killall', 'pkill',
-  'git push', 'git reset', 'git rebase', 'git checkout',
-  'git clean', 'git branch -D', 'git branch -d',
+  'kill',
+  'killall',
+  'pkill',
+  'git push',
+  'git reset',
+  'git rebase',
+  'git checkout',
+  'git clean',
+  'git branch -D',
+  'git branch -d',
   'npm publish',
-  'curl', 'wget',
-  'ssh', 'scp',
+  'curl',
+  'wget',
+  'ssh',
+  'scp',
 ]
 
 /**

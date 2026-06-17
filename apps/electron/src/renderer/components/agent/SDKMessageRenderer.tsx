@@ -18,12 +18,32 @@ import {
   isThinkingSignatureError,
 } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { Bot, Loader2, AlertTriangle, FileText, FileImage, Download, Split, Undo2, RotateCw, Plus, Minimize2, Wrench, Settings, ExternalLink, Quote } from 'lucide-react'
+import {
+  Bot,
+  Loader2,
+  AlertTriangle,
+  FileText,
+  FileImage,
+  Download,
+  Split,
+  Undo2,
+  RotateCw,
+  Plus,
+  Minimize2,
+  Wrench,
+  Settings,
+  ExternalLink,
+  Quote,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { DurationBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
-import { ProcessBlockGroup, buildAssistantTurnRenderItems, buildCompletedToolResultIds } from './ProcessBlockGroup'
+import {
+  ProcessBlockGroup,
+  buildAssistantTurnRenderItems,
+  buildCompletedToolResultIds,
+} from './ProcessBlockGroup'
 import { extractToolResultText, parseTaskCreateResult, TASK_TOOL_NAMES } from './task-progress'
 import { TaskProgressCard } from './TaskProgressCard'
 import { normalizeThinkTagsInContentBlocks } from './thinking-tag-parser'
@@ -57,13 +77,13 @@ import {
   MessageResponse,
   UserMessageContent,
 } from '@/components/ai-elements/message'
-import { formatMessageTime } from '@/lib/time-utils'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
 
 // ===== SDKMessageRenderer Props =====
@@ -104,7 +124,8 @@ function formatSystemToolName(toolName: string): string {
 }
 
 function PermissionDeniedNotice({ message }: { message: SDKSystemMessage }): React.ReactElement {
-  const toolName = typeof message.tool_name === 'string' ? formatSystemToolName(message.tool_name) : undefined
+  const toolName =
+    typeof message.tool_name === 'string' ? formatSystemToolName(message.tool_name) : undefined
   const denialMessage = typeof message.message === 'string' ? message.message : undefined
   const reason = typeof message.decision_reason === 'string' ? message.decision_reason : undefined
 
@@ -121,9 +142,7 @@ function PermissionDeniedNotice({ message }: { message: SDKSystemMessage }): Rea
               </span>
             )}
           </div>
-          {denialMessage && (
-            <p className="break-words text-muted-foreground">{denialMessage}</p>
-          )}
+          {denialMessage && <p className="break-words text-muted-foreground">{denialMessage}</p>}
           {reason && reason !== denialMessage && (
             <p className="break-words text-muted-foreground/70">{reason}</p>
           )}
@@ -162,7 +181,10 @@ function extractMeta(message: SDKMessage): MessageMeta {
 }
 
 /** 从 turn 消息列表中提取 result 消息的耗时和用量数据 */
-function extractTurnUsage(turnMessages: SDKMessage[]): { durationMs?: number; usage?: AgentEventUsage } {
+function extractTurnUsage(turnMessages: SDKMessage[]): {
+  durationMs?: number
+  usage?: AgentEventUsage
+} {
   for (const msg of turnMessages) {
     if (msg.type !== 'result') continue
     const resultMsg = msg as SDKResultMessage
@@ -176,7 +198,8 @@ function extractTurnUsage(turnMessages: SDKMessage[]): { durationMs?: number; us
     return {
       durationMs,
       usage: {
-        inputTokens: u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
+        inputTokens:
+          u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
         outputTokens: u.output_tokens,
         cacheReadTokens: u.cache_read_input_tokens,
         cacheCreationTokens: u.cache_creation_input_tokens,
@@ -219,7 +242,10 @@ function extractStructuredToolResultText(message: SDKUserMessage): string | unde
   }
 }
 
-function extractToolResultForTask(message: SDKUserMessage, resultBlock: SDKToolResultBlock): string | undefined {
+function extractToolResultForTask(
+  message: SDKUserMessage,
+  resultBlock: SDKToolResultBlock
+): string | undefined {
   return extractStructuredToolResultText(message) ?? extractToolResultText(resultBlock.content)
 }
 
@@ -331,7 +357,11 @@ export function groupIntoTurns(messages: SDKMessage[], sessionModelId?: string):
       const sysMsg = msg as SDKSystemMessage
       // 仅需要独立渲染的 system 消息才中断 turn（compact_boundary / compacting / permission_denied）
       // 其他 system 消息（如 init、task_started、task_progress）归入当前 turn，不中断分组
-      if (sysMsg.subtype === 'compact_boundary' || sysMsg.subtype === 'compacting' || sysMsg.subtype === 'permission_denied') {
+      if (
+        sysMsg.subtype === 'compact_boundary' ||
+        sysMsg.subtype === 'compacting' ||
+        sysMsg.subtype === 'permission_denied'
+      ) {
         flushTurn()
         groups.push({ type: 'system', message: sysMsg })
       } else if (currentTurn) {
@@ -376,7 +406,13 @@ function mergeAdjacentSameModelTurns(groups: MessageGroup[]): MessageGroup[] {
     for (let i = result.length - 1; i >= 0; i--) {
       const prev = result[i]!
       if (prev.type === 'user') break // 真正的用户输入阻断合并
-      if (prev.type === 'system' && ['compact_boundary', 'permission_denied'].includes((prev.message as SDKSystemMessage).subtype ?? '')) break
+      if (
+        prev.type === 'system' &&
+        ['compact_boundary', 'permission_denied'].includes(
+          (prev.message as SDKSystemMessage).subtype ?? ''
+        )
+      )
+        break
       if (prev.type === 'assistant-turn') {
         if (prev.model === group.model) {
           mergeTargetIdx = i
@@ -400,7 +436,7 @@ function mergeAdjacentSameModelTurns(groups: MessageGroup[]): MessageGroup[] {
 
 function buildTaskProgressData(
   topLevelBlocks: SDKContentBlock[],
-  turnMessages: SDKMessage[],
+  turnMessages: SDKMessage[]
 ): {
   taskActivities: ToolActivity[]
   firstTaskIndex: number
@@ -480,15 +516,17 @@ export function buildHistoricalTaskSubjects(allMessages: SDKMessage[]): Map<stri
 
   for (const tb of pendingTaskCreates) {
     const input = tb.input as Record<string, unknown>
-    const subject = typeof input.subject === 'string'
-      ? input.subject
-      : typeof input.description === 'string'
-        ? input.description
-        : undefined
+    const subject =
+      typeof input.subject === 'string'
+        ? input.subject
+        : typeof input.description === 'string'
+          ? input.description
+          : undefined
     if (!subject) continue
     const resultText = globalResultMap.get(tb.id)
     const parsedResult = parseTaskCreateResult(resultText)
-    if (parsedResult?.id) historicalTaskSubjects.set(parsedResult.id, parsedResult.subject ?? subject)
+    if (parsedResult?.id)
+      historicalTaskSubjects.set(parsedResult.id, parsedResult.subject ?? subject)
   }
 
   return historicalTaskSubjects
@@ -521,7 +559,20 @@ export interface AssistantTurnRendererProps {
   sessionModelId?: string
 }
 
-export function AssistantTurnRenderer({ turn, allMessages, historicalTaskSubjects, basePath, onFork, onRewind, onRetry, onRetryInNewSession, onCompact, isStreaming, stoppedByUser, sessionModelId: _sessionModelId }: AssistantTurnRendererProps): React.ReactElement | null {
+export function AssistantTurnRenderer({
+  turn,
+  allMessages,
+  historicalTaskSubjects,
+  basePath,
+  onFork,
+  onRewind,
+  onRetry,
+  onRetryInNewSession,
+  onCompact,
+  isStreaming,
+  stoppedByUser,
+  sessionModelId: _sessionModelId,
+}: AssistantTurnRendererProps): React.ReactElement | null {
   const channels = useAtomValue(channelsAtom)
   const processGroupsKeepExpanded = useAtomValue(agentProcessGroupsKeepExpandedAtom)
   // 收集所有 assistant 消息的内容块，保留 parent_tool_use_id 关联
@@ -631,11 +682,10 @@ export function AssistantTurnRenderer({ turn, allMessages, historicalTaskSubject
       return null
     }
 
-    const isAgentTool = block.type === 'tool_use'
-      && ((block as { name: string }).name === 'Agent' || (block as { name: string }).name === 'Task')
-    const childBlocks = isAgentTool
-      ? childBlocksMap.get((block as { id: string }).id)
-      : undefined
+    const isAgentTool =
+      block.type === 'tool_use' &&
+      ((block as { name: string }).name === 'Agent' || (block as { name: string }).name === 'Task')
+    const childBlocks = isAgentTool ? childBlocksMap.get((block as { id: string }).id) : undefined
 
     return (
       <ContentBlock
@@ -690,7 +740,9 @@ export function AssistantTurnRenderer({ turn, allMessages, historicalTaskSubject
                 isStreaming={isStreaming}
                 keepExpandedAfterComplete={processGroupsKeepExpanded}
               >
-                {item.items.map((groupItem) => renderProcessGroupBlock(groupItem.block, groupItem.index))}
+                {item.items.map((groupItem) =>
+                  renderProcessGroupBlock(groupItem.block, groupItem.index)
+                )}
               </ProcessBlockGroup>
             )
           })}
@@ -709,43 +761,48 @@ export function AssistantTurnRenderer({ turn, allMessages, historicalTaskSubject
         <TurnFileChangesSummary turnMessages={turn.turnMessages} basePath={basePath} />
       )}
       {/* 操作栏：流式输出完成后显示操作按钮 */}
-      {!isStreaming && (() => {
-        const textContent = topLevelBlocks
-          .filter((b) => b.type === 'text' && 'text' in b)
-          .map((b) => (b as { text: string }).text)
-          .join('\n\n')
-        // 仅取主线 assistant 消息的 uuid 作为 fork/rewind 截断点。
-        // SDK forkSession 内部会过滤掉 sidechain（parent_tool_use_id 非空的子代理消息），
-        // 若把子代理 uuid 传过去会触发 "Message <uuid> not found in session" 错误。
-        const mainlineAssistants = turn.assistantMessages.filter((m) => !m.parent_tool_use_id)
-        const lastUuid = mainlineAssistants.length > 0
-          ? mainlineAssistants[mainlineAssistants.length - 1]?.uuid
-          : undefined
-        const hasActions = !!(textContent || (onFork && lastUuid) || (onRewind && lastUuid))
-        const hasDuration = durationMs != null
-        if (!hasDuration && !hasActions && !showStoppedBadge) return null
-        return (
-          <MessageActions className="pl-[46px] mt-0.5 min-h-[28px] justify-start">
-            {hasDuration && <DurationBadge durationMs={durationMs!} usage={usage} />}
-            {textContent && <CopyButton content={textContent} />}
-            {onFork && lastUuid && (
-              <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>
-                <Split className="size-3.5" />
-              </MessageAction>
-            )}
-            {onRewind && lastUuid && (
-              <MessageAction tooltip="回退到此处" onClick={() => onRewind(lastUuid)}>
-                <Undo2 className="size-3.5" />
-              </MessageAction>
-            )}
-            {showStoppedBadge && (
-              <Badge variant="outline" className="text-xs text-muted-foreground/70 border-muted-foreground/30 shrink-0">
-                已被用户中断
-              </Badge>
-            )}
-          </MessageActions>
-        )
-      })()}
+      {!isStreaming &&
+        (() => {
+          const textContent = topLevelBlocks
+            .filter((b) => b.type === 'text' && 'text' in b)
+            .map((b) => (b as { text: string }).text)
+            .join('\n\n')
+          // 仅取主线 assistant 消息的 uuid 作为 fork/rewind 截断点。
+          // SDK forkSession 内部会过滤掉 sidechain（parent_tool_use_id 非空的子代理消息），
+          // 若把子代理 uuid 传过去会触发 "Message <uuid> not found in session" 错误。
+          const mainlineAssistants = turn.assistantMessages.filter((m) => !m.parent_tool_use_id)
+          const lastUuid =
+            mainlineAssistants.length > 0
+              ? mainlineAssistants[mainlineAssistants.length - 1]?.uuid
+              : undefined
+          const hasActions = !!(textContent || (onFork && lastUuid) || (onRewind && lastUuid))
+          const hasDuration = durationMs != null
+          if (!hasDuration && !hasActions && !showStoppedBadge) return null
+          return (
+            <MessageActions className="pl-[46px] mt-0.5 min-h-[28px] justify-start">
+              {hasDuration && <DurationBadge durationMs={durationMs!} usage={usage} />}
+              {textContent && <CopyButton content={textContent} />}
+              {onFork && lastUuid && (
+                <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>
+                  <Split className="size-3.5" />
+                </MessageAction>
+              )}
+              {onRewind && lastUuid && (
+                <MessageAction tooltip="回退到此处" onClick={() => onRewind(lastUuid)}>
+                  <Undo2 className="size-3.5" />
+                </MessageAction>
+              )}
+              {showStoppedBadge && (
+                <Badge
+                  variant="outline"
+                  className="text-xs text-muted-foreground/70 border-muted-foreground/30 shrink-0"
+                >
+                  已被用户中断
+                </Badge>
+              )}
+            </MessageActions>
+          )
+        })()}
     </Message>
   )
 }
@@ -860,7 +917,11 @@ export interface QuotedFileRef {
 }
 
 /** 解析消息中的 <attached_files> 块和 <quoted_file> 块，返回文件列表、引用列表和剩余文本 */
-export function parseAttachedFiles(content: string): { files: AttachedFileRef[]; quotes: QuotedFileRef[]; text: string } {
+export function parseAttachedFiles(content: string): {
+  files: AttachedFileRef[]
+  quotes: QuotedFileRef[]
+  text: string
+} {
   const quoteRegex = /<quoted_file[^>]*>[\s\S]*?<\/quoted_file>\n*/g
   const quotes: QuotedFileRef[] = []
   let quoteMatch: RegExpExecArray | null
@@ -912,8 +973,13 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
   React.useEffect(() => {
     const ext = file.filename.split('.').pop()?.toLowerCase() ?? 'png'
     const mimeMap: Record<string, string> = {
-      png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-      gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      bmp: 'image/bmp',
     }
     const mediaType = mimeMap[ext] ?? 'image/png'
 
@@ -995,9 +1061,13 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
     <Message from="user">
       <div className="flex items-start gap-2.5 mb-2.5">
         <div className="flex flex-col justify-between h-[35px] items-end">
-          <span className="text-sm font-semibold text-foreground/60 leading-none">{userProfile.userName}</span>
+          <span className="text-sm font-semibold text-foreground/60 leading-none">
+            {userProfile.userName}
+          </span>
           {meta.createdAt && (
-            <span className="text-[10px] text-foreground/[0.38] leading-none">{formatMessageTime(meta.createdAt)}</span>
+            <span className="text-[10px] text-foreground/[0.38] leading-none">
+              {formatMessageTime(meta.createdAt)}
+            </span>
           )}
         </div>
         <UserAvatar avatar={userProfile.avatar} size={35} />
@@ -1050,7 +1120,12 @@ interface ErrorMessageProps {
   onCompact?: () => void
 }
 
-function ErrorMessage({ message, onRetry, onRetryInNewSession, onCompact }: ErrorMessageProps): React.ReactElement {
+function ErrorMessage({
+  message,
+  onRetry,
+  onRetryInNewSession,
+  onCompact,
+}: ErrorMessageProps): React.ReactElement {
   const meta = extractMeta(message as unknown as SDKMessage)
   const errorText = message.error?.message ?? '未知错误'
 
@@ -1070,13 +1145,15 @@ function ErrorMessage({ message, onRetry, onRetryInNewSession, onCompact }: Erro
   const setSettingsTab = useSetAtom(settingsTabAtom)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
-  const contentText = message.message?.content
-    ?.filter((b) => b.type === 'text' && 'text' in b)
-    .map((b) => (b as { text: string }).text)
-    .join('\n') ?? errorText
-  const isThinkingSignature = errorCode === THINKING_SIGNATURE_ERROR_CODE ||
-    isThinkingSignatureError(contentText, errorText)
-  const displayTitle = errorTitle ?? (isThinkingSignature ? THINKING_SIGNATURE_ERROR_TITLE : undefined)
+  const contentText =
+    message.message?.content
+      ?.filter((b) => b.type === 'text' && 'text' in b)
+      .map((b) => (b as { text: string }).text)
+      .join('\n') ?? errorText
+  const isThinkingSignature =
+    errorCode === THINKING_SIGNATURE_ERROR_CODE || isThinkingSignatureError(contentText, errorText)
+  const displayTitle =
+    errorTitle ?? (isThinkingSignature ? THINKING_SIGNATURE_ERROR_TITLE : undefined)
   const displayContentText = isThinkingSignature ? THINKING_SIGNATURE_ERROR_MESSAGE : contentText
   const displayedErrorActions = (errorActions ?? []).filter((action) => {
     if (action.action === 'retry' && !onRetry) return false
@@ -1205,17 +1282,17 @@ function ErrorMessage({ message, onRetry, onRetryInNewSession, onCompact }: Erro
               </Button>
             )}
             {!hasStructuredActions && isThinkingSignature && onRetryInNewSession && (
-              <Button
-                size="sm"
-                onClick={onRetryInNewSession}
-                title="新建对话并引用当前会话继续"
-              >
+              <Button size="sm" onClick={onRetryInNewSession} title="新建对话并引用当前会话继续">
                 <Plus className="size-3.5 mr-1.5" />
                 在新对话继续
               </Button>
             )}
             {!hasStructuredActions && onRetry && (
-              <Button size="sm" variant={isPromptTooLong || isThinkingSignature ? 'outline' : 'default'} onClick={onRetry}>
+              <Button
+                size="sm"
+                variant={isPromptTooLong || isThinkingSignature ? 'outline' : 'default'}
+                onClick={onRetry}
+              >
                 <RotateCw className="size-3.5 mr-1.5" />
                 重试
               </Button>
@@ -1289,14 +1366,19 @@ export function getGroupId(group: MessageGroup): string {
   }
   if (group.type === 'system') {
     if (!messageIdCache.has(group.message)) {
-      messageIdCache.set(group.message, `system-${group.message.subtype ?? 'unknown'}-${++fallbackIdCounter}`)
+      messageIdCache.set(
+        group.message,
+        `system-${group.message.subtype ?? 'unknown'}-${++fallbackIdCounter}`
+      )
     }
     return messageIdCache.get(group.message)!
   }
   // assistant-turn：取首条 assistant 消息的 uuid
   const first = group.assistantMessages[0]
   if (first?.uuid) return first.uuid
-  const stableKey = first ? (first as unknown as Record<string, unknown>)._tagentStableKey : undefined
+  const stableKey = first
+    ? (first as unknown as Record<string, unknown>)._tagentStableKey
+    : undefined
   if (typeof stableKey === 'string') return stableKey
   // 没有 uuid：使用基于首条 assistant message 对象引用的缓存 ID
   if (first) {
@@ -1339,7 +1421,20 @@ export function getGroupPreview(group: MessageGroup): string {
   return texts.join(' ').slice(0, 200)
 }
 
-export function MessageGroupRenderer({ group, allMessages, historicalTaskSubjects, basePath, onFork, onRewind, onRetry, onRetryInNewSession, onCompact, isStreaming, stoppedByUser, sessionModelId }: MessageGroupRendererProps): React.ReactElement | null {
+export function MessageGroupRenderer({
+  group,
+  allMessages,
+  historicalTaskSubjects,
+  basePath,
+  onFork,
+  onRewind,
+  onRetry,
+  onRetryInNewSession,
+  onCompact,
+  isStreaming,
+  stoppedByUser,
+  sessionModelId,
+}: MessageGroupRendererProps): React.ReactElement | null {
   const groupId = getGroupId(group)
 
   if (group.type === 'user') {
@@ -1352,9 +1447,24 @@ export function MessageGroupRenderer({ group, allMessages, historicalTaskSubject
 
   if (group.type === 'system') {
     const subtype = group.message.subtype
-    if (subtype === 'compact_boundary') return <div data-message-id={groupId}><CompactBoundaryDivider /></div>
-    if (subtype === 'compacting') return <div data-message-id={groupId}><CompactingIndicator /></div>
-    if (subtype === 'permission_denied') return <div data-message-id={groupId}><PermissionDeniedNotice message={group.message} /></div>
+    if (subtype === 'compact_boundary')
+      return (
+        <div data-message-id={groupId}>
+          <CompactBoundaryDivider />
+        </div>
+      )
+    if (subtype === 'compacting')
+      return (
+        <div data-message-id={groupId}>
+          <CompactingIndicator />
+        </div>
+      )
+    if (subtype === 'permission_denied')
+      return (
+        <div data-message-id={groupId}>
+          <PermissionDeniedNotice message={group.message} />
+        </div>
+      )
     return null
   }
 

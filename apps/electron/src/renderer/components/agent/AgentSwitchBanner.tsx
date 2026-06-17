@@ -20,12 +20,13 @@ import { Sparkles, X, ArrowRight } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import {
-  currentAgentSessionIdAtom,
-  agentPromptSuggestionsAtom,
-} from '@/atoms/agent-atoms'
+import { currentAgentSessionIdAtom, agentPromptSuggestionsAtom } from '@/atoms/agent-atoms'
 import { pendingAgentSwitchSuggestionAtom } from '@/atoms/ask-atoms'
-import { composerModeMapAtom, composerModeSyncedSessionsAtom, currentComposerModeAtom } from '@/atoms/composer-atoms'
+import {
+  composerModeMapAtom,
+  composerModeSyncedSessionsAtom,
+  currentComposerModeAtom,
+} from '@/atoms/composer-atoms'
 import { Button } from '@/components/ui/button'
 
 export function AgentSwitchBanner(): React.ReactElement | null {
@@ -120,9 +121,7 @@ export function AgentSwitchBanner(): React.ReactElement | null {
 
       {/* 升级理由 */}
       <div className="px-4 pb-3">
-        <p className="text-sm text-foreground/80 leading-relaxed">
-          {suggestion.reason}
-        </p>
+        <p className="text-sm text-foreground/80 leading-relaxed">{suggestion.reason}</p>
       </div>
 
       {/* 操作按钮 */}

@@ -27,35 +27,35 @@ WPS 用户 ← WPS /v7/messages/create ← OAuth + KSO-1 签名 ← Agent 回复
 
 ## 已落地文件
 
-| 层级 | 文件 | 职责 |
-|------|------|------|
-| 类型 | `packages/shared/src/types/wps.ts` | 配置/状态/IPC 常量 |
-| 主进程 | `apps/electron/src/main/lib/wps-config.ts` | `~/.tagent/wps.json` 持久化 + 密钥加密 |
-| 主进程 | `apps/electron/src/main/lib/wps-crypto.ts` | 事件签名、AES 解密、KSO-1 |
-| 主进程 | `apps/electron/src/main/lib/wps-oauth.ts` | OAuth2 token 缓存与并发去重 |
-| 主进程 | `apps/electron/src/main/lib/wps-message-parser.ts` | 文本消息解析、@Bot 识别 |
-| 主进程 | `apps/electron/src/main/lib/wps-bridge.ts` | HTTP 回调 + Agent 路由 + 回发 |
-| 主进程 | `apps/electron/src/main/index.ts` | `registerBridge` 自动启停 |
-| 主进程 | `apps/electron/src/main/ipc.ts` | WPS IPC 处理器 |
-| 渲染 | `apps/electron/src/renderer/components/settings/WpsSettings.tsx` | 配置 UI |
-| 渲染 | `apps/electron/src/renderer/components/settings/BotHubSettings.tsx` | 远程 Hub 卡片 |
-| 渲染 | `apps/electron/src/renderer/atoms/wps-atoms.ts` | 连接状态 |
-| 渲染 | `apps/electron/src/renderer/main.tsx` | `WpsInitializer` |
-| Preload | `apps/electron/src/preload/index.ts` | `window.electronAPI` 暴露 |
+| 层级    | 文件                                                                | 职责                                   |
+| ------- | ------------------------------------------------------------------- | -------------------------------------- |
+| 类型    | `packages/shared/src/types/wps.ts`                                  | 配置/状态/IPC 常量                     |
+| 主进程  | `apps/electron/src/main/lib/wps-config.ts`                          | `~/.tagent/wps.json` 持久化 + 密钥加密 |
+| 主进程  | `apps/electron/src/main/lib/wps-crypto.ts`                          | 事件签名、AES 解密、KSO-1              |
+| 主进程  | `apps/electron/src/main/lib/wps-oauth.ts`                           | OAuth2 token 缓存与并发去重            |
+| 主进程  | `apps/electron/src/main/lib/wps-message-parser.ts`                  | 文本消息解析、@Bot 识别                |
+| 主进程  | `apps/electron/src/main/lib/wps-bridge.ts`                          | HTTP 回调 + Agent 路由 + 回发          |
+| 主进程  | `apps/electron/src/main/index.ts`                                   | `registerBridge` 自动启停              |
+| 主进程  | `apps/electron/src/main/ipc.ts`                                     | WPS IPC 处理器                         |
+| 渲染    | `apps/electron/src/renderer/components/settings/WpsSettings.tsx`    | 配置 UI                                |
+| 渲染    | `apps/electron/src/renderer/components/settings/BotHubSettings.tsx` | 远程 Hub 卡片                          |
+| 渲染    | `apps/electron/src/renderer/atoms/wps-atoms.ts`                     | 连接状态                               |
+| 渲染    | `apps/electron/src/renderer/main.tsx`                               | `WpsInitializer`                       |
+| Preload | `apps/electron/src/preload/index.ts`                                | `window.electronAPI` 暴露              |
 
 ## 配置说明
 
 持久化路径：`~/.tagent/wps.json`（开发模式 `~/.tagent-dev/wps.json`）
 
-| 字段 | 说明 |
-|------|------|
-| `enabled` | 是否启用并自动启动 Bridge |
-| `appId` | WPS 应用 ID |
-| `secretKey` | 应用密钥（safeStorage 加密存储） |
-| `encryptKey` | 事件解密密钥（可选，默认用 secretKey） |
-| `apiUrl` | 默认 `https://openapi.wps.cn` |
-| `callbackPort` | 本地监听端口，默认 `19086` |
-| `callbackPath` | 回调路径，默认 `/open/receive` |
+| 字段                 | 说明                                    |
+| -------------------- | --------------------------------------- |
+| `enabled`            | 是否启用并自动启动 Bridge               |
+| `appId`              | WPS 应用 ID                             |
+| `secretKey`          | 应用密钥（safeStorage 加密存储）        |
+| `encryptKey`         | 事件解密密钥（可选，默认用 secretKey）  |
+| `apiUrl`             | 默认 `https://openapi.wps.cn`           |
+| `callbackPort`       | 本地监听端口，默认 `19086`              |
+| `callbackPath`       | 回调路径，默认 `/open/receive`          |
 | `defaultWorkspaceId` | IM 内 `/workspace` 切换后持久化的工作区 |
 
 ## 开放平台配置步骤

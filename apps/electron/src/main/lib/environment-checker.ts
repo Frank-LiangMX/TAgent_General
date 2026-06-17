@@ -83,17 +83,18 @@ export async function checkEnvironment(): Promise<EnvironmentCheckResult> {
   const downloadUrls = getDownloadUrls(platform)
 
   // 并行检测 Node.js 和 Git
-  const [nodeStatus, gitStatus] = await Promise.all([
-    detectNodeRuntime(),
-    detectGitRuntime(),
-  ])
+  const [nodeStatus, gitStatus] = await Promise.all([detectNodeRuntime(), detectGitRuntime()])
 
   // Node.js 检测结果
   const nodejsResult = {
     installed: nodeStatus.available,
     version: nodeStatus.version || undefined,
-    meetsMinimum: nodeStatus.version ? checkNodeVersion(nodeStatus.version, '18.0.0', '22.0.0').meetsMinimum : false,
-    meetsRecommended: nodeStatus.version ? checkNodeVersion(nodeStatus.version, '18.0.0', '22.0.0').meetsRecommended : false,
+    meetsMinimum: nodeStatus.version
+      ? checkNodeVersion(nodeStatus.version, '18.0.0', '22.0.0').meetsMinimum
+      : false,
+    meetsRecommended: nodeStatus.version
+      ? checkNodeVersion(nodeStatus.version, '18.0.0', '22.0.0').meetsRecommended
+      : false,
     downloadUrl: downloadUrls.nodejs,
   }
 

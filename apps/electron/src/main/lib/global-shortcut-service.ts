@@ -65,7 +65,7 @@ function getGlobalAccelerator(id: string): string | null {
   // 转换为 Electron 标准格式
   return accelerator
     .split('+')
-    .map((part) => part.trim().toLowerCase() === 'cmd' ? 'CommandOrControl' : part)
+    .map((part) => (part.trim().toLowerCase() === 'cmd' ? 'CommandOrControl' : part))
     .join('+')
 }
 

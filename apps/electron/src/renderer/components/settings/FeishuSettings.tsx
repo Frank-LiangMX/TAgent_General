@@ -7,7 +7,26 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { Loader2, CheckCircle2, XCircle, ExternalLink, Users, User, Trash2, RefreshCw, Copy, Check, Power, PowerOff, Plus, ChevronRight, PlayCircle, QrCode, MessageSquare, AlertTriangle } from 'lucide-react'
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  ExternalLink,
+  Users,
+  User,
+  Trash2,
+  RefreshCw,
+  Copy,
+  Check,
+  Power,
+  PowerOff,
+  Plus,
+  ChevronRight,
+  PlayCircle,
+  QrCode,
+  MessageSquare,
+  AlertTriangle,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -16,7 +35,16 @@ import { SettingsInput } from './primitives/SettingsInput'
 import { SettingsSecretInput } from './primitives/SettingsSecretInput'
 import { SettingsSection } from './primitives/SettingsSection'
 
-import type { FeishuTestResult, FeishuChatBinding, FeishuBotConfig, FeishuBotBridgeState, FeishuRegisterAppQRCode, FeishuRegisterAppStatus, FeishuSessionMirrorSettings, FeishuSessionSyncMode } from '@tagent/shared'
+import type {
+  FeishuTestResult,
+  FeishuChatBinding,
+  FeishuBotConfig,
+  FeishuBotBridgeState,
+  FeishuRegisterAppQRCode,
+  FeishuRegisterAppStatus,
+  FeishuSessionMirrorSettings,
+  FeishuSessionSyncMode,
+} from '@tagent/shared'
 
 import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
 import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
@@ -66,32 +94,35 @@ const STATUS_CONFIG = {
   error: { color: 'bg-red-500', label: '连接错误' },
 } as const
 
-
 /** 飞书批量权限配置 JSON（用于一键复制粘贴到飞书开放平台） */
-const FEISHU_SCOPES_JSON = JSON.stringify({
-  scopes: {
-    tenant: [
-      'contact:contact.base:readonly',
-      'drive:drive',
-      'im:chat',
-      'im:chat.announcement:write_only',
-      'im:chat.managers:write_only',
-      'im:chat.members:read',
-      'im:chat.members:write_only',
-      'im:chat.tabs:write_only',
-      'im:chat.top_notice:write_only',
-      'im:message',
-      'im:message.group_at_msg:readonly',
-      'im:message.group_msg',
-      'im:message.p2p_msg:readonly',
-      'im:message.reactions:write_only',
-      'im:message:send_as_bot',
-      'im:resource',
-      'wiki:wiki',
-    ],
-    user: [],
+const FEISHU_SCOPES_JSON = JSON.stringify(
+  {
+    scopes: {
+      tenant: [
+        'contact:contact.base:readonly',
+        'drive:drive',
+        'im:chat',
+        'im:chat.announcement:write_only',
+        'im:chat.managers:write_only',
+        'im:chat.members:read',
+        'im:chat.members:write_only',
+        'im:chat.tabs:write_only',
+        'im:chat.top_notice:write_only',
+        'im:message',
+        'im:message.group_at_msg:readonly',
+        'im:message.group_msg',
+        'im:message.p2p_msg:readonly',
+        'im:message.reactions:write_only',
+        'im:message:send_as_bot',
+        'im:resource',
+        'wiki:wiki',
+      ],
+      user: [],
+    },
   },
-}, null, 2)
+  null,
+  2
+)
 
 /**
  * 视频教程入口配置。
@@ -120,7 +151,10 @@ function normalizeVideoEmbedUrl(raw: string): { embedUrl: string; isIframe: bool
   if (bvMatch) {
     const pMatch = url.match(/[?&]p=(\d+)/)
     const pageParam = pMatch ? `&page=${pMatch[1]}` : ''
-    return { embedUrl: `https://player.bilibili.com/player.html?bvid=${bvMatch[1]}&autoplay=0&high_quality=1&danmaku=0${pageParam}`, isIframe: true }
+    return {
+      embedUrl: `https://player.bilibili.com/player.html?bvid=${bvMatch[1]}&autoplay=0&high_quality=1&danmaku=0${pageParam}`,
+      isIframe: true,
+    }
   }
   // B 站短链（b23.tv/xxx）：无法在前端跟随重定向，让 iframe 自己处理
   if (/^https?:\/\/b23\.tv\//.test(url)) {
@@ -131,7 +165,9 @@ function normalizeVideoEmbedUrl(raw: string): { embedUrl: string; isIframe: bool
     return { embedUrl: url, isIframe: true }
   }
   // YouTube watch / shorts / youtu.be → embed
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/)
+  const ytMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/
+  )
   if (ytMatch) {
     return { embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}`, isIframe: true }
   }
@@ -155,7 +191,7 @@ function FeishuTutorialVideo(): React.ReactElement | null {
   const botStates = useAtomValue(feishuBotStatesAtom)
   const hasConnectedBot = React.useMemo(
     () => Object.values(botStates).some((b) => b.status === 'connected'),
-    [botStates],
+    [botStates]
   )
   const [expanded, setExpanded] = React.useState(true)
   const autoCollapsedRef = React.useRef(false)
@@ -188,11 +224,20 @@ function FeishuTutorialVideo(): React.ReactElement | null {
           <span className="text-sm text-muted-foreground">
             {expanded ? '点击收起视频' : '点击展开视频教程（约 3 分钟）'}
           </span>
-          <ChevronRight size={16} className={cn('text-muted-foreground transition-transform duration-200', expanded && 'rotate-90')} />
+          <ChevronRight
+            size={16}
+            className={cn(
+              'text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-90'
+            )}
+          />
         </button>
         {expanded && (
           <div className="px-4 pb-4 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-            <div className="relative w-full overflow-hidden rounded-md bg-black" style={{ aspectRatio: '16 / 9' }}>
+            <div
+              className="relative w-full overflow-hidden rounded-md bg-black"
+              style={{ aspectRatio: '16 / 9' }}
+            >
               {video.isIframe ? (
                 <iframe
                   src={video.embedUrl}
@@ -248,25 +293,31 @@ function PermissionsStep(): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
 
   const handleCopy = React.useCallback(() => {
-    navigator.clipboard.writeText(FEISHU_SCOPES_JSON).then(() => {
-      setCopied(true)
-      toast.success('权限配置已复制到剪贴板')
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {
-      toast.error('复制失败')
-    })
+    navigator.clipboard
+      .writeText(FEISHU_SCOPES_JSON)
+      .then(() => {
+        setCopied(true)
+        toast.success('权限配置已复制到剪贴板')
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {
+        toast.error('复制失败')
+      })
   }, [])
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">4</span>
+        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+          4
+        </span>
         <span className="font-medium text-foreground">配置权限</span>
       </div>
       <div className="pl-7 space-y-3 text-muted-foreground">
         <p>
-          进入「权限管理」页面，点击下方按钮复制权限配置 JSON，
-          在飞书开放平台点击右上角「<span className="text-foreground font-medium">批量开通权限</span>」按钮，把 JSON 粘贴进去即可一次性添加所有权限。
+          进入「权限管理」页面，点击下方按钮复制权限配置 JSON， 在飞书开放平台点击右上角「
+          <span className="text-foreground font-medium">批量开通权限</span>」按钮，把 JSON
+          粘贴进去即可一次性添加所有权限。
         </p>
 
         {/* 主操作：一键复制按钮（更显眼） */}
@@ -288,28 +339,80 @@ function PermissionsStep(): React.ReactElement {
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           onClick={() => setExpanded(!expanded)}
         >
-          <ChevronRight size={14} className={cn('transition-transform duration-200', expanded && 'rotate-90')} />
+          <ChevronRight
+            size={14}
+            className={cn('transition-transform duration-200', expanded && 'rotate-90')}
+          />
           <span>{expanded ? '收起权限明细' : '查看每个权限的作用'}</span>
         </button>
         {expanded && (
           <div className="bg-muted/50 rounded-md p-3 font-mono text-xs space-y-0.5 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-            <div><span className="text-foreground/70">im:message</span> — 获取与发送单聊、群组消息</div>
-            <div><span className="text-foreground/70">im:message:send_as_bot</span> — 以机器人身份发送消息</div>
-            <div><span className="text-foreground/70">im:message.p2p_msg:readonly</span> — 接收用户发给机器人的单聊消息</div>
-            <div><span className="text-foreground/70">im:message.group_at_msg:readonly</span> — 接收群聊中 @机器人 的消息</div>
-            <div><span className="text-foreground/70">im:message.group_msg</span> — 接收群聊所有用户消息（配合 im:chat 实现仅你和 Bot 的群免 @ 续聊、群聊上下文）</div>
-            <div><span className="text-foreground/70">im:message.reactions:write_only</span> — 为消息添加状态表情（如⌨️/✅），让用户感知 Bot 正在处理 / 已完成</div>
-            <div><span className="text-foreground/70">im:chat</span> — 创建群 + 读取/更新群基础信息（群名、简介、真人数量等；免 @ 续聊靠它判断群里只有你和 Bot）</div>
-            <div><span className="text-foreground/70">im:chat.members:read</span> — 获取群成员列表（支持 @某人）</div>
-            <div><span className="text-foreground/70">im:chat.members:write_only</span> — 添加 / 移除群成员（Bot 主动拉人入群）</div>
-            <div><span className="text-foreground/70">im:chat.managers:write_only</span> — 指定 / 移除群管理员</div>
-            <div><span className="text-foreground/70">im:chat.announcement:write_only</span> — 更新群公告（把任务进度挂到公告里）</div>
-            <div><span className="text-foreground/70">im:chat.tabs:write_only</span> — 操作群会话标签页</div>
-            <div><span className="text-foreground/70">im:chat.top_notice:write_only</span> — 设置群置顶消息</div>
-            <div><span className="text-foreground/70">im:resource</span> — 获取消息中的资源文件（图片、文档等）</div>
-            <div><span className="text-foreground/70">contact:contact.base:readonly</span> — 获取用户基本信息（群聊发送者名称）</div>
-            <div><span className="text-foreground/70">drive:drive</span> — 云文档评论 @Bot 时读取与回复（支持文档协作场景）</div>
-            <div><span className="text-foreground/70">wiki:wiki</span> — 解析知识库链接的真实文档（@Bot 在 wiki 文档评论时使用）</div>
+            <div>
+              <span className="text-foreground/70">im:message</span> — 获取与发送单聊、群组消息
+            </div>
+            <div>
+              <span className="text-foreground/70">im:message:send_as_bot</span> —
+              以机器人身份发送消息
+            </div>
+            <div>
+              <span className="text-foreground/70">im:message.p2p_msg:readonly</span> —
+              接收用户发给机器人的单聊消息
+            </div>
+            <div>
+              <span className="text-foreground/70">im:message.group_at_msg:readonly</span> —
+              接收群聊中 @机器人 的消息
+            </div>
+            <div>
+              <span className="text-foreground/70">im:message.group_msg</span> —
+              接收群聊所有用户消息（配合 im:chat 实现仅你和 Bot 的群免 @ 续聊、群聊上下文）
+            </div>
+            <div>
+              <span className="text-foreground/70">im:message.reactions:write_only</span> —
+              为消息添加状态表情（如⌨️/✅），让用户感知 Bot 正在处理 / 已完成
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat</span> — 创建群 +
+              读取/更新群基础信息（群名、简介、真人数量等；免 @ 续聊靠它判断群里只有你和 Bot）
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.members:read</span> —
+              获取群成员列表（支持 @某人）
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.members:write_only</span> — 添加 /
+              移除群成员（Bot 主动拉人入群）
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.managers:write_only</span> — 指定 /
+              移除群管理员
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.announcement:write_only</span> —
+              更新群公告（把任务进度挂到公告里）
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.tabs:write_only</span> — 操作群会话标签页
+            </div>
+            <div>
+              <span className="text-foreground/70">im:chat.top_notice:write_only</span> —
+              设置群置顶消息
+            </div>
+            <div>
+              <span className="text-foreground/70">im:resource</span> —
+              获取消息中的资源文件（图片、文档等）
+            </div>
+            <div>
+              <span className="text-foreground/70">contact:contact.base:readonly</span> —
+              获取用户基本信息（群聊发送者名称）
+            </div>
+            <div>
+              <span className="text-foreground/70">drive:drive</span> — 云文档评论 @Bot
+              时读取与回复（支持文档协作场景）
+            </div>
+            <div>
+              <span className="text-foreground/70">wiki:wiki</span> — 解析知识库链接的真实文档（@Bot
+              在 wiki 文档评论时使用）
+            </div>
           </div>
         )}
       </div>
@@ -342,13 +445,16 @@ function FeishuCliSection(): React.ReactElement {
   const [copied, setCopied] = React.useState(false)
 
   const handleSendToAgent = React.useCallback(() => {
-    navigator.clipboard.writeText(FEISHU_CLI_PROMPT).then(() => {
-      setCopied(true)
-      toast.success('配置指令已复制，请在 Agent 对话中粘贴发送')
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {
-      toast.error('复制失败')
-    })
+    navigator.clipboard
+      .writeText(FEISHU_CLI_PROMPT)
+      .then(() => {
+        setCopied(true)
+        toast.success('配置指令已复制，请在 Agent 对话中粘贴发送')
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {
+        toast.error('复制失败')
+      })
   }, [])
 
   return (
@@ -358,35 +464,50 @@ function FeishuCliSection(): React.ReactElement {
     >
       <SettingsCard divided={false}>
         <div className="px-4 py-4 space-y-2 text-sm text-muted-foreground">
-          <p className="text-xs">复制配置提示词，并前往飞书Bot日常绑定的<strong>工作区</strong>，创建新的 TAgent Agent 对话并发送即可让 TAgent 协助完成配置。</p>
+          <p className="text-xs">
+            复制配置提示词，并前往飞书Bot日常绑定的<strong>工作区</strong>，创建新的 TAgent Agent
+            对话并发送即可让 TAgent 协助完成配置。
+          </p>
           <button
             type="button"
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             onClick={() => setExpanded(!expanded)}
           >
-            <ChevronRight size={14} className={cn('transition-transform duration-200', expanded && 'rotate-90')} />
+            <ChevronRight
+              size={14}
+              className={cn('transition-transform duration-200', expanded && 'rotate-90')}
+            />
             <span>{expanded ? '收起配置步骤' : '展开查看配置步骤'}</span>
           </button>
 
           {expanded && (
             <div className="bg-muted/50 rounded-md p-3 font-mono text-xs space-y-1.5 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-              <div><span className="text-foreground/70 font-semibold">步骤 1</span> — 安装飞书 CLI 到全局</div>
+              <div>
+                <span className="text-foreground/70 font-semibold">步骤 1</span> — 安装飞书 CLI
+                到全局
+              </div>
               <div className="pl-3 text-foreground/60">npm install -g @larksuite/cli</div>
-              <div className="pt-1"><span className="text-foreground/70 font-semibold">步骤 2</span> — 将 SKILL 配置到本工作区（默认本工作区；如需全局会增加 Token 消耗）</div>
-              <div className="pl-3 text-foreground/60">npx skills add https://github.com/larksuite/cli -y -g</div>
-              <div className="pt-1"><span className="text-foreground/70 font-semibold">步骤 3</span> — 初始化 CLI（新建独立 CLI 应用，不影响 TAgent 飞书 Bot）</div>
+              <div className="pt-1">
+                <span className="text-foreground/70 font-semibold">步骤 2</span> — 将 SKILL
+                配置到本工作区（默认本工作区；如需全局会增加 Token 消耗）
+              </div>
+              <div className="pl-3 text-foreground/60">
+                npx skills add https://github.com/larksuite/cli -y -g
+              </div>
+              <div className="pt-1">
+                <span className="text-foreground/70 font-semibold">步骤 3</span> — 初始化
+                CLI（新建独立 CLI 应用，不影响 TAgent 飞书 Bot）
+              </div>
               <div className="pl-3 text-foreground/60">lark-cli config init --new</div>
-              <div className="pt-1"><span className="text-foreground/70 font-semibold">步骤 4</span> — 一键申请全部领域权限（文档/表格/日历/任务/邮件/通讯录/会议等）</div>
+              <div className="pt-1">
+                <span className="text-foreground/70 font-semibold">步骤 4</span> —
+                一键申请全部领域权限（文档/表格/日历/任务/邮件/通讯录/会议等）
+              </div>
               <div className="pl-3 text-foreground/60">lark-cli auth login --domain all</div>
             </div>
           )}
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSendToAgent}
-            className="gap-1.5"
-          >
+          <Button size="sm" variant="outline" onClick={handleSendToAgent} className="gap-1.5">
             {copied ? <Check size={14} /> : <Copy size={14} />}
             <span>{copied ? '已复制至剪贴板' : '复制配置提示词'}</span>
           </Button>
@@ -404,7 +525,11 @@ interface FeishuBindingCardProps {
   onRemove: (chatId: string) => void
 }
 
-function FeishuBindingCard({ binding, onUpdate, onRemove }: FeishuBindingCardProps): React.ReactElement {
+function FeishuBindingCard({
+  binding,
+  onUpdate,
+  onRemove,
+}: FeishuBindingCardProps): React.ReactElement {
   const workspaces = useAtomValue(agentWorkspacesAtom)
   const sessions = useAtomValue(agentSessionsAtom)
 
@@ -425,23 +550,32 @@ function FeishuBindingCard({ binding, onUpdate, onRemove }: FeishuBindingCardPro
       {/* 头部：类型图标 + 名称 + 删除 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className={cn(
-            'flex items-center justify-center w-8 h-8 rounded-lg',
-            isGroup ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-green-500/10 text-green-600 dark:text-green-400'
-          )}>
+          <div
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-lg',
+              isGroup
+                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                : 'bg-green-500/10 text-green-600 dark:text-green-400'
+            )}
+          >
             {isGroup ? <Users size={16} /> : <User size={16} />}
           </div>
           <div>
             <div className="text-sm font-medium text-foreground">{displayName}</div>
             <div className="text-xs text-muted-foreground">
-              {isGroup ? '群聊' : '私聊'} · {new Date(binding.createdAt).toLocaleDateString('zh-CN')}
+              {isGroup ? '群聊' : '私聊'} ·{' '}
+              {new Date(binding.createdAt).toLocaleDateString('zh-CN')}
             </div>
           </div>
         </div>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            >
               <Trash2 size={14} />
             </Button>
           </AlertDialogTrigger>
@@ -449,7 +583,8 @@ function FeishuBindingCard({ binding, onUpdate, onRemove }: FeishuBindingCardPro
             <AlertDialogHeader>
               <AlertDialogTitle>解除绑定</AlertDialogTitle>
               <AlertDialogDescription>
-                确定要解除「{displayName}」的飞书聊天绑定吗？解除后下次在飞书发消息会自动创建新绑定。
+                确定要解除「{displayName}
+                」的飞书聊天绑定吗？解除后下次在飞书发消息会自动创建新绑定。
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -476,7 +611,9 @@ function FeishuBindingCard({ binding, onUpdate, onRemove }: FeishuBindingCardPro
           </SelectTrigger>
           <SelectContent>
             {workspaces.map((w) => (
-              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+              <SelectItem key={w.id} value={w.id}>
+                {w.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -541,30 +678,36 @@ function FeishuBindingsTab(): React.ReactElement {
   }, [anyConnected, refreshBindings])
 
   // 更新绑定
-  const handleUpdate = React.useCallback(async (chatId: string, updates: { workspaceId?: string; sessionId?: string }) => {
-    try {
-      const result = await window.electronAPI.updateFeishuBinding({ chatId, ...updates })
-      if (result) {
-        setBindings((prev) => prev.map((b) => b.chatId === chatId ? result : b))
-        toast.success('绑定已更新')
+  const handleUpdate = React.useCallback(
+    async (chatId: string, updates: { workspaceId?: string; sessionId?: string }) => {
+      try {
+        const result = await window.electronAPI.updateFeishuBinding({ chatId, ...updates })
+        if (result) {
+          setBindings((prev) => prev.map((b) => (b.chatId === chatId ? result : b)))
+          toast.success('绑定已更新')
+        }
+      } catch {
+        toast.error('更新绑定失败')
       }
-    } catch {
-      toast.error('更新绑定失败')
-    }
-  }, [setBindings])
+    },
+    [setBindings]
+  )
 
   // 移除绑定
-  const handleRemove = React.useCallback(async (chatId: string) => {
-    try {
-      const ok = await window.electronAPI.removeFeishuBinding(chatId)
-      if (ok) {
-        setBindings((prev) => prev.filter((b) => b.chatId !== chatId))
-        toast.success('绑定已解除')
+  const handleRemove = React.useCallback(
+    async (chatId: string) => {
+      try {
+        const ok = await window.electronAPI.removeFeishuBinding(chatId)
+        if (ok) {
+          setBindings((prev) => prev.filter((b) => b.chatId !== chatId))
+          toast.success('绑定已解除')
+        }
+      } catch {
+        toast.error('解除绑定失败')
       }
-    } catch {
-      toast.error('解除绑定失败')
-    }
-  }, [setBindings])
+    },
+    [setBindings]
+  )
 
   // 按类型分组：群聊 + 单聊
   const groupBindings = bindings.filter((b) => b.chatType === 'group')
@@ -576,12 +719,7 @@ function FeishuBindingsTab(): React.ReactElement {
         title="绑定管理"
         description="查看和管理飞书聊天与 TAgent 工作区/会话的绑定关系"
         action={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={refreshBindings}
-            disabled={refreshing}
-          >
+          <Button size="sm" variant="outline" onClick={refreshBindings} disabled={refreshing}>
             <RefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
             <span className="ml-1.5">刷新</span>
           </Button>
@@ -646,13 +784,16 @@ function CliRecommendationCard(): React.ReactElement {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = React.useCallback(() => {
-    navigator.clipboard.writeText(FEISHU_CLI_PROMPT).then(() => {
-      setCopied(true)
-      toast.success('提示词已复制，前往 Agent 对话粘贴发送')
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {
-      toast.error('复制失败')
-    })
+    navigator.clipboard
+      .writeText(FEISHU_CLI_PROMPT)
+      .then(() => {
+        setCopied(true)
+        toast.success('提示词已复制，前往 Agent 对话粘贴发送')
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {
+        toast.error('复制失败')
+      })
   }, [])
 
   return (
@@ -664,12 +805,7 @@ function CliRecommendationCard(): React.ReactElement {
           复制下方提示词到任意工作区的新对话发送即可，Agent 会全程引导完成。
         </div>
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleCopy}
-        className="gap-1.5 w-full"
-      >
+      <Button size="sm" variant="outline" onClick={handleCopy} className="gap-1.5 w-full">
         {copied ? <Check size={14} /> : <Copy size={14} />}
         <span>{copied ? '已复制至剪贴板' : '复制配置提示词'}</span>
       </Button>
@@ -685,7 +821,11 @@ interface RegisterFeishuDialogProps {
 }
 
 /** 扫码注册飞书 Bot：弹窗内全程引导，扫码成功后自动保存配置并启动 Bot */
-function RegisterFeishuDialog({ open, onOpenChange, onSuccess }: RegisterFeishuDialogProps): React.ReactElement {
+function RegisterFeishuDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: RegisterFeishuDialogProps): React.ReactElement {
   const [qrcode, setQrcode] = React.useState<FeishuRegisterAppQRCode | null>(null)
   const [status, setStatus] = React.useState<FeishuRegisterAppStatus | null>(null)
   const [phase, setPhase] = React.useState<'idle' | 'qrcode' | 'success' | 'error'>('idle')
@@ -716,7 +856,8 @@ function RegisterFeishuDialog({ open, onOpenChange, onSuccess }: RegisterFeishuD
       setStatus(payload)
     })
 
-    window.electronAPI.registerFeishuApp()
+    window.electronAPI
+      .registerFeishuApp()
       .then((result) => {
         if (cancelled) return
         setPhase('success')
@@ -754,7 +895,8 @@ function RegisterFeishuDialog({ open, onOpenChange, onSuccess }: RegisterFeishuD
             扫码创建飞书 Bot
           </DialogTitle>
           <DialogDescription>
-            飞书后端将自动创建一个 PersonalAgent 应用，扫码完成后 TAgent 会自动保存凭证并启动 Bot，整个过程无需手动复制 App ID / Secret。
+            飞书后端将自动创建一个 PersonalAgent 应用，扫码完成后 TAgent 会自动保存凭证并启动
+            Bot，整个过程无需手动复制 App ID / Secret。
           </DialogDescription>
         </DialogHeader>
 
@@ -818,7 +960,9 @@ function RegisterFeishuDialog({ open, onOpenChange, onSuccess }: RegisterFeishuD
             <div className="flex flex-col items-center gap-2 py-8 text-sm">
               <XCircle size={32} className="text-red-600" />
               <span className="text-foreground font-medium">创建失败</span>
-              <span className="text-xs text-muted-foreground text-center max-w-[300px]">{errorMsg || '未知错误，请稍后重试'}</span>
+              <span className="text-xs text-muted-foreground text-center max-w-[300px]">
+                {errorMsg || '未知错误，请稍后重试'}
+              </span>
             </div>
           )}
         </div>
@@ -845,39 +989,44 @@ const SESSION_SYNC_LABELS: Record<FeishuSessionSyncMode, string> = {
   stream: '实时同步到飞书群',
 }
 
-function normalizeSessionMirrorSettings(settings: FeishuSessionMirrorSettings | undefined): FeishuSessionMirrorSettings {
-  return settings?.mode === 'stream'
-    ? { mode: 'stream', botId: settings.botId }
-    : { mode: 'off' }
+function normalizeSessionMirrorSettings(
+  settings: FeishuSessionMirrorSettings | undefined
+): FeishuSessionMirrorSettings {
+  return settings?.mode === 'stream' ? { mode: 'stream', botId: settings.botId } : { mode: 'off' }
 }
 
 function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.ReactElement {
   const [settings, setSettings] = React.useState<FeishuSessionMirrorSettings>({ mode: 'off' })
   const [bindings, setBindings] = React.useState<FeishuChatBinding[]>([])
-  const enabledBots = React.useMemo(
-    () => bots.filter((bot) => bot.enabled && bot.appId),
-    [bots],
-  )
+  const enabledBots = React.useMemo(() => bots.filter((bot) => bot.enabled && bot.appId), [bots])
   const selectedBot = React.useMemo(
     () => enabledBots.find((bot) => bot.id === settings.botId),
-    [enabledBots, settings.botId],
+    [enabledBots, settings.botId]
   )
   const selectedBotHasBinding = React.useMemo(
-    () => Boolean(settings.botId && bindings.some((binding) =>
-      binding.botId === settings.botId && binding.userId && binding.userId !== 'unknown'
-    )),
-    [bindings, settings.botId],
+    () =>
+      Boolean(
+        settings.botId &&
+        bindings.some(
+          (binding) =>
+            binding.botId === settings.botId && binding.userId && binding.userId !== 'unknown'
+        )
+      ),
+    [bindings, settings.botId]
   )
-  const showBotBindingWarning = settings.mode === 'stream' && Boolean(settings.botId) && !selectedBotHasBinding
+  const showBotBindingWarning =
+    settings.mode === 'stream' && Boolean(settings.botId) && !selectedBotHasBinding
 
   React.useEffect(() => {
-    window.electronAPI.getSettings()
+    window.electronAPI
+      .getSettings()
       .then((appSettings) => {
         setSettings(normalizeSessionMirrorSettings(appSettings.feishuSessionMirror))
       })
       .catch(() => {})
 
-    window.electronAPI.listFeishuBindings()
+    window.electronAPI
+      .listFeishuBindings()
       .then(setBindings)
       .catch(() => {})
   }, [])
@@ -892,18 +1041,23 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
     }
   }, [])
 
-  const handleModeChange = React.useCallback((value: string) => {
-    const mode = value as FeishuSessionSyncMode
-    const fallbackBotId = settings.botId ?? enabledBots[0]?.id
-    const next: FeishuSessionMirrorSettings = mode === 'stream'
-      ? { mode, botId: fallbackBotId }
-      : { mode, botId: settings.botId }
-    saveSettings(next).catch(() => {})
-  }, [enabledBots, saveSettings, settings.botId])
+  const handleModeChange = React.useCallback(
+    (value: string) => {
+      const mode = value as FeishuSessionSyncMode
+      const fallbackBotId = settings.botId ?? enabledBots[0]?.id
+      const next: FeishuSessionMirrorSettings =
+        mode === 'stream' ? { mode, botId: fallbackBotId } : { mode, botId: settings.botId }
+      saveSettings(next).catch(() => {})
+    },
+    [enabledBots, saveSettings, settings.botId]
+  )
 
-  const handleBotChange = React.useCallback((botId: string) => {
-    saveSettings({ ...settings, botId }).catch(() => {})
-  }, [saveSettings, settings])
+  const handleBotChange = React.useCallback(
+    (botId: string) => {
+      saveSettings({ ...settings, botId }).catch(() => {})
+    },
+    [saveSettings, settings]
+  )
 
   return (
     <SettingsSection
@@ -933,11 +1087,15 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
               disabled={enabledBots.length === 0}
             >
               <SelectTrigger className="h-9">
-                <SelectValue placeholder={enabledBots.length === 0 ? '先启用一个 Bot' : '选择同步 Bot'} />
+                <SelectValue
+                  placeholder={enabledBots.length === 0 ? '先启用一个 Bot' : '选择同步 Bot'}
+                />
               </SelectTrigger>
               <SelectContent>
                 {enabledBots.map((bot) => (
-                  <SelectItem key={bot.id} value={bot.id}>{bot.name}</SelectItem>
+                  <SelectItem key={bot.id} value={bot.id}>
+                    {bot.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -946,29 +1104,35 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
           <div className="flex items-start gap-2 rounded-lg bg-blue-500/10 px-3 py-3 text-xs text-blue-700 dark:text-blue-300">
             <MessageSquare size={15} className="mt-0.5 flex-shrink-0" />
             <div className="leading-relaxed">
-              实时同步模式下，一个 TAgent Session 对应一个飞书群。即使配置了多个 Bot，也只会使用这里选中的 Bot，避免同一 Session 被多个 Bot 重复建群或拆散上下文。
+              实时同步模式下，一个 TAgent Session 对应一个飞书群。即使配置了多个
+              Bot，也只会使用这里选中的 Bot，避免同一 Session 被多个 Bot 重复建群或拆散上下文。
             </div>
           </div>
 
           <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
             <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
             <div className="space-y-1 leading-relaxed">
-              <div className="font-medium text-amber-900 dark:text-amber-200">想在仅你和 Bot 的群里不 @Bot 也能继续发送消息，需要额外申请两个权限。</div>
-              <div>
-                请在飞书开放平台为同步 Bot 申请并发布以下权限：
+              <div className="font-medium text-amber-900 dark:text-amber-200">
+                想在仅你和 Bot 的群里不 @Bot 也能继续发送消息，需要额外申请两个权限。
               </div>
+              <div>请在飞书开放平台为同步 Bot 申请并发布以下权限：</div>
               <div className="flex flex-col gap-1 pl-1">
                 <div>
-                  <code className="rounded bg-amber-500/15 px-1 py-0.5 text-[11px] text-amber-900 dark:text-amber-100">im:message.group_msg</code>
-                  {' '}— 接收群聊中所有用户消息（否则飞书不会把非 @ 的群消息推送给 TAgent）
+                  <code className="rounded bg-amber-500/15 px-1 py-0.5 text-[11px] text-amber-900 dark:text-amber-100">
+                    im:message.group_msg
+                  </code>{' '}
+                  — 接收群聊中所有用户消息（否则飞书不会把非 @ 的群消息推送给 TAgent）
                 </div>
                 <div>
-                  <code className="rounded bg-amber-500/15 px-1 py-0.5 text-[11px] text-amber-900 dark:text-amber-100">im:chat</code>
-                  {' '}— 读取群基础信息以判断群里只有你和 Bot（缺少时无法识别 2 人群，仍需 @Bot）
+                  <code className="rounded bg-amber-500/15 px-1 py-0.5 text-[11px] text-amber-900 dark:text-amber-100">
+                    im:chat
+                  </code>{' '}
+                  — 读取群基础信息以判断群里只有你和 Bot（缺少时无法识别 2 人群，仍需 @Bot）
                 </div>
               </div>
               <div>
-                两者都审核通过并发布后才会生效；任一缺失或审核未过时，仍需要在群里 @Bot 才能触发 Agent。一键复制的权限配置里已包含这两项，单独手动添加时请勿遗漏。
+                两者都审核通过并发布后才会生效；任一缺失或审核未过时，仍需要在群里 @Bot 才能触发
+                Agent。一键复制的权限配置里已包含这两项，单独手动添加时请勿遗漏。
               </div>
             </div>
           </div>
@@ -977,7 +1141,8 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
             <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
               <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
               <div className="leading-relaxed">
-                当前同步 Bot 还没有绑定记录。请先在飞书里向「{selectedBot?.name ?? '该 Bot'}」发送一条消息，TAgent 记录你的 open_id 后才能自动为新 Session 建群。
+                当前同步 Bot 还没有绑定记录。请先在飞书里向「{selectedBot?.name ?? '该 Bot'}
+                」发送一条消息，TAgent 记录你的 open_id 后才能自动为新 Session 建群。
               </div>
             </div>
           )}
@@ -1008,12 +1173,18 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
   // 加载已有 secret（使用 bot-specific API）
   React.useEffect(() => {
     if (bot.appSecret && bot.id) {
-      window.electronAPI.getDecryptedFeishuBotSecret?.(bot.id)
-        .then((s: string) => { if (s) setAppSecret(s) })
+      window.electronAPI
+        .getDecryptedFeishuBotSecret?.(bot.id)
+        .then((s: string) => {
+          if (s) setAppSecret(s)
+        })
         .catch(() => {
           // 回退到旧 API（兼容迁移前的首个 Bot）
-          window.electronAPI.getDecryptedFeishuSecret?.()
-            .then((s: string) => { if (s) setAppSecret(s) })
+          window.electronAPI
+            .getDecryptedFeishuSecret?.()
+            .then((s: string) => {
+              if (s) setAppSecret(s)
+            })
             .catch(() => {})
         })
     }
@@ -1050,7 +1221,10 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
       const result = await window.electronAPI.testFeishuConnection(appId.trim(), appSecret.trim())
       setTestResult(result)
     } catch (err) {
-      setTestResult({ success: false, message: `测试失败: ${err instanceof Error ? err.message : String(err)}` })
+      setTestResult({
+        success: false,
+        message: `测试失败: ${err instanceof Error ? err.message : String(err)}`,
+      })
     } finally {
       setTesting(false)
     }
@@ -1063,7 +1237,9 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
       if (multiState?.bots) {
         setBotStates(multiState.bots)
       }
-    } catch { /* 忽略 */ }
+    } catch {
+      /* 忽略 */
+    }
   }, [setBotStates])
 
   const handleToggle = React.useCallback(async () => {
@@ -1122,23 +1298,48 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
         tabIndex={0}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer"
         onClick={() => setExpanded(!expanded)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded) } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setExpanded(!expanded)
+          }
+        }}
       >
         <div className="flex items-center gap-3">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig.color}`} />
           <span className="font-medium text-sm">{bot.name || '未命名 Bot'}</span>
-          <span className="text-xs text-muted-foreground">{bot.appId ? bot.appId.slice(0, 12) + '...' : '未配置'}</span>
+          <span className="text-xs text-muted-foreground">
+            {bot.appId ? bot.appId.slice(0, 12) + '...' : '未配置'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {isConnected ? (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleToggle() }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggle()
+              }}
+            >
               <PowerOff size={14} className="mr-1" />
               停止
             </Button>
           ) : bot.appId ? (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleToggle() }}
-              disabled={state?.status === 'connecting'}>
-              {state?.status === 'connecting' ? <Loader2 size={14} className="animate-spin mr-1" /> : <Power size={14} className="mr-1" />}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggle()
+              }}
+              disabled={state?.status === 'connecting'}
+            >
+              {state?.status === 'connecting' ? (
+                <Loader2 size={14} className="animate-spin mr-1" />
+              ) : (
+                <Power size={14} className="mr-1" />
+              )}
               启动
             </Button>
           ) : null}
@@ -1169,8 +1370,12 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           />
 
           <div className="flex items-center gap-3">
-            <Button size="sm" variant="outline" onClick={handleTest}
-              disabled={testing || !appId.trim() || !appSecret.trim()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleTest}
+              disabled={testing || !appId.trim() || !appSecret.trim()}
+            >
               {testing && <Loader2 size={14} className="animate-spin" />}
               <span>{testing ? '测试中...' : '测试连接'}</span>
             </Button>
@@ -1200,15 +1405,23 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           </div>
 
           {testResult && (
-            <div className={cn(
-              'p-3 rounded-lg flex items-start gap-2 text-sm',
-              testResult.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'
-            )}>
-              {testResult.success
-                ? <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
-                : <XCircle size={16} className="flex-shrink-0 mt-0.5" />
-              }
-              <span>{testResult.message}{testResult.botName && ` — ${testResult.botName}`}</span>
+            <div
+              className={cn(
+                'p-3 rounded-lg flex items-start gap-2 text-sm',
+                testResult.success
+                  ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                  : 'bg-red-500/10 text-red-700 dark:text-red-400'
+              )}
+            >
+              {testResult.success ? (
+                <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
+              ) : (
+                <XCircle size={16} className="flex-shrink-0 mt-0.5" />
+              )}
+              <span>
+                {testResult.message}
+                {testResult.botName && ` — ${testResult.botName}`}
+              </span>
             </div>
           )}
 
@@ -1240,15 +1453,19 @@ function FeishuConfigTab(): React.ReactElement {
       try {
         const oldConfig = await window.electronAPI.getFeishuConfig()
         if (oldConfig.appId) {
-          setBots([{
-            id: 'legacy',
-            name: '飞书助手',
-            enabled: oldConfig.enabled,
-            appId: oldConfig.appId,
-            appSecret: oldConfig.appSecret,
-          }])
+          setBots([
+            {
+              id: 'legacy',
+              name: '飞书助手',
+              enabled: oldConfig.enabled,
+              appId: oldConfig.appId,
+              appSecret: oldConfig.appSecret,
+            },
+          ])
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } finally {
       setLoading(false)
     }
@@ -1261,7 +1478,9 @@ function FeishuConfigTab(): React.ReactElement {
       if (multiState?.bots) {
         setBotStates(multiState.bots)
       }
-    } catch { /* 忽略 */ }
+    } catch {
+      /* 忽略 */
+    }
   }, [setBotStates])
 
   React.useEffect(() => {
@@ -1289,27 +1508,30 @@ function FeishuConfigTab(): React.ReactElement {
   const [registerOpen, setRegisterOpen] = React.useState(false)
 
   /** 扫码成功后：保存配置 + 自动启动 Bot */
-  const handleRegisterSuccess = React.useCallback(async (result: { appId: string; appSecret: string }) => {
-    try {
-      const saved = await window.electronAPI.saveFeishuBotConfig({
-        name: defaultBotName(bots.length),
-        enabled: true,
-        appId: result.appId,
-        appSecret: result.appSecret,
-        defaultWorkspaceId: undefined,
-        defaultChannelId: undefined,
-        defaultModelId: undefined,
-      })
-      setBots((prev) => [...prev, saved])
-      toast.success(`Bot "${saved.name}" 已创建`)
-      // 自动启动 Bot（不阻塞 UI）
-      window.electronAPI.startFeishuBot(saved.id).catch((err: unknown) => {
-        toast.error(err instanceof Error ? err.message : '自动启动失败，请手动启动')
-      })
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '保存配置失败')
-    }
-  }, [bots.length])
+  const handleRegisterSuccess = React.useCallback(
+    async (result: { appId: string; appSecret: string }) => {
+      try {
+        const saved = await window.electronAPI.saveFeishuBotConfig({
+          name: defaultBotName(bots.length),
+          enabled: true,
+          appId: result.appId,
+          appSecret: result.appSecret,
+          defaultWorkspaceId: undefined,
+          defaultChannelId: undefined,
+          defaultModelId: undefined,
+        })
+        setBots((prev) => [...prev, saved])
+        toast.success(`Bot "${saved.name}" 已创建`)
+        // 自动启动 Bot（不阻塞 UI）
+        window.electronAPI.startFeishuBot(saved.id).catch((err: unknown) => {
+          toast.error(err instanceof Error ? err.message : '自动启动失败，请手动启动')
+        })
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '保存配置失败')
+      }
+    },
+    [bots.length]
+  )
 
   if (loading) {
     return (
@@ -1380,13 +1602,13 @@ function FeishuConfigTab(): React.ReactElement {
             {/* 步骤 1 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">1</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  1
+                </span>
                 <span className="font-medium text-foreground">创建自建应用</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                前往{' '}
-                <Link href="https://open.feishu.cn/app">飞书开放平台</Link>
-                {' '}（海外版：
+                前往 <Link href="https://open.feishu.cn/app">飞书开放平台</Link> （海外版：
                 <Link href="https://open.larksuite.com/app">Lark 开放平台</Link>
                 ），点击「创建自建应用」并填写名称描述。
               </p>
@@ -1395,7 +1617,9 @@ function FeishuConfigTab(): React.ReactElement {
             {/* 步骤 2 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">2</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  2
+                </span>
                 <span className="font-medium text-foreground">获取凭证</span>
               </div>
               <p className="pl-7 text-muted-foreground">
@@ -1409,12 +1633,13 @@ function FeishuConfigTab(): React.ReactElement {
             {/* 步骤 3 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">3</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  3
+                </span>
                 <span className="font-medium text-foreground">启用机器人能力</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                进入「添加应用能力」页面，启用「机器人」能力。
-                这样应用才能接收和发送飞书消息。
+                进入「添加应用能力」页面，启用「机器人」能力。 这样应用才能接收和发送飞书消息。
               </p>
             </div>
 
@@ -1424,13 +1649,13 @@ function FeishuConfigTab(): React.ReactElement {
             {/* 步骤 5 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">5</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  5
+                </span>
                 <span className="font-medium text-foreground">配置事件订阅（关键步骤）</span>
               </div>
               <div className="pl-7 space-y-2 text-muted-foreground">
-                <p>
-                  进入「事件与回调」页面，分别完成下面两项配置：
-                </p>
+                <p>进入「事件与回调」页面，分别完成下面两项配置：</p>
                 <div className="space-y-1.5">
                   <div className="text-foreground/80 font-medium text-xs">① 事件订阅</div>
                   <ol className="list-decimal pl-4 space-y-1">
@@ -1441,8 +1666,10 @@ function FeishuConfigTab(): React.ReactElement {
                     </li>
                     <li>
                       添加事件{' '}
-                      <code className="bg-muted/50 px-1.5 py-0.5 rounded text-xs text-foreground/80">im.message.receive_v1</code>
-                      {' '}（接收消息）
+                      <code className="bg-muted/50 px-1.5 py-0.5 rounded text-xs text-foreground/80">
+                        im.message.receive_v1
+                      </code>{' '}
+                      （接收消息）
                     </li>
                   </ol>
                 </div>
@@ -1455,8 +1682,10 @@ function FeishuConfigTab(): React.ReactElement {
                     </li>
                     <li>
                       添加回调{' '}
-                      <code className="bg-muted/50 px-1.5 py-0.5 rounded text-xs text-foreground/80">card.action.trigger</code>
-                      {' '}（卡片按钮回调，TAgent 的流式卡片交互依赖此项）
+                      <code className="bg-muted/50 px-1.5 py-0.5 rounded text-xs text-foreground/80">
+                        card.action.trigger
+                      </code>{' '}
+                      （卡片按钮回调，TAgent 的流式卡片交互依赖此项）
                     </li>
                   </ol>
                 </div>
@@ -1466,21 +1695,22 @@ function FeishuConfigTab(): React.ReactElement {
             {/* 步骤 6 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">6</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  6
+                </span>
                 <span className="font-medium text-foreground">发布应用</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                进入「版本管理与发布」→ 创建版本 → 提交审核。
-                需要企业管理员在{' '}
-                <Link href="https://feishu.cn/admin">管理后台</Link>
-                {' '}审核通过后，机器人才能正常使用。
+                进入「版本管理与发布」→ 创建版本 → 提交审核。 需要企业管理员在{' '}
+                <Link href="https://feishu.cn/admin">管理后台</Link>{' '}
+                审核通过后，机器人才能正常使用。
               </p>
             </div>
 
             {/* 提示 */}
             <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
-              版本审核通过并发布后，在飞书中搜索机器人名称添加到聊天，
-              即可通过飞书向 TAgent Agent 发送指令。
+              版本审核通过并发布后，在飞书中搜索机器人名称添加到聊天， 即可通过飞书向 TAgent Agent
+              发送指令。
             </div>
           </div>
         </SettingsCard>
@@ -1488,7 +1718,6 @@ function FeishuConfigTab(): React.ReactElement {
 
       {/* 飞书 CLI 配置引导 */}
       <FeishuCliSection />
-
     </div>
   )
 }

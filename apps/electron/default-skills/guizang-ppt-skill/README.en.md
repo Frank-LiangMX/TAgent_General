@@ -4,7 +4,7 @@ An agent skill for Claude Code, Codex, and similar coding-agent environments. It
 
 It ships with two visual systems:
 
-- **Style A: editorial magazine × electronic ink**. Picture *Monocle* with code stitched in. Best for narrative talks, opinions, salons, and personal voice.
+- **Style A: editorial magazine × electronic ink**. Picture _Monocle_ with code stitched in. Best for narrative talks, opinions, salons, and personal voice.
 - **Style B: Swiss International Typographic Style**. Grid-first, one high-saturation anchor color, sharp rectangles, hairline rules, and extreme type contrast. Best for facts, products, analysis, and frameworks.
 
 > Distilled by [Guizang](https://x.com/op7418) from offline talks like "One-Person Company: Organizations Folded by AI" and "A New Way of Working." Every pitfall hit during those decks is logged in `checklist.md`.
@@ -161,13 +161,13 @@ guizang-ppt-skill/
 
 Pick from `references/themes.md`. **Custom hex values are not allowed** — protecting the aesthetic matters more than freedom of choice.
 
-| Theme | Best for |
-|------|---------|
-| 🖋 Ink Classic | general default, commercial launches, when in doubt |
-| 🌊 Indigo Porcelain | tech / research / AI / technical keynotes |
-| 🌿 Forest Ink | nature / sustainability / culture / non-fiction |
-| 🍂 Kraft Paper | nostalgic / humanist / literary / indie zines |
-| 🌙 Dune | art / design / creative / gallery |
+| Theme               | Best for                                            |
+| ------------------- | --------------------------------------------------- |
+| 🖋 Ink Classic      | general default, commercial launches, when in doubt |
+| 🌊 Indigo Porcelain | tech / research / AI / technical keynotes           |
+| 🌿 Forest Ink       | nature / sustainability / culture / non-fiction     |
+| 🍂 Kraft Paper      | nostalgic / humanist / literary / indie zines       |
+| 🌙 Dune             | art / design / creative / gallery                   |
 
 Switching themes only requires replacing the 6 variables at the top of `template.html`'s `:root{}` block — all other CSS flows through `var(--...)`.
 
@@ -175,12 +175,12 @@ Switching themes only requires replacing the 6 variables at the top of `template
 
 Pick from `references/themes-swiss.md`. **Custom hex values are not allowed** here either.
 
-| Theme | Best for |
-|------|---------|
+| Theme                    | Best for                                            |
+| ------------------------ | --------------------------------------------------- |
 | International Klein Blue | default, commercial launch, AI products, frameworks |
-| Lemon Yellow | youth, sports, retail, Y2K retro |
-| Lemon Green | ecology, sustainability, Gen Z brands |
-| Safety Orange | alerts, news, energetic topics |
+| Lemon Yellow             | youth, sports, retail, Y2K retro                    |
+| Lemon Green              | ecology, sustainability, Gen Z brands               |
+| Safety Orange            | alerts, news, energetic topics                      |
 
 If the user asks for a Swiss-style deck without specifying color, default to International Klein Blue.
 
@@ -197,7 +197,7 @@ If the user asks for a Swiss-style deck without specifying color, default to Int
 
 ## Visual references
 
-- [*Monocle*](https://monocle.com) magazine layouts
+- [_Monocle_](https://monocle.com) magazine layouts
 - YC Garry Tan — "Thin Harness, Fat Skills"
 - Massimo Vignelli / Helvetica Forever / Swiss International Typographic Style
 - Guizang's offline talk deck series

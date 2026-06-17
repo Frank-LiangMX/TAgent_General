@@ -22,9 +22,8 @@ export interface AgentModelRoutingPolicy {
  */
 export function resolveAgentModelRouting(input: AgentModelRoutingInput): AgentModelRoutingPolicy {
   const model = input.modelId?.trim().toLowerCase() ?? ''
-  const deepSeekFamily = input.provider === 'deepseek' ||
-    model.startsWith('deepseek-') ||
-    model.includes('/deepseek-')
+  const deepSeekFamily =
+    input.provider === 'deepseek' || model.startsWith('deepseek-') || model.includes('/deepseek-')
 
   return {
     deepSeekFamily,
@@ -34,7 +33,7 @@ export function resolveAgentModelRouting(input: AgentModelRoutingInput): AgentMo
 
 export function applyAgentModelRoutingToEnv(
   env: Record<string, string | undefined>,
-  policy: AgentModelRoutingPolicy,
+  policy: AgentModelRoutingPolicy
 ): void {
   if (policy.subagentModel) {
     env.CLAUDE_CODE_SUBAGENT_MODEL = policy.subagentModel

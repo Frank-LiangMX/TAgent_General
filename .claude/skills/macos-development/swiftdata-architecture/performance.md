@@ -17,6 +17,7 @@ func measureFetch() async throws {
 ```
 
 ### Instruments Traces
+
 - **SwiftData** instrument: query durations, save operations
 - **Core Data** instrument: underlying SQLite operations (SwiftData uses Core Data)
 - **Allocations**: memory growth from model objects
@@ -356,14 +357,14 @@ let query = searchText.lowercased()
 
 ## Common Performance Issues
 
-| Issue | Symptom | Fix |
-|-------|---------|-----|
-| Fetching too many objects | High memory, slow scroll | Use fetchLimit, pagination |
-| Main thread saves | UI freezes on save | Use @ModelActor for writes |
-| N+1 queries | Slow list rendering | Batch fetch relationships |
-| No fetch limits | Memory growth | Always set fetchLimit for bounded UI |
-| Frequent small saves | Disk I/O bottleneck | Batch saves (every N items) |
-| Context never reset | Memory growth in loops | Call modelContext.reset() after batches |
+| Issue                     | Symptom                  | Fix                                     |
+| ------------------------- | ------------------------ | --------------------------------------- |
+| Fetching too many objects | High memory, slow scroll | Use fetchLimit, pagination              |
+| Main thread saves         | UI freezes on save       | Use @ModelActor for writes              |
+| N+1 queries               | Slow list rendering      | Batch fetch relationships               |
+| No fetch limits           | Memory growth            | Always set fetchLimit for bounded UI    |
+| Frequent small saves      | Disk I/O bottleneck      | Batch saves (every N items)             |
+| Context never reset       | Memory growth in loops   | Call modelContext.reset() after batches |
 
 ## Best Practices
 

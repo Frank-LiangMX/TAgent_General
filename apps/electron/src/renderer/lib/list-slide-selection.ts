@@ -23,7 +23,10 @@ export const LIST_SLIDE_ITEM_SELECTED_CLASS = 'list-slide-item--selected'
 /** 行内背景透明，由父级滑动层绘制选中态 */
 export const LIST_SLIDE_ITEM_GHOST_CLASS = 'list-slide-item--ghost'
 
-export function listSlideItemGhostClasses(active: boolean, useSlideIndicator: boolean): string | false {
+export function listSlideItemGhostClasses(
+  active: boolean,
+  useSlideIndicator: boolean
+): string | false {
   return active && useSlideIndicator
     ? `${LIST_SLIDE_ITEM_SELECTED_CLASS} ${LIST_SLIDE_ITEM_GHOST_CLASS}`
     : false

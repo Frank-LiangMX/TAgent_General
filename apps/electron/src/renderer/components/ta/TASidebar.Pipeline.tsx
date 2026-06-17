@@ -9,9 +9,9 @@ import { useSetAtom } from 'jotai'
 import { GitBranch, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-import { taActiveTabAtom } from '@/atoms/app-mode'
-
 import type { PipelineRun, PipelineSummary } from '@tagent/shared'
+
+import { taActiveTabAtom } from '@/atoms/app-mode'
 
 export function TASidebarPipeline(): React.ReactElement {
   const setActiveTab = useSetAtom(taActiveTabAtom)
@@ -38,10 +38,19 @@ export function TASidebarPipeline(): React.ReactElement {
       }
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  const displaySummary = summary ?? { running: 0, pending: 0, completed: 0, failed: 0, cancelled: 0, total: 0 }
+  const displaySummary = summary ?? {
+    running: 0,
+    pending: 0,
+    completed: 0,
+    failed: 0,
+    cancelled: 0,
+    total: 0,
+  }
 
   return (
     <div className="px-3 py-3 flex flex-col gap-3">
@@ -67,7 +76,13 @@ export function TASidebarPipeline(): React.ReactElement {
               )}
               <span className="truncate flex-1">{pipeline.name}</span>
               <span className="text-muted-foreground text-[10px]">
-                {pipeline.status === 'running' ? '运行中' : pipeline.status === 'completed' ? '已完成' : pipeline.status === 'failed' ? '失败' : pipeline.status}
+                {pipeline.status === 'running'
+                  ? '运行中'
+                  : pipeline.status === 'completed'
+                    ? '已完成'
+                    : pipeline.status === 'failed'
+                      ? '失败'
+                      : pipeline.status}
               </span>
             </div>
           ))}
@@ -87,7 +102,11 @@ export function TASidebarPipeline(): React.ReactElement {
   )
 }
 
-function StatCard({ label, value, color }: {
+function StatCard({
+  label,
+  value,
+  color,
+}: {
   label: string
   value: number
   color: 'blue' | 'amber' | 'emerald' | 'red'

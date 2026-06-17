@@ -19,7 +19,7 @@ export function getPlanModeChangeFromToolName(toolName: string): PlanModeChange 
 export function updatePlanModeSessionSet(
   prev: Set<string>,
   sessionId: string,
-  active: boolean,
+  active: boolean
 ): Set<string> {
   if (active) {
     if (prev.has(sessionId)) return prev

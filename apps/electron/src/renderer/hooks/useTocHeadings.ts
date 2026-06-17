@@ -25,7 +25,7 @@ const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6'
 export function useTocHeadings(
   containerRef: React.RefObject<HTMLElement>,
   contentKey: string,
-  enabled: boolean,
+  enabled: boolean
 ): TocHeading[] {
   const [headings, setHeadings] = React.useState<TocHeading[]>([])
 

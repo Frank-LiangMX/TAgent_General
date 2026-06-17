@@ -17,7 +17,11 @@ import {
   getAgentWorkspace,
   getWorkspaceCapabilities,
 } from './agent-workspace-manager'
-import { buildAttachedFilesBlock, buildSessionFileTree, buildFileTree } from './bridge-attachment-utils'
+import {
+  buildAttachedFilesBlock,
+  buildSessionFileTree,
+  buildFileTree,
+} from './bridge-attachment-utils'
 import {
   listSwitchableChannels,
   getEnabledModels,
@@ -117,7 +121,7 @@ export class BridgeCommandHandler {
     chatId: string,
     text: string,
     contextData?: unknown,
-    attachments?: BridgeAttachment[],
+    attachments?: BridgeAttachment[]
   ): Promise<void> {
     if (text.trimStart().startsWith('/')) {
       // 命令消息不携带附件（附件由 Bridge 缓冲，等普通消息触发）
@@ -145,7 +149,7 @@ export class BridgeCommandHandler {
     const session = createAgentSession(
       `${this.config.platformName}会话`,
       channelId,
-      workspaceId || undefined,
+      workspaceId || undefined
     )
 
     const binding: BridgeChatBinding = {
@@ -269,7 +273,11 @@ export class BridgeCommandHandler {
     await this.send(chatId, lines.join('\n'), contextData)
   }
 
-  private async createNewSession(chatId: string, title?: string, contextData?: unknown): Promise<void> {
+  private async createNewSession(
+    chatId: string,
+    title?: string,
+    contextData?: unknown
+  ): Promise<void> {
     const settings = getSettings()
     const channelId = settings.agentChannelId
     if (!channelId) {
@@ -280,11 +288,7 @@ export class BridgeCommandHandler {
     // 确定工作区
     const workspaceId = this.config.getDefaultWorkspaceId?.() ?? settings.agentWorkspaceId ?? ''
 
-    const session = createAgentSession(
-      title || '新会话',
-      channelId,
-      workspaceId || undefined,
-    )
+    const session = createAgentSession(title || '新会话', channelId, workspaceId || undefined)
 
     // 清理旧绑定
     const oldBinding = this.chatBindings.get(chatId)
@@ -305,7 +309,11 @@ export class BridgeCommandHandler {
     // 通知渲染进程刷新会话列表
     this.notifySessionCreated(session.id, session.title)
 
-    await this.send(chatId, `✅ 已创建 Agent 会话: ${session.title} (${session.id.slice(0, 8)})`, contextData)
+    await this.send(
+      chatId,
+      `✅ 已创建 Agent 会话: ${session.title} (${session.id.slice(0, 8)})`,
+      contextData
+    )
   }
 
   private async handleListCommand(chatId: string, contextData?: unknown): Promise<void> {
@@ -323,9 +331,7 @@ export class BridgeCommandHandler {
 
     // 按工作区分组
     for (const ws of workspaces) {
-      const wsSessions = sessions
-        .filter((s) => s.workspaceId === ws.id)
-        .slice(0, MAX_PER_WS)
+      const wsSessions = sessions.filter((s) => s.workspaceId === ws.id).slice(0, MAX_PER_WS)
 
       if (wsSessions.length === 0) continue
 
@@ -369,15 +375,20 @@ export class BridgeCommandHandler {
     await this.send(chatId, '✅ 已停止 Agent', contextData)
   }
 
-  private async handleSwitchCommand(chatId: string, arg: string, contextData?: unknown): Promise<void> {
+  private async handleSwitchCommand(
+    chatId: string,
+    arg: string,
+    contextData?: unknown
+  ): Promise<void> {
     const sessions = listAgentSessions()
     const settings = getSettings()
 
     // 支持序号和 ID 前缀两种匹配
     const index = Number(arg)
-    const match = Number.isInteger(index) && index >= 1 && index <= sessions.length
-      ? sessions[index - 1]
-      : sessions.find((s) => s.id.startsWith(arg))
+    const match =
+      Number.isInteger(index) && index >= 1 && index <= sessions.length
+        ? sessions[index - 1]
+        : sessions.find((s) => s.id.startsWith(arg))
 
     if (!match) {
       await this.send(chatId, `未找到会话。使用 /list 查看可用会话。`, contextData)
@@ -393,17 +404,29 @@ export class BridgeCommandHandler {
     const binding: BridgeChatBinding = {
       chatId,
       sessionId: match.id,
-      workspaceId: match.workspaceId ?? this.config.getDefaultWorkspaceId?.() ?? settings.agentWorkspaceId ?? '',
+      workspaceId:
+        match.workspaceId ??
+        this.config.getDefaultWorkspaceId?.() ??
+        settings.agentWorkspaceId ??
+        '',
       channelId: match.channelId ?? settings.agentChannelId ?? '',
       modelId: settings.agentModelId ?? undefined,
     }
     this.chatBindings.set(chatId, binding)
     this.sessionToChat.set(match.id, chatId)
 
-    await this.send(chatId, `✅ 已切换到会话: ${match.title} (${match.id.slice(0, 8)})`, contextData)
+    await this.send(
+      chatId,
+      `✅ 已切换到会话: ${match.title} (${match.id.slice(0, 8)})`,
+      contextData
+    )
   }
 
-  private async handleWorkspaceCommand(chatId: string, arg?: string, contextData?: unknown): Promise<void> {
+  private async handleWorkspaceCommand(
+    chatId: string,
+    arg?: string,
+    contextData?: unknown
+  ): Promise<void> {
     const workspaces = listAgentWorkspacesByUpdatedAt()
     const binding = this.chatBindings.get(chatId)
     const currentWorkspaceId = binding?.workspaceId
@@ -427,11 +450,12 @@ export class BridgeCommandHandler {
 
     // 支持序号和名称匹配
     const index = Number(arg)
-    const match = Number.isInteger(index) && index >= 1 && index <= workspaces.length
-      ? workspaces[index - 1]
-      : workspaces.find(
-          (w) => w.name.toLowerCase() === arg.toLowerCase() || w.slug === arg.toLowerCase(),
-        )
+    const match =
+      Number.isInteger(index) && index >= 1 && index <= workspaces.length
+        ? workspaces[index - 1]
+        : workspaces.find(
+            (w) => w.name.toLowerCase() === arg.toLowerCase() || w.slug === arg.toLowerCase()
+          )
 
     if (!match) {
       const available = workspaces.map((w, i) => `${i + 1}. ${w.name}`).join(', ')
@@ -450,9 +474,7 @@ export class BridgeCommandHandler {
 
     // 列出该工作区下最近会话
     const sessions = listAgentSessions()
-    const recentSessions = sessions
-      .filter((s) => s.workspaceId === match.id)
-      .slice(0, 5)
+    const recentSessions = sessions.filter((s) => s.workspaceId === match.id).slice(0, 5)
 
     const lines = [`✅ 已切换到工作区: ${match.name}`]
     if (recentSessions.length > 0) {
@@ -484,7 +506,9 @@ export class BridgeCommandHandler {
       const effChannelId = binding.channelId || nowSettings.agentChannelId
       const effModelId = binding.modelId ?? nowSettings.agentModelId
       const modelInfo = describeBindingModel(effChannelId, effModelId)
-      lines.push(`模型: ${modelInfo.channelName} / ${modelInfo.modelName}${modelInfo.valid ? '' : '（已失效）'}`)
+      lines.push(
+        `模型: ${modelInfo.channelName} / ${modelInfo.modelName}${modelInfo.valid ? '' : '（已失效）'}`
+      )
     } else {
       lines.push('会话: 未绑定（发送消息将自动创建）')
     }
@@ -559,13 +583,17 @@ export class BridgeCommandHandler {
    * - /model <渠道序号>  列出该渠道下的模型
    * - /model <渠道> <模型> 切换到该渠道的该模型
    */
-  private async handleModelCommand(chatId: string, arg: string, contextData?: unknown): Promise<void> {
+  private async handleModelCommand(
+    chatId: string,
+    arg: string,
+    contextData?: unknown
+  ): Promise<void> {
     const channels = listSwitchableChannels()
     if (channels.length === 0) {
       await this.send(
         chatId,
         '暂无可用渠道。请先在 TAgent 设置中配置并启用渠道（需填入 API Key 且至少启用一个模型）。',
-        contextData,
+        contextData
       )
       return
     }
@@ -617,7 +645,7 @@ export class BridgeCommandHandler {
       await this.send(
         chatId,
         `未找到模型 "${parts[1]}"。使用 /model ${channelIdx} 查看该渠道的模型。`,
-        contextData,
+        contextData
       )
       return
     }
@@ -627,7 +655,11 @@ export class BridgeCommandHandler {
     if (!binding) {
       binding = this.ensureBinding(chatId) ?? undefined
       if (!binding) {
-        await this.send(chatId, '请先发送一条消息创建会话，或在 TAgent 设置中选择 Agent 渠道。', contextData)
+        await this.send(
+          chatId,
+          '请先发送一条消息创建会话，或在 TAgent 设置中选择 Agent 渠道。',
+          contextData
+        )
         return
       }
     }
@@ -638,7 +670,7 @@ export class BridgeCommandHandler {
     await this.send(
       chatId,
       `✅ 已切换模型: ${channel.name} / ${model.name}\n（注：重启应用后会恢复默认渠道设置）`,
-      contextData,
+      contextData
     )
   }
 
@@ -648,7 +680,7 @@ export class BridgeCommandHandler {
     chatId: string,
     text: string,
     contextData?: unknown,
-    attachments?: BridgeAttachment[],
+    attachments?: BridgeAttachment[]
   ): Promise<void> {
     const settings = getSettings()
     const channelId = settings.agentChannelId
@@ -697,7 +729,7 @@ export class BridgeCommandHandler {
 
     // 如果有附件，拼接 <attached_files> 块到用户消息前
     const fileReferences = attachments?.length
-      ? buildAttachedFilesBlock(attachments.map(a => ({ label: a.label, path: a.absolutePath })))
+      ? buildAttachedFilesBlock(attachments.map((a) => ({ label: a.label, path: a.absolutePath })))
       : ''
     const effectiveText = text.trim() || (attachments?.length ? '请查看上面附加的文件。' : '')
     const userMessage = fileReferences + effectiveText
@@ -759,7 +791,9 @@ export class BridgeCommandHandler {
     const duration = ((Date.now() - buffer.startedAt) / 1000).toFixed(1)
     const replyText = buffer.text.trim() || '✅ Agent 已完成（无文本输出）'
 
-    this.log(`Agent 回复 (${duration}s): ${replyText.slice(0, 100)}${replyText.length > 100 ? '...' : ''}`)
+    this.log(
+      `Agent 回复 (${duration}s): ${replyText.slice(0, 100)}${replyText.length > 100 ? '...' : ''}`
+    )
     this.send(buffer.chatId, replyText, buffer.contextData).catch(console.error)
     this.sessionBuffers.delete(sessionId)
   }

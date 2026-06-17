@@ -23,7 +23,7 @@ export function captureVoiceDictationTarget(forceTAgentInput?: boolean): boolean
 
 export async function commitVoiceDictationText(
   text: string,
-  settings: VoiceDictationSettings,
+  settings: VoiceDictationSettings
 ): Promise<VoiceDictationCommitResult> {
   const trimmed = text.trim()
   if (!trimmed) {

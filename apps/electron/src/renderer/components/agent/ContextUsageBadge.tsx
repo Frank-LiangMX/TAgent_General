@@ -20,13 +20,13 @@ import { cn } from '@/lib/utils'
 /** 压缩阈值比例（SDK 在 ~77.5% 窗口大小时自动压缩） */
 const COMPACT_THRESHOLD_RATIO = 0.775
 /** 显示警告的阈值（压缩阈值的 80%） */
-const WARNING_RATIO = 0.80
+const WARNING_RATIO = 0.8
 /** 危险阈值（直接占 contextWindow 90%, SDK 可能快撑不住） */
-const DANGER_RATIO = 0.90
+const DANGER_RATIO = 0.9
 /** P2-1: Nudges 80% 触发阈值（contextWindow × 80%）*/
-const NUDGE_80_RATIO = 0.80
+const NUDGE_80_RATIO = 0.8
 /** P2-1: Nudges 90% 触发阈值 */
-const NUDGE_90_RATIO = 0.90
+const NUDGE_90_RATIO = 0.9
 /** Popover hover 关闭延迟（ms），与 AgentThinkingPopover 一致 */
 const HOVER_CLOSE_DELAY = 150
 
@@ -78,7 +78,7 @@ function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactE
           ? 'text-red-500 dark:text-red-400'
           : isWarning
             ? 'text-amber-500 dark:text-amber-400'
-            : 'text-foreground/70',
+            : 'text-foreground/70'
       )}
       aria-hidden="true"
     >
@@ -118,7 +118,12 @@ function DetailRow({ label, value, emphasized }: DetailRowProps): React.ReactEle
   return (
     <div className="flex items-center justify-between gap-4 text-xs">
       <span className="text-foreground/70">{label}</span>
-      <span className={cn('tabular-nums', emphasized ? 'font-medium text-foreground' : 'text-foreground/90')}>
+      <span
+        className={cn(
+          'tabular-nums',
+          emphasized ? 'font-medium text-foreground' : 'text-foreground/90'
+        )}
+      >
         {value}
       </span>
     </div>
@@ -145,7 +150,13 @@ export function ContextUsageBadge({
     contextWindow?: number
   } | null>(null)
   if (inputTokens && inputTokens > 0) {
-    stableRef.current = { inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens, contextWindow }
+    stableRef.current = {
+      inputTokens,
+      outputTokens,
+      cacheReadTokens,
+      cacheCreationTokens,
+      contextWindow,
+    }
   }
 
   // P2-1: Nudges 阈值追踪 ref — 记录上次弹过的阈值, 避免重复弹
@@ -228,9 +239,7 @@ export function ContextUsageBadge({
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
-  const isWarning = compactThreshold
-    ? displayTokens / compactThreshold >= WARNING_RATIO
-    : false
+  const isWarning = compactThreshold ? displayTokens / compactThreshold >= WARNING_RATIO : false
 
   const ratio = displayWindow ? displayTokens / displayWindow : 0
   const isDanger = displayWindow ? ratio >= DANGER_RATIO : false
@@ -238,9 +247,7 @@ export function ContextUsageBadge({
   // 纯输入 = 总上下文 - 缓存读取 - 缓存写入
   const pureInput = displayTokens - (displayCacheRead ?? 0) - (displayCacheCreation ?? 0)
 
-  const percent = displayWindow
-    ? Math.round((displayTokens / displayWindow) * 100)
-    : undefined
+  const percent = displayWindow ? Math.round((displayTokens / displayWindow) * 100) : undefined
 
   const handleCompactClick = (): void => {
     if (isProcessing) return
@@ -261,9 +268,15 @@ export function ContextUsageBadge({
               ? 'text-red-600 dark:text-red-400'
               : isWarning
                 ? 'text-amber-600 dark:text-amber-400'
-                : 'text-foreground/60 hover:text-foreground',
+                : 'text-foreground/60 hover:text-foreground'
           )}
-          title={isDanger ? '上下文危险 (>90%), 建议立即 compact' : isWarning ? '上下文接近阈值' : undefined}
+          title={
+            isDanger
+              ? '上下文危险 (>90%), 建议立即 compact'
+              : isWarning
+                ? '上下文接近阈值'
+                : undefined
+          }
           onMouseEnter={() => {
             cancelClose()
             setOpen(true)
@@ -285,8 +298,12 @@ export function ContextUsageBadge({
         <div className="flex flex-col gap-1.5">
           {pureInput > 0 && <DetailRow label="输入" value={pureInput.toLocaleString()} />}
           {displayOutput ? <DetailRow label="输出" value={displayOutput.toLocaleString()} /> : null}
-          {displayCacheCreation ? <DetailRow label="缓存写入" value={displayCacheCreation.toLocaleString()} /> : null}
-          {displayCacheRead ? <DetailRow label="缓存读取" value={displayCacheRead.toLocaleString()} /> : null}
+          {displayCacheCreation ? (
+            <DetailRow label="缓存写入" value={displayCacheCreation.toLocaleString()} />
+          ) : null}
+          {displayCacheRead ? (
+            <DetailRow label="缓存读取" value={displayCacheRead.toLocaleString()} />
+          ) : null}
 
           {displayWindow ? (
             <>
@@ -297,11 +314,7 @@ export function ContextUsageBadge({
                 emphasized
               />
               {percent != null && (
-                <DetailRow
-                  label="占用"
-                  value={`${percent}%`}
-                  emphasized={isWarning}
-                />
+                <DetailRow label="占用" value={`${percent}%`} emphasized={isWarning} />
               )}
             </>
           ) : null}
@@ -313,7 +326,7 @@ export function ContextUsageBadge({
             size="sm"
             className={cn(
               'h-7 text-xs gap-1.5',
-              isWarning && 'bg-amber-500 hover:bg-amber-600 text-white',
+              isWarning && 'bg-amber-500 hover:bg-amber-600 text-white'
             )}
             onClick={handleCompactClick}
             disabled={isProcessing}

@@ -20,7 +20,6 @@ import {
 } from '@tagent/shared'
 import { app, BrowserWindow, shell } from 'electron'
 
-
 /** 已注册的可取消下载：key -> cancel() */
 const activeDownloads = new Map<string, () => void>()
 
@@ -41,7 +40,7 @@ function getInstallerDir(): string {
 export async function downloadInstaller(
   source: InstallerSource,
   key: string,
-  sender: BrowserWindow,
+  sender: BrowserWindow
 ): Promise<InstallerDownloadResult> {
   const dir = getInstallerDir()
   await fsp.mkdir(dir, { recursive: true })
@@ -49,7 +48,7 @@ export async function downloadInstaller(
 
   // 尝试主 URL，失败再尝试 fallback
   const urls = [source.downloadUrl, source.fallbackUrl].filter(
-    (u): u is string => typeof u === 'string' && u.length > 0,
+    (u): u is string => typeof u === 'string' && u.length > 0
   )
   if (urls.length === 0) {
     throw new Error('安装包清单缺少有效 URL')
@@ -62,28 +61,20 @@ export async function downloadInstaller(
       const sha256 = await computeSha256(filePath)
       if (source.sha256 && sha256.toLowerCase() !== source.sha256.toLowerCase()) {
         await fsp.unlink(filePath).catch(() => {})
-        throw new Error(
-          `sha256 校验失败：期望 ${source.sha256}，实际 ${sha256}`,
-        )
+        throw new Error(`sha256 校验失败：期望 ${source.sha256}，实际 ${sha256}`)
       }
       if (!source.sha256) {
-        console.warn(
-          `[Installer] ${source.filename} 清单未提供 sha256，跳过校验`,
-        )
+        console.warn(`[Installer] ${source.filename} 清单未提供 sha256，跳过校验`)
       }
       return { filePath, sha256 }
     } catch (error) {
       lastError = error
-      const isCancelled =
-        error instanceof Error && error.message === 'cancelled'
+      const isCancelled = error instanceof Error && error.message === 'cancelled'
       if (isCancelled) {
         // 用户取消不降级到 fallback
         throw error
       }
-      console.warn(
-        `[Installer] 从 ${url} 下载失败，尝试下一个源：`,
-        error,
-      )
+      console.warn(`[Installer] 从 ${url} 下载失败，尝试下一个源：`, error)
       await fsp.unlink(filePath).catch(() => {})
     }
   }
@@ -99,7 +90,7 @@ function downloadToFile(
   filePath: string,
   source: InstallerSource,
   key: string,
-  sender: BrowserWindow,
+  sender: BrowserWindow
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     let cancelled = false
@@ -269,8 +260,15 @@ export async function cleanInstallerDir(): Promise<number> {
   try {
     const files = await fsp.readdir(dir)
     for (const f of files) {
-      try { await fsp.unlink(path.join(dir, f)); count++ } catch { /* skip */ }
+      try {
+        await fsp.unlink(path.join(dir, f))
+        count++
+      } catch {
+        /* skip */
+      }
     }
-  } catch { /* skip */ }
+  } catch {
+    /* skip */
+  }
   return count
 }

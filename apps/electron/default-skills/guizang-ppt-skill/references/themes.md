@@ -20,12 +20,12 @@
 **调性**:纯墨黑 + 暖米白,杂志感最强,Monocle / Apricot / A Book Apart 风。
 
 ```css
---ink:#0a0a0b;
---ink-rgb:10,10,11;
---paper:#f1efea;
---paper-rgb:241,239,234;
---paper-tint:#e8e5de;
---ink-tint:#18181a;
+--ink: #0a0a0b;
+--ink-rgb: 10, 10, 11;
+--paper: #f1efea;
+--paper-rgb: 241, 239, 234;
+--paper-tint: #e8e5de;
+--ink-tint: #18181a;
 ```
 
 ---
@@ -36,12 +36,12 @@
 **调性**:深靛蓝 + 瓷白,冷静、理性、有深度,像学术期刊或蓝印花瓷器。
 
 ```css
---ink:#0a1f3d;
---ink-rgb:10,31,61;
---paper:#f1f3f5;
---paper-rgb:241,243,245;
---paper-tint:#e4e8ec;
---ink-tint:#152a4a;
+--ink: #0a1f3d;
+--ink-rgb: 10, 31, 61;
+--paper: #f1f3f5;
+--paper-rgb: 241, 243, 245;
+--paper-tint: #e4e8ec;
+--ink-tint: #152a4a;
 ```
 
 ---
@@ -52,12 +52,12 @@
 **调性**:深森林绿 + 象牙,沉稳、有呼吸感,像旧版《国家地理》。
 
 ```css
---ink:#1a2e1f;
---ink-rgb:26,46,31;
---paper:#f5f1e8;
---paper-rgb:245,241,232;
---paper-tint:#ece7da;
---ink-tint:#253d2c;
+--ink: #1a2e1f;
+--ink-rgb: 26, 46, 31;
+--paper: #f5f1e8;
+--paper-rgb: 245, 241, 232;
+--paper-tint: #ece7da;
+--ink-tint: #253d2c;
 ```
 
 ---
@@ -68,12 +68,12 @@
 **调性**:深棕 + 暖米,像牛皮信封或老笔记本,温暖、有年代感。
 
 ```css
---ink:#2a1e13;
---ink-rgb:42,30,19;
---paper:#eedfc7;
---paper-rgb:238,223,199;
---paper-tint:#e0d0b6;
---ink-tint:#3a2a1d;
+--ink: #2a1e13;
+--ink-rgb: 42, 30, 19;
+--paper: #eedfc7;
+--paper-rgb: 238, 223, 199;
+--paper-tint: #e0d0b6;
+--ink-tint: #3a2a1d;
 ```
 
 ---
@@ -84,25 +84,25 @@
 **调性**:炭灰 + 沙色,克制、高级、中性,像沙漠黄昏或建筑设计图册。
 
 ```css
---ink:#1f1a14;
---ink-rgb:31,26,20;
---paper:#f0e6d2;
---paper-rgb:240,230,210;
---paper-tint:#e3d7bf;
---ink-tint:#2d2620;
+--ink: #1f1a14;
+--ink-rgb: 31, 26, 20;
+--paper: #f0e6d2;
+--paper-rgb: 240, 230, 210;
+--paper-tint: #e3d7bf;
+--ink-tint: #2d2620;
 ```
 
 ---
 
 ## 推荐选择参考
 
-| 如果是... | 推荐主题 |
-|---|---|
-| 不知道选啥 / 第一次用 | 🖋 墨水经典 |
-| AI / 技术 / 产品发布 | 🌊 靛蓝瓷 |
-| 内容 / 行业观察 / 文化 | 🌿 森林墨 |
-| 书评 / 生活方式 / 人文 | 🍂 牛皮纸 |
-| 设计 / 艺术 / 品牌 | 🌙 沙丘 |
+| 如果是...              | 推荐主题    |
+| ---------------------- | ----------- |
+| 不知道选啥 / 第一次用  | 🖋 墨水经典 |
+| AI / 技术 / 产品发布   | 🌊 靛蓝瓷   |
+| 内容 / 行业观察 / 文化 | 🌿 森林墨   |
+| 书评 / 生活方式 / 人文 | 🍂 牛皮纸   |
+| 设计 / 艺术 / 品牌     | 🌙 沙丘     |
 
 ---
 

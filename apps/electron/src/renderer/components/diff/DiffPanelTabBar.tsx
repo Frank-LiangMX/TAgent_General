@@ -25,27 +25,38 @@ interface PreviousTabState {
   activeTab: DiffPanelTab
 }
 
-export function DiffPanelTabBar({ activeTab, onTabChange, onClose }: DiffPanelTabBarProps): React.ReactElement {
+export function DiffPanelTabBar({
+  activeTab,
+  onTabChange,
+  onClose,
+}: DiffPanelTabBarProps): React.ReactElement {
   const unseenMap = useAtomValue(agentDiffUnseenChangesAtom)
   const setUnseenMap = useSetAtom(agentDiffUnseenChangesAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const unseenChanges = unseenMap.get(currentSessionId ?? '') ?? false
   const prevTabStateRef = React.useRef<PreviousTabState>({ sessionId: currentSessionId, activeTab })
 
-  const clearUnseen = React.useCallback((sessionId = currentSessionId) => {
-    if (!sessionId) return
-    setUnseenMap((prev) => {
-      if (prev.get(sessionId) === false) return prev
-      const m = new Map(prev)
-      m.set(sessionId, false)
-      return m
-    })
-  }, [currentSessionId, setUnseenMap])
+  const clearUnseen = React.useCallback(
+    (sessionId = currentSessionId) => {
+      if (!sessionId) return
+      setUnseenMap((prev) => {
+        if (prev.get(sessionId) === false) return prev
+        const m = new Map(prev)
+        m.set(sessionId, false)
+        return m
+      })
+    },
+    [currentSessionId, setUnseenMap]
+  )
 
   // 同一会话内，从「文件改动」切走时，说明用户已经看过当前改动。
   React.useEffect(() => {
     const previous = prevTabStateRef.current
-    if (previous.sessionId === currentSessionId && previous.activeTab === 'changes' && activeTab !== 'changes') {
+    if (
+      previous.sessionId === currentSessionId &&
+      previous.activeTab === 'changes' &&
+      activeTab !== 'changes'
+    ) {
       clearUnseen(currentSessionId)
     }
     prevTabStateRef.current = { sessionId: currentSessionId, activeTab }
@@ -70,7 +81,7 @@ export function DiffPanelTabBar({ activeTab, onTabChange, onClose }: DiffPanelTa
             'border-t border-l border-r',
             activeTab === 'session'
               ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50',
+              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
           )}
         >
           会话文件
@@ -83,7 +94,7 @@ export function DiffPanelTabBar({ activeTab, onTabChange, onClose }: DiffPanelTa
             'border-t border-l border-r',
             activeTab === 'changes'
               ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50',
+              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
           )}
         >
           <span className="inline-flex items-center gap-1">
@@ -105,7 +116,9 @@ export function DiffPanelTabBar({ activeTab, onTabChange, onClose }: DiffPanelTa
                 <PanelRightClose className="size-4" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">折叠文件面板 ({navigator.platform.includes('Mac') ? '⌘⇧B' : 'Ctrl+Shift+B'})</TooltipContent>
+            <TooltipContent side="bottom">
+              折叠文件面板 ({navigator.platform.includes('Mac') ? '⌘⇧B' : 'Ctrl+Shift+B'})
+            </TooltipContent>
           </Tooltip>
         )}
       </div>

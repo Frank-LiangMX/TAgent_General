@@ -79,9 +79,7 @@ export const NANO_BANANA_TOOL_META: ChatToolMeta = {
   id: 'nano-banana',
   name: 'Nano Banana',
   description: 'AI 图片生成与编辑（基于 Gemini Image Generation）',
-  params: [
-    { name: 'prompt', type: 'string', description: '图片生成/编辑描述', required: true },
-  ],
+  params: [{ name: 'prompt', type: 'string', description: '图片生成/编辑描述', required: true }],
   icon: 'ImagePlus',
   category: 'builtin',
   executorType: 'builtin',
@@ -114,13 +112,15 @@ export const NANO_BANANA_TOOL_META: ChatToolMeta = {
 export const NANO_BANANA_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'generate_image',
-    description: 'Generate or edit images using AI. Supports text-to-image generation, reference image editing, and iterative modifications with context.',
+    description:
+      'Generate or edit images using AI. Supports text-to-image generation, reference image editing, and iterative modifications with context.',
     parameters: {
       type: 'object',
       properties: {
         prompt: {
           type: 'string',
-          description: 'Detailed description of the image to generate or the edits to make. English descriptions work best.',
+          description:
+            'Detailed description of the image to generate or the edits to make. English descriptions work best.',
         },
         aspectRatio: {
           type: 'string',
@@ -134,7 +134,8 @@ export const NANO_BANANA_TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         useReferenceImages: {
           type: 'string',
-          description: 'Set to "true" to use uploaded reference images or previously generated images for editing',
+          description:
+            'Set to "true" to use uploaded reference images or previously generated images for editing',
           enum: ['true', 'false'],
         },
         numberOfImages: {
@@ -212,9 +213,7 @@ const DUMMY_THOUGHT_SIGNATURE = 'skip_thought_signature_validator'
 
 /** 检查对话历史中是否存在 thoughtSignature */
 function historyHasThoughtSignature(history: GeminiContent[]): boolean {
-  return history.some((c) =>
-    c.parts.some((p) => p.thoughtSignature || p.thought_signature),
-  )
+  return history.some((c) => c.parts.some((p) => p.thoughtSignature || p.thought_signature))
 }
 
 /**
@@ -228,7 +227,7 @@ function buildGeminiRequest(
     aspectRatio?: string
     imageSize?: string
     numberOfImages?: number
-  },
+  }
 ): Record<string, unknown> {
   // 多轮对话中 model 响应含 thoughtSignature 时，新 user 的 text part 也必须带签名
   const needsSignature = history.length > 0 && historyHasThoughtSignature(history)
@@ -242,10 +241,7 @@ function buildGeminiRequest(
   ]
 
   // 合并历史 + 当前用户消息
-  const contents: GeminiContent[] = [
-    ...history,
-    { role: 'user', parts: userParts },
-  ]
+  const contents: GeminiContent[] = [...history, { role: 'user', parts: userParts }]
 
   const generationConfig: Record<string, unknown> = {
     responseModalities: ['TEXT', 'IMAGE'],
@@ -272,7 +268,7 @@ function buildGeminiRequest(
  */
 export async function executeNanoBananaTool(
   toolCall: ToolCall,
-  context: NanoBananaContext,
+  context: NanoBananaContext
 ): Promise<ToolResult> {
   const credentials = getToolCredentials('nano-banana')
 
@@ -289,9 +285,10 @@ export async function executeNanoBananaTool(
     const aspectRatio = toolCall.arguments.aspectRatio as string | undefined
     const imageSize = toolCall.arguments.imageSize as string | undefined
     const useReferenceImages = toolCall.arguments.useReferenceImages === 'true'
-    const numberOfImages = typeof toolCall.arguments.numberOfImages === 'number'
-      ? Math.min(Math.max(Math.round(toolCall.arguments.numberOfImages), 1), 4)
-      : 1
+    const numberOfImages =
+      typeof toolCall.arguments.numberOfImages === 'number'
+        ? Math.min(Math.max(Math.round(toolCall.arguments.numberOfImages), 1), 4)
+        : 1
 
     if (!prompt) {
       return {
@@ -357,7 +354,12 @@ export async function executeNanoBananaTool(
     }
 
     const parts = candidate.content.parts
-    console.log(`[Nano Banana] 响应包含 ${parts.length} 个 parts，类型:`, parts.map((p) => p.inlineData ? `image(${p.inlineData.mimeType})` : `text(${(p.text ?? '').slice(0, 30)})`))
+    console.log(
+      `[Nano Banana] 响应包含 ${parts.length} 个 parts，类型:`,
+      parts.map((p) =>
+        p.inlineData ? `image(${p.inlineData.mimeType})` : `text(${(p.text ?? '').slice(0, 30)})`
+      )
+    )
     const generatedAttachments: FileAttachment[] = []
     const textParts: string[] = []
 
@@ -394,9 +396,10 @@ export async function executeNanoBananaTool(
 
     // 构建返回结果
     const imageCount = generatedAttachments.length
-    const resultText = imageCount > 0
-      ? `图片已成功生成（${imageCount} 张）${textParts.length > 0 ? `\n\n${textParts.join('\n')}` : ''}`
-      : textParts.join('\n') || '未生成图片内容'
+    const resultText =
+      imageCount > 0
+        ? `图片已成功生成（${imageCount} 张）${textParts.length > 0 ? `\n\n${textParts.join('\n')}` : ''}`
+        : textParts.join('\n') || '未生成图片内容'
 
     return {
       toolCallId: toolCall.id,

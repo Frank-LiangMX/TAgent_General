@@ -11,7 +11,6 @@ import { DefaultResultRenderer } from './default-result'
 
 import { cn } from '@/lib/utils'
 
-
 interface TaskGetResultRendererProps {
   result: string
   isError: boolean
@@ -43,9 +42,7 @@ function normalizeBlockId(value: string): string {
 
 function parseBlocks(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value
-      .map((item) => normalizeBlockId(String(item)))
-      .filter(Boolean)
+    return value.map((item) => normalizeBlockId(String(item))).filter(Boolean)
   }
   if (typeof value === 'number') return [`#${value}`]
   if (typeof value !== 'string') return []
@@ -53,9 +50,7 @@ function parseBlocks(value: unknown): string[] {
   if (/^(?:none|null|undefined|n\/a|无|暂无)$/i.test(value.trim())) return []
 
   const matches = value.match(/#[A-Za-z0-9._-]+|[A-Za-z0-9._-]+/g)
-  return matches
-    ? matches.map(normalizeBlockId).filter(Boolean)
-    : []
+  return matches ? matches.map(normalizeBlockId).filter(Boolean) : []
 }
 
 function parseJsonTask(text: string): ParsedTaskGetResult | null {
@@ -107,7 +102,11 @@ function parseTextTask(text: string): ParsedTaskGetResult | null {
     }
   }
 
-  return result.id || result.subject || result.status || result.description || result.blocks.length > 0
+  return result.id ||
+    result.subject ||
+    result.status ||
+    result.description ||
+    result.blocks.length > 0
     ? result
     : null
 }
@@ -186,7 +185,10 @@ function statusMeta(status: string | undefined): {
   }
 }
 
-export function TaskGetResultRenderer({ result, isError }: TaskGetResultRendererProps): React.ReactElement {
+export function TaskGetResultRenderer({
+  result,
+  isError,
+}: TaskGetResultRendererProps): React.ReactElement {
   const task = React.useMemo(() => parseTaskGetResult(result), [result])
 
   if (isError) return <DefaultResultRenderer result={result} isError />
@@ -210,16 +212,16 @@ export function TaskGetResultRenderer({ result, isError }: TaskGetResultRenderer
             </h4>
           </div>
           {task.description && (
-            <p className="text-[12px] leading-relaxed text-muted-foreground">
-              {task.description}
-            </p>
+            <p className="text-[12px] leading-relaxed text-muted-foreground">{task.description}</p>
           )}
         </div>
 
-        <span className={cn(
-          'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
-          meta.className,
-        )}>
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+            meta.className
+          )}
+        >
           <StatusIcon className="size-3" />
           {meta.label}
         </span>

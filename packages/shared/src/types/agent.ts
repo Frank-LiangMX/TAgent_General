@@ -298,7 +298,13 @@ export interface SDKUserMessage {
 /** SDK result 消息（查询结束时返回） */
 export interface SDKResultMessage {
   type: 'result'
-  subtype: 'success' | 'error' | 'error_max_turns' | 'error_max_budget_usd' | 'error_during_execution' | (string & {})
+  subtype:
+    | 'success'
+    | 'error'
+    | 'error_max_turns'
+    | 'error_max_budget_usd'
+    | 'error_during_execution'
+    | (string & {})
   usage: {
     input_tokens: number
     output_tokens: number
@@ -407,7 +413,12 @@ export type SDKMessage =
   | SDKToolProgressMessage
   | SDKPromptSuggestionMessage
   | SDKToolUseSummaryMessage
-  | { type: string; session_id?: string; parent_tool_use_id?: string | null; [key: string]: unknown }
+  | {
+      type: string
+      session_id?: string
+      parent_tool_use_id?: string | null
+      [key: string]: unknown
+    }
 
 // ===== Agent 事件类型 =====
 
@@ -558,17 +569,80 @@ export type AgentPlanModeChangeSource = 'initial' | 'tool' | 'permission'
 export type AgentEvent =
   // 文本流式输出
   | { type: 'text_delta'; text: string; turnId?: string; parentToolUseId?: string }
-  | { type: 'text_complete'; text: string; isIntermediate: boolean; turnId?: string; parentToolUseId?: string }
+  | {
+      type: 'text_complete'
+      text: string
+      isIntermediate: boolean
+      turnId?: string
+      parentToolUseId?: string
+    }
   // 工具执行
-  | { type: 'tool_start'; toolName: string; toolUseId: string; input: Record<string, unknown>; intent?: string; displayName?: string; turnId?: string; parentToolUseId?: string }
-  | { type: 'tool_result'; toolUseId: string; toolName?: string; result: string; isError: boolean; input?: Record<string, unknown>; turnId?: string; parentToolUseId?: string; imageAttachments?: AgentToolResultImage[] }
+  | {
+      type: 'tool_start'
+      toolName: string
+      toolUseId: string
+      input: Record<string, unknown>
+      intent?: string
+      displayName?: string
+      turnId?: string
+      parentToolUseId?: string
+    }
+  | {
+      type: 'tool_result'
+      toolUseId: string
+      toolName?: string
+      result: string
+      isError: boolean
+      input?: Record<string, unknown>
+      turnId?: string
+      parentToolUseId?: string
+      imageAttachments?: AgentToolResultImage[]
+    }
   // 后台任务
-  | { type: 'task_backgrounded'; toolUseId: string; taskId: string; intent?: string; turnId?: string }
-  | { type: 'task_started'; taskId: string; toolUseId?: string; description: string; taskType?: string; turnId?: string }
-  | { type: 'task_progress'; toolUseId: string; elapsedSeconds?: number; turnId?: string; taskId?: string; description?: string; lastToolName?: string; usage?: TaskUsage }
-  | { type: 'task_notification'; taskId: string; toolUseId?: string; status: 'completed' | 'failed' | 'stopped'; summary: string; outputFile?: string; usage?: TaskUsage; turnId?: string }
+  | {
+      type: 'task_backgrounded'
+      toolUseId: string
+      taskId: string
+      intent?: string
+      turnId?: string
+    }
+  | {
+      type: 'task_started'
+      taskId: string
+      toolUseId?: string
+      description: string
+      taskType?: string
+      turnId?: string
+    }
+  | {
+      type: 'task_progress'
+      toolUseId: string
+      elapsedSeconds?: number
+      turnId?: string
+      taskId?: string
+      description?: string
+      lastToolName?: string
+      usage?: TaskUsage
+    }
+  | {
+      type: 'task_notification'
+      taskId: string
+      toolUseId?: string
+      status: 'completed' | 'failed' | 'stopped'
+      summary: string
+      outputFile?: string
+      usage?: TaskUsage
+      turnId?: string
+    }
   | { type: 'thinking_tokens'; estimatedTokens: number; estimatedTokensDelta: number }
-  | { type: 'shell_backgrounded'; toolUseId: string; shellId: string; intent?: string; command?: string; turnId?: string }
+  | {
+      type: 'shell_backgrounded'
+      toolUseId: string
+      shellId: string
+      intent?: string
+      command?: string
+      turnId?: string
+    }
   | { type: 'shell_killed'; shellId: string; turnId?: string }
   // 工具使用摘要
   | { type: 'tool_use_summary'; summary: string; precedingToolUseIds: string[] }
@@ -577,10 +651,10 @@ export type AgentEvent =
   | { type: 'error'; message: string }
   | { type: 'typed_error'; error: TypedError }
   // 重试机制
-  | { type: 'retrying'; attempt: number; maxAttempts: number; delaySeconds: number; reason: string }  // 保留向后兼容
-  | { type: 'retry_attempt'; attemptData: RetryAttempt }  // 新增：记录详细尝试信息
-  | { type: 'retry_cleared' }  // 新增：重试成功，清除状态
-  | { type: 'retry_failed'; finalAttempt: RetryAttempt }  // 新增：重试失败
+  | { type: 'retrying'; attempt: number; maxAttempts: number; delaySeconds: number; reason: string } // 保留向后兼容
+  | { type: 'retry_attempt'; attemptData: RetryAttempt } // 新增：记录详细尝试信息
+  | { type: 'retry_cleared' } // 新增：重试成功，清除状态
+  | { type: 'retry_failed'; finalAttempt: RetryAttempt } // 新增：重试失败
   // Usage 更新
   | { type: 'usage_update'; usage: AgentEventUsage }
   // 上下文压缩
@@ -617,12 +691,34 @@ export type TAgentEvent =
   | { type: 'exit_plan_mode_request'; request: ExitPlanModeRequest }
   | { type: 'exit_plan_mode_resolved'; requestId: string }
   | { type: 'enter_plan_mode'; sessionId: string }
-  | { type: 'plan_mode_changed'; sessionId: string; active: boolean; source: AgentPlanModeChangeSource }
-  | { type: 'retry'; status: 'starting' | 'attempt' | 'cleared' | 'failed'; attempt?: number; maxAttempts?: number; delaySeconds?: number; reason?: string; attemptData?: RetryAttempt; error?: TypedError }
+  | {
+      type: 'plan_mode_changed'
+      sessionId: string
+      active: boolean
+      source: AgentPlanModeChangeSource
+    }
+  | {
+      type: 'retry'
+      status: 'starting' | 'attempt' | 'cleared' | 'failed'
+      attempt?: number
+      maxAttempts?: number
+      delaySeconds?: number
+      reason?: string
+      attemptData?: RetryAttempt
+      error?: TypedError
+    }
   | { type: 'model_resolved'; model: string }
   | { type: 'permission_mode_changed'; mode: TAgentPermissionMode }
   | { type: 'title_updated'; title: string }
-  | { type: 'external_run_started'; source: AgentExternalRunSource; sessionId: string; title?: string; workspaceId?: string; modelId?: string; startedAt: number }
+  | {
+      type: 'external_run_started'
+      source: AgentExternalRunSource
+      sessionId: string
+      title?: string
+      workspaceId?: string
+      modelId?: string
+      startedAt: number
+    }
 
 /** 外部入口触发 Agent 运行的来源 */
 export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
@@ -841,8 +937,8 @@ export interface WorkspaceMcpConfig {
 export interface SkillImportSource {
   sourceWorkspaceSlug: string
   sourceWorkspaceName: string
-  importedAt: string        // ISO 8601
-  sourceVersion: string     // 导入时源 Skill 的 version，无则 '0.0.0'
+  importedAt: string // ISO 8601
+  sourceVersion: string // 导入时源 Skill 的 version，无则 '0.0.0'
 }
 
 /** 工作区 Skill 元数据 */
@@ -1260,7 +1356,7 @@ export interface ExitPlanModeResponse {
 /** 当前 TAgent 支持的权限模式，值直接映射 SDK 原生 permissionMode */
 export const TAGENT_PERMISSION_MODES = ['auto', 'bypassPermissions', 'plan'] as const
 
-export type TAgentPermissionMode = typeof TAGENT_PERMISSION_MODES[number]
+export type TAgentPermissionMode = (typeof TAGENT_PERMISSION_MODES)[number]
 
 export const TAGENT_DEFAULT_PERMISSION_MODE: TAgentPermissionMode = 'bypassPermissions'
 

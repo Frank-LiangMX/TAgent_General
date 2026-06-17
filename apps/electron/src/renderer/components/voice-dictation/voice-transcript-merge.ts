@@ -26,9 +26,8 @@ function joinTranscriptParts(left: string, right: string): string {
 
   const lastLeft = left.at(-1) ?? ''
   const firstRight = right.at(0) ?? ''
-  const separator = ASCII_WORD_EDGE_PATTERN.test(lastLeft) && ASCII_WORD_EDGE_PATTERN.test(firstRight)
-    ? ' '
-    : ''
+  const separator =
+    ASCII_WORD_EDGE_PATTERN.test(lastLeft) && ASCII_WORD_EDGE_PATTERN.test(firstRight) ? ' ' : ''
   return `${left}${separator}${right}`
 }
 
@@ -42,7 +41,7 @@ export function mergeVoiceDictationTranscript(
   state: VoiceDictationTranscriptMergeState,
   incomingText: string,
   isFinal: boolean,
-  sessionId: string,
+  sessionId: string
 ): VoiceDictationTranscriptMergeResult {
   const text = incomingText.trim()
   if (!text) {

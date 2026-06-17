@@ -126,7 +126,10 @@ export function UpdateDialog(): React.ReactElement | null {
               />
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatBytes(updateStatus.progress.transferred)} / {formatBytes(updateStatus.progress.total)}</span>
+              <span>
+                {formatBytes(updateStatus.progress.transferred)} /{' '}
+                {formatBytes(updateStatus.progress.total)}
+              </span>
               <span>{formatBytes(updateStatus.progress.bytesPerSecond)}/s</span>
             </div>
           </div>
@@ -149,9 +152,7 @@ export function UpdateDialog(): React.ReactElement | null {
               </AlertDialogAction>
             </>
           ) : (
-            <AlertDialogCancel>
-              {isDownloading ? '后台下载' : '知道了'}
-            </AlertDialogCancel>
+            <AlertDialogCancel>{isDownloading ? '后台下载' : '知道了'}</AlertDialogCancel>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>

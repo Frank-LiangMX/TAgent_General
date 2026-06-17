@@ -27,14 +27,22 @@ export interface ToolResultRendererProps {
   basePath?: string
 }
 
-export function ToolResultRenderer({ toolName, input, result, isError, basePath }: ToolResultRendererProps): React.ReactElement {
+export function ToolResultRenderer({
+  toolName,
+  input,
+  result,
+  isError,
+  basePath,
+}: ToolResultRendererProps): React.ReactElement {
   switch (toolName) {
     case 'Bash':
       return <BashResultRenderer result={result} isError={isError} input={input} />
     case 'Read':
       return <ReadResultRenderer result={result} isError={isError} input={input} />
     case 'Edit':
-      return <EditResultRenderer result={result} isError={isError} input={input} basePath={basePath} />
+      return (
+        <EditResultRenderer result={result} isError={isError} input={input} basePath={basePath} />
+      )
     case 'Write':
       return <WriteResultRenderer result={result} isError={isError} input={input} />
     case 'Grep':

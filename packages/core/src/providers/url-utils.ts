@@ -93,11 +93,11 @@ export function normalizeBaseUrl(baseUrl: string): string {
  */
 export function normalizeAnthropicProviderUrl(baseUrl: string, provider: ProviderType): string {
   if (
-    provider === 'minimax'
-    || provider === 'anthropic-compatible'
-    || provider === 'xiaomi'
-    || provider === 'xiaomi-token-plan'
-    || provider === 'zhipu-coding'
+    provider === 'minimax' ||
+    provider === 'anthropic-compatible' ||
+    provider === 'xiaomi' ||
+    provider === 'xiaomi-token-plan' ||
+    provider === 'zhipu-coding'
   ) {
     return normalizeVersionedAnthropicBaseUrl(baseUrl)
   }

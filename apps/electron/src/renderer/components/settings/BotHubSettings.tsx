@@ -11,10 +11,10 @@ import { useAtomValue } from 'jotai'
 import { Bot, Cable, Settings, Diamond } from 'lucide-react'
 import * as React from 'react'
 
+import { BotDefaultSettings } from './BotDefaultSettings'
 import { DingTalkSettings } from './DingTalkSettings'
 import { FeishuSettings } from './FeishuSettings'
 import { WeChatSettings } from './WeChatSettings'
-import { BotDefaultSettings } from './BotDefaultSettings'
 import { WpsSettings } from './WpsSettings'
 
 import dingtalkLogo from '@/assets/bots/dingding.png'
@@ -94,7 +94,11 @@ const STATUS_CONFIG = {
   connecting: { color: 'bg-amber-400', label: '连接中', dotClass: 'bg-amber-400 animate-pulse' },
   connected: { color: 'bg-emerald-500', label: '已连接', dotClass: 'bg-emerald-500' },
   error: { color: 'bg-red-500', label: '错误', dotClass: 'bg-red-500' },
-  waiting_scan: { color: 'bg-amber-400', label: '等待扫码', dotClass: 'bg-amber-400 animate-pulse' },
+  waiting_scan: {
+    color: 'bg-amber-400',
+    label: '等待扫码',
+    dotClass: 'bg-amber-400 animate-pulse',
+  },
   scanned: { color: 'bg-blue-400', label: '已扫码', dotClass: 'bg-blue-400 animate-pulse' },
 } as const
 
@@ -124,7 +128,9 @@ function PlatformCard({
   onClick: () => void
   isActive: boolean
 }): React.ReactElement {
-  const statusConfig = status ? (STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.disconnected) : null
+  const statusConfig = status
+    ? (STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.disconnected)
+    : null
   const isConnected = status === 'connected'
 
   return (
@@ -136,7 +142,7 @@ function PlatformCard({
         'border border-transparent',
         isActive
           ? 'bg-muted/60 border-border/50 shadow-sm'
-          : 'bg-muted/30 hover:bg-muted/50 hover:border-border/30',
+          : 'bg-muted/30 hover:bg-muted/50 hover:border-border/30'
       )}
     >
       {/* 状态指示点（仅平台卡片） */}
@@ -147,7 +153,12 @@ function PlatformCard({
       )}
 
       {/* 图标 */}
-      <div className={cn('flex items-center justify-center w-11 h-11 rounded-xl mb-2.5', platform.iconBgClass)}>
+      <div
+        className={cn(
+          'flex items-center justify-center w-11 h-11 rounded-xl mb-2.5',
+          platform.iconBgClass
+        )}
+      >
         {platform.iconSrc ? (
           <img src={platform.iconSrc} alt={platform.name} className="w-7 h-7 object-contain" />
         ) : platform.Icon ? (
@@ -161,7 +172,12 @@ function PlatformCard({
       <div className="text-sm font-medium text-foreground">{platform.name}</div>
 
       {/* 描述或状态 */}
-      <div className={cn('text-xs mt-0.5', isConnected ? platform.accentColor : 'text-muted-foreground')}>
+      <div
+        className={cn(
+          'text-xs mt-0.5',
+          isConnected ? platform.accentColor : 'text-muted-foreground'
+        )}
+      >
         {statusConfig ? statusConfig.label : platform.description}
       </div>
     </button>
@@ -195,12 +211,15 @@ export function BotHubSettings(): React.ReactElement {
   const wechatState = useAtomValue(wechatBridgeStateAtom)
   const wpsState = useAtomValue(wpsBridgeStateAtom)
 
-  const platformStatuses = React.useMemo(() => ({
-    feishu: getPlatformStatus(feishuBotStates),
-    dingtalk: getPlatformStatus(dingtalkBotStates),
-    wechat: wechatState.status,
-    wps: wpsState.status,
-  }), [feishuBotStates, dingtalkBotStates, wechatState.status, wpsState.status])
+  const platformStatuses = React.useMemo(
+    () => ({
+      feishu: getPlatformStatus(feishuBotStates),
+      dingtalk: getPlatformStatus(dingtalkBotStates),
+      wechat: wechatState.status,
+      wps: wpsState.status,
+    }),
+    [feishuBotStates, dingtalkBotStates, wechatState.status, wpsState.status]
+  )
 
   const connectedCount = Object.values(platformStatuses).filter((s) => s === 'connected').length
 
@@ -250,9 +269,7 @@ export function BotHubSettings(): React.ReactElement {
       <div className="border-t border-border/50" />
 
       {/* 内容面板 */}
-      <div className="min-h-[400px]">
-        {renderPlatformPanel(selectedPlatform)}
-      </div>
+      <div className="min-h-[400px]">{renderPlatformPanel(selectedPlatform)}</div>
     </div>
   )
 }

@@ -60,7 +60,9 @@ export function saveWpsConfig(input: WpsConfigInput): WpsConfig {
     enabled: input.enabled,
     appId: input.appId.trim(),
     apiUrl: input.apiUrl.trim() || DEFAULT_CONFIG.apiUrl,
-    callbackPort: Number.isFinite(input.callbackPort) ? input.callbackPort : DEFAULT_CONFIG.callbackPort,
+    callbackPort: Number.isFinite(input.callbackPort)
+      ? input.callbackPort
+      : DEFAULT_CONFIG.callbackPort,
     callbackPath: input.callbackPath.trim() || DEFAULT_CONFIG.callbackPath,
     defaultWorkspaceId: input.defaultWorkspaceId,
     secretKey: input.secretKey ? encryptText(input.secretKey) : existing.secretKey,

@@ -8,8 +8,8 @@
  * 启动时由 AgentView 加载并填充，切换时同步落盘。
  */
 
-import { atom } from 'jotai'
 import { DEFAULT_COMPOSER_MODE, type ComposerMode } from '@tagent/shared'
+import { atom } from 'jotai'
 
 import { currentAgentSessionIdAtom } from './agent-atoms'
 

@@ -7,11 +7,22 @@
  * - 底部：预设模板网格
  */
 
-import { RotateCcw, Save, Sparkles, Code2, Wand2, GraduationCap, Scale, Check, AlertCircle } from 'lucide-react'
+import {
+  RotateCcw,
+  Save,
+  Sparkles,
+  Code2,
+  Wand2,
+  GraduationCap,
+  Scale,
+  Check,
+  AlertCircle,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { Button } from '../ui/button'
 import { Textarea } from '../ui/textarea'
+
 import { cn } from '@/lib/utils'
 
 /** SOUL.md 最大字符数限制 */
@@ -96,7 +107,8 @@ export function SoulSettings(): React.ReactElement {
 
   React.useEffect(() => {
     setIsLoading(true)
-    window.electronAPI.getSoulContent()
+    window.electronAPI
+      .getSoulContent()
       .then((result) => {
         setContent(result.content)
         setIsDefault(result.isDefault)
@@ -228,13 +240,22 @@ export function SoulSettings(): React.ReactElement {
                 <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-all",
-                      isOverLimit ? "bg-red-500" : progressPercent > 80 ? "bg-amber-500" : "bg-muted-foreground/50"
+                      'h-full rounded-full transition-all',
+                      isOverLimit
+                        ? 'bg-red-500'
+                        : progressPercent > 80
+                          ? 'bg-amber-500'
+                          : 'bg-muted-foreground/50'
                     )}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <span className={cn('text-xs font-mono', isOverLimit ? 'text-red-500' : 'text-muted-foreground')}>
+                <span
+                  className={cn(
+                    'text-xs font-mono',
+                    isOverLimit ? 'text-red-500' : 'text-muted-foreground'
+                  )}
+                >
                   {charCount} / {MAX_SOUL_LENGTH}
                 </span>
               </div>
@@ -258,9 +279,9 @@ export function SoulSettings(): React.ReactElement {
                 onClick={() => applyTemplate(template.content)}
                 disabled={isLoading || isSaving}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border border-border/30",
-                  "hover:border-border hover:bg-muted/30 transition-colors text-left",
-                  "disabled:opacity-50 cursor-pointer"
+                  'flex items-center gap-3 p-3 rounded-lg border border-border/30',
+                  'hover:border-border hover:bg-muted/30 transition-colors text-left',
+                  'disabled:opacity-50 cursor-pointer'
                 )}
               >
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -268,7 +289,9 @@ export function SoulSettings(): React.ReactElement {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground">{template.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">{template.description}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {template.description}
+                  </div>
                 </div>
               </button>
             )

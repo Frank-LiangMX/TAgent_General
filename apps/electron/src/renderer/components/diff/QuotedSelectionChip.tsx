@@ -22,9 +22,7 @@ interface QuotedSelectionChipProps {
 
 function truncateText(text: string, maxLen: number = 80): string {
   const singleLine = text.replace(/\s+/g, ' ').trim()
-  return singleLine.length > maxLen
-    ? singleLine.slice(0, maxLen - 3) + '...'
-    : singleLine
+  return singleLine.length > maxLen ? singleLine.slice(0, maxLen - 3) + '...' : singleLine
 }
 
 function truncatePath(filePath: string, maxLen: number = 40): string {
@@ -39,10 +37,13 @@ export function QuotedSelectionChip({
   onRemove,
   className,
 }: QuotedSelectionChipProps): React.ReactElement {
-  const handleRemoveClick = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    onRemove()
-  }, [onRemove])
+  const handleRemoveClick = React.useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      onRemove()
+    },
+    [onRemove]
+  )
 
   return (
     <div
@@ -51,14 +52,12 @@ export function QuotedSelectionChip({
         'rounded-lg bg-primary/8 border border-primary/20',
         'pl-2.5 pr-7 py-1.5 text-[13px]',
         'transition-colors hover:bg-primary/12',
-        className,
+        className
       )}
     >
       <Quote className="size-4 shrink-0 mt-0.5 text-primary/60" />
       <div className="flex flex-col min-w-0">
-        <span className="text-foreground/80 line-clamp-2 leading-snug">
-          {truncateText(text)}
-        </span>
+        <span className="text-foreground/80 line-clamp-2 leading-snug">{truncateText(text)}</span>
         <span className="text-[11px] text-muted-foreground/60 mt-0.5">
           {truncatePath(filePath)}
         </span>
@@ -71,7 +70,7 @@ export function QuotedSelectionChip({
           'bg-foreground/10 text-foreground/50',
           'flex items-center justify-center',
           'opacity-0 group-hover/chip:opacity-100 transition-opacity duration-200',
-          'hover:bg-foreground/20 hover:text-foreground',
+          'hover:bg-foreground/20 hover:text-foreground'
         )}
         aria-label="移除引用"
       >

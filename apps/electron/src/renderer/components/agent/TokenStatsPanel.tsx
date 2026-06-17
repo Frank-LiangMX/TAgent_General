@@ -10,10 +10,7 @@ import { useAtomValue } from 'jotai'
 import { Coins, Database, Zap, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  currentSessionTokenStatsAtom,
-  cacheHitRateAtom,
-} from '@/atoms/agent-atoms'
+import { currentSessionTokenStatsAtom, cacheHitRateAtom } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 
@@ -88,7 +85,9 @@ export function TokenStatsPanel(): React.ReactElement | null {
           label="缓存命中"
           value={formatHitRate(cacheHitRate)}
           highlight={cacheHitRate !== null && cacheHitRate > 0.5}
-          tooltip={cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined}
+          tooltip={
+            cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
+          }
         />
       )}
 
@@ -108,9 +107,7 @@ export function TokenStatsPanel(): React.ReactElement | null {
       {stats.turnCount > 0 && (
         <>
           <div className="h-3 w-px bg-border/50" />
-          <span className="text-muted-foreground/60">
-            {stats.turnCount} 轮
-          </span>
+          <span className="text-muted-foreground/60">{stats.turnCount} 轮</span>
         </>
       )}
     </div>
@@ -130,13 +127,18 @@ function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): Re
     <div
       className={cn(
         'flex items-center gap-1.5',
-        highlight && 'text-emerald-600 dark:text-emerald-400',
+        highlight && 'text-emerald-600 dark:text-emerald-400'
       )}
       title={tooltip}
     >
       <span className="opacity-70">{icon}</span>
       <span className="text-muted-foreground/80">{label}</span>
-      <span className={cn('font-medium tabular-nums', highlight && 'text-emerald-600 dark:text-emerald-400')}>
+      <span
+        className={cn(
+          'font-medium tabular-nums',
+          highlight && 'text-emerald-600 dark:text-emerald-400'
+        )}
+      >
         {value}
       </span>
     </div>

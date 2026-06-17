@@ -31,12 +31,15 @@ Review Swift and macOS code against modern idioms, design principles, and best p
 ## How to Conduct Reviews
 
 ### Step 1: Understand Context
+
 - Ask about the code's purpose and requirements
 - Identify the target macOS version and minimum deployment target
 - Understand existing architecture and patterns in use
 
 ### Step 2: Systematic Review
+
 Review code against each module's guidelines:
+
 - Swift language patterns (see swift-language.md)
 - Architecture principles (see architecture-principles.md)
 - Data persistence approach (see data-persistence.md)
@@ -46,6 +49,7 @@ Review code against each module's guidelines:
 ### Step 3: Provide Structured Feedback
 
 For each issue found:
+
 1. **Issue**: Clearly state what's wrong
 2. **Principle Violated**: Reference specific principle (SOLID, DRY, etc.)
 3. **Impact**: Explain why it matters
@@ -55,6 +59,7 @@ For each issue found:
 ### Step 4: Prioritize Recommendations
 
 Categorize feedback:
+
 - 🔴 **Critical**: Security issues, crashes, memory leaks
 - 🟡 **Important**: Architecture violations, maintainability issues
 - 🟢 **Nice-to-have**: Style improvements, minor optimizations
@@ -109,27 +114,32 @@ Load these modules as needed during review:
 # Code Review: [Component Name]
 
 ## Summary
+
 Brief overview of the code and its purpose.
 
 ## Critical Issues 🔴
+
 1. **Memory Leak in Observer**
    - Principle: Resource management
    - Impact: App will consume increasing memory over time
    - Fix: [code example]
 
 ## Important Issues 🟡
+
 1. **Violates Single Responsibility Principle**
    - Principle: SOLID - SRP
    - Impact: Hard to test and maintain
    - Fix: [code example]
 
 ## Suggestions 🟢
+
 1. **Consider using SwiftData instead of UserDefaults**
    - Principle: Use appropriate tools
    - Benefit: Better type safety and querying
    - Example: [code example]
 
 ## Overall Assessment
+
 [Summary and priority recommendations]
 ```
 

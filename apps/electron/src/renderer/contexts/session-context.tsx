@@ -18,9 +18,7 @@ export function ConversationProvider({
   children: React.ReactNode
 }): React.ReactElement {
   return (
-    <ConversationContext.Provider value={conversationId}>
-      {children}
-    </ConversationContext.Provider>
+    <ConversationContext.Provider value={conversationId}>{children}</ConversationContext.Provider>
   )
 }
 
@@ -46,11 +44,7 @@ export function AgentSessionProvider({
   sessionId: string
   children: React.ReactNode
 }): React.ReactElement {
-  return (
-    <AgentSessionContext.Provider value={sessionId}>
-      {children}
-    </AgentSessionContext.Provider>
-  )
+  return <AgentSessionContext.Provider value={sessionId}>{children}</AgentSessionContext.Provider>
 }
 
 export function useAgentSessionId(): string {

@@ -15,7 +15,6 @@ import { AgentView } from '@/components/agent'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
 import { ScratchPadView } from '@/components/scratch-pad/ScratchPadView'
 
-
 export interface TabContentProps {
   tabId: string
 }
@@ -27,7 +26,9 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
   // [FLASH-DEBUG] 监控 tab 查找失败（说明 tabId 指向了不存在的标签）
   React.useEffect(() => {
     if (!tab) {
-      console.warn(`[FLASH-DEBUG] TabContent: tab not found for tabId="${tabId}"`, { tabIds: tabs.map(t => t.id) })
+      console.warn(`[FLASH-DEBUG] TabContent: tab not found for tabId="${tabId}"`, {
+        tabIds: tabs.map((t) => t.id),
+      })
     }
   }, [tab, tabId, tabs])
 

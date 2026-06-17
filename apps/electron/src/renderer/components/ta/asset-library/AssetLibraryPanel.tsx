@@ -5,7 +5,20 @@
  * 从 SQLite 数据库直读资产数据。
  */
 
-import { Search, Filter, Plus, Folder, Image, Box, Music, FileText, Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react'
+import {
+  Search,
+  Filter,
+  Plus,
+  Folder,
+  Image,
+  Box,
+  Music,
+  FileText,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Database,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -28,7 +41,17 @@ const ASSET_TYPE_ICONS: Record<string, React.ReactNode> = {
 }
 
 // 资产类型列表
-const ASSET_TYPES = ['mesh', 'texture', 'material', 'animation', 'audio', 'skeleton', 'particle', 'level', 'blueprint']
+const ASSET_TYPES = [
+  'mesh',
+  'texture',
+  'material',
+  'animation',
+  'audio',
+  'skeleton',
+  'particle',
+  'level',
+  'blueprint',
+]
 
 /** 资产记录类型 */
 interface AssetRecord {
@@ -151,25 +174,27 @@ export function AssetLibraryPanel(): React.ReactElement {
     return () => {
       mounted = false
     }
-     
   }, [])
 
   // 加载资产列表
-  const loadAssets = React.useCallback(async (params?: ListAssetsParams) => {
-    try {
-      const result: ListAssetsResult = await window.electronAPI.listAssets({
-        type: selectedType || undefined,
-        project: selectedProject || undefined,
-        limit: 50,
-        ...params,
-      })
-      setAssets(result.assets)
-      setTotal(result.total)
-      setHasMore(result.hasMore)
-    } catch (err) {
-      console.error('[AssetLibraryPanel] 加载资产失败:', err)
-    }
-  }, [selectedType, selectedProject])
+  const loadAssets = React.useCallback(
+    async (params?: ListAssetsParams) => {
+      try {
+        const result: ListAssetsResult = await window.electronAPI.listAssets({
+          type: selectedType || undefined,
+          project: selectedProject || undefined,
+          limit: 50,
+          ...params,
+        })
+        setAssets(result.assets)
+        setTotal(result.total)
+        setHasMore(result.hasMore)
+      } catch (err) {
+        console.error('[AssetLibraryPanel] 加载资产失败:', err)
+      }
+    },
+    [selectedType, selectedProject]
+  )
 
   // 加载统计
   const loadStats = React.useCallback(async () => {
@@ -286,12 +311,7 @@ export function AssetLibraryPanel(): React.ReactElement {
           <br />
           数据库位置: ~/.tagent/ta/tag_store/tags.db
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={handleCreateDatabase}
-        >
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleCreateDatabase}>
           <Database size={14} />
           初始化资产库
         </Button>
@@ -332,7 +352,13 @@ export function AssetLibraryPanel(): React.ReactElement {
         </div>
 
         {/* 刷新按钮 */}
-        <Button variant="ghost" size="sm" className="h-8" onClick={handleRefresh} disabled={isLoading}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8"
+          onClick={handleRefresh}
+          disabled={isLoading}
+        >
           {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
         </Button>
       </div>
@@ -369,7 +395,13 @@ export function AssetLibraryPanel(): React.ReactElement {
           {/* 加载更多 */}
           {hasMore && (
             <div className="px-4 py-2 border-t border-border">
-              <Button variant="ghost" size="sm" className="w-full" onClick={handleLoadMore} disabled={isLoading}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={handleLoadMore}
+                disabled={isLoading}
+              >
                 {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
                 加载更多
               </Button>

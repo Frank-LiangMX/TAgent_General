@@ -11,9 +11,7 @@ import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
-import {
-  agentSessionPathMapAtom,
-} from '@/atoms/agent-atoms'
+import { agentSessionPathMapAtom } from '@/atoms/agent-atoms'
 import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
   createPreviewTabId,
@@ -58,9 +56,7 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
     return (
       <div className="flex h-full flex-col overflow-hidden bg-content-area">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border/30 px-3">
-          <div className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
-            预览已关闭
-          </div>
+          <div className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">预览已关闭</div>
         </div>
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
           当前会话没有可预览的文件
@@ -69,15 +65,13 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
     )
   }
 
-  const dirPath = currentFile.dirPath || sessionPath || getFallbackDirPath(currentFile.filePath, sessionPath)
+  const dirPath =
+    currentFile.dirPath || sessionPath || getFallbackDirPath(currentFile.filePath, sessionPath)
   const defaultAppTargetPath = getDefaultAppTargetPath(currentFile, sessionPath)
   const defaultAppAccess = getPreviewFileAccess(sessionId, currentFile, sessionPath)
   const toolbarActions = (
     <>
-      <DefaultAppOpenButton
-        filePath={defaultAppTargetPath}
-        access={defaultAppAccess}
-      />
+      <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
     </>
   )
 

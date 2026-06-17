@@ -40,11 +40,10 @@ export function TAWelcomePanel(): React.ReactElement {
         <div className="size-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
           <MessageSquare size={24} />
         </div>
-        <h2 className="text-lg font-medium text-foreground mb-2">
-          与 Agent 对话
-        </h2>
+        <h2 className="text-lg font-medium text-foreground mb-2">与 Agent 对话</h2>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-          在 TA 模式下与 Agent 沟通，所有会话数据独立存储。<br />
+          在 TA 模式下与 Agent 沟通，所有会话数据独立存储。
+          <br />
           点击下方按钮创建一个新的 TA 会话。
         </p>
         <Button onClick={handleStartTAChat} className="gap-2">

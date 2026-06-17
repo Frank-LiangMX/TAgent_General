@@ -27,7 +27,7 @@ export interface MentionListRef {
 
 function MentionListInner<T>(
   { items, onSelect, emptyText, keyExtractor, renderItem }: MentionListProps<T>,
-  ref: React.ForwardedRef<MentionListRef>,
+  ref: React.ForwardedRef<MentionListRef>
 ): React.ReactElement {
   const [localIndex, setLocalIndex] = React.useState(0)
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -85,7 +85,7 @@ function MentionListInner<T>(
           type="button"
           className={cn(
             'w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent transition-colors',
-            index === localIndex && 'bg-accent text-accent-foreground',
+            index === localIndex && 'bg-accent text-accent-foreground'
           )}
           // 用 mousedown 而非 click：异步 items 重渲染会替换 button 节点，
           // 导致 mousedown/mouseup 不在同一节点、click 不派发而漏选；
@@ -104,5 +104,5 @@ function MentionListInner<T>(
 
 // 泛型 forwardRef 包装
 export const MentionList = React.forwardRef(MentionListInner) as <T>(
-  props: MentionListProps<T> & { ref?: React.Ref<MentionListRef> },
+  props: MentionListProps<T> & { ref?: React.Ref<MentionListRef> }
 ) => React.ReactElement

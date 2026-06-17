@@ -15,7 +15,10 @@ export interface TrayMenuModel {
   moreSessions: TrayRecentSessionItem[]
 }
 
-function getWorkspaceLabel(session: AgentSessionMeta, workspacesById: Map<string, AgentWorkspace>): string {
+function getWorkspaceLabel(
+  session: AgentSessionMeta,
+  workspacesById: Map<string, AgentWorkspace>
+): string {
   if (!session.workspaceId) return '未选择工作区'
   const workspace = workspacesById.get(session.workspaceId)
   return workspace?.name ?? '未知工作区'
@@ -23,7 +26,7 @@ function getWorkspaceLabel(session: AgentSessionMeta, workspacesById: Map<string
 
 function toRecentSessionItem(
   session: AgentSessionMeta,
-  workspacesById: Map<string, AgentWorkspace>,
+  workspacesById: Map<string, AgentWorkspace>
 ): TrayRecentSessionItem {
   return {
     id: session.id,
@@ -35,7 +38,7 @@ function toRecentSessionItem(
 export function createTrayMenuModel(
   sessions: AgentSessionMeta[],
   workspaces: AgentWorkspace[],
-  runningSessionIds: Set<string> = new Set(),
+  runningSessionIds: Set<string> = new Set()
 ): TrayMenuModel {
   const workspacesById = new Map(workspaces.map((workspace) => [workspace.id, workspace]))
   const visibleSessions = sessions

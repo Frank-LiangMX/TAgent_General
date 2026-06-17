@@ -11,19 +11,16 @@
  */
 
 import { useAtom, useSetAtom } from 'jotai'
-import {
-  Check,
-  ShieldCheck,
-  X,
-  MessageSquare,
-  Send,
-  FileText,
-} from 'lucide-react'
+import { Check, ShieldCheck, X, MessageSquare, Send, FileText } from 'lucide-react'
 import * as React from 'react'
 
 import type { ExitPlanModeAction, ExitPlanAllowedPrompt } from '@tagent/shared'
 
-import { allPendingExitPlanRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import {
+  allPendingExitPlanRequestsAtom,
+  agentStreamingStatesAtom,
+  finalizeStreamingActivities,
+} from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
 
 /** 选项定义 */
@@ -70,7 +67,9 @@ interface ExitPlanModeBannerProps {
   sessionId: string
 }
 
-export function ExitPlanModeBanner({ sessionId }: ExitPlanModeBannerProps): React.ReactElement | null {
+export function ExitPlanModeBanner({
+  sessionId,
+}: ExitPlanModeBannerProps): React.ReactElement | null {
   const [allRequests, setAllRequests] = useAtom(allPendingExitPlanRequestsAtom)
   const setStreamingStates = useSetAtom(agentStreamingStatesAtom)
   const requests = allRequests.get(sessionId) ?? []
@@ -169,9 +168,8 @@ export function ExitPlanModeBanner({ sessionId }: ExitPlanModeBannerProps): Reac
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
         const count = PLAN_OPTIONS.length
-        const next = e.key === 'ArrowDown'
-          ? (curFocusIdx + 1) % count
-          : (curFocusIdx - 1 + count) % count
+        const next =
+          e.key === 'ArrowDown' ? (curFocusIdx + 1) % count : (curFocusIdx - 1 + count) % count
         setFocusedIdx(next)
       } else if (e.key === 'Enter' && !e.isComposing) {
         e.preventDefault()
@@ -219,15 +217,11 @@ export function ExitPlanModeBanner({ sessionId }: ExitPlanModeBannerProps): Reac
             <X className="size-3.5" />
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Agent 已完成计划，请选择如何继续
-        </p>
+        <p className="text-xs text-muted-foreground">Agent 已完成计划，请选择如何继续</p>
       </div>
 
       {/* allowedPrompts 展示 */}
-      {request.allowedPrompts.length > 0 && (
-        <AllowedPromptsList prompts={request.allowedPrompts} />
-      )}
+      {request.allowedPrompts.length > 0 && <AllowedPromptsList prompts={request.allowedPrompts} />}
 
       {/* 选项列表 */}
       <div className="px-4 pb-2">
@@ -240,9 +234,10 @@ export function ExitPlanModeBanner({ sessionId }: ExitPlanModeBannerProps): Reac
                 type="button"
                 className={`
                   flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
-                  ${option.variant === 'destructive'
-                    ? 'bg-muted/50 text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
-                    : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+                  ${
+                    option.variant === 'destructive'
+                      ? 'bg-muted/50 text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
+                      : 'bg-muted/50 text-foreground/80 hover:bg-muted'
                   }
                   ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
                 `}
@@ -255,9 +250,7 @@ export function ExitPlanModeBanner({ sessionId }: ExitPlanModeBannerProps): Reac
                 }}
                 disabled={submitting}
               >
-                <span className="text-[10px] shrink-0 text-muted-foreground/50">
-                  {idx + 1}
-                </span>
+                <span className="text-[10px] shrink-0 text-muted-foreground/50">{idx + 1}</span>
                 <span className="shrink-0 text-muted-foreground/70">{option.icon}</span>
                 <div className="flex flex-col min-w-0">
                   <span className="font-medium">{option.label}</span>

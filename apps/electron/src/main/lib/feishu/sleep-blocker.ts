@@ -9,7 +9,7 @@ export interface SleepBlockerAdapter {
 }
 
 export function shouldPreventSleepForFeishuSync(
-  settings: Pick<AppSettings, 'feishuSessionMirror'>,
+  settings: Pick<AppSettings, 'feishuSessionMirror'>
 ): boolean {
   return settings.feishuSessionMirror?.mode === 'stream'
 }

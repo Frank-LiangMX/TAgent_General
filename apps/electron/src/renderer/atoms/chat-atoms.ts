@@ -8,7 +8,13 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
-import type { ConversationMeta, ChatMessage, FileAttachment, ChatToolActivity, Channel } from '@tagent/shared'
+import type {
+  ConversationMeta,
+  ChatMessage,
+  FileAttachment,
+  ChatToolActivity,
+  Channel,
+} from '@tagent/shared'
 
 /** 全局渠道列表缓存（启动时加载一次，设置变更时刷新） */
 export const channelsAtom = atom<Channel[]>([])
@@ -74,60 +80,50 @@ export const streamingConversationIdsAtom = atom<Set<string>>((get) => {
  * 读：当前对话是否在流式中
  * 写：更新当前对话的 streaming 标志
  */
-export const streamingAtom = atom<boolean>(
-  (get) => {
-    const currentId = get(currentConversationIdAtom)
-    if (!currentId) return false
-    return get(streamingStatesAtom).get(currentId)?.streaming ?? false
-  },
-)
+export const streamingAtom = atom<boolean>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return false
+  return get(streamingStatesAtom).get(currentId)?.streaming ?? false
+})
 
 /**
  * 流式生成中的临时累积内容（派生读写原子，向后兼容）
  * 读：当前对话的累积内容
  */
-export const streamingContentAtom = atom<string>(
-  (get) => {
-    const currentId = get(currentConversationIdAtom)
-    if (!currentId) return ''
-    return get(streamingStatesAtom).get(currentId)?.content ?? ''
-  },
-)
+export const streamingContentAtom = atom<string>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return ''
+  return get(streamingStatesAtom).get(currentId)?.content ?? ''
+})
 
 /**
  * 流式生成中的推理内容（派生读写原子，向后兼容）
  * 读：当前对话的推理内容
  */
-export const streamingReasoningAtom = atom<string>(
-  (get) => {
-    const currentId = get(currentConversationIdAtom)
-    if (!currentId) return ''
-    return get(streamingStatesAtom).get(currentId)?.reasoning ?? ''
-  },
-)
+export const streamingReasoningAtom = atom<string>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return ''
+  return get(streamingStatesAtom).get(currentId)?.reasoning ?? ''
+})
 
 /** 当前对话流式消息绑定的模型（发送时快照） */
-export const streamingModelAtom = atom<string | null>(
-  (get) => {
-    const currentId = get(currentConversationIdAtom)
-    if (!currentId) return null
-    return get(streamingStatesAtom).get(currentId)?.model ?? null
-  },
-)
+export const streamingModelAtom = atom<string | null>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return null
+  return get(streamingStatesAtom).get(currentId)?.model ?? null
+})
 
 /** 当前对话的工具活动列表（派生只读） */
-export const streamingToolActivitiesAtom = atom<ChatToolActivity[]>(
-  (get) => {
-    const currentId = get(currentConversationIdAtom)
-    if (!currentId) return []
-    return get(streamingStatesAtom).get(currentId)?.toolActivities ?? []
-  },
-)
+export const streamingToolActivitiesAtom = atom<ChatToolActivity[]>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return []
+  return get(streamingStatesAtom).get(currentId)?.toolActivities ?? []
+})
 
 /** 选中的模型（持久化到 localStorage） */
 export const selectedModelAtom = atomWithStorage<SelectedModel | null>(
   'tagent-selected-model',
-  null,
+  null
 )
 
 /** 当前对话的元数据（派生原子） */
@@ -142,17 +138,14 @@ export const currentConversationAtom = atom<ConversationMeta | null>((get) => {
 /** 上下文长度（持久化到 localStorage，默认不限制） */
 export const contextLengthAtom = atomWithStorage<ContextLengthValue>(
   'tagent-context-length',
-  'infinite',
+  'infinite'
 )
 
 /** 并排模式 */
 export const parallelModeAtom = atom<boolean>(false)
 
 /** 思考模式（持久化到 localStorage） */
-export const thinkingEnabledAtom = atomWithStorage<boolean>(
-  'tagent-thinking-enabled',
-  false,
-)
+export const thinkingEnabledAtom = atomWithStorage<boolean>('tagent-thinking-enabled', false)
 
 /** 当前对话的上下文分隔线 */
 export const contextDividersAtom = atom<string[]>([])
@@ -264,7 +257,4 @@ export const conversationThinkingEnabledAtom = atom<Map<string, boolean>>(new Ma
 export const conversationParallelModeAtom = atom<Map<string, boolean>>(new Map())
 
 /** 思考块默认展开偏好（持久化到 localStorage） */
-export const thinkingExpandedAtom = atomWithStorage<boolean>(
-  'tagent-thinking-expanded',
-  false,
-)
+export const thinkingExpandedAtom = atomWithStorage<boolean>('tagent-thinking-expanded', false)

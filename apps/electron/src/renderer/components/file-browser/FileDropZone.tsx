@@ -24,157 +24,180 @@ interface FileDropZoneProps {
   onFoldersDropped: (folderPaths: string[]) => void
 }
 
-export function FileDropZone({ workspaceSlug, sessionId, target = 'session', onFilesUploaded, onFilesAttached, onAttachFolder, onFoldersDropped }: FileDropZoneProps): React.ReactElement {
+export function FileDropZone({
+  workspaceSlug,
+  sessionId,
+  target = 'session',
+  onFilesUploaded,
+  onFilesAttached,
+  onAttachFolder,
+  onFoldersDropped,
+}: FileDropZoneProps): React.ReactElement {
   const [isDragOver, setIsDragOver] = React.useState<'left' | 'right' | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
 
   const isWorkspace = target === 'workspace'
 
-  const saveFiles = React.useCallback(async (files: globalThis.File[]): Promise<void> => {
-    if (files.length === 0) return
-    if (!isWorkspace && !sessionId) {
-      console.error('[FileDropZone] session 模式下 sessionId 不能为空')
-      return
-    }
+  const saveFiles = React.useCallback(
+    async (files: globalThis.File[]): Promise<void> => {
+      if (files.length === 0) return
+      if (!isWorkspace && !sessionId) {
+        console.error('[FileDropZone] session 模式下 sessionId 不能为空')
+        return
+      }
 
-    const oversized: string[] = []
-    const attachedLargeFiles: string[] = []
-    const largeFilePaths: string[] = []
-    const okFiles: globalThis.File[] = []
+      const oversized: string[] = []
+      const attachedLargeFiles: string[] = []
+      const largeFilePaths: string[] = []
+      const okFiles: globalThis.File[] = []
 
-    for (const file of files) {
-      if (file.size > MAX_ATTACHMENT_SIZE) {
-        let sourcePath = ''
-        try { sourcePath = window.electronAPI.getPathForFile(file) } catch { /* ignored */ }
-        if (sourcePath && onFilesAttached) {
-          largeFilePaths.push(sourcePath)
-          attachedLargeFiles.push(file.name)
+      for (const file of files) {
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          let sourcePath = ''
+          try {
+            sourcePath = window.electronAPI.getPathForFile(file)
+          } catch {
+            /* ignored */
+          }
+          if (sourcePath && onFilesAttached) {
+            largeFilePaths.push(sourcePath)
+            attachedLargeFiles.push(file.name)
+          } else {
+            oversized.push(file.name)
+          }
         } else {
-          oversized.push(file.name)
+          okFiles.push(file)
         }
-      } else {
-        okFiles.push(file)
-      }
-    }
-
-    if (oversized.length > 0) {
-      toast.error(`以下文件超过 100MB 且无法取得本地路径，已跳过：${formatFileNames(oversized)}`, {
-        description: '请选择本地文件，或改用附加文件夹。',
-      })
-    }
-
-    if (okFiles.length === 0 && largeFilePaths.length === 0) return
-
-    setIsUploading(true)
-    try {
-      if (largeFilePaths.length > 0 && onFilesAttached) {
-        await onFilesAttached(largeFilePaths)
-        toast.success(`已作为附加文件显示在右侧文件区：${formatFileNames(attachedLargeFiles)}`)
       }
 
-      const fileEntries: Array<{ filename: string; data: string }> = []
-      for (const file of okFiles) {
-        const base64 = await fileToBase64(file)
-        fileEntries.push({ filename: file.name, data: base64 })
+      if (oversized.length > 0) {
+        toast.error(
+          `以下文件超过 100MB 且无法取得本地路径，已跳过：${formatFileNames(oversized)}`,
+          {
+            description: '请选择本地文件，或改用附加文件夹。',
+          }
+        )
       }
 
-      if (fileEntries.length > 0) {
-        if (isWorkspace) {
-          await window.electronAPI.saveFilesToWorkspaceFiles({
-            workspaceSlug,
-            files: fileEntries,
-          })
-        } else {
-          await window.electronAPI.saveFilesToAgentSession({
-            workspaceSlug,
-            sessionId: sessionId!,
-            files: fileEntries,
-          })
-        }
+      if (okFiles.length === 0 && largeFilePaths.length === 0) return
 
-        onFilesUploaded()
-        toast.success(`已添加 ${okFiles.length} 个文件`)
-      }
-    } catch (error) {
-      console.error('[FileDropZone] 文件上传失败:', error)
-      toast.error('文件上传失败')
-    } finally {
-      setIsUploading(false)
-    }
-  }, [workspaceSlug, sessionId, isWorkspace, onFilesUploaded, onFilesAttached])
-
-  const handleDrop = React.useCallback(async (e: React.DragEvent, side: 'left' | 'right'): Promise<void> => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(null)
-    if (isUploading) return
-
-    const droppedFiles = Array.from(e.dataTransfer.files)
-    if (droppedFiles.length === 0) {
-      if (side === 'right') {
-        toast.info('无法识别拖入的内容，请使用按钮选择文件夹')
-      }
-      return
-    }
-
-    const pathMap = new Map<string, globalThis.File>()
-    const paths: string[] = []
-    for (const f of droppedFiles) {
+      setIsUploading(true)
       try {
-        const p = window.electronAPI.getPathForFile(f)
-        if (p) {
-          paths.push(p)
-          pathMap.set(p, f)
+        if (largeFilePaths.length > 0 && onFilesAttached) {
+          await onFilesAttached(largeFilePaths)
+          toast.success(`已作为附加文件显示在右侧文件区：${formatFileNames(attachedLargeFiles)}`)
         }
-      } catch { /* 无法获取路径时忽略 */ }
-    }
 
-    if (paths.length > 0) {
-      try {
-        const { directories, files: filePaths } = await window.electronAPI.checkPathsType(paths)
+        const fileEntries: Array<{ filename: string; data: string }> = []
+        for (const file of okFiles) {
+          const base64 = await fileToBase64(file)
+          fileEntries.push({ filename: file.name, data: base64 })
+        }
 
-        // 左侧：只上传文件，忽略目录
-        if (side === 'left') {
-          if (directories.length > 0) {
-            toast.info('文件夹请拖到右侧「附加文件夹」区')
+        if (fileEntries.length > 0) {
+          if (isWorkspace) {
+            await window.electronAPI.saveFilesToWorkspaceFiles({
+              workspaceSlug,
+              files: fileEntries,
+            })
+          } else {
+            await window.electronAPI.saveFilesToAgentSession({
+              workspaceSlug,
+              sessionId: sessionId!,
+              files: fileEntries,
+            })
           }
-          const regularFiles = filePaths.flatMap((p) => {
-            const f = pathMap.get(p)
-            return f ? [f] : []
-          })
-          if (regularFiles.length > 0) {
-            await saveFiles(regularFiles)
-          }
-        } else {
-          // 右侧：附加文件夹，也支持将文件按原路径附加
-          if (filePaths.length > 0) {
-            if (onFilesAttached) {
-              await onFilesAttached(filePaths)
-              toast.success(`已附加 ${filePaths.length} 个文件`)
-            } else {
-              toast.info('文件请拖到左侧「添加文件」区')
-            }
-          }
-          if (directories.length > 0) {
-            onFoldersDropped(directories)
-          }
+
+          onFilesUploaded()
+          toast.success(`已添加 ${okFiles.length} 个文件`)
         }
       } catch (error) {
-        console.error('[FileDropZone] 路径检测失败，回退处理:', error)
+        console.error('[FileDropZone] 文件上传失败:', error)
+        toast.error('文件上传失败')
+      } finally {
+        setIsUploading(false)
+      }
+    },
+    [workspaceSlug, sessionId, isWorkspace, onFilesUploaded, onFilesAttached]
+  )
+
+  const handleDrop = React.useCallback(
+    async (e: React.DragEvent, side: 'left' | 'right'): Promise<void> => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragOver(null)
+      if (isUploading) return
+
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      if (droppedFiles.length === 0) {
+        if (side === 'right') {
+          toast.info('无法识别拖入的内容，请使用按钮选择文件夹')
+        }
+        return
+      }
+
+      const pathMap = new Map<string, globalThis.File>()
+      const paths: string[] = []
+      for (const f of droppedFiles) {
+        try {
+          const p = window.electronAPI.getPathForFile(f)
+          if (p) {
+            paths.push(p)
+            pathMap.set(p, f)
+          }
+        } catch {
+          /* 无法获取路径时忽略 */
+        }
+      }
+
+      if (paths.length > 0) {
+        try {
+          const { directories, files: filePaths } = await window.electronAPI.checkPathsType(paths)
+
+          // 左侧：只上传文件，忽略目录
+          if (side === 'left') {
+            if (directories.length > 0) {
+              toast.info('文件夹请拖到右侧「附加文件夹」区')
+            }
+            const regularFiles = filePaths.flatMap((p) => {
+              const f = pathMap.get(p)
+              return f ? [f] : []
+            })
+            if (regularFiles.length > 0) {
+              await saveFiles(regularFiles)
+            }
+          } else {
+            // 右侧：附加文件夹，也支持将文件按原路径附加
+            if (filePaths.length > 0) {
+              if (onFilesAttached) {
+                await onFilesAttached(filePaths)
+                toast.success(`已附加 ${filePaths.length} 个文件`)
+              } else {
+                toast.info('文件请拖到左侧「添加文件」区')
+              }
+            }
+            if (directories.length > 0) {
+              onFoldersDropped(directories)
+            }
+          }
+        } catch (error) {
+          console.error('[FileDropZone] 路径检测失败，回退处理:', error)
+          if (side === 'left') {
+            await saveFiles(droppedFiles)
+          } else {
+            toast.warning('无法识别文件夹，请使用按钮选择')
+          }
+        }
+      } else {
         if (side === 'left') {
           await saveFiles(droppedFiles)
         } else {
           toast.warning('无法识别文件夹，请使用按钮选择')
         }
       }
-    } else {
-      if (side === 'left') {
-        await saveFiles(droppedFiles)
-      } else {
-        toast.warning('无法识别文件夹，请使用按钮选择')
-      }
-    }
-  }, [saveFiles, onFoldersDropped, onFilesAttached, isUploading])
+    },
+    [saveFiles, onFoldersDropped, onFilesAttached, isUploading]
+  )
 
   const handleDragOver = React.useCallback((e: React.DragEvent, side: 'left' | 'right'): void => {
     e.preventDefault()
@@ -203,15 +226,22 @@ export function FileDropZone({ workspaceSlug, sessionId, target = 'session', onF
       if (largeFiles.length > 0) {
         if (onFilesAttached) {
           await onFilesAttached(largeFiles.map((f) => f.path))
-          toast.success(`已作为附加文件显示在右侧文件区：${formatFileNames(largeFiles.map((f) => f.filename))}`)
+          toast.success(
+            `已作为附加文件显示在右侧文件区：${formatFileNames(largeFiles.map((f) => f.filename))}`
+          )
         } else {
-          toast.error(`以下文件超过 100MB，未复制到工作文件夹：${formatFileNames(largeFiles.map((f) => f.filename))}`, {
-            description: '可在输入框中直接发送为附加文件，或使用附加文件夹。',
-          })
+          toast.error(
+            `以下文件超过 100MB，未复制到工作文件夹：${formatFileNames(largeFiles.map((f) => f.filename))}`,
+            {
+              description: '可在输入框中直接发送为附加文件，或使用附加文件夹。',
+            }
+          )
         }
       }
       if (skippedFiles.length > 0) {
-        toast.warning(`以下文件无法读取，已跳过：${formatFileNames(skippedFiles.map((f) => f.filename))}`)
+        toast.warning(
+          `以下文件无法读取，已跳过：${formatFileNames(skippedFiles.map((f) => f.filename))}`
+        )
       }
 
       const oversized: string[] = []
@@ -267,15 +297,17 @@ export function FileDropZone({ workspaceSlug, sessionId, target = 'session', onF
       isDragOver === side
         ? 'bg-primary/25 ring-2 ring-primary/50'
         : 'bg-muted/40 hover:bg-muted/70',
-      isUploading && 'pointer-events-none opacity-60',
+      isUploading && 'pointer-events-none opacity-60'
     )
 
-  const activateOnKey = (fn: () => void) => (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      fn()
+  const activateOnKey =
+    (fn: () => void) =>
+    (e: React.KeyboardEvent): void => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        fn()
+      }
     }
-  }
 
   return (
     <div className="flex gap-2 px-3 pt-2 pb-1.5 flex-shrink-0">
@@ -327,7 +359,9 @@ export function FileDropZone({ workspaceSlug, sessionId, target = 'session', onF
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>{isWorkspace ? '附加文件夹供工作区所有会话访问' : '告知 Agent 你想处理的文件夹'}</p>
+              <p>
+                {isWorkspace ? '附加文件夹供工作区所有会话访问' : '告知 Agent 你想处理的文件夹'}
+              </p>
             </TooltipContent>
           </Tooltip>
         </>

@@ -41,15 +41,9 @@ function collectCollapsiblePanels(node: unknown): CardNode[] {
 
   const current = node as CardNode
   const panels = current.tag === 'collapsible_panel' ? [current] : []
-  const children = [
-    ...(current.elements ?? []),
-    ...(current.body?.elements ?? []),
-  ]
+  const children = [...(current.elements ?? []), ...(current.body?.elements ?? [])]
 
-  return [
-    ...panels,
-    ...children.flatMap((child) => collectCollapsiblePanels(child)),
-  ]
+  return [...panels, ...children.flatMap((child) => collectCollapsiblePanels(child))]
 }
 
 describe('飞书流式卡片工具调用折叠', () => {
@@ -63,11 +57,12 @@ describe('飞书流式卡片工具调用折叠', () => {
   })
 
   test('Given 多个已完成工具 When 渲染最终卡片 Then 工具摘要面板默认收起', () => {
-    const card = renderCard(stateWithTools([
-      tool('tool-1', 'done'),
-      tool('tool-2', 'done'),
-      tool('tool-3', 'done'),
-    ], 'done'))
+    const card = renderCard(
+      stateWithTools(
+        [tool('tool-1', 'done'), tool('tool-2', 'done'), tool('tool-3', 'done')],
+        'done'
+      )
+    )
 
     const panels = collectCollapsiblePanels(card)
 

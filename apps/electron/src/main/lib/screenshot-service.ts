@@ -66,7 +66,8 @@ function getScreenshotWindow(scale: number): BrowserWindow {
     clearTimeout(_idleTimer)
     _idleTimer = null
   }
-  if (_screenshotWin && !_screenshotWin.isDestroyed() && _screenshotScale === scale) return _screenshotWin
+  if (_screenshotWin && !_screenshotWin.isDestroyed() && _screenshotScale === scale)
+    return _screenshotWin
   if (_screenshotWin && !_screenshotWin.isDestroyed()) {
     _screenshotWin.destroy()
   }
@@ -98,7 +99,9 @@ let _lock: Promise<unknown> = Promise.resolve()
 function withLock<T>(fn: () => Promise<T>): Promise<T> {
   let resolve: (value?: unknown) => void
   const prev = _lock
-  _lock = new Promise((r) => { resolve = r })
+  _lock = new Promise((r) => {
+    resolve = r
+  })
   // prev 即便已 rejected（fn 自身的 try/catch 兜底下不应发生，但加固调用方意外抛错路径），
   // 也用 .catch 吞掉以确保后续锁能继续推进。
   return prev.catch(() => undefined).then(() => fn().finally(() => resolve!()))
@@ -113,7 +116,9 @@ function resolveMaxSegmentHeight(): number {
     if (Number.isFinite(h) && h > 0) {
       return Math.max(1, Math.min(SCREENSHOT_MAX_SEGMENT, h - SCREENSHOT_SEGMENT_MARGIN))
     }
-  } catch { /* 降级 */ }
+  } catch {
+    /* 降级 */
+  }
   return SCREENSHOT_MAX_SEGMENT
 }
 
@@ -168,13 +173,21 @@ function sanitizeScreenshotFragment(html: string): string {
   // 纵深防御：CSP (script-src 'none') 是主要安全保障，此处做额外清理。
   return html
     .replace(/<script\b[\s\S]*?<\/script>/gi, '')
-    .replace(/<(?:iframe|object|embed|base|form)\b[\s\S]*?<\/(?:iframe|object|embed|base|form)>/gi, '')
+    .replace(
+      /<(?:iframe|object|embed|base|form)\b[\s\S]*?<\/(?:iframe|object|embed|base|form)>/gi,
+      ''
+    )
     .replace(/<(?:iframe|object|embed|base|form)\b[^>]*\/?>/gi, '')
     .replace(/<meta\b[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '')
     .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
 }
 
-function buildScreenshotHtml(htmlContent: string, isDark: boolean, css: string, themeClass: string): string {
+function buildScreenshotHtml(
+  htmlContent: string,
+  isDark: boolean,
+  css: string,
+  themeClass: string
+): string {
   const bg = isDark ? '#111827' : '#ffffff'
   const safeHtml = sanitizeScreenshotFragment(htmlContent)
   // 防止 css 字符串中出现 `</style >` 等变体提前终止 style 块。
@@ -207,7 +220,11 @@ img,video,canvas,svg{max-width:100%}
 
 /* ── 核心截图函数 ── */
 
-async function loadScreenshotDocument(win: BrowserWindow, htmlPath: string, width: number): Promise<number> {
+async function loadScreenshotDocument(
+  win: BrowserWindow,
+  htmlPath: string,
+  width: number
+): Promise<number> {
   win.setSize(width, 100)
   await win.loadURL(pathToFileURL(htmlPath).href)
   await win.webContents.executeJavaScript(`
@@ -239,7 +256,12 @@ async function loadScreenshotDocument(win: BrowserWindow, htmlPath: string, widt
   return Math.ceil(totalHeight)
 }
 
-async function captureLoadedDocument(win: BrowserWindow, width: number, totalHeight: number, scale: number): Promise<Buffer> {
+async function captureLoadedDocument(
+  win: BrowserWindow,
+  width: number,
+  totalHeight: number,
+  scale: number
+): Promise<Buffer> {
   assertScreenshotBudget(width, totalHeight, scale)
 
   const maxH = resolveMaxSegmentHeight()
@@ -247,9 +269,7 @@ async function captureLoadedDocument(win: BrowserWindow, width: number, totalHei
   if (totalHeight <= maxH) {
     win.setSize(width, totalHeight)
     await new Promise((r) => setTimeout(r, 100))
-    const image = await win.webContents.capturePage(
-      { x: 0, y: 0, width, height: totalHeight },
-    )
+    const image = await win.webContents.capturePage({ x: 0, y: 0, width, height: totalHeight })
     return image.toPNG({ scaleFactor: scale })
   }
 
@@ -261,9 +281,7 @@ async function captureLoadedDocument(win: BrowserWindow, width: number, totalHei
     win.setSize(width, segH)
     await win.webContents.executeJavaScript(`window.scrollTo(0, ${captured})`)
     await new Promise((r) => setTimeout(r, 120))
-    const seg: NativeImage = await win.webContents.capturePage(
-      { x: 0, y: 0, width, height: segH },
-    )
+    const seg: NativeImage = await win.webContents.capturePage({ x: 0, y: 0, width, height: segH })
     parts.push(PNG.sync.read(seg.toPNG({ scaleFactor: scale })))
     captured += segH
   }
@@ -290,7 +308,11 @@ async function screenshotCapture(htmlContent: string, width: number): Promise<Bu
 
     return captureLoadedDocument(win, width, totalHeight, scale)
   } finally {
-    try { unlinkSync(tmpPath) } catch { /* 清理 */ }
+    try {
+      unlinkSync(tmpPath)
+    } catch {
+      /* 清理 */
+    }
   }
 }
 
@@ -317,10 +339,16 @@ export function captureScreenshot(input: ScreenshotInput): Promise<ScreenshotRes
   return withLock(async () => {
     try {
       const { html, isDark, width = 960, mode, css = '', themeClass = '' } = input
-      if (typeof html !== 'string' || Buffer.byteLength(html, 'utf-8') > SCREENSHOT_LIMITS.MAX_HTML_BYTES) {
+      if (
+        typeof html !== 'string' ||
+        Buffer.byteLength(html, 'utf-8') > SCREENSHOT_LIMITS.MAX_HTML_BYTES
+      ) {
         throw new Error('截图内容过大')
       }
-      if (typeof css !== 'string' || Buffer.byteLength(css, 'utf-8') > SCREENSHOT_LIMITS.MAX_HTML_BYTES) {
+      if (
+        typeof css !== 'string' ||
+        Buffer.byteLength(css, 'utf-8') > SCREENSHOT_LIMITS.MAX_HTML_BYTES
+      ) {
         throw new Error('截图样式过大')
       }
       if (!Number.isFinite(width)) {
@@ -331,7 +359,10 @@ export function captureScreenshot(input: ScreenshotInput): Promise<ScreenshotRes
       }
       // 渲染端传入的是「内容宽度」，加上左右各 SCREENSHOT_PADDING_X 才是最终截图宽度。
       // gutter 是叠加在内容之外、而不是从内容里挤出来的——所以内容不会被压缩。
-      const contentWidth = Math.max(SCREENSHOT_LIMITS.MIN_WIDTH, Math.min(SCREENSHOT_LIMITS.MAX_WIDTH, Math.ceil(width)))
+      const contentWidth = Math.max(
+        SCREENSHOT_LIMITS.MIN_WIDTH,
+        Math.min(SCREENSHOT_LIMITS.MAX_WIDTH, Math.ceil(width))
+      )
       const safeWidth = contentWidth + SCREENSHOT_PADDING_X * 2
       const htmlContent = buildScreenshotHtml(html, isDark, css, themeClass)
       if (Buffer.byteLength(htmlContent, 'utf-8') > SCREENSHOT_LIMITS.MAX_HTML_BYTES) {

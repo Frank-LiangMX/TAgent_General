@@ -98,9 +98,14 @@ function clamp(value: number, min: number, max: number): number {
 // ===== 图标（与 CodeBlock 一致） =====
 
 const ICON_ATTRS = {
-  width: 14, height: 14, viewBox: '0 0 24 24',
-  fill: 'none', stroke: 'currentColor', strokeWidth: 2,
-  strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  width: 14,
+  height: 14,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
 }
 const copyIconPath = (
   <>
@@ -205,18 +210,37 @@ export function MermaidBlock({ code }: MermaidBlockProps): React.ReactElement {
         <div className="flex items-center gap-1">
           {renderedSvg && (
             <div className="flex items-center gap-0.5 mr-2">
-              <button type="button" onClick={handleZoomOut} className="p-0.5 rounded hover:bg-foreground/10 transition-colors" title="缩小">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="p-0.5 rounded hover:bg-foreground/10 transition-colors"
+                title="缩小"
+              >
                 <svg {...ICON_ATTRS}>{zoomOutPath}</svg>
               </button>
-              <button type="button" onClick={handleZoomReset} className="px-1 py-0.5 rounded hover:bg-foreground/10 transition-colors min-w-[40px] text-center tabular-nums" title="重置缩放">
+              <button
+                type="button"
+                onClick={handleZoomReset}
+                className="px-1 py-0.5 rounded hover:bg-foreground/10 transition-colors min-w-[40px] text-center tabular-nums"
+                title="重置缩放"
+              >
                 {zoomPercent}%
               </button>
-              <button type="button" onClick={handleZoomIn} className="p-0.5 rounded hover:bg-foreground/10 transition-colors" title="放大">
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="p-0.5 rounded hover:bg-foreground/10 transition-colors"
+                title="放大"
+              >
                 <svg {...ICON_ATTRS}>{zoomInPath}</svg>
               </button>
             </div>
           )}
-          <button type="button" onClick={handleCopy} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-foreground/10 transition-colors text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-foreground/10 transition-colors text-muted-foreground hover:text-foreground"
+          >
             <svg {...ICON_ATTRS}>{copied ? checkIconPath : copyIconPath}</svg>
             <span>{copied ? '已复制' : '复制'}</span>
           </button>
@@ -225,9 +249,7 @@ export function MermaidBlock({ code }: MermaidBlockProps): React.ReactElement {
 
       <div className="overflow-hidden">
         {!renderedSvg ? (
-          <pre
-            className="mermaid-block-scroll overflow-x-auto p-4 m-0 text-[13px] leading-[1.6] bg-muted/30 text-foreground/80"
-          >
+          <pre className="mermaid-block-scroll overflow-x-auto p-4 m-0 text-[13px] leading-[1.6] bg-muted/30 text-foreground/80">
             <code>{code}</code>
           </pre>
         ) : (

@@ -12,7 +12,9 @@ export function isThinkingSignatureError(...messages: Array<string | null | unde
   // 2. "thinking block ... Invalid signature"（顺序颠倒变体）
   // 3. "....signature: Field required"（中转/网关把 content.N.thinking.signature 路径段脱敏成 *** 后透传的 Pydantic 校验报错，
   //    如 "***.***.***.***.***.signature: Field required"）
-  return /(?:invalid\s+signature[\s\S]{0,240}thinking\s+block|thinking\s+block[\s\S]{0,240}invalid\s+signature|\bsignature\s*:\s*field\s+required)/i.test(combined)
+  return /(?:invalid\s+signature[\s\S]{0,240}thinking\s+block|thinking\s+block[\s\S]{0,240}invalid\s+signature|\bsignature\s*:\s*field\s+required)/i.test(
+    combined
+  )
 }
 
 export function formatThinkingSignatureError(): string {

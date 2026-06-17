@@ -31,10 +31,9 @@ interface EditResultRendererProps {
 const HUNK_HEADER_RE = /^@@ -(\d+)(,\d+)? \+(\d+)(,\d+)?( @@.*)$/
 
 function getExplicitStartLine(input: Record<string, unknown>): number | null {
-  const value = input.offset ?? input.start_line ?? input.startLine ?? input.line_number ?? input.lineNumber
-  return typeof value === 'number' && Number.isFinite(value)
-    ? Math.max(1, Math.floor(value))
-    : null
+  const value =
+    input.offset ?? input.start_line ?? input.startLine ?? input.line_number ?? input.lineNumber
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(1, Math.floor(value)) : null
 }
 
 function uniqueIndexOf(haystack: string, needle: string): number | null {
@@ -52,12 +51,17 @@ function lineNumberAtIndex(text: string, index: number): number {
   return lineNumber
 }
 
-function findEditedSnippetStartLine(fileContents: string, oldStr: string, newStr: string): number | null {
+function findEditedSnippetStartLine(
+  fileContents: string,
+  oldStr: string,
+  newStr: string
+): number | null {
   const normalizedContents = fileContents.replace(/\r\n?/g, '\n')
   const normalizedNew = newStr.replace(/\r\n?/g, '\n')
   const normalizedOld = oldStr.replace(/\r\n?/g, '\n')
-  const matchIndex = uniqueIndexOf(normalizedContents, normalizedNew)
-    ?? uniqueIndexOf(normalizedContents, normalizedOld)
+  const matchIndex =
+    uniqueIndexOf(normalizedContents, normalizedNew) ??
+    uniqueIndexOf(normalizedContents, normalizedOld)
   return matchIndex === null ? null : lineNumberAtIndex(normalizedContents, matchIndex)
 }
 
@@ -65,13 +69,22 @@ function offsetHunkSpecs(hunkSpecs: string | undefined, offset: number): string 
   if (!hunkSpecs) return hunkSpecs
   return hunkSpecs.replace(
     HUNK_HEADER_RE,
-    (_match, deletionStart: string, deletionCount: string | undefined, additionStart: string, additionCount: string | undefined, suffix: string) => (
+    (
+      _match,
+      deletionStart: string,
+      deletionCount: string | undefined,
+      additionStart: string,
+      additionCount: string | undefined,
+      suffix: string
+    ) =>
       `@@ -${Number(deletionStart) + offset}${deletionCount ?? ''} +${Number(additionStart) + offset}${additionCount ?? ''}${suffix}`
-    ),
   )
 }
 
-function offsetFileDiffLineNumbers(fileDiff: FileDiffMetadata, lineNumberStart: number | null): FileDiffMetadata {
+function offsetFileDiffLineNumbers(
+  fileDiff: FileDiffMetadata,
+  lineNumberStart: number | null
+): FileDiffMetadata {
   const offset = lineNumberStart === null ? 0 : Math.max(0, Math.floor(lineNumberStart) - 1)
   if (offset === 0) return fileDiff
   return {
@@ -85,7 +98,12 @@ function offsetFileDiffLineNumbers(fileDiff: FileDiffMetadata, lineNumberStart: 
   }
 }
 
-export function EditResultRenderer({ result, isError, input, basePath }: EditResultRendererProps): React.ReactElement {
+export function EditResultRenderer({
+  result,
+  isError,
+  input,
+  basePath,
+}: EditResultRendererProps): React.ReactElement {
   const theme = useAtomValue(resolvedThemeAtom)
   const sessionId = useAtomValue(currentAgentSessionIdAtom)
   const oldStr = typeof input.old_string === 'string' ? input.old_string : ''
@@ -94,29 +112,38 @@ export function EditResultRenderer({ result, isError, input, basePath }: EditRes
   const explicitStartLine = getExplicitStartLine(input)
   const [lineNumberStart, setLineNumberStart] = React.useState<number | null>(explicitStartLine)
 
-  const oldFile = React.useMemo<FileContents>(() => ({
-    name: filePath,
-    contents: oldStr,
-    cacheKey: `old:${filePath}:${cheapHash(oldStr)}`,
-  }), [filePath, oldStr])
+  const oldFile = React.useMemo<FileContents>(
+    () => ({
+      name: filePath,
+      contents: oldStr,
+      cacheKey: `old:${filePath}:${cheapHash(oldStr)}`,
+    }),
+    [filePath, oldStr]
+  )
 
-  const newFile = React.useMemo<FileContents>(() => ({
-    name: filePath,
-    contents: newStr,
-    cacheKey: `new:${filePath}:${cheapHash(newStr)}`,
-  }), [filePath, newStr])
+  const newFile = React.useMemo<FileContents>(
+    () => ({
+      name: filePath,
+      contents: newStr,
+      cacheKey: `new:${filePath}:${cheapHash(newStr)}`,
+    }),
+    [filePath, newStr]
+  )
 
-  const options = React.useMemo(() => ({
-    diffStyle: 'unified' as const,
-    theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
-    disableFileHeader: true,
-    diffIndicators: 'bars' as const,
-    hunkSeparators: 'line-info' as const,
-    lineDiffType: 'none' as const,
-    overflow: 'scroll' as const,
-    themeType: theme as 'light' | 'dark' | 'system',
-    unsafeCSS: PIERRE_DIFF_CSS,
-  }), [theme])
+  const options = React.useMemo(
+    () => ({
+      diffStyle: 'unified' as const,
+      theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
+      disableFileHeader: true,
+      diffIndicators: 'bars' as const,
+      hunkSeparators: 'line-info' as const,
+      lineDiffType: 'none' as const,
+      overflow: 'scroll' as const,
+      themeType: theme as 'light' | 'dark' | 'system',
+      unsafeCSS: PIERRE_DIFF_CSS,
+    }),
+    [theme]
+  )
 
   React.useEffect(() => {
     if (explicitStartLine !== null) {
@@ -131,10 +158,11 @@ export function EditResultRenderer({ result, isError, input, basePath }: EditRes
 
     let cancelled = false
     const candidateBasePaths = basePath ? [basePath] : undefined
-    window.electronAPI.resolveAndReadFile(filePath, {
-      sessionId: sessionId ?? undefined,
-      candidateBasePaths,
-    })
+    window.electronAPI
+      .resolveAndReadFile(filePath, {
+        sessionId: sessionId ?? undefined,
+        candidateBasePaths,
+      })
       .then((file) => {
         if (cancelled) return
         setLineNumberStart(file ? findEditedSnippetStartLine(file.content, oldStr, newStr) : null)
@@ -166,19 +194,11 @@ export function EditResultRenderer({ result, isError, input, basePath }: EditRes
   }
 
   if (!oldStr && !newStr) {
-    return (
-      <div className="text-[12px] text-muted-foreground">
-        {result || '编辑成功'}
-      </div>
-    )
+    return <div className="text-[12px] text-muted-foreground">{result || '编辑成功'}</div>
   }
 
   if (!fileDiff) {
-    return (
-      <div className="text-[12px] text-muted-foreground">
-        {result || '编辑成功'}
-      </div>
-    )
+    return <div className="text-[12px] text-muted-foreground">{result || '编辑成功'}</div>
   }
 
   return (

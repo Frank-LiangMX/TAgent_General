@@ -7,11 +7,11 @@
 
 import * as React from 'react'
 
-const DASH_LENGTH = 9    // 每段虚线长度
-const DASH_GAP = 7       // 虚线间距
-const STROKE_WIDTH = 2   // 线宽
+const DASH_LENGTH = 9 // 每段虚线长度
+const DASH_GAP = 7 // 虚线间距
+const STROKE_WIDTH = 2 // 线宽
 const BORDER_RADIUS = 17 // 圆角半径，与输入框 rounded-[17px] 一致
-const OFFSET = 2         // 向外偏移，避免遮盖原有 border
+const OFFSET = 2 // 向外偏移，避免遮盖原有 border
 
 export function PlanModeDashedBorder(): React.ReactElement {
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -43,12 +43,7 @@ export function PlanModeDashedBorder(): React.ReactElement {
       }}
     >
       {size.w > 0 && size.h > 0 && (
-        <svg
-          width={svgW}
-          height={svgH}
-          className="block"
-          style={{ overflow: 'visible' }}
-        >
+        <svg width={svgW} height={svgH} className="block" style={{ overflow: 'visible' }}>
           <rect
             className="plan-mode-stroke"
             x={STROKE_WIDTH / 2}

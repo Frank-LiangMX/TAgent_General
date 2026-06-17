@@ -15,10 +15,16 @@ interface MarkdownTocProps {
 
 /** 计算标题相对滚动容器的 top（不依赖 offsetParent 链） */
 function offsetTopWithin(node: HTMLElement, container: HTMLElement): number {
-  return node.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+  return (
+    node.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+  )
 }
 
-export function MarkdownToc({ containerRef, contentKey, enabled }: MarkdownTocProps): React.ReactElement | null {
+export function MarkdownToc({
+  containerRef,
+  contentKey,
+  enabled,
+}: MarkdownTocProps): React.ReactElement | null {
   const headings = useTocHeadings(containerRef, contentKey, enabled)
   const activeId = useScrollSpy(containerRef, headings)
   const listRef = React.useRef<HTMLDivElement>(null)
@@ -39,13 +45,15 @@ export function MarkdownToc({ containerRef, contentKey, enabled }: MarkdownTocPr
   // active 项保持在侧栏可视区内
   React.useEffect(() => {
     if (!activeId || !listRef.current) return
-    const item = listRef.current.querySelector<HTMLElement>(`[data-toc-id="${CSS.escape(activeId)}"]`)
+    const item = listRef.current.querySelector<HTMLElement>(
+      `[data-toc-id="${CSS.escape(activeId)}"]`
+    )
     item?.scrollIntoView({ block: 'nearest' })
   }, [activeId])
 
   const minLevel = React.useMemo(
     () => (headings.length ? Math.min(...headings.map((h) => h.level)) : 1),
-    [headings],
+    [headings]
   )
 
   if (!enabled || narrow || headings.length < 2) return null
@@ -62,7 +70,9 @@ export function MarkdownToc({ containerRef, contentKey, enabled }: MarkdownTocPr
       aria-label="文档目录"
       className="flex flex-col w-52 shrink-0 self-start max-h-full m-2 rounded-lg bg-muted/40"
     >
-      <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">目录</div>
+      <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
+        目录
+      </div>
       <div ref={listRef} className="min-h-0 overflow-auto scrollbar-thin px-1 pb-2">
         {headings.map((heading) => {
           const active = heading.id === activeId
@@ -79,7 +89,7 @@ export function MarkdownToc({ containerRef, contentKey, enabled }: MarkdownTocPr
                 'border-l-2 border-transparent',
                 active
                   ? 'border-primary text-foreground font-medium bg-foreground/[0.04]'
-                  : 'text-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.03]',
+                  : 'text-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.03]'
               )}
             >
               {heading.text}

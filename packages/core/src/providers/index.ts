@@ -29,17 +29,17 @@ const adapterRegistry = new Map<ProviderType, ProviderAdapter>([
   ['anthropic', new AnthropicAdapter()],
   ['anthropic-compatible', new AnthropicAdapter('anthropic-compatible')],
   ['openai', new OpenAIAdapter()],
-  ['deepseek', new AnthropicAdapter('deepseek')],   // DeepSeek 使用 Anthropic 兼容协议
-  ['kimi-api', new AnthropicAdapter('kimi-api')],       // Kimi API 的 Anthropic 协议端点
+  ['deepseek', new AnthropicAdapter('deepseek')], // DeepSeek 使用 Anthropic 兼容协议
+  ['kimi-api', new AnthropicAdapter('kimi-api')], // Kimi API 的 Anthropic 协议端点
   ['kimi-coding', new AnthropicAdapter('kimi-coding')], // Kimi Coding Plan 订阅制（强制 User-Agent）
-  ['zhipu', new OpenAIAdapter()],         // 智谱 AI 使用 OpenAI 兼容协议
+  ['zhipu', new OpenAIAdapter()], // 智谱 AI 使用 OpenAI 兼容协议
   ['zhipu-coding', new AnthropicAdapter('zhipu-coding')], // 智谱 Coding Plan 订阅制（强制 User-Agent）
   ['minimax', new AnthropicAdapter('minimax')], // MiniMax 使用 Anthropic 兼容协议
-  ['doubao', new OpenAIAdapter()],        // 豆包使用 OpenAI 兼容协议
-  ['qwen', new OpenAIAdapter()],          // 通义千问使用 OpenAI 兼容协议
-  ['xiaomi', new AnthropicAdapter('xiaomi')],                       // 小米 MiMo API 使用 Anthropic 兼容协议
+  ['doubao', new OpenAIAdapter()], // 豆包使用 OpenAI 兼容协议
+  ['qwen', new OpenAIAdapter()], // 通义千问使用 OpenAI 兼容协议
+  ['xiaomi', new AnthropicAdapter('xiaomi')], // 小米 MiMo API 使用 Anthropic 兼容协议
   ['xiaomi-token-plan', new AnthropicAdapter('xiaomi-token-plan')], // 小米 Token Plan 订阅制（强制 User-Agent）
-  ['custom', new OpenAIAdapter()],        // 自定义也使用 OpenAI 兼容协议
+  ['custom', new OpenAIAdapter()], // 自定义也使用 OpenAI 兼容协议
   ['google', new GoogleAdapter()],
 ])
 
@@ -53,7 +53,9 @@ const adapterRegistry = new Map<ProviderType, ProviderAdapter>([
 export function getAdapter(provider: ProviderType): ProviderAdapter {
   const adapter = adapterRegistry.get(provider)
   if (!adapter) {
-    throw new Error(`不支持的供应商: ${provider}。你可能过去使用的是 TAgent 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。`)
+    throw new Error(
+      `不支持的供应商: ${provider}。你可能过去使用的是 TAgent 商业版，请重新下载商业版覆盖安装，当前版本为开源版本。`
+    )
   }
   return adapter
 }

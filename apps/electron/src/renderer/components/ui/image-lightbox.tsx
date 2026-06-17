@@ -61,9 +61,7 @@ export function ImageLightbox({
           }}
         >
           {/* 隐藏的标题（无障碍） */}
-          <DialogPrimitive.Title className="sr-only">
-            {alt || '图片预览'}
-          </DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">{alt || '图片预览'}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
             预览图片：{alt || '图片'}
           </DialogPrimitive.Description>

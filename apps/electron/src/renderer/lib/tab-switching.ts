@@ -13,14 +13,11 @@ function arraysEqual(left: readonly string[], right: readonly string[]): boolean
 export function promoteTabMru(
   mru: string[],
   tabId: string | null,
-  limit = DEFAULT_TAB_MRU_LIMIT,
+  limit = DEFAULT_TAB_MRU_LIMIT
 ): string[] {
   if (!tabId) return mru
 
-  const next = [
-    tabId,
-    ...mru.filter((id) => id !== tabId),
-  ].slice(0, Math.max(1, limit))
+  const next = [tabId, ...mru.filter((id) => id !== tabId)].slice(0, Math.max(1, limit))
 
   return arraysEqual(mru, next) ? mru : next
 }
@@ -30,7 +27,7 @@ export function getInitialTabSwitchIndex<T extends TabSwitchCandidate>(
   candidates: readonly T[],
   activeTabId: string | null,
   mru: readonly string[],
-  direction: 1 | -1,
+  direction: 1 | -1
 ): number {
   if (candidates.length === 0) return -1
 
@@ -51,9 +48,12 @@ export function getInitialTabSwitchIndex<T extends TabSwitchCandidate>(
   }
 
   const activeIndex = activeTabId ? orderedIds.indexOf(activeTabId) : -1
-  const targetOrderIndex = activeIndex === -1
-    ? direction === 1 ? 0 : orderedIds.length - 1
-    : (activeIndex + direction + orderedIds.length) % orderedIds.length
+  const targetOrderIndex =
+    activeIndex === -1
+      ? direction === 1
+        ? 0
+        : orderedIds.length - 1
+      : (activeIndex + direction + orderedIds.length) % orderedIds.length
   const targetId = orderedIds[targetOrderIndex]
 
   return candidates.findIndex((candidate) => candidate.id === targetId)

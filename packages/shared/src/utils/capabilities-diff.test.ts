@@ -7,7 +7,7 @@ import type { WorkspaceCapabilities } from '../types/agent'
 /** 构建测试用 WorkspaceCapabilities */
 function makeCaps(
   mcpServers: Array<{ name: string; enabled: boolean }> = [],
-  skills: Array<{ slug: string; name: string; enabled: boolean }> = [],
+  skills: Array<{ slug: string; name: string; enabled: boolean }> = []
 ): WorkspaceCapabilities {
   return {
     mcpServers: mcpServers.map((s) => ({ ...s, type: 'stdio' as const })),
@@ -19,7 +19,7 @@ describe('diffCapabilities', () => {
   test('无变化返回空数组', () => {
     const caps = makeCaps(
       [{ name: 'github', enabled: true }],
-      [{ slug: 'review', name: 'Code Review', enabled: true }],
+      [{ slug: 'review', name: 'Code Review', enabled: true }]
     )
     expect(diffCapabilities(caps, caps)).toEqual([])
   })
@@ -93,12 +93,21 @@ describe('diffCapabilities', () => {
 
   test('检测多个同时变化', () => {
     const prev = makeCaps(
-      [{ name: 'github', enabled: true }, { name: 'slack', enabled: true }],
-      [{ slug: 'review', name: 'Code Review', enabled: true }],
+      [
+        { name: 'github', enabled: true },
+        { name: 'slack', enabled: true },
+      ],
+      [{ slug: 'review', name: 'Code Review', enabled: true }]
     )
     const next = makeCaps(
-      [{ name: 'github', enabled: false }, { name: 'jira', enabled: true }],
-      [{ slug: 'review', name: 'Code Review', enabled: false }, { slug: 'test', name: 'Test Runner', enabled: true }],
+      [
+        { name: 'github', enabled: false },
+        { name: 'jira', enabled: true },
+      ],
+      [
+        { slug: 'review', name: 'Code Review', enabled: false },
+        { slug: 'test', name: 'Test Runner', enabled: true },
+      ]
     )
     const changes = diffCapabilities(prev, next)
 

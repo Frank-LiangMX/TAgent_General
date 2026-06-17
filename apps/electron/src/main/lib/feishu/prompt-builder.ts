@@ -141,7 +141,9 @@ function buildQuotedMessageBlock(q: QuotedMessage): string {
     q.senderName ? `sender_name="${escapeAttr(q.senderName)}"` : '',
     q.createdAt ? `created_at="${new Date(q.createdAt).toISOString()}"` : '',
     `type="${q.contentType}"`,
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
   return `<quoted_message ${attrs}>\n${q.content}\n</quoted_message>`
 }
 
@@ -159,7 +161,7 @@ function escapeAttr(s: string): string {
  */
 export async function fetchQuotedMessage(
   client: LarkClient,
-  parentMessageId: string,
+  parentMessageId: string
 ): Promise<QuotedMessage | undefined> {
   try {
     const resp = await client.im.v1.message.get({
@@ -171,9 +173,8 @@ export async function fetchQuotedMessage(
     const contentType = item.msg_type ?? 'unknown'
     const bodyContent = item.body?.content ?? ''
     const senderId = item.sender?.id
-    const createTime = typeof item.create_time === 'string'
-      ? Number(item.create_time)
-      : item.create_time
+    const createTime =
+      typeof item.create_time === 'string' ? Number(item.create_time) : item.create_time
 
     let content = ''
     let cardJson: string | undefined

@@ -40,7 +40,11 @@ function readSessionFile(sessionId: string): SessionMessage[] {
   const filePath = join(tempDir, `${sessionId}.jsonl`)
   if (!existsSync(filePath)) return []
   const raw = readFileSync(filePath, 'utf-8')
-  return raw.trim().split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l) as SessionMessage)
+  return raw
+    .trim()
+    .split('\n')
+    .filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as SessionMessage)
 }
 
 /** compactSession 写入的 JSONL 单行结构（system/user/assistant + optional tool blocks） */
@@ -66,21 +70,37 @@ async function test1DropOldToolResults(): Promise<void> {
     { type: 'system', subtype: 'init' },
     { type: 'user', message: { content: [{ type: 'text', text: 'Q1' }] } },
     { type: 'assistant', message: { content: [{ type: 'text', text: 'A1' }] } },
-    { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/x' } }] } },
-    { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'file content' }] } },
+    {
+      type: 'assistant',
+      message: {
+        content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/x' } }],
+      },
+    },
+    {
+      type: 'user',
+      message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: 'file content' }] },
+    },
     { type: 'assistant', message: { content: [{ type: 'text', text: 'A2' }] } },
   ])
 
   const result = await compactSession(sessionId, { strategy: 'drop_old_tool_results' })
 
-  console.log('  before:', result.beforeCount, 'after:', result.afterCount, 'dropped:', result.droppedCount)
+  console.log(
+    '  before:',
+    result.beforeCount,
+    'after:',
+    result.afterCount,
+    'dropped:',
+    result.droppedCount
+  )
   console.log('  message:', result.message)
 
   // 断言
   if (result.success !== true) throw new Error('Expected success=true')
   if (result.beforeCount !== 6) throw new Error(`Expected beforeCount=6, got ${result.beforeCount}`)
   if (result.afterCount !== 4) throw new Error(`Expected afterCount=4, got ${result.afterCount}`)
-  if (result.droppedCount !== 2) throw new Error(`Expected droppedCount=2, got ${result.droppedCount}`)
+  if (result.droppedCount !== 2)
+    throw new Error(`Expected droppedCount=2, got ${result.droppedCount}`)
 
   // 验证文件被改对
   const newMsgs = readSessionFile(sessionId)
@@ -110,13 +130,22 @@ async function test2KeepLastN(): Promise<void> {
 
   const result = await compactSession(sessionId, { strategy: 'keep_last_n', keepLastN: 2 })
 
-  console.log('  before:', result.beforeCount, 'after:', result.afterCount, 'dropped:', result.droppedCount)
+  console.log(
+    '  before:',
+    result.beforeCount,
+    'after:',
+    result.afterCount,
+    'dropped:',
+    result.droppedCount
+  )
   console.log('  message:', result.message)
 
   if (result.success !== true) throw new Error('Expected success=true')
   if (result.beforeCount !== 5) throw new Error(`Expected beforeCount=5, got ${result.beforeCount}`)
-  if (result.afterCount !== 3) throw new Error(`Expected afterCount=3 (system+Q2+A2), got ${result.afterCount}`)
-  if (result.droppedCount !== 2) throw new Error(`Expected droppedCount=2 (Q1+A1), got ${result.droppedCount}`)
+  if (result.afterCount !== 3)
+    throw new Error(`Expected afterCount=3 (system+Q2+A2), got ${result.afterCount}`)
+  if (result.droppedCount !== 2)
+    throw new Error(`Expected droppedCount=2 (Q1+A1), got ${result.droppedCount}`)
 
   const newMsgs = readSessionFile(sessionId)
   if (newMsgs.length !== 3) throw new Error(`Expected 3 msgs in file, got ${newMsgs.length}`)
@@ -143,7 +172,8 @@ async function test3Summarize(): Promise<void> {
   console.log('  message:', result.message)
 
   if (result.success !== false) throw new Error('Expected success=false for summarize')
-  if (!result.message.includes('未实现')) throw new Error(`Expected "未实现" in message, got: ${result.message}`)
+  if (!result.message.includes('未实现'))
+    throw new Error(`Expected "未实现" in message, got: ${result.message}`)
 
   console.log('  ✅ 断言全部通过')
 }
@@ -169,23 +199,33 @@ async function test5CorruptedLines(): Promise<void> {
   const sessionId = 'integration-5'
   const filePath = join(tempDir, `${sessionId}.jsonl`)
   // 故意写损坏 JSON 行
-  const content = [
-    JSON.stringify({ type: 'system' }),
-    '{ this is not valid JSON',
-    JSON.stringify({ type: 'user', message: { content: [{ type: 'text', text: 'valid' }] } }),
-    'another bad line',
-    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1' }] } }),
-  ].join('\n') + '\n'
+  const content =
+    [
+      JSON.stringify({ type: 'system' }),
+      '{ this is not valid JSON',
+      JSON.stringify({ type: 'user', message: { content: [{ type: 'text', text: 'valid' }] } }),
+      'another bad line',
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1' }] } }),
+    ].join('\n') + '\n'
   writeFileSync(filePath, content, 'utf-8')
 
   const result = await compactSession(sessionId, { strategy: 'drop_old_tool_results' })
 
-  console.log('  before:', result.beforeCount, 'after:', result.afterCount, 'dropped:', result.droppedCount)
+  console.log(
+    '  before:',
+    result.beforeCount,
+    'after:',
+    result.afterCount,
+    'dropped:',
+    result.droppedCount
+  )
 
   // 3 valid: system + user + assistant(tool_use)
   if (result.beforeCount !== 3) throw new Error(`Expected beforeCount=3, got ${result.beforeCount}`)
-  if (result.afterCount !== 2) throw new Error(`Expected afterCount=2 (system+user), got ${result.afterCount}`)
-  if (result.droppedCount !== 1) throw new Error(`Expected droppedCount=1 (tool_use), got ${result.droppedCount}`)
+  if (result.afterCount !== 2)
+    throw new Error(`Expected afterCount=2 (system+user), got ${result.afterCount}`)
+  if (result.droppedCount !== 1)
+    throw new Error(`Expected droppedCount=1 (tool_use), got ${result.droppedCount}`)
 
   console.log('  ✅ 断言全部通过 (2 损坏行被跳过)')
 }

@@ -35,13 +35,13 @@ function getCommonGitBashPaths(): string[] {
   if (scoop) {
     paths.push(
       join(scoop, 'apps', 'git', 'current', 'bin', 'bash.exe'),
-      join(scoop, 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe'),
+      join(scoop, 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe')
     )
   }
   if (localAppData) {
     paths.push(
       join(localAppData, 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe'),
-      join(localAppData, 'scoop', 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe'),
+      join(localAppData, 'scoop', 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe')
     )
   }
 
@@ -50,7 +50,7 @@ function getCommonGitBashPaths(): string[] {
     join(programFiles, 'Git', 'bin', 'bash.exe'),
     'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
     join(programFiles, 'Git', 'usr', 'bin', 'bash.exe'),
-    'C:\\Program Files (x86)\\Git\\usr\\bin\\bash.exe',
+    'C:\\Program Files (x86)\\Git\\usr\\bin\\bash.exe'
   )
 
   return paths

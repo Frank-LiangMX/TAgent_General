@@ -65,7 +65,9 @@ class ScheduledCleanupService {
    */
   private getMemoryDir(mode: MemoryMode): string {
     const isDev = !app.isPackaged
-    const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+    const baseDir = isDev
+      ? path.join(app.getPath('home'), '.tagent-dev')
+      : path.join(app.getPath('home'), '.tagent')
     return mode === 'general' ? path.join(baseDir, 'memory') : path.join(baseDir, 'ta', 'memory')
   }
 
@@ -152,7 +154,9 @@ class ScheduledCleanupService {
 
     const delay = nextSunday4AM.getTime() - now.getTime()
 
-    console.log(`[ScheduledCleanupService] 下次运行时间: ${nextSunday4AM.toISOString()}, 距今 ${Math.round(delay / 1000 / 60)} 分钟`)
+    console.log(
+      `[ScheduledCleanupService] 下次运行时间: ${nextSunday4AM.toISOString()}, 距今 ${Math.round(delay / 1000 / 60)} 分钟`
+    )
 
     this.timerId = setTimeout(() => {
       this.runCleanup('general').catch(console.error)
@@ -189,7 +193,9 @@ class ScheduledCleanupService {
       result.lruMarked = this.markLRU(dir)
 
       result.success = true
-      console.log(`[ScheduledCleanupService] ${mode} 模式 Cleanup 完成: L4归档=${result.l4Archived}, L3压缩=${result.l3Compressed}`)
+      console.log(
+        `[ScheduledCleanupService] ${mode} 模式 Cleanup 完成: L4归档=${result.l4Archived}, L3压缩=${result.l3Compressed}`
+      )
 
       // 更新状态
       const state = this.states.get(mode) || { lastRunTime: null }

@@ -13,18 +13,18 @@ import { MessageCircle } from 'lucide-react'
 import * as React from 'react'
 
 import {
+  agentChannelIdAtom,
+  agentModelIdAtom,
+  agentSessionChannelMapAtom,
+  agentSessionModelMapAtom,
+} from '@/atoms/agent-atoms'
+import {
   btwOpenAtom,
   btwMessagesAtom,
   btwChannelIdAtom,
   btwModelIdAtom,
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
-import {
-  agentChannelIdAtom,
-  agentModelIdAtom,
-  agentSessionChannelMapAtom,
-  agentSessionModelMapAtom,
-} from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
 import { cn } from '@/lib/utils'
 
@@ -83,7 +83,7 @@ export function BtwFloatingTrigger({
         'text-foreground/50 hover:text-foreground/70',
         'transition-all duration-200 ease-out',
         // 默认圆形仅图标；hover 展开文字（文字用 hidden 避免挤偏图标居中）
-        'size-[28px] hover:w-auto hover:min-w-[28px] hover:justify-start hover:px-2 hover:gap-1.5',
+        'size-[28px] hover:w-auto hover:min-w-[28px] hover:justify-start hover:px-2 hover:gap-1.5'
       )}
       title="旁注：快速提问，不进入主对话历史"
     >

@@ -14,9 +14,16 @@ import type { PipelineRun, PipelineRunStatus, PipelineSummary } from '@tagent/sh
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const STATUS_CONFIG: Record<PipelineRunStatus, { icon: React.ReactNode; color: string; label: string }> = {
+const STATUS_CONFIG: Record<
+  PipelineRunStatus,
+  { icon: React.ReactNode; color: string; label: string }
+> = {
   pending: { icon: <Clock size={16} />, color: 'text-muted-foreground', label: '等待中' },
-  running: { icon: <Loader2 size={16} className="animate-spin" />, color: 'text-blue-500', label: '运行中' },
+  running: {
+    icon: <Loader2 size={16} className="animate-spin" />,
+    color: 'text-blue-500',
+    label: '运行中',
+  },
   completed: { icon: <CheckCircle size={16} />, color: 'text-emerald-500', label: '已完成' },
   failed: { icon: <XCircle size={16} />, color: 'text-red-500', label: '失败' },
   cancelled: { icon: <XCircle size={16} />, color: 'text-muted-foreground', label: '已取消' },
@@ -179,7 +186,12 @@ function PipelineCard({ pipeline, onCancel, isCancelling }: PipelineCardProps): 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
       {/* 状态图标 */}
-      <div className={cn('size-8 rounded-full flex items-center justify-center bg-muted', statusConfig.color)}>
+      <div
+        className={cn(
+          'size-8 rounded-full flex items-center justify-center bg-muted',
+          statusConfig.color
+        )}
+      >
         {statusConfig.icon}
       </div>
 

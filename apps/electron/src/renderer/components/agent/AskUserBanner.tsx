@@ -13,7 +13,11 @@ import remarkGfm from 'remark-gfm'
 
 import type { AskUserQuestion } from '@tagent/shared'
 
-import { allPendingAskUserRequestsAtom, agentStreamingStatesAtom, finalizeStreamingActivities } from '@/atoms/agent-atoms'
+import {
+  allPendingAskUserRequestsAtom,
+  agentStreamingStatesAtom,
+  finalizeStreamingActivities,
+} from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
 
 interface QuestionAnswer {
@@ -74,9 +78,9 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
     setActiveTab(0)
     setFocusedOptIdx(-1)
     const firstOpt = questions[0]?.options[0]
-    setAnswers(firstOpt
-      ? new Map([[0, { ...EMPTY_ANSWER, selected: [firstOpt.label] }]])
-      : new Map())
+    setAnswers(
+      firstOpt ? new Map([[0, { ...EMPTY_ANSWER, selected: [firstOpt.label] }]]) : new Map()
+    )
   }, [request?.requestId])
 
   // 切换 Tab 时重置焦点并默认选中第一个选项
@@ -117,11 +121,14 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
-        const nextIdx = curFocusIdx === -1
-          ? (e.key === 'ArrowDown' ? 0 : itemCount - 1)
-          : e.key === 'ArrowDown'
-            ? (curFocusIdx + 1) % itemCount
-            : (curFocusIdx - 1 + itemCount) % itemCount
+        const nextIdx =
+          curFocusIdx === -1
+            ? e.key === 'ArrowDown'
+              ? 0
+              : itemCount - 1
+            : e.key === 'ArrowDown'
+              ? (curFocusIdx + 1) % itemCount
+              : (curFocusIdx - 1 + itemCount) % itemCount
         setFocusedOptIdx(nextIdx)
         // 移动焦点同时选中
         if (nextIdx < q.options.length) {
@@ -174,7 +181,9 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
       const map = new Map(prev)
       const cur = map.get(qIdx) ?? EMPTY_ANSWER
       const selected = q.multiSelect
-        ? (cur.selected.includes(label) ? cur.selected.filter((s) => s !== label) : [...cur.selected, label])
+        ? cur.selected.includes(label)
+          ? cur.selected.filter((s) => s !== label)
+          : [...cur.selected, label]
         : [label]
       map.set(qIdx, { ...cur, selected, showCustom: false, customText: '' })
       return map
@@ -185,7 +194,11 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
     setAnswers((prev) => {
       const map = new Map(prev)
       const cur = map.get(qIdx) ?? EMPTY_ANSWER
-      map.set(qIdx, { ...cur, showCustom: !cur.showCustom, selected: cur.showCustom ? cur.selected : [] })
+      map.set(qIdx, {
+        ...cur,
+        showCustom: !cur.showCustom,
+        selected: cur.showCustom ? cur.selected : [],
+      })
       return map
     })
   }
@@ -206,7 +219,10 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
           answersRecord[key] = answer.selected.join(', ')
         }
       }
-      await window.electronAPI.respondAskUser({ requestId: request.requestId, answers: answersRecord })
+      await window.electronAPI.respondAskUser({
+        requestId: request.requestId,
+        answers: answersRecord,
+      })
       setAllRequests((prev) => {
         const map = new Map(prev)
         const current = map.get(sessionId) ?? []
@@ -262,19 +278,21 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
           <div className="flex gap-1">
             {questions.map((q, idx) => {
               const isActive = idx === activeTab
-              const hasAnswer = getAnswer(idx).selected.length > 0
-                || (getAnswer(idx).showCustom && getAnswer(idx).customText.trim().length > 0)
+              const hasAnswer =
+                getAnswer(idx).selected.length > 0 ||
+                (getAnswer(idx).showCustom && getAnswer(idx).customText.trim().length > 0)
               return (
                 <button
                   key={idx}
                   type="button"
                   className={`
                     px-2.5 py-1 rounded-lg text-xs font-medium transition-all outline-none
-                    ${isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : hasAnswer
-                        ? 'bg-primary/15 text-primary'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : hasAnswer
+                          ? 'bg-primary/15 text-primary'
+                          : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                     }
                   `}
                   onClick={() => setActiveTab(idx)}
@@ -306,12 +324,14 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
             }
           }}
           onToggleCustom={() => toggleCustomByState(activeTab)}
-          onCustomTextChange={(text) => setAnswers((prev) => {
-            const map = new Map(prev)
-            const cur = map.get(activeTab) ?? EMPTY_ANSWER
-            map.set(activeTab, { ...cur, customText: text })
-            return map
-          })}
+          onCustomTextChange={(text) =>
+            setAnswers((prev) => {
+              const map = new Map(prev)
+              const cur = map.get(activeTab) ?? EMPTY_ANSWER
+              map.set(activeTab, { ...cur, customText: text })
+              return map
+            })
+          }
           onSubmit={isLastTab ? handleSubmit : goNextTab}
         />
       </div>
@@ -361,9 +381,10 @@ function QuestionCard({
   onSubmit: () => void
 }): React.ReactElement {
   const optionCount = question.options.length
-  const previewOption = focusedIndex >= 0 && focusedIndex < optionCount
-    ? question.options[focusedIndex]
-    : question.options.find((o) => answer.selected.includes(o.label))
+  const previewOption =
+    focusedIndex >= 0 && focusedIndex < optionCount
+      ? question.options[focusedIndex]
+      : question.options.find((o) => answer.selected.includes(o.label))
   const previewContent = previewOption?.preview
 
   return (
@@ -389,20 +410,25 @@ function QuestionCard({
               type="button"
               className={`
                 flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
-                ${isSelected
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+                ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted/50 text-foreground/80 hover:bg-muted'
                 }
                 ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
               `}
               onClick={() => onToggleOption(option.label)}
             >
-              <span className={`text-[10px] shrink-0 ${isSelected ? 'text-primary-foreground/60' : 'text-muted-foreground/50'}`}>
+              <span
+                className={`text-[10px] shrink-0 ${isSelected ? 'text-primary-foreground/60' : 'text-muted-foreground/50'}`}
+              >
                 {idx + 1}
               </span>
               <span className="font-medium">{option.label}</span>
               {option.description && (
-                <span className={`text-[11px] ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                <span
+                  className={`text-[11px] ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                >
                   {option.description}
                 </span>
               )}
@@ -415,15 +441,18 @@ function QuestionCard({
           type="button"
           className={`
             flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
-            ${answer.showCustom
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+            ${
+              answer.showCustom
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted/50 text-foreground/80 hover:bg-muted'
             }
             ${focusedIndex === optionCount ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
           `}
           onClick={onToggleCustom}
         >
-          <span className={`text-[10px] shrink-0 ${answer.showCustom ? 'text-primary-foreground/60' : 'text-muted-foreground/50'}`}>
+          <span
+            className={`text-[10px] shrink-0 ${answer.showCustom ? 'text-primary-foreground/60' : 'text-muted-foreground/50'}`}
+          >
             {optionCount + 1}
           </span>
           <span className="font-medium">其他...</span>

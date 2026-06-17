@@ -6,11 +6,7 @@
 
 import { atom } from 'jotai'
 
-import type {
-  EnvironmentCheckResult,
-  RuntimeStatus,
-  InstallerManifest,
-} from '@tagent/shared'
+import type { EnvironmentCheckResult, RuntimeStatus, InstallerManifest } from '@tagent/shared'
 
 /**
  * 单个安装包的下载状态

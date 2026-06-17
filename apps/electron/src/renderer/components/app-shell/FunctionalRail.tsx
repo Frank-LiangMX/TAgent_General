@@ -25,7 +25,14 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-import { topLevelModeAtom, activeRailItemAtom, appModeAtom, type GeneralRailItem, type TARailItem, type TopLevelMode } from '@/atoms/app-mode'
+import {
+  topLevelModeAtom,
+  activeRailItemAtom,
+  appModeAtom,
+  type GeneralRailItem,
+  type TARailItem,
+  type TopLevelMode,
+} from '@/atoms/app-mode'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import {
@@ -91,7 +98,12 @@ const TA_RAIL_ITEMS: Array<{
   icon: React.ReactNode
   description: string
 }> = [
-  { id: 'sessions', label: '会话', icon: <MessageSquare size={17} />, description: 'TA 会话（与通用模式数据隔离）' },
+  {
+    id: 'sessions',
+    label: '会话',
+    icon: <MessageSquare size={17} />,
+    description: 'TA 会话（与通用模式数据隔离）',
+  },
   { id: 'assets', label: '资产库', icon: <Database size={17} />, description: '资产库管理' },
   { id: 'review', label: '审核', icon: <ClipboardCheck size={17} />, description: '审核队列' },
   { id: 'pipeline', label: '流水线', icon: <GitBranch size={17} />, description: '流水线管理' },
@@ -161,48 +173,54 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     }
   }, [setTopLevelMode, topLevelMode])
 
-  const handleModeSwitch = React.useCallback(async (targetMode: TopLevelMode) => {
-    if (isSwitching || targetMode === topLevelMode) return
+  const handleModeSwitch = React.useCallback(
+    async (targetMode: TopLevelMode) => {
+      if (isSwitching || targetMode === topLevelMode) return
 
-    setIsSwitching(true)
-    try {
-      const result = await window.electronAPI.switchMode({
-        targetMode,
-        source: 'user-click',
-        force: false,
-      })
+      setIsSwitching(true)
+      try {
+        const result = await window.electronAPI.switchMode({
+          targetMode,
+          source: 'user-click',
+          force: false,
+        })
 
-      if (result.success) {
-        setTopLevelMode(targetMode)
-      } else {
-        console.warn('[FunctionalRail] 切换失败:', result.error)
+        if (result.success) {
+          setTopLevelMode(targetMode)
+        } else {
+          console.warn('[FunctionalRail] 切换失败:', result.error)
+        }
+      } catch (error) {
+        console.error('[FunctionalRail] 切换模式失败:', error)
+      } finally {
+        setIsSwitching(false)
       }
-    } catch (error) {
-      console.error('[FunctionalRail] 切换模式失败:', error)
-    } finally {
-      setIsSwitching(false)
-    }
-  }, [isSwitching, topLevelMode, setTopLevelMode])
+    },
+    [isSwitching, topLevelMode, setTopLevelMode]
+  )
 
   /** 处理 Rail 按钮点击：草稿按钮点击时直接打开草稿 Tab 并同步 rail 选中态 */
-  const handleRailItemClick = React.useCallback((item: { id: string }) => {
-    if (item.id === 'scratch') {
-      setActiveRailItem('scratch')
-      // 打开草稿 Tab
-      const currentTabs = store.get(tabsAtom)
-      const { tabs: newTabs, activeTabId: newActiveTabId } = openTab(currentTabs, {
-        type: 'scratch',
-        sessionId: SCRATCH_PAD_ID,
-        title: SCRATCH_PAD_TITLE,
-      })
-      store.set(tabsAtom, newTabs)
-      store.set(activeTabIdAtom, newActiveTabId)
-      // 设置 appMode 为 scratch，确保主区域正确渲染
-      setAppMode('scratch')
-    } else {
-      setActiveRailItem(item.id as GeneralRailItem | TARailItem)
-    }
-  }, [store, setActiveRailItem, setAppMode])
+  const handleRailItemClick = React.useCallback(
+    (item: { id: string }) => {
+      if (item.id === 'scratch') {
+        setActiveRailItem('scratch')
+        // 打开草稿 Tab
+        const currentTabs = store.get(tabsAtom)
+        const { tabs: newTabs, activeTabId: newActiveTabId } = openTab(currentTabs, {
+          type: 'scratch',
+          sessionId: SCRATCH_PAD_ID,
+          title: SCRATCH_PAD_TITLE,
+        })
+        store.set(tabsAtom, newTabs)
+        store.set(activeTabIdAtom, newActiveTabId)
+        // 设置 appMode 为 scratch，确保主区域正确渲染
+        setAppMode('scratch')
+      } else {
+        setActiveRailItem(item.id as GeneralRailItem | TARailItem)
+      }
+    },
+    [store, setActiveRailItem, setAppMode]
+  )
 
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
 
@@ -237,7 +255,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
                       'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
-                      isActive && 'rail-island-btn--active',
+                      isActive && 'rail-island-btn--active'
                     )}
                   >
                     {item.icon}
@@ -265,7 +283,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
                       'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
-                      isActive && 'rail-island-btn--active',
+                      isActive && 'rail-island-btn--active'
                     )}
                   >
                     {item.icon}
@@ -290,8 +308,12 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
       <div className="flex flex-col items-center gap-1.5 w-full">
         {modeButtons.map(({ value, label, icon, description }) => {
           const isActive = topLevelMode === value
-          const taskCount = value === 'general' ? (modeStatus?.generalTasks ?? 0) : (modeStatus?.taTasks ?? 0)
-          const isPaused = value === 'general' ? (modeStatus?.generalPaused ?? false) : (modeStatus?.taPaused ?? false)
+          const taskCount =
+            value === 'general' ? (modeStatus?.generalTasks ?? 0) : (modeStatus?.taTasks ?? 0)
+          const isPaused =
+            value === 'general'
+              ? (modeStatus?.generalPaused ?? false)
+              : (modeStatus?.taPaused ?? false)
 
           return (
             <Tooltip key={value}>
@@ -303,7 +325,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                   className={cn(
                     'rail-island-btn relative size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
                     isActive && 'rail-island-btn--active',
-                    isSwitching && 'opacity-50 cursor-not-allowed',
+                    isSwitching && 'opacity-50 cursor-not-allowed'
                   )}
                 >
                   {isSwitching && isActive ? <Loader2 size={14} className="animate-spin" /> : icon}

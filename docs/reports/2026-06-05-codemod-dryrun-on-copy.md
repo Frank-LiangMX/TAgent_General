@@ -19,56 +19,58 @@ PYTHONIOENCODING=utf-8 python scripts/codemod_proma_to_tagent.py \
 
 ## 2. 统计
 
-| 指标 | 数值 |
-|---|---|
-| **总扫描文件** | 458 |
-| **受影响文件** | 197 |
+| 指标           | 数值    |
+| -------------- | ------- |
+| **总扫描文件** | 458     |
+| **受影响文件** | 197     |
 | **总 changes** | **593** |
 
 ### 2.1 按规则
 
-| 规则 | 匹配 | 文件 |
-|---|---|---|
-| `scope`（@proma/X → @tagent/X） | 337 | 169 |
-| `brand`（裸 Proma → TAgent） | 190 | 64 |
-| `type_prefix`（PromaXxx → TAgentXxx） | 66 | 17 |
-| `package_name`（"proma" → "tagent"） | 0 | 0 |
+| 规则                                  | 匹配 | 文件 |
+| ------------------------------------- | ---- | ---- |
+| `scope`（@proma/X → @tagent/X）       | 337  | 169  |
+| `brand`（裸 Proma → TAgent）          | 190  | 64   |
+| `type_prefix`（PromaXxx → TAgentXxx） | 66   | 17   |
+| `package_name`（"proma" → "tagent"）  | 0    | 0    |
 
 > **注意**：`package_name` 0 匹配是因为 `package.json` 的 "proma" 实际上写在 `"name": "proma"`，而现有规则需要 `^...` 行首匹配 — 后续可放宽。
 
 ### 2.2 改动最频繁的文件
 
-| 改动 | 文件 |
-|---|---|
-| 75 | `apps\electron\src\preload\index.ts` |
-| 23 | `packages\shared\src\types\agent.ts` |
-| 23 | `apps\electron\src\main\lib\agent-orchestrator.ts` |
-| 19 | `apps\electron\src\main\ipc.ts` |
-| 15 | `apps\electron\src\renderer\components\settings\FeishuSettings.tsx` |
-| 11 | `apps\electron\src\renderer\components\settings\ChannelSettings.tsx` |
-| 11 | `apps\electron\src\main\lib\agent-prompt-builder.ts` |
-| 11 | `apps\electron\src\main\lib\git-diff-service.ts` |
-| 8 | `apps\electron\src\main\index.ts` |
-| 8 | `apps\electron\src\renderer\components\agent\AgentView.tsx` |
+| 改动 | 文件                                                                 |
+| ---- | -------------------------------------------------------------------- |
+| 75   | `apps\electron\src\preload\index.ts`                                 |
+| 23   | `packages\shared\src\types\agent.ts`                                 |
+| 23   | `apps\electron\src\main\lib\agent-orchestrator.ts`                   |
+| 19   | `apps\electron\src\main\ipc.ts`                                      |
+| 15   | `apps\electron\src\renderer\components\settings\FeishuSettings.tsx`  |
+| 11   | `apps\electron\src\renderer\components\settings\ChannelSettings.tsx` |
+| 11   | `apps\electron\src\main\lib\agent-prompt-builder.ts`                 |
+| 11   | `apps\electron\src\main\lib\git-diff-service.ts`                     |
+| 8    | `apps\electron\src\main\index.ts`                                    |
+| 8    | `apps\electron\src\renderer\components\agent\AgentView.tsx`          |
 
 ### 2.3 典型 change 样本
 
-| 文件:行 | 规则 | before | after |
-|---|---|---|---|
-| `package.json:12-15` | scope | `@proma/electron` | `@tagent/electron` |
-| `packages\core\package.json:2,17` | scope | `@proma/core`, `@proma/shared` | `@tagent/core`, `@tagent/shared` |
-| `packages\shared\src\types\agent.ts:545` | type_prefix | `PromaPermissionMode` | `TAgentPermissionMode` |
-| `packages\shared\src\types\agent.ts:550` | type_prefix | `PromaEvent` | `TAgentEvent` |
-| `packages\shared\src\config\index.ts:6` | brand | `Proma` | `TAgent` |
-| `apps\electron\src\preload\index.ts:1` | scope | `import ... from '@proma/shared'` | `import ... from '@tagent/shared'` |
+| 文件:行                                  | 规则        | before                            | after                              |
+| ---------------------------------------- | ----------- | --------------------------------- | ---------------------------------- |
+| `package.json:12-15`                     | scope       | `@proma/electron`                 | `@tagent/electron`                 |
+| `packages\core\package.json:2,17`        | scope       | `@proma/core`, `@proma/shared`    | `@tagent/core`, `@tagent/shared`   |
+| `packages\shared\src\types\agent.ts:545` | type_prefix | `PromaPermissionMode`             | `TAgentPermissionMode`             |
+| `packages\shared\src\types\agent.ts:550` | type_prefix | `PromaEvent`                      | `TAgentEvent`                      |
+| `packages\shared\src\config\index.ts:6`  | brand       | `Proma`                           | `TAgent`                           |
+| `apps\electron\src\preload\index.ts:1`   | scope       | `import ... from '@proma/shared'` | `import ... from '@tagent/shared'` |
 
 ## 3. 风险点
 
 ### 3.1 0 风险的规则
+
 - `scope`（337 处）：完全机械替换，import 路径，**低风险**
 - `type_prefix`（66 处）：PascalCase 跟随模式，**低风险**（已经在 `re.fullmatch` 范围内）
 
 ### 3.2 中风险的规则
+
 - `brand`（190 处）：**裸 'Proma' 字符串**，可能含：
   - 注释（`// Proma Note`）
   - 字符串字面量（`'Welcome to Proma'`）
@@ -85,15 +87,15 @@ PYTHONIOENCODING=utf-8 python scripts/codemod_proma_to_tagent.py \
 
 ## 4. 排除项生效
 
-| 排除项 | 行为 |
-|---|---|
-| `node_modules/` | ✅ 不扫（458 - 估计 200+ = 实际 458） |
-| `.git/` | ✅ 不扫 |
-| `release/` | ✅ 不扫 |
-| `__pycache__/` | ✅ 不扫（Python 项目的） |
-| `bun.lock` | ✅ 不扫（**重要**：锁文件由 bun install 重新生成） |
-| `release-notes/` | ✅ 不扫（**重要**：历史记录） |
-| `.md` 文档 | ✅ 不扫（默认；需 `--include-docs`） |
+| 排除项           | 行为                                               |
+| ---------------- | -------------------------------------------------- |
+| `node_modules/`  | ✅ 不扫（458 - 估计 200+ = 实际 458）              |
+| `.git/`          | ✅ 不扫                                            |
+| `release/`       | ✅ 不扫                                            |
+| `__pycache__/`   | ✅ 不扫（Python 项目的）                           |
+| `bun.lock`       | ✅ 不扫（**重要**：锁文件由 bun install 重新生成） |
+| `release-notes/` | ✅ 不扫（**重要**：历史记录）                      |
+| `.md` 文档       | ✅ 不扫（默认；需 `--include-docs`）               |
 
 ## 5. 下一步
 

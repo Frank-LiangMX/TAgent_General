@@ -146,7 +146,9 @@ export function getEnabledTools(enabledToolIds?: string[]): EnabledToolsResult {
     const state = config.toolStates[toolId]
 
     // 检查工具是否启用（前端开关 + 配置开关）
-    const isEnabledByUser = enabledToolIds ? enabledToolIds.includes(toolId) : (state?.enabled ?? false)
+    const isEnabledByUser = enabledToolIds
+      ? enabledToolIds.includes(toolId)
+      : (state?.enabled ?? false)
     if (!isEnabledByUser) continue
 
     // 检查工具是否可用（凭据已配置）

@@ -43,9 +43,7 @@ export function WelcomeEmptyState(): React.ReactElement {
   const displayName = userProfile.userName || '用户'
 
   const isTAMode = topLevelMode === 'ta'
-  const primaryLabel = isTAMode
-    ? '新建 TA 会话'
-    : '开始新 Agent 会话'
+  const primaryLabel = isTAMode ? '新建 TA 会话' : '开始新 Agent 会话'
 
   const tipKey = isTAMode ? 'ta' : 'agent'
   const tipText = MODE_TIPS[tipKey] ?? MODE_TIPS['agent']!
@@ -81,15 +79,15 @@ export function WelcomeEmptyState(): React.ReactElement {
       {/* 主按钮 */}
       <button
         type="button"
-        onClick={() => { void handleStart() }}
+        onClick={() => {
+          void handleStart()
+        }}
         disabled={creating}
         className={cn(
-          'mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-60',
+          'mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-60'
         )}
       >
-        {creating
-          ? <Loader2 size={16} className="animate-spin" />
-          : <Bot size={16} />}
+        {creating ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} />}
         {primaryLabel}
       </button>
     </div>

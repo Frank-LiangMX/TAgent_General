@@ -19,7 +19,11 @@ export function isInsideMacSquircle(x: number, y: number, width: number, height:
 }
 
 /** 对 BGRA 位图应用 squircle alpha 蒙版（区外透明） */
-export function applyMacSquircleMaskToBitmap(bitmap: Buffer, width: number, height: number): Buffer {
+export function applyMacSquircleMaskToBitmap(
+  bitmap: Buffer,
+  width: number,
+  height: number
+): Buffer {
   const out = Buffer.from(bitmap)
   const pixelCount = width * height
   if (out.length < pixelCount * 4) {
@@ -42,7 +46,7 @@ export function blitCenteredOnCanvas(
   patchBitmap: Buffer,
   patchWidth: number,
   patchHeight: number,
-  canvasSize: number,
+  canvasSize: number
 ): Buffer {
   const canvas = Buffer.alloc(canvasSize * canvasSize * 4, 0)
   const offsetX = Math.floor((canvasSize - patchWidth) / 2)

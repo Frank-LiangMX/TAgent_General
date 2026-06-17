@@ -39,7 +39,19 @@ function getCachedThemeMode(): ThemeMode {
 function getCachedThemeStyle(): ThemeStyle {
   try {
     const cached = localStorage.getItem(THEME_STYLE_CACHE_KEY)
-    if (cached === 'default' || cached === 'ocean-light' || cached === 'ocean-dark' || cached === 'forest-light' || cached === 'forest-dark' || cached === 'slate-light' || cached === 'slate-dark' || cached === 'orange-light' || cached === 'orange-dark' || cached === 'purple-light' || cached === 'purple-dark') {
+    if (
+      cached === 'default' ||
+      cached === 'ocean-light' ||
+      cached === 'ocean-dark' ||
+      cached === 'forest-light' ||
+      cached === 'forest-dark' ||
+      cached === 'slate-light' ||
+      cached === 'slate-dark' ||
+      cached === 'orange-light' ||
+      cached === 'orange-dark' ||
+      cached === 'purple-light' ||
+      cached === 'purple-dark'
+    ) {
       return cached
     }
   } catch {
@@ -116,7 +128,11 @@ const ALL_THEME_STYLE_CLASSES = [
  * 不触发任何 classList mutation。避免与 vibrancy + backdrop-blur 合成层叠加
  * 导致 Chromium 重建合成层造成的全屏闪烁。
  */
-export function applyThemeToDOM(themeMode: ThemeMode, themeStyle: ThemeStyle = 'default', systemIsDark: boolean = true): void {
+export function applyThemeToDOM(
+  themeMode: ThemeMode,
+  themeStyle: ThemeStyle = 'default',
+  systemIsDark: boolean = true
+): void {
   const html = document.documentElement
 
   // 计算目标状态
@@ -169,7 +185,7 @@ export function applyThemeToDOM(themeMode: ThemeMode, themeStyle: ThemeStyle = '
 export async function initializeTheme(
   setThemeMode: (mode: ThemeMode) => void,
   setSystemIsDark: (isDark: boolean) => void,
-  setThemeStyle?: (style: ThemeStyle) => void,
+  setThemeStyle?: (style: ThemeStyle) => void
 ): Promise<() => void> {
   // 从主进程加载持久化设置
   const settings = await window.electronAPI.getSettings()

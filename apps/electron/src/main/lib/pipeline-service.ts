@@ -11,9 +11,10 @@
  * - 统计缓存，避免全量扫描
  */
 
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { randomUUID } from 'node:crypto'
+
 import { app } from 'electron'
 
 import type {
@@ -34,7 +35,9 @@ import type {
  */
 function getPipelineRunsPath(): string {
   const isDev = !app.isPackaged
-  const baseDir = isDev ? path.join(app.getPath('home'), '.tagent-dev') : path.join(app.getPath('home'), '.tagent')
+  const baseDir = isDev
+    ? path.join(app.getPath('home'), '.tagent-dev')
+    : path.join(app.getPath('home'), '.tagent')
   return path.join(baseDir, 'ta', 'pipeline_runs.jsonl')
 }
 
@@ -63,14 +66,16 @@ function readAllRuns(): PipelineRun[] {
   const content = fs.readFileSync(filePath, 'utf-8')
   const lines = content.trim().split('\n').filter(Boolean)
 
-  return lines.map((line) => {
-    try {
-      return JSON.parse(line) as PipelineRun
-    } catch {
-      console.warn('[PipelineService] 解析行失败:', line.slice(0, 100))
-      return null
-    }
-  }).filter((run): run is PipelineRun => run !== null)
+  return lines
+    .map((line) => {
+      try {
+        return JSON.parse(line) as PipelineRun
+      } catch {
+        console.warn('[PipelineService] 解析行失败:', line.slice(0, 100))
+        return null
+      }
+    })
+    .filter((run): run is PipelineRun => run !== null)
 }
 
 /**
@@ -162,7 +167,10 @@ export function getPipelineRun(id: string): PipelineRun | null {
  *
  * 返回更新后的流水线，如果不存在则返回 null。
  */
-export function updatePipelineRun(id: string, request: UpdatePipelineRunRequest): PipelineRun | null {
+export function updatePipelineRun(
+  id: string,
+  request: UpdatePipelineRunRequest
+): PipelineRun | null {
   const runs = readAllRuns()
   const index = runs.findIndex((run) => run.id === id)
 
@@ -328,7 +336,11 @@ export function failPipelineRun(id: string, error: string): PipelineRun | null {
 /**
  * 更新流水线进度
  */
-export function updatePipelineProgress(id: string, itemsProcessed: number, itemsTotal?: number): PipelineRun | null {
+export function updatePipelineProgress(
+  id: string,
+  itemsProcessed: number,
+  itemsTotal?: number
+): PipelineRun | null {
   const run = getPipelineRun(id)
 
   if (!run || run.status !== 'running') {

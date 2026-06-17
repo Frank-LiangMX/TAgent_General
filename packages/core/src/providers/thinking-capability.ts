@@ -60,7 +60,7 @@ function startsWith(modelId: string, prefix: string): boolean {
  */
 export function detectThinkingCapability(
   providerType: ProviderType,
-  modelId: string,
+  modelId: string
 ): ThinkingCapability {
   // DeepSeek v4 系列（按模型 ID 识别，不依赖 providerType）：
   // effort-based-max 模式会在思考关闭时显式发 `{type:'disabled'}`，这是 DeepSeek v4 的硬要求
@@ -75,7 +75,12 @@ export function detectThinkingCapability(
 
   // Kimi / 智谱 / MiniMax 的 Anthropic 协议渠道：
   // 这些供应商的 thinking 请求参数存在兼容差异，这里直接省略以保持连接稳定。
-  if (providerType === 'kimi-api' || providerType === 'kimi-coding' || providerType === 'zhipu-coding' || providerType === 'minimax') {
+  if (
+    providerType === 'kimi-api' ||
+    providerType === 'kimi-coding' ||
+    providerType === 'zhipu-coding' ||
+    providerType === 'minimax'
+  ) {
     return { mode: 'none', disableStrategy: 'omit-field' }
   }
 
@@ -95,10 +100,7 @@ export function detectThinkingCapability(
   }
 
   // Claude Opus 4.6 / Sonnet 4.6：两者都支持，优先 adaptive
-  if (
-    startsWith(modelId, 'claude-opus-4-6') ||
-    startsWith(modelId, 'claude-sonnet-4-6')
-  ) {
+  if (startsWith(modelId, 'claude-opus-4-6') || startsWith(modelId, 'claude-sonnet-4-6')) {
     return { mode: 'adaptive-preferred', disableStrategy: 'explicit-disabled' }
   }
 

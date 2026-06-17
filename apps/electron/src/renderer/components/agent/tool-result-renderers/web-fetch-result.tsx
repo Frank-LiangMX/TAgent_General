@@ -15,7 +15,10 @@ interface WebFetchResultRendererProps {
   isError: boolean
 }
 
-export function WebFetchResultRenderer({ result, isError }: WebFetchResultRendererProps): React.ReactElement {
+export function WebFetchResultRenderer({
+  result,
+  isError,
+}: WebFetchResultRendererProps): React.ReactElement {
   if (isError) {
     return (
       <pre className="rounded-md p-3 text-[12px] font-mono text-destructive/80 bg-destructive/5 whitespace-pre-wrap break-all overflow-x-auto">

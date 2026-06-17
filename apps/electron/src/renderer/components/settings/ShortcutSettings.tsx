@@ -17,7 +17,13 @@ import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-default
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import { Switch } from '@/components/ui/switch'
 import { DEFAULT_SHORTCUTS, SHORTCUT_CATEGORY_LABELS } from '@/lib/shortcut-defaults'
-import { getActiveAccelerator, getAcceleratorDisplay, checkConflict, updateShortcutOverrides, isMac } from '@/lib/shortcut-registry'
+import {
+  getActiveAccelerator,
+  getAcceleratorDisplay,
+  checkConflict,
+  updateShortcutOverrides,
+  isMac,
+} from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
 
 // ===== 快捷键录制弹窗 =====
@@ -29,7 +35,12 @@ interface RecordingModalProps {
   onCancel: () => void
 }
 
-function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: RecordingModalProps): React.ReactElement {
+function RecordingModal({
+  shortcutId,
+  shortcutName,
+  onSave,
+  onCancel,
+}: RecordingModalProps): React.ReactElement {
   const [pendingKeys, setPendingKeys] = React.useState('')
   const [conflict, setConflict] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
@@ -40,26 +51,39 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
     if (rawKey === '+') return 'Plus'
     if (rawKey.length === 1) return rawKey.toUpperCase()
     const keyMap: Record<string, string> = {
-      ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
-      Escape: 'Esc', Backspace: 'Backspace', Delete: 'Delete', Enter: 'Enter', Tab: 'Tab',
+      ArrowUp: 'Up',
+      ArrowDown: 'Down',
+      ArrowLeft: 'Left',
+      ArrowRight: 'Right',
+      Escape: 'Esc',
+      Backspace: 'Backspace',
+      Delete: 'Delete',
+      Enter: 'Enter',
+      Tab: 'Tab',
     }
     return keyMap[rawKey] ?? rawKey
   }, [])
 
-  const isStandaloneKeyAllowed = React.useCallback((key: string): boolean => /^F(?:[1-9]|1[0-9]|2[0-4])$/i.test(key), [])
+  const isStandaloneKeyAllowed = React.useCallback(
+    (key: string): boolean => /^F(?:[1-9]|1[0-9]|2[0-4])$/i.test(key),
+    []
+  )
 
-  const finishCapture = React.useCallback((accelerator: string) => {
-    if (!accelerator) return
-    const conflictId = checkConflict(accelerator, shortcutId)
-    if (conflictId) {
-      const conflictDef = DEFAULT_SHORTCUTS.find((s) => s.id === conflictId)
-      setConflict(conflictDef?.name ?? conflictId)
+  const finishCapture = React.useCallback(
+    (accelerator: string) => {
+      if (!accelerator) return
+      const conflictId = checkConflict(accelerator, shortcutId)
+      if (conflictId) {
+        const conflictDef = DEFAULT_SHORTCUTS.find((s) => s.id === conflictId)
+        setConflict(conflictDef?.name ?? conflictId)
+        setPendingKeys(accelerator)
+        return
+      }
       setPendingKeys(accelerator)
-      return
-    }
-    setPendingKeys(accelerator)
-    setConflict(null)
-  }, [shortcutId])
+      setConflict(null)
+    },
+    [shortcutId]
+  )
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -117,17 +141,21 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
         <div className="text-sm font-medium text-foreground mb-3">{shortcutName}</div>
 
         {/* 录制区域 */}
-        <div className={cn(
-          'rounded-lg p-4 text-center mb-4',
-          conflict ? 'bg-red-500/10' : pendingKeys ? 'bg-muted' : 'bg-muted/50'
-        )}>
+        <div
+          className={cn(
+            'rounded-lg p-4 text-center mb-4',
+            conflict ? 'bg-red-500/10' : pendingKeys ? 'bg-muted' : 'bg-muted/50'
+          )}
+        >
           {conflict ? (
             <div className="text-red-600 text-xs">
               <span className="font-mono">{getAcceleratorDisplay(pendingKeys)}</span>
               <span className="ml-2">与「{conflict}」冲突</span>
             </div>
           ) : pendingKeys ? (
-            <span className="font-mono text-sm text-foreground">{getAcceleratorDisplay(pendingKeys)}</span>
+            <span className="font-mono text-sm text-foreground">
+              {getAcceleratorDisplay(pendingKeys)}
+            </span>
           ) : (
             <span className="text-xs text-muted-foreground">按下快捷键组合...</span>
           )}
@@ -135,7 +163,10 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
 
         {/* 操作按钮 */}
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-muted">
+          <button
+            onClick={onCancel}
+            className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-muted"
+          >
             取消
           </button>
           <button
@@ -156,7 +187,10 @@ function RecordingModal({ shortcutId, shortcutName, onSave, onCancel }: Recordin
 export function ShortcutSettings(): React.ReactElement {
   const [overrides, setOverrides] = useAtom(shortcutOverridesAtom)
   const [sendWithCmdEnter, setSendWithCmdEnter] = useAtom(sendWithCmdEnterAtom)
-  const [recordingShortcut, setRecordingShortcut] = React.useState<{ id: string; name: string } | null>(null)
+  const [recordingShortcut, setRecordingShortcut] = React.useState<{
+    id: string
+    name: string
+  } | null>(null)
 
   const grouped = React.useMemo(() => {
     const groups = new Map<ShortcutCategory, typeof DEFAULT_SHORTCUTS>()
@@ -168,62 +202,75 @@ export function ShortcutSettings(): React.ReactElement {
     return groups
   }, [])
 
-  const reregisterGlobalShortcut = React.useCallback(async (shortcutId: string): Promise<boolean> => {
-    const def = DEFAULT_SHORTCUTS.find((s) => s.id === shortcutId)
-    if (!def?.global) return true
-    const results = await window.electronAPI.reregisterGlobalShortcuts()
-    return results[shortcutId] !== false
-  }, [])
-
-  const handleSaveShortcut = React.useCallback(async (shortcutId: string, accelerator: string): Promise<boolean> => {
-    const key = isMac ? 'mac' : 'win'
-    const newOverrides: ShortcutOverrides = { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: accelerator } }
-    try {
-      await window.electronAPI.updateSettings({ shortcutOverrides: newOverrides })
-      setOverrides(newOverrides)
-      updateShortcutOverrides(newOverrides)
+  const reregisterGlobalShortcut = React.useCallback(
+    async (shortcutId: string): Promise<boolean> => {
       const def = DEFAULT_SHORTCUTS.find((s) => s.id === shortcutId)
-      if (def?.global) await reregisterGlobalShortcut(shortcutId)
-      toast.success('已保存')
-      return true
-    } catch {
-      toast.error('保存失败')
-      return false
-    }
-  }, [overrides, reregisterGlobalShortcut, setOverrides])
+      if (!def?.global) return true
+      const results = await window.electronAPI.reregisterGlobalShortcuts()
+      return results[shortcutId] !== false
+    },
+    []
+  )
 
-  const handleToggle = React.useCallback(async (shortcutId: string, enable: boolean) => {
-    const key = isMac ? 'mac' : 'win'
-    const newOverrides: ShortcutOverrides = enable
-      ? { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: undefined } }
-      : { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: null } }
-
-    // 如果启用且没有默认值，删除整个 override
-    if (enable && newOverrides[shortcutId]?.[key] === undefined) {
-      const cleanOverrides = { ...newOverrides }
-      delete cleanOverrides[shortcutId]
-      try {
-        await window.electronAPI.updateSettings({ shortcutOverrides: cleanOverrides })
-        setOverrides(cleanOverrides)
-        updateShortcutOverrides(cleanOverrides)
-      } catch {
-        toast.error('操作失败')
+  const handleSaveShortcut = React.useCallback(
+    async (shortcutId: string, accelerator: string): Promise<boolean> => {
+      const key = isMac ? 'mac' : 'win'
+      const newOverrides: ShortcutOverrides = {
+        ...overrides,
+        [shortcutId]: { ...overrides[shortcutId], [key]: accelerator },
       }
-    } else {
       try {
         await window.electronAPI.updateSettings({ shortcutOverrides: newOverrides })
         setOverrides(newOverrides)
         updateShortcutOverrides(newOverrides)
+        const def = DEFAULT_SHORTCUTS.find((s) => s.id === shortcutId)
+        if (def?.global) await reregisterGlobalShortcut(shortcutId)
+        toast.success('已保存')
+        return true
       } catch {
-        toast.error('操作失败')
+        toast.error('保存失败')
+        return false
       }
-    }
-  }, [overrides, setOverrides])
+    },
+    [overrides, reregisterGlobalShortcut, setOverrides]
+  )
+
+  const handleToggle = React.useCallback(
+    async (shortcutId: string, enable: boolean) => {
+      const key = isMac ? 'mac' : 'win'
+      const newOverrides: ShortcutOverrides = enable
+        ? { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: undefined } }
+        : { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: null } }
+
+      // 如果启用且没有默认值，删除整个 override
+      if (enable && newOverrides[shortcutId]?.[key] === undefined) {
+        const cleanOverrides = { ...newOverrides }
+        delete cleanOverrides[shortcutId]
+        try {
+          await window.electronAPI.updateSettings({ shortcutOverrides: cleanOverrides })
+          setOverrides(cleanOverrides)
+          updateShortcutOverrides(cleanOverrides)
+        } catch {
+          toast.error('操作失败')
+        }
+      } else {
+        try {
+          await window.electronAPI.updateSettings({ shortcutOverrides: newOverrides })
+          setOverrides(newOverrides)
+          updateShortcutOverrides(newOverrides)
+        } catch {
+          toast.error('操作失败')
+        }
+      }
+    },
+    [overrides, setOverrides]
+  )
 
   const handleToggleSendKey = React.useCallback(() => {
     const newValue = !sendWithCmdEnter
     setSendWithCmdEnter(newValue)
-    window.electronAPI.updateSettings({ sendWithCmdEnter: newValue })
+    window.electronAPI
+      .updateSettings({ sendWithCmdEnter: newValue })
       .then(() => toast.success('已保存'))
       .catch(() => toast.error('保存失败'))
   }, [sendWithCmdEnter, setSendWithCmdEnter])
@@ -264,7 +311,9 @@ export function ShortcutSettings(): React.ReactElement {
           <div key={category} className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">{categoryIcons[category]}</span>
-              <span className="text-sm font-medium text-foreground">{SHORTCUT_CATEGORY_LABELS[category]}</span>
+              <span className="text-sm font-medium text-foreground">
+                {SHORTCUT_CATEGORY_LABELS[category]}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -279,9 +328,13 @@ export function ShortcutSettings(): React.ReactElement {
                     <ShortcutTile
                       key={def.id}
                       name={def.name}
-                      shortcut={def.readonly ? (isMac ? def.defaultMac : def.defaultWin) : currentAccel}
+                      shortcut={
+                        def.readonly ? (isMac ? def.defaultMac : def.defaultWin) : currentAccel
+                      }
                       active={currentAccel !== null}
-                      onClick={() => !def.readonly && setRecordingShortcut({ id: def.id, name: def.name })}
+                      onClick={() =>
+                        !def.readonly && setRecordingShortcut({ id: def.id, name: def.name })
+                      }
                       onToggle={() => !def.readonly && handleToggle(def.id, currentAccel === null)}
                       disabled={def.readonly}
                       global={def.global}
@@ -340,7 +393,16 @@ interface ShortcutTileProps {
   global?: boolean
 }
 
-function ShortcutTile({ name, shortcut, active, onClick, onToggle, disabled, readonly, global }: ShortcutTileProps): React.ReactElement {
+function ShortcutTile({
+  name,
+  shortcut,
+  active,
+  onClick,
+  onToggle,
+  disabled,
+  readonly,
+  global,
+}: ShortcutTileProps): React.ReactElement {
   return (
     <div
       onClick={disabled || readonly ? undefined : onClick}

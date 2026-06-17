@@ -24,7 +24,7 @@ export interface CapabilityChange {
  */
 export function diffCapabilities(
   prev: WorkspaceCapabilities,
-  next: WorkspaceCapabilities,
+  next: WorkspaceCapabilities
 ): CapabilityChange[] {
   const changes: CapabilityChange[] = []
 

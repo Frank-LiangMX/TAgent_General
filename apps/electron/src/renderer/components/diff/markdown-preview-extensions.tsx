@@ -14,7 +14,6 @@ import DOMPurify from 'dompurify'
 import katex from 'katex'
 import { createRoot } from 'react-dom/client'
 
-
 import { extractCodeText } from '../../lib/markdown-rich-text'
 import { shouldRenderMermaidCodeBlock } from '../../lib/mermaid-detection'
 
@@ -47,7 +46,9 @@ interface CodeBlockRenderModeState {
 }
 
 const shikiCodeBlockPluginKey = new PluginKey<ShikiDecorationState>('markdownShikiCodeBlock')
-const codeBlockRenderModePluginKey = new PluginKey<CodeBlockRenderModeState>('markdownCodeBlockRenderMode')
+const codeBlockRenderModePluginKey = new PluginKey<CodeBlockRenderModeState>(
+  'markdownCodeBlockRenderMode'
+)
 const SHIKI_REFRESH_META = 'markdownShikiCodeBlockRefresh'
 const CODE_BLOCK_RENDER_MODE_META = 'markdownCodeBlockRenderModeRefresh'
 const SHIKI_TOKEN_CACHE_LIMIT = 160
@@ -86,7 +87,9 @@ function serializeMarkdownVideo(state: MarkdownSerializerLike, node: ProseMirror
   const src = escapeHtmlAttr(stringAttr(node, 'src'))
   const poster = escapeHtmlAttr(stringAttr(node, 'poster'))
   const title = escapeHtmlAttr(stringAttr(node, 'title'))
-  state.write(`<video controls src="${src}"${poster ? ` poster="${poster}"` : ''}${title ? ` title="${title}"` : ''}></video>`)
+  state.write(
+    `<video controls src="${src}"${poster ? ` poster="${poster}"` : ''}${title ? ` title="${title}"` : ''}></video>`
+  )
   state.closeBlock(node)
 }
 
@@ -124,7 +127,11 @@ function shouldLoadShikiLanguage(requestedLanguage: string, actualLanguage: stri
   return requestedLanguage !== 'text' && actualLanguage === 'text'
 }
 
-function getCachedShikiTokens(code: string, language: string, theme: string): HighlightTokensResult | null {
+function getCachedShikiTokens(
+  code: string,
+  language: string,
+  theme: string
+): HighlightTokensResult | null {
   const key = `${theme}\u0000${language}\u0000${code}`
   if (shikiTokenCache.has(key)) {
     const cached = shikiTokenCache.get(key) ?? null
@@ -200,7 +207,7 @@ function requestMissingShikiLanguages(view: EditorView, theme: string, pending: 
       highlightCode({ code: ' ', language, theme })
         .then(() => {})
         .catch((error) => console.error('[MarkdownRichEditor] Shiki 高亮失败:', error))
-        .finally(() => pending.delete(key)),
+        .finally(() => pending.delete(key))
     )
   }
 
@@ -233,7 +240,8 @@ function createShikiDecorationsPlugin(themeRef: ThemeRef): Plugin<ShikiDecoratio
       },
     },
     props: {
-      decorations: (state) => shikiCodeBlockPluginKey.getState(state)?.decorations ?? DecorationSet.empty,
+      decorations: (state) =>
+        shikiCodeBlockPluginKey.getState(state)?.decorations ?? DecorationSet.empty,
     },
     view: (view) => {
       const pending = new Set<string>()
@@ -286,13 +294,18 @@ function createShikiDecorationsPlugin(themeRef: ThemeRef): Plugin<ShikiDecoratio
   })
 }
 
-function buildCodeBlockRenderModeDecorations(doc: ProseMirrorNode, editable: boolean): DecorationSet {
+function buildCodeBlockRenderModeDecorations(
+  doc: ProseMirrorNode,
+  editable: boolean
+): DecorationSet {
   const decorations: Decoration[] = []
   doc.descendants((node, pos) => {
     if (node.type.name !== 'codeBlock') return true
-    decorations.push(Decoration.node(pos, pos + node.nodeSize, {
-      'data-tagent-render-mode': editable ? 'editing' : 'preview',
-    }))
+    decorations.push(
+      Decoration.node(pos, pos + node.nodeSize, {
+        'data-tagent-render-mode': editable ? 'editing' : 'preview',
+      })
+    )
     return false
   })
   return DecorationSet.create(doc, decorations)
@@ -319,7 +332,8 @@ function createCodeBlockRenderModePlugin(): Plugin<CodeBlockRenderModeState> {
       },
     },
     props: {
-      decorations: (state) => codeBlockRenderModePluginKey.getState(state)?.decorations ?? DecorationSet.empty,
+      decorations: (state) =>
+        codeBlockRenderModePluginKey.getState(state)?.decorations ?? DecorationSet.empty,
     },
     view: (view) => {
       let lastEditable = view.editable
@@ -330,7 +344,9 @@ function createCodeBlockRenderModePlugin(): Plugin<CodeBlockRenderModeState> {
         refreshHandle = setTimeout(() => {
           refreshHandle = null
           if (currentView.isDestroyed) return
-          currentView.dispatch(currentView.state.tr.setMeta(CODE_BLOCK_RENDER_MODE_META, currentView.editable))
+          currentView.dispatch(
+            currentView.state.tr.setMeta(CODE_BLOCK_RENDER_MODE_META, currentView.editable)
+          )
         }, 0)
       }
 
@@ -388,7 +404,10 @@ function uniqueMediaCandidates(paths: string[]): string[] {
   return paths.filter((path, index) => path && paths.indexOf(path) === index)
 }
 
-async function resolveFirstMediaCandidate(paths: string[], fileAccessRef: FileAccessRef): Promise<string> {
+async function resolveFirstMediaCandidate(
+  paths: string[],
+  fileAccessRef: FileAccessRef
+): Promise<string> {
   for (const path of paths) {
     const result = await window.electronAPI.resolveFilePath(path, fileAccessRef.current)
     if (result?.url) return result.url
@@ -396,7 +415,11 @@ async function resolveFirstMediaCandidate(paths: string[], fileAccessRef: FileAc
   return ''
 }
 
-function resolveMediaSrc(src: string, fileAccessRef: FileAccessRefOrNull, apply: (src: string) => void): () => void {
+function resolveMediaSrc(
+  src: string,
+  fileAccessRef: FileAccessRefOrNull,
+  apply: (src: string) => void
+): () => void {
   // 外链 / data-URL / blob / 已授权 tagent-file 协议：直接 apply，不走 IPC
   if (!src || isExternalUrl(src)) {
     apply(src)
@@ -429,7 +452,9 @@ function resolveMediaSrc(src: string, fileAccessRef: FileAccessRefOrNull, apply:
       if (!cancelled) apply('')
     })
 
-  return () => { cancelled = true }
+  return () => {
+    cancelled = true
+  }
 }
 
 function createStaticHtmlView(
@@ -438,7 +463,7 @@ function createStaticHtmlView(
     className: string
     getHtml: (node: ProseMirrorNode) => string
     inline?: boolean
-  },
+  }
 ) {
   const dom = document.createElement(options.inline ? 'span' : 'div')
   dom.contentEditable = 'false'
@@ -485,7 +510,9 @@ function createMarkdownImageView(initialNode: ProseMirrorNode, fileAccessRef: Fi
     const title = String(node.attrs.title ?? '')
     img.alt = alt
     img.title = title
-    cleanup = resolveMediaSrc(src, fileAccessRef, (resolvedSrc) => { img.src = resolvedSrc })
+    cleanup = resolveMediaSrc(src, fileAccessRef, (resolvedSrc) => {
+      img.src = resolvedSrc
+    })
 
     if (title) {
       caption.textContent = title
@@ -536,7 +563,9 @@ function createMarkdownVideoView(initialNode: ProseMirrorNode, fileAccessRef: Fi
     const poster = String(node.attrs.poster ?? '')
     const title = String(node.attrs.title ?? '')
     video.title = title
-    cleanupSrc = resolveMediaSrc(src, fileAccessRef, (resolvedSrc) => { video.src = resolvedSrc })
+    cleanupSrc = resolveMediaSrc(src, fileAccessRef, (resolvedSrc) => {
+      video.src = resolvedSrc
+    })
     cleanupPoster = resolveMediaSrc(poster, fileAccessRef, (resolvedPoster) => {
       if (resolvedPoster) video.poster = resolvedPoster
       else video.removeAttribute('poster')
@@ -594,25 +623,35 @@ function createShikiCodeBlockView(initialNode: ProseMirrorNode, view: EditorView
   // 头部栏：语言标签 + 复制按钮
   const header = document.createElement('div')
   header.contentEditable = 'false'
-  setClass(header, 'tagent-code-header flex h-8 items-center justify-between border-b border-border/30 px-3 text-xs text-muted-foreground')
+  setClass(
+    header,
+    'tagent-code-header flex h-8 items-center justify-between border-b border-border/30 px-3 text-xs text-muted-foreground'
+  )
   const label = document.createElement('span')
   label.className = 'font-medium select-none'
   header.appendChild(label)
 
   const copyBtn = document.createElement('button')
   copyBtn.type = 'button'
-  copyBtn.className = 'flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-foreground/10 transition-colors text-muted-foreground hover:text-foreground'
-  copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span>'
+  copyBtn.className =
+    'flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-foreground/10 transition-colors text-muted-foreground hover:text-foreground'
+  copyBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span>'
   let copyTimeout: ReturnType<typeof setTimeout> | null = null
   let currentCode = initialNode.textContent
   copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(currentCode).then(() => {
-      copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>已复制</span>'
-      if (copyTimeout) clearTimeout(copyTimeout)
-      copyTimeout = setTimeout(() => {
-        copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span>'
-      }, 2000)
-    }).catch(() => {})
+    navigator.clipboard
+      .writeText(currentCode)
+      .then(() => {
+        copyBtn.innerHTML =
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>已复制</span>'
+        if (copyTimeout) clearTimeout(copyTimeout)
+        copyTimeout = setTimeout(() => {
+          copyBtn.innerHTML =
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span>'
+        }, 2000)
+      })
+      .catch(() => {})
   })
   header.appendChild(copyBtn)
 
@@ -620,11 +659,17 @@ function createShikiCodeBlockView(initialNode: ProseMirrorNode, view: EditorView
   setClass(body, 'tagent-code-source-body markdown-code-block-body overflow-x-auto')
 
   const editPre = document.createElement('pre')
-  setClass(editPre, 'markdown-code-edit-layer m-0 min-h-[3.2em] overflow-x-auto bg-transparent p-4 font-mono text-[13px] leading-[1.6]')
+  setClass(
+    editPre,
+    'markdown-code-edit-layer m-0 min-h-[3.2em] overflow-x-auto bg-transparent p-4 font-mono text-[13px] leading-[1.6]'
+  )
   editPre.style.whiteSpace = 'pre'
 
   const contentDOM = document.createElement('code')
-  setClass(contentDOM, 'block min-h-[1.6em] whitespace-pre bg-transparent p-0 font-mono text-[13px] leading-[1.6]')
+  setClass(
+    contentDOM,
+    'block min-h-[1.6em] whitespace-pre bg-transparent p-0 font-mono text-[13px] leading-[1.6]'
+  )
   contentDOM.style.whiteSpace = 'pre'
   editPre.appendChild(contentDOM)
   body.appendChild(editPre)
@@ -654,7 +699,8 @@ function createShikiCodeBlockView(initialNode: ProseMirrorNode, view: EditorView
     currentCode = node.textContent
     label.textContent = language === 'text' ? 'Code' : getDisplayName(language)
     const className = language === 'text' ? undefined : `language-${language}`
-    const shouldRenderMermaid = !view.editable && shouldRenderMermaidCodeBlock(className, currentCode)
+    const shouldRenderMermaid =
+      !view.editable && shouldRenderMermaidCodeBlock(className, currentCode)
     dom.classList.toggle('tagent-code-block--mermaid', shouldRenderMermaid)
     scheduleMermaidRender(shouldRenderMermaid ? currentCode : null)
   }
@@ -697,17 +743,19 @@ export function createMarkdownImage(fileAccessRef: FileAccessRefOrNull): Node {
     },
 
     parseHTML() {
-      return [{
-        tag: 'img[src]',
-        getAttrs: (node) => {
-          if (!(node instanceof HTMLElement)) return false
-          return {
-            src: node.getAttribute('src') || '',
-            alt: node.getAttribute('alt') || '',
-            title: node.getAttribute('title') || '',
-          }
+      return [
+        {
+          tag: 'img[src]',
+          getAttrs: (node) => {
+            if (!(node instanceof HTMLElement)) return false
+            return {
+              src: node.getAttribute('src') || '',
+              alt: node.getAttribute('alt') || '',
+              title: node.getAttribute('title') || '',
+            }
+          },
         },
-      }]
+      ]
     },
 
     renderHTML({ HTMLAttributes }) {
@@ -744,18 +792,20 @@ export function createMarkdownVideo(fileAccessRef: FileAccessRefOrNull): Node {
     },
 
     parseHTML() {
-      return [{
-        tag: 'video[src], video[data-type="markdown-video"]',
-        getAttrs: (node) => {
-          if (!(node instanceof HTMLElement)) return false
-          const source = node.querySelector('source')
-          return {
-            src: node.getAttribute('src') || source?.getAttribute('src') || '',
-            poster: node.getAttribute('poster') || '',
-            title: node.getAttribute('title') || node.getAttribute('alt') || '',
-          }
+      return [
+        {
+          tag: 'video[src], video[data-type="markdown-video"]',
+          getAttrs: (node) => {
+            if (!(node instanceof HTMLElement)) return false
+            const source = node.querySelector('source')
+            return {
+              src: node.getAttribute('src') || source?.getAttribute('src') || '',
+              poster: node.getAttribute('poster') || '',
+              title: node.getAttribute('title') || node.getAttribute('alt') || '',
+            }
+          },
         },
-      }]
+      ]
     },
 
     renderHTML({ HTMLAttributes }) {
@@ -789,12 +839,15 @@ export const RawHtmlBlock = Node.create({
   },
 
   parseHTML() {
-    return [{
-      tag: 'div[data-type="raw-html-block"]',
-      getAttrs: (node) => node instanceof HTMLElement
-        ? { html: node.dataset.html || '', markdown: node.dataset.markdown || '' }
-        : false,
-    }]
+    return [
+      {
+        tag: 'div[data-type="raw-html-block"]',
+        getAttrs: (node) =>
+          node instanceof HTMLElement
+            ? { html: node.dataset.html || '', markdown: node.dataset.markdown || '' }
+            : false,
+      },
+    ]
   },
 
   renderHTML({ node }) {
@@ -817,10 +870,11 @@ export const RawHtmlBlock = Node.create({
   },
 
   addNodeView() {
-    return ({ node }) => createStaticHtmlView(node, {
-      className: 'not-prose my-3 overflow-auto',
-      getHtml: (nextNode) => String(nextNode.attrs.html ?? ''),
-    })
+    return ({ node }) =>
+      createStaticHtmlView(node, {
+        className: 'not-prose my-3 overflow-auto',
+        getHtml: (nextNode) => String(nextNode.attrs.html ?? ''),
+      })
   },
 })
 
@@ -835,10 +889,13 @@ export const RawHtmlInline = Node.create({
   },
 
   parseHTML() {
-    return [{
-      tag: 'span[data-type="raw-html-inline"]',
-      getAttrs: (node) => node instanceof HTMLElement ? { html: node.dataset.html || '' } : false,
-    }]
+    return [
+      {
+        tag: 'span[data-type="raw-html-inline"]',
+        getAttrs: (node) =>
+          node instanceof HTMLElement ? { html: node.dataset.html || '' } : false,
+      },
+    ]
   },
 
   renderHTML({ node }) {
@@ -854,11 +911,12 @@ export const RawHtmlInline = Node.create({
   },
 
   addNodeView() {
-    return ({ node }) => createStaticHtmlView(node, {
-      inline: true,
-      className: 'not-prose inline-block align-baseline',
-      getHtml: (nextNode) => String(nextNode.attrs.html ?? ''),
-    })
+    return ({ node }) =>
+      createStaticHtmlView(node, {
+        inline: true,
+        className: 'not-prose inline-block align-baseline',
+        getHtml: (nextNode) => String(nextNode.attrs.html ?? ''),
+      })
   },
 })
 
@@ -873,10 +931,13 @@ export const MathInline = Node.create({
   },
 
   parseHTML() {
-    return [{
-      tag: 'span[data-type="math-inline"]',
-      getAttrs: (node) => node instanceof HTMLElement ? { latex: node.dataset.latex || '' } : false,
-    }]
+    return [
+      {
+        tag: 'span[data-type="math-inline"]',
+        getAttrs: (node) =>
+          node instanceof HTMLElement ? { latex: node.dataset.latex || '' } : false,
+      },
+    ]
   },
 
   renderHTML({ node }) {
@@ -920,10 +981,13 @@ export const MathBlock = Node.create({
   },
 
   parseHTML() {
-    return [{
-      tag: 'div[data-type="math-block"]',
-      getAttrs: (node) => node instanceof HTMLElement ? { latex: node.dataset.latex || '' } : false,
-    }]
+    return [
+      {
+        tag: 'div[data-type="math-block"]',
+        getAttrs: (node) =>
+          node instanceof HTMLElement ? { latex: node.dataset.latex || '' } : false,
+      },
+    ]
   },
 
   renderHTML({ node }) {
@@ -982,15 +1046,17 @@ export function createShikiCodeBlock(themeRef: ThemeRef): Node {
     },
 
     parseHTML() {
-      return [{
-        tag: 'pre',
-        preserveWhitespace: 'full',
-        getContent: (element, schema) => {
-          const code = (element as Element).querySelector('code')
-          const text = code ? extractCodeText(code) : (element.textContent || '')
-          return text ? Fragment.from(schema.text(text)) : Fragment.empty
+      return [
+        {
+          tag: 'pre',
+          preserveWhitespace: 'full',
+          getContent: (element, schema) => {
+            const code = (element as Element).querySelector('code')
+            const text = code ? extractCodeText(code) : element.textContent || ''
+            return text ? Fragment.from(schema.text(text)) : Fragment.empty
+          },
         },
-      }]
+      ]
     },
 
     addCommands() {

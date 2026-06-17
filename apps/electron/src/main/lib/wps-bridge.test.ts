@@ -13,7 +13,9 @@ describe('wps-crypto', () => {
     const encryptedData = 'dGVzdA=='
 
     const signature = calculateEventSignature(appId, secretKey, topic, nonce, time, encryptedData)
-    expect(verifyEventSignature(appId, secretKey, topic, nonce, time, encryptedData, signature)).toBe(true)
+    expect(
+      verifyEventSignature(appId, secretKey, topic, nonce, time, encryptedData, signature)
+    ).toBe(true)
   })
 
   it('过期时间戳应校验失败', () => {
@@ -24,7 +26,9 @@ describe('wps-crypto', () => {
     const time = Math.floor(Date.now() / 1000) - 600
     const encryptedData = 'dGVzdA=='
     const signature = calculateEventSignature(appId, secretKey, topic, nonce, time, encryptedData)
-    expect(verifyEventSignature(appId, secretKey, topic, nonce, time, encryptedData, signature)).toBe(false)
+    expect(
+      verifyEventSignature(appId, secretKey, topic, nonce, time, encryptedData, signature)
+    ).toBe(false)
   })
 })
 

@@ -25,8 +25,12 @@ vi.mock('electron', () => ({
   },
   app: { getPath: () => '/tmp' },
   BrowserWindow: class {
-    static getAllWindows() { return [] }
-    static getFocusedWindow() { return null }
+    static getAllWindows() {
+      return []
+    }
+    static getFocusedWindow() {
+      return null
+    }
   },
   WebContents: class {},
   dialog: { showOpenDialog: () => {} },
@@ -42,7 +46,7 @@ function ch(
   id: string,
   name: string,
   enabled: boolean,
-  models: Array<{ id: string; name: string; enabled: boolean }>,
+  models: Array<{ id: string; name: string; enabled: boolean }>
 ): Channel {
   return {
     id,
@@ -62,8 +66,13 @@ const testDataSource: ChannelDataSource = {
   getChannelById: (id: string) => mockChannels.find((c) => c.id === id),
 }
 
-const { getEnabledModels, listSwitchableChannels, resolveChannelByIndex, resolveModelByIndex, describeBindingModel } =
-  await import('./bridge-model-utils')
+const {
+  getEnabledModels,
+  listSwitchableChannels,
+  resolveChannelByIndex,
+  resolveModelByIndex,
+  describeBindingModel,
+} = await import('./bridge-model-utils')
 
 // ============================================
 // getEnabledModels (纯函数)
@@ -88,9 +97,7 @@ describe('getEnabledModels', () => {
   })
 
   test('Given 全部 disabled When 过滤 Then 返回空数组', () => {
-    const c = ch('c1', 'C1', true, [
-      { id: 'm1', name: 'M1', enabled: false },
-    ])
+    const c = ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: false }])
     expect(getEnabledModels(c)).toEqual([])
   })
 
@@ -108,32 +115,26 @@ describe('listSwitchableChannels', () => {
   beforeEach(() => resetMocks())
 
   test('Given 启用渠道 + 有启用模型 When list Then 包含该渠道', () => {
-    mockChannels = [
-      ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }])]
     expect(listSwitchableChannels(testDataSource).map((c) => c.id)).toEqual(['c1'])
   })
 
   test('Given 停用渠道 When list Then 排除', () => {
-    mockChannels = [
-      ch('c1', 'C1', false, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', false, [{ id: 'm1', name: 'M1', enabled: true }])]
     expect(listSwitchableChannels(testDataSource)).toEqual([])
   })
 
   test('Given 启用渠道但无启用模型 When list Then 排除', () => {
-    mockChannels = [
-      ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: false }]),
-    ]
+    mockChannels = [ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: false }])]
     expect(listSwitchableChannels(testDataSource)).toEqual([])
   })
 
   test('Given 混合场景 When list Then 只返回合法渠道 (enabled + 有启用模型)', () => {
     mockChannels = [
-      ch('a', 'A', true, [{ id: 'm1', name: 'M1', enabled: true }]),     // ✓
-      ch('b', 'B', false, [{ id: 'm2', name: 'M2', enabled: true }]),    // ✗ 停用
-      ch('c', 'C', true, [{ id: 'm3', name: 'M3', enabled: false }]),   // ✗ 无启用模型
-      ch('d', 'D', true, [{ id: 'm4', name: 'M4', enabled: true }]),     // ✓
+      ch('a', 'A', true, [{ id: 'm1', name: 'M1', enabled: true }]), // ✓
+      ch('b', 'B', false, [{ id: 'm2', name: 'M2', enabled: true }]), // ✗ 停用
+      ch('c', 'C', true, [{ id: 'm3', name: 'M3', enabled: false }]), // ✗ 无启用模型
+      ch('d', 'D', true, [{ id: 'm4', name: 'M4', enabled: true }]), // ✓
     ]
     expect(listSwitchableChannels(testDataSource).map((c) => c.id)).toEqual(['a', 'd'])
   })
@@ -282,7 +283,7 @@ describe('describeBindingModel', () => {
     mockChannels = []
     const d = describeBindingModel('non-existent', 'm1', testDataSource)
     expect(d.channelName).toBe('non-existent')
-    expect(d.modelName).toBe('m1')  // modelId 原值
+    expect(d.modelName).toBe('m1') // modelId 原值
     expect(d.valid).toBe(false)
   })
 
@@ -295,9 +296,7 @@ describe('describeBindingModel', () => {
   })
 
   test('Given channel 存在但 modelId 不在 channel.models When describe Then modelName 用 modelId 原值 + valid=false', () => {
-    mockChannels = [
-      ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }])]
     const d = describeBindingModel('c1', 'unknown-model', testDataSource)
     expect(d.channelName).toBe('C1')
     expect(d.modelName).toBe('unknown-model')
@@ -305,9 +304,7 @@ describe('describeBindingModel', () => {
   })
 
   test('Given channel 存在 + modelId 是 undefined When describe Then modelName 是 "未设置" + valid=false', () => {
-    mockChannels = [
-      ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }])]
     const d = describeBindingModel('c1', undefined, testDataSource)
     expect(d.channelName).toBe('C1')
     expect(d.modelName).toBe('未设置')
@@ -315,9 +312,7 @@ describe('describeBindingModel', () => {
   })
 
   test('Given channel 存在 + modelId 是空字符串 When describe Then 空字符串被替换为 "未设置" (modelId || "未设置")', () => {
-    mockChannels = [
-      ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', true, [{ id: 'm1', name: 'M1', enabled: true }])]
     const d = describeBindingModel('c1', '', testDataSource)
     // 实现用 `modelId || '未设置'`, 空字符串是 falsy, 走 fallback
     expect(d.modelName).toBe('未设置')
@@ -327,10 +322,8 @@ describe('describeBindingModel', () => {
   test('Given channel 已停用 (enabled=false) When describe Then valid=false (channel 存在但可能不应该用)', () => {
     // 注: describeBindingModel 不检查 enabled, 只检查存在性
     // 所以即使停用也算 valid
-    mockChannels = [
-      ch('c1', 'C1', false, [{ id: 'm1', name: 'M1', enabled: true }]),
-    ]
+    mockChannels = [ch('c1', 'C1', false, [{ id: 'm1', name: 'M1', enabled: true }])]
     const d = describeBindingModel('c1', 'm1', testDataSource)
-    expect(d.valid).toBe(true)  // 仍然 valid (只检查存在性)
+    expect(d.valid).toBe(true) // 仍然 valid (只检查存在性)
   })
 })

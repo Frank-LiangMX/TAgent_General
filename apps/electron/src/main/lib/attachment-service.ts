@@ -17,11 +17,7 @@ import { extname, basename, join, isAbsolute, normalize } from 'node:path'
 import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { dialog, BrowserWindow } from 'electron'
 
-import {
-  getConfigDir,
-  getConversationAttachmentsDir,
-  resolveAttachmentPath,
-} from './config-paths'
+import { getConfigDir, getConversationAttachmentsDir, resolveAttachmentPath } from './config-paths'
 
 import type {
   FileAttachment,
@@ -33,14 +29,8 @@ import type {
   FileDialogSkippedFile,
 } from '@tagent/shared'
 
-
 /** 支持的图片 MIME 类型 */
-const IMAGE_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-])
+const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 
 /** 扩展名 → MIME 类型映射 */
 const MIME_MAP: Record<string, string> = {
@@ -76,10 +66,27 @@ const FILE_FILTERS = [
   {
     name: '支持的文件',
     extensions: [
-      'png', 'jpg', 'jpeg', 'gif', 'webp',
-      'pdf', 'txt', 'md', 'json', 'csv', 'xml', 'html',
-      'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-      'odt', 'odp', 'ods',
+      'png',
+      'jpg',
+      'jpeg',
+      'gif',
+      'webp',
+      'pdf',
+      'txt',
+      'md',
+      'json',
+      'csv',
+      'xml',
+      'html',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'ppt',
+      'pptx',
+      'odt',
+      'odp',
+      'ods',
     ],
   },
   {
@@ -293,11 +300,20 @@ export async function openFileDialog(): Promise<FileDialogResult> {
     } catch (error) {
       const message = error instanceof Error ? error.message : '读取文件失败'
       console.warn(`[附件服务] 读取文件失败，跳过: ${filePath}`, error)
-      skippedFiles.push({ filename, mediaType, size: fileSize, path: filePath, reason: 'unreadable', message })
+      skippedFiles.push({
+        filename,
+        mediaType,
+        size: fileSize,
+        path: filePath,
+        reason: 'unreadable',
+        message,
+      })
     }
   }
 
-  console.log(`[附件服务] 文件对话框选择了 ${files.length} 个内存附件，${largeFiles.length} 个大文件引用，${skippedFiles.length} 个跳过`)
+  console.log(
+    `[附件服务] 文件对话框选择了 ${files.length} 个内存附件，${largeFiles.length} 个大文件引用，${skippedFiles.length} 个跳过`
+  )
   return {
     files,
     ...(largeFiles.length > 0 && { largeFiles }),

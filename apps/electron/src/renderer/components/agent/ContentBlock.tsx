@@ -23,8 +23,15 @@ import { formatDuration } from './AgentMessages'
 import { getToolPhrase } from './tool-phrase'
 import { ToolResultRenderer } from './tool-result-renderers'
 import { PreviewOpenButton } from './tool-result-renderers/preview-open-button'
-import { getTaskGetStatusLabel, parseTaskGetResult, type ParsedTaskGetResult } from './tool-result-renderers/task-get-result'
-import { parseTaskListResult, type ParsedTaskListItem } from './tool-result-renderers/task-list-result'
+import {
+  getTaskGetStatusLabel,
+  parseTaskGetResult,
+  type ParsedTaskGetResult,
+} from './tool-result-renderers/task-get-result'
+import {
+  parseTaskListResult,
+  type ParsedTaskListItem,
+} from './tool-result-renderers/task-list-result'
 import { getToolIcon, extractFilePath } from './tool-utils'
 
 import type {
@@ -155,8 +162,8 @@ function SubAgentFooter({
 }): React.ReactElement | null {
   // 解析结果文本，分离内容与元数据
   const parsed = React.useMemo(
-    () => resultText ? parseAgentResultText(resultText) : null,
-    [resultText],
+    () => (resultText ? parseAgentResultText(resultText) : null),
+    [resultText]
   )
 
   // 优先使用 task_notification 的用量数据，备用从 result 文本中解析
@@ -178,15 +185,11 @@ function SubAgentFooter({
       {/* 用量统计行（最底部） */}
       {effectiveMeta && (
         <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60 tabular-nums">
-          {effectiveMeta.durationMs > 0 && (
-            <span>{formatDuration(effectiveMeta.durationMs)}</span>
-          )}
+          {effectiveMeta.durationMs > 0 && <span>{formatDuration(effectiveMeta.durationMs)}</span>}
           {effectiveMeta.totalTokens > 0 && (
             <span>{effectiveMeta.totalTokens.toLocaleString()} tokens</span>
           )}
-          {effectiveMeta.toolUses > 0 && (
-            <span>{effectiveMeta.toolUses} 次工具调用</span>
-          )}
+          {effectiveMeta.toolUses > 0 && <span>{effectiveMeta.toolUses} 次工具调用</span>}
         </div>
       )}
     </div>
@@ -218,7 +221,13 @@ export interface ContentBlockProps {
 
 // ===== 提示词折叠行 =====
 
-function PromptRow({ prompt, dimmed = false }: { prompt: string; dimmed?: boolean }): React.ReactElement {
+function PromptRow({
+  prompt,
+  dimmed = false,
+}: {
+  prompt: string
+  dimmed?: boolean
+}): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
   const preview = prompt.length > 60 ? prompt.slice(0, 60) + '…' : prompt
 
@@ -229,24 +238,35 @@ function PromptRow({ prompt, dimmed = false }: { prompt: string; dimmed?: boolea
         className="flex items-center gap-2 py-0.5 text-left hover:opacity-70 transition-opacity group"
         onClick={() => setExpanded(!expanded)}
       >
-        <MessageSquareText className={cn('size-3.5 shrink-0', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
+        <MessageSquareText
+          className={cn(
+            'size-3.5 shrink-0',
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          )}
+        />
 
-        <span className={cn(
-          'shrink-0 text-[14px]',
-          dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground',
-        )}>提示词</span>
+        <span
+          className={cn(
+            'shrink-0 text-[14px]',
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          )}
+        >
+          提示词
+        </span>
 
-        <span className={cn(
-          'truncate text-[14px]',
-          dimmed ? 'text-muted-foreground/50' : 'text-muted-foreground/60',
-        )}>
+        <span
+          className={cn(
+            'truncate text-[14px]',
+            dimmed ? 'text-muted-foreground/50' : 'text-muted-foreground/60'
+          )}
+        >
           {preview}
         </span>
 
         <ChevronRight
           className={cn(
             'shrink-0 size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-all duration-150',
-            expanded && 'rotate-90 opacity-100',
+            expanded && 'rotate-90 opacity-100'
           )}
         />
       </button>
@@ -265,9 +285,10 @@ function PromptRow({ prompt, dimmed = false }: { prompt: string; dimmed?: boolea
 // ===== 工具短语 diff 着色 =====
 
 function TaskGetCollapsedSummary({ task }: { task: ParsedTaskGetResult }): React.ReactElement {
-  const blockPreview = task.blocks.length > 0
-    ? `${task.blocks[0]}${task.blocks.length > 1 ? ` +${task.blocks.length - 1}` : ''}`
-    : undefined
+  const blockPreview =
+    task.blocks.length > 0
+      ? `${task.blocks[0]}${task.blocks.length > 1 ? ` +${task.blocks.length - 1}` : ''}`
+      : undefined
 
   return (
     <>
@@ -337,7 +358,16 @@ interface ToolUseBlockProps {
   isStreaming?: boolean
 }
 
-function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed = false, childBlocks, basePath, isStreaming }: ToolUseBlockProps): React.ReactElement {
+function ToolUseBlock({
+  block,
+  allMessages,
+  animate = false,
+  index = 0,
+  dimmed = false,
+  childBlocks,
+  basePath,
+  isStreaming,
+}: ToolUseBlockProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
   const toolResult = useToolResult(block.id, allMessages)
   const resultText = toolResult?.result
@@ -364,19 +394,20 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
   const isCompleted = toolResult !== null
 
   // 运行中显示进行时短语，完成或非流式（已终止）显示完成态短语
-  const displayLabel = (isCompleted || !isStreaming) ? phrase.label : phrase.loadingLabel
+  const displayLabel = isCompleted || !isStreaming ? phrase.label : phrase.loadingLabel
   const filePath = extractFilePath(block.input)
-  const isPreviewable = (
+  const isPreviewable =
     (block.name === 'Read' || block.name === 'Edit' || block.name === 'Write') &&
     isCompleted &&
     filePath
-  )
 
   const delay = animate && index < 10 ? `${index * 30}ms` : '0ms'
 
   // Agent/Task: 提取 prompt 用于气泡展示
   const agentPrompt = isAgentTool
-    ? (typeof block.input.prompt === 'string' ? block.input.prompt : undefined)
+    ? typeof block.input.prompt === 'string'
+      ? block.input.prompt
+      : undefined
     : undefined
 
   // 子代理工具调用统计
@@ -386,9 +417,7 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
   if (isAgentTool) {
     return (
       <div
-        className={cn(
-          animate && 'animate-in fade-in duration-150 fill-mode-both',
-        )}
+        className={cn(animate && 'animate-in fade-in duration-150 fill-mode-both')}
         style={animate ? { animationDelay: delay } : undefined}
       >
         {/* 头部行：折叠箭头 + 状态 + 语义短语 */}
@@ -400,7 +429,7 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
           <ChevronRight
             className={cn(
               'size-3 text-muted-foreground/50 transition-transform duration-150 shrink-0',
-              childrenExpanded && 'rotate-90',
+              childrenExpanded && 'rotate-90'
             )}
           />
 
@@ -411,12 +440,21 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
             <XCircle className="size-3.5 text-destructive/70 shrink-0" />
           ) : null}
 
-          <ToolIcon className={cn('size-3.5 shrink-0', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
+          <ToolIcon
+            className={cn(
+              'size-3.5 shrink-0',
+              dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+            )}
+          />
 
-          <span className={cn(
-            'truncate text-[14px]',
-            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground',
-          )}>{displayLabel}</span>
+          <span
+            className={cn(
+              'truncate text-[14px]',
+              dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+            )}
+          >
+            {displayLabel}
+          </span>
 
           {/* 子工具计数（折叠时显示） */}
           {childToolCount > 0 && !childrenExpanded && (
@@ -428,34 +466,32 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
 
         {/* 展开内容 */}
         {childrenExpanded && (
-          <div className={cn(
-            'pl-5 mt-1.5 space-y-2 border-l-2 border-primary/20 ml-[5px]',
-            animate && 'animate-in fade-in slide-in-from-top-1 duration-150',
-          )}>
+          <div
+            className={cn(
+              'pl-5 mt-1.5 space-y-2 border-l-2 border-primary/20 ml-[5px]',
+              animate && 'animate-in fade-in slide-in-from-top-1 duration-150'
+            )}
+          >
             {/* 提示词：可折叠行 */}
             {agentPrompt && <PromptRow prompt={agentPrompt} dimmed={dimmed} />}
 
             {/* 子代理工具调用 */}
-            {hasChildren && childBlocks.map((childBlock, ci) => (
-              <ContentBlock
-                key={ci}
-                block={childBlock}
-                allMessages={allMessages}
-                basePath={basePath}
-                animate={animate}
-                index={ci}
-                dimmed
-                isStreaming={isStreaming}
-              />
-            ))}
+            {hasChildren &&
+              childBlocks.map((childBlock, ci) => (
+                <ContentBlock
+                  key={ci}
+                  block={childBlock}
+                  allMessages={allMessages}
+                  basePath={basePath}
+                  animate={animate}
+                  index={ci}
+                  dimmed
+                  isStreaming={isStreaming}
+                />
+              ))}
 
             {/* SubAgent 完成信息 */}
-            {isCompleted && (
-              <SubAgentFooter
-                meta={subAgentMeta}
-                resultText={toolResult?.result}
-              />
-            )}
+            {isCompleted && <SubAgentFooter meta={subAgentMeta} resultText={toolResult?.result} />}
 
             {/* 底部收起按钮 */}
             <button
@@ -475,16 +511,14 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
   // ===== 普通工具：语义化短语 + 结构化结果 =====
   return (
     <div
-      className={cn(
-        animate && 'animate-in fade-in duration-150 fill-mode-both',
-      )}
+      className={cn(animate && 'animate-in fade-in duration-150 fill-mode-both')}
       style={animate ? { animationDelay: delay } : undefined}
     >
       <button
         type="button"
         className={cn(
           'inline-flex max-w-full items-center gap-2 py-0.5 text-left transition-opacity group',
-          'hover:opacity-70',
+          'hover:opacity-70'
         )}
         onClick={() => setExpanded(!expanded)}
       >
@@ -494,13 +528,22 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
           <XCircle className="size-3.5 text-destructive/70 shrink-0" />
         ) : null}
 
-        <ToolIcon className={cn('size-3.5 shrink-0', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
+        <ToolIcon
+          className={cn(
+            'size-3.5 shrink-0',
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          )}
+        />
 
-        <span className={cn(
-          'min-w-0 truncate text-[14px]',
-          taskGetSummary || taskListSummary ? 'shrink-0' : '',
-          dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground',
-        )}>{displayLabel}</span>
+        <span
+          className={cn(
+            'min-w-0 truncate text-[14px]',
+            taskGetSummary || taskListSummary ? 'shrink-0' : '',
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          )}
+        >
+          {displayLabel}
+        </span>
 
         {phrase.diffStats && (isCompleted || !isStreaming) && (
           <span className="shrink-0 text-[14px] tabular-nums">
@@ -529,20 +572,20 @@ function ToolUseBlock({ block, allMessages, animate = false, index = 0, dimmed =
         <ChevronRight
           className={cn(
             'shrink-0 size-3 text-muted-foreground/45 transition-transform duration-150',
-            expanded && 'rotate-90',
+            expanded && 'rotate-90'
           )}
         />
 
-        {isPreviewable && (
-          <PreviewOpenButton filePath={filePath} />
-        )}
+        {isPreviewable && <PreviewOpenButton filePath={filePath} />}
       </button>
 
       {shouldShowResult && resultText && expanded && (
-        <div className={cn(
-          'ml-5.5 mt-1 mb-2 pl-3 border-l-2 border-border/30',
-          animate && 'animate-in fade-in slide-in-from-top-1 duration-150',
-        )}>
+        <div
+          className={cn(
+            'ml-5.5 mt-1 mb-2 pl-3 border-l-2 border-border/30',
+            animate && 'animate-in fade-in slide-in-from-top-1 duration-150'
+          )}
+        >
           <ToolResultRenderer
             toolName={block.name}
             input={block.input}
@@ -593,8 +636,15 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
   return (
     <div className="relative mb-3">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Brain className={cn('size-3.5', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
-        <span className={cn('text-[14px] uppercase tracking-wider', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')}>
+        <Brain
+          className={cn('size-3.5', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')}
+        />
+        <span
+          className={cn(
+            'text-[14px] uppercase tracking-wider',
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          )}
+        >
           Thinking
         </span>
       </div>
@@ -602,7 +652,7 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
         className={cn(
           'relative rounded-lg px-3.5 py-2.5',
           dimmed ? 'bg-muted/30' : 'bg-muted/50',
-          shouldCollapse && !isExpanded && 'pb-7',
+          shouldCollapse && !isExpanded && 'pb-7'
         )}
         style={{
           border: 'none',
@@ -614,7 +664,7 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
           className={cn(
             'prose prose-sm dark:prose-invert max-w-none prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-[14px] leading-relaxed overflow-hidden transition-[max-height] duration-200',
             dimmed ? 'text-muted-foreground' : 'text-foreground/90',
-            shouldCollapse && !isExpanded && 'max-h-[5.6em]',
+            shouldCollapse && !isExpanded && 'max-h-[5.6em]'
           )}
         >
           <MessageResponse>{block.thinking}</MessageResponse>
@@ -649,13 +699,25 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
 
 // ===== ContentBlock 主组件 =====
 
-export function ContentBlock({ block, allMessages, basePath, basePaths, animate = false, index = 0, dimmed = false, childBlocks, isStreaming }: ContentBlockProps): React.ReactElement | null {
+export function ContentBlock({
+  block,
+  allMessages,
+  basePath,
+  basePaths,
+  animate = false,
+  index = 0,
+  dimmed = false,
+  childBlocks,
+  isStreaming,
+}: ContentBlockProps): React.ReactElement | null {
   // text 块 — 主要内容，不受 dimmed 影响
   if (block.type === 'text') {
     const textBlock = block as SDKTextBlock
     if (!textBlock.text) return null
     return (
-      <MessageResponse basePath={basePath} basePaths={basePaths}>{textBlock.text}</MessageResponse>
+      <MessageResponse basePath={basePath} basePaths={basePaths}>
+        {textBlock.text}
+      </MessageResponse>
     )
   }
 

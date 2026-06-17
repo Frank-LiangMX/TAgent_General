@@ -98,7 +98,8 @@ export function createVoiceDictationWindow(): void {
 }
 
 export function toggleVoiceDictationWindow(options: VoiceDictationToggleOptions = {}): void {
-  const win = voiceDictationWindow && !voiceDictationWindow.isDestroyed() ? voiceDictationWindow : null
+  const win =
+    voiceDictationWindow && !voiceDictationWindow.isDestroyed() ? voiceDictationWindow : null
 
   if (win?.isVisible()) {
     win.webContents.send(VOICE_DICTATION_IPC_CHANNELS.TOGGLE_STOP)
@@ -133,10 +134,7 @@ function installVoiceDictationMediaPermissions(win: BrowserWindow): void {
     if (details.mediaType === 'video') return false
 
     return isTrustedVoiceDictationUrl(
-      details.requestingUrl ??
-      details.securityOrigin ??
-      webContents?.getURL() ??
-      requestingOrigin,
+      details.requestingUrl ?? details.securityOrigin ?? webContents?.getURL() ?? requestingOrigin
     )
   })
 
@@ -149,9 +147,7 @@ function installVoiceDictationMediaPermissions(win: BrowserWindow): void {
     const mediaDetails = details as Electron.MediaAccessPermissionRequest
     const requestsVideo = mediaDetails.mediaTypes?.includes('video') ?? false
     const isTrustedRequest = isTrustedVoiceDictationUrl(
-      mediaDetails.requestingUrl ??
-      mediaDetails.securityOrigin ??
-      webContents.getURL(),
+      mediaDetails.requestingUrl ?? mediaDetails.securityOrigin ?? webContents.getURL()
     )
 
     callback(isTrustedRequest && !requestsVideo)
@@ -223,18 +219,24 @@ export function resizeVoiceDictationWindow(height: number): void {
   const display = screen.getDisplayMatching(bounds)
   const maxHeight = Math.max(MIN_WINDOW_HEIGHT, display.workArea.height - WINDOW_MARGIN * 2)
   const nextHeight = Math.max(MIN_WINDOW_HEIGHT, Math.min(maxHeight, Math.round(height)))
-  setVoiceDictationBoundsWithoutSaving(clampBoundsToVisibleWorkArea({
-    x: bounds.x,
-    y: bounds.y,
-    width: WINDOW_WIDTH,
-    height: nextHeight,
-  }))
+  setVoiceDictationBoundsWithoutSaving(
+    clampBoundsToVisibleWorkArea({
+      x: bounds.x,
+      y: bounds.y,
+      width: WINDOW_WIDTH,
+      height: nextHeight,
+    })
+  )
 }
 
 export function hideVoiceDictationWindow(): void {
   flushPendingVoiceDictationPositionSave()
   suppressTAgentActivationBriefly()
-  if (voiceDictationWindow && !voiceDictationWindow.isDestroyed() && voiceDictationWindow.isVisible()) {
+  if (
+    voiceDictationWindow &&
+    !voiceDictationWindow.isDestroyed() &&
+    voiceDictationWindow.isVisible()
+  ) {
     voiceDictationWindow.hide()
   }
   voiceDictationTargetCaptured = false
@@ -296,7 +298,12 @@ function getInitialVoiceDictationBounds(): Electron.Rectangle {
   })
 }
 
-function getSavedVoiceDictationPosition(): { x: number; y: number; relativeX?: number; relativeY?: number } | null {
+function getSavedVoiceDictationPosition(): {
+  x: number
+  y: number
+  relativeX?: number
+  relativeY?: number
+} | null {
   const position = getSettings().voiceDictation?.windowPosition
   if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return null
   return {
@@ -374,12 +381,10 @@ function saveVoiceDictationPosition(): void {
   const { x, y } = voiceDictationWindow.getBounds()
   const display = screen.getDisplayNearestPoint({ x: x + WINDOW_WIDTH / 2, y: y + 48 })
   const { workArea } = display
-  const relativeX = workArea.width > WINDOW_WIDTH
-    ? (x - workArea.x) / (workArea.width - WINDOW_WIDTH)
-    : 0.5
-  const relativeY = workArea.height > WINDOW_HEIGHT
-    ? (y - workArea.y) / (workArea.height - WINDOW_HEIGHT)
-    : 0.28
+  const relativeX =
+    workArea.width > WINDOW_WIDTH ? (x - workArea.x) / (workArea.width - WINDOW_WIDTH) : 0.5
+  const relativeY =
+    workArea.height > WINDOW_HEIGHT ? (y - workArea.y) / (workArea.height - WINDOW_HEIGHT) : 0.28
   const settings = getSettings()
   updateSettings({
     voiceDictation: {

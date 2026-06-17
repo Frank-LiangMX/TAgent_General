@@ -54,7 +54,11 @@ function countTree(nodes: SkillFileNode[]): { files: number; dirs: number } {
   return { files, dirs }
 }
 
-export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }: SkillFilesPanelProps): React.ReactElement {
+export function SkillFilesPanel({
+  workspaceSlug,
+  skillSlug,
+  onFileCountChange,
+}: SkillFilesPanelProps): React.ReactElement {
   const [tree, setTree] = React.useState<SkillFileNode[]>([])
   const [loading, setLoading] = React.useState(true)
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set())
@@ -66,7 +70,10 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
   const [editText, setEditText] = React.useState('')
   const [saving, setSaving] = React.useState(false)
 
-  const [creating, setCreating] = React.useState<{ type: 'file' | 'directory'; parent: string } | null>(null)
+  const [creating, setCreating] = React.useState<{
+    type: 'file' | 'directory'
+    parent: string
+  } | null>(null)
   const [createName, setCreateName] = React.useState('')
 
   const [renaming, setRenaming] = React.useState<string | null>(null)
@@ -105,7 +112,11 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
       setEditing(false)
       setLoadingFile(true)
       try {
-        const result = await window.electronAPI.readSkillFile(workspaceSlug, skillSlug, relativePath)
+        const result = await window.electronAPI.readSkillFile(
+          workspaceSlug,
+          skillSlug,
+          relativePath
+        )
         setFileContent(result)
         setEditText(result.content ?? '')
       } catch (err) {
@@ -116,7 +127,7 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
         setLoadingFile(false)
       }
     },
-    [workspaceSlug, skillSlug],
+    [workspaceSlug, skillSlug]
   )
 
   const toggleExpand = (path: string): void => {
@@ -132,7 +143,12 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
     if (!fileContent) return
     setSaving(true)
     try {
-      await window.electronAPI.writeSkillFile(workspaceSlug, skillSlug, fileContent.relativePath, editText)
+      await window.electronAPI.writeSkillFile(
+        workspaceSlug,
+        skillSlug,
+        fileContent.relativePath,
+        editText
+      )
       setFileContent({ ...fileContent, content: editText, size: new Blob([editText]).size })
       setEditing(false)
       toast.success('已保存')
@@ -164,7 +180,12 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
     }
     const relativePath = creating.parent ? `${creating.parent}/${name}` : name
     try {
-      await window.electronAPI.createSkillEntry(workspaceSlug, skillSlug, relativePath, creating.type)
+      await window.electronAPI.createSkillEntry(
+        workspaceSlug,
+        skillSlug,
+        relativePath,
+        creating.type
+      )
       toast.success(`已创建${creating.type === 'directory' ? '目录' : '文件'}: ${name}`)
       setCreating(null)
       setCreateName('')
@@ -182,7 +203,10 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
     try {
       await window.electronAPI.deleteSkillEntry(workspaceSlug, skillSlug, node.relativePath)
       toast.success('已删除')
-      if (selected === node.relativePath || (node.type === 'directory' && selected?.startsWith(node.relativePath + '/'))) {
+      if (
+        selected === node.relativePath ||
+        (node.type === 'directory' && selected?.startsWith(node.relativePath + '/'))
+      ) {
         setSelected(null)
         setFileContent(null)
         setEditing(false)
@@ -341,7 +365,12 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
                       {formatSize(fileContent.size)}
                     </span>
                     {!editing ? (
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(true)} className="h-7">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditing(true)}
+                        className="h-7"
+                      >
                         <Pencil size={12} /> 编辑
                       </Button>
                     ) : (
@@ -358,7 +387,12 @@ export function SkillFilesPanel({ workspaceSlug, skillSlug, onFileCountChange }:
                         >
                           <X size={12} /> 取消
                         </Button>
-                        <Button size="sm" onClick={() => void saveFile()} disabled={saving} className="h-7">
+                        <Button
+                          size="sm"
+                          onClick={() => void saveFile()}
+                          disabled={saving}
+                          className="h-7"
+                        >
                           <Save size={12} /> {saving ? '保存中...' : '保存'}
                         </Button>
                       </>
@@ -446,19 +480,27 @@ function TreeNode(props: TreeNodeProps): React.ReactElement {
       <div
         className={cn(
           'group flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer select-none',
-          isSelected ? 'bg-accent text-foreground' : 'hover:bg-accent/60 text-foreground/80',
+          isSelected ? 'bg-accent text-foreground' : 'hover:bg-accent/60 text-foreground/80'
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         onClick={() => !isRenaming && props.onSelect(node)}
       >
         <span className="shrink-0 w-3.5">
           {node.type === 'directory' ? (
-            isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+            isExpanded ? (
+              <ChevronDown size={12} />
+            ) : (
+              <ChevronRight size={12} />
+            )
           ) : null}
         </span>
         <span className="shrink-0 text-muted-foreground">
           {node.type === 'directory' ? (
-            isExpanded ? <FolderOpen size={12} /> : <Folder size={12} />
+            isExpanded ? (
+              <FolderOpen size={12} />
+            ) : (
+              <Folder size={12} />
+            )
           ) : (
             <FileIcon size={12} />
           )}

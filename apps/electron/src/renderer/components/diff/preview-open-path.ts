@@ -38,7 +38,7 @@ export function getDefaultAppTargetPath(file: PreviewFile, sessionPath: string):
 export function getPreviewFileAccess(
   sessionId: string,
   file: PreviewFile,
-  sessionPath: string,
+  sessionPath: string
 ): FileAccessOptions {
   return {
     sessionId,

@@ -55,9 +55,8 @@ export function appendAskMessage(agentSessionId: string, message: AskMessage): v
  */
 export function rewriteAskMessages(agentSessionId: string, messages: AskMessage[]): void {
   const filePath = getAgentSessionAskMessagesPath(agentSessionId)
-  const content = messages.length > 0
-    ? messages.map((m) => JSON.stringify(m)).join('\n') + '\n'
-    : ''
+  const content =
+    messages.length > 0 ? messages.map((m) => JSON.stringify(m)).join('\n') + '\n' : ''
 
   try {
     writeFileSync(filePath, content, 'utf-8')

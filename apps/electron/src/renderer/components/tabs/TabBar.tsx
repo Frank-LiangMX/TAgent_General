@@ -16,8 +16,6 @@ import { TabBarItem } from './TabBarItem'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { TabItem } from '@/atoms/tab-atoms'
 
-
-
 import {
   agentSessionsAtom,
   currentAgentSessionIdAtom,
@@ -26,15 +24,9 @@ import {
 } from '@/atoms/agent-atoms'
 import { appModeAtom, activeRailItemAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { currentConversationIdAtom } from '@/atoms/chat-atoms'
-import {
-  activeTabIdAtom,
-  tabIndicatorMapAtom,
-  visibleTabsAtom,
-} from '@/atoms/tab-atoms'
+import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
-import {
-  detectIsWindows,
-} from '@/lib/platform'
+import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 export function TabBar(): React.ReactElement {
@@ -64,75 +56,95 @@ export function TabBar(): React.ReactElement {
     startIndex: number
   } | null>(null)
 
-  const handleActivate = React.useCallback((tabId: string) => {
-    setActiveTabId(tabId)
+  const handleActivate = React.useCallback(
+    (tabId: string) => {
+      setActiveTabId(tabId)
 
-    const tab = tabs.find((t) => t.id === tabId)
-    if (!tab) return
+      const tab = tabs.find((t) => t.id === tabId)
+      if (!tab) return
 
-    // P3: chat 类型已退役，仅处理 agent/preview/scratch
-    if (tab.type === 'agent' || tab.type === 'preview') {
-      setAppMode('agent')
-      setCurrentAgentSessionId(tab.sessionId)
-      if (topLevelMode === 'general') {
-        setActiveRailItem('sessions')
+      // P3: chat 类型已退役，仅处理 agent/preview/scratch
+      if (tab.type === 'agent' || tab.type === 'preview') {
+        setAppMode('agent')
+        setCurrentAgentSessionId(tab.sessionId)
+        if (topLevelMode === 'general') {
+          setActiveRailItem('sessions')
+        }
+
+        // 用户打开查看后只清除未读角标；是否完成由用户通过对勾确认。
+        setUnviewedCompleted((prev) => {
+          if (!prev.has(tab.sessionId)) return prev
+          const next = new Set(prev)
+          next.delete(tab.sessionId)
+          return next
+        })
+
+        const session = agentSessions.find((s) => s.id === tab.sessionId)
+        if (session?.workspaceId) {
+          setCurrentAgentWorkspaceId(session.workspaceId)
+          window.electronAPI
+            .updateSettings({
+              agentWorkspaceId: session.workspaceId,
+            })
+            .catch(console.error)
+        }
+      } else if (tab.type === 'scratch') {
+        setAppMode('scratch')
+        if (topLevelMode === 'general') {
+          setActiveRailItem('scratch')
+        }
+        // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
+        setCurrentConversationId(null)
+        if (appMode !== 'agent') {
+          setCurrentAgentSessionId(null)
+        }
+      }
+    },
+    [
+      setActiveTabId,
+      tabs,
+      agentSessions,
+      appMode,
+      setAppMode,
+      setCurrentConversationId,
+      setCurrentAgentSessionId,
+      setCurrentAgentWorkspaceId,
+      setUnviewedCompleted,
+      setActiveRailItem,
+      topLevelMode,
+    ]
+  )
+
+  const handleDragStart = React.useCallback(
+    (tabId: string, e: React.PointerEvent) => {
+      if (e.button !== 0) return // 只处理左键
+      const idx = tabs.findIndex((t) => t.id === tabId)
+      if (idx === -1) return
+
+      dragState.current = {
+        dragging: false,
+        tabId,
+        startX: e.clientX,
+        startIndex: idx,
       }
 
-      // 用户打开查看后只清除未读角标；是否完成由用户通过对勾确认。
-      setUnviewedCompleted((prev) => {
-        if (!prev.has(tab.sessionId)) return prev
-        const next = new Set(prev)
-        next.delete(tab.sessionId)
-        return next
-      })
-
-      const session = agentSessions.find((s) => s.id === tab.sessionId)
-      if (session?.workspaceId) {
-        setCurrentAgentWorkspaceId(session.workspaceId)
-        window.electronAPI.updateSettings({
-          agentWorkspaceId: session.workspaceId,
-        }).catch(console.error)
+      const handleMove = (me: PointerEvent): void => {
+        if (!dragState.current) return
+        const dx = Math.abs(me.clientX - dragState.current.startX)
+        if (dx > 5) dragState.current.dragging = true
       }
-    } else if (tab.type === 'scratch') {
-      setAppMode('scratch')
-      if (topLevelMode === 'general') {
-        setActiveRailItem('scratch')
+
+      const handleUp = (): void => {
+        document.removeEventListener('pointermove', handleMove)
+        document.removeEventListener('pointerup', handleUp)
+        dragState.current = null
       }
-      // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
-      setCurrentConversationId(null)
-      if (appMode !== 'agent') {
-        setCurrentAgentSessionId(null)
-      }
-    }
-  }, [setActiveTabId, tabs, agentSessions, appMode, setAppMode, setCurrentConversationId, setCurrentAgentSessionId, setCurrentAgentWorkspaceId, setUnviewedCompleted, setActiveRailItem, topLevelMode])
 
-  const handleDragStart = React.useCallback((tabId: string, e: React.PointerEvent) => {
-    if (e.button !== 0) return // 只处理左键
-    const idx = tabs.findIndex((t) => t.id === tabId)
-    if (idx === -1) return
-
-    dragState.current = {
-      dragging: false,
-      tabId,
-      startX: e.clientX,
-      startIndex: idx,
-    }
-
-    const handleMove = (me: PointerEvent): void => {
-      if (!dragState.current) return
-      const dx = Math.abs(me.clientX - dragState.current.startX)
-      if (dx > 5) dragState.current.dragging = true
-    }
-
-    const handleUp = (): void => {
-      document.removeEventListener('pointermove', handleMove)
-      document.removeEventListener('pointerup', handleUp)
-      dragState.current = null
-    }
-
-    document.addEventListener('pointermove', handleMove)
-    document.addEventListener('pointerup', handleUp)
-  }, [tabs])
+      document.addEventListener('pointermove', handleMove)
+      document.addEventListener('pointerup', handleUp)
+    },
+    [tabs]
+  )
 
   if (tabs.length === 0) {
     return <div className="h-[34px] titlebar-drag-region relative z-[10]" />
@@ -142,11 +154,11 @@ export function TabBar(): React.ReactElement {
     <TabBarInner
       tabs={tabs}
       activeTabId={activeTabId}
-        streamingMap={indicatorMap}
-        onActivate={handleActivate}
-        onClose={requestClose}
-        onDragStart={handleDragStart}
-      />
+      streamingMap={indicatorMap}
+      onActivate={handleActivate}
+      onClose={requestClose}
+      onDragStart={handleDragStart}
+    />
   )
 }
 
@@ -207,20 +219,23 @@ function TabBarInner({
     }
   }, [])
 
-  const handleTabHoverEnter = React.useCallback((tabId: string) => {
-    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
-    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
-    if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
-    setIsLeaving(false)
+  const handleTabHoverEnter = React.useCallback(
+    (tabId: string) => {
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
+      if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
+      setIsLeaving(false)
 
-    // 如果已经有面板打开（从一个 Tab 滑到另一个），立即切换
-    if (hoveredTabId) {
-      setHoveredTabId(tabId)
-    } else {
-      // 首次 hover，延迟 300ms
-      enterTimerRef.current = setTimeout(() => setHoveredTabId(tabId), 300)
-    }
-  }, [hoveredTabId])
+      // 如果已经有面板打开（从一个 Tab 滑到另一个），立即切换
+      if (hoveredTabId) {
+        setHoveredTabId(tabId)
+      } else {
+        // 首次 hover，延迟 300ms
+        enterTimerRef.current = setTimeout(() => setHoveredTabId(tabId), 300)
+      }
+    },
+    [hoveredTabId]
+  )
 
   const handleTabHoverLeave = React.useCallback(() => {
     if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
@@ -246,11 +261,16 @@ function TabBarInner({
           注意：不要把 titlebar-no-drag 加到下面的整条 flex 容器上，否则标签右侧空白会再次失去拖拽能力。
           Windows 上背景拖拽层避开右上角 WindowControls 区域（126px），防止 hitmask 重叠。
           需要交互的单个 Tab 会在 TabBarItem 内部自己声明 titlebar-no-drag。 */}
-      <div className={cn("absolute inset-0 z-[10] titlebar-drag-region", isWindows && "right-[126px]")} />
+      <div
+        className={cn('absolute inset-0 z-[10] titlebar-drag-region', isWindows && 'right-[126px]')}
+      />
 
       <div
         ref={scrollRef}
-        className={cn("relative z-[2] flex items-end flex-1 min-w-0 overflow-x-auto scrollbar-none", isWindows && "pr-[126px]")}
+        className={cn(
+          'relative z-[2] flex items-end flex-1 min-w-0 overflow-x-auto scrollbar-none',
+          isWindows && 'pr-[126px]'
+        )}
       >
         {tabs.map((tab) => (
           <TabBarItem

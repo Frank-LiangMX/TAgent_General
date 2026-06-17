@@ -45,15 +45,15 @@ bun run dev
 
 ## 可用命令
 
-| 命令 | 说明 |
-|------|------|
-| `bun run dev` | 启动开发模式（热重载） |
-| `bun run build` | 构建生产版本 |
-| `bun run start` | 构建并运行生产版本 |
-| `bun run dist:appimage` | 打包 AppImage（推荐） |
-| `bun run dist:deb` | 打包 deb（Ubuntu/Debian） |
-| `bun run dist:rpm` | 打包 rpm（Fedora/RHEL） |
-| `bun run dist:linux` | 打包所有 Linux 格式 |
+| 命令                    | 说明                      |
+| ----------------------- | ------------------------- |
+| `bun run dev`           | 启动开发模式（热重载）    |
+| `bun run build`         | 构建生产版本              |
+| `bun run start`         | 构建并运行生产版本        |
+| `bun run dist:appimage` | 打包 AppImage（推荐）     |
+| `bun run dist:deb`      | 打包 deb（Ubuntu/Debian） |
+| `bun run dist:rpm`      | 打包 rpm（Fedora/RHEL）   |
+| `bun run dist:linux`    | 打包所有 Linux 格式       |
 
 ## 打包产物
 
@@ -64,15 +64,18 @@ bun run dev
 ## 依赖说明
 
 ### 核心依赖
+
 - **Electron** 39.5.1 - 桌面应用框架
 - **Claude Agent SDK** 0.3.153 - AI Agent 能力
 - **Bun** 1.0+ - JavaScript 运行时
 
 ### Linux SDK
+
 - `@anthropic-ai/claude-agent-sdk-linux-x64` - x64 架构
 - `@anthropic-ai/claude-agent-sdk-linux-arm64` - ARM64 架构
 
 ### 系统依赖（deb 包需要）
+
 ```bash
 # Ubuntu/Debian
 sudo apt install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0
@@ -80,13 +83,13 @@ sudo apt install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libats
 
 ## 与主工程的关系
 
-| 项目 | 关系 |
-|------|------|
-| 源代码 | 符号链接共享 `../electron/src` |
-| 资源文件 | 符号链接共享 `../electron/resources` |
-| Skills | 符号链接共享 `../electron/default-skills` |
-| 依赖配置 | 独立 `package.json`，包含 Linux SDK |
-| 打包配置 | 独立 `electron-builder.yml`，仅 Linux |
+| 项目     | 关系                                      |
+| -------- | ----------------------------------------- |
+| 源代码   | 符号链接共享 `../electron/src`            |
+| 资源文件 | 符号链接共享 `../electron/resources`      |
+| Skills   | 符号链接共享 `../electron/default-skills` |
+| 依赖配置 | 独立 `package.json`，包含 Linux SDK       |
+| 打包配置 | 独立 `electron-builder.yml`，仅 Linux     |
 
 ## 注意事项
 
@@ -101,12 +104,14 @@ sudo apt install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libats
 ## 故障排除
 
 ### 符号链接失效
+
 ```bash
 rm -f src resources default-skills scripts ta-agent-mcp-wheels
 ./setup-symlinks.sh
 ```
 
 ### 原生模块编译失败
+
 ```bash
 # 确保有编译工具链
 sudo apt install build-essential python3
@@ -117,6 +122,7 @@ bun install
 ```
 
 ### Electron 启动失败
+
 ```bash
 # 检查系统依赖
 sudo apt install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils

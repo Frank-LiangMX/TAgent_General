@@ -40,7 +40,10 @@ export function Conversation({ className, ...props }: ConversationProps): React.
 
 export type ConversationContentProps = ComponentProps<typeof StickToBottom.Content>
 
-export function ConversationContent({ className, ...props }: ConversationContentProps): React.ReactElement {
+export function ConversationContent({
+  className,
+  ...props
+}: ConversationContentProps): React.ReactElement {
   return (
     <StickToBottom.Content
       scrollClassName="scrollbar-thin"
@@ -79,9 +82,7 @@ export function ConversationEmptyState({
           {icon && <div className="text-muted-foreground">{icon}</div>}
           <div className="space-y-1">
             <h3 className="font-medium text-sm">{title}</h3>
-            {description && (
-              <p className="text-muted-foreground text-sm">{description}</p>
-            )}
+            {description && <p className="text-muted-foreground text-sm">{description}</p>}
           </div>
         </>
       )}

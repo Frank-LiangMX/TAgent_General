@@ -8,14 +8,17 @@
  * - Agent = 可动手（走 SDK orchestrator，默认）
  */
 
+import { DEFAULT_COMPOSER_MODE, type ComposerMode } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { MessageSquareText } from 'lucide-react'
 import * as React from 'react'
 
-import { DEFAULT_COMPOSER_MODE, type ComposerMode } from '@tagent/shared'
-
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import { currentComposerModeAtom, composerModeMapAtom, composerModeSyncedSessionsAtom } from '@/atoms/composer-atoms'
+import {
+  currentComposerModeAtom,
+  composerModeMapAtom,
+  composerModeSyncedSessionsAtom,
+} from '@/atoms/composer-atoms'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -25,7 +28,9 @@ interface ComposerModeSelectorProps {
   className?: string
 }
 
-export function ComposerModeSelector({ className }: ComposerModeSelectorProps): React.ReactElement | null {
+export function ComposerModeSelector({
+  className,
+}: ComposerModeSelectorProps): React.ReactElement | null {
   const currentMode = useAtomValue(currentComposerModeAtom)
   const [modeMap, setModeMap] = useAtom(composerModeMapAtom)
   const addSynced = useSetAtom(composerModeSyncedSessionsAtom)

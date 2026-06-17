@@ -9,9 +9,9 @@
 import { Search, Hash, CornerDownLeft, X } from 'lucide-react'
 import * as React from 'react'
 
-import type { SettingsTab } from '@/atoms/settings-tab'
-
 import { searchSettings, type SearchResult } from './settingsSearchIndex'
+
+import type { SettingsTab } from '@/atoms/settings-tab'
 
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
@@ -95,7 +95,10 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
   return (
     <div ref={containerRef} className={cn('relative w-full', !fullWidth && 'max-w-md')}>
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
         <input
           ref={inputRef}
           type="text"
@@ -112,7 +115,7 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
             'bg-muted/40 border border-border/60',
             'placeholder:text-muted-foreground/50',
             'focus:outline-none focus:bg-background focus:border-primary/40 focus:ring-1 focus:ring-primary/20',
-            'transition-colors',
+            'transition-colors'
           )}
         />
         {query ? (
@@ -140,7 +143,7 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
             'absolute top-full left-0 right-0 mt-1.5 z-50',
             'rounded-lg border border-border/60 bg-popover shadow-lg',
             'max-h-[60vh] overflow-y-auto',
-            'scrollbar-thin',
+            'scrollbar-thin'
           )}
         >
           {results.length === 0 ? (
@@ -184,7 +187,7 @@ function SearchResultItem({
       onMouseEnter={onHover}
       className={cn(
         'w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-left transition-colors',
-        active ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/40',
+        active ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/40'
       )}
     >
       <Hash size={12} className="text-muted-foreground shrink-0" />

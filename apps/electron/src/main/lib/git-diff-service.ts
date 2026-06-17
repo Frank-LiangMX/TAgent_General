@@ -9,8 +9,13 @@ import { spawn } from 'child_process'
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'fs'
 import { basename, isAbsolute, join, resolve, sep } from 'path'
 
-import type { ChangedFileEntry, UnstagedChangesResult, UntrackedFileEntry , ChangeSource, ChangedFileStatus } from '@tagent/shared'
-
+import type {
+  ChangedFileEntry,
+  UnstagedChangesResult,
+  UntrackedFileEntry,
+  ChangeSource,
+  ChangedFileStatus,
+} from '@tagent/shared'
 
 /** 大文件读取上限：超过则跳过，避免 IPC 序列化撑爆内存 */
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
@@ -135,7 +140,7 @@ function computeSource(
   filePath: string,
   gitRoot: string,
   sessionPath?: string,
-  workspaceFilesPath?: string,
+  workspaceFilesPath?: string
 ): ChangeSource {
   const absolutePath = join(gitRoot, filePath)
   let inSession = false
@@ -149,7 +154,9 @@ function computeSource(
   }
 
   if (workspaceFilesPath) {
-    const normalized = workspaceFilesPath.endsWith(sep) ? workspaceFilesPath : workspaceFilesPath + sep
+    const normalized = workspaceFilesPath.endsWith(sep)
+      ? workspaceFilesPath
+      : workspaceFilesPath + sep
     if (absolutePath.startsWith(normalized)) {
       inWorkspace = true
     }
@@ -165,7 +172,9 @@ function computeSource(
  * 解析 numstat 输出为 path -> { additions, deletions } 映射。
  * 对 rename/copy 行（格式 `add\tdel\told => new` 或带 `{...}` 的），以新路径为 key。
  */
-function parseNumstat(numStat: string | null): Map<string, { additions: number; deletions: number }> {
+function parseNumstat(
+  numStat: string | null
+): Map<string, { additions: number; deletions: number }> {
   const map = new Map<string, { additions: number; deletions: number }>()
   if (!numStat) return map
   for (const line of numStat.split('\n')) {
@@ -195,7 +204,7 @@ export async function getUnstagedChanges(
   dirPath: string,
   sessionPath?: string,
   workspaceFilesPath?: string,
-  extraPaths?: string[],
+  extraPaths?: string[]
 ): Promise<UnstagedChangesResult> {
   // 收集所有候选目录中的不重复 Git 仓库根
   const candidates = [dirPath, sessionPath, workspaceFilesPath, ...(extraPaths || [])].filter(
@@ -270,7 +279,10 @@ export async function getUnstagedChanges(
     }
 
     // 获取未追踪文件
-    const untrackedOutput = await runGitCommand(['ls-files', '--others', '--exclude-standard'], gitRoot)
+    const untrackedOutput = await runGitCommand(
+      ['ls-files', '--others', '--exclude-standard'],
+      gitRoot
+    )
     if (untrackedOutput) {
       for (const rel of untrackedOutput.split('\n').filter(Boolean)) {
         const absPath = join(gitRoot, rel)
@@ -321,7 +333,11 @@ function findAllGitRootsDown(dirPath: string, maxDepth: number): string[] {
 
     const fullPath = join(dirPath, name)
     let st
-    try { st = statSync(fullPath) } catch { continue }
+    try {
+      st = statSync(fullPath)
+    } catch {
+      continue
+    }
     if (!st.isDirectory()) continue
 
     if (existsSync(join(fullPath, '.git'))) {
@@ -365,8 +381,12 @@ async function findGitRoot(baseDir: string): Promise<string | null> {
 /**
  * 获取单个文件的 unified diff
  */
-export async function getFileDiff(dirPath: string, filePath: string, gitRoot?: string): Promise<string> {
-  const root = gitRoot || await findGitRoot(dirPath)
+export async function getFileDiff(
+  dirPath: string,
+  filePath: string,
+  gitRoot?: string
+): Promise<string> {
+  const root = gitRoot || (await findGitRoot(dirPath))
   if (!root) return ''
   const safePath = normalizeSafePath(root, filePath)
   if (!safePath) {
@@ -380,8 +400,13 @@ export async function getFileDiff(dirPath: string, filePath: string, gitRoot?: s
 /**
  * 获取文件的旧版本（git HEAD 或指定 baseRef）和新版本（磁盘）内容
  */
-export async function getDiffContents(dirPath: string, filePath: string, gitRoot?: string, baseRef?: string): Promise<{ oldContent: string; newContent: string } | null> {
-  const root = gitRoot || await findGitRoot(dirPath)
+export async function getDiffContents(
+  dirPath: string,
+  filePath: string,
+  gitRoot?: string,
+  baseRef?: string
+): Promise<{ oldContent: string; newContent: string } | null> {
+  const root = gitRoot || (await findGitRoot(dirPath))
 
   // 无 git root：纯文件预览（无 git HEAD 可比较），仅读磁盘文件，安全检查依赖 dirPath
   if (!root) {
@@ -441,7 +466,10 @@ export async function getDiffContents(dirPath: string, filePath: string, gitRoot
     }
   }
 
-  return { oldContent: normalizeLineEndings(oldContent), newContent: normalizeLineEndings(newContent) }
+  return {
+    oldContent: normalizeLineEndings(oldContent),
+    newContent: normalizeLineEndings(newContent),
+  }
 }
 
 /**
@@ -450,9 +478,13 @@ export async function getDiffContents(dirPath: string, filePath: string, gitRoot
  * filePath 应为相对于 gitRoot 或 dirPath 的相对路径。
  * 拒绝绝对路径和 `..` 穿越。
  */
-export async function getUntrackedContent(dirPath: string, filePath: string, gitRoot?: string): Promise<string> {
+export async function getUntrackedContent(
+  dirPath: string,
+  filePath: string,
+  gitRoot?: string
+): Promise<string> {
   if (!filePath || typeof filePath !== 'string') return ''
-  const root = gitRoot || await findGitRoot(dirPath) || dirPath
+  const root = gitRoot || (await findGitRoot(dirPath)) || dirPath
   const safePath = normalizeSafePath(root, filePath)
   if (!safePath) {
     console.warn('[git-diff-service] getUntrackedContent 拒绝不安全路径:', filePath)
@@ -474,8 +506,12 @@ export async function getUntrackedContent(dirPath: string, filePath: string, git
 /**
  * 还原文件的未暂存变更
  */
-export async function revertFile(dirPath: string, filePath: string, gitRoot?: string): Promise<void> {
-  const root = gitRoot || await findGitRoot(dirPath)
+export async function revertFile(
+  dirPath: string,
+  filePath: string,
+  gitRoot?: string
+): Promise<void> {
+  const root = gitRoot || (await findGitRoot(dirPath))
   if (!root) throw new Error('未找到 Git 仓库')
   const safePath = normalizeSafePath(root, filePath)
   if (!safePath) {
@@ -490,7 +526,9 @@ export async function revertFile(dirPath: string, filePath: string, gitRoot?: st
 /**
  * 列出指定仓库的所有 Git Worktree
  */
-export async function listWorktrees(repoPath: string): Promise<import('@tagent/shared').WorktreeInfo[]> {
+export async function listWorktrees(
+  repoPath: string
+): Promise<import('@tagent/shared').WorktreeInfo[]> {
   const output = await runGitCommand(['worktree', 'list', '--porcelain'], repoPath)
   if (!output) return []
 
@@ -535,7 +573,7 @@ export async function listWorktrees(repoPath: string): Promise<import('@tagent/s
  */
 export async function getWorktreeChanges(
   worktreePath: string,
-  baseBranch: string = 'origin/main',
+  baseBranch: string = 'origin/main'
 ): Promise<import('@tagent/shared').UnstagedChangesResult> {
   if (!existsSync(worktreePath)) {
     return { isGitRepo: false, files: [], untrackedFiles: [], gitRootNames: [] }
@@ -555,8 +593,14 @@ export async function getWorktreeChanges(
   const fileMap = new Map<string, import('@tagent/shared').ChangedFileEntry>()
 
   // 1. 已 commit 但未合并的改动: git diff baseBranch...HEAD
-  const committedStatus = await runGitCommand(['diff', `${baseBranch}...HEAD`, '--name-status'], gitRoot)
-  const committedNumstat = await runGitCommand(['diff', `${baseBranch}...HEAD`, '--numstat'], gitRoot)
+  const committedStatus = await runGitCommand(
+    ['diff', `${baseBranch}...HEAD`, '--name-status'],
+    gitRoot
+  )
+  const committedNumstat = await runGitCommand(
+    ['diff', `${baseBranch}...HEAD`, '--numstat'],
+    gitRoot
+  )
   const committedStats = parseNumstat(committedNumstat)
 
   if (committedStatus) {
@@ -637,7 +681,10 @@ export async function getWorktreeChanges(
 
   // 3. 新文件（未追踪）
   const untrackedFiles: import('@tagent/shared').UntrackedFileEntry[] = []
-  const untrackedOutput = await runGitCommand(['ls-files', '--others', '--exclude-standard'], gitRoot)
+  const untrackedOutput = await runGitCommand(
+    ['ls-files', '--others', '--exclude-standard'],
+    gitRoot
+  )
   if (untrackedOutput) {
     for (const rel of untrackedOutput.split('\n').filter(Boolean)) {
       if (!fileMap.has(rel)) {

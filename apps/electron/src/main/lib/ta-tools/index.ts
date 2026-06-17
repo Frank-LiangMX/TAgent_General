@@ -8,12 +8,36 @@
  * - 模式切换建议
  */
 
-import { CHECK_DIRECTORY_STRUCTURE_TOOL_META, CHECK_DIRECTORY_STRUCTURE_TOOL_DEFINITIONS, executeCheckDirectoryStructure } from './check-directory-structure-tool'
-import { CHECK_NAMING_TOOL_META, CHECK_NAMING_TOOL_DEFINITIONS, executeCheckNaming } from './check-naming-tool'
-import { DISCOVER_CONVENTIONS_TOOL_META, DISCOVER_CONVENTIONS_TOOL_DEFINITIONS, executeDiscoverConventions } from './discover-conventions-tool'
-import { LOAD_CONVENTIONS_TOOL_META, LOAD_CONVENTIONS_TOOL_DEFINITIONS, executeLoadConventions } from './load-conventions-tool'
-import { SUGGEST_NAMING_TOOL_META, SUGGEST_NAMING_TOOL_DEFINITIONS, executeSuggestNaming } from './suggest-naming-tool'
-import { SWITCH_MODE_TOOL_META, SWITCH_MODE_TOOL_DEFINITIONS, isSwitchModeToolCall } from './switch-mode-tool'
+import {
+  CHECK_DIRECTORY_STRUCTURE_TOOL_META,
+  CHECK_DIRECTORY_STRUCTURE_TOOL_DEFINITIONS,
+  executeCheckDirectoryStructure,
+} from './check-directory-structure-tool'
+import {
+  CHECK_NAMING_TOOL_META,
+  CHECK_NAMING_TOOL_DEFINITIONS,
+  executeCheckNaming,
+} from './check-naming-tool'
+import {
+  DISCOVER_CONVENTIONS_TOOL_META,
+  DISCOVER_CONVENTIONS_TOOL_DEFINITIONS,
+  executeDiscoverConventions,
+} from './discover-conventions-tool'
+import {
+  LOAD_CONVENTIONS_TOOL_META,
+  LOAD_CONVENTIONS_TOOL_DEFINITIONS,
+  executeLoadConventions,
+} from './load-conventions-tool'
+import {
+  SUGGEST_NAMING_TOOL_META,
+  SUGGEST_NAMING_TOOL_DEFINITIONS,
+  executeSuggestNaming,
+} from './suggest-naming-tool'
+import {
+  SWITCH_MODE_TOOL_META,
+  SWITCH_MODE_TOOL_DEFINITIONS,
+  isSwitchModeToolCall,
+} from './switch-mode-tool'
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'

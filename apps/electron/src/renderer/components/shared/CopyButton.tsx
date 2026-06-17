@@ -29,15 +29,8 @@ export function CopyButton({ content }: CopyButtonProps): React.ReactElement {
   }, [content])
 
   return (
-    <MessageAction
-      tooltip={copied ? '已复制' : '复制'}
-      onClick={handleCopy}
-    >
-      {copied ? (
-        <CheckIcon className="size-4" />
-      ) : (
-        <CopyIcon className="size-4" />
-      )}
+    <MessageAction tooltip={copied ? '已复制' : '复制'} onClick={handleCopy}>
+      {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
     </MessageAction>
   )
 }

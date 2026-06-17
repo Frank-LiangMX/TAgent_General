@@ -70,6 +70,7 @@ MyApp/
 **Cons**: Related files scattered across folders, doesn't scale as well
 
 ### Recommendation
+
 - **Small apps (< 15 files)**: Group by layer — simpler, less folder nesting
 - **Medium+ apps (15+ files)**: Group by feature — better discoverability and modularity
 
@@ -186,14 +187,14 @@ package struct MigrationHelper {
 
 ### Access Level Summary
 
-| Level | Visible To |
-|-------|-----------|
-| `private` | Enclosing declaration only |
-| `fileprivate` | Same source file |
-| `internal` (default) | Same module/target |
-| `package` | Same package (Swift 5.9+) |
-| `public` | Any importing module |
-| `open` | Any module (can subclass/override) |
+| Level                | Visible To                         |
+| -------------------- | ---------------------------------- |
+| `private`            | Enclosing declaration only         |
+| `fileprivate`        | Same source file                   |
+| `internal` (default) | Same module/target                 |
+| `package`            | Same package (Swift 5.9+)          |
+| `public`             | Any importing module               |
+| `open`               | Any module (can subclass/override) |
 
 ## DRY: Reducing Duplication
 
@@ -271,13 +272,13 @@ struct Contact: Searchable {
 
 ## When to Modularize
 
-| Signal | Action |
-|--------|--------|
-| Build times getting slow | Extract stable code into packages |
-| Multiple developers working on same files | Split into feature modules |
-| Want to share code between app and extension | Extract into shared package |
-| Tests require the full app to compile | Extract testable code into packages |
-| Hard to find files | Reorganize by feature |
+| Signal                                       | Action                              |
+| -------------------------------------------- | ----------------------------------- |
+| Build times getting slow                     | Extract stable code into packages   |
+| Multiple developers working on same files    | Split into feature modules          |
+| Want to share code between app and extension | Extract into shared package         |
+| Tests require the full app to compile        | Extract testable code into packages |
+| Hard to find files                           | Reorganize by feature               |
 
 **Don't modularize prematurely** — start with feature folders in the app target and extract to packages when there's a concrete benefit.
 

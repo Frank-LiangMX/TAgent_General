@@ -6,8 +6,8 @@
  */
 
 import { Circle, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
 import * as React from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -55,10 +55,16 @@ const STEPS: { id: InstallPhase; label: string }[] = [
 /** 步骤顺序（用于判定 active/done） */
 const STEP_ORDER: InstallPhase[] = STEPS.map((s) => s.id)
 
-export function TAInstallDialog({ open, onOpenChange, onComplete }: TAInstallDialogProps): React.ReactElement {
+export function TAInstallDialog({
+  open,
+  onOpenChange,
+  onComplete,
+}: TAInstallDialogProps): React.ReactElement {
   const [logs, setLogs] = React.useState<LogEntry[]>([])
   const [currentPhase, setCurrentPhase] = React.useState<InstallPhase | null>(null)
-  const [status, setStatus] = React.useState<'idle' | 'running' | 'success' | 'failed' | 'cancelled'>('idle')
+  const [status, setStatus] = React.useState<
+    'idle' | 'running' | 'success' | 'failed' | 'cancelled'
+  >('idle')
   const [error, setError] = React.useState<string | null>(null)
   const logsEndRef = React.useRef<HTMLDivElement>(null)
   const startedRef = React.useRef(false)
@@ -206,7 +212,9 @@ export function TAInstallDialog({ open, onOpenChange, onComplete }: TAInstallDia
               <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <div className="text-red-600 font-medium">安装失败</div>
-                {error && <div className="text-xs text-muted-foreground mt-0.5 break-all">{error}</div>}
+                {error && (
+                  <div className="text-xs text-muted-foreground mt-0.5 break-all">{error}</div>
+                )}
               </div>
             </div>
           )}

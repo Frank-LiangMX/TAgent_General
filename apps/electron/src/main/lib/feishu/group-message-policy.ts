@@ -1,7 +1,4 @@
-import type {
-  FeishuChatBinding,
-  FeishuGroupInfo,
-} from '@tagent/shared'
+import type { FeishuChatBinding, FeishuGroupInfo } from '@tagent/shared'
 
 export interface SingleUserGroupInput {
   groupInfo: Pick<FeishuGroupInfo, 'members' | 'userCount'> | null | undefined
@@ -43,8 +40,9 @@ export function isSingleUserGroupForSender(input: SingleUserGroupInput): boolean
   }
 
   // 回退路径：成员列表减 bot（依赖成员读取权限 + botOpenId 正确）
-  const members = (input.groupInfo?.members ?? [])
-    .filter((member) => member.openId !== input.botOpenId)
+  const members = (input.groupInfo?.members ?? []).filter(
+    (member) => member.openId !== input.botOpenId
+  )
   if (members.length !== 1) return false
 
   const [onlyUser] = members
@@ -53,7 +51,9 @@ export function isSingleUserGroupForSender(input: SingleUserGroupInput): boolean
   return true
 }
 
-export function resolveGroupMessageAccess(input: GroupMessageAccessInput): GroupMessageAccessResult {
+export function resolveGroupMessageAccess(
+  input: GroupMessageAccessInput
+): GroupMessageAccessResult {
   if (input.isSessionMirrorGroup) {
     return { accepted: true, reason: 'session-mirror' }
   }

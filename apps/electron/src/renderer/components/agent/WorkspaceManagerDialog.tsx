@@ -68,7 +68,10 @@ export function WorkspaceManagerDialog({
 
   // 拖拽状态
   const [dragId, setDragId] = React.useState<string | null>(null)
-  const [dropIndicator, setDropIndicator] = React.useState<{ id: string; position: 'before' | 'after' } | null>(null)
+  const [dropIndicator, setDropIndicator] = React.useState<{
+    id: string
+    position: 'before' | 'after'
+  } | null>(null)
 
   // 打开时清掉中间态，避免上次未保存的编辑/输入残留
   React.useEffect(() => {
@@ -300,10 +303,13 @@ export function WorkspaceManagerDialog({
                     ws.id === currentWorkspaceId
                       ? 'bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
                       : 'text-foreground/70 hover:bg-foreground/[0.04]',
-                    dragId === ws.id && 'opacity-40',
+                    dragId === ws.id && 'opacity-40'
                   )}
                 >
-                  <GripVertical size={13} className="flex-shrink-0 text-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
+                  <GripVertical
+                    size={13}
+                    className="flex-shrink-0 text-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+                  />
 
                   <FolderOpen size={14} className="flex-shrink-0 text-foreground/40" />
 
@@ -385,7 +391,9 @@ export function WorkspaceManagerDialog({
       {/* 删除确认弹窗（嵌套在 Dialog 内） */}
       <AlertDialog
         open={deleteTargetId !== null}
-        onOpenChange={(v) => { if (!v) setDeleteTargetId(null) }}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTargetId(null)
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

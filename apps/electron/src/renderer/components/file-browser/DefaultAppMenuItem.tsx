@@ -32,12 +32,7 @@ export function DefaultAppMenuItem({
         })
       }}
     >
-      <img
-        src={info.iconDataUrl}
-        alt=""
-        className="size-3.5 shrink-0"
-        draggable={false}
-      />
+      <img src={info.iconDataUrl} alt="" className="size-3.5 shrink-0" draggable={false} />
       <span className="truncate">用 {info.name} 打开</span>
     </DropdownMenuItem>
   )

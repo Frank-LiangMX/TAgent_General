@@ -50,7 +50,7 @@ export function DefaultAppOpenButton({
           className={cn(
             'flex items-center shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors',
             labeled ? 'gap-1 h-6 px-1.5 max-w-[140px]' : 'justify-center size-6',
-            className,
+            className
           )}
           aria-label={`用 ${info.name} 打开`}
         >
@@ -60,9 +60,7 @@ export function DefaultAppOpenButton({
             className={cn('shrink-0', labeled ? 'size-4' : 'size-3.5')}
             draggable={false}
           />
-          {labeled && (
-            <span className="text-[11px] leading-none truncate">{info.name}</span>
-          )}
+          {labeled && <span className="text-[11px] leading-none truncate">{info.name}</span>}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">

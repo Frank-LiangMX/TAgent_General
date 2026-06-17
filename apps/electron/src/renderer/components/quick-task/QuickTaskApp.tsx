@@ -33,7 +33,7 @@ interface ModelInfo {
 }
 
 export function QuickTaskApp(): React.ReactElement {
-  const [mode] = useState<TaskMode>('agent')  // P3: 固定为 agent
+  const [mode] = useState<TaskMode>('agent') // P3: 固定为 agent
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<QuickAttachment[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -121,63 +121,64 @@ export function QuickTaskApp(): React.ReactElement {
   }, [])
 
   // 添加文件为附件
-  const addFiles = useCallback(async (files: File[]) => {
-    const newAttachments: QuickAttachment[] = []
-    const pathBackedFiles: string[] = []
-    const rejectedLargeFiles: string[] = []
+  const addFiles = useCallback(
+    async (files: File[]) => {
+      const newAttachments: QuickAttachment[] = []
+      const pathBackedFiles: string[] = []
+      const rejectedLargeFiles: string[] = []
 
-    for (const file of files) {
-      try {
-        if (file.size > MAX_ATTACHMENT_SIZE) {
-          const sourcePath = mode === 'agent' ? window.electronAPI.getPathForFile(file) : ''
-          if (!sourcePath) {
-            rejectedLargeFiles.push(file.name)
+      for (const file of files) {
+        try {
+          if (file.size > MAX_ATTACHMENT_SIZE) {
+            const sourcePath = mode === 'agent' ? window.electronAPI.getPathForFile(file) : ''
+            if (!sourcePath) {
+              rejectedLargeFiles.push(file.name)
+              continue
+            }
+
+            const previewUrl = file.type.startsWith('image/')
+              ? URL.createObjectURL(file)
+              : undefined
+            newAttachments.push({
+              id: crypto.randomUUID(),
+              filename: file.name,
+              mediaType: file.type || 'application/octet-stream',
+              sourcePath,
+              size: file.size,
+              previewUrl,
+            })
+            pathBackedFiles.push(file.name)
             continue
           }
 
-          const previewUrl = file.type.startsWith('image/')
-            ? URL.createObjectURL(file)
-            : undefined
+          const base64 = await fileToBase64(file)
+          const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
           newAttachments.push({
             id: crypto.randomUUID(),
             filename: file.name,
             mediaType: file.type || 'application/octet-stream',
-            sourcePath,
+            base64,
             size: file.size,
             previewUrl,
           })
-          pathBackedFiles.push(file.name)
-          continue
+        } catch (err) {
+          console.error('[快速任务] 读取文件失败:', err)
         }
-
-        const base64 = await fileToBase64(file)
-        const previewUrl = file.type.startsWith('image/')
-          ? URL.createObjectURL(file)
-          : undefined
-        newAttachments.push({
-          id: crypto.randomUUID(),
-          filename: file.name,
-          mediaType: file.type || 'application/octet-stream',
-          base64,
-          size: file.size,
-          previewUrl,
-        })
-      } catch (err) {
-        console.error('[快速任务] 读取文件失败:', err)
       }
-    }
-    if (pathBackedFiles.length > 0) {
-      toast.success(`已将大文件作为附加文件引用：${formatFileNames(pathBackedFiles)}`)
-    }
-    if (rejectedLargeFiles.length > 0) {
-      toast.error(`以下文件超过 100MB，已跳过：${formatFileNames(rejectedLargeFiles)}`, {
-        description: '无法取得本地路径，不能作为附加文件引用。',
-      })
-    }
-    if (newAttachments.length > 0) {
-      setAttachments((prev) => [...prev, ...newAttachments])
-    }
-  }, [mode])
+      if (pathBackedFiles.length > 0) {
+        toast.success(`已将大文件作为附加文件引用：${formatFileNames(pathBackedFiles)}`)
+      }
+      if (rejectedLargeFiles.length > 0) {
+        toast.error(`以下文件超过 100MB，已跳过：${formatFileNames(rejectedLargeFiles)}`, {
+          description: '无法取得本地路径，不能作为附加文件引用。',
+        })
+      }
+      if (newAttachments.length > 0) {
+        setAttachments((prev) => [...prev, ...newAttachments])
+      }
+    },
+    [mode]
+  )
 
   // 移除附件
   const removeAttachment = useCallback((id: string) => {
@@ -189,13 +190,16 @@ export function QuickTaskApp(): React.ReactElement {
   }, [])
 
   // 粘贴事件
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const files = Array.from(e.clipboardData.files)
-    if (files.length > 0) {
-      e.preventDefault()
-      addFiles(files)
-    }
-  }, [addFiles])
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const files = Array.from(e.clipboardData.files)
+      if (files.length > 0) {
+        e.preventDefault()
+        addFiles(files)
+      }
+    },
+    [addFiles]
+  )
 
   // 拖拽事件
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -208,19 +212,25 @@ export function QuickTaskApp(): React.ReactElement {
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) addFiles(files)
-  }, [addFiles])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length > 0) addFiles(files)
+    },
+    [addFiles]
+  )
 
   // 文件选择
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (files.length > 0) addFiles(files)
-    e.target.value = '' // 允许重复选择同一文件
-  }, [addFiles])
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? [])
+      if (files.length > 0) addFiles(files)
+      e.target.value = '' // 允许重复选择同一文件
+    },
+    [addFiles]
+  )
 
   // 提交任务（P3: 仅 Agent 模式）
   const handleSubmit = useCallback(async () => {
@@ -233,7 +243,11 @@ export function QuickTaskApp(): React.ReactElement {
         text: trimmed,
         mode: 'agent',
         files: attachments.map(({ filename, mediaType, base64, sourcePath, size }) => ({
-          filename, mediaType, base64, sourcePath, size,
+          filename,
+          mediaType,
+          base64,
+          sourcePath,
+          size,
         })),
       })
       setText('')
@@ -246,12 +260,15 @@ export function QuickTaskApp(): React.ReactElement {
   }, [text, attachments, isSubmitting])
 
   // Enter 提交，Shift+Enter 换行
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault()
-      handleSubmit()
-    }
-  }, [handleSubmit])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+        e.preventDefault()
+        handleSubmit()
+      }
+    },
+    [handleSubmit]
+  )
 
   const hasContent = text.trim().length > 0 || attachments.length > 0
 
@@ -262,7 +279,9 @@ export function QuickTaskApp(): React.ReactElement {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className={`quick-task-container flex w-full flex-col rounded-2xl bg-background transition-colors ${isDragOver ? 'ring-2 ring-primary/50' : ''}`}>
+      <div
+        className={`quick-task-container flex w-full flex-col rounded-2xl bg-background transition-colors ${isDragOver ? 'ring-2 ring-primary/50' : ''}`}
+      >
         {/* 顶栏：模型信息（P3: 已移除模式切换） */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <div className="flex items-center gap-2">
@@ -326,7 +345,16 @@ export function QuickTaskApp(): React.ReactElement {
               className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
               title="添加附件"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
               附件
@@ -340,9 +368,7 @@ export function QuickTaskApp(): React.ReactElement {
             />
 
             {/* 拖拽/粘贴提示 */}
-            <span className="text-[10px] text-muted-foreground/30 ml-1">
-              支持粘贴或拖拽文件
-            </span>
+            <span className="text-[10px] text-muted-foreground/30 ml-1">支持粘贴或拖拽文件</span>
           </div>
 
           {/* 发送按钮 */}
@@ -355,7 +381,16 @@ export function QuickTaskApp(): React.ReactElement {
             {isSubmitting ? (
               <span className="inline-block size-3 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
@@ -377,7 +412,12 @@ interface AttachmentChipProps {
   onRemove: () => void
 }
 
-function AttachmentChip({ filename, mediaType, previewUrl, onRemove }: AttachmentChipProps): React.ReactElement {
+function AttachmentChip({
+  filename,
+  mediaType,
+  previewUrl,
+  onRemove,
+}: AttachmentChipProps): React.ReactElement {
   const isImage = mediaType.startsWith('image/')
   const displayName = filename.length > 20 ? filename.slice(0, 17) + '...' : filename
 
@@ -390,7 +430,15 @@ function AttachmentChip({ filename, mediaType, previewUrl, onRemove }: Attachmen
           onClick={onRemove}
           className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/chip:opacity-100 transition-opacity"
         >
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <svg
+            width="8"
+            height="8"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+          >
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
           </svg>
@@ -401,7 +449,16 @@ function AttachmentChip({ filename, mediaType, previewUrl, onRemove }: Attachmen
 
   return (
     <div className="group/chip relative flex items-center gap-1.5 shrink-0 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
       </svg>
       <span className="max-w-[120px] truncate">{displayName}</span>
@@ -410,7 +467,15 @@ function AttachmentChip({ filename, mediaType, previewUrl, onRemove }: Attachmen
         onClick={onRemove}
         className="ml-0.5 size-3.5 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted opacity-0 group-hover/chip:opacity-100 transition-all"
       >
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+        <svg
+          width="8"
+          height="8"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+        >
           <path d="M18 6 6 18" />
           <path d="m6 6 12 12" />
         </svg>

@@ -6,10 +6,7 @@
 
 import { describe, expect, test } from 'vitest'
 
-import {
-  validateToolInput,
-  TOOL_REQUIRED_PARAMS,
-} from './agent-tool-input-validator'
+import { validateToolInput, TOOL_REQUIRED_PARAMS } from './agent-tool-input-validator'
 
 // ============================================
 // 常量 sanity
@@ -74,7 +71,7 @@ describe('validateToolInput - 缺单个参数', () => {
     expect(r!.behavior).toBe('deny')
     expect(r!.message).toContain('"file_path"')
     expect(r!.message).toContain('Write')
-    expect(r!.message).not.toContain('"content"')  // content 不缺
+    expect(r!.message).not.toContain('"content"') // content 不缺
   })
 
   test('Given Write 缺 content When validate Then 返回 deny + 提示 content', () => {
@@ -179,7 +176,7 @@ describe('validateToolInput - 额外字段不影响校验', () => {
   test('Given 工具调用带额外字段 + 必需字段完整 When validate Then 返回 null', () => {
     const r = validateToolInput('Bash', {
       command: 'ls',
-      description: 'list files',  // 非必需, 不报错
+      description: 'list files', // 非必需, 不报错
       timeout: 5000,
     })
     expect(r).toBeNull()

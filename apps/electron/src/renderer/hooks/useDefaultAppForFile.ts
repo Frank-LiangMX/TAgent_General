@@ -19,7 +19,7 @@ function extKeyOf(filePath: string): string {
 
 export function useDefaultAppForFile(
   filePath: string | null | undefined,
-  access?: FileAccessOptions,
+  access?: FileAccessOptions
 ): DefaultAppInfo | null {
   const [info, setInfo] = React.useState<DefaultAppInfo | null>(() => {
     if (!filePath) return null
@@ -42,7 +42,11 @@ export function useDefaultAppForFile(
       .getDefaultAppForFile(filePath, access)
       .then((result) => {
         if (cancelled) return
-        console.log('[useDefaultAppForFile] IPC 返回:', filePath, result ? `name=${result.name}` : 'null')
+        console.log(
+          '[useDefaultAppForFile] IPC 返回:',
+          filePath,
+          result ? `name=${result.name}` : 'null'
+        )
         // 带访问上下文时，null 可能来自路径授权失败，不能污染按后缀共享的默认 App 缓存。
         if (result || !access) rendererCache.set(key, result)
         setInfo(result)

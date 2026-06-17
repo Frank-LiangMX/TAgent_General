@@ -6,7 +6,14 @@
  * - 读取：主文件 → .tmp 残留 → .bak 回退，多层容错
  */
 
-import { writeFileSync, renameSync, existsSync, copyFileSync, readFileSync, unlinkSync } from 'node:fs'
+import {
+  writeFileSync,
+  renameSync,
+  existsSync,
+  copyFileSync,
+  readFileSync,
+  unlinkSync,
+} from 'node:fs'
 
 /**
  * 原子写入 JSON 文件：write-to-temp → rename
@@ -67,7 +74,11 @@ export function readJsonFileSafe<T>(filePath: string): T | null {
       // .tmp 也损坏，继续 fallback
     }
     // 清理无效的 .tmp
-    try { unlinkSync(tmpPath) } catch { /* ignore */ }
+    try {
+      unlinkSync(tmpPath)
+    } catch {
+      /* ignore */
+    }
   }
 
   // 3. Fallback 到 .bak

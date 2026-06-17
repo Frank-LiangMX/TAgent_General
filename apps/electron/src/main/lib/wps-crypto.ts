@@ -19,7 +19,7 @@ export function calculateEventSignature(
   topic: string,
   nonce: string,
   time: number,
-  encryptedData: string,
+  encryptedData: string
 ): string {
   const content = `${appId}:${topic}:${nonce}:${time}:${encryptedData}`
   return createHmac('sha256', secretKey)
@@ -37,7 +37,7 @@ export function verifyEventSignature(
   nonce: string,
   time: number,
   encryptedData: string,
-  receivedSignature: string,
+  receivedSignature: string
 ): boolean {
   const nowSec = Math.floor(Date.now() / 1000)
   if (Math.abs(nowSec - time) > 300) return false
@@ -69,7 +69,7 @@ export function generateKso1AuthHeader(
   contentType: string,
   ksoDate: string,
   requestBody: string,
-  secretKey: string,
+  secretKey: string
 ): string {
   const bodyHash = requestBody ? createHash('sha256').update(requestBody, 'utf8').digest('hex') : ''
   const signContent = `KSO-1${method}${requestUri}${contentType}${ksoDate}${bodyHash}`

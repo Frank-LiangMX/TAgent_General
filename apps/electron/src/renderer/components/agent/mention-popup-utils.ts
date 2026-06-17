@@ -31,7 +31,7 @@ export interface PositionOptions {
 export function positionPopup(
   popup: HTMLDivElement | null,
   rect: DOMRect | null | undefined,
-  options?: PositionOptions,
+  options?: PositionOptions
 ): void {
   if (!rect || !popup) return
 

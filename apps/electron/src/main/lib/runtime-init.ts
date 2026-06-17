@@ -108,7 +108,9 @@ export async function initializeRuntime(options: RuntimeInitOptions = {}): Promi
       }
 
       console.log('[运行时初始化] Shell 环境检测完成:', {
-        gitBash: gitBashStatus.available ? `✅ ${gitBashStatus.version}` : `❌ ${gitBashStatus.error}`,
+        gitBash: gitBashStatus.available
+          ? `✅ ${gitBashStatus.version}`
+          : `❌ ${gitBashStatus.error}`,
         wsl: wslStatus.available
           ? `✅ WSL ${wslStatus.version} (${wslStatus.defaultDistro})`
           : `❌ ${wslStatus.error}`,
@@ -137,7 +139,9 @@ export async function initializeRuntime(options: RuntimeInitOptions = {}): Promi
   console.log(`[运行时初始化] 初始化完成 (耗时 ${duration}ms)`)
   console.log('[运行时初始化] 状态:', {
     node: nodeStatus.available ? `✅ ${nodeStatus.version}` : `❌ ${nodeStatus.error}`,
-    bun: bunStatus.available ? `✅ ${bunStatus.version} (${bunStatus.source})` : `❌ ${bunStatus.error}`,
+    bun: bunStatus.available
+      ? `✅ ${bunStatus.version} (${bunStatus.source})`
+      : `❌ ${bunStatus.error}`,
     git: gitStatus.available ? `✅ ${gitStatus.version}` : `❌ ${gitStatus.error}`,
     shell: shellEnvironmentStatus
       ? `${shellEnvironmentStatus.recommended ? '✅' : '⚠️'} ${shellEnvironmentStatus.recommended || '无可用环境'}`
@@ -186,7 +190,7 @@ async function validateAllEnabledChannels(): Promise<void> {
           provider: c.provider,
         })
         return { channelId: c.id, name: c.name, model: modelId, result }
-      }),
+      })
     )
     let pass = 0
     let fail = 0
@@ -238,7 +242,9 @@ export function isRuntimeInitialized(): boolean {
  * @param options - 初始化选项
  * @returns 新的运行时状态
  */
-export async function reinitializeRuntime(options: RuntimeInitOptions = {}): Promise<RuntimeStatus> {
+export async function reinitializeRuntime(
+  options: RuntimeInitOptions = {}
+): Promise<RuntimeStatus> {
   isInitialized = false
   runtimeStatusCache = null
   return initializeRuntime(options)

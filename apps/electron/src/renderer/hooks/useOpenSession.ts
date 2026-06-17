@@ -51,13 +51,14 @@ export function useOpenSession(): OpenSessionFn {
       const resolvedMode = mode ?? session?.mode ?? 'general'
 
       // 切回 agent 会话时，若该会话上次开着预览 Tab 则一并重建并回到上次视图
-      const restore = type === 'agent'
-        ? buildOpenTabRestore(
-            sessionId,
-            store.get(sessionViewStateMapAtom),
-            store.get(previewFileMapAtom),
-          )
-        : undefined
+      const restore =
+        type === 'agent'
+          ? buildOpenTabRestore(
+              sessionId,
+              store.get(sessionViewStateMapAtom),
+              store.get(previewFileMapAtom)
+            )
+          : undefined
       const result = openTab(tabs, { type, sessionId, title, mode: resolvedMode }, restore)
       setTabs(result.tabs)
       setActiveTabId(result.activeTabId)
@@ -78,9 +79,11 @@ export function useOpenSession(): OpenSessionFn {
         // 同步 workspaceId，确保与 TabBar 切换行为一致
         if (session?.workspaceId) {
           setCurrentAgentWorkspaceId(session.workspaceId)
-          window.electronAPI.updateSettings({
-            agentWorkspaceId: session.workspaceId,
-          }).catch(console.error)
+          window.electronAPI
+            .updateSettings({
+              agentWorkspaceId: session.workspaceId,
+            })
+            .catch(console.error)
         }
       } else {
         // scratch
@@ -89,6 +92,16 @@ export function useOpenSession(): OpenSessionFn {
         setCurrentAgentSessionId(null)
       }
     },
-    [tabs, setTabs, setActiveTabId, setAppMode, setCurrentConversationId, setCurrentAgentSessionId, agentSessions, setCurrentAgentWorkspaceId, setUnviewedCompleted],
+    [
+      tabs,
+      setTabs,
+      setActiveTabId,
+      setAppMode,
+      setCurrentConversationId,
+      setCurrentAgentSessionId,
+      agentSessions,
+      setCurrentAgentWorkspaceId,
+      setUnviewedCompleted,
+    ]
   )
 }

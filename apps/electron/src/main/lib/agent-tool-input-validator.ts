@@ -30,7 +30,7 @@ export interface ToolValidationFailure {
  */
 export function validateToolInput(
   toolName: string,
-  input: Record<string, unknown>,
+  input: Record<string, unknown>
 ): ToolValidationFailure | null {
   const requiredParams = TOOL_REQUIRED_PARAMS.get(toolName)
   if (!requiredParams) return null
@@ -46,9 +46,10 @@ export function validateToolInput(
   if (missing.length === 0) return null
 
   const paramList = missing.map((p) => `"${p}"`).join(', ')
-  const message = missing.length === 1
-    ? `Tool "${toolName}" is missing required parameter ${paramList}. Please retry with all required parameters filled in.`
-    : `Tool "${toolName}" is missing required parameters: ${paramList}. Please retry with all required parameters filled in.`
+  const message =
+    missing.length === 1
+      ? `Tool "${toolName}" is missing required parameter ${paramList}. Please retry with all required parameters filled in.`
+      : `Tool "${toolName}" is missing required parameters: ${paramList}. Please retry with all required parameters filled in.`
 
   return { behavior: 'deny' as const, message }
 }

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - **Ask 档位 Composer** — Agent 输入区 Ask 档位（轻量对话，权限边界 + 引导切换 Agent），替代独立 Chat 模式
 - **ComposerModeSelector** — 输入区档位切换器（Ask/Agent），对标 Cursor Ask/Agent
 - **AgentSwitchBanner** — Ask 模式下引导升级到 Agent 的横幅（自 AgentRecommendBanner 改造）
@@ -28,26 +29,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/btw` fork to new session** — `↗` button in the panel header forks the side Q&A into a new Agent session. New session inherits the parent conversation context (via `&session:` reference) plus the btw transcript, so users can continue with full tool access.
 
 ### Changed
+
 - `/btw` panel UI refined: resized to a floating card (`top-[10vh] bottom-[10vh]`), frosted glass (`bg-background/70 backdrop-blur-xl`), custom thin scrollbar, no longer overlaps window control buttons.
 
 ### Changed
+
 - (none yet)
 
 ### Deprecated
+
 - (none yet)
 
 ### Removed
+
 - (none yet)
 
 ### Removed
+
 - **独立 Chat 模式 UI** — `ChatView`、`components/chat/` 目录、`appMode: 'chat'`、`TabType: 'chat'`（历史对话可导出）
 - **Chat 发送路径 IPC** — `CHAT_IPC_CHANNELS.SEND_MESSAGE`、`STOP_GENERATION`、`GENERATE_TITLE`（附件 API 保留）
 - **Chat 监听器** — `useGlobalChatListeners.ts`（已删除）
 
 ### Fixed
+
 - (none yet)
 
 ### Security
+
 - (none yet)
 
 ---
@@ -64,6 +72,7 @@ When you make a PR that affects users, add an entry under `[Unreleased]` in the 
 - **Security** — vulnerability fixes
 
 The release script (`scripts/release.py ship X.Y.Z`) will:
+
 1. Move `[Unreleased]` entries to a new `[X.Y.Z]` section with today's date
 2. Reset `[Unreleased]` to empty
 3. Commit + tag + push

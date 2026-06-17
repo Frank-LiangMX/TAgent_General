@@ -118,7 +118,7 @@ function buildHeader(
   messageType: number,
   flags: number,
   serialization: number,
-  compression: number,
+  compression: number
 ): Buffer {
   return Buffer.from([
     (PROTOCOL_VERSION << 4) | HEADER_SIZE,
@@ -133,7 +133,7 @@ function buildFrame(
   flags: number,
   serialization: number,
   compression: number,
-  payload: Buffer,
+  payload: Buffer
 ): Buffer {
   const header = buildHeader(messageType, flags, serialization, compression)
   const size = Buffer.alloc(4)
@@ -182,7 +182,7 @@ function buildClientRequest(settings: VoiceDictationSettings): Buffer {
     FLAG_NO_SEQUENCE,
     SERIALIZATION_JSON,
     COMPRESSION_GZIP,
-    payload,
+    payload
   )
 }
 
@@ -193,7 +193,7 @@ function buildAudioFrame(audio: Buffer, isLast: boolean): Buffer {
     isLast ? FLAG_LAST_NO_SEQUENCE : FLAG_NO_SEQUENCE,
     SERIALIZATION_NONE,
     COMPRESSION_GZIP,
-    payload,
+    payload
   )
 }
 
@@ -222,9 +222,9 @@ function getAuthoritativeResult(results: ServerResult[]): ServerResult | null {
   if (candidates.length === 1) return candidates[0]!.result
 
   // result 数组表示识别候选，不是需要拼接的分句；拼接会制造重复文本。
-  return [...candidates]
-    .sort((left, right) => (right.result.confidence ?? 0) - (left.result.confidence ?? 0))[0]!
-    .result
+  return [...candidates].sort(
+    (left, right) => (right.result.confidence ?? 0) - (left.result.confidence ?? 0)
+  )[0]!.result
 }
 
 function isResultFinal(result: ServerResult): boolean {
@@ -303,7 +303,7 @@ function parseServerMessage(data: Buffer): ParsedServerMessage | null {
 
 /** 测试豆包 ASR 连接，仅验证 WebSocket 握手和鉴权 Header。 */
 export async function testDoubaoAsrConnection(
-  settings: VoiceDictationSettings,
+  settings: VoiceDictationSettings
 ): Promise<{ success: boolean; message: string }> {
   if (!settings.appId || !settings.accessToken || !settings.resourceId) {
     return { success: false, message: '请先填写 APP ID、Access Token 和 Resource ID' }
@@ -340,7 +340,7 @@ export async function testDoubaoAsrConnection(
 export async function startDoubaoAsrSession(
   sessionId: string,
   settings: VoiceDictationSettings,
-  win: BrowserWindow,
+  win: BrowserWindow
 ): Promise<void> {
   if (!settings.appId || !settings.accessToken || !settings.resourceId) {
     throw new Error('请先填写豆包 ASR 凭证')

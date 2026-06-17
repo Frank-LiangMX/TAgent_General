@@ -26,9 +26,7 @@ describe('planDropOldToolResults (P1-3)', () => {
       {
         type: 'user',
         message: {
-          content: [
-            { type: 'tool_result', tool_use_id: 'tool-1', content: 'result' },
-          ],
+          content: [{ type: 'tool_result', tool_use_id: 'tool-1', content: 'result' }],
         },
       },
     ]
@@ -71,9 +69,7 @@ describe('planDropOldToolResults (P1-3)', () => {
       {
         type: 'assistant',
         message: {
-          content: [
-            { type: 'tool_use', id: 'tool-1', name: 'Read', input: { file_path: '/x' } },
-          ],
+          content: [{ type: 'tool_use', id: 'tool-1', name: 'Read', input: { file_path: '/x' } }],
         },
       },
     ]
@@ -101,16 +97,16 @@ describe('planDropOldToolResults (P1-3)', () => {
 
   test('Given 混合会话 (system+user+assistant+tool_result+tool_use) When plan Then 只丢纯 tool 块', () => {
     const msgs: SDKMessageRow[] = [
-      { type: 'system' },                                                                      // 0: 保留
-      { type: 'user', message: { content: [{ type: 'text', text: 'Q1' }] } },               // 1: 保留
-      { type: 'assistant', message: { content: [{ type: 'text', text: 'A1' }] } },         // 2: 保留
-      { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1' }] } },     // 3: 丢
-      { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1' }] } },  // 4: 丢
-      { type: 'assistant', message: { content: [{ type: 'text', text: 'A2' }] } },         // 5: 保留
+      { type: 'system' }, // 0: 保留
+      { type: 'user', message: { content: [{ type: 'text', text: 'Q1' }] } }, // 1: 保留
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'A1' }] } }, // 2: 保留
+      { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1' }] } }, // 3: 丢
+      { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1' }] } }, // 4: 丢
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'A2' }] } }, // 5: 保留
     ]
     const { kept, dropped } = planDropOldToolResults(msgs)
-    expect(kept.length).toBe(4)  // 0, 1, 2, 5
-    expect(dropped.length).toBe(2)  // 3, 4
+    expect(kept.length).toBe(4) // 0, 1, 2, 5
+    expect(dropped.length).toBe(2) // 3, 4
     expect(kept[0]?.type).toBe('system')
     expect(kept[1]?.type).toBe('user')
     expect(kept[2]?.type).toBe('assistant')
@@ -130,9 +126,7 @@ describe('planDropOldToolResults (P1-3)', () => {
   })
 
   test('Given 未知 type 消息 When plan Then 保留 (保守)', () => {
-    const msgs: SDKMessageRow[] = [
-      { type: 'sdk_result', something: 'foo' },
-    ]
+    const msgs: SDKMessageRow[] = [{ type: 'sdk_result', something: 'foo' }]
     const { kept, dropped } = planDropOldToolResults(msgs)
     expect(kept).toEqual(msgs)
     expect(dropped).toEqual([])
@@ -155,11 +149,11 @@ describe('planKeepLastN (P1-3)', () => {
   test('Given N=2 When plan Then 保留最后 2 条 user+assistant + 全部 system', () => {
     const msgs: SDKMessageRow[] = [
       { type: 'system' },
-      { type: 'user', message: { content: [{ type: 'text', text: 'Q1' }] } },    // 0
+      { type: 'user', message: { content: [{ type: 'text', text: 'Q1' }] } }, // 0
       { type: 'assistant', message: { content: [{ type: 'text', text: 'A1' }] } }, // 1
-      { type: 'user', message: { content: [{ type: 'text', text: 'Q2' }] } },    // 2
+      { type: 'user', message: { content: [{ type: 'text', text: 'Q2' }] } }, // 2
       { type: 'assistant', message: { content: [{ type: 'text', text: 'A2' }] } }, // 3
-      { type: 'user', message: { content: [{ type: 'text', text: 'Q3' }] } },    // 4
+      { type: 'user', message: { content: [{ type: 'text', text: 'Q3' }] } }, // 4
       { type: 'assistant', message: { content: [{ type: 'text', text: 'A3' }] } }, // 5
     ]
     const { kept, dropped } = planKeepLastN(msgs, 2)
@@ -197,7 +191,7 @@ describe('planKeepLastN (P1-3)', () => {
       message: { content: [{ type: 'text', text: `m${i}` }] },
     }))
     const { kept, dropped } = planKeepLastN(msgs)
-    expect(kept.length).toBe(10)  // 默认 10
+    expect(kept.length).toBe(10) // 默认 10
     expect(dropped.length).toBe(15)
   })
 })

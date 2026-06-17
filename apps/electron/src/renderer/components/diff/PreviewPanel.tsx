@@ -13,25 +13,13 @@ import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
-import {
-  agentSessionPathMapAtom,
-  currentSessionSidePanelOpenAtom,
-} from '@/atoms/agent-atoms'
-import {
-  previewPanelOpenMapAtom,
-  previewFileMapAtom,
-} from '@/atoms/preview-atoms'
-import {
-  activeTabIdAtom,
-  getPreviewTabTitle,
-  openTab,
-  tabsAtom,
-} from '@/atoms/tab-atoms'
+import { agentSessionPathMapAtom, currentSessionSidePanelOpenAtom } from '@/atoms/agent-atoms'
+import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
+import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
-
 
 interface PreviewPanelProps {
   sessionId: string
@@ -55,7 +43,11 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
   const useStackedWindowsHeader = isWindows && !isSidePanelOpen
 
   const handleClosePanel = React.useCallback(() => {
-    setOpenMap((prev) => { const m = new Map(prev); m.set(sessionId, false); return m })
+    setOpenMap((prev) => {
+      const m = new Map(prev)
+      m.set(sessionId, false)
+      return m
+    })
   }, [sessionId, setOpenMap])
 
   const handleOpenPreviewTab = React.useCallback(() => {
@@ -74,17 +66,18 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
     })
   }, [currentFile, sessionId, setActiveTabId, setOpenMap, setTabs, tabs])
 
-  const fileName = currentFile ? currentFile.filePath.split(/[\\/]/).pop() || currentFile.filePath : '文件预览'
+  const fileName = currentFile
+    ? currentFile.filePath.split(/[\\/]/).pop() || currentFile.filePath
+    : '文件预览'
   const defaultAppTargetPath = currentFile ? getDefaultAppTargetPath(currentFile, sessionPath) : ''
-  const defaultAppAccess = currentFile ? getPreviewFileAccess(sessionId, currentFile, sessionPath) : undefined
+  const defaultAppAccess = currentFile
+    ? getPreviewFileAccess(sessionId, currentFile, sessionPath)
+    : undefined
 
   const renderPreviewActions = (): React.ReactElement => (
     <div className="ml-auto flex items-center gap-0.5 shrink-0">
       {currentFile && (
-        <DefaultAppOpenButton
-          filePath={defaultAppTargetPath}
-          access={defaultAppAccess}
-        />
+        <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
       )}
       {currentFile && (
         <Tooltip>
@@ -115,7 +108,9 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>关闭预览面板 ({getAcceleratorDisplay(getActiveAccelerator('toggle-preview-panel'))})</p>
+          <p>
+            关闭预览面板 ({getAcceleratorDisplay(getActiveAccelerator('toggle-preview-panel'))})
+          </p>
         </TooltipContent>
       </Tooltip>
     </div>
@@ -124,16 +119,19 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
   return (
     <div className="flex flex-col h-full overflow-hidden bg-content-area titlebar-no-drag">
       {/* 顶部栏：文件名 + 预览操作 */}
-      <div className={cn('flex-shrink-0 border-b border-border/30 titlebar-no-drag', useStackedWindowsHeader && 'bg-content-area')}>
+      <div
+        className={cn(
+          'flex-shrink-0 border-b border-border/30 titlebar-no-drag',
+          useStackedWindowsHeader && 'bg-content-area'
+        )}
+      >
         {useStackedWindowsHeader ? (
           <>
             <div
               className="flex items-center h-[34px] pl-3"
               style={{ paddingRight: WINDOWS_WINDOW_CONTROLS_SAFE_AREA }}
             >
-              <span className="text-xs text-muted-foreground truncate">
-                {fileName}
-              </span>
+              <span className="text-xs text-muted-foreground truncate">{fileName}</span>
             </div>
             <div className="flex items-center h-[30px] px-3 border-t border-border/20 bg-muted/20">
               {renderPreviewActions()}
@@ -141,9 +139,7 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
           </>
         ) : (
           <div className="flex items-center h-[34px] px-3">
-            <span className="text-xs text-muted-foreground truncate">
-              {fileName}
-            </span>
+            <span className="text-xs text-muted-foreground truncate">{fileName}</span>
             {renderPreviewActions()}
           </div>
         )}

@@ -16,15 +16,15 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 **永远用标准比例**，不要用原图 `aspect-ratio: 2592/1798` 这种奇葩比例：
 
-| 场景 | 推荐比例 | 写法 |
-|------|---------|------|
-| 左文右图 主图 | 16:10 或 4:3 | `.frame-img.r-16x10` 或 `.frame-img.r-4x3` |
-| 图片网格（多图对比） | 统一 | `.frame-img.h-22` / `.frame-img.h-26`，不用 aspect-ratio |
-| 小型面板组 | 统一 | `.frame-img.h-16` / `.frame-img.h-18`，同组必须同高 |
-| 左小图 + 右文字 | 1:1 或 3:2 | `.frame-img.r-1x1` 或 `.frame-img.r-3x2` |
-| 全屏主视觉 | 16:9 | `.frame-img.r-16x9` |
-| 信息图 / 截图再设计 | 16:9 或 16:10 | `.frame-img.r-16x9.fit-contain` 或 `.frame-img.r-16x10.fit-contain` |
-| 图文混排小插图 | 3:2 或 3:4 | `.frame-img.r-3x2` 或 `.frame-img.r-3x4` |
+| 场景                 | 推荐比例      | 写法                                                                |
+| -------------------- | ------------- | ------------------------------------------------------------------- |
+| 左文右图 主图        | 16:10 或 4:3  | `.frame-img.r-16x10` 或 `.frame-img.r-4x3`                          |
+| 图片网格（多图对比） | 统一          | `.frame-img.h-22` / `.frame-img.h-26`，不用 aspect-ratio            |
+| 小型面板组           | 统一          | `.frame-img.h-16` / `.frame-img.h-18`，同组必须同高                 |
+| 左小图 + 右文字      | 1:1 或 3:2    | `.frame-img.r-1x1` 或 `.frame-img.r-3x2`                            |
+| 全屏主视觉           | 16:9          | `.frame-img.r-16x9`                                                 |
+| 信息图 / 截图再设计  | 16:9 或 16:10 | `.frame-img.r-16x9.fit-contain` 或 `.frame-img.r-16x10.fit-contain` |
+| 图文混排小插图       | 3:2 或 3:4    | `.frame-img.r-3x2` 或 `.frame-img.r-3x4`                            |
 
 图片必须包在 `<figure class="frame-img">` 里。默认照片会 `object-fit:cover + object-position:top center`,只裁底部,不裁顶/左/右。信息图和截图再设计必须加 `.fit-contain`,避免文字或标注被裁切。
 
@@ -46,11 +46,13 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ### C. 图片定位准则（避免图片堆到页面最底部、被浏览器工具栏遮挡）
 
 **错误做法**（已踩坑，不要再犯）：
+
 - 在非 grid 容器里用 `align-self:end`：`align-self` 在 flex/grid 之外完全无效，图片会掉到文档流末尾堆底
 - 用 `position:absolute + bottom:0` 把图"固定"到底：会被底部 `.foot` 和 `#nav` 圆点遮挡
 - 单张图片只写 `height:N vh` 不限 `max-height`：在低分屏会撑出视口
 
 **正确做法**：
+
 - 图文混排**必须用 `.frame.grid-2-7-5`**（或 `.grid-2-6-6` / `.grid-2-8-4`）的 grid 结构
 - grid 容器默认 `align-items:start`（已在 template 中设置），图片自然贴到 cell 顶端
 - 如果需要"图片底对齐左列 callout"：**左列用 flex column + `justify-content:space-between`**（让 callout 自己贴左列底），**右列 figure 直接保持 align-items:start 即可**，不要加 `align-self:end`
@@ -68,13 +70,13 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 **动效策略**:在 `<section>` 上加 `data-animate="<recipe>"` 选择动画风格;每个需要入场动画的元素加 `data-anim`(可选附值,如 `left` / `right` / `line` / `step`)。
 
-| recipe | 用法 | 适合布局 |
-|---|---|---|
-| 默认(cascade) | 什么也不加,自动级联淡入 | 大部分正文页(Layout 3 / 4 / 5 / 10) |
-| `hero` | `.hero` 页自动启用,节奏更慢更仪式感 | Layout 1 / 2 / 7(所有 hero 页) |
-| `quote` | 一句一句揭示,慢节奏(550ms stagger) | Layout 8 大引用 |
-| `directional` | 左进 → 分割 → 右进,用于对比 | Layout 9 Before/After |
-| `pipeline` | 手动推进,按 →/空格 一步步点亮 | Layout 6 流水线 |
+| recipe        | 用法                                | 适合布局                            |
+| ------------- | ----------------------------------- | ----------------------------------- |
+| 默认(cascade) | 什么也不加,自动级联淡入             | 大部分正文页(Layout 3 / 4 / 5 / 10) |
+| `hero`        | `.hero` 页自动启用,节奏更慢更仪式感 | Layout 1 / 2 / 7(所有 hero 页)      |
+| `quote`       | 一句一句揭示,慢节奏(550ms stagger)  | Layout 8 大引用                     |
+| `directional` | 左进 → 分割 → 右进,用于对比         | Layout 9 Before/After               |
+| `pipeline`    | 手动推进,按 →/空格 一步步点亮       | Layout 6 流水线                     |
 
 **降级保底**:如果 motion.min.js 本地 + CDN 都加载失败,脚本会强制把所有 `data-anim` 元素设为 `opacity:1`,内容永远可读。
 
@@ -106,11 +108,11 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 这是最常见的内容重复问题。两者在语义上完全不同的维度：
 
-| 位置 | 角色 | 内容性质 | 例子 |
-|------|------|---------|------|
-| `.chrome` 左上 | **杂志页眉 / 导航元数据** | 稳定的"栏目名"或"章节分类"，跨多页可以相同 | "Act II · Workflow" / "Data · Result" / "lukew.com · 2026.04" |
-| `.chrome` 右上 | **页号 + 幕号** | 固定格式 | "Act II · 15 / 25" |
-| `.kicker` | **这一页独一份的引导句** | 是大标题的"小前缀"，像杂志大标题上方的一行话，每页都应不同 | "BUT" / "一个人,做了什么。" / "Phase 01 · 设计阶段" |
+| 位置           | 角色                      | 内容性质                                                   | 例子                                                          |
+| -------------- | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| `.chrome` 左上 | **杂志页眉 / 导航元数据** | 稳定的"栏目名"或"章节分类"，跨多页可以相同                 | "Act II · Workflow" / "Data · Result" / "lukew.com · 2026.04" |
+| `.chrome` 右上 | **页号 + 幕号**           | 固定格式                                                   | "Act II · 15 / 25"                                            |
+| `.kicker`      | **这一页独一份的引导句**  | 是大标题的"小前缀"，像杂志大标题上方的一行话，每页都应不同 | "BUT" / "一个人,做了什么。" / "Phase 01 · 设计阶段"           |
 
 **反例**（已踩坑）：chrome 写"设计先行 · Design First"，kicker 又写"Phase 01 · 设计阶段"——意思重复，读者一眼就觉得 AI 生成的。
 
@@ -122,18 +124,18 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 #### 按布局的主题默认值
 
-| Layout | 默认主题 | 原因 |
-|---|---|---|
-| 1. 开场封面 | `hero dark` | 开场仪式感,暗底强冲击 |
-| 2. 章节幕封 | `hero dark` 与 `hero light` **必须交替** | 呼吸节奏 |
-| 3. 大字报(数据) | `light` | 数字需纸白底;多幕连发时可偶插 `dark` |
-| 4. 左文右图 | **`light` / `dark` 交替** | 正文节奏主力 |
-| 5. 图片网格 | `light` | 截图需亮底 |
-| 6. Pipeline | `light` | 流程图需清晰 |
-| 7. 问题页 | `hero dark` | 强视觉冲击默认 |
-| 8. 大引用 | **`dark` 优先**,偶用 `light` | 金句仪式感靠暗底 |
-| 9. 对比页 | `light` | 双列需清晰 |
-| 10. 图文混排 | **`light` / `dark` 交替** | 节奏 |
+| Layout          | 默认主题                                 | 原因                                 |
+| --------------- | ---------------------------------------- | ------------------------------------ |
+| 1. 开场封面     | `hero dark`                              | 开场仪式感,暗底强冲击                |
+| 2. 章节幕封     | `hero dark` 与 `hero light` **必须交替** | 呼吸节奏                             |
+| 3. 大字报(数据) | `light`                                  | 数字需纸白底;多幕连发时可偶插 `dark` |
+| 4. 左文右图     | **`light` / `dark` 交替**                | 正文节奏主力                         |
+| 5. 图片网格     | `light`                                  | 截图需亮底                           |
+| 6. Pipeline     | `light`                                  | 流程图需清晰                         |
+| 7. 问题页       | `hero dark`                              | 强视觉冲击默认                       |
+| 8. 大引用       | **`dark` 优先**,偶用 `light`             | 金句仪式感靠暗底                     |
+| 9. 对比页       | `light`                                  | 双列需清晰                           |
+| 10. 图文混排    | **`light` / `dark` 交替**                | 节奏                                 |
 
 #### 节奏硬规则(生成后 grep 自检)
 
@@ -144,16 +146,16 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 #### 8 页节奏模板(可直接套用)
 
-| 页 | 主题 | 布局 | 备注 |
-|---|---|---|---|
-| 1 | `hero dark` | 封面 | 开场 |
-| 2 | `light` | 大字报 | 数据抛出 |
-| 3 | `dark` | 左文右图 | 对比/故事 |
-| 4 | `light` | Pipeline | 流程 |
-| 5 | `hero light` | 章节幕封 | 呼吸 |
-| 6 | `dark` | 左文右图 or 大引用 | |
-| 7 | `hero dark` | 问题页 | 悬念收束 |
-| 8 | `light` | 大引用/结尾 | 收尾 |
+| 页  | 主题         | 布局               | 备注      |
+| --- | ------------ | ------------------ | --------- |
+| 1   | `hero dark`  | 封面               | 开场      |
+| 2   | `light`      | 大字报             | 数据抛出  |
+| 3   | `dark`       | 左文右图           | 对比/故事 |
+| 4   | `light`      | Pipeline           | 流程      |
+| 5   | `hero light` | 章节幕封           | 呼吸      |
+| 6   | `dark`       | 左文右图 or 大引用 |           |
+| 7   | `hero dark`  | 问题页             | 悬念收束  |
+| 8   | `light`      | 大引用/结尾        | 收尾      |
 
 **先画这张表对齐,再动手写 slide**。跳过规划直接粘骨架 = 全是 light。
 
@@ -186,6 +188,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 用 `hero dark` 让 WebGL 背景在大部分区域透出
 - `h-hero` 是最大字号（10vw），这里作标题主视觉
 - 用 `min-height:80vh + align-content:center` 让内容整体垂直居中
@@ -204,9 +207,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
   <div class="frame" style="display:grid; gap:6vh; align-content:center; min-height:80vh">
     <div class="kicker" data-anim>Act I</div>
     <h1 class="h-hero" style="font-size:8.5vw" data-anim>硬数据</h1>
-    <p class="lead" style="max-width:55vw" data-anim>
-      先看数字，再谈方法。
-    </p>
+    <p class="lead" style="max-width:55vw" data-anim>先看数字，再谈方法。</p>
   </div>
   <div class="foot">
     <div>第一幕引子</div>
@@ -216,6 +217,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 极简，只需要 kicker + 大标题 + 一行引语
 - 两个幕的封面可以交替 `hero light` / `hero dark`，制造节奏
 - `h-hero` 字号可以从 10vw 调到 8.5vw 适配长短
@@ -276,6 +278,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 3×2 或 4×2 网格最稳（见 `.grid-6`）
 - 每个 `stat-card` 结构固定：label（英文小字）→ nb（大字数字）→ note（注释）
 - 数字建议 2-3 位字符（太长会溢出），用 K / M 简写
@@ -296,22 +299,20 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
     <div style="display:flex; flex-direction:column; justify-content:space-between; gap:3vh">
       <div>
         <div class="kicker" data-anim>BUT</div>
-        <h2 class="h-xl" style="white-space:nowrap; font-size:7.2vw" data-anim>
-          我不是程序员。
-        </h2>
+        <h2 class="h-xl" style="white-space:nowrap; font-size:7.2vw" data-anim>我不是程序员。</h2>
         <p class="lead" style="margin-top:3vh" data-anim>
           大学毕业之后再也没写过一行代码。过去十年做的是 UI 设计和 AI 特效。
         </p>
       </div>
       <div class="callout" data-anim>
-        "这东西在三年前，<br>
+        "这东西在三年前，<br />
         需要一个十人团队做一年。"
         <div class="callout-src">— 一个观察者的判断</div>
       </div>
     </div>
     <!-- 右列：图片用标准 16/10 比例 + max-height，不要 align-self:end -->
     <figure class="frame-img r-16x10" data-anim>
-      <img src="images/codepilot.png" alt="CodePilot 产品截图">
+      <img src="images/codepilot.png" alt="CodePilot 产品截图" />
       <figcaption class="img-cap">CodePilot · 产品截图</figcaption>
     </figure>
   </div>
@@ -323,6 +324,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 用 `grid-2-7-5`（左 7 份、右 5 份），`align-items:start` 已在 template 预设
 - **左列**用 flex column + `justify-content:space-between`：标题贴顶，callout 自然贴底
 - **右列图片** **不要加 `align-self:end`**。会让图片滑到 cell 底部，低分屏下被浏览器工具栏遮挡
@@ -344,27 +346,27 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
     <div class="grid-3-3" style="margin-top:4vh">
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/weibo.png" alt="微博 289K">
+        <img src="images/weibo.png" alt="微博 289K" />
         <figcaption class="img-cap">微博 · 289K</figcaption>
       </figure>
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/twitter.png" alt="推特 137K">
+        <img src="images/twitter.png" alt="推特 137K" />
         <figcaption class="img-cap">推特 · 137K</figcaption>
       </figure>
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/wechat.png" alt="公众号 96K">
+        <img src="images/wechat.png" alt="公众号 96K" />
         <figcaption class="img-cap">公众号 · 96K</figcaption>
       </figure>
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/jike.png" alt="即刻 26K">
+        <img src="images/jike.png" alt="即刻 26K" />
         <figcaption class="img-cap">即刻 · 26K</figcaption>
       </figure>
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/xhs.png" alt="小红书 19K">
+        <img src="images/xhs.png" alt="小红书 19K" />
         <figcaption class="img-cap">小红书 · 19K</figcaption>
       </figure>
       <figure class="frame-img" style="height:26vh" data-anim>
-        <img src="images/douyin.png" alt="抖音 10K">
+        <img src="images/douyin.png" alt="抖音 10K" />
         <figcaption class="img-cap">抖音 · 10K</figcaption>
       </figure>
     </div>
@@ -377,6 +379,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 关键：每个 `frame-img` 必须写死 `height:NNvh`（不要用 `aspect-ratio`），否则网格会撑破
 - 图片会自动 `object-fit:cover + object-position:top`，只裁底部
 - 用 `.grid-3-3`（3×2）或 `.grid-3`（3×1）承载
@@ -457,6 +460,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 用 `.pipeline-section` 分组 + `.pipeline-label` 作组标题
 - 两组之间用 3.6vh 的间距 + 顶部细分隔线（已在 CSS 中预设）
 - 每个 step 是固定的 nb → title → desc 结构
@@ -480,9 +484,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
       <span data-anim style="display:block">哪些岗位本来就</span>
       <span data-anim style="display:block">不该由人来做？</span>
     </h1>
-    <p class="lead" style="max-width:50vw" data-anim>
-      这个问题，不是技术问题，是架构问题。
-    </p>
+    <p class="lead" style="max-width:50vw" data-anim>这个问题，不是技术问题，是架构问题。</p>
   </div>
   <div class="foot">
     <div>Page 24 · The Question</div>
@@ -492,6 +494,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - Hero 页留白越多越好，只放一个问题
 - `h-hero` 字号视长度调整（7vw 适合 3 行，10vw 适合 1 行）
 - 用 `<br>` 手工断行，确保断点在语义处
@@ -509,12 +512,14 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
   </div>
   <div class="frame" style="display:grid; gap:5vh; align-content:center; min-height:80vh">
     <div class="kicker" data-anim>Quote · 金句</div>
-    <blockquote style="font-family:var(--serif-zh); font-weight:700; font-size:5.8vw; line-height:1.2; letter-spacing:-.01em; max-width:72vw">
+    <blockquote
+      style="font-family:var(--serif-zh); font-weight:700; font-size:5.8vw; line-height:1.2; letter-spacing:-.01em; max-width:72vw"
+    >
       <span data-anim="line" style="display:block">"没有交接,</span>
       <span data-anim="line" style="display:block">所有人都在构建。"</span>
     </blockquote>
     <p class="lead" style="max-width:55vw; opacity:.65" data-anim>
-      Without the handoff, everyone builds.<br>
+      Without the handoff, everyone builds.<br />
       And that makes all the difference.
     </p>
     <div class="meta-row" data-anim>
@@ -529,6 +534,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 整页留白,只放一个大引用 + 出处
 - `<blockquote>` 用 inline style 单独放大（5-6vw）,不要用 `h-hero`（那是页面主标题的命名）
 - 下面跟随英文原文（lead · opacity:.65）制造层级
@@ -550,10 +556,15 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
     <div class="grid-2-6-6" style="gap:5vw 4vh">
       <!-- 左列：旧 -->
-      <div data-anim="left" style="padding:3vh 2vw; border-left:3px solid currentColor; opacity:.55">
+      <div
+        data-anim="left"
+        style="padding:3vh 2vw; border-left:3px solid currentColor; opacity:.55"
+      >
         <div class="kicker" style="opacity:.9">Before · 旧模式</div>
         <h3 class="h-md" style="margin-top:2vh">设计 → 开发 → 交接</h3>
-        <ul style="margin-top:3vh; padding-left:1.2em; display:flex; flex-direction:column; gap:1.4vh; font-family:var(--sans-zh); font-size:max(14px,1.1vw); line-height:1.55">
+        <ul
+          style="margin-top:3vh; padding-left:1.2em; display:flex; flex-direction:column; gap:1.4vh; font-family:var(--sans-zh); font-size:max(14px,1.1vw); line-height:1.55"
+        >
           <li>设计师在 Figma 做稿</li>
           <li>开发者盯着文件翻译像素</li>
           <li>反复 PR 沟通对齐</li>
@@ -564,7 +575,9 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
       <div data-anim="right" style="padding:3vh 2vw; border-left:3px solid currentColor">
         <div class="kicker" style="opacity:.9">After · 新模式</div>
         <h3 class="h-md" style="margin-top:2vh">同工具 · 并行 · 共建</h3>
-        <ul style="margin-top:3vh; padding-left:1.2em; display:flex; flex-direction:column; gap:1.4vh; font-family:var(--sans-zh); font-size:max(14px,1.1vw); line-height:1.55">
+        <ul
+          style="margin-top:3vh; padding-left:1.2em; display:flex; flex-direction:column; gap:1.4vh; font-family:var(--sans-zh); font-size:max(14px,1.1vw); line-height:1.55"
+        >
           <li>三个角色同时在 Intent 工作</li>
           <li>agents.md 作为共享上下文</li>
           <li>代理处理对齐 / 冲突 / 动画</li>
@@ -581,6 +594,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - 用 `.grid-2-6-6`（1:1）左右分半
 - 左列 `opacity:.55` 做"旧"的视觉弱化,右列满亮度做"新"的突出
 - 两列都用 `border-left:3px solid` + `padding-left` 做引用块感
@@ -603,21 +617,25 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
       <h2 class="h-xl" style="margin-top:1vh; margin-bottom:3vh" data-anim>设计先行 · 2 周</h2>
 
       <p class="lead" style="margin-bottom:3vh" data-anim>
-        在 Figma 中完成视觉探索与设计系统,网格 / 排版 / 颜色变量 / 可复用组件,桌面和移动端稿件几轮反馈迭代。
+        在 Figma 中完成视觉探索与设计系统,网格 / 排版 / 颜色变量 /
+        可复用组件,桌面和移动端稿件几轮反馈迭代。
       </p>
 
-      <p data-anim style="font-family:var(--sans-zh); font-size:max(14px,1.15vw); line-height:1.75; opacity:.78; margin-bottom:2.4vh">
+      <p
+        data-anim
+        style="font-family:var(--sans-zh); font-size:max(14px,1.15vw); line-height:1.75; opacity:.78; margin-bottom:2.4vh"
+      >
         两周之内,视觉风格、粗略结构、方向性内容全部稳定。这是扎实的传统设计流程——在这里还没什么新鲜事。
       </p>
 
       <div class="callout" style="margin-top:3vh" data-anim>
-        "This phase was pretty standard.<br>Just a solid Web design process."
+        "This phase was pretty standard.<br />Just a solid Web design process."
         <div class="callout-src">— Luke Wroblewski</div>
       </div>
     </div>
     <!-- 右列:辅助图 · 竖版或方形 -->
     <figure class="frame-img r-3x4" data-anim>
-      <img src="images/figma.png" alt="Figma design system">
+      <img src="images/figma.png" alt="Figma design system" />
       <figcaption class="img-cap">Figma · Design System</figcaption>
     </figure>
   </div>
@@ -629,6 +647,7 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 ```
 
 **要点**：
+
 - `.grid-2-8-4`(8:4) 让正文占主导,图片作辅助
 - 左列包含多种信息层级:kicker → 大标题 → lead → 正文段落 → callout(引用)
 - 右列图片用 **竖版 3:4** 或方形 1:1,避免和左列文本竞争注意力
@@ -638,14 +657,14 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 
 ## 附录：常用网格模板
 
-| 类名 | 配比 | 用途 |
-|---|---|---|
-| `.grid-2-6-6` | 6:6（1:1） | 对半分 |
-| `.grid-2-7-5` | 7:5 | 文字为主 + 辅助图 |
-| `.grid-2-8-4` | 8:4（2:1） | 大段文字 + 小图/数据 |
-| `.grid-3` | 1:1:1 | 3 项并列（案例/截图） |
-| `.grid-3-3` | 3×2 | 6 图矩阵 |
-| `.grid-6` | 3×2 | 6 个数据卡片 |
+| 类名          | 配比       | 用途                  |
+| ------------- | ---------- | --------------------- |
+| `.grid-2-6-6` | 6:6（1:1） | 对半分                |
+| `.grid-2-7-5` | 7:5        | 文字为主 + 辅助图     |
+| `.grid-2-8-4` | 8:4（2:1） | 大段文字 + 小图/数据  |
+| `.grid-3`     | 1:1:1      | 3 项并列（案例/截图） |
+| `.grid-3-3`   | 3×2        | 6 图矩阵              |
+| `.grid-6`     | 3×2        | 6 个数据卡片          |
 
 所有网格都预留 `gap: 3vw 4vh`（水平 3vw、竖直 4vh），可以单独覆写。
 

@@ -18,16 +18,27 @@ export function makeUniqueAttachmentName(originalName: string, existingNames: st
   return `${baseName}-${counter}${ext}`
 }
 
-export function createClipboardTextDraft(text: string, existingNames: string[], now = new Date()): ClipboardTextDraft {
+export function createClipboardTextDraft(
+  text: string,
+  existingNames: string[],
+  now = new Date()
+): ClipboardTextDraft {
   const isMarkdown = looksLikeMarkdown(text)
   const extension = isMarkdown ? 'md' : 'txt'
   const mediaType = isMarkdown ? 'text/markdown' : 'text/plain'
-  const filename = makeUniqueAttachmentName(`clipboard-${formatClipboardTimestamp(now)}.${extension}`, existingNames)
+  const filename = makeUniqueAttachmentName(
+    `clipboard-${formatClipboardTimestamp(now)}.${extension}`,
+    existingNames
+  )
   const size = new TextEncoder().encode(text).byteLength
   return { filename, mediaType, size }
 }
 
-export function createClipboardPendingFile(draft: ClipboardTextDraft, sourcePath: string, id: string): AgentPendingFile {
+export function createClipboardPendingFile(
+  draft: ClipboardTextDraft,
+  sourcePath: string,
+  id: string
+): AgentPendingFile {
   return {
     id,
     filename: draft.filename,

@@ -19,8 +19,12 @@ vi.mock('electron', () => ({
   },
   app: { getPath: () => '/tmp' },
   BrowserWindow: class {
-    static getAllWindows() { return [] }
-    static getFocusedWindow() { return null }
+    static getAllWindows() {
+      return []
+    }
+    static getFocusedWindow() {
+      return null
+    }
   },
   WebContents: class {},
   dialog: { showOpenDialog: () => {} },
@@ -55,7 +59,12 @@ afterEach(() => {
 function installMockFetch(responses: Array<{ status: number; body?: string }>) {
   let idx = 0
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url
     fetchCalls.push({ url, init: init ?? {} })
     const r = responses[Math.min(idx, responses.length - 1)]!
     idx++
@@ -201,7 +210,11 @@ describe('validateChannelModel - anthropic family (4xx/5xx)', () => {
 describe('validateChannelModel - anthropic family header 变体', () => {
   test('Given kimi-coding provider When validate Then headers 用 Bearer + User-Agent, 不发 x-api-key', async () => {
     installMockFetch([{ status: 200, body: '{}' }])
-    await validateChannelModel({ ...ANTHROPIC_INPUT, provider: 'kimi-coding', baseUrl: 'https://api.kimi.com/coding' })
+    await validateChannelModel({
+      ...ANTHROPIC_INPUT,
+      provider: 'kimi-coding',
+      baseUrl: 'https://api.kimi.com/coding',
+    })
     const headers = fetchCalls[0]!.init.headers as Record<string, string>
     expect(headers.Authorization).toBe('Bearer sk-test-key')
     expect(headers['User-Agent']).toMatch(/^TAgent\//)
@@ -210,7 +223,11 @@ describe('validateChannelModel - anthropic family header 变体', () => {
 
   test('Given minimax provider When validate Then headers 用 Bearer, 不发 x-api-key', async () => {
     installMockFetch([{ status: 200, body: '{}' }])
-    await validateChannelModel({ ...ANTHROPIC_INPUT, provider: 'minimax', baseUrl: 'https://api.minimax.com' })
+    await validateChannelModel({
+      ...ANTHROPIC_INPUT,
+      provider: 'minimax',
+      baseUrl: 'https://api.minimax.com',
+    })
     const headers = fetchCalls[0]!.init.headers as Record<string, string>
     expect(headers.Authorization).toBe('Bearer sk-test-key')
     expect(headers['x-api-key']).toBeUndefined()
@@ -328,7 +345,7 @@ describe('validateChannelModel - 网络层异常', () => {
 
   test('Given fetch 抛非 Error 对象 When validate Then 返回失败 + "未知错误"', async () => {
     globalThis.fetch = vi.fn(async () => {
-      throw 'string-not-error'  // eslint-disable-line @typescript-eslint/no-throw-literal
+      throw 'string-not-error' // eslint-disable-line @typescript-eslint/no-throw-literal
     }) as unknown as typeof globalThis.fetch
     const r = await validateChannelModel(ANTHROPIC_INPUT)
     expect(r.success).toBe(false)

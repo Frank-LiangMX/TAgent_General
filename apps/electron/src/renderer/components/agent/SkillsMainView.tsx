@@ -7,12 +7,16 @@ import * as React from 'react'
 
 import type { WorkspaceCapabilities } from '@tagent/shared'
 
+import {
+  agentWorkspacesAtom,
+  currentAgentWorkspaceIdAtom,
+  workspaceCapabilitiesVersionAtom,
+} from '@/atoms/agent-atoms'
 import { selectedCapabilityAtom } from '@/atoms/app-mode'
-import { agentWorkspacesAtom, currentAgentWorkspaceIdAtom, workspaceCapabilitiesVersionAtom } from '@/atoms/agent-atoms'
 import { CapabilityDetailView } from '@/components/agent/CapabilityDetailView'
 import { CapabilityToolbar } from '@/components/agent/CapabilityToolbar'
-import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { Panel } from '@/components/app-shell/Panel'
+import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 
 export function SkillsMainView(): React.ReactElement {
   const selectedCapability = useAtomValue(selectedCapabilityAtom)
@@ -27,7 +31,10 @@ export function SkillsMainView(): React.ReactElement {
       setCapabilities(null)
       return
     }
-    window.electronAPI.getWorkspaceCapabilities(workspace.slug).then(setCapabilities).catch(console.error)
+    window.electronAPI
+      .getWorkspaceCapabilities(workspace.slug)
+      .then(setCapabilities)
+      .catch(console.error)
   }, [workspace?.slug, capabilitiesVersion])
 
   const header = React.useMemo(() => {
@@ -37,7 +44,9 @@ export function SkillsMainView(): React.ReactElement {
       return {
         crumbs: workspace ? [{ label: workspace.name }, { label: 'MCP' }] : [{ label: 'MCP' }],
         title: server?.name ?? selectedCapability.key,
-        description: server ? `${server.type} · ${server.enabled ? '已启用' : '已禁用'}` : 'MCP Server 配置与连接状态',
+        description: server
+          ? `${server.type} · ${server.enabled ? '已启用' : '已禁用'}`
+          : 'MCP Server 配置与连接状态',
       }
     }
     const skill = capabilities?.skills.find((s) => s.slug === selectedCapability.key)

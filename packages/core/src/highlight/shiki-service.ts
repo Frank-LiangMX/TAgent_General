@@ -19,9 +19,24 @@ type ShikiHighlighter = HighlighterGeneric<BundledLanguage, BundledTheme>
 
 /** 默认预加载的语言列表 */
 const DEFAULT_LANGS: BundledLanguage[] = [
-  'javascript', 'typescript', 'python', 'java', 'json',
-  'markdown', 'html', 'css', 'shellscript', 'go', 'rust', 'sql',
-  'tsx', 'jsx', 'yaml', 'toml', 'c', 'cpp',
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'json',
+  'markdown',
+  'html',
+  'css',
+  'shellscript',
+  'go',
+  'rust',
+  'sql',
+  'tsx',
+  'jsx',
+  'yaml',
+  'toml',
+  'c',
+  'cpp',
 ]
 
 /** 默认加载的主题 */
@@ -71,20 +86,36 @@ export interface HighlightResult {
 
 /** 不规则语言显示名称（无法通过首字母大写自动生成） */
 const DISPLAY_NAMES: Record<string, string> = {
-  js: 'JavaScript', javascript: 'JavaScript',
-  ts: 'TypeScript', typescript: 'TypeScript',
-  tsx: 'TSX', jsx: 'JSX',
-  py: 'Python', rb: 'Ruby',
-  cpp: 'C++', 'c++': 'C++',
-  cs: 'C#', csharp: 'C#',
-  kt: 'Kotlin', rs: 'Rust',
-  sh: 'Shell', zsh: 'Shell',
-  yml: 'YAML', md: 'Markdown',
+  js: 'JavaScript',
+  javascript: 'JavaScript',
+  ts: 'TypeScript',
+  typescript: 'TypeScript',
+  tsx: 'TSX',
+  jsx: 'JSX',
+  py: 'Python',
+  rb: 'Ruby',
+  cpp: 'C++',
+  'c++': 'C++',
+  cs: 'C#',
+  csharp: 'C#',
+  kt: 'Kotlin',
+  rs: 'Rust',
+  sh: 'Shell',
+  zsh: 'Shell',
+  yml: 'YAML',
+  md: 'Markdown',
   tf: 'Terraform',
-  html: 'HTML', css: 'CSS', scss: 'SCSS', less: 'LESS',
-  json: 'JSON', xml: 'XML', sql: 'SQL',
-  graphql: 'GraphQL', php: 'PHP',
-  plaintext: 'Text', text: 'Text',
+  html: 'HTML',
+  css: 'CSS',
+  scss: 'SCSS',
+  less: 'LESS',
+  json: 'JSON',
+  xml: 'XML',
+  sql: 'SQL',
+  graphql: 'GraphQL',
+  php: 'PHP',
+  plaintext: 'Text',
+  text: 'Text',
 }
 
 /** 获取语言显示名称，未匹配的自动首字母大写 */
@@ -196,7 +227,10 @@ function resolveLoadedLanguage(highlighter: ShikiHighlighter, lang: string): str
  * 解析语言别名并按需加载，返回可直接使用的语言标识
  * 未知语言自动 fallback 到 'text'
  */
-async function resolveAndLoadLanguage(highlighter: ShikiHighlighter, lang: string): Promise<string> {
+async function resolveAndLoadLanguage(
+  highlighter: ShikiHighlighter,
+  lang: string
+): Promise<string> {
   const resolved = resolveLanguage(lang)
 
   if (resolved === 'text') return 'text'

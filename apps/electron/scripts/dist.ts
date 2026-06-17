@@ -145,11 +145,7 @@ function parseArgs(): DistOptions {
         : args.includes('--dir')
           ? 'dir'
           : 'all',
-    platform: args.includes('--win')
-      ? 'win'
-      : args.includes('--linux')
-        ? 'linux'
-        : 'mac',
+    platform: args.includes('--win') ? 'win' : args.includes('--linux') ? 'linux' : 'mac',
   }
 }
 
@@ -161,7 +157,9 @@ function main(): void {
   // 打印配置信息
   console.log(`\n${color.bgBlue}${color.bold} TAgent 打包工具 ${color.reset}\n`)
   console.log(`  ${color.bold}平台${color.reset}:     ${opts.platform}`)
-  console.log(`  ${color.bold}架构${color.reset}:     ${opts.currentArch ? arch + ' (仅当前)' : 'arm64 + x64'}`)
+  console.log(
+    `  ${color.bold}架构${color.reset}:     ${opts.currentArch ? arch + ' (仅当前)' : 'arm64 + x64'}`
+  )
   console.log(`  ${color.bold}格式${color.reset}:     ${opts.targetFormat}`)
   console.log(`  ${color.bold}签名${color.reset}:     ${opts.noSign ? '跳过' : '启用'}`)
   console.log(`  ${color.bold}详细日志${color.reset}: ${opts.verbose ? '开启' : '关闭'}`)
@@ -173,27 +171,21 @@ function main(): void {
   // ── 步骤 1: 构建主进程 ──
   step++
   printStepStart(step, totalSteps, '构建主进程 (esbuild)')
-  results.push(
-    runStep('构建主进程', 'bun', ['run', 'build:main'], { verbose: opts.verbose })
-  )
+  results.push(runStep('构建主进程', 'bun', ['run', 'build:main'], { verbose: opts.verbose }))
   printStepResult(results[results.length - 1])
   if (!results[results.length - 1].success) return printSummary(results)
 
   // ── 步骤 2: 构建 Preload ──
   step++
   printStepStart(step, totalSteps, '构建 Preload (esbuild)')
-  results.push(
-    runStep('构建 Preload', 'bun', ['run', 'build:preload'], { verbose: opts.verbose })
-  )
+  results.push(runStep('构建 Preload', 'bun', ['run', 'build:preload'], { verbose: opts.verbose }))
   printStepResult(results[results.length - 1])
   if (!results[results.length - 1].success) return printSummary(results)
 
   // ── 步骤 3: 构建渲染进程 ──
   step++
   printStepStart(step, totalSteps, '构建渲染进程 (Vite)')
-  results.push(
-    runStep('构建渲染进程', 'bun', ['run', 'build:renderer'], { verbose: opts.verbose })
-  )
+  results.push(runStep('构建渲染进程', 'bun', ['run', 'build:renderer'], { verbose: opts.verbose }))
   printStepResult(results[results.length - 1])
   if (!results[results.length - 1].success) return printSummary(results)
 
@@ -255,12 +247,15 @@ function printSummary(results: StepResult[]): void {
   // 各步骤耗时表
   for (const r of results) {
     if (r.skipped) {
-      console.log(`  ${color.dim}○${color.reset} ${r.name.padEnd(20)} ${color.dim}跳过${color.reset}`)
+      console.log(
+        `  ${color.dim}○${color.reset} ${r.name.padEnd(20)} ${color.dim}跳过${color.reset}`
+      )
       continue
     }
     const icon = r.success ? `${color.green}●${color.reset}` : `${color.red}●${color.reset}`
     const bar = r.duration > 0 ? '█'.repeat(Math.min(Math.ceil(r.duration / 1000), 30)) : ''
-    const barColor = r.duration > 30000 ? color.red : r.duration > 10000 ? color.yellow : color.green
+    const barColor =
+      r.duration > 30000 ? color.red : r.duration > 10000 ? color.yellow : color.green
     console.log(
       `  ${icon} ${r.name.padEnd(20)} ${barColor}${bar}${color.reset} ${formatDuration(r.duration)}`
     )

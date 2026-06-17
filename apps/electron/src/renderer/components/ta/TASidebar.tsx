@@ -14,7 +14,6 @@
 
 import * as React from 'react'
 
-
 import { TASidebarAssets } from './TASidebar.Assets'
 import { TASidebarConfig } from './TASidebar.Config'
 import { TASidebarMemory } from './TASidebar.Memory'

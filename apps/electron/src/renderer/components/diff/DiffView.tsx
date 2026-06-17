@@ -36,33 +36,45 @@ function countLines(content: string): number {
   return count
 }
 
-export const DiffView = React.memo(function DiffView({ oldContent, newContent, filePath, viewMode }: DiffViewProps): React.ReactElement {
+export const DiffView = React.memo(function DiffView({
+  oldContent,
+  newContent,
+  filePath,
+  viewMode,
+}: DiffViewProps): React.ReactElement {
   const theme = useAtomValue(resolvedThemeAtom)
 
   const oldLines = React.useMemo(() => countLines(oldContent), [oldContent])
   const newLines = React.useMemo(() => countLines(newContent), [newContent])
   const tooLarge = oldLines > MAX_DIFF_LINES || newLines > MAX_DIFF_LINES
 
-  const oldFile: FileContents = React.useMemo(() => ({
-    name: filePath,
-    contents: oldContent,
-  }), [filePath, oldContent])
+  const oldFile: FileContents = React.useMemo(
+    () => ({
+      name: filePath,
+      contents: oldContent,
+    }),
+    [filePath, oldContent]
+  )
 
-  const newFile: FileContents = React.useMemo(() => ({
-    name: filePath,
-    contents: newContent,
-  }), [filePath, newContent])
+  const newFile: FileContents = React.useMemo(
+    () => ({
+      name: filePath,
+      contents: newContent,
+    }),
+    [filePath, newContent]
+  )
 
-  const options = React.useMemo(() => ({
-    diffStyle: viewMode,
-    theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
-    disableFileHeader: true,
-    diffIndicators: 'bars' as const,
-    hunkSeparators: 'line-info' as const,
-    lineDiffType: 'none' as const,
-    overflow: 'scroll' as const,
-    themeType: theme as 'light' | 'dark' | 'system',
-    unsafeCSS: `
+  const options = React.useMemo(
+    () => ({
+      diffStyle: viewMode,
+      theme: { dark: 'one-dark-pro' as const, light: 'one-light' as const },
+      disableFileHeader: true,
+      diffIndicators: 'bars' as const,
+      hunkSeparators: 'line-info' as const,
+      lineDiffType: 'none' as const,
+      overflow: 'scroll' as const,
+      themeType: theme as 'light' | 'dark' | 'system',
+      unsafeCSS: `
       :root, :host {
         --diffs-bg: transparent;
         --diffs-addition-base: rgb(67,167,71);
@@ -123,7 +135,9 @@ export const DiffView = React.memo(function DiffView({ oldContent, newContent, f
         background-color: hsl(var(--content-area)) !important;
       }
     `,
-  }), [viewMode, theme])
+    }),
+    [viewMode, theme]
+  )
 
   if (tooLarge) {
     return (
@@ -135,7 +149,8 @@ export const DiffView = React.memo(function DiffView({ oldContent, newContent, f
               旧文件 {oldLines.toLocaleString()} 行，新文件 {newLines.toLocaleString()} 行
             </p>
             <p className="text-[12px] text-muted-foreground/60 mt-2">
-              请使用命令行 <code className="px-1 py-0.5 rounded bg-muted text-[11px]">git diff</code> 查看
+              请使用命令行{' '}
+              <code className="px-1 py-0.5 rounded bg-muted text-[11px]">git diff</code> 查看
             </p>
           </div>
         </div>

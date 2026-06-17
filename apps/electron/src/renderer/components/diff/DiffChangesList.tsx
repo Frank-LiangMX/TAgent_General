@@ -15,7 +15,6 @@ import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-
 /** 按目录分组后的数据结构 */
 interface FileGroup {
   /** 完整 Git 仓库路径（用作 React key，避免同名目录冲突） */
@@ -73,7 +72,9 @@ export const DiffChangesList = React.memo(function DiffChangesList({
   const setDiffDataMap = useSetAtom(agentDiffDataAtom)
   const cached = diffDataMap.get(sessionId)
   const [files, setFiles] = React.useState<ChangedFileEntry[]>(() => cached?.files ?? [])
-  const [untrackedFiles, setUntrackedFiles] = React.useState<UntrackedFileEntry[]>(() => cached?.untrackedFiles ?? [])
+  const [untrackedFiles, setUntrackedFiles] = React.useState<UntrackedFileEntry[]>(
+    () => cached?.untrackedFiles ?? []
+  )
   const [isGitRepo, setIsGitRepo] = React.useState(() => cached?.isGitRepo ?? true)
   /** 首次 fetch 是否已返回——区分 loading 与真·空，避免 "没有代码改动" 误闪 */
   const [hasFetched, setHasFetched] = React.useState<boolean>(() => cached !== undefined)
@@ -87,25 +88,38 @@ export const DiffChangesList = React.memo(function DiffChangesList({
   const setUnseenFilesMap = useSetAtom(agentDiffUnseenFilesAtom)
   const unseenFiles = unseenFilesMap.get(sessionId) ?? new Set<string>()
 
-  const markFileAsSeen = React.useCallback((filePath: string) => {
-    setUnseenFilesMap((prev) => {
-      const s = prev.get(sessionId)
-      if (!s?.has(filePath)) return prev
-      const m = new Map(prev)
-      const next = new Set(s)
-      next.delete(filePath)
-      m.set(sessionId, next)
-      return m
-    })
-  }, [sessionId, setUnseenFilesMap])
+  const markFileAsSeen = React.useCallback(
+    (filePath: string) => {
+      setUnseenFilesMap((prev) => {
+        const s = prev.get(sessionId)
+        if (!s?.has(filePath)) return prev
+        const m = new Map(prev)
+        const next = new Set(s)
+        next.delete(filePath)
+        m.set(sessionId, next)
+        return m
+      })
+    },
+    [sessionId, setUnseenFilesMap]
+  )
 
   const fetchChanges = React.useCallback(async () => {
     if (!dirPath && !worktreeMode) return
     const requestId = ++fetchSeqRef.current
     try {
       const result = worktreeMode
-        ? await window.electronAPI.getWorktreeChanges(worktreeMode.path, worktreeMode.baseBranch, sessionId)
-        : await window.electronAPI.getUnstagedChanges(dirPath, sessionPath, workspaceFilesPath, extraPaths, sessionId)
+        ? await window.electronAPI.getWorktreeChanges(
+            worktreeMode.path,
+            worktreeMode.baseBranch,
+            sessionId
+          )
+        : await window.electronAPI.getUnstagedChanges(
+            dirPath,
+            sessionPath,
+            workspaceFilesPath,
+            extraPaths,
+            sessionId
+          )
       if (requestId !== fetchSeqRef.current) return
       setIsGitRepo(result.isGitRepo)
       setFiles(result.files || [])
@@ -121,7 +135,15 @@ export const DiffChangesList = React.memo(function DiffChangesList({
       setIsGitRepo(true)
       setHasFetched(true)
     }
-  }, [dirPath, sessionPath, workspaceFilesPath, extraPaths, sessionId, setDiffDataMap, worktreeMode])
+  }, [
+    dirPath,
+    sessionPath,
+    workspaceFilesPath,
+    extraPaths,
+    sessionId,
+    setDiffDataMap,
+    worktreeMode,
+  ])
 
   React.useEffect(() => {
     fetchChanges()
@@ -130,19 +152,22 @@ export const DiffChangesList = React.memo(function DiffChangesList({
   // 窗口聚焦刷新已统一在 useGlobalAgentListeners 中处理（递增 refreshVersion）
 
   /** Revert 文件 */
-  const handleRevert = React.useCallback(async (filePath: string, gitRoot: string) => {
-    if (!window.confirm(`确定要还原 ${filePath} 的所有变更吗？此操作不可撤销。`)) return
-    try {
-      await window.electronAPI.revertFile({ dirPath, filePath, gitRoot, sessionId })
-      await fetchChanges()
-    } catch (err) {
-      window.alert(`还原失败：${err instanceof Error ? err.message : '未知错误'}`)
-    }
-  }, [dirPath, fetchChanges, sessionId])
+  const handleRevert = React.useCallback(
+    async (filePath: string, gitRoot: string) => {
+      if (!window.confirm(`确定要还原 ${filePath} 的所有变更吗？此操作不可撤销。`)) return
+      try {
+        await window.electronAPI.revertFile({ dirPath, filePath, gitRoot, sessionId })
+        await fetchChanges()
+      } catch (err) {
+        window.alert(`还原失败：${err instanceof Error ? err.message : '未知错误'}`)
+      }
+    },
+    [dirPath, fetchChanges, sessionId]
+  )
 
   /** 切换文件夹折叠 */
   const toggleDir = React.useCallback((dirName: string) => {
-    setCollapsedDirs(prev => {
+    setCollapsedDirs((prev) => {
       const next = new Set(prev)
       if (next.has(dirName)) {
         next.delete(dirName)
@@ -260,33 +285,52 @@ export const DiffChangesList = React.memo(function DiffChangesList({
                   {group.sources.map((src) => {
                     const cfg = SOURCE_CONFIG[src] ?? SOURCE_CONFIG.none!
                     return (
-                      <span key={src} className={cn('rounded px-1 py-0.5 text-[12px] leading-none shrink-0', cfg.color)}>
+                      <span
+                        key={src}
+                        className={cn(
+                          'rounded px-1 py-0.5 text-[12px] leading-none shrink-0',
+                          cfg.color
+                        )}
+                      >
                         {cfg.label}
                       </span>
                     )
                   })}
                   <span className="ml-auto shrink-0 flex items-center gap-1.5">
                     <span className="text-foreground/30">{group.files.length} changed files</span>
-                    {group.totalAdditions > 0 && <span className="text-foreground/30">+{group.totalAdditions}</span>}
-                    {group.totalDeletions > 0 && <span className="text-foreground/30">-{group.totalDeletions}</span>}
+                    {group.totalAdditions > 0 && (
+                      <span className="text-foreground/30">+{group.totalAdditions}</span>
+                    )}
+                    {group.totalDeletions > 0 && (
+                      <span className="text-foreground/30">-{group.totalDeletions}</span>
+                    )}
                   </span>
                 </button>
 
                 {/* 文件列表 */}
-                {!isCollapsed && group.files.map((file) => {
-                  const absPath = `${file.gitRoot || dirPath}/${file.filePath}`.replace(/\/+/g, '/')
-                  return (
-                    <FileRow
-                      key={`${file.gitRoot}:${file.filePath}`}
-                      file={file}
-                      isSelected={absPath === selectedFilePath || file.filePath === selectedFilePath}
-                      isUnseen={unseenFiles.has(absPath)}
-                      onClick={() => { markFileAsSeen(absPath); onFileClick(file.filePath, false, file.gitRoot) }}
-                      onRevert={() => handleRevert(file.filePath, file.gitRoot)}
-                      dirPath={dirPath}
-                    />
-                  )
-                })}
+                {!isCollapsed &&
+                  group.files.map((file) => {
+                    const absPath = `${file.gitRoot || dirPath}/${file.filePath}`.replace(
+                      /\/+/g,
+                      '/'
+                    )
+                    return (
+                      <FileRow
+                        key={`${file.gitRoot}:${file.filePath}`}
+                        file={file}
+                        isSelected={
+                          absPath === selectedFilePath || file.filePath === selectedFilePath
+                        }
+                        isUnseen={unseenFiles.has(absPath)}
+                        onClick={() => {
+                          markFileAsSeen(absPath)
+                          onFileClick(file.filePath, false, file.gitRoot)
+                        }}
+                        onRevert={() => handleRevert(file.filePath, file.gitRoot)}
+                        dirPath={dirPath}
+                      />
+                    )
+                  })}
               </div>
             )
           })}
@@ -341,7 +385,7 @@ function FileRow({
         'flex items-center w-full px-2 pl-3 h-[36px] text-[14px] transition-colors group',
         isSelected
           ? 'session-item-selected bg-primary/10 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-          : 'hover:bg-primary/5',
+          : 'hover:bg-primary/5'
       )}
       onClick={onClick}
     >
@@ -358,26 +402,25 @@ function FileRow({
                 <span className="ml-1 text-foreground/30 text-[12px]">(已删除)</span>
               )}
             </span>
-            {dir && (
-              <span className="text-[11px] text-foreground/30 truncate">{dir}</span>
-            )}
+            {dir && <span className="text-[11px] text-foreground/30 truncate">{dir}</span>}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-[400px] break-all">{fullPath}</TooltipContent>
+        <TooltipContent side="bottom" className="max-w-[400px] break-all">
+          {fullPath}
+        </TooltipContent>
       </Tooltip>
 
       {/* +/- 行数 — hover 时隐藏让位给操作按钮 */}
       <span className="ml-auto shrink-0 flex items-center gap-1.5 text-[13px] group-hover:hidden">
-        {file.additions > 0 && (
-          <span style={{ color: 'rgb(34 197 94)' }}>+{file.additions}</span>
-        )}
-        {file.deletions > 0 && (
-          <span style={{ color: 'rgb(239 68 68)' }}>-{file.deletions}</span>
-        )}
+        {file.additions > 0 && <span style={{ color: 'rgb(34 197 94)' }}>+{file.additions}</span>}
+        {file.deletions > 0 && <span style={{ color: 'rgb(239 68 68)' }}>-{file.deletions}</span>}
       </span>
 
       {/* Hover 操作按钮 */}
-      <span className="ml-auto shrink-0 hidden group-hover:flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <span
+        className="ml-auto shrink-0 hidden group-hover:flex items-center gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <span
@@ -420,12 +463,12 @@ function UntrackedFileRow({
         <TooltipTrigger asChild>
           <span className="ml-1.5 truncate flex items-baseline gap-1.5 min-w-0">
             <span className="shrink-0">{fileName}</span>
-            {dir && (
-              <span className="text-[11px] text-foreground/30 truncate">{dir}</span>
-            )}
+            {dir && <span className="text-[11px] text-foreground/30 truncate">{dir}</span>}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-[400px] break-all">{fullPath}</TooltipContent>
+        <TooltipContent side="bottom" className="max-w-[400px] break-all">
+          {fullPath}
+        </TooltipContent>
       </Tooltip>
       <span className="ml-1.5 rounded px-1 py-0.5 text-[12px] leading-none shrink-0 bg-amber-500/10 text-amber-500">
         新文件

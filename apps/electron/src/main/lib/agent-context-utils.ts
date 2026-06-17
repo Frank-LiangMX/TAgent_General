@@ -57,10 +57,10 @@ export function clearAllSessionContextWindows(): void {
 export function computeMaxContextMessages(
   contextWindow: number,
   systemReservedTokens: number = 4000,
-  outputReservedTokens: number = 8000,
+  outputReservedTokens: number = 8000
 ): number {
   const budget = contextWindow - systemReservedTokens - outputReservedTokens
-  if (budget <= 0) return 5  // 预算不够, 至少 5 条保命
+  if (budget <= 0) return 5 // 预算不够, 至少 5 条保命
   return Math.max(5, Math.floor(budget / AVG_TOKENS_PER_MESSAGE))
 }
 
@@ -92,7 +92,5 @@ export function summarizeToolResult(content: string, budgetTokens: number = 500)
  */
 export function formatImagePlaceholder(imageCount: number): string {
   if (imageCount <= 0) return ''
-  return imageCount === 1
-    ? ' [本消息含 1 张图片]'
-    : ` [本消息含 ${imageCount} 张图片]`
+  return imageCount === 1 ? ' [本消息含 1 张图片]' : ` [本消息含 ${imageCount} 张图片]`
 }

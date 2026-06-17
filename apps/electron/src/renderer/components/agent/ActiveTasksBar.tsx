@@ -50,11 +50,7 @@ export function ActiveTasksBar({
       <span className="text-xs text-muted-foreground font-medium">运行中任务:</span>
       <div className="flex items-center gap-2 flex-wrap">
         {tasks.map((task) => (
-          <TaskBadge
-            key={task.toolUseId}
-            task={task}
-            onClick={() => onTaskClick(task.toolUseId)}
-          />
+          <TaskBadge key={task.toolUseId} task={task} onClick={() => onTaskClick(task.toolUseId)} />
         ))}
       </div>
     </div>

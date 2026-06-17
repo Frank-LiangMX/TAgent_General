@@ -14,25 +14,30 @@
 
 import { randomUUID } from 'node:crypto'
 
-import {
-  getAdapter,
-  streamSSE,
-  fetchTitle,
-} from '@tagent/core'
+import { getAdapter, streamSSE, fetchTitle } from '@tagent/core'
 import { CHAT_IPC_CHANNELS } from '@tagent/shared'
-
 
 import { readAttachmentAsBase64, isImageAttachment } from './attachment-service'
 import { listChannels, decryptApiKey } from './channel-manager'
 import { executeToolCalls } from './chat-tool-executor'
 import { getEnabledTools } from './chat-tool-registry'
-import { appendMessage, updateConversationMeta, getConversationMessages } from './conversation-manager'
+import {
+  appendMessage,
+  updateConversationMeta,
+  getConversationMessages,
+} from './conversation-manager'
 import { extractTextFromAttachment, isDocumentAttachment } from './document-parser'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 
 import type { ImageAttachmentData, ContinuationMessage } from '@tagent/core'
-import type { ChatSendInput, ChatMessage, GenerateTitleInput, FileAttachment, ChatToolActivity } from '@tagent/shared'
+import type {
+  ChatSendInput,
+  ChatMessage,
+  GenerateTitleInput,
+  FileAttachment,
+  ChatToolActivity,
+} from '@tagent/shared'
 import type { WebContents } from 'electron'
 
 /** 活跃的 AbortController 映射（conversationId → controller） */
@@ -76,7 +81,7 @@ function getImageAttachmentData(attachments?: FileAttachment[]): ImageAttachment
  */
 export async function enrichMessageWithDocuments(
   messageText: string,
-  attachments?: FileAttachment[],
+  attachments?: FileAttachment[]
 ): Promise<string> {
   if (!attachments || attachments.length === 0) return messageText
 
@@ -112,9 +117,7 @@ export async function enrichMessageWithDocuments(
  *
  * 导出供单测
  */
-export async function enrichHistoryWithDocuments(
-  history: ChatMessage[],
-): Promise<ChatMessage[]> {
+export async function enrichHistoryWithDocuments(history: ChatMessage[]): Promise<ChatMessage[]> {
   const enriched: ChatMessage[] = []
 
   for (const msg of history) {
@@ -148,12 +151,10 @@ export async function enrichHistoryWithDocuments(
 export function filterHistory(
   messageHistory: ChatMessage[],
   contextDividers?: string[],
-  contextLength?: number | 'infinite',
+  contextLength?: number | 'infinite'
 ): ChatMessage[] {
   // 过滤掉空内容的助手消息，避免发送无效消息给 API
-  let filtered = messageHistory.filter(
-    (msg) => !(msg.role === 'assistant' && !msg.content.trim()),
-  )
+  let filtered = messageHistory.filter((msg) => !(msg.role === 'assistant' && !msg.content.trim()))
 
   // 分隔线过滤：仅保留最后一个分隔线之后的消息
   if (contextDividers && contextDividers.length > 0) {
@@ -199,14 +200,18 @@ export function filterHistory(
  * @param input 发送参数
  * @param webContents 渲染进程的 webContents 实例（用于推送事件）
  */
-export async function sendMessage(
-  input: ChatSendInput,
-  webContents: WebContents,
-): Promise<void> {
+export async function sendMessage(input: ChatSendInput, webContents: WebContents): Promise<void> {
   const {
-    conversationId, userMessage, channelId,
-    modelId, systemMessage, contextLength, contextDividers, attachments,
-    thinkingEnabled, enabledToolIds,
+    conversationId,
+    userMessage,
+    channelId,
+    modelId,
+    systemMessage,
+    contextLength,
+    contextDividers,
+    attachments,
+    thinkingEnabled,
+    enabledToolIds,
   } = input
 
   // 1. 查找渠道
@@ -268,11 +273,12 @@ export async function sendMessage(
     const { tools, systemPromptAppend } = getEnabledTools(enabledToolIds)
 
     // 注入工具系统提示词
-    const effectiveSystemMessage = systemPromptAppend && systemMessage
-      ? systemMessage + systemPromptAppend
-      : systemPromptAppend
-        ? systemPromptAppend
-        : systemMessage
+    const effectiveSystemMessage =
+      systemPromptAppend && systemMessage
+        ? systemMessage + systemPromptAppend
+        : systemPromptAppend
+          ? systemPromptAppend
+          : systemMessage
 
     const proxyUrl = await getEffectiveProxyUrl()
     const fetchFn = getFetchFn(proxyUrl)
@@ -284,7 +290,12 @@ export async function sendMessage(
     let pendingToolResults = false
 
     /** 流式事件处理器（工具轮和最终响应轮复用） */
-    const handleStreamEvent = (event: { type: string; delta?: string; toolCallId?: string; toolName?: string }): void => {
+    const handleStreamEvent = (event: {
+      type: string
+      delta?: string
+      toolCallId?: string
+      toolName?: string
+    }): void => {
       switch (event.type) {
         case 'chunk':
           accumulatedContent += event.delta ?? ''
@@ -428,8 +439,10 @@ export async function sendMessage(
         createdAt: Date.now(),
         model: modelId,
         reasoning: accumulatedReasoning || undefined,
-        toolActivities: accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
-        attachments: accumulatedGeneratedAttachments.length > 0 ? accumulatedGeneratedAttachments : undefined,
+        toolActivities:
+          accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
+        attachments:
+          accumulatedGeneratedAttachments.length > 0 ? accumulatedGeneratedAttachments : undefined,
       }
       appendMessage(conversationId, assistantMsg)
 
@@ -446,7 +459,10 @@ export async function sendMessage(
     webContents.send(CHAT_IPC_CHANNELS.STREAM_COMPLETE, {
       conversationId,
       model: modelId,
-      messageId: (accumulatedContent.trim() || accumulatedGeneratedAttachments.length > 0) ? assistantMsgId : undefined,
+      messageId:
+        accumulatedContent.trim() || accumulatedGeneratedAttachments.length > 0
+          ? assistantMsgId
+          : undefined,
     })
   } catch (error) {
     // 被中止的请求：保存已输出的部分内容，通知前端停止
@@ -464,7 +480,8 @@ export async function sendMessage(
           model: modelId,
           reasoning: accumulatedReasoning || undefined,
           stopped: true,
-          toolActivities: accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
+          toolActivities:
+            accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
         }
         appendMessage(conversationId, partialMsg)
 
@@ -503,7 +520,8 @@ export async function sendMessage(
         reasoning: accumulatedReasoning || undefined,
         stopped: true,
         error: errorMessage,
-        toolActivities: accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
+        toolActivities:
+          accumulatedToolActivities.length > 0 ? accumulatedToolActivities : undefined,
       }
       appendMessage(conversationId, partialMsg)
 
@@ -549,7 +567,8 @@ export function stopAllGenerations(): void {
 // ===== 标题生成 =====
 
 /** 标题生成 Prompt */
-const TITLE_PROMPT = '根据用户的第一条消息，生成一个简短的对话标题（10字以内）。只输出标题，不要有任何其他内容、标点符号或引号。如果消息内容过短或无明确主题，直接使用原始消息作为标题。\n\n用户消息：'
+const TITLE_PROMPT =
+  '根据用户的第一条消息，生成一个简短的对话标题（10字以内）。只输出标题，不要有任何其他内容、标点符号或引号。如果消息内容过短或无明确主题，直接使用原始消息作为标题。\n\n用户消息：'
 
 /** 短消息阈值：低于此长度直接使用原文作为标题 */
 const SHORT_MESSAGE_THRESHOLD = 4
@@ -568,7 +587,11 @@ const MAX_TITLE_LENGTH = 20
  */
 export async function generateTitle(input: GenerateTitleInput): Promise<string | null> {
   const { userMessage, channelId, modelId } = input
-  console.log('[标题生成] 开始生成标题:', { channelId, modelId, userMessage: userMessage.slice(0, 50) })
+  console.log('[标题生成] 开始生成标题:', {
+    channelId,
+    modelId,
+    userMessage: userMessage.slice(0, 50),
+  })
 
   // 短消息直接使用原文作为标题，避免 AI 幻觉
   const trimmedMessage = userMessage.trim()
@@ -613,7 +636,10 @@ export async function generateTitle(input: GenerateTitleInput): Promise<string |
     }
 
     // 截断到最大长度并清理引号
-    const cleaned = title.trim().replace(/^["'""'']+|["'""'']+$/g, '').trim()
+    const cleaned = title
+      .trim()
+      .replace(/^["'""'']+|["'""'']+$/g, '')
+      .trim()
     const result = cleaned.slice(0, MAX_TITLE_LENGTH) || null
     console.log('[标题生成] 成功生成标题:', result)
     return result

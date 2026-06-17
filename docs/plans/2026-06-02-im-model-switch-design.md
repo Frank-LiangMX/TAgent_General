@@ -11,10 +11,10 @@
 
 存在**两套独立的命令分发实现**：
 
-| 平台 | 命令分发 | binding 类型 | 当前模型解析优先级 | 持久化 |
-|------|---------|------------|------------------|--------|
-| 飞书 | `feishu-bridge.ts` 自己的 switch + 卡片消息 | `FeishuChatBinding` | `botConfig 默认 > 应用设置 > binding`（`:1612-1613`） | ✅ 存盘 |
-| 钉钉/微信 | 共享 `bridge-command-handler.ts` + 纯文本 | `BridgeChatBinding` | `应用设置 > binding`（`:610-611`） | ❌ 内存态 |
+| 平台      | 命令分发                                    | binding 类型        | 当前模型解析优先级                                    | 持久化    |
+| --------- | ------------------------------------------- | ------------------- | ----------------------------------------------------- | --------- |
+| 飞书      | `feishu-bridge.ts` 自己的 switch + 卡片消息 | `FeishuChatBinding` | `botConfig 默认 > 应用设置 > binding`（`:1612-1613`） | ✅ 存盘   |
+| 钉钉/微信 | 共享 `bridge-command-handler.ts` + 纯文本   | `BridgeChatBinding` | `应用设置 > binding`（`:610-611`）                    | ❌ 内存态 |
 
 两套都把 binding（per-chat）排在全局默认**之后**，导致 per-chat 切换不会生效。
 
@@ -59,22 +59,27 @@
 - `describeBindingModel(channelId, modelId)` — 返回 `{ channelName, modelName, valid }` 供 `/now` 展示
 
 呈现层各自实现：
+
 - 飞书：`feishu-message.ts` 新增 `buildChannelListCard` / `buildModelListCard` / `buildModelSwitchedCard`
 - 钉钉/微信：共享 handler 内拼纯文本
 
 ## 改动清单
 
 ### 新增
+
 - `apps/electron/src/main/lib/bridge-model-utils.ts`
 
 ### 飞书
+
 - `feishu-bridge.ts`：`handleCommand` 加 `/model`+`/m`；新增 `handleModelCommand`；切换写 binding + `saveBindings`；`:1612-1613` 优先级；`handleNowCommand` 加模型行
 - `feishu-message.ts`：新增 3 个卡片 builder；`buildHelpCard` 加 `/model` 说明
 
 ### 钉钉/微信
+
 - `bridge-command-handler.ts`：`handleCommand` 加 `/model`+`/m`；新增 `handleModelCommand`（纯文本）；切换写 binding；`:610-611` 优先级；`handleNowCommand` 加模型行；`sendHelp` 加说明
 
 ### 收尾
+
 - `bun run typecheck` 通过
 - 递增 `@proma/electron` patch 版本
 - code-reviewer 审查
@@ -82,7 +87,9 @@
 ## 追加变更（2026-06-02 同批次）
 
 ### 移除未实现的 Chat 模式
+
 飞书与共享 handler 的 Chat 模式一直只是占位（发消息回 "Chat 模式暂未实现"）。本批次彻底移除模式概念：
+
 - 删除 `/chat`、`/agent` 命令及 `updateBindingMode`
 - 删除 `FeishuChatBinding.mode` 与 `BridgeChatBinding.mode` 字段、所有 `mode: 'agent'` 初始化、`createNewSession` 的 mode 参数
 - `handleUserMessage` 去掉 mode 分支，直接走 Agent 逻辑
@@ -90,6 +97,7 @@
 - 旧持久化 binding 里残留的 `mode` 字段被忽略，无害
 
 ### 命令简写别名（不与现有命令冲突）
+
 `/h`=help、`/n`=new、`/ls`=list、`/s`=stop、`/sw`=switch、`/ws`=workspace、`/m`=model。帮助卡片/文本与设置 UI 同步标注。
 
 ## 测试要点（BDD 思路）

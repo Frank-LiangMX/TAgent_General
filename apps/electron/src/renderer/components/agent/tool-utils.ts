@@ -156,10 +156,7 @@ export function getToolDisplayName(toolName: string): string {
  * 根据工具名称和输入参数生成简洁的摘要文本
  * 用于在工具活动列表中展示关键信息
  */
-export function getInputSummary(
-  toolName: string,
-  input: Record<string, unknown>
-): string | null {
+export function getInputSummary(toolName: string, input: Record<string, unknown>): string | null {
   switch (toolName) {
     case 'Bash': {
       const command = input.command
@@ -212,9 +209,7 @@ export function getInputSummary(
     case 'Task': {
       const description = input.description ?? input.prompt
       if (typeof description === 'string') {
-        return description.length > 80
-          ? description.slice(0, 80) + '…'
-          : description
+        return description.length > 80 ? description.slice(0, 80) + '…' : description
       }
       return null
     }
@@ -349,20 +344,23 @@ export function getInputSummary(
     case 'ScheduleWakeup': {
       const delaySeconds = input.delaySeconds
       const reason = input.reason
-      if (typeof delaySeconds === 'number' && typeof reason === 'string') return `${delaySeconds}s · ${reason}`
+      if (typeof delaySeconds === 'number' && typeof reason === 'string')
+        return `${delaySeconds}s · ${reason}`
       if (typeof delaySeconds === 'number') return `${delaySeconds}s`
       return null
     }
 
     case 'Monitor': {
       const description = input.description
-      if (typeof description === 'string') return description.length > 60 ? description.slice(0, 60) + '…' : description
+      if (typeof description === 'string')
+        return description.length > 60 ? description.slice(0, 60) + '…' : description
       return null
     }
 
     case 'PushNotification': {
       const message = input.message
-      if (typeof message === 'string') return message.length > 60 ? message.slice(0, 60) + '…' : message
+      if (typeof message === 'string')
+        return message.length > 60 ? message.slice(0, 60) + '…' : message
       return null
     }
 
@@ -386,7 +384,8 @@ export function getInputSummary(
     case 'RemoteTrigger': {
       const action = input.action
       const triggerId = input.trigger_id
-      if (typeof action === 'string' && typeof triggerId === 'string') return `${action} · ${triggerId}`
+      if (typeof action === 'string' && typeof triggerId === 'string')
+        return `${action} · ${triggerId}`
       if (typeof action === 'string') return action
       return null
     }
@@ -434,11 +433,8 @@ export function getInputSummary(
  * 从工具输入参数中提取文件路径
  * 按优先级依次检查常见的路径字段名
  */
-export function extractFilePath(
-  input: Record<string, unknown>
-): string | null {
-  const value =
-    input.file_path ?? input.filePath ?? input.path ?? input.notebook_path
+export function extractFilePath(input: Record<string, unknown>): string | null {
+  const value = input.file_path ?? input.filePath ?? input.path ?? input.notebook_path
   if (typeof value === 'string') {
     return value
   }

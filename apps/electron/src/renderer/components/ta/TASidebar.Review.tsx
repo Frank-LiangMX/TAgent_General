@@ -12,7 +12,12 @@ import * as React from 'react'
 import { taActiveTabAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 
-interface ReviewStats { pending: number; needsReview: number; approved: number; rejected: number }
+interface ReviewStats {
+  pending: number
+  needsReview: number
+  approved: number
+  rejected: number
+}
 interface ReviewItem {
   id: string
   name: string
@@ -53,7 +58,9 @@ export function TASidebarReview(): React.ReactElement {
       }
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   return (
@@ -73,9 +80,7 @@ export function TASidebarReview(): React.ReactElement {
           {isLoading ? (
             <div className="text-[12px] text-muted-foreground/60 text-center py-3">加载中...</div>
           ) : recent.length === 0 ? (
-            <div className="text-[12px] text-muted-foreground/60 text-center py-3">
-              队列已清空
-            </div>
+            <div className="text-[12px] text-muted-foreground/60 text-center py-3">队列已清空</div>
           ) : (
             recent.map((r) => (
               <button
@@ -100,7 +105,12 @@ export function TASidebarReview(): React.ReactElement {
   )
 }
 
-function StatCard({ label, value, loading, color }: {
+function StatCard({
+  label,
+  value,
+  loading,
+  color,
+}: {
   label: string
   value: number | undefined
   loading: boolean

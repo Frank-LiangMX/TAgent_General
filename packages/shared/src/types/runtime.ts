@@ -17,12 +17,7 @@ export type Architecture = 'arm64' | 'x64'
  * 平台-架构组合标识
  * 用于确定下载哪个 Bun 二进制文件
  */
-export type PlatformArch =
-  | 'darwin-arm64'
-  | 'darwin-x64'
-  | 'linux-arm64'
-  | 'linux-x64'
-  | 'win32-x64'
+export type PlatformArch = 'darwin-arm64' | 'darwin-x64' | 'linux-arm64' | 'linux-x64' | 'win32-x64'
 
 /**
  * Bun 二进制下载信息

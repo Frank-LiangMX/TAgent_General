@@ -50,10 +50,16 @@ import type {
   UsageStatsOverview,
 } from '@tagent/shared'
 
-import { useOpenSession } from '@/hooks/useOpenSession'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
 /** ===== 工具函数 ===== */
@@ -91,7 +97,12 @@ function formatTime(timestamp: number): string {
   if (diff < 60_000) return '刚刚'
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleDateString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 const TIME_RANGE_LABELS: Record<TimeRange, string> = {
@@ -117,10 +128,10 @@ const STORAGE_CATEGORY_LABELS: Record<string, string> = {
   'chat-sessions': 'Chat 会话',
   'mcp-config': 'MCP 配置',
   'sdk-config': 'SDK 配置',
-  'workspaces': '工作区',
+  workspaces: '工作区',
   'temp-files': '临时文件',
   'media-cache': '媒体缓存',
-  'logs': '日志',
+  logs: '日志',
 }
 
 /** ===== 组件 ===== */
@@ -168,10 +179,13 @@ export function InsightsSettings(): React.ReactElement {
   React.useEffect(() => {
     void loadStats()
     void loadStorage()
-    window.electronAPI.getSettings().then((settings) => {
-      setAutoCleanupTemp(settings.autoCleanupTempOnStart !== false)
-      setAutoCleanupDays(settings.autoCleanupArchivedDays ?? 0)
-    }).catch(console.error)
+    window.electronAPI
+      .getSettings()
+      .then((settings) => {
+        setAutoCleanupTemp(settings.autoCleanupTempOnStart !== false)
+        setAutoCleanupDays(settings.autoCleanupArchivedDays ?? 0)
+      })
+      .catch(console.error)
   }, [loadStats, loadStorage])
 
   const handleRefresh = (): void => {
@@ -304,7 +318,7 @@ export function InsightsSettings(): React.ReactElement {
                       'px-2.5 h-6 rounded-md text-[11px] font-medium transition-colors',
                       activeTimeRange === range
                         ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground',
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     {TIME_RANGE_LABELS[range]}
@@ -328,14 +342,22 @@ export function InsightsSettings(): React.ReactElement {
             <HeroMetric
               icon={<Zap size={14} />}
               label="Token 总数"
-              value={timeRangeStats ? formatTokens(timeRangeStats.totalInputTokens + timeRangeStats.totalOutputTokens) : '—'}
+              value={
+                timeRangeStats
+                  ? formatTokens(timeRangeStats.totalInputTokens + timeRangeStats.totalOutputTokens)
+                  : '—'
+              }
               sub={timeRangeStats ? `${timeRangeStats.sessions} 个会话` : ''}
             />
             <HeroMetric
               icon={<Coins size={14} />}
               label="累计费用"
               value={timeRangeStats ? formatCost(timeRangeStats.totalCostUsd) : '—'}
-              sub={stats?.totalCacheReadTokens ? `节省 ${formatTokens(stats.totalCacheReadTokens)} 缓存` : '无缓存命中'}
+              sub={
+                stats?.totalCacheReadTokens
+                  ? `节省 ${formatTokens(stats.totalCacheReadTokens)} 缓存`
+                  : '无缓存命中'
+              }
               subHighlight={!!stats?.totalCacheReadTokens}
             />
             <HeroMetric
@@ -393,10 +415,7 @@ export function InsightsSettings(): React.ReactElement {
                 <div className="text-sm text-foreground">启动清理临时</div>
                 <div className="text-xs text-muted-foreground">预览/安装缓存</div>
               </div>
-              <Switch
-                checked={autoCleanupTemp}
-                onCheckedChange={handleAutoCleanupTempChange}
-              />
+              <Switch checked={autoCleanupTemp} onCheckedChange={handleAutoCleanupTempChange} />
             </div>
             <div className="flex items-center justify-between">
               <div>
@@ -452,11 +471,7 @@ export function InsightsSettings(): React.ReactElement {
           ) : (
             <div className="space-y-2.5 mt-1">
               {sortedModelStats.slice(0, 5).map((model) => (
-                <ModelBar
-                  key={model.modelId}
-                  model={model}
-                  maxCost={maxModelCost}
-                />
+                <ModelBar key={model.modelId} model={model} maxCost={maxModelCost} />
               ))}
             </div>
           )}
@@ -493,7 +508,8 @@ export function InsightsSettings(): React.ReactElement {
             <>
               <CheckCircle />
               <span className="text-foreground">
-                已释放 <span className="font-medium">{formatBytes(lastResult.freedBytes)}</span>，删除 <span className="font-medium">{lastResult.deletedCount}</span> 个文件
+                已释放 <span className="font-medium">{formatBytes(lastResult.freedBytes)}</span>
+                ，删除 <span className="font-medium">{lastResult.deletedCount}</span> 个文件
               </span>
             </>
           ) : (
@@ -536,7 +552,7 @@ function HeroMetric({
         <div
           className={cn(
             'text-[11px] mt-1.5 flex items-center gap-1',
-            subHighlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/60',
+            subHighlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/60'
           )}
         >
           {subHighlight && <span className="inline-block w-1 h-1 rounded-full bg-emerald-500" />}
@@ -568,7 +584,7 @@ function BentoCard({
         'rounded-2xl border border-border/40 bg-card/60 p-4 flex flex-col',
         'hover:border-border/70 transition-colors',
         scrollable && 'max-h-64',
-        className,
+        className
       )}
     >
       <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
@@ -577,10 +593,14 @@ function BentoCard({
           <span className="text-xs font-medium text-foreground truncate">{title}</span>
         </div>
         {subtitle && (
-          <span className="text-[10px] text-muted-foreground/60 shrink-0 tabular-nums">{subtitle}</span>
+          <span className="text-[10px] text-muted-foreground/60 shrink-0 tabular-nums">
+            {subtitle}
+          </span>
         )}
       </div>
-      <div className={cn('flex-1 min-h-0', scrollable && 'overflow-y-auto scrollbar-thin -mr-1 pr-1')}>
+      <div
+        className={cn('flex-1 min-h-0', scrollable && 'overflow-y-auto scrollbar-thin -mr-1 pr-1')}
+      >
         {children}
       </div>
     </div>
@@ -636,16 +656,24 @@ function StorageCategoryRow({
       <span
         className={cn(
           'inline-block h-2 w-2 rounded-full shrink-0',
-          STORAGE_PALETTE[colorIndex % STORAGE_PALETTE.length],
+          STORAGE_PALETTE[colorIndex % STORAGE_PALETTE.length]
         )}
       />
       <span className="text-foreground truncate">{label}</span>
-      <span className="text-muted-foreground tabular-nums shrink-0 ml-auto">{formatBytes(bytes)}</span>
+      <span className="text-muted-foreground tabular-nums shrink-0 ml-auto">
+        {formatBytes(bytes)}
+      </span>
     </div>
   )
 }
 
-function ModelBar({ model, maxCost }: { model: ModelUsageStats; maxCost: number }): React.ReactElement {
+function ModelBar({
+  model,
+  maxCost,
+}: {
+  model: ModelUsageStats
+  maxCost: number
+}): React.ReactElement {
   const pct = maxCost > 0 ? (model.totalCostUsd / maxCost) * 100 : 0
   return (
     <div className="group">
@@ -730,7 +758,7 @@ function CleanupAction({
         variant === 'primary'
           ? 'bg-primary text-primary-foreground hover:bg-primary/90'
           : 'bg-muted/50 text-foreground hover:bg-muted',
-        'disabled:opacity-50',
+        'disabled:opacity-50'
       )}
     >
       {loading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -744,7 +772,9 @@ function CheckCircle({ muted = false }: { muted?: boolean }): React.ReactElement
     <span
       className={cn(
         'inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium',
-        muted ? 'bg-muted text-muted-foreground' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+        muted
+          ? 'bg-muted text-muted-foreground'
+          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
       )}
     >
       ✓

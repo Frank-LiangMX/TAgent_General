@@ -61,7 +61,8 @@ export function CollapsibleResult({
           ) : (
             <>
               <ChevronDown className="size-3" />
-              显示全部 ({safeContent.length.toLocaleString()} 字符, {safeContent.split('\n').length} 行)
+              显示全部 ({safeContent.length.toLocaleString()} 字符, {safeContent.split('\n').length}{' '}
+              行)
             </>
           )}
         </button>

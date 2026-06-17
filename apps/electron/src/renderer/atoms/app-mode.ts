@@ -62,10 +62,7 @@ export const generalRailItemAtom = atomWithStorage<GeneralRailItem>(
 )
 
 /** TA 模式功能区选中（持久化到 localStorage） */
-export const taActiveTabAtom = atomWithStorage<TARailItem>(
-  'tagent-ta-rail-item',
-  'sessions'
-)
+export const taActiveTabAtom = atomWithStorage<TARailItem>('tagent-ta-rail-item', 'sessions')
 
 /**
  * 当前激活的功能区（按 topLevelMode 派生）。

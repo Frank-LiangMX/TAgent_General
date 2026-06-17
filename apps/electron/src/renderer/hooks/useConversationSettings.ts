@@ -19,10 +19,7 @@ import {
   conversationThinkingEnabledAtom,
   conversationParallelModeAtom,
 } from '@/atoms/chat-atoms'
-import {
-  selectedPromptIdAtom,
-  conversationPromptIdAtom,
-} from '@/atoms/system-prompt-atoms'
+import { selectedPromptIdAtom, conversationPromptIdAtom } from '@/atoms/system-prompt-atoms'
 import { useConversationId, useConversationIdOptional } from '@/contexts/session-context'
 
 // ===== 通用 Map 读写辅助 =====
@@ -34,10 +31,7 @@ function useMapValue<T>(mapAtom: MapAtom<T>, key: string, defaultValue: T): T {
   return map.get(key) ?? defaultValue
 }
 
-function useMapSetter<T>(
-  mapAtom: MapAtom<T>,
-  key: string,
-): (value: T | ((prev: T) => T)) => void {
+function useMapSetter<T>(mapAtom: MapAtom<T>, key: string): (value: T | ((prev: T) => T)) => void {
   const setMap = useSetAtom(mapAtom)
   return React.useCallback(
     (value: T | ((prev: T) => T)) => {
@@ -52,7 +46,7 @@ function useMapSetter<T>(
         return map
       })
     },
-    [key, setMap],
+    [key, setMap]
   )
 }
 
@@ -68,7 +62,10 @@ export function useConversationModel(): [SelectedModel | null, (m: SelectedModel
 }
 
 /** 可选版本：在 Provider 外返回 null（ModelSelector 双模式用） */
-export function useConversationModelOptional(): [SelectedModel | null, ((m: SelectedModel | null) => void) | null] {
+export function useConversationModelOptional(): [
+  SelectedModel | null,
+  ((m: SelectedModel | null) => void) | null,
+] {
   const conversationId = useConversationIdOptional()
   const defaultModel = useAtomValue(selectedModelAtom)
   const map = useAtomValue(conversationModelsAtom)
@@ -85,14 +82,17 @@ export function useConversationModelOptional(): [SelectedModel | null, ((m: Sele
         return m
       })
     },
-    [conversationId, setMap],
+    [conversationId, setMap]
   )
 
   return [value, conversationId ? setter : null]
 }
 
 /** 每个对话独立的上下文长度 */
-export function useConversationContextLength(): [ContextLengthValue, (v: ContextLengthValue) => void] {
+export function useConversationContextLength(): [
+  ContextLengthValue,
+  (v: ContextLengthValue) => void,
+] {
   const conversationId = useConversationId()
   const defaultLength = useAtomValue(contextLengthAtom)
   const value = useMapValue(conversationContextLengthAtom, conversationId, defaultLength)

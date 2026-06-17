@@ -64,9 +64,7 @@ export function applyTAgentBrandToDOM(brand: TAgentBrand): void {
 }
 
 /** 从主进程加载并应用 */
-export async function initializeTAgentBrand(
-  setBrand: (brand: TAgentBrand) => void,
-): Promise<void> {
+export async function initializeTAgentBrand(setBrand: (brand: TAgentBrand) => void): Promise<void> {
   try {
     const settings = await window.electronAPI.getSettings()
     const brand = settings.tagentBrand ?? DEFAULT_TAGENT_BRAND

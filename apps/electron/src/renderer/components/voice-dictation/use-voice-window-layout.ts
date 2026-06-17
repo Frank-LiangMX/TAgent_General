@@ -62,35 +62,40 @@ export function useVoiceWindowLayout(input: VoiceWindowLayoutInput): VoiceWindow
 
     const rootStyle = window.getComputedStyle(root)
     const rootVerticalPadding =
-      Number.parseFloat(rootStyle.paddingTop) +
-      Number.parseFloat(rootStyle.paddingBottom)
-    const transcriptNaturalHeight = Math.ceil(Math.max(MIN_TRANSCRIPT_HEIGHT, transcriptBox.scrollHeight))
+      Number.parseFloat(rootStyle.paddingTop) + Number.parseFloat(rootStyle.paddingBottom)
+    const transcriptNaturalHeight = Math.ceil(
+      Math.max(MIN_TRANSCRIPT_HEIGHT, transcriptBox.scrollHeight)
+    )
     const fixedHeight = Math.ceil(
       rootVerticalPadding +
-      header.getBoundingClientRect().height +
-      hintBar.getBoundingClientRect().height +
-      1,
+        header.getBoundingClientRect().height +
+        hintBar.getBoundingClientRect().height +
+        1
     )
     const maxWindowHeight = Math.max(
       220,
-      Math.min(MAX_WINDOW_HEIGHT, window.screen.availHeight - 24),
+      Math.min(MAX_WINDOW_HEIGHT, window.screen.availHeight - 24)
     )
     const availableTranscriptHeight = Math.max(
       MIN_TRANSCRIPT_HEIGHT,
-      maxWindowHeight - fixedHeight - WINDOW_HEIGHT_BUFFER,
+      maxWindowHeight - fixedHeight - WINDOW_HEIGHT_BUFFER
     )
     const viewportMaxTranscriptHeight = Math.min(MAX_TRANSCRIPT_HEIGHT, availableTranscriptHeight)
     const nextTranscriptMaxHeight =
-      transcriptNaturalHeight > viewportMaxTranscriptHeight
-        ? viewportMaxTranscriptHeight
-        : null
+      transcriptNaturalHeight > viewportMaxTranscriptHeight ? viewportMaxTranscriptHeight : null
     const nextTranscriptHeight = nextTranscriptMaxHeight ?? transcriptNaturalHeight
     const extraBuffer = nextTranscriptMaxHeight === null ? 8 : 0
-    const nextHeight = Math.ceil(fixedHeight + nextTranscriptHeight + WINDOW_HEIGHT_BUFFER + extraBuffer)
+    const nextHeight = Math.ceil(
+      fixedHeight + nextTranscriptHeight + WINDOW_HEIGHT_BUFFER + extraBuffer
+    )
 
     setTranscriptMaxHeight((current) => {
       if (current === null && nextTranscriptMaxHeight === null) return current
-      if (current !== null && nextTranscriptMaxHeight !== null && Math.abs(current - nextTranscriptMaxHeight) < 2) {
+      if (
+        current !== null &&
+        nextTranscriptMaxHeight !== null &&
+        Math.abs(current - nextTranscriptMaxHeight) < 2
+      ) {
         return current
       }
       return nextTranscriptMaxHeight
@@ -122,7 +127,14 @@ export function useVoiceWindowLayout(input: VoiceWindowLayoutInput): VoiceWindow
       requestAnimationFrame(scrollTranscriptToBottom)
     })
     return () => cancelAnimationFrame(frame)
-  }, [commitResultMessage, message, resizeVoiceWindow, scrollTranscriptToBottom, status, transcript])
+  }, [
+    commitResultMessage,
+    message,
+    resizeVoiceWindow,
+    scrollTranscriptToBottom,
+    status,
+    transcript,
+  ])
 
   React.useLayoutEffect(() => {
     requestTranscriptBottomScroll()

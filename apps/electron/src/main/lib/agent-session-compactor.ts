@@ -64,7 +64,11 @@ export function planDropOldToolResults(messages: SDKMessageRow[]): {
     if (msg.type === 'user') {
       // user 消息: 仅含 tool_result 块 → 丢
       const content = msg.message?.content
-      if (Array.isArray(content) && content.length > 0 && content.every((b) => b.type === 'tool_result')) {
+      if (
+        Array.isArray(content) &&
+        content.length > 0 &&
+        content.every((b) => b.type === 'tool_result')
+      ) {
         dropped.push(msg)
         continue
       }
@@ -74,7 +78,11 @@ export function planDropOldToolResults(messages: SDKMessageRow[]): {
     if (msg.type === 'assistant') {
       // assistant 消息: 仅含 tool_use 块（无文本）→ 丢
       const content = msg.message?.content
-      if (Array.isArray(content) && content.length > 0 && content.every((b) => b.type === 'tool_use')) {
+      if (
+        Array.isArray(content) &&
+        content.length > 0 &&
+        content.every((b) => b.type === 'tool_use')
+      ) {
         dropped.push(msg)
         continue
       }
@@ -94,12 +102,18 @@ export function planDropOldToolResults(messages: SDKMessageRow[]): {
  * 规则: 保留最后 N 条 user+assistant 对, 其余全丢
  * system 消息**全部保留**（不能丢，会影响 Agent 行为）
  */
-export function planKeepLastN(messages: SDKMessageRow[], keepLastN: number = 10): {
+export function planKeepLastN(
+  messages: SDKMessageRow[],
+  keepLastN: number = 10
+): {
   kept: SDKMessageRow[]
   dropped: SDKMessageRow[]
 } {
   if (keepLastN <= 0) {
-    return { kept: messages.filter((m) => m.type === 'system'), dropped: messages.filter((m) => m.type !== 'system') }
+    return {
+      kept: messages.filter((m) => m.type === 'system'),
+      dropped: messages.filter((m) => m.type !== 'system'),
+    }
   }
 
   const systemMsgs = messages.filter((m) => m.type === 'system')
@@ -120,7 +134,7 @@ export function planKeepLastN(messages: SDKMessageRow[], keepLastN: number = 10)
  */
 export async function compactSession(
   sessionId: string,
-  input: CompactSessionInput,
+  input: CompactSessionInput
 ): Promise<CompactSessionResult> {
   const filePath = getAgentSessionMessagesPath(sessionId)
 

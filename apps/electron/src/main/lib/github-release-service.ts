@@ -4,10 +4,7 @@
  * 从 GitHub API 获取项目的发布日志（Release Notes）
  */
 
-import type {
-  GitHubRelease,
-  GitHubReleaseListOptions,
-} from '@tagent/shared'
+import type { GitHubRelease, GitHubReleaseListOptions } from '@tagent/shared'
 
 /** GitHub API 基础 URL */
 const GITHUB_API_BASE = 'https://api.github.com'
@@ -53,7 +50,7 @@ async function fetchFromGitHub<T>(endpoint: string): Promise<T> {
 
   const response = await fetch(url, {
     headers: {
-      'Accept': 'application/vnd.github+json',
+      Accept: 'application/vnd.github+json',
       'User-Agent': 'TAgent-Desktop-App',
     },
   })
@@ -65,9 +62,7 @@ async function fetchFromGitHub<T>(endpoint: string): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new Error(
-      `GitHub API 请求失败 (${response.status})，请检查网络连接后重试`
-    )
+    throw new Error(`GitHub API 请求失败 (${response.status})，请检查网络连接后重试`)
   }
 
   return response.json() as Promise<T>
@@ -98,23 +93,15 @@ export async function getLatestRelease(): Promise<GitHubRelease | null> {
 export async function listReleases(
   options: GitHubReleaseListOptions = {}
 ): Promise<GitHubRelease[]> {
-  const {
-    perPage = 10,
-    page = 1,
-    includePrerelease = false,
-  } = options
+  const { perPage = 10, page = 1, includePrerelease = false } = options
 
   try {
     // 检查缓存
-    if (
-      releaseCache &&
-      Date.now() - releaseCache.timestamp < CACHE_TTL &&
-      page === 1
-    ) {
+    if (releaseCache && Date.now() - releaseCache.timestamp < CACHE_TTL && page === 1) {
       console.log('[GitHub Release] 使用缓存的 Release 列表')
       const filtered = includePrerelease
         ? releaseCache.data
-        : releaseCache.data.filter(r => !r.prerelease && !r.draft)
+        : releaseCache.data.filter((r) => !r.prerelease && !r.draft)
       return filtered.slice(0, perPage)
     }
 
@@ -124,16 +111,14 @@ export async function listReleases(
       page: String(page),
     })
 
-    const releases = await fetchFromGitHub<GitHubRelease[]>(
-      `/releases?${params.toString()}`
-    )
+    const releases = await fetchFromGitHub<GitHubRelease[]>(`/releases?${params.toString()}`)
 
     console.log(`[GitHub Release] 获取到 ${releases.length} 个 Releases`)
 
     // 过滤草稿和预发布版本（如果需要）
     const filtered = includePrerelease
       ? releases
-      : releases.filter(r => !r.prerelease && !r.draft)
+      : releases.filter((r) => !r.prerelease && !r.draft)
 
     // 更新缓存（仅第一页）
     if (page === 1) {
@@ -151,7 +136,7 @@ export async function listReleases(
       console.log('[GitHub Release] API 请求失败，使用过期缓存')
       const filtered = includePrerelease
         ? releaseCache.data
-        : releaseCache.data.filter(r => !r.prerelease && !r.draft)
+        : releaseCache.data.filter((r) => !r.prerelease && !r.draft)
       return filtered.slice(0, perPage)
     }
     // 没有缓存时抛出异常，让前端知道加载失败
@@ -173,9 +158,7 @@ export async function getReleaseByTag(tag: string): Promise<GitHubRelease | null
       return cached.data
     }
 
-    const release = await fetchFromGitHub<GitHubRelease>(
-      `/releases/tags/${tag}`
-    )
+    const release = await fetchFromGitHub<GitHubRelease>(`/releases/tags/${tag}`)
     console.log(`[GitHub Release] 获取 Release: ${tag}`)
 
     tagCache.set(tag, { data: release, timestamp: Date.now() })

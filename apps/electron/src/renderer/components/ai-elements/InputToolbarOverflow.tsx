@@ -19,11 +19,7 @@ import * as React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export interface ToolbarItem {
@@ -154,22 +150,16 @@ export function InputToolbarOverflow({
   const overflowItems = items.slice(visibleCount)
   const hasOverflow = overflowItems.length > 0
 
-  const setItemRef = (key: string) => (el: HTMLDivElement | null): void => {
-    if (el) itemRefs.current.set(key, el)
-    else itemRefs.current.delete(key)
-  }
+  const setItemRef =
+    (key: string) =>
+    (el: HTMLDivElement | null): void => {
+      if (el) itemRefs.current.set(key, el)
+      else itemRefs.current.delete(key)
+    }
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-between px-2 py-1 h-[48px] gap-4',
-        className
-      )}
-    >
-      <div
-        ref={containerRef}
-        className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden"
-      >
+    <div className={cn('flex items-center justify-between px-2 py-1 h-[48px] gap-4', className)}>
+      <div ref={containerRef} className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
         {visibleItems.map((it) => (
           <div key={it.key} ref={setItemRef(it.key)} className="shrink-0 flex items-center">
             {it.node}

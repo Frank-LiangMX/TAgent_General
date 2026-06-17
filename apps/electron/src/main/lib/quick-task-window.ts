@@ -7,8 +7,7 @@
 
 import { join } from 'path'
 
-import { BrowserWindow, screen , app } from 'electron'
-
+import { BrowserWindow, screen, app } from 'electron'
 
 /** 快速任务窗口单例 */
 let quickTaskWindow: BrowserWindow | null = null

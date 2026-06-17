@@ -45,10 +45,13 @@ describe('Agent 辅助模型路由', () => {
   test('Given DeepSeek 模型 When 应用模型路由 Then 注入 SDK SubAgent 模型环境变量', () => {
     const env: Record<string, string | undefined> = {}
 
-    applyAgentModelRoutingToEnv(env, resolveAgentModelRouting({
-      modelId: 'deepseek-v4-flash',
-      provider: 'deepseek',
-    }))
+    applyAgentModelRoutingToEnv(
+      env,
+      resolveAgentModelRouting({
+        modelId: 'deepseek-v4-flash',
+        provider: 'deepseek',
+      })
+    )
 
     expect(env.CLAUDE_CODE_SUBAGENT_MODEL).toBe(DEEPSEEK_SUBAGENT_MODEL_ID)
   })

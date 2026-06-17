@@ -110,7 +110,7 @@ function toGoogleContents(input: StreamRequestInput): GoogleContent[] {
   const contents: GoogleContent[] = history
     .filter((msg) => msg.role !== 'system')
     .map((msg) => {
-      const role = msg.role === 'assistant' ? 'model' as const : 'user' as const
+      const role = msg.role === 'assistant' ? ('model' as const) : ('user' as const)
 
       // 历史用户消息的附件也需要转换为多模态内容
       if (msg.role === 'user' && msg.attachments && msg.attachments.length > 0) {
@@ -122,10 +122,7 @@ function toGoogleContents(input: StreamRequestInput): GoogleContent[] {
       if (msg.role === 'assistant' && msg.reasoning) {
         return {
           role,
-          parts: [
-            { text: msg.reasoning, thought: true },
-            { text: msg.content },
-          ],
+          parts: [{ text: msg.reasoning, thought: true }, { text: msg.content }],
         }
       }
 
@@ -146,13 +143,15 @@ function toGoogleContents(input: StreamRequestInput): GoogleContent[] {
  * 将工具定义转换为 Google 格式
  */
 function toGoogleTools(tools: ToolDefinition[]): Array<Record<string, unknown>> {
-  return [{
-    functionDeclarations: tools.map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-    })),
-  }]
+  return [
+    {
+      functionDeclarations: tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      })),
+    },
+  ]
 }
 
 /**
@@ -160,7 +159,7 @@ function toGoogleTools(tools: ToolDefinition[]): Array<Record<string, unknown>> 
  */
 function appendContinuationMessages(
   contents: GoogleContent[],
-  continuationMessages: ContinuationMessage[],
+  continuationMessages: ContinuationMessage[]
 ): void {
   for (const contMsg of continuationMessages) {
     if (contMsg.role === 'assistant') {
@@ -262,7 +261,7 @@ export class GoogleAdapter implements ProviderAdapter {
           const fc = part.functionCall
           events.push({
             type: 'tool_call_start',
-            toolCallId: fc.name,  // Google 没有独立的调用 ID，用函数名
+            toolCallId: fc.name, // Google 没有独立的调用 ID，用函数名
             toolName: fc.name,
             // 保留 thoughtSignature，续接请求需要原样返回
             metadata: part.thoughtSignature

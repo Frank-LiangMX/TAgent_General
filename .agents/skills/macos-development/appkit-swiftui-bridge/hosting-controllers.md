@@ -136,7 +136,9 @@ class MainSplitViewController: NSSplitViewController {
 ## Incremental Adoption Strategy
 
 ### Phase 1: Leaf Views
+
 Start by replacing simple, self-contained views:
+
 - Settings panels
 - Detail views
 - Empty states
@@ -156,18 +158,23 @@ class DetailViewController: NSViewController {
 ```
 
 ### Phase 2: Container Views
+
 Move to views that contain other views:
+
 - Tab containers
 - Split view panels
 - List/detail patterns
 
 ### Phase 3: Window-Level
+
 Eventually host entire windows in SwiftUI:
+
 - New windows as SwiftUI `WindowGroup`
 - Settings via SwiftUI `Settings` scene
 - Menu bar with `MenuBarExtra`
 
 ### Phase 4: Full Migration
+
 - Replace the App Delegate entry point with SwiftUI `@main App`
 - Use `NSApplicationDelegateAdaptor` for remaining AppKit lifecycle needs
 

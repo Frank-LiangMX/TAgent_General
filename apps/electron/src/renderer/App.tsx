@@ -18,7 +18,9 @@ export default function App(): React.ReactElement {
   const appRenderCountRef = React.useRef(0)
   appRenderCountRef.current++
   if (appRenderCountRef.current > 1) {
-    console.warn(`[FLASH-DEBUG] App re-render #${appRenderCountRef.current}, isLoading/showOnboarding may have changed`)
+    console.warn(
+      `[FLASH-DEBUG] App re-render #${appRenderCountRef.current}, isLoading/showOnboarding may have changed`
+    )
   }
 
   const store = useStore()

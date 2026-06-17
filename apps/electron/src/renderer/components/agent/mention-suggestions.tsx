@@ -37,7 +37,7 @@ function createMentionSuggestion<T>(
   config: MentionSuggestionConfig<T>,
   workspaceSlugRef: React.RefObject<string | null>,
   mentionActiveRef: React.MutableRefObject<boolean>,
-  mentionItemCountRef: React.MutableRefObject<number>,
+  mentionItemCountRef: React.MutableRefObject<number>
 ): Omit<SuggestionOptions<T>, 'editor'> {
   return {
     char: config.char,
@@ -144,7 +144,7 @@ export interface SkillMentionItem {
 export function createSkillMentionSuggestion(
   workspaceSlugRef: React.RefObject<string | null>,
   mentionActiveRef: React.MutableRefObject<boolean>,
-  mentionItemCountRef: React.MutableRefObject<number>,
+  mentionItemCountRef: React.MutableRefObject<number>
 ) {
   return createMentionSuggestion<SkillMentionItem>(
     {
@@ -154,7 +154,10 @@ export function createSkillMentionSuggestion(
         const caps = await window.electronAPI.getWorkspaceCapabilities(slug)
         return caps.skills
           .filter((s) => s.enabled)
-          .filter((s) => !q || s.name.toLowerCase().includes(q) || (s.slug ?? '').toLowerCase().includes(q))
+          .filter(
+            (s) =>
+              !q || s.name.toLowerCase().includes(q) || (s.slug ?? '').toLowerCase().includes(q)
+          )
           .map((s) => ({ id: s.slug, name: s.name, description: s.description }))
       },
       keyExtractor: (item) => item.id,
@@ -163,7 +166,9 @@ export function createSkillMentionSuggestion(
           <Sparkles className="size-3.5 text-violet-500 flex-shrink-0" />
           <span className="truncate font-medium flex-1 min-w-0">{item.name}</span>
           {item.description && (
-            <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">{item.description}</span>
+            <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">
+              {item.description}
+            </span>
           )}
         </>
       ),
@@ -171,7 +176,7 @@ export function createSkillMentionSuggestion(
     },
     workspaceSlugRef,
     mentionActiveRef,
-    mentionItemCountRef,
+    mentionItemCountRef
   )
 }
 
@@ -186,7 +191,7 @@ export interface McpMentionItem {
 export function createMcpMentionSuggestion(
   workspaceSlugRef: React.RefObject<string | null>,
   mentionActiveRef: React.MutableRefObject<boolean>,
-  mentionItemCountRef: React.MutableRefObject<number>,
+  mentionItemCountRef: React.MutableRefObject<number>
 ) {
   return createMentionSuggestion<McpMentionItem>(
     {
@@ -204,14 +209,16 @@ export function createMcpMentionSuggestion(
         <>
           <Server className="size-3.5 text-emerald-500 flex-shrink-0" />
           <span className="truncate font-medium flex-1 min-w-0">{item.name}</span>
-          <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">{item.type}</span>
+          <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">
+            {item.type}
+          </span>
         </>
       ),
       toCommand: (item) => ({ id: item.id, label: item.name }),
     },
     workspaceSlugRef,
     mentionActiveRef,
-    mentionItemCountRef,
+    mentionItemCountRef
   )
 }
 
@@ -223,7 +230,7 @@ export function createSessionMentionSuggestion(
   workspaceIdRef: React.RefObject<string | null>,
   currentSessionIdRef: React.RefObject<string | null>,
   mentionActiveRef: React.MutableRefObject<boolean>,
-  mentionItemCountRef: React.MutableRefObject<number>,
+  mentionItemCountRef: React.MutableRefObject<number>
 ) {
   return createMentionSuggestion<SessionMentionItem>(
     {
@@ -245,7 +252,9 @@ export function createSessionMentionSuggestion(
           <MessageSquareText className="size-3.5 text-sky-500 flex-shrink-0" />
           <span className="truncate font-medium flex-1 min-w-0">{item.title}</span>
           {item.snippet && (
-            <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">{item.snippet}</span>
+            <span className="truncate text-[10px] text-muted-foreground/50 max-w-[120px]">
+              {item.snippet}
+            </span>
           )}
         </>
       ),
@@ -254,6 +263,6 @@ export function createSessionMentionSuggestion(
     // 会话引用不依赖 slug，但复用通用 mention 工厂时需要一个非空 ref 才会触发 fetchItems。
     workspaceIdRef,
     mentionActiveRef,
-    mentionItemCountRef,
+    mentionItemCountRef
   )
 }

@@ -40,14 +40,16 @@ const MAX_BARS = 20
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
- 
 const PREVIEW_MD_COMPONENTS = {
-  pre: ({ children }: { children?: React.ReactNode }) => <pre className="text-[11px] opacity-70 truncate">{children}</pre>,
-  code: ({ children }: { children?: React.ReactNode }) => <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>,
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="text-[11px] opacity-70 truncate">{children}</pre>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>
+  ),
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 } as const
- 
 
 // ── 辅助函数 ──
 
@@ -79,7 +81,11 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
   const [canScroll, setCanScroll] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [isDragging, setIsDragging] = React.useState(false)
-  const [scrollMetrics, setScrollMetrics] = React.useState({ scrollTop: 0, scrollHeight: 1, clientHeight: 1 })
+  const [scrollMetrics, setScrollMetrics] = React.useState({
+    scrollTop: 0,
+    scrollHeight: 1,
+    clientHeight: 1,
+  })
   const closeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const fadeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const openTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
@@ -161,7 +167,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
       // 直接用 getBoundingClientRect 计算 target 相对 list 视口的偏移
       const listRect = list.getBoundingClientRect()
       const targetRect = target.getBoundingClientRect()
-      const offsetInList = (targetRect.top - listRect.top) + list.scrollTop
+      const offsetInList = targetRect.top - listRect.top + list.scrollTop
       const offset = offsetInList - (list.clientHeight - target.offsetHeight) / 2
       list.scrollTo({ top: Math.max(0, offset), behavior: 'auto' })
     }, 0)
@@ -179,7 +185,10 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
   const handleShortcutOpen = React.useCallback(() => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
-    if (openTimerRef.current) { clearTimeout(openTimerRef.current); openTimerRef.current = undefined }
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current)
+      openTimerRef.current = undefined
+    }
     setIsLeaving(false)
     setHovered(true)
   }, [])
@@ -228,29 +237,33 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
 
   // ── 跳转到指定消息（直接操作 scrollTop，绕过 scrollIntoView） ──
 
-  const scrollToMessage = React.useCallback((id: string) => {
-    const el = scrollRef.current
-    if (!el) return
-    const target = Array.from(el.querySelectorAll<HTMLElement>('[data-message-id]')).find(
-      (node) => node.getAttribute('data-message-id') === id
-    )
-    if (!target) return
+  const scrollToMessage = React.useCallback(
+    (id: string) => {
+      const el = scrollRef.current
+      if (!el) return
+      const target = Array.from(el.querySelectorAll<HTMLElement>('[data-message-id]')).find(
+        (node) => node.getAttribute('data-message-id') === id
+      )
+      if (!target) return
 
-    stopScroll()
-    stickyState.animation = undefined
-    stickyState.velocity = 0
-    stickyState.accumulated = 0
+      stopScroll()
+      stickyState.animation = undefined
+      stickyState.velocity = 0
+      stickyState.accumulated = 0
 
-    const offsetTop = getOffsetTopRelativeTo(target, el)
-    const targetHeight = target.offsetHeight
-    const viewportHeight = el.clientHeight
-    const scrollTarget = targetHeight < viewportHeight
-      ? offsetTop - (viewportHeight - targetHeight) / 2
-      : offsetTop - 32
-    el.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
+      const offsetTop = getOffsetTopRelativeTo(target, el)
+      const targetHeight = target.offsetHeight
+      const viewportHeight = el.clientHeight
+      const scrollTarget =
+        targetHeight < viewportHeight
+          ? offsetTop - (viewportHeight - targetHeight) / 2
+          : offsetTop - 32
+      el.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
 
-    setHovered(false)
-  }, [scrollRef, stopScroll, stickyState])
+      setHovered(false)
+    },
+    [scrollRef, stopScroll, stickyState]
+  )
 
   // ── 搜索过滤 ──
 
@@ -270,71 +283,77 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
 
   // ── 滚动条滑块拖拽 ──
 
-  const handleThumbMouseDown = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleThumbMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
 
-    const el = scrollRef.current
-    const track = trackRef.current
-    if (!el || !track) return
+      const el = scrollRef.current
+      const track = trackRef.current
+      if (!el || !track) return
 
-    // 停止 StickToBottom 自动滚动
-    stopScroll()
-    stickyState.animation = undefined
-    stickyState.velocity = 0
-    stickyState.accumulated = 0
+      // 停止 StickToBottom 自动滚动
+      stopScroll()
+      stickyState.animation = undefined
+      stickyState.velocity = 0
+      stickyState.accumulated = 0
 
-    setIsDragging(true)
-    const startY = e.clientY
-    const startScrollTop = el.scrollTop
-    const trackHeight = track.clientHeight
-    const { scrollHeight, clientHeight } = el
-    const scrollRange = scrollHeight - clientHeight
-    const thumbHeight = Math.max(trackHeight * 0.1, (clientHeight / scrollHeight) * trackHeight)
-    const scrollableTrack = trackHeight - thumbHeight
+      setIsDragging(true)
+      const startY = e.clientY
+      const startScrollTop = el.scrollTop
+      const trackHeight = track.clientHeight
+      const { scrollHeight, clientHeight } = el
+      const scrollRange = scrollHeight - clientHeight
+      const thumbHeight = Math.max(trackHeight * 0.1, (clientHeight / scrollHeight) * trackHeight)
+      const scrollableTrack = trackHeight - thumbHeight
 
-    const onMouseMove = (ev: MouseEvent): void => {
-      ev.preventDefault()
-      const delta = ev.clientY - startY
-      const scrollDelta = scrollableTrack > 0 ? (delta / scrollableTrack) * scrollRange : 0
-      el.scrollTop = Math.max(0, Math.min(scrollRange, startScrollTop + scrollDelta))
-    }
+      const onMouseMove = (ev: MouseEvent): void => {
+        ev.preventDefault()
+        const delta = ev.clientY - startY
+        const scrollDelta = scrollableTrack > 0 ? (delta / scrollableTrack) * scrollRange : 0
+        el.scrollTop = Math.max(0, Math.min(scrollRange, startScrollTop + scrollDelta))
+      }
 
-    const onMouseUp = (): void => {
-      setIsDragging(false)
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-    }
+      const onMouseUp = (): void => {
+        setIsDragging(false)
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+      }
 
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'grabbing'
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-  }, [scrollRef, stopScroll, stickyState])
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'grabbing'
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [scrollRef, stopScroll, stickyState]
+  )
 
   // ── 轨道点击跳转 ──
 
-  const handleTrackMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // 只响应直接点击轨道背景，忽略点击滑块
-    if (e.target !== e.currentTarget) return
+  const handleTrackMouseDown = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      // 只响应直接点击轨道背景，忽略点击滑块
+      if (e.target !== e.currentTarget) return
 
-    const track = trackRef.current
-    const el = scrollRef.current
-    if (!track || !el) return
+      const track = trackRef.current
+      const el = scrollRef.current
+      if (!track || !el) return
 
-    stopScroll()
-    stickyState.animation = undefined
-    stickyState.velocity = 0
-    stickyState.accumulated = 0
+      stopScroll()
+      stickyState.animation = undefined
+      stickyState.velocity = 0
+      stickyState.accumulated = 0
 
-    const rect = track.getBoundingClientRect()
-    const clickRatio = (e.clientY - rect.top) / rect.height
-    const { scrollHeight, clientHeight } = el
-    const targetTop = clickRatio * (scrollHeight - clientHeight)
-    el.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
-  }, [scrollRef, stopScroll, stickyState])
+      const rect = track.getBoundingClientRect()
+      const clickRatio = (e.clientY - rect.top) / rect.height
+      const { scrollHeight, clientHeight } = el
+      const targetTop = clickRatio * (scrollHeight - clientHeight)
+      el.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
+    },
+    [scrollRef, stopScroll, stickyState]
+  )
 
   if (items.length < MIN_ITEMS || !canScroll) return null
 
@@ -397,9 +416,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
             {/* 消息列表 */}
             <div ref={listRef} className="overflow-y-auto flex-1 p-2 space-y-1 scrollbar-thin">
               {filteredItems.length === 0 ? (
-                <div className="py-6 text-center text-xs text-muted-foreground">
-                  未找到匹配消息
-                </div>
+                <div className="py-6 text-center text-xs text-muted-foreground">未找到匹配消息</div>
               ) : (
                 filteredItems.map((item) => (
                   <button
@@ -456,7 +473,10 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
       </div>
 
       {/* ── 滚动进度条 ── */}
-      <div className="relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto" style={{ width: 7 }}>
+      <div
+        className="relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto"
+        style={{ width: 7 }}
+      >
         <div
           ref={trackRef}
           className="relative h-full rounded-full cursor-pointer"
@@ -465,9 +485,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
           <div
             className={cn(
               'absolute left-0 right-0 rounded-full transition-colors duration-100 scroll-progress-thumb',
-              isDragging
-                ? 'scroll-progress-thumb-active cursor-grabbing'
-                : 'cursor-grab'
+              isDragging ? 'scroll-progress-thumb-active cursor-grabbing' : 'cursor-grab'
             )}
             style={{
               height: `${thumbHeightPct}%`,
@@ -487,7 +505,7 @@ function ItemIcon({ item }: { item: MinimapItem }): React.ReactElement {
   if (item.role === 'user' && item.avatar) {
     return <UserAvatar avatar={item.avatar} size={16} className="mt-0.5" />
   }
-  if ((item.role === 'assistant') && item.model) {
+  if (item.role === 'assistant' && item.model) {
     return (
       <img
         src={getModelLogo(item.model)}
@@ -514,9 +532,13 @@ function HighlightedPreview({ text, query }: { text: string; query: string }): R
     return (
       <span className="text-xs text-popover-foreground/80 line-clamp-3">
         {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase()
-            ? <mark key={i} className="bg-primary/20 text-primary rounded-sm px-0.5">{part}</mark>
-            : part
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} className="bg-primary/20 text-primary rounded-sm px-0.5">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
         )}
       </span>
     )

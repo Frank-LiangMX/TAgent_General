@@ -13,9 +13,15 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-import type { ModelUsageStats, TimeRangeStats, UsageCallRecord, UsageStatsOverview, SessionTokenStats } from '@tagent/shared'
-
 import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
+
+import type {
+  ModelUsageStats,
+  TimeRangeStats,
+  UsageCallRecord,
+  UsageStatsOverview,
+  SessionTokenStats,
+} from '@tagent/shared'
 
 /** JSONL 消息类型（简化版，只提取需要的字段） */
 interface SessionMessage {
@@ -68,14 +74,17 @@ class UsageStatsService {
     }
 
     // 按模型聚合
-    const modelStatsMap = new Map<string, {
-      sessions: Set<string>
-      inputTokens: number
-      outputTokens: number
-      cacheReadTokens: number
-      cacheCreationTokens: number
-      costUsd: number
-    }>()
+    const modelStatsMap = new Map<
+      string,
+      {
+        sessions: Set<string>
+        inputTokens: number
+        outputTokens: number
+        cacheReadTokens: number
+        cacheCreationTokens: number
+        costUsd: number
+      }
+    >()
 
     // 单次调用记录
     const callRecords: UsageCallRecord[] = []
@@ -86,7 +95,13 @@ class UsageStatsService {
     const timeRanges = {
       today: { cutoff: now - dayMs, sessions: new Set<string>(), input: 0, output: 0, cost: 0 },
       week: { cutoff: now - 7 * dayMs, sessions: new Set<string>(), input: 0, output: 0, cost: 0 },
-      month: { cutoff: now - 30 * dayMs, sessions: new Set<string>(), input: 0, output: 0, cost: 0 },
+      month: {
+        cutoff: now - 30 * dayMs,
+        sessions: new Set<string>(),
+        input: 0,
+        output: 0,
+        cost: 0,
+      },
       all: { cutoff: 0, sessions: new Set<string>(), input: 0, output: 0, cost: 0 },
     }
 
@@ -234,9 +249,27 @@ class UsageStatsService {
 
     // 构建时间范围统计
     const byTimeRange = {
-      today: this.buildTimeRangeStats('today', timeRanges.today, byModel, sessionIndex, now - dayMs),
-      week: this.buildTimeRangeStats('week', timeRanges.week, byModel, sessionIndex, now - 7 * dayMs),
-      month: this.buildTimeRangeStats('month', timeRanges.month, byModel, sessionIndex, now - 30 * dayMs),
+      today: this.buildTimeRangeStats(
+        'today',
+        timeRanges.today,
+        byModel,
+        sessionIndex,
+        now - dayMs
+      ),
+      week: this.buildTimeRangeStats(
+        'week',
+        timeRanges.week,
+        byModel,
+        sessionIndex,
+        now - 7 * dayMs
+      ),
+      month: this.buildTimeRangeStats(
+        'month',
+        timeRanges.month,
+        byModel,
+        sessionIndex,
+        now - 30 * dayMs
+      ),
       all: this.buildTimeRangeStats('all', timeRanges.all, byModel, sessionIndex, 0),
     }
 
@@ -258,7 +291,7 @@ class UsageStatsService {
     rangeData: { sessions: Set<string>; input: number; output: number; cost: number },
     byModel: ModelUsageStats[],
     sessionIndex: SessionIndexItem[],
-    cutoff: number,
+    cutoff: number
   ): TimeRangeStats {
     // 过滤该时间范围内的模型统计
     const filteredModels = byModel.map((m) => ({

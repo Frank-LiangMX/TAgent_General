@@ -5,10 +5,10 @@
  * 用于鼠标悬停时显示额外信息。
  */
 
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import * as React from "react"
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import * as React from 'react'
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 
 const TooltipProvider = TooltipPrimitive.Provider
 
@@ -26,13 +26,13 @@ const TooltipContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         // 主题自定义色 + 轻量浮岛毛玻璃（采样背后页面内容）
-        "session-glass-tooltip z-[10050] overflow-hidden rounded-lg px-3 py-2 text-xs",
-        "text-tooltip-foreground",
-        "animate-in fade-in-0 zoom-in-95",
-        "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-        "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        'session-glass-tooltip z-[10050] overflow-hidden rounded-lg px-3 py-2 text-xs',
+        'text-tooltip-foreground',
+        'animate-in fade-in-0 zoom-in-95',
+        'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+        'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         // 内部次要文字使用 tooltip-muted 颜色
-        "[&_.text-muted-foreground]:text-tooltip-muted",
+        '[&_.text-muted-foreground]:text-tooltip-muted',
         className
       )}
       {...props}

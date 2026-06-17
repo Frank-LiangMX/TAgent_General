@@ -18,7 +18,6 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
-
 interface TabPreviewPanelProps {
   title: string
   items: TabMinimapItem[]
@@ -29,14 +28,16 @@ interface TabPreviewPanelProps {
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
- 
 const PREVIEW_MD_COMPONENTS = {
-  pre: ({ children }: { children?: React.ReactNode }) => <pre className="text-[11px] opacity-70 truncate">{children}</pre>,
-  code: ({ children }: { children?: React.ReactNode }) => <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>,
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="text-[11px] opacity-70 truncate">{children}</pre>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>
+  ),
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 } as const
- 
 
 // ── 子组件 ──
 
@@ -75,7 +76,11 @@ function Preview({ text }: { text: string }): React.ReactElement {
 
 // ── 主组件 ──
 
-export function TabPreviewPanel({ title, items, isLeaving }: TabPreviewPanelProps): React.ReactElement {
+export function TabPreviewPanel({
+  title,
+  items,
+  isLeaving,
+}: TabPreviewPanelProps): React.ReactElement {
   return (
     <div
       className={cn(
@@ -99,9 +104,7 @@ export function TabPreviewPanel({ title, items, isLeaving }: TabPreviewPanelProp
       {/* 消息列表 */}
       <div className="overflow-y-auto flex-1 p-1.5 space-y-0.5 scrollbar-thin">
         {items.length === 0 ? (
-          <div className="py-6 text-center text-xs text-muted-foreground">
-            暂无消息
-          </div>
+          <div className="py-6 text-center text-xs text-muted-foreground">暂无消息</div>
         ) : (
           items.map((item) => (
             <div

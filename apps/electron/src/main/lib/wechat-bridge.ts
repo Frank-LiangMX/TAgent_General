@@ -12,15 +12,32 @@
 import * as crypto from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-import { WECHAT_IPC_CHANNELS, WECHAT_ITEM_TYPE, WECHAT_MESSAGE_TYPE, WECHAT_MESSAGE_STATE } from '@tagent/shared'
+import {
+  WECHAT_IPC_CHANNELS,
+  WECHAT_ITEM_TYPE,
+  WECHAT_MESSAGE_TYPE,
+  WECHAT_MESSAGE_STATE,
+} from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 import QRCode from 'qrcode'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
-import { inferImageMediaType, saveImageToSession, saveFileToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
+import {
+  inferImageMediaType,
+  saveImageToSession,
+  saveFileToSession,
+  inferExtension,
+  MAX_IMAGE_SIZE,
+} from './bridge-attachment-utils'
 import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
 import { getWeChatSyncPath } from './config-paths'
-import { getDecryptedCredentials, saveWeChatCredentials, clearWeChatCredentials, getWeChatConfig, updateWeChatDefaultWorkspace } from './wechat-config'
+import {
+  getDecryptedCredentials,
+  saveWeChatCredentials,
+  clearWeChatCredentials,
+  getWeChatConfig,
+  updateWeChatDefaultWorkspace,
+} from './wechat-config'
 
 import type {
   WeChatBridgeState,
@@ -28,8 +45,6 @@ import type {
   WeChatIncomingMessage,
   WeChatMessageItem,
 } from '@tagent/shared'
-
-
 
 // ===== iLink API 常量 =====
 
@@ -48,24 +63,23 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024
 const HANDLE_MESSAGE_TIMEOUT_MS = 90_000
 const PENDING_IMAGES_CLEANUP_INTERVAL = 7 * 60 * 1000
 
-const ALLOWED_CDN_HOSTS = [
-  '.weixin.qq.com',
-  '.wechat.com',
-  '.qpic.cn',
-  '.qlogo.cn',
-]
+const ALLOWED_CDN_HOSTS = ['.weixin.qq.com', '.wechat.com', '.qpic.cn', '.qlogo.cn']
 
 function isAllowedCdnUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
     if (parsed.protocol !== 'https:') return false
-    return ALLOWED_CDN_HOSTS.some(suffix => parsed.hostname.endsWith(suffix))
+    return ALLOWED_CDN_HOSTS.some((suffix) => parsed.hostname.endsWith(suffix))
   } catch {
     return false
   }
 }
 
-async function fetchMediaWithSizeGuard(url: string, ac: AbortController, label: string): Promise<Buffer> {
+async function fetchMediaWithSizeGuard(
+  url: string,
+  ac: AbortController,
+  label: string
+): Promise<Buffer> {
   const resp = await fetch(url, { signal: ac.signal })
   if (!resp.ok) {
     const body = await resp.text().catch(() => '')
@@ -149,7 +163,9 @@ function parseAesKey(aesKeyBase64: string): Buffer {
   if (aesKeyBase64.length === 32 && /^[0-9a-fA-F]{32}$/.test(aesKeyBase64)) {
     return Buffer.from(aesKeyBase64, 'hex')
   }
-  throw new Error(`aes_key 解析失败：期望 16 字节或 32 字符 hex，实际 base64 解码后 ${decoded.length} 字节`)
+  throw new Error(
+    `aes_key 解析失败：期望 16 字节或 32 字符 hex，实际 base64 解码后 ${decoded.length} 字节`
+  )
 }
 
 function decryptAesEcbWithKey(ciphertext: Buffer, key: Buffer): Buffer {
@@ -182,53 +198,84 @@ class ILinkClient {
 
   /** 长轮询获取消息 */
   async getUpdates(buf: string, signal?: AbortSignal): Promise<GetUpdatesResponse> {
-    return this.post<GetUpdatesResponse>('/ilink/bot/getupdates', {
-      get_updates_buf: buf,
-      base_info: { channel_version: '1.0.0' },
-    }, LONG_POLL_TIMEOUT_MS + 5000, signal)
+    return this.post<GetUpdatesResponse>(
+      '/ilink/bot/getupdates',
+      {
+        get_updates_buf: buf,
+        base_info: { channel_version: '1.0.0' },
+      },
+      LONG_POLL_TIMEOUT_MS + 5000,
+      signal
+    )
   }
 
   /** 发送消息 */
-  async sendMessage(toUserId: string, items: WeChatMessageItem[], contextToken: string): Promise<SendMessageResponse> {
-    return this.post<SendMessageResponse>('/ilink/bot/sendmessage', {
-      msg: {
-        from_user_id: this.botId,
-        to_user_id: toUserId,
-        client_id: `tagent_${Date.now()}`,
-        message_type: WECHAT_MESSAGE_TYPE.BOT,
-        message_state: WECHAT_MESSAGE_STATE.FINISH,
-        item_list: items,
-        context_token: contextToken,
+  async sendMessage(
+    toUserId: string,
+    items: WeChatMessageItem[],
+    contextToken: string
+  ): Promise<SendMessageResponse> {
+    return this.post<SendMessageResponse>(
+      '/ilink/bot/sendmessage',
+      {
+        msg: {
+          from_user_id: this.botId,
+          to_user_id: toUserId,
+          client_id: `tagent_${Date.now()}`,
+          message_type: WECHAT_MESSAGE_TYPE.BOT,
+          message_state: WECHAT_MESSAGE_STATE.FINISH,
+          item_list: items,
+          context_token: contextToken,
+        },
+        base_info: {},
       },
-      base_info: {},
-    }, SEND_TIMEOUT_MS)
+      SEND_TIMEOUT_MS
+    )
   }
 
   /** 发送文本消息（便捷方法） */
-  async sendText(toUserId: string, text: string, contextToken: string): Promise<SendMessageResponse> {
-    return this.sendMessage(toUserId, [{
-      type: WECHAT_ITEM_TYPE.TEXT,
-      text_item: { text },
-    }], contextToken)
+  async sendText(
+    toUserId: string,
+    text: string,
+    contextToken: string
+  ): Promise<SendMessageResponse> {
+    return this.sendMessage(
+      toUserId,
+      [
+        {
+          type: WECHAT_ITEM_TYPE.TEXT,
+          text_item: { text },
+        },
+      ],
+      contextToken
+    )
   }
 
   /** 获取配置（typing_ticket） */
   async getConfig(userId: string, contextToken: string): Promise<GetConfigResponse> {
-    return this.post<GetConfigResponse>('/ilink/bot/getconfig', {
-      ilink_user_id: userId,
-      context_token: contextToken,
-      base_info: {},
-    }, 10_000)
+    return this.post<GetConfigResponse>(
+      '/ilink/bot/getconfig',
+      {
+        ilink_user_id: userId,
+        context_token: contextToken,
+        base_info: {},
+      },
+      10_000
+    )
   }
 
   /** 发送"正在输入"状态 */
   async sendTyping(userId: string, typingTicket: string, status: number): Promise<void> {
-    await this.post('/ilink/bot/sendtyping', {
-      ilink_user_id: userId,
-      typing_ticket: typingTicket,
-      status,
-      base_info: {},
-    }, 10_000)
+    await this.post(
+      '/ilink/bot/sendtyping',
+      {
+        ilink_user_id: userId,
+        typing_ticket: typingTicket,
+        status,
+        base_info: {},
+      },
+      10_000
+    )
   }
 
   /**
@@ -271,7 +318,9 @@ class ILinkClient {
     if (!encryptQueryParam && !fullUrl) throw new Error('缺少 encrypt_query_param 和 full_url')
 
     const cdnBaseUrl = 'https://novac2c.cdn.weixin.qq.com/c2c'
-    const url = fullUrl ?? `${cdnBaseUrl}/download?encrypted_query_param=${encodeURIComponent(encryptQueryParam!)}`
+    const url =
+      fullUrl ??
+      `${cdnBaseUrl}/download?encrypted_query_param=${encodeURIComponent(encryptQueryParam!)}`
     if (!isAllowedCdnUrl(url)) throw new Error(`图片 CDN URL 域名不在白名单: ${url}`)
 
     const ac = new AbortController()
@@ -306,7 +355,9 @@ class ILinkClient {
     if (!encryptQueryParam && !fullUrl) throw new Error('缺少 encrypt_query_param 和 full_url')
 
     const cdnBaseUrl = 'https://novac2c.cdn.weixin.qq.com/c2c'
-    const url = fullUrl ?? `${cdnBaseUrl}/download?encrypted_query_param=${encodeURIComponent(encryptQueryParam!)}`
+    const url =
+      fullUrl ??
+      `${cdnBaseUrl}/download?encrypted_query_param=${encodeURIComponent(encryptQueryParam!)}`
     if (!isAllowedCdnUrl(url)) throw new Error(`文件 CDN URL 域名不在白名单: ${url}`)
 
     const ac = new AbortController()
@@ -324,7 +375,12 @@ class ILinkClient {
     return decryptAesEcbWithKey(encrypted, key)
   }
 
-  private async post<T>(path: string, body: unknown, timeoutMs: number, signal?: AbortSignal): Promise<T> {
+  private async post<T>(
+    path: string,
+    body: unknown,
+    timeoutMs: number,
+    signal?: AbortSignal
+  ): Promise<T> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -343,8 +399,8 @@ class ILinkClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'AuthorizationType': 'ilink_bot_token',
-          'Authorization': `Bearer ${this.botToken}`,
+          AuthorizationType: 'ilink_bot_token',
+          Authorization: `Bearer ${this.botToken}`,
           'X-WECHAT-UIN': this.wechatUIN,
         },
         body: JSON.stringify(body),
@@ -356,7 +412,7 @@ class ILinkClient {
         throw new Error(`HTTP ${resp.status}: ${text}`)
       }
 
-      return await resp.json() as T
+      return (await resp.json()) as T
     } finally {
       clearTimeout(timeout)
       if (onAbort && signal) {
@@ -404,9 +460,10 @@ class WeChatBridge {
         const contextToken = ctx?.contextToken ?? ''
         // 微信单条消息有长度限制，超长分段
         const MAX_LEN = 4000
-        const chunks = text.length <= MAX_LEN
-          ? [text]
-          : text.match(new RegExp(`.{1,${MAX_LEN}}`, 'gs')) ?? [text]
+        const chunks =
+          text.length <= MAX_LEN
+            ? [text]
+            : (text.match(new RegExp(`.{1,${MAX_LEN}}`, 'gs')) ?? [text])
         for (const chunk of chunks) {
           await this.client.sendText(chatId, chunk, contextToken)
         }
@@ -505,7 +562,7 @@ class WeChatBridge {
   private async fetchQRCode(): Promise<QRCodeResponse> {
     const resp = await fetch(QR_CODE_URL)
     if (!resp.ok) throw new Error(`获取二维码失败: HTTP ${resp.status}`)
-    return await resp.json() as QRCodeResponse
+    return (await resp.json()) as QRCodeResponse
   }
 
   private async pollQRStatus(qrcode: string): Promise<WeChatCredentials> {
@@ -531,7 +588,7 @@ class WeChatBridge {
           continue
         }
 
-        const data = await resp.json() as QRStatusResponse
+        const data = (await resp.json()) as QRStatusResponse
 
         switch (data.status) {
           case 'confirmed': {
@@ -581,7 +638,10 @@ class WeChatBridge {
     this.commandHandler.subscribe()
 
     // 定期清理过期的图片缓冲
-    this.pendingImagesCleanupTimer = setInterval(() => this.cleanExpiredPendingImages(), PENDING_IMAGES_CLEANUP_INTERVAL)
+    this.pendingImagesCleanupTimer = setInterval(
+      () => this.cleanExpiredPendingImages(),
+      PENDING_IMAGES_CLEANUP_INTERVAL
+    )
 
     this.updateStatus({ status: 'connected', connectedAt: Date.now(), qrCodeData: undefined })
     console.log('[微信 Bridge] 长轮询已启动')
@@ -639,7 +699,10 @@ class WeChatBridge {
             await Promise.race([
               this.handleMessage(msg),
               new Promise<never>((_, reject) => {
-                timeoutId = setTimeout(() => reject(new Error('handleMessage 超时')), HANDLE_MESSAGE_TIMEOUT_MS)
+                timeoutId = setTimeout(
+                  () => reject(new Error('handleMessage 超时')),
+                  HANDLE_MESSAGE_TIMEOUT_MS
+                )
               }),
             ])
           } catch (error) {
@@ -653,7 +716,10 @@ class WeChatBridge {
 
         failures++
         const backoff = Math.min(INITIAL_BACKOFF_MS * Math.pow(2, failures - 1), MAX_BACKOFF_MS)
-        console.warn(`[微信 Bridge] 轮询失败 (${failures}/${MAX_CONSECUTIVE_FAILURES}, backoff=${backoff}ms):`, error)
+        console.warn(
+          `[微信 Bridge] 轮询失败 (${failures}/${MAX_CONSECUTIVE_FAILURES}, backoff=${backoff}ms):`,
+          error
+        )
 
         if (failures >= MAX_CONSECUTIVE_FAILURES) {
           console.warn('[微信 Bridge] 连续失败过多，可能需要重新登录')
@@ -668,13 +734,17 @@ class WeChatBridge {
     const now = Date.now()
     for (const [chatId, entry] of this.pendingImages) {
       if (now - entry.createdAt > WeChatBridge.PENDING_IMAGES_TTL) {
-        console.log(`[微信 Bridge] 清理过期图片缓冲: ${chatId.slice(0, 8)}... (${entry.images.length} 张)`)
+        console.log(
+          `[微信 Bridge] 清理过期图片缓冲: ${chatId.slice(0, 8)}... (${entry.images.length} 张)`
+        )
         this.pendingImages.delete(chatId)
       }
     }
     for (const [chatId, entry] of this.pendingFiles) {
       if (now - entry.createdAt > WeChatBridge.PENDING_IMAGES_TTL) {
-        console.log(`[微信 Bridge] 清理过期文件缓冲: ${chatId.slice(0, 8)}... (${entry.files.length} 个)`)
+        console.log(
+          `[微信 Bridge] 清理过期文件缓冲: ${chatId.slice(0, 8)}... (${entry.files.length} 个)`
+        )
         this.pendingFiles.delete(chatId)
       }
     }
@@ -693,11 +763,11 @@ class WeChatBridge {
       .join('')
 
     const imageItems = msg.item_list.filter(
-      (item) => item.type === WECHAT_ITEM_TYPE.IMAGE && item.image_item,
+      (item) => item.type === WECHAT_ITEM_TYPE.IMAGE && item.image_item
     )
 
     const fileItems = msg.item_list.filter(
-      (item) => item.type === WECHAT_ITEM_TYPE.FILE && item.file_item,
+      (item) => item.type === WECHAT_ITEM_TYPE.FILE && item.file_item
     )
 
     const chatId = msg.from_user_id
@@ -723,7 +793,11 @@ class WeChatBridge {
         const mediaType = inferImageMediaType(buf)
         if (buf.length > MAX_IMAGE_SIZE) {
           console.warn(`[微信 Bridge] 图片超过大小限制: ${(buf.length / 1024 / 1024).toFixed(1)}MB`)
-          await this.client.sendText(chatId, `⚠️ 一张图片超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB 限制，已跳过`, contextToken)
+          await this.client.sendText(
+            chatId,
+            `⚠️ 一张图片超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB 限制，已跳过`,
+            contextToken
+          )
           continue
         }
         imageDownloads.push({ id: `${msgId}-img-${idx}`, data: buf, mediaType })
@@ -741,15 +815,27 @@ class WeChatBridge {
       // 预检文件大小（len 字段为字符串形式的字节数）
       const declaredSize = fileItem.file_item!.len ? parseInt(fileItem.file_item!.len, 10) : 0
       if (declaredSize > MAX_FILE_SIZE) {
-        console.warn(`[微信 Bridge] 文件超过大小限制: ${(declaredSize / 1024 / 1024).toFixed(1)}MB, 文件名: ${fileName}`)
-        await this.client.sendText(chatId, `⚠️ 文件「${fileName}」超过 20MB 限制，已跳过`, contextToken)
+        console.warn(
+          `[微信 Bridge] 文件超过大小限制: ${(declaredSize / 1024 / 1024).toFixed(1)}MB, 文件名: ${fileName}`
+        )
+        await this.client.sendText(
+          chatId,
+          `⚠️ 文件「${fileName}」超过 20MB 限制，已跳过`,
+          contextToken
+        )
         continue
       }
       try {
         const buf = await this.client.downloadFile(fileItem)
         if (buf.length > MAX_FILE_SIZE) {
-          console.warn(`[微信 Bridge] 文件实际大小超限: ${(buf.length / 1024 / 1024).toFixed(1)}MB, 文件名: ${fileName}`)
-          await this.client.sendText(chatId, `⚠️ 文件「${fileName}」超过 20MB 限制，已跳过`, contextToken)
+          console.warn(
+            `[微信 Bridge] 文件实际大小超限: ${(buf.length / 1024 / 1024).toFixed(1)}MB, 文件名: ${fileName}`
+          )
+          await this.client.sendText(
+            chatId,
+            `⚠️ 文件「${fileName}」超过 20MB 限制，已跳过`,
+            contextToken
+          )
           continue
         }
         fileDownloads.push({ id: `${msgId}-file-${idx}`, data: buf, fileName })
@@ -771,7 +857,10 @@ class WeChatBridge {
         const entry = this.pendingImages.get(chatId)
         const existing = entry ? entry.images : []
         const merged = [...existing, ...imageDownloads].slice(-WeChatBridge.PENDING_IMAGES_MAX)
-        this.pendingImages.set(chatId, { images: merged, createdAt: entry?.createdAt ?? Date.now() })
+        this.pendingImages.set(chatId, {
+          images: merged,
+          createdAt: entry?.createdAt ?? Date.now(),
+        })
       }
       // 缓冲文件
       if (fileDownloads.length > 0) {
@@ -780,15 +869,15 @@ class WeChatBridge {
         const merged = [...existing, ...fileDownloads].slice(-WeChatBridge.PENDING_FILES_MAX)
         this.pendingFiles.set(chatId, { files: merged, createdAt: entry?.createdAt ?? Date.now() })
       }
-      const imgCount = (this.pendingImages.get(chatId)?.images.length ?? 0)
-      const fileCount = (this.pendingFiles.get(chatId)?.files.length ?? 0)
+      const imgCount = this.pendingImages.get(chatId)?.images.length ?? 0
+      const fileCount = this.pendingFiles.get(chatId)?.files.length ?? 0
       const parts: string[] = []
       if (imgCount > 0) parts.push(`${imgCount} 张图片`)
       if (fileCount > 0) parts.push(`${fileCount} 个文件`)
       await this.client.sendText(
         chatId,
         `📎 已收到 ${parts.join('和 ')}，请继续发送文字消息以触发处理。`,
-        contextToken,
+        contextToken
       )
       return
     }
@@ -834,7 +923,11 @@ class WeChatBridge {
       if (allFiles.length > 0) {
         this.pendingFiles.set(chatId, { files: allFiles, createdAt: Date.now() })
       }
-      await this.client.sendText(chatId, '❌ 上一条消息仍在处理中，附件已暂存，请稍候再试', contextToken)
+      await this.client.sendText(
+        chatId,
+        '❌ 上一条消息仍在处理中，附件已暂存，请稍候再试',
+        contextToken
+      )
       return
     }
 
@@ -860,7 +953,7 @@ class WeChatBridge {
         binding.sessionId,
         hint,
         img.mediaType,
-        img.data,
+        img.data
       )
       const label = `${hint}.${inferExtension(img.mediaType)}`
       attachments.push({ absolutePath, label, kind: 'image' as const })
@@ -872,7 +965,7 @@ class WeChatBridge {
         workspace.slug,
         binding.sessionId,
         file.fileName,
-        file.data,
+        file.data
       )
       attachments.push({ absolutePath, label: file.fileName, kind: 'file' as const })
     }

@@ -12,7 +12,13 @@ import * as React from 'react'
 
 import type { TAgentPermissionMode } from '@tagent/shared'
 
-import { agentPermissionModeMapAtom, agentDefaultPermissionModeAtom, sessionPersistedPermissionModeAtom, sessionExistsAtom, agentPlanModeSessionsAtom } from '@/atoms/agent-atoms'
+import {
+  agentPermissionModeMapAtom,
+  agentDefaultPermissionModeAtom,
+  sessionPersistedPermissionModeAtom,
+  sessionExistsAtom,
+  agentPlanModeSessionsAtom,
+} from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -38,7 +44,10 @@ interface PermissionModeSelectorProps {
   disabled?: boolean
 }
 
-export function PermissionModeSelector({ sessionId, disabled = false }: PermissionModeSelectorProps): React.ReactElement | null {
+export function PermissionModeSelector({
+  sessionId,
+  disabled = false,
+}: PermissionModeSelectorProps): React.ReactElement | null {
   const [modeMap, setModeMap] = useAtom(agentPermissionModeMapAtom)
   const setPlanModeSessions = useSetAtom(agentPlanModeSessionsAtom)
   const defaultMode = useAtomValue(agentDefaultPermissionModeAtom)
@@ -62,37 +71,40 @@ export function PermissionModeSelector({ sessionId, disabled = false }: Permissi
   }, [sessionId, persistedSessionMode, sessionExistsInList, defaultMode, setModeMap])
 
   /** 切换到指定模式（乐观更新 + 失败回滚） */
-  const selectMode = React.useCallback(async (nextMode: TAgentPermissionMode) => {
-    if (disabled) return
-    const prevMode = mode
+  const selectMode = React.useCallback(
+    async (nextMode: TAgentPermissionMode) => {
+      if (disabled) return
+      const prevMode = mode
 
-    setOpen(false)
+      setOpen(false)
 
-    // 乐观更新当前 session 的模式
-    setModeMap((prev: Map<string, TAgentPermissionMode>) => {
-      const next = new Map(prev)
-      next.set(sessionId, nextMode)
-      return next
-    })
-    setPlanModeSessions((prev: Set<string>) =>
-      updatePlanModeSessionSet(prev, sessionId, nextMode === 'plan')
-    )
-
-    // 热切换运行中的当前 session；失败时回滚 modeMap 保持 UI/后端一致
-    try {
-      await window.electronAPI.updateSessionPermissionMode(sessionId, nextMode)
-    } catch (error) {
-      console.error('[PermissionModeSelector] 运行中切换权限模式失败，回滚 UI:', error)
+      // 乐观更新当前 session 的模式
       setModeMap((prev: Map<string, TAgentPermissionMode>) => {
         const next = new Map(prev)
-        next.set(sessionId, prevMode)
+        next.set(sessionId, nextMode)
         return next
       })
       setPlanModeSessions((prev: Set<string>) =>
-        updatePlanModeSessionSet(prev, sessionId, prevMode === 'plan')
+        updatePlanModeSessionSet(prev, sessionId, nextMode === 'plan')
       )
-    }
-  }, [disabled, mode, sessionId, setModeMap, setPlanModeSessions])
+
+      // 热切换运行中的当前 session；失败时回滚 modeMap 保持 UI/后端一致
+      try {
+        await window.electronAPI.updateSessionPermissionMode(sessionId, nextMode)
+      } catch (error) {
+        console.error('[PermissionModeSelector] 运行中切换权限模式失败，回滚 UI:', error)
+        setModeMap((prev: Map<string, TAgentPermissionMode>) => {
+          const next = new Map(prev)
+          next.set(sessionId, prevMode)
+          return next
+        })
+        setPlanModeSessions((prev: Set<string>) =>
+          updatePlanModeSessionSet(prev, sessionId, prevMode === 'plan')
+        )
+      }
+    },
+    [disabled, mode, sessionId, setModeMap, setPlanModeSessions]
+  )
 
   const config = TAGENT_PERMISSION_MODE_CONFIG[mode]
   const Icon = MODE_ICONS[mode]
@@ -117,7 +129,9 @@ export function PermissionModeSelector({ sessionId, disabled = false }: Permissi
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-[220px]">
             <p className="font-medium">Ask 档位不适用</p>
-            <p className="text-xs text-muted-foreground mt-0.5">权限模式是 Agent 档位的概念，Ask 不能写文件或执行命令</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              权限模式是 Agent 档位的概念，Ask 不能写文件或执行命令
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -163,17 +177,21 @@ export function PermissionModeSelector({ sessionId, disabled = false }: Permissi
               <button
                 key={k}
                 type="button"
-                onClick={() => { selectMode(k) }}
+                onClick={() => {
+                  selectMode(k)
+                }}
                 className={cn(
                   'flex items-start gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors',
                   'hover:bg-accent hover:text-accent-foreground',
-                  mode === k && 'bg-accent/50',
+                  mode === k && 'bg-accent/50'
                 )}
               >
                 <ModeIcon className="size-4 mt-0.5 shrink-0 text-foreground/70" />
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium">{cfg.label}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{cfg.description}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">
+                    {cfg.description}
+                  </span>
                 </div>
               </button>
             )

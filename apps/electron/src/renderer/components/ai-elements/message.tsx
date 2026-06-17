@@ -19,7 +19,16 @@
 
 import { detectLanguage } from '@tagent/core'
 import { CodeBlock, MermaidBlock } from '@tagent/ui'
-import { ChevronDown, ChevronUp, Paperclip, FileText, Sparkles, Server, Download, MessageSquareText } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  Paperclip,
+  FileText,
+  Sparkles,
+  Server,
+  Download,
+  MessageSquareText,
+} from 'lucide-react'
 import * as React from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
@@ -34,13 +43,11 @@ import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { LoadingIndicator } from '@/components/ui/loading-indicator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { shouldInspectMermaidCodeBlock, shouldRenderMermaidCodeBlock } from '@/lib/mermaid-detection'
+  shouldInspectMermaidCodeBlock,
+  shouldRenderMermaidCodeBlock,
+} from '@/lib/mermaid-detection'
 import { cn } from '@/lib/utils'
 
 // ===== Message 根容器 =====
@@ -88,11 +95,7 @@ export function MessageHeader({
 }: MessageHeaderProps): React.ReactElement {
   return (
     <div
-      className={cn(
-        'flex items-start gap-2.5 mb-2.5',
-        'group-[.is-user]:hidden',
-        className
-      )}
+      className={cn('flex items-start gap-2.5 mb-2.5', 'group-[.is-user]:hidden', className)}
       {...props}
     >
       {logo && (
@@ -101,7 +104,9 @@ export function MessageHeader({
         </div>
       )}
       <div className="flex flex-col justify-between h-[35px]">
-        {model && <span className="text-sm font-semibold text-foreground/60 leading-none">{model}</span>}
+        {model && (
+          <span className="text-sm font-semibold text-foreground/60 leading-none">{model}</span>
+        )}
         {time && <span className="text-[10px] text-foreground/[0.38] leading-none">{time}</span>}
       </div>
       {children}
@@ -262,7 +267,10 @@ const MENTION_STYLES: Record<MentionType, { icon: typeof FileText; className: st
   file: { icon: FileText, className: 'bg-primary/10 text-primary' },
   skill: { icon: Sparkles, className: 'bg-[hsl(270_60%_60%/0.15)] text-[hsl(270_60%_50%)]' },
   mcp: { icon: Server, className: 'bg-[hsl(160_60%_45%/0.15)] text-[hsl(160_60%_35%)]' },
-  session: { icon: MessageSquareText, className: 'bg-[hsl(200_80%_50%/0.14)] text-[hsl(200_80%_40%)]' },
+  session: {
+    icon: MessageSquareText,
+    className: 'bg-[hsl(200_80%_50%/0.14)] text-[hsl(200_80%_40%)]',
+  },
 }
 
 function safeDecode(raw: string): string {
@@ -277,11 +285,12 @@ function MentionChip({ type, value }: { type: MentionType; value: string }): Rea
   const style = MENTION_STYLES[type]
   const Icon = style.icon
   const decoded = safeDecode(value)
-  const display = type === 'file'
-    ? (decoded.split('/').pop() || decoded)
-    : type === 'session'
-      ? `会话 ${decoded.slice(0, 8)}`
-      : decoded
+  const display =
+    type === 'file'
+      ? decoded.split('/').pop() || decoded
+      : type === 'session'
+        ? `会话 ${decoded.slice(0, 8)}`
+        : decoded
   return (
     <span
       className={cn(
@@ -370,7 +379,13 @@ export type RemarkPluginFn = () => (tree: MdastParent) => void
 const BasePathsContext = React.createContext<string[] | undefined>(undefined)
 
 /** 提供附加目录候选给所有内嵌的 MessageResponse */
-export function BasePathsProvider({ basePaths, children }: { basePaths?: string[]; children: React.ReactNode }): React.ReactElement {
+export function BasePathsProvider({
+  basePaths,
+  children,
+}: {
+  basePaths?: string[]
+  children: React.ReactNode
+}): React.ReactElement {
   return <BasePathsContext.Provider value={basePaths}>{children}</BasePathsContext.Provider>
 }
 
@@ -447,7 +462,9 @@ function extractText(node: React.ReactNode): string {
 /** 代码块 / Mermaid 渲染器 */
 const MarkdownPre = React.memo(function MarkdownPre({
   children: preChildren,
-}: { children?: React.ReactNode }): React.ReactElement {
+}: {
+  children?: React.ReactNode
+}): React.ReactElement {
   // react-markdown v10 把 <code> 替换成自定义组件后，type 不再是字符串 'code'，
   // 但 pre 的 code child 要么是原生 'code'（v9 及之前），要么是自定义函数/对象组件（v10+）。
   // 通过 type 形态过滤掉意外混入的其他原生 HTML 元素（如 span/div），降低未来 react-markdown
@@ -497,11 +514,18 @@ const MarkdownInlineCode = React.memo(function MarkdownInlineCode({
   basePath,
   basePaths,
   ...codeProps
-}: React.HTMLAttributes<HTMLElement> & { basePath?: string; basePaths?: string[] }): React.ReactElement {
+}: React.HTMLAttributes<HTMLElement> & {
+  basePath?: string
+  basePaths?: string[]
+}): React.ReactElement {
   // 兜底：从 context 读附加 basePaths（避免穿透 SDKMessageRenderer / ContentBlock 等中间层）
   const ctxBasePaths = React.useContext(BasePathsContext)
   if (codeClassName) {
-    return <code className={codeClassName} {...codeProps}>{codeChildren}</code>
+    return (
+      <code className={codeClassName} {...codeProps}>
+        {codeChildren}
+      </code>
+    )
   }
 
   const text = typeof codeChildren === 'string' ? codeChildren : ''
@@ -517,7 +541,9 @@ const MarkdownInlineCode = React.memo(function MarkdownInlineCode({
       }
     }
     if (isAbsoluteFilePath(text)) {
-      return <FilePathChip filePath={text.trim()} basePaths={merged.length > 0 ? merged : undefined} />
+      return (
+        <FilePathChip filePath={text.trim()} basePaths={merged.length > 0 ? merged : undefined} />
+      )
     }
     if (merged.length > 0 && isRelativeFilePath(text)) {
       return <FilePathChip filePath={text.trim()} basePaths={merged} />
@@ -536,21 +562,30 @@ const MarkdownInlineCode = React.memo(function MarkdownInlineCode({
 
 /** 使用 react-markdown 渲染 assistant 消息内容，代码块使用 Shiki 语法高亮 */
 export const MessageResponse = React.memo(
-  function MessageResponse({ children, className, basePath, basePaths, remarkPlugins }: MessageResponseProps): React.ReactElement {
+  function MessageResponse({
+    children,
+    className,
+    basePath,
+    basePaths,
+    remarkPlugins,
+  }: MessageResponseProps): React.ReactElement {
     // 合并内置 + 外部 remark 插件（保持引用稳定）
     const mergedRemarkPlugins = React.useMemo(
-      () => remarkPlugins ? [...REMARK_PLUGINS, ...remarkPlugins] : REMARK_PLUGINS,
+      () => (remarkPlugins ? [...REMARK_PLUGINS, ...remarkPlugins] : REMARK_PLUGINS),
       [remarkPlugins]
     )
 
     // 稳定引用的 components 对象，避免 react-markdown 每帧重建组件映射
-    const components = React.useMemo(() => ({
-      a: MarkdownLink,
-      pre: MarkdownPre,
-      code: (props: React.HTMLAttributes<HTMLElement>) => (
-        <MarkdownInlineCode {...props} basePath={basePath} basePaths={basePaths} />
-      ),
-    }), [basePath, basePaths])
+    const components = React.useMemo(
+      () => ({
+        a: MarkdownLink,
+        pre: MarkdownPre,
+        code: (props: React.HTMLAttributes<HTMLElement>) => (
+          <MarkdownInlineCode {...props} basePath={basePath} basePaths={basePaths} />
+        ),
+      }),
+      [basePath, basePaths]
+    )
 
     return (
       <div
@@ -598,7 +633,11 @@ interface UserMessageContentProps extends HTMLAttributes<HTMLDivElement> {
  * - 点击展开/收起，带渐变遮罩
  */
 export const UserMessageContent = React.memo(
-  function UserMessageContent({ children, className, ...props }: UserMessageContentProps): React.ReactElement {
+  function UserMessageContent({
+    children,
+    className,
+    ...props
+  }: UserMessageContentProps): React.ReactElement {
     const [isExpanded, setIsExpanded] = React.useState(false)
     const [shouldCollapse, setShouldCollapse] = React.useState(false)
     const contentRef = React.useRef<HTMLDivElement>(null)
@@ -620,7 +659,14 @@ export const UserMessageContent = React.memo(
     }, [])
 
     return (
-      <div className={cn('relative inline-block max-w-full rounded-[10px] bg-primary/10 px-3.5 py-2.5', shouldCollapse && !isExpanded && 'pb-6', className)} {...props}>
+      <div
+        className={cn(
+          'relative inline-block max-w-full rounded-[10px] bg-primary/10 px-3.5 py-2.5',
+          shouldCollapse && !isExpanded && 'pb-6',
+          className
+        )}
+        {...props}
+      >
         <div
           ref={contentRef}
           className={cn(
@@ -629,7 +675,12 @@ export const UserMessageContent = React.memo(
             shouldCollapse && !isExpanded && 'max-h-[6.5em]'
           )}
         >
-          <MessageResponse className="prose-p:my-0.5 prose-headings:my-1.5" remarkPlugins={USER_REMARK_PLUGINS}>{children}</MessageResponse>
+          <MessageResponse
+            className="prose-p:my-0.5 prose-headings:my-1.5"
+            remarkPlugins={USER_REMARK_PLUGINS}
+          >
+            {children}
+          </MessageResponse>
         </div>
         {shouldCollapse && (
           <button
@@ -665,7 +716,11 @@ export const UserMessageContent = React.memo(
 type MessageLoadingProps = HTMLAttributes<HTMLDivElement> & { startedAt?: number }
 
 /** 等待首个 chunk 的加载动画 */
-export function MessageLoading({ className, startedAt, ...props }: MessageLoadingProps): React.ReactElement {
+export function MessageLoading({
+  className,
+  startedAt,
+  ...props
+}: MessageLoadingProps): React.ReactElement {
   return (
     <div className={cn('mt-0', className)} {...props}>
       <LoadingIndicator
@@ -743,7 +798,10 @@ interface MessageAttachmentImageProps {
 }
 
 /** 图片附件展示（单图: max 500px，多图: 280px 方块），点击可预览大图 */
-function MessageAttachmentImage({ attachment, isSingle = false }: MessageAttachmentImageProps): React.ReactElement {
+function MessageAttachmentImage({
+  attachment,
+  isSingle = false,
+}: MessageAttachmentImageProps): React.ReactElement {
   const [imageSrc, setImageSrc] = React.useState<string | null>(null)
   const [lightboxOpen, setLightboxOpen] = React.useState(false)
 
@@ -765,10 +823,12 @@ function MessageAttachmentImage({ attachment, isSingle = false }: MessageAttachm
 
   if (!imageSrc) {
     return (
-      <div className={cn(
-        'rounded-lg bg-muted/30 animate-pulse shrink-0',
-        isSingle ? 'w-[280px] h-[200px]' : 'size-[280px]'
-      )} />
+      <div
+        className={cn(
+          'rounded-lg bg-muted/30 animate-pulse shrink-0',
+          isSingle ? 'w-[280px] h-[200px]' : 'size-[280px]'
+        )}
+      />
     )
   }
 
@@ -819,9 +879,8 @@ interface MessageAttachmentFileProps {
 /** 文件附件展示（标签样式，teal 色调） */
 function MessageAttachmentFile({ attachment }: MessageAttachmentFileProps): React.ReactElement {
   /** 截断文件名 */
-  const displayName = attachment.filename.length > 20
-    ? attachment.filename.slice(0, 17) + '...'
-    : attachment.filename
+  const displayName =
+    attachment.filename.length > 20 ? attachment.filename.slice(0, 17) + '...' : attachment.filename
 
   return (
     <div className="flex items-center gap-2 rounded-lg bg-[#37a5aa]/10 border border-[#37a5aa]/20 px-3 py-1.5 text-[13px] text-[#37a5aa] shrink-0">
@@ -836,7 +895,10 @@ function MessageAttachmentFile({ attachment }: MessageAttachmentFileProps): Reac
 type StreamingIndicatorProps = HTMLAttributes<HTMLSpanElement>
 
 /** 流式生成中的呼吸脉冲点指示器 */
-export function StreamingIndicator({ className, ...props }: StreamingIndicatorProps): React.ReactElement {
+export function StreamingIndicator({
+  className,
+  ...props
+}: StreamingIndicatorProps): React.ReactElement {
   return (
     <span
       className={cn(

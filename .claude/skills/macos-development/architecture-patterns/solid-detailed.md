@@ -55,6 +55,7 @@ struct DocumentSearch {
 ```
 
 ### When to Bend SRP
+
 - **Tiny apps**: A single ViewModel handling fetch + display is fine for 1-2 screens
 - **Data models**: `@Model` classes naturally combine data + persistence — that's SwiftData's design
 - **Value types**: Small structs with 2-3 responsibilities are often clearer than over-split types
@@ -298,14 +299,15 @@ struct ThumbnailView: View {
 
 SOLID principles are guidelines, not laws. Apply them proportionally:
 
-| App Size | SRP | OCP | LSP | ISP | DIP |
-|----------|-----|-----|-----|-----|-----|
-| Prototype | Loose | Skip | Follow | Skip | Skip |
-| Small (1-3 screens) | Moderate | Where natural | Follow | Light | For testing |
-| Medium (4-10 screens) | Strict | For extensible areas | Follow | Moderate | For services |
-| Large (10+ screens) | Strict | Everywhere | Follow | Strict | Everywhere |
+| App Size              | SRP      | OCP                  | LSP    | ISP      | DIP          |
+| --------------------- | -------- | -------------------- | ------ | -------- | ------------ |
+| Prototype             | Loose    | Skip                 | Follow | Skip     | Skip         |
+| Small (1-3 screens)   | Moderate | Where natural        | Follow | Light    | For testing  |
+| Medium (4-10 screens) | Strict   | For extensible areas | Follow | Moderate | For services |
+| Large (10+ screens)   | Strict   | Everywhere           | Follow | Strict   | Everywhere   |
 
 **Rules of thumb:**
+
 - If a class is under 100 lines, SRP violations are probably fine
 - If you'll never extend a type, OCP is unnecessary overhead
 - LSP should always be followed — it prevents bugs

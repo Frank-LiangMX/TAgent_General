@@ -10,11 +10,9 @@ import { Loader2, Power, PowerOff, LogOut, QrCode, ExternalLink } from 'lucide-r
 import * as React from 'react'
 import { toast } from 'sonner'
 
-
 import { SettingsCard } from './primitives/SettingsCard'
 import { SettingsRow } from './primitives/SettingsRow'
 import { SettingsSection } from './primitives/SettingsSection'
-
 
 import type { WeChatBridgeStatus } from '@tagent/shared'
 
@@ -43,14 +41,13 @@ export function WeChatSettings(): React.ReactElement {
 
   // 加载配置和状态
   React.useEffect(() => {
-    Promise.all([
-      window.electronAPI.getWeChatConfig(),
-      window.electronAPI.getWeChatStatus(),
-    ]).then(([config, status]) => {
-      setHasCredentials(!!config.credentials)
-      setBridgeState(status)
-      setLoaded(true)
-    })
+    Promise.all([window.electronAPI.getWeChatConfig(), window.electronAPI.getWeChatStatus()]).then(
+      ([config, status]) => {
+        setHasCredentials(!!config.credentials)
+        setBridgeState(status)
+        setLoaded(true)
+      }
+    )
   }, [setBridgeState])
 
   // 订阅状态变化
@@ -121,10 +118,7 @@ export function WeChatSettings(): React.ReactElement {
   return (
     <div className="space-y-8">
       {/* 连接状态 */}
-      <SettingsSection
-        title="微信集成"
-        description="扫码登录微信，在微信中控制 TAgent Agent"
-      >
+      <SettingsSection title="微信集成" description="扫码登录微信，在微信中控制 TAgent Agent">
         <SettingsCard>
           <SettingsRow label="Bridge 状态">
             <div className="flex items-center gap-3">
@@ -145,12 +139,7 @@ export function WeChatSettings(): React.ReactElement {
                 </div>
               ) : hasCredentials && !isLoggingIn ? (
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleStart}
-                    disabled={isConnecting}
-                  >
+                  <Button size="sm" variant="outline" onClick={handleStart} disabled={isConnecting}>
                     {isConnecting ? (
                       <Loader2 size={14} className="animate-spin mr-1.5" />
                     ) : (
@@ -190,18 +179,11 @@ export function WeChatSettings(): React.ReactElement {
 
       {/* QR 码显示区域 */}
       {showQRCode && (
-        <SettingsSection
-          title="扫码登录"
-          description="使用微信扫描下方二维码"
-        >
+        <SettingsSection title="扫码登录" description="使用微信扫描下方二维码">
           <SettingsCard divided={false}>
             <div className="flex flex-col items-center py-8 px-4">
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <img
-                  src={bridgeState.qrCodeData}
-                  alt="微信登录二维码"
-                  className="w-52 h-52"
-                />
+                <img src={bridgeState.qrCodeData} alt="微信登录二维码" className="w-52 h-52" />
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
                 {bridgeState.status === 'scanned' ? (
@@ -210,12 +192,7 @@ export function WeChatSettings(): React.ReactElement {
                   '打开微信，扫描二维码登录'
                 )}
               </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="mt-2"
-                onClick={handleLogin}
-              >
+              <Button size="sm" variant="ghost" className="mt-2" onClick={handleLogin}>
                 刷新二维码
               </Button>
             </div>
@@ -224,40 +201,41 @@ export function WeChatSettings(): React.ReactElement {
       )}
 
       {/* 使用说明 */}
-      <SettingsSection
-        title="使用说明"
-        description="微信机器人的工作方式"
-      >
+      <SettingsSection title="使用说明" description="微信机器人的工作方式">
         <SettingsCard divided={false}>
           <div className="px-4 py-4 space-y-5 text-sm">
             {/* 步骤 1 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">1</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  1
+                </span>
                 <span className="font-medium text-foreground">扫码登录</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                点击上方「扫码登录」，用微信扫描二维码。
-                这会将你的微信账号作为 Bot 接入 TAgent。
+                点击上方「扫码登录」，用微信扫描二维码。 这会将你的微信账号作为 Bot 接入 TAgent。
               </p>
             </div>
 
             {/* 步骤 2 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">2</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  2
+                </span>
                 <span className="font-medium text-foreground">自动连接</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                扫码成功后，TAgent 会自动建立长连接。
-                凭证会加密保存，下次启动 TAgent 时自动重连。
+                扫码成功后，TAgent 会自动建立长连接。 凭证会加密保存，下次启动 TAgent 时自动重连。
               </p>
             </div>
 
             {/* 步骤 3 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">3</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+                  3
+                </span>
                 <span className="font-medium text-foreground">收发消息</span>
               </div>
               <p className="pl-7 text-muted-foreground">
@@ -277,8 +255,7 @@ export function WeChatSettings(): React.ReactElement {
                 iLink Bot API
                 <ExternalLink className="size-2.5" />
               </button>
-              ，这是微信官方提供的 Bot 接口。
-              会话凭证使用系统级加密存储。
+              ，这是微信官方提供的 Bot 接口。 会话凭证使用系统级加密存储。
             </div>
           </div>
         </SettingsCard>

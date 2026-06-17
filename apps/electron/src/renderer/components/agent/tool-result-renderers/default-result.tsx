@@ -30,7 +30,10 @@ function tryParseKeyValue(text: string): Array<{ key: string; value: string }> |
   return null
 }
 
-export function DefaultResultRenderer({ result, isError }: DefaultResultRendererProps): React.ReactElement {
+export function DefaultResultRenderer({
+  result,
+  isError,
+}: DefaultResultRendererProps): React.ReactElement {
   if (isError) {
     return (
       <pre className="rounded-md p-3 text-[12px] font-mono text-destructive/80 bg-destructive/5 whitespace-pre-wrap break-all overflow-x-auto">

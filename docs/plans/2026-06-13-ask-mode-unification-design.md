@@ -27,12 +27,12 @@
 
 ### 1.1 问题
 
-| 问题 | 说明 |
-|------|------|
-| Chat 入口弱 | `appMode` 切换藏在欢迎页 / 设置 / `Cmd+Shift+M`，Rail「会话」与列表内容不一致 |
-| 双轨成本高 | 两套 IPC、atoms、侧栏、Tab 类型、~9k 行 Chat 专用 UI |
-| Chat 差异化不足 | 相对网页端 DeepSeek / 豆包等无独占理由 |
-| 轻量问答割裂 | `/btw` 已支持无工具问答，但与主 Composer 分离 |
+| 问题            | 说明                                                                          |
+| --------------- | ----------------------------------------------------------------------------- |
+| Chat 入口弱     | `appMode` 切换藏在欢迎页 / 设置 / `Cmd+Shift+M`，Rail「会话」与列表内容不一致 |
+| 双轨成本高      | 两套 IPC、atoms、侧栏、Tab 类型、~9k 行 Chat 专用 UI                          |
+| Chat 差异化不足 | 相对网页端 DeepSeek / 豆包等无独占理由                                        |
+| 轻量问答割裂    | `/btw` 已支持无工具问答，但与主 Composer 分离                                 |
 
 ### 1.2 目标
 
@@ -52,15 +52,15 @@
 
 ## 2. 已确认产品决策
 
-| # | 决策 |
-|---|------|
-| D1 | Composer 档位对标 Cursor：**Ask = 只对话**，**Agent = 可动手** |
-| D2 | 切换发生在 **输入区**，不在设置页、不作为全局 `appMode` |
-| D3 | 升级路径：**同 `agentSessionId` 切到 Agent 档位 + 预填 `suggestedPrompt`**，非新建 Chat 会话 |
-| D4 | Ask 工具白名单：`suggest_agent_switch`（必开）+ 可选 `web-search`、`memory`；其余禁用 |
-| D5 | Ask 消息存 **`{sessionId}.ask.jsonl`**，与 SDK JSONL 并列 |
-| D6 | 侧栏 **单一 Agent 会话列表**；退役 Chat 列表主路径 |
-| D7 | `/btw` 在 P2 与 Ask 收敛（合并为 Ask 展开态或 deprecate） |
+| #   | 决策                                                                                         |
+| --- | -------------------------------------------------------------------------------------------- |
+| D1  | Composer 档位对标 Cursor：**Ask = 只对话**，**Agent = 可动手**                               |
+| D2  | 切换发生在 **输入区**，不在设置页、不作为全局 `appMode`                                      |
+| D3  | 升级路径：**同 `agentSessionId` 切到 Agent 档位 + 预填 `suggestedPrompt`**，非新建 Chat 会话 |
+| D4  | Ask 工具白名单：`suggest_agent_switch`（必开）+ 可选 `web-search`、`memory`；其余禁用        |
+| D5  | Ask 消息存 **`{sessionId}.ask.jsonl`**，与 SDK JSONL 并列                                    |
+| D6  | 侧栏 **单一 Agent 会话列表**；退役 Chat 列表主路径                                           |
+| D7  | `/btw` 在 P2 与 Ask 收敛（合并为 Ask 展开态或 deprecate）                                    |
 
 ---
 
@@ -139,11 +139,11 @@ export interface AskSendInput {
 
 ### 4.3 存储路径
 
-| 资源 | 路径 | 说明 |
-|------|------|------|
-| Agent SDK 消息 | `~/.tagent/agent-sessions/{id}.jsonl` | 现有 |
-| Ask 消息 | `~/.tagent/agent-sessions/{id}.ask.jsonl` | **新增** |
-| Chat 遗留 | `~/.tagent/conversations/*` | 只读 / 迁移，P3 前不删 |
+| 资源           | 路径                                      | 说明                   |
+| -------------- | ----------------------------------------- | ---------------------- |
+| Agent SDK 消息 | `~/.tagent/agent-sessions/{id}.jsonl`     | 现有                   |
+| Ask 消息       | `~/.tagent/agent-sessions/{id}.ask.jsonl` | **新增**               |
+| Chat 遗留      | `~/.tagent/conversations/*`               | 只读 / 迁移，P3 前不删 |
 
 **config-paths 新增**：
 
@@ -196,12 +196,12 @@ import { getAgentSessionSDKMessages } from './agent-session-manager'
 
 自 `agent-recommend-tool.ts` 演进：
 
-| 项 | Chat 现状 | Ask 目标 |
-|----|-----------|----------|
-| 工具名 | `suggest_agent_mode` | `suggest_agent_switch`（可保留别名兼容一期） |
-| systemPromptAppend | Chat 导向 | Ask 权限边界 + 引导语 |
-| 执行结果 | `agent_recommendation` | `agent_switch_suggestion` |
-| UI | 迁移到新 Agent 会话 | **切 Composer 为 agent + 预填 draft** |
+| 项                 | Chat 现状              | Ask 目标                                     |
+| ------------------ | ---------------------- | -------------------------------------------- |
+| 工具名             | `suggest_agent_mode`   | `suggest_agent_switch`（可保留别名兼容一期） |
+| systemPromptAppend | Chat 导向              | Ask 权限边界 + 引导语                        |
+| 执行结果           | `agent_recommendation` | `agent_switch_suggestion`                    |
+| UI                 | 迁移到新 Agent 会话    | **切 Composer 为 agent + 预填 draft**        |
 
 ---
 
@@ -209,14 +209,14 @@ import { getAgentSessionSDKMessages } from './agent-session-manager'
 
 **文件**：`apps/electron/src/main/lib/ask-tool-policy.ts`（**新建**）
 
-| 工具 ID | Ask | Agent |
-|---------|-----|-------|
-| `agent-mode-recommend` / `suggest_agent_switch` | ✅ 必开 | ❌ |
-| `web-search` | ✅ 可配置 | Agent/MCP |
-| `memory` | ✅ 可配置 | Agent 记忆体系 |
-| `nano-banana` | ❌ 默认 | 产品后续 |
-| `ta-*` | ❌ | TA Agent |
-| 自定义 HTTP | ❌ | 视配置 |
+| 工具 ID                                         | Ask       | Agent          |
+| ----------------------------------------------- | --------- | -------------- |
+| `agent-mode-recommend` / `suggest_agent_switch` | ✅ 必开   | ❌             |
+| `web-search`                                    | ✅ 可配置 | Agent/MCP      |
+| `memory`                                        | ✅ 可配置 | Agent 记忆体系 |
+| `nano-banana`                                   | ❌ 默认   | 产品后续       |
+| `ta-*`                                          | ❌        | TA Agent       |
+| 自定义 HTTP                                     | ❌        | 视配置         |
 
 实现：`getAskEnabledTools()` 返回 `ToolDefinition[]` + `systemPromptAppend`，内部调用 `chat-tool-registry` 子集，**不**走 Chat 全量 `getEnabledTools`。
 
@@ -264,11 +264,11 @@ onAskStreamChunk(listener): () => void
 
 ### 7.3 与 `CHAT_IPC_CHANNELS` 关系
 
-| 阶段 | 策略 |
-|------|------|
+| 阶段   | 策略                                                 |
+| ------ | ---------------------------------------------------- |
 | P0～P1 | Ask 用 `ASK_IPC_*`；Chat IPC 保留给遗留 / Quick Task |
-| P2 | Quick Task 默认 Agent；Ask 走 `ASK_IPC` |
-| P3 | 删除 `CHAT_IPC` 发送类；只读类可保留一季 |
+| P2     | Quick Task 默认 Agent；Ask 走 `ASK_IPC`              |
+| P3     | 删除 `CHAT_IPC` 发送类；只读类可保留一季             |
 
 ---
 
@@ -278,13 +278,13 @@ onAskStreamChunk(listener): () => void
 
 **目标**：Agent 输入区可切 Ask，能发、能流式、能展示，带权限契约。
 
-| PR | 内容 |
-|----|------|
-| P0-1 | `packages/shared`：`ask.ts` 类型 + `ASK_IPC_CHANNELS`；`config-paths` + `AgentSessionMeta.lastComposerMode` |
+| PR   | 内容                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------- |
+| P0-1 | `packages/shared`：`ask.ts` 类型 + `ASK_IPC_CHANNELS`；`config-paths` + `AgentSessionMeta.lastComposerMode`    |
 | P0-2 | 主进程：`ask-message-store.ts`、`ask-service.ts`、`ask-prompt-builder.ts`、`ask-tool-policy.ts`；注册 `ipc.ts` |
-| P0-3 | `preload/index.ts` + `ask-service.test.ts`（流式 mock） |
-| P0-4 | 渲染：`composerModeMapAtom` / 持久化；`ComposerModeSelector.tsx`；`AgentView` 发送分支 |
-| P0-5 | `AskMessageItem` + `AgentMessages` 时间线合并；`useGlobalAskListeners.ts` |
+| P0-3 | `preload/index.ts` + `ask-service.test.ts`（流式 mock）                                                        |
+| P0-4 | 渲染：`composerModeMapAtom` / 持久化；`ComposerModeSelector.tsx`；`AgentView` 发送分支                         |
+| P0-5 | `AskMessageItem` + `AgentMessages` 时间线合并；`useGlobalAskListeners.ts`                                      |
 
 **P0 验收**：
 
@@ -294,13 +294,13 @@ onAskStreamChunk(listener): () => void
 
 ### Phase P1 — 引导升级 + 体验（约 1.5～2 天）
 
-| PR | 内容 |
-|----|------|
-| P1-1 | `suggest_agent_switch` 工具 + `STREAM_SWITCH_SUGGESTION` |
+| PR   | 内容                                                                              |
+| ---- | --------------------------------------------------------------------------------- |
+| P1-1 | `suggest_agent_switch` 工具 + `STREAM_SWITCH_SUGGESTION`                          |
 | P1-2 | `AgentSwitchBanner.tsx`（自 `AgentRecommendBanner` 改造，放 `components/agent/`） |
-| P1-3 | Ask 下灰掉 Permission / 工作区附件；模型选择器支持全渠道 |
-| P1-4 | 输入区弱提示文案：`仅对话，不修改文件或执行命令` |
-| P1-5 | 可选：发送前启发式提示（改文件/运行命令关键词） |
+| P1-3 | Ask 下灰掉 Permission / 工作区附件；模型选择器支持全渠道                          |
+| P1-4 | 输入区弱提示文案：`仅对话，不修改文件或执行命令`                                  |
+| P1-5 | 可选：发送前启发式提示（改文件/运行命令关键词）                                   |
 
 **P1 验收**：
 
@@ -309,22 +309,22 @@ onAskStreamChunk(listener): () => void
 
 ### Phase P2 — 导航统一 + Chat 藏入口（约 1.5～2 天）
 
-| PR | 内容 |
-|----|------|
-| P2-1 | 侧栏移除 `appMode === 'chat'` 列表分支；Rail 文案改为「会话」 |
-| P2-2 | 删除/隐藏欢迎页 Chat Tab、`SettingsPanel` Chat/Agent 切换 |
+| PR   | 内容                                                                 |
+| ---- | -------------------------------------------------------------------- |
+| P2-1 | 侧栏移除 `appMode === 'chat'` 列表分支；Rail 文案改为「会话」        |
+| P2-2 | 删除/隐藏欢迎页 Chat Tab、`SettingsPanel` Chat/Agent 切换            |
 | P2-3 | `TabSwitcher` / `SearchDialog` 仅 Agent（Chat 结果可选保留只读一季） |
-| P2-4 | 快捷键：`Cmd+Shift+M` 改为切换 Composer 档位（非 appMode） |
-| P2-5 | `/btw` 标记 deprecated 或映射到 Ask 展开面板 |
+| P2-4 | 快捷键：`Cmd+Shift+M` 改为切换 Composer 档位（非 appMode）           |
+| P2-5 | `/btw` 标记 deprecated 或映射到 Ask 展开面板                         |
 
 ### Phase P3 — Chat 栈退役（约 2～3 天）
 
-| PR | 内容 |
-|----|------|
-| P3-1 | 删 `ChatView` 及 `components/chat/`（先搬迁共享组件到 `components/shared/`） |
+| PR   | 内容                                                                                |
+| ---- | ----------------------------------------------------------------------------------- |
+| P3-1 | 删 `ChatView` 及 `components/chat/`（先搬迁共享组件到 `components/shared/`）        |
 | P3-2 | 删 `chat-service` 发送路径 / `useGlobalChatListeners`（保留附件 API 若 Agent 仍用） |
-| P3-3 | `migration-service` 调整；设置里 Chat 历史「导出」 |
-| P3-4 | 删 `appMode: 'chat'`、`TabType: 'chat'` |
+| P3-3 | `migration-service` 调整；设置里 Chat 历史「导出」                                  |
+| P3-4 | 删 `appMode: 'chat'`、`TabType: 'chat'`                                             |
 
 ---
 
@@ -332,26 +332,26 @@ onAskStreamChunk(listener): () => void
 
 ### 9.1 `packages/shared`
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
-| [ ] 新增 Ask 类型与 IPC | `src/types/ask.ts` | 导出至 `src/index.ts` |
-| [ ] 扩展会话元数据 | `src/types/agent.ts` | `AgentSessionMeta.lastComposerMode?` |
-| [ ] 流式事件类型 | `ask.ts` | `AskStreamChunkEvent` 等，带 `agentSessionId` |
-| [ ] 升级引导类型 | `ask.ts` 或 `chat-tool.ts` | `AgentSwitchSuggestion` |
+| 任务                    | 文件                       | 说明                                          |
+| ----------------------- | -------------------------- | --------------------------------------------- |
+| [ ] 新增 Ask 类型与 IPC | `src/types/ask.ts`         | 导出至 `src/index.ts`                         |
+| [ ] 扩展会话元数据      | `src/types/agent.ts`       | `AgentSessionMeta.lastComposerMode?`          |
+| [ ] 流式事件类型        | `ask.ts`                   | `AskStreamChunkEvent` 等，带 `agentSessionId` |
+| [ ] 升级引导类型        | `ask.ts` 或 `chat-tool.ts` | `AgentSwitchSuggestion`                       |
 
 ### 9.2 `apps/electron/src/main/lib`
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
-| [ ] Ask 消息路径 | `config-paths.ts` | `getAgentSessionAskMessagesPath` |
-| [ ] Ask JSONL CRUD | `ask-message-store.ts` | **新建**，参考 `conversation-manager` 简化版 |
-| [ ] Ask 流式服务 | `ask-service.ts` | **新建**，参考 `chat-service.ts` + `btw-service.ts` |
-| [ ] 权限契约 | `ask-prompt-builder.ts` | **新建**，`buildAskSystemPrompt(sessionId)` |
-| [ ] 工具白名单 | `ask-tool-policy.ts` | **新建** |
-| [ ] 升级工具 | `chat-tools/agent-recommend-tool.ts` | 改 prompt / 工具名 / 返回 type |
-| [ ] IPC 注册 | `ipc.ts` | `ASK_IPC_CHANNELS` handlers |
-| [ ] 会话 CRUD | `agent-session-manager.ts` | 读写 `lastComposerMode` |
-| [ ] 测试 | `ask-service.test.ts` | 契约注入、工具白名单、mock adapter |
+| 任务               | 文件                                 | 说明                                                |
+| ------------------ | ------------------------------------ | --------------------------------------------------- |
+| [ ] Ask 消息路径   | `config-paths.ts`                    | `getAgentSessionAskMessagesPath`                    |
+| [ ] Ask JSONL CRUD | `ask-message-store.ts`               | **新建**，参考 `conversation-manager` 简化版        |
+| [ ] Ask 流式服务   | `ask-service.ts`                     | **新建**，参考 `chat-service.ts` + `btw-service.ts` |
+| [ ] 权限契约       | `ask-prompt-builder.ts`              | **新建**，`buildAskSystemPrompt(sessionId)`         |
+| [ ] 工具白名单     | `ask-tool-policy.ts`                 | **新建**                                            |
+| [ ] 升级工具       | `chat-tools/agent-recommend-tool.ts` | 改 prompt / 工具名 / 返回 type                      |
+| [ ] IPC 注册       | `ipc.ts`                             | `ASK_IPC_CHANNELS` handlers                         |
+| [ ] 会话 CRUD      | `agent-session-manager.ts`           | 读写 `lastComposerMode`                             |
+| [ ] 测试           | `ask-service.test.ts`                | 契约注入、工具白名单、mock adapter                  |
 
 **可复用、少改**：
 
@@ -365,15 +365,15 @@ onAskStreamChunk(listener): () => void
 
 ### 9.3 `apps/electron/src/preload`
 
-| 任务 | 文件 |
-|------|------|
-| [ ] 暴露 Ask API + stream 监听 | `index.ts` |
-| [ ] 更新 `ElectronAPI` 接口 | 同文件或 `types` |
+| 任务                           | 文件             |
+| ------------------------------ | ---------------- |
+| [ ] 暴露 Ask API + stream 监听 | `index.ts`       |
+| [ ] 更新 `ElectronAPI` 接口    | 同文件或 `types` |
 
 ### 9.4 主进程入口
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
+| 任务                  | 文件            | 说明                                 |
+| --------------------- | --------------- | ------------------------------------ |
 | [ ] 托盘「新建 Chat」 | `main/index.ts` | 改为新建 Agent 会话 + Ask 档位（P2） |
 
 ---
@@ -382,65 +382,65 @@ onAskStreamChunk(listener): () => void
 
 ### 10.1 Atoms
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
-| [ ] Composer 档位 Map | `atoms/composer-atoms.ts` | **新建** `composerModeMapAtom` |
-| [ ] Ask 消息 / 流式 | `atoms/ask-atoms.ts` | **新建**，结构参考 `chat-atoms` 简化 |
-| [ ] 升级引导 | 迁自 `chat-atoms` | `pendingAgentSwitchSuggestionAtom` |
-| [ ] 拆渠道 atom | `atoms/channel-atoms.ts` | **新建**，从 `chat-atoms` 迁 `channelsAtom` |
-| [ ] 弱化 appMode | `atoms/app-mode.ts` | P2 移除 `'chat'`，保留 `scratch` |
+| 任务                  | 文件                      | 说明                                        |
+| --------------------- | ------------------------- | ------------------------------------------- |
+| [ ] Composer 档位 Map | `atoms/composer-atoms.ts` | **新建** `composerModeMapAtom`              |
+| [ ] Ask 消息 / 流式   | `atoms/ask-atoms.ts`      | **新建**，结构参考 `chat-atoms` 简化        |
+| [ ] 升级引导          | 迁自 `chat-atoms`         | `pendingAgentSwitchSuggestionAtom`          |
+| [ ] 拆渠道 atom       | `atoms/channel-atoms.ts`  | **新建**，从 `chat-atoms` 迁 `channelsAtom` |
+| [ ] 弱化 appMode      | `atoms/app-mode.ts`       | P2 移除 `'chat'`，保留 `scratch`            |
 
 ### 10.2 Hooks
 
-| 任务 | 文件 |
-|------|------|
-| [ ] Ask IPC 监听 | `hooks/useGlobalAskListeners.ts` |
-| [ ] 挂载监听 | `main.tsx`（与 Agent 监听并列） |
-| [ ] 发送逻辑 | `AgentView.tsx` 或 `hooks/useComposerSend.ts` |
-| [ ] 清理 Chat 监听 | P3 删 `useGlobalChatListeners.ts` |
+| 任务               | 文件                                          |
+| ------------------ | --------------------------------------------- |
+| [ ] Ask IPC 监听   | `hooks/useGlobalAskListeners.ts`              |
+| [ ] 挂载监听       | `main.tsx`（与 Agent 监听并列）               |
+| [ ] 发送逻辑       | `AgentView.tsx` 或 `hooks/useComposerSend.ts` |
+| [ ] 清理 Chat 监听 | P3 删 `useGlobalChatListeners.ts`             |
 
 ### 10.3 组件
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
-| [ ] 档位切换器 | `components/agent/ComposerModeSelector.tsx` | 参考 `PermissionModeSelector` 36px 圆形 |
-| [ ] Ask 气泡 | `components/agent/AskMessageItem.tsx` | **新建** |
-| [ ] 升级横幅 | `components/agent/AgentSwitchBanner.tsx` | 自 `AgentRecommendBanner` 改 |
-| [ ] 时间线合并 | `AgentMessages.tsx` | 拉 Ask + SDK，按时间排序 |
-| [ ] 输入区分支 | `AgentView.tsx` | Ask 时隐藏/禁用 Agent 专属控件 |
-| [ ] 搬迁共享 UI | `components/shared/` | `UserAvatar`、`CopyButton`、`AttachmentPreviewItem`、`ModelSelector` |
+| 任务            | 文件                                        | 说明                                                                 |
+| --------------- | ------------------------------------------- | -------------------------------------------------------------------- |
+| [ ] 档位切换器  | `components/agent/ComposerModeSelector.tsx` | 参考 `PermissionModeSelector` 36px 圆形                              |
+| [ ] Ask 气泡    | `components/agent/AskMessageItem.tsx`       | **新建**                                                             |
+| [ ] 升级横幅    | `components/agent/AgentSwitchBanner.tsx`    | 自 `AgentRecommendBanner` 改                                         |
+| [ ] 时间线合并  | `AgentMessages.tsx`                         | 拉 Ask + SDK，按时间排序                                             |
+| [ ] 输入区分支  | `AgentView.tsx`                             | Ask 时隐藏/禁用 Agent 专属控件                                       |
+| [ ] 搬迁共享 UI | `components/shared/`                        | `UserAvatar`、`CopyButton`、`AttachmentPreviewItem`、`ModelSelector` |
 
 ### 10.4 App Shell
 
-| 任务 | 文件 | 说明 |
-|------|------|------|
-| [ ] 侧栏单列表 | `LeftSidebar.tsx` | 删 Chat 分支（P2） |
-| [ ] Rail 文案 | `FunctionalRail.tsx` | 「会话」 |
-| [ ] Tab | `TabContent.tsx` | 删 `chat` 分支（P3） |
-| [ ] 搜索 | `SearchDialog.tsx` | Agent only（P2） |
-| [ ] 快捷键 | `GlobalShortcuts.tsx` | Composer 档位（P2） |
-| [ ] 欢迎页 | `WelcomeEmptyState.tsx` | 删 Chat Tab（P2） |
+| 任务           | 文件                    | 说明                 |
+| -------------- | ----------------------- | -------------------- |
+| [ ] 侧栏单列表 | `LeftSidebar.tsx`       | 删 Chat 分支（P2）   |
+| [ ] Rail 文案  | `FunctionalRail.tsx`    | 「会话」             |
+| [ ] Tab        | `TabContent.tsx`        | 删 `chat` 分支（P3） |
+| [ ] 搜索       | `SearchDialog.tsx`      | Agent only（P2）     |
+| [ ] 快捷键     | `GlobalShortcuts.tsx`   | Composer 档位（P2）  |
+| [ ] 欢迎页     | `WelcomeEmptyState.tsx` | 删 Chat Tab（P2）    |
 
 ### 10.5 设置
 
-| 任务 | 文件 |
-|------|------|
-| [ ] 删 Chat/Agent 切换 | `SettingsPanel.tsx` |
-| [ ] Prompt 文案 | `PromptSettings.tsx` — 区分 Agent 系统提示 |
-| [ ] Tool 设置 | `ToolSettings.tsx` — 标注「Ask 白名单」或拆分 |
+| 任务                   | 文件                                          |
+| ---------------------- | --------------------------------------------- |
+| [ ] 删 Chat/Agent 切换 | `SettingsPanel.tsx`                           |
+| [ ] Prompt 文案        | `PromptSettings.tsx` — 区分 Agent 系统提示    |
+| [ ] Tool 设置          | `ToolSettings.tsx` — 标注「Ask 白名单」或拆分 |
 
 ---
 
 ## 11. 与现有模块关系
 
-| 模块 | 关系 |
-|------|------|
-| `btw-service` / `BtwPanel` | P2 收敛；上下文抽取逻辑 **复用** |
-| `chat-service` | P0～P1 Ask 平行实现；P3 评估删除或剩附件工具 |
-| `AgentRecommendBanner` | P1 迁至 Agent，行为改为切档位 |
-| `QuickTaskApp` | P2 仅 Agent + 可选 Ask |
-| Feishu/DingTalk/WeChat Bridge | **无改动**（已走 Agent 会话） |
-| `packages/core` providers | **保留**，Ask 与 Agent 共用 |
+| 模块                          | 关系                                         |
+| ----------------------------- | -------------------------------------------- |
+| `btw-service` / `BtwPanel`    | P2 收敛；上下文抽取逻辑 **复用**             |
+| `chat-service`                | P0～P1 Ask 平行实现；P3 评估删除或剩附件工具 |
+| `AgentRecommendBanner`        | P1 迁至 Agent，行为改为切档位                |
+| `QuickTaskApp`                | P2 仅 Agent + 可选 Ask                       |
+| Feishu/DingTalk/WeChat Bridge | **无改动**（已走 Agent 会话）                |
+| `packages/core` providers     | **保留**，Ask 与 Agent 共用                  |
 
 ---
 
@@ -486,12 +486,12 @@ Feature: Composer Ask 档位
 
 ## 13. 用户数据与迁移
 
-| 数据 | 策略 |
-|------|------|
-| `conversations/*` | P2 后 UI 不展示；设置页「导出 Chat 历史」 |
-| 单条迁移 | 保留 `migrateChatToAgent` IPC，入口移到导出/历史页 |
-| `appMode` localStorage | P2 迁移脚本：`chat` → 删除 key，默认 agent |
-| Tab `type: 'chat'` | 启动时清理或提示「已归档」 |
+| 数据                   | 策略                                               |
+| ---------------------- | -------------------------------------------------- |
+| `conversations/*`      | P2 后 UI 不展示；设置页「导出 Chat 历史」          |
+| 单条迁移               | 保留 `migrateChatToAgent` IPC，入口移到导出/历史页 |
+| `appMode` localStorage | P2 迁移脚本：`chat` → 删除 key，默认 agent         |
+| Tab `type: 'chat'`     | 启动时清理或提示「已归档」                         |
 
 ---
 
@@ -506,12 +506,12 @@ Feature: Composer Ask 档位
 
 ## 15. 工时估算
 
-| 阶段 | 人天 |
-|------|------|
-| P0 | 2.5～3.5 |
-| P1 | 1.5～2 |
-| P2 | 1.5～2 |
-| P3 | 2～3 |
+| 阶段     | 人天          |
+| -------- | ------------- |
+| P0       | 2.5～3.5      |
+| P1       | 1.5～2        |
+| P2       | 1.5～2        |
+| P3       | 2～3          |
 | **合计** | **7.5～10.5** |
 
 ---
@@ -539,6 +539,7 @@ Feature: Composer Ask 档位
 
 ```markdown
 ### Added
+
 - desktop: Agent 输入区 Ask 档位（轻量对话，权限边界 + 引导切换 Agent）
 ```
 
@@ -546,6 +547,7 @@ P3 合并后：
 
 ```markdown
 ### Removed
+
 - desktop: 独立 Chat 模式 UI（历史对话可导出）
 ```
 
@@ -553,9 +555,9 @@ P3 合并后：
 
 ## 18. 文档维护
 
-| 文档 | 动作 |
-|------|------|
-| 本文 | 实施中更新 PR 链接 / 状态 |
-| `docs/PROGRESS.md` | 标记阶段完成 |
-| `docs/decisions/0002-ask-mode-composer.md` | Status → Implemented |
-| `CLAUDE.md` / `README.md` | **需用户允许后** 更新架构图与模式说明 |
+| 文档                                       | 动作                                  |
+| ------------------------------------------ | ------------------------------------- |
+| 本文                                       | 实施中更新 PR 链接 / 状态             |
+| `docs/PROGRESS.md`                         | 标记阶段完成                          |
+| `docs/decisions/0002-ask-mode-composer.md` | Status → Implemented                  |
+| `CLAUDE.md` / `README.md`                  | **需用户允许后** 更新架构图与模式说明 |

@@ -19,17 +19,18 @@ import {
   hasDangerousStructure,
 } from '@tagent/shared'
 
-import type {
-  PermissionRequest,
-  DangerLevel,
-  AskUserRequest,
-} from '@tagent/shared'
+import type { PermissionRequest, DangerLevel, AskUserRequest } from '@tagent/shared'
 
 /** SDK PermissionBehavior */
 type PermissionBehavior = 'allow' | 'deny'
 
 /** SDK PermissionUpdateDestination */
-type PermissionUpdateDestination = 'userSettings' | 'projectSettings' | 'localSettings' | 'session' | 'cliArg'
+type PermissionUpdateDestination =
+  | 'userSettings'
+  | 'projectSettings'
+  | 'localSettings'
+  | 'session'
+  | 'cliArg'
 
 /** SDK 权限规则值 */
 interface PermissionRuleValue {
@@ -38,38 +39,43 @@ interface PermissionRuleValue {
 }
 
 /** SDK PermissionUpdate（匹配 SDK 0.2.63） */
-export type PermissionUpdate = {
-  type: 'addRules' | 'replaceRules' | 'removeRules'
-  rules: PermissionRuleValue[]
-  behavior: PermissionBehavior
-  destination: PermissionUpdateDestination
-} | {
-  type: 'setMode'
-  mode: string
-  destination: PermissionUpdateDestination
-} | {
-  type: 'addDirectories' | 'removeDirectories'
-  directories: string[]
-  destination: PermissionUpdateDestination
-}
+export type PermissionUpdate =
+  | {
+      type: 'addRules' | 'replaceRules' | 'removeRules'
+      rules: PermissionRuleValue[]
+      behavior: PermissionBehavior
+      destination: PermissionUpdateDestination
+    }
+  | {
+      type: 'setMode'
+      mode: string
+      destination: PermissionUpdateDestination
+    }
+  | {
+      type: 'addDirectories' | 'removeDirectories'
+      directories: string[]
+      destination: PermissionUpdateDestination
+    }
 
 /** SDK PermissionDecisionClassification（匹配 SDK 0.2.120） */
 type PermissionDecisionClassification = 'user_temporary' | 'user_permanent' | 'user_reject'
 
 /** SDK PermissionResult（匹配 SDK 0.2.120） */
-export type PermissionResult = {
-  behavior: 'allow'
-  updatedInput?: Record<string, unknown>
-  updatedPermissions?: PermissionUpdate[]
-  toolUseID?: string
-  decisionClassification?: PermissionDecisionClassification
-} | {
-  behavior: 'deny'
-  message: string
-  interrupt?: boolean
-  toolUseID?: string
-  decisionClassification?: PermissionDecisionClassification
-}
+export type PermissionResult =
+  | {
+      behavior: 'allow'
+      updatedInput?: Record<string, unknown>
+      updatedPermissions?: PermissionUpdate[]
+      toolUseID?: string
+      decisionClassification?: PermissionDecisionClassification
+    }
+  | {
+      behavior: 'deny'
+      message: string
+      interrupt?: boolean
+      toolUseID?: string
+      decisionClassification?: PermissionDecisionClassification
+    }
 
 /** canUseTool 回调的 options 参数（匹配 SDK CanUseTool） */
 export interface CanUseToolOptions {
@@ -121,9 +127,18 @@ export class AgentPermissionService {
   createCanUseTool(
     sessionId: string,
     sendToRenderer: (request: PermissionRequest) => void,
-    askUserHandler?: (sessionId: string, input: Record<string, unknown>, signal: AbortSignal, sendToRenderer: (request: AskUserRequest) => void) => Promise<PermissionResult>,
-    sendAskUserToRenderer?: (request: AskUserRequest) => void,
-  ): (toolName: string, input: Record<string, unknown>, options: CanUseToolOptions) => Promise<PermissionResult> {
+    askUserHandler?: (
+      sessionId: string,
+      input: Record<string, unknown>,
+      signal: AbortSignal,
+      sendToRenderer: (request: AskUserRequest) => void
+    ) => Promise<PermissionResult>,
+    sendAskUserToRenderer?: (request: AskUserRequest) => void
+  ): (
+    toolName: string,
+    input: Record<string, unknown>,
+    options: CanUseToolOptions
+  ) => Promise<PermissionResult> {
     return async (toolName, input, options) => {
       // AskUserQuestion 拦截：委托给交互式问答服务
       if (toolName === 'AskUserQuestion' && askUserHandler && sendAskUserToRenderer) {
@@ -153,12 +168,16 @@ export class AgentPermissionService {
         this.pendingPermissions.set(request.requestId, { resolve, request })
 
         // 如果 signal 被中止，自动拒绝
-        options.signal.addEventListener('abort', () => {
-          if (this.pendingPermissions.has(request.requestId)) {
-            this.pendingPermissions.delete(request.requestId)
-            resolve({ behavior: 'deny' as const, message: '操作已中止' })
-          }
-        }, { once: true })
+        options.signal.addEventListener(
+          'abort',
+          () => {
+            if (this.pendingPermissions.has(request.requestId)) {
+              this.pendingPermissions.delete(request.requestId)
+              resolve({ behavior: 'deny' as const, message: '操作已中止' })
+            }
+          },
+          { once: true }
+        )
       })
     }
   }
@@ -168,7 +187,11 @@ export class AgentPermissionService {
    *
    * @returns 对应的 sessionId，用于向渲染进程发送 resolved 事件；未找到请求时返回 null
    */
-  respondToPermission(requestId: string, behavior: 'allow' | 'deny', alwaysAllow: boolean): string | null {
+  respondToPermission(
+    requestId: string,
+    behavior: 'allow' | 'deny',
+    alwaysAllow: boolean
+  ): string | null {
     const pending = this.pendingPermissions.get(requestId)
     if (!pending) return null
 
@@ -235,7 +258,11 @@ export class AgentPermissionService {
   /**
    * 判断工具/命令是否在会话白名单中
    */
-  private isWhitelisted(sessionId: string, toolName: string, input: Record<string, unknown>): boolean {
+  private isWhitelisted(
+    sessionId: string,
+    toolName: string,
+    input: Record<string, unknown>
+  ): boolean {
     const whitelist = this.sessionWhitelists.get(sessionId)
     if (!whitelist) return false
 
@@ -255,7 +282,11 @@ export class AgentPermissionService {
   /**
    * 将工具/命令加入会话白名单
    */
-  private addToWhitelist(sessionId: string, toolName: string, input: Record<string, unknown>): void {
+  private addToWhitelist(
+    sessionId: string,
+    toolName: string,
+    input: Record<string, unknown>
+  ): void {
     const whitelist = this.getOrCreateWhitelist(sessionId)
 
     if (toolName !== 'Bash') {
@@ -305,11 +336,10 @@ export class AgentPermissionService {
     sessionId: string,
     toolName: string,
     input: Record<string, unknown>,
-    options: CanUseToolOptions,
+    options: CanUseToolOptions
   ): PermissionRequest {
-    const command = toolName === 'Bash' && typeof input.command === 'string'
-      ? input.command
-      : undefined
+    const command =
+      toolName === 'Bash' && typeof input.command === 'string' ? input.command : undefined
 
     return {
       requestId: randomUUID(),
@@ -338,13 +368,9 @@ export class AgentPermissionService {
           ? `执行命令: ${input.command.slice(0, 200)}`
           : '执行 Bash 命令'
       case 'Write':
-        return typeof input.file_path === 'string'
-          ? `写入文件: ${input.file_path}`
-          : '写入文件'
+        return typeof input.file_path === 'string' ? `写入文件: ${input.file_path}` : '写入文件'
       case 'Edit':
-        return typeof input.file_path === 'string'
-          ? `编辑文件: ${input.file_path}`
-          : '编辑文件'
+        return typeof input.file_path === 'string' ? `编辑文件: ${input.file_path}` : '编辑文件'
       case 'NotebookEdit':
         return typeof input.notebook_path === 'string'
           ? `编辑 Notebook: ${input.notebook_path}`
@@ -358,21 +384,15 @@ export class AgentPermissionService {
           ? `执行 REPL: ${input.description}`
           : '执行 REPL 代码'
       case 'Workflow':
-        return typeof input.name === 'string'
-          ? `运行工作流: ${input.name}`
-          : '运行工作流'
+        return typeof input.name === 'string' ? `运行工作流: ${input.name}` : '运行工作流'
       case 'ScheduleWakeup':
-        return typeof input.reason === 'string'
-          ? `安排会话唤醒: ${input.reason}`
-          : '安排会话唤醒'
+        return typeof input.reason === 'string' ? `安排会话唤醒: ${input.reason}` : '安排会话唤醒'
       case 'Monitor':
         return typeof input.description === 'string'
           ? `启动监控任务: ${input.description}`
           : '启动监控任务'
       case 'PushNotification':
-        return typeof input.message === 'string'
-          ? `发送通知: ${input.message}`
-          : '发送通知'
+        return typeof input.message === 'string' ? `发送通知: ${input.message}` : '发送通知'
       default:
         return `使用工具: ${toolName}`
     }
@@ -396,7 +416,18 @@ export class AgentPermissionService {
     if (toolName === 'Task') return 'normal'
 
     // 新 SDK 的后台/定时/通知/脚本能力都可能产生会话外影响，需要明确审批
-    if (['REPL', 'Workflow', 'ScheduleWakeup', 'Monitor', 'PushNotification', 'CronCreate', 'CronDelete', 'RemoteTrigger'].includes(toolName)) {
+    if (
+      [
+        'REPL',
+        'Workflow',
+        'ScheduleWakeup',
+        'Monitor',
+        'PushNotification',
+        'CronCreate',
+        'CronDelete',
+        'RemoteTrigger',
+      ].includes(toolName)
+    ) {
       return 'normal'
     }
 

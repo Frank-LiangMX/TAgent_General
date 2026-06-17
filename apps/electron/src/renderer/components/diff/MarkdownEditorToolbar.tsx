@@ -102,7 +102,7 @@ function buildScreenshotPayload(editor: Editor): {
   const rect = root.getBoundingClientRect()
   const width = Math.max(
     SCREENSHOT_LIMITS.MIN_WIDTH,
-    Math.min(SCREENSHOT_LIMITS.MAX_WIDTH, Math.ceil(rect.width || 960)),
+    Math.min(SCREENSHOT_LIMITS.MAX_WIDTH, Math.ceil(rect.width || 960))
   )
   clone.style.width = `${width}px`
   clone.style.height = 'auto'
@@ -154,7 +154,8 @@ function ToolbarButton({
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="text-xs">
-        {label}{shortcut && <span className="ml-1.5 text-muted-foreground">{shortcut}</span>}
+        {label}
+        {shortcut && <span className="ml-1.5 text-muted-foreground">{shortcut}</span>}
       </TooltipContent>
     </Tooltip>
   )
@@ -179,7 +180,9 @@ function TableGridPicker({ editor }: { editor: Editor }) {
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">插入表格</TooltipContent>
+        <TooltipContent side="bottom" className="text-xs">
+          插入表格
+        </TooltipContent>
       </Tooltip>
       <PopoverContent side="bottom" align="start" className="w-auto p-2">
         <div className="mb-1.5 text-center text-xs text-muted-foreground">
@@ -195,7 +198,9 @@ function TableGridPicker({ editor }: { editor: Editor }) {
                 key={i}
                 className={cn(
                   'h-4 w-4 cursor-pointer rounded-sm border',
-                  selected ? 'border-primary bg-primary/20' : 'border-border bg-background hover:border-primary/50',
+                  selected
+                    ? 'border-primary bg-primary/20'
+                    : 'border-border bg-background hover:border-primary/50'
                 )}
                 onMouseEnter={() => setHover({ row: r, col: c })}
                 onClick={() => insert(r, c)}
@@ -243,7 +248,9 @@ function LinkPopover({ editor, active }: { editor: Editor; active: boolean }) {
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">链接 <span className="text-muted-foreground">⌘K</span></TooltipContent>
+        <TooltipContent side="bottom" className="text-xs">
+          链接 <span className="text-muted-foreground">⌘K</span>
+        </TooltipContent>
       </Tooltip>
       <PopoverContent side="bottom" align="start" className="w-72 p-2">
         <div className="flex gap-1.5">
@@ -251,7 +258,9 @@ function LinkPopover({ editor, active }: { editor: Editor; active: boolean }) {
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') apply() }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') apply()
+            }}
             placeholder="https://..."
             className="h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-primary"
             autoFocus
@@ -279,8 +288,9 @@ function LinkPopover({ editor, active }: { editor: Editor; active: boolean }) {
 }
 
 export function MarkdownEditorToolbar({ editor }: MarkdownEditorToolbarProps): React.ReactElement {
-  const platform = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-    ?? navigator.platform
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+    navigator.platform
   const isMac = platform.includes('Mac')
   const mod = isMac ? '⌘' : 'Ctrl+'
   const [screenshotting, setScreenshotting] = React.useState(false)
@@ -305,30 +315,40 @@ export function MarkdownEditorToolbar({ editor }: MarkdownEditorToolbarProps): R
     }),
   })
 
-  const handleScreenshot = React.useCallback(async (mode: 'clipboard' | 'file') => {
-    // ref 做同步重入锁，state 仅驱动 UI——state 在同 tick 内的 setState 不会立即生效，
-    // 用作 guard 会漏检同一 tick 内的二次触发（键盘 + 点击同时发生等情况）。
-    if (screenshottingRef.current) return
-    screenshottingRef.current = true
-    setScreenshotting(true)
-    try {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-      const { html, width, css, themeClass } = buildScreenshotPayload(editor)
-      const isDark = document.documentElement.classList.contains('dark')
-      const result = await window.electronAPI.screenshotCapture({ html, isDark, width, mode, css, themeClass })
-      if (result.success) {
-        toast.success(result.message)
-      } else {
-        toast.warning(result.message)
+  const handleScreenshot = React.useCallback(
+    async (mode: 'clipboard' | 'file') => {
+      // ref 做同步重入锁，state 仅驱动 UI——state 在同 tick 内的 setState 不会立即生效，
+      // 用作 guard 会漏检同一 tick 内的二次触发（键盘 + 点击同时发生等情况）。
+      if (screenshottingRef.current) return
+      screenshottingRef.current = true
+      setScreenshotting(true)
+      try {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+        const { html, width, css, themeClass } = buildScreenshotPayload(editor)
+        const isDark = document.documentElement.classList.contains('dark')
+        const result = await window.electronAPI.screenshotCapture({
+          html,
+          isDark,
+          width,
+          mode,
+          css,
+          themeClass,
+        })
+        if (result.success) {
+          toast.success(result.message)
+        } else {
+          toast.warning(result.message)
+        }
+      } catch (err) {
+        console.error('[截图] 失败:', err)
+        toast.error(err instanceof Error ? err.message : '截图失败')
+      } finally {
+        screenshottingRef.current = false
+        setScreenshotting(false)
       }
-    } catch (err) {
-      console.error('[截图] 失败:', err)
-      toast.error(err instanceof Error ? err.message : '截图失败')
-    } finally {
-      screenshottingRef.current = false
-      setScreenshotting(false)
-    }
-  }, [editor])
+    },
+    [editor]
+  )
 
   const handleScreenshotClipboard = React.useCallback(() => {
     void handleScreenshot('clipboard')
@@ -341,32 +361,106 @@ export function MarkdownEditorToolbar({ editor }: MarkdownEditorToolbarProps): R
   return (
     <div className="sticky top-0 z-10 flex items-center gap-0.5 border-b border-border/50 bg-background px-2 py-1">
       {/* 行内格式 */}
-      <ToolbarButton icon={Bold} label="加粗" shortcut={`${mod}B`} active={activeState.bold} onClick={() => editor.chain().focus().toggleBold().run()} />
-      <ToolbarButton icon={Italic} label="斜体" shortcut={`${mod}I`} active={activeState.italic} onClick={() => editor.chain().focus().toggleItalic().run()} />
-      <ToolbarButton icon={UnderlineIcon} label="下划线" shortcut={`${mod}U`} active={activeState.underline} onClick={() => editor.chain().focus().toggleUnderline().run()} />
-      <ToolbarButton icon={Strikethrough} label="删除线" shortcut={`${mod}⇧X`} active={activeState.strike} onClick={() => editor.chain().focus().toggleStrike().run()} />
-      <ToolbarButton icon={Code} label="行内代码" shortcut={`${mod}E`} active={activeState.code} onClick={() => editor.chain().focus().toggleCode().run()} />
+      <ToolbarButton
+        icon={Bold}
+        label="加粗"
+        shortcut={`${mod}B`}
+        active={activeState.bold}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+      />
+      <ToolbarButton
+        icon={Italic}
+        label="斜体"
+        shortcut={`${mod}I`}
+        active={activeState.italic}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      />
+      <ToolbarButton
+        icon={UnderlineIcon}
+        label="下划线"
+        shortcut={`${mod}U`}
+        active={activeState.underline}
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+      />
+      <ToolbarButton
+        icon={Strikethrough}
+        label="删除线"
+        shortcut={`${mod}⇧X`}
+        active={activeState.strike}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+      />
+      <ToolbarButton
+        icon={Code}
+        label="行内代码"
+        shortcut={`${mod}E`}
+        active={activeState.code}
+        onClick={() => editor.chain().focus().toggleCode().run()}
+      />
 
       <Separator orientation="vertical" className="mx-0.5 h-5" />
 
       {/* 标题 */}
-      <ToolbarButton icon={Heading1} label="标题 1" active={activeState.heading1} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
-      <ToolbarButton icon={Heading2} label="标题 2" active={activeState.heading2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
-      <ToolbarButton icon={Heading3} label="标题 3" active={activeState.heading3} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
+      <ToolbarButton
+        icon={Heading1}
+        label="标题 1"
+        active={activeState.heading1}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+      />
+      <ToolbarButton
+        icon={Heading2}
+        label="标题 2"
+        active={activeState.heading2}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+      />
+      <ToolbarButton
+        icon={Heading3}
+        label="标题 3"
+        active={activeState.heading3}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+      />
 
       <Separator orientation="vertical" className="mx-0.5 h-5" />
 
       {/* 列表 */}
-      <ToolbarButton icon={List} label="无序列表" active={activeState.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()} />
-      <ToolbarButton icon={ListOrdered} label="有序列表" active={activeState.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
-      <ToolbarButton icon={ListChecks} label="任务列表" active={activeState.taskList} onClick={() => editor.chain().focus().toggleTaskList().run()} />
+      <ToolbarButton
+        icon={List}
+        label="无序列表"
+        active={activeState.bulletList}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+      />
+      <ToolbarButton
+        icon={ListOrdered}
+        label="有序列表"
+        active={activeState.orderedList}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+      />
+      <ToolbarButton
+        icon={ListChecks}
+        label="任务列表"
+        active={activeState.taskList}
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+      />
 
       <Separator orientation="vertical" className="mx-0.5 h-5" />
 
       {/* 块元素 */}
-      <ToolbarButton icon={Quote} label="引用" active={activeState.blockquote} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
-      <ToolbarButton icon={CodeSquare} label="代码块" active={activeState.codeBlock} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
-      <ToolbarButton icon={Minus} label="分隔线" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+      <ToolbarButton
+        icon={Quote}
+        label="引用"
+        active={activeState.blockquote}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+      />
+      <ToolbarButton
+        icon={CodeSquare}
+        label="代码块"
+        active={activeState.codeBlock}
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+      />
+      <ToolbarButton
+        icon={Minus}
+        label="分隔线"
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      />
 
       <Separator orientation="vertical" className="mx-0.5 h-5" />
 

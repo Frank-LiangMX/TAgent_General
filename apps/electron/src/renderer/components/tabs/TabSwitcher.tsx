@@ -35,7 +35,6 @@ import {
 import { getInitialTabSwitchIndex, promoteTabMru } from '@/lib/tab-switching'
 import { cn } from '@/lib/utils'
 
-
 type SwitchSectionId = 'recent'
 type SwitchCandidateType = 'agent'
 
@@ -91,11 +90,14 @@ export function TabSwitcher(): ReactElement | null {
   const listRef = useRef<HTMLDivElement>(null)
 
   const switcherModel = useMemo<SwitcherModel>(() => {
-    const workspaceNameById = new Map(agentWorkspaces.map((workspace) => [workspace.id, workspace.name]))
+    const workspaceNameById = new Map(
+      agentWorkspaces.map((workspace) => [workspace.id, workspace.name])
+    )
 
     const buildAgentCandidate = (session: AgentSessionMeta): SwitchCandidate => {
-      const status = agentIndicatorMap.get(session.id)
-        ?? (unviewedCompletedIds.has(session.id) ? 'completed' : 'idle')
+      const status =
+        agentIndicatorMap.get(session.id) ??
+        (unviewedCompletedIds.has(session.id) ? 'completed' : 'idle')
       return {
         id: session.id,
         type: 'agent',
@@ -182,13 +184,17 @@ export function TabSwitcher(): ReactElement | null {
       const restore = buildOpenTabRestore(
         candidate.id,
         store.get(sessionViewStateMapAtom),
-        store.get(previewFileMapAtom),
+        store.get(previewFileMapAtom)
       )
-      const nextTab = openTab(tabsRef.current, {
-        type: 'agent',
-        sessionId: candidate.id,
-        title: candidate.title,
-      }, restore)
+      const nextTab = openTab(
+        tabsRef.current,
+        {
+          type: 'agent',
+          sessionId: candidate.id,
+          title: candidate.title,
+        },
+        restore
+      )
       setTabs(nextTab.tabs)
       setActiveTabId(nextTab.activeTabId)
       // MRU/起始定位按会话 ID 归一化：即使 restore 后激活的是预览 Tab，
@@ -224,13 +230,16 @@ export function TabSwitcher(): ReactElement | null {
       setTabs,
       setUnviewedCompleted,
       store,
-    ],
+    ]
   )
 
-  const activateAndClose = useCallback((candidate: SwitchCandidate): void => {
-    activateCandidate(candidate)
-    closeSwitcher()
-  }, [activateCandidate, closeSwitcher])
+  const activateAndClose = useCallback(
+    (candidate: SwitchCandidate): void => {
+      activateCandidate(candidate)
+      closeSwitcher()
+    },
+    [activateCandidate, closeSwitcher]
+  )
 
   useEffect(() => {
     const getNextIndex = (direction: 1 | -1): number => {
@@ -239,7 +248,7 @@ export function TabSwitcher(): ReactElement | null {
         candidates,
         activeSessionIdRef.current,
         tabMruRef.current,
-        direction,
+        direction
       )
     }
 
@@ -277,7 +286,8 @@ export function TabSwitcher(): ReactElement | null {
         return
       }
 
-      const nextIndex = (selectedIndexRef.current + direction + candidates.length) % candidates.length
+      const nextIndex =
+        (selectedIndexRef.current + direction + candidates.length) % candidates.length
       setSelectedIndex(nextIndex)
       selectedIndexRef.current = nextIndex
     }
@@ -325,7 +335,7 @@ export function TabSwitcher(): ReactElement | null {
     if (safeIndex < 0) return
 
     const selectedRow = listRef.current?.querySelector<HTMLElement>(
-      `[data-switcher-index="${safeIndex}"]`,
+      `[data-switcher-index="${safeIndex}"]`
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
   }, [isOpen, selectedIndex, switcherModel.candidates.length])
@@ -360,7 +370,9 @@ export function TabSwitcher(): ReactElement | null {
               )}
               <div className="px-5 pt-1 pb-1 flex items-center justify-between gap-3">
                 <span className="text-[11px] font-medium text-foreground/55">{section.title}</span>
-                <span className="text-[10px] text-muted-foreground truncate">{section.description}</span>
+                <span className="text-[10px] text-muted-foreground truncate">
+                  {section.description}
+                </span>
               </div>
               {section.candidates.map((candidate) => {
                 const index = globalIndex
@@ -421,7 +433,11 @@ function SwitcherCandidateRow({
       data-switcher-index={index}
       className={cn(
         'relative flex items-center gap-3 w-full pl-5 pr-5 py-2.5 text-[15px] text-left cursor-default transition-colors',
-        active ? 'bg-primary/15 text-foreground' : hoverEnabled ? 'text-muted-foreground hover:bg-muted/40' : 'text-muted-foreground',
+        active
+          ? 'bg-primary/15 text-foreground'
+          : hoverEnabled
+            ? 'text-muted-foreground hover:bg-muted/40'
+            : 'text-muted-foreground'
       )}
       onMouseEnter={onMouseEnter}
       onMouseDown={(event) => {
@@ -434,7 +450,7 @@ function SwitcherCandidateRow({
           className={cn(
             'absolute left-1.5 top-2 bottom-2 w-[2px] rounded-full',
             indicatorColor,
-            indicatorPulse && 'animate-pulse',
+            indicatorPulse && 'animate-pulse'
           )}
           aria-hidden="true"
         />

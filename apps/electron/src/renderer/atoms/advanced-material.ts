@@ -19,7 +19,7 @@ export function applyAdvancedMaterialToDOM(enabled: boolean): void {
 
 /** 从主进程加载并应用 */
 export async function initializeAdvancedMaterial(
-  setEnabled: (enabled: boolean) => void,
+  setEnabled: (enabled: boolean) => void
 ): Promise<void> {
   try {
     const settings = await window.electronAPI.getSettings()

@@ -12,22 +12,13 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import {
-  Plus,
-  Sparkles,
-  FolderOpen,
-  MessageSquare,
-  Download,
-} from 'lucide-react'
+import { Plus, Sparkles, FolderOpen, MessageSquare, Download } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import type { McpServerEntry, SkillMeta, WorkspaceCapabilities } from '@tagent/shared'
-
 import { ImportSkillDialog } from './ImportSkillDialog'
 
-import { BuiltinMcpRecommendations, type BuiltinMcpInfo } from '@/components/settings/BuiltinMcpRecommendations'
-import { McpServerForm } from '@/components/settings/McpServerForm'
+import type { McpServerEntry, SkillMeta, WorkspaceCapabilities } from '@tagent/shared'
 
 import {
   agentChannelIdAtom,
@@ -38,10 +29,20 @@ import {
   workspaceCapabilitiesVersionAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
+import {
+  BuiltinMcpRecommendations,
+  type BuiltinMcpInfo,
+} from '@/components/settings/BuiltinMcpRecommendations'
+import { McpServerForm } from '@/components/settings/McpServerForm'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-
 
 interface CapabilityToolbarProps {
   /** 当前工作区的 capabilities */
@@ -67,7 +68,10 @@ export function CapabilityToolbar({
 
   // MCP 表单状态
   const [mcpFormOpen, setMcpFormOpen] = React.useState(false)
-  const [editingServer, setEditingServer] = React.useState<{ name: string; entry: McpServerEntry } | null>(null)
+  const [editingServer, setEditingServer] = React.useState<{
+    name: string
+    entry: McpServerEntry
+  } | null>(null)
 
   // 推荐 MCP 面板状态
   const [recommendationsOpen, setRecommendationsOpen] = React.useState(false)
@@ -79,7 +83,8 @@ export function CapabilityToolbar({
   const [skillsDir, setSkillsDir] = React.useState('')
   React.useEffect(() => {
     if (!workspaceSlug) return
-    window.electronAPI.getWorkspaceSkillsDir(workspaceSlug)
+    window.electronAPI
+      .getWorkspaceSkillsDir(workspaceSlug)
       .then(setSkillsDir)
       .catch(() => setSkillsDir(''))
   }, [workspaceSlug])
@@ -91,9 +96,10 @@ export function CapabilityToolbar({
       return
     }
     const skillsDirPath = `~/${import.meta.env.DEV ? '.tagent-dev' : '.tagent'}/agent-workspaces/${workspaceSlug}/skills/`
-    const skillList = capabilities && capabilities.skills.length > 0
-      ? capabilities.skills.map((s) => `- ${s.name}: ${s.description ?? '无描述'}`).join('\n')
-      : '暂无 Skill'
+    const skillList =
+      capabilities && capabilities.skills.length > 0
+        ? capabilities.skills.map((s) => `- ${s.name}: ${s.description ?? '无描述'}`).join('\n')
+        : '暂无 Skill'
     const prompt = `请帮我配置当前工作区的 Skills，你要主动来帮我实现，你可以采用联网搜索深度研究来尝试，当前环境已经有 Claude Agent SDK 了，除非不确定的时候才来问我，否则默认将帮我完成安装，而不是指导我。
 
 ## 工作区信息
@@ -119,7 +125,11 @@ ${skillList}
 请查看 skills/ 目录了解现有配置，根据我的需求创建或编辑 Skill。`
 
     try {
-      const session = await window.electronAPI.createAgentSession(undefined, agentChannelId, currentWorkspaceId ?? undefined)
+      const session = await window.electronAPI.createAgentSession(
+        undefined,
+        agentChannelId,
+        currentWorkspaceId ?? undefined
+      )
       const sessions = await window.electronAPI.listAgentSessions()
       setAgentSessions(sessions)
       setCurrentSessionId(session.id)
@@ -173,7 +183,11 @@ mcp.json 格式如下：
 请读取当前配置文件，根据我的需求添加或修改 MCP 服务器，然后写回文件。`
 
     try {
-      const session = await window.electronAPI.createAgentSession(undefined, agentChannelId, currentWorkspaceId ?? undefined)
+      const session = await window.electronAPI.createAgentSession(
+        undefined,
+        agentChannelId,
+        currentWorkspaceId ?? undefined
+      )
       const sessions = await window.electronAPI.listAgentSessions()
       setAgentSessions(sessions)
       setCurrentSessionId(session.id)
@@ -268,7 +282,12 @@ mcp.json 格式如下：
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={() => setImportDialogOpen(true)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 gap-1.5"
+              onClick={() => setImportDialogOpen(true)}
+            >
               <Download size={14} />
               导入 Skill
             </Button>
@@ -279,7 +298,12 @@ mcp.json 格式如下：
         {skillsDir && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={handleOpenSkillsDir}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1.5"
+                onClick={handleOpenSkillsDir}
+              >
                 <FolderOpen size={14} />
                 目录
               </Button>
@@ -292,7 +316,12 @@ mcp.json 格式如下：
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={handleConfigSkillsViaChat}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 gap-1.5"
+              onClick={handleConfigSkillsViaChat}
+            >
               <MessageSquare size={14} />
               AI 配置 Skills
             </Button>
@@ -304,7 +333,12 @@ mcp.json 格式如下：
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={handleConfigMcpViaChat}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 gap-1.5"
+              onClick={handleConfigMcpViaChat}
+            >
               <MessageSquare size={14} />
               AI 配置 MCP
             </Button>
@@ -319,10 +353,10 @@ mcp.json 格式如下：
       <Dialog open={mcpFormOpen} onOpenChange={setMcpFormOpen}>
         <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0 max-h-[85vh]">
           <DialogHeader className="px-6 pb-4 pt-6">
-            <DialogTitle>{editingServer ? `编辑 MCP：${editingServer.name}` : '添加 MCP 服务器'}</DialogTitle>
-            <DialogDescription>
-              支持 stdio（命令行）、HTTP、sse 三种传输方式
-            </DialogDescription>
+            <DialogTitle>
+              {editingServer ? `编辑 MCP：${editingServer.name}` : '添加 MCP 服务器'}
+            </DialogTitle>
+            <DialogDescription>支持 stdio（命令行）、HTTP、sse 三种传输方式</DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto px-6 pb-6 max-h-[calc(85vh-120px)]">
             <McpServerForm
@@ -341,9 +375,7 @@ mcp.json 格式如下：
         <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0 max-h-[85vh]">
           <DialogHeader className="px-6 pb-4 pt-6">
             <DialogTitle>推荐 MCP</DialogTitle>
-            <DialogDescription>
-              常用 MCP 服务器，点击安装按钮后会预填表单
-            </DialogDescription>
+            <DialogDescription>常用 MCP 服务器，点击安装按钮后会预填表单</DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto px-6 pb-6 max-h-[calc(85vh-120px)]">
             <BuiltinMcpRecommendations

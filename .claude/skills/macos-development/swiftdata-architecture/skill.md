@@ -29,17 +29,18 @@ Guide developers through SwiftData architecture decisions, from schema design to
 
 ## Quick Decision Guide
 
-| Question | Answer |
-|----------|--------|
-| Should I use SwiftData or Core Data? | SwiftData for macOS 14+ / iOS 17+ targets |
-| @Query or FetchDescriptor? | @Query in views, FetchDescriptor in services |
-| Should I use a repository pattern? | Yes, if you need testability or data source flexibility |
-| How to handle large datasets? | Pagination + background context + batch operations |
+| Question                             | Answer                                                     |
+| ------------------------------------ | ---------------------------------------------------------- |
+| Should I use SwiftData or Core Data? | SwiftData for macOS 14+ / iOS 17+ targets                  |
+| @Query or FetchDescriptor?           | @Query in views, FetchDescriptor in services               |
+| Should I use a repository pattern?   | Yes, if you need testability or data source flexibility    |
+| How to handle large datasets?        | Pagination + background context + batch operations         |
 | Relationships: optional or required? | Default to optional unless the model is invalid without it |
 
 ## Common Pitfalls
 
 ### 1. Missing Unique Constraints
+
 ```swift
 // Wrong - duplicate entries on re-import
 @Model class Contact {
@@ -56,6 +57,7 @@ Guide developers through SwiftData architecture decisions, from schema design to
 ```
 
 ### 2. Fetching Too Much Data
+
 ```swift
 // Wrong - loads all properties of all records
 let descriptor = FetchDescriptor<Document>()
@@ -69,6 +71,7 @@ let docs = try modelContext.fetch(descriptor)
 ```
 
 ### 3. Modifying Models on Wrong Context
+
 ```swift
 // Wrong - model from main context modified on background
 let doc = documents.first!
@@ -91,11 +94,13 @@ Task.detached {
 ## How to Conduct Reviews
 
 ### Step 1: Understand the Data Model
+
 - What entities exist and how do they relate?
 - What's the expected data volume?
 - What are the primary query patterns?
 
 ### Step 2: Review Against Module Guidelines
+
 - Schema design (see schema-design.md)
 - Query patterns (see query-patterns.md)
 - Repository pattern (see repository-pattern.md)
@@ -104,6 +109,7 @@ Task.detached {
 ### Step 3: Provide Structured Feedback
 
 For each issue found:
+
 1. **Issue**: Describe the data layer problem
 2. **Impact**: Data corruption, performance, memory, testability
 3. **Fix**: Correct implementation with code

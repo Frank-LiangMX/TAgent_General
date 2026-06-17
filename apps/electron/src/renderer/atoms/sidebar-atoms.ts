@@ -14,10 +14,7 @@ export type SidebarViewMode = 'active' | 'archived'
 export const sidebarViewModeAtom = atom<SidebarViewMode>('active')
 
 /** 工作区列表高度（px），用户可拖拽调整，持久化到 localStorage */
-export const workspaceListHeightAtom = atomWithStorage<number>(
-  'tagent-workspace-list-height',
-  120,
-)
+export const workspaceListHeightAtom = atomWithStorage<number>('tagent-workspace-list-height', 120)
 
 /**
  * Agent 模式侧边栏上区（Working/置顶 Tab）的高度（px）。
@@ -27,5 +24,5 @@ export const workspaceListHeightAtom = atomWithStorage<number>(
  */
 export const agentSidebarTopHeightAtom = atomWithStorage<number>(
   'tagent-agent-sidebar-top-height',
-  -1,
+  -1
 )

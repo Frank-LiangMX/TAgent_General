@@ -19,9 +19,7 @@ export const LOAD_CONVENTIONS_TOOL_META: ChatToolMeta = {
   id: 'ta_load_conventions',
   name: '加载规范配置',
   description: '读取并解析项目中的规范配置文件',
-  params: [
-    { name: 'configPath', type: 'string', description: '配置文件路径', required: true },
-  ],
+  params: [{ name: 'configPath', type: 'string', description: '配置文件路径', required: true }],
   icon: 'FileText',
   category: 'builtin',
   executorType: 'builtin',
@@ -32,12 +30,17 @@ export const LOAD_CONVENTIONS_TOOL_META: ChatToolMeta = {
 export const LOAD_CONVENTIONS_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'load_conventions',
-    description: 'Load and parse a convention config file. Returns the parsed configuration with naming rules, directory structure, and style guidelines.',
+    description:
+      'Load and parse a convention config file. Returns the parsed configuration with naming rules, directory structure, and style guidelines.',
     parameters: {
       type: 'object',
       properties: {
         configPath: { type: 'string', description: 'Path to config file (relative or absolute)' },
-        format: { type: 'string', description: 'Output format', enum: ['full', 'summary', 'rules-only'] },
+        format: {
+          type: 'string',
+          description: 'Output format',
+          enum: ['full', 'summary', 'rules-only'],
+        },
       },
       required: ['configPath'],
     },
@@ -87,9 +90,7 @@ interface LoadResult {
  */
 function loadConventions(configPath: string, cwd: string): LoadResult {
   // 处理相对路径
-  const absolutePath = path.isAbsolute(configPath)
-    ? configPath
-    : path.resolve(cwd, configPath)
+  const absolutePath = path.isAbsolute(configPath) ? configPath : path.resolve(cwd, configPath)
 
   // 1. 检查文件是否存在
   if (!fs.existsSync(absolutePath)) {
@@ -146,7 +147,7 @@ function loadConventions(configPath: string, cwd: string): LoadResult {
 function validateConfig(config: Record<string, unknown>): { valid: boolean; error?: string } {
   // 检查是否有任何规范字段
   const validKeys = ['naming', 'structure', 'style', 'metadata']
-  const hasValidKey = validKeys.some(k => config[k] !== undefined)
+  const hasValidKey = validKeys.some((k) => config[k] !== undefined)
 
   if (!hasValidKey) {
     return {
@@ -226,7 +227,7 @@ function formatConfig(config: TAConventionConfig, format: string): string {
 
     if (config.structure) {
       lines.push('### 目录规则')
-      for (const dir of (config.structure.requiredDirs || [])) {
+      for (const dir of config.structure.requiredDirs || []) {
         lines.push(`- ${dir}`)
       }
       lines.push('')
@@ -311,10 +312,7 @@ function formatConfig(config: TAConventionConfig, format: string): string {
 
 // ===== 工具执行 =====
 
-export function executeLoadConventions(
-  toolCall: ToolCall,
-  cwd: string
-): ToolResult {
+export function executeLoadConventions(toolCall: ToolCall, cwd: string): ToolResult {
   const configPath = toolCall.arguments.configPath as string
   const format = (toolCall.arguments.format as string) || 'full'
 

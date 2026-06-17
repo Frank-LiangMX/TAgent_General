@@ -19,7 +19,12 @@ export const CHECK_NAMING_TOOL_META: ChatToolMeta = {
   description: '检查资产命名是否符合 TA 规范',
   params: [
     { name: 'name', type: 'string', description: '要检查的名称', required: true },
-    { name: 'assetType', type: 'string', description: '资产类型（mesh/texture/material/skeleton）', required: false },
+    {
+      name: 'assetType',
+      type: 'string',
+      description: '资产类型（mesh/texture/material/skeleton）',
+      required: false,
+    },
   ],
   icon: 'FileCheck',
   category: 'builtin',
@@ -31,12 +36,17 @@ export const CHECK_NAMING_TOOL_META: ChatToolMeta = {
 export const CHECK_NAMING_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'check_naming',
-    description: 'Check if an asset name follows TA naming conventions. Returns validation result with issues and suggestions.',
+    description:
+      'Check if an asset name follows TA naming conventions. Returns validation result with issues and suggestions.',
     parameters: {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'The asset name to check' },
-        assetType: { type: 'string', description: 'Asset type: mesh, texture, material, skeleton, animation', enum: ['mesh', 'texture', 'material', 'skeleton', 'animation'] },
+        assetType: {
+          type: 'string',
+          description: 'Asset type: mesh, texture, material, skeleton, animation',
+          enum: ['mesh', 'texture', 'material', 'skeleton', 'animation'],
+        },
       },
       required: ['name'],
     },
@@ -47,11 +57,11 @@ export const CHECK_NAMING_TOOL_DEFINITIONS: ToolDefinition[] = [
 
 /** 资产类型前缀规范 */
 const ASSET_PREFIXES: Record<string, string[]> = {
-  mesh: ['SM_', 'BP_', 'UI_'],      // Static Mesh, Blueprint, UI Mesh
+  mesh: ['SM_', 'BP_', 'UI_'], // Static Mesh, Blueprint, UI Mesh
   texture: ['T_', 'T_BC', 'T_N', 'T_M', 'T_E'], // Texture BaseColor/Normal/Metallic/Emissive
-  material: ['M_', 'MI_'],          // Material, Material Instance
-  skeleton: ['SK_', 'SKM_'],        // Skeleton Mesh
-  animation: ['A_', 'AS_'],         // Animation, Animation Sequence
+  material: ['M_', 'MI_'], // Material, Material Instance
+  skeleton: ['SK_', 'SKM_'], // Skeleton Mesh
+  animation: ['A_', 'AS_'], // Animation, Animation Sequence
 }
 
 /** 资产类型后缀规范 */
@@ -64,12 +74,42 @@ const ASSET_SUFFIXES: Record<string, string[]> = {
 }
 
 /** 禁用字符 */
-const FORBIDDEN_CHARS = [' ', '-', '.', '@', '#', '$', '%', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '/', '?', '!']
+const FORBIDDEN_CHARS = [
+  ' ',
+  '-',
+  '.',
+  '@',
+  '#',
+  '$',
+  '%',
+  '&',
+  '*',
+  '(',
+  ')',
+  '+',
+  '=',
+  '[',
+  ']',
+  '{',
+  '}',
+  '|',
+  '\\',
+  ':',
+  ';',
+  '"',
+  "'",
+  '<',
+  '>',
+  ',',
+  '/',
+  '?',
+  '!',
+]
 
 /** 禁用模式（UE5 不允许的命名） */
 const FORBIDDEN_PATTERNS = [
-  /^\d/,           // 数字开头
-  /^[a-z]/,        // 小写开头（UE5 资产必须大写开头）
+  /^\d/, // 数字开头
+  /^[a-z]/, // 小写开头（UE5 资产必须大写开头）
 ]
 
 // ===== 检查逻辑 =====
@@ -130,7 +170,7 @@ function checkNaming(name: string, assetType?: string): NamingCheckResult {
   } else {
     // 验证指定类型的前缀
     const validPrefixes = ASSET_PREFIXES[assetType] || []
-    const hasValidPrefix = validPrefixes.some(p => name.startsWith(p))
+    const hasValidPrefix = validPrefixes.some((p) => name.startsWith(p))
     if (!hasValidPrefix && validPrefixes.length > 0) {
       issues.push({
         type: 'warning',
@@ -170,7 +210,7 @@ function checkNaming(name: string, assetType?: string): NamingCheckResult {
   }
 
   return {
-    valid: issues.filter(i => i.type === 'error').length === 0,
+    valid: issues.filter((i) => i.type === 'error').length === 0,
     issues,
     detectedType,
   }

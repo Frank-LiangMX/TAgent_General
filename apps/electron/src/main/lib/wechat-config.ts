@@ -58,7 +58,10 @@ export function getWeChatConfig(): WeChatConfig {
 }
 
 /** 保存微信凭证（接收明文 botToken，自动加密） */
-export function saveWeChatCredentials(creds: WeChatCredentials, defaultWorkspaceId?: string): WeChatConfig {
+export function saveWeChatCredentials(
+  creds: WeChatCredentials,
+  defaultWorkspaceId?: string
+): WeChatConfig {
   const configPath = getWeChatConfigPath()
   const config: WeChatConfig = {
     enabled: true,
@@ -89,7 +92,11 @@ export function getDecryptedCredentials(): WeChatCredentials | null {
 export function updateWeChatDefaultWorkspace(workspaceId: string): void {
   const configPath = getWeChatConfigPath()
   const config = getWeChatConfig()
-  writeFileSync(configPath, JSON.stringify({ ...config, defaultWorkspaceId: workspaceId }, null, 2), 'utf-8')
+  writeFileSync(
+    configPath,
+    JSON.stringify({ ...config, defaultWorkspaceId: workspaceId }, null, 2),
+    'utf-8'
+  )
 }
 
 /** 清除微信凭证（登出） */

@@ -49,9 +49,12 @@ function HeaderStatusChip({
       className={cn(
         'inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
         tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
-        tone === 'running' && 'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
-        tone === 'blocked' && 'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
-        tone === 'completed' && 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300',
+        tone === 'running' &&
+          'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
+        tone === 'blocked' &&
+          'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
+        tone === 'completed' &&
+          'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300'
       )}
       title={typeof children === 'string' ? children : undefined}
     >
@@ -80,7 +83,9 @@ function getStatusLabel(status: SessionIndicatorStatus, runningTool: ToolActivit
   return '空闲'
 }
 
-function getStatusTone(status: SessionIndicatorStatus): 'neutral' | 'running' | 'blocked' | 'completed' {
+function getStatusTone(
+  status: SessionIndicatorStatus
+): 'neutral' | 'running' | 'blocked' | 'completed' {
   if (status === 'blocked') return 'blocked'
   if (status === 'completed') return 'completed'
   if (status === 'running') return 'running'
@@ -116,7 +121,8 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
 
   const modelId = sessionModelMap.get(sessionId) ?? defaultModelId
   const modelLabel = modelId ? resolveModelDisplayName(modelId, channels) : '未选择模型'
-  const permissionMode = permissionModeMap.get(sessionId) ?? persistedPermissionMode ?? defaultPermissionMode
+  const permissionMode =
+    permissionModeMap.get(sessionId) ?? persistedPermissionMode ?? defaultPermissionMode
   const permissionLabel = TAGENT_PERMISSION_MODE_CONFIG[permissionMode].label
   const status = sessionIndicatorMap.get(sessionId) ?? 'idle'
   const runningTool = getLatestRunningTool(streamState?.toolActivities)

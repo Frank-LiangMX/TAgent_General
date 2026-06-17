@@ -36,9 +36,7 @@ export function SettingsRow({
       {icon && <div className="flex-shrink-0 mr-3">{icon}</div>}
       <div className="flex-1 min-w-0 mr-4">
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       {children && <div className="flex-shrink-0">{children}</div>}
     </div>

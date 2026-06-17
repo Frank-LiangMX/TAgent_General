@@ -14,15 +14,23 @@ import js from '@eslint/js'
 const compat = new FlatCompat({
   baseDirectory: __dirname,
   allConfig: { plugins: {} },
-  recommendedConfig: js.configs.recommended,  // 兼容新版 @eslint/eslintrc 3.3.5
+  recommendedConfig: js.configs.recommended, // 兼容新版 @eslint/eslintrc 3.3.5
 })
 
 // 注册一个空 react-hooks 插件，仅用于让源码里 // eslint-disable-line react-hooks/exhaustive-deps
 // 注释能识别（plugin 4.6.2 与 ESLint 9 不兼容，先注册成空壳占位）
 const reactHooksStub = {
   rules: {
-    'rules-of-hooks': { create() { return {} } },
-    'exhaustive-deps': { create() { return {} } },
+    'rules-of-hooks': {
+      create() {
+        return {}
+      },
+    },
+    'exhaustive-deps': {
+      create() {
+        return {}
+      },
+    },
   },
 }
 

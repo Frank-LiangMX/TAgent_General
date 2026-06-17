@@ -31,18 +31,52 @@ const VIDEO_EXTS = new Set(['mp4', 'webm', 'mov'])
  * 否则消息中的相对路径无法被识别为可点击 chip。
  */
 const CODE_EXTS = new Set([
-  'md', 'markdown',
-  'json', 'jsonc', 'json5',
-  'xml', 'html', 'htm',
-  'txt', 'log', 'csv',
-  'yaml', 'yml', 'toml', 'ini', 'env', 'lock',
-  'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs',
-  'py', 'go', 'rs', 'java', 'kt', 'swift',
-  'c', 'h', 'cpp', 'hpp', 'cs',
-  'sh', 'bash', 'zsh', 'fish',
-  'css', 'scss', 'less',
-  'sql', 'rb', 'php',
-  'diff', 'patch',
+  'md',
+  'markdown',
+  'json',
+  'jsonc',
+  'json5',
+  'xml',
+  'html',
+  'htm',
+  'txt',
+  'log',
+  'csv',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'env',
+  'lock',
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'mjs',
+  'cjs',
+  'py',
+  'go',
+  'rs',
+  'java',
+  'kt',
+  'swift',
+  'c',
+  'h',
+  'cpp',
+  'hpp',
+  'cs',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'css',
+  'scss',
+  'less',
+  'sql',
+  'rb',
+  'php',
+  'diff',
+  'patch',
 ])
 /** 文档扩展名 */
 const DOC_EXTS = new Set(['pdf', 'docx'])
@@ -86,7 +120,12 @@ interface FilePathChipProps {
 }
 
 /** 文件路径芯片 — 可点击，触发文件预览 */
-export function FilePathChip({ filePath, basePath, basePaths, className }: FilePathChipProps): React.ReactElement {
+export function FilePathChip({
+  filePath,
+  basePath,
+  basePaths,
+  className,
+}: FilePathChipProps): React.ReactElement {
   const trimmedPath = filePath.trim()
   const { path: cleanPath, suffix: lineColSuffix } = stripLineCol(trimmedPath)
 
@@ -112,12 +151,16 @@ export function FilePathChip({ filePath, basePath, basePaths, className }: FileP
       const firstSegment = cleanPath.split('/')[0]
       if (firstSegment) {
         for (const base of candidateBases) {
-          const baseName = base.endsWith('/') ? base.slice(0, -1).split('/').pop() : base.split('/').pop()
+          const baseName = base.endsWith('/')
+            ? base.slice(0, -1).split('/').pop()
+            : base.split('/').pop()
           if (baseName === firstSegment) {
             const parentDir = base.endsWith('/')
               ? base.slice(0, base.slice(0, -1).lastIndexOf('/'))
               : base.slice(0, base.lastIndexOf('/'))
-            return parentDir.endsWith('/') ? `${parentDir}${cleanPath}` : `${parentDir}/${cleanPath}`
+            return parentDir.endsWith('/')
+              ? `${parentDir}${cleanPath}`
+              : `${parentDir}/${cleanPath}`
           }
         }
       }
@@ -144,15 +187,21 @@ export function FilePathChip({ filePath, basePath, basePaths, className }: FileP
         observer.disconnect()
         const bases = candidateBases.length > 0 ? candidateBases : undefined
         const sessionId = store.get(currentAgentSessionIdAtom)
-        window.electronAPI.resolveFilePath(cleanPath, { sessionId: sessionId ?? undefined, candidateBasePaths: bases })
+        window.electronAPI
+          .resolveFilePath(cleanPath, {
+            sessionId: sessionId ?? undefined,
+            candidateBasePaths: bases,
+          })
           .then((resolved) => {
             const exists = resolved !== null
             fileExistsCache.set(key, exists)
             setFileStatus(exists ? 'resolved' : 'broken')
           })
-          .catch(() => { /* IPC 失败不标记 */ })
+          .catch(() => {
+            /* IPC 失败不标记 */
+          })
       },
-      { threshold: 0 },
+      { threshold: 0 }
     )
     observer.observe(el)
     return () => observer.disconnect()
@@ -202,7 +251,10 @@ export function FilePathChip({ filePath, basePath, basePaths, className }: FileP
       )}
     >
       <FileTypeIcon name={filename} isDirectory={false} size={14} />
-      <span className="truncate max-w-[240px]">{filename}{lineColSuffix}</span>
+      <span className="truncate max-w-[240px]">
+        {filename}
+        {lineColSuffix}
+      </span>
     </button>
   )
 }

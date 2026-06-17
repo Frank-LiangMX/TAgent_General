@@ -39,7 +39,7 @@ export function applyMarkdownFontSizeToDOM(size: MarkdownFontSize): void {
  * 从主进程加载持久化设置并写入 atom + DOM。
  */
 export async function initializeMarkdownFontSize(
-  setSize: (size: MarkdownFontSize) => void,
+  setSize: (size: MarkdownFontSize) => void
 ): Promise<void> {
   try {
     const settings = await window.electronAPI.getSettings()

@@ -148,14 +148,8 @@ function flattenVisible(nodes: FileTreeNode[]): FileTreeNode[] {
 export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListProps>(
   function FileMentionList({ sessionEntries, workspaceEntries, onSelect }, ref) {
     // 构建树（仅在条目变化时重建）
-    const sessionTree = React.useMemo(
-      () => buildTree(sessionEntries),
-      [sessionEntries],
-    )
-    const workspaceTree = React.useMemo(
-      () => buildTree(workspaceEntries),
-      [workspaceEntries],
-    )
+    const sessionTree = React.useMemo(() => buildTree(sessionEntries), [sessionEntries])
+    const workspaceTree = React.useMemo(() => buildTree(workspaceEntries), [workspaceEntries])
 
     // 折叠/展开状态（用 expandedPaths Set 管理）
     const [expandedPaths, setExpandedPaths] = React.useState<Set<string>>(new Set())
@@ -186,11 +180,11 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
     // 可见项（用于键盘导航和渲染）
     const sessionVisible = React.useMemo(
       () => flattenVisible(sessionTreeWithState),
-      [sessionTreeWithState],
+      [sessionTreeWithState]
     )
     const workspaceVisible = React.useMemo(
       () => flattenVisible(workspaceTreeWithState),
-      [workspaceTreeWithState],
+      [workspaceTreeWithState]
     )
 
     // 选中索引
@@ -235,15 +229,12 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
       (node: FileTreeNode) => {
         onSelect({ name: node.name, path: node.path, type: node.type })
       },
-      [onSelect],
+      [onSelect]
     )
 
-    const handleSetIndex = React.useCallback(
-      (index: number) => {
-        setSelectedIndex(index)
-      },
-      [],
-    )
+    const handleSetIndex = React.useCallback((index: number) => {
+      setSelectedIndex(index)
+    }, [])
 
     // 暴露键盘处理给 TipTap
     React.useImperativeHandle(ref, () => ({
@@ -312,40 +303,40 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
     return (
       <TooltipProvider>
         <MentionErrorBoundary>
-      <div
-        ref={containerRef}
-        className="session-glass-surface session-glass-popover overflow-y-auto max-h-[360px] min-w-[260px]"
-      >
-        {/* 会话文件 */}
-        {hasSession && (
-          <FileSection
-            label="会话文件"
-            tree={sessionTreeWithState}
-            selectedIndex={selectedIndex}
-            baseIndex={0}
-            onSelect={handleSelect}
-            onToggle={toggleExpand}
-            setSelectedIndex={handleSetIndex}
-          />
-        )}
+          <div
+            ref={containerRef}
+            className="session-glass-surface session-glass-popover overflow-y-auto max-h-[360px] min-w-[260px]"
+          >
+            {/* 会话文件 */}
+            {hasSession && (
+              <FileSection
+                label="会话文件"
+                tree={sessionTreeWithState}
+                selectedIndex={selectedIndex}
+                baseIndex={0}
+                onSelect={handleSelect}
+                onToggle={toggleExpand}
+                setSelectedIndex={handleSetIndex}
+              />
+            )}
 
-        {/* 工作区文件 */}
-        {hasWorkspace && (
-          <FileSection
-            label="工作区文件"
-            tree={workspaceTreeWithState}
-            selectedIndex={selectedIndex}
-            baseIndex={sessionVisible.length}
-            onSelect={handleSelect}
-            onToggle={toggleExpand}
-            setSelectedIndex={handleSetIndex}
-          />
-        )}
-      </div>
-      </MentionErrorBoundary>
+            {/* 工作区文件 */}
+            {hasWorkspace && (
+              <FileSection
+                label="工作区文件"
+                tree={workspaceTreeWithState}
+                selectedIndex={selectedIndex}
+                baseIndex={sessionVisible.length}
+                onSelect={handleSelect}
+                onToggle={toggleExpand}
+                setSelectedIndex={handleSetIndex}
+              />
+            )}
+          </div>
+        </MentionErrorBoundary>
       </TooltipProvider>
     )
-  },
+  }
 )
 
 // ===== 子组件 =====
@@ -442,86 +433,85 @@ function TreeNodeList({
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <button
-          type="button"
-          data-mention-item=""
-          className={cn(
-            'w-full flex items-center gap-1.5 px-2.5 py-1 text-left text-xs transition-colors',
-            isSelected
-              ? 'bg-accent text-accent-foreground'
-              : 'hover:bg-accent/50',
-          )}
-          style={{ paddingLeft }}
-          // 用 mousedown 而非 click：异步搜索结果重渲染会替换 button 节点，
-          // 导致 mousedown/mouseup 不在同一节点、click 不派发而漏选；
-          // preventDefault 阻止按钮抢焦点，避免编辑器 blur 触发弹窗关闭竞态。
-          onMouseDown={(e) => {
-            e.preventDefault()
-            setSelectedIndex(idx)
-            if (node.type === 'dir') {
-              handleDirClick(node)
-            } else {
-              onSelect(node)
-            }
-          }}
-          onDoubleClick={() => {
-            if (node.type === 'dir') {
-              handleDirDoubleClick(node)
-            }
-          }}
-        >
-          {/* 目录展开/折叠箭头 */}
-          {node.type === 'dir' && node.children.length > 0 ? (
-            <ChevronRight
+              type="button"
+              data-mention-item=""
               className={cn(
-                'size-3 shrink-0 text-muted-foreground transition-transform duration-150',
-                node.expanded && 'rotate-90',
+                'w-full flex items-center gap-1.5 px-2.5 py-1 text-left text-xs transition-colors',
+                isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
               )}
-            />
-          ) : node.type === 'dir' ? (
-            <span className="w-3 shrink-0" />
-          ) : (
-            <span className="w-3 shrink-0" />
-          )}
+              style={{ paddingLeft }}
+              // 用 mousedown 而非 click：异步搜索结果重渲染会替换 button 节点，
+              // 导致 mousedown/mouseup 不在同一节点、click 不派发而漏选；
+              // preventDefault 阻止按钮抢焦点，避免编辑器 blur 触发弹窗关闭竞态。
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setSelectedIndex(idx)
+                if (node.type === 'dir') {
+                  handleDirClick(node)
+                } else {
+                  onSelect(node)
+                }
+              }}
+              onDoubleClick={() => {
+                if (node.type === 'dir') {
+                  handleDirDoubleClick(node)
+                }
+              }}
+            >
+              {/* 目录展开/折叠箭头 */}
+              {node.type === 'dir' && node.children.length > 0 ? (
+                <ChevronRight
+                  className={cn(
+                    'size-3 shrink-0 text-muted-foreground transition-transform duration-150',
+                    node.expanded && 'rotate-90'
+                  )}
+                />
+              ) : node.type === 'dir' ? (
+                <span className="w-3 shrink-0" />
+              ) : (
+                <span className="w-3 shrink-0" />
+              )}
 
-          {/* 文件/目录图标 */}
-          <FileTypeIcon
-            name={node.name}
-            isDirectory={node.type === 'dir'}
-            isOpen={node.type === 'dir' && node.expanded}
-            size={12}
-          />
+              {/* 文件/目录图标 */}
+              <FileTypeIcon
+                name={node.name}
+                isDirectory={node.type === 'dir'}
+                isOpen={node.type === 'dir' && node.expanded}
+                size={12}
+              />
 
-          {/* 名称 */}
-          <span className="truncate flex-1">{node.name}</span>
+              {/* 名称 */}
+              <span className="truncate flex-1">{node.name}</span>
 
-          {/* 路径（当路径不等于文件名时显示） */}
-          {node.path !== node.name && (
-            <span className="text-[10px] text-muted-foreground/60 truncate max-w-[140px] shrink-[2]">
-              {node.path}
-            </span>
-          )}
+              {/* 路径（当路径不等于文件名时显示） */}
+              {node.path !== node.name && (
+                <span className="text-[10px] text-muted-foreground/60 truncate max-w-[140px] shrink-[2]">
+                  {node.path}
+                </span>
+              )}
 
-          {/* 选中文件夹时的快捷键提示 */}
-          {isSelected && node.type === 'dir' && node.children.length > 0 && !node.expanded && (
-            <span className="text-[10px] text-muted-foreground/60 shrink-0 bg-muted/50 rounded px-1 py-px">
-              Tab 展开
-            </span>
-          )}
-          {isSelected && node.type === 'dir' && node.children.length > 0 && node.expanded && (
-            <span className="text-[10px] text-muted-foreground/60 shrink-0 bg-muted/50 rounded px-1 py-px">
-              Tab 折叠
-            </span>
-          )}
-        </button>
+              {/* 选中文件夹时的快捷键提示 */}
+              {isSelected && node.type === 'dir' && node.children.length > 0 && !node.expanded && (
+                <span className="text-[10px] text-muted-foreground/60 shrink-0 bg-muted/50 rounded px-1 py-px">
+                  Tab 展开
+                </span>
+              )}
+              {isSelected && node.type === 'dir' && node.children.length > 0 && node.expanded && (
+                <span className="text-[10px] text-muted-foreground/60 shrink-0 bg-muted/50 rounded px-1 py-px">
+                  Tab 折叠
+                </span>
+              )}
+            </button>
           </TooltipTrigger>
           <TooltipContent side="right" className="z-[10000] max-w-xs break-all">
             <p>{node.path}</p>
           </TooltipContent>
         </Tooltip>
         {/* 展开状态下递归渲染子节点 */}
-        {node.type === 'dir' && node.expanded && node.children.length > 0 &&
-          node.children.map((child) => renderNode(child))
-        }
+        {node.type === 'dir' &&
+          node.expanded &&
+          node.children.length > 0 &&
+          node.children.map((child) => renderNode(child))}
       </React.Fragment>
     )
   }

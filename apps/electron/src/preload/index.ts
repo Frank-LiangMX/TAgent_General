@@ -5,10 +5,40 @@
  * 使用上下文隔离确保安全性
  */
 
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS, INSTALLER_IPC_CHANNELS, PROXY_IPC_CHANNELS, GITHUB_RELEASE_IPC_CHANNELS, SYSTEM_PROMPT_IPC_CHANNELS, MEMORY_IPC_CHANNELS, CHAT_TOOL_IPC_CHANNELS, FEISHU_IPC_CHANNELS, DINGTALK_IPC_CHANNELS, WECHAT_IPC_CHANNELS, WPS_IPC_CHANNELS, PIPELINE_IPC_CHANNELS, USAGE_STATS_IPC_CHANNELS, ASK_IPC_CHANNELS, SOUL_IPC_CHANNELS } from '@tagent/shared'
+import {
+  IPC_CHANNELS,
+  CHANNEL_IPC_CHANNELS,
+  CHAT_IPC_CHANNELS,
+  AGENT_IPC_CHANNELS,
+  ENVIRONMENT_IPC_CHANNELS,
+  INSTALLER_IPC_CHANNELS,
+  PROXY_IPC_CHANNELS,
+  GITHUB_RELEASE_IPC_CHANNELS,
+  SYSTEM_PROMPT_IPC_CHANNELS,
+  MEMORY_IPC_CHANNELS,
+  CHAT_TOOL_IPC_CHANNELS,
+  FEISHU_IPC_CHANNELS,
+  DINGTALK_IPC_CHANNELS,
+  WECHAT_IPC_CHANNELS,
+  WPS_IPC_CHANNELS,
+  PIPELINE_IPC_CHANNELS,
+  USAGE_STATS_IPC_CHANNELS,
+  ASK_IPC_CHANNELS,
+  SOUL_IPC_CHANNELS,
+} from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
-import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS, SCRATCH_PAD_IPC_CHANNELS, APP_ICON_IPC_CHANNELS, DOCK_BADGE_IPC_CHANNELS, STORAGE_IPC_CHANNELS , QUICK_TASK_IPC_CHANNELS, TRAY_IPC_CHANNELS, VOICE_DICTATION_IPC_CHANNELS } from '../types'
+import {
+  USER_PROFILE_IPC_CHANNELS,
+  SETTINGS_IPC_CHANNELS,
+  SCRATCH_PAD_IPC_CHANNELS,
+  APP_ICON_IPC_CHANNELS,
+  DOCK_BADGE_IPC_CHANNELS,
+  STORAGE_IPC_CHANNELS,
+  QUICK_TASK_IPC_CHANNELS,
+  TRAY_IPC_CHANNELS,
+  VOICE_DICTATION_IPC_CHANNELS,
+} from '../types'
 
 import type {
   UserProfile,
@@ -222,7 +252,6 @@ interface MemoryLayerStats {
   l5: { exists: boolean; lines: number; lastUpdated: number | null }
 }
 
-
 /**
  * 暴露给渲染进程的 API 接口定义
  */
@@ -249,7 +278,13 @@ export interface ElectronAPI {
   getGitRepoStatus: (dirPath: string) => Promise<GitRepoStatus | null>
 
   /** 获取未暂存的变更文件列表 */
-  getUnstagedChanges: (dirPath: string, sessionPath?: string, workspaceFilesPath?: string, extraPaths?: string[], sessionId?: string) => Promise<import('@tagent/shared').UnstagedChangesResult>
+  getUnstagedChanges: (
+    dirPath: string,
+    sessionPath?: string,
+    workspaceFilesPath?: string,
+    extraPaths?: string[],
+    sessionId?: string
+  ) => Promise<import('@tagent/shared').UnstagedChangesResult>
   /** 获取单个文件的 diff */
   getFileDiff: (input: import('@tagent/shared').GetFileDiffInput) => Promise<string>
   /** 获取未追踪文件内容 */
@@ -257,11 +292,20 @@ export interface ElectronAPI {
   /** 还原文件变更 */
   revertFile: (input: import('@tagent/shared').RevertFileInput) => Promise<void>
   /** 获取文件新旧版本内容 */
-  getDiffContents: (input: import('@tagent/shared').GetFileDiffInput) => Promise<{ oldContent: string; newContent: string } | null>
+  getDiffContents: (
+    input: import('@tagent/shared').GetFileDiffInput
+  ) => Promise<{ oldContent: string; newContent: string } | null>
   /** 列出 Git Worktree */
-  listWorktrees: (repoPath: string, sessionId: string) => Promise<import('@tagent/shared').WorktreeInfo[]>
+  listWorktrees: (
+    repoPath: string,
+    sessionId: string
+  ) => Promise<import('@tagent/shared').WorktreeInfo[]>
   /** 获取 Worktree 相对于基准分支的全量变更 */
-  getWorktreeChanges: (worktreePath: string, baseBranch: string, sessionId: string) => Promise<import('@tagent/shared').UnstagedChangesResult>
+  getWorktreeChanges: (
+    worktreePath: string,
+    baseBranch: string,
+    sessionId: string
+  ) => Promise<import('@tagent/shared').UnstagedChangesResult>
   /** 在独立窗口打开当前文件预览 */
   openDetachedPreview: (input: DetachedPreviewWindowInput) => Promise<string | null>
   /** 获取独立预览窗口数据 */
@@ -323,7 +367,11 @@ export interface ElectronAPI {
   listConversations: () => Promise<ConversationMeta[]>
 
   /** 创建对话 */
-  createConversation: (title?: string, modelId?: string, channelId?: string) => Promise<ConversationMeta>
+  createConversation: (
+    title?: string,
+    modelId?: string,
+    channelId?: string
+  ) => Promise<ConversationMeta>
 
   /** 获取对话消息 */
   getConversationMessages: (id: string) => Promise<ChatMessage[]>
@@ -335,7 +383,11 @@ export interface ElectronAPI {
   updateConversationTitle: (id: string, title: string) => Promise<ConversationMeta>
 
   /** 更新对话使用的模型/渠道 */
-  updateConversationModel: (id: string, modelId: string, channelId: string) => Promise<ConversationMeta>
+  updateConversationModel: (
+    id: string,
+    modelId: string,
+    channelId: string
+  ) => Promise<ConversationMeta>
 
   /** 删除对话 */
   deleteConversation: (id: string) => Promise<void>
@@ -366,7 +418,7 @@ export interface ElectronAPI {
   truncateMessagesFrom: (
     conversationId: string,
     messageId: string,
-    preserveFirstMessageAttachments?: boolean,
+    preserveFirstMessageAttachments?: boolean
   ) => Promise<ChatMessage[]>
 
   /** 更新上下文分隔线 */
@@ -421,7 +473,9 @@ export interface ElectronAPI {
   onSystemThemeChanged: (callback: (isDark: boolean) => void) => () => void
 
   /** 订阅用户手动切换主题事件（跨窗口同步，返回清理函数） */
-  onThemeSettingsChanged: (callback: (payload: { themeMode: string; themeStyle: string }) => void) => () => void
+  onThemeSettingsChanged: (
+    callback: (payload: { themeMode: string; themeStyle: string }) => void
+  ) => () => void
 
   // ===== Scratch Pad =====
 
@@ -468,9 +522,7 @@ export interface ElectronAPI {
   launchInstaller: (filePath: string) => Promise<void>
 
   /** 订阅下载进度事件，返回取消订阅函数 */
-  onInstallerProgress: (
-    callback: (payload: InstallerProgressPayload) => void,
-  ) => () => void
+  onInstallerProgress: (callback: (payload: InstallerProgressPayload) => void) => () => void
 
   // ===== 代理配置相关 =====
 
@@ -506,7 +558,12 @@ export interface ElectronAPI {
   listAgentSessions: (mode?: 'general' | 'ta') => Promise<AgentSessionMeta[]>
 
   /** 创建 Agent 会话（可指定 mode：'general' | 'ta'，默认 'general'） */
-  createAgentSession: (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => Promise<AgentSessionMeta>
+  createAgentSession: (
+    title?: string,
+    channelId?: string,
+    workspaceId?: string,
+    mode?: 'general' | 'ta'
+  ) => Promise<AgentSessionMeta>
 
   /** 获取 Agent 会话 SDKMessage（Phase 4 新格式） */
   getAgentSessionSDKMessages: (id: string) => Promise<SDKMessage[]>
@@ -536,7 +593,9 @@ export interface ElectronAPI {
   searchAgentSessionMessages: (query: string) => Promise<AgentMessageSearchResult[]>
 
   /** 搜索当前工作区可引用的 Agent 会话 */
-  searchAgentSessionReferences: (input: AgentSessionReferenceSearchInput) => Promise<AgentSessionReferenceSearchResult[]>
+  searchAgentSessionReferences: (
+    input: AgentSessionReferenceSearchInput
+  ) => Promise<AgentSessionReferenceSearchResult[]>
 
   /** 迁移 Agent 会话到另一个工作区 */
   moveAgentSessionToWorkspace: (input: MoveSessionToWorkspaceInput) => Promise<AgentSessionMeta>
@@ -598,10 +657,18 @@ export interface ElectronAPI {
   saveWorkspaceMcpConfig: (workspaceSlug: string, config: WorkspaceMcpConfig) => Promise<void>
 
   /** 测试 MCP 服务器连接 */
-  testMcpServer: (name: string, entry: import('@tagent/shared').McpServerEntry) => Promise<{ success: boolean; message: string }>
+  testMcpServer: (
+    name: string,
+    entry: import('@tagent/shared').McpServerEntry
+  ) => Promise<{ success: boolean; message: string }>
 
   /** 获取 TA MCP Server 状态 */
-  getTAMcpStatus: () => Promise<{ installed: boolean; configured: boolean; pythonVersion?: string; error?: string }>
+  getTAMcpStatus: () => Promise<{
+    installed: boolean
+    configured: boolean
+    pythonVersion?: string
+    error?: string
+  }>
 
   /** 检查工作区是否配置了 TA MCP */
   isTAMcpConfigured: (workspaceSlug: string) => Promise<boolean>
@@ -618,19 +685,25 @@ export interface ElectronAPI {
    * 启动后台安装任务，日志通过 onTAInstallLog 推流。
    * 返回 { success, error } 表示启动结果（不是安装结果）。
    */
-  installTAMcp: (options?: { forceOnline?: boolean }) => Promise<{ success: boolean; error?: string }>
+  installTAMcp: (options?: {
+    forceOnline?: boolean
+  }) => Promise<{ success: boolean; error?: string }>
 
   /** 取消正在进行的安装 */
   cancelTAInstall: () => Promise<boolean>
 
   /** 获取当前安装状态 */
-  getTAInstallProgress: () => Promise<{ state: 'idle' | 'running' | 'success' | 'failed' | 'cancelled' }>
+  getTAInstallProgress: () => Promise<{
+    state: 'idle' | 'running' | 'success' | 'failed' | 'cancelled'
+  }>
 
   /**
    * 订阅安装日志（流式）
    * @returns unsubscribe 函数
    */
-  onTAInstallLog: (cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void) => () => void
+  onTAInstallLog: (
+    cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void
+  ) => () => void
 
   // ===== ModeManager 模式管理 =====
 
@@ -659,13 +732,19 @@ export interface ElectronAPI {
   }>
 
   /** 注册后台任务 */
-  registerBackgroundTask: (task: { id: string; mode: 'general' | 'ta'; description: string }) => Promise<void>
+  registerBackgroundTask: (task: {
+    id: string
+    mode: 'general' | 'ta'
+    description: string
+  }) => Promise<void>
 
   /** 完成后台任务 */
   completeBackgroundTask: (taskId: string, mode: 'general' | 'ta') => Promise<void>
 
   /** 监听模式变化 */
-  onModeChanged: (callback: (data: { previousMode: string; currentMode: string }) => void) => () => void
+  onModeChanged: (
+    callback: (data: { previousMode: string; currentMode: string }) => void
+  ) => () => void
 
   /** 监听任务完成通知 */
   onTaskNotification: (callback: (data: { mode: string; message: string }) => void) => () => void
@@ -697,10 +776,23 @@ export interface ElectronAPI {
   listProjects: () => Promise<string[]>
 
   /** 获取审核队列 */
-  getReviewQueue: (params?: { status?: 'pending' | 'approved' | 'rejected' | 'needs_review'; offset?: number; limit?: number }) => Promise<{ items: Array<AssetRecord & { reviewHistory?: ReviewHistoryRecord[] }>; total: number; hasMore: boolean }>
+  getReviewQueue: (params?: {
+    status?: 'pending' | 'approved' | 'rejected' | 'needs_review'
+    offset?: number
+    limit?: number
+  }) => Promise<{
+    items: Array<AssetRecord & { reviewHistory?: ReviewHistoryRecord[] }>
+    total: number
+    hasMore: boolean
+  }>
 
   /** 获取审核统计 */
-  getReviewStats: () => Promise<{ pending: number; needsReview: number; approved: number; rejected: number }>
+  getReviewStats: () => Promise<{
+    pending: number
+    needsReview: number
+    approved: number
+    rejected: number
+  }>
 
   // ===== 记忆层管理 =====
 
@@ -711,16 +803,29 @@ export interface ElectronAPI {
   getMemoryStats: (mode: 'general' | 'ta') => Promise<MemoryLayerStats>
 
   /** 搜索 L4 会话 */
-  searchMemorySessions: (mode: 'general' | 'ta', query: string, limit?: number) => Promise<SessionMemoryRecord[]>
+  searchMemorySessions: (
+    mode: 'general' | 'ta',
+    query: string,
+    limit?: number
+  ) => Promise<SessionMemoryRecord[]>
 
   /** 列出最近的 L4 会话 */
-  listRecentMemorySessions: (mode: 'general' | 'ta', limit?: number) => Promise<SessionMemoryRecord[]>
+  listRecentMemorySessions: (
+    mode: 'general' | 'ta',
+    limit?: number
+  ) => Promise<SessionMemoryRecord[]>
 
   /** 获取 Markdown 层内容 */
-  getMemoryMdContent: (mode: 'general' | 'ta', layer: 'L0' | 'L1' | 'L2' | 'L5') => Promise<string | null>
+  getMemoryMdContent: (
+    mode: 'general' | 'ta',
+    layer: 'L0' | 'L1' | 'L2' | 'L5'
+  ) => Promise<string | null>
 
   /** 获取 L3 纠错记录 */
-  getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
+  getMemoryCorrections: (
+    mode: 'general' | 'ta',
+    limit?: number
+  ) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
 
   // ===== Pipeline 流水线管理 =====
 
@@ -761,13 +866,21 @@ export interface ElectronAPI {
   deleteWorkspaceSkill: (workspaceSlug: string, skillSlug: string) => Promise<void>
 
   /** 切换工作区 Skill 启用/禁用 */
-  toggleWorkspaceSkill: (workspaceSlug: string, skillSlug: string, enabled: boolean) => Promise<void>
+  toggleWorkspaceSkill: (
+    workspaceSlug: string,
+    skillSlug: string,
+    enabled: boolean
+  ) => Promise<void>
 
   /** 获取其他工作区的 Skill 列表 */
   getOtherWorkspaceSkills: (currentSlug: string) => Promise<OtherWorkspaceSkillsGroup[]>
 
   /** 从其他工作区导入 Skill */
-  importSkillFromWorkspace: (targetSlug: string, sourceSlug: string, skillSlug: string) => Promise<SkillMeta>
+  importSkillFromWorkspace: (
+    targetSlug: string,
+    sourceSlug: string,
+    skillSlug: string
+  ) => Promise<SkillMeta>
 
   /** 从源工作区同步更新已导入的 Skill */
   updateSkillFromSource: (targetSlug: string, skillSlug: string) => Promise<SkillMeta>
@@ -779,22 +892,48 @@ export interface ElectronAPI {
   writeSkillContent: (workspaceSlug: string, skillSlug: string, content: string) => Promise<void>
 
   /** 列出 Skill 目录下的子文件树（不含 SKILL.md） */
-  listSkillFiles: (workspaceSlug: string, skillSlug: string) => Promise<import('@tagent/shared').SkillFileNode[]>
+  listSkillFiles: (
+    workspaceSlug: string,
+    skillSlug: string
+  ) => Promise<import('@tagent/shared').SkillFileNode[]>
 
   /** 读取 Skill 目录下的子文件内容 */
-  readSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string) => Promise<import('@tagent/shared').SkillFileContent>
+  readSkillFile: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string
+  ) => Promise<import('@tagent/shared').SkillFileContent>
 
   /** 写入 Skill 目录下的子文件内容（文本） */
-  writeSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string, content: string) => Promise<void>
+  writeSkillFile: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string,
+    content: string
+  ) => Promise<void>
 
   /** 在 Skill 目录下创建文件或目录 */
-  createSkillEntry: (workspaceSlug: string, skillSlug: string, relativePath: string, type: 'file' | 'directory') => Promise<void>
+  createSkillEntry: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string,
+    type: 'file' | 'directory'
+  ) => Promise<void>
 
   /** 删除 Skill 目录下的文件或目录 */
-  deleteSkillEntry: (workspaceSlug: string, skillSlug: string, relativePath: string) => Promise<void>
+  deleteSkillEntry: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string
+  ) => Promise<void>
 
   /** 重命名/移动 Skill 目录下的文件或目录 */
-  renameSkillEntry: (workspaceSlug: string, skillSlug: string, fromRelative: string, toRelative: string) => Promise<void>
+  renameSkillEntry: (
+    workspaceSlug: string,
+    skillSlug: string,
+    fromRelative: string,
+    toRelative: string
+  ) => Promise<void>
 
   /** 订阅 Agent 流式事件（返回清理函数） */
   onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => () => void
@@ -806,7 +945,9 @@ export interface ElectronAPI {
   onAgentStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void
 
   /** 订阅 Agent 标题自动更新事件 */
-  onAgentTitleUpdated: (callback: (data: { sessionId: string; title: string }) => void) => () => void
+  onAgentTitleUpdated: (
+    callback: (data: { sessionId: string; title: string }) => void
+  ) => () => void
 
   // ===== Agent 权限系统 =====
 
@@ -831,7 +972,12 @@ export interface ElectronAPI {
   getPendingNudges: (sessionId: string) => Promise<NudgeCandidate[]>
 
   /** 响应 Nudge */
-  respondNudge: (sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta') => Promise<void>
+  respondNudge: (
+    sessionId: string,
+    nudgeId: string,
+    action: 'accept' | 'reject' | 'defer',
+    mode: 'general' | 'ta'
+  ) => Promise<void>
 
   /** 监听 Nudge 事件 */
   onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => () => void
@@ -839,7 +985,13 @@ export interface ElectronAPI {
   // ===== TA 意图检测 =====
 
   /** 监听 TA 意图提示事件 */
-  onTAIntentPrompt: (callback: (event: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => void) => () => void
+  onTAIntentPrompt: (
+    callback: (event: {
+      prompt: string
+      confidence: 'strong' | 'medium' | 'weak'
+      reason: 'not_installed' | 'not_configured'
+    }) => void
+  ) => () => void
 
   // ===== Btw 侧面提问 =====
 
@@ -854,7 +1006,14 @@ export interface ElectronAPI {
   }) => Promise<void>
 
   /** 监听侧面提问事件 */
-  onBtwEvent: (callback: (event: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => void) => () => void
+  onBtwEvent: (
+    callback: (event: {
+      type: 'text' | 'complete' | 'error'
+      messageId: string
+      text?: string
+      error?: string
+    }) => void
+  ) => () => void
 
   /** 取消侧面提问 */
   cancelBtw: () => Promise<void>
@@ -892,7 +1051,9 @@ export interface ElectronAPI {
   onAskStreamError: (callback: (event: AskStreamErrorEvent) => void) => () => void
 
   /** 订阅 Ask 升级引导事件（suggest_agent_switch 工具结果触发） */
-  onAskStreamSwitchSuggestion: (callback: (event: AskStreamSwitchSuggestionEvent) => void) => () => void
+  onAskStreamSwitchSuggestion: (
+    callback: (event: AskStreamSwitchSuggestionEvent) => void
+  ) => () => void
 
   // ===== Chat 工具管理 =====
 
@@ -977,11 +1138,19 @@ export interface ElectronAPI {
   /** 获取工作区附加文件列表 */
   getWorkspaceAttachedFiles: (workspaceSlug: string) => Promise<string[]>
   /** 获取工作区 worktree 仓库配置列表 */
-  getWorktreeRepos: (workspaceSlug: string) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
+  getWorktreeRepos: (
+    workspaceSlug: string
+  ) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
   /** 添加 worktree 仓库到工作区配置 */
-  addWorktreeRepo: (workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
+  addWorktreeRepo: (
+    workspaceSlug: string,
+    repo: import('@tagent/shared').WorkspaceWorktreeRepo
+  ) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
   /** 从工作区配置移除 worktree 仓库 */
-  removeWorktreeRepo: (workspaceSlug: string, repoPath: string) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
+  removeWorktreeRepo: (
+    workspaceSlug: string,
+    repoPath: string
+  ) => Promise<import('@tagent/shared').WorkspaceWorktreeRepo[]>
 
   // ===== Agent 文件系统操作 =====
 
@@ -1001,40 +1170,77 @@ export interface ElectronAPI {
   writeClipboardPreview: (filename: string, content: string) => Promise<string>
 
   /** 用系统默认应用打开任意文件（无工作区限制） */
-  systemOpenFile: (filePath: string, appName?: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
+  systemOpenFile: (
+    filePath: string,
+    appName?: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<void>
 
   /** 扫描系统中可用的编辑器应用（仅 macOS） */
   scanEditors: () => Promise<import('@tagent/shared').EditorApp[]>
 
   /** 查询本机为该文件类型注册的默认打开应用（含图标 dataURL） */
-  getDefaultAppForFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').DefaultAppInfo | null>
+  getDefaultAppForFile: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<import('@tagent/shared').DefaultAppInfo | null>
 
   /** 在系统文件管理器中显示文件 */
   showInFolder: (filePath: string) => Promise<void>
 
   /** 解析文件路径并读取内容（供内联预览使用） */
-  resolveAndReadFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ resolvedPath: string; content: string } | null>
+  resolveAndReadFile: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<{ resolvedPath: string; content: string } | null>
 
   /** 写入文本文件（供 Markdown 内联编辑使用） */
-  writeTextFile: (filePath: string, content: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<boolean>
+  writeTextFile: (
+    filePath: string,
+    content: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<boolean>
 
   /** 仅解析文件路径（供 PDF/图片等用 file:// 加载） */
-  resolveFilePath: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').ResolvedFileUrl | null>
+  resolveFilePath: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<import('@tagent/shared').ResolvedFileUrl | null>
 
   /** 为内联 PDF 预览生成临时 HTML 文件，返回文件路径 */
-  preparePdfPreview: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ tmpHtmlUrl: string } | null>
+  preparePdfPreview: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<{ tmpHtmlUrl: string } | null>
 
   /** 读取文件为 base64（带路径校验，供内联图片预览等） */
-  readBinaryBase64: (filePath: string, access?: import('@tagent/shared').FileAccessOptions, maxSize?: number) => Promise<string | null>
+  readBinaryBase64: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions,
+    maxSize?: number
+  ) => Promise<string | null>
 
   /** DOCX 转 HTML（内联预览） */
-  docxToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<{ resolvedPath: string; html: string } | null>
+  docxToHtml: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<{ resolvedPath: string; html: string } | null>
 
   /** XLSX/PPTX 转 HTML（内联预览） */
-  officeToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<import('@tagent/shared').OfficePreviewResult | null>
+  officeToHtml: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<import('@tagent/shared').OfficePreviewResult | null>
 
   /** 截图导出：将 HTML 渲染为 PNG 并复制到剪贴板或保存文件 */
-  screenshotCapture: (input: { html: string; isDark: boolean; width?: number; mode: 'clipboard' | 'file'; css?: string; themeClass?: string }) => Promise<{ success: boolean; message: string; filePath?: string }>
+  screenshotCapture: (input: {
+    html: string
+    isDark: boolean
+    width?: number
+    mode: 'clipboard' | 'file'
+    css?: string
+    themeClass?: string
+  }) => Promise<{ success: boolean; message: string; filePath?: string }>
 
   /** 重命名文件/目录 */
   renameFile: (filePath: string, newName: string) => Promise<void>
@@ -1043,19 +1249,37 @@ export interface ElectronAPI {
   moveFile: (filePath: string, targetDir: string) => Promise<void>
 
   /** 列出附加目录内容 */
-  listAttachedDirectory: (dirPath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<FileEntry[]>
+  listAttachedDirectory: (
+    dirPath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<FileEntry[]>
 
   /** 读取附加目录文件内容为 base64（限制在已附加目录范围内） */
-  readAttachedFile: (filePath: string, sessionId?: string, workspaceSlug?: string) => Promise<string>
+  readAttachedFile: (
+    filePath: string,
+    sessionId?: string,
+    workspaceSlug?: string
+  ) => Promise<string>
 
   /** 在文件管理器中显示附加目录文件 */
-  showAttachedInFolder: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
+  showAttachedInFolder: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<void>
 
   /** 重命名附加目录文件/目录（无工作区路径限制） */
-  renameAttachedFile: (filePath: string, newName: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
+  renameAttachedFile: (
+    filePath: string,
+    newName: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<void>
 
   /** 移动附加目录文件/目录（无工作区路径限制） */
-  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@tagent/shared').FileAccessOptions) => Promise<void>
+  moveAttachedFile: (
+    filePath: string,
+    targetDir: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => Promise<void>
 
   /** 检查路径类型（文件 or 目录），用于拖拽检测 */
   checkPathsType: (paths: string[]) => Promise<{ directories: string[]; files: string[] }>
@@ -1064,7 +1288,13 @@ export interface ElectronAPI {
   getPathForFile: (file: File) => string
 
   /** 搜索工作区文件（用于 @ 引用，支持附加目录） */
-  searchWorkspaceFiles: (rootPath: string, query: string, limit?: number, additionalPaths?: string[], sessionPaths?: string[]) => Promise<FileSearchResult>
+  searchWorkspaceFiles: (
+    rootPath: string,
+    query: string,
+    limit?: number,
+    additionalPaths?: string[],
+    sessionPaths?: string[]
+  ) => Promise<FileSearchResult>
 
   // ===== 系统提示词管理 =====
 
@@ -1103,19 +1333,35 @@ export interface ElectronAPI {
   updater?: {
     checkForUpdates: () => Promise<void>
     getStatus: () => Promise<{
-      status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error'
+      status:
+        | 'idle'
+        | 'checking'
+        | 'available'
+        | 'downloading'
+        | 'downloaded'
+        | 'not-available'
+        | 'error'
       version?: string
       releaseNotes?: string
       progress?: { percent: number; transferred: number; total: number; bytesPerSecond: number }
       error?: string
     }>
-    onStatusChanged: (callback: (status: {
-      status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error'
-      version?: string
-      releaseNotes?: string
-      progress?: { percent: number; transferred: number; total: number; bytesPerSecond: number }
-      error?: string
-    }) => void) => () => void
+    onStatusChanged: (
+      callback: (status: {
+        status:
+          | 'idle'
+          | 'checking'
+          | 'available'
+          | 'downloading'
+          | 'downloaded'
+          | 'not-available'
+          | 'error'
+        version?: string
+        releaseNotes?: string
+        progress?: { percent: number; transferred: number; total: number; bytesPerSecond: number }
+        error?: string
+      }) => void
+    ) => () => void
     quitAndInstall: () => Promise<void>
   }
 
@@ -1160,7 +1406,9 @@ export interface ElectronAPI {
   /** 获取多 Bot 配置 */
   getFeishuMultiConfig: () => Promise<import('@tagent/shared').FeishuMultiBotConfig>
   /** 保存单个 Bot 配置 */
-  saveFeishuBotConfig: (input: import('@tagent/shared').FeishuBotConfigInput) => Promise<import('@tagent/shared').FeishuBotConfig>
+  saveFeishuBotConfig: (
+    input: import('@tagent/shared').FeishuBotConfigInput
+  ) => Promise<import('@tagent/shared').FeishuBotConfig>
   /** 获取单个 Bot 解密后的 App Secret */
   getDecryptedFeishuBotSecret: (botId: string) => Promise<string>
   /** 删除 Bot */
@@ -1179,9 +1427,13 @@ export interface ElectronAPI {
   /** 取消正在进行的扫码注册流程 */
   cancelFeishuRegistration: () => Promise<void>
   /** 监听二维码 URL 生成 */
-  onFeishuRegisterQrcode: (callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void) => () => void
+  onFeishuRegisterQrcode: (
+    callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void
+  ) => () => void
   /** 监听注册流程状态变化 */
-  onFeishuRegisterStatus: (callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void) => () => void
+  onFeishuRegisterStatus: (
+    callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void
+  ) => () => void
 
   // ===== 钉钉集成 =====
 
@@ -1207,7 +1459,9 @@ export interface ElectronAPI {
   /** 获取多 Bot 配置 */
   getDingTalkMultiConfig: () => Promise<import('@tagent/shared').DingTalkMultiBotConfig>
   /** 保存单个 Bot 配置 */
-  saveDingTalkBotConfig: (input: import('@tagent/shared').DingTalkBotConfigInput) => Promise<import('@tagent/shared').DingTalkBotConfig>
+  saveDingTalkBotConfig: (
+    input: import('@tagent/shared').DingTalkBotConfigInput
+  ) => Promise<import('@tagent/shared').DingTalkBotConfig>
   /** 获取单个 Bot 解密后的 Client Secret */
   getDecryptedDingTalkBotSecret: (botId: string) => Promise<string>
   /** 删除 Bot */
@@ -1267,9 +1521,13 @@ export interface ElectronAPI {
   /** 获取语音输入设置 */
   getVoiceDictationSettings: () => Promise<VoiceDictationSettings>
   /** 更新语音输入设置 */
-  updateVoiceDictationSettings: (updates: VoiceDictationSettingsUpdate) => Promise<VoiceDictationSettings>
+  updateVoiceDictationSettings: (
+    updates: VoiceDictationSettingsUpdate
+  ) => Promise<VoiceDictationSettings>
   /** 测试语音输入连接 */
-  testVoiceDictationConnection: (updates?: VoiceDictationSettingsUpdate) => Promise<VoiceDictationTestResult>
+  testVoiceDictationConnection: (
+    updates?: VoiceDictationSettingsUpdate
+  ) => Promise<VoiceDictationTestResult>
   /** 唤起或停止语音输入浮窗 */
   toggleVoiceDictation: () => Promise<void>
   /** 开始语音输入会话 */
@@ -1291,7 +1549,9 @@ export interface ElectronAPI {
   /** 订阅语音输入停止请求事件 */
   onVoiceDictationToggleStop: (callback: () => void) => () => void
   /** 订阅语音输入转写事件 */
-  onVoiceDictationTranscript: (callback: (event: VoiceDictationTranscriptEvent) => void) => () => void
+  onVoiceDictationTranscript: (
+    callback: (event: VoiceDictationTranscriptEvent) => void
+  ) => () => void
   /** 订阅语音输入状态事件 */
   onVoiceDictationState: (callback: (event: VoiceDictationStateEvent) => void) => () => void
   /** 订阅主窗口插入语音文本事件 */
@@ -1365,8 +1625,21 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_GIT_REPO_STATUS, dirPath)
   },
 
-  getUnstagedChanges: (dirPath: string, sessionPath?: string, workspaceFilesPath?: string, extraPaths?: string[], sessionId?: string) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_UNSTAGED_CHANGES, dirPath, sessionPath, workspaceFilesPath, extraPaths, sessionId)
+  getUnstagedChanges: (
+    dirPath: string,
+    sessionPath?: string,
+    workspaceFilesPath?: string,
+    extraPaths?: string[],
+    sessionId?: string
+  ) => {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.GET_UNSTAGED_CHANGES,
+      dirPath,
+      sessionPath,
+      workspaceFilesPath,
+      extraPaths,
+      sessionId
+    )
   },
 
   getFileDiff: (input: import('@tagent/shared').GetFileDiffInput) => {
@@ -1390,7 +1663,12 @@ const electronAPI: ElectronAPI = {
   },
 
   getWorktreeChanges: (worktreePath: string, baseBranch: string, sessionId: string) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_WORKTREE_CHANGES, worktreePath, baseBranch, sessionId)
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.GET_WORKTREE_CHANGES,
+      worktreePath,
+      baseBranch,
+      sessionId
+    )
   },
 
   openDetachedPreview: (input: DetachedPreviewWindowInput) => {
@@ -1398,7 +1676,10 @@ const electronAPI: ElectronAPI = {
   },
 
   getDetachedPreviewData: (previewId: string) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_DETACHED_PREVIEW_DATA, previewId) as Promise<DetachedPreviewWindowData | null>
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.GET_DETACHED_PREVIEW_DATA,
+      previewId
+    ) as Promise<DetachedPreviewWindowData | null>
   },
 
   // 通用工具
@@ -1528,13 +1809,13 @@ const electronAPI: ElectronAPI = {
   truncateMessagesFrom: (
     conversationId: string,
     messageId: string,
-    preserveFirstMessageAttachments = false,
+    preserveFirstMessageAttachments = false
   ) => {
     return ipcRenderer.invoke(
       CHAT_IPC_CHANNELS.TRUNCATE_MESSAGES_FROM,
       conversationId,
       messageId,
-      preserveFirstMessageAttachments,
+      preserveFirstMessageAttachments
     )
   },
 
@@ -1556,7 +1837,11 @@ const electronAPI: ElectronAPI = {
   },
 
   saveResourceFileAs: (resourceRelativePath: string, defaultFilename: string) => {
-    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.SAVE_RESOURCE_FILE_AS, resourceRelativePath, defaultFilename)
+    return ipcRenderer.invoke(
+      CHAT_IPC_CHANNELS.SAVE_RESOURCE_FILE_AS,
+      resourceRelativePath,
+      defaultFilename
+    )
   },
 
   deleteAttachment: (localPath: string) => {
@@ -1600,13 +1885,20 @@ const electronAPI: ElectronAPI = {
   onSystemThemeChanged: (callback: (isDark: boolean) => void) => {
     const listener = (_: unknown, isDark: boolean): void => callback(isDark)
     ipcRenderer.on(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, listener)
+    }
   },
 
-  onThemeSettingsChanged: (callback: (payload: { themeMode: string; themeStyle: string }) => void) => {
-    const listener = (_: unknown, payload: { themeMode: string; themeStyle: string }): void => callback(payload)
+  onThemeSettingsChanged: (
+    callback: (payload: { themeMode: string; themeStyle: string }) => void
+  ) => {
+    const listener = (_: unknown, payload: { themeMode: string; themeStyle: string }): void =>
+      callback(payload)
     ipcRenderer.on(SETTINGS_IPC_CHANNELS.ON_THEME_SETTINGS_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(SETTINGS_IPC_CHANNELS.ON_THEME_SETTINGS_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(SETTINGS_IPC_CHANNELS.ON_THEME_SETTINGS_CHANGED, listener)
+    }
   },
 
   // Scratch Pad 持久化
@@ -1681,31 +1973,41 @@ const electronAPI: ElectronAPI = {
   onStreamChunk: (callback: (event: StreamChunkEvent) => void) => {
     const listener = (_: unknown, event: StreamChunkEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_CHUNK, listener)
-    return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_CHUNK, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_CHUNK, listener)
+    }
   },
 
   onStreamReasoning: (callback: (event: StreamReasoningEvent) => void) => {
     const listener = (_: unknown, event: StreamReasoningEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_REASONING, listener)
-    return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_REASONING, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_REASONING, listener)
+    }
   },
 
   onStreamComplete: (callback: (event: StreamCompleteEvent) => void) => {
     const listener = (_: unknown, event: StreamCompleteEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_COMPLETE, listener)
-    return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_COMPLETE, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_COMPLETE, listener)
+    }
   },
 
   onStreamError: (callback: (event: StreamErrorEvent) => void) => {
     const listener = (_: unknown, event: StreamErrorEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_ERROR, listener)
-    return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_ERROR, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_ERROR, listener)
+    }
   },
 
   onStreamToolActivity: (callback: (event: StreamToolActivityEvent) => void) => {
     const listener = (_: unknown, event: StreamToolActivityEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_TOOL_ACTIVITY, listener)
-    return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_TOOL_ACTIVITY, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_TOOL_ACTIVITY, listener)
+    }
   },
 
   // Agent 会话管理
@@ -1713,8 +2015,19 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_SESSIONS, mode)
   },
 
-  createAgentSession: (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_SESSION, title, channelId, workspaceId, mode)
+  createAgentSession: (
+    title?: string,
+    channelId?: string,
+    workspaceId?: string,
+    mode?: 'general' | 'ta'
+  ) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.CREATE_SESSION,
+      title,
+      channelId,
+      workspaceId,
+      mode
+    )
   },
 
   getAgentSessionSDKMessages: (id: string) => {
@@ -1730,7 +2043,11 @@ const electronAPI: ElectronAPI = {
   },
 
   migrateChatToAgent: (conversationId: string, agentSessionId: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.MIGRATE_CHAT_TO_AGENT, conversationId, agentSessionId)
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.MIGRATE_CHAT_TO_AGENT,
+      conversationId,
+      agentSessionId
+    )
   },
 
   togglePinAgentSession: (id: string) => {
@@ -1830,7 +2147,10 @@ const electronAPI: ElectronAPI = {
   },
 
   testMcpServer: (name: string, entry: import('@tagent/shared').McpServerEntry) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.TEST_MCP_SERVER, name, entry) as Promise<{ success: boolean; message: string }>
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.TEST_MCP_SERVER, name, entry) as Promise<{
+      success: boolean
+      message: string
+    }>
   },
 
   // TA MCP Server
@@ -1844,7 +2164,10 @@ const electronAPI: ElectronAPI = {
   },
 
   isTAMcpConfigured: (workspaceSlug: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED, workspaceSlug) as Promise<boolean>
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.IS_TA_MCP_CONFIGURED,
+      workspaceSlug
+    ) as Promise<boolean>
   },
 
   enableTAMcp: (workspaceSlug: string) => {
@@ -1875,7 +2198,10 @@ const electronAPI: ElectronAPI = {
   onTAInstallLog: (
     cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void
   ) => {
-    const handler = (_: unknown, chunk: { phase: string; stream: string; text: string; ts: number }) => cb(chunk)
+    const handler = (
+      _: unknown,
+      chunk: { phase: string; stream: string; text: string; ts: number }
+    ) => cb(chunk)
     ipcRenderer.on(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, handler)
     return () => {
       ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, handler)
@@ -1907,24 +2233,16 @@ const electronAPI: ElectronAPI = {
       AGENT_IPC_CHANNELS.IMPORT_SKILL_FROM_WORKSPACE,
       targetSlug,
       sourceSlug,
-      skillSlug,
+      skillSlug
     )
   },
 
   updateSkillFromSource: (targetSlug: string, skillSlug: string) => {
-    return ipcRenderer.invoke(
-      AGENT_IPC_CHANNELS.UPDATE_SKILL_FROM_SOURCE,
-      targetSlug,
-      skillSlug,
-    )
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SKILL_FROM_SOURCE, targetSlug, skillSlug)
   },
 
   readSkillContent: (workspaceSlug: string, skillSlug: string) => {
-    return ipcRenderer.invoke(
-      AGENT_IPC_CHANNELS.READ_SKILL_CONTENT,
-      workspaceSlug,
-      skillSlug,
-    )
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.READ_SKILL_CONTENT, workspaceSlug, skillSlug)
   },
 
   writeSkillContent: (workspaceSlug: string, skillSlug: string, content: string) => {
@@ -1932,7 +2250,7 @@ const electronAPI: ElectronAPI = {
       AGENT_IPC_CHANNELS.WRITE_SKILL_CONTENT,
       workspaceSlug,
       skillSlug,
-      content,
+      content
     )
   },
 
@@ -1941,48 +2259,101 @@ const electronAPI: ElectronAPI = {
   },
 
   readSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.READ_SKILL_FILE, workspaceSlug, skillSlug, relativePath)
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.READ_SKILL_FILE,
+      workspaceSlug,
+      skillSlug,
+      relativePath
+    )
   },
 
-  writeSkillFile: (workspaceSlug: string, skillSlug: string, relativePath: string, content: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.WRITE_SKILL_FILE, workspaceSlug, skillSlug, relativePath, content)
+  writeSkillFile: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string,
+    content: string
+  ) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.WRITE_SKILL_FILE,
+      workspaceSlug,
+      skillSlug,
+      relativePath,
+      content
+    )
   },
 
-  createSkillEntry: (workspaceSlug: string, skillSlug: string, relativePath: string, type: 'file' | 'directory') => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_SKILL_ENTRY, workspaceSlug, skillSlug, relativePath, type)
+  createSkillEntry: (
+    workspaceSlug: string,
+    skillSlug: string,
+    relativePath: string,
+    type: 'file' | 'directory'
+  ) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.CREATE_SKILL_ENTRY,
+      workspaceSlug,
+      skillSlug,
+      relativePath,
+      type
+    )
   },
 
   deleteSkillEntry: (workspaceSlug: string, skillSlug: string, relativePath: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_SKILL_ENTRY, workspaceSlug, skillSlug, relativePath)
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.DELETE_SKILL_ENTRY,
+      workspaceSlug,
+      skillSlug,
+      relativePath
+    )
   },
 
-  renameSkillEntry: (workspaceSlug: string, skillSlug: string, fromRelative: string, toRelative: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.RENAME_SKILL_ENTRY, workspaceSlug, skillSlug, fromRelative, toRelative)
+  renameSkillEntry: (
+    workspaceSlug: string,
+    skillSlug: string,
+    fromRelative: string,
+    toRelative: string
+  ) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.RENAME_SKILL_ENTRY,
+      workspaceSlug,
+      skillSlug,
+      fromRelative,
+      toRelative
+    )
   },
 
   onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => {
     const listener = (_: unknown, event: AgentStreamEvent): void => callback(event)
     ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_EVENT, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_EVENT, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_EVENT, listener)
+    }
   },
 
   onAgentStreamComplete: (callback: (data: AgentStreamCompletePayload) => void) => {
     const listener = (_: unknown, data: AgentStreamCompletePayload): void => callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_COMPLETE, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_COMPLETE, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_COMPLETE, listener)
+    }
   },
 
   onAgentStreamError: (callback: (data: { sessionId: string; error: string }) => void) => {
-    const listener = (_: unknown, data: { sessionId: string; error: string }): void => callback(data)
+    const listener = (_: unknown, data: { sessionId: string; error: string }): void =>
+      callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_ERROR, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_ERROR, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_ERROR, listener)
+    }
   },
 
   // 标题自动更新通知
   onAgentTitleUpdated: (callback: (data: { sessionId: string; title: string }) => void) => {
-    const listener = (_: unknown, data: { sessionId: string; title: string }): void => callback(data)
+    const listener = (_: unknown, data: { sessionId: string; title: string }): void =>
+      callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.TITLE_UPDATED, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TITLE_UPDATED, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TITLE_UPDATED, listener)
+    }
   },
 
   // Agent 权限系统
@@ -2011,20 +2382,41 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.GET_PENDING_NUDGES, sessionId)
   },
 
-  respondNudge: (sessionId: string, nudgeId: string, action: 'accept' | 'reject' | 'defer', mode: 'general' | 'ta') => {
+  respondNudge: (
+    sessionId: string,
+    nudgeId: string,
+    action: 'accept' | 'reject' | 'defer',
+    mode: 'general' | 'ta'
+  ) => {
     return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.RESPOND_NUDGE, sessionId, nudgeId, action, mode)
   },
 
   onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: { type: string; nudge: NudgeCandidate }) => callback(data)
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { type: string; nudge: NudgeCandidate }
+    ) => callback(data)
     ipcRenderer.on(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
     return () => ipcRenderer.removeListener(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
   },
 
   // TA 意图检测
-  onTAIntentPrompt: (callback: (event: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => void) => {
+  onTAIntentPrompt: (
+    callback: (event: {
+      prompt: string
+      confidence: 'strong' | 'medium' | 'weak'
+      reason: 'not_installed' | 'not_configured'
+    }) => void
+  ) => {
     const { TA_INTENT_IPC_CHANNELS } = require('@tagent/shared')
-    const handler = (_event: Electron.IpcRendererEvent, data: { prompt: string; confidence: 'strong' | 'medium' | 'weak'; reason: 'not_installed' | 'not_configured' }) => callback(data)
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: {
+        prompt: string
+        confidence: 'strong' | 'medium' | 'weak'
+        reason: 'not_installed' | 'not_configured'
+      }
+    ) => callback(data)
     ipcRenderer.on(TA_INTENT_IPC_CHANNELS.TA_INTENT_PROMPT, handler)
     return () => ipcRenderer.removeListener(TA_INTENT_IPC_CHANNELS.TA_INTENT_PROMPT, handler)
   },
@@ -2042,9 +2434,24 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(BTW_IPC_CHANNELS.SEND_BTW, input)
   },
 
-  onBtwEvent: (callback: (event: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => void) => {
+  onBtwEvent: (
+    callback: (event: {
+      type: 'text' | 'complete' | 'error'
+      messageId: string
+      text?: string
+      error?: string
+    }) => void
+  ) => {
     const { BTW_IPC_CHANNELS } = require('@tagent/shared')
-    const handler = (_event: Electron.IpcRendererEvent, data: { type: 'text' | 'complete' | 'error'; messageId: string; text?: string; error?: string }) => callback(data)
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: {
+        type: 'text' | 'complete' | 'error'
+        messageId: string
+        text?: string
+        error?: string
+      }
+    ) => callback(data)
     ipcRenderer.on(BTW_IPC_CHANNELS.BTW_EVENT, handler)
     return () => ipcRenderer.removeListener(BTW_IPC_CHANNELS.BTW_EVENT, handler)
   },
@@ -2082,31 +2489,41 @@ const electronAPI: ElectronAPI = {
   onAskStreamChunk: (callback: (event: AskStreamChunkEvent) => void) => {
     const listener = (_: unknown, event: AskStreamChunkEvent): void => callback(event)
     ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_CHUNK, listener)
-    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_CHUNK, listener) }
+    return () => {
+      ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_CHUNK, listener)
+    }
   },
 
   onAskStreamReasoning: (callback: (event: AskStreamReasoningEvent) => void) => {
     const listener = (_: unknown, event: AskStreamReasoningEvent): void => callback(event)
     ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_REASONING, listener)
-    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_REASONING, listener) }
+    return () => {
+      ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_REASONING, listener)
+    }
   },
 
   onAskStreamComplete: (callback: (event: AskStreamCompleteEvent) => void) => {
     const listener = (_: unknown, event: AskStreamCompleteEvent): void => callback(event)
     ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_COMPLETE, listener)
-    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_COMPLETE, listener) }
+    return () => {
+      ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_COMPLETE, listener)
+    }
   },
 
   onAskStreamError: (callback: (event: AskStreamErrorEvent) => void) => {
     const listener = (_: unknown, event: AskStreamErrorEvent): void => callback(event)
     ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_ERROR, listener)
-    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_ERROR, listener) }
+    return () => {
+      ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_ERROR, listener)
+    }
   },
 
   onAskStreamSwitchSuggestion: (callback: (event: AskStreamSwitchSuggestionEvent) => void) => {
     const listener = (_: unknown, event: AskStreamSwitchSuggestionEvent): void => callback(event)
     ipcRenderer.on(ASK_IPC_CHANNELS.STREAM_SWITCH_SUGGESTION, listener)
-    return () => { ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_SWITCH_SUGGESTION, listener) }
+    return () => {
+      ipcRenderer.removeListener(ASK_IPC_CHANNELS.STREAM_SWITCH_SUGGESTION, listener)
+    }
   },
 
   // Chat 工具管理
@@ -2137,7 +2554,9 @@ const electronAPI: ElectronAPI = {
   onCustomToolChanged: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(CHAT_TOOL_IPC_CHANNELS.CUSTOM_TOOL_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(CHAT_TOOL_IPC_CHANNELS.CUSTOM_TOOL_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(CHAT_TOOL_IPC_CHANNELS.CUSTOM_TOOL_CHANGED, listener)
+    }
   },
 
   testChatTool: (toolId: string) => {
@@ -2163,13 +2582,17 @@ const electronAPI: ElectronAPI = {
   onCapabilitiesChanged: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(AGENT_IPC_CHANNELS.CAPABILITIES_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.CAPABILITIES_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.CAPABILITIES_CHANGED, listener)
+    }
   },
 
   onWorkspaceFilesChanged: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(AGENT_IPC_CHANNELS.WORKSPACE_FILES_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.WORKSPACE_FILES_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.WORKSPACE_FILES_CHANGED, listener)
+    }
   },
 
   // Agent 附件
@@ -2233,7 +2656,10 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_WORKTREE_REPOS, workspaceSlug)
   },
 
-  addWorktreeRepo: (workspaceSlug: string, repo: import('@tagent/shared').WorkspaceWorktreeRepo) => {
+  addWorktreeRepo: (
+    workspaceSlug: string,
+    repo: import('@tagent/shared').WorkspaceWorktreeRepo
+  ) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.ADD_WORKTREE_REPO, workspaceSlug, repo)
   },
 
@@ -2262,7 +2688,11 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.WRITE_CLIPBOARD_PREVIEW, filename, content)
   },
 
-  systemOpenFile: (filePath: string, appName?: string, access?: import('@tagent/shared').FileAccessOptions) => {
+  systemOpenFile: (
+    filePath: string,
+    appName?: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE, filePath, appName, access)
   },
 
@@ -2271,7 +2701,9 @@ const electronAPI: ElectronAPI = {
   },
 
   getDefaultAppForFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE, filePath, access) as Promise<import('@tagent/shared').DefaultAppInfo | null>
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_DEFAULT_APP_FOR_FILE, filePath, access) as Promise<
+      import('@tagent/shared').DefaultAppInfo | null
+    >
   },
 
   showInFolder: (filePath: string) => {
@@ -2279,35 +2711,68 @@ const electronAPI: ElectronAPI = {
   },
 
   resolveAndReadFile: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:resolve-and-read', filePath, access) as Promise<{ resolvedPath: string; content: string } | null>
+    return ipcRenderer.invoke('file:resolve-and-read', filePath, access) as Promise<{
+      resolvedPath: string
+      content: string
+    } | null>
   },
 
-  writeTextFile: (filePath: string, content: string, access?: import('@tagent/shared').FileAccessOptions) => {
+  writeTextFile: (
+    filePath: string,
+    content: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => {
     return ipcRenderer.invoke('file:write-text', filePath, content, access) as Promise<boolean>
   },
 
   resolveFilePath: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:resolve-path', filePath, access) as Promise<import('@tagent/shared').ResolvedFileUrl | null>
+    return ipcRenderer.invoke('file:resolve-path', filePath, access) as Promise<
+      import('@tagent/shared').ResolvedFileUrl | null
+    >
   },
 
   preparePdfPreview: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:prepare-pdf-preview', filePath, access) as Promise<{ tmpHtmlUrl: string } | null>
+    return ipcRenderer.invoke('file:prepare-pdf-preview', filePath, access) as Promise<{
+      tmpHtmlUrl: string
+    } | null>
   },
 
-  readBinaryBase64: (filePath: string, access?: import('@tagent/shared').FileAccessOptions, maxSize?: number) => {
-    return ipcRenderer.invoke('file:read-binary-base64', filePath, access, maxSize) as Promise<string | null>
+  readBinaryBase64: (
+    filePath: string,
+    access?: import('@tagent/shared').FileAccessOptions,
+    maxSize?: number
+  ) => {
+    return ipcRenderer.invoke('file:read-binary-base64', filePath, access, maxSize) as Promise<
+      string | null
+    >
   },
 
   docxToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:docx-to-html', filePath, access) as Promise<{ resolvedPath: string; html: string } | null>
+    return ipcRenderer.invoke('file:docx-to-html', filePath, access) as Promise<{
+      resolvedPath: string
+      html: string
+    } | null>
   },
 
   officeToHtml: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
-    return ipcRenderer.invoke('file:office-to-html', filePath, access) as Promise<import('@tagent/shared').OfficePreviewResult | null>
+    return ipcRenderer.invoke('file:office-to-html', filePath, access) as Promise<
+      import('@tagent/shared').OfficePreviewResult | null
+    >
   },
 
-  screenshotCapture: (input: { html: string; isDark: boolean; width?: number; mode: 'clipboard' | 'file'; css?: string; themeClass?: string }) => {
-    return ipcRenderer.invoke(IPC_CHANNELS.SCREENSHOT_CAPTURE, input) as Promise<{ success: boolean; message: string; filePath?: string }>
+  screenshotCapture: (input: {
+    html: string
+    isDark: boolean
+    width?: number
+    mode: 'clipboard' | 'file'
+    css?: string
+    themeClass?: string
+  }) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SCREENSHOT_CAPTURE, input) as Promise<{
+      success: boolean
+      message: string
+      filePath?: string
+    }>
   },
 
   renameFile: (filePath: string, newName: string) => {
@@ -2323,18 +2788,31 @@ const electronAPI: ElectronAPI = {
   },
 
   readAttachedFile: (filePath: string, sessionId?: string, workspaceSlug?: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.READ_ATTACHED_FILE, filePath, sessionId, workspaceSlug)
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.READ_ATTACHED_FILE,
+      filePath,
+      sessionId,
+      workspaceSlug
+    )
   },
 
   showAttachedInFolder: (filePath: string, access?: import('@tagent/shared').FileAccessOptions) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SHOW_ATTACHED_IN_FOLDER, filePath, access)
   },
 
-  renameAttachedFile: (filePath: string, newName: string, access?: import('@tagent/shared').FileAccessOptions) => {
+  renameAttachedFile: (
+    filePath: string,
+    newName: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.RENAME_ATTACHED_FILE, filePath, newName, access)
   },
 
-  moveAttachedFile: (filePath: string, targetDir: string, access?: import('@tagent/shared').FileAccessOptions) => {
+  moveAttachedFile: (
+    filePath: string,
+    targetDir: string,
+    access?: import('@tagent/shared').FileAccessOptions
+  ) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.MOVE_ATTACHED_FILE, filePath, targetDir, access)
   },
 
@@ -2346,8 +2824,21 @@ const electronAPI: ElectronAPI = {
     return webUtils.getPathForFile(file)
   },
 
-  searchWorkspaceFiles: (rootPath: string, query: string, limit = 20, additionalPaths?: string[], sessionPaths?: string[]) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SEARCH_WORKSPACE_FILES, rootPath, query, limit, additionalPaths, sessionPaths)
+  searchWorkspaceFiles: (
+    rootPath: string,
+    query: string,
+    limit = 20,
+    additionalPaths?: string[],
+    sessionPaths?: string[]
+  ) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.SEARCH_WORKSPACE_FILES,
+      rootPath,
+      query,
+      limit,
+      additionalPaths,
+      sessionPaths
+    )
   },
 
   // 系统提示词管理
@@ -2393,9 +2884,14 @@ const electronAPI: ElectronAPI = {
     checkForUpdates: () => ipcRenderer.invoke('updater:check'),
     getStatus: () => ipcRenderer.invoke('updater:get-status'),
     onStatusChanged: (callback) => {
-      const listener = (_event: Electron.IpcRendererEvent, status: Parameters<typeof callback>[0]): void => callback(status)
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        status: Parameters<typeof callback>[0]
+      ): void => callback(status)
       ipcRenderer.on('updater:status-changed', listener)
-      return () => { ipcRenderer.removeListener('updater:status-changed', listener) }
+      return () => {
+        ipcRenderer.removeListener('updater:status-changed', listener)
+      }
     },
     quitAndInstall: () => ipcRenderer.invoke('updater:quit-and-install'),
   },
@@ -2460,9 +2956,12 @@ const electronAPI: ElectronAPI = {
   },
 
   onFeishuStatusChanged: (callback: (state: FeishuBridgeState) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: FeishuBridgeState): void => callback(state)
+    const listener = (_event: Electron.IpcRendererEvent, state: FeishuBridgeState): void =>
+      callback(state)
     ipcRenderer.on(FEISHU_IPC_CHANNELS.STATUS_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.STATUS_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.STATUS_CHANGED, listener)
+    }
   },
 
   // --- 多 Bot v2 API ---
@@ -2505,16 +3004,26 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(FEISHU_IPC_CHANNELS.REGISTER_APP_CANCEL)
   },
 
-  onFeishuRegisterQrcode: (callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void) => {
-    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppQRCode) => callback(payload)
+  onFeishuRegisterQrcode: (
+    callback: (payload: import('@tagent/shared').FeishuRegisterAppQRCode) => void
+  ) => {
+    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppQRCode) =>
+      callback(payload)
     ipcRenderer.on(FEISHU_IPC_CHANNELS.REGISTER_APP_QRCODE, listener)
-    return () => { ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_QRCODE, listener) }
+    return () => {
+      ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_QRCODE, listener)
+    }
   },
 
-  onFeishuRegisterStatus: (callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void) => {
-    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppStatus) => callback(payload)
+  onFeishuRegisterStatus: (
+    callback: (payload: import('@tagent/shared').FeishuRegisterAppStatus) => void
+  ) => {
+    const listener = (_: unknown, payload: import('@tagent/shared').FeishuRegisterAppStatus) =>
+      callback(payload)
     ipcRenderer.on(FEISHU_IPC_CHANNELS.REGISTER_APP_STATUS, listener)
-    return () => { ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_STATUS, listener) }
+    return () => {
+      ipcRenderer.removeListener(FEISHU_IPC_CHANNELS.REGISTER_APP_STATUS, listener)
+    }
   },
 
   // ===== 微信集成 =====
@@ -2544,9 +3053,12 @@ const electronAPI: ElectronAPI = {
   },
 
   onWeChatStatusChanged: (callback: (state: WeChatBridgeState) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: WeChatBridgeState): void => callback(state)
+    const listener = (_event: Electron.IpcRendererEvent, state: WeChatBridgeState): void =>
+      callback(state)
     ipcRenderer.on(WECHAT_IPC_CHANNELS.STATUS_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(WECHAT_IPC_CHANNELS.STATUS_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(WECHAT_IPC_CHANNELS.STATUS_CHANGED, listener)
+    }
   },
 
   // ===== WPS 协作集成 =====
@@ -2580,9 +3092,12 @@ const electronAPI: ElectronAPI = {
   },
 
   onWpsStatusChanged: (callback: (state: WpsBridgeState) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: WpsBridgeState): void => callback(state)
+    const listener = (_event: Electron.IpcRendererEvent, state: WpsBridgeState): void =>
+      callback(state)
     ipcRenderer.on(WPS_IPC_CHANNELS.STATUS_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(WPS_IPC_CHANNELS.STATUS_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(WPS_IPC_CHANNELS.STATUS_CHANGED, listener)
+    }
   },
 
   // ===== 钉钉集成 =====
@@ -2616,9 +3131,12 @@ const electronAPI: ElectronAPI = {
   },
 
   onDingTalkStatusChanged: (callback: (state: DingTalkBridgeState) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: DingTalkBridgeState): void => callback(state)
+    const listener = (_event: Electron.IpcRendererEvent, state: DingTalkBridgeState): void =>
+      callback(state)
     ipcRenderer.on(DINGTALK_IPC_CHANNELS.STATUS_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(DINGTALK_IPC_CHANNELS.STATUS_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(DINGTALK_IPC_CHANNELS.STATUS_CHANGED, listener)
+    }
   },
 
   // --- 钉钉多 Bot v2 API ---
@@ -2654,7 +3172,9 @@ const electronAPI: ElectronAPI = {
   onMenuCloseTab: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on('menu:close-tab', listener)
-    return () => { ipcRenderer.removeListener('menu:close-tab', listener) }
+    return () => {
+      ipcRenderer.removeListener('menu:close-tab', listener)
+    }
   },
 
   // ===== 快速任务窗口 =====
@@ -2674,13 +3194,17 @@ const electronAPI: ElectronAPI = {
   onQuickTaskFocus: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(QUICK_TASK_IPC_CHANNELS.FOCUS, listener)
-    return () => { ipcRenderer.removeListener(QUICK_TASK_IPC_CHANNELS.FOCUS, listener) }
+    return () => {
+      ipcRenderer.removeListener(QUICK_TASK_IPC_CHANNELS.FOCUS, listener)
+    }
   },
 
   onQuickTaskOpenSession: (callback: (data: QuickTaskOpenSessionData) => void) => {
     const listener = (_: unknown, data: QuickTaskOpenSessionData): void => callback(data)
     ipcRenderer.on('quick-task:open-session', listener)
-    return () => { ipcRenderer.removeListener('quick-task:open-session', listener) }
+    return () => {
+      ipcRenderer.removeListener('quick-task:open-session', listener)
+    }
   },
 
   // ===== 语音输入 =====
@@ -2732,31 +3256,41 @@ const electronAPI: ElectronAPI = {
   onVoiceDictationShown: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(VOICE_DICTATION_IPC_CHANNELS.SHOWN, listener)
-    return () => { ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.SHOWN, listener) }
+    return () => {
+      ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.SHOWN, listener)
+    }
   },
 
   onVoiceDictationToggleStop: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on(VOICE_DICTATION_IPC_CHANNELS.TOGGLE_STOP, listener)
-    return () => { ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.TOGGLE_STOP, listener) }
+    return () => {
+      ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.TOGGLE_STOP, listener)
+    }
   },
 
   onVoiceDictationTranscript: (callback: (event: VoiceDictationTranscriptEvent) => void) => {
     const listener = (_: unknown, event: VoiceDictationTranscriptEvent): void => callback(event)
     ipcRenderer.on(VOICE_DICTATION_IPC_CHANNELS.TRANSCRIPT, listener)
-    return () => { ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.TRANSCRIPT, listener) }
+    return () => {
+      ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.TRANSCRIPT, listener)
+    }
   },
 
   onVoiceDictationState: (callback: (event: VoiceDictationStateEvent) => void) => {
     const listener = (_: unknown, event: VoiceDictationStateEvent): void => callback(event)
     ipcRenderer.on(VOICE_DICTATION_IPC_CHANNELS.STATE, listener)
-    return () => { ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.STATE, listener) }
+    return () => {
+      ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.STATE, listener)
+    }
   },
 
   onVoiceDictationInsertText: (callback: (data: { text: string }) => void) => {
     const listener = (_: unknown, data: { text: string }): void => callback(data)
     ipcRenderer.on(VOICE_DICTATION_IPC_CHANNELS.INSERT_TEXT, listener)
-    return () => { ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.INSERT_TEXT, listener) }
+    return () => {
+      ipcRenderer.removeListener(VOICE_DICTATION_IPC_CHANNELS.INSERT_TEXT, listener)
+    }
   },
 
   checkMicrophonePermission: () => {
@@ -2770,13 +3304,17 @@ const electronAPI: ElectronAPI = {
   onTrayOpenAgentSession: (callback: (data: TrayOpenAgentSessionData) => void) => {
     const listener = (_: unknown, data: TrayOpenAgentSessionData): void => callback(data)
     ipcRenderer.on(TRAY_IPC_CHANNELS.OPEN_AGENT_SESSION, listener)
-    return () => { ipcRenderer.removeListener(TRAY_IPC_CHANNELS.OPEN_AGENT_SESSION, listener) }
+    return () => {
+      ipcRenderer.removeListener(TRAY_IPC_CHANNELS.OPEN_AGENT_SESSION, listener)
+    }
   },
 
   onTrayCreateSession: (callback: (data: TrayCreateSessionData) => void) => {
     const listener = (_: unknown, data: TrayCreateSessionData): void => callback(data)
     ipcRenderer.on(TRAY_IPC_CHANNELS.CREATE_SESSION, listener)
-    return () => { ipcRenderer.removeListener(TRAY_IPC_CHANNELS.CREATE_SESSION, listener) }
+    return () => {
+      ipcRenderer.removeListener(TRAY_IPC_CHANNELS.CREATE_SESSION, listener)
+    }
   },
 
   migrationGetExportPreview: (workspaceId: string) => {
@@ -2814,7 +3352,9 @@ const electronAPI: ElectronAPI = {
   onMigrationOpenImportFile: (callback: (data: { filePath: string }) => void) => {
     const listener = (_: unknown, data: { filePath: string }): void => callback(data)
     ipcRenderer.on('migration:open-import-file', listener)
-    return () => { ipcRenderer.removeListener('migration:open-import-file', listener) }
+    return () => {
+      ipcRenderer.removeListener('migration:open-import-file', listener)
+    }
   },
 
   // ===== 存储管理 =====
@@ -2860,15 +3400,20 @@ const electronAPI: ElectronAPI = {
   },
 
   onModeChanged: (callback: (data: { previousMode: string; currentMode: string }) => void) => {
-    const listener = (_: unknown, data: { previousMode: string; currentMode: string }): void => callback(data)
+    const listener = (_: unknown, data: { previousMode: string; currentMode: string }): void =>
+      callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.MODE_CHANGED, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.MODE_CHANGED, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.MODE_CHANGED, listener)
+    }
   },
 
   onTaskNotification: (callback: (data: { mode: string; message: string }) => void) => {
     const listener = (_: unknown, data: { mode: string; message: string }): void => callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, listener)
-    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, listener) }
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TASK_NOTIFICATION, listener)
+    }
   },
 
   // ===== 资产库 API =====
@@ -2905,7 +3450,11 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_PROJECTS)
   },
 
-  getReviewQueue: (params?: { status?: 'pending' | 'approved' | 'rejected' | 'needs_review'; offset?: number; limit?: number }) => {
+  getReviewQueue: (params?: {
+    status?: 'pending' | 'approved' | 'rejected' | 'needs_review'
+    offset?: number
+    limit?: number
+  }) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_REVIEW_QUEUE, params)
   },
 
@@ -2954,7 +3503,11 @@ const electronAPI: ElectronAPI = {
   },
 
   updatePipelineRun: (id: string, request: UpdatePipelineRunRequest) => {
-    return ipcRenderer.invoke(PIPELINE_IPC_CHANNELS.UPDATE, id, request) as Promise<PipelineRun | null>
+    return ipcRenderer.invoke(
+      PIPELINE_IPC_CHANNELS.UPDATE,
+      id,
+      request
+    ) as Promise<PipelineRun | null>
   },
 
   cancelPipelineRun: (id: string) => {
@@ -2974,7 +3527,10 @@ const electronAPI: ElectronAPI = {
   },
 
   getSessionTokenStats: (sessionId: string) => {
-    return ipcRenderer.invoke(USAGE_STATS_IPC_CHANNELS.GET_SESSION_TOKEN_STATS, sessionId) as Promise<SessionTokenStats>
+    return ipcRenderer.invoke(
+      USAGE_STATS_IPC_CHANNELS.GET_SESSION_TOKEN_STATS,
+      sessionId
+    ) as Promise<SessionTokenStats>
   },
 }
 

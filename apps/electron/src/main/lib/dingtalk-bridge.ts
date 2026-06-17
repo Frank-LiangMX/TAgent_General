@@ -13,7 +13,12 @@ import { DINGTALK_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
-import { inferImageMediaType, saveImageToSession, inferExtension, MAX_IMAGE_SIZE } from './bridge-attachment-utils'
+import {
+  inferImageMediaType,
+  saveImageToSession,
+  inferExtension,
+  MAX_IMAGE_SIZE,
+} from './bridge-attachment-utils'
 import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-handler'
 import { getDecryptedBotClientSecret } from './dingtalk-config'
 import { getSettings } from './settings-service'
@@ -40,8 +45,13 @@ interface DWClientModule {
 
 interface DWClientInstance {
   connected: boolean
-  registerCallbackListener(eventId: string, callback: (msg: DWClientDownStream) => void): DWClientInstance
-  registerAllEventListener(callback: (msg: DWClientDownStream) => { status: string; message?: string }): DWClientInstance
+  registerCallbackListener(
+    eventId: string,
+    callback: (msg: DWClientDownStream) => void
+  ): DWClientInstance
+  registerAllEventListener(
+    callback: (msg: DWClientDownStream) => { status: string; message?: string }
+  ): DWClientInstance
   connect(): Promise<void>
   disconnect(): void
   send(messageId: string, value: { status: string; message?: string }): void
@@ -80,7 +90,7 @@ interface DingTalkRobotMessage {
   senderNick: string
   senderId: string
   conversationId: string
-  conversationType: '1' | '2'  // 1=单聊, 2=群聊
+  conversationType: '1' | '2' // 1=单聊, 2=群聊
   sessionWebhook: string
   sessionWebhookExpiredTime: number
   /** 机器人标识，用于图片下载 API */
@@ -107,7 +117,10 @@ class DingTalkBridge {
   private messageQueue: Promise<void> = Promise.resolve()
 
   /** 图片缓冲（纯图片消息等待文字触发） */
-  private pendingImages = new Map<string, { images: DingTalkImageAttachment[]; createdAt: number }>()
+  private pendingImages = new Map<
+    string,
+    { images: DingTalkImageAttachment[]; createdAt: number }
+  >()
   private static readonly PENDING_IMAGES_TTL = 10 * 60 * 1000 // 10 minutes
   private static readonly PENDING_IMAGES_MAX = 20
   private pendingImagesCleanupTimer: ReturnType<typeof setInterval> | null = null
@@ -191,7 +204,7 @@ class DingTalkBridge {
 
     try {
       const clientSecret = getDecryptedBotClientSecret(this.botConfig.id)
-      const sdk = await import('dingtalk-stream-sdk-nodejs') as DWClientModule
+      const sdk = (await import('dingtalk-stream-sdk-nodejs')) as DWClientModule
 
       this.client = new sdk.DWClient({
         clientId: this.botConfig.clientId,
@@ -207,13 +220,20 @@ class DingTalkBridge {
 
       // 注册 EVENT：其他事件类型（自动 ACK）
       this.client.registerAllEventListener((msg: DWClientDownStream) => {
-        console.log(`[钉钉 Bridge/${this.botConfig.name}] 收到事件:`, msg.headers.topic, msg.headers.eventType ?? '')
+        console.log(
+          `[钉钉 Bridge/${this.botConfig.name}] 收到事件:`,
+          msg.headers.topic,
+          msg.headers.eventType ?? ''
+        )
         return { status: sdk.EventAck.SUCCESS }
       })
 
       await this.client.connect()
       this.commandHandler.subscribe()
-      this.pendingImagesCleanupTimer = setInterval(() => this.cleanExpiredPendingImages(), 20 * 60 * 1000)
+      this.pendingImagesCleanupTimer = setInterval(
+        () => this.cleanExpiredPendingImages(),
+        20 * 60 * 1000
+      )
 
       this.updateStatus({ status: 'connected', connectedAt: Date.now() })
       console.log(`[钉钉 Bridge/${this.botConfig.name}] Stream 连接已建立`)
@@ -252,7 +272,7 @@ class DingTalkBridge {
   async testConnection(clientId: string, clientSecret: string): Promise<DingTalkTestResult> {
     let testClient: DWClientInstance | null = null
     try {
-      const sdk = await import('dingtalk-stream-sdk-nodejs') as DWClientModule
+      const sdk = (await import('dingtalk-stream-sdk-nodejs')) as DWClientModule
 
       testClient = new sdk.DWClient({
         clientId,
@@ -271,7 +291,11 @@ class DingTalkBridge {
       }
     } catch (error) {
       if (testClient) {
-        try { testClient.disconnect() } catch { /* 关闭失败不影响测试结果 */ }
+        try {
+          testClient.disconnect()
+        } catch {
+          /* 关闭失败不影响测试结果 */
+        }
       }
       const errorMessage = error instanceof Error ? error.message : String(error)
       return {
@@ -294,7 +318,9 @@ class DingTalkBridge {
     const now = Date.now()
     for (const [chatId, entry] of this.pendingImages) {
       if (now - entry.createdAt > DingTalkBridge.PENDING_IMAGES_TTL) {
-        console.log(`[钉钉 Bridge/${this.botConfig.name}] 清理过期图片缓冲: ${chatId.slice(0, 8)}... (${entry.images.length} 张)`)
+        console.log(
+          `[钉钉 Bridge/${this.botConfig.name}] 清理过期图片缓冲: ${chatId.slice(0, 8)}... (${entry.images.length} 张)`
+        )
         this.pendingImages.delete(chatId)
       }
     }
@@ -350,7 +376,9 @@ class DingTalkBridge {
         const buf = await this.downloadDingTalkImage(downloadCodes[idx]!, robotCode)
         const mediaType = inferImageMediaType(buf)
         if (buf.length > MAX_IMAGE_SIZE) {
-          console.warn(`[钉钉 Bridge/${this.botConfig.name}] 图片较大: ${(buf.length / 1024 / 1024).toFixed(1)}MB`)
+          console.warn(
+            `[钉钉 Bridge/${this.botConfig.name}] 图片较大: ${(buf.length / 1024 / 1024).toFixed(1)}MB`
+          )
         }
         downloads.push({ id: `${msg.headers.messageId}-${idx}`, data: buf, mediaType })
       } catch (error) {
@@ -373,7 +401,7 @@ class DingTalkBridge {
       this.pendingImages.set(chatId, { images: merged, createdAt: entry?.createdAt ?? Date.now() })
       await this.replyTextViaWebhook(
         data.sessionWebhook,
-        `📎 已收到 ${merged.length} 张图片，请继续发送文字消息以触发处理。`,
+        `📎 已收到 ${merged.length} 张图片，请继续发送文字消息以触发处理。`
       )
       return
     }
@@ -399,12 +427,16 @@ class DingTalkBridge {
     // 有图片：先检查 session 是否正在运行，避免保存图片后消息被拦截
     if (this.commandHandler.isSessionActive(chatId)) {
       this.pendingImages.set(chatId, { images: allImages, createdAt: Date.now() })
-      await this.replyTextViaWebhook(data.sessionWebhook, '❌ 上一条消息仍在处理中，图片已暂存，请稍候再试')
+      await this.replyTextViaWebhook(
+        data.sessionWebhook,
+        '❌ 上一条消息仍在处理中，图片已暂存，请稍候再试'
+      )
       return
     }
 
     // 先验证 workspace 是否有效，避免 ensureBinding 创建孤儿 binding
-    const preCheckWorkspaceId = this.botConfig.defaultWorkspaceId ?? getSettings().agentWorkspaceId ?? ''
+    const preCheckWorkspaceId =
+      this.botConfig.defaultWorkspaceId ?? getSettings().agentWorkspaceId ?? ''
     if (!preCheckWorkspaceId || !getAgentWorkspace(preCheckWorkspaceId)) {
       await this.replyTextViaWebhook(data.sessionWebhook, '⚠️ 当前未设置工作区，无法保存图片')
       return
@@ -428,7 +460,7 @@ class DingTalkBridge {
         binding.sessionId,
         hint,
         img.mediaType,
-        img.data,
+        img.data
       )
       const label = `${hint}.${inferExtension(img.mediaType)}`
       return { absolutePath, label, kind: 'image' as const }
@@ -471,7 +503,11 @@ class DingTalkBridge {
       const body = await resp.text()
       throw new Error(`获取 access_token 失败: HTTP ${resp.status} ${body}`)
     }
-    const data = await resp.json() as { accessToken: string; expireIn?: number; expiresIn?: number }
+    const data = (await resp.json()) as {
+      accessToken: string
+      expireIn?: number
+      expiresIn?: number
+    }
     const expireSeconds = data.expireIn ?? data.expiresIn ?? 7200
     this.accessToken = {
       value: data.accessToken,
@@ -498,7 +534,7 @@ class DingTalkBridge {
       const body = await resp.text()
       throw new Error(`换取下载 URL 失败: HTTP ${resp.status} ${body}`)
     }
-    const { downloadUrl } = await resp.json() as { downloadUrl: string }
+    const { downloadUrl } = (await resp.json()) as { downloadUrl: string }
     if (!downloadUrl) throw new Error('钉钉返回空 downloadUrl')
     const bin = await fetch(downloadUrl)
     if (!bin.ok) throw new Error(`下载图片失败: HTTP ${bin.status}`)

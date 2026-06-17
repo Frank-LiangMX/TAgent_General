@@ -50,9 +50,16 @@ export const workingSessionGroupsAtom = atom<WorkingSessionGroups>((get) => {
   for (const [id, status] of indicatorMap) {
     const session = sessionMap.get(id)
     if (!session || draftIds.has(id)) continue
-    if (status === 'blocked') { todo.push(session); includedIds.add(id) }
-    else if (status === 'running') { running.push(session); includedIds.add(id) }
-    else if (status === 'completed') { done.push(session); includedIds.add(id) }
+    if (status === 'blocked') {
+      todo.push(session)
+      includedIds.add(id)
+    } else if (status === 'running') {
+      running.push(session)
+      includedIds.add(id)
+    } else if (status === 'completed') {
+      done.push(session)
+      includedIds.add(id)
+    }
   }
 
   // 从完成未查看与显式保留集合提取 done
@@ -66,24 +73,38 @@ export const workingSessionGroupsAtom = atom<WorkingSessionGroups>((get) => {
 
   // completedButUnconfirmed 会话：跨重启恢复到工作中列表
   for (const session of sessions) {
-    if (!session.completedButUnconfirmed || draftIds.has(session.id) || includedIds.has(session.id)) continue
+    if (!session.completedButUnconfirmed || draftIds.has(session.id) || includedIds.has(session.id))
+      continue
     const status = indicatorMap.get(session.id)
-    if (status === 'blocked') { todo.push(session); includedIds.add(session.id) }
-    else if (status === 'running') { running.push(session); includedIds.add(session.id) }
-    else { done.push(session); includedIds.add(session.id) }
+    if (status === 'blocked') {
+      todo.push(session)
+      includedIds.add(session.id)
+    } else if (status === 'running') {
+      running.push(session)
+      includedIds.add(session.id)
+    } else {
+      done.push(session)
+      includedIds.add(session.id)
+    }
   }
 
   // manualWorking 会话：按当前 indicator 分配到对应子组
   for (const session of sessions) {
     if (!session.manualWorking || draftIds.has(session.id) || includedIds.has(session.id)) continue
     const status = indicatorMap.get(session.id)
-    if (status === 'blocked') { todo.push(session); includedIds.add(session.id) }
-    else if (status === 'running') { running.push(session); includedIds.add(session.id) }
-    else { done.push(session); includedIds.add(session.id) }
+    if (status === 'blocked') {
+      todo.push(session)
+      includedIds.add(session.id)
+    } else if (status === 'running') {
+      running.push(session)
+      includedIds.add(session.id)
+    } else {
+      done.push(session)
+      includedIds.add(session.id)
+    }
   }
 
-  const byDate = (a: AgentSessionMeta, b: AgentSessionMeta): number =>
-    b.updatedAt - a.updatedAt
+  const byDate = (a: AgentSessionMeta, b: AgentSessionMeta): number => b.updatedAt - a.updatedAt
   todo.sort(byDate)
   running.sort(byDate)
   done.sort(byDate)

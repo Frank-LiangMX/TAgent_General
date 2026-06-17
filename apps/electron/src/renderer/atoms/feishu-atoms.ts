@@ -6,18 +6,14 @@
 
 import { atom } from 'jotai'
 
-import type {
-  FeishuBridgeState,
-  FeishuChatBinding,
-  FeishuBotBridgeState,
-} from '@tagent/shared'
+import type { FeishuBridgeState, FeishuChatBinding, FeishuBotBridgeState } from '@tagent/shared'
 
 /** 多 Bot Bridge 状态（botId → 状态） */
 export const feishuBotStatesAtom = atom<Record<string, FeishuBotBridgeState>>({})
 
 /** 任一 Bot 已连接（derived） */
 export const feishuAnyConnectedAtom = atom((get) =>
-  Object.values(get(feishuBotStatesAtom)).some((b) => b.status === 'connected'),
+  Object.values(get(feishuBotStatesAtom)).some((b) => b.status === 'connected')
 )
 
 /** 飞书 Bridge 连接状态（向后兼容：取第一个 Bot 状态） */

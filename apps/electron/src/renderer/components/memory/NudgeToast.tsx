@@ -19,7 +19,11 @@ import type { NudgeCandidate } from '@tagent/shared'
  * @param mode 记忆模式
  * @returns toast ID
  */
-export function showNudgeToast(nudge: NudgeCandidate, sessionId: string, mode: 'general' | 'ta'): string | number {
+export function showNudgeToast(
+  nudge: NudgeCandidate,
+  sessionId: string,
+  mode: 'general' | 'ta'
+): string | number {
   // 纠正类型自动记录，显示简单确认
   if (nudge.type === 'correction') {
     return toast(nudge.userMessage, {
@@ -55,7 +59,11 @@ export function showNudgeToast(nudge: NudgeCandidate, sessionId: string, mode: '
  * @param sessionId 会话 ID
  * @param mode 记忆模式
  */
-export function showNudgeToasts(nudges: NudgeCandidate[], sessionId: string, mode: 'general' | 'ta'): void {
+export function showNudgeToasts(
+  nudges: NudgeCandidate[],
+  sessionId: string,
+  mode: 'general' | 'ta'
+): void {
   // 串行显示，避免重叠
   for (let i = 0; i < nudges.length; i++) {
     const nudge = nudges[i]

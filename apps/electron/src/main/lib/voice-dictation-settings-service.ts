@@ -57,7 +57,7 @@ export function getVoiceDictationSettings(): VoiceDictationSettings {
 
 /** 保存语音输入设置，Access Token 加密后落盘 */
 export function updateVoiceDictationSettings(
-  updates: VoiceDictationSettingsUpdate,
+  updates: VoiceDictationSettingsUpdate
 ): VoiceDictationSettings {
   const current = getVoiceDictationSettings()
   const next: VoiceDictationSettings = {

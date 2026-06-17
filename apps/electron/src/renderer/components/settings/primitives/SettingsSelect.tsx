@@ -58,26 +58,30 @@ export function SettingsSelect({
     <div className="px-4 py-3 space-y-2">
       <div>
         <div className={LABEL_CLASS}>{label}</div>
-        {description && (
-          <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>
-        )}
+        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder={placeholder}>
             {selected ? (
               <span className="flex items-center gap-2">
-                {selected.icon && <img src={selected.icon} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                {selected.icon && (
+                  <img src={selected.icon} alt="" className="w-4 h-4 rounded-sm object-contain" />
+                )}
                 <span>{selected.label}</span>
               </span>
-            ) : placeholder}
+            ) : (
+              placeholder
+            )}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               <span className="flex items-center gap-2">
-                {option.icon && <img src={option.icon} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                {option.icon && (
+                  <img src={option.icon} alt="" className="w-4 h-4 rounded-sm object-contain" />
+                )}
                 <span>{option.label}</span>
               </span>
             </SelectItem>

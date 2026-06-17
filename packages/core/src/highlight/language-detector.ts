@@ -62,10 +62,26 @@ function ensureRegistered(): void {
 
 /** highlightAuto 的候选子集，与 ensureRegistered 保持一致 */
 const DETECT_LANGS = [
-  'bash', 'c', 'cpp', 'csharp', 'css', 'go',
-  'javascript', 'json', 'java', 'kotlin', 'markdown',
-  'python', 'ruby', 'rust', 'shell', 'sql', 'swift',
-  'typescript', 'xml', 'yaml',
+  'bash',
+  'c',
+  'cpp',
+  'csharp',
+  'css',
+  'go',
+  'javascript',
+  'json',
+  'java',
+  'kotlin',
+  'markdown',
+  'python',
+  'ruby',
+  'rust',
+  'shell',
+  'sql',
+  'swift',
+  'typescript',
+  'xml',
+  'yaml',
 ]
 
 /** highlightAuto 置信度门槛：低于此值视为无法识别 */

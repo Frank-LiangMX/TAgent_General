@@ -17,7 +17,12 @@ class WpsOAuthTokenManager {
   private cache = new Map<string, TokenCache>()
   private requesting = new Map<string, Promise<string>>()
 
-  async getAccessToken(appId: string, secretKey: string, apiUrl: string, forceRefresh = false): Promise<string> {
+  async getAccessToken(
+    appId: string,
+    secretKey: string,
+    apiUrl: string,
+    forceRefresh = false
+  ): Promise<string> {
     const key = cacheKey(appId, secretKey)
     if (!forceRefresh) {
       const cached = this.cache.get(key)
@@ -44,7 +49,7 @@ class WpsOAuthTokenManager {
     appId: string,
     secretKey: string,
     apiUrl: string,
-    key: string,
+    key: string
   ): Promise<string> {
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
@@ -63,7 +68,7 @@ class WpsOAuthTokenManager {
       throw new Error(`获取 WPS AccessToken 失败: HTTP ${response.status} ${errText.slice(0, 200)}`)
     }
 
-    const data = await response.json() as { access_token?: string; expires_in?: number }
+    const data = (await response.json()) as { access_token?: string; expires_in?: number }
     if (!data.access_token) throw new Error('WPS AccessToken 响应缺少 access_token')
 
     const ttl = data.expires_in ?? 7200

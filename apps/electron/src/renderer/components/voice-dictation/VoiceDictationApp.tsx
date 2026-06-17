@@ -10,13 +10,14 @@ import { CHUNK_BYTES, concatAudioBuffers, floatTo16BitPcm, splitChunk } from './
 import { mergeVoiceDictationTranscript } from './voice-transcript-merge'
 
 import type { VoiceDictationTranscriptMergeState } from './voice-transcript-merge'
-import type { VoiceDictationCommitResult, VoiceDictationSettings, VoiceDictationStateEvent, VoiceDictationTranscriptEvent } from '../../../types'
+import type {
+  VoiceDictationCommitResult,
+  VoiceDictationSettings,
+  VoiceDictationStateEvent,
+  VoiceDictationTranscriptEvent,
+} from '../../../types'
 
 import { Button } from '@/components/ui/button'
-
-
-
-
 
 const MAX_QUEUED_CHUNKS = 60
 const STOP_COMMIT_TIMEOUT_MS = 1400
@@ -49,19 +50,13 @@ export function VoiceDictationApp(): React.ReactElement {
   const commitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const commitInFlightRef = React.useRef(false)
 
-  const {
-    rootRef,
-    panelRef,
-    headerRef,
-    hintBarRef,
-    transcriptBoxRef,
-    transcriptMaxHeight,
-  } = useVoiceWindowLayout({
-    commitResultMessage: commitResult?.message ?? null,
-    message,
-    status,
-    transcript,
-  })
+  const { rootRef, panelRef, headerRef, hintBarRef, transcriptBoxRef, transcriptMaxHeight } =
+    useVoiceWindowLayout({
+      commitResultMessage: commitResult?.message ?? null,
+      message,
+      status,
+      transcript,
+    })
 
   React.useEffect(() => {
     document.body.style.background = 'hsl(var(--background))'
@@ -73,7 +68,8 @@ export function VoiceDictationApp(): React.ReactElement {
   }, [])
 
   React.useEffect(() => {
-    window.electronAPI.getVoiceDictationSettings()
+    window.electronAPI
+      .getVoiceDictationSettings()
       .then((settings) => {
         settingsRef.current = settings
       })
@@ -106,10 +102,12 @@ export function VoiceDictationApp(): React.ReactElement {
       return
     }
 
-    window.electronAPI.sendVoiceDictationAudio({
-      sessionId,
-      data: chunk,
-    }).catch(console.error)
+    window.electronAPI
+      .sendVoiceDictationAudio({
+        sessionId,
+        data: chunk,
+      })
+      .catch(console.error)
   }, [])
 
   const flushQueuedAudio = React.useCallback(() => {
@@ -165,15 +163,18 @@ export function VoiceDictationApp(): React.ReactElement {
     }
   }, [cleanupAudio])
 
-  const scheduleCommit = React.useCallback((delay: number) => {
-    if (commitInFlightRef.current) return
-    if (commitTimerRef.current) {
-      clearTimeout(commitTimerRef.current)
-    }
-    commitTimerRef.current = setTimeout(() => {
-      commitAndHide().catch(console.error)
-    }, delay)
-  }, [commitAndHide])
+  const scheduleCommit = React.useCallback(
+    (delay: number) => {
+      if (commitInFlightRef.current) return
+      if (commitTimerRef.current) {
+        clearTimeout(commitTimerRef.current)
+      }
+      commitTimerRef.current = setTimeout(() => {
+        commitAndHide().catch(console.error)
+      }, delay)
+    },
+    [commitAndHide]
+  )
 
   const stopRecording = React.useCallback(async () => {
     if (stoppingRef.current) return
@@ -277,7 +278,8 @@ export function VoiceDictationApp(): React.ReactElement {
   }, [requestMicrophoneStream, sendAudioChunk])
 
   const startRecording = React.useCallback(async () => {
-    const refreshSettings = window.electronAPI.getVoiceDictationSettings()
+    const refreshSettings = window.electronAPI
+      .getVoiceDictationSettings()
       .then((latest) => {
         settingsRef.current = latest
         return latest
@@ -348,7 +350,8 @@ export function VoiceDictationApp(): React.ReactElement {
       throw error
     })
 
-    window.electronAPI.startVoiceDictation({ sessionId: nextSessionId })
+    window.electronAPI
+      .startVoiceDictation({ sessionId: nextSessionId })
       .then(() => {
         if (sessionIdRef.current !== nextSessionId) return
         asrReadyRef.current = true
@@ -387,51 +390,60 @@ export function VoiceDictationApp(): React.ReactElement {
       stopRecording().catch(console.error)
     })
 
-    const cleanupTranscript = window.electronAPI.onVoiceDictationTranscript((event: VoiceDictationTranscriptEvent) => {
-      if (event.sessionId !== sessionIdRef.current) return
-      const mergedTranscript = mergeVoiceDictationTranscript(
-        transcriptMergeStateRef.current,
-        event.text,
-        event.isFinal,
-        event.sessionId,
-      )
-      transcriptMergeStateRef.current = mergedTranscript.state
-      setTranscript(mergedTranscript.text)
-      transcriptRef.current = mergedTranscript.text
-      if (stoppingRef.current && event.isFinal) {
-        scheduleCommit(FINAL_COMMIT_DELAY_MS)
+    const cleanupTranscript = window.electronAPI.onVoiceDictationTranscript(
+      (event: VoiceDictationTranscriptEvent) => {
+        if (event.sessionId !== sessionIdRef.current) return
+        const mergedTranscript = mergeVoiceDictationTranscript(
+          transcriptMergeStateRef.current,
+          event.text,
+          event.isFinal,
+          event.sessionId
+        )
+        transcriptMergeStateRef.current = mergedTranscript.state
+        setTranscript(mergedTranscript.text)
+        transcriptRef.current = mergedTranscript.text
+        if (stoppingRef.current && event.isFinal) {
+          scheduleCommit(FINAL_COMMIT_DELAY_MS)
+        }
       }
-    })
+    )
 
-    const cleanupState = window.electronAPI.onVoiceDictationState((event: VoiceDictationStateEvent) => {
-      if (event.sessionId && event.sessionId !== sessionIdRef.current) return
-      if (event.status === 'connecting') {
-        setStatus('recording')
-        return
+    const cleanupState = window.electronAPI.onVoiceDictationState(
+      (event: VoiceDictationStateEvent) => {
+        if (event.sessionId && event.sessionId !== sessionIdRef.current) return
+        if (event.status === 'connecting') {
+          setStatus('recording')
+          return
+        }
+        // ASR 连接被服务端关闭（VAD 静音超时），如果仍在录音则自动重连
+        if (
+          event.status === 'idle' &&
+          event.message === 'asr_session_ended' &&
+          !stoppingRef.current
+        ) {
+          const nextSessionId = crypto.randomUUID()
+          setSessionId(nextSessionId)
+          sessionIdRef.current = nextSessionId
+          asrReadyRef.current = false
+          queuedAudioRef.current = []
+          window.electronAPI
+            .startVoiceDictation({ sessionId: nextSessionId })
+            .then(() => {
+              if (sessionIdRef.current !== nextSessionId) return
+              asrReadyRef.current = true
+              flushQueuedAudio()
+            })
+            .catch((error) => {
+              const textMessage = error instanceof Error ? error.message : '未知错误'
+              setStatus('error')
+              setMessage(textMessage)
+            })
+          return
+        }
+        setStatus(event.status)
+        if (event.message) setMessage(event.message)
       }
-      // ASR 连接被服务端关闭（VAD 静音超时），如果仍在录音则自动重连
-      if (event.status === 'idle' && event.message === 'asr_session_ended' && !stoppingRef.current) {
-        const nextSessionId = crypto.randomUUID()
-        setSessionId(nextSessionId)
-        sessionIdRef.current = nextSessionId
-        asrReadyRef.current = false
-        queuedAudioRef.current = []
-        window.electronAPI.startVoiceDictation({ sessionId: nextSessionId })
-          .then(() => {
-            if (sessionIdRef.current !== nextSessionId) return
-            asrReadyRef.current = true
-            flushQueuedAudio()
-          })
-          .catch((error) => {
-            const textMessage = error instanceof Error ? error.message : '未知错误'
-            setStatus('error')
-            setMessage(textMessage)
-          })
-        return
-      }
-      setStatus(event.status)
-      if (event.message) setMessage(event.message)
-    })
+    )
 
     return () => {
       cleanupShown()
@@ -440,7 +452,9 @@ export function VoiceDictationApp(): React.ReactElement {
       cleanupState()
       const currentSessionId = sessionIdRef.current
       if (currentSessionId) {
-        window.electronAPI.cancelVoiceDictation({ sessionId: currentSessionId }).catch(console.error)
+        window.electronAPI
+          .cancelVoiceDictation({ sessionId: currentSessionId })
+          .catch(console.error)
       }
       if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
       cleanupAudio()
@@ -449,30 +463,36 @@ export function VoiceDictationApp(): React.ReactElement {
 
   const busy = status === 'connecting' || status === 'recording' || status === 'stopping'
   return (
-    <div ref={rootRef} className="box-border flex h-screen w-screen flex-col overflow-hidden rounded-xl bg-background px-2 pt-2 pb-1.5">
+    <div
+      ref={rootRef}
+      className="box-border flex h-screen w-screen flex-col overflow-hidden rounded-xl bg-background px-2 pt-2 pb-1.5"
+    >
       <div ref={panelRef} className="flex min-h-0 w-full flex-col overflow-hidden">
-        <div ref={headerRef} className="voice-dictation-drag-region flex shrink-0 items-center justify-between px-2 pt-0.5 pb-2">
+        <div
+          ref={headerRef}
+          className="voice-dictation-drag-region flex shrink-0 items-center justify-between px-2 pt-0.5 pb-2"
+        >
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={`relative flex size-8 items-center justify-center rounded-full ${status === 'error' ? 'bg-destructive/12 text-destructive' : 'bg-primary/12 text-primary'}`}
             >
-              {status === 'connecting' || status === 'stopping'
-                ? <Loader2 className="size-4 animate-spin" />
-                : status === 'completed'
-                  ? <Check className="size-4" />
-                  : status === 'recording'
-                    ? (
-                      <div className="flex items-center gap-[3px] h-4">
-                        {[0.6, 1, 0.75, 0.9, 0.5].map((scale, i) => (
-                          <span
-                            key={i}
-                            className="w-[3px] rounded-full bg-primary transition-all duration-100"
-                            style={{ height: `${Math.max(4, Math.round(volume * scale * 16))}px` }}
-                          />
-                        ))}
-                      </div>
-                    )
-                    : <Mic className="size-4" />}
+              {status === 'connecting' || status === 'stopping' ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : status === 'completed' ? (
+                <Check className="size-4" />
+              ) : status === 'recording' ? (
+                <div className="flex items-center gap-[3px] h-4">
+                  {[0.6, 1, 0.75, 0.9, 0.5].map((scale, i) => (
+                    <span
+                      key={i}
+                      className="w-[3px] rounded-full bg-primary transition-all duration-100"
+                      style={{ height: `${Math.max(4, Math.round(volume * scale * 16))}px` }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Mic className="size-4" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-medium text-foreground">TAgent 语音输入</div>
@@ -506,7 +526,10 @@ export function VoiceDictationApp(): React.ReactElement {
 
         <div className="min-h-0 px-2">
           <div className="overflow-hidden rounded-lg bg-muted/45">
-            <div ref={hintBarRef} className="flex min-h-8 shrink-0 items-center justify-between gap-3 px-3 py-1.5 text-xs leading-4 text-muted-foreground">
+            <div
+              ref={hintBarRef}
+              className="flex min-h-8 shrink-0 items-center justify-between gap-3 px-3 py-1.5 text-xs leading-4 text-muted-foreground"
+            >
               <span className="truncate">
                 Ctrl+～ 停止 · 外部写入光标 · TAgent 激活时写入 Chat / Agent
               </span>
@@ -548,8 +571,10 @@ declare global {
 }
 
 function isConstraintError(error: unknown): boolean {
-  return error instanceof DOMException &&
+  return (
+    error instanceof DOMException &&
     (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError')
+  )
 }
 
 function getMicrophoneErrorMessage(error: unknown): string {

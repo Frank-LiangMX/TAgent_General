@@ -15,8 +15,6 @@ import type { VoiceDictationSettings, MicPermissionResult } from '../../../types
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -24,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
 const ENDPOINT_OPTIONS = [
@@ -66,7 +66,8 @@ export function VoiceInputSettings(): React.ReactElement {
   }, [])
 
   React.useEffect(() => {
-    window.electronAPI.getVoiceDictationSettings()
+    window.electronAPI
+      .getVoiceDictationSettings()
       .then(setSettings)
       .catch((error) => {
         console.error('[语音输入] 加载设置失败:', error)
@@ -93,22 +94,25 @@ export function VoiceInputSettings(): React.ReactElement {
     }
   }, [])
 
-  const update = React.useCallback(async (updates: Partial<VoiceDictationSettings>) => {
-    if (!settings) return
-    const optimistic = { ...settings, ...updates, provider: 'doubao' as const }
-    setSettings(optimistic)
-    setSaving(true)
-    try {
-      const saved = await window.electronAPI.updateVoiceDictationSettings(optimistic)
-      setSettings(saved)
-      window.electronAPI.reregisterGlobalShortcuts().catch(console.error)
-    } catch (error) {
-      console.error('[语音输入] 保存设置失败:', error)
-      toast.error('保存语音输入设置失败')
-    } finally {
-      setSaving(false)
-    }
-  }, [settings])
+  const update = React.useCallback(
+    async (updates: Partial<VoiceDictationSettings>) => {
+      if (!settings) return
+      const optimistic = { ...settings, ...updates, provider: 'doubao' as const }
+      setSettings(optimistic)
+      setSaving(true)
+      try {
+        const saved = await window.electronAPI.updateVoiceDictationSettings(optimistic)
+        setSettings(saved)
+        window.electronAPI.reregisterGlobalShortcuts().catch(console.error)
+      } catch (error) {
+        console.error('[语音输入] 保存设置失败:', error)
+        toast.error('保存语音输入设置失败')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [settings]
+  )
 
   const handleTest = React.useCallback(async () => {
     if (!settings) return
@@ -184,10 +188,7 @@ export function VoiceInputSettings(): React.ReactElement {
             <div className="text-sm font-medium text-foreground">启用语音输入</div>
             <div className="text-xs text-muted-foreground">Ctrl+～ 呼起浮窗</div>
           </div>
-          <Switch
-            checked={settings.enabled}
-            onCheckedChange={(enabled) => update({ enabled })}
-          />
+          <Switch checked={settings.enabled} onCheckedChange={(enabled) => update({ enabled })} />
         </div>
       </div>
 
@@ -201,7 +202,11 @@ export function VoiceInputSettings(): React.ReactElement {
             onClick={handleTest}
             disabled={testing || !settings.appId || !settings.accessToken || !settings.resourceId}
           >
-            {testing ? <Loader2 className="size-3 animate-spin mr-1" /> : <TestTube2 className="size-3 mr-1" />}
+            {testing ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <TestTube2 className="size-3 mr-1" />
+            )}
             测试
           </Button>
         </div>
@@ -269,14 +274,18 @@ export function VoiceInputSettings(): React.ReactElement {
               <div className="text-sm text-muted-foreground">连接模式</div>
               <Select
                 value={settings.endpointMode}
-                onValueChange={(v) => update({ endpointMode: v as VoiceDictationSettings['endpointMode'] })}
+                onValueChange={(v) =>
+                  update({ endpointMode: v as VoiceDictationSettings['endpointMode'] })
+                }
               >
                 <SelectTrigger className="w-[140px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {ENDPOINT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -294,7 +303,9 @@ export function VoiceInputSettings(): React.ReactElement {
                 </SelectTrigger>
                 <SelectContent>
                   {LANGUAGE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -305,14 +316,18 @@ export function VoiceInputSettings(): React.ReactElement {
               <div className="text-sm text-muted-foreground">输出方式</div>
               <Select
                 value={settings.outputMode}
-                onValueChange={(v) => update({ outputMode: v as VoiceDictationSettings['outputMode'] })}
+                onValueChange={(v) =>
+                  update({ outputMode: v as VoiceDictationSettings['outputMode'] })
+                }
               >
                 <SelectTrigger className="w-[140px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {OUTPUT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -332,9 +347,7 @@ export function VoiceInputSettings(): React.ReactElement {
         )}
       </div>
 
-      {saving && (
-        <p className="text-xs text-muted-foreground">正在保存...</p>
-      )}
+      {saving && <p className="text-xs text-muted-foreground">正在保存...</p>}
     </div>
   )
 }

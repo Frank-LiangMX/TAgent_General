@@ -47,9 +47,7 @@ export function NamingRulesConfig(): React.ReactElement {
             <TooltipTrigger>
               <Info size={14} className="text-muted-foreground cursor-help" />
             </TooltipTrigger>
-            <TooltipContent>
-              UE5 资产名必须以大写字母开头，不能包含空格或特殊字符
-            </TooltipContent>
+            <TooltipContent>UE5 资产名必须以大写字母开头，不能包含空格或特殊字符</TooltipContent>
           </Tooltip>
         </div>
       </div>

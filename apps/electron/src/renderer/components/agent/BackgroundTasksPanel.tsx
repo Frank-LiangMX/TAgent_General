@@ -12,7 +12,6 @@ import type { BackgroundTask } from '@/atoms/agent-atoms'
 
 import { cn } from '@/lib/utils'
 
-
 export interface BackgroundTasksPanelProps {
   tasks: BackgroundTask[]
   className?: string
@@ -33,18 +32,22 @@ export function BackgroundTasksPanel({
   return (
     <div className={cn('mt-2', className)}>
       {/* 标题 */}
-      <div className="text-xs text-foreground/60 mb-1.5 px-0.5">
-        {tasks.length} 个后台任务：
-      </div>
+      <div className="text-xs text-foreground/60 mb-1.5 px-0.5">{tasks.length} 个后台任务：</div>
 
       {/* 任务表格 */}
       <div className="rounded-md border border-border/50 overflow-hidden bg-muted/20">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border/50 bg-muted/30">
-              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 w-8 text-[11px]">#</th>
-              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 text-[11px]">任务描述</th>
-              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 w-20 text-[11px]">状态</th>
+              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 w-8 text-[11px]">
+                #
+              </th>
+              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 text-[11px]">
+                任务描述
+              </th>
+              <th className="text-left py-1.5 px-2 font-medium text-foreground/50 w-20 text-[11px]">
+                状态
+              </th>
             </tr>
           </thead>
           <tbody>

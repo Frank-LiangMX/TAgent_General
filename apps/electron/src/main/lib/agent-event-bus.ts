@@ -18,7 +18,7 @@ export type AgentEventHandler = (sessionId: string, payload: AgentStreamPayload)
 export type AgentEventMiddleware = (
   sessionId: string,
   payload: AgentStreamPayload,
-  next: () => void,
+  next: () => void
 ) => void
 
 export class AgentEventBus {

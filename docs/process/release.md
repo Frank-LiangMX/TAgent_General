@@ -20,12 +20,14 @@
 ## 3. 发版流程
 
 ### 3.1 准备
+
 1. 所有计划功能合入 main
 2. CI 全绿
 3. CHANGELOG.md 完整（`[Unreleased]` 段已填好）
 4. README.md 反映当前状态
 
 ### 3.2 跑 release 脚本
+
 ```bash
 # 1. 看现状
 python scripts/release.py status
@@ -38,6 +40,7 @@ python scripts/release.py ship 0.2.0 --yes
 ```
 
 脚本自动：
+
 1. 把 `[Unreleased]` 段移到新的 `[0.2.0] - 2026-06-05` 段
 2. 重置 `[Unreleased]` 为空
 3. 更新 `VERSION` 文件 + `package.json` + 同步 4 个文件
@@ -46,6 +49,7 @@ python scripts/release.py ship 0.2.0 --yes
 6. 触发 CI build 流程
 
 ### 3.3 CI 跑构建
+
 - tag push → GitHub Actions 触发 release workflow
 - 构建：PyInstaller（ta_agent）+ electron-builder（Desktop）+ docker build（Server）
 - 产物上传到 GitHub Releases
@@ -92,6 +96,7 @@ python scripts/release.py ship 1.0.0 --yes
 ```
 
 RC 期间：
+
 - 不强制兼容
 - 用户明确知道是 pre-release
 - 数据迁移脚本可后续补
@@ -111,6 +116,7 @@ TAgent 暂不维护 LTS（项目早期）。后续看需要。
 ## 9. 故障恢复
 
 ### 9.1 Tag 推错了
+
 ```bash
 # 删本地 + 远端
 git tag -d v0.2.0
@@ -120,6 +126,7 @@ git push origin :refs/tags/v0.2.0
 ```
 
 ### 9.2 Build 失败
+
 ```bash
 # 删 tag
 git push origin :refs/tags/v0.2.0
@@ -129,6 +136,7 @@ git push origin :refs/tags/v0.2.0
 ```
 
 ### 9.3 数据迁移出错
+
 - 不重发版本（用户可能已经升级）
 - 发 0.2.1 修复 + 数据迁移回滚命令
 - 在 CHANGELOG 标注 "important: if upgrading from 0.1.x, ..."
@@ -136,6 +144,7 @@ git push origin :refs/tags/v0.2.0
 ## 10. 工具脚本
 
 `scripts/release.py` 必须包含：
+
 - `status` — 当前版本 / 下一个版本建议
 - `ship <version>` — 发版
 - `dry-run` — 试运行不真做

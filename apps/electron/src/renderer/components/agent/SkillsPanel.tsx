@@ -3,15 +3,7 @@
  */
 
 import { useAtom } from 'jotai'
-import {
-  CircleCheck,
-  CircleDashed,
-  Plug,
-  RotateCw,
-  Settings2,
-  Sparkles,
-  Zap,
-} from 'lucide-react'
+import { CircleCheck, CircleDashed, Plug, RotateCw, Settings2, Sparkles, Zap } from 'lucide-react'
 import * as React from 'react'
 
 import type { WorkspaceCapabilities } from '@tagent/shared'
@@ -26,10 +18,7 @@ interface SkillsPanelProps {
   onConfigure?: () => void
 }
 
-export function SkillsPanel({
-  capabilities,
-  onConfigure,
-}: SkillsPanelProps): React.ReactElement {
+export function SkillsPanel({ capabilities, onConfigure }: SkillsPanelProps): React.ReactElement {
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
   const [filter, setFilter] = React.useState<SkillsFilter>('all')
 
@@ -65,7 +54,9 @@ export function SkillsPanel({
       </div>
 
       <div className="flex shrink-0 gap-1 border-b border-border/40 px-2 py-1.5">
-        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>全部</FilterChip>
+        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
+          全部
+        </FilterChip>
         <FilterChip active={filter === 'mcp'} onClick={() => setFilter('mcp')}>
           MCP {totalMcpCount > 0 ? `(${totalMcpCount})` : ''}
         </FilterChip>
@@ -88,10 +79,14 @@ export function SkillsPanel({
                     <NavigatorRow
                       key={server.name}
                       icon={server.enabled ? <CircleCheck size={12} /> : <CircleDashed size={12} />}
-                      iconClassName={server.enabled ? 'text-emerald-500' : 'text-muted-foreground/50'}
+                      iconClassName={
+                        server.enabled ? 'text-emerald-500' : 'text-muted-foreground/50'
+                      }
                       title={server.name}
                       subtitle={server.type}
-                      selected={selectedCapability?.type === 'mcp' && selectedCapability.key === server.name}
+                      selected={
+                        selectedCapability?.type === 'mcp' && selectedCapability.key === server.name
+                      }
                       onClick={() => setSelectedCapability({ type: 'mcp', key: server.name })}
                     />
                   ))
@@ -111,13 +106,18 @@ export function SkillsPanel({
                       iconClassName={skill.enabled ? 'text-amber-500' : 'text-muted-foreground/50'}
                       title={skill.name}
                       subtitle={skill.description ?? skill.slug}
-                      badge={skill.hasUpdate ? (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400">
-                          <RotateCw size={9} />
-                          更新
-                        </span>
-                      ) : undefined}
-                      selected={selectedCapability?.type === 'skill' && selectedCapability.key === skill.slug}
+                      badge={
+                        skill.hasUpdate ? (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                            <RotateCw size={9} />
+                            更新
+                          </span>
+                        ) : undefined
+                      }
+                      selected={
+                        selectedCapability?.type === 'skill' &&
+                        selectedCapability.key === skill.slug
+                      }
                       onClick={() => setSelectedCapability({ type: 'skill', key: skill.slug })}
                     />
                   ))
@@ -148,7 +148,7 @@ function FilterChip({
         'rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
         active
           ? 'bg-foreground/8 text-foreground'
-          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
       )}
     >
       {children}
@@ -180,11 +180,14 @@ function NavigatorRow({
       className={cn(
         'group relative flex w-full items-start gap-2 px-3 py-2 text-left transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
-        selected ? 'bg-accent/70' : 'hover:bg-accent/40',
+        selected ? 'bg-accent/70' : 'hover:bg-accent/40'
       )}
     >
       {selected ? (
-        <span className="absolute bottom-1 left-0 top-1 w-0.5 rounded-full bg-primary" aria-hidden />
+        <span
+          className="absolute bottom-1 left-0 top-1 w-0.5 rounded-full bg-primary"
+          aria-hidden
+        />
       ) : null}
       <span className={cn('mt-0.5 shrink-0', iconClassName)}>{icon}</span>
       <span className="min-w-0 flex-1">
@@ -193,7 +196,9 @@ function NavigatorRow({
           {badge}
         </span>
         {subtitle ? (
-          <span className="mt-0.5 line-clamp-1 text-[10px] leading-4 text-muted-foreground">{subtitle}</span>
+          <span className="mt-0.5 line-clamp-1 text-[10px] leading-4 text-muted-foreground">
+            {subtitle}
+          </span>
         ) : null}
       </span>
     </button>

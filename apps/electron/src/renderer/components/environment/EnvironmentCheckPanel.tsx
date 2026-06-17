@@ -5,7 +5,7 @@
  * 用于 Onboarding Step 2 和设置里的 EnvironmentCheckDialog 复用。
  */
 
-import { useAtom, useSetAtom , useAtomValue } from 'jotai'
+import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { Loader2, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
@@ -19,16 +19,12 @@ import {
 } from '@/atoms/environment'
 import { Button } from '@/components/ui/button'
 
-
-
 interface EnvironmentCheckPanelProps {
   /** 首次挂载时是否自动跑一次检测（Onboarding 用），Dialog 场景可设 false */
   autoDetectOnMount?: boolean
 }
 
-export function EnvironmentCheckPanel({
-  autoDetectOnMount = true,
-}: EnvironmentCheckPanelProps) {
+export function EnvironmentCheckPanel({ autoDetectOnMount = true }: EnvironmentCheckPanelProps) {
   const [runtime, setRuntime] = useAtom(runtimeStatusAtom)
   const setManifest = useSetAtom(installerManifestAtom)
   const shellOk = useAtomValue(isShellEnvironmentOkAtom)
@@ -64,7 +60,6 @@ export function EnvironmentCheckPanel({
         .then((m) => setManifest(m))
         .catch(() => {})
     }
-     
   }, [])
 
   // ----- Shell 环境卡片 -----
@@ -158,8 +153,8 @@ export function EnvironmentCheckPanel({
 
       {!shellOk && runtime && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
-          Shell 环境未就绪：现在发送 Agent 消息会失败。请先安装 Git for Windows
-          （会附带 Git Bash），安装完成后点「重新检测」。
+          Shell 环境未就绪：现在发送 Agent 消息会失败。请先安装 Git for Windows （会附带 Git
+          Bash），安装完成后点「重新检测」。
         </div>
       )}
 

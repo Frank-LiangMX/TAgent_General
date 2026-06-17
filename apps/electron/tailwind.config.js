@@ -1,9 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
-  content: [
-    './src/renderer/**/*.{js,ts,jsx,tsx}',
-  ],
+  content: ['./src/renderer/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -70,14 +68,11 @@ export default {
         },
       },
       animation: {
-        'in': 'slide-in-from-top 0.3s ease-out',
-        'out': 'slide-out-to-right 0.2s ease-in',
+        in: 'slide-in-from-top 0.3s ease-out',
+        out: 'slide-out-to-right 0.2s ease-in',
         'preview-slide-out': 'preview-slide-out 0.25s ease-out forwards',
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('tailwindcss-animate'),
-  ],
+  plugins: [require('@tailwindcss/typography'), require('tailwindcss-animate')],
 }

@@ -9,9 +9,19 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Database, ClipboardCheck, GitBranch, Settings, Loader2, Brain, Download, X, Circle } from 'lucide-react'
-import { toast } from 'sonner'
+import {
+  Database,
+  ClipboardCheck,
+  GitBranch,
+  Settings,
+  Loader2,
+  Brain,
+  Download,
+  X,
+  Circle,
+} from 'lucide-react'
 import * as React from 'react'
+import { toast } from 'sonner'
 
 import { AssetLibraryPanel } from './asset-library/AssetLibraryPanel'
 import { TAConfigPanel } from './config/TAConfigPanel'
@@ -51,7 +61,7 @@ export function TAModeView(): React.ReactElement {
 
   // 计算当前 workspace slug
   const workspaceSlug = React.useMemo(() => {
-    const ws = workspaces.find(w => w.id === currentWorkspaceId)
+    const ws = workspaces.find((w) => w.id === currentWorkspaceId)
     return ws?.slug ?? null
   }, [workspaces, currentWorkspaceId])
 
@@ -144,7 +154,7 @@ export function TAModeView(): React.ReactElement {
                 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
                 activeTab === id
                   ? 'bg-primary/10 text-foreground font-medium'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               {icon}
@@ -201,7 +211,9 @@ export function TAModeView(): React.ReactElement {
               </div>
             )}
             {mcpStatus?.pythonVersion && (
-              <div className="text-xs text-muted-foreground mt-1">Python {mcpStatus.pythonVersion}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Python {mcpStatus.pythonVersion}
+              </div>
             )}
           </div>
         </div>

@@ -10,21 +10,29 @@
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { useAtom } from 'jotai'
-import { Camera, ImagePlus, Volume2, BellRing, Clock, StickyNote, Globe, Check, X } from 'lucide-react'
+import {
+  Camera,
+  ImagePlus,
+  Volume2,
+  BellRing,
+  Clock,
+  StickyNote,
+  Globe,
+  Check,
+  X,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { UserAvatar } from '../shared/UserAvatar'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Switch } from '../ui/switch'
 
-import type { NotificationSoundId, NotificationSoundType, NotificationSoundSettings } from '@/types/settings'
+import type {
+  NotificationSoundId,
+  NotificationSoundType,
+  NotificationSoundSettings,
+} from '@/types/settings'
 
 import {
   notificationsEnabledAtom,
@@ -53,9 +61,13 @@ interface EmojiMartEmoji {
 export function GeneralSettings(): React.ReactElement {
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
   const [notificationsEnabled, setNotificationsEnabled] = useAtom(notificationsEnabledAtom)
-  const [notificationSoundEnabled, setNotificationSoundEnabled] = useAtom(notificationSoundEnabledAtom)
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useAtom(
+    notificationSoundEnabledAtom
+  )
   const [notificationSounds, setNotificationSounds] = useAtom(notificationSoundsAtom)
-  const [stickyUserMessageEnabled, setStickyUserMessageEnabled] = useAtom(stickyUserMessageEnabledAtom)
+  const [stickyUserMessageEnabled, setStickyUserMessageEnabled] = useAtom(
+    stickyUserMessageEnabledAtom
+  )
   const [isEditingName, setIsEditingName] = React.useState(false)
   const [nameInput, setNameInput] = React.useState(userProfile.userName)
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false)
@@ -77,9 +89,12 @@ export function GeneralSettings(): React.ReactElement {
   }, [])
 
   React.useEffect(() => {
-    window.electronAPI.getSettings().then((settings) => {
-      setArchiveAfterDays(settings.archiveAfterDays ?? 7)
-    }).catch(console.error)
+    window.electronAPI
+      .getSettings()
+      .then((settings) => {
+        setArchiveAfterDays(settings.archiveAfterDays ?? 7)
+      })
+      .catch(console.error)
   }, [])
 
   const handleArchiveDaysChange = async (value: string): Promise<void> => {
@@ -182,7 +197,10 @@ export function GeneralSettings(): React.ReactElement {
                 onChange={(e) => setNameInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveName()
-                  if (e.key === 'Escape') { setNameInput(userProfile.userName); setIsEditingName(false) }
+                  if (e.key === 'Escape') {
+                    setNameInput(userProfile.userName)
+                    setIsEditingName(false)
+                  }
                 }}
                 maxLength={30}
                 autoFocus
@@ -191,13 +209,22 @@ export function GeneralSettings(): React.ReactElement {
               <button onClick={handleSaveName} className="p-1 hover:bg-muted rounded">
                 <Check className="size-3.5 text-primary" />
               </button>
-              <button onClick={() => { setNameInput(userProfile.userName); setIsEditingName(false) }} className="p-1 hover:bg-muted rounded">
+              <button
+                onClick={() => {
+                  setNameInput(userProfile.userName)
+                  setIsEditingName(false)
+                }}
+                className="p-1 hover:bg-muted rounded"
+              >
                 <X className="size-3.5 text-muted-foreground" />
               </button>
             </div>
           ) : (
             <button
-              onClick={() => { setNameInput(userProfile.userName); setIsEditingName(true) }}
+              onClick={() => {
+                setNameInput(userProfile.userName)
+                setIsEditingName(true)
+              }}
               className="text-base font-medium text-foreground hover:text-primary transition-colors"
             >
               {userProfile.userName}
@@ -209,11 +236,7 @@ export function GeneralSettings(): React.ReactElement {
       {/* 设置网格 - 2列布局 */}
       <div className="grid grid-cols-2 gap-3">
         {/* 语言 */}
-        <SettingTile
-          icon={<Globe className="size-4" />}
-          label="语言"
-          value="简体中文"
-        />
+        <SettingTile icon={<Globe className="size-4" />} label="语言" value="简体中文" />
 
         {/* 自动归档 */}
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -281,10 +304,12 @@ export function GeneralSettings(): React.ReactElement {
         </div>
 
         {/* 音效选择器 */}
-        <div className={cn(
-          'px-3 py-2 space-y-2',
-          (!notificationsEnabled || !notificationSoundEnabled) && 'opacity-50 pointer-events-none'
-        )}>
+        <div
+          className={cn(
+            'px-3 py-2 space-y-2',
+            (!notificationsEnabled || !notificationSoundEnabled) && 'opacity-50 pointer-events-none'
+          )}
+        >
           <SoundRow
             label="任务完成"
             type="taskComplete"
@@ -347,7 +372,12 @@ interface SettingToggleTileProps {
   onToggle: (checked: boolean) => void
 }
 
-function SettingToggleTile({ icon, label, checked, onToggle }: SettingToggleTileProps): React.ReactElement {
+function SettingToggleTile({
+  icon,
+  label,
+  checked,
+  onToggle,
+}: SettingToggleTileProps): React.ReactElement {
   return (
     <button
       type="button"
@@ -357,19 +387,23 @@ function SettingToggleTile({ icon, label, checked, onToggle }: SettingToggleTile
         checked ? 'bg-muted/50 border border-border/50' : 'bg-muted/30 hover:bg-muted/50'
       )}
     >
-      <div className={cn(
-        'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-        checked ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
-      )}>
+      <div
+        className={cn(
+          'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+          checked ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
+        )}
+      >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground">{label}</div>
       </div>
-      <div className={cn(
-        'w-4 h-4 rounded-full flex items-center justify-center shrink-0',
-        checked ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-      )}>
+      <div
+        className={cn(
+          'w-4 h-4 rounded-full flex items-center justify-center shrink-0',
+          checked ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+        )}
+      >
         {checked && <Check className="size-2.5 text-white" />}
       </div>
     </button>
@@ -399,7 +433,9 @@ function SoundRow({ label, type, sounds, onSoundChange }: SoundRowProps): React.
           </SelectTrigger>
           <SelectContent>
             {NOTIFICATION_SOUNDS.map((s) => (
-              <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+              <SelectItem key={s.id} value={s.id}>
+                {s.label}
+              </SelectItem>
             ))}
             <SelectItem value="none">无</SelectItem>
           </SelectContent>

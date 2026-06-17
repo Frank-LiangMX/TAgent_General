@@ -25,12 +25,17 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
-import type { McpServerEntry, McpTransportType, SkillMeta, WorkspaceMcpConfig } from '@tagent/shared'
+import type {
+  McpServerEntry,
+  McpTransportType,
+  SkillMeta,
+  WorkspaceMcpConfig,
+} from '@tagent/shared'
 
-import { selectedCapabilityAtom } from '@/atoms/app-mode'
 import { agentWorkspacesAtom, currentAgentWorkspaceIdAtom } from '@/atoms/agent-atoms'
-import { SettingsCard } from '@/components/settings/primitives'
+import { selectedCapabilityAtom } from '@/atoms/app-mode'
 import { McpServerForm } from '@/components/settings/McpServerForm'
+import { SettingsCard } from '@/components/settings/primitives'
 import { SkillFilesPanel } from '@/components/settings/SkillFilesPanel'
 import {
   AlertDialog,
@@ -53,13 +58,18 @@ function extractSkillBody(content: string): string {
   return match?.[1]?.trim() ?? content
 }
 
-function rebuildSkillMd(content: string, patch: { name?: string; description?: string; body?: string }): string {
+function rebuildSkillMd(
+  content: string,
+  patch: { name?: string; description?: string; body?: string }
+): string {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
   if (!frontmatterMatch) return content
 
   let fm = frontmatterMatch[1]!
   if (patch.name !== undefined) {
-    fm = /^name:/m.test(fm) ? fm.replace(/^name:.*$/m, `name: ${patch.name}`) : `name: ${patch.name}\n${fm}`
+    fm = /^name:/m.test(fm)
+      ? fm.replace(/^name:.*$/m, `name: ${patch.name}`)
+      : `name: ${patch.name}\n${fm}`
   }
   if (patch.description !== undefined) {
     if (/^description:/m.test(fm)) {
@@ -78,7 +88,9 @@ interface CapabilityDetailViewProps {
   variant?: 'default' | 'inspector'
 }
 
-export function CapabilityDetailView({ variant = 'default' }: CapabilityDetailViewProps): React.ReactElement {
+export function CapabilityDetailView({
+  variant = 'default',
+}: CapabilityDetailViewProps): React.ReactElement {
   const hideBackButton = variant === 'inspector'
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
@@ -86,7 +98,7 @@ export function CapabilityDetailView({ variant = 'default' }: CapabilityDetailVi
 
   const workspaceSlug = React.useMemo(
     () => workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null,
-    [workspaces, currentWorkspaceId],
+    [workspaces, currentWorkspaceId]
   )
 
   const handleBack = React.useCallback(() => {
@@ -216,11 +228,22 @@ function SkillCapabilityDetail({
   }
 
   if (loadingContent) {
-    return <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">加载中...</div>
+    return (
+      <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+        加载中...
+      </div>
+    )
   }
 
   if (!skill) {
-    return <CapabilityNotFound type="Skill" name={skillSlug} onBack={onBack} hideBackButton={hideBackButton} />
+    return (
+      <CapabilityNotFound
+        type="Skill"
+        name={skillSlug}
+        onBack={onBack}
+        hideBackButton={hideBackButton}
+      />
+    )
   }
 
   const metaTags = [
@@ -255,7 +278,7 @@ function SkillCapabilityDetail({
                   'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
                   skill.enabled
                     ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    : 'border border-border/60 bg-muted/60 text-muted-foreground',
+                    : 'border border-border/60 bg-muted/60 text-muted-foreground'
                 )}
               >
                 {skill.enabled ? '已启用' : '已禁用'}
@@ -282,7 +305,12 @@ function SkillCapabilityDetail({
               </button>
             ) : (
               <>
-                <Button size="sm" variant="ghost" onClick={() => setIsEditingMeta(false)} disabled={saving}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditingMeta(false)}
+                  disabled={saving}
+                >
                   <X size={14} /> 取消
                 </Button>
                 <Button size="sm" onClick={() => void saveMeta()} disabled={saving}>
@@ -314,11 +342,17 @@ function SkillCapabilityDetail({
             }}
             className="scale-75 origin-left"
           />
-          <span className="text-xs text-muted-foreground">{skill.enabled ? '已启用' : '未启用'}</span>
+          <span className="text-xs text-muted-foreground">
+            {skill.enabled ? '已启用' : '未启用'}
+          </span>
         </div>
       </div>
 
-      <Tabs value={detailTab} onValueChange={(v) => setDetailTab(v as 'body' | 'files')} className="flex min-h-0 flex-1 flex-col">
+      <Tabs
+        value={detailTab}
+        onValueChange={(v) => setDetailTab(v as 'body' | 'files')}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <TabsList className="self-start rounded-full border border-border/60 bg-muted/40 p-1">
           <TabsTrigger value="body">说明</TabsTrigger>
           <TabsTrigger value="files">
@@ -335,8 +369,12 @@ function SkillCapabilityDetail({
           <SettingsCard divided={false} className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div className="min-w-0">
-                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">SKILL.md</div>
-                <div className="mt-1 text-xs text-muted-foreground">这里适合写 Skill 的用途、边界和使用说明。</div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  SKILL.md
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  这里适合写 Skill 的用途、边界和使用说明。
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {!isEditingBody ? (
@@ -353,7 +391,12 @@ function SkillCapabilityDetail({
                   </button>
                 ) : (
                   <>
-                    <Button size="sm" variant="ghost" onClick={() => setIsEditingBody(false)} disabled={saving}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setIsEditingBody(false)}
+                      disabled={saving}
+                    >
                       <X size={14} /> 取消
                     </Button>
                     <Button size="sm" onClick={() => void saveBody()} disabled={saving}>
@@ -381,7 +424,11 @@ function SkillCapabilityDetail({
         </TabsContent>
 
         <TabsContent value="files" className="flex-1 min-h-0 pt-3">
-          <SkillFilesPanel workspaceSlug={workspaceSlug} skillSlug={skill.slug} onFileCountChange={setFileCount} />
+          <SkillFilesPanel
+            workspaceSlug={workspaceSlug}
+            skillSlug={skill.slug}
+            onFileCountChange={setFileCount}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -456,7 +503,7 @@ function McpCapabilityDetail({
                 timestamp: Date.now(),
               },
             }
-          : prev,
+          : prev
       )
       if (result.success) {
         toast.success('测试成功', { description: result.message })
@@ -480,7 +527,14 @@ function McpCapabilityDetail({
   }
 
   if (!entry) {
-    return <CapabilityNotFound type="MCP Server" name={serverName} onBack={onBack} hideBackButton={hideBackButton} />
+    return (
+      <CapabilityNotFound
+        type="MCP Server"
+        name={serverName}
+        onBack={onBack}
+        hideBackButton={hideBackButton}
+      />
+    )
   }
 
   const envCount = entry.env ? Object.keys(entry.env).length : 0
@@ -516,23 +570,37 @@ function McpCapabilityDetail({
                   'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
                   entry.enabled
                     ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    : 'border border-border/60 bg-muted/60 text-muted-foreground',
+                    : 'border border-border/60 bg-muted/60 text-muted-foreground'
                 )}
               >
                 {entry.enabled ? '已启用' : '已禁用'}
               </span>
             </div>
             <p className="mt-2 max-w-[72ch] text-sm leading-6 text-muted-foreground">
-              {entry.type === 'stdio' ? entry.command ?? 'stdio 服务器' : entry.url ?? '远程 MCP 服务器'}
+              {entry.type === 'stdio'
+                ? (entry.command ?? 'stdio 服务器')
+                : (entry.url ?? '远程 MCP 服务器')}
             </p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void load()}
+              disabled={loading}
+            >
               {loading ? <Loader2 size={14} className="animate-spin" /> : null}
               <span className="ml-1">刷新</span>
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => void handleTest()} disabled={testing || loading}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleTest()}
+              disabled={testing || loading}
+            >
               {testing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               <span className="ml-1">{testing ? '测试中' : '测试连接'}</span>
             </Button>
@@ -553,11 +621,16 @@ function McpCapabilityDetail({
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>删除 MCP 服务器</AlertDialogTitle>
-                    <AlertDialogDescription>确定删除「{serverName}」吗？此操作不可恢复。</AlertDialogDescription>
+                    <AlertDialogDescription>
+                      确定删除「{serverName}」吗？此操作不可恢复。
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
                       删除
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -592,8 +665,12 @@ function McpCapabilityDetail({
         <>
           <SettingsCard divided={false} className="overflow-hidden">
             <div className="border-b border-border/60 px-4 py-3">
-              <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">连接配置</div>
-              <div className="mt-1 text-xs text-muted-foreground">这里显示连接方式和可直接修改的关键字段。</div>
+              <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                连接配置
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                这里显示连接方式和可直接修改的关键字段。
+              </div>
             </div>
             <div className="divide-y divide-border/60">
               <div className="flex items-center gap-4 px-4 py-2.5">
@@ -604,7 +681,10 @@ function McpCapabilityDetail({
                     try {
                       const config = await window.electronAPI.getWorkspaceMcpConfig(workspaceSlug)
                       const newConfig: WorkspaceMcpConfig = {
-                        servers: { ...config.servers, [serverName]: { ...entry, enabled: checked } },
+                        servers: {
+                          ...config.servers,
+                          [serverName]: { ...entry, enabled: checked },
+                        },
                       }
                       await window.electronAPI.saveWorkspaceMcpConfig(workspaceSlug, newConfig)
                       setEntry((prev) => (prev ? { ...prev, enabled: checked } : prev))
@@ -615,16 +695,22 @@ function McpCapabilityDetail({
                   }}
                   className="scale-75 origin-left"
                 />
-                <span className="text-xs text-muted-foreground">{entry.enabled ? '已启用' : '未启用'}</span>
+                <span className="text-xs text-muted-foreground">
+                  {entry.enabled ? '已启用' : '未启用'}
+                </span>
               </div>
               <MetadataRow label="类型" value={TRANSPORT_LABELS[entry.type]} />
               {entry.type === 'stdio' && (
                 <>
                   <MetadataRow label="命令" value={entry.command ?? '—'} />
-                  {entry.args && entry.args.length > 0 && <MetadataRow label="参数" value={entry.args.join(' ')} />}
+                  {entry.args && entry.args.length > 0 && (
+                    <MetadataRow label="参数" value={entry.args.join(' ')} />
+                  )}
                 </>
               )}
-              {(entry.type === 'http' || entry.type === 'sse') && <MetadataRow label="URL" value={entry.url ?? '—'} />}
+              {(entry.type === 'http' || entry.type === 'sse') && (
+                <MetadataRow label="URL" value={entry.url ?? '—'} />
+              )}
               {entry.timeout != null && <MetadataRow label="超时" value={`${entry.timeout}s`} />}
             </div>
           </SettingsCard>
@@ -632,7 +718,9 @@ function McpCapabilityDetail({
           {entry.env && Object.keys(entry.env).length > 0 && (
             <SettingsCard divided={false} className="overflow-hidden">
               <div className="border-b border-border/60 px-4 py-3">
-                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">环境变量</div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  环境变量
+                </div>
               </div>
               <div className="divide-y divide-border/60">
                 {Object.entries(entry.env).map(([key, value]) => (
@@ -645,7 +733,9 @@ function McpCapabilityDetail({
           {entry.headers && Object.keys(entry.headers).length > 0 && (
             <SettingsCard divided={false} className="overflow-hidden">
               <div className="border-b border-border/60 px-4 py-3">
-                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">请求头</div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  请求头
+                </div>
               </div>
               <div className="divide-y divide-border/60">
                 {Object.entries(entry.headers).map(([key, value]) => (
@@ -658,8 +748,12 @@ function McpCapabilityDetail({
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <SettingsCard divided={false} className="overflow-hidden">
               <div className="border-b border-border/60 px-4 py-3">
-                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">连接测试</div>
-                <div className="mt-1 text-xs text-muted-foreground">这里显示最近一次连通性测试的结果。</div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  连接测试
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  这里显示最近一次连通性测试的结果。
+                </div>
               </div>
               <div className="p-4">
                 {entry.lastTestResult ? (
@@ -668,7 +762,7 @@ function McpCapabilityDetail({
                       'rounded-xl border p-3',
                       entry.lastTestResult.success
                         ? 'border-emerald-500/20 bg-emerald-500/5'
-                        : 'border-red-500/20 bg-red-500/5',
+                        : 'border-red-500/20 bg-red-500/5'
                     )}
                   >
                     <div className="flex items-start gap-2 text-sm">
@@ -724,7 +818,13 @@ function McpCapabilityDetail({
   )
 }
 
-function MetadataRow({ label, value }: { label: string; value: React.ReactNode }): React.ReactElement {
+function MetadataRow({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}): React.ReactElement {
   return (
     <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-4 px-4 py-2.5">
       <span className="pt-0.5 text-xs text-muted-foreground">{label}</span>
@@ -779,7 +879,9 @@ function CapabilityNotFound({
         <p className="text-sm font-medium text-foreground">
           {type}「{name}」未找到
         </p>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">可能是它已经被删除，或者列表还没有刷新。</p>
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          可能是它已经被删除，或者列表还没有刷新。
+        </p>
         {!hideBackButton ? (
           <button
             type="button"

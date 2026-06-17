@@ -7,11 +7,7 @@
 
 import { describe, expect, test } from 'vitest'
 
-import {
-  createTrayMenuModel,
-  TRAY_RECENT_LIMIT,
-  TRAY_MORE_LIMIT,
-} from './tray-menu-model'
+import { createTrayMenuModel, TRAY_RECENT_LIMIT, TRAY_MORE_LIMIT } from './tray-menu-model'
 
 import type { AgentSessionMeta, AgentWorkspace } from '@tagent/shared'
 
@@ -27,7 +23,7 @@ function sess(
   id: string,
   title: string,
   updatedAt: number,
-  opts: { workspaceId?: string; archived?: boolean } = {},
+  opts: { workspaceId?: string; archived?: boolean } = {}
 ): AgentSessionMeta {
   return {
     id,
@@ -134,11 +130,7 @@ describe('createTrayMenuModel - recentSessions', () => {
   })
 
   test('Given 5 个非 running 会话 When create Then moreSessions 为空 (少于 4 个)', () => {
-    const sessions = [
-      sess('s1', 'a', 500),
-      sess('s2', 'b', 400),
-      sess('s3', 'c', 300),
-    ]
+    const sessions = [sess('s1', 'a', 500), sess('s2', 'b', 400), sess('s3', 'c', 300)]
     const m = createTrayMenuModel(sessions, [], new Set())
     expect(m.recentSessions).toHaveLength(3)
     expect(m.moreSessions).toEqual([])
@@ -205,11 +197,7 @@ describe('createTrayMenuModel - 排序', () => {
   })
 
   test('Given sessions updatedAt 相等 When create Then 保持输入顺序 (稳定排序)', () => {
-    const sessions = [
-      sess('a', 'A', 100),
-      sess('b', 'B', 100),
-      sess('c', 'C', 100),
-    ]
+    const sessions = [sess('a', 'A', 100), sess('b', 'B', 100), sess('c', 'C', 100)]
     const m = createTrayMenuModel(sessions, [], new Set())
     // 稳定排序: 同样 updatedAt, 保留输入顺序
     expect(m.recentSessions.map((r) => r.id)).toEqual(['a', 'b', 'c'])
@@ -246,10 +234,7 @@ describe('createTrayMenuModel - 标题处理', () => {
 
 describe('createTrayMenuModel - 不可变性', () => {
   test('Given input sessions When create Then 原数组不被修改', () => {
-    const sessions = [
-      sess('s1', 'A', 100),
-      sess('s2', 'B', 300),
-    ]
+    const sessions = [sess('s1', 'A', 100), sess('s2', 'B', 300)]
     const before = JSON.stringify(sessions)
     createTrayMenuModel(sessions, [], new Set())
     expect(JSON.stringify(sessions)).toBe(before)

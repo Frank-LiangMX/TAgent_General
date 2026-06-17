@@ -28,8 +28,17 @@ const WATCHER_RESTART_DELAY_MS = 5000
 
 // 高频变动目录：跳过其中的变更事件，防止 node_modules / .next 等产生 IPC 事件风暴
 const HIGH_NOISE_SEGMENTS = new Set([
-  'node_modules', '.next', '.nuxt', '.git', 'dist', 'build',
-  '.cache', '__pycache__', '.turbo', '.parcel-cache', '.svelte-kit',
+  'node_modules',
+  '.next',
+  '.nuxt',
+  '.git',
+  'dist',
+  'build',
+  '.cache',
+  '__pycache__',
+  '.turbo',
+  '.parcel-cache',
+  '.svelte-kit',
 ])
 
 function isHighNoisePath(normalizedPath: string): boolean {
@@ -81,8 +90,7 @@ export function startWorkspaceWatcher(win: BrowserWindow): void {
       }
 
       const isCapabilitiesChange =
-        normalizedFilename.endsWith('/mcp.json') ||
-        normalizedFilename.includes('/skills/')
+        normalizedFilename.endsWith('/mcp.json') || normalizedFilename.includes('/skills/')
 
       if (isCapabilitiesChange) {
         // MCP/Skills 变化 → 通知侧边栏刷新
@@ -109,7 +117,11 @@ export function startWorkspaceWatcher(win: BrowserWindow): void {
     // 当目录被删除/权限变更/iCloud 同步异常等运行时错误发生时即触发。必须显式监听并降级。
     watcher.on('error', (err) => {
       console.error('[工作区监听] 运行时错误，将尝试自愈重启:', err)
-      try { watcher?.close() } catch { /* watcher 可能已自动关闭 */ }
+      try {
+        watcher?.close()
+      } catch {
+        /* watcher 可能已自动关闭 */
+      }
       watcher = null
       setTimeout(() => {
         if (!win.isDestroyed() && !watcher) startWorkspaceWatcher(win)
@@ -169,7 +181,11 @@ export function watchAttachedDirectory(dirPath: string): void {
     // 附加目录通常是用户外接的项目目录，断电/挂载/权限变化更易触发。
     w.on('error', (err) => {
       console.error('[附加目录监听] 运行时错误，移除监听器:', dirPath, err)
-      try { w.close() } catch { /* 已关闭 */ }
+      try {
+        w.close()
+      } catch {
+        /* 已关闭 */
+      }
       attachedWatchers.delete(dirPath)
     })
 

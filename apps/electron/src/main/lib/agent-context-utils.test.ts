@@ -68,35 +68,35 @@ describe('computeMaxContextMessages (P0-1)', () => {
 
 describe('summarizeToolResult (P1-1)', () => {
   test('Given 短内容 (< budget) When summarize Then 原样返回', () => {
-    const short = 'a'.repeat(100)  // ~25 tokens, 默认 budget 500
+    const short = 'a'.repeat(100) // ~25 tokens, 默认 budget 500
     const out = summarizeToolResult(short, 500)
     expect(out).toBe(short)
     expect(out).not.toContain('[truncated]')
   })
 
   test('Given 长内容 (> budget) When summarize Then 头尾保留 + 中间 truncated 标记', () => {
-    const long = 'A'.repeat(2000) + 'B'.repeat(2000)  // 4000 chars ~= 1000 tokens, budget 500
+    const long = 'A'.repeat(2000) + 'B'.repeat(2000) // 4000 chars ~= 1000 tokens, budget 500
     const out = summarizeToolResult(long, 500)
-    expect(out).toContain('A')   // 头部保留
-    expect(out).toContain('B')   // 尾部保留
-    expect(out).toContain('[truncated]')  // 中间标记
-    expect(out.length).toBeLessThan(long.length)  // 总长小于原文
+    expect(out).toContain('A') // 头部保留
+    expect(out).toContain('B') // 尾部保留
+    expect(out).toContain('[truncated]') // 中间标记
+    expect(out.length).toBeLessThan(long.length) // 总长小于原文
   })
 
   test('Given budget=100, 长内容 When summarize Then 头 40% + 尾 60% 保留', () => {
-    const head = 'H'.repeat(160)  // 40 chars * 4 = 160 chars head budget
+    const head = 'H'.repeat(160) // 40 chars * 4 = 160 chars head budget
     const tail = 'T'.repeat(240)
-    const mid = 'M'.repeat(1000)  // 中间填充
+    const mid = 'M'.repeat(1000) // 中间填充
     const content = head + mid + tail
-    const out = summarizeToolResult(content, 100)  // budget 100 tokens = 400 chars
-    expect(out).toContain('H')   // 头 40%
-    expect(out).toContain('T')   // 尾 60%
+    const out = summarizeToolResult(content, 100) // budget 100 tokens = 400 chars
+    expect(out).toContain('H') // 头 40%
+    expect(out).toContain('T') // 尾 60%
     expect(out).toContain('[truncated]')
   })
 
   test('Given 极小 budget (1 token) When summarize Then 头+截断+尾, 总长 < 30', () => {
     const content = 'X'.repeat(1000)
-    const out = summarizeToolResult(content, 1)  // 1 char head + 2 char tail + truncated marker
+    const out = summarizeToolResult(content, 1) // 1 char head + 2 char tail + truncated marker
     expect(out).toContain('X')
     expect(out).toContain('[truncated]')
     // head=1 + tail=2 + 21 截断标记 = 24
@@ -105,14 +105,14 @@ describe('summarizeToolResult (P1-1)', () => {
   })
 
   test('Given 默认 budget (500 tokens) When summarize Then 适用默认', () => {
-    const long = 'C'.repeat(3000)  // ~750 tokens, > 500 default
+    const long = 'C'.repeat(3000) // ~750 tokens, > 500 default
     const out = summarizeToolResult(long)
     expect(out).toContain('[truncated]')
   })
 
   test('Given 精确等于 budget 的内容 When summarize Then 不截断', () => {
-    const content = 'D'.repeat(MAX_TOOL_SUMMARY_LENGTH)  // 200 chars
-    const out = summarizeToolResult(content, Math.ceil(MAX_TOOL_SUMMARY_LENGTH / CHARS_PER_TOKEN))  // budget 50 tokens = 200 chars
+    const content = 'D'.repeat(MAX_TOOL_SUMMARY_LENGTH) // 200 chars
+    const out = summarizeToolResult(content, Math.ceil(MAX_TOOL_SUMMARY_LENGTH / CHARS_PER_TOKEN)) // budget 50 tokens = 200 chars
     expect(out).toBe(content)
   })
 })

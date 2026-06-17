@@ -21,7 +21,12 @@ export const CHECK_DIRECTORY_STRUCTURE_TOOL_META: ChatToolMeta = {
   description: '验证项目目录结构是否符合 TA 规范',
   params: [
     { name: 'directory', type: 'string', description: '要检查的目录路径', required: true },
-    { name: 'projectType', type: 'string', description: '项目类型（ue5/blender/general）', required: false },
+    {
+      name: 'projectType',
+      type: 'string',
+      description: '项目类型（ue5/blender/general）',
+      required: false,
+    },
   ],
   icon: 'FolderCheck',
   category: 'builtin',
@@ -33,12 +38,17 @@ export const CHECK_DIRECTORY_STRUCTURE_TOOL_META: ChatToolMeta = {
 export const CHECK_DIRECTORY_STRUCTURE_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'check_directory_structure',
-    description: 'Check if a directory structure follows TA conventions. Validates asset organization, naming consistency, and structure issues.',
+    description:
+      'Check if a directory structure follows TA conventions. Validates asset organization, naming consistency, and structure issues.',
     parameters: {
       type: 'object',
       properties: {
         directory: { type: 'string', description: 'Directory path to check' },
-        projectType: { type: 'string', description: 'Project type', enum: ['ue5', 'blender', 'unity', 'general'] },
+        projectType: {
+          type: 'string',
+          description: 'Project type',
+          enum: ['ue5', 'blender', 'unity', 'general'],
+        },
         depth: { type: 'number', description: 'Check depth limit (default: 3)' },
       },
       required: ['directory'],
@@ -72,14 +82,7 @@ const STANDARD_STRUCTURES: Record<string, string[]> = {
     'Assets/Prefabs',
     'Assets/Scenes',
   ],
-  blender: [
-    'models',
-    'textures',
-    'materials',
-    'animations',
-    'renders',
-    'scripts',
-  ],
+  blender: ['models', 'textures', 'materials', 'animations', 'renders', 'scripts'],
   general: [
     'assets',
     'assets/models',
@@ -194,7 +197,7 @@ async function checkDirectoryStructure(
   }
 
   return {
-    valid: issues.filter(i => i.type === 'error').length === 0,
+    valid: issues.filter((i) => i.type === 'error').length === 0,
     issues,
     foundDirectories,
     missingDirectories,
@@ -276,9 +279,7 @@ export async function executeCheckDirectoryStructure(
   const depth = (toolCall.arguments.depth as number) || 3
 
   // 处理相对路径
-  const absolutePath = path.isAbsolute(directory)
-    ? directory
-    : path.resolve(cwd, directory)
+  const absolutePath = path.isAbsolute(directory) ? directory : path.resolve(cwd, directory)
 
   const result = await checkDirectoryStructure(absolutePath, projectType, depth)
 

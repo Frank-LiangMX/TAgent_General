@@ -24,14 +24,17 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
   const diffPanelTabMap = useAtomValue(agentDiffPanelTabAtom)
   const setDiffPanelTabMap = useSetAtom(agentDiffPanelTabAtom)
 
-  const setActiveTab = React.useCallback((tab: 'session' | 'changes') => {
-    if (!currentSessionId) return
-    setDiffPanelTabMap((prev) => {
-      const map = new Map(prev)
-      map.set(currentSessionId, tab)
-      return map
-    })
-  }, [currentSessionId, setDiffPanelTabMap])
+  const setActiveTab = React.useCallback(
+    (tab: 'session' | 'changes') => {
+      if (!currentSessionId) return
+      setDiffPanelTabMap((prev) => {
+        const map = new Map(prev)
+        map.set(currentSessionId, tab)
+        return map
+      })
+    },
+    [currentSessionId, setDiffPanelTabMap]
+  )
 
   if (appMode !== 'agent' || !currentSessionId) {
     return null

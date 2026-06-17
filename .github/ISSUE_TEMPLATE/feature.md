@@ -1,8 +1,8 @@
 ---
 name: Feature Request
 about: Suggest a feature for TAgent
-title: "[Feature] "
-labels: ["enhancement", "needs-triage"]
+title: '[Feature] '
+labels: ['enhancement', 'needs-triage']
 assignees: []
 ---
 

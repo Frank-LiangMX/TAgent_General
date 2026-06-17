@@ -10,17 +10,16 @@
  *   作为 LLM history 传入，让 LLM 知道"刚才发生了什么"
  */
 
+import { getAdapter, getTAgentUserAgent } from '@tagent/core'
+import { BTW_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
-import { BTW_IPC_CHANNELS } from '@tagent/shared'
-import type { ChatMessage, SDKMessage } from '@tagent/shared'
-import { getAdapter, getTAgentUserAgent } from '@tagent/core'
-
+import { getAgentSessionSDKMessages } from './agent-session-manager'
 import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
-import { getAgentSessionSDKMessages } from './agent-session-manager'
 
 import type { StreamRequestInput } from '@tagent/core'
+import type { ChatMessage, SDKMessage } from '@tagent/shared'
 
 /** 当前活跃的 BTW 请求 AbortController */
 let activeBtwController: AbortController | null = null
@@ -92,7 +91,12 @@ export function convertSDKMessagesToChatHistory(
   sdkMessages: SDKMessage[],
   maxTurns: number
 ): ChatMessage[] {
-  const raw: Array<{ role: 'user' | 'assistant'; content: string; createdAt: number; uuid?: string }> = []
+  const raw: Array<{
+    role: 'user' | 'assistant'
+    content: string
+    createdAt: number
+    uuid?: string
+  }> = []
 
   for (const msg of sdkMessages) {
     if (!isRecord(msg)) continue
@@ -245,10 +249,8 @@ export async function sendBtwMessage(input: {
         try {
           const json = JSON.parse(jsonStr)
           // 提取文本内容（兼容不同供应商格式）
-          const text = json.choices?.[0]?.delta?.content
-            || json.delta?.text
-            || json.message?.content
-            || ''
+          const text =
+            json.choices?.[0]?.delta?.content || json.delta?.text || json.message?.content || ''
 
           if (text) {
             accumulatedText += text

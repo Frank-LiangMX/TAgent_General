@@ -23,7 +23,10 @@ export interface FormattedAgentResult {
 /**
  * 构建 Agent 回复的飞书交互卡片
  */
-export function buildAgentReplyCard(result: FormattedAgentResult, subtitle?: string): Record<string, unknown> {
+export function buildAgentReplyCard(
+  result: FormattedAgentResult,
+  subtitle?: string
+): Record<string, unknown> {
   const toolLine = formatToolSummaryLine(result.toolSummaries, result.duration)
   const content = truncateForFeishu(result.text)
 
@@ -36,13 +39,15 @@ export function buildAgentReplyCard(result: FormattedAgentResult, subtitle?: str
     },
     elements: [
       { tag: 'markdown', content },
-      ...(toolLine ? [
-        { tag: 'hr' },
-        {
-          tag: 'note',
-          elements: [{ tag: 'plain_text', content: toolLine }],
-        },
-      ] : []),
+      ...(toolLine
+        ? [
+            { tag: 'hr' },
+            {
+              tag: 'note',
+              elements: [{ tag: 'plain_text', content: toolLine }],
+            },
+          ]
+        : []),
     ],
   }
 }
@@ -57,9 +62,7 @@ export function buildErrorCard(errorMessage: string): Record<string, unknown> {
       title: { tag: 'plain_text', content: 'TAgent 错误' },
       template: 'red',
     },
-    elements: [
-      { tag: 'markdown', content: errorMessage },
-    ],
+    elements: [{ tag: 'markdown', content: errorMessage }],
   }
 }
 
@@ -77,7 +80,7 @@ export interface WorkspaceListItem {
  */
 export function buildSessionListCard(
   workspaces: WorkspaceListItem[],
-  currentWorkspaceId?: string,
+  currentWorkspaceId?: string
 ): Record<string, unknown> {
   const elements: Array<Record<string, unknown>> = []
 
@@ -137,7 +140,7 @@ export function buildSessionListCard(
  */
 export function buildWorkspaceSwitchedCard(
   workspaceName: string,
-  sessions: Array<{ id: string; title: string; index: number }>,
+  sessions: Array<{ id: string; title: string; index: number }>
 ): Record<string, unknown> {
   const elements: Array<Record<string, unknown>> = []
 
@@ -148,9 +151,7 @@ export function buildWorkspaceSwitchedCard(
 
   if (sessions.length > 0) {
     elements.push({ tag: 'hr' })
-    const lines = sessions.map(
-      (s) => `  **${s.index}.** ${s.title}`,
-    )
+    const lines = sessions.map((s) => `  **${s.index}.** ${s.title}`)
     elements.push({
       tag: 'markdown',
       content: `**最近会话**\n${lines.join('\n')}`,
@@ -160,12 +161,15 @@ export function buildWorkspaceSwitchedCard(
   elements.push({ tag: 'hr' })
   elements.push({
     tag: 'note',
-    elements: [{
-      tag: 'plain_text',
-      content: sessions.length > 0
-        ? '使用 /switch <序号> 继续已有会话 | 直接发消息或 /new 创建新会话'
-        : '直接发送消息或 /new 创建新会话',
-    }],
+    elements: [
+      {
+        tag: 'plain_text',
+        content:
+          sessions.length > 0
+            ? '使用 /switch <序号> 继续已有会话 | 直接发消息或 /new 创建新会话'
+            : '直接发送消息或 /new 创建新会话',
+      },
+    ],
   })
 
   return {
@@ -182,12 +186,10 @@ export function buildWorkspaceSwitchedCard(
  * 构建工作区列表卡片（/workspace 无参数时）
  */
 export function buildWorkspaceListCard(
-  workspaces: Array<{ index: number; name: string; isCurrent: boolean }>,
+  workspaces: Array<{ index: number; name: string; isCurrent: boolean }>
 ): Record<string, unknown> {
   const lines = workspaces.map((w) =>
-    w.isCurrent
-      ? `▶ **${w.index}.** ${w.name}（当前）`
-      : `  **${w.index}.** ${w.name}`,
+    w.isCurrent ? `▶ **${w.index}.** ${w.name}（当前）` : `  **${w.index}.** ${w.name}`
   )
 
   return {
@@ -245,12 +247,12 @@ export function buildHelpCard(): Record<string, unknown> {
  * 构建渠道列表卡片（/model 无参数时）
  */
 export function buildChannelListCard(
-  channels: Array<{ index: number; name: string; modelCount: number; isCurrent: boolean }>,
+  channels: Array<{ index: number; name: string; modelCount: number; isCurrent: boolean }>
 ): Record<string, unknown> {
   const lines = channels.map((c) =>
     c.isCurrent
       ? `▶ **${c.index}.** ${c.name}（${c.modelCount} 个模型 · 当前）`
-      : `  **${c.index}.** ${c.name}（${c.modelCount} 个模型）`,
+      : `  **${c.index}.** ${c.name}（${c.modelCount} 个模型）`
   )
 
   return {
@@ -279,12 +281,10 @@ export function buildChannelListCard(
 export function buildModelListCard(
   channelName: string,
   channelIndex: number,
-  models: Array<{ index: number; name: string; isCurrent: boolean }>,
+  models: Array<{ index: number; name: string; isCurrent: boolean }>
 ): Record<string, unknown> {
   const lines = models.map((m) =>
-    m.isCurrent
-      ? `▶ **${m.index}.** ${m.name}（当前）`
-      : `  **${m.index}.** ${m.name}`,
+    m.isCurrent ? `▶ **${m.index}.** ${m.name}（当前）` : `  **${m.index}.** ${m.name}`
   )
 
   return {
@@ -301,9 +301,7 @@ export function buildModelListCard(
       { tag: 'hr' },
       {
         tag: 'note',
-        elements: [
-          { tag: 'plain_text', content: `使用 /model ${channelIndex} <模型序号> 切换` },
-        ],
+        elements: [{ tag: 'plain_text', content: `使用 /model ${channelIndex} <模型序号> 切换` }],
       },
     ],
   }
@@ -314,7 +312,7 @@ export function buildModelListCard(
  */
 export function buildModelSwitchedCard(
   channelName: string,
-  modelName: string,
+  modelName: string
 ): Record<string, unknown> {
   return {
     config: { wide_screen_mode: true },
@@ -399,10 +397,7 @@ export function splitLongContent(text: string, maxLength = 25000): string[] {
 /**
  * 累积工具使用次数（从 SDKMessage 的 tool_use block 中提取工具名）
  */
-export function accumulateToolStart(
-  summaries: Map<string, ToolSummary>,
-  toolName: string,
-): void {
+export function accumulateToolStart(summaries: Map<string, ToolSummary>, toolName: string): void {
   const existing = summaries.get(toolName)
   if (existing) {
     existing.count++

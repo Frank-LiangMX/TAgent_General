@@ -9,12 +9,7 @@ import { useAtom, useSetAtom } from 'jotai'
 import { Globe, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsToggle,
-  SettingsInput,
-} from './primitives'
+import { SettingsSection, SettingsCard, SettingsToggle, SettingsInput } from './primitives'
 
 import { proxyConfigAtom, loadProxyConfigAtom, updateProxyConfigAtom } from '@/atoms/proxy-atoms'
 import { cn } from '@/lib/utils'
@@ -25,7 +20,10 @@ export function ProxySettings(): React.ReactElement {
   const updateProxyConfig = useSetAtom(updateProxyConfigAtom)
 
   const [detecting, setDetecting] = React.useState(false)
-  const [detectResult, setDetectResult] = React.useState<{ success: boolean; message: string } | null>(null)
+  const [detectResult, setDetectResult] = React.useState<{
+    success: boolean
+    message: string
+  } | null>(null)
 
   // 初始化加载配置
   React.useEffect(() => {
@@ -61,9 +59,7 @@ export function ProxySettings(): React.ReactElement {
       const result = await window.electronAPI.detectSystemProxy()
       setDetectResult({
         success: result.success,
-        message: result.success
-          ? `检测到系统代理: ${result.proxyUrl}`
-          : result.message,
+        message: result.success ? `检测到系统代理: ${result.proxyUrl}` : result.message,
       })
     } catch {
       setDetectResult({
@@ -142,11 +138,7 @@ export function ProxySettings(): React.ReactElement {
                           detectResult.success ? 'text-emerald-600' : 'text-muted-foreground'
                         )}
                       >
-                        {detectResult.success ? (
-                          <CheckCircle2 size={12} />
-                        ) : (
-                          <XCircle size={12} />
-                        )}
+                        {detectResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                         <span>{detectResult.message}</span>
                       </div>
                     )}
@@ -175,9 +167,7 @@ export function ProxySettings(): React.ReactElement {
                 />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-foreground">手动配置</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    手动输入代理地址和端口
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">手动输入代理地址和端口</p>
                 </div>
               </div>
               {config.mode === 'manual' && (

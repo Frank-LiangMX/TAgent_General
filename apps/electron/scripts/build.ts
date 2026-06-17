@@ -23,8 +23,8 @@
  */
 
 import { spawnSync } from 'child_process'
-import { join, dirname } from 'path'
 import { existsSync } from 'fs'
+import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 // ============================================
@@ -217,8 +217,12 @@ function main(): void {
 
   // 打印配置信息
   console.log(`\n${color.bgBlue}${color.bold} TAgent 打包工具 ${color.reset}\n`)
-  console.log(`  ${color.bold}平台${color.reset}:       ${color.cyan}${platform}${color.reset}${opts.platform === 'auto' ? ' (自动检测)' : ''}`)
-  console.log(`  ${color.bold}架构${color.reset}:       ${color.cyan}${arch}${color.reset}${opts.arch === 'auto' ? ' (自动检测)' : ''}`)
+  console.log(
+    `  ${color.bold}平台${color.reset}:       ${color.cyan}${platform}${color.reset}${opts.platform === 'auto' ? ' (自动检测)' : ''}`
+  )
+  console.log(
+    `  ${color.bold}架构${color.reset}:       ${color.cyan}${arch}${color.reset}${opts.arch === 'auto' ? ' (自动检测)' : ''}`
+  )
   console.log(`  ${color.bold}工作目录${color.reset}:   ${color.dim}${workDir}${color.reset}`)
   console.log(`  ${color.bold}输出格式${color.reset}:   ${opts.format || '默认'}`)
   console.log(`  ${color.bold}代码签名${color.reset}:   ${opts.noSign ? '跳过' : '启用'}`)
@@ -228,8 +232,12 @@ function main(): void {
 
   // 检查 Linux 目录是否存在
   if (platform === 'linux' && !existsSync(ELECTRON_LINUX_DIR)) {
-    console.log(`\n${color.bgYellow}${color.bold} 警告 ${color.reset} apps/electron-linux 目录不存在`)
-    console.log(`${color.dim}Linux 打包需要 electron-linux 工程，将使用 apps/electron 尝试打包${color.reset}\n`)
+    console.log(
+      `\n${color.bgYellow}${color.bold} 警告 ${color.reset} apps/electron-linux 目录不存在`
+    )
+    console.log(
+      `${color.dim}Linux 打包需要 electron-linux 工程，将使用 apps/electron 尝试打包${color.reset}\n`
+    )
   }
 
   const totalSteps = opts.skipBuild ? 1 : 5
@@ -250,7 +258,10 @@ function main(): void {
     step++
     printStepStart(step, totalSteps, '构建 Preload (esbuild)')
     results.push(
-      runStep('构建 Preload', 'bun', ['run', 'build:preload'], { verbose: opts.verbose, cwd: workDir })
+      runStep('构建 Preload', 'bun', ['run', 'build:preload'], {
+        verbose: opts.verbose,
+        cwd: workDir,
+      })
     )
     printStepResult(results[results.length - 1])
     if (!results[results.length - 1].success) return printSummary(results)
@@ -259,7 +270,10 @@ function main(): void {
     step++
     printStepStart(step, totalSteps, '构建渲染进程 (Vite)')
     results.push(
-      runStep('构建渲染进程', 'bun', ['run', 'build:renderer'], { verbose: opts.verbose, cwd: workDir })
+      runStep('构建渲染进程', 'bun', ['run', 'build:renderer'], {
+        verbose: opts.verbose,
+        cwd: workDir,
+      })
     )
     printStepResult(results[results.length - 1])
     if (!results[results.length - 1].success) return printSummary(results)
@@ -268,7 +282,10 @@ function main(): void {
     step++
     printStepStart(step, totalSteps, '复制资源文件')
     results.push(
-      runStep('复制资源文件', 'bun', ['run', 'build:resources'], { verbose: opts.verbose, cwd: workDir })
+      runStep('复制资源文件', 'bun', ['run', 'build:resources'], {
+        verbose: opts.verbose,
+        cwd: workDir,
+      })
     )
     printStepResult(results[results.length - 1])
   }
@@ -322,12 +339,15 @@ function printSummary(results: StepResult[], workDir?: string): void {
 
   for (const r of results) {
     if (r.skipped) {
-      console.log(`  ${color.dim}○${color.reset} ${r.name.padEnd(20)} ${color.dim}跳过${color.reset}`)
+      console.log(
+        `  ${color.dim}○${color.reset} ${r.name.padEnd(20)} ${color.dim}跳过${color.reset}`
+      )
       continue
     }
     const icon = r.success ? `${color.green}●${color.reset}` : `${color.red}●${color.reset}`
     const bar = r.duration > 0 ? '█'.repeat(Math.min(Math.ceil(r.duration / 1000), 30)) : ''
-    const barColor = r.duration > 30000 ? color.red : r.duration > 10000 ? color.yellow : color.green
+    const barColor =
+      r.duration > 30000 ? color.red : r.duration > 10000 ? color.yellow : color.green
     console.log(
       `  ${icon} ${r.name.padEnd(20)} ${barColor}${bar}${color.reset} ${formatDuration(r.duration)}`
     )

@@ -12,6 +12,7 @@
 ## 1. 工作流
 
 ### 1.1 分支命名
+
 - `feature/<scope>-<short-desc>` — 新功能
   - 例：`feature/ta-mode-asset-library`
 - `fix/<scope>-<short-desc>` — 修 bug
@@ -21,6 +22,7 @@
 - `docs/<short-desc>` — 文档
 
 ### 1.2 开发循环
+
 ```bash
 # 1. 切到新分支
 git checkout -b feature/my-feature
@@ -44,6 +46,7 @@ gh pr create
 ```
 
 ### 1.3 PR Review 流程
+
 - 至少 2 个 reviewer approve
 - 所有 CI 检查通过
 - PR description 勾选所有 checklist
@@ -52,6 +55,7 @@ gh pr create
 ## 2. 编码规范
 
 完整版见 `docs\process\`：
+
 - [linting.md](docs/process/linting.md) — 代码风格
 - [testing.md](docs/process/testing.md) — 测试标准
 - [git-workflow.md](docs/process/git-workflow.md) — 详细 git 流程
@@ -80,6 +84,7 @@ gh pr create
 完整版见 `docs\process\release.md`。
 
 简要：
+
 - 改 `VERSION` 文件
 - 跑 `python scripts/release.py ship X.Y.Z --yes`
 - 自动 bump + commit + tag + push

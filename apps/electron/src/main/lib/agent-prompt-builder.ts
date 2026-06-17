@@ -10,6 +10,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+
 import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
 import { getWorkspaceMcpConfig } from './agent-workspace-manager'
 import { getConfigDirName, getSoulPath, getTaSoulPath } from './config-paths'
@@ -51,14 +52,14 @@ const MAX_SOUL_LENGTH = 2000
  */
 function containsInjectionPattern(content: string): boolean {
   const suspiciousPatterns = [
-    /\{\{.*?\}\}/,           // {{ template }}
-    /\$\{.*?\}/,             // ${ variable }
-    /<%.*?%>/,               // <% erb %>
-    /ignore\s+previous/i,    // "ignore previous" attack
-    /system\s*:/i,           // fake system prompt
+    /\{\{.*?\}\}/, // {{ template }}
+    /\$\{.*?\}/, // ${ variable }
+    /<%.*?%>/, // <% erb %>
+    /ignore\s+previous/i, // "ignore previous" attack
+    /system\s*:/i, // fake system prompt
   ]
 
-  return suspiciousPatterns.some(pattern => pattern.test(content))
+  return suspiciousPatterns.some((pattern) => pattern.test(content))
 }
 
 /**
@@ -137,7 +138,8 @@ interface SubAgentMetadata {
  * 主 Agent prompt 已包含 "中文回复与思考"。SubAgent 的 detailedPrompt 替换主 context，
  * 不会继承，所以每个 SubAgent prompt 也要 prepend 这条。
  */
-export const LANGUAGE_INSTRUCTION = '**语言**：始终使用中文回复和中文思考（包括 thinking / chain-of-thought 内部推理），保留必要的英文技术术语。'
+export const LANGUAGE_INSTRUCTION =
+  '**语言**：始终使用中文回复和中文思考（包括 thinking / chain-of-thought 内部推理），保留必要的英文技术术语。'
 
 const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
   'code-reviewer': {
@@ -165,7 +167,7 @@ const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
     defaultModel: 'haiku',
     usageHint: '代码修改完成后做质量检查',
   },
-  'explorer': {
+  explorer: {
     shortDesc: '代码库探索子代理。用于快速搜索文件、理解项目结构、查找相关代码。',
     detailedPrompt: `${LANGUAGE_INSTRUCTION}
 
@@ -182,7 +184,7 @@ const SUBAGENT_METADATA: Record<string, SubAgentMetadata> = {
     defaultModel: 'haiku',
     usageHint: '探索代码库、搜索多个文件、理解项目结构',
   },
-  'researcher': {
+  researcher: {
     shortDesc: '技术调研子代理。用于对比技术方案、评估依赖库、分析架构选型。',
     detailedPrompt: `${LANGUAGE_INSTRUCTION}
 
@@ -736,9 +738,10 @@ export function buildDynamicContext(ctx: DynamicContext): string {
       wsLines.push('MCP 服务器:')
       for (const [name, entry] of serverEntries) {
         const status = entry.enabled ? '已启用' : '已禁用'
-        const detail = entry.type === 'stdio'
-          ? `${entry.command}${entry.args?.length ? ' ' + entry.args.join(' ') : ''}`
-          : entry.url || ''
+        const detail =
+          entry.type === 'stdio'
+            ? `${entry.command}${entry.args?.length ? ' ' + entry.args.join(' ') : ''}`
+            : entry.url || ''
         wsLines.push(`- ${name} (${entry.type}, ${status}): ${detail}`)
       }
     }
