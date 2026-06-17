@@ -4,9 +4,19 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing release tag to publish assets to
+        required: true
+        default: v1.0.0
 
 permissions:
+  actions: read
   contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
 
 jobs:
   build-desktop:
@@ -16,26 +26,32 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            platform: mac
+            package_args: --mac
             workdir: apps/electron
             artifact: desktop-macos
             paths: |
               apps/electron/out/*.dmg
               apps/electron/out/*.zip
+              apps/electron/out/*.blockmap
+              apps/electron/out/*.yml
           - os: windows-latest
-            platform: win
+            package_args: --win
             workdir: apps/electron
             artifact: desktop-windows
             paths: |
               apps/electron/out/*.exe
+              apps/electron/out/*.blockmap
+              apps/electron/out/*.yml
           - os: ubuntu-latest
-            platform: linux
+            package_args: --linux --x64
             workdir: apps/electron-linux
             artifact: desktop-linux
             paths: |
               apps/electron-linux/out/*.AppImage
               apps/electron-linux/out/*.deb
               apps/electron-linux/out/*.tar.gz
+              apps/electron-linux/out/*.blockmap
+              apps/electron-linux/out/*.yml
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -84,19 +100,23 @@ jobs:
         working-directory: ${{ matrix.workdir }}
         run: bun run build
 
+      - name: Prepare optional package resources
+        working-directory: ${{ matrix.workdir }}
+        run: mkdir -p ta-agent-mcp-wheels
+
       - name: Package (electron-builder)
         working-directory: ${{ matrix.workdir }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Linux 跳过签名（开源项目无需签名）
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --${{ matrix.platform }}
+        run: npx electron-builder ${{ matrix.package_args }} --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.paths }}
+          if-no-files-found: error
           retention-days: 90
 
   release:
@@ -115,8 +135,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          overwrite_files: true
           files: |
             artifacts/**
