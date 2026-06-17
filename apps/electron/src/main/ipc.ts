@@ -31,8 +31,10 @@ import {
   ASK_IPC_CHANNELS,
   SOUL_IPC_CHANNELS,
   isTAgentPermissionMode,
-  type NudgeCandidate,
-  type MemoryConfig,
+} from '@tagent/shared'
+import type {
+  NudgeCandidate,
+  MemoryConfig,
   CompactSessionInput,
   CompactSessionResult,
   RuntimeStatus,

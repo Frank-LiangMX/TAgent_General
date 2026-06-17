@@ -16,14 +16,16 @@ import { getAdapter, streamSSE } from '@tagent/core'
 import {
   ASK_IPC_CHANNELS,
   DEFAULT_COMPOSER_MODE,
-  type AskMessage,
-  type AskSendInput,
-  type AskStreamChunkEvent,
-  type AskStreamCompleteEvent,
-  type AskStreamErrorEvent,
-  type AskStreamReasoningEvent,
-  type AskStreamSwitchSuggestionEvent,
-  type ChatToolActivity,
+} from '@tagent/shared'
+import type {
+  AskMessage,
+  AskSendInput,
+  AskStreamChunkEvent,
+  AskStreamCompleteEvent,
+  AskStreamErrorEvent,
+  AskStreamReasoningEvent,
+  AskStreamSwitchSuggestionEvent,
+  ChatToolActivity,
   ChatMessage as SharedChatMessage,
 } from '@tagent/shared'
 
