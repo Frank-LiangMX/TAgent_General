@@ -13,6 +13,22 @@ TAgent 发布由 GitHub Actions 完成。本地发布工具只负责检查状态
 - 预发布版本，例如 `1.1.0-rc.1`
 - GitHub Release tag 使用 `v` 前缀，例如 `v1.0.1`
 
+### 版本号来源
+
+- **应用版本号**：从 `apps/electron/package.json` 的 `version` 字段读取
+- **关于页显示**：
+  - 显示当前安装版本（`package.json` 版本）
+  - 自动从 GitHub Release 获取最新发布版本
+  - 若有新版本，显示"新版本 vX.X.X 可用"提示
+- **更新检查**：通过 `electron-updater` 连接 GitHub Release 自动检测
+
+### 版本号更新流程
+
+1. 手动修改 `apps/electron/package.json` 的 `version` 字段
+2. 运行发布脚本创建对应 tag
+3. GitHub Actions 自动构建并创建 Release
+4. 用户应用自动检测到新版本提示更新
+
 ## 2. 发布前检查
 
 1. 所有发布相关改动必须通过 PR 合并进 `main`。

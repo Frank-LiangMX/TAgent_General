@@ -14,7 +14,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const APPS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const TA_AGENT_MCP_DIR = resolve(APPS_DIR, '..', '..', 'ta-agent-mcp')
+const TA_AGENT_MCP_DIR = resolve(APPS_DIR, 'default-mcp', 'ta-agent-mcp')
 const WHEELS_DIR = join(APPS_DIR, 'ta-agent-mcp-wheels', `${process.platform}-${process.arch}`)
 
 /** Python 包列表（与 ta-agent-mcp/pyproject.toml dependencies 保持一致） */
