@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/btw` context sharing** — by-the-way questions now have full visibility into the main conversation (matching Claude Code native semantics). On send, the main session's last 20 user/assistant turns are converted from `SDKMessage[]` to `ChatMessage[]` and injected as LLM history. Tool-use blocks are downgraded to `[调用工具 X]` text; tool-result blocks are skipped. Lets users ask "刚才那个文件名是啥" and get a contextually correct answer.
 - **`/btw` fork to new session** — `↗` button in the panel header forks the side Q&A into a new Agent session. New session inherits the parent conversation context (via `&session:` reference) plus the btw transcript, so users can continue with full tool access.
 
+- Release helper CLI for checking release status, dispatching the GitHub Actions release workflow, watching completion, and listing uploaded assets.
+
 ### Changed
 
 - `/btw` panel UI refined: resized to a floating card (`top-[10vh] bottom-[10vh]`), frosted glass (`bg-background/70 backdrop-blur-xl`), custom thin scrollbar, no longer overlaps window control buttons.
