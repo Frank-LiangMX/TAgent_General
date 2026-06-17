@@ -1,16 +1,21 @@
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
+
+const sharedElectronRoot = resolve(__dirname, '../electron')
+const sharedRendererRoot = resolve(sharedElectronRoot, 'src/renderer')
 
 // 与主工程共享的 vite 配置
 export default defineConfig({
-  root: resolve(__dirname, 'src/renderer'),
-  publicDir: resolve(__dirname, 'src/renderer/public'),
+  root: sharedRendererRoot,
+  publicDir: resolve(sharedRendererRoot, 'public'),
   base: './',
   resolve: {
     alias: {
       // @/* 指向 src/renderer/*（与 apps/electron 一致）
-      '@': resolve(__dirname, 'src/renderer'),
+      '@': sharedRendererRoot,
       '@tagent/shared': resolve(__dirname, '../../packages/shared/src'),
       '@tagent/core': resolve(__dirname, '../../packages/core/src'),
       '@tagent/ui': resolve(__dirname, '../../packages/ui/src'),
@@ -22,9 +27,17 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'src/renderer/index.html'),
-        detached: resolve(__dirname, 'src/renderer/detached-preview.html'),
+        index: resolve(sharedRendererRoot, 'index.html'),
+        detached: resolve(sharedRendererRoot, 'detached-preview.html'),
       },
+    },
+  },
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss({ config: resolve(sharedElectronRoot, 'tailwind.config.js') }),
+        autoprefixer(),
+      ],
     },
   },
   plugins: [react()],

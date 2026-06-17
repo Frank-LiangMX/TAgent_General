@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - GitHub Release workflow now packages desktop artifacts without letting electron-builder publish in parallel, uploads updater metadata, and prepares optional wheelhouse resources before packaging.
 - Release CI now pins Windows/Python runner tooling and writes Linux renderer output inside the Linux app package directory.
+- Linux release renderer builds now resolve shared HTML inputs through the real source tree instead of symlinked paths.
 
 ### Security
 
