@@ -13,10 +13,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { getAdapter, streamSSE } from '@tagent/core'
-import {
-  ASK_IPC_CHANNELS,
-  DEFAULT_COMPOSER_MODE,
-} from '@tagent/shared'
+import { ASK_IPC_CHANNELS, DEFAULT_COMPOSER_MODE } from '@tagent/shared'
 import type {
   AskMessage,
   AskSendInput,
