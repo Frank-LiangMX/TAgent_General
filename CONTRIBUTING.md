@@ -23,8 +23,12 @@
 
 ### 1.2 开发循环
 
+默认使用分支 + PR；这是代码、CI、release、依赖、构建、schema、公共 API、用户数据、权限 / 安全相关改动的标准流程。
+
+低风险小改动可以轻量处理：纯文档错别字、注释、格式、非流程性文档补充，且不影响 runtime / build / CI / release 时，经维护者明确授权后可以直接在当前分支或 `main` 提交。
+
 ```bash
-# 1. 切到新分支
+# 1. 切到新分支（标准流程）
 git checkout -b feature/my-feature
 
 # 2. 开发 + 测试
@@ -40,14 +44,16 @@ pre-commit run --all-files
 git add .
 git commit -m "feat(ta-agent): add FTS5 session search"
 
-# 5. Push + 开 PR
+# 5. Push + 开 PR（低风险直提例外不需要）
 git push origin feature/my-feature
 gh pr create
 ```
 
 ### 1.3 PR Review 流程
 
-- 至少 2 个 reviewer approve
+- 高风险 / 核心代码：2 个 reviewer approve
+- 普通代码 / CI / release：至少 1 个 reviewer 或 CODEOWNER approve
+- 低风险文档 / 注释：owner 自审即可；已授权的直提小改不需要 PR
 - 所有 CI 检查通过
 - PR description 勾选所有 checklist
 - 改动 ≥ 500 行需特别说明设计动机

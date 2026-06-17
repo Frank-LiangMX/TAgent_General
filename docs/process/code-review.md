@@ -1,21 +1,21 @@
 # Code Review 流程
 
-> TAgent 用 **2 reviewer** + PR template checklist 双重把关。
+> TAgent 用风险分级 review + PR template checklist 把关：高风险 2 人，普通风险 1 人，低风险文档小改可 owner 自审。
 
 ## 1. 流程概览
 
 ```
-开发者 push 分支
+开发者 push 分支（低风险直提例外可跳过）
    ↓
 开 PR（带 description + checklist）
    ↓
 CI 自动跑（lint / typecheck / test / build）
    ↓
-Reviewer 1 review（可能来回）
+Reviewer review（可能来回）
    ↓
-Reviewer 2 review
+高风险改动追加第二位 reviewer
    ↓
-所有 checklist 勾选 + CI 绿 + 2 approve
+所有 checklist 勾选 + CI 绿 + 达到风险分级要求
    ↓
 Squash merge / Merge commit
    ↓
@@ -50,7 +50,7 @@ Squash merge / Merge commit
 - [ ] 文档同步更新
 - [ ] 关联 issue / ADR / design doc
 - [ ] 截图（UI 改动）
-- [ ] 2 个 reviewer
+- [ ] 按风险分级完成 review
 ```
 
 完整模板在 `.github/PULL_REQUEST_TEMPLATE.md`。
@@ -153,18 +153,26 @@ Reviewer 必看 7 项，**任何一项不同意就 request changes**：
 
 ## 6. 例外
 
-### 6.1 Hotfix
+### 6.1 Review 等级
+
+- 高风险 / 核心代码：2 个 reviewer
+- 普通代码 / CI / release：至少 1 个 reviewer 或 CODEOWNER
+- 低风险文档 / 注释：owner 自审即可
+
+### 6.2 Hotfix
 
 - 1 个 reviewer 即可（owner 优先）
 - 仍需 CI 绿
 - PR description 可以简略
 
-### 6.2 文档 / 配置类
+### 6.3 低风险直提
 
-- 1 个 reviewer
+- 仅限纯文档错别字、注释、格式、非流程性文档补充
+- 必须由维护者明确授权
+- 不影响 runtime / build / CI / release
 - 可以省 lint / test 检查（纯文档）
 
-### 6.3 紧急回滚
+### 6.4 紧急回滚
 
 - 不用 PR，直接 revert
 - 事后补 PR 解释
