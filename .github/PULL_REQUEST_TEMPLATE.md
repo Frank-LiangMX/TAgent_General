@@ -1,6 +1,6 @@
 # Pull Request
 
-> **2 reviewer required** + all CI green before merge.
+> Review is risk-based: high-risk changes need 2 reviewers; normal code / CI / release changes need at least 1 reviewer or CODEOWNER; all required CI must be green before merge.
 
 ## Why
 
@@ -84,14 +84,14 @@
 - [ ] 自查过 reviewer checklist
 - [ ] 截图（UI 改动）
 - [ ] 关联 issue / ADR / design doc
-- [ ] 至少 2 个 reviewer requested
+- [ ] 按风险分级 request reviewer
 - [ ] 所有 CI 检查通过
 
 ## Reviewers
 
 <!-- GitHub auto-assigns CODEOWNERS. Manual: @user1 @user2 -->
 
-| Reviewer   | Status       |
-| ---------- | ------------ |
-| @reviewer1 | ⏳ / ✅ / ❌ |
-| @reviewer2 | ⏳ / ✅ / ❌ |
+| Reviewer                       | Status       |
+| ------------------------------ | ------------ |
+| @primary-reviewer              | ⏳ / ✅ / ❌ |
+| @second-reviewer-for-high-risk | ⏳ / ✅ / ❌ |

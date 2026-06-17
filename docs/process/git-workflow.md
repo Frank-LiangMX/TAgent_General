@@ -1,16 +1,25 @@
 # Git 工作流
 
-> TAgent 用 **GitHub Flow**（简单、单主分支、PR 流程）。
+> TAgent 用 **风险分级 GitHub Flow**：`main` 始终可发布，代码和高风险改动走 PR，低风险小改可在维护者明确授权后轻量处理。
 
 ## 1. 分支策略
 
 ### 1.1 main 分支
 
 - **永远可发布**（任何时候 checkout 都能跑）
-- 受保护：必须 PR + 2 reviewer + CI 通过才能合并
-- 任何紧急 hotfix 也走 PR（不能直接 push）
+- 代码逻辑、依赖、CI / release、构建、权限 / 安全、用户数据、schema、公共 API、删除 / 移动文件等改动必须通过 PR 合并
+- 低风险小改动（纯文档错别字、注释、格式、非流程性文档补充）可在维护者明确授权后直接提交到 `main`
+- 已发布 tag 禁止 force-push 或重写历史
 
-### 1.2 feature 分支
+### 1.2 风险分级
+
+| 风险等级 | 典型改动                                                             | 流程                         | Review                          |
+| -------- | -------------------------------------------------------------------- | ---------------------------- | ------------------------------- |
+| 高风险   | 核心代码、跨模式接口、memory schema、用户数据、权限 / 安全、发布链路 | 分支 + PR + CI               | 2 个 reviewer                   |
+| 普通风险 | 一般代码、测试、CI 调整、依赖升级、构建配置                          | 分支 + PR + CI               | 至少 1 个 reviewer 或 CODEOWNER |
+| 低风险   | 纯文档错别字、注释、格式、非流程性文档补充                           | 可直接提交，需维护者明确授权 | owner 自审即可                  |
+
+### 1.3 feature 分支
 
 - 命名：`feature/<scope>-<short-desc>`
 - 例：
@@ -19,15 +28,15 @@
   - `feature/sync-engine-push`
 - 生命周期：一个 PR + merge 后**立即删除**
 
-### 1.3 fix 分支
+### 1.4 fix 分支
 
 - 命名：`fix/<scope>-<short-desc>`
 - 例：
   - `fix/memory-fts5-rebuild`
   - `fix/electron-blender-hang`
-- 紧急时也可以 `fix/urgent-X`（但仍走 PR）
+- 紧急时也可以 `fix/urgent-X`（走 expedited review）
 
-### 1.4 chore / docs 分支
+### 1.5 chore / docs 分支
 
 - 命名：`chore/<scope>-<short-desc>` 或 `docs/<short-desc>`
 - 例：`chore/ci-add-coverage-gate`
@@ -162,7 +171,7 @@ git push
 - 紧急 bug 等不及完整 PR
 - 走 `fix/urgent-X` 分支
 - 直接 @ 项目 owner 走 expedited review
-- 仍需 CI 绿 + 至少 1 个 reviewer（紧急豁免 2 个）
+- 仍需 CI 绿 + 至少 1 个 reviewer 或 owner approve（紧急豁免 2 个）
 
 ### 5.2 Revert
 
