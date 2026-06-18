@@ -95,14 +95,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # electron-linux 通过符号链接共享 apps/electron/src，需要先建立符号链接
-      # 否则 typecheck 找不到 src/ 目录
-      - name: Setup electron-linux symlinks
-        working-directory: apps/electron-linux
-        run: |
-          chmod +x setup-symlinks.sh
-          ./setup-symlinks.sh
-
       - name: TypeScript typecheck
         run: bun run typecheck
 
