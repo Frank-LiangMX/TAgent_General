@@ -1497,6 +1497,8 @@ export const AGENT_IPC_CHANNELS = {
   // P1-3: Context 压缩
   /** 客户端主动压缩会话历史（SDK 压缩失败时的 fallback）*/
   COMPACT_SESSION: 'agent:compact-session',
+  /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
+  GET_CONTEXT_USAGE: 'agent:get-context-usage',
   // 消息发送
   /** 发送消息（触发 Agent 流式响应） */
   SEND_MESSAGE: 'agent:send-message',

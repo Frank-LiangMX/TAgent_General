@@ -138,6 +138,7 @@ import { permissionService } from './lib/agent-permission-service'
 import {
   runAgent,
   stopAgent,
+  getAgentContextUsage,
   generateAgentTitle,
   saveFilesToAgentSession,
   saveFilesToWorkspaceFiles,
@@ -1813,6 +1814,13 @@ export function registerIpcHandlers(): void {
     async (_, sessionId: string, input: CompactSessionInput): Promise<CompactSessionResult> => {
       const { compactSession } = await import('./lib/agent-session-compactor')
       return compactSession(sessionId, input)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
+    async (_, sessionId: string): Promise<import('@tagent/shared').GetContextUsageResponse> => {
+      return getAgentContextUsage(sessionId)
     }
   )
 

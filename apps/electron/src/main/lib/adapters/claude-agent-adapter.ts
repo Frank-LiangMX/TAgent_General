@@ -14,6 +14,10 @@ import {
 } from '@tagent/shared'
 
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
+import {
+  ContextUsageFetchError,
+  mapSdkContextUsageResponse,
+} from '../context-usage-mapper'
 
 import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 import type {
@@ -29,6 +33,7 @@ import type {
   JsonSchemaOutputFormat,
   SDKMessage,
   TAgentPermissionMode,
+  ContextUsageSnapshot,
 } from '@tagent/shared'
 
 /** SDK Query 对象类型（从动态导入中推断） */
@@ -975,6 +980,33 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       query as ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>
     ).setPermissionMode(mode as import('@anthropic-ai/claude-agent-sdk').PermissionMode)
     console.log(`[Claude 适配器] 权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
+  }
+
+  /**
+   * 获取当前活跃 Query 的 Context 分项占用（与 Claude Code /context 同源）
+   */
+  async getContextUsage(sessionId: string): Promise<ContextUsageSnapshot> {
+    const query = activeQueries.get(sessionId)
+    if (!query) {
+      throw new ContextUsageFetchError(
+        'NO_ACTIVE_QUERY',
+        '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
+      )
+    }
+    if (typeof query.getContextUsage !== 'function') {
+      throw new ContextUsageFetchError('UNSUPPORTED', '当前 SDK 版本不支持 Context 分项查询')
+    }
+    try {
+      const response = await query.getContextUsage()
+      return mapSdkContextUsageResponse(response)
+    } catch (error) {
+      console.error(`[Claude 适配器] getContextUsage 失败: sessionId=${sessionId}`, error)
+      if (error instanceof ContextUsageFetchError) throw error
+      throw new ContextUsageFetchError(
+        'SDK_ERROR',
+        error instanceof Error ? error.message : 'SDK getContextUsage 调用失败'
+      )
+    }
   }
 }
 

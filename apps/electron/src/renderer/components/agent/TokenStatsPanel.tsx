@@ -1,18 +1,31 @@
 /**
- * TokenStatsPanel — Token 统计面板
+ * TokenStatsPanel — 会话底栏统计条
  *
- * 显示当前会话的累计 token 使用量、缓存命中率、成本。
+ * 左侧：当前 Context 窗口占用（圆环 + 分项 Popover 入口）
+ * 右侧：累计 token、缓存命中、费用、轮数
  * 仅在通用模式显示（TA 模式暂不显示）。
- * 位置：会话页底部（AgentView 的 bottom bar 区域）。
  */
 
 import { useAtomValue } from 'jotai'
 import { Coins, Database, Zap, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
-import { currentSessionTokenStatsAtom, cacheHitRateAtom } from '@/atoms/agent-atoms'
+import {
+  agentContextStatusAtom,
+  cacheHitRateAtom,
+  currentAgentSessionIdAtom,
+  currentSessionTokenStatsAtom,
+} from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
+
+import { ContextUsageBadge } from './ContextUsageBadge'
+
+interface TokenStatsPanelProps {
+  isProcessing?: boolean
+  onCompact?: () => void
+  onClientCompact?: () => void
+}
 
 /** 格式化 token 数为可读字符串 */
 function formatTokens(tokens: number): string {
@@ -33,7 +46,6 @@ function formatCost(costUsd: number): string {
   if (costUsd >= 0.01) {
     return `$${costUsd.toFixed(3)}`
   }
-  // 小于 $0.01 时显示更精确的值
   return `$${costUsd.toFixed(4)}`
 }
 
@@ -43,71 +55,90 @@ function formatHitRate(rate: number | null): string {
   return `${Math.round(rate * 100)}%`
 }
 
-export function TokenStatsPanel(): React.ReactElement | null {
+export function TokenStatsPanel({
+  isProcessing = false,
+  onCompact,
+  onClientCompact,
+}: TokenStatsPanelProps): React.ReactElement | null {
   const topLevelMode = useAtomValue(topLevelModeAtom)
+  const sessionId = useAtomValue(currentAgentSessionIdAtom)
   const stats = useAtomValue(currentSessionTokenStatsAtom)
+  const contextStatus = useAtomValue(agentContextStatusAtom)
   const cacheHitRate = useAtomValue(cacheHitRateAtom)
 
-  // TA 模式暂不显示
   if (topLevelMode === 'ta') return null
 
-  // 无数据时不显示
-  if (stats.totalInputTokens === 0 && stats.totalOutputTokens === 0) return null
+  const hasTokenStats = stats.totalInputTokens > 0 || stats.totalOutputTokens > 0
+  const hasContextData = (contextStatus.inputTokens ?? 0) > 0
+  const showContextUsage = hasContextData && onCompact != null
 
-  // 计算缓存节省的 token
+  if (!hasTokenStats && !showContextUsage) return null
+
   const cacheSavedTokens = stats.totalCacheReadTokens
-  // 是否有缓存数据（支持 prompt caching 的模型）
   const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
-      {/* 输入 token */}
-      <StatItem
-        icon={<Zap size={12} />}
-        label="输入"
-        value={formatTokens(stats.totalInputTokens)}
-      />
-
-      {/* 输出 token */}
-      <StatItem
-        icon={<TrendingUp size={12} />}
-        label="输出"
-        value={formatTokens(stats.totalOutputTokens)}
-      />
-
-      {/* 分隔线 */}
-      <div className="h-3 w-px bg-border/50" />
-
-      {/* 缓存命中率 — 仅当模型支持 prompt caching 时显示 */}
-      {hasCacheData && (
-        <StatItem
-          icon={<Database size={12} />}
-          label="缓存命中"
-          value={formatHitRate(cacheHitRate)}
-          highlight={cacheHitRate !== null && cacheHitRate > 0.5}
-          tooltip={
-            cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
-          }
-        />
-      )}
-
-      {/* 费用 */}
-      {stats.totalCostUsd > 0 && (
+      {showContextUsage && (
         <>
-          <div className="h-3 w-px bg-border/50" />
-          <StatItem
-            icon={<Coins size={12} />}
-            label="费用"
-            value={formatCost(stats.totalCostUsd)}
+          <ContextUsageBadge
+            sessionId={sessionId}
+            variant="inline"
+            inputTokens={contextStatus.inputTokens}
+            outputTokens={contextStatus.outputTokens}
+            cacheReadTokens={contextStatus.cacheReadTokens}
+            cacheCreationTokens={contextStatus.cacheCreationTokens}
+            costUsd={contextStatus.costUsd}
+            contextWindow={contextStatus.contextWindow}
+            isCompacting={contextStatus.isCompacting}
+            isProcessing={isProcessing}
+            onCompact={onCompact}
+            onClientCompact={onClientCompact}
           />
+          {hasTokenStats && <div className="h-3 w-px bg-border/50" />}
         </>
       )}
 
-      {/* turn 数 */}
-      {stats.turnCount > 0 && (
+      {hasTokenStats && (
         <>
+          <StatItem
+            icon={<Zap size={12} />}
+            label="输入"
+            value={formatTokens(stats.totalInputTokens)}
+          />
+          <StatItem
+            icon={<TrendingUp size={12} />}
+            label="输出"
+            value={formatTokens(stats.totalOutputTokens)}
+          />
           <div className="h-3 w-px bg-border/50" />
-          <span className="text-muted-foreground/60">{stats.turnCount} 轮</span>
+          {hasCacheData && (
+            <StatItem
+              icon={<Database size={12} />}
+              label="缓存命中"
+              value={formatHitRate(cacheHitRate)}
+              highlight={cacheHitRate !== null && cacheHitRate > 0.5}
+              tooltip={
+                cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
+              }
+            />
+          )}
+          {stats.totalCostUsd > 0 && (
+            <>
+              <div className="h-3 w-px bg-border/50" />
+              <StatItem
+                icon={<Coins size={12} />}
+                label="费用"
+                value={formatCost(stats.totalCostUsd)}
+              />
+            </>
+          )}
+          {stats.turnCount > 0 && (
+            <>
+              <div className="h-3 w-px bg-border/50" />
+              <span className="text-muted-foreground/60">{stats.turnCount} 轮</span>
+            </>
+          )}
         </>
       )}
     </div>

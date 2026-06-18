@@ -62,3 +62,6 @@ export * from './pipeline'
 
 // 使用统计相关类型
 export * from './usage-stats'
+
+// Context Usage 分项
+export * from './context-usage'

@@ -1,12 +1,9 @@
 /**
  * ContextUsageBadge — 上下文使用量指示器
  *
- * 输入框工具栏上的一个 36×36 圆形按钮：
- * - 内部为 16px 圆环，按 displayTokens / displayWindow 比例渲染
- * - hover / click 弹出 Popover，内含 token 明细 + 手动压缩按钮
- * - 压缩中时按钮位置显示 Loader2 旋转图标
- * - 占用接近压缩阈值（窗口 × 0.775 × 80%）时圆环变琥珀色
- * - 无数据时不显示
+ * - variant="toolbar"：输入框工具栏 36×36 圆形按钮（保留兼容）
+ * - variant="inline"：底栏 token 行内联展示（圆环 + Context + 占用比）
+ * - 点击弹出 Popover：token 明细 + 手动压缩（后续接 SDK 分项面板）
  */
 
 import { Loader2, Minimize2 } from 'lucide-react'
@@ -15,7 +12,11 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useContextUsageBreakdown } from '@/hooks/useContextUsageBreakdown'
 import { cn } from '@/lib/utils'
+
+import { ContextUsagePanel } from './ContextUsagePanel'
 
 /** 压缩阈值比例（SDK 在 ~77.5% 窗口大小时自动压缩） */
 const COMPACT_THRESHOLD_RATIO = 0.775
@@ -31,6 +32,7 @@ const NUDGE_90_RATIO = 0.9
 const HOVER_CLOSE_DELAY = 150
 
 interface ContextUsageBadgeProps {
+  sessionId?: string | null
   inputTokens?: number
   outputTokens?: number
   cacheReadTokens?: number
@@ -42,6 +44,8 @@ interface ContextUsageBadgeProps {
   onCompact: () => void
   /** P1-3: 客户端压缩 (LLM compact_session 失败时的 fallback) */
   onClientCompact?: () => void
+  /** toolbar：输入框 36px 圆钮；inline：底栏 token 行内联展示 */
+  variant?: 'toolbar' | 'inline'
 }
 
 /** 格式化 token 数为可读字符串（如 1234 → "1.2k"） */
@@ -131,6 +135,7 @@ function DetailRow({ label, value, emphasized }: DetailRowProps): React.ReactEle
 }
 
 export function ContextUsageBadge({
+  sessionId,
   inputTokens,
   outputTokens,
   cacheReadTokens,
@@ -140,7 +145,9 @@ export function ContextUsageBadge({
   isProcessing,
   onCompact,
   onClientCompact,
+  variant = 'toolbar',
 }: ContextUsageBadgeProps): React.ReactElement | null {
+  const isInline = variant === 'inline'
   // 保留最近一次有效的 token 值，避免切换会话时闪烁消失
   const stableRef = React.useRef<{
     inputTokens: number
@@ -165,6 +172,10 @@ export function ContextUsageBadge({
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
+  const { snapshot, error: breakdownError, loading: breakdownLoading } = useContextUsageBreakdown(
+    sessionId,
+    open
+  )
 
   const cancelClose = React.useCallback(() => {
     if (closeTimerRef.current != null) {
@@ -180,8 +191,16 @@ export function ContextUsageBadge({
 
   React.useEffect(() => cancelClose, [cancelClose])
 
-  // 压缩中 → 按钮位置显示 spinner
+  // 压缩中 → 显示 spinner
   if (isCompacting) {
+    if (isInline) {
+      return (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          <span>压缩中</span>
+        </div>
+      )
+    }
     return (
       <Button
         type="button"
@@ -255,47 +274,41 @@ export function ContextUsageBadge({
     setOpen(false)
   }
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            'size-[36px] rounded-full',
-            isDanger
-              ? 'text-red-600 dark:text-red-400'
-              : isWarning
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-foreground/60 hover:text-foreground'
-          )}
-          title={
-            isDanger
-              ? '上下文危险 (>90%), 建议立即 compact'
-              : isWarning
-                ? '上下文接近阈值'
-                : undefined
-          }
-          onMouseEnter={() => {
-            cancelClose()
-            setOpen(true)
-          }}
-          onMouseLeave={scheduleClose}
-        >
-          <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        className="w-auto min-w-[220px] p-2.5"
-        onMouseEnter={cancelClose}
-        onMouseLeave={scheduleClose}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="flex flex-col gap-1.5">
+  const toneClass = isDanger
+    ? 'text-red-600 dark:text-red-400'
+    : isWarning
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-muted-foreground hover:text-foreground'
+
+  const triggerTitle = isDanger
+    ? '上下文危险 (>90%), 建议立即 compact'
+    : isWarning
+      ? '上下文接近阈值'
+      : '查看 Context 占用'
+
+  const popoverContent = (
+    <PopoverContent
+      side="top"
+      align={isInline ? 'start' : 'center'}
+      sideOffset={8}
+      className={cn('w-auto p-2.5', isInline ? 'min-w-[280px] max-w-[360px]' : 'min-w-[220px]')}
+      onMouseEnter={isInline ? undefined : cancelClose}
+      onMouseLeave={isInline ? undefined : scheduleClose}
+      onOpenAutoFocus={(e) => e.preventDefault()}
+    >
+        <div className="flex flex-col gap-2">
+          {breakdownLoading ? (
+            <p className="text-xs text-muted-foreground">正在加载 Context 分项…</p>
+          ) : snapshot ? (
+            <ContextUsagePanel snapshot={snapshot} />
+          ) : breakdownError ? (
+            <p className="text-xs text-muted-foreground">{breakdownError.message}</p>
+          ) : null}
+
+          {(snapshot || breakdownError) && <div className="h-px bg-border my-0.5" />}
+
+          <p className="text-[10px] font-medium text-foreground/70">API 汇总</p>
+          <div className="flex flex-col gap-1.5">
           {pureInput > 0 && <DetailRow label="输入" value={pureInput.toLocaleString()} />}
           {displayOutput ? <DetailRow label="输出" value={displayOutput.toLocaleString()} /> : null}
           {displayCacheCreation ? (
@@ -336,21 +349,99 @@ export function ContextUsageBadge({
           </Button>
           {/* P1-3: 客户端压缩 (LLM compact_session 失败时的 fallback) */}
           {onClientCompact && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
-              onClick={onClientCompact}
-              disabled={isProcessing}
-              title="客户端 drop_old_tool_results: 不调 LLM, 直接丢老 tool_use/tool_result 对"
-            >
-              <Minimize2 className="size-3" />
-              客户端压缩
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={onClientCompact}
+                  disabled={isProcessing}
+                >
+                  <Minimize2 className="size-3" />
+                  客户端压缩
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px]">
+                <p>客户端 drop_old_tool_results：不调 LLM，直接丢弃较早的 tool_use / tool_result 对</p>
+              </TooltipContent>
+            </Tooltip>
           )}
+          </div>
         </div>
       </PopoverContent>
-    </Popover>
+  )
+
+  if (isInline) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <Tooltip>
+            <PopoverTrigger asChild>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors',
+                    toneClass
+                  )}
+                >
+                  <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
+                  <span className="text-muted-foreground/80">Context</span>
+                  {displayWindow ? (
+                    <span className="font-medium tabular-nums text-foreground/90">
+                      {formatTokens(displayTokens)}/{formatTokens(displayWindow)}
+                    </span>
+                  ) : (
+                    <span className="font-medium tabular-nums text-foreground/90">
+                      {formatTokens(displayTokens)}
+                    </span>
+                  )}
+                  {percent != null && (
+                    <span className={cn('tabular-nums', isDanger && 'font-medium')}>{percent}%</span>
+                  )}
+                </button>
+              </TooltipTrigger>
+            </PopoverTrigger>
+            <TooltipContent side="top">
+              <p>{triggerTitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">点击查看详情</p>
+            </TooltipContent>
+          </Tooltip>
+          {popoverContent}
+        </Popover>
+      </TooltipProvider>
+    )
+  }
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <Tooltip>
+          <PopoverTrigger asChild>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn('size-[36px] rounded-full', toneClass)}
+                onMouseEnter={() => {
+                  cancelClose()
+                  setOpen(true)
+                }}
+                onMouseLeave={scheduleClose}
+              >
+                <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
+              </Button>
+            </TooltipTrigger>
+          </PopoverTrigger>
+          <TooltipContent side="bottom">
+            <p>{triggerTitle}</p>
+          </TooltipContent>
+        </Tooltip>
+        {popoverContent}
+      </Popover>
+    </TooltipProvider>
   )
 }

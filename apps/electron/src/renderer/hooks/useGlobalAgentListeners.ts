@@ -66,6 +66,7 @@ import {
   agentSidePanelOpenAtom,
   sessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
+import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
   notificationsEnabledAtom,
@@ -1139,6 +1140,7 @@ export function useGlobalAgentListeners(): void {
                 return map
               })
             }
+            store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
           } else if (event.type === 'usage_update') {
             // 流式过程中的 usage_update — 用于实时显示进度
             // 注意：中转站可能不返回此数据，依赖 complete 事件兜底

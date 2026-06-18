@@ -1,7 +1,7 @@
 # Context Usage 分项面板设计（SDK `getContextUsage` 接入）
 
-> **状态**：Draft v0.1，待评审  
-> **日期**：2026-06-13  
+> **状态**：Draft v0.2（入口位置已确认）  
+> **日期**：2026-06-13（2026-06-18 更新底栏入口）  
 > **分支建议**：`feature/context-usage-breakdown`  
 > **关联设计**：[`2026-06-05-tagent-fusion-design.md`](2026-06-05-tagent-fusion-design.md) §8.4 Context 管理、[`2026-06-09-agent-ui-optimization-plan.md`](2026-06-09-agent-ui-optimization-plan.md)  
 > **路径**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`
@@ -76,11 +76,11 @@ getContextUsage(): Promise<SDKControlGetContextUsageResponse>
 | #   | 决策                                                                                               | 状态     |
 | --- | -------------------------------------------------------------------------------------------------- | -------- |
 | D1  | 分项数据**以 SDK `getContextUsage()` 为唯一事实源**；失败时降级为现有汇总 Popover                  | 建议采纳 |
-| D2  | 入口挂在现有 **`ContextUsageBadge`**：点击圆环打开分项面板（Popover 升级或 Dialog）                | 待评审   |
+| D2  | 入口位于会话**底栏 token 统计行左侧**（`TokenStatsPanel`）；点击 Context 行打开分项面板（Popover 向上展开） | **已确认** |
 | D3  | 面板标题与截图对齐：**「Context Usage」** + 占用百分比 + `totalTokens / maxTokens`                 | 待评审   |
 | D4  | 主视图展示 `categories` 分段条 + 列表；**二级明细**（MCP 逐工具、memory 逐文件）默认折叠，可展开   | 建议采纳 |
 | D5  | 保留圆环预警色（70% 黄 / 90% 红，见 fusion §8.4 P2-2）与手动压缩按钮                               | 建议采纳 |
-| D6  | **Ask 档位**无活跃 SDK Query 时：圆环仍可按 Provider usage 显示；分项面板显示「仅 Agent 档位可用」 | 待评审   |
+| D6  | **Ask 档位**无活跃 SDK Query 时：底栏圆环仍可按 Provider usage 显示；分项面板显示「仅 Agent 档位可用」 | **已确认** |
 | D7  | 刷新策略：**打开面板时拉取** + 每轮 `complete` 事件后后台刷新缓存（防抖 500ms）                    | 建议采纳 |
 
 ---
@@ -88,7 +88,7 @@ getContextUsage(): Promise<SDKControlGetContextUsageResponse>
 ## 3. 架构总览
 
 ```
-用户点击 ContextUsageBadge
+用户点击底栏 Context 行（TokenStatsPanel 左侧）
         │
         ▼
 renderer: contextUsageAtom / fetchContextUsage(sessionId)
@@ -262,15 +262,22 @@ export const contextUsageLoadingAtom = atom<boolean>(false)
 
 | 组件                          | 职责                                                      |
 | ----------------------------- | --------------------------------------------------------- |
-| `ContextUsageBadge.tsx`       | 保留圆环；点击改为打开分项面板（或嵌套 Popover 加大尺寸） |
+| `TokenStatsPanel.tsx`         | **底栏容器**：左侧 Context 占用 + 右侧累计 token 统计     |
+| `ContextUsageBadge.tsx`       | `variant="inline"` 底栏内联圆环；点击打开分项 / 汇总面板  |
 | `ContextUsagePanel.tsx`       | **新建**：分段条 + 分类列表 + 可折叠明细                  |
 | `ContextUsageSegmentBar.tsx`  | **新建**：按 `categories[].color` 渲染水平条              |
 | `ContextUsageCategoryRow.tsx` | **新建**：色块 + 标签 + token 数                          |
 
+**入口位置（已落地 v0.2）**：
+
+- 从输入框工具栏移除 `context-usage` 项。
+- Context 标识与累计 token 统计合并为同一条底栏：`TokenStatsPanel`。
+- 左侧：`Context` + 圆环 + `60.1k/200k (30%)`；右侧：输入 / 输出 / 缓存 / 费用 / 轮数。
+
 **UI 规范**（对齐 `CLAUDE.md` §UI 风格）：
 
-- 触发器仍为 **36px 圆形按钮** + `variant="ghost"`。
-- Popover：`w-auto min-w-[280px] max-w-[360px]`，标题 `text-xs font-medium text-foreground/80`。
+- 底栏 Context 触发器为**内联可点击行**（非 36px 工具栏圆钮）。
+- Popover：`side="top"`、`align="start"`，`min-w-[280px] max-w-[360px]`。
 - 分项行：`text-xs`，描述 `text-[10px] text-muted-foreground`。
 - 颜色：优先用 SDK 返回的 `category.color`（CSS 变量或 inline），不硬编码主题色表。
 - 分类名：SDK 为英文；UI 层提供 `CONTEXT_USAGE_LABELS: Record<string, string>` 可选中文映射，未映射则显示原文。
@@ -352,7 +359,7 @@ export const contextUsageLoadingAtom = atom<boolean>(false)
 | ------------------------ | ---------------------------------------------------------- |
 | Jotai atoms + hook       | `atoms/context-usage-atoms.ts`、`hooks/useContextUsage.ts` |
 | 分段条 + 分类列表        | `ContextUsagePanel.tsx` 等                                 |
-| 接入 `ContextUsageBadge` | `ContextUsageBadge.tsx`、`AgentView.tsx`                   |
+| 接入底栏 Context 行        | `TokenStatsPanel.tsx`、`ContextUsageBadge.tsx`（`variant="inline"`） |
 | `complete` 后防抖刷新    | `useGlobalAgentListeners.ts`                               |
 
 **验收**：Agent 会话发消息后，点击圆环可见与 `/context` 同结构的分项；截图附 PR。
@@ -452,6 +459,6 @@ Feature: Context Usage 分项面板
 
 ## 14. 评审后待更新
 
-- [ ] D2：Popover 升级 vs 独立 Dialog
-- [ ] D6：Ask 档位下是否隐藏分项入口
-- [ ] 是否在 `.context/PROGRESS.md` 登记为 P1 任务（评审通过后）
+- [x] D2：入口位于底栏 token 行（`TokenStatsPanel` 左侧），非输入工具栏
+- [x] D6：Ask 档位下底栏仍显示圆环，分项面板降级提示
+- [ ] SDK `getContextUsage` 分项面板（P0–P2）实现与验收

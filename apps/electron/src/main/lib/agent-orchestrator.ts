@@ -3031,4 +3031,24 @@ export class AgentOrchestrator {
 
     return uuid
   }
+
+  /** 获取当前会话 Context 分项占用 */
+  async getContextUsage(sessionId: string): Promise<import('@tagent/shared').GetContextUsageResponse> {
+    if (!this.adapter.getContextUsage) {
+      return {
+        ok: false,
+        code: 'UNSUPPORTED',
+        message: '当前 Provider 不支持 Context 分项查询',
+      }
+    }
+    try {
+      const snapshot = await this.adapter.getContextUsage(sessionId)
+      return { ok: true, snapshot }
+    } catch (error) {
+      const { toGetContextUsageError } = await import('./context-usage-mapper')
+      const mapped = toGetContextUsageError(error)
+      console.warn(`[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`)
+      return { ok: false, code: mapped.code, message: mapped.message }
+    }
+  }
 }

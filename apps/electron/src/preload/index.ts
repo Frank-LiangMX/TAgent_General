@@ -69,6 +69,7 @@ import type {
   ChannelTestResult,
   CompactSessionInput,
   CompactSessionResult,
+  GetContextUsageResponse,
   ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
@@ -357,6 +358,9 @@ export interface ElectronAPI {
 
   /** P1-3: 客户端压缩会话历史（LLM compact_session tool 失败时的 fallback）*/
   compactSession: (sessionId: string, input: CompactSessionInput) => Promise<CompactSessionResult>
+
+  /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
+  getContextUsage: (sessionId: string) => Promise<GetContextUsageResponse>
 
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
@@ -1745,6 +1749,13 @@ const electronAPI: ElectronAPI = {
 
   compactSession: (sessionId: string, input: CompactSessionInput) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.COMPACT_SESSION, sessionId, input)
+  },
+
+  getContextUsage: (sessionId: string) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
+      sessionId
+    ) as Promise<GetContextUsageResponse>
   },
 
   fetchModels: (input: FetchModelsInput) => {

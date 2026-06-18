@@ -43,14 +43,13 @@ import { AskUserBanner } from './AskUserBanner'
 import { BtwFloatingTrigger } from './BtwFloatingTrigger'
 import { BtwPanel } from './BtwPanel'
 import { ComposerModeSelector } from './ComposerModeSelector'
-import { ContextUsageBadge } from './ContextUsageBadge'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
-import type { AgentContextStatus, SubagentEagerness } from '@/atoms/agent-atoms'
+import type { SubagentEagerness } from '@/atoms/agent-atoms'
 import type {
   AgentSendInput,
   AgentPendingFile,
@@ -660,11 +659,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     }
   }, [sessionId, setComposerModeMap, addComposerModeSynced])
 
-  const contextStatus: AgentContextStatus = {
-    isCompacting: streamState?.isCompacting ?? false,
-    inputTokens: streamState?.inputTokens,
-    contextWindow: streamState?.contextWindow,
-  }
   const setAgentStreamErrors = useSetAtom(agentStreamErrorsAtom)
   const streamErrors = useAtomValue(agentStreamErrorsAtom)
   const _agentError = streamErrors.get(sessionId) ?? null
@@ -1025,7 +1019,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           map.set(sessionId, stats)
           return map
         })
-        // 填充 streamingStates 的 inputTokens/contextWindow（用于 ContextUsageBadge）
+        // 填充 streamingStates 的 inputTokens/contextWindow（用于底栏 Context 占用）
         // 只有当 streamingStates 中没有数据时才填充（避免覆盖实时流式数据）
         setStreamingStates((prev) => {
           const state = prev.get(sessionId)
@@ -2703,22 +2697,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         ),
       },
       {
-        key: 'context-usage',
-        node: (
-          <ContextUsageBadge
-            inputTokens={contextStatus.inputTokens}
-            outputTokens={contextStatus.outputTokens}
-            cacheReadTokens={contextStatus.cacheReadTokens}
-            cacheCreationTokens={contextStatus.cacheCreationTokens}
-            contextWindow={contextStatus.contextWindow}
-            isCompacting={contextStatus.isCompacting}
-            isProcessing={streaming}
-            onCompact={handleCompact}
-            onClientCompact={handleClientCompact}
-          />
-        ),
-      },
-      {
         key: 'auto-preview',
         node: (
           <DisplayOptionsPopover
@@ -2737,14 +2715,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       handleOpenFileDialog,
       handleAttachFolder,
       handleSpeech,
-      contextStatus.inputTokens,
-      contextStatus.outputTokens,
-      contextStatus.cacheReadTokens,
-      contextStatus.cacheCreationTokens,
-      contextStatus.contextWindow,
-      contextStatus.isCompacting,
-      streaming,
-      handleCompact,
       autoPreviewEnabled,
       processGroupsKeepExpanded,
       setAutoPreviewEnabled,
@@ -2980,8 +2950,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             />
           </SessionFloatingLayout>
 
-          {/* Token 统计面板 — 仅通用模式显示 */}
-          <TokenStatsPanel />
+          {/* 底栏：Context 占用 + 累计 Token 统计 */}
+          <TokenStatsPanel
+            isProcessing={streaming}
+            onCompact={handleCompact}
+            onClientCompact={handleClientCompact}
+          />
         </div>
       </AgentSessionProvider>
 
