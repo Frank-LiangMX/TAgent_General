@@ -27,12 +27,12 @@
 
 ### 1.1 现状
 
-| 能力 | 实现 | 局限 |
-| ---- | ---- | ---- |
-| 圆环占用比 | `ContextUsageBadge` | 仅 `inputTokens / contextWindow` |
-| Popover 明细 | 输入 / 输出 / 缓存 / 总量 | 无分项 |
-| 数据来源 | `assistant.message.usage`、`result.usage` | 流式消息里的**汇总**用量 |
-| 会话累计 | `TokenStatsPanel` | 多轮累计，非当前 context 构成 |
+| 能力         | 实现                                      | 局限                             |
+| ------------ | ----------------------------------------- | -------------------------------- |
+| 圆环占用比   | `ContextUsageBadge`                       | 仅 `inputTokens / contextWindow` |
+| Popover 明细 | 输入 / 输出 / 缓存 / 总量                 | 无分项                           |
+| 数据来源     | `assistant.message.usage`、`result.usage` | 流式消息里的**汇总**用量         |
+| 会话累计     | `TokenStatsPanel`                         | 多轮累计，非当前 context 构成    |
 
 主进程 `claude-agent-adapter.ts` 已保存活跃 `Query`（`activeQueries`），但**未调用** `getContextUsage()`。
 
@@ -73,15 +73,15 @@ getContextUsage(): Promise<SDKControlGetContextUsageResponse>
 
 ## 2. 已确认 / 待确认产品决策
 
-| # | 决策 | 状态 |
-| --- | --- | --- |
-| D1 | 分项数据**以 SDK `getContextUsage()` 为唯一事实源**；失败时降级为现有汇总 Popover | 建议采纳 |
-| D2 | 入口挂在现有 **`ContextUsageBadge`**：点击圆环打开分项面板（Popover 升级或 Dialog） | 待评审 |
-| D3 | 面板标题与截图对齐：**「Context Usage」** + 占用百分比 + `totalTokens / maxTokens` | 待评审 |
-| D4 | 主视图展示 `categories` 分段条 + 列表；**二级明细**（MCP 逐工具、memory 逐文件）默认折叠，可展开 | 建议采纳 |
-| D5 | 保留圆环预警色（70% 黄 / 90% 红，见 fusion §8.4 P2-2）与手动压缩按钮 | 建议采纳 |
-| D6 | **Ask 档位**无活跃 SDK Query 时：圆环仍可按 Provider usage 显示；分项面板显示「仅 Agent 档位可用」 | 待评审 |
-| D7 | 刷新策略：**打开面板时拉取** + 每轮 `complete` 事件后后台刷新缓存（防抖 500ms） | 建议采纳 |
+| #   | 决策                                                                                               | 状态     |
+| --- | -------------------------------------------------------------------------------------------------- | -------- |
+| D1  | 分项数据**以 SDK `getContextUsage()` 为唯一事实源**；失败时降级为现有汇总 Popover                  | 建议采纳 |
+| D2  | 入口挂在现有 **`ContextUsageBadge`**：点击圆环打开分项面板（Popover 升级或 Dialog）                | 待评审   |
+| D3  | 面板标题与截图对齐：**「Context Usage」** + 占用百分比 + `totalTokens / maxTokens`                 | 待评审   |
+| D4  | 主视图展示 `categories` 分段条 + 列表；**二级明细**（MCP 逐工具、memory 逐文件）默认折叠，可展开   | 建议采纳 |
+| D5  | 保留圆环预警色（70% 黄 / 90% 红，见 fusion §8.4 P2-2）与手动压缩按钮                               | 建议采纳 |
+| D6  | **Ask 档位**无活跃 SDK Query 时：圆环仍可按 Provider usage 显示；分项面板显示「仅 Agent 档位可用」 | 待评审   |
+| D7  | 刷新策略：**打开面板时拉取** + 每轮 `complete` 事件后后台刷新缓存（防抖 500ms）                    | 建议采纳 |
 
 ---
 
@@ -260,12 +260,12 @@ export const contextUsageLoadingAtom = atom<boolean>(false)
 
 ### 6.2 UI 组件
 
-| 组件 | 职责 |
-| ---- | ---- |
-| `ContextUsageBadge.tsx` | 保留圆环；点击改为打开分项面板（或嵌套 Popover 加大尺寸） |
-| `ContextUsagePanel.tsx` | **新建**：分段条 + 分类列表 + 可折叠明细 |
-| `ContextUsageSegmentBar.tsx` | **新建**：按 `categories[].color` 渲染水平条 |
-| `ContextUsageCategoryRow.tsx` | **新建**：色块 + 标签 + token 数 |
+| 组件                          | 职责                                                      |
+| ----------------------------- | --------------------------------------------------------- |
+| `ContextUsageBadge.tsx`       | 保留圆环；点击改为打开分项面板（或嵌套 Popover 加大尺寸） |
+| `ContextUsagePanel.tsx`       | **新建**：分段条 + 分类列表 + 可折叠明细                  |
+| `ContextUsageSegmentBar.tsx`  | **新建**：按 `categories[].color` 渲染水平条              |
+| `ContextUsageCategoryRow.tsx` | **新建**：色块 + 标签 + token 数                          |
 
 **UI 规范**（对齐 `CLAUDE.md` §UI 风格）：
 
@@ -296,39 +296,39 @@ export const contextUsageLoadingAtom = atom<boolean>(false)
 
 ### 6.3 降级策略
 
-| 条件 | UI 行为 |
-| ---- | ------- |
+| 条件              | UI 行为                                                                  |
+| ----------------- | ------------------------------------------------------------------------ |
 | `NO_ACTIVE_QUERY` | 显示汇总行（现有 Popover 内容）+ 提示「发送一条 Agent 消息后可查看分项」 |
-| `SDK_ERROR` | Toast + 汇总降级 |
-| `UNSUPPORTED` | 第三方端点可能无 breakdown；仅圆环 |
-| Ask 档位 | 同 `NO_ACTIVE_QUERY` 或隐藏分项入口（依 D6） |
+| `SDK_ERROR`       | Toast + 汇总降级                                                         |
+| `UNSUPPORTED`     | 第三方端点可能无 breakdown；仅圆环                                       |
+| Ask 档位          | 同 `NO_ACTIVE_QUERY` 或隐藏分项入口（依 D6）                             |
 
 ---
 
 ## 7. 风险与边界
 
-| 风险 | 影响 | 缓解 |
-| ---- | ---- | ---- |
-| 无活跃 Query | 面板无数据 | 降级 + 文案说明 |
-| 兼容端点非官方 CLI | `getContextUsage` 可能失败 | `UNSUPPORTED` + 保留汇总圆环 |
-| Control 调用延迟 | 打开面板 100–500ms | Loading skeleton；缓存上次快照 |
-| SDK 版本漂移 | 字段增减 | shared 类型 `?` 可选 + 映射层单测 |
-| 分项与圆环总数不一致 | 用户困惑 | 面板注明「分项为 SDK 估算，圆环为 API usage」；以 `totalTokens/maxTokens` 为面板主数字 |
-| 模式隔离 | TA / general 共用 Agent SDK | 按 `sessionId` 隔离即可，无额外分支 |
+| 风险                 | 影响                        | 缓解                                                                                   |
+| -------------------- | --------------------------- | -------------------------------------------------------------------------------------- |
+| 无活跃 Query         | 面板无数据                  | 降级 + 文案说明                                                                        |
+| 兼容端点非官方 CLI   | `getContextUsage` 可能失败  | `UNSUPPORTED` + 保留汇总圆环                                                           |
+| Control 调用延迟     | 打开面板 100–500ms          | Loading skeleton；缓存上次快照                                                         |
+| SDK 版本漂移         | 字段增减                    | shared 类型 `?` 可选 + 映射层单测                                                      |
+| 分项与圆环总数不一致 | 用户困惑                    | 面板注明「分项为 SDK 估算，圆环为 API usage」；以 `totalTokens/maxTokens` 为面板主数字 |
+| 模式隔离             | TA / general 共用 Agent SDK | 按 `sessionId` 隔离即可，无额外分支                                                    |
 
 ---
 
 ## 8. 与现有模块关系
 
-| 模块 | 关系 |
-| ---- | ---- |
-| `ContextUsageBadge` | **扩展**，非替换 |
-| `TokenStatsPanel` | 不变（累计统计） |
-| `agent-context-utils.ts` | 不变；动态历史条数预算仍用汇总逻辑 |
+| 模块                      | 关系                                          |
+| ------------------------- | --------------------------------------------- |
+| `ContextUsageBadge`       | **扩展**，非替换                              |
+| `TokenStatsPanel`         | 不变（累计统计）                              |
+| `agent-context-utils.ts`  | 不变；动态历史条数预算仍用汇总逻辑            |
 | `useGlobalAgentListeners` | 增加 `complete` 后触发 context usage 缓存刷新 |
-| `claude-agent-adapter` | 新增 `getContextUsage` 封装 |
-| Ask 档位 | 不写入 SDK JSONL；分项仅 Agent 档位 |
-| Insights 设置页 | 无交集 |
+| `claude-agent-adapter`    | 新增 `getContextUsage` 封装                   |
+| Ask 档位                  | 不写入 SDK JSONL；分项仅 Agent 档位           |
+| Insights 设置页           | 无交集                                        |
 
 ---
 
@@ -336,36 +336,36 @@ export const contextUsageLoadingAtom = atom<boolean>(false)
 
 ### P0 — 数据管线（1～1.5 天）
 
-| 任务 | 文件 |
-| ---- | ---- |
-| shared 类型 + IPC 常量 | `packages/shared/src/types/context-usage.ts`、`agent.ts` |
-| SDK 映射 + adapter 方法 | `claude-agent-adapter.ts` |
-| IPC handler | `main/ipc.ts` |
-| Preload 桥接 | `preload/index.ts` |
+| 任务                      | 文件                                                                 |
+| ------------------------- | -------------------------------------------------------------------- |
+| shared 类型 + IPC 常量    | `packages/shared/src/types/context-usage.ts`、`agent.ts`             |
+| SDK 映射 + adapter 方法   | `claude-agent-adapter.ts`                                            |
+| IPC handler               | `main/ipc.ts`                                                        |
+| Preload 桥接              | `preload/index.ts`                                                   |
 | 单测：映射、无 Query 错误 | `claude-agent-adapter.test.ts` 或新建 `context-usage-mapper.test.ts` |
 
 **验收**：DevTools 可 `window.electronAPI.getContextUsage(sessionId)` 返回 JSON。
 
 ### P1 — 分项面板 MVP（1.5～2 天）
 
-| 任务 | 文件 |
-| ---- | ---- |
-| Jotai atoms + hook | `atoms/context-usage-atoms.ts`、`hooks/useContextUsage.ts` |
-| 分段条 + 分类列表 | `ContextUsagePanel.tsx` 等 |
-| 接入 `ContextUsageBadge` | `ContextUsageBadge.tsx`、`AgentView.tsx` |
-| `complete` 后防抖刷新 | `useGlobalAgentListeners.ts` |
+| 任务                     | 文件                                                       |
+| ------------------------ | ---------------------------------------------------------- |
+| Jotai atoms + hook       | `atoms/context-usage-atoms.ts`、`hooks/useContextUsage.ts` |
+| 分段条 + 分类列表        | `ContextUsagePanel.tsx` 等                                 |
+| 接入 `ContextUsageBadge` | `ContextUsageBadge.tsx`、`AgentView.tsx`                   |
+| `complete` 后防抖刷新    | `useGlobalAgentListeners.ts`                               |
 
 **验收**：Agent 会话发消息后，点击圆环可见与 `/context` 同结构的分项；截图附 PR。
 
 ### P2 — 体验打磨（0.5～1 天）
 
-| 任务 | 说明 |
-| ---- | ---- |
-| 二级明细折叠 | MCP / memory / skills / agents |
-| 中文标签映射 | `context-usage-labels.ts` |
-| `messageBreakdown` 展示 | Conversation 子项 |
-| Auto-compact 状态行 | `isAutoCompactEnabled` |
-| 加载 / 错误 / 空态 | Skeleton、降级文案 |
+| 任务                    | 说明                           |
+| ----------------------- | ------------------------------ |
+| 二级明细折叠            | MCP / memory / skills / agents |
+| 中文标签映射            | `context-usage-labels.ts`      |
+| `messageBreakdown` 展示 | Conversation 子项              |
+| Auto-compact 状态行     | `isAutoCompactEnabled`         |
+| 加载 / 错误 / 空态      | Skeleton、降级文案             |
 
 ### P3 — 可选增强（后续）
 
@@ -416,13 +416,13 @@ Feature: Context Usage 分项面板
 
 ## 11. 工时估算
 
-| 阶段 | 人天 |
-| ---- | ---- |
-| P0 数据管线 | 1～1.5 |
-| P1 MVP UI | 1.5～2 |
-| P2 打磨 | 0.5～1 |
+| 阶段                 | 人天       |
+| -------------------- | ---------- |
+| P0 数据管线          | 1～1.5     |
+| P1 MVP UI            | 1.5～2     |
+| P2 打磨              | 0.5～1     |
 | **合计（至可发布）** | **3～4.5** |
-| P3 可选 | +1～2 |
+| P3 可选              | +1～2      |
 
 ---
 

@@ -67,7 +67,9 @@ export function AboutSettings(): React.ReactElement {
 function HeroSection(): React.ReactElement {
   const [openingTutorial, setOpeningTutorial] = React.useState(false)
   const [tutorialError, setTutorialError] = React.useState<string | null>(null)
-  const [latestRelease, setLatestRelease] = React.useState<import('@tagent/shared').GitHubRelease | null>(null)
+  const [latestRelease, setLatestRelease] = React.useState<
+    import('@tagent/shared').GitHubRelease | null
+  >(null)
   const [loadingLatest, setLoadingLatest] = React.useState(true)
 
   // 获取最新发布版本
@@ -81,13 +83,6 @@ function HeroSection(): React.ReactElement {
       .catch(console.error)
       .finally(() => setLoadingLatest(false))
   }, [])
-
-  // 解析版本号用于比较
-  const parseVersion = (v: string): [number, number, number] => {
-    const match = v.match(/^(\d+)\.(\d+)\.(\d+)/)
-    if (!match) return [0, 0, 0]
-    return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])]
-  }
 
   // 判断是否有新版本
   const latestVersion = latestRelease?.tag_name?.replace(/^v/, '') || ''
@@ -139,9 +134,7 @@ function HeroSection(): React.ReactElement {
 
         {/* 最新版本提示 */}
         {loadingLatest ? (
-          <div className="mt-2 text-xs text-muted-foreground/50">
-            正在检查最新版本...
-          </div>
+          <div className="mt-2 text-xs text-muted-foreground/50">正在检查最新版本...</div>
         ) : hasNewVersion ? (
           <div className="mt-2 flex items-center gap-1.5 text-xs">
             <Badge variant="default" className="text-xs gap-1">
@@ -150,9 +143,7 @@ function HeroSection(): React.ReactElement {
             </Badge>
           </div>
         ) : latestRelease ? (
-          <div className="mt-2 text-xs text-muted-foreground/50">
-            当前已是最新版本
-          </div>
+          <div className="mt-2 text-xs text-muted-foreground/50">当前已是最新版本</div>
         ) : null}
 
         {/* 快捷操作按钮 */}

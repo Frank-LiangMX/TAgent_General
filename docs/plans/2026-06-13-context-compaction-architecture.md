@@ -20,14 +20,14 @@ TAgent Agent 会话的 context 压缩是 **双层结构**：
 
 ## 1. 机制对照表
 
-| 机制 | SDK 原生？ | 入口 | 实现位置 | 是否调 LLM |
-| ---- | ---------- | ---- | -------- | ---------- |
-| 自动压缩 | ✅ | context 接近上限 | SDK/CLI 内部 | ✅ 摘要 |
-| 手动 `/compact` | ✅ | `ContextUsageBadge` → 发 `/compact` | `AgentView` + orchestrator 透传 | ✅ 摘要 |
-| `compact_boundary` 事件 | ✅（事件） | 流式消息 | `useGlobalAgentListeners` → UI | — |
-| `compact_session` 工具 | ❌ | Agent 调 MCP `tagent-compactor` | `agent-orchestrator` 注入 | 否（删块） |
-| 客户端压缩按钮 | ❌ | Popover「客户端压缩」 | IPC → `compactSession()` | 否（删块） |
-| `buildContextPrompt` 截历史 | ❌ | 无 `resume` 的首条 prompt | `agent-orchestrator` | 否（拼接最近 N 条） |
+| 机制                        | SDK 原生？ | 入口                                | 实现位置                        | 是否调 LLM          |
+| --------------------------- | ---------- | ----------------------------------- | ------------------------------- | ------------------- |
+| 自动压缩                    | ✅         | context 接近上限                    | SDK/CLI 内部                    | ✅ 摘要             |
+| 手动 `/compact`             | ✅         | `ContextUsageBadge` → 发 `/compact` | `AgentView` + orchestrator 透传 | ✅ 摘要             |
+| `compact_boundary` 事件     | ✅（事件） | 流式消息                            | `useGlobalAgentListeners` → UI  | —                   |
+| `compact_session` 工具      | ❌         | Agent 调 MCP `tagent-compactor`     | `agent-orchestrator` 注入       | 否（删块）          |
+| 客户端压缩按钮              | ❌         | Popover「客户端压缩」               | IPC → `compactSession()`        | 否（删块）          |
+| `buildContextPrompt` 截历史 | ❌         | 无 `resume` 的首条 prompt           | `agent-orchestrator`            | 否（拼接最近 N 条） |
 
 ---
 
@@ -81,20 +81,20 @@ fusion 设计 §8.4：TAgent 支持 **任意兼容端点**，SDK 服务端 compa
 
 ### 3.2 实现
 
-| 组件 | 文件 |
-| ---- | ---- |
-| 压缩逻辑 | `apps/electron/src/main/lib/agent-session-compactor.ts` |
+| 组件         | 文件                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------ |
+| 压缩逻辑     | `apps/electron/src/main/lib/agent-session-compactor.ts`                              |
 | MCP 工具注入 | `agent-orchestrator.injectCompactSessionTool()` → `tagent-compactor:compact_session` |
-| IPC | `AGENT_IPC_CHANNELS.COMPACT_SESSION` |
-| UI | `ContextUsageBadge`「客户端压缩」、`AgentView.handleClientCompact` |
+| IPC          | `AGENT_IPC_CHANNELS.COMPACT_SESSION`                                                 |
+| UI           | `ContextUsageBadge`「客户端压缩」、`AgentView.handleClientCompact`                   |
 
 **策略**：
 
-| strategy | 行为 | 状态 |
-| -------- | ---- | ---- |
-| `drop_old_tool_results` | 删除仅含 tool_use / tool_result 的消息块，保留含文本的 user/assistant | ✅ |
-| `keep_last_n` | 仅保留最近 N 条 user/assistant | ✅ |
-| `summarize` | 用便宜模型总结老消息 | ❌ 未实现（M2+） |
+| strategy                | 行为                                                                  | 状态             |
+| ----------------------- | --------------------------------------------------------------------- | ---------------- |
+| `drop_old_tool_results` | 删除仅含 tool_use / tool_result 的消息块，保留含文本的 user/assistant | ✅               |
+| `keep_last_n`           | 仅保留最近 N 条 user/assistant                                        | ✅               |
+| `summarize`             | 用便宜模型总结老消息                                                  | ❌ 未实现（M2+） |
 
 ### 3.3 与 SDK 的状态边界（重要）
 
@@ -163,37 +163,37 @@ UI 应在后续迭代中补充简短说明（待办）。
 
 ### 6.2 待改进（按优先级）
 
-| 优先级 | 项 | 说明 |
-| ------ | -- | ---- |
-| P1 | 客户端压缩提示 | 活跃会话时 toast 警告「建议结束当前轮次或新开会话」 |
-| P2 | 设置页暴露 `autoCompactEnabled` | 与 SDK 选项对齐，减少依赖 `~/.claude` 黑盒 |
-| P2 | 接入 `getContextUsage()` | 见 context-usage-breakdown 设计；压缩决策更可解释 |
-| P3 | 实现 `summarize` 策略 | 客户端兜底的信息保留优于纯删块 |
-| P3 | `compact_session` 与 SDK 协调 | 压完后可选通知用户刷新 resume 或 fork 新会话 |
+| 优先级 | 项                              | 说明                                                |
+| ------ | ------------------------------- | --------------------------------------------------- |
+| P1     | 客户端压缩提示                  | 活跃会话时 toast 警告「建议结束当前轮次或新开会话」 |
+| P2     | 设置页暴露 `autoCompactEnabled` | 与 SDK 选项对齐，减少依赖 `~/.claude` 黑盒          |
+| P2     | 接入 `getContextUsage()`        | 见 context-usage-breakdown 设计；压缩决策更可解释   |
+| P3     | 实现 `summarize` 策略           | 客户端兜底的信息保留优于纯删块                      |
+| P3     | `compact_session` 与 SDK 协调   | 压完后可选通知用户刷新 resume 或 fork 新会话        |
 
 ### 6.3 与 Claude Code 对比
 
-| 维度 | Claude Code | TAgent（当前） |
-| ---- | ----------- | -------------- |
-| Auto-compact | ✅ | ✅（SDK 默认，未在 adapter 显式配置） |
-| 手动 `/compact` | ✅ | ✅ |
-| `/context` 分项 | ✅ CLI | ❌ 未接 `getContextUsage()`（规划中） |
-| compact 失败 fallback | 官方链路内 | ✅ 自研 JSONL compactor |
-| 任意兼容端点 | ❌ | ✅（代价是自管 fallback） |
+| 维度                  | Claude Code | TAgent（当前）                        |
+| --------------------- | ----------- | ------------------------------------- |
+| Auto-compact          | ✅          | ✅（SDK 默认，未在 adapter 显式配置） |
+| 手动 `/compact`       | ✅          | ✅                                    |
+| `/context` 分项       | ✅ CLI      | ❌ 未接 `getContextUsage()`（规划中） |
+| compact 失败 fallback | 官方链路内  | ✅ 自研 JSONL compactor               |
+| 任意兼容端点          | ❌          | ✅（代价是自管 fallback）             |
 
 ---
 
 ## 7. 关键代码索引
 
-| 用途 | 路径 |
-| ---- | ---- |
-| 手动 `/compact` | `apps/electron/src/renderer/components/agent/AgentView.tsx` — `handleCompact` |
-| 客户端压缩 | `AgentView.tsx` — `handleClientCompact`；`agent-session-compactor.ts` |
-| `/compact` 透传 | `apps/electron/src/main/lib/agent-orchestrator.ts` |
-| SDK 选项构建 | `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts` |
-| 压缩 UI 状态 | `apps/electron/src/renderer/atoms/agent-atoms.ts`；`ContextUsageBadge.tsx` |
-| 单测 | `apps/electron/src/main/lib/agent-session-compactor.test.ts` |
-| SDK 类型 | `node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts` — `SDKCompactBoundaryMessage`、`autoCompactEnabled` |
+| 用途            | 路径                                                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| 手动 `/compact` | `apps/electron/src/renderer/components/agent/AgentView.tsx` — `handleCompact`                              |
+| 客户端压缩      | `AgentView.tsx` — `handleClientCompact`；`agent-session-compactor.ts`                                      |
+| `/compact` 透传 | `apps/electron/src/main/lib/agent-orchestrator.ts`                                                         |
+| SDK 选项构建    | `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts`                                              |
+| 压缩 UI 状态    | `apps/electron/src/renderer/atoms/agent-atoms.ts`；`ContextUsageBadge.tsx`                                 |
+| 单测            | `apps/electron/src/main/lib/agent-session-compactor.test.ts`                                               |
+| SDK 类型        | `node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts` — `SDKCompactBoundaryMessage`、`autoCompactEnabled` |
 
 ---
 

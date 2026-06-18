@@ -44,14 +44,14 @@ jobs:
               apps/electron/out/*.yml
           - os: ubuntu-latest
             package_args: --linux --x64
-            workdir: apps/electron-linux
+            workdir: apps/electron
             artifact: desktop-linux
             paths: |
-              apps/electron-linux/out/*.AppImage
-              apps/electron-linux/out/*.deb
-              apps/electron-linux/out/*.tar.gz
-              apps/electron-linux/out/*.blockmap
-              apps/electron-linux/out/*.yml
+              apps/electron/out/*.AppImage
+              apps/electron/out/*.deb
+              apps/electron/out/*.tar.gz
+              apps/electron/out/*.blockmap
+              apps/electron/out/*.yml
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -94,14 +94,6 @@ jobs:
           npm_config_python: python
         run: |
           bun install --no-frozen-lockfile
-
-      # Linux runner 额外需要：创建符号链接到主工程
-      - name: Setup Linux symlinks
-        if: runner.os == 'Linux'
-        working-directory: apps/electron-linux
-        run: |
-          chmod +x setup-symlinks.sh
-          ./setup-symlinks.sh
 
       - name: Build
         working-directory: ${{ matrix.workdir }}

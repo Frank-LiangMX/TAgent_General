@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux packaging no longer uses deprecated or invalid electron-builder options that fail schema validation.
 - Linux deb packaging now includes required homepage metadata and flat artifact file names.
 - Linux release packaging now builds x64 artifacts only, matching the release workflow matrix.
+- Linux release packaging now uses the main Electron app configuration instead of a separate `apps/electron-linux` package.
 
 ### Security
 

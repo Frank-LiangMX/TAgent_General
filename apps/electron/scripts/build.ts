@@ -23,7 +23,6 @@
  */
 
 import { spawnSync } from 'child_process'
-import { existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -54,7 +53,6 @@ interface BuildOptions {
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = join(__dirname, '..')
 const ELECTRON_DIR = ROOT_DIR
-const ELECTRON_LINUX_DIR = join(ROOT_DIR, '..', 'electron-linux')
 
 // 平台特定格式映射
 const PLATFORM_FORMATS: Record<string, string[]> = {
@@ -129,10 +127,7 @@ function detectCurrentPlatform(): 'mac' | 'win' | 'linux' {
   }
 }
 
-function getWorkDir(platform: 'mac' | 'win' | 'linux'): string {
-  if (platform === 'linux' && existsSync(ELECTRON_LINUX_DIR)) {
-    return ELECTRON_LINUX_DIR
-  }
+function getWorkDir(_platform: 'mac' | 'win' | 'linux'): string {
   return ELECTRON_DIR
 }
 
@@ -229,16 +224,6 @@ function main(): void {
   console.log(`  ${color.bold}构建步骤${color.reset}:   ${opts.skipBuild ? '跳过' : '执行'}`)
   console.log(`  ${color.bold}详细日志${color.reset}:   ${opts.verbose ? '开启' : '关闭'}`)
   printSeparator()
-
-  // 检查 Linux 目录是否存在
-  if (platform === 'linux' && !existsSync(ELECTRON_LINUX_DIR)) {
-    console.log(
-      `\n${color.bgYellow}${color.bold} 警告 ${color.reset} apps/electron-linux 目录不存在`
-    )
-    console.log(
-      `${color.dim}Linux 打包需要 electron-linux 工程，将使用 apps/electron 尝试打包${color.reset}\n`
-    )
-  }
 
   const totalSteps = opts.skipBuild ? 1 : 5
   let step = 0
