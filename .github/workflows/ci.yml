@@ -24,9 +24,9 @@ jobs:
 
       # ta-agent-mcp 项目的 lint（src/tests 在该子目录下）
       - name: Ruff check (ta-agent-mcp)
-        working-directory: ta-agent-mcp
         run: |
-          if [ -d src ] && [ -d tests ]; then
+          if [ -d ta-agent-mcp/src ] && [ -d ta-agent-mcp/tests ]; then
+            cd ta-agent-mcp
             # 先自动修复可修复的问题
             ruff check --fix src/ tests/ || true
             ruff format src/ tests/ || true
@@ -61,21 +61,24 @@ jobs:
           python-version: '3.11'
 
       - name: Install ta-agent-mcp deps
-        working-directory: ta-agent-mcp
         run: |
-          pip install -e ".[dev]"
+          if [ -f ta-agent-mcp/pyproject.toml ]; then
+            pip install -e "ta-agent-mcp[dev]"
+          else
+            echo "ta-agent-mcp not found, skipping dependency install"
+          fi
 
       - name: Run ta-agent-mcp tests
-        working-directory: ta-agent-mcp
         run: |
-          if [ -d src ] && [ -d tests ]; then
+          if [ -d ta-agent-mcp/src ] && [ -d ta-agent-mcp/tests ]; then
+            cd ta-agent-mcp
             pytest --cov=src --cov-fail-under=25 --cov-report=xml --cov-report=term
           else
             echo "No tests yet, skipping"
           fi
 
       - name: Upload coverage
-        if: always()
+        if: always() && hashFiles('ta-agent-mcp/coverage.xml') != ''
         uses: codecov/codecov-action@v4
         with:
           file: ta-agent-mcp/coverage.xml

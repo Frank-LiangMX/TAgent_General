@@ -211,13 +211,13 @@
 
 **产出**：关于页版本显示优化 + 自动检查更新
 
-| 任务                   | 内容                                                                  |
-| ---------------------- | --------------------------------------------------------------------- |
-| 版本显示优化           | 关于页从 GitHub Release 获取最新版本，显示"新版本 vX.X.X 可用"提示   |
-| 自动检查更新           | 进入关于页时自动触发更新检查（状态为 idle 时）                        |
-| 代码改动               | `AboutSettings.tsx` HeroSection 新增 `getLatestRelease` 调用         |
-| UpdateSection 自动检查 | 组件加载时检测 `status === 'idle'` 自动调用 `checkForUpdates()`      |
-| **里程碑**             | **关于页版本信息与 GitHub Release 关联完成**                         |
+| 任务                   | 内容                                                               |
+| ---------------------- | ------------------------------------------------------------------ |
+| 版本显示优化           | 关于页从 GitHub Release 获取最新版本，显示"新版本 vX.X.X 可用"提示 |
+| 自动检查更新           | 进入关于页时自动触发更新检查（状态为 idle 时）                     |
+| 代码改动               | `AboutSettings.tsx` HeroSection 新增 `getLatestRelease` 调用       |
+| UpdateSection 自动检查 | 组件加载时检测 `status === 'idle'` 自动调用 `checkForUpdates()`    |
+| **里程碑**             | **关于页版本信息与 GitHub Release 关联完成**                       |
 
 ### 2026-06-11（续四）
 
@@ -521,7 +521,7 @@
 | TA 工具集注入        | `main/lib/agent-orchestrator.ts` `injectTATools`                             |
 | TA 内置工具          | `main/lib/ta-tools/`                                                         |
 | TA system prompt     | `main/lib/agent-prompt-builder.ts` `SystemPromptContext.mode`                |
-| TA MCP Server        | `apps/electron/default-mcp/ta-agent-mcp/`                                  |
+| TA MCP Server        | `apps/electron/default-mcp/ta-agent-mcp/`                                    |
 | 顶层模式切换         | `renderer/atoms/app-mode.ts` `topLevelModeAtom`                              |
 | Chat/Agent 切换      | `renderer/components/settings/SettingsPanel.tsx` `SettingsModeSwitcher`      |
 | per-mode rail 记忆   | `renderer/atoms/app-mode.ts` `activeRailItemAtom` (派生)                     |
