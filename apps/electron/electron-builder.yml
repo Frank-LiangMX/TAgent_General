@@ -140,6 +140,7 @@ nsis:
 # Linux configuration
 # ============================================
 linux:
+  artifactName: '${productName}-${version}-${os}-${arch}.${ext}'
   executableName: tagent
   executableArgs:
     - '--no-sandbox'
