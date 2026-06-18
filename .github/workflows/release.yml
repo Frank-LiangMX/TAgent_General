@@ -71,29 +71,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      # 删除国内 npm 镜像，CI 国际网络用官方源
-      - name: Use official npm registry
-        run: |
-          rm -f .npmrc
-          # 临时禁用 lockfile 中的镜像地址（保留 bun.lock 结构，重写 npm 解析域名）
-          # macOS 用 BSD sed (需要 -i '')，Linux 用 GNU sed (直接 -i)
-          if [ -f bun.lock ]; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-              sed -i '' 's|https://registry\.npmmirror\.com|https://registry.npmjs.org|g' bun.lock
-              sed -i '' 's|https://npmmirror\.com/mirrors/electron/|https://github.com/electron/electron/releases/download/|g' bun.lock
-            else
-              sed -i 's|https://registry\.npmmirror\.com|https://registry.npmjs.org|g' bun.lock
-              sed -i 's|https://npmmirror\.com/mirrors/electron/|https://github.com/electron/electron/releases/download/|g' bun.lock
-            fi
-          fi
-          echo "Configured to use official registry"
-
       - name: Install dependencies
         env:
           PYTHON: python
           npm_config_python: python
+          npm_config_registry: https://registry.npmjs.org
+          npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
         run: |
-          bun install --no-frozen-lockfile
+          bun install --frozen-lockfile
 
       - name: Build
         working-directory: ${{ matrix.workdir }}
@@ -106,7 +92,7 @@ jobs:
       - name: Package (electron-builder)
         working-directory: ${{ matrix.workdir }}
         env:
-          # Linux 跳过签名（开源项目无需签名）
+          # Skip code signing in CI; platform signing can be added later.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder ${{ matrix.package_args }} --publish never
 
