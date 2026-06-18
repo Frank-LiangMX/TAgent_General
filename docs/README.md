@@ -20,6 +20,13 @@
 | [`plans/2026-06-05-tagent-server-design.md`](plans/2026-06-05-tagent-server-design.md)               | TAgent Server 完整设计（12 节）                       |
 | [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md) | **Ask 档位统一 Composer**（替代 Chat 模式，实施清单） |
 
+## 归档
+
+| 文档                                                                                                     | 内容                                   |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| [`archive/plans/2026-06-02-im-model-switch-design.md`](archive/plans/2026-06-02-im-model-switch-design.md) | IM `/model` 切换设计，能力已完成       |
+| [`archive/reports/2026-06-05-brand-migration.md`](archive/reports/2026-06-05-brand-migration.md)           | 品牌迁移 / codemod 三份报告合并归档    |
+
 ## 架构决策
 
 | 文档                                                                             | 决策                                            |
@@ -50,5 +57,6 @@
 - **新决策** → 写 `decisions/NNNN-<topic>.md`（用模板）
 - **新流程** → 写 `process/<topic>.md`
 - **新实验** → 写 `experiments/{backend,frontend}/YYYY-MM-DD-<topic>.md`
+- **已完成或被替代设计** → 移到 `archive/`，并在 `docs/PROGRESS.md` 登记状态
 - **改动公共 API** → 改对应 README
 - **改动 release behavior** → 改 `CHANGELOG.md`

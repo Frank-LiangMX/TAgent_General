@@ -8,7 +8,7 @@ codemod_proma_to_tagent.py — 品牌替换 codemod (DRY-RUN by default)
 **默认 dry-run**：不改任何文件，只输出"将会改什么"
 **加 --apply 才真改**
 
-**重要约束**（来自 docs/reports/2026-06-05-proma-scope-inventory.md §3）：
+**重要约束**（来自 docs/archive/reports/2026-06-05-brand-migration.md）：
 - 不动 bun.lock / package-lock.json（让 bun install 重新生成）
 - 不动 release-notes/（历史记录）
 - 不动 .git/（commit history）

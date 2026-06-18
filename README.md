@@ -6,6 +6,12 @@
 
 ✅ **实施阶段**（2026-06-18）：P0-P2 核心功能已完成，Ask 档位统一、TA 模式 UI、记忆自进化机制已落地。
 
+当前主线进入 **稳定性收口 + 上游能力对齐**：
+
+- 远程连通已覆盖飞书 / 钉钉 / 微信 / WPS 协作，其中 WPS 协作为文本链路 MVP。
+- 后续优先级见 `docs/plans/2026-06-16-upstream-upgrade-issues.md`（Issue A~E）。
+- 具体当前状态以 `docs/PROGRESS.md` 为准。
+
 ## 阅读顺序
 
 1. **`AGENTS.md`** — Agent 协作入口规范（必读）

@@ -5,6 +5,7 @@
 > **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
 > **新增规划**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（上游能力对齐 + 开发 Agent 实施手册）
 > **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
+> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板待实现）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 
 ---
@@ -33,9 +34,32 @@
 
 ---
 
-## 当前状态（2026-06-14）
+## 当前状态（2026-06-18）
 
-**阶段**：P2 阶段完成，所有后续优化任务已完成
+**阶段**：MVP / P1 / P2 / P3 主线已完成，当前进入稳定性收口、上游能力对齐和远程连通完善阶段。
+
+**当前判断**：
+
+- 通用 Agent 主链路、Ask 档位、TA 模式、记忆自进化、使用统计、`/btw`、远程连通主框架均已落地。
+- `compact_session` / 客户端压缩已实现，Context 管理核心 7/7 不再作为阻塞项。
+- WPS 协作已作为远程连通 MVP 合入（文本消息链路）；媒体、绑定持久化、公网回调配置仍是后续增强。
+- 当前工作区曾出现较多 UI/设置/上游对齐相关未提交改动；继续开发前应先清理工作区边界。
+
+**规划文档登记表**：
+
+| 文档 | 当前登记状态 | 说明 |
+| ---- | ------------ | ---- |
+| `2026-06-05-tagent-fusion-design.md` | 主设计 / 历史基线 | 多处早期状态已被后续实现超越，以本文件当前状态为准 |
+| `2026-06-05-tagent-server-design.md` | 未来独立项目规划 | TAgent Server 未进入当前 Desktop 活跃开发；后续若启动需单独建里程碑 |
+| `archive/plans/2026-06-02-im-model-switch-design.md` | 已完成归档 | `/model` / `/now` / per-chat 模型切换已在远程 Bridge 路径落地 |
+| `2026-06-09-agent-ui-optimization-plan.md` | 已完成 / 当前工作区仍有相关 UI 改动 | Agent 页面首轮收敛已登记；继续开发前先清理未提交 UI 边界 |
+| `2026-06-13-ask-mode-unification-design.md` | 已完成 | Ask 档位统一 Composer + Chat 主路径退役 |
+| `2026-06-13-context-compaction-architecture.md` | 已完成归档 + M2+ 小待办 | 双层压缩机制已落地；`summarize` 策略、客户端压缩说明仍可后续增强 |
+| `2026-06-13-context-usage-breakdown-design.md` | 活跃待办 | Context Usage 分项面板 P0-P2 未实现 |
+| `2026-06-16-upstream-upgrade-plan.md` | 活跃待办 | 上游能力对齐总规划 |
+| `2026-06-16-upstream-upgrade-issues.md` | 活跃待办 | Issue A~E 可直接拆 PR |
+| `2026-06-16-wps-bridge-landing.md` | MVP 已完成 + 增强待办 | 文本链路已合入；媒体/绑定/公网回调/富文本待增强 |
+| `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 
 **已完成**：
 
@@ -155,9 +179,21 @@
   - 左侧 Agent 会话竖条语义收敛：active=主题色，running=蓝色，blocked=橙色，completed=绿色，manual working 不显示蓝条
   - 设计记录见 `docs/plans/2026-06-09-agent-ui-optimization-plan.md`
 
-**进行中**：
+**进行中 / 下一步**：
 
-- 无
+- **工作区清理**：确认 `apps/electron-linux/`、`temp-openclaw-channel-xiezuo/`、上游升级草案与 UI 设置改动哪些保留、哪些删除。
+- **Context Usage 分项面板**：见 `docs/plans/2026-06-13-context-usage-breakdown-design.md`。
+  - P0：shared 类型 + IPC 常量、SDK `getContextUsage()` 映射、主进程 handler、Preload API、映射单测
+  - P1：Jotai atoms / hook、分段条与分类列表、接入 `ContextUsageBadge`、complete 后防抖刷新
+  - P2：二级明细、中文标签、`messageBreakdown`、auto-compact 状态行、加载 / 错误 / 空态
+- **上游能力对齐（Issue A~E）**：见 `docs/plans/2026-06-16-upstream-upgrade-issues.md`。
+  - A：统一 1M 上下文能力判断
+  - B：Automation 调度内核
+  - C：Automation 管理界面
+  - D：自动任务上下文安全阀
+  - E：预览分屏偏好 + monthly 调度
+- **WPS 协作增强**：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片解析。
+- **小修收口**：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL。
 
 **剩余任务**（按设计文档 §10.1 阶段划分）：
 
@@ -206,6 +242,30 @@
 ---
 
 ## 历史进度
+
+### 2026-06-18（续二）
+
+**产出**：项目状态文档校准
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 根上下文更新 | `CLAUDE.md` 当前进度从 2026-06-06 旧状态更新为 2026-06-18 当前状态 |
+| README 校准 | 补充“稳定性收口 + 上游能力对齐”阶段说明 |
+| PROGRESS 校准 | 明确主线完成、活跃待办、Context Usage 分项面板、WPS 后续增强与上游 Issue A~E |
+| **里程碑** | **新 Agent 入口文档与当前代码状态重新对齐** |
+
+### 2026-06-18（续）
+
+**产出**：WPS 协作远程连通 MVP
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 主进程 Bridge | `wps-bridge.ts` 本地 HTTP 回调服务，支持 challenge、签名校验、AES 解密、文本消息路由 |
+| 鉴权与签名 | `wps-oauth.ts` OAuth2 token 缓存；`wps-crypto.ts` 事件签名与 KSO-1 |
+| 设置页 | `WpsSettings.tsx` 接入远程 Hub，可保存、测试、启停、复制本地回调地址 |
+| 类型与 IPC | `WPS_IPC_CHANNELS`、Preload API、主进程 handler、Jotai 状态 |
+| 文档 | `docs/plans/2026-06-16-wps-bridge-landing.md` 记录使用方式、限制与下一步 |
+| **当前限制** | **仅文本链路；媒体、绑定持久化、公网回调 URL 与富文本 / 卡片后续增强** |
 
 ### 2026-06-18
 
@@ -473,7 +533,7 @@
 | #11  | 工作区 UI 重构（D 方案 v2）        |
 | #12  | Context 管理机制（7 项）           |
 
-#### 3. §8.4 Context 管理 6/7 实现
+#### 3. §8.4 Context 管理（原 6/7，后续已补齐 7/7）
 
 | 优先级   | 改动                              | 状态    |
 | -------- | --------------------------------- | ------- |
@@ -483,7 +543,7 @@
 | P1-2     | 图片 placeholder                  | ✅      |
 | P2-1     | Nudges 80%/90%                    | ✅      |
 | P2-2     | 圆环 3 态颜色                     | ✅      |
-| **P1-3** | **客户端 compact_session 工具**   | ❌ 待做 |
+| **P1-3** | **客户端 compact_session 工具**   | ✅ 后续已完成（见 `agent-session-compactor.ts` / `ContextUsageBadge`） |
 
 ---
 

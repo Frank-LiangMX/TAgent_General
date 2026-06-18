@@ -60,6 +60,7 @@
 - 持久化文件（建议 `~/.tagent[-dev]/automations.json`）。
 - 支持调度类型：`interval` / `daily` / `weekly`。
 - 失败重试与退避；连续失败自动暂停（可配置阈值）。
+- 运行历史记录 `lastRun` / `nextRun` / `failureCount` / `lastError`，便于 UI 展示和排障。
 
 **不在范围**
 
@@ -71,6 +72,7 @@
 - 任务可 CRUD + 启停 + 手动运行。
 - 应用重启后任务状态、下次运行时间可恢复。
 - 调度执行不会阻塞主线程 UI。
+- 连续失败可退避，最近错误可被后续 UI 读取。
 
 **测试要求**
 
