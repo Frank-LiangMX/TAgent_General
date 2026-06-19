@@ -4606,6 +4606,14 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  ipcMain.handle(
+    USAGE_STATS_IPC_CHANNELS.GET_SESSION_CONTEXT_STATUS,
+    async (_event, sessionId: string) => {
+      const { usageStatsService } = await import('./lib/usage-stats-service')
+      return usageStatsService.getSessionContextStatus(sessionId)
+    }
+  )
+
   // ===== Btw 侧面提问 =====
 
   ipcMain.handle(

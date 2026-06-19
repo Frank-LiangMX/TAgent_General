@@ -28,6 +28,7 @@ import { createInterface } from 'node:readline'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { clearNanoBananaAgentHistory } from './chat-tools/nano-banana-mcp'
+import { clearContextUsageCache } from './context-usage-cache'
 import {
   getAgentSessionsIndexPath,
   getAgentSessionsDir,
@@ -512,6 +513,9 @@ export function deleteAgentSession(id: string): void {
 
   // 清理 Nano Banana 生图历史
   clearNanoBananaAgentHistory(id)
+
+  // 清理 Context 分项快照（内存 + 磁盘）
+  clearContextUsageCache(id)
 
   // 清理 SDK 关联数据（file-history 和 projects 下的 session JSONL）
   const sdkSessionIds = [removed.sdkSessionId, removed.forkSourceSdkSessionId].filter(

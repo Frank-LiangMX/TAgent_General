@@ -1,8 +1,11 @@
 /** SDK 分类名 → 中文展示（未映射则显示原文） */
 export const CONTEXT_USAGE_LABELS: Record<string, string> = {
   'System prompt': '系统提示词',
+  'System tools': '内置工具',
   'Tool definitions': '工具定义',
+  'Custom agents': '子 Agent',
   Rules: '规则',
+  'Free space': '剩余空间',
   Skills: '技能',
   'MCP tools': 'MCP 工具',
   Memory: '记忆文件',

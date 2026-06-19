@@ -276,8 +276,10 @@ export function openTab(
     // 检查是否已存在草稿 tab
     const existingScratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID)
     const scratchTab = existingScratchTab ?? createScratchPadTab()
+    // 保留已有的非草稿 Tab，将草稿 Tab 添加到末尾（如果不存在）
+    const otherTabs = tabs.filter((t) => t.id !== SCRATCH_PAD_ID)
     return {
-      tabs: [scratchTab],
+      tabs: [...otherTabs, scratchTab],
       activeTabId: SCRATCH_PAD_ID,
     }
   }

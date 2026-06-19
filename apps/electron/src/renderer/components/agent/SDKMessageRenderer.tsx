@@ -12,10 +12,16 @@
  */
 
 import {
+  COMPACTION_IN_PROGRESS_LABEL,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_TITLE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
+  getCompactBoundaryLabel,
+  isSdkCompactBoundaryMessage,
+  isSdkCompactingStatusMessage,
+  isSdkStandaloneSystemMessage,
   isThinkingSignatureError,
+  readCompactBoundaryMetadata,
 } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
@@ -103,12 +109,13 @@ export interface SDKMessageRendererProps {
 
 // ===== system 消息：上下文压缩分割线 =====
 
-function CompactBoundaryDivider(): React.ReactElement {
+function CompactBoundaryDivider({ message }: { message?: SDKSystemMessage }): React.ReactElement {
+  const label = getCompactBoundaryLabel(message ? readCompactBoundaryMetadata(message) : undefined)
   return (
     <div className="flex items-center gap-3 my-4 px-1">
       <div className="flex-1 h-px bg-border/40" />
       <span className="shrink-0 text-[11px] text-muted-foreground/60 px-2 py-0.5 rounded-full border border-border/30 bg-muted/20">
-        上下文已压缩
+        {label}
       </span>
       <div className="flex-1 h-px bg-border/40" />
     </div>
@@ -160,7 +167,7 @@ export function CompactingIndicator(): React.ReactElement {
       <div className="flex-1 h-px bg-border/40" />
       <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/70 px-2 py-0.5 rounded-full border border-border/30 bg-muted/20">
         <Loader2 className="size-3 animate-spin" />
-        正在压缩...
+        {COMPACTION_IN_PROGRESS_LABEL}
       </span>
       <div className="flex-1 h-px bg-border/40" />
     </div>
@@ -355,13 +362,8 @@ export function groupIntoTurns(messages: SDKMessage[], sessionModelId?: string):
       }
     } else if (msg.type === 'system') {
       const sysMsg = msg as SDKSystemMessage
-      // 仅需要独立渲染的 system 消息才中断 turn（compact_boundary / compacting / permission_denied）
-      // 其他 system 消息（如 init、task_started、task_progress）归入当前 turn，不中断分组
-      if (
-        sysMsg.subtype === 'compact_boundary' ||
-        sysMsg.subtype === 'compacting' ||
-        sysMsg.subtype === 'permission_denied'
-      ) {
+      // 压缩 / 权限拒绝等需在时间线独立占位；init、task_* 等归入当前 turn
+      if (isSdkStandaloneSystemMessage(sysMsg)) {
         flushTurn()
         groups.push({ type: 'system', message: sysMsg })
       } else if (currentTurn) {
@@ -408,9 +410,7 @@ function mergeAdjacentSameModelTurns(groups: MessageGroup[]): MessageGroup[] {
       if (prev.type === 'user') break // 真正的用户输入阻断合并
       if (
         prev.type === 'system' &&
-        ['compact_boundary', 'permission_denied'].includes(
-          (prev.message as SDKSystemMessage).subtype ?? ''
-        )
+        isSdkStandaloneSystemMessage(prev.message as SDKSystemMessage)
       )
         break
       if (prev.type === 'assistant-turn') {
@@ -886,13 +886,16 @@ export function SDKMessageRenderer({
     const subtype = sysMsg.subtype
 
     if (subtype === 'compact_boundary') {
-      return <CompactBoundaryDivider />
+      return <CompactBoundaryDivider message={sysMsg} />
+    }
+    if (isSdkCompactingStatusMessage(sysMsg)) {
+      return <CompactingIndicator />
     }
     if (subtype === 'permission_denied') {
       return <PermissionDeniedNotice message={sysMsg} />
     }
 
-    // compacting 事件已由 isCompacting flag 驱动的尾部指示器接管（见 AgentMessages），此处不再渲染持久条目
+    // 其他 system（含 status=requesting）不在单条路径渲染
 
     return null
   }
@@ -1336,6 +1339,8 @@ export interface MessageGroupRendererProps {
   onCompact?: () => void
   /** 是否正在流式输出中（隐藏操作栏） */
   isStreaming?: boolean
+  /** SDK 是否处于 compacting 状态（控制 status=compacting 分隔符显示） */
+  isContextCompacting?: boolean
   /** 是否被用户中断 */
   stoppedByUser?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
@@ -1402,8 +1407,10 @@ export function getGroupPreview(group: MessageGroup): string {
       .slice(0, 200)
   }
   if (group.type === 'system') {
-    if (group.message.subtype === 'compact_boundary') return '上下文已压缩'
-    if (group.message.subtype === 'compacting') return '正在压缩上下文...'
+    if (isSdkCompactBoundaryMessage(group.message)) {
+      return getCompactBoundaryLabel(readCompactBoundaryMetadata(group.message))
+    }
+    if (isSdkCompactingStatusMessage(group.message)) return COMPACTION_IN_PROGRESS_LABEL
     if (group.message.subtype === 'permission_denied') return '自动审批已拒绝操作'
     return ''
   }
@@ -1432,6 +1439,7 @@ export function MessageGroupRenderer({
   onRetryInNewSession,
   onCompact,
   isStreaming,
+  isContextCompacting,
   stoppedByUser,
   sessionModelId,
 }: MessageGroupRendererProps): React.ReactElement | null {
@@ -1447,18 +1455,20 @@ export function MessageGroupRenderer({
 
   if (group.type === 'system') {
     const subtype = group.message.subtype
-    if (subtype === 'compact_boundary')
+    if (isSdkCompactBoundaryMessage(group.message))
       return (
         <div data-message-id={groupId}>
-          <CompactBoundaryDivider />
+          <CompactBoundaryDivider message={group.message} />
         </div>
       )
-    if (subtype === 'compacting')
+    if (isSdkCompactingStatusMessage(group.message)) {
+      if (!isContextCompacting) return null
       return (
         <div data-message-id={groupId}>
           <CompactingIndicator />
         </div>
       )
+    }
     if (subtype === 'permission_denied')
       return (
         <div data-message-id={groupId}>

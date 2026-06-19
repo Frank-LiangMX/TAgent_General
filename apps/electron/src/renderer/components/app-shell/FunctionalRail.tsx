@@ -39,6 +39,7 @@ import {
   tabsAtom,
   activeTabIdAtom,
   openTab,
+  closeTab,
   SCRATCH_PAD_ID,
   SCRATCH_PAD_TITLE,
 } from '@/atoms/tab-atoms'
@@ -217,6 +218,17 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         setAppMode('scratch')
       } else {
         setActiveRailItem(item.id as GeneralRailItem | TARailItem)
+        // 点击非草稿功能时，关闭草稿 Tab 并切换回 agent 模式
+        const currentTabs = store.get(tabsAtom)
+        const scratchTab = currentTabs.find((t) => t.type === 'scratch')
+        if (scratchTab) {
+          const currentActiveTabId = store.get(activeTabIdAtom)
+          const tabResult = closeTab(currentTabs, currentActiveTabId, scratchTab.id)
+          store.set(tabsAtom, tabResult.tabs)
+          store.set(activeTabIdAtom, tabResult.activeTabId)
+        }
+        // 确保 appMode 为 agent（会话/文件/Skills 都属于 agent 模式）
+        setAppMode('agent')
       }
     },
     [store, setActiveRailItem, setAppMode]

@@ -12,6 +12,13 @@ import { createPortal } from 'react-dom'
 import Markdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+import {
+  COMPACTION_IN_PROGRESS_LABEL,
+  getCompactBoundaryLabel,
+  isSdkCompactBoundaryMessage,
+  isSdkCompactingStatusMessage,
+  readCompactBoundaryMetadata,
+} from '@tagent/shared'
 import type {
   ChatMessage,
   SDKAssistantMessage,
@@ -229,14 +236,13 @@ function buildAgentMinimapItems(messages: SDKMessage[], userAvatar?: string): Ta
 
     if (message.type === 'system') {
       const system = message as SDKSystemMessage
-      const preview =
-        system.subtype === 'compact_boundary'
-          ? '上下文已压缩'
-          : system.subtype === 'compacting'
-            ? '正在压缩上下文...'
-            : system.subtype === 'permission_denied'
-              ? '自动审批已拒绝操作'
-              : ''
+      const preview = isSdkCompactBoundaryMessage(system)
+        ? getCompactBoundaryLabel(readCompactBoundaryMetadata(system))
+        : isSdkCompactingStatusMessage(system)
+          ? COMPACTION_IN_PROGRESS_LABEL
+          : system.subtype === 'permission_denied'
+            ? '自动审批已拒绝操作'
+            : ''
       if (preview) {
         items.push({
           id: `${system.subtype ?? 'system'}-${items.length}`,

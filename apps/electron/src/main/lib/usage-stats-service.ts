@@ -17,11 +17,13 @@ import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
 
 import type {
   ModelUsageStats,
+  SessionContextStatus,
   TimeRangeStats,
   UsageCallRecord,
   UsageStatsOverview,
   SessionTokenStats,
 } from '@tagent/shared'
+import { inferContextWindow, pickResultContextWindow, resolveDisplayContextWindow, sumContextUsedTokens } from '@tagent/shared'
 
 /** JSONL 消息类型（简化版，只提取需要的字段） */
 interface SessionMessage {
@@ -42,6 +44,7 @@ interface SessionMessage {
     cache_read_input_tokens?: number
     cache_creation_input_tokens?: number
   }
+  modelUsage?: Record<string, { contextWindow?: number }>
   total_cost_usd?: number
   _createdAt?: number
 }
@@ -364,6 +367,70 @@ class UsageStatsService {
     }
 
     return result
+  }
+
+  /**
+   * 获取单个会话的当前 Context 占用（最后一轮 API usage，非跨轮累计）
+   * 口径对齐 Claude Code context_window / Proma agent-session-usage
+   */
+  getSessionContextStatus(sessionId: string): SessionContextStatus | null {
+    const filePath = path.join(getAgentSessionsDir(), `${sessionId}.jsonl`)
+    if (!fs.existsSync(filePath)) return null
+
+    let lines: string[]
+    try {
+      lines = fs.readFileSync(filePath, 'utf-8').split('\n')
+    } catch {
+      return null
+    }
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i]
+      if (!line?.trim()) continue
+
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(line)
+      } catch {
+        continue
+      }
+
+      const msg = parsed as SessionMessage
+
+      if (msg.type === 'result' && msg.usage) {
+        const inputTokens = sumContextUsedTokens(msg.usage)
+        const contextWindow = msg.modelUsage
+          ? pickResultContextWindow(
+              msg.modelUsage as Record<string, { contextWindow?: number }>
+            )
+          : undefined
+        return {
+          inputTokens,
+          outputTokens: msg.usage.output_tokens,
+          cacheReadTokens: msg.usage.cache_read_input_tokens,
+          cacheCreationTokens: msg.usage.cache_creation_input_tokens,
+          contextWindow,
+        }
+      }
+
+      if (msg.type === 'assistant' && msg.message?.usage) {
+        const usage = msg.message.usage
+        const inputTokens = sumContextUsedTokens(usage)
+        const modelName = msg._channelModelId ?? msg.message.model
+        return {
+          inputTokens,
+          outputTokens: usage.output_tokens,
+          cacheReadTokens: usage.cache_read_input_tokens,
+          cacheCreationTokens: usage.cache_creation_input_tokens,
+          contextWindow: resolveDisplayContextWindow(
+            modelName,
+            inferContextWindow(modelName)
+          ),
+        }
+      }
+    }
+
+    return null
   }
 }
 

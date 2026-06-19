@@ -5,7 +5,7 @@
  * 模式照搬 chat-atoms.ts。
  */
 
-import { TAGENT_DEFAULT_PERMISSION_MODE } from '@tagent/shared'
+import { TAGENT_DEFAULT_PERMISSION_MODE, resolveDisplayContextWindow } from '@tagent/shared'
 import { atom } from 'jotai'
 import { atomFamily, atomWithStorage } from 'jotai/utils'
 
@@ -90,6 +90,8 @@ export interface AgentStreamState {
   costUsd?: number
   /** 模型上下文窗口大小 */
   contextWindow?: number
+  /** usage 数据最后更新时间（用于 Context 面板时效提示） */
+  usageUpdatedAt?: number
   /** 当前 thinking block 的 token 估算值（SDK 实时估算，非计费值） */
   thinkingEstimatedTokens?: number
   /** 是否正在压缩上下文 */
@@ -729,16 +731,43 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
       // 工具使用摘要 — 目前不影响流式状态，仅用于 UI 展示
       return prev
 
-    case 'complete':
+    case 'complete': {
       // 成功完成 — 清除 retrying，但保持 running: true
-      // 等待 STREAM_COMPLETE IPC 回调通过删除流式状态来控制 UI 就绪状态
-      // 这避免了用户在后端尚未完成清理时就能发送新消息的竞态条件
-      // 同时将未完成的工具活动标记为 done（兜底）
+      // token 计数默认只信任流式 usage_update（单条模型调用 ≈ 当轮完整 prompt）。
+      // result.usage 是整个 query 内多次 model call 的累计，直接覆盖会虚高（Proma #821）。
+      // GLM 等兼容端点无流式 usage 时，才从 result.usage 兜底。
+      const needResultFallback = !prev.inputTokens || prev.inputTokens <= 0
       return {
         ...prev,
+        ...(event.usage
+          ? {
+              ...(event.usage.costUsd != null && { costUsd: event.usage.costUsd }),
+              ...(event.usage.contextWindow != null && {
+                contextWindow: resolveDisplayContextWindow(
+                  prev.model,
+                  event.usage.contextWindow
+                ),
+              }),
+              ...(event.usage.contextWindow != null && { usageUpdatedAt: Date.now() }),
+              ...(needResultFallback &&
+                event.usage.inputTokens != null && { inputTokens: event.usage.inputTokens }),
+              ...(needResultFallback &&
+                event.usage.outputTokens != null && { outputTokens: event.usage.outputTokens }),
+              ...(needResultFallback &&
+                event.usage.cacheReadTokens != null && {
+                  cacheReadTokens: event.usage.cacheReadTokens,
+                }),
+              ...(needResultFallback &&
+                event.usage.cacheCreationTokens != null && {
+                  cacheCreationTokens: event.usage.cacheCreationTokens,
+                }),
+              ...(needResultFallback && { usageUpdatedAt: Date.now() }),
+            }
+          : {}),
         retrying: undefined,
         ...finalizeStreamingActivities(prev.toolActivities),
       }
+    }
 
     case 'typed_error':
       // 处理类型化错误（TypedError）
@@ -753,7 +782,7 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
     case 'usage_update':
       return {
         ...prev,
-        inputTokens: event.usage.inputTokens,
+        ...(event.usage.inputTokens != null && { inputTokens: event.usage.inputTokens }),
         ...(event.usage.outputTokens != null && { outputTokens: event.usage.outputTokens }),
         ...(event.usage.cacheReadTokens != null && {
           cacheReadTokens: event.usage.cacheReadTokens,
@@ -762,7 +791,11 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
           cacheCreationTokens: event.usage.cacheCreationTokens,
         }),
         ...(event.usage.costUsd != null && { costUsd: event.usage.costUsd }),
-        ...(event.usage.contextWindow && { contextWindow: event.usage.contextWindow }),
+        ...(event.usage.contextWindow &&
+          !prev.contextWindow && {
+            contextWindow: resolveDisplayContextWindow(prev.model, event.usage.contextWindow),
+          }),
+        usageUpdatedAt: Date.now(),
       }
 
     case 'compacting':
@@ -855,6 +888,7 @@ export interface AgentContextStatus {
   cacheCreationTokens?: number
   costUsd?: number
   contextWindow?: number
+  usageUpdatedAt?: number
 }
 
 /** 当前会话的上下文使用量派生 atom */
@@ -870,6 +904,7 @@ export const agentContextStatusAtom = atom<AgentContextStatus>((get) => {
     cacheCreationTokens: state?.cacheCreationTokens,
     costUsd: state?.costUsd,
     contextWindow: state?.contextWindow,
+    usageUpdatedAt: state?.usageUpdatedAt,
   }
 })
 

@@ -145,6 +145,7 @@ import type {
   PipelineSummary,
   UsageStatsOverview,
   SessionTokenStats,
+  SessionContextStatus,
   DetachedPreviewWindowData,
   DetachedPreviewWindowInput,
   FeishuConfig,
@@ -859,6 +860,9 @@ export interface ElectronAPI {
 
   /** 获取单个会话的 Token 统计 */
   getSessionTokenStats: (sessionId: string) => Promise<SessionTokenStats>
+
+  /** 获取单个会话当前 Context 占用（最后一轮，非累计） */
+  getSessionContextStatus: (sessionId: string) => Promise<SessionContextStatus | null>
 
   /** 获取工作区 Skill 列表（含活跃和不活跃） */
   getWorkspaceSkills: (workspaceSlug: string) => Promise<SkillMeta[]>
@@ -3542,6 +3546,13 @@ const electronAPI: ElectronAPI = {
       USAGE_STATS_IPC_CHANNELS.GET_SESSION_TOKEN_STATS,
       sessionId
     ) as Promise<SessionTokenStats>
+  },
+
+  getSessionContextStatus: (sessionId: string) => {
+    return ipcRenderer.invoke(
+      USAGE_STATS_IPC_CHANNELS.GET_SESSION_CONTEXT_STATUS,
+      sessionId
+    ) as Promise<SessionContextStatus | null>
   },
 }
 

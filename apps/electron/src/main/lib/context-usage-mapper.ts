@@ -3,6 +3,7 @@ import type {
   ContextUsageSnapshot,
   ContextUsageErrorCode,
 } from '@tagent/shared'
+import { resolveContextUsageColor, resolveDisplayContextWindow } from '@tagent/shared'
 
 export class ContextUsageFetchError extends Error {
   readonly code: ContextUsageErrorCode
@@ -26,17 +27,22 @@ export function mapSdkContextUsageResponse(sdk: SdkContextUsageResponse): Contex
       }
     : null
 
+  const rawMaxTokens = sdk.rawMaxTokens ?? sdk.maxTokens
+  const maxTokens = resolveDisplayContextWindow(sdk.model, sdk.maxTokens)
+  const percentage =
+    maxTokens > 0 ? (sdk.totalTokens / maxTokens) * 100 : sdk.percentage
+
   return {
     categories: sdk.categories.map((category) => ({
       name: category.name,
       tokens: category.tokens,
-      color: category.color,
+      color: resolveContextUsageColor(category.name, category.color),
       isDeferred: category.isDeferred,
     })),
     totalTokens: sdk.totalTokens,
-    maxTokens: sdk.maxTokens,
-    rawMaxTokens: sdk.rawMaxTokens,
-    percentage: sdk.percentage,
+    maxTokens,
+    rawMaxTokens,
+    percentage,
     model: sdk.model,
     isAutoCompactEnabled: sdk.isAutoCompactEnabled,
     autoCompactThreshold: sdk.autoCompactThreshold,

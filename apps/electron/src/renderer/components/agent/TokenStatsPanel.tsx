@@ -90,6 +90,7 @@ export function TokenStatsPanel({
             cacheCreationTokens={contextStatus.cacheCreationTokens}
             costUsd={contextStatus.costUsd}
             contextWindow={contextStatus.contextWindow}
+            usageUpdatedAt={contextStatus.usageUpdatedAt}
             isCompacting={contextStatus.isCompacting}
             isProcessing={isProcessing}
             onCompact={onCompact}

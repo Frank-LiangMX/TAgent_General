@@ -62,10 +62,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const showRightPanel = topLevelMode === 'general' && appMode === 'agent' && !!currentSessionId
 
-  /** 通用模式三种 Rail 共用同一侧栏宽度，切换功能区时浮岛不跳变 */
+  /** 通用模式四种 Rail 共用同一侧栏宽度，切换功能区时浮岛不跳变 */
   const showLeftSidebar =
     topLevelMode === 'general'
-      ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills'
+      ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills' || activeRailItem === 'scratch'
       : activeRailItem !== 'scratch'
 
   const navSidebarWidth = NAV_SIDEBAR_WIDTH

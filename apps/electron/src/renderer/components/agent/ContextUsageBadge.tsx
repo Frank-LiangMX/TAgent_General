@@ -6,6 +6,7 @@
  * - 点击弹出 Popover：token 明细 + 手动压缩（后续接 SDK 分项面板）
  */
 
+import { COMPACTION_IN_PROGRESS_LABEL } from '@tagent/shared'
 import { Loader2, Minimize2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -39,6 +40,7 @@ interface ContextUsageBadgeProps {
   cacheCreationTokens?: number
   costUsd?: number
   contextWindow?: number
+  usageUpdatedAt?: number
   isCompacting: boolean
   isProcessing: boolean
   onCompact: () => void
@@ -112,28 +114,6 @@ function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactE
   )
 }
 
-/** Popover 里的一行 key/value */
-interface DetailRowProps {
-  label: string
-  value: string
-  emphasized?: boolean
-}
-function DetailRow({ label, value, emphasized }: DetailRowProps): React.ReactElement {
-  return (
-    <div className="flex items-center justify-between gap-4 text-xs">
-      <span className="text-foreground/70">{label}</span>
-      <span
-        className={cn(
-          'tabular-nums',
-          emphasized ? 'font-medium text-foreground' : 'text-foreground/90'
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
-
 export function ContextUsageBadge({
   sessionId,
   inputTokens,
@@ -191,36 +171,11 @@ export function ContextUsageBadge({
 
   React.useEffect(() => cancelClose, [cancelClose])
 
-  // 压缩中 → 显示 spinner
-  if (isCompacting) {
-    if (isInline) {
-      return (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" />
-          <span>压缩中</span>
-        </div>
-      )
-    }
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-[36px] rounded-full text-muted-foreground cursor-default"
-        disabled
-      >
-        <Loader2 className="size-4 animate-spin" />
-      </Button>
-    )
-  }
-
-  // 使用稳定值：优先当前数据，回退到上次有效数据
   const stable = stableRef.current
   const hasCurrent = inputTokens != null && inputTokens > 0
   const displayTokens = hasCurrent ? inputTokens : stable?.inputTokens
   const displayWindow = hasCurrent ? contextWindow : stable?.contextWindow
 
-  // P2-1: Context 80% / 90% 触发 Nudges toast (一次会话最多弹 1 次 80% + 1 次 90%)
   React.useEffect(() => {
     if (!displayWindow || !displayTokens) return
     const ratio = displayTokens / displayWindow
@@ -243,36 +198,23 @@ export function ContextUsageBadge({
         },
       })
     } else if (ratio < NUDGE_80_RATIO && lastNudgeFiredRef.current !== 'none') {
-      // 用户已压缩 / 新建会话, 重置 ref 准备下次再弹
       lastNudgeFiredRef.current = 'none'
     }
   }, [displayTokens, displayWindow, onCompact])
-  const displayOutput = hasCurrent ? outputTokens : stable?.outputTokens
-  const displayCacheRead = hasCurrent ? cacheReadTokens : stable?.cacheReadTokens
-  const displayCacheCreation = hasCurrent ? cacheCreationTokens : stable?.cacheCreationTokens
 
-  // 从未有过 usage 数据 → 不显示
-  if (!displayTokens || displayTokens <= 0) return null
-
-  // 警告阈值：基于压缩阈值（contextWindow × 0.775 × 80%）
+  const ratio = displayWindow && displayTokens ? displayTokens / displayWindow : 0
+  const percent =
+    displayWindow && displayTokens
+      ? Math.round((displayTokens / displayWindow) * 100)
+      : undefined
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
-  const isWarning = compactThreshold ? displayTokens / compactThreshold >= WARNING_RATIO : false
-
-  const ratio = displayWindow ? displayTokens / displayWindow : 0
-  const isDanger = displayWindow ? ratio >= DANGER_RATIO : false
-
-  // 纯输入 = 总上下文 - 缓存读取 - 缓存写入
-  const pureInput = displayTokens - (displayCacheRead ?? 0) - (displayCacheCreation ?? 0)
-
-  const percent = displayWindow ? Math.round((displayTokens / displayWindow) * 100) : undefined
-
-  const handleCompactClick = (): void => {
-    if (isProcessing) return
-    onCompact()
-    setOpen(false)
-  }
+  const isWarning =
+    compactThreshold && displayTokens
+      ? displayTokens / compactThreshold >= WARNING_RATIO
+      : false
+  const isDanger = displayWindow && displayTokens ? ratio >= DANGER_RATIO : false
 
   const toneClass = isDanger
     ? 'text-red-600 dark:text-red-400'
@@ -280,66 +222,105 @@ export function ContextUsageBadge({
       ? 'text-amber-600 dark:text-amber-400'
       : 'text-muted-foreground hover:text-foreground'
 
-  const triggerTitle = isDanger
-    ? '上下文危险 (>90%), 建议立即 compact'
-    : isWarning
-      ? '上下文接近阈值'
-      : '查看 Context 占用'
+  const contextAmountLabel =
+    displayTokens && displayWindow
+      ? `${formatTokens(displayTokens)} / ${formatTokens(displayWindow)}`
+      : displayTokens
+        ? formatTokens(displayTokens)
+        : undefined
+
+  const triggerTitle = isCompacting
+    ? COMPACTION_IN_PROGRESS_LABEL
+    : isDanger
+      ? '上下文危险 (>90%)，建议立即压缩'
+      : isWarning
+        ? '上下文接近压缩阈值'
+        : '查看 Context 占用'
+
+  if (isCompacting) {
+    if (isInline) {
+      return (
+        <div className="flex items-center gap-1 text-muted-foreground" title={triggerTitle}>
+          <Loader2 className="size-3.5 animate-spin" />
+          {percent != null ? (
+            <span className={cn('text-xs tabular-nums font-medium', toneClass)}>{percent}%</span>
+          ) : null}
+        </div>
+      )
+    }
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-[36px] rounded-full text-muted-foreground cursor-default"
+        disabled
+      >
+        <Loader2 className="size-4 animate-spin" />
+      </Button>
+    )
+  }
+
+  if (!displayTokens || displayTokens <= 0) return null
+
+  const handleCompactClick = (): void => {
+    if (isProcessing) return
+    onCompact()
+    setOpen(false)
+  }
 
   const popoverContent = (
     <PopoverContent
       side="top"
       align={isInline ? 'start' : 'center'}
       sideOffset={8}
-      className={cn('w-auto p-2.5', isInline ? 'min-w-[280px] max-w-[360px]' : 'min-w-[220px]')}
+      className={cn(
+        'flex max-h-[min(70vh,480px)] w-auto flex-col overflow-hidden p-0',
+        isInline ? 'min-w-[280px] max-w-[340px]' : 'min-w-[240px]'
+      )}
       onMouseEnter={isInline ? undefined : cancelClose}
       onMouseLeave={isInline ? undefined : scheduleClose}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-        <div className="flex flex-col gap-2">
-          {breakdownLoading ? (
-            <p className="text-xs text-muted-foreground">正在加载 Context 分项…</p>
-          ) : snapshot ? (
-            <ContextUsagePanel snapshot={snapshot} />
-          ) : breakdownError ? (
-            <p className="text-xs text-muted-foreground">{breakdownError.message}</p>
-          ) : null}
+      <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin">
+        {breakdownLoading ? (
+          <div className="flex flex-col gap-3">
+            <div className="h-3 w-full animate-pulse rounded-full bg-muted/60" />
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-8 animate-pulse rounded-md bg-muted/40" />
+              ))}
+            </div>
+          </div>
+        ) : snapshot ? (
+          <ContextUsagePanel snapshot={snapshot} />
+        ) : breakdownError ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">{breakdownError.message}</p>
+        ) : null}
+      </div>
 
-          {(snapshot || breakdownError) && <div className="h-px bg-border my-0.5" />}
+      <div className="shrink-0 border-t border-border/50 px-3 py-2.5">
+        {!snapshot && !breakdownLoading && displayWindow ? (
+          <div className="mb-2.5 flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">当前窗口</span>
+              <span className="tabular-nums font-medium text-foreground/90">
+                {formatTokens(displayTokens)} / {formatTokens(displayWindow)}
+                {percent != null ? ` (${percent}%)` : ''}
+              </span>
+            </div>
+          </div>
+        ) : null}
 
-          <p className="text-[10px] font-medium text-foreground/70">API 汇总</p>
-          <div className="flex flex-col gap-1.5">
-          {pureInput > 0 && <DetailRow label="输入" value={pureInput.toLocaleString()} />}
-          {displayOutput ? <DetailRow label="输出" value={displayOutput.toLocaleString()} /> : null}
-          {displayCacheCreation ? (
-            <DetailRow label="缓存写入" value={displayCacheCreation.toLocaleString()} />
-          ) : null}
-          {displayCacheRead ? (
-            <DetailRow label="缓存读取" value={displayCacheRead.toLocaleString()} />
-          ) : null}
-
-          {displayWindow ? (
-            <>
-              <div className="h-px bg-border my-0.5" />
-              <DetailRow
-                label="上下文"
-                value={`${formatTokens(displayTokens)} / ${formatTokens(displayWindow)}`}
-                emphasized
-              />
-              {percent != null && (
-                <DetailRow label="占用" value={`${percent}%`} emphasized={isWarning} />
-              )}
-            </>
-          ) : null}
-
-          <div className="h-px bg-border my-0.5" />
+        <div className="flex flex-col gap-1.5">
           <Button
             type="button"
-            variant={isWarning ? 'default' : 'outline'}
+            variant={isWarning || isDanger ? 'default' : 'outline'}
             size="sm"
             className={cn(
-              'h-7 text-xs gap-1.5',
-              isWarning && 'bg-amber-500 hover:bg-amber-600 text-white'
+              'h-8 w-full gap-1.5 text-xs',
+              isDanger && 'bg-red-500 text-white hover:bg-red-600',
+              isWarning && !isDanger && 'bg-amber-500 text-white hover:bg-amber-600'
             )}
             onClick={handleCompactClick}
             disabled={isProcessing}
@@ -347,30 +328,22 @@ export function ContextUsageBadge({
             <Minimize2 className="size-3.5" />
             {isProcessing ? '对话进行中' : '手动压缩'}
           </Button>
-          {/* P1-3: 客户端压缩 (LLM compact_session 失败时的 fallback) */}
           {onClientCompact && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={onClientCompact}
-                  disabled={isProcessing}
-                >
-                  <Minimize2 className="size-3" />
-                  客户端压缩
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[240px]">
-                <p>客户端 drop_old_tool_results：不调 LLM，直接丢弃较早的 tool_use / tool_result 对</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-full gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+              onClick={onClientCompact}
+              disabled={isProcessing}
+              title="不调 LLM，直接丢弃较早的 tool 块（兼容端点兜底）"
+            >
+              客户端压缩
+            </Button>
           )}
-          </div>
         </div>
-      </PopoverContent>
+      </div>
+    </PopoverContent>
   )
 
   if (isInline) {
@@ -383,30 +356,26 @@ export function ContextUsageBadge({
                 <button
                   type="button"
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors',
+                    'flex items-center gap-1 rounded-md px-0.5 py-0.5 transition-colors',
                     toneClass
                   )}
                 >
                   <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
-                  <span className="text-muted-foreground/80">Context</span>
-                  {displayWindow ? (
-                    <span className="font-medium tabular-nums text-foreground/90">
-                      {formatTokens(displayTokens)}/{formatTokens(displayWindow)}
+                  {percent != null ? (
+                    <span className={cn('text-xs tabular-nums font-medium', toneClass)}>
+                      {percent}%
                     </span>
-                  ) : (
-                    <span className="font-medium tabular-nums text-foreground/90">
-                      {formatTokens(displayTokens)}
-                    </span>
-                  )}
-                  {percent != null && (
-                    <span className={cn('tabular-nums', isDanger && 'font-medium')}>{percent}%</span>
-                  )}
+                  ) : null}
                 </button>
               </TooltipTrigger>
             </PopoverTrigger>
             <TooltipContent side="top">
-              <p>{triggerTitle}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">点击查看详情</p>
+              {contextAmountLabel ? (
+                <p className="tabular-nums">{contextAmountLabel}</p>
+              ) : null}
+              <p className={cn('text-xs', contextAmountLabel ? 'mt-0.5 text-muted-foreground' : '')}>
+                {triggerTitle}
+              </p>
             </TooltipContent>
           </Tooltip>
           {popoverContent}
@@ -437,7 +406,10 @@ export function ContextUsageBadge({
             </TooltipTrigger>
           </PopoverTrigger>
           <TooltipContent side="bottom">
-            <p>{triggerTitle}</p>
+            {contextAmountLabel ? <p className="tabular-nums">{contextAmountLabel}</p> : null}
+            <p className={cn('text-xs', contextAmountLabel ? 'mt-0.5 text-muted-foreground' : '')}>
+              {triggerTitle}
+            </p>
           </TooltipContent>
         </Tooltip>
         {popoverContent}

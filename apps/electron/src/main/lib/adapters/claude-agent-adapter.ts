@@ -11,9 +11,15 @@ import {
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
   isThinkingSignatureError as matchesThinkingSignatureError,
+  normalizeContextUsageSnapshot,
+  pickResultContextWindow,
 } from '@tagent/shared'
 
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
+import {
+  getContextUsageCache,
+  setContextUsageCache,
+} from '../context-usage-cache'
 import {
   ContextUsageFetchError,
   mapSdkContextUsageResponse,
@@ -585,6 +591,16 @@ const forceKillTimers = new Map<string, NodeJS.Timeout>()
 /** abort 后等待 SDK 自身兜底（2s+5s）再检测并强杀的延时 */
 const FORCE_KILL_GRACE_MS = 10_000
 
+async function cacheContextUsageFromQuery(sessionId: string, query: SDKQuery): Promise<void> {
+  if (typeof query.getContextUsage !== 'function') return
+  try {
+    const response = await query.getContextUsage()
+    setContextUsageCache(sessionId, mapSdkContextUsageResponse(response))
+  } catch (error) {
+    console.warn(`[Claude 适配器] 缓存 Context 分项失败: sessionId=${sessionId}`, error)
+  }
+}
+
 /**
  * 平台差异化强制终止：macOS/Linux 用 SIGKILL，Windows 用 taskkill /F /T 级联杀子孙
  *
@@ -879,11 +895,14 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             modelUsage?: Record<string, { contextWindow?: number }>
             terminal_reason?: string
           }
-          if (resultMsg.modelUsage) {
-            const firstEntry = Object.values(resultMsg.modelUsage)[0]
-            if (firstEntry?.contextWindow) {
-              options.onContextWindow?.(firstEntry.contextWindow)
-            }
+          const contextWindow = pickResultContextWindow(resultMsg.modelUsage)
+          if (contextWindow) {
+            options.onContextWindow?.(contextWindow)
+          }
+          // Query 仍存活时抓取 /context 分项快照，供对话结束后 Popover 展示
+          const liveQuery = activeQueries.get(options.sessionId)
+          if (liveQuery) {
+            void cacheContextUsageFromQuery(options.sessionId, liveQuery)
           }
           // 被软中断 / 延迟工具 / hook 暂停等场景产生的 result：不关闭通道，
           // 让 SDK 继续读取通道中已排队（或后续注入）的消息并开启新一轮 turn。
@@ -987,26 +1006,34 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
    */
   async getContextUsage(sessionId: string): Promise<ContextUsageSnapshot> {
     const query = activeQueries.get(sessionId)
-    if (!query) {
-      throw new ContextUsageFetchError(
-        'NO_ACTIVE_QUERY',
-        '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
-      )
+    if (query) {
+      if (typeof query.getContextUsage !== 'function') {
+        throw new ContextUsageFetchError('UNSUPPORTED', '当前 SDK 版本不支持 Context 分项查询')
+      }
+      try {
+        const response = await query.getContextUsage()
+        const snapshot = mapSdkContextUsageResponse(response)
+        setContextUsageCache(sessionId, snapshot)
+        return snapshot
+      } catch (error) {
+        console.error(`[Claude 适配器] getContextUsage 失败: sessionId=${sessionId}`, error)
+        if (error instanceof ContextUsageFetchError) throw error
+        throw new ContextUsageFetchError(
+          'SDK_ERROR',
+          error instanceof Error ? error.message : 'SDK getContextUsage 调用失败'
+        )
+      }
     }
-    if (typeof query.getContextUsage !== 'function') {
-      throw new ContextUsageFetchError('UNSUPPORTED', '当前 SDK 版本不支持 Context 分项查询')
+
+    const cached = getContextUsageCache(sessionId)
+    if (cached) {
+      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
     }
-    try {
-      const response = await query.getContextUsage()
-      return mapSdkContextUsageResponse(response)
-    } catch (error) {
-      console.error(`[Claude 适配器] getContextUsage 失败: sessionId=${sessionId}`, error)
-      if (error instanceof ContextUsageFetchError) throw error
-      throw new ContextUsageFetchError(
-        'SDK_ERROR',
-        error instanceof Error ? error.message : 'SDK getContextUsage 调用失败'
-      )
-    }
+
+    throw new ContextUsageFetchError(
+      'NO_ACTIVE_QUERY',
+      '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
+    )
   }
 }
 

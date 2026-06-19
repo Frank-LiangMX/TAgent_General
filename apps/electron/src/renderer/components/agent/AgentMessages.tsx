@@ -5,6 +5,7 @@
  * 流式输出通过 SDK 渲染路径（MessageGroupRenderer）展示工具活动。
  */
 
+import { isSdkCompactingStatusMessage } from '@tagent/shared'
 import { useSmoothStream } from '@tagent/ui'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
@@ -667,6 +668,15 @@ export function AgentMessages({
     return groupIntoTurns(allSDKMessages, sessionModelId)
   }, [allSDKMessages, sessionModelId])
 
+  const hasInlineCompactingIndicator = React.useMemo(
+    () =>
+      (streamState?.isCompacting ?? false) &&
+      allGroups.some(
+        (g) => g.type === 'system' && isSdkCompactingStatusMessage(g.message as SDKMessage)
+      ),
+    [allGroups, streamState?.isCompacting]
+  )
+
   // 跨 turn 历史 TaskCreate id → subject 映射：顶层算一次，避免每个 AssistantTurnRenderer
   // 都对全量 allMessages 做 O(M) 扫描（流式期间 useMemo 因 allMessages 引用变化失效，
   // 长会话会触发 O(T × M) 雪崩）。
@@ -863,6 +873,7 @@ export function AgentMessages({
                     onRetryInNewSession={shouldDisableActions ? undefined : onRetryInNewSession}
                     onCompact={shouldDisableActions ? undefined : onCompact}
                     isStreaming={isLive || undefined}
+                    isContextCompacting={streamState?.isCompacting}
                     stoppedByUser={isLastAssistantTurn || undefined}
                     sessionModelId={sessionModelId}
                   />
@@ -917,9 +928,8 @@ export function AgentMessages({
                   </Message>
                 )}
 
-              {/* 压缩中指示器：由 isCompacting flag 驱动的尾部元素，compact_boundary 到达时 flag 翻 false 自然消失，
-                视觉上被流中新出现的"上下文已压缩"分隔符无缝替换 */}
-              {streamState?.isCompacting && <CompactingIndicator />}
+              {/* SDK status=compacting 到达后会在时间线内联显示；此处仅作事件到达前的兜底 */}
+              {streamState?.isCompacting && !hasInlineCompactingIndicator && <CompactingIndicator />}
             </>
           )}
         </ConversationContent>

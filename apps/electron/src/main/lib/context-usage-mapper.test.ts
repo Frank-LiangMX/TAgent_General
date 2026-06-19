@@ -9,7 +9,7 @@ import {
 describe('mapSdkContextUsageResponse', () => {
   test('maps full SDK response to shared snapshot', () => {
     const snapshot = mapSdkContextUsageResponse({
-      categories: [{ name: 'System prompt', tokens: 503, color: '#ff0000' }],
+      categories: [{ name: 'System prompt', tokens: 503, color: 'gray' }],
       totalTokens: 60_100,
       maxTokens: 200_000,
       rawMaxTokens: 200_000,
@@ -30,10 +30,32 @@ describe('mapSdkContextUsageResponse', () => {
     })
 
     expect(snapshot.categories[0]?.name).toBe('System prompt')
+    expect(snapshot.categories[0]?.color).toBe('#9CA3AF')
     expect(snapshot.totalTokens).toBe(60_100)
     expect(snapshot.apiUsage?.inputTokens).toBe(1000)
     expect(snapshot.memoryFiles[0]?.path).toBe('L0_user.md')
     expect(snapshot.fetchedAt).toBeGreaterThan(0)
+  })
+
+  test('upgrades MiniMax display window when SDK reports 200K', () => {
+    const snapshot = mapSdkContextUsageResponse({
+      categories: [],
+      totalTokens: 27_600,
+      maxTokens: 200_000,
+      rawMaxTokens: 200_000,
+      percentage: 14,
+      gridRows: [],
+      model: 'MiniMax-M3',
+      memoryFiles: [],
+      mcpTools: [],
+      agents: [],
+      isAutoCompactEnabled: false,
+      apiUsage: null,
+    })
+
+    expect(snapshot.maxTokens).toBe(1_000_000)
+    expect(snapshot.rawMaxTokens).toBe(200_000)
+    expect(snapshot.percentage).toBeCloseTo(2.76)
   })
 
   test('handles missing optional fields', () => {

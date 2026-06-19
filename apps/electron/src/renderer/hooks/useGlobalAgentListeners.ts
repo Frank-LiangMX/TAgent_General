@@ -27,6 +27,7 @@ import type {
   TAgentEvent,
   AgentSessionMeta,
 } from '@tagent/shared'
+import { inferContextWindow, pickResultContextWindow, resolveDisplayContextWindow, sumContextUsedTokens } from '@tagent/shared'
 
 import {
   agentStreamingStatesAtom,
@@ -129,87 +130,27 @@ function uniqueTruthyPaths(paths: Array<string | null | undefined>): string[] {
 // ============================================================================
 
 /**
- * 按模型名推断 contextWindow。SDK 流式过程中不返回此字段，
- * 只有 result 消息的 modelUsage 才带（且部分渠道不返回）。
- * 这里提供一个按模型家族的 fallback，保证进度环永远有分母可用。
- *
- * 数据来源（2025-06）：
- * - Claude Opus/Sonnet 4.x: 1M
- * - Claude Haiku: 200K
- * - GPT-4o/GPT-4-turbo: 128K
- * - o1/o3: 200K
- * - DeepSeek V4: 1M
- * - Gemini 2.0 Flash: 1M, Pro: 2M
- * - GLM-4/GLM-5: 128K
- * - Qwen 2.5: 128K
- * - Llama 4 Scout: 10M, Maverick: 1M
- * - Mistral Large: 128K
+ * 从 SDK assistant 消息提取 usage 事件（Context 圆环数据源）
  */
-function inferContextWindow(model?: string): number | undefined {
-  if (!model) return undefined
-  const m = model.toLowerCase()
-
-  // === 10M 超大上下文 ===
-  if (m.includes('llama-4-scout') || m.includes('llama4-scout') || m.includes('scout'))
-    return 10_000_000
-
-  // === 2M 大上下文 ===
-  if (m.includes('gemini-2') && m.includes('pro')) return 2_000_000
-  if (m.includes('gemini-2.0-pro') || m.includes('gemini-2.5-pro')) return 2_000_000
-
-  // === 1M 上下文 ===
-  // Claude Sonnet/Opus 4.x
-  if (
-    m.includes('claude-sonnet-4') ||
-    m.includes('claude-opus-4') ||
-    m.includes('claude-sonnet4') ||
-    m.includes('claude-opus4')
+function buildUsageUpdateFromAssistant(aMsg: SDKAssistantMessage): AgentEvent | null {
+  if (aMsg.parent_tool_use_id || !aMsg.message.usage) return null
+  const u = aMsg.message.usage
+  const inputTokens = sumContextUsedTokens(u)
+  const modelName = aMsg._channelModelId ?? aMsg.message.model
+  const fallbackWindow = resolveDisplayContextWindow(
+    modelName,
+    inferContextWindow(modelName)
   )
-    return 1_000_000
-  // DeepSeek V4
-  if (m.includes('deepseek-v4') || m.includes('deepseek-v3')) return 1_000_000
-  // Gemini 2.0 Flash
-  if (m.includes('gemini-2') && m.includes('flash')) return 1_000_000
-  // Llama 4 Maverick
-  if (m.includes('llama-4-maverick') || m.includes('llama4-maverick') || m.includes('maverick'))
-    return 1_000_000
-  // MiniMax M3
-  if (m.includes('minimax-m3')) return 1_000_000
-  // 小米 MiMo
-  if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return 1_000_000
-
-  // === 200K 上下文 ===
-  // Claude Haiku
-  if (m.includes('claude-haiku')) return 200_000
-  // OpenAI o1/o3 系列
-  if (m.includes('openai-o1') || m.includes('openai-o3') || m.includes('/o1') || m.includes('/o3'))
-    return 200_000
-
-  // === 128K 上下文 ===
-  // GPT-4o / GPT-4-turbo
-  if (
-    m.includes('gpt-4o') ||
-    m.includes('gpt-4-turbo') ||
-    m.includes('gpt4o') ||
-    m.includes('gpt4-turbo')
-  )
-    return 128_000
-  // 智谱 GLM 系列
-  if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5'))
-    return 128_000
-  // 阿里 Qwen 2.5
-  if (
-    m.includes('qwen-2.5') ||
-    m.includes('qwen2.5') ||
-    m.includes('qwen-2') ||
-    m.includes('qwen2')
-  )
-    return 128_000
-  // Mistral Large
-  if (m.includes('mistral-large') || m.includes('mistral large')) return 128_000
-
-  // === 默认值 ===
-  return 200_000
+  return {
+    type: 'usage_update',
+    usage: {
+      inputTokens,
+      outputTokens: u.output_tokens,
+      cacheReadTokens: u.cache_read_input_tokens,
+      cacheCreationTokens: u.cache_creation_input_tokens,
+      ...(fallbackWindow ? { contextWindow: fallbackWindow } : {}),
+    },
+  }
 }
 
 function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
@@ -313,22 +254,8 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
       }
       // Usage（保留完整字段用于详细展示）
       if (!aMsg.parent_tool_use_id && aMsg.message.usage) {
-        const u = aMsg.message.usage
-        const inputTokens =
-          u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0)
-        // 流式过程中 SDK 不返回 contextWindow，按模型名推断一个默认值作为 fallback
-        const modelName = aMsg.message.model ?? aMsg._channelModelId
-        const fallbackWindow = inferContextWindow(modelName)
-        events.push({
-          type: 'usage_update',
-          usage: {
-            inputTokens,
-            outputTokens: u.output_tokens,
-            cacheReadTokens: u.cache_read_input_tokens,
-            cacheCreationTokens: u.cache_creation_input_tokens,
-            ...(fallbackWindow ? { contextWindow: fallbackWindow } : {}),
-          },
-        })
+        const usageEvent = buildUsageUpdateFromAssistant(aMsg)
+        if (usageEvent) events.push(usageEvent)
       }
       return events
     }
@@ -375,25 +302,22 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
         total_cost_usd?: number
         modelUsage?: Record<string, { contextWindow?: number }>
       }
-      const usage = rMsg.usage
-      const contextWindow = rMsg.modelUsage
-        ? Object.values(rMsg.modelUsage)[0]?.contextWindow
-        : undefined
+      const contextWindow = pickResultContextWindow(rMsg.modelUsage)
+      const u = rMsg.usage
+      const hasUsageMeta =
+        rMsg.total_cost_usd != null || contextWindow != null || u != null
       return [
         {
           type: 'complete',
           stopReason: rMsg.subtype === 'success' ? 'end_turn' : 'error',
-          usage: usage
+          usage: hasUsageMeta
             ? {
-                inputTokens:
-                  usage.input_tokens +
-                  (usage.cache_read_input_tokens ?? 0) +
-                  (usage.cache_creation_input_tokens ?? 0),
-                outputTokens: usage.output_tokens,
-                cacheReadTokens: usage.cache_read_input_tokens,
-                cacheCreationTokens: usage.cache_creation_input_tokens,
+                inputTokens: u ? sumContextUsedTokens(u) : 0,
                 costUsd: rMsg.total_cost_usd,
                 contextWindow,
+                ...(u && { outputTokens: u.output_tokens }),
+                ...(u && { cacheReadTokens: u.cache_read_input_tokens }),
+                ...(u && { cacheCreationTokens: u.cache_creation_input_tokens }),
               }
             : undefined,
         },
@@ -403,7 +327,15 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
     case 'system': {
       const sMsg = msg as SDKSystemMessage
       if (sMsg.subtype === 'compact_boundary') return [{ type: 'compact_complete' }]
-      if (sMsg.subtype === 'compacting') return [{ type: 'compacting' }]
+      if (
+        sMsg.subtype === 'compacting' ||
+        (sMsg.subtype === 'status' && (sMsg as { status?: string | null }).status === 'compacting')
+      ) {
+        return [{ type: 'compacting' }]
+      }
+      if (sMsg.subtype === 'status' && (sMsg as { compact_result?: string }).compact_result === 'failed') {
+        return [{ type: 'compact_complete' }]
+      }
       if (sMsg.subtype === 'task_started' && sMsg.task_id) {
         return [
           {
@@ -1092,7 +1024,7 @@ export function useGlobalAgentListeners(): void {
               updatePlanModeSessionSet(prev, sessionId, event.mode === 'plan')
             )
           } else if (event.type === 'complete') {
-            // 累计 token 统计（P3 阶段）— usage 数据在 complete 事件中
+            // 累计 token 统计（计费）— 与 Context 圆环分离，各轮 result 累加
             const usage = event.usage
             if (usage) {
               store.set(sessionTokenStatsAtom, (prev) => {
@@ -1106,36 +1038,17 @@ export function useGlobalAgentListeners(): void {
                   turnCount: 0,
                 }
                 map.set(sessionId, {
-                  totalInputTokens: current.totalInputTokens + usage.inputTokens,
-                  totalOutputTokens: current.totalOutputTokens + (usage.outputTokens ?? 0),
-                  totalCacheReadTokens: current.totalCacheReadTokens + (usage.cacheReadTokens ?? 0),
+                  totalInputTokens:
+                    current.totalInputTokens + (usage.inputTokens ?? 0),
+                  totalOutputTokens:
+                    current.totalOutputTokens + (usage.outputTokens ?? 0),
+                  totalCacheReadTokens:
+                    current.totalCacheReadTokens + (usage.cacheReadTokens ?? 0),
                   totalCacheCreationTokens:
-                    current.totalCacheCreationTokens + (usage.cacheCreationTokens ?? 0),
+                    current.totalCacheCreationTokens +
+                    (usage.cacheCreationTokens ?? 0),
                   totalCostUsd: current.totalCostUsd + (usage.costUsd ?? 0),
                   turnCount: current.turnCount + 1,
-                })
-                return map
-              })
-
-              // 同步更新 streamingStates 的 inputTokens/contextWindow（用于 ContextUsageBadge）
-              // 解决中转站不返回 usage_update 的问题
-              // 注意：这里用 sessionTokenStatsAtom 的累计值替换，而非累加，
-              // 因为 usage_update 事件是替换式的，保持一致
-              store.set(agentStreamingStatesAtom, (prev) => {
-                const state = prev.get(sessionId)
-                if (!state) return prev
-                const map = new Map(prev)
-                // 从 sessionTokenStatsAtom 获取累计值，确保与 usage_update 语义一致
-                const tokenStats = store.get(sessionTokenStatsAtom).get(sessionId)
-                map.set(sessionId, {
-                  ...state,
-                  inputTokens: tokenStats?.totalInputTokens ?? state.inputTokens,
-                  outputTokens: tokenStats?.totalOutputTokens ?? state.outputTokens,
-                  cacheReadTokens: tokenStats?.totalCacheReadTokens ?? state.cacheReadTokens,
-                  cacheCreationTokens:
-                    tokenStats?.totalCacheCreationTokens ?? state.cacheCreationTokens,
-                  // contextWindow 如果已有则保留，否则从 usage 获取
-                  contextWindow: state.contextWindow ?? usage.contextWindow,
                 })
                 return map
               })

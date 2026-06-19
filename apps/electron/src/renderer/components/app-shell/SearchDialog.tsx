@@ -19,6 +19,13 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Search, X, Bot, Archive, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
+import {
+  COMPACTION_IN_PROGRESS_LABEL,
+  getCompactBoundaryLabel,
+  isSdkCompactBoundaryMessage,
+  isSdkCompactingStatusMessage,
+  readCompactBoundaryMetadata,
+} from '@tagent/shared'
 import type {
   AgentMessageSearchResult,
   SDKMessage,
@@ -212,14 +219,13 @@ function buildAgentPreviewItems(
 
     if (message.type === 'system') {
       const system = message as SDKSystemMessage
-      const preview =
-        system.subtype === 'compact_boundary'
-          ? '上下文已压缩'
-          : system.subtype === 'compacting'
-            ? '正在压缩上下文...'
-            : system.subtype === 'permission_denied'
-              ? '自动审批已拒绝操作'
-              : ''
+      const preview = isSdkCompactBoundaryMessage(system)
+        ? getCompactBoundaryLabel(readCompactBoundaryMetadata(system))
+        : isSdkCompactingStatusMessage(system)
+          ? COMPACTION_IN_PROGRESS_LABEL
+          : system.subtype === 'permission_denied'
+            ? '自动审批已拒绝操作'
+            : ''
       if (preview) {
         items.push({
           id: `${system.subtype ?? 'system'}-${items.length}`,

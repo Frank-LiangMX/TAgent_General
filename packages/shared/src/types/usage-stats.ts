@@ -28,6 +28,15 @@ export interface SessionTokenStats {
   turnCount: number
 }
 
+/** 会话当前 Context 窗口占用（来自 JSONL 最后一条带 usage 的消息） */
+export interface SessionContextStatus {
+  inputTokens: number
+  outputTokens?: number
+  cacheReadTokens?: number
+  cacheCreationTokens?: number
+  contextWindow?: number
+}
+
 /** 模型使用统计 */
 export interface ModelUsageStats {
   modelId: string
@@ -76,6 +85,8 @@ export const USAGE_STATS_IPC_CHANNELS = {
   GET_OVERVIEW: 'usage-stats:get-overview',
   /** 获取单个会话的 Token 统计 */
   GET_SESSION_TOKEN_STATS: 'usage-stats:get-session-token-stats',
+  /** 获取单个会话当前 Context 占用（最后一轮，非累计） */
+  GET_SESSION_CONTEXT_STATUS: 'usage-stats:get-session-context-status',
 } as const
 
 /** 存储类别 */
