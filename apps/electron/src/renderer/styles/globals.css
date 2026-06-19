@@ -3072,6 +3072,30 @@ html.material-frosted .content-main-shell .content-glass {
   );
 }
 
+/**
+ * RightNavIsland - 右侧文件面板浮岛容器
+ * 与左侧 NavIsland 相似的浮岛样式
+ */
+.right-nav-island {
+  padding: 8px;
+  padding-left: 0;
+}
+
+.right-nav-island-glass {
+  border-top-right-radius: var(--nav-island-outer-radius, 20px);
+  border-bottom-right-radius: var(--nav-island-outer-radius, 20px);
+}
+
+/* macOS 右上角圆角适配 */
+.right-nav-island--mac .right-nav-island-glass {
+  border-top-right-radius: var(--nav-island-outer-radius, 20px);
+}
+
+/* Windows 右上角保持完整圆角 */
+.right-nav-island--win .right-nav-island-glass {
+  border-top-right-radius: var(--nav-island-outer-radius, 20px);
+}
+
 
 /**
  * rail-glass - FunctionalRail 专用液态玻璃

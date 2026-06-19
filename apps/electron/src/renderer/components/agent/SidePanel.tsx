@@ -177,15 +177,6 @@ export function SidePanel({
     [openPreviewTabForFile, sessionPath, selectedWorktreePath]
   )
 
-  // 动画标志：isOpen 变化时启用过渡动画，切换会话时即时显示
-  const prevIsOpenRef = React.useRef(isOpen)
-  const prevSessionIdRef = React.useRef(sessionId)
-  const shouldAnimate = prevSessionIdRef.current === sessionId && prevIsOpenRef.current !== isOpen
-  React.useEffect(() => {
-    prevIsOpenRef.current = isOpen
-    prevSessionIdRef.current = sessionId
-  })
-
   const filesVersion = useAtomValue(workspaceFilesVersionAtom)
   const setFilesVersion = useSetAtom(workspaceFilesVersionAtom)
   const diffRefreshVersionMap = useAtomValue(agentDiffRefreshVersionAtom)
@@ -361,21 +352,12 @@ export function SidePanel({
   return (
     <div
       className={cn(
-        'panel-glass relative z-0 h-full flex-shrink-0 overflow-hidden titlebar-drag-region',
-        shouldAnimate && 'transition-[width] duration-300 ease-in-out',
-        isOpen ? '' : '!w-0'
+        'relative z-0 h-full flex-shrink-0 overflow-hidden titlebar-drag-region',
+        isWindows ? 'pt-[34px]' : 'pt-0'
       )}
-      style={isOpen ? { width } : undefined}
     >
       {/* 面板内容 */}
-      <div
-        className={cn(
-          'w-full h-full flex flex-col titlebar-no-drag',
-          isWindows ? 'pt-[34px]' : 'pt-0',
-          shouldAnimate && 'transition-opacity duration-300',
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-      >
+      <div className="w-full h-full flex flex-col titlebar-no-drag">
         <DiffPanelTabBar
           activeTab={activeTab}
           onTabChange={onTabChange}

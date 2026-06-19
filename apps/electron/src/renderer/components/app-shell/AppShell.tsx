@@ -18,6 +18,7 @@ import * as React from 'react'
 import { FunctionalRail } from './FunctionalRail'
 import { LeftSidebar } from './LeftSidebar'
 import { NavIsland } from './NavIsland'
+import { RightNavIsland } from './RightNavIsland'
 import { RightSidePanel } from './RightSidePanel'
 
 import {
@@ -185,23 +186,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </div>
         </div>
 
-        {/* 右侧边栏：Agent 文件面板，仅在通用模式 Agent 子模式下显示 */}
+        {/* 右侧边栏：Agent 文件面板浮岛，仅在通用模式 Agent 子模式下显示 */}
         {showRightPanel && (
-          <div
-            className={cn(
-              'relative z-[60] flex items-stretch transition-[padding] duration-300 ease-in-out',
-              isPanelOpen ? 'p-2 pl-0' : 'p-0'
-            )}
+          <RightNavIsland
+            isOpen={isPanelOpen}
+            width={clampedRightPanelWidth}
+            onDragStart={handleMouseDown}
           >
-            {/* 拖拽手柄 — 绝对定位，居中于主区域和右侧面板的缝隙 */}
-            {isPanelOpen && (
-              <div
-                className="absolute left-0 top-0 bottom-0 w-[8px] -translate-x-1/2 cursor-col-resize active:bg-primary/50 transition-colors z-10"
-                onMouseDown={handleMouseDown}
-              />
-            )}
             <RightSidePanel width={clampedRightPanelWidth} />
-          </div>
+          </RightNavIsland>
         )}
       </div>
     </AppShellProvider>
