@@ -3076,24 +3076,22 @@ html.material-frosted .content-main-shell .content-glass {
  * RightNavIsland - 右侧文件面板浮岛容器
  * 与左侧 NavIsland 相似的浮岛样式
  */
-.right-nav-island {
-  padding: 8px;
-  padding-left: 0;
-}
-
 .right-nav-island-glass {
+  /* 右侧浮岛：左上和左下保持直角，右上和右下圆角 */
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   border-top-right-radius: var(--nav-island-outer-radius, 20px);
   border-bottom-right-radius: var(--nav-island-outer-radius, 20px);
 }
 
-/* macOS 右上角圆角适配 */
-.right-nav-island--mac .right-nav-island-glass {
-  border-top-right-radius: var(--nav-island-outer-radius, 20px);
+/* macOS 右上角略减小圆角，与左侧红绿灯区域对称 */
+.right-nav-island-glass--mac {
+  border-top-right-radius: var(--nav-island-outer-radius-tl, 14px);
 }
 
-/* Windows 右上角保持完整圆角 */
-.right-nav-island--win .right-nav-island-glass {
-  border-top-right-radius: var(--nav-island-outer-radius, 20px);
+.right-nav-island-glass--mac::before,
+.right-nav-island-glass--mac::after {
+  border-top-right-radius: var(--nav-island-outer-radius-tl, 14px);
 }
 
 

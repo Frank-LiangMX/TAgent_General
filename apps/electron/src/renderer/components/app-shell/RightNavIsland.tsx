@@ -32,16 +32,7 @@ export function RightNavIsland({
   if (!isOpen) return null
 
   return (
-    <div
-      className={cn(
-        'right-nav-island relative z-[60] flex items-stretch',
-        isMac ? 'right-nav-island--mac' : 'right-nav-island--win'
-      )}
-      style={{
-        width: width + 8, // 8px 为外边距
-        ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
-      }}
-    >
+    <div className="p-2 pl-0 relative z-[60] flex shrink-0 items-stretch self-stretch">
       {/* 拖拽手柄 — 绝对定位，居中于主区域和浮岛的缝隙 */}
       <div
         className="absolute left-0 top-0 bottom-0 w-[8px] -translate-x-1/2 cursor-col-resize active:bg-primary/50 transition-colors z-10"
@@ -51,11 +42,14 @@ export function RightNavIsland({
       {/* 浮岛容器 */}
       <div
         className={cn(
-          'right-nav-island-glass relative flex h-full flex-col overflow-hidden flex-shrink-0',
-          'nav-island-glass nav-island-glass--float',
-          isMac && 'nav-island-glass--mac'
+          'right-nav-island-glass nav-island-glass nav-island-glass--float',
+          'relative flex h-full flex-col overflow-hidden flex-shrink-0',
+          isMac && 'right-nav-island-glass--mac'
         )}
-        style={{ width }}
+        style={{
+          width,
+          ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
+        }}
       >
         {children}
       </div>
