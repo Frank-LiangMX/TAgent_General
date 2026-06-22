@@ -2720,8 +2720,97 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 /* Windows：无 vibrancy 时强化圆角裁切，避免底板直角从半透明玻璃下透出 */
-.shell-glass--win .nav-island-glass.nav-island-glass--float {
+.shell-glass--win .nav-island-glass.nav-island-glass--float,
+.shell-glass--win .right-nav-island-glass.nav-island-glass--float {
   contain: paint;
+}
+
+/**
+ * RightNavIsland - 右侧文件面板浮岛容器
+ * 四个角都是圆角
+ */
+.right-nav-island-glass.nav-island-glass {
+  border-radius: var(--nav-island-outer-radius, 20px) !important;
+}
+
+/* macOS 左上角略减小圆角 */
+.right-nav-island-glass.nav-island-glass--mac {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px) !important;
+}
+
+/* 覆盖 ::before 和 ::after 的圆角 */
+.nav-island-glass--mac.right-nav-island-glass::before,
+.nav-island-glass--mac.right-nav-island-glass::after {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px) !important;
+}
+
+/**
+ * right-panel-plate-toggle - 锚定于 shell p-2 右缘，开/关完整显示
+ */
+.right-panel-plate-toggle {
+  /* 容器承载固定锚点 */
+}
+
+/**
+ * right-panel-expand-shell - 从右上角锚点（圆钮）纯 scale 展开
+ * 列宽 / 底板 inset 由 React 一次性切换，此处只做过渡视觉
+ *
+ * 展开：略带回弹的 ease-out（与 btw-panel 同族）
+ * 收回：更短、更干脆的 ease-in，内容先淡出
+ */
+.right-panel-expand-shell {
+  transform-origin: 100% var(--right-panel-toggle-y, 52px);
+  /* 收回态过渡（移除 --expanded 时生效） */
+  transition:
+    transform var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity calc(var(--right-panel-collapse-ms, 240ms) - 40ms) cubic-bezier(0.4, 0, 1, 1),
+    filter calc(var(--right-panel-collapse-ms, 240ms) - 60ms) ease-in;
+  transform: scale(0.16);
+  opacity: 0;
+  filter: blur(3px);
+  will-change: transform, opacity, filter;
+  /* 与主区底板接缝重叠 1px，避免 scale 动画后露缝 */
+  margin-left: -1px;
+}
+
+.right-panel-expand-shell--expanded {
+  /* 展开态过渡（添加 --expanded 时生效） */
+  transition:
+    transform var(--right-panel-expand-ms, 360ms) cubic-bezier(0.22, 1.12, 0.36, 1),
+    opacity calc(var(--right-panel-expand-ms, 360ms) - 80ms) cubic-bezier(0.16, 1, 0.3, 1) 50ms,
+    filter calc(var(--right-panel-expand-ms, 360ms) - 100ms) ease-out 40ms;
+  transform: scale(1);
+  opacity: 1;
+  filter: blur(0);
+}
+
+.right-panel-expand-body {
+  opacity: 0;
+  transform: translate3d(5px, 0, 0);
+  /* 收回：内容先走，避免壳已缩小时仍看到文字 */
+  transition:
+    opacity 140ms cubic-bezier(0.4, 0, 1, 1),
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.right-panel-expand-body--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  /* 展开：壳到位后再轻推内容 */
+  transition:
+    opacity 260ms ease-out 100ms,
+    transform 320ms cubic-bezier(0.22, 1.08, 0.36, 1) 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-expand-shell,
+  .right-panel-expand-shell--expanded,
+  .right-panel-expand-body,
+  .right-panel-expand-body--visible {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    filter: none !important;
+  }
 }
 
 /**
@@ -2767,36 +2856,47 @@ html:not(.dark) .btw-panel-glass::after,
 
 .content-main-foreground .tabbar-bg {
   background-color: transparent;
+  border-top-right-radius: var(--content-plate-radius);
 }
 
-/* TabBar / 底部输入 dock：越过主区左 padding，与 Nav 浮岛右缘对齐 */
+/* 底栏统计条：与 TabBar 同样向两侧 bleed，右侧浮岛展开时延伸至过渡区 */
+.content-main-shell .token-stats-bar.content-shell-chrome-bleed {
+  padding-left: calc(var(--content-chrome-bleed-left, 0px) + 1rem);
+  padding-right: calc(var(--content-chrome-bleed-right, 0px) + 1rem);
+}
+
+/* TabBar / 底部输入 dock：越过主区左右 padding，与两侧浮岛右/左缘对齐 */
 .content-shell-chrome-bleed {
   box-sizing: border-box;
-  width: calc(100% + var(--content-chrome-bleed-left, 0px));
+  width: calc(
+    100% + var(--content-chrome-bleed-left, 0px) + var(--content-chrome-bleed-right, 0px)
+  );
   margin-left: calc(-1 * var(--content-chrome-bleed-left, 0px));
+  margin-right: calc(-1 * var(--content-chrome-bleed-right, 0px));
   padding-left: var(--content-chrome-bleed-left, 0px);
+  padding-right: var(--content-chrome-bleed-right, 0px);
 }
 
-/* 底栏输入 dock：左侧与 Sidebar 对齐，内容区保留原有内边距 */
+/* 底栏输入 dock：左右与 Sidebar / 右浮岛对齐，内容区保留原有内边距 */
 .content-main-shell .session-input-dock.content-shell-chrome-bleed {
   padding-left: calc(var(--content-chrome-bleed-left, 0px) + 10px);
-  padding-right: 10px;
+  padding-right: calc(var(--content-chrome-bleed-right, 0px) + 10px);
 }
 
 @media (min-width: 768px) {
   .content-main-shell .session-input-dock.content-shell-chrome-bleed {
-    padding-right: 18px;
+    padding-right: calc(var(--content-chrome-bleed-right, 0px) + 18px);
   }
 }
 
-/* 主区底板：左侧与 Nav 浮岛左缘圆角对齐，右侧圆角 */
+/* 主区底板：左右延伸至两侧浮岛下方（与 Nav / RightNav 对称） */
 .content-base-plate--body,
 .content-base-plate-frame {
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 0;
   left: calc(-1 * var(--content-base-inset-left, 0px));
+  right: calc(-1 * var(--content-base-inset-right, 0px));
   --content-plate-radius: 20px;
   border-radius:
     var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
@@ -2804,6 +2904,13 @@ html:not(.dark) .btw-panel-glass::after,
     var(--content-plate-radius)
     var(--nav-island-outer-radius, var(--content-plate-radius));
   pointer-events: none;
+}
+
+/* 右侧浮岛展开：外缘圆角对齐浮岛（主区内容层保持圆角，与左侧 Nav 对称） */
+.content-main-shell--right-inset .content-base-plate--body,
+.content-main-shell--right-inset .content-base-plate-frame {
+  border-top-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
+  border-bottom-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
 }
 
 .content-base-plate--body {
@@ -2859,7 +2966,7 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 /*
- * content-base-plate-edge - 仅右侧竖边（圆角由 border-radius 自然过渡）
+ * content-base-plate-edge - 主区右缘竖边；右侧浮岛展开时由浮岛外轮廓承担
  */
 .content-base-plate-edge {
   border-style: solid;
@@ -2867,6 +2974,10 @@ html:not(.dark) .btw-panel-glass::after,
   border-left: none;
   border-top: none;
   border-bottom: none;
+}
+
+.content-main-shell--right-inset .content-base-plate-edge {
+  border-right-width: 0;
 }
 
 .content-base-plate-edge--tone {
@@ -2889,15 +3000,13 @@ html:not(.dark) .btw-panel-glass::after,
     90deg,
     transparent 0px,
     #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
-    #000 calc(100% - var(--content-plate-radius)),
-    transparent 100%
+    #000 100%
   );
   mask-image: linear-gradient(
     90deg,
     transparent 0px,
     #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
-    #000 calc(100% - var(--content-plate-radius)),
-    transparent 100%
+    #000 100%
   );
 }
 
@@ -2974,12 +3083,13 @@ html:not(.dark) .btw-panel-glass::after,
   opacity: 0.34;
 }
 
-/* 主区内容层透明，视觉由底板承担 */
+/* 主区内容层透明，视觉由底板承担；允许圆角露出（勿用 overflow:hidden 裁切子层圆角） */
 .content-main-shell .content-glass {
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: 0;
+  overflow: visible;
 }
 
 .content-main-shell .content-glass::before,
@@ -3071,29 +3181,6 @@ html.material-frosted .content-main-shell .content-glass {
     rgba(255, 255, 255, 0) 100%
   );
 }
-
-/**
- * RightNavIsland - 右侧文件面板浮岛容器
- * 与左侧 NavIsland 相似的浮岛样式
- */
-.right-nav-island-glass {
-  /* 右侧浮岛：左上和左下保持直角，右上和右下圆角 */
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: var(--nav-island-outer-radius, 20px);
-  border-bottom-right-radius: var(--nav-island-outer-radius, 20px);
-}
-
-/* macOS 右上角略减小圆角，与左侧红绿灯区域对称 */
-.right-nav-island-glass--mac {
-  border-top-right-radius: var(--nav-island-outer-radius-tl, 14px);
-}
-
-.right-nav-island-glass--mac::before,
-.right-nav-island-glass--mac::after {
-  border-top-right-radius: var(--nav-island-outer-radius-tl, 14px);
-}
-
 
 /**
  * rail-glass - FunctionalRail 专用液态玻璃

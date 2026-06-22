@@ -5,8 +5,7 @@
  */
 
 import { TAGENT_PERMISSION_MODE_CONFIG } from '@tagent/shared'
-import { useAtom, useAtomValue } from 'jotai'
-import { PanelRight } from 'lucide-react'
+import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import { getToolDisplayName } from './tool-utils'
@@ -21,15 +20,10 @@ import {
   agentSessionModelMapAtom,
   agentSessionsAtom,
   agentSessionStreamingStateAtomFamily,
-  agentSidePanelOpenAtom,
   sessionPersistedPermissionModeAtom,
-  workspaceFilesVersionAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { resolveModelDisplayName } from '@/lib/model-logo'
-import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
 
 /** AgentHeader 属性接口 */
@@ -104,19 +98,6 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
   const persistedPermissionMode = useAtomValue(sessionPersistedPermissionModeAtom(sessionId))
   const defaultPermissionMode = useAtomValue(agentDefaultPermissionModeAtom)
 
-  // 文件面板切换状态（全局共享）
-  const [isPanelOpen, setSidePanelOpen] = useAtom(agentSidePanelOpenAtom)
-  const filesVersion = useAtomValue(workspaceFilesVersionAtom)
-  const hasFileChanges = filesVersion > 0
-
-  const togglePanel = React.useCallback(() => {
-    setSidePanelOpen((v) => !v)
-  }, [setSidePanelOpen])
-
-  React.useEffect(() => {
-    return registerShortcut('toggle-right-panel', togglePanel)
-  }, [togglePanel])
-
   if (!session) return null
 
   const modelId = sessionModelMap.get(sessionId) ?? defaultModelId
@@ -141,29 +122,6 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
           <HeaderStatusChip tone={statusTone}>{statusLabel}</HeaderStatusChip>
         </div>
       </div>
-
-      {/* 文件面板打开按钮（面板关闭时显示） */}
-      {!isPanelOpen && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="relative titlebar-no-drag h-7 w-7 flex-shrink-0"
-              onClick={togglePanel}
-            >
-              <PanelRight className="size-3.5" />
-              {hasFileChanges && (
-                <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary animate-pulse" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>打开文件面板 ({navigator.platform.includes('Mac') ? '⌘⇧B' : 'Ctrl+Shift+B'})</p>
-          </TooltipContent>
-        </Tooltip>
-      )}
     </div>
   )
 }

@@ -78,7 +78,7 @@ export function TokenStatsPanel({
   const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
 
   return (
-    <div className="flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
+    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
       {showContextUsage && (
         <>
           <ContextUsageBadge

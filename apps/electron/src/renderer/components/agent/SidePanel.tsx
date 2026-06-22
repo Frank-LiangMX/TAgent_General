@@ -1,8 +1,7 @@
 /**
  * SidePanel — Agent 侧面板容器
  *
- * 直接展示文件浏览器，默认打开状态。
- * 切换按钮在面板关闭时显示活动指示点。
+ * 直接展示文件浏览器。
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
@@ -23,7 +22,6 @@ import * as React from 'react'
 import type { FileEntry, AgentPendingFile } from '@tagent/shared'
 
 import {
-  agentSidePanelOpenAtom,
   workspaceFilesVersionAtom,
   currentAgentWorkspaceIdAtom,
   agentWorkspacesAtom,
@@ -96,8 +94,6 @@ export function SidePanel({
   onTabChange,
   width = 280,
 }: SidePanelProps): React.ReactElement {
-  // per-session 侧面板状态（默认打开）
-  const [isOpen, setIsOpen] = useAtom(agentSidePanelOpenAtom)
   const isWindows = React.useMemo(() => detectIsWindows(), [])
 
   // Tab 系统
@@ -358,11 +354,7 @@ export function SidePanel({
     >
       {/* 面板内容 */}
       <div className="w-full h-full flex flex-col titlebar-no-drag">
-        <DiffPanelTabBar
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-          onClose={() => setIsOpen(false)}
-        />
+        <DiffPanelTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
         {activeTab === 'changes' ? (
           sessionPath ? (

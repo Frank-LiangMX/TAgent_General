@@ -1,15 +1,13 @@
 /**
  * DiffPanelTabBar — 右侧面板顶部 Tab 栏
  *
- * 切换「会话文件」「工作区文件」和「代码改动」三个视图。最右侧有关闭按钮。
+ * 切换「会话文件」与「代码改动」；折叠由接缝锚点按钮统一处理。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { PanelRightClose } from 'lucide-react'
 import * as React from 'react'
 
 import { agentDiffUnseenChangesAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type DiffPanelTab = 'session' | 'changes'
@@ -17,7 +15,6 @@ type DiffPanelTab = 'session' | 'changes'
 interface DiffPanelTabBarProps {
   activeTab: DiffPanelTab
   onTabChange: (tab: DiffPanelTab) => void
-  onClose?: () => void
 }
 
 interface PreviousTabState {
@@ -28,7 +25,6 @@ interface PreviousTabState {
 export function DiffPanelTabBar({
   activeTab,
   onTabChange,
-  onClose,
 }: DiffPanelTabBarProps): React.ReactElement {
   const unseenMap = useAtomValue(agentDiffUnseenChangesAtom)
   const setUnseenMap = useSetAtom(agentDiffUnseenChangesAtom)
@@ -104,23 +100,6 @@ export function DiffPanelTabBar({
             文件改动
           </span>
         </button>
-        {/* 右侧关闭按钮（常驻，三个 tab 下都可见） */}
-        {onClose && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex items-center justify-center size-[28px] mr-1 mb-[3px] rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
-              >
-                <PanelRightClose className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              折叠文件面板 ({navigator.platform.includes('Mac') ? '⌘⇧B' : 'Ctrl+Shift+B'})
-            </TooltipContent>
-          </Tooltip>
-        )}
       </div>
     </div>
   )
