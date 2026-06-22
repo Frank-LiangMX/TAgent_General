@@ -31,14 +31,10 @@ export function RightNavIsland({
 
   if (!isOpen) return null
 
+  // 与左侧 NavIsland 外层结构一致：p-2（但左侧是 pr-0，右侧是 pl-0）
+  // self-stretch 让高度拉伸到父容器（shell-glass）的高度
   return (
-    // 悬浮定位：紧贴窗口右边缘，叠在主区域之上
-    <div
-      className="absolute right-0 top-0 bottom-0 z-[70] flex items-stretch p-2"
-      style={{
-        width: width + 8, // 8px 为外边距
-      }}
-    >
+    <div className="p-2 pl-0 relative z-[70] flex shrink-0 items-stretch self-stretch">
       {/* 拖拽手柄 — 绝对定位，居中于主区域和浮岛的缝隙 */}
       <div
         className="absolute left-0 top-0 bottom-0 w-[8px] -translate-x-1/2 cursor-col-resize active:bg-primary/50 transition-colors z-10"
