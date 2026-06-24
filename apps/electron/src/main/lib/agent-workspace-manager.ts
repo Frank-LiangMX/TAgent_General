@@ -528,7 +528,23 @@ export function getWorkspaceMcpConfig(workspaceSlug: string): WorkspaceMcpConfig
   try {
     const raw = readFileSync(mcpPath, 'utf-8')
     const parsed = JSON.parse(raw) as Partial<WorkspaceMcpConfig>
-    return { servers: parsed.servers ?? {} }
+    const servers = parsed.servers ?? {}
+    // 用户手写的 mcp.json 可能省略 type 字段，按 command/url 推断，避免静默丢弃
+    for (const [name, entry] of Object.entries(servers)) {
+      if (!entry) continue
+      if (!entry.type) {
+        if (entry.command) {
+          entry.type = 'stdio'
+          console.warn(`[Agent 工作区] MCP "${name}" 缺少 type 字段，按 command 推断为 stdio`)
+        } else if (entry.url) {
+          entry.type = 'http'
+          console.warn(`[Agent 工作区] MCP "${name}" 缺少 type 字段，按 url 推断为 http`)
+        } else {
+          console.warn(`[Agent 工作区] MCP "${name}" 配置不完整：缺 type 且无 command/url，已跳过`)
+        }
+      }
+    }
+    return { servers }
   } catch (error) {
     console.error('[Agent 工作区] 读取 MCP 配置失败:', error)
     return { servers: {} }
