@@ -35,9 +35,6 @@ export const NAV_SIDEBAR_WIDTH = 240
 /** 文件 / Skills 侧栏宽度（与会话侧栏统一，保留常量供旧引用） */
 export const NAV_SIDEBAR_INSPECTOR_WIDTH = NAV_SIDEBAR_WIDTH
 
-/** 插件页 Rail 宽度（略宽以配合双列侧栏） */
-export const NAV_RAIL_PLUGINS_WIDTH = 68
-
 /** 插件页 Sidebar 宽度（双列插件卡片） */
 export const NAV_SIDEBAR_PLUGINS_WIDTH = 380
 
