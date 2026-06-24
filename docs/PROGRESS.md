@@ -2,10 +2,14 @@
 
 > **单文件持续更新** — 新 Agent 读此文件即可了解项目状态  
 > **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`  
-> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
-> **新增规划**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（上游能力对齐 + 开发 Agent 实施手册）
-> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
-> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板待实现）
+> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）  
+> **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）  
+> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）  
+> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）  
+> **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）  
+> **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1）  
+> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）  
+> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）  
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 
 ---
@@ -34,16 +38,26 @@
 
 ---
 
-## 当前状态（2026-06-18）
+## 当前状态（2026-06-24）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成，当前进入稳定性收口、上游能力对齐和远程连通完善阶段。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。基于 2026-06-24 对上游 Proma v0.13.3 的全面调研，识别出本地落后约 6 天 / 80 commit / 3 个版本，已发布 4 份新规划文档（见下）。
 
 **当前判断**：
 
 - 通用 Agent 主链路、Ask 档位、TA 模式、记忆自进化、使用统计、`/btw`、远程连通主框架均已落地。
 - `compact_session` / 客户端压缩已实现，Context 管理核心 7/7 不再作为阻塞项。
 - WPS 协作已作为远程连通 MVP 合入（文本消息链路）；媒体、绑定持久化、公网回调配置仍是后续增强。
+- **🔴 P0 缺口**：Claude Agent SDK 仍为 `0.3.153`，落后上游 32 个版本，触发每会话 2s drain timeout 和并发写风暴。
+- **🔴 P0 缺口**：Automation 调度系统、协作子会话、Monitor 长任务 — **本地完全缺失**（0%）。
+- **🟠 P1 缺口**：1M 上下文能力未统一到 `packages/shared`、多款 1M 模型未启用。
 - 当前工作区曾出现较多 UI/设置/上游对齐相关未提交改动；继续开发前应先清理工作区边界。
+
+**2026-06-24 新增规划文档**：
+
+- [`plans/2026-06-24-upstream-feature-roadmap.md`](plans/2026-06-24-upstream-feature-roadmap.md) — 上游对齐总路线图（37 大类 / ~130 项 / 5 阶段）
+- [`plans/2026-06-24-p0-stability-patches.md`](plans/2026-06-24-p0-stability-patches.md) — 4 个 P0 稳定性 PR 模板（SDK 升级 + 三个 bug 修复）
+- [`plans/2026-06-24-automation-design.md`](plans/2026-06-24-automation-design.md) — Automation 调度系统 v1 设计
+- [`plans/2026-06-24-collaboration-design.md`](plans/2026-06-24-collaboration-design.md) — 协作子会话 v1 设计
 
 **规划文档登记表**：
 
@@ -51,15 +65,24 @@
 | ---- | ------------ | ---- |
 | `2026-06-05-tagent-fusion-design.md` | 主设计 / 历史基线 | 多处早期状态已被后续实现超越，以本文件当前状态为准 |
 | `2026-06-05-tagent-server-design.md` | 未来独立项目规划 | TAgent Server 未进入当前 Desktop 活跃开发；后续若启动需单独建里程碑 |
-| `archive/plans/2026-06-02-im-model-switch-design.md` | 已完成归档 | `/model` / `/now` / per-chat 模型切换已在远程 Bridge 路径落地 |
+| `2026-05-18-proactive-scheduler-monitor-design.md` | 历史探索归档 | Proma Proactive Center 设计（v0.13.3 Automation 已吸收核心思想） |
+| `2026-06-07-ta-tools-analysis.md` | 已完成 | ta_agent 工具分类分析（4 类，约 50 工具） |
+| `2026-06-07-ta-mcp-architecture.md` | 已完成 | TA MCP Server 架构（已落地） |
 | `2026-06-09-agent-ui-optimization-plan.md` | 已完成 / 当前工作区仍有相关 UI 改动 | Agent 页面首轮收敛已登记；继续开发前先清理未提交 UI 边界 |
+| `2026-06-09-verification-checklist.md` | 历史归档 | 2026-06-09 验证清单（决策 #15 实施） |
 | `2026-06-13-ask-mode-unification-design.md` | 已完成 | Ask 档位统一 Composer + Chat 主路径退役 |
 | `2026-06-13-context-compaction-architecture.md` | 已完成归档 + M2+ 小待办 | 双层压缩机制已落地；`summarize` 策略、客户端压缩说明仍可后续增强 |
 | `2026-06-13-context-usage-breakdown-design.md` | 活跃待办 | Context Usage 分项面板 P0-P2 未实现 |
-| `2026-06-16-upstream-upgrade-plan.md` | 活跃待办 | 上游能力对齐总规划 |
-| `2026-06-16-upstream-upgrade-issues.md` | 活跃待办 | Issue A~E 可直接拆 PR |
+| `2026-06-16-upstream-upgrade-plan.md` | v0.10.34 基线旧规划 | Issue A~E 已在此框架下提出；v0.13.3 基线升级见新文档 |
+| `2026-06-16-upstream-upgrade-issues.md` | 活跃待办 | Issue A~E 可直接拆 PR（与新文档合并执行） |
 | `2026-06-16-wps-bridge-landing.md` | MVP 已完成 + 增强待办 | 文本链路已合入；媒体/绑定/公网回调/富文本待增强 |
+| `2026-06-18-right-panel-anchor-animation.md` | 已完成 | 右栏岛式布局 + scale 动画 |
+| **`2026-06-24-upstream-feature-roadmap.md`** | **新增活跃待办** | v0.13.3 基线对齐总路线图：P0 稳定性 + Automation + 协作子会话 + 上下文统一 |
+| **`2026-06-24-p0-stability-patches.md`** | **新增活跃待办** | SDK 0.3.185 升级 + #910/#913/#903 四个 PR 模板（1-2 天可完成） |
+| **`2026-06-24-automation-design.md`** | **新增活跃待办** | Automation 调度系统 v1 设计：30s tick / interval+daily+weekly+monthly+once / 失败退避 / 上下文安全阀 |
+| **`2026-06-24-collaboration-design.md`** | **新增活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
+| `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
 
 **已完成**：
 

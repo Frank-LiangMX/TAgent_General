@@ -1,5 +1,8 @@
 # 右侧文件浮岛 — 锚点展开交互（2026-06-18）
 
+> **状态**：✅ Implemented（2026-06-18 落地，commit `d73d0a1a`）
+> **关联 commit**：`d73d0a1a` feat(desktop): anchor right panel with scale expand/collapse animation
+
 ## 背景与目标
 
 用户希望右侧文件浮岛的 **展开/折叠按钮固定在同一个位置**，打开时面板从按钮处「长出来」，关闭时收回到按钮，参考 [react-bits](https://github.com/DavidHDev/react-bits) / Motion 的 shared-layout 思路（非其文档 Sidebar 的 translateX 抽屉）。

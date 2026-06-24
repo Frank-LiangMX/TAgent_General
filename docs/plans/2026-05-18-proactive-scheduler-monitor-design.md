@@ -1,8 +1,10 @@
 # Proma Proactive Center 设计文档
 
-> 版本：Draft 1  
-> 日期：2026-05-18  
-> 范围：Proma OSS Electron app 的主动协作、定时任务、Monitor、Memory 插件化与 UI 设计
+> **状态**：Superseded — 核心思想已被 2026-06-24 新规划文档吸收
+> **被替代文档**：[`2026-06-24-automation-design.md`](2026-06-24-automation-design.md)、[`2026-06-24-collaboration-design.md`](2026-06-24-collaboration-design.md)
+> **日期**：2026-05-18（2026-06-24 标记为 Superseded）
+> **范围**：原 Proma OSS Electron app 的主动协作、定时任务、Monitor、Memory 插件化与 UI 设计
+> **保留原因**：作为 TAgent 「proactive Agent」方向的**思路溯源**保留，包含 Memory 插件化、Session Recall、Skill Curator 等仍可参考的设计
 
 ## 1. 背景
 

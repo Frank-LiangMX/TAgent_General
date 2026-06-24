@@ -1,7 +1,12 @@
 # TAgent 上游能力对齐 — Issue 草案（A~E）
 
-> 来源规划：`docs/plans/2026-06-16-upstream-upgrade-plan.md`  
-> 用途：直接复制到 GitHub Issues（建议一条 issue 对应一个 PR）
+> **状态**：活跃 — Issue A 仍可独立执行；Issue B/C/D/E 已被 2026-06-24 新设计文档覆盖
+> **关联文档**：
+> - **Issue A**（1M 上下文统一）→ [`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md) §2.4
+> - **Issue B/C/D/E**（Automation 相关）→ [`2026-06-24-automation-design.md`](2026-06-24-automation-design.md)
+> - **上游基线**：v0.10.34（2026-06-16）→ v0.13.3（2026-06-23）
+> **来源规划**：[`docs/plans/2026-06-16-upstream-upgrade-plan.md`](2026-06-16-upstream-upgrade-plan.md)
+> **用途**：直接复制到 GitHub Issues（建议一条 issue 对应一个 PR）
 
 ---
 

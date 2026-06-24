@@ -1,9 +1,11 @@
 # TAgent 上游能力对齐规划（v0.10.34 基线）
 
-> **状态**：Draft v0.1  
-> **日期**：2026-06-16  
-> **适用范围**：TAgent Desktop（`apps/electron`）  
+> **状态**：Superseded by v0.13.3 基线规划 — 见 [`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md)
+> **基线**：v0.10.34（2026-06-16）
+> **日期**：2026-06-16（2026-06-24 标记为 Superseded）
+> **适用范围**：TAgent Desktop（`apps/electron`）
 > **目标**：在不破坏双模式架构的前提下，引入上游已验证的高价值能力
+> **保留原因**：本文档的 M1~M4 里程碑、风险清单、开发 Agent 实施手册（§7）作为方法论仍可参考
 
 ---
 

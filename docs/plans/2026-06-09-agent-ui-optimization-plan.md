@@ -1,9 +1,10 @@
 # TAgent Agent 页面高级优化建议
 
-> **状态**：Draft v0.3，Header 首版已拍板，继续逐条评审中  
-> **日期**：2026-06-09  
-> **作者**：Codex（与用户共同评审）  
-> **路径**：`F:\TAgent_General\docs\plans\2026-06-09-agent-ui-optimization-plan.md`
+> **状态**：✅ Implemented（2026-06-18 全部落地）
+> **日期**：2026-06-09（2026-06-24 状态字段更新）
+> **作者**：Codex（与用户共同评审）
+> **后续 UI 迭代**：见 [`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md) §2.5
+> **路径**：`docs/plans/2026-06-09-agent-ui-optimization-plan.md`
 
 ---
 

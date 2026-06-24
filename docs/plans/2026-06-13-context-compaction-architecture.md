@@ -1,8 +1,8 @@
 # Context 压缩机制说明（SDK 原生 vs TAgent 兜底）
 
-> **状态**：Accepted（现状归档 + 改进方向）  
-> **日期**：2026-06-13  
-> **关联设计**：[`2026-06-05-tagent-fusion-design.md`](2026-06-05-tagent-fusion-design.md) §8.4、[`2026-06-13-context-usage-breakdown-design.md`](2026-06-13-context-usage-breakdown-design.md)  
+> **状态**：✅ Implemented（2026-06-14 三策略全部落地：drop_old_tool_results / keep_last_n / summarize）
+> **日期**：2026-06-13（2026-06-24 状态字段更新）
+> **关联设计**：[`2026-06-05-tagent-fusion-design.md`](2026-06-05-tagent-fusion-design.md) §8.4、[`2026-06-13-context-usage-breakdown-design.md`](2026-06-13-context-usage-breakdown-design.md)
 > **路径**：`docs/plans/2026-06-13-context-compaction-architecture.md`
 
 ---
@@ -94,7 +94,7 @@ fusion 设计 §8.4：TAgent 支持 **任意兼容端点**，SDK 服务端 compa
 | ----------------------- | --------------------------------------------------------------------- | ---------------- |
 | `drop_old_tool_results` | 删除仅含 tool_use / tool_result 的消息块，保留含文本的 user/assistant | ✅               |
 | `keep_last_n`           | 仅保留最近 N 条 user/assistant                                        | ✅               |
-| `summarize`             | 用便宜模型总结老消息                                                  | ❌ 未实现（M2+） |
+| `summarize`             | 用便宜模型总结老消息                                                  | ✅               |
 
 ### 3.3 与 SDK 的状态边界（重要）
 

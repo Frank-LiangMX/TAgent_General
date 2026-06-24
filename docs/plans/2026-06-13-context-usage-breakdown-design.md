@@ -1,9 +1,10 @@
 # Context Usage 分项面板设计（SDK `getContextUsage` 接入）
 
-> **状态**：Draft v0.2（入口位置已确认）  
-> **日期**：2026-06-13（2026-06-18 更新底栏入口）  
-> **分支建议**：`feature/context-usage-breakdown`  
-> **关联设计**：[`2026-06-05-tagent-fusion-design.md`](2026-06-05-tagent-fusion-design.md) §8.4 Context 管理、[`2026-06-09-agent-ui-optimization-plan.md`](2026-06-09-agent-ui-optimization-plan.md)  
+> **状态**：✅ Implemented（2026-06-18 落地）
+> **日期**：2026-06-13（2026-06-18 更新底栏入口；2026-06-24 标记为已实现）
+> **分支**：`feature/context-usage-breakdown`（已合并至 main）
+> **关联 commit**：`f1470412` feat(desktop): add context usage breakdown via SDK getContextUsage
+> **关联设计**：[`2026-06-05-tagent-fusion-design.md`](2026-06-05-tagent-fusion-design.md) §8.4 Context 管理、[`2026-06-09-agent-ui-optimization-plan.md`](2026-06-09-agent-ui-optimization-plan.md)
 > **路径**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`
 
 ---
