@@ -16,14 +16,8 @@ import {
 } from '@tagent/shared'
 
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
-import {
-  getContextUsageCache,
-  setContextUsageCache,
-} from '../context-usage-cache'
-import {
-  ContextUsageFetchError,
-  mapSdkContextUsageResponse,
-} from '../context-usage-mapper'
+import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
+import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
 
 import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 import type {

@@ -23,10 +23,7 @@ export function isSdkCompactingStatusMessage(message: {
 }
 
 /** 识别 SDK compact_boundary 完成标记 */
-export function isSdkCompactBoundaryMessage(message: {
-  type?: string
-  subtype?: string
-}): boolean {
+export function isSdkCompactBoundaryMessage(message: { type?: string; subtype?: string }): boolean {
   return message.type === 'system' && message.subtype === 'compact_boundary'
 }
 
@@ -45,7 +42,9 @@ export function isSdkStandaloneSystemMessage(message: {
 }
 
 /** 从 compact_boundary 读取元数据 */
-export function readCompactBoundaryMetadata(message: unknown): SdkCompactBoundaryMetadata | undefined {
+export function readCompactBoundaryMetadata(
+  message: unknown
+): SdkCompactBoundaryMetadata | undefined {
   if (message == null || typeof message !== 'object') return undefined
   const meta = (message as { compact_metadata?: unknown }).compact_metadata
   if (meta == null || typeof meta !== 'object') return undefined

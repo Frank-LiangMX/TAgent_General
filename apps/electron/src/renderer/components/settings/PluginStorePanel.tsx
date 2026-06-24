@@ -240,17 +240,16 @@ export function PluginStorePanel({
                 </p>
               </div>
             ) : tab === 'skill' ? (
-              <div
-                key={`skill-${gridPhase}`}
-                className="plugins-panel-grid grid grid-cols-2 gap-2"
-              >
+              <div key={`skill-${gridPhase}`} className="plugins-panel-grid grid grid-cols-2 gap-2">
                 {filteredSkills.map((skill, index) => (
                   <StorePluginCard
                     key={skill.slug}
                     kind="skill"
                     title={skill.name}
                     subtitle={skill.description}
-                    selected={activeSelection?.kind === 'skill' && activeSelection.id === skill.slug}
+                    selected={
+                      activeSelection?.kind === 'skill' && activeSelection.id === skill.slug
+                    }
                     installed={installedSkillSet.has(skill.slug)}
                     style={{ animationDelay: `${Math.min(index, 8) * 24}ms` }}
                     onClick={() => setSelected({ kind: 'skill', id: skill.slug })}
@@ -401,7 +400,13 @@ function StoreCardSkeletonGrid(): React.ReactElement {
   )
 }
 
-function DetailMetaRow({ label, value }: { label: string; value: React.ReactNode }): React.ReactElement {
+function DetailMetaRow({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}): React.ReactElement {
   return (
     <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 text-[11px]">
       <span className="text-muted-foreground">{label}</span>

@@ -2068,9 +2068,12 @@ export function registerIpcHandlers(): void {
   )
 
   // 插件商店：获取目录
-  ipcMain.handle(AGENT_IPC_CHANNELS.GET_PLUGIN_STORE_CATALOG, async (): Promise<import('@tagent/shared').PluginStoreCatalog> => {
-    return getPluginStoreCatalog()
-  })
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_PLUGIN_STORE_CATALOG,
+    async (): Promise<import('@tagent/shared').PluginStoreCatalog> => {
+      return getPluginStoreCatalog()
+    }
+  )
 
   // 插件商店：安装 Skill
   ipcMain.handle(

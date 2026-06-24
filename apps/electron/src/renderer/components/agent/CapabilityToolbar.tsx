@@ -23,7 +23,10 @@ import {
   workspaceCapabilitiesVersionAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import { PluginStorePanel, mcpCatalogEntryToServerEntry } from '@/components/settings/PluginStorePanel'
+import {
+  PluginStorePanel,
+  mcpCatalogEntryToServerEntry,
+} from '@/components/settings/PluginStorePanel'
 import type { BuiltinMcpCatalogEntry } from '@tagent/shared'
 import { McpServerForm } from '@/components/settings/McpServerForm'
 import {
@@ -161,7 +164,10 @@ ${pluginList}
       >
         {/* 与 TabBar 一致：背景拖拽层铺满空白区；交互按钮各自 titlebar-no-drag 穿透 OS hitmask */}
         <div
-          className={cn('absolute inset-0 z-[10] titlebar-drag-region', isWindows && 'right-[126px]')}
+          className={cn(
+            'absolute inset-0 z-[10] titlebar-drag-region',
+            isWindows && 'right-[126px]'
+          )}
           aria-hidden
         />
         <Tooltip>

@@ -58,10 +58,7 @@ export const selectedCapabilityAtom = atom<CapabilitySelection | null>(null)
 /** 插件侧栏 Tab：MCP 连接 / Skill 指令 */
 export type PluginKindTab = 'mcp' | 'skill'
 
-export const pluginKindTabAtom = atomWithStorage<PluginKindTab>(
-  'tagent-plugin-kind-tab',
-  'mcp'
-)
+export const pluginKindTabAtom = atomWithStorage<PluginKindTab>('tagent-plugin-kind-tab', 'mcp')
 
 /** 通用模式功能区选中（持久化到 localStorage） */
 export const generalRailItemAtom = atomWithStorage<GeneralRailItem>(

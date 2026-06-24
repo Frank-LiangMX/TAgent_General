@@ -70,7 +70,9 @@ export function ContextUsageCategoryGroup({
         )}
       </CollapsibleTrigger>
       <CollapsibleContent className="pb-1 pl-5">
-        <div className="mt-1 flex flex-col gap-1 border-l border-foreground/10 pl-2.5">{children}</div>
+        <div className="mt-1 flex flex-col gap-1 border-l border-foreground/10 pl-2.5">
+          {children}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   )

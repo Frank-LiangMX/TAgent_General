@@ -23,7 +23,12 @@ import type {
   UsageStatsOverview,
   SessionTokenStats,
 } from '@tagent/shared'
-import { inferContextWindow, pickResultContextWindow, resolveDisplayContextWindow, sumContextUsedTokens } from '@tagent/shared'
+import {
+  inferContextWindow,
+  pickResultContextWindow,
+  resolveDisplayContextWindow,
+  sumContextUsedTokens,
+} from '@tagent/shared'
 
 /** JSONL 消息类型（简化版，只提取需要的字段） */
 interface SessionMessage {
@@ -400,9 +405,7 @@ class UsageStatsService {
       if (msg.type === 'result' && msg.usage) {
         const inputTokens = sumContextUsedTokens(msg.usage)
         const contextWindow = msg.modelUsage
-          ? pickResultContextWindow(
-              msg.modelUsage as Record<string, { contextWindow?: number }>
-            )
+          ? pickResultContextWindow(msg.modelUsage as Record<string, { contextWindow?: number }>)
           : undefined
         return {
           inputTokens,
@@ -422,10 +425,7 @@ class UsageStatsService {
           outputTokens: usage.output_tokens,
           cacheReadTokens: usage.cache_read_input_tokens,
           cacheCreationTokens: usage.cache_creation_input_tokens,
-          contextWindow: resolveDisplayContextWindow(
-            modelName,
-            inferContextWindow(modelName)
-          ),
+          contextWindow: resolveDisplayContextWindow(modelName, inferContextWindow(modelName)),
         }
       }
     }

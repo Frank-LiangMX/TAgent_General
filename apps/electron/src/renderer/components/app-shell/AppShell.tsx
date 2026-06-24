@@ -74,7 +74,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const showLeftSidebar =
     topLevelMode === 'general'
-      ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills' || activeRailItem === 'scratch'
+      ? activeRailItem === 'sessions' ||
+        activeRailItem === 'files' ||
+        activeRailItem === 'skills' ||
+        activeRailItem === 'scratch'
       : activeRailItem !== 'scratch'
 
   const isPluginsRail = activeRailItem === 'skills'

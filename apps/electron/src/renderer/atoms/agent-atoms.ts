@@ -743,10 +743,7 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
           ? {
               ...(event.usage.costUsd != null && { costUsd: event.usage.costUsd }),
               ...(event.usage.contextWindow != null && {
-                contextWindow: resolveDisplayContextWindow(
-                  prev.model,
-                  event.usage.contextWindow
-                ),
+                contextWindow: resolveDisplayContextWindow(prev.model, event.usage.contextWindow),
               }),
               ...(event.usage.contextWindow != null && { usageUpdatedAt: Date.now() }),
               ...(needResultFallback &&

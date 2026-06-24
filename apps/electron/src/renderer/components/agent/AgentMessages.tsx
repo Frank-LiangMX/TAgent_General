@@ -929,7 +929,9 @@ export function AgentMessages({
                 )}
 
               {/* SDK status=compacting 到达后会在时间线内联显示；此处仅作事件到达前的兜底 */}
-              {streamState?.isCompacting && !hasInlineCompactingIndicator && <CompactingIndicator />}
+              {streamState?.isCompacting && !hasInlineCompactingIndicator && (
+                <CompactingIndicator />
+              )}
             </>
           )}
         </ConversationContent>

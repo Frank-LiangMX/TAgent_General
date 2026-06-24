@@ -27,7 +27,12 @@ import type {
   TAgentEvent,
   AgentSessionMeta,
 } from '@tagent/shared'
-import { inferContextWindow, pickResultContextWindow, resolveDisplayContextWindow, sumContextUsedTokens } from '@tagent/shared'
+import {
+  inferContextWindow,
+  pickResultContextWindow,
+  resolveDisplayContextWindow,
+  sumContextUsedTokens,
+} from '@tagent/shared'
 
 import {
   agentStreamingStatesAtom,
@@ -137,10 +142,7 @@ function buildUsageUpdateFromAssistant(aMsg: SDKAssistantMessage): AgentEvent | 
   const u = aMsg.message.usage
   const inputTokens = sumContextUsedTokens(u)
   const modelName = aMsg._channelModelId ?? aMsg.message.model
-  const fallbackWindow = resolveDisplayContextWindow(
-    modelName,
-    inferContextWindow(modelName)
-  )
+  const fallbackWindow = resolveDisplayContextWindow(modelName, inferContextWindow(modelName))
   return {
     type: 'usage_update',
     usage: {
@@ -304,8 +306,7 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
       }
       const contextWindow = pickResultContextWindow(rMsg.modelUsage)
       const u = rMsg.usage
-      const hasUsageMeta =
-        rMsg.total_cost_usd != null || contextWindow != null || u != null
+      const hasUsageMeta = rMsg.total_cost_usd != null || contextWindow != null || u != null
       return [
         {
           type: 'complete',
@@ -333,7 +334,10 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
       ) {
         return [{ type: 'compacting' }]
       }
-      if (sMsg.subtype === 'status' && (sMsg as { compact_result?: string }).compact_result === 'failed') {
+      if (
+        sMsg.subtype === 'status' &&
+        (sMsg as { compact_result?: string }).compact_result === 'failed'
+      ) {
         return [{ type: 'compact_complete' }]
       }
       if (sMsg.subtype === 'task_started' && sMsg.task_id) {
@@ -1038,15 +1042,11 @@ export function useGlobalAgentListeners(): void {
                   turnCount: 0,
                 }
                 map.set(sessionId, {
-                  totalInputTokens:
-                    current.totalInputTokens + (usage.inputTokens ?? 0),
-                  totalOutputTokens:
-                    current.totalOutputTokens + (usage.outputTokens ?? 0),
-                  totalCacheReadTokens:
-                    current.totalCacheReadTokens + (usage.cacheReadTokens ?? 0),
+                  totalInputTokens: current.totalInputTokens + (usage.inputTokens ?? 0),
+                  totalOutputTokens: current.totalOutputTokens + (usage.outputTokens ?? 0),
+                  totalCacheReadTokens: current.totalCacheReadTokens + (usage.cacheReadTokens ?? 0),
                   totalCacheCreationTokens:
-                    current.totalCacheCreationTokens +
-                    (usage.cacheCreationTokens ?? 0),
+                    current.totalCacheCreationTokens + (usage.cacheCreationTokens ?? 0),
                   totalCostUsd: current.totalCostUsd + (usage.costUsd ?? 0),
                   turnCount: current.turnCount + 1,
                 })

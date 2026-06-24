@@ -226,7 +226,12 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
             </p>
           </div>
           <div className="shrink-0 text-right">
-            <div className={cn('text-lg font-semibold tabular-nums leading-none', usageToneClass(percent))}>
+            <div
+              className={cn(
+                'text-lg font-semibold tabular-nums leading-none',
+                usageToneClass(percent)
+              )}
+            >
               {percent}%
             </div>
             <div className="mt-1 text-[10px] text-muted-foreground">{usageStatusText(percent)}</div>
@@ -259,7 +264,8 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
 
       {snapshot.rawMaxTokens < snapshot.maxTokens && (
         <p className="rounded-xl bg-background/14 px-2.5 py-2 text-[10px] leading-snug text-muted-foreground/65">
-          SDK 窗口 {formatContextTokens(snapshot.rawMaxTokens)}，展示按模型 {formatContextTokens(snapshot.maxTokens)}
+          SDK 窗口 {formatContextTokens(snapshot.rawMaxTokens)}，展示按模型{' '}
+          {formatContextTokens(snapshot.maxTokens)}
         </p>
       )}
 

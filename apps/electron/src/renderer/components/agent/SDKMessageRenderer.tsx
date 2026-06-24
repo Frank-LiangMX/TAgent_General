@@ -408,10 +408,7 @@ function mergeAdjacentSameModelTurns(groups: MessageGroup[]): MessageGroup[] {
     for (let i = result.length - 1; i >= 0; i--) {
       const prev = result[i]!
       if (prev.type === 'user') break // 真正的用户输入阻断合并
-      if (
-        prev.type === 'system' &&
-        isSdkStandaloneSystemMessage(prev.message as SDKSystemMessage)
-      )
+      if (prev.type === 'system' && isSdkStandaloneSystemMessage(prev.message as SDKSystemMessage))
         break
       if (prev.type === 'assistant-turn') {
         if (prev.model === group.model) {

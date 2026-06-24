@@ -59,7 +59,11 @@ export function BuiltinMcpRecommendations({
         </h4>
         <div className="grid gap-3">
           {generalMcps.map((mcp) => (
-            <McpRecommendationCard key={mcp.name} mcp={mcpWithStatus(mcp)} onInstall={handleInstall} />
+            <McpRecommendationCard
+              key={mcp.name}
+              mcp={mcpWithStatus(mcp)}
+              onInstall={handleInstall}
+            />
           ))}
         </div>
       </div>
@@ -71,7 +75,11 @@ export function BuiltinMcpRecommendations({
         </h4>
         <div className="grid gap-3">
           {taMcps.map((mcp) => (
-            <McpRecommendationCard key={mcp.name} mcp={mcpWithStatus(mcp)} onInstall={handleInstall} />
+            <McpRecommendationCard
+              key={mcp.name}
+              mcp={mcpWithStatus(mcp)}
+              onInstall={handleInstall}
+            />
           ))}
         </div>
       </div>
@@ -145,7 +153,12 @@ function McpRecommendationCard({ mcp, onInstall }: McpRecommendationCardProps): 
           </Button>
         ) : null}
         {!mcp.installed ? (
-          <Button variant="outline" size="sm" disabled={mcp.installing} onClick={() => onInstall(mcp)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mcp.installing}
+            onClick={() => onInstall(mcp)}
+          >
             {mcp.installing ? (
               <>
                 <Loader2 size={14} className="animate-spin" />

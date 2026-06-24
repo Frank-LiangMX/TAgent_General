@@ -2719,7 +2719,8 @@ export class AgentOrchestrator {
           // 根据错误类型决定是否保留 sdkSessionId
           // 网络瞬时错误保留 session：resume 时可复用 JSONL 指针恢复，避免 ~50K token 全量重传
           const isTransientNetwork = isTransientNetworkError(rawErrorMessage, stderrOutput)
-          const shouldClearSession = !isTransientNetwork && (!apiError || apiError.statusCode >= 500)
+          const shouldClearSession =
+            !isTransientNetwork && (!apiError || apiError.statusCode >= 500)
           if (existingSdkSessionId && shouldClearSession) {
             try {
               updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
@@ -3036,7 +3037,9 @@ export class AgentOrchestrator {
   }
 
   /** 获取当前会话 Context 分项占用 */
-  async getContextUsage(sessionId: string): Promise<import('@tagent/shared').GetContextUsageResponse> {
+  async getContextUsage(
+    sessionId: string
+  ): Promise<import('@tagent/shared').GetContextUsageResponse> {
     if (!this.adapter.getContextUsage) {
       return {
         ok: false,

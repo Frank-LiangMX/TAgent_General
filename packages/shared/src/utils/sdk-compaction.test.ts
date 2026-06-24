@@ -49,9 +49,7 @@ describe('getCompactBoundaryLabel', () => {
 
 describe('isSdkStandaloneSystemMessage', () => {
   test('includes compacting status and compact boundary', () => {
-    expect(isSdkCompactBoundaryMessage({ type: 'system', subtype: 'compact_boundary' })).toBe(
-      true
-    )
+    expect(isSdkCompactBoundaryMessage({ type: 'system', subtype: 'compact_boundary' })).toBe(true)
     expect(
       isSdkStandaloneSystemMessage({
         type: 'system',
