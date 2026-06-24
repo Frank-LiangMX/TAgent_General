@@ -81,6 +81,7 @@
 | **`2026-06-24-p0-stability-patches.md`** | **新增活跃待办** | SDK 0.3.185 升级 + #910/#913/#903 四个 PR 模板（1-2 天可完成） |
 | **`2026-06-24-automation-design.md`** | **新增活跃待办** | Automation 调度系统 v1 设计：30s tick / interval+daily+weekly+monthly+once / 失败退避 / 上下文安全阀 |
 | **`2026-06-24-collaboration-design.md`** | **新增活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
+| **`2026-06-24-proma-upstream-borrow-list.md`** | **新增参考清单** | Proma v0.11.1→v0.13.3 新增特性借鉴清单：已落地 / 待评估 / 候选借鉴 / 不适用 四档分级，按梯队排序 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
 
@@ -539,7 +540,7 @@
 | `05c525c` | `~/.proma-dev/` → `~/.tagent-dev/`        | 4      |
 | `d6c4e32` | `appId: com.proma.app` → `com.tagent.app` | 1      |
 | `935064e` | 扩展名 `proma-*` → `tagent-*`             | 8      |
-| `7018bba` | skill `proma-coach` → `tagent-coach`      | 1      |
+| `7018bba` | coach skill 统一为 `tagent-coach`         | 1      |
 | `9b81d9e` | in-app state / DOM / URL                  | 51     |
 | `7c56f97` | Logo 资源文件                             | 19     |
 | `8baaee2` | yml + package.json                        | 5      |
