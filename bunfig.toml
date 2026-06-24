@@ -1,0 +1,5 @@
+# Bun 配置：将缓存目录指向项目内，避免 Windows Defender 实时扫描锁定 native 包
+# 根因：Bun 默认缓存目录 ~/.bun/install/cache/ 在解压 @napi-rs/* 等 native 包时
+# 会被 Windows Defender 实时扫描锁住文件，导致 EPERM (NtSetInformationFile) 错误
+[install.cache]
+dir = "./.bun-cache"

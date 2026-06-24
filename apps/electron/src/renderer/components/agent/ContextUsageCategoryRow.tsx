@@ -33,7 +33,12 @@ export function ContextUsageCategoryRow({
             style={{ backgroundColor: isFreeSpace ? '#D1D5DB' : swatchColor }}
             aria-hidden="true"
           />
-          <span className={cn('truncate text-xs text-foreground/85', category.isDeferred && 'opacity-70')}>
+          <span
+            className={cn(
+              'truncate text-xs text-foreground/85',
+              category.isDeferred && 'opacity-70'
+            )}
+          >
             {getContextUsageLabel(category.name)}
             {category.isDeferred ? (
               <span className="ml-1 text-[10px] text-muted-foreground">延迟</span>

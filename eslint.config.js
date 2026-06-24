@@ -141,6 +141,7 @@ export default [
       '**/.tagent/**',
       '**/tagent-dist/**',
       '**/tagent-running-data/**',
+      '**/.bun-cache/**',
       // 测试文件用 bun:test，缺 typescript resolver 解析不了，先跳 import/no-unresolved
       // 测试代码的 import 顺序混乱也跳（不影响主代码）
       '**/*.test.ts',

@@ -30,7 +30,6 @@ import {
   detectIsMac,
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
-  NAV_RAIL_PLUGINS_WIDTH,
   NAV_RAIL_WIDTH,
   NAV_SIDEBAR_PLUGINS_WIDTH,
   NAV_SIDEBAR_WIDTH,
@@ -75,11 +74,14 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const showLeftSidebar =
     topLevelMode === 'general'
-      ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills' || activeRailItem === 'scratch'
+      ? activeRailItem === 'sessions' ||
+        activeRailItem === 'files' ||
+        activeRailItem === 'skills' ||
+        activeRailItem === 'scratch'
       : activeRailItem !== 'scratch'
 
   const isPluginsRail = activeRailItem === 'skills'
-  const navRailWidth = isPluginsRail ? NAV_RAIL_PLUGINS_WIDTH : NAV_RAIL_WIDTH
+  const navRailWidth = NAV_RAIL_WIDTH
   const navSidebarWidth = isPluginsRail ? NAV_SIDEBAR_PLUGINS_WIDTH : NAV_SIDEBAR_WIDTH
   const navIslandWidth = showLeftSidebar ? navRailWidth + navSidebarWidth : navRailWidth
   const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING

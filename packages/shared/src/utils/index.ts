@@ -9,19 +9,14 @@ export function noop(): void {
 
 export { diffCapabilities } from './capabilities-diff'
 export type { CapabilityChange } from './capabilities-diff'
-export {
-  calculateContextUsageRatio,
-  sumContextUsedTokens,
-} from './context-usage'
+export { calculateContextUsageRatio, sumContextUsedTokens } from './context-usage'
 export type { UsageTokensLike } from './context-usage'
 export {
   CONTEXT_USAGE_CATEGORY_COLORS,
   CONTEXT_USAGE_SWATCH,
   resolveContextUsageColor,
 } from './context-usage-colors'
-export {
-  normalizeContextUsageSnapshot,
-} from './context-usage-snapshot'
+export { normalizeContextUsageSnapshot } from './context-usage-snapshot'
 export {
   DEFAULT_CONTEXT_WINDOW,
   ONE_MILLION_CONTEXT_WINDOW,

@@ -37,7 +37,7 @@ export function PluginToolbarButton({
       type="button"
       disabled={disabled || loading}
       className={cn(
-        'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-55',
+        'titlebar-no-drag relative z-[20] inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-55',
         VARIANT_CLASS[variant],
         className
       )}

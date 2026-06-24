@@ -515,8 +515,7 @@ export function LeftSidebar({
       if (stillValid) return
     }
 
-    const list =
-      pluginKindTab === 'mcp' ? capabilities.mcpServers : capabilities.skills
+    const list = pluginKindTab === 'mcp' ? capabilities.mcpServers : capabilities.skills
     if (list.length === 0) {
       setSelectedCapability(null)
       return
@@ -1011,9 +1010,7 @@ export function LeftSidebar({
         )
       }
       if (activeRailItem === 'skills') {
-        return (
-          <SkillsRailContent capabilities={capabilities} />
-        )
+        return <SkillsRailContent capabilities={capabilities} />
       }
       return <TASidebar activeRailItem={activeRailItem as TARailItem} />
     }
@@ -1023,9 +1020,7 @@ export function LeftSidebar({
       case 'files':
         return <FilesRailContent workspaceKey={currentWorkspaceId ?? 'no-workspace'} />
       case 'skills':
-        return (
-          <SkillsRailContent capabilities={capabilities} />
-        )
+        return <SkillsRailContent capabilities={capabilities} />
       case 'scratch':
         // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
         return null

@@ -172,12 +172,11 @@ import {
   getWorkspaceMcpConfig,
   saveWorkspaceMcpConfig,
   getAllWorkspaceSkills,
-  getOtherWorkspaceSkills,
   getWorkspaceCapabilities,
   getAgentWorkspace,
   deleteWorkspaceSkill,
-  importSkillFromWorkspace,
-  updateSkillFromSource,
+  installStoreSkill,
+  getPluginStoreCatalog,
   readWorkspaceSkillContent,
   writeWorkspaceSkillContent,
   toggleWorkspaceSkill,
@@ -2068,24 +2067,19 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  // 获取其他工作区的 Skill 列表
-  ipcMain.handle(AGENT_IPC_CHANNELS.GET_OTHER_WORKSPACE_SKILLS, async (_, currentSlug: string) => {
-    return getOtherWorkspaceSkills(currentSlug)
-  })
-
-  // 从其他工作区导入 Skill
+  // 插件商店：获取目录
   ipcMain.handle(
-    AGENT_IPC_CHANNELS.IMPORT_SKILL_FROM_WORKSPACE,
-    async (_, targetSlug: string, sourceSlug: string, skillSlug: string): Promise<SkillMeta> => {
-      return importSkillFromWorkspace(targetSlug, sourceSlug, skillSlug)
+    AGENT_IPC_CHANNELS.GET_PLUGIN_STORE_CATALOG,
+    async (): Promise<import('@tagent/shared').PluginStoreCatalog> => {
+      return getPluginStoreCatalog()
     }
   )
 
-  // 从源工作区同步更新已导入的 Skill
+  // 插件商店：安装 Skill
   ipcMain.handle(
-    AGENT_IPC_CHANNELS.UPDATE_SKILL_FROM_SOURCE,
-    async (_, targetSlug: string, skillSlug: string): Promise<SkillMeta> => {
-      return updateSkillFromSource(targetSlug, skillSlug)
+    AGENT_IPC_CHANNELS.INSTALL_STORE_SKILL,
+    async (_, workspaceSlug: string, skillSlug: string): Promise<SkillMeta> => {
+      return installStoreSkill(workspaceSlug, skillSlug)
     }
   )
 

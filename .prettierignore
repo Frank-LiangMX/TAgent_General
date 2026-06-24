@@ -1,0 +1,33 @@
+# 依赖与构建产物
+node_modules/
+dist/
+out/
+release/
+coverage/
+.bun-cache/
+
+# TAgent 运行时数据
+.tagent/
+tagent-dist/
+tagent-running-data/
+
+# 配置文件（自身格式不影响代码）
+*.cjs
+*.config.js
+*.config.ts
+
+# 测试产物
+*.tsbuildinfo
+
+# 临时开发目录
+temp-*/
+
+# default-skills 下的 vendor 资源
+apps/electron/default-skills/**/assets/
+
+# 归档
+.context/
+
+# 文档不强制 prettier 格式（手写 markdown 风格保留）
+docs/
+*.md

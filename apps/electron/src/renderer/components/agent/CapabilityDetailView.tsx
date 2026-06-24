@@ -351,7 +351,12 @@ function SkillCapabilityDetail({
           </div>
         </div>
 
-        <div className={cn('mt-4 grid gap-2', compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4')}>
+        <div
+          className={cn(
+            'mt-4 grid gap-2',
+            compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4'
+          )}
+        >
           {metaTags.map((item) => (
             <SummaryCard key={item.label} label={item.label} value={item.value} />
           ))}
@@ -702,7 +707,12 @@ function McpCapabilityDetail({
           </div>
         </div>
 
-        <div className={cn('mt-4 grid gap-2', compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4')}>
+        <div
+          className={cn(
+            'mt-4 grid gap-2',
+            compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4'
+          )}
+        >
           <SummaryCard label="传输" value={TRANSPORT_LABELS[entry.type]} />
           <SummaryCard label="环境变量" value={envCount > 0 ? `${envCount} 项` : '无'} />
           <SummaryCard label="请求头" value={headerCount > 0 ? `${headerCount} 项` : '无'} />

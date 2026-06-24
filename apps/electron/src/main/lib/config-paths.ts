@@ -9,6 +9,8 @@ import { mkdirSync, existsSync, cpSync, rmSync, readdirSync, readFileSync } from
 import { homedir } from 'node:os'
 import { join, basename } from 'node:path'
 
+import { PREINSTALLED_SKILL_SLUGS, type PluginStoreSkillEntry } from '@tagent/shared'
+
 /**
  * 获取配置目录名称
  *
@@ -403,6 +405,87 @@ export function getInactiveSkillsDir(slug: string): string {
 }
 
 /**
+ * 获取 app bundle 内的 default-skills 目录（插件商店 Skill 源）
+ */
+export function getBundledSkillsDir(): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { app } = require('electron')
+  return app.isPackaged
+    ? join(process.resourcesPath, 'default-skills')
+    : join(__dirname, '../default-skills')
+}
+
+/** 从 SKILL.md frontmatter 解析 name / description */
+function parseSkillCatalogFields(skillDir: string): {
+  name: string
+  description: string
+  version: string
+} {
+  const slug = basename(skillDir)
+  const skillMdPath = join(skillDir, 'SKILL.md')
+  if (!existsSync(skillMdPath)) {
+    return { name: slug, description: '', version: '0.0.0' }
+  }
+
+  try {
+    const content = readFileSync(skillMdPath, 'utf-8')
+    const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
+    if (!fmMatch?.[1]) {
+      return { name: slug, description: '', version: parseSkillVersion(skillDir) }
+    }
+
+    let name = slug
+    let description = ''
+    for (const line of fmMatch[1].split('\n')) {
+      const colonIdx = line.indexOf(':')
+      if (colonIdx === -1) continue
+      const key = line.slice(0, colonIdx).trim()
+      const value = line
+        .slice(colonIdx + 1)
+        .trim()
+        .replace(/^["']|["']$/g, '')
+      if (key === 'name' && value) name = value
+      if (key === 'description' && value) description = value
+    }
+
+    return { name, description, version: parseSkillVersion(skillDir) }
+  } catch {
+    return { name: slug, description: '', version: '0.0.0' }
+  }
+}
+
+/**
+ * 列出 bundle 内可供插件商店安装的 Skill 目录
+ */
+export function listBundledStoreSkills(): PluginStoreSkillEntry[] {
+  const bundledDir = getBundledSkillsDir()
+  if (!existsSync(bundledDir)) return []
+
+  const preinstalled = new Set(PREINSTALLED_SKILL_SLUGS)
+  const entries: PluginStoreSkillEntry[] = []
+
+  try {
+    for (const entry of readdirSync(bundledDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (preinstalled.has(entry.name)) continue
+
+      const source = join(bundledDir, entry.name)
+      const fields = parseSkillCatalogFields(source)
+      entries.push({
+        slug: entry.name,
+        name: fields.name,
+        description: fields.description,
+        version: fields.version,
+      })
+    }
+  } catch (err) {
+    console.warn('[配置] 读取插件商店 Skill 目录失败:', err)
+  }
+
+  return entries.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+}
+
+/**
  * 获取默认 Skills 模板目录路径
  *
  * 新建工作区时自动复制此目录的内容到工作区 skills/ 下。
@@ -492,24 +575,27 @@ function defaultSkillCopyFilter(src: string): boolean {
  *   （避免每次启动同步 4MB+ 文件阻塞主进程）
  */
 export function seedDefaultSkills(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { app } = require('electron')
-  const bundledDir = app.isPackaged
-    ? join(process.resourcesPath, 'default-skills')
-    : join(__dirname, '../default-skills')
+  const bundledDir = getBundledSkillsDir()
 
   if (!existsSync(bundledDir)) {
     console.log('[配置] 未找到内置 default-skills 目录，跳过')
     return
   }
 
+  if (PREINSTALLED_SKILL_SLUGS.length === 0) {
+    console.log('[配置] 无预装 Skill，跳过 default-skills 同步')
+    return
+  }
+
   const userDir = getDefaultSkillsDir()
+  const preinstalled = new Set(PREINSTALLED_SKILL_SLUGS)
 
   try {
     const entries = readdirSync(bundledDir, { withFileTypes: true })
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue
+      if (!preinstalled.has(entry.name)) continue
 
       const source = join(bundledDir, entry.name)
       const target = join(userDir, entry.name)

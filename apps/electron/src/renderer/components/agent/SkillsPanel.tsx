@@ -3,14 +3,7 @@
  */
 
 import { useAtom } from 'jotai'
-import {
-  CircleCheck,
-  LayoutGrid,
-  Plug,
-  RotateCw,
-  Search,
-  Sparkles,
-} from 'lucide-react'
+import { CircleCheck, LayoutGrid, Plug, RotateCw, Search, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
 import type { WorkspaceCapabilities } from '@tagent/shared'

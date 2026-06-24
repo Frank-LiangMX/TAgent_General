@@ -152,10 +152,11 @@ export function ContextUsageBadge({
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
-  const { snapshot, error: breakdownError, loading: breakdownLoading } = useContextUsageBreakdown(
-    sessionId,
-    open
-  )
+  const {
+    snapshot,
+    error: breakdownError,
+    loading: breakdownLoading,
+  } = useContextUsageBreakdown(sessionId, open)
 
   const cancelClose = React.useCallback(() => {
     if (closeTimerRef.current != null) {
@@ -204,16 +205,12 @@ export function ContextUsageBadge({
 
   const ratio = displayWindow && displayTokens ? displayTokens / displayWindow : 0
   const percent =
-    displayWindow && displayTokens
-      ? Math.round((displayTokens / displayWindow) * 100)
-      : undefined
+    displayWindow && displayTokens ? Math.round((displayTokens / displayWindow) * 100) : undefined
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
   const isWarning =
-    compactThreshold && displayTokens
-      ? displayTokens / compactThreshold >= WARNING_RATIO
-      : false
+    compactThreshold && displayTokens ? displayTokens / compactThreshold >= WARNING_RATIO : false
   const isDanger = displayWindow && displayTokens ? ratio >= DANGER_RATIO : false
 
   const toneClass = isDanger
@@ -378,10 +375,10 @@ export function ContextUsageBadge({
               </TooltipTrigger>
             </PopoverTrigger>
             <TooltipContent side="top">
-              {contextAmountLabel ? (
-                <p className="tabular-nums">{contextAmountLabel}</p>
-              ) : null}
-              <p className={cn('text-xs', contextAmountLabel ? 'mt-0.5 text-muted-foreground' : '')}>
+              {contextAmountLabel ? <p className="tabular-nums">{contextAmountLabel}</p> : null}
+              <p
+                className={cn('text-xs', contextAmountLabel ? 'mt-0.5 text-muted-foreground' : '')}
+              >
                 {triggerTitle}
               </p>
             </TooltipContent>

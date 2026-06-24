@@ -4,10 +4,7 @@ import type { ContextUsageCategory } from '@tagent/shared'
 import { resolveContextUsageColor } from '@tagent/shared'
 
 import { getContextUsageLabel } from '@/lib/context-usage-labels'
-import {
-  formatContextTokens,
-  isFreeSpaceCategory,
-} from '@/lib/context-usage-format'
+import { formatContextTokens, isFreeSpaceCategory } from '@/lib/context-usage-format'
 import { cn } from '@/lib/utils'
 
 interface ContextUsageSegmentBarProps {
@@ -78,7 +75,9 @@ function buildSegments(
 }
 
 function SegmentLegend({ segments }: { segments: SegmentItem[] }): React.ReactElement {
-  const visible = segments.filter((segment) => segment.key !== '__remainder__' && segment.tokens > 0)
+  const visible = segments.filter(
+    (segment) => segment.key !== '__remainder__' && segment.tokens > 0
+  )
   if (visible.length === 0) return <></>
 
   return (
@@ -123,7 +122,7 @@ export function ContextUsageSegmentBar({
             <div
               key={segment.key}
               className="h-full min-w-[2px] shrink-0 transition-[width] duration-300"
-            aria-label={`${segment.label}: ${formatContextTokens(segment.tokens)}`}
+              aria-label={`${segment.label}: ${formatContextTokens(segment.tokens)}`}
               style={{
                 width: `${segment.widthPercent}%`,
                 backgroundColor: segment.color,

@@ -15,7 +15,8 @@ export class ContextUsageFetchError extends Error {
   }
 }
 
-type SdkContextUsageResponse = import('@anthropic-ai/claude-agent-sdk').SDKControlGetContextUsageResponse
+type SdkContextUsageResponse =
+  import('@anthropic-ai/claude-agent-sdk').SDKControlGetContextUsageResponse
 
 export function mapSdkContextUsageResponse(sdk: SdkContextUsageResponse): ContextUsageSnapshot {
   const apiUsage: ContextUsageApiUsage | null = sdk.apiUsage
@@ -29,8 +30,7 @@ export function mapSdkContextUsageResponse(sdk: SdkContextUsageResponse): Contex
 
   const rawMaxTokens = sdk.rawMaxTokens ?? sdk.maxTokens
   const maxTokens = resolveDisplayContextWindow(sdk.model, sdk.maxTokens)
-  const percentage =
-    maxTokens > 0 ? (sdk.totalTokens / maxTokens) * 100 : sdk.percentage
+  const percentage = maxTokens > 0 ? (sdk.totalTokens / maxTokens) * 100 : sdk.percentage
 
   return {
     categories: sdk.categories.map((category) => ({

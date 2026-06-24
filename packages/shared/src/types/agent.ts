@@ -955,13 +955,6 @@ export interface SkillMeta {
   hasUpdate?: boolean
 }
 
-/** 其他工作区 Skill 分组（导入对话框用） */
-export interface OtherWorkspaceSkillsGroup {
-  workspaceName: string
-  workspaceSlug: string
-  skills: SkillMeta[]
-}
-
 /** Skill 目录下的文件/子目录节点（递归树） */
 export interface SkillFileNode {
   /** 相对于 Skill 根目录的相对路径，使用 POSIX 分隔符 */
@@ -1528,12 +1521,10 @@ export const AGENT_IPC_CHANNELS = {
   DELETE_SKILL: 'agent:delete-skill',
   /** 切换工作区 Skill 启用/禁用 */
   TOGGLE_SKILL: 'agent:toggle-skill',
-  /** 获取其他工作区的 Skill 列表 */
-  GET_OTHER_WORKSPACE_SKILLS: 'agent:get-other-workspace-skills',
-  /** 从其他工作区导入 Skill 到当前工作区 */
-  IMPORT_SKILL_FROM_WORKSPACE: 'agent:import-skill-from-workspace',
-  /** 从源工作区同步更新已导入的 Skill */
-  UPDATE_SKILL_FROM_SOURCE: 'agent:update-skill-from-source',
+  /** 从插件商店安装内置 Skill */
+  INSTALL_STORE_SKILL: 'agent:install-store-skill',
+  /** 获取插件商店目录 */
+  GET_PLUGIN_STORE_CATALOG: 'agent:get-plugin-store-catalog',
   /** 读取 SKILL.md 全文内容 */
   READ_SKILL_CONTENT: 'agent:read-skill-content',
   /** 写入 SKILL.md 全文内容 */

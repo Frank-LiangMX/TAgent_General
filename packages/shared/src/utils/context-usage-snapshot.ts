@@ -8,8 +8,7 @@ export function normalizeContextUsageSnapshot(
 ): ContextUsageSnapshot {
   const rawMaxTokens = snapshot.rawMaxTokens ?? snapshot.maxTokens
   const maxTokens = resolveDisplayContextWindow(snapshot.model, rawMaxTokens)
-  const percentage =
-    maxTokens > 0 ? (snapshot.totalTokens / maxTokens) * 100 : snapshot.percentage
+  const percentage = maxTokens > 0 ? (snapshot.totalTokens / maxTokens) * 100 : snapshot.percentage
 
   if (
     maxTokens === snapshot.maxTokens &&
