@@ -507,12 +507,23 @@ export function getDefaultSkillsDir(): string {
  *
  * 无 version 字段时返回 '0.0.0'（确保旧 Skill 会被更新）。
  */
+/**
+ * 去除文件内容开头的 UTF-8 BOM 字节（﻿）。
+ *
+ * 某些 Windows 编辑器（VSCode 默认、Notepad 等）保存的文件带 BOM，会导致
+ * `content.match(/^---\s*\n/)` 匹配失败，SKILL.md frontmatter 解析失败、
+ * 版本误判为 0.0.0。读取后统一 strip 一下。
+ */
+export function stripBom(content: string): string {
+  return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content
+}
+
 export function parseSkillVersion(skillDir: string): string {
   const skillMdPath = join(skillDir, 'SKILL.md')
   if (!existsSync(skillMdPath)) return '0.0.0'
 
   try {
-    const content = readFileSync(skillMdPath, 'utf-8')
+    const content = stripBom(readFileSync(skillMdPath, 'utf-8'))
     const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
     if (!fmMatch?.[1]) return '0.0.0'
 

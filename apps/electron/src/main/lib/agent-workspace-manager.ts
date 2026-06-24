@@ -33,6 +33,7 @@ import {
   getBundledSkillsDir,
   listBundledStoreSkills,
   parseSkillVersion,
+  stripBom,
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
@@ -557,7 +558,9 @@ export function getWorkspaceSkills(workspaceSlug: string): SkillMeta[] {
 function parseSkillFrontmatter(content: string, slug: string, enabled: boolean): SkillMeta {
   const meta: SkillMeta = { slug, name: slug, enabled }
 
-  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
+  // strip BOM（某些 Windows 编辑器保存的文件带 UTF-8 BOM，会导致 ^--- 匹配失败）
+  const normalized = stripBom(content)
+  const fmMatch = normalized.match(/^---\s*\n([\s\S]*?)\n---/)
   if (!fmMatch) return meta
 
   const yaml = fmMatch[1]
