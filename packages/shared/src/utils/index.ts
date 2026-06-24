@@ -7,6 +7,7 @@ export function noop(): void {
   // no-op
 }
 
+export { normalizeLatexDelimiters } from './markdown-latex'
 export { diffCapabilities } from './capabilities-diff'
 export type { CapabilityChange } from './capabilities-diff'
 export { calculateContextUsageRatio, sumContextUsedTokens } from './context-usage'

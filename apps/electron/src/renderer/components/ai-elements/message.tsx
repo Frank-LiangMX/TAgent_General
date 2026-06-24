@@ -34,6 +34,7 @@ import Markdown, { defaultUrlTransform } from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
+import { normalizeLatexDelimiters } from '@tagent/shared'
 
 import { FilePathChip, isAbsoluteFilePath, isRelativeFilePath } from './file-path-chip'
 
@@ -587,6 +588,9 @@ export const MessageResponse = React.memo(
       [basePath, basePaths]
     )
 
+    // 预处理 LaTeX 原生分隔符（\(...\) → $...$，\[...\] → $$...$$）
+    const normalizedContent = React.useMemo(() => normalizeLatexDelimiters(children), [children])
+
     return (
       <div
         className={cn(
@@ -603,7 +607,7 @@ export const MessageResponse = React.memo(
           urlTransform={mentionUrlTransform}
           components={components}
         >
-          {children}
+          {normalizedContent}
         </Markdown>
       </div>
     )

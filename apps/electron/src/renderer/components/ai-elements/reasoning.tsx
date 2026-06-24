@@ -17,6 +17,7 @@ import Markdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
+import { normalizeLatexDelimiters } from '@tagent/shared'
 
 import type { ComponentProps, ReactNode } from 'react'
 
@@ -201,6 +202,9 @@ export const ReasoningContent = React.memo(
     children,
     ...props
   }: ReasoningContentProps): React.ReactElement {
+    // 预处理 LaTeX 原生分隔符
+    const normalizedContent = React.useMemo(() => normalizeLatexDelimiters(children), [children])
+
     return (
       <CollapsibleContent
         className={cn(
@@ -235,7 +239,7 @@ export const ReasoningContent = React.memo(
               ),
             }}
           >
-            {children}
+            {normalizedContent}
           </Markdown>
         </div>
       </CollapsibleContent>

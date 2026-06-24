@@ -86,7 +86,7 @@ import {
   getWorkspaceFilesDir,
   getConfigDirName,
 } from './config-paths'
-import { isTransientNetworkError } from './error-patterns'
+import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { getMemoryConfig } from './memory-service'
 import { searchMemory, addMemory, formatSearchResult } from './memos-client'
 import { getFetchFn } from './proxy-fetch'
@@ -231,6 +231,9 @@ function isAutoRetryableCatchError(
   if (/\b502\b|\b529\b|overloaded/i.test(text)) return true
   // 瞬时网络错误（terminated / ECONNRESET / socket hang up 等）
   if (isTransientNetworkError(rawErrorMessage, stderr)) return true
+  // 上游响应体解析失败（JSON Parse error / HTML 错误页 / SSE 截断等）
+  // 本质是网关瞬时异常，重试通常能恢复
+  if (isMalformedResponseError(rawErrorMessage, stderr)) return true
   return false
 }
 
