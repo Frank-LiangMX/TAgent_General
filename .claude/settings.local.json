@@ -11,7 +11,18 @@
       "Bash(bun run *)",
       "WebSearch",
       "Bash(npx tsc *)",
-      "Bash(find *)"
+      "Bash(find *)",
+      "Bash(bun install *)",
+      "Bash(tasklist)",
+      "Bash(tasklist *)",
+      "Bash(taskkill *)",
+      "Bash(wmic process *)",
+      "Bash(grep -v \"\\\\.npm$\")",
+      "Bash(bun test *)",
+      "Bash(grep -iE \"\\\\.tsx$\")",
+      "Bash(xargs grep -l \"Tiptap\\\\|RichText\\\\|EditorContent\\\\|useEditor\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
