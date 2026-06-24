@@ -106,7 +106,6 @@ import type {
   StopTaskInput,
   WorkspaceMcpConfig,
   SkillMeta,
-  OtherWorkspaceSkillsGroup,
   WorkspaceCapabilities,
   FileEntry,
   FileSearchResult,
@@ -880,18 +879,11 @@ export interface ElectronAPI {
     enabled: boolean
   ) => Promise<void>
 
-  /** 获取其他工作区的 Skill 列表 */
-  getOtherWorkspaceSkills: (currentSlug: string) => Promise<OtherWorkspaceSkillsGroup[]>
+  /** 获取插件商店目录 */
+  getPluginStoreCatalog: () => Promise<import('@tagent/shared').PluginStoreCatalog>
 
-  /** 从其他工作区导入 Skill */
-  importSkillFromWorkspace: (
-    targetSlug: string,
-    sourceSlug: string,
-    skillSlug: string
-  ) => Promise<SkillMeta>
-
-  /** 从源工作区同步更新已导入的 Skill */
-  updateSkillFromSource: (targetSlug: string, skillSlug: string) => Promise<SkillMeta>
+  /** 从插件商店安装 Skill */
+  installStoreSkill: (workspaceSlug: string, skillSlug: string) => Promise<SkillMeta>
 
   /** 读取 SKILL.md 全文内容 */
   readSkillContent: (workspaceSlug: string, skillSlug: string) => Promise<string>
@@ -2239,21 +2231,12 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.TOGGLE_SKILL, workspaceSlug, skillSlug, enabled)
   },
 
-  getOtherWorkspaceSkills: (currentSlug: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_OTHER_WORKSPACE_SKILLS, currentSlug)
+  getPluginStoreCatalog: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_PLUGIN_STORE_CATALOG)
   },
 
-  importSkillFromWorkspace: (targetSlug: string, sourceSlug: string, skillSlug: string) => {
-    return ipcRenderer.invoke(
-      AGENT_IPC_CHANNELS.IMPORT_SKILL_FROM_WORKSPACE,
-      targetSlug,
-      sourceSlug,
-      skillSlug
-    )
-  },
-
-  updateSkillFromSource: (targetSlug: string, skillSlug: string) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SKILL_FROM_SOURCE, targetSlug, skillSlug)
+  installStoreSkill: (workspaceSlug: string, skillSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INSTALL_STORE_SKILL, workspaceSlug, skillSlug)
   },
 
   readSkillContent: (workspaceSlug: string, skillSlug: string) => {

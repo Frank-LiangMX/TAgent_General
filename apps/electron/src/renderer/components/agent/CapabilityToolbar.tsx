@@ -1,16 +1,15 @@
 /**
  * CapabilityToolbar - 插件区主区工具栏
  *
- * 集中承载插件管理入口：添加、推荐、导入、目录、AI 配置。
+ * 集中承载插件管理入口：商店、目录、AI 配置。
  * 按钮样式参考 Kun PluginMarketplace 胶囊按钮。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { Download, FolderOpen, MessageSquare, Plus, Settings, Sparkles } from 'lucide-react'
+import { FolderOpen, MessageSquare, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { ImportSkillDialog } from './ImportSkillDialog'
 import { PluginToolbarButton } from './plugin-toolbar-button'
 
 import type { McpServerEntry, WorkspaceCapabilities } from '@tagent/shared'
@@ -24,10 +23,8 @@ import {
   workspaceCapabilitiesVersionAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import {
-  BuiltinMcpRecommendations,
-  type BuiltinMcpInfo,
-} from '@/components/settings/BuiltinMcpRecommendations'
+import { PluginStorePanel, mcpCatalogEntryToServerEntry } from '@/components/settings/PluginStorePanel'
+import type { BuiltinMcpCatalogEntry } from '@tagent/shared'
 import { McpServerForm } from '@/components/settings/McpServerForm'
 import {
   Dialog,
@@ -64,8 +61,7 @@ export function CapabilityToolbar({
     name: string
     entry: McpServerEntry
   } | null>(null)
-  const [recommendationsOpen, setRecommendationsOpen] = React.useState(false)
-  const [importDialogOpen, setImportDialogOpen] = React.useState(false)
+  const [storeOpen, setStoreOpen] = React.useState(false)
 
   const [skillsDir, setSkillsDir] = React.useState('')
   React.useEffect(() => {
@@ -120,20 +116,22 @@ ${pluginList}
     }
   }
 
-  const handleAddPlugin = (): void => {
+  const handleAddCustomMcp = (): void => {
     setEditingServer(null)
     setMcpFormOpen(true)
+    setStoreOpen(false)
   }
 
-  const handleInstallBuiltinMcp = (mcp: BuiltinMcpInfo): void => {
-    const entry: McpServerEntry = {
-      type: 'stdio',
-      command: mcp.installCommand,
-      args: mcp.installArgs,
-      enabled: false,
-    }
+  const handleInstallStoreMcp = (mcp: BuiltinMcpCatalogEntry): void => {
+    const entry = mcpCatalogEntryToServerEntry(mcp)
     setEditingServer({ name: mcp.name, entry })
     setMcpFormOpen(true)
+    setStoreOpen(false)
+  }
+
+  const handleStoreSkillInstalled = (): void => {
+    bumpCapabilitiesVersion((v) => v + 1)
+    toast.success('Skill 已安装')
   }
 
   const handleMcpFormSaved = async (): Promise<void> => {
@@ -149,83 +147,50 @@ ${pluginList}
     }
   }
 
-  const handleImportPlugin = async (sourceSlug: string, skillSlug: string): Promise<void> => {
-    try {
-      await window.electronAPI.importSkillFromWorkspace(workspaceSlug, sourceSlug, skillSlug)
-      bumpCapabilitiesVersion((v) => v + 1)
-      setImportDialogOpen(false)
-      toast.success('已导入插件')
-    } catch (error) {
-      console.error('[CapabilityToolbar] 导入插件失败:', error)
-      const message = error instanceof Error ? error.message : '未知错误'
-      toast.error('导入插件失败', { description: message })
-    }
-  }
-
   const installedMcpNames = capabilities?.mcpServers.map((s) => s.name) ?? []
+  const installedSkillSlugs = capabilities?.skills.map((s) => s.slug) ?? []
   const isWindows = React.useMemo(() => detectIsWindows(), [])
 
   return (
     <>
       <div
         className={cn(
-          'relative flex flex-wrap items-center gap-2 border-b border-border/40 bg-muted/15 px-5 py-2.5 titlebar-no-drag',
+          'relative flex flex-wrap items-center gap-2 border-b border-border/40 bg-muted/15 px-5 py-2.5',
           isWindows && 'pr-[134px]'
         )}
       >
+        {/* 与 TabBar 一致：背景拖拽层铺满空白区；交互按钮各自 titlebar-no-drag 穿透 OS hitmask */}
         <div
-          className={cn(
-            'pointer-events-none absolute inset-0 titlebar-drag-region',
-            isWindows && 'right-[126px]'
-          )}
+          className={cn('absolute inset-0 z-[10] titlebar-drag-region', isWindows && 'right-[126px]')}
           aria-hidden
         />
-        <div className="relative z-[1] flex flex-wrap items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <PluginToolbarButton variant="primary" icon={<Plus size={15} strokeWidth={2} />} onClick={handleAddPlugin}>
-              添加插件
-            </PluginToolbarButton>
+            <span className="inline-flex">
+              <PluginToolbarButton
+                variant="primary"
+                icon={<Sparkles size={15} strokeWidth={1.75} />}
+                onClick={() => setStoreOpen(true)}
+              >
+                插件商店
+              </PluginToolbarButton>
+            </span>
           </TooltipTrigger>
-          <TooltipContent>添加 MCP 连接插件</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PluginToolbarButton
-              variant="subtle"
-              icon={<Sparkles size={15} strokeWidth={1.75} />}
-              onClick={() => setRecommendationsOpen(true)}
-            >
-              推荐插件
-            </PluginToolbarButton>
-          </TooltipTrigger>
-          <TooltipContent>查看推荐的一键安装插件</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PluginToolbarButton
-              variant="outline"
-              icon={<Download size={15} strokeWidth={1.9} />}
-              onClick={() => setImportDialogOpen(true)}
-            >
-              导入插件
-            </PluginToolbarButton>
-          </TooltipTrigger>
-          <TooltipContent>从其他工作区导入 Skill 指令插件</TooltipContent>
+          <TooltipContent>浏览并安装 Skill 与 MCP</TooltipContent>
         </Tooltip>
 
         {skillsDir ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <PluginToolbarButton
-                variant="outline"
-                icon={<FolderOpen size={15} strokeWidth={1.75} />}
-                onClick={handleOpenSkillsDir}
-              >
-                打开目录
-              </PluginToolbarButton>
+              <span className="inline-flex">
+                <PluginToolbarButton
+                  variant="outline"
+                  icon={<FolderOpen size={15} strokeWidth={1.75} />}
+                  onClick={handleOpenSkillsDir}
+                >
+                  打开目录
+                </PluginToolbarButton>
+              </span>
             </TooltipTrigger>
             <TooltipContent>在文件管理器中打开插件目录</TooltipContent>
           </Tooltip>
@@ -235,26 +200,27 @@ ${pluginList}
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <PluginToolbarButton
-              variant="subtle"
-              icon={<MessageSquare size={15} strokeWidth={1.75} />}
-              onClick={() => void handleConfigPluginsViaChat()}
-            >
-              AI 配置
-            </PluginToolbarButton>
+            <span className="inline-flex">
+              <PluginToolbarButton
+                variant="subtle"
+                icon={<MessageSquare size={15} strokeWidth={1.75} />}
+                onClick={() => void handleConfigPluginsViaChat()}
+              >
+                AI 配置
+              </PluginToolbarButton>
+            </span>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs text-xs">
             让 TAgent Agent 联网查找并配置插件到当前工作区
           </TooltipContent>
         </Tooltip>
-        </div>
       </div>
 
       <Dialog open={mcpFormOpen} onOpenChange={setMcpFormOpen}>
         <DialogContent className="max-h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
           <DialogHeader className="px-6 pb-4 pt-6">
             <DialogTitle>
-              {editingServer ? `编辑插件：${editingServer.name}` : '添加插件'}
+              {editingServer ? `编辑 MCP：${editingServer.name}` : '自定义 MCP'}
             </DialogTitle>
             <DialogDescription>MCP 连接插件，支持 stdio、HTTP、SSE 三种传输方式</DialogDescription>
           </DialogHeader>
@@ -270,36 +236,29 @@ ${pluginList}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={recommendationsOpen} onOpenChange={setRecommendationsOpen}>
-        <DialogContent className="max-h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
-          <DialogHeader className="px-6 pb-4 pt-6">
-            <DialogTitle className="flex items-center gap-2">
-              <Settings size={16} className="text-muted-foreground" />
-              推荐插件
+      <Dialog open={storeOpen} onOpenChange={setStoreOpen}>
+        <DialogContent className="flex h-[min(85vh,700px)] w-[min(780px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 px-5 pb-3 pt-5">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Sparkles size={16} className="text-muted-foreground" />
+              插件商店
             </DialogTitle>
-            <DialogDescription>常用 MCP 连接插件，点击安装后会预填配置表单</DialogDescription>
+            <DialogDescription className="text-xs">
+              按需安装 Skill 与 MCP，不再默认批量预装
+            </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-6 pb-6">
-            <BuiltinMcpRecommendations
-              installedMcps={installedMcpNames}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-5">
+            <PluginStorePanel
               workspaceSlug={workspaceSlug}
-              onInstall={(mcp) => {
-                setRecommendationsOpen(false)
-                handleInstallBuiltinMcp(mcp)
-              }}
+              installedSkillSlugs={installedSkillSlugs}
+              installedMcpNames={installedMcpNames}
+              onInstallMcp={handleInstallStoreMcp}
+              onSkillInstalled={handleStoreSkillInstalled}
+              onAddCustomMcp={handleAddCustomMcp}
             />
           </div>
         </DialogContent>
       </Dialog>
-
-      <ImportSkillDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        workspaceSlug={workspaceSlug}
-        currentSkills={capabilities?.skills ?? []}
-        importingSkill={null}
-        onImport={handleImportPlugin}
-      />
     </>
   )
 }
