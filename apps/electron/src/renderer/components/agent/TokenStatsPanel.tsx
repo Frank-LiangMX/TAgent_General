@@ -7,7 +7,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Coins, Database, Zap, TrendingUp } from 'lucide-react'
+import { Coins, Database, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -17,6 +17,7 @@ import {
   currentSessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { ContextUsageBadge } from './ContextUsageBadge'
@@ -103,7 +104,7 @@ export function TokenStatsPanel({
       {hasTokenStats && (
         <>
           <StatItem
-            icon={<Zap size={12} />}
+            icon={<TrendingDown size={12} />}
             label="输入"
             value={formatTokens(stats.totalInputTokens)}
           />
@@ -112,17 +113,19 @@ export function TokenStatsPanel({
             label="输出"
             value={formatTokens(stats.totalOutputTokens)}
           />
-          <div className="h-3 w-px bg-border/50" />
           {hasCacheData && (
-            <StatItem
-              icon={<Database size={12} />}
-              label="缓存命中"
-              value={formatHitRate(cacheHitRate)}
-              highlight={cacheHitRate !== null && cacheHitRate > 0.5}
-              tooltip={
-                cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
-              }
-            />
+            <>
+              <div className="h-3 w-px bg-border/50" />
+              <StatItem
+                icon={<Database size={12} />}
+                label="缓存命中"
+                value={formatHitRate(cacheHitRate)}
+                highlight={cacheHitRate !== null && cacheHitRate > 0.5}
+                tooltip={
+                  cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
+                }
+              />
+            </>
           )}
           {stats.totalCostUsd > 0 && (
             <>
@@ -155,13 +158,12 @@ interface StatItemProps {
 }
 
 function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): React.ReactElement {
-  return (
+  const content = (
     <div
       className={cn(
         'flex items-center gap-1.5',
         highlight && 'text-emerald-600 dark:text-emerald-400'
       )}
-      title={tooltip}
     >
       <span className="opacity-70">{icon}</span>
       <span className="text-muted-foreground/80">{label}</span>
@@ -174,5 +176,16 @@ function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): Re
         {value}
       </span>
     </div>
+  )
+
+  if (!tooltip) return content
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top">
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }

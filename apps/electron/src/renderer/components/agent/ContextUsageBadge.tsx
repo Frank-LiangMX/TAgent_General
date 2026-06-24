@@ -240,7 +240,7 @@ export function ContextUsageBadge({
   if (isCompacting) {
     if (isInline) {
       return (
-        <div className="flex items-center gap-1 text-muted-foreground" title={triggerTitle}>
+        <div className="flex items-center gap-1 text-muted-foreground" aria-label={triggerTitle}>
           <Loader2 className="size-3.5 animate-spin" />
           {percent != null ? (
             <span className={cn('text-xs tabular-nums font-medium', toneClass)}>{percent}%</span>
@@ -268,6 +268,7 @@ export function ContextUsageBadge({
     onCompact()
     setOpen(false)
   }
+  const showBreakdownLoading = breakdownLoading || (open && !snapshot && !breakdownError)
 
   const popoverContent = (
     <PopoverContent
@@ -275,20 +276,21 @@ export function ContextUsageBadge({
       align={isInline ? 'start' : 'center'}
       sideOffset={8}
       className={cn(
-        'flex max-h-[min(70vh,480px)] w-auto flex-col overflow-hidden p-0',
-        isInline ? 'min-w-[280px] max-w-[340px]' : 'min-w-[240px]'
+        'context-usage-popover flex max-h-[min(76vh,560px)] w-[360px] flex-col overflow-hidden p-0',
+        isInline ? 'max-w-[360px]' : ''
       )}
       onMouseEnter={isInline ? undefined : cancelClose}
       onMouseLeave={isInline ? undefined : scheduleClose}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin">
-        {breakdownLoading ? (
-          <div className="flex flex-col gap-3">
-            <div className="h-3 w-full animate-pulse rounded-full bg-muted/60" />
-            <div className="space-y-2">
+      <div className="min-h-[300px] flex-1 overflow-y-auto p-3 scrollbar-thin">
+        {showBreakdownLoading ? (
+          <div className="flex flex-col gap-3 rounded-2xl bg-background/16 p-3">
+            <div className="h-4 w-32 animate-pulse rounded-full bg-muted/60" />
+            <div className="h-2.5 w-full animate-pulse rounded-full bg-muted/50" />
+            <div className="space-y-1.5">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-8 animate-pulse rounded-md bg-muted/40" />
+                <div key={i} className="h-7 animate-pulse rounded-xl bg-muted/35" />
               ))}
             </div>
           </div>
@@ -299,8 +301,8 @@ export function ContextUsageBadge({
         ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-border/50 px-3 py-2.5">
-        {!snapshot && !breakdownLoading && displayWindow ? (
+      <div className="shrink-0 bg-background/12 px-3 pb-3 pt-2 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.14)]">
+        {!snapshot && !showBreakdownLoading && displayWindow ? (
           <div className="mb-2.5 flex flex-col gap-1 text-xs">
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">当前窗口</span>
@@ -312,34 +314,40 @@ export function ContextUsageBadge({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-1.5">
-          <Button
+        <div className="flex items-center gap-2">
+          <button
             type="button"
-            variant={isWarning || isDanger ? 'default' : 'outline'}
-            size="sm"
             className={cn(
-              'h-8 w-full gap-1.5 text-xs',
-              isDanger && 'bg-red-500 text-white hover:bg-red-600',
-              isWarning && !isDanger && 'bg-amber-500 text-white hover:bg-amber-600'
+              'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+              'bg-background/22 text-foreground/82 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18),0_0_0_1px_hsl(var(--foreground)/0.08)]',
+              'hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55',
+              isDanger && 'bg-red-500/12 text-red-600 hover:bg-red-500/16 dark:text-red-300',
+              isWarning &&
+                !isDanger &&
+                'bg-amber-500/12 text-amber-700 hover:bg-amber-500/16 dark:text-amber-300'
             )}
             onClick={handleCompactClick}
             disabled={isProcessing}
           >
             <Minimize2 className="size-3.5" />
-            {isProcessing ? '对话进行中' : '手动压缩'}
-          </Button>
+            {isProcessing ? '对话进行中' : '压缩上下文'}
+          </button>
           {onClientCompact && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 w-full gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-              onClick={onClientCompact}
-              disabled={isProcessing}
-              title="不调 LLM，直接丢弃较早的 tool 块（兼容端点兜底）"
-            >
-              客户端压缩
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
+                  onClick={onClientCompact}
+                  disabled={isProcessing}
+                >
+                  快速
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="end">
+                <p>不调 LLM，直接丢弃较早的 tool 块</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

@@ -1,7 +1,7 @@
 /**
  * CapabilityDetailView - 能力详情主区域视图
  *
- * 左侧 SkillsPanel 选中 Skill / MCP Server 后，右侧展示完整详情。
+ * 左侧 PluginsPanel 选中插件后，右侧展示完整详情。
  * 这里保留现有数据和编辑能力，但把视觉结构重排成更清晰的概览卡 + 分区内容。
  */
 
@@ -10,6 +10,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  LayoutGrid,
   Loader2,
   Pencil,
   Plug,
@@ -117,6 +118,7 @@ export function CapabilityDetailView({
           workspaceSlug={workspaceSlug}
           onBack={handleBack}
           hideBackButton={hideBackButton}
+          compact={hideBackButton}
         />
       ) : (
         <McpCapabilityDetail
@@ -124,6 +126,7 @@ export function CapabilityDetailView({
           workspaceSlug={workspaceSlug}
           onBack={handleBack}
           hideBackButton={hideBackButton}
+          compact={hideBackButton}
         />
       )}
     </div>
@@ -135,11 +138,13 @@ function SkillCapabilityDetail({
   workspaceSlug,
   onBack,
   hideBackButton,
+  compact = false,
 }: {
   skillSlug: string
   workspaceSlug: string
   onBack: () => void
   hideBackButton?: boolean
+  compact?: boolean
 }): React.ReactElement {
   const [content, setContent] = React.useState<string | null>(null)
   const [loadingContent, setLoadingContent] = React.useState(false)
@@ -238,7 +243,7 @@ function SkillCapabilityDetail({
   if (!skill) {
     return (
       <CapabilityNotFound
-        type="Skill"
+        type="插件"
         name={skillSlug}
         onBack={onBack}
         hideBackButton={hideBackButton}
@@ -254,39 +259,64 @@ function SkillCapabilityDetail({
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 py-5">
-      <div className="rounded-2xl border border-border/60 bg-card/90 p-4 shadow-sm shadow-foreground/5">
+    <div className={cn('flex min-h-0 flex-1 flex-col gap-4', compact ? 'px-5 py-3' : 'px-5 py-5')}>
+      <div
+        className={cn(
+          'rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-foreground/5',
+          compact ? 'p-3.5' : 'p-4'
+        )}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              {!hideBackButton ? (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+            {!compact ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!hideBackButton ? (
+                    <button
+                      type="button"
+                      onClick={onBack}
+                      className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <ArrowLeft size={12} className="mr-1.5" />
+                      返回
+                    </button>
+                  ) : null}
+                  <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">
+                    指令插件
+                  </span>
+                  <h3 className="truncate text-base font-semibold text-foreground">{skill.name}</h3>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
+                      skill.enabled
+                        ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : 'border border-border/60 bg-muted/60 text-muted-foreground'
+                    )}
+                  >
+                    {skill.enabled ? '已启用' : '已禁用'}
+                  </span>
+                </div>
+                <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  {skill.description ?? '暂无描述'}
+                </p>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                  Skill
+                </span>
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
+                    skill.enabled
+                      ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                      : 'border border-border/60 bg-muted/60 text-muted-foreground'
+                  )}
                 >
-                  <ArrowLeft size={12} className="mr-1.5" />
-                  返回
-                </button>
-              ) : null}
-              <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Skill
-              </span>
-              <h3 className="truncate text-base font-semibold text-foreground">{skill.name}</h3>
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-                  skill.enabled
-                    ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    : 'border border-border/60 bg-muted/60 text-muted-foreground'
-                )}
-              >
-                {skill.enabled ? '已启用' : '已禁用'}
-              </span>
-            </div>
-            <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-              {skill.description ?? '暂无描述'}
-            </p>
+                  {skill.enabled ? '已启用' : '已禁用'}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -321,7 +351,7 @@ function SkillCapabilityDetail({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={cn('mt-4 grid gap-2', compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4')}>
           {metaTags.map((item) => (
             <SummaryCard key={item.label} label={item.label} value={item.value} />
           ))}
@@ -440,11 +470,13 @@ function McpCapabilityDetail({
   workspaceSlug,
   onBack,
   hideBackButton,
+  compact = false,
 }: {
   serverName: string
   workspaceSlug: string
   onBack: () => void
   hideBackButton?: boolean
+  compact?: boolean
 }): React.ReactElement {
   const [loading, setLoading] = React.useState(true)
   const [isEditing, setIsEditing] = React.useState(false)
@@ -529,7 +561,7 @@ function McpCapabilityDetail({
   if (!entry) {
     return (
       <CapabilityNotFound
-        type="MCP Server"
+        type="插件"
         name={serverName}
         onBack={onBack}
         hideBackButton={hideBackButton}
@@ -541,46 +573,76 @@ function McpCapabilityDetail({
   const headerCount = entry.headers ? Object.keys(entry.headers).length : 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 py-5">
-      <div className="rounded-2xl border border-border/60 bg-card/90 p-4 shadow-sm shadow-foreground/5">
+    <div className={cn('flex min-h-0 flex-1 flex-col gap-4', compact ? 'px-5 py-3' : 'px-5 py-5')}>
+      <div
+        className={cn(
+          'rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-foreground/5',
+          compact ? 'p-3.5' : 'p-4'
+        )}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              {!hideBackButton ? (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <ArrowLeft size={12} className="mr-1.5" />
-                  返回
-                </button>
-              ) : null}
-              <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                MCP
-              </span>
-              <h3 className="truncate text-base font-semibold text-foreground">{serverName}</h3>
-              {entry.isBuiltin && (
-                <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
-                  内置
+            {!compact ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!hideBackButton ? (
+                    <button
+                      type="button"
+                      onClick={onBack}
+                      className="inline-flex h-8 items-center justify-center rounded-full border border-border/60 bg-muted/35 px-3 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <ArrowLeft size={12} className="mr-1.5" />
+                      返回
+                    </button>
+                  ) : null}
+                  <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">
+                    连接插件
+                  </span>
+                  <h3 className="truncate text-base font-semibold text-foreground">{serverName}</h3>
+                  {entry.isBuiltin && (
+                    <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+                      内置
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
+                      entry.enabled
+                        ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : 'border border-border/60 bg-muted/60 text-muted-foreground'
+                    )}
+                  >
+                    {entry.enabled ? '已启用' : '已禁用'}
+                  </span>
+                </div>
+                <p className="mt-2 max-w-[72ch] text-sm leading-6 text-muted-foreground">
+                  {entry.type === 'stdio'
+                    ? (entry.command ?? 'stdio 服务器')
+                    : (entry.url ?? '远程 MCP 服务器')}
+                </p>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                  MCP
                 </span>
-              )}
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-                  entry.enabled
-                    ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    : 'border border-border/60 bg-muted/60 text-muted-foreground'
-                )}
-              >
-                {entry.enabled ? '已启用' : '已禁用'}
-              </span>
-            </div>
-            <p className="mt-2 max-w-[72ch] text-sm leading-6 text-muted-foreground">
-              {entry.type === 'stdio'
-                ? (entry.command ?? 'stdio 服务器')
-                : (entry.url ?? '远程 MCP 服务器')}
-            </p>
+                {entry.isBuiltin ? (
+                  <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+                    内置
+                  </span>
+                ) : null}
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
+                    entry.enabled
+                      ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                      : 'border border-border/60 bg-muted/60 text-muted-foreground'
+                  )}
+                >
+                  {entry.enabled ? '已启用' : '已禁用'}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -640,7 +702,7 @@ function McpCapabilityDetail({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={cn('mt-4 grid gap-2', compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4')}>
           <SummaryCard label="传输" value={TRANSPORT_LABELS[entry.type]} />
           <SummaryCard label="环境变量" value={envCount > 0 ? `${envCount} 项` : '无'} />
           <SummaryCard label="请求头" value={headerCount > 0 ? `${headerCount} 项` : '无'} />
@@ -852,10 +914,10 @@ function EmptyCapabilityState(): React.ReactElement {
   return (
     <div className="flex h-full items-center justify-center p-6">
       <div className="max-w-sm rounded-2xl border border-dashed border-border/70 bg-muted/20 px-6 py-8 text-center">
-        <Zap size={32} className="mx-auto text-muted-foreground/30" />
-        <h4 className="mt-4 text-sm font-medium text-foreground">选择一个 MCP 或 Skill 查看详情</h4>
+        <LayoutGrid size={32} className="mx-auto text-muted-foreground/30" strokeWidth={1.5} />
+        <h4 className="mt-4 text-sm font-medium text-foreground">选择一个插件查看详情</h4>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          从左侧列表点击具体能力，右侧会显示配置、状态、测试结果和编辑入口。
+          从左侧列表点击具体插件，右侧会显示配置、状态、测试结果和编辑入口。
         </p>
       </div>
     </div>

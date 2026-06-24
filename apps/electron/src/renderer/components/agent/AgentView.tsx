@@ -24,7 +24,6 @@ import {
   Plus,
   MicIcon,
   X,
-  Brain,
   Sparkles,
   Eye,
   Bot,
@@ -86,7 +85,6 @@ import {
   workspaceAttachedDirectoriesMapAtom,
   workspaceAttachedFilesMapAtom,
   liveMessagesMapAtom,
-  agentThinkingAtom,
   subagentEagernessAtom,
   stoppedByUserSessionsAtom,
   agentPlanModeSessionsAtom,
@@ -109,7 +107,7 @@ import {
   btwModelIdAtom,
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
-import { channelsAtom, thinkingExpandedAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/chat-atoms'
 import {
   currentComposerModeAtom,
   composerModeMapAtom,
@@ -196,89 +194,6 @@ function getUserTextFromSDKMessage(message: SDKMessage): string | null {
     .map((block) => (block as { text: string }).text)
 
   return texts.length > 0 ? texts.join('\n') : null
-}
-
-// ===== 思考模式 Hover Popover =====
-
-interface AgentThinkingPopoverProps {
-  agentThinking: import('@tagent/shared').ThinkingConfig | undefined
-  onToggle: () => void
-}
-
-function AgentThinkingPopover({
-  agentThinking,
-  onToggle,
-}: AgentThinkingPopoverProps): React.ReactElement {
-  const [thinkingExpanded, setThinkingExpanded] = useAtom(thinkingExpandedAtom)
-  const [open, setOpen] = React.useState(false)
-  const hoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const isEnabled = agentThinking?.type === 'adaptive'
-
-  const handleMouseEnter = React.useCallback(() => {
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
-    setOpen(true)
-  }, [])
-
-  const handleMouseLeave = React.useCallback(() => {
-    hoverTimeout.current = setTimeout(() => setOpen(false), 150)
-  }, [])
-
-  React.useEffect(() => {
-    return () => {
-      if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
-    }
-  }, [])
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            'size-[36px] rounded-full',
-            isEnabled ? 'text-green-500' : 'text-foreground/60 hover:text-foreground'
-          )}
-          onClick={onToggle}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          <Brain className="size-5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        className="w-auto min-w-[160px] p-2 px-2.5"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-foreground/70">思考模式</span>
-            <Switch
-              checked={isEnabled}
-              onCheckedChange={onToggle}
-              className="h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
-          </div>
-          <div className="h-px bg-border" />
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-foreground/70">展开思考</span>
-            <Switch
-              checked={thinkingExpanded}
-              onCheckedChange={setThinkingExpanded}
-              className="h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
 }
 
 /**
@@ -586,7 +501,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       }),
     [agentChannelIds, globalChannels]
   )
-  const [agentThinking, setAgentThinking] = useAtom(agentThinkingAtom)
   const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
@@ -2670,22 +2584,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       },
       { key: 'composer-mode', node: <ComposerModeSelector /> },
       {
-        key: 'thinking',
-        node: (
-          <AgentThinkingPopover
-            agentThinking={agentThinking}
-            onToggle={() => {
-              const next =
-                agentThinking?.type === 'adaptive'
-                  ? { type: 'disabled' as const }
-                  : { type: 'adaptive' as const }
-              setAgentThinking(next)
-              window.electronAPI.updateSettings({ agentThinking: next })
-            }}
-          />
-        ),
-      },
-      {
         key: 'subagent-eagerness',
         node: (
           <SubagentEagernessSelector
@@ -2711,8 +2609,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     ],
     [
       sessionId,
-      agentThinking,
-      setAgentThinking,
       handleOpenFileDialog,
       handleAttachFolder,
       handleSpeech,

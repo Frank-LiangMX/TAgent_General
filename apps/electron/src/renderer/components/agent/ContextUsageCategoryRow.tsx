@@ -25,11 +25,11 @@ export function ContextUsageCategoryRow({
   const swatchColor = resolveContextUsageColor(category.name, category.color)
 
   return (
-    <div className="border-b border-border/30 py-2 last:border-b-0">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
+    <div className="rounded-xl px-2 py-1.5 transition-colors hover:bg-foreground/5">
+      <div className="grid grid-cols-[1fr_auto_42px] items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <span
-            className="size-2 shrink-0 rounded-[3px]"
+            className="size-2.5 shrink-0 rounded-[4px]"
             style={{ backgroundColor: isFreeSpace ? '#D1D5DB' : swatchColor }}
             aria-hidden="true"
           />
@@ -43,9 +43,12 @@ export function ContextUsageCategoryRow({
         <span className="shrink-0 text-xs tabular-nums text-foreground/90">
           {formatContextTokens(category.tokens)}
         </span>
+        <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+          {barPercent != null ? `${barPercent}%` : '—'}
+        </span>
       </div>
       {!isFreeSpace && barPercent != null && barPercent > 0 && (
-        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-border/25">
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-foreground/8">
           <div
             className="h-full rounded-full transition-[width] duration-300"
             style={{

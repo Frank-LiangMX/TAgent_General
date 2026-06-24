@@ -1,224 +1,289 @@
 /**
- * SkillsPanel - 工作区 MCP & Skills 导航列表（Navigator 翼）
+ * PluginsPanel - 工作区插件导航（双列卡片 + MCP / Skill Tab）
  */
 
 import { useAtom } from 'jotai'
-import { CircleCheck, CircleDashed, Plug, RotateCw, Settings2, Sparkles, Zap } from 'lucide-react'
+import {
+  CircleCheck,
+  LayoutGrid,
+  Plug,
+  RotateCw,
+  Search,
+  Sparkles,
+} from 'lucide-react'
 import * as React from 'react'
 
 import type { WorkspaceCapabilities } from '@tagent/shared'
 
-import { selectedCapabilityAtom } from '@/atoms/app-mode'
+import { pluginKindTabAtom, selectedCapabilityAtom, type PluginKindTab } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 
-type SkillsFilter = 'all' | 'mcp' | 'skills'
-
-interface SkillsPanelProps {
-  capabilities: WorkspaceCapabilities | null
-  onConfigure?: () => void
+interface PluginListItem {
+  id: string
+  kind: PluginKindTab
+  title: string
+  subtitle?: string
+  enabled: boolean
+  hasUpdate?: boolean
 }
 
-export function SkillsPanel({ capabilities, onConfigure }: SkillsPanelProps): React.ReactElement {
+interface PluginsPanelProps {
+  capabilities: WorkspaceCapabilities | null
+}
+
+/** @deprecated 使用 PluginsPanel */
+export type SkillsPanelProps = PluginsPanelProps
+
+export function PluginsPanel({ capabilities }: PluginsPanelProps): React.ReactElement {
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
-  const [filter, setFilter] = React.useState<SkillsFilter>('all')
+  const [kindTab, setKindTab] = useAtom(pluginKindTabAtom)
+  const [query, setQuery] = React.useState('')
 
-  const enabledMcpCount = capabilities?.mcpServers.filter((s) => s.enabled).length ?? 0
-  const totalMcpCount = capabilities?.mcpServers.length ?? 0
-  const enabledSkillCount = capabilities?.skills.filter((s) => s.enabled).length ?? 0
-  const totalSkillCount = capabilities?.skills.length ?? 0
+  const { mcpItems, skillItems } = React.useMemo(() => {
+    if (!capabilities) {
+      return { mcpItems: [] as PluginListItem[], skillItems: [] as PluginListItem[] }
+    }
+    const mcpItems: PluginListItem[] = capabilities.mcpServers
+      .map((server) => ({
+        id: server.name,
+        kind: 'mcp' as const,
+        title: server.name,
+        subtitle: server.type,
+        enabled: server.enabled,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+    const skillItems: PluginListItem[] = capabilities.skills
+      .map((skill) => ({
+        id: skill.slug,
+        kind: 'skill' as const,
+        title: skill.name,
+        subtitle: skill.description ?? skill.slug,
+        enabled: skill.enabled,
+        hasUpdate: skill.hasUpdate,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+    return { mcpItems, skillItems }
+  }, [capabilities])
 
-  const showMcp = filter === 'all' || filter === 'mcp'
-  const showSkills = filter === 'all' || filter === 'skills'
+  const activeItems = kindTab === 'mcp' ? mcpItems : skillItems
+  const enabledCount = activeItems.filter((item) => item.enabled).length
+  const normalizedQuery = query.trim().toLowerCase()
+
+  const visibleItems = activeItems.filter((item) => {
+    if (!normalizedQuery) return true
+    return (
+      item.title.toLowerCase().includes(normalizedQuery) ||
+      (item.subtitle?.toLowerCase().includes(normalizedQuery) ?? false)
+    )
+  })
+
+  const selectedKey =
+    selectedCapability?.type === 'mcp'
+      ? `mcp:${selectedCapability.key}`
+      : selectedCapability?.type === 'skill'
+        ? `skill:${selectedCapability.key}`
+        : null
+
+  const tabIndex = kindTab === 'mcp' ? 0 : 1
+  const [gridPhase, setGridPhase] = React.useState(0)
+
+  const handleKindTabChange = React.useCallback(
+    (tab: PluginKindTab) => {
+      if (tab === kindTab) return
+      setKindTab(tab)
+      setGridPhase((value) => value + 1)
+      if (!capabilities) return
+
+      const list = tab === 'mcp' ? capabilities.mcpServers : capabilities.skills
+      if (list.length === 0) {
+        setSelectedCapability(null)
+        return
+      }
+      const first = list[0]!
+      if (tab === 'mcp') {
+        setSelectedCapability({ type: 'mcp', key: first.name })
+      } else {
+        setSelectedCapability({ type: 'skill', key: (first as { slug: string }).slug })
+      }
+    },
+    [capabilities, kindTab, setKindTab, setSelectedCapability]
+  )
+
+  const handleSelectItem = React.useCallback(
+    (item: PluginListItem) => {
+      if (item.kind !== kindTab) {
+        setKindTab(item.kind)
+      }
+      setSelectedCapability(
+        item.kind === 'mcp' ? { type: 'mcp', key: item.id } : { type: 'skill', key: item.id }
+      )
+    },
+    [kindTab, setKindTab, setSelectedCapability]
+  )
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3">
-        <div className="min-w-0">
-          <span className="text-[11px] font-medium text-foreground">MCP & Skills</span>
-          <span className="ml-2 text-[10px] tabular-nums text-muted-foreground">
-            {capabilities
-              ? `${enabledMcpCount + enabledSkillCount}/${totalMcpCount + totalSkillCount}`
-              : '…'}
+    <div className="plugins-panel flex h-full min-h-0 flex-col">
+      <div className="plugins-panel-header shrink-0 px-3 pb-2 pt-2.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <LayoutGrid size={14} className="shrink-0 text-muted-foreground/75" strokeWidth={1.75} />
+          <span className="text-[12px] font-semibold text-foreground">插件</span>
+          <span className="rounded-md bg-foreground/6 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+            {capabilities ? `${enabledCount}/${activeItems.length}` : '…'}
           </span>
         </div>
-        {onConfigure ? (
+
+        <div className="agent-model-segmented agent-model-segmented--2 mt-2.5">
+          <div
+            className="agent-model-segmented-indicator"
+            style={{ transform: `translateX(${tabIndex * 100}%)` }}
+          />
           <button
             type="button"
-            onClick={onConfigure}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
-            title="配置 MCP 与 Skills"
+            onClick={() => handleKindTabChange('mcp')}
+            className={cn(
+              'agent-model-segmented-option gap-1',
+              kindTab === 'mcp' && 'agent-model-segmented-option--active'
+            )}
           >
-            <Settings2 size={14} />
+            <Plug size={12} strokeWidth={1.75} />
+            <span>MCP</span>
+            {capabilities ? (
+              <span className="text-[10px] tabular-nums opacity-60">{mcpItems.length}</span>
+            ) : null}
           </button>
-        ) : null}
+          <button
+            type="button"
+            onClick={() => handleKindTabChange('skill')}
+            className={cn(
+              'agent-model-segmented-option gap-1',
+              kindTab === 'skill' && 'agent-model-segmented-option--active'
+            )}
+          >
+            <Sparkles size={12} strokeWidth={1.75} />
+            <span>Skill</span>
+            {capabilities ? (
+              <span className="text-[10px] tabular-nums opacity-60">{skillItems.length}</span>
+            ) : null}
+          </button>
+        </div>
+
+        <label className="plugins-panel-search relative mt-2.5 flex items-center gap-2 rounded-xl px-2.5 py-1.5">
+          <Search size={13} className="shrink-0 text-muted-foreground/65" strokeWidth={2} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={kindTab === 'mcp' ? '搜索 MCP…' : '搜索 Skill…'}
+            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/55"
+          />
+        </label>
       </div>
 
-      <div className="flex shrink-0 gap-1 border-b border-border/40 px-2 py-1.5">
-        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
-          全部
-        </FilterChip>
-        <FilterChip active={filter === 'mcp'} onClick={() => setFilter('mcp')}>
-          MCP {totalMcpCount > 0 ? `(${totalMcpCount})` : ''}
-        </FilterChip>
-        <FilterChip active={filter === 'skills'} onClick={() => setFilter('skills')}>
-          Skills {totalSkillCount > 0 ? `(${totalSkillCount})` : ''}
-        </FilterChip>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5 scrollbar-thin">
         {capabilities === null ? (
-          <SkeletonRows rows={5} />
+          <PluginCardSkeletonGrid />
+        ) : visibleItems.length === 0 ? (
+          <div className="plugins-panel-empty">
+            <LayoutGrid size={20} className="text-muted-foreground/35" strokeWidth={1.5} />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {activeItems.length === 0
+                ? kindTab === 'mcp'
+                  ? '暂无 MCP 插件'
+                  : '暂无 Skill 插件'
+                : '没有匹配的插件'}
+            </p>
+          </div>
         ) : (
-          <>
-            {showMcp ? (
-              <section className="mb-1">
-                {capabilities.mcpServers.length === 0 ? (
-                  <EmptyRow icon={<Plug size={12} />} text="暂无 MCP" />
-                ) : (
-                  capabilities.mcpServers.map((server) => (
-                    <NavigatorRow
-                      key={server.name}
-                      icon={server.enabled ? <CircleCheck size={12} /> : <CircleDashed size={12} />}
-                      iconClassName={
-                        server.enabled ? 'text-emerald-500' : 'text-muted-foreground/50'
-                      }
-                      title={server.name}
-                      subtitle={server.type}
-                      selected={
-                        selectedCapability?.type === 'mcp' && selectedCapability.key === server.name
-                      }
-                      onClick={() => setSelectedCapability({ type: 'mcp', key: server.name })}
-                    />
-                  ))
-                )}
-              </section>
-            ) : null}
-
-            {showSkills ? (
-              <section>
-                {capabilities.skills.length === 0 ? (
-                  <EmptyRow icon={<Sparkles size={12} />} text="暂无 Skills" />
-                ) : (
-                  capabilities.skills.map((skill) => (
-                    <NavigatorRow
-                      key={skill.slug}
-                      icon={<Zap size={12} />}
-                      iconClassName={skill.enabled ? 'text-amber-500' : 'text-muted-foreground/50'}
-                      title={skill.name}
-                      subtitle={skill.description ?? skill.slug}
-                      badge={
-                        skill.hasUpdate ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400">
-                            <RotateCw size={9} />
-                            更新
-                          </span>
-                        ) : undefined
-                      }
-                      selected={
-                        selectedCapability?.type === 'skill' &&
-                        selectedCapability.key === skill.slug
-                      }
-                      onClick={() => setSelectedCapability({ type: 'skill', key: skill.slug })}
-                    />
-                  ))
-                )}
-              </section>
-            ) : null}
-          </>
+          <div
+            key={`${kindTab}-${gridPhase}`}
+            className="plugins-panel-grid grid grid-cols-2 gap-2"
+          >
+            {visibleItems.map((item, index) => {
+              const itemKey = `${item.kind}:${item.id}`
+              const selected = selectedKey === itemKey
+              return (
+                <PluginCard
+                  key={itemKey}
+                  item={item}
+                  selected={selected}
+                  style={{ animationDelay: `${Math.min(index, 8) * 24}ms` }}
+                  onClick={() => handleSelectItem(item)}
+                />
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
-        active
-          ? 'bg-foreground/8 text-foreground'
-          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-      )}
-    >
-      {children}
-    </button>
-  )
-}
+/** @deprecated 使用 PluginsPanel */
+export const SkillsPanel = PluginsPanel
 
-function NavigatorRow({
-  icon,
-  iconClassName,
-  title,
-  subtitle,
-  badge,
+function PluginCard({
+  item,
   selected,
   onClick,
+  style,
 }: {
-  icon: React.ReactNode
-  iconClassName?: string
-  title: string
-  subtitle?: string
-  badge?: React.ReactNode
-  selected?: boolean
-  onClick?: () => void
+  item: PluginListItem
+  selected: boolean
+  onClick: () => void
+  style?: React.CSSProperties
 }): React.ReactElement {
+  const Icon = item.kind === 'mcp' ? Plug : Sparkles
   return (
     <button
       type="button"
       onClick={onClick}
+      style={style}
       className={cn(
-        'group relative flex w-full items-start gap-2 px-3 py-2 text-left transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
-        selected ? 'bg-accent/70' : 'hover:bg-accent/40'
+        'plugins-panel-card group relative flex min-h-[88px] flex-col items-start gap-2 rounded-[14px] p-2.5 text-left transition-[transform,box-shadow,background-color] duration-200',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35',
+        selected
+          ? 'plugins-panel-card--selected'
+          : 'hover:-translate-y-px hover:bg-foreground/[0.04]'
       )}
     >
-      {selected ? (
+      <div className="flex w-full items-start justify-between gap-1">
         <span
-          className="absolute bottom-1 left-0 top-1 w-0.5 rounded-full bg-primary"
-          aria-hidden
-        />
-      ) : null}
-      <span className={cn('mt-0.5 shrink-0', iconClassName)}>{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="truncate text-xs font-medium text-foreground">{title}</span>
-          {badge}
+          className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-[10px]',
+            item.kind === 'mcp'
+              ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
+              : 'bg-amber-500/12 text-amber-600 dark:text-amber-400'
+          )}
+        >
+          <Icon size={13} strokeWidth={1.85} />
         </span>
-        {subtitle ? (
-          <span className="mt-0.5 line-clamp-1 text-[10px] leading-4 text-muted-foreground">
-            {subtitle}
+        {item.hasUpdate ? (
+          <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/12 px-1 py-0.5 text-[9px] font-medium text-amber-700 dark:text-amber-300">
+            <RotateCw size={8} />
+            更新
           </span>
-        ) : null}
+        ) : item.enabled ? (
+          <CircleCheck size={12} className="text-emerald-500/85" strokeWidth={2} />
+        ) : (
+          <span className="size-2 rounded-full bg-muted-foreground/25" />
+        )}
+      </div>
+      <span className="line-clamp-2 w-full text-[11px] font-semibold leading-4 text-foreground">
+        {item.title}
       </span>
+      {item.subtitle ? (
+        <span className="line-clamp-2 w-full text-[10px] leading-3.5 text-muted-foreground">
+          {item.subtitle}
+        </span>
+      ) : null}
     </button>
   )
 }
 
-function EmptyRow({ icon, text }: { icon: React.ReactNode; text: string }): React.ReactElement {
+function PluginCardSkeletonGrid(): React.ReactElement {
   return (
-    <div className="flex items-center gap-2 px-3 py-3 text-[11px] text-muted-foreground">
-      <span className="text-muted-foreground/50">{icon}</span>
-      {text}
-    </div>
-  )
-}
-
-function SkeletonRows({ rows }: { rows: number }): React.ReactElement {
-  return (
-    <div className="flex flex-col gap-1 px-2 py-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/30" />
+    <div className="grid grid-cols-2 gap-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-[88px] animate-pulse rounded-[14px] bg-muted/25" />
       ))}
     </div>
   )

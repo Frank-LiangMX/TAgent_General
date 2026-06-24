@@ -23,28 +23,42 @@ function formatCompactThreshold(threshold: number): string {
   return formatContextTokens(threshold)
 }
 
+function thresholdPercent(snapshot: ContextUsageSnapshot): number | undefined {
+  const threshold = snapshot.autoCompactThreshold
+  if (threshold == null || threshold <= 0) return undefined
+  if (threshold <= 1) return threshold * 100
+  if (snapshot.maxTokens <= 0) return undefined
+  return (threshold / snapshot.maxTokens) * 100
+}
+
 function usageToneClass(percent: number): string {
   if (percent >= 90) return 'text-red-500 dark:text-red-400'
   if (percent >= 70) return 'text-amber-500 dark:text-amber-400'
   return 'text-foreground/75'
 }
 
+function usageStatusText(percent: number): string {
+  if (percent >= 90) return '上下文危险，建议立即压缩'
+  if (percent >= 70) return '接近压缩区间，建议留意'
+  return '容量健康'
+}
+
 function DetailLine({
   label,
   value,
   muted,
-  title,
+  ariaLabel,
 }: {
   label: string
   value: string
   muted?: boolean
-  title?: string
+  ariaLabel?: string
 }): React.ReactElement {
   return (
     <div className="flex items-center justify-between gap-3 text-[11px]">
       <span
         className={cn('min-w-0 truncate text-muted-foreground', muted && 'opacity-70')}
-        title={title ?? label}
+        aria-label={ariaLabel ?? label}
       >
         {label}
       </span>
@@ -121,7 +135,7 @@ function getCategoryDrillDown(
             <DetailLine
               key={file.path}
               label={shortPath}
-              title={file.path}
+              ariaLabel={file.path}
               value={formatContextTokens(file.tokens)}
             />
           )
@@ -189,6 +203,7 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
   const percent = Math.round(snapshot.percentage)
   const sortedCategories = React.useMemo(() => sortCategories(snapshot), [snapshot])
   const topCategoryName = sortedCategories.find((c) => !isFreeSpaceCategory(c.name))?.name
+  const threshold = thresholdPercent(snapshot)
 
   const metaParts: string[] = []
   if (snapshot.isAutoCompactEnabled) {
@@ -202,33 +217,58 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-xs font-medium text-foreground/80">Context 占用</p>
-          <span className={cn('text-sm font-semibold tabular-nums', usageToneClass(percent))}>
-            {percent}%
+      <div className="rounded-2xl bg-background/20 p-3 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-foreground/90">Context 容量</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {snapshot.model || '当前模型'}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <div className={cn('text-lg font-semibold tabular-nums leading-none', usageToneClass(percent))}>
+              {percent}%
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">{usageStatusText(percent)}</div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-baseline justify-between gap-3 text-[11px]">
+          <span className="text-muted-foreground">已用 / 窗口</span>
+          <span className="tabular-nums font-medium text-foreground/85">
+            {formatContextTokens(snapshot.totalTokens)} / {formatContextTokens(snapshot.maxTokens)}
           </span>
         </div>
-        <p className="mt-0.5 text-[11px] tabular-nums text-muted-foreground">
-          {formatContextTokens(snapshot.totalTokens)} / {formatContextTokens(snapshot.maxTokens)}
-          {snapshot.model ? ` · ${snapshot.model}` : ''}
-        </p>
+
+        <ContextUsageSegmentBar
+          categories={snapshot.categories}
+          totalTokens={snapshot.totalTokens}
+          maxTokens={snapshot.maxTokens}
+          thresholdPercent={threshold}
+          showLegend={false}
+          className="mt-2"
+        />
+
+        <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground/70">
+          <span>{snapshot.isAutoCompactEnabled ? '自动压缩已开启' : '自动压缩未开启'}</span>
+          {snapshot.autoCompactThreshold != null ? (
+            <span>阈值 {formatCompactThreshold(snapshot.autoCompactThreshold)}</span>
+          ) : null}
+        </div>
       </div>
 
-      <ContextUsageSegmentBar
-        categories={snapshot.categories}
-        totalTokens={snapshot.totalTokens}
-        maxTokens={snapshot.maxTokens}
-        showLegend={false}
-      />
-
       {snapshot.rawMaxTokens < snapshot.maxTokens && (
-        <p className="text-[10px] leading-snug text-muted-foreground/65">
+        <p className="rounded-xl bg-background/14 px-2.5 py-2 text-[10px] leading-snug text-muted-foreground/65">
           SDK 窗口 {formatContextTokens(snapshot.rawMaxTokens)}，展示按模型 {formatContextTokens(snapshot.maxTokens)}
         </p>
       )}
 
-      <div className="flex flex-col">
+      <div className="rounded-2xl bg-background/14 p-1.5 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.12)]">
+        <div className="grid grid-cols-[1fr_auto_42px] gap-2 px-2 pb-1 text-[10px] text-muted-foreground/70">
+          <span>分类</span>
+          <span>Token</span>
+          <span className="text-right">占比</span>
+        </div>
         {sortedCategories.map((category) => {
           const drillDown = getCategoryDrillDown(snapshot, category.name)
           const barPercent = categoryPercentOfWindow(category.tokens, snapshot.maxTokens)

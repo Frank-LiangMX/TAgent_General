@@ -1,5 +1,5 @@
 /**
- * SkillsMainView - Skills 功能区主区（Inspector）
+ * SkillsMainView - 插件功能区主区（Inspector）
  */
 
 import { useAtomValue } from 'jotai'
@@ -17,6 +17,7 @@ import { CapabilityDetailView } from '@/components/agent/CapabilityDetailView'
 import { CapabilityToolbar } from '@/components/agent/CapabilityToolbar'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
+import { cn } from '@/lib/utils'
 
 export function SkillsMainView(): React.ReactElement {
   const selectedCapability = useAtomValue(selectedCapabilityAtom)
@@ -42,23 +43,27 @@ export function SkillsMainView(): React.ReactElement {
     if (selectedCapability.type === 'mcp') {
       const server = capabilities?.mcpServers.find((s) => s.name === selectedCapability.key)
       return {
-        crumbs: workspace ? [{ label: workspace.name }, { label: 'MCP' }] : [{ label: 'MCP' }],
+        crumbs: workspace ? [{ label: workspace.name }, { label: '插件' }] : [{ label: '插件' }],
         title: server?.name ?? selectedCapability.key,
         description: server
-          ? `${server.type} · ${server.enabled ? '已启用' : '已禁用'}`
-          : 'MCP Server 配置与连接状态',
+          ? `MCP · ${server.type} · ${server.enabled ? '已启用' : '已禁用'}`
+          : '连接插件配置与状态',
       }
     }
     const skill = capabilities?.skills.find((s) => s.slug === selectedCapability.key)
     return {
-      crumbs: workspace ? [{ label: workspace.name }, { label: 'Skills' }] : [{ label: 'Skills' }],
+      crumbs: workspace ? [{ label: workspace.name }, { label: '插件' }] : [{ label: '插件' }],
       title: skill?.name ?? selectedCapability.key,
-      description: skill?.description ?? 'Skill 说明、文件与编辑',
+      description: skill?.description ?? 'Skill 指令说明、文件与编辑',
     }
   }, [selectedCapability, workspace, capabilities])
 
+  const detailKey = selectedCapability
+    ? `${selectedCapability.type}:${selectedCapability.key}`
+    : 'empty'
+
   return (
-    <Panel variant="grow" className="content-glass">
+    <Panel variant="grow" className="content-glass plugins-inspector">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {workspace ? (
           <CapabilityToolbar
@@ -67,14 +72,27 @@ export function SkillsMainView(): React.ReactElement {
             workspaceName={workspace.name}
           />
         ) : null}
-        {header ? (
-          <RailInspectorHeader
-            crumbs={header.crumbs}
-            title={header.title}
-            description={header.description}
-          />
-        ) : null}
-        <CapabilityDetailView variant="inspector" />
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {header ? (
+            <RailInspectorHeader
+              className="plugins-inspector-header border-border/35 bg-muted/10"
+              crumbs={header.crumbs}
+              title={header.title}
+              description={header.description}
+            />
+          ) : null}
+
+          <div
+            key={detailKey}
+            className={cn(
+              'plugins-inspector-body min-h-0 flex-1 overflow-hidden',
+              header ? 'plugins-inspector-body--with-header' : 'plugins-inspector-body--empty'
+            )}
+          >
+            <CapabilityDetailView variant="inspector" />
+          </div>
+        </div>
       </div>
     </Panel>
   )

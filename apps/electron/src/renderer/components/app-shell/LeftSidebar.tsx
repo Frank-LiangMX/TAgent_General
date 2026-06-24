@@ -4,7 +4,7 @@
  * 根据 activeRailItem 显示不同功能区内容：
  * - sessions: 会话列表（Chat/Agent 模式）
  * - files: 工作区文件树
- * - skills: MCP Server & Skills 管理
+ * - skills: 插件管理
  * - TA 模式的各种功能面板
  *
  * 不再包含模式切换器（已移至 FunctionalRail）
@@ -70,6 +70,7 @@ import {
 } from '@/atoms/agent-atoms'
 import {
   appModeAtom,
+  pluginKindTabAtom,
   selectedCapabilityAtom,
   type AppMode,
   topLevelModeAtom,
@@ -110,7 +111,7 @@ import { userProfileAtom } from '@/atoms/user-profile'
 import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
-import { SkillsPanel } from '@/components/agent/SkillsPanel'
+import { PluginsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
@@ -496,37 +497,44 @@ export function LeftSidebar({
   }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
 
   const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
+  const pluginKindTab = useAtomValue(pluginKindTabAtom)
 
-  // 进入 Skills / 切换工作区时：校验选中项，无效则自动选中第一项
+  const selectedCapabilityKey = selectedCapability?.key ?? null
+  const selectedCapabilityType = selectedCapability?.type ?? null
+
+  // 进入插件区 / 切换工作区时：仅在校选项失效时补选（不跨 Tab 兜底，避免与侧栏 Tab 冲突）
   React.useEffect(() => {
-    if (topLevelMode !== 'general' || activeRailItem !== 'skills' || !capabilities) {
+    if (activeRailItem !== 'skills' || !capabilities) {
       return
     }
-    if (selectedCapability) {
+    if (selectedCapabilityType && selectedCapabilityKey) {
       const stillValid =
-        selectedCapability.type === 'mcp'
-          ? capabilities.mcpServers.some((s) => s.name === selectedCapability.key)
-          : capabilities.skills.some((s) => s.slug === selectedCapability.key)
+        selectedCapabilityType === 'mcp'
+          ? capabilities.mcpServers.some((s) => s.name === selectedCapabilityKey)
+          : capabilities.skills.some((s) => s.slug === selectedCapabilityKey)
       if (stillValid) return
     }
-    const firstMcp = capabilities.mcpServers[0]
-    if (firstMcp) {
-      setSelectedCapability({ type: 'mcp', key: firstMcp.name })
+
+    const list =
+      pluginKindTab === 'mcp' ? capabilities.mcpServers : capabilities.skills
+    if (list.length === 0) {
+      setSelectedCapability(null)
       return
     }
-    const firstSkill = capabilities.skills[0]
-    if (firstSkill) {
-      setSelectedCapability({ type: 'skill', key: firstSkill.slug })
+    const first = list[0]!
+    if (pluginKindTab === 'mcp') {
+      setSelectedCapability({ type: 'mcp', key: first.name })
     } else {
-      setSelectedCapability(null)
+      setSelectedCapability({ type: 'skill', key: (first as { slug: string }).slug })
     }
   }, [
-    topLevelMode,
     activeRailItem,
     capabilities,
-    selectedCapability,
+    selectedCapabilityKey,
+    selectedCapabilityType,
     setSelectedCapability,
     currentWorkspaceSlug,
+    pluginKindTab,
   ])
 
   /** Working 区域状态（已不用于目录区分组，但保留状态供其他模块用） */
@@ -1002,6 +1010,11 @@ export function LeftSidebar({
           />
         )
       }
+      if (activeRailItem === 'skills') {
+        return (
+          <SkillsRailContent capabilities={capabilities} />
+        )
+      }
       return <TASidebar activeRailItem={activeRailItem as TARailItem} />
     }
 
@@ -1011,13 +1024,7 @@ export function LeftSidebar({
         return <FilesRailContent workspaceKey={currentWorkspaceId ?? 'no-workspace'} />
       case 'skills':
         return (
-          <SkillsRailContent
-            capabilities={capabilities}
-            onConfigure={() => {
-              setSettingsTab('agent')
-              setSettingsOpen(true)
-            }}
-          />
+          <SkillsRailContent capabilities={capabilities} />
         )
       case 'scratch':
         // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
@@ -1048,7 +1055,8 @@ export function LeftSidebar({
     <div
       className={cn(
         'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
-        'transition-[width,opacity] duration-300 ease-in-out'
+        'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        activeRailItem === 'skills' && 'nav-island-sidebar--plugins'
       )}
       style={{
         width: width ?? 240,
@@ -1424,15 +1432,13 @@ function FilesRailContent({ workspaceKey }: { workspaceKey: string }): React.Rea
   return <WorkspaceFilesView workspaceKey={workspaceKey} layout="navigator" />
 }
 
-/** Skills 功能区内容 —— MCP server 列表 + Skills 列表 + 能力计数 */
+/** 插件功能区内容 —— 统一插件列表 */
 function SkillsRailContent({
   capabilities,
-  onConfigure,
 }: {
   capabilities: WorkspaceCapabilities | null
-  onConfigure: () => void
 }): React.ReactElement {
-  return <SkillsPanel capabilities={capabilities} onConfigure={onConfigure} />
+  return <PluginsPanel capabilities={capabilities} />
 }
 
 // ===== 对话列表项 =====

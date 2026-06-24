@@ -15,6 +15,8 @@ interface ContextUsageSegmentBarProps {
   totalTokens: number
   /** 窗口上限；有值时分段条以 maxTokens 为分母并显示剩余灰段 */
   maxTokens?: number
+  /** 自动压缩阈值位置（0-100），用于在分段条上画一条细标记 */
+  thresholdPercent?: number
   /** 下方已有分类列表时关闭图例，避免重复 */
   showLegend?: boolean
   className?: string
@@ -102,6 +104,7 @@ export function ContextUsageSegmentBar({
   categories,
   totalTokens,
   maxTokens,
+  thresholdPercent,
   showLegend = true,
   className,
 }: ContextUsageSegmentBarProps): React.ReactElement {
@@ -110,22 +113,32 @@ export function ContextUsageSegmentBar({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <div
-        className="flex h-3 w-full overflow-hidden rounded-full bg-border/30"
-        role="img"
-        aria-label="Context 占用分段"
-      >
-        {coloredSegments.map((segment) => (
-          <div
-            key={segment.key}
-            className="h-full min-w-[2px] shrink-0"
-            style={{
-              width: `${segment.widthPercent}%`,
-              backgroundColor: segment.color,
-            }}
-            title={`${segment.label}: ${formatContextTokens(segment.tokens)}`}
+      <div className="relative py-1">
+        <div
+          className="flex h-2.5 w-full overflow-hidden rounded-full bg-foreground/8 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18)]"
+          role="img"
+          aria-label="Context 占用分段"
+        >
+          {coloredSegments.map((segment) => (
+            <div
+              key={segment.key}
+              className="h-full min-w-[2px] shrink-0 transition-[width] duration-300"
+            aria-label={`${segment.label}: ${formatContextTokens(segment.tokens)}`}
+              style={{
+                width: `${segment.widthPercent}%`,
+                backgroundColor: segment.color,
+              }}
+            />
+          ))}
+        </div>
+        {thresholdPercent != null && thresholdPercent > 0 && thresholdPercent < 100 ? (
+          <span
+            className="absolute bottom-0 top-0 w-px rounded-full bg-foreground/45"
+            style={{ left: `${thresholdPercent}%` }}
+            aria-label={`自动压缩阈值 ${Math.round(thresholdPercent)}%`}
+            aria-hidden="true"
           />
-        ))}
+        ) : null}
       </div>
       {showLegend ? <SegmentLegend segments={coloredSegments} /> : null}
     </div>

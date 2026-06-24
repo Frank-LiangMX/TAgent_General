@@ -46,7 +46,7 @@ export function ConversationContent({
 }: ConversationContentProps): React.ReactElement {
   return (
     <StickToBottom.Content
-      scrollClassName="scrollbar-thin"
+      scrollClassName="scrollbar-none"
       className={cn('flex flex-col gap-1 py-4 px-8', className)}
       {...props}
     />

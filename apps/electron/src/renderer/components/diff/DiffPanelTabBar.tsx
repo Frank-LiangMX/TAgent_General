@@ -66,18 +66,16 @@ export function DiffPanelTabBar({
   }
 
   return (
-    <div className="flex items-end h-[34px] tabbar-bg relative flex-shrink-0">
-      <div className="absolute inset-0 titlebar-drag-region" />
-      <div className="relative flex items-end flex-1 titlebar-no-drag">
+    <div className="relative flex h-[44px] flex-shrink-0 items-center px-3 pt-2 titlebar-drag-region">
+      <div className="relative flex h-8 flex-1 items-center rounded-full border border-border/35 bg-background/35 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] titlebar-no-drag">
         <button
           type="button"
           onClick={() => onTabChange('session')}
           className={cn(
-            'flex-1 px-3 h-[34px] rounded-t-lg text-xs transition-colors select-none cursor-pointer',
-            'border-t border-l border-r',
+            'h-6 flex-1 select-none rounded-full px-2 text-[11px] font-medium transition-all cursor-pointer',
             activeTab === 'session'
-              ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
+              ? 'bg-background/80 text-foreground shadow-sm shadow-black/[0.04]'
+              : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80'
           )}
         >
           会话文件
@@ -86,11 +84,10 @@ export function DiffPanelTabBar({
           type="button"
           onClick={handleChangesClick}
           className={cn(
-            'flex-1 px-3 h-[34px] rounded-t-lg text-xs transition-colors select-none cursor-pointer relative',
-            'border-t border-l border-r',
+            'relative h-6 flex-1 select-none rounded-full px-2 text-[11px] font-medium transition-all cursor-pointer',
             activeTab === 'changes'
-              ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
+              ? 'bg-background/80 text-foreground shadow-sm shadow-black/[0.04]'
+              : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80'
           )}
         >
           <span className="inline-flex items-center gap-1">

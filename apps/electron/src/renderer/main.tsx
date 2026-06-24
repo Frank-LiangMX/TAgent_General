@@ -93,6 +93,9 @@ const isVoiceDictationWindow =
   new URLSearchParams(window.location.search).get('window') === 'voice-dictation'
 const isDetachedPreviewWindow =
   new URLSearchParams(window.location.search).get('window') === 'detached-preview'
+const isMainWindow = !isQuickTaskWindow && !isVoiceDictationWindow && !isDetachedPreviewWindow
+
+document.documentElement.classList.toggle('tagent-app-shell-window', isMainWindow)
 
 /**
  * 主题初始化组件

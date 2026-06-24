@@ -21,6 +21,8 @@ interface NavIslandProps {
   /** 是否展开 Sidebar(收起时仅显示 Rail) */
   showSidebar: boolean
   sidebarWidth?: number
+  /** Rail 列宽（插件页可略宽） */
+  railWidth?: number
   children: React.ReactNode
 }
 
@@ -40,23 +42,24 @@ function NavIslandMacChrome(): React.ReactElement {
 export function NavIsland({
   showSidebar,
   sidebarWidth = NAV_SIDEBAR_DEFAULT_WIDTH,
+  railWidth = NAV_RAIL_WIDTH,
   children,
 }: NavIslandProps): React.ReactElement {
   const isMac = React.useMemo(() => detectIsMac(), [])
   const wingOpen = showSidebar
-  const islandWidth = wingOpen ? NAV_RAIL_WIDTH + sidebarWidth : NAV_RAIL_WIDTH
+  const islandWidth = wingOpen ? railWidth + sidebarWidth : railWidth
 
   return (
     <div
       className={cn(
         'nav-island-glass nav-island-glass--float relative flex h-full flex-col overflow-hidden flex-shrink-0',
-        'transition-[width] duration-300 ease-in-out',
+        'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
         wingOpen && 'nav-island-glass--expanded',
         isMac && 'nav-island-glass--mac'
       )}
       style={{
         width: islandWidth,
-        ['--nav-rail-width' as string]: `${NAV_RAIL_WIDTH}px`,
+        ['--nav-rail-width' as string]: `${railWidth}px`,
       }}
     >
       {isMac ? <NavIslandMacChrome /> : null}

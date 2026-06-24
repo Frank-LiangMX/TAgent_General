@@ -14,7 +14,7 @@ import {
   Palette,
   MessageSquare,
   FolderOpen,
-  Zap,
+  LayoutGrid,
   Database,
   ClipboardCheck,
   GitBranch,
@@ -86,9 +86,9 @@ const COMMON_TOP_RAIL_ITEMS: Array<{
   },
   {
     id: 'skills',
-    label: 'Skills',
-    icon: <Zap size={17} />,
-    description: 'MCP Server & Skills',
+    label: '插件',
+    icon: <LayoutGrid size={17} strokeWidth={1.75} />,
+    description: '工作区插件管理',
   },
 ]
 

@@ -81,6 +81,8 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
   const [canScroll, setCanScroll] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [isDragging, setIsDragging] = React.useState(false)
+  const [isScrollActive, setIsScrollActive] = React.useState(false)
+  const [isColumnHovered, setIsColumnHovered] = React.useState(false)
   const [scrollMetrics, setScrollMetrics] = React.useState({
     scrollTop: 0,
     scrollHeight: 1,
@@ -89,6 +91,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
   const closeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const fadeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const openTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
+  const scrollActiveTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const searchInputRef = React.useRef<HTMLInputElement>(null)
   const trackRef = React.useRef<HTMLDivElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
@@ -100,6 +103,7 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
       if (openTimerRef.current) clearTimeout(openTimerRef.current)
+      if (scrollActiveTimerRef.current) clearTimeout(scrollActiveTimerRef.current)
     }
   }, [])
 
@@ -109,10 +113,19 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
     const el = scrollRef.current
     if (!el) return
 
-    const update = (): void => {
+    const showScrollControls = (): void => {
+      setIsScrollActive(true)
+      if (scrollActiveTimerRef.current) clearTimeout(scrollActiveTimerRef.current)
+      scrollActiveTimerRef.current = setTimeout(() => {
+        setIsScrollActive(false)
+      }, 900)
+    }
+
+    const update = (activate = false): void => {
       const { scrollTop, scrollHeight, clientHeight } = el
       setCanScroll(scrollHeight > clientHeight + 10)
       setScrollMetrics({ scrollTop, scrollHeight, clientHeight })
+      if (activate) showScrollControls()
       if (scrollHeight <= 0) return
 
       const viewportCenter = scrollTop + clientHeight / 2
@@ -135,12 +148,16 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
     }
 
     update()
-    el.addEventListener('scroll', update, { passive: true })
-    const observer = new ResizeObserver(update)
+    setIsScrollActive(false)
+    const handleScroll = (): void => update(true)
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    el.addEventListener('wheel', showScrollControls, { passive: true })
+    const observer = new ResizeObserver(() => update())
     observer.observe(el)
 
     return () => {
-      el.removeEventListener('scroll', update)
+      el.removeEventListener('scroll', handleScroll)
+      el.removeEventListener('wheel', showScrollControls)
       observer.disconnect()
     }
   }, [scrollRef])
@@ -368,9 +385,14 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
   const thumbRatio = scrollHeight > 0 ? Math.min(clientHeight / scrollHeight, 1) : 1
   const thumbHeightPct = Math.max(10, thumbRatio * 100)
   const thumbTopPct = scrollRange > 0 ? (scrollTop / scrollRange) * (100 - thumbHeightPct) : 0
+  const controlsVisible = hovered || isDragging || isScrollActive || isColumnHovered
 
   return (
-    <div className="absolute right-1 top-0 bottom-0 z-30 flex pointer-events-none">
+    <div
+      className="absolute right-1 top-0 bottom-0 z-30 flex w-8 justify-end pointer-events-auto"
+      onMouseEnter={() => setIsColumnHovered(true)}
+      onMouseLeave={() => setIsColumnHovered(false)}
+    >
       {/* ── 迷你地图悬停区域（面板 + 横杠） ── */}
       <div className="flex items-start h-full">
         {/* 展开面板 */}
@@ -474,7 +496,10 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
 
       {/* ── 滚动进度条 ── */}
       <div
-        className="relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto"
+        className={cn(
+          'relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
+          controlsVisible ? 'opacity-100' : 'opacity-0'
+        )}
         style={{ width: 7 }}
       >
         <div
@@ -485,7 +510,11 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
           <div
             className={cn(
               'absolute left-0 right-0 rounded-full transition-colors duration-100 scroll-progress-thumb',
-              isDragging ? 'scroll-progress-thumb-active cursor-grabbing' : 'cursor-grab'
+              isDragging
+                ? 'scroll-progress-thumb-active cursor-grabbing'
+                : controlsVisible
+                  ? 'scroll-progress-thumb-visible cursor-grab'
+                  : 'cursor-grab'
             )}
             style={{
               height: `${thumbHeightPct}%`,

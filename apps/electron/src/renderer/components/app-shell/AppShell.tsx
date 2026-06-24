@@ -2,8 +2,8 @@
  * AppShell - 应用主布局容器
  *
  * 右侧浮岛动画原则（避免底板弹到窗口边界）：
- * - 布局（flex 列宽 + 底板 inset）只跟 panelColumnShown 同步，开/关瞬间到位或瞬间撤掉
- * - 视觉动画只用 transform scale，不在动画期间改 width / inset
+ * - 右栏列宽跟 panelColumnShown 同步；底板右边界保持稳定，不跟右栏卸载跳变
+ * - 视觉动画在浮岛自身边界内完成，不让元素越过底板圆角边界
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -30,18 +30,24 @@ import {
   detectIsMac,
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
+  NAV_RAIL_PLUGINS_WIDTH,
   NAV_RAIL_WIDTH,
+  NAV_SIDEBAR_PLUGINS_WIDTH,
   NAV_SIDEBAR_WIDTH,
   SHELL_EDGE_PADDING,
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
-/** 浮钮与 TabBar 行对齐（相对主区顶缘） */
+/** 右栏动画锚点沿用顶栏附近的垂直位置 */
 const RIGHT_PANEL_TOGGLE_TOP = 34
+/** Windows 自定义窗口按钮占用的右上角区域，TabBar 也使用同一避让宽度 */
+const WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH = 126
+/** 顶栏右侧按钮与 Windows 窗口按钮同顶线对齐 */
+const TOPBAR_CONTROL_TOP = 8
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
-/** 与 CSS 收回 transform 时长一致，供卸载列延迟使用 */
+/** 与 CSS 收回动画时长一致，供卸载列延迟使用 */
 const PANEL_COLLAPSE_MS = 240
 
 function clampRightPanelWidth(width: number): number {
@@ -72,8 +78,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       ? activeRailItem === 'sessions' || activeRailItem === 'files' || activeRailItem === 'skills' || activeRailItem === 'scratch'
       : activeRailItem !== 'scratch'
 
-  const navSidebarWidth = NAV_SIDEBAR_WIDTH
-  const navIslandWidth = showLeftSidebar ? NAV_RAIL_WIDTH + navSidebarWidth : NAV_RAIL_WIDTH
+  const isPluginsRail = activeRailItem === 'skills'
+  const navRailWidth = isPluginsRail ? NAV_RAIL_PLUGINS_WIDTH : NAV_RAIL_WIDTH
+  const navSidebarWidth = isPluginsRail ? NAV_SIDEBAR_PLUGINS_WIDTH : NAV_SIDEBAR_WIDTH
+  const navIslandWidth = showLeftSidebar ? navRailWidth + navSidebarWidth : navRailWidth
   const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
@@ -101,7 +109,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     return () => clearTimeout(timer)
   }, [isPanelOpen])
 
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     if (!isPanelOpen) return
     if (!panelColumnShown) return
 
@@ -113,12 +121,17 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
     setShellAnimExpanded(false)
     let cancelled = false
-    const frame = requestAnimationFrame(() => {
-      if (!cancelled) setShellAnimExpanded(true)
+    let nextFrame = 0
+    // Windows/Chromium 可能把首帧折叠态与展开态合并绘制，双 RAF 保证过渡有起点。
+    const firstFrame = requestAnimationFrame(() => {
+      nextFrame = requestAnimationFrame(() => {
+        if (!cancelled) setShellAnimExpanded(true)
+      })
     })
     return () => {
       cancelled = true
-      cancelAnimationFrame(frame)
+      cancelAnimationFrame(firstFrame)
+      if (nextFrame) cancelAnimationFrame(nextFrame)
     }
   }, [isPanelOpen, panelColumnShown])
 
@@ -128,9 +141,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     }
   }, [panelColumnMounted, isPanelOpen])
 
-  /** 布局：列可见即预留满宽 + 底板延伸，与 flex 列 outer width 一致 */
-  const contentBaseInsetRight =
-    showRightPanel && panelColumnShown ? clampedRightPanelWidth : 0
+  /**
+   * 底板边界是主窗口的视觉边界，不跟随右栏卸载跳变。
+   * 右栏关闭时只收回浮岛内容，底板仍稳定延伸到全局圆角边界，避免右边缘闪烁。
+   */
+  const contentBaseInsetRight = showRightPanel ? clampedRightPanelWidth : 0
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -188,7 +203,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         }}
       >
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
-          <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth}>
+          <NavIsland
+            showSidebar={showLeftSidebar}
+            sidebarWidth={navSidebarWidth}
+            railWidth={navRailWidth}
+          >
             <FunctionalRail />
             {showLeftSidebar && (
               <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
@@ -200,6 +219,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           open={workspaceManagerOpen}
           onOpenChange={setWorkspaceManagerOpen}
         />
+
+        <div className="app-content-boundary-rim" aria-hidden />
 
         <div
           className={cn(
@@ -219,6 +240,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
               ['--content-chrome-bleed-right' as string]:
                 showRightPanel && panelColumnShown ? `${SHELL_EDGE_PADDING}px` : '0px',
+              transition:
+                '--content-base-inset-left 300ms cubic-bezier(0.16, 1, 0.3, 1), --content-base-fade-width 300ms cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             <div className="content-base-plate content-base-plate--body" aria-hidden />
@@ -246,8 +269,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         {showRightPanel && panelColumnShown && (
           <div
-            className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pl-0"
-            style={{ width: rightColumnOuterWidth }}
+            className="right-panel-layout-column relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0"
+            style={{ width: shellExpanded ? rightColumnOuterWidth : 0 }}
           >
             <div className="relative flex h-full min-h-0 w-full items-stretch">
               {shellExpanded && (
@@ -258,23 +281,41 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               )}
               <div
                 className={cn(
-                  'right-panel-expand-shell right-nav-island-glass nav-island-glass nav-island-glass--float',
-                  'relative flex h-full min-h-0 w-full flex-col overflow-hidden',
-                  shellExpanded && 'right-panel-expand-shell--expanded',
-                  isMac && 'right-nav-island-glass--mac'
+                  'right-panel-shadow-frame relative ml-auto flex h-full min-h-0 w-full',
+                  shellExpanded && 'right-panel-shadow-frame--expanded'
                 )}
                 style={{
                   ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
-                  ['--right-panel-toggle-y' as string]: `${RIGHT_PANEL_TOGGLE_TOP + 18}px`,
+                  ['--right-panel-reveal-width' as string]: `${clampedRightPanelWidth}px`,
                 }}
               >
                 <div
                   className={cn(
-                    'right-panel-expand-body nav-island-body relative flex min-h-0 flex-1 flex-col pr-9',
-                    bodyVisible && 'right-panel-expand-body--visible'
+                    'right-panel-reveal-mask ml-auto flex h-full min-h-0',
+                    shellExpanded && 'right-panel-reveal-mask--expanded'
                   )}
                 >
-                  <RightSidePanel width={clampedRightPanelWidth} />
+                  <div
+                    className={cn(
+                      'right-panel-expand-shell right-nav-island-glass nav-island-glass nav-island-glass--float',
+                      'relative flex h-full min-h-0 w-full flex-col overflow-hidden',
+                      shellExpanded && 'right-panel-expand-shell--expanded',
+                      isMac && 'right-nav-island-glass--mac'
+                    )}
+                    style={{
+                      ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
+                      ['--right-panel-toggle-y' as string]: `${RIGHT_PANEL_TOGGLE_TOP + 18}px`,
+                    }}
+                  >
+                    <div
+                      className={cn(
+                        'right-panel-expand-body nav-island-body relative flex min-h-0 flex-1 flex-col',
+                        bodyVisible && 'right-panel-expand-body--visible'
+                      )}
+                    >
+                      <RightSidePanel width={clampedRightPanelWidth} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -283,13 +324,17 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         {showRightPanel && (
           <div
-            className="right-panel-plate-toggle pointer-events-auto absolute z-[80] titlebar-no-drag"
+            className="right-panel-topbar-toggle pointer-events-auto absolute z-[100] titlebar-no-drag"
             style={{
-              top: SHELL_EDGE_PADDING + RIGHT_PANEL_TOGGLE_TOP,
-              right: SHELL_EDGE_PADDING,
+              top: TOPBAR_CONTROL_TOP,
+              right: isMac ? SHELL_EDGE_PADDING : WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH,
             }}
           >
-            <RightPanelToggle open={isPanelOpen} onToggle={toggleRightPanel} />
+            <RightPanelToggle
+              open={isPanelOpen}
+              onToggle={toggleRightPanel}
+              className="right-panel-topbar-toggle-button"
+            />
           </div>
         )}
       </div>

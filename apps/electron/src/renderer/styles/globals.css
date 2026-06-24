@@ -44,6 +44,9 @@
     --glass-rim: 220 14% 86%;
     /* 外壳团雾光斑色（勿用 --primary，纯白主题下 primary 近黑会画出脏斑） */
     --shell-blob: 220 28% 92%;
+    /* 主窗口内容边界：所有内容必须被裁在底板圆角矩形内 */
+    --app-content-boundary-inset: 8px;
+    --app-content-boundary-radius: 20px;
   }
 
   .dark {
@@ -464,6 +467,74 @@
   }
 }
 
+/*
+ * 主窗口全局内容边界。
+ * Electron 窗口不是视觉内容边界；底板圆角矩形才是。裁切 body 能同时约束
+ * AppShell 子树以及 Radix / Sonner 等 portal 浮层，避免动画阶段越过底板范围。
+ */
+html.tagent-app-shell-window,
+html.tagent-app-shell-window body,
+html.tagent-app-shell-window #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+html.tagent-app-shell-window body {
+  clip-path: inset(
+    var(--app-content-boundary-inset)
+    round var(--app-content-boundary-radius)
+  );
+}
+
+.app-content-boundary-rim {
+  position: absolute;
+  top: var(--app-content-boundary-inset);
+  right: var(--app-content-boundary-inset);
+  bottom: var(--app-content-boundary-inset);
+  z-index: 65;
+  width: 34px;
+  pointer-events: none;
+  border-top-right-radius: var(--app-content-boundary-radius);
+  border-bottom-right-radius: var(--app-content-boundary-radius);
+  background:
+    linear-gradient(
+      to left,
+      hsl(var(--background) / 0.42) 0,
+      hsl(var(--background) / 0.20) 3px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.48),
+    inset -2px 0 0 hsl(var(--foreground) / 0.045);
+}
+
+.dark .app-content-boundary-rim {
+  background:
+    linear-gradient(
+      to left,
+      rgba(0, 0, 0, 0.22) 0,
+      rgba(0, 0, 0, 0.10) 4px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.14),
+    inset -2px 0 0 rgba(0, 0, 0, 0.22);
+}
+
+html.material-frosted .app-content-boundary-rim {
+  background:
+    linear-gradient(
+      to left,
+      hsl(var(--background) / 0.34) 0,
+      hsl(var(--background) / 0.14) 4px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 var(--material-edge-inset),
+    inset -2px 0 0 var(--material-edge-outer);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -539,6 +610,12 @@
 .window-control-close:active {
   background-color: #a01d11;
   color: #fff;
+}
+
+.right-panel-topbar-toggle-button {
+  width: 36px !important;
+  height: 28px !important;
+  border-radius: 4px !important;
 }
 
 /* 深色特殊主题 dialog 光晕效果 */
@@ -1659,6 +1736,9 @@ html:not(.dark) .btw-panel-glass::after,
 .scroll-progress-thumb:hover {
   background-color: hsl(var(--foreground) / 0.20);
 }
+.scroll-progress-thumb-visible {
+  background-color: hsl(var(--foreground) / 0.18);
+}
 .scroll-progress-thumb-active {
   background-color: hsl(var(--foreground) / 0.32) !important;
 }
@@ -2758,28 +2838,56 @@ html:not(.dark) .btw-panel-glass::after,
  * 展开：略带回弹的 ease-out（与 btw-panel 同族）
  * 收回：更短、更干脆的 ease-in，内容先淡出
  */
+.right-panel-layout-column {
+  transition: width var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+.right-panel-layout-column:has(.right-panel-shadow-frame--expanded) {
+  transition-duration: var(--right-panel-expand-ms, 360ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.right-panel-shadow-frame {
+  filter:
+    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))
+    drop-shadow(0 10px 28px rgba(0, 0, 0, 0.12))
+    drop-shadow(0 28px 64px rgba(0, 0, 0, 0.10));
+  transition: filter var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .right-panel-shadow-frame {
+  filter:
+    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.18))
+    drop-shadow(0 14px 40px rgba(0, 0, 0, 0.22))
+    drop-shadow(0 32px 76px rgba(0, 0, 0, 0.18));
+}
+
+.right-panel-reveal-mask {
+  width: 0;
+  overflow: hidden;
+  border-radius: var(--nav-island-outer-radius, 20px);
+  transition: width var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+.right-panel-reveal-mask--expanded {
+  width: var(--right-panel-reveal-width, 100%);
+  transition-duration: var(--right-panel-expand-ms, 360ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .right-panel-expand-shell {
+  width: var(--right-panel-reveal-width, 100%);
+  flex-shrink: 0;
   transform-origin: 100% var(--right-panel-toggle-y, 52px);
-  /* 收回态过渡（移除 --expanded 时生效） */
-  transition:
-    transform var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1),
-    opacity calc(var(--right-panel-collapse-ms, 240ms) - 40ms) cubic-bezier(0.4, 0, 1, 1),
-    filter calc(var(--right-panel-collapse-ms, 240ms) - 60ms) ease-in;
-  transform: scale(0.16);
-  opacity: 0;
-  filter: blur(3px);
-  will-change: transform, opacity, filter;
+  opacity: 1;
+  filter: blur(0);
   /* 与主区底板接缝重叠 1px，避免 scale 动画后露缝 */
   margin-left: -1px;
 }
 
 .right-panel-expand-shell--expanded {
-  /* 展开态过渡（添加 --expanded 时生效） */
-  transition:
-    transform var(--right-panel-expand-ms, 360ms) cubic-bezier(0.22, 1.12, 0.36, 1),
-    opacity calc(var(--right-panel-expand-ms, 360ms) - 80ms) cubic-bezier(0.16, 1, 0.3, 1) 50ms,
-    filter calc(var(--right-panel-expand-ms, 360ms) - 100ms) ease-out 40ms;
-  transform: scale(1);
   opacity: 1;
   filter: blur(0);
 }
@@ -2791,6 +2899,7 @@ html:not(.dark) .btw-panel-glass::after,
   transition:
     opacity 140ms cubic-bezier(0.4, 0, 1, 1),
     transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .right-panel-expand-body--visible {
@@ -2913,6 +3022,14 @@ html:not(.dark) .btw-panel-glass::after,
   border-bottom-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
 }
 
+.content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.34),
+    inset -2px 0 0 hsl(var(--foreground) / 0.035),
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
 .content-base-plate--body {
   z-index: 0;
   isolation: isolate;
@@ -2966,7 +3083,8 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 /*
- * content-base-plate-edge - 主区右缘竖边；右侧浮岛展开时由浮岛外轮廓承担
+ * content-base-plate-edge - 底板右缘竖边。
+ * 右侧栏开关不改变底板边界，因此右缘必须始终保留 tone + glint，避免与窗口背景融合。
  */
 .content-base-plate-edge {
   border-style: solid;
@@ -2977,7 +3095,7 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 .content-main-shell--right-inset .content-base-plate-edge {
-  border-right-width: 0;
+  border-right-width: 1px;
 }
 
 .content-base-plate-edge--tone {
@@ -3034,6 +3152,14 @@ html:not(.dark) .btw-panel-glass::after,
       hsl(var(--content-area) / 0.08) 100%
     );
   box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.12),
+    inset -2px 0 0 rgba(0, 0, 0, 0.18),
     0 8px 32px rgba(0, 0, 0, 0.14),
     0 2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -3800,7 +3926,7 @@ html:not(.dark) .rail-island-btn--active {
 .session-glass-modal-lg {
   --glass-bg: var(--background);
   --glass-fg: var(--foreground);
-  border-radius: 12px;
+  border-radius: 20px;
   -webkit-backdrop-filter: blur(28px) saturate(1.68) brightness(1.04);
   backdrop-filter: blur(28px) saturate(1.68) brightness(1.04);
   background: linear-gradient(
@@ -3851,7 +3977,7 @@ html:not(.dark) .rail-island-btn--active {
 .session-glass-popover {
   --glass-bg: var(--popover);
   --glass-fg: var(--popover-foreground);
-  border-radius: 8px;
+  border-radius: 14px;
   -webkit-backdrop-filter: blur(22px) saturate(1.52) brightness(1.03);
   backdrop-filter: blur(22px) saturate(1.52) brightness(1.03);
   background: linear-gradient(
@@ -3958,6 +4084,253 @@ html:not(.dark) .rail-island-btn--active {
     0 0 0 1px rgba(255, 255, 255, 0.08),
     0 6px 22px -6px rgba(0, 0, 0, 0.34),
     0 16px 40px -12px rgba(0, 0, 0, 0.28);
+}
+
+/* Agent 模型选择浮窗：更明显的背景玻璃 + 轻量展开/收回动画 */
+.agent-model-popover {
+  border-radius: 20px;
+  transform-origin: var(--radix-popover-content-transform-origin);
+  -webkit-backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
+  backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 18% 0%,
+      hsl(var(--glass-shine) / 0.38),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.48),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.62) 0%,
+      hsl(var(--background) / 0.70) 48%,
+      hsl(var(--popover) / 0.58) 100%
+    );
+  border-color: hsl(var(--glass-rim) / 0.92);
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.58),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.34),
+    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.36),
+    0 0 0 1px hsl(var(--glass-shine) / 0.34),
+    0 12px 34px -12px rgba(0, 0, 0, 0.24),
+    0 28px 70px -24px rgba(0, 0, 0, 0.20);
+}
+
+.agent-model-popover[data-state='open'] {
+  animation: agent-model-popover-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-model-popover[data-state='closed'] {
+  animation: agent-model-popover-out 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.agent-model-popover-header {
+  background:
+    linear-gradient(180deg, hsl(var(--glass-shine) / 0.15), transparent 72%),
+    hsl(var(--background) / 0.12);
+}
+
+.agent-model-popover-search {
+  background: hsl(var(--background) / 0.34);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.32),
+    0 0 0 1px hsl(var(--foreground) / 0.08);
+}
+
+.context-usage-popover {
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
+  backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.30),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 68% 58% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.34),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.62) 0%,
+      hsl(var(--background) / 0.70) 50%,
+      hsl(var(--popover) / 0.56) 100%
+    );
+}
+
+.dark .context-usage-popover {
+  -webkit-backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
+  backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.12),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 68% 58% at 100% 100%,
+      hsl(var(--primary) / 0.08),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.48) 0%,
+      hsl(var(--background) / 0.60) 50%,
+      hsl(var(--popover) / 0.44) 100%
+    );
+}
+
+.agent-model-segmented {
+  --agent-model-segment-count: 4;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--agent-model-segment-count), minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  padding: 4px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, hsl(var(--glass-shine) / 0.10), transparent 70%),
+    hsl(var(--background) / 0.24);
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.18);
+}
+
+.agent-model-segmented--2 {
+  --agent-model-segment-count: 2;
+}
+
+.agent-model-segmented--4 {
+  --agent-model-segment-count: 4;
+}
+
+.agent-model-segmented-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  z-index: 0;
+  width: calc((100% - 8px) / var(--agent-model-segment-count));
+  border-radius: 10px;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(16px) saturate(1.42) brightness(1.03);
+  backdrop-filter: blur(16px) saturate(1.42) brightness(1.03);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.58) 0%,
+    hsl(var(--background) / 0.68) 52%,
+    hsl(var(--background) / 0.58) 100%
+  );
+  border: 1px solid hsl(var(--glass-rim) / 0.72);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.46),
+    inset 0 -1px 0 hsl(var(--glass-rim) / 0.22),
+    0 4px 14px -8px rgba(0, 0, 0, 0.18);
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-model-segmented-option {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 6px 8px;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.agent-model-segmented-option:hover {
+  color: hsl(var(--foreground) / 0.88);
+}
+
+.agent-model-segmented-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px hsl(var(--glass-rim) / 0.9);
+}
+
+.agent-model-segmented-option--active {
+  color: hsl(var(--foreground));
+}
+
+.agent-model-list-selection {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 10px;
+  will-change: transform, width, height;
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .agent-model-popover {
+  -webkit-backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
+  backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.14),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 100% 100%,
+      hsl(var(--primary) / 0.10),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.50) 0%,
+      hsl(var(--background) / 0.62) 48%,
+      hsl(var(--popover) / 0.46) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.13),
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.08),
+    inset 0 -1px 0 0 hsl(var(--glass-ambient) / 0.28),
+    0 0 0 1px hsl(var(--foreground) / 0.08),
+    0 12px 38px -12px rgba(0, 0, 0, 0.44),
+    0 28px 78px -24px rgba(0, 0, 0, 0.36);
+}
+
+@keyframes agent-model-popover-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.965);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes agent-model-popover-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.975);
+    filter: blur(1px);
+  }
 }
 
 .dark .session-glass-surface::after {
@@ -4395,13 +4768,19 @@ html.material-frosted .content-base-plate--body {
   transition: left 300ms ease-in-out;
 }
 
+html.material-frosted .content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 0 var(--material-edge-inset),
+    inset -2px 0 0 0 var(--material-edge-outer);
+}
+
 html.material-frosted .content-base-plate-edge--tone {
   border-color: hsl(var(--glass-rim) / 0.58);
 }
 
 html.material-frosted .content-base-plate-edge--glint {
   border-color: var(--material-edge-inset);
-  opacity: 0.32;
+  opacity: 0.46;
 }
 
 html.material-frosted .content-base-plate-hairline--tone {
@@ -4618,4 +4997,93 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-radix-popper-content-wrapper] em-emoji-picker,
 [data-radix-popper-content-wrapper] em-emoji-picker * {
   overscroll-behavior: contain;
+}
+
+/* ===== 插件页：侧栏双列卡片 + 主区 Inspector ===== */
+
+.plugins-panel-search {
+  background:
+    linear-gradient(180deg, hsl(var(--glass-shine) / 0.08), transparent 72%),
+    hsl(var(--background) / 0.22);
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.16);
+}
+
+.plugins-panel-grid {
+  animation: plugins-grid-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plugins-panel-card {
+  animation: plugins-card-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  background:
+    linear-gradient(168deg, hsl(var(--background) / 0.34) 0%, hsl(var(--card) / 0.42) 100%);
+  border: 1px solid hsl(var(--border) / 0.45);
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.14);
+}
+
+.plugins-panel-card--selected {
+  background:
+    linear-gradient(168deg, hsl(var(--glass-ambient) / 0.42) 0%, hsl(var(--background) / 0.58) 100%);
+  border-color: hsl(var(--glass-rim) / 0.72);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.34),
+    0 6px 18px -12px rgba(0, 0, 0, 0.22);
+}
+
+.plugins-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.plugins-inspector-body {
+  animation: plugins-inspector-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plugins-inspector-header {
+  animation: plugins-inspector-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes plugins-grid-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes plugins-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes plugins-inspector-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugins-panel-grid,
+  .plugins-panel-card,
+  .plugins-inspector-body,
+  .plugins-inspector-header {
+    animation: none;
+  }
 }

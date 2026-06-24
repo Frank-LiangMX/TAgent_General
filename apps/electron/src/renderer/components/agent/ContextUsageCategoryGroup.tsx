@@ -28,32 +28,37 @@ export function ContextUsageCategoryGroup({
   const isFreeSpace = isFreeSpaceCategory(category.name)
 
   return (
-    <Collapsible defaultOpen={defaultOpen} className="border-b border-border/30 last:border-b-0">
+    <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger
         className={cn(
-          'flex w-full flex-col gap-1.5 py-2 text-left transition-colors',
-          'hover:bg-muted/30 rounded-sm -mx-0.5 px-0.5'
+          'flex w-full flex-col gap-1.5 rounded-xl px-2 py-1.5 text-left transition-colors',
+          'hover:bg-foreground/5'
         )}
       >
-        <div className="flex w-full items-center gap-1.5">
-          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
-          <span
-            className="size-2 shrink-0 rounded-[3px]"
-            style={{ backgroundColor: swatchColor }}
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1 truncate text-xs text-foreground/85">
-            {label}
-            {itemCount != null && itemCount > 0 ? (
-              <span className="ml-1 text-muted-foreground">({itemCount})</span>
-            ) : null}
-          </span>
+        <div className="grid w-full grid-cols-[1fr_auto_42px] items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+            <span
+              className="size-2.5 shrink-0 rounded-[4px]"
+              style={{ backgroundColor: swatchColor }}
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1 truncate text-xs text-foreground/85">
+              {label}
+              {itemCount != null && itemCount > 0 ? (
+                <span className="ml-1 text-muted-foreground">({itemCount})</span>
+              ) : null}
+            </span>
+          </div>
           <span className="shrink-0 text-xs tabular-nums text-foreground/90">
             {formatContextTokens(category.tokens)}
           </span>
+          <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+            {barPercent != null ? `${Math.round(barPercent)}%` : '—'}
+          </span>
         </div>
         {!isFreeSpace && barPercent != null && barPercent > 0 && (
-          <div className="ml-5 h-1 overflow-hidden rounded-full bg-border/25">
+          <div className="ml-5 h-1 overflow-hidden rounded-full bg-foreground/8">
             <div
               className="h-full rounded-full"
               style={{
@@ -64,8 +69,8 @@ export function ContextUsageCategoryGroup({
           </div>
         )}
       </CollapsibleTrigger>
-      <CollapsibleContent className="pb-2 pl-5">
-        <div className="mt-1 flex flex-col gap-1 border-l border-border/40 pl-2.5">{children}</div>
+      <CollapsibleContent className="pb-1 pl-5">
+        <div className="mt-1 flex flex-col gap-1 border-l border-foreground/10 pl-2.5">{children}</div>
       </CollapsibleContent>
     </Collapsible>
   )

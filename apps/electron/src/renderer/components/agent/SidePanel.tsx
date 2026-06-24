@@ -387,33 +387,39 @@ export function SidePanel({
             </div>
           )
         ) : activeTab === 'session' ? (
-          <div className="flex-1 min-h-0 flex flex-col pt-0.5 mx-2 mb-2">
+          <div className="flex-1 min-h-0 flex flex-col mx-3 mb-3">
             {sessionPath ? (
               <>
-                <div className="flex items-center gap-1 px-2 h-[32px] flex-shrink-0">
-                  <FolderOpen className="size-3 text-muted-foreground" />
-                  <span className="text-[11px] font-medium text-muted-foreground">会话文件</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-3 text-muted-foreground/50 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[200px]">
-                      <p>当前会话的专属文件，仅本次对话的 Agent 可以访问</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <span
-                    className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0"
-                    title={sessionPath}
-                  >
-                    {breadcrumb}
-                  </span>
+                <div className="mb-2 flex flex-shrink-0 items-center gap-2 rounded-xl border border-border/35 bg-background/35 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/55 text-muted-foreground">
+                    <FolderOpen className="size-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-foreground/80">会话文件</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="size-3 text-muted-foreground/45 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-[200px]">
+                          <p>当前会话的专属文件，仅本次对话的 Agent 可以访问</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div
+                      className="truncate text-[10px] leading-4 text-muted-foreground/70"
+                      title={sessionPath}
+                    >
+                      {breadcrumb}
+                    </div>
+                  </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className={filePanelActionButtonClass}
+                        className={cn(filePanelActionButtonClass, 'rounded-lg bg-background/20')}
                         onClick={() =>
                           window.electronAPI.openFile(sessionPath).catch(console.error)
                         }
@@ -426,16 +432,18 @@ export function SidePanel({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <FileSearchBar
-                  workspaceFilesPath={null}
-                  sessionPath={sessionPath}
-                  sessionAttachedDirs={attachedDirs}
-                  workspaceAttachedDirs={[]}
-                  placeholder="搜索会话文件..."
-                  sessionId={sessionId}
-                  onFilePreview={handleFilePreview}
-                />
-                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+                <div className="mb-2">
+                  <FileSearchBar
+                    workspaceFilesPath={null}
+                    sessionPath={sessionPath}
+                    sessionAttachedDirs={attachedDirs}
+                    workspaceAttachedDirs={[]}
+                    placeholder="搜索会话文件..."
+                    sessionId={sessionId}
+                    onFilePreview={handleFilePreview}
+                  />
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-xl bg-background/20">
                   {attachedFiles.length > 0 && (
                     <AttachedFilesSection
                       attachedFiles={attachedFiles}
