@@ -30,7 +30,7 @@
 
 | #   | 决策点      | 选择                                                                                  |
 | --- | ----------- | ------------------------------------------------------------------------------------- |
-| 1   | 鉴权        | **复用公司内部 SSO**（`intranet-xsjsso.seasungame.com`，AES 加密本地配置）            |
+| 1   | 鉴权        | **复用公司内部 SSO**（`<INTERNAL_SSO_DOMAIN>`，AES 加密本地配置）            |
 | 2   | 同步范型    | **Server 是 metadata 权威源**（client push → server 确认 → 通知其他 client pull）     |
 | 3   | 资产文件    | **不上传**（SVN 管文件本体）                                                          |
 | 4   | 资产 ID     | **SVN 路径 + 文件 hash 前缀**（`"Assets/Hero/SK_Hero_01.fbx::a3f2e1"`，本地可独立算） |

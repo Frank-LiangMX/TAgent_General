@@ -4,7 +4,7 @@
  * 挂载 React 应用，初始化主题系统。
  */
 
-import { diffCapabilities } from '@tagent/shared'
+import { diffCapabilities, isAgentCompatibleProvider } from '@tagent/shared'
 import { useSetAtom, useAtomValue, useStore } from 'jotai'
 import React, { useEffect, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
@@ -222,17 +222,24 @@ function AgentSettingsInitializer(): null {
         // 加载 Agent 启用渠道列表，过滤已删除的渠道
         if (settings.agentChannelIds && settings.agentChannelIds.length > 0) {
           const validIds = settings.agentChannelIds.filter((id) => channelIds.has(id))
-          setAgentChannelIds(validIds)
-          // 如果有渠道被清理，持久化更新后的列表
-          if (validIds.length !== settings.agentChannelIds.length) {
-            console.warn('[AgentSettings] 清理了已删除的 agentChannelIds')
-            window.electronAPI.updateSettings({ agentChannelIds: validIds }).catch(console.error)
+          // 补充已启用但不在白名单中的 Agent 兼容渠道（如 kscc 渠道首次创建时 settings 时序问题）
+          const missingIds = channels
+            .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider) && !validIds.includes(c.id))
+            .map((c) => c.id)
+          const mergedIds = missingIds.length > 0 ? [...missingIds, ...validIds] : validIds
+          setAgentChannelIds(mergedIds)
+          if (mergedIds.length !== (settings.agentChannelIds?.length ?? 0)) {
+            window.electronAPI.updateSettings({ agentChannelIds: mergedIds }).catch(console.error)
           }
-        } else if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
-          // 迁移：旧版本只有 agentChannelId，自动转为数组
-          const migrated = [settings.agentChannelId]
-          setAgentChannelIds(migrated)
-          window.electronAPI.updateSettings({ agentChannelIds: migrated }).catch(console.error)
+        } else {
+          // 兜底：agentChannelIds 为空时，自动填充所有 Agent 兼容的已启用渠道
+          const compatibleIds = channels
+            .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider))
+            .map((c) => c.id)
+          if (compatibleIds.length > 0) {
+            setAgentChannelIds(compatibleIds)
+            window.electronAPI.updateSettings({ agentChannelIds: compatibleIds }).catch(console.error)
+          }
         }
 
         // 兜底：agentChannelId 存在但不在 agentChannelIds 白名单中，自动修复不一致

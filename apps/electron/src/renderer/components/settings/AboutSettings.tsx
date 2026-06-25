@@ -367,6 +367,10 @@ function EnvironmentSection(): React.ReactElement {
   const [runtimeStatus, setRuntimeStatus] = React.useState<RuntimeStatus | null>(null)
   const [isChecking, setIsChecking] = React.useState(false)
   const [expanded, setExpanded] = React.useState(false)
+  const [ksccStatus, setKsccStatus] = React.useState<{
+    installed: boolean
+    version?: string
+  } | null>(null)
 
   // 初始化时加载缓存
   React.useEffect(() => {
@@ -379,6 +383,9 @@ function EnvironmentSection(): React.ReactElement {
     window.electronAPI.getRuntimeStatus().then((status) => {
       setRuntimeStatus(status)
     })
+    window.electronAPI.getKsccStatus().then((status) => {
+      if (status) setKsccStatus({ installed: status.installed, version: undefined })
+    }).catch(() => {})
   }, [])
 
   const handleCheck = async () => {
@@ -389,6 +396,8 @@ function EnvironmentSection(): React.ReactElement {
       setEnvironmentResult(checkResult)
       const status = await window.electronAPI.getRuntimeStatus()
       setRuntimeStatus(status)
+      const ksccResult = await window.electronAPI.checkKsccReadiness()
+      if (ksccResult) setKsccStatus({ installed: ksccResult.kscc.installed, version: ksccResult.kscc.version })
     } catch (error) {
       console.error('[环境检测] 检测失败:', error)
     } finally {
@@ -414,7 +423,7 @@ function EnvironmentSection(): React.ReactElement {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <StatusGridItem name="Node.js" ok={nodejsOk} version={result?.nodejs.version} />
           <StatusGridItem name="Git" ok={gitOk} version={result?.git.version} />
           <StatusGridItem
@@ -427,6 +436,7 @@ function EnvironmentSection(): React.ReactElement {
             }
             hide={!runtimeStatus?.shell}
           />
+          <StatusGridItem name="kscc" ok={ksccStatus?.installed ?? false} version={ksccStatus?.version} />
         </div>
 
         {/* 快捷检测按钮 */}
@@ -540,6 +550,26 @@ function EnvironmentSection(): React.ReactElement {
               </AlertDescription>
             </Alert>
           )}
+
+          {/* kscc 内网 CLI */}
+          <EnvironmentCheckCard
+            name="kscc"
+            status={!ksccStatus ? 'checking' : ksccStatus.installed ? 'success' : 'warning'}
+            version={ksccStatus?.version}
+            requirement="公司内网 AI 编程工具（免费）"
+            statusText={
+              !ksccStatus
+                ? undefined
+                : ksccStatus.installed
+                  ? '已安装'
+                  : '未安装'
+            }
+            action={
+              ksccStatus && !ksccStatus.installed
+                ? { type: 'openExternal' as const, url: 'https://tagent.cool/docs/kscc-install' }
+                : { type: 'none' as const }
+            }
+          />
         </div>
       )}
     </SettingsCard>
