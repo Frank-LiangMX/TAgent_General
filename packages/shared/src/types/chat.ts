@@ -319,6 +319,12 @@ export interface ModelOption {
   modelName: string
   /** AI 供应商类型 */
   provider: ProviderType
+  /** 该模型选项是否被禁用（灰显） */
+  disabled?: boolean
+  /** 禁用原因（显示为 tooltip） */
+  disabledReason?: string
+  /** 标签（如"公司免费"） */
+  badge?: string
 }
 
 // ===== 分页加载相关 =====

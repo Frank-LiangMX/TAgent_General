@@ -23,6 +23,7 @@ export type ProviderType =
   | 'qwen'
   | 'xiaomi'
   | 'xiaomi-token-plan'
+  | 'kscc-internal'
   | 'custom'
 
 /**
@@ -43,6 +44,7 @@ export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
   qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   xiaomi: 'https://api.xiaomimimo.com/anthropic',
   'xiaomi-token-plan': 'https://token-plan-cn.xiaomimimo.com/anthropic',
+  'kscc-internal': '', // 内置默认值，无需配置
   custom: '',
 }
 
@@ -64,6 +66,7 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
   qwen: '通义千问',
   xiaomi: '小米 MiMo (API)',
   'xiaomi-token-plan': '小米 MiMo Token Plan',
+  'kscc-internal': '金山云',
   custom: 'OpenAI 兼容格式',
 }
 
@@ -83,6 +86,7 @@ export const AGENT_COMPATIBLE_PROVIDERS: ReadonlySet<ProviderType> = new Set<Pro
   'minimax',
   'xiaomi',
   'xiaomi-token-plan',
+  'kscc-internal',
 ])
 
 /**

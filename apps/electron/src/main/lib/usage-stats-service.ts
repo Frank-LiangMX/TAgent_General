@@ -160,7 +160,7 @@ class UsageStatsService {
             // result 消息包含最终 usage
             if (msg.type === 'result') {
               if (msg.usage) {
-                sessionInputTokens += msg.usage.input_tokens || 0
+                sessionInputTokens += sumContextUsedTokens(msg.usage)
                 sessionOutputTokens += msg.usage.output_tokens || 0
                 sessionCacheReadTokens += msg.usage.cache_read_input_tokens || 0
                 sessionCacheCreationTokens += msg.usage.cache_creation_input_tokens || 0
@@ -354,9 +354,10 @@ class UsageStatsService {
         }
 
         // result 消息包含最终 usage
+        // input_tokens 仅含非缓存部分，总输入需加回缓存 token
         if (msg.type === 'result') {
           if (msg.usage) {
-            result.totalInputTokens += msg.usage.input_tokens || 0
+            result.totalInputTokens += sumContextUsedTokens(msg.usage)
             result.totalOutputTokens += msg.usage.output_tokens || 0
             result.totalCacheReadTokens += msg.usage.cache_read_input_tokens || 0
             result.totalCacheCreationTokens += msg.usage.cache_creation_input_tokens || 0

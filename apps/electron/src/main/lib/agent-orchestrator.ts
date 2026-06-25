@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
@@ -670,11 +671,15 @@ export class AgentOrchestrator {
     }
 
     // 认证方式按 provider 分支
+    // - kscc 内网渠道：kscc CLI 自行处理认证，不注入任何 ANTHROPIC_* 凭证
     // - Kimi Coding Plan：只认 Bearer，通过 ANTHROPIC_CUSTOM_HEADERS 注入 TAgent UA
     // - MiniMax Coding Plan：Claude Code 场景使用 Bearer（ANTHROPIC_AUTH_TOKEN）
     // - 通过 ANTHROPIC_AUTH_TOKEN 让 SDK 发 Authorization: Bearer
     // - 其它：ANTHROPIC_API_KEY（SDK 内部会同时带上 x-api-key 和 Bearer）
-    if (
+    if (provider === 'kscc-internal') {
+      // kscc 自管认证，保留 CLAUDE_CONFIG_DIR 等公共配置即可
+      return sdkEnv
+    } else if (
       provider === 'kimi-coding' ||
       provider === 'zhipu-coding' ||
       provider === 'xiaomi-token-plan'
@@ -1351,7 +1356,10 @@ export class AgentOrchestrator {
     delete process.env.ANTHROPIC_AUTH_TOKEN
     delete process.env.ANTHROPIC_BASE_URL
     delete process.env.ANTHROPIC_CUSTOM_HEADERS
-    if (channel.provider === 'kimi-coding') {
+    if (channel.provider === 'kscc-internal') {
+      // kscc 自管认证，不注入任何凭证，也不设置 ANTHROPIC_BASE_URL
+      // （kscc CLI 内部已配置 endpoint）
+    } else if (channel.provider === 'kimi-coding') {
       // Kimi Coding Plan：只用 Bearer + 必须带 User-Agent
       process.env.ANTHROPIC_AUTH_TOKEN = apiKey
       process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
@@ -1366,7 +1374,7 @@ export class AgentOrchestrator {
       process.env.ANTHROPIC_API_KEY = apiKey
     }
     // 使用与 buildSdkEnv 相同的规范化逻辑，确保 process.env 和 sdkEnv 中的 URL 一致
-    if (channel.baseUrl && channel.baseUrl !== 'https://api.anthropic.com') {
+    if (channel.provider !== 'kscc-internal' && channel.baseUrl && channel.baseUrl !== 'https://api.anthropic.com') {
       process.env.ANTHROPIC_BASE_URL = normalizeAnthropicBaseUrlForSdk(channel.baseUrl)
     }
 
@@ -1380,6 +1388,19 @@ export class AgentOrchestrator {
     // 4. 读取已有的 SDK session ID（用于 resume）
     const sessionMeta = getAgentSessionMeta(sessionId)
     let existingSdkSessionId = sessionMeta?.sdkSessionId
+
+    // 4.0 渠道切换时清空 SDK session：旧 session 绑定了前一个渠道的 CLI/API，
+    //     resume 回旧 CLI 会导致认证失败或协议不兼容
+    if (channelId !== sessionMeta?.channelId) {
+      if (existingSdkSessionId) {
+        console.log(`[Agent 编排] 渠道变更 ${sessionMeta?.channelId} → ${channelId}，清除 sdkSessionId`)
+        updateAgentSessionMeta(sessionId, { sdkSessionId: undefined, channelId })
+        existingSdkSessionId = undefined
+      } else {
+        // 首次发消息时记录渠道
+        updateAgentSessionMeta(sessionId, { channelId })
+      }
+    }
 
     // 4.1 检测回退后的 resume 截断点（快照回退功能）
     let rewindResumeAt: string | undefined
@@ -1473,9 +1494,48 @@ export class AgentOrchestrator {
       const sdk = await import('@anthropic-ai/claude-agent-sdk')
 
       // 9. 构建 SDK query
-      const cliPath = resolveSDKCliPath()
+      let cliPath = resolveSDKCliPath()
 
-      if (!existsSync(cliPath)) {
+      // kscc 内网渠道：替换为 kscc CLI
+      if (channel.provider === 'kscc-internal') {
+        try {
+          // Windows: where 返回多个结果（kscc shim, kscc.cmd, kscc.exe），
+          // 优先取 .cmd 或 .exe（真正的可执行文件），避免 shim 导致 SDK spawn 失败
+          const cmd = process.platform === 'win32' ? 'where' : 'which'
+          let ksccPath: string | undefined
+          if (process.platform === 'win32') {
+            const allPaths = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
+              .trim()
+              .split(/\r?\n/)
+            ksccPath = allPaths.find(p => p.endsWith('.cmd')) || allPaths.find(p => p.endsWith('.exe')) || allPaths[0]
+          } else {
+            ksccPath = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
+              .trim()
+              .split('\n')[0]
+          }
+          if (ksccPath) {
+            cliPath = ksccPath
+          }
+          console.log(`[Agent 编排] 使用 kscc CLI: ${cliPath}`)
+        } catch {
+          reportPreflightError({
+            code: 'kscc_not_found',
+            title: 'kscc 未找到',
+            message: '已选择 kscc 内网渠道但未检测到 kscc 命令，请按安装引导完成 kscc 安装',
+            actions: [
+              { key: 'g', label: '打开安装引导', action: 'open_kscc_install_guide' },
+              { key: 's', label: '切换渠道', action: 'open_channel_settings' },
+            ],
+            canRetry: false,
+          })
+          return
+        }
+      }
+
+      // kscc 渠道：where/which 已验证命令在 PATH 中，跳过 existsSync
+      const isKsccChannel = channel.provider === 'kscc-internal'
+
+      if (!isKsccChannel && !existsSync(cliPath)) {
         const subpkg = `@anthropic-ai/claude-agent-sdk-${process.platform}-${process.arch}`
         console.error(`[Agent 编排] SDK native binary 不存在: ${cliPath}`)
         reportPreflightError({
@@ -2008,6 +2068,7 @@ export class AgentOrchestrator {
         model: modelId || DEFAULT_MODEL_ID,
         cwd: agentCwd,
         sdkCliPath: cliPath,
+        isKsccChannel: channel.provider === 'kscc-internal',
         env: sdkEnv,
         ...(maxTurns != null && { maxTurns }),
         sdkPermissionMode: sdkPermissionModeForTAgentMode(initialPermissionMode),
@@ -2038,6 +2099,8 @@ export class AgentOrchestrator {
             })(),
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
+            ksccProvider: channel.provider === 'kscc-internal',
+            ksccSubagentModel: channel.provider === 'kscc-internal' ? modelRouting.subagentModel : undefined,
             subagentEagerness: appSettings.subagentEagerness,
             mode: getAgentSessionMeta(sessionId)?.mode,
           }),

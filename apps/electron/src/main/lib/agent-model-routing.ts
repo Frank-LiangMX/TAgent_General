@@ -9,6 +9,8 @@ export interface AgentModelRoutingInput {
 export interface AgentModelRoutingPolicy {
   /** 是否命中 DeepSeek 系列主模型 */
   deepSeekFamily: boolean
+  /** 是否命中 kscc 内网渠道模型 */
+  ksccFamily?: boolean
   /** 命中时写入 CLAUDE_CODE_SUBAGENT_MODEL；未命中时删除该环境变量以保留 SDK 默认解析 */
   subagentModel?: string
 }
@@ -24,10 +26,22 @@ export function resolveAgentModelRouting(input: AgentModelRoutingInput): AgentMo
   const model = input.modelId?.trim().toLowerCase() ?? ''
   const deepSeekFamily =
     input.provider === 'deepseek' || model.startsWith('deepseek-') || model.includes('/deepseek-')
+  const ksccFamily = input.provider === 'kscc-internal'
+
+  let subagentModel: string | undefined
+  if (ksccFamily) {
+    // kscc 内网渠道：子 Agent 使用最轻量的模型
+    if (model.includes('mimo-v2.5-pro')) subagentModel = 'mimo-v2.5'
+    else if (model.includes('mimo-v2.5')) subagentModel = 'mimo-v2.5'
+    else subagentModel = 'glm-5.1' // 默认用 GLM-5.1 作为 subagent
+  } else if (deepSeekFamily) {
+    subagentModel = DEEPSEEK_SUBAGENT_MODEL_ID
+  }
 
   return {
     deepSeekFamily,
-    ...(deepSeekFamily && { subagentModel: DEEPSEEK_SUBAGENT_MODEL_ID }),
+    ksccFamily,
+    ...(subagentModel && { subagentModel }),
   }
 }
 

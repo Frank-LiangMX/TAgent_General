@@ -132,6 +132,8 @@ function createMessageChannel(signal: AbortSignal): MessageChannel {
 export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   /** SDK native binary 路径（claude 或 claude.exe） */
   sdkCliPath: string
+  /** 是否为 kscc 渠道（kscc 在 Windows 上是 .cmd 脚本，需要 shell: true） */
+  isKsccChannel?: boolean
   /** 环境变量（含 API Key、Base URL、代理等） */
   env: Record<string, string | undefined>
   /** 最大轮次（undefined = SDK 默认） */
@@ -801,7 +803,15 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         spawnClaudeCodeProcess: (
           spawnOpts: import('@anthropic-ai/claude-agent-sdk').SpawnOptions
         ) => {
-          const child = spawnChild(spawnOpts.command, spawnOpts.args, {
+          // kscc 在 Windows 上是 .cmd 脚本，spawn 无法直接执行，
+          // 需要 cmd.exe /c 来运行，否则 EINVAL
+          const isKscc = options.isKsccChannel ?? false
+          const isWinCmd = isKscc && process.platform === 'win32'
+
+          const spawnCommand = isWinCmd ? 'cmd.exe' : spawnOpts.command
+          const spawnArgs = isWinCmd ? ['/c', 'kscc', ...spawnOpts.args] : spawnOpts.args
+
+          const child = spawnChild(spawnCommand, spawnArgs, {
             cwd: spawnOpts.cwd,
             env: spawnOpts.env,
             signal: spawnOpts.signal,

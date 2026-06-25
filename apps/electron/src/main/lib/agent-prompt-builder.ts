@@ -270,6 +270,10 @@ interface SystemPromptContext {
   claudeAvailable?: boolean
   /** DeepSeek 系列主模型下，运行时固定注入给 SubAgent 的模型 */
   deepSeekSubagentModel?: string
+  /** 当前是否走 kscc 内网渠道 */
+  ksccProvider?: boolean
+  /** kscc 系列主模型下，运行时注入给 SubAgent 的模型 */
+  ksccSubagentModel?: string
   /** 用户对主 Agent 派发 SubAgent 的积极性（设置项，默认 conservative） */
   subagentEagerness?: SubagentEagerness
   /**
@@ -311,7 +315,35 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false
-  if (ctx.deepSeekSubagentModel === DEEPSEEK_SUBAGENT_MODEL_ID) {
+  if (ctx.ksccProvider) {
+    // kscc 内网渠道：所有 SubAgent 统一使用配置的 subagent 模型
+    const subagentModel = ctx.ksccSubagentModel ?? 'glm-5.1'
+    const subagentList = Object.entries(SUBAGENT_METADATA)
+      .map(([name, meta]) => `- **${name}**（${subagentModel}）：${meta.usageHint}`)
+      .join('\n')
+
+    sections.push(`## SubAgent 委派策略
+
+**核心原则：先探索再行动，用 SubAgent 保持主上下文干净。**
+
+当前通过 kscc 内网渠道运行，所有 SubAgent 统一使用 \`${subagentModel}\`。调用 SubAgent 时不要通过 \`model\` 参数指定模型，也不要使用 haiku/sonnet/opus 等 Claude 模型别名，否则会导致调用失败。
+
+kscc 内网模型不支持 extended thinking，不要设置 thinking 参数。
+
+### 内置 SubAgent
+
+系统已预定义以下子代理，可直接通过 Agent 工具按名称调用：
+
+${subagentList}
+
+### 何时委派 SubAgent
+
+- 需要探索代码库、搜索多个文件 → 委派 \`explorer\`
+- 需要调研技术方案、对比多个选项 → 委派 \`researcher\`
+- 代码修改完成后做质量检查 → 委派 \`code-reviewer\`
+- 需要并行处理多个独立子任务 → 同时委派多个 SubAgent
+- 以上内置 SubAgent 不满足需求时，也可以自行定义临时 SubAgent，但不要指定 \`model\` 参数`)
+  } else if (ctx.deepSeekSubagentModel === DEEPSEEK_SUBAGENT_MODEL_ID) {
     // DeepSeek 渠道：所有 SubAgent 在运行时固定路由到 flash 模型
     const subagentList = Object.entries(SUBAGENT_METADATA)
       .map(([name, meta]) => `- **${name}**（${DEEPSEEK_SUBAGENT_MODEL_ID}）：${meta.usageHint}`)

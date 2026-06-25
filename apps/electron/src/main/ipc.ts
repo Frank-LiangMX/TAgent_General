@@ -4381,6 +4381,24 @@ export function registerIpcHandlers(): void {
     return { state: getInstallState() }
   })
 
+  // ===== kscc 内网渠道 =====
+
+  ipcMain.handle(AGENT_IPC_CHANNELS.CHECK_KSCC_READINESS, async () => {
+    const { checkKsccInstallReadiness } = await import('./lib/kscc-service')
+    return checkKsccInstallReadiness()
+  })
+
+  ipcMain.handle(AGENT_IPC_CHANNELS.GET_KSCC_STATUS, async () => {
+    const { getKsccStatus } = await import('./lib/kscc-service')
+    return getKsccStatus()
+  })
+
+  ipcMain.handle(AGENT_IPC_CHANNELS.REFRESH_KSCC_STATUS, async () => {
+    const { clearKsccCache, checkKsccInstallReadiness } = await import('./lib/kscc-service')
+    clearKsccCache()
+    return checkKsccInstallReadiness()
+  })
+
   // ===== ModeManager 模式管理 =====
 
   ipcMain.handle(AGENT_IPC_CHANNELS.GET_MODE_STATUS, async () => {

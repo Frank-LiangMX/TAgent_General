@@ -14,8 +14,8 @@
 
 **核心参考**：
 
-- kscc 是 Owtffssent Claude Code CLI 的公司内部定制版（`@seasun/kscc` v1.0.21），协议与原生 CLI 完全一致
-- kscc 代理地址 `http://120.92.138.34`，内网可达，认证由 kscc CLI 自行处理（读 `~/.claude/` 配置）
+- kscc 是 Owtffssent Claude Code CLI 的公司内部定制版（`<KSCC_PACKAGE>`），协议与原生 CLI 完全一致
+- kscc 代理地址通过 `~/.tagent/kscc-config.json` 配置（`probeUrl` 字段），内网可达，认证由 kscc CLI 自行处理（读 `~/.claude/` 配置）
 - kscc 内置模型列表通过 `initAndGetModels()` 读取：glm-5、glm-5.1、glm-5.2(1M)、kimi-k2.5、kimi-k2.6、mimo-v2.5(1M)、mimo-v2.5-pro(1M)
 - kscc CLI 支持 `--permission-prompt-tool`、`streamInput`、`ExitPlanMode`、thinking/budget、effort、mcpServers 等 TAgent 所需的核心特性（feature 检测已确认）
 - 不支持 `toolUseConcurrency` 和 `context-1m` beta（TAgent 当前硬编码 `toolUseConcurrency: 1`，不影响正确性）
@@ -66,7 +66,7 @@ export type ProviderType =
 
 export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
   ...existing,
-  'kscc-internal': 'http://120.92.138.34',
+  'kscc-internal': '', // 从 kscc-config.json 的 probeUrl 字段读取
 }
 
 export const PROVIDER_LABELS: Record<ProviderType, string> = {
@@ -92,7 +92,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { ChannelModel } from '@tagent/shared'
 
-const KSCC_PROBE_URL = 'http://120.92.138.34'
+const KSCC_PROBE_URL = '' // 从 kscc-config.json 读取
 const KSCC_PROBE_TIMEOUT = 3000
 
 /** 探测内网连通性 */
@@ -122,7 +122,7 @@ export function isKsccInstalled(): boolean {
 /** 读取 kscc 内置模型列表 */
 export async function fetchKsccModels(): Promise<ChannelModel[]> {
   try {
-    const m = require(require.resolve('@seasun/kscc/src/util.js', { paths: [homedir()] }))
+    const m = require(require.resolve('<KSCC_PACKAGE>/src/util.js', { paths: [homedir()] }))
     const models = await m.initAndGetModels()
     return models.map((r: any) => ({
       id: r.value,
@@ -194,7 +194,7 @@ export const DEFAULT_KSCC_MODELS: ChannelModel[] = [
       id: randomUUID(),
       name: 'kscc 内网',
       provider: 'kscc-internal',
-      baseUrl: 'http://120.92.138.34',
+      baseUrl: '', // 从 kscc-config.json 读取
       apiKey: '',
       models,
       enabled: true,
@@ -234,9 +234,9 @@ if (channel.provider === 'kscc-internal') {
     reportPreflightError({
       code: 'kscc_not_found',
       title: 'kscc 未找到',
-      message: '已选择 kscc 内网渠道但未检测到 kscc 命令，请运行 npm i -g @seasun/kscc',
+      message: '已选择 kscc 内网渠道但未检测到 kscc 命令，请按安装引导完成 kscc 安装',
       actions: [
-        { key: 'i', label: '安装 kscc', action: 'open_external', payload: 'http://npmhub.ksyun.com/@seasun/kscc' },
+        { key: 'i', label: '安装引导', action: 'open_kscc_install_guide' },
         { key: 's', label: '切换渠道', action: 'open_channel_settings' },
       ],
       canRetry: false,

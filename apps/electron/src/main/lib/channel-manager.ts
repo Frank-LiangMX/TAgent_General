@@ -7,6 +7,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
@@ -14,8 +15,10 @@ import { PROVIDER_DEFAULT_URLS } from '@tagent/shared'
 import { safeStorage } from 'electron'
 
 import { getChannelsPath } from './config-paths'
+import { getProbeUrl, getDefaultModels as getDefaultKsccModels } from './kscc-config'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
+import { getSettings, updateSettings } from './settings-service'
 import pkg from '../../../package.json' with { type: 'json' }
 
 import type {
@@ -107,11 +110,53 @@ function decryptKey(encryptedKey: string): string {
   }
 }
 
+/** 同步 kscc 渠道到 Agent 可用渠道白名单 */
+function syncKsccToAgentChannelIds(channelId: string, add: boolean): void {
+  try {
+    const settings = getSettings()
+    const currentIds = settings.agentChannelIds ?? []
+    if (add && !currentIds.includes(channelId)) {
+      const newIds = [channelId, ...currentIds] // kscc 置顶
+      updateSettings({ agentChannelIds: newIds })
+    } else if (!add && currentIds.includes(channelId)) {
+      const newIds = currentIds.filter((id) => id !== channelId)
+      updateSettings({ agentChannelIds: newIds })
+    }
+  } catch (e) {
+    console.warn('[渠道管理] 同步 kscc 到 agentChannelIds 失败:', e)
+  }
+}
+
+/**
+ * 同步检测 kscc CLI 是否在 PATH 中
+ */
+function checkKsccInstalledSync(): { installed: boolean; path?: string; version?: string } {
+  try {
+    const cmd = process.platform === 'win32' ? 'where' : 'which'
+    const path = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
+      .trim()
+      .split('\n')[0]
+    let version: string | undefined
+    try {
+      version = execFileSync('kscc', ['--version'], { encoding: 'utf-8', timeout: 5000 }).trim()
+    } catch { /* */ }
+    return { installed: true, path, version }
+  } catch {
+    return { installed: false }
+  }
+}
+
+/** kscc 默认模型列表（fetchKsccModels 失败时使用，从配置读取） */
+function getKsccModels(): ChannelModel[] {
+  return getDefaultKsccModels()
+}
+
 /**
  * 获取所有渠道
  *
  * 返回的渠道中 apiKey 保持加密状态。
  * 首次调用时，如果没有任何 DeepSeek 渠道，自动创建预设渠道。
+ * kscc 内网渠道：始终创建，enabled 首次由安装状态决定，之后用户手动控制。
  */
 export function listChannels(): Channel[] {
   const config = readConfig()
@@ -126,7 +171,7 @@ export function listChannels(): Channel[] {
       id: randomUUID(),
       name: 'DeepSeek',
       provider: 'deepseek',
-      baseUrl: PROVIDER_DEFAULT_URLS.deepseek,
+      baseUrl: 'https://api.deepseek.com/anthropic',
       apiKey: encryptApiKey(''),
       models: [
         { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', enabled: true },
@@ -136,10 +181,48 @@ export function listChannels(): Channel[] {
       createdAt: now,
       updatedAt: now,
     }
-    config.channels.push(presetChannel)
+    config.channels.unshift(presetChannel)
     writeConfig(config)
-    console.log('[渠道管理] 已自动创建 DeepSeek 预设渠道')
-    return config.channels
+  }
+
+  // --- kscc 内网渠道（始终创建，enabled 首次由安装状态决定，之后用户手动控制）---
+  const ksccExisting = config.channels.find((c) => c.provider === 'kscc-internal')
+  const ksccProbeUrl = getProbeUrl()
+  const models = getKsccModels()
+
+  if (!ksccExisting) {
+    // 首次创建：CLI 已安装 → 启用；否则禁用（用户点击 Switch 弹出安装引导）
+    const ksccCheck = checkKsccInstalledSync()
+    const shouldEnable = ksccCheck.installed
+    const now = Date.now()
+    const ksccChannelId = randomUUID()
+    config.channels.push({
+      id: ksccChannelId,
+      name: 'kscc 内网',
+      provider: 'kscc-internal',
+      baseUrl: ksccProbeUrl,
+      apiKey: encryptApiKey(''),
+      models,
+      enabled: shouldEnable,
+      createdAt: now,
+      updatedAt: now,
+    })
+    writeConfig(config)
+    syncKsccToAgentChannelIds(ksccChannelId, shouldEnable)
+  } else {
+    // 渠道已存在：只同步 baseUrl（配置可能更新），不改 enabled（尊重用户手动设置）
+    if (ksccExisting.baseUrl !== ksccProbeUrl) {
+      ksccExisting.baseUrl = ksccProbeUrl
+      ksccExisting.updatedAt = Date.now()
+      writeConfig(config)
+    }
+    // 确保 agentChannelIds 白名单与当前 enabled 状态一致
+    const isInList = (getSettings().agentChannelIds ?? []).includes(ksccExisting.id)
+    if (ksccExisting.enabled && !isInList) {
+      syncKsccToAgentChannelIds(ksccExisting.id, true)
+    } else if (!ksccExisting.enabled && isInList) {
+      syncKsccToAgentChannelIds(ksccExisting.id, false)
+    }
   }
 
   return config.channels
@@ -279,6 +362,7 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'kscc-internal':
         return await testAnthropicCompatible(channel.baseUrl, apiKey, proxyUrl, channel.provider)
       case 'openai':
       case 'zhipu':
@@ -330,6 +414,7 @@ export async function validateChannelModel(input: {
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'kscc-internal':
         return await validateAnthropicModel(
           input.baseUrl,
           input.apiKey,
@@ -650,6 +735,7 @@ export async function testChannelDirect(input: FetchModelsInput): Promise<Channe
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'kscc-internal':
         return await testAnthropicCompatible(input.baseUrl, input.apiKey, proxyUrl, input.provider)
       case 'openai':
       case 'zhipu':
@@ -690,6 +776,7 @@ export async function fetchModels(input: FetchModelsInput): Promise<FetchModelsR
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'kscc-internal':
         return await fetchAnthropicCompatibleModels(
           input.baseUrl,
           input.apiKey,

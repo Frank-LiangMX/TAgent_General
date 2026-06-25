@@ -713,6 +713,20 @@ export interface ElectronAPI {
     cb: (chunk: { phase: string; stream: string; text: string; ts: number }) => void
   ) => () => void
 
+  // ===== kscc 内网渠道 =====
+
+  /** 检测 kscc 安装就绪状态 */
+  checkKsccReadiness: () => Promise<import('@tagent/shared').KsccInstallReadiness>
+
+  /** 获取 kscc 状态 */
+  getKsccStatus: () => Promise<{
+    installed: boolean
+    models: import('@tagent/shared').ChannelModel[]
+  }>
+
+  /** 刷新 kscc 状态（清缓存重检） */
+  refreshKsccStatus: () => Promise<import('@tagent/shared').KsccInstallReadiness>
+
   // ===== ModeManager 模式管理 =====
 
   /** 获取模式状态摘要 */
@@ -2240,6 +2254,20 @@ const electronAPI: ElectronAPI = {
     return () => {
       ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TA_INSTALL_LOG, handler)
     }
+  },
+
+  // ===== kscc 内网渠道 =====
+
+  checkKsccReadiness: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CHECK_KSCC_READINESS)
+  },
+
+  getKsccStatus: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_KSCC_STATUS)
+  },
+
+  refreshKsccStatus: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.REFRESH_KSCC_STATUS)
   },
 
   getWorkspaceSkills: (workspaceSlug: string) => {

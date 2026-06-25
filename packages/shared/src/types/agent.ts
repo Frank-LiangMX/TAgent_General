@@ -451,6 +451,7 @@ export type ErrorCode =
   | 'claude_binary_not_found'
   | 'session_busy'
   | 'ta_dependency_missing'
+  | 'kscc_not_found'
   | 'unknown_error'
 
 /** 恢复操作 */
@@ -1698,6 +1699,14 @@ export const AGENT_IPC_CHANNELS = {
   /** 任务完成通知（主进程 → 渲染进程推送） */
   TASK_NOTIFICATION: 'agent:task-notification',
 
+  // kscc 内网渠道
+  /** 检测 kscc 安装就绪状态 */
+  CHECK_KSCC_READINESS: 'agent:check-kscc-readiness',
+  /** 获取 kscc 状态（已配置+内网+已安装+模型列表） */
+  GET_KSCC_STATUS: 'agent:get-kscc-status',
+  /** 刷新 kscc 状态（清缓存重检） */
+  REFRESH_KSCC_STATUS: 'agent:refresh-kscc-status',
+
   // 资产库管理（TA 模式）
   /** 初始化资产库服务 */
   INIT_ASSET_STORE: 'agent:init-asset-store',
@@ -1773,4 +1782,34 @@ export interface PendingRequestsSnapshot {
   askUsers: AskUserRequest[]
   /** 待处理的 ExitPlanMode 请求 */
   exitPlans: ExitPlanModeRequest[]
+}
+
+// ===== kscc 内网渠道安装引导 =====
+
+/** kscc 安装步骤 */
+export interface KsccInstallStep {
+  id: string
+  label: string
+  /** 可复制到剪贴板的命令 */
+  command?: string
+  /** 可打开的外部链接 */
+  link?: string
+  /** 是否可选步骤 */
+  optional?: boolean
+  /** 检测时已满足 */
+  done?: boolean
+}
+
+/** kscc 安装就绪检测结果 */
+export interface KsccInstallReadiness {
+  /** Node.js 环境检测 */
+  nodeJs: { installed: boolean; version?: string; meetsMinimum: boolean }
+  /** Git 环境检测 */
+  git: { installed: boolean; version?: string }
+  /** kscc CLI 检测 */
+  kscc: { installed: boolean; path?: string; version?: string }
+  /** 运行平台 */
+  platform: 'aix' | 'android' | 'darwin' | 'freebsd' | 'haiku' | 'linux' | 'openbsd' | 'sunos' | 'win32' | 'cygwin' | 'netbsd'
+  /** 动态安装步骤 */
+  installSteps: KsccInstallStep[]
 }
