@@ -1,11 +1,11 @@
 /**
- * 联网搜索工具模块（Chat 模式）
+ * 联网搜索工具模块
  *
  * 基于 Tavily Search API 提供实时联网搜索能力。
  * 凭据存储在 ~/.tagent/chat-tools.json 的 toolCredentials 中。
  */
 
-import { getToolCredentials } from '../chat-tool-config'
+import { getToolCredentials } from '../tool-config'
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'

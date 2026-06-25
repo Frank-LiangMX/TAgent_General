@@ -22,7 +22,7 @@ import {
   agentSessionStreamingStateAtomFamily,
   sessionPersistedPermissionModeAtom,
 } from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { resolveModelDisplayName } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 

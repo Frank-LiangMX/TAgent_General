@@ -11,8 +11,7 @@ import { stopAllAgents, killOrphanedClaudeSubprocesses } from './lib/agent-servi
 import { upgradeDefaultSkillsInWorkspaces } from './lib/agent-workspace-manager'
 import { getIsQuitting, setQuitting } from './lib/app-lifecycle'
 import { registerBridge, startAllBridges, stopAllBridges } from './lib/bridge-registry'
-import { stopAllGenerations } from './lib/chat-service'
-import { startChatToolsWatcher, stopChatToolsWatcher } from './lib/chat-tools-watcher'
+import { startChatToolsWatcher, stopChatToolsWatcher } from './lib/tool-config-watcher'
 import { seedDefaultSkills } from './lib/config-paths'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import { getDingTalkMultiBotConfig } from './lib/dingtalk-config'
@@ -506,9 +505,6 @@ async function bootstrap(): Promise<void> {
     openAgentSession: (sessionId, title) => {
       sendToMainWindow(TRAY_IPC_CHANNELS.OPEN_AGENT_SESSION, { sessionId, title })
     },
-    createChatSession: () => {
-      sendToMainWindow(TRAY_IPC_CHANNELS.CREATE_SESSION, { mode: 'chat' })
-    },
     createAgentSession: () => {
       sendToMainWindow(TRAY_IPC_CHANNELS.CREATE_SESSION, { mode: 'agent' })
     },
@@ -645,9 +641,8 @@ app.on('before-quit', () => {
   // 标记正在退出，让 close 事件不再阻止关闭
   setQuitting()
 
-  // 中止所有活跃的 Agent 和 Chat 子进程
+  // 中止所有活跃的 Agent 子进程
   stopAllAgents()
-  stopAllGenerations()
   // 最后兜底：扫描并强杀所有孤儿 claude-agent-sdk 子进程（Issue #357）
   // 针对 pidMap 未覆盖、dispose 漏杀等极端场景，确保不遗留残留进程
   killOrphanedClaudeSubprocesses()

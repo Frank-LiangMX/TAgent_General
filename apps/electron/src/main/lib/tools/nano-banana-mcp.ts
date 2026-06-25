@@ -11,7 +11,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import { extname, resolve, isAbsolute, join } from 'node:path'
 
 import { saveAttachment, isImageAttachment } from '../attachment-service'
-import { getToolState, getToolCredentials } from '../chat-tool-config'
+import { getToolState, getToolCredentials } from '../tool-config'
 
 // ===== Gemini API 类型（REST API 使用 camelCase） =====
 

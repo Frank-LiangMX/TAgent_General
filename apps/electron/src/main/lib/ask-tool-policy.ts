@@ -15,11 +15,11 @@
  * - 自定义 HTTP 工具
  * - nano-banana
  *
- * 实现：直接消费 chat-tool-config 的 toolStates 决定可选工具的开关，
- * 不复用 chat-tool-registry（后者会拉起所有 builtin tool）。
+ * 实现：直接消费 tool-config 的 toolStates 决定可选工具的开关，
+ * 不复用 tool-registry（后者会拉起所有 builtin tool）。
  */
 
-import { getChatToolsConfig } from './chat-tool-config'
+import { getChatToolsConfig } from './tool-config'
 
 import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
 import type { AskMessage, ChatToolActivity } from '@tagent/shared'
@@ -64,9 +64,9 @@ export function isSuggestAgentSwitchToolCall(toolName: string): boolean {
 const WEB_SEARCH_TOOL_ID = 'web-search'
 
 /**
- * Ask 下的联网搜索工具定义（无 Tavily 工具用，由 chat-tool-registry 提供）
+ * Ask 下的联网搜索工具定义（无 Tavily 工具用，由 tool-registry 提供）
  *
- * 直接复用 chat-tool-registry.getAskEnabledTools 的同一组定义。
+ * 直接复用 tool-registry.getAskEnabledTools 的同一组定义。
  * 这里仅作为常量说明：Ask 工具集不直接调用 getEnabledTools（避免拉起 nano-banana/ta/...），
  * 而是基于 chat-tools.json 的 toolStates 显式枚举。
  */
@@ -97,9 +97,9 @@ export function getAskEnabledTools(): AskEnabledToolsResult {
   const tools: ToolDefinition[] = [SUGGEST_AGENT_SWITCH_TOOL_DEFINITION]
 
   if (config.toolStates[WEB_SEARCH_TOOL_ID]?.enabled) {
-    // web-search 的 ToolDefinition 由 chat-tools 目录提供，
-    // 此处仅占位（P1 视情况接 chat-tool-registry 的轻量子集）
-    // 为避免引入 chat-tool-registry（会拉起 nano-banana/ta/memory 的副作用），
+    // web-search 的 ToolDefinition 由 tools 目录提供，
+    // 此处仅占位（P1 视情况接 tool-registry 的轻量子集）
+    // 为避免引入 tool-registry（会拉起 nano-banana/ta/memory 的副作用），
     // 当前 P0 阶段暂不注入联网工具，P1 再补
   }
 

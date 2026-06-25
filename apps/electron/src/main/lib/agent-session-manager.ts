@@ -27,7 +27,7 @@ import { join, resolve, dirname } from 'node:path'
 import { createInterface } from 'node:readline'
 
 import { getAgentWorkspace } from './agent-workspace-manager'
-import { clearNanoBananaAgentHistory } from './chat-tools/nano-banana-mcp'
+import { clearNanoBananaAgentHistory } from './tools/nano-banana-mcp'
 import { clearContextUsageCache } from './context-usage-cache'
 import {
   getAgentSessionsIndexPath,

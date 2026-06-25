@@ -19,7 +19,7 @@ import {
   agentModelIdAtom,
   agentThinkingAtom,
 } from '@/atoms/agent-atoms'
-import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/chat-atoms'
+import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'

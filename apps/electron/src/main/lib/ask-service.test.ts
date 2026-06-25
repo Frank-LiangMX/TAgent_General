@@ -45,8 +45,8 @@ vi.mock('./btw-service', () => ({
   },
 }))
 
-// ask-tool-policy 依赖 chat-tool-config（其内部读 JSON），mock 掉
-vi.mock('./chat-tool-config', () => ({
+// ask-tool-policy 依赖 tool-config（其内部读 JSON），mock 掉
+vi.mock('./tool-config', () => ({
   getChatToolsConfig: () => ({ toolStates: {}, customTools: [] }),
 }))
 

@@ -15,7 +15,6 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import {
   tabsAtom,
@@ -38,7 +37,6 @@ export function useOpenSession(): OpenSessionFn {
   const [tabs, setTabs] = useAtom(tabsAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const setAppMode = useSetAtom(appModeAtom)
-  const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
@@ -88,7 +86,6 @@ export function useOpenSession(): OpenSessionFn {
       } else {
         // scratch
         setAppMode('scratch')
-        setCurrentConversationId(null)
         setCurrentAgentSessionId(null)
       }
     },
@@ -97,7 +94,6 @@ export function useOpenSession(): OpenSessionFn {
       setTabs,
       setActiveTabId,
       setAppMode,
-      setCurrentConversationId,
       setCurrentAgentSessionId,
       agentSessions,
       setCurrentAgentWorkspaceId,

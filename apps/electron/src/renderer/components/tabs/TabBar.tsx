@@ -23,7 +23,6 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom, activeRailItemAtom, topLevelModeAtom } from '@/atoms/app-mode'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { detectIsWindows } from '@/lib/platform'
@@ -39,7 +38,6 @@ export function TabBar(): React.ReactElement {
   const setAppMode = useSetAtom(appModeAtom)
   const setActiveRailItem = useSetAtom(activeRailItemAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
-  const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
@@ -94,7 +92,6 @@ export function TabBar(): React.ReactElement {
           setActiveRailItem('scratch')
         }
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
-        setCurrentConversationId(null)
         if (appMode !== 'agent') {
           setCurrentAgentSessionId(null)
         }
@@ -106,7 +103,6 @@ export function TabBar(): React.ReactElement {
       agentSessions,
       appMode,
       setAppMode,
-      setCurrentConversationId,
       setCurrentAgentSessionId,
       setCurrentAgentWorkspaceId,
       setUnviewedCompleted,

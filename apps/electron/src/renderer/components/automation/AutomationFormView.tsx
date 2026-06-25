@@ -28,7 +28,7 @@ import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { createAutomation, updateAutomation } from '@/atoms/automation-atoms'
 import { RunHistoryPanel } from '@/components/automation/RunHistoryPanel'
 import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'

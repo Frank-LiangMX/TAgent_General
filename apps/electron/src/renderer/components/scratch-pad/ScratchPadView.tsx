@@ -4,7 +4,7 @@
  * 基于 TipTap 的轻量 Markdown 编辑器，内容持久化到 ~/.tagent/scratch-pad.md。
  * 自动保存由 ScratchPadPersistence 组件通过监听 scratchPadContentAtom 统一管理。
  *
- * 支持：Markdown 快捷输入、图片粘贴、Todo 列表（- [ ] 触发）、代码高亮（lowlight）、数学公式（$..$ / $$..$$ 触发）、导出为 Markdown
+ * 支持：Markdown 快捷输入、图片粘贴、Todo 列表（- [ ] 触发）、代码高亮（lowlight）、数学公式（$..$ / $$..$$ 触发）
  */
 
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
@@ -12,15 +12,11 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useAtom, useAtomValue } from 'jotai'
-import { FileDown } from 'lucide-react'
 import * as React from 'react'
 
-import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import {
   scratchPadContentAtom,
   scratchPadLoadedAtom,
-  tabsAtom,
-  activeTabIdAtom,
 } from '@/atoms/tab-atoms'
 import { SpeechButton } from '@/components/ai-elements/speech-button'
 import {
@@ -34,15 +30,6 @@ import {
   createMarkdownImage,
   createMarkdownVideo,
 } from '@/components/diff/markdown-preview-extensions'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
 import { lowlight } from '@/lib/lowlight'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown-rich-text'
 import {
@@ -93,80 +80,6 @@ export function ScratchPadView(): React.ReactElement {
     },
     immediatelyRender: false,
   })
-
-  // ===== 导出 =====
-
-  // 导出目标上下文
-  const workspaces = useAtomValue(agentWorkspacesAtom)
-  const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
-  const tabs = useAtomValue(tabsAtom)
-  const activeTabId = useAtomValue(activeTabIdAtom)
-
-  const currentWorkspace = React.useMemo(
-    () => workspaces.find((w) => w.id === currentWorkspaceId) ?? null,
-    [workspaces, currentWorkspaceId]
-  )
-
-  const activeSessionId = React.useMemo(() => {
-    const activeTab = tabs.find((t) => t.id === activeTabId)
-    if (activeTab?.type === 'agent' || activeTab?.type === 'preview') return activeTab.sessionId
-    const agentTab = [...tabs].reverse().find((t) => t.type === 'agent')
-    return agentTab?.sessionId ?? null
-  }, [tabs, activeTabId])
-
-  const activeSessionTitle = React.useMemo(() => {
-    const agentTab = tabs.find((t) => t.sessionId === activeSessionId && t.type === 'agent')
-    return agentTab?.title ?? null
-  }, [tabs, activeSessionId])
-
-  const makeFilename = () => {
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `scratch-pad-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.md`
-  }
-
-  const handleExport = React.useCallback(
-    async (target: 'session' | 'workspace') => {
-      if (!editor || editor.isEmpty) return
-      // htmlToMarkdown 能正确处理本编辑器的所有自定义节点（math/task/markdownImage/table 等），
-      // 而通用 turndown 不认识这些 data-type 节点，会丢内容。
-      const markdownContent = htmlToMarkdown(editor.getHTML())
-      const filename = makeFilename()
-
-      try {
-        let dirPath: string | null = null
-        if (target === 'session' && activeSessionId && currentWorkspaceId) {
-          dirPath = await window.electronAPI.getAgentSessionPath(
-            currentWorkspaceId,
-            activeSessionId
-          )
-        } else if (target === 'workspace' && currentWorkspace?.slug) {
-          dirPath = await window.electronAPI.getWorkspaceFilesPath(currentWorkspace.slug)
-        }
-        if (!dirPath) return
-        await window.electronAPI.exportScratchPad(markdownContent, dirPath, filename)
-      } catch (err) {
-        console.error('[ScratchPad] 导出失败:', err)
-      }
-    },
-    [editor, activeSessionId, currentWorkspaceId, currentWorkspace]
-  )
-
-  const handleBrowseExport = React.useCallback(async () => {
-    if (!editor || editor.isEmpty) return
-
-    const filename = makeFilename()
-    const filePath = await window.electronAPI.chooseExportPath(filename)
-    if (!filePath) return
-
-    try {
-      const markdownContent = htmlToMarkdown(editor.getHTML())
-      // 传空 filename 触发 IPC 的完整路径模式，由 Node.js path.dirname 安全处理
-      await window.electronAPI.exportScratchPad(markdownContent, filePath, '')
-    } catch (err) {
-      console.error('[ScratchPad] 导出失败:', err)
-    }
-  }, [editor])
 
   // ===== 内容同步 =====
 
@@ -298,51 +211,10 @@ export function ScratchPadView(): React.ReactElement {
       <div className="absolute left-1/2 -translate-x-1/2 bottom-10 z-20">
         <SpeechButton className="size-11 rounded-full bg-background/95 border border-border/60 shadow-md backdrop-blur hover:bg-accent text-foreground/80" />
       </div>
-      <div className="h-[28px] border-t border-border/40 px-4 flex items-center justify-between">
+      <div className="h-[28px] border-t border-border/40 px-4 flex items-center">
         <span className="text-[11px] text-muted-foreground/60">
           Scratch Pad — 内容自动保存到本地
         </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="text-[11px] text-muted-foreground/60 hover:text-foreground flex items-center gap-1 transition-colors"
-              title="导出为 Markdown"
-            >
-              <FileDown className="w-3 h-3" />
-              导出
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent align="end" side="top" className="min-w-[240px] z-[9999]">
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                导出为 Markdown
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => handleExport('session')}
-                disabled={!activeSessionId}
-                className="flex flex-col items-start"
-              >
-                <span className="text-xs">保存到会话目录</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {activeSessionTitle ?? '无活跃会话'}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleExport('workspace')}
-                disabled={!currentWorkspace}
-                className="flex flex-col items-start"
-              >
-                <span className="text-xs">保存到工作区目录</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {currentWorkspace?.name ?? '无当前工作区'}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleBrowseExport}>浏览选择位置...</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenu>
       </div>
     </div>
   )

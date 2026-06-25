@@ -79,14 +79,11 @@ import {
 } from '@/atoms/app-mode'
 import {
   conversationsAtom,
-  currentConversationIdAtom,
+} from '@/atoms/agent-atoms'
+import {
+  channelsAtom,
   selectedModelAtom,
-  streamingConversationIdsAtom,
-  conversationModelsAtom,
-  conversationContextLengthAtom,
-  conversationThinkingEnabledAtom,
-  conversationParallelModeAtom,
-} from '@/atoms/chat-atoms'
+} from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
@@ -311,7 +308,6 @@ export function LeftSidebar({
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const [_activeItem, setActiveItem] = React.useState<SidebarItemId>('all-chats')
   const [conversations, setConversations] = useAtom(conversationsAtom)
-  const currentConversationId = useAtomValue(currentConversationIdAtom)
   const draftSessionIds = useAtomValue(draftSessionIdsAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
   const setAgentMessagesCache = useSetAtom(agentSDKMessagesCacheAtom)
@@ -322,7 +318,6 @@ export function LeftSidebar({
   const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
-  const streamingIds = useAtomValue(streamingConversationIdsAtom)
   const mode = useAtomValue(appModeAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const isMac = React.useMemo(() => detectIsMac(), [])
@@ -382,10 +377,6 @@ export function LeftSidebar({
   }, [activeSessionId])
 
   // per-conversation/session Map atoms（删除时清理）
-  const setConvModels = useSetAtom(conversationModelsAtom)
-  const setConvContextLength = useSetAtom(conversationContextLengthAtom)
-  const setConvThinking = useSetAtom(conversationThinkingEnabledAtom)
-  const setConvParallel = useSetAtom(conversationParallelModeAtom)
   const setConvPromptId = useSetAtom(conversationPromptIdAtom)
   const setPreviewPanelOpen = useSetAtom(previewPanelOpenMapAtom)
   const setPreviewFile = useSetAtom(previewFileMapAtom)
@@ -409,10 +400,6 @@ export function LeftSidebar({
         map.delete(id)
         return map
       }
-      setConvModels(deleteKey)
-      setConvContextLength(deleteKey)
-      setConvThinking(deleteKey)
-      setConvParallel(deleteKey)
       setConvPromptId(deleteKey)
       setPreviewPanelOpen(deleteKey)
       setPreviewFile(deleteKey)
@@ -454,10 +441,6 @@ export function LeftSidebar({
       clearPreviewCacheForSession(id)
     },
     [
-      setConvModels,
-      setConvContextLength,
-      setConvThinking,
-      setConvParallel,
       setConvPromptId,
       setPreviewPanelOpen,
       setPreviewFile,

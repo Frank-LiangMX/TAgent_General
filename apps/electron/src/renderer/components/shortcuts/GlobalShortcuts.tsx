@@ -26,12 +26,11 @@ import {
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
-  chatPendingMessageAtom,
-  conversationDraftsAtom,
   conversationsAtom,
-  currentConversationIdAtom,
+} from '@/atoms/agent-atoms'
+import {
   selectedModelAtom,
-} from '@/atoms/chat-atoms'
+} from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import {

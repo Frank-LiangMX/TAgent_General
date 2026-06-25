@@ -1,34 +1,34 @@
 /**
- * Chat 工具注册表
+ * 工具注册表
  *
- * 管理所有可用的 Chat 工具：
+ * 管理所有可用的工具：
  * - 内置工具（记忆、联网搜索）
  * - 自定义工具（用户配置的 HTTP 工具）
  *
  * 提供统一接口获取启用的工具定义和系统提示词。
  */
 
-import { getChatToolsConfig } from './chat-tool-config'
+import { getChatToolsConfig } from './tool-config'
 import {
   AGENT_RECOMMEND_TOOL_META,
   AGENT_RECOMMEND_TOOL_DEFINITIONS,
   isAgentRecommendAvailable,
-} from './chat-tools/agent-recommend-tool'
+} from './tools/agent-recommend-tool'
 import {
   MEMORY_TOOL_META,
   MEMORY_TOOL_DEFINITIONS,
   isMemoryAvailable,
-} from './chat-tools/memory-tool'
+} from './tools/memory-tool'
 import {
   NANO_BANANA_TOOL_META,
   NANO_BANANA_TOOL_DEFINITIONS,
   isNanoBananaAvailable,
-} from './chat-tools/nano-banana-tool'
+} from './tools/nano-banana-tool'
 import {
   WEB_SEARCH_TOOL_META,
   WEB_SEARCH_TOOL_DEFINITIONS,
   isWebSearchAvailable,
-} from './chat-tools/web-search-tool'
+} from './tools/web-search-tool'
 import {
   TA_TOOL_META,
   TA_TOOL_DEFINITIONS,

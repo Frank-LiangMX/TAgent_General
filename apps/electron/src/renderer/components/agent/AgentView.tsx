@@ -108,7 +108,7 @@ import {
   btwModelIdAtom,
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import {
   currentComposerModeAtom,
   composerModeMapAtom,

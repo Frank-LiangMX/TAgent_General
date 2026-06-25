@@ -20,7 +20,6 @@ import {
   GITHUB_RELEASE_IPC_CHANNELS,
   SYSTEM_PROMPT_IPC_CHANNELS,
   MEMORY_IPC_CHANNELS,
-  CHAT_TOOL_IPC_CHANNELS,
   FEISHU_IPC_CHANNELS,
   DINGTALK_IPC_CHANNELS,
   WECHAT_IPC_CHANNELS,
@@ -49,12 +48,7 @@ import type {
   FetchModelsResult,
   ConversationMeta,
   ChatMessage,
-  ChatSendInput,
-  GenerateTitleInput,
-  AttachmentSaveInput,
-  AttachmentSaveResult,
   FileDialogResult,
-  RecentMessagesResult,
   AgentSessionMeta,
   AgentSendInput,
   AgentWorkspace,
@@ -90,9 +84,6 @@ import type {
   SystemPrompt,
   SystemPromptCreateInput,
   SystemPromptUpdateInput,
-  ChatToolInfo,
-  ChatToolState,
-  ChatToolMeta,
   MoveSessionToWorkspaceInput,
   ForkSessionInput,
   RewindSessionInput,
@@ -126,7 +117,6 @@ import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electro
 import {
   USER_PROFILE_IPC_CHANNELS,
   SETTINGS_IPC_CHANNELS,
-  SCRATCH_PAD_IPC_CHANNELS,
   QUICK_TASK_IPC_CHANNELS,
   VOICE_DICTATION_IPC_CHANNELS,
   APP_ICON_IPC_CHANNELS,
@@ -200,9 +190,7 @@ import {
   cleanupStaleWorkspaceAttachedPaths,
 } from './lib/agent-workspace-manager'
 import {
-  saveAttachment,
   readAttachmentAsBase64,
-  deleteAttachment,
   openFileDialog,
 } from './lib/attachment-service'
 import {
@@ -217,32 +205,15 @@ import {
   validateChannelModel,
 } from './lib/channel-manager'
 import {
-  updateToolState,
-  updateToolCredentials,
-  getToolCredentials,
-  addCustomTool,
-  deleteCustomTool,
-} from './lib/chat-tool-config'
-import { getAllToolInfos } from './lib/chat-tool-registry'
-import {
   getAgentSessionWorkspacePath,
   getAgentWorkspacesDir,
   getWorkspaceSkillsDir,
   getWorkspaceFilesDir,
-  getScratchPadPath,
 } from './lib/config-paths'
 import {
   listConversations,
-  createConversation,
-  getConversationMessages,
-  getRecentMessages,
-  updateConversationMeta,
   deleteConversation,
-  deleteMessage,
-  truncateMessagesFrom,
-  updateContextDividers,
   autoArchiveConversations,
-  searchConversationMessages,
 } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import {
@@ -256,7 +227,6 @@ import {
 } from './lib/dingtalk-config'
 import { setDockBadgeCount } from './lib/dock-badge-service'
 import { setMacDockIconFromPng } from './lib/dock-icon-mac'
-import { extractTextFromAttachment } from './lib/document-parser'
 import { checkEnvironment } from './lib/environment-checker'
 import { feishuBridgeManager } from './lib/feishu-bridge-manager'
 import {
@@ -305,11 +275,7 @@ import {
   setDefaultPrompt,
 } from './lib/system-prompt-manager'
 import { detectSystemProxy } from './lib/system-proxy-detector'
-import {
-  getTutorialContent,
-  getTutorialHtmlPath,
-  createWelcomeConversation,
-} from './lib/tutorial-service'
+import { getTutorialHtmlPath } from './lib/tutorial-service'
 import { registerUpdaterIpc } from './lib/updater/updater-ipc'
 import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
 import { wechatBridge } from './lib/wechat-bridge'
@@ -1226,87 +1192,9 @@ export function registerIpcHandlers(): void {
     return listConversations()
   })
 
-  // 创建对话
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.CREATE_CONVERSATION,
-    async (_, title?: string, modelId?: string, channelId?: string): Promise<ConversationMeta> => {
-      return createConversation(title, modelId, channelId)
-    }
-  )
-
-  // 获取对话消息
-  ipcMain.handle(CHAT_IPC_CHANNELS.GET_MESSAGES, async (_, id: string): Promise<ChatMessage[]> => {
-    return getConversationMessages(id)
-  })
-
-  // 获取对话最近 N 条消息（分页加载）
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.GET_RECENT_MESSAGES,
-    async (_, id: string, limit: number): Promise<RecentMessagesResult> => {
-      return getRecentMessages(id, limit)
-    }
-  )
-
-  // 更新对话标题
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.UPDATE_TITLE,
-    async (_, id: string, title: string): Promise<ConversationMeta> => {
-      return updateConversationMeta(id, { title })
-    }
-  )
-
-  // 更新对话使用的模型/渠道
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.UPDATE_MODEL,
-    async (_, id: string, modelId: string, channelId: string): Promise<ConversationMeta> => {
-      return updateConversationMeta(id, { modelId, channelId })
-    }
-  )
-
   // 删除对话
   ipcMain.handle(CHAT_IPC_CHANNELS.DELETE_CONVERSATION, async (_, id: string): Promise<void> => {
     return deleteConversation(id)
-  })
-
-  // 切换对话置顶状态
-  ipcMain.handle(CHAT_IPC_CHANNELS.TOGGLE_PIN, async (_, id: string): Promise<ConversationMeta> => {
-    const conversations = listConversations()
-    const current = conversations.find((c) => c.id === id)
-    if (!current) throw new Error(`对话不存在: ${id}`)
-    const newPinned = !current.pinned
-    // 置顶时自动取消归档
-    const updates: Partial<ConversationMeta> = { pinned: newPinned }
-    if (newPinned && current.archived) {
-      updates.archived = false
-    }
-    return updateConversationMeta(id, updates)
-  })
-
-  // 切换对话归档状态
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.TOGGLE_ARCHIVE,
-    async (_, id: string): Promise<ConversationMeta> => {
-      const conversations = listConversations()
-      const current = conversations.find((c) => c.id === id)
-      if (!current) throw new Error(`对话不存在: ${id}`)
-      const newArchived = !current.archived
-      // 归档时自动取消置顶
-      const updates: Partial<ConversationMeta> = { archived: newArchived }
-      if (newArchived && current.pinned) {
-        updates.pinned = false
-      }
-      return updateConversationMeta(id, updates)
-    }
-  )
-
-  // 搜索对话消息内容
-  ipcMain.handle(CHAT_IPC_CHANNELS.SEARCH_MESSAGES, async (_, query: string) => {
-    return searchConversationMessages(query)
-  })
-
-  // 获取教程内容
-  ipcMain.handle(CHAT_IPC_CHANNELS.GET_TUTORIAL_CONTENT, async (): Promise<string | null> => {
-    return getTutorialContent()
   })
 
   // 在系统默认浏览器中打开本地教程页面（resources/index.html）
@@ -1339,55 +1227,7 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  // 创建欢迎对话（含教程附件）
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.CREATE_WELCOME_CONVERSATION,
-    async (): Promise<ConversationMeta | null> => {
-      return createWelcomeConversation()
-    }
-  )
-
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.DELETE_MESSAGE,
-    async (_, conversationId: string, messageId: string): Promise<ChatMessage[]> => {
-      return deleteMessage(conversationId, messageId)
-    }
-  )
-
-  // 从指定消息开始截断（包含该消息）
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.TRUNCATE_MESSAGES_FROM,
-    async (
-      _,
-      conversationId: string,
-      messageId: string,
-      preserveFirstMessageAttachments?: boolean
-    ): Promise<ChatMessage[]> => {
-      return truncateMessagesFrom(
-        conversationId,
-        messageId,
-        preserveFirstMessageAttachments ?? false
-      )
-    }
-  )
-
-  // 更新上下文分隔线
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.UPDATE_CONTEXT_DIVIDERS,
-    async (_, conversationId: string, dividers: string[]): Promise<ConversationMeta> => {
-      return updateContextDividers(conversationId, dividers)
-    }
-  )
-
   // ===== 附件管理相关 =====
-
-  // 保存附件到本地
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.SAVE_ATTACHMENT,
-    async (_, input: AttachmentSaveInput): Promise<AttachmentSaveResult> => {
-      return saveAttachment(input)
-    }
-  )
 
   // 读取附件（返回 base64）
   ipcMain.handle(
@@ -1433,72 +1273,10 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  // 保存应用内置资源文件到用户选择的位置（原生 Save As 对话框）
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.SAVE_RESOURCE_FILE_AS,
-    async (event, resourceRelativePath: string, defaultFilename: string): Promise<boolean> => {
-      const { dialog, BrowserWindow } = await import('electron')
-      const { writeFileSync, readFileSync, existsSync } = await import('node:fs')
-      const { join, normalize, sep, extname: pathExtname } = await import('node:path')
-
-      // 解析到应用内置 resources 目录（dev 用 __dirname/resources，prod 用 process.resourcesPath）
-      const resourcesDir = normalize(getBundledResourcesDir())
-      const fullPath = normalize(join(resourcesDir, resourceRelativePath))
-
-      // 安全校验：防止路径穿越（追加 sep 防止 resources-evil 绕过）
-      if (!fullPath.startsWith(resourcesDir + sep)) {
-        throw new Error('Path traversal not allowed')
-      }
-      if (!existsSync(fullPath)) {
-        throw new Error(`Resource not found: ${resourceRelativePath}`)
-      }
-
-      const win = BrowserWindow.fromWebContents(event.sender)
-      const ext = pathExtname(defaultFilename).replace('.', '').toLowerCase()
-      const filterMap: Record<string, string> = {
-        jpg: 'JPEG',
-        jpeg: 'JPEG',
-        png: 'PNG',
-        gif: 'GIF',
-        webp: 'WebP',
-      }
-      const filterName = filterMap[ext] ?? 'Image'
-
-      const result = await dialog.showSaveDialog(win ?? BrowserWindow.getFocusedWindow()!, {
-        defaultPath: defaultFilename,
-        filters: [
-          { name: `${filterName} 图片`, extensions: [ext || 'png'] },
-          { name: '所有文件', extensions: ['*'] },
-        ],
-      })
-
-      if (result.canceled || !result.filePath) return false
-
-      writeFileSync(result.filePath, readFileSync(fullPath))
-      return true
-    }
-  )
-
-  // 删除附件
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.DELETE_ATTACHMENT,
-    async (_, localPath: string): Promise<void> => {
-      deleteAttachment(localPath)
-    }
-  )
-
   // 打开文件选择对话框
   ipcMain.handle(CHAT_IPC_CHANNELS.OPEN_FILE_DIALOG, async (): Promise<FileDialogResult> => {
     return openFileDialog()
   })
-
-  // 提取附件文档的文本内容
-  ipcMain.handle(
-    CHAT_IPC_CHANNELS.EXTRACT_ATTACHMENT_TEXT,
-    async (_, localPath: string): Promise<string> => {
-      return extractTextFromAttachment(localPath)
-    }
-  )
 
   // ===== 用户档案相关 =====
 
@@ -1573,85 +1351,6 @@ export function registerIpcHandlers(): void {
       win.webContents.send(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, isDark)
     })
   })
-
-  // ===== Scratch Pad 持久化 =====
-
-  // 从磁盘加载 scratch-pad.md
-  ipcMain.handle(SCRATCH_PAD_IPC_CHANNELS.LOAD, async (): Promise<string> => {
-    const path = getScratchPadPath()
-    try {
-      if (!existsSync(path)) return ''
-      return readFileSync(path, 'utf-8')
-    } catch (err) {
-      console.error('[ScratchPad] 加载失败:', err)
-      return ''
-    }
-  })
-
-  // 异步保存 scratch-pad.md
-  ipcMain.handle(SCRATCH_PAD_IPC_CHANNELS.SAVE, async (_, content: string): Promise<boolean> => {
-    const path = getScratchPadPath()
-    try {
-      await writeFile(path, content, 'utf-8')
-      return true
-    } catch (err) {
-      console.error('[ScratchPad] 保存失败:', err)
-      return false
-    }
-  })
-
-  // 同步保存 scratch-pad.md（beforeunload 场景）
-  ipcMain.on(SCRATCH_PAD_IPC_CHANNELS.SAVE_SYNC, (event, content: string) => {
-    try {
-      writeFileSync(getScratchPadPath(), content, 'utf-8')
-      event.returnValue = true
-    } catch (err) {
-      console.error('[ScratchPad] 同步保存失败:', err)
-      event.returnValue = false
-    }
-  })
-
-  // 导出为 Markdown 到指定目录
-  ipcMain.handle(
-    SCRATCH_PAD_IPC_CHANNELS.EXPORT,
-    async (_, markdown: string, dirPath: string, filename: string): Promise<string> => {
-      let filePath: string
-      if (!filename) {
-        // 完整文件路径模式（来自保存对话框）
-        filePath = dirPath
-        const dir = dirname(filePath)
-        if (!existsSync(dir)) {
-          mkdirSync(dir, { recursive: true })
-        }
-      } else {
-        if (!existsSync(dirPath)) {
-          mkdirSync(dirPath, { recursive: true })
-        }
-        filePath = join(dirPath, filename)
-      }
-      writeFileSync(filePath, markdown, 'utf-8')
-      console.log('[ScratchPad] 已导出:', filePath)
-      return filePath
-    }
-  )
-
-  // 打开保存对话框，返回用户选择的路径
-  ipcMain.handle(
-    SCRATCH_PAD_IPC_CHANNELS.CHOOSE_EXPORT_PATH,
-    async (_, defaultName: string): Promise<string | null> => {
-      const win = BrowserWindow.getFocusedWindow()
-      if (!win) return null
-      const result = await dialog.showSaveDialog(win, {
-        title: '导出 Scratch Pad 为 Markdown',
-        defaultPath: defaultName,
-        filters: [
-          { name: 'Markdown', extensions: ['md'] },
-          { name: '所有文件', extensions: ['*'] },
-        ],
-      })
-      return result.canceled ? null : result.filePath
-    }
-  )
 
   // ===== 应用图标切换 =====
 
@@ -2344,147 +2043,6 @@ export function registerIpcHandlers(): void {
     ): Promise<void> => {
       const { nudgeService } = await import('./lib/nudge-service')
       await nudgeService.handleNudgeResponse(sessionId, nudgeId, action, mode)
-    }
-  )
-
-  // ===== Chat 工具管理 =====
-
-  // 获取所有工具信息
-  ipcMain.handle(CHAT_TOOL_IPC_CHANNELS.GET_ALL_TOOLS, async (): Promise<ChatToolInfo[]> => {
-    return getAllToolInfos()
-  })
-
-  // 获取工具凭据
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.GET_TOOL_CREDENTIALS,
-    async (_, toolId: string): Promise<Record<string, string>> => {
-      return getToolCredentials(toolId)
-    }
-  )
-
-  // 更新工具开关状态
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.UPDATE_TOOL_STATE,
-    async (_, toolId: string, state: ChatToolState): Promise<void> => {
-      updateToolState(toolId, state)
-    }
-  )
-
-  // 更新工具凭据
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.UPDATE_TOOL_CREDENTIALS,
-    async (_, toolId: string, credentials: Record<string, string>): Promise<void> => {
-      updateToolCredentials(toolId, credentials)
-    }
-  )
-
-  // 创建自定义工具
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.CREATE_CUSTOM_TOOL,
-    async (_, meta: ChatToolMeta): Promise<void> => {
-      addCustomTool(meta)
-    }
-  )
-
-  // 删除自定义工具
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.DELETE_CUSTOM_TOOL,
-    async (_, toolId: string): Promise<void> => {
-      deleteCustomTool(toolId)
-    }
-  )
-
-  // 测试工具连接
-  ipcMain.handle(
-    CHAT_TOOL_IPC_CHANNELS.TEST_TOOL,
-    async (_, toolId: string): Promise<{ success: boolean; message: string }> => {
-      // 记忆工具复用现有测试逻辑
-      if (toolId === 'memory') {
-        const config = getMemoryConfig()
-        if (!config.apiKey) {
-          return { success: false, message: '请先填写 API Key' }
-        }
-        try {
-          const { searchMemory } = await import('./lib/memos-client')
-          const result = await searchMemory(
-            {
-              apiKey: config.apiKey,
-              userId: config.userId?.trim() || 'tagent-user',
-              baseUrl: config.baseUrl,
-            },
-            'test connection',
-            1
-          )
-          return {
-            success: true,
-            message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好`,
-          }
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error)
-          return { success: false, message: `连接失败: ${msg}` }
-        }
-      }
-      // 联网搜索工具测试
-      if (toolId === 'web-search') {
-        const { getToolCredentials: getCredentials } = await import('./lib/chat-tool-config')
-        const credentials = getCredentials('web-search')
-        if (!credentials.apiKey) {
-          return { success: false, message: '请先填写 Tavily API Key' }
-        }
-        try {
-          const response = await fetch('https://api.tavily.com/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              api_key: credentials.apiKey,
-              query: 'test connection',
-              search_depth: 'basic',
-              max_results: 1,
-            }),
-          })
-          if (!response.ok) {
-            const errorText = await response.text()
-            return { success: false, message: `API 请求失败 (${response.status}): ${errorText}` }
-          }
-          return { success: true, message: '连接成功，Tavily 搜索 API 可用' }
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error)
-          return { success: false, message: `连接失败: ${msg}` }
-        }
-      }
-      // Nano Banana 生图工具测试
-      if (toolId === 'nano-banana') {
-        const { getToolCredentials: getCredentials } = await import('./lib/chat-tool-config')
-        const credentials = getCredentials('nano-banana')
-        if (!credentials.apiKey) {
-          return { success: false, message: '请先填写 Gemini API Key' }
-        }
-        try {
-          const baseUrl = credentials.baseUrl?.trim() || 'https://generativelanguage.googleapis.com'
-          const model = credentials.model?.trim() || 'gemini-3.1-flash-image-preview'
-          const url = `${baseUrl}/v1beta/models/${model}:generateContent?key=${credentials.apiKey}`
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
-              generationConfig: { maxOutputTokens: 10 },
-            }),
-          })
-          if (!response.ok) {
-            const errorText = await response.text()
-            return {
-              success: false,
-              message: `API 请求失败 (${response.status}): ${errorText.slice(0, 200)}`,
-            }
-          }
-          return { success: true, message: `连接成功，模型 ${model} 可用` }
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error)
-          return { success: false, message: `连接失败: ${msg}` }
-        }
-      }
-      return { success: false, message: `工具 ${toolId} 不支持测试` }
     }
   )
 

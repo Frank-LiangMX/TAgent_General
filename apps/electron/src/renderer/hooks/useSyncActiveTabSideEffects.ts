@@ -1,7 +1,7 @@
 /**
  * useSyncActiveTabSideEffects — 将"新激活标签"的副作用同步到全局原子
  *
- * 标签页切换/关闭时，需要把 appMode、currentConversationId、
+ * 标签页切换/关闭时，需要把 appMode、
  * currentAgentSessionId、currentAgentWorkspaceId、unviewedCompletedSessionIds
  * 等全局状态同步到新激活的标签。该逻辑原本在 TabBar.handleClose 和
  * GlobalShortcuts.handleCloseTab 中各写一份，此 hook 统一封装，避免
@@ -21,13 +21,11 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from '@/atoms/agent-atoms'
 import { activeRailItemAtom, appModeAtom, topLevelModeAtom } from '@/atoms/app-mode'
-import { currentConversationIdAtom } from '@/atoms/chat-atoms'
 
 export type SyncActiveTabSideEffects = (newActiveTab: TabItem | null) => void
 
 export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
   const setAppMode = useSetAtom(appModeAtom)
-  const setCurrentConversationId = useSetAtom(currentConversationIdAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
@@ -40,7 +38,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
     (newActiveTab) => {
       if (!newActiveTab) {
         // 所有标签都已关闭
-        setCurrentConversationId(null)
         setCurrentAgentSessionId(null)
         return
       }
@@ -52,7 +49,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
           setActiveRailItem('scratch')
         }
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
-        setCurrentConversationId(null)
         if (appMode !== 'agent') {
           setCurrentAgentSessionId(null)
         }
@@ -65,7 +61,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         setActiveRailItem('sessions')
       }
       setCurrentAgentSessionId(newActiveTab.sessionId)
-      setCurrentConversationId(null)
 
       // 清除该会话的"已完成未查看"标记
       setUnviewedCompleted((prev) => {
@@ -89,7 +84,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
     [
       appMode,
       setAppMode,
-      setCurrentConversationId,
       setCurrentAgentSessionId,
       setCurrentAgentWorkspaceId,
       setUnviewedCompleted,

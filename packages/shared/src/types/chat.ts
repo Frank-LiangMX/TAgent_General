@@ -1,7 +1,7 @@
 /**
  * Chat 相关类型定义
  *
- * 包含消息、对话、流式事件等核心类型，
+ * 包含消息、对话等核心类型，
  * 以及 Chat 模块的 IPC 通道常量。
  */
 
@@ -110,6 +110,26 @@ export interface ChatMessage {
   toolActivities?: ChatToolActivity[]
 }
 
+// ===== Chat 工具活动 =====
+
+/**
+ * Chat 工具活动（记忆工具调用状态）
+ */
+export interface ChatToolActivity {
+  /** 工具调用 ID */
+  toolCallId: string
+  /** 工具名称 */
+  toolName: string
+  /** 活动类型：开始 / 结果 */
+  type: 'start' | 'result'
+  /** 执行结果（仅 result 时存在） */
+  result?: string
+  /** 是否遇到错误 */
+  isError?: boolean
+  /** 工具调用参数（result 事件中携带，用于语义化短语和结构化结果渲染） */
+  input?: Record<string, unknown>
+}
+
 // ===== 对话相关 =====
 
 /**
@@ -185,122 +205,6 @@ export interface MessageSearchResult {
   archived?: boolean
 }
 
-// ===== 消息发送 =====
-
-/**
- * 发送消息的输入参数
- */
-export interface ChatSendInput {
-  /** 对话 ID */
-  conversationId: string
-  /** 用户消息内容 */
-  userMessage: string
-  /** 消息历史（用于上下文） */
-  messageHistory: ChatMessage[]
-  /** 渠道 ID */
-  channelId: string
-  /** 模型 ID */
-  modelId: string
-  /** 系统提示词（可选） */
-  systemMessage?: string
-  /** 上下文长度（轮数），'infinite' 表示全部包含 */
-  contextLength?: number | 'infinite'
-  /** 上下文分隔线对应的消息 ID 列表 */
-  contextDividers?: string[]
-  /** 文件附件列表 */
-  attachments?: FileAttachment[]
-  /** 是否启用思考模式 */
-  thinkingEnabled?: boolean
-  /** 本次请求启用的工具 ID 列表（由前端工具选择器决定） */
-  enabledToolIds?: string[]
-}
-
-// ===== 标题生成 =====
-
-/**
- * 生成对话标题的输入参数
- */
-export interface GenerateTitleInput {
-  /** 用户消息内容（用于生成标题） */
-  userMessage: string
-  /** 渠道 ID */
-  channelId: string
-  /** 模型 ID */
-  modelId: string
-}
-
-// ===== 流式事件载荷 =====
-
-/**
- * 流式内容片段事件
- */
-export interface StreamChunkEvent {
-  /** 对话 ID */
-  conversationId: string
-  /** 内容增量 */
-  delta: string
-}
-
-/**
- * 流式推理片段事件
- */
-export interface StreamReasoningEvent {
-  /** 对话 ID */
-  conversationId: string
-  /** 推理增量 */
-  delta: string
-}
-
-/**
- * 流式完成事件
- */
-export interface StreamCompleteEvent {
-  /** 对话 ID */
-  conversationId: string
-  /** 使用的模型 */
-  model: string
-  /** 助手消息 ID */
-  messageId: string
-}
-
-/**
- * 流式错误事件
- */
-export interface StreamErrorEvent {
-  /** 对话 ID */
-  conversationId: string
-  /** 错误信息 */
-  error: string
-}
-
-/**
- * Chat 工具活动（记忆工具调用状态）
- */
-export interface ChatToolActivity {
-  /** 工具调用 ID */
-  toolCallId: string
-  /** 工具名称 */
-  toolName: string
-  /** 活动类型：开始 / 结果 */
-  type: 'start' | 'result'
-  /** 执行结果（仅 result 时存在） */
-  result?: string
-  /** 是否遇到错误 */
-  isError?: boolean
-  /** 工具调用参数（result 事件中携带，用于语义化短语和结构化结果渲染） */
-  input?: Record<string, unknown>
-}
-
-/**
- * 流式工具活动事件
- */
-export interface StreamToolActivityEvent {
-  /** 对话 ID */
-  conversationId: string
-  /** 工具活动详情 */
-  activity: ChatToolActivity
-}
-
 // ===== 模型选项 =====
 
 /**
@@ -350,75 +254,14 @@ export interface RecentMessagesResult {
  * Chat 相关 IPC 通道常量
  */
 export const CHAT_IPC_CHANNELS = {
-  // 对话管理
   /** 获取对话列表 */
   LIST_CONVERSATIONS: 'chat:list-conversations',
-  /** 创建对话 */
-  CREATE_CONVERSATION: 'chat:create-conversation',
-  /** 获取对话消息（全部） */
-  GET_MESSAGES: 'chat:get-messages',
-  /** 获取对话最近 N 条消息（分页加载） */
-  GET_RECENT_MESSAGES: 'chat:get-recent-messages',
-  /** 更新对话标题 */
-  UPDATE_TITLE: 'chat:update-title',
   /** 删除对话 */
   DELETE_CONVERSATION: 'chat:delete-conversation',
-  /** 更新对话使用的模型/渠道 */
-  UPDATE_MODEL: 'chat:update-conversation-model',
-
-  // 消息发送
-  /** 发送消息（触发 AI 流式响应） */
-  SEND_MESSAGE: 'chat:send-message',
-  /** 中止生成 */
-  STOP_GENERATION: 'chat:stop-generation',
-  /** 删除消息 */
-  DELETE_MESSAGE: 'chat:delete-message',
-  /** 从指定消息开始截断后续消息（包含该消息） */
-  TRUNCATE_MESSAGES_FROM: 'chat:truncate-messages-from',
-  /** 更新上下文分隔线 */
-  UPDATE_CONTEXT_DIVIDERS: 'chat:update-context-dividers',
-  /** 生成对话标题 */
-  GENERATE_TITLE: 'chat:generate-title',
-
-  // 附件管理
-  /** 保存附件到本地 */
-  SAVE_ATTACHMENT: 'chat:save-attachment',
   /** 读取附件（返回 base64） */
   READ_ATTACHMENT: 'chat:read-attachment',
   /** 另存图片到用户选择的位置（原生 Save As 对话框） */
   SAVE_IMAGE_AS: 'chat:save-image-as',
-  /** 保存应用内置资源文件到用户选择的位置（原生 Save As 对话框） */
-  SAVE_RESOURCE_FILE_AS: 'chat:save-resource-file-as',
-  /** 删除附件 */
-  DELETE_ATTACHMENT: 'chat:delete-attachment',
   /** 打开文件选择对话框 */
   OPEN_FILE_DIALOG: 'chat:open-file-dialog',
-  /** 提取附件文档的文本内容 */
-  EXTRACT_ATTACHMENT_TEXT: 'chat:extract-attachment-text',
-
-  // 置顶管理
-  /** 切换对话置顶状态 */
-  TOGGLE_PIN: 'chat:toggle-pin',
-  /** 切换对话归档状态 */
-  TOGGLE_ARCHIVE: 'chat:toggle-archive',
-  /** 搜索对话消息内容 */
-  SEARCH_MESSAGES: 'chat:search-messages',
-
-  // 教程
-  /** 获取教程内容 */
-  GET_TUTORIAL_CONTENT: 'chat:get-tutorial-content',
-  /** 创建欢迎对话（含教程附件） */
-  CREATE_WELCOME_CONVERSATION: 'chat:create-welcome-conversation',
-
-  // 流式事件（主进程 → 渲染进程推送）
-  /** 内容片段 */
-  STREAM_CHUNK: 'chat:stream:chunk',
-  /** 推理片段 */
-  STREAM_REASONING: 'chat:stream:reasoning',
-  /** 流式完成 */
-  STREAM_COMPLETE: 'chat:stream:complete',
-  /** 流式错误 */
-  STREAM_ERROR: 'chat:stream:error',
-  /** 工具活动事件（记忆工具调用/结果指示） */
-  STREAM_TOOL_ACTIVITY: 'chat:stream:tool-activity',
 } as const

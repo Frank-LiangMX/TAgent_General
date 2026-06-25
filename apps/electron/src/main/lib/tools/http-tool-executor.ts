@@ -5,7 +5,7 @@
  * 支持 URL/Body 模板占位符替换、超时控制、响应路径提取。
  */
 
-import { getChatToolsConfig } from '../chat-tool-config'
+import { getChatToolsConfig } from '../tool-config'
 
 import type { ToolCall, ToolResult } from '@tagent/core'
 import type { ChatToolMeta, ChatToolHttpConfig } from '@tagent/shared'

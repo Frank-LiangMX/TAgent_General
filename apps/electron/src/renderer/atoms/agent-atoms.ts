@@ -23,6 +23,7 @@ import type {
   AgentEffort,
   SDKMessage,
   UnstagedChangesResult,
+  ConversationMeta,
 } from '@tagent/shared'
 
 import { calculateDockBadgeCount, countPendingRequests } from '@/lib/dock-badge-count'
@@ -1181,3 +1182,8 @@ export type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggress
  * 改档位后，Agent 主 prompt 会动态注入对应的派发策略段。
  */
 export const subagentEagernessAtom = atom<SubagentEagerness>('conservative')
+
+// ===== 从 chat-atoms 迁移的共享状态 =====
+
+/** 对话列表（兼容旧会话数据） */
+export const conversationsAtom = atom<ConversationMeta[]>([])
