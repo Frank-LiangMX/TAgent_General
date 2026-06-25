@@ -33,6 +33,7 @@ import {
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
+  normalizeContextUsageSnapshot,
 } from '@tagent/shared'
 import { app } from 'electron'
 
@@ -88,6 +89,7 @@ import {
 } from './config-paths'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { getMemoryConfig } from './memory-service'
+import { getContextUsageCache } from './context-usage-cache'
 import { searchMemory, addMemory, formatSearchResult } from './memos-client'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
@@ -1204,6 +1206,8 @@ export class AgentOrchestrator {
       mentionedSkills,
       mentionedMcpServers,
       mentionedSessionIds,
+      automationContext,
+      triggeredBy,
     } = input
     const stderrChunks: string[] = []
 
@@ -1389,6 +1393,19 @@ export class AgentOrchestrator {
     console.log(
       `[Agent 编排] Resume 状态: sdkSessionId=${existingSdkSessionId || '无'}, tagent sessionId=${sessionId}`
     )
+
+    // 4.2 用户接管保护：非定时任务触发的用户消息会标记 automationGraduated，
+    // 后续调度不再向该会话注入定时任务消息
+    const isScheduledRun =
+      triggeredBy === 'automation' || userMessage.includes('TAGENT_SCHEDULED_RUN')
+    if (
+      !isScheduledRun &&
+      sessionMeta?.sourceAutomationId &&
+      !sessionMeta.automationGraduated
+    ) {
+      updateAgentSessionMeta(sessionId, { automationGraduated: true })
+      console.log(`[Agent 编排] 定时任务子会话 ${sessionId} 已被用户接管`)
+    }
 
     // 5. 持久化用户消息（SDKMessage 格式）
     const userSDKMsg: SDKMessage = {
@@ -1608,6 +1625,10 @@ export class AgentOrchestrator {
 
       // 11.5 注入 mention 引用指令（Skill/MCP/会话）— 仅影响 prompt，不影响持久化
       let enrichedMessage = userMessage
+      if (automationContext) {
+        enrichedMessage = `<automation_context>\n${automationContext}\n</automation_context>\n\n${enrichedMessage}`
+        console.log('[Agent 编排] 注入 automation_context（定时任务执行）')
+      }
       const referencedSessionsBlock = buildReferencedSessionsPrompt(
         sessionId,
         mentionedSessionIds,
@@ -2001,7 +2022,8 @@ export class AgentOrchestrator {
         // Worker 子代理在 bypassPermissions 模式下也会被自动放行。
         allowDangerouslySkipPermissions: !canUseTool,
         canUseTool,
-        ...(sdkPermissionModeForTAgentMode(initialPermissionMode) === 'auto' && {
+        // 仅「自动审批」限制 SDK 可见工具集；「完全自动」须放开 Write/Bash 等，由 canUseTool 统一放行
+        ...(initialPermissionMode === 'auto' && {
           allowedTools: [...SAFE_TOOLS],
         }),
         // claude_code preset 提供基础环境信息（platform/shell/OS/git/model/知识截止日期等）
@@ -3058,6 +3080,24 @@ export class AgentOrchestrator {
       const mapped = toGetContextUsageError(error)
       console.warn(`[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`)
       return { ok: false, code: mapped.code, message: mapped.message }
+    }
+  }
+
+  /** 读取会话 Context 分项缓存（不调用 SDK，用于面板优先展示） */
+  getContextUsageCached(
+    sessionId: string
+  ): import('@tagent/shared').GetContextUsageResponse {
+    const cached = getContextUsageCache(sessionId)
+    if (!cached) {
+      return {
+        ok: false,
+        code: 'NO_CACHE',
+        message: '暂无 Context 分项缓存',
+      }
+    }
+    return {
+      ok: true,
+      snapshot: normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() }),
     }
   }
 }

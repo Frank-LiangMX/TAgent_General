@@ -1,9 +1,7 @@
 /**
  * ContextUsageBadge — 上下文使用量指示器
  *
- * - variant="toolbar"：输入框工具栏 36×36 圆形按钮（保留兼容）
- * - variant="inline"：底栏 token 行内联展示（圆环 + Context + 占用比）
- * - 点击弹出 Popover：token 明细 + 手动压缩（后续接 SDK 分项面板）
+ * 占用比以 SDK getContextUsage() 为准（与分项面板同源），避免流式 usage 在部分模型上虚高。
  */
 
 import { COMPACTION_IN_PROGRESS_LABEL } from '@tagent/shared'
@@ -13,6 +11,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useContextUsageBreakdown } from '@/hooks/useContextUsageBreakdown'
 import { cn } from '@/lib/utils'
@@ -152,11 +151,6 @@ export function ContextUsageBadge({
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
-  const {
-    snapshot,
-    error: breakdownError,
-    loading: breakdownLoading,
-  } = useContextUsageBreakdown(sessionId, open)
 
   const cancelClose = React.useCallback(() => {
     if (closeTimerRef.current != null) {
@@ -174,13 +168,47 @@ export function ContextUsageBadge({
 
   const stable = stableRef.current
   const hasCurrent = inputTokens != null && inputTokens > 0
-  const displayTokens = hasCurrent ? inputTokens : stable?.inputTokens
-  const displayWindow = hasCurrent ? contextWindow : stable?.contextWindow
+  const streamTokens = hasCurrent ? inputTokens : stable?.inputTokens
+  const streamWindow = hasCurrent ? contextWindow : stable?.contextWindow
+
+  const streamPreview =
+    streamWindow && streamTokens && streamTokens > 0 && streamTokens <= streamWindow
+      ? { totalTokens: streamTokens, maxTokens: streamWindow }
+      : null
+
+  const {
+    snapshot,
+    error: breakdownError,
+    loading: breakdownLoading,
+    refreshing: breakdownRefreshing,
+    isStreamPreview,
+  } = useContextUsageBreakdown(sessionId, !!sessionId, streamPreview)
+
+  // SDK / 缓存快照（不含流式估算预览）— 圆环与百分比以此为准
+  const authoritativeSnapshot = snapshot && !isStreamPreview ? snapshot : null
+
+  // 圆环与百分比：优先 SDK 分项（准确）；流式 usage 仅作加载前兜底，且超过 100% 时不展示以免误导
+  const streamRatio =
+    streamWindow && streamTokens && streamTokens <= streamWindow
+      ? streamTokens / streamWindow
+      : undefined
+  const displayTokens = authoritativeSnapshot?.totalTokens ?? streamTokens
+  const displayWindow = authoritativeSnapshot?.maxTokens ?? streamWindow
+  const ratio = authoritativeSnapshot
+    ? authoritativeSnapshot.percentage / 100
+    : streamRatio ?? 0
+  const percent = authoritativeSnapshot
+    ? Math.round(authoritativeSnapshot.percentage)
+    : streamRatio != null
+      ? Math.round(streamRatio * 100)
+      : undefined
 
   React.useEffect(() => {
-    if (!displayWindow || !displayTokens) return
-    const ratio = displayTokens / displayWindow
-    if (ratio >= NUDGE_90_RATIO && lastNudgeFiredRef.current !== '90') {
+    const ratioForNudge = authoritativeSnapshot
+      ? authoritativeSnapshot.percentage / 100
+      : streamRatio
+    if (ratioForNudge == null) return
+    if (ratioForNudge >= NUDGE_90_RATIO && lastNudgeFiredRef.current !== '90') {
       lastNudgeFiredRef.current = '90'
       toast.warning('上下文危险 (>90%)，建议立即压缩或新建会话', {
         duration: 8000,
@@ -189,7 +217,7 @@ export function ContextUsageBadge({
           onClick: () => onCompact(),
         },
       })
-    } else if (ratio >= NUDGE_80_RATIO && lastNudgeFiredRef.current === 'none') {
+    } else if (ratioForNudge >= NUDGE_80_RATIO && lastNudgeFiredRef.current === 'none') {
       lastNudgeFiredRef.current = '80'
       toast('上下文已用 80%，建议压缩或开新会话', {
         duration: 6000,
@@ -198,20 +226,25 @@ export function ContextUsageBadge({
           onClick: () => onCompact(),
         },
       })
-    } else if (ratio < NUDGE_80_RATIO && lastNudgeFiredRef.current !== 'none') {
+    } else if (ratioForNudge < NUDGE_80_RATIO && lastNudgeFiredRef.current !== 'none') {
       lastNudgeFiredRef.current = 'none'
     }
-  }, [displayTokens, displayWindow, onCompact])
+  }, [authoritativeSnapshot, streamRatio, onCompact])
 
-  const ratio = displayWindow && displayTokens ? displayTokens / displayWindow : 0
-  const percent =
-    displayWindow && displayTokens ? Math.round((displayTokens / displayWindow) * 100) : undefined
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
-  const isWarning =
-    compactThreshold && displayTokens ? displayTokens / compactThreshold >= WARNING_RATIO : false
-  const isDanger = displayWindow && displayTokens ? ratio >= DANGER_RATIO : false
+  const isWarning = authoritativeSnapshot
+    ? ratio >= COMPACT_THRESHOLD_RATIO * WARNING_RATIO
+    : compactThreshold && displayTokens
+      ? displayTokens / compactThreshold >= WARNING_RATIO
+      : false
+  const isDanger = ratio >= DANGER_RATIO
+
+  const showPercentPlaceholder =
+    !authoritativeSnapshot && (breakdownLoading || breakdownRefreshing)
+  const effectivePercent = showPercentPlaceholder ? undefined : percent
+  const effectiveRatio = showPercentPlaceholder ? 0 : ratio
 
   const toneClass = isDanger
     ? 'text-red-600 dark:text-red-400'
@@ -239,8 +272,12 @@ export function ContextUsageBadge({
       return (
         <div className="flex items-center gap-1 text-muted-foreground" aria-label={triggerTitle}>
           <Loader2 className="size-3.5 animate-spin" />
-          {percent != null ? (
-            <span className={cn('text-xs tabular-nums font-medium', toneClass)}>{percent}%</span>
+          {effectivePercent != null ? (
+            <span className={cn('text-xs tabular-nums font-medium', toneClass)}>
+              {effectivePercent}%
+            </span>
+          ) : showPercentPlaceholder ? (
+            <Loader2 className="size-3.5 animate-spin" />
           ) : null}
         </div>
       )
@@ -258,14 +295,15 @@ export function ContextUsageBadge({
     )
   }
 
-  if (!displayTokens || displayTokens <= 0) return null
+  if (!snapshot && !breakdownLoading && (!displayTokens || displayTokens <= 0)) return null
 
   const handleCompactClick = (): void => {
     if (isProcessing) return
     onCompact()
     setOpen(false)
   }
-  const showBreakdownLoading = breakdownLoading || (open && !snapshot && !breakdownError)
+  const showFullSkeleton = breakdownLoading && !snapshot
+  const panelDetailsLoading = breakdownRefreshing || isStreamPreview
 
   const popoverContent = (
     <PopoverContent
@@ -273,15 +311,15 @@ export function ContextUsageBadge({
       align={isInline ? 'start' : 'center'}
       sideOffset={8}
       className={cn(
-        'context-usage-popover flex max-h-[min(76vh,560px)] w-[360px] flex-col overflow-hidden p-0',
+        'context-usage-popover grid w-[360px] max-h-[min(76vh,560px)] grid-rows-[minmax(300px,1fr)_auto] overflow-hidden p-0',
         isInline ? 'max-w-[360px]' : ''
       )}
       onMouseEnter={isInline ? undefined : cancelClose}
       onMouseLeave={isInline ? undefined : scheduleClose}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <div className="min-h-[300px] flex-1 overflow-y-auto p-3 scrollbar-thin">
-        {showBreakdownLoading ? (
+      <ScrollProgressContainer className="h-full min-h-0" contentClassName="p-3 pr-4">
+        {showFullSkeleton ? (
           <div className="flex flex-col gap-3 rounded-2xl bg-background/16 p-3">
             <div className="h-4 w-32 animate-pulse rounded-full bg-muted/60" />
             <div className="h-2.5 w-full animate-pulse rounded-full bg-muted/50" />
@@ -292,19 +330,23 @@ export function ContextUsageBadge({
             </div>
           </div>
         ) : snapshot ? (
-          <ContextUsagePanel snapshot={snapshot} />
+          <ContextUsagePanel
+            snapshot={snapshot}
+            detailsLoading={panelDetailsLoading}
+            isStreamPreview={isStreamPreview}
+          />
         ) : breakdownError ? (
           <p className="text-xs leading-relaxed text-muted-foreground">{breakdownError.message}</p>
         ) : null}
-      </div>
+      </ScrollProgressContainer>
 
       <div className="shrink-0 bg-background/12 px-3 pb-3 pt-2 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.14)]">
-        {!snapshot && !showBreakdownLoading && displayWindow ? (
+        {!authoritativeSnapshot && !showFullSkeleton && displayWindow && streamRatio != null ? (
           <div className="mb-2.5 flex flex-col gap-1 text-xs">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">当前窗口</span>
+              <span className="text-muted-foreground">流式估算（仅供参考）</span>
               <span className="tabular-nums font-medium text-foreground/90">
-                {formatTokens(displayTokens)} / {formatTokens(displayWindow)}
+                {formatTokens(displayTokens!)} / {formatTokens(displayWindow)}
                 {percent != null ? ` (${percent}%)` : ''}
               </span>
             </div>
@@ -365,11 +407,13 @@ export function ContextUsageBadge({
                     toneClass
                   )}
                 >
-                  <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
-                  {percent != null ? (
+                  <UsageRing ratio={effectiveRatio} isWarning={isWarning} isDanger={isDanger} />
+                  {effectivePercent != null ? (
                     <span className={cn('text-xs tabular-nums font-medium', toneClass)}>
-                      {percent}%
+                      {effectivePercent}%
                     </span>
+                  ) : showPercentPlaceholder ? (
+                    <Loader2 className="size-3.5 animate-spin" />
                   ) : null}
                 </button>
               </TooltipTrigger>
@@ -406,7 +450,7 @@ export function ContextUsageBadge({
                 }}
                 onMouseLeave={scheduleClose}
               >
-                <UsageRing ratio={ratio} isWarning={isWarning} isDanger={isDanger} />
+                <UsageRing ratio={effectiveRatio} isWarning={isWarning} isDanger={isDanger} />
               </Button>
             </TooltipTrigger>
           </PopoverTrigger>

@@ -363,6 +363,9 @@ export interface ElectronAPI {
   /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
   getContextUsage: (sessionId: string) => Promise<GetContextUsageResponse>
 
+  /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
+  getContextUsageCached: (sessionId: string) => Promise<GetContextUsageResponse>
+
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
 
@@ -1763,6 +1766,13 @@ const electronAPI: ElectronAPI = {
   getContextUsage: (sessionId: string) => {
     return ipcRenderer.invoke(
       AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
+      sessionId
+    ) as Promise<GetContextUsageResponse>
+  },
+
+  getContextUsageCached: (sessionId: string) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE_CACHED,
       sessionId
     ) as Promise<GetContextUsageResponse>
   },

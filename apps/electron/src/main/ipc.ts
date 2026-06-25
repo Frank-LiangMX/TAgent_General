@@ -140,6 +140,7 @@ import {
   runAgent,
   stopAgent,
   getAgentContextUsage,
+  getAgentContextUsageCached,
   generateAgentTitle,
   saveFilesToAgentSession,
   saveFilesToWorkspaceFiles,
@@ -1821,6 +1822,13 @@ export function registerIpcHandlers(): void {
     AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
     async (_, sessionId: string): Promise<import('@tagent/shared').GetContextUsageResponse> => {
       return getAgentContextUsage(sessionId)
+    }
+  )
+
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE_CACHED,
+    (_, sessionId: string): import('@tagent/shared').GetContextUsageResponse => {
+      return getAgentContextUsageCached(sessionId)
     }
   )
 
@@ -4707,22 +4715,33 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.CREATE, async (_, input) => {
     const { createAutomation } = await import('./lib/automation-manager')
-    return createAutomation(input)
+    const { broadcastChanged } = await import('./lib/automation-scheduler')
+    const automation = createAutomation(input)
+    broadcastChanged()
+    return automation
   })
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.UPDATE, async (_, input) => {
     const { updateAutomation } = await import('./lib/automation-manager')
-    return updateAutomation(input)
+    const { broadcastChanged } = await import('./lib/automation-scheduler')
+    const automation = updateAutomation(input)
+    broadcastChanged()
+    return automation
   })
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.DELETE, async (_, id: string) => {
     const { deleteAutomation } = await import('./lib/automation-manager')
-    return deleteAutomation(id)
+    const { broadcastChanged } = await import('./lib/automation-scheduler')
+    deleteAutomation(id)
+    broadcastChanged()
   })
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.TOGGLE, async (_, id: string) => {
     const { toggleAutomation } = await import('./lib/automation-manager')
-    return toggleAutomation(id)
+    const { broadcastChanged } = await import('./lib/automation-scheduler')
+    const automation = toggleAutomation(id)
+    broadcastChanged()
+    return automation
   })
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.RUN_NOW, async (_, id: string) => {

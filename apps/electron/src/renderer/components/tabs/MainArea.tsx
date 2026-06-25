@@ -35,6 +35,7 @@ import {
 } from '@/atoms/workspace-explorer'
 import { SkillsMainView } from '@/components/agent/SkillsMainView'
 import { WorkspaceFilesMainView } from '@/components/agent/WorkspaceFilesMainView'
+import { AutomationMainView } from '@/components/automation/AutomationMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
@@ -91,6 +92,10 @@ export function MainArea(): React.ReactElement {
 
   if (activeRailItem === 'skills') {
     return <SkillsMainView />
+  }
+
+  if (activeRailItem === 'automation') {
+    return <AutomationMainView />
   }
 
   // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染

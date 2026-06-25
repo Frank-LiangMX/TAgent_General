@@ -1500,6 +1500,8 @@ export const AGENT_IPC_CHANNELS = {
   COMPACT_SESSION: 'agent:compact-session',
   /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
   GET_CONTEXT_USAGE: 'agent:get-context-usage',
+  /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
+  GET_CONTEXT_USAGE_CACHED: 'agent:get-context-usage-cached',
   // 消息发送
   /** 发送消息（触发 Agent 流式响应） */
   SEND_MESSAGE: 'agent:send-message',

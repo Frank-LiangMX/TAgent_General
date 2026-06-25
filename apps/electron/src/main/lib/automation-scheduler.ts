@@ -18,7 +18,6 @@
 
 import { BrowserWindow, powerSaveBlocker } from 'electron'
 import {
-  AUTOMATION_MAX_CONSECUTIVE_FAILURES,
   AUTOMATION_IPC_CHANNELS,
   AUTOMATION_DEFAULT_SESSION_MODE,
   DAILY_CONTEXT_ROLLOVER_THRESHOLD,
@@ -33,9 +32,8 @@ import {
   setNextRunAt,
   setLastSessionId,
   computeNextRunAt,
-  isSameLocalDay,
-  formatScheduleLabel,
 } from './automation-manager'
+import { formatScheduleLabel, isSameLocalDay } from '@tagent/shared'
 import { createAgentSession, updateAgentSessionMeta, getAgentSessionMeta } from './agent-session-manager'
 import { getContextUsageCache } from './context-usage-cache'
 import { runAgentHeadless, isAgentSessionActive } from './agent-service'
@@ -142,19 +140,7 @@ export async function runAutomation(automation: Automation, manual = false): Pro
         }
         appendRun(automation.id, run)
         broadcastChanged()
-        // 失败退避：连续失败达上限自动暂停
-        const latest = getAutomation(automation.id)
-        if (
-          latest &&
-          latest.enabled &&
-          (latest.consecutiveFailures ?? 0) >= AUTOMATION_MAX_CONSECUTIVE_FAILURES
-        ) {
-          updateAfterRun(automation.id, { status: 'failed', error: `连续失败 ${latest.consecutiveFailures} 次，已自动暂停` })
-          console.warn(`[定时任务] ${automation.name} 连续失败 ${latest.consecutiveFailures} 次，已自动暂停`)
-          broadcastChanged()
-        } else {
-          updateAfterRun(automation.id, { status, error })
-        }
+        updateAfterRun(automation.id, { status, error })
         resolveRun()
       }
 
@@ -171,7 +157,7 @@ export async function runAutomation(automation: Automation, manual = false): Pro
         {
           sessionId: targetSessionId,
           userMessage: automation.prompt + '\n<!--TAGENT_SCHEDULED_RUN-->',
-          automationContext: `这是 TAgent 定时任务「${automation.name}」的自动执行（ID: ${automation.id}，${formatScheduleLabel(automation)}）。这本身就是定时任务，不要建议用户再创建定时任务。直接执行任务即可。`,
+          automationContext,
           channelId: automation.channelId,
           modelId: automation.modelId,
           workspaceId: automation.workspaceId,

@@ -27,7 +27,7 @@ export const topLevelModeAtom = atomWithStorage<TopLevelMode>('tagent-top-level-
 export const appModeAtom = atomWithStorage<AppMode>('tagent-app-mode', 'agent')
 
 /** 通用模式下的功能区类型 */
-export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'scratch'
+export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'scratch' | 'automation'
 
 /**
  * TA 模式下的功能区类型（含「会话」入口）。

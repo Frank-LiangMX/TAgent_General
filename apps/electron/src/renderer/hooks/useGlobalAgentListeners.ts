@@ -437,6 +437,20 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
   }
 }
 
+/** 流式 usage 与 SDK 分项刷新防抖（避免每 token 都打 getContextUsage） */
+const CONTEXT_USAGE_REFRESH_DEBOUNCE_MS = 1_200
+const contextUsageRefreshTimers = new Map<string, number>()
+
+function scheduleContextUsageRefresh(sessionId: string, bump: () => void): void {
+  const existing = contextUsageRefreshTimers.get(sessionId)
+  if (existing != null) window.clearTimeout(existing)
+  const timer = window.setTimeout(() => {
+    contextUsageRefreshTimers.delete(sessionId)
+    bump()
+  }, CONTEXT_USAGE_REFRESH_DEBOUNCE_MS)
+  contextUsageRefreshTimers.set(sessionId, timer)
+}
+
 export function useGlobalAgentListeners(): void {
   const store = useStore()
 
@@ -1055,8 +1069,10 @@ export function useGlobalAgentListeners(): void {
             }
             store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
           } else if (event.type === 'usage_update') {
-            // 流式过程中的 usage_update — 用于实时显示进度
-            // 注意：中转站可能不返回此数据，依赖 complete 事件兜底
+            // 流式 usage_update 仅作计费参考；圆环改拉 SDK getContextUsage（防抖）
+            scheduleContextUsageRefresh(sessionId, () => {
+              store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+            })
           }
         }
       }) // unstable_batchedUpdates
