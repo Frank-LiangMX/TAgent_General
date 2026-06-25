@@ -18,7 +18,7 @@ export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = 14
 export const NAV_MAC_CHROME_HEIGHT = 32
 
 /** TabBar 内容区高度 */
-export const TAB_BAR_HEIGHT = 34
+export const TAB_BAR_HEIGHT = 28
 
 /** 导航岛 body 内首行顶距（Tailwind pt-2） */
 export const NAV_ISLAND_BODY_PADDING_TOP = 8

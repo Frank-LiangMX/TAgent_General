@@ -22,7 +22,7 @@ import { TASidebarReview } from './TASidebar.Review'
 
 import type { TARailItem } from '@/atoms/app-mode'
 
-const TITLES: Record<TARailItem, string> = {
+const TITLES: Record<TARailItem | 'skills' | 'draft', string> = {
   sessions: '会话',
   assets: '资产库',
   review: '审核',

@@ -596,8 +596,11 @@ export function LeftSidebar({
     // 也避免将来在两者之间意外插入 await 导致跨渲染状态不一致。
     // （React 18 在同一事件回调中会自动批处理多次 setState，所以单次渲染
     // 的一致性由 React 保证，这里只是保持代码组织清晰。）
-    const wasActive = activeTabId === pendingDeleteId
-    const tabResult = closeTab(tabs, activeTabId, pendingDeleteId)
+    // 注意：draft tab 的 id 格式为 __draft__:<draftId>，需要从 tabs 列表查找
+    const tabToClose = tabs.find((t) => t.sessionId === pendingDeleteId)
+    const tabIdToClose = tabToClose?.id ?? pendingDeleteId
+    const wasActive = activeTabId === tabIdToClose
+    const tabResult = closeTab(tabs, activeTabId, tabIdToClose)
     setTabs(tabResult.tabs)
     setActiveTabId(tabResult.activeTabId)
 

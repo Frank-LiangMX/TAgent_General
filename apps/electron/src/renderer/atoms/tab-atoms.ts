@@ -11,6 +11,7 @@ import { atom } from 'jotai'
 import {
   agentRunningSessionIdsAtom,
   agentSessionIndicatorMapAtom,
+  agentSessionsAtom,
   unviewedCompletedSessionIdsAtom,
 } from './agent-atoms'
 
@@ -96,8 +97,26 @@ export interface OpenTabRestore {
 
 // ===== 核心 Atoms =====
 
-/** 顶部入口列表：Draft + 当前会话（所有模式共享） */
-export const tabsAtom = atom<TabItem[]>([])
+/** 顶部入口列表（写入时自动清理孤儿 preview tab） */
+export const tabsAtom = atom<TabItem[], [TabItem[] | ((prev: TabItem[]) => TabItem[])], void>(
+  (get) => get(rawTabsAtom),
+  (get, set, updater: TabItem[] | ((prev: TabItem[]) => TabItem[])) => {
+    const prev = get(rawTabsAtom)
+    const newTabs = typeof updater === 'function' ? updater(prev) : updater
+
+    // Invariant: preview tab 必须有对应的 agent tab
+    const agentSessionIds = new Set(
+      newTabs.filter((t) => t.type === 'agent').map((t) => t.sessionId)
+    )
+    const cleaned = newTabs.filter(
+      (t) => t.type !== 'preview' || agentSessionIds.has(t.sessionId)
+    )
+    set(rawTabsAtom, cleaned)
+  }
+)
+
+/** 内部原始存储 */
+const rawTabsAtom = atom<TabItem[]>([])
 
 /**
  * 每个顶层模式各自的激活 tab ID。
@@ -163,12 +182,24 @@ export const draftPlaceholderLoadedAtom = atom<boolean>(false)
 
 // ===== 派生 Atoms =====
 
-/** 当前活跃标签 */
+/** 标签列表（标题与会话元数据同步） */
+export const syncedTabsAtom = atom<TabItem[]>((get) => {
+  const tabs = get(tabsAtom)
+  const sessions = get(agentSessionsAtom)
+  return tabs.map((tab) => {
+    if (tab.type !== 'agent') return tab
+    const session = sessions.find((s) => s.id === tab.sessionId)
+    const title = session?.title
+    return title && title !== tab.title ? { ...tab, title } : tab
+  })
+})
+
+/** 当前活跃标签（从同步列表读取，标题始终最新） */
 export const activeTabAtom = atom<TabItem | null>((get) => {
   const activeId = get(activeTabIdAtom)
   if (!activeId) return null
   const mode = get(topLevelModeAtom)
-  return get(tabsAtom).find((t) => t.id === activeId && isTabVisibleInMode(t, mode)) ?? null
+  return get(syncedTabsAtom).find((t) => t.id === activeId && isTabVisibleInMode(t, mode)) ?? null
 })
 
 /**
@@ -183,7 +214,7 @@ export const activeSessionIdAtom = atom<string | null>((get) => {
 
 /** 标签是否在流式输出中（派生，从现有流式 atoms 计算） */
 export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
-  const tabs = get(tabsAtom)
+  const tabs = get(syncedTabsAtom)
   const agentRunning = get(agentRunningSessionIdsAtom)
   const map = new Map<string, boolean>()
   for (const tab of tabs) {
@@ -198,7 +229,7 @@ export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
 
 /** 标签页指示点状态（agent 用完整 SessionIndicatorStatus） */
 export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((get) => {
-  const tabs = get(tabsAtom)
+  const tabs = get(syncedTabsAtom)
   const agentIndicator = get(agentSessionIndicatorMapAtom)
   const unviewedCompletedIds = get(unviewedCompletedSessionIdsAtom)
   const map = new Map<string, SessionIndicatorStatus>()
@@ -239,7 +270,7 @@ export function isTabVisibleInMode(tab: TabItem, mode: TopLevelMode): boolean {
 
 export const visibleTabsAtom = atom<TabItem[]>((get) => {
   const mode = get(topLevelModeAtom)
-  return get(tabsAtom).filter((tab) => isTabVisibleInMode(tab, mode))
+  return get(syncedTabsAtom).filter((tab) => isTabVisibleInMode(tab, mode))
 })
 
 export const visibleSessionTabsAtom = atom<TabItem[]>((get) => {
@@ -387,24 +418,28 @@ export function closeTab(
 
   const newTabs = tabs.filter((t) => t.id !== tabId && (!boundPreviewId || t.id !== boundPreviewId))
 
-  // 如果关闭的是当前激活的标签，切换到相邻标签（跳过 preview 标签）
   let newActiveTabId = activeTabId
   if (activeTabId === tabId || (boundPreviewId !== null && activeTabId === boundPreviewId)) {
     if (newTabs.length > 0) {
-      // 在过滤后的数组中找到相邻位置，优先选 agent 标签而非 preview 标签
-      let candidateIndex = Math.min(tabIndex, newTabs.length - 1)
-      if (newTabs[candidateIndex]?.type === 'preview') {
-        if (candidateIndex > 0 && newTabs[candidateIndex - 1]?.type === 'agent') {
-          candidateIndex = candidateIndex - 1
-        }
-      }
-      newActiveTabId = newTabs[candidateIndex]!.id
+      const approxIndex = Math.min(tabIndex, newTabs.length - 1)
+      newActiveTabId = newTabs[findNearestNonPreviewTab(newTabs, approxIndex)]!.id
     } else {
       newActiveTabId = null
     }
   }
 
   return { tabs: newTabs, activeTabId: newActiveTabId }
+}
+
+/** 从近似位置向两侧扩展，找到最近的非 preview 标签 */
+function findNearestNonPreviewTab(tabs: TabItem[], approxIndex: number): number {
+  for (let offset = 0; offset < tabs.length; offset++) {
+    const right = approxIndex + offset
+    if (right < tabs.length && tabs[right]?.type !== 'preview') return right
+    const left = approxIndex - offset - 1
+    if (left >= 0 && tabs[left]?.type !== 'preview') return left
+  }
+  return 0
 }
 
 /** 重排标签顺序（当前只保留 Scratch + 当前会话，保留函数用于兼容旧调用） */

@@ -57,6 +57,10 @@
   - **未做（M4 后续）**：Agent MCP 工具、自然语言创建、custom cron、TipTap 富文本编辑器
 - ✅ **kscc 内网渠道集成** 已完成 — 见 [kscc-internal-provider-design.md](plans/2026-06-25-kscc-internal-provider-design.md)
 - ✅ **草稿模式重构 + Chat 清理** 已完成 — 见 [draft-restructure-design.md](plans/2026-06-25-draft-restructure-design.md)
+- ✅ **标签页系统修复 + UI 打磨** 已完成（2026-06-26，branch `feature/draft-restructure`）：
+  - Bug：TabBar / TATabBar / CapabilityToolbar 的拖拽覆盖层缺少 `pointer-events-none`，点击被吞
+  - UI：Tab 圆角加大（12px）、高度降至 28px 与窗口按钮齐平、激活态轻度玻璃光泽、底部指示线滑动动画
+  - 逻辑：`syncedTabsAtom` 标题自动同步、`closeTab` 双侧扩展搜索跳过 preview tab、`topLevelModeAtom` 切模式自动恢复 activeTab、会话删除解析 draft ID 同步关 tab、`tabsAtom` 写派生自动清理孤儿 preview tab
   - Chat 残留清理：删除 chat-atoms.ts / chat-service.ts（~900 行）、~15 死 IPC handler、~25 死 preload 方法、重命名 chat-tools → tools
   - Draft 数据层：shared types + draft-manager + IPC + preload API
   - Draft Atoms + 导航：AppMode 'scratch'→'draft'、TabType 'scratch'→'draft'、per-mode tab 记忆

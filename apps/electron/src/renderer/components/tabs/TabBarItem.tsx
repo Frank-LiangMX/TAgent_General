@@ -108,6 +108,7 @@ export function TabBarItem({
     return (
       <div
         className="relative flex-shrink-0 titlebar-no-drag"
+        data-tab-id={id}
         onMouseEnter={onHoverEnter}
         onMouseLeave={onHoverLeave}
       >
@@ -115,12 +116,12 @@ export function TabBarItem({
           ref={buttonRef}
           type="button"
           className={cn(
-            'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[34px]',
-            'rounded-t-lg text-xs transition-colors select-none cursor-pointer',
-            'border-t border-l border-r border-transparent',
+            'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[28px]',
+            'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+            'border-t border-l border-r',
             isActive
-              ? 'bg-content-area text-foreground border-border/50'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              ? 'tab-item-selected text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
           )}
           onClick={onActivate}
           onMouseDown={handleMouseDown}
@@ -145,12 +146,6 @@ export function TabBarItem({
           >
             <X className="size-2.5" />
           </span>
-          {isActive && (
-            <span
-              className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-primary"
-              aria-hidden="true"
-            />
-          )}
         </button>
       </div>
     )
@@ -159,6 +154,7 @@ export function TabBarItem({
   return (
     <div
       className="relative min-w-[96px] max-w-[160px] flex-[1_0_96px] titlebar-no-drag"
+      data-tab-id={id}
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
@@ -166,12 +162,12 @@ export function TabBarItem({
         ref={buttonRef}
         type="button"
         className={cn(
-          'group relative flex items-center gap-1.5 px-2.5 h-[34px] w-full',
-          'rounded-t-lg text-xs transition-colors select-none cursor-pointer',
-          'border-t border-l border-r border-transparent',
+          'group relative flex items-center gap-1.5 px-2.5 h-[28px] w-full',
+          'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+          'border-t border-l border-r',
           isActive
-            ? 'bg-content-area text-foreground border-border/50'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ? 'tab-item-selected text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
         )}
         onClick={onActivate}
         onMouseDown={handleMouseDown}
@@ -213,12 +209,9 @@ export function TabBarItem({
           </span>
         )}
 
-        {(isActive || statusLineClass) && (
+        {statusLineClass && (
           <span
-            className={cn(
-              'absolute inset-x-3 bottom-0 h-[2px] rounded-full',
-              statusLineClass ?? 'bg-primary'
-            )}
+            className={cn('absolute inset-x-3 bottom-0 h-[2px] rounded-full', statusLineClass)}
             aria-hidden="true"
           />
         )}

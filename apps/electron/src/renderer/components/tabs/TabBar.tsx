@@ -19,6 +19,7 @@ import type { TabItem } from '@/atoms/tab-atoms'
 import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
+import { useTabSlideIndicator } from '@/hooks/useTabSlideIndicator'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -82,7 +83,7 @@ export function TabBar(): React.ReactElement {
   )
 
   if (tabs.length === 0) {
-    return <div className="h-[34px] titlebar-drag-region relative z-[10]" />
+    return <div className="h-[28px] titlebar-drag-region relative z-[10]" />
   }
 
   return (
@@ -122,6 +123,9 @@ function TabBarInner({
 
   // 滚动容器 ref
   const scrollRef = React.useRef<HTMLDivElement>(null)
+
+  // Tab 选中态滑动指示器
+  const { indicatorStyle } = useTabSlideIndicator(scrollRef, activeTabId)
 
   // 鼠标滚轮横向滚动（使用原生事件监听器以支持 preventDefault）
   React.useEffect(() => {
@@ -191,13 +195,13 @@ function TabBarInner({
   }, [])
 
   return (
-    <div className="flex items-end h-[34px] tabbar-bg content-shell-chrome-bleed relative shrink-0">
+    <div className="flex items-end h-[28px] tabbar-bg content-shell-chrome-bleed relative shrink-0">
       {/* 顶部 TabBar 的空白区域必须保持可拖拽，尤其是 macOS/Windows 自定义标题栏。
           注意：不要把 titlebar-no-drag 加到下面的整条 flex 容器上，否则标签右侧空白会再次失去拖拽能力。
           Windows 上背景拖拽层避开右上角 WindowControls 区域（126px），防止 hitmask 重叠。
           需要交互的单个 Tab 会在 TabBarItem 内部自己声明 titlebar-no-drag。 */}
       <div
-        className={cn('absolute inset-0 z-[10] titlebar-drag-region', isWindows && 'right-[126px]')}
+        className={cn('absolute inset-0 z-[10] titlebar-drag-region pointer-events-none', isWindows && 'right-[126px]')}
       />
 
       <div
@@ -207,6 +211,14 @@ function TabBarInner({
           isWindows && 'pr-[126px]'
         )}
       >
+        {/* 滑动底部指示线 */}
+        {indicatorStyle && (
+          <span
+            className="absolute rounded-full bg-primary pointer-events-none"
+            style={{ ...indicatorStyle, zIndex: 2 }}
+            aria-hidden="true"
+          />
+        )}
         {tabs.map((tab) => (
           <TabBarItem
             key={tab.id}
