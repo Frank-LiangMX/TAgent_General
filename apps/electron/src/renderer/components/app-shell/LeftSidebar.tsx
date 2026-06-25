@@ -112,6 +112,7 @@ import { PluginsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
 import { WorkspaceFileDropSurface } from '@/components/agent/WorkspaceFileDropSurface'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
+import { DraftListPanel } from '@/components/draft/DraftListPanel'
 import {
   SessionMiniMapPopover,
   useSessionMiniMapHover,
@@ -1009,8 +1010,7 @@ export function LeftSidebar({
       case 'automation':
         return <AutomationRailList />
       case 'draft':
-        // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
-        return null
+        return <DraftListPanel />
       case 'sessions':
       default:
         return (

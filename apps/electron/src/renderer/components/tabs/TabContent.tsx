@@ -12,6 +12,7 @@ import { TabErrorBoundary } from './TabErrorBoundary'
 
 import { tabsAtom } from '@/atoms/tab-atoms'
 import { AgentView } from '@/components/agent'
+import { DraftView } from '@/components/draft'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
 
 export interface TabContentProps {
@@ -40,11 +41,10 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
   }
 
   if (tab.type === 'draft') {
-    // DraftView 尚未实现，暂用占位符
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        DraftView placeholder (draftId={tab.sessionId})
-      </div>
+      <TabErrorBoundary key={tab.id} sessionId={tab.sessionId}>
+        <DraftView draftId={tab.sessionId} />
+      </TabErrorBoundary>
     )
   }
 
