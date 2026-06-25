@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 
 import type {
   Automation,
+  AutomationNotificationTrigger,
   AutomationPermissionMode,
   AutomationSessionMode,
   CreateAutomationInput,
@@ -66,6 +67,21 @@ export interface AutomationFormDraft {
   permissionMode: AutomationPermissionMode
   maxRuns?: number
   notificationSystem: boolean
+  notificationFeishuEnabled: boolean
+  notificationFeishuChatId: string
+  notificationTrigger: AutomationNotificationTrigger
+}
+
+function buildNotificationFromDraft(
+  draft: AutomationFormDraft
+): CreateAutomationInput['notification'] {
+  return {
+    system: draft.notificationSystem,
+    trigger: draft.notificationTrigger,
+    feishu: draft.notificationFeishuEnabled
+      ? { enabled: true, chatId: draft.notificationFeishuChatId.trim() || undefined }
+      : { enabled: false },
+  }
 }
 
 interface AutomationFormViewProps {
@@ -96,6 +112,9 @@ export function createEmptyDraft(defaults: {
     sessionMode: AUTOMATION_DEFAULT_SESSION_MODE,
     permissionMode: AUTOMATION_DEFAULT_PERMISSION_MODE,
     notificationSystem: true,
+    notificationFeishuEnabled: false,
+    notificationFeishuChatId: '',
+    notificationTrigger: 'always',
   }
 }
 
@@ -118,6 +137,9 @@ export function automationToDraft(automation: Automation): AutomationFormDraft {
     permissionMode: automation.permissionMode ?? AUTOMATION_DEFAULT_PERMISSION_MODE,
     maxRuns: automation.maxRuns,
     notificationSystem: automation.notification?.system ?? true,
+    notificationFeishuEnabled: automation.notification?.feishu?.enabled ?? false,
+    notificationFeishuChatId: automation.notification?.feishu?.chatId ?? '',
+    notificationTrigger: automation.notification?.trigger ?? 'always',
   }
 }
 
@@ -230,7 +252,7 @@ export function AutomationFormView({
           workspaceId: draft.workspaceId,
           sessionMode: draft.sessionMode,
           permissionMode: draft.permissionMode,
-          notification: { system: draft.notificationSystem },
+          notification: buildNotificationFromDraft(draft),
         }
         const created = await createAutomation(input)
         setSaveState('saved')
@@ -256,7 +278,7 @@ export function AutomationFormView({
         workspaceId: draft.workspaceId,
         sessionMode: draft.sessionMode,
         permissionMode: draft.permissionMode,
-        notification: { system: draft.notificationSystem },
+        notification: buildNotificationFromDraft(draft),
       }
       const updated = await updateAutomation(input)
       setSaveState('saved')
@@ -379,17 +401,51 @@ export function AutomationFormView({
             </div>
           </section>
 
-          <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
+          <section className="space-y-3 rounded-2xl bg-card/50 p-4 shadow-sm">
+            <p className="text-xs font-medium text-foreground/80">运行通知</p>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-medium text-foreground/80">系统通知</p>
-                <p className="text-[10px] text-muted-foreground">运行完成后发送系统通知</p>
+                <p className="text-xs text-foreground/80">系统通知</p>
+                <p className="text-[10px] text-muted-foreground">运行完成后发送桌面通知</p>
               </div>
               <Switch
                 checked={draft.notificationSystem}
                 onCheckedChange={(checked) => patchDraft({ notificationSystem: checked })}
               />
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-foreground/80">飞书通知</p>
+                <p className="text-[10px] text-muted-foreground">向指定群聊发送卡片消息</p>
+              </div>
+              <Switch
+                checked={draft.notificationFeishuEnabled}
+                onCheckedChange={(checked) => patchDraft({ notificationFeishuEnabled: checked })}
+              />
+            </div>
+            {draft.notificationFeishuEnabled ? (
+              <div className="space-y-2">
+                <Label className="text-xs text-foreground/80">飞书 chat_id</Label>
+                <Input
+                  value={draft.notificationFeishuChatId}
+                  onChange={(e) => patchDraft({ notificationFeishuChatId: e.target.value })}
+                  placeholder="oc_xxx 或群聊 ID"
+                  className="h-9 text-xs"
+                />
+              </div>
+            ) : null}
+            <FieldSelect
+              label="通知时机"
+              value={draft.notificationTrigger}
+              onValueChange={(v) =>
+                patchDraft({ notificationTrigger: v as AutomationNotificationTrigger })
+              }
+              options={[
+                { value: 'always', label: '每次运行' },
+                { value: 'success', label: '仅成功' },
+                { value: 'error', label: '仅失败' },
+              ]}
+            />
           </section>
 
           {mode === 'edit' && automation ? (

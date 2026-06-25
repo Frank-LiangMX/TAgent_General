@@ -37,6 +37,7 @@ import { formatScheduleLabel, isSameLocalDay } from '@tagent/shared'
 import { createAgentSession, updateAgentSessionMeta, getAgentSessionMeta } from './agent-session-manager'
 import { getContextUsageCache } from './context-usage-cache'
 import { runAgentHeadless, isAgentSessionActive } from './agent-service'
+import { notifyAutomationRunFinished } from './automation-notification-service'
 
 /** tick 周期：每 30s 检查一次到期任务（短轮询，抗休眠漂移） */
 const TICK_INTERVAL_MS = 30_000
@@ -47,6 +48,12 @@ const RUN_TIMEOUT_MS = 2 * 60 * 60 * 1000
 let tickTimer: NodeJS.Timeout | undefined
 /** 正在执行中的 automation id 集合，防止同一任务重入 */
 const runningAutomations = new Set<string>()
+
+function dispatchRunNotification(automation: Automation, run: AutomationRun): void {
+  void notifyAutomationRunFinished({ automation, run }).catch((err) => {
+    console.error(`[定时任务] 发送完成通知失败: ${automation.name}`, err)
+  })
+}
 
 /** 向所有渲染窗口广播任务列表变更，触发前端刷新 */
 export function broadcastChanged(): void {
@@ -141,6 +148,7 @@ export async function runAutomation(automation: Automation, manual = false): Pro
         appendRun(automation.id, run)
         broadcastChanged()
         updateAfterRun(automation.id, { status, error })
+        dispatchRunNotification(automation, run)
         resolveRun()
       }
 
@@ -187,6 +195,7 @@ export async function runAutomation(automation: Automation, manual = false): Pro
     appendRun(automation.id, run)
     broadcastChanged()
     updateAfterRun(automation.id, { status: 'failed', error: run.error })
+    dispatchRunNotification(automation, run)
   } finally {
     runningAutomations.delete(automation.id)
     if (powerSaveBlocker.isStarted(blockerId)) powerSaveBlocker.stop(blockerId)

@@ -2519,7 +2519,13 @@ class FeishuBridge {
       if (sentId) this.addToDedup(this.recentMessageIds, sentId)
     } catch (error) {
       console.error('[飞书 Bridge] 发送卡片消息失败:', error)
+      throw error
     }
+  }
+
+  /** 主动向指定飞书聊天发送卡片（定时任务通知等主动推送场景） */
+  async sendCardToChat(chatId: string, card: Record<string, unknown>): Promise<void> {
+    await this.sendCard(chatId, card)
   }
 
   // ===== 群聊 Thread Reply =====

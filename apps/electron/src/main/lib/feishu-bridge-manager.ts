@@ -187,6 +187,26 @@ class FeishuBridgeManager {
     return undefined
   }
 
+  /** 获取首个已连接的 Bridge（主动推送兜底） */
+  getFirstConnectedBridge(): FeishuBridge | undefined {
+    for (const bridge of this.bridges.values()) {
+      if (bridge.getStatus().status === 'connected') return bridge
+    }
+    return undefined
+  }
+
+  /** 向指定飞书聊天发送卡片（定时任务完成通知等） */
+  async sendCardToChat(chatId: string, card: Record<string, unknown>): Promise<void> {
+    const bridge = this.findBridgeByChatId(chatId) ?? this.getFirstConnectedBridge()
+    if (!bridge) {
+      throw new Error(`飞书 Bot 未连接，无法发送到 chat=${chatId}`)
+    }
+    if (bridge.getStatus().status !== 'connected') {
+      throw new Error(`飞书 Bot 未连接，无法发送到 chat=${chatId}`)
+    }
+    await bridge.sendCardToChat(chatId, card)
+  }
+
   // ===== 连接测试（静态，不影响运行中的 Bridge） =====
 
   async testConnection(appId: string, appSecret: string): Promise<FeishuTestResult> {
