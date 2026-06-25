@@ -11,7 +11,7 @@ import * as React from 'react'
 
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
 
-import { draftsAtom, currentDraftIdAtom, deleteDraftAtom } from '@/atoms/draft-atoms'
+import { draftsAtom, currentDraftIdAtom, deleteDraftAtom, draftsLoadedAtom, loadDraftsAtom } from '@/atoms/draft-atoms'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import {
@@ -245,9 +245,16 @@ const DraftItem = React.memo(function DraftItem({
 export function DraftListPanel(): React.ReactElement {
   const drafts = useAtomValue(draftsAtom)
   const currentDraftId = useAtomValue(currentDraftIdAtom)
+  const draftsLoaded = useAtomValue(draftsLoadedAtom)
+  const loadDrafts = useSetAtom(loadDraftsAtom)
   const openSession = useOpenSession()
   const deleteDraft = useSetAtom(deleteDraftAtom)
   const store = useStore()
+
+  // 首次挂载时加载草稿列表
+  React.useEffect(() => {
+    if (!draftsLoaded) void loadDrafts()
+  }, [draftsLoaded, loadDrafts])
 
   const groups = React.useMemo(() => groupByStatus(drafts), [drafts])
 
