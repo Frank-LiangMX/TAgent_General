@@ -32,7 +32,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
   const setActiveRailItem = useSetAtom(activeRailItemAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const agentSessions = useAtomValue(agentSessionsAtom)
-  const appMode = useAtomValue(appModeAtom)
 
   return useCallback<SyncActiveTabSideEffects>(
     (newActiveTab) => {
@@ -48,10 +47,7 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         if (topLevelMode === 'general') {
           setActiveRailItem('draft')
         }
-        // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
-        if (appMode !== 'agent') {
-          setCurrentAgentSessionId(null)
-        }
+        setCurrentAgentSessionId(null)
         return
       }
 
@@ -82,7 +78,6 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
       }
     },
     [
-      appMode,
       setAppMode,
       setCurrentAgentSessionId,
       setCurrentAgentWorkspaceId,

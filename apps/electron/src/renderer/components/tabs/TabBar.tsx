@@ -8,7 +8,7 @@
  * - Chrome 风格等分宽度（溢出时可横向滚动）
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import { TabBarItem } from './TabBarItem'
@@ -16,15 +16,9 @@ import { TabBarItem } from './TabBarItem'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { TabItem } from '@/atoms/tab-atoms'
 
-import {
-  agentSessionsAtom,
-  currentAgentSessionIdAtom,
-  currentAgentWorkspaceIdAtom,
-  unviewedCompletedSessionIdsAtom,
-} from '@/atoms/agent-atoms'
-import { appModeAtom, activeRailItemAtom, topLevelModeAtom } from '@/atoms/app-mode'
 import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
+import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -33,15 +27,8 @@ export function TabBar(): React.ReactElement {
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
 
-  // Tab 切换时同步 sidebar 状态
-  const appMode = useAtomValue(appModeAtom)
-  const setAppMode = useSetAtom(appModeAtom)
-  const setActiveRailItem = useSetAtom(activeRailItemAtom)
-  const topLevelMode = useAtomValue(topLevelModeAtom)
-  const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
-  const agentSessions = useAtomValue(agentSessionsAtom)
-  const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
-  const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
+  // 统一切换副作用
+  const syncSideEffects = useSyncActiveTabSideEffects()
 
   // 统一关闭逻辑：关闭当前会话入口并回到 Scratch Pad，不停止后台 Agent
   const { requestClose } = useCloseTab()
@@ -57,58 +44,10 @@ export function TabBar(): React.ReactElement {
   const handleActivate = React.useCallback(
     (tabId: string) => {
       setActiveTabId(tabId)
-
       const tab = tabs.find((t) => t.id === tabId)
-      if (!tab) return
-
-      // P3: chat 类型已退役，仅处理 agent/preview/draft
-      if (tab.type === 'agent' || tab.type === 'preview') {
-        setAppMode('agent')
-        setCurrentAgentSessionId(tab.sessionId)
-        if (topLevelMode === 'general') {
-          setActiveRailItem('sessions')
-        }
-
-        // 用户打开查看后只清除未读角标；是否完成由用户通过对勾确认。
-        setUnviewedCompleted((prev) => {
-          if (!prev.has(tab.sessionId)) return prev
-          const next = new Set(prev)
-          next.delete(tab.sessionId)
-          return next
-        })
-
-        const session = agentSessions.find((s) => s.id === tab.sessionId)
-        if (session?.workspaceId) {
-          setCurrentAgentWorkspaceId(session.workspaceId)
-          window.electronAPI
-            .updateSettings({
-              agentWorkspaceId: session.workspaceId,
-            })
-            .catch(console.error)
-        }
-      } else if (tab.type === 'draft') {
-        setAppMode('draft')
-        if (topLevelMode === 'general') {
-          setActiveRailItem('draft')
-        }
-        // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
-        if (appMode !== 'agent') {
-          setCurrentAgentSessionId(null)
-        }
-      }
+      syncSideEffects(tab ?? null)
     },
-    [
-      setActiveTabId,
-      tabs,
-      agentSessions,
-      appMode,
-      setAppMode,
-      setCurrentAgentSessionId,
-      setCurrentAgentWorkspaceId,
-      setUnviewedCompleted,
-      setActiveRailItem,
-      topLevelMode,
-    ]
+    [setActiveTabId, tabs, syncSideEffects]
   )
 
   const handleDragStart = React.useCallback(

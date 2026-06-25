@@ -33,6 +33,7 @@ import {
   tabsAtom,
 } from '@/atoms/tab-atoms'
 import { getInitialTabSwitchIndex, promoteTabMru } from '@/lib/tab-switching'
+import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { cn } from '@/lib/utils'
 
 type SwitchSectionId = 'recent'
@@ -78,9 +79,11 @@ export function TabSwitcher(): ReactElement | null {
   const unviewedCompletedIds = useAtomValue(unviewedCompletedSessionIdsAtom)
   const draftSessionIds = useAtomValue(draftSessionIdsAtom)
 
-  const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
   const setCurrentAgentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
+
+  // 统一切换副作用
+  const syncSideEffects = useSyncActiveTabSideEffects()
 
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -197,8 +200,7 @@ export function TabSwitcher(): ReactElement | null {
       )
       setTabs(nextTab.tabs)
       setActiveTabId(nextTab.activeTabId)
-      // MRU/起始定位按会话 ID 归一化：即使 restore 后激活的是预览 Tab，
-      // 也以 candidate.id（会话 ID）记账，保证与候选列表对齐。
+      // MRU/起始定位按会话 ID 归一化
       activeSessionIdRef.current = candidate.id
       setTabMru((prev) => {
         const next = promoteTabMru(prev, candidate.id)
@@ -206,29 +208,15 @@ export function TabSwitcher(): ReactElement | null {
         return next
       })
 
-      setCurrentAgentSessionId(candidate.id)
-
-      setUnviewedCompleted((prev) => {
-        if (!prev.has(candidate.id)) return prev
-        const next = new Set(prev)
-        next.delete(candidate.id)
-        return next
-      })
-
-      if (candidate.workspaceId) {
-        setCurrentAgentWorkspaceId(candidate.workspaceId)
-        window.electronAPI
-          .updateSettings({ agentWorkspaceId: candidate.workspaceId })
-          .catch(console.error)
-      }
+      // 统一副作用
+      const activatedTab = nextTab.tabs.find((t) => t.id === nextTab.activeTabId)
+      syncSideEffects(activatedTab ?? null)
     },
     [
       setActiveTabId,
-      setCurrentAgentSessionId,
-      setCurrentAgentWorkspaceId,
+      syncSideEffects,
       setTabMru,
       setTabs,
-      setUnviewedCompleted,
       store,
     ]
   )

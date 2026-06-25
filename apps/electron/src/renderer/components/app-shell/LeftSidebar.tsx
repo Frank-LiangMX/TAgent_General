@@ -909,7 +909,11 @@ export function LeftSidebar({
       const tabResult = closeTab(tabs, activeTabId, updatedSession.id)
       setTabs(tabResult.tabs)
       setActiveTabId(tabResult.activeTabId)
-      setCurrentAgentSessionId(null)
+      // 同步副作用到新激活标签（替代无条件 setCurrentAgentSessionId(null)）
+      const newActiveTab = tabResult.activeTabId
+        ? tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null
+        : null
+      syncActiveTabSideEffects(newActiveTab)
       // 从 Working Done 集合移除
       setWorkingDone((prev) => {
         if (!prev.has(updatedSession.id)) return prev

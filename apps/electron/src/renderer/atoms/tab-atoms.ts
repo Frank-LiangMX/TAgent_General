@@ -275,7 +275,7 @@ export function getPersistableTabState(
 }
 
 /** 打开或聚焦会话入口。
- * 草稿标签页不再常驻，由用户主动打开。
+ * 保留已有标签页，新标签追加到末尾；复用时更新标题。
  * restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
 export function openTab(
   tabs: TabItem[],
@@ -285,12 +285,9 @@ export function openTab(
   if (item.type === 'draft') {
     const draftTabId = createDraftTabId(item.sessionId)
     const existingDraftTab = tabs.find((t) => t.id === draftTabId)
-    const draftTab = existingDraftTab ?? {
-      id: draftTabId,
-      type: 'draft' as const,
-      sessionId: item.sessionId,
-      title: item.title,
-    }
+    const draftTab = existingDraftTab
+      ? { ...existingDraftTab, title: item.title }
+      : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title }
     const otherTabs = tabs.filter((t) => t.id !== draftTabId)
     return {
       tabs: [...otherTabs, draftTab],
@@ -305,7 +302,7 @@ export function openTab(
       id: item.sessionId,
       type: 'agent' as const,
       sessionId: item.sessionId,
-      title: 'Agent 会话',
+      title: item.title,
     }
     const previewTab: TabItem = {
       id: createPreviewTabId(item.sessionId),
@@ -313,21 +310,23 @@ export function openTab(
       sessionId: item.sessionId,
       title: item.title,
     }
-
+    const otherTabs = tabs.filter(
+      (t) => t.id !== ownerAgentTab.id && t.id !== previewTab.id
+    )
+    if (!otherTabs.some((t) => t.id === ownerAgentTab.id)) {
+      otherTabs.push(ownerAgentTab)
+    }
+    otherTabs.push(previewTab)
     return {
-      tabs: [ownerAgentTab, previewTab],
+      tabs: otherTabs,
       activeTabId: previewTab.id,
     }
   }
 
   const existingTab = tabs.find((t) => t.sessionId === item.sessionId && t.type === item.type)
-  const sessionTab: TabItem = existingTab ?? {
-    id: item.sessionId,
-    type: item.type,
-    sessionId: item.sessionId,
-    title: item.title,
-    mode: item.mode ?? 'general',
-  }
+  const sessionTab: TabItem = existingTab
+    ? { ...existingTab, title: item.title }
+    : { id: item.sessionId, type: item.type, sessionId: item.sessionId, title: item.title, mode: item.mode ?? 'general' }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。
   if (restore?.previewTabOpen) {
@@ -337,14 +336,20 @@ export function openTab(
       sessionId: item.sessionId,
       title: restore.previewTitle,
     }
+    const otherTabs = tabs.filter(
+      (t) => t.id !== sessionTab.id && t.id !== previewTab.id
+    )
+    otherTabs.push(sessionTab, previewTab)
     return {
-      tabs: [sessionTab, previewTab],
+      tabs: otherTabs,
       activeTabId: restore.lastView === 'preview' ? previewTab.id : sessionTab.id,
     }
   }
 
+  const otherTabs = tabs.filter((t) => t.id !== sessionTab.id)
+  otherTabs.push(sessionTab)
   return {
-    tabs: [sessionTab],
+    tabs: otherTabs,
     activeTabId: sessionTab.id,
   }
 }
@@ -382,12 +387,18 @@ export function closeTab(
 
   const newTabs = tabs.filter((t) => t.id !== tabId && (!boundPreviewId || t.id !== boundPreviewId))
 
-  // 如果关闭的是当前激活的标签，切换到相邻标签
+  // 如果关闭的是当前激活的标签，切换到相邻标签（跳过 preview 标签）
   let newActiveTabId = activeTabId
   if (activeTabId === tabId || (boundPreviewId !== null && activeTabId === boundPreviewId)) {
     if (newTabs.length > 0) {
-      const nextIndex = Math.min(tabIndex, newTabs.length - 1)
-      newActiveTabId = newTabs[nextIndex]!.id
+      // 在过滤后的数组中找到相邻位置，优先选 agent 标签而非 preview 标签
+      let candidateIndex = Math.min(tabIndex, newTabs.length - 1)
+      if (newTabs[candidateIndex]?.type === 'preview') {
+        if (candidateIndex > 0 && newTabs[candidateIndex - 1]?.type === 'agent') {
+          candidateIndex = candidateIndex - 1
+        }
+      }
+      newActiveTabId = newTabs[candidateIndex]!.id
     } else {
       newActiveTabId = null
     }

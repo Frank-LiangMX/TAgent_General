@@ -34,6 +34,8 @@ import {
   type TARailItem,
   type TopLevelMode,
 } from '@/atoms/app-mode'
+import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { activeTabIdAtom, tabsAtom } from '@/atoms/tab-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { hasUpdateAtom } from '@/atoms/updater'
@@ -206,9 +208,19 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         setActiveRailItem('draft')
       } else {
         setActiveRailItem(item.id as GeneralRailItem | TARailItem)
-        // 如果当前在草稿模式，切回 agent
+        // 如果当前在草稿模式，切回 agent 并同步 currentAgentSessionId
         if (store.get(appModeAtom) === 'draft') {
           setAppMode('agent')
+          const currentActiveTabId = store.get(activeTabIdAtom)
+          const currentTabs = store.get(tabsAtom)
+          const activeTab = currentActiveTabId
+            ? currentTabs.find((t) => t.id === currentActiveTabId) ?? null
+            : null
+          if (activeTab && (activeTab.type === 'agent' || activeTab.type === 'preview')) {
+            store.set(currentAgentSessionIdAtom, activeTab.sessionId)
+          } else {
+            store.set(currentAgentSessionIdAtom, null)
+          }
         }
       }
     },
