@@ -807,10 +807,9 @@ function TabStatePersistenceInitializer(): null {
 }
 
 /**
- * Scratch Pad 持久化 — 已退役，等待 Draft 持久化替换。
- * Phase 2 将替换为 DraftPersistence。
+ * Draft 持久化 — 占位组件，Phase 4 将替换为 DraftPersistence。
  */
-function ScratchPadPersistence(): null {
+function DraftPersistence(): null {
   return null
 }
 
@@ -866,7 +865,7 @@ if (isQuickTaskWindow) {
       <DingTalkInitializer />
       <WpsInitializer />
       <TabStatePersistenceInitializer />
-      <ScratchPadPersistence />
+      <DraftPersistence />
       <GlobalShortcuts />
       <TabSwitcher />
       <App />

@@ -61,7 +61,7 @@ export function useOpenSession(): OpenSessionFn {
       setTabs(result.tabs)
       setActiveTabId(result.activeTabId)
 
-      // P3: chat 已退役，仅处理 agent / preview / scratch
+      // P3: chat 已退役，仅处理 agent / preview / draft
       if (type === 'agent' || type === 'preview') {
         setAppMode('agent')
         setCurrentAgentSessionId(sessionId)
@@ -84,8 +84,8 @@ export function useOpenSession(): OpenSessionFn {
             .catch(console.error)
         }
       } else {
-        // scratch
-        setAppMode('scratch')
+        // draft
+        setAppMode('draft')
         setCurrentAgentSessionId(null)
       }
     },

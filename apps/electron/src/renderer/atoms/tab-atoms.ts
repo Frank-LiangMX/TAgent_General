@@ -1,8 +1,8 @@
 /**
  * Tab Atoms — 当前工作区入口状态管理
  *
- * 顶部只保留 Scratch Pad 与当前会话两个入口；会话恢复与导航交给左侧列表。
- * 通过桥接 atom 与现有 currentConversationIdAtom / currentAgentSessionIdAtom 同步，
+ * 顶部标签页管理（Agent / Draft / Preview）。
+ * 通过桥接 atom 与现有 currentAgentSessionIdAtom 同步，
  * 确保所有现有派生 atoms 无需修改。
  */
 
@@ -22,17 +22,28 @@ import { topLevelModeAtom } from '@/atoms/app-mode'
 
 // ===== 类型定义 =====
 
-/** 标签页类型（Settings 不作为 Tab，保留独立视图；P3 已退役 chat） */
-export type TabType = 'agent' | 'scratch' | 'preview'
+/** 标签页类型（Settings 不作为 Tab，保留独立视图） */
+export type TabType = 'agent' | 'draft' | 'preview'
 
-/** Scratch Pad 专用的固定 sessionId */
-export const SCRATCH_PAD_ID = '__scratch-pad__'
+/** Draft Tab 的 ID 前缀 */
+export const DRAFT_TAB_PREFIX = '__draft__:'
 
 /** 会话预览 Tab 的 ID 前缀：运行时临时入口，不参与持久化 */
 const PREVIEW_TAB_PREFIX = '__preview__:'
 
-/** Scratch Pad 标签默认标题 */
-export const SCRATCH_PAD_TITLE = 'Scratch Pad'
+/** Draft Tab 的 ID 格式：__draft__:<draftId> */
+export function createDraftTabId(draftId: string): string {
+  return `${DRAFT_TAB_PREFIX}${draftId}`
+}
+
+export function isDraftTab(tab: TabItem): boolean {
+  return tab.type === 'draft' || tab.id.startsWith(DRAFT_TAB_PREFIX)
+}
+
+export function getDraftIdFromTab(tab: TabItem): string | null {
+  if (tab.type !== 'draft') return null
+  return tab.id.replace(DRAFT_TAB_PREFIX, '')
+}
 
 /** 标签页数据 */
 export interface TabItem {
@@ -45,7 +56,7 @@ export interface TabItem {
   /** 标签页显示标题 */
   title: string
   /**
-   * 顶层模式标记（仅 agent/scratch/preview 类型有意义）。
+   * 顶层模式标记（仅 agent/draft/preview 类型有意义）。
    * - 'general'：通用模式会话，TA 模式 TabBar 不显示
    * - 'ta'：TA 模式会话，通用模式 TabBar 不显示
    * 旧记录不设此字段 → 视为 'general'。
@@ -85,7 +96,7 @@ export interface OpenTabRestore {
 
 // ===== 核心 Atoms =====
 
-/** 顶部入口列表：Scratch Pad + 当前会话（所有模式共享） */
+/** 顶部入口列表：Draft + 当前会话（所有模式共享） */
 export const tabsAtom = atom<TabItem[]>([])
 
 /**
@@ -145,10 +156,10 @@ export interface TabMinimapItem {
 }
 export const tabMinimapCacheAtom = atom<Map<string, TabMinimapItem[]>>(new Map())
 
-/** Scratch Pad 编辑内容（HTML 字符串，供 TipTap 编辑器使用） */
-export const scratchPadContentAtom = atom<string>('')
-/** Scratch Pad 内容是否已从磁盘加载 */
-export const scratchPadLoadedAtom = atom<boolean>(false)
+/** Draft 编辑内容（HTML 字符串，供 TipTap 编辑器使用） */
+export const draftPlaceholderAtom = atom<string>('')
+/** Draft 内容是否已从磁盘加载 */
+export const draftPlaceholderLoadedAtom = atom<boolean>(false)
 
 // ===== 派生 Atoms =====
 
@@ -176,7 +187,7 @@ export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
   const agentRunning = get(agentRunningSessionIdsAtom)
   const map = new Map<string, boolean>()
   for (const tab of tabs) {
-    if (tab.type === 'scratch') continue
+    if (tab.type === 'draft') continue
     // P3: chat 已退役，仅处理 agent 类型
     if (tab.type === 'agent') {
       map.set(tab.id, agentRunning.has(tab.sessionId))
@@ -192,7 +203,7 @@ export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((ge
   const unviewedCompletedIds = get(unviewedCompletedSessionIdsAtom)
   const map = new Map<string, SessionIndicatorStatus>()
   for (const tab of tabs) {
-    if (tab.type === 'scratch') continue
+    if (tab.type === 'draft') continue
     // P3: chat 已退役，仅处理 agent 类型
     if (tab.type === 'agent') {
       const status =
@@ -223,7 +234,7 @@ export function isPreviewTab(tab: TabItem): boolean {
 }
 
 export function isTabVisibleInMode(tab: TabItem, mode: TopLevelMode): boolean {
-  return tab.type === 'scratch' || (tab.mode ?? 'general') === mode
+  return tab.type === 'draft' || (tab.mode ?? 'general') === mode
 }
 
 export const visibleTabsAtom = atom<TabItem[]>((get) => {
@@ -240,7 +251,7 @@ function isSessionTab(tab: TabItem): boolean {
 }
 
 function getPersistentTabs(tabs: TabItem[]): TabItem[] {
-  return tabs.filter((tab) => tab.id !== SCRATCH_PAD_ID && !isPreviewTab(tab))
+  return tabs.filter((tab) => !isDraftTab(tab) && !isPreviewTab(tab))
 }
 
 export function getPersistableTabState(
@@ -271,15 +282,19 @@ export function openTab(
   item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
   restore?: OpenTabRestore
 ): { tabs: TabItem[]; activeTabId: string } {
-  if (item.type === 'scratch') {
-    // 检查是否已存在草稿 tab
-    const existingScratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID)
-    const scratchTab = existingScratchTab ?? createScratchPadTab()
-    // 保留已有的非草稿 Tab，将草稿 Tab 添加到末尾（如果不存在）
-    const otherTabs = tabs.filter((t) => t.id !== SCRATCH_PAD_ID)
+  if (item.type === 'draft') {
+    const draftTabId = createDraftTabId(item.sessionId)
+    const existingDraftTab = tabs.find((t) => t.id === draftTabId)
+    const draftTab = existingDraftTab ?? {
+      id: draftTabId,
+      type: 'draft' as const,
+      sessionId: item.sessionId,
+      title: item.title,
+    }
+    const otherTabs = tabs.filter((t) => t.id !== draftTabId)
     return {
-      tabs: [...otherTabs, scratchTab],
-      activeTabId: SCRATCH_PAD_ID,
+      tabs: [...otherTabs, draftTab],
+      activeTabId: draftTabId,
     }
   }
 
@@ -385,7 +400,7 @@ export function closeTab(
 export function reorderTabs(tabs: TabItem[], fromIndex: number, toIndex: number): TabItem[] {
   if (fromIndex === toIndex) return tabs
   // Scratch 不可移出第 0 位
-  if (tabs[0]?.id === SCRATCH_PAD_ID && (fromIndex === 0 || toIndex === 0)) return tabs
+  if (tabs[0]?.id === DRAFT_TAB_PREFIX && (fromIndex === 0 || toIndex === 0)) return tabs
   const newTabs = [...tabs]
   const [moved] = newTabs.splice(fromIndex, 1)
   newTabs.splice(toIndex, 0, moved!)
@@ -397,12 +412,12 @@ export function updateTabTitle(tabs: TabItem[], sessionId: string, title: string
   return tabs.map((t) => (t.sessionId === sessionId && !isPreviewTab(t) ? { ...t, title } : t))
 }
 
-/** 创建 Scratch Pad 标签 */
-export function createScratchPadTab(): TabItem {
+/** 创建 Draft 标签 */
+export function createDraftTab(draftId: string, title: string): TabItem {
   return {
-    id: SCRATCH_PAD_ID,
-    type: 'scratch',
-    sessionId: SCRATCH_PAD_ID,
-    title: SCRATCH_PAD_TITLE,
+    id: createDraftTabId(draftId),
+    type: 'draft',
+    sessionId: draftId,
+    title,
   }
 }

@@ -3,7 +3,7 @@ import type { AgentSessionMeta } from '@tagent/shared'
 
 export interface ExternalAgentRunTab {
   id: string
-  type: 'agent' | 'scratch' | 'preview' // P3: chat 已退役
+  type: 'agent' | 'draft' | 'preview' // P3: chat 已退役
   sessionId: string
   title: string
 }

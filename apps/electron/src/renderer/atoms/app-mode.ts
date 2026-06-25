@@ -2,13 +2,13 @@
  * App Mode Atom - 应用顶层模式状态
  *
  * 顶层模式：
- * - general: 通用模式（原有 chat/agent/scratch）
+ * - general: 通用模式（原有 chat/agent/draft）
  * - ta: TA 模式（技术美术专用）
  *
  * 子模式（仅在 general 模式下有效）：
  * - chat: 对话模式
  * - agent: Agent 模式
- * - scratch: 草稿本模式
+ * - draft: 需求草稿模式
  */
 
 import { atom } from 'jotai'
@@ -18,7 +18,7 @@ import { atomWithStorage } from 'jotai/utils'
 export type TopLevelMode = 'general' | 'ta'
 
 /** 子模式：仅在 general 模式下有效（P3 已退役 chat） */
-export type AppMode = 'agent' | 'scratch'
+export type AppMode = 'agent' | 'draft'
 
 /** 顶层模式 atom，自动持久化到 localStorage */
 export const topLevelModeAtom = atomWithStorage<TopLevelMode>('tagent-top-level-mode', 'general')
@@ -27,12 +27,12 @@ export const topLevelModeAtom = atomWithStorage<TopLevelMode>('tagent-top-level-
 export const appModeAtom = atomWithStorage<AppMode>('tagent-app-mode', 'agent')
 
 /** 通用模式下的功能区类型 */
-export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'scratch' | 'automation'
+export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'draft' | 'automation'
 
 /**
  * TA 模式下的功能区类型（含「会话」入口）。
  * TA 模式点击「会话」图标 → 主区显示 TA 会话面板，TA 会话数据与通用模式隔离。
- * 另外，skills/scratch 作为双模式常驻入口，也允许在 TA 模式激活。
+ * 另外，skills/draft 作为双模式常驻入口，也允许在 TA 模式激活。
  */
 export type TARailItem =
   | 'sessions'
@@ -42,7 +42,7 @@ export type TARailItem =
   | 'memory'
   | 'config'
   | 'skills'
-  | 'scratch'
+  | 'draft'
 
 /** 所有功能区类型 */
 export type RailItem = GeneralRailItem | TARailItem

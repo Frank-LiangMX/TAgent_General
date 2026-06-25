@@ -13,7 +13,6 @@ import { TabErrorBoundary } from './TabErrorBoundary'
 import { tabsAtom } from '@/atoms/tab-atoms'
 import { AgentView } from '@/components/agent'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
-import { ScratchPadView } from '@/components/scratch-pad/ScratchPadView'
 
 export interface TabContentProps {
   tabId: string
@@ -40,8 +39,13 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
     )
   }
 
-  if (tab.type === 'scratch') {
-    return <ScratchPadView />
+  if (tab.type === 'draft') {
+    // DraftView 尚未实现，暂用占位符
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+        DraftView placeholder (draftId={tab.sessionId})
+      </div>
+    )
   }
 
   if (tab.type === 'preview') {

@@ -31,6 +31,7 @@ import {
   SOUL_IPC_CHANNELS,
   isTAgentPermissionMode,
   AUTOMATION_IPC_CHANNELS,
+  DRAFT_IPC_CHANNELS,
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
@@ -4323,5 +4324,37 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.RUN_NOW, async (_, id: string) => {
     const { runAutomationNow } = await import('./lib/automation-scheduler')
     return runAutomationNow(id)
+  })
+
+  // ===== Draft 需求草稿 =====
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.LIST, async () => {
+    const { listDrafts } = await import('./lib/draft-manager')
+    return listDrafts()
+  })
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.GET, async (_, id: string) => {
+    const { getDraft } = await import('./lib/draft-manager')
+    return getDraft(id)
+  })
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.CREATE, async (_, opts?: { title?: string; workspaceId?: string; mode?: 'general' | 'ta'; context?: string }) => {
+    const { createDraft } = await import('./lib/draft-manager')
+    return createDraft(opts)
+  })
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.UPDATE, async (_, id: string, partial: Record<string, unknown>) => {
+    const { updateDraft } = await import('./lib/draft-manager')
+    return updateDraft(id, partial)
+  })
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.DELETE, async (_, id: string) => {
+    const { deleteDraft } = await import('./lib/draft-manager')
+    return deleteDraft(id)
+  })
+
+  ipcMain.handle(DRAFT_IPC_CHANNELS.MIGRATE_LEGACY, async () => {
+    const { migrateLegacy } = await import('./lib/draft-manager')
+    return migrateLegacy()
   })
 }

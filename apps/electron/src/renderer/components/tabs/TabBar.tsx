@@ -61,7 +61,7 @@ export function TabBar(): React.ReactElement {
       const tab = tabs.find((t) => t.id === tabId)
       if (!tab) return
 
-      // P3: chat 类型已退役，仅处理 agent/preview/scratch
+      // P3: chat 类型已退役，仅处理 agent/preview/draft
       if (tab.type === 'agent' || tab.type === 'preview') {
         setAppMode('agent')
         setCurrentAgentSessionId(tab.sessionId)
@@ -86,10 +86,10 @@ export function TabBar(): React.ReactElement {
             })
             .catch(console.error)
         }
-      } else if (tab.type === 'scratch') {
-        setAppMode('scratch')
+      } else if (tab.type === 'draft') {
+        setAppMode('draft')
         if (topLevelMode === 'general') {
-          setActiveRailItem('scratch')
+          setActiveRailItem('draft')
         }
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
         if (appMode !== 'agent') {

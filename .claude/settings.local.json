@@ -31,7 +31,11 @@
       "Bash(git pull *)",
       "Bash(xargs grep -li -E \"scheduler|cron|schedule|automation|routine\")",
       "Bash(xargs grep -l \"better-sqlite3\\\\|sqlite\\\\|\\\\.db\")",
-      "Bash(bunx vitest *)"
+      "Bash(bunx vitest *)",
+      "Bash(git status *)",
+      "Bash(xargs sed -i -e 's/'\\\\''scratch'\\\\''/'\\\\''draft'\\\\''/g' -e 's/\"scratch\"/\"draft\"/g' -e s/SCRATCH_PAD_ID/DRAFT_TAB_PREFIX/g -e s/SCRATCH_PAD_TITLE/DRAFT_TITLE/g -e s/scratchPadContentAtom/removed_scratchPadContentAtom/g -e s/scratchPadLoadedAtom/removed_scratchPadLoadedAtom/g -e s/isScratch/isDraft/g)",
+      "Bash(sed -i '/draft.id/d; /draft.title/d; /打开草稿 Tab/d' apps/electron/src/renderer/components/app-shell/FunctionalRail.tsx)",
+      "Bash(sed -i 's/const currentTabs = store.get\\(tabsAtom\\)/void \\(async \\(\\) => {\\\\n          const draft = await window.electronAPI.draft.create\\({ title: '\\\\''未命名草稿'\\\\'' }\\)\\\\n          const currentTabs = store.get\\(tabsAtom\\)/' apps/electron/src/renderer/components/app-shell/FunctionalRail.tsx)"
     ]
   }
 }

@@ -1,8 +1,8 @@
 /**
- * ScratchPadView — 草稿本编辑器
+ * ScratchPadView — 草稿编辑器（遗留组件，待 DraftView 替换）
  *
  * 基于 TipTap 的轻量 Markdown 编辑器，内容持久化到 ~/.tagent/scratch-pad.md。
- * 自动保存由 ScratchPadPersistence 组件通过监听 scratchPadContentAtom 统一管理。
+ * 自动保存由 DraftPersistence 组件通过监听 removed_scratchPadContentAtom 统一管理。
  *
  * 支持：Markdown 快捷输入、图片粘贴、Todo 列表（- [ ] 触发）、代码高亮（lowlight）、数学公式（$..$ / $$..$$ 触发）
  */
@@ -15,8 +15,8 @@ import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import {
-  scratchPadContentAtom,
-  scratchPadLoadedAtom,
+  draftPlaceholderAtom as removed_scratchPadContentAtom,
+  draftPlaceholderLoadedAtom as removed_scratchPadLoadedAtom,
 } from '@/atoms/tab-atoms'
 import { SpeechButton } from '@/components/ai-elements/speech-button'
 import {
@@ -40,8 +40,8 @@ import {
 } from '@/lib/voice-input-focus'
 
 export function ScratchPadView(): React.ReactElement {
-  const [content, setContent] = useAtom(scratchPadContentAtom)
-  const loaded = useAtomValue(scratchPadLoadedAtom)
+  const [content, setContent] = useAtom(removed_scratchPadContentAtom)
+  const loaded = useAtomValue(removed_scratchPadLoadedAtom)
   const containerRef = React.useRef<HTMLDivElement>(null)
 
   // 用 ref 追踪最新内容，避免在 useEffect deps 里包含 content 导致循环

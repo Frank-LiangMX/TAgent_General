@@ -30,7 +30,7 @@ const TITLES: Record<TARailItem, string> = {
   memory: '记忆',
   config: '配置',
   skills: '技能',
-  scratch: '草稿',
+  draft: '草稿',
 }
 
 interface TASidebarProps {

@@ -25,6 +25,7 @@ import {
   ASK_IPC_CHANNELS,
   SOUL_IPC_CHANNELS,
   AUTOMATION_IPC_CHANNELS,
+  DRAFT_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -1253,6 +1254,25 @@ export interface ElectronAPI {
     toggle: (id: string) => Promise<import('@tagent/shared').Automation>
     runNow: (id: string) => Promise<void>
     onChanged: (callback: () => void) => () => void
+  }
+
+  // ===== Draft 需求草稿 =====
+
+  draft: {
+    list: () => Promise<import('@tagent/shared').DraftDocument[]>
+    get: (id: string) => Promise<import('@tagent/shared').DraftDocument | null>
+    create: (opts?: {
+      title?: string
+      workspaceId?: string
+      mode?: 'general' | 'ta'
+      context?: string
+    }) => Promise<import('@tagent/shared').DraftDocument>
+    update: (
+      id: string,
+      partial: Partial<import('@tagent/shared').DraftDocument>
+    ) => Promise<import('@tagent/shared').DraftDocument | null>
+    delete: (id: string) => Promise<boolean>
+    migrateLegacy: () => Promise<import('@tagent/shared').DraftDocument | null>
   }
 
   // GitHub Release
@@ -3285,6 +3305,17 @@ const electronAPI: ElectronAPI = {
         ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
       }
     },
+  },
+
+  // ===== Draft 需求草稿 =====
+
+  draft: {
+    list: () => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.LIST),
+    get: (id: string) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.GET, id),
+    create: (opts) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.CREATE, opts),
+    update: (id, partial) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.UPDATE, id, partial),
+    delete: (id: string) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.DELETE, id),
+    migrateLegacy: () => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.MIGRATE_LEGACY),
   },
 }
 

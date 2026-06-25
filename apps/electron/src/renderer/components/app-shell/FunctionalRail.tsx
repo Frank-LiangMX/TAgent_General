@@ -41,8 +41,9 @@ import {
   activeTabIdAtom,
   openTab,
   closeTab,
-  SCRATCH_PAD_ID,
-  SCRATCH_PAD_TITLE,
+  createDraftTabId,
+  createDraftTab,
+  isDraftTab,
 } from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
@@ -80,16 +81,16 @@ const GENERAL_RAIL_ITEMS: Array<{
 
 /** 双模式常驻功能区（Rail 顶端） */
 const COMMON_TOP_RAIL_ITEMS: Array<{
-  id: 'scratch' | 'skills'
+  id: 'draft' | 'skills'
   label: string
   icon: React.ReactNode
   description: string
 }> = [
   {
-    id: 'scratch',
+    id: 'draft',
     label: '草稿',
     icon: <StickyNote size={17} />,
-    description: '草稿本',
+    description: '需求草稿',
   },
   {
     id: 'skills',
@@ -207,30 +208,34 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     [isSwitching, topLevelMode, setTopLevelMode]
   )
 
-  /** 处理 Rail 按钮点击：草稿按钮点击时直接打开草稿 Tab 并同步 rail 选中态 */
+  /** 处理 Rail 按钮点击：草稿按钮点击时创建新草稿并打开对应 Tab，同步 rail 选中态 */
   const handleRailItemClick = React.useCallback(
     (item: { id: string }) => {
-      if (item.id === 'scratch') {
-        setActiveRailItem('scratch')
-        // 打开草稿 Tab
-        const currentTabs = store.get(tabsAtom)
-        const { tabs: newTabs, activeTabId: newActiveTabId } = openTab(currentTabs, {
-          type: 'scratch',
-          sessionId: SCRATCH_PAD_ID,
-          title: SCRATCH_PAD_TITLE,
-        })
-        store.set(tabsAtom, newTabs)
-        store.set(activeTabIdAtom, newActiveTabId)
-        // 设置 appMode 为 scratch，确保主区域正确渲染
-        setAppMode('scratch')
+      if (item.id === 'draft') {
+        setActiveRailItem('draft')
+        // 创建新草稿
+        window.electronAPI.draft
+          .create({ title: '未命名草稿' })
+          .then((draft: { id: string; title: string }) => {
+            const draftTabId = createDraftTabId(draft.id)
+            const currentTabs = store.get(tabsAtom)
+            const existingDraftTab = currentTabs.find((t) => t.id === draftTabId)
+            const draftTab = existingDraftTab ?? createDraftTab(draft.id, draft.title)
+            const otherTabs = currentTabs.filter((t) => t.id !== draftTabId)
+            store.set(tabsAtom, [...otherTabs, draftTab])
+            store.set(activeTabIdAtom, draftTabId)
+          })
+          .catch(console.error)
+        // 设置 appMode 为 draft，确保主区域正确渲染
+        setAppMode('draft')
       } else {
         setActiveRailItem(item.id as GeneralRailItem | TARailItem)
-        // 点击非草稿功能时，关闭草稿 Tab 并切换回 agent 模式
+        // 点击非草稿功能时，关闭所有草稿 Tab 并切换回 agent 模式
         const currentTabs = store.get(tabsAtom)
-        const scratchTab = currentTabs.find((t) => t.type === 'scratch')
-        if (scratchTab) {
+        const draftTabs = currentTabs.filter((t) => t.type === 'draft')
+        for (const draftTab of draftTabs) {
           const currentActiveTabId = store.get(activeTabIdAtom)
-          const tabResult = closeTab(currentTabs, currentActiveTabId, scratchTab.id)
+          const tabResult = closeTab(currentTabs, currentActiveTabId, draftTab.id)
           store.set(tabsAtom, tabResult.tabs)
           store.set(activeTabIdAtom, tabResult.activeTabId)
         }
@@ -248,7 +253,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
       value: 'general' as TopLevelMode,
       label: '通用',
       icon: <Layers size={14} />,
-      description: 'Chat / Agent / 草稿本',
+      description: 'Chat / Agent / 需求草稿',
     },
     {
       value: 'ta' as TopLevelMode,

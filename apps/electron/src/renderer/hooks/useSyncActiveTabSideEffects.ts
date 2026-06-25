@@ -42,11 +42,11 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         return
       }
 
-      // P3: chat 已退役，仅处理 scratch / agent / preview
-      if (newActiveTab.type === 'scratch') {
-        setAppMode('scratch')
+      // P3: chat 已退役，仅处理 draft / agent / preview
+      if (newActiveTab.type === 'draft') {
+        setAppMode('draft')
         if (topLevelMode === 'general') {
-          setActiveRailItem('scratch')
+          setActiveRailItem('draft')
         }
         // Agent 模式下切到 Scratch Pad 时保持右侧文件面板不收起
         if (appMode !== 'agent') {

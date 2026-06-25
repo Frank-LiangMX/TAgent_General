@@ -1008,7 +1008,7 @@ export function LeftSidebar({
         return <SkillsRailContent capabilities={capabilities} />
       case 'automation':
         return <AutomationRailList />
-      case 'scratch':
+      case 'draft':
         // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
         return null
       case 'sessions':

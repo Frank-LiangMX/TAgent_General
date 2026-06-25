@@ -87,8 +87,8 @@ export function TabBarItem({
     onClose()
   }
 
-  const isScratch = type === 'scratch'
-  const statusLineClass = isScratch
+  const isDraft = type === 'draft'
+  const statusLineClass = isDraft
     ? undefined
     : isStreaming !== 'idle'
       ? isStreaming === 'completed'
@@ -104,7 +104,7 @@ export function TabBarItem({
   // P3: chat 已退役
 
   // Scratch Pad 显示草稿图标
-  if (isScratch) {
+  if (isDraft) {
     return (
       <div
         className="relative flex-shrink-0 titlebar-no-drag"
@@ -127,7 +127,7 @@ export function TabBarItem({
           onPointerDown={onDragStart}
         >
           <StickyNote className="size-3.5" />
-          <span className="truncate">草稿</span>
+          <span className="truncate">{title}</span>
           {/* 关闭按钮 */}
           <span
             role="button"
@@ -193,8 +193,8 @@ export function TabBarItem({
           </span>
         )}
 
-        {/* 关闭按钮（scratch 类型不显示） */}
-        {!isScratch && (
+        {/* 关闭按钮（draft 类型也显示） */}
+        {!isDraft && (
           <span
             role="button"
             tabIndex={-1}

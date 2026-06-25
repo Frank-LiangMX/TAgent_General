@@ -99,7 +99,7 @@ export function MainArea(): React.ReactElement {
   }
 
   // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
-  if (activeRailItem === 'scratch') {
+  if (activeRailItem === 'draft') {
     return <GeneralMainArea />
   }
 
@@ -167,7 +167,7 @@ function GeneralMainArea(): React.ReactElement {
   const previewOpen =
     activeTab?.type === 'agent' && (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
-  const showSessionWelcome = appMode !== 'scratch' && sessionTabs.length === 0
+  const showSessionWelcome = appMode !== 'draft' && sessionTabs.length === 0
 
   // 关闭动画状态：当 previewOpen 从 true → false 时，播放退出动画再移除 DOM
   // 在 render 阶段同步派生 closing，避免中间帧出现 flex: 1 1 auto 导致左侧瞬间跳到 100% 宽
