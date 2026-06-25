@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 import type { DraftStatus } from '@tagent/shared'
 
-import { currentDraftAtom, upgradeToReadyAtom } from '@/atoms/draft-atoms'
+import { currentDraftAtom, upgradeToReadyAtom, upgradeToAgentAtom } from '@/atoms/draft-atoms'
 import { cn } from '@/lib/utils'
 
 /** 状态颜色映射 */
@@ -43,6 +43,7 @@ function formatRelativeTime(timestamp: number): string {
 export function DraftStatusBar(): React.ReactElement {
   const draft = useAtomValue(currentDraftAtom)
   const upgradeToReady = useSetAtom(upgradeToReadyAtom)
+  const upgradeToAgent = useSetAtom(upgradeToAgentAtom)
 
   if (!draft) {
     return <div className="h-[28px] border-t border-border/40" />
@@ -51,9 +52,12 @@ export function DraftStatusBar(): React.ReactElement {
   const status = draft.status
   const isReady = status === 'ready'
 
-  const handleUpgradeToAgent = (): void => {
-    // Phase 5 尚未实现，暂时提示
-    toast.info('即将实现', { description: 'Draft → Agent 升级流程将在后续版本实现' })
+  const handleUpgradeToAgent = async (): Promise<void> => {
+    try {
+      await upgradeToAgent()
+    } catch (error) {
+      toast.error('交给 Agent 失败', { description: String(error) })
+    }
   }
 
   const handleReadyClick = async (): Promise<void> => {

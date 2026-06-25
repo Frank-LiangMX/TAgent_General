@@ -1,17 +1,18 @@
 # TAgent 项目进度追踪
 
-> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态  
-> **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`  
-> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）  
-> **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）  
-> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）  
-> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）  
-> **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）  
-> **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）  
-> **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`  
-> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）  
-> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）  
+> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态
+> **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`
+> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
+> **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）
+> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
+> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）
+> **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）
+> **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）
+> **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
+> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）
+> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
+> **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
 
 ---
 
@@ -39,9 +40,9 @@
 
 ---
 
-## 当前状态（2026-06-25）
+## 当前状态（2026-06-26）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成（2026-06-25）。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
 
 **当前判断**：
 
@@ -55,6 +56,14 @@
   - M3：系统通知 + 飞书卡片；trigger 过滤（每次 / 仅成功 / 仅失败）
   - **未做（M4 后续）**：Agent MCP 工具、自然语言创建、custom cron、TipTap 富文本编辑器
 - ✅ **kscc 内网渠道集成** 已完成 — 见 [kscc-internal-provider-design.md](plans/2026-06-25-kscc-internal-provider-design.md)
+- ✅ **草稿模式重构 + Chat 清理** 已完成 — 见 [draft-restructure-design.md](plans/2026-06-25-draft-restructure-design.md)
+  - Chat 残留清理：删除 chat-atoms.ts / chat-service.ts（~900 行）、~15 死 IPC handler、~25 死 preload 方法、重命名 chat-tools → tools
+  - Draft 数据层：shared types + draft-manager + IPC + preload API
+  - Draft Atoms + 导航：AppMode 'scratch'→'draft'、TabType 'scratch'→'draft'、per-mode tab 记忆
+  - Draft UI：DraftView / DraftEditor / RequirementBlockCard / RequirementList / DraftAssistantPanel / DraftStatusBar / DraftListPanel（7 组件）
+  - Draft → Agent 升级：buildAgentPrompt + upgradeToAgentAtom（创建会话 → 发送初始消息 → 推进状态 → 切换标签页）
+  - 旧版迁移：migrateLegacyAtom 迁移 scratch-pad.md 内容
+  - 净删 -2796 行（Chat 清理）+ 新增 ~1500 行（Draft 系统）
 - 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
 - **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
 
@@ -284,6 +293,20 @@
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
+
+### 2026-06-26
+
+**产出**：草稿模式重构 + Chat 残留清理（全 6 阶段完成）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| Phase 1: Chat 清理 | 删除 chat-atoms.ts / chat-service.ts（~900 行）、~15 死 IPC handler、~25 死 preload 方法、tray chat 入口、重命名 chat-tools → tools（净删 -2796 行） |
+| Phase 2: Draft 数据层 | `packages/shared/src/types/draft.ts`（DraftDocument / RequirementBlock / DraftStatus / DRAFT_IPC_CHANNELS）、`main/lib/draft-manager.ts`（CRUD + migrateLegacy）、config-paths 辅助、IPC handler、preload API |
+| Phase 3: Draft Atoms + 导航 | `draft-atoms.ts`（draftsAtom / currentDraftAtom / upgradeToReadyAtom / upgradeToAgentAtom / migrateLegacyAtom）、TabType 'scratch'→'draft'、AppMode 'scratch'→'draft'、per-mode tab 记忆 |
+| Phase 4: Draft UI | 7 组件：DraftView / DraftEditor(TipTap) / RequirementBlockCard / RequirementList / DraftAssistantPanel / DraftStatusBar / DraftListPanel |
+| Phase 5: Agent 升级 | `draft-prompt-builder.ts`（buildAgentPrompt → HTML→MD → R-n 需求块）、upgradeToAgentAtom（创建会话 → 发送初始消息 → 推进状态 → 切换标签页）、DraftStatusBar 接线 |
+| Phase 6: 收尾 | 删除 ScratchPadView.tsx、settings.ts scratchPadActive → draftActive、更新文档 |
+| **里程碑** | **草稿 = 需求起点 → AI 澄清 → 结构化 → 交给 Agent；Chat 死代码全清** |
 
 ### 2026-06-25（续）
 

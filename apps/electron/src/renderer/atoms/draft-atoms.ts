@@ -4,7 +4,11 @@
 
 import { atom } from 'jotai'
 
-import type { DraftDocument, RequirementBlock, DraftStatus } from '@tagent/shared'
+import type { DraftDocument, RequirementBlock, DraftStatus, AgentSendInput } from '@tagent/shared'
+
+import { agentChannelIdAtom, currentAgentSessionIdAtom, agentSessionsAtom, currentAgentWorkspaceIdAtom } from './agent-atoms'
+import { selectedModelAtom } from './model-atoms'
+import { buildAgentPrompt } from '@/lib/draft-prompt-builder'
 
 /** 草稿列表（从 IPC 加载） */
 export const draftsAtom = atom<DraftDocument[]>([])
@@ -111,6 +115,63 @@ export const upgradeToReadyAtom = atom(null, async (get, set) => {
   const draft = get(currentDraftAtom)
   if (!draft || draft.status !== 'draft') return
   await set(setDraftStatusAtom, { id: draft.id, status: 'ready' })
+})
+
+/** 升级草稿到 Agent 执行 */
+export const upgradeToAgentAtom = atom(null, async (get, set) => {
+  const draft = get(currentDraftAtom)
+  if (!draft || draft.status !== 'ready') return
+
+  const channelId = get(agentChannelIdAtom) ?? undefined
+  const modelId = get(selectedModelAtom)?.modelId ?? undefined
+  const workspaceId = draft.workspaceId ?? get(currentAgentWorkspaceIdAtom) ?? undefined
+
+  // 1. 创建 Agent 会话
+  const meta = await window.electronAPI.createAgentSession(
+    draft.title,
+    channelId,
+    workspaceId,
+    draft.mode
+  )
+  if (!meta) return
+
+  // 2. 发送草稿上下文作为初始消息
+  const prompt = buildAgentPrompt(draft)
+  const input: AgentSendInput = {
+    sessionId: meta.id,
+    userMessage: prompt,
+    channelId: meta.channelId ?? channelId ?? '',
+    modelId,
+    workspaceId,
+  }
+  await window.electronAPI.sendAgentMessage(input)
+
+  // 3. 更新草稿状态
+  const updated = await window.electronAPI.draft.update(draft.id, {
+    status: 'executing',
+    agentSessionId: meta.id,
+  })
+  if (updated) {
+    set(draftsAtom, (prev) => prev.map((d) => (d.id === draft.id ? updated : d)))
+  }
+
+  // 4. 切换到 Agent 会话标签页
+  set(currentAgentSessionIdAtom, meta.id)
+  set(agentSessionsAtom, (prev) => {
+    if (prev.some((s) => s.id === meta.id)) return prev
+    return [meta, ...prev]
+  })
+
+  return meta
+})
+
+/** 迁移旧版 scratch-pad.md */
+export const migrateLegacyAtom = atom(null, async (get, set) => {
+  const draft = await window.electronAPI.draft.migrateLegacy()
+  if (draft) {
+    set(draftsAtom, (prev) => [draft, ...prev])
+  }
+  return draft
 })
 
 /** 持久化单个草稿到 IPC */

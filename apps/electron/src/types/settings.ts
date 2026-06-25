@@ -263,8 +263,8 @@ export interface AppSettings {
   advancedMaterialEnabled?: boolean
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand
-  /** 上次是否在 Scratch Pad 页（用于重启恢复） */
-  scratchPadActive?: boolean
+  /** 上次是否在草稿页（用于重启恢复） */
+  draftActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */
   appIconVariant?: string
   /** 语音输入设置（Access Token 以加密态存储，由专用服务解密后返回渲染进程） */
