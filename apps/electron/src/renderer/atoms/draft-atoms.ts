@@ -17,6 +17,9 @@ export const draftsLoadedAtom = atom(false)
 /** 当前激活草稿 ID */
 export const currentDraftIdAtom = atom<string | null>(null)
 
+/** 草稿搜索 Dialog 开关 */
+export const draftSearchOpenAtom = atom(false)
+
 /** 当前草稿（派生） */
 export const currentDraftAtom = atom<DraftDocument | null>((get) => {
   const id = get(currentDraftIdAtom)

@@ -2,45 +2,19 @@
  * DraftListPanel — 侧边栏草稿列表
  *
  * 列出 draftsAtom 中的所有草稿，按状态分组。
- * 每行：StickyNote 图标 + 标题 + 状态 Badge。
- * 点击打开/聚焦该草稿的 Tab。
- * 当前激活草稿高亮。
+ * 点击使用 useOpenSession 打开/聚焦草稿 Tab。
  */
 
-import { useAtomValue, useStore } from 'jotai'
+import { useAtomValue } from 'jotai'
 import { StickyNote } from 'lucide-react'
 import * as React from 'react'
 
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
 
 import { draftsAtom, currentDraftIdAtom } from '@/atoms/draft-atoms'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  createDraftTab,
-  createDraftTabId,
-} from '@/atoms/tab-atoms'
+import { useOpenSession } from '@/hooks/useOpenSession'
+import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { cn } from '@/lib/utils'
-
-/** 状态颜色映射（与 DraftStatusBar 保持一致） */
-const STATUS_STYLES: Record<DraftStatus, string> = {
-  draft: 'bg-foreground/12 text-foreground/55',
-  ready: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  executing: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  done: 'bg-green-500/15 text-green-600 dark:text-green-400',
-  verified: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-}
-
-const STATUS_LABELS: Record<DraftStatus, string> = {
-  draft: '草稿',
-  ready: '就绪',
-  executing: '执行中',
-  done: '完成',
-  verified: '已验证',
-}
-
-/** 状态排列顺序 */
-const STATUS_ORDER: DraftStatus[] = ['draft', 'ready', 'executing', 'done', 'verified']
 
 function groupByStatus(drafts: DraftDocument[]): Array<{ status: DraftStatus; items: DraftDocument[] }> {
   const groups = new Map<DraftStatus, DraftDocument[]>()
@@ -62,18 +36,12 @@ function groupByStatus(drafts: DraftDocument[]): Array<{ status: DraftStatus; it
 export function DraftListPanel(): React.ReactElement {
   const drafts = useAtomValue(draftsAtom)
   const currentDraftId = useAtomValue(currentDraftIdAtom)
-  const store = useStore()
+  const openSession = useOpenSession()
 
   const groups = React.useMemo(() => groupByStatus(drafts), [drafts])
 
   const handleClick = (draft: DraftDocument): void => {
-    const draftTabId = createDraftTabId(draft.id)
-    const currentTabs = store.get(tabsAtom)
-    const existingTab = currentTabs.find((t) => t.id === draftTabId)
-    const draftTab = existingTab ?? createDraftTab(draft.id, draft.title)
-    const otherTabs = currentTabs.filter((t) => t.id !== draftTabId)
-    store.set(tabsAtom, [...otherTabs, draftTab])
-    store.set(activeTabIdAtom, draftTabId)
+    openSession('draft', draft.id, draft.title)
   }
 
   if (drafts.length === 0) {

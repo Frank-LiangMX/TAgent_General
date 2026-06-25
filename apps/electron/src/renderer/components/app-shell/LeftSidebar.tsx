@@ -32,6 +32,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { SearchDialog } from './SearchDialog'
+import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
@@ -85,6 +86,7 @@ import {
   selectedModelAtom,
 } from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
@@ -333,6 +335,8 @@ export function LeftSidebar({
     () => agentSessions.filter((session) => isAgentSessionInTopLevelMode(session, topLevelMode)),
     [agentSessions, topLevelMode]
   )
+  const [drafts, setDrafts] = useAtom(draftsAtom)
+  const [draftSearchOpen, setDraftSearchOpen] = useAtom(draftSearchOpenAtom)
   const [currentAgentSessionId, setCurrentAgentSessionId] = useAtom(currentAgentSessionIdAtom)
   const agentIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
   const unviewedCompletedSessionIds = useAtomValue(unviewedCompletedSessionIdsAtom)
@@ -665,6 +669,17 @@ export function LeftSidebar({
       setConversations((prev) => prev.filter((c) => c.id !== pendingDeleteId))
     } finally {
       setPendingDeleteId(null)
+    }
+  }
+
+  /** 创建新草稿 */
+  const handleNewDraft = async (): Promise<void> => {
+    try {
+      const doc = await window.electronAPI.draft.create({ title: '未命名草稿' })
+      setDrafts((prev) => [doc, ...prev])
+      openSession('draft', doc.id, doc.title)
+    } catch (error) {
+      console.error('[侧边栏] 创建草稿失败:', error)
     }
   }
 
@@ -1228,6 +1243,30 @@ export function LeftSidebar({
         </div>
       )}
 
+      {/* 新草稿按钮 + 搜索按钮（仅草稿功能区显示） */}
+      {activeRailItem === 'draft' && (
+        <div className="nav-island-action-row px-3 gap-1.5">
+          <button
+            onClick={handleNewDraft}
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+          >
+            <Plus size={14} />
+            <span>新草稿</span>
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setDraftSearchOpen(true)}
+                className="flex-shrink-0 size-[36px] flex items-center justify-center rounded-[10px] text-foreground/40 bg-primary/5 hover:bg-primary/10 hover:text-foreground/60 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+              >
+                <Search size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">搜索草稿</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
       {/* 功能区内容：切换 Rail 时淡入，避免侧栏翼内容突变生硬 */}
       <div
         key={activeRailItem}
@@ -1308,6 +1347,7 @@ export function LeftSidebar({
       {deleteDialog}
       {moveDialog}
       <SearchDialog />
+      <DraftSearchDialog />
     </div>
   )
 }

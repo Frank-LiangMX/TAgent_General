@@ -11,6 +11,7 @@ import * as React from 'react'
 import type { RequirementBlock, AcceptanceCriterion, DraftStatus } from '@tagent/shared'
 
 import { currentDraftRequirementsAtom, currentDraftAtom } from '@/atoms/draft-atoms'
+import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -19,21 +20,13 @@ interface RequirementBlockCardProps {
   index: number
 }
 
-/** 状态对应的颜色 */
-const STATUS_COLORS: Record<DraftStatus, string> = {
-  draft: 'bg-foreground/15 text-foreground/60',
-  ready: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  executing: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  done: 'bg-green-500/15 text-green-600 dark:text-green-400',
-  verified: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-}
-
-const STATUS_LABELS: Record<DraftStatus, string> = {
-  draft: '草稿',
-  ready: '就绪',
-  executing: '执行中',
-  done: '完成',
-  verified: '已验证',
+function isBlockComplete(block: RequirementBlock): boolean {
+  return !!(
+    block.title.trim() &&
+    block.description.trim() &&
+    block.acceptanceCriteria.length > 0 &&
+    block.acceptanceCriteria.some((c) => c.text.trim())
+  )
 }
 
 export function RequirementBlockCard({ block, index }: RequirementBlockCardProps): React.ReactElement {
@@ -96,14 +89,20 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
 
   return (
     <div className="rounded-xl border border-border/50 bg-card/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] overflow-hidden">
-      {/* 卡片头部：标签 + 标题 + 状态 */}
+      {/* 卡片头部：标签 + 完整性指示 + 标题 + 状态 */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30">
         <Badge
           variant="secondary"
-          className={cn('text-[10px] font-semibold tracking-wide px-1.5 py-0.5', STATUS_COLORS[status])}
+          className={cn('text-[10px] font-semibold tracking-wide px-1.5 py-0.5', STATUS_STYLES[status])}
         >
           {block.label}
         </Badge>
+
+        {isBlockComplete(block) && (
+          <span className="inline-flex items-center justify-center size-4 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 shrink-0">
+            <Check size={9} strokeWidth={3} />
+          </span>
+        )}
 
         <input
           value={block.title}
@@ -114,7 +113,7 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
 
         <Badge
           variant="outline"
-          className={cn('text-[10px] px-1.5 py-0.5 border-0 shrink-0', STATUS_COLORS[status])}
+          className={cn('text-[10px] px-1.5 py-0.5 border-0 shrink-0', STATUS_STYLES[status])}
         >
           {STATUS_LABELS[status]}
         </Badge>

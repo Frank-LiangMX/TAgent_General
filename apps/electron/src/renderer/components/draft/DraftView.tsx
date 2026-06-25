@@ -2,9 +2,10 @@
  * DraftView — 需求草稿主容器
  *
  * 挂载时设置 currentDraftIdAtom，布局为：
- * 顶部：标题（可编辑） + AI 助手开关
+ * 顶部：标题（可编辑）+ 状态胶囊 + AI 助手开关
+ * 进度条：需求按状态分段
  * 主体：左侧编辑器 + 需求列表 / 右侧 AI 助手面板
- * 底部：状态栏
+ * 底部：状态栏（单键下一步）
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -22,6 +23,8 @@ import { cn } from '@/lib/utils'
 import { DraftEditor } from './DraftEditor'
 import { DraftStatusBar } from './DraftStatusBar'
 import { DraftAssistantPanel } from './DraftAssistantPanel'
+import { DraftProgressBar } from './DraftProgressBar'
+import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 
 interface DraftViewProps {
   draftId: string
@@ -32,7 +35,15 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
   const loadDrafts = useSetAtom(loadDraftsAtom)
   const draft = useAtomValue(currentDraftAtom)
   const [title, setTitle] = useAtom(currentDraftTitleAtom)
-  const [assistantOpen, setAssistantOpen] = React.useState(false)
+
+  // 助手面板：空草稿默认打开，用户手动切换后以用户选择为准
+  const isEmpty = React.useMemo(
+    () => !draft?.context?.trim() && draft?.requirements.length === 0,
+    [draft]
+  )
+  const [assistantUserToggled, setAssistantUserToggled] = React.useState(false)
+  const [assistantManualState, setAssistantManualState] = React.useState(false)
+  const assistantOpen = assistantUserToggled ? assistantManualState : isEmpty
 
   // 挂载时：设置当前草稿 ID + 加载草稿列表
   React.useEffect(() => {
@@ -72,6 +83,11 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
     }
   }
 
+  const toggleAssistant = (): void => {
+    setAssistantUserToggled(true)
+    setAssistantManualState((prev) => !prev)
+  }
+
   if (!draft) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -82,7 +98,7 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 顶部：标题 + AI 助手开关 */}
+      {/* 顶部：标题 + 状态胶囊 + AI 助手开关 */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border/40 shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {editingTitle ? (
@@ -104,6 +120,15 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
               >
                 {title || '未命名草稿'}
               </h1>
+              {/* 内联状态胶囊 */}
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium shrink-0',
+                  STATUS_STYLES[draft.status]
+                )}
+              >
+                {STATUS_LABELS[draft.status]}
+              </span>
               <button
                 type="button"
                 onClick={startEditTitle}
@@ -119,7 +144,7 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
         {/* AI 助手面板开关 */}
         <button
           type="button"
-          onClick={() => setAssistantOpen((prev) => !prev)}
+          onClick={toggleAssistant}
           className={cn(
             'p-2 rounded-md transition-colors shrink-0',
             assistantOpen
@@ -131,6 +156,11 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
           {assistantOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
         </button>
       </div>
+
+      {/* 进度条 */}
+      {draft.requirements.length > 0 && (
+        <DraftProgressBar requirements={draft.requirements} overallStatus={draft.status} />
+      )}
 
       {/* 主体：编辑器 + 需求列表 / AI 助手面板 */}
       <div className="flex flex-1 min-h-0 overflow-hidden">

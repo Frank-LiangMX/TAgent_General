@@ -36,15 +36,6 @@ import {
 } from '@/atoms/app-mode'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  openTab,
-  closeTab,
-  createDraftTabId,
-  createDraftTab,
-  isDraftTab,
-} from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { UserAvatar } from '@/components/shared/UserAvatar'
@@ -208,39 +199,17 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     [isSwitching, topLevelMode, setTopLevelMode]
   )
 
-  /** 处理 Rail 按钮点击：草稿按钮点击时创建新草稿并打开对应 Tab，同步 rail 选中态 */
+  /** 处理 Rail 按钮点击：草稿按钮仅切换侧边栏面板，不自动创建草稿 */
   const handleRailItemClick = React.useCallback(
     (item: { id: string }) => {
       if (item.id === 'draft') {
         setActiveRailItem('draft')
-        // 创建新草稿
-        window.electronAPI.draft
-          .create({ title: '未命名草稿' })
-          .then((draft: { id: string; title: string }) => {
-            const draftTabId = createDraftTabId(draft.id)
-            const currentTabs = store.get(tabsAtom)
-            const existingDraftTab = currentTabs.find((t) => t.id === draftTabId)
-            const draftTab = existingDraftTab ?? createDraftTab(draft.id, draft.title)
-            const otherTabs = currentTabs.filter((t) => t.id !== draftTabId)
-            store.set(tabsAtom, [...otherTabs, draftTab])
-            store.set(activeTabIdAtom, draftTabId)
-          })
-          .catch(console.error)
-        // 设置 appMode 为 draft，确保主区域正确渲染
-        setAppMode('draft')
       } else {
         setActiveRailItem(item.id as GeneralRailItem | TARailItem)
-        // 点击非草稿功能时，关闭所有草稿 Tab 并切换回 agent 模式
-        const currentTabs = store.get(tabsAtom)
-        const draftTabs = currentTabs.filter((t) => t.type === 'draft')
-        for (const draftTab of draftTabs) {
-          const currentActiveTabId = store.get(activeTabIdAtom)
-          const tabResult = closeTab(currentTabs, currentActiveTabId, draftTab.id)
-          store.set(tabsAtom, tabResult.tabs)
-          store.set(activeTabIdAtom, tabResult.activeTabId)
+        // 如果当前在草稿模式，切回 agent
+        if (store.get(appModeAtom) === 'draft') {
+          setAppMode('agent')
         }
-        // 确保 appMode 为 agent（会话/文件/Skills 都属于 agent 模式）
-        setAppMode('agent')
       }
     },
     [store, setActiveRailItem, setAppMode]
