@@ -267,9 +267,9 @@ React UI 更新
 
 ## 当前进度与下一步
 
-**当前阶段**：MVP / P1 / P2 / P3 主线已完成，进入“稳定性收口 + 上游能力对齐 + 远程连通完善”阶段。
+**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`。当前活跃开发主线为 **kscc 内网渠道集成**。
 
-**已完成**（截至 2026-06-18）：
+**已完成**（截至 2026-06-25）：
 
 - Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
 - Ask 档位统一 Composer + Chat 主路径退役
@@ -278,19 +278,23 @@ React UI 更新
 - §8.4 Context 管理核心能力完成（含 `compact_session` 兜底、客户端压缩、Context 圆环）
 - 远程连通：飞书 / 钉钉 / 微信 / WPS 协作 Bridge
 - 使用统计、Token 统计、`/btw` 侧面提问等后续优化完成
+- Claude Agent SDK **0.3.185** 升级（写风暴 / 断连修复）
+- **Automation v1（M1–M3）**：调度内核 + 管理 UI + 运行通知（PR #15）
 
 **活跃待办**：
 
-- 清理当前工作区残留改动与临时目录（例如上游对齐副本、临时克隆目录）
-- Context Usage 分项面板：接 Claude Agent SDK `getContextUsage()`，补 shared/IPC/preload/renderer 数据管线与 UI 面板
-- 上游能力对齐 A~E：上下文能力统一、Automation 调度、上下文安全阀、预览分屏 / monthly
+- **kscc 内网渠道集成**（当前主线）— `docs/plans/2026-06-25-kscc-internal-provider-design.md`
+- Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
+- Context Usage 分项面板收尾
+- 上游能力对齐 Issue A / E 等
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
 **详细进度**：见 `docs/PROGRESS.md`
 
 **重点规划**：
-- `docs/plans/2026-06-16-upstream-upgrade-plan.md`
+- `docs/plans/2026-06-25-kscc-internal-provider-design.md`（**当前主线**）
+- `docs/plans/2026-06-24-automation-design.md`（M1–M3 ✅ / M4 待做）
 - `docs/plans/2026-06-16-upstream-upgrade-issues.md`
 - `docs/plans/2026-06-13-context-usage-breakdown-design.md`
 - `docs/plans/2026-06-16-wps-bridge-landing.md`

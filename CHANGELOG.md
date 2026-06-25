@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Automation v1（M1–M3）** — 定时任务系统：30s tick 调度内核、daily/reuse 会话策略、侧栏列表 + 主区编辑器、运行历史、系统 / 飞书运行通知（PR #15）
+- **Context Usage 改进** — badge 与面板数据统一、缓存优先刷新、自定义滚动条
+- **工作区文件页** — OS 拖放复制 / 附加、顶栏窗口拖拽修复
+
 - **Ask 档位 Composer** — Agent 输入区 Ask 档位（轻量对话，权限边界 + 引导切换 Agent），替代独立 Chat 模式
 - **ComposerModeSelector** — 输入区档位切换器（Ask/Agent），对标 Cursor Ask/Agent
 - **AgentSwitchBanner** — Ask 模式下引导升级到 Agent 的横幅（自 AgentRecommendBanner 改造）
@@ -32,9 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Claude Agent SDK 升级至 **0.3.185**（写风暴 / 断连修复，PR #13）
 - `/btw` panel UI refined: resized to a floating card (`top-[10vh] bottom-[10vh]`), frosted glass (`bg-background/70 backdrop-blur-xl`), custom thin scrollbar, no longer overlaps window control buttons.
 
-### Changed
+### Removed
 
 - (none yet)
 

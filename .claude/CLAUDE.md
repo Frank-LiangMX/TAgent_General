@@ -25,7 +25,7 @@
 | 用途       | 路径                                            |
 | ---------- | ----------------------------------------------- |
 | 项目入口   | `CLAUDE.md`（根目录）                           |
-| 进度追踪   | `.context/PROGRESS.md`                          |
+| 进度追踪   | `docs/PROGRESS.md`                              |
 | 设计文档   | `docs/plans/2026-06-05-tagent-fusion-design.md` |
 | 运行时数据 | `~/.tagent/general/` 与 `~/.tagent/ta/`         |
 
