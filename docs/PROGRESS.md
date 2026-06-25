@@ -41,7 +41,7 @@
 
 ## 当前状态（2026-06-25）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。当前活跃开发主线切换为 **kscc 内网渠道集成**。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成（2026-06-25）。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
 
 **当前判断**：
 
@@ -54,7 +54,8 @@
   - M2：侧栏任务列表 + 主区编辑器 / 运行历史；附带 context usage、工作区文件页等稳定性修复
   - M3：系统通知 + 飞书卡片；trigger 过滤（每次 / 仅成功 / 仅失败）
   - **未做（M4 后续）**：Agent MCP 工具、自然语言创建、custom cron、TipTap 富文本编辑器
-- **🔴 当前主线**：**kscc 内网渠道** — 见 [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md)
+- ✅ **kscc 内网渠道集成** 已完成 — 见 [kscc-internal-provider-design.md](plans/2026-06-25-kscc-internal-provider-design.md)
+- 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
 - **🟠 活跃待办**：协作子会话、Context Usage 分项收尾、上游 Issue A/E、WPS 增强
 
 **2026-06-24 / 06-25 规划文档**：
@@ -63,7 +64,7 @@
 - [`plans/2026-06-24-p0-stability-patches.md`](plans/2026-06-24-p0-stability-patches.md) — P0 稳定性（SDK 升级 ✅，其余按需）
 - [`plans/2026-06-24-automation-design.md`](plans/2026-06-24-automation-design.md) — Automation v1（**M1–M3 ✅ / M4 待做**）
 - [`plans/2026-06-24-collaboration-design.md`](plans/2026-06-24-collaboration-design.md) — 协作子会话 v1
-- [`plans/2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) — **kscc 内网渠道（当前主线）**
+- [`plans/2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) — **kscc 内网渠道（已完成）**
 
 **规划文档登记表**：
 
@@ -87,7 +88,7 @@
 | **`2026-06-24-upstream-feature-roadmap.md`** | **活跃待办** | v0.13.3 基线对齐总路线图 |
 | **`2026-06-24-automation-design.md`** | **M1–M3 已完成 / M4 待做** | Automation v1：调度 + UI + 通知已合 main（PR #15）；M4 扩展另开分支 |
 | **`2026-06-24-collaboration-design.md`** | **活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
-| **`2026-06-25-kscc-internal-provider-design.md`** | **当前主线** | kscc 内网渠道：内网探测 + CLI 路径替换 + 零改动外部渠道 |
+| **`2026-06-25-kscc-internal-provider-design.md`** | **已完成** | kscc 内网渠道集成：CLI 检测 + 凭据隔离 + SubAgent 路由 + UI 全链路 |
 | **`2026-06-24-proma-upstream-borrow-list.md`** | **参考清单** | Proma v0.11.1→v0.13.3 新增特性借鉴清单 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
@@ -284,6 +285,28 @@
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为**当前主线** |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
+
+### 2026-06-25（续）
+
+**产出**：kscc 内网渠道集成完成
+
+| 任务 | 内容 |
+| ---- | ---- |
+| shared types | `kscc-internal` ProviderType + PROVIDER_LABELS + AGENT_COMPATIBLE_PROVIDERS |
+| kscc-config.ts | 内置默认值 + ~/.tagent/kscc-config.json 可选覆盖 |
+| kscc-service.ts | CLI 检测（isKsccInstalled / checkKsccInstallReadiness），无内网探测 |
+| channel-manager.ts | 自动创建 kscc 渠道 + syncKsccToAgentChannelIds 白名单同步 |
+| orchestrator | kscc CLI 路径解析 + cmd.exe /c kscc spawn + 凭据隔离 + SubAgent 模型注入 |
+| IPC + preload | CHECK_KSCC_READINESS / GET_KSCC_STATUS / REFRESH_KSCC_STATUS |
+| UI | KsccInstallGuide 对话框 + ChannelSettings 开关 + ChannelForm 只读提示 + 排除 PROVIDER_OPTIONS |
+| 模型选择器 | 金山云标签 + 品牌色徽章 + per-session 选模型 + lockedProvider 仅在有消息时锁定 |
+| 动画 | ThreePetalSpiral 品牌色替换 + 16px 尺寸 + SubAgent 品牌色标记 + 思考中文化 |
+| 路径修复 | attachedDirs 优先于 agent-workspaces sessionPath 解析文件路径 |
+| 缓存命中率 | totalInputTokens 统一为 sumContextUsedTokens 口径 |
+| 时长格式 | 整数秒，去掉毫秒和小数 |
+| 图标 | kscc.svg 圆角矩形背景 + 原始 PNG 嵌入 |
+| 合并 | 直接合入 `main`（3 commits） |
+| **里程碑** | **kscc 内网零成本 Agent 可用；下一阶段上游 v0.13.3 对齐** |
 
 ### 2026-06-18（续二）
 
