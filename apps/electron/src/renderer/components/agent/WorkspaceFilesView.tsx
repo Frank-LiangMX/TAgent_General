@@ -37,6 +37,8 @@ import {
 } from '@/components/file-browser'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
+import { useWorkspaceFileDropActions } from '@/components/agent/WorkspaceFileDropSurface'
 import { cn } from '@/lib/utils'
 
 interface WorkspaceFilesViewProps {
@@ -154,44 +156,9 @@ export function WorkspaceFilesView({
     [handleInspectFile, handleOpenInOs, isNavigator]
   )
 
-  // 附加 / 移除目录
-  const attachWorkspaceDir = React.useCallback(
-    async (dirPath: string) => {
-      if (!workspaceSlug || !currentWorkspaceId) return
-      const updated = await window.electronAPI.attachWorkspaceDirectory({
-        workspaceSlug,
-        directoryPath: dirPath,
-      })
-      setWsAttachedDirsMap((prev) => {
-        const map = new Map(prev)
-        map.set(currentWorkspaceId, updated)
-        return map
-      })
-    },
-    [workspaceSlug, currentWorkspaceId, setWsAttachedDirsMap]
-  )
-
-  const handleAttachFolder = React.useCallback(async () => {
-    try {
-      const result = await window.electronAPI.openFolderDialog()
-      if (result) await attachWorkspaceDir(result.path)
-    } catch (error) {
-      console.error('[WorkspaceFilesView] 附加文件夹失败:', error)
-    }
-  }, [attachWorkspaceDir])
-
-  const handleFoldersDropped = React.useCallback(
-    async (folderPaths: string[]) => {
-      for (const dirPath of folderPaths) {
-        try {
-          await attachWorkspaceDir(dirPath)
-        } catch (error) {
-          console.error('[WorkspaceFilesView] 拖拽附加文件夹失败:', error)
-        }
-      }
-    },
-    [attachWorkspaceDir]
-  )
+  // 附加 / 移除目录 — 拖放由外层 WorkspaceFileDropSurface 处理
+  const { handleFilesUploaded, handleFilesAttached, handleAttachFolder, handleFoldersDropped } =
+    useWorkspaceFileDropActions()
 
   const handleDetachDirectory = React.useCallback(
     async (dirPath: string) => {
@@ -218,32 +185,6 @@ export function WorkspaceFilesView({
   )
 
   // 附加 / 移除文件
-  const attachWorkspaceFile = React.useCallback(
-    async (filePath: string) => {
-      if (!workspaceSlug || !currentWorkspaceId) return
-      const updated = await window.electronAPI.attachWorkspaceFile({ workspaceSlug, filePath })
-      setWsAttachedFilesMap((prev) => {
-        const map = new Map(prev)
-        map.set(currentWorkspaceId, updated)
-        return map
-      })
-    },
-    [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap]
-  )
-
-  const handleFilesAttached = React.useCallback(
-    async (filePaths: string[]) => {
-      for (const filePath of filePaths) {
-        try {
-          await attachWorkspaceFile(filePath)
-        } catch (error) {
-          console.error('[WorkspaceFilesView] 附加文件失败:', error)
-        }
-      }
-    },
-    [attachWorkspaceFile]
-  )
-
   const handleDetachFile = React.useCallback(
     async (filePath: string) => {
       if (!workspaceSlug || !currentWorkspaceId) return
@@ -264,11 +205,6 @@ export function WorkspaceFilesView({
     },
     [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap]
   )
-
-  // 拖拽上传完成后递增版本号，触发 FileBrowser 刷新
-  const handleFilesUploaded = React.useCallback(() => {
-    setFilesVersion((prev) => prev + 1)
-  }, [setFilesVersion])
 
   const breadcrumb = React.useMemo(() => {
     if (!workspaceFilesPath) return ''
@@ -419,13 +355,13 @@ export function WorkspaceFilesView({
       </div>
 
       {/* 文件列表 */}
-      <div
+      <ScrollProgressContainer
         className={cn(
-          'min-h-0 overflow-y-auto pb-1 scrollbar-thin',
-          layout === 'main'
-            ? 'flex-1 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-sm shadow-foreground/5'
-            : 'flex-1'
+          'min-h-0 flex-1',
+          layout === 'main' &&
+            'rounded-3xl border border-border/60 bg-card/90 shadow-sm shadow-foreground/5'
         )}
+        contentClassName={cn('pb-1', layout === 'main' ? 'p-4' : '')}
       >
         {wsAttachedFiles.length > 0 && (
           <AttachedFilesSection
@@ -472,7 +408,7 @@ export function WorkspaceFilesView({
           onAttachFolder={handleAttachFolder}
           onFoldersDropped={handleFoldersDropped}
         />
-      </div>
+      </ScrollProgressContainer>
     </div>
   )
 }

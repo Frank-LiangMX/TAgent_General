@@ -22,6 +22,7 @@ import {
   Settings,
   Loader2,
   StickyNote,
+  Clock,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -68,6 +69,12 @@ const GENERAL_RAIL_ITEMS: Array<{
     label: '文件',
     icon: <FolderOpen size={17} />,
     description: '工作区文件树',
+  },
+  {
+    id: 'automation',
+    label: '自动任务',
+    icon: <Clock size={17} />,
+    description: '定时任务与调度',
   },
 ]
 

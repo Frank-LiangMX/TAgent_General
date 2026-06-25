@@ -85,6 +85,7 @@ export interface ContextUsageSnapshot {
 
 export type ContextUsageErrorCode =
   | 'NO_ACTIVE_QUERY'
+  | 'NO_CACHE'
   | 'SDK_ERROR'
   | 'SESSION_NOT_FOUND'
   | 'UNSUPPORTED'

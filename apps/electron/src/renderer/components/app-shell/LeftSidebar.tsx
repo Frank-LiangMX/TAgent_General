@@ -113,6 +113,7 @@ import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginsPanel } from '@/components/agent/SkillsPanel'
 import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
+import { WorkspaceFileDropSurface } from '@/components/agent/WorkspaceFileDropSurface'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import {
   SessionMiniMapPopover,
@@ -120,6 +121,7 @@ import {
   type SessionMiniMapType,
 } from '@/components/session-preview/SessionMiniMapPopover'
 import { TASidebar } from '@/components/ta/TASidebar'
+import { AutomationRailList } from '@/components/automation/AutomationRailList'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1021,6 +1023,8 @@ export function LeftSidebar({
         return <FilesRailContent workspaceKey={currentWorkspaceId ?? 'no-workspace'} />
       case 'skills':
         return <SkillsRailContent capabilities={capabilities} />
+      case 'automation':
+        return <AutomationRailList />
       case 'scratch':
         // 草稿功能区不需要侧边栏内容，由主区域 Tab 显示
         return null
@@ -1058,7 +1062,10 @@ export function LeftSidebar({
       }}
     >
       {/* Win：无顶栏控件时仍保留拖拽条（如 Skills） */}
-      {!isMac && activeRailItem !== 'sessions' && activeRailItem !== 'files' ? (
+      {!isMac &&
+      activeRailItem !== 'sessions' &&
+      activeRailItem !== 'files' &&
+      activeRailItem !== 'automation' ? (
         <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} />
       ) : null}
 
@@ -1424,7 +1431,11 @@ function SessionsRailContent({
 
 /** 文件功能区内容 —— 工作区文件树（已从 RightSidePanel 迁出） */
 function FilesRailContent({ workspaceKey }: { workspaceKey: string }): React.ReactElement {
-  return <WorkspaceFilesView workspaceKey={workspaceKey} layout="navigator" />
+  return (
+    <WorkspaceFileDropSurface className="flex h-full min-h-0 flex-1 flex-col">
+      <WorkspaceFilesView workspaceKey={workspaceKey} layout="navigator" />
+    </WorkspaceFileDropSurface>
+  )
 }
 
 /** 插件功能区内容 —— 统一插件列表 */

@@ -440,6 +440,8 @@ export function updateAgentSessionMeta(
       | 'permissionMode'
       | 'completedButUnconfirmed'
       | 'lastComposerMode'
+      | 'automationGraduated'
+      | 'sourceAutomationId'
     >
   >
 ): AgentSessionMeta {

@@ -77,7 +77,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       ? activeRailItem === 'sessions' ||
         activeRailItem === 'files' ||
         activeRailItem === 'skills' ||
-        activeRailItem === 'scratch'
+        activeRailItem === 'scratch' ||
+        activeRailItem === 'automation'
       : activeRailItem !== 'scratch'
 
   const isPluginsRail = activeRailItem === 'skills'

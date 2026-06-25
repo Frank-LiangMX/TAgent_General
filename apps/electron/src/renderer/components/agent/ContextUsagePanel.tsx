@@ -14,6 +14,20 @@ import { ContextUsageSegmentBar } from './ContextUsageSegmentBar'
 
 interface ContextUsagePanelProps {
   snapshot: ContextUsageSnapshot
+  /** 分项明细仍在加载（摘要已展示） */
+  detailsLoading?: boolean
+  /** 当前展示的是流式估算摘要，非 SDK 分项 */
+  isStreamPreview?: boolean
+}
+
+function CategoryBreakdownSkeleton(): React.ReactElement {
+  return (
+    <div className="space-y-1.5 px-1 py-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="h-7 animate-pulse rounded-xl bg-muted/35" />
+      ))}
+    </div>
+  )
 }
 
 function formatCompactThreshold(threshold: number): string {
@@ -55,14 +69,18 @@ function DetailLine({
   ariaLabel?: string
 }): React.ReactElement {
   return (
-    <div className="flex items-center justify-between gap-3 text-[11px]">
+    <div className="grid grid-cols-[1fr_auto_42px] items-center gap-2 text-[11px]">
       <span
-        className={cn('min-w-0 truncate text-muted-foreground', muted && 'opacity-70')}
+        className={cn(
+          'ml-5 min-w-0 truncate border-l border-foreground/10 pl-2.5 text-muted-foreground',
+          muted && 'opacity-70'
+        )}
         aria-label={ariaLabel ?? label}
       >
         {label}
       </span>
-      <span className="shrink-0 tabular-nums text-foreground/85">{value}</span>
+      <span className="shrink-0 text-xs tabular-nums text-foreground/90">{value}</span>
+      <span aria-hidden="true" />
     </div>
   )
 }
@@ -199,13 +217,23 @@ function sortCategories(snapshot: ContextUsageSnapshot): ContextUsageSnapshot['c
   return [...used, ...freeSpace]
 }
 
-export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.ReactElement {
+export function ContextUsagePanel({
+  snapshot,
+  detailsLoading = false,
+  isStreamPreview = false,
+}: ContextUsagePanelProps): React.ReactElement {
   const percent = Math.round(snapshot.percentage)
   const sortedCategories = React.useMemo(() => sortCategories(snapshot), [snapshot])
   const topCategoryName = sortedCategories.find((c) => !isFreeSpaceCategory(c.name))?.name
   const threshold = thresholdPercent(snapshot)
+  const hasCategoryBreakdown = sortedCategories.length > 0
 
   const metaParts: string[] = []
+  if (isStreamPreview) {
+    metaParts.push('摘要为流式估算，分项加载中')
+  } else if (detailsLoading) {
+    metaParts.push('分项刷新中')
+  }
   if (snapshot.isAutoCompactEnabled) {
     metaParts.push(
       snapshot.autoCompactThreshold != null
@@ -254,6 +282,10 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
           className="mt-2"
         />
 
+        {detailsLoading && !hasCategoryBreakdown ? (
+          <div className="mt-2 h-1.5 animate-pulse rounded-full bg-muted/40" />
+        ) : null}
+
         <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground/70">
           <span>{snapshot.isAutoCompactEnabled ? '自动压缩已开启' : '自动压缩未开启'}</span>
           {snapshot.autoCompactThreshold != null ? (
@@ -275,31 +307,38 @@ export function ContextUsagePanel({ snapshot }: ContextUsagePanelProps): React.R
           <span>Token</span>
           <span className="text-right">占比</span>
         </div>
-        {sortedCategories.map((category) => {
-          const drillDown = getCategoryDrillDown(snapshot, category.name)
-          const barPercent = categoryPercentOfWindow(category.tokens, snapshot.maxTokens)
+        {detailsLoading && !hasCategoryBreakdown ? (
+          <CategoryBreakdownSkeleton />
+        ) : (
+          sortedCategories.map((category) => {
+            const drillDown = getCategoryDrillDown(snapshot, category.name)
+            const barPercent = categoryPercentOfWindow(category.tokens, snapshot.maxTokens)
 
-          if (drillDown) {
+            if (drillDown) {
+              return (
+                <ContextUsageCategoryGroup
+                  key={category.name}
+                  category={category}
+                  itemCount={drillDown.itemCount}
+                  barPercent={barPercent}
+                  defaultOpen={category.name === topCategoryName}
+                >
+                  {drillDown.content}
+                </ContextUsageCategoryGroup>
+              )
+            }
             return (
-              <ContextUsageCategoryGroup
+              <ContextUsageCategoryRow
                 key={category.name}
                 category={category}
-                itemCount={drillDown.itemCount}
-                barPercent={barPercent}
-                defaultOpen={category.name === topCategoryName}
-              >
-                {drillDown.content}
-              </ContextUsageCategoryGroup>
+                maxTokens={snapshot.maxTokens}
+              />
             )
-          }
-          return (
-            <ContextUsageCategoryRow
-              key={category.name}
-              category={category}
-              maxTokens={snapshot.maxTokens}
-            />
-          )
-        })}
+          })
+        )}
+        {detailsLoading && hasCategoryBreakdown ? (
+          <p className="px-2 py-1 text-[10px] text-muted-foreground/60">正在刷新分项…</p>
+        ) : null}
       </div>
 
       <p className="text-[10px] leading-snug text-muted-foreground/55">{metaParts.join(' · ')}</p>

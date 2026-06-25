@@ -320,6 +320,13 @@ export async function getAgentContextUsage(
   return orchestrator.getContextUsage(sessionId)
 }
 
+/** 读取会话 Context 分项缓存（快速路径，不调用 SDK） */
+export function getAgentContextUsageCached(
+  sessionId: string
+): import('@tagent/shared').GetContextUsageResponse {
+  return orchestrator.getContextUsageCached(sessionId)
+}
+
 /**
  * 快照回退：回退到指定消息点，恢复文件 + 截断对话
  */

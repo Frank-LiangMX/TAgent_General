@@ -537,6 +537,12 @@ async function bootstrap(): Promise<void> {
     safeRun('initAutoUpdater', () => initAutoUpdater(mainWindow!))
   }
 
+  // 启动定时任务调度器（30s tick，启动时恢复已过期任务）
+  await safeAwait('startAutomationScheduler', async () => {
+    const { startScheduler } = await import('./lib/automation-scheduler')
+    startScheduler()
+  })
+
   // 预创建快速任务窗口（隐藏状态，首次唤起秒开）
   safeRun('createQuickTaskWindow', createQuickTaskWindow)
   if (getSettings().voiceDictation?.enabled === true) {
@@ -651,6 +657,14 @@ app.on('before-quit', () => {
   stopWorkspaceWatcher()
   // 停止 Chat 工具配置文件监听
   stopChatToolsWatcher()
+  // 停止定时任务调度器
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { stopScheduler } = require('./lib/automation-scheduler')
+    stopScheduler()
+  } catch (err) {
+    console.error('[退出] 停止定时任务调度器失败:', err)
+  }
   // 停止所有 Bridge
   stopAllBridges()
   // 释放飞书同步防休眠

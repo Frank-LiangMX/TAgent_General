@@ -21,6 +21,7 @@ import { isImageFile } from '@/components/agent/SDKMessageRenderer'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { FileTypeIcon } from '@/components/file-browser'
 import { Button } from '@/components/ui/button'
+import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
 const TEXT_PREVIEW_MAX_BYTES = 256 * 1024
 
 function getPathBasename(filePath: string): string {
@@ -212,7 +213,7 @@ function FileInspector({
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
+      <ScrollProgressContainer className="min-h-0 flex-1" contentClassName="p-5">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 size={16} className="animate-spin" />
@@ -243,7 +244,7 @@ function FileInspector({
             description="此文件类型暂不支持内联预览，可使用「打开」在默认应用中查看。"
           />
         )}
-      </div>
+      </ScrollProgressContainer>
     </div>
   )
 }
@@ -321,7 +322,7 @@ function DirectoryInspector({
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
+      <ScrollProgressContainer className="min-h-0 flex-1" contentClassName="p-5">
         <div className="mb-4 flex flex-wrap gap-2">
           <StatPill label="文件夹" value={String(folderCount)} />
           <StatPill label="文件" value={String(fileCount)} />
@@ -357,7 +358,7 @@ function DirectoryInspector({
             ) : null}
           </ul>
         )}
-      </div>
+      </ScrollProgressContainer>
     </div>
   )
 }

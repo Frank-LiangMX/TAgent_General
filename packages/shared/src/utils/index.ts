@@ -35,6 +35,8 @@ export {
   readCompactBoundaryMetadata,
 } from './sdk-compaction'
 export type { SdkCompactBoundaryMetadata } from './sdk-compaction'
+export { computeNextRunAt, formatScheduleLabel, isSameLocalDay } from './automation-schedule'
+export type { AutomationScheduleInput } from './automation-schedule'
 export {
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_TITLE,

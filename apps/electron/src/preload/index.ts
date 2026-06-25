@@ -25,6 +25,7 @@ import {
   USAGE_STATS_IPC_CHANNELS,
   ASK_IPC_CHANNELS,
   SOUL_IPC_CHANNELS,
+  AUTOMATION_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -361,6 +362,9 @@ export interface ElectronAPI {
 
   /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
   getContextUsage: (sessionId: string) => Promise<GetContextUsageResponse>
+
+  /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
+  getContextUsageCached: (sessionId: string) => Promise<GetContextUsageResponse>
 
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
@@ -1365,6 +1369,22 @@ export interface ElectronAPI {
     quitAndInstall: () => Promise<void>
   }
 
+  // ===== Automation 定时任务 =====
+
+  automation: {
+    list: () => Promise<import('@tagent/shared').Automation[]>
+    create: (
+      input: import('@tagent/shared').CreateAutomationInput
+    ) => Promise<import('@tagent/shared').Automation>
+    update: (
+      input: import('@tagent/shared').UpdateAutomationInput
+    ) => Promise<import('@tagent/shared').Automation>
+    delete: (id: string) => Promise<void>
+    toggle: (id: string) => Promise<import('@tagent/shared').Automation>
+    runNow: (id: string) => Promise<void>
+    onChanged: (callback: () => void) => () => void
+  }
+
   // GitHub Release
   getLatestRelease: () => Promise<GitHubRelease | null>
   listReleases: (options?: GitHubReleaseListOptions) => Promise<GitHubRelease[]>
@@ -1750,6 +1770,13 @@ const electronAPI: ElectronAPI = {
   getContextUsage: (sessionId: string) => {
     return ipcRenderer.invoke(
       AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
+      sessionId
+    ) as Promise<GetContextUsageResponse>
+  },
+
+  getContextUsageCached: (sessionId: string) => {
+    return ipcRenderer.invoke(
+      AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE_CACHED,
       sessionId
     ) as Promise<GetContextUsageResponse>
   },
@@ -3536,6 +3563,26 @@ const electronAPI: ElectronAPI = {
       USAGE_STATS_IPC_CHANNELS.GET_SESSION_CONTEXT_STATUS,
       sessionId
     ) as Promise<SessionContextStatus | null>
+  },
+
+  // ===== Automation 定时任务 =====
+
+  automation: {
+    list: () => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.LIST),
+    create: (input: import('@tagent/shared').CreateAutomationInput) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.CREATE, input),
+    update: (input: import('@tagent/shared').UpdateAutomationInput) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.UPDATE, input),
+    delete: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.DELETE, id),
+    toggle: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.TOGGLE, id),
+    runNow: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.RUN_NOW, id),
+    onChanged: (callback: () => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
+      return () => {
+        ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
+      }
+    },
   },
 }
 
