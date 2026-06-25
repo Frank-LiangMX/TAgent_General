@@ -2,12 +2,11 @@
  * DraftListPanel — 侧边栏草稿列表
  *
  * 列出 draftsAtom 中的所有草稿，按状态分组。
- * 点击使用 useOpenSession 打开/聚焦草稿 Tab。
- * 右键菜单支持删除。
+ * 交互与会话列表一致：点击选中、右键菜单、三点下拉、双击重命名。
  */
 
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { StickyNote, Trash2 } from 'lucide-react'
+import { StickyNote, Trash2, MoreHorizontal, Pencil } from 'lucide-react'
 import * as React from 'react'
 
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
@@ -19,8 +18,16 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +58,190 @@ function groupByStatus(drafts: DraftDocument[]): Array<{ status: DraftStatus; it
   return result
 }
 
+function formatDraftTime(updatedAt: number): string {
+  const date = new Date(updatedAt)
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 86_400_000
+  const pad = (n: number): string => n.toString().padStart(2, '0')
+  if (updatedAt >= todayStart) {
+    return `今天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  if (updatedAt >= yesterdayStart) {
+    return `昨天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  return `${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+// ---- 单行组件 ----
+
+interface DraftItemProps {
+  draft: DraftDocument
+  active: boolean
+  onSelect: (draft: DraftDocument) => void
+  onRequestDelete: (id: string) => void
+  onRename: (id: string, newTitle: string) => void
+}
+
+const DraftItem = React.memo(function DraftItem({
+  draft,
+  active,
+  onSelect,
+  onRequestDelete,
+  onRename,
+}: DraftItemProps): React.ReactElement {
+  const [editing, setEditing] = React.useState(false)
+  const [editTitle, setEditTitle] = React.useState('')
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const justStartedEditing = React.useRef(false)
+
+  const startEdit = (): void => {
+    setEditTitle(draft.title)
+    setEditing(true)
+    justStartedEditing.current = true
+    setTimeout(() => {
+      justStartedEditing.current = false
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 300)
+  }
+
+  const saveTitle = async (): Promise<void> => {
+    if (justStartedEditing.current) return
+    const trimmed = editTitle.trim()
+    if (!trimmed || trimmed === draft.title) {
+      setEditing(false)
+      return
+    }
+    await onRename(draft.id, trimmed)
+    setEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveTitle()
+    } else if (e.key === 'Escape') {
+      setEditing(false)
+    }
+  }
+
+  const menuItems = (
+    MenuItem: typeof ContextMenuItem | typeof DropdownMenuItem,
+    MenuSeparator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
+  ) => (
+    <>
+      <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={startEdit}>
+        <Pencil size={14} />
+        重命名
+      </MenuItem>
+      <MenuSeparator className="my-0.5" />
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5 text-destructive"
+        onSelect={() => onRequestDelete(draft.id)}
+      >
+        <Trash2 size={14} />
+        删除草稿
+      </MenuItem>
+    </>
+  )
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onSelect(draft)}
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            startEdit()
+          }}
+          className={cn(
+            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-colors duration-150 titlebar-no-drag text-left',
+            active
+              ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] rounded-[10px]'
+              : 'rounded-md hover:bg-primary/5'
+          )}
+        >
+          <StickyNote
+            size={14}
+            className={cn('flex-shrink-0', active ? 'text-primary/60' : 'text-foreground/30')}
+          />
+
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveTitle}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                maxLength={100}
+              />
+            ) : (
+              <div
+                className={cn(
+                  'truncate text-[13px] leading-5 flex items-center gap-1.5',
+                  active ? 'text-foreground' : 'text-foreground/80'
+                )}
+              >
+                <span className="truncate flex-1 min-w-0">{draft.title || '未命名草稿'}</span>
+                <span className="flex-shrink-0 text-[10px] text-foreground/35 tabular-nums">
+                  {formatDraftTime(draft.updatedAt)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* 状态徽章 */}
+          {!editing && (
+            <span
+              className={cn(
+                'inline-flex items-center rounded px-1 py-0.5 text-[9px] font-medium shrink-0',
+                STATUS_STYLES[draft.status]
+              )}
+            >
+              {STATUS_LABELS[draft.status]}
+            </span>
+          )}
+
+          {/* 三点菜单按钮（hover 时可见） */}
+          {!editing && (
+            <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu onOpenChange={setMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      'p-1 rounded-md text-foreground/30 hover:bg-foreground/[0.08] hover:text-foreground/60 transition-colors',
+                      'opacity-0 pointer-events-none',
+                      'group-hover:opacity-100 group-hover:pointer-events-auto',
+                      'data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto'
+                    )}
+                  >
+                    <MoreHorizontal size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-36 z-[9999] min-w-0 p-0.5">
+                  {menuItems(DropdownMenuItem, DropdownMenuSeparator)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-36 z-[9999] min-w-0 p-0.5">
+        {menuItems(ContextMenuItem, ContextMenuSeparator)}
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+})
+
+// ---- 列表面板 ----
+
 export function DraftListPanel(): React.ReactElement {
   const drafts = useAtomValue(draftsAtom)
   const currentDraftId = useAtomValue(currentDraftIdAtom)
@@ -66,8 +257,17 @@ export function DraftListPanel(): React.ReactElement {
     openSession('draft', draft.id, draft.title)
   }
 
-  const handleRequestDelete = (draftId: string): void => {
-    setPendingDeleteId(draftId)
+  const handleRequestDelete = (id: string): void => {
+    setPendingDeleteId(id)
+  }
+
+  const handleRename = async (id: string, newTitle: string): Promise<void> => {
+    const draft = drafts.find((d) => d.id === id)
+    if (!draft || newTitle === draft.title) return
+    await window.electronAPI.draft.update(id, { title: newTitle })
+    // 刷新列表
+    const updated = await window.electronAPI.draft.list()
+    store.set(draftsAtom, updated)
   }
 
   const handleConfirmDelete = async (): Promise<void> => {
@@ -83,7 +283,6 @@ export function DraftListPanel(): React.ReactElement {
       store.set(activeTabIdAtom, tabResult.activeTabId)
     }
 
-    // 删除草稿
     await deleteDraft(pendingDeleteId)
     setPendingDeleteId(null)
   }
@@ -105,45 +304,16 @@ export function DraftListPanel(): React.ReactElement {
               {STATUS_LABELS[status]}
             </p>
             <div className="flex flex-col gap-0.5">
-              {items.map((draft) => {
-                const isActive = draft.id === currentDraftId
-                return (
-                  <ContextMenu key={draft.id}>
-                    <ContextMenuTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => handleClick(draft)}
-                        className={cn(
-                          'w-full flex items-center gap-2 px-3 py-[7px] rounded-md text-left transition-colors duration-100',
-                          isActive
-                            ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                            : 'text-foreground/60 hover:bg-primary/5 hover:text-foreground'
-                        )}
-                      >
-                        <StickyNote size={14} className={cn('shrink-0', isActive ? 'text-primary/70' : 'text-foreground/35')} />
-                        <span className="text-[13px] truncate flex-1 min-w-0">{draft.title || '未命名草稿'}</span>
-                        <span
-                          className={cn(
-                            'inline-flex items-center rounded px-1 py-0.5 text-[9px] font-medium shrink-0',
-                            STATUS_STYLES[draft.status]
-                          )}
-                        >
-                          {STATUS_LABELS[draft.status]}
-                        </span>
-                      </button>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-36">
-                      <ContextMenuItem
-                        className="text-destructive/80 focus:text-destructive"
-                        onClick={() => handleRequestDelete(draft.id)}
-                      >
-                        <Trash2 size={13} className="mr-2" />
-                        删除草稿
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                )
-              })}
+              {items.map((draft) => (
+                <DraftItem
+                  key={draft.id}
+                  draft={draft}
+                  active={draft.id === currentDraftId}
+                  onSelect={handleClick}
+                  onRequestDelete={handleRequestDelete}
+                  onRename={handleRename}
+                />
+              ))}
             </div>
           </div>
         ))}
