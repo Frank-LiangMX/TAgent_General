@@ -8,7 +8,7 @@
 > **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）  
 > **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）  
 > **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）  
-> **kscc 内网渠道（当前主线）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`  
+> **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`  
 > **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）  
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）  
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
@@ -46,7 +46,7 @@
 **当前判断**：
 
 - 通用 Agent 主链路、Ask 档位、TA 模式、记忆自进化、使用统计、`/btw`、远程连通主框架均已落地。
-- `compact_session` / 客户端压缩已实现；Context Usage 分项面板核心能力已接入（badge / 面板 / 缓存刷新仍有持续优化空间）。
+- `compact_session` / 客户端压缩已实现；Context Usage 分项面板 P0-P2 已完成（P3 可选增强）。
 - WPS 协作已作为远程连通 MVP 合入（文本消息链路）；媒体、绑定持久化、公网回调配置仍是后续增强。
 - ✅ **SDK 0.3.185** 已升级（PR #13），写风暴 / 断连相关修复已合入。
 - ✅ **Automation v1（M1–M3）** 已合入 `main`（PR #15，2026-06-25）：
@@ -56,7 +56,7 @@
   - **未做（M4 后续）**：Agent MCP 工具、自然语言创建、custom cron、TipTap 富文本编辑器
 - ✅ **kscc 内网渠道集成** 已完成 — 见 [kscc-internal-provider-design.md](plans/2026-06-25-kscc-internal-provider-design.md)
 - 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
-- **🟠 活跃待办**：协作子会话、Context Usage 分项收尾、上游 Issue A/E、WPS 增强
+- **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
 
 **2026-06-24 / 06-25 规划文档**：
 
@@ -79,9 +79,9 @@
 | `2026-06-09-verification-checklist.md` | 历史归档 | 2026-06-09 验证清单（决策 #15 实施） |
 | `2026-06-13-ask-mode-unification-design.md` | 已完成 | Ask 档位统一 Composer + Chat 主路径退役 |
 | `2026-06-13-context-compaction-architecture.md` | 已完成归档 + M2+ 小待办 | 双层压缩机制已落地；`summarize` 策略、客户端压缩说明仍可后续增强 |
-| `2026-06-13-context-usage-breakdown-design.md` | 活跃待办 | Context Usage 分项面板 P0-P2 未实现 |
+| `2026-06-13-context-usage-breakdown-design.md` | **P0-P2 已完成 / P3 可选** | Context Usage 分项面板 P0-P2 全部落地；P3（Insights 统计、阈值定向 Nudge、View Report 链接）为可选增强 |
 | `2026-06-16-upstream-upgrade-plan.md` | v0.10.34 基线旧规划 | Issue A~E 已在此框架下提出；v0.13.3 基线升级见新文档 |
-| `2026-06-16-upstream-upgrade-issues.md` | 活跃待办 | Issue A~E 可直接拆 PR（与新文档合并执行） |
+| `2026-06-16-upstream-upgrade-issues.md` | **B/C/D 已完成 / A/E 部分完成** | Issue B/C/D 已通过 Automation v1 合入；A（1M 上下文）~60%；E（Preview/月度）~50% |
 | `2026-06-16-wps-bridge-landing.md` | MVP 已完成 + 增强待办 | 文本链路已合入；媒体/绑定/公网回调/富文本待增强 |
 | `2026-06-18-right-panel-anchor-animation.md` | 已完成 | 右栏岛式布局 + scale 动画 |
 | **`2026-06-24-p0-stability-patches.md`** | **部分完成** | SDK 0.3.185 升级 ✅（PR #13）；#910/#913/#903 按需跟进 |
@@ -213,17 +213,16 @@
 
 **进行中 / 下一步**：
 
-1. **kscc 内网渠道集成（当前主线）** — 见 [`docs/plans/2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md)
-   - 分支建议：`feature/kscc-internal-provider`
-   - 内网探测 + kscc CLI 检测 + 渠道自动创建
-   - Agent 编排 `sdkCliPath` 替换 + 认证隔离 + 模型路由 / 提示词
+1. **上游 v0.13.3 对齐（当前主线）** — 见 [`docs/plans/2026-06-24-upstream-feature-roadmap.md`](plans/2026-06-24-upstream-feature-roadmap.md)
+   - Issue A（1M 上下文统一）~60% 完成，仍需扩展模型覆盖和校准
+   - Issue E（Preview 分屏偏好 + 月度调度）~50% 完成
+   - Issue B/C/D 已通过 Automation v1 合入完成
 2. **Automation M4 扩展**（非阻塞，可另开 `feature/automation-extensions`）
    - Agent MCP 工具（list/create/update/delete）
    - 自然语言创建任务、custom cron、TipTap 富文本编辑器
-3. **Context Usage 分项面板收尾** — 见 `docs/plans/2026-06-13-context-usage-breakdown-design.md`
-4. **上游能力对齐（Issue A / E 等）** — 见 `docs/plans/2026-06-16-upstream-upgrade-issues.md`
-5. **WPS 协作增强** — 媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
-6. **小修收口** — `project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
+3. **协作子会话 v1** — 见 `docs/plans/2026-06-24-collaboration-design.md`
+4. **WPS 协作增强** — 媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
+5. **小修收口** — `project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
 **剩余任务**（按设计文档 §10.1 阶段划分）：
 
@@ -283,7 +282,7 @@
 | Automation M2 | 管理 UI：侧栏列表 + 主区编辑器 / 运行历史；context usage、文件页拖放等修复 |
 | Automation M3 | 运行通知：系统通知 + 飞书卡片 + trigger 过滤 |
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
-| 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为**当前主线** |
+| 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
 
 ### 2026-06-25（续）

@@ -267,7 +267,7 @@ React UI 更新
 
 ## 当前进度与下一步
 
-**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`。当前活跃开发主线为 **kscc 内网渠道集成**。
+**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成。当前活跃开发主线为 **上游 v0.13.3 对齐**。
 
 **已完成**（截至 2026-06-25）：
 
@@ -283,20 +283,19 @@ React UI 更新
 
 **活跃待办**：
 
-- **kscc 内网渠道集成**（当前主线）— `docs/plans/2026-06-25-kscc-internal-provider-design.md`
+- **上游 v0.13.3 对齐**（当前主线）— `docs/plans/2026-06-24-upstream-feature-roadmap.md`（Issue A/E 部分完成）
+- 协作子会话 v1 — `docs/plans/2026-06-24-collaboration-design.md`
 - Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
-- Context Usage 分项面板收尾
-- 上游能力对齐 Issue A / E 等
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
 **详细进度**：见 `docs/PROGRESS.md`
 
 **重点规划**：
-- `docs/plans/2026-06-25-kscc-internal-provider-design.md`（**当前主线**）
+- `docs/plans/2026-06-24-upstream-feature-roadmap.md`（**当前主线**）
+- `docs/plans/2026-06-24-collaboration-design.md`（协作子会话 v1）
 - `docs/plans/2026-06-24-automation-design.md`（M1–M3 ✅ / M4 待做）
-- `docs/plans/2026-06-16-upstream-upgrade-issues.md`
-- `docs/plans/2026-06-13-context-usage-breakdown-design.md`
+- `docs/plans/2026-06-16-upstream-upgrade-issues.md`（B/C/D ✅ / A/E 部分）
 - `docs/plans/2026-06-16-wps-bridge-landing.md`
 
 ---
