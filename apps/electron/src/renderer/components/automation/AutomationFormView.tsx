@@ -29,16 +29,10 @@ import {
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/chat-atoms'
-import {
-  createAutomation,
-  updateAutomation,
-} from '@/atoms/automation-atoms'
+import { createAutomation, updateAutomation } from '@/atoms/automation-atoms'
 import { RunHistoryPanel } from '@/components/automation/RunHistoryPanel'
 import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
-import {
-  ScheduleEditor,
-  type ScheduleEditorValue,
-} from '@/components/automation/ScheduleEditor'
+import { ScheduleEditor, type ScheduleEditorValue } from '@/components/automation/ScheduleEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -466,7 +460,9 @@ export function AutomationFormView({
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
           <div className="min-w-0 text-[10px] text-muted-foreground">
             {errorMessage ? <span className="text-destructive">{errorMessage}</span> : null}
-            {!errorMessage && saveState === 'saved' ? <span className="text-emerald-600">已保存</span> : null}
+            {!errorMessage && saveState === 'saved' ? (
+              <span className="text-emerald-600">已保存</span>
+            ) : null}
             {!errorMessage && saveState === 'dirty' ? <span>有未保存的更改</span> : null}
           </div>
           <div className="flex items-center gap-2">

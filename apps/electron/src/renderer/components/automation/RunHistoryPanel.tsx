@@ -15,10 +15,7 @@ interface RunHistoryPanelProps {
   onOpenSession?: (sessionId: string) => void
 }
 
-export function RunHistoryPanel({
-  runs,
-  onOpenSession,
-}: RunHistoryPanelProps): React.ReactElement {
+export function RunHistoryPanel({ runs, onOpenSession }: RunHistoryPanelProps): React.ReactElement {
   const ordered = [...runs].reverse()
 
   if (ordered.length === 0) {
@@ -32,11 +29,7 @@ export function RunHistoryPanel({
   return (
     <div className="space-y-2">
       {ordered.map((run, index) => (
-        <RunHistoryItem
-          key={`${run.runAt}-${index}`}
-          run={run}
-          onOpenSession={onOpenSession}
-        />
+        <RunHistoryItem key={`${run.runAt}-${index}`} run={run} onOpenSession={onOpenSession} />
       ))}
     </div>
   )

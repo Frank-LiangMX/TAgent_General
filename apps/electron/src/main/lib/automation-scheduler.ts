@@ -34,7 +34,11 @@ import {
   computeNextRunAt,
 } from './automation-manager'
 import { formatScheduleLabel, isSameLocalDay } from '@tagent/shared'
-import { createAgentSession, updateAgentSessionMeta, getAgentSessionMeta } from './agent-session-manager'
+import {
+  createAgentSession,
+  updateAgentSessionMeta,
+  getAgentSessionMeta,
+} from './agent-session-manager'
 import { getContextUsageCache } from './context-usage-cache'
 import { runAgentHeadless, isAgentSessionActive } from './agent-service'
 import { notifyAutomationRunFinished } from './automation-notification-service'
@@ -97,7 +101,9 @@ export async function runAutomation(automation: Automation, manual = false): Pro
     const sessionMode = automation.sessionMode ?? AUTOMATION_DEFAULT_SESSION_MODE
 
     let reuseSessionId: string | undefined
-    const lastSessionMeta = automation.lastSessionId ? getAgentSessionMeta(automation.lastSessionId) : undefined
+    const lastSessionMeta = automation.lastSessionId
+      ? getAgentSessionMeta(automation.lastSessionId)
+      : undefined
     // 已被用户手动接管（毕业）的会话不再复用，强制新建，避免把定时任务消息注入用户的私人会话
     if (lastSessionMeta?.automationGraduated) {
       console.log(`[定时任务] ${automation.name} 上次会话已被用户接管，本次自动开新会话`)
@@ -126,7 +132,11 @@ export async function runAutomation(automation: Automation, manual = false): Pro
     if (reuseSessionId) {
       targetSessionId = reuseSessionId
     } else {
-      const created = createAgentSession(automation.name, automation.channelId, automation.workspaceId)
+      const created = createAgentSession(
+        automation.name,
+        automation.channelId,
+        automation.workspaceId
+      )
       updateAgentSessionMeta(created.id, { sourceAutomationId: automation.id })
       targetSessionId = created.id
       setLastSessionId(automation.id, created.id)
@@ -177,8 +187,10 @@ export async function runAutomation(automation: Automation, manual = false): Pro
           source: 'bridge',
           onError: (error) => finish('failed', error),
           onComplete: () => finish('succeeded'),
-          onTitleUpdated: () => { /* 子会话标题不需要特殊处理 */ },
-        },
+          onTitleUpdated: () => {
+            /* 子会话标题不需要特殊处理 */
+          },
+        }
       ).catch((err) => {
         finish('failed', err instanceof Error ? err.message : '未知错误')
       })

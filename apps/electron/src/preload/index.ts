@@ -1373,8 +1373,12 @@ export interface ElectronAPI {
 
   automation: {
     list: () => Promise<import('@tagent/shared').Automation[]>
-    create: (input: import('@tagent/shared').CreateAutomationInput) => Promise<import('@tagent/shared').Automation>
-    update: (input: import('@tagent/shared').UpdateAutomationInput) => Promise<import('@tagent/shared').Automation>
+    create: (
+      input: import('@tagent/shared').CreateAutomationInput
+    ) => Promise<import('@tagent/shared').Automation>
+    update: (
+      input: import('@tagent/shared').UpdateAutomationInput
+    ) => Promise<import('@tagent/shared').Automation>
     delete: (id: string) => Promise<void>
     toggle: (id: string) => Promise<import('@tagent/shared').Automation>
     runNow: (id: string) => Promise<void>

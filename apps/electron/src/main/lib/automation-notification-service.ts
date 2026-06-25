@@ -31,8 +31,7 @@ function buildSummary(payload: AutomationNotificationPayload): string {
 function sendSystemNotification(payload: AutomationNotificationPayload): void {
   const { automation, run } = payload
   const summary = buildSummary(payload)
-  const statusPrefix =
-    run.status === 'succeeded' ? '✅' : run.status === 'failed' ? '❌' : '⏭️'
+  const statusPrefix = run.status === 'succeeded' ? '✅' : run.status === 'failed' ? '❌' : '⏭️'
 
   const notification = new Notification({
     title: `${statusPrefix} ${automation.name}`,
@@ -80,10 +79,7 @@ export async function notifyAutomationRunFinished(
     try {
       sendSystemNotification(payload)
     } catch (error) {
-      console.error(
-        `[定时任务] 系统通知发送失败: automation=${payload.automation.id}`,
-        error
-      )
+      console.error(`[定时任务] 系统通知发送失败: automation=${payload.automation.id}`, error)
     }
   }
 

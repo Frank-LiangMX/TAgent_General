@@ -194,9 +194,7 @@ export function ContextUsageBadge({
       : undefined
   const displayTokens = authoritativeSnapshot?.totalTokens ?? streamTokens
   const displayWindow = authoritativeSnapshot?.maxTokens ?? streamWindow
-  const ratio = authoritativeSnapshot
-    ? authoritativeSnapshot.percentage / 100
-    : streamRatio ?? 0
+  const ratio = authoritativeSnapshot ? authoritativeSnapshot.percentage / 100 : (streamRatio ?? 0)
   const percent = authoritativeSnapshot
     ? Math.round(authoritativeSnapshot.percentage)
     : streamRatio != null
@@ -241,8 +239,7 @@ export function ContextUsageBadge({
       : false
   const isDanger = ratio >= DANGER_RATIO
 
-  const showPercentPlaceholder =
-    !authoritativeSnapshot && (breakdownLoading || breakdownRefreshing)
+  const showPercentPlaceholder = !authoritativeSnapshot && (breakdownLoading || breakdownRefreshing)
   const effectivePercent = showPercentPlaceholder ? undefined : percent
   const effectiveRatio = showPercentPlaceholder ? 0 : ratio
 

@@ -1398,11 +1398,7 @@ export class AgentOrchestrator {
     // 后续调度不再向该会话注入定时任务消息
     const isScheduledRun =
       triggeredBy === 'automation' || userMessage.includes('TAGENT_SCHEDULED_RUN')
-    if (
-      !isScheduledRun &&
-      sessionMeta?.sourceAutomationId &&
-      !sessionMeta.automationGraduated
-    ) {
+    if (!isScheduledRun && sessionMeta?.sourceAutomationId && !sessionMeta.automationGraduated) {
       updateAgentSessionMeta(sessionId, { automationGraduated: true })
       console.log(`[Agent 编排] 定时任务子会话 ${sessionId} 已被用户接管`)
     }
@@ -3084,9 +3080,7 @@ export class AgentOrchestrator {
   }
 
   /** 读取会话 Context 分项缓存（不调用 SDK，用于面板优先展示） */
-  getContextUsageCached(
-    sessionId: string
-  ): import('@tagent/shared').GetContextUsageResponse {
+  getContextUsageCached(sessionId: string): import('@tagent/shared').GetContextUsageResponse {
     const cached = getContextUsageCache(sessionId)
     if (!cached) {
       return {

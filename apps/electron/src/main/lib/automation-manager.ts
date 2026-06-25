@@ -246,4 +246,3 @@ export function setLastSessionId(id: string, sessionId: string): void {
   automation.updatedAt = Date.now()
   writeStore(store)
 }
-

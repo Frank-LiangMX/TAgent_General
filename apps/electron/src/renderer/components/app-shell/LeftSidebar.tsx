@@ -1062,7 +1062,10 @@ export function LeftSidebar({
       }}
     >
       {/* Win：无顶栏控件时仍保留拖拽条（如 Skills） */}
-      {!isMac && activeRailItem !== 'sessions' && activeRailItem !== 'files' && activeRailItem !== 'automation' ? (
+      {!isMac &&
+      activeRailItem !== 'sessions' &&
+      activeRailItem !== 'files' &&
+      activeRailItem !== 'automation' ? (
         <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} />
       ) : null}
 

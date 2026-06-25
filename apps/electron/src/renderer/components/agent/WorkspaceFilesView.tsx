@@ -157,12 +157,8 @@ export function WorkspaceFilesView({
   )
 
   // 附加 / 移除目录 — 拖放由外层 WorkspaceFileDropSurface 处理
-  const {
-    handleFilesUploaded,
-    handleFilesAttached,
-    handleAttachFolder,
-    handleFoldersDropped,
-  } = useWorkspaceFileDropActions()
+  const { handleFilesUploaded, handleFilesAttached, handleAttachFolder, handleFoldersDropped } =
+    useWorkspaceFileDropActions()
 
   const handleDetachDirectory = React.useCallback(
     async (dirPath: string) => {

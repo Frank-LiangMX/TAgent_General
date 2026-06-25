@@ -18,10 +18,7 @@ export interface OsFileDropContext {
   onFoldersDropped: (folderPaths: string[]) => void
 }
 
-async function saveDroppedFiles(
-  files: globalThis.File[],
-  ctx: OsFileDropContext
-): Promise<void> {
+async function saveDroppedFiles(files: globalThis.File[], ctx: OsFileDropContext): Promise<void> {
   if (files.length === 0) return
   const isWorkspace = ctx.target === 'workspace'
   if (!isWorkspace && !ctx.sessionId) return
@@ -66,10 +63,7 @@ async function saveDroppedFiles(
 }
 
 /** 智能路由：文件复制/附加，文件夹附加 */
-export async function processOsFileDrop(
-  e: React.DragEvent,
-  ctx: OsFileDropContext
-): Promise<void> {
+export async function processOsFileDrop(e: React.DragEvent, ctx: OsFileDropContext): Promise<void> {
   e.preventDefault()
   e.stopPropagation()
 

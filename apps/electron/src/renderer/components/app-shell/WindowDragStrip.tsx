@@ -45,7 +45,10 @@ export function ContentWindowDragBand({
   return (
     <div
       aria-hidden
-      className={cn('pointer-events-none absolute top-0 left-0 z-[30] titlebar-drag-region', className)}
+      className={cn(
+        'pointer-events-none absolute top-0 left-0 z-[30] titlebar-drag-region',
+        className
+      )}
       style={{
         right: WINDOWS_WINDOW_CONTROLS_RIGHT_INSET,
         height: CONTENT_TOP_DRAG_BAND_HEIGHT,

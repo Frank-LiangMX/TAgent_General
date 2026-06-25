@@ -135,7 +135,14 @@ export function useContextUsageBreakdown(
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [sessionId, enabled, refreshNonce, streamPreview?.totalTokens, streamPreview?.maxTokens, streamPreview?.model])
+  }, [
+    sessionId,
+    enabled,
+    refreshNonce,
+    streamPreview?.totalTokens,
+    streamPreview?.maxTokens,
+    streamPreview?.model,
+  ])
 
   return { snapshot, error, loading, refreshing, isStreamPreview }
 }
