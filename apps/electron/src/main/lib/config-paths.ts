@@ -508,7 +508,7 @@ export function getDefaultSkillsDir(): string {
  * 无 version 字段时返回 '0.0.0'（确保旧 Skill 会被更新）。
  */
 /**
- * 去除文件内容开头的 UTF-8 BOM 字节（﻿）。
+ * 去除文件内容开头的 UTF-8 BOM 字节 (U+FEFF)。
  *
  * 某些 Windows 编辑器（VSCode 默认、Notepad 等）保存的文件带 BOM，会导致
  * `content.match(/^---\s*\n/)` 匹配失败，SKILL.md frontmatter 解析失败、
