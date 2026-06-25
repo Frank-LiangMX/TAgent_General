@@ -101,6 +101,8 @@ export interface SDKMessageRendererProps {
   allMessages: SDKMessage[]
   /** 相对路径解析基准 */
   basePath?: string
+  /** 多个候选基础目录（如附加目录），优先于 basePath 解析相对路径 */
+  basePaths?: string[]
   /** 是否显示消息头部（模型 icon + 名称），默认 true */
   showHeader?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
@@ -538,6 +540,8 @@ export interface AssistantTurnRendererProps {
   /** 跨 turn 历史 TaskCreate id → subject 映射（由父组件 useMemo 算一次后传入） */
   historicalTaskSubjects: Map<string, string>
   basePath?: string
+  /** 多个候选基础目录（如附加目录），优先于 basePath 解析相对路径 */
+  basePaths?: string[]
   /** 分叉回调（传入最后一条 assistant 消息的 uuid） */
   onFork?: (upToMessageUuid: string) => void
   /** 回退回调（传入 assistant message uuid） */
@@ -561,6 +565,7 @@ export function AssistantTurnRenderer({
   allMessages,
   historicalTaskSubjects,
   basePath,
+  basePaths,
   onFork,
   onRewind,
   onRetry,
@@ -690,6 +695,7 @@ export function AssistantTurnRenderer({
         block={block}
         allMessages={allMessages}
         basePath={basePath}
+        basePaths={basePaths}
         animate={!!isStreaming}
         index={i}
         dimmed={hasTextContent && block.type !== 'text'}
@@ -810,6 +816,7 @@ export function SDKMessageRenderer({
   message,
   allMessages,
   basePath,
+  basePaths,
   showHeader = true,
   sessionModelId,
 }: SDKMessageRendererProps): React.ReactElement | null {
@@ -858,6 +865,7 @@ export function SDKMessageRenderer({
                 block={block}
                 allMessages={allMessages}
                 basePath={basePath}
+                basePaths={basePaths}
                 index={i}
                 dimmed={hasTextContent && block.type !== 'text'}
               />
@@ -1192,6 +1200,9 @@ function ErrorMessage({
         // 触发 TA 模式页面打开安装对话框
         window.dispatchEvent(new CustomEvent('tagent:ta-install-request'))
         break
+      case 'open_kscc_install_guide':
+        window.dispatchEvent(new CustomEvent('tagent:kscc-install-request'))
+        break
       case 'open_ta_settings':
         // 跳转到 TA 模式（通过 custom event 通知主 shell）
         window.dispatchEvent(new CustomEvent('tagent:open-ta-mode'))
@@ -1340,6 +1351,8 @@ export interface MessageGroupRendererProps {
   isContextCompacting?: boolean
   /** 是否被用户中断 */
   stoppedByUser?: boolean
+  /** 多个候选基础目录（如附加目录），优先于 basePath 解析相对路径 */
+  basePaths?: string[]
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
   sessionModelId?: string
 }
@@ -1430,6 +1443,7 @@ export function MessageGroupRenderer({
   allMessages,
   historicalTaskSubjects,
   basePath,
+  basePaths,
   onFork,
   onRewind,
   onRetry,
@@ -1483,6 +1497,7 @@ export function MessageGroupRenderer({
         allMessages={allMessages}
         historicalTaskSubjects={historicalTaskSubjects}
         basePath={basePath}
+        basePaths={basePaths}
         onFork={onFork}
         onRewind={onRewind}
         onRetry={onRetry}

@@ -54,7 +54,7 @@ import {
 } from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
-import { Spinner } from '@/components/ui/spinner'
+import { ThreePetalSpiral } from '@/components/ui/three-petal-spiral'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
@@ -393,14 +393,14 @@ function RetryAttemptItem({
   )
 }
 
-/** 格式化耗时（毫秒 → 可读字符串） */
+/** 格式化耗时（毫秒 → 可读字符串，仅保留整数秒） */
 export function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
-  const seconds = ms / 1000
-  if (seconds < 60) return `${seconds.toFixed(1)}s`
+  const seconds = Math.round(ms / 1000)
+  if (seconds < 1) return `0s`
+  if (seconds < 60) return `${seconds}s`
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
-  return `${m}m ${s.toFixed(0)}s`
+  return `${m}m ${s}s`
 }
 
 /** 构建 usage tooltip 多行文本 */
@@ -443,8 +443,12 @@ export function DurationBadge({
   )
 }
 
-/** Agent 运行指示器 — Shimmer Spinner + 无括号的运行时间 */
-function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.ReactElement {
+/** Agent 运行指示器 — 三瓣螺旋动画 + 运行时间 */
+function AgentRunningIndicator({
+  startedAt,
+}: {
+  startedAt?: number
+}): React.ReactElement {
   const [elapsed, setElapsed] = React.useState(0)
 
   React.useEffect(() => {
@@ -456,17 +460,17 @@ function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.Rea
   }, [startedAt])
 
   const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds.toFixed(1)}s`
+    if (seconds < 60) return `${seconds.toFixed(0)}s`
     const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}m ${s.toFixed(1)}s`
+    const s = Math.floor(seconds % 60)
+    return `${m}m ${s}s`
   }
 
   return (
-    <div className="flex items-center gap-2 min-h-[28px]">
-      <Spinner size="sm" className="text-primary/75" />
+    <div className="flex items-center gap-1.5 min-h-[28px]">
+      <ThreePetalSpiral size={16} />
       <span className="text-[13px] font-light text-muted-foreground/75 tabular-nums">
-        Agent Running {formatTime(elapsed)}
+        运行中 {formatTime(elapsed)}
       </span>
     </div>
   )
@@ -866,7 +870,8 @@ export function AgentMessages({
                     group={group}
                     allMessages={allSDKMessages}
                     historicalTaskSubjects={historicalTaskSubjects}
-                    basePath={sessionPath || undefined}
+                    basePath={(attachedDirs?.length ?? 0) > 0 ? undefined : (sessionPath || undefined)}
+                    basePaths={(attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined}
                     onFork={shouldDisableActions ? undefined : onFork}
                     onRewind={shouldDisableActions ? undefined : onRewind}
                     onRetry={shouldDisableActions ? undefined : onRetry}
@@ -911,8 +916,8 @@ export function AgentMessages({
                                 key={index}
                                 block={block}
                                 allMessages={allSDKMessages}
-                                basePath={sessionPath || undefined}
-                                basePaths={attachedDirs}
+                                basePath={(attachedDirs?.length ?? 0) > 0 ? undefined : (sessionPath || undefined)}
+                                basePaths={(attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined}
                                 index={index}
                                 dimmed={hasSmoothTextContent && block.type !== 'text'}
                                 isStreaming={streaming}

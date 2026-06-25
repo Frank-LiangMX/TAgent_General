@@ -112,6 +112,7 @@ const PROVIDER_CHAT_PATHS: Record<ProviderType, string> = {
   qwen: '/chat/completions',
   xiaomi: '/v1/messages',
   'xiaomi-token-plan': '/v1/messages',
+  'kscc-internal': '/v1/messages',
   custom: '/chat/completions',
 }
 
@@ -582,7 +583,15 @@ export function ChannelForm({
             placeholder="https://api.example.com"
             description={baseUrl.trim() ? `预览：${buildPreviewUrl(baseUrl, provider)}` : undefined}
           />
-          {/* API Key + 测试连接同行 */}
+          {/* API Key + 测试连接同行 — kscc 渠道只读提示 */}
+          {channel?.provider === 'kscc-internal' ? (
+            <div className="px-4 py-3">
+              <div className="text-sm font-medium text-foreground">API Key</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                kscc 内网渠道由系统自动配置，无需 API Key。认证由 kscc CLI 自行处理。
+              </p>
+            </div>
+          ) : (
           <div className="px-4 py-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="text-sm font-medium text-foreground">API Key</div>
@@ -655,6 +664,7 @@ export function ChannelForm({
               </div>
             )}
           </div>
+          )}
           <SettingsToggle
             label="启用此配置"
             description="关闭后该配置的模型不会在选择列表中出现"

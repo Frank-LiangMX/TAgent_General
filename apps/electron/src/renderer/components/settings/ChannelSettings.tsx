@@ -7,6 +7,7 @@
  */
 
 import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
+import type { KsccInstallReadiness } from '@tagent/shared'
 import { useAtom, useSetAtom } from 'jotai'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -31,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { getChannelLogo } from '@/lib/model-logo'
+import { KsccInstallGuide } from '@/components/agent/KsccInstallGuide'
 
 /** 组件视图模式 */
 type ViewMode = 'list' | 'create' | 'edit'
@@ -45,6 +47,7 @@ export function ChannelSettings(): React.ReactElement {
   const [agentChannelIds, setAgentChannelIds] = useAtom(agentChannelIdsAtom)
   const setGlobalChannels = useSetAtom(channelsAtom)
   const [deleteTarget, setDeleteTarget] = React.useState<Channel | null>(null)
+  const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
   const agentChannelIdsRef = React.useRef(agentChannelIds)
   const agentChannelIdRef = React.useRef(agentChannelId)
 
@@ -60,6 +63,12 @@ export function ChannelSettings(): React.ReactElement {
   const loadChannels = React.useCallback(async (): Promise<Channel[]> => {
     try {
       const list = await window.electronAPI.listChannels()
+      // kscc 内网渠道置顶
+      list.sort((a, b) => {
+        const aKscc = a.provider === 'kscc-internal' ? 0 : 1
+        const bKscc = b.provider === 'kscc-internal' ? 0 : 1
+        return aKscc - bKscc
+      })
       setChannels(list)
       setGlobalChannels(list) // 同步到全局缓存
       return list
@@ -145,6 +154,26 @@ export function ChannelSettings(): React.ReactElement {
 
   /** 切换渠道启用状态（主开关） */
   const handleToggle = async (channel: Channel): Promise<void> => {
+    // kscc 渠道禁用时，先检查是否已安装
+    if (channel.provider === 'kscc-internal' && !channel.enabled) {
+      try {
+        const status = await window.electronAPI.getKsccStatus()
+        if (status.installed) {
+          // 已安装，直接启用
+          await window.electronAPI.updateChannel(channel.id, { enabled: true })
+          const settings = await window.electronAPI.getSettings()
+          const currentIds: string[] = settings.agentChannelIds ?? []
+          if (!currentIds.includes(channel.id)) {
+            await window.electronAPI.updateSettings({ agentChannelIds: [channel.id, ...currentIds] })
+          }
+          await loadChannels()
+          return
+        }
+      } catch { /* fallthrough to guide */ }
+      // 未安装，打开引导
+      setKsccGuideOpen(true)
+      return
+    }
     try {
       const savedChannel = await window.electronAPI.updateChannel(channel.id, {
         enabled: !channel.enabled,
@@ -245,6 +274,15 @@ export function ChannelSettings(): React.ReactElement {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* kscc 安装引导 */}
+      <KsccInstallGuide
+        open={ksccGuideOpen}
+        onOpenChange={setKsccGuideOpen}
+        onComplete={(installed) => {
+          if (installed) loadChannels()
+        }}
+      />
     </div>
   )
 }
@@ -261,13 +299,18 @@ interface ChannelRowProps {
 function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
   const enabledCount = channel.models.filter((m) => m.enabled).length
   const isAgentCapable = isAgentCompatibleProvider(channel.provider)
+  const isKscc = channel.provider === 'kscc-internal'
   const description = [
     PROVIDER_LABELS[channel.provider],
     enabledCount > 0 ? `${enabledCount} 个模型已启用` : undefined,
     isAgentCapable ? '可用于 Agent' : undefined,
+    isKscc ? '金山云' : undefined,
   ]
     .filter(Boolean)
     .join(' · ')
+
+  // kscc 渠道由系统管理生命周期，不允许手动编辑/删除
+  const hideEditDelete = isKscc
 
   return (
     <SettingsRow
@@ -277,21 +320,25 @@ function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): R
       className="group"
     >
       <div className="flex items-center gap-2">
-        {/* 操作按钮 */}
-        <button
-          onClick={onEdit}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
-          title="编辑"
-        >
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={onDelete}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-          title="删除"
-        >
-          <Trash2 size={14} />
-        </button>
+        {/* 操作按钮 — kscc 渠道隐藏 */}
+        {!hideEditDelete && (
+          <>
+            <button
+              onClick={onEdit}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
+              title="编辑"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+              title="删除"
+            >
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
 
         {/* 启用/关闭开关 */}
         <Switch checked={channel.enabled} onCheckedChange={onToggle} />

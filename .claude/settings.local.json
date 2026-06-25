@@ -22,7 +22,16 @@
       "Bash(grep -iE \"\\\\.tsx$\")",
       "Bash(xargs grep -l \"Tiptap\\\\|RichText\\\\|EditorContent\\\\|useEditor\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --base main --title 'fix\\(agent\\): low-cost upstream borrow patch \\(A2-A5\\)' --body ' *)",
+      "Bash(gh pr *)",
+      "Bash(git pull *)",
+      "Bash(xargs grep -li -E \"scheduler|cron|schedule|automation|routine\")",
+      "Bash(xargs grep -l \"better-sqlite3\\\\|sqlite\\\\|\\\\.db\")",
+      "Bash(bunx vitest *)"
     ]
   }
 }

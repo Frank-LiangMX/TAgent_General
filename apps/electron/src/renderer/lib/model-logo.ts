@@ -53,6 +53,7 @@ import WenxinLogo from '@/assets/models/wenxin.png'
 import XiaomiLogo from '@/assets/models/xiaomi.png'
 import YiLogo from '@/assets/models/yi.png'
 import ZhipuLogo from '@/assets/models/zhipu.png'
+import KsccLogo from '@/assets/models/kscc.svg'
 
 // ChatGLM
 
@@ -183,6 +184,9 @@ const MODEL_LOGO_MAP: Record<string, string> = {
   cohere: CohereLogo,
   command: CohereLogo,
 
+  // === kscc 内网渠道 ===
+  kscc: KsccLogo,
+
   // === Embedding 通用 ===
   'text-embedding': EmbeddingLogo,
   embedding: EmbeddingLogo,
@@ -208,6 +212,7 @@ const PROVIDER_LOGO_MAP: Record<ProviderType, string> = {
   qwen: QwenLogo,
   xiaomi: XiaomiLogo,
   'xiaomi-token-plan': XiaomiLogo,
+  'kscc-internal': KsccLogo,
   custom: OpenAILogo,
 }
 

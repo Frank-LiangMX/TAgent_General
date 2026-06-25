@@ -5,14 +5,16 @@
  * P3: Chat 模式已退役，移除 Chat 相关依赖。
  */
 
+import { isAgentCompatibleProvider } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { ChevronDown, Cpu, Search } from 'lucide-react'
 import * as React from 'react'
 
-import type { AgentEffort, Channel, ModelOption } from '@tagent/shared'
+import type { AgentEffort, Channel, ModelOption, KsccInstallReadiness } from '@tagent/shared'
 
 import {
   agentChannelIdAtom,
+  agentChannelIdsAtom,
   agentEffortAtom,
   agentModelIdAtom,
   agentThinkingAtom,
@@ -27,7 +29,9 @@ import { cn } from '@/lib/utils'
 function buildModelOptions(
   channels: Channel[],
   filterChannelId?: string,
-  filterChannelIds?: string[]
+  filterChannelIds?: string[],
+  ksccReadiness?: KsccInstallReadiness | null,
+  lockedProvider?: string
 ): ModelOption[] {
   const options: ModelOption[] = []
 
@@ -36,6 +40,20 @@ function buildModelOptions(
     if (filterChannelId && channel.id !== filterChannelId) continue
     if (filterChannelIds && filterChannelIds.length > 0 && !filterChannelIds.includes(channel.id))
       continue
+
+    // 渠道互斥：kscc 开始的会话不显示外部渠道，外部渠道开始的不显示 kscc
+    if (lockedProvider) {
+      const isKsccChannel = channel.provider === 'kscc-internal'
+      if (lockedProvider === 'kscc-internal' && !isKsccChannel) continue
+      if (lockedProvider !== 'kscc-internal' && isKsccChannel) continue
+    }
+
+    // kscc 渠道特殊处理：未安装时灰显
+    const isKscc = channel.provider === 'kscc-internal'
+    const ksccDisabled = isKscc && ksccReadiness && !ksccReadiness.kscc.installed
+    const ksccDisabledReason = isKscc && ksccReadiness && !ksccReadiness.kscc.installed
+      ? '请先安装 kscc'
+      : undefined
 
     for (const model of channel.models) {
       if (!model.enabled) continue
@@ -46,6 +64,8 @@ function buildModelOptions(
         modelId: model.id,
         modelName: model.name,
         provider: channel.provider,
+        ...(ksccDisabled && { disabled: true, disabledReason: ksccDisabledReason }),
+        ...(isKscc && !ksccDisabled && { badge: '金山云' }),
       })
     }
   }
@@ -84,6 +104,8 @@ interface AgentModelSelectorProps {
   filterChannelId?: string
   /** 仅显示这些渠道的模型（多渠道过滤） */
   filterChannelIds?: string[]
+  /** 会话锁定的渠道类型，互斥过滤（'kscc-internal' 则只显示 kscc，其他值则隐藏 kscc） */
+  lockedProvider?: string
   /** 外部选中模型（不传则用内部 atom） */
   externalSelectedModel?: { channelId: string; modelId: string } | null
   /** 外部选择回调 */
@@ -92,15 +114,19 @@ interface AgentModelSelectorProps {
   hideLogo?: boolean
   /** 紧凑模式：Cpu 图标 + 模型名 pill，用于嵌入 trailing 区域 */
   compact?: boolean
+  /** kscc 未安装时点击灰显模型的回调 */
+  onInstallGuideOpen?: () => void
 }
 
 export function AgentModelSelector({
   filterChannelId,
   filterChannelIds,
+  lockedProvider,
   externalSelectedModel,
   onModelSelect,
   hideLogo = false,
   compact = false,
+  onInstallGuideOpen,
 }: AgentModelSelectorProps = {}): React.ReactElement {
   const channelId = useAtomValue(agentChannelIdAtom)
   const modelId = useAtomValue(agentModelIdAtom)
@@ -112,6 +138,7 @@ export function AgentModelSelector({
   const channels = useAtomValue(channelsAtom)
   const channelsLoaded = useAtomValue(channelsLoadedAtom)
   const setChannels = useSetAtom(channelsAtom)
+  const [agentChannelIds, setAgentChannelIds] = useAtom(agentChannelIdsAtom)
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
   const listContentRef = React.useRef<HTMLDivElement>(null)
@@ -126,14 +153,34 @@ export function AgentModelSelector({
   // 每次打开选择浮窗时刷新渠道列表，确保最新
   React.useEffect(() => {
     if (open) {
-      window.electronAPI.listChannels().then(setChannels).catch(console.error)
+      window.electronAPI.listChannels().then((ch) => {
+        setChannels(ch)
+        // 同步 agentChannelIds 白名单，补充已启用但缺失的 Agent 兼容渠道
+        const currentIds = new Set(agentChannelIds)
+        const missingIds = ch
+          .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider) && !currentIds.has(c.id))
+          .map((c) => c.id)
+        if (missingIds.length > 0) {
+          const merged = [...missingIds, ...agentChannelIds]
+          setAgentChannelIds(merged)
+          window.electronAPI.updateSettings({ agentChannelIds: merged }).catch(console.error)
+        }
+      }).catch(console.error)
       setSearch('')
     }
-  }, [open, setChannels])
+  }, [open, setChannels, agentChannelIds, setAgentChannelIds])
+
+  // kscc 安装就绪检测
+  const [ksccReadiness, setKsccReadiness] = React.useState<KsccInstallReadiness | null>(null)
+  React.useEffect(() => {
+    if (open) {
+      window.electronAPI.checkKsccReadiness().then(setKsccReadiness).catch(() => setKsccReadiness(null))
+    }
+  }, [open])
 
   const modelOptions = React.useMemo(
-    () => buildModelOptions(channels, filterChannelId, filterChannelIds),
-    [channels, filterChannelId, filterChannelIds]
+    () => buildModelOptions(channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider),
+    [channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider]
   )
   const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
 
@@ -513,15 +560,25 @@ export function AgentModelSelector({
                                   }}
                                   type="button"
                                   aria-selected={isSelected}
-                                  onClick={() => handleSelect(option)}
+                                  disabled={option.disabled}
+                                  title={option.disabled ? option.disabledReason : undefined}
+                                  onClick={() => {
+                                    if (option.disabled) {
+                                      onInstallGuideOpen?.()
+                                      return
+                                    }
+                                    handleSelect(option)
+                                  }}
                                   onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
                                   className={cn(
                                     'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
                                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-                                    isSelected
-                                      ? 'text-foreground'
-                                      : 'hover:bg-primary/5 text-foreground/78',
-                                    isHighlighted && !isSelected && 'bg-foreground/6'
+                                    option.disabled
+                                      ? 'cursor-not-allowed opacity-50'
+                                      : isSelected
+                                        ? 'text-foreground'
+                                        : 'hover:bg-primary/5 text-foreground/78',
+                                    isHighlighted && !isSelected && !option.disabled && 'bg-foreground/6'
                                   )}
                                 >
                                   <img
@@ -537,6 +594,11 @@ export function AgentModelSelector({
                                   >
                                     {option.modelName}
                                   </span>
+                                  {option.badge && !option.disabled && (
+                                    <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
+                                      {option.badge}
+                                    </span>
+                                  )}
                                 </button>
                               )
                             })}

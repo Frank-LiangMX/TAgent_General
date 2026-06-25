@@ -43,6 +43,7 @@ import { BtwFloatingTrigger } from './BtwFloatingTrigger'
 import { BtwPanel } from './BtwPanel'
 import { ComposerModeSelector } from './ComposerModeSelector'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
+import { KsccInstallGuide } from './KsccInstallGuide'
 import { PermissionBanner } from './PermissionBanner'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
@@ -462,6 +463,7 @@ function DisplayOptionsPopover({
 }
 
 export function AgentView({ sessionId }: { sessionId: string }): React.ReactElement {
+  const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
   const [persistedSDKMessages, setPersistedSDKMessages] = React.useState<SDKMessage[]>([])
   const persistedSDKMessagesRef = React.useRef<SDKMessage[]>([])
   persistedSDKMessagesRef.current = persistedSDKMessages
@@ -493,6 +495,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   // 在传给 ModelSelector 之前过滤掉非 Anthropic 兼容的渠道，
   // 与 ChannelForm / ChannelSettings 保持一致。
   const globalChannels = useAtomValue(channelsAtom)
+  const setGlobalChannels = useSetAtom(channelsAtom)
   const agentChannelIdsAgentSafe = React.useMemo(
     () =>
       agentChannelIds.filter((id) => {
@@ -1523,7 +1526,16 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   /** ModelSelector 选择回调 */
   const handleModelSelect = React.useCallback(
     (option: ModelOption): void => {
-      // 更新当前会话的 per-session 配置
+      // 跨渠道切换时提示上下文丢失
+      const currentChannelId = sessionChannelMap.get(sessionId)
+      if (currentChannelId && currentChannelId !== option.channelId) {
+        const hasMessages = (store.get(askMessagesMapAtom).get(sessionId) ?? []).length > 0
+        if (hasMessages) {
+          toast.info('切换渠道后 Agent 将丢失之前的操作上下文，如需保留完整记忆请新建会话')
+        }
+      }
+
+      // 仅更新当前会话的 per-session 配置，不影响其他会话
       setSessionChannelMap((prev) => {
         const map = new Map(prev)
         map.set(sessionId, option.channelId)
@@ -1543,15 +1555,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         setAgentChannelIds(updatedChannelIds)
       }
 
-      // 同时更新全局默认值（新会话继承）
-      setDefaultChannelId(option.channelId)
-      setDefaultModelId(option.modelId)
-
-      // 持久化到设置
+      // 持久化白名单（不持久化全局默认渠道/模型，各会话独立）
       window.electronAPI
         .updateSettings({
-          agentChannelId: option.channelId,
-          agentModelId: option.modelId,
           agentChannelIds: updatedChannelIds,
         })
         .catch(console.error)
@@ -1560,12 +1566,21 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       sessionId,
       setSessionChannelMap,
       setSessionModelMap,
-      setDefaultChannelId,
-      setDefaultModelId,
       agentChannelIds,
       setAgentChannelIds,
     ]
   )
+
+  // 渠道互斥：会话锁定到初始渠道类型（kscc 或外部）
+  const lockedProvider = React.useMemo(() => {
+    if (!agentChannelId) return undefined
+    // 仅在会话已有消息时锁定渠道类型，新会话允许自由选择
+    const sessionHasMessages = persistedSDKMessages.length > 0
+    if (!sessionHasMessages) return undefined
+    const ch = globalChannels.find((c) => c.id === agentChannelId)
+    if (!ch) return undefined
+    return ch.provider === 'kscc-internal' ? 'kscc-internal' : 'external'
+  }, [agentChannelId, globalChannels, persistedSDKMessages.length])
 
   /** 构建 externalSelectedModel 给 ModelSelector */
   const externalSelectedModel = React.useMemo(() => {
@@ -2528,6 +2543,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     return () => window.removeEventListener('tagent:focus-input', handler)
   }, [])
 
+  // 监听 kscc 安装引导请求（来自 preflight error recovery action）
+  React.useEffect(() => {
+    const handler = () => setKsccGuideOpen(true)
+    window.addEventListener('tagent:kscc-install-request', handler)
+    return () => window.removeEventListener('tagent:kscc-install-request', handler)
+  }, [])
+
   const allAskUserRequests = useAtomValue(allPendingAskUserRequestsAtom)
   const allExitPlanRequests = useAtomValue(allPendingExitPlanRequestsAtom)
   const hasBannerOverlay =
@@ -2623,8 +2645,10 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     <>
       <AgentModelSelector
         filterChannelIds={agentChannelIdsAgentSafe}
+        lockedProvider={lockedProvider}
         externalSelectedModel={externalSelectedModel}
         onModelSelect={handleModelSelect}
+        onInstallGuideOpen={() => setKsccGuideOpen(true)}
         hideLogo
         compact
       />
@@ -2887,6 +2911,17 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         open={heuristicDialog.open}
         messagePreview={heuristicDialog.pendingText}
         onChoice={handleHeuristicChoice}
+      />
+
+      {/* kscc 内网渠道状态检测 */}
+      <KsccInstallGuide
+        open={ksccGuideOpen}
+        onOpenChange={setKsccGuideOpen}
+        onComplete={(installed) => {
+          if (installed) {
+            window.electronAPI.listChannels().then(setGlobalChannels).catch(console.error)
+          }
+        }}
       />
     </>
   )

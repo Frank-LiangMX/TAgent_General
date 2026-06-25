@@ -456,6 +456,13 @@ function ToolUseBlock({
             {displayLabel}
           </span>
 
+          {/* SubAgent 标识 */}
+          {isAgentTool && (
+            <span className="ml-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'var(--tagent-brand-soft)', color: 'var(--tagent-brand)' }}>
+              SubAgent
+            </span>
+          )}
+
           {/* 子工具计数（折叠时显示） */}
           {childToolCount > 0 && !childrenExpanded && (
             <span className="shrink-0 text-[11px] text-muted-foreground/50 tabular-nums">
@@ -641,11 +648,11 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
         />
         <span
           className={cn(
-            'text-[14px] uppercase tracking-wider',
+            'text-[14px]',
             dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
           )}
         >
-          Thinking
+          思考
         </span>
       </div>
       <div
