@@ -786,6 +786,10 @@ export interface AgentSessionMeta {
    * @see docs/plans/2026-06-13-ask-mode-unification-design.md §4.1
    */
   lastComposerMode?: ComposerMode
+  /** 用户接管标记（true=定时任务不再注入消息，避免污染用户私人会话） */
+  automationGraduated?: boolean
+  /** 创建来源的定时任务 ID（由 automation-scheduler 在创建子会话时写入） */
+  sourceAutomationId?: string
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */
@@ -1018,6 +1022,10 @@ export interface AgentSendInput {
   mentionedSessionIds?: string[]
   /** 渲染进程生成的流式开始时间戳，主进程原样回传到 STREAM_COMPLETE，确保竞态保护比较的是同一个值 */
   startedAt?: number
+  /** 定时任务自动化上下文（注入到 prompt 前，告诉 Agent 这是定时任务执行） */
+  automationContext?: string
+  /** 定时任务触发来源标识（如 'automation'） */
+  triggeredBy?: string
 }
 
 // ===== Agent 队列消息 =====

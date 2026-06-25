@@ -25,6 +25,7 @@ import {
   USAGE_STATS_IPC_CHANNELS,
   ASK_IPC_CHANNELS,
   SOUL_IPC_CHANNELS,
+  AUTOMATION_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -1363,6 +1364,18 @@ export interface ElectronAPI {
       }) => void
     ) => () => void
     quitAndInstall: () => Promise<void>
+  }
+
+  // ===== Automation 定时任务 =====
+
+  automation: {
+    list: () => Promise<import('@tagent/shared').Automation[]>
+    create: (input: import('@tagent/shared').CreateAutomationInput) => Promise<import('@tagent/shared').Automation>
+    update: (input: import('@tagent/shared').UpdateAutomationInput) => Promise<import('@tagent/shared').Automation>
+    delete: (id: string) => Promise<void>
+    toggle: (id: string) => Promise<import('@tagent/shared').Automation>
+    runNow: (id: string) => Promise<void>
+    onChanged: (callback: () => void) => () => void
   }
 
   // GitHub Release
@@ -3536,6 +3549,26 @@ const electronAPI: ElectronAPI = {
       USAGE_STATS_IPC_CHANNELS.GET_SESSION_CONTEXT_STATUS,
       sessionId
     ) as Promise<SessionContextStatus | null>
+  },
+
+  // ===== Automation 定时任务 =====
+
+  automation: {
+    list: () => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.LIST),
+    create: (input: import('@tagent/shared').CreateAutomationInput) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.CREATE, input),
+    update: (input: import('@tagent/shared').UpdateAutomationInput) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.UPDATE, input),
+    delete: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.DELETE, id),
+    toggle: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.TOGGLE, id),
+    runNow: (id: string) => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.RUN_NOW, id),
+    onChanged: (callback: () => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
+      return () => {
+        ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
+      }
+    },
   },
 }
 

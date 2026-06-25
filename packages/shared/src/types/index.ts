@@ -65,3 +65,6 @@ export * from './usage-stats'
 
 // Context Usage 分项
 export * from './context-usage'
+
+// Automation 定时任务相关类型
+export * from './automation'
