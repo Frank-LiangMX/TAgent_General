@@ -1,5 +1,5 @@
 /**
- * Chat 工具配置服务
+ * 工具配置服务
  *
  * 管理 ~/.tagent/chat-tools.json 的读写。
  * 存储工具开关状态和非记忆工具的凭据。
@@ -43,7 +43,7 @@ export function getChatToolsConfig(): ChatToolsFileConfig {
       customTools: data.customTools ?? [],
     }
   } catch (error) {
-    console.error('[Chat 工具配置] 读取失败:', error)
+    console.error('[工具配置] 读取失败:', error)
     return structuredClone(DEFAULT_CONFIG)
   }
 }
@@ -55,10 +55,10 @@ export function saveChatToolsConfig(config: ChatToolsFileConfig): void {
   const filePath = getChatToolsConfigPath()
   try {
     writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf-8')
-    console.log('[Chat 工具配置] 已保存')
+    console.log('[工具配置] 已保存')
   } catch (error) {
-    console.error('[Chat 工具配置] 保存失败:', error)
-    throw new Error('保存 Chat 工具配置失败')
+    console.error('[工具配置] 保存失败:', error)
+    throw new Error('保存工具配置失败')
   }
 }
 

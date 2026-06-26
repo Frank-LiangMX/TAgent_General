@@ -18,7 +18,7 @@ import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 import type { Channel } from '@tagent/shared'
 
 import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import {
   AlertDialog,
   AlertDialogAction,

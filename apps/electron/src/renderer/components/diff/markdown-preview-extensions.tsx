@@ -24,7 +24,7 @@ import type { EditorView, ViewMutationRecord } from '@tiptap/pm/view'
 import type { Root } from 'react-dom/client'
 
 type FileAccessRef = { current: FileAccessOptions | undefined }
-/** 传 null 表示当前编辑器无会话/文件上下文（如 ScratchPad），跳过路径解析。 */
+/** 传 null 表示当前编辑器无会话/文件上下文（如 DraftView），跳过路径解析。 */
 type FileAccessRefOrNull = FileAccessRef | null
 type ThemeRef = { current: string }
 
@@ -436,7 +436,7 @@ function resolveMediaSrc(
       })()
     : src
   const candidatePaths = uniqueMediaCandidates([localSrc, decodeLocalMediaPath(localSrc)])
-  // 无会话上下文：直接显示原始 src（ScratchPad 等无文件解析需求的场景）
+  // 无会话上下文：直接显示原始 src（DraftView 等无文件解析需求的场景）
   if (fileAccessRef === null) {
     apply(isFileUrl ? '' : localSrc)
     return () => {}

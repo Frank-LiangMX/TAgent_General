@@ -1,5 +1,5 @@
 /**
- * Nano Banana 生图工具模块（Chat 模式）
+ * Nano Banana 生图工具模块
  *
  * 基于 Gemini Image Generation API 提供 AI 生图能力。
  * 支持文生图、参考图编辑、多轮连续修改。
@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { saveAttachment, readAttachmentAsBase64, isImageAttachment } from '../attachment-service'
-import { getToolCredentials } from '../chat-tool-config'
+import { getToolCredentials } from '../tool-config'
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta, FileAttachment } from '@tagent/shared'

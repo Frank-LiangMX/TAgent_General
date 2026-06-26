@@ -1,5 +1,5 @@
 /**
- * WorkspaceFilesView — 工作区文件树（目录区「工作区」功能区内容）
+ * WorkspaceFilesView — 项目文件树（目录区「工作区」功能区内容）
  *
  * 与 SidePanel 中的 session 端文件面板共享数据底座（workspaceAttachedDirectoriesMapAtom /
  * workspaceAttachedFilesMapAtom / getWorkspaceFilesPath），但行为独立：
@@ -62,8 +62,10 @@ export function WorkspaceFilesView({
   // 当前工作区
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
-  const workspaceName = workspaces.find((w) => w.id === currentWorkspaceId)?.name ?? '工作区'
-  const workspaceSlug = workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null
+  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId)
+  const workspaceName = currentWorkspace?.name ?? '工作区'
+  const workspaceSlug = currentWorkspace?.slug ?? null
+  const isProjectMode = !!currentWorkspace?.projectDirectory
 
   // 工作区级附加目录 / 文件
   const wsAttachedDirsMap = useAtomValue(workspaceAttachedDirectoriesMapAtom)
@@ -106,9 +108,13 @@ export function WorkspaceFilesView({
       .catch(console.error)
   }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
 
-  // 加载工作区文件目录路径
+  // 加载项目文件目录路径（项目模式下使用 projectDirectory）
   const [workspaceFilesPath, setWorkspaceFilesPath] = React.useState<string | null>(null)
   React.useEffect(() => {
+    if (isProjectMode && currentWorkspace?.projectDirectory) {
+      setWorkspaceFilesPath(currentWorkspace.projectDirectory)
+      return
+    }
     if (!workspaceSlug) {
       setWorkspaceFilesPath(null)
       return
@@ -117,7 +123,7 @@ export function WorkspaceFilesView({
       .getWorkspaceFilesPath(workspaceSlug)
       .then(setWorkspaceFilesPath)
       .catch(() => setWorkspaceFilesPath(null))
-  }, [workspaceSlug])
+  }, [isProjectMode, currentWorkspace?.projectDirectory, workspaceSlug])
 
   const filesVersion = useAtomValue(workspaceFilesVersionAtom)
   const setFilesVersion = useSetAtom(workspaceFilesVersionAtom)
@@ -250,7 +256,7 @@ export function WorkspaceFilesView({
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
                 <FolderOpen className="size-3.5" />
-                <span>工作区文件</span>
+                <span>项目文件</span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-semibold text-foreground">{workspaceName}</h2>
@@ -281,7 +287,7 @@ export function WorkspaceFilesView({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p>在 Finder 中打开工作区文件目录</p>
+                    <p>在 Finder 中打开项目文件目录</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -297,7 +303,7 @@ export function WorkspaceFilesView({
       ) : (
         <div className="flex items-center gap-1 px-2 h-[32px] flex-shrink-0">
           <FolderOpen className="size-3 text-muted-foreground" />
-          <span className="text-[11px] font-medium text-muted-foreground">工作区文件</span>
+          <span className="text-[11px] font-medium text-muted-foreground">项目文件</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Info className="size-3 text-muted-foreground/50 cursor-help" />
@@ -328,7 +334,7 @@ export function WorkspaceFilesView({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p>在 Finder 中打开工作区文件目录</p>
+                <p>在 Finder 中打开项目文件目录</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -349,7 +355,7 @@ export function WorkspaceFilesView({
           sessionPath={null}
           sessionAttachedDirs={[]}
           workspaceAttachedDirs={wsAttachedDirs}
-          placeholder="搜索工作区文件..."
+          placeholder="搜索项目文件..."
           onFilePreview={handleFileActivate}
         />
       </div>
@@ -363,52 +369,52 @@ export function WorkspaceFilesView({
         )}
         contentClassName={cn('pb-1', layout === 'main' ? 'p-4' : '')}
       >
-        {wsAttachedFiles.length > 0 && (
-          <AttachedFilesSection
-            attachedFiles={wsAttachedFiles}
-            onDetach={handleDetachFile}
-            onFilePreview={handleFileActivate}
-          />
-        )}
-        {wsAttachedDirs.length > 0 && (
-          <AttachedDirsSection
-            attachedDirs={wsAttachedDirs}
-            onDetach={handleDetachDirectory}
-            refreshVersion={filesVersion}
-            onFilePreview={handleFileActivate}
-            inspectMode={isNavigator}
-            onDirectoryInspect={handleInspectDirectory}
-          />
-        )}
-        {workspaceFilesPath && (
-          <>
-            {hasAttachedItems && (
-              <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
-                工作文件（存储于该工作区目录）
-              </div>
-            )}
-            <FileBrowser
-              rootPath={workspaceFilesPath}
-              hideToolbar
-              embedded
-              hideEmpty={hasAttachedItems}
-              onFilePreview={handleOpenInOs}
-              inspectMode={isNavigator}
-              onFileInspect={handleInspectFile}
-              onDirectoryInspect={handleInspectDirectory}
-              inspectPath={isNavigator ? selectedFile : null}
+          {wsAttachedFiles.length > 0 && (
+            <AttachedFilesSection
+              attachedFiles={wsAttachedFiles}
+              onDetach={handleDetachFile}
+              onFilePreview={handleFileActivate}
             />
-          </>
-        )}
-        <FileDropZone
-          workspaceSlug={workspaceSlug ?? ''}
-          target="workspace"
-          onFilesUploaded={handleFilesUploaded}
-          onFilesAttached={handleFilesAttached}
-          onAttachFolder={handleAttachFolder}
-          onFoldersDropped={handleFoldersDropped}
-        />
-      </ScrollProgressContainer>
+          )}
+          {wsAttachedDirs.length > 0 && (
+            <AttachedDirsSection
+              attachedDirs={wsAttachedDirs}
+              onDetach={handleDetachDirectory}
+              refreshVersion={filesVersion}
+              onFilePreview={handleFileActivate}
+              inspectMode={isNavigator}
+              onDirectoryInspect={handleInspectDirectory}
+            />
+          )}
+          {workspaceFilesPath && (
+            <>
+              {hasAttachedItems && (
+                <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
+                  工作文件（存储于该工作区目录）
+                </div>
+              )}
+              <FileBrowser
+                rootPath={workspaceFilesPath}
+                hideToolbar
+                embedded
+                hideEmpty={hasAttachedItems}
+                onFilePreview={handleOpenInOs}
+                inspectMode={isNavigator}
+                onFileInspect={handleInspectFile}
+                onDirectoryInspect={handleInspectDirectory}
+                inspectPath={isNavigator ? selectedFile : null}
+              />
+            </>
+          )}
+          <FileDropZone
+            workspaceSlug={workspaceSlug ?? ''}
+            target="workspace"
+            onFilesUploaded={handleFilesUploaded}
+            onFilesAttached={handleFilesAttached}
+            onAttachFolder={handleAttachFolder}
+            onFoldersDropped={handleFoldersDropped}
+          />
+        </ScrollProgressContainer>
     </div>
   )
 }

@@ -1,8 +1,8 @@
 /**
  * Tab Atoms — 当前工作区入口状态管理
  *
- * 顶部只保留 Scratch Pad 与当前会话两个入口；会话恢复与导航交给左侧列表。
- * 通过桥接 atom 与现有 currentConversationIdAtom / currentAgentSessionIdAtom 同步，
+ * 顶部标签页管理（Agent / Draft / Preview）。
+ * 通过桥接 atom 与现有 currentAgentSessionIdAtom 同步，
  * 确保所有现有派生 atoms 无需修改。
  */
 
@@ -11,9 +11,9 @@ import { atom } from 'jotai'
 import {
   agentRunningSessionIdsAtom,
   agentSessionIndicatorMapAtom,
+  agentSessionsAtom,
   unviewedCompletedSessionIdsAtom,
 } from './agent-atoms'
-import { streamingConversationIdsAtom } from './chat-atoms'
 
 import type { SessionIndicatorStatus } from './agent-atoms'
 import type { PreviewFile } from './preview-atoms'
@@ -23,17 +23,28 @@ import { topLevelModeAtom } from '@/atoms/app-mode'
 
 // ===== 类型定义 =====
 
-/** 标签页类型（Settings 不作为 Tab，保留独立视图；P3 已退役 chat） */
-export type TabType = 'agent' | 'scratch' | 'preview'
+/** 标签页类型（Settings 不作为 Tab，保留独立视图） */
+export type TabType = 'agent' | 'draft' | 'preview'
 
-/** Scratch Pad 专用的固定 sessionId */
-export const SCRATCH_PAD_ID = '__scratch-pad__'
+/** Draft Tab 的 ID 前缀 */
+export const DRAFT_TAB_PREFIX = '__draft__:'
 
 /** 会话预览 Tab 的 ID 前缀：运行时临时入口，不参与持久化 */
 const PREVIEW_TAB_PREFIX = '__preview__:'
 
-/** Scratch Pad 标签默认标题 */
-export const SCRATCH_PAD_TITLE = 'Scratch Pad'
+/** Draft Tab 的 ID 格式：__draft__:<draftId> */
+export function createDraftTabId(draftId: string): string {
+  return `${DRAFT_TAB_PREFIX}${draftId}`
+}
+
+export function isDraftTab(tab: TabItem): boolean {
+  return tab.type === 'draft' || tab.id.startsWith(DRAFT_TAB_PREFIX)
+}
+
+export function getDraftIdFromTab(tab: TabItem): string | null {
+  if (tab.type !== 'draft') return null
+  return tab.id.replace(DRAFT_TAB_PREFIX, '')
+}
 
 /** 标签页数据 */
 export interface TabItem {
@@ -46,7 +57,7 @@ export interface TabItem {
   /** 标签页显示标题 */
   title: string
   /**
-   * 顶层模式标记（仅 agent/scratch/preview 类型有意义）。
+   * 顶层模式标记（仅 agent/draft/preview 类型有意义）。
    * - 'general'：通用模式会话，TA 模式 TabBar 不显示
    * - 'ta'：TA 模式会话，通用模式 TabBar 不显示
    * 旧记录不设此字段 → 视为 'general'。
@@ -86,8 +97,26 @@ export interface OpenTabRestore {
 
 // ===== 核心 Atoms =====
 
-/** 顶部入口列表：Scratch Pad + 当前会话（所有模式共享） */
-export const tabsAtom = atom<TabItem[]>([])
+/** 顶部入口列表（写入时自动清理孤儿 preview tab） */
+export const tabsAtom = atom<TabItem[], [TabItem[] | ((prev: TabItem[]) => TabItem[])], void>(
+  (get) => get(rawTabsAtom),
+  (get, set, updater: TabItem[] | ((prev: TabItem[]) => TabItem[])) => {
+    const prev = get(rawTabsAtom)
+    const newTabs = typeof updater === 'function' ? updater(prev) : updater
+
+    // Invariant: preview tab 必须有对应的 agent tab
+    const agentSessionIds = new Set(
+      newTabs.filter((t) => t.type === 'agent').map((t) => t.sessionId)
+    )
+    const cleaned = newTabs.filter(
+      (t) => t.type !== 'preview' || agentSessionIds.has(t.sessionId)
+    )
+    set(rawTabsAtom, cleaned)
+  }
+)
+
+/** 内部原始存储 */
+const rawTabsAtom = atom<TabItem[]>([])
 
 /**
  * 每个顶层模式各自的激活 tab ID。
@@ -146,19 +175,31 @@ export interface TabMinimapItem {
 }
 export const tabMinimapCacheAtom = atom<Map<string, TabMinimapItem[]>>(new Map())
 
-/** Scratch Pad 编辑内容（HTML 字符串，供 TipTap 编辑器使用） */
-export const scratchPadContentAtom = atom<string>('')
-/** Scratch Pad 内容是否已从磁盘加载 */
-export const scratchPadLoadedAtom = atom<boolean>(false)
+/** Draft 编辑内容（HTML 字符串，供 TipTap 编辑器使用） */
+export const draftPlaceholderAtom = atom<string>('')
+/** Draft 内容是否已从磁盘加载 */
+export const draftPlaceholderLoadedAtom = atom<boolean>(false)
 
 // ===== 派生 Atoms =====
 
-/** 当前活跃标签 */
+/** 标签列表（标题与会话元数据同步） */
+export const syncedTabsAtom = atom<TabItem[]>((get) => {
+  const tabs = get(tabsAtom)
+  const sessions = get(agentSessionsAtom)
+  return tabs.map((tab) => {
+    if (tab.type !== 'agent') return tab
+    const session = sessions.find((s) => s.id === tab.sessionId)
+    const title = session?.title
+    return title && title !== tab.title ? { ...tab, title } : tab
+  })
+})
+
+/** 当前活跃标签（从同步列表读取，标题始终最新） */
 export const activeTabAtom = atom<TabItem | null>((get) => {
   const activeId = get(activeTabIdAtom)
   if (!activeId) return null
   const mode = get(topLevelModeAtom)
-  return get(tabsAtom).find((t) => t.id === activeId && isTabVisibleInMode(t, mode)) ?? null
+  return get(syncedTabsAtom).find((t) => t.id === activeId && isTabVisibleInMode(t, mode)) ?? null
 })
 
 /**
@@ -173,11 +214,11 @@ export const activeSessionIdAtom = atom<string | null>((get) => {
 
 /** 标签是否在流式输出中（派生，从现有流式 atoms 计算） */
 export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
-  const tabs = get(tabsAtom)
+  const tabs = get(syncedTabsAtom)
   const agentRunning = get(agentRunningSessionIdsAtom)
   const map = new Map<string, boolean>()
   for (const tab of tabs) {
-    if (tab.type === 'scratch') continue
+    if (tab.type === 'draft') continue
     // P3: chat 已退役，仅处理 agent 类型
     if (tab.type === 'agent') {
       map.set(tab.id, agentRunning.has(tab.sessionId))
@@ -188,12 +229,12 @@ export const tabStreamingMapAtom = atom<Map<string, boolean>>((get) => {
 
 /** 标签页指示点状态（agent 用完整 SessionIndicatorStatus） */
 export const tabIndicatorMapAtom = atom<Map<string, SessionIndicatorStatus>>((get) => {
-  const tabs = get(tabsAtom)
+  const tabs = get(syncedTabsAtom)
   const agentIndicator = get(agentSessionIndicatorMapAtom)
   const unviewedCompletedIds = get(unviewedCompletedSessionIdsAtom)
   const map = new Map<string, SessionIndicatorStatus>()
   for (const tab of tabs) {
-    if (tab.type === 'scratch') continue
+    if (tab.type === 'draft') continue
     // P3: chat 已退役，仅处理 agent 类型
     if (tab.type === 'agent') {
       const status =
@@ -224,12 +265,12 @@ export function isPreviewTab(tab: TabItem): boolean {
 }
 
 export function isTabVisibleInMode(tab: TabItem, mode: TopLevelMode): boolean {
-  return tab.type === 'scratch' || (tab.mode ?? 'general') === mode
+  return tab.type === 'draft' || (tab.mode ?? 'general') === mode
 }
 
 export const visibleTabsAtom = atom<TabItem[]>((get) => {
   const mode = get(topLevelModeAtom)
-  return get(tabsAtom).filter((tab) => isTabVisibleInMode(tab, mode))
+  return get(syncedTabsAtom).filter((tab) => isTabVisibleInMode(tab, mode))
 })
 
 export const visibleSessionTabsAtom = atom<TabItem[]>((get) => {
@@ -241,7 +282,7 @@ function isSessionTab(tab: TabItem): boolean {
 }
 
 function getPersistentTabs(tabs: TabItem[]): TabItem[] {
-  return tabs.filter((tab) => tab.id !== SCRATCH_PAD_ID && !isPreviewTab(tab))
+  return tabs.filter((tab) => !isDraftTab(tab) && !isPreviewTab(tab))
 }
 
 export function getPersistableTabState(
@@ -265,22 +306,23 @@ export function getPersistableTabState(
 }
 
 /** 打开或聚焦会话入口。
- * 草稿标签页不再常驻，由用户主动打开。
+ * 保留已有标签页，新标签追加到末尾；复用时更新标题。
  * restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
 export function openTab(
   tabs: TabItem[],
   item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
   restore?: OpenTabRestore
 ): { tabs: TabItem[]; activeTabId: string } {
-  if (item.type === 'scratch') {
-    // 检查是否已存在草稿 tab
-    const existingScratchTab = tabs.find((t) => t.id === SCRATCH_PAD_ID)
-    const scratchTab = existingScratchTab ?? createScratchPadTab()
-    // 保留已有的非草稿 Tab，将草稿 Tab 添加到末尾（如果不存在）
-    const otherTabs = tabs.filter((t) => t.id !== SCRATCH_PAD_ID)
+  if (item.type === 'draft') {
+    const draftTabId = createDraftTabId(item.sessionId)
+    const existingDraftTab = tabs.find((t) => t.id === draftTabId)
+    const draftTab = existingDraftTab
+      ? { ...existingDraftTab, title: item.title }
+      : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title }
+    const otherTabs = tabs.filter((t) => t.id !== draftTabId)
     return {
-      tabs: [...otherTabs, scratchTab],
-      activeTabId: SCRATCH_PAD_ID,
+      tabs: [...otherTabs, draftTab],
+      activeTabId: draftTabId,
     }
   }
 
@@ -291,7 +333,7 @@ export function openTab(
       id: item.sessionId,
       type: 'agent' as const,
       sessionId: item.sessionId,
-      title: 'Agent 会话',
+      title: item.title,
     }
     const previewTab: TabItem = {
       id: createPreviewTabId(item.sessionId),
@@ -299,21 +341,23 @@ export function openTab(
       sessionId: item.sessionId,
       title: item.title,
     }
-
+    const otherTabs = tabs.filter(
+      (t) => t.id !== ownerAgentTab.id && t.id !== previewTab.id
+    )
+    if (!otherTabs.some((t) => t.id === ownerAgentTab.id)) {
+      otherTabs.push(ownerAgentTab)
+    }
+    otherTabs.push(previewTab)
     return {
-      tabs: [ownerAgentTab, previewTab],
+      tabs: otherTabs,
       activeTabId: previewTab.id,
     }
   }
 
   const existingTab = tabs.find((t) => t.sessionId === item.sessionId && t.type === item.type)
-  const sessionTab: TabItem = existingTab ?? {
-    id: item.sessionId,
-    type: item.type,
-    sessionId: item.sessionId,
-    title: item.title,
-    mode: item.mode ?? 'general',
-  }
+  const sessionTab: TabItem = existingTab
+    ? { ...existingTab, title: item.title }
+    : { id: item.sessionId, type: item.type, sessionId: item.sessionId, title: item.title, mode: item.mode ?? 'general' }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。
   if (restore?.previewTabOpen) {
@@ -323,14 +367,20 @@ export function openTab(
       sessionId: item.sessionId,
       title: restore.previewTitle,
     }
+    const otherTabs = tabs.filter(
+      (t) => t.id !== sessionTab.id && t.id !== previewTab.id
+    )
+    otherTabs.push(sessionTab, previewTab)
     return {
-      tabs: [sessionTab, previewTab],
+      tabs: otherTabs,
       activeTabId: restore.lastView === 'preview' ? previewTab.id : sessionTab.id,
     }
   }
 
+  const otherTabs = tabs.filter((t) => t.id !== sessionTab.id)
+  otherTabs.push(sessionTab)
   return {
-    tabs: [sessionTab],
+    tabs: otherTabs,
     activeTabId: sessionTab.id,
   }
 }
@@ -368,12 +418,11 @@ export function closeTab(
 
   const newTabs = tabs.filter((t) => t.id !== tabId && (!boundPreviewId || t.id !== boundPreviewId))
 
-  // 如果关闭的是当前激活的标签，切换到相邻标签
   let newActiveTabId = activeTabId
   if (activeTabId === tabId || (boundPreviewId !== null && activeTabId === boundPreviewId)) {
     if (newTabs.length > 0) {
-      const nextIndex = Math.min(tabIndex, newTabs.length - 1)
-      newActiveTabId = newTabs[nextIndex]!.id
+      const approxIndex = Math.min(tabIndex, newTabs.length - 1)
+      newActiveTabId = newTabs[findNearestNonPreviewTab(newTabs, approxIndex)]!.id
     } else {
       newActiveTabId = null
     }
@@ -382,11 +431,22 @@ export function closeTab(
   return { tabs: newTabs, activeTabId: newActiveTabId }
 }
 
+/** 从近似位置向两侧扩展，找到最近的非 preview 标签 */
+function findNearestNonPreviewTab(tabs: TabItem[], approxIndex: number): number {
+  for (let offset = 0; offset < tabs.length; offset++) {
+    const right = approxIndex + offset
+    if (right < tabs.length && tabs[right]?.type !== 'preview') return right
+    const left = approxIndex - offset - 1
+    if (left >= 0 && tabs[left]?.type !== 'preview') return left
+  }
+  return 0
+}
+
 /** 重排标签顺序（当前只保留 Scratch + 当前会话，保留函数用于兼容旧调用） */
 export function reorderTabs(tabs: TabItem[], fromIndex: number, toIndex: number): TabItem[] {
   if (fromIndex === toIndex) return tabs
   // Scratch 不可移出第 0 位
-  if (tabs[0]?.id === SCRATCH_PAD_ID && (fromIndex === 0 || toIndex === 0)) return tabs
+  if (tabs[0]?.id === DRAFT_TAB_PREFIX && (fromIndex === 0 || toIndex === 0)) return tabs
   const newTabs = [...tabs]
   const [moved] = newTabs.splice(fromIndex, 1)
   newTabs.splice(toIndex, 0, moved!)
@@ -398,12 +458,12 @@ export function updateTabTitle(tabs: TabItem[], sessionId: string, title: string
   return tabs.map((t) => (t.sessionId === sessionId && !isPreviewTab(t) ? { ...t, title } : t))
 }
 
-/** 创建 Scratch Pad 标签 */
-export function createScratchPadTab(): TabItem {
+/** 创建 Draft 标签 */
+export function createDraftTab(draftId: string, title: string): TabItem {
   return {
-    id: SCRATCH_PAD_ID,
-    type: 'scratch',
-    sessionId: SCRATCH_PAD_ID,
-    title: SCRATCH_PAD_TITLE,
+    id: createDraftTabId(draftId),
+    type: 'draft',
+    sessionId: draftId,
+    title,
   }
 }

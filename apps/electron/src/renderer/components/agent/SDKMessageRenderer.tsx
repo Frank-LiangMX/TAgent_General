@@ -70,7 +70,7 @@ import type {
 } from '@tagent/shared'
 
 import { agentProcessGroupsKeepExpandedAtom } from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import { userProfileAtom } from '@/atoms/user-profile'

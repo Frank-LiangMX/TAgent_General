@@ -26,12 +26,11 @@ import {
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
-  chatPendingMessageAtom,
-  conversationDraftsAtom,
   conversationsAtom,
-  currentConversationIdAtom,
+} from '@/atoms/agent-atoms'
+import {
   selectedModelAtom,
-} from '@/atoms/chat-atoms'
+} from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import {
@@ -40,7 +39,8 @@ import {
   settingsCloseRequestedAtom,
 } from '@/atoms/settings-tab'
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import { tabsAtom, activeTabIdAtom, openTab } from '@/atoms/tab-atoms'
+import { tabsAtom, activeTabIdAtom, openTab, buildOpenTabRestore, sessionViewStateMapAtom } from '@/atoms/tab-atoms'
+import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useShortcut } from '@/hooks/useShortcut'
@@ -358,25 +358,19 @@ export function GlobalShortcuts(): null {
         if (!session) return
 
         store.set(agentSessionsAtom, sessions)
-        store.set(appModeAtom, 'agent')
-        store.set(activeViewAtom, 'conversations')
-        store.set(currentAgentSessionIdAtom, session.id)
 
-        if (session.workspaceId) {
-          store.set(currentAgentWorkspaceIdAtom, session.workspaceId)
-          window.electronAPI
-            .updateSettings({
-              agentWorkspaceId: session.workspaceId,
-            })
-            .catch(console.error)
-        }
-
+        // 走 openTab 统一入口，保留已有标签页并处理 restore
+        const restore = buildOpenTabRestore(
+          session.id,
+          store.get(sessionViewStateMapAtom),
+          store.get(previewFileMapAtom)
+        )
         const currentTabs = store.get(tabsAtom)
         const result = openTab(currentTabs, {
           type: 'agent',
           sessionId: session.id,
           title: session.title || data.title,
-        })
+        }, restore)
         store.set(tabsAtom, result.tabs)
         store.set(activeTabIdAtom, result.activeTabId)
       } catch (error) {

@@ -1,17 +1,18 @@
 # TAgent 项目进度追踪
 
-> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态  
-> **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`  
-> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）  
-> **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）  
-> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）  
-> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）  
-> **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）  
-> **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）  
-> **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`  
-> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）  
-> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）  
+> **单文件持续更新** — 新 Agent 读此文件即可了解项目状态
+> **主设计**：`docs/plans/2026-06-05-tagent-fusion-design.md`
+> **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
+> **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）
+> **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
+> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）
+> **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）
+> **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）
+> **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
+> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）
+> **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
+> **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
 
 ---
 
@@ -39,9 +40,9 @@
 
 ---
 
-## 当前状态（2026-06-25）
+## 当前状态（2026-06-26）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成（2026-06-25）。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
 
 **当前判断**：
 
@@ -55,6 +56,47 @@
   - M3：系统通知 + 飞书卡片；trigger 过滤（每次 / 仅成功 / 仅失败）
   - **未做（M4 后续）**：Agent MCP 工具、自然语言创建、custom cron、TipTap 富文本编辑器
 - ✅ **kscc 内网渠道集成** 已完成 — 见 [kscc-internal-provider-design.md](plans/2026-06-25-kscc-internal-provider-design.md)
+- ✅ **草稿模式重构 + Chat 清理** 已完成 — 见 [draft-restructure-design.md](plans/2026-06-25-draft-restructure-design.md)
+- ✅ **标签页系统修复 + UI 打磨** 已完成（2026-06-26，branch `feature/draft-restructure`）：
+  - Bug：TabBar / TATabBar / CapabilityToolbar 的拖拽覆盖层缺少 `pointer-events-none`，点击被吞
+  - UI：Tab 圆角加大（12px）、高度降至 28px 与窗口按钮齐平、激活态轻度玻璃光泽、底部指示线滑动动画
+  - 逻辑：`syncedTabsAtom` 标题自动同步、`closeTab` 双侧扩展搜索跳过 preview tab、`topLevelModeAtom` 切模式自动恢复 activeTab、会话删除解析 draft ID 同步关 tab、`tabsAtom` 写派生自动清理孤儿 preview tab
+  - Chat 残留清理：删除 chat-atoms.ts / chat-service.ts（~900 行）、~15 死 IPC handler、~25 死 preload 方法、重命名 chat-tools → tools
+  - Draft 数据层：shared types + draft-manager + IPC + preload API
+  - Draft Atoms + 导航：AppMode 'scratch'→'draft'、TabType 'scratch'→'draft'、per-mode tab 记忆
+  - Draft UI：DraftView / DraftEditor / RequirementBlockCard / RequirementList / DraftAssistantPanel / DraftStatusBar / DraftListPanel（7 组件）
+  - Draft → Agent 升级：buildAgentPrompt + upgradeToAgentAtom（创建会话 → 发送初始消息 → 推进状态 → 切换标签页）
+  - 旧版迁移：migrateLegacyAtom 迁移 scratch-pad.md 内容
+  - 净删 -2796 行（Chat 清理）+ 新增 ~1500 行（Draft 系统）
+- ✅ **工作区 → 项目模型重构 + 文件活动追踪** 已完成（2026-06-26，branch `feature/draft-restructure`）— 见 [workspace-to-project-design.md](plans/2026-06-26-workspace-to-project-design.md)：
+  - 项目模型：工作区增加 `projectDirectory` 字段；创建项目时直接关联用户选择的本地代码目录，Agent 在该目录内工作
+  - 首次引导卡片：无项目时居中显示「选择项目目录开始」引导卡片，用户选择目录后自动创建项目
+  - 项目管理弹窗：WorkspaceManagerDialog → ProjectManagerDialog，文案统一为「项目」，新建项目改为调用文件夹选择对话框
+  - AgentView 工作区选择器、SidePanel 附加目录 UI 文案适配项目模型
+  - 旧工作区兼容：`projectDirectory = undefined` 时回退到旧 `~/.tagent/agent-workspaces/{slug}/{sessionId}/` 行为
+  - 跨目录边界审批：SDK `blockedPath` 参数接入 `canUseTool`，Agent 访问项目目录外文件时弹出「需要访问目录」横幅，用户允许后自动追加到 `attachedDirectories`
+  - Auto vs Bypass 区分：Auto 模式下写操作（Write / Edit / MultiEdit / NotebookEdit / 非安全 Bash）强制弹窗确认，Bypass 模式仍全自由
+- 文件活动追踪：useGlobalAgentListeners 在 `tool_start` 事件捕获 Read / 写工具路径，按 session 存入 `sessionReadFilesAtom` / `sessionChangedFilesAtom`
+  - SidePanel 文件活动卡片：已读 N / 已改 N 的可展开摘要卡片
+  - WorkspaceFilesView「navigator」布局双 Tab：「文件树」+「变更」，变更 tab 列出当前会话 Agent 已读/已改文件路径，带蓝色/橙色标记
+  - 类型检查：4 包全通过（shared/core/ui/electron）
+- ✅ **右侧边栏重构（已完成）**：文件系统全部集中到右侧浮岛，左侧去掉文件功能区，右侧 3 个 tab：项目文件 / 文件活动 / 代码改动
+  - `DiffPanelTabBar` 重写为 3 个 tab（项目文件/文件活动/代码改动）
+  - `agentDiffPanelTabAtom` 类型更新为 `'project' | 'activity' | 'changes'`
+  - `RightSidePanel` 类型同步
+  - `GET_SESSION_PATH` 修复：project 模式下返回 `projectDirectory`（修复 diff 找不到 Git 仓库的 bug）
+  - IPC 文件边界检查扩展为 `isWithinWorkspacesOrProjects`，`projectDirectory` 纳入白名单（修复文件树显示"越界"的 bug）
+  - `activity` tab：完整文件活动列表（已读蓝/已改橙标记 + 点击预览/添加到聊天/在文件夹中显示）
+  - `project` tab：`FileBrowser` 文件树（embedded + hideToolbar）+ 外部文件区域（附加文件/附加目录）
+  - 移除左侧「文件」功能区：`GeneralRailItem` 删除 `'files'`，FunctionalRail/LeftSidebar/MainArea/AppShell 联动清理
+  - 权限响应后附加目录同步：`PermissionBanner.respond` 成功后同步 `agentAttachedDirectoriesMapAtom`
+  - 越界弹窗改进：按钮文案「允许并附加此目录」+ 说明文字
+  - 类型检查：4 包全通过
+- ✅ **会话弹窗玻璃态统一（已完成）**：PermissionBanner / AskUserBanner / ExitPlanModeBanner / AgentSwitchBanner 四个横幅从 `bg-card` 实色改为 `session-glass-modal` 玻璃态浮层；内部元素 `bg-muted` → `bg-foreground/[0.04]`，`ring-offset-card` → `ring-offset-transparent`
+- ✅ **窗口拖拽修复（已完成）**：
+  - `WindowControls` 加 `titlebar-no-drag` + `z-[200]`，避免 drag region 吞点击
+  - 左右栏顶部统一 `pt-[34px]` + drag band（右栏避让 126px 窗口按钮区域，与 `RailInspectorHeader` 方案一致）
+  - 移除左栏 4px `SidebarWindowDragStrip`（已被 34px drag band 取代）
 - 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
 - **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
 
@@ -89,6 +131,7 @@
 | **`2026-06-24-automation-design.md`** | **M1–M3 已完成 / M4 待做** | Automation v1：调度 + UI + 通知已合 main（PR #15）；M4 扩展另开分支 |
 | **`2026-06-24-collaboration-design.md`** | **活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
 | **`2026-06-25-kscc-internal-provider-design.md`** | **已完成** | kscc 内网渠道集成：CLI 检测 + 凭据隔离 + SubAgent 路由 + UI 全链路 |
+| **`2026-06-26-workspace-to-project-design.md`** | **已完成** | 工作区→项目模型重构 + 文件活动追踪：Phase 0–4 全部落地（`feature/draft-restructure`） |
 | **`2026-06-24-proma-upstream-borrow-list.md`** | **参考清单** | Proma v0.11.1→v0.13.3 新增特性借鉴清单 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
@@ -284,6 +327,37 @@
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
+
+### 2026-06-26（续）
+
+**产出**：右侧边栏重构 + 会话弹窗玻璃态 + 窗口拖拽修复（分支 `feature/workspace-to-project`）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| activity tab | 完整文件活动列表（已读蓝/已改橙标记 + 点击预览/添加到聊天/在文件夹中显示），空状态提示 |
+| project tab | `FileBrowser` 文件树（embedded + hideToolbar）+ 外部文件区域（附加文件/附加目录，仅在有附加项时显示） |
+| 左侧文件功能区移除 | `GeneralRailItem` 删除 `'files'`；FunctionalRail/LeftSidebar/MainArea/AppShell 联动清理；删除 `FilesRailContent` 组件 |
+| 权限响应同步 | `PermissionBanner.respond` 成功后同步 `agentAttachedDirectoriesMapAtom`（主进程已持久化，此处仅同步渲染进程） |
+| 越界弹窗改进 | 按钮文案「允许并附加此目录」+ 说明文字「允许后此目录将添加到项目附加目录」 |
+| 会话弹窗玻璃态 | PermissionBanner / AskUserBanner / ExitPlanModeBanner / AgentSwitchBanner 四个横幅 `bg-card` → `session-glass-modal`；内部 `bg-muted` → `bg-foreground/[0.04]`；`ring-offset-card` → `ring-offset-transparent` |
+| 窗口按钮修复 | `WindowControls` 加 `titlebar-no-drag` + `z-[200]`，避免 SidePanel drag region 吞点击 |
+| 窗口拖拽修复 | 左右栏顶部统一 `pt-[34px]` + drag band；右栏避让 126px 窗口按钮区（与 `RailInspectorHeader` 一致）；移除左栏 4px `SidebarWindowDragStrip` |
+| 类型检查 | 4 包全通过（shared/core/ui/electron） |
+| **里程碑** | **右侧边栏 3-tab 体系闭环；会话弹窗与全局玻璃态风格统一；Windows 窗口按钮/拖拽双修** |
+
+### 2026-06-26
+
+**产出**：草稿模式重构 + Chat 残留清理（全 6 阶段完成）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| Phase 1: Chat 清理 | 删除 chat-atoms.ts / chat-service.ts（~900 行）、~15 死 IPC handler、~25 死 preload 方法、tray chat 入口、重命名 chat-tools → tools（净删 -2796 行） |
+| Phase 2: Draft 数据层 | `packages/shared/src/types/draft.ts`（DraftDocument / RequirementBlock / DraftStatus / DRAFT_IPC_CHANNELS）、`main/lib/draft-manager.ts`（CRUD + migrateLegacy）、config-paths 辅助、IPC handler、preload API |
+| Phase 3: Draft Atoms + 导航 | `draft-atoms.ts`（draftsAtom / currentDraftAtom / upgradeToReadyAtom / upgradeToAgentAtom / migrateLegacyAtom）、TabType 'scratch'→'draft'、AppMode 'scratch'→'draft'、per-mode tab 记忆 |
+| Phase 4: Draft UI | 7 组件：DraftView / DraftEditor(TipTap) / RequirementBlockCard / RequirementList / DraftAssistantPanel / DraftStatusBar / DraftListPanel |
+| Phase 5: Agent 升级 | `draft-prompt-builder.ts`（buildAgentPrompt → HTML→MD → R-n 需求块）、upgradeToAgentAtom（创建会话 → 发送初始消息 → 推进状态 → 切换标签页）、DraftStatusBar 接线 |
+| Phase 6: 收尾 | 删除 ScratchPadView.tsx、settings.ts scratchPadActive → draftActive、更新文档 |
+| **里程碑** | **草稿 = 需求起点 → AI 澄清 → 结构化 → 交给 Agent；Chat 死代码全清** |
 
 ### 2026-06-25（续）
 

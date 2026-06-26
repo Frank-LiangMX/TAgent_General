@@ -22,7 +22,7 @@ import { TASidebarReview } from './TASidebar.Review'
 
 import type { TARailItem } from '@/atoms/app-mode'
 
-const TITLES: Record<TARailItem, string> = {
+const TITLES: Record<TARailItem | 'skills' | 'draft', string> = {
   sessions: '会话',
   assets: '资产库',
   review: '审核',
@@ -30,7 +30,7 @@ const TITLES: Record<TARailItem, string> = {
   memory: '记忆',
   config: '配置',
   skills: '技能',
-  scratch: '草稿',
+  draft: '草稿',
 }
 
 interface TASidebarProps {

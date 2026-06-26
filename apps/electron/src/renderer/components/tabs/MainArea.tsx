@@ -29,12 +29,7 @@ import {
   visibleSessionTabsAtom,
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
-import {
-  workspaceSelectedDirectoryAtom,
-  workspaceSelectedFileAtom,
-} from '@/atoms/workspace-explorer'
 import { SkillsMainView } from '@/components/agent/SkillsMainView'
-import { WorkspaceFilesMainView } from '@/components/agent/WorkspaceFilesMainView'
 import { AutomationMainView } from '@/components/automation/AutomationMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
@@ -51,8 +46,6 @@ export function MainArea(): React.ReactElement {
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
   const setSelectedCapability = useSetAtom(selectedCapabilityAtom)
-  const setSelectedFile = useSetAtom(workspaceSelectedFileAtom)
-  const setSelectedDirectory = useSetAtom(workspaceSelectedDirectoryAtom)
 
   // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
   React.useEffect(() => {
@@ -68,14 +61,6 @@ export function MainArea(): React.ReactElement {
     }
   }, [activeRailItem, setSelectedCapability])
 
-  // 离开 files 功能区时清除文件检视选中
-  React.useEffect(() => {
-    if (activeRailItem !== 'files') {
-      setSelectedFile(null)
-      setSelectedDirectory(null)
-    }
-  }, [activeRailItem, setSelectedFile, setSelectedDirectory])
-
   // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
   if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
     return <GeneralMainArea />
@@ -84,10 +69,6 @@ export function MainArea(): React.ReactElement {
   // TA 模式其他模块（资产/审核/流水线/记忆/配置）使用独立渲染逻辑
   if (topLevelMode === 'ta') {
     return <TAMainArea />
-  }
-
-  if (activeRailItem === 'files') {
-    return <WorkspaceFilesMainView />
   }
 
   if (activeRailItem === 'skills') {
@@ -99,7 +80,7 @@ export function MainArea(): React.ReactElement {
   }
 
   // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
-  if (activeRailItem === 'scratch') {
+  if (activeRailItem === 'draft') {
     return <GeneralMainArea />
   }
 
@@ -167,7 +148,7 @@ function GeneralMainArea(): React.ReactElement {
   const previewOpen =
     activeTab?.type === 'agent' && (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
-  const showSessionWelcome = appMode !== 'scratch' && sessionTabs.length === 0
+  const showSessionWelcome = appMode !== 'draft' && sessionTabs.length === 0
 
   // 关闭动画状态：当 previewOpen 从 true → false 时，播放退出动画再移除 DOM
   // 在 render 阶段同步派生 closing，避免中间帧出现 flex: 1 1 auto 导致左侧瞬间跳到 100% 宽

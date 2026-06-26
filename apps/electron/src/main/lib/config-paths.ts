@@ -765,6 +765,18 @@ export function getScratchPadPath(): string {
   return join(getConfigDir(), 'scratch-pad.md')
 }
 
+export function getDraftsIndexPath(): string {
+  return join(getConfigDir(), 'drafts.json')
+}
+
+export function getDraftsDir(): string {
+  return join(getConfigDir(), 'drafts')
+}
+
+export function getDraftPath(id: string): string {
+  return join(getDraftsDir(), `${id}.json`)
+}
+
 /**
  * 获取 SOUL.md 人格定义文件路径
  *

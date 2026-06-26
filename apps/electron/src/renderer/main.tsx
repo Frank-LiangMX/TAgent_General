@@ -32,11 +32,10 @@ import {
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
 import {
-  currentConversationIdAtom,
   channelsAtom,
   channelsLoadedAtom,
   selectedModelAtom,
-} from './atoms/chat-atoms'
+} from './atoms/model-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
 import { markdownFontSizeAtom, initializeMarkdownFontSize } from './atoms/markdown-font-size'
@@ -50,9 +49,6 @@ import {
   tabsAtom,
   activeTabIdAtom,
   getPersistableTabState,
-  scratchPadContentAtom,
-  scratchPadLoadedAtom,
-  SCRATCH_PAD_ID,
 } from './atoms/tab-atoms'
 import { tagentBrandAtom, initializeTAgentBrand } from './atoms/tagent-brand'
 import {
@@ -556,8 +552,7 @@ function FeishuInitializer(): null {
 
     // 定期上报在场状态（5 秒间隔 + 焦点变化时即时上报）
     const reportPresence = (): void => {
-      const activeSessionId =
-        store.get(currentAgentSessionIdAtom) ?? store.get(currentConversationIdAtom)
+      const activeSessionId = store.get(currentAgentSessionIdAtom)
       window.electronAPI
         .reportFeishuPresence({
           activeSessionId,
@@ -812,95 +807,9 @@ function TabStatePersistenceInitializer(): null {
 }
 
 /**
- * Scratch Pad 初始化和持久化组件
- *
- * 从磁盘加载 scratch-pad.md 内容，自动保存到磁盘。
- * 草稿标签页不再常驻，由用户点击 Rail 草稿按钮主动打开。
+ * Draft 持久化 — 占位组件，Phase 4 将替换为 DraftPersistence。
  */
-function ScratchPadPersistence(): null {
-  const store = useStore()
-  const loadedRef = useRef(false)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
-
-  // 启动：加载文件内容
-  useEffect(() => {
-    const init = async (): Promise<void> => {
-      try {
-        // 加载 scratch-pad.md 内容（磁盘存的是 markdown，转为 HTML 给编辑器用）
-        const loadedMd = window.electronAPI.loadScratchPad
-          ? await window.electronAPI.loadScratchPad()
-          : ''
-
-        const loadedHtml = loadedMd ? markdownToHtml(loadedMd) : ''
-        store.set(scratchPadContentAtom, loadedHtml)
-        store.set(scratchPadLoadedAtom, true)
-
-        console.log('[ScratchPad] 初始化完成，已加载内容:', !!loadedMd)
-      } catch (err) {
-        console.error('[ScratchPad] 初始化失败:', err)
-      } finally {
-        loadedRef.current = true
-      }
-    }
-
-    init()
-  }, [store])
-
-  // 自动保存：监听 scratchPadContentAtom 变化，防抖写入磁盘
-  useEffect(() => {
-    const save = (): void => {
-      const html = store.get(scratchPadContentAtom)
-      if (window.electronAPI.saveScratchPad) {
-        const md = htmlToMarkdown(html)
-        window.electronAPI
-          .saveScratchPad(md)
-          .then((ok) => {
-            if (!ok) console.error('[ScratchPad] 保存失败')
-          })
-          .catch(console.error)
-      }
-    }
-
-    const debouncedSave = (): void => {
-      if (!loadedRef.current) return
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      saveTimerRef.current = setTimeout(save, 500)
-    }
-
-    const unsub = store.sub(scratchPadContentAtom, debouncedSave)
-
-    // beforeunload 时同步写入
-    const handleBeforeUnload = (): void => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      const html = store.get(scratchPadContentAtom)
-      if (window.electronAPI.saveScratchPadSync) {
-        const md = htmlToMarkdown(html)
-        window.electronAPI.saveScratchPadSync(md)
-      }
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      unsub()
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [store])
-
-  // 监听 activeTabIdAtom 变化，持久化 scratchPadActive 到 settings
-  useEffect(() => {
-    const unsub = store.sub(activeTabIdAtom, () => {
-      const activeTabId = store.get(activeTabIdAtom)
-      const isScratchActive = activeTabId === SCRATCH_PAD_ID
-      window.electronAPI
-        .updateSettings({
-          scratchPadActive: isScratchActive,
-        })
-        .catch(() => {})
-    })
-    return unsub
-  }, [store])
-
+function DraftPersistence(): null {
   return null
 }
 
@@ -956,7 +865,7 @@ if (isQuickTaskWindow) {
       <DingTalkInitializer />
       <WpsInitializer />
       <TabStatePersistenceInitializer />
-      <ScratchPadPersistence />
+      <DraftPersistence />
       <GlobalShortcuts />
       <TabSwitcher />
       <App />

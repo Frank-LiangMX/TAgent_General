@@ -1,5 +1,5 @@
 /**
- * Agent 模式推荐工具模块（Chat 模式）
+ * Agent 模式推荐工具模块
  *
  * 智能识别适合 Agent 模式的任务，推荐用户切换。
  * 工具本身不执行切换，只产出推荐数据（reason + suggestedPrompt），

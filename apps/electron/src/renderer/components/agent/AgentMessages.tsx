@@ -38,7 +38,7 @@ import {
   currentAskRefreshVersionAtom,
   currentAskStreamStateAtom,
 } from '@/atoms/ask-atoms'
-import { channelsAtom } from '@/atoms/chat-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {

@@ -21,6 +21,8 @@ interface UseWorkspaceActionsResult {
   selectWorkspace: (workspaceId: string) => void
   /** 创建并切到新工作区；成功返回新工作区，失败已 toast 并返回 null */
   createWorkspace: (name: string) => Promise<AgentWorkspace | null>
+  /** 选择目录并创建项目工作区；成功返回新工作区，失败/取消返回 null */
+  createProject: () => Promise<AgentWorkspace | null>
 }
 
 export function useWorkspaceActions(): UseWorkspaceActionsResult {
@@ -61,5 +63,22 @@ export function useWorkspaceActions(): UseWorkspaceActionsResult {
     [setWorkspaces, setCurrentWorkspaceId]
   )
 
-  return { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace }
+  const createProject = React.useCallback(async (): Promise<AgentWorkspace | null> => {
+    try {
+      const result = await window.electronAPI.openFolderDialog()
+      if (!result) return null
+
+      const workspace = await window.electronAPI.createProjectWorkspace(result.path)
+      setWorkspaces((prev) => [workspace, ...prev])
+      setCurrentWorkspaceId(workspace.id)
+      window.electronAPI.updateSettings({ agentWorkspaceId: workspace.id }).catch(console.error)
+      return workspace
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '创建项目失败'
+      toast.error(msg)
+      return null
+    }
+  }, [setWorkspaces, setCurrentWorkspaceId])
+
+  return { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace, createProject }
 }

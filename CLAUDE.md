@@ -148,9 +148,10 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 | Atom 文件        | 管理的状态                                         |
 | ---------------- | -------------------------------------------------- |
-| `chat-atoms.ts`  | 对话列表、当前消息、流式状态、模型选择             |
+| `model-atoms.ts` | 渠道列表、模型选择、思考展开                       |
 | `agent-atoms.ts` | Agent 会话列表、当前会话、工作区选择、权限请求队列 |
-| `app-mode.ts`    | 应用模式（Chat / Agent）                           |
+| `draft-atoms.ts` | 草稿列表、当前草稿、需求块、升级到 Agent          |
+| `app-mode.ts`    | 应用模式（Agent / Draft）                          |
 | `theme.ts`       | 主题模式                                           |
 
 ### 本地文件存储（`~/.tagent/`）
@@ -267,9 +268,9 @@ React UI 更新
 
 ## 当前进度与下一步
 
-**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成。当前活跃开发主线为 **上游 v0.13.3 对齐**。
+**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线为 **上游 v0.13.3 对齐**。
 
-**已完成**（截至 2026-06-25）：
+**已完成**（截至 2026-06-26）：
 
 - Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
 - Ask 档位统一 Composer + Chat 主路径退役
@@ -280,6 +281,7 @@ React UI 更新
 - 使用统计、Token 统计、`/btw` 侧面提问等后续优化完成
 - Claude Agent SDK **0.3.185** 升级（写风暴 / 断连修复）
 - **Automation v1（M1–M3）**：调度内核 + 管理 UI + 运行通知（PR #15）
+- **草稿模式重构 + Chat 清理**：Chat 死代码全清（-2796 行）、Draft 全系统（数据层 + Atoms + 7 UI 组件 + Agent 升级流 + 旧版迁移）
 
 **活跃待办**：
 
@@ -297,6 +299,7 @@ React UI 更新
 - `docs/plans/2026-06-24-automation-design.md`（M1–M3 ✅ / M4 待做）
 - `docs/plans/2026-06-16-upstream-upgrade-issues.md`（B/C/D ✅ / A/E 部分）
 - `docs/plans/2026-06-16-wps-bridge-landing.md`
+- `docs/plans/2026-06-25-draft-restructure-design.md`（草稿重构 + Chat 清理）
 
 ---
 

@@ -17,7 +17,8 @@ import {
   agentChannelIdAtom,
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { conversationsAtom, selectedModelAtom } from '@/atoms/chat-atoms'
+import { conversationsAtom } from '@/atoms/agent-atoms'
+import { selectedModelAtom } from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
 

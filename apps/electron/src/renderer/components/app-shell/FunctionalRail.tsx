@@ -13,7 +13,6 @@ import {
   Layers,
   Palette,
   MessageSquare,
-  FolderOpen,
   LayoutGrid,
   Database,
   ClipboardCheck,
@@ -34,16 +33,10 @@ import {
   type TARailItem,
   type TopLevelMode,
 } from '@/atoms/app-mode'
+import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
+import { activeTabIdAtom, tabsAtom } from '@/atoms/tab-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  openTab,
-  closeTab,
-  SCRATCH_PAD_ID,
-  SCRATCH_PAD_TITLE,
-} from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { UserAvatar } from '@/components/shared/UserAvatar'
@@ -51,7 +44,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
-/** 通用模式功能区配置 */
+/** 通用模式功能区配置（文件功能已迁移至右侧边栏） */
 const GENERAL_RAIL_ITEMS: Array<{
   id: GeneralRailItem
   label: string
@@ -65,12 +58,6 @@ const GENERAL_RAIL_ITEMS: Array<{
     description: 'Chat / Agent 会话列表',
   },
   {
-    id: 'files',
-    label: '文件',
-    icon: <FolderOpen size={17} />,
-    description: '工作区文件树',
-  },
-  {
     id: 'automation',
     label: '自动任务',
     icon: <Clock size={17} />,
@@ -80,16 +67,16 @@ const GENERAL_RAIL_ITEMS: Array<{
 
 /** 双模式常驻功能区（Rail 顶端） */
 const COMMON_TOP_RAIL_ITEMS: Array<{
-  id: 'scratch' | 'skills'
+  id: 'draft' | 'skills'
   label: string
   icon: React.ReactNode
   description: string
 }> = [
   {
-    id: 'scratch',
+    id: 'draft',
     label: '草稿',
     icon: <StickyNote size={17} />,
-    description: '草稿本',
+    description: '需求草稿',
   },
   {
     id: 'skills',
@@ -207,35 +194,27 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     [isSwitching, topLevelMode, setTopLevelMode]
   )
 
-  /** 处理 Rail 按钮点击：草稿按钮点击时直接打开草稿 Tab 并同步 rail 选中态 */
+  /** 处理 Rail 按钮点击：草稿按钮仅切换侧边栏面板，不自动创建草稿 */
   const handleRailItemClick = React.useCallback(
     (item: { id: string }) => {
-      if (item.id === 'scratch') {
-        setActiveRailItem('scratch')
-        // 打开草稿 Tab
-        const currentTabs = store.get(tabsAtom)
-        const { tabs: newTabs, activeTabId: newActiveTabId } = openTab(currentTabs, {
-          type: 'scratch',
-          sessionId: SCRATCH_PAD_ID,
-          title: SCRATCH_PAD_TITLE,
-        })
-        store.set(tabsAtom, newTabs)
-        store.set(activeTabIdAtom, newActiveTabId)
-        // 设置 appMode 为 scratch，确保主区域正确渲染
-        setAppMode('scratch')
+      if (item.id === 'draft') {
+        setActiveRailItem('draft')
       } else {
         setActiveRailItem(item.id as GeneralRailItem | TARailItem)
-        // 点击非草稿功能时，关闭草稿 Tab 并切换回 agent 模式
-        const currentTabs = store.get(tabsAtom)
-        const scratchTab = currentTabs.find((t) => t.type === 'scratch')
-        if (scratchTab) {
+        // 如果当前在草稿模式，切回 agent 并同步 currentAgentSessionId
+        if (store.get(appModeAtom) === 'draft') {
+          setAppMode('agent')
           const currentActiveTabId = store.get(activeTabIdAtom)
-          const tabResult = closeTab(currentTabs, currentActiveTabId, scratchTab.id)
-          store.set(tabsAtom, tabResult.tabs)
-          store.set(activeTabIdAtom, tabResult.activeTabId)
+          const currentTabs = store.get(tabsAtom)
+          const activeTab = currentActiveTabId
+            ? currentTabs.find((t) => t.id === currentActiveTabId) ?? null
+            : null
+          if (activeTab && (activeTab.type === 'agent' || activeTab.type === 'preview')) {
+            store.set(currentAgentSessionIdAtom, activeTab.sessionId)
+          } else {
+            store.set(currentAgentSessionIdAtom, null)
+          }
         }
-        // 确保 appMode 为 agent（会话/文件/Skills 都属于 agent 模式）
-        setAppMode('agent')
       }
     },
     [store, setActiveRailItem, setAppMode]
@@ -248,7 +227,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
       value: 'general' as TopLevelMode,
       label: '通用',
       icon: <Layers size={14} />,
-      description: 'Chat / Agent / 草稿本',
+      description: 'Chat / Agent / 需求草稿',
     },
     {
       value: 'ta' as TopLevelMode,

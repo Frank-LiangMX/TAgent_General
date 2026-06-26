@@ -31,7 +31,28 @@
       "Bash(git pull *)",
       "Bash(xargs grep -li -E \"scheduler|cron|schedule|automation|routine\")",
       "Bash(xargs grep -l \"better-sqlite3\\\\|sqlite\\\\|\\\\.db\")",
-      "Bash(bunx vitest *)"
+      "Bash(bunx vitest *)",
+      "Bash(git status *)",
+      "Bash(xargs sed -i -e 's/'\\\\''scratch'\\\\''/'\\\\''draft'\\\\''/g' -e 's/\"scratch\"/\"draft\"/g' -e s/SCRATCH_PAD_ID/DRAFT_TAB_PREFIX/g -e s/SCRATCH_PAD_TITLE/DRAFT_TITLE/g -e s/scratchPadContentAtom/removed_scratchPadContentAtom/g -e s/scratchPadLoadedAtom/removed_scratchPadLoadedAtom/g -e s/isScratch/isDraft/g)",
+      "Bash(sed -i '/draft.id/d; /draft.title/d; /打开草稿 Tab/d' apps/electron/src/renderer/components/app-shell/FunctionalRail.tsx)",
+      "Bash(sed -i 's/const currentTabs = store.get\\(tabsAtom\\)/void \\(async \\(\\) => {\\\\n          const draft = await window.electronAPI.draft.create\\({ title: '\\\\''未命名草稿'\\\\'' }\\)\\\\n          const currentTabs = store.get\\(tabsAtom\\)/' apps/electron/src/renderer/components/app-shell/FunctionalRail.tsx)",
+      "Bash(xargs grep -il \"workspace\")",
+      "Bash(xargs grep -il \"workspace\\\\|Workspace\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(xargs grep -l \"context\\\\|Context\\\\|file.*list\\\\|touched\\\\|modified\\\\|affected\\\\|recent\\\\|open\")",
+      "Bash(curl -s \"https://api.github.com/repos/bytedance/UI-TARS-desktop\")",
+      "Bash(curl -s \"https://api.github.com/repos/microsoft/OmniParser\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/bytedance/UI-TARS-desktop/main/README.md\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/microsoft/OmniParser/master/README.md\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/bytedance/UI-TARS-desktop/main/README.md\" -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/microsoft/OmniParser/master/README.md\" -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
+      "Bash(sed -n '131p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/WorkspaceFilesView.tsx\")",
+      "Bash(sed -n '364p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/WorkspaceFilesView.tsx\")",
+      "Bash(grep *)",
+      "Bash(sed -n '1,50p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/SidePanel.tsx\")",
+      "Bash(sed -n '340,420p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/SidePanel.tsx\")"
     ]
   }
 }

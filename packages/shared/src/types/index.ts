@@ -68,3 +68,6 @@ export * from './context-usage'
 
 // Automation 定时任务相关类型
 export * from './automation'
+
+// Draft 需求草稿相关类型
+export * from './draft'

@@ -21,7 +21,7 @@ export function useTrackSessionView(): void {
 
   React.useEffect(() => {
     if (!activeTab) return
-    // 只追踪会话相关的 Tab（agent 会话 + 其预览），chat/scratch 不参与预览重建
+    // 只追踪会话相关的 Tab（agent 会话 + 其预览），chat/draft 不参与预览重建
     const isPreview = activeTab.type === 'preview'
     const isAgent = activeTab.type === 'agent'
     if (!isPreview && !isAgent) return

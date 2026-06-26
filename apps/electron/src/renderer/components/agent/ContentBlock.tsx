@@ -45,7 +45,7 @@ import type {
   SDKSystemMessage,
 } from '@tagent/shared'
 
-import { thinkingExpandedAtom } from '@/atoms/chat-atoms'
+import { thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { MessageResponse } from '@/components/ai-elements/message'
 import { cn } from '@/lib/utils'
 

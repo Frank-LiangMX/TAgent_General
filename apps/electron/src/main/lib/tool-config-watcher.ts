@@ -1,5 +1,5 @@
 /**
- * Chat 工具配置文件监听器
+ * 工具配置文件监听器
  *
  * 监听 ~/.tagent/chat-tools.json 的变化，
  * 当 Agent 通过文件系统修改配置后自动通知渲染进程刷新工具列表。
@@ -30,7 +30,7 @@ export function startChatToolsWatcher(): void {
   const filePath = getChatToolsConfigPath()
 
   if (!existsSync(filePath)) {
-    console.log('[Chat 工具监听] 配置文件不存在，跳过:', filePath)
+    console.log('[工具监听] 配置文件不存在，跳过:', filePath)
     return
   }
 
@@ -46,7 +46,7 @@ export function startChatToolsWatcher(): void {
             win.webContents.send(CHAT_TOOL_IPC_CHANNELS.CUSTOM_TOOL_CHANGED)
           }
         }
-        console.log('[Chat 工具监听] 配置变更，已通知渲染进程')
+        console.log('[工具监听] 配置变更，已通知渲染进程')
         debounceTimer = null
       }, DEBOUNCE_MS)
     })
@@ -54,7 +54,7 @@ export function startChatToolsWatcher(): void {
     // EventEmitter 在 'error' 事件无监听器时会抛出未捕获异常并终止主进程。
     // 配置文件被外部工具替换/删除时即可能触发。
     watcher.on('error', (err) => {
-      console.error('[Chat 工具监听] 运行时错误，关闭监听:', err)
+      console.error('[工具监听] 运行时错误，关闭监听:', err)
       try {
         watcher?.close()
       } catch {
@@ -63,9 +63,9 @@ export function startChatToolsWatcher(): void {
       watcher = null
     })
 
-    console.log('[Chat 工具监听] 已启动')
+    console.log('[工具监听] 已启动')
   } catch (err) {
-    console.error('[Chat 工具监听] 启动失败:', err)
+    console.error('[工具监听] 启动失败:', err)
   }
 }
 
@@ -76,6 +76,6 @@ export function stopChatToolsWatcher(): void {
   if (watcher) {
     watcher.close()
     watcher = null
-    console.log('[Chat 工具监听] 已停止')
+    console.log('[工具监听] 已停止')
   }
 }

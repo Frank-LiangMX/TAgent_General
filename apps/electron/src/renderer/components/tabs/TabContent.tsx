@@ -12,8 +12,8 @@ import { TabErrorBoundary } from './TabErrorBoundary'
 
 import { tabsAtom } from '@/atoms/tab-atoms'
 import { AgentView } from '@/components/agent'
+import { DraftView } from '@/components/draft'
 import { PreviewTabContent } from '@/components/diff/PreviewTabContent'
-import { ScratchPadView } from '@/components/scratch-pad/ScratchPadView'
 
 export interface TabContentProps {
   tabId: string
@@ -40,8 +40,12 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
     )
   }
 
-  if (tab.type === 'scratch') {
-    return <ScratchPadView />
+  if (tab.type === 'draft') {
+    return (
+      <TabErrorBoundary key={tab.id} sessionId={tab.sessionId}>
+        <DraftView draftId={tab.sessionId} />
+      </TabErrorBoundary>
+    )
   }
 
   if (tab.type === 'preview') {

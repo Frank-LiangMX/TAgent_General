@@ -1,5 +1,5 @@
 /**
- * 记忆工具模块（Chat 模式）
+ * 记忆工具模块
  *
  * 从 chat-service.ts 提取的记忆工具定义和执行逻辑。
  * 凭据通过 getMemoryConfig() 从 memory.json 读取（Chat + Agent 共用）。

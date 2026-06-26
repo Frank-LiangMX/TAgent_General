@@ -16,6 +16,8 @@ import {
   FolderInput,
   Info,
   MessageSquarePlus,
+  FileSearch,
+  FilePen,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -31,6 +33,8 @@ import {
   agentDiffRefreshVersionAtom,
   fileBrowserAutoRevealAtom,
   agentSelectedWorktreeAtom,
+  sessionReadFilesAtom,
+  sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import {
   previewPanelOpenMapAtom,
@@ -79,8 +83,8 @@ function getMediaTypeFromFilename(filename: string): string {
 interface SidePanelProps {
   sessionId: string
   sessionPath: string | null
-  activeTab: 'session' | 'changes'
-  onTabChange: (tab: 'session' | 'changes') => void
+  activeTab: 'project' | 'activity' | 'changes'
+  onTabChange: (tab: 'project' | 'activity' | 'changes') => void
   width?: number
 }
 
@@ -181,7 +185,9 @@ export function SidePanel({
   // 派生当前工作区 slug（用于 FileDropZone IPC 调用）
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const workspaces = useAtomValue(agentWorkspacesAtom)
-  const workspaceSlug = workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null
+  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId)
+  const workspaceSlug = currentWorkspace?.slug ?? null
+  const isProjectMode = !!currentWorkspace?.projectDirectory
 
   // 附加目录列表（会话级）
   const attachedDirsMap = useAtomValue(agentAttachedDirectoriesMapAtom)
@@ -310,6 +316,12 @@ export function SidePanel({
     setFilesVersion((prev) => prev + 1)
   }, [setFilesVersion])
 
+  // 已读/已改文件（用于 activity tab 和 project tab 中文件活动卡片）
+  const readFilesMap = useAtomValue(sessionReadFilesAtom)
+  const changedFilesMap = useAtomValue(sessionChangedFilesAtom)
+  const readFiles = readFilesMap.get(sessionId) ?? []
+  const changedFiles = changedFilesMap.get(sessionId) ?? []
+
   // 添加文件到聊天
   const pendingFiles = useAtomValue(agentPendingFilesAtomFamily(sessionId))
   const setPendingFiles = useSetAtom(agentPendingFilesAtomFamily(sessionId))
@@ -348,12 +360,20 @@ export function SidePanel({
   return (
     <div
       className={cn(
-        'relative z-0 h-full flex-shrink-0 overflow-hidden titlebar-drag-region',
+        'relative z-0 h-full flex-shrink-0 overflow-hidden',
         isWindows ? 'pt-[34px]' : 'pt-0'
       )}
     >
+      {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 RailInspectorHeader right-[126px] 一致） */}
+      {isWindows && (
+        <div
+          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[34px] titlebar-drag-region"
+          style={{ right: 126 }}
+          aria-hidden
+        />
+      )}
       {/* 面板内容 */}
-      <div className="w-full h-full flex flex-col titlebar-no-drag">
+      <div className="w-full h-full flex flex-col">
         <DiffPanelTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
         {activeTab === 'changes' ? (
@@ -386,7 +406,14 @@ export function SidePanel({
               等待会话初始化...
             </div>
           )
-        ) : activeTab === 'session' ? (
+        ) : activeTab === 'activity' ? (
+          <ActivityTabContent
+            sessionId={sessionId}
+            onFilePreview={handleFilePreview}
+            onAddToChat={handleAddToChat}
+            allowedPaths={basePathsRef.current}
+          />
+        ) : activeTab === 'project' ? (
           <div className="flex-1 min-h-0 flex flex-col mx-3 mb-3">
             {sessionPath ? (
               <>
@@ -396,13 +423,19 @@ export function SidePanel({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-medium text-foreground/80">会话文件</span>
+                      <span className="text-[11px] font-medium text-foreground/80">
+                        {isProjectMode ? '项目文件' : '会话文件'}
+                      </span>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="size-3 text-muted-foreground/45 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-[200px]">
-                          <p>当前会话的专属文件，仅本次对话的 Agent 可以访问</p>
+                          <p>
+                            {isProjectMode
+                              ? 'Agent 在该项目目录内工作。文件浏览请使用右侧「项目文件」标签页'
+                              : '当前会话的专属文件，仅本次对话的 Agent 可以访问'}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -432,54 +465,14 @@ export function SidePanel({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="mb-2">
-                  <FileSearchBar
-                    workspaceFilesPath={null}
-                    sessionPath={sessionPath}
-                    sessionAttachedDirs={attachedDirs}
-                    workspaceAttachedDirs={[]}
-                    placeholder="搜索会话文件..."
-                    sessionId={sessionId}
-                    onFilePreview={handleFilePreview}
-                  />
-                </div>
                 <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-xl bg-background/20">
-                  {attachedFiles.length > 0 && (
-                    <AttachedFilesSection
-                      attachedFiles={attachedFiles}
-                      onDetach={handleDetachFile}
-                      onAddToChat={handleAddToChat}
-                      onFilePreview={handleFilePreview}
-                      allowedPaths={basePathsRef.current}
-                      sessionId={sessionId}
-                    />
-                  )}
-                  {attachedDirs.length > 0 && (
-                    <AttachedDirsSection
-                      attachedDirs={attachedDirs}
-                      onDetach={handleDetachDirectory}
-                      refreshVersion={filesVersion}
-                      onAddToChat={handleAddToChat}
-                      onFilePreview={handleFilePreview}
-                      allowedPaths={basePathsRef.current}
-                      sessionId={sessionId}
-                    />
-                  )}
-                  <>
-                    {hasSessionAttachedItems && (
-                      <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
-                        工作文件（存储于该工作区目录）
-                      </div>
-                    )}
-                    <FileBrowser
-                      rootPath={sessionPath}
-                      hideToolbar
-                      embedded
-                      hideEmpty={hasSessionAttachedItems}
-                      onAddToChat={handleAddToChat}
-                      onFilePreview={handleFilePreview}
-                    />
-                  </>
+                  <FileBrowser
+                    rootPath={sessionPath}
+                    embedded
+                    hideToolbar
+                    onFilePreview={handleFilePreview}
+                    onAddToChat={handleAddToChat}
+                  />
                   <FileDropZone
                     workspaceSlug={workspaceSlug ?? ''}
                     sessionId={sessionId}
@@ -490,6 +483,34 @@ export function SidePanel({
                     onFoldersDropped={handleSessionFoldersDropped}
                   />
                 </div>
+
+                {/* 外部文件区域（附加文件 + 附加目录） */}
+                {hasSessionAttachedItems && (
+                  <div className="mt-2 rounded-xl border border-border/35 bg-background/35 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                    <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">外部文件</div>
+                    {attachedFiles.length > 0 && (
+                      <AttachedFilesSection
+                        attachedFiles={attachedFiles}
+                        onDetach={handleDetachFile}
+                        onAddToChat={handleAddToChat}
+                        onFilePreview={handleFilePreview}
+                        allowedPaths={basePathsRef.current}
+                        sessionId={sessionId}
+                      />
+                    )}
+                    {attachedDirs.length > 0 && (
+                      <AttachedDirsSection
+                        attachedDirs={attachedDirs}
+                        onDetach={handleDetachDirectory}
+                        refreshVersion={filesVersion}
+                        onAddToChat={handleAddToChat}
+                        onFilePreview={handleFilePreview}
+                        allowedPaths={basePathsRef.current}
+                        sessionId={sessionId}
+                      />
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
@@ -498,6 +519,155 @@ export function SidePanel({
             )}
           </div>
         ) : null}
+      </div>
+    </div>
+  )
+}
+
+// ===== Activity Tab 内容 =====
+
+interface ActivityTabContentProps {
+  sessionId: string
+  onFilePreview?: (filePath: string) => void
+  onAddToChat?: (entry: FileEntry) => void
+  allowedPaths?: string[]
+}
+
+function ActivityTabContent({ sessionId, onFilePreview, onAddToChat, allowedPaths }: ActivityTabContentProps): React.ReactElement {
+  const readFilesMap = useAtomValue(sessionReadFilesAtom)
+  const changedFilesMap = useAtomValue(sessionChangedFilesAtom)
+  const readFiles = readFilesMap.get(sessionId) ?? []
+  const changedFiles = changedFilesMap.get(sessionId) ?? []
+  const hasActivity = readFiles.length > 0 || changedFiles.length > 0
+
+  const handleFileAction = (path: string, action: 'preview' | 'add' | 'show'): void => {
+    if (action === 'preview') {
+      onFilePreview?.(path)
+    } else if (action === 'add') {
+      onAddToChat?.({ name: getPathBasename(path), path, isDirectory: false })
+    } else if (action === 'show') {
+      window.electronAPI
+        .showAttachedInFolder(path, {
+          sessionId,
+          candidateBasePaths: allowedPaths,
+        })
+        .catch(console.error)
+    }
+  }
+
+  if (!hasActivity) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
+        <FileSearch className="size-5 text-muted-foreground/30" />
+        <span>暂无文件活动</span>
+        <span className="text-[10px] text-muted-foreground/40">Agent 读取或修改文件后将显示在这里</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col mx-3 mb-3">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-xl bg-background/20 p-2 space-y-1">
+        {/* 已改文件 */}
+        {changedFiles.length > 0 && (
+          <div className="space-y-0.5">
+            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">已修改</div>
+            {changedFiles.map((path) => (
+              <ActivityFileItem
+                key={`changed-${path}`}
+                path={path}
+                type="changed"
+                onAction={handleFileAction}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* 已读文件 */}
+        {readFiles.length > 0 && (
+          <div className="space-y-0.5">
+            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">已读取</div>
+            {readFiles.map((path) => (
+              <ActivityFileItem
+                key={`read-${path}`}
+                path={path}
+                type="read"
+                onAction={handleFileAction}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface ActivityFileItemProps {
+  path: string
+  type: 'read' | 'changed'
+  onAction: (path: string, action: 'preview' | 'add' | 'show') => void
+}
+
+function ActivityFileItem({ path, type, onAction }: ActivityFileItemProps): React.ReactElement {
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const name = getPathBasename(path)
+
+  return (
+    <div className="group relative flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent/40 cursor-pointer transition-colors">
+      {/* 标记点 */}
+      <span
+        className={cn(
+          'size-1.5 rounded-full flex-shrink-0',
+          type === 'read' ? 'bg-blue-500' : 'bg-amber-500'
+        )}
+      />
+      {/* 文件名 */}
+      <span
+        className="flex-1 min-w-0 truncate text-[11px] text-foreground/80"
+        title={path}
+        onClick={() => onAction(path, 'preview')}
+      >
+        {name}
+      </span>
+      {/* 操作按钮 */}
+      <div
+        className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenu onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="h-5 w-5 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground"
+              aria-label="更多操作"
+            >
+              <MoreHorizontal className="size-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
+            <DropdownMenuItem
+              className="text-xs py-1 [&>svg]:size-3.5"
+              onSelect={() => onAction(path, 'preview')}
+            >
+              <ExternalLink className="size-3.5" />
+              打开文件
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs py-1 [&>svg]:size-3.5"
+              onSelect={() => onAction(path, 'add')}
+            >
+              <MessageSquarePlus className="size-3.5" />
+              添加到聊天
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs py-1 [&>svg]:size-3.5"
+              onSelect={() => onAction(path, 'show')}
+            >
+              <FolderSearch className="size-3.5" />
+              在文件夹中显示
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

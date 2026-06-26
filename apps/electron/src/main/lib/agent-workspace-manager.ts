@@ -54,7 +54,7 @@ interface AgentWorkspacesIndex {
   workspaces: AgentWorkspace[]
 }
 
-const INDEX_VERSION = 2
+const INDEX_VERSION = 3
 
 /** 读取工作区索引文件，自动执行版本迁移 */
 function readIndex(): AgentWorkspacesIndex {
@@ -79,6 +79,9 @@ function migrateIndex(index: AgentWorkspacesIndex): void {
   if (oldVersion < 2) {
     activateSkillCreatorInAllWorkspaces(index)
   }
+
+  // v2 → v3: 旧工作区 projectDirectory=undefined，无需操作
+  // 新工作区创建时会自动填入 projectDirectory
 
   index.version = INDEX_VERSION
   writeIndex(index)
@@ -234,6 +237,40 @@ export function createAgentWorkspace(name: string): AgentWorkspace {
   writeIndex(index)
 
   console.log(`[Agent 工作区] 已创建工作区: ${name} (slug: ${slug})`)
+  return workspace
+}
+
+/** 创建项目模式工作区（用户选择本地代码目录） */
+export function createProjectWorkspace(projectDirectory: string): AgentWorkspace {
+  const normalizedDir = projectDirectory.replace(/\\/g, '/')
+  const index = readIndex()
+
+  // 已关联此目录的工作区直接返回
+  const existing = index.workspaces.find((w) => w.projectDirectory === normalizedDir)
+  if (existing) return existing
+
+  const dirName = basename(normalizedDir)
+  const existingSlugs = new Set(index.workspaces.map((w) => w.slug))
+  const slug = slugify(dirName, existingSlugs)
+  const now = Date.now()
+
+  const workspace: AgentWorkspace = {
+    id: randomUUID(),
+    name: dirName,
+    slug,
+    projectDirectory: normalizedDir,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  getAgentWorkspacePath(slug)
+  ensurePluginManifest(slug, dirName)
+  copyDefaultSkills(slug)
+
+  index.workspaces.unshift(workspace)
+  writeIndex(index)
+
+  console.log(`[Agent 工作区] 已创建项目工作区: ${dirName} (slug: ${slug}, dir: ${normalizedDir})`)
   return workspace
 }
 

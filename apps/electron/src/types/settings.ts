@@ -263,8 +263,8 @@ export interface AppSettings {
   advancedMaterialEnabled?: boolean
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand
-  /** 上次是否在 Scratch Pad 页（用于重启恢复） */
-  scratchPadActive?: boolean
+  /** 上次是否在草稿页（用于重启恢复） */
+  draftActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */
   appIconVariant?: string
   /** 语音输入设置（Access Token 以加密态存储，由专用服务解密后返回渲染进程） */
@@ -388,7 +388,7 @@ export interface QuickTaskSubmitInput {
   /** 任务文本内容 */
   text: string
   /** 目标模式 */
-  mode: 'chat' | 'agent'
+  mode: 'agent'
   /** 附件列表（base64 编码或本地路径引用） */
   files?: QuickTaskFile[]
 }
@@ -404,7 +404,7 @@ export interface QuickTaskFile {
 
 /** 主窗口接收的快速任务打开会话数据 */
 export interface QuickTaskOpenSessionData {
-  mode: 'chat' | 'agent'
+  mode: 'agent'
   text: string
   files?: QuickTaskFile[]
 }
@@ -420,7 +420,7 @@ export interface TrayOpenAgentSessionData {
 /** 菜单栏创建会话事件 */
 export interface TrayCreateSessionData {
   /** 目标模式 */
-  mode: 'chat' | 'agent'
+  mode: 'agent'
 }
 
 /** 菜单栏 IPC 事件通道 */

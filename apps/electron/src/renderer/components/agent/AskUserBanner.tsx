@@ -253,7 +253,7 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
   }
 
   return (
-    <div className="mx-4 mb-3 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+    <div className="session-glass-modal mx-4 mb-3 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
       {/* 头部 + Tab 栏 */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-center justify-between mb-2">
@@ -292,7 +292,7 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : hasAnswer
                           ? 'bg-primary/15 text-primary'
-                          : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                          : 'bg-foreground/[0.04] text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground'
                     }
                   `}
                   onClick={() => setActiveTab(idx)}
@@ -413,9 +413,9 @@ function QuestionCard({
                 ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+                    : 'bg-foreground/[0.04] text-foreground/80 hover:bg-foreground/[0.08]'
                 }
-                ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
+                ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-transparent' : ''}
               `}
               onClick={() => onToggleOption(option.label)}
             >
@@ -444,9 +444,9 @@ function QuestionCard({
             ${
               answer.showCustom
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+                : 'bg-foreground/[0.04] text-foreground/80 hover:bg-foreground/[0.08]'
             }
-            ${focusedIndex === optionCount ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
+            ${focusedIndex === optionCount ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-transparent' : ''}
           `}
           onClick={onToggleCustom}
         >
@@ -463,7 +463,7 @@ function QuestionCard({
       {answer.showCustom && (
         <input
           type="text"
-          className="w-full px-3 py-2 rounded-lg text-xs bg-muted/40 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
+          className="w-full px-3 py-2 rounded-lg text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
           placeholder="输入自定义答案..."
           value={answer.customText}
           onChange={(e) => onCustomTextChange(e.target.value)}
@@ -480,7 +480,7 @@ function QuestionCard({
 
       {/* 选项 Preview（聚焦或选中时展示） */}
       {previewContent && (
-        <div className="mt-2 rounded-lg bg-muted/40 p-3 text-xs prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-0.5 prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        <div className="mt-2 rounded-lg bg-foreground/[0.04] p-3 text-xs prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-0.5 prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
           <Markdown remarkPlugins={PREVIEW_REMARK_PLUGINS} urlTransform={safeUrlTransform}>
             {previewContent}
           </Markdown>

@@ -165,7 +165,7 @@ ${pluginList}
         {/* 与 TabBar 一致：背景拖拽层铺满空白区；交互按钮各自 titlebar-no-drag 穿透 OS hitmask */}
         <div
           className={cn(
-            'absolute inset-0 z-[10] titlebar-drag-region',
+            'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
             isWindows && 'right-[126px]'
           )}
           aria-hidden
