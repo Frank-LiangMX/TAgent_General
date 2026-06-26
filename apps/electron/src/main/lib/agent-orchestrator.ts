@@ -31,6 +31,7 @@ import {
   TAGENT_DEFAULT_PERMISSION_MODE,
   TAGENT_PERMISSION_MODE_CONFIG,
   SAFE_TOOLS,
+  isWriteTool,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
@@ -594,7 +595,11 @@ function collectAttachedDirectories(params: {
   if (workspaceSlug) {
     for (const d of getWorkspaceAttachedDirectories(workspaceSlug)) push(d)
     for (const f of getWorkspaceAttachedFiles(workspaceSlug)) push(dirname(f))
-    push(getWorkspaceFilesDir(workspaceSlug))
+    const ws = getAgentWorkspace(workspaceSlug)
+    // 仅旧模式工作区包含 workspace-files（项目模式下 cwd 就是项目目录，无需单独附加）
+    if (!ws?.projectDirectory) {
+      push(getWorkspaceFilesDir(workspaceSlug))
+    }
   }
 
   return result
@@ -1574,10 +1579,19 @@ export class AgentOrchestrator {
       if (workspaceId) {
         const ws = getAgentWorkspace(workspaceId)
         if (ws) {
-          agentCwd = getAgentSessionWorkspacePath(ws.slug, sessionId)
-          workspaceSlug = ws.slug
-          workspace = ws
-          console.log(`[Agent 编排] 使用 session 级别 cwd: ${agentCwd} (${ws.name}/${sessionId})`)
+          if (ws.projectDirectory) {
+            // 项目模式：cwd = 用户项目目录
+            agentCwd = ws.projectDirectory
+            workspaceSlug = ws.slug
+            workspace = ws
+            console.log(`[Agent 编排] 使用项目目录 cwd: ${agentCwd}`)
+          } else {
+            // 旧模式：cwd = ~/.tagent 内部 session 目录
+            agentCwd = getAgentSessionWorkspacePath(ws.slug, sessionId)
+            workspaceSlug = ws.slug
+            workspace = ws
+            console.log(`[Agent 编排] 使用 session 级别 cwd: ${agentCwd} (${ws.name}/${sessionId})`)
+          }
 
           ensurePluginManifest(ws.slug, ws.name)
 
@@ -2047,8 +2061,27 @@ export class AgentOrchestrator {
             }
           }
 
-          case 'auto':
+          case 'auto': {
+            // auto 模式写操作守卫：Write/Edit/MultiEdit/NotebookEdit 和非安全 Bash 始终需确认
+            if (isWriteTool(toolName, input) && !permissionService.isWhitelisted(sessionId, toolName, input)) {
+              const request = permissionService.buildPermissionRequest(sessionId, toolName, input, options)
+              this.eventBus.emit(sessionId, {
+                kind: 'tagent_event',
+                event: { type: 'permission_request', request },
+              })
+              return new Promise<PermissionResult>((resolve) => {
+                permissionService.setPending(request.requestId, { resolve, request })
+                options.signal.addEventListener('abort', () => {
+                  if (permissionService.hasPending(request.requestId)) {
+                    permissionService.deletePending(request.requestId)
+                    resolve({ behavior: 'deny' as const, message: '操作已中止' })
+                  }
+                }, { once: true })
+              })
+            }
+            // 只读操作走 SDK classifier
             return autoCanUseTool(toolName, input, options)
+          }
 
           default:
             return { behavior: 'allow' as const, updatedInput: input }

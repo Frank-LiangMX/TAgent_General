@@ -71,6 +71,8 @@ import {
   agentDiffPanelTabAtom,
   agentSidePanelOpenAtom,
   sessionTokenStatsAtom,
+  sessionReadFilesAtom,
+  sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
@@ -817,10 +819,35 @@ export function useGlobalAgentListeners(): void {
                 map.set(sessionId, inner)
                 return map
               })
+              // 文件活动追踪：写入已改文件
+              store.set(sessionChangedFilesAtom, (prev) => {
+                const map = new Map(prev)
+                const existing = map.get(sessionId) ?? []
+                if (!existing.includes(targetPath)) {
+                  map.set(sessionId, [...existing, targetPath])
+                }
+                return map
+              })
               // Agent 开始改文件时，自动切换预览面板到该文件
               if (store.get(autoPreviewEnabledAtom)) {
                 setAutoPreviewFile(sessionId, targetPath, false)
               }
+            }
+          }
+
+          // 文件活动追踪：读取文件
+          if (event.type === 'tool_start' && event.toolName === 'Read') {
+            const input = event.input as Record<string, unknown> | undefined
+            const targetPath = (input?.file_path as string | undefined) ?? (input?.path as string | undefined)
+            if (typeof targetPath === 'string' && targetPath.length > 0) {
+              store.set(sessionReadFilesAtom, (prev) => {
+                const map = new Map(prev)
+                const existing = map.get(sessionId) ?? []
+                if (!existing.includes(targetPath)) {
+                  map.set(sessionId, [...existing, targetPath])
+                }
+                return map
+              })
             }
           }
 

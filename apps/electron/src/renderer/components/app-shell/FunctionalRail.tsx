@@ -13,7 +13,6 @@ import {
   Layers,
   Palette,
   MessageSquare,
-  FolderOpen,
   LayoutGrid,
   Database,
   ClipboardCheck,
@@ -45,7 +44,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
-/** 通用模式功能区配置 */
+/** 通用模式功能区配置（文件功能已迁移至右侧边栏） */
 const GENERAL_RAIL_ITEMS: Array<{
   id: GeneralRailItem
   label: string
@@ -57,12 +56,6 @@ const GENERAL_RAIL_ITEMS: Array<{
     label: '会话',
     icon: <MessageSquare size={17} />,
     description: 'Chat / Agent 会话列表',
-  },
-  {
-    id: 'files',
-    label: '文件',
-    icon: <FolderOpen size={17} />,
-    description: '工作区文件树',
   },
   {
     id: 'automation',

@@ -9,14 +9,15 @@
  */
 
 import { useAtom, useSetAtom } from 'jotai'
-import { Shield, ShieldAlert, Check, X } from 'lucide-react'
+import { Shield, ShieldAlert, FolderOpen, Check, X } from 'lucide-react'
 import * as React from 'react'
 
-import type { DangerLevel } from '@tagent/shared'
+import type { DangerLevel, PermissionRequest } from '@tagent/shared'
 
 import {
   allPendingPermissionRequestsAtom,
   agentStreamingStatesAtom,
+  agentAttachedDirectoriesMapAtom,
   finalizeStreamingActivities,
 } from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
@@ -45,9 +46,10 @@ interface PermissionBannerProps {
 export function PermissionBanner({ sessionId }: PermissionBannerProps): React.ReactElement | null {
   const [allRequests, setAllRequests] = useAtom(allPendingPermissionRequestsAtom)
   const setStreamingStates = useSetAtom(agentStreamingStatesAtom)
+  const setAttachedDirsMap = useSetAtom(agentAttachedDirectoriesMapAtom)
   const requests = allRequests.get(sessionId) ?? []
   const [responding, setResponding] = React.useState(false)
-  const respondRef = React.useRef<(behavior: 'allow' | 'deny', alwaysAllow?: boolean) => void>()
+  const respondRef = React.useRef<(behavior: 'allow' | 'deny', alwaysAllow?: boolean, addDirectories?: string[]) => void>()
 
   const request = requests[0] ?? null
 
@@ -93,12 +95,13 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
 
   if (!request) return null
 
-  const iconColor = DANGER_ICON_STYLES[request.dangerLevel]
-  const isDangerous = request.dangerLevel === 'dangerous'
-  const IconComponent = isDangerous ? ShieldAlert : Shield
+  const isBlockedPath = !!request.blockedPath
+  const iconColor = isBlockedPath ? 'text-blue-500 dark:text-blue-400' : DANGER_ICON_STYLES[request.dangerLevel]
+  const isDangerous = !isBlockedPath && request.dangerLevel === 'dangerous'
+  const IconComponent = isBlockedPath ? FolderOpen : isDangerous ? ShieldAlert : Shield
 
   /** 响应权限请求 */
-  const respond = async (behavior: 'allow' | 'deny', alwaysAllow = false): Promise<void> => {
+  const respond = async (behavior: 'allow' | 'deny', alwaysAllow = false, addDirectories?: string[]): Promise<void> => {
     if (responding) return
     setResponding(true)
 
@@ -107,7 +110,19 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
         requestId: request.requestId,
         behavior,
         alwaysAllow,
+        ...(addDirectories?.length ? { addDirectories } : {}),
       })
+      // 越界目录批准后同步到渲染进程的附加目录 atom（主进程已持久化，此处仅同步本地状态）
+      if (behavior === 'allow' && addDirectories?.length) {
+        setAttachedDirsMap((prev) => {
+          const existing = prev.get(sessionId) ?? []
+          const merged = [...new Set([...existing, ...addDirectories])]
+          if (merged.length === existing.length) return prev
+          const map = new Map(prev)
+          map.set(sessionId, merged)
+          return map
+        })
+      }
       // 移除已响应的请求（FIFO 出队）
       setAllRequests((prev) => {
         const map = new Map(prev)
@@ -127,13 +142,17 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
   respondRef.current = respond
 
   return (
-    <div className="mx-4 mb-3 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+    <div className="session-glass-modal mx-4 mb-3 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
       {/* 头部 */}
       <div className="flex items-center justify-between px-3 py-2">
         <div className="flex items-center gap-2">
           <IconComponent className={`size-4 ${iconColor}`} />
           <span className="text-sm font-medium">
-            {isDangerous ? '危险操作需要确认' : '需要确认'}
+            {isBlockedPath
+              ? 'Agent 需要访问目录'
+              : isDangerous
+                ? '危险操作需要确认'
+                : '需要确认'}
           </span>
           {requests.length > 1 && (
             <span className="text-xs text-muted-foreground">(+{requests.length - 1})</span>
@@ -156,24 +175,38 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
 
       {/* 命令/操作内容 */}
       <div className="px-3 pb-2 space-y-1.5">
-        {/* SDK 可读标题（优先展示，描述操作意图） */}
-        {request.sdkTitle && <p className="text-xs text-foreground">{request.sdkTitle}</p>}
-        {/* SDK 详细描述（与标题不同时才展示） */}
-        {request.sdkDescription && request.sdkDescription !== request.sdkTitle && (
-          <p className="text-xs text-muted-foreground">{request.sdkDescription}</p>
+        {isBlockedPath ? (
+          <>
+            <p className="text-xs text-muted-foreground">此目录在当前项目范围之外</p>
+            <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">
+              {request.blockedPath}
+            </pre>
+            <p className="text-[10px] text-muted-foreground/60">
+              允许后此目录将添加到项目附加目录，后续 Agent 可直接访问
+            </p>
+          </>
+        ) : (
+          <>
+            {/* SDK 可读标题（优先展示，描述操作意图） */}
+            {request.sdkTitle && <p className="text-xs text-foreground">{request.sdkTitle}</p>}
+            {/* SDK 详细描述（与标题不同时才展示） */}
+            {request.sdkDescription && request.sdkDescription !== request.sdkTitle && (
+              <p className="text-xs text-muted-foreground">{request.sdkDescription}</p>
+            )}
+            {/* Bash 命令：始终展示代码块 */}
+            {request.command ? (
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
+                {request.command}
+              </pre>
+            ) : !request.sdkTitle && Object.keys(request.toolInput).length > 0 ? (
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
+                {JSON.stringify(request.toolInput, null, 2)}
+              </pre>
+            ) : !request.sdkTitle ? (
+              <p className="text-xs text-muted-foreground">{request.description}</p>
+            ) : null}
+          </>
         )}
-        {/* Bash 命令：始终展示代码块 */}
-        {request.command ? (
-          <pre className="text-xs font-mono bg-background/50 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
-            {request.command}
-          </pre>
-        ) : !request.sdkTitle && Object.keys(request.toolInput).length > 0 ? (
-          <pre className="text-xs font-mono bg-background/50 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
-            {JSON.stringify(request.toolInput, null, 2)}
-          </pre>
-        ) : !request.sdkTitle ? (
-          <p className="text-xs text-muted-foreground">{request.description}</p>
-        ) : null}
       </div>
 
       {/* 操作按钮 */}
@@ -187,28 +220,34 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
           className="h-7 px-3 text-xs text-muted-foreground hover:text-destructive"
         >
           <X className="size-3 mr-1" />
-          拒绝
+          {isBlockedPath ? '拒绝访问' : '拒绝'}
         </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => respond('allow', true)}
-          disabled={responding}
-          className="h-7 px-3 text-xs"
-        >
-          本次会话总是允许
-        </Button>
+        {!isBlockedPath && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => respond('allow', true)}
+            disabled={responding}
+            className="h-7 px-3 text-xs"
+          >
+            本次会话总是允许
+          </Button>
+        )}
 
         <Button
           variant="default"
           size="sm"
-          onClick={() => respond('allow')}
+          onClick={() =>
+            isBlockedPath
+              ? respond('allow', false, [request.blockedPath!])
+              : respond('allow')
+          }
           disabled={responding}
           className="h-7 px-3 text-xs"
         >
           <Check className="size-3 mr-1" />
-          允许
+          {isBlockedPath ? '允许并附加此目录' : '允许'}
         </Button>
       </div>
     </div>

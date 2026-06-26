@@ -93,7 +93,7 @@ export interface BtwMessage {
 
 // ===== Agent 工作区 =====
 
-/** Agent 工作区 */
+/** Agent 工作区（项目模式） */
 export interface AgentWorkspace {
   /** 工作区唯一标识 */
   id: string
@@ -101,6 +101,8 @@ export interface AgentWorkspace {
   name: string
   /** URL-safe 目录名（创建后不可变） */
   slug: string
+  /** 项目目录 — 用户选择的本地代码目录，Agent 直接在该目录工作 */
+  projectDirectory?: string
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */
@@ -1374,7 +1376,7 @@ export const TAGENT_PERMISSION_MODE_CONFIG = {
   auto: {
     sdkMode: 'auto',
     label: '自动审批',
-    description: 'SDK 内置审批器自动判断，危险操作才需确认',
+    description: '只读操作自动放行，写操作需确认',
   },
   bypassPermissions: {
     sdkMode: 'bypassPermissions',
@@ -1432,7 +1434,44 @@ export interface PermissionRequest {
   sdkTitle?: string
   /** SDK 提供的详细描述，如 "Claude wants to write 200 lines to /path/to/file.ts" */
   sdkDescription?: string
+  /** SDK 报告的越界路径（Agent 尝试访问项目范围外的目录） */
+  blockedPath?: string
+  /** SDK 建议的权限更新（如 addDirectories） */
+  suggestions?: PermissionUpdate[]
 }
+
+/** SDK PermissionUpdateDestination */
+export type PermissionUpdateDestination =
+  | 'userSettings'
+  | 'projectSettings'
+  | 'localSettings'
+  | 'session'
+  | 'cliArg'
+
+/** SDK 权限规则值 */
+export interface PermissionRuleValue {
+  toolName: string
+  ruleContent?: string
+}
+
+/** SDK PermissionUpdate（匹配 SDK 0.2.63） */
+export type PermissionUpdate =
+  | {
+      type: 'addRules' | 'replaceRules' | 'removeRules'
+      rules: PermissionRuleValue[]
+      behavior: 'allow' | 'deny'
+      destination: PermissionUpdateDestination
+    }
+  | {
+      type: 'setMode'
+      mode: string
+      destination: PermissionUpdateDestination
+    }
+  | {
+      type: 'addDirectories' | 'removeDirectories'
+      directories: string[]
+      destination: PermissionUpdateDestination
+    }
 
 /** 权限响应（渲染进程 → 主进程） */
 export interface PermissionResponse {
@@ -1440,6 +1479,8 @@ export interface PermissionResponse {
   behavior: 'allow' | 'deny'
   /** 是否记住选择（加入会话白名单） */
   alwaysAllow: boolean
+  /** 用户批准扩展的目录（来自 blockedPath 场景） */
+  addDirectories?: string[]
 }
 
 // ===== IPC 通道常量 =====
@@ -1485,6 +1526,8 @@ export const AGENT_IPC_CHANNELS = {
   LIST_WORKSPACES: 'agent:list-workspaces',
   /** 创建工作区 */
   CREATE_WORKSPACE: 'agent:create-workspace',
+  /** 创建项目工作区（用户选择本地代码目录） */
+  CREATE_PROJECT_WORKSPACE: 'agent:create-project-workspace',
   /** 更新工作区 */
   UPDATE_WORKSPACE: 'agent:update-workspace',
   /** 删除工作区 */

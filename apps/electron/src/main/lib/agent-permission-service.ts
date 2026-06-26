@@ -19,43 +19,17 @@ import {
   hasDangerousStructure,
 } from '@tagent/shared'
 
-import type { PermissionRequest, DangerLevel, AskUserRequest } from '@tagent/shared'
+import type {
+  PermissionRequest,
+  PermissionUpdate,
+  PermissionUpdateDestination,
+  PermissionRuleValue,
+  DangerLevel,
+  AskUserRequest,
+} from '@tagent/shared'
 
 /** SDK PermissionBehavior */
 type PermissionBehavior = 'allow' | 'deny'
-
-/** SDK PermissionUpdateDestination */
-type PermissionUpdateDestination =
-  | 'userSettings'
-  | 'projectSettings'
-  | 'localSettings'
-  | 'session'
-  | 'cliArg'
-
-/** SDK 权限规则值 */
-interface PermissionRuleValue {
-  toolName: string
-  ruleContent?: string
-}
-
-/** SDK PermissionUpdate（匹配 SDK 0.2.63） */
-export type PermissionUpdate =
-  | {
-      type: 'addRules' | 'replaceRules' | 'removeRules'
-      rules: PermissionRuleValue[]
-      behavior: PermissionBehavior
-      destination: PermissionUpdateDestination
-    }
-  | {
-      type: 'setMode'
-      mode: string
-      destination: PermissionUpdateDestination
-    }
-  | {
-      type: 'addDirectories' | 'removeDirectories'
-      directories: string[]
-      destination: PermissionUpdateDestination
-    }
 
 /** SDK PermissionDecisionClassification（匹配 SDK 0.2.120） */
 type PermissionDecisionClassification = 'user_temporary' | 'user_permanent' | 'user_reject'
@@ -155,6 +129,25 @@ export class AgentPermissionService {
       // 会话白名单检查（用户之前选择了"始终允许"）
       if (this.isWhitelisted(sessionId, toolName, input)) return allow()
 
+      // 跨目录边界审批：SDK 报告 Agent 尝试访问项目范围外的目录
+      if (options.blockedPath) {
+        const request = this.buildBlockedPathRequest(sessionId, toolName, input, options)
+        sendToRenderer(request)
+        return new Promise<PermissionResult>((resolve) => {
+          this.pendingPermissions.set(request.requestId, { resolve, request })
+          options.signal.addEventListener(
+            'abort',
+            () => {
+              if (this.pendingPermissions.has(request.requestId)) {
+                this.pendingPermissions.delete(request.requestId)
+                resolve({ behavior: 'deny' as const, message: '操作已中止' })
+              }
+            },
+            { once: true }
+          )
+        })
+      }
+
       // auto 模式本地 classifier：只读工具（Read/Glob/Grep/WebSearch/WebFetch 及只读 Bash 命令）自动放行
       // 原因：CLI 的 --permission-prompt-tool stdio 会把每次 tool 调用都转发给 canUseTool，
       // SDK 的 auto classifier 对只读操作未必真的放行，这里做本地兜底避免用户被无意义的审批打扰
@@ -190,7 +183,8 @@ export class AgentPermissionService {
   respondToPermission(
     requestId: string,
     behavior: 'allow' | 'deny',
-    alwaysAllow: boolean
+    alwaysAllow: boolean,
+    addDirectories?: string[]
   ): string | null {
     const pending = this.pendingPermissions.get(requestId)
     if (!pending) return null
@@ -202,11 +196,17 @@ export class AgentPermissionService {
       this.addToWhitelist(sessionId, pending.request.toolName, pending.request.toolInput)
     }
 
-    pending.resolve(
-      behavior === 'allow'
-        ? { behavior: 'allow' as const, updatedInput: pending.request.toolInput }
-        : { behavior: 'deny' as const, message: '用户拒绝了此操作' }
-    )
+    const result: PermissionResult = behavior === 'allow'
+      ? {
+          behavior: 'allow' as const,
+          updatedInput: pending.request.toolInput,
+          ...(addDirectories?.length
+            ? { updatedPermissions: [{ type: 'addDirectories' as const, directories: addDirectories, destination: 'session' as const }] }
+            : {}),
+        }
+      : { behavior: 'deny' as const, message: '用户拒绝了此操作' }
+
+    pending.resolve(result)
     this.pendingPermissions.delete(requestId)
     return sessionId
   }
@@ -228,6 +228,21 @@ export class AgentPermissionService {
    */
   getPendingRequests(): PermissionRequest[] {
     return [...this.pendingPermissions.values()].map((p) => p.request)
+  }
+
+  /** 注册待处理请求（供 orchestrator 直接调用） */
+  setPending(requestId: string, entry: PendingPermission): void {
+    this.pendingPermissions.set(requestId, entry)
+  }
+
+  /** 检查待处理请求是否存在 */
+  hasPending(requestId: string): boolean {
+    return this.pendingPermissions.has(requestId)
+  }
+
+  /** 删除待处理请求 */
+  deletePending(requestId: string): void {
+    this.pendingPermissions.delete(requestId)
   }
 
   /**
@@ -258,7 +273,7 @@ export class AgentPermissionService {
   /**
    * 判断工具/命令是否在会话白名单中
    */
-  private isWhitelisted(
+  isWhitelisted(
     sessionId: string,
     toolName: string,
     input: Record<string, unknown>
@@ -332,7 +347,7 @@ export class AgentPermissionService {
   /**
    * 构建权限请求对象
    */
-  private buildPermissionRequest(
+  buildPermissionRequest(
     sessionId: string,
     toolName: string,
     input: Record<string, unknown>,
@@ -352,6 +367,32 @@ export class AgentPermissionService {
       decisionReason: options.decisionReason,
       decisionReasonType: options.decisionReasonType,
       classifierApprovable: options.classifierApprovable,
+      sdkDisplayName: options.displayName,
+      sdkTitle: options.title,
+      sdkDescription: options.description,
+      blockedPath: options.blockedPath,
+      suggestions: options.suggestions,
+    }
+  }
+
+  /**
+   * 构建目录越界访问的权限请求对象
+   */
+  private buildBlockedPathRequest(
+    sessionId: string,
+    toolName: string,
+    input: Record<string, unknown>,
+    options: CanUseToolOptions
+  ): PermissionRequest {
+    return {
+      requestId: randomUUID(),
+      sessionId,
+      toolName,
+      toolInput: input,
+      description: `Agent 需要访问目录: ${options.blockedPath}`,
+      dangerLevel: 'normal' as const,
+      blockedPath: options.blockedPath,
+      suggestions: options.suggestions,
       sdkDisplayName: options.displayName,
       sdkTitle: options.title,
       sdkDescription: options.description,

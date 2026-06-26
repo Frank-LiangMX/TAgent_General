@@ -29,7 +29,7 @@ export function WindowControls(): React.ReactElement | null {
   if (!isWindows) return null
 
   return (
-    <div className="window-controls fixed top-[8px] right-[8px] z-[100] flex select-none">
+    <div className="window-controls fixed top-[8px] right-[8px] z-[200] flex select-none titlebar-no-drag">
       {/* 最小化 */}
       <button
         type="button"

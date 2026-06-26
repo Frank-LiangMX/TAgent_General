@@ -1,16 +1,14 @@
 /**
- * WorkspaceManagerDialog — 工作区管理弹窗
+ * ProjectManagerDialog — 项目管理弹窗
  *
- * 把原本嵌在 LeftSidebar 内的 WorkspaceSelector 能力完整搬到 Dialog 中：
- * - 列出所有工作区，点击切换
- * - 新建工作区
+ * 管理项目工作区（用户选择的本地代码目录）：
+ * - 列出所有项目，点击切换
+ * - 新建项目（选择目录）
  * - 重命名（hover 行内编辑）
  * - 删除（含 AlertDialog 二次确认）
  * - 拖拽排序并持久化
  *
- * 通过 `useWorkspaceActions` 共享 select/create 逻辑，
- * 删除时直接调用 `window.electronAPI.deleteAgentWorkspace`，
- * 与旧 `WorkspaceSelector` 行为一致。
+ * 每行显示项目名 + 目录路径截断，取代旧版的仅名称。
  */
 
 import { useAtom } from 'jotai'
@@ -41,22 +39,27 @@ import {
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { cn } from '@/lib/utils'
 
-interface WorkspaceManagerDialogProps {
+interface ProjectManagerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function WorkspaceManagerDialog({
+/** 截断路径，保留最后两级目录 + 盘符/根 */
+function truncatePath(path: string, maxLen = 40): string {
+  if (path.length <= maxLen) return path
+  const parts = path.split('/')
+  if (parts.length <= 3) return path
+  const last = parts.slice(-2).join('/')
+  const prefix = parts[0]! // 根或盘符
+  return `${prefix}/.../${last}`
+}
+
+export function ProjectManagerDialog({
   open,
   onOpenChange,
-}: WorkspaceManagerDialogProps): React.ReactElement {
-  const { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace } = useWorkspaceActions()
+}: ProjectManagerDialogProps): React.ReactElement {
+  const { workspaces, currentWorkspaceId, selectWorkspace, createProject } = useWorkspaceActions()
   const [, setWorkspaces] = useAtom(agentWorkspacesAtom)
-
-  // 新建状态
-  const [creating, setCreating] = React.useState(false)
-  const [newName, setNewName] = React.useState('')
-  const createInputRef = React.useRef<HTMLInputElement>(null)
 
   // 重命名状态
   const [editingId, setEditingId] = React.useState<string | null>(null)
@@ -73,51 +76,23 @@ export function WorkspaceManagerDialog({
     position: 'before' | 'after'
   } | null>(null)
 
-  // 打开时清掉中间态，避免上次未保存的编辑/输入残留
+  // 打开时清掉中间态
   React.useEffect(() => {
     if (open) {
-      setCreating(false)
-      setNewName('')
       setEditingId(null)
       setDeleteTargetId(null)
     }
   }, [open])
 
-  /** 切换工作区 */
+  /** 切换项目 */
   const handleSelect = (workspace: AgentWorkspace): void => {
     if (editingId) return
     selectWorkspace(workspace.id)
   }
 
-  // ===== 新建 =====
-
-  const handleStartCreate = (): void => {
-    setCreating(true)
-    setNewName('')
-    requestAnimationFrame(() => {
-      createInputRef.current?.focus()
-    })
-  }
-
-  const handleCreate = async (): Promise<void> => {
-    const trimmed = newName.trim()
-    if (!trimmed) {
-      setCreating(false)
-      return
-    }
-    await createWorkspace(trimmed)
-    setCreating(false)
-  }
-
-  const handleCreateKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter') {
-      if (e.nativeEvent.isComposing) return
-      e.preventDefault()
-      handleCreate()
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      setCreating(false)
-    }
+  /** 新建项目 — 选择目录 */
+  const handleCreateProject = async (): Promise<void> => {
+    await createProject()
   }
 
   // ===== 重命名 =====
@@ -181,7 +156,7 @@ export function WorkspaceManagerDialog({
         selectWorkspace(remaining[0]!.id)
       }
     } catch (error) {
-      console.error('[WorkspaceManagerDialog] 删除工作区失败:', error)
+      console.error('[ProjectManagerDialog] 删除项目失败:', error)
     } finally {
       setDeleteTargetId(null)
     }
@@ -206,7 +181,6 @@ export function WorkspaceManagerDialog({
       setDropIndicator(null)
       return
     }
-    // 根据鼠标在目标元素的上半/下半部分决定插入位置
     const rect = e.currentTarget.getBoundingClientRect()
     const ratio = (e.clientY - rect.top) / rect.height
     let position: 'before' | 'after'
@@ -263,26 +237,26 @@ export function WorkspaceManagerDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md gap-0 p-0 overflow-hidden">
           <DialogHeader className="px-5 py-4 border-b border-border/40">
-            <DialogTitle>工作区</DialogTitle>
+            <DialogTitle>项目管理</DialogTitle>
             <DialogDescription className="mt-1 text-xs">
-              管理 Agent 模式下的工作区。可新建、重命名、删除和排序。
+              每个项目对应一个本地代码目录，Agent 将在该目录内工作。
             </DialogDescription>
           </DialogHeader>
 
-          {/* 顶部操作条：新建工作区 */}
+          {/* 顶部操作条：新建项目 */}
           <div className="px-4 py-2 border-b border-border/30 flex-shrink-0">
             <button
               type="button"
-              onClick={handleStartCreate}
+              onClick={handleCreateProject}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
-              title="新建工作区"
+              title="选择目录新建项目"
             >
               <Plus size={13} />
-              <span>新建工作区</span>
+              <span>选择目录新建项目</span>
             </button>
           </div>
 
-          {/* 工作区列表 */}
+          {/* 项目列表 */}
           <div className="flex flex-col p-2 max-h-[60vh] overflow-y-auto scrollbar-thin">
             {workspaces.map((ws) => (
               <div key={ws.id} className="relative">
@@ -326,7 +300,14 @@ export function WorkspaceManagerDialog({
                     />
                   ) : (
                     <>
-                      <span className="flex-1 min-w-0 truncate">{ws.name}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="block truncate">{ws.name}</span>
+                        {ws.projectDirectory && (
+                          <span className="block truncate text-[10px] text-muted-foreground font-mono">
+                            {truncatePath(ws.projectDirectory)}
+                          </span>
+                        )}
+                      </div>
 
                       {ws.id === currentWorkspaceId && (
                         <span className="flex-shrink-0 text-[10px] font-medium text-primary/70 uppercase tracking-wide">
@@ -362,33 +343,16 @@ export function WorkspaceManagerDialog({
               </div>
             ))}
 
-            {/* 新建工作区输入框 */}
-            {creating && (
-              <div className="flex items-center gap-2 px-2 py-2">
-                <FolderOpen size={14} className="flex-shrink-0 text-foreground/40" />
-                <input
-                  ref={createInputRef}
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={handleCreateKeyDown}
-                  onBlur={() => setCreating(false)}
-                  placeholder="工作区名称..."
-                  className="flex-1 min-w-0 bg-transparent text-[13px] text-foreground border-b border-primary/50 outline-none px-0.5"
-                  maxLength={50}
-                />
-              </div>
-            )}
-
-            {workspaces.length === 0 && !creating && (
+            {workspaces.length === 0 && (
               <div className="py-6 text-center text-[12px] text-foreground/40">
-                暂无工作区，点击右上角"新建"创建
+                暂无项目，点击上方按钮选择目录创建
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认弹窗（嵌套在 Dialog 内） */}
+      {/* 删除确认弹窗 */}
       <AlertDialog
         open={deleteTargetId !== null}
         onOpenChange={(v) => {
@@ -397,9 +361,9 @@ export function WorkspaceManagerDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除工作区</AlertDialogTitle>
+            <AlertDialogTitle>确认删除项目</AlertDialogTitle>
             <AlertDialogDescription>
-              删除后工作区配置将被移除，但目录文件会保留。确定要删除吗？
+              删除后项目配置将被移除，但目录文件会保留。确定要删除吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

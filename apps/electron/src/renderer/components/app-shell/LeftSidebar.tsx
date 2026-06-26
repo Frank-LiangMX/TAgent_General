@@ -111,8 +111,6 @@ import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginsPanel } from '@/components/agent/SkillsPanel'
-import { WorkspaceFilesView } from '@/components/agent/WorkspaceFilesView'
-import { WorkspaceFileDropSurface } from '@/components/agent/WorkspaceFileDropSurface'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
 import {
@@ -252,13 +250,6 @@ function groupByDate<T extends { updatedAt: number }>(
   return groups
 }
 
-const SIDEBAR_DRAG_STRIP_HEIGHT = {
-  collapsedMac: 50,
-  expandedMac: 30,
-  collapsed: 8,
-  expanded: 4,
-} as const
-
 function getSessionLeftAccent(
   indicatorStatus: SessionIndicatorStatus,
   active: boolean
@@ -277,10 +268,6 @@ function isAgentSessionInTopLevelMode(
   return (session.mode ?? 'general') === topLevelMode
 }
 
-function SidebarWindowDragStrip({ height }: { height: number }): React.ReactElement {
-  return <div aria-hidden="true" className="sidebar-window-drag-strip" style={{ height }} />
-}
-
 /** 与 Rail 首个按钮（size-10）齐平的顶栏控件样式 */
 const SIDEBAR_TOP_CONTROL_CLASS =
   'h-10 rounded-[12px] border border-border/40 bg-primary/5 text-[11px] text-foreground/70 transition-colors duration-100 hover:border-border/70 hover:bg-primary/10 titlebar-no-drag'
@@ -295,8 +282,6 @@ function SidebarTopControlsRow({
 }): React.ReactElement {
   return (
     <div className="relative shrink-0 px-3 nav-island-body-start">
-      {!isMac ? <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} /> : null}
-      {!isMac ? <div className="h-2 shrink-0" aria-hidden /> : null}
       <div className="nav-island-header-row gap-1.5">{children}</div>
     </div>
   )
@@ -1025,8 +1010,6 @@ export function LeftSidebar({
 
     // 通用模式根据 activeRailItem 渲染
     switch (activeRailItem) {
-      case 'files':
-        return <FilesRailContent workspaceKey={currentWorkspaceId ?? 'no-workspace'} />
       case 'skills':
         return <SkillsRailContent capabilities={capabilities} />
       case 'automation':
@@ -1060,20 +1043,21 @@ export function LeftSidebar({
       className={cn(
         'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
         'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-        activeRailItem === 'skills' && 'nav-island-sidebar--plugins'
+        activeRailItem === 'skills' && 'nav-island-sidebar--plugins',
+        !isMac && 'pt-[34px]'
       )}
       style={{
         width: width ?? 240,
       }}
     >
-      {/* Win：无顶栏控件时仍保留拖拽条（如 Skills） */}
-      {!isMac &&
-      activeRailItem !== 'sessions' &&
-      activeRailItem !== 'files' &&
-      activeRailItem !== 'automation' ? (
-        <SidebarWindowDragStrip height={SIDEBAR_DRAG_STRIP_HEIGHT.expanded} />
-      ) : null}
-
+      {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 SidePanel / RailInspectorHeader 一致） */}
+      {!isMac && (
+        <div
+          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[34px] titlebar-drag-region"
+          style={{ right: 0 }}
+          aria-hidden
+        />
+      )}
       {/* 会话页顶栏：工作区选择(折叠按钮已移除) */}
       {activeRailItem === 'sessions' ? (
         <SidebarTopControlsRow isMac={isMac}>
@@ -1152,78 +1136,6 @@ export function LeftSidebar({
         </SidebarTopControlsRow>
       ) : null}
 
-      {/* 文件页：仅工作区选择 */}
-      {activeRailItem === 'files' && mode === 'agent' && topLevelMode === 'general' ? (
-        <SidebarTopControlsRow isMac={isMac}>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className={cn(
-                  SIDEBAR_TOP_CONTROL_CLASS,
-                  'flex w-full items-center justify-between gap-1.5 px-2.5'
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <FolderOpen size={12} className="shrink-0 text-foreground/40" />
-                  <span className="truncate font-medium">
-                    {currentWorkspaceName ?? '选择工作区'}
-                  </span>
-                </span>
-                <ChevronDown size={12} className="shrink-0 text-foreground/40" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              side="bottom"
-              align="start"
-              sideOffset={4}
-              className="w-64 overflow-hidden p-0"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-foreground/50">
-                  切换工作区
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceManagerOpen(true)}
-                  className="text-[11px] text-primary/70 transition-colors hover:text-primary titlebar-no-drag"
-                >
-                  管理 →
-                </button>
-              </div>
-              <div className="max-h-[50vh] overflow-y-auto p-1 scrollbar-thin">
-                {workspaces.length === 0 ? (
-                  <div className="py-3 text-center text-[12px] text-foreground/40">暂无工作区</div>
-                ) : (
-                  <div className="flex flex-col gap-0.5">
-                    {workspaces.map((ws) => {
-                      const isActive = ws.id === currentWorkspaceId
-                      return (
-                        <button
-                          key={ws.id}
-                          type="button"
-                          onClick={() => selectWorkspace(ws.id)}
-                          className={cn(
-                            'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors duration-100',
-                            isActive
-                              ? 'bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-                              : 'text-foreground/70 hover:bg-foreground/[0.04]'
-                          )}
-                        >
-                          <FolderOpen size={13} className="shrink-0 text-foreground/40" />
-                          <span className="min-w-0 flex-1 truncate font-medium">{ws.name}</span>
-                          {isActive ? <Check size={12} className="shrink-0 text-primary" /> : null}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </SidebarTopControlsRow>
-      ) : null}
-
       {/* 新会话按钮 + 搜索按钮（仅 Agent 会话功能区显示） */}
       {activeRailItem === 'sessions' && (
         <div className="nav-island-action-row px-3 gap-1.5">
@@ -1279,7 +1191,7 @@ export function LeftSidebar({
         key={activeRailItem}
         className={cn(
           'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200',
-          activeRailItem !== 'sessions' && activeRailItem !== 'files' && 'nav-island-body-start'
+          activeRailItem !== 'sessions' && 'nav-island-body-start'
         )}
       >
         {renderRailContent()}
@@ -1456,15 +1368,6 @@ function SessionsRailContent({
         </div>
       )}
     </div>
-  )
-}
-
-/** 文件功能区内容 —— 工作区文件树（已从 RightSidePanel 迁出） */
-function FilesRailContent({ workspaceKey }: { workspaceKey: string }): React.ReactElement {
-  return (
-    <WorkspaceFileDropSurface className="flex h-full min-h-0 flex-1 flex-col">
-      <WorkspaceFilesView workspaceKey={workspaceKey} layout="navigator" />
-    </WorkspaceFileDropSurface>
   )
 }
 

@@ -527,6 +527,9 @@ export interface ElectronAPI {
   /** 创建 Agent 工作区 */
   createAgentWorkspace: (name: string) => Promise<AgentWorkspace>
 
+  /** 创建项目工作区（用户选择本地代码目录） */
+  createProjectWorkspace: (projectDirectory: string) => Promise<AgentWorkspace>
+
   /** 更新 Agent 工作区 */
   updateAgentWorkspace: (id: string, updates: { name: string }) => Promise<AgentWorkspace>
 
@@ -1898,6 +1901,10 @@ const electronAPI: ElectronAPI = {
 
   createAgentWorkspace: (name: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_WORKSPACE, name)
+  },
+
+  createProjectWorkspace: (projectDirectory: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_PROJECT_WORKSPACE, projectDirectory)
   },
 
   updateAgentWorkspace: (id: string, updates: { name: string }) => {

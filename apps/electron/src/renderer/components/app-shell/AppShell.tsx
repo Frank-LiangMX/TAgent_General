@@ -22,7 +22,7 @@ import {
 } from '@/atoms/agent-atoms'
 import { appModeAtom, topLevelModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
-import { WorkspaceManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
+import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
@@ -75,7 +75,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const showLeftSidebar =
     topLevelMode === 'general'
       ? activeRailItem === 'sessions' ||
-        activeRailItem === 'files' ||
         activeRailItem === 'skills' ||
         activeRailItem === 'draft' ||
         activeRailItem === 'automation'
@@ -218,7 +217,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </NavIsland>
         </div>
 
-        <WorkspaceManagerDialog
+        <ProjectManagerDialog
           open={workspaceManagerOpen}
           onOpenChange={setWorkspaceManagerOpen}
         />

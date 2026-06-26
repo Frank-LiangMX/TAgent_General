@@ -21,6 +21,7 @@ import {
   Settings,
   Paperclip,
   FolderPlus,
+  FolderOpen,
   Plus,
   MicIcon,
   X,
@@ -149,6 +150,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AgentSessionProvider } from '@/contexts/session-context'
 import { useOpenSession } from '@/hooks/useOpenSession'
+import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { isLikelyAgentIntent } from '@/lib/ask-heuristic'
 import {
   createClipboardPendingFile,
@@ -781,14 +783,16 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   }, [workspaceSlug, currentWorkspaceId, setWsAttachedFilesMap])
 
   // 工作区级目录（workspace shared files + 工作区级附加目录），@ 引用标记为工作区文件
+  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId)
   const workspaceDirs = React.useMemo(() => {
     const dirs: string[] = []
-    if (workspaceFilesPath) dirs.push(workspaceFilesPath)
+    // 项目模式下 cwd 就是项目目录，无需附加 workspace-files/
+    if (!currentWorkspace?.projectDirectory && workspaceFilesPath) dirs.push(workspaceFilesPath)
     for (const d of wsAttachedDirs) {
       if (!dirs.includes(d)) dirs.push(d)
     }
     return dirs
-  }, [workspaceFilesPath, wsAttachedDirs])
+  }, [currentWorkspace?.projectDirectory, workspaceFilesPath, wsAttachedDirs])
 
   const attachedFileDirectories = React.useMemo(() => {
     const dirs: string[] = []
@@ -2688,6 +2692,37 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       )}
     </>
   )
+
+  // 是否有项目模式的工作区
+  const hasProject = workspaces.some((w) => w.projectDirectory)
+  const { createProject } = useWorkspaceActions()
+
+  // 无项目时显示引导卡片
+  if (!hasProject) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="max-w-sm w-full mx-4 rounded-2xl bg-card shadow-xl p-8 text-center">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
+            <FolderOpen className="size-8 text-primary" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">
+            选择项目目录开始
+          </h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            TAgent 将在你选择的代码目录中工作
+          </p>
+          <Button
+            onClick={() => {
+              createProject().catch(console.error)
+            }}
+            className="w-full"
+          >
+            选择目录
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

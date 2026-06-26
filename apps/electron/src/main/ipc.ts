@@ -158,6 +158,7 @@ import {
 import {
   listAgentWorkspaces,
   createAgentWorkspace,
+  createProjectWorkspace,
   updateAgentWorkspace,
   deleteAgentWorkspace,
   reorderAgentWorkspaces,
@@ -349,6 +350,9 @@ function getAuthorizedRoots(options?: FileAccessOptions): string[] {
     if (meta?.workspaceId) {
       const workspace = getAgentWorkspace(meta.workspaceId)
       if (workspace?.slug) workspaceSlugs.add(workspace.slug)
+      if (workspace?.projectDirectory) {
+        roots.push(workspace.projectDirectory)
+      }
     }
   }
 
@@ -360,9 +364,35 @@ function getAuthorizedRoots(options?: FileAccessOptions): string[] {
     roots.push(getWorkspaceFilesDir(slug))
     roots.push(...getWorkspaceAttachedDirectories(slug))
     roots.push(...getWorkspaceAttachedFiles(slug))
+    // 项目模式下加入 projectDirectory
+    for (const ws of listAgentWorkspaces()) {
+      if (ws.slug === slug && ws.projectDirectory) {
+        roots.push(ws.projectDirectory)
+        break
+      }
+    }
   }
 
   return roots
+}
+
+function isWithinWorkspacesOrProjects(filePath: string): boolean {
+  const resolved = resolve(filePath)
+  const workspacesRoot = resolve(getAgentWorkspacesDir())
+  if (resolved.startsWith(workspacesRoot + sep) || resolved === workspacesRoot) return true
+  for (const ws of listAgentWorkspaces()) {
+    if (ws.projectDirectory) {
+      const pd = resolve(ws.projectDirectory)
+      if (resolved.startsWith(pd + sep) || resolved === pd) return true
+    }
+  }
+  return false
+}
+
+/** 确保路径在工作区目录或项目目录内，否则抛出越界错误 */
+function ensureWithinWorkspacesOrProjects(filePath: string): void {
+  if (isWithinWorkspacesOrProjects(filePath)) return
+  throw new Error('访问路径超出 Agent 工作区范围')
 }
 
 function isUnderRoot(resolvedPath: string, root: string): boolean {
@@ -1680,6 +1710,14 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // 创建项目工作区（用户选择本地代码目录）
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.CREATE_PROJECT_WORKSPACE,
+    async (_, projectDirectory: string): Promise<AgentWorkspace> => {
+      return createProjectWorkspace(projectDirectory)
+    }
+  )
+
   // 更新 Agent 工作区
   ipcMain.handle(
     AGENT_IPC_CHANNELS.UPDATE_WORKSPACE,
@@ -1924,11 +1962,23 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     AGENT_IPC_CHANNELS.PERMISSION_RESPOND,
     async (event, response: PermissionResponse): Promise<void> => {
-      const { requestId, behavior, alwaysAllow } = response
-      const sessionId = permissionService.respondToPermission(requestId, behavior, alwaysAllow)
+      const { requestId, behavior, alwaysAllow, addDirectories } = response
+      const sessionId = permissionService.respondToPermission(requestId, behavior, alwaysAllow, addDirectories)
 
       // 发送 permission_resolved 事件给渲染进程
       if (sessionId) {
+        // 持久化批准的目录到会话元数据
+        if (addDirectories?.length) {
+          try {
+            const session = getAgentSessionMeta(sessionId)
+            const existing = session?.attachedDirectories ?? []
+            const merged = [...new Set([...existing, ...addDirectories])]
+            updateAgentSessionMeta(sessionId, { attachedDirectories: merged })
+          } catch (err) {
+            console.error('[IPC] 持久化 addDirectories 失败:', err)
+          }
+        }
+
         event.sender.send(AGENT_IPC_CHANNELS.STREAM_EVENT, {
           sessionId,
           payload: {
@@ -2322,12 +2372,15 @@ export function registerIpcHandlers(): void {
 
   // ===== Agent 文件系统操作 =====
 
-  // 获取 session 工作路径
+  // 获取 session 工作路径（project 模式下返回 projectDirectory）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.GET_SESSION_PATH,
     async (_, workspaceId: string, sessionId: string): Promise<string | null> => {
       const ws = getAgentWorkspace(workspaceId)
       if (!ws) return null
+      if (ws.projectDirectory) {
+        return ws.projectDirectory
+      }
       return getAgentSessionWorkspacePath(ws.slug, sessionId)
     }
   )
@@ -2339,12 +2392,9 @@ export function registerIpcHandlers(): void {
       const { readdirSync, statSync } = await import('node:fs')
       const { resolve } = await import('node:path')
 
-      // 安全校验：路径必须在 agent-workspaces 目录下
+      // 安全校验：路径必须在 agent-workspaces 目录下或项目目录下
       const safePath = resolve(dirPath)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot)) {
-        throw new Error('访问路径超出 Agent 工作区范围')
-      }
+      ensureWithinWorkspacesOrProjects(safePath)
 
       const entries: FileEntry[] = []
       const items = readdirSync(safePath, { withFileTypes: true })
@@ -2380,12 +2430,9 @@ export function registerIpcHandlers(): void {
     const { rmSync } = await import('node:fs')
     const { resolve } = await import('node:path')
 
-    // 安全校验：路径必须在 agent-workspaces 目录下
+    // 安全校验：路径必须在 agent-workspaces 目录下或项目目录下
     const safePath = resolve(filePath)
-    const workspacesRoot = resolve(getAgentWorkspacesDir())
-    if (!safePath.startsWith(workspacesRoot)) {
-      throw new Error('访问路径超出 Agent 工作区范围')
-    }
+    ensureWithinWorkspacesOrProjects(safePath)
 
     rmSync(safePath, { recursive: true, force: true })
     console.log(`[Agent 文件] 已删除: ${safePath}`)
@@ -2396,10 +2443,7 @@ export function registerIpcHandlers(): void {
     const { resolve } = await import('node:path')
 
     const safePath = resolve(filePath)
-    const workspacesRoot = resolve(getAgentWorkspacesDir())
-    if (!safePath.startsWith(workspacesRoot)) {
-      throw new Error('访问路径超出 Agent 工作区范围')
-    }
+    ensureWithinWorkspacesOrProjects(safePath)
 
     await shell.openPath(safePath)
   })
@@ -2446,10 +2490,7 @@ export function registerIpcHandlers(): void {
     const { resolve } = await import('node:path')
 
     const safePath = resolve(filePath)
-    const workspacesRoot = resolve(getAgentWorkspacesDir())
-    if (!safePath.startsWith(workspacesRoot)) {
-      throw new Error('访问路径超出 Agent 工作区范围')
-    }
+    ensureWithinWorkspacesOrProjects(safePath)
 
     shell.showItemInFolder(safePath)
   })
@@ -2617,10 +2658,7 @@ export function registerIpcHandlers(): void {
       }
 
       const safePath = resolve(filePath)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot)) {
-        throw new Error('访问路径超出 Agent 工作区范围')
-      }
+      ensureWithinWorkspacesOrProjects(safePath)
 
       const newPath = join(dirname(safePath), newName)
       renameSync(safePath, newPath)
@@ -2637,8 +2675,7 @@ export function registerIpcHandlers(): void {
 
       const safePath = resolve(filePath)
       const safeTarget = resolve(targetDir)
-      const workspacesRoot = resolve(getAgentWorkspacesDir())
-      if (!safePath.startsWith(workspacesRoot) || !safeTarget.startsWith(workspacesRoot)) {
+      if (!isWithinWorkspacesOrProjects(safePath) || !isWithinWorkspacesOrProjects(safeTarget)) {
         throw new Error('访问路径超出 Agent 工作区范围')
       }
 

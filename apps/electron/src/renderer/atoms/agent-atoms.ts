@@ -317,8 +317,8 @@ export const agentSidePanelWidthAtom = atomWithStorage<number>('tagent-agent-sid
 /** @deprecated 保留以兼容旧代码，但实际所有 session 都读全局 atom */
 export const agentSidePanelOpenMapAtom = atom<Map<string, boolean>>(new Map())
 
-/** 侧面板当前 Tab：'session' | 'changes'（per-session Map） */
-export const agentDiffPanelTabAtom = atom<Map<string, 'session' | 'changes'>>(new Map())
+/** 侧面板当前 Tab：'project' | 'activity' | 'changes'（per-session Map） */
+export const agentDiffPanelTabAtom = atom<Map<string, 'project' | 'activity' | 'changes'>>(new Map())
 
 /** Diff 视图模式：'split' | 'unified' */
 export const agentDiffViewModeAtom = atom<'split' | 'unified'>('split')
@@ -1187,3 +1187,11 @@ export const subagentEagernessAtom = atom<SubagentEagerness>('conservative')
 
 /** 对话列表（兼容旧会话数据） */
 export const conversationsAtom = atom<ConversationMeta[]>([])
+
+// ===== 文件活动追踪 =====
+
+/** 会话级已读文件路径（sessionId → paths） */
+export const sessionReadFilesAtom = atom<Map<string, string[]>>(new Map())
+
+/** 会话级已改文件路径（sessionId → paths） */
+export const sessionChangedFilesAtom = atom<Map<string, string[]>>(new Map())

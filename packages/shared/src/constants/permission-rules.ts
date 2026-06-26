@@ -110,3 +110,23 @@ export function isDangerousCommand(command: string): boolean {
   const trimmed = command.trim().toLowerCase()
   return DANGEROUS_COMMANDS.some((dc) => trimmed.startsWith(dc.toLowerCase()))
 }
+
+/** 写操作工具名称 */
+export const WRITE_TOOLS: readonly string[] = [
+  'Write',
+  'Edit',
+  'MultiEdit',
+  'NotebookEdit',
+]
+
+/**
+ * 判断工具是否为写操作（auto 模式下需用户确认）
+ */
+export function isWriteTool(toolName: string, input: Record<string, unknown>): boolean {
+  if (WRITE_TOOLS.includes(toolName)) return true
+  if (toolName === 'Bash') {
+    const command = typeof input.command === 'string' ? input.command : ''
+    return !isSafeBashCommand(command)
+  }
+  return false
+}

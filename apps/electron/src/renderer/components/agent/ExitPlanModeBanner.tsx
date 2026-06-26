@@ -202,7 +202,7 @@ export function ExitPlanModeBanner({
   if (!request) return null
 
   return (
-    <div className="mx-4 mb-3 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+    <div className="session-glass-modal mx-4 mb-3 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
       {/* 头部 */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-center gap-2 mb-1">
@@ -236,10 +236,10 @@ export function ExitPlanModeBanner({
                   flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
                   ${
                     option.variant === 'destructive'
-                      ? 'bg-muted/50 text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
-                      : 'bg-muted/50 text-foreground/80 hover:bg-muted'
+                      ? 'bg-foreground/[0.04] text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
+                      : 'bg-foreground/[0.04] text-foreground/80 hover:bg-foreground/[0.08]'
                   }
-                  ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-card' : ''}
+                  ${isFocused ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-transparent' : ''}
                 `}
                 onClick={() => {
                   if (option.action === 'feedback') {
@@ -268,7 +268,7 @@ export function ExitPlanModeBanner({
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 px-3 py-2 rounded-lg text-xs bg-muted/40 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
+              className="flex-1 px-3 py-2 rounded-lg text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
               placeholder="输入修改意见..."
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}

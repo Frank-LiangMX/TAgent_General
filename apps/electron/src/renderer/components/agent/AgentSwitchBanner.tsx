@@ -100,7 +100,7 @@ export function AgentSwitchBanner(): React.ReactElement | null {
   }
 
   return (
-    <div className="mx-4 mb-2 rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+    <div className="session-glass-modal mx-4 mb-2 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
       {/* 头部 */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-center justify-between">

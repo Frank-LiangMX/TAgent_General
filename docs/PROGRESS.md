@@ -68,6 +68,35 @@
   - Draft → Agent 升级：buildAgentPrompt + upgradeToAgentAtom（创建会话 → 发送初始消息 → 推进状态 → 切换标签页）
   - 旧版迁移：migrateLegacyAtom 迁移 scratch-pad.md 内容
   - 净删 -2796 行（Chat 清理）+ 新增 ~1500 行（Draft 系统）
+- ✅ **工作区 → 项目模型重构 + 文件活动追踪** 已完成（2026-06-26，branch `feature/draft-restructure`）— 见 [workspace-to-project-design.md](plans/2026-06-26-workspace-to-project-design.md)：
+  - 项目模型：工作区增加 `projectDirectory` 字段；创建项目时直接关联用户选择的本地代码目录，Agent 在该目录内工作
+  - 首次引导卡片：无项目时居中显示「选择项目目录开始」引导卡片，用户选择目录后自动创建项目
+  - 项目管理弹窗：WorkspaceManagerDialog → ProjectManagerDialog，文案统一为「项目」，新建项目改为调用文件夹选择对话框
+  - AgentView 工作区选择器、SidePanel 附加目录 UI 文案适配项目模型
+  - 旧工作区兼容：`projectDirectory = undefined` 时回退到旧 `~/.tagent/agent-workspaces/{slug}/{sessionId}/` 行为
+  - 跨目录边界审批：SDK `blockedPath` 参数接入 `canUseTool`，Agent 访问项目目录外文件时弹出「需要访问目录」横幅，用户允许后自动追加到 `attachedDirectories`
+  - Auto vs Bypass 区分：Auto 模式下写操作（Write / Edit / MultiEdit / NotebookEdit / 非安全 Bash）强制弹窗确认，Bypass 模式仍全自由
+- 文件活动追踪：useGlobalAgentListeners 在 `tool_start` 事件捕获 Read / 写工具路径，按 session 存入 `sessionReadFilesAtom` / `sessionChangedFilesAtom`
+  - SidePanel 文件活动卡片：已读 N / 已改 N 的可展开摘要卡片
+  - WorkspaceFilesView「navigator」布局双 Tab：「文件树」+「变更」，变更 tab 列出当前会话 Agent 已读/已改文件路径，带蓝色/橙色标记
+  - 类型检查：4 包全通过（shared/core/ui/electron）
+- ✅ **右侧边栏重构（已完成）**：文件系统全部集中到右侧浮岛，左侧去掉文件功能区，右侧 3 个 tab：项目文件 / 文件活动 / 代码改动
+  - `DiffPanelTabBar` 重写为 3 个 tab（项目文件/文件活动/代码改动）
+  - `agentDiffPanelTabAtom` 类型更新为 `'project' | 'activity' | 'changes'`
+  - `RightSidePanel` 类型同步
+  - `GET_SESSION_PATH` 修复：project 模式下返回 `projectDirectory`（修复 diff 找不到 Git 仓库的 bug）
+  - IPC 文件边界检查扩展为 `isWithinWorkspacesOrProjects`，`projectDirectory` 纳入白名单（修复文件树显示"越界"的 bug）
+  - `activity` tab：完整文件活动列表（已读蓝/已改橙标记 + 点击预览/添加到聊天/在文件夹中显示）
+  - `project` tab：`FileBrowser` 文件树（embedded + hideToolbar）+ 外部文件区域（附加文件/附加目录）
+  - 移除左侧「文件」功能区：`GeneralRailItem` 删除 `'files'`，FunctionalRail/LeftSidebar/MainArea/AppShell 联动清理
+  - 权限响应后附加目录同步：`PermissionBanner.respond` 成功后同步 `agentAttachedDirectoriesMapAtom`
+  - 越界弹窗改进：按钮文案「允许并附加此目录」+ 说明文字
+  - 类型检查：4 包全通过
+- ✅ **会话弹窗玻璃态统一（已完成）**：PermissionBanner / AskUserBanner / ExitPlanModeBanner / AgentSwitchBanner 四个横幅从 `bg-card` 实色改为 `session-glass-modal` 玻璃态浮层；内部元素 `bg-muted` → `bg-foreground/[0.04]`，`ring-offset-card` → `ring-offset-transparent`
+- ✅ **窗口拖拽修复（已完成）**：
+  - `WindowControls` 加 `titlebar-no-drag` + `z-[200]`，避免 drag region 吞点击
+  - 左右栏顶部统一 `pt-[34px]` + drag band（右栏避让 126px 窗口按钮区域，与 `RailInspectorHeader` 方案一致）
+  - 移除左栏 4px `SidebarWindowDragStrip`（已被 34px drag band 取代）
 - 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
 - **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
 
@@ -102,6 +131,7 @@
 | **`2026-06-24-automation-design.md`** | **M1–M3 已完成 / M4 待做** | Automation v1：调度 + UI + 通知已合 main（PR #15）；M4 扩展另开分支 |
 | **`2026-06-24-collaboration-design.md`** | **活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
 | **`2026-06-25-kscc-internal-provider-design.md`** | **已完成** | kscc 内网渠道集成：CLI 检测 + 凭据隔离 + SubAgent 路由 + UI 全链路 |
+| **`2026-06-26-workspace-to-project-design.md`** | **已完成** | 工作区→项目模型重构 + 文件活动追踪：Phase 0–4 全部落地（`feature/draft-restructure`） |
 | **`2026-06-24-proma-upstream-borrow-list.md`** | **参考清单** | Proma v0.11.1→v0.13.3 新增特性借鉴清单 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
@@ -297,6 +327,23 @@
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
+
+### 2026-06-26（续）
+
+**产出**：右侧边栏重构 + 会话弹窗玻璃态 + 窗口拖拽修复（分支 `feature/workspace-to-project`）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| activity tab | 完整文件活动列表（已读蓝/已改橙标记 + 点击预览/添加到聊天/在文件夹中显示），空状态提示 |
+| project tab | `FileBrowser` 文件树（embedded + hideToolbar）+ 外部文件区域（附加文件/附加目录，仅在有附加项时显示） |
+| 左侧文件功能区移除 | `GeneralRailItem` 删除 `'files'`；FunctionalRail/LeftSidebar/MainArea/AppShell 联动清理；删除 `FilesRailContent` 组件 |
+| 权限响应同步 | `PermissionBanner.respond` 成功后同步 `agentAttachedDirectoriesMapAtom`（主进程已持久化，此处仅同步渲染进程） |
+| 越界弹窗改进 | 按钮文案「允许并附加此目录」+ 说明文字「允许后此目录将添加到项目附加目录」 |
+| 会话弹窗玻璃态 | PermissionBanner / AskUserBanner / ExitPlanModeBanner / AgentSwitchBanner 四个横幅 `bg-card` → `session-glass-modal`；内部 `bg-muted` → `bg-foreground/[0.04]`；`ring-offset-card` → `ring-offset-transparent` |
+| 窗口按钮修复 | `WindowControls` 加 `titlebar-no-drag` + `z-[200]`，避免 SidePanel drag region 吞点击 |
+| 窗口拖拽修复 | 左右栏顶部统一 `pt-[34px]` + drag band；右栏避让 126px 窗口按钮区（与 `RailInspectorHeader` 一致）；移除左栏 4px `SidebarWindowDragStrip` |
+| 类型检查 | 4 包全通过（shared/core/ui/electron） |
+| **里程碑** | **右侧边栏 3-tab 体系闭环；会话弹窗与全局玻璃态风格统一；Windows 窗口按钮/拖拽双修** |
 
 ### 2026-06-26
 

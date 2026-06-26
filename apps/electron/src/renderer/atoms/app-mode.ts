@@ -66,8 +66,8 @@ export const pluginKindTabAtom = atomWithStorage<PluginKindTab>('tagent-plugin-k
 
 // ===== Rail Item Atoms =====
 
-/** 通用模式下的侧栏功能项 */
-export type GeneralRailItem = 'sessions' | 'files' | 'skills' | 'automation' | 'draft'
+/** 通用模式下的侧栏功能项（文件功能已迁移至右侧边栏） */
+export type GeneralRailItem = 'sessions' | 'skills' | 'automation' | 'draft'
 
 /** TA 模式下的侧栏功能项 */
 export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory' | 'config'
