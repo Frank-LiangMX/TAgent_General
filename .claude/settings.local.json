@@ -52,7 +52,10 @@
       "Bash(sed -n '364p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/WorkspaceFilesView.tsx\")",
       "Bash(grep *)",
       "Bash(sed -n '1,50p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/SidePanel.tsx\")",
-      "Bash(sed -n '340,420p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/SidePanel.tsx\")"
+      "Bash(sed -n '340,420p' \"F:/TAgent_General/apps/electron/src/renderer/components/agent/SidePanel.tsx\")",
+      "Bash(git fetch *)",
+      "Bash(git merge --no-ff feature/workspace-to-project -m ' *)",
+      "Bash(git branch *)"
     ]
   }
 }

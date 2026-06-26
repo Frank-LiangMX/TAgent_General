@@ -11,7 +11,12 @@ import { toast } from 'sonner'
 
 import type { DraftStatus } from '@tagent/shared'
 
-import { currentDraftAtom, upgradeToReadyAtom, upgradeToAgentAtom, setDraftStatusAtom } from '@/atoms/draft-atoms'
+import {
+  currentDraftAtom,
+  upgradeToReadyAtom,
+  upgradeToAgentAtom,
+  setDraftStatusAtom,
+} from '@/atoms/draft-atoms'
 import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 import { cn } from '@/lib/utils'
 

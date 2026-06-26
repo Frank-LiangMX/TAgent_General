@@ -1566,13 +1566,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         })
         .catch(console.error)
     },
-    [
-      sessionId,
-      setSessionChannelMap,
-      setSessionModelMap,
-      agentChannelIds,
-      setAgentChannelIds,
-    ]
+    [sessionId, setSessionChannelMap, setSessionModelMap, agentChannelIds, setAgentChannelIds]
   )
 
   // 渠道互斥：会话锁定到初始渠道类型（kscc 或外部）
@@ -2705,12 +2699,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
             <FolderOpen className="size-8 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">
-            选择项目目录开始
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            TAgent 将在你选择的代码目录中工作
-          </p>
+          <h2 className="text-lg font-semibold text-foreground mb-2">选择项目目录开始</h2>
+          <p className="text-sm text-muted-foreground mb-6">TAgent 将在你选择的代码目录中工作</p>
           <Button
             onClick={() => {
               createProject().catch(console.error)

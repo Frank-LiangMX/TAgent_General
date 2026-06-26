@@ -78,13 +78,8 @@ import {
   type RailItem,
   type TARailItem,
 } from '@/atoms/app-mode'
-import {
-  conversationsAtom,
-} from '@/atoms/agent-atoms'
-import {
-  channelsAtom,
-  selectedModelAtom,
-} from '@/atoms/model-atoms'
+import { conversationsAtom } from '@/atoms/agent-atoms'
+import { channelsAtom, selectedModelAtom } from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
@@ -899,7 +894,7 @@ export function LeftSidebar({
       setActiveTabId(tabResult.activeTabId)
       // 同步副作用到新激活标签（替代无条件 setCurrentAgentSessionId(null)）
       const newActiveTab = tabResult.activeTabId
-        ? tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null
+        ? (tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null)
         : null
       syncActiveTabSideEffects(newActiveTab)
       // 从 Working Done 集合移除

@@ -1379,7 +1379,11 @@ export class AgentOrchestrator {
       process.env.ANTHROPIC_API_KEY = apiKey
     }
     // 使用与 buildSdkEnv 相同的规范化逻辑，确保 process.env 和 sdkEnv 中的 URL 一致
-    if (channel.provider !== 'kscc-internal' && channel.baseUrl && channel.baseUrl !== 'https://api.anthropic.com') {
+    if (
+      channel.provider !== 'kscc-internal' &&
+      channel.baseUrl &&
+      channel.baseUrl !== 'https://api.anthropic.com'
+    ) {
       process.env.ANTHROPIC_BASE_URL = normalizeAnthropicBaseUrlForSdk(channel.baseUrl)
     }
 
@@ -1398,7 +1402,9 @@ export class AgentOrchestrator {
     //     resume 回旧 CLI 会导致认证失败或协议不兼容
     if (channelId !== sessionMeta?.channelId) {
       if (existingSdkSessionId) {
-        console.log(`[Agent 编排] 渠道变更 ${sessionMeta?.channelId} → ${channelId}，清除 sdkSessionId`)
+        console.log(
+          `[Agent 编排] 渠道变更 ${sessionMeta?.channelId} → ${channelId}，清除 sdkSessionId`
+        )
         updateAgentSessionMeta(sessionId, { sdkSessionId: undefined, channelId })
         existingSdkSessionId = undefined
       } else {
@@ -1512,7 +1518,10 @@ export class AgentOrchestrator {
             const allPaths = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
               .trim()
               .split(/\r?\n/)
-            ksccPath = allPaths.find(p => p.endsWith('.cmd')) || allPaths.find(p => p.endsWith('.exe')) || allPaths[0]
+            ksccPath =
+              allPaths.find((p) => p.endsWith('.cmd')) ||
+              allPaths.find((p) => p.endsWith('.exe')) ||
+              allPaths[0]
           } else {
             ksccPath = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
               .trim()
@@ -2063,20 +2072,32 @@ export class AgentOrchestrator {
 
           case 'auto': {
             // auto 模式写操作守卫：Write/Edit/MultiEdit/NotebookEdit 和非安全 Bash 始终需确认
-            if (isWriteTool(toolName, input) && !permissionService.isWhitelisted(sessionId, toolName, input)) {
-              const request = permissionService.buildPermissionRequest(sessionId, toolName, input, options)
+            if (
+              isWriteTool(toolName, input) &&
+              !permissionService.isWhitelisted(sessionId, toolName, input)
+            ) {
+              const request = permissionService.buildPermissionRequest(
+                sessionId,
+                toolName,
+                input,
+                options
+              )
               this.eventBus.emit(sessionId, {
                 kind: 'tagent_event',
                 event: { type: 'permission_request', request },
               })
               return new Promise<PermissionResult>((resolve) => {
                 permissionService.setPending(request.requestId, { resolve, request })
-                options.signal.addEventListener('abort', () => {
-                  if (permissionService.hasPending(request.requestId)) {
-                    permissionService.deletePending(request.requestId)
-                    resolve({ behavior: 'deny' as const, message: '操作已中止' })
-                  }
-                }, { once: true })
+                options.signal.addEventListener(
+                  'abort',
+                  () => {
+                    if (permissionService.hasPending(request.requestId)) {
+                      permissionService.deletePending(request.requestId)
+                      resolve({ behavior: 'deny' as const, message: '操作已中止' })
+                    }
+                  },
+                  { once: true }
+                )
               })
             }
             // 只读操作走 SDK classifier
@@ -2133,7 +2154,8 @@ export class AgentOrchestrator {
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
             ksccProvider: channel.provider === 'kscc-internal',
-            ksccSubagentModel: channel.provider === 'kscc-internal' ? modelRouting.subagentModel : undefined,
+            ksccSubagentModel:
+              channel.provider === 'kscc-internal' ? modelRouting.subagentModel : undefined,
             subagentEagerness: appSettings.subagentEagerness,
             mode: getAgentSessionMeta(sessionId)?.mode,
           }),

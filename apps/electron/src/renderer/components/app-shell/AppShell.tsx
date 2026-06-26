@@ -217,10 +217,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </NavIsland>
         </div>
 
-        <ProjectManagerDialog
-          open={workspaceManagerOpen}
-          onOpenChange={setWorkspaceManagerOpen}
-        />
+        <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
         <div className="app-content-boundary-rim" aria-hidden />
 

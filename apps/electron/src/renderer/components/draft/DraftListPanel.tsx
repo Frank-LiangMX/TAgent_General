@@ -12,7 +12,13 @@ import * as React from 'react'
 
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
 
-import { draftsAtom, currentDraftIdAtom, deleteDraftAtom, draftsLoadedAtom, loadDraftsAtom } from '@/atoms/draft-atoms'
+import {
+  draftsAtom,
+  currentDraftIdAtom,
+  deleteDraftAtom,
+  draftsLoadedAtom,
+  loadDraftsAtom,
+} from '@/atoms/draft-atoms'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { useDraftListSlideIndicator } from '@/hooks/useDraftListSlideIndicator'
@@ -50,7 +56,9 @@ import {
 import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { cn } from '@/lib/utils'
 
-function groupByStatus(drafts: DraftDocument[]): Array<{ status: DraftStatus; items: DraftDocument[] }> {
+function groupByStatus(
+  drafts: DraftDocument[]
+): Array<{ status: DraftStatus; items: DraftDocument[] }> {
   const groups = new Map<DraftStatus, DraftDocument[]>()
   for (const d of drafts) {
     const list = groups.get(d.status) ?? []
@@ -317,11 +325,7 @@ export function DraftListPanel(): React.ReactElement {
   }
 
   if (drafts.length === 0) {
-    return (
-      <div className="px-4 py-6 text-center text-[12px] text-foreground/30">
-        暂无需求草稿
-      </div>
-    )
+    return <div className="px-4 py-6 text-center text-[12px] text-foreground/30">暂无需求草稿</div>
   }
 
   return (
@@ -379,7 +383,9 @@ export function DraftListPanel(): React.ReactElement {
         >
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除草稿</AlertDialogTitle>
-            <AlertDialogDescription>删除后将无法恢复，确定要删除这个草稿吗？</AlertDialogDescription>
+            <AlertDialogDescription>
+              删除后将无法恢复，确定要删除这个草稿吗？
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>

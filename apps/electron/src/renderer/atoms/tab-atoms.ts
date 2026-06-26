@@ -108,9 +108,7 @@ export const tabsAtom = atom<TabItem[], [TabItem[] | ((prev: TabItem[]) => TabIt
     const agentSessionIds = new Set(
       newTabs.filter((t) => t.type === 'agent').map((t) => t.sessionId)
     )
-    const cleaned = newTabs.filter(
-      (t) => t.type !== 'preview' || agentSessionIds.has(t.sessionId)
-    )
+    const cleaned = newTabs.filter((t) => t.type !== 'preview' || agentSessionIds.has(t.sessionId))
     set(rawTabsAtom, cleaned)
   }
 )
@@ -341,9 +339,7 @@ export function openTab(
       sessionId: item.sessionId,
       title: item.title,
     }
-    const otherTabs = tabs.filter(
-      (t) => t.id !== ownerAgentTab.id && t.id !== previewTab.id
-    )
+    const otherTabs = tabs.filter((t) => t.id !== ownerAgentTab.id && t.id !== previewTab.id)
     if (!otherTabs.some((t) => t.id === ownerAgentTab.id)) {
       otherTabs.push(ownerAgentTab)
     }
@@ -357,7 +353,13 @@ export function openTab(
   const existingTab = tabs.find((t) => t.sessionId === item.sessionId && t.type === item.type)
   const sessionTab: TabItem = existingTab
     ? { ...existingTab, title: item.title }
-    : { id: item.sessionId, type: item.type, sessionId: item.sessionId, title: item.title, mode: item.mode ?? 'general' }
+    : {
+        id: item.sessionId,
+        type: item.type,
+        sessionId: item.sessionId,
+        title: item.title,
+        mode: item.mode ?? 'general',
+      }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。
   if (restore?.previewTabOpen) {
@@ -367,9 +369,7 @@ export function openTab(
       sessionId: item.sessionId,
       title: restore.previewTitle,
     }
-    const otherTabs = tabs.filter(
-      (t) => t.id !== sessionTab.id && t.id !== previewTab.id
-    )
+    const otherTabs = tabs.filter((t) => t.id !== sessionTab.id && t.id !== previewTab.id)
     otherTabs.push(sessionTab, previewTab)
     return {
       tabs: otherTabs,

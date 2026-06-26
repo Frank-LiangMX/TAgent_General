@@ -838,7 +838,8 @@ export function useGlobalAgentListeners(): void {
           // 文件活动追踪：读取文件
           if (event.type === 'tool_start' && event.toolName === 'Read') {
             const input = event.input as Record<string, unknown> | undefined
-            const targetPath = (input?.file_path as string | undefined) ?? (input?.path as string | undefined)
+            const targetPath =
+              (input?.file_path as string | undefined) ?? (input?.path as string | undefined)
             if (typeof targetPath === 'string' && targetPath.length > 0) {
               store.set(sessionReadFilesAtom, (prev) => {
                 const map = new Map(prev)

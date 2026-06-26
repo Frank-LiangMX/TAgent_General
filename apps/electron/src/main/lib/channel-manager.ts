@@ -139,7 +139,9 @@ function checkKsccInstalledSync(): { installed: boolean; path?: string; version?
     let version: string | undefined
     try {
       version = execFileSync('kscc', ['--version'], { encoding: 'utf-8', timeout: 5000 }).trim()
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
     return { installed: true, path, version }
   } catch {
     return { installed: false }

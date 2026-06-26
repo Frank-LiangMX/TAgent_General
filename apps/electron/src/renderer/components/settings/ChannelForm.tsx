@@ -592,78 +592,78 @@ export function ChannelForm({
               </p>
             </div>
           ) : (
-          <div className="px-4 py-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-medium text-foreground">API Key</div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={handleTestModel}
-                  disabled={
-                    validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
-                  }
-                  className="h-7 text-xs"
-                  title="用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配"
+            <div className="px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium text-foreground">API Key</div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={handleTestModel}
+                    disabled={
+                      validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
+                    }
+                    className="h-7 text-xs"
+                    title="用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配"
+                  >
+                    {validatingModel ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Zap size={12} />
+                    )}
+                    <span>测试 model</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={handleTest}
+                    disabled={testing || !apiKey.trim() || !baseUrl.trim()}
+                    className="h-7 text-xs"
+                  >
+                    {testing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                    <span>测试连接</span>
+                  </Button>
+                </div>
+              </div>
+              {modelValidateResult && (
+                <div
+                  className={`text-xs px-2 py-1.5 rounded ${modelValidateResult.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
                 >
-                  {validatingModel ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
-                    <Zap size={12} />
+                  {modelValidateResult.message}
+                </div>
+              )}
+              <div className="relative">
+                <Input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={isEdit ? '留空则不更新' : '输入 API Key'}
+                  required={!isEdit}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {testResult && (
+                <div
+                  className={cn(
+                    'flex items-center gap-1.5 text-xs',
+                    testResult.success ? 'text-emerald-600' : 'text-destructive'
                   )}
-                  <span>测试 model</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={handleTest}
-                  disabled={testing || !apiKey.trim() || !baseUrl.trim()}
-                  className="h-7 text-xs"
                 >
-                  {testing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-                  <span>测试连接</span>
-                </Button>
-              </div>
+                  {testResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                  <span>{testResult.message}</span>
+                </div>
+              )}
             </div>
-            {modelValidateResult && (
-              <div
-                className={`text-xs px-2 py-1.5 rounded ${modelValidateResult.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
-              >
-                {modelValidateResult.message}
-              </div>
-            )}
-            <div className="relative">
-              <Input
-                type={showApiKey ? 'text' : 'password'}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={isEdit ? '留空则不更新' : '输入 API Key'}
-                required={!isEdit}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-            {testResult && (
-              <div
-                className={cn(
-                  'flex items-center gap-1.5 text-xs',
-                  testResult.success ? 'text-emerald-600' : 'text-destructive'
-                )}
-              >
-                {testResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                <span>{testResult.message}</span>
-              </div>
-            )}
-          </div>
           )}
           <SettingsToggle
             label="启用此配置"

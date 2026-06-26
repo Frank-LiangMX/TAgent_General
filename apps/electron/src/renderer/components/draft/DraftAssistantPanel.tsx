@@ -6,7 +6,16 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Send, Loader2, Search, Globe, ListChecks, Pencil, ShieldCheck, Sparkles } from 'lucide-react'
+import {
+  Send,
+  Loader2,
+  Search,
+  Globe,
+  ListChecks,
+  Pencil,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -62,8 +71,7 @@ const FRAMEWORKS: FrameworkDef[] = [
     group: '结构',
     label: '润色',
     icon: <Pencil size={15} />,
-    instruction:
-      '请对以下需求草稿进行文字润色：改善措辞、消除歧义、统一术语，保持原意不变。',
+    instruction: '请对以下需求草稿进行文字润色：改善措辞、消除歧义、统一术语，保持原意不变。',
   },
   {
     group: '检查',
@@ -206,7 +214,9 @@ export function DraftAssistantPanel(): React.ReactElement {
             const items = FRAMEWORKS.filter((f) => f.group === group)
             return (
               <div key={group}>
-                <p className="text-[10px] text-muted-foreground/50 mb-1 uppercase tracking-wider">{group}</p>
+                <p className="text-[10px] text-muted-foreground/50 mb-1 uppercase tracking-wider">
+                  {group}
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {items.map((fw) => (
                     <button

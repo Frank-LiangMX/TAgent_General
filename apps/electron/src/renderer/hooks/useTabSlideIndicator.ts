@@ -23,10 +23,7 @@ const EMPTY_STYLES: TabSlideIndicatorStyles = {
   indicatorStyle: null,
 }
 
-function measureTabItem(
-  container: HTMLElement,
-  tabId: string
-): TabIndicatorMetrics | null {
+function measureTabItem(container: HTMLElement, tabId: string): TabIndicatorMetrics | null {
   const item = container.querySelector<HTMLElement>(tabItemSelector(tabId))
   if (!item) return null
   return {
@@ -37,10 +34,7 @@ function measureTabItem(
   }
 }
 
-function metricsToStyle(
-  metrics: TabIndicatorMetrics,
-  transition: string
-): React.CSSProperties {
+function metricsToStyle(metrics: TabIndicatorMetrics, transition: string): React.CSSProperties {
   return {
     display: 'block',
     position: 'absolute',
@@ -75,10 +69,7 @@ export function useTabSlideIndicator(
   const lastSettledTabRef = React.useRef<string | null>(null)
   const [styles, setStyles] = React.useState<TabSlideIndicatorStyles>(EMPTY_STYLES)
 
-  function buildStyles(
-    metrics: TabIndicatorMetrics,
-    animate: boolean
-  ): TabSlideIndicatorStyles {
+  function buildStyles(metrics: TabIndicatorMetrics, animate: boolean): TabSlideIndicatorStyles {
     const plateTransition = animate ? LIST_SLIDE_TRANSITION : 'none'
     const indicatorTransition = animate
       ? 'left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1)'

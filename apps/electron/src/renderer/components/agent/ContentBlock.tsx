@@ -458,7 +458,10 @@ function ToolUseBlock({
 
           {/* SubAgent 标识 */}
           {isAgentTool && (
-            <span className="ml-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'var(--tagent-brand-soft)', color: 'var(--tagent-brand)' }}>
+            <span
+              className="ml-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+              style={{ background: 'var(--tagent-brand-soft)', color: 'var(--tagent-brand)' }}
+            >
               SubAgent
             </span>
           )}

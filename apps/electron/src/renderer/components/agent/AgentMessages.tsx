@@ -444,11 +444,7 @@ export function DurationBadge({
 }
 
 /** Agent 运行指示器 — 三瓣螺旋动画 + 运行时间 */
-function AgentRunningIndicator({
-  startedAt,
-}: {
-  startedAt?: number
-}): React.ReactElement {
+function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.ReactElement {
   const [elapsed, setElapsed] = React.useState(0)
 
   React.useEffect(() => {
@@ -870,7 +866,9 @@ export function AgentMessages({
                     group={group}
                     allMessages={allSDKMessages}
                     historicalTaskSubjects={historicalTaskSubjects}
-                    basePath={(attachedDirs?.length ?? 0) > 0 ? undefined : (sessionPath || undefined)}
+                    basePath={
+                      (attachedDirs?.length ?? 0) > 0 ? undefined : sessionPath || undefined
+                    }
                     basePaths={(attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined}
                     onFork={shouldDisableActions ? undefined : onFork}
                     onRewind={shouldDisableActions ? undefined : onRewind}
@@ -916,8 +914,14 @@ export function AgentMessages({
                                 key={index}
                                 block={block}
                                 allMessages={allSDKMessages}
-                                basePath={(attachedDirs?.length ?? 0) > 0 ? undefined : (sessionPath || undefined)}
-                                basePaths={(attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined}
+                                basePath={
+                                  (attachedDirs?.length ?? 0) > 0
+                                    ? undefined
+                                    : sessionPath || undefined
+                                }
+                                basePaths={
+                                  (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
+                                }
                                 index={index}
                                 dimmed={hasSmoothTextContent && block.type !== 'text'}
                                 isStreaming={streaming}

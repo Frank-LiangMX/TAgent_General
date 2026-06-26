@@ -201,7 +201,10 @@ function TabBarInner({
           Windows 上背景拖拽层避开右上角 WindowControls 区域（126px），防止 hitmask 重叠。
           需要交互的单个 Tab 会在 TabBarItem 内部自己声明 titlebar-no-drag。 */}
       <div
-        className={cn('absolute inset-0 z-[10] titlebar-drag-region pointer-events-none', isWindows && 'right-[126px]')}
+        className={cn(
+          'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
+          isWindows && 'right-[126px]'
+        )}
       />
 
       <div

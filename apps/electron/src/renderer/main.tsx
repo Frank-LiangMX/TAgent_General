@@ -31,11 +31,7 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
-import {
-  channelsAtom,
-  channelsLoadedAtom,
-  selectedModelAtom,
-} from './atoms/model-atoms'
+import { channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/model-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
 import { markdownFontSizeAtom, initializeMarkdownFontSize } from './atoms/markdown-font-size'
@@ -45,11 +41,7 @@ import {
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
-import {
-  tabsAtom,
-  activeTabIdAtom,
-  getPersistableTabState,
-} from './atoms/tab-atoms'
+import { tabsAtom, activeTabIdAtom, getPersistableTabState } from './atoms/tab-atoms'
 import { tagentBrandAtom, initializeTAgentBrand } from './atoms/tagent-brand'
 import {
   themeModeAtom,
@@ -220,7 +212,9 @@ function AgentSettingsInitializer(): null {
           const validIds = settings.agentChannelIds.filter((id) => channelIds.has(id))
           // 补充已启用但不在白名单中的 Agent 兼容渠道（如 kscc 渠道首次创建时 settings 时序问题）
           const missingIds = channels
-            .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider) && !validIds.includes(c.id))
+            .filter(
+              (c) => c.enabled && isAgentCompatibleProvider(c.provider) && !validIds.includes(c.id)
+            )
             .map((c) => c.id)
           const mergedIds = missingIds.length > 0 ? [...missingIds, ...validIds] : validIds
           setAgentChannelIds(mergedIds)
@@ -234,7 +228,9 @@ function AgentSettingsInitializer(): null {
             .map((c) => c.id)
           if (compatibleIds.length > 0) {
             setAgentChannelIds(compatibleIds)
-            window.electronAPI.updateSettings({ agentChannelIds: compatibleIds }).catch(console.error)
+            window.electronAPI
+              .updateSettings({ agentChannelIds: compatibleIds })
+              .catch(console.error)
           }
         }
 

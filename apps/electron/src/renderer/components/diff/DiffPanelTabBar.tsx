@@ -7,7 +7,11 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
-import { agentDiffUnseenChangesAtom, currentAgentSessionIdAtom, agentDiffUnseenFilesAtom } from '@/atoms/agent-atoms'
+import {
+  agentDiffUnseenChangesAtom,
+  currentAgentSessionIdAtom,
+  agentDiffUnseenFilesAtom,
+} from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
 
 type DiffPanelTab = 'project' | 'activity' | 'changes'
@@ -22,7 +26,10 @@ interface PrevTabState {
   activeTab: DiffPanelTab
 }
 
-export function DiffPanelTabBar({ activeTab, onTabChange }: DiffPanelTabBarProps): React.ReactElement {
+export function DiffPanelTabBar({
+  activeTab,
+  onTabChange,
+}: DiffPanelTabBarProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)

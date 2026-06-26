@@ -29,7 +29,10 @@ function isBlockComplete(block: RequirementBlock): boolean {
   )
 }
 
-export function RequirementBlockCard({ block, index }: RequirementBlockCardProps): React.ReactElement {
+export function RequirementBlockCard({
+  block,
+  index,
+}: RequirementBlockCardProps): React.ReactElement {
   const setRequirements = useSetAtom(currentDraftRequirementsAtom)
   const draft = useAtomValue(currentDraftAtom)
 
@@ -40,10 +43,11 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
   const [descExpanded, setDescExpanded] = React.useState(false)
 
   // ---- 标题编辑 ----
-  const updateField = <K extends keyof RequirementBlock>(key: K, value: RequirementBlock[K]): void => {
-    setRequirements((prev) =>
-      prev.map((r, i) => (i === index ? { ...r, [key]: value } : r))
-    )
+  const updateField = <K extends keyof RequirementBlock>(
+    key: K,
+    value: RequirementBlock[K]
+  ): void => {
+    setRequirements((prev) => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)))
   }
 
   // ---- 验收标准 ----
@@ -55,9 +59,7 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
     }
     setRequirements((prev) =>
       prev.map((r, i) =>
-        i === index
-          ? { ...r, acceptanceCriteria: [...r.acceptanceCriteria, newCriterion] }
-          : r
+        i === index ? { ...r, acceptanceCriteria: [...r.acceptanceCriteria, newCriterion] } : r
       )
     )
   }
@@ -93,7 +95,10 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30">
         <Badge
           variant="secondary"
-          className={cn('text-[10px] font-semibold tracking-wide px-1.5 py-0.5', STATUS_STYLES[status])}
+          className={cn(
+            'text-[10px] font-semibold tracking-wide px-1.5 py-0.5',
+            STATUS_STYLES[status]
+          )}
         >
           {block.label}
         </Badge>
@@ -168,7 +173,9 @@ export function RequirementBlockCard({ block, index }: RequirementBlockCardProps
                   placeholder="验收条件…"
                   className={cn(
                     'flex-1 min-w-0 text-[13px] bg-transparent outline-none',
-                    criterion.checked ? 'text-muted-foreground/50 line-through' : 'text-foreground/80'
+                    criterion.checked
+                      ? 'text-muted-foreground/50 line-through'
+                      : 'text-foreground/80'
                   )}
                 />
 

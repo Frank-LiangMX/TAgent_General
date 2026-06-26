@@ -36,10 +36,7 @@ const SPIRAL_CONFIG = {
 } as const
 
 /** 计算曲线上的点 */
-function spiralPoint(
-  progress: number,
-  detailScale: number,
-): { x: number; y: number } {
+function spiralPoint(progress: number, detailScale: number): { x: number; y: number } {
   const t = progress * Math.PI * 2
   const d = SPIRAL_CONFIG.d + detailScale * 0.25
   const Rmr = SPIRAL_CONFIG.R - SPIRAL_CONFIG.r
@@ -64,10 +61,10 @@ function buildPath(detailScale: number): string {
 function getParticle(
   index: number,
   progress: number,
-  detailScale: number,
+  detailScale: number
 ): { x: number; y: number; radius: number; opacity: number } {
   const tailOffset = index / (SPIRAL_CONFIG.particleCount - 1)
-  const np = ((progress - tailOffset * SPIRAL_CONFIG.trailSpan) % 1 + 1) % 1
+  const np = (((progress - tailOffset * SPIRAL_CONFIG.trailSpan) % 1) + 1) % 1
   const point = spiralPoint(np, detailScale)
   const fade = Math.pow(1 - tailOffset, 0.56)
   return {
@@ -136,17 +133,12 @@ export function ThreePetalSpiral({
       const progress = (time % SPIRAL_CONFIG.durationMs) / SPIRAL_CONFIG.durationMs
 
       // 呼吸缩放
-      const pulsePhase =
-        (time % SPIRAL_CONFIG.pulseDurationMs) / SPIRAL_CONFIG.pulseDurationMs
-      const detailScale =
-        0.52 + ((Math.sin(pulsePhase * Math.PI * 2 + 0.55) + 1) / 2) * 0.48
+      const pulsePhase = (time % SPIRAL_CONFIG.pulseDurationMs) / SPIRAL_CONFIG.pulseDurationMs
+      const detailScale = 0.52 + ((Math.sin(pulsePhase * Math.PI * 2 + 0.55) + 1) / 2) * 0.48
 
       // 旋转角度
       const rotation =
-        -(
-          (time % SPIRAL_CONFIG.rotationDurationMs) /
-          SPIRAL_CONFIG.rotationDurationMs
-        ) * 360
+        -((time % SPIRAL_CONFIG.rotationDurationMs) / SPIRAL_CONFIG.rotationDurationMs) * 360
 
       const g = groupEl.current
       const p = pathEl.current

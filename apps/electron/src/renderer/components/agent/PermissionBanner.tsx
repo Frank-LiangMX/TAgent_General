@@ -49,7 +49,10 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
   const setAttachedDirsMap = useSetAtom(agentAttachedDirectoriesMapAtom)
   const requests = allRequests.get(sessionId) ?? []
   const [responding, setResponding] = React.useState(false)
-  const respondRef = React.useRef<(behavior: 'allow' | 'deny', alwaysAllow?: boolean, addDirectories?: string[]) => void>()
+  const respondRef =
+    React.useRef<
+      (behavior: 'allow' | 'deny', alwaysAllow?: boolean, addDirectories?: string[]) => void
+    >()
 
   const request = requests[0] ?? null
 
@@ -96,12 +99,18 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
   if (!request) return null
 
   const isBlockedPath = !!request.blockedPath
-  const iconColor = isBlockedPath ? 'text-blue-500 dark:text-blue-400' : DANGER_ICON_STYLES[request.dangerLevel]
+  const iconColor = isBlockedPath
+    ? 'text-blue-500 dark:text-blue-400'
+    : DANGER_ICON_STYLES[request.dangerLevel]
   const isDangerous = !isBlockedPath && request.dangerLevel === 'dangerous'
   const IconComponent = isBlockedPath ? FolderOpen : isDangerous ? ShieldAlert : Shield
 
   /** 响应权限请求 */
-  const respond = async (behavior: 'allow' | 'deny', alwaysAllow = false, addDirectories?: string[]): Promise<void> => {
+  const respond = async (
+    behavior: 'allow' | 'deny',
+    alwaysAllow = false,
+    addDirectories?: string[]
+  ): Promise<void> => {
     if (responding) return
     setResponding(true)
 
@@ -148,11 +157,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
         <div className="flex items-center gap-2">
           <IconComponent className={`size-4 ${iconColor}`} />
           <span className="text-sm font-medium">
-            {isBlockedPath
-              ? 'Agent 需要访问目录'
-              : isDangerous
-                ? '危险操作需要确认'
-                : '需要确认'}
+            {isBlockedPath ? 'Agent 需要访问目录' : isDangerous ? '危险操作需要确认' : '需要确认'}
           </span>
           {requests.length > 1 && (
             <span className="text-xs text-muted-foreground">(+{requests.length - 1})</span>
@@ -239,9 +244,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
           variant="default"
           size="sm"
           onClick={() =>
-            isBlockedPath
-              ? respond('allow', false, [request.blockedPath!])
-              : respond('allow')
+            isBlockedPath ? respond('allow', false, [request.blockedPath!]) : respond('allow')
           }
           disabled={responding}
           className="h-7 px-3 text-xs"

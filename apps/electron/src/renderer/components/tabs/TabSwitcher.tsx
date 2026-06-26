@@ -212,13 +212,7 @@ export function TabSwitcher(): ReactElement | null {
       const activatedTab = nextTab.tabs.find((t) => t.id === nextTab.activeTabId)
       syncSideEffects(activatedTab ?? null)
     },
-    [
-      setActiveTabId,
-      syncSideEffects,
-      setTabMru,
-      setTabs,
-      store,
-    ]
+    [setActiveTabId, syncSideEffects, setTabMru, setTabs, store]
   )
 
   const activateAndClose = useCallback(

@@ -36,8 +36,10 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
     [currentSessionId, setDiffPanelTabMap]
   )
 
-  const sessionPath = currentSessionId ? sessionPathMap.get(currentSessionId) ?? null : null
-  const activeTab = currentSessionId ? diffPanelTabMap.get(currentSessionId) ?? 'project' : 'project'
+  const sessionPath = currentSessionId ? (sessionPathMap.get(currentSessionId) ?? null) : null
+  const activeTab = currentSessionId
+    ? (diffPanelTabMap.get(currentSessionId) ?? 'project')
+    : 'project'
 
   return (
     <SidePanel

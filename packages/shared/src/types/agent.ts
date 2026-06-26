@@ -1852,7 +1852,18 @@ export interface KsccInstallReadiness {
   /** kscc CLI 检测 */
   kscc: { installed: boolean; path?: string; version?: string }
   /** 运行平台 */
-  platform: 'aix' | 'android' | 'darwin' | 'freebsd' | 'haiku' | 'linux' | 'openbsd' | 'sunos' | 'win32' | 'cygwin' | 'netbsd'
+  platform:
+    | 'aix'
+    | 'android'
+    | 'darwin'
+    | 'freebsd'
+    | 'haiku'
+    | 'linux'
+    | 'openbsd'
+    | 'sunos'
+    | 'win32'
+    | 'cygwin'
+    | 'netbsd'
   /** 动态安装步骤 */
   installSteps: KsccInstallStep[]
 }

@@ -6,7 +6,12 @@ import { atom } from 'jotai'
 
 import type { DraftDocument, RequirementBlock, DraftStatus, AgentSendInput } from '@tagent/shared'
 
-import { agentChannelIdAtom, currentAgentSessionIdAtom, agentSessionsAtom, currentAgentWorkspaceIdAtom } from './agent-atoms'
+import {
+  agentChannelIdAtom,
+  currentAgentSessionIdAtom,
+  agentSessionsAtom,
+  currentAgentWorkspaceIdAtom,
+} from './agent-atoms'
 import { selectedModelAtom } from './model-atoms'
 import { buildAgentPrompt } from '@/lib/draft-prompt-builder'
 
@@ -82,12 +87,15 @@ export const currentDraftTitleAtom = atom(
 )
 
 /** 创建草稿 */
-export const createDraftAtom = atom(null, async (get, set, opts?: Parameters<typeof window.electronAPI.draft.create>[0]) => {
-  const doc = await window.electronAPI.draft.create(opts)
-  set(draftsAtom, (prev) => [doc, ...prev])
-  set(currentDraftIdAtom, doc.id)
-  return doc
-})
+export const createDraftAtom = atom(
+  null,
+  async (get, set, opts?: Parameters<typeof window.electronAPI.draft.create>[0]) => {
+    const doc = await window.electronAPI.draft.create(opts)
+    set(draftsAtom, (prev) => [doc, ...prev])
+    set(currentDraftIdAtom, doc.id)
+    return doc
+  }
+)
 
 /** 删除草稿 */
 export const deleteDraftAtom = atom(null, async (get, set, id: string) => {
@@ -106,12 +114,15 @@ export const loadDraftsAtom = atom(null, async (get, set) => {
 })
 
 /** 推进草稿状态 */
-export const setDraftStatusAtom = atom(null, async (get, set, { id, status }: { id: string; status: DraftStatus }) => {
-  const updated = await window.electronAPI.draft.update(id, { status })
-  if (updated) {
-    set(draftsAtom, (prev) => prev.map((d) => (d.id === id ? updated : d)))
+export const setDraftStatusAtom = atom(
+  null,
+  async (get, set, { id, status }: { id: string; status: DraftStatus }) => {
+    const updated = await window.electronAPI.draft.update(id, { status })
+    if (updated) {
+      set(draftsAtom, (prev) => prev.map((d) => (d.id === id ? updated : d)))
+    }
   }
-})
+)
 
 /** 升级草稿到 ready */
 export const upgradeToReadyAtom = atom(null, async (get, set) => {

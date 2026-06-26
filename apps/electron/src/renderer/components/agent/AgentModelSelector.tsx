@@ -51,9 +51,8 @@ function buildModelOptions(
     // kscc 渠道特殊处理：未安装时灰显
     const isKscc = channel.provider === 'kscc-internal'
     const ksccDisabled = isKscc && ksccReadiness && !ksccReadiness.kscc.installed
-    const ksccDisabledReason = isKscc && ksccReadiness && !ksccReadiness.kscc.installed
-      ? '请先安装 kscc'
-      : undefined
+    const ksccDisabledReason =
+      isKscc && ksccReadiness && !ksccReadiness.kscc.installed ? '请先安装 kscc' : undefined
 
     for (const model of channel.models) {
       if (!model.enabled) continue
@@ -153,19 +152,24 @@ export function AgentModelSelector({
   // 每次打开选择浮窗时刷新渠道列表，确保最新
   React.useEffect(() => {
     if (open) {
-      window.electronAPI.listChannels().then((ch) => {
-        setChannels(ch)
-        // 同步 agentChannelIds 白名单，补充已启用但缺失的 Agent 兼容渠道
-        const currentIds = new Set(agentChannelIds)
-        const missingIds = ch
-          .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider) && !currentIds.has(c.id))
-          .map((c) => c.id)
-        if (missingIds.length > 0) {
-          const merged = [...missingIds, ...agentChannelIds]
-          setAgentChannelIds(merged)
-          window.electronAPI.updateSettings({ agentChannelIds: merged }).catch(console.error)
-        }
-      }).catch(console.error)
+      window.electronAPI
+        .listChannels()
+        .then((ch) => {
+          setChannels(ch)
+          // 同步 agentChannelIds 白名单，补充已启用但缺失的 Agent 兼容渠道
+          const currentIds = new Set(agentChannelIds)
+          const missingIds = ch
+            .filter(
+              (c) => c.enabled && isAgentCompatibleProvider(c.provider) && !currentIds.has(c.id)
+            )
+            .map((c) => c.id)
+          if (missingIds.length > 0) {
+            const merged = [...missingIds, ...agentChannelIds]
+            setAgentChannelIds(merged)
+            window.electronAPI.updateSettings({ agentChannelIds: merged }).catch(console.error)
+          }
+        })
+        .catch(console.error)
       setSearch('')
     }
   }, [open, setChannels, agentChannelIds, setAgentChannelIds])
@@ -174,12 +178,16 @@ export function AgentModelSelector({
   const [ksccReadiness, setKsccReadiness] = React.useState<KsccInstallReadiness | null>(null)
   React.useEffect(() => {
     if (open) {
-      window.electronAPI.checkKsccReadiness().then(setKsccReadiness).catch(() => setKsccReadiness(null))
+      window.electronAPI
+        .checkKsccReadiness()
+        .then(setKsccReadiness)
+        .catch(() => setKsccReadiness(null))
     }
   }, [open])
 
   const modelOptions = React.useMemo(
-    () => buildModelOptions(channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider),
+    () =>
+      buildModelOptions(channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider),
     [channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider]
   )
   const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
@@ -578,7 +586,10 @@ export function AgentModelSelector({
                                       : isSelected
                                         ? 'text-foreground'
                                         : 'hover:bg-primary/5 text-foreground/78',
-                                    isHighlighted && !isSelected && !option.disabled && 'bg-foreground/6'
+                                    isHighlighted &&
+                                      !isSelected &&
+                                      !option.disabled &&
+                                      'bg-foreground/6'
                                   )}
                                 >
                                   <img

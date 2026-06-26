@@ -207,7 +207,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
           const currentActiveTabId = store.get(activeTabIdAtom)
           const currentTabs = store.get(tabsAtom)
           const activeTab = currentActiveTabId
-            ? currentTabs.find((t) => t.id === currentActiveTabId) ?? null
+            ? (currentTabs.find((t) => t.id === currentActiveTabId) ?? null)
             : null
           if (activeTab && (activeTab.type === 'agent' || activeTab.type === 'preview')) {
             store.set(currentAgentSessionIdAtom, activeTab.sessionId)

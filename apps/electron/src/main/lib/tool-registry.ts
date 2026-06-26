@@ -14,11 +14,7 @@ import {
   AGENT_RECOMMEND_TOOL_DEFINITIONS,
   isAgentRecommendAvailable,
 } from './tools/agent-recommend-tool'
-import {
-  MEMORY_TOOL_META,
-  MEMORY_TOOL_DEFINITIONS,
-  isMemoryAvailable,
-} from './tools/memory-tool'
+import { MEMORY_TOOL_META, MEMORY_TOOL_DEFINITIONS, isMemoryAvailable } from './tools/memory-tool'
 import {
   NANO_BANANA_TOOL_META,
   NANO_BANANA_TOOL_DEFINITIONS,

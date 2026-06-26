@@ -76,7 +76,10 @@ export type TARailItem = 'sessions' | 'assets' | 'review' | 'pipeline' | 'memory
 export type RailItem = GeneralRailItem | TARailItem
 
 /** 通用模式侧栏功能项 atom */
-export const generalRailItemAtom = atomWithStorage<GeneralRailItem>('tagent-general-rail', 'sessions')
+export const generalRailItemAtom = atomWithStorage<GeneralRailItem>(
+  'tagent-general-rail',
+  'sessions'
+)
 
 /** TA 模式侧栏功能项 atom */
 export const taActiveTabAtom = atomWithStorage<TARailItem>('tagent-ta-active-tab', 'assets')

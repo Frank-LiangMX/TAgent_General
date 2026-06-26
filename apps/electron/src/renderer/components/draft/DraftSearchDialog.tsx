@@ -117,7 +117,9 @@ export function DraftSearchDialog(): React.ReactElement {
                 onClick={() => handleSelect(draft)}
                 className={cn(
                   'w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors text-[13px]',
-                  i === selectedIndex ? 'bg-primary/8 text-foreground' : 'text-foreground/60 hover:bg-primary/4'
+                  i === selectedIndex
+                    ? 'bg-primary/8 text-foreground'
+                    : 'text-foreground/60 hover:bg-primary/4'
                 )}
               >
                 <StickyNote size={13} className="shrink-0 text-foreground/30" />

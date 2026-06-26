@@ -25,12 +25,8 @@ import {
   agentAttachedFilesMapAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import {
-  conversationsAtom,
-} from '@/atoms/agent-atoms'
-import {
-  selectedModelAtom,
-} from '@/atoms/model-atoms'
+import { conversationsAtom } from '@/atoms/agent-atoms'
+import { selectedModelAtom } from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import {
@@ -39,7 +35,13 @@ import {
   settingsCloseRequestedAtom,
 } from '@/atoms/settings-tab'
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import { tabsAtom, activeTabIdAtom, openTab, buildOpenTabRestore, sessionViewStateMapAtom } from '@/atoms/tab-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  openTab,
+  buildOpenTabRestore,
+  sessionViewStateMapAtom,
+} from '@/atoms/tab-atoms'
 import { previewFileMapAtom } from '@/atoms/preview-atoms'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useCreateSession } from '@/hooks/useCreateSession'
@@ -366,11 +368,15 @@ export function GlobalShortcuts(): null {
           store.get(previewFileMapAtom)
         )
         const currentTabs = store.get(tabsAtom)
-        const result = openTab(currentTabs, {
-          type: 'agent',
-          sessionId: session.id,
-          title: session.title || data.title,
-        }, restore)
+        const result = openTab(
+          currentTabs,
+          {
+            type: 'agent',
+            sessionId: session.id,
+            title: session.title || data.title,
+          },
+          restore
+        )
         store.set(tabsAtom, result.tabs)
         store.set(activeTabIdAtom, result.activeTabId)
       } catch (error) {

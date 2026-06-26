@@ -68,7 +68,7 @@ export function KsccInstallGuide({
   const doCheck = React.useCallback(async () => {
     setChecking(true)
     try {
-      const data = await window.electronAPI.checkKsccReadiness() as KsccInstallReadiness
+      const data = (await window.electronAPI.checkKsccReadiness()) as KsccInstallReadiness
       setReadiness(data)
       if (data.kscc?.installed) {
         const ok = await enableKsccChannel()
@@ -170,7 +170,10 @@ export function KsccInstallGuide({
               variant="outline"
               size="sm"
               disabled={checking}
-              onClick={() => { setReadiness(null); doCheck() }}
+              onClick={() => {
+                setReadiness(null)
+                doCheck()
+              }}
             >
               重新检测
             </Button>

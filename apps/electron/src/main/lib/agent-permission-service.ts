@@ -196,15 +196,24 @@ export class AgentPermissionService {
       this.addToWhitelist(sessionId, pending.request.toolName, pending.request.toolInput)
     }
 
-    const result: PermissionResult = behavior === 'allow'
-      ? {
-          behavior: 'allow' as const,
-          updatedInput: pending.request.toolInput,
-          ...(addDirectories?.length
-            ? { updatedPermissions: [{ type: 'addDirectories' as const, directories: addDirectories, destination: 'session' as const }] }
-            : {}),
-        }
-      : { behavior: 'deny' as const, message: '用户拒绝了此操作' }
+    const result: PermissionResult =
+      behavior === 'allow'
+        ? {
+            behavior: 'allow' as const,
+            updatedInput: pending.request.toolInput,
+            ...(addDirectories?.length
+              ? {
+                  updatedPermissions: [
+                    {
+                      type: 'addDirectories' as const,
+                      directories: addDirectories,
+                      destination: 'session' as const,
+                    },
+                  ],
+                }
+              : {}),
+          }
+        : { behavior: 'deny' as const, message: '用户拒绝了此操作' }
 
     pending.resolve(result)
     this.pendingPermissions.delete(requestId)
@@ -273,11 +282,7 @@ export class AgentPermissionService {
   /**
    * 判断工具/命令是否在会话白名单中
    */
-  isWhitelisted(
-    sessionId: string,
-    toolName: string,
-    input: Record<string, unknown>
-  ): boolean {
+  isWhitelisted(sessionId: string, toolName: string, input: Record<string, unknown>): boolean {
     const whitelist = this.sessionWhitelists.get(sessionId)
     if (!whitelist) return false
 

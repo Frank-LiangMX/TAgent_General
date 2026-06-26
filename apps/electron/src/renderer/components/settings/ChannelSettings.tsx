@@ -164,12 +164,16 @@ export function ChannelSettings(): React.ReactElement {
           const settings = await window.electronAPI.getSettings()
           const currentIds: string[] = settings.agentChannelIds ?? []
           if (!currentIds.includes(channel.id)) {
-            await window.electronAPI.updateSettings({ agentChannelIds: [channel.id, ...currentIds] })
+            await window.electronAPI.updateSettings({
+              agentChannelIds: [channel.id, ...currentIds],
+            })
           }
           await loadChannels()
           return
         }
-      } catch { /* fallthrough to guide */ }
+      } catch {
+        /* fallthrough to guide */
+      }
       // 未安装，打开引导
       setKsccGuideOpen(true)
       return

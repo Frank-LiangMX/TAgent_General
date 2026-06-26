@@ -369,52 +369,52 @@ export function WorkspaceFilesView({
         )}
         contentClassName={cn('pb-1', layout === 'main' ? 'p-4' : '')}
       >
-          {wsAttachedFiles.length > 0 && (
-            <AttachedFilesSection
-              attachedFiles={wsAttachedFiles}
-              onDetach={handleDetachFile}
-              onFilePreview={handleFileActivate}
-            />
-          )}
-          {wsAttachedDirs.length > 0 && (
-            <AttachedDirsSection
-              attachedDirs={wsAttachedDirs}
-              onDetach={handleDetachDirectory}
-              refreshVersion={filesVersion}
-              onFilePreview={handleFileActivate}
-              inspectMode={isNavigator}
-              onDirectoryInspect={handleInspectDirectory}
-            />
-          )}
-          {workspaceFilesPath && (
-            <>
-              {hasAttachedItems && (
-                <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
-                  工作文件（存储于该工作区目录）
-                </div>
-              )}
-              <FileBrowser
-                rootPath={workspaceFilesPath}
-                hideToolbar
-                embedded
-                hideEmpty={hasAttachedItems}
-                onFilePreview={handleOpenInOs}
-                inspectMode={isNavigator}
-                onFileInspect={handleInspectFile}
-                onDirectoryInspect={handleInspectDirectory}
-                inspectPath={isNavigator ? selectedFile : null}
-              />
-            </>
-          )}
-          <FileDropZone
-            workspaceSlug={workspaceSlug ?? ''}
-            target="workspace"
-            onFilesUploaded={handleFilesUploaded}
-            onFilesAttached={handleFilesAttached}
-            onAttachFolder={handleAttachFolder}
-            onFoldersDropped={handleFoldersDropped}
+        {wsAttachedFiles.length > 0 && (
+          <AttachedFilesSection
+            attachedFiles={wsAttachedFiles}
+            onDetach={handleDetachFile}
+            onFilePreview={handleFileActivate}
           />
-        </ScrollProgressContainer>
+        )}
+        {wsAttachedDirs.length > 0 && (
+          <AttachedDirsSection
+            attachedDirs={wsAttachedDirs}
+            onDetach={handleDetachDirectory}
+            refreshVersion={filesVersion}
+            onFilePreview={handleFileActivate}
+            inspectMode={isNavigator}
+            onDirectoryInspect={handleInspectDirectory}
+          />
+        )}
+        {workspaceFilesPath && (
+          <>
+            {hasAttachedItems && (
+              <div className="text-[11px] font-medium text-muted-foreground mb-1 px-3 pt-2">
+                工作文件（存储于该工作区目录）
+              </div>
+            )}
+            <FileBrowser
+              rootPath={workspaceFilesPath}
+              hideToolbar
+              embedded
+              hideEmpty={hasAttachedItems}
+              onFilePreview={handleOpenInOs}
+              inspectMode={isNavigator}
+              onFileInspect={handleInspectFile}
+              onDirectoryInspect={handleInspectDirectory}
+              inspectPath={isNavigator ? selectedFile : null}
+            />
+          </>
+        )}
+        <FileDropZone
+          workspaceSlug={workspaceSlug ?? ''}
+          target="workspace"
+          onFilesUploaded={handleFilesUploaded}
+          onFilesAttached={handleFilesAttached}
+          onAttachFolder={handleAttachFolder}
+          onFoldersDropped={handleFoldersDropped}
+        />
+      </ScrollProgressContainer>
     </div>
   )
 }

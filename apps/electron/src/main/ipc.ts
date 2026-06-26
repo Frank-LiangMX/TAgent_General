@@ -191,10 +191,7 @@ import {
   removeWorktreeRepo,
   cleanupStaleWorkspaceAttachedPaths,
 } from './lib/agent-workspace-manager'
-import {
-  readAttachmentAsBase64,
-  openFileDialog,
-} from './lib/attachment-service'
+import { readAttachmentAsBase64, openFileDialog } from './lib/attachment-service'
 import {
   listChannels,
   createChannel,
@@ -1963,7 +1960,12 @@ export function registerIpcHandlers(): void {
     AGENT_IPC_CHANNELS.PERMISSION_RESPOND,
     async (event, response: PermissionResponse): Promise<void> => {
       const { requestId, behavior, alwaysAllow, addDirectories } = response
-      const sessionId = permissionService.respondToPermission(requestId, behavior, alwaysAllow, addDirectories)
+      const sessionId = permissionService.respondToPermission(
+        requestId,
+        behavior,
+        alwaysAllow,
+        addDirectories
+      )
 
       // 发送 permission_resolved 事件给渲染进程
       if (sessionId) {
@@ -4375,15 +4377,24 @@ export function registerIpcHandlers(): void {
     return getDraft(id)
   })
 
-  ipcMain.handle(DRAFT_IPC_CHANNELS.CREATE, async (_, opts?: { title?: string; workspaceId?: string; mode?: 'general' | 'ta'; context?: string }) => {
-    const { createDraft } = await import('./lib/draft-manager')
-    return createDraft(opts)
-  })
+  ipcMain.handle(
+    DRAFT_IPC_CHANNELS.CREATE,
+    async (
+      _,
+      opts?: { title?: string; workspaceId?: string; mode?: 'general' | 'ta'; context?: string }
+    ) => {
+      const { createDraft } = await import('./lib/draft-manager')
+      return createDraft(opts)
+    }
+  )
 
-  ipcMain.handle(DRAFT_IPC_CHANNELS.UPDATE, async (_, id: string, partial: Record<string, unknown>) => {
-    const { updateDraft } = await import('./lib/draft-manager')
-    return updateDraft(id, partial)
-  })
+  ipcMain.handle(
+    DRAFT_IPC_CHANNELS.UPDATE,
+    async (_, id: string, partial: Record<string, unknown>) => {
+      const { updateDraft } = await import('./lib/draft-manager')
+      return updateDraft(id, partial)
+    }
+  )
 
   ipcMain.handle(DRAFT_IPC_CHANNELS.DELETE, async (_, id: string) => {
     const { deleteDraft } = await import('./lib/draft-manager')

@@ -112,12 +112,7 @@ export function isDangerousCommand(command: string): boolean {
 }
 
 /** 写操作工具名称 */
-export const WRITE_TOOLS: readonly string[] = [
-  'Write',
-  'Edit',
-  'MultiEdit',
-  'NotebookEdit',
-]
+export const WRITE_TOOLS: readonly string[] = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 
 /**
  * 判断工具是否为写操作（auto 模式下需用户确认）

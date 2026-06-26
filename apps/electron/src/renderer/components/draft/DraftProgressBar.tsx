@@ -9,12 +9,7 @@ import * as React from 'react'
 
 import type { DraftStatus, RequirementBlock } from '@tagent/shared'
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 
 interface DraftProgressBarProps {
@@ -31,7 +26,10 @@ const SEGMENT_BG: Record<DraftStatus, string> = {
   verified: 'bg-emerald-500/25',
 }
 
-function countByStatus(requirements: RequirementBlock[], overallStatus: DraftStatus): Map<DraftStatus, number> {
+function countByStatus(
+  requirements: RequirementBlock[],
+  overallStatus: DraftStatus
+): Map<DraftStatus, number> {
   const counts = new Map<DraftStatus, number>()
   for (const block of requirements) {
     const status = block.status ?? overallStatus
@@ -40,8 +38,14 @@ function countByStatus(requirements: RequirementBlock[], overallStatus: DraftSta
   return counts
 }
 
-export function DraftProgressBar({ requirements, overallStatus }: DraftProgressBarProps): React.ReactElement {
-  const counts = React.useMemo(() => countByStatus(requirements, overallStatus), [requirements, overallStatus])
+export function DraftProgressBar({
+  requirements,
+  overallStatus,
+}: DraftProgressBarProps): React.ReactElement {
+  const counts = React.useMemo(
+    () => countByStatus(requirements, overallStatus),
+    [requirements, overallStatus]
+  )
   const total = requirements.length
 
   const segments = React.useMemo(() => {
@@ -55,9 +59,7 @@ export function DraftProgressBar({ requirements, overallStatus }: DraftProgressB
     return result
   }, [counts, total])
 
-  const tooltipText = segments
-    .map((s) => `${s.count} ${STATUS_LABELS[s.status]}`)
-    .join(' / ')
+  const tooltipText = segments.map((s) => `${s.count} ${STATUS_LABELS[s.status]}`).join(' / ')
 
   return (
     <TooltipProvider>

@@ -318,7 +318,9 @@ export const agentSidePanelWidthAtom = atomWithStorage<number>('tagent-agent-sid
 export const agentSidePanelOpenMapAtom = atom<Map<string, boolean>>(new Map())
 
 /** 侧面板当前 Tab：'project' | 'activity' | 'changes'（per-session Map） */
-export const agentDiffPanelTabAtom = atom<Map<string, 'project' | 'activity' | 'changes'>>(new Map())
+export const agentDiffPanelTabAtom = atom<Map<string, 'project' | 'activity' | 'changes'>>(
+  new Map()
+)
 
 /** Diff 视图模式：'split' | 'unified' */
 export const agentDiffViewModeAtom = atom<'split' | 'unified'>('split')

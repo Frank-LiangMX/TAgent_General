@@ -155,7 +155,7 @@ function buildInstallSteps(
   nodeJs: { installed: boolean; version?: string; meetsMinimum: boolean },
   git: { installed: boolean; version?: string },
   kscc: { installed: boolean; path?: string; version?: string },
-  config: import('./kscc-config').KsccConfig,
+  config: import('./kscc-config').KsccConfig
 ): KsccInstallStep[] {
   const steps: KsccInstallStep[] = []
 

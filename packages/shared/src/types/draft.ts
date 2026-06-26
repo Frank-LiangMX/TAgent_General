@@ -18,23 +18,23 @@ export interface AcceptanceCriterion {
 /** 需求块 — 比 Kun 的 R-n 块更轻量 */
 export interface RequirementBlock {
   id: string
-  label: string                // "R-1", "R-2" 自增
+  label: string // "R-1", "R-2" 自增
   title: string
   description: string
   acceptanceCriteria: AcceptanceCriterion[]
-  status?: DraftStatus         // 块级状态覆盖
+  status?: DraftStatus // 块级状态覆盖
 }
 
 /** 完整草稿文档 */
 export interface DraftDocument {
   id: string
   title: string
-  workspaceId?: string         // 关联工作区
+  workspaceId?: string // 关联工作区
   mode?: 'general' | 'ta'
-  context: string              // 自由形式背景（TipTap HTML）
+  context: string // 自由形式背景（TipTap HTML）
   requirements: RequirementBlock[]
   status: DraftStatus
-  agentSessionId?: string      // 升级后关联的 Agent 会话
+  agentSessionId?: string // 升级后关联的 Agent 会话
   createdAt: number
   updatedAt: number
 }

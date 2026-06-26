@@ -487,7 +487,9 @@ export function SidePanel({
                 {/* 外部文件区域（附加文件 + 附加目录） */}
                 {hasSessionAttachedItems && (
                   <div className="mt-2 rounded-xl border border-border/35 bg-background/35 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                    <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">外部文件</div>
+                    <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">
+                      外部文件
+                    </div>
                     {attachedFiles.length > 0 && (
                       <AttachedFilesSection
                         attachedFiles={attachedFiles}
@@ -533,7 +535,12 @@ interface ActivityTabContentProps {
   allowedPaths?: string[]
 }
 
-function ActivityTabContent({ sessionId, onFilePreview, onAddToChat, allowedPaths }: ActivityTabContentProps): React.ReactElement {
+function ActivityTabContent({
+  sessionId,
+  onFilePreview,
+  onAddToChat,
+  allowedPaths,
+}: ActivityTabContentProps): React.ReactElement {
   const readFilesMap = useAtomValue(sessionReadFilesAtom)
   const changedFilesMap = useAtomValue(sessionChangedFilesAtom)
   const readFiles = readFilesMap.get(sessionId) ?? []
@@ -560,7 +567,9 @@ function ActivityTabContent({ sessionId, onFilePreview, onAddToChat, allowedPath
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
         <FileSearch className="size-5 text-muted-foreground/30" />
         <span>暂无文件活动</span>
-        <span className="text-[10px] text-muted-foreground/40">Agent 读取或修改文件后将显示在这里</span>
+        <span className="text-[10px] text-muted-foreground/40">
+          Agent 读取或修改文件后将显示在这里
+        </span>
       </div>
     )
   }
@@ -571,7 +580,9 @@ function ActivityTabContent({ sessionId, onFilePreview, onAddToChat, allowedPath
         {/* 已改文件 */}
         {changedFiles.length > 0 && (
           <div className="space-y-0.5">
-            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">已修改</div>
+            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">
+              已修改
+            </div>
             {changedFiles.map((path) => (
               <ActivityFileItem
                 key={`changed-${path}`}
@@ -586,7 +597,9 @@ function ActivityTabContent({ sessionId, onFilePreview, onAddToChat, allowedPath
         {/* 已读文件 */}
         {readFiles.length > 0 && (
           <div className="space-y-0.5">
-            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">已读取</div>
+            <div className="text-[10px] font-medium text-foreground/50 uppercase tracking-wide px-1 mb-1">
+              已读取
+            </div>
             {readFiles.map((path) => (
               <ActivityFileItem
                 key={`read-${path}`}
