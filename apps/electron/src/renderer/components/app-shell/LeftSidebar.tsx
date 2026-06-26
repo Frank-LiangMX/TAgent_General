@@ -28,6 +28,7 @@ import {
   Check,
   CircleCheckBig,
   FolderOpen,
+  Folder,
   Hourglass,
   Timer,
   Settings,
@@ -1438,9 +1439,18 @@ function SessionsRailContent({
     ...pinnedAgentSessions.map((s) => s.id),
     ...agentProjectGroups.flatMap((g) => g.sessions.map((s) => s.id)),
   ].join('|')
+
+  // 活跃会话是否在可见列表中（折叠的项目其会话不在 DOM 中）
+  const isActiveSessionVisible = activeSessionId
+    ? pinnedAgentSessions.some((s) => s.id === activeSessionId) ||
+      agentProjectGroups.some(
+        (g) => !collapsedWorkspaceIds.has(g.workspace.id) && g.sessions.some((s) => s.id === activeSessionId)
+      )
+    : false
+
   const { plateStyle, accentStyle } = useSessionListSlideIndicator(
     listRef,
-    activeSessionId,
+    isActiveSessionVisible ? activeSessionId : null,
     sessionLayoutKey
   )
   const activeSession = activeSessionId
@@ -2229,7 +2239,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               isCurrent ? 'text-foreground' : 'text-foreground/65',
             )}
           >
-            <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+            {!collapsed ? <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" /> : <Folder size={13} className="flex-shrink-0 text-foreground/40" />}
             <input
               ref={editRef}
               value={editName}
@@ -2250,7 +2260,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88',
             )}
           >
-            <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+            {!collapsed ? <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" /> : <Folder size={13} className="flex-shrink-0 text-foreground/40" />}
             <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
               {group.workspace.name}
             </span>
@@ -2328,9 +2338,11 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
         </DropdownMenu>
       </div>
 
-      <div className="ml-4 mt-px">
-        {!collapsed ? (
-          sessions.length > 0 ? (
+      <div className="ml-4 mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
+          {!collapsed && sessions.length > 0 ? (
             <div className="flex flex-col gap-0.5">
               {sessions.map((session) => (
                 <AgentSessionItem
@@ -2374,12 +2386,12 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                 </button>
               )}
             </div>
-          ) : (
+          ) : !collapsed ? (
             <div className="px-1.5 py-0.5 text-[12px] text-foreground/22 select-none">
               暂无会话
             </div>
-          )
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </section>
   )
