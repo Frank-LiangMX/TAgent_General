@@ -5,7 +5,7 @@
  * 确保所有打开会话的入口都能正确同步 appMode 和 currentSessionId。
  */
 
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import * as React from 'react'
 
 import {
@@ -34,7 +34,7 @@ type OpenSessionFn = (
 
 export function useOpenSession(): OpenSessionFn {
   const store = useStore()
-  const [tabs, setTabs] = useAtom(tabsAtom)
+  const setTabs = useSetAtom(tabsAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const setAppMode = useSetAtom(appModeAtom)
   const setCurrentAgentSessionId = useSetAtom(currentAgentSessionIdAtom)
@@ -57,7 +57,8 @@ export function useOpenSession(): OpenSessionFn {
               store.get(previewFileMapAtom)
             )
           : undefined
-      const result = openTab(tabs, { type, sessionId, title, mode: resolvedMode }, restore)
+      const currentTabs = store.get(tabsAtom)
+      const result = openTab(currentTabs, { type, sessionId, title, mode: resolvedMode }, restore)
       setTabs(result.tabs)
       setActiveTabId(result.activeTabId)
 
@@ -90,7 +91,7 @@ export function useOpenSession(): OpenSessionFn {
       }
     },
     [
-      tabs,
+      store,
       setTabs,
       setActiveTabId,
       setAppMode,

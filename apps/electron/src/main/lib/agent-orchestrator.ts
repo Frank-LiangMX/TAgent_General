@@ -536,7 +536,7 @@ const TITLE_PROMPT =
 const MAX_TITLE_LENGTH = 20
 
 /** 默认会话标题（用于判断是否需要自动生成） */
-const DEFAULT_SESSION_TITLE = '新 Agent 会话'
+const DEFAULT_SESSION_TITLES = new Set(['新 Agent 会话', 'TA 会话'])
 
 /** 默认模型 ID */
 const DEFAULT_MODEL_ID = 'claude-sonnet-4-6'
@@ -1070,14 +1070,17 @@ export class AgentOrchestrator {
   ): Promise<void> {
     try {
       const meta = getAgentSessionMeta(sessionId)
-      if (!meta || meta.title !== DEFAULT_SESSION_TITLE) return
+      if (!meta || !DEFAULT_SESSION_TITLES.has(meta.title)) return
 
       const title = await this.generateTitle({ userMessage, channelId, modelId })
-      if (!title) return
+      // API 生成失败时，用用户消息首行作为兜底标题
+      const fallback = userMessage.split('\n')[0]?.trim().slice(0, MAX_TITLE_LENGTH) || null
+      const finalTitle = title || fallback
+      if (!finalTitle) return
 
-      updateAgentSessionMeta(sessionId, { title })
-      callbacks.onTitleUpdated(title)
-      console.log(`[Agent 编排] 自动标题生成完成: "${title}"`)
+      updateAgentSessionMeta(sessionId, { title: finalTitle })
+      callbacks.onTitleUpdated(finalTitle)
+      console.log(`[Agent 编排] 自动标题生成完成: "${finalTitle}"${title ? '' : '（兜底）'}`)
     } catch (error) {
       console.warn('[Agent 编排] 自动标题生成失败:', error)
     }

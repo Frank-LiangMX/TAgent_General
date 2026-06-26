@@ -313,53 +313,68 @@ export function openTab(
 ): { tabs: TabItem[]; activeTabId: string } {
   if (item.type === 'draft') {
     const draftTabId = createDraftTabId(item.sessionId)
-    const existingDraftTab = tabs.find((t) => t.id === draftTabId)
-    const draftTab = existingDraftTab
-      ? { ...existingDraftTab, title: item.title }
-      : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title }
-    const otherTabs = tabs.filter((t) => t.id !== draftTabId)
-    return {
-      tabs: [...otherTabs, draftTab],
-      activeTabId: draftTabId,
+    const existingIndex = tabs.findIndex((t) => t.id === draftTabId)
+    const draftTab =
+      existingIndex !== -1
+        ? { ...tabs[existingIndex]!, title: item.title }
+        : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title }
+    if (existingIndex !== -1) {
+      const newTabs = [...tabs]
+      newTabs[existingIndex] = draftTab
+      return { tabs: newTabs, activeTabId: draftTabId }
     }
+    return { tabs: [...tabs, draftTab], activeTabId: draftTabId }
   }
 
   if (item.type === 'preview') {
-    const ownerAgentTab = tabs.find(
+    const ownerAgentTabIndex = tabs.findIndex(
       (t) => t.type === 'agent' && t.sessionId === item.sessionId
-    ) ?? {
-      id: item.sessionId,
-      type: 'agent' as const,
-      sessionId: item.sessionId,
-      title: item.title,
-    }
+    )
+    const ownerAgentTab =
+      ownerAgentTabIndex !== -1
+        ? tabs[ownerAgentTabIndex]!
+        : {
+            id: item.sessionId,
+            type: 'agent' as const,
+            sessionId: item.sessionId,
+            title: item.title,
+          }
     const previewTab: TabItem = {
       id: createPreviewTabId(item.sessionId),
       type: 'preview',
       sessionId: item.sessionId,
       title: item.title,
     }
-    const otherTabs = tabs.filter((t) => t.id !== ownerAgentTab.id && t.id !== previewTab.id)
-    if (!otherTabs.some((t) => t.id === ownerAgentTab.id)) {
+    const previewIndex = tabs.findIndex((t) => t.id === previewTab.id)
+    // 重建：移除旧预览 tab，保留 owner agent tab 原位
+    const otherTabs = tabs.filter((t) => t.id !== previewTab.id)
+    if (ownerAgentTabIndex === -1) {
       otherTabs.push(ownerAgentTab)
     }
-    otherTabs.push(previewTab)
+    // 预览 tab 追加到 owner 之后
+    const insertAfter = otherTabs.findIndex((t) => t.id === ownerAgentTab.id)
+    if (insertAfter !== -1) {
+      otherTabs.splice(insertAfter + 1, 0, previewTab)
+    } else {
+      otherTabs.push(previewTab)
+    }
     return {
       tabs: otherTabs,
       activeTabId: previewTab.id,
     }
   }
 
-  const existingTab = tabs.find((t) => t.sessionId === item.sessionId && t.type === item.type)
-  const sessionTab: TabItem = existingTab
-    ? { ...existingTab, title: item.title }
-    : {
-        id: item.sessionId,
-        type: item.type,
-        sessionId: item.sessionId,
-        title: item.title,
-        mode: item.mode ?? 'general',
-      }
+  const existingIndex = tabs.findIndex((t) => t.sessionId === item.sessionId && t.type === item.type)
+  const sessionTab: TabItem =
+    existingIndex !== -1
+      ? { ...tabs[existingIndex]!, title: item.title }
+      : {
+          id: item.sessionId,
+          type: item.type,
+          sessionId: item.sessionId,
+          title: item.title,
+          mode: item.mode ?? 'general',
+        }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。
   if (restore?.previewTabOpen) {
@@ -369,18 +384,32 @@ export function openTab(
       sessionId: item.sessionId,
       title: restore.previewTitle,
     }
-    const otherTabs = tabs.filter((t) => t.id !== sessionTab.id && t.id !== previewTab.id)
-    otherTabs.push(sessionTab, previewTab)
+    // 已有 tab 保持原位，只重建预览 tab
+    const otherTabs = tabs.filter((t) => t.id !== previewTab.id)
+    if (existingIndex !== -1) {
+      otherTabs.splice(existingIndex, 1, sessionTab)
+    } else {
+      otherTabs.push(sessionTab)
+    }
+    otherTabs.push(previewTab)
     return {
       tabs: otherTabs,
       activeTabId: restore.lastView === 'preview' ? previewTab.id : sessionTab.id,
     }
   }
 
-  const otherTabs = tabs.filter((t) => t.id !== sessionTab.id)
-  otherTabs.push(sessionTab)
+  // 已有的 tab 保持原位，只更新标题和激活态；新 tab 追加到末尾
+  if (existingIndex !== -1) {
+    const newTabs = [...tabs]
+    newTabs[existingIndex] = sessionTab
+    return {
+      tabs: newTabs,
+      activeTabId: sessionTab.id,
+    }
+  }
+
   return {
-    tabs: otherTabs,
+    tabs: [...tabs, sessionTab],
     activeTabId: sessionTab.id,
   }
 }
