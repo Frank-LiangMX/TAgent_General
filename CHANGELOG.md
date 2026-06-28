@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- (none yet)
+
+### Changed
+
+- (none yet)
+
+### Fixed
+
+- (none yet)
+
+---
+
+## [1.3.0] - 2026-06-29
+
+### Added
+
+- **插件市场 / 已安装页重构** — 整合包优先的市场浏览、已安装卡片视图、侧栏玻璃滑动导航、整合包分组去重
+- **插件详情与配置** — 市场/已安装详情页、插件配置对话框、整合包详情
+- **`@tagent/ui` 共享 UI 包** — 基础组件（Button、Dialog、SegmentedTabs 等）、design tokens、glass 样式迁入 `packages/ui`，Electron 渲染层改用共享组件
+- **插件商店共享层** — `plugin-store-catalog`、`plugin-store-bundles` 及分组/导航测试
+
+### Changed
+
+- **侧栏会话列表** — 移除工作区下拉，改为按项目分组的手风琴平铺；统一选中/非选中 `pl-7` 缩进与竖条位置
+- **工作中 / 置顶状态** — 琥珀色竖条 + Timer；Pin 图标与滑动指示器层绘制逻辑统一
+- **项目折叠动画** — 文件夹展开/收起图标区分（`FolderOpen` / `FolderClosed`），200ms 轻量过渡
+- **Agent 默认标题** — 支持「新 Agent 会话」「TA 会话」及用户首行 fallback
+- **Context / 模型选择** — 渠道默认模型、Context 底栏、Mention 弹窗滚动条等配套优化
+
+### Removed
+
+- 旧能力详情页 `CapabilityDetailView`、侧栏 `SkillsPanel`（由新插件市场/已安装页替代）
+
+### Fixed
+
+- `useOpenSession` stale closure 导致重复开 tab
+- `openTab` 将已有 tab 移到末尾
+- 折叠项目后滑动指示器错乱（折叠时隐藏活跃会话指示器）
+
+---
+
+## [1.2.0] - 2026-06-26
+
+> 详见 GitHub Release [v1.2.0](https://github.com/Frank-LiangMX/TAgent_General/releases/tag/v1.2.0)。以下为 v1.2.0 之前累积、尚未单独归档于本文件的条目。
+
+### Added
+
 - **Automation v1（M1–M3）** — 定时任务系统：30s tick 调度内核、daily/reuse 会话策略、侧栏列表 + 主区编辑器、运行历史、系统 / 飞书运行通知（PR #15）
 - **Context Usage 改进** — badge 与面板数据统一、缓存优先刷新、自定义滚动条
 - **工作区文件页** — OS 拖放复制 / 附加、顶栏窗口拖拽修复
