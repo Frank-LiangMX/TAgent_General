@@ -45,6 +45,7 @@ import {
 } from '@/atoms/agent-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
@@ -632,13 +633,17 @@ export function SearchDialog(): React.ReactElement {
             className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-foreground/40 outline-none"
           />
           {query && (
-            <button
-              onClick={handleClearQuery}
-              title="清空"
-              className="p-0.5 rounded text-foreground/30 hover:text-foreground/60 transition-colors"
-            >
-              <X size={14} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleClearQuery}
+                  className="p-0.5 rounded text-foreground/30 hover:text-foreground/60 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>清空</TooltipContent>
+            </Tooltip>
           )}
           <button
             onClick={() => void runSearch()}
@@ -653,20 +658,26 @@ export function SearchDialog(): React.ReactElement {
             {loading ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
             <span>搜索</span>
           </button>
-          <button
-            onClick={() => void handleAgentSearch()}
-            disabled={trimmedQuery.length < 2}
-            title="适合在精准搜索找不到的情况下使用，Agent 会帮助你搜索整个 TAgent 会话空间"
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors',
-              trimmedQuery.length >= 2
-                ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
-                : 'bg-foreground/[0.06] text-foreground/30 cursor-not-allowed'
-            )}
-          >
-            <Bot size={12} />
-            <span>Agent 搜索</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => void handleAgentSearch()}
+                disabled={trimmedQuery.length < 2}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors',
+                  trimmedQuery.length >= 2
+                    ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
+                    : 'bg-foreground/[0.06] text-foreground/30 cursor-not-allowed'
+                )}
+              >
+                <Bot size={12} />
+                <span>Agent 搜索</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[260px]">
+              适合在精准搜索找不到的情况下使用，Agent 会帮助你搜索整个 TAgent 会话空间
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* 搜索结果 */}

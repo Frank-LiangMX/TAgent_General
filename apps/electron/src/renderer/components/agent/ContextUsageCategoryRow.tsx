@@ -3,7 +3,8 @@ import * as React from 'react'
 import type { ContextUsageCategory } from '@tagent/shared'
 import { resolveContextUsageColor } from '@tagent/shared'
 
-import { getContextUsageLabel } from '@/lib/context-usage-labels'
+import { ContextUsageTermHint } from './ContextUsageTermHint'
+
 import {
   categoryPercentOfWindow,
   formatContextTokens,
@@ -33,17 +34,23 @@ export function ContextUsageCategoryRow({
             style={{ backgroundColor: isFreeSpace ? '#D1D5DB' : swatchColor }}
             aria-hidden="true"
           />
-          <span
-            className={cn(
-              'truncate text-xs text-foreground/85',
-              category.isDeferred && 'opacity-70'
-            )}
-          >
-            {getContextUsageLabel(category.name)}
+          <div className="flex min-w-0 flex-1 items-center gap-1">
+            <ContextUsageTermHint
+              term={category.name}
+              className={cn(
+                'min-w-0 truncate text-xs text-foreground/85',
+                category.isDeferred && 'opacity-70'
+              )}
+            />
             {category.isDeferred ? (
-              <span className="ml-1 text-[10px] text-muted-foreground">延迟</span>
+              <ContextUsageTermHint
+                term="延迟加载"
+                display="延迟"
+                inline
+                className="shrink-0 text-[10px] text-muted-foreground"
+              />
             ) : null}
-          </span>
+          </div>
         </div>
         <span className="shrink-0 text-xs tabular-nums text-foreground/90">
           {formatContextTokens(category.tokens)}

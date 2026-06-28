@@ -22,6 +22,7 @@ import { normalizeLatexDelimiters } from '@tagent/shared'
 import type { ComponentProps, ReactNode } from 'react'
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 // ===== 上下文 =====
@@ -223,19 +224,23 @@ export const ReasoningContent = React.memo(
             rehypePlugins={[rehypeKatex]}
             components={{
               a: ({ href, children: linkChildren, ...linkProps }) => (
-                <a
-                  {...linkProps}
-                  href={href}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                      window.electronAPI.openExternal(href)
-                    }
-                  }}
-                  title={href}
-                >
-                  {linkChildren}
-                </a>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a
+                      {...linkProps}
+                      href={href}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                          window.electronAPI.openExternal(href)
+                        }
+                      }}
+                    >
+                      {linkChildren}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[400px] break-all">{href}</TooltipContent>
+                </Tooltip>
               ),
             }}
           >

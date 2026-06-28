@@ -75,6 +75,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import { cn } from '@/lib/utils'
 
 // ===== 常量 =====
@@ -460,12 +461,12 @@ function FeishuCliSection(): React.ReactElement {
   return (
     <SettingsSection
       title="配置飞书 CLI"
-      description="飞书官方开源的命令行工具，配置后 TAgent Agent 将可以直接读消息、查日历、写文档、建多维表格、发邮件，把任务真正落到飞书里完成。"
+      description="飞书官方开源的命令行工具，配置后 TAgent 将可以直接读消息、查日历、写文档、建多维表格、发邮件，把任务真正落到飞书里完成。"
     >
       <SettingsCard divided={false}>
         <div className="px-4 py-4 space-y-2 text-sm text-muted-foreground">
           <p className="text-xs">
-            复制配置提示词，并前往飞书Bot日常绑定的<strong>工作区</strong>，创建新的 TAgent Agent
+            复制配置提示词，并前往飞书Bot日常绑定的<strong>工作区</strong>，创建新的 TAgent 会话
             对话并发送即可让 TAgent 协助完成配置。
           </p>
           <button
@@ -801,7 +802,7 @@ function CliRecommendationCard(): React.ReactElement {
       <div className="flex items-start gap-2">
         <div className="flex-1 text-xs text-foreground/80 leading-relaxed">
           <div className="font-medium text-foreground mb-0.5">想要更完整的飞书生态体验？</div>
-          补全飞书 CLI 后 TAgent Agent 还可以直接读写你的文档、查日历、发邮件等。
+          补全飞书 CLI 后 TAgent 还可以直接读写你的文档、查日历、发邮件等。
           复制下方提示词到任意工作区的新对话发送即可，Agent 会全程引导完成。
         </div>
       </div>
@@ -1062,7 +1063,7 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
   return (
     <SettingsSection
       title="同步到飞书"
-      description="开启后，每个新的 TAgent Agent Session 会创建一个仅包含你和指定 Bot 的飞书群，并把输出同步到群内卡片，同时默认阻止电脑自动休眠，方便你脱离电脑在飞书上继续完成工作。"
+      description="开启后，每个新的 TAgent 会话会创建一个仅包含你和指定 Bot 的飞书群，并把输出同步到群内卡片，同时默认阻止电脑自动休眠，方便你脱离电脑在飞书上继续完成工作。"
     >
       <SettingsCard divided={false}>
         <div className="px-4 py-4 space-y-4">
@@ -1709,7 +1710,7 @@ function FeishuConfigTab(): React.ReactElement {
 
             {/* 提示 */}
             <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
-              版本审核通过并发布后，在飞书中搜索机器人名称添加到聊天， 即可通过飞书向 TAgent Agent
+              版本审核通过并发布后，在飞书中搜索机器人名称添加到聊天， 即可通过飞书向 TAgent
               发送指令。
             </div>
           </div>
@@ -1729,26 +1730,18 @@ export function FeishuSettings(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* Tab 切换栏 */}
-      <div className="inline-flex rounded-lg bg-muted p-1 gap-0.5">
+      <SegmentedTabs
+        className="max-w-xs"
+        value={activeTab}
+        onValueChange={(tab) => setActiveTab(tab as FeishuTab)}
+      >
         {TAB_OPTIONS.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setActiveTab(tab.value)}
-            className={cn(
-              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-              activeTab === tab.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+          <SegmentedTabsItem key={tab.value} value={tab.value}>
             {tab.label}
-          </button>
+          </SegmentedTabsItem>
         ))}
-      </div>
+      </SegmentedTabs>
 
-      {/* Tab 内容 */}
       {activeTab === 'config' ? <FeishuConfigTab /> : <FeishuBindingsTab />}
     </div>
   )

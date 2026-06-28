@@ -989,10 +989,12 @@ export interface SkillFileContent {
   size: number
 }
 
-/** 工作区能力摘要（MCP + Skill 计数） */
+/** 工作区能力摘要（MCP + Skill + 已安装整合包记录） */
 export interface WorkspaceCapabilities {
   mcpServers: Array<{ name: string; enabled: boolean; type: McpTransportType }>
   skills: SkillMeta[]
+  /** 来自 plugins-installed.json 的整合包安装记录 */
+  installedBundles: import('../plugin-store-bundles').WorkspacePluginBundleRecord[]
 }
 
 // ===== Agent 发送输入 =====
@@ -1362,7 +1364,7 @@ export const TAGENT_PERMISSION_MODES = ['auto', 'bypassPermissions', 'plan'] as 
 
 export type TAgentPermissionMode = (typeof TAGENT_PERMISSION_MODES)[number]
 
-export const TAGENT_DEFAULT_PERMISSION_MODE: TAgentPermissionMode = 'bypassPermissions'
+export const TAGENT_DEFAULT_PERMISSION_MODE: TAgentPermissionMode = 'auto'
 
 export interface TAgentPermissionModeConfig {
   /** 对应 Claude Agent SDK 的 permissionMode */
@@ -1577,6 +1579,8 @@ export const AGENT_IPC_CHANNELS = {
   TOGGLE_SKILL: 'agent:toggle-skill',
   /** 从插件商店安装内置 Skill */
   INSTALL_STORE_SKILL: 'agent:install-store-skill',
+  /** 从插件商店安装整合包 */
+  INSTALL_STORE_BUNDLE: 'agent:install-store-bundle',
   /** 获取插件商店目录 */
   GET_PLUGIN_STORE_CATALOG: 'agent:get-plugin-store-catalog',
   /** 读取 SKILL.md 全文内容 */

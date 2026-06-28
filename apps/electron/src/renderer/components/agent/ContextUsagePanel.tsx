@@ -8,6 +8,7 @@ import {
 } from '@/lib/context-usage-format'
 import { cn } from '@/lib/utils'
 
+import { ContextUsageTermHint } from './ContextUsageTermHint'
 import { ContextUsageCategoryGroup } from './ContextUsageCategoryGroup'
 import { ContextUsageCategoryRow } from './ContextUsageCategoryRow'
 import { ContextUsageSegmentBar } from './ContextUsageSegmentBar'
@@ -58,27 +59,29 @@ function usageStatusText(percent: number): string {
 }
 
 function DetailLine({
+  term,
   label,
   value,
   muted,
-  ariaLabel,
 }: {
+  /** 说明 lookup key，默认与 label 相同 */
+  term?: string
   label: string
   value: string
   muted?: boolean
-  ariaLabel?: string
 }): React.ReactElement {
+  const lookup = term ?? label
   return (
     <div className="grid grid-cols-[1fr_auto_42px] items-center gap-2 text-[11px]">
-      <span
+      <ContextUsageTermHint
+        term={lookup}
+        display={label}
+        inline
         className={cn(
           'ml-5 min-w-0 truncate border-l border-foreground/10 pl-2.5 text-muted-foreground',
           muted && 'opacity-70'
         )}
-        aria-label={ariaLabel ?? label}
-      >
-        {label}
-      </span>
+      />
       <span className="shrink-0 text-xs tabular-nums text-foreground/90">{value}</span>
       <span aria-hidden="true" />
     </div>
@@ -152,8 +155,8 @@ function getCategoryDrillDown(
           return (
             <DetailLine
               key={file.path}
+              term={shortPath}
               label={shortPath}
-              ariaLabel={file.path}
               value={formatContextTokens(file.tokens)}
             />
           )
@@ -182,6 +185,7 @@ function getCategoryDrillDown(
               value={formatContextTokens(snapshot.messageBreakdown.toolResultTokens)}
             />
             <DetailLine
+              term="附件明细"
               label="附件"
               value={formatContextTokens(snapshot.messageBreakdown.attachmentTokens)}
             />
@@ -228,27 +232,42 @@ export function ContextUsagePanel({
   const threshold = thresholdPercent(snapshot)
   const hasCategoryBreakdown = sortedCategories.length > 0
 
-  const metaParts: string[] = []
+  const metaParts: React.ReactNode[] = []
   if (isStreamPreview) {
-    metaParts.push('摘要为流式估算，分项加载中')
+    metaParts.push(
+      <ContextUsageTermHint key="stream" term="流式估算" display="摘要为流式估算，分项加载中" inline />
+    )
   } else if (detailsLoading) {
-    metaParts.push('分项刷新中')
+    metaParts.push(
+      <ContextUsageTermHint key="refresh" term="分项刷新中" inline />
+    )
   }
   if (snapshot.isAutoCompactEnabled) {
     metaParts.push(
-      snapshot.autoCompactThreshold != null
-        ? `自动压缩 ${formatCompactThreshold(snapshot.autoCompactThreshold)}`
-        : '自动压缩已开启'
+      <ContextUsageTermHint
+        key="compact"
+        term="自动压缩"
+        display={
+          snapshot.autoCompactThreshold != null
+            ? `自动压缩 ${formatCompactThreshold(snapshot.autoCompactThreshold)}`
+            : '自动压缩已开启'
+        }
+        inline
+      />
     )
   }
-  metaParts.push('分项为 SDK 估算')
+  metaParts.push(
+    <ContextUsageTermHint key="sdk" term="分项为SDK估算" inline />
+  )
 
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-2xl bg-background/20 p-3 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground/90">Context 容量</p>
+            <p className="text-[13px] font-medium text-foreground/90">
+              <ContextUsageTermHint term="Context 容量" className="font-medium text-foreground/90" />
+            </p>
             <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
               {snapshot.model || '当前模型'}
             </p>
@@ -267,7 +286,11 @@ export function ContextUsagePanel({
         </div>
 
         <div className="mt-3 flex items-baseline justify-between gap-3 text-[11px]">
-          <span className="text-muted-foreground">已用 / 窗口</span>
+          <ContextUsageTermHint
+            term="已用 / 窗口"
+            className="text-muted-foreground"
+            inline
+          />
           <span className="tabular-nums font-medium text-foreground/85">
             {formatContextTokens(snapshot.totalTokens)} / {formatContextTokens(snapshot.maxTokens)}
           </span>
@@ -287,25 +310,37 @@ export function ContextUsagePanel({
         ) : null}
 
         <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground/70">
-          <span>{snapshot.isAutoCompactEnabled ? '自动压缩已开启' : '自动压缩未开启'}</span>
+          <ContextUsageTermHint
+            term="自动压缩"
+            display={snapshot.isAutoCompactEnabled ? '自动压缩已开启' : '自动压缩未开启'}
+            inline
+          />
           {snapshot.autoCompactThreshold != null ? (
-            <span>阈值 {formatCompactThreshold(snapshot.autoCompactThreshold)}</span>
+            <ContextUsageTermHint
+              term="自动压缩阈值"
+              display={`阈值 ${formatCompactThreshold(snapshot.autoCompactThreshold)}`}
+              inline
+            />
           ) : null}
         </div>
       </div>
 
       {snapshot.rawMaxTokens < snapshot.maxTokens && (
         <p className="rounded-xl bg-background/14 px-2.5 py-2 text-[10px] leading-snug text-muted-foreground/65">
-          SDK 窗口 {formatContextTokens(snapshot.rawMaxTokens)}，展示按模型{' '}
-          {formatContextTokens(snapshot.maxTokens)}
+          <ContextUsageTermHint term="SDK窗口差异" inline>
+            <>
+              SDK 窗口 {formatContextTokens(snapshot.rawMaxTokens)}，展示按模型{' '}
+              {formatContextTokens(snapshot.maxTokens)}
+            </>
+          </ContextUsageTermHint>
         </p>
       )}
 
       <div className="rounded-2xl bg-background/14 p-1.5 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.12)]">
         <div className="grid grid-cols-[1fr_auto_42px] gap-2 px-2 pb-1 text-[10px] text-muted-foreground/70">
-          <span>分类</span>
-          <span>Token</span>
-          <span className="text-right">占比</span>
+          <ContextUsageTermHint term="分类" inline />
+          <ContextUsageTermHint term="Token" inline />
+          <ContextUsageTermHint term="占比" display="占比" inline className="text-right" />
         </div>
         {detailsLoading && !hasCategoryBreakdown ? (
           <CategoryBreakdownSkeleton />
@@ -341,7 +376,14 @@ export function ContextUsagePanel({
         ) : null}
       </div>
 
-      <p className="text-[10px] leading-snug text-muted-foreground/55">{metaParts.join(' · ')}</p>
+      <p className="flex flex-wrap items-center gap-x-1 text-[10px] leading-snug text-muted-foreground/55">
+        {metaParts.map((part, index) => (
+          <React.Fragment key={index}>
+            {index > 0 ? <span aria-hidden="true">·</span> : null}
+            {part}
+          </React.Fragment>
+        ))}
+      </p>
     </div>
   )
 }

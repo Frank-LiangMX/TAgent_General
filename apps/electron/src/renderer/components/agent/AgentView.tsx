@@ -13,7 +13,7 @@
  * 布局：AgentHeader | AgentMessages | AgentInput + 可选 FileBrowser 侧面板
  */
 
-import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider } from '@tagent/shared'
+import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider, resolveAgentSessionModelId } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   ArrowUp,
@@ -487,17 +487,28 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const sessionModelMap = useAtomValue(agentSessionModelMapAtom)
   const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
   const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
-  const [defaultChannelId, setDefaultChannelId] = useAtom(agentChannelIdAtom)
-  const [defaultModelId, setDefaultModelId] = useAtom(agentModelIdAtom)
-  const agentChannelId = sessionChannelMap.get(sessionId) ?? defaultChannelId
-  const agentModelId = sessionModelMap.get(sessionId) ?? defaultModelId
+  const [defaultChannelId] = useAtom(agentChannelIdAtom)
+  const legacyGlobalModelId = useAtomValue(agentModelIdAtom)
   const agentChannelIds = useAtomValue(agentChannelIdsAtom)
   const setAgentChannelIds = useSetAtom(agentChannelIdsAtom)
+  const globalChannels = useAtomValue(channelsAtom)
+  const setGlobalChannels = useSetAtom(channelsAtom)
+  const agentChannelId = sessionChannelMap.get(sessionId) ?? defaultChannelId
+  const agentChannel = React.useMemo(
+    () =>
+      agentChannelId
+        ? globalChannels.find((c) => c.id === agentChannelId && c.enabled)
+        : undefined,
+    [agentChannelId, globalChannels]
+  )
+  const agentModelId = resolveAgentSessionModelId(
+    agentChannel,
+    sessionModelMap.get(sessionId),
+    legacyGlobalModelId
+  )
   // Agent 模式：Claude Agent SDK 仅支持 Anthropic 协议。
   // 在传给 ModelSelector 之前过滤掉非 Anthropic 兼容的渠道，
   // 与 ChannelForm / ChannelSettings 保持一致。
-  const globalChannels = useAtomValue(channelsAtom)
-  const setGlobalChannels = useSetAtom(channelsAtom)
   const agentChannelIdsAgentSafe = React.useMemo(
     () =>
       agentChannelIds.filter((id) => {
@@ -524,9 +535,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const stableChannelIdRef = React.useRef(agentChannelId)
   if (agentChannelId) stableChannelIdRef.current = agentChannelId
 
-  // 已有会话首次打开时，从全局默认值初始化 per-session map。
-  // setter 内的 `prev.has(sessionId)` 守卫保证幂等，外层不再订阅 Map atom，
-  // 避免 setter 写入 → atom 引用变化 → effect 重跑的自循环（React #185）。
+  // 已有会话首次打开时，从渠道默认 / 旧版全局默认初始化 per-session map（不写 settings）
   React.useEffect(() => {
     if (!sessionId) return
     if (defaultChannelId) {
@@ -537,15 +546,31 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         return map
       })
     }
-    if (defaultModelId) {
+    const channelId = defaultChannelId
+    const channel = channelId
+      ? globalChannels.find((c) => c.id === channelId && c.enabled)
+      : undefined
+    const resolvedModelId = resolveAgentSessionModelId(
+      channel,
+      undefined,
+      legacyGlobalModelId
+    )
+    if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
         const map = new Map(prev)
-        map.set(sessionId, defaultModelId)
+        map.set(sessionId, resolvedModelId)
         return map
       })
     }
-  }, [sessionId, defaultChannelId, defaultModelId, setSessionChannelMap, setSessionModelMap])
+  }, [
+    sessionId,
+    defaultChannelId,
+    legacyGlobalModelId,
+    globalChannels,
+    setSessionChannelMap,
+    setSessionModelMap,
+  ])
 
   // 从主进程拉取该会话的 Composer 档位（持久化到 AgentSessionMeta.lastComposerMode）
   // 并写入 composerModeMapAtom 作为本地缓存。syncSet 内幂等守卫。
@@ -668,9 +693,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     pendingFilesRef.current = pendingFiles
   }, [pendingFiles])
 
-  // 渠道已选但模型未选时，自动选择第一个可用模型
-  // （globalChannels 在 line 334 已声明）
-  // 检查 Agent 渠道列表中是否存在可用的模型（渠道 enabled + 模型 enabled）
+  // 渠道已选但会话尚未绑定模型时，写入 per-session map（默认来自渠道配置，不持久化 settings）
   const hasAvailableModel = React.useMemo(() => {
     if (!agentChannelIds || agentChannelIds.length === 0) return false
     return globalChannels.some(
@@ -682,40 +705,23 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     )
   }, [globalChannels, agentChannelIds])
   React.useEffect(() => {
-    if (!agentChannelId || agentModelId) return
+    if (!agentChannelId) return
 
     const channel = globalChannels.find((c) => c.id === agentChannelId && c.enabled)
-    if (!channel) return
+    const resolvedModelId = resolveAgentSessionModelId(
+      channel,
+      undefined,
+      legacyGlobalModelId
+    )
+    if (!resolvedModelId) return
 
-    const firstModel = channel.models.find((m) => m.enabled)
-    if (!firstModel) return
-
-    // 更新 per-session map（带幂等守卫，避免无意义写入导致 effect 自循环）
     setSessionModelMap((prev) => {
-      if (prev.get(sessionId) === firstModel.id) return prev
+      if (prev.has(sessionId)) return prev
       const map = new Map(prev)
-      map.set(sessionId, firstModel.id)
+      map.set(sessionId, resolvedModelId)
       return map
     })
-    // 全局默认值 + 持久化 IPC 也加幂等：firstModel 与当前 defaultModelId 相同时跳过，
-    // 避免每次 agentChannelId / globalChannels 变化都重复写盘和触发 agentModelIdAtom 更新。
-    if (defaultModelId !== firstModel.id) {
-      setDefaultModelId(firstModel.id)
-      window.electronAPI
-        .updateSettings({
-          agentChannelId,
-          agentModelId: firstModel.id,
-        })
-        .catch(console.error)
-    }
-  }, [
-    agentChannelId,
-    agentModelId,
-    globalChannels,
-    sessionId,
-    setSessionModelMap,
-    setDefaultModelId,
-  ])
+  }, [agentChannelId, sessionId, globalChannels, legacyGlobalModelId, setSessionModelMap])
 
   // 获取当前 session 的工作路径（文件浏览器需要）
   React.useEffect(() => {
@@ -1013,14 +1019,21 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     if (!messagesLoaded) return
     if (!pendingPrompt) return
     if (pendingPrompt.sessionId !== sessionId) return
-    if (!agentChannelId || streaming) return
+    if (streaming) return
+
+    const resolvedChannelId = pendingPrompt.channelId ?? agentChannelId
+    const resolvedModelId = pendingPrompt.modelId ?? agentModelId
+    const resolvedWorkspaceId = pendingPrompt.workspaceId ?? currentWorkspaceId ?? undefined
+
+    // 新会话需等渠道 / 模型就绪，避免 orchestrator 回退 DEFAULT_MODEL_ID 导致 SDK 异常退出
+    if (!resolvedChannelId || !resolvedModelId) return
 
     // 快照当前上下文
     const snapshot = {
       message: pendingPrompt.message,
-      channelId: agentChannelId,
-      modelId: agentModelId || undefined,
-      workspaceId: currentWorkspaceId || undefined,
+      channelId: resolvedChannelId,
+      modelId: resolvedModelId,
+      workspaceId: resolvedWorkspaceId,
       additionalDirectories: Array.from(
         new Set([
           ...attachedDirs,
@@ -2842,8 +2855,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                             ? composerMode === 'ask'
                               ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
                               : sendWithCmdEnter
-                                ? '输入消息... (⌘/Ctrl+Enter 发送，Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
-                                : '输入消息... (Enter 发送，Shift+Enter 换行，@ 引用文件，/ 调用 Skill，# 调用 MCP，& 引用会话)'
+                                ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
                             : !agentChannelId
                               ? '请先在设置中选择 Agent 供应商'
                               : '暂无可用模型，请先在设置中启用渠道'

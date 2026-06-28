@@ -21,6 +21,7 @@ import {
   finalizeStreamingActivities,
 } from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 危险等级对应的图标颜色 */
 const DANGER_ICON_STYLES: Record<DangerLevel, string> = {
@@ -167,14 +168,18 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
           <span className="text-xs text-muted-foreground font-mono">
             {request.sdkDisplayName ?? formatToolName(request.toolName)}
           </span>
-          <button
-            type="button"
-            className="size-5 flex items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-            onClick={handleDismiss}
-            title="关闭并终止 Agent"
-          >
-            <X className="size-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="size-5 flex items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                onClick={handleDismiss}
+              >
+                <X className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>关闭并终止 Agent</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

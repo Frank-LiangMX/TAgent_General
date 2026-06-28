@@ -1,18 +1,16 @@
 /**
  * ChannelSettings - 渠道配置页
  *
- * 单一列表：每个渠道一个启用开关。
- * Agent 模式自动从已启用 ∩ Anthropic 兼容的渠道中筛选，
- * agentChannelIds 设置项保留用于向后兼容，但由主开关联动派生。
+ * kscc 内网内置渠道单独区块；其余 AI 供应商配置在下方列表管理。
  */
 
 import { PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
-import type { KsccInstallReadiness } from '@tagent/shared'
 import { useAtom, useSetAtom } from 'jotai'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as React from 'react'
 
 import { ChannelForm } from './ChannelForm'
+import { KsccChannelForm } from './KsccChannelForm'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 
 import type { Channel } from '@tagent/shared'
@@ -31,11 +29,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { getChannelLogo } from '@/lib/model-logo'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { KsccInstallGuide } from '@/components/agent/KsccInstallGuide'
+import { getChannelLogo } from '@/lib/model-logo'
 
 /** 组件视图模式 */
-type ViewMode = 'list' | 'create' | 'edit'
+type ViewMode = 'list' | 'create' | 'edit' | 'edit-kscc'
 
 export function ChannelSettings(): React.ReactElement {
   const [channels, setChannels] = React.useState<Channel[]>([])
@@ -59,18 +58,20 @@ export function ChannelSettings(): React.ReactElement {
     agentChannelIdRef.current = agentChannelId
   }, [agentChannelId])
 
-  /** 加载渠道列表 */
+  const ksccChannel = React.useMemo(
+    () => channels.find((c) => c.provider === 'kscc-internal'),
+    [channels]
+  )
+  const otherChannels = React.useMemo(
+    () => channels.filter((c) => c.provider !== 'kscc-internal'),
+    [channels]
+  )
+
   const loadChannels = React.useCallback(async (): Promise<Channel[]> => {
     try {
       const list = await window.electronAPI.listChannels()
-      // kscc 内网渠道置顶
-      list.sort((a, b) => {
-        const aKscc = a.provider === 'kscc-internal' ? 0 : 1
-        const bKscc = b.provider === 'kscc-internal' ? 0 : 1
-        return aKscc - bKscc
-      })
       setChannels(list)
-      setGlobalChannels(list) // 同步到全局缓存
+      setGlobalChannels(list)
       return list
     } catch (error) {
       console.error('[渠道设置] 加载渠道列表失败:', error)
@@ -78,7 +79,7 @@ export function ChannelSettings(): React.ReactElement {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setGlobalChannels])
 
   React.useEffect(() => {
     loadChannels()
@@ -118,23 +119,19 @@ export function ChannelSettings(): React.ReactElement {
     [setAgentChannelIds, setAgentChannelId, setAgentModelId]
   )
 
-  /** 删除渠道（通过弹窗确认） */
   const handleDeleteRequest = (channel: Channel): void => {
     setDeleteTarget(channel)
   }
 
-  /** 确认删除 */
   const handleDeleteConfirm = async (): Promise<void> => {
     if (!deleteTarget) return
     const target = deleteTarget
     try {
       await window.electronAPI.deleteChannel(target.id)
 
-      // 从 Agent 渠道列表中移除
       const newIds = agentChannelIds.filter((id) => id !== target.id)
       setAgentChannelIds(newIds)
 
-      // 如果删除的是当前选中的 Agent 渠道，清空选择
       if (agentChannelId === target.id) {
         setAgentChannelId(null)
         setAgentModelId(null)
@@ -152,15 +149,12 @@ export function ChannelSettings(): React.ReactElement {
     }
   }
 
-  /** 切换渠道启用状态（主开关） */
-  const handleToggle = async (channel: Channel): Promise<void> => {
-    // kscc 渠道禁用时，先检查是否已安装
-    if (channel.provider === 'kscc-internal' && !channel.enabled) {
+  const handleKsccToggle = async (channel: Channel): Promise<void> => {
+    if (!channel.enabled) {
       try {
         const status = await window.electronAPI.getKsccStatus()
         if (status.installed) {
-          // 已安装，直接启用
-          await window.electronAPI.updateChannel(channel.id, { enabled: true })
+          const savedChannel = await window.electronAPI.updateChannel(channel.id, { enabled: true })
           const settings = await window.electronAPI.getSettings()
           const currentIds: string[] = settings.agentChannelIds ?? []
           if (!currentIds.includes(channel.id)) {
@@ -168,16 +162,27 @@ export function ChannelSettings(): React.ReactElement {
               agentChannelIds: [channel.id, ...currentIds],
             })
           }
+          await syncAgentChannelEligibility(savedChannel, true)
           await loadChannels()
           return
         }
       } catch {
-        /* fallthrough to guide */
+        /* fallthrough */
       }
-      // 未安装，打开引导
       setKsccGuideOpen(true)
       return
     }
+
+    try {
+      const savedChannel = await window.electronAPI.updateChannel(channel.id, { enabled: false })
+      await syncAgentChannelEligibility(savedChannel, false)
+      await loadChannels()
+    } catch (error) {
+      console.error('[渠道设置] 切换 kscc 渠道状态失败:', error)
+    }
+  }
+
+  const handleToggle = async (channel: Channel): Promise<void> => {
     try {
       const savedChannel = await window.electronAPI.updateChannel(channel.id, {
         enabled: !channel.enabled,
@@ -186,27 +191,48 @@ export function ChannelSettings(): React.ReactElement {
         savedChannel,
         savedChannel.enabled && isAgentCompatibleProvider(savedChannel.provider)
       )
-
       await loadChannels()
     } catch (error) {
       console.error('[渠道设置] 切换渠道状态失败:', error)
     }
   }
 
-  /** 表单保存回调 */
   const handleFormSaved = async (): Promise<void> => {
     setViewMode('list')
     setEditingChannel(null)
     await loadChannels()
   }
 
-  /** 取消表单 */
   const handleFormCancel = (): void => {
     setViewMode('list')
     setEditingChannel(null)
   }
 
-  // 表单视图
+  const handleKsccBack = async (): Promise<void> => {
+    setViewMode('list')
+    await loadChannels()
+  }
+
+  if (viewMode === 'edit-kscc' && ksccChannel) {
+    return (
+      <>
+        <KsccChannelForm
+          channel={ksccChannel}
+          onBack={() => void handleKsccBack()}
+          onUpdated={loadChannels}
+          onInstallGuideOpen={() => setKsccGuideOpen(true)}
+        />
+        <KsccInstallGuide
+          open={ksccGuideOpen}
+          onOpenChange={setKsccGuideOpen}
+          onComplete={(installed) => {
+            if (installed) loadChannels()
+          }}
+        />
+      </>
+    )
+  }
+
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
       <ChannelForm
@@ -218,13 +244,34 @@ export function ChannelSettings(): React.ReactElement {
     )
   }
 
-  // 列表视图
   return (
     <div className="space-y-8">
-      {/* 区块一：模型配置 */}
+      <SettingsSection
+        title="金山云内网"
+        description="公司内网 Agent 渠道，由 kscc CLI 提供认证与模型能力"
+      >
+        {loading ? (
+          <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
+        ) : ksccChannel ? (
+          <SettingsCard divided={false}>
+            <KsccChannelRow
+              channel={ksccChannel}
+              onConfigure={() => setViewMode('edit-kscc')}
+              onToggle={() => void handleKsccToggle(ksccChannel)}
+            />
+          </SettingsCard>
+        ) : (
+          <SettingsCard divided={false}>
+            <div className="text-sm text-muted-foreground py-8 text-center px-4">
+              未找到 kscc 内网渠道，请重启应用或检查安装
+            </div>
+          </SettingsCard>
+        )}
+      </SettingsSection>
+
       <SettingsSection
         title="模型配置"
-        description="管理 AI 供应商连接，配置 API Key 和可用模型。启用的 Anthropic 兼容渠道可在 Agent 模式使用"
+        description="管理外部 AI 供应商连接，配置 API Key 和可用模型"
         action={
           <Button size="sm" onClick={() => setViewMode('create')}>
             <Plus size={16} />
@@ -234,15 +281,15 @@ export function ChannelSettings(): React.ReactElement {
       >
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
-        ) : channels.length === 0 ? (
+        ) : otherChannels.length === 0 ? (
           <SettingsCard divided={false}>
             <div className="text-sm text-muted-foreground py-12 text-center">
-              还没有配置任何模型，点击上方&ldquo;添加配置&rdquo;开始
+              还没有配置外部供应商，点击上方「添加配置」开始
             </div>
           </SettingsCard>
         ) : (
           <SettingsCard>
-            {channels.map((channel) => (
+            {otherChannels.map((channel) => (
               <ChannelRow
                 key={channel.id}
                 channel={channel}
@@ -251,14 +298,13 @@ export function ChannelSettings(): React.ReactElement {
                   setViewMode('edit')
                 }}
                 onDelete={() => handleDeleteRequest(channel)}
-                onToggle={() => handleToggle(channel)}
+                onToggle={() => void handleToggle(channel)}
               />
             ))}
           </SettingsCard>
         )}
       </SettingsSection>
 
-      {/* 删除确认弹窗 */}
       <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
@@ -279,7 +325,6 @@ export function ChannelSettings(): React.ReactElement {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* kscc 安装引导 */}
       <KsccInstallGuide
         open={ksccGuideOpen}
         onOpenChange={setKsccGuideOpen}
@@ -291,7 +336,48 @@ export function ChannelSettings(): React.ReactElement {
   )
 }
 
-// ===== 渠道行子组件 =====
+interface KsccChannelRowProps {
+  channel: Channel
+  onConfigure: () => void
+  onToggle: () => void
+}
+
+function KsccChannelRow({
+  channel,
+  onConfigure,
+  onToggle,
+}: KsccChannelRowProps): React.ReactElement {
+  const enabledCount = channel.models.filter((m) => m.enabled).length
+  const description = [
+    '内置渠道 · 金山云',
+    enabledCount > 0 ? `${enabledCount} 个模型已启用` : '尚未启用模型',
+    '可用于 Agent',
+  ].join(' · ')
+
+  return (
+    <SettingsRow
+      label={channel.name}
+      icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
+      description={description}
+      className="group"
+    >
+      <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onConfigure}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Pencil size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>配置模型</TooltipContent>
+        </Tooltip>
+        <Switch checked={channel.enabled} onCheckedChange={onToggle} />
+      </div>
+    </SettingsRow>
+  )
+}
 
 interface ChannelRowProps {
   channel: Channel
@@ -303,18 +389,13 @@ interface ChannelRowProps {
 function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
   const enabledCount = channel.models.filter((m) => m.enabled).length
   const isAgentCapable = isAgentCompatibleProvider(channel.provider)
-  const isKscc = channel.provider === 'kscc-internal'
   const description = [
     PROVIDER_LABELS[channel.provider],
     enabledCount > 0 ? `${enabledCount} 个模型已启用` : undefined,
     isAgentCapable ? '可用于 Agent' : undefined,
-    isKscc ? '金山云' : undefined,
   ]
     .filter(Boolean)
     .join(' · ')
-
-  // kscc 渠道由系统管理生命周期，不允许手动编辑/删除
-  const hideEditDelete = isKscc
 
   return (
     <SettingsRow
@@ -324,27 +405,28 @@ function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): R
       className="group"
     >
       <div className="flex items-center gap-2">
-        {/* 操作按钮 — kscc 渠道隐藏 */}
-        {!hideEditDelete && (
-          <>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <button
               onClick={onEdit}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
-              title="编辑"
             >
               <Pencil size={14} />
             </button>
+          </TooltipTrigger>
+          <TooltipContent>编辑</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <button
               onClick={onDelete}
               className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-              title="删除"
             >
               <Trash2 size={14} />
             </button>
-          </>
-        )}
-
-        {/* 启用/关闭开关 */}
+          </TooltipTrigger>
+          <TooltipContent>删除</TooltipContent>
+        </Tooltip>
         <Switch checked={channel.enabled} onCheckedChange={onToggle} />
       </div>
     </SettingsRow>

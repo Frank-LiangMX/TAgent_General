@@ -20,6 +20,7 @@ import {
   Globe,
   Check,
   X,
+  XIcon,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -72,6 +73,7 @@ export function GeneralSettings(): React.ReactElement {
   const [nameInput, setNameInput] = React.useState(userProfile.userName)
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false)
   const [archiveAfterDays, setArchiveAfterDays] = React.useState<number>(7)
+  const [closeAction, setCloseAction] = React.useState<string>('ask')
   const [isDarkMode, setIsDarkMode] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -93,6 +95,7 @@ export function GeneralSettings(): React.ReactElement {
       .getSettings()
       .then((settings) => {
         setArchiveAfterDays(settings.archiveAfterDays ?? 7)
+        setCloseAction(settings.closeAction ?? 'ask')
       })
       .catch(console.error)
   }, [])
@@ -104,6 +107,17 @@ export function GeneralSettings(): React.ReactElement {
       await window.electronAPI.updateSettings({ archiveAfterDays: days })
     } catch (error) {
       console.error('[通用设置] 更新归档天数失败:', error)
+    }
+  }
+
+  const handleCloseActionChange = async (value: string): Promise<void> => {
+    setCloseAction(value)
+    try {
+      await window.electronAPI.updateSettings({
+        closeAction: value === 'ask' ? undefined : (value as 'minimize-to-tray' | 'quit'),
+      })
+    } catch (error) {
+      console.error('[通用设置] 更新关闭行为失败:', error)
     }
   }
 
@@ -256,6 +270,26 @@ export function GeneralSettings(): React.ReactElement {
               <SelectItem value="14">14天</SelectItem>
               <SelectItem value="30">30天</SelectItem>
               <SelectItem value="60">60天</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 关闭窗口行为 */}
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center shrink-0">
+            <XIcon className="size-4 text-rose-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-foreground">关闭窗口</div>
+          </div>
+          <Select value={closeAction} onValueChange={handleCloseActionChange}>
+            <SelectTrigger className="w-[110px] h-7 text-xs bg-transparent border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ask">每次询问</SelectItem>
+              <SelectItem value="minimize-to-tray">最小化到托盘</SelectItem>
+              <SelectItem value="quit">退出程序</SelectItem>
             </SelectContent>
           </Select>
         </div>

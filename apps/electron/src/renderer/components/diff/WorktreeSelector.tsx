@@ -3,6 +3,7 @@ import * as React from 'react'
 
 import type { WorktreeInfo, WorkspaceWorktreeRepo } from '@tagent/shared'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface WorktreeSelectorProps {
@@ -98,16 +99,20 @@ export function WorktreeSelector({
             className={cn('w-3 h-3 shrink-0 transition-transform', isOpen && 'rotate-180')}
           />
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            fetchWorktrees()
-          }}
-          className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-          title="刷新 worktree 列表"
-        >
-          <RefreshCw className={cn('w-3 h-3', isLoading && 'animate-spin')} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                fetchWorktrees()
+              }}
+              className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RefreshCw className={cn('w-3 h-3', isLoading && 'animate-spin')} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>刷新 worktree 列表</TooltipContent>
+        </Tooltip>
       </div>
 
       {isOpen && (

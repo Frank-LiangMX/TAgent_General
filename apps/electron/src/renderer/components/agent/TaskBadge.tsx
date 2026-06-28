@@ -10,6 +10,7 @@ import * as React from 'react'
 
 import type { BackgroundTask } from '@/atoms/agent-atoms'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export interface TaskBadgeProps {
@@ -77,35 +78,39 @@ export function TaskBadge({ task, onClick }: TaskBadgeProps): React.ReactElement
   const Icon = task.type === 'shell' ? Terminal : GitBranch
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'h-[30px] px-3 py-1.5 rounded-[8px]',
-        'flex items-center gap-2 shrink-0',
-        'bg-background/70 backdrop-blur-sm',
-        'border-[0.5px] border-border',
-        'hover:bg-accent hover:border-accent-foreground/20',
-        'transition-all duration-200',
-        'text-xs font-medium',
-        'cursor-pointer select-none'
-      )}
-      title={task.intent || `${task.type} 任务`}
-    >
-      {/* Spinner */}
-      <Loader2 className="size-3 animate-spin text-primary" />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className={cn(
+            'h-[30px] px-3 py-1.5 rounded-[8px]',
+            'flex items-center gap-2 shrink-0',
+            'bg-background/70 backdrop-blur-sm',
+            'border-[0.5px] border-border',
+            'hover:bg-accent hover:border-accent-foreground/20',
+            'transition-all duration-200',
+            'text-xs font-medium',
+            'cursor-pointer select-none'
+          )}
+        >
+          {/* Spinner */}
+          <Loader2 className="size-3 animate-spin text-primary" />
 
-      {/* 类型图标 */}
-      <Icon className="size-3 text-muted-foreground" />
+          {/* 类型图标 */}
+          <Icon className="size-3 text-muted-foreground" />
 
-      {/* 类型标签 */}
-      <span className="text-muted-foreground">{task.type === 'shell' ? 'Shell' : 'Task'}</span>
+          {/* 类型标签 */}
+          <span className="text-muted-foreground">{task.type === 'shell' ? 'Shell' : 'Task'}</span>
 
-      {/* 任务 ID（缩短） */}
-      <span className="font-mono opacity-80">{shortenId(task.id)}</span>
+          {/* 任务 ID（缩短） */}
+          <span className="font-mono opacity-80">{shortenId(task.id)}</span>
 
-      {/* 耗时 */}
-      <span className="tabular-nums text-muted-foreground">{formatElapsed(displayElapsed)}</span>
-    </button>
+          {/* 耗时 */}
+          <span className="tabular-nums text-muted-foreground">{formatElapsed(displayElapsed)}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{task.intent || `${task.type} 任务`}</TooltipContent>
+    </Tooltip>
   )
 }

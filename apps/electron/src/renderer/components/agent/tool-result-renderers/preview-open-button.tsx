@@ -12,6 +12,7 @@ import * as React from 'react'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface PreviewOpenButtonProps {
@@ -51,30 +52,34 @@ export function PreviewOpenButton({
   }
 
   return (
-    <span
-      role="button"
-      tabIndex={0}
-      className={cn(
-        'inline-flex shrink-0 items-center px-1.5 py-px rounded text-[11px] text-muted-foreground/60',
-        'hover:text-foreground/70 hover:bg-muted/50',
-        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-        'transition-colors duration-150 cursor-pointer',
-        className
-      )}
-      onClick={(e) => {
-        e.stopPropagation()
-        handleOpen()
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          e.stopPropagation()
-          handleOpen()
-        }
-      }}
-      title="在预览标签页中打开"
-    >
-      预览
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          role="button"
+          tabIndex={0}
+          className={cn(
+            'inline-flex shrink-0 items-center px-1.5 py-px rounded text-[11px] text-muted-foreground/60',
+            'hover:text-foreground/70 hover:bg-muted/50',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            'transition-colors duration-150 cursor-pointer',
+            className
+          )}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleOpen()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              handleOpen()
+            }
+          }}
+        >
+          预览
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>在预览标签页中打开</TooltipContent>
+    </Tooltip>
   )
 }

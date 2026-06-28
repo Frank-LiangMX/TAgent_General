@@ -199,6 +199,19 @@ function AgentSettingsInitializer(): null {
           window.electronAPI
             .updateSettings({ agentChannelId: undefined, agentModelId: undefined })
             .catch(console.error)
+        } else if (!settings.agentChannelId) {
+          // 兜底：用户从未显式选择 Agent 渠道，自动选择第一个 Agent 兼容的已启用渠道
+          const compatibleIds = channels
+            .filter((c) => c.enabled && isAgentCompatibleProvider(c.provider))
+            .map((c) => c.id)
+          if (compatibleIds.length > 0) {
+            const autoId = compatibleIds[0]!
+            setAgentChannelId(autoId)
+            window.electronAPI
+              .updateSettings({ agentChannelId: autoId })
+              .catch(console.error)
+            console.info('[AgentSettings] 自动选择 Agent 渠道:', autoId)
+          }
         }
         if (
           settings.agentModelId &&

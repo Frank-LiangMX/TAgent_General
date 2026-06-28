@@ -5,13 +5,14 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { ChevronRight, Search, Undo2, X } from 'lucide-react'
+import { ChevronRight, Undo2 } from 'lucide-react'
 import * as React from 'react'
 
 import type { ChangedFileEntry, ChangeSource, UntrackedFileEntry } from '@tagent/shared'
 
 import { agentDiffUnseenFilesAtom, agentDiffDataAtom } from '@/atoms/agent-atoms'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
+import { SearchInput } from '@/components/ui/search-input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -232,32 +233,22 @@ export const DiffChangesList = React.memo(function DiffChangesList({
     <div className="flex flex-col h-full overflow-y-auto">
       {/* 搜索框 — 有改动文件时才显示 */}
       <div className="flex-shrink-0 sticky top-0 z-10 bg-content-area px-2 pt-1.5 pb-1">
-        <div className="flex items-center gap-1.5 px-2 h-7 rounded-md bg-muted/50 border border-transparent focus-within:border-primary/40 focus-within:bg-muted/70 transition-colors">
-          <Search className="size-3 text-muted-foreground flex-shrink-0" />
-          <input
-            type="text"
-            aria-label="搜索改动文件"
-            className="flex-1 bg-transparent text-[11px] outline-none placeholder:text-muted-foreground/40"
-            placeholder="搜索改动文件..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <>
-              <span className="text-[10px] text-muted-foreground/50 flex-shrink-0 tabular-nums">
+        <SearchInput
+          variant="muted"
+          size="sm"
+          aria-label="搜索改动文件"
+          placeholder="搜索改动文件..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onClear={() => setSearchQuery('')}
+          trailing={
+            searchQuery ? (
+              <span className="text-[10px] text-muted-foreground/50 tabular-nums">
                 {matchedFilesCount + filteredUntrackedFiles.length}
               </span>
-              <button
-                type="button"
-                aria-label="清除搜索"
-                className="flex-shrink-0 p-0.5 rounded-sm hover:bg-foreground/[0.08] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                onClick={() => setSearchQuery('')}
-              >
-                <X className="size-3" />
-              </button>
-            </>
-          )}
-        </div>
+            ) : undefined
+          }
+        />
       </div>
 
       {isEmpty && (

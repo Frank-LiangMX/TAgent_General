@@ -3,6 +3,8 @@ import { resolveContextUsageColor } from '@tagent/shared'
 import { ChevronDown } from 'lucide-react'
 import * as React from 'react'
 
+import { ContextUsageTermHint } from './ContextUsageTermHint'
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { getContextUsageLabel } from '@/lib/context-usage-labels'
 import { formatContextTokens, isFreeSpaceCategory } from '@/lib/context-usage-format'
@@ -50,12 +52,17 @@ export function ContextUsageCategoryGroup({
               style={{ backgroundColor: swatchColor }}
               aria-hidden="true"
             />
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground/85">
-              {label}
-              {itemCount != null && itemCount > 0 ? (
-                <span className="ml-1 text-muted-foreground">({itemCount})</span>
-              ) : null}
-            </span>
+            <ContextUsageTermHint
+              term={category.name}
+              className="min-w-0 flex-1 truncate text-xs text-foreground/85"
+            >
+              <span className="truncate">
+                {label}
+                {itemCount != null && itemCount > 0 ? (
+                  <span className="ml-1 text-muted-foreground">({itemCount})</span>
+                ) : null}
+              </span>
+            </ContextUsageTermHint>
           </div>
           <span className="shrink-0 text-xs tabular-nums text-foreground/90">
             {formatContextTokens(category.tokens)}

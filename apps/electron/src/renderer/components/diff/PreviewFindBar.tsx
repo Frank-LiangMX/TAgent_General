@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface PreviewFindBarProps {
   open: boolean
@@ -408,48 +409,60 @@ export function PreviewFindBar({
         spellCheck={false}
         className="h-5 w-[145px] min-w-0 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
       />
-      <button
-        type="button"
-        onClick={() => setCaseSensitive((v) => !v)}
-        disabled={Boolean(unsupportedReason)}
-        className={cn(
-          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-          caseSensitive && 'bg-primary/15 text-primary'
-        )}
-        title="区分大小写"
-        aria-label="区分大小写"
-        aria-pressed={caseSensitive}
-      >
-        Aa
-      </button>
-      <button
-        type="button"
-        onClick={() => setWholeWord((v) => !v)}
-        disabled={Boolean(unsupportedReason)}
-        className={cn(
-          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-          wholeWord && 'bg-primary/15 text-primary'
-        )}
-        title="全词匹配"
-        aria-label="全词匹配"
-        aria-pressed={wholeWord}
-      >
-        ab
-      </button>
-      <button
-        type="button"
-        onClick={() => setRegex((v) => !v)}
-        disabled={Boolean(unsupportedReason)}
-        className={cn(
-          'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-          regex && 'bg-primary/15 text-primary'
-        )}
-        title="使用正则表达式"
-        aria-label="使用正则表达式"
-        aria-pressed={regex}
-      >
-        .*
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setCaseSensitive((v) => !v)}
+            disabled={Boolean(unsupportedReason)}
+            className={cn(
+              'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+              caseSensitive && 'bg-primary/15 text-primary'
+            )}
+            aria-label="区分大小写"
+            aria-pressed={caseSensitive}
+          >
+            Aa
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>区分大小写</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setWholeWord((v) => !v)}
+            disabled={Boolean(unsupportedReason)}
+            className={cn(
+              'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+              wholeWord && 'bg-primary/15 text-primary'
+            )}
+            aria-label="全词匹配"
+            aria-pressed={wholeWord}
+          >
+            ab
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>全词匹配</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setRegex((v) => !v)}
+            disabled={Boolean(unsupportedReason)}
+            className={cn(
+              'h-5 rounded px-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+              regex && 'bg-primary/15 text-primary'
+            )}
+            aria-label="使用正则表达式"
+            aria-pressed={regex}
+          >
+            .*
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>使用正则表达式</TooltipContent>
+      </Tooltip>
       <span
         role="status"
         aria-live="polite"
@@ -461,35 +474,47 @@ export function PreviewFindBar({
       >
         {statusText}
       </span>
-      <button
-        type="button"
-        onClick={goToPrevious}
-        disabled={Boolean(unsupportedReason) || matchCount === 0}
-        className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
-        title="上一个匹配"
-        aria-label="上一个匹配"
-      >
-        <ChevronUp className="size-3.5" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={goToNext}
-        disabled={Boolean(unsupportedReason) || matchCount === 0}
-        className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
-        title="下一个匹配"
-        aria-label="下一个匹配"
-      >
-        <ChevronDown className="size-3.5" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={close}
-        className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-        title="关闭查找"
-        aria-label="关闭查找"
-      >
-        <X className="size-3.5" aria-hidden="true" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={goToPrevious}
+            disabled={Boolean(unsupportedReason) || matchCount === 0}
+            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+            aria-label="上一个匹配"
+          >
+            <ChevronUp className="size-3.5" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>上一个匹配</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={goToNext}
+            disabled={Boolean(unsupportedReason) || matchCount === 0}
+            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+            aria-label="下一个匹配"
+          >
+            <ChevronDown className="size-3.5" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>下一个匹配</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={close}
+            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="关闭查找"
+          >
+            <X className="size-3.5" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>关闭查找</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

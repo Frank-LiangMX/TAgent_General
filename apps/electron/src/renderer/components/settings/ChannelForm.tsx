@@ -23,7 +23,7 @@ import {
   XCircle,
   Zap,
   Download,
-  Search,
+  Star,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -59,6 +59,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SearchInput } from '@/components/ui/search-input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getProviderLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
@@ -165,6 +167,9 @@ export function ChannelForm({
   const [apiKey, setApiKey] = React.useState('')
   const [showApiKey, setShowApiKey] = React.useState(false)
   const [models, setModels] = React.useState<ChannelModel[]>(channel?.models ?? [])
+  const [defaultModelId, setDefaultModelId] = React.useState<string | undefined>(
+    channel?.defaultModelId
+  )
   const [enabled, setEnabled] = React.useState(channel?.enabled ?? true)
 
   // 新模型输入
@@ -223,7 +228,8 @@ export function ChannelForm({
       currentProvider: ProviderType,
       currentBaseUrl: string,
       currentApiKey: string,
-      currentEnabled: boolean
+      currentEnabled: boolean,
+      currentDefaultModelId: string | undefined
     ) => {
       if (!isEdit || !channel) return
       try {
@@ -233,6 +239,7 @@ export function ChannelForm({
           baseUrl: currentBaseUrl,
           apiKey: currentApiKey || undefined,
           models: currentModels,
+          defaultModelId: currentDefaultModelId,
           enabled: currentEnabled,
         })
         const eligible = isAgentEligibleChannel(savedChannel)
@@ -257,12 +264,21 @@ export function ChannelForm({
       nextProvider: ProviderType,
       nextBaseUrl: string,
       nextApiKey: string,
-      nextEnabled: boolean
+      nextEnabled: boolean,
+      nextDefaultModelId: string | undefined
     ) => {
       if (!isEdit || !initializedRef.current) return
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
       autoSaveTimerRef.current = setTimeout(() => {
-        doAutoSave(nextModels, nextName, nextProvider, nextBaseUrl, nextApiKey, nextEnabled)
+        doAutoSave(
+          nextModels,
+          nextName,
+          nextProvider,
+          nextBaseUrl,
+          nextApiKey,
+          nextEnabled,
+          nextDefaultModelId
+        )
       }, AUTO_SAVE_DELAY)
     },
     [isEdit, doAutoSave]
@@ -284,11 +300,11 @@ export function ChannelForm({
 
   // 监听字段变化触发 auto-save
   React.useEffect(() => {
-    scheduleAutoSave(models, name, provider, baseUrl, apiKey, enabled)
+    scheduleAutoSave(models, name, provider, baseUrl, apiKey, enabled, defaultModelId)
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
     }
-  }, [models, name, provider, baseUrl, apiKey, enabled, scheduleAutoSave])
+  }, [models, name, provider, baseUrl, apiKey, enabled, defaultModelId, scheduleAutoSave])
 
   // 切换供应商时自动更新 Base URL，Anthropic 兼容渠道自动添加预设模型
   const handleProviderChange = (newProvider: string): void => {
@@ -344,11 +360,25 @@ export function ChannelForm({
   /** 删除模型 */
   const handleRemoveModel = (modelId: string): void => {
     setModels((prev) => prev.filter((m) => m.id !== modelId))
+    if (defaultModelId === modelId) {
+      setDefaultModelId(undefined)
+    }
   }
 
   /** 切换模型启用状态（点击可用模型 → 启用，点击已启用模型 → 禁用） */
   const handleToggleModel = (modelId: string): void => {
+    const target = models.find((m) => m.id === modelId)
+    const willDisable = target?.enabled === true
     setModels((prev) => prev.map((m) => (m.id === modelId ? { ...m, enabled: !m.enabled } : m)))
+    if (defaultModelId === modelId && willDisable) {
+      setDefaultModelId(undefined)
+    }
+  }
+
+  /** 设为渠道默认模型（须为已启用模型） */
+  const handleSetDefaultModel = (modelId: string): void => {
+    setDefaultModelId(modelId)
+    setModels((prev) => prev.map((m) => (m.id === modelId ? { ...m, enabled: true } : m)))
   }
 
   /** 从供应商 API 拉取可用模型列表 */
@@ -447,6 +477,7 @@ export function ChannelForm({
         baseUrl,
         apiKey,
         models,
+        defaultModelId,
         enabled,
       }
       const savedChannel = await window.electronAPI.createChannel(input)
@@ -462,7 +493,7 @@ export function ChannelForm({
     } finally {
       setSaving(false)
     }
-  }, [name, provider, baseUrl, apiKey, models, enabled, onAgentEligibilityChange])
+  }, [name, provider, baseUrl, apiKey, models, defaultModelId, enabled, onAgentEligibilityChange])
 
   /** 创建渠道（仅新建模式） */
   const handleCreate = async (): Promise<void> => {
@@ -596,24 +627,30 @@ export function ChannelForm({
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-medium text-foreground">API Key</div>
                 <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={handleTestModel}
-                    disabled={
-                      validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
-                    }
-                    className="h-7 text-xs"
-                    title="用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配"
-                  >
-                    {validatingModel ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Zap size={12} />
-                    )}
-                    <span>测试 model</span>
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={handleTestModel}
+                        disabled={
+                          validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
+                        }
+                        className="h-7 text-xs"
+                      >
+                        {validatingModel ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Zap size={12} />
+                        )}
+                        <span>测试 model</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[260px]">
+                      用您配的 model 实际发请求, 防止 9120caac 那类 model 名误配
+                    </TooltipContent>
+                  </Tooltip>
                   <Button
                     variant="outline"
                     size="sm"
@@ -677,7 +714,11 @@ export function ChannelForm({
       {/* 已启用模型 */}
       <SettingsSection
         title="已启用模型"
-        description={enabledModels.length > 0 ? `${enabledModels.length} 个模型` : undefined}
+        description={
+          enabledModels.length > 0
+            ? `${enabledModels.length} 个模型 · 星标为 Agent 默认模型`
+            : undefined
+        }
       >
         <SettingsCard divided={false}>
           {enabledModels.length === 0 ? (
@@ -686,25 +727,57 @@ export function ChannelForm({
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {enabledModels.map((model) => (
-                <div key={model.id} className="flex items-center gap-2 px-4 py-2.5 group">
-                  <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
-                  <span className="text-sm text-foreground flex-1">
-                    {model.name}
-                    {model.name !== model.id && (
-                      <span className="text-muted-foreground ml-1">({model.id})</span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleModel(model.id)}
-                    className="p-0.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                    title="取消启用"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
+              {enabledModels.map((model) => {
+                const isDefault = defaultModelId === model.id
+                return (
+                  <div key={model.id} className="flex items-center gap-2 px-4 py-2.5 group">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefaultModel(model.id)}
+                          className={cn(
+                            'flex-shrink-0 p-0.5 transition-colors',
+                            isDefault
+                              ? 'text-amber-500 dark:text-amber-400'
+                              : 'text-muted-foreground/50 hover:text-amber-500 dark:hover:text-amber-400'
+                          )}
+                          aria-label={isDefault ? '当前为默认模型' : '设为默认模型'}
+                        >
+                          <Star size={14} className={isDefault ? 'fill-current' : undefined} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isDefault ? 'Agent 默认模型' : '设为 Agent 默认模型'}
+                      </TooltipContent>
+                    </Tooltip>
+                    <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+                    <span className="text-sm text-foreground flex-1">
+                      {model.name}
+                      {isDefault && (
+                        <span className="ml-1.5 text-[10px] text-amber-600 dark:text-amber-400">
+                          默认
+                        </span>
+                      )}
+                      {model.name !== model.id && (
+                        <span className="text-muted-foreground ml-1">({model.id})</span>
+                      )}
+                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleModel(model.id)}
+                          className="p-0.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <X size={14} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>取消启用</TooltipContent>
+                    </Tooltip>
+                  </div>
+                )
+              })}
             </div>
           )}
         </SettingsCard>
@@ -748,18 +821,12 @@ export function ChannelForm({
           {/* 模型搜索过滤 */}
           {models.filter((m) => !m.enabled).length > 5 && (
             <div className="px-4 pt-3 pb-1">
-              <div className="relative">
-                <Search
-                  size={14}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  value={modelFilter}
-                  onChange={(e) => setModelFilter(e.target.value)}
-                  placeholder="搜索可用模型..."
-                  className="h-8 text-sm pl-8"
-                />
-              </div>
+              <SearchInput
+                value={modelFilter}
+                onChange={(e) => setModelFilter(e.target.value)}
+                placeholder="搜索可用模型..."
+                onClear={() => setModelFilter('')}
+              />
             </div>
           )}
 
@@ -787,17 +854,21 @@ export function ChannelForm({
                       <span className="text-muted-foreground ml-1">({model.id})</span>
                     )}
                   </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveModel(model.id)
-                    }}
-                    className="p-0.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                    title="删除"
-                  >
-                    <X size={14} />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveModel(model.id)
+                        }}
+                        className="p-0.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X size={14} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>删除</TooltipContent>
+                  </Tooltip>
                 </div>
               ))}
 

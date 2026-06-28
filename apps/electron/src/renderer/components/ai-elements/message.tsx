@@ -292,13 +292,28 @@ function MentionChip({ type, value }: { type: MentionType; value: string }): Rea
       : type === 'session'
         ? `会话 ${decoded.slice(0, 8)}`
         : decoded
-  return (
+  const showDecodedTitle = type === 'file' || type === 'session'
+  return showDecodedTitle ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            'inline-flex items-center gap-0.5 rounded px-1 py-[1px] text-[13px] font-medium whitespace-nowrap align-baseline',
+            style.className
+          )}
+        >
+          <Icon className="size-3 inline shrink-0" />
+          {display}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{decoded}</TooltipContent>
+    </Tooltip>
+  ) : (
     <span
       className={cn(
         'inline-flex items-center gap-0.5 rounded px-1 py-[1px] text-[13px] font-medium whitespace-nowrap align-baseline',
         style.className
       )}
-      title={type === 'file' || type === 'session' ? decoded : undefined}
     >
       <Icon className="size-3 inline shrink-0" />
       {display}
@@ -432,19 +447,23 @@ const MarkdownLink = React.memo(function MarkdownLink({
   }
 
   return (
-    <a
-      {...linkProps}
-      href={href}
-      onClick={(e) => {
-        e.preventDefault()
-        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-          window.electronAPI.openExternal(href)
-        }
-      }}
-      title={href}
-    >
-      {linkChildren}
-    </a>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <a
+          {...linkProps}
+          href={href}
+          onClick={(e) => {
+            e.preventDefault()
+            if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+              window.electronAPI.openExternal(href)
+            }
+          }}
+        >
+          {linkChildren}
+        </a>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[400px] break-all">{href}</TooltipContent>
+    </Tooltip>
   )
 })
 
@@ -855,14 +874,18 @@ function MessageAttachmentImage({
   return (
     <div className="relative group inline-block">
       {imgElement}
-      <button
-        type="button"
-        onClick={handleSave}
-        className="absolute bottom-2 right-2 p-1.5 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
-        title="保存图片"
-      >
-        <Download className="size-4" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="absolute bottom-2 right-2 p-1.5 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+          >
+            <Download className="size-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>保存图片</TooltipContent>
+      </Tooltip>
       <ImageLightbox
         src={imageSrc}
         alt={attachment.filename}

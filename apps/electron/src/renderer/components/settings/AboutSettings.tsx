@@ -21,9 +21,10 @@ import {
   BookOpen,
   Terminal,
   Github,
-  FileCode2,
 } from 'lucide-react'
 import * as React from 'react'
+
+import tagentLogo from '../../../../resources/icon.png'
 
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
@@ -115,9 +116,14 @@ function HeroSection(): React.ReactElement {
 
       <div className="relative flex flex-col items-center py-8 px-6">
         {/* Logo 区域 */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center mb-4 shadow-lg shadow-primary/10">
-          <FileCode2 size={32} className="text-primary" />
-        </div>
+        <img
+          src={tagentLogo}
+          alt=""
+          width={64}
+          height={64}
+          className="mb-4 h-16 w-16 rounded-2xl object-cover shadow-lg shadow-primary/10"
+          draggable={false}
+        />
 
         {/* 品牌名 */}
         <h1 className="text-2xl font-bold text-foreground mb-1">TAgent</h1>

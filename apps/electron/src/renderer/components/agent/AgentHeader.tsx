@@ -14,16 +14,16 @@ import type { SessionIndicatorStatus, ToolActivity } from '@/atoms/agent-atoms'
 
 import {
   agentDefaultPermissionModeAtom,
-  agentModelIdAtom,
   agentPermissionModeMapAtom,
   agentSessionIndicatorMapAtom,
-  agentSessionModelMapAtom,
   agentSessionsAtom,
   agentSessionStreamingStateAtomFamily,
   sessionPersistedPermissionModeAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
+import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { resolveModelDisplayName } from '@/lib/model-logo'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** AgentHeader 属性接口 */
@@ -38,23 +38,28 @@ function HeaderStatusChip({
   children: React.ReactNode
   tone?: 'neutral' | 'running' | 'blocked' | 'completed'
 }): React.ReactElement {
-  return (
-    <span
-      className={cn(
-        'inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
-        tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
-        tone === 'running' &&
-          'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
-        tone === 'blocked' &&
-          'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
-        tone === 'completed' &&
-          'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300'
-      )}
-      title={typeof children === 'string' ? children : undefined}
-    >
-      {children}
-    </span>
+  const isStringChild = typeof children === 'string'
+  const chipClassName = cn(
+    'inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
+    tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
+    tone === 'running' &&
+      'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
+    tone === 'blocked' &&
+      'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
+    tone === 'completed' &&
+      'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300'
   )
+  if (isStringChild) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={chipClassName}>{children}</span>
+        </TooltipTrigger>
+        <TooltipContent>{children as string}</TooltipContent>
+      </Tooltip>
+    )
+  }
+  return <span className={chipClassName}>{children}</span>
 }
 
 function getLatestRunningTool(toolActivities: ToolActivity[] | undefined): ToolActivity | null {
@@ -91,8 +96,7 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
   const session = sessions.find((s) => s.id === sessionId) ?? null
   const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))
   const sessionIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
-  const sessionModelMap = useAtomValue(agentSessionModelMapAtom)
-  const defaultModelId = useAtomValue(agentModelIdAtom)
+  const { modelId } = useAgentSessionChannelModel(sessionId)
   const channels = useAtomValue(channelsAtom)
   const permissionModeMap = useAtomValue(agentPermissionModeMapAtom)
   const persistedPermissionMode = useAtomValue(sessionPersistedPermissionModeAtom(sessionId))
@@ -100,7 +104,6 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
 
   if (!session) return null
 
-  const modelId = sessionModelMap.get(sessionId) ?? defaultModelId
   const modelLabel = modelId ? resolveModelDisplayName(modelId, channels) : '未选择模型'
   const permissionMode =
     permissionModeMap.get(sessionId) ?? persistedPermissionMode ?? defaultPermissionMode

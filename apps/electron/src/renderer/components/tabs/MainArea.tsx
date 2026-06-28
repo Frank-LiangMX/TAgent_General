@@ -12,6 +12,7 @@
 import { useAtomValue, useSetAtom, useAtom } from 'jotai'
 import * as React from 'react'
 
+import { ContentWindowDragBand } from '@/components/app-shell/WindowDragStrip'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 
@@ -19,7 +20,6 @@ import {
   topLevelModeAtom,
   activeRailItemAtom,
   appModeAtom,
-  selectedCapabilityAtom,
   type TARailItem,
 } from '@/atoms/app-mode'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
@@ -45,7 +45,6 @@ export function MainArea(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
-  const setSelectedCapability = useSetAtom(selectedCapabilityAtom)
 
   // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
   React.useEffect(() => {
@@ -53,13 +52,6 @@ export function MainArea(): React.ReactElement {
       setAppMode('agent')
     }
   }, [topLevelMode, activeRailItem, setAppMode])
-
-  // 离开 skills 功能区时清除选中
-  React.useEffect(() => {
-    if (activeRailItem !== 'skills') {
-      setSelectedCapability(null)
-    }
-  }, [activeRailItem, setSelectedCapability])
 
   // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
   if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
@@ -254,11 +246,14 @@ function GeneralMainArea(): React.ReactElement {
             注：宽度变化不用 transition——文字逐帧 reflow 会导致行末字符抖动，
             视觉上像"内容从右向左推送"。让左侧瞬间变宽，由右侧 absolute 滑出动画
             覆盖期内呈现"被剥离"的视觉效果。 */}
-        <div className="flex flex-col min-w-0 h-full" style={leftFlexStyle}>
+        <div className="flex flex-col min-w-0 h-full relative" style={leftFlexStyle}>
           {!showSessionWelcome && <TabBar />}
-          <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1">
+          <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1 relative">
             {showSessionWelcome || tabs.length === 0 ? (
-              <WelcomeView />
+              <>
+                <ContentWindowDragBand />
+                <WelcomeView />
+              </>
             ) : deferredActiveTabId ? (
               <div className="flex-1 min-h-0 titlebar-no-drag">
                 <TabContent tabId={deferredActiveTabId} />

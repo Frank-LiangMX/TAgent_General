@@ -58,7 +58,7 @@ export function PermissionModeSelector({
 
   // 初始化：如果当前 session 不在 Map 中，按以下优先级读回：
   // 1. session meta.permissionMode（每个 tab 独立持久化，重启恢复各自的值）
-  // 2. 默认完全自动模式
+  // 2. 默认自动审批模式
   React.useEffect(() => {
     if (!sessionExistsInList) return
 

@@ -41,7 +41,7 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
   {
     tabId: 'general',
     tabLabel: '通用设置',
-    tabDescription: '用户档案、通知、归档、消息置顶条',
+    tabDescription: '用户档案、通知、归档、消息置顶条、关闭窗口',
     items: [
       {
         id: 'user-avatar',
@@ -66,6 +66,12 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
         title: '自动归档',
         description: '超过指定天数自动归档',
         keywords: ['archive', '归档'],
+      },
+      {
+        id: 'close-action',
+        title: '关闭窗口',
+        description: '点击关闭按钮时的行为',
+        keywords: ['close', 'quit', '退出', '托盘', 'tray'],
       },
       { id: 'sticky-message', title: '消息悬浮置顶条', description: '滚动时显示最近用户消息' },
     ],

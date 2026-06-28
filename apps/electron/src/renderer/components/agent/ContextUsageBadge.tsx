@@ -14,9 +14,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useContextUsageBreakdown } from '@/hooks/useContextUsageBreakdown'
+import { getContextUsageDescription } from '@/lib/context-usage-labels'
 import { cn } from '@/lib/utils'
 
 import { ContextUsagePanel } from './ContextUsagePanel'
+import { ContextUsageTermHint } from './ContextUsageTermHint'
 
 /** 压缩阈值比例（SDK 在 ~77.5% 窗口大小时自动压缩） */
 const COMPACT_THRESHOLD_RATIO = 0.775
@@ -341,7 +343,7 @@ export function ContextUsageBadge({
         {!authoritativeSnapshot && !showFullSkeleton && displayWindow && streamRatio != null ? (
           <div className="mb-2.5 flex flex-col gap-1 text-xs">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">流式估算（仅供参考）</span>
+              <ContextUsageTermHint term="流式估算" display="流式估算（仅供参考）" inline />
               <span className="tabular-nums font-medium text-foreground/90">
                 {formatTokens(displayTokens!)} / {formatTokens(displayWindow)}
                 {percent != null ? ` (${percent}%)` : ''}
@@ -364,26 +366,21 @@ export function ContextUsageBadge({
             )}
             onClick={handleCompactClick}
             disabled={isProcessing}
+            title={isProcessing ? undefined : getContextUsageDescription('压缩上下文')}
           >
             <Minimize2 className="size-3.5" />
             {isProcessing ? '对话进行中' : '压缩上下文'}
           </button>
           {onClientCompact && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
-                  onClick={onClientCompact}
-                  disabled={isProcessing}
-                >
-                  快速
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="end">
-                <p>不调 LLM，直接丢弃较早的 tool 块</p>
-              </TooltipContent>
-            </Tooltip>
+            <button
+              type="button"
+              className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
+              onClick={onClientCompact}
+              disabled={isProcessing}
+              title={getContextUsageDescription('客户端快速压缩')}
+            >
+              快速
+            </button>
           )}
         </div>
       </div>

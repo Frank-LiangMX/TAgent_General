@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { cn } from '@/lib/utils'
 
@@ -245,15 +246,19 @@ export function ProjectManagerDialog({
 
           {/* 顶部操作条：新建项目 */}
           <div className="px-4 py-2 border-b border-border/30 flex-shrink-0">
-            <button
-              type="button"
-              onClick={handleCreateProject}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
-              title="选择目录新建项目"
-            >
-              <Plus size={13} />
-              <span>选择目录新建项目</span>
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleCreateProject}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
+                >
+                  <Plus size={13} />
+                  <span>选择目录新建项目</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>选择目录新建项目</TooltipContent>
+            </Tooltip>
           </div>
 
           {/* 项目列表 */}
@@ -316,21 +321,29 @@ export function ProjectManagerDialog({
                       )}
 
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <button
-                          onClick={(e) => handleStartRename(e, ws)}
-                          className="p-1 rounded hover:bg-foreground/[0.08] text-foreground/30 hover:text-foreground/60 transition-colors"
-                          title="重命名"
-                        >
-                          <Pencil size={12} />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => handleStartRename(e, ws)}
+                              className="p-1 rounded hover:bg-foreground/[0.08] text-foreground/30 hover:text-foreground/60 transition-colors"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>重命名</TooltipContent>
+                        </Tooltip>
                         {canDelete(ws) && (
-                          <button
-                            onClick={(e) => handleStartDelete(e, ws.id)}
-                            className="p-1 rounded hover:bg-destructive/10 text-foreground/30 hover:text-destructive transition-colors"
-                            title="删除"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => handleStartDelete(e, ws.id)}
+                                className="p-1 rounded hover:bg-destructive/10 text-foreground/30 hover:text-destructive transition-colors"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>删除</TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </>

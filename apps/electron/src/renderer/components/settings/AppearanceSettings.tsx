@@ -34,6 +34,7 @@ import {
   applyThemeToDOM,
 } from '@/atoms/theme'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 皮肤选项 */
 const SKIN_OPTIONS = [
@@ -709,30 +710,38 @@ interface MaterialPreviewProps {
 function MaterialPreview({ enabled, onToggle }: MaterialPreviewProps): React.ReactElement {
   return (
     <div className="tagent-material-pair">
-      <button
-        type="button"
-        onClick={() => onToggle(true)}
-        aria-pressed={enabled}
-        data-selected={enabled}
-        className="tagent-material-tile"
-        title="高透玻璃"
-      >
-        <div className="tagent-material-preview tagent-material-preview-glass" />
-        <div className="tagent-material-name">高透</div>
-        <div className="tagent-material-tag">Glass</div>
-      </button>
-      <button
-        type="button"
-        onClick={() => onToggle(false)}
-        aria-pressed={!enabled}
-        data-selected={!enabled}
-        className="tagent-material-tile"
-        title="轻量磨砂"
-      >
-        <div className="tagent-material-preview tagent-material-preview-frosted" />
-        <div className="tagent-material-name">磨砂</div>
-        <div className="tagent-material-tag">Frosted</div>
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onToggle(true)}
+            aria-pressed={enabled}
+            data-selected={enabled}
+            className="tagent-material-tile"
+          >
+            <div className="tagent-material-preview tagent-material-preview-glass" />
+            <div className="tagent-material-name">高透</div>
+            <div className="tagent-material-tag">Glass</div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>高透玻璃</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onToggle(false)}
+            aria-pressed={!enabled}
+            data-selected={!enabled}
+            className="tagent-material-tile"
+          >
+            <div className="tagent-material-preview tagent-material-preview-frosted" />
+            <div className="tagent-material-name">磨砂</div>
+            <div className="tagent-material-tag">Frosted</div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>轻量磨砂</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

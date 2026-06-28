@@ -118,7 +118,7 @@ export function WeChatSettings(): React.ReactElement {
   return (
     <div className="space-y-8">
       {/* 连接状态 */}
-      <SettingsSection title="微信集成" description="扫码登录微信，在微信中控制 TAgent Agent">
+      <SettingsSection title="微信集成" description="扫码登录微信，在微信中控制 TAgent">
         <SettingsCard>
           <SettingsRow label="Bridge 状态">
             <div className="flex items-center gap-3">
@@ -239,7 +239,7 @@ export function WeChatSettings(): React.ReactElement {
                 <span className="font-medium text-foreground">收发消息</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                连接成功后，通过微信发送消息即可与 TAgent Agent 交互。
+                连接成功后，通过微信发送消息即可与 TAgent 交互。
                 支持文本、图片、文件等消息类型。
               </p>
             </div>

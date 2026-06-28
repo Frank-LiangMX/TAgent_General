@@ -620,7 +620,8 @@ export function RichTextInput({
   return (
     <div
       className={cn(
-        'rich-text-input relative w-full overflow-y-auto scrollbar-thin transition-[max-height] duration-200 ease-in-out',
+        'rich-text-input relative w-full scrollbar-thin transition-[max-height] duration-200 ease-in-out',
+        !value ? 'overflow-y-hidden' : 'overflow-y-auto',
         isManuallyCollapsed ? 'max-h-[52px]' : isExpanded ? 'max-h-[500px]' : 'max-h-[200px]',
         disabled && 'opacity-50 cursor-not-allowed',
         className
@@ -672,7 +673,9 @@ export function RichTextInput({
           color: hsl(var(--muted-foreground));
           pointer-events: none;
           height: 0;
-          opacity: 0.5;
+          opacity: 0.45;
+          font-size: 12px;
+          line-height: 1.45;
           font-style: ${suggestionActive ? 'italic' : 'normal'};
         }
         .ProseMirror::-webkit-scrollbar {

@@ -21,7 +21,10 @@ import {
 } from '@/atoms/agent-atoms'
 import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { SearchInput } from '@/components/ui/search-input'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
@@ -253,7 +256,6 @@ export function AgentModelSelector({
   const displayModelInfo = currentModelInfo ?? stableModelInfoRef.current
   const thinkingEnabled = agentThinking?.type === 'adaptive'
   const effectiveEffort = agentEffort ?? 'high'
-  const effortIndex = EFFORT_OPTIONS.findIndex((option) => option.value === effectiveEffort)
   const selectedModelIndex = React.useMemo(() => {
     if (!selectedModel?.channelId || !selectedModel?.modelId) return -1
     return flatOptions.findIndex(
@@ -412,32 +414,13 @@ export function AgentModelSelector({
                 <span className="text-[10px] text-muted-foreground/70">下次发送生效</span>
               </div>
 
-              <div className="agent-model-segmented agent-model-segmented--2">
-                <div
-                  className="agent-model-segmented-indicator"
-                  style={{ transform: `translateX(${thinkingEnabled ? 100 : 0}%)` }}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleThinkingSelect(false)}
-                  className={cn(
-                    'agent-model-segmented-option',
-                    !thinkingEnabled && 'agent-model-segmented-option--active'
-                  )}
-                >
-                  关闭思考
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleThinkingSelect(true)}
-                  className={cn(
-                    'agent-model-segmented-option',
-                    thinkingEnabled && 'agent-model-segmented-option--active'
-                  )}
-                >
-                  自适应思考
-                </button>
-              </div>
+              <SegmentedTabs
+                value={thinkingEnabled ? 'on' : 'off'}
+                onValueChange={(next) => handleThinkingSelect(next === 'on')}
+              >
+                <SegmentedTabsItem value="off">关闭思考</SegmentedTabsItem>
+                <SegmentedTabsItem value="on">自适应思考</SegmentedTabsItem>
+              </SegmentedTabs>
 
               {thinkingEnabled ? (
                 <div className="space-y-2">
@@ -455,35 +438,25 @@ export function AgentModelSelector({
                     />
                   </div>
 
-                  <div className="agent-model-segmented agent-model-segmented--4">
-                    <div
-                      className="agent-model-segmented-indicator"
-                      style={{
-                        transform: `translateX(${(effortIndex >= 0 ? effortIndex : 2) * 100}%)`,
-                      }}
-                    />
-                    {EFFORT_OPTIONS.map((option) => {
-                      const selected = effectiveEffort === option.value
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleEffortSelect(option.value)}
-                          className={cn(
-                            'agent-model-segmented-option flex-col items-start',
-                            selected && 'agent-model-segmented-option--active'
-                          )}
-                        >
-                          <span className="block text-[11px] font-medium leading-none">
-                            {option.label}
-                          </span>
-                          <span className="mt-1 block text-[10px] leading-none opacity-70">
-                            {option.desc}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <SegmentedTabs
+                    value={effectiveEffort}
+                    onValueChange={(next) => handleEffortSelect(next as AgentEffort)}
+                  >
+                    {EFFORT_OPTIONS.map((option) => (
+                      <SegmentedTabsItem
+                        key={option.value}
+                        value={option.value}
+                        className="flex-col items-start"
+                      >
+                        <span className="block text-[11px] font-medium leading-none">
+                          {option.label}
+                        </span>
+                        <span className="mt-1 block text-[10px] leading-none opacity-70">
+                          {option.desc}
+                        </span>
+                      </SegmentedTabsItem>
+                    ))}
+                  </SegmentedTabs>
                 </div>
               ) : (
                 <div className="rounded-xl bg-background/14 px-2.5 py-2 text-[11px] text-muted-foreground ring-1 ring-foreground/6">
@@ -492,18 +465,15 @@ export function AgentModelSelector({
               )}
             </div>
 
-            <div className="agent-model-popover-search flex items-center gap-2 rounded-xl px-3 py-1.5">
-              <Search className="size-4 shrink-0 text-muted-foreground/70" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="搜索模型或渠道"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
-                autoFocus
-              />
-            </div>
+            <SearchInput
+              variant="glass"
+              size="md"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="搜索模型或渠道"
+              autoFocus
+            />
           </div>
 
           <div className="max-h-[340px] overflow-y-auto p-1.5 scrollbar-thin">
@@ -560,57 +530,69 @@ export function AgentModelSelector({
                               const isHighlighted = currentFlatIndex === highlightIndex
 
                               return (
-                                <button
-                                  key={`${option.channelId}:${option.modelId}`}
-                                  ref={(el) => {
-                                    if (el) itemRefs.current.set(currentFlatIndex, el)
-                                    else itemRefs.current.delete(currentFlatIndex)
-                                  }}
-                                  type="button"
-                                  aria-selected={isSelected}
-                                  disabled={option.disabled}
-                                  title={option.disabled ? option.disabledReason : undefined}
-                                  onClick={() => {
-                                    if (option.disabled) {
-                                      onInstallGuideOpen?.()
-                                      return
-                                    }
-                                    handleSelect(option)
-                                  }}
-                                  onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
-                                  className={cn(
-                                    'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
-                                    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-                                    option.disabled
-                                      ? 'cursor-not-allowed opacity-50'
-                                      : isSelected
-                                        ? 'text-foreground'
-                                        : 'hover:bg-primary/5 text-foreground/78',
-                                    isHighlighted &&
-                                      !isSelected &&
-                                      !option.disabled &&
-                                      'bg-foreground/6'
-                                  )}
-                                >
-                                  <img
-                                    src={getModelLogo(option.modelId, option.provider)}
-                                    alt={option.modelName}
-                                    className="size-5 shrink-0 rounded object-cover"
-                                  />
-                                  <span
-                                    className={cn(
-                                      'min-w-0 flex-1 truncate text-xs',
-                                      isSelected ? 'font-medium' : 'font-medium'
-                                    )}
-                                  >
-                                    {option.modelName}
-                                  </span>
-                                  {option.badge && !option.disabled && (
-                                    <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
-                                      {option.badge}
-                                    </span>
-                                  )}
-                                </button>
+                                (() => {
+                                  const modelButton = (
+                                    <button
+                                      key={`${option.channelId}:${option.modelId}`}
+                                      ref={(el) => {
+                                        if (el) itemRefs.current.set(currentFlatIndex, el)
+                                        else itemRefs.current.delete(currentFlatIndex)
+                                      }}
+                                      type="button"
+                                      aria-selected={isSelected}
+                                      disabled={option.disabled}
+                                      onClick={() => {
+                                        if (option.disabled) {
+                                          onInstallGuideOpen?.()
+                                          return
+                                        }
+                                        handleSelect(option)
+                                      }}
+                                      onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                                      className={cn(
+                                        'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
+                                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                                        option.disabled
+                                          ? 'cursor-not-allowed opacity-50'
+                                          : isSelected
+                                            ? 'text-foreground'
+                                            : 'hover:bg-primary/5 text-foreground/78',
+                                        isHighlighted &&
+                                          !isSelected &&
+                                          !option.disabled &&
+                                          'bg-foreground/6'
+                                      )}
+                                    >
+                                      <img
+                                        src={getModelLogo(option.modelId, option.provider)}
+                                        alt={option.modelName}
+                                        className="size-5 shrink-0 rounded object-cover"
+                                      />
+                                      <span
+                                        className={cn(
+                                          'min-w-0 flex-1 truncate text-xs',
+                                          isSelected ? 'font-medium' : 'font-medium'
+                                        )}
+                                      >
+                                        {option.modelName}
+                                      </span>
+                                      {option.badge && !option.disabled && (
+                                        <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
+                                          {option.badge}
+                                        </span>
+                                      )}
+                                    </button>
+                                  )
+                                  if (option.disabled && option.disabledReason) {
+                                    return (
+                                      <Tooltip key={`${option.channelId}:${option.modelId}`}>
+                                        <TooltipTrigger asChild>{modelButton}</TooltipTrigger>
+                                        <TooltipContent>{option.disabledReason}</TooltipContent>
+                                      </Tooltip>
+                                    )
+                                  }
+                                  return modelButton
+                                })()
                               )
                             })}
                           </div>

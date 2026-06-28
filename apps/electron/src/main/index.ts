@@ -5,38 +5,43 @@ import { setTAgentVersion } from '@tagent/core'
 import { getMacTrafficLightPosition } from '@tagent/shared'
 import { app, BrowserWindow, dialog, Menu, protocol, screen, shell } from 'electron'
 
-import { TRAY_IPC_CHANNELS } from '../types'
+import { TRAY_IPC_CHANNELS, WINDOW_CLOSE_IPC_CHANNELS } from '../types'
 import { registerIpcHandlers } from './ipc'
-import { stopAllAgents, killOrphanedClaudeSubprocesses } from './lib/agent-service'
+import { killOrphanedClaudeSubprocesses } from './lib/agent-service'
+import { startAutoArchiveScheduler } from './lib/auto-archive-scheduler'
+import {
+  clearForceExitFallback,
+  requestApplicationQuit,
+  runApplicationShutdown,
+  scheduleForceExitFallback,
+} from './lib/app-shutdown'
 import { upgradeDefaultSkillsInWorkspaces } from './lib/agent-workspace-manager'
 import { getIsQuitting, setQuitting } from './lib/app-lifecycle'
-import { registerBridge, startAllBridges, stopAllBridges } from './lib/bridge-registry'
-import { startChatToolsWatcher, stopChatToolsWatcher } from './lib/tool-config-watcher'
+import { registerBridge, startAllBridges } from './lib/bridge-registry'
+import { startChatToolsWatcher } from './lib/tool-config-watcher'
 import { seedDefaultSkills } from './lib/config-paths'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import { getDingTalkMultiBotConfig } from './lib/dingtalk-config'
 import { feishuBridgeManager } from './lib/feishu-bridge-manager'
 import { getFeishuMultiBotConfig } from './lib/feishu-config'
-import { stopFeishuSyncSleepBlocker, syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
-import { registerGlobalShortcut, unregisterAllGlobalShortcuts } from './lib/global-shortcut-service'
+import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
+import { registerGlobalShortcut } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
 import {
   createQuickTaskWindow,
   toggleQuickTaskWindow,
-  destroyQuickTaskWindow,
 } from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
-import { initAutoUpdater, cleanupUpdater } from './lib/updater/auto-updater'
+import { initAutoUpdater } from './lib/updater/auto-updater'
 import {
   createVoiceDictationWindow,
   toggleVoiceDictationWindow,
-  destroyVoiceDictationWindow,
   shouldSuppressVoiceDictationActivate,
 } from './lib/voice-dictation-window'
 import { wechatBridge } from './lib/wechat-bridge'
 import { getWeChatConfig } from './lib/wechat-config'
-import { startWorkspaceWatcher, stopWorkspaceWatcher } from './lib/workspace-watcher'
+import { startWorkspaceWatcher } from './lib/workspace-watcher'
 import { wpsBridge } from './lib/wps-bridge'
 import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import { createApplicationMenu } from './menu'
@@ -410,18 +415,37 @@ function createWindow(): void {
     })
   }
 
-  // Windows: 点击关闭按钮时隐藏窗口到托盘，而不是退出
+  // Windows: 点击关闭按钮时根据用户选择隐藏到托盘或退出
   if (process.platform === 'win32') {
     mainWindow.on('close', (event) => {
-      if (!getIsQuitting() && getTray()) {
+      if (!getIsQuitting()) {
         // 隐藏前先刷新挂起的窗口状态保存
         if (windowStateSaveTimer) {
           clearTimeout(windowStateSaveTimer)
           windowStateSaveTimer = null
         }
         saveMainWindowState()
+
+        // 开发模式：关窗即退出，避免 electronmon 热重载后任务管理器残留 Electron
+        if (!app.isPackaged) {
+          setQuitting()
+          return
+        }
+
         event.preventDefault()
-        mainWindow?.hide()
+
+        // 检查用户是否已保存关闭行为偏好
+        const settings = getSettings()
+        console.info('[WindowClose] closeAction:', settings.closeAction)
+        if (settings.closeAction === 'quit') {
+          requestApplicationQuit()
+        } else if (settings.closeAction === 'minimize-to-tray') {
+          mainWindow?.hide()
+        } else {
+          // 未保存偏好，发送 IPC 让渲染进程弹出确认对话框
+          console.info('[WindowClose] 发送 close-request IPC')
+          mainWindow?.webContents.send(WINDOW_CLOSE_IPC_CHANNELS.REQUEST)
+        }
       }
     })
   }
@@ -480,6 +504,7 @@ async function bootstrap(): Promise<void> {
 
   // Register IPC handlers
   registerIpcHandlers()
+  safeRun('startAutoArchiveScheduler', startAutoArchiveScheduler)
 
   // Set dock icon on macOS
   // 确保 Dock 图标可见（dev 模式下通过 spawn 启动时可能不会自动显示）
@@ -638,37 +663,17 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  // 标记正在退出，让 close 事件不再阻止关闭
-  setQuitting()
-
-  // 中止所有活跃的 Agent 子进程
-  stopAllAgents()
-  // 最后兜底：扫描并强杀所有孤儿 claude-agent-sdk 子进程（Issue #357）
-  // 针对 pidMap 未覆盖、dispose 漏杀等极端场景，确保不遗留残留进程
-  killOrphanedClaudeSubprocesses()
-  // 清理更新器定时器
-  cleanupUpdater()
-  // 停止工作区文件监听
-  stopWorkspaceWatcher()
-  // 停止 Chat 工具配置文件监听
-  stopChatToolsWatcher()
-  // 停止定时任务调度器
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { stopScheduler } = require('./lib/automation-scheduler')
-    stopScheduler()
-  } catch (err) {
-    console.error('[退出] 停止定时任务调度器失败:', err)
-  }
-  // 停止所有 Bridge
-  stopAllBridges()
-  // 释放飞书同步防休眠
-  stopFeishuSyncSleepBlocker()
-  // 注销全局快捷键
-  unregisterAllGlobalShortcuts()
-  // 销毁快速任务窗口
-  destroyQuickTaskWindow()
-  destroyVoiceDictationWindow()
+  scheduleForceExitFallback()
+  runApplicationShutdown()
   // Clean up system tray before quitting
   destroyTray()
+})
+
+// 二次兜底：清扫 Agent 子进程；成功退出则取消强退定时器
+app.on('will-quit', () => {
+  killOrphanedClaudeSubprocesses()
+})
+
+app.on('quit', () => {
+  clearForceExitFallback()
 })

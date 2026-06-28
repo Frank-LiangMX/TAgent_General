@@ -1,42 +1,31 @@
 /**
  * CapabilityToolbar - 插件区主区工具栏
  *
- * 集中承载插件管理入口：商店、目录、AI 配置。
- * 按钮样式参考 Kun PluginMarketplace 胶囊按钮。
+ * 集中承载插件管理入口：目录、AI 配置。
  */
 
-import { useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageSquare, Sparkles } from 'lucide-react'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
+import { FolderOpen, MessageSquare } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { PluginConfigDialog } from './plugin-config-dialog'
 import { PluginToolbarButton } from './plugin-toolbar-button'
 
-import type { McpServerEntry, WorkspaceCapabilities } from '@tagent/shared'
+import { resolveAgentSessionModelId, type WorkspaceCapabilities } from '@tagent/shared'
 
 import {
   agentChannelIdAtom,
-  currentAgentWorkspaceIdAtom,
-  agentSessionsAtom,
-  currentAgentSessionIdAtom,
+  agentModelIdAtom,
   agentPendingPromptAtom,
-  workspaceCapabilitiesVersionAtom,
+  agentSessionChannelMapAtom,
+  agentSessionModelMapAtom,
+  currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
-import {
-  PluginStorePanel,
-  mcpCatalogEntryToServerEntry,
-} from '@/components/settings/PluginStorePanel'
-import type { BuiltinMcpCatalogEntry } from '@tagent/shared'
-import { McpServerForm } from '@/components/settings/McpServerForm'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { activeRailItemAtom } from '@/atoms/app-mode'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useCreateSession } from '@/hooks/useCreateSession'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -51,22 +40,24 @@ export function CapabilityToolbar({
   workspaceSlug,
   workspaceName,
 }: CapabilityToolbarProps): React.ReactElement {
-  const setAppMode = useSetAtom(appModeAtom)
-  const agentChannelId = useAtomValue(agentChannelIdAtom)
-  const setAgentSessions = useSetAtom(agentSessionsAtom)
-  const setCurrentSessionId = useSetAtom(currentAgentSessionIdAtom)
+  const setActiveRailItem = useSetAtom(activeRailItemAtom)
   const setPendingPrompt = useSetAtom(agentPendingPromptAtom)
+  const store = useStore()
+  const agentChannelId = useAtomValue(agentChannelIdAtom)
+  const legacyGlobalModelId = useAtomValue(agentModelIdAtom)
+  const channels = useAtomValue(channelsAtom)
+  const agentModelId = React.useMemo(() => {
+    if (!agentChannelId) return undefined
+    const channel = channels.find((c) => c.id === agentChannelId && c.enabled)
+    return resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+  }, [agentChannelId, channels, legacyGlobalModelId])
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
-  const bumpCapabilitiesVersion = useSetAtom(workspaceCapabilitiesVersionAtom)
-
-  const [mcpFormOpen, setMcpFormOpen] = React.useState(false)
-  const [editingServer, setEditingServer] = React.useState<{
-    name: string
-    entry: McpServerEntry
-  } | null>(null)
-  const [storeOpen, setStoreOpen] = React.useState(false)
+  const { createAgent } = useCreateSession()
 
   const [skillsDir, setSkillsDir] = React.useState('')
+  const [configDialogOpen, setConfigDialogOpen] = React.useState(false)
+  const [configSubmitting, setConfigSubmitting] = React.useState(false)
+
   React.useEffect(() => {
     if (!workspaceSlug) return
     window.electronAPI
@@ -75,73 +66,64 @@ export function CapabilityToolbar({
       .catch(() => setSkillsDir(''))
   }, [workspaceSlug])
 
-  const handleConfigPluginsViaChat = async (): Promise<void> => {
+  const handleOpenConfigDialog = (): void => {
     if (!agentChannelId) {
       toast.error('请先在 AI 渠道设置中选择 Agent 供应商')
       return
     }
-    const dataRoot = import.meta.env.DEV ? '.tagent-dev' : '.tagent'
-    const skillsDirPath = `~/${dataRoot}/agent-workspaces/${workspaceSlug}/skills/`
-    const mcpConfigPath = `~/${dataRoot}/agent-workspaces/${workspaceSlug}/mcp.json`
-    const pluginList =
-      capabilities && (capabilities.skills.length > 0 || capabilities.mcpServers.length > 0)
-        ? [
-            ...capabilities.mcpServers.map((s) => `- [连接] ${s.name} (${s.type})`),
-            ...capabilities.skills.map((s) => `- [指令] ${s.name}: ${s.description ?? '无描述'}`),
-          ].join('\n')
-        : '暂无插件'
-    const prompt = `请帮我配置当前工作区的插件（MCP 连接与 Skill 指令），你要主动来帮我实现，你可以采用联网搜索深度研究来尝试，当前环境已经有 Claude Agent SDK 了，除非不确定的时候才来问我，否则默认将帮我完成安装，而不是指导我。
+    setConfigDialogOpen(true)
+  }
 
-## 工作区信息
-- 工作区: ${workspaceName}
-- MCP 配置: ${mcpConfigPath}
-- Skills 目录: ${skillsDirPath}
+  const handleConfigSubmit = async (message: string): Promise<void> => {
+    if (!agentChannelId) {
+      toast.error('请先在 AI 渠道设置中选择 Agent 供应商')
+      return
+    }
+    if (!agentModelId) {
+      toast.error('请先在设置中选择 Agent 模型')
+      return
+    }
 
-## 当前插件
-${pluginList}
-
-请读取 mcp.json 与 skills/ 目录，根据我的需求添加或修改插件配置。`
-
+    setConfigSubmitting(true)
     try {
-      const session = await window.electronAPI.createAgentSession(
-        undefined,
-        agentChannelId,
-        currentWorkspaceId ?? undefined
-      )
-      const sessions = await window.electronAPI.listAgentSessions()
-      setAgentSessions(sessions)
-      setCurrentSessionId(session.id)
-      setPendingPrompt({ sessionId: session.id, message: prompt })
-      setAppMode('agent')
+      const session = await createAgent({ channelId: agentChannelId })
+      if (!session) {
+        toast.error('创建配置会话失败')
+        return
+      }
+
+      // 预先写入 per-session 渠道 / 模型，避免 pendingPrompt 抢跑时上下文不完整
+      store.set(agentSessionChannelMapAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(session.id, agentChannelId)
+        return map
+      })
+      store.set(agentSessionModelMapAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(session.id, agentModelId)
+        return map
+      })
+
+      setActiveRailItem('sessions')
+      setConfigDialogOpen(false)
+
+      // 等主区切到 AgentView 后再挂 pending，降低挂载竞态
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
+      setPendingPrompt({
+        sessionId: session.id,
+        message,
+        channelId: agentChannelId,
+        modelId: agentModelId,
+        workspaceId: currentWorkspaceId ?? session.workspaceId ?? undefined,
+      })
     } catch (error) {
       console.error('[CapabilityToolbar] 创建配置会话失败:', error)
       toast.error('创建配置会话失败')
+    } finally {
+      setConfigSubmitting(false)
     }
-  }
-
-  const handleAddCustomMcp = (): void => {
-    setEditingServer(null)
-    setMcpFormOpen(true)
-    setStoreOpen(false)
-  }
-
-  const handleInstallStoreMcp = (mcp: BuiltinMcpCatalogEntry): void => {
-    const entry = mcpCatalogEntryToServerEntry(mcp)
-    setEditingServer({ name: mcp.name, entry })
-    setMcpFormOpen(true)
-    setStoreOpen(false)
-  }
-
-  const handleStoreSkillInstalled = (): void => {
-    bumpCapabilitiesVersion((v) => v + 1)
-    toast.success('Skill 已安装')
-  }
-
-  const handleMcpFormSaved = async (): Promise<void> => {
-    setMcpFormOpen(false)
-    setEditingServer(null)
-    bumpCapabilitiesVersion((v) => v + 1)
-    toast.success('插件已保存')
   }
 
   const handleOpenSkillsDir = (): void => {
@@ -150,8 +132,6 @@ ${pluginList}
     }
   }
 
-  const installedMcpNames = capabilities?.mcpServers.map((s) => s.name) ?? []
-  const installedSkillSlugs = capabilities?.skills.map((s) => s.slug) ?? []
   const isWindows = React.useMemo(() => detectIsWindows(), [])
 
   return (
@@ -162,7 +142,6 @@ ${pluginList}
           isWindows && 'pr-[134px]'
         )}
       >
-        {/* 与 TabBar 一致：背景拖拽层铺满空白区；交互按钮各自 titlebar-no-drag 穿透 OS hitmask */}
         <div
           className={cn(
             'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
@@ -170,21 +149,6 @@ ${pluginList}
           )}
           aria-hidden
         />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <PluginToolbarButton
-                variant="primary"
-                icon={<Sparkles size={15} strokeWidth={1.75} />}
-                onClick={() => setStoreOpen(true)}
-              >
-                插件商店
-              </PluginToolbarButton>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>浏览并安装 Skill 与 MCP</TooltipContent>
-        </Tooltip>
-
         {skillsDir ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -202,7 +166,9 @@ ${pluginList}
           </Tooltip>
         ) : null}
 
-        <div className="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden />
+        {skillsDir ? (
+          <div className="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden />
+        ) : null}
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -210,61 +176,27 @@ ${pluginList}
               <PluginToolbarButton
                 variant="subtle"
                 icon={<MessageSquare size={15} strokeWidth={1.75} />}
-                onClick={() => void handleConfigPluginsViaChat()}
+                onClick={handleOpenConfigDialog}
               >
                 AI 配置
               </PluginToolbarButton>
             </span>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs text-xs">
-            让 TAgent Agent 联网查找并配置插件到当前工作区
+            填写需求后发送，Agent 会帮你写入当前工作区
           </TooltipContent>
         </Tooltip>
       </div>
 
-      <Dialog open={mcpFormOpen} onOpenChange={setMcpFormOpen}>
-        <DialogContent className="max-h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
-          <DialogHeader className="px-6 pb-4 pt-6">
-            <DialogTitle>
-              {editingServer ? `编辑 MCP：${editingServer.name}` : '自定义 MCP'}
-            </DialogTitle>
-            <DialogDescription>MCP 连接插件，支持 stdio、HTTP、SSE 三种传输方式</DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-6 pb-6">
-            <McpServerForm
-              server={editingServer}
-              workspaceSlug={workspaceSlug}
-              onSaved={handleMcpFormSaved}
-              onCancel={() => setMcpFormOpen(false)}
-              hideTitleBar
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={storeOpen} onOpenChange={setStoreOpen}>
-        <DialogContent className="flex h-[min(85vh,700px)] w-[min(780px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="shrink-0 px-5 pb-3 pt-5">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Sparkles size={16} className="text-muted-foreground" />
-              插件商店
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              按需安装 Skill 与 MCP，不再默认批量预装
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-5">
-            <PluginStorePanel
-              workspaceSlug={workspaceSlug}
-              installedSkillSlugs={installedSkillSlugs}
-              installedMcpNames={installedMcpNames}
-              onInstallMcp={handleInstallStoreMcp}
-              onSkillInstalled={handleStoreSkillInstalled}
-              onAddCustomMcp={handleAddCustomMcp}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PluginConfigDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+        workspaceName={workspaceName}
+        workspaceSlug={workspaceSlug}
+        capabilities={capabilities}
+        submitting={configSubmitting}
+        onSubmit={handleConfigSubmit}
+      />
     </>
   )
 }

@@ -38,6 +38,7 @@ import {
   QUICK_TASK_IPC_CHANNELS,
   TRAY_IPC_CHANNELS,
   VOICE_DICTATION_IPC_CHANNELS,
+  WINDOW_CLOSE_IPC_CHANNELS,
 } from '../types'
 
 import type {
@@ -59,6 +60,7 @@ import type {
   MicPermissionResult,
   TrayCreateSessionData,
   TrayOpenAgentSessionData,
+  WindowCloseResponseData,
 } from '../types'
 import type {
   RuntimeStatus,
@@ -789,6 +791,12 @@ export interface ElectronAPI {
   /** 从插件商店安装 Skill */
   installStoreSkill: (workspaceSlug: string, skillSlug: string) => Promise<SkillMeta>
 
+  /** 从插件商店安装整合包 */
+  installStoreBundle: (
+    workspaceSlug: string,
+    bundleId: string
+  ) => Promise<import('@tagent/shared').InstallStoreBundleResult>
+
   /** 读取 SKILL.md 全文内容 */
   readSkillContent: (workspaceSlug: string, skillSlug: string) => Promise<string>
 
@@ -1513,6 +1521,13 @@ export interface ElectronAPI {
   cleanupTempStorage: () => Promise<unknown>
   /** 取消迁移导入（清理临时解压目录） */
   migrationCancelImport: (tempDir: string) => Promise<void>
+
+  // ===== 窗口关闭确认 =====
+
+  /** 监听主进程的关闭确认请求（返回清理函数） */
+  onWindowCloseRequest: (callback: () => void) => () => void
+  /** 回传用户关闭行为选择 */
+  sendWindowCloseResponse: (data: WindowCloseResponseData) => void
 }
 
 interface MigrationExportResult {
@@ -2030,6 +2045,10 @@ const electronAPI: ElectronAPI = {
 
   installStoreSkill: (workspaceSlug: string, skillSlug: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INSTALL_STORE_SKILL, workspaceSlug, skillSlug)
+  },
+
+  installStoreBundle: (workspaceSlug: string, bundleId: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.INSTALL_STORE_BUNDLE, workspaceSlug, bundleId)
   },
 
   readSkillContent: (workspaceSlug: string, skillSlug: string) => {
@@ -3323,6 +3342,19 @@ const electronAPI: ElectronAPI = {
     update: (id, partial) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.UPDATE, id, partial),
     delete: (id: string) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.DELETE, id),
     migrateLegacy: () => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.MIGRATE_LEGACY),
+  },
+
+  // ===== 窗口关闭确认 =====
+
+  onWindowCloseRequest: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
+    return () => {
+      ipcRenderer.removeListener(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
+    }
+  },
+  sendWindowCloseResponse: (data: WindowCloseResponseData) => {
+    ipcRenderer.send(WINDOW_CLOSE_IPC_CHANNELS.RESPONSE, data)
   },
 }
 

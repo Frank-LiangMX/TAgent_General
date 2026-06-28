@@ -3,6 +3,7 @@ import { join } from 'path'
 
 import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
 
+import { requestApplicationQuit } from './lib/app-shutdown'
 import { isAgentSessionActive } from './lib/agent-service'
 import { listAgentSessions } from './lib/agent-session-manager'
 import { listAgentWorkspaces } from './lib/agent-workspace-manager'
@@ -98,7 +99,7 @@ function buildTrayMenu(actions: TrayActions): Menu {
     {
       label: '退出 TAgent',
       click: () => {
-        app.quit()
+        requestApplicationQuit()
       },
     },
   ]

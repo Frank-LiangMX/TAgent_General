@@ -150,6 +150,18 @@ export function openDetachedPreviewWindow(
   return id
 }
 
+/** 应用退出时关闭所有独立预览窗口，避免残留 BrowserWindow 阻止进程退出 */
+export function destroyAllDetachedPreviewWindows(): void {
+  for (const win of previewWindowsById.values()) {
+    if (!win.isDestroyed()) {
+      win.destroy()
+    }
+  }
+  previewWindowsById.clear()
+  previewDataById.clear()
+  previewIdBySignature.clear()
+}
+
 export function getDetachedPreviewWindowData(id: string): DetachedPreviewWindowData | null {
   return previewDataById.get(id) ?? null
 }

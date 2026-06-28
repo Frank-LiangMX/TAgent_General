@@ -64,6 +64,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   LIST_SLIDE_HOST_CLASS,
   LIST_SLIDE_INDICATOR_CLASS,
@@ -535,13 +536,17 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
           <div className="flex items-center gap-2 h-9 px-4 shrink-0">
             <SettingsSearch onNavigate={handleSearchNavigate} fullWidth />
             {onClose && (
-              <button
-                onClick={handleClose}
-                className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.06] active:scale-95 transition-all"
-                title="关闭"
-              >
-                <X size={13} strokeWidth={2} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleClose}
+                    className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.06] active:scale-95 transition-all"
+                  >
+                    <X size={13} strokeWidth={2} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>关闭</TooltipContent>
+              </Tooltip>
             )}
           </div>
 

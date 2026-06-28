@@ -7,14 +7,14 @@
  * 必须放在 StickToBottom（Conversation）内部使用。
  */
 
-import { AlertTriangle, Search } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
 
 import { UserAvatar } from '@/components/shared/UserAvatar'
-import { Input } from '@/components/ui/input'
+import { SearchInput } from '@/components/ui/search-input'
 import { useShortcut } from '@/hooks/useShortcut'
 import { getModelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
@@ -418,21 +418,19 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
 
             {/* 搜索框 */}
             <div className="px-3 py-2 border-b shrink-0">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
-                <Input
-                  ref={searchInputRef}
-                  placeholder="搜索消息..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => {
-                    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
-                    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
-                    setIsLeaving(false)
-                  }}
-                  className="h-7 text-xs pl-8 rounded-lg"
-                />
-              </div>
+              <SearchInput
+                ref={searchInputRef}
+                variant="muted"
+                size="sm"
+                placeholder="搜索消息..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+                  if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
+                  setIsLeaving(false)
+                }}
+              />
             </div>
 
             {/* 消息列表 */}

@@ -6,7 +6,6 @@
  */
 
 import { useSetAtom } from 'jotai'
-import { Search, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import { FileTypeIcon } from './FileTypeIcon'
@@ -14,6 +13,7 @@ import { FileTypeIcon } from './FileTypeIcon'
 import type { FileIndexEntry } from '@tagent/shared'
 
 import { fileBrowserAutoRevealAtom } from '@/atoms/agent-atoms'
+import { SearchInput } from '@/components/ui/search-input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -251,27 +251,20 @@ export function FileSearchBar({
 
   return (
     <div ref={containerRef} className="relative mx-2 flex-shrink-0">
-      {/* 搜索输入框 */}
-      <div className="flex items-center gap-1.5 px-2 h-7 rounded-md bg-muted/40 border border-transparent focus-within:border-primary/40 focus-within:bg-muted/70 transition-colors">
-        {searching ? (
-          <Loader2 className="size-3 text-muted-foreground flex-shrink-0 animate-spin" />
-        ) : (
-          <Search className="size-3 text-muted-foreground flex-shrink-0" />
-        )}
-        <input
-          ref={inputRef}
-          type="text"
-          className="flex-1 bg-transparent text-[11px] outline-none placeholder:text-muted-foreground/40"
-          placeholder={placeholder}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClick={() => {
-            dismissedRef.current = false
-            if (results.length > 0 && !isOpen) setIsOpen(true)
-          }}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
+      <SearchInput
+        ref={inputRef}
+        variant="muted"
+        size="sm"
+        loading={searching}
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onClick={() => {
+          dismissedRef.current = false
+          if (results.length > 0 && !isOpen) setIsOpen(true)
+        }}
+        onKeyDown={handleKeyDown}
+      />
 
       {/* 结果浮层（绝对定位，不影响布局） */}
       {isOpen && results.length > 0 && (

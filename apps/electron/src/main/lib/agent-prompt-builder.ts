@@ -25,9 +25,11 @@ import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
  *
  * 当用户没有自定义 SOUL.md 时使用此默认人格定义。
  */
-export const DEFAULT_SOUL_MD = `# TAgent Agent
+export const DEFAULT_SOUL_MD = `# TAgent
 
-你是 TAgent Agent — 一个集成在 TAgent 桌面应用中的通用AI助手，由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。
+你是 **TAgent**，TAgent 桌面应用中的 AI 助手。名字本身已含 Agent 含义，对外请自称「TAgent」，不要说「TAgent Agent」等重复表述。
+
+由 Claude Agent SDK 驱动。你有极强的自主性和主观能动性，可以完成任何任务，尽最大努力帮助用户。
 
 ## 风格
 - 使用中文回复和思考，保留必要的英文技术术语
@@ -63,6 +65,23 @@ function containsInjectionPattern(content: string): boolean {
 }
 
 /**
+ * 迁移旧版 SOUL.md 中「TAgent Agent」叠词身份表述
+ */
+function migrateLegacySoulIdentity(content: string): string | null {
+  if (!/\bTAgent Agent\b/.test(content)) return null
+
+  let next = content
+  next = next.replace(/^#\s*TAgent Agent\s*$/m, '# TAgent')
+  next = next.replace(
+    /你是 TAgent Agent[^\n]*/,
+    '你是 **TAgent**，TAgent 桌面应用中的 AI 助手。名字本身已含 Agent 含义，对外请自称「TAgent」，不要说「TAgent Agent」等重复表述。'
+  )
+  next = next.replace(/自称 TAgent Agent/g, '对外自称「TAgent」')
+
+  return next === content ? null : next
+}
+
+/**
  * 加载 SOUL.md 内容
  *
  * 优先级：
@@ -87,7 +106,14 @@ function loadSoulMd(mode?: 'general' | 'ta'): string | null {
   }
 
   try {
-    const content = readFileSync(soulPath, 'utf-8').trim()
+    let content = readFileSync(soulPath, 'utf-8').trim()
+
+    const migrated = migrateLegacySoulIdentity(content)
+    if (migrated) {
+      writeFileSync(soulPath, migrated, 'utf-8')
+      console.log('[SOUL] 已迁移旧版「TAgent Agent」身份表述')
+      content = migrated
+    }
 
     // 空文件：跳过
     if (!content) {
@@ -293,7 +319,7 @@ type SubagentEagerness = 'never' | 'conservative' | 'balanced' | 'aggressive'
  * 构建追加到 claude_code preset 之后的自定义系统提示词。
  *
  * claude_code preset 提供：环境信息（platform/shell/OS）、git 状态、模型信息、知识截止日期、currentDate 等。
- * 本函数追加：TAgent Agent 角色定义、工具使用指南、SubAgent 策略、工作区信息、记忆系统等。
+ * 本函数追加：TAgent 角色定义、工具使用指南、SubAgent 策略、工作区信息、记忆系统等。
  * 工具（Read/Write/Edit/Bash 等）由 SDK 独立注册，不受 systemPrompt 影响。
  */
 export function buildSystemPrompt(ctx: SystemPromptContext): string {
@@ -654,7 +680,7 @@ ${subagentList}
 
 1. 优先使用中文**回复**与**思考**（包括 thinking / chain-of-thought 内部推理过程），保留技术术语
 2. 与用户确认破坏性操作后再执行
-3. 自称 TAgent Agent，你会非常积极的维护有价值的文档，并总能在交互中帮助用户改善用法或者沉淀/更新 Skills 等来优化未来的工作流程和表现，以及更趋近于自动化完成任务，你区分的清楚哪些是工作区级别哪些是会话级别的
+3. 对外自称「TAgent」（禁止说「TAgent Agent」），你会非常积极的维护有价值的文档，并总能在交互中帮助用户改善用法或者沉淀/更新 Skills 等来优化未来的工作流程和表现，以及更趋近于自动化完成任务，你区分的清楚哪些是工作区级别哪些是会话级别的
 4. 日常交流简洁直接；但当任务的交付物本身就是文本输出时（分析报告、文档、方案对比），完整输出内容，不要压缩
 5. **会话恢复**：每次收到新任务时，先检查会话级和工作区级两个 \`.context/\` 目录（note.md、todo.md）以及当前目录的 CLAUDE.md
 6. **自检习惯**：复杂任务执行过程中，定期回顾 CLAUDE.md 和两级 .context/ 中的内容，确保行为与已记录的规范和计划保持一致`)

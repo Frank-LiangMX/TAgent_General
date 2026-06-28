@@ -6,13 +6,14 @@
  * 快捷键：macOS ⌘K / Windows & Linux Ctrl+K（按平台自动切换）
  */
 
-import { Search, Hash, CornerDownLeft, X } from 'lucide-react'
+import { Hash, CornerDownLeft } from 'lucide-react'
 import * as React from 'react'
 
 import { searchSettings, type SearchResult } from './settingsSearchIndex'
 
 import type { SettingsTab } from '@/atoms/settings-tab'
 
+import { SearchInput } from '@/components/ui/search-input'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -94,47 +95,29 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
 
   return (
     <div ref={containerRef} className={cn('relative w-full', !fullWidth && 'max-w-md')}>
-      <div className="relative">
-        <Search
-          size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-        />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder="搜索设置项..."
-          className={cn(
-            'w-full h-8 pl-9 pr-20 text-sm rounded-lg',
-            'bg-muted/40 border border-border/60',
-            'placeholder:text-muted-foreground/50',
-            'focus:outline-none focus:bg-background focus:border-primary/40 focus:ring-1 focus:ring-primary/20',
-            'transition-colors'
-          )}
-        />
-        {query ? (
-          <button
-            onClick={() => {
-              setQuery('')
-              inputRef.current?.focus()
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <X size={12} />
-          </button>
-        ) : (
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 h-5 rounded border border-border/60 bg-background text-[10px] text-muted-foreground font-sans">
-            <span className="text-[10px]">{modKeyLabel}</span>
-            <span>K</span>
-          </kbd>
-        )}
-      </div>
+      <SearchInput
+        ref={inputRef}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        placeholder="搜索设置项..."
+        onClear={() => {
+          setQuery('')
+          inputRef.current?.focus()
+        }}
+        trailing={
+          !query ? (
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 h-5 rounded border border-border/60 bg-background text-[10px] text-muted-foreground font-sans">
+              <span className="text-[10px]">{modKeyLabel}</span>
+              <span>K</span>
+            </kbd>
+          ) : undefined
+        }
+      />
 
       {/* 结果下拉面板 */}
       {open && query && (

@@ -51,6 +51,7 @@ import type {
 } from '@tagent/shared'
 
 import { Button } from '@/components/ui/button'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import {
   Select,
   SelectContent,
@@ -59,6 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
@@ -309,22 +311,17 @@ export function InsightsSettings(): React.ReactElement {
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/30">
+              <SegmentedTabs
+                className="w-auto shrink-0"
+                value={activeTimeRange}
+                onValueChange={(range) => setActiveTimeRange(range as typeof activeTimeRange)}
+              >
                 {(['today', 'week', 'month', 'all'] as const).map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => setActiveTimeRange(range)}
-                    className={cn(
-                      'px-2.5 h-6 rounded-md text-[11px] font-medium transition-colors',
-                      activeTimeRange === range
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
+                  <SegmentedTabsItem key={range} value={range} className="px-2.5">
                     {TIME_RANGE_LABELS[range]}
-                  </button>
+                  </SegmentedTabsItem>
                 ))}
-              </div>
+              </SegmentedTabs>
               <Button
                 variant="ghost"
                 size="icon"
@@ -623,12 +620,15 @@ function StorageBar({
         const pct = (cat.bytes / totalBytes) * 100
         if (pct < 0.5) return null
         return (
-          <div
-            key={cat.key}
-            className={cn('h-full transition-all', STORAGE_PALETTE[i % STORAGE_PALETTE.length])}
-            style={{ width: `${pct}%` }}
-            title={`${cat.key}: ${formatBytes(cat.bytes)}`}
-          />
+          <Tooltip key={cat.key}>
+            <TooltipTrigger asChild>
+              <div
+                className={cn('h-full transition-all', STORAGE_PALETTE[i % STORAGE_PALETTE.length])}
+                style={{ width: `${pct}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{`${cat.key}: ${formatBytes(cat.bytes)}`}</TooltipContent>
+          </Tooltip>
         )
       })}
     </div>
@@ -714,16 +714,31 @@ function CallRecordRow({
         </div>
       </div>
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums shrink-0">
-        <span title="输入">
-          <span className="opacity-60">↓</span> {formatTokens(record.inputTokens)}
-        </span>
-        <span title="输出">
-          <span className="opacity-60">↑</span> {formatTokens(record.outputTokens)}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <span className="opacity-60">↓</span> {formatTokens(record.inputTokens)}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>输入</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <span className="opacity-60">↑</span> {formatTokens(record.outputTokens)}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>输出</TooltipContent>
+        </Tooltip>
         {record.cacheReadTokens > 0 && (
-          <span title="缓存" className="text-emerald-600 dark:text-emerald-400">
-            ⚡{formatTokens(record.cacheReadTokens)}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-emerald-600 dark:text-emerald-400">
+                ⚡{formatTokens(record.cacheReadTokens)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>缓存</TooltipContent>
+          </Tooltip>
         )}
         <span className="font-medium text-foreground/80">{formatCost(record.costUsd)}</span>
       </div>

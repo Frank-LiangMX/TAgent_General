@@ -17,7 +17,7 @@ import type { NodeRuntimeStatus } from '@tagent/shared'
  *
  * @returns Node.js 可执行路径，如果未找到返回 null
  */
-function findNodePath(): string | null {
+export function resolveNodeExecutablePath(): string | null {
   try {
     const command = process.platform === 'win32' ? 'where node' : 'which node'
 
@@ -150,7 +150,7 @@ function meetsVersion(version: string, target: string): boolean {
 export async function detectNodeRuntime(): Promise<NodeRuntimeStatus> {
   console.log('[Node.js 检测] 开始检测 Node.js 运行时...')
 
-  const nodePath = findNodePath()
+  const nodePath = resolveNodeExecutablePath()
 
   if (!nodePath) {
     console.warn('[Node.js 检测] 未找到 Node.js')

@@ -204,11 +204,17 @@ export function isActivityGroup(item: ActivityGroup | ToolActivity): item is Act
   return 'parent' in item && 'children' in item
 }
 
-/** 待自动发送的 Agent 提示（从设置页"对话完成配置"触发） */
+/** 待自动发送的 Agent 提示（从设置页 / 插件 AI 配置等入口触发） */
 export interface AgentPendingPrompt {
   sessionId: string
   message: string
   additionalDirectories?: string[]
+  /** 显式指定渠道，避免新会话 per-session map 尚未初始化时误用默认值 */
+  channelId?: string
+  /** 显式指定模型，避免在模型 auto-select 完成前用 DEFAULT_MODEL_ID 发送 */
+  modelId?: string
+  /** 显式指定工作区，避免会话元数据尚未同步时 workspaceId 为空 */
+  workspaceId?: string
 }
 
 // ===== Atoms =====
@@ -956,7 +962,7 @@ export const currentSessionTokenStatsAtom = atom<SessionTokenStats>((get) => {
   )
 })
 
-/** 缓存命中率（派生）— cacheReadTokens / totalInputTokens */
+/** 缓存读取占比（派生）— totalCacheReadTokens / totalInputTokens（含跨会话 Prompt Cache） */
 export const cacheHitRateAtom = atom<number | null>((get) => {
   const stats = get(currentSessionTokenStatsAtom)
   if (stats.totalInputTokens === 0) return null

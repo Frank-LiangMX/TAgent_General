@@ -31,7 +31,6 @@ import {
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
   NAV_RAIL_WIDTH,
-  NAV_SIDEBAR_PLUGINS_WIDTH,
   NAV_SIDEBAR_WIDTH,
   SHELL_EDGE_PADDING,
 } from '@/lib/platform'
@@ -80,9 +79,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         activeRailItem === 'automation'
       : activeRailItem !== 'draft'
 
-  const isPluginsRail = activeRailItem === 'skills'
   const navRailWidth = NAV_RAIL_WIDTH
-  const navSidebarWidth = isPluginsRail ? NAV_SIDEBAR_PLUGINS_WIDTH : NAV_SIDEBAR_WIDTH
+  const navSidebarWidth = NAV_SIDEBAR_WIDTH
   const navIslandWidth = showLeftSidebar ? navRailWidth + navSidebarWidth : navRailWidth
   const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
 

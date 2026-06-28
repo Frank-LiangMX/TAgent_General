@@ -2,12 +2,12 @@
  * TokenStatsPanel — 会话底栏统计条
  *
  * 左侧：当前 Context 窗口占用（圆环 + 分项 Popover 入口）
- * 右侧：累计 token、缓存命中、费用、轮数
+ * 右侧：累计 token、缓存读取占比、轮数
  * 仅在通用模式显示（TA 模式暂不显示）。
  */
 
 import { useAtomValue } from 'jotai'
-import { Coins, Database, TrendingDown, TrendingUp } from 'lucide-react'
+import { Database, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -19,6 +19,7 @@ import {
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { getContextUsageDescription } from '@/lib/context-usage-labels'
 
 import { ContextUsageBadge } from './ContextUsageBadge'
 
@@ -39,17 +40,6 @@ function formatTokens(tokens: number): string {
   return `${tokens}`
 }
 
-/** 格式化费用为可读字符串 */
-function formatCost(costUsd: number): string {
-  if (costUsd >= 1) {
-    return `$${costUsd.toFixed(2)}`
-  }
-  if (costUsd >= 0.01) {
-    return `$${costUsd.toFixed(3)}`
-  }
-  return `$${costUsd.toFixed(4)}`
-}
-
 /** 格式化命中率为百分比 */
 function formatHitRate(rate: number | null): string {
   if (rate === null) return '—'
@@ -67,6 +57,22 @@ export function TokenStatsPanel({
   const contextStatus = useAtomValue(agentContextStatusAtom)
   const cacheHitRate = useAtomValue(cacheHitRateAtom)
 
+  const cacheSavedTokens = stats.totalCacheReadTokens
+  const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
+  const cacheReadTooltip = React.useMemo((): readonly string[] | undefined => {
+    const base = getContextUsageDescription('缓存读取')
+    if (!base) return undefined
+    const lines: string[] = []
+    if (hasCacheData && cacheSavedTokens > 0) {
+      lines.push(`本会话累计缓存读取 ${formatTokens(cacheSavedTokens)} tokens。`)
+    }
+    lines.push(base)
+    if (stats.turnCount <= 1) {
+      lines.push('首条消息也可能 >0，不表示上一轮对话复用。')
+    }
+    return lines
+  }, [cacheSavedTokens, hasCacheData, stats.turnCount])
+
   if (topLevelMode === 'ta') return null
 
   const hasTokenStats = stats.totalInputTokens > 0 || stats.totalOutputTokens > 0
@@ -74,9 +80,6 @@ export function TokenStatsPanel({
   const showContextUsage = hasContextData && onCompact != null
 
   if (!hasTokenStats && !showContextUsage) return null
-
-  const cacheSavedTokens = stats.totalCacheReadTokens
-  const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
 
   return (
     <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
@@ -107,40 +110,37 @@ export function TokenStatsPanel({
             icon={<TrendingDown size={12} />}
             label="输入"
             value={formatTokens(stats.totalInputTokens)}
+            tooltip={getContextUsageDescription('累计输入')}
           />
           <StatItem
             icon={<TrendingUp size={12} />}
             label="输出"
             value={formatTokens(stats.totalOutputTokens)}
+            tooltip={getContextUsageDescription('累计输出')}
           />
           {hasCacheData && (
             <>
               <div className="h-3 w-px bg-border/50" />
               <StatItem
                 icon={<Database size={12} />}
-                label="缓存命中"
+                label="缓存读取"
                 value={formatHitRate(cacheHitRate)}
                 highlight={cacheHitRate !== null && cacheHitRate > 0.5}
-                tooltip={
-                  cacheSavedTokens > 0 ? `节省 ${formatTokens(cacheSavedTokens)} tokens` : undefined
-                }
-              />
-            </>
-          )}
-          {stats.totalCostUsd > 0 && (
-            <>
-              <div className="h-3 w-px bg-border/50" />
-              <StatItem
-                icon={<Coins size={12} />}
-                label="费用"
-                value={formatCost(stats.totalCostUsd)}
+                tooltip={cacheReadTooltip}
               />
             </>
           )}
           {stats.turnCount > 0 && (
             <>
               <div className="h-3 w-px bg-border/50" />
-              <span className="text-muted-foreground/60">{stats.turnCount} 轮</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help text-muted-foreground/60">{stats.turnCount} 轮</span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>{getContextUsageDescription('对话轮数')}</p>
+                </TooltipContent>
+              </Tooltip>
             </>
           )}
         </>
@@ -154,7 +154,7 @@ interface StatItemProps {
   label: string
   value: string
   highlight?: boolean
-  tooltip?: string
+  tooltip?: string | readonly string[]
 }
 
 function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): React.ReactElement {
@@ -180,11 +180,17 @@ function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): Re
 
   if (!tooltip) return content
 
+  const lines = typeof tooltip === 'string' ? [tooltip] : tooltip
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent side="top">
-        <p>{tooltip}</p>
+      <TooltipContent side="top" className="max-w-[240px] text-xs">
+        <div className="flex flex-col gap-1.5 leading-relaxed">
+          {lines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
       </TooltipContent>
     </Tooltip>
   )

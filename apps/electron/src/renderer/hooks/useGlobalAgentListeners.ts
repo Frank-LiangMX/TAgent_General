@@ -32,6 +32,7 @@ import {
   pickResultContextWindow,
   resolveDisplayContextWindow,
   sumContextUsedTokens,
+  resolveAgentSessionModelId,
 } from '@tagent/shared'
 
 import {
@@ -50,6 +51,8 @@ import {
   applyAgentEvent,
   liveMessagesMapAtom,
   agentSessionModelMapAtom,
+  agentSessionChannelMapAtom,
+  agentChannelIdAtom,
   agentModelIdAtom,
   agentPermissionModeMapAtom,
   stoppedByUserSessionsAtom,
@@ -74,6 +77,7 @@ import {
   sessionReadFilesAtom,
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
 import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
@@ -738,9 +742,19 @@ export function useGlobalAgentListeners(): void {
             // 为 assistant 消息注入渠道 modelId，确保流式期间就绑定正确模型
             if (msgRecord.type === 'assistant' && !msgRecord._channelModelId) {
               const sessionModelMap = store.get(agentSessionModelMapAtom)
-              const defaultModelId = store.get(agentModelIdAtom)
-              msgRecord._channelModelId =
-                sessionModelMap.get(sessionId) ?? defaultModelId ?? undefined
+              const sessionChannelMap = store.get(agentSessionChannelMapAtom)
+              const defaultChannelId = store.get(agentChannelIdAtom)
+              const legacyGlobalModelId = store.get(agentModelIdAtom)
+              const channels = store.get(channelsAtom)
+              const channelId = sessionChannelMap.get(sessionId) ?? defaultChannelId
+              const channel = channelId
+                ? channels.find((c) => c.id === channelId && c.enabled)
+                : undefined
+              msgRecord._channelModelId = resolveAgentSessionModelId(
+                channel,
+                sessionModelMap.get(sessionId),
+                legacyGlobalModelId
+              )
             }
 
             store.set(liveMessagesMapAtom, (prev) => {

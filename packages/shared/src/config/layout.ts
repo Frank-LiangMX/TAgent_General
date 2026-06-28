@@ -32,11 +32,8 @@ export const NAV_ISLAND_STACK_GAP = 6
 /** 会话侧栏翼默认宽度 */
 export const NAV_SIDEBAR_WIDTH = 240
 
-/** 文件 / Skills 侧栏宽度（与会话侧栏统一，保留常量供旧引用） */
+/** 文件 / Skills 侧栏宽度（与会话侧栏统一） */
 export const NAV_SIDEBAR_INSPECTOR_WIDTH = NAV_SIDEBAR_WIDTH
-
-/** 插件页 Sidebar 宽度（双列插件卡片） */
-export const NAV_SIDEBAR_PLUGINS_WIDTH = 380
 
 /**
  * macOS 红绿灯在 Rail 内的水平内边距（相对导航岛左缘，非窗口左缘）

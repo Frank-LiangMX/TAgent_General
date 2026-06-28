@@ -123,7 +123,9 @@ import {
   APP_ICON_IPC_CHANNELS,
   DOCK_BADGE_IPC_CHANNELS,
   STORAGE_IPC_CHANNELS,
+  WINDOW_CLOSE_IPC_CHANNELS,
 } from '../types'
+import type { WindowCloseResponseData } from '../types'
 import { askUserService } from './lib/agent-ask-user-service'
 import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
@@ -150,7 +152,6 @@ import {
   migrateChatToAgentSession,
   moveSessionToWorkspace,
   forkAgentSession,
-  autoArchiveAgentSessions,
   cleanupStaleAttachedPaths,
   searchAgentSessionMessages,
   searchAgentSessionReferences,
@@ -170,6 +171,7 @@ import {
   getAgentWorkspace,
   deleteWorkspaceSkill,
   installStoreSkill,
+  installStoreBundle,
   getPluginStoreCatalog,
   readWorkspaceSkillContent,
   writeWorkspaceSkillContent,
@@ -212,9 +214,9 @@ import {
 import {
   listConversations,
   deleteConversation,
-  autoArchiveConversations,
 } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
+import { requestApplicationQuit } from './lib/app-shutdown'
 import {
   getDingTalkConfig,
   saveDingTalkConfig,
@@ -1824,6 +1826,18 @@ export function registerIpcHandlers(): void {
     AGENT_IPC_CHANNELS.INSTALL_STORE_SKILL,
     async (_, workspaceSlug: string, skillSlug: string): Promise<SkillMeta> => {
       return installStoreSkill(workspaceSlug, skillSlug)
+    }
+  )
+
+  // 插件商店：安装整合包
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.INSTALL_STORE_BUNDLE,
+    async (
+      _,
+      workspaceSlug: string,
+      bundleId: string
+    ): Promise<import('@tagent/shared').InstallStoreBundleResult> => {
+      return installStoreBundle(workspaceSlug, bundleId)
     }
   )
 
@@ -3618,28 +3632,6 @@ export function registerIpcHandlers(): void {
   // 注册更新 IPC 处理器
   registerUpdaterIpc()
 
-  // 启动时自动归档 + 每 24 小时定期检查
-  const runAutoArchive = (): void => {
-    try {
-      const settings = getSettings()
-      const days = settings.archiveAfterDays ?? 7
-      if (days > 0) {
-        const archivedChats = autoArchiveConversations(days)
-        const archivedSessions = autoArchiveAgentSessions(days)
-        if (archivedChats + archivedSessions > 0) {
-          console.log(
-            `[自动归档] 已归档 ${archivedChats} 个对话, ${archivedSessions} 个 Agent 会话`
-          )
-        }
-      }
-    } catch (error) {
-      console.error('[自动归档] 自动归档失败:', error)
-    }
-  }
-
-  runAutoArchive()
-  setInterval(runAutoArchive, 24 * 60 * 60 * 1000)
-
   // 启动时清理不存在的附加目录/文件（如已删除的 worktree）
   try {
     cleanupStaleAttachedPaths()
@@ -3929,6 +3921,23 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return win && !win.isDestroyed() ? win.isMaximized() : false
+  })
+
+  // ===== 窗口关闭确认 =====
+
+  ipcMain.on(WINDOW_CLOSE_IPC_CHANNELS.RESPONSE, (_event, data: WindowCloseResponseData) => {
+    console.info('[WindowClose] 收到 close-response:', data)
+    const { action, remember } = data
+    if (remember) {
+      updateSettings({ closeAction: action })
+      console.info('[WindowClose] 已保存 closeAction:', action)
+    }
+    if (action === 'quit') {
+      requestApplicationQuit()
+    } else {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win && !win.isDestroyed()) win.hide()
+    }
   })
 
   // ===== TA MCP Server 管理 =====

@@ -10,6 +10,7 @@ import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 
 /** 任务模式（P3: chat 已退役） */
@@ -339,26 +340,30 @@ export function QuickTaskApp(): React.ReactElement {
         <div className="flex items-center justify-between px-4 pb-3 pt-1">
           <div className="flex items-center gap-1">
             {/* 附件按钮 */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-              title="添加附件"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
-              附件
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
+                  附件
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>添加附件</TooltipContent>
+            </Tooltip>
             <input
               ref={fileInputRef}
               type="file"

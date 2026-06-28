@@ -1,31 +1,18 @@
 import { useAtomValue } from 'jotai'
-import { Toaster as Sonner } from 'sonner'
+
+import { Toaster } from '@tagent/ui'
 
 import { resolvedThemeAtom } from '@/atoms/theme'
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
+type ToasterProps = React.ComponentProps<typeof Toaster>
 
-const Toaster = ({ ...props }: ToasterProps) => {
+/**
+ * Toaster 薄包装：读 jotai theme atom 注入给纯展示组件 Toaster。
+ * packages/ui 的 Toaster 不耦合状态管理，theme 由调用方传入。
+ */
+const ToasterWithTheme = ({ ...props }: Omit<ToasterProps, 'theme'>) => {
   const theme = useAtomValue(resolvedThemeAtom)
-
-  return (
-    <Sonner
-      theme={theme as ToasterProps['theme']}
-      position="top-center"
-      offset={58}
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
-          description: 'group-[.toast]:text-muted-foreground',
-          actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
-          cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
-        },
-      }}
-      {...props}
-    />
-  )
+  return <Toaster theme={theme as ToasterProps['theme']} {...props} />
 }
 
-export { Toaster }
+export { ToasterWithTheme as Toaster }

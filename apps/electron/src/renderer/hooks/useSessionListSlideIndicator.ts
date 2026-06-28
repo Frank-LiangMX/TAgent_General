@@ -36,11 +36,14 @@ function measureSessionListItem(
   const item = container.querySelector<HTMLElement>(sessionListItemSelector(sessionId))
   if (!item) return null
 
+  const containerRect = container.getBoundingClientRect()
+  const itemRect = item.getBoundingClientRect()
+
   return {
-    left: item.offsetLeft,
-    width: item.offsetWidth,
-    top: item.offsetTop,
-    height: item.offsetHeight,
+    left: itemRect.left - containerRect.left,
+    width: itemRect.width,
+    top: itemRect.top - containerRect.top + container.scrollTop,
+    height: itemRect.height,
   }
 }
 

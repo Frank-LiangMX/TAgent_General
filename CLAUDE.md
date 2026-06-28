@@ -227,6 +227,36 @@ bun run build:resources   # 复制 resources/ 到 dist/
 - `PermissionModeSelector`：圆形按钮 + Tooltip + 点击切换
 - `AgentThinkingPopover`：圆形按钮 + Popover + Switch 开关
 
+## UI 库使用规范
+
+**写任何 UI 代码前必读 `packages/ui/DESIGN.md`**。
+
+### 基础组件
+
+- 基础 UI 组件（Button / Dialog / Tooltip / Popover / Input 等 27 个）已迁移到 `@tagent/ui` 包
+- **新代码必须**：`import { Button } from '@tagent/ui'`
+- **禁止**从 `@/components/ui/xxx` 新增 import（兼容期保留旧路径供存量代码使用，新代码禁用）
+
+### Token 系统
+
+- 视觉 token（圆角/颜色/阴影/间距/字号/动效）权威源在 `packages/ui/src/tokens/`
+- 修改 token：编辑 `packages/ui/src/tokens/*.ts` → `bun run --filter @tagent/ui tokens:generate` → 全局自动更新
+- **禁止硬编码**：颜色（`#fff` / `rgb(...)`）、圆角（`rounded-[14px]`）、阴影
+- 颜色用 `bg-background` / `text-foreground` / `border-border` 等 Tailwind 语义类
+- 圆角用 `rounded-glass-*` token 类（如 `rounded-glass-tooltip`）
+
+### 新增组件
+
+- 放 `packages/ui/src/components/`，不放 `apps/electron/src/renderer/components/ui/`
+- 在 `packages/ui/src/index.ts` 加 export
+- 更新 `packages/ui/DESIGN.md` 组件清单
+- `bun run typecheck` 通过 + 视觉抽查
+
+### session-glass-* 类
+
+- 定义在 `packages/ui/styles/glass.css`，被 `globals.css` `@import`
+- 圆角引用 `--radius-glass-*` token，改 token 源全局生效
+
 ## Agent SDK 集成架构
 
 基于 `@anthropic-ai/claude-agent-sdk@0.3.143` 实现 Agent 模式。
@@ -290,6 +320,11 @@ React UI 更新
 - Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
+
+**最近完成**（2026-06-27）：
+
+- **侧栏项目-会话手风琴布局** + 3 个导航 Bug 修复（闭包过期 / tab 位置偏移 / 标题不更新）
+- **插件市场 / 已安装页重构**：整合包优先市场、已安装卡片浏览 + 侧栏分类导航、玻璃滑动选中态、整合包分组去重；`@` 引用弹窗主题滚动条
 
 **详细进度**：见 `docs/PROGRESS.md`
 

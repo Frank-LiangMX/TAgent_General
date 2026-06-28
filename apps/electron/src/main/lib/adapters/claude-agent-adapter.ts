@@ -15,7 +15,7 @@ import {
   pickResultContextWindow,
 } from '@tagent/shared'
 
-import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
+import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-spawn'
 import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
 import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
 
@@ -808,8 +808,16 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           const isKscc = options.isKsccChannel ?? false
           const isWinCmd = isKscc && process.platform === 'win32'
 
-          const spawnCommand = isWinCmd ? 'cmd.exe' : spawnOpts.command
-          const spawnArgs = isWinCmd ? ['/c', 'kscc', ...spawnOpts.args] : spawnOpts.args
+          let spawnCommand = isWinCmd ? 'cmd.exe' : spawnOpts.command
+          let spawnArgs = isWinCmd ? ['/c', 'kscc', ...spawnOpts.args] : spawnOpts.args
+
+          if (isWinCmd) {
+            const direct = planKsccWindowsSpawn(options.sdkCliPath, spawnOpts.args)
+            if (direct) {
+              spawnCommand = direct.command
+              spawnArgs = direct.args
+            }
+          }
 
           const child = spawnChild(spawnCommand, spawnArgs, {
             cwd: spawnOpts.cwd,
@@ -823,7 +831,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             const onStderr = options.onStderr
             child.stderr?.on('data', (chunk: Buffer) => {
               try {
-                onStderr(chunk.toString())
+                const text =
+                  process.platform === 'win32' ? decodeWindowsChildStderr(chunk) : chunk.toString('utf8')
+                onStderr(text)
               } catch {
                 /* 用户回调异常不影响流 */
               }
@@ -1042,22 +1052,30 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
 }
 
 /**
- * 扫描并强杀所有孤儿 claude-agent-sdk 子进程（应用退出最后兜底）
+ * 扫描并强杀 Agent 相关残留子进程（应用退出最后兜底）
  *
  * 使用场景：app.on('before-quit') 里 stopAllAgents() 之后调用。
- * 针对 pidMap 未覆盖、child 'exit' 事件未触发、dispose 漏杀等极端场景的最后一道防线。
+ * 针对 pidMap 未覆盖、kscc/cmd 链、child 'exit' 未触发、dispose 漏杀等场景。
  *
- * 匹配条件：父进程是当前进程 + 命令行含 "claude-agent-sdk"
+ * 策略（Windows）：
+ * 1. 强杀 Electron 的所有直接子进程树（taskkill /F /T）
+ * 2. 再按命令行特征匹配 Agent / kscc / claude 进程做二次清扫
  *
- * - macOS/Linux: `pgrep -P <pid>` 找所有子进程，再用 ps 过滤匹配的再 SIGKILL
- * - Windows: PowerShell 查 ParentProcessId + CommandLine 匹配后 Stop-Process
- *   （wmic 在 Win11 已被 deprecated，部分版本不再预装）
- *
- * 所有 execFileSync 都加 3s timeout，防止在异常进程表 / 权限不足等场景挂死 before-quit
+ * 所有 execFileSync 都加 3s timeout，防止 before-quit 挂死。
  */
 export function scanAndKillOrphanedClaudeSubprocesses(): void {
   const parentPid = process.pid
   const SCAN_TIMEOUT_MS = 3_000
+
+  const directChildPids = listDirectChildPids(parentPid, SCAN_TIMEOUT_MS)
+  for (const pid of directChildPids) {
+    forceKillClaudeProcess(pid)
+  }
+
+  const markerClause = AGENT_PROCESS_MARKERS.map(
+    (marker) => `$_.CommandLine -like '*${marker}*'`
+  ).join(' -or ')
+
   try {
     if (process.platform === 'win32') {
       execFileSync(
@@ -1065,7 +1083,7 @@ export function scanAndKillOrphanedClaudeSubprocesses(): void {
         [
           '-NoProfile',
           '-Command',
-          `Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${parentPid} -and $_.CommandLine -like '*claude-agent-sdk*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`,
+          `$p=${parentPid}; Get-CimInstance Win32_Process | Where-Object { ($_.ParentProcessId -eq $p) -and (${markerClause}) } | ForEach-Object { taskkill /F /T /PID $_.ProcessId 2>$null }`,
         ],
         { stdio: 'ignore', timeout: SCAN_TIMEOUT_MS }
       )
@@ -1087,9 +1105,9 @@ export function scanAndKillOrphanedClaudeSubprocesses(): void {
             encoding: 'utf8',
             timeout: SCAN_TIMEOUT_MS,
           })
-          if (cmd.includes('claude-agent-sdk')) {
-            process.kill(pid, 'SIGKILL')
-            console.warn(`[Claude 适配器] 退出扫描: 强杀孤儿 claude 子进程 pid=${pid}`)
+          if (AGENT_PROCESS_MARKERS.some((marker) => cmd.includes(marker))) {
+            forceKillClaudeProcess(pid)
+            console.warn(`[Claude 适配器] 退出扫描: 强杀孤儿 Agent 子进程 pid=${pid}`)
           }
         } catch {
           // ps 失败 / 进程已退出 / 超时，跳过
@@ -1098,5 +1116,47 @@ export function scanAndKillOrphanedClaudeSubprocesses(): void {
     }
   } catch (error) {
     console.warn('[Claude 适配器] 退出扫描执行失败:', error)
+  }
+}
+
+/** Agent / kscc 子进程命令行特征（用于退出清扫） */
+const AGENT_PROCESS_MARKERS = [
+  'claude-agent-sdk',
+  'claude.exe',
+  '@seasun/kscc',
+  'kscc.cmd',
+  'cli-wrapper.js',
+]
+
+function listDirectChildPids(parentPid: number, timeoutMs: number): number[] {
+  try {
+    if (process.platform === 'win32') {
+      const output = execFileSync(
+        'powershell',
+        [
+          '-NoProfile',
+          '-Command',
+          `(Get-CimInstance Win32_Process -Filter 'ParentProcessId=${parentPid}' | Select-Object -ExpandProperty ProcessId) -join [Environment]::NewLine`,
+        ],
+        { encoding: 'utf8', timeout: timeoutMs }
+      ).trim()
+      if (!output) return []
+      return output
+        .split(/\r?\n/)
+        .map((line) => parseInt(line.trim(), 10))
+        .filter((pid) => Number.isFinite(pid) && pid > 0)
+    }
+
+    const output = execFileSync('pgrep', ['-P', String(parentPid)], {
+      encoding: 'utf8',
+      timeout: timeoutMs,
+    }).trim()
+    if (!output) return []
+    return output
+      .split('\n')
+      .map((line) => parseInt(line.trim(), 10))
+      .filter((pid) => Number.isFinite(pid) && pid > 0)
+  } catch {
+    return []
   }
 }

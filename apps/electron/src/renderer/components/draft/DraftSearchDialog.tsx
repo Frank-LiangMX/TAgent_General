@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue } from 'jotai'
-import { Search, StickyNote } from 'lucide-react'
+import { StickyNote } from 'lucide-react'
 import * as React from 'react'
 
 import type { DraftDocument } from '@tagent/shared'
@@ -14,6 +14,7 @@ import type { DraftDocument } from '@tagent/shared'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { SearchInput } from '@/components/ui/search-input'
 import { cn } from '@/lib/utils'
 import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 
@@ -90,10 +91,10 @@ export function DraftSearchDialog(): React.ReactElement {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="top-[15%] translate-y-0 max-w-lg p-0 gap-0">
         <DialogTitle className="sr-only">搜索草稿</DialogTitle>
-        <div className="flex items-center border-b border-border/40 px-4 h-11">
-          <Search size={15} className="text-muted-foreground mr-2 shrink-0" />
-          <input
+        <div className="border-b border-border/40 px-4 py-2">
+          <SearchInput
             ref={inputRef}
+            variant="plain"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -101,7 +102,6 @@ export function DraftSearchDialog(): React.ReactElement {
             }}
             onKeyDown={handleKeyDown}
             placeholder="搜索草稿标题或内容..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
           />
         </div>
         <div className="max-h-[300px] overflow-y-auto">

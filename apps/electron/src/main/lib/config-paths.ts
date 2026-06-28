@@ -455,34 +455,12 @@ function parseSkillCatalogFields(skillDir: string): {
 }
 
 /**
- * 列出 bundle 内可供插件商店安装的 Skill 目录
+ * 列出 bundle 内 legacy Skill 目录（Proma 时代遗留，不再进入插件商店）
+ *
+ * @deprecated 商店 Skill 见 `getPluginStoreSkills()`
  */
 export function listBundledStoreSkills(): PluginStoreSkillEntry[] {
-  const bundledDir = getBundledSkillsDir()
-  if (!existsSync(bundledDir)) return []
-
-  const preinstalled = new Set(PREINSTALLED_SKILL_SLUGS)
-  const entries: PluginStoreSkillEntry[] = []
-
-  try {
-    for (const entry of readdirSync(bundledDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue
-      if (preinstalled.has(entry.name)) continue
-
-      const source = join(bundledDir, entry.name)
-      const fields = parseSkillCatalogFields(source)
-      entries.push({
-        slug: entry.name,
-        name: fields.name,
-        description: fields.description,
-        version: fields.version,
-      })
-    }
-  } catch (err) {
-    console.warn('[配置] 读取插件商店 Skill 目录失败:', err)
-  }
-
-  return entries.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+  return []
 }
 
 /**

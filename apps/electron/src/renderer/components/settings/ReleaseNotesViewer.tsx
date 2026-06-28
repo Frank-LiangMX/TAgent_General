@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm'
 import type { GitHubRelease } from '@tagent/shared'
 
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface ReleaseNotesViewerProps {
@@ -76,16 +77,20 @@ export function ReleaseNotesViewer({
           </div>
 
           {/* GitHub 链接 */}
-          <a
-            href={release.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors shrink-0"
-            title="在 GitHub 上查看"
-          >
-            <ExternalLink className="h-3 w-3" />
-            GitHub
-          </a>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href={release.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors shrink-0"
+              >
+                <ExternalLink className="h-3 w-3" />
+                GitHub
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>在 GitHub 上查看</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
@@ -103,21 +108,30 @@ export function ReleaseNotesViewer({
             remarkPlugins={[remarkGfm]}
             components={{
               pre: ({ children: preChildren }) => <CodeBlock>{preChildren}</CodeBlock>,
-              a: ({ href, children: linkChildren, ...linkProps }) => (
-                <a
-                  {...linkProps}
-                  href={href ?? undefined}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                      window.electronAPI.openExternal(href)
-                    }
-                  }}
-                  title={href ?? undefined}
-                >
-                  {linkChildren}
-                </a>
-              ),
+              a: ({ href, children: linkChildren, ...linkProps }) =>
+                href ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        {...linkProps}
+                        href={href}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (href.startsWith('http://') || href.startsWith('https://')) {
+                            window.electronAPI.openExternal(href)
+                          }
+                        }}
+                      >
+                        {linkChildren}
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[400px] break-all">{href}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <a {...linkProps} href={undefined}>
+                    {linkChildren}
+                  </a>
+                ),
             }}
           >
             {release.body}

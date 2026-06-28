@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { useTocHeadings } from '@/hooks/useTocHeadings'
 import { cn } from '@/lib/utils'
@@ -77,23 +78,26 @@ export function MarkdownToc({
         {headings.map((heading) => {
           const active = heading.id === activeId
           return (
-            <button
-              key={heading.id}
-              type="button"
-              data-toc-id={heading.id}
-              onClick={() => jumpTo(heading)}
-              title={heading.text}
-              style={{ paddingLeft: `${(heading.level - minLevel) * 12 + 8}px` }}
-              className={cn(
-                'block w-full text-left truncate rounded py-1 pr-2 text-[12px] leading-snug transition-colors',
-                'border-l-2 border-transparent',
-                active
-                  ? 'border-primary text-foreground font-medium bg-foreground/[0.04]'
-                  : 'text-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.03]'
-              )}
-            >
-              {heading.text}
-            </button>
+            <Tooltip key={heading.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  data-toc-id={heading.id}
+                  onClick={() => jumpTo(heading)}
+                  style={{ paddingLeft: `${(heading.level - minLevel) * 12 + 8}px` }}
+                  className={cn(
+                    'block w-full text-left truncate rounded py-1 pr-2 text-[12px] leading-snug transition-colors',
+                    'border-l-2 border-transparent',
+                    active
+                      ? 'border-primary text-foreground font-medium bg-foreground/[0.04]'
+                      : 'text-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.03]'
+                  )}
+                >
+                  {heading.text}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[400px] break-all">{heading.text}</TooltipContent>
+            </Tooltip>
           )
         })}
       </div>

@@ -20,6 +20,7 @@ import {
   AUTOMATION_DEFAULT_SESSION_MODE,
   computeNextRunAt,
   formatScheduleLabel,
+  resolveAgentSessionModelId,
 } from '@tagent/shared'
 
 import {
@@ -148,6 +149,11 @@ export function AutomationFormView({
   const defaultChannelId = useAtomValue(agentChannelIdAtom)
   const defaultModelId = useAtomValue(agentModelIdAtom)
   const defaultWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
+  const defaultModelForAutomation = React.useMemo(() => {
+    if (!defaultChannelId) return defaultModelId ?? undefined
+    const channel = channels.find((c) => c.id === defaultChannelId && c.enabled)
+    return resolveAgentSessionModelId(channel, undefined, defaultModelId)
+  }, [defaultChannelId, channels, defaultModelId])
   const openSession = useOpenSession()
 
   const [draft, setDraft] = React.useState<AutomationFormDraft>(() =>
@@ -155,7 +161,7 @@ export function AutomationFormView({
       ? automationToDraft(automation)
       : createEmptyDraft({
           channelId: defaultChannelId ?? '',
-          modelId: defaultModelId ?? undefined,
+          modelId: defaultModelForAutomation,
           workspaceId: defaultWorkspaceId ?? '',
         })
   )

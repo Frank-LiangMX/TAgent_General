@@ -1,0 +1,702 @@
+/**
+ * session-glass-* 系列玻璃浮层样式
+ *
+ * 从 apps/electron/src/renderer/styles/globals.css 迁移而来。
+ * 圆角引用 --radius-glass-* token（定义见 packages/ui/src/tokens/radius.ts）。
+ * 修改圆角请改 token 源，不要直接改这里的 var(--radius-glass-*)。
+ */
+
+/**
+ * session-glass - 会话浮层通用毛玻璃
+ * 输入框 / 用户消息置顶条 / Token 底栏共享，normal 态即强玻璃质感
+ */
+.session-glass,
+.chat-input-glass {
+  position: relative;
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(28px) saturate(1.72) brightness(1.04);
+  backdrop-filter: blur(28px) saturate(1.72) brightness(1.04);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--background) / 0.38) 0%,
+    hsl(var(--background) / 0.54) 52%,
+    hsl(var(--background) / 0.46) 100%
+  );
+  border: 0.5px solid hsl(var(--glass-rim) / 0.88);
+  box-shadow:
+    inset 0 1.5px 0 0 hsl(var(--glass-shine) / 0.55),
+    inset 0 -0.5px 0 0 hsl(var(--glass-rim) / 0.35),
+    0 6px 22px -6px rgba(0, 0, 0, 0.18),
+    0 18px 48px -14px rgba(0, 0, 0, 0.14);
+}
+
+.session-glass::before,
+.chat-input-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--glass-shine) / 0.50) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.65) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--glass-shine) / 0.22) 0%,
+      transparent 42%
+    );
+}
+
+.session-glass::after,
+.chat-input-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.42) 28%,
+    rgba(255, 255, 255, 0.68) 50%,
+    rgba(255, 255, 255, 0.38) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.session-glass > *,
+.chat-input-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-input-glass {
+  border-radius: var(--radius-glass-input);
+}
+
+/* 侧栏列表项 / Rail / 旁注芯片 — 轻量浮岛玻璃（弱于主会话浮层） */
+.session-glass-sidebar,
+.session-glass-rail,
+.session-glass-chip {
+  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.55) 0%,
+    hsl(var(--background) / 0.62) 48%,
+    hsl(var(--background) / 0.56) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.82);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.45),
+    0 2px 10px -4px rgba(0, 0, 0, 0.10),
+    0 6px 18px -8px rgba(0, 0, 0, 0.08);
+}
+
+.session-glass-sidebar {
+  border-radius: var(--radius-glass-sidebar);
+}
+
+.session-glass-rail {
+  border-radius: var(--radius-glass-rail);
+}
+
+.session-glass-chip {
+  border-radius: var(--radius-glass-chip);
+}
+
+.session-glass-chip-dashed {
+  border-style: dashed !important;
+  border-color: hsl(var(--muted-foreground) / 0.28) !important;
+}
+
+.dark .session-glass-chip-dashed:not(:hover) {
+  border-color: hsl(var(--foreground) / 0.26) !important;
+}
+
+.session-glass-chip-dashed:hover {
+  border-color: hsl(var(--glass-rim) / 0.95) !important;
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-shine) / 0.65) 0%,
+    hsl(var(--background) / 0.64) 48%,
+    hsl(var(--background) / 0.58) 100%
+  ) !important;
+}
+
+.dark .session-glass-chip-dashed:hover {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.10) 0%,
+    hsl(var(--background) / 0.56) 48%,
+    hsl(var(--background) / 0.50) 100%
+  ) !important;
+}
+
+.session-glass-sidebar::before,
+.session-glass-rail::before,
+.session-glass-chip::before {
+  opacity: 0.55;
+}
+
+.session-glass-sidebar::after,
+.session-glass-rail::after,
+.session-glass-chip::after {
+  opacity: 0.45;
+}
+
+.dark .session-glass-sidebar,
+.dark .session-glass-rail,
+.dark .session-glass-chip {
+  -webkit-backdrop-filter: blur(16px) saturate(1.32) brightness(0.97);
+  backdrop-filter: blur(16px) saturate(1.32) brightness(0.97);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--background) / 0.54) 48%,
+    hsl(var(--background) / 0.48) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.09),
+    0 2px 12px -4px rgba(0, 0, 0, 0.28),
+    0 6px 20px -8px rgba(0, 0, 0, 0.22);
+}
+
+/**
+ * session-glass-tooltip - 全局 Tooltip 浮窗
+ * 使用各主题 --tooltip 色板，配合 backdrop-filter 采样背后 UI
+ */
+.session-glass-tooltip {
+  position: relative;
+  isolation: isolate;
+  color: hsl(var(--tooltip-foreground));
+  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.03);
+  backdrop-filter: blur(16px) saturate(1.38) brightness(1.03);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--tooltip) / 0.82) 0%,
+    hsl(var(--tooltip) / 0.70) 52%,
+    hsl(var(--tooltip) / 0.74) 100%
+  );
+  border: 0.5px solid hsl(var(--tooltip-foreground) / 0.14);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--tooltip-foreground) / 0.10),
+    0 4px 14px -4px rgba(0, 0, 0, 0.20),
+    0 10px 28px -8px rgba(0, 0, 0, 0.16);
+}
+
+.session-glass-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--tooltip-foreground) / 0.10) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--tooltip-foreground) / 0.06) 0%,
+      transparent 42%
+    );
+}
+
+.session-glass-tooltip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.42;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.30) 28%,
+    rgba(255, 255, 255, 0.48) 50%,
+    rgba(255, 255, 255, 0.26) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.session-glass-tooltip > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .session-glass-tooltip::after {
+  opacity: 0.32;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.14) 28%,
+    rgba(255, 255, 255, 0.24) 50%,
+    rgba(255, 255, 255, 0.10) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/**
+ * session-glass-surface - 弹窗 / 菜单 / 选项浮层通用毛玻璃
+ * --glass-bg / --glass-fg 由 modal / popover 变体注入
+ */
+.session-glass-overlay {
+  background: rgba(0, 0, 0, 0.16) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
+}
+
+.session-glass-surface {
+  /* 不可设 position:relative，否则会覆盖 Dialog/Popover 的 fixed/absolute 定位 */
+  isolation: isolate;
+  color: hsl(var(--glass-fg, var(--foreground)));
+  -webkit-backdrop-filter: blur(24px) saturate(1.55) brightness(1.04);
+  backdrop-filter: blur(24px) saturate(1.55) brightness(1.04);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-bg, var(--background)) / 0.44) 0%,
+    hsl(var(--glass-bg, var(--background)) / 0.58) 52%,
+    hsl(var(--glass-bg, var(--background)) / 0.50) 100%
+  );
+  border: 0.5px solid hsl(var(--glass-rim) / 0.88);
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.55),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.32),
+    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.10),
+    0 8px 26px -8px rgba(0, 0, 0, 0.20),
+    0 22px 56px -16px rgba(0, 0, 0, 0.16);
+}
+
+.session-glass-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.62;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--glass-shine) / 0.52) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.60) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--glass-shine) / 0.20) 0%,
+      transparent 42%
+    );
+}
+
+.session-glass-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.58;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.46) 24%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(255, 255, 255, 0.40) 76%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* 弹窗：与输入框同级强玻璃 */
+.session-glass-modal,
+.session-glass-modal-lg {
+  --glass-bg: var(--background);
+  --glass-fg: var(--foreground);
+  border-radius: var(--radius-glass-modal);
+  -webkit-backdrop-filter: blur(28px) saturate(1.68) brightness(1.04);
+  backdrop-filter: blur(28px) saturate(1.68) brightness(1.04);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-shine) / 0.35) 0%,
+    hsl(var(--glass-bg, var(--background)) / 0.72) 46%,
+    hsl(var(--glass-bg, var(--background)) / 0.78) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.92);
+  box-shadow:
+    inset 0 2.5px 0 0 hsl(var(--glass-shine) / 0.65),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.38),
+    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.38),
+    0 0 0 1px hsl(var(--glass-shine) / 0.55),
+    0 0 0 1.5px rgba(0, 0, 0, 0.03),
+    0 10px 32px -10px rgba(0, 0, 0, 0.22),
+    0 28px 72px -18px rgba(0, 0, 0, 0.18);
+}
+
+.session-glass-modal::after,
+.session-glass-modal-lg::after {
+  opacity: 0.72;
+  padding: 1.5px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.52) 22%,
+    rgba(255, 255, 255, 0.82) 48%,
+    rgba(255, 255, 255, 0.46) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.session-glass-modal-lg {
+  --glass-bg: var(--dialog);
+  --glass-fg: var(--dialog-foreground);
+  border-radius: var(--radius-glass-modal-lg);
+  box-shadow:
+    inset 0 2.5px 0 0 hsl(var(--glass-shine) / 0.65),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.38),
+    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.38),
+    0 0 0 1px hsl(var(--glass-shine) / 0.55),
+    0 0 0 1.5px rgba(0, 0, 0, 0.03),
+    0 14px 40px -12px rgba(0, 0, 0, 0.26),
+    0 32px 80px -20px rgba(0, 0, 0, 0.20);
+}
+
+/* 菜单 / 选项浮层：略实于弹窗，保证可读 */
+.session-glass-popover {
+  --glass-bg: var(--popover);
+  --glass-fg: var(--popover-foreground);
+  border-radius: var(--radius-glass-popover);
+  -webkit-backdrop-filter: blur(22px) saturate(1.52) brightness(1.03);
+  backdrop-filter: blur(22px) saturate(1.52) brightness(1.03);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-bg, var(--popover)) / 0.52) 0%,
+    hsl(var(--glass-bg, var(--popover)) / 0.64) 52%,
+    hsl(var(--glass-bg, var(--popover)) / 0.58) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.85);
+  box-shadow:
+    inset 0 1.5px 0 0 hsl(var(--glass-shine) / 0.48),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.28),
+    0 0 0 1px hsl(var(--glass-shine) / 0.42),
+    0 6px 20px -6px rgba(0, 0, 0, 0.16),
+    0 16px 36px -12px rgba(0, 0, 0, 0.12);
+}
+
+.dark .session-glass-surface {
+  -webkit-backdrop-filter: blur(24px) saturate(1.52) brightness(0.96);
+  backdrop-filter: blur(24px) saturate(1.52) brightness(0.96);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-bg, var(--background)) / 0.36) 0%,
+    hsl(var(--glass-bg, var(--background)) / 0.50) 52%,
+    hsl(var(--glass-bg, var(--background)) / 0.42) 100%
+  );
+  border-color: hsl(var(--glass-fg, var(--foreground)) / 0.20);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 0 hsl(var(--glass-fg, var(--foreground)) / 0.13),
+    inset 0 -1px 0 0 hsl(var(--glass-fg, var(--foreground)) / 0.07),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 30px -8px rgba(0, 0, 0, 0.40),
+    0 22px 58px -16px rgba(0, 0, 0, 0.32);
+}
+
+.dark .session-glass-modal,
+.dark .session-glass-modal-lg {
+  -webkit-backdrop-filter: blur(28px) saturate(1.58) brightness(0.94);
+  backdrop-filter: blur(28px) saturate(1.58) brightness(0.94);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.04) 0%,
+    hsl(var(--glass-bg, var(--background)) / 0.62) 46%,
+    hsl(var(--glass-bg, var(--background)) / 0.68) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.55);
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.14),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.08),
+    inset 0 -1px 0 0 hsl(var(--glass-ambient) / 0.35),
+    0 0 0 1px hsl(var(--glass-shine) / 0.10),
+    0 0 0 1.5px rgba(0, 0, 0, 0.18),
+    0 10px 36px -10px rgba(0, 0, 0, 0.44),
+    0 28px 76px -18px rgba(0, 0, 0, 0.36);
+}
+
+.dark .session-glass-surface::before {
+  opacity: 0.34;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--glass-shine) / 0.20) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.28) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--glass-shine) / 0.07) 0%,
+      transparent 42%
+    );
+}
+
+.dark .session-glass-modal::after,
+.dark .session-glass-modal-lg::after {
+  opacity: 0.30;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.12) 22%,
+    rgba(255, 255, 255, 0.22) 48%,
+    rgba(255, 255, 255, 0.10) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.dark .session-glass-popover {
+  -webkit-backdrop-filter: blur(22px) saturate(1.46) brightness(0.96);
+  backdrop-filter: blur(22px) saturate(1.46) brightness(0.96);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-bg, var(--popover)) / 0.44) 0%,
+    hsl(var(--glass-bg, var(--popover)) / 0.56) 52%,
+    hsl(var(--glass-bg, var(--popover)) / 0.50) 100%
+  );
+  border-color: hsl(var(--glass-fg, var(--foreground)) / 0.20);
+  box-shadow:
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 0 hsl(var(--glass-fg, var(--foreground)) / 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 6px 22px -6px rgba(0, 0, 0, 0.34),
+    0 16px 40px -12px rgba(0, 0, 0, 0.28);
+}
+
+.dark .session-glass-surface::after {
+  opacity: 0.32;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.10) 28%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.session-glass-sticky {
+  border-radius: var(--radius-glass-sticky);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.session-glass-sticky:hover {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--accent) / 0.42) 0%,
+    hsl(var(--accent) / 0.34) 52%,
+    hsl(var(--accent) / 0.30) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.18);
+}
+
+.dark .session-glass,
+.dark .chat-input-glass {
+  -webkit-backdrop-filter: blur(28px) saturate(1.58) brightness(0.94);
+  backdrop-filter: blur(28px) saturate(1.58) brightness(0.94);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--background) / 0.34) 0%,
+    hsl(var(--background) / 0.48) 52%,
+    hsl(var(--background) / 0.40) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.16);
+  box-shadow:
+    inset 0 1.5px 0 0 hsl(var(--foreground) / 0.12),
+    inset 0 -0.5px 0 0 hsl(var(--foreground) / 0.06),
+    0 6px 24px -6px rgba(0, 0, 0, 0.42),
+    0 18px 52px -14px rgba(0, 0, 0, 0.34);
+}
+
+.dark .session-glass::before,
+.dark .chat-input-glass::before {
+  opacity: 0.38;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--glass-shine) / 0.18) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.26) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--glass-shine) / 0.06) 0%,
+      transparent 42%
+    );
+}
+
+.dark .session-glass::after,
+.dark .chat-input-glass::after {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.18) 28%,
+    rgba(255, 255, 255, 0.32) 50%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.dark .session-glass-sticky:hover {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--accent) / 0.30) 0%,
+    hsl(var(--accent) / 0.24) 52%,
+    hsl(var(--accent) / 0.20) 100%
+  );
+}
+
+/**
+ * material-frosted 覆盖 - 普通材质下 session-glass-* 的轻量磨砂变体
+ * （::before / ::after 折射层混合选择器块仍留在 globals.css，因同时作用于 panel-glass / rail-glass 等其他玻璃类）
+ */
+html.material-frosted .session-glass-overlay {
+  background: rgba(0, 0, 0, 0.30) !important;
+  -webkit-backdrop-filter: blur(var(--material-blur-mask)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-mask)) saturate(var(--material-blur-saturate));
+}
+
+html.material-frosted .session-glass-modal::after,
+html.material-frosted .session-glass-modal-lg::after {
+  opacity: 0.40;
+  padding: 1px;
+}
+
+html.material-frosted .session-glass,
+html.material-frosted .chat-input-glass {
+  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--card) / var(--material-opacity-elevated));
+  border-color: hsl(var(--glass-rim) / 0.62);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    inset 0 -0.5px 0 0 hsl(var(--border) / 0.3),
+    0 0 0 1px var(--material-edge-outer),
+    0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+html.material-frosted .session-glass-surface,
+html.material-frosted .session-glass-modal {
+  -webkit-backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--background) / var(--material-opacity-overlay));
+  border-color: hsl(var(--glass-rim) / 0.68);
+  box-shadow:
+    inset 0 1.5px 0 0 var(--material-edge-inset),
+    inset 0 -1px 0 0 hsl(var(--border) / 0.3),
+    0 0 0 1px var(--material-edge-outer),
+    0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+html.material-frosted .session-glass-modal-lg {
+  -webkit-backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--dialog) / var(--material-opacity-overlay));
+  border-color: hsl(var(--glass-rim) / 0.7);
+  box-shadow:
+    inset 0 1.5px 0 0 var(--material-edge-inset),
+    inset 0 -1px 0 0 hsl(var(--border) / 0.32),
+    0 0 0 1px var(--material-edge-outer),
+    0 8px 28px rgba(0, 0, 0, 0.14);
+}
+
+html.material-frosted .session-glass-popover {
+  -webkit-backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-overlay)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--popover) / var(--material-opacity-overlay));
+  border-color: hsl(var(--glass-rim) / 0.62);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 0 0 1px var(--material-edge-outer),
+    0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+html.material-frosted .session-glass-sidebar,
+html.material-frosted .session-glass-rail,
+html.material-frosted .session-glass-chip {
+  -webkit-backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--muted) / var(--material-opacity-chip));
+  border-color: hsl(var(--glass-rim) / 0.58);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+html.material-frosted .session-glass-chip-dashed:hover {
+  background: hsl(var(--accent) / 0.72) !important;
+  border-color: hsl(var(--border) / 0.85) !important;
+}
+
+html.material-frosted.dark .session-glass-chip-dashed:not(:hover) {
+  border-color: hsl(var(--foreground) / 0.30) !important;
+}
+
+html.material-frosted .session-glass-tooltip {
+  -webkit-backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--tooltip) / 0.94);
+  border-color: hsl(var(--tooltip-foreground) / 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+html.material-frosted .session-glass-sticky {
+  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--card) / var(--material-opacity-elevated));
+  border-color: hsl(var(--glass-rim) / 0.62);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+html.material-frosted .session-glass-sticky:hover {
+  background: hsl(var(--accent) / 0.68);
+  border-color: hsl(var(--border) / 0.85);
+}

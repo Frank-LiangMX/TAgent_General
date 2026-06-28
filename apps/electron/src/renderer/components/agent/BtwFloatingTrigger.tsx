@@ -12,12 +12,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { MessageCircle } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  agentChannelIdAtom,
-  agentModelIdAtom,
-  agentSessionChannelMapAtom,
-  agentSessionModelMapAtom,
-} from '@/atoms/agent-atoms'
+import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import {
   btwOpenAtom,
   btwMessagesAtom,
@@ -26,6 +21,7 @@ import {
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface BtwFloatingTriggerProps {
@@ -45,14 +41,8 @@ export function BtwFloatingTrigger({
   const setBtwSourceSessionId = useSetAtom(btwSourceSessionIdAtom)
 
   // 获取当前会话的渠道和模型
-  const sessionChannelMap = useAtomValue(agentSessionChannelMapAtom)
-  const sessionModelMap = useAtomValue(agentSessionModelMapAtom)
-  const defaultChannelId = useAtomValue(agentChannelIdAtom)
-  const defaultModelId = useAtomValue(agentModelIdAtom)
+  const { channelId, modelId } = useAgentSessionChannelModel(sessionId)
   const channels = useAtomValue(channelsAtom)
-
-  const channelId = sessionChannelMap.get(sessionId) ?? defaultChannelId
-  const modelId = sessionModelMap.get(sessionId) ?? defaultModelId
 
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
@@ -74,23 +64,27 @@ export function BtwFloatingTrigger({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className={cn(
-        'group inline-flex items-center justify-center rounded-full shrink-0',
-        'bg-muted/50 hover:bg-muted/70',
-        'text-foreground/50 hover:text-foreground/70',
-        'transition-all duration-200 ease-out',
-        // 默认圆形仅图标；hover 展开文字（文字用 hidden 避免挤偏图标居中）
-        'size-[28px] hover:w-auto hover:min-w-[28px] hover:justify-start hover:px-2 hover:gap-1.5'
-      )}
-      title="旁注：快速提问，不进入主对话历史"
-    >
-      <MessageCircle size={14} className="shrink-0" aria-hidden />
-      <span className="hidden text-[11px] leading-none whitespace-nowrap group-hover:inline">
-        旁注
-      </span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleClick}
+          className={cn(
+            'group inline-flex items-center justify-center rounded-full shrink-0',
+            'bg-muted/50 hover:bg-muted/70',
+            'text-foreground/50 hover:text-foreground/70',
+            'transition-all duration-200 ease-out',
+            // 默认圆形仅图标；hover 展开文字（文字用 hidden 避免挤偏图标居中）
+            'size-[28px] hover:w-auto hover:min-w-[28px] hover:justify-start hover:px-2 hover:gap-1.5'
+          )}
+        >
+          <MessageCircle size={14} className="shrink-0" aria-hidden />
+          <span className="hidden text-[11px] leading-none whitespace-nowrap group-hover:inline">
+            旁注
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[220px]">旁注：快速提问，不进入主对话历史</TooltipContent>
+    </Tooltip>
   )
 }

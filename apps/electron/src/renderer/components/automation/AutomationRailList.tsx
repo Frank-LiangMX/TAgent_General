@@ -20,6 +20,7 @@ import {
 import { WindowDragStrip } from '@/components/app-shell/WindowDragStrip'
 import { Button } from '@/components/ui/button'
 import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export function AutomationRailList(): React.ReactElement {
@@ -66,16 +67,20 @@ export function AutomationRailList(): React.ReactElement {
           <p className="text-sm font-medium text-foreground">自动任务</p>
           <p className="text-[10px] text-muted-foreground">{automations.length} 个任务</p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-[36px] shrink-0 rounded-full p-0 text-foreground/60 hover:text-foreground"
-          onClick={handleCreate}
-          title="新建任务"
-        >
-          <Plus size={16} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-[36px] shrink-0 rounded-full p-0 text-foreground/60 hover:text-foreground"
+              onClick={handleCreate}
+            >
+              <Plus size={16} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>新建任务</TooltipContent>
+        </Tooltip>
       </div>
 
       <ScrollProgressContainer className="min-h-0 flex-1" contentClassName="px-2 py-2">

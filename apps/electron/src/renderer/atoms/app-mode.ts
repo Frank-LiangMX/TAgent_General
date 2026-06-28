@@ -53,16 +53,33 @@ export const topLevelModeAtom = atom<TopLevelMode, [TopLevelMode], void>(
 /** App 子模式，自动持久化到 localStorage */
 export const appModeAtom = atomWithStorage<AppMode>('tagent-app-mode', 'agent')
 
-export interface CapabilitySelection {
-  type: 'skill' | 'mcp'
-  key: string
-}
-
-export const selectedCapabilityAtom = atom<CapabilitySelection | null>(null)
-
 export type PluginKindTab = 'mcp' | 'skill'
 
-export const pluginKindTabAtom = atomWithStorage<PluginKindTab>('tagent-plugin-kind-tab', 'mcp')
+/** 插件侧栏：市场分类或已安装列表 */
+export type PluginSidebarSection =
+  | 'recommended'
+  | 'dev'
+  | 'workflow'
+  | 'office'
+  | 'planning'
+  | 'meta'
+  | 'ta'
+  | 'installed'
+
+export const pluginSidebarSectionAtom = atomWithStorage<PluginSidebarSection>(
+  'tagent-plugin-sidebar-section',
+  'recommended'
+)
+
+/** 已安装页侧栏筛选（概览 / 整合包 / 单独安装 / MCP / Skill） */
+export type InstalledPluginNavFilter =
+  | 'overview'
+  | 'orphan'
+  | 'mcp'
+  | 'skill'
+  | `bundle:${string}`
+
+export const installedPluginNavAtom = atom<InstalledPluginNavFilter>('overview')
 
 // ===== Rail Item Atoms =====
 

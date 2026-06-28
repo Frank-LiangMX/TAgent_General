@@ -88,6 +88,7 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
 import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
@@ -1013,14 +1014,18 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
         className="max-w-[300px] max-h-[200px] rounded-lg object-contain cursor-pointer"
         onClick={() => setLightboxOpen(true)}
       />
-      <button
-        type="button"
-        onClick={handleSave}
-        className="absolute bottom-2 right-2 p-1.5 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
-        title="保存图片"
-      >
-        <Download className="size-4" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="absolute bottom-2 right-2 p-1.5 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+          >
+            <Download className="size-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>保存图片</TooltipContent>
+      </Tooltip>
       <ImageLightbox
         src={imageSrc}
         alt={file.filename}
@@ -1293,10 +1298,15 @@ function ErrorMessage({
               </Button>
             )}
             {!hasStructuredActions && isThinkingSignature && onRetryInNewSession && (
-              <Button size="sm" onClick={onRetryInNewSession} title="新建对话并引用当前会话继续">
-                <Plus className="size-3.5 mr-1.5" />
-                在新对话继续
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" onClick={onRetryInNewSession}>
+                    <Plus className="size-3.5 mr-1.5" />
+                    在新对话继续
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>新建对话并引用当前会话继续</TooltipContent>
+              </Tooltip>
             )}
             {!hasStructuredActions && onRetry && (
               <Button
@@ -1309,15 +1319,17 @@ function ErrorMessage({
               </Button>
             )}
             {!hasStructuredActions && !isThinkingSignature && onRetryInNewSession && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRetryInNewSession}
-                title="如遇到未知错误，可点此按钮在新会话中尝试解决"
-              >
-                <Plus className="size-3.5 mr-1.5" />
-                在新会话中重试
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onRetryInNewSession}>
+                    <Plus className="size-3.5 mr-1.5" />
+                    在新会话中重试
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[220px]">
+                  如遇到未知错误，可点此按钮在新会话中尝试解决
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}

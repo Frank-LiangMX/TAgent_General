@@ -1762,7 +1762,7 @@ export class AgentOrchestrator {
       }
 
       // 12. 读取应用设置并确定权限模式
-      // 权限模式只属于当前 session；新会话默认完全自动模式。
+      // 权限模式只属于当前 session；新会话默认自动审批（只读放行，写操作需确认）。
       const appSettings = getSettings()
       const initialPermissionMode: TAgentPermissionMode =
         permissionModeOverride ?? TAGENT_DEFAULT_PERMISSION_MODE
@@ -2778,6 +2778,13 @@ export class AgentOrchestrator {
             )
           } else {
             userFacingError = friendlyErrorMessage(errorMessage)
+            // SDK 子进程 exit code 1 时 error.message 往往不含 stderr，补上便于排查
+            if (/exited with code 1/i.test(errorMessage) && stderrOutput.trim()) {
+              const stderrHint = stderrOutput.trim().slice(0, 800)
+              if (!userFacingError.includes(stderrHint)) {
+                userFacingError = `${userFacingError}\n\n${stderrHint}`
+              }
+            }
           }
 
           // 保存错误消息到 JSONL

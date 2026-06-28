@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
-import { PROVIDER_DEFAULT_URLS } from '@tagent/shared'
+import { PROVIDER_DEFAULT_URLS, normalizeChannelDefaultModelId } from '@tagent/shared'
 import { safeStorage } from 'electron'
 
 import { getChannelsPath } from './config-paths'
@@ -153,6 +153,37 @@ function getKsccModels(): ChannelModel[] {
   return getDefaultKsccModels()
 }
 
+/** kscc 内网：认证由 kscc CLI 管理，不做 HTTP /messages 探测（baseUrl 是内网探测地址） */
+function testKsccInternalConnection(): ChannelTestResult {
+  const kscc = checkKsccInstalledSync()
+  if (!kscc.installed) {
+    return { success: false, message: 'kscc CLI 未安装或不在 PATH 中，请先完成 kscc 安装' }
+  }
+  const versionPart = kscc.version ? ` (${kscc.version})` : ''
+  return { success: true, message: `kscc CLI 可用${versionPart}，认证由 kscc 管理` }
+}
+
+function validateKsccInternalModel(model: string): ChannelTestResult {
+  const kscc = checkKsccInstalledSync()
+  if (!kscc.installed) {
+    return { success: false, message: 'kscc CLI 未安装或不在 PATH 中，请先完成 kscc 安装' }
+  }
+
+  const knownIds = new Set(getKsccModels().map((m) => m.id))
+  if (knownIds.size > 0 && !knownIds.has(model)) {
+    return {
+      success: false,
+      message: `model "${model}" 不在 kscc 默认模型列表中，请检查渠道模型配置`,
+    }
+  }
+
+  const versionPart = kscc.version ? `，kscc ${kscc.version}` : ''
+  return {
+    success: true,
+    message: `kscc 已就绪${versionPart}；model "${model}" 在列表中（认证由 kscc CLI 管理）`,
+  }
+}
+
 /**
  * 获取所有渠道
  *
@@ -240,6 +271,14 @@ export function getChannelById(id: string): Channel | undefined {
   return config.channels.find((c) => c.id === id)
 }
 
+/** 保存前规范化渠道字段（默认模型须为已启用模型） */
+function finalizeChannel(channel: Channel): Channel {
+  return {
+    ...channel,
+    defaultModelId: normalizeChannelDefaultModelId(channel),
+  }
+}
+
 /**
  * 创建新渠道
  *
@@ -250,17 +289,18 @@ export function createChannel(input: ChannelCreateInput): Channel {
   const config = readConfig()
   const now = Date.now()
 
-  const channel: Channel = {
+  const channel: Channel = finalizeChannel({
     id: randomUUID(),
     name: input.name,
     provider: input.provider,
     baseUrl: input.baseUrl,
     apiKey: encryptApiKey(input.apiKey),
     models: input.models,
+    defaultModelId: input.defaultModelId,
     enabled: input.enabled,
     createdAt: now,
     updatedAt: now,
-  }
+  })
 
   config.channels.push(channel)
   writeConfig(config)
@@ -286,16 +326,18 @@ export function updateChannel(id: string, input: ChannelUpdateInput): Channel {
 
   const existing = config.channels[index]!
 
-  const updated: Channel = {
+  const updated: Channel = finalizeChannel({
     ...existing,
     name: input.name ?? existing.name,
     provider: input.provider ?? existing.provider,
     baseUrl: input.baseUrl ?? existing.baseUrl,
     apiKey: input.apiKey ? encryptApiKey(input.apiKey) : existing.apiKey,
     models: input.models ?? existing.models,
+    defaultModelId:
+      input.defaultModelId !== undefined ? input.defaultModelId : existing.defaultModelId,
     enabled: input.enabled ?? existing.enabled,
     updatedAt: Date.now(),
-  }
+  })
 
   config.channels[index] = updated
   writeConfig(config)
@@ -364,8 +406,9 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-      case 'kscc-internal':
         return await testAnthropicCompatible(channel.baseUrl, apiKey, proxyUrl, channel.provider)
+      case 'kscc-internal':
+        return testKsccInternalConnection()
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -416,7 +459,6 @@ export async function validateChannelModel(input: {
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-      case 'kscc-internal':
         return await validateAnthropicModel(
           input.baseUrl,
           input.apiKey,
@@ -424,6 +466,8 @@ export async function validateChannelModel(input: {
           proxyUrl,
           input.provider
         )
+      case 'kscc-internal':
+        return validateKsccInternalModel(input.model.trim())
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -737,8 +781,9 @@ export async function testChannelDirect(input: FetchModelsInput): Promise<Channe
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-      case 'kscc-internal':
         return await testAnthropicCompatible(input.baseUrl, input.apiKey, proxyUrl, input.provider)
+      case 'kscc-internal':
+        return testKsccInternalConnection()
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -778,13 +823,25 @@ export async function fetchModels(input: FetchModelsInput): Promise<FetchModelsR
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
-      case 'kscc-internal':
         return await fetchAnthropicCompatibleModels(
           input.baseUrl,
           input.apiKey,
           proxyUrl,
           input.provider
         )
+      case 'kscc-internal': {
+        const kscc = checkKsccInstalledSync()
+        if (!kscc.installed) {
+          return { success: false, message: 'kscc CLI 未安装', models: getKsccModels() }
+        }
+        const { fetchKsccModels } = await import('./kscc-service')
+        const models = await fetchKsccModels()
+        return {
+          success: true,
+          message: '已从 kscc 读取模型列表',
+          models: models.length > 0 ? models : getKsccModels(),
+        }
+      }
       case 'openai':
       case 'zhipu':
       case 'doubao':

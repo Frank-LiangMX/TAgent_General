@@ -33,7 +33,7 @@ export function buildAgentReplyCard(
   return {
     config: { wide_screen_mode: true },
     header: {
-      title: { tag: 'plain_text', content: 'TAgent Agent' },
+      title: { tag: 'plain_text', content: 'TAgent' },
       ...(subtitle ? { subtitle: { tag: 'plain_text', content: subtitle } } : {}),
       template: 'blue',
     },

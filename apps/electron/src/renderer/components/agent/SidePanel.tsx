@@ -361,13 +361,13 @@ export function SidePanel({
     <div
       className={cn(
         'relative z-0 h-full flex-shrink-0 overflow-hidden',
-        isWindows ? 'pt-[34px]' : 'pt-0'
+        isWindows ? 'pt-[28px]' : 'pt-0'
       )}
     >
       {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 RailInspectorHeader right-[126px] 一致） */}
       {isWindows && (
         <div
-          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[34px] titlebar-drag-region"
+          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[28px] titlebar-drag-region"
           style={{ right: 126 }}
           aria-hidden
         />
@@ -439,12 +439,16 @@ export function SidePanel({
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <div
-                      className="truncate text-[10px] leading-4 text-muted-foreground/70"
-                      title={sessionPath}
-                    >
-                      {breadcrumb}
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="truncate text-[10px] leading-4 text-muted-foreground/70">
+                          {breadcrumb}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[400px] break-all">
+                        {sessionPath}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -635,13 +639,17 @@ function ActivityFileItem({ path, type, onAction }: ActivityFileItemProps): Reac
         )}
       />
       {/* 文件名 */}
-      <span
-        className="flex-1 min-w-0 truncate text-[11px] text-foreground/80"
-        title={path}
-        onClick={() => onAction(path, 'preview')}
-      >
-        {name}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="flex-1 min-w-0 truncate text-[11px] text-foreground/80"
+            onClick={() => onAction(path, 'preview')}
+          >
+            {name}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[400px] break-all">{path}</TooltipContent>
+      </Tooltip>
       {/* 操作按钮 */}
       <div
         className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -721,25 +729,32 @@ function AttachedFilesSection({
           >
             <span className="w-3.5 flex-shrink-0" />
             <FileTypeIcon name={name} isDirectory={false} />
-            <span className="text-xs truncate flex-1" title={filePath}>
-              {name}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs truncate flex-1">{name}</span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[400px] break-all">{filePath}</TooltipContent>
+            </Tooltip>
             <div
               className="flex-shrink-0"
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground invisible group-hover:visible focus-visible:visible data-[state=open]:visible"
-                    title="更多操作"
-                    aria-label="更多操作"
-                  >
-                    <MoreHorizontal className="size-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground invisible group-hover:visible focus-visible:visible data-[state=open]:visible"
+                        aria-label="更多操作"
+                      >
+                        <MoreHorizontal className="size-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>更多操作</TooltipContent>
+                </Tooltip>
                 <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
                   {onAddToChat && (
                     <DropdownMenuItem
@@ -1008,9 +1023,12 @@ function AttachedDirTree({
           )}
         />
         <FileTypeIcon name={dirName} isDirectory isOpen={expanded} />
-        <span className="text-xs truncate flex-1" title={dirPath}>
-          {dirName}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-xs truncate flex-1">{dirName}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[400px] break-all">{dirPath}</TooltipContent>
+        </Tooltip>
         <Button
           type="button"
           variant="ghost"
@@ -1315,23 +1333,27 @@ function AttachedDirItem({
           {/* 悬浮/选中状态：三点菜单 */}
           {!isRenaming && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
-                    !isSelected &&
-                      'invisible group-hover:visible focus-visible:visible data-[state=open]:visible'
-                  )}
-                  title="更多操作"
-                  aria-label="更多操作"
-                  onClick={() => {
-                    if (!isSelected) onSelect(currentPath, false)
-                  }}
-                >
-                  <MoreHorizontal className="size-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
+                        !isSelected &&
+                          'invisible group-hover:visible focus-visible:visible data-[state=open]:visible'
+                      )}
+                      aria-label="更多操作"
+                      onClick={() => {
+                        if (!isSelected) onSelect(currentPath, false)
+                      }}
+                    >
+                      <MoreHorizontal className="size-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>更多操作</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
                 {onAddToChat && !entry.isDirectory && (
                   <DropdownMenuItem

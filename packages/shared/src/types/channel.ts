@@ -126,6 +126,8 @@ export interface Channel {
   apiKey: string
   /** 可用模型列表 */
   models: ChannelModel[]
+  /** 该渠道的默认模型（须为已启用模型之一；未设则用第一个已启用模型） */
+  defaultModelId?: string
   /** 是否启用 */
   enabled: boolean
   /** 创建时间戳 */
@@ -144,6 +146,8 @@ export interface ChannelCreateInput {
   /** 明文 API Key，主进程会加密后存储 */
   apiKey: string
   models: ChannelModel[]
+  /** 该渠道的默认模型（须为已启用模型之一） */
+  defaultModelId?: string
   enabled: boolean
 }
 
@@ -157,6 +161,8 @@ export interface ChannelUpdateInput {
   /** 明文 API Key，为空字符串表示不更新 */
   apiKey?: string
   models?: ChannelModel[]
+  /** 该渠道的默认模型（须为已启用模型之一） */
+  defaultModelId?: string
   enabled?: boolean
 }
 

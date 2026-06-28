@@ -10,6 +10,7 @@ import { OnboardingView } from './components/onboarding/OnboardingView'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { TutorialBanner } from './components/tutorial/TutorialBanner'
 import { TooltipProvider } from './components/ui/tooltip'
+import { WindowCloseConfirmDialog } from './components/WindowCloseConfirmDialog'
 
 import type { AppShellContextType } from './contexts/AppShellContext'
 
@@ -104,6 +105,7 @@ export default function App(): React.ReactElement {
       <SettingsDialog />
       <TutorialBanner />
       <GlobalEnvironmentCheckDialog />
+      <GlobalWindowCloseConfirmDialog />
     </TooltipProvider>
   )
 }
@@ -114,4 +116,21 @@ export default function App(): React.ReactElement {
 function GlobalEnvironmentCheckDialog(): React.ReactElement {
   const [open, setOpen] = useAtom(environmentCheckDialogOpenAtom)
   return <EnvironmentCheckDialog open={open} onOpenChange={setOpen} />
+}
+
+/**
+ * 全局窗口关闭确认对话框，由主进程 WINDOW_CLOSE_IPC_CHANNELS.REQUEST 触发。
+ */
+function GlobalWindowCloseConfirmDialog(): React.ReactElement {
+  const [open, setOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    const cleanup = window.electronAPI.onWindowCloseRequest(() => {
+      console.info('[GlobalWindowCloseConfirmDialog] 收到 close-request')
+      setOpen(true)
+    })
+    return cleanup
+  }, [])
+
+  return <WindowCloseConfirmDialog open={open} onOpenChange={setOpen} />
 }

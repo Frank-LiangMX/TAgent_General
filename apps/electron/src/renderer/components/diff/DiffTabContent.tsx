@@ -22,6 +22,8 @@ import { markdownTocOpenAtom } from '@/atoms/markdown-toc'
 import { quotedSelectionMapAtom } from '@/atoms/preview-atoms'
 import { resolvedThemeAtom } from '@/atoms/theme'
 import { PIERRE_FILE_CSS } from '@/components/agent/tool-result-renderers/pierre-styles'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import { useShortcut } from '@/hooks/useShortcut'
 import { initShortcutRegistry } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
@@ -1064,38 +1066,22 @@ export function DiffTabContent({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-1.5 flex-shrink-0">
-        <span className="text-[12px] text-foreground/60 truncate" title={filePath}>
-          {filePath}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-[12px] text-foreground/60 truncate">{filePath}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[400px] break-all">{filePath}</TooltipContent>
+        </Tooltip>
 
         {!previewOnly && (
-          <div
-            className="relative flex rounded-lg bg-muted p-0.5 shrink-0 ml-auto cursor-pointer select-none"
-            onClick={() => setViewMode((v) => (v === 'split' ? 'unified' : 'split'))}
+          <SegmentedTabs
+            className="ml-auto w-auto shrink-0"
+            value={viewMode}
+            onValueChange={(mode) => setViewMode(mode as 'split' | 'unified')}
           >
-            <div
-              className={cn(
-                'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-md bg-background shadow-sm transition-transform duration-200 ease-in-out',
-                viewMode === 'unified' ? 'translate-x-full' : 'translate-x-0'
-              )}
-            />
-            <span
-              className={cn(
-                'relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
-                viewMode === 'split' ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              分栏
-            </span>
-            <span
-              className={cn(
-                'relative z-[1] rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
-                viewMode === 'unified' ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              统一
-            </span>
-          </div>
+            <SegmentedTabsItem value="split">分栏</SegmentedTabsItem>
+            <SegmentedTabsItem value="unified">统一</SegmentedTabsItem>
+          </SegmentedTabs>
         )}
 
         {previewOnly &&
@@ -1104,96 +1090,128 @@ export function DiffTabContent({
           (markdownEditing ? (
             <div className="ml-auto flex items-center gap-1">
               {isMarkdown && (
-                <button
-                  type="button"
-                  onClick={() => setMarkdownSourceMode((v) => !v)}
-                  disabled={markdownSaving}
-                  className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 disabled:opacity-50 shrink-0"
-                  title={markdownSourceMode ? '切换到富文本编辑' : '切换到源码编辑'}
-                >
-                  {markdownSourceMode ? (
-                    <Eye className="size-3.5" />
-                  ) : (
-                    <Code2 className="size-3.5" />
-                  )}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setMarkdownSourceMode((v) => !v)}
+                      disabled={markdownSaving}
+                      className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 disabled:opacity-50 shrink-0"
+                    >
+                      {markdownSourceMode ? (
+                        <Eye className="size-3.5" />
+                      ) : (
+                        <Code2 className="size-3.5" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {markdownSourceMode ? '切换到富文本编辑' : '切换到源码编辑'}
+                  </TooltipContent>
+                </Tooltip>
               )}
-              <button
-                type="button"
-                onClick={exitMarkdownEdit}
-                disabled={markdownSaving}
-                className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 disabled:opacity-50 shrink-0"
-                title="退出编辑"
-              >
-                <X className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveMarkdownEdit()}
-                disabled={markdownSaving}
-                className={cn(
-                  'p-1 rounded hover:bg-foreground/[0.06] disabled:opacity-50 shrink-0 transition-colors duration-300',
-                  autosaveStatus === 'saved' && 'text-green-500 hover:text-green-500',
-                  autosaveStatus === 'error' && 'text-red-500 hover:text-red-500',
-                  autosaveStatus !== 'saved' &&
-                    autosaveStatus !== 'error' &&
-                    'text-foreground/40 hover:text-foreground/60'
-                )}
-                title={
-                  autosaveStatus === 'error'
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={exitMarkdownEdit}
+                    disabled={markdownSaving}
+                    className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 disabled:opacity-50 shrink-0"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>退出编辑</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => void saveMarkdownEdit()}
+                    disabled={markdownSaving}
+                    className={cn(
+                      'p-1 rounded hover:bg-foreground/[0.06] disabled:opacity-50 shrink-0 transition-colors duration-300',
+                      autosaveStatus === 'saved' && 'text-green-500 hover:text-green-500',
+                      autosaveStatus === 'error' && 'text-red-500 hover:text-red-500',
+                      autosaveStatus !== 'saved' &&
+                        autosaveStatus !== 'error' &&
+                        'text-foreground/40 hover:text-foreground/60'
+                    )}
+                  >
+                    <Save className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {autosaveStatus === 'error'
                     ? '自动保存失败，点击重试'
                     : autosaveStatus === 'saved'
                       ? '已保存'
-                      : '立即保存并退出'
-                }
-              >
-                <Save className="size-3.5" />
-              </button>
+                      : '立即保存并退出'}
+                </TooltipContent>
+              </Tooltip>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={startMarkdownEdit}
-              className="ml-auto p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0"
-              title={isMarkdown ? '编辑 Markdown' : '编辑文本'}
-            >
-              <Pencil className="size-3.5" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={startMarkdownEdit}
+                  className="ml-auto p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0"
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{isMarkdown ? '编辑 Markdown' : '编辑文本'}</TooltipContent>
+            </Tooltip>
           ))}
 
-        <button
-          type="button"
-          onClick={handleCopy}
-          className={cn(
-            'p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0',
-            previewOnly && !isEditableText && 'ml-auto'
-          )}
-          title="复制文件内容"
-        >
-          {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className={cn(
+                'p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0',
+                previewOnly && !isEditableText && 'ml-auto'
+              )}
+            >
+              {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>复制文件内容</TooltipContent>
+        </Tooltip>
 
-        <button
-          type="button"
-          onClick={handleManualRefresh}
-          className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0"
-          title="刷新文件内容（检测外部编辑器的修改）"
-        >
-          <RefreshCw className="size-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              className="p-1 rounded hover:bg-foreground/[0.06] text-foreground/40 hover:text-foreground/60 shrink-0"
+            >
+              <RefreshCw className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[220px]">
+            刷新文件内容（检测外部编辑器的修改）
+          </TooltipContent>
+        </Tooltip>
 
         {isMarkdown && !markdownEditing && (
-          <button
-            type="button"
-            onClick={() => setTocOpen((v) => !v)}
-            className={cn(
-              'p-1 rounded hover:bg-foreground/[0.06] shrink-0',
-              tocOpen ? 'text-foreground/70' : 'text-foreground/40 hover:text-foreground/60'
-            )}
-            title={tocOpen ? '隐藏目录' : '显示目录'}
-          >
-            <List className="size-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setTocOpen((v) => !v)}
+                className={cn(
+                  'p-1 rounded hover:bg-foreground/[0.06] shrink-0',
+                  tocOpen ? 'text-foreground/70' : 'text-foreground/40 hover:text-foreground/60'
+                )}
+              >
+                <List className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{tocOpen ? '隐藏目录' : '显示目录'}</TooltipContent>
+          </Tooltip>
         )}
 
         {toolbarActions}

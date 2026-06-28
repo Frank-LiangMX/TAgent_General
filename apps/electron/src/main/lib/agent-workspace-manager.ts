@@ -31,7 +31,6 @@ import {
   getInactiveSkillsDir,
   getDefaultSkillsDir,
   getBundledSkillsDir,
-  listBundledStoreSkills,
   parseSkillVersion,
   stripBom,
 } from './config-paths'
@@ -46,8 +45,19 @@ import type {
   SkillFileNode,
   SkillFileContent,
   PluginStoreCatalog,
+  PluginStoreSkillInstallSpec,
+  InstallStoreBundleResult,
 } from '@tagent/shared'
-import { BUILTIN_MCP_CATALOG, PREINSTALLED_SKILL_SLUGS } from '@tagent/shared'
+import {
+  BUILTIN_MCP_CATALOG,
+  PREINSTALLED_SKILL_SLUGS,
+  buildPluginStoreCatalog,
+  getStoreSkillCatalogEntry,
+  getStorePluginBundle,
+  mcpCatalogEntryToServerEntry,
+  type WorkspacePluginsInstalledManifest,
+  createEmptyPluginsInstalledManifest,
+} from '@tagent/shared'
 
 interface AgentWorkspacesIndex {
   version: number
@@ -442,23 +452,164 @@ export function upgradeDefaultSkillsInWorkspaces(): void {
   }
 }
 
-/** 获取插件商店目录（内置 Skill + MCP） */
+/** 获取插件商店目录（TAgent 推荐整合包 + Skill + MCP） */
 export function getPluginStoreCatalog(): PluginStoreCatalog {
-  return {
-    skills: listBundledStoreSkills(),
-    mcps: BUILTIN_MCP_CATALOG,
+  return buildPluginStoreCatalog()
+}
+
+function getWorkspacePluginsInstalledPath(workspaceSlug: string): string {
+  return join(getAgentWorkspacePath(workspaceSlug), 'plugins-installed.json')
+}
+
+function readPluginsInstalledManifest(workspaceSlug: string): WorkspacePluginsInstalledManifest {
+  const path = getWorkspacePluginsInstalledPath(workspaceSlug)
+  const data = readJsonFileSafe<WorkspacePluginsInstalledManifest>(path)
+  if (!data || data.version !== 1 || !data.bundles) {
+    return createEmptyPluginsInstalledManifest()
   }
+  return data
+}
+
+function writePluginsInstalledManifest(
+  workspaceSlug: string,
+  manifest: WorkspacePluginsInstalledManifest
+): void {
+  writeJsonFileAtomic(getWorkspacePluginsInstalledPath(workspaceSlug), manifest)
+}
+
+function workspaceHasSkill(workspaceSlug: string, skillSlug: string): boolean {
+  const active = join(getWorkspaceSkillsDir(workspaceSlug), skillSlug)
+  const inactive = join(getInactiveSkillsDir(workspaceSlug), skillSlug)
+  return existsSync(active) || existsSync(inactive)
+}
+
+/** 从商店安装 MCP 到工作区 mcp.json（已存在则跳过） */
+export function installStoreMcp(workspaceSlug: string, mcpName: string): 'installed' | 'skipped' {
+  const catalogEntry = BUILTIN_MCP_CATALOG.find((mcp) => mcp.name === mcpName)
+  if (!catalogEntry) {
+    throw new Error(`插件商店中不存在该 MCP: ${mcpName}`)
+  }
+
+  const config = getWorkspaceMcpConfig(workspaceSlug)
+  if (config.servers[mcpName]) {
+    return 'skipped'
+  }
+
+  config.servers[mcpName] = {
+    ...mcpCatalogEntryToServerEntry(catalogEntry),
+    enabled: true,
+  }
+  saveWorkspaceMcpConfig(workspaceSlug, config)
+  console.log(`[Agent 工作区] 已从插件商店安装 MCP: ${workspaceSlug}/${mcpName}`)
+  return 'installed'
+}
+
+/** 从插件商店安装整合包 */
+export function installStoreBundle(
+  workspaceSlug: string,
+  bundleId: string
+): InstallStoreBundleResult {
+  const bundle = getStorePluginBundle(bundleId)
+  if (!bundle) {
+    throw new Error(`插件商店中不存在该整合包: ${bundleId}`)
+  }
+
+  const result: InstallStoreBundleResult = {
+    bundleId,
+    installedSkills: [],
+    skippedSkills: [],
+    installedMcps: [],
+    skippedMcps: [],
+    errors: [],
+  }
+
+  for (const skillSlug of bundle.skills) {
+    try {
+      if (workspaceHasSkill(workspaceSlug, skillSlug)) {
+        result.skippedSkills.push(skillSlug)
+        continue
+      }
+      installStoreSkill(workspaceSlug, skillSlug)
+      result.installedSkills.push(skillSlug)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      result.errors.push(`Skill ${skillSlug}: ${message}`)
+    }
+  }
+
+  for (const mcpName of bundle.mcps) {
+    try {
+      const status = installStoreMcp(workspaceSlug, mcpName)
+      if (status === 'installed') {
+        result.installedMcps.push(mcpName)
+      } else {
+        result.skippedMcps.push(mcpName)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      result.errors.push(`MCP ${mcpName}: ${message}`)
+    }
+  }
+
+  const manifest = readPluginsInstalledManifest(workspaceSlug)
+  manifest.bundles[bundleId] = {
+    bundleId,
+    source: 'store',
+    installedAt: new Date().toISOString(),
+    mcps: [...bundle.mcps],
+    skills: [...bundle.skills],
+  }
+  writePluginsInstalledManifest(workspaceSlug, manifest)
+
+  return result
+}
+
+function writeCatalogSkillToWorkspace(workspaceSlug: string, spec: PluginStoreSkillInstallSpec): SkillMeta {
+  const targetPath = join(getWorkspaceSkillsDir(workspaceSlug), spec.slug)
+  const targetInactivePath = join(getInactiveSkillsDir(workspaceSlug), spec.slug)
+
+  if (existsSync(targetPath) || existsSync(targetInactivePath)) {
+    throw new Error(`当前工作区已存在同名 Skill: ${spec.slug}`)
+  }
+
+  mkdirSync(targetPath, { recursive: true })
+  const skillMd = [
+    '---',
+    `name: ${spec.slug}`,
+    `description: ${JSON.stringify(spec.description)}`,
+    `version: "${spec.version}"`,
+    'group: tagent',
+    `category: ${spec.category}`,
+    `tier: ${spec.tier}`,
+    '---',
+    '',
+    spec.body.trim(),
+    '',
+  ].join('\n')
+  writeFileSync(join(targetPath, 'SKILL.md'), skillMd, 'utf-8')
+
+  console.log(`[Agent 工作区] 已从插件商店安装推荐 Skill: ${workspaceSlug}/${spec.slug}`)
+  return parseSkillFrontmatter(skillMd, spec.slug, true)
 }
 
 /**
- * 从 app bundle 安装商店 Skill 到工作区
+ * 从插件商店安装 Skill 到工作区（推荐清单或 legacy bundle）
  */
 export function installStoreSkill(workspaceSlug: string, skillSlug: string): SkillMeta {
+  const catalogEntry = getStoreSkillCatalogEntry(skillSlug)
+  if (!catalogEntry) {
+    throw new Error(`插件商店中不存在该 Skill: ${skillSlug}`)
+  }
+
+  if (catalogEntry.installKind === 'inline') {
+    return writeCatalogSkillToWorkspace(workspaceSlug, catalogEntry)
+  }
+
   const bundledDir = getBundledSkillsDir()
   const sourcePath = join(bundledDir, skillSlug)
 
   if (!existsSync(sourcePath)) {
-    throw new Error(`插件商店中不存在该 Skill: ${skillSlug}`)
+    throw new Error(`商店 Skill 资源缺失（bundle 未包含）: ${skillSlug}`)
   }
 
   const sourceSkillMdPath = join(sourcePath, 'SKILL.md')
@@ -684,7 +835,11 @@ export function getWorkspaceCapabilities(workspaceSlug: string): WorkspaceCapabi
     type: entry.type,
   }))
 
-  return { mcpServers, skills }
+  return {
+    mcpServers,
+    skills,
+    installedBundles: Object.values(readPluginsInstalledManifest(workspaceSlug).bundles),
+  }
 }
 
 export function deleteWorkspaceSkill(workspaceSlug: string, skillSlug: string): void {

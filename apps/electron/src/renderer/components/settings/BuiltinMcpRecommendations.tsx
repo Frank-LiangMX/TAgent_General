@@ -7,9 +7,10 @@
 import { ExternalLink, CheckCircle2, Loader2, Download, Plug } from 'lucide-react'
 import * as React from 'react'
 
-import { BUILTIN_MCP_CATALOG, type BuiltinMcpCatalogEntry } from '@tagent/shared'
+import { getRecommendedDevMcps, getTaMcps, type BuiltinMcpCatalogEntry } from '@tagent/shared'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export type BuiltinMcpInfo = BuiltinMcpCatalogEntry & {
@@ -30,8 +31,8 @@ export function BuiltinMcpRecommendations({
 }: BuiltinMcpRecommendationsProps): React.ReactElement {
   const [installingMcp, setInstallingMcp] = React.useState<string | null>(null)
 
-  const generalMcps = BUILTIN_MCP_CATALOG.filter((m) => m.category === 'general')
-  const taMcps = BUILTIN_MCP_CATALOG.filter((m) => m.category === 'ta')
+  const devMcps = getRecommendedDevMcps()
+  const taMcps = getTaMcps()
 
   const mcpWithStatus = (mcp: BuiltinMcpCatalogEntry): BuiltinMcpInfo => ({
     ...mcp,
@@ -55,10 +56,10 @@ export function BuiltinMcpRecommendations({
       <div>
         <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground/80">
           <Plug size={16} className="text-blue-500" />
-          通用 MCP
+          开发工具 MCP
         </h4>
         <div className="grid gap-3">
-          {generalMcps.map((mcp) => (
+          {devMcps.map((mcp) => (
             <McpRecommendationCard
               key={mcp.name}
               mcp={mcpWithStatus(mcp)}
@@ -142,15 +143,19 @@ function McpRecommendationCard({ mcp, onInstall }: McpRecommendationCardProps): 
 
       <div className="flex items-center gap-2">
         {mcp.docsUrl ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => window.open(mcp.docsUrl, '_blank')}
-            title="查看文档"
-          >
-            <ExternalLink size={14} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => window.open(mcp.docsUrl, '_blank')}
+              >
+                <ExternalLink size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>查看文档</TooltipContent>
+          </Tooltip>
         ) : null}
         {!mcp.installed ? (
           <Button

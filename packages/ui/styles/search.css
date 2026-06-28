@@ -1,0 +1,20 @@
+/**
+ * 统一搜索框样式 — @tagent/ui SearchInput
+ *
+ * 玻璃变体用于插件面板、模型选择器等浮层内嵌搜索。
+ */
+
+.ui-search-input--glass {
+  background:
+    linear-gradient(180deg, hsl(var(--glass-shine) / 0.08), transparent 72%),
+    hsl(var(--background) / 0.34);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.32),
+    0 0 0 1px hsl(var(--foreground) / 0.08);
+}
+
+.ui-search-input--glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.38),
+    0 0 0 1px hsl(var(--primary) / 0.28);
+}

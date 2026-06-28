@@ -15,6 +15,7 @@ import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-pa
 import type { DetachedPreviewWindowData } from '@tagent/shared'
 
 import { agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 function getPreviewId(): string | null {
@@ -92,22 +93,29 @@ export function DetachedPreviewApp(): React.ReactElement {
       <div className="h-11 flex items-center gap-2 px-3 border-b border-border/40 shrink-0">
         <div className="min-w-0 flex-1">
           <div className="text-xs font-medium truncate">{getFileName(data.filePath)}</div>
-          <div className="text-[11px] text-muted-foreground truncate" title={data.filePath}>
-            {data.filePath}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-[11px] text-muted-foreground truncate">{data.filePath}</div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[400px] break-all">{data.filePath}</TooltipContent>
+          </Tooltip>
         </div>
         <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className={cn(
-            'size-7 flex items-center justify-center rounded-md text-muted-foreground',
-            'hover:bg-muted/60 hover:text-foreground transition-colors'
-          )}
-          title="刷新预览"
-        >
-          <RefreshCw className="size-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className={cn(
+                'size-7 flex items-center justify-center rounded-md text-muted-foreground',
+                'hover:bg-muted/60 hover:text-foreground transition-colors'
+              )}
+            >
+              <RefreshCw className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>刷新预览</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">

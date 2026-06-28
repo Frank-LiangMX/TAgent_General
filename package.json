@@ -13,7 +13,7 @@
     "jotai": "^2.17.1"
   },
   "scripts": {
-    "dev": "bun run --filter='@tagent/electron' dev",
+    "dev": "bun run --filter='@tagent/ui' tokens:generate && bun run --filter='@tagent/electron' dev",
     "dev-start": "bun run dev",
     "dev-stop": "bun run --filter='@tagent/electron' dev-stop",
     "electron:dev": "bun run --filter='@tagent/electron' dev",

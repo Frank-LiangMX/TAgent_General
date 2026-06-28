@@ -41,6 +41,7 @@ import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import { resolveAgentSessionModelId } from '@tagent/shared'
 import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities, AgentWorkspace } from '@tagent/shared'
 
 // ===== 项目分组类型 =====
@@ -94,8 +95,6 @@ import {
 } from '@/atoms/agent-atoms'
 import {
   appModeAtom,
-  pluginKindTabAtom,
-  selectedCapabilityAtom,
   activeRailItemAtom,
   type AppMode,
   topLevelModeAtom,
@@ -129,7 +128,7 @@ import { userProfileAtom } from '@/atoms/user-profile'
 import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
-import { PluginsPanel } from '@/components/agent/SkillsPanel'
+import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
 import {
@@ -348,7 +347,13 @@ export function LeftSidebar({
   const unviewedCompletedSessionIds = useAtomValue(unviewedCompletedSessionIdsAtom)
   const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
   const agentChannelId = useAtomValue(agentChannelIdAtom)
-  const agentModelId = useAtomValue(agentModelIdAtom)
+  const legacyGlobalModelId = useAtomValue(agentModelIdAtom)
+  const channels = useAtomValue(channelsAtom)
+  const defaultModelForNewSession = React.useMemo(() => {
+    if (!agentChannelId) return undefined
+    const channel = channels.find((c) => c.id === agentChannelId && c.enabled)
+    return resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+  }, [agentChannelId, channels, legacyGlobalModelId])
   const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
   const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
@@ -491,46 +496,6 @@ export function LeftSidebar({
       .then(setCapabilities)
       .catch(console.error)
   }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
-
-  const [selectedCapability, setSelectedCapability] = useAtom(selectedCapabilityAtom)
-  const pluginKindTab = useAtomValue(pluginKindTabAtom)
-
-  const selectedCapabilityKey = selectedCapability?.key ?? null
-  const selectedCapabilityType = selectedCapability?.type ?? null
-
-  // 进入插件区 / 切换工作区时：仅在校选项失效时补选（不跨 Tab 兜底，避免与侧栏 Tab 冲突）
-  React.useEffect(() => {
-    if (activeRailItem !== 'skills' || !capabilities) {
-      return
-    }
-    if (selectedCapabilityType && selectedCapabilityKey) {
-      const stillValid =
-        selectedCapabilityType === 'mcp'
-          ? capabilities.mcpServers.some((s) => s.name === selectedCapabilityKey)
-          : capabilities.skills.some((s) => s.slug === selectedCapabilityKey)
-      if (stillValid) return
-    }
-
-    const list = pluginKindTab === 'mcp' ? capabilities.mcpServers : capabilities.skills
-    if (list.length === 0) {
-      setSelectedCapability(null)
-      return
-    }
-    const first = list[0]!
-    if (pluginKindTab === 'mcp') {
-      setSelectedCapability({ type: 'mcp', key: first.name })
-    } else {
-      setSelectedCapability({ type: 'skill', key: (first as { slug: string }).slug })
-    }
-  }, [
-    activeRailItem,
-    capabilities,
-    selectedCapabilityKey,
-    selectedCapabilityType,
-    setSelectedCapability,
-    currentWorkspaceSlug,
-    pluginKindTab,
-  ])
 
   /** Working 区域状态（供归档区判断用） */
   const workingSessionIds = useAtomValue(workingSessionIdsSetAtom)
@@ -718,10 +683,10 @@ export function LeftSidebar({
           return map
         })
       }
-      if (agentModelId) {
+      if (defaultModelForNewSession) {
         setSessionModelMap((prev) => {
           const map = new Map(prev)
-          map.set(meta.id, agentModelId)
+          map.set(meta.id, defaultModelForNewSession)
           return map
         })
       }
@@ -753,10 +718,10 @@ export function LeftSidebar({
             return map
           })
         }
-        if (agentModelId) {
+        if (defaultModelForNewSession) {
           setSessionModelMap((prev) => {
             const map = new Map(prev)
-            map.set(meta.id, agentModelId)
+            map.set(meta.id, defaultModelForNewSession)
             return map
           })
         }
@@ -767,7 +732,7 @@ export function LeftSidebar({
         console.error('[侧边栏] 在工作区中创建 Agent 会话失败:', error)
       }
     },
-    [agentChannelId, agentModelId, openSession, setActiveView, setActiveItem, setAgentSessions, setSessionChannelMap, setSessionModelMap, topLevelMode]
+    [agentChannelId, defaultModelForNewSession, openSession, setActiveView, setActiveItem, setAgentSessions, setSessionChannelMap, setSessionModelMap, topLevelMode]
   )
 
   /** 选择 Agent 会话（打开或聚焦标签页） */
@@ -1152,7 +1117,6 @@ export function LeftSidebar({
       className={cn(
         'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
         'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-        activeRailItem === 'skills' && 'nav-island-sidebar--plugins',
         !isMac && 'pt-[28px]'
       )}
       style={{
@@ -1422,7 +1386,6 @@ function SessionsRailContent({
     (workspaceId: string): void => {
       selectWorkspace(workspaceId)
       store.set(activeRailItemAtom, 'skills')
-      store.set(selectedCapabilityAtom, null)
     },
     [selectWorkspace, store]
   )
@@ -1587,7 +1550,7 @@ function SkillsRailContent({
 }: {
   capabilities: WorkspaceCapabilities | null
 }): React.ReactElement {
-  return <PluginsPanel capabilities={capabilities} />
+  return <PluginSidebarNav capabilities={capabilities} />
 }
 
 // ===== 对话列表项 =====
@@ -1821,7 +1784,7 @@ interface AgentSessionItemProps {
   workspaceName?: string
   /** 父级列表绘制滑动指示器时，本项不再铺选中玻璃底 */
   useListSlideIndicator?: boolean
-  /** 子行扩展样式（如 -ml-4 w-[calc(100%+1rem)] 让选中遮罩铺满侧栏边界） */
+  /** 子行扩展样式 */
   childClassName?: string
   onSelect: (id: string, title: string) => void
   onConfirmDone: (id: string) => Promise<void>
@@ -1972,6 +1935,16 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
+  // 滑动指示器接管选中态竖条/图标时，行内仍保留同宽占位，避免文本位移
+  const showSlideAccent = active && useListSlideIndicator
+  const showPrefixIcon =
+    !showSlideAccent &&
+    !active &&
+    (session.manualWorking || (session.pinned && !session.manualWorking))
+  // 工作中 normal 态：仅图标，不显示竖条
+  const showInlineAccent =
+    !showSlideAccent && !!leftAccent && !(session.manualWorking && !active)
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -1988,9 +1961,8 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             startEdit()
           }}
           className={cn(
-            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-colors duration-150 titlebar-no-drag text-left',
+            'group relative w-full flex items-center gap-1 py-[7px] px-1 transition-colors duration-150 titlebar-no-drag text-left',
             childClassName,
-            leftAccent && 'pl-7',
             active
               ? useListSlideIndicator
                 ? cn(
@@ -2003,22 +1975,29 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               : 'rounded-md hover:bg-primary/5'
           )}
         >
-          {/* 非选中态：竖条和文本之间的小图标 */}
-          {session.manualWorking && !active && (
-            <Timer size={12} className="absolute left-[10px] top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400 pointer-events-none" />
-          )}
-          {session.pinned && !active && !session.manualWorking && (
-            <Pin size={11} className="absolute left-[10px] top-1/2 -translate-y-1/2 text-primary/60 pointer-events-none" />
-          )}
-          {leftAccent && !(active && useListSlideIndicator) && !(session.manualWorking && !active) && !(session.pinned && !active && !session.manualWorking) && (
+          {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后 */}
+          <div className="flex-shrink-0 w-[18px]" aria-hidden />
+          {showInlineAccent && leftAccent && (
             <span
               className={cn(
-                'session-sidebar-accent session-sidebar-accent--inline left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
+                'session-sidebar-accent session-sidebar-accent--inline absolute left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
                 SESSION_LEFT_ACCENT_CLASS[leftAccent],
                 leftAccent === 'blue' && 'animate-pulse'
               )}
             />
           )}
+          {showPrefixIcon &&
+            (session.manualWorking ? (
+              <Timer
+                size={12}
+                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400 pointer-events-none"
+              />
+            ) : (
+              <Pin
+                size={11}
+                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-primary/60 pointer-events-none"
+              />
+            ))}
           <div className="flex-1 min-w-0">
             {editing ? (
               <input
@@ -2338,7 +2317,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
         </DropdownMenu>
       </div>
 
-      <div className="ml-4 mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
+      <div
+        className="mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
         <div className="overflow-hidden">
@@ -2353,7 +2333,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
                   showPinIcon={!!session.pinned}
                   leftAccent={getSessionLeftAccent(agentIndicatorMap.get(session.id) ?? 'idle', session.id === activeSessionId, session.manualWorking)}
-                  childClassName="-ml-4 w-[calc(100%+1rem)] pl-7"
                   workspaceName={
                     session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
                   }
@@ -2371,24 +2350,27 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                 <button
                   type="button"
                   onClick={() => onShowMore(group.workspace.id)}
-                  className="w-full text-left px-1.5 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
+                  className="w-full flex items-center gap-1 px-1 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
                 >
-                  显示更多
+                  <span className="flex-shrink-0 w-[18px]" aria-hidden />
+                  <span>显示更多</span>
                 </button>
               )}
               {expanded && (
                 <button
                   type="button"
                   onClick={() => onCollapseExtra(group.workspace.id)}
-                  className="w-full text-left px-1.5 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
+                  className="w-full flex items-center gap-1 px-1 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
                 >
-                  收起
+                  <span className="flex-shrink-0 w-[18px]" aria-hidden />
+                  <span>收起</span>
                 </button>
               )}
             </div>
           ) : !collapsed ? (
-            <div className="px-1.5 py-0.5 text-[12px] text-foreground/22 select-none">
-              暂无会话
+            <div className="flex items-center gap-1 px-1 py-0.5 text-[12px] text-foreground/22 select-none">
+              <span className="flex-shrink-0 w-[18px]" aria-hidden />
+              <span>暂无会话</span>
             </div>
           ) : null}
         </div>

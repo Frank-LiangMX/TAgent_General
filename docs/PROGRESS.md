@@ -40,7 +40,7 @@
 
 ---
 
-## 当前状态（2026-06-26）
+## 当前状态（2026-06-27）
 
 **阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
 
@@ -97,6 +97,24 @@
   - `WindowControls` 加 `titlebar-no-drag` + `z-[200]`，避免 drag region 吞点击
   - 左右栏顶部统一 `pt-[34px]` + drag band（右栏避让 126px 窗口按钮区域，与 `RailInspectorHeader` 方案一致）
   - 移除左栏 4px `SidebarWindowDragStrip`（已被 34px drag band 取代）
+- ✅ **侧栏项目-会话手风琴布局重构** 已完成（2026-06-27，branch `main`，2 commits）：
+  - 移除顶部工作区 Popover 下拉选择器，改为按项目分组的手风琴平铺布局
+  - 新增 `AgentProjectGroupItem` 子组件：项目标题行（FolderOpen/Folder 图标 + 项目名 + 展开箭头 + Plus 新建 + 三点菜单）+ 折叠时隐藏会话列表
+  - `collapsedWorkspaceIds` 本地 state 跟踪折叠状态；`grid-template-rows: 0fr/1fr` 200ms 轻量动画
+  - 统一会话项布局：所有状态（置顶/工作中/普通/选中）一致 padding + 对齐；`getSessionLeftAccent` 始终返回值（含 `'idle'` 透明类型），`pl-7` 统一文本缩进
+  - 工作中会话：琥珀色左侧 accent bar + Timer 图标（选中时在 slide indicator 层 z-[2] 绘制，未选中时在 `left-[10px]` 内联绘制）
+  - 置顶会话：Pin 图标（选中时 slide indicator 层，未选中时内联）
+  - 确认完成按钮从内联移入三点菜单；三点菜单改为 `MoreVertical` 图标 + absolute 定位
+  - 折叠时选中项的 slide indicator 修复：`isActiveSessionVisible` 判断，项目折叠时不渲染滑块
+  - **Bug 修复**：`useOpenSession` 闭包过期（`store.get(tabsAtom)` 替代 captured `tabs`）、`openTab` 保留已有 tab 位置（不再移到末尾）、新会话标题取用户首行输入（不再全部"新Agent会话"）
+- ✅ **插件市场 / 已安装页重构** 已完成（2026-06-27）：
+  - **市场页**：整合包优先浏览（`PluginMarketplaceView`）、分类侧栏导航、卡片网格 + 点击详情；「Get」→「安装」；整合包成员不在散落列表重复展示
+  - **已安装页**：主区卡片墙（`InstalledPluginsView`）+ 轻量详情（`InstalledPluginDetail`）；侧栏分类导航（概览 / MCP / Skill / 各整合包）；`installedPluginNavAtom` 驱动主区筛选
+  - **整合包分组**：`groupInstalledPlugins` 支持 manifest + 商店定义推断；单元测试覆盖分组与市场过滤
+  - **侧栏交互**：`PluginNavSlideList` + 通用 `useListSlideIndicator`，与会话/草稿一致的玻璃滑动选中态
+  - **布局**：插件 rail 侧栏统一 240px；移除顶栏「插件商店」按钮（入口在左侧 rail）
+  - **清理**：删除 `SkillsPanel` / `CapabilityDetailView` / `selectedCapabilityAtom` 旧主从路径；`PluginStorePanel` 仍为未挂载死代码（设置页无入口）
+  - **小修**：`@` 引用弹窗（`FileMentionList` / `MentionList`）滚动条统一 `scrollbar-thin`；Context 底栏词条 Tooltip；Token 底栏隐藏费用展示
 - 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
 - **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
 
@@ -328,7 +346,26 @@
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
 
-### 2026-06-26（续）
+### 2026-06-27
+
+**产出**：侧栏项目-会话手风琴布局 + Bug 修复 + UI 统一重构（2 commits on `main`）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 手风琴布局 | 移除工作区 Popover，按项目分组平铺；`AgentProjectGroupItem` 组件（标题行 + 可折叠会话列表）；`collapsedWorkspaceIds` 折叠状态 |
+| 折叠动画 | `grid-template-rows: 0fr/1fr` + 200ms transition 轻量展开/收起动画 |
+| 图标区分 | 展开项目 FolderOpen 图标，折叠项目 Folder 图标 |
+| 统一会话项 | 所有状态一致 padding + `pl-7` 对齐；`getSessionLeftAccent` 始终返回值（含 `'idle'` 透明类型） |
+| 工作中指示 | 琥珀色 accent bar + Timer 图标（选中 slide indicator 层 z-[2]，未选中 left-[10px] 内联） |
+| 置顶指示 | Pin 图标（选中 slide indicator 层，未选中内联）；confirm-done 移入三点菜单 |
+| 三点菜单 | `MoreVertical` 图标 + absolute 定位不占 flex 空间 |
+| 折叠态滑块 | `isActiveSessionVisible` 判断：项目折叠时不渲染 slide indicator |
+| 闭包 Bug | `useOpenSession` 用 `store.get(tabsAtom)` 替代 captured `tabs`，修复重复开 tab |
+| Tab 位置 Bug | `openTab` 不再移动已有 tab 到末尾，保留原始位置 |
+| 标题 Bug | `agent-orchestrator.ts` 取用户首行输入作标题，不再全部"新Agent会话" |
+| **里程碑** | **侧栏手风琴布局闭环；所有会话项视觉统一；3 个导航 Bug 修复** |
+
+### 2026-06-26（续二）
 
 **产出**：右侧边栏重构 + 会话弹窗玻璃态 + 窗口拖拽修复（分支 `feature/workspace-to-project`）
 

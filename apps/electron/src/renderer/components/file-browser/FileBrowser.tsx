@@ -60,6 +60,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** 计算目标路径相对 rootPath 的祖先目录集合（不含 rootPath 自身、含目标的所有上级） */
@@ -388,19 +389,26 @@ export function FileBrowser({
       {/* 顶部工具栏（可由外部接管） */}
       {!hideToolbar && (
         <div className="flex items-center gap-1 px-3 pr-10 h-[48px] border-b flex-shrink-0">
-          <span className="text-xs text-muted-foreground truncate flex-1" title={rootPath}>
-            {breadcrumb}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 flex-shrink-0"
-            onClick={() => window.electronAPI.openFile(rootPath).catch(console.error)}
-            title="在 Finder 中打开"
-          >
-            <ExternalLink className="size-3.5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs text-muted-foreground truncate flex-1">{breadcrumb}</span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[400px] break-all">{rootPath}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 flex-shrink-0"
+                onClick={() => window.electronAPI.openFile(rootPath).catch(console.error)}
+              >
+                <ExternalLink className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>在 Finder 中打开</TooltipContent>
+          </Tooltip>
           <Button
             type="button"
             variant="ghost"
@@ -831,23 +839,27 @@ function FileTreeItem({
           {/* 悬浮/选中状态：三点菜单 */}
           {showMenu && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
-                    !isSelected &&
-                      'invisible group-hover:visible focus-visible:visible data-[state=open]:visible'
-                  )}
-                  title="更多操作"
-                  aria-label="更多操作"
-                  onClick={(e) => {
-                    if (!isSelected) onSelect(entry, e)
-                  }}
-                >
-                  <MoreHorizontal className="size-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'h-6 w-6 rounded flex items-center justify-center hover:bg-accent/70 text-muted-foreground hover:text-foreground',
+                        !isSelected &&
+                          'invisible group-hover:visible focus-visible:visible data-[state=open]:visible'
+                      )}
+                      aria-label="更多操作"
+                      onClick={(e) => {
+                        if (!isSelected) onSelect(entry, e)
+                      }}
+                    >
+                      <MoreHorizontal className="size-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>更多操作</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
                 {onAddToChat && !entry.isDirectory && menuSelectedCount === 1 && (
                   <DropdownMenuItem

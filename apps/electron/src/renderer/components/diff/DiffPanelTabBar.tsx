@@ -12,7 +12,7 @@ import {
   currentAgentSessionIdAtom,
   agentDiffUnseenFilesAtom,
 } from '@/atoms/agent-atoms'
-import { cn } from '@/lib/utils'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 
 type DiffPanelTab = 'project' | 'activity' | 'changes'
 
@@ -65,63 +65,37 @@ export function DiffPanelTabBar({
     prevTabStateRef.current = { sessionId: currentSessionId, activeTab }
   }, [activeTab, currentSessionId, clearUnseen])
 
-  const handleChangesClick = () => {
-    clearUnseen()
-    if (activeTab !== 'changes') {
-      onTabChange('changes')
+  const handleTabChange = (tab: string): void => {
+    const next = tab as DiffPanelTab
+    if (next === 'changes') {
+      clearUnseen()
+    }
+    if (next !== activeTab) {
+      onTabChange(next)
     }
   }
 
   return (
     <div className="relative flex h-[44px] flex-shrink-0 items-center px-3 pt-2 titlebar-drag-region">
-      <div className="relative flex h-8 flex-1 items-center rounded-full border border-border/35 bg-background/35 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] titlebar-no-drag">
-        <button
-          type="button"
-          onClick={() => onTabChange('project')}
-          className={cn(
-            'h-6 flex-1 select-none rounded-full px-2 text-[11px] font-medium transition-all cursor-pointer',
-            activeTab === 'project'
-              ? 'bg-background/80 text-foreground shadow-sm shadow-black/[0.04]'
-              : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80'
+      <SegmentedTabs
+        className="titlebar-no-drag flex-1"
+        value={activeTab}
+        onValueChange={handleTabChange}
+      >
+        <SegmentedTabsItem value="project">项目文件</SegmentedTabsItem>
+        <SegmentedTabsItem value="activity" className="gap-1">
+          {unseenFilesCount > 0 && activeTab !== 'activity' && (
+            <span className="size-2 shrink-0 rounded-full bg-primary ring-1 ring-background" />
           )}
-        >
-          项目文件
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('activity')}
-          className={cn(
-            'h-6 flex-1 select-none rounded-full px-2 text-[11px] font-medium transition-all cursor-pointer',
-            activeTab === 'activity'
-              ? 'bg-background/80 text-foreground shadow-sm shadow-black/[0.04]'
-              : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80'
+          文件活动
+        </SegmentedTabsItem>
+        <SegmentedTabsItem value="changes" className="gap-1">
+          {unseenChanges && activeTab !== 'changes' && (
+            <span className="size-2 shrink-0 rounded-full bg-primary ring-1 ring-background" />
           )}
-        >
-          <span className="inline-flex items-center gap-1">
-            {unseenFilesCount > 0 && activeTab !== 'activity' && (
-              <span className="size-2 rounded-full bg-primary ring-1 ring-background shrink-0" />
-            )}
-            文件活动
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={handleChangesClick}
-          className={cn(
-            'relative h-6 flex-1 select-none rounded-full px-2 text-[11px] font-medium transition-all cursor-pointer',
-            activeTab === 'changes'
-              ? 'bg-background/80 text-foreground shadow-sm shadow-black/[0.04]'
-              : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80'
-          )}
-        >
-          <span className="inline-flex items-center gap-1">
-            {unseenChanges && activeTab !== 'changes' && (
-              <span className="size-2 rounded-full bg-primary ring-1 ring-background shrink-0" />
-            )}
-            代码改动
-          </span>
-        </button>
-      </div>
+          代码改动
+        </SegmentedTabsItem>
+      </SegmentedTabs>
     </div>
   )
 }

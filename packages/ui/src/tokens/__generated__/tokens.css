@@ -1,0 +1,18 @@
+/* ============================================
+ * 此文件由 packages/ui/src/tokens/__generator__/generate.ts 自动生成
+ * 请勿手动编辑，修改 token 请编辑 packages/ui/src/tokens/*.ts
+ * 然后运行: bun run --filter @tagent/ui tokens:generate
+ * ============================================ */
+
+:root {
+  --radius-glass-input: 24px;
+  --radius-glass-sidebar: 10px;
+  --radius-glass-rail: 12px;
+  --radius-glass-chip: 6px;
+  --radius-glass-modal: 20px;
+  --radius-glass-modal-lg: 24px;
+  --radius-glass-popover: 14px;
+  --radius-glass-sticky: 12px;
+  --radius-glass-tooltip: 20px;
+}
+

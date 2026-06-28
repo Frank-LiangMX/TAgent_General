@@ -6,7 +6,6 @@
  */
 
 import {
-  Search,
   Filter,
   Plus,
   Folder,
@@ -22,8 +21,9 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { SearchInput } from '@/components/ui/search-input'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 // 资产类型图标
@@ -324,30 +324,30 @@ export function AssetLibraryPanel(): React.ReactElement {
       {/* 顶部工具栏 */}
       <div className="flex items-center gap-3 p-4 border-b border-border">
         {/* 搜索框 */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="搜索资产..."
-            className="pl-9 h-9"
-          />
-        </div>
+        <SearchInput
+          containerClassName="flex-1"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder="搜索资产..."
+        />
 
         {/* 类型筛选 */}
         <div className="flex items-center gap-1">
           {ASSET_TYPES.slice(0, 5).map((type) => (
-            <Button
-              key={type}
-              variant={selectedType === type ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedType(selectedType === type ? null : type)}
-              className="h-8 px-2"
-              title={type}
-            >
-              {ASSET_TYPE_ICONS[type] || <Folder size={16} />}
-            </Button>
+            <Tooltip key={type}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={selectedType === type ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedType(selectedType === type ? null : type)}
+                  className="h-8 px-2"
+                >
+                  {ASSET_TYPE_ICONS[type] || <Folder size={16} />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{type}</TooltipContent>
+            </Tooltip>
           ))}
         </div>
 
@@ -431,24 +431,26 @@ function AssetCard({ asset }: AssetCardProps): React.ReactElement {
   const timeAgo = getTimeAgo(asset.updated_at)
 
   return (
-    <div
-      className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-muted/50 transition-colors cursor-pointer"
-      title={asset.path}
-    >
-      {/* 图标 */}
-      <div className="size-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-        {ASSET_TYPE_ICONS[asset.type] || <Folder size={20} className="text-muted-foreground" />}
-      </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-muted/50 transition-colors cursor-pointer">
+          {/* 图标 */}
+          <div className="size-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+            {ASSET_TYPE_ICONS[asset.type] || <Folder size={20} className="text-muted-foreground" />}
+          </div>
 
-      {/* 信息 */}
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm truncate">{asset.name}</div>
-        <div className="text-xs text-muted-foreground truncate">{asset.path}</div>
-      </div>
+          {/* 信息 */}
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{asset.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{asset.path}</div>
+          </div>
 
-      {/* 时间 */}
-      <div className="text-xs text-muted-foreground flex-shrink-0">{timeAgo}</div>
-    </div>
+          {/* 时间 */}
+          <div className="text-xs text-muted-foreground flex-shrink-0">{timeAgo}</div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[400px] break-all">{asset.path}</TooltipContent>
+    </Tooltip>
   )
 }
 

@@ -14,8 +14,6 @@
 import { execSync } from 'child_process'
 import { existsSync } from 'fs'
 
-import { app } from 'electron'
-
 import type { ShellEnvResult } from '@tagent/shared'
 
 /**
@@ -153,11 +151,7 @@ export async function loadWindowsEnv(): Promise<ShellEnvResult> {
     return { success: true, loadedCount: 0, error: null }
   }
 
-  // 开发模式下跳过（从终端启动，PATH 已完整）
-  if (!app.isPackaged) {
-    return { success: true, loadedCount: 0, error: null }
-  }
-
+  // dev / 打包均从注册表合并 PATH：IDE 启动的 Electron 常缺少 Node.js 目录
   console.log('[Windows 环境] 正在从注册表加载 PATH...')
 
   try {

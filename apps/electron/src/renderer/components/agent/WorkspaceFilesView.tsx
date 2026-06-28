@@ -312,12 +312,16 @@ export function WorkspaceFilesView({
               <p>工作区内所有会话可访问的文件和文件夹，每个新对话都可以自动读取</p>
             </TooltipContent>
           </Tooltip>
-          <span
-            className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0"
-            title={workspaceFilesPath ?? ''}
-          >
-            {breadcrumb}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-[10px] text-muted-foreground/70 truncate flex-1 min-w-0">
+                {breadcrumb}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[400px] break-all">
+              {workspaceFilesPath ?? ''}
+            </TooltipContent>
+          </Tooltip>
           {workspaceFilesPath && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -457,9 +461,12 @@ function AttachedFilesSection({
           >
             <span className="w-3.5 flex-shrink-0" />
             <FileTypeIcon name={name} isDirectory={false} />
-            <span className="text-xs truncate flex-1" title={filePath}>
-              {name}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs truncate flex-1">{name}</span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[400px] break-all">{filePath}</TooltipContent>
+            </Tooltip>
             <Button
               type="button"
               variant="ghost"
@@ -615,9 +622,12 @@ function AttachedDirTree({
           )}
         />
         <FileTypeIcon name={dirName} isDirectory isOpen={expanded} />
-        <span className="text-xs truncate flex-1" title={dirPath}>
-          {dirName}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-xs truncate flex-1">{dirName}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[400px] break-all">{dirPath}</TooltipContent>
+        </Tooltip>
         <Button
           type="button"
           variant="ghost"

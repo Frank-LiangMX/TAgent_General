@@ -2,13 +2,14 @@
  * SettingsSegmentedControl - 分段选择器
  *
  * 用于少量选项的快速切换（如外观主题选择）。
- * 水平排列的按钮组，高亮当前选中项。
+ * 基于 @tagent/ui SegmentedTabs 统一样式。
  */
 
 import * as React from 'react'
 
 import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
 
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import { cn } from '@/lib/utils'
 
 /** 分段选项定义 */
@@ -46,25 +47,17 @@ export function SettingsSegmentedControl({
         <div className={LABEL_CLASS}>{label}</div>
         {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
-      <div className="inline-flex rounded-lg bg-muted p-1 gap-0.5">
+      <SegmentedTabs
+        className="max-w-md"
+        value={value}
+        onValueChange={onValueChange}
+      >
         {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            disabled={disabled}
-            onClick={() => onValueChange(option.value)}
-            className={cn(
-              'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-              value === option.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+          <SegmentedTabsItem key={option.value} value={option.value} disabled={disabled}>
             {option.label}
-          </button>
+          </SegmentedTabsItem>
         ))}
-      </div>
+      </SegmentedTabs>
     </div>
   )
 }

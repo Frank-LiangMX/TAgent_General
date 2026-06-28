@@ -67,6 +67,13 @@ extraResources:
   # 默认 Dock 图标（macOS app.dock.setIcon 使用）
   - from: resources/icon.png
     to: icon.png
+  # 托盘图标（tray.ts 通过 process.resourcesPath 加载）
+  - from: resources/iconTemplate.png
+    to: iconTemplate.png
+  - from: resources/iconTemplate@2x.png
+    to: iconTemplate@2x.png
+  - from: resources/iconTemplate@3x.png
+    to: iconTemplate@3x.png
   # TA MCP Server 离线 wheelhouse（一键安装依赖）
   - from: ta-agent-mcp-wheels
     to: ta-agent-mcp-wheels

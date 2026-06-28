@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Loader2,
   Plug,
-  Search,
   Sparkles,
 } from 'lucide-react'
 import * as React from 'react'
@@ -20,15 +19,48 @@ import type {
   BuiltinMcpCatalogEntry,
   McpServerEntry,
   PluginStoreCatalog,
+  PluginStoreCategory,
   PluginStoreSkillEntry,
 } from '@tagent/shared'
 
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { SearchInput } from '@/components/ui/search-input'
+import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import { cn } from '@/lib/utils'
 
 type StoreTab = 'skill' | 'mcp'
+type SkillCategoryFilter = 'all' | PluginStoreCategory | 'recommended'
+type McpCategoryFilter = 'all' | 'dev' | 'ta' | 'recommended'
+
+const CATEGORY_LABELS: Record<PluginStoreCategory, string> = {
+  dev: '开发工具',
+  ta: 'TA 专用',
+  workflow: '工作流',
+  office: '办公文档',
+  planning: '任务规划',
+  meta: '扩展能力',
+}
+
+function sortByRecommended<T extends { tier: string; name?: string; displayName?: string; slug?: string }>(
+  items: T[]
+): T[] {
+  return [...items].sort((a, b) => {
+    const tierA = a.tier === 'recommended' ? 0 : 1
+    const tierB = b.tier === 'recommended' ? 0 : 1
+    if (tierA !== tierB) return tierA - tierB
+    const labelA = a.displayName ?? a.name ?? a.slug ?? ''
+    const labelB = b.displayName ?? b.name ?? b.slug ?? ''
+    return labelA.localeCompare(labelB, 'zh-CN')
+  })
+}
+
+function storeItemBadge(category: string, tier: string): string | undefined {
+  if (category === 'ta') return 'TA'
+  if (tier === 'recommended') return '推荐'
+  return undefined
+}
 
 type StoreSelection = { kind: StoreTab; id: string }
 
@@ -55,6 +87,8 @@ export function PluginStorePanel({
   onAddCustomMcp,
 }: PluginStorePanelProps): React.ReactElement {
   const [tab, setTab] = React.useState<StoreTab>('skill')
+  const [skillCategoryFilter, setSkillCategoryFilter] = React.useState<SkillCategoryFilter>('all')
+  const [mcpCategoryFilter, setMcpCategoryFilter] = React.useState<McpCategoryFilter>('all')
   const [query, setQuery] = React.useState('')
   const [catalog, setCatalog] = React.useState<PluginStoreCatalog | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -73,7 +107,7 @@ export function PluginStorePanel({
       })
       .catch((err) => {
         console.error('[PluginStorePanel] 加载插件商店失败:', err)
-        if (!cancelled) setCatalog({ skills: [], mcps: [] })
+        if (!cancelled) setCatalog({ bundles: [], skills: [], mcps: [] })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -90,25 +124,41 @@ export function PluginStorePanel({
 
   const filteredSkills = React.useMemo(() => {
     const skills = catalog?.skills ?? []
-    if (!normalizedQuery) return skills
-    return skills.filter(
-      (s) =>
-        s.slug.toLowerCase().includes(normalizedQuery) ||
-        s.name.toLowerCase().includes(normalizedQuery) ||
-        s.description.toLowerCase().includes(normalizedQuery)
-    )
-  }, [catalog?.skills, normalizedQuery])
+    let list = skills
+    if (skillCategoryFilter === 'recommended') {
+      list = list.filter((s) => s.tier === 'recommended')
+    } else if (skillCategoryFilter !== 'all') {
+      list = list.filter((s) => s.category === skillCategoryFilter)
+    }
+    if (normalizedQuery) {
+      list = list.filter(
+        (s) =>
+          s.slug.toLowerCase().includes(normalizedQuery) ||
+          s.name.toLowerCase().includes(normalizedQuery) ||
+          s.description.toLowerCase().includes(normalizedQuery)
+      )
+    }
+    return sortByRecommended(list)
+  }, [catalog?.skills, normalizedQuery, skillCategoryFilter])
 
   const filteredMcps = React.useMemo(() => {
     const mcps = catalog?.mcps ?? []
-    if (!normalizedQuery) return mcps
-    return mcps.filter(
-      (m) =>
-        m.name.toLowerCase().includes(normalizedQuery) ||
-        m.displayName.toLowerCase().includes(normalizedQuery) ||
-        m.description.toLowerCase().includes(normalizedQuery)
-    )
-  }, [catalog?.mcps, normalizedQuery])
+    let list = mcps
+    if (mcpCategoryFilter === 'recommended') {
+      list = list.filter((m) => m.tier === 'recommended')
+    } else if (mcpCategoryFilter === 'dev' || mcpCategoryFilter === 'ta') {
+      list = list.filter((m) => m.category === mcpCategoryFilter)
+    }
+    if (normalizedQuery) {
+      list = list.filter(
+        (m) =>
+          m.name.toLowerCase().includes(normalizedQuery) ||
+          m.displayName.toLowerCase().includes(normalizedQuery) ||
+          m.description.toLowerCase().includes(normalizedQuery)
+      )
+    }
+    return sortByRecommended(list)
+  }, [catalog?.mcps, normalizedQuery, mcpCategoryFilter])
 
   const activeSelection = React.useMemo((): StoreSelection | null => {
     const list = tab === 'skill' ? filteredSkills : filteredMcps
@@ -139,7 +189,6 @@ export function PluginStorePanel({
     return filteredMcps.find((m) => m.name === activeSelection.id) ?? null
   }, [activeSelection, filteredMcps])
 
-  const tabIndex = tab === 'skill' ? 0 : 1
   const listCount = tab === 'skill' ? filteredSkills.length : filteredMcps.length
 
   const handleTabChange = (next: StoreTab): void => {
@@ -181,50 +230,55 @@ export function PluginStorePanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 space-y-2.5">
-        <div className="agent-model-segmented agent-model-segmented--2">
-          <div
-            className="agent-model-segmented-indicator"
-            style={{ transform: `translateX(${tabIndex * 100}%)` }}
-          />
-          <button
-            type="button"
-            onClick={() => handleTabChange('skill')}
-            className={cn(
-              'agent-model-segmented-option gap-1',
-              tab === 'skill' && 'agent-model-segmented-option--active'
-            )}
-          >
+        <SegmentedTabs value={tab} onValueChange={(next) => handleTabChange(next as StoreTab)}>
+          <SegmentedTabsItem value="skill" className="gap-1">
             <Sparkles size={12} strokeWidth={1.75} />
             <span>Skill</span>
             {catalog ? (
               <span className="text-[10px] tabular-nums opacity-60">{catalog.skills.length}</span>
             ) : null}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('mcp')}
-            className={cn(
-              'agent-model-segmented-option gap-1',
-              tab === 'mcp' && 'agent-model-segmented-option--active'
-            )}
-          >
+          </SegmentedTabsItem>
+          <SegmentedTabsItem value="mcp" className="gap-1">
             <Plug size={12} strokeWidth={1.75} />
             <span>MCP</span>
             {catalog ? (
               <span className="text-[10px] tabular-nums opacity-60">{catalog.mcps.length}</span>
             ) : null}
-          </button>
-        </div>
+          </SegmentedTabsItem>
+        </SegmentedTabs>
 
-        <label className="plugins-panel-search relative flex items-center gap-2 rounded-xl px-2.5 py-1.5">
-          <Search size={13} className="shrink-0 text-muted-foreground/65" strokeWidth={2} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={tab === 'mcp' ? '搜索 MCP…' : '搜索 Skill…'}
-            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/55"
-          />
-        </label>
+        <SearchInput
+          variant="glass"
+          size="sm"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={tab === 'mcp' ? '搜索 MCP…' : '搜索 Skill…'}
+        />
+
+        {tab === 'skill' ? (
+          <SegmentedTabs
+            className="!grid-cols-[repeat(6,minmax(0,1fr))]"
+            value={skillCategoryFilter}
+            onValueChange={(next) => setSkillCategoryFilter(next as SkillCategoryFilter)}
+          >
+            <SegmentedTabsItem value="all">全部</SegmentedTabsItem>
+            <SegmentedTabsItem value="recommended">推荐</SegmentedTabsItem>
+            <SegmentedTabsItem value="workflow">工作流</SegmentedTabsItem>
+            <SegmentedTabsItem value="office">办公</SegmentedTabsItem>
+            <SegmentedTabsItem value="planning">规划</SegmentedTabsItem>
+            <SegmentedTabsItem value="meta">扩展</SegmentedTabsItem>
+          </SegmentedTabs>
+        ) : (
+          <SegmentedTabs
+            value={mcpCategoryFilter}
+            onValueChange={(next) => setMcpCategoryFilter(next as McpCategoryFilter)}
+          >
+            <SegmentedTabsItem value="all">全部</SegmentedTabsItem>
+            <SegmentedTabsItem value="recommended">推荐</SegmentedTabsItem>
+            <SegmentedTabsItem value="dev">开发</SegmentedTabsItem>
+            <SegmentedTabsItem value="ta">TA</SegmentedTabsItem>
+          </SegmentedTabs>
+        )}
       </div>
 
       <div className="mt-3 flex min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border border-border/45 bg-background/20">
@@ -250,6 +304,7 @@ export function PluginStorePanel({
                     selected={
                       activeSelection?.kind === 'skill' && activeSelection.id === skill.slug
                     }
+                    badge={storeItemBadge(skill.category, skill.tier)}
                     installed={installedSkillSet.has(skill.slug)}
                     style={{ animationDelay: `${Math.min(index, 8) * 24}ms` }}
                     onClick={() => setSelected({ kind: 'skill', id: skill.slug })}
@@ -264,7 +319,7 @@ export function PluginStorePanel({
                     kind="mcp"
                     title={mcp.displayName}
                     subtitle={mcp.description}
-                    badge={mcp.category === 'ta' ? 'TA' : undefined}
+                    badge={storeItemBadge(mcp.category, mcp.tier)}
                     selected={activeSelection?.kind === 'mcp' && activeSelection.id === mcp.name}
                     installed={installedMcpSet.has(mcp.name)}
                     style={{ animationDelay: `${Math.min(index, 8) * 24}ms` }}
@@ -446,6 +501,11 @@ function StoreSkillDetail({
         </div>
 
         <div className="space-y-2 rounded-xl border border-border/50 bg-muted/10 p-3">
+          <DetailMetaRow label="分类" value={CATEGORY_LABELS[skill.category] ?? skill.category} />
+          <DetailMetaRow
+            label="类型"
+            value={skill.installKind === 'bundled' ? '完整包（含脚本）' : '轻量工作流'}
+          />
           <DetailMetaRow label="版本" value={skill.version || '—'} />
           <DetailMetaRow
             label="标识"
@@ -524,6 +584,7 @@ function StoreMcpDetail({
         </div>
 
         <div className="space-y-2 rounded-xl border border-border/50 bg-muted/10 p-3">
+          <DetailMetaRow label="分类" value={CATEGORY_LABELS[mcp.category] ?? mcp.category} />
           <DetailMetaRow
             label="启动"
             value={<code className="break-all font-mono text-[10px]">{installPreview}</code>}
@@ -580,11 +641,4 @@ function StoreMcpDetail({
 }
 
 /** 将商店 MCP 条目转为 McpServerEntry 预填表单 */
-export function mcpCatalogEntryToServerEntry(mcp: BuiltinMcpCatalogEntry): McpServerEntry {
-  return {
-    type: 'stdio',
-    command: mcp.installCommand,
-    args: mcp.installArgs,
-    enabled: false,
-  }
-}
+export { mcpCatalogEntryToServerEntry } from '@tagent/shared'

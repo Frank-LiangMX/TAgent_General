@@ -25,6 +25,7 @@
     "build:renderer": "vite build",
     "build:resources": "node -e \"require('fs').rmSync('dist/resources',{recursive:true,force:true});require('fs').cpSync('resources','dist/resources',{recursive:true})\"",
     "build:ta-wheels": "node --experimental-strip-types scripts/build-ta-wheels.ts",
+    "prebuild": "bun run --filter='@tagent/ui' tokens:generate",
     "build": "bun run build:main && bun run build:preload && bun run build:renderer && bun run build:resources",
     "start": "bun run build && bunx electron .",
     "typecheck": "tsc --noEmit",

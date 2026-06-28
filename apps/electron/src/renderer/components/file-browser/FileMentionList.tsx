@@ -305,7 +305,7 @@ export const FileMentionList = React.forwardRef<FileMentionRef, FileMentionListP
         <MentionErrorBoundary>
           <div
             ref={containerRef}
-            className="session-glass-surface session-glass-popover overflow-y-auto max-h-[360px] min-w-[260px]"
+            className="session-glass-surface session-glass-popover overflow-y-auto scrollbar-thin max-h-[360px] min-w-[260px]"
           >
             {/* 会话文件 */}
             {hasSession && (

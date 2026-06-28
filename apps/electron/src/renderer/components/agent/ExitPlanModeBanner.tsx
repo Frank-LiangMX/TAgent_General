@@ -22,6 +22,7 @@ import {
   finalizeStreamingActivities,
 } from '@/atoms/agent-atoms'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 选项定义 */
 interface PlanOption {
@@ -208,14 +209,18 @@ export function ExitPlanModeBanner({
         <div className="flex items-center gap-2 mb-1">
           <FileText className="size-4 text-primary" />
           <span className="text-sm font-medium text-foreground flex-1">Agent 计划待审批</span>
-          <button
-            type="button"
-            className="size-5 flex items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-            onClick={handleDismiss}
-            title="关闭并终止 Agent"
-          >
-            <X className="size-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="size-5 flex items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                onClick={handleDismiss}
+              >
+                <X className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>关闭并终止 Agent</TooltipContent>
+          </Tooltip>
         </div>
         <p className="text-xs text-muted-foreground">Agent 已完成计划，请选择如何继续</p>
       </div>

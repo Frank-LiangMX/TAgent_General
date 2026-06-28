@@ -210,7 +210,7 @@ export interface AppSettings {
   themeStyle?: ThemeStyle
   /** Agent 默认渠道 ID（仅限 Anthropic 渠道） — 当前选中的渠道 */
   agentChannelId?: string
-  /** Agent 默认模型 ID */
+  /** @deprecated 旧版全局默认模型，新逻辑请用 channels.json 内各渠道 defaultModelId */
   agentModelId?: string
   /** Agent 启用的渠道 ID 列表（多选，Switch 开关） */
   agentChannelIds?: string[]
@@ -277,6 +277,8 @@ export interface AppSettings {
   autoCleanupArchivedDays?: number
   /** 主窗口状态（大小、位置、是否最大化） */
   mainWindowState?: MainWindowState
+  /** Windows 关闭按钮行为：'minimize-to-tray' 隐藏到托盘 / 'quit' 退出程序，undefined 弹框让用户选择 */
+  closeAction?: 'minimize-to-tray' | 'quit'
 }
 
 /** 主窗口大小、位置和最大化状态 */
@@ -430,6 +432,20 @@ export const TRAY_IPC_CHANNELS = {
   /** 创建新会话 */
   CREATE_SESSION: 'tray:create-session',
 } as const
+
+/** 窗口关闭确认 IPC 通道 */
+export const WINDOW_CLOSE_IPC_CHANNELS = {
+  /** 主进程 → 渲染进程：请求显示关闭确认对话框 */
+  REQUEST: 'window:close-request',
+  /** 渲染进程 → 主进程：回传用户选择结果 */
+  RESPONSE: 'window:close-response',
+} as const
+
+/** 窗口关闭确认回传数据 */
+export interface WindowCloseResponseData {
+  action: 'minimize-to-tray' | 'quit'
+  remember: boolean
+}
 
 /** 存储管理 IPC 通道 */
 export const STORAGE_IPC_CHANNELS = {

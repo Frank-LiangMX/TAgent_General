@@ -27,6 +27,7 @@ import { SettingsCard } from './primitives'
 import type { SkillFileNode, SkillFileContent } from '@tagent/shared'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface SkillFilesPanelProps {
@@ -262,30 +263,42 @@ export function SkillFilesPanel({
               })()}
         </div>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            title="新建文件（根目录）"
-            onClick={() => startCreate('file', '')}
-            className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <FilePlus size={14} />
-          </button>
-          <button
-            type="button"
-            title="新建目录（根目录）"
-            onClick={() => startCreate('directory', '')}
-            className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <FolderPlus size={14} />
-          </button>
-          <button
-            type="button"
-            title="刷新"
-            onClick={() => void refreshTree()}
-            className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <RefreshCw size={14} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => startCreate('file', '')}
+                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FilePlus size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>新建文件（根目录）</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => startCreate('directory', '')}
+                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FolderPlus size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>新建目录（根目录）</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => void refreshTree()}
+                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>刷新</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -527,48 +540,64 @@ function TreeNode(props: TreeNodeProps): React.ReactElement {
           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 shrink-0 transition-opacity">
             {node.type === 'directory' && (
               <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    props.onStartCreate('file', node.relativePath)
-                  }}
-                  className="p-0.5 hover:text-foreground text-muted-foreground"
-                  title="在此新建文件"
-                >
-                  <FilePlus size={11} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    props.onStartCreate('directory', node.relativePath)
-                  }}
-                  className="p-0.5 hover:text-foreground text-muted-foreground"
-                  title="在此新建目录"
-                >
-                  <FolderPlus size={11} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        props.onStartCreate('file', node.relativePath)
+                      }}
+                      className="p-0.5 hover:text-foreground text-muted-foreground"
+                    >
+                      <FilePlus size={11} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>在此新建文件</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        props.onStartCreate('directory', node.relativePath)
+                      }}
+                      className="p-0.5 hover:text-foreground text-muted-foreground"
+                    >
+                      <FolderPlus size={11} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>在此新建目录</TooltipContent>
+                </Tooltip>
               </>
             )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                props.onStartRename(node)
-              }}
-              className="p-0.5 hover:text-foreground text-muted-foreground"
-              title="重命名"
-            >
-              <Pencil size={11} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                props.onDelete(node)
-              }}
-              className="p-0.5 hover:text-destructive text-muted-foreground"
-              title="删除"
-            >
-              <Trash2 size={11} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.onStartRename(node)
+                  }}
+                  className="p-0.5 hover:text-foreground text-muted-foreground"
+                >
+                  <Pencil size={11} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>重命名</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.onDelete(node)
+                  }}
+                  className="p-0.5 hover:text-destructive text-muted-foreground"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>删除</TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>

@@ -77,7 +77,7 @@ function MentionListInner<T>(
   return (
     <div
       ref={containerRef}
-      className="session-glass-surface session-glass-popover overflow-y-auto max-h-[240px] w-[280px]"
+      className="session-glass-surface session-glass-popover overflow-y-auto scrollbar-thin max-h-[240px] w-[280px]"
     >
       {items.map((item, index) => (
         <button

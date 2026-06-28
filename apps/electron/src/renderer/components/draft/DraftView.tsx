@@ -18,6 +18,7 @@ import {
   currentDraftTitleAtom,
   loadDraftsAtom,
 } from '@/atoms/draft-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { DraftEditor } from './DraftEditor'
@@ -113,13 +114,17 @@ export function DraftView({ draftId }: DraftViewProps): React.ReactElement {
             />
           ) : (
             <>
-              <h1
-                className="text-lg font-semibold text-foreground truncate cursor-pointer hover:text-primary/80 transition-colors"
-                onClick={startEditTitle}
-                title="点击编辑标题"
-              >
-                {title || '未命名草稿'}
-              </h1>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h1
+                    className="text-lg font-semibold text-foreground truncate cursor-pointer hover:text-primary/80 transition-colors"
+                    onClick={startEditTitle}
+                  >
+                    {title || '未命名草稿'}
+                  </h1>
+                </TooltipTrigger>
+                <TooltipContent>点击编辑标题</TooltipContent>
+              </Tooltip>
               {/* 内联状态胶囊 */}
               <span
                 className={cn(

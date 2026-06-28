@@ -12,6 +12,7 @@ function makeCaps(
   return {
     mcpServers: mcpServers.map((s) => ({ ...s, type: 'stdio' as const })),
     skills: skills.map((s) => ({ ...s })),
+    installedBundles: [],
   }
 }
 
