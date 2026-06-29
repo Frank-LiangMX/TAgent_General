@@ -13,11 +13,11 @@
 ## 启动
 
 ```bash
-F:\TAgent_General\scripts\dev\dev.bat
+F:\TAgent_General\scripts\dev\Start-TAgent-Dev.bat
 ```
 
 > **注意**：决策 #15 改了 `agent-orchestrator.ts`，**需要重启主进程**。
-> 用 `Ctrl+Shift+R` 或 `scripts\dev\dev-stop.bat && scripts\dev\dev.bat`。
+> 用 `Ctrl+Shift+R` 或 `scripts\dev\Stop-TAgent-Dev.bat && scripts\dev\Start-TAgent-Dev.bat`。
 
 ## 1. 决策 #15：Enter vs Shift+Enter
 

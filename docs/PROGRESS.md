@@ -40,9 +40,9 @@
 
 ---
 
-## 当前状态（2026-06-27）
+## 当前状态（2026-06-29）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
 
 **当前判断**：
 
@@ -345,6 +345,19 @@
 | 合并 | PR #15 → `main`（`feature/automation-scheduler-core`） |
 | 新规划 | [`2026-06-25-kscc-internal-provider-design.md`](plans/2026-06-25-kscc-internal-provider-design.md) 登记为当时主线（已完成） |
 | **里程碑** | **定时任务 v1 可用；下一阶段 kscc 内网零成本 Agent** |
+
+### 2026-06-29
+
+**产出**：v1.3.1 补丁发布 + kscc 渠道工具修复 + dev 脚本闪退修复 + typecheck 清理（commits on `main`）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| kscc Bash 工具修复 | `agent-orchestrator.ts` 的 `buildSdkEnv` 把 Windows shell 检测（`CLAUDE_CODE_SHELL`）移到 kscc early return 之前，避免 kscc 子进程在 Windows 退化用 cmd.exe 跑 Unix 命令 |
+| kscc ripgrep 自动补齐 | 新增 `ensure-kscc-ripgrep.ts`，启动时检测 kscc vendor 目录缺 `rg.exe` 则从系统 PATH 复制，解决 Grep/Glob 报 `ENOENT rg.exe`；仅 Windows 生效 |
+| dev 启动脚本闪退 | `Start-TAgent-Dev.bat` / `Stop-TAgent-Dev.bat` 改为纯 ASCII + CRLF，删除会误杀 kscc 等 CLI agent 的旧 `dev.bat` / `dev-stop.bat` / `dev-kill-all.ps1`（旧脚本无差别 `Stop-Process bun`） |
+| typecheck 清理 | 修复 1.3.0 遗留的 11 个类型错误：`claude-agent-adapter` 补 `TRANSIENT_NETWORK_PATTERN` import、`PluginSidebarNav` 类型收窄、`ChannelSettings` void 包装、两个 test mock 适配类型定义 |
+| 版本发布 | v1.3.0（插件市场 + `@tagent/ui` + 侧栏手风琴）、v1.3.1（本日修复）先后发布到 GitHub Release，auto-updater 推送给用户 |
+| **里程碑** | **kscc 渠道 Bash/ripgrep 工具开箱即用；dev 启动脚本不再闪退；CI typecheck 转绿** |
 
 ### 2026-06-27
 

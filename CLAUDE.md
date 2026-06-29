@@ -300,7 +300,7 @@ React UI 更新
 
 **当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成。当前活跃开发主线为 **上游 v0.13.3 对齐**。
 
-**已完成**（截至 2026-06-26）：
+**已完成**（截至 2026-06-29）：
 
 - Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
 - Ask 档位统一 Composer + Chat 主路径退役
@@ -312,6 +312,8 @@ React UI 更新
 - Claude Agent SDK **0.3.185** 升级（写风暴 / 断连修复）
 - **Automation v1（M1–M3）**：调度内核 + 管理 UI + 运行通知（PR #15）
 - **草稿模式重构 + Chat 清理**：Chat 死代码全清（-2796 行）、Draft 全系统（数据层 + Atoms + 7 UI 组件 + Agent 升级流 + 旧版迁移）
+- **v1.3.0 发布**（2026-06-29）：插件市场/已安装页重构 + `@tagent/ui` 迁移 + 侧栏手风琴布局
+- **v1.3.1 发布**（2026-06-29）：kscc 渠道 Bash/ripgrep 工具修复 + dev 启动脚本闪退修复 + 1.3.0 遗留 typecheck 错误清理
 
 **活跃待办**：
 
@@ -320,6 +322,11 @@ React UI 更新
 - Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
+
+**最近完成**（2026-06-29）：
+
+- **v1.3.1 补丁发布**：修复 kscc 渠道 Bash 工具不可用（`buildSdkEnv` 把 `CLAUDE_CODE_SHELL` 配置移到 early return 前）+ ripgrep 自动补齐（新增 `ensure-kscc-ripgrep`，启动时从系统 PATH 复制 `rg.exe` 到 kscc vendor 目录）+ dev 启动脚本闪退（`Start/Stop-TAgent-Dev.bat` 编码修复，移除误杀 kscc 的旧 `dev.bat`/`dev-kill-all.ps1`）+ 1.3.0 遗留 11 个 typecheck 错误清理
+- **v1.3.0 发布**：插件市场/已安装页重构、`@tagent/ui` 共享 UI 包、侧栏项目-会话手风琴布局
 
 **最近完成**（2026-06-27）：
 
@@ -343,7 +350,7 @@ React UI 更新
 如果你是新进入此项目的 AI Agent：
 
 1. **先读本文件** — 了解项目身份、架构、约束
-2. **读 `.context/PROGRESS.md`** — 了解当前进度和下一步
+2. **读 `docs/PROGRESS.md`** — 了解当前进度和下一步
 3. **读设计文档** — `docs/plans/2026-06-05-tagent-fusion-design.md` 了解完整设计
 4. **品牌约束** — 永远用 TAgent，不用 Proma；路径用 `~/.tagent/`
 5. **问用户确认** — 重大改动前先问
