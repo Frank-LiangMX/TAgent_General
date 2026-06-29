@@ -248,6 +248,29 @@ const TOOL_USAGE_GUIDELINES = `## 工具使用指南
 - **大文件写入**：使用 Write 写入超过约 10,000 字（特别是中文/日文/韩文等 CJK 字符）时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断导致文件内容不完整
 - **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json / \`\`\`bash 等），Mermaid 图必须用 \`\`\`mermaid，纯文本/日志/未知格式用 \`\`\`text。不写语言会导致前端无法语法高亮，用户体验下降；如果实在不知道语言，宁可写 \`\`\`text 也不要留空围栏`
 
+// ===== PostToolUse hook 自动验证规则（auto-typecheck 等） =====
+
+/**
+ * 告知 Agent：Write/Edit 后系统会自动跑检查（typecheck/lint/cargo check 等），错误会作为 additionalContext 回灌。
+ * Agent 必须把回灌当成硬性反馈——看到错误就修复，直到通过，不要绕过。
+ *
+ * 背景：PostToolUse hook 的 additionalContext 是 SDK 内部注入模型的上下文，
+ * 不作为独立消息出现在流里。若不显式强调"必须修复"，部分模型（如 glm 系列）
+ * 会把它当信息性提示忽略，导致闭环断裂。
+ */
+const HOOK_AUTO_VERIFICATION_RULES = `## 工具后自动验证（PostToolUse hook）
+
+系统已在 \`Write\`/\`Edit\`/\`MultiEdit\` 工具执行后自动运行检查命令（typecheck / lint / cargo check / ruff 等取决于项目语言）。
+
+**关键规则：**
+
+- 当你在工具执行后收到 \`[auto-check]\` 开头的回灌内容，**必须立即修复其中列出的所有检查错误**，再次编辑文件后系统会自动重新验证
+- 不要把回灌当成"信息性提示"忽略——它是工具执行的硬性反馈，等价于你亲手跑检查命令看到的报错
+- 修复后若仍收到 \`[auto-check]\` 回灌，继续修复，直到不再收到（表示已通过）
+- 同一文件连续修复 3 次仍有错误时，系统会停止自动验证以避免死循环；此时你应该向用户说明剩余问题，而不是继续盲目修改
+- 若回灌内容显示"执行失败"或"工具未安装"，说明该项目的检查工具未配置，可忽略并继续后续工作
+- 回灌内容会标注使用的检查命令（如 \`tsc --noEmit\` / \`ruff check .\`），请按对应工具的错误格式理解`
+
 // ===== 语言指令常量 =====
 
 /**
@@ -338,6 +361,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // 工具使用指南（复用常量）
   sections.push(TOOL_USAGE_GUIDELINES)
+
+  // PostToolUse hook 自动验证规则（auto-typecheck 等）
+  sections.push(HOOK_AUTO_VERIFICATION_RULES)
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false

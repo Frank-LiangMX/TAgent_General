@@ -200,6 +200,12 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   sdkSessionId?: string
   /** 附加的外部目录（SDK additionalDirectories） */
   additionalDirectories?: string[]
+  /**
+   * PostToolUse 等 hook 配置（SDK 原生 JS 回调式，非 shell command）。
+   * 由 buildPostToolUseHooks() 构造，在 query options 透传给 SDK。
+   * MVP 阶段内置 auto-typecheck 钩子。
+   */
+  hooks?: Partial<Record<string, import('@anthropic-ai/claude-agent-sdk').HookCallbackMatcher[]>>
 }
 
 // ============================================================================
@@ -794,6 +800,8 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           options.additionalDirectories.length > 0 && {
             additionalDirectories: options.additionalDirectories,
           }),
+        // PostToolUse JS 回调式 hooks（auto-typecheck 等）
+        ...(options.hooks && { hooks: options.hooks }),
         // 强制顺序执行工具，防止并发 tool_use 导致 400 错误
         // 根因：多个 tool_use 并发时若结果未完整批量提交会触发 invalid_request_error
         toolUseConcurrency: 1,

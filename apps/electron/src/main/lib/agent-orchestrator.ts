@@ -62,6 +62,7 @@ import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-pla
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
+import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
   appendSDKMessages,
   updateAgentSessionMeta,
@@ -2173,6 +2174,13 @@ export class AgentOrchestrator {
         ...(workspaceSlug && {
           plugins: [{ type: 'local' as const, path: getAgentWorkspacePath(workspaceSlug) }],
         }),
+        // PostToolUse 钩子（按全局 settings.hooks.autoCheck 决定是否注入，默认开启）
+        // 非 TS 项目工作区由 hook 内部 resolveCheckCommand 自动跳过，无需用户配置
+        // 语言级精细配置（启用/超时）通过 buildPostToolUseHooks 传入
+        ...(appSettings.hooks?.autoTypecheck !== false &&
+          appSettings.hooks?.autoCheck !== false && {
+            hooks: buildPostToolUseHooks(appSettings.hooks?.languages),
+          }),
         // 合并附加目录：用户当次输入 + 会话级 + 工作区级（详见 collectAttachedDirectories）
         ...(() => {
           const allDirs = collectAttachedDirectories({

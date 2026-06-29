@@ -960,6 +960,16 @@ export interface SkillMeta {
   importSource?: SkillImportSource
   /** 是否有可用更新（源 Skill 版本 > importSource.sourceVersion） */
   hasUpdate?: boolean
+  /** 允许该 Skill 调用的工具列表（Claude Code 标准 frontmatter 字段） */
+  allowedTools?: string[]
+  /** 许可证标识（如 MIT / Apache-2.0） */
+  license?: string
+  /** 自定义元数据（键值对，如 author / homepage 等） */
+  metadata?: Record<string, string>
+  /** 分类标签（如 planning / debugging / testing） */
+  category?: string
+  /** 兼容性声明（如 requires-claude-code: ">=1.0"） */
+  compatibility?: string
 }
 
 /** Skill 目录下的文件/子目录节点（递归树） */
@@ -1276,6 +1286,35 @@ export interface WorkspaceWorktreeRepo {
   worktreesPath: string
   /** 优先级（数字越小越优先） */
   priority?: number
+}
+
+/** 支持自动检查的语言标识 */
+export type AutoCheckLanguage =
+  | 'typescript'
+  | 'javascript'
+  | 'python'
+  | 'rust'
+  | 'go'
+  | 'lua'
+  | 'cpp'
+  | 'java'
+
+/** 单个语言的精细配置 */
+export interface LanguageHookConfig {
+  /** 是否启用该语言的检查（默认：TS/JS/Python/Rust/Go/Lua 为 true，C++/Java 为 false） */
+  enabled?: boolean
+  /** 检查命令超时（秒），不设用语言默认（多数 60s，Rust 120s） */
+  timeoutSec?: number
+}
+
+/** 全局 hook 开关配置（应用级，存 settings.json） */
+export interface HooksConfig {
+  /** auto-check 钩子是否启用（默认 true）：Edit/Write 代码后自动跑检查命令 */
+  autoCheck?: boolean
+  /** 各语言的精细配置（覆盖默认值） */
+  languages?: Partial<Record<AutoCheckLanguage, LanguageHookConfig>>
+  /** @deprecated 旧字段名，向后兼容；新逻辑读 autoCheck */
+  autoTypecheck?: boolean
 }
 
 // ===== AskUserQuestion 交互式问答类型 =====

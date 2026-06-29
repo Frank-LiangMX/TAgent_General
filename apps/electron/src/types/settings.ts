@@ -279,6 +279,8 @@ export interface AppSettings {
   mainWindowState?: MainWindowState
   /** Windows 关闭按钮行为：'minimize-to-tray' 隐藏到托盘 / 'quit' 退出程序，undefined 弹框让用户选择 */
   closeAction?: 'minimize-to-tray' | 'quit'
+  /** 全局 hook 开关配置（auto-typecheck 等，默认全开） */
+  hooks?: import('@tagent/shared').HooksConfig
 }
 
 /** 主窗口大小、位置和最大化状态 */
