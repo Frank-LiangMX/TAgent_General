@@ -341,7 +341,7 @@ export function AssetLibraryPanel(): React.ReactElement {
                   variant={selectedType === type ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedType(selectedType === type ? null : type)}
-                  className="h-8 px-2"
+                  className="size-[32px] rounded-lg p-0"
                 >
                   {ASSET_TYPE_ICONS[type] || <Folder size={16} />}
                 </Button>
@@ -355,7 +355,7 @@ export function AssetLibraryPanel(): React.ReactElement {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8"
+          className="size-[36px] rounded-full p-0"
           onClick={handleRefresh}
           disabled={isLoading}
         >

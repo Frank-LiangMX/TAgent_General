@@ -47,14 +47,14 @@ export function WindowCloseConfirmDialog({ open, onOpenChange }: WindowCloseConf
         <AlertDialogFooter className="flex-row gap-2 sm:gap-2">
           <button
             type="button"
-            className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             onClick={() => handleAction('minimize-to-tray')}
           >
             最小化到托盘
           </button>
           <button
             type="button"
-            className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
+            className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
             onClick={() => handleAction('quit')}
           >
             退出程序

@@ -30,14 +30,14 @@ export function AutomationTaskToolbar({
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 rounded-full px-3 text-xs"
+          className="h-9 rounded-full px-3.5 text-xs gap-1.5"
           disabled={running || !enabled}
           onClick={onRunNow}
         >
           {running ? (
-            <Loader2 size={14} className="mr-1.5 animate-spin" />
+            <Loader2 size={14} className="animate-spin" />
           ) : (
-            <Play size={14} className="mr-1.5" />
+            <Play size={14} />
           )}
           立即运行
         </Button>
@@ -45,17 +45,17 @@ export function AutomationTaskToolbar({
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 rounded-full px-3 text-xs"
+          className="h-9 rounded-full px-3.5 text-xs gap-1.5"
           onClick={onToggle}
         >
           {enabled ? (
             <>
-              <Pause size={14} className="mr-1.5" />
+              <Pause size={14} />
               暂停任务
             </>
           ) : (
             <>
-              <Play size={14} className="mr-1.5" />
+              <Play size={14} />
               恢复任务
             </>
           )}
@@ -66,11 +66,11 @@ export function AutomationTaskToolbar({
           variant="ghost"
           size="sm"
           className={cn(
-            'h-8 rounded-full px-3 text-xs text-red-500 hover:bg-red-500/10 hover:text-red-400'
+            'h-9 rounded-full px-3.5 text-xs gap-1.5 text-red-500 hover:bg-red-500/10 hover:text-red-400'
           )}
           onClick={onDelete}
         >
-          <Trash2 size={14} className="mr-1.5" />
+          <Trash2 size={14} />
           删除
         </Button>
       </div>

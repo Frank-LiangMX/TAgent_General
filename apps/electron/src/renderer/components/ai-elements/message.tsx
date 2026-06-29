@@ -96,7 +96,11 @@ export function MessageHeader({
 }: MessageHeaderProps): React.ReactElement {
   return (
     <div
-      className={cn('flex items-start gap-2.5 mb-2.5', 'group-[.is-user]:hidden', className)}
+      className={cn(
+        'flex items-start gap-2.5 mb-2.5 select-none',
+        'group-[.is-user]:hidden',
+        className
+      )}
       {...props}
     >
       {logo && (
@@ -157,7 +161,7 @@ export function MessageActions({
   return (
     <div
       className={cn(
-        'flex items-center gap-2.5 text-muted-foreground/60 hover:text-muted-foreground/90 transition-colors duration-200',
+        'flex items-center gap-2.5 select-none text-muted-foreground/60 hover:text-muted-foreground/90 transition-colors duration-200 animate-in fade-in duration-200 fill-mode-both',
         className
       )}
       {...props}

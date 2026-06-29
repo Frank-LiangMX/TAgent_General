@@ -1158,7 +1158,7 @@ export function LeftSidebar({
         <div className="nav-island-action-row px-3 gap-1.5">
           <button
             onClick={handleNewAgentSession}
-            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
           >
             <Plus size={14} />
             <span>新会话</span>
@@ -1184,7 +1184,7 @@ export function LeftSidebar({
         <div className="nav-island-action-row px-3 gap-1.5">
           <button
             onClick={handleNewDraft}
-            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
           >
             <Plus size={14} />
             <span>新草稿</span>

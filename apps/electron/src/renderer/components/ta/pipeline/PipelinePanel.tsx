@@ -114,22 +114,22 @@ export function PipelinePanel(): React.ReactElement {
         <Button
           variant="outline"
           size="sm"
-          className="h-8"
+          className="h-9 rounded-xl gap-1.5"
           onClick={handleCreate}
           disabled={isCreating}
         >
           <Play size={16} />
-          <span className="ml-1">新建测试流水线</span>
+          新建测试流水线
         </Button>
         <Button
           variant="outline"
           size="sm"
-          className="h-8"
+          className="h-9 rounded-xl gap-1.5"
           onClick={handleCleanup}
           disabled={isCleaning}
         >
           <Trash2 size={16} />
-          <span className="ml-1">清理已完成</span>
+          清理已完成
         </Button>
       </div>
 

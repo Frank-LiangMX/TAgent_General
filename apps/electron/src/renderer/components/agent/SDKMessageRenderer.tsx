@@ -40,6 +40,7 @@ import {
   Settings,
   ExternalLink,
   Quote,
+  RefreshCw,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -69,7 +70,7 @@ import type {
   RecoveryAction,
 } from '@tagent/shared'
 
-import { agentProcessGroupsKeepExpandedAtom } from '@/atoms/agent-atoms'
+import { agentProcessGroupsKeepExpandedAtom, currentAgentSessionDraftAtom } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
@@ -90,6 +91,7 @@ import { Button } from '@/components/ui/button'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
 
@@ -679,6 +681,7 @@ export function AssistantTurnRenderer({
             activities={taskActivities}
             streamEnded={!isStreaming}
             historicalTaskSubjects={historicalTaskSubjects}
+            animate
           />
         )
       }
@@ -1064,59 +1067,73 @@ function QuoteChip({ quote }: { quote: QuotedFileRef }): React.ReactElement {
 
 function UserInputMessage({ message }: { message: SDKUserMessage }): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
+  const setCurrentDraft = useSetAtom(currentAgentSessionDraftAtom)
   const rawText = extractUserText(message) ?? ''
   const { files: attachedFiles, quotes, text } = parseAttachedFiles(rawText)
   const imageFiles = attachedFiles.filter((f) => isImageFile(f.filename))
   const nonImageFiles = attachedFiles.filter((f) => !isImageFile(f.filename))
   const meta = extractMeta(message as unknown as SDKMessage)
 
+  /** 重新发送：把这条消息的文本回填到当前会话输入框。
+   *  存储的 text 是 Markdown（反斜杠等已被 escapeMarkdownText 转义），
+   *  直接回填会被 RichTextInput 的 onChange 再次转义导致字符翻倍，
+   *  因此先用 markdownToPlainText 反转义回用户原始输入。 */
+  const handleResend = React.useCallback(() => {
+    if (text) setCurrentDraft(markdownToPlainText(text))
+  }, [text, setCurrentDraft])
+
   return (
     <Message from="user">
-      <div className="flex items-start gap-2.5 mb-2.5">
-        <div className="flex flex-col justify-between h-[35px] items-end">
-          <span className="text-sm font-semibold text-foreground/60 leading-none">
-            {userProfile.userName}
-          </span>
-          {meta.createdAt && (
-            <span className="text-[10px] text-foreground/[0.38] leading-none">
-              {formatMessageTime(meta.createdAt)}
-            </span>
+      <div className="flex items-start gap-2.5">
+        {/* 气泡 + 操作行（纵向容器，整体右对齐） */}
+        <div className="flex flex-col items-end gap-1 min-w-0">
+          <MessageContent>
+            {/* 引用文件 Chip */}
+            {quotes.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
+                {quotes.map((q, i) => (
+                  <QuoteChip key={`${q.path}:${i}`} quote={q} />
+                ))}
+              </div>
+            )}
+            {/* 图片缩略图 */}
+            {imageFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2.5 mb-2 justify-end">
+                {imageFiles.map((file) => (
+                  <AttachedImageThumb key={file.path} file={file} />
+                ))}
+              </div>
+            )}
+            {/* 非图片文件芯片 */}
+            {nonImageFiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
+                {nonImageFiles.map((file) => (
+                  <AttachedFileChip key={file.path} file={file} />
+                ))}
+              </div>
+            )}
+            {text && <UserMessageContent>{text}</UserMessageContent>}
+          </MessageContent>
+          {/* 时间 + 复制 + 重新发送按钮同一行：复用 MessageActions 的浅色→hover 变深行为，与 assistant 回答一致 */}
+          {(meta.createdAt || text) && (
+            <MessageActions className="min-h-[28px] justify-end">
+              {meta.createdAt && (
+                <span className="text-[10px] text-muted-foreground/60 leading-none tabular-nums">
+                  {formatMessageTime(meta.createdAt)}
+                </span>
+              )}
+              {text && <CopyButton content={text} />}
+              {text && (
+                <MessageAction tooltip="重新发送" onClick={handleResend}>
+                  <RefreshCw className="size-3.5" />
+                </MessageAction>
+              )}
+            </MessageActions>
           )}
         </div>
+        {/* 用户头像（气泡右侧，顶部对齐，与 assistant 头像同尺寸 35px） */}
         <UserAvatar avatar={userProfile.avatar} size={35} />
       </div>
-      <MessageContent>
-        {/* 引用文件 Chip */}
-        {quotes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {quotes.map((q, i) => (
-              <QuoteChip key={`${q.path}:${i}`} quote={q} />
-            ))}
-          </div>
-        )}
-        {/* 图片缩略图 */}
-        {imageFiles.length > 0 && (
-          <div className="flex flex-wrap gap-2.5 mb-2">
-            {imageFiles.map((file) => (
-              <AttachedImageThumb key={file.path} file={file} />
-            ))}
-          </div>
-        )}
-        {/* 非图片文件芯片 */}
-        {nonImageFiles.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {nonImageFiles.map((file) => (
-              <AttachedFileChip key={file.path} file={file} />
-            ))}
-          </div>
-        )}
-        {text && <UserMessageContent>{text}</UserMessageContent>}
-      </MessageContent>
-      {text && (
-        <MessageActions className="mt-0.5 justify-end">
-          <CopyButton content={text} />
-        </MessageActions>
-      )}
     </Message>
   )
 }
@@ -1242,7 +1259,7 @@ function ErrorMessage({
   const hasActions = hasStructuredActions || hasLegacyActions
 
   return (
-    <Message from="assistant">
+    <Message from="assistant" className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
       <MessageHeader
         model={undefined}
         time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
@@ -1470,7 +1487,7 @@ export function MessageGroupRenderer({
 
   if (group.type === 'user') {
     return (
-      <div data-message-id={groupId} data-message-role="user">
+      <div data-message-id={groupId} data-message-role="user" className="animate-in fade-in duration-200 fill-mode-both">
         <UserInputMessage message={group.message} />
       </div>
     )
@@ -1494,7 +1511,7 @@ export function MessageGroupRenderer({
     }
     if (subtype === 'permission_denied')
       return (
-        <div data-message-id={groupId}>
+        <div data-message-id={groupId} className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
           <PermissionDeniedNotice message={group.message} />
         </div>
       )
@@ -1503,7 +1520,7 @@ export function MessageGroupRenderer({
 
   // assistant-turn
   return (
-    <div data-message-id={groupId} data-message-role="assistant">
+    <div data-message-id={groupId} data-message-role="assistant" className="animate-in fade-in duration-200 fill-mode-both">
       <AssistantTurnRenderer
         turn={group}
         allMessages={allMessages}

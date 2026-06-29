@@ -161,7 +161,12 @@ export function MemoryMonitorPanel(): React.ReactElement {
         <div className="text-sm font-medium">{mode === 'general' ? '通用模式' : 'TA 模式'}记忆</div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">共 {totalLines} 条</span>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={loadData}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-[36px] rounded-full p-0"
+            onClick={loadData}
+          >
             <RefreshCw size={14} />
           </Button>
         </div>

@@ -53,31 +53,39 @@ export function MainArea(): React.ReactElement {
     }
   }, [topLevelMode, activeRailItem, setAppMode])
 
-  // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
-  if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
+  // 渲染当前 rail 对应的主区内容（不含淡入容器）
+  const renderRailContent = (): React.ReactElement => {
+    // TA 模式 + 选中「会话」→ 与通用模式完全一致的布局
+    if (topLevelMode === 'ta' && activeRailItem === 'sessions') {
+      return <GeneralMainArea />
+    }
+
+    // TA 模式其他模块（资产/审核/流水线/记忆/配置）使用独立渲染逻辑
+    if (topLevelMode === 'ta') {
+      return <TAMainArea />
+    }
+
+    if (activeRailItem === 'skills') {
+      return <SkillsMainView />
+    }
+
+    if (activeRailItem === 'automation') {
+      return <AutomationMainView />
+    }
+
+    // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
     return <GeneralMainArea />
   }
 
-  // TA 模式其他模块（资产/审核/流水线/记忆/配置）使用独立渲染逻辑
-  if (topLevelMode === 'ta') {
-    return <TAMainArea />
-  }
-
-  if (activeRailItem === 'skills') {
-    return <SkillsMainView />
-  }
-
-  if (activeRailItem === 'automation') {
-    return <AutomationMainView />
-  }
-
-  // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
-  if (activeRailItem === 'draft') {
-    return <GeneralMainArea />
-  }
-
-  // 通用模式使用原有逻辑
-  return <GeneralMainArea />
+  // rail 切换时整体淡入（key 变化触发重挂）；会话内 tab 切换不经过此 key，不受影响
+  return (
+    <div
+      key={`${topLevelMode}:${activeRailItem}`}
+      className="h-full min-h-0 animate-in fade-in duration-300"
+    >
+      {renderRailContent()}
+    </div>
+  )
 }
 
 /**

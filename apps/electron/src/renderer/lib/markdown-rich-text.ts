@@ -330,6 +330,54 @@ export function markdownToHtml(markdown: string): string {
   return enhanceMarkdownHtml(markdownIt.render(preprocessMarkdown(markdown)))
 }
 
+const PLAINTEXT_BLOCK_TAGS = new Set([
+  'p',
+  'div',
+  'li',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'blockquote',
+  'tr',
+])
+
+/** 递归从 DOM 节点提取纯文本，块级标签和 <br> 转换行 */
+function domNodeToPlainText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent || ''
+  if (node.nodeType !== Node.ELEMENT_NODE) return ''
+  const el = node as HTMLElement
+  const tag = el.tagName.toLowerCase()
+  // 代码块原样保留内部文本（含换行）
+  if (tag === 'pre') return (el.textContent || '') + '\n'
+  const childText = Array.from(el.childNodes).map(domNodeToPlainText).join('')
+  if (tag === 'br') return '\n'
+  if (PLAINTEXT_BLOCK_TAGS.has(tag)) {
+    return childText.endsWith('\n') ? childText : childText + '\n'
+  }
+  return childText
+}
+
+/**
+ * 将存储的 Markdown 还原为纯文本（反转义所有 escapeMarkdownText 转义字符）。
+ *
+ * 用于把历史用户消息回填到输入框：RichTextInput 的 onChange 会再次执行
+ * htmlToMarkdown 转义，若直接回填存储的 Markdown（已含转义），会导致反斜杠
+ * 等字符被二次转义（`\` → `\\` → `\\\\`，渲染时变成 `\\`）。
+ * 这里用 markdown-it 解析回 HTML 再提取纯文本，确保回填的是用户原始输入。
+ */
+export function markdownToPlainText(markdown: string): string {
+  if (!markdown) return ''
+  const html = markdownIt.render(preprocessMarkdown(markdown))
+  const container = document.createElement('div')
+  container.innerHTML = html
+  return domNodeToPlainText(container)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 /** 将 TipTap 输出的 HTML 转换为 Markdown 格式 */
 export function htmlToMarkdown(html: string): string {
   if (!html || html === '<p></p>') return ''

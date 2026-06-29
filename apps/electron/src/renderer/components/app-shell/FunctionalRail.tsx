@@ -222,6 +222,50 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
 
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
 
+  // ===== 功能区滑动指示器（参考设置页菜单滑动选中态） =====
+  const railHostRef = React.useRef<HTMLDivElement>(null)
+  const [indicatorStyle, setIndicatorStyle] = React.useState<React.CSSProperties>({
+    opacity: 0,
+  })
+  const lastActiveRef = React.useRef<string | null>(null)
+  const lastModeRef = React.useRef<TopLevelMode>(topLevelMode)
+
+  React.useLayoutEffect(() => {
+    const host = railHostRef.current
+    // 模式切换会让 railItems 重建，此时不播放滑动，直接无动画定位
+    const modeChanged = lastModeRef.current !== topLevelMode
+    if (modeChanged) lastModeRef.current = topLevelMode
+    if (!host || !activeRailItem) {
+      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
+      lastActiveRef.current = null
+      return
+    }
+
+    const activeButton = host.querySelector<HTMLButtonElement>(
+      `[data-rail-id="${activeRailItem}"]`
+    )
+    if (!activeButton) {
+      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
+      return
+    }
+
+    const hostRect = host.getBoundingClientRect()
+    const btnRect = activeButton.getBoundingClientRect()
+    const top = btnRect.top - hostRect.top
+    const skipAnimation = lastActiveRef.current === null || modeChanged
+
+    // 首次激活 / 模式切换后：无动画直接定位；同模式内切换：滑动过渡
+    setIndicatorStyle({
+      opacity: 1,
+      top,
+      height: btnRect.height,
+      transition: skipAnimation
+        ? 'none'
+        : 'top 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+    })
+    lastActiveRef.current = activeRailItem
+  }, [activeRailItem, railItems, topLevelMode])
+
   const modeButtons = [
     {
       value: 'general' as TopLevelMode,
@@ -242,7 +286,12 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
       {!isMac ? <div className="w-full shrink-0 h-2" aria-hidden /> : null}
 
       <div className="nav-island-body-start w-full flex flex-col items-center">
-        <div className="flex flex-col items-center gap-1.5 w-full">
+        <div
+          ref={railHostRef}
+          className="rail-slide-host relative flex flex-col items-center gap-1.5 w-full"
+        >
+          {/* 滑动指示器：玻璃浮岛跟随激活按钮 */}
+          <div className="rail-slide-indicator pointer-events-none" style={indicatorStyle} aria-hidden />
           {COMMON_TOP_RAIL_ITEMS.map((item) => {
             const isActive = activeRailItem === item.id
             return (
@@ -250,10 +299,11 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    data-rail-id={item.id}
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
-                      isActive && 'rail-island-btn--active'
+                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag relative z-[2]',
+                      isActive && 'rail-island-btn--active rail-island-btn--ghost'
                     )}
                   >
                     {item.icon}
@@ -269,7 +319,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
             )
           })}
 
-          <div className="glass-divider my-0.5 w-8 shrink-0" />
+          <div className="glass-divider my-0.5 w-8 shrink-0 relative z-[2]" />
 
           {railItems.map((item) => {
             const isActive = activeRailItem === item.id
@@ -278,10 +328,11 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    data-rail-id={item.id}
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag',
-                      isActive && 'rail-island-btn--active'
+                      'rail-island-btn size-10 flex items-center justify-center rounded-[12px] titlebar-no-drag relative z-[2]',
+                      isActive && 'rail-island-btn--active rail-island-btn--ghost'
                     )}
                   >
                     {item.icon}

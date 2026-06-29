@@ -267,7 +267,7 @@ function RetryingNotice({
 
       {/* 展开内容：重试历史 */}
       {expanded && retrying.history.length > 0 && (
-        <div className="mt-3 space-y-3 border-t border-amber-200 dark:border-amber-800 pt-3">
+        <div className="mt-3 space-y-3 border-t border-amber-200 dark:border-amber-800 pt-3 animate-in fade-in duration-150 fill-mode-both">
           <div className="text-xs font-medium text-amber-900 dark:text-amber-100">尝试历史：</div>
           {retrying.history.map((attempt, index) => (
             <RetryAttemptItem
@@ -463,7 +463,7 @@ function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.Rea
   }
 
   return (
-    <div className="flex items-center gap-1.5 min-h-[28px]">
+    <div className="flex items-center gap-1.5 min-h-[28px] select-none">
       <ThreePetalSpiral size={16} />
       <span className="text-[13px] font-light text-muted-foreground/75 tabular-nums">
         运行中 {formatTime(elapsed)}

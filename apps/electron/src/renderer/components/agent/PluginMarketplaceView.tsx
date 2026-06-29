@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 
 import { PluginMarketplaceBundleDetail } from './PluginMarketplaceBundleDetail'
 import { PluginMarketplaceDetail } from './PluginMarketplaceDetail'
+import { PluginToolbarButton } from './plugin-toolbar-button'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import {
   PLUGIN_CATEGORY_LABELS,
@@ -251,10 +252,13 @@ export function PluginMarketplaceView({
             </p>
           </div>
           {onAddCustomMcp ? (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={onAddCustomMcp}>
-              <Plus size={14} />
+            <PluginToolbarButton
+              variant="outline"
+              icon={<Plus size={14} />}
+              onClick={onAddCustomMcp}
+            >
               自定义 MCP
-            </Button>
+            </PluginToolbarButton>
           ) : null}
         </div>
         <SegmentedTabs
