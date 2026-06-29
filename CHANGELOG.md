@@ -21,6 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-06-29
+
+### Added
+
+- **kscc 渠道 ripgrep 自动补齐** — kscc CLI 不自带 ripgrep，Windows 下 Grep/Glob 工具会报 `ENOENT rg.exe`。TAgent 启动时自动检测 kscc vendor 目录，缺失则从系统 PATH 复制 `rg.exe` 过去，所有用户开箱即用（需系统已装 ripgrep，如 `winget install BurntSushi.ripgrep.MSVC`）
+
+### Fixed
+
+- **kscc 渠道 Bash 工具不可用** — `buildSdkEnv` 在 kscc 渠道 early return 跳过了 Windows shell 配置，导致 kscc 子进程拿不到 `CLAUDE_CODE_SHELL`，退化用 cmd.exe 跑 Unix 命令全部失败。改为将 shell 检测移到认证分支之前，所有渠道都先配 shell
+- **dev 启动脚本闪退** — `Start-TAgent-Dev.bat` / `Stop-TAgent-Dev.bat` 因 UTF-8 无 BOM 编码导致中文被 cmd 当命令执行而闪退；同时移除了会误杀 kscc 等 CLI agent 的旧 `dev.bat` / `dev-stop.bat` / `dev-kill-all.ps1`（旧脚本无差别 `Stop-Process bun`）
+
+---
+
 ## [1.3.0] - 2026-06-29
 
 ### Added

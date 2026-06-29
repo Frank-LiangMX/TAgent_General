@@ -27,6 +27,7 @@ import { getFeishuMultiBotConfig } from './lib/feishu-config'
 import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { registerGlobalShortcut } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
+import { ensureKsccRipgrep } from './lib/ensure-kscc-ripgrep'
 import {
   createQuickTaskWindow,
   toggleQuickTaskWindow,
@@ -491,6 +492,11 @@ async function bootstrap(): Promise<void> {
   // 初始化运行时环境（Shell 环境 + Bun + Git 检测）
   // 必须在其他初始化之前执行，确保环境变量正确加载
   await safeAwait('initializeRuntime', () => initializeRuntime())
+
+  // 确保 kscc CLI 的 ripgrep 二进制就位（仅 Windows）
+  // kscc 包不带 ripgrep，缺失会导致 Grep/Glob 工具报 ENOENT；
+  // 这里从系统 PATH 找 rg.exe 复制到 kscc vendor 目录，让所有用户开箱即用
+  safeRun('ensureKsccRipgrep', ensureKsccRipgrep)
 
   // 同步默认 Skills 模板到 ~/.tagent/default-skills/
   safeRun('seedDefaultSkills', seedDefaultSkills)

@@ -1,31 +1,29 @@
 @echo off
-setlocal EnableExtensions
+setlocal
+
 set "TAGENT_ROOT=%~dp0..\.."
-cd /d "%TAGENT_ROOT%"
 
-set "BUN_INSTALL=%USERPROFILE%\.bun"
-set "PATH=%BUN_INSTALL%\bin;%PATH%"
+REM ============================================
+REM TAgent dev startup script
+REM 1. Clean leftover port 5173 (does NOT kill bun, to avoid killing kscc / other CLI agents)
+REM 2. Sync resources to dist
+REM 3. Start bun run dev
+REM ============================================
 
-where bun >nul 2>&1
+echo.
+echo === [1/3] Cleaning leftover port 5173 ===
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue; if ($c) { try { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue; Write-Output ('  killed leftover PID='+$c.OwningProcess) } catch {} } else { Write-Output '  [OK] 5173 free' }"
+
+echo.
+echo === [2/3] Sync resources to dist ===
+cd /d "%TAGENT_ROOT%\apps\electron"
+call bun run build:resources
 if errorlevel 1 (
-  echo 未找到 Bun。请先安装 Bun 并执行 bun install
-  echo 仓库: %CD%
-  pause
+  echo [X] build:resources failed
   exit /b 1
 )
 
-set ELECTRON_RUN_AS_NODE=
-
-echo ========================================
-echo   TAgent 开发模式
-echo   目录: %CD%
-echo   停止: 双击 scripts\dev\Stop-TAgent-Dev.bat
-echo ========================================
 echo.
-
-bun run dev-start
-if errorlevel 1 (
-  echo.
-  echo 启动失败，请查看上方错误信息。
-  pause
-)
+echo === [3/3] Starting dev server ===
+cd /d "%TAGENT_ROOT%"
+bun run dev

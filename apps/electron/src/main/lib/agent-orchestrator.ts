@@ -675,6 +675,30 @@ export class AgentOrchestrator {
       CLAUDE_CONFIG_DIR: getSdkConfigDir(),
     }
 
+    // Windows 平台：配置 Shell 环境（所有渠道共用，含 kscc）
+    // 必须在 provider 认证分支之前执行，否则 kscc 渠道的 early return 会跳过
+    // CLAUDE_CODE_SHELL 设置，导致 kscc 子进程在 Windows 上退化用 cmd.exe 跑
+    // Unix 命令（ls/grep/find），Bash 工具全部失败。
+    if (process.platform === 'win32') {
+      const runtimeStatus = getRuntimeStatus()
+      const shellStatus = runtimeStatus?.shell
+
+      if (shellStatus) {
+        if (shellStatus.gitBash?.available && shellStatus.gitBash.path) {
+          sdkEnv.CLAUDE_CODE_SHELL = shellStatus.gitBash.path
+          console.log(`[Agent 编排] 配置 Shell 环境: Git Bash (${shellStatus.gitBash.path})`)
+        } else if (shellStatus.wsl?.available) {
+          sdkEnv.CLAUDE_CODE_SHELL = 'wsl'
+          console.log(
+            `[Agent 编排] 配置 Shell 环境: WSL ${shellStatus.wsl.version} (${shellStatus.wsl.defaultDistro})`
+          )
+        } else {
+          console.warn('[Agent 编排] Windows 平台未检测到可用的 Shell 环境（Git Bash / WSL）')
+        }
+        sdkEnv.CLAUDE_BASH_NO_LOGIN = '1'
+      }
+    }
+
     // 认证方式按 provider 分支
     // - kscc 内网渠道：kscc CLI 自行处理认证，不注入任何 ANTHROPIC_* 凭证
     // - Kimi Coding Plan：只认 Bearer，通过 ANTHROPIC_CUSTOM_HEADERS 注入 TAgent UA
@@ -682,7 +706,7 @@ export class AgentOrchestrator {
     // - 通过 ANTHROPIC_AUTH_TOKEN 让 SDK 发 Authorization: Bearer
     // - 其它：ANTHROPIC_API_KEY（SDK 内部会同时带上 x-api-key 和 Bearer）
     if (provider === 'kscc-internal') {
-      // kscc 自管认证，保留 CLAUDE_CONFIG_DIR 等公共配置即可
+      // kscc 自管认证，保留 CLAUDE_CONFIG_DIR / CLAUDE_CODE_SHELL 等公共配置即可
       return sdkEnv
     } else if (
       provider === 'kimi-coding' ||
@@ -709,27 +733,6 @@ export class AgentOrchestrator {
     if (proxyUrl) {
       sdkEnv.HTTPS_PROXY = proxyUrl
       sdkEnv.HTTP_PROXY = proxyUrl
-    }
-
-    // Windows 平台：配置 Shell 环境
-    if (process.platform === 'win32') {
-      const runtimeStatus = getRuntimeStatus()
-      const shellStatus = runtimeStatus?.shell
-
-      if (shellStatus) {
-        if (shellStatus.gitBash?.available && shellStatus.gitBash.path) {
-          sdkEnv.CLAUDE_CODE_SHELL = shellStatus.gitBash.path
-          console.log(`[Agent 编排] 配置 Shell 环境: Git Bash (${shellStatus.gitBash.path})`)
-        } else if (shellStatus.wsl?.available) {
-          sdkEnv.CLAUDE_CODE_SHELL = 'wsl'
-          console.log(
-            `[Agent 编排] 配置 Shell 环境: WSL ${shellStatus.wsl.version} (${shellStatus.wsl.defaultDistro})`
-          )
-        } else {
-          console.warn('[Agent 编排] Windows 平台未检测到可用的 Shell 环境（Git Bash / WSL）')
-        }
-        sdkEnv.CLAUDE_BASH_NO_LOGIN = '1'
-      }
     }
 
     // 针对 claude-agent-sdk 0.2.111+ 的 options.env 叠加语义加固：
