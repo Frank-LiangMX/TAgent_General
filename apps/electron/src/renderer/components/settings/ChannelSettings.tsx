@@ -219,7 +219,7 @@ export function ChannelSettings(): React.ReactElement {
         <KsccChannelForm
           channel={ksccChannel}
           onBack={() => void handleKsccBack()}
-          onUpdated={loadChannels}
+          onUpdated={() => void loadChannels()}
           onInstallGuideOpen={() => setKsccGuideOpen(true)}
         />
         <KsccInstallGuide

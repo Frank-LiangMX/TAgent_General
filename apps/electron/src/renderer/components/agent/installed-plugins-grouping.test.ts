@@ -52,8 +52,6 @@ describe('groupInstalledPlugins', () => {
           name: 'ta-agent-mcp',
           type: 'stdio',
           enabled: true,
-          command: 'python',
-          args: [],
         },
       ],
       skills: [
@@ -62,14 +60,12 @@ describe('groupInstalledPlugins', () => {
           name: 'brainstorming',
           description: '',
           enabled: true,
-          path: 'skills/brainstorming',
         },
         {
           slug: 'brandkit',
           name: 'brandkit',
           description: '',
           enabled: true,
-          path: 'skills/brandkit',
         },
       ],
       installedBundles: [],
@@ -95,7 +91,6 @@ describe('groupInstalledPlugins', () => {
           name: 'brainstorming',
           description: '',
           enabled: true,
-          path: 'skills/brainstorming',
         },
       ],
       installedBundles: [

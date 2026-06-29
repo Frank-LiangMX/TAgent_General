@@ -16,6 +16,7 @@ import {
 } from '@tagent/shared'
 
 import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-spawn'
+import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
 import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
 import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
 

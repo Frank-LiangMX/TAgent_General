@@ -53,7 +53,7 @@ const NAV_SECTIONS: NavSection[] = [
   { id: 'ta', icon: <FolderOpen size={14} strokeWidth={1.75} /> },
 ]
 
-const STATIC_INSTALLED_NAV: InstalledPluginNavFilter[] = ['overview', 'orphan', 'mcp', 'skill']
+const STATIC_INSTALLED_NAV: Exclude<InstalledPluginNavFilter, `bundle:${string}`>[] = ['overview', 'orphan', 'mcp', 'skill']
 
 export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React.ReactElement {
   const [section, setSection] = useAtom(pluginSidebarSectionAtom)
