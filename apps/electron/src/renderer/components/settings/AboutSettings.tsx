@@ -25,6 +25,18 @@ import {
 import * as React from 'react'
 
 import tagentLogo from '../../../../resources/icon.png'
+import tagentLogoDefaultLight from '../../../../resources/tagent-logo-proposals-v2/tagent-default-light.png'
+import tagentLogoDefaultDark from '../../../../resources/tagent-logo-proposals-v2/tagent-default-dark.png'
+import tagentLogoSlateLight from '../../../../resources/tagent-logo-proposals-v2/tagent-slate-light.png'
+import tagentLogoSlateDark from '../../../../resources/tagent-logo-proposals-v2/tagent-slate-dark.png'
+import tagentLogoOceanLight from '../../../../resources/tagent-logo-proposals-v2/tagent-ocean-light.png'
+import tagentLogoOceanDark from '../../../../resources/tagent-logo-proposals-v2/tagent-ocean-dark.png'
+import tagentLogoForestLight from '../../../../resources/tagent-logo-proposals-v2/tagent-forest-light.png'
+import tagentLogoForestDark from '../../../../resources/tagent-logo-proposals-v2/tagent-forest-dark.png'
+import tagentLogoOrangeLight from '../../../../resources/tagent-logo-proposals-v2/tagent-orange-light.png'
+import tagentLogoOrangeDark from '../../../../resources/tagent-logo-proposals-v2/tagent-orange-dark.png'
+import tagentLogoPurpleLight from '../../../../resources/tagent-logo-proposals-v2/tagent-purple-light.png'
+import tagentLogoPurpleDark from '../../../../resources/tagent-logo-proposals-v2/tagent-purple-dark.png'
 
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
@@ -33,11 +45,28 @@ import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
 
 import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { updateStatusAtom, updaterAvailableAtom, checkForUpdates } from '@/atoms/updater'
+import { themeLogoKeyAtom } from '@/atoms/theme'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+/** 主题 logo key → 资源 映射表，随 themeLogoKeyAtom 切换 */
+const THEME_LOGOS: Record<string, string> = {
+  'default-light': tagentLogoDefaultLight,
+  'default-dark': tagentLogoDefaultDark,
+  'slate-light': tagentLogoSlateLight,
+  'slate-dark': tagentLogoSlateDark,
+  'ocean-light': tagentLogoOceanLight,
+  'ocean-dark': tagentLogoOceanDark,
+  'forest-light': tagentLogoForestLight,
+  'forest-dark': tagentLogoForestDark,
+  'orange-light': tagentLogoOrangeLight,
+  'orange-dark': tagentLogoOrangeDark,
+  'purple-light': tagentLogoPurpleLight,
+  'purple-dark': tagentLogoPurpleDark,
+}
 
 /** 从 package.json 构建时由 Vite define 注入 */
 declare const __APP_VERSION__: string
@@ -72,6 +101,9 @@ function HeroSection(): React.ReactElement {
     import('@tagent/shared').GitHubRelease | null
   >(null)
   const [loadingLatest, setLoadingLatest] = React.useState(true)
+  // 主题切换时自动换 logo（找不到对应变体时回退到默认 icon.png）
+  const themeLogoKey = useAtomValue(themeLogoKeyAtom)
+  const themedLogo = THEME_LOGOS[themeLogoKey] ?? tagentLogo
 
   // 获取最新发布版本
   React.useEffect(() => {
@@ -116,14 +148,16 @@ function HeroSection(): React.ReactElement {
 
       <div className="relative flex flex-col items-center py-8 px-6">
         {/* Logo 区域 */}
-        <img
-          src={tagentLogo}
-          alt=""
-          width={64}
-          height={64}
-          className="mb-4 h-16 w-16 rounded-2xl object-cover shadow-lg shadow-primary/10"
-          draggable={false}
-        />
+        <div className="mb-4 h-16 w-16 rounded-2xl overflow-hidden about-logo-glow">
+          <img
+            src={themedLogo}
+            alt=""
+            width={64}
+            height={64}
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
+        </div>
 
         {/* 品牌名 */}
         <h1 className="text-2xl font-bold text-foreground mb-1">TAgent</h1>

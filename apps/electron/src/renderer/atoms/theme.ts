@@ -105,6 +105,23 @@ export const resolvedThemeAtom = atom<'light' | 'dark'>((get) => {
   return mode
 })
 
+/**
+ * 派生：当前主题对应的 logo 变体 key
+ *
+ * 映射规则：
+ * - 非特殊主题（light/dark/system）→ 'default-light' / 'default-dark'
+ * - 特殊主题 → 直接用 themeStyle（如 'ocean-light' / 'forest-dark'）
+ *
+ * 渲染层用此 key 查 logo 资源表，主题切换时自动换 logo。
+ */
+export const themeLogoKeyAtom = atom<string>((get) => {
+  const mode = get(themeModeAtom)
+  if (mode === 'special') {
+    return get(themeStyleAtom)
+  }
+  return get(resolvedThemeAtom) === 'dark' ? 'default-dark' : 'default-light'
+})
+
 /** 所有特殊风格 class（用于清理旧值） */
 const ALL_THEME_STYLE_CLASSES = [
   'theme-ocean-light',
