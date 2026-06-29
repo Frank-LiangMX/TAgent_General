@@ -10,6 +10,9 @@ import planningSuite from '@/assets/plugin-icons/planning-suite.svg'
 import skillWorkshop from '@/assets/plugin-icons/skill-workshop.svg'
 import taAgentSuite from '@/assets/plugin-icons/ta-agent-suite.svg'
 
+// superpowers-full 临时复用 planning-suite logo（后续换专属 icon）
+const superpowersFull = planningSuite
+
 export const PLUGIN_BUNDLE_LOGO_URLS: Record<PluginStoreLogoKey, string> = {
   'ta-agent-suite': taAgentSuite,
   'github-dev-collab': githubDevCollab,
@@ -18,6 +21,7 @@ export const PLUGIN_BUNDLE_LOGO_URLS: Record<PluginStoreLogoKey, string> = {
   'office-suite': officeSuite,
   'planning-suite': planningSuite,
   'skill-workshop': skillWorkshop,
+  'superpowers-full': superpowersFull,
 }
 
 interface PluginBundleLogoProps {

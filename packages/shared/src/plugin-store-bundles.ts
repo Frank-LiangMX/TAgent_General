@@ -15,6 +15,7 @@ export type PluginStoreLogoKey =
   | 'office-suite'
   | 'planning-suite'
   | 'skill-workshop'
+  | 'superpowers-full'
 
 export interface StorePluginBundle {
   id: string
@@ -101,18 +102,6 @@ export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
     homepageUrl: 'https://github.com/anthropics/skills',
   },
   {
-    id: 'planning-suite',
-    name: '需求与计划',
-    description: '需求澄清、编写计划与分阶段执行三类规划 Skill。',
-    category: 'planning',
-    tier: 'recommended',
-    mcps: [],
-    skills: ['brainstorming', 'writing-plans', 'executing-plans'],
-    logo: 'planning-suite',
-    publisher: 'TAgent',
-    repositoryUrl: `${TAGENT_REPO}/default-skills`,
-  },
-  {
     id: 'skill-workshop',
     name: 'Skill 扩展工坊',
     description: '创建、迭代 Skill 与发现已有能力路径的 meta 工具包。',
@@ -123,6 +112,34 @@ export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
     logo: 'skill-workshop',
     publisher: 'TAgent',
     repositoryUrl: `${TAGENT_REPO}/default-skills/skill-creator`,
+  },
+  {
+    id: 'superpowers-full',
+    name: 'Superpowers 完整开发方法论',
+    description: 'Jesse Vincent 的 Superpowers 全套 14 个 skill：头脑风暴、计划、TDD、系统化调试、子代理开发、代码审查、worktree 隔离、完成前验证等完整工作流。',
+    category: 'dev',
+    tier: 'recommended',
+    mcps: [],
+    skills: [
+      'brainstorming',
+      'writing-plans',
+      'executing-plans',
+      'systematic-debugging',
+      'test-driven-development',
+      'verification-before-completion',
+      'subagent-driven-development',
+      'dispatching-parallel-agents',
+      'requesting-code-review',
+      'receiving-code-review',
+      'using-git-worktrees',
+      'finishing-a-development-branch',
+      'using-superpowers',
+      'writing-skills',
+    ],
+    logo: 'superpowers-full',
+    publisher: 'Superpowers (Jesse Vincent)',
+    repositoryUrl: 'https://github.com/obra/superpowers',
+    homepageUrl: 'https://github.com/obra/superpowers',
   },
 ] as const
 

@@ -7,15 +7,15 @@ import { groupInstalledPlugins } from './installed-plugins-grouping'
 const mockCatalog: PluginStoreCatalog = {
   bundles: [
     {
-      id: 'planning-suite',
-      name: '需求与计划',
+      id: 'superpowers-full',
+      name: 'Superpowers 完整开发方法论',
       description: '',
-      category: 'planning',
+      category: 'dev',
       tier: 'recommended',
       mcps: [],
       skills: ['brainstorming', 'writing-plans'],
-      logo: 'planning-suite',
-      publisher: 'TAgent',
+      logo: 'superpowers-full',
+      publisher: 'Superpowers (Jesse Vincent)',
       repositoryUrl: 'https://example.com',
     },
     {
@@ -74,10 +74,10 @@ describe('groupInstalledPlugins', () => {
     const { bundleGroups, orphanItems } = groupInstalledPlugins(capabilities, mockCatalog)
 
     expect(bundleGroups.map((group) => group.bundleId).sort()).toEqual([
-      'planning-suite',
+      'superpowers-full',
       'ta-agent-suite',
     ])
-    expect(bundleGroups.find((group) => group.bundleId === 'planning-suite')?.items.map((i) => i.id)).toEqual([
+    expect(bundleGroups.find((group) => group.bundleId === 'superpowers-full')?.items.map((i) => i.id)).toEqual([
       'brainstorming',
     ])
     expect(orphanItems.map((item) => item.id)).toEqual(['brandkit'])
@@ -95,7 +95,7 @@ describe('groupInstalledPlugins', () => {
       ],
       installedBundles: [
         {
-          bundleId: 'planning-suite',
+          bundleId: 'superpowers-full',
           source: 'store',
           installedAt: '2026-01-01T00:00:00.000Z',
           mcps: [],

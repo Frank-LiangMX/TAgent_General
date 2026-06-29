@@ -6,9 +6,9 @@ import type { InstalledPluginsGrouping } from './installed-plugins-grouping'
 const mockGrouping: InstalledPluginsGrouping = {
   bundleGroups: [
     {
-      bundleId: 'planning-suite',
-      name: '需求与计划',
-      logo: 'planning-suite',
+      bundleId: 'superpowers-full',
+      name: 'Superpowers 完整开发方法论',
+      logo: 'superpowers-full',
       installedCount: 1,
       totalCount: 2,
       items: [
@@ -45,7 +45,7 @@ describe('resolveInstalledGridView', () => {
   })
 
   test('整合包筛选只显示该包成员', () => {
-    const view = resolveInstalledGridView('bundle:planning-suite', mockGrouping)
+    const view = resolveInstalledGridView('bundle:superpowers-full', mockGrouping)
     expect(view.bundles).toHaveLength(0)
     expect(view.items.map((item) => item.id)).toEqual(['brainstorming'])
   })

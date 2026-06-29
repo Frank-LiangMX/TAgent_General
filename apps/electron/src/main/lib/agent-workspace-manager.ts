@@ -770,10 +770,28 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
   const yaml = fmMatch[1]
   if (!yaml) return meta
 
-  const validKeys = new Set(['name', 'description', 'icon', 'version'])
+  // Claude Code 标准 frontmatter 字段（含 TAgent 扩展的 category）
+  // 兼容 kebab-case（allowed-tools）和 snake_case
+  const validKeys = new Set([
+    'name',
+    'description',
+    'icon',
+    'version',
+    'allowed-tools',
+    'allowed_tools',
+    'license',
+    'metadata',
+    'category',
+    'compatibility',
+  ])
+  // 列表类型字段（值是 - item 数组）
+  const listKeys = new Set(['allowed-tools', 'allowed_tools'])
   const entries: Record<string, string> = {}
+  const listEntries: Record<string, string[]> = {}
+  const mapEntries: Record<string, Record<string, string>> = {}
   let currentKey = ''
   let isFolded = false
+  let currentMode: 'scalar' | 'list' | 'map' = 'scalar'
 
   for (const line of yaml.split('\n')) {
     const indented = /^\s/.test(line)
@@ -782,6 +800,7 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
       const colonIdx = line.indexOf(':')
       if (colonIdx === -1) {
         currentKey = ''
+        currentMode = 'scalar'
         continue
       }
 
@@ -790,22 +809,73 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
 
       if (!validKeys.has(key)) {
         currentKey = ''
-        isFolded = false
+        currentMode = 'scalar'
         continue
       }
 
+      currentKey = key
+
       if (raw === '|' || raw === '>') {
-        currentKey = key
+        // block scalar（多行字符串）
+        currentMode = 'scalar'
         isFolded = raw === '>'
         entries[key] = ''
         continue
       }
 
-      currentKey = key
+      if (raw === '') {
+        // 值为空 → 可能是 list（下面 - item）或 map（下面 缩进 key: value）
+        // 先假设 list，遇到非 - 的缩进 key 切换为 map
+        currentMode = 'list'
+        listEntries[key] = []
+        isFolded = false
+        continue
+      }
+
+      // 单行值
+      currentMode = 'scalar'
       isFolded = false
       entries[key] = raw.replace(/^["']|["']$/g, '')
     } else if (currentKey) {
       const text = line.trim()
+
+      if (currentMode === 'list') {
+        // list 项：- value
+        if (text.startsWith('- ')) {
+          const item = text.slice(2).trim().replace(/^["']|["']$/g, '')
+          listEntries[currentKey]!.push(item)
+          continue
+        }
+        // 缩进的 key: value → 实际是 map 不是 list
+        if (text.includes(':') && !text.startsWith('-')) {
+          currentMode = 'map'
+          mapEntries[currentKey] = {}
+          const colonIdx2 = text.indexOf(':')
+          const mk = text.slice(0, colonIdx2).trim()
+          const mv = text.slice(colonIdx2 + 1).trim().replace(/^["']|["']$/g, '')
+          if (mk) mapEntries[currentKey]![mk] = mv
+          continue
+        }
+        // 空行或其他 → 结束当前字段
+        currentKey = ''
+        currentMode = 'scalar'
+        continue
+      }
+
+      if (currentMode === 'map') {
+        if (text.includes(':')) {
+          const colonIdx2 = text.indexOf(':')
+          const mk = text.slice(0, colonIdx2).trim()
+          const mv = text.slice(colonIdx2 + 1).trim().replace(/^["']|["']$/g, '')
+          if (mk) mapEntries[currentKey]![mk] = mv
+          continue
+        }
+        currentKey = ''
+        currentMode = 'scalar'
+        continue
+      }
+
+      // scalar 模式：追加文本
       if (!text) {
         if (entries[currentKey]) entries[currentKey] += '\n'
         continue
@@ -819,6 +889,20 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
   if (entries.description) meta.description = entries.description.trim()
   if (entries.icon) meta.icon = entries.icon.trim()
   if (entries.version) meta.version = entries.version.trim()
+  if (entries.license) meta.license = entries.license.trim()
+  if (entries.category) meta.category = entries.category.trim()
+  if (entries.compatibility) meta.compatibility = entries.compatibility.trim()
+
+  // allowed-tools（kebab-case 或 snake_case）
+  const allowedTools = listEntries['allowed-tools'] ?? listEntries['allowed_tools']
+  if (allowedTools && allowedTools.length > 0) {
+    meta.allowedTools = allowedTools
+  }
+
+  // metadata（map）
+  if (mapEntries.metadata && Object.keys(mapEntries.metadata).length > 0) {
+    meta.metadata = mapEntries.metadata
+  }
 
   return meta
 }
@@ -1268,7 +1352,6 @@ export function getWorkspaceAttachedDirectories(workspaceSlug: string): string[]
   const config = readWorkspaceConfig(workspaceSlug)
   return config.attachedDirectories ?? []
 }
-
 export function attachWorkspaceDirectory(workspaceSlug: string, directoryPath: string): string[] {
   const config = readWorkspaceConfig(workspaceSlug)
   const existing = config.attachedDirectories ?? []
