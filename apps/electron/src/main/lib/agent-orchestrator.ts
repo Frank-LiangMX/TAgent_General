@@ -63,6 +63,7 @@ import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-pla
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
+import { injectAutomationMcpServer } from './automation-agent-tools'
 import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
   appendSDKMessages,
@@ -1689,6 +1690,20 @@ export class AgentOrchestrator {
       await this.injectMemoryTools(sdk, mcpServers)
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
       await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
+
+      if (triggeredBy !== 'delegation') {
+        try {
+          await injectAutomationMcpServer(sdk, mcpServers, {
+            sessionId,
+            channelId,
+            modelId,
+            workspaceId,
+            triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
+          })
+        } catch (err) {
+          console.error('[Agent 编排] 注入定时任务工具失败:', err)
+        }
+      }
 
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {

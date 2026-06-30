@@ -10,7 +10,7 @@ import { app, BrowserWindow } from 'electron'
 import { stopAllAgents, killOrphanedClaudeSubprocesses } from './agent-service'
 import { stopAutoArchiveScheduler } from './auto-archive-scheduler'
 import { setQuitting } from './app-lifecycle'
-import { stopAllBridges } from './bridge-registry'
+import { stopAllBridges, stopBridgeSelfHealing } from './bridge-registry'
 import { destroyAllDetachedPreviewWindows } from './detached-preview-window'
 import { stopFeishuSyncSleepBlocker } from './feishu-sleep-blocker'
 import { unregisterAllGlobalShortcuts } from './global-shortcut-service'
@@ -60,6 +60,7 @@ export function runApplicationShutdown(): void {
   } catch (err) {
     console.error('[退出] 停止定时任务调度器失败:', err)
   }
+  stopBridgeSelfHealing()
   stopAllBridges()
   stopFeishuSyncSleepBlocker()
   unregisterAllGlobalShortcuts()
