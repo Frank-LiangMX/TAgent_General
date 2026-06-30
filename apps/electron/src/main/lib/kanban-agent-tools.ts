@@ -5,11 +5,7 @@
  * export buildKanbanAgentTools() 供后续 agent-orchestrator.ts 在 MCP 注入阶段调用
  * （参考 injectAutomationMcpServer 的注入位置，见 agent-orchestrator.ts 中 TODO 注释）。
  *
- * 依赖 Phase A kanban-db，合并后接线：
- * - 当前 kanban-db.ts 尚未提交（Worker S 并行开发中，工作树内已存在但未 commit）
- * - 为保证本提交自洽可编译，下方 kanbanDb 占位对象提供最小 stub，每个函数抛「尚未接线」错误
- * - 合并后改为 `import { kanbanDbService } from './kanban-db'` 并删除 stub
- *   （同时把入参类型替换为 @tagent/shared 中已定义的 CreateKanbanBoardInput / CreateKanbanTaskInput）
+ * 已接线 kanban-db：所有 handler 调用 kanbanDbService 实现 CRUD。
  *
  * 工具清单（与 docs/plans/2026-06-30-task-kanban-orchestration-design.md §5.3 对齐）：
  * - kanban_create_board：主 Agent 创建看板（rootGoal + parentSessionId）
@@ -18,8 +14,17 @@
  * - kanban_block：工人标记任务阻塞（缺信息 / 等待外部）
  * - kanban_comment：blackboard 风格注释（任意方；kanban-db 暂无对应 API，待 Phase D）
  *
- * 模式隔离：v1 仅 general 模式注入；TA 模式禁止注入本工具集（见 §6.1）。
- */
+ * 模式隔离：v1 仅 general 模式注入；TA 模式禁止注入本工具集（见 §6.1） */
+
+import type {
+  CreateKanbanBoardInput,
+  CreateKanbanTaskInput,
+  KanbanBoard,
+  KanbanTask,
+  KanbanTaskStatus,
+} from '@tagent/shared'
+
+import { kanbanDbService } from './kanban-db'
 
 /** MCP 工具结果格式（与 automation-agent-tools 的 AutomationToolResult 一致） */
 export interface KanbanToolResult extends Record<string, unknown> {
@@ -34,7 +39,7 @@ export interface KanbanAgentTool {
   handler: (args: Record<string, unknown>) => Promise<KanbanToolResult>
 }
 
-// ===== 工具入参类型（最小契约；合并后替换为 @tagent/shared 的 Create*Input） =====
+// ===== 工具入参类型（handler 内部参数解析用，与 @tagent/shared 的 Create*Input 对齐） =====
 
 export interface KanbanCreateBoardArgs {
   rootGoal: string
@@ -77,49 +82,14 @@ export interface KanbanCommentArgs {
   comment: string
 }
 
-// ===== 依赖 Phase A kanban-db：最小 stub（合并后替换为真实 import） =====
+// ===== 依赖 kanban-db：已接线，直接调用 kanbanDbService =====
 //
-// 期望 kanban-db.ts 暴露以下方法（与设计 §3 / Phase A DoD 对齐）：
-//   kanbanDbService.createBoard(input): { id, ... }
-//   kanbanDbService.createTask(input): { id, ... }
-//   kanbanDbService.listTasksByBoard(boardId): KanbanTask[]
-//   kanbanDbService.updateTaskStatus(taskId, update): void
+// kanbanDbService 暴露的方法（与设计 §3 / Phase A DoD 对齐）：
+//   createBoard(input): KanbanBoard
+//   createTask(input): KanbanTask
+//   listTasksByBoard(boardId): KanbanTask[]
+//   updateTaskStatus(taskId, update): void
 //   （addTaskComment 待 Phase D blackboard 落地）
-//
-// 当前抛错以保证调用方明确感知「未接线」而非拿到空数据。
-// 合并后用 `import { kanbanDbService } from './kanban-db'` 替换本对象。
-
-interface KanbanDbFacade {
-  createBoard: (input: KanbanCreateBoardArgs) => { id: string }
-  createTask: (input: KanbanAddTaskArgs) => { id: string }
-  listTasksByBoard: (boardId: string) => Array<{ id: string; title: string; status: string }>
-  updateTaskStatus: (
-    taskId: string,
-    update: { status: 'blocked'; blockedReason: string }
-  ) => void
-  addTaskComment: (taskId: string, comment: string) => void
-}
-
-const kanbanDbNotWiredError = '[看板工具] kanban-db 尚未接线（依赖 Phase A），合并后改为真实 import'
-
-/** kanban-db 占位实现；Phase A 合并后用 `import { kanbanDbService } from './kanban-db'` 替换 */
-const kanbanDb: KanbanDbFacade = {
-  createBoard: () => {
-    throw new Error(kanbanDbNotWiredError)
-  },
-  createTask: () => {
-    throw new Error(kanbanDbNotWiredError)
-  },
-  listTasksByBoard: () => {
-    throw new Error(kanbanDbNotWiredError)
-  },
-  updateTaskStatus: () => {
-    throw new Error(kanbanDbNotWiredError)
-  },
-  addTaskComment: () => {
-    throw new Error(kanbanDbNotWiredError)
-  },
-}
 
 // ===== 工具辅助 =====
 
@@ -265,18 +235,18 @@ const kanbanCommentSchema: Record<string, unknown> = {
 // ===== 工具 handler =====
 
 async function handleCreateBoard(args: Record<string, unknown>): Promise<KanbanToolResult> {
-  const input: KanbanCreateBoardArgs = {
+  const input: CreateKanbanBoardInput = {
     rootGoal: assertNonBlank(args.rootGoal, 'rootGoal'),
     parentSessionId: assertNonBlank(args.parentSessionId, 'parentSessionId'),
     originChatId: optionalString(args.originChatId),
     originBridge: parseOriginBridge(args.originBridge),
   }
-  const board = kanbanDb.createBoard(input)
+  const board: KanbanBoard = kanbanDbService.createBoard(input)
   return jsonResult({ boardId: board.id, created: true })
 }
 
 async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolResult> {
-  const input: KanbanAddTaskArgs = {
+  const input: CreateKanbanTaskInput = {
     boardId: assertNonBlank(args.boardId, 'boardId'),
     title: assertNonBlank(args.title, 'title'),
     body: optionalString(args.body) ?? '',
@@ -287,14 +257,14 @@ async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolR
       typeof args.priority === 'number' && Number.isFinite(args.priority) ? args.priority : undefined,
     parentTaskId: optionalString(args.parentTaskId),
   }
-  const task = kanbanDb.createTask(input)
+  const task: KanbanTask = kanbanDbService.createTask(input)
   return jsonResult({ taskId: task.id, created: true })
 }
 
 async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const boardId = assertNonBlank(args.boardId, 'boardId')
-  const statusFilter = parseStatus(args.status)
-  const allTasks = kanbanDb.listTasksByBoard(boardId)
+  const statusFilter = parseStatus(args.status) as KanbanTaskStatus | undefined
+  const allTasks: KanbanTask[] = kanbanDbService.listTasksByBoard(boardId)
   const tasks =
     statusFilter === undefined ? allTasks : allTasks.filter((t) => t.status === statusFilter)
   return jsonResult({ tasks, count: tasks.length })
@@ -303,7 +273,7 @@ async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToo
 async function handleBlock(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const taskId = assertNonBlank(args.taskId, 'taskId')
   const reason = assertNonBlank(args.reason, 'reason')
-  kanbanDb.updateTaskStatus(taskId, {
+  kanbanDbService.updateTaskStatus(taskId, {
     status: 'blocked',
     blockedReason: reason,
   })

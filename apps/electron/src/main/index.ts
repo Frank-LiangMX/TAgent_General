@@ -624,6 +624,12 @@ async function bootstrap(): Promise<void> {
     startScheduler()
   })
 
+  // 初始化 Kanban 看板子系统（db + dispatcher，demo 模式 runner）
+  await safeAwait('initKanbanSubsystem', async () => {
+    const { initKanbanSubsystem } = await import('./lib/kanban-bootstrap')
+    initKanbanSubsystem()
+  })
+
   // 预创建快速任务窗口（隐藏状态，首次唤起秒开）
   safeRun('createQuickTaskWindow', createQuickTaskWindow)
   if (getSettings().voiceDictation?.enabled === true) {

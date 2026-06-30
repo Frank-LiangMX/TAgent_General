@@ -11,12 +11,8 @@
  * - 防递归 prompt 前缀（避免工人再创建看板 / automation）
  * - 完成回调 → updater.markTaskDone；失败 → updater.markTaskFailed
  *
- * 依赖 Phase A kanban-db，合并后接线：
- * - 当前 kanban-db.ts 尚未提交（Worker S 并行开发中，工作树内已存在但未 commit）
- * - 为保证本提交自洽可编译，默认 updater 为 noop（仅打 warn 日志），不直接 import kanban-db
- * - 合并后：删除 noopUpdater，改 `import { kanbanDbService } from './kanban-db'`，
- *   用 kanbanDbService.updateTaskStatus 实现 markTaskRunning/Done/Failed
- * - 调用方（dispatcher）也可通过 options.updater 注入自定义实现（如测试 mock）
+ * 已接线 kanban-db：createKanbanDbUpdater() 工厂调用 kanbanDbService.updateTaskStatus，
+ * dispatcher 默认注入真实 updater；测试可 options.updater 注入 mock。
  *
  * KanbanWorkerTask / KanbanWorkerBoardContext 为本文件最小契约，字段命名与
  * @tagent/shared 的 KanbanTask / KanbanBoard 对齐，Phase B 可直接复用完整类型。
@@ -32,6 +28,7 @@ import type { AgentExternalRunSource } from '@tagent/shared'
 
 import { createAgentSession, updateAgentSessionMeta } from './agent-session-manager'
 import { runRegisteredHeadlessAgent } from './agent-headless-runner-registry'
+import { kanbanDbService } from './kanban-db'
 
 /**
  * 看板工人任务契约
@@ -73,8 +70,7 @@ export interface KanbanWorkerBoardContext {
 /**
  * 任务状态回流接口（依赖注入）
  *
- * 默认 noopUpdater（kanban-db 未接线时仅打 warn 日志）。
- * Phase A 合并后：导出 createKanbanDbUpdater() 工厂，调用 kanbanDbService.updateTaskStatus；
+ * 默认由 createKanbanDbUpdater() 创建，调用 kanbanDbService.updateTaskStatus。
  * dispatcher 也可通过 options.updater 注入自定义实现（如测试 mock）。
  */
 export interface KanbanTaskUpdater {
@@ -86,24 +82,40 @@ export interface KanbanTaskUpdater {
   markTaskFailed(taskId: string, error: string): void
 }
 
-/** 默认 noop updater：kanban-db 未接线时仅打 warn 日志，便于先跑通桥接 / 测试 */
-const noopUpdater: KanbanTaskUpdater = {
-  markTaskRunning: (taskId, sessionId) =>
-    console.warn(
-      `[看板工人] kanban-db 尚未接线，markTaskRunning 被跳过: taskId=${taskId}, sessionId=${sessionId}`
-    ),
-  markTaskDone: (taskId, summary) =>
-    console.warn(
-      `[看板工人] kanban-db 尚未接线，markTaskDone 被跳过: taskId=${taskId}, summary=${summary ?? ''}`
-    ),
-  markTaskFailed: (taskId, error) =>
-    console.warn(
-      `[看板工人] kanban-db 尚未接线，markTaskFailed 被跳过: taskId=${taskId}, error=${error}`
-    ),
+/**
+ * 创建基于 kanbanDbService 的真实任务状态回流器
+ *
+ * - markTaskRunning：updateTaskStatus(running, assigneeSessionId)
+ * - markTaskDone：updateTaskStatus(done, resultSummary)
+ * - markTaskFailed：updateTaskStatus(failed, error)
+ *
+ * startedAt 由 kanban-db 在 status='running' 时自动写入，此处不显式传。
+ */
+export function createKanbanDbUpdater(): KanbanTaskUpdater {
+  return {
+    markTaskRunning: (taskId, sessionId) => {
+      kanbanDbService.updateTaskStatus(taskId, {
+        status: 'running',
+        assigneeSessionId: sessionId,
+      })
+    },
+    markTaskDone: (taskId, summary) => {
+      kanbanDbService.updateTaskStatus(taskId, {
+        status: 'done',
+        resultSummary: summary,
+      })
+    },
+    markTaskFailed: (taskId, error) => {
+      kanbanDbService.updateTaskStatus(taskId, {
+        status: 'failed',
+        error,
+      })
+    },
+  }
 }
 
 export interface RunKanbanTaskHeadlessOptions {
-  /** 任务状态回流器；默认 noopUpdater（kanban-db 合并后由 dispatcher 注入真实实现） */
+  /** 任务状态回流器；默认 createKanbanDbUpdater()（调用 kanbanDbService） */
   updater?: KanbanTaskUpdater
   /** 任务开始回调（dispatcher 用于并发计数 / IM 通知） */
   onTaskStarted?: (taskId: string, sessionId: string) => void
@@ -152,7 +164,7 @@ export async function runKanbanTaskHeadless(
   boardContext: KanbanWorkerBoardContext,
   options: RunKanbanTaskHeadlessOptions = {}
 ): Promise<void> {
-  const updater = options.updater ?? noopUpdater
+  const updater = options.updater ?? createKanbanDbUpdater()
   const startedAt = Date.now()
 
   // 1. 创建子会话（标题用任务标题，便于侧栏识别）；mode 强制 general，TA 模式禁止创建看板

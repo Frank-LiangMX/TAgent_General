@@ -26,6 +26,7 @@ import {
   SOUL_IPC_CHANNELS,
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
+  KANBAN_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -1286,6 +1287,24 @@ export interface ElectronAPI {
     ) => Promise<import('@tagent/shared').DraftDocument | null>
     delete: (id: string) => Promise<boolean>
     migrateLegacy: () => Promise<import('@tagent/shared').DraftDocument | null>
+  }
+
+  // ===== Kanban 看板 =====
+
+  kanban: {
+    listTasks: (boardId: string) => Promise<import('@tagent/shared').KanbanTask[]>
+    getBoard: (
+      boardId: string
+    ) => Promise<import('@tagent/shared').KanbanBoard | null>
+    seedDemo: (
+      input: import('@tagent/shared').SeedKanbanDemoInput
+    ) => Promise<import('@tagent/shared').SeedKanbanDemoResult>
+    pauseBoard: (boardId: string) => Promise<void>
+    resumeBoard: (boardId: string) => Promise<void>
+    unblockTask: (
+      input: import('@tagent/shared').UnblockKanbanTaskInput
+    ) => Promise<void>
+    onChanged: (callback: () => void) => () => void
   }
 
   // GitHub Release
@@ -3353,6 +3372,27 @@ const electronAPI: ElectronAPI = {
     update: (id, partial) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.UPDATE, id, partial),
     delete: (id: string) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.DELETE, id),
     migrateLegacy: () => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.MIGRATE_LEGACY),
+  },
+
+  // ===== Kanban 看板 =====
+
+  kanban: {
+    listTasks: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.LIST_TASKS, boardId),
+    getBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.GET_BOARD, boardId),
+    seedDemo: (input: import('@tagent/shared').SeedKanbanDemoInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.SEED_DEMO, input),
+    pauseBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.PAUSE_BOARD, boardId),
+    resumeBoard: (boardId: string) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RESUME_BOARD, boardId),
+    unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.UNBLOCK_TASK, input),
+    onChanged: (callback: () => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on(KANBAN_IPC_CHANNELS.CHANGED, listener)
+      return () => {
+        ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.CHANGED, listener)
+      }
+    },
   },
 
   // ===== 窗口关闭确认 =====

@@ -796,6 +796,12 @@ export interface AgentSessionMeta {
   /** 创建来源的定时任务 ID（由 automation-scheduler 在创建子会话时写入） */
   sourceAutomationId?: string
   /**
+   * 看板：该会话拥有的看板 ID（由 seedDemoKanban / kanban_create_board 写入主会话 meta）。
+   * 渲染进程据此决定是否显示「团队」二级 Tab。
+   * 与 parentBoardId 区分：parentBoardId 表示子会话属于哪个看板，boardId 表示主会话拥有哪个看板。
+   */
+  boardId?: string
+  /**
    * 看板：子会话所属看板 ID（由 kanban-worker-service 创建工人子会话时写入）。
    * v1 仅 general 模式；TA 模式禁止创建看板，故 TA 会话不应出现此字段。
    */

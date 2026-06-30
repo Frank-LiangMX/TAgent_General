@@ -130,6 +130,15 @@ import {
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
+  sessionBoardIdAtomFamily,
+  sessionSourceKanbanTaskIdAtomFamily,
+  sessionAgentSubTabAtomFamily,
+  useKanbanBoard,
+} from '@/atoms/kanban-atoms'
+import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
+import { KanbanBoardSummary } from '@/components/kanban/KanbanBoardSummary'
+import { SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import {
   InputToolbarOverflow,
   type ToolbarItem,
 } from '@/components/ai-elements/InputToolbarOverflow'
@@ -530,6 +539,42 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     if (!meta) return globalWorkspaceId // 数据未加载，回退全局
     return meta.workspaceId ?? null // 数据已加载，以会话自身为准
   }, [sessions, sessionId, globalWorkspaceId])
+
+  // ===== Kanban 团队 Tab 集成 =====
+  // 嵌套工人会话（sourceKanbanTaskId 存在）隐藏二级 Tab，避免递归
+  const isNestedWorker = useAtomValue(sessionSourceKanbanTaskIdAtomFamily(sessionId)) !== undefined
+  const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
+  const [subTab, setSubTab] = useAtom(sessionAgentSubTabAtomFamily(sessionId))
+  const kanbanBoard = useKanbanBoard(sessionId)
+  const setAgentSessionsForKanban = useSetAtom(agentSessionsAtom)
+  const [seedingDemo, setSeedingDemo] = React.useState(false)
+
+  const handleSeedDemo = React.useCallback(async () => {
+    if (!agentChannelId) {
+      toast.error('请先选择 AI 渠道后再加载看板演示')
+      return
+    }
+    setSeedingDemo(true)
+    try {
+      await window.electronAPI.kanban.seedDemo({
+        sessionId,
+        channelId: agentChannelId,
+        workspaceId: currentWorkspaceId ?? undefined,
+      })
+      // 刷新会话列表以获取更新后的 meta.boardId
+      const refreshed = await window.electronAPI.listAgentSessions()
+      setAgentSessionsForKanban(refreshed)
+      setSubTab('team')
+      toast.success('看板演示数据已加载')
+    } catch (err) {
+      console.error('[看板] 加载演示失败:', err)
+      toast.error('加载看板演示失败', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setSeedingDemo(false)
+    }
+  }, [agentChannelId, currentWorkspaceId, sessionId, setAgentSessionsForKanban, setSubTab])
+  // ===== Kanban 集成结束 =====
+
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
   const [pendingFiles, setPendingFiles] = useAtom(agentPendingFilesAtomFamily(sessionId))
   const workspaces = useAtomValue(agentWorkspacesAtom)
@@ -2717,6 +2762,47 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           {/* Agent Header */}
           <AgentHeader sessionId={sessionId} />
 
+          {/* 二级 Tab：对话 | 团队（嵌套工人会话不显示） */}
+          {!isNestedWorker && (
+            <div className="flex items-center gap-2 px-4 pt-1.5 pb-1">
+              <SegmentedTabs
+                value={subTab}
+                onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
+                className="text-xs"
+              >
+                <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
+                <SegmentedTabsItem value="team">
+                  团队{boardId && kanbanBoard.tasks.length > 0 && (
+                    <span className="ml-1 tabular-nums text-muted-foreground">
+                      {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/{kanbanBoard.tasks.length}
+                    </span>
+                  )}
+                </SegmentedTabsItem>
+              </SegmentedTabs>
+              {!boardId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[11px] text-foreground/60 hover:text-foreground"
+                  onClick={() => void handleSeedDemo()}
+                  disabled={seedingDemo}
+                >
+                  {seedingDemo ? '加载中…' : '加载看板演示'}
+                </Button>
+              )}
+              {boardId && subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
+                <KanbanBoardSummary
+                  tasks={kanbanBoard.tasks}
+                  onOpenTeam={() => setSubTab('team')}
+                />
+              )}
+            </div>
+          )}
+
+          {subTab === 'team' && boardId && !isNestedWorker ? (
+            <SessionTeamTab sessionId={sessionId} boardId={boardId} />
+          ) : (
+            <>
           <SessionFloatingLayout
             bottom={
               <>
@@ -2898,6 +2984,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             onCompact={handleCompact}
             onClientCompact={handleClientCompact}
           />
+            </>
+          )}
         </div>
       </AgentSessionProvider>
 

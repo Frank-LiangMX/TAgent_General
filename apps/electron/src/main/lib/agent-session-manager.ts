@@ -444,6 +444,7 @@ export function updateAgentSessionMeta(
       | 'sourceAutomationId'
       | 'parentBoardId'
       | 'sourceKanbanTaskId'
+      | 'boardId'
     >
   >
 ): AgentSessionMeta {
