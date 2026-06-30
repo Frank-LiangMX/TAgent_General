@@ -34,7 +34,7 @@
 | --- | --- | --- | --- |
 | P1-1 | Bridge 长连接自愈 | ✅ | `bridge-registry.ts` + index 注册 |
 | P1-2 | `automation-agent-tools.ts` | ✅ | 6 个 MCP 工具 + orchestrator 注入 |
-| P1-3 | 协作子会话 v1（collaboration + headless runner） | ⏳ | glm-5.2 |
+| P1-3 | 协作子会话 v1（collaboration + headless runner） | ⏳ | glm-5.2；**长跑终态见** [`task-kanban-orchestration-design.md`](2026-06-30-task-kanban-orchestration-design.md) **（暂缓 Epic）** |
 | P1-4 | adapter Stop hook + 后台任务唤醒 | ⏳ | glm-5.2 |
 | P1-5 | Issue A 1M 上下文 + `qwen-anthropic` | ⏳ | glm-5.1 |
 
@@ -84,3 +84,11 @@ kscc -p --permission-mode bypassPermissions --model glm-5.1 `
 ```
 
 **合并顺序**：P0 → P1 无冲突模块并行 → P2 → 全量 typecheck/test → 交用户验收。
+
+---
+
+## 暂缓 Epic（上游完成后另开分支）
+
+| Epic | 文档 | 说明 |
+| --- | --- | --- |
+| 任务看板编排 Kanban | [`2026-06-30-task-kanban-orchestration-design.md`](2026-06-30-task-kanban-orchestration-design.md) | Hermes 式看板 + IM 进度 + 无限角色库；**等本分支验收后再做** |

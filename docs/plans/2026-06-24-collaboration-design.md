@@ -1,11 +1,15 @@
 # TAgent 协作子会话（Collaboration）系统设计文档
 
-> **状态**：Draft v0.1  
+> **状态**：Draft v0.1 — **执行层参考文档**（终态架构见下方）  
 > **日期**：2026-06-24  
 > **目标**：让用户能看到 Agent 在主会话中委派的子 Agent，形成可视化、可继续、可审计的协作体验  
 > **关联**：[`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md) §2.3、[`2026-06-24-automation-design.md`](2026-06-24-automation-design.md) §12.1  
 > **上游基线**：proma-ai/Proma #888 / #901 / #745 / #898  
 > **分支建议**：`feature/collaboration-agents`
+
+> **⚠️ 2026-06-30 架构决策**：长跑多 Agent 的**主线**已改为 **Kanban 看板 + 调度器**（Hermes 思路），Collaboration 子会话降级为**执行层（工人）**。  
+> **请先读**：[`2026-06-30-task-kanban-orchestration-design.md`](2026-06-30-task-kanban-orchestration-design.md) — 含 Handoff、里程碑、与上游对齐关系。  
+> 本文档仍保留 Proma MCP 工具、阻塞冒泡、UI 等细节，供 Phase B borrow 时查阅。
 
 ---
 

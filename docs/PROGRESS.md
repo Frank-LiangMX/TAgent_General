@@ -10,7 +10,8 @@
 > **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）
 > **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）
 > **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
-> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（MCP 委派体系）
+> **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（Proma MCP 执行层参考）
+> **任务看板编排（暂缓 Epic）**：`docs/plans/2026-06-30-task-kanban-orchestration-design.md`（Kanban + IM + 角色库；等上游对齐后做）
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
@@ -122,7 +123,7 @@
 - 🔴 **当前主线**：**上游 Proma v0.13.4 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)、[proma-upstream-borrow-list.md](plans/2026-06-24-proma-upstream-borrow-list.md)
 - **🟠 活跃待办（2026-06-30 扫描）**：
   - P0：`#913` adapter、`#910`/`#903` 确认、SDK 平台子包对齐
-  - P1：协作子会话（0%）、Bridge 自愈、后台任务唤醒 idle Agent
+  - P1：上游 P1-3 最小 headless；**Kanban 长跑 Epic 暂缓**（见 `task-kanban-orchestration-design.md`）
   - P2：Automation M4（`automation-agent-tools`）、Issue A/E、WPS 增强
   - P3：`#915` classic/modern 双界面、预览分屏偏好、`qwen-anthropic` 渠道
 
@@ -297,7 +298,7 @@
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| **协作子会话 v1** | ❌ 0% | `agent-collaboration-tools.ts` + headless runner；见 collaboration-design |
+| **协作 / 看板编排** | ❌ 暂缓 Epic | 上游对齐后再做；见 [`task-kanban-orchestration-design.md`](plans/2026-06-30-task-kanban-orchestration-design.md) |
 | **Bridge 长连接自愈** | ❌ | TAgent `bridge-registry.ts` 仅 start/stop，无 recover / 健康检查 |
 | **后台任务唤醒 idle Agent** | ❌ | 依赖 Stop hook + headless runner |
 | **Automation M4** | 部分 | M1–M3 ✅；缺 `automation-agent-tools`、自然语言创建、custom cron |
