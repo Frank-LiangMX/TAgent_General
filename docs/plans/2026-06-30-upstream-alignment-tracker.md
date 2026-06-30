@@ -24,7 +24,7 @@
 | P0-2 | #910 `onSessionId` 用 `capturedSdkSessionId` 守卫 | ✅ | `agent-orchestrator.ts` |
 | P0-3 | #903 终止分支保留 `sdkSessionId` | ✅ | + `TRANSIENT_NETWORK_PATTERN` 扩展 |
 | P0-4 | SDK 平台 optional 子包 0.3.185 | ✅ | `apps/electron/package.json` |
-| P0-5 | `bun run typecheck` + `bun test` | 🚧 | 每批改动后必跑 |
+| P0-5 | `bun run typecheck` + `bun test` | ✅ | typecheck 0 error；`bun test` 297/300（3 个既有 electron mock 导入失败，非本分支回归） |
 
 ---
 
@@ -44,12 +44,12 @@
 
 | ID | 任务 | 状态 | 模型建议 |
 | --- | --- | --- | --- |
-| P2-1 | #915 classic/modern 双界面 | ⏳ | mimo-v2.5-pro |
-| P2-2 | `previewModePreference` 预览路由 | ⏳ | glm-5.1 |
-| P2-3 | 外部 MCP type 推断 | ⏳ | kimi-k2.5 |
-| P2-4 | Context Usage 显示精度 | ⏳ | glm-5.1 |
-| P2-5 | Automation NL 创建 + custom cron | ⏳ | glm-5.1 |
-| P2-6 | Nowledge Mem（可选） | ⏭️ | — |
+| P2-1 | #915 classic/modern 双界面 | ⏭️ | 用户不需要，跳过 |
+| P2-2 | `previewModePreference` 预览路由 | ✅ | useOpenPreview + 设置页 |
+| P2-3 | 外部 MCP type 推断 | ✅ | 已在 agent-workspace-manager |
+| P2-4 | Context Usage 显示精度 | ✅ | TAgent 自有方案 + 切会话清 stableRef |
+| P2-5 | Automation NL 创建 + custom cron | 部分 ✅ | Skill + prompt + 工具编码修复 + 自动审批权限；custom cron 未做（Proma 亦无） |
+| P2-6 | Nowledge Mem（可选） | ⏭️ | 用户跳过：TAgent 自有记忆系统 |
 
 ---
 
@@ -57,8 +57,8 @@
 
 | ID | 任务 | 状态 |
 | --- | --- | --- |
-| P3-1 | #904–#912 输入预览小修（逐项验证） | ⏳ |
-| P3-2 | 项目重命名 + 删除确认 | ⏳ |
+| P3-1 | #904–#912 输入预览小修（逐项验证） | ✅ | #904/#906/#908/#911/#912；#909 跳过 |
+| P3-2 | 项目重命名 + 删除确认 | ✅ | 侧栏内联删除确认 + 重命名刷新 atom |
 | P3-3 | WPS 协作增强 | ⏳（独立线，非 Proma 对齐） |
 
 ---
@@ -67,10 +67,16 @@
 
 | Commit | 内容 |
 | --- | --- |
-| `3fd924f1` | 文档：Kanban 编排 Epic 暂缓 |
-| `9d13366d` | P1 Bridge 自愈 + automation agent MCP 工具 |
 | `7c8c4f2d` | P0 稳定性（#913/#910/#903 + SDK 0.3.185） |
-| `d2bb116c` | 文档：上游 v0.13.4 扫描校准 |
+| `9d13366d` | P1 Bridge 自愈 + automation agent MCP 工具 |
+| `3fd924f1` | 文档：Kanban 编排 Epic 暂缓 |
+| `84ae8c42` | 文档：上游 alignment tracker 更新 |
+| `a2411a48` | P1 headless registry + 后台唤醒 + qwen-anthropic |
+| `a7e1c13` | P2 预览路由 + Automation Skill + prompt |
+| `f77ee38b` | P3 UI 小修 + 自动审批权限路由 + automation 工具修复 |
+| `0aeb95ba` | 文档：tracker / PROGRESS 验收状态 |
+
+**分支状态（2026-06-30）**：P0–P3（除 custom cron / WPS / #915 / Nowledge Mem）已落地，**待用户验收后合 PR**。
 
 ---
 

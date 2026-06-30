@@ -120,12 +120,9 @@
   - **小修**：`@` 引用弹窗（`FileMentionList` / `MentionList`）滚动条统一 `scrollbar-thin`；Context 底栏词条 Tooltip；Token 底栏隐藏费用展示
 - ✅ **Agent Hooks + auto-check** 已完成（2026-06-30，commits on `main`）— PostToolUse 多语言检查钩子 + `AgentBehaviorSettings` 语言级配置；**TAgent 独有，Proma 无**
 - ✅ **Superpowers 14 skill** 已收录（2026-06-30）
-- 🔴 **当前主线**：**上游 Proma v0.13.4 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)、[proma-upstream-borrow-list.md](plans/2026-06-24-proma-upstream-borrow-list.md)
-- **🟠 活跃待办（2026-06-30 扫描）**：
-  - P0：`#913` adapter、`#910`/`#903` 确认、SDK 平台子包对齐
-  - P1：上游 P1-3 最小 headless；**Kanban 长跑 Epic 暂缓**（见 `task-kanban-orchestration-design.md`）
-  - P2：Automation M4（`automation-agent-tools`）、Issue A/E、WPS 增强
-  - P3：`#915` classic/modern 双界面、预览分屏偏好、`qwen-anthropic` 渠道
+- 🟢 **上游 Proma v0.13.4 对齐**（`feature/upstream-v0.13.4-alignment`）— P0–P3 已落地，**待验收合 PR**；跟踪 [`2026-06-30-upstream-alignment-tracker.md`](plans/2026-06-30-upstream-alignment-tracker.md)
+- **本分支已完成（2026-06-30）**：P0 稳定性、P1 Bridge/Automation MCP/headless、P2 预览路由 + Automation Skill、P3 #904–#912 + 侧栏删项确认、自动审批权限路由（避免 SDK classifier 硬拒）
+- **本分支未做 / 跳过**：custom cron（M4）、WPS 增强（独立线）、#915 双界面、Nowledge Mem
 
 **2026-06-24 / 06-25 规划文档**：
 
@@ -309,7 +306,7 @@
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| **#915 classic/modern 双界面** | ❌ | v0.13.4 新增，`interfaceVariantAtom` + 外观设置 |
+| **#915 classic/modern 双界面** | ⏭️ 跳过 | 用户不需要；TAgent 保持现有单套 UI |
 | **#920 侧栏会话排序** | ✅ | TAgent 已有等价 `currentSession` 逻辑 |
 | **qwen-anthropic 渠道** | ❌ | Qwen3.7 1M Anthropic 协议 |
 | **Nowledge Mem 记忆卡片** | ❌ | Proma MemorySettings 引导 |
