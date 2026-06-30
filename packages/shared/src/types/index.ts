@@ -71,3 +71,6 @@ export * from './automation'
 
 // Draft 需求草稿相关类型
 export * from './draft'
+
+// Kanban 任务看板编排相关类型
+export * from './kanban'
