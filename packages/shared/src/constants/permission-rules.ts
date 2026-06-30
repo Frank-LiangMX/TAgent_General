@@ -1,3 +1,5 @@
+import type { TAgentPermissionMode } from '../types/agent'
+
 /**
  * 工具分类规则 — Agent 权限系统
  *
@@ -114,6 +116,37 @@ export function isDangerousCommand(command: string): boolean {
 /** 写操作工具名称 */
 export const WRITE_TOOLS: readonly string[] = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 
+/** automation MCP 只读工具（auto 模式下免确认） */
+export const AUTOMATION_MCP_READ_TOOLS: readonly string[] = [
+  'mcp__automation__list_automations',
+  'mcp__automation__get_automation',
+]
+
+/** automation MCP 写操作工具（auto 模式下需用户确认） */
+export const AUTOMATION_MCP_MUTATION_TOOLS: readonly string[] = [
+  'mcp__automation__create_automation',
+  'mcp__automation__update_automation',
+  'mcp__automation__delete_automation',
+  'mcp__automation__run_automation_now',
+]
+
+/** 解析 MCP 工具名：mcp__server__tool → { server, tool } */
+export function parseMcpToolName(
+  toolName: string
+): { server: string; tool: string } | null {
+  const parts = toolName.split('__')
+  if (parts[0] !== 'mcp' || parts.length < 3) return null
+  return { server: parts[1]!, tool: parts.slice(2).join('__') }
+}
+
+export function isAutomationReadTool(toolName: string): boolean {
+  return AUTOMATION_MCP_READ_TOOLS.includes(toolName)
+}
+
+export function isAutomationMutationTool(toolName: string): boolean {
+  return AUTOMATION_MCP_MUTATION_TOOLS.includes(toolName)
+}
+
 /**
  * 判断工具是否为写操作（auto 模式下需用户确认）
  */
@@ -124,4 +157,69 @@ export function isWriteTool(toolName: string, input: Record<string, unknown>): b
     return !isSafeBashCommand(command)
   }
   return false
+}
+
+/** 会话外影响 / 后台执行类工具（自动审批模式下需用户确认） */
+export const HIGH_RISK_PROACTIVE_TOOLS: readonly string[] = [
+  'Task',
+  'REPL',
+  'Workflow',
+  'ScheduleWakeup',
+  'Monitor',
+  'PushNotification',
+  'CronCreate',
+  'CronDelete',
+  'RemoteTrigger',
+]
+
+/** 只读类内置工具（自动审批模式下免确认） */
+export const AUTO_MODE_READ_ONLY_TOOLS: readonly string[] = [
+  'Skill',
+  'TaskList',
+  'TaskGet',
+  'ListMcpResourcesTool',
+  'ReadMcpResourceTool',
+]
+
+/**
+ * 自动审批模式下是否可静默放行（只读查询 + 安全 Bash）
+ *
+ * 其余工具（写文件、MCP 变更、子任务、定时唤醒等）一律走 PermissionBanner。
+ */
+export function isAutoModeAutoAllowTool(toolName: string, input: Record<string, unknown>): boolean {
+  if (SAFE_TOOLS.includes(toolName)) return true
+  if (AUTO_MODE_READ_ONLY_TOOLS.includes(toolName)) return true
+  if (isAutomationReadTool(toolName)) return true
+  if (toolName === 'Bash') {
+    const command = typeof input.command === 'string' ? input.command : ''
+    return isSafeBashCommand(command)
+  }
+  return false
+}
+
+/**
+ * 自动审批模式下是否必须弹出 TAgent 权限横幅
+ */
+export function requiresAutoModeConfirmation(
+  toolName: string,
+  input: Record<string, unknown>
+): boolean {
+  if (toolName === 'AskUserQuestion') return false
+  return !isAutoModeAutoAllowTool(toolName, input)
+}
+
+/**
+ * TAgent 权限模式 → 传给 Claude Agent SDK 的 permissionMode
+ *
+ * 「自动审批」与「完全自动」的决策全部由 TAgent canUseTool 完成。
+ * 若 SDK 仍用原生 auto，内置 classifier 可能在 canUseTool 之前硬拒高风险工具并终止任务。
+ * 因此这两档统一映射为 default，保证每次工具调用都先进入 TAgent 审批链路。
+ */
+export function resolveSdkPermissionModeForTAgent(
+  mode: TAgentPermissionMode
+): TAgentPermissionMode | 'default' {
+  if (mode === 'auto' || mode === 'bypassPermissions') {
+    return 'default'
+  }
+  return mode
 }

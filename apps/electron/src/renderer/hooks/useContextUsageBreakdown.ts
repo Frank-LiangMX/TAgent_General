@@ -1,7 +1,10 @@
 import type { ContextUsageSnapshot, GetContextUsageError } from '@tagent/shared'
 import * as React from 'react'
 
-import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
+import {
+  bumpContextUsageRefreshNonce,
+  contextUsageRefreshNonceBySessionAtom,
+} from '@/atoms/context-usage-atoms'
 import { useAtomValue } from 'jotai'
 
 interface UseContextUsageBreakdownResult {
@@ -41,9 +44,12 @@ export function buildStreamPreviewSnapshot(
 export function useContextUsageBreakdown(
   sessionId: string | null | undefined,
   enabled: boolean,
-  streamPreview?: { totalTokens: number; maxTokens: number; model?: string } | null
+  streamPreview?: { totalTokens: number; maxTokens: number; model?: string } | null,
+  /** 是否调用 SDK getContextUsage；空闲会话仅用缓存/流式预览即可 */
+  liveFetch = true
 ): UseContextUsageBreakdownResult {
-  const refreshNonce = useAtomValue(contextUsageRefreshNonceAtom)
+  const nonceMap = useAtomValue(contextUsageRefreshNonceBySessionAtom)
+  const refreshNonce = sessionId ? (nonceMap.get(sessionId) ?? 0) : 0
   const [snapshot, setSnapshot] = React.useState<ContextUsageSnapshot | null>(null)
   const [error, setError] = React.useState<GetContextUsageError | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -79,6 +85,13 @@ export function useContextUsageBreakdown(
 
     const delayMs = refreshNonce > 0 ? 500 : 0
     const timer = window.setTimeout(() => {
+      if (!liveFetch) {
+        if (!hasDisplayedRef.current) {
+          setLoading(false)
+        }
+        return
+      }
+
       if (!hasDisplayedRef.current) {
         if (streamPreview && streamPreview.totalTokens > 0 && streamPreview.maxTokens > 0) {
           setSnapshot(
@@ -142,6 +155,7 @@ export function useContextUsageBreakdown(
     streamPreview?.totalTokens,
     streamPreview?.maxTokens,
     streamPreview?.model,
+    liveFetch,
   ])
 
   return { snapshot, error, loading, refreshing, isStreamPreview }

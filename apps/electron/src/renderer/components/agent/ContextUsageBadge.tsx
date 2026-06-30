@@ -137,6 +137,13 @@ export function ContextUsageBadge({
     cacheCreationTokens?: number
     contextWindow?: number
   } | null>(null)
+  const lastSessionRef = React.useRef<string | undefined>(undefined)
+  React.useEffect(() => {
+    if (lastSessionRef.current !== sessionId) {
+      stableRef.current = null
+      lastSessionRef.current = sessionId ?? undefined
+    }
+  }, [sessionId])
   if (inputTokens && inputTokens > 0) {
     stableRef.current = {
       inputTokens,
@@ -184,7 +191,7 @@ export function ContextUsageBadge({
     loading: breakdownLoading,
     refreshing: breakdownRefreshing,
     isStreamPreview,
-  } = useContextUsageBreakdown(sessionId, !!sessionId, streamPreview)
+  } = useContextUsageBreakdown(sessionId, !!sessionId, streamPreview, open || isProcessing)
 
   // SDK / 缓存快照（不含流式估算预览）— 圆环与百分比以此为准
   const authoritativeSnapshot = snapshot && !isStreamPreview ? snapshot : null

@@ -13,10 +13,10 @@
 import { randomUUID } from 'node:crypto'
 
 import {
-  SAFE_TOOLS,
-  isSafeBashCommand,
   isDangerousCommand,
   hasDangerousStructure,
+  isAutoModeAutoAllowTool,
+  parseMcpToolName,
 } from '@tagent/shared'
 
 import type {
@@ -93,10 +93,10 @@ export class AgentPermissionService {
   private sessionWhitelists = new Map<string, SessionWhitelist>()
 
   /**
-   * 创建 canUseTool 回调（auto 模式及 escalation 场景使用）
+   * 创建 canUseTool 回调（自动审批模式使用）
    *
-   * SDK 的 auto 模式内置 classifier 自动处理大多数权限决策，仅在 classifier 无法判断时
-   * 才调用此回调（escalation）。返回的函数签名匹配 SDK 的 CanUseTool 类型。
+   * SDK 侧使用 default permissionMode，每次工具调用都会进入此回调。
+   * 只读操作静默放行，高风险操作弹出 PermissionBanner 等待用户确认。
    */
   createCanUseTool(
     sessionId: string,
@@ -148,10 +148,8 @@ export class AgentPermissionService {
         })
       }
 
-      // auto 模式本地 classifier：只读工具（Read/Glob/Grep/WebSearch/WebFetch 及只读 Bash 命令）自动放行
-      // 原因：CLI 的 --permission-prompt-tool stdio 会把每次 tool 调用都转发给 canUseTool，
-      // SDK 的 auto classifier 对只读操作未必真的放行，这里做本地兜底避免用户被无意义的审批打扰
-      if (this.isReadOnlyTool(toolName, input)) return allow()
+      // 自动审批：只读工具静默放行，其余走权限横幅
+      if (isAutoModeAutoAllowTool(toolName, input)) return allow()
 
       // 需要询问用户：构建请求并发送到 UI
       const request = this.buildPermissionRequest(sessionId, toolName, input, options)
@@ -262,22 +260,6 @@ export class AgentPermissionService {
   }
 
   // ===== 工具分类判断 =====
-
-  /**
-   * 判断工具是否为只读操作（智能模式下自动允许）
-   */
-  private isReadOnlyTool(toolName: string, input: Record<string, unknown>): boolean {
-    // 安全工具白名单
-    if (SAFE_TOOLS.includes(toolName)) return true
-
-    // Bash 工具：检查命令是否匹配安全模式
-    if (toolName === 'Bash') {
-      const command = typeof input.command === 'string' ? input.command : ''
-      return isSafeBashCommand(command)
-    }
-
-    return false
-  }
 
   /**
    * 判断工具/命令是否在会话白名单中
@@ -424,7 +406,7 @@ export class AgentPermissionService {
       case 'Task':
         return typeof input.description === 'string'
           ? `启动子任务: ${input.description}`
-          : '启动子任务'
+          : '启动子 Agent 子任务'
       case 'REPL':
         return typeof input.description === 'string'
           ? `执行 REPL: ${input.description}`
@@ -439,8 +421,27 @@ export class AgentPermissionService {
           : '启动监控任务'
       case 'PushNotification':
         return typeof input.message === 'string' ? `发送通知: ${input.message}` : '发送通知'
-      default:
+      default: {
+        const mcp = parseMcpToolName(toolName)
+        if (mcp?.server === 'automation') {
+          const name = typeof input.name === 'string' ? input.name.trim() : ''
+          switch (mcp.tool) {
+            case 'create_automation':
+              return name
+                ? `创建定时任务「${name}」`
+                : '创建 TAgent 定时任务（将写入 automations.json 并按计划自动执行）'
+            case 'update_automation':
+              return name ? `修改定时任务「${name}」` : '修改 TAgent 定时任务'
+            case 'delete_automation':
+              return '删除 TAgent 定时任务'
+            case 'run_automation_now':
+              return name ? `立即运行定时任务「${name}」` : '立即运行 TAgent 定时任务'
+            default:
+              return `定时任务操作: ${mcp.tool}`
+          }
+        }
         return `使用工具: ${toolName}`
+      }
     }
   }
 
@@ -475,6 +476,11 @@ export class AgentPermissionService {
       ].includes(toolName)
     ) {
       return 'normal'
+    }
+
+    const mcp = parseMcpToolName(toolName)
+    if (mcp?.server === 'automation') {
+      return mcp.tool === 'delete_automation' ? 'dangerous' : 'normal'
     }
 
     return 'normal'

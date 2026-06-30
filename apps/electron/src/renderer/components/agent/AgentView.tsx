@@ -125,13 +125,13 @@ import {
 } from '@/atoms/preview-atoms'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import {
   InputToolbarOverflow,
   type ToolbarItem,
 } from '@/components/ai-elements/InputToolbarOverflow'
 import { RichTextInput } from '@/components/ai-elements/rich-text-input'
 import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
+import { openPreview } from '@/components/diff/preview-opener'
 import { SessionFloatingLayout } from '@/components/layout/SessionFloatingLayout'
 import { AttachmentPreviewItem } from '@/components/shared/AttachmentPreviewItem'
 import {
@@ -1354,30 +1354,14 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const openClipboardPreviewFile = React.useCallback(
     (filePath: string): void => {
       const parentPath = getFileParentPath(filePath)
-      setPreviewFileMap((prev) => {
-        const m = new Map(prev)
-        m.set(sessionId, {
-          filePath,
-          previewOnly: true,
-          readOnly: false,
-          basePaths: parentPath ? [parentPath] : undefined,
-        })
-        return m
+      openPreview(store, sessionId, {
+        filePath,
+        previewOnly: true,
+        readOnly: false,
+        basePaths: parentPath ? [parentPath] : undefined,
       })
-      store.set(previewPanelOpenMapAtom, (prev) => {
-        const m = new Map(prev)
-        m.set(sessionId, false)
-        return m
-      })
-      const result = openTab(store.get(tabsAtom), {
-        type: 'preview',
-        sessionId,
-        title: getPreviewTabTitle(filePath),
-      })
-      store.set(tabsAtom, result.tabs)
-      store.set(activeTabIdAtom, result.activeTabId)
     },
-    [sessionId, setPreviewFileMap, store]
+    [sessionId, store]
   )
 
   /** 点击 clipboard 附件时，在当前会话的临时预览标签页中显示内容 */
@@ -1601,10 +1585,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   /** 发送消息 */
   const handleSend = React.useCallback(
-    async (submitOpts?: { shiftKey: boolean }): Promise<void> => {
+    async (submitOpts?: { shiftKey?: boolean; overrideText?: string }): Promise<void> => {
       // 决策 #15：Shift+Enter = 打断当前 turn 立即注入；纯 Enter = 排队等当前 turn 完成
       const wantsInterrupt = submitOpts?.shiftKey ?? false
-      const text = inputContent.trim()
+      const overrideText = submitOpts?.overrideText
+      const text = (overrideText ?? inputContent).trim()
 
       // /btw 侧面提问检测
       if (text.startsWith('/btw ') || text === '/btw') {
@@ -1731,9 +1716,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           return map
         })
 
-        // 2. 清空输入框
-        setInputContent('')
-        setInputHtmlContent('')
+        // 2. 清空输入框（仅发送用户自己输入的内容，点推荐条时保留草稿）
+        if (overrideText === undefined) {
+          setInputContent('')
+          setInputHtmlContent('')
+        }
         setPromptSuggestions((prev) => {
           if (!prev.has(sessionId)) return prev
           const map = new Map(prev)
@@ -1997,8 +1984,10 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         })(),
       }
 
-      setInputContent('')
-      setInputHtmlContent('')
+      if (overrideText === undefined) {
+        setInputContent('')
+        setInputHtmlContent('')
+      }
 
       window.electronAPI.sendAgentMessage(input).catch((error) => {
         console.error('[AgentView] 发送消息失败:', error)
@@ -2691,7 +2680,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
               ? 'bg-primary text-primary-foreground hover:bg-primary/90'
               : 'text-foreground/30 cursor-not-allowed'
           )}
-          onClick={handleSend}
+          onClick={() => void handleSend()}
           disabled={!canSend}
         >
           <ArrowUp className="size-5" />
@@ -2821,7 +2810,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                           <button
                             type="button"
                             className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
-                            onClick={handleSend}
+                            onClick={() => void handleSend({ overrideText: suggestion })}
                           >
                             <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
                             <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">

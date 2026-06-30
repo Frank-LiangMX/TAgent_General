@@ -29,9 +29,7 @@ import {
 } from '@tagent/core'
 import {
   TAGENT_DEFAULT_PERMISSION_MODE,
-  TAGENT_PERMISSION_MODE_CONFIG,
-  SAFE_TOOLS,
-  isWriteTool,
+  resolveSdkPermissionModeForTAgent,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
@@ -152,12 +150,6 @@ export interface SessionCallbacks {
 }
 
 // ===== 工具函数 =====
-
-function sdkPermissionModeForTAgentMode(mode: TAgentPermissionMode): TAgentPermissionMode {
-  // TAgent 自己在 canUseTool 里实现完全自动。SDK 原生 bypassPermissions
-  // 可能在 canUseTool 前直接放行 ExitPlanMode，绕过计划审批。
-  return mode === 'bypassPermissions' ? 'auto' : TAGENT_PERMISSION_MODE_CONFIG[mode].sdkMode
-}
 
 /**
  * 从 stderr 中提取 API 错误信息
@@ -2007,7 +1999,10 @@ export class AgentOrchestrator {
             // 同步通知 SDK 侧切换权限模式
             if (this.adapter.setPermissionMode) {
               this.adapter
-                .setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(result.targetMode))
+                .setPermissionMode(
+                  sessionId,
+                  resolveSdkPermissionModeForTAgent(result.targetMode) as TAgentPermissionMode
+                )
                 .catch((err: unknown) => {
                   console.warn(`[Agent 编排] SDK 权限模式切换失败:`, err)
                 })
@@ -2089,39 +2084,9 @@ export class AgentOrchestrator {
             }
           }
 
-          case 'auto': {
-            // auto 模式写操作守卫：Write/Edit/MultiEdit/NotebookEdit 和非安全 Bash 始终需确认
-            if (
-              isWriteTool(toolName, input) &&
-              !permissionService.isWhitelisted(sessionId, toolName, input)
-            ) {
-              const request = permissionService.buildPermissionRequest(
-                sessionId,
-                toolName,
-                input,
-                options
-              )
-              this.eventBus.emit(sessionId, {
-                kind: 'tagent_event',
-                event: { type: 'permission_request', request },
-              })
-              return new Promise<PermissionResult>((resolve) => {
-                permissionService.setPending(request.requestId, { resolve, request })
-                options.signal.addEventListener(
-                  'abort',
-                  () => {
-                    if (permissionService.hasPending(request.requestId)) {
-                      permissionService.deletePending(request.requestId)
-                      resolve({ behavior: 'deny' as const, message: '操作已中止' })
-                    }
-                  },
-                  { once: true }
-                )
-              })
-            }
-            // 只读操作走 SDK classifier
+          case 'auto':
+            // 只读静默放行；写操作、MCP 变更、子任务、后台能力等一律走 PermissionBanner
             return autoCanUseTool(toolName, input, options)
-          }
 
           default:
             return { behavior: 'allow' as const, updatedInput: input }
@@ -2135,6 +2100,7 @@ export class AgentOrchestrator {
         appSettings.agentMaxTurns && appSettings.agentMaxTurns > 0
           ? appSettings.agentMaxTurns
           : undefined
+      const resolvedSdkPermissionMode = resolveSdkPermissionModeForTAgent(initialPermissionMode)
       const queryOptions: ClaudeAgentQueryOptions = {
         sessionId,
         prompt: finalPrompt,
@@ -2144,7 +2110,7 @@ export class AgentOrchestrator {
         isKsccChannel: channel.provider === 'kscc-internal',
         env: sdkEnv,
         ...(maxTurns != null && { maxTurns }),
-        sdkPermissionMode: sdkPermissionModeForTAgentMode(initialPermissionMode),
+        sdkPermissionMode: resolvedSdkPermissionMode as TAgentPermissionMode,
         // 当提供 canUseTool 回调时必须为 false，否则 CLI 同时收到
         // --allow-dangerously-skip-permissions 和 --permission-prompt-tool stdio
         // 两个矛盾的指令，导致 ExitPlanMode/AskUserQuestion 等交互式工具失败。
@@ -2152,10 +2118,6 @@ export class AgentOrchestrator {
         // Worker 子代理在 bypassPermissions 模式下也会被自动放行。
         allowDangerouslySkipPermissions: !canUseTool,
         canUseTool,
-        // 仅「自动审批」限制 SDK 可见工具集；「完全自动」须放开 Write/Bash 等，由 canUseTool 统一放行
-        ...(initialPermissionMode === 'auto' && {
-          allowedTools: [...SAFE_TOOLS],
-        }),
         // claude_code preset 提供基础环境信息（platform/shell/OS/git/model/知识截止日期等）
         // buildSystemPrompt 追加 TAgent 特有指令（角色定义、SubAgent 策略、工作区信息等）
         systemPrompt: {
@@ -3016,7 +2978,8 @@ export class AgentOrchestrator {
     })
     // 同步通知 SDK 侧
     if (this.adapter.setPermissionMode) {
-      await this.adapter.setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(mode))
+      const sdkMode = resolveSdkPermissionModeForTAgent(mode)
+      await this.adapter.setPermissionMode(sessionId, sdkMode as TAgentPermissionMode)
     }
     console.log(`[Agent 编排] 运行中权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
@@ -3241,7 +3204,12 @@ export class AgentOrchestrator {
     } catch (error) {
       const { toGetContextUsageError } = await import('./context-usage-mapper')
       const mapped = toGetContextUsageError(error)
-      console.warn(`[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`)
+      // 空闲会话无活跃 Query 是正常状态，不应刷 warn
+      if (mapped.code !== 'NO_ACTIVE_QUERY' && mapped.code !== 'NO_CACHE') {
+        console.warn(
+          `[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`
+        )
+      }
       return { ok: false, code: mapped.code, message: mapped.message }
     }
   }

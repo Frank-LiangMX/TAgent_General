@@ -42,6 +42,7 @@ import {
   agentMessageRefreshAtom,
   allPendingPermissionRequestsAtom,
   allPendingAskUserRequestsAtom,
+  askUserDraftsAtom,
   allPendingExitPlanRequestsAtom,
   agentPromptSuggestionsAtom,
   backgroundTasksAtomFamily,
@@ -78,7 +79,10 @@ import {
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
+import {
+  bumpContextUsageRefreshNonce,
+  contextUsageRefreshNonceBySessionAtom,
+} from '@/atoms/context-usage-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
   notificationsEnabledAtom,
@@ -1039,6 +1043,25 @@ export function useGlobalAgentListeners(): void {
               event.request.questions[0]?.question ?? 'Agent 有问题需要你回答',
               'permissionRequest'
             )
+          } else if (event.type === 'ask_user_resolved') {
+            // 协作父会话代答等场景：清理所有会话中的残留请求与草稿
+            store.set(allPendingAskUserRequestsAtom, (prev) => {
+              let changed = false
+              const map = new Map(prev)
+              prev.forEach((requests, pendingSessionId) => {
+                const nextRequests = requests.filter((r) => r.requestId !== event.requestId)
+                if (nextRequests.length !== requests.length) changed = true
+                if (nextRequests.length === 0) map.delete(pendingSessionId)
+                else map.set(pendingSessionId, nextRequests)
+              })
+              return changed ? map : prev
+            })
+            store.set(askUserDraftsAtom, (prev) => {
+              if (!prev.has(event.requestId)) return prev
+              const map = new Map(prev)
+              map.delete(event.requestId)
+              return map
+            })
           } else if (event.type === 'exit_plan_mode_request') {
             // ExitPlanMode 请求入队
             store.set(allPendingExitPlanRequestsAtom, (prev) => {
@@ -1119,11 +1142,15 @@ export function useGlobalAgentListeners(): void {
                 return map
               })
             }
-            store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+            store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+              bumpContextUsageRefreshNonce(prev, sessionId)
+            )
           } else if (event.type === 'usage_update') {
             // 流式 usage_update 仅作计费参考；圆环改拉 SDK getContextUsage（防抖）
             scheduleContextUsageRefresh(sessionId, () => {
-              store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+              store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+                bumpContextUsageRefreshNonce(prev, sessionId)
+              )
             })
           }
         }
@@ -1409,8 +1436,10 @@ export function useGlobalAgentListeners(): void {
 
     // ===== 5.7 Context 分项后台刷新完成通知（stale-while-revalidate） =====
     // 后台缓存已更新 → bump nonce → useContextUsageBreakdown 重新获取（命中刚更新的缓存）
-    const cleanupContextUsageUpdated = window.electronAPI.onContextUsageUpdated(() => {
-      store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+    const cleanupContextUsageUpdated = window.electronAPI.onContextUsageUpdated((data) => {
+      store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+        bumpContextUsageRefreshNonce(prev, data.sessionId)
+      )
     })
 
     // 定期清理 60s 前的「最近修改」标记，避免 atom 无限增长
