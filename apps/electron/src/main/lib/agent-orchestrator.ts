@@ -1693,6 +1693,12 @@ export class AgentOrchestrator {
         }
       }
 
+      // TODO(kanban): Phase B 注入看板工具集
+      // 当 sessionId 所属会话 mode === 'general' 且 triggeredBy !== 'kanban'（防递归）时，
+      // 调用 buildKanbanAgentTools() 把 5 个 kanban_* 工具包装成 sdk.tool() 注入 mcpServers。
+      // 参考 injectAutomationMcpServer 的实现；v1 仅 general 模式，TA 模式禁止注入。
+      // 详见 docs/plans/2026-06-30-task-kanban-orchestration-design.md §5.3 / §6.1。
+
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {
         await this.injectTATools(sdk, mcpServers, sessionId, agentCwd)

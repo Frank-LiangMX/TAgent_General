@@ -442,6 +442,8 @@ export function updateAgentSessionMeta(
       | 'lastComposerMode'
       | 'automationGraduated'
       | 'sourceAutomationId'
+      | 'parentBoardId'
+      | 'sourceKanbanTaskId'
     >
   >
 ): AgentSessionMeta {
