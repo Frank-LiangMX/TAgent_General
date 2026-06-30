@@ -1,8 +1,9 @@
 # TAgent P0 稳定性 PR 模板（SDK 0.3.185 升级 + 三个修复）
 
-> **状态**：Ready to Execute  
+> **状态**：部分完成（2026-06-30 校准）  
 > **日期**：2026-06-24  
-> **目标**：对齐上游 `@anthropic-ai/claude-agent-sdk@0.3.185`，合并 #910/#913/#903 三个稳定性修复  
+> **目标**：对齐上游 SDK 0.3.185 + #910/#913/#903  
+> **进度**：PR-1 主包升级 ✅；**PR-1 adapter #913 ❌ 未对齐**；#910/#903 ⚠️ 待与 Proma diff 确认  
 > **关联**：[`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md) §2.1 P0  
 > **上游基线**：`proma-ai/Proma` 2026-06-23 main 分支
 

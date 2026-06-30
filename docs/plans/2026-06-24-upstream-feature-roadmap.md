@@ -1,8 +1,9 @@
-# TAgent 上游特性对齐路线图（v0.13.3 基线）
+# TAgent 上游特性对齐路线图（v0.13.4 基线）
 
-> **状态**：Draft v0.1  
-> **日期**：2026-06-24  
-> **基线**：本地 `@tagent/electron@1.0.0` (2026-06-18) → 上游 `@proma/electron@0.13.3` (2026-06-23)  
+> **状态**：活跃 — 2026-06-30 对照 `F:\Proma` 扫描校准  
+> **日期**：2026-06-24（初版）/ 2026-06-30（基线升至 v0.13.4）  
+> **基线**：本地 `@tagent/electron@1.3.1` → 上游 `@proma/electron@0.13.4`（SDK 0.3.185）  
+> **借鉴清单**：[`2026-06-24-proma-upstream-borrow-list.md`](2026-06-24-proma-upstream-borrow-list.md)（逐项状态，优先读此）  
 > **适用范围**：TAgent Desktop（`apps/electron`）  
 > **关联文档**：[`2026-06-16-upstream-upgrade-plan.md`](2026-06-16-upstream-upgrade-plan.md)（v0.10.34 基线旧规划）、[`2026-06-16-upstream-upgrade-issues.md`](2026-06-16-upstream-upgrade-issues.md)（Issue A~E）、[`2026-06-24-p0-stability-patches.md`](2026-06-24-p0-stability-patches.md)（P0 PR 模板）、[`2026-06-24-automation-design.md`](2026-06-24-automation-design.md)（Automation 设计）、[`2026-06-24-collaboration-design.md`](2026-06-24-collaboration-design.md)（协作子会话设计）
 
@@ -12,7 +13,7 @@
 
 **本文要做的事**：基于对上游 Proma 仓库 `2026-06-23` 版本的全面 commit / release-notes 调研，输出一份从本地 `TAgent_General` 视角出发、按 P0~P3 优先级排序的**总特性需求清单**，并给出 5 阶段实施路线。
 
-**核心结论（一句话）**：本地落后上游 6 天、约 80 个 commit、3 个版本。最关键的三件事是 (1) 升级 Claude Agent SDK 到 0.3.185、(2) 补齐**自动化系统**（本地 0%）、(3) 补齐**协作子会话体系**（本地 0%）。
+**核心结论（2026-06-30 更新）**：Automation M1–M3、SDK 主包 0.3.185、once/maxRuns 已对齐。**仍缺三块**：(1) **#913 adapter 终止语义**（每会话 2s drain）、(2) **协作子会话**（0%）、(3) **Bridge 自愈 + 后台任务唤醒**。v0.13.4 仅新增 **#915 双界面** 与 **#920 侧栏排序**（后者 TAgent 已有等价实现）。
 
 **不要做的事**：
 
@@ -54,20 +55,20 @@
 - ✅ 飞书 / 钉钉 / 微信 / WPS 四大 Bridge 主链路
 - ✅ ESLint 9 升级 + 305 单元测试
 
-### 1.3 本地缺失的关键能力
+### 1.3 本地缺失 / 未完全对齐的关键能力（2026-06-30）
 
-| 能力 | 严重程度 | 本地实现 | 上游实现 |
-|---|---|---|---|
-| Claude Agent SDK 0.3.185 | 🔴 严重 | 0.3.153 | 0.3.185 |
-| Automation 定时任务系统 | 🔴 严重 | 完全缺失 | 完整实现 |
-| Collaboration 子会话 | 🔴 严重 | 完全缺失 | 完整实现 |
-| Monitor 长任务监听 | 🟠 高 | 完全缺失 | 完整实现 |
-| Nowledge Mem 记忆卡片 | 🟡 中 | 缺失 | 已实现 |
-| 1M 上下文多模型 | 🟡 中 | 部分 | 完整 |
-| anthropic-compatible 协议 | 🟡 中 | 缺失 | 已实现 |
-| classic/modern 双界面 | 🟢 低 | 缺失 | 已实现 |
-| LaTeX 原生分隔符渲染 | 🟢 低 | 缺失 | 已实现 |
-| mention 面板标题栏 | 🟢 低 | 缺失 | 已实现 |
+| 能力 | 严重程度 | TAgent | 上游 Proma v0.13.4 |
+| --- | --- | --- | --- |
+| #913 adapter iterator 终止 | 🔴 严重 | ❌ `promptSuggestions: true` | ✅ #913 已修 |
+| 协作子会话 / Agent 委派 | 🔴 严重 | 0% | ✅ collaboration-tools |
+| Automation Agent MCP 工具 | 🟠 高 | M1–M3 ✅，无 agent-tools | ✅ |
+| Bridge 长连接自愈 | 🟠 高 | 仅 start/stop | ✅ recover + 健康检查 |
+| 后台任务唤醒 idle Agent | 🟠 高 | ❌ | ✅ Stop hook |
+| classic/modern 双界面 (#915) | 🟡 中 | ❌ | ✅ v0.13.4 |
+| 预览 Tab/分屏偏好 | 🟡 中 | 部分 | ✅ |
+| 1M 上下文 + qwen-anthropic | 🟡 中 | ~60% | ✅ |
+| Monitor / Nowledge Mem | 🟡 中 | ❌ | ✅ |
+| **PostToolUse auto-check 钩子** | — | ✅ **TAgent 独有** | ❌ |
 
 ---
 

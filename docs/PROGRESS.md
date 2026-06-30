@@ -5,7 +5,8 @@
 > **已完成**：`docs/plans/2026-06-13-ask-mode-unification-design.md`（Ask 档位 / 退役 Chat）
 > **上游对齐（v0.10.34 基线）**：`docs/plans/2026-06-16-upstream-upgrade-plan.md`（旧规划 + 开发 Agent 实施手册）
 > **Issue 草案**：`docs/plans/2026-06-16-upstream-upgrade-issues.md`（A~E 任务拆分）
-> **上游对齐（v0.13.3 基线，2026-06-24）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）
+> **上游对齐（v0.13.4 基线，2026-06-30 扫描）**：`docs/plans/2026-06-24-upstream-feature-roadmap.md`（总路线图 + ~130 项清单）
+> **借鉴清单（2026-06-30 校准）**：`docs/plans/2026-06-24-proma-upstream-borrow-list.md`
 > **P0 稳定性 PR 模板**：`docs/plans/2026-06-24-p0-stability-patches.md`（SDK 0.3.185 + #910/#913/#903）
 > **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）
 > **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
@@ -40,16 +41,17 @@
 
 ---
 
-## 当前状态（2026-06-29）
+## 当前状态（2026-06-30）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。当前活跃开发主线切换为 **上游 v0.13.3 对齐**。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。Agent Hooks（auto-check）与 Superpowers skill 包已合入 `main`。当前活跃开发主线为 **上游 Proma v0.13.4 对齐**（`F:\Proma` 扫描日期 2026-06-30）。
 
 **当前判断**：
 
 - 通用 Agent 主链路、Ask 档位、TA 模式、记忆自进化、使用统计、`/btw`、远程连通主框架均已落地。
 - `compact_session` / 客户端压缩已实现；Context Usage 分项面板 P0-P2 已完成（P3 可选增强）。
 - WPS 协作已作为远程连通 MVP 合入（文本消息链路）；媒体、绑定持久化、公网回调配置仍是后续增强。
-- ✅ **SDK 0.3.185** 已升级（PR #13），写风暴 / 断连相关修复已合入。
+- ✅ **SDK 0.3.185** 主包已升级（PR #13）；⚠️ **#913 adapter 终止语义未完全对齐**（`promptSuggestions` 仍为 `true`，每会话可能多等 2s drain timeout）；optional 平台子包仍锁 `0.3.153`。
+- ⚠️ **#910 / #903** 写风暴 / 断连保留 session：TAgent 有自研修复，但与 Proma v0.13.3 实现需逐段 diff 确认等价性。
 - ✅ **Automation v1（M1–M3）** 已合入 `main`（PR #15，2026-06-25）：
   - M1：30s tick 调度内核、daily/reuse 会话策略、失败退避、防递归 / 防休眠
   - M2：侧栏任务列表 + 主区编辑器 / 运行历史；附带 context usage、工作区文件页等稳定性修复
@@ -115,8 +117,14 @@
   - **布局**：插件 rail 侧栏统一 240px；移除顶栏「插件商店」按钮（入口在左侧 rail）
   - **清理**：删除 `SkillsPanel` / `CapabilityDetailView` / `selectedCapabilityAtom` 旧主从路径；`PluginStorePanel` 仍为未挂载死代码（设置页无入口）
   - **小修**：`@` 引用弹窗（`FileMentionList` / `MentionList`）滚动条统一 `scrollbar-thin`；Context 底栏词条 Tooltip；Token 底栏隐藏费用展示
-- 🔴 **当前主线**：**上游 v0.13.3 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)
-- **🟠 活跃待办**：协作子会话、上游 Issue A/E、WPS 增强
+- ✅ **Agent Hooks + auto-check** 已完成（2026-06-30，commits on `main`）— PostToolUse 多语言检查钩子 + `AgentBehaviorSettings` 语言级配置；**TAgent 独有，Proma 无**
+- ✅ **Superpowers 14 skill** 已收录（2026-06-30）
+- 🔴 **当前主线**：**上游 Proma v0.13.4 对齐** — 见 [upstream-feature-roadmap.md](plans/2026-06-24-upstream-feature-roadmap.md)、[proma-upstream-borrow-list.md](plans/2026-06-24-proma-upstream-borrow-list.md)
+- **🟠 活跃待办（2026-06-30 扫描）**：
+  - P0：`#913` adapter、`#910`/`#903` 确认、SDK 平台子包对齐
+  - P1：协作子会话（0%）、Bridge 自愈、后台任务唤醒 idle Agent
+  - P2：Automation M4（`automation-agent-tools`）、Issue A/E、WPS 增强
+  - P3：`#915` classic/modern 双界面、预览分屏偏好、`qwen-anthropic` 渠道
 
 **2026-06-24 / 06-25 规划文档**：
 
@@ -144,13 +152,15 @@
 | `2026-06-16-upstream-upgrade-issues.md` | **B/C/D 已完成 / A/E 部分完成** | Issue B/C/D 已通过 Automation v1 合入；A（1M 上下文）~60%；E（Preview/月度）~50% |
 | `2026-06-16-wps-bridge-landing.md` | MVP 已完成 + 增强待办 | 文本链路已合入；媒体/绑定/公网回调/富文本待增强 |
 | `2026-06-18-right-panel-anchor-animation.md` | 已完成 | 右栏岛式布局 + scale 动画 |
-| **`2026-06-24-p0-stability-patches.md`** | **部分完成** | SDK 0.3.185 升级 ✅（PR #13）；#910/#913/#903 按需跟进 |
-| **`2026-06-24-upstream-feature-roadmap.md`** | **活跃待办** | v0.13.3 基线对齐总路线图 |
+| **`2026-06-24-p0-stability-patches.md`** | **部分完成** | SDK 主包升级 ✅；#913 adapter ❌；#910/#903 待确认 |
+| **`2026-06-24-upstream-feature-roadmap.md`** | **活跃待办（v0.13.4 基线）** | v0.13.4 基线对齐总路线图 |
 | **`2026-06-24-automation-design.md`** | **M1–M3 已完成 / M4 待做** | Automation v1：调度 + UI + 通知已合 main（PR #15）；M4 扩展另开分支 |
 | **`2026-06-24-collaboration-design.md`** | **活跃待办** | 协作子会话 v1 设计：7 个 MCP 工具 + 后台 Runner + 阻塞事件冒泡 |
 | **`2026-06-25-kscc-internal-provider-design.md`** | **已完成** | kscc 内网渠道集成：CLI 检测 + 凭据隔离 + SubAgent 路由 + UI 全链路 |
 | **`2026-06-26-workspace-to-project-design.md`** | **已完成** | 工作区→项目模型重构 + 文件活动追踪：Phase 0–4 全部落地（`feature/draft-restructure`） |
-| **`2026-06-24-proma-upstream-borrow-list.md`** | **参考清单** | Proma v0.11.1→v0.13.3 新增特性借鉴清单 |
+| **`2026-06-24-proma-upstream-borrow-list.md`** | **活跃参考（2026-06-30 校准）** | Proma v0.11.1→v0.13.4 借鉴清单，逐项对齐状态 |
+| **`2026-06-29-agent-hooks-design.md`** | **已完成（TAgent 独有）** | PostToolUse auto-check 钩子 + 多语言精细配置 |
+| **`2026-06-30-auto-check-design.md`** | **已完成** | auto-check 语言级配置 + UI |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
 
@@ -272,18 +282,38 @@
   - 左侧 Agent 会话竖条语义收敛：active=主题色，running=蓝色，blocked=橙色，completed=绿色，manual working 不显示蓝条
   - 设计记录见 `docs/plans/2026-06-09-agent-ui-optimization-plan.md`
 
-**进行中 / 下一步**：
+**进行中 / 下一步**（2026-06-30 校准，详见 [`proma-upstream-borrow-list.md`](plans/2026-06-24-proma-upstream-borrow-list.md) §6）：
 
-1. **上游 v0.13.3 对齐（当前主线）** — 见 [`docs/plans/2026-06-24-upstream-feature-roadmap.md`](plans/2026-06-24-upstream-feature-roadmap.md)
-   - Issue A（1M 上下文统一）~60% 完成，仍需扩展模型覆盖和校准
-   - Issue E（Preview 分屏偏好 + 月度调度）~50% 完成
-   - Issue B/C/D 已通过 Automation v1 合入完成
-2. **Automation M4 扩展**（非阻塞，可另开 `feature/automation-extensions`）
-   - Agent MCP 工具（list/create/update/delete）
-   - 自然语言创建任务、custom cron、TipTap 富文本编辑器
-3. **协作子会话 v1** — 见 `docs/plans/2026-06-24-collaboration-design.md`
-4. **WPS 协作增强** — 媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
-5. **小修收口** — `project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
+### 第一梯队 — P0 稳定性（建议先做）
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| **#913 adapter drain timeout** | ❌ 未对齐 | `claude-agent-adapter.ts`：`promptSuggestions: false` + terminal result 后 `break` |
+| **#910 写风暴** | ⚠️ 待确认 | Proma 用 `capturedSdkSessionId` 守卫；TAgent 用 `existingSdkSessionId` 同步更新 |
+| **#903 断连保留 session** | ⚠️ 待确认 | 终止分支不清 `sdkSessionId` + `TRANSIENT_NETWORK_PATTERN` 扩展 |
+| **SDK 平台子包 0.3.185** | ❌ | optionalDependencies 仍 `0.3.153` |
+
+### 第二梯队 — 核心能力缺口
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| **协作子会话 v1** | ❌ 0% | `agent-collaboration-tools.ts` + headless runner；见 collaboration-design |
+| **Bridge 长连接自愈** | ❌ | TAgent `bridge-registry.ts` 仅 start/stop，无 recover / 健康检查 |
+| **后台任务唤醒 idle Agent** | ❌ | 依赖 Stop hook + headless runner |
+| **Automation M4** | 部分 | M1–M3 ✅；缺 `automation-agent-tools`、自然语言创建、custom cron |
+| **Issue A 1M 上下文** | ~60% | shared 已有 `inferContextWindow`，模型覆盖与 orchestrator 去重未完成 |
+| **Issue E Preview 分屏** | ~50% | 缺 `previewModePreferenceAtom` 路由；monthly 调度 ✅ |
+
+### 第三梯队 — 体验 / 渠道
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| **#915 classic/modern 双界面** | ❌ | v0.13.4 新增，`interfaceVariantAtom` + 外观设置 |
+| **#920 侧栏会话排序** | ✅ | TAgent 已有等价 `currentSession` 逻辑 |
+| **qwen-anthropic 渠道** | ❌ | Qwen3.7 1M Anthropic 协议 |
+| **Nowledge Mem 记忆卡片** | ❌ | Proma MemorySettings 引导 |
+| **WPS 协作增强** | 部分 | 文本 MVP ✅；媒体/绑定/公网回调待做 |
+| **小修收口** | 待做 | `project_repeat` Nudge、TaskOutput、真实模型成本、飞书教程视频 URL |
 
 **剩余任务**（按设计文档 §10.1 阶段划分）：
 
@@ -332,6 +362,19 @@
 ---
 
 ## 历史进度
+
+### 2026-06-30
+
+**产出**：上游 Proma v0.13.4 全量扫描 + 进度文档校准
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 扫描基准 | `F:\Proma` → `@proma/electron@0.13.4`，SDK 0.3.185 |
+| 文档更新 | `PROGRESS.md`、`proma-upstream-borrow-list.md`、`upstream-feature-roadmap.md`、`p0-stability-patches.md` |
+| 关键发现 | #913 adapter 未对齐；协作子会话 0%；Bridge 自愈缺；Automation M4 缺 agent-tools |
+| v0.13.4 增量 | #915 classic/modern 双界面（未做）；#920 侧栏排序（TAgent 已有等价） |
+| TAgent 超前 | PostToolUse auto-check 钩子、Superpowers 14 skill（Proma 无） |
+| **里程碑** | **上游对齐清单与代码现实重新对齐，P0 优先级明确为 #913** |
 
 ### 2026-06-25
 
