@@ -381,9 +381,7 @@ export function ContextUsageBadge({
               </button>
             </TooltipTrigger>
             {!isProcessing && (
-              <TooltipContent side="top">
-                {getContextUsageDescription('压缩上下文')}
-              </TooltipContent>
+              <TooltipContent side="top">{getContextUsageDescription('压缩上下文')}</TooltipContent>
             )}
           </Tooltip>
           {onClientCompact && (

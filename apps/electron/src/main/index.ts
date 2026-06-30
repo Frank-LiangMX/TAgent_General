@@ -28,10 +28,7 @@ import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { registerGlobalShortcut } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
 import { ensureKsccRipgrep } from './lib/ensure-kscc-ripgrep'
-import {
-  createQuickTaskWindow,
-  toggleQuickTaskWindow,
-} from './lib/quick-task-window'
+import { createQuickTaskWindow, toggleQuickTaskWindow } from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { initAutoUpdater } from './lib/updater/auto-updater'
@@ -167,10 +164,7 @@ registerBridge({
     const states = feishuBridgeManager.getStates()
     return config.bots.some(
       (bot) =>
-        bot.enabled &&
-        !!bot.appId &&
-        !!bot.appSecret &&
-        states.bots[bot.id]?.status === 'error'
+        bot.enabled && !!bot.appId && !!bot.appSecret && states.bots[bot.id]?.status === 'error'
     )
   },
   start: () => feishuBridgeManager.startAll(),

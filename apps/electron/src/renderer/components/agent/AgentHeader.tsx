@@ -42,8 +42,7 @@ function HeaderStatusChip({
   const chipClassName = cn(
     'inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
     tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
-    tone === 'running' &&
-      'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
+    tone === 'running' && 'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
     tone === 'blocked' &&
       'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
     tone === 'completed' &&

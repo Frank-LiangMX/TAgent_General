@@ -1175,7 +1175,11 @@ export function DiffTabContent({
                 previewOnly && !isEditableText && 'ml-auto'
               )}
             >
-              {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+              {copied ? (
+                <Check className="size-3.5 text-green-500" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent>复制文件内容</TooltipContent>

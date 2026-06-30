@@ -30,9 +30,7 @@ describe('isAutoModeAutoAllowTool', () => {
   })
 
   test('create_automation 需确认', () => {
-    expect(isAutoModeAutoAllowTool('mcp__automation__create_automation', { name: 'x' })).toBe(
-      false
-    )
+    expect(isAutoModeAutoAllowTool('mcp__automation__create_automation', { name: 'x' })).toBe(false)
   })
 
   test('Write 需确认', () => {

@@ -70,7 +70,10 @@ import type {
   RecoveryAction,
 } from '@tagent/shared'
 
-import { agentProcessGroupsKeepExpandedAtom, currentAgentSessionDraftAtom } from '@/atoms/agent-atoms'
+import {
+  agentProcessGroupsKeepExpandedAtom,
+  currentAgentSessionDraftAtom,
+} from '@/atoms/agent-atoms'
 import { activeSessionIdAtom } from '@/atoms/tab-atoms'
 import { useOpenPreview } from '@/components/diff/preview-opener'
 import { channelsAtom } from '@/atoms/model-atoms'
@@ -1284,7 +1287,10 @@ function ErrorMessage({
   const hasActions = hasStructuredActions || hasLegacyActions
 
   return (
-    <Message from="assistant" className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
+    <Message
+      from="assistant"
+      className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both"
+    >
       <MessageHeader
         model={undefined}
         time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
@@ -1512,7 +1518,11 @@ export function MessageGroupRenderer({
 
   if (group.type === 'user') {
     return (
-      <div data-message-id={groupId} data-message-role="user" className="animate-in fade-in duration-200 fill-mode-both">
+      <div
+        data-message-id={groupId}
+        data-message-role="user"
+        className="animate-in fade-in duration-200 fill-mode-both"
+      >
         <UserInputMessage message={group.message} />
       </div>
     )
@@ -1536,7 +1546,10 @@ export function MessageGroupRenderer({
     }
     if (subtype === 'permission_denied')
       return (
-        <div data-message-id={groupId} className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
+        <div
+          data-message-id={groupId}
+          className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both"
+        >
           <PermissionDeniedNotice message={group.message} />
         </div>
       )
@@ -1545,7 +1558,11 @@ export function MessageGroupRenderer({
 
   // assistant-turn
   return (
-    <div data-message-id={groupId} data-message-role="assistant" className="animate-in fade-in duration-200 fill-mode-both">
+    <div
+      data-message-id={groupId}
+      data-message-role="assistant"
+      className="animate-in fade-in duration-200 fill-mode-both"
+    >
       <AssistantTurnRenderer
         turn={group}
         allMessages={allMessages}

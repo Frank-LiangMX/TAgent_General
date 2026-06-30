@@ -2575,7 +2575,8 @@ export class AgentOrchestrator {
               const resultTerminalReason = (msg as { terminal_reason?: string }).terminal_reason
               const keptOpenForTasks =
                 (msg as Record<string, unknown>)._keepChannelOpenForTasks === true
-              const keepChannelOpen = shouldKeepChannelOpen(resultTerminalReason) || keptOpenForTasks
+              const keepChannelOpen =
+                shouldKeepChannelOpen(resultTerminalReason) || keptOpenForTasks
               const hasDeferredTool =
                 (msg as { deferred_tool_use?: unknown }).deferred_tool_use != null
               console.log(
@@ -2877,9 +2878,7 @@ export class AgentOrchestrator {
 
           // 保留 sdkSessionId，确保下一轮能继续 resume（对齐 Proma #903）
           if (existingSdkSessionId) {
-            console.log(
-              `[Agent 编排] 保留 sdkSessionId 以便下一轮 resume（错误未表明会话失效）`
-            )
+            console.log(`[Agent 编排] 保留 sdkSessionId 以便下一轮 resume（错误未表明会话失效）`)
           }
 
           return

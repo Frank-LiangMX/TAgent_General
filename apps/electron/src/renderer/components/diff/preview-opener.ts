@@ -61,9 +61,12 @@ export function openPreview(store: JotaiStore, sessionId: string, file: PreviewF
 
 export function useOpenPreview(): (sessionId: string, file: PreviewFile) => void {
   const store = useStore()
-  return React.useCallback((sessionId: string, file: PreviewFile) => {
-    openPreview(store, sessionId, file)
-  }, [store])
+  return React.useCallback(
+    (sessionId: string, file: PreviewFile) => {
+      openPreview(store, sessionId, file)
+    },
+    [store]
+  )
 }
 
 /** 把 preview Tab 即时切换为右侧分屏（拖拽 tear-off / 顶栏按钮共用） */

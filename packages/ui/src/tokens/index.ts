@@ -15,9 +15,4 @@ export { shadows, type ShadowToken } from './shadows'
 export { spacing, type SpacingToken } from './spacing'
 export { fontSize, type FontSizeToken } from './fontSize'
 export { motion, type MotionToken } from './motion'
-export {
-  colors,
-  tailwindColorTokens,
-  type ThemeName,
-  type ThemeColors,
-} from './colors'
+export { colors, tailwindColorTokens, type ThemeName, type ThemeColors } from './colors'

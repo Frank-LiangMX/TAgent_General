@@ -27,9 +27,7 @@ export function useAgentSessionChannelModel(sessionId: string): AgentSessionChan
   const channels = useAtomValue(channelsAtom)
 
   const channelId = sessionChannelMap.get(sessionId) ?? defaultChannelId ?? null
-  const channel = channelId
-    ? channels.find((c) => c.id === channelId && c.enabled)
-    : undefined
+  const channel = channelId ? channels.find((c) => c.id === channelId && c.enabled) : undefined
   const modelId = resolveAgentSessionModelId(
     channel,
     sessionModelMap.get(sessionId),

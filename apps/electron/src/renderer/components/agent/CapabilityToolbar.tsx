@@ -166,9 +166,7 @@ export function CapabilityToolbar({
           </Tooltip>
         ) : null}
 
-        {skillsDir ? (
-          <div className="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden />
-        ) : null}
+        {skillsDir ? <div className="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden /> : null}
 
         <Tooltip>
           <TooltipTrigger asChild>

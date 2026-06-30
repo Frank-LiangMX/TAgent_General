@@ -5,11 +5,7 @@
  * 避免 AgentOrchestrator 与 agent-service 形成难以维护的循环依赖。
  */
 
-import type {
-  AgentExternalRunSource,
-  AgentMessage,
-  AgentSendInput,
-} from '@tagent/shared'
+import type { AgentExternalRunSource, AgentMessage, AgentSendInput } from '@tagent/shared'
 
 export interface HeadlessAgentRunCallbacks {
   onError: (error: string) => void
@@ -20,7 +16,7 @@ export interface HeadlessAgentRunCallbacks {
 
 export type HeadlessAgentRunner = (
   input: AgentSendInput,
-  callbacks: HeadlessAgentRunCallbacks,
+  callbacks: HeadlessAgentRunCallbacks
 ) => Promise<void>
 
 export type AgentStopper = (sessionId: string) => void
@@ -38,7 +34,7 @@ export function setAgentStopper(stopper: AgentStopper): void {
 
 export async function runRegisteredHeadlessAgent(
   input: AgentSendInput,
-  callbacks: HeadlessAgentRunCallbacks,
+  callbacks: HeadlessAgentRunCallbacks
 ): Promise<void> {
   if (!headlessRunner) {
     throw new Error('Agent headless runner 尚未初始化')

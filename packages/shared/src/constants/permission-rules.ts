@@ -131,9 +131,7 @@ export const AUTOMATION_MCP_MUTATION_TOOLS: readonly string[] = [
 ]
 
 /** 解析 MCP 工具名：mcp__server__tool → { server, tool } */
-export function parseMcpToolName(
-  toolName: string
-): { server: string; tool: string } | null {
+export function parseMcpToolName(toolName: string): { server: string; tool: string } | null {
   const parts = toolName.split('__')
   if (parts[0] !== 'mcp' || parts.length < 3) return null
   return { server: parts[1]!, tool: parts.slice(2).join('__') }

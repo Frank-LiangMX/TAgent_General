@@ -273,7 +273,11 @@ export function ChannelSettings(): React.ReactElement {
         title="模型配置"
         description="管理外部 AI 供应商连接，配置 API Key 和可用模型"
         action={
-          <Button size="sm" className="h-9 rounded-xl gap-1.5" onClick={() => setViewMode('create')}>
+          <Button
+            size="sm"
+            className="h-9 rounded-xl gap-1.5"
+            onClick={() => setViewMode('create')}
+          >
             <Plus size={16} />
             添加配置
           </Button>

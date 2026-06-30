@@ -24,10 +24,7 @@ import {
   updateAdvancedMaterialEnabled,
 } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
-import {
-  previewModePreferenceAtom,
-  type PreviewModePreference,
-} from '@/atoms/preview-atoms'
+import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
 import { tagentBrandAtom, updateTAgentBrand } from '@/atoms/tagent-brand'
 import {
   themeModeAtom,

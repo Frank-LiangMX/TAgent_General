@@ -239,8 +239,7 @@ export function WeChatSettings(): React.ReactElement {
                 <span className="font-medium text-foreground">收发消息</span>
               </div>
               <p className="pl-7 text-muted-foreground">
-                连接成功后，通过微信发送消息即可与 TAgent 交互。
-                支持文本、图片、文件等消息类型。
+                连接成功后，通过微信发送消息即可与 TAgent 交互。 支持文本、图片、文件等消息类型。
               </p>
             </div>
 

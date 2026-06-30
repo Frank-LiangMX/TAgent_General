@@ -14,7 +14,10 @@ export interface ListSlideStyles {
   accentStyle: React.CSSProperties | null
 }
 
-export type ListItemMeasurer = (container: HTMLElement, itemId: string) => ListIndicatorMetrics | null
+export type ListItemMeasurer = (
+  container: HTMLElement,
+  itemId: string
+) => ListIndicatorMetrics | null
 
 const EMPTY_STYLES: ListSlideStyles = {
   plateStyle: null,
@@ -50,7 +53,10 @@ function rowMetricsToAccentMetrics(row: ListIndicatorMetrics): ListIndicatorMetr
   }
 }
 
-function metricsToPlateStyle(metrics: ListIndicatorMetrics, transition: string): React.CSSProperties {
+function metricsToPlateStyle(
+  metrics: ListIndicatorMetrics,
+  transition: string
+): React.CSSProperties {
   return {
     display: 'block',
     position: 'absolute',
@@ -62,7 +68,10 @@ function metricsToPlateStyle(metrics: ListIndicatorMetrics, transition: string):
   }
 }
 
-function metricsToAccentStyle(metrics: ListIndicatorMetrics, transition: string): React.CSSProperties {
+function metricsToAccentStyle(
+  metrics: ListIndicatorMetrics,
+  transition: string
+): React.CSSProperties {
   return {
     display: 'block',
     position: 'absolute',
@@ -171,6 +180,9 @@ export const PLUGIN_NAV_LIST_ATTR = 'data-plugin-nav-id'
 
 export const pluginNavItemSelector = createListItemSelector(PLUGIN_NAV_LIST_ATTR)
 
-export function measurePluginNavItem(container: HTMLElement, itemId: string): ListIndicatorMetrics | null {
+export function measurePluginNavItem(
+  container: HTMLElement,
+  itemId: string
+): ListIndicatorMetrics | null {
   return measureOffsetListItem(PLUGIN_NAV_LIST_ATTR, container, itemId)
 }

@@ -529,71 +529,69 @@ export function AgentModelSelector({
                               const currentFlatIndex = flatIndex++
                               const isHighlighted = currentFlatIndex === highlightIndex
 
-                              return (
-                                (() => {
-                                  const modelButton = (
-                                    <button
-                                      key={`${option.channelId}:${option.modelId}`}
-                                      ref={(el) => {
-                                        if (el) itemRefs.current.set(currentFlatIndex, el)
-                                        else itemRefs.current.delete(currentFlatIndex)
-                                      }}
-                                      type="button"
-                                      aria-selected={isSelected}
-                                      disabled={option.disabled}
-                                      onClick={() => {
-                                        if (option.disabled) {
-                                          onInstallGuideOpen?.()
-                                          return
-                                        }
-                                        handleSelect(option)
-                                      }}
-                                      onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                              return (() => {
+                                const modelButton = (
+                                  <button
+                                    key={`${option.channelId}:${option.modelId}`}
+                                    ref={(el) => {
+                                      if (el) itemRefs.current.set(currentFlatIndex, el)
+                                      else itemRefs.current.delete(currentFlatIndex)
+                                    }}
+                                    type="button"
+                                    aria-selected={isSelected}
+                                    disabled={option.disabled}
+                                    onClick={() => {
+                                      if (option.disabled) {
+                                        onInstallGuideOpen?.()
+                                        return
+                                      }
+                                      handleSelect(option)
+                                    }}
+                                    onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                                    className={cn(
+                                      'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
+                                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                                      option.disabled
+                                        ? 'cursor-not-allowed opacity-50'
+                                        : isSelected
+                                          ? 'text-foreground'
+                                          : 'hover:bg-primary/5 text-foreground/78',
+                                      isHighlighted &&
+                                        !isSelected &&
+                                        !option.disabled &&
+                                        'bg-foreground/6'
+                                    )}
+                                  >
+                                    <img
+                                      src={getModelLogo(option.modelId, option.provider)}
+                                      alt={option.modelName}
+                                      className="size-5 shrink-0 rounded object-cover"
+                                    />
+                                    <span
                                       className={cn(
-                                        'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
-                                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-                                        option.disabled
-                                          ? 'cursor-not-allowed opacity-50'
-                                          : isSelected
-                                            ? 'text-foreground'
-                                            : 'hover:bg-primary/5 text-foreground/78',
-                                        isHighlighted &&
-                                          !isSelected &&
-                                          !option.disabled &&
-                                          'bg-foreground/6'
+                                        'min-w-0 flex-1 truncate text-xs',
+                                        isSelected ? 'font-medium' : 'font-medium'
                                       )}
                                     >
-                                      <img
-                                        src={getModelLogo(option.modelId, option.provider)}
-                                        alt={option.modelName}
-                                        className="size-5 shrink-0 rounded object-cover"
-                                      />
-                                      <span
-                                        className={cn(
-                                          'min-w-0 flex-1 truncate text-xs',
-                                          isSelected ? 'font-medium' : 'font-medium'
-                                        )}
-                                      >
-                                        {option.modelName}
+                                      {option.modelName}
+                                    </span>
+                                    {option.badge && !option.disabled && (
+                                      <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
+                                        {option.badge}
                                       </span>
-                                      {option.badge && !option.disabled && (
-                                        <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
-                                          {option.badge}
-                                        </span>
-                                      )}
-                                    </button>
+                                    )}
+                                  </button>
+                                )
+                                if (option.disabled && option.disabledReason) {
+                                  return (
+                                    <Tooltip key={`${option.channelId}:${option.modelId}`}>
+                                      <TooltipTrigger asChild>{modelButton}</TooltipTrigger>
+                                      <TooltipContent>{option.disabledReason}</TooltipContent>
+                                    </Tooltip>
                                   )
-                                  if (option.disabled && option.disabledReason) {
-                                    return (
-                                      <Tooltip key={`${option.channelId}:${option.modelId}`}>
-                                        <TooltipTrigger asChild>{modelButton}</TooltipTrigger>
-                                        <TooltipContent>{option.disabledReason}</TooltipContent>
-                                      </Tooltip>
-                                    )
-                                  }
-                                  return modelButton
-                                })()
-                              )
+                                }
+                                return modelButton
+                              })()
                             })}
                           </div>
                         </div>

@@ -2,15 +2,7 @@
  * InstalledPluginDetail — 已安装插件详情（轻量，对齐市场详情页）
  */
 
-import {
-  ArrowLeft,
-  Loader2,
-  Pencil,
-  Plug,
-  Sparkles,
-  Trash2,
-  Zap,
-} from 'lucide-react'
+import { ArrowLeft, Loader2, Pencil, Plug, Sparkles, Trash2, Zap } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -178,7 +170,11 @@ function InstalledSkillDetail({
                 checked={skill.enabled}
                 onCheckedChange={async (checked) => {
                   try {
-                    await window.electronAPI.toggleWorkspaceSkill(workspaceSlug, skill.slug, checked)
+                    await window.electronAPI.toggleWorkspaceSkill(
+                      workspaceSlug,
+                      skill.slug,
+                      checked
+                    )
                     setSkill({ ...skill, enabled: checked })
                     bumpCapabilities((v) => v + 1)
                   } catch (err) {
@@ -351,11 +347,7 @@ function InstalledMcpDetail({
             <MetaItem
               label="测试"
               value={
-                entry.lastTestResult
-                  ? entry.lastTestResult.success
-                    ? '通过'
-                    : '失败'
-                  : '未测试'
+                entry.lastTestResult ? (entry.lastTestResult.success ? '通过' : '失败') : '未测试'
               }
             />
           </dl>
@@ -368,7 +360,9 @@ function InstalledMcpDetail({
                 <Plug size={22} strokeWidth={1.75} />
               </span>
               <div className="min-w-0">
-                <h2 className="text-xl font-semibold tracking-tight text-foreground">{serverName}</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                  {serverName}
+                </h2>
                 <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">
                   {connectionSummary}
                 </p>
@@ -398,7 +392,12 @@ function InstalledMcpDetail({
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void handleTest()} disabled={testing}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleTest()}
+              disabled={testing}
+            >
               {testing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               <span className="ml-1">{testing ? '测试中' : '测试连接'}</span>
             </Button>

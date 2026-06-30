@@ -17,7 +17,9 @@ function useSegmentedTabsContext(component: string): SegmentedTabsContextValue {
   return context
 }
 
-function getSegmentedTabItems(children: React.ReactNode): React.ReactElement<SegmentedTabsItemProps>[] {
+function getSegmentedTabItems(
+  children: React.ReactNode
+): React.ReactElement<SegmentedTabsItemProps>[] {
   return React.Children.toArray(children).filter(
     (child): child is React.ReactElement<SegmentedTabsItemProps> =>
       React.isValidElement(child) && child.type === SegmentedTabsItem
@@ -62,8 +64,10 @@ function SegmentedTabs({
   )
 }
 
-export interface SegmentedTabsItemProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'value'> {
+export interface SegmentedTabsItemProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'value'
+> {
   value: string
 }
 

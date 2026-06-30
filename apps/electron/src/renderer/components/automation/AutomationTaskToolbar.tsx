@@ -34,11 +34,7 @@ export function AutomationTaskToolbar({
           disabled={running || !enabled}
           onClick={onRunNow}
         >
-          {running ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Play size={14} />
-          )}
+          {running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           立即运行
         </Button>
         <Button

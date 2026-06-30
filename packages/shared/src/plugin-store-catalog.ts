@@ -17,13 +17,7 @@ export const PREINSTALLED_SKILL_SLUGS: readonly string[] = []
 export type PluginStoreTier = 'recommended' | 'optional'
 
 /** Skill / MCP 场景分类 */
-export type PluginStoreCategory =
-  | 'dev'
-  | 'ta'
-  | 'workflow'
-  | 'office'
-  | 'planning'
-  | 'meta'
+export type PluginStoreCategory = 'dev' | 'ta' | 'workflow' | 'office' | 'planning' | 'meta'
 
 export type PluginStoreSkillInstallKind = 'inline' | 'bundled'
 
@@ -66,7 +60,9 @@ export interface PluginStoreBundledSkillEntry extends PluginStoreSkillEntry {
   installKind: 'bundled'
 }
 
-export type PluginStoreSkillCatalogEntry = PluginStoreSkillInstallSpec | PluginStoreBundledSkillEntry
+export type PluginStoreSkillCatalogEntry =
+  | PluginStoreSkillInstallSpec
+  | PluginStoreBundledSkillEntry
 
 const INLINE_STORE_SKILLS: PluginStoreSkillInstallSpec[] = [
   {

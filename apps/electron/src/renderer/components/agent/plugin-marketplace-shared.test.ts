@@ -72,8 +72,22 @@ describe('excludeBundleMembersFromMarketplace', () => {
 
   test('excludeBundleMembersFromMarketplace 保留未收录条目', () => {
     const all = [
-      { id: 'skill-a', kind: 'skill' as const, title: '', description: '', category: 'dev' as const, tier: 'recommended' },
-      { id: 'skill-b', kind: 'skill' as const, title: '', description: '', category: 'dev' as const, tier: 'optional' },
+      {
+        id: 'skill-a',
+        kind: 'skill' as const,
+        title: '',
+        description: '',
+        category: 'dev' as const,
+        tier: 'recommended',
+      },
+      {
+        id: 'skill-b',
+        kind: 'skill' as const,
+        title: '',
+        description: '',
+        category: 'dev' as const,
+        tier: 'optional',
+      },
     ]
     const filtered = excludeBundleMembersFromMarketplace(all, mockCatalog)
     expect(filtered.map((item) => item.id)).toEqual(['skill-b'])

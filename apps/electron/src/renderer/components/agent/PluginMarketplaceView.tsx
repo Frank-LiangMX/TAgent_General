@@ -37,9 +37,7 @@ import {
   sortMarketplaceItems,
 } from './plugin-marketplace-shared'
 
-type StoreSelection =
-  | { kind: 'bundle'; id: string }
-  | { kind: 'skill' | 'mcp'; id: string }
+type StoreSelection = { kind: 'bundle'; id: string } | { kind: 'skill' | 'mcp'; id: string }
 
 interface PluginMarketplaceViewProps {
   workspaceSlug: string
@@ -170,7 +168,9 @@ export function PluginMarketplaceView({
         if (installedTotal === 0 && skippedTotal > 0) {
           toast.success('整合包内容已全部安装')
         } else {
-          toast.success(`已安装 ${installedTotal} 项${skippedTotal > 0 ? `，跳过 ${skippedTotal} 项已存在` : ''}`)
+          toast.success(
+            `已安装 ${installedTotal} 项${skippedTotal > 0 ? `，跳过 ${skippedTotal} 项已存在` : ''}`
+          )
         }
       }
     } catch (error) {
@@ -238,8 +238,7 @@ export function PluginMarketplaceView({
     )
   }
 
-  const empty =
-    !loading && bundles.length === 0 && flatItems.length === 0
+  const empty = !loading && bundles.length === 0 && flatItems.length === 0
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">

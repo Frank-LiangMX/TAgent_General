@@ -235,12 +235,15 @@ export function ContextUsagePanel({
   const metaParts: React.ReactNode[] = []
   if (isStreamPreview) {
     metaParts.push(
-      <ContextUsageTermHint key="stream" term="流式估算" display="摘要为流式估算，分项加载中" inline />
+      <ContextUsageTermHint
+        key="stream"
+        term="流式估算"
+        display="摘要为流式估算，分项加载中"
+        inline
+      />
     )
   } else if (detailsLoading) {
-    metaParts.push(
-      <ContextUsageTermHint key="refresh" term="分项刷新中" inline />
-    )
+    metaParts.push(<ContextUsageTermHint key="refresh" term="分项刷新中" inline />)
   }
   if (snapshot.isAutoCompactEnabled) {
     metaParts.push(
@@ -256,9 +259,7 @@ export function ContextUsagePanel({
       />
     )
   }
-  metaParts.push(
-    <ContextUsageTermHint key="sdk" term="分项为SDK估算" inline />
-  )
+  metaParts.push(<ContextUsageTermHint key="sdk" term="分项为SDK估算" inline />)
 
   return (
     <div className="flex flex-col gap-3">
@@ -266,7 +267,10 @@ export function ContextUsagePanel({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[13px] font-medium text-foreground/90">
-              <ContextUsageTermHint term="Context 容量" className="font-medium text-foreground/90" />
+              <ContextUsageTermHint
+                term="Context 容量"
+                className="font-medium text-foreground/90"
+              />
             </p>
             <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
               {snapshot.model || '当前模型'}
@@ -286,11 +290,7 @@ export function ContextUsagePanel({
         </div>
 
         <div className="mt-3 flex items-baseline justify-between gap-3 text-[11px]">
-          <ContextUsageTermHint
-            term="已用 / 窗口"
-            className="text-muted-foreground"
-            inline
-          />
+          <ContextUsageTermHint term="已用 / 窗口" className="text-muted-foreground" inline />
           <span className="tabular-nums font-medium text-foreground/85">
             {formatContextTokens(snapshot.totalTokens)} / {formatContextTokens(snapshot.maxTokens)}
           </span>

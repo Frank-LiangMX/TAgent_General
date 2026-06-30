@@ -36,11 +36,6 @@ export function PluginBundleLogo({
   alt,
 }: PluginBundleLogoProps): React.ReactElement {
   return (
-    <img
-      src={PLUGIN_BUNDLE_LOGO_URLS[logo]}
-      alt={alt}
-      className={className}
-      draggable={false}
-    />
+    <img src={PLUGIN_BUNDLE_LOGO_URLS[logo]} alt={alt} className={className} draggable={false} />
   )
 }

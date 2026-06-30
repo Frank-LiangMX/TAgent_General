@@ -41,9 +41,10 @@ export interface InstalledPluginsGrouping {
   orphanItems: PluginListItem[]
 }
 
-export function buildPluginListItems(
-  capabilities: WorkspaceCapabilities
-): { mcpItems: PluginListItem[]; skillItems: PluginListItem[] } {
+export function buildPluginListItems(capabilities: WorkspaceCapabilities): {
+  mcpItems: PluginListItem[]
+  skillItems: PluginListItem[]
+} {
   const mcpItems: PluginListItem[] = capabilities.mcpServers
     .map((server) => ({
       id: server.name,

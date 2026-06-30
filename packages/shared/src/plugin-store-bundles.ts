@@ -33,8 +33,7 @@ export interface StorePluginBundle {
   homepageUrl?: string
 }
 
-const TAGENT_REPO =
-  'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron'
+const TAGENT_REPO = 'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron'
 
 export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
   {
@@ -116,7 +115,8 @@ export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
   {
     id: 'superpowers-full',
     name: 'Superpowers 完整开发方法论',
-    description: 'Jesse Vincent 的 Superpowers 全套 14 个 skill：头脑风暴、计划、TDD、系统化调试、子代理开发、代码审查、worktree 隔离、完成前验证等完整工作流。',
+    description:
+      'Jesse Vincent 的 Superpowers 全套 14 个 skill：头脑风暴、计划、TDD、系统化调试、子代理开发、代码审查、worktree 隔离、完成前验证等完整工作流。',
     category: 'dev',
     tier: 'recommended',
     mcps: [],

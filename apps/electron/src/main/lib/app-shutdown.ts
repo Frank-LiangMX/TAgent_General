@@ -55,7 +55,8 @@ export function runApplicationShutdown(): void {
   stopChatToolsWatcher()
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { stopScheduler } = require('./automation-scheduler') as typeof import('./automation-scheduler')
+    const { stopScheduler } =
+      require('./automation-scheduler') as typeof import('./automation-scheduler')
     stopScheduler()
   } catch (err) {
     console.error('[退出] 停止定时任务调度器失败:', err)

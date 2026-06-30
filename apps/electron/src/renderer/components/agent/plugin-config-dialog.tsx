@@ -130,7 +130,10 @@ export function PluginConfigDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plugin-config-request" className="text-xs font-medium text-foreground/80">
+            <Label
+              htmlFor="plugin-config-request"
+              className="text-xs font-medium text-foreground/80"
+            >
               想安装什么插件？
             </Label>
             <Textarea

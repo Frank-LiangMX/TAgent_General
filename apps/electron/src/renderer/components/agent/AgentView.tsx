@@ -13,7 +13,11 @@
  * 布局：AgentHeader | AgentMessages | AgentInput + 可选 FileBrowser 侧面板
  */
 
-import { MAX_ATTACHMENT_SIZE, isAgentCompatibleProvider, resolveAgentSessionModelId } from '@tagent/shared'
+import {
+  MAX_ATTACHMENT_SIZE,
+  isAgentCompatibleProvider,
+  resolveAgentSessionModelId,
+} from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   ArrowUp,
@@ -496,9 +500,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const agentChannelId = sessionChannelMap.get(sessionId) ?? defaultChannelId
   const agentChannel = React.useMemo(
     () =>
-      agentChannelId
-        ? globalChannels.find((c) => c.id === agentChannelId && c.enabled)
-        : undefined,
+      agentChannelId ? globalChannels.find((c) => c.id === agentChannelId && c.enabled) : undefined,
     [agentChannelId, globalChannels]
   )
   const agentModelId = resolveAgentSessionModelId(
@@ -550,11 +552,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     const channel = channelId
       ? globalChannels.find((c) => c.id === channelId && c.enabled)
       : undefined
-    const resolvedModelId = resolveAgentSessionModelId(
-      channel,
-      undefined,
-      legacyGlobalModelId
-    )
+    const resolvedModelId = resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
@@ -708,11 +706,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     if (!agentChannelId) return
 
     const channel = globalChannels.find((c) => c.id === agentChannelId && c.enabled)
-    const resolvedModelId = resolveAgentSessionModelId(
-      channel,
-      undefined,
-      legacyGlobalModelId
-    )
+    const resolvedModelId = resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (!resolvedModelId) return
 
     setSessionModelMap((prev) => {

@@ -875,7 +875,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             child.stderr?.on('data', (chunk: Buffer) => {
               try {
                 const text =
-                  process.platform === 'win32' ? decodeWindowsChildStderr(chunk) : chunk.toString('utf8')
+                  process.platform === 'win32'
+                    ? decodeWindowsChildStderr(chunk)
+                    : chunk.toString('utf8')
                 onStderr(text)
               } catch {
                 /* 用户回调异常不影响流 */
@@ -906,7 +908,7 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         clearIdleTimer()
         idleTimer = setTimeout(() => {
           console.warn(
-            `[Claude 适配器] 后台任务空闲超时 (${BACKGROUND_IDLE_TIMEOUT_MS}ms)，释放子进程: ${options.sessionId}`,
+            `[Claude 适配器] 后台任务空闲超时 (${BACKGROUND_IDLE_TIMEOUT_MS}ms)，释放子进程: ${options.sessionId}`
           )
           channel.close()
         }, BACKGROUND_IDLE_TIMEOUT_MS)

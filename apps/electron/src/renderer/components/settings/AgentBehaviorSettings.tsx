@@ -14,12 +14,7 @@ import { useAtom } from 'jotai'
 import { subagentEagernessAtom } from '@/atoms/agent-atoms'
 import type { SubagentEagerness } from '@/atoms/agent-atoms'
 import type { AutoCheckLanguage, LanguageHookConfig } from '@tagent/shared'
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsToggle,
-  SettingsSelect,
-} from './primitives'
+import { SettingsSection, SettingsCard, SettingsToggle, SettingsSelect } from './primitives'
 import { Switch } from '../ui/switch'
 import { Input } from '../ui/input'
 import { cn } from '@/lib/utils'
@@ -40,14 +35,56 @@ const LANGUAGE_INFO: Array<{
   defaultEnabled: boolean
   defaultTimeoutSec: number
 }> = [
-  { id: 'typescript', label: 'TypeScript', desc: 'tsconfig.json — tsc --noEmit', defaultEnabled: true, defaultTimeoutSec: 60 },
-  { id: 'javascript', label: 'JavaScript', desc: 'package.json — npm run lint', defaultEnabled: true, defaultTimeoutSec: 60 },
-  { id: 'python', label: 'Python', desc: 'pyproject.toml — ruff / mypy', defaultEnabled: true, defaultTimeoutSec: 60 },
-  { id: 'rust', label: 'Rust', desc: 'Cargo.toml — cargo check', defaultEnabled: true, defaultTimeoutSec: 120 },
+  {
+    id: 'typescript',
+    label: 'TypeScript',
+    desc: 'tsconfig.json — tsc --noEmit',
+    defaultEnabled: true,
+    defaultTimeoutSec: 60,
+  },
+  {
+    id: 'javascript',
+    label: 'JavaScript',
+    desc: 'package.json — npm run lint',
+    defaultEnabled: true,
+    defaultTimeoutSec: 60,
+  },
+  {
+    id: 'python',
+    label: 'Python',
+    desc: 'pyproject.toml — ruff / mypy',
+    defaultEnabled: true,
+    defaultTimeoutSec: 60,
+  },
+  {
+    id: 'rust',
+    label: 'Rust',
+    desc: 'Cargo.toml — cargo check',
+    defaultEnabled: true,
+    defaultTimeoutSec: 120,
+  },
   { id: 'go', label: 'Go', desc: 'go.mod — go vet', defaultEnabled: true, defaultTimeoutSec: 60 },
-  { id: 'lua', label: 'Lua', desc: '.luacheckrc — luacheck', defaultEnabled: true, defaultTimeoutSec: 60 },
-  { id: 'cpp', label: 'C / C++', desc: 'CMakeLists.txt — cmake --build（编译慢，默认关）', defaultEnabled: false, defaultTimeoutSec: 180 },
-  { id: 'java', label: 'Java', desc: 'pom.xml — mvn compile（编译慢，默认关）', defaultEnabled: false, defaultTimeoutSec: 180 },
+  {
+    id: 'lua',
+    label: 'Lua',
+    desc: '.luacheckrc — luacheck',
+    defaultEnabled: true,
+    defaultTimeoutSec: 60,
+  },
+  {
+    id: 'cpp',
+    label: 'C / C++',
+    desc: 'CMakeLists.txt — cmake --build（编译慢，默认关）',
+    defaultEnabled: false,
+    defaultTimeoutSec: 180,
+  },
+  {
+    id: 'java',
+    label: 'Java',
+    desc: 'pom.xml — mvn compile（编译慢，默认关）',
+    defaultEnabled: false,
+    defaultTimeoutSec: 180,
+  },
 ]
 
 export function AgentBehaviorSettings(): React.ReactElement {
@@ -161,10 +198,7 @@ export function AgentBehaviorSettings(): React.ReactElement {
                     (userCfg.enabled ?? lang.defaultEnabled) === lang.defaultEnabled &&
                     (userCfg.timeoutSec ?? lang.defaultTimeoutSec) === lang.defaultTimeoutSec
                   return (
-                    <div
-                      key={lang.id}
-                      className="flex items-center gap-3 px-4 py-3"
-                    >
+                    <div key={lang.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{lang.label}</span>

@@ -207,9 +207,7 @@ function AgentSettingsInitializer(): null {
           if (compatibleIds.length > 0) {
             const autoId = compatibleIds[0]!
             setAgentChannelId(autoId)
-            window.electronAPI
-              .updateSettings({ agentChannelId: autoId })
-              .catch(console.error)
+            window.electronAPI.updateSettings({ agentChannelId: autoId }).catch(console.error)
             console.info('[AgentSettings] 自动选择 Agent 渠道:', autoId)
           }
         }

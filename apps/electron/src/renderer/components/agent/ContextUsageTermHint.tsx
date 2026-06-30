@@ -1,10 +1,7 @@
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  getContextUsageDescription,
-  getContextUsageLabel,
-} from '@/lib/context-usage-labels'
+import { getContextUsageDescription, getContextUsageLabel } from '@/lib/context-usage-labels'
 import { cn } from '@/lib/utils'
 
 interface ContextUsageTermHintProps {

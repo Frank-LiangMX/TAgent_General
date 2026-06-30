@@ -643,7 +643,10 @@ export function ChannelForm({
                         type="button"
                         onClick={handleTestModel}
                         disabled={
-                          validatingModel || !apiKey.trim() || !baseUrl.trim() || models.length === 0
+                          validatingModel ||
+                          !apiKey.trim() ||
+                          !baseUrl.trim() ||
+                          models.length === 0
                         }
                         className="h-7 text-xs"
                       >

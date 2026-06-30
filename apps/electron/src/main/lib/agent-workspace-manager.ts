@@ -564,7 +564,10 @@ export function installStoreBundle(
   return result
 }
 
-function writeCatalogSkillToWorkspace(workspaceSlug: string, spec: PluginStoreSkillInstallSpec): SkillMeta {
+function writeCatalogSkillToWorkspace(
+  workspaceSlug: string,
+  spec: PluginStoreSkillInstallSpec
+): SkillMeta {
   const targetPath = join(getWorkspaceSkillsDir(workspaceSlug), spec.slug)
   const targetInactivePath = join(getInactiveSkillsDir(workspaceSlug), spec.slug)
 
@@ -842,7 +845,10 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
       if (currentMode === 'list') {
         // list 项：- value
         if (text.startsWith('- ')) {
-          const item = text.slice(2).trim().replace(/^["']|["']$/g, '')
+          const item = text
+            .slice(2)
+            .trim()
+            .replace(/^["']|["']$/g, '')
           listEntries[currentKey]!.push(item)
           continue
         }
@@ -852,7 +858,10 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
           mapEntries[currentKey] = {}
           const colonIdx2 = text.indexOf(':')
           const mk = text.slice(0, colonIdx2).trim()
-          const mv = text.slice(colonIdx2 + 1).trim().replace(/^["']|["']$/g, '')
+          const mv = text
+            .slice(colonIdx2 + 1)
+            .trim()
+            .replace(/^["']|["']$/g, '')
           if (mk) mapEntries[currentKey]![mk] = mv
           continue
         }
@@ -866,7 +875,10 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
         if (text.includes(':')) {
           const colonIdx2 = text.indexOf(':')
           const mk = text.slice(0, colonIdx2).trim()
-          const mv = text.slice(colonIdx2 + 1).trim().replace(/^["']|["']$/g, '')
+          const mv = text
+            .slice(colonIdx2 + 1)
+            .trim()
+            .replace(/^["']|["']$/g, '')
           if (mk) mapEntries[currentKey]![mk] = mv
           continue
         }
