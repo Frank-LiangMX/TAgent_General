@@ -13,7 +13,10 @@ export function draftListItemSelector(draftId: string): string {
 
 export type DraftListSlideStyles = ListSlideStyles
 
-function measureDraftListItem(container: HTMLElement, draftId: string): ListIndicatorMetrics | null {
+function measureDraftListItem(
+  container: HTMLElement,
+  draftId: string
+): ListIndicatorMetrics | null {
   return measureOffsetListItem('data-draft-list-id', container, draftId)
 }
 

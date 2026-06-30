@@ -245,7 +245,7 @@ export function DraftAssistantPanel(): React.ReactElement {
       {/* 消息列表 */}
       <div
         className={cn(
-          'flex-1 px-4 py-3 space-y-3 min-h-0',
+          'selectable-content flex-1 px-4 py-3 space-y-3 min-h-0',
           messages.length === 0 ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'
         )}
       >

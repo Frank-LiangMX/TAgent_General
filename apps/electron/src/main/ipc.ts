@@ -211,10 +211,7 @@ import {
   getWorkspaceSkillsDir,
   getWorkspaceFilesDir,
 } from './lib/config-paths'
-import {
-  listConversations,
-  deleteConversation,
-} from './lib/conversation-manager'
+import { listConversations, deleteConversation } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import { requestApplicationQuit } from './lib/app-shutdown'
 import {

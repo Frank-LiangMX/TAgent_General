@@ -188,7 +188,7 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
         {isBlockedPath ? (
           <>
             <p className="text-xs text-muted-foreground">此目录在当前项目范围之外</p>
-            <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">
+            <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all scrollbar-thin">
               {request.blockedPath}
             </pre>
             <p className="text-[10px] text-muted-foreground/60">
@@ -205,11 +205,11 @@ export function PermissionBanner({ sessionId }: PermissionBannerProps): React.Re
             )}
             {/* Bash 命令：始终展示代码块 */}
             {request.command ? (
-              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto scrollbar-thin">
                 {request.command}
               </pre>
             ) : !request.sdkTitle && Object.keys(request.toolInput).length > 0 ? (
-              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto">
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto scrollbar-thin">
                 {JSON.stringify(request.toolInput, null, 2)}
               </pre>
             ) : !request.sdkTitle ? (

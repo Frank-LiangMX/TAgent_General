@@ -7,35 +7,38 @@ import { cn } from '@/lib/utils'
 /** 搜索框统一圆角（与插件侧栏原 rounded-xl 一致） */
 const SEARCH_INPUT_RADIUS = 'rounded-glass-rail'
 
-const searchInputVariants = cva('ui-search-input flex w-full items-center gap-2 transition-colors', {
-  variants: {
-    variant: {
-      /** 设置页 / 表单内标准搜索框 */
-      default: cn(
-        SEARCH_INPUT_RADIUS,
-        'border border-border/60 bg-muted/40 focus-within:border-primary/40 focus-within:bg-background focus-within:ring-1 focus-within:ring-primary/20'
-      ),
-      /** 侧栏 / 列表面板紧凑搜索 */
-      muted: cn(
-        SEARCH_INPUT_RADIUS,
-        'border border-transparent bg-muted/40 focus-within:border-primary/40 focus-within:bg-muted/70'
-      ),
-      /** 插件面板 / 模型选择器等玻璃浮层 */
-      glass: cn(SEARCH_INPUT_RADIUS, 'ui-search-input--glass border border-transparent'),
-      /** 对话框顶栏：无容器背景，仅图标 + 输入 */
-      plain: 'rounded-none border-0 bg-transparent p-0 shadow-none ring-0 focus-within:ring-0',
+const searchInputVariants = cva(
+  'ui-search-input flex w-full items-center gap-2 transition-colors',
+  {
+    variants: {
+      variant: {
+        /** 设置页 / 表单内标准搜索框 */
+        default: cn(
+          SEARCH_INPUT_RADIUS,
+          'border border-border/60 bg-muted/40 focus-within:border-primary/40 focus-within:bg-background focus-within:ring-1 focus-within:ring-primary/20'
+        ),
+        /** 侧栏 / 列表面板紧凑搜索 */
+        muted: cn(
+          SEARCH_INPUT_RADIUS,
+          'border border-transparent bg-muted/40 focus-within:border-primary/40 focus-within:bg-muted/70'
+        ),
+        /** 插件面板 / 模型选择器等玻璃浮层 */
+        glass: cn(SEARCH_INPUT_RADIUS, 'ui-search-input--glass border border-transparent'),
+        /** 对话框顶栏：无容器背景，仅图标 + 输入 */
+        plain: 'rounded-none border-0 bg-transparent p-0 shadow-none ring-0 focus-within:ring-0',
+      },
+      size: {
+        sm: 'h-7 px-2',
+        md: 'h-8 px-2.5',
+        lg: 'h-9 px-3',
+      },
     },
-    size: {
-      sm: 'h-7 px-2',
-      md: 'h-8 px-2.5',
-      lg: 'h-9 px-3',
+    defaultVariants: {
+      variant: 'default',
+      size: 'md',
     },
-  },
-  defaultVariants: {
-    variant: 'default',
-    size: 'md',
-  },
-})
+  }
+)
 
 const searchInputFieldVariants = cva(
   'min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-50',
@@ -60,7 +63,8 @@ const SEARCH_ICON_SIZE = {
 } as const satisfies Record<NonNullable<VariantProps<typeof searchInputVariants>['size']>, number>
 
 export interface SearchInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends
+    Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof searchInputVariants> {
   /** 外层容器 class */
   containerClassName?: string

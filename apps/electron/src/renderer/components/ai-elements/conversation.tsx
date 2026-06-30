@@ -47,7 +47,7 @@ export function ConversationContent({
   return (
     <StickToBottom.Content
       scrollClassName="scrollbar-none"
-      className={cn('flex flex-col gap-1 py-4 px-8', className)}
+      className={cn('selectable-content flex flex-col gap-1 py-4 px-8', className)}
       {...props}
     />
   )

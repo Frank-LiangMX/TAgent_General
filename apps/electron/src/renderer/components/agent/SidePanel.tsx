@@ -4,7 +4,7 @@
  * 直接展示文件浏览器。
  */
 
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
   X,
   FolderOpen,
@@ -41,7 +41,7 @@ import {
   previewFileMapAtom,
   type PreviewFile,
 } from '@/atoms/preview-atoms'
-import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { useOpenPreview } from '@/components/diff/preview-opener'
 import { DiffChangesList } from '@/components/diff/DiffChangesList'
 import { DiffPanelTabBar } from '@/components/diff/DiffPanelTabBar'
 import { WorktreeSelector } from '@/components/diff/WorktreeSelector'
@@ -103,7 +103,7 @@ export function SidePanel({
   // Tab 系统
   const previewFileMap = useAtomValue(previewFileMapAtom)
   const selectedFilePath = previewFileMap.get(sessionId)?.filePath
-  const store = useStore()
+  const openPreviewForFile = useOpenPreview()
 
   // 预览面板 atoms
   const setPreviewFileMap = useSetAtom(previewFileMapAtom)
@@ -114,25 +114,9 @@ export function SidePanel({
 
   const openPreviewTabForFile = React.useCallback(
     (file: PreviewFile) => {
-      setPreviewFileMap((prev) => {
-        const m = new Map(prev)
-        m.set(sessionId, file)
-        return m
-      })
-      setPreviewOpenMap((prev) => {
-        const m = new Map(prev)
-        m.set(sessionId, false)
-        return m
-      })
-      const result = openTab(store.get(tabsAtom), {
-        type: 'preview',
-        sessionId,
-        title: getPreviewTabTitle(file.filePath),
-      })
-      store.set(tabsAtom, result.tabs)
-      store.set(activeTabIdAtom, result.activeTabId)
+      openPreviewForFile(sessionId, file)
     },
-    [sessionId, setPreviewFileMap, setPreviewOpenMap, store]
+    [sessionId, openPreviewForFile]
   )
 
   const handleFilePreview = React.useCallback(

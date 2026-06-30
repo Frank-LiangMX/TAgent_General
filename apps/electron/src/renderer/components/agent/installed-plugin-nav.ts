@@ -4,7 +4,11 @@
 
 import type { InstalledPluginNavFilter } from '@/atoms/app-mode'
 
-import type { InstalledBundleGroup, InstalledPluginsGrouping, PluginListItem } from './installed-plugins-grouping'
+import type {
+  InstalledBundleGroup,
+  InstalledPluginsGrouping,
+  PluginListItem,
+} from './installed-plugins-grouping'
 
 export type { InstalledPluginNavFilter } from '@/atoms/app-mode'
 

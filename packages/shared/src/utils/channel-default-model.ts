@@ -3,9 +3,7 @@ import type { Channel } from '../types/channel'
 type ChannelModelSource = Pick<Channel, 'models' | 'defaultModelId'>
 
 /** 渠道内第一个已启用的模型 ID */
-export function getFirstEnabledChannelModelId(
-  channel: ChannelModelSource
-): string | undefined {
+export function getFirstEnabledChannelModelId(channel: ChannelModelSource): string | undefined {
   return channel.models.find((m) => m.enabled)?.id
 }
 
@@ -30,9 +28,7 @@ export function resolveChannelDefaultModelId(
 /**
  * 校验并规范化渠道的 defaultModelId（无效时清除）
  */
-export function normalizeChannelDefaultModelId(
-  channel: ChannelModelSource
-): string | undefined {
+export function normalizeChannelDefaultModelId(channel: ChannelModelSource): string | undefined {
   if (!channel.defaultModelId) return undefined
   const enabled = channel.models.filter((m) => m.enabled)
   if (enabled.some((m) => m.id === channel.defaultModelId)) {

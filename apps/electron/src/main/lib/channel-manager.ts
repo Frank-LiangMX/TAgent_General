@@ -406,6 +406,7 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'qwen-anthropic':
         return await testAnthropicCompatible(channel.baseUrl, apiKey, proxyUrl, channel.provider)
       case 'kscc-internal':
         return testKsccInternalConnection()
@@ -459,6 +460,7 @@ export async function validateChannelModel(input: {
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'qwen-anthropic':
         return await validateAnthropicModel(
           input.baseUrl,
           input.apiKey,
@@ -506,7 +508,7 @@ async function validateAnthropicModel(
   ) {
     headers.Authorization = `Bearer ${apiKey}`
     headers['User-Agent'] = getTAgentUserAgent(pkg.version)
-  } else if (provider === 'minimax') {
+  } else if (provider === 'minimax' || provider === 'qwen-anthropic') {
     headers.Authorization = `Bearer ${apiKey}`
   } else {
     headers['x-api-key'] = apiKey
@@ -658,6 +660,9 @@ async function testAnthropicCompatible(
     case 'xiaomi-token-plan':
       testModel = 'mimo-v2.5-pro'
       break
+    case 'qwen-anthropic':
+      testModel = 'qwen3.7-plus'
+      break
     default:
       testModel = 'claude-sonnet-4-6'
   }
@@ -672,7 +677,7 @@ async function testAnthropicCompatible(
   } else if (provider === 'xiaomi-token-plan') {
     headers.Authorization = `Bearer ${apiKey}`
     headers['User-Agent'] = getTAgentUserAgent(pkg.version)
-  } else if (provider === 'minimax') {
+  } else if (provider === 'minimax' || provider === 'qwen-anthropic') {
     headers.Authorization = `Bearer ${apiKey}`
   } else {
     headers['x-api-key'] = apiKey
@@ -781,6 +786,7 @@ export async function testChannelDirect(input: FetchModelsInput): Promise<Channe
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'qwen-anthropic':
         return await testAnthropicCompatible(input.baseUrl, input.apiKey, proxyUrl, input.provider)
       case 'kscc-internal':
         return testKsccInternalConnection()
@@ -823,6 +829,7 @@ export async function fetchModels(input: FetchModelsInput): Promise<FetchModelsR
       case 'minimax':
       case 'xiaomi':
       case 'xiaomi-token-plan':
+      case 'qwen-anthropic':
         return await fetchAnthropicCompatibleModels(
           input.baseUrl,
           input.apiKey,
@@ -894,7 +901,7 @@ async function fetchAnthropicCompatibleModels(
   } else if (provider === 'xiaomi-token-plan') {
     headers.Authorization = `Bearer ${apiKey}`
     headers['User-Agent'] = getTAgentUserAgent(pkg.version)
-  } else if (provider === 'minimax') {
+  } else if (provider === 'minimax' || provider === 'qwen-anthropic') {
     headers.Authorization = `Bearer ${apiKey}`
   } else {
     headers['x-api-key'] = apiKey

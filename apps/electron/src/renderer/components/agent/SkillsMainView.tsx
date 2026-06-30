@@ -126,7 +126,9 @@ export function SkillsMainView(): React.ReactElement {
               <DialogTitle>
                 {editingServer ? `编辑 MCP：${editingServer.name}` : '自定义 MCP'}
               </DialogTitle>
-              <DialogDescription>MCP 连接插件，支持 stdio、HTTP、SSE 三种传输方式</DialogDescription>
+              <DialogDescription>
+                MCP 连接插件，支持 stdio、HTTP、SSE 三种传输方式
+              </DialogDescription>
             </DialogHeader>
             <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-6 pb-6">
               <McpServerForm

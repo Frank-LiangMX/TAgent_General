@@ -29,9 +29,7 @@ export function WindowCloseConfirmDialog({ open, onOpenChange }: WindowCloseConf
       <AlertDialogContent className="max-w-[400px]">
         <AlertDialogHeader>
           <AlertDialogTitle>关闭窗口</AlertDialogTitle>
-          <AlertDialogDescription>
-            你希望如何处理？
-          </AlertDialogDescription>
+          <AlertDialogDescription>你希望如何处理？</AlertDialogDescription>
         </AlertDialogHeader>
 
         <label className="flex items-center gap-2 cursor-pointer select-none">

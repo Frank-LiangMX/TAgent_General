@@ -14,15 +14,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-import {
-  radius,
-  shadows,
-  spacing,
-  fontSize,
-  motion,
-  colors,
-  tailwindColorTokens,
-} from '../index'
+import { radius, shadows, spacing, fontSize, motion, colors, tailwindColorTokens } from '../index'
 
 const __dirname = new URL('.', import.meta.url).pathname
   // Windows 路径修正（/F:/ → F:/）
@@ -45,14 +37,13 @@ function generateTailwindKey(token: string): string {
 function buildCssBlock(category: string, tokens: Record<string, string>): string {
   const entries = Object.entries(tokens)
   if (entries.length === 0) return ''
-  const lines = entries.map(([key, value]) => `  ${generateCssVariableName(category, key)}: ${value};`)
+  const lines = entries.map(
+    ([key, value]) => `  ${generateCssVariableName(category, key)}: ${value};`
+  )
   return `:root {\n${lines.join('\n')}\n}\n`
 }
 
-function buildTailwindObject(
-  category: string,
-  tokens: Record<string, string>
-): string {
+function buildTailwindObject(category: string, tokens: Record<string, string>): string {
   const entries = Object.entries(tokens)
   if (entries.length === 0) return '{}'
   const lines = entries.map(

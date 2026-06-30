@@ -860,6 +860,8 @@ export interface ElectronAPI {
   onAgentTitleUpdated: (
     callback: (data: { sessionId: string; title: string }) => void
   ) => () => void
+  /** 订阅 Context 分项后台刷新完成事件（stale-while-revalidate：后台刷新完缓存后重新获取） */
+  onContextUsageUpdated: (callback: (data: { sessionId: string }) => void) => () => void
 
   // ===== Agent 权限系统 =====
 
@@ -2163,6 +2165,15 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on(AGENT_IPC_CHANNELS.TITLE_UPDATED, listener)
     return () => {
       ipcRenderer.removeListener(AGENT_IPC_CHANNELS.TITLE_UPDATED, listener)
+    }
+  },
+
+  // Context 分项后台刷新完成通知（stale-while-revalidate：后台刷新完缓存后通知渲染进程重新获取）
+  onContextUsageUpdated: (callback: (data: { sessionId: string }) => void) => {
+    const listener = (_: unknown, data: { sessionId: string }): void => callback(data)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, listener)
+    return () => {
+      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, listener)
     }
   },
 

@@ -5,10 +5,10 @@
  * - 点击切换标签
  * - 中键关闭标签
  * - 拖拽重排序
- * - Chrome 风格等分宽度（溢出时可横向滚动）
+ * - preview Tab 拖出 TabBar 转为右侧分屏
  */
 
-import { useAtom, useAtomValue } from 'jotai'
+import { useAtom, useAtomValue, useStore } from 'jotai'
 import * as React from 'react'
 
 import { TabBarItem } from './TabBarItem'
@@ -17,6 +17,7 @@ import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { TabItem } from '@/atoms/tab-atoms'
 
 import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
+import { tearOffPreviewToSplit } from '@/components/diff/preview-opener'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { useTabSlideIndicator } from '@/hooks/useTabSlideIndicator'
@@ -27,14 +28,11 @@ export function TabBar(): React.ReactElement {
   const tabs = useAtomValue(visibleTabsAtom)
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
+  const store = useStore()
 
-  // 统一切换副作用
   const syncSideEffects = useSyncActiveTabSideEffects()
-
-  // 统一关闭逻辑：关闭当前会话入口并回到 Scratch Pad，不停止后台 Agent
   const { requestClose } = useCloseTab()
 
-  // 拖拽状态
   const dragState = React.useRef<{
     dragging: boolean
     tabId: string
@@ -51,9 +49,16 @@ export function TabBar(): React.ReactElement {
     [setActiveTabId, tabs, syncSideEffects]
   )
 
+  const handleTearOff = React.useCallback(
+    (tabId: string) => {
+      tearOffPreviewToSplit(store, tabId)
+    },
+    [store]
+  )
+
   const handleDragStart = React.useCallback(
     (tabId: string, e: React.PointerEvent) => {
-      if (e.button !== 0) return // 只处理左键
+      if (e.button !== 0) return
       const idx = tabs.findIndex((t) => t.id === tabId)
       if (idx === -1) return
 
@@ -94,11 +99,11 @@ export function TabBar(): React.ReactElement {
       onActivate={handleActivate}
       onClose={requestClose}
       onDragStart={handleDragStart}
+      onTearOff={handleTearOff}
     />
   )
 }
 
-/** 内部组件：管理全局 hover 状态，确保同一时刻只有一个预览面板 */
 function TabBarInner({
   tabs,
   activeTabId,
@@ -106,6 +111,7 @@ function TabBarInner({
   onActivate,
   onClose,
   onDragStart,
+  onTearOff,
 }: {
   tabs: TabItem[]
   activeTabId: string | null
@@ -113,6 +119,7 @@ function TabBarInner({
   onActivate: (tabId: string) => void
   onClose: (tabId: string) => void
   onDragStart: (tabId: string, e: React.PointerEvent) => void
+  onTearOff: (tabId: string) => void
 }): React.ReactElement {
   const [hoveredTabId, setHoveredTabId] = React.useState<string | null>(null)
   const [isLeaving, setIsLeaving] = React.useState(false)
@@ -120,14 +127,60 @@ function TabBarInner({
   const leaveTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const fadeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const isWindows = React.useMemo(() => detectIsWindows(), [])
-
-  // 滚动容器 ref
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const barRef = React.useRef<HTMLDivElement>(null)
+  const [tearingOff, setTearingOff] = React.useState<string | null>(null)
 
-  // Tab 选中态滑动指示器
   const { indicatorStyle } = useTabSlideIndicator(scrollRef, activeTabId)
 
-  // 鼠标滚轮横向滚动（使用原生事件监听器以支持 preventDefault）
+  const handleDragStartWithTearOff = React.useCallback(
+    (tabId: string, e: React.PointerEvent) => {
+      const tab = tabs.find((t) => t.id === tabId)
+      if (!tab || tab.type !== 'preview') {
+        onDragStart(tabId, e)
+        return
+      }
+
+      if (e.button !== 0) return
+      const startX = e.clientX
+      let torn = false
+      let sorting = false
+      const TEAR_OFF_MARGIN = 24
+
+      const handleMove = (me: PointerEvent): void => {
+        if (torn) return
+        const rect = barRef.current?.getBoundingClientRect()
+        const outOfBar =
+          !!rect &&
+          (me.clientY < rect.top - TEAR_OFF_MARGIN || me.clientY > rect.bottom + TEAR_OFF_MARGIN)
+        if (outOfBar) {
+          torn = true
+          setTearingOff(tabId)
+          document.removeEventListener('pointermove', handleMove)
+          requestAnimationFrame(() => {
+            onTearOff(tabId)
+            setTearingOff(null)
+          })
+          return
+        }
+        const dx = Math.abs(me.clientX - startX)
+        if (!sorting && dx > 5) {
+          sorting = true
+          onDragStart(tabId, e)
+        }
+      }
+
+      const handleUp = (): void => {
+        document.removeEventListener('pointermove', handleMove)
+        document.removeEventListener('pointerup', handleUp)
+      }
+
+      document.addEventListener('pointermove', handleMove)
+      document.addEventListener('pointerup', handleUp)
+    },
+    [tabs, onDragStart, onTearOff]
+  )
+
   React.useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -141,7 +194,6 @@ function TabBarInner({
     return () => el.removeEventListener('wheel', handleWheel)
   }, [])
 
-  // 新增 tab 时自动滚动到最右
   const prevTabCount = React.useRef(tabs.length)
   React.useEffect(() => {
     if (tabs.length > prevTabCount.current && scrollRef.current) {
@@ -165,11 +217,9 @@ function TabBarInner({
       if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
       setIsLeaving(false)
 
-      // 如果已经有面板打开（从一个 Tab 滑到另一个），立即切换
       if (hoveredTabId) {
         setHoveredTabId(tabId)
       } else {
-        // 首次 hover，延迟 300ms
         enterTimerRef.current = setTimeout(() => setHoveredTabId(tabId), 300)
       }
     },
@@ -187,7 +237,6 @@ function TabBarInner({
     }, 200)
   }, [])
 
-  // 面板的 hover 进入（阻止关闭）
   const handlePanelHoverEnter = React.useCallback(() => {
     if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
@@ -195,17 +244,20 @@ function TabBarInner({
   }, [])
 
   return (
-    <div className="flex items-end h-[28px] tabbar-bg content-shell-chrome-bleed relative shrink-0">
-      {/* 顶部 TabBar 的空白区域必须保持可拖拽，尤其是 macOS/Windows 自定义标题栏。
-          注意：不要把 titlebar-no-drag 加到下面的整条 flex 容器上，否则标签右侧空白会再次失去拖拽能力。
-          Windows 上背景拖拽层避开右上角 WindowControls 区域（126px），防止 hitmask 重叠。
-          需要交互的单个 Tab 会在 TabBarItem 内部自己声明 titlebar-no-drag。 */}
+    <div
+      ref={barRef}
+      className="flex items-end h-[28px] tabbar-bg content-shell-chrome-bleed relative shrink-0"
+    >
       <div
         className={cn(
           'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
           isWindows && 'right-[126px]'
         )}
       />
+
+      {tearingOff && (
+        <div className="pointer-events-none absolute -bottom-px left-0 right-0 h-px bg-primary/60 shadow-[0_0_8px_rgba(0,0,0,0.2)]" />
+      )}
 
       <div
         ref={scrollRef}
@@ -214,7 +266,6 @@ function TabBarInner({
           isWindows && 'pr-[126px]'
         )}
       >
-        {/* 滑动底部指示线 */}
         {indicatorStyle && (
           <span
             className="absolute rounded-full bg-primary pointer-events-none"
@@ -232,10 +283,11 @@ function TabBarInner({
             isStreaming={streamingMap.get(tab.id) ?? 'idle'}
             isHovered={hoveredTabId === tab.id}
             isLeaving={hoveredTabId === tab.id && isLeaving}
+            isTearingOff={tearingOff === tab.id}
             onActivate={() => onActivate(tab.id)}
             onClose={() => onClose(tab.id)}
             onMiddleClick={() => onClose(tab.id)}
-            onDragStart={(e) => onDragStart(tab.id, e)}
+            onDragStart={(e) => handleDragStartWithTearOff(tab.id, e)}
             onHoverEnter={() => handleTabHoverEnter(tab.id)}
             onHoverLeave={handleTabHoverLeave}
             onPanelHoverEnter={handlePanelHoverEnter}

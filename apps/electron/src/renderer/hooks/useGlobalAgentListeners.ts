@@ -42,6 +42,7 @@ import {
   agentMessageRefreshAtom,
   allPendingPermissionRequestsAtom,
   allPendingAskUserRequestsAtom,
+  askUserDraftsAtom,
   allPendingExitPlanRequestsAtom,
   agentPromptSuggestionsAtom,
   backgroundTasksAtomFamily,
@@ -78,7 +79,10 @@ import {
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { contextUsageRefreshNonceAtom } from '@/atoms/context-usage-atoms'
+import {
+  bumpContextUsageRefreshNonce,
+  contextUsageRefreshNonceBySessionAtom,
+} from '@/atoms/context-usage-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import {
   notificationsEnabledAtom,
@@ -207,6 +211,8 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
         }
         return events
       }
+      case 'run_resumed':
+        return [{ type: 'run_resumed', sessionId: evt.sessionId }]
       default:
         return []
     }
@@ -1037,6 +1043,25 @@ export function useGlobalAgentListeners(): void {
               event.request.questions[0]?.question ?? 'Agent 有问题需要你回答',
               'permissionRequest'
             )
+          } else if (event.type === 'ask_user_resolved') {
+            // 协作父会话代答等场景：清理所有会话中的残留请求与草稿
+            store.set(allPendingAskUserRequestsAtom, (prev) => {
+              let changed = false
+              const map = new Map(prev)
+              prev.forEach((requests, pendingSessionId) => {
+                const nextRequests = requests.filter((r) => r.requestId !== event.requestId)
+                if (nextRequests.length !== requests.length) changed = true
+                if (nextRequests.length === 0) map.delete(pendingSessionId)
+                else map.set(pendingSessionId, nextRequests)
+              })
+              return changed ? map : prev
+            })
+            store.set(askUserDraftsAtom, (prev) => {
+              if (!prev.has(event.requestId)) return prev
+              const map = new Map(prev)
+              map.delete(event.requestId)
+              return map
+            })
           } else if (event.type === 'exit_plan_mode_request') {
             // ExitPlanMode 请求入队
             store.set(allPendingExitPlanRequestsAtom, (prev) => {
@@ -1083,6 +1108,14 @@ export function useGlobalAgentListeners(): void {
             store.set(agentPlanModeSessionsAtom, (prev: Set<string>) =>
               updatePlanModeSessionSet(prev, sessionId, event.mode === 'plan')
             )
+          } else if (event.type === 'run_resumed') {
+            store.set(agentStreamingStatesAtom, (prev) => {
+              const current = prev.get(sessionId)
+              if (!current || current.running) return prev
+              const map = new Map(prev)
+              map.set(sessionId, { ...current, running: true, backgroundWaiting: false })
+              return map
+            })
           } else if (event.type === 'complete') {
             // 累计 token 统计（计费）— 与 Context 圆环分离，各轮 result 累加
             const usage = event.usage
@@ -1109,11 +1142,15 @@ export function useGlobalAgentListeners(): void {
                 return map
               })
             }
-            store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+            store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+              bumpContextUsageRefreshNonce(prev, sessionId)
+            )
           } else if (event.type === 'usage_update') {
             // 流式 usage_update 仅作计费参考；圆环改拉 SDK getContextUsage（防抖）
             scheduleContextUsageRefresh(sessionId, () => {
-              store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+              store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+                bumpContextUsageRefreshNonce(prev, sessionId)
+              )
             })
           }
         }
@@ -1127,25 +1164,23 @@ export function useGlobalAgentListeners(): void {
           `[FLASH-DEBUG] STREAM_COMPLETE for session=${data.sessionId.slice(0, 8)}, stoppedByUser=${data.stoppedByUser}, resultSubtype=${data.resultSubtype}`
         )
         unstable_batchedUpdates(() => {
-          // 发送桌面通知（任务完成，始终播放提示音）
+          const backgroundTasksPending = data.backgroundTasksPending === true
           const enabled = store.get(notificationsEnabledAtom)
           const soundEnabled = store.get(notificationSoundEnabledAtom)
           const sounds = store.get(notificationSoundsAtom)
           const sessionTitle = getSessionTitle(data.sessionId)
-          sendDesktopNotification('Agent 任务完成', `[${sessionTitle}] 任务已完成`, enabled, {
-            playSound: enabled && soundEnabled,
-            soundType: 'taskComplete',
-            sounds,
-            onNavigate: makeNavigateToSession(data.sessionId, sessionTitle),
-          })
+          if (!backgroundTasksPending) {
+            sendDesktopNotification('Agent 任务完成', `[${sessionTitle}] 任务已完成`, enabled, {
+              playSound: enabled && soundEnabled,
+              soundType: 'taskComplete',
+              sounds,
+              onNavigate: makeNavigateToSession(data.sessionId, sessionTitle),
+            })
+          }
 
-          // STREAM_COMPLETE 表示后端已完全结束 — 立即标记 running: false
-          // 同时将所有未完成的工具活动标记为已完成，防止 subagent spinner 继续转动
-          // （complete 事件只清除 retrying，保持 running: true 以防竞态）
-          // 竞态保护：通过 startedAt 区分新旧流，防止旧流的 complete 事件重置新流的 running 状态
           store.set(agentStreamingStatesAtom, (prev) => {
             const current = prev.get(data.sessionId)
-            if (!current || !current.running) {
+            if (!current || (!current.running && !current.backgroundWaiting)) {
               return prev
             }
             if (
@@ -1158,13 +1193,12 @@ export function useGlobalAgentListeners(): void {
             map.set(data.sessionId, {
               ...current,
               running: false,
+              backgroundWaiting: backgroundTasksPending,
               ...finalizeStreamingActivities(current.toolActivities),
             })
             return map
           })
 
-          // 当前激活会话完成后仍保留在 Working Done，等待用户用对勾明确确认。
-          // 只有未激活会话才进入"未查看完成"，避免当前页面完成时出现额外未读提醒。
           const currentSessionId = store.get(currentAgentSessionIdAtom)
           const completionMarkers = getAgentCompletionMarkers({
             tabs: store.get(tabsAtom),
@@ -1173,7 +1207,7 @@ export function useGlobalAgentListeners(): void {
             sessionId: data.sessionId,
             documentHasFocus: document.hasFocus(),
           })
-          if (completionMarkers.markUnviewedCompleted) {
+          if (completionMarkers.markUnviewedCompleted && !backgroundTasksPending) {
             store.set(unviewedCompletedSessionIdsAtom, (prev: Set<string>) => {
               const next = new Set(prev)
               next.add(data.sessionId)
@@ -1400,6 +1434,14 @@ export function useGlobalAgentListeners(): void {
         .catch(console.error)
     })
 
+    // ===== 5.7 Context 分项后台刷新完成通知（stale-while-revalidate） =====
+    // 后台缓存已更新 → bump nonce → useContextUsageBreakdown 重新获取（命中刚更新的缓存）
+    const cleanupContextUsageUpdated = window.electronAPI.onContextUsageUpdated((data) => {
+      store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
+        bumpContextUsageRefreshNonce(prev, data.sessionId)
+      )
+    })
+
     // 定期清理 60s 前的「最近修改」标记，避免 atom 无限增长
     const pruneTimer = setInterval(() => {
       const cutoff = Date.now() - RECENTLY_MODIFIED_TTL_MS
@@ -1493,6 +1535,7 @@ export function useGlobalAgentListeners(): void {
       cleanupNudge()
       cleanupTAIntent()
       cleanupBtw()
+      cleanupContextUsageUpdated()
       clearInterval(pruneTimer)
       window.removeEventListener('focus', onWindowFocus)
     }

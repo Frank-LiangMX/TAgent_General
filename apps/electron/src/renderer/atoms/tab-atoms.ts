@@ -364,7 +364,9 @@ export function openTab(
     }
   }
 
-  const existingIndex = tabs.findIndex((t) => t.sessionId === item.sessionId && t.type === item.type)
+  const existingIndex = tabs.findIndex(
+    (t) => t.sessionId === item.sessionId && t.type === item.type
+  )
   const sessionTab: TabItem =
     existingIndex !== -1
       ? { ...tabs[existingIndex]!, title: item.title }

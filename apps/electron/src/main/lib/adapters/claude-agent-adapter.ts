@@ -594,6 +594,9 @@ const forceKillTimers = new Map<string, NodeJS.Timeout>()
 /** abort 后等待 SDK 自身兜底（2s+5s）再检测并强杀的延时 */
 const FORCE_KILL_GRACE_MS = 10_000
 
+/** 后台任务挂起时无活动的空闲上限（1 小时），与 SDK ScheduleWakeup 上界对齐 */
+const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
+
 async function cacheContextUsageFromQuery(sessionId: string, query: SDKQuery): Promise<void> {
   if (typeof query.getContextUsage !== 'function') return
   try {
@@ -743,6 +746,17 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     })
     queryReadyPromises.set(options.sessionId, readyPromise)
 
+    // 后台任务等待态：本轮结束时若仍有 background_tasks/session_crons 在飞行，
+    // 保持消息通道开启，让 SDK 子进程存活并在任务完成时 yield task_notification。
+    let backgroundTasksPending = false
+    let idleTimer: NodeJS.Timeout | null = null
+    const clearIdleTimer = (): void => {
+      if (idleTimer) {
+        clearTimeout(idleTimer)
+        idleTimer = null
+      }
+    }
+
     try {
       // 动态导入 SDK
       const sdk = await import('@anthropic-ai/claude-agent-sdk')
@@ -757,7 +771,11 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         allowDangerouslySkipPermissions: options.allowDangerouslySkipPermissions,
         // 关键：false 获取完整消息，与 v2 stream() 返回格式一致
         includePartialMessages: false,
-        promptSuggestions: true,
+        // 关闭 SDK 自动 prompt_suggestion：它在每轮 result 之后才到达，是旧版「收到 result 后
+        // 仍需等 2s 尾部消息」约束的根源。关闭后 result 即本轮最后一条消息，adapter 可在 result
+        // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行该计划」建议由
+        // orchestrator 自行注入，不依赖此选项，故功能不受影响。（对齐 Proma #913）
+        promptSuggestions: false,
         cwd: options.cwd,
         abortController: controller,
         env: options.env,
@@ -800,11 +818,27 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           options.additionalDirectories.length > 0 && {
             additionalDirectories: options.additionalDirectories,
           }),
-        // PostToolUse JS 回调式 hooks（auto-typecheck 等）
-        ...(options.hooks && { hooks: options.hooks }),
         // 强制顺序执行工具，防止并发 tool_use 导致 400 错误
-        // 根因：多个 tool_use 并发时若结果未完整批量提交会触发 invalid_request_error
         toolUseConcurrency: 1,
+
+        // Stop hook 观察者：读取本轮结束时仍在飞行的后台任务/定时任务集合（对齐 Proma #745）
+        hooks: {
+          ...(options.hooks ?? {}),
+          Stop: [
+            {
+              hooks: [
+                async (input: unknown) => {
+                  const bt = (input as { background_tasks?: unknown[] }).background_tasks
+                  const crons = (input as { session_crons?: unknown[] }).session_crons
+                  backgroundTasksPending =
+                    (Array.isArray(bt) && bt.length > 0) ||
+                    (Array.isArray(crons) && crons.length > 0)
+                  return { continue: true }
+                },
+              ],
+            },
+          ],
+        },
 
         // 自定义 spawn：记录 PID 以供 abort/dispose 做 force-kill 兜底（Issue #357）
         // 注意：一旦提供 spawnClaudeCodeProcess，SDK 会完全绕过 spawnLocalProcess，
@@ -841,7 +875,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             child.stderr?.on('data', (chunk: Buffer) => {
               try {
                 const text =
-                  process.platform === 'win32' ? decodeWindowsChildStderr(chunk) : chunk.toString('utf8')
+                  process.platform === 'win32'
+                    ? decodeWindowsChildStderr(chunk)
+                    : chunk.toString('utf8')
                 onStderr(text)
               } catch {
                 /* 用户回调异常不影响流 */
@@ -867,6 +903,17 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       // 使用持久化消息通道：在查询期间保持 generator 活跃以支持工具权限注入，
       // 收到 result 后调用 channel.close() 让 SDK 自然关闭 stdin 并退出子进程。
       const channel = createMessageChannel(controller.signal)
+
+      const armIdleTimer = (): void => {
+        clearIdleTimer()
+        idleTimer = setTimeout(() => {
+          console.warn(
+            `[Claude 适配器] 后台任务空闲超时 (${BACKGROUND_IDLE_TIMEOUT_MS}ms)，释放子进程: ${options.sessionId}`
+          )
+          channel.close()
+        }, BACKGROUND_IDLE_TIMEOUT_MS)
+        idleTimer.unref?.()
+      }
 
       // 将初始 prompt 入队
       channel.enqueue({
@@ -895,6 +942,12 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         queryReadyResolvers.delete(options.sessionId)
       }
 
+      // 终止标记：收到非 keep-open 的 terminal result 后置 true，yield 该 result 后主动 break。
+      // SDK 0.3.185 把会话终止逻辑挪进了 cleanup()，而 cleanup() 只在 iterator.return() 被调用时
+      // 触发（旧版「关 stdin → 子进程 EOF 退出 → 输出流自然 done」的链路已废弃）。for-await 的
+      // break 会自动对 SDK iterator 调 .return() → cleanup()，避免 orchestrator 依赖 2s drain timeout。
+      let terminateAfterTerminalResult = false
+
       for await (const sdkMessage of queryIterator) {
         if (controller.signal.aborted) break
 
@@ -912,6 +965,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           }
         }
 
+        if (msg.type === 'system' && idleTimer != null) {
+          const sub = msg.subtype
+          if (sub === 'task_started' || sub === 'task_progress' || sub === 'task_notification') {
+            armIdleTimer()
+          }
+        }
+
         // 捕获 result 中的 contextWindow
         if (msg.type === 'result') {
           const resultMsg = msg as {
@@ -922,29 +982,31 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           if (contextWindow) {
             options.onContextWindow?.(contextWindow)
           }
-          // Query 仍存活时抓取 /context 分项快照，供对话结束后 Popover 展示
           const liveQuery = activeQueries.get(options.sessionId)
           if (liveQuery) {
             void cacheContextUsageFromQuery(options.sessionId, liveQuery)
           }
-          // 被软中断 / 延迟工具 / hook 暂停等场景产生的 result：不关闭通道，
-          // 让 SDK 继续读取通道中已排队（或后续注入）的消息并开启新一轮 turn。
-          // 完整白名单见 CONTINUABLE_TERMINAL_REASONS。
-          //
-          // 注意：keep-open 场景本身就是"等待用户决策"（权限审批、Exit Plan、AskUser 等），
-          // 不在此处加闲置超时——用户离开再回来继续交互是合法的，强行超时会破坏体验。
-          // 若用户关闭 Tab，TabBar/GlobalShortcuts 会主动调 stopAgent → abort() 终止子进程。
-          if (!shouldKeepChannelOpen(resultMsg.terminal_reason)) {
-            // result 表示本轮真正结束，关闭消息通道让 SDK 自然调用 endInput() 关闭 stdin。
-            // 子进程检测到 stdin EOF 后会退出，readMessages() 结束，iterator 返回 done:true。
-            // 注意：prompt_suggestion 等尾部消息仍会通过 stdout 正常传递，不受影响。
+          const keepForReason = shouldKeepChannelOpen(resultMsg.terminal_reason)
+          const keepForTasks = backgroundTasksPending
+
+          if (keepForTasks && !keepForReason) {
+            ;(msg as Record<string, unknown>)._keepChannelOpenForTasks = true
+            armIdleTimer()
+          } else if (keepForReason) {
+            if (keepForTasks) armIdleTimer()
+          } else {
+            clearIdleTimer()
             channel.close()
+            terminateAfterTerminalResult = true
           }
         }
 
         yield sdkMessage as SDKMessage
+
+        if (terminateAfterTerminalResult) break
       }
     } finally {
+      clearIdleTimer()
       // 注意：pidMap 的清理由 child.on('exit') 触发，不在这里清除
       // 原因：finally 可能先于子进程真正退出执行，此时仍需保留 PID 以便 abort/dispose 兜底
       activeControllers.delete(options.sessionId)
@@ -1028,6 +1090,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
    * 获取当前活跃 Query 的 Context 分项占用（与 Claude Code /context 同源）
    */
   async getContextUsage(sessionId: string): Promise<ContextUsageSnapshot> {
+    // stale-while-revalidate: 优先返回缓存（可能略旧），由 orchestrator 后台刷新 + IPC 通知更新
+    const cached = getContextUsageCache(sessionId)
+    if (cached) {
+      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
+    }
+
+    // 无缓存才同步调 SDK（首次打开 / 会话刚开始）
     const query = activeQueries.get(sessionId)
     if (query) {
       if (typeof query.getContextUsage !== 'function') {
@@ -1048,15 +1117,30 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       }
     }
 
-    const cached = getContextUsageCache(sessionId)
-    if (cached) {
-      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
-    }
-
     throw new ContextUsageFetchError(
       'NO_ACTIVE_QUERY',
       '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
     )
+  }
+
+  /**
+   * 后台刷新 Context 分项缓存（stale-while-revalidate 的 revalidate 部分）。
+   * 由 orchestrator 在 getContextUsage 返回缓存后 fire-and-forget 调用，
+   * 刷新完成后 orchestrator 通过 IPC 通知渲染进程重新获取（命中刚更新的缓存）。
+   *
+   * @returns 是否成功刷新（true = 缓存已更新，需通知渲染进程）
+   */
+  async refreshContextUsage(sessionId: string): Promise<boolean> {
+    const query = activeQueries.get(sessionId)
+    if (!query || typeof query.getContextUsage !== 'function') return false
+    try {
+      const response = await query.getContextUsage()
+      setContextUsageCache(sessionId, mapSdkContextUsageResponse(response))
+      return true
+    } catch (error) {
+      console.warn(`[Claude 适配器] 后台刷新 Context 分项失败: sessionId=${sessionId}`, error)
+      return false
+    }
   }
 }
 

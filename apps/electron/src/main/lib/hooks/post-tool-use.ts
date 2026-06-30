@@ -131,9 +131,13 @@ function resolveCheckCommand(
       if (scripts) {
         // 优先 typecheck > check > lint
         const scriptName =
-          typeof scripts.typecheck === 'string' ? 'typecheck' :
-          typeof scripts.check === 'string' ? 'check' :
-          typeof scripts.lint === 'string' ? 'lint' : null
+          typeof scripts.typecheck === 'string'
+            ? 'typecheck'
+            : typeof scripts.check === 'string'
+              ? 'check'
+              : typeof scripts.lint === 'string'
+                ? 'lint'
+                : null
 
         if (scriptName) {
           // bun 优先，npm 兜底
@@ -168,7 +172,12 @@ function resolveCheckCommand(
 
   // 2. Python：优先 ruff，其次 mypy
   if (language === 'python') {
-    const pyRoot = findProjectRoot(filePath, ['pyproject.toml', 'setup.py', 'requirements.txt', '.python-version'])
+    const pyRoot = findProjectRoot(filePath, [
+      'pyproject.toml',
+      'setup.py',
+      'requirements.txt',
+      '.python-version',
+    ])
     if (!pyRoot || !pythonProjectHasConfig(pyRoot)) return null
     // ruff 优先（快），mypy 兜底
     const pyprojectPath = join(pyRoot, 'pyproject.toml')
@@ -348,7 +357,10 @@ function runCheckCommand(
     })
     child.on('error', (err) => {
       clearTimeout(timer)
-      resolve({ output: output + `\n[执行失败: ${err.message}]\n（可能工具未安装）`, exitCode: null })
+      resolve({
+        output: output + `\n[执行失败: ${err.message}]\n（可能工具未安装）`,
+        exitCode: null,
+      })
     })
   })
 }

@@ -6,12 +6,11 @@
  * 点击后将文件内容在当前会话的临时预览标签页中打开。
  */
 
-import { useAtomValue, useSetAtom, useStore } from 'jotai'
+import { useAtomValue, useStore } from 'jotai'
 import * as React from 'react'
 
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
-import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { openPreview } from '@/components/diff/preview-opener'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -26,29 +25,11 @@ export function PreviewOpenButton({
 }: PreviewOpenButtonProps): React.ReactElement | null {
   const sessionId = useAtomValue(currentAgentSessionIdAtom)
   const store = useStore()
-  const setPreviewFile = useSetAtom(previewFileMapAtom)
-  const setPreviewOpen = useSetAtom(previewPanelOpenMapAtom)
 
   if (!sessionId || !filePath) return null
 
   const handleOpen = () => {
-    setPreviewFile((prev) => {
-      const next = new Map(prev)
-      next.set(sessionId, { filePath, previewOnly: true, readOnly: true })
-      return next
-    })
-    setPreviewOpen((prev) => {
-      const next = new Map(prev)
-      next.set(sessionId, false)
-      return next
-    })
-    const result = openTab(store.get(tabsAtom), {
-      type: 'preview',
-      sessionId,
-      title: getPreviewTabTitle(filePath),
-    })
-    store.set(tabsAtom, result.tabs)
-    store.set(activeTabIdAtom, result.activeTabId)
+    openPreview(store, sessionId, { filePath, previewOnly: true, readOnly: true })
   }
 
   return (

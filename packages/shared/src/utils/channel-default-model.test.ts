@@ -16,17 +16,13 @@ const models: ChannelModel[] = [
 
 describe('resolveChannelDefaultModelId', () => {
   test('uses explicit default when enabled', () => {
-    expect(
-      resolveChannelDefaultModelId({ models, defaultModelId: 'kimi-k2.5' })
-    ).toBe('kimi-k2.5')
+    expect(resolveChannelDefaultModelId({ models, defaultModelId: 'kimi-k2.5' })).toBe('kimi-k2.5')
   })
 
   test('falls back to first enabled when default disabled', () => {
     expect(
       resolveChannelDefaultModelId({
-        models: models.map((m) =>
-          m.id === 'kimi-k2.5' ? { ...m, enabled: false } : m
-        ),
+        models: models.map((m) => (m.id === 'kimi-k2.5' ? { ...m, enabled: false } : m)),
         defaultModelId: 'kimi-k2.5',
       })
     ).toBe('glm-5.1')
@@ -39,15 +35,11 @@ describe('resolveChannelDefaultModelId', () => {
 
 describe('normalizeChannelDefaultModelId', () => {
   test('clears invalid default', () => {
-    expect(
-      normalizeChannelDefaultModelId({ models, defaultModelId: 'missing' })
-    ).toBeUndefined()
+    expect(normalizeChannelDefaultModelId({ models, defaultModelId: 'missing' })).toBeUndefined()
   })
 
   test('keeps valid default', () => {
-    expect(
-      normalizeChannelDefaultModelId({ models, defaultModelId: 'glm-5.1' })
-    ).toBe('glm-5.1')
+    expect(normalizeChannelDefaultModelId({ models, defaultModelId: 'glm-5.1' })).toBe('glm-5.1')
   })
 })
 
@@ -55,9 +47,7 @@ describe('resolveAgentSessionModelId', () => {
   const channel = { models, defaultModelId: 'glm-5.1' }
 
   test('session override wins', () => {
-    expect(resolveAgentSessionModelId(channel, 'kimi-k2.5', 'legacy')).toBe(
-      'kimi-k2.5'
-    )
+    expect(resolveAgentSessionModelId(channel, 'kimi-k2.5', 'legacy')).toBe('kimi-k2.5')
   })
 
   test('channel default before legacy global', () => {

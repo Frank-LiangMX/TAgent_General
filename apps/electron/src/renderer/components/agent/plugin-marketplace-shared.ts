@@ -57,7 +57,9 @@ export interface MarketplaceCatalogItem {
   mcp?: BuiltinMcpCatalogEntry
 }
 
-export function buildMarketplaceBundles(catalog: PluginStoreCatalog | null): MarketplaceBundleItem[] {
+export function buildMarketplaceBundles(
+  catalog: PluginStoreCatalog | null
+): MarketplaceBundleItem[] {
   if (!catalog) return []
   return catalog.bundles.map((bundle) => ({
     id: bundle.id,
@@ -107,7 +109,9 @@ export function sortMarketplaceBundles(bundles: MarketplaceBundleItem[]): Market
   })
 }
 
-export function buildMarketplaceItems(catalog: PluginStoreCatalog | null): MarketplaceCatalogItem[] {
+export function buildMarketplaceItems(
+  catalog: PluginStoreCatalog | null
+): MarketplaceCatalogItem[] {
   if (!catalog) return []
   const skills: MarketplaceCatalogItem[] = catalog.skills.map((skill) => ({
     id: skill.slug,

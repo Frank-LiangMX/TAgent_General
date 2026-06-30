@@ -105,6 +105,8 @@ export interface AgentStreamState {
   compactInFlight?: boolean
   /** 流式开始时间戳（用于思考计时持久化） */
   startedAt?: number
+  /** 后台任务等待态：turn 已轻量完成但通道仍开着，等待 task_notification 续轮 */
+  backgroundWaiting?: boolean
   /** 重试状态（扩展版） */
   retrying?: {
     /** 当前第几次尝试 */
@@ -461,6 +463,23 @@ export const pendingPermissionRequestsAtom = atom(
 /** 待处理的 AskUser 请求 Map — 以 sessionId 为 key，切换会话时保留状态 */
 export const allPendingAskUserRequestsAtom = atom<Map<string, readonly AskUserRequest[]>>(new Map())
 
+/** AskUser 单题答案草稿 */
+export interface AskUserQuestionDraft {
+  selected: string[]
+  customText: string
+  showCustom: boolean
+}
+
+/** AskUser 请求级草稿 — 以 requestId 为 key，组件卸载后仍保留 */
+export interface AskUserRequestDraft {
+  activeTab: number
+  focusedOptIdx: number
+  answers: Map<number, AskUserQuestionDraft>
+}
+
+/** 待提交 AskUser 草稿 Map — 以 requestId 为 key，切换预览/会话时保留填写进度 */
+export const askUserDraftsAtom = atom<Map<string, AskUserRequestDraft>>(new Map())
+
 type AskUserRequestsUpdate =
   | readonly AskUserRequest[]
   | ((prev: readonly AskUserRequest[]) => readonly AskUserRequest[])
@@ -726,6 +745,9 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
 
     case 'shell_killed':
       return prev
+
+    case 'run_resumed':
+      return { ...prev, running: true, backgroundWaiting: false }
 
     case 'task_notification':
       return prev

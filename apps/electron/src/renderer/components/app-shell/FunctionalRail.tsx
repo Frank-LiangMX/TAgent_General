@@ -11,7 +11,7 @@
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   Layers,
-  Palette,
+  Boxes,
   MessageSquare,
   LayoutGrid,
   Database,
@@ -241,9 +241,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
       return
     }
 
-    const activeButton = host.querySelector<HTMLButtonElement>(
-      `[data-rail-id="${activeRailItem}"]`
-    )
+    const activeButton = host.querySelector<HTMLButtonElement>(`[data-rail-id="${activeRailItem}"]`)
     if (!activeButton) {
       setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
       return
@@ -276,7 +274,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     {
       value: 'ta' as TopLevelMode,
       label: 'TA',
-      icon: <Palette size={14} />,
+      icon: <Boxes size={14} />,
       description: '技术美术工具',
     },
   ]
@@ -291,7 +289,11 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
           className="rail-slide-host relative flex flex-col items-center gap-1.5 w-full"
         >
           {/* 滑动指示器：玻璃浮岛跟随激活按钮 */}
-          <div className="rail-slide-indicator pointer-events-none" style={indicatorStyle} aria-hidden />
+          <div
+            className="rail-slide-indicator pointer-events-none"
+            style={indicatorStyle}
+            aria-hidden
+          />
           {COMMON_TOP_RAIL_ITEMS.map((item) => {
             const isActive = activeRailItem === item.id
             return (

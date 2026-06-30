@@ -2,14 +2,7 @@
  * PluginMarketplaceDetail — 市场插件详情（Cursor Marketplace 点击后全页）
  */
 
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ExternalLink,
-  Loader2,
-  Plug,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ExternalLink, Loader2, Plug, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 
@@ -74,16 +67,21 @@ export function PluginMarketplaceDetail({
           {/* 左侧元数据 — 对齐 Cursor Marketplace 详情左栏 */}
           <aside className="w-full shrink-0 space-y-4 lg:w-44">
             <div className="space-y-1 text-[11px]">
-              <p className="text-muted-foreground">
-                市场 / {PLUGIN_SECTION_LABELS[section]}
-              </p>
+              <p className="text-muted-foreground">市场 / {PLUGIN_SECTION_LABELS[section]}</p>
               <p className="text-foreground/80">
-                {isMcp ? 'MCP 连接' : skill?.installKind === 'bundled' ? '完整 Skill 包' : '轻量 Skill'}
+                {isMcp
+                  ? 'MCP 连接'
+                  : skill?.installKind === 'bundled'
+                    ? '完整 Skill 包'
+                    : '轻量 Skill'}
               </p>
             </div>
 
             <dl className="space-y-2.5 text-[11px]">
-              <MetaItem label="分类" value={PLUGIN_CATEGORY_LABELS[isMcp ? mcp!.category : skill!.category]} />
+              <MetaItem
+                label="分类"
+                value={PLUGIN_CATEGORY_LABELS[isMcp ? mcp!.category : skill!.category]}
+              />
               {!isMcp && skill ? (
                 <>
                   <MetaItem label="版本" value={skill.version || '—'} />
@@ -137,7 +135,12 @@ export function PluginMarketplaceDetail({
                   已安装
                 </span>
               ) : (
-                <Button size="sm" className="shrink-0 px-5" disabled={installing} onClick={onInstall}>
+                <Button
+                  size="sm"
+                  className="shrink-0 px-5"
+                  disabled={installing}
+                  onClick={onInstall}
+                >
                   {installing ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />

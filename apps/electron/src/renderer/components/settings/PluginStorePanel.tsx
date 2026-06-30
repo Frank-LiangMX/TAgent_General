@@ -43,9 +43,9 @@ const CATEGORY_LABELS: Record<PluginStoreCategory, string> = {
   meta: '扩展能力',
 }
 
-function sortByRecommended<T extends { tier: string; name?: string; displayName?: string; slug?: string }>(
-  items: T[]
-): T[] {
+function sortByRecommended<
+  T extends { tier: string; name?: string; displayName?: string; slug?: string },
+>(items: T[]): T[] {
   return [...items].sort((a, b) => {
     const tierA = a.tier === 'recommended' ? 0 : 1
     const tierB = b.tier === 'recommended' ? 0 : 1

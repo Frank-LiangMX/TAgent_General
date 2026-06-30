@@ -107,7 +107,9 @@ export function TaskBadge({ task, onClick }: TaskBadgeProps): React.ReactElement
           <span className="font-mono opacity-80">{shortenId(task.id)}</span>
 
           {/* 耗时 */}
-          <span className="tabular-nums text-muted-foreground">{formatElapsed(displayElapsed)}</span>
+          <span className="tabular-nums text-muted-foreground">
+            {formatElapsed(displayElapsed)}
+          </span>
         </button>
       </TooltipTrigger>
       <TooltipContent>{task.intent || `${task.type} 任务`}</TooltipContent>

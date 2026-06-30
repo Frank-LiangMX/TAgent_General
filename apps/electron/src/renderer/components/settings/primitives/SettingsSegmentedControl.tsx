@@ -47,11 +47,7 @@ export function SettingsSegmentedControl({
         <div className={LABEL_CLASS}>{label}</div>
         {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
       </div>
-      <SegmentedTabs
-        className="max-w-md"
-        value={value}
-        onValueChange={onValueChange}
-      >
+      <SegmentedTabs className="max-w-md" value={value} onValueChange={onValueChange}>
         {options.map((option) => (
           <SegmentedTabsItem key={option.value} value={option.value} disabled={disabled}>
             {option.label}

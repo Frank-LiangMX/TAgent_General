@@ -32,9 +32,7 @@ interface InstalledPluginsViewProps {
   workspaceSlug: string
 }
 
-type InstalledSelection =
-  | { kind: 'bundle'; id: string }
-  | { kind: 'skill' | 'mcp'; id: string }
+type InstalledSelection = { kind: 'bundle'; id: string } | { kind: 'skill' | 'mcp'; id: string }
 
 export function InstalledPluginsView({
   capabilities,
@@ -111,7 +109,9 @@ export function InstalledPluginsView({
   const navTitle = React.useMemo(() => {
     const bundleId = parseBundleNavId(installedNav)
     if (bundleId) {
-      return filteredGrouping.bundleGroups.find((group) => group.bundleId === bundleId)?.name ?? '整合包'
+      return (
+        filteredGrouping.bundleGroups.find((group) => group.bundleId === bundleId)?.name ?? '整合包'
+      )
     }
     if (installedNav in INSTALLED_NAV_LABELS) {
       return INSTALLED_NAV_LABELS[installedNav as keyof typeof INSTALLED_NAV_LABELS]
@@ -174,7 +174,9 @@ export function InstalledPluginsView({
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             点击卡片查看状态与管理选项
             {!loading ? (
-              <span className="ml-1 tabular-nums text-foreground/70">· 共 {totalCount} 项已安装</span>
+              <span className="ml-1 tabular-nums text-foreground/70">
+                · 共 {totalCount} 项已安装
+              </span>
             ) : null}
           </p>
         </div>
@@ -319,7 +321,9 @@ function InstalledItemCard({
           <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
           <p className="mt-0.5 text-[10px] text-muted-foreground">
             {item.kind === 'mcp' ? 'MCP' : 'Skill'}
-            {item.subtitle ? ` · ${item.subtitle.slice(0, 24)}${item.subtitle.length > 24 ? '…' : ''}` : ''}
+            {item.subtitle
+              ? ` · ${item.subtitle.slice(0, 24)}${item.subtitle.length > 24 ? '…' : ''}`
+              : ''}
           </p>
         </div>
       </div>

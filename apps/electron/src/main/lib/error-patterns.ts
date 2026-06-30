@@ -6,7 +6,7 @@
  * 内置的 2 次重试无法完全消化时，会穿透到 Orchestrator 应用层兜底。
  */
 export const TRANSIENT_NETWORK_PATTERN =
-  /terminated|socket hang up|ECONNRESET|ETIMEDOUT|EPIPE|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|fetch failed|network error|stream (?:closed|ended|disconnected) prematurely|premature close/i
+  /terminated|socket hang up|ECONNRESET|ETIMEDOUT|ECONNABORTED|EPIPE|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|fetch failed|network error|connection (?:error|closed|reset)|other side closed|AbortError|(?:operation|request) was aborted|(?:request )?timed out|stream (?:closed|ended|disconnected) prematurely|premature close/i
 
 /**
  * 上游响应体解析失败模式

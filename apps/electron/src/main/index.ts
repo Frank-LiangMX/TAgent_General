@@ -17,7 +17,7 @@ import {
 } from './lib/app-shutdown'
 import { upgradeDefaultSkillsInWorkspaces } from './lib/agent-workspace-manager'
 import { getIsQuitting, setQuitting } from './lib/app-lifecycle'
-import { registerBridge, startAllBridges } from './lib/bridge-registry'
+import { registerBridge, startAllBridges, startBridgeSelfHealing } from './lib/bridge-registry'
 import { startChatToolsWatcher } from './lib/tool-config-watcher'
 import { seedDefaultSkills } from './lib/config-paths'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
@@ -28,10 +28,7 @@ import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { registerGlobalShortcut } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
 import { ensureKsccRipgrep } from './lib/ensure-kscc-ripgrep'
-import {
-  createQuickTaskWindow,
-  toggleQuickTaskWindow,
-} from './lib/quick-task-window'
+import { createQuickTaskWindow, toggleQuickTaskWindow } from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { initAutoUpdater } from './lib/updater/auto-updater'
@@ -162,8 +159,17 @@ registerBridge({
     const config = getFeishuMultiBotConfig()
     return config.bots.some((b) => b.enabled && b.appId && b.appSecret)
   },
+  needsRecovery: () => {
+    const config = getFeishuMultiBotConfig()
+    const states = feishuBridgeManager.getStates()
+    return config.bots.some(
+      (bot) =>
+        bot.enabled && !!bot.appId && !!bot.appSecret && states.bots[bot.id]?.status === 'error'
+    )
+  },
   start: () => feishuBridgeManager.startAll(),
   stop: () => feishuBridgeManager.stopAll(),
+  recover: () => recoverEnabledFeishuBots(),
 })
 
 registerBridge({
@@ -172,8 +178,20 @@ registerBridge({
     const config = getDingTalkMultiBotConfig()
     return config.bots.some((b) => b.enabled && b.clientId && b.clientSecret)
   },
+  needsRecovery: () => {
+    const config = getDingTalkMultiBotConfig()
+    const states = dingtalkBridgeManager.getStates()
+    return config.bots.some(
+      (bot) =>
+        bot.enabled &&
+        !!bot.clientId &&
+        !!bot.clientSecret &&
+        states.bots[bot.id]?.status === 'error'
+    )
+  },
   start: () => dingtalkBridgeManager.startAll(),
   stop: () => dingtalkBridgeManager.stopAll(),
+  recover: () => recoverEnabledDingTalkBots(),
 })
 
 registerBridge({
@@ -182,6 +200,7 @@ registerBridge({
     const config = getWeChatConfig()
     return !!(config.enabled && config.credentials)
   },
+  needsRecovery: () => wechatBridge.getStatus().status === 'error',
   start: () => wechatBridge.start(),
   stop: () => wechatBridge.stop(),
 })
@@ -192,9 +211,44 @@ registerBridge({
     const config = getWpsConfig()
     return !!(config.enabled && config.appId && getDecryptedWpsSecretKey())
   },
+  needsRecovery: () => wpsBridge.getStatus().status === 'error',
   start: () => wpsBridge.start(),
   stop: () => wpsBridge.stop(),
 })
+
+async function recoverEnabledFeishuBots(): Promise<void> {
+  const config = getFeishuMultiBotConfig()
+  let failedCount = 0
+  for (const bot of config.bots) {
+    if (!bot.enabled || !bot.appId || !bot.appSecret) continue
+    try {
+      await feishuBridgeManager.restartBot(bot.id)
+    } catch (error) {
+      failedCount++
+      console.error(`[飞书 BridgeManager] Bot "${bot.name}" 自愈恢复失败:`, error)
+    }
+  }
+  if (failedCount > 0) {
+    throw new Error(`${failedCount} 个飞书 Bot 自愈恢复失败`)
+  }
+}
+
+async function recoverEnabledDingTalkBots(): Promise<void> {
+  const config = getDingTalkMultiBotConfig()
+  let failedCount = 0
+  for (const bot of config.bots) {
+    if (!bot.enabled || !bot.clientId || !bot.clientSecret) continue
+    try {
+      await dingtalkBridgeManager.restartBot(bot.id)
+    } catch (error) {
+      failedCount++
+      console.error(`[钉钉 BridgeManager] Bot "${bot.name}" 自愈恢复失败:`, error)
+    }
+  }
+  if (failedCount > 0) {
+    throw new Error(`${failedCount} 个钉钉 Bot 自愈恢复失败`)
+  }
+}
 
 let mainWindow: BrowserWindow | null = null
 
@@ -594,6 +648,7 @@ async function bootstrap(): Promise<void> {
 
   // 启动所有已注册的 Bridge（飞书/钉钉/微信等）
   await safeAwait('startAllBridges', () => startAllBridges())
+  safeRun('startBridgeSelfHealing', startBridgeSelfHealing)
 
   app.on('activate', () => {
     if (shouldSuppressVoiceDictationActivate()) {

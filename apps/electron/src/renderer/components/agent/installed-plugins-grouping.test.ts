@@ -77,9 +77,9 @@ describe('groupInstalledPlugins', () => {
       'superpowers-full',
       'ta-agent-suite',
     ])
-    expect(bundleGroups.find((group) => group.bundleId === 'superpowers-full')?.items.map((i) => i.id)).toEqual([
-      'brainstorming',
-    ])
+    expect(
+      bundleGroups.find((group) => group.bundleId === 'superpowers-full')?.items.map((i) => i.id)
+    ).toEqual(['brainstorming'])
     expect(orphanItems.map((item) => item.id)).toEqual(['brandkit'])
   })
 

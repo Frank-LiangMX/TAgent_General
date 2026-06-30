@@ -63,4 +63,12 @@ export interface AgentProviderAdapter {
   setPermissionMode?(sessionId: string, mode: string): Promise<void>
   /** 获取当前会话 Context 分项占用（可选，仅 Claude Agent SDK 支持） */
   getContextUsage?(sessionId: string): Promise<import('@tagent/shared').ContextUsageSnapshot>
+  /**
+   * 后台刷新 Context 分项缓存（stale-while-revalidate 的 revalidate 部分）。
+   * 由 orchestrator 在 getContextUsage 返回缓存后 fire-and-forget 调用，
+   * 刷新完成后 orchestrator 通过 IPC 通知渲染进程重新获取（命中刚更新的缓存）。
+   *
+   * @returns 是否成功刷新（true = 缓存已更新，需通知渲染进程）
+   */
+  refreshContextUsage?(sessionId: string): Promise<boolean>
 }

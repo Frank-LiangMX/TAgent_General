@@ -29,15 +29,15 @@ import {
 } from '@tagent/core'
 import {
   TAGENT_DEFAULT_PERMISSION_MODE,
-  TAGENT_PERMISSION_MODE_CONFIG,
-  SAFE_TOOLS,
-  isWriteTool,
+  resolveSdkPermissionModeForTAgent,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
   normalizeContextUsageSnapshot,
+  AGENT_IPC_CHANNELS,
+  supports1MContext,
 } from '@tagent/shared'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 
 import {
   isPromptTooLongError,
@@ -62,6 +62,7 @@ import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-pla
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
+import { injectAutomationMcpServer } from './automation-agent-tools'
 import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
   appendSDKMessages,
@@ -135,7 +136,12 @@ export interface SessionCallbacks {
   /** 发送流式完成（携带已持久化的消息列表） */
   onComplete: (
     messages?: AgentMessage[],
-    opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
+    opts?: {
+      stoppedByUser?: boolean
+      startedAt?: number
+      resultSubtype?: string
+      backgroundTasksPending?: boolean
+    }
   ) => void
   /** 发送标题更新 */
   onTitleUpdated: (title: string) => void
@@ -144,12 +150,6 @@ export interface SessionCallbacks {
 }
 
 // ===== 工具函数 =====
-
-function sdkPermissionModeForTAgentMode(mode: TAgentPermissionMode): TAgentPermissionMode {
-  // TAgent 自己在 canUseTool 里实现完全自动。SDK 原生 bypassPermissions
-  // 可能在 canUseTool 前直接放行 ExitPlanMode，绕过计划审批。
-  return mode === 'bypassPermissions' ? 'auto' : TAGENT_PERMISSION_MODE_CONFIG[mode].sdkMode
-}
 
 /**
  * 从 stderr 中提取 API 错误信息
@@ -541,28 +541,6 @@ const DEFAULT_SESSION_TITLES = new Set(['新 Agent 会话', 'TA 会话'])
 
 /** 默认模型 ID */
 const DEFAULT_MODEL_ID = 'claude-sonnet-4-6'
-
-/**
- * 判断模型是否支持 1M context window beta（context-1m-2025-08-07）
- * 当前支持：Claude Sonnet 4 / 4.5 / 4.6、Opus 4.6 / 4.7 / 4.8、DeepSeek V4 系列、
- * 小米 MiMo V2.5 / V2.5 Pro / V2 Pro
- * 参考：https://docs.anthropic.com/en/docs/build-with-claude/context-windows
- */
-function supports1MContext(modelId: string): boolean {
-  const m = modelId.toLowerCase()
-  if (m.includes('haiku')) return false
-  // Claude: Sonnet 4+ 与 Opus 4.6+ 都支持
-  if (m.includes('claude')) {
-    if (m.includes('sonnet-4')) return true
-    if (m.includes('opus-4-6') || m.includes('opus-4-7') || m.includes('opus-4-8')) return true
-    return false
-  }
-  // DeepSeek V4 系列（deepseek-v4-pro、deepseek-v4-flash）
-  if (m.includes('deepseek-v4')) return true
-  // 小米 MiMo：v2.5 / v2.5-pro / v2-pro 为 1M（omni / flash 不支持）
-  if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return true
-  return false
-}
 
 /**
  * 聚合一次 SDK 调用涉及的所有附加目录（去重，保持插入顺序）。
@@ -1346,10 +1324,22 @@ export class AgentOrchestrator {
     }
     const completeRun = (
       messages?: AgentMessage[],
-      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
+      opts?: {
+        stoppedByUser?: boolean
+        startedAt?: number
+        resultSubtype?: string
+        backgroundTasksPending?: boolean
+      }
     ): void => {
       releaseActiveRun()
       callbacks.onComplete(messages, opts)
+    }
+    /** 轻量完成：turn 结束但后台任务仍在飞行，保留 active slot 等待 task_notification 续轮 */
+    const idleComplete = (
+      messages?: AgentMessage[],
+      opts?: { startedAt?: number; resultSubtype?: string }
+    ): void => {
+      callbacks.onComplete(messages, { ...opts, backgroundTasksPending: true })
     }
     const failRun = (
       error: string,
@@ -1689,6 +1679,20 @@ export class AgentOrchestrator {
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
       await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
 
+      if (triggeredBy !== 'delegation') {
+        try {
+          await injectAutomationMcpServer(sdk, mcpServers, {
+            sessionId,
+            channelId,
+            modelId,
+            workspaceId,
+            triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
+          })
+        } catch (err) {
+          console.error('[Agent 编排] 注入定时任务工具失败:', err)
+        }
+      }
+
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {
         await this.injectTATools(sdk, mcpServers, sessionId, agentCwd)
@@ -1995,7 +1999,10 @@ export class AgentOrchestrator {
             // 同步通知 SDK 侧切换权限模式
             if (this.adapter.setPermissionMode) {
               this.adapter
-                .setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(result.targetMode))
+                .setPermissionMode(
+                  sessionId,
+                  resolveSdkPermissionModeForTAgent(result.targetMode) as TAgentPermissionMode
+                )
                 .catch((err: unknown) => {
                   console.warn(`[Agent 编排] SDK 权限模式切换失败:`, err)
                 })
@@ -2077,39 +2084,9 @@ export class AgentOrchestrator {
             }
           }
 
-          case 'auto': {
-            // auto 模式写操作守卫：Write/Edit/MultiEdit/NotebookEdit 和非安全 Bash 始终需确认
-            if (
-              isWriteTool(toolName, input) &&
-              !permissionService.isWhitelisted(sessionId, toolName, input)
-            ) {
-              const request = permissionService.buildPermissionRequest(
-                sessionId,
-                toolName,
-                input,
-                options
-              )
-              this.eventBus.emit(sessionId, {
-                kind: 'tagent_event',
-                event: { type: 'permission_request', request },
-              })
-              return new Promise<PermissionResult>((resolve) => {
-                permissionService.setPending(request.requestId, { resolve, request })
-                options.signal.addEventListener(
-                  'abort',
-                  () => {
-                    if (permissionService.hasPending(request.requestId)) {
-                      permissionService.deletePending(request.requestId)
-                      resolve({ behavior: 'deny' as const, message: '操作已中止' })
-                    }
-                  },
-                  { once: true }
-                )
-              })
-            }
-            // 只读操作走 SDK classifier
+          case 'auto':
+            // 只读静默放行；写操作、MCP 变更、子任务、后台能力等一律走 PermissionBanner
             return autoCanUseTool(toolName, input, options)
-          }
 
           default:
             return { behavior: 'allow' as const, updatedInput: input }
@@ -2123,6 +2100,7 @@ export class AgentOrchestrator {
         appSettings.agentMaxTurns && appSettings.agentMaxTurns > 0
           ? appSettings.agentMaxTurns
           : undefined
+      const resolvedSdkPermissionMode = resolveSdkPermissionModeForTAgent(initialPermissionMode)
       const queryOptions: ClaudeAgentQueryOptions = {
         sessionId,
         prompt: finalPrompt,
@@ -2132,7 +2110,7 @@ export class AgentOrchestrator {
         isKsccChannel: channel.provider === 'kscc-internal',
         env: sdkEnv,
         ...(maxTurns != null && { maxTurns }),
-        sdkPermissionMode: sdkPermissionModeForTAgentMode(initialPermissionMode),
+        sdkPermissionMode: resolvedSdkPermissionMode as TAgentPermissionMode,
         // 当提供 canUseTool 回调时必须为 false，否则 CLI 同时收到
         // --allow-dangerously-skip-permissions 和 --permission-prompt-tool stdio
         // 两个矛盾的指令，导致 ExitPlanMode/AskUserQuestion 等交互式工具失败。
@@ -2140,10 +2118,6 @@ export class AgentOrchestrator {
         // Worker 子代理在 bypassPermissions 模式下也会被自动放行。
         allowDangerouslySkipPermissions: !canUseTool,
         canUseTool,
-        // 仅「自动审批」限制 SDK 可见工具集；「完全自动」须放开 Write/Bash 等，由 canUseTool 统一放行
-        ...(initialPermissionMode === 'auto' && {
-          allowedTools: [...SAFE_TOOLS],
-        }),
         // claude_code preset 提供基础环境信息（platform/shell/OS/git/model/知识截止日期等）
         // buildSystemPrompt 追加 TAgent 特有指令（角色定义、SubAgent 策略、工作区信息等）
         systemPrompt: {
@@ -2213,12 +2187,12 @@ export class AgentOrchestrator {
           console.error(`[Agent SDK stderr] ${data}`)
         },
         onSessionId: (sdkSessionId: string) => {
+          // 仅在 session_id 真正变化时才持久化（对齐 Proma #910）
+          const isNewSessionId = sdkSessionId !== capturedSdkSessionId
           capturedSdkSessionId = sdkSessionId
-          if (sdkSessionId !== existingSdkSessionId) {
+          if (isNewSessionId) {
             try {
               updateAgentSessionMeta(sessionId, { sdkSessionId })
-              // 持久化成功后同步已保存指针，避免后续相同 session_id 重复触发同步写
-              existingSdkSessionId = sdkSessionId
               console.log(`[Agent 编排] 已保存 SDK session_id: ${sdkSessionId}`)
             } catch (err) {
               console.error(`[Agent 编排] 保存 SDK session_id 失败:`, err)
@@ -2352,6 +2326,7 @@ export class AgentOrchestrator {
           // 此 timeout 仅作安全网，防止极端情况下 iterator 仍未关闭
           let drainTimeoutPromise: Promise<'drain_timeout'> | null = null
           const RESULT_DRAIN_TIMEOUT_MS = 2_000
+          let awaitingBackgroundWake = false
 
           while (true) {
             if (!pendingNext) {
@@ -2385,6 +2360,22 @@ export class AgentOrchestrator {
 
             pendingNext = null
             const msg = iterResult.value
+
+            if (awaitingBackgroundWake) {
+              const sub = msg.type === 'system' ? (msg as { subtype?: string }).subtype : undefined
+              if (
+                msg.type === 'assistant' ||
+                msg.type === 'user' ||
+                sub === 'task_started' ||
+                sub === 'task_progress'
+              ) {
+                awaitingBackgroundWake = false
+                this.eventBus.emit(sessionId, {
+                  kind: 'tagent_event',
+                  event: { type: 'run_resumed', sessionId },
+                })
+              }
+            }
 
             // SDK 权限模式可能在 canUseTool 前直接批准工具（如 bypassPermissions）。
             // 因此计划阶段状态要从实际 tool_use 流里同步，不能只依赖权限回调。
@@ -2582,16 +2573,25 @@ export class AgentOrchestrator {
               // 等待队列或后续消息继续 drive Query，此处跳过 drain 超时以免误关闭事件循环。
               // 完整白名单见 adapters/claude-agent-adapter.ts 的 CONTINUABLE_TERMINAL_REASONS。
               const resultTerminalReason = (msg as { terminal_reason?: string }).terminal_reason
-              const keepChannelOpen = shouldKeepChannelOpen(resultTerminalReason)
-              // 分类打点：跟踪线上哪种 terminal_reason 最常见，配合 deferred_tool_use 回填决策
+              const keptOpenForTasks =
+                (msg as Record<string, unknown>)._keepChannelOpenForTasks === true
+              const keepChannelOpen =
+                shouldKeepChannelOpen(resultTerminalReason) || keptOpenForTasks
               const hasDeferredTool =
                 (msg as { deferred_tool_use?: unknown }).deferred_tool_use != null
               console.log(
                 `[Agent 编排] result 到达: sessionId=${sessionId}, subtype=${capturedResultSubtype ?? 'unknown'}, ` +
                   `terminal_reason=${resultTerminalReason ?? 'undefined'}, keepChannelOpen=${keepChannelOpen}` +
+                  (keptOpenForTasks ? ', keptOpenForTasks=true' : '') +
                   (hasDeferredTool ? ', hasDeferredTool=true' : '')
               )
-              if (!keepChannelOpen && !drainTimeoutPromise) {
+              if (keptOpenForTasks) {
+                awaitingBackgroundWake = true
+                idleComplete(getAgentSessionMessages(sessionId), {
+                  startedAt: streamStartedAt,
+                  resultSubtype: capturedResultSubtype,
+                })
+              } else if (!keepChannelOpen && !drainTimeoutPromise) {
                 // 启动 drain 超时安全网：adapter 层 channel.close() 应让 iterator 自然关闭，
                 // 此处仅在极端情况下（如 SDK 版本不兼容）保护事件循环不无限挂起
                 drainTimeoutPromise = new Promise((resolve) =>
@@ -2876,22 +2876,9 @@ export class AgentOrchestrator {
             startedAt: streamStartedAt,
           })
 
-          // 根据错误类型决定是否保留 sdkSessionId
-          // 网络瞬时错误保留 session：resume 时可复用 JSONL 指针恢复，避免 ~50K token 全量重传
-          const isTransientNetwork = isTransientNetworkError(rawErrorMessage, stderrOutput)
-          const shouldClearSession =
-            !isTransientNetwork && (!apiError || apiError.statusCode >= 500)
-          if (existingSdkSessionId && shouldClearSession) {
-            try {
-              updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
-              console.log(`[Agent 编排] 已清除失效的 sdkSessionId`)
-            } catch {
-              /* 忽略 */
-            }
-          } else if (existingSdkSessionId && !shouldClearSession) {
-            console.log(
-              `[Agent 编排] 保留 sdkSessionId (网络错误=${isTransientNetwork}, API 错误 ${apiError?.statusCode})`
-            )
+          // 保留 sdkSessionId，确保下一轮能继续 resume（对齐 Proma #903）
+          if (existingSdkSessionId) {
+            console.log(`[Agent 编排] 保留 sdkSessionId 以便下一轮 resume（错误未表明会话失效）`)
           }
 
           return
@@ -2990,7 +2977,8 @@ export class AgentOrchestrator {
     })
     // 同步通知 SDK 侧
     if (this.adapter.setPermissionMode) {
-      await this.adapter.setPermissionMode(sessionId, sdkPermissionModeForTAgentMode(mode))
+      const sdkMode = resolveSdkPermissionModeForTAgent(mode)
+      await this.adapter.setPermissionMode(sessionId, sdkMode as TAgentPermissionMode)
     }
     console.log(`[Agent 编排] 运行中权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
@@ -3196,7 +3184,7 @@ export class AgentOrchestrator {
     return uuid
   }
 
-  /** 获取当前会话 Context 分项占用 */
+  /** 获取当前会话 Context 分项占用（stale-while-revalidate：有缓存立即返回，后台刷新 + IPC 通知更新） */
   async getContextUsage(
     sessionId: string
   ): Promise<import('@tagent/shared').GetContextUsageResponse> {
@@ -3209,13 +3197,50 @@ export class AgentOrchestrator {
     }
     try {
       const snapshot = await this.adapter.getContextUsage(sessionId)
+      // 返回缓存后，后台刷新并通知渲染进程重新获取（命中刚更新的缓存）
+      this.refreshContextUsageInBackground(sessionId)
       return { ok: true, snapshot }
     } catch (error) {
       const { toGetContextUsageError } = await import('./context-usage-mapper')
       const mapped = toGetContextUsageError(error)
-      console.warn(`[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`)
+      // 空闲会话无活跃 Query 是正常状态，不应刷 warn
+      if (mapped.code !== 'NO_ACTIVE_QUERY' && mapped.code !== 'NO_CACHE') {
+        console.warn(
+          `[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`
+        )
+      }
       return { ok: false, code: mapped.code, message: mapped.message }
     }
+  }
+
+  /** 后台刷新中的会话，防止并发刷新 Context 分项 */
+  private readonly contextUsageRefreshing = new Set<string>()
+
+  /**
+   * 后台刷新 Context 分项缓存，完成后通过 IPC 通知渲染进程重新获取。
+   * fire-and-forget，不阻塞 getContextUsage 返回。同会话并发刷新只跑一个。
+   */
+  private refreshContextUsageInBackground(sessionId: string): void {
+    if (!this.adapter.refreshContextUsage) return
+    if (this.contextUsageRefreshing.has(sessionId)) return
+
+    this.contextUsageRefreshing.add(sessionId)
+    void this.adapter
+      .refreshContextUsage(sessionId)
+      .then((updated) => {
+        if (!updated) return
+        try {
+          const win = BrowserWindow.getAllWindows()[0]
+          if (win && !win.isDestroyed()) {
+            win.webContents.send(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, { sessionId })
+          }
+        } catch (err) {
+          console.warn(`[Agent 编排] 推送 Context 分项更新通知失败: sessionId=${sessionId}`, err)
+        }
+      })
+      .finally(() => {
+        this.contextUsageRefreshing.delete(sessionId)
+      })
   }
 
   /** 读取会话 Context 分项缓存（不调用 SDK，用于面板优先展示） */

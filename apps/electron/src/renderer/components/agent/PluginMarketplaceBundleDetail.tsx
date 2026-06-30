@@ -69,9 +69,7 @@ export function PluginMarketplaceBundleDetail({
         <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-6 lg:flex-row lg:gap-10">
           <aside className="w-full shrink-0 space-y-4 lg:w-44">
             <div className="space-y-1 text-[11px]">
-              <p className="text-muted-foreground">
-                市场 / {PLUGIN_SECTION_LABELS[section]}
-              </p>
+              <p className="text-muted-foreground">市场 / {PLUGIN_SECTION_LABELS[section]}</p>
               <p className="text-foreground/80">{bundle.publisher}</p>
             </div>
             <dl className="space-y-2.5 text-[11px]">
@@ -133,7 +131,12 @@ export function PluginMarketplaceBundleDetail({
                   已安装 {installedCount}/{totalItems}
                 </span>
               ) : (
-                <Button size="sm" className="shrink-0 px-5" disabled={installing} onClick={onInstall}>
+                <Button
+                  size="sm"
+                  className="shrink-0 px-5"
+                  disabled={installing}
+                  onClick={onInstall}
+                >
                   {installing ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />

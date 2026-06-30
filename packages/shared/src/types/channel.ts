@@ -21,6 +21,7 @@ export type ProviderType =
   | 'minimax'
   | 'doubao'
   | 'qwen'
+  | 'qwen-anthropic'
   | 'xiaomi'
   | 'xiaomi-token-plan'
   | 'kscc-internal'
@@ -42,6 +43,7 @@ export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
   minimax: 'https://api.minimaxi.com/anthropic',
   doubao: 'https://ark.cn-beijing.volces.com/api/v3',
   qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  'qwen-anthropic': 'https://dashscope.aliyuncs.com/apps/anthropic',
   xiaomi: 'https://api.xiaomimimo.com/anthropic',
   'xiaomi-token-plan': 'https://token-plan-cn.xiaomimimo.com/anthropic',
   'kscc-internal': '', // 内置默认值，无需配置
@@ -64,6 +66,7 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
   minimax: 'MiniMax (API&编程包)',
   doubao: '豆包',
   qwen: '通义千问',
+  'qwen-anthropic': '通义千问 (Anthropic 协议)',
   xiaomi: '小米 MiMo (API)',
   'xiaomi-token-plan': '小米 MiMo Token Plan',
   'kscc-internal': '金山云',
@@ -86,6 +89,7 @@ export const AGENT_COMPATIBLE_PROVIDERS: ReadonlySet<ProviderType> = new Set<Pro
   'minimax',
   'xiaomi',
   'xiaomi-token-plan',
+  'qwen-anthropic',
   'kscc-internal',
 ])
 

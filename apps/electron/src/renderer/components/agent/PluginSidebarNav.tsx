@@ -17,10 +17,7 @@ import * as React from 'react'
 
 import type { PluginStoreCatalog, WorkspaceCapabilities } from '@tagent/shared'
 
-import {
-  installedPluginNavAtom,
-  pluginSidebarSectionAtom,
-} from '@/atoms/app-mode'
+import { installedPluginNavAtom, pluginSidebarSectionAtom } from '@/atoms/app-mode'
 import type { PluginSidebarSection } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 
@@ -53,7 +50,12 @@ const NAV_SECTIONS: NavSection[] = [
   { id: 'ta', icon: <FolderOpen size={14} strokeWidth={1.75} /> },
 ]
 
-const STATIC_INSTALLED_NAV: Exclude<InstalledPluginNavFilter, `bundle:${string}`>[] = ['overview', 'orphan', 'mcp', 'skill']
+const STATIC_INSTALLED_NAV: Exclude<InstalledPluginNavFilter, `bundle:${string}`>[] = [
+  'overview',
+  'orphan',
+  'mcp',
+  'skill',
+]
 
 export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React.ReactElement {
   const [section, setSection] = useAtom(pluginSidebarSectionAtom)
@@ -132,7 +134,11 @@ export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React
             ← 返回市场
           </button>
           <div className="flex min-w-0 items-center gap-1.5">
-            <LayoutGrid size={14} className="shrink-0 text-muted-foreground/75" strokeWidth={1.75} />
+            <LayoutGrid
+              size={14}
+              className="shrink-0 text-muted-foreground/75"
+              strokeWidth={1.75}
+            />
             <span className="text-[12px] font-semibold text-foreground">已安装</span>
             <span className="ml-auto rounded-md bg-foreground/6 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
               {capabilities ? installedCounts.total : '…'}

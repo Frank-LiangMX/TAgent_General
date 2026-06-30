@@ -70,7 +70,12 @@ import type {
   RecoveryAction,
 } from '@tagent/shared'
 
-import { agentProcessGroupsKeepExpandedAtom, currentAgentSessionDraftAtom } from '@/atoms/agent-atoms'
+import {
+  agentProcessGroupsKeepExpandedAtom,
+  currentAgentSessionDraftAtom,
+} from '@/atoms/agent-atoms'
+import { activeSessionIdAtom } from '@/atoms/tab-atoms'
+import { useOpenPreview } from '@/components/diff/preview-opener'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
@@ -92,6 +97,7 @@ import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
+import { getFileParentPath } from '@/lib/file-utils'
 import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
 
@@ -1044,12 +1050,34 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
 function AttachedFileChip({ file }: { file: AttachedFileRef }): React.ReactElement {
   const isImg = isImageFile(file.filename)
   const Icon = isImg ? FileImage : FileText
+  const activeSessionId = useAtomValue(activeSessionIdAtom)
+  const openPreview = useOpenPreview()
+
+  const handleOpenPreview = React.useCallback((): void => {
+    if (!activeSessionId) return
+    const parentPath = getFileParentPath(file.path)
+    openPreview(activeSessionId, {
+      filePath: file.path,
+      previewOnly: true,
+      readOnly: true,
+      basePaths: parentPath ? [parentPath] : undefined,
+    })
+  }, [activeSessionId, file.path, openPreview])
 
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2.5 py-1 text-[12px] text-muted-foreground">
+    <button
+      type="button"
+      onClick={handleOpenPreview}
+      disabled={!activeSessionId}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2.5 py-1 text-[12px] text-muted-foreground',
+        'transition-colors hover:bg-muted hover:text-foreground disabled:cursor-default disabled:hover:bg-muted/60 disabled:hover:text-muted-foreground'
+      )}
+      title={file.path}
+    >
       <Icon className="size-3.5 shrink-0" />
       <span className="truncate max-w-[200px]">{file.filename}</span>
-    </div>
+    </button>
   )
 }
 
@@ -1259,7 +1287,10 @@ function ErrorMessage({
   const hasActions = hasStructuredActions || hasLegacyActions
 
   return (
-    <Message from="assistant" className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
+    <Message
+      from="assistant"
+      className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both"
+    >
       <MessageHeader
         model={undefined}
         time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
@@ -1487,7 +1518,11 @@ export function MessageGroupRenderer({
 
   if (group.type === 'user') {
     return (
-      <div data-message-id={groupId} data-message-role="user" className="animate-in fade-in duration-200 fill-mode-both">
+      <div
+        data-message-id={groupId}
+        data-message-role="user"
+        className="animate-in fade-in duration-200 fill-mode-both"
+      >
         <UserInputMessage message={group.message} />
       </div>
     )
@@ -1511,7 +1546,10 @@ export function MessageGroupRenderer({
     }
     if (subtype === 'permission_denied')
       return (
-        <div data-message-id={groupId} className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both">
+        <div
+          data-message-id={groupId}
+          className="animate-in fade-in slide-in-from-top-1 duration-200 fill-mode-both"
+        >
           <PermissionDeniedNotice message={group.message} />
         </div>
       )
@@ -1520,7 +1558,11 @@ export function MessageGroupRenderer({
 
   // assistant-turn
   return (
-    <div data-message-id={groupId} data-message-role="assistant" className="animate-in fade-in duration-200 fill-mode-both">
+    <div
+      data-message-id={groupId}
+      data-message-role="assistant"
+      className="animate-in fade-in duration-200 fill-mode-both"
+    >
       <AssistantTurnRenderer
         turn={group}
         allMessages={allMessages}

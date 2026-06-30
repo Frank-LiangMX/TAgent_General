@@ -42,7 +42,12 @@ import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 import type { ActiveView } from '@/atoms/active-view'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import { resolveAgentSessionModelId } from '@tagent/shared'
-import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities, AgentWorkspace } from '@tagent/shared'
+import type {
+  ConversationMeta,
+  AgentSessionMeta,
+  WorkspaceCapabilities,
+  AgentWorkspace,
+} from '@tagent/shared'
 
 // ===== 项目分组类型 =====
 interface AgentProjectGroup {
@@ -126,7 +131,6 @@ import {
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
-import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
@@ -137,6 +141,7 @@ import {
   type SessionMiniMapType,
 } from '@/components/session-preview/SessionMiniMapPopover'
 import { TASidebar } from '@/components/ta/TASidebar'
+import { automationsAtom } from '@/atoms/automation-atoms'
 import { AutomationRailList } from '@/components/automation/AutomationRailList'
 import {
   AlertDialog,
@@ -319,11 +324,21 @@ export function LeftSidebar({
   const draftSessionIds = useAtomValue(draftSessionIdsAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
   const setAgentMessagesCache = useSetAtom(agentSDKMessagesCacheAtom)
+  const setAutomations = useSetAtom(automationsAtom)
 
   /** 待删除对话 ID，非空时显示确认弹窗 */
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
+  /** 待删除项目 ID，非空时显示项目删除确认弹窗 */
+  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = React.useState<string | null>(
+    null
+  )
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = React.useState<string | null>(null)
   /** 待迁移会话 ID，非空时显示迁移对话框 */
   const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
+  /** 折叠状态：用户手动折叠的项目 ID 集合 */
+  const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
+  /** 额外展开数量：超出预览限制后用户点击"显示更多"展开的条数 */
+  const [extraSessionCounts, setExtraSessionCounts] = React.useState<Map<string, number>>(new Map())
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
   const mode = useAtomValue(appModeAtom)
@@ -357,9 +372,9 @@ export function LeftSidebar({
   const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
   const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
-  const workspaces = useAtomValue(agentWorkspacesAtom)
+  const setCurrentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
+  const [workspaces, setWorkspaces] = useAtom(agentWorkspacesAtom)
   const { selectWorkspace, createProject } = useWorkspaceActions()
-  const setWorkspaceManagerOpen = useSetAtom(workspaceManagerOpenAtom)
 
   /** 当前工作区名称（用于目录区顶端工作区选择按钮显示） */
   const currentWorkspaceName = React.useMemo(
@@ -732,7 +747,17 @@ export function LeftSidebar({
         console.error('[侧边栏] 在工作区中创建 Agent 会话失败:', error)
       }
     },
-    [agentChannelId, defaultModelForNewSession, openSession, setActiveView, setActiveItem, setAgentSessions, setSessionChannelMap, setSessionModelMap, topLevelMode]
+    [
+      agentChannelId,
+      defaultModelForNewSession,
+      openSession,
+      setActiveView,
+      setActiveItem,
+      setAgentSessions,
+      setSessionChannelMap,
+      setSessionModelMap,
+      topLevelMode,
+    ]
   )
 
   /** 选择 Agent 会话（打开或聚焦标签页） */
@@ -766,6 +791,164 @@ export function LeftSidebar({
     },
     [setAgentSessions, setTabs]
   )
+
+  /** 重命名工作区（项目）名称 */
+  const handleWorkspaceRename = React.useCallback(
+    async (workspaceId: string, newName: string): Promise<void> => {
+      try {
+        const updated = await window.electronAPI.updateAgentWorkspace(workspaceId, {
+          name: newName,
+        })
+        setWorkspaces((prev) => prev.map((w) => (w.id === updated.id ? updated : w)))
+      } catch (error) {
+        console.error('[侧边栏] 重命名工作区失败:', error)
+        const msg = error instanceof Error ? error.message : '重命名失败'
+        toast.error(msg)
+      }
+    },
+    [setWorkspaces]
+  )
+
+  const canDeleteWorkspace = React.useCallback(
+    (workspace: AgentWorkspace): boolean => workspace.slug !== 'default' && workspaces.length > 1,
+    [workspaces.length]
+  )
+
+  const pendingDeleteWorkspace = React.useMemo(
+    () => workspaces.find((workspace) => workspace.id === pendingDeleteWorkspaceId) ?? null,
+    [pendingDeleteWorkspaceId, workspaces]
+  )
+
+  /** 请求删除项目（弹出二次确认框） */
+  const handleRequestDeleteWorkspace = React.useCallback((workspaceId: string): void => {
+    setPendingDeleteWorkspaceId(workspaceId)
+  }, [])
+
+  /** 确认删除项目及其绑定资源 */
+  const handleConfirmDeleteWorkspace = React.useCallback(async (): Promise<void> => {
+    const workspaceId = pendingDeleteWorkspaceId
+    const workspace = workspaces.find((item) => item.id === workspaceId)
+    if (!workspaceId || !workspace) return
+
+    if (!canDeleteWorkspace(workspace)) {
+      toast.error(workspace.slug === 'default' ? '默认项目不能删除' : '至少需要保留一个项目')
+      setPendingDeleteWorkspaceId(null)
+      return
+    }
+
+    const deletedSessionIds = new Set(
+      agentSessions
+        .filter((session) => session.workspaceId === workspaceId)
+        .map((session) => session.id)
+    )
+
+    try {
+      setDeletingWorkspaceId(workspaceId)
+
+      await window.electronAPI.deleteAgentWorkspace(workspaceId)
+
+      for (const sessionId of deletedSessionIds) {
+        cleanupMapAtoms(sessionId)
+      }
+
+      setDraftSessionIds((prev: Set<string>) => {
+        let changed = false
+        const next = new Set(prev)
+        for (const sessionId of deletedSessionIds) {
+          if (next.delete(sessionId)) changed = true
+        }
+        return changed ? next : prev
+      })
+
+      setAgentMessagesCache((prev) => {
+        let changed = false
+        const next = new Map(prev)
+        for (const sessionId of deletedSessionIds) {
+          if (next.delete(sessionId)) changed = true
+        }
+        return changed ? next : prev
+      })
+      setAutomations((prev) => prev.filter((automation) => automation.workspaceId !== workspaceId))
+
+      const currentTabs = store.get(tabsAtom)
+      const currentActiveTabId = store.get(activeTabIdAtom)
+      const nextTabs = currentTabs.filter(
+        (tab) =>
+          (tab.type !== 'agent' && tab.type !== 'preview') || !deletedSessionIds.has(tab.sessionId)
+      )
+      const nextActiveTabId =
+        currentActiveTabId && nextTabs.some((tab) => tab.id === currentActiveTabId)
+          ? currentActiveTabId
+          : (nextTabs[0]?.id ?? null)
+
+      setTabs(nextTabs)
+      setActiveTabId(nextActiveTabId)
+      syncActiveTabSideEffects(
+        nextActiveTabId ? (nextTabs.find((tab) => tab.id === nextActiveTabId) ?? null) : null
+      )
+
+      const [remainingWorkspaces, sessions] = await Promise.all([
+        window.electronAPI.listAgentWorkspaces(),
+        window.electronAPI.listAgentSessions(),
+      ])
+
+      setWorkspaces(remainingWorkspaces)
+      setAgentSessions(sessions)
+
+      setExtraSessionCounts((prev) => {
+        if (!prev.has(workspaceId)) return prev
+        const next = new Map(prev)
+        next.delete(workspaceId)
+        return next
+      })
+
+      setCollapsedWorkspaceIds((prev) => {
+        if (!prev.has(workspaceId)) return prev
+        const next = new Set(prev)
+        next.delete(workspaceId)
+        return next
+      })
+
+      if (workspaceId === currentWorkspaceId) {
+        const fallback =
+          remainingWorkspaces.find((item) => item.slug === 'default') ??
+          remainingWorkspaces[0] ??
+          null
+        setCurrentWorkspaceId(fallback?.id ?? null)
+        if (fallback) {
+          window.electronAPI.updateSettings({ agentWorkspaceId: fallback.id }).catch(console.error)
+        }
+      }
+
+      toast.success('项目已删除', {
+        description: `已删除「${workspace.name}」及其绑定资源`,
+      })
+    } catch (error) {
+      console.error('[侧边栏] 删除项目失败:', error)
+      const msg = error instanceof Error ? error.message : '删除项目失败'
+      toast.error(msg)
+    } finally {
+      setDeletingWorkspaceId(null)
+      setPendingDeleteWorkspaceId(null)
+    }
+  }, [
+    pendingDeleteWorkspaceId,
+    workspaces,
+    canDeleteWorkspace,
+    agentSessions,
+    cleanupMapAtoms,
+    setDraftSessionIds,
+    setAgentMessagesCache,
+    setAutomations,
+    store,
+    setTabs,
+    setActiveTabId,
+    syncActiveTabSideEffects,
+    setWorkspaces,
+    setAgentSessions,
+    currentWorkspaceId,
+    setCurrentWorkspaceId,
+  ])
 
   /** 切换 Agent 会话置顶状态 */
   const handleTogglePinAgent = React.useCallback(
@@ -951,15 +1134,11 @@ export function LeftSidebar({
     for (const workspace of workspaces) {
       sessionsByWorkspaceId.set(workspace.id, [])
     }
-    const defaultWsId =
-      workspaces.find((ws) => ws.slug === 'default')?.id ?? workspaces[0]?.id
+    const defaultWsId = workspaces.find((ws) => ws.slug === 'default')?.id ?? workspaces[0]?.id
 
     const visibleHistory = sortAgentSessionsByUpdatedAtDesc(
       currentModeAgentSessions.filter(
-        (session) =>
-          !session.archived &&
-          !session.pinned &&
-          !draftSessionIds.has(session.id)
+        (session) => !session.archived && !session.pinned && !draftSessionIds.has(session.id)
       )
     )
 
@@ -977,12 +1156,6 @@ export function LeftSidebar({
       sessions: sessionsByWorkspaceId.get(workspace.id) ?? [],
     }))
   }, [currentModeAgentSessions, draftSessionIds, workspaces])
-
-  /** 折叠状态：用户手动折叠的项目 ID 集合 */
-  const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
-
-  /** 额外展开数量：超出预览限制后用户点击"显示更多"展开的条数 */
-  const [extraSessionCounts, setExtraSessionCounts] = React.useState<Map<string, number>>(new Map())
 
   // 删除确认弹窗（collapsed/expanded 共享）
   const deleteDialog = (
@@ -1011,6 +1184,43 @@ export function LeftSidebar({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  const projectDeleteDialog = (
+    <AlertDialog
+      open={pendingDeleteWorkspaceId !== null}
+      onOpenChange={(open) => {
+        if (!open && !deletingWorkspaceId) setPendingDeleteWorkspaceId(null)
+      }}
+    >
+      <AlertDialogContent
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !deletingWorkspaceId) {
+            e.preventDefault()
+            void handleConfirmDeleteWorkspace()
+          }
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除项目</AlertDialogTitle>
+          <AlertDialogDescription>
+            将删除「{pendingDeleteWorkspace?.name ?? '该项目'}
+            」及其绑定的所有会话、自动任务、MCP、Skills 与工作区文件。删除后无法恢复。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={!!deletingWorkspaceId}>取消</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={!!deletingWorkspaceId}
+            onClick={() => void handleConfirmDeleteWorkspace()}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deletingWorkspaceId ? '删除中...' : '删除项目'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -1064,7 +1274,8 @@ export function LeftSidebar({
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
-            setWorkspaceManagerOpen={setWorkspaceManagerOpen}
+            onRenameWorkspace={handleWorkspaceRename}
+            onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
           />
         )
       }
@@ -1106,7 +1317,8 @@ export function LeftSidebar({
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
-            setWorkspaceManagerOpen={setWorkspaceManagerOpen}
+            onRenameWorkspace={handleWorkspaceRename}
+            onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
           />
         )
     }
@@ -1207,7 +1419,7 @@ export function LeftSidebar({
       <div
         key={activeRailItem}
         className={cn(
-          'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200',
+          'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200'
         )}
       >
         {renderRailContent()}
@@ -1280,6 +1492,7 @@ export function LeftSidebar({
       )}
 
       {deleteDialog}
+      {projectDeleteDialog}
       {moveDialog}
       <SearchDialog />
       <DraftSearchDialog />
@@ -1311,7 +1524,8 @@ function SessionsRailContent({
   workspaceNameMap,
   selectWorkspace,
   handleNewSessionInWorkspace,
-  setWorkspaceManagerOpen,
+  onRenameWorkspace,
+  onRequestDeleteWorkspace,
 }: {
   activeSessionId: string | null
   agentProjectGroups: AgentProjectGroup[]
@@ -1333,7 +1547,8 @@ function SessionsRailContent({
   workspaceNameMap: Map<string, string>
   selectWorkspace: (id: string) => void
   handleNewSessionInWorkspace: (workspaceId: string) => Promise<void>
-  setWorkspaceManagerOpen: (open: boolean) => void
+  onRenameWorkspace: (workspaceId: string, name: string) => Promise<void>
+  onRequestDeleteWorkspace: (workspaceId: string) => void
 }): React.ReactElement {
   const store = useStore()
 
@@ -1371,16 +1586,8 @@ function SessionsRailContent({
     [setExtraSessionCounts]
   )
 
-  const handleRenameWorkspace = React.useCallback(
-    async (id: string, name: string): Promise<void> => {
-      try {
-        await window.electronAPI.updateAgentWorkspace(id, { name })
-      } catch (err) {
-        console.error('[侧边栏] 重命名工作区失败:', err)
-      }
-    },
-    []
-  )
+  const handleRenameWorkspace = onRenameWorkspace
+  const handleRequestDeleteWorkspace = onRequestDeleteWorkspace
 
   const handleConfigureProject = React.useCallback(
     (workspaceId: string): void => {
@@ -1388,13 +1595,6 @@ function SessionsRailContent({
       store.set(activeRailItemAtom, 'skills')
     },
     [selectWorkspace, store]
-  )
-
-  const handleRequestDeleteWorkspace = React.useCallback(
-    (workspaceId: string): void => {
-      setWorkspaceManagerOpen(true)
-    },
-    [setWorkspaceManagerOpen]
   )
 
   const listRef = React.useRef<HTMLDivElement>(null)
@@ -1407,7 +1607,9 @@ function SessionsRailContent({
   const isActiveSessionVisible = activeSessionId
     ? pinnedAgentSessions.some((s) => s.id === activeSessionId) ||
       agentProjectGroups.some(
-        (g) => !collapsedWorkspaceIds.has(g.workspace.id) && g.sessions.some((s) => s.id === activeSessionId)
+        (g) =>
+          !collapsedWorkspaceIds.has(g.workspace.id) &&
+          g.sessions.some((s) => s.id === activeSessionId)
       )
     : false
 
@@ -1428,7 +1630,13 @@ function SessionsRailContent({
     : undefined
 
   return (
-    <div ref={listRef} className={cn('flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative', LIST_SLIDE_HOST_CLASS)}>
+    <div
+      ref={listRef}
+      className={cn(
+        'flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative',
+        LIST_SLIDE_HOST_CLASS
+      )}
+    >
       <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
         {plateStyle && <div className={LIST_SLIDE_INDICATOR_CLASS} style={plateStyle} />}
         {accentStyle && activeAccent && (
@@ -1481,7 +1689,11 @@ function SessionsRailContent({
                   active={session.id === activeSessionId}
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
                   useListSlideIndicator
-                  leftAccent={getSessionLeftAccent(agentIndicatorMap.get(session.id) ?? 'idle', session.id === activeSessionId, session.manualWorking)}
+                  leftAccent={getSessionLeftAccent(
+                    agentIndicatorMap.get(session.id) ?? 'idle',
+                    session.id === activeSessionId,
+                    session.manualWorking
+                  )}
                   workspaceName={
                     session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
                   }
@@ -1507,40 +1719,40 @@ function SessionsRailContent({
         ) : (
           <div className="flex flex-col gap-0.5">
             {agentProjectGroups.map((group) => (
-            <AgentProjectGroupItem
-              key={group.workspace.id}
-              group={group}
-              currentWorkspaceId={currentWorkspaceId}
-              collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
-              activeSessionId={activeSessionId}
-              agentIndicatorMap={agentIndicatorMap}
-              expanded={extraSessionCounts.has(group.workspace.id)}
-              extraCount={extraSessionCounts.get(group.workspace.id) ?? 0}
-              workspaceNameMap={workspaceNameMap}
-              onSelectProject={(id) => {
-                selectWorkspace(id)
-                toggleCollapsed(id)
-              }}
-              onNewSession={handleNewSessionInWorkspace}
-              onRenameWorkspace={handleRenameWorkspace}
-              onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
-              onConfigureProject={handleConfigureProject}
-              onSelectSession={handleSelectAgentSession}
-              onShowMore={showMore}
-              onCollapseExtra={collapseExtra}
-              handleRequestDelete={handleRequestDelete}
-              handleAgentRename={handleAgentRename}
-              handleTogglePinAgent={handleTogglePinAgent}
-              handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
-              handleToggleArchiveAgent={handleToggleArchiveAgent}
-              handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
-              handleRequestMove={handleRequestMove}
-            />
-          ))}
+              <AgentProjectGroupItem
+                key={group.workspace.id}
+                group={group}
+                currentWorkspaceId={currentWorkspaceId}
+                collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
+                activeSessionId={activeSessionId}
+                agentIndicatorMap={agentIndicatorMap}
+                expanded={extraSessionCounts.has(group.workspace.id)}
+                extraCount={extraSessionCounts.get(group.workspace.id) ?? 0}
+                workspaceNameMap={workspaceNameMap}
+                onSelectProject={(id) => {
+                  selectWorkspace(id)
+                  toggleCollapsed(id)
+                }}
+                onNewSession={handleNewSessionInWorkspace}
+                onRenameWorkspace={handleRenameWorkspace}
+                onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+                onConfigureProject={handleConfigureProject}
+                onSelectSession={handleSelectAgentSession}
+                onShowMore={showMore}
+                onCollapseExtra={collapseExtra}
+                handleRequestDelete={handleRequestDelete}
+                handleAgentRename={handleAgentRename}
+                handleTogglePinAgent={handleTogglePinAgent}
+                handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
+                handleToggleArchiveAgent={handleToggleArchiveAgent}
+                handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
+                handleRequestMove={handleRequestMove}
+              />
+            ))}
           </div>
-      )}
+        )}
+      </div>
     </div>
-  </div>
   )
 }
 
@@ -1942,8 +2154,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     !active &&
     (session.manualWorking || (session.pinned && !session.manualWorking))
   // 工作中 normal 态：仅图标，不显示竖条
-  const showInlineAccent =
-    !showSlideAccent && !!leftAccent && !(session.manualWorking && !active)
+  const showInlineAccent = !showSlideAccent && !!leftAccent && !(session.manualWorking && !active)
 
   return (
     <ContextMenu>
@@ -2025,7 +2236,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             )}
           </div>
           {!editing && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="absolute right-0 top-1/2 -translate-y-1/2"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownMenu onOpenChange={setMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -2175,26 +2389,34 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
     .filter((s) => ACTIVE_SESSION_STATUSES.has(getStatus(s.id)))
     .slice()
     .sort((a, b) => {
-      const pa = sessionPriority(a), pb = sessionPriority(b)
+      const pa = sessionPriority(a),
+        pb = sessionPriority(b)
       if (pa !== pb) return pa - pb
       return b.updatedAt - a.updatedAt
     })
   const activeIds = new Set(activeSessions.map((s) => s.id))
 
   const fillSessions = group.sessions
-    .filter((s) => !activeIds.has(s.id) && (s.pinned || s.manualWorking || s.updatedAt >= recentCutoff))
+    .filter(
+      (s) => !activeIds.has(s.id) && (s.pinned || s.manualWorking || s.updatedAt >= recentCutoff)
+    )
     .slice()
     .sort((a, b) => {
-      const pa = sessionPriority(a), pb = sessionPriority(b)
+      const pa = sessionPriority(a),
+        pb = sessionPriority(b)
       if (pa !== pb) return pa - pb
       return b.updatedAt - a.updatedAt
     })
-    .slice(0, PROJECT_SESSION_PREVIEW_LIMIT + group.sessions.filter((s) => s.pinned || s.manualWorking).length)
+    .slice(
+      0,
+      PROJECT_SESSION_PREVIEW_LIMIT +
+        group.sessions.filter((s) => s.pinned || s.manualWorking).length
+    )
   const fillIds = new Set(fillSessions.map((s) => s.id))
 
   const currentSession =
     activeSessionId && !activeIds.has(activeSessionId) && !fillIds.has(activeSessionId)
-      ? group.sessions.find((s) => s.id === activeSessionId) ?? null
+      ? (group.sessions.find((s) => s.id === activeSessionId) ?? null)
       : null
 
   const collapsedSessions = [
@@ -2215,10 +2437,14 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
           <div
             className={cn(
               'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag',
-              isCurrent ? 'text-foreground' : 'text-foreground/65',
+              isCurrent ? 'text-foreground' : 'text-foreground/65'
             )}
           >
-            {!collapsed ? <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" /> : <Folder size={13} className="flex-shrink-0 text-foreground/40" />}
+            {!collapsed ? (
+              <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+            ) : (
+              <Folder size={13} className="flex-shrink-0 text-foreground/40" />
+            )}
             <input
               ref={editRef}
               value={editName}
@@ -2236,10 +2462,14 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             onClick={() => onSelectProject(group.workspace.id)}
             className={cn(
               'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-colors titlebar-no-drag group-hover/project:pr-11 hover:bg-foreground/[0.025]',
-              isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88',
+              isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
             )}
           >
-            {!collapsed ? <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" /> : <Folder size={13} className="flex-shrink-0 text-foreground/40" />}
+            {!collapsed ? (
+              <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+            ) : (
+              <Folder size={13} className="flex-shrink-0 text-foreground/40" />
+            )}
             <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
               {group.workspace.name}
             </span>
@@ -2247,7 +2477,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               size={12}
               className={cn(
                 'flex-shrink-0 text-foreground/30 transition-transform duration-150',
-                collapsed ? '-rotate-90' : 'rotate-90',
+                collapsed ? '-rotate-90' : 'rotate-90'
               )}
             />
           </button>
@@ -2306,7 +2536,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             <DropdownMenuItem
               className={cn(
                 'text-xs py-1 [&>svg]:size-3.5',
-                'text-destructive focus:text-destructive',
+                'text-destructive focus:text-destructive'
               )}
               onSelect={() => onRequestDeleteWorkspace(group.workspace.id)}
             >
@@ -2332,7 +2562,11 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   useListSlideIndicator
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
                   showPinIcon={!!session.pinned}
-                  leftAccent={getSessionLeftAccent(agentIndicatorMap.get(session.id) ?? 'idle', session.id === activeSessionId, session.manualWorking)}
+                  leftAccent={getSessionLeftAccent(
+                    agentIndicatorMap.get(session.id) ?? 'idle',
+                    session.id === activeSessionId,
+                    session.manualWorking
+                  )}
                   workspaceName={
                     session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
                   }

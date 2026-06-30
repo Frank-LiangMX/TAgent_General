@@ -18,9 +18,7 @@ function runAutoArchive(): void {
       const archivedChats = autoArchiveConversations(days)
       const archivedSessions = autoArchiveAgentSessions(days)
       if (archivedChats + archivedSessions > 0) {
-        console.log(
-          `[自动归档] 已归档 ${archivedChats} 个对话, ${archivedSessions} 个 Agent 会话`
-        )
+        console.log(`[自动归档] 已归档 ${archivedChats} 个对话, ${archivedSessions} 个 Agent 会话`)
       }
     }
   } catch (error) {

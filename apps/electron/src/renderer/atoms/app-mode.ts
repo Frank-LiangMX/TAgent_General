@@ -72,12 +72,7 @@ export const pluginSidebarSectionAtom = atomWithStorage<PluginSidebarSection>(
 )
 
 /** 已安装页侧栏筛选（概览 / 整合包 / 单独安装 / MCP / Skill） */
-export type InstalledPluginNavFilter =
-  | 'overview'
-  | 'orphan'
-  | 'mcp'
-  | 'skill'
-  | `bundle:${string}`
+export type InstalledPluginNavFilter = 'overview' | 'orphan' | 'mcp' | 'skill' | `bundle:${string}`
 
 export const installedPluginNavAtom = atom<InstalledPluginNavFilter>('overview')
 
