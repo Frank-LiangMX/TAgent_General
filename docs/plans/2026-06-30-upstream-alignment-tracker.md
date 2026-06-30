@@ -74,7 +74,7 @@
 | `a2411a48` | P1 headless registry + 后台唤醒 + qwen-anthropic |
 | `a7e1c13` | P2 预览路由 + Automation Skill + prompt |
 | `f77ee38b` | P3 UI 小修 + 自动审批权限路由 + automation 工具修复 |
-| `0aeb95ba` | 文档：tracker / PROGRESS 验收状态 |
+| `f8ef76df` | 文档：tracker / PROGRESS 验收状态 |
 
 **分支状态（2026-06-30）**：P0–P3（除 custom cron / WPS / #915 / Nowledge Mem）已落地，**待用户验收后合 PR**。
 
