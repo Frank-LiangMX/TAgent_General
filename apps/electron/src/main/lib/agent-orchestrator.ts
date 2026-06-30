@@ -37,6 +37,7 @@ import {
   THINKING_SIGNATURE_ERROR_TITLE,
   normalizeContextUsageSnapshot,
   AGENT_IPC_CHANNELS,
+  supports1MContext,
 } from '@tagent/shared'
 import { app, BrowserWindow } from 'electron'
 
@@ -137,7 +138,12 @@ export interface SessionCallbacks {
   /** 发送流式完成（携带已持久化的消息列表） */
   onComplete: (
     messages?: AgentMessage[],
-    opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
+    opts?: {
+      stoppedByUser?: boolean
+      startedAt?: number
+      resultSubtype?: string
+      backgroundTasksPending?: boolean
+    }
   ) => void
   /** 发送标题更新 */
   onTitleUpdated: (title: string) => void
@@ -543,28 +549,6 @@ const DEFAULT_SESSION_TITLES = new Set(['新 Agent 会话', 'TA 会话'])
 
 /** 默认模型 ID */
 const DEFAULT_MODEL_ID = 'claude-sonnet-4-6'
-
-/**
- * 判断模型是否支持 1M context window beta（context-1m-2025-08-07）
- * 当前支持：Claude Sonnet 4 / 4.5 / 4.6、Opus 4.6 / 4.7 / 4.8、DeepSeek V4 系列、
- * 小米 MiMo V2.5 / V2.5 Pro / V2 Pro
- * 参考：https://docs.anthropic.com/en/docs/build-with-claude/context-windows
- */
-function supports1MContext(modelId: string): boolean {
-  const m = modelId.toLowerCase()
-  if (m.includes('haiku')) return false
-  // Claude: Sonnet 4+ 与 Opus 4.6+ 都支持
-  if (m.includes('claude')) {
-    if (m.includes('sonnet-4')) return true
-    if (m.includes('opus-4-6') || m.includes('opus-4-7') || m.includes('opus-4-8')) return true
-    return false
-  }
-  // DeepSeek V4 系列（deepseek-v4-pro、deepseek-v4-flash）
-  if (m.includes('deepseek-v4')) return true
-  // 小米 MiMo：v2.5 / v2.5-pro / v2-pro 为 1M（omni / flash 不支持）
-  if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return true
-  return false
-}
 
 /**
  * 聚合一次 SDK 调用涉及的所有附加目录（去重，保持插入顺序）。
@@ -1348,10 +1332,22 @@ export class AgentOrchestrator {
     }
     const completeRun = (
       messages?: AgentMessage[],
-      opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
+      opts?: {
+        stoppedByUser?: boolean
+        startedAt?: number
+        resultSubtype?: string
+        backgroundTasksPending?: boolean
+      }
     ): void => {
       releaseActiveRun()
       callbacks.onComplete(messages, opts)
+    }
+    /** 轻量完成：turn 结束但后台任务仍在飞行，保留 active slot 等待 task_notification 续轮 */
+    const idleComplete = (
+      messages?: AgentMessage[],
+      opts?: { startedAt?: number; resultSubtype?: string }
+    ): void => {
+      callbacks.onComplete(messages, { ...opts, backgroundTasksPending: true })
     }
     const failRun = (
       error: string,
@@ -2368,6 +2364,7 @@ export class AgentOrchestrator {
           // 此 timeout 仅作安全网，防止极端情况下 iterator 仍未关闭
           let drainTimeoutPromise: Promise<'drain_timeout'> | null = null
           const RESULT_DRAIN_TIMEOUT_MS = 2_000
+          let awaitingBackgroundWake = false
 
           while (true) {
             if (!pendingNext) {
@@ -2401,6 +2398,22 @@ export class AgentOrchestrator {
 
             pendingNext = null
             const msg = iterResult.value
+
+            if (awaitingBackgroundWake) {
+              const sub = msg.type === 'system' ? (msg as { subtype?: string }).subtype : undefined
+              if (
+                msg.type === 'assistant' ||
+                msg.type === 'user' ||
+                sub === 'task_started' ||
+                sub === 'task_progress'
+              ) {
+                awaitingBackgroundWake = false
+                this.eventBus.emit(sessionId, {
+                  kind: 'tagent_event',
+                  event: { type: 'run_resumed', sessionId },
+                })
+              }
+            }
 
             // SDK 权限模式可能在 canUseTool 前直接批准工具（如 bypassPermissions）。
             // 因此计划阶段状态要从实际 tool_use 流里同步，不能只依赖权限回调。
@@ -2598,16 +2611,24 @@ export class AgentOrchestrator {
               // 等待队列或后续消息继续 drive Query，此处跳过 drain 超时以免误关闭事件循环。
               // 完整白名单见 adapters/claude-agent-adapter.ts 的 CONTINUABLE_TERMINAL_REASONS。
               const resultTerminalReason = (msg as { terminal_reason?: string }).terminal_reason
-              const keepChannelOpen = shouldKeepChannelOpen(resultTerminalReason)
-              // 分类打点：跟踪线上哪种 terminal_reason 最常见，配合 deferred_tool_use 回填决策
+              const keptOpenForTasks =
+                (msg as Record<string, unknown>)._keepChannelOpenForTasks === true
+              const keepChannelOpen = shouldKeepChannelOpen(resultTerminalReason) || keptOpenForTasks
               const hasDeferredTool =
                 (msg as { deferred_tool_use?: unknown }).deferred_tool_use != null
               console.log(
                 `[Agent 编排] result 到达: sessionId=${sessionId}, subtype=${capturedResultSubtype ?? 'unknown'}, ` +
                   `terminal_reason=${resultTerminalReason ?? 'undefined'}, keepChannelOpen=${keepChannelOpen}` +
+                  (keptOpenForTasks ? ', keptOpenForTasks=true' : '') +
                   (hasDeferredTool ? ', hasDeferredTool=true' : '')
               )
-              if (!keepChannelOpen && !drainTimeoutPromise) {
+              if (keptOpenForTasks) {
+                awaitingBackgroundWake = true
+                idleComplete(getAgentSessionMessages(sessionId), {
+                  startedAt: streamStartedAt,
+                  resultSubtype: capturedResultSubtype,
+                })
+              } else if (!keepChannelOpen && !drainTimeoutPromise) {
                 // 启动 drain 超时安全网：adapter 层 channel.close() 应让 iterator 自然关闭，
                 // 此处仅在极端情况下（如 SDK 版本不兼容）保护事件循环不无限挂起
                 drainTimeoutPromise = new Promise((resolve) =>

@@ -637,6 +637,7 @@ export type AgentEvent =
       usage?: TaskUsage
       turnId?: string
     }
+  | { type: 'run_resumed'; sessionId: string }
   | { type: 'thinking_tokens'; estimatedTokens: number; estimatedTokensDelta: number }
   | {
       type: 'shell_backgrounded'
@@ -722,6 +723,7 @@ export type TAgentEvent =
       modelId?: string
       startedAt: number
     }
+  | { type: 'run_resumed'; sessionId: string }
 
 /** 外部入口触发 Agent 运行的来源 */
 export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
@@ -1165,6 +1167,8 @@ export interface AgentStreamCompletePayload {
   startedAt?: number
   /** SDK result 消息的 subtype（success / error_max_turns / error_max_budget_usd / error_during_execution 等） */
   resultSubtype?: string
+  /** 本轮主体结束但仍有后台任务在飞行：UI 进入空闲可输入态，等待 task_notification 自动续轮 */
+  backgroundTasksPending?: boolean
 }
 
 // ===== 文件浏览器 =====

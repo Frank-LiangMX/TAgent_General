@@ -594,6 +594,9 @@ const forceKillTimers = new Map<string, NodeJS.Timeout>()
 /** abort 后等待 SDK 自身兜底（2s+5s）再检测并强杀的延时 */
 const FORCE_KILL_GRACE_MS = 10_000
 
+/** 后台任务挂起时无活动的空闲上限（1 小时），与 SDK ScheduleWakeup 上界对齐 */
+const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
+
 async function cacheContextUsageFromQuery(sessionId: string, query: SDKQuery): Promise<void> {
   if (typeof query.getContextUsage !== 'function') return
   try {
@@ -743,6 +746,17 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     })
     queryReadyPromises.set(options.sessionId, readyPromise)
 
+    // 后台任务等待态：本轮结束时若仍有 background_tasks/session_crons 在飞行，
+    // 保持消息通道开启，让 SDK 子进程存活并在任务完成时 yield task_notification。
+    let backgroundTasksPending = false
+    let idleTimer: NodeJS.Timeout | null = null
+    const clearIdleTimer = (): void => {
+      if (idleTimer) {
+        clearTimeout(idleTimer)
+        idleTimer = null
+      }
+    }
+
     try {
       // 动态导入 SDK
       const sdk = await import('@anthropic-ai/claude-agent-sdk')
@@ -804,11 +818,27 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           options.additionalDirectories.length > 0 && {
             additionalDirectories: options.additionalDirectories,
           }),
-        // PostToolUse JS 回调式 hooks（auto-typecheck 等）
-        ...(options.hooks && { hooks: options.hooks }),
         // 强制顺序执行工具，防止并发 tool_use 导致 400 错误
-        // 根因：多个 tool_use 并发时若结果未完整批量提交会触发 invalid_request_error
         toolUseConcurrency: 1,
+
+        // Stop hook 观察者：读取本轮结束时仍在飞行的后台任务/定时任务集合（对齐 Proma #745）
+        hooks: {
+          ...(options.hooks ?? {}),
+          Stop: [
+            {
+              hooks: [
+                async (input: unknown) => {
+                  const bt = (input as { background_tasks?: unknown[] }).background_tasks
+                  const crons = (input as { session_crons?: unknown[] }).session_crons
+                  backgroundTasksPending =
+                    (Array.isArray(bt) && bt.length > 0) ||
+                    (Array.isArray(crons) && crons.length > 0)
+                  return { continue: true }
+                },
+              ],
+            },
+          ],
+        },
 
         // 自定义 spawn：记录 PID 以供 abort/dispose 做 force-kill 兜底（Issue #357）
         // 注意：一旦提供 spawnClaudeCodeProcess，SDK 会完全绕过 spawnLocalProcess，
@@ -872,6 +902,17 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       // 收到 result 后调用 channel.close() 让 SDK 自然关闭 stdin 并退出子进程。
       const channel = createMessageChannel(controller.signal)
 
+      const armIdleTimer = (): void => {
+        clearIdleTimer()
+        idleTimer = setTimeout(() => {
+          console.warn(
+            `[Claude 适配器] 后台任务空闲超时 (${BACKGROUND_IDLE_TIMEOUT_MS}ms)，释放子进程: ${options.sessionId}`,
+          )
+          channel.close()
+        }, BACKGROUND_IDLE_TIMEOUT_MS)
+        idleTimer.unref?.()
+      }
+
       // 将初始 prompt 入队
       channel.enqueue({
         type: 'user' as const,
@@ -922,6 +963,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           }
         }
 
+        if (msg.type === 'system' && idleTimer != null) {
+          const sub = msg.subtype
+          if (sub === 'task_started' || sub === 'task_progress' || sub === 'task_notification') {
+            armIdleTimer()
+          }
+        }
+
         // 捕获 result 中的 contextWindow
         if (msg.type === 'result') {
           const resultMsg = msg as {
@@ -932,20 +980,20 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           if (contextWindow) {
             options.onContextWindow?.(contextWindow)
           }
-          // Query 仍存活时抓取 /context 分项快照，供对话结束后 Popover 展示
           const liveQuery = activeQueries.get(options.sessionId)
           if (liveQuery) {
             void cacheContextUsageFromQuery(options.sessionId, liveQuery)
           }
-          // 被软中断 / 延迟工具 / hook 暂停等场景产生的 result：不关闭通道，
-          // 让 SDK 继续读取通道中已排队（或后续注入）的消息并开启新一轮 turn。
-          // 完整白名单见 CONTINUABLE_TERMINAL_REASONS。
-          //
-          // 注意：keep-open 场景本身就是"等待用户决策"（权限审批、Exit Plan、AskUser 等），
-          // 不在此处加闲置超时——用户离开再回来继续交互是合法的，强行超时会破坏体验。
-          // 若用户关闭 Tab，TabBar/GlobalShortcuts 会主动调 stopAgent → abort() 终止子进程。
-          if (!shouldKeepChannelOpen(resultMsg.terminal_reason)) {
-            // result 表示本轮真正结束：先关闭消息通道，yield 后 break 触发 iterator.return() → cleanup()
+          const keepForReason = shouldKeepChannelOpen(resultMsg.terminal_reason)
+          const keepForTasks = backgroundTasksPending
+
+          if (keepForTasks && !keepForReason) {
+            ;(msg as Record<string, unknown>)._keepChannelOpenForTasks = true
+            armIdleTimer()
+          } else if (keepForReason) {
+            if (keepForTasks) armIdleTimer()
+          } else {
+            clearIdleTimer()
             channel.close()
             terminateAfterTerminalResult = true
           }
@@ -956,6 +1004,7 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         if (terminateAfterTerminalResult) break
       }
     } finally {
+      clearIdleTimer()
       // 注意：pidMap 的清理由 child.on('exit') 触发，不在这里清除
       // 原因：finally 可能先于子进程真正退出执行，此时仍需保留 PID 以便 abort/dispose 兜底
       activeControllers.delete(options.sessionId)

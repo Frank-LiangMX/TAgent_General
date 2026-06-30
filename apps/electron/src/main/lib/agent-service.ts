@@ -22,6 +22,7 @@ import {
 } from './adapters/claude-agent-adapter'
 import { AgentEventBus } from './agent-event-bus'
 import { AgentOrchestrator } from './agent-orchestrator'
+import { setAgentStopper, setHeadlessAgentRunner } from './agent-headless-runner-registry'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
 
@@ -157,6 +158,7 @@ export async function runAgent(input: AgentSendInput, webContents: WebContents):
             stoppedByUser: opts?.stoppedByUser ?? false,
             startedAt: opts?.startedAt,
             resultSubtype: opts?.resultSubtype,
+            backgroundTasksPending: opts?.backgroundTasksPending,
           })
         }
       },
@@ -242,6 +244,7 @@ export async function runAgentHeadless(
             stoppedByUser: opts?.stoppedByUser ?? false,
             startedAt: opts?.startedAt,
             resultSubtype: opts?.resultSubtype,
+            backgroundTasksPending: opts?.backgroundTasksPending,
           })
         }
       },
@@ -312,6 +315,9 @@ export async function generateAgentTitle(input: AgentGenerateTitleInput): Promis
 export function stopAgent(sessionId: string): void {
   orchestrator.stop(sessionId)
 }
+
+setHeadlessAgentRunner(runAgentHeadless)
+setAgentStopper(stopAgent)
 
 /** 获取指定会话的 Context 分项占用 */
 export async function getAgentContextUsage(

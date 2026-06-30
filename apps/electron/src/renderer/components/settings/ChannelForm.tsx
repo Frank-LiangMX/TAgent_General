@@ -87,6 +87,7 @@ const PROVIDER_OPTIONS: ProviderType[] = [
   'minimax',
   'doubao',
   'qwen',
+  'qwen-anthropic',
   'xiaomi',
   'xiaomi-token-plan',
 ]
@@ -112,6 +113,7 @@ const PROVIDER_CHAT_PATHS: Record<ProviderType, string> = {
   minimax: '/v1/messages',
   doubao: '/chat/completions',
   qwen: '/chat/completions',
+  'qwen-anthropic': '/v1/messages',
   xiaomi: '/v1/messages',
   'xiaomi-token-plan': '/v1/messages',
   'kscc-internal': '/v1/messages',
@@ -129,6 +131,7 @@ const ANTHROPIC_PROTOCOL_PROVIDERS: ReadonlySet<ProviderType> = new Set<Provider
   'minimax',
   'xiaomi',
   'xiaomi-token-plan',
+  'qwen-anthropic',
 ])
 
 /**
@@ -337,6 +340,11 @@ export function ChannelForm({
           { id: 'mimo-v2.5', name: 'MiMo V2.5', enabled: true },
           { id: 'mimo-v2-omni', name: 'MiMo V2 Omni', enabled: true },
           { id: 'mimo-v2-flash', name: 'MiMo V2 Flash', enabled: true },
+        ])
+      } else if (p === 'qwen-anthropic') {
+        setModels([
+          { id: 'qwen3.7-max', name: 'Qwen3.7 Max', enabled: true },
+          { id: 'qwen3.7-plus', name: 'Qwen3.7 Plus', enabled: true },
         ])
       }
     }

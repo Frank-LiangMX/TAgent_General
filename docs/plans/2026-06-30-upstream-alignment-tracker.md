@@ -34,9 +34,9 @@
 | --- | --- | --- | --- |
 | P1-1 | Bridge 长连接自愈 | ✅ | `bridge-registry.ts` + index 注册 |
 | P1-2 | `automation-agent-tools.ts` | ✅ | 6 个 MCP 工具 + orchestrator 注入 |
-| P1-3 | 协作子会话 v1（collaboration + headless runner） | ⏳ | glm-5.2；**长跑终态见** [`task-kanban-orchestration-design.md`](2026-06-30-task-kanban-orchestration-design.md) **（暂缓 Epic）** |
-| P1-4 | adapter Stop hook + 后台任务唤醒 | ⏳ | glm-5.2 |
-| P1-5 | Issue A 1M 上下文 + `qwen-anthropic` | ⏳ | glm-5.1 |
+| P1-3 | headless-runner-registry（Collaboration 前置） | ✅ | `agent-headless-runner-registry.ts` + agent-service |
+| P1-4 | adapter Stop hook + 后台任务唤醒 idle Agent | ✅ | adapter + orchestrator + renderer |
+| P1-5 | Issue A 1M 上下文 + `qwen-anthropic` | ✅ | shared 单一事实源 + qwen-anthropic 渠道 |
 
 ---
 
@@ -67,6 +67,7 @@
 
 | Commit | 内容 |
 | --- | --- |
+| `3fd924f1` | 文档：Kanban 编排 Epic 暂缓 |
 | `9d13366d` | P1 Bridge 自愈 + automation agent MCP 工具 |
 | `7c8c4f2d` | P0 稳定性（#913/#910/#903 + SDK 0.3.185） |
 | `d2bb116c` | 文档：上游 v0.13.4 扫描校准 |

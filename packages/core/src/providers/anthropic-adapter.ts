@@ -287,7 +287,7 @@ export class AnthropicAdapter implements ProviderAdapter {
       base['User-Agent'] = getTAgentUserAgent()
       return base
     }
-    if (this.providerType === 'minimax') {
+    if (this.providerType === 'minimax' || this.providerType === 'qwen-anthropic') {
       base['Authorization'] = `Bearer ${apiKey}`
       return base
     }

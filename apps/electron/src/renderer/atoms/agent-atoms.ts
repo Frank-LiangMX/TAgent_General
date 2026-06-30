@@ -105,6 +105,8 @@ export interface AgentStreamState {
   compactInFlight?: boolean
   /** 流式开始时间戳（用于思考计时持久化） */
   startedAt?: number
+  /** 后台任务等待态：turn 已轻量完成但通道仍开着，等待 task_notification 续轮 */
+  backgroundWaiting?: boolean
   /** 重试状态（扩展版） */
   retrying?: {
     /** 当前第几次尝试 */
@@ -726,6 +728,9 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
 
     case 'shell_killed':
       return prev
+
+    case 'run_resumed':
+      return { ...prev, running: true, backgroundWaiting: false }
 
     case 'task_notification':
       return prev
