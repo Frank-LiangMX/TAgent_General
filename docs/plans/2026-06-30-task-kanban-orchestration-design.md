@@ -1,10 +1,10 @@
 # TAgent 任务看板编排（Kanban Orchestration）系统设计
 
-> **状态**：Draft v1.0 — **暂缓实施**（等上游对齐完成后再开发）  
-> **日期**：2026-06-30  
-> **决策拍板**：2026-06-30 — 采用 **Hermes 式 Kanban + 调度器** 作为长任务多 Agent 的主线，而非仅移植 Proma 轻量 Collaboration  
-> **前置条件**：`feature/upstream-v0.13.4-alignment` 全部验收并合入 `main` 后再开新分支  
-> **建议分支**：`feature/task-kanban-orchestration`  
+> **状态**：Draft v1.1 — **Phase A 探索中**（上游 v0.13.4 已合 main，PR #16；探索分支 `feature/kanban-exploration`）
+> **日期**：2026-06-30
+> **决策拍板**：2026-06-30 — 采用 **Hermes 式 Kanban + 调度器** 作为长任务多 Agent 的主线，而非仅移植 Proma 轻量 Collaboration
+> **前置条件**：~~`feature/upstream-v0.13.4-alignment` 全部验收并合入 `main` 后再开新分支~~ ✅ 已合 main（PR #16）；Phase A 探索在 `feature/kanban-exploration` 进行
+> **建议分支**：`feature/task-kanban-orchestration`（Phase A 通过后正式开分支）
 > **关联文档**：  
 > - [`2026-06-24-collaboration-design.md`](2026-06-24-collaboration-design.md) — Proma 路线（执行层参考，非最终架构）  
 > - [`2026-06-24-automation-design.md`](2026-06-24-automation-design.md) — 定时任务（与看板互补）  
@@ -22,14 +22,16 @@ TAgent 的**长任务多 Agent 编排**能力：用户从**桌面 / 微信 / WPS
 
 ### 0.2 现在能不能做
 
-**不能。** 必须先完成上游对齐（见 [`2026-06-30-upstream-alignment-tracker.md`](2026-06-30-upstream-alignment-tracker.md)）：
+**可以开始 Phase A 探索。** 上游 v0.13.4 对齐已合入 `main`（PR #16，`feature/upstream-v0.13.4-alignment`），探索工作在独立分支 `feature/kanban-exploration` 上进行。Phase A 通过后再开正式分支 `feature/task-kanban-orchestration`。
 
 | 上游项 | 与本项目关系 |
 | --- | --- |
 | P1-3 Proma Collaboration 移植 | 本设计**吸收其执行层**（子会话 + MCP），但**不以 Proma 轻量方案为终态** |
-| P1-4 headless runner + Stop hook | **硬依赖** — 看板工人必须能 headless 跑子会话 |
+| P1-4 headless runner + Stop hook | **已就绪** — `agent-headless-runner-registry.ts` + `runAgentHeadless` 已合 main，看板工人直接复用 |
 | P1-2 automation MCP | 已有，看板长跑任务可复用 bypass 权限思路 |
 | Bridge 自愈 P1-1 | 已有，IM 长任务通知依赖 Bridge 稳定 |
+
+> 探索期具体验证范围、风险矩阵、E2E 清单见 [`2026-06-30-kanban-exploration-report.md`](2026-06-30-kanban-exploration-report.md)。
 
 ### 0.3 与 Proma / Hermes 的关系（一句话）
 
@@ -42,8 +44,9 @@ TAgent 的**长任务多 Agent 编排**能力：用户从**桌面 / 微信 / WPS
 ### 0.4 开新会话时第一句话建议
 
 ```
-请先读 docs/plans/2026-06-30-task-kanban-orchestration-design.md §0 和 §9 里程碑，
-确认上游对齐已完成，然后从 Phase A 开始实现。
+请先读 docs/plans/2026-06-30-kanban-exploration-report.md 了解 Phase A 探索范围与验收清单，
+再读 docs/plans/2026-06-30-task-kanban-orchestration-design.md §0 和 §9 里程碑，
+确认上游 v0.13.4 已合 main（PR #16），然后从 Phase A 开始实现。
 ```
 
 ---
@@ -490,4 +493,4 @@ async function kanbanDispatcherTick() {
 | Phase 完成 | 更新 §7 表格状态 + PROGRESS.md |
 | 设计变更 | 递增版本号，禁止 silent 改 scope |
 
-**最后更新**：2026-06-30 — 初稿，暂缓至上游对齐后实施。
+**最后更新**：2026-06-30 — Phase A 探索期，上游 v0.13.4 已合 main（PR #16）；探索范围与验收清单见 [`2026-06-30-kanban-exploration-report.md`](2026-06-30-kanban-exploration-report.md)。
