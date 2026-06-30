@@ -4,11 +4,13 @@
  * 复用内联预览的 PreviewFile 状态和 DiffTabContent 编辑能力，但不参与 Tab 持久化。
  */
 
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
+import { PanelRight } from 'lucide-react'
 import * as React from 'react'
 
 import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
+import { tearOffPreviewToSplit } from './preview-opener'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 import { agentSessionPathMapAtom } from '@/atoms/agent-atoms'
@@ -19,9 +21,34 @@ import {
   getPreviewTabTitle,
   tabsAtom,
 } from '@/atoms/tab-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface PreviewTabContentProps {
   sessionId: string
+}
+
+function TearOffButton({ sessionId }: { sessionId: string }): React.ReactElement {
+  const store = useStore()
+  const onClick = React.useCallback(() => {
+    tearOffPreviewToSplit(store, createPreviewTabId(sessionId))
+  }, [store, sessionId])
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex items-center justify-center size-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+          aria-label="切换为侧边分屏"
+        >
+          <PanelRight className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p>切换为侧边分屏（保留会话 Tab，文件预览移到右侧）</p>
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 function getFallbackDirPath(filePath: string, sessionPath: string): string {
@@ -72,6 +99,7 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
   const toolbarActions = (
     <>
       <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
+      <TearOffButton sessionId={sessionId} />
     </>
   )
 

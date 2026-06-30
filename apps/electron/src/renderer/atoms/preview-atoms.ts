@@ -39,6 +39,19 @@ export const previewFileMapAtom = atom<Map<string, PreviewFile | null>>(new Map(
 /** 分栏比例（对话占比），持久化 */
 export const previewSplitRatioAtom = atomWithStorage<number>('tagent-preview-split-ratio', 0.5)
 
+/**
+ * 预览默认展开方式，持久化。
+ * - 'tab'   = 以预览标签页形式打开（默认）
+ * - 'split' = 在主区域右侧分屏展开（可同时看到 Agent 输出与文件内容）
+ */
+export type PreviewModePreference = 'tab' | 'split'
+export const previewModePreferenceAtom = atomWithStorage<PreviewModePreference>(
+  'tagent-preview-mode-pref',
+  'tab',
+  undefined,
+  { getOnInit: true }
+)
+
 /** 自动预览开关，持久化（默认关闭以减轻设备性能负担，老用户保留已设置的偏好） */
 export const autoPreviewEnabledAtom = atomWithStorage<boolean>('tagent-auto-preview-enabled', false)
 

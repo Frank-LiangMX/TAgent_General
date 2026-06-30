@@ -10,8 +10,8 @@ import { useStore } from 'jotai'
 import * as React from 'react'
 
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import { previewFileMapAtom, previewPanelOpenMapAtom } from '@/atoms/preview-atoms'
-import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import type { PreviewFile } from '@/atoms/preview-atoms'
+import { openPreview } from '@/components/diff/preview-opener'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -212,27 +212,11 @@ export function FilePathChip({
     const sessionId = store.get(currentAgentSessionIdAtom)
     if (!sessionId) return
 
-    store.set(previewFileMapAtom, (prev) => {
-      const m = new Map(prev)
-      m.set(sessionId, {
-        filePath: cleanPath,
-        previewOnly: true,
-        basePaths: candidateBases.length > 0 ? candidateBases : undefined,
-      })
-      return m
+    openPreview(store, sessionId, {
+      filePath: cleanPath,
+      previewOnly: true,
+      basePaths: candidateBases.length > 0 ? candidateBases : undefined,
     })
-    store.set(previewPanelOpenMapAtom, (prev) => {
-      const m = new Map(prev)
-      m.set(sessionId, false)
-      return m
-    })
-    const result = openTab(store.get(tabsAtom), {
-      type: 'preview',
-      sessionId,
-      title: getPreviewTabTitle(cleanPath),
-    })
-    store.set(tabsAtom, result.tabs)
-    store.set(activeTabIdAtom, result.activeTabId)
   }, [store, cleanPath, candidateBases])
 
   return (

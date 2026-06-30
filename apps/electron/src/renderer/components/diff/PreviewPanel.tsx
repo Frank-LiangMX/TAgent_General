@@ -5,8 +5,8 @@
  * Agent 修改文件时自动切换到最新修改的文件。
  */
 
-import { useAtomValue, useSetAtom } from 'jotai'
-import { Maximize2, X } from 'lucide-react'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { Maximize2, PanelRight, X } from 'lucide-react'
 import * as React from 'react'
 
 import { DefaultAppOpenButton } from './DefaultAppOpenButton'
@@ -14,7 +14,11 @@ import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 import { agentSessionPathMapAtom, currentSessionSidePanelOpenAtom } from '@/atoms/agent-atoms'
-import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
+import {
+  previewPanelOpenMapAtom,
+  previewFileMapAtom,
+  previewModePreferenceAtom,
+} from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
@@ -34,6 +38,7 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
   const setTabs = useSetAtom(tabsAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const isSidePanelOpen = useAtomValue(currentSessionSidePanelOpenAtom)
+  const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
 
   const currentFile = fileMap.get(sessionId) ?? null
 
@@ -84,6 +89,36 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
           <TooltipTrigger asChild>
             <button
               type="button"
+              onClick={() => setPreviewModePref((p) => (p === 'split' ? 'tab' : 'split'))}
+              className={cn(
+                'flex items-center justify-center size-6 shrink-0 rounded transition-colors',
+                previewModePref === 'split'
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+              aria-label={
+                previewModePref === 'split'
+                  ? '默认展开方式：侧边分屏，点击改为标签页'
+                  : '默认展开方式：标签页，点击改为侧边分屏'
+              }
+            >
+              <PanelRight className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>
+              {previewModePref === 'split'
+                ? '默认展开方式：侧边分屏 · 点击改为「标签页」（仅影响下次打开）'
+                : '默认展开方式：标签页 · 点击改为「侧边分屏」（仅影响下次打开）'}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {currentFile && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
               onClick={handleOpenPreviewTab}
               className="flex items-center justify-center size-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
               aria-label="作为标签页打开预览"
@@ -118,7 +153,6 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-content-area titlebar-no-drag">
-      {/* 顶部栏：文件名 + 预览操作 */}
       <div
         className={cn(
           'flex-shrink-0 border-b border-border/30 titlebar-no-drag',
@@ -145,7 +179,6 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
         )}
       </div>
 
-      {/* 内容区 */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {currentFile ? (
           <DiffTabContent
