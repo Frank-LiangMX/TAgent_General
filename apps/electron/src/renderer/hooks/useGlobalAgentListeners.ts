@@ -1400,6 +1400,12 @@ export function useGlobalAgentListeners(): void {
         .catch(console.error)
     })
 
+    // ===== 5.7 Context 分项后台刷新完成通知（stale-while-revalidate） =====
+    // 后台缓存已更新 → bump nonce → useContextUsageBreakdown 重新获取（命中刚更新的缓存）
+    const cleanupContextUsageUpdated = window.electronAPI.onContextUsageUpdated(() => {
+      store.set(contextUsageRefreshNonceAtom, (prev) => prev + 1)
+    })
+
     // 定期清理 60s 前的「最近修改」标记，避免 atom 无限增长
     const pruneTimer = setInterval(() => {
       const cutoff = Date.now() - RECENTLY_MODIFIED_TTL_MS
@@ -1493,6 +1499,7 @@ export function useGlobalAgentListeners(): void {
       cleanupNudge()
       cleanupTAIntent()
       cleanupBtw()
+      cleanupContextUsageUpdated()
       clearInterval(pruneTimer)
       window.removeEventListener('focus', onWindowFocus)
     }

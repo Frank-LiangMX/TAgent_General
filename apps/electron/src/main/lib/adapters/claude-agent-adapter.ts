@@ -1028,6 +1028,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
    * 获取当前活跃 Query 的 Context 分项占用（与 Claude Code /context 同源）
    */
   async getContextUsage(sessionId: string): Promise<ContextUsageSnapshot> {
+    // stale-while-revalidate: 优先返回缓存（可能略旧），由 orchestrator 后台刷新 + IPC 通知更新
+    const cached = getContextUsageCache(sessionId)
+    if (cached) {
+      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
+    }
+
+    // 无缓存才同步调 SDK（首次打开 / 会话刚开始）
     const query = activeQueries.get(sessionId)
     if (query) {
       if (typeof query.getContextUsage !== 'function') {
@@ -1048,15 +1055,30 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       }
     }
 
-    const cached = getContextUsageCache(sessionId)
-    if (cached) {
-      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
-    }
-
     throw new ContextUsageFetchError(
       'NO_ACTIVE_QUERY',
       '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
     )
+  }
+
+  /**
+   * 后台刷新 Context 分项缓存（stale-while-revalidate 的 revalidate 部分）。
+   * 由 orchestrator 在 getContextUsage 返回缓存后 fire-and-forget 调用，
+   * 刷新完成后 orchestrator 通过 IPC 通知渲染进程重新获取（命中刚更新的缓存）。
+   *
+   * @returns 是否成功刷新（true = 缓存已更新，需通知渲染进程）
+   */
+  async refreshContextUsage(sessionId: string): Promise<boolean> {
+    const query = activeQueries.get(sessionId)
+    if (!query || typeof query.getContextUsage !== 'function') return false
+    try {
+      const response = await query.getContextUsage()
+      setContextUsageCache(sessionId, mapSdkContextUsageResponse(response))
+      return true
+    } catch (error) {
+      console.warn(`[Claude 适配器] 后台刷新 Context 分项失败: sessionId=${sessionId}`, error)
+      return false
+    }
   }
 }
 

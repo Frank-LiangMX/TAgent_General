@@ -1587,6 +1587,8 @@ export const AGENT_IPC_CHANNELS = {
   GET_CONTEXT_USAGE: 'agent:get-context-usage',
   /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
   GET_CONTEXT_USAGE_CACHED: 'agent:get-context-usage-cached',
+  /** 后台刷新 Context 分项缓存完成后，主进程 → 渲染进程的更新通知（stale-while-revalidate） */
+  CONTEXT_USAGE_UPDATED: 'agent:context-usage-updated',
   // 消息发送
   /** 发送消息（触发 Agent 流式响应） */
   SEND_MESSAGE: 'agent:send-message',

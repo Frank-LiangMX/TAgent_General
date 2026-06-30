@@ -36,8 +36,9 @@ import {
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
   normalizeContextUsageSnapshot,
+  AGENT_IPC_CHANNELS,
 } from '@tagent/shared'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 
 import {
   isPromptTooLongError,
@@ -3196,7 +3197,7 @@ export class AgentOrchestrator {
     return uuid
   }
 
-  /** 获取当前会话 Context 分项占用 */
+  /** 获取当前会话 Context 分项占用（stale-while-revalidate：有缓存立即返回，后台刷新 + IPC 通知更新） */
   async getContextUsage(
     sessionId: string
   ): Promise<import('@tagent/shared').GetContextUsageResponse> {
@@ -3209,6 +3210,8 @@ export class AgentOrchestrator {
     }
     try {
       const snapshot = await this.adapter.getContextUsage(sessionId)
+      // 返回缓存后，后台刷新并通知渲染进程重新获取（命中刚更新的缓存）
+      this.refreshContextUsageInBackground(sessionId)
       return { ok: true, snapshot }
     } catch (error) {
       const { toGetContextUsageError } = await import('./context-usage-mapper')
@@ -3216,6 +3219,36 @@ export class AgentOrchestrator {
       console.warn(`[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`)
       return { ok: false, code: mapped.code, message: mapped.message }
     }
+  }
+
+  /** 后台刷新中的会话，防止并发刷新 Context 分项 */
+  private readonly contextUsageRefreshing = new Set<string>()
+
+  /**
+   * 后台刷新 Context 分项缓存，完成后通过 IPC 通知渲染进程重新获取。
+   * fire-and-forget，不阻塞 getContextUsage 返回。同会话并发刷新只跑一个。
+   */
+  private refreshContextUsageInBackground(sessionId: string): void {
+    if (!this.adapter.refreshContextUsage) return
+    if (this.contextUsageRefreshing.has(sessionId)) return
+
+    this.contextUsageRefreshing.add(sessionId)
+    void this.adapter
+      .refreshContextUsage(sessionId)
+      .then((updated) => {
+        if (!updated) return
+        try {
+          const win = BrowserWindow.getAllWindows()[0]
+          if (win && !win.isDestroyed()) {
+            win.webContents.send(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, { sessionId })
+          }
+        } catch (err) {
+          console.warn(`[Agent 编排] 推送 Context 分项更新通知失败: sessionId=${sessionId}`, err)
+        }
+      })
+      .finally(() => {
+        this.contextUsageRefreshing.delete(sessionId)
+      })
   }
 
   /** 读取会话 Context 分项缓存（不调用 SDK，用于面板优先展示） */
