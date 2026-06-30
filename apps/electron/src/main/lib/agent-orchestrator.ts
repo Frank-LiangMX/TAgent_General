@@ -2214,12 +2214,12 @@ export class AgentOrchestrator {
           console.error(`[Agent SDK stderr] ${data}`)
         },
         onSessionId: (sdkSessionId: string) => {
+          // 仅在 session_id 真正变化时才持久化（对齐 Proma #910）
+          const isNewSessionId = sdkSessionId !== capturedSdkSessionId
           capturedSdkSessionId = sdkSessionId
-          if (sdkSessionId !== existingSdkSessionId) {
+          if (isNewSessionId) {
             try {
               updateAgentSessionMeta(sessionId, { sdkSessionId })
-              // 持久化成功后同步已保存指针，避免后续相同 session_id 重复触发同步写
-              existingSdkSessionId = sdkSessionId
               console.log(`[Agent 编排] 已保存 SDK session_id: ${sdkSessionId}`)
             } catch (err) {
               console.error(`[Agent 编排] 保存 SDK session_id 失败:`, err)
@@ -2877,21 +2877,10 @@ export class AgentOrchestrator {
             startedAt: streamStartedAt,
           })
 
-          // 根据错误类型决定是否保留 sdkSessionId
-          // 网络瞬时错误保留 session：resume 时可复用 JSONL 指针恢复，避免 ~50K token 全量重传
-          const isTransientNetwork = isTransientNetworkError(rawErrorMessage, stderrOutput)
-          const shouldClearSession =
-            !isTransientNetwork && (!apiError || apiError.statusCode >= 500)
-          if (existingSdkSessionId && shouldClearSession) {
-            try {
-              updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
-              console.log(`[Agent 编排] 已清除失效的 sdkSessionId`)
-            } catch {
-              /* 忽略 */
-            }
-          } else if (existingSdkSessionId && !shouldClearSession) {
+          // 保留 sdkSessionId，确保下一轮能继续 resume（对齐 Proma #903）
+          if (existingSdkSessionId) {
             console.log(
-              `[Agent 编排] 保留 sdkSessionId (网络错误=${isTransientNetwork}, API 错误 ${apiError?.statusCode})`
+              `[Agent 编排] 保留 sdkSessionId 以便下一轮 resume（错误未表明会话失效）`
             )
           }
 

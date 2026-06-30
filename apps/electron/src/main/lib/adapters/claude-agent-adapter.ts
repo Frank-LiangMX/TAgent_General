@@ -757,7 +757,11 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         allowDangerouslySkipPermissions: options.allowDangerouslySkipPermissions,
         // 关键：false 获取完整消息，与 v2 stream() 返回格式一致
         includePartialMessages: false,
-        promptSuggestions: true,
+        // 关闭 SDK 自动 prompt_suggestion：它在每轮 result 之后才到达，是旧版「收到 result 后
+        // 仍需等 2s 尾部消息」约束的根源。关闭后 result 即本轮最后一条消息，adapter 可在 result
+        // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行该计划」建议由
+        // orchestrator 自行注入，不依赖此选项，故功能不受影响。（对齐 Proma #913）
+        promptSuggestions: false,
         cwd: options.cwd,
         abortController: controller,
         env: options.env,
@@ -895,6 +899,12 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         queryReadyResolvers.delete(options.sessionId)
       }
 
+      // 终止标记：收到非 keep-open 的 terminal result 后置 true，yield 该 result 后主动 break。
+      // SDK 0.3.185 把会话终止逻辑挪进了 cleanup()，而 cleanup() 只在 iterator.return() 被调用时
+      // 触发（旧版「关 stdin → 子进程 EOF 退出 → 输出流自然 done」的链路已废弃）。for-await 的
+      // break 会自动对 SDK iterator 调 .return() → cleanup()，避免 orchestrator 依赖 2s drain timeout。
+      let terminateAfterTerminalResult = false
+
       for await (const sdkMessage of queryIterator) {
         if (controller.signal.aborted) break
 
@@ -935,14 +945,15 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           // 不在此处加闲置超时——用户离开再回来继续交互是合法的，强行超时会破坏体验。
           // 若用户关闭 Tab，TabBar/GlobalShortcuts 会主动调 stopAgent → abort() 终止子进程。
           if (!shouldKeepChannelOpen(resultMsg.terminal_reason)) {
-            // result 表示本轮真正结束，关闭消息通道让 SDK 自然调用 endInput() 关闭 stdin。
-            // 子进程检测到 stdin EOF 后会退出，readMessages() 结束，iterator 返回 done:true。
-            // 注意：prompt_suggestion 等尾部消息仍会通过 stdout 正常传递，不受影响。
+            // result 表示本轮真正结束：先关闭消息通道，yield 后 break 触发 iterator.return() → cleanup()
             channel.close()
+            terminateAfterTerminalResult = true
           }
         }
 
         yield sdkMessage as SDKMessage
+
+        if (terminateAfterTerminalResult) break
       }
     } finally {
       // 注意：pidMap 的清理由 child.on('exit') 触发，不在这里清除
