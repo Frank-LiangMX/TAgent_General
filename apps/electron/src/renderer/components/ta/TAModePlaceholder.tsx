@@ -9,7 +9,7 @@
  * - 项目配置
  */
 
-import { Palette, Database, ClipboardCheck, GitBranch, Settings } from 'lucide-react'
+import { Boxes, Database, ClipboardCheck, GitBranch, Settings } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -47,7 +47,7 @@ export function TAModePlaceholder(): React.ReactElement {
       {/* Logo 和标题 */}
       <div className="flex items-center gap-3 mb-6">
         <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Palette className="size-6 text-primary" />
+          <Boxes className="size-6 text-primary" />
         </div>
         <div>
           <h1 className="text-xl font-semibold text-foreground">TA 模式</h1>

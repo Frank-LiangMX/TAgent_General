@@ -251,7 +251,7 @@ export function BtwPanel(): React.ReactElement | null {
       {/* Messages — 有内容时才显示滚动条 */}
       <div
         className={cn(
-          'flex-1 px-4 py-3 space-y-3 min-h-0',
+          'selectable-content flex-1 px-4 py-3 space-y-3 min-h-0',
           messages.length === 0 ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'
         )}
       >

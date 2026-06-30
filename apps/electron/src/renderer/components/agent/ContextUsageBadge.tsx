@@ -353,34 +353,48 @@ export function ContextUsageBadge({
         ) : null}
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
-              'bg-background/22 text-foreground/82 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18),0_0_0_1px_hsl(var(--foreground)/0.08)]',
-              'hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55',
-              isDanger && 'bg-red-500/12 text-red-600 hover:bg-red-500/16 dark:text-red-300',
-              isWarning &&
-                !isDanger &&
-                'bg-amber-500/12 text-amber-700 hover:bg-amber-500/16 dark:text-amber-300'
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+                  'bg-background/22 text-foreground/82 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18),0_0_0_1px_hsl(var(--foreground)/0.08)]',
+                  'hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55',
+                  isDanger && 'bg-red-500/12 text-red-600 hover:bg-red-500/16 dark:text-red-300',
+                  isWarning &&
+                    !isDanger &&
+                    'bg-amber-500/12 text-amber-700 hover:bg-amber-500/16 dark:text-amber-300'
+                )}
+                onClick={handleCompactClick}
+                disabled={isProcessing}
+              >
+                <Minimize2 className="size-3.5" />
+                {isProcessing ? '对话进行中' : '压缩上下文'}
+              </button>
+            </TooltipTrigger>
+            {!isProcessing && (
+              <TooltipContent side="top">
+                {getContextUsageDescription('压缩上下文')}
+              </TooltipContent>
             )}
-            onClick={handleCompactClick}
-            disabled={isProcessing}
-            title={isProcessing ? undefined : getContextUsageDescription('压缩上下文')}
-          >
-            <Minimize2 className="size-3.5" />
-            {isProcessing ? '对话进行中' : '压缩上下文'}
-          </button>
+          </Tooltip>
           {onClientCompact && (
-            <button
-              type="button"
-              className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
-              onClick={onClientCompact}
-              disabled={isProcessing}
-              title={getContextUsageDescription('客户端快速压缩')}
-            >
-              快速
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
+                  onClick={onClientCompact}
+                  disabled={isProcessing}
+                >
+                  快速
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {getContextUsageDescription('客户端快速压缩')}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

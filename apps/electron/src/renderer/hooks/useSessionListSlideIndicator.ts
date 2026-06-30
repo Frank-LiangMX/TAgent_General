@@ -155,6 +155,10 @@ export function useSessionListSlideIndicator(
         const animate = performance.now() < slideLockUntilRef.current
         setStyles(buildSlideStyles(metrics, animate))
         idleUntilRef.current = performance.now() + FOLLOW_DURATION_MS
+      } else {
+        // 选中项尚未渲染进 DOM（列表异步加载中）：保持循环重试，确保
+        // 选中项出现后蒙版能定位，而不是永久停留在 EMPTY_STYLES 消失
+        idleUntilRef.current = performance.now() + FOLLOW_DURATION_MS
       }
 
       if (performance.now() < idleUntilRef.current) {
@@ -197,7 +201,24 @@ export function useSessionListSlideIndicator(
     })
     observer.observe(container)
 
-    return () => observer.disconnect()
+    // 子树变化兜底：会话列表异步加载、选中项晚挂载时，确保蒙版能定位。
+    // subtree 会因流式消息等频繁触发，用 rAF 节流避免性能开销。
+    let rafThrottle = 0
+    const mutationObserver = new MutationObserver(() => {
+      if (!activeSessionIdRef.current) return
+      if (rafThrottle) return
+      rafThrottle = requestAnimationFrame(() => {
+        rafThrottle = 0
+        kickFollowLoop()
+      })
+    })
+    mutationObserver.observe(container, { childList: true, subtree: true })
+
+    return () => {
+      observer.disconnect()
+      mutationObserver.disconnect()
+      if (rafThrottle) cancelAnimationFrame(rafThrottle)
+    }
   }, [containerRef, kickFollowLoop])
 
   // 滚动时跟随（选中项相对容器 top 随 scrollTop 变化）

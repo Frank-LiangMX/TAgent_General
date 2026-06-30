@@ -11,7 +11,7 @@
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   Layers,
-  Palette,
+  Boxes,
   MessageSquare,
   LayoutGrid,
   Database,
@@ -276,7 +276,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     {
       value: 'ta' as TopLevelMode,
       label: 'TA',
-      icon: <Palette size={14} />,
+      icon: <Boxes size={14} />,
       description: '技术美术工具',
     },
   ]
