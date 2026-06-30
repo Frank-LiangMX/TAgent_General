@@ -24,6 +24,17 @@ import { kanbanDbService } from './kanban-db'
 import { startKanbanDispatcher, stopKanbanDispatcher } from './kanban-dispatcher'
 import { getAgentSessionMeta, updateAgentSessionMeta, createAgentSession } from './agent-session-manager'
 
+/** 启动时 init 失败（如 better-sqlite3 ABI 不匹配）时，IPC 侧再试一次并给出修复指引 */
+function ensureKanbanDb(): void {
+  if (kanbanDbService.isInitialized()) return
+  const result = kanbanDbService.initialize()
+  if (!result.success) {
+    throw new Error(
+      `[看板] 数据库未就绪: ${result.error ?? 'unknown'}。请在 apps/electron 执行 bun run rebuild:native 后重启 dev`
+    )
+  }
+}
+
 /** 向所有渲染窗口广播看板数据变更，触发前端刷新 */
 export function broadcastKanbanChanged(): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -51,6 +62,7 @@ export function resumeKanbanBoard(boardId: string): void {
 
 /** 解除任务阻塞：状态从 blocked → ready，清空 blockedReason */
 export function unblockKanbanTask(input: UnblockKanbanTaskInput): void {
+  ensureKanbanDb()
   kanbanDbService.updateTaskStatus(input.taskId, {
     status: 'ready',
     blockedReason: undefined,
@@ -68,6 +80,7 @@ export function unblockKanbanTask(input: UnblockKanbanTaskInput): void {
  * running 任务创建占位子会话并写入 assigneeSessionId（不 sendMessage）
  */
 export function seedDemoKanban(input: SeedKanbanDemoInput): SeedKanbanDemoResult {
+  ensureKanbanDb()
   const { sessionId, channelId, workspaceId } = input
 
   // 校验主会话存在
@@ -158,11 +171,13 @@ export function seedDemoKanban(input: SeedKanbanDemoInput): SeedKanbanDemoResult
 
 /** 列出某看板下全部任务 */
 export function listKanbanTasks(boardId: string): KanbanTask[] {
+  ensureKanbanDb()
   return kanbanDbService.listTasksByBoard(boardId)
 }
 
 /** 获取看板信息 */
 export function getKanbanBoard(boardId: string) {
+  ensureKanbanDb()
   return kanbanDbService.getBoard(boardId)
 }
 

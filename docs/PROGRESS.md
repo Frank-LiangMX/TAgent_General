@@ -12,6 +12,8 @@
 > **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
 > **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（Proma MCP 执行层参考）
 > **任务看板编排（Phase A 探索中）**：`docs/plans/2026-06-30-task-kanban-orchestration-design.md`（Kanban + IM + 角色库；上游 v0.13.4 已合 main，探索分支 `feature/kanban-exploration`）
+> **看板 v1 产品方案**：`docs/plans/2026-06-30-kanban-v1-product-design.md`（主会话 对话|团队 Tab、Master-Detail、无 Gateway）
+> **看板会话交接（2026-06-30 夜）**：`docs/plans/2026-06-30-kanban-session-handoff.md` — **明天继续开发先读此文件**
 > **看板探索报告**：`docs/plans/2026-06-30-kanban-exploration-report.md`（Phase A 验证范围、基础设施盘点、风险矩阵、E2E 清单）
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
@@ -47,7 +49,16 @@
 
 **阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。Agent Hooks（auto-check）与 Superpowers skill 包已合入 `main`。上游 Proma v0.13.4 对齐已合入 `main`（PR #16，2026-06-30）。当前活跃开发主线为 **看板 + 多 Agent 协同 Phase A 探索**（`feature/kanban-exploration` 分支）。
 
-🔵 **Kanban 探索分支 `feature/kanban-exploration` 进行中** — 三路工人并行 spike：Worker S（kanban-db + dispatcher 内核）、Worker A（headless 工人桥接 + MCP schema 骨架）、Worker B（探索报告 + 追踪文档）。详见 [`2026-06-30-kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md)。
+🔵 **Kanban 探索分支 `feature/kanban-exploration` 进行中** — Phase A 内核 + 团队 Tab UI + demo seed 已落地；Windows dev 启动与 `better-sqlite3` 重建已补丁。**明天继续请先读** [`2026-06-30-kanban-session-handoff.md`](plans/2026-06-30-kanban-session-handoff.md)。
+
+**分支最新能力（2026-06-30 夜）**：
+
+- ✅ `kanban-db` + `kanban-dispatcher` + IPC + preload
+- ✅ Agent 会话 **对话 | 团队** Tab + Master-Detail + 「加载看板演示」
+- ✅ Windows：`Start-TAgent-Dev.bat`（bun/electron/native 自检）
+- ⏳ Phase B：草稿升级建板、真实 headless worker、orchestrator 工具注入
+
+**历史 spike**：Worker S/A/B 并行探索 — 详见 [`2026-06-30-kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md)。
 
 **当前判断**：
 

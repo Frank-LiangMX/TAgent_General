@@ -138,6 +138,11 @@ export class KanbanDbService {
     return this.dbPath ?? getDefaultKanbanDbPath()
   }
 
+  /** 是否已成功打开数据库连接 */
+  isInitialized(): boolean {
+    return this.db !== null
+  }
+
   /**
    * 初始化数据库：打开连接、设置 WAL、建表
    * @returns 成功返回 { success: true }；失败返回 { success: false, error }
