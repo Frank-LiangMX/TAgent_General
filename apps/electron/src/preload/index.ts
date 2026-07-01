@@ -27,6 +27,7 @@ import {
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
   KANBAN_IPC_CHANNELS,
+  AGENT_ROLE_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -1216,6 +1217,22 @@ export interface ElectronAPI {
   /** 重置为默认内容 */
   resetSoulDefault: () => Promise<string>
 
+  // ===== Agent 角色库 =====
+
+  /** 角色库 API（看板 worker 角色定义：systemPrompt + 模型池 + 权限模式） */
+  agentRole: {
+    /** 列出所有角色（内置 + 自定义） */
+    list: () => Promise<import('@tagent/shared').AgentRoleProfile[]>
+    /** 获取单个角色 by id */
+    get: (roleId: string) => Promise<import('@tagent/shared').AgentRoleProfile | undefined>
+    /** 保存角色（新增或覆盖） */
+    save: (input: import('@tagent/shared').SaveAgentRoleInput) => Promise<import('@tagent/shared').AgentRoleProfile[]>
+    /** 删除角色（内置不可删） */
+    delete: (input: import('@tagent/shared').DeleteAgentRoleInput) => Promise<{ roles: import('@tagent/shared').AgentRoleProfile[]; deleted: boolean; reason?: string }>
+    /** 重置为默认角色 */
+    resetDefault: () => Promise<import('@tagent/shared').AgentRoleProfile[]>
+  }
+
   // ===== 自动更新 =====
 
   /** 更新 API */
@@ -1296,15 +1313,48 @@ export interface ElectronAPI {
     getBoard: (
       boardId: string
     ) => Promise<import('@tagent/shared').KanbanBoard | null>
-    seedDemo: (
-      input: import('@tagent/shared').SeedKanbanDemoInput
-    ) => Promise<import('@tagent/shared').SeedKanbanDemoResult>
+    /** 列出所有看板（B4：全局看板视图） */
+    listBoards: (
+      input?: import('@tagent/shared').ListKanbanBoardsInput
+    ) => Promise<import('@tagent/shared').KanbanBoard[]>
+    /** 独立创建看板（B4：不绑定会话） */
+    createBoard: (
+      input: import('@tagent/shared').CreateKanbanBoardIpcInput
+    ) => Promise<import('@tagent/shared').KanbanBoard>
+    /** 更新看板（B4：标题/状态） */
+    updateBoard: (
+      input: import('@tagent/shared').UpdateKanbanBoardInput
+    ) => Promise<import('@tagent/shared').KanbanBoard | null>
+    /** 删除看板（B4：软删除=cancelled，硬删除=DELETE） */
+    deleteBoard: (input: import('@tagent/shared').DeleteKanbanBoardInput) => Promise<void>
+    /** 新建任务（B5：UI 创建任务闭环，channelId 由渲染层兜底） */
+    createTask: (
+      input: import('@tagent/shared').CreateKanbanTaskIpcInput
+    ) => Promise<import('@tagent/shared').KanbanTask>
+    createBoardFromDraft: (
+      input: import('@tagent/shared').CreateBoardFromDraftInput
+    ) => Promise<import('@tagent/shared').CreateBoardFromDraftResult>
     pauseBoard: (boardId: string) => Promise<void>
     resumeBoard: (boardId: string) => Promise<void>
     unblockTask: (
       input: import('@tagent/shared').UnblockKanbanTaskInput
     ) => Promise<void>
+    retryTask: (taskId: string) => Promise<void>
+    attachBoardToSession: (
+      input: import('@tagent/shared').AttachBoardToSessionInput
+    ) => Promise<void>
+    detachBoardFromSession: (
+      input: import('@tagent/shared').DetachBoardFromSessionInput
+    ) => Promise<void>
     onChanged: (callback: () => void) => () => void
+    onBoardCompleted: (
+      callback: (payload: {
+        boardId: string
+        parentSessionId?: string
+        requireSummary: boolean
+        summary: { total: number; done: number; failed: number }
+      }) => void
+    ) => () => void
   }
 
   // GitHub Release
@@ -1546,7 +1596,7 @@ export interface ElectronAPI {
   // ===== 窗口关闭确认 =====
 
   /** 监听主进程的关闭确认请求（返回清理函数） */
-  onWindowCloseRequest: (callback: () => void) => () => void
+  onWindowCloseRequest: (callback: (data?: { runningTaskCount?: number }) => void) => () => void
   /** 回传用户关闭行为选择 */
   sendWindowCloseResponse: (data: WindowCloseResponseData) => void
 }
@@ -2682,6 +2732,17 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(SOUL_IPC_CHANNELS.RESET_DEFAULT)
   },
 
+  // Agent 角色库
+  agentRole: {
+    list: () => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.LIST),
+    get: (roleId: string) => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.GET, roleId),
+    save: (input: import('@tagent/shared').SaveAgentRoleInput) =>
+      ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.SAVE, input),
+    delete: (input: import('@tagent/shared').DeleteAgentRoleInput) =>
+      ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.DELETE, input),
+    resetDefault: () => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.RESET_DEFAULT),
+  },
+
   // 自动更新
   updater: {
     checkForUpdates: () => ipcRenderer.invoke('updater:check'),
@@ -3379,13 +3440,29 @@ const electronAPI: ElectronAPI = {
   kanban: {
     listTasks: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.LIST_TASKS, boardId),
     getBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.GET_BOARD, boardId),
-    seedDemo: (input: import('@tagent/shared').SeedKanbanDemoInput) =>
-      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.SEED_DEMO, input),
+    listBoards: (input?: import('@tagent/shared').ListKanbanBoardsInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.LIST_BOARDS, input),
+    createBoard: (input: import('@tagent/shared').CreateKanbanBoardIpcInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.CREATE_BOARD, input),
+    updateBoard: (input: import('@tagent/shared').UpdateKanbanBoardInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.UPDATE_BOARD, input),
+    deleteBoard: (input: import('@tagent/shared').DeleteKanbanBoardInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.DELETE_BOARD, input),
+    createTask: (input: import('@tagent/shared').CreateKanbanTaskIpcInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.CREATE_TASK, input),
+    createBoardFromDraft: (input: import('@tagent/shared').CreateBoardFromDraftInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.CREATE_BOARD_FROM_DRAFT, input),
     pauseBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.PAUSE_BOARD, boardId),
     resumeBoard: (boardId: string) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RESUME_BOARD, boardId),
     unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.UNBLOCK_TASK, input),
+    retryTask: (taskId: string) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RETRY_TASK, taskId),
+    attachBoardToSession: (input: import('@tagent/shared').AttachBoardToSessionInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.ATTACH_BOARD_TO_SESSION, input),
+    detachBoardFromSession: (input: import('@tagent/shared').DetachBoardFromSessionInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.DETACH_BOARD_FROM_SESSION, input),
     onChanged: (callback: () => void) => {
       const listener = (): void => callback()
       ipcRenderer.on(KANBAN_IPC_CHANNELS.CHANGED, listener)
@@ -3393,12 +3470,35 @@ const electronAPI: ElectronAPI = {
         ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.CHANGED, listener)
       }
     },
+    onBoardCompleted: (
+      callback: (payload: {
+        boardId: string
+        parentSessionId?: string
+        requireSummary: boolean
+        summary: { total: number; done: number; failed: number }
+      }) => void
+    ) => {
+      const listener = (
+        _event: unknown,
+        payload: {
+          boardId: string
+          parentSessionId?: string
+          requireSummary: boolean
+          summary: { total: number; done: number; failed: number }
+        }
+      ): void => callback(payload)
+      ipcRenderer.on(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
+      return () => {
+        ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
+      }
+    },
   },
 
   // ===== 窗口关闭确认 =====
 
-  onWindowCloseRequest: (callback: () => void) => {
-    const listener = (): void => callback()
+  onWindowCloseRequest: (callback: (data?: { runningTaskCount?: number }) => void) => {
+    const listener = (_event: unknown, data?: { runningTaskCount?: number }): void =>
+      callback(data)
     ipcRenderer.on(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
     return () => {
       ipcRenderer.removeListener(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)

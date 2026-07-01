@@ -25,6 +25,7 @@ export type SettingsTab =
   | 'insights'
   | 'agent'
   | 'agent-behavior'
+  | 'agent-roles'
   | 'tutorial'
 
 /** 当前设置标签页（不持久化，每次打开设置默认显示渠道） */

@@ -75,3 +75,6 @@ export * from './draft'
 // Kanban 任务看板编排相关类型
 export * from './kanban'
 export * from './kanban-ipc'
+
+// Agent 角色库（看板 worker 角色定义）
+export * from './agent-role'

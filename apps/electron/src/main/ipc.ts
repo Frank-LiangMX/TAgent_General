@@ -131,6 +131,7 @@ import { askUserService } from './lib/agent-ask-user-service'
 import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
 import { registerKanbanIpcHandlers } from './lib/kanban-ipc'
+import { registerAgentRoleIpcHandlers } from './lib/agent-role-ipc'
 import {
   runAgent,
   stopAgent,
@@ -4417,4 +4418,8 @@ export function registerIpcHandlers(): void {
   // ===== Kanban 看板 =====
 
   registerKanbanIpcHandlers()
+
+  // ===== Agent 角色库 =====
+
+  registerAgentRoleIpcHandlers()
 }

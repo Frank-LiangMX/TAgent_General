@@ -29,6 +29,7 @@ import {
   BarChart3,
   Sparkles,
   Wand2,
+  Users,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -45,6 +46,7 @@ import { ShortcutSettings } from './ShortcutSettings'
 import { SoulSettings } from './SoulSettings'
 import { VoiceInputSettings } from './VoiceInputSettings'
 import { AgentBehaviorSettings } from './AgentBehaviorSettings'
+import { AgentRoleSettings } from './AgentRoleSettings'
 
 import type { SettingsTab } from '@/atoms/settings-tab'
 
@@ -97,6 +99,7 @@ const ALL_TABS: TabItem[] = [
   { id: 'prompts', label: '提示词', icon: <BookOpen size={15} />, group: 'core' },
   { id: 'soul', label: '人格', icon: <Sparkles size={15} />, group: 'core' },
   { id: 'agent-behavior', label: 'Agent 行为', icon: <Wand2 size={15} />, group: 'core' },
+  { id: 'agent-roles', label: '角色库', icon: <Users size={15} />, group: 'core' },
   { id: 'bots', label: '远程', icon: <Bot size={15} />, group: 'integration' },
   { id: 'voice-input', label: '语音', icon: <Mic size={15} />, group: 'integration' },
   { id: 'proxy', label: '代理', icon: <Globe size={15} />, group: 'integration' },
@@ -118,6 +121,8 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
       return <SoulSettings />
     case 'agent-behavior':
       return <AgentBehaviorSettings />
+    case 'agent-roles':
+      return <AgentRoleSettings />
     case 'proxy':
       return <ProxySettings />
     case 'appearance':
