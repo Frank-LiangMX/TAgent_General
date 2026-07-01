@@ -286,12 +286,40 @@ export function updateKanbanBoard(input: UpdateKanbanBoardInput): KanbanBoard | 
   return board
 }
 
-/** 删除看板（B4：软删除=cancelled，硬删除=DELETE） */
+/** 删除看板（B4：软删除=cancelled，硬删除=DELETE + 清理 worker 会话） */
 export function deleteKanbanBoard(input: DeleteKanbanBoardInput): void {
   ensureKanbanDb()
-  kanbanDbService.deleteBoard(input.boardId, input.hard ?? false)
+  const hard = input.hard ?? false
+
+  // 硬删除时先收集 worker 会话 ID，删除看板后清理（避免 FK 约束干扰）
+  let workerSessionIds: string[] = []
+  if (hard) {
+    const tasks = kanbanDbService.listTasksByBoard(input.boardId)
+    workerSessionIds = tasks
+      .map((t) => t.assigneeSessionId)
+      .filter((id): id is string => Boolean(id))
+  }
+
+  kanbanDbService.deleteBoard(input.boardId, hard)
   broadcastKanbanChanged()
-  console.log(`[看板] 删除看板: ${input.boardId} (hard=${input.hard ?? false})`)
+  console.log(`[看板] 删除看板: ${input.boardId} (hard=${hard})`)
+
+  // 硬删除后清理关联的 worker 子会话（jsonl + 索引 + 工作目录）
+  // worker 会话随看板生命周期结束，避免长期堆积
+  if (hard && workerSessionIds.length > 0) {
+    // lazy import 避免与 agent-session-manager 循环依赖
+    const { deleteAgentSession } = require('./agent-session-manager')
+    let cleaned = 0
+    for (const sessionId of workerSessionIds) {
+      try {
+        deleteAgentSession(sessionId)
+        cleaned++
+      } catch (err) {
+        console.warn(`[看板] 清理 worker 会话失败 ${sessionId}:`, err)
+      }
+    }
+    console.log(`[看板] 已清理 ${cleaned}/${workerSessionIds.length} 个 worker 子会话`)
+  }
 }
 
 /**

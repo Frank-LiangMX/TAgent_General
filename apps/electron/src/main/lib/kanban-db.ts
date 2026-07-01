@@ -786,7 +786,7 @@ export class KanbanDbService {
            error = @error,
            result_summary = @result_summary,
            blocked_reason = @blocked_reason,
-           assignee_session_id = @assignee_session_id,
+           assignee_session_id = COALESCE(@assignee_session_id, assignee_session_id),
            started_at = COALESCE(started_at, @started_at),
            finished_at = @finished_at,
            updated_at = @updated_at
