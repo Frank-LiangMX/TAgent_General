@@ -498,8 +498,19 @@ function createWindow(): void {
           mainWindow?.hide()
         } else {
           // 未保存偏好，发送 IPC 让渲染进程弹出确认对话框
+          // 附带 running 任务数，让用户知道有任务在跑时优先最小化
           console.info('[WindowClose] 发送 close-request IPC')
-          mainWindow?.webContents.send(WINDOW_CLOSE_IPC_CHANNELS.REQUEST)
+          let runningTaskCount = 0
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { kanbanDbService } = require('./lib/kanban-db') as typeof import('./lib/kanban-db')
+            if (kanbanDbService.isInitialized()) {
+              runningTaskCount = kanbanDbService.listTasksByStatus('running').length
+            }
+          } catch (err) {
+            console.error('[WindowClose] 读取 running 任务数失败:', err)
+          }
+          mainWindow?.webContents.send(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, { runningTaskCount })
         }
       }
     })

@@ -149,18 +149,47 @@ export const upgradeToAgentAtom = atom(null, async (get, set) => {
   )
   if (!meta) return
 
-  // 2. 发送草稿上下文作为初始消息
+  // 2. 草稿含 ≥2 个需求块时自动建看板（写回 meta.boardId 触发「团队」Tab 显示）
+  //    TA 模式不建板（v1 仅 general 模式支持看板）
+  let boardCreated = false
+  if (draft.mode !== 'ta' && draft.requirements.length >= 2 && channelId) {
+    try {
+      const result = await window.electronAPI.kanban.createBoardFromDraft({
+        sessionId: meta.id,
+        channelId,
+        workspaceId,
+        rootGoal: draft.title,
+        requirements: draft.requirements.map((req) => ({
+          label: req.label,
+          title: req.title,
+          description: req.description,
+          acceptanceCriteria: req.acceptanceCriteria
+            .filter((ac) => ac.text.trim())
+            .map((ac) => ac.text),
+        })),
+      })
+      boardCreated = !!result.boardId
+      console.log(`[草稿升级] 已自动建板 ${result.boardId}，共 ${result.tasks.length} 个任务`)
+    } catch (err) {
+      console.error('[草稿升级] 自动建板失败，继续走普通 Agent 会话:', err)
+    }
+  }
+
+  // 3. 发送草稿上下文作为初始消息（看板已建则加引导前缀）
   const prompt = buildAgentPrompt(draft)
+  const kanbanPrefix = boardCreated
+    ? `已为你自动创建看板（共 ${draft.requirements.length} 个任务），使用 kanban_list_tasks 工具可查看任务详情。任务由调度器自动派工执行，可在「团队」Tab 查看进度。\n\n`
+    : ''
   const input: AgentSendInput = {
     sessionId: meta.id,
-    userMessage: prompt,
+    userMessage: kanbanPrefix + prompt,
     channelId: meta.channelId ?? channelId ?? '',
     modelId,
     workspaceId,
   }
   await window.electronAPI.sendAgentMessage(input)
 
-  // 3. 更新草稿状态
+  // 4. 更新草稿状态
   const updated = await window.electronAPI.draft.update(draft.id, {
     status: 'executing',
     agentSessionId: meta.id,

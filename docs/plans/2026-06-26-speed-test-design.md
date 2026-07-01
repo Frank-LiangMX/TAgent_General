@@ -303,3 +303,172 @@ success + ttfbMs >= 2000 → 红底红字 "X.Xs"
    - 10 秒超时 → 返回 `ttfbMs: null`
    - kscc-internal 渠道 → 正常测速
 4. **单元测试**（BDD 风格）: 在 `channel-manager.test.ts` 中新增 `describe('speedTestModels')` 块
+
+---
+
+## 9. 输出速度测速（tok/s）扩展
+
+> 追加日期：2026-07-01
+> 动机：TTFB 只测首字延迟，不测模型推理速度。用户遇到"长输出卡顿"时 TTFB 正常但整体耗时几分钟，无法判断是网络慢还是模型慢。
+
+### 9.1 两个维度互补
+
+| 指标 | 含义 | 数据来源 | 现有方案 |
+|------|------|----------|----------|
+| **TTFB** | 首字多久出现（网络 + 排队） | POST `max_tokens:1` | 已设计（第 1-8 节） |
+| **tok/s** | 模型生成多快（推理能力） | `result.usage.output_tokens / _durationMs` | **本章新增** |
+
+实测数据（会话 bb9e65d1）：
+- glm-5.2：~15 tok/s（3432 token / 228.8s）
+- Claude Sonnet：~60-80 tok/s（业界基准）
+- 同样 3000 token 输出，glm-5.2 要 3.8 分钟，Claude 只要 40 秒
+
+### 9.2 输出速度等级
+
+| 等级 | tok/s 范围 | 颜色 | 含义 |
+|------|-----------|------|------|
+| 快 | > 60 tok/s | 绿 `emerald-600` / `emerald-400` | Claude / GPT-4o 级别 |
+| 中 | 30–60 tok/s | 黄 `amber-500` / `amber-400` | 主流模型 |
+| 慢 | < 30 tok/s | 红 `red-500` / `red-400` | glm-5.2 等慢模型 |
+| 无数据 | 未采集 | 灰 `muted-foreground` | 首次使用 |
+
+阈值依据：
+- Claude Sonnet 4.x：60-80 tok/s
+- GPT-4o：50-70 tok/s
+- DeepSeek V3：40-60 tok/s
+- glm-5.2 实测：15 tok/s（本会话数据，2026-07-01）
+
+### 9.3 实现方案：被动采集优先
+
+**方案 A（推荐）：被动采集**
+
+不额外发测速请求，从用户实际使用中采集 `result.usage`：
+
+```
+duration_s = result._durationMs / 1000
+tok_per_sec = result.usage.output_tokens / duration_s
+```
+
+数据源：`agent-orchestrator.ts` 的 `persistSDKMessages`（第 1139 行）已持久化 result 消息含 `usage` 和 `_durationMs`。
+
+**采集点**：在 orchestrator 消费 result 消息时，按 `{channelId}:{modelId}` 更新统计。
+
+优势：
+- 不额外消耗 token
+- 反映真实使用场景（含上下文长度影响）
+- 数据随使用自然积累
+
+劣势：
+- 首次使用无数据（需 fallback 到主动测速或显示"无数据"）
+
+**方案 B（补充）：主动测速**
+
+扩展现有 TTFB 测速，对用户选中的模型额外发一轮 `max_tokens:100` 请求：
+
+```typescript
+// 速度测速请求体（与 TTFB 测速共用 URL/headers，只改 max_tokens）
+{
+  ...validateBody,
+  max_tokens: 100,  // 而非 1
+}
+// 计时
+const ttfbStart = performance.now()
+const resp = await fetchFn(...)
+const ttfbMs = performance.now() - ttfbStart
+await resp.text()
+const totalMs = performance.now() - t0
+// 纯生成速度 = 100 / ((totalMs - ttfbMs) / 1000)
+const outputTokPerSec = 100 / ((totalMs - ttfbMs) / 1000)
+```
+
+优势：首次使用即有数据
+劣势：消耗 ~100 token/模型（成本极低，可接受）
+
+### 9.4 类型扩展
+
+`packages/shared/src/types/channel.ts`：
+
+```typescript
+export interface ModelSpeedTestResult {
+  channelId: string
+  modelId: string
+  success: boolean
+  ttfbMs: number | null                  // 已有：首字延迟
+  totalTimeMs: number | null              // 已有：总耗时
+  outputTokPerSec: number | null          // 新增：输出速度（主动测速）
+  message: string
+}
+
+/** 被动采集的模型统计（持久化） */
+export interface ModelRuntimeStats {
+  tokPerSecAvg: number                    // 滑动平均
+  tokPerSecSamples: number                // 采样次数
+  lastTtfbMs: number | null              // 最近一次 TTFB（来自实际请求）
+  lastUpdated: number                    // timestamp
+}
+```
+
+### 9.5 被动采集实现
+
+**采集点**：`agent-orchestrator.ts` 消费 result 消息处（约第 2400 行附近，`msg.type === 'result'` 分支）。
+
+```typescript
+// 伪代码
+if (msg.type === 'result' && msg.usage?.output_tokens && msg._durationMs) {
+  const tokPerSec = msg.usage.output_tokens / (msg._durationMs / 1000)
+  const key = `${channelId}:${modelId}`
+  updateModelRuntimeStats(key, tokPerSec)
+}
+```
+
+**存储**：`settings.json` 的 `modelStats` 字段（持久化，跨会话积累）。
+
+```typescript
+// settings.json
+{
+  modelStats: {
+    "kscc:glm-5.2": {
+      tokPerSecAvg: 15.2,
+      tokPerSecSamples: 5,
+      lastTtfbMs: 1733,
+      lastUpdated: 1782906240000
+    }
+  }
+}
+```
+
+**滑动平均**：新样本与旧平均按 `0.3 * new + 0.7 * old` 加权，避免单次异常拉偏。
+
+### 9.6 UI 展示升级
+
+渠道列表延迟 pill 升级为双指标：
+
+```
+[287ms · 65 tok/s]   ← TTFB + 输出速度，两者都有
+[1.3s · 慢]          ← 只有 TTFB，tok/s 标红
+[287ms · —]          ← 只有 TTFB，tok/s 未采集
+```
+
+- TTFB 部分用 ms/s 展示（已有逻辑）
+- tok/s 部分用数字 + "tok/s"，无数据时显示 "—"
+- pill 整体颜色取 TTFB 和 tok/s 较慢者
+
+**Popover 内**：测速结果区每个模型显示两行：
+```
+claude-sonnet-4-6   [287ms · 65 tok/s]
+glm-5.2             [1.7s · 15 tok/s]
+```
+
+### 9.7 实施优先级
+
+1. **P1 被动采集**（零成本）：在 orchestrator 加采集点，写 settings.json，UI 先显示 tok/s
+2. **P2 主动测速**：TTFB 测速落地后，扩展为双轮（`max_tokens:1` + `max_tokens:100`）
+3. **P3 UI 双指标**：pill 展示 TTFB + tok/s
+
+### 9.8 验证方案
+
+1. 发几轮真实请求，确认 `settings.json` 的 `modelStats` 被更新
+2. 滑动平均正确（手动算 vs 存储）
+3. 渠道列表 pill 显示 tok/s
+4. 无数据时显示 "—" 而非 0
+5. 主动测速可选开关，默认关（避免额外消耗）

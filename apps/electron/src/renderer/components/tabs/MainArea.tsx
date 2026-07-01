@@ -33,6 +33,7 @@ import { SkillsMainView } from '@/components/agent/SkillsMainView'
 import { AutomationMainView } from '@/components/automation/AutomationMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { PreviewPanel } from '@/components/diff/PreviewPanel'
+import { KanbanMainView } from '@/components/kanban/KanbanMainView'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
 import { AssetLibraryPanel } from '@/components/ta/asset-library/AssetLibraryPanel'
 import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
@@ -71,6 +72,10 @@ export function MainArea(): React.ReactElement {
 
     if (activeRailItem === 'automation') {
       return <AutomationMainView />
+    }
+
+    if (activeRailItem === 'kanban') {
+      return <KanbanMainView />
     }
 
     // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染

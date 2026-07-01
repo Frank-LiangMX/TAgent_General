@@ -22,6 +22,7 @@ import {
   Loader2,
   StickyNote,
   Clock,
+  KanbanSquare,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -56,6 +57,12 @@ const GENERAL_RAIL_ITEMS: Array<{
     label: '会话',
     icon: <MessageSquare size={17} />,
     description: 'Chat / Agent 会话列表',
+  },
+  {
+    id: 'kanban',
+    label: '看板',
+    icon: <KanbanSquare size={17} />,
+    description: '多 Agent 任务编排看板（全局视图）',
   },
   {
     id: 'automation',
@@ -98,6 +105,12 @@ const TA_RAIL_ITEMS: Array<{
     label: '会话',
     icon: <MessageSquare size={17} />,
     description: 'TA 会话（与通用模式数据隔离）',
+  },
+  {
+    id: 'kanban',
+    label: '看板',
+    icon: <KanbanSquare size={17} />,
+    description: '多 Agent 任务编排看板（批量资产流水线）',
   },
   { id: 'assets', label: '资产库', icon: <Database size={17} />, description: '资产库管理' },
   { id: 'review', label: '审核', icon: <ClipboardCheck size={17} />, description: '审核队列' },

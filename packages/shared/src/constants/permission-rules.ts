@@ -88,7 +88,9 @@ export function hasDangerousStructure(command: string): boolean {
   // 输出重定向
   if (/>{1,2}/.test(command)) return true
   // find -exec / -delete（可执行任意命令/删除文件）
-  if (/\b-exec\b/.test(command) || /\b-delete\b/.test(command)) return true
+  // 注意：\b 在空格与 - 之间不匹配（两者都是非单词字符），
+  // 必须用 (?:^|\s) 确保 -exec/-delete 是独立参数
+  if (/(?:^|\s)-exec\b/.test(command) || /(?:^|\s)-delete\b/.test(command)) return true
   // 命令链接操作符（&&、;）
   if (/[;&]/.test(command)) return true
   // 子 shell / 命令替换（$(...) 和反引号）
@@ -179,18 +181,99 @@ export const AUTO_MODE_READ_ONLY_TOOLS: readonly string[] = [
   'ReadMcpResourceTool',
 ]
 
+/** 项目内只读 Bash 命令模式（auto 模式下，cwd 内 + 只读 → 免询问） */
+const PROJECT_LOCAL_READ_ONLY_BASH_PATTERNS: readonly RegExp[] = [
+  /^cat\b/,
+  /^find\b/,
+  /^echo\b/,
+  /^sed\s+-n\b/, // sed -n 静默打印（无 -i 原地编辑）
+  /^awk\b/,
+  /^sort\b/,
+  /^uniq\b/,
+  /^cut\b/,
+  /^tr\b/,
+  /^diff\b/,
+  /^grep\b/,
+  /^rg\b/,
+  /^head\b/,
+  /^tail\b/,
+  /^wc\b/,
+  /^file\b/,
+  /^stat\b/,
+  /^tree\b/,
+  /^du\b/,
+  /^df\b/,
+  /^ls\b/,
+  /^pwd$/,
+]
+
 /**
- * 自动审批模式下是否可静默放行（只读查询 + 安全 Bash）
+ * 判断路径 token 是否在 cwd 外
+ *
+ * - 绝对路径（Unix `/`、Windows 盘符 `C:`、家目录 `~`）→ 检查是否以 cwd 为前缀
+ * - 父目录路径（`..`）→ 视为 cwd 外（保守，避免越界）
+ * - 相对路径（`./foo`、`foo.txt`）→ 视为 cwd 内
+ */
+function isPathOutsideCwd(token: string, cwd: string): boolean {
+  const isAbsolute = token.startsWith('/') || token.startsWith('~') || /^[a-zA-Z]:[\\/]/.test(token)
+  if (!isAbsolute && !token.startsWith('..')) return false
+  const normalizedCwd = cwd.replace(/\\/g, '/').replace(/\/$/, '')
+  const normalizedToken = token.replace(/\\/g, '/')
+  // 以 cwd 为前缀（含等价）视为 cwd 内
+  if (
+    normalizedToken === normalizedCwd ||
+    normalizedToken.startsWith(normalizedCwd + '/') ||
+    // Windows 盘符大小写不敏感
+    normalizedToken.toLowerCase() === normalizedCwd.toLowerCase() ||
+    normalizedToken.toLowerCase().startsWith(normalizedCwd.toLowerCase() + '/')
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
+ * 判断 Bash 命令是否为「项目内只读」（cwd 内 + 只读命令 + 无危险结构）
+ *
+ * 用于 auto 模式下免询问放行。检查三道关：
+ * 1. 必须提供 cwd（否则无法判断路径边界，保守拒绝）
+ * 2. hasDangerousStructure 必须为 false（无重定向、无管道危险命令、无 -exec/-delete）
+ * 3. 命令必须匹配只读模式（cat/find/echo 等）
+ * 4. 命令参数没有访问 cwd 外路径（绝对路径必须以 cwd 为前缀；父目录 `..` 视为越界）
+ */
+export function isProjectLocalReadOnlyBash(command: string, cwd?: string): boolean {
+  const trimmed = command.trim()
+  if (!cwd) return false // 未提供 cwd 无法判断路径边界，保守拒绝
+  if (hasDangerousStructure(trimmed)) return false
+  if (!PROJECT_LOCAL_READ_ONLY_BASH_PATTERNS.some((p) => p.test(trimmed))) return false
+  const tokens = trimmed.split(/\s+/).slice(1) // 跳过命令本身
+  for (const token of tokens) {
+    if (!token) continue
+    if (token.startsWith('-')) continue // 跳过选项
+    if (isPathOutsideCwd(token, cwd)) return false
+  }
+  return true
+}
+
+/**
+ * 自动审批模式下是否可静默放行（只读查询 + 安全 Bash + 项目内只读 Bash）
  *
  * 其余工具（写文件、MCP 变更、子任务、定时唤醒等）一律走 PermissionBanner。
+ *
+ * @param cwd 可选，传入会话 cwd 后会扩展放行「项目内只读 Bash」（如 cat/find/echo cwd 内文件）
  */
-export function isAutoModeAutoAllowTool(toolName: string, input: Record<string, unknown>): boolean {
+export function isAutoModeAutoAllowTool(
+  toolName: string,
+  input: Record<string, unknown>,
+  cwd?: string
+): boolean {
   if (SAFE_TOOLS.includes(toolName)) return true
   if (AUTO_MODE_READ_ONLY_TOOLS.includes(toolName)) return true
   if (isAutomationReadTool(toolName)) return true
   if (toolName === 'Bash') {
     const command = typeof input.command === 'string' ? input.command : ''
-    return isSafeBashCommand(command)
+    if (isSafeBashCommand(command)) return true
+    if (cwd && isProjectLocalReadOnlyBash(command, cwd)) return true
   }
   return false
 }
@@ -200,10 +283,11 @@ export function isAutoModeAutoAllowTool(toolName: string, input: Record<string, 
  */
 export function requiresAutoModeConfirmation(
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  cwd?: string
 ): boolean {
   if (toolName === 'AskUserQuestion') return false
-  return !isAutoModeAutoAllowTool(toolName, input)
+  return !isAutoModeAutoAllowTool(toolName, input, cwd)
 }
 
 /**
