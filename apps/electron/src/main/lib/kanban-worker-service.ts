@@ -24,11 +24,13 @@
 
 import { powerSaveBlocker } from 'electron'
 
-import type { AgentExternalRunSource } from '@tagent/shared'
+import type { AgentExternalRunSource, SDKMessage } from '@tagent/shared'
 
-import { createAgentSession, updateAgentSessionMeta } from './agent-session-manager'
+import { createAgentSession, getAgentSessionSDKMessages, updateAgentSessionMeta } from './agent-session-manager'
 import { runRegisteredHeadlessAgent } from './agent-headless-runner-registry'
 import { kanbanDbService } from './kanban-db'
+import { getRoleById } from './agent-role-service'
+import type { KanbanWorkerRunner } from './kanban-dispatcher'
 
 /**
  * 看板工人任务契约
@@ -49,9 +51,11 @@ export interface KanbanWorkerTask {
   channelId: string
   /** 模型 ID（可由 roleId 解析；为空时由 orchestrator 兜底默认模型） */
   modelId?: string
+  /** 角色 ID（绑定角色库，worker 启动时注入 role.systemPrompt + permissionMode） */
+  roleId?: string
   /** 工作区 ID（决定 cwd） */
   workspaceId?: string
-  /** 权限模式覆盖（默认 bypassPermissions，与 automation 一致） */
+  /** 权限模式覆盖（默认 bypassPermissions，与 automation 一致；role.permissionMode 优先） */
   permissionMode?: 'auto' | 'bypassPermissions'
 }
 
@@ -59,8 +63,8 @@ export interface KanbanWorkerTask {
 export interface KanbanWorkerBoardContext {
   /** 看板 ID */
   id: string
-  /** 发起会话 ID（用于侧栏父子会话关联展示） */
-  parentSessionId: string
+  /** 发起会话 ID（可选，B4 起看板可脱离会话独立存在） */
+  parentSessionId?: string
   /** IM 来源 chatId（可选，未来用于回推进度卡片） */
   originChatId?: string
   /** IM 来源桥（可选，与 originChatId 一起用于 IM 通知） */
@@ -133,13 +137,81 @@ export interface RunKanbanTaskHeadlessOptions {
 /**
  * 防递归 prompt 前缀：告诉工人这是看板任务执行，不要再创建看板 / automation。
  * 对标 automation-scheduler 的 automationContext 思路。
+ *
+ * 如果 task.roleId 存在，查角色库追加 role.systemPrompt（定义工人专业能力边界）。
+ * role.systemPrompt 放在防递归前缀之前，让工人先理解自己的角色，再接收执行约束。
  */
 function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoardContext): string {
-  return [
+  const lines: string[] = []
+
+  // 角色库 prompt（如果 task 绑定了 roleId）
+  if (task.roleId) {
+    const role = getRoleById(task.roleId)
+    if (role) {
+      lines.push(`【角色：${role.displayName}】`)
+      lines.push(role.systemPrompt)
+      lines.push('') // 空行分隔角色 prompt 和执行约束
+    } else {
+      console.warn(`[看板] 角色 ${task.roleId} 不存在，跳过角色 prompt 注入`)
+    }
+  }
+
+  lines.push(
     `这是看板「${board.id}」任务「${task.title}」(${task.id}) 的自动执行。`,
     '本任务由看板调度器派工，请直接执行任务内容，不要建议用户再创建看板或定时任务。',
-    '完成后请在回复中给出结论摘要；若已注入 kanban_complete 工具则调用它回写摘要。',
-  ].join('\n')
+    '完成后请在回复中给出完整的结论摘要（无长度限制，系统会自动提取最后一条 assistant 回复作为任务结果存储）。',
+    '不要尝试调用 kanban_comment / kanban_complete 等工具，工人子会话不注入看板工具集（防递归）。'
+  )
+
+  return lines.join('\n')
+}
+
+/**
+ * 解析 worker 的权限模式
+ *
+ * 优先级：
+ * 1. task.permissionMode（显式指定，最高）
+ * 2. role.permissionMode（task 绑定 roleId 时，角色库定义）
+ * 3. 默认 bypassPermissions（与 automation 一致，无人值守写操作必备）
+ */
+function resolvePermissionMode(task: KanbanWorkerTask): 'auto' | 'bypassPermissions' {
+  if (task.permissionMode) return task.permissionMode
+  if (task.roleId) {
+    const role = getRoleById(task.roleId)
+    if (role?.permissionMode) return role.permissionMode
+  }
+  return 'bypassPermissions'
+}
+
+/**
+ * 从工人子会话消息中提取最后一条 assistant 文本作为任务摘要
+ *
+ * 扫描顺序：从后往前找最后一条 SDKAssistantMessage，取其 content 里的 text 块拼接。
+ * 跳过纯工具调用 / thinking 的 assistant 消息（没有 text 块时继续往前找）。
+ * 找不到返回 undefined（markTaskDone 不写 resultSummary）。
+ *
+ * 不截断：完整存储工人最后一条回复，便于主会话回流汇总。
+ * SQLite TEXT 字段无长度限制，几 KB 摘要完全可存。
+ */
+function extractLastAssistantSummary(sessionId: string): string | undefined {
+  const messages = getAgentSessionSDKMessages(sessionId)
+  if (messages.length === 0) return undefined
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]!
+    if (msg.type !== 'assistant') continue
+    // 显式断言为 SDKAssistantMessage，TS 对联合类型 + optional 字段的收窄不够
+    const assistantMsg = msg as { message?: { content?: Array<{ type: string; text?: string }> } }
+    const content = assistantMsg.message?.content
+    if (!Array.isArray(content)) continue
+    const textBlocks = content.filter(
+      (b): b is { type: 'text'; text: string } => b.type === 'text' && typeof b.text === 'string'
+    )
+    if (textBlocks.length === 0) continue
+    const text = textBlocks.map((b) => b.text).join('').trim()
+    if (!text) continue
+    return text
+  }
+  return undefined
 }
 
 /**
@@ -189,6 +261,9 @@ export async function runKanbanTaskHeadless(
         if (settled) return
         settled = true
         if (status === 'done') {
+          // done + summary 由 dispatcher 根据 runner 返回值写
+          // （createKanbanHeadlessRunner 的 runner 会从工人会话提取 summary 返回）
+          // 此处 markTaskDone 在 createRunningOnlyUpdater 是 no-op
           updater.markTaskDone(task.id)
         } else {
           updater.markTaskFailed(task.id, error ?? '未知错误')
@@ -205,7 +280,8 @@ export async function runKanbanTaskHeadless(
           channelId: task.channelId,
           modelId: task.modelId,
           workspaceId: task.workspaceId,
-          permissionModeOverride: task.permissionMode ?? 'bypassPermissions',
+          // 权限模式优先级：task.permissionMode > role.permissionMode > 默认 bypassPermissions
+          permissionModeOverride: resolvePermissionMode(task),
           triggeredBy: 'kanban',
           startedAt,
         },
@@ -223,5 +299,73 @@ export async function runKanbanTaskHeadless(
     })
   } finally {
     if (powerSaveBlocker.isStarted(blockerId)) powerSaveBlocker.stop(blockerId)
+  }
+}
+
+/**
+ * 创建「仅写 running」的 updater（dispatcher 注入真实 runner 场景用）
+ *
+ * 为什么 done/failed 不写：dispatcher 会根据 runner 返回值统一写 status=done + resultSummary
+ * （summary 由 runner 通过 extractLastAssistantSummary 提取返回），本处只负责 running + assigneeSessionId。
+ */
+function createRunningOnlyUpdater(): KanbanTaskUpdater {
+  return {
+    markTaskRunning: (taskId, sessionId) => {
+      kanbanDbService.updateTaskStatus(taskId, {
+        status: 'running',
+        assigneeSessionId: sessionId,
+      })
+    },
+    markTaskDone: () => {
+      // no-op：done + summary 由 dispatcher 根据 runner 返回值写
+    },
+    markTaskFailed: () => {
+      // no-op：failed + error 由 dispatcher 根据 runner 返回值写
+    },
+  }
+}
+
+/**
+ * 把 runKanbanTaskHeadless 包装为 KanbanWorkerRunner（dispatcher 注入用）
+ *
+ * 替代 kanban-bootstrap 的 mockWorkerRunner，让看板任务通过真实 headless Agent 子会话执行。
+ *
+ * - 从 DB 读 board 构造 boardContext（parentSessionId / originChatId / originBridge）
+ * - 用 createRunningOnlyUpdater()：只写 running + assigneeSessionId
+ *   （done/failed 状态由 dispatcher 根据 runner 返回值写，但 summary 由 runner 提取返回）
+ * - 通过 onTaskCompleted 捕获 error 返回给 dispatcher，dispatcher 据此写 failed + error
+ * - summary 通过 extractLastAssistantSummary 提取，作为 runner 返回值传给 dispatcher
+ */
+export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
+  return async (task) => {
+    const board = kanbanDbService.getBoard(task.boardId)
+    if (!board) {
+      return { error: `看板不存在: ${task.boardId}` }
+    }
+    const boardContext: KanbanWorkerBoardContext = {
+      id: board.id,
+      parentSessionId: board.parentSessionId,
+      originChatId: board.originChatId,
+      originBridge: board.originBridge,
+    }
+    let capturedError: string | undefined
+    let workerSessionId: string | undefined
+    await runKanbanTaskHeadless(task, boardContext, {
+      updater: createRunningOnlyUpdater(),
+      onTaskStarted: (_taskId, sessionId) => {
+        workerSessionId = sessionId
+      },
+      onTaskCompleted: (_taskId, status, _summary, error) => {
+        if (status === 'failed') {
+          capturedError = error ?? '未知错误'
+        }
+      },
+    })
+    // 成功时从工人会话提取最后一条 assistant 文本作为 summary 返回给 dispatcher
+    if (!capturedError && workerSessionId) {
+      const summary = extractLastAssistantSummary(workerSessionId)
+      return { summary }
+    }
+    return { error: capturedError }
   }
 }

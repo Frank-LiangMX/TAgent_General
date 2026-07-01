@@ -16,15 +16,19 @@
  *
  * 模式隔离：v1 仅 general 模式注入；TA 模式禁止注入本工具集（见 §6.1） */
 
-import type {
-  CreateKanbanBoardInput,
-  CreateKanbanTaskInput,
-  KanbanBoard,
-  KanbanTask,
-  KanbanTaskStatus,
+import {
+  KANBAN_DEFAULT_MAX_CONCURRENT,
+  type CreateKanbanBoardInput,
+  type CreateKanbanTaskInput,
+  type KanbanBoard,
+  type KanbanTask,
+  type KanbanTaskStatus,
 } from '@tagent/shared'
 
 import { kanbanDbService } from './kanban-db'
+import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
+import { broadcastKanbanChanged } from './kanban-ipc'
+import { getSettings } from './settings-service'
 
 /** MCP 工具结果格式（与 automation-agent-tools 的 AutomationToolResult 一致） */
 export interface KanbanToolResult extends Record<string, unknown> {
@@ -43,9 +47,13 @@ export interface KanbanAgentTool {
 
 export interface KanbanCreateBoardArgs {
   rootGoal: string
-  parentSessionId: string
+  parentSessionId?: string
+  title?: string
+  mode?: 'general' | 'ta'
   originChatId?: string
   originBridge?: 'wechat' | 'wps' | 'feishu' | 'dingtalk' | 'desktop'
+  /** 完成后是否需要主会话汇总（B9，分析/审计/调研类设 true，批量执行类设 false） */
+  requireSummary?: boolean
 }
 
 export interface KanbanAddTaskArgs {
@@ -70,6 +78,11 @@ export interface KanbanListTasksArgs {
     | 'done'
     | 'failed'
     | 'cancelled'
+}
+
+export interface KanbanListBoardsArgs {
+  mode?: 'general' | 'ta'
+  status?: 'active' | 'completed' | 'cancelled'
 }
 
 export interface KanbanBlockArgs {
@@ -130,6 +143,22 @@ function parseOriginBridge(value: unknown): KanbanCreateBoardArgs['originBridge'
     : undefined
 }
 
+const ALLOWED_MODES: ReadonlySet<string> = new Set(['general', 'ta'])
+
+function parseMode(value: unknown): KanbanCreateBoardArgs['mode'] | undefined {
+  if (typeof value !== 'string') return undefined
+  return ALLOWED_MODES.has(value) ? (value as KanbanCreateBoardArgs['mode']) : undefined
+}
+
+const ALLOWED_BOARD_STATUSES: ReadonlySet<string> = new Set(['active', 'completed', 'cancelled'])
+
+function parseBoardStatus(value: unknown): KanbanListBoardsArgs['status'] | undefined {
+  if (typeof value !== 'string') return undefined
+  return ALLOWED_BOARD_STATUSES.has(value)
+    ? (value as KanbanListBoardsArgs['status'])
+    : undefined
+}
+
 const ALLOWED_STATUSES: ReadonlySet<string> = new Set([
   'pending',
   'ready',
@@ -157,7 +186,16 @@ const kanbanCreateBoardSchema: Record<string, unknown> = {
     },
     parentSessionId: {
       type: 'string',
-      description: '发起该看板的 Agent 会话 ID（用于侧栏父子会话关联）',
+      description: '可选：发起该看板的 Agent 会话 ID（用于侧栏父子会话关联）。B4 起看板可脱离会话独立存在。',
+    },
+    title: {
+      type: 'string',
+      description: '可选：看板展示名（不填则用 rootGoal 截断）',
+    },
+    mode: {
+      type: 'string',
+      enum: ['general', 'ta'],
+      description: '可选：所属模式（默认 general）',
     },
     originChatId: {
       type: 'string',
@@ -168,8 +206,30 @@ const kanbanCreateBoardSchema: Record<string, unknown> = {
       enum: ['wechat', 'wps', 'feishu', 'dingtalk', 'desktop'],
       description: '可选：IM 来源桥类型',
     },
+    requireSummary: {
+      type: 'boolean',
+      description:
+        '可选：完成后是否需要主会话汇总（默认 false）。分析/审计/调研/重构总结类任务（交付物是综合报告）设 true，board 全部完成后自动触发主会话汇总；批量改资产/批量生成文件/批量执行类任务（交付物是独立文件/资产）设 false，只发通知不触发主会话。',
+    },
   },
-  required: ['rootGoal', 'parentSessionId'],
+  required: ['rootGoal'],
+  additionalProperties: false,
+}
+
+const kanbanListBoardsSchema: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    mode: {
+      type: 'string',
+      enum: ['general', 'ta'],
+      description: '可选：按模式过滤（不传则列出所有模式）',
+    },
+    status: {
+      type: 'string',
+      enum: ['active', 'completed', 'cancelled'],
+      description: '可选：按状态过滤（不传则默认只看 active）',
+    },
+  },
   additionalProperties: false,
 }
 
@@ -234,18 +294,42 @@ const kanbanCommentSchema: Record<string, unknown> = {
 
 // ===== 工具 handler =====
 
-async function handleCreateBoard(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleCreateBoard(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const input: CreateKanbanBoardInput = {
     rootGoal: assertNonBlank(args.rootGoal, 'rootGoal'),
-    parentSessionId: assertNonBlank(args.parentSessionId, 'parentSessionId'),
+    parentSessionId: optionalString(args.parentSessionId),
+    title: optionalString(args.title),
+    mode: parseMode(args.mode),
     originChatId: optionalString(args.originChatId),
     originBridge: parseOriginBridge(args.originBridge),
+    requireSummary: args.requireSummary === true,
+    // 读设置项的默认并发上限（用户可在设置页调），未配则用 KANBAN_DEFAULT_MAX_CONCURRENT
+    maxConcurrent:
+      typeof args.maxConcurrent === 'number' && Number.isFinite(args.maxConcurrent)
+        ? args.maxConcurrent
+        : getSettings().agentBehavior?.defaultMaxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT,
   }
   const board: KanbanBoard = kanbanDbService.createBoard(input)
-  return jsonResult({ boardId: board.id, created: true })
+  // 传了 parentSessionId 且会话存在时，自动写回 meta.boardId（触发「团队」Tab 显示）
+  // 与 createKanbanBoard IPC 行为对齐，避免用户手动绑定
+  if (input.parentSessionId && getAgentSessionMeta(input.parentSessionId)) {
+    updateAgentSessionMeta(input.parentSessionId, { boardId: board.id })
+  }
+  // 广播变更：触发渲染层刷新 agentSessionsAtom（同步 boardId）和看板 UI
+  broadcastKanbanChanged()
+  return jsonResult({ boardId: board.id, created: true, requireSummary: board.requireSummary })
 }
 
-async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleListBoards(args: Record<string, unknown>): Promise<KanbanToolResult> {
+  const mode = parseMode(args.mode)
+  const status = parseBoardStatus(args.status)
+  const boards: KanbanBoard[] = kanbanDbService.listBoards(
+    mode || status ? { mode, status } : undefined
+  )
+  return jsonResult({ boards, count: boards.length })
+}
+
+export async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const input: CreateKanbanTaskInput = {
     boardId: assertNonBlank(args.boardId, 'boardId'),
     title: assertNonBlank(args.title, 'title'),
@@ -258,10 +342,11 @@ async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolR
     parentTaskId: optionalString(args.parentTaskId),
   }
   const task: KanbanTask = kanbanDbService.createTask(input)
+  broadcastKanbanChanged()
   return jsonResult({ taskId: task.id, created: true })
 }
 
-async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const boardId = assertNonBlank(args.boardId, 'boardId')
   const statusFilter = parseStatus(args.status) as KanbanTaskStatus | undefined
   const allTasks: KanbanTask[] = kanbanDbService.listTasksByBoard(boardId)
@@ -270,17 +355,18 @@ async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToo
   return jsonResult({ tasks, count: tasks.length })
 }
 
-async function handleBlock(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleBlock(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const taskId = assertNonBlank(args.taskId, 'taskId')
   const reason = assertNonBlank(args.reason, 'reason')
   kanbanDbService.updateTaskStatus(taskId, {
     status: 'blocked',
     blockedReason: reason,
   })
+  broadcastKanbanChanged()
   return jsonResult({ taskId, status: 'blocked', reason })
 }
 
-async function handleComment(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleComment(args: Record<string, unknown>): Promise<KanbanToolResult> {
   const taskId = assertNonBlank(args.taskId, 'taskId')
   const comment = assertNonBlank(args.comment, 'comment')
   // TODO(kanban): kanban-db 尚未提供 addTaskComment / metadata 更新 API，
@@ -305,9 +391,16 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
     kanban_create_board: {
       name: 'kanban_create_board',
       description:
-        '创建 TAgent 看板（长任务多 Agent 编排容器）。传入 rootGoal 与发起会话 ID，调度器会自动 tick 派工。仅 general 模式可用。',
+        '创建 TAgent 看板（长任务多 Agent 编排容器）。传入 rootGoal，调度器会自动 tick 派工。支持 general / TA 双模式。',
       inputSchema: kanbanCreateBoardSchema,
       handler: handleCreateBoard,
+    },
+    kanban_list_boards: {
+      name: 'kanban_list_boards',
+      description:
+        '列出所有看板（B4 全局视图）。支持按模式（general/ta）和状态（active/completed/cancelled）过滤，不传 status 默认只看 active。',
+      inputSchema: kanbanListBoardsSchema,
+      handler: handleListBoards,
     },
     kanban_add_task: {
       name: 'kanban_add_task',
@@ -338,4 +431,153 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
       handler: handleComment,
     },
   }
+}
+
+// ===== MCP 注入（orchestrator 调用） =====
+
+/** 看板工具注入上下文（参考 AutomationAgentToolContext） */
+export interface KanbanAgentToolContext {
+  /** 当前会话 ID（未来扩展用：handler 可据此解析 session meta） */
+  sessionId: string
+  /** 当前会话渠道 ID（kanban_add_task 未显式传 channelId 时作为兜底） */
+  channelId?: string
+  /** 触发来源（防递归：'kanban' 时不应注入，由 orchestrator 提前判断） */
+  triggeredBy?: 'user' | 'automation' | 'delegation' | 'kanban'
+}
+
+/**
+ * 注入看板 MCP 工具集到 SDK
+ *
+ * 参考 injectAutomationMcpServer 模式：用 zod 定义 schema + sdk.tool() 注册 + sdk.createSdkMcpServer 打包。
+ * 复用 buildKanbanAgentTools() 的 handler（调 kanbanDbService CRUD）。
+ *
+ * 注入条件（由调用方 orchestrator 判断）：
+ * - 会话 mode === 'general'（TA 模式禁用）
+ * - triggeredBy !== 'kanban'（防工人子会话递归建板）
+ *
+ * kanban_add_task 的 channelId 若未传，用 ctx.channelId 兜底（v1 任务继承当前会话渠道）。
+ */
+export async function injectKanbanMcpServer(
+  sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+  mcpServers: Record<string, Record<string, unknown>>,
+  ctx: KanbanAgentToolContext
+): Promise<void> {
+  const { z } = await import('zod')
+
+  const createBoardSchema = {
+    rootGoal: z.string().describe('用户原始目标（看板根任务标题）'),
+    parentSessionId: z
+      .string()
+      .optional()
+      .describe('发起该看板的 Agent 会话 ID（可选，B4 起看板可脱离会话独立存在）'),
+    title: z.string().optional().describe('看板展示名（不填则用 rootGoal）'),
+    mode: z.enum(['general', 'ta']).optional().describe('所属模式（默认 general）'),
+    originChatId: z.string().optional().describe('IM 来源 chatId（用于回推完成通知）'),
+    originBridge: z
+      .enum(['wechat', 'wps', 'feishu', 'dingtalk', 'desktop'])
+      .optional()
+      .describe('IM 来源桥类型'),
+    requireSummary: z
+      .boolean()
+      .optional()
+      .describe(
+        '完成后是否需要主会话汇总（默认 false）。分析/审计/调研/重构总结类设 true，board 完成后自动触发主会话汇总；批量执行/批量生成类设 false，只发通知。'
+      ),
+  }
+
+  const listBoardsSchema = {
+    mode: z.enum(['general', 'ta']).optional().describe('按模式过滤（不传则列出所有模式）'),
+    status: z
+      .enum(['active', 'completed', 'cancelled'])
+      .optional()
+      .describe('按状态过滤（不传则默认只看 active）'),
+  }
+
+  const addTaskSchema = {
+    boardId: z.string().describe('所属看板 ID'),
+    title: z.string().describe('任务标题（一行简述）'),
+    body: z.string().optional().describe('给工人的完整 prompt'),
+    roleId: z.string().optional().describe('绑定角色库 ID（决定 model / 权限）'),
+    channelId: z.string().optional().describe('任务渠道 ID（不传则用当前会话渠道）'),
+    modelId: z.string().optional().describe('指定模型 ID（否则由 roleId 解析）'),
+    priority: z.number().optional().describe('优先级（数字越大越优先；默认 0）'),
+    parentTaskId: z.string().optional().describe('父任务 ID（构建分解树）'),
+  }
+
+  const listTasksSchema = {
+    boardId: z.string().describe('看板 ID'),
+    status: z
+      .enum(['pending', 'ready', 'running', 'blocked', 'review', 'done', 'failed', 'cancelled'])
+      .optional()
+      .describe('按状态过滤（不传则列出全部）'),
+  }
+
+  const blockSchema = {
+    taskId: z.string().describe('要标记阻塞的任务 ID'),
+    reason: z.string().describe('阻塞原因（缺信息 / 等待外部输入 / 权限不足等）'),
+  }
+
+  const commentSchema = {
+    taskId: z.string().describe('目标任务 ID'),
+    comment: z.string().describe('注释内容（写入任务 metadata.blackboard）'),
+  }
+
+  const server = sdk.createSdkMcpServer({
+    name: 'kanban',
+    version: '1.0.0',
+    tools: [
+      sdk.tool(
+        'kanban_create_board',
+        '创建 TAgent 看板（长任务多 Agent 编排容器）。传入 rootGoal，调度器会自动 tick 派工。支持 general / TA 双模式。',
+        createBoardSchema,
+        async (args: Record<string, unknown>) => {
+          // parentSessionId 未传时用当前会话 ID 兜底，确保建板后自动绑定到当前会话
+          // 否则团队 Tab 拿不到 boardId，无法显示任务进度
+          const enriched = {
+            ...args,
+            parentSessionId: args.parentSessionId ?? ctx.sessionId,
+          }
+          return handleCreateBoard(enriched)
+        }
+      ),
+      sdk.tool(
+        'kanban_list_boards',
+        '列出所有看板（B4 全局视图）。支持按模式（general/ta）和状态过滤，不传 status 默认只看 active。',
+        listBoardsSchema,
+        async (args: Record<string, unknown>) => handleListBoards(args),
+        { annotations: { readOnlyHint: true } }
+      ),
+      sdk.tool(
+        'kanban_add_task',
+        '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务。',
+        addTaskSchema,
+        async (args: Record<string, unknown>) => {
+          const enriched = { ...args, channelId: args.channelId ?? ctx.channelId }
+          return handleAddTask(enriched)
+        }
+      ),
+      sdk.tool(
+        'kanban_list_tasks',
+        '列出看板下的任务，支持按状态过滤（pending/ready/running/blocked/review/done/failed/cancelled）。',
+        listTasksSchema,
+        async (args: Record<string, unknown>) => handleListTasks(args),
+        { annotations: { readOnlyHint: true } }
+      ),
+      sdk.tool(
+        'kanban_block',
+        '工人标记当前任务阻塞（缺信息 / 等待外部输入 / 权限不足）。阻塞后会触发 IM 通知，等待用户回复 unblock。',
+        blockSchema,
+        async (args: Record<string, unknown>) => handleBlock(args)
+      ),
+      sdk.tool(
+        'kanban_comment',
+        '向任务的 blackboard 写入注释（任意方可调用，用于跨任务共享上下文 / 备注）。',
+        commentSchema,
+        async (args: Record<string, unknown>) => handleComment(args)
+      ),
+    ],
+  })
+
+  mcpServers.kanban = server as unknown as Record<string, unknown>
+  console.log('[Agent 编排] 已注入看板工具集 (kanban)')
 }

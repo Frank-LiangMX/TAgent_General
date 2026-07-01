@@ -38,6 +38,98 @@ describe('KanbanDbService', () => {
     test('getBoard 不存在时返回 null', () => {
       expect(db.getBoard('b_nonexistent')).toBeNull()
     })
+
+    // ===== B4：看板独立实体化测试 =====
+
+    test('createBoard 支持独立建板（不传 parentSessionId）', () => {
+      const board = db.createBoard({
+        rootGoal: '独立任务',
+        title: '独立看板',
+        mode: 'ta',
+      })
+      expect(board.parentSessionId).toBeUndefined()
+      expect(board.title).toBe('独立看板')
+      expect(board.mode).toBe('ta')
+
+      const fetched = db.getBoard(board.id)
+      expect(fetched?.parentSessionId).toBeUndefined()
+      expect(fetched?.title).toBe('独立看板')
+      expect(fetched?.mode).toBe('ta')
+    })
+
+    test('createBoard 默认 mode 为 general', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      expect(board.mode).toBe('general')
+    })
+
+    test('listBoards 返回所有看板，按 updated_at DESC 排序', () => {
+      const b1 = db.createBoard({ rootGoal: 'G1', mode: 'general' })
+      const b2 = db.createBoard({ rootGoal: 'G2', mode: 'ta' })
+      const b3 = db.createBoard({ rootGoal: 'G3', mode: 'general' })
+      void b1
+      void b2
+      void b3
+
+      const all = db.listBoards()
+      expect(all).toHaveLength(3)
+      // 默认只看 active，全部应为 active
+      expect(all.every((b) => b.status === 'active')).toBe(true)
+    })
+
+    test('listBoards 按 mode 过滤', () => {
+      db.createBoard({ rootGoal: 'G1', mode: 'general' })
+      db.createBoard({ rootGoal: 'G2', mode: 'ta' })
+      db.createBoard({ rootGoal: 'G3', mode: 'general' })
+
+      const generalOnly = db.listBoards({ mode: 'general' })
+      expect(generalOnly).toHaveLength(2)
+      expect(generalOnly.every((b) => b.mode === 'general')).toBe(true)
+
+      const taOnly = db.listBoards({ mode: 'ta' })
+      expect(taOnly).toHaveLength(1)
+      expect(taOnly[0]!.mode).toBe('ta')
+    })
+
+    test('listBoards 按 status 过滤', () => {
+      const b1 = db.createBoard({ rootGoal: 'G1' })
+      db.createBoard({ rootGoal: 'G2' })
+      // 软删除 b1
+      db.deleteBoard(b1.id)
+
+      const activeOnly = db.listBoards()
+      expect(activeOnly).toHaveLength(1)
+      expect(activeOnly[0]!.id).not.toBe(b1.id)
+
+      const cancelledOnly = db.listBoards({ status: 'cancelled' })
+      expect(cancelledOnly).toHaveLength(1)
+      expect(cancelledOnly[0]!.id).toBe(b1.id)
+      expect(cancelledOnly[0]!.status).toBe('cancelled')
+    })
+
+    test('updateBoard 更新标题和状态', () => {
+      const board = db.createBoard({ rootGoal: 'G', title: '原标题' })
+      const updated = db.updateBoard(board.id, { title: '新标题', status: 'completed' })
+      expect(updated?.title).toBe('新标题')
+      expect(updated?.status).toBe('completed')
+      expect(updated?.updatedAt).toBeGreaterThanOrEqual(board.updatedAt)
+    })
+
+    test('updateBoard 不存在返回 null', () => {
+      expect(db.updateBoard('b_nonexistent', { title: 'X' })).toBeNull()
+    })
+
+    test('deleteBoard 软删除（status → cancelled）', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      db.deleteBoard(board.id)
+      const fetched = db.getBoard(board.id)
+      expect(fetched?.status).toBe('cancelled')
+    })
+
+    test('deleteBoard 硬删除（真删）', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      db.deleteBoard(board.id, true)
+      expect(db.getBoard(board.id)).toBeNull()
+    })
   })
 
   describe('任务 CRUD + 状态机', () => {

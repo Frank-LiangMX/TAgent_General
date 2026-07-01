@@ -12,24 +12,26 @@
 import * as React from 'react'
 import { useAtom } from 'jotai'
 
-import type { KanbanTask, KanbanTaskStatus } from '@tagent/shared'
+import type { KanbanBoard, KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
 import { Badge, Button, Input } from '@tagent/ui'
-import { Loader2, Pause, Play, RefreshCw } from 'lucide-react'
+import { Loader2, Pause, Play, RefreshCw, Unlink, ArrowLeftRight } from 'lucide-react'
 
 import {
   selectedKanbanTaskIdAtomFamily,
   useKanbanBoard,
+  useKanbanBoards,
 } from '@/atoms/kanban-atoms'
 import { AgentView } from '@/components/agent/AgentView'
 import { cn } from '@/lib/utils'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
+import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 
 /** 按状态分组的顺序与中文标签 */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
-  { status: 'running', label: '进行中' },
-  { status: 'ready', label: '待办' },
+  { status: 'running', label: '执行中' },
+  { status: 'ready', label: '待派工' },
   { status: 'pending', label: '待办（依赖未满足）' },
   { status: 'blocked', label: '阻塞' },
   { status: 'review', label: '待验收' },
@@ -48,9 +50,14 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
   const [selectedTaskId, setSelectedTaskId] = useAtom(
     selectedKanbanTaskIdAtomFamily(boardId)
   )
-  const [paused, setPaused] = React.useState(false)
+  // B5：paused 从 board 派生（切换看板时同步反映真实状态，不再用 local state）
+  const paused = board?.paused ?? false
   const [unblockReason, setUnblockReason] = React.useState('')
   const [unblocking, setUnblocking] = React.useState(false)
+  const [switcherOpen, setSwitcherOpen] = React.useState(false)
+
+  // 全局看板列表（切换看板用）
+  const { boards } = useKanbanBoards()
 
   // 选中任务对象（tasks 变更后保持选中态）
   const selectedTask = React.useMemo(
@@ -75,11 +82,11 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
   const handlePauseResume = async (): Promise<void> => {
     if (paused) {
       await window.electronAPI.kanban.resumeBoard(boardId)
-      setPaused(false)
     } else {
       await window.electronAPI.kanban.pauseBoard(boardId)
-      setPaused(true)
     }
+    // 不需要本地 toggle：IPC 成功后会 broadcastKanbanChanged，
+    // useKanbanBoard 重新拉取 board，paused 自然更新
   }
 
   const handleUnblock = async (): Promise<void> => {
@@ -98,6 +105,33 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
     }
   }
 
+  const handleSwitchBoard = async (targetBoardId: string): Promise<void> => {
+    if (targetBoardId === boardId) {
+      setSwitcherOpen(false)
+      return
+    }
+    try {
+      await window.electronAPI.kanban.attachBoardToSession({
+        sessionId,
+        boardId: targetBoardId,
+      })
+      setSelectedTaskId(null)
+    } catch (err) {
+      console.error('[看板] 切换看板失败:', err)
+    } finally {
+      setSwitcherOpen(false)
+    }
+  }
+
+  const handleDetach = async (): Promise<void> => {
+    try {
+      await window.electronAPI.kanban.detachBoardFromSession({ sessionId })
+      setSelectedTaskId(null)
+    } catch (err) {
+      console.error('[看板] 解绑看板失败:', err)
+    }
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-1">
       {/* 左栏：任务列表 */}
@@ -111,6 +145,24 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-7 rounded-full p-0"
+              onClick={() => setSwitcherOpen(true)}
+              title="切换看板"
+            >
+              <ArrowLeftRight className="size-3.5 text-foreground/60" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-7 rounded-full p-0"
+              onClick={() => void handleDetach()}
+              title="解绑看板"
+            >
+              <Unlink className="size-3.5 text-foreground/60" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -137,7 +189,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
         </div>
 
         {/* 任务列表（按状态分组） */}
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 scrollbar-thin">
           {loading && tasks.length === 0 && (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
@@ -167,6 +219,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
                       task={task}
                       selected={task.id === selectedTaskId}
                       onSelect={setSelectedTaskId}
+                      showDetailDialog={false}
                     />
                   ))}
                 </div>
@@ -213,6 +266,13 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
           </div>
         )}
       </section>
+      <KanbanSwitcherDialog
+        open={switcherOpen}
+        onOpenChange={setSwitcherOpen}
+        boards={boards}
+        currentBoardId={boardId}
+        onSelect={handleSwitchBoard}
+      />
     </div>
   )
 }
@@ -232,7 +292,7 @@ function TaskDetailView({
   unblocking: boolean
 }): React.ReactElement {
   return (
-    <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
       <div className="mx-auto max-w-2xl space-y-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
