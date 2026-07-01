@@ -97,6 +97,8 @@ export class AgentPermissionService {
    *
    * SDK 侧使用 default permissionMode，每次工具调用都会进入此回调。
    * 只读操作静默放行，高风险操作弹出 PermissionBanner 等待用户确认。
+   *
+   * @param cwd 会话工作目录，传入后会扩展放行「项目内只读 Bash」（cat/find/echo cwd 内文件）
    */
   createCanUseTool(
     sessionId: string,
@@ -107,7 +109,8 @@ export class AgentPermissionService {
       signal: AbortSignal,
       sendToRenderer: (request: AskUserRequest) => void
     ) => Promise<PermissionResult>,
-    sendAskUserToRenderer?: (request: AskUserRequest) => void
+    sendAskUserToRenderer?: (request: AskUserRequest) => void,
+    cwd?: string
   ): (
     toolName: string,
     input: Record<string, unknown>,
@@ -149,7 +152,7 @@ export class AgentPermissionService {
       }
 
       // 自动审批：只读工具静默放行，其余走权限横幅
-      if (isAutoModeAutoAllowTool(toolName, input)) return allow()
+      if (isAutoModeAutoAllowTool(toolName, input, cwd)) return allow()
 
       // 需要询问用户：构建请求并发送到 UI
       const request = this.buildPermissionRequest(sessionId, toolName, input, options)

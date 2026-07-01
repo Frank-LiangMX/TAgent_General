@@ -137,6 +137,7 @@ import {
 } from '@/atoms/kanban-atoms'
 import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
 import { KanbanBoardSummary } from '@/components/kanban/KanbanBoardSummary'
+import { TaskProgressDock } from './TaskProgressDock'
 import { SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import {
   InputToolbarOverflow,
@@ -546,33 +547,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
   const [subTab, setSubTab] = useAtom(sessionAgentSubTabAtomFamily(sessionId))
   const kanbanBoard = useKanbanBoard(sessionId)
-  const setAgentSessionsForKanban = useSetAtom(agentSessionsAtom)
-  const [seedingDemo, setSeedingDemo] = React.useState(false)
-
-  const handleSeedDemo = React.useCallback(async () => {
-    if (!agentChannelId) {
-      toast.error('请先选择 AI 渠道后再加载看板演示')
-      return
-    }
-    setSeedingDemo(true)
-    try {
-      await window.electronAPI.kanban.seedDemo({
-        sessionId,
-        channelId: agentChannelId,
-        workspaceId: currentWorkspaceId ?? undefined,
-      })
-      // 刷新会话列表以获取更新后的 meta.boardId
-      const refreshed = await window.electronAPI.listAgentSessions()
-      setAgentSessionsForKanban(refreshed)
-      setSubTab('team')
-      toast.success('看板演示数据已加载')
-    } catch (err) {
-      console.error('[看板] 加载演示失败:', err)
-      toast.error('加载看板演示失败', { description: err instanceof Error ? err.message : undefined })
-    } finally {
-      setSeedingDemo(false)
-    }
-  }, [agentChannelId, currentWorkspaceId, sessionId, setAgentSessionsForKanban, setSubTab])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
@@ -2759,45 +2733,36 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     <>
       <AgentSessionProvider sessionId={sessionId}>
         <div className="relative flex flex-col h-full flex-1 min-w-0">
-          {/* Agent Header */}
-          <AgentHeader sessionId={sessionId} />
-
-          {/* 二级 Tab：对话 | 团队（嵌套工人会话不显示） */}
-          {!isNestedWorker && (
-            <div className="flex items-center gap-2 px-4 pt-1.5 pb-1">
-              <SegmentedTabs
-                value={subTab}
-                onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
-                className="text-xs"
-              >
-                <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
-                <SegmentedTabsItem value="team">
-                  团队{boardId && kanbanBoard.tasks.length > 0 && (
-                    <span className="ml-1 tabular-nums text-muted-foreground">
-                      {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/{kanbanBoard.tasks.length}
-                    </span>
+          {/* Agent Header（右侧合并二级 Tab + 看板缩略） */}
+          <AgentHeader
+            sessionId={sessionId}
+            rightSlot={
+              !isNestedWorker ? (
+                <>
+                  <SegmentedTabs
+                    value={subTab}
+                    onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
+                    className="text-xs"
+                  >
+                    <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
+                    <SegmentedTabsItem value="team">
+                      团队{boardId && kanbanBoard.tasks.length > 0 && (
+                        <span className="ml-1 tabular-nums text-muted-foreground">
+                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/{kanbanBoard.tasks.length}
+                        </span>
+                      )}
+                    </SegmentedTabsItem>
+                  </SegmentedTabs>
+                  {boardId && subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
+                    <KanbanBoardSummary
+                      tasks={kanbanBoard.tasks}
+                      onOpenTeam={() => setSubTab('team')}
+                    />
                   )}
-                </SegmentedTabsItem>
-              </SegmentedTabs>
-              {!boardId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-[11px] text-foreground/60 hover:text-foreground"
-                  onClick={() => void handleSeedDemo()}
-                  disabled={seedingDemo}
-                >
-                  {seedingDemo ? '加载中…' : '加载看板演示'}
-                </Button>
-              )}
-              {boardId && subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
-                <KanbanBoardSummary
-                  tasks={kanbanBoard.tasks}
-                  onOpenTeam={() => setSubTab('team')}
-                />
-              )}
-            </div>
-          )}
+                </>
+              ) : null
+            }
+          />
 
           {subTab === 'team' && boardId && !isNestedWorker ? (
             <SessionTeamTab sessionId={sessionId} boardId={boardId} />
@@ -2911,6 +2876,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                           </button>
                         </div>
                       )}
+
+                      {/* 任务进度预览条：长任务进行中时显示在输入框上方，避免随会话滚走 */}
+                      <TaskProgressDock
+                        allMessages={persistedSDKMessages}
+                        streaming={streaming}
+                      />
 
                       <RichTextInput
                         value={inputContent}

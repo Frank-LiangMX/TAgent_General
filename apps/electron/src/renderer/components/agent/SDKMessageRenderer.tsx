@@ -540,6 +540,51 @@ export function buildHistoricalTaskSubjects(allMessages: SDKMessage[]): Map<stri
   return historicalTaskSubjects
 }
 
+/**
+ * 扫描整个会话的所有消息，提取所有 TaskCreate/TaskUpdate/TodoWrite 工具活动。
+ *
+ * 与 buildTaskProgressData 的区别：buildTaskProgressData 只看单个 turn 的顶层 blocks，
+ * 本函数跨 turn 扫描，用于输入框上方的全局任务进度预览条。
+ */
+export function buildAllTaskActivities(allMessages: SDKMessage[]): ToolActivity[] {
+  const taskBlocks: SDKToolUseBlock[] = []
+
+  for (const msg of allMessages) {
+    if (msg.type !== 'assistant') continue
+    const aMsg = msg as SDKAssistantMessage
+    const blocks = aMsg.message?.content
+    if (!Array.isArray(blocks)) continue
+    for (const b of blocks) {
+      if (b.type === 'tool_use' && TASK_TOOL_NAMES.has((b as SDKToolUseBlock).name)) {
+        taskBlocks.push(b as SDKToolUseBlock)
+      }
+    }
+  }
+
+  const toolResultMap = new Map<string, string>()
+  for (const msg of allMessages) {
+    if (msg.type !== 'user') continue
+    const userMsg = msg as SDKUserMessage
+    const blocks = userMsg.message?.content
+    if (!Array.isArray(blocks)) continue
+    for (const b of blocks) {
+      if (b.type === 'tool_result') {
+        const rb = b as SDKToolResultBlock
+        const text = extractToolResultForTask(userMsg, rb)
+        if (text) toolResultMap.set(rb.tool_use_id, text)
+      }
+    }
+  }
+
+  return taskBlocks.map((tb) => ({
+    toolUseId: tb.id,
+    toolName: tb.name,
+    input: tb.input as Record<string, unknown>,
+    result: toolResultMap.get(tb.id),
+    done: true,
+  }))
+}
+
 // ===== AssistantTurnRenderer — 渲染一个完整的 assistant turn =====
 
 export interface AssistantTurnRendererProps {

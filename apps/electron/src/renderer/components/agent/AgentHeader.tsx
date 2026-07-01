@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils'
 /** AgentHeader 属性接口 */
 interface AgentHeaderProps {
   sessionId: string
+  /** 右侧插槽（渲染在状态 chip 行最右，避让 WindowControls） */
+  rightSlot?: React.ReactNode
 }
 
 function HeaderStatusChip({
@@ -90,7 +92,7 @@ function getStatusTone(
   return 'neutral'
 }
 
-export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement | null {
+export function AgentHeader({ sessionId, rightSlot }: AgentHeaderProps): React.ReactElement | null {
   const sessions = useAtomValue(agentSessionsAtom)
   const session = sessions.find((s) => s.id === sessionId) ?? null
   const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))
@@ -114,9 +116,6 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
 
   return (
     <div className="relative z-[51] flex h-[36px] items-center gap-2 px-4">
-      {/* 拖拽层仅覆盖左侧区域，避开右上角 WindowControls（Windows 上 ~126px）。
-          否则 header 的 drag-region 会与按钮重叠，导致 OS hitmask 把单击当成标题栏点击。 */}
-      <div className="absolute inset-0 right-[126px] titlebar-drag-region pointer-events-none" />
       <div className="flex flex-1 min-w-0 items-center">
         <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
           <HeaderStatusChip>{modelLabel}</HeaderStatusChip>
@@ -124,6 +123,11 @@ export function AgentHeader({ sessionId }: AgentHeaderProps): React.ReactElement
           <HeaderStatusChip tone={statusTone}>{statusLabel}</HeaderStatusChip>
         </div>
       </div>
+      {rightSlot && (
+        <div className="relative z-10 flex shrink-0 items-center gap-2">
+          {rightSlot}
+        </div>
+      )}
     </div>
   )
 }

@@ -61,6 +61,15 @@ export function runApplicationShutdown(): void {
   } catch (err) {
     console.error('[退出] 停止定时任务调度器失败:', err)
   }
+  try {
+    // 停止看板调度器（worker 子会话由 stopAllAgents 统一停，dispatcher 只清 tick timer）
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { stopKanbanDispatcher } =
+      require('./kanban-dispatcher') as typeof import('./kanban-dispatcher')
+    stopKanbanDispatcher()
+  } catch (err) {
+    console.error('[退出] 停止看板调度器失败:', err)
+  }
   stopBridgeSelfHealing()
   stopAllBridges()
   stopFeishuSyncSleepBlocker()

@@ -63,6 +63,7 @@ import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-m
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
 import { injectAutomationMcpServer } from './automation-agent-tools'
+import { injectKanbanMcpServer } from './kanban-agent-tools'
 import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
   appendSDKMessages,
@@ -1179,7 +1180,43 @@ export class AgentOrchestrator {
       return { ...m, _createdAt: now } as unknown as SDKMessage
     })
 
-    appendSDKMessages(sessionId, withTimestamps)
+    // 截断 kanban_add_task 的 body（省主会话 context）
+    // body 权威源是 kanban DB（tasks.body 列），主会话 JSONL 只是回显；
+    // 截断后 Agent 可通过 kanban_list_tasks 查完整 body，worker 执行不受影响
+    const sanitized = withTimestamps.map((m) => {
+      if (m.type !== 'assistant') return m
+      const msg = m as { message?: { content?: Array<Record<string, unknown>> } }
+      const content = msg.message?.content
+      if (!Array.isArray(content)) return m
+      let modified = false
+      const newContent = content.map((block) => {
+        if (
+          block.type !== 'tool_use' ||
+          block.name !== 'kanban_add_task' ||
+          !block.input
+        ) {
+          return block
+        }
+        const input = block.input as Record<string, unknown>
+        if (typeof input.body !== 'string') return block
+        const body = input.body
+        if (body.length <= 200) return block
+        modified = true
+        return {
+          ...block,
+          input: {
+            ...input,
+            body:
+              body.slice(0, 200) +
+              `\n\n...（已省略 ${body.length - 200} 字，完整 prompt 见工人会话或 kanban_list_tasks）`,
+          },
+        }
+      })
+      if (!modified) return m
+      return { ...m, message: { ...msg.message, content: newContent } } as unknown as SDKMessage
+    })
+
+    appendSDKMessages(sessionId, sanitized)
   }
 
   /**
@@ -1693,11 +1730,20 @@ export class AgentOrchestrator {
         }
       }
 
-      // TODO(kanban): Phase B 注入看板工具集
-      // 当 sessionId 所属会话 mode === 'general' 且 triggeredBy !== 'kanban'（防递归）时，
-      // 调用 buildKanbanAgentTools() 把 5 个 kanban_* 工具包装成 sdk.tool() 注入 mcpServers。
-      // 参考 injectAutomationMcpServer 的实现；v1 仅 general 模式，TA 模式禁止注入。
-      // 详见 docs/plans/2026-06-30-task-kanban-orchestration-design.md §5.3 / §6.1。
+      // 注入看板工具集
+      // B4 起支持 general / TA 双模式，仅防递归（triggeredBy !== 'kanban'）。
+      // TA 模式也可创建看板做批量资产编排。
+      if (triggeredBy !== 'kanban') {
+        try {
+          await injectKanbanMcpServer(sdk, mcpServers, {
+            sessionId,
+            channelId,
+            triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
+          })
+        } catch (err) {
+          console.error('[Agent 编排] 注入看板工具集失败:', err)
+        }
+      }
 
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {
@@ -1843,7 +1889,8 @@ export class AgentOrchestrator {
             kind: 'tagent_event',
             event: { type: 'ask_user_request', request },
           })
-        }
+        },
+        agentCwd
       )
 
       /**

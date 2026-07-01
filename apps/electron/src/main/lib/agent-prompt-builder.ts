@@ -248,6 +248,78 @@ const TOOL_USAGE_GUIDELINES = `## 工具使用指南
 - **大文件写入**：使用 Write 写入超过约 10,000 字（特别是中文/日文/韩文等 CJK 字符）时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断导致文件内容不完整
 - **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json / \`\`\`bash 等），Mermaid 图必须用 \`\`\`mermaid，纯文本/日志/未知格式用 \`\`\`text。不写语言会导致前端无法语法高亮，用户体验下降；如果实在不知道语言，宁可写 \`\`\`text 也不要留空围栏`
 
+// ===== 看板多 Agent 编排指南 =====
+
+/**
+ * 告知 Agent：何时 + 如何使用看板工具拆解任务为多 Agent 并行编排。
+ *
+ * 核心触发条件：
+ * - 用户给出"大目标"（不是单步问答），如"重构 X 模块"、"分析 Y 项目"、"实现 Z 功能"
+ * - 任务可拆解为 3+ 个相对独立的子任务
+ * - 子任务可并行或存在依赖链（A→B→C）
+ *
+ * 防止滥用：简单问答、单文件小改、单步查询不要建看板，直接做。
+ */
+const KANBAN_ORCHESTRATION_GUIDE = `## 看板多 Agent 编排指南
+
+你拥有看板工具集（kanban_create_board / kanban_add_task / kanban_list_tasks / kanban_list_boards / kanban_block / kanban_comment），可以把大型任务拆解为多 Agent 并行编排。
+
+### 何时该用看板（强信号）
+
+满足以下任意一条，**必须**用看板编排而非单会话从头走到尾：
+
+- 用户给出**大目标**且明显可拆解："分析这个项目工程"、"重构 X 模块"、"实现完整的 Y 功能"、"做一次代码审计"
+- 任务自然分解为 3+ 个独立子任务（如"分析项目" → 读 README + 扫架构 + 列依赖 + 出报告）
+- 子任务间有依赖链（A 完成后 B 才能开始）
+- 子任务可并行（独立模块的分析、独立文件的改造）
+
+### 何时**不该**用看板（防滥用）
+
+- 单步问答："这个函数怎么用？"、"这个错误什么意思？"
+- 单文件小改：改个 bug、加个字段、调样式
+- 单次查询：搜一下某符号在哪、统计某文件行数
+- 任务预计 < 5 分钟完成
+
+### 使用流程（必须按顺序）
+
+1. **判断规模**：先用 1-2 次 Glob/Grep 探查任务规模。若确认是大目标，进入下一步。
+2. **建看板**：调用 \`kanban_create_board\`，rootGoal 写用户原始目标，title 简短。
+   - **判断 requireSummary**：如果交付物是综合报告（分析/审计/调研/重构总结类），设 \`requireSummary: true\`，board 完成后系统会自动触发主会话汇总；如果交付物是独立文件/资产（批量改资产/批量生成/批量执行类），设 \`requireSummary: false\`（默认），只发完成通知不触发主会话。
+3. **拆任务**：列出 3-8 个子任务，每个调用 \`kanban_add_task\`：
+   - title：一行简述（"分析项目依赖树" / "扫描入口模块"）
+   - body：**完整的工人 prompt**——工人是独立子会话，看不到当前对话上下文，body 必须自包含（包含目标、路径、输出格式）
+   - priority：数字越大越优先；有依赖的下游任务 priority 调低
+4. **告知用户**：建完看板后回复用户："已创建看板，N 个任务已派发，调度器会自动执行，你可以在看板页查看进度"。
+5. **不要自己执行**：看板建好后，调度器会在 30s 内自动派工给工人子会话。你不要自己领任务做，让系统自动派。
+   - 若 requireSummary=true，board 完成后系统会自动触发你汇总，无需用户手动询问。
+
+### 任务拆解原则
+
+- **独立性**：每个任务的 body 要让工人能独立执行，不依赖其他任务的中间结果（依赖通过 priority 顺序 + 状态机保证）
+- **可验收**：body 末尾写明"完成后输出 X"，便于结果回流
+- **粒度适中**：单个任务工人执行 5-30 分钟为宜；太大拆不开、太小调度开销高
+- **依赖最小化**：能并行就并行，避免人为串行链
+
+### 示例：用户说"分析 F:/某项目工程"
+
+判断：大目标 ✅ 可拆解 ✅ → 用看板
+
+\`\`\`text
+1. kanban_create_board({ rootGoal: "分析 F:/某项目工程", title: "某项目分析" })
+2. kanban_add_task({ boardId, title: "读取 README 与文档", body: "读取 F:/某项目/README.md 与 docs/ 目录所有 .md 文件，输出项目定位、核心功能、技术栈摘要", channelId, priority: 10 })
+3. kanban_add_task({ boardId, title: "扫描架构与目录结构", body: "列出 F:/某项目顶层目录树（2 层），识别 src/ tests/ config/ 等约定目录，输出架构模式判断（monorepo / 单应用 / 库）", channelId, priority: 8 })
+4. kanban_add_task({ boardId, title: "分析依赖与技术栈", body: "读取 F:/某项目/package.json / requirements.txt / go.mod 等依赖清单文件，输出核心依赖列表 + 版本 + 用途判断", channelId, priority: 8 })
+5. kanban_add_task({ boardId, title: "识别入口与主流程", body: "找出 F:/某项目的入口文件（main.ts / index.js / __main__.py 等），跟踪顶层调用链 3 层，输出主流程时序描述", channelId, priority: 5 })
+6. 回复用户："已创建看板「某项目分析」，4 个分析任务已派发，调度器会自动执行，你可以在看板页查看进度"
+\`\`\`
+
+### 注意
+
+- 看板工具在 **general 模式**和 **TA 模式**都可用
+- 工人是 headless 子会话，bypassPermissions，能直接读写文件
+- 任务完成后调度器自动推进下游 ready 任务，你不需要手动驱动
+- 若任务失败（status=failed），看板详情页会显示 error；你可以读 error 后决定是否补一个修复任务`
+
 // ===== PostToolUse hook 自动验证规则（auto-typecheck 等） =====
 
 /**
@@ -361,6 +433,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // 工具使用指南（复用常量）
   sections.push(TOOL_USAGE_GUIDELINES)
+
+  // 看板多 Agent 编排指南（教 Agent 何时 + 如何用 kanban_* 工具拆解大任务）
+  sections.push(KANBAN_ORCHESTRATION_GUIDE)
 
   // PostToolUse hook 自动验证规则（auto-typecheck 等）
   sections.push(HOOK_AUTO_VERIFICATION_RULES)
