@@ -102,7 +102,11 @@ describe('KanbanDispatcher', () => {
         return { summary: `done:${task.title}` }
       }
 
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       const tasks = await waitForAllSettled(db, board.id)
@@ -116,7 +120,11 @@ describe('KanbanDispatcher', () => {
       db.createTask({ boardId: board.id, title: 'A', channelId: 'c1' })
 
       const mockRunner: KanbanWorkerRunner = async () => ({ error: '工人爆炸' })
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       const tasks = await waitForAllSettled(db, board.id)
@@ -132,7 +140,11 @@ describe('KanbanDispatcher', () => {
       const mockRunner: KanbanWorkerRunner = async () => {
         throw new Error('runner 抛错')
       }
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       const tasks = await waitForAllSettled(db, board.id)
@@ -165,7 +177,11 @@ describe('KanbanDispatcher', () => {
         return { summary: 'done' }
       }
 
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       // 等待 3 个工人被领取
@@ -203,7 +219,11 @@ describe('KanbanDispatcher', () => {
       }
 
       // board.maxConcurrent 未传，db 默认填 3
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       await waitFor(() => pendingResolvers.size === 3, 2000)
@@ -231,7 +251,11 @@ describe('KanbanDispatcher', () => {
         return { summary: 'done' }
       }
 
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
 
       // 各自跑 2 个，总共 4 个 running
@@ -260,7 +284,11 @@ describe('KanbanDispatcher', () => {
         runCount++
         return { summary: 'done' }
       }
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
 
       // 暂停看板
       db.updateBoard(board.id, { paused: true })
@@ -289,7 +317,11 @@ describe('KanbanDispatcher', () => {
       expect(db.getTask(task.id)?.status).toBe('pending')
 
       const mockRunner: KanbanWorkerRunner = async () => ({ summary: 'ok' })
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
 
       // 手动触发一次 tick（不启动定时器）
       dispatchKanbanTick()
@@ -307,7 +339,11 @@ describe('KanbanDispatcher', () => {
   describe('startKanbanDispatcher / stopKanbanDispatcher', () => {
     test('startKanbanDispatcher 幂等（重复调用不启动多个定时器）', () => {
       const mockRunner: KanbanWorkerRunner = async () => ({ summary: '' })
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
       startKanbanDispatcher()
       // stopKanbanDispatcher 在 afterEach 中调用；此处只验证不崩溃
@@ -331,7 +367,11 @@ describe('KanbanDispatcher', () => {
         })
         return { summary: 'done' }
       }
-      configureKanbanDispatcher({ runner: mockRunner, db })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
       startKanbanDispatcher()
       await waitFor(() => pendingResolvers.size === 1, 1000)
 
