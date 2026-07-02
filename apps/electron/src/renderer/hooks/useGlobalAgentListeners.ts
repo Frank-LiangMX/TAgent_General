@@ -26,6 +26,7 @@ import type {
   SDKUserContentBlock,
   TAgentEvent,
   AgentSessionMeta,
+  AgentSendInput,
 } from '@tagent/shared'
 import {
   inferContextWindow,
@@ -1527,6 +1528,87 @@ export function useGlobalAgentListeners(): void {
     }
     window.addEventListener('focus', onWindowFocus)
 
+    // 看板数据变更时刷新会话列表（MCP 工具建板会写回 session meta.boardId，
+    // 需同步 agentSessionsAtom 才能让「团队」Tab 拿到 boardId）
+    const cleanupKanbanChanged = window.electronAPI.kanban.onChanged(() => {
+      window.electronAPI
+        .listAgentSessions()
+        .then((sessions) => store.set(agentSessionsAtom, sessions))
+        .catch(console.error)
+    })
+
+    // 看板全部任务完成事件（事件回流方案 B + B9 requireSummary）
+    // dispatcher 检测 board 所有任务终态后广播，此处监听并提示用户
+    const cleanupBoardCompleted = window.electronAPI.kanban.onBoardCompleted((payload) => {
+      const { boardId, parentSessionId, requireSummary, summary } = payload
+      console.log('[看板] 收到 board-completed 事件:', payload)
+      const successCount = summary.done
+      const failedCount = summary.failed
+      const totalCount = summary.total
+      // 桌面通知（点击跳转到主会话）
+      const sessionTitle = parentSessionId
+        ? (store.get(agentSessionsAtom).find((s) => s.id === parentSessionId)?.title ?? '看板会话')
+        : '看板'
+      const notifyBody =
+        failedCount > 0
+          ? `${successCount}/${totalCount} 完成，${failedCount} 失败`
+          : `${successCount}/${totalCount} 全部完成`
+      const enabled = store.get(notificationsEnabledAtom)
+      const soundEnabled = store.get(notificationSoundEnabledAtom)
+      const sounds = store.get(notificationSoundsAtom)
+      sendDesktopNotification('看板任务完成', `[${sessionTitle}] ${notifyBody}`, enabled, {
+        playSound: enabled && soundEnabled,
+        soundType: 'taskComplete',
+        sounds,
+        onNavigate: parentSessionId
+          ? makeNavigateToSession(parentSessionId, sessionTitle)
+          : undefined,
+      })
+      // toast 提示（带跳转 action）
+      toast.success('看板任务完成', {
+        description: `${sessionTitle} · ${notifyBody}`,
+        duration: 10000,
+        action: parentSessionId
+          ? {
+              label: '查看',
+              onClick: () => makeNavigateToSession(parentSessionId, sessionTitle)(),
+            }
+          : undefined,
+      })
+      void boardId // boardId 暂未用于 UI，留作后续扩展
+
+      // B9：requireSummary=true 时自动注入 user 消息触发主会话汇总
+      // 场景：分析/审计/调研类任务，交付物是综合报告，需要主会话汇总工人结果
+      // 若主会话正在运行（streaming），跳过避免冲突；空闲时才自动触发
+      if (requireSummary && parentSessionId) {
+        const session = store.get(agentSessionsAtom).find((s) => s.id === parentSessionId)
+        const streamingState = store.get(agentStreamingStatesAtom).get(parentSessionId)
+        if (streamingState?.running) {
+          console.log('[看板] 主会话正在运行，跳过自动汇总触发（避免冲突）')
+          return
+        }
+        const channelId = session?.channelId ?? ''
+        if (!channelId) {
+          console.warn('[看板] 主会话无 channelId，无法自动触发汇总')
+          return
+        }
+        const summarizePrompt = [
+          `看板「${sessionTitle}」已全部完成（${successCount}/${totalCount} 成功${failedCount > 0 ? `，${failedCount} 失败` : ''}）。`,
+          '请调用 kanban_list_tasks 工具查看所有任务结果，读取每个任务的 resultSummary，',
+          '综合输出一份完整的汇总报告给用户。如果有失败的任务，说明失败原因。',
+        ].join('')
+        const summarizeInput: AgentSendInput = {
+          sessionId: parentSessionId,
+          userMessage: summarizePrompt,
+          channelId,
+          modelId: undefined,
+        }
+        window.electronAPI
+          .sendAgentMessage(summarizeInput)
+          .catch((err) => console.error('[看板] 自动触发主会话汇总失败:', err))
+      }
+    })
+
     return () => {
       cleanupEvent()
       cleanupComplete()
@@ -1536,6 +1618,8 @@ export function useGlobalAgentListeners(): void {
       cleanupTAIntent()
       cleanupBtw()
       cleanupContextUsageUpdated()
+      cleanupKanbanChanged()
+      cleanupBoardCompleted()
       clearInterval(pruneTimer)
       window.removeEventListener('focus', onWindowFocus)
     }

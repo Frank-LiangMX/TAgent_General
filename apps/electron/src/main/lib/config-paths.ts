@@ -781,3 +781,15 @@ export function getTaSoulPath(): string {
 
   return join(taDir, 'SOUL.md')
 }
+
+/**
+ * 获取 Agent 角色库文件路径
+ *
+ * 角色库定义看板 worker 的专业能力（systemPrompt + 模型池 + 权限模式）。
+ * 与 SOUL.md 分层：SOUL.md 是全局身份层，角色库是任务职责层。
+ *
+ * @returns ~/.tagent/agent-roles.json
+ */
+export function getAgentRolesPath(): string {
+  return join(getConfigDir(), 'agent-roles.json')
+}

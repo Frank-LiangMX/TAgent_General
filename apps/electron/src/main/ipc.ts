@@ -32,6 +32,7 @@ import {
   isTAgentPermissionMode,
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
+  KANBAN_IPC_CHANNELS,
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
@@ -129,6 +130,8 @@ import type { WindowCloseResponseData } from '../types'
 import { askUserService } from './lib/agent-ask-user-service'
 import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
+import { registerKanbanIpcHandlers } from './lib/kanban-ipc'
+import { registerAgentRoleIpcHandlers } from './lib/agent-role-ipc'
 import {
   runAgent,
   stopAgent,
@@ -4411,4 +4414,12 @@ export function registerIpcHandlers(): void {
     const { migrateLegacy } = await import('./lib/draft-manager')
     return migrateLegacy()
   })
+
+  // ===== Kanban 看板 =====
+
+  registerKanbanIpcHandlers()
+
+  // ===== Agent 角色库 =====
+
+  registerAgentRoleIpcHandlers()
 }

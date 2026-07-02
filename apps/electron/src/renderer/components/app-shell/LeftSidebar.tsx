@@ -135,6 +135,7 @@ import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
+import { KanbanRailContent } from '@/components/kanban/KanbanRailContent'
 import {
   SessionMiniMapPopover,
   useSessionMiniMapHover,
@@ -290,6 +291,9 @@ function isAgentSessionInTopLevelMode(
   session: AgentSessionMeta,
   topLevelMode: 'general' | 'ta'
 ): boolean {
+  // 工人子会话（由看板 dispatcher 创建）不在侧栏列表显示
+  // 原因：它们是看板任务的执行容器，通过「团队」Tab 嵌套查看，避免污染主会话列表
+  if (session.sourceKanbanTaskId) return false
   return (session.mode ?? 'general') === topLevelMode
 }
 
@@ -1282,6 +1286,9 @@ export function LeftSidebar({
       if (activeRailItem === 'skills') {
         return <SkillsRailContent capabilities={capabilities} />
       }
+      if (activeRailItem === 'kanban') {
+        return <KanbanRailContent />
+      }
       return <TASidebar activeRailItem={activeRailItem as TARailItem} />
     }
 
@@ -1293,6 +1300,8 @@ export function LeftSidebar({
         return <AutomationRailList />
       case 'draft':
         return <DraftListPanel />
+      case 'kanban':
+        return <KanbanRailContent />
       case 'sessions':
       default:
         return (

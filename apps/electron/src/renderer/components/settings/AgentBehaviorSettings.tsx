@@ -4,6 +4,7 @@
  * 整合 Agent 行为相关配置：
  * - auto-check hook 开关 + 语言级精细配置
  * - SubAgent 派发积极性档位
+ * - 看板 worker 模型分配规则（避免并行降智）
  *
  * 使用 TAgent 统一的 settings primitives 组件，风格与 ProxySettings 等保持一致。
  */
@@ -25,6 +26,24 @@ const EAGERNESS_OPTIONS = [
   { value: 'conservative', label: '保守（推荐）' },
   { value: 'balanced', label: '平衡' },
   { value: 'aggressive', label: '积极' },
+]
+
+/** 单模型最大并发数档位选项 */
+const MAX_CONCURRENT_PER_MODEL_OPTIONS = [
+  { value: '1', label: '1（最稳，无并行降智）' },
+  { value: '2', label: '2（推荐，平衡吞吐与稳定性）' },
+  { value: '3', label: '3（较高吞吐，可能触发限流）' },
+  { value: '4', label: '4（高吞吐，需渠道支持）' },
+  { value: '5', label: '5（激进，仅免费渠道建议）' },
+]
+
+/** 看板默认并发上限档位选项 */
+const DEFAULT_MAX_CONCURRENT_OPTIONS = [
+  { value: '3', label: '3（保守，适合小任务）' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5（推荐，kscc 6 模型可充分并行）' },
+  { value: '6', label: '6（激进，需渠道支持）' },
+  { value: '8', label: '8（高并行，适合批量任务）' },
 ]
 
 /** 各语言的展示信息 + 默认配置 */
@@ -94,6 +113,12 @@ export function AgentBehaviorSettings(): React.ReactElement {
     Partial<Record<AutoCheckLanguage, LanguageHookConfig>>
   >({})
   const [langPanelOpen, setLangPanelOpen] = React.useState(false)
+  // 看板 worker 模型分配设置
+  const [maxConcurrentPerModel, setMaxConcurrentPerModel] = React.useState<number>(2)
+  const [preferFreeChannel, setPreferFreeChannel] = React.useState<boolean>(true)
+  const [allowExternalModels, setAllowExternalModels] = React.useState<boolean>(false)
+  // 看板默认并发上限
+  const [defaultMaxConcurrent, setDefaultMaxConcurrent] = React.useState<number>(3)
   const [loaded, setLoaded] = React.useState(false)
 
   React.useEffect(() => {
@@ -103,6 +128,12 @@ export function AgentBehaviorSettings(): React.ReactElement {
         const enabled = settings.hooks?.autoCheck ?? settings.hooks?.autoTypecheck ?? true
         setAutoCheckEnabled(enabled)
         setLanguagesConfig(settings.hooks?.languages ?? {})
+        // 看板模型分配设置（默认值：2 / true / false）
+        const ab = settings.agentBehavior
+        setMaxConcurrentPerModel(ab?.maxConcurrentPerModel ?? 2)
+        setPreferFreeChannel(ab?.preferFreeChannel ?? true)
+        setAllowExternalModels(ab?.allowExternalModels ?? false)
+        setDefaultMaxConcurrent(ab?.defaultMaxConcurrent ?? 3)
         setLoaded(true)
       })
       .catch((err) => {
@@ -128,6 +159,56 @@ export function AgentBehaviorSettings(): React.ReactElement {
       await window.electronAPI.updateSettings({ subagentEagerness: v })
     } catch (error) {
       console.error('[Agent 行为设置] 更新 SubAgent 积极性失败:', error)
+    }
+  }
+
+  const handleMaxConcurrentPerModelChange = async (value: string): Promise<void> => {
+    const n = parseInt(value, 10)
+    if (Number.isNaN(n) || n < 1 || n > 5) return
+    setMaxConcurrentPerModel(n)
+    try {
+      await window.electronAPI.updateSettings({
+        agentBehavior: { maxConcurrentPerModel: n },
+      })
+    } catch (error) {
+      console.error('[Agent 行为设置] 更新单模型并发上限失败:', error)
+    }
+  }
+
+  const handlePreferFreeChannelChange = async (checked: boolean): Promise<void> => {
+    setPreferFreeChannel(checked)
+    try {
+      await window.electronAPI.updateSettings({
+        agentBehavior: { preferFreeChannel: checked },
+      })
+    } catch (error) {
+      console.error('[Agent 行为设置] 更新优先免费渠道失败:', error)
+      setPreferFreeChannel(!checked)
+    }
+  }
+
+  const handleAllowExternalModelsChange = async (checked: boolean): Promise<void> => {
+    setAllowExternalModels(checked)
+    try {
+      await window.electronAPI.updateSettings({
+        agentBehavior: { allowExternalModels: checked },
+      })
+    } catch (error) {
+      console.error('[Agent 行为设置] 更新允许外部模型失败:', error)
+      setAllowExternalModels(!checked)
+    }
+  }
+
+  const handleDefaultMaxConcurrentChange = async (value: string): Promise<void> => {
+    const n = parseInt(value, 10)
+    if (Number.isNaN(n) || n < 1 || n > 10) return
+    setDefaultMaxConcurrent(n)
+    try {
+      await window.electronAPI.updateSettings({
+        agentBehavior: { defaultMaxConcurrent: n },
+      })
+    } catch (error) {
+      console.error('[Agent 行为设置] 更新默认并发上限失败:', error)
     }
   }
 
@@ -253,6 +334,47 @@ export function AgentBehaviorSettings(): React.ReactElement {
             value={subagentEagerness}
             onValueChange={handleEagernessChange}
             options={EAGERNESS_OPTIONS}
+          />
+        </SettingsCard>
+      </SettingsSection>
+
+      {/* 看板 worker 模型分配 */}
+      <SettingsSection
+        title="看板 worker 模型分配"
+        description="看板任务并行执行时如何分配模型，避免同模型过度并发触发降智"
+      >
+        <SettingsCard>
+          <SettingsSelect
+            label="看板默认并发上限"
+            description="新建看板的最大并发任务数。kscc 有 6 个模型，建议 5 充分并行；保守场景选 3。已有看板的并发数不变。"
+            value={String(defaultMaxConcurrent)}
+            onValueChange={handleDefaultMaxConcurrentChange}
+            options={DEFAULT_MAX_CONCURRENT_OPTIONS}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsSelect
+            label="单模型最大并发数"
+            description="同一模型同时跑的 worker 数上限，超限自动切换渠道下一个可用模型。kscc 单模型建议 2，避免限流降智。"
+            value={String(maxConcurrentPerModel)}
+            onValueChange={handleMaxConcurrentPerModelChange}
+            options={MAX_CONCURRENT_PER_MODEL_OPTIONS}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsToggle
+            label="优先免费渠道"
+            description="未指定模型时优先用 kscc（免费）渠道的可用模型，避免调用外部收费模型"
+            checked={preferFreeChannel}
+            onCheckedChange={handlePreferFreeChannelChange}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsToggle
+            label="允许使用外部模型"
+            description="关闭时 worker 只用免费渠道模型；开启后可在白名单内使用外部收费模型（如 Claude / GPT）"
+            checked={allowExternalModels}
+            onCheckedChange={handleAllowExternalModelsChange}
           />
         </SettingsCard>
       </SettingsSection>

@@ -130,6 +130,16 @@ import {
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
+  sessionBoardIdAtomFamily,
+  sessionSourceKanbanTaskIdAtomFamily,
+  sessionAgentSubTabAtomFamily,
+  useKanbanBoard,
+} from '@/atoms/kanban-atoms'
+import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
+import { KanbanBoardSummary } from '@/components/kanban/KanbanBoardSummary'
+import { TaskProgressDock } from './TaskProgressDock'
+import { SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import {
   InputToolbarOverflow,
   type ToolbarItem,
 } from '@/components/ai-elements/InputToolbarOverflow'
@@ -530,6 +540,15 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     if (!meta) return globalWorkspaceId // 数据未加载，回退全局
     return meta.workspaceId ?? null // 数据已加载，以会话自身为准
   }, [sessions, sessionId, globalWorkspaceId])
+
+  // ===== Kanban 团队 Tab 集成 =====
+  // 嵌套工人会话（sourceKanbanTaskId 存在）隐藏二级 Tab，避免递归
+  const isNestedWorker = useAtomValue(sessionSourceKanbanTaskIdAtomFamily(sessionId)) !== undefined
+  const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
+  const [subTab, setSubTab] = useAtom(sessionAgentSubTabAtomFamily(sessionId))
+  const kanbanBoard = useKanbanBoard(sessionId)
+  // ===== Kanban 集成结束 =====
+
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
   const [pendingFiles, setPendingFiles] = useAtom(agentPendingFilesAtomFamily(sessionId))
   const workspaces = useAtomValue(agentWorkspacesAtom)
@@ -2714,190 +2733,234 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     <>
       <AgentSessionProvider sessionId={sessionId}>
         <div className="relative flex flex-col h-full flex-1 min-w-0">
-          {/* Agent Header */}
-          <AgentHeader sessionId={sessionId} />
-
-          <SessionFloatingLayout
-            bottom={
-              <>
-                <PermissionBanner sessionId={sessionId} />
-                <AgentSwitchBanner />
-                {composerMode === 'ask' && !hasBannerOverlay && (
-                  <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
-                    <MessageSquareText className="size-3.5" />
-                    <span>Ask 档位：仅对话，不修改文件或执行命令</span>
-                  </div>
-                )}
-                {!hasBannerOverlay && (
-                  <div
-                    className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
-                    data-input-mode="agent"
+          {/* Agent Header（右侧合并二级 Tab + 看板缩略） */}
+          <AgentHeader
+            sessionId={sessionId}
+            rightSlot={
+              !isNestedWorker ? (
+                <>
+                  <SegmentedTabs
+                    value={subTab}
+                    onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
+                    className="text-xs"
                   >
-                    <div className="absolute bottom-full right-[18px] mb-2 z-50">
-                      <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
-                      <BtwPanel />
-                    </div>
-                    <div
-                      className={cn(
-                        'session-glass chat-input-glass transition-all duration-200',
-                        (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
-                        isDragOver &&
-                          'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                    <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
+                    <SegmentedTabsItem value="team">
+                      团队
+                      {boardId && kanbanBoard.tasks.length > 0 && (
+                        <span className="ml-1 tabular-nums text-muted-foreground">
+                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
+                          {kanbanBoard.tasks.length}
+                        </span>
                       )}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
-                      {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
-                        <PlanModeDashedBorder />
-                      )}
-
-                      {/* 无 Agent 渠道或无可用模型提示 */}
-                      {(!agentChannelId || !hasAvailableModel) && (
-                        <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
-                          <Settings size={14} />
-                          <span>
-                            {!agentChannelId
-                              ? '请在设置中选择 Agent 供应商'
-                              : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
-                          </span>
-                          <button
-                            type="button"
-                            className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
-                            onClick={() => setSettingsOpen(true)}
-                          >
-                            前往设置
-                          </button>
-                        </div>
-                      )}
-
-                      {/* 附件 + 引用选中文本 Chip（同排并排） */}
-                      {(pendingFiles.length > 0 || currentQuotedSelection) && (
-                        <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
-                          {pendingFiles.map((file) => (
-                            <AttachmentPreviewItem
-                              key={file.id}
-                              filename={file.filename}
-                              mediaType={file.mediaType}
-                              previewUrl={file.previewUrl}
-                              onRemove={() => handleRemoveFile(file.id)}
-                              onClick={
-                                file.filename.startsWith('clipboard-')
-                                  ? () => handleClipboardPreview(file)
-                                  : undefined
-                              }
-                            />
-                          ))}
-                          {currentQuotedSelection && (
-                            <QuotedSelectionChip
-                              text={currentQuotedSelection.text}
-                              filePath={currentQuotedSelection.filePath}
-                              onRemove={handleRemoveQuotedSelection}
-                            />
-                          )}
-                        </div>
-                      )}
-
-                      {/* Agent 建议提示 */}
-                      {suggestion && !streaming && (
-                        <div className="px-3 pt-2.5 pb-1.5">
-                          <button
-                            type="button"
-                            className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
-                            onClick={() => void handleSend({ overrideText: suggestion })}
-                          >
-                            <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
-                            <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
-                              {suggestion}
-                            </span>
-                            <X
-                              className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setPromptSuggestions((prev) => {
-                                  if (!prev.has(sessionId)) return prev
-                                  const map = new Map(prev)
-                                  map.delete(sessionId)
-                                  return map
-                                })
-                              }}
-                            />
-                          </button>
-                        </div>
-                      )}
-
-                      <RichTextInput
-                        value={inputContent}
-                        onChange={setInputContent}
-                        onSubmit={handleSend}
-                        onPasteFiles={handlePasteFiles}
-                        onPasteLongText={handlePasteLongText}
-                        longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
-                        placeholder={
-                          agentChannelId && hasAvailableModel
-                            ? composerMode === 'ask'
-                              ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
-                              : sendWithCmdEnter
-                                ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                                : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                            : !agentChannelId
-                              ? '请先在设置中选择 Agent 供应商'
-                              : '暂无可用模型，请先在设置中启用渠道'
-                        }
-                        disabled={!agentChannelId || !hasAvailableModel}
-                        autoFocusTrigger={sessionId}
-                        collapsible
-                        enableMentions
-                        workspacePath={sessionPath}
-                        workspaceId={currentWorkspaceId}
-                        workspaceSlug={workspaceSlug}
-                        sessionId={sessionId}
-                        attachedDirs={workspaceMentionPaths}
-                        sessionAttachedDirs={sessionMentionPaths}
-                        htmlValue={inputHtmlContent}
-                        onHtmlChange={setInputHtmlContent}
-                        sendWithCmdEnter={sendWithCmdEnter}
-                      />
-
-                      {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
-                      <InputToolbarOverflow
-                        items={inputToolbarItems}
-                        trailing={inputTrailingNode}
-                      />
-                    </div>
-                  </div>
-                )}
-                <AskUserBanner sessionId={sessionId} />
-                <ExitPlanModeBanner sessionId={sessionId} />
-              </>
+                    </SegmentedTabsItem>
+                  </SegmentedTabs>
+                  {boardId && subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
+                    <KanbanBoardSummary
+                      tasks={kanbanBoard.tasks}
+                      onOpenTeam={() => setSubTab('team')}
+                    />
+                  )}
+                </>
+              ) : null
             }
-          >
-            <AgentMessages
-              sessionId={sessionId}
-              sessionModelId={agentModelId || undefined}
-              messagesLoaded={messagesLoaded}
-              persistedSDKMessages={persistedSDKMessages}
-              streaming={streaming}
-              streamState={streamState}
-              liveMessages={liveMessages}
-              sessionPath={sessionPath}
-              attachedDirs={allAttachedDirs}
-              stoppedByUser={stoppedByUser}
-              onRetry={handleRetry}
-              onRetryInNewSession={handleRetryInNewSession}
-              onFork={handleFork}
-              onRewind={handleRewindRequest}
-              onCompact={handleCompact}
-              floatingInput
-            />
-          </SessionFloatingLayout>
-
-          {/* 底栏：Context 占用 + 累计 Token 统计 */}
-          <TokenStatsPanel
-            isProcessing={streaming}
-            onCompact={handleCompact}
-            onClientCompact={handleClientCompact}
           />
+
+          {subTab === 'team' && boardId && !isNestedWorker ? (
+            <SessionTeamTab sessionId={sessionId} boardId={boardId} />
+          ) : (
+            <>
+              <SessionFloatingLayout
+                bottom={
+                  <>
+                    <PermissionBanner sessionId={sessionId} />
+                    <AgentSwitchBanner />
+                    {composerMode === 'ask' && !hasBannerOverlay && (
+                      <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
+                        <MessageSquareText className="size-3.5" />
+                        <span>Ask 档位：仅对话，不修改文件或执行命令</span>
+                      </div>
+                    )}
+                    {!hasBannerOverlay && (
+                      <div
+                        className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
+                        data-input-mode="agent"
+                      >
+                        <div className="absolute bottom-full right-[18px] mb-2 z-50">
+                          <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
+                          <BtwPanel />
+                        </div>
+                        <div
+                          className={cn(
+                            'session-glass chat-input-glass transition-all duration-200',
+                            (isPlanMode || isPermissionPlanMode) &&
+                              !isDragOver &&
+                              'plan-mode-border',
+                            isDragOver &&
+                              'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                          )}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
+                            <PlanModeDashedBorder />
+                          )}
+
+                          {/* 无 Agent 渠道或无可用模型提示 */}
+                          {(!agentChannelId || !hasAvailableModel) && (
+                            <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
+                              <Settings size={14} />
+                              <span>
+                                {!agentChannelId
+                                  ? '请在设置中选择 Agent 供应商'
+                                  : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
+                              </span>
+                              <button
+                                type="button"
+                                className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+                                onClick={() => setSettingsOpen(true)}
+                              >
+                                前往设置
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 附件 + 引用选中文本 Chip（同排并排） */}
+                          {(pendingFiles.length > 0 || currentQuotedSelection) && (
+                            <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
+                              {pendingFiles.map((file) => (
+                                <AttachmentPreviewItem
+                                  key={file.id}
+                                  filename={file.filename}
+                                  mediaType={file.mediaType}
+                                  previewUrl={file.previewUrl}
+                                  onRemove={() => handleRemoveFile(file.id)}
+                                  onClick={
+                                    file.filename.startsWith('clipboard-')
+                                      ? () => handleClipboardPreview(file)
+                                      : undefined
+                                  }
+                                />
+                              ))}
+                              {currentQuotedSelection && (
+                                <QuotedSelectionChip
+                                  text={currentQuotedSelection.text}
+                                  filePath={currentQuotedSelection.filePath}
+                                  onRemove={handleRemoveQuotedSelection}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Agent 建议提示 */}
+                          {suggestion && !streaming && (
+                            <div className="px-3 pt-2.5 pb-1.5">
+                              <button
+                                type="button"
+                                className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
+                                onClick={() => void handleSend({ overrideText: suggestion })}
+                              >
+                                <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
+                                <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
+                                  {suggestion}
+                                </span>
+                                <X
+                                  className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setPromptSuggestions((prev) => {
+                                      if (!prev.has(sessionId)) return prev
+                                      const map = new Map(prev)
+                                      map.delete(sessionId)
+                                      return map
+                                    })
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 任务进度预览条：长任务进行中时显示在输入框上方，避免随会话滚走 */}
+                          <TaskProgressDock
+                            allMessages={persistedSDKMessages}
+                            streaming={streaming}
+                          />
+
+                          <RichTextInput
+                            value={inputContent}
+                            onChange={setInputContent}
+                            onSubmit={handleSend}
+                            onPasteFiles={handlePasteFiles}
+                            onPasteLongText={handlePasteLongText}
+                            longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
+                            placeholder={
+                              agentChannelId && hasAvailableModel
+                                ? composerMode === 'ask'
+                                  ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
+                                  : sendWithCmdEnter
+                                    ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                    : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                : !agentChannelId
+                                  ? '请先在设置中选择 Agent 供应商'
+                                  : '暂无可用模型，请先在设置中启用渠道'
+                            }
+                            disabled={!agentChannelId || !hasAvailableModel}
+                            autoFocusTrigger={sessionId}
+                            collapsible
+                            enableMentions
+                            workspacePath={sessionPath}
+                            workspaceId={currentWorkspaceId}
+                            workspaceSlug={workspaceSlug}
+                            sessionId={sessionId}
+                            attachedDirs={workspaceMentionPaths}
+                            sessionAttachedDirs={sessionMentionPaths}
+                            htmlValue={inputHtmlContent}
+                            onHtmlChange={setInputHtmlContent}
+                            sendWithCmdEnter={sendWithCmdEnter}
+                          />
+
+                          {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
+                          <InputToolbarOverflow
+                            items={inputToolbarItems}
+                            trailing={inputTrailingNode}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <AskUserBanner sessionId={sessionId} />
+                    <ExitPlanModeBanner sessionId={sessionId} />
+                  </>
+                }
+              >
+                <AgentMessages
+                  sessionId={sessionId}
+                  sessionModelId={agentModelId || undefined}
+                  messagesLoaded={messagesLoaded}
+                  persistedSDKMessages={persistedSDKMessages}
+                  streaming={streaming}
+                  streamState={streamState}
+                  liveMessages={liveMessages}
+                  sessionPath={sessionPath}
+                  attachedDirs={allAttachedDirs}
+                  stoppedByUser={stoppedByUser}
+                  onRetry={handleRetry}
+                  onRetryInNewSession={handleRetryInNewSession}
+                  onFork={handleFork}
+                  onRewind={handleRewindRequest}
+                  onCompact={handleCompact}
+                  floatingInput
+                />
+              </SessionFloatingLayout>
+
+              {/* 底栏：Context 占用 + 累计 Token 统计 */}
+              <TokenStatsPanel
+                isProcessing={streaming}
+                onCompact={handleCompact}
+                onClientCompact={handleClientCompact}
+              />
+            </>
+          )}
         </div>
       </AgentSessionProvider>
 

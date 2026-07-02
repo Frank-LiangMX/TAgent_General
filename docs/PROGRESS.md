@@ -11,7 +11,10 @@
 > **Automation 设计**：`docs/plans/2026-06-24-automation-design.md`（定时任务系统 v1，**M1–M3 已合 main**）
 > **kscc 内网渠道（已完成）**：`docs/plans/2026-06-25-kscc-internal-provider-design.md`
 > **协作子会话设计**：`docs/plans/2026-06-24-collaboration-design.md`（Proma MCP 执行层参考）
-> **任务看板编排（暂缓 Epic）**：`docs/plans/2026-06-30-task-kanban-orchestration-design.md`（Kanban + IM + 角色库；等上游对齐后做）
+> **任务看板编排（Phase A 探索中）**：`docs/plans/2026-06-30-task-kanban-orchestration-design.md`（Kanban + IM + 角色库；上游 v0.13.4 已合 main，探索分支 `feature/kanban-exploration`）
+> **看板 v1 产品方案**：`docs/plans/2026-06-30-kanban-v1-product-design.md`（主会话 对话|团队 Tab、Master-Detail、无 Gateway）
+> **看板会话交接（2026-06-30 夜）**：`docs/plans/2026-06-30-kanban-session-handoff.md` — **明天继续开发先读此文件**
+> **看板探索报告**：`docs/plans/2026-06-30-kanban-exploration-report.md`（Phase A 验证范围、基础设施盘点、风险矩阵、E2E 清单）
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
@@ -44,7 +47,18 @@
 
 ## 当前状态（2026-06-30）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。Agent Hooks（auto-check）与 Superpowers skill 包已合入 `main`。当前活跃开发主线为 **上游 Proma v0.13.4 对齐**（`F:\Proma` 扫描日期 2026-06-30）。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。Agent Hooks（auto-check）与 Superpowers skill 包已合入 `main`。上游 Proma v0.13.4 对齐已合入 `main`（PR #16，2026-06-30）。当前活跃开发主线为 **看板 + 多 Agent 协同 Phase A 探索**（`feature/kanban-exploration` 分支）。
+
+🔵 **Kanban 探索分支 `feature/kanban-exploration` 进行中** — Phase A 内核 + 团队 Tab UI + demo seed 已落地；Windows dev 启动与 `better-sqlite3` 重建已补丁。**明天继续请先读** [`2026-06-30-kanban-session-handoff.md`](plans/2026-06-30-kanban-session-handoff.md)。
+
+**分支最新能力（2026-06-30 夜）**：
+
+- ✅ `kanban-db` + `kanban-dispatcher` + IPC + preload
+- ✅ Agent 会话 **对话 | 团队** Tab + Master-Detail + 「加载看板演示」
+- ✅ Windows：`Start-TAgent-Dev.bat`（bun/electron/native 自检）
+- ⏳ Phase B：草稿升级建板、真实 headless worker、orchestrator 工具注入
+
+**历史 spike**：Worker S/A/B 并行探索 — 详见 [`2026-06-30-kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md)。
 
 **当前判断**：
 
@@ -120,7 +134,7 @@
   - **小修**：`@` 引用弹窗（`FileMentionList` / `MentionList`）滚动条统一 `scrollbar-thin`；Context 底栏词条 Tooltip；Token 底栏隐藏费用展示
 - ✅ **Agent Hooks + auto-check** 已完成（2026-06-30，commits on `main`）— PostToolUse 多语言检查钩子 + `AgentBehaviorSettings` 语言级配置；**TAgent 独有，Proma 无**
 - ✅ **Superpowers 14 skill** 已收录（2026-06-30）
-- 🟢 **上游 Proma v0.13.4 对齐**（`feature/upstream-v0.13.4-alignment`）— P0–P3 已落地，**待验收合 PR**；跟踪 [`2026-06-30-upstream-alignment-tracker.md`](plans/2026-06-30-upstream-alignment-tracker.md)
+- 🟢 **上游 Proma v0.13.4 对齐**（`feature/upstream-v0.13.4-alignment`）— P0–P3 已落地，**PR #16 已合 main**（2026-06-30）；跟踪 [`2026-06-30-upstream-alignment-tracker.md`](plans/2026-06-30-upstream-alignment-tracker.md)
 - **本分支已完成（2026-06-30）**：P0 稳定性、P1 Bridge/Automation MCP/headless、P2 预览路由 + Automation Skill、P3 #904–#912 + 侧栏删项确认、自动审批权限路由（避免 SDK classifier 硬拒）
 - **本分支未做 / 跳过**：custom cron（M4）、WPS 增强（独立线）、#915 双界面、Nowledge Mem
 
@@ -295,7 +309,7 @@
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| **协作 / 看板编排** | ❌ 暂缓 Epic | 上游对齐后再做；见 [`task-kanban-orchestration-design.md`](plans/2026-06-30-task-kanban-orchestration-design.md) |
+| **协作 / 看板编排** | 🔵 Phase A 探索中 | 上游 v0.13.4 已合 main（PR #16）；探索分支 `feature/kanban-exploration` 三路工人并行 spike；见 [`kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md) |
 | **Bridge 长连接自愈** | ❌ | TAgent `bridge-registry.ts` 仅 start/stop，无 recover / 健康检查 |
 | **后台任务唤醒 idle Agent** | ❌ | 依赖 Stop hook + headless runner |
 | **Automation M4** | 部分 | M1–M3 ✅；缺 `automation-agent-tools`、自然语言创建、custom cron |

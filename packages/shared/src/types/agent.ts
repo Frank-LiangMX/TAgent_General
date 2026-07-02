@@ -795,6 +795,22 @@ export interface AgentSessionMeta {
   automationGraduated?: boolean
   /** 创建来源的定时任务 ID（由 automation-scheduler 在创建子会话时写入） */
   sourceAutomationId?: string
+  /**
+   * 看板：该会话拥有的看板 ID（由 kanban_create_board / attachBoardToSession 写入主会话 meta）。
+   * 渲染进程据此决定是否显示「团队」二级 Tab。
+   * 与 parentBoardId 区分：parentBoardId 表示子会话属于哪个看板，boardId 表示主会话拥有哪个看板。
+   */
+  boardId?: string
+  /**
+   * 看板：子会话所属看板 ID（由 kanban-worker-service 创建工人子会话时写入）。
+   * B4 起支持 general / TA 双模式，TA 会话也可作为看板工人。
+   */
+  parentBoardId?: string
+  /**
+   * 看板：触发该子会话的看板任务 ID（t_xxxx）。
+   * 与 parentBoardId 一起写入，用于侧栏关联展示和 dispatcher 状态回流。
+   */
+  sourceKanbanTaskId?: string
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */

@@ -10,7 +10,7 @@
  * 集成测试（流式 mock）放 P1 阶段。
  */
 
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 // ask-prompt-builder 依赖 btw-service（其内部读 SDK messages），mock 掉避免拉起 fs
 vi.mock('./btw-service', () => ({
@@ -49,6 +49,18 @@ vi.mock('./btw-service', () => ({
 vi.mock('./tool-config', () => ({
   getChatToolsConfig: () => ({ toolStates: {}, customTools: [] }),
 }))
+
+// 隔离 config-paths：mock getAgentSessionAskMessagesPath 指向临时目录
+// （vi.spyOn(cp, 'getConfigDir') 不生效，因为 getAgentSessionsDir 内部
+// 直接调用模块作用域的 getConfigDir，不走 cp.getConfigDir）
+vi.mock('./config-paths', async () => {
+  const actual = await vi.importActual<typeof import('./config-paths')>('./config-paths')
+  return {
+    ...actual,
+    getAgentSessionAskMessagesPath: (id: string) =>
+      join((globalThis as { __testTmpDir?: string }).__testTmpDir ?? '', `${id}.ask.jsonl`),
+  }
+})
 
 const { buildAskSystemPromptWithHistory, ASK_PERMISSION_CONTRACT } =
   await import('./ask-prompt-builder')
@@ -173,18 +185,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 let tmpDir: string
-let originalGetConfigDir: typeof import('./config-paths').getConfigDir | undefined
 
-beforeEach(async () => {
+beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'tagent-ask-test-'))
-  // 重写 getConfigDir 指向临时目录
-  const cp = await import('./config-paths')
-  originalGetConfigDir = cp.getConfigDir
-  // 替换模块内部方法（不重导出，但要能影响 getAgentSessionAskMessagesPath 的解析）
-  // config-paths.ts 内部调用 getConfigDir()，但因为是内部 const 引用，
-  // 我们用更直接的办法：覆盖 getConfigDirName 返回 `.tagent-ask-test-<rand>`，
-  // 并预设对应的真实临时目录结构。
-  vi.spyOn(cp, 'getConfigDir').mockReturnValue(tmpDir)
+  ;(globalThis as { __testTmpDir?: string }).__testTmpDir = tmpDir
+})
+
+afterEach(() => {
+  if (tmpDir) {
+    rmSync(tmpDir, { recursive: true, force: true })
+  }
+  delete (globalThis as { __testTmpDir?: string }).__testTmpDir
 })
 
 describe('ask-message-store JSONL CRUD', () => {
@@ -288,8 +299,7 @@ describe('ask-message-store JSONL CRUD', () => {
   })
 })
 
-// 清理临时目录
-import { afterAll } from 'vitest'
+// 清理临时目录（afterEach 已逐个清理，这里兜底防止异常退出残留）
 afterAll(() => {
   if (tmpDir) {
     try {
@@ -297,8 +307,5 @@ afterAll(() => {
     } catch {
       /* ignore */
     }
-  }
-  if (originalGetConfigDir) {
-    vi.restoreAllMocks()
   }
 })

@@ -120,17 +120,26 @@ function GlobalEnvironmentCheckDialog(): React.ReactElement {
 
 /**
  * 全局窗口关闭确认对话框，由主进程 WINDOW_CLOSE_IPC_CHANNELS.REQUEST 触发。
+ * 附带 running 任务数，提示用户有任务在跑时优先最小化。
  */
 function GlobalWindowCloseConfirmDialog(): React.ReactElement {
   const [open, setOpen] = React.useState(false)
+  const [runningTaskCount, setRunningTaskCount] = React.useState(0)
 
   React.useEffect(() => {
-    const cleanup = window.electronAPI.onWindowCloseRequest(() => {
-      console.info('[GlobalWindowCloseConfirmDialog] 收到 close-request')
+    const cleanup = window.electronAPI.onWindowCloseRequest((data) => {
+      console.info('[GlobalWindowCloseConfirmDialog] 收到 close-request', data)
+      setRunningTaskCount(data?.runningTaskCount ?? 0)
       setOpen(true)
     })
     return cleanup
   }, [])
 
-  return <WindowCloseConfirmDialog open={open} onOpenChange={setOpen} />
+  return (
+    <WindowCloseConfirmDialog
+      open={open}
+      onOpenChange={setOpen}
+      runningTaskCount={runningTaskCount}
+    />
+  )
 }

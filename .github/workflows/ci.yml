@@ -118,11 +118,27 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      # --ignore-scripts 跳过 electron 的 postinstall（下载二进制），需手动触发
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
+      # 重新编译 better-sqlite3 for 当前 Node ABI
+      # （跳过 @tagent/electron 的 postinstall，因为它 rebuild for Electron ABI，
+      # CI 跑 vitest 用 Node runtime，不需要 Electron ABI）
+      - name: Rebuild better-sqlite3 for current Node
+        run: npm rebuild better-sqlite3
+
+      # 用 node 跑 vitest（不用 bun）：bun 加载 better-sqlite3 native module
+      # 会触发 "Module did not self-register"，node 能正常加载 Node ABI 编译的 native module
       - name: Run tests with coverage
-        run: bun test:coverage
+        run: npx vitest run --coverage
 
       - name: Upload coverage
         if: always()

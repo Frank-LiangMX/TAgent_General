@@ -31,6 +31,7 @@ const TITLES: Record<TARailItem | 'skills' | 'draft', string> = {
   config: '配置',
   skills: '技能',
   draft: '草稿',
+  kanban: '看板',
 }
 
 interface TASidebarProps {

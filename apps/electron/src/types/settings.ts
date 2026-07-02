@@ -281,6 +281,22 @@ export interface AppSettings {
   closeAction?: 'minimize-to-tray' | 'quit'
   /** 全局 hook 开关配置（auto-typecheck 等，默认全开） */
   hooks?: import('@tagent/shared').HooksConfig
+  /** Agent 行为设置（看板 worker 模型分配、角色库等） */
+  agentBehavior?: AgentBehaviorSettings
+}
+
+/** Agent 行为设置（看板 worker 模型分配规则） */
+export interface AgentBehaviorSettings {
+  /** 单模型最大并发数（避免同模型并行降智，默认 2） */
+  maxConcurrentPerModel?: number
+  /** 优先免费渠道（kscc 优先，默认 true） */
+  preferFreeChannel?: boolean
+  /** 允许使用外部收费模型（默认 false） */
+  allowExternalModels?: boolean
+  /** 允许的外部模型 ID 白名单（allowExternalModels=false 时生效） */
+  externalModelWhitelist?: string[]
+  /** 看板默认最大并发任务数（新建看板的默认 maxConcurrent，默认 3） */
+  defaultMaxConcurrent?: number
 }
 
 /** 主窗口大小、位置和最大化状态 */
