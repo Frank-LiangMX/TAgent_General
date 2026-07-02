@@ -9,65 +9,85 @@
  * - 完成回调：自定义 updater.markTaskDone + onTaskCompleted('done')
  * - 失败回调：自定义 updater.markTaskFailed + onTaskCompleted('failed', err)
  * - task.permissionMode 透传
- * - 默认 noop updater 不抛错（kanban-db 未接线场景）
  * - runRegisteredHeadlessAgent 抛错时回流到 markTaskFailed
  *
- * Mock 策略：vi.hoisted 共享 vi.fn 引用，vi.mock 注入到 kanban-worker-service 的依赖。
- * kanban-db 未接线（Phase A 尚未合并），默认 updater 为 noop，无需 mock。
+ * Mock 策略：vi.mock 工厂内创建 vi.fn，通过 await import + vi.mocked 拿引用。
+ * kanban-db / agent-role-service 均 mock，默认 updater 调用 mock 后的 kanbanDbService。
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-// vi.hoisted：在所有 import 之前创建 mock 函数实例，确保 vi.mock 工厂能闭包引用
-const mocks = vi.hoisted(() => {
-  return {
-    createSession: vi.fn(),
-    updateMeta: vi.fn(),
-    runHeadless: vi.fn(),
-    powerStart: vi.fn(),
-    powerStop: vi.fn(),
-    powerIsStarted: vi.fn(),
-  }
-})
-
-// Mock electron 的 powerSaveBlocker（kanban-worker-service 顶部 import { powerSaveBlocker } from 'electron'）
+// Mock electron 的 powerSaveBlocker
 vi.mock('electron', () => ({
   powerSaveBlocker: {
-    start: mocks.powerStart,
-    stop: mocks.powerStop,
-    isStarted: mocks.powerIsStarted,
+    start: vi.fn(() => 1),
+    stop: vi.fn(),
+    isStarted: vi.fn(() => false),
   },
 }))
 
-// Mock agent-session-manager：捕获 createAgentSession / updateAgentSessionMeta 调用
+// Mock agent-session-manager
 vi.mock('./agent-session-manager', () => ({
-  createAgentSession: mocks.createSession,
-  updateAgentSessionMeta: mocks.updateMeta,
+  createAgentSession: vi.fn(
+    (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => ({
+      id: `s_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: title ?? '测试会话',
+      channelId,
+      workspaceId,
+      mode: mode ?? 'general',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+  ),
+  updateAgentSessionMeta: vi.fn(),
+  getAgentSessionSDKMessages: vi.fn(() => []),
 }))
 
-// Mock agent-headless-runner-registry：捕获 input + callbacks，让测试主动触发完成/失败
+// Mock agent-headless-runner-registry：捕获 input + callbacks
 vi.mock('./agent-headless-runner-registry', () => ({
-  runRegisteredHeadlessAgent: mocks.runHeadless,
+  runRegisteredHeadlessAgent: vi.fn(
+    (
+      input: Record<string, unknown>,
+      callbacks: {
+        onError: (error: string) => void
+        onComplete: () => void
+        onTitleUpdated: (title: string) => void
+        source?: string
+      }
+    ) => {
+      return new Promise<void>((resolve) => {
+        capturedRuns.push({ input, callbacks, resolve })
+      })
+    }
+  ),
 }))
 
-// 默认 mock 行为：powerSaveBlocker.start 返回数字 ID，isStarted 返回 false（跳过 stop）
-mocks.powerStart.mockReturnValue(1)
-mocks.powerIsStarted.mockReturnValue(false)
+// Mock kanban-db：默认 updater 调用 kanbanDbService.updateTaskStatus
+vi.mock('./kanban-db', () => ({
+  kanbanDbService: {
+    updateTaskStatus: vi.fn(),
+    isInitialized: vi.fn(() => true),
+  },
+}))
 
-// 默认 createAgentSession：返回最小可用的 session meta
-mocks.createSession.mockImplementation(
-  (title?: string, channelId?: string, workspaceId?: string, mode?: 'general' | 'ta') => ({
-    id: `s_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    title: title ?? '测试会话',
-    channelId,
-    workspaceId,
-    mode: mode ?? 'general',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  })
-)
+// Mock agent-role-service：getRoleById 返回 undefined（测试不测角色注入）
+vi.mock('./agent-role-service', () => ({
+  getRoleById: vi.fn(() => undefined),
+}))
 
-// 默认 runRegisteredHeadlessAgent：捕获调用但不主动 resolve，让测试控制回调时机
+// Mock kanban-ipc：broadcastKanbanChanged 不做任何事
+vi.mock('./kanban-ipc', () => ({
+  broadcastKanbanChanged: vi.fn(),
+}))
+
+// Mock settings-service：getSettings 返回最小配置
+vi.mock('./settings-service', () => ({
+  getSettings: vi.fn(() => ({
+    kanbanDefaultMaxConcurrent: 2,
+    kanbanDefaultMaxConcurrentPerModel: 1,
+  })),
+}))
+
 interface CapturedRun {
   input: Record<string, unknown>
   callbacks: {
@@ -80,24 +100,22 @@ interface CapturedRun {
 }
 let capturedRuns: CapturedRun[] = []
 
-mocks.runHeadless.mockImplementation(
-  (input: Record<string, unknown>, callbacks: CapturedRun['callbacks']) => {
-    return new Promise<void>((resolve) => {
-      capturedRuns.push({ input, callbacks, resolve })
-    })
-  }
-)
-
 const { runKanbanTaskHeadless } = await import('./kanban-worker-service')
 const { buildKanbanAgentTools } = await import('./kanban-agent-tools')
+const agentSessionManager = await import('./agent-session-manager')
+const headlessRegistry = await import('./agent-headless-runner-registry')
+const electron = await import('electron')
+
+const mockCreateSession = vi.mocked(agentSessionManager.createAgentSession)
+const mockUpdateMeta = vi.mocked(agentSessionManager.updateAgentSessionMeta)
+const mockRunHeadless = vi.mocked(headlessRegistry.runRegisteredHeadlessAgent)
+const mockPowerStart = vi.mocked(electron.powerSaveBlocker.start)
 
 beforeEach(() => {
-  mocks.createSession.mockClear()
-  mocks.updateMeta.mockClear()
-  mocks.runHeadless.mockClear()
-  mocks.powerStart.mockClear()
-  mocks.powerStop.mockClear()
-  mocks.powerIsStarted.mockClear()
+  mockCreateSession.mockClear()
+  mockUpdateMeta.mockClear()
+  mockRunHeadless.mockClear()
+  mockPowerStart.mockClear()
   capturedRuns = []
 })
 
@@ -162,8 +180,8 @@ describe('runKanbanTaskHeadless', () => {
 
   test('创建子会话（mode=general）并写入 parentBoardId / sourceKanbanTaskId', async () => {
     const promise = runKanbanTaskHeadless(baseTask, baseBoard)
-    expect(mocks.createSession).toHaveBeenCalledWith('测试任务', 'ch_test', undefined, 'general')
-    expect(mocks.updateMeta).toHaveBeenCalledWith(expect.any(String), {
+    expect(mockCreateSession).toHaveBeenCalledWith('测试任务', 'ch_test', undefined, 'general')
+    expect(mockUpdateMeta).toHaveBeenCalledWith(expect.any(String), {
       parentBoardId: 'b_test1',
       sourceKanbanTaskId: 't_test1',
     })
@@ -186,7 +204,6 @@ describe('runKanbanTaskHeadless', () => {
       onTaskCompleted,
     })
 
-    // 执行前先标记 running
     expect(updater.markTaskRunning).toHaveBeenCalledWith(
       't_test1',
       expect.any(String),
@@ -223,15 +240,14 @@ describe('runKanbanTaskHeadless', () => {
     expect(onTaskCompleted).toHaveBeenCalledWith('t_test1', 'failed', undefined, 'boom')
   })
 
-  test('未传 updater 时使用 noop，不抛错（kanban-db 未接线场景）', async () => {
+  test('未传 updater 时使用默认 db updater，不抛错', async () => {
     const promise = runKanbanTaskHeadless(baseTask, baseBoard)
     completeLatestRun()
     await expect(promise).resolves.toBeUndefined()
   })
 
   test('runRegisteredHeadlessAgent 抛错时回流到 markTaskFailed', async () => {
-    // 让 mock 在本次调用中 reject
-    mocks.runHeadless.mockImplementationOnce(() => Promise.reject(new Error('runner 崩溃')))
+    mockRunHeadless.mockImplementationOnce(() => Promise.reject(new Error('runner 崩溃')))
 
     const updater = {
       markTaskRunning: vi.fn(),
@@ -251,14 +267,14 @@ describe('runKanbanTaskHeadless', () => {
 
   test('启动 powerSaveBlocker 防休眠', async () => {
     const promise = runKanbanTaskHeadless(baseTask, baseBoard)
-    expect(mocks.powerStart).toHaveBeenCalledWith('prevent-app-suspension')
+    expect(mockPowerStart).toHaveBeenCalledWith('prevent-app-suspension')
     completeLatestRun()
     await promise
   })
 })
 
 describe('buildKanbanAgentTools', () => {
-  test('返回 5 个 kanban_* 工具', () => {
+  test('返回 6 个 kanban_* 工具', () => {
     const tools = buildKanbanAgentTools()
     const names = Object.keys(tools).sort()
     expect(names).toEqual([
@@ -266,6 +282,7 @@ describe('buildKanbanAgentTools', () => {
       'kanban_block',
       'kanban_comment',
       'kanban_create_board',
+      'kanban_list_boards',
       'kanban_list_tasks',
     ])
     for (const name of names) {
@@ -278,32 +295,15 @@ describe('buildKanbanAgentTools', () => {
     }
   })
 
-  test('kanban_create_board handler 在 kanban-db 未接线时抛错', async () => {
-    const tools = buildKanbanAgentTools()
-    await expect(
-      tools.kanban_create_board!.handler({
-        rootGoal: '做 X',
-        parentSessionId: 's_1',
-      })
-    ).rejects.toThrow(/kanban-db 尚未接线/)
-  })
-
-  test('kanban_block handler 校验必填字段（在调用 kanban-db 之前）', async () => {
+  test('kanban_block handler 校验必填字段', async () => {
     const tools = buildKanbanAgentTools()
     await expect(tools.kanban_block!.handler({ taskId: 't_1' })).rejects.toThrow(/reason/)
-  })
-
-  test('kanban_block handler 字段齐全后调用 kanban-db（未接线时抛错）', async () => {
-    const tools = buildKanbanAgentTools()
-    await expect(tools.kanban_block!.handler({ taskId: 't_1', reason: '缺信息' })).rejects.toThrow(
-      /kanban-db 尚未接线/
-    )
   })
 
   test('kanban_comment handler 抛「未实现」错误（待 Phase D）', async () => {
     const tools = buildKanbanAgentTools()
     await expect(tools.kanban_comment!.handler({ taskId: 't_1', comment: 'hi' })).rejects.toThrow(
-      /kanban_comment 尚未实现/
+      /尚未实现/
     )
   })
 })

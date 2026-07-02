@@ -1,12 +1,23 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 
+// 依赖 better-sqlite3 native module 的测试文件
+// - CI（ubuntu）：node + vitest 跑，better-sqlite3 编译为 Node ABI，能加载
+// - 本地 dev（Windows）：better-sqlite3 被 rebuild 为 Electron ABI，vitest (Node) 加载会 ABI 不匹配
+//   本地 skip 这两个文件，CI 跑全量
+const nativeModuleTests = [
+  'apps/electron/src/main/lib/kanban-db.test.ts',
+  'apps/electron/src/main/lib/kanban-dispatcher.test.ts',
+]
+
+const isCI = !!process.env.CI
+
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
     include: ['apps/**/*.test.ts', 'packages/**/*.test.ts'],
-    exclude: ['node_modules/**'],
+    exclude: ['node_modules/**', ...(isCI ? [] : nativeModuleTests)],
   },
   resolve: {
     alias: {

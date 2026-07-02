@@ -19,6 +19,10 @@ tagent-running-data/
 # 测试产物
 *.tsbuildinfo
 
+# 自动生成的文件（tokens:generate 产物，不要 prettier 格式化）
+**/__generated__/
+packages/ui/src/tokens/__generated__/
+
 # 临时开发目录
 temp-*/
 
