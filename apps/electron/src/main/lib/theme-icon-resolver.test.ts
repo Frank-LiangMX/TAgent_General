@@ -105,7 +105,12 @@ describe('resolveLogoKey - special + default 风格 fallback', () => {
 
 describe('resolveLogoKey - 与 titlebar-overlay 行为一致', () => {
   // 覆盖所有 (mode, style, systemIsDark) 组合的关键路径
-  const cases: Array<{ mode: ThemeMode; style: ThemeStyle | undefined; sysDark: boolean; expected: string }> = [
+  const cases: Array<{
+    mode: ThemeMode
+    style: ThemeStyle | undefined
+    sysDark: boolean
+    expected: string
+  }> = [
     { mode: 'light', style: undefined, sysDark: true, expected: 'default-light' },
     { mode: 'light', style: 'ocean-dark', sysDark: true, expected: 'default-light' },
     { mode: 'dark', style: undefined, sysDark: false, expected: 'default-dark' },

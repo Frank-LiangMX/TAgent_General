@@ -1,7 +1,15 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
 
-import { Tray, Menu, app, nativeImage, nativeTheme, BrowserWindow, type NativeImage } from 'electron'
+import {
+  Tray,
+  Menu,
+  app,
+  nativeImage,
+  nativeTheme,
+  BrowserWindow,
+  type NativeImage,
+} from 'electron'
 
 import { requestApplicationQuit } from './lib/app-shutdown'
 import { isAgentSessionActive } from './lib/agent-service'

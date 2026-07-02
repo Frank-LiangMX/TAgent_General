@@ -36,13 +36,7 @@ function stopWindows(): void {
   killWinProjectElectron()
 
   // 勿用 repoRoot / apps\electron 等过宽片段，会误杀正在执行 dev-stop 的 bun 父进程
-  const fragments = [
-    'dist\\main.cjs',
-    'vite dev',
-    'esbuild',
-    'concurrently',
-    'run-electronmon',
-  ]
+  const fragments = ['dist\\main.cjs', 'vite dev', 'esbuild', 'concurrently', 'run-electronmon']
   for (const fragment of fragments) {
     killWinByCommandLine(fragment)
   }

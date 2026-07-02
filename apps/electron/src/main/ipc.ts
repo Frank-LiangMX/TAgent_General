@@ -1369,10 +1369,7 @@ export function registerIpcHandlers(): void {
         })
 
         // 让原生菜单跟随应用主题明暗（light/dark/system）
-        nativeTheme.themeSource = resolveNativeThemeSource(
-          result.themeMode,
-          result.themeStyle
-        )
+        nativeTheme.themeSource = resolveNativeThemeSource(result.themeMode, result.themeStyle)
       }
 
       return result

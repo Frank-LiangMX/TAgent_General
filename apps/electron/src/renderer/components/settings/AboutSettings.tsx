@@ -334,7 +334,9 @@ function UpdateSection(): React.ReactElement | null {
       {/* 下载完成：关于页内直接重启 */}
       {status.status === 'downloaded' && status.version && (
         <div className="border-t px-4 py-2.5 flex items-center justify-between gap-3">
-          <span className="text-xs text-muted-foreground">v{status.version} 已下载，重启后生效</span>
+          <span className="text-xs text-muted-foreground">
+            v{status.version} 已下载，重启后生效
+          </span>
           <Button
             size="sm"
             className="h-7 text-xs gap-1 shrink-0"

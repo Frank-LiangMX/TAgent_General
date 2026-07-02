@@ -1202,7 +1202,14 @@ async function speedTestOneModel(
       case 'xiaomi':
       case 'xiaomi-token-plan':
       case 'qwen-anthropic':
-        return await speedTestAnthropicModel(channel.id, modelId, channel.baseUrl, apiKey, proxyUrl, provider)
+        return await speedTestAnthropicModel(
+          channel.id,
+          modelId,
+          channel.baseUrl,
+          apiKey,
+          proxyUrl,
+          provider
+        )
       case 'openai':
       case 'zhipu':
       case 'doubao':
@@ -1259,7 +1266,11 @@ async function speedTestAnthropicModel(
     'anthropic-version': '2023-06-01',
     'content-type': 'application/json',
   }
-  if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
+  if (
+    provider === 'kimi-coding' ||
+    provider === 'zhipu-coding' ||
+    provider === 'xiaomi-token-plan'
+  ) {
     headers.Authorization = `Bearer ${apiKey}`
     headers['User-Agent'] = getTAgentUserAgent(pkg.version)
   } else if (provider === 'minimax' || provider === 'qwen-anthropic') {
@@ -1490,8 +1501,10 @@ async function speedTestKsccModel(
 
   const sdkArgs = [
     '-p',
-    '--model', modelId,
-    '--output-format', 'stream-json',
+    '--model',
+    modelId,
+    '--output-format',
+    'stream-json',
     '--verbose',
     '--dangerously-skip-permissions',
     '--no-session-persistence',
@@ -1536,9 +1549,17 @@ async function speedTestKsccModel(
       resolved = true
       clearTimeout(timeout)
       // 杀进程：SIGTERM，200ms 后 SIGKILL 兜底
-      try { child.kill('SIGTERM') } catch { /* */ }
+      try {
+        child.kill('SIGTERM')
+      } catch {
+        /* */
+      }
       setTimeout(() => {
-        try { if (!child.killed) child.kill('SIGKILL') } catch { /* */ }
+        try {
+          if (!child.killed) child.kill('SIGKILL')
+        } catch {
+          /* */
+        }
       }, 200)
       resolve(result)
     }
@@ -1601,7 +1622,9 @@ async function speedTestKsccModel(
 
     // 写入 stdin 触发 prompt（kscc -p 从 stdin 读 prompt）
     try {
-      child.stdin.on('error', () => { /* stdin 写入失败不致命 */ })
+      child.stdin.on('error', () => {
+        /* stdin 写入失败不致命 */
+      })
       child.stdin.end('ping\n')
     } catch {
       /* ignore */

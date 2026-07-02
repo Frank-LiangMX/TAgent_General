@@ -54,8 +54,12 @@ export function SpeedTestPopover({ channels }: SpeedTestPopoverProps) {
     return arr
   }, [enabledChannels])
 
-  const allKeys = useMemo(() => new Set(allItems.map((i) => itemKey(i.channelId, i.modelId))), [allItems])
-  const allSelected = selected.size > 0 && allKeys.size > 0 && [...allKeys].every((k) => selected.has(k))
+  const allKeys = useMemo(
+    () => new Set(allItems.map((i) => itemKey(i.channelId, i.modelId))),
+    [allItems]
+  )
+  const allSelected =
+    selected.size > 0 && allKeys.size > 0 && [...allKeys].every((k) => selected.has(k))
 
   const toggleItem = (channelId: string, modelId: string) => {
     const key = itemKey(channelId, modelId)
@@ -112,10 +116,7 @@ export function SpeedTestPopover({ channels }: SpeedTestPopoverProps) {
           {running ? <Loader2 size={16} className="animate-spin" /> : <Gauge size={16} />}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-auto min-w-[260px] p-0 border-none shadow-xl"
-      >
+      <PopoverContent align="end" className="w-auto min-w-[260px] p-0 border-none shadow-xl">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
           <span className="text-xs font-medium text-foreground/80">测速（首字延迟）</span>
           <button

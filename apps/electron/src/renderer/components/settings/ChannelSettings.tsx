@@ -252,11 +252,7 @@ export function ChannelSettings(): React.ReactElement {
       <SettingsSection
         title="金山云内网"
         description="公司内网 Agent 渠道，由 kscc CLI 提供认证与模型能力"
-        action={
-          ksccChannel ? (
-            <SpeedTestPopover channels={[ksccChannel]} />
-          ) : undefined
-        }
+        action={ksccChannel ? <SpeedTestPopover channels={[ksccChannel]} /> : undefined}
       >
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
@@ -418,7 +414,13 @@ interface ChannelRowProps {
   onToggle: () => void
 }
 
-function ChannelRow({ channel, speedTestResults, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
+function ChannelRow({
+  channel,
+  speedTestResults,
+  onEdit,
+  onDelete,
+  onToggle,
+}: ChannelRowProps): React.ReactElement {
   const enabledModels = channel.models.filter((m) => m.enabled)
   const enabledCount = enabledModels.length
   const isAgentCapable = isAgentCompatibleProvider(channel.provider)
