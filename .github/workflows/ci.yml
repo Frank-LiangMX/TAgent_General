@@ -125,6 +125,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # 重新编译 better-sqlite3 for 当前 Node ABI
+      # （bun install 可能用不同 Node 版本编译，导致运行时 ABI 不匹配）
+      - name: Rebuild better-sqlite3 for current Node
+        run: npm rebuild better-sqlite3
+
       # 用 node 跑 vitest（不用 bun）：bun 加载 better-sqlite3 native module
       # 会触发 "Module did not self-register"，node 能正常加载 Node ABI 编译的 native module
       - name: Run tests with coverage
