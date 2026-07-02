@@ -125,6 +125,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
+      # --ignore-scripts 跳过 electron 的 postinstall（下载二进制），需手动触发
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
       # 重新编译 better-sqlite3 for 当前 Node ABI
       # （跳过 @tagent/electron 的 postinstall，因为它 rebuild for Electron ABI，
       # CI 跑 vitest 用 Node runtime，不需要 Electron ABI）
