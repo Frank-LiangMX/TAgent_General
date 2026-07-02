@@ -48,6 +48,8 @@ import type {
   ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
+  SpeedTestInput,
+  SpeedTestBatchResult,
   ConversationMeta,
   ChatMessage,
   FileDialogResult,
@@ -124,9 +126,7 @@ import {
   APP_ICON_IPC_CHANNELS,
   DOCK_BADGE_IPC_CHANNELS,
   STORAGE_IPC_CHANNELS,
-  WINDOW_CLOSE_IPC_CHANNELS,
 } from '../types'
-import type { WindowCloseResponseData } from '../types'
 import { askUserService } from './lib/agent-ask-user-service'
 import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
@@ -207,6 +207,7 @@ import {
   testChannelDirect,
   fetchModels,
   validateChannelModel,
+  speedTestModels,
 } from './lib/channel-manager'
 import {
   getAgentSessionWorkspacePath,
@@ -216,7 +217,6 @@ import {
 } from './lib/config-paths'
 import { listConversations, deleteConversation } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
-import { requestApplicationQuit } from './lib/app-shutdown'
 import {
   getDingTalkConfig,
   saveDingTalkConfig,
@@ -267,6 +267,9 @@ import { getProxySettings, saveProxySettings } from './lib/proxy-settings-servic
 import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
 import { calculateStorageStats, cleanupStorage, cleanupTempFiles } from './lib/storage-service'
+import { updateTrayIcon } from './tray'
+import { updateWindowIcon } from './lib/window-icon'
+import { resolveNativeThemeSource } from './lib/theme-icon-resolver'
 import {
   getSystemPromptConfig,
   createSystemPrompt,
@@ -1215,6 +1218,14 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // 批量测速（TTFB，首字延迟）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.SPEED_TEST,
+    async (_, input: SpeedTestInput): Promise<SpeedTestBatchResult> => {
+      return speedTestModels(input)
+    }
+  )
+
   // ===== 对话管理相关 =====
 
   // 获取对话列表
@@ -1349,6 +1360,19 @@ export function registerIpcHandlers(): void {
             win.webContents.send(SETTINGS_IPC_CHANNELS.ON_THEME_SETTINGS_CHANGED, payload)
           }
         })
+
+        // 同步更新主进程侧图标（托盘 + 所有窗口的任务栏图标）
+        const sysDark = nativeTheme.shouldUseDarkColors
+        updateTrayIcon(result.themeMode, result.themeStyle, sysDark)
+        BrowserWindow.getAllWindows().forEach((win) => {
+          updateWindowIcon(win, result.themeMode, result.themeStyle, sysDark)
+        })
+
+        // 让原生菜单跟随应用主题明暗（light/dark/system）
+        nativeTheme.themeSource = resolveNativeThemeSource(
+          result.themeMode,
+          result.themeStyle
+        )
       }
 
       return result
@@ -1380,6 +1404,21 @@ export function registerIpcHandlers(): void {
     BrowserWindow.getAllWindows().forEach((win) => {
       win.webContents.send(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, isDark)
     })
+
+    // 依赖系统明暗的主题模式需要同步更新图标：
+    // - themeMode='system'：明暗完全跟随系统
+    // - themeMode='special' + style='default'：fallback 到系统明暗
+    const settings = getSettings()
+    const dependsOnSystem =
+      settings.themeMode === 'system' ||
+      (settings.themeMode === 'special' &&
+        (!settings.themeStyle || settings.themeStyle === 'default'))
+    if (dependsOnSystem) {
+      updateTrayIcon(settings.themeMode, settings.themeStyle, isDark)
+      BrowserWindow.getAllWindows().forEach((win) => {
+        updateWindowIcon(win, settings.themeMode, settings.themeStyle, isDark)
+      })
+    }
   })
 
   // ===== 应用图标切换 =====
@@ -3924,21 +3963,7 @@ export function registerIpcHandlers(): void {
   })
 
   // ===== 窗口关闭确认 =====
-
-  ipcMain.on(WINDOW_CLOSE_IPC_CHANNELS.RESPONSE, (_event, data: WindowCloseResponseData) => {
-    console.info('[WindowClose] 收到 close-response:', data)
-    const { action, remember } = data
-    if (remember) {
-      updateSettings({ closeAction: action })
-      console.info('[WindowClose] 已保存 closeAction:', action)
-    }
-    if (action === 'quit') {
-      requestApplicationQuit()
-    } else {
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win && !win.isDestroyed()) win.hide()
-    }
-  })
+  // 已移除：关闭按钮固定为隐藏到托盘，不再弹窗询问
 
   // ===== TA MCP Server 管理 =====
 

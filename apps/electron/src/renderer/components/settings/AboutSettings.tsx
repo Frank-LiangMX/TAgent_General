@@ -44,9 +44,15 @@ import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
 
 import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
-import { updateStatusAtom, updaterAvailableAtom, checkForUpdates } from '@/atoms/updater'
+import {
+  updateStatusAtom,
+  updaterAvailableAtom,
+  checkForUpdates,
+  type DownloadProgress,
+} from '@/atoms/updater'
 import { themeLogoKeyAtom } from '@/atoms/theme'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
+import { formatBytes } from '@/lib/format-bytes'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -312,8 +318,33 @@ function UpdateSection(): React.ReactElement | null {
           <RefreshCw size={16} className="text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">软件更新</span>
         </div>
-        <UpdateStatusBadge status={status.status} version={status.version} error={status.error} />
+        <UpdateStatusBadge
+          status={status.status}
+          version={status.version}
+          error={status.error}
+          progress={status.progress}
+        />
       </div>
+
+      {/* 下载进度 */}
+      {status.status === 'downloading' && (
+        <UpdateDownloadProgress version={status.version} progress={status.progress} />
+      )}
+
+      {/* 下载完成：关于页内直接重启 */}
+      {status.status === 'downloaded' && status.version && (
+        <div className="border-t px-4 py-2.5 flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">v{status.version} 已下载，重启后生效</span>
+          <Button
+            size="sm"
+            className="h-7 text-xs gap-1 shrink-0"
+            onClick={() => window.electronAPI.updater?.quitAndInstall()}
+          >
+            <RotateCw size={12} />
+            立即重启
+          </Button>
+        </div>
+      )}
 
       {/* 错误详情（可展开） */}
       {status.status === 'error' && status.error && (
@@ -351,14 +382,50 @@ function UpdateSection(): React.ReactElement | null {
   )
 }
 
+function UpdateDownloadProgress({
+  version,
+  progress,
+}: {
+  version?: string
+  progress?: DownloadProgress
+}): React.ReactElement {
+  const percent = progress ? Math.min(100, Math.round(progress.percent)) : 0
+  const hasProgress = Boolean(progress && progress.total > 0)
+
+  return (
+    <div className="border-t px-4 py-2.5 space-y-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{version ? `正在下载 v${version}` : '正在下载更新'}</span>
+        <span>{hasProgress ? `${percent}%` : '连接中…'}</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: hasProgress ? `${percent}%` : '30%' }}
+        />
+      </div>
+      {hasProgress && progress && (
+        <div className="flex justify-between text-[11px] text-muted-foreground">
+          <span>
+            {formatBytes(progress.transferred)} / {formatBytes(progress.total)}
+          </span>
+          <span>{formatBytes(progress.bytesPerSecond)}/s</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function UpdateStatusBadge({
   status,
   version,
   error,
+  progress,
 }: {
   status: string
   version?: string
   error?: string
+  progress?: DownloadProgress
 }): React.ReactElement {
   switch (status) {
     case 'checking':
@@ -373,13 +440,16 @@ function UpdateStatusBadge({
           <ExternalLink size={10} />v{version} 可用
         </Badge>
       )
-    case 'downloading':
+    case 'downloading': {
+      const percent =
+        progress && progress.total > 0 ? Math.min(100, Math.round(progress.percent)) : null
       return (
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="secondary" className="text-xs gap-1">
           <Loader2 size={10} className="animate-spin" />
-          下载中
+          {percent != null ? `下载中 ${percent}%` : '下载中…'}
         </Badge>
       )
+    }
     case 'downloaded':
       return (
         <Badge variant="default" className="text-xs gap-1">

@@ -49,31 +49,121 @@ export const SAFE_BASH_PATTERNS: readonly RegExp[] = [
   // - find 的 -exec/-delete 可执行任意命令/删除文件
 ]
 
-/** 危险命令前缀（需特别标记⚠️） */
+/**
+ * 危险命令前缀（按破坏性分类，语言无关）
+ *
+ * 匹配规则：token-based 前缀匹配（见 isDangerousCommand）。
+ * 列表条目按"破坏性类别"组织，便于审阅与扩展。
+ *
+ * 设计原则：
+ * - 只列"破坏性"操作（删除/覆盖/卸载/清理/系统修改/远程执行）
+ * - 高频只读/构建命令（npm install、go build、cargo test）不列入，避免过度拦截
+ * - 安装依赖（npm install、pip install、cargo add）不列入——供应链风险由用户自行评估
+ */
 export const DANGEROUS_COMMANDS: readonly string[] = [
+  // A. 删除/破坏文件系统
   'rm',
   'rmdir',
+  'del', // Windows
+  'unlink',
+  'shred',
+  'truncate',
+  'mkfs',
+  'fdisk',
+  'parted',
+  'dd',
+  // B. 权限/系统修改
   'sudo',
   'su',
+  'doas',
+  'runas', // Windows
   'chmod',
   'chown',
-  'mv',
-  'dd',
+  'chgrp',
+  'systemctl',
+  'service',
+  'launchctl', // macOS
+  'sc stop', // Windows 服务
+  'sc delete',
+  'regedit', // Windows 注册表
+  'defaults write', // macOS 系统配置
+  'defaults delete',
+  // C. 网络下载/执行（可能拉取并执行任意代码）
+  'curl',
+  'wget',
+  'aria2c',
+  'fetch',
+  // D. 远程登录/传输
+  'ssh',
+  'scp',
+  'rsync',
+  'mosh',
+  'telnet',
+  'rlogin',
+  // E. 进程控制
   'kill',
   'killall',
   'pkill',
+  'taskkill', // Windows
+  // F. 包管理卸载/破坏（只列卸载和安装二进制，不列安装依赖）
+  'pip uninstall',
+  'pip3 uninstall',
+  'uv pip uninstall',
+  'npm uninstall',
+  'npm rm',
+  'npm un',
+  'yarn remove',
+  'pnpm remove',
+  'pnpm rm',
+  'apt remove',
+  'apt purge',
+  'apt-get remove',
+  'apt-get purge',
+  'yum remove',
+  'dnf remove',
+  'brew uninstall',
+  'pacman -R',
+  'pacman -Rs',
+  'pacman -Rns',
+  'cargo uninstall',
+  'go install', // 安装二进制到 GOPATH/bin
+  // G. 构建清理（删除产物）
+  'make clean',
+  'make distclean',
+  'make uninstall',
+  'make mrproper',
+  'cargo clean',
+  'go clean',
+  'bazel clean',
+  'mvn clean',
+  'gradle clean',
+  // H. Git 破坏性操作
   'git push',
   'git reset',
   'git rebase',
-  'git checkout',
+  'git checkout .', // 丢弃工作区改动
+  'git checkout --', // 丢弃工作区改动（显式 -- 分隔）
   'git clean',
   'git branch -D',
   'git branch -d',
+  'git commit --amend',
+  'git stash drop',
+  'git stash clear',
+  'git filter-branch',
+  'git reflog expire',
+  // I. 容器/编排破坏
+  'docker rm',
+  'docker rmi',
+  'docker system prune',
+  'docker volume rm',
+  'docker network rm',
+  'docker kill',
+  'docker stop',
+  'docker compose down',
+  'docker-compose down',
+  'kubectl delete',
+  // J. 发布（影响外部状态）
   'npm publish',
-  'curl',
-  'wget',
-  'ssh',
-  'scp',
 ]
 
 /**
@@ -109,10 +199,24 @@ export function isSafeBashCommand(command: string): boolean {
 
 /**
  * 判断命令是否为危险命令
+ *
+ * 使用 token-based 前缀匹配：命令按空白分割为 tokens，
+ * 检查前 N 个 token 是否与某条 DANGEROUS_COMMANDS 条目完全相等。
+ *
+ * 相比 startsWith 的改进：
+ * - `del` 不再误匹配 `delta`、`rms` 等
+ * - `rm` 不再误匹配 `rmdir`（rmdir 单独列出）
+ * - `fetch` 不再误匹配 `git fetch`（第一个 token 是 git）
+ * - `sc` 不再误匹配 `scala`、`scp` 等
  */
 export function isDangerousCommand(command: string): boolean {
-  const trimmed = command.trim().toLowerCase()
-  return DANGEROUS_COMMANDS.some((dc) => trimmed.startsWith(dc.toLowerCase()))
+  const tokens = command.trim().toLowerCase().split(/\s+/)
+  if (tokens.length === 0 || tokens[0] === '') return false
+  return DANGEROUS_COMMANDS.some((dc) => {
+    const dcTokens = dc.toLowerCase().split(/\s+/)
+    if (tokens.length < dcTokens.length) return false
+    return dcTokens.every((t, i) => tokens[i] === t)
+  })
 }
 
 /** 写操作工具名称 */

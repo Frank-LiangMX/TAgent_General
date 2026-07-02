@@ -3,15 +3,15 @@ import { join } from 'path'
 
 import { setTAgentVersion } from '@tagent/core'
 import { getMacTrafficLightPosition } from '@tagent/shared'
-import { app, BrowserWindow, dialog, Menu, protocol, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, nativeTheme, protocol, screen, shell } from 'electron'
 
-import { TRAY_IPC_CHANNELS, WINDOW_CLOSE_IPC_CHANNELS } from '../types'
+import { TRAY_IPC_CHANNELS } from '../types'
 import { registerIpcHandlers } from './ipc'
+import { registerMainWindowBridge, hideMainWindowToTray } from './lib/main-window-bridge'
 import { killOrphanedClaudeSubprocesses } from './lib/agent-service'
 import { startAutoArchiveScheduler } from './lib/auto-archive-scheduler'
 import {
   clearForceExitFallback,
-  requestApplicationQuit,
   runApplicationShutdown,
   scheduleForceExitFallback,
 } from './lib/app-shutdown'
@@ -31,7 +31,7 @@ import { ensureKsccRipgrep } from './lib/ensure-kscc-ripgrep'
 import { createQuickTaskWindow, toggleQuickTaskWindow } from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
-import { initAutoUpdater } from './lib/updater/auto-updater'
+import { initAutoUpdater, getIsQuittingForUpdate } from './lib/updater/auto-updater'
 import {
   createVoiceDictationWindow,
   toggleVoiceDictationWindow,
@@ -43,7 +43,9 @@ import { startWorkspaceWatcher } from './lib/workspace-watcher'
 import { wpsBridge } from './lib/wps-bridge'
 import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import { createApplicationMenu } from './menu'
-import { createTray, destroyTray, getTray } from './tray'
+import { createTray, destroyTray, getTray, hideWindowToTray, prepareWindowFromTray } from './tray'
+import { updateWindowIcon } from './lib/window-icon'
+import { resolveNativeThemeSource } from './lib/theme-icon-resolver'
 
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
@@ -312,6 +314,7 @@ function showAndFocusMainWindow(): void {
     createWindow()
     return
   }
+  prepareWindowFromTray(mainWindow)
   ensureWindowOnScreen(mainWindow)
   if (mainWindow.isMinimized()) {
     mainWindow.restore()
@@ -395,6 +398,17 @@ function createWindow(): void {
   })
   installWindowsZoomInFallback(mainWindow)
 
+  // 应用当前主题图标（覆盖 BrowserWindow 创建时的默认 icon）
+  if (!mainWindow.isDestroyed()) {
+    const initSettings = getSettings()
+    updateWindowIcon(
+      mainWindow,
+      initSettings.themeMode,
+      initSettings.themeStyle,
+      nativeTheme.shouldUseDarkColors
+    )
+  }
+
   // Load the renderer
   const isDev = !app.isPackaged
   if (isDev) {
@@ -470,55 +484,30 @@ function createWindow(): void {
     })
   }
 
-  // Windows: 点击关闭按钮时根据用户选择隐藏到托盘或退出
-  if (process.platform === 'win32') {
+  // Windows / Linux：关闭按钮仅隐藏到托盘；完全退出请用托盘菜单
+  // dev 与 prod 行为一致，避免 dev 模式关窗销毁窗口后托盘打开需重建（延迟大）
+  if (process.platform === 'win32' || process.platform === 'linux') {
     mainWindow.on('close', (event) => {
-      if (!getIsQuitting()) {
-        // 隐藏前先刷新挂起的窗口状态保存
+      if (!getIsQuitting() && getTray()) {
         if (windowStateSaveTimer) {
           clearTimeout(windowStateSaveTimer)
           windowStateSaveTimer = null
         }
         saveMainWindowState()
 
-        // 开发模式：关窗即退出，避免 electronmon 热重载后任务管理器残留 Electron
-        if (!app.isPackaged) {
-          setQuitting()
-          return
-        }
-
         event.preventDefault()
-
-        // 检查用户是否已保存关闭行为偏好
-        const settings = getSettings()
-        console.info('[WindowClose] closeAction:', settings.closeAction)
-        if (settings.closeAction === 'quit') {
-          requestApplicationQuit()
-        } else if (settings.closeAction === 'minimize-to-tray') {
-          mainWindow?.hide()
-        } else {
-          // 未保存偏好，发送 IPC 让渲染进程弹出确认对话框
-          // 附带 running 任务数，让用户知道有任务在跑时优先最小化
-          console.info('[WindowClose] 发送 close-request IPC')
-          let runningTaskCount = 0
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { kanbanDbService } =
-              require('./lib/kanban-db') as typeof import('./lib/kanban-db')
-            if (kanbanDbService.isInitialized()) {
-              runningTaskCount = kanbanDbService.listTasksByStatus('running').length
-            }
-          } catch (err) {
-            console.error('[WindowClose] 读取 running 任务数失败:', err)
-          }
-          mainWindow?.webContents.send(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, { runningTaskCount })
-        }
+        hideMainWindowToTray()
       }
     })
   }
 
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  registerMainWindowBridge({
+    getMainWindow: () => mainWindow,
+    hideToTray: hideWindowToTray,
   })
 }
 
@@ -550,6 +539,14 @@ app.whenReady().then(bootstrap).catch(handleBootstrapFailure)
 async function bootstrap(): Promise<void> {
   // 初始化 TAgent 版本号（供 User-Agent 等全局标识使用）
   setTAgentVersion(app.getVersion())
+
+  // 让原生菜单（托盘菜单、应用菜单、系统对话框）跟随应用主题明暗。
+  // 未设置时跟随系统主题，与应用主题不同步。必须在创建窗口/托盘前设置。
+  const initSettings = getSettings()
+  nativeTheme.themeSource = resolveNativeThemeSource(
+    initSettings.themeMode,
+    initSettings.themeStyle
+  )
 
   // 注册自定义协议 tagent-file:// 用于内联预览本地文件。
   // 协议只接受主进程签发的 opaque token，不解析 renderer 提供的绝对路径。
@@ -734,15 +731,31 @@ function handleBootstrapFailure(err: unknown): void {
 }
 
 app.on('window-all-closed', () => {
-  // 非 macOS：关闭所有窗口时退出应用
-  // macOS：保持应用运行（可通过 tray 或 Dock 重新打开）
-  if (process.platform !== 'darwin') {
+  if (process.platform === 'darwin') return
+
+  // 开发模式：关窗即退出，不保留托盘后台进程
+  if (!app.isPackaged) {
     app.quit()
+    return
   }
+
+  // 正式版退出流程中，确保 quit 走完
+  if (getIsQuitting()) {
+    app.quit()
+    return
+  }
+
+  // 正式版托盘模式：主窗口 hide 不会 destroy，一般不会触发此事件
+  if (getTray()) return
+
+  app.quit()
 })
 
 app.on('before-quit', () => {
-  scheduleForceExitFallback()
+  // 更新安装期间不要 5s 强退，否则 NSIS 安装器可能来不及启动
+  if (!getIsQuittingForUpdate()) {
+    scheduleForceExitFallback()
+  }
   runApplicationShutdown()
   // Clean up system tray before quitting
   destroyTray()

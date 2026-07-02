@@ -1347,6 +1347,15 @@ export class AgentOrchestrator {
     // 否则用本地 runGeneration 作为回退（headless 模式等无渲染进程场景）
     const streamStartedAt = input.startedAt ?? runGeneration
     this.activeSessions.set(sessionId, runGeneration)
+
+    // 阶段级耗时打点（排查"会话发起后很久才回复"问题，定位卡在哪一步）
+    const timings: Record<string, number> = {}
+    let _phaseStart = Date.now()
+    const markPhase = (name: string): void => {
+      const now = Date.now()
+      timings[name] = now - _phaseStart
+      _phaseStart = now
+    }
     const releaseActiveRun = (): void => {
       // 在发送 STREAM_COMPLETE 前释放 active slot，避免渲染进程已进入空闲态、
       // 主进程仍在 finally 前短暂拒绝下一条消息。
@@ -1423,6 +1432,7 @@ export class AgentOrchestrator {
     })
     const sdkEnv = await this.buildSdkEnv(apiKey, channel.baseUrl, channel.provider)
     applyAgentModelRoutingToEnv(sdkEnv, modelRouting)
+    markPhase('preflight')
 
     // 4. 读取已有的 SDK session ID（用于 resume）
     const sessionMeta = getAgentSessionMeta(sessionId)
@@ -1476,6 +1486,7 @@ export class AgentOrchestrator {
     } as unknown as SDKMessage
     appendSDKMessages(sessionId, [userSDKMsg])
     callbacks.onRunStarted?.({ startedAt: streamStartedAt })
+    markPhase('persistUserMsg')
 
     // 5.5 Nudge 检测（每 5 turn 检查记忆模式）
     try {
@@ -1521,6 +1532,7 @@ export class AgentOrchestrator {
     } catch (e) {
       console.warn('[Agent 编排] Nudge 检测失败:', e)
     }
+    markPhase('nudgeDetect')
 
     // 6. 状态初始化
     const accumulatedMessages: SDKMessage[] = []
@@ -1533,6 +1545,7 @@ export class AgentOrchestrator {
     try {
       // 8. 动态导入 SDK
       const sdk = await import('@anthropic-ai/claude-agent-sdk')
+      markPhase('sdkImport')
 
       // 9. 构建 SDK query
       let cliPath = resolveSDKCliPath()
@@ -1664,6 +1677,7 @@ export class AgentOrchestrator {
       } catch (e) {
         console.warn('[Agent 编排] TA 意图检测失败:', e)
       }
+      markPhase('taIntent')
 
       // 9.4.1 Fork session JSONL 迁移已在 forkAgentSession 中完成，
       // fork 后的会话直接使用自己的 cwd，无需回退到源目录。
@@ -1694,6 +1708,7 @@ export class AgentOrchestrator {
           console.log(`[Agent 编排] 已设置 SDK settings (plansDirectory, skipWebFetchPreflight)`)
         }
       }
+      markPhase('sdkSettings')
 
       // 9.6 直接信任已保存的 sdkSessionId，跳过 listSessions 预验证
       // 原因：listSessions({ dir }) 基于 cwd 路径哈希查找，但 session 级别的 cwd
@@ -1708,9 +1723,13 @@ export class AgentOrchestrator {
 
       // 10. 构建 MCP 服务器配置 + 记忆工具 + 生图工具 + 自定义工具
       const mcpServers = this.buildMcpServers(workspaceSlug)
+      markPhase('buildMcpConfig')
       await this.injectMemoryTools(sdk, mcpServers)
+      markPhase('injectMemory')
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
+      markPhase('injectNanoBanana')
       await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
+      markPhase('injectCompactSession')
 
       if (triggeredBy !== 'delegation') {
         try {
@@ -1725,6 +1744,7 @@ export class AgentOrchestrator {
           console.error('[Agent 编排] 注入定时任务工具失败:', err)
         }
       }
+      markPhase('injectAutomation')
 
       // 注入看板工具集
       // B4 起支持 general / TA 双模式，仅防递归（triggeredBy !== 'kanban'）。
@@ -1740,11 +1760,13 @@ export class AgentOrchestrator {
           console.error('[Agent 编排] 注入看板工具集失败:', err)
         }
       }
+      markPhase('injectKanban')
 
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {
         await this.injectTATools(sdk, mcpServers, sessionId, agentCwd)
       }
+      markPhase('injectTA')
 
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
@@ -1806,6 +1828,7 @@ export class AgentOrchestrator {
               { agentCwd },
               getSessionContextWindow(sessionId)
             )
+      markPhase('buildContextPrompt')
 
       if (existingSdkSessionId) {
         console.log(`[Agent 编排] 使用 resume 模式，SDK session ID: ${existingSdkSessionId}`)
@@ -2274,6 +2297,13 @@ export class AgentOrchestrator {
           setSessionContextWindow(sessionId, cw) // P0-1
         },
       }
+      markPhase('buildQueryOptions')
+
+      // 输出阶段级耗时（排查"会话发起后很久才回复"，定位卡在哪一步）
+      const totalPreflightMs = Object.values(timings).reduce((a, b) => a + b, 0)
+      console.log(
+        `[Agent 编排] 启动阶段耗时（总计 ${totalPreflightMs}ms）: ${JSON.stringify(timings)}`
+      )
 
       console.log(`[Agent 编排] 开始通过 Adapter 遍历事件流...`)
 

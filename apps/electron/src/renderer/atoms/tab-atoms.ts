@@ -150,8 +150,19 @@ export const activeTabIdAtom = atom<string | null, [string | null], void>(
       next.set(mode, newId)
       return next
     })
+    // 同步视觉激活 tab，保证非 TabBar 入口（快捷键、外部调用）也能让指示器跟随
+    set(visualActiveTabIdAtom, newId)
   }
 )
+
+/**
+ * 视觉激活 tab —— 驱动指示器滑动动画与 tab 高亮，点击瞬间同步设置。
+ *
+ * 与 activeTabIdAtom 解耦：TabBar handleActivate 点击时先设 visual（指示器立即滑动），
+ * 动画结束后才 setActiveTabId（触发会话加载）。动画期间会话内容不切换，主线程只服务动画。
+ * activeTabIdAtom 的 setter 也会同步设 visual，保证其他入口（快捷键等）两者不脱节。
+ */
+export const visualActiveTabIdAtom = atom<string | null>(null)
 
 /** 标签页 MRU（最近使用）顺序，最近使用的 ID 排在前面 */
 export const tabMruAtom = atom<string[]>([])
@@ -274,6 +285,15 @@ export const visibleTabsAtom = atom<TabItem[]>((get) => {
 export const visibleSessionTabsAtom = atom<TabItem[]>((get) => {
   return get(visibleTabsAtom).filter((tab) => tab.type === 'agent')
 })
+
+/**
+ * Tab 切换蒙版开关
+ *
+ * 点击 tab 瞬间同步设 true（在 setActiveTabId 之前），让 MainArea 的蒙版在
+ * React 首次重渲染前就显示，避免点击后要等一整轮渲染才看到蒙版的"顿"感。
+ * MainArea 在新内容渲染完后设 false。
+ */
+export const tabSwitchingAtom = atom<boolean>(false)
 
 function isSessionTab(tab: TabItem): boolean {
   return tab.type === 'agent'

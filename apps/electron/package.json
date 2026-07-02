@@ -1,6 +1,6 @@
 {
   "name": "@tagent/electron",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "TAgent - General AI Agent Desktop App with Claude Agent SDK",
   "homepage": "https://github.com/Frank-LiangMX/TAgent_General",
   "main": "dist/main.cjs",

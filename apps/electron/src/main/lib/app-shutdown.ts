@@ -9,14 +9,14 @@ import { app, BrowserWindow } from 'electron'
 
 import { stopAllAgents, killOrphanedClaudeSubprocesses } from './agent-service'
 import { stopAutoArchiveScheduler } from './auto-archive-scheduler'
-import { setQuitting } from './app-lifecycle'
+import { getIsQuitting, setQuitting } from './app-lifecycle'
 import { stopAllBridges, stopBridgeSelfHealing } from './bridge-registry'
 import { destroyAllDetachedPreviewWindows } from './detached-preview-window'
 import { stopFeishuSyncSleepBlocker } from './feishu-sleep-blocker'
 import { unregisterAllGlobalShortcuts } from './global-shortcut-service'
 import { destroyQuickTaskWindow } from './quick-task-window'
 import { stopChatToolsWatcher } from './tool-config-watcher'
-import { cleanupUpdater } from './updater/auto-updater'
+import { cleanupUpdater, getIsQuittingForUpdate } from './updater/auto-updater'
 import { destroyVoiceDictationWindow } from './voice-dictation-window'
 import { stopWorkspaceWatcher } from './workspace-watcher'
 
@@ -25,17 +25,26 @@ const FORCE_EXIT_MS = 5_000
 let shutdownStarted = false
 let forceExitTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 关闭所有 BrowserWindow（含隐藏主窗 / 独立预览），避免 close 拦截导致 quit 卡住 */
+/** 关闭所有 BrowserWindow（含隐藏主窗 / 独立预览），避免 close 拦截导致 quit 卡住
+ *
+ * 先 hide() 再 destroy()：close() 会触发 Chromium 页面卸载流程，经历白屏→黑屏→销毁的闪烁；
+ * hide() 让窗口对用户瞬间消失，destroy() 立即释放资源且不触发 close 事件/beforeunload。
+ */
 export function destroyAllAppWindows(): void {
   for (const win of BrowserWindow.getAllWindows()) {
     if (win.isDestroyed()) continue
     win.removeAllListeners('close')
-    win.close()
+    win.hide()
+    win.destroy()
   }
 }
 
 /** 托盘 / 菜单等入口：发起正常退出，并注册超时强退兜底 */
 export function requestApplicationQuit(): void {
+  // 必须先标记退出，否则 Windows/macOS 主窗 close 拦截会 preventDefault 并隐藏到托盘
+  if (!getIsQuitting()) {
+    setQuitting()
+  }
   scheduleForceExitFallback()
   app.quit()
 }
@@ -46,6 +55,15 @@ export function runApplicationShutdown(): void {
   shutdownStarted = true
 
   setQuitting()
+
+  // 安装更新：仅释放可能锁住安装目录的 Agent 子进程，其余交给 NSIS 安装器
+  if (getIsQuittingForUpdate()) {
+    stopAllAgents()
+    killOrphanedClaudeSubprocesses()
+    cleanupUpdater()
+    return
+  }
+
   destroyAllDetachedPreviewWindows()
   stopAllAgents()
   killOrphanedClaudeSubprocesses()

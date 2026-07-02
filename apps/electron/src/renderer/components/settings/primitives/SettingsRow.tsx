@@ -20,6 +20,8 @@ interface SettingsRowProps {
   description?: string
   /** 右侧控件 */
   children?: React.ReactNode
+  /** description 下方的额外内容（如测速 badge 列） */
+  bottomSlot?: React.ReactNode
   /** 额外 className */
   className?: string
 }
@@ -29,6 +31,7 @@ export function SettingsRow({
   icon,
   description,
   children,
+  bottomSlot,
   className,
 }: SettingsRowProps): React.ReactElement {
   return (
@@ -37,6 +40,7 @@ export function SettingsRow({
       <div className="flex-1 min-w-0 mr-4">
         <div className={LABEL_CLASS}>{label}</div>
         {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
+        {bottomSlot && <div className="flex flex-wrap gap-1 mt-1">{bottomSlot}</div>}
       </div>
       {children && <div className="flex-shrink-0">{children}</div>}
     </div>

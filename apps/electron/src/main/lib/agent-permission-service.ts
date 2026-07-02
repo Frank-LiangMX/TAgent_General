@@ -276,10 +276,14 @@ export class AgentPermissionService {
       return whitelist.allowedTools.has(toolName)
     }
 
-    // Bash 工具：即使基础命令在白名单中，也要重新检查完整命令的安全性
+    // Bash 工具：先过危险兜底，再判断是否放行
     const command = typeof input.command === 'string' ? input.command : ''
+    // 危险命令/危险结构一律重新询问（即使会话内选过「总是允许」）
     if (hasDangerousStructure(command)) return false
     if (isDangerousCommand(command)) return false
+    // 用户对任一 Bash 选过「总是允许」→ 整个会话放行所有非危险 Bash
+    if (whitelist.allowedTools.has('Bash')) return true
+    // 回退：细粒度匹配（兼容旧白名单数据）
     const baseCommand = this.extractBaseCommand(command)
     return whitelist.allowedBashCommands.has(baseCommand)
   }
@@ -297,6 +301,9 @@ export class AgentPermissionService {
     if (toolName !== 'Bash') {
       whitelist.allowedTools.add(toolName)
     } else {
+      // Bash：整个会话放行（危险命令仍由 isWhitelisted 中的兜底拦截）
+      whitelist.allowedTools.add('Bash')
+      // 同时记录细粒度命令，保留用于审计/未来细粒度策略（不影响放行判断）
       const command = typeof input.command === 'string' ? input.command : ''
       const baseCommand = this.extractBaseCommand(command)
       if (baseCommand) {

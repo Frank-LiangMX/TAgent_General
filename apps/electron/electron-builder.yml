@@ -74,6 +74,11 @@ extraResources:
     to: iconTemplate@2x.png
   - from: resources/iconTemplate@3x.png
     to: iconTemplate@3x.png
+  # 主题图标（窗口/托盘动态切换，theme-icon-resolver.ts 加载）
+  - from: resources/theme-icons
+    to: theme-icons
+    filter:
+      - '**/*.png'
   # TA MCP Server 离线 wheelhouse（一键安装依赖）
   - from: ta-agent-mcp-wheels
     to: ta-agent-mcp-wheels
@@ -123,6 +128,8 @@ dmg:
 # Windows 配置
 # ============================================
 win:
+  # 与 NSIS 实际产出及 latest.yml 保持一致，避免 auto-updater 404
+  artifactName: '${productName}.Setup.${version}.${ext}'
   icon: resources/icon.ico
   fileAssociations:
     - ext: tagent-backup

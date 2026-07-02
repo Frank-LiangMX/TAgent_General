@@ -70,8 +70,8 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
       {
         id: 'close-action',
         title: '关闭窗口',
-        description: '点击关闭按钮时的行为',
-        keywords: ['close', 'quit', '退出', '托盘', 'tray'],
+        description: '关闭按钮隐藏到托盘，托盘右键退出',
+        keywords: ['close', 'quit', '退出', '托盘', 'tray', '关闭窗口'],
       },
       { id: 'sticky-message', title: '消息悬浮置顶条', description: '滚动时显示最近用户消息' },
     ],

@@ -1,6 +1,7 @@
 import { BrowserWindow, nativeTheme } from 'electron'
 
 import { getSettings } from './settings-service'
+import { resolveLogoKey } from './theme-icon-resolver'
 
 import type { ThemeMode, ThemeStyle } from '../../types'
 
@@ -30,18 +31,7 @@ export function resolveOverlayColors(
   themeStyle: ThemeStyle | undefined,
   systemIsDark: boolean
 ): OverlayColors {
-  let key: string
-
-  if (themeMode === 'special' && themeStyle && themeStyle !== 'default') {
-    key = themeStyle
-  } else if (themeMode === 'system') {
-    key = systemIsDark ? 'default-dark' : 'default-light'
-  } else if (themeMode === 'dark') {
-    key = 'default-dark'
-  } else {
-    key = 'default-light'
-  }
-
+  const key = resolveLogoKey(themeMode, themeStyle, systemIsDark)
   const colors = THEME_COLORS[key] ?? THEME_COLORS['default-dark']!
   return { color: colors.color, symbolColor: colors.symbolColor, height: OVERLAY_HEIGHT }
 }

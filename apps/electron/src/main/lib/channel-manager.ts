@@ -7,7 +7,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } from '@tagent/core'
@@ -19,6 +19,7 @@ import { getProbeUrl, getDefaultModels as getDefaultKsccModels } from './kscc-co
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getSettings, updateSettings } from './settings-service'
+import { planKsccWindowsSpawn } from './kscc-windows-spawn'
 import pkg from '../../../package.json' with { type: 'json' }
 
 import type {
@@ -30,7 +31,10 @@ import type {
   ChannelModel,
   FetchModelsInput,
   FetchModelsResult,
+  ModelSpeedTestResult,
   ProviderType,
+  SpeedTestBatchResult,
+  SpeedTestInput,
 } from '@tagent/shared'
 
 /** 当前配置版本 */
@@ -129,13 +133,23 @@ function syncKsccToAgentChannelIds(channelId: string, add: boolean): void {
 
 /**
  * 同步检测 kscc CLI 是否在 PATH 中
+ *
+ * Windows 下 `where kscc` 可能返回多个路径（shim/.cmd/.exe），优先取 .cmd 或 .exe，
+ * 因为 shim 文件 spawn 不了。与 agent-orchestrator.ts:1559 保持一致。
  */
 function checkKsccInstalledSync(): { installed: boolean; path?: string; version?: string } {
   try {
     const cmd = process.platform === 'win32' ? 'where' : 'which'
-    const path = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
+    const allPaths = execFileSync(cmd, ['kscc'], { encoding: 'utf-8', timeout: 3000 })
       .trim()
-      .split('\n')[0]
+      .split(/\r?\n/)
+      .filter(Boolean)
+    const path =
+      process.platform === 'win32'
+        ? allPaths.find((p) => p.toLowerCase().endsWith('.cmd')) ||
+          allPaths.find((p) => p.toLowerCase().endsWith('.exe')) ||
+          allPaths[0]
+        : allPaths[0]
     let version: string | undefined
     try {
       version = execFileSync('kscc', ['--version'], { encoding: 'utf-8', timeout: 5000 }).trim()
@@ -1072,4 +1086,525 @@ async function fetchGoogleModels(
     message: `成功获取 ${models.length} 个模型`,
     models,
   }
+}
+
+// ============================================================
+// TTFB 测速（首字延迟）
+// ============================================================
+
+/**
+ * 批量测速入口
+ *
+ * 按渠道分组：同渠道的模型共享一次 apiKey 解密，串行执行（避免单渠道并发触发 rate limit）；
+ * 不同渠道之间 Promise.allSettled 并发。
+ * kscc 渠道无需 apiKey，直接走 spawn kscc 子进程。
+ */
+export async function speedTestModels(input: SpeedTestInput): Promise<SpeedTestBatchResult> {
+  const channels = listChannels()
+  const channelMap = new Map(channels.map((c) => [c.id, c]))
+
+  // 按 channelId 分组
+  const byChannel = new Map<string, string[]>()
+  for (const item of input.items) {
+    const arr = byChannel.get(item.channelId) ?? []
+    arr.push(item.modelId)
+    byChannel.set(item.channelId, arr)
+  }
+
+  // 每个渠道一个 async 函数，内部串行跑该渠道的所有模型
+  const channelTasks = Array.from(byChannel.entries()).map(async ([channelId, modelIds]) => {
+    const channel = channelMap.get(channelId)
+    if (!channel) {
+      // 渠道不存在：所有模型标记失败
+      const results: Record<string, ModelSpeedTestResult> = {}
+      for (const modelId of modelIds) {
+        const key = `${channelId}:${modelId}`
+        results[key] = {
+          channelId,
+          modelId,
+          success: false,
+          ttfbMs: null,
+          totalTimeMs: 0,
+          message: '渠道不存在',
+        }
+      }
+      return results
+    }
+
+    // kscc 渠道：无需 apiKey
+    if (channel.provider === 'kscc-internal') {
+      const results: Record<string, ModelSpeedTestResult> = {}
+      for (const modelId of modelIds) {
+        const key = `${channelId}:${modelId}`
+        results[key] = await speedTestKsccModel(channelId, modelId)
+      }
+      return results
+    }
+
+    // 其他渠道：解密 apiKey，串行测每个模型
+    let apiKey: string
+    try {
+      apiKey = decryptApiKey(channel.id)
+    } catch {
+      const results: Record<string, ModelSpeedTestResult> = {}
+      for (const modelId of modelIds) {
+        const key = `${channelId}:${modelId}`
+        results[key] = {
+          channelId,
+          modelId,
+          success: false,
+          ttfbMs: null,
+          totalTimeMs: 0,
+          message: 'API Key 解密失败',
+        }
+      }
+      return results
+    }
+
+    const proxyUrl = await getEffectiveProxyUrl()
+    const results: Record<string, ModelSpeedTestResult> = {}
+    for (const modelId of modelIds) {
+      const key = `${channelId}:${modelId}`
+      results[key] = await speedTestOneModel(channel, modelId, apiKey, proxyUrl)
+    }
+    return results
+  })
+
+  const settled = await Promise.allSettled(channelTasks)
+  const merged: Record<string, ModelSpeedTestResult> = {}
+  for (const result of settled) {
+    if (result.status === 'fulfilled') {
+      Object.assign(merged, result.value)
+    }
+  }
+  return { results: merged }
+}
+
+/**
+ * 单模型测速分派：按 provider 走对应协议
+ */
+async function speedTestOneModel(
+  channel: Channel,
+  modelId: string,
+  apiKey: string,
+  proxyUrl: string | undefined
+): Promise<ModelSpeedTestResult> {
+  const provider = channel.provider
+  try {
+    switch (provider) {
+      case 'anthropic':
+      case 'anthropic-compatible':
+      case 'deepseek':
+      case 'kimi-api':
+      case 'kimi-coding':
+      case 'zhipu-coding':
+      case 'minimax':
+      case 'xiaomi':
+      case 'xiaomi-token-plan':
+      case 'qwen-anthropic':
+        return await speedTestAnthropicModel(channel.id, modelId, channel.baseUrl, apiKey, proxyUrl, provider)
+      case 'openai':
+      case 'zhipu':
+      case 'doubao':
+      case 'qwen':
+      case 'custom':
+        return await speedTestOpenAIModel(channel.id, modelId, channel.baseUrl, apiKey, proxyUrl)
+      case 'google':
+        return await speedTestGoogleModel(channel.id, modelId, channel.baseUrl, apiKey, proxyUrl)
+      case 'kscc-internal':
+        return await speedTestKsccModel(channel.id, modelId)
+      default:
+        return {
+          channelId: channel.id,
+          modelId,
+          success: false,
+          ttfbMs: null,
+          totalTimeMs: 0,
+          message: `不支持的供应商: ${provider}`,
+        }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '未知错误'
+    return {
+      channelId: channel.id,
+      modelId,
+      success: false,
+      ttfbMs: null,
+      totalTimeMs: 0,
+      message: `测速失败: ${message}`,
+    }
+  }
+}
+
+/**
+ * Anthropic 协议测速
+ *
+ * 复用 validateAnthropicModel 的 URL/headers/body 构建，外加 performance.now() 计时。
+ * 超时用 AbortController + setTimeout 手动管理（undici fetch + AbortSignal.timeout
+ * 在某些环境下行为不稳定，可能与 Electron 主进程事件循环有关）。
+ * TTFB = fetch resolve 时刻（首字节到达）。
+ */
+async function speedTestAnthropicModel(
+  channelId: string,
+  modelId: string,
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl: string | undefined,
+  provider: ProviderType
+): Promise<ModelSpeedTestResult> {
+  const url = normalizeAnthropicProviderUrl(baseUrl, provider)
+  const fetchFn = getFetchFn(proxyUrl)
+
+  const headers: Record<string, string> = {
+    'anthropic-version': '2023-06-01',
+    'content-type': 'application/json',
+  }
+  if (provider === 'kimi-coding' || provider === 'zhipu-coding' || provider === 'xiaomi-token-plan') {
+    headers.Authorization = `Bearer ${apiKey}`
+    headers['User-Agent'] = getTAgentUserAgent(pkg.version)
+  } else if (provider === 'minimax' || provider === 'qwen-anthropic') {
+    headers.Authorization = `Bearer ${apiKey}`
+  } else {
+    headers['x-api-key'] = apiKey
+    headers.Authorization = `Bearer ${apiKey}`
+  }
+
+  const t0 = performance.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10_000)
+  let response: Response
+  try {
+    response = await fetchFn(`${url}/messages`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    clearTimeout(timer)
+    const elapsed = Math.round(performance.now() - t0)
+    const message = error instanceof Error ? error.message : '请求失败'
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs: null,
+      totalTimeMs: elapsed,
+      message: `请求超时或失败: ${message}`,
+    }
+  }
+  const ttfbMs = Math.round(performance.now() - t0)
+  clearTimeout(timer)
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs,
+      totalTimeMs: ttfbMs,
+      message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}`,
+    }
+  }
+
+  // 不读 response.text()，response.ok 即视为成功（避免 body stream 挂起）
+  return {
+    channelId,
+    modelId,
+    success: true,
+    ttfbMs,
+    totalTimeMs: ttfbMs,
+    message: `TTFB ${ttfbMs}ms`,
+  }
+}
+
+/**
+ * OpenAI 协议测速
+ */
+async function speedTestOpenAIModel(
+  channelId: string,
+  modelId: string,
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl: string | undefined
+): Promise<ModelSpeedTestResult> {
+  const url = normalizeBaseUrl(baseUrl)
+  const fetchFn = getFetchFn(proxyUrl)
+
+  const t0 = performance.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10_000)
+  let response: Response
+  try {
+    response = await fetchFn(`${url}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    clearTimeout(timer)
+    const elapsed = Math.round(performance.now() - t0)
+    const message = error instanceof Error ? error.message : '请求失败'
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs: null,
+      totalTimeMs: elapsed,
+      message: `请求超时或失败: ${message}`,
+    }
+  }
+  const ttfbMs = Math.round(performance.now() - t0)
+  clearTimeout(timer)
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs,
+      totalTimeMs: ttfbMs,
+      message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}`,
+    }
+  }
+
+  return {
+    channelId,
+    modelId,
+    success: true,
+    ttfbMs,
+    totalTimeMs: ttfbMs,
+    message: `TTFB ${ttfbMs}ms`,
+  }
+}
+
+/**
+ * Google Generative AI 测速
+ */
+async function speedTestGoogleModel(
+  channelId: string,
+  modelId: string,
+  baseUrl: string,
+  apiKey: string,
+  proxyUrl: string | undefined
+): Promise<ModelSpeedTestResult> {
+  const url = normalizeBaseUrl(baseUrl)
+  const fetchFn = getFetchFn(proxyUrl)
+
+  const t0 = performance.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10_000)
+  let response: Response
+  try {
+    response = await fetchFn(
+      `${url}/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'ping' }] }],
+          generationConfig: { maxOutputTokens: 1 },
+        }),
+        signal: controller.signal,
+      }
+    )
+  } catch (error) {
+    clearTimeout(timer)
+    const elapsed = Math.round(performance.now() - t0)
+    const message = error instanceof Error ? error.message : '请求失败'
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs: null,
+      totalTimeMs: elapsed,
+      message: `请求超时或失败: ${message}`,
+    }
+  }
+  const ttfbMs = Math.round(performance.now() - t0)
+  clearTimeout(timer)
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs,
+      totalTimeMs: ttfbMs,
+      message: `HTTP ${response.status}: ${errorBody.slice(0, 200)}`,
+    }
+  }
+
+  return {
+    channelId,
+    modelId,
+    success: true,
+    ttfbMs,
+    totalTimeMs: ttfbMs,
+    message: `TTFB ${ttfbMs}ms`,
+  }
+}
+
+/**
+ * kscc 渠道测速：spawn kscc CLI 子进程
+ *
+ * kscc 内网认证由 kscc CLI 内部管理，无法直接 POST API。
+ * 启动 `kscc -p --model {modelId} --output-format stream-json ...`，
+ * 收到 stdout 第一个非空行即视为模型开始输出（init/assistant 事件），记录 TTFB 并杀进程。
+ *
+ * Windows 下直接 spawn('kscc') 会因 .cmd 脚本 + PATH 问题失败，
+ * 必须用 planKsccWindowsSpawn 走 node.exe + cli-wrapper.js（与 agent-orchestrator 一致）。
+ *
+ * 超时 10s 兜底。
+ */
+async function speedTestKsccModel(
+  channelId: string,
+  modelId: string
+): Promise<ModelSpeedTestResult> {
+  const kscc = checkKsccInstalledSync()
+  if (!kscc.installed || !kscc.path) {
+    return {
+      channelId,
+      modelId,
+      success: false,
+      ttfbMs: null,
+      totalTimeMs: 0,
+      message: 'kscc CLI 未安装或不在 PATH 中',
+    }
+  }
+
+  const sdkArgs = [
+    '-p',
+    '--model', modelId,
+    '--output-format', 'stream-json',
+    '--verbose',
+    '--dangerously-skip-permissions',
+    '--no-session-persistence',
+  ]
+
+  // Windows 下用 planKsccWindowsSpawn 走 node.exe + cli-wrapper.js，否则 spawn .cmd 会失败
+  let command: string
+  let args: string[]
+  let useShell = false
+  if (process.platform === 'win32') {
+    const direct = planKsccWindowsSpawn(kscc.path, sdkArgs)
+    if (direct) {
+      command = direct.command
+      args = direct.args
+    } else {
+      // fallback：cmd.exe /c kscc ...
+      command = 'cmd.exe'
+      args = ['/c', 'kscc', ...sdkArgs]
+      useShell = false
+    }
+  } else {
+    command = 'kscc'
+    args = sdkArgs
+    useShell = false
+  }
+
+  return new Promise((resolve) => {
+    const t0 = performance.now()
+    let resolved = false
+    let ttfbMs: number | null = null
+    let stderrBuf = ''
+
+    const child = spawn(command, args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: useShell,
+      env: process.env,
+      windowsHide: true,
+    })
+
+    const finish = (result: ModelSpeedTestResult) => {
+      if (resolved) return
+      resolved = true
+      clearTimeout(timeout)
+      // 杀进程：SIGTERM，200ms 后 SIGKILL 兜底
+      try { child.kill('SIGTERM') } catch { /* */ }
+      setTimeout(() => {
+        try { if (!child.killed) child.kill('SIGKILL') } catch { /* */ }
+      }, 200)
+      resolve(result)
+    }
+
+    const timeout = setTimeout(() => {
+      finish({
+        channelId,
+        modelId,
+        success: false,
+        ttfbMs,
+        totalTimeMs: Math.round(performance.now() - t0),
+        message: `超时 10s${stderrBuf ? `：${stderrBuf.slice(0, 200)}` : ''}`,
+      })
+    }, 10_000)
+
+    child.stdout.on('data', (chunk: Buffer) => {
+      if (resolved) return
+      const text = chunk.toString()
+      // 收到 stdout 第一个非空字节即视为模型已启动开始输出
+      // stream-json 第一行通常是 system/init 事件，标志 kscc 已就绪开始处理
+      if (text.trim().length > 0) {
+        ttfbMs = Math.round(performance.now() - t0)
+        finish({
+          channelId,
+          modelId,
+          success: true,
+          ttfbMs,
+          totalTimeMs: ttfbMs,
+          message: `kscc TTFB ${ttfbMs}ms`,
+        })
+      }
+    })
+
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderrBuf += chunk.toString()
+    })
+
+    child.on('error', (err) => {
+      finish({
+        channelId,
+        modelId,
+        success: false,
+        ttfbMs,
+        totalTimeMs: Math.round(performance.now() - t0),
+        message: `kscc 启动失败: ${err.message}`,
+      })
+    })
+
+    child.on('close', (code) => {
+      if (resolved) return
+      finish({
+        channelId,
+        modelId,
+        success: false,
+        ttfbMs,
+        totalTimeMs: Math.round(performance.now() - t0),
+        message: `kscc 进程退出（code=${code}）未收到 stdout${stderrBuf ? `：${stderrBuf.slice(0, 200)}` : ''}`,
+      })
+    })
+
+    // 写入 stdin 触发 prompt（kscc -p 从 stdin 读 prompt）
+    try {
+      child.stdin.on('error', () => { /* stdin 写入失败不致命 */ })
+      child.stdin.end('ping\n')
+    } catch {
+      /* ignore */
+    }
+  })
 }

@@ -248,6 +248,42 @@ const TOOL_USAGE_GUIDELINES = `## 工具使用指南
 - **大文件写入**：使用 Write 写入超过约 10,000 字（特别是中文/日文/韩文等 CJK 字符）时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断导致文件内容不完整
 - **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json / \`\`\`bash 等），Mermaid 图必须用 \`\`\`mermaid，纯文本/日志/未知格式用 \`\`\`text。不写语言会导致前端无法语法高亮，用户体验下降；如果实在不知道语言，宁可写 \`\`\`text 也不要留空围栏`
 
+// ===== 增效能力总览（统揽全局的"信号 → 行动"决策树）=====
+
+/**
+ * 告知 Agent：遇到什么信号该用什么增效能力。
+ *
+ * 解决问题：compact_session / CronCreate / Skills / Plan 模式等能力 prompt 引导弱或零提及，
+ * Agent 装了但不会主动用。本 section 作为统一入口决策树，把"信号 → 行动"映射集中到一处。
+ * 具体能力的细节由后续各专门 section（记忆系统、计划模式、Automation 等）展开。
+ */
+const PROACTIVE_ENHANCEMENT_OVERVIEW = `## 增效能力总览（主动调用，不要一条路走到黑）
+
+你不是聊天软件，不能一问一答把所有执行都堆在主会话。遇到以下信号主动选用对应能力：
+
+### 任务规模判断
+- **独立子任务**（探索/调研/实现单一模块）→ SubAgent（explorer/researcher/coder）
+- **大目标拆解**（3+ 独立子任务/项目级分析重构审计）→ 看板编排（kanban_create_board + kanban_add_task）
+- **方向不明的复杂任务**（3+ 文件改动/多种方案需权衡/用户需求模糊）→ 先 EnterPlanMode 出方案，用户确认后再执行
+
+### Context 主动瘦身
+- 当前会话较长（> 15 万 token 或 > 50% 窗口）→ 后续独立任务优先 SubAgent，避免主会话继续膨胀
+- context > 70% 或看到 "prompt_too_long" 错误 → 立即调 compact_session 压缩历史
+- compact 时机：当前无活跃工具调用时才压缩，避免误压缩进行中的任务
+
+### 复用与沉淀
+- 遇到"代码审查/测试生成/性能优化"等通用任务 → 先看 skills/ 目录有没有现成的，复用而非重造
+- 完成有价值的调研/分析 → 写到 .context/note.md，不要只留聊天流
+- 跨会话需要记住的事实/偏好 → add_memory，下次新会话自动 recall
+
+### 自动化与定时
+- 用户说"以后每次/每天/定期" → Automation 系统（mcp__automation__* 工具），不是 CronCreate
+- 短时延迟（几分钟到 1 小时，如"等构建跑完再看"）→ ScheduleWakeup
+- 周期性定时（每天/每小时/工作日）→ CronCreate
+
+### 协调者心态
+你是协调者 + 决策者，不是全能执行者。主会话保持精简，重活委派出去，自己只做编排、决策和与用户沟通。`
+
 // ===== 看板多 Agent 编排指南 =====
 
 /**
@@ -433,6 +469,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // 工具使用指南（复用常量）
   sections.push(TOOL_USAGE_GUIDELINES)
+
+  // 增效能力总览（统揽全局的"信号 → 行动"决策树，教 Agent 何时主动用 compact/Plan/Skills/Automation 等）
+  sections.push(PROACTIVE_ENHANCEMENT_OVERVIEW)
 
   // 看板多 Agent 编排指南（教 Agent 何时 + 如何用 kanban_* 工具拆解大任务）
   sections.push(KANBAN_ORCHESTRATION_GUIDE)
@@ -812,29 +851,58 @@ function buildSubagentDispatchStrategy(eagerness: SubagentEagerness): string {
   }
   const label = labels[eagerness]
 
-  const strategies: Record<SubagentEagerness, string> = {
-    never: `## SubAgent 派发策略（用户设定：${label}）
+  if (eagerness === 'never') {
+    return `## SubAgent 派发策略（用户设定：${label}）
 
 **绝不派发 SubAgent**。所有任务主 Agent 自己做。
 - 任务长用 TaskCreate 跟踪，自己一步步推进
 - 不用 Agent/Task 工具派 subagent
-- 适合场景：debug、需要完全确定性、避免并行干扰`,
+- 适合场景：debug、需要完全确定性、避免并行干扰`
+  }
 
-    conservative: `## SubAgent 派发策略（用户设定：${label}）
+  // 必委派场景（所有非 never 档位共享，不受批量阈值限制）
+  const mandatoryScenes = `### 必委派场景（强信号，不受下面批量阈值限制）
 
-**只在同时满足 3 个条件**时派发 SubAgent：
-1. **同类项 ≥ 5**：连续遇到 5+ 个相同模式（5+ 个 unused import、5+ 个 model logo 改名、5+ 个 codemod）
-2. **耗时 > 5 分钟**：单个任务预计超过 5 分钟（批量 codemod、批量生成测试、批量重命名）
-3. **可独立验证**：任务有明确 pass/fail 标准（\`bun run lint 0 errors\`、\`bun test pass\`、\`grep 匹配\`）
+以下场景**必须**委派，不管耗时和批量大小：
 
-三个条件**都满足**才派 refactor-cleanup / test-writer / coder / explorer 等 subagent，自己验证完报告。
+1. **探索代码库**：预计要读 3+ 个文件或 > 3 次搜索才能理解 → 委派 \`explorer\`
+   - 反模式：主会话串行读 10 个文件找某个符号 → context 浪费
+2. **调研技术方案**：对比 A vs B、选库、评估依赖、架构选型 → 委派 \`researcher\`
+3. **代码改动后审查**：非平凡改动（跨多文件 / 影响行为 / 涉及安全）→ 委派 \`code-reviewer\`
+4. **大目标拆解**：3+ 独立子任务，或项目级分析/重构/审计（文件 > 20）→ 用看板编排（kanban_create_board + kanban_add_task）
+   - 反模式：主会话串行做"分析依赖 + 扫架构 + 列入口"三个独立任务 → 该用看板并行
+
+### 主会话直接干的场景
+
+- 单步问答（"这个函数怎么用？"）
+- 单文件小改（< 50 行）
+- 已知路径的读写（改配置、改常量）
+- 已有 SubAgent 结果后的汇总和决策
+
+### 看板 vs SubAgent 选择
+
+| 维度 | 看板 | SubAgent |
+|------|------|----------|
+| 执行 | 异步、并行、headless 工人 | 同步、阻塞、主会话等结果 |
+| Context | 工人隔离，主会话只汇总 | 结果回流主会话 |
+| 适合 | 项目级大任务 | 中等任务、调研、审查 |
+
+大项目分析用看板，"需要等"不是缺点 — 看板并行 + context 隔离反而比主会话串行快。真正等不起的是中等任务和单步问答，那些走 SubAgent 或主会话直接干。
+
+### 批量任务阈值（按档位区分）`
+
+  const batchThresholds: Record<Exclude<SubagentEagerness, 'never'>, string> = {
+    conservative: `**同时满足 3 个条件**才派批量任务：
+1. **同类项 ≥ 5**：连续遇到 5+ 个相同模式（5+ 个 unused import、5+ 个 codemod）
+2. **耗时 > 5 分钟**：批量 codemod、批量生成测试、批量重命名
+3. **可独立验证**：\`bun run lint 0 errors\`、\`bun test pass\`、\`grep 匹配\`
+
+三个条件**都满足**才派 refactor-cleanup / test-writer / coder 等 subagent，自己验证完报告。
 不满足就 TaskCreate 跟踪自己干。
 **默认行为**，适合大多数用户。`,
 
-    balanced: `## SubAgent 派发策略（用户设定：${label}）
-
-**任一条件**触发即派发 SubAgent：
-1. **同类项 ≥ 3**（5 个 import 留着没清、3 个 model 改名）
+    balanced: `**任一条件**触发即派批量任务：
+1. **同类项 ≥ 3**（3 个 import 留着没清、3 个 model 改名）
 2. **耗时 > 3 分钟**（批量 codemod、批量生成测试、批量重写）
 3. **关键词触发**：用户 prompt 含"批量"、"全部"、"每个"、"所有"、"扫一遍"
 4. **可独立验证**
@@ -842,18 +910,20 @@ function buildSubagentDispatchStrategy(eagerness: SubagentEagerness): string {
 识别到任一即派 subagent 干完报告。比自己一条条干省时间。
 **比 conservative 更激进**，适合需要加速的用户。`,
 
-    aggressive: `## SubAgent 派发策略（用户设定：${label}）
-
-**任何能派的任务都派**。最大化并行。
+    aggressive: `**任何能派的批量任务都派**。最大化并行。
 - 看到 1+ 项就开始判断能否派
 - 关键词、复杂度、可验证性、文件数都是派发信号
 - 优先并行：能同时派多个 subagent 就同时派
 - 适合场景：算力够、不在乎成本、想最快完成
 
-**注意**：派太激进可能浪费 token，要权衡。但用户选了 aggressive 表明他接受这个权衡。`,
+**注意**：必委派场景（探索/调研/审查/大目标）在任何档位都必须派，这里只控制批量任务的激进程度。`,
   }
 
-  return strategies[eagerness]
+  return `## SubAgent 派发策略（用户设定：${label}）
+
+${mandatoryScenes}
+
+${batchThresholds[eagerness]}`
 }
 
 // ===== 动态 Per-Message 上下文 =====

@@ -8,7 +8,7 @@
  * - preview Tab 拖出 TabBar 转为右侧分屏
  */
 
-import { useAtom, useAtomValue, useStore } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import * as React from 'react'
 
 import { TabBarItem } from './TabBarItem'
@@ -16,7 +16,13 @@ import { TabBarItem } from './TabBarItem'
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { TabItem } from '@/atoms/tab-atoms'
 
-import { activeTabIdAtom, tabIndicatorMapAtom, visibleTabsAtom } from '@/atoms/tab-atoms'
+import {
+  activeTabIdAtom,
+  tabIndicatorMapAtom,
+  tabSwitchingAtom,
+  visualActiveTabIdAtom,
+  visibleTabsAtom,
+} from '@/atoms/tab-atoms'
 import { tearOffPreviewToSplit } from '@/components/diff/preview-opener'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
@@ -27,11 +33,21 @@ import { cn } from '@/lib/utils'
 export function TabBar(): React.ReactElement {
   const tabs = useAtomValue(visibleTabsAtom)
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
+  const [visualActiveTabId, setVisualActiveTabId] = useAtom(visualActiveTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
   const store = useStore()
+  const setTabSwitching = useSetAtom(tabSwitchingAtom)
 
   const syncSideEffects = useSyncActiveTabSideEffects()
   const { requestClose } = useCloseTab()
+
+  // 延迟激活定时器：点击后等指示器动画（0.35s）结束才切会话，避免动画与渲染竞争主线程
+  const switchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  React.useEffect(() => {
+    return () => {
+      if (switchTimerRef.current) clearTimeout(switchTimerRef.current)
+    }
+  }, [])
 
   const dragState = React.useRef<{
     dragging: boolean
@@ -42,11 +58,20 @@ export function TabBar(): React.ReactElement {
 
   const handleActivate = React.useCallback(
     (tabId: string) => {
-      setActiveTabId(tabId)
+      // 1. 同步设视觉激活 tab → 指示器立即开始 0.35s 滑动动画，旧会话内容保持不动
+      setVisualActiveTabId(tabId)
+      // 2. 清前一次待激活的 timer（快速连点只激活最后一次）
+      if (switchTimerRef.current) clearTimeout(switchTimerRef.current)
       const tab = tabs.find((t) => t.id === tabId)
-      syncSideEffects(tab ?? null)
+      // 3. 等指示器动画结束（350ms）才切会话 + 开蒙版，动画期间主线程只服务动画
+      switchTimerRef.current = setTimeout(() => {
+        switchTimerRef.current = null
+        setTabSwitching(true)
+        setActiveTabId(tabId)
+        syncSideEffects(tab ?? null)
+      }, 350)
     },
-    [setActiveTabId, tabs, syncSideEffects]
+    [setVisualActiveTabId, setActiveTabId, setTabSwitching, syncSideEffects, tabs]
   )
 
   const handleTearOff = React.useCallback(
@@ -94,7 +119,7 @@ export function TabBar(): React.ReactElement {
   return (
     <TabBarInner
       tabs={tabs}
-      activeTabId={activeTabId}
+      activeTabId={visualActiveTabId}
       streamingMap={indicatorMap}
       onActivate={handleActivate}
       onClose={requestClose}
@@ -220,7 +245,8 @@ function TabBarInner({
       if (hoveredTabId) {
         setHoveredTabId(tabId)
       } else {
-        enterTimerRef.current = setTimeout(() => setHoveredTabId(tabId), 300)
+        // 首次进入悬停延迟 600ms，避免鼠标扫过时误触预览
+        enterTimerRef.current = setTimeout(() => setHoveredTabId(tabId), 600)
       }
     },
     [hoveredTabId]

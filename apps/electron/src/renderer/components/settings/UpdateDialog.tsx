@@ -16,6 +16,7 @@ import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 import type { GitHubRelease } from '@tagent/shared'
 
 import { updateStatusAtom } from '@/atoms/updater'
+import { formatBytes } from '@/lib/format-bytes'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -90,11 +91,6 @@ export function UpdateDialog(): React.ReactElement | null {
     window.electronAPI.updater?.quitAndInstall()
   }
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  }
-
   if (!dialogVersion) return null
 
   const isDownloading = updateStatus.status === 'downloading'
@@ -117,21 +113,36 @@ export function UpdateDialog(): React.ReactElement | null {
         </AlertDialogHeader>
 
         {/* 下载进度 */}
-        {isDownloading && updateStatus.progress && (
+        {isDownloading && (
           <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>下载进度</span>
+              <span>
+                {updateStatus.progress && updateStatus.progress.total > 0
+                  ? `${Math.round(updateStatus.progress.percent)}%`
+                  : '连接中…'}
+              </span>
+            </div>
             <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${updateStatus.progress.percent}%` }}
+                style={{
+                  width:
+                    updateStatus.progress && updateStatus.progress.total > 0
+                      ? `${updateStatus.progress.percent}%`
+                      : '30%',
+                }}
               />
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {formatBytes(updateStatus.progress.transferred)} /{' '}
-                {formatBytes(updateStatus.progress.total)}
-              </span>
-              <span>{formatBytes(updateStatus.progress.bytesPerSecond)}/s</span>
-            </div>
+            {updateStatus.progress && updateStatus.progress.total > 0 && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {formatBytes(updateStatus.progress.transferred)} /{' '}
+                  {formatBytes(updateStatus.progress.total)}
+                </span>
+                <span>{formatBytes(updateStatus.progress.bytesPerSecond)}/s</span>
+              </div>
+            )}
           </div>
         )}
 

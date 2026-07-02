@@ -1,7 +1,7 @@
 # Agent 主会话主动增效设计文档
 
 > 创建日期：2026-07-01
-> 状态：已定稿，待实施 P0
+> 状态：P0 已实施（2026-07-02），待验证效果后排期 P1
 > 类型：产品理念 + Prompt 工程方案
 > 关联：`2026-07-01-kscc-streaming-and-stuck-analysis.md` 第 13 节方案 B
 
@@ -228,13 +228,22 @@ if (contextUsage > 50) {
 - `2026-06-13-context-compaction-architecture.md` → compact 机制细节
 - `2026-06-26-speed-test-design.md` 第 9 节 → tok/s 数据支撑"何时该 compact"
 
-## 10. 最终决策（2026-07-01 拍板）
+## 10. 最终决策（2026-07-01 拍板，2026-07-02 实施 P0）
 
 | 决策项 | 结果 |
 |--------|------|
-| 实施时机 | 文档定稿，待后续单独排期实施 P0 |
-| 增效总览位置 | TOOL_USAGE_GUIDELINES 后（agent-prompt-builder.ts:250） |
+| 实施时机 | P0 已于 2026-07-02 实施 |
+| 增效总览位置 | TOOL_USAGE_GUIDELINES 后（agent-prompt-builder.ts:437） |
 | UI 轻提示 | 不做，先看 prompt 效果 |
 | 行为统计 | 不做，先看用户反馈 |
+
+### P0 实施记录（2026-07-02）
+
+已落地两部分（`agent-prompt-builder.ts`）：
+
+1. **重构 `buildSubagentDispatchStrategy`**（line 806+）：所有非 `never` 档位都强制包含"必委派场景"块——探索代码库（> 3 次搜索）→ `explorer`、调研方案 → `researcher`、非平凡改动后审查 → `code-reviewer`、大目标拆解 → 看板。档位只控制批量任务阈值（conservative 5+ / balanced 3+ / aggressive 1+）。
+2. **新增 `PROACTIVE_ENHANCEMENT_OVERVIEW` 常量**（line 251+）并在 `buildSystemPrompt` push（line 437）：统揽全局的"信号 → 行动"决策树，覆盖任务规模判断 / Context 主动瘦身（compact_session）/ 复用沉淀（Skills + note.md + Memory）/ 自动化定时（Automation / ScheduleWakeup / CronCreate）。
+
+未做：P1 动态 context 感知（`buildDynamicContext` 注入 context 占用百分比，> 50% 追加提示）。等 P0 验证有效后排期。
 
 实施时只做 P0（静态 prompt 增强），P1（动态 context 感知）在 P0 验证有效后再排期。

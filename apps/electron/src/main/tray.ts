@@ -1,13 +1,16 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
 
-import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
+import { Tray, Menu, app, nativeImage, nativeTheme, BrowserWindow, type NativeImage } from 'electron'
 
 import { requestApplicationQuit } from './lib/app-shutdown'
 import { isAgentSessionActive } from './lib/agent-service'
 import { listAgentSessions } from './lib/agent-session-manager'
 import { listAgentWorkspaces } from './lib/agent-workspace-manager'
 import { createTrayMenuModel, type TrayRecentSessionItem } from './lib/tray-menu-model'
+import { getThemeIconPath, resolveLogoKey } from './lib/theme-icon-resolver'
+import { getSettings } from './lib/settings-service'
+import type { ThemeMode, ThemeStyle } from '../types'
 
 let tray: Tray | null = null
 
@@ -19,13 +22,64 @@ export interface TrayActions {
 
 /**
  * 获取托盘图标路径
- * 使用专门生成的 iconTemplate.png（单色 + alpha，适配各平台）
+ *
+ * - macOS: 使用 iconTemplate.png（单色模板，跟随菜单栏明暗自动反色）
+ * - Windows/Linux: 使用当前主题对应的彩色图标
  */
 function getTrayIconPath(): string {
   // dev: __dirname/resources（build:resources 拷贝产物）
   // prod: process.resourcesPath（electron-builder extraResources 产物）
   const resourcesDir = app.isPackaged ? process.resourcesPath : join(__dirname, 'resources')
-  return join(resourcesDir, 'iconTemplate.png')
+
+  // macOS 保持单色 template 图标（符合菜单栏设计规范）
+  if (process.platform === 'darwin') {
+    return join(resourcesDir, 'iconTemplate.png')
+  }
+
+  // Windows/Linux 用当前主题对应的彩色图标
+  const settings = getSettings()
+  const key = resolveLogoKey(
+    settings.themeMode,
+    settings.themeStyle,
+    nativeTheme.shouldUseDarkColors
+  )
+  return getThemeIconPath(key)
+}
+
+/**
+ * 加载托盘图标并缩放到 16×16（Windows/Linux 用）
+ *
+ * 1254×1254 的主题图标直接交给系统会在托盘里模糊，需显式 resize 保证清晰。
+ * 失败时返回 null，调用方 fallback 到原图。
+ */
+/**
+ * 加载托盘图标并缩放到 16×16（Windows/Linux 用）
+ *
+ * 1254×1254 的主题图标直接交给系统会在托盘里模糊，需显式 resize 保证清晰。
+ * 失败时返回 null，调用方 fallback 到原图。
+ */
+function loadTrayIconImage(iconPath: string): NativeImage | null {
+  if (!existsSync(iconPath)) return null
+  const image = nativeImage.createFromPath(iconPath)
+  if (image.isEmpty()) return null
+  return image.resize({ width: 16, height: 16, quality: 'best' })
+}
+
+/** 将主窗口隐藏到托盘（Windows/Linux 同时从任务栏移除） */
+export function hideWindowToTray(win: BrowserWindow): void {
+  if (win.isDestroyed()) return
+  if (process.platform !== 'darwin') {
+    win.setSkipTaskbar(true)
+  }
+  win.hide()
+}
+
+/** 从托盘恢复主窗口前，还原任务栏图标 */
+export function prepareWindowFromTray(win: BrowserWindow): void {
+  if (win.isDestroyed()) return
+  if (process.platform !== 'darwin') {
+    win.setSkipTaskbar(false)
+  }
 }
 
 /** 显示主窗口 */
@@ -127,12 +181,19 @@ export function createTray(actionsInput?: Partial<TrayActions>): Tray | null {
   }
 
   try {
-    const image = nativeImage.createFromPath(iconPath)
+    // macOS 用 iconTemplate.png；Windows/Linux 用主题彩色图标（已 resize 到 16×16）
+    const isMac = process.platform === 'darwin'
+    const image = isMac ? nativeImage.createFromPath(iconPath) : loadTrayIconImage(iconPath)
+
+    if (!image || image.isEmpty()) {
+      console.warn('Tray icon image is empty:', iconPath)
+      return null
+    }
 
     // macOS: 标记为 Template 图像
     // Template 图像必须是单色的，使用 alpha 通道定义形状
     // 系统会自动根据菜单栏主题填充颜色
-    if (process.platform === 'darwin') {
+    if (isMac) {
       image.setTemplateImage(true)
     }
 
@@ -143,14 +204,12 @@ export function createTray(actionsInput?: Partial<TrayActions>): Tray | null {
 
     updateTrayMenu(actions)
 
-    // 点击行为：始终弹出菜单（与右键一致）
+    // 左键单击：显示主窗口（零延迟唤起）
     tray.on('click', () => {
-      const contextMenu = updateTrayMenu(actions)
-      if (contextMenu) {
-        tray?.popUpContextMenu(contextMenu)
-      }
+      actions.showMainWindow()
     })
 
+    // 右键：刷新菜单（Windows/Linux 自动弹出，macOS 需 click 时 popUp）
     tray.on('right-click', () => {
       updateTrayMenu(actions)
     })
@@ -161,6 +220,34 @@ export function createTray(actionsInput?: Partial<TrayActions>): Tray | null {
     console.error('Failed to create system tray:', error)
     return null
   }
+}
+
+/**
+ * 更新托盘图标以匹配当前主题
+ *
+ * - macOS: 直接 return，保持 iconTemplate.png 单色模板（由系统处理明暗）
+ * - Windows/Linux: 切换到对应主题的彩色图标（resize 到 16×16 保证清晰）
+ *
+ * 在主题设置变化或系统明暗变化时由 ipc.ts 调用。
+ */
+export function updateTrayIcon(
+  mode: ThemeMode,
+  style: ThemeStyle | undefined,
+  systemIsDark: boolean
+): void {
+  if (!tray || tray.isDestroyed()) return
+  // macOS 托盘保持单色 template，不跟随应用主题
+  if (process.platform === 'darwin') return
+
+  const key = resolveLogoKey(mode, style, systemIsDark)
+  const iconPath = getThemeIconPath(key)
+  const image = loadTrayIconImage(iconPath)
+  if (!image) {
+    console.warn('[托盘] 主题图标加载失败:', iconPath)
+    return
+  }
+
+  tray.setImage(image)
 }
 
 /**

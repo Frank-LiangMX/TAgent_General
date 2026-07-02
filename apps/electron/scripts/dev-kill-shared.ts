@@ -49,11 +49,24 @@ export function killWinByImage(name: string): void {
   }
 }
 
+function getProtectedPids(): number[] {
+  const pids = [process.pid]
+  if (process.ppid) pids.push(process.ppid)
+  return pids
+}
+
+function buildPidExclusionClause(): string {
+  return getProtectedPids()
+    .map((pid) => `$_.ProcessId -ne ${pid}`)
+    .join(' -and ')
+}
+
 export function killWinByCommandLine(fragment: string): void {
   const escaped = escapePsLike(fragment)
+  const pidExclusion = buildPidExclusionClause()
   const ps = [
     'Get-CimInstance Win32_Process |',
-    `Where-Object { $_.CommandLine -like '*${escaped}*' } |`,
+    `Where-Object { $_.CommandLine -like '*${escaped}*' -and ${pidExclusion} } |`,
     'ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
   ].join(' ')
   try {
@@ -66,9 +79,11 @@ export function killWinByCommandLine(fragment: string): void {
 /** Windows：命令行须同时包含项目路径与所有片段（避免误杀 Vite / 当前 dev 会话） */
 export function killWinByScopedCommandLine(rootPath: string, ...fragments: string[]): void {
   const root = escapePsLike(rootPath.replace(/\//g, '\\'))
+  const pidExclusion = buildPidExclusionClause()
   const conditions = [
     `$_.CommandLine -like '*${root}*'`,
     ...fragments.map((f) => `$_.CommandLine -like '*${escapePsLike(f.replace(/\//g, '\\'))}*'`),
+    pidExclusion,
   ]
   const ps = [
     'Get-CimInstance Win32_Process |',
@@ -92,5 +107,52 @@ export function killWinProjectElectron(): void {
     for (const fragment of electronFragments) {
       killWinByScopedCommandLine(root, fragment)
     }
+  }
+}
+
+/** 释放 Vite 开发端口（上一轮 dev 异常退出时常残留） */
+export function killDevPort(port = 5173): void {
+  if (process.platform === 'win32') {
+    try {
+      const out = execSync(`netstat -ano | findstr :${port}`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+      const pids = new Set<string>()
+      for (const line of out.split('\n')) {
+        const parts = line.trim().split(/\s+/)
+        const pid = parts[parts.length - 1]
+        if (pid && /^\d+$/.test(pid) && pid !== '0') pids.add(pid)
+      }
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // 端口无监听
+    }
+    return
+  }
+
+  try {
+    const pids = execSync(`lsof -ti:${port}`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+    for (const pid of pids) {
+      try {
+        execSync(`kill -9 ${pid}`, { stdio: 'ignore' })
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // 端口无监听
   }
 }

@@ -40,7 +40,6 @@ import {
   QUICK_TASK_IPC_CHANNELS,
   TRAY_IPC_CHANNELS,
   VOICE_DICTATION_IPC_CHANNELS,
-  WINDOW_CLOSE_IPC_CHANNELS,
 } from '../types'
 
 import type {
@@ -62,7 +61,6 @@ import type {
   MicPermissionResult,
   TrayCreateSessionData,
   TrayOpenAgentSessionData,
-  WindowCloseResponseData,
 } from '../types'
 import type {
   RuntimeStatus,
@@ -77,6 +75,8 @@ import type {
   ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
+  SpeedTestInput,
+  SpeedTestBatchResult,
   ConversationMeta,
   FileDialogResult,
   AgentSessionMeta,
@@ -356,6 +356,9 @@ export interface ElectronAPI {
 
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
+
+  /** 批量测速（TTFB，首字延迟） */
+  speedTestModels: (input: SpeedTestInput) => Promise<SpeedTestBatchResult>
 
   // ===== 对话管理相关 =====
 
@@ -1594,13 +1597,6 @@ export interface ElectronAPI {
   cleanupTempStorage: () => Promise<unknown>
   /** 取消迁移导入（清理临时解压目录） */
   migrationCancelImport: (tempDir: string) => Promise<void>
-
-  // ===== 窗口关闭确认 =====
-
-  /** 监听主进程的关闭确认请求（返回清理函数） */
-  onWindowCloseRequest: (callback: (data?: { runningTaskCount?: number }) => void) => () => void
-  /** 回传用户关闭行为选择 */
-  sendWindowCloseResponse: (data: WindowCloseResponseData) => void
 }
 
 interface MigrationExportResult {
@@ -1764,6 +1760,10 @@ const electronAPI: ElectronAPI = {
 
   fetchModels: (input: FetchModelsInput) => {
     return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.FETCH_MODELS, input)
+  },
+
+  speedTestModels: (input: SpeedTestInput) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.SPEED_TEST, input)
   },
 
   // 对话管理
@@ -3492,19 +3492,6 @@ const electronAPI: ElectronAPI = {
         ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
       }
     },
-  },
-
-  // ===== 窗口关闭确认 =====
-
-  onWindowCloseRequest: (callback: (data?: { runningTaskCount?: number }) => void) => {
-    const listener = (_event: unknown, data?: { runningTaskCount?: number }): void => callback(data)
-    ipcRenderer.on(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
-    return () => {
-      ipcRenderer.removeListener(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
-    }
-  },
-  sendWindowCloseResponse: (data: WindowCloseResponseData) => {
-    ipcRenderer.send(WINDOW_CLOSE_IPC_CHANNELS.RESPONSE, data)
   },
 }
 

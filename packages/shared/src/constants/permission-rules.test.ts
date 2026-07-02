@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   isAutoModeAutoAllowTool,
+  isDangerousCommand,
   isProjectLocalReadOnlyBash,
   requiresAutoModeConfirmation,
   resolveSdkPermissionModeForTAgent,
@@ -123,5 +124,171 @@ describe('requiresAutoModeConfirmation', () => {
     expect(requiresAutoModeConfirmation('Read', {})).toBe(false)
     expect(requiresAutoModeConfirmation('Write', { file_path: 'a.ts' })).toBe(true)
     expect(requiresAutoModeConfirmation('AskUserQuestion', {})).toBe(false)
+  })
+})
+
+describe('isDangerousCommand（token-based 前缀匹配）', () => {
+  // A. 删除/破坏文件系统
+  test('删除类命令 → true', () => {
+    expect(isDangerousCommand('rm -rf node_modules')).toBe(true)
+    expect(isDangerousCommand('rmdir empty-dir')).toBe(true)
+    expect(isDangerousCommand('del /f tmp')).toBe(true) // Windows
+    expect(isDangerousCommand('unlink file.txt')).toBe(true)
+    expect(isDangerousCommand('truncate -s 0 log.txt')).toBe(true)
+    expect(isDangerousCommand('dd if=/dev/zero of=/dev/sda')).toBe(true)
+  })
+
+  // B. 权限/系统修改
+  test('系统修改类命令 → true', () => {
+    expect(isDangerousCommand('sudo apt update')).toBe(true)
+    expect(isDangerousCommand('chmod +x script.sh')).toBe(true)
+    expect(isDangerousCommand('chown root:root file')).toBe(true)
+    expect(isDangerousCommand('systemctl stop nginx')).toBe(true)
+    expect(isDangerousCommand('launchctl unload plist')).toBe(true) // macOS
+    expect(isDangerousCommand('sc stop MyService')).toBe(true) // Windows
+    expect(isDangerousCommand('defaults write com.apple.finder AppleShowAllFiles true')).toBe(true)
+  })
+
+  // C. 网络下载
+  test('网络下载类命令 → true', () => {
+    expect(isDangerousCommand('curl https://example.com/script.sh')).toBe(true)
+    expect(isDangerousCommand('wget https://example.com/file.tar.gz')).toBe(true)
+  })
+
+  // D. 远程登录
+  test('远程登录类命令 → true', () => {
+    expect(isDangerousCommand('ssh user@host')).toBe(true)
+    expect(isDangerousCommand('scp file user@host:/path')).toBe(true)
+    expect(isDangerousCommand('rsync -av src/ dest/')).toBe(true)
+  })
+
+  // E. 进程控制
+  test('进程控制类命令 → true', () => {
+    expect(isDangerousCommand('kill -9 1234')).toBe(true)
+    expect(isDangerousCommand('killall node')).toBe(true)
+    expect(isDangerousCommand('pkill -f python')).toBe(true)
+    expect(isDangerousCommand('taskkill /PID 1234 /F')).toBe(true) // Windows
+  })
+
+  // F. 包管理卸载（多语言）
+  test('包管理卸载类命令 → true', () => {
+    expect(isDangerousCommand('pip uninstall requests')).toBe(true)
+    expect(isDangerousCommand('pip3 uninstall flask')).toBe(true)
+    expect(isDangerousCommand('npm uninstall lodash')).toBe(true)
+    expect(isDangerousCommand('npm rm express')).toBe(true)
+    expect(isDangerousCommand('yarn remove react')).toBe(true)
+    expect(isDangerousCommand('pnpm remove vue')).toBe(true)
+    expect(isDangerousCommand('apt remove nginx')).toBe(true)
+    expect(isDangerousCommand('apt-get purge mysql-server')).toBe(true)
+    expect(isDangerousCommand('yum remove httpd')).toBe(true)
+    expect(isDangerousCommand('dnf remove nodejs')).toBe(true)
+    expect(isDangerousCommand('brew uninstall git')).toBe(true)
+    expect(isDangerousCommand('pacman -R firefox')).toBe(true)
+    expect(isDangerousCommand('cargo uninstall ripgrep')).toBe(true)
+    expect(isDangerousCommand('go install example.com/cmd/foo@latest')).toBe(true)
+  })
+
+  // G. 构建清理
+  test('构建清理类命令 → true', () => {
+    expect(isDangerousCommand('make clean')).toBe(true)
+    expect(isDangerousCommand('make distclean')).toBe(true)
+    expect(isDangerousCommand('cargo clean')).toBe(true)
+    expect(isDangerousCommand('go clean')).toBe(true)
+    expect(isDangerousCommand('bazel clean')).toBe(true)
+    expect(isDangerousCommand('mvn clean')).toBe(true)
+  })
+
+  // H. Git 破坏性操作
+  test('Git 破坏性命令 → true', () => {
+    expect(isDangerousCommand('git push origin main')).toBe(true)
+    expect(isDangerousCommand('git push --force')).toBe(true)
+    expect(isDangerousCommand('git reset --hard HEAD~1')).toBe(true)
+    expect(isDangerousCommand('git rebase main')).toBe(true)
+    expect(isDangerousCommand('git checkout .')).toBe(true) // 丢弃工作区
+    expect(isDangerousCommand('git checkout -- file.ts')).toBe(true) // 丢弃工作区
+    expect(isDangerousCommand('git clean -fd')).toBe(true)
+    expect(isDangerousCommand('git branch -D feature')).toBe(true)
+    expect(isDangerousCommand('git commit --amend')).toBe(true)
+    expect(isDangerousCommand('git stash drop stash@{0}')).toBe(true)
+    expect(isDangerousCommand('git stash clear')).toBe(true)
+  })
+
+  // I. 容器/编排破坏
+  test('容器破坏类命令 → true', () => {
+    expect(isDangerousCommand('docker rm -f container')).toBe(true)
+    expect(isDangerousCommand('docker rmi image:tag')).toBe(true)
+    expect(isDangerousCommand('docker system prune -af')).toBe(true)
+    expect(isDangerousCommand('docker volume rm myvol')).toBe(true)
+    expect(isDangerousCommand('docker kill container')).toBe(true)
+    expect(isDangerousCommand('docker stop container')).toBe(true)
+    expect(isDangerousCommand('docker compose down')).toBe(true)
+    expect(isDangerousCommand('docker-compose down')).toBe(true)
+    expect(isDangerousCommand('kubectl delete pod mypod')).toBe(true)
+  })
+
+  // J. 发布
+  test('发布命令 → true', () => {
+    expect(isDangerousCommand('npm publish')).toBe(true)
+  })
+
+  // 安全命令不误拦（多语言构建/测试/运行）
+  test('安全构建/测试/运行命令 → false', () => {
+    // JS
+    expect(isDangerousCommand('npm run dev')).toBe(false)
+    expect(isDangerousCommand('npm test')).toBe(false)
+    expect(isDangerousCommand('node script.js')).toBe(false)
+    expect(isDangerousCommand('bun run dev')).toBe(false)
+    expect(isDangerousCommand('bun test')).toBe(false)
+    // Python
+    expect(isDangerousCommand('python script.py')).toBe(false)
+    expect(isDangerousCommand('python -m pytest')).toBe(false)
+    expect(isDangerousCommand('pytest -v')).toBe(false)
+    expect(isDangerousCommand('pip install requests')).toBe(false) // 安装依赖不拦
+    // C/C++
+    expect(isDangerousCommand('cmake -B build')).toBe(false)
+    expect(isDangerousCommand('make build')).toBe(false)
+    expect(isDangerousCommand('make test')).toBe(false)
+    expect(isDangerousCommand('g++ -o main main.cpp')).toBe(false)
+    // Go
+    expect(isDangerousCommand('go build')).toBe(false)
+    expect(isDangerousCommand('go test')).toBe(false)
+    expect(isDangerousCommand('go run main.go')).toBe(false)
+    // Rust
+    expect(isDangerousCommand('cargo build')).toBe(false)
+    expect(isDangerousCommand('cargo test')).toBe(false)
+    expect(isDangerousCommand('cargo run')).toBe(false)
+    // Java
+    expect(isDangerousCommand('mvn compile')).toBe(false)
+    expect(isDangerousCommand('gradle build')).toBe(false)
+    // 通用
+    expect(isDangerousCommand('git status')).toBe(false)
+    expect(isDangerousCommand('git diff')).toBe(false)
+    expect(isDangerousCommand('git fetch origin')).toBe(false) // fetch 单词不匹配 git fetch
+    expect(isDangerousCommand('git log --oneline')).toBe(false)
+    expect(isDangerousCommand('git checkout main')).toBe(false) // 切分支不拦
+    expect(isDangerousCommand('git checkout -b new-branch')).toBe(false) // 创建分支不拦
+    expect(isDangerousCommand('ls -la')).toBe(false)
+    expect(isDangerousCommand('cat README.md')).toBe(false)
+  })
+
+  // token-based 边界：不误匹配相似前缀
+  test('token 边界：不误匹配相似前缀', () => {
+    // del 不匹配 delta
+    expect(isDangerousCommand('delta --version')).toBe(false)
+    // rm 不匹配 rmdir（rmdir 单独列出，自己匹配自己）
+    expect(isDangerousCommand('rmdir empty-dir')).toBe(true) // rmdir 在列表
+    // fetch 不匹配 git fetch（第一个 token 是 git）
+    expect(isDangerousCommand('git fetch origin')).toBe(false)
+    // sc 不匹配 scala / scp（scp 单独列出，自己匹配自己）
+    expect(isDangerousCommand('scala script.scala')).toBe(false)
+    expect(isDangerousCommand('scp file host:/path')).toBe(true) // scp 在列表
+    // kill 不匹配 kill-session（token 匹配，非子串）
+    expect(isDangerousCommand('kill-session --help')).toBe(false)
+  })
+
+  // 边界：空命令、纯空白
+  test('空命令 → false', () => {
+    expect(isDangerousCommand('')).toBe(false)
+    expect(isDangerousCommand('   ')).toBe(false)
   })
 })

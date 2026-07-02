@@ -8,6 +8,8 @@
 import { BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
+import { setQuitting } from '../app-lifecycle'
+import { shouldUseSilentInstall } from './updater-install-policy'
 import { UPDATER_IPC_CHANNELS } from './updater-types'
 
 import type { UpdateStatus } from './updater-types'
@@ -20,6 +22,14 @@ let win: BrowserWindow | null = null
 
 /** 定时检查定时器 */
 let checkInterval: ReturnType<typeof setInterval> | null = null
+
+/** 是否正在退出以安装更新（供退出清扫跳过强杀逻辑） */
+let quittingForUpdate = false
+
+/** 是否因安装更新而退出 */
+export function getIsQuittingForUpdate(): boolean {
+  return quittingForUpdate
+}
 
 /** 更新状态并推送给渲染进程 */
 function setStatus(status: UpdateStatus): void {
@@ -54,14 +64,20 @@ export async function checkForUpdates(): Promise<void> {
 
 /** 退出并安装已下载的更新 */
 export function quitAndInstall(): void {
-  // 移除所有窗口的 close 监听器，避免 preventDefault 阻止退出
+  quittingForUpdate = true
+  setQuitting()
+
+  // 移除所有窗口的 close 监听器，避免 Windows 托盘隐藏逻辑阻止退出
   for (const w of BrowserWindow.getAllWindows()) {
     w.removeAllListeners('close')
   }
 
+  const isSilent = shouldUseSilentInstall()
+  console.log(`[更新] 退出并安装（silent=${isSilent}）`)
+
   // 延迟调用确保 IPC 响应已发送回渲染进程
   setImmediate(() => {
-    autoUpdater.quitAndInstall(true, true)
+    autoUpdater.quitAndInstall(isSilent, true)
   })
 }
 

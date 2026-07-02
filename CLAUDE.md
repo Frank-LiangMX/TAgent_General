@@ -294,6 +294,29 @@ React UI 更新
 - ✅ 自动更新：Electron Updater 集成
 - ✅ 多模态支持：图片、文档附件
 
+## SubAgent 与看板派发策略
+
+**全局策略已内置于 system prompt**（`agent-prompt-builder.ts:buildSubagentDispatchStrategy`），所有项目生效，所有档位都强制必委派探索/调研/审查/大目标。此处只记录本项目级补充。
+
+### 本项目高频委派场景
+
+- **探索 IPC 通道链路**：新增/修改 IPC 通道需同步改 4 处（`@tagent/shared` 类型 → `main/ipc.ts` 处理器 → `preload/index.ts` 桥接 → renderer atoms），派 `explorer` 先摸清现有链路
+- **调研 Provider 适配器**：对比多 Provider 实现时派 `researcher`（`packages/core/src/providers/`）
+- **审查 IPC / 主进程改动**：跨进程改动易引入安全漏洞，改完派 `code-reviewer`
+- **大项目分析**：本 monorepo（`packages/*` + `apps/electron/src/*`）文件多，整体架构分析用看板并行拆分
+
+### 派发策略档位
+
+用户可在 Agent 工具栏 `SubagentEagernessSelector` 切换（never / conservative / balanced / aggressive，默认 conservative）。所有档位都强制必委派探索/调研/审查/大目标，档位只控制批量任务的激进程度。
+
+### 反模式（避免）
+
+- ❌ 主会话串行读 10+ 文件找某个符号 → 派 `explorer`
+- ❌ 主会话串行做 3+ 独立子任务 → 用看板并行
+- ❌ 主会话改完多文件代码不审查 → 派 `code-reviewer`
+- ❌ 大项目分析派一个 SubAgent 硬啃 → SubAgent context 会爆，用看板拆分
+- ❌ 简单单步问答也派 SubAgent → 开销高，主会话直接干更快
+
 ---
 
 ## 当前进度与下一步

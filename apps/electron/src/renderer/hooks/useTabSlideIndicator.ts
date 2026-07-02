@@ -63,7 +63,7 @@ function metricsToIndicatorStyle(
 
 export function useTabSlideIndicator(
   containerRef: React.RefObject<HTMLElement | null>,
-  activeTabId: string | null
+  visualActiveTabId: string | null
 ): TabSlideIndicatorStyles {
   const prevActiveTabRef = React.useRef<string | null>(null)
   const lastSettledTabRef = React.useRef<string | null>(null)
@@ -84,46 +84,46 @@ export function useTabSlideIndicator(
   const applyMetrics = React.useCallback(
     (animate: boolean) => {
       const container = containerRef.current
-      if (!container || !activeTabId) {
+      if (!container || !visualActiveTabId) {
         setStyles(EMPTY_STYLES)
         lastSettledTabRef.current = null
         return
       }
 
-      const metrics = measureTabItem(container, activeTabId)
+      const metrics = measureTabItem(container, visualActiveTabId)
       if (!metrics) return
 
       setStyles(buildStyles(metrics, animate))
-      lastSettledTabRef.current = activeTabId
+      lastSettledTabRef.current = visualActiveTabId
     },
-    [activeTabId, containerRef]
+    [visualActiveTabId, containerRef]
   )
 
   React.useLayoutEffect(() => {
     const prevTab = prevActiveTabRef.current
-    const isTabChange = prevTab !== null && prevTab !== activeTabId
+    const isTabChange = prevTab !== null && prevTab !== visualActiveTabId
 
-    if (!activeTabId) {
+    if (!visualActiveTabId) {
       setStyles(EMPTY_STYLES)
       lastSettledTabRef.current = null
       return
     }
 
     if (!isTabChange) {
-      if (lastSettledTabRef.current === activeTabId) return
+      if (lastSettledTabRef.current === visualActiveTabId) return
       applyMetrics(false)
       return
     }
 
     applyMetrics(true)
-  }, [activeTabId, applyMetrics])
+  }, [visualActiveTabId, applyMetrics])
 
   React.useEffect(() => {
-    prevActiveTabRef.current = activeTabId
-  }, [activeTabId])
+    prevActiveTabRef.current = visualActiveTabId
+  }, [visualActiveTabId])
 
-  const activeTabIdRef = React.useRef(activeTabId)
-  activeTabIdRef.current = activeTabId
+  const activeTabIdRef = React.useRef(visualActiveTabId)
+  activeTabIdRef.current = visualActiveTabId
 
   React.useEffect(() => {
     const container = containerRef.current

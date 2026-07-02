@@ -16,6 +16,8 @@ import { ContentWindowDragBand } from '@/components/app-shell/WindowDragStrip'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 
+import { cn } from '@/lib/utils'
+
 import {
   topLevelModeAtom,
   activeRailItemAtom,
@@ -26,6 +28,7 @@ import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-
 import {
   activeTabIdAtom,
   activeTabAtom,
+  tabSwitchingAtom,
   visibleSessionTabsAtom,
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
@@ -145,6 +148,31 @@ function GeneralMainArea(): React.ReactElement {
   // 后必须等主区域渲染完才能看到 tab 切换效果
   const contentTabId = activeTab?.id ?? null
   const deferredActiveTabId = React.useDeferredValue(contentTabId)
+
+  // 会话切换蒙版：TabBar 点击瞬间同步设 tabSwitchingAtom=true（赶在 React 首次重渲染前），
+  // 这里订阅它显示蒙版；deferredActiveTabId 追上后设 false（新内容渲染完，蒙版淡出）。
+  // 强制蒙版至少显示 300ms，避免会话渲染太快时蒙版一闪而过用户感知不到"加载中"。
+  const [switching, setSwitching] = useAtom(tabSwitchingAtom)
+  const switchingSinceRef = React.useRef<number>(0)
+  React.useEffect(() => {
+    if (switching) {
+      switchingSinceRef.current = Date.now()
+      return
+    }
+  }, [switching])
+  React.useEffect(() => {
+    if (!switching) return
+    if (contentTabId !== deferredActiveTabId) return
+    // 内容已渲染完，但确保蒙版至少显示 300ms
+    const elapsed = Date.now() - switchingSinceRef.current
+    const minDuration = 300
+    if (elapsed >= minDuration) {
+      setSwitching(false)
+    } else {
+      const timer = setTimeout(() => setSwitching(false), minDuration - elapsed)
+      return () => clearTimeout(timer)
+    }
+  }, [switching, contentTabId, deferredActiveTabId, setSwitching])
 
   const previewOpenMap = useAtomValue(previewPanelOpenMapAtom)
   const [splitRatio, setSplitRatio] = useAtom(previewSplitRatioAtom)
@@ -272,6 +300,18 @@ function GeneralMainArea(): React.ReactElement {
                 <TabContent tabId={deferredActiveTabId} />
               </div>
             ) : null}
+
+            {/* 会话切换蒙版：盖住内容区，淡入淡出不阻塞主线程渲染 */}
+            <div
+              aria-hidden
+              className={cn(
+                'pointer-events-none absolute inset-0 z-[50] flex items-center justify-center',
+                'bg-background/60 backdrop-blur-[2px] transition-opacity duration-200',
+                switching ? 'opacity-100' : 'opacity-0'
+              )}
+            >
+              <div className="size-5 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/60" />
+            </div>
           </div>
         </div>
 

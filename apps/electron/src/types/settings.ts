@@ -277,7 +277,7 @@ export interface AppSettings {
   autoCleanupArchivedDays?: number
   /** 主窗口状态（大小、位置、是否最大化） */
   mainWindowState?: MainWindowState
-  /** Windows 关闭按钮行为：'minimize-to-tray' 隐藏到托盘 / 'quit' 退出程序，undefined 弹框让用户选择 */
+  /** @deprecated 关闭按钮已固定为隐藏到托盘，此字段不再使用 */
   closeAction?: 'minimize-to-tray' | 'quit'
   /** 全局 hook 开关配置（auto-typecheck 等，默认全开） */
   hooks?: import('@tagent/shared').HooksConfig
@@ -450,20 +450,6 @@ export const TRAY_IPC_CHANNELS = {
   /** 创建新会话 */
   CREATE_SESSION: 'tray:create-session',
 } as const
-
-/** 窗口关闭确认 IPC 通道 */
-export const WINDOW_CLOSE_IPC_CHANNELS = {
-  /** 主进程 → 渲染进程：请求显示关闭确认对话框 */
-  REQUEST: 'window:close-request',
-  /** 渲染进程 → 主进程：回传用户选择结果 */
-  RESPONSE: 'window:close-response',
-} as const
-
-/** 窗口关闭确认回传数据 */
-export interface WindowCloseResponseData {
-  action: 'minimize-to-tray' | 'quit'
-  remember: boolean
-}
 
 /** 存储管理 IPC 通道 */
 export const STORAGE_IPC_CHANNELS = {

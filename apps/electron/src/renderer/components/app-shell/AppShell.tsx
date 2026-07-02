@@ -28,6 +28,7 @@ import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
 import {
   detectIsMac,
+  detectIsWindows,
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
   NAV_RAIL_WIDTH,
@@ -59,6 +60,7 @@ export interface AppShellProps {
 
 export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const isMac = React.useMemo(() => detectIsMac(), [])
+  const isWindows = React.useMemo(() => detectIsWindows(), [])
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
@@ -325,7 +327,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             className="right-panel-topbar-toggle pointer-events-auto absolute z-[100] titlebar-no-drag"
             style={{
               top: TOPBAR_CONTROL_TOP,
-              right: isMac ? SHELL_EDGE_PADDING : WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH,
+              // Windows 右上角有窗口控制按钮，给其留位；mac/linux 贴 shell 右内边距
+              right: isWindows ? WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH : SHELL_EDGE_PADDING,
             }}
           >
             <RightPanelToggle

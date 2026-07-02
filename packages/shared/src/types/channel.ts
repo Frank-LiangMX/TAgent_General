@@ -245,4 +245,29 @@ export const CHANNEL_IPC_CHANNELS = {
   TEST_DIRECT: 'channel:test-direct',
   /** 验证指定 model 名是否被供应商接受（P0-2, 防止 9120caac 那类 400 (2013)）*/
   VALIDATE_MODEL: 'channel:validate-model',
+  /** 测速（TTFB，首字延迟） */
+  SPEED_TEST: 'channel:speed-test',
 } as const
+
+/** 单个模型的测速结果 */
+export interface ModelSpeedTestResult {
+  channelId: string
+  modelId: string
+  success: boolean
+  /** 首字延迟（ms），失败时为 null */
+  ttfbMs: number | null
+  /** 总耗时（ms），失败时为 null */
+  totalTimeMs: number | null
+  message: string
+}
+
+/** 批量测速输入：用户选择的模型列表 */
+export interface SpeedTestInput {
+  items: Array<{ channelId: string; modelId: string }>
+}
+
+/** 批量测速结果 */
+export interface SpeedTestBatchResult {
+  /** key 格式 "{channelId}:{modelId}" */
+  results: Record<string, ModelSpeedTestResult>
+}

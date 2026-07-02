@@ -13,10 +13,10 @@ import { ChannelForm } from './ChannelForm'
 import { KsccChannelForm } from './KsccChannelForm'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 
-import type { Channel } from '@tagent/shared'
+import type { Channel, ModelSpeedTestResult } from '@tagent/shared'
 
 import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/model-atoms'
+import { channelsAtom, speedTestResultsAtom } from '@/atoms/model-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,8 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { KsccInstallGuide } from '@/components/agent/KsccInstallGuide'
 import { getChannelLogo } from '@/lib/model-logo'
+import { SpeedTestBadge } from './SpeedTestBadge'
+import { SpeedTestPopover } from './SpeedTestPopover'
 
 /** 组件视图模式 */
 type ViewMode = 'list' | 'create' | 'edit' | 'edit-kscc'
@@ -66,6 +68,7 @@ export function ChannelSettings(): React.ReactElement {
     () => channels.filter((c) => c.provider !== 'kscc-internal'),
     [channels]
   )
+  const [speedTestResults] = useAtom(speedTestResultsAtom)
 
   const loadChannels = React.useCallback(async (): Promise<Channel[]> => {
     try {
@@ -249,6 +252,11 @@ export function ChannelSettings(): React.ReactElement {
       <SettingsSection
         title="金山云内网"
         description="公司内网 Agent 渠道，由 kscc CLI 提供认证与模型能力"
+        action={
+          ksccChannel ? (
+            <SpeedTestPopover channels={[ksccChannel]} />
+          ) : undefined
+        }
       >
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
@@ -256,6 +264,7 @@ export function ChannelSettings(): React.ReactElement {
           <SettingsCard divided={false}>
             <KsccChannelRow
               channel={ksccChannel}
+              speedTestResults={speedTestResults}
               onConfigure={() => setViewMode('edit-kscc')}
               onToggle={() => void handleKsccToggle(ksccChannel)}
             />
@@ -273,14 +282,17 @@ export function ChannelSettings(): React.ReactElement {
         title="模型配置"
         description="管理外部 AI 供应商连接，配置 API Key 和可用模型"
         action={
-          <Button
-            size="sm"
-            className="h-9 rounded-xl gap-1.5"
-            onClick={() => setViewMode('create')}
-          >
-            <Plus size={16} />
-            添加配置
-          </Button>
+          <div className="flex items-center gap-1">
+            {otherChannels.length > 0 ? <SpeedTestPopover channels={otherChannels} /> : null}
+            <Button
+              size="sm"
+              className="h-9 rounded-xl gap-1.5"
+              onClick={() => setViewMode('create')}
+            >
+              <Plus size={16} />
+              添加配置
+            </Button>
+          </div>
         }
       >
         {loading ? (
@@ -297,6 +309,7 @@ export function ChannelSettings(): React.ReactElement {
               <ChannelRow
                 key={channel.id}
                 channel={channel}
+                speedTestResults={speedTestResults}
                 onEdit={() => {
                   setEditingChannel(channel)
                   setViewMode('edit')
@@ -342,16 +355,19 @@ export function ChannelSettings(): React.ReactElement {
 
 interface KsccChannelRowProps {
   channel: Channel
+  speedTestResults: Record<string, ModelSpeedTestResult>
   onConfigure: () => void
   onToggle: () => void
 }
 
 function KsccChannelRow({
   channel,
+  speedTestResults,
   onConfigure,
   onToggle,
 }: KsccChannelRowProps): React.ReactElement {
-  const enabledCount = channel.models.filter((m) => m.enabled).length
+  const enabledModels = channel.models.filter((m) => m.enabled)
+  const enabledCount = enabledModels.length
   const description = [
     '内置渠道 · 金山云',
     enabledCount > 0 ? `${enabledCount} 个模型已启用` : '尚未启用模型',
@@ -364,6 +380,17 @@ function KsccChannelRow({
       icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
       description={description}
       className="group"
+      bottomSlot={
+        enabledCount > 0
+          ? enabledModels.map((m) => (
+              <SpeedTestBadge
+                key={`${channel.id}:${m.id}`}
+                modelId={m.id}
+                result={speedTestResults[`${channel.id}:${m.id}`]}
+              />
+            ))
+          : undefined
+      }
     >
       <div className="flex items-center gap-2">
         <Tooltip>
@@ -385,13 +412,15 @@ function KsccChannelRow({
 
 interface ChannelRowProps {
   channel: Channel
+  speedTestResults: Record<string, ModelSpeedTestResult>
   onEdit: () => void
   onDelete: () => void
   onToggle: () => void
 }
 
-function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
-  const enabledCount = channel.models.filter((m) => m.enabled).length
+function ChannelRow({ channel, speedTestResults, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
+  const enabledModels = channel.models.filter((m) => m.enabled)
+  const enabledCount = enabledModels.length
   const isAgentCapable = isAgentCompatibleProvider(channel.provider)
   const description = [
     PROVIDER_LABELS[channel.provider],
@@ -407,6 +436,17 @@ function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): R
       icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
       description={description}
       className="group"
+      bottomSlot={
+        enabledCount > 0
+          ? enabledModels.map((m) => (
+              <SpeedTestBadge
+                key={`${channel.id}:${m.id}`}
+                modelId={m.id}
+                result={speedTestResults[`${channel.id}:${m.id}`]}
+              />
+            ))
+          : undefined
+      }
     >
       <div className="flex items-center gap-2">
         <Tooltip>

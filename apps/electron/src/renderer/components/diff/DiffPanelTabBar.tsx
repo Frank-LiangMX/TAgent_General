@@ -76,7 +76,7 @@ export function DiffPanelTabBar({
   }
 
   return (
-    <div className="relative flex h-[44px] flex-shrink-0 items-center px-3 pt-2 titlebar-drag-region">
+    <div className="relative flex h-[44px] flex-shrink-0 items-center pl-3 pr-12 pt-2 titlebar-drag-region">
       <SegmentedTabs
         className="titlebar-no-drag flex-1"
         value={activeTab}

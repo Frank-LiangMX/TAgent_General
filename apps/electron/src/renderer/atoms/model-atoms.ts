@@ -7,7 +7,7 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
-import type { Channel } from '@tagent/shared'
+import type { Channel, ModelSpeedTestResult } from '@tagent/shared'
 
 /** 全局渠道列表缓存（启动时加载一次，设置变更时刷新） */
 export const channelsAtom = atom<Channel[]>([])
@@ -29,3 +29,9 @@ export const selectedModelAtom = atomWithStorage<SelectedModel | null>(
 
 /** 思考块默认展开偏好（持久化到 localStorage） */
 export const thinkingExpandedAtom = atomWithStorage<boolean>('tagent-thinking-expanded', false)
+
+/** 测速结果（key: "{channelId}:{modelId}"，session-only，窗口关闭后丢失） */
+export const speedTestResultsAtom = atom<Record<string, ModelSpeedTestResult>>({})
+
+/** 测速进行中标志 */
+export const speedTestRunningAtom = atom(false)
