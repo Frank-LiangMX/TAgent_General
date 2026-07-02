@@ -12,6 +12,12 @@
 import { DINGTALK_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
+import type {
+  DingTalkBridgeState,
+  DingTalkBotBridgeState,
+  DingTalkBotConfig,
+  DingTalkTestResult,
+} from '@tagent/shared'
 import { getAgentWorkspace } from './agent-workspace-manager'
 import {
   inferImageMediaType,
@@ -23,12 +29,6 @@ import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-ha
 import { getDecryptedBotClientSecret } from './dingtalk-config'
 import { getSettings } from './settings-service'
 
-import type {
-  DingTalkBridgeState,
-  DingTalkBotBridgeState,
-  DingTalkBotConfig,
-  DingTalkTestResult,
-} from '@tagent/shared'
 
 // ===== 类型声明 =====
 

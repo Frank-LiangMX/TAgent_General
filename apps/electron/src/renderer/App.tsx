@@ -1,6 +1,7 @@
 import { useAtom, useStore } from 'jotai'
 import * as React from 'react'
 
+import { TooltipProvider } from '@tagent/ui'
 import { agentSessionsAtom } from './atoms/agent-atoms'
 import { environmentCheckDialogOpenAtom } from './atoms/environment'
 import { tabsAtom, activeTabIdAtom, openTab } from './atoms/tab-atoms'
@@ -9,7 +10,6 @@ import { EnvironmentCheckDialog } from './components/environment/EnvironmentChec
 import { OnboardingView } from './components/onboarding/OnboardingView'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { TutorialBanner } from './components/tutorial/TutorialBanner'
-import { TooltipProvider } from './components/ui/tooltip'
 
 import type { AppShellContextType } from './contexts/AppShellContext'
 

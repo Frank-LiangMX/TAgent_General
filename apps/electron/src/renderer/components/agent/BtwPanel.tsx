@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 
 import type { BtwMessage } from '@tagent/shared'
 
+import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   btwOpenAtom,
   btwMessagesAtom,
@@ -26,8 +27,6 @@ import {
   btwModelIdAtom,
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 

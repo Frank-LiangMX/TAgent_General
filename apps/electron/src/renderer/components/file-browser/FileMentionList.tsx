@@ -17,11 +17,11 @@
 import { ChevronRight, Folder } from 'lucide-react'
 import * as React from 'react'
 
-import { FileTypeIcon } from './FileTypeIcon'
 
 import type { FileIndexEntry } from '@tagent/shared'
 
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@tagent/ui'
+import { FileTypeIcon } from './FileTypeIcon'
 import { cn } from '@/lib/utils'
 
 // ===== Error Boundary =====

@@ -9,6 +9,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Maximize2, PanelRight, X } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
@@ -20,7 +21,6 @@ import {
   previewModePreferenceAtom,
 } from '@/atoms/preview-atoms'
 import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'

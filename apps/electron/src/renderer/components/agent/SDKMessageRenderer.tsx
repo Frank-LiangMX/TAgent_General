@@ -44,6 +44,19 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
+import type {
+  SDKMessage,
+  SDKAssistantMessage,
+  SDKUserMessage,
+  SDKSystemMessage,
+  SDKContentBlock,
+  SDKResultMessage,
+  AgentEventUsage,
+  SDKToolUseBlock,
+  SDKToolResultBlock,
+  RecoveryAction,
+} from '@tagent/shared'
+import { Badge , Button , ImageLightbox , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { DurationBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
 import {
@@ -57,18 +70,6 @@ import { normalizeThinkTagsInContentBlocks } from './thinking-tag-parser'
 import { TurnFileChangesSummary } from './TurnFileChangesSummary'
 
 import type { ToolActivity } from '@/atoms/agent-atoms'
-import type {
-  SDKMessage,
-  SDKAssistantMessage,
-  SDKUserMessage,
-  SDKSystemMessage,
-  SDKContentBlock,
-  SDKResultMessage,
-  AgentEventUsage,
-  SDKToolUseBlock,
-  SDKToolResultBlock,
-  RecoveryAction,
-} from '@tagent/shared'
 
 import {
   agentProcessGroupsKeepExpandedAtom,
@@ -91,10 +92,6 @@ import {
 } from '@/components/ai-elements/message'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { UserAvatar } from '@/components/shared/UserAvatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ImageLightbox } from '@/components/ui/image-lightbox'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { getFileParentPath } from '@/lib/file-utils'

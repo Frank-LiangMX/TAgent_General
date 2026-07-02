@@ -14,8 +14,7 @@ import { useMemo, useState } from 'react'
 
 import type { Channel } from '@tagent/shared'
 
-import { Button } from '@tagent/ui'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import { Button, Popover, PopoverContent, PopoverTrigger } from '@tagent/ui'
 
 import { speedTestResultsAtom, speedTestRunningAtom } from '@/atoms/model-atoms'
 

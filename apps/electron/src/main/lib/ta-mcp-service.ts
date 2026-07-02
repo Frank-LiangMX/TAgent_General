@@ -8,11 +8,11 @@ import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
+import type { WorkspaceMcpConfig } from '@tagent/shared'
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { getWorkspaceMcpPath, getConfigDir } from './config-paths'
 
 import type { InstallLogChunk } from './ta-mcp-installer'
-import type { WorkspaceMcpConfig } from '@tagent/shared'
 
 /** TA MCP Server 名称 */
 export const TA_MCP_SERVER_NAME = 'ta-agent-mcp'
@@ -324,14 +324,14 @@ export async function installTAMcpServer(
 /** 获取当前安装任务状态 */
 export function getInstallState(): 'idle' | 'running' | 'success' | 'failed' | 'cancelled' {
   // 动态 import 避免循环依赖
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
   return taMcpInstaller.getState()
 }
 
 /** 取消当前安装 */
 export function cancelTAMcpInstall(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
   taMcpInstaller.cancel()
 }

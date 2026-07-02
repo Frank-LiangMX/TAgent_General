@@ -5,10 +5,10 @@
  * 支持 URL/Body 模板占位符替换、超时控制、响应路径提取。
  */
 
-import { getChatToolsConfig } from '../tool-config'
 
 import type { ToolCall, ToolResult } from '@tagent/core'
 import type { ChatToolMeta, ChatToolHttpConfig } from '@tagent/shared'
+import { getChatToolsConfig } from '../tool-config'
 
 /** HTTP 请求超时（30 秒） */
 const HTTP_TIMEOUT_MS = 30_000

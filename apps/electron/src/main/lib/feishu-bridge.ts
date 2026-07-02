@@ -14,6 +14,23 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { FEISHU_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
+import type {
+  AgentStreamPayload,
+  AgentSendInput,
+  FeishuBridgeState,
+  FeishuChatBinding,
+  FeishuTestResult,
+  FeishuMention,
+  FeishuGroupInfo,
+  FeishuGroupMember,
+  FeishuMessageContext,
+  FeishuChatMessage,
+  FeishuUpdateBindingInput,
+  FeishuBotConfig,
+  AgentSessionMeta,
+  SDKAssistantMessage,
+  SDKUserMessage,
+} from '@tagent/shared'
 import { agentEventBus, runAgentHeadless, stopAgent } from './agent-service'
 import { createAgentSession, listAgentSessions, getAgentSessionMeta } from './agent-session-manager'
 import {
@@ -73,23 +90,6 @@ import {
 import { getSettings } from './settings-service'
 
 import type { ToolSummary, FormattedAgentResult, WorkspaceListItem } from './feishu-message'
-import type {
-  AgentStreamPayload,
-  AgentSendInput,
-  FeishuBridgeState,
-  FeishuChatBinding,
-  FeishuTestResult,
-  FeishuMention,
-  FeishuGroupInfo,
-  FeishuGroupMember,
-  FeishuMessageContext,
-  FeishuChatMessage,
-  FeishuUpdateBindingInput,
-  FeishuBotConfig,
-  AgentSessionMeta,
-  SDKAssistantMessage,
-  SDKUserMessage,
-} from '@tagent/shared'
 
 // ===== 类型定义 =====
 

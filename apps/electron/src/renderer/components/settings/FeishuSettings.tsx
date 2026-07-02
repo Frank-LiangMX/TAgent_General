@@ -30,11 +30,6 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsInput } from './primitives/SettingsInput'
-import { SettingsSecretInput } from './primitives/SettingsSecretInput'
-import { SettingsSection } from './primitives/SettingsSection'
-
 import type {
   FeishuTestResult,
   FeishuChatBinding,
@@ -45,9 +40,6 @@ import type {
   FeishuSessionMirrorSettings,
   FeishuSessionSyncMode,
 } from '@tagent/shared'
-
-import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
-import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,24 +50,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import {
+ Button ,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
+  SelectValue, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import { SettingsCard , SettingsInput , SettingsSecretInput , SettingsSection } from './primitives'
+
+
+import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
+import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
 import { cn } from '@/lib/utils'
 
 // ===== 常量 =====

@@ -13,10 +13,10 @@ import { Loader2 } from 'lucide-react'
 import type { KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
 import { Badge } from '@tagent/ui'
+import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 
-import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 
 /** 格式化耗时（ms → "12s" / "3m 45s" / "1h 12m"） */
 function formatDuration(ms: number): string {

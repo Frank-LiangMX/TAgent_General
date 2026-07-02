@@ -10,9 +10,11 @@
 
 import { createServer } from 'node:http'
 
+import type { Server, IncomingMessage, ServerResponse } from 'node:http'
 import { WPS_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
+import type { WpsBridgeState, WpsTestResult } from '@tagent/shared'
 import { BridgeCommandHandler } from './bridge-command-handler'
 import {
   getDecryptedWpsEncryptKey,
@@ -24,8 +26,6 @@ import { decryptEventData, generateKso1AuthHeader, verifyEventSignature } from '
 import { parseWpsMessage } from './wps-message-parser'
 import { wpsOAuthTokenManager } from './wps-oauth'
 
-import type { WpsBridgeState, WpsTestResult } from '@tagent/shared'
-import type { Server, IncomingMessage, ServerResponse } from 'node:http'
 
 const MAX_BODY_SIZE = 2 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 20_000

@@ -28,13 +28,6 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import {
-  SettingsSection,
-  SettingsCard,
-  SettingsInput,
-  SettingsSelect,
-  SettingsToggle,
-} from './primitives'
 
 import type {
   Channel,
@@ -45,7 +38,6 @@ import type {
   ProviderType,
 } from '@tagent/shared'
 
-import { channelFormDirtyAtom } from '@/atoms/settings-tab'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,12 +47,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { SearchInput } from '@/components/ui/search-input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+ Button , Input , ScrollArea , SearchInput , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  SettingsSection,
+  SettingsCard,
+  SettingsInput,
+  SettingsSelect,
+  SettingsToggle,
+} from './primitives'
+import { channelFormDirtyAtom } from '@/atoms/settings-tab'
 import { getProviderLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 

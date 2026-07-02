@@ -9,6 +9,8 @@ import * as React from 'react'
 import type { Automation } from '@tagent/shared'
 import { formatScheduleLabel } from '@tagent/shared'
 
+import { Button , ScrollProgressContainer , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { WindowDragStrip } from '@/components/app-shell/WindowDragStrip'
 import {
   automationsAtom,
   automationsGroupedAtom,
@@ -17,10 +19,6 @@ import {
   loadAutomations,
   selectedAutomationIdAtom,
 } from '@/atoms/automation-atoms'
-import { WindowDragStrip } from '@/components/app-shell/WindowDragStrip'
-import { Button } from '@/components/ui/button'
-import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export function AutomationRailList(): React.ReactElement {

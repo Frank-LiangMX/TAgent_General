@@ -19,19 +19,12 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsInput } from './primitives/SettingsInput'
-import { SettingsSecretInput } from './primitives/SettingsSecretInput'
-import { SettingsSection } from './primitives/SettingsSection'
-
 import type {
   DingTalkBotConfig,
   DingTalkBotBridgeState,
   DingTalkBridgeStatus,
   DingTalkTestResult,
 } from '@tagent/shared'
-
-import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +35,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+ Button } from '@tagent/ui'
+import { SettingsCard , SettingsInput , SettingsSecretInput , SettingsSection } from './primitives'
+
+
+import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { cn } from '@/lib/utils'
 
 /** 安全地用系统浏览器打开链接 */

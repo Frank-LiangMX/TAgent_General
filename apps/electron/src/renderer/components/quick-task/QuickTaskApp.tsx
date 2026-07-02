@@ -10,7 +10,7 @@ import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 
 /** 任务模式（P3: chat 已退役） */

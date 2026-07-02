@@ -12,6 +12,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { MessageCircle } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import {
   btwOpenAtom,
@@ -21,7 +22,6 @@ import {
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface BtwFloatingTriggerProps {

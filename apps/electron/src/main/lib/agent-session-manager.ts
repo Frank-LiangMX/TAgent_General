@@ -26,6 +26,15 @@ import {
 import { join, resolve, dirname } from 'node:path'
 import { createInterface } from 'node:readline'
 
+import type {
+  AgentSessionMeta,
+  AgentMessage,
+  SDKMessage,
+  ForkSessionInput,
+  AgentMessageSearchResult,
+  AgentSessionReferenceSearchInput,
+  AgentSessionReferenceSearchResult,
+} from '@tagent/shared'
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { clearNanoBananaAgentHistory } from './tools/nano-banana-mcp'
 import { clearContextUsageCache } from './context-usage-cache'
@@ -45,15 +54,6 @@ import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 if (!process.env.CLAUDE_CONFIG_DIR) {
   process.env.CLAUDE_CONFIG_DIR = getSdkConfigDir()
 }
-import type {
-  AgentSessionMeta,
-  AgentMessage,
-  SDKMessage,
-  ForkSessionInput,
-  AgentMessageSearchResult,
-  AgentSessionReferenceSearchInput,
-  AgentSessionReferenceSearchResult,
-} from '@tagent/shared'
 
 /**
  * 会话索引文件格式

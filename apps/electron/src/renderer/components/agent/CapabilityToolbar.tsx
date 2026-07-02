@@ -9,10 +9,11 @@ import { FolderOpen, MessageSquare } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { resolveAgentSessionModelId, type WorkspaceCapabilities } from '@tagent/shared'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { PluginConfigDialog } from './plugin-config-dialog'
 import { PluginToolbarButton } from './plugin-toolbar-button'
 
-import { resolveAgentSessionModelId, type WorkspaceCapabilities } from '@tagent/shared'
 
 import {
   agentChannelIdAtom,
@@ -24,7 +25,6 @@ import {
 } from '@/atoms/agent-atoms'
 import { activeRailItemAtom } from '@/atoms/app-mode'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'

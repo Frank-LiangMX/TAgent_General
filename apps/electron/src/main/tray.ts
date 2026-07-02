@@ -11,6 +11,7 @@ import {
   type NativeImage,
 } from 'electron'
 
+import type { ThemeMode, ThemeStyle } from '../types'
 import { requestApplicationQuit } from './lib/app-shutdown'
 import { isAgentSessionActive } from './lib/agent-service'
 import { listAgentSessions } from './lib/agent-session-manager'
@@ -18,7 +19,6 @@ import { listAgentWorkspaces } from './lib/agent-workspace-manager'
 import { createTrayMenuModel, type TrayRecentSessionItem } from './lib/tray-menu-model'
 import { getThemeIconPath, resolveLogoKey } from './lib/theme-icon-resolver'
 import { getSettings } from './lib/settings-service'
-import type { ThemeMode, ThemeStyle } from '../types'
 
 let tray: Tray | null = null
 

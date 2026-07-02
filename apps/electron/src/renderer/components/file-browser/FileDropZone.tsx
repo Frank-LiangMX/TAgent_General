@@ -10,7 +10,7 @@ import { Paperclip, FolderPlus, Loader2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { fileToBase64, formatFileNames } from '@/lib/file-utils'
 import { cn } from '@/lib/utils'
 

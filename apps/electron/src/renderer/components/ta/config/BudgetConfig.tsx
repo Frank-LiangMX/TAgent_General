@@ -4,7 +4,7 @@
 
 import * as React from 'react'
 
-import { Input } from '@/components/ui/input'
+import { Input } from '@tagent/ui'
 
 const budgetDefaults = [
   { type: 'LOD0 多边形', value: '50000', unit: '三角形' },

@@ -8,9 +8,9 @@ import { join } from 'path'
 
 import { app, BrowserWindow, screen } from 'electron'
 
+import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
 import { getSettings, updateSettings } from './settings-service'
 import { captureVoiceDictationTarget } from './text-output-service'
-import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
 
 let voiceDictationWindow: BrowserWindow | null = null
 let voiceDictationTargetCaptured = false

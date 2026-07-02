@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 import type { PipelineRun, PipelineRunStatus, PipelineSummary } from '@tagent/shared'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 const STATUS_CONFIG: Record<

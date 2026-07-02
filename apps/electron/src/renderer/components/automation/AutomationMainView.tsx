@@ -8,6 +8,17 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@tagent/ui'
+import { formatScheduleLabel } from '@tagent/shared'
+import {
   automationsAtom,
   automationEditorModeAtom,
   deleteAutomation,
@@ -20,17 +31,6 @@ import { AutomationFormView } from '@/components/automation/AutomationFormView'
 import { AutomationTaskToolbar } from '@/components/automation/AutomationTaskToolbar'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { formatScheduleLabel } from '@tagent/shared'
 
 import { detectIsMac } from '@/lib/platform'
 

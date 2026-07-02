@@ -8,13 +8,13 @@
 import { ReactRenderer } from '@tiptap/react'
 import { MessageSquareText, Sparkles, Server } from 'lucide-react'
 
+import type { AgentSessionReferenceSearchResult } from '@tagent/shared'
+import type { SuggestionOptions } from '@tiptap/suggestion'
+import type React from 'react'
 import { createMentionPopup, positionPopup } from './mention-popup-utils'
 import { MentionList } from './MentionList'
 
 import type { MentionListRef } from './MentionList'
-import type { AgentSessionReferenceSearchResult } from '@tagent/shared'
-import type { SuggestionOptions } from '@tiptap/suggestion'
-import type React from 'react'
 
 // ===== 泛型工厂 =====
 

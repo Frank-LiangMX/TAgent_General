@@ -23,6 +23,7 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { Button } from '@tagent/ui'
 import { AssetLibraryPanel } from './asset-library/AssetLibraryPanel'
 import { TAConfigPanel } from './config/TAConfigPanel'
 import { PipelinePanel } from './pipeline/PipelinePanel'
@@ -31,7 +32,6 @@ import { TAInstallDialog } from './TAInstallDialog'
 
 import { currentAgentWorkspaceIdAtom, agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type TATabId = 'assets' | 'review' | 'pipeline' | 'memory' | 'config'

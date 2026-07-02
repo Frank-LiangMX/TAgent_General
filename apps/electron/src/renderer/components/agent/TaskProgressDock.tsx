@@ -12,10 +12,10 @@
 import * as React from 'react'
 import { ListTodo, ChevronDown, ChevronUp, Loader2, CheckCircle2, Circle } from 'lucide-react'
 
+import type { SDKMessage } from '@tagent/shared'
 import { aggregateTaskItems, type TaskItem } from './task-progress'
 import { buildAllTaskActivities, buildHistoricalTaskSubjects } from './SDKMessageRenderer'
 
-import type { SDKMessage } from '@tagent/shared'
 
 import { cn } from '@/lib/utils'
 

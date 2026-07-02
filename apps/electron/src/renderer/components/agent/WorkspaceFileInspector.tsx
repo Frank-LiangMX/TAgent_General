@@ -8,6 +8,7 @@ import { useAtomValue } from 'jotai'
 import { ExternalLink, File, FolderOpen, FolderSearch, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
+import { Button , ScrollProgressContainer } from '@tagent/ui'
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,
@@ -20,8 +21,6 @@ import {
 import { isImageFile } from '@/components/agent/SDKMessageRenderer'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { FileTypeIcon } from '@/components/file-browser'
-import { Button } from '@/components/ui/button'
-import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
 const TEXT_PREVIEW_MAX_BYTES = 256 * 1024
 
 function getPathBasename(filePath: string): string {

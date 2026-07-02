@@ -12,6 +12,7 @@ import * as React from 'react'
 
 import type { TAgentPermissionMode } from '@tagent/shared'
 
+import { Button , Popover, PopoverContent, PopoverTrigger , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 import {
   agentPermissionModeMapAtom,
   agentDefaultPermissionModeAtom,
@@ -19,9 +20,6 @@ import {
   sessionExistsAtom,
   agentPlanModeSessionsAtom,
 } from '@/atoms/agent-atoms'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { updatePlanModeSessionSet } from '@/lib/agent-plan-mode'
 import { cn } from '@/lib/utils'
 

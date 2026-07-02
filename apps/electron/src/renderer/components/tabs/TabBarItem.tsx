@@ -98,7 +98,7 @@ export function TabBarItem({
         ? 'bg-emerald-500'
         : isStreaming === 'blocked'
           ? 'bg-orange-500'
-          : 'bg-blue-500 animate-pulse'
+          : 'tab-status-streaming'
       : undefined
   const previewItems = minimapCache.get(id) ?? []
   // 当前 active Tab 不显示预览面板
@@ -215,7 +215,7 @@ export function TabBarItem({
 
         {statusLineClass && (
           <span
-            className={cn('absolute inset-x-3 bottom-0 h-[2px] rounded-full', statusLineClass)}
+            className={cn('absolute inset-x-3 bottom-0 h-[2.5px] rounded-full', statusLineClass)}
             aria-hidden="true"
           />
         )}

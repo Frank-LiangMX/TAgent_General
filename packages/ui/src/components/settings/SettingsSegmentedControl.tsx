@@ -2,15 +2,18 @@
  * SettingsSegmentedControl - 分段选择器
  *
  * 用于少量选项的快速切换（如外观主题选择）。
- * 基于 @tagent/ui SegmentedTabs 统一样式。
+ * 基于 SegmentedTabs 统一样式。
+ *
+ * 左右结构：左侧 label + ? tooltip，右侧分段控件。
  */
 
 import * as React from 'react'
 
-import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
+import { SegmentedTabs, SegmentedTabsItem } from '../segmented-tabs'
+import { cn } from '../../lib/utils'
+import { FieldLabel } from './FieldLabel'
+import { ROW_CLASS } from './SettingsUIConstants'
 
-import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
-import { cn } from '@/lib/utils'
 
 /** 分段选项定义 */
 interface SegmentOption {
@@ -21,7 +24,7 @@ interface SegmentOption {
 interface SettingsSegmentedControlProps {
   /** 标签文本 */
   label: string
-  /** 描述文本（可选） */
+  /** 描述文本（可选，hover ? 图标显示 tooltip） */
   description?: string
   /** 当前值 */
   value: string
@@ -42,12 +45,15 @@ export function SettingsSegmentedControl({
   disabled,
 }: SettingsSegmentedControlProps): React.ReactElement {
   return (
-    <div className="px-4 py-3 space-y-2">
-      <div>
-        <div className={LABEL_CLASS}>{label}</div>
-        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
+    <div className={cn(ROW_CLASS)}>
+      <div className="flex-1 min-w-0 mr-4">
+        <FieldLabel label={label} description={description} />
       </div>
-      <SegmentedTabs className="max-w-md" value={value} onValueChange={onValueChange}>
+      <SegmentedTabs
+        className="shrink-0"
+        value={value}
+        onValueChange={onValueChange}
+      >
         {options.map((option) => (
           <SegmentedTabsItem key={option.value} value={option.value} disabled={disabled}>
             {option.label}

@@ -38,6 +38,33 @@ import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
 
+import type {
+  AgentSendInput,
+  AgentPendingFile,
+  FileDialogLargeFile,
+  ModelOption,
+  SDKMessage,
+} from '@tagent/shared'
+import {
+  SegmentedTabs,
+  SegmentedTabsItem,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
 import { AgentModelSelector } from './AgentModelSelector'
@@ -54,14 +81,8 @@ import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
+import { TaskProgressDock } from './TaskProgressDock'
 import type { SubagentEagerness } from '@/atoms/agent-atoms'
-import type {
-  AgentSendInput,
-  AgentPendingFile,
-  FileDialogLargeFile,
-  ModelOption,
-  SDKMessage,
-} from '@tagent/shared'
 
 import {
   agentStreamingStatesAtom,
@@ -137,8 +158,6 @@ import {
 } from '@/atoms/kanban-atoms'
 import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
 import { KanbanBoardSummary } from '@/components/kanban/KanbanBoardSummary'
-import { TaskProgressDock } from './TaskProgressDock'
-import { SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import {
   InputToolbarOverflow,
   type ToolbarItem,
@@ -148,20 +167,6 @@ import { QuotedSelectionChip } from '@/components/diff/QuotedSelectionChip'
 import { openPreview } from '@/components/diff/preview-opener'
 import { SessionFloatingLayout } from '@/components/layout/SessionFloatingLayout'
 import { AttachmentPreviewItem } from '@/components/shared/AttachmentPreviewItem'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AgentSessionProvider } from '@/contexts/session-context'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'

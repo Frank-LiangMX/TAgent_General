@@ -8,8 +8,7 @@ import { MicIcon } from 'lucide-react'
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface SpeechButtonProps {

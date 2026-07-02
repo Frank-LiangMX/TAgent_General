@@ -9,7 +9,7 @@ import * as React from 'react'
 
 import type { DraftStatus, RequirementBlock } from '@tagent/shared'
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 
 interface DraftProgressBarProps {

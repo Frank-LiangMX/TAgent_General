@@ -52,6 +52,7 @@ L5_insights.md    提炼的洞察
 2. **模式隔离**：写到 mode 相关代码时确认 general 与 ta 是否共享
 3. **Provider 共享**：Channel / API Key 全局共享
 4. **Memory 写入**：直写 JSONL/MD，幂等
+5. **UI 库**：基础组件 `import { Button } from '@tagent/ui'`，禁止 `@/components/ui/*` 新增 import（ESLint warn）。玻璃样式用 `session-list-item-active` / `session-glass-*` 类，圆角用 `rounded-glass-*` token，禁止硬编码 `rounded-[10px]` / `#fff`。详见根 `CLAUDE.md` "UI 库使用规范"决策树
 
 ## 调试命令
 

@@ -1,9 +1,9 @@
 import { BrowserWindow, nativeTheme } from 'electron'
 
+import type { ThemeMode, ThemeStyle } from '../../types'
 import { getSettings } from './settings-service'
 import { resolveLogoKey } from './theme-icon-resolver'
 
-import type { ThemeMode, ThemeStyle } from '../../types'
 
 interface OverlayColors {
   color: string

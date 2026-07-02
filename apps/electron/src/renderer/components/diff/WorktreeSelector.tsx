@@ -3,7 +3,7 @@ import * as React from 'react'
 
 import type { WorktreeInfo, WorkspaceWorktreeRepo } from '@tagent/shared'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface WorktreeSelectorProps {

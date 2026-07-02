@@ -20,6 +20,7 @@ import { Sparkles, X, ArrowRight } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { Button } from '@tagent/ui'
 import { currentAgentSessionIdAtom, agentPromptSuggestionsAtom } from '@/atoms/agent-atoms'
 import { pendingAgentSwitchSuggestionAtom } from '@/atoms/ask-atoms'
 import {
@@ -27,7 +28,6 @@ import {
   composerModeSyncedSessionsAtom,
   currentComposerModeAtom,
 } from '@/atoms/composer-atoms'
-import { Button } from '@/components/ui/button'
 
 export function AgentSwitchBanner(): React.ReactElement | null {
   const [suggestion, setSuggestion] = useAtom(pendingAgentSwitchSuggestionAtom)

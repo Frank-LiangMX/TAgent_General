@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface PreviewFindBarProps {
   open: boolean

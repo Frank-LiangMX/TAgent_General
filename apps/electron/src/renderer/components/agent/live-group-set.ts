@@ -1,5 +1,5 @@
-import type { MessageGroup } from './SDKMessageRenderer'
 import type { SDKMessage } from '@tagent/shared'
+import type { MessageGroup } from './SDKMessageRenderer'
 
 interface BuildLiveGroupSetOptions {
   allGroups: MessageGroup[]

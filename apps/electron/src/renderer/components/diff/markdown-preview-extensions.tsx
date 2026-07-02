@@ -14,14 +14,14 @@ import DOMPurify from 'dompurify'
 import katex from 'katex'
 import { createRoot } from 'react-dom/client'
 
-import { extractCodeText } from '../../lib/markdown-rich-text'
-import { shouldRenderMermaidCodeBlock } from '../../lib/mermaid-detection'
 
 import type { HighlightTokensResult } from '@tagent/core'
 import type { FileAccessOptions } from '@tagent/shared'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import type { EditorView, ViewMutationRecord } from '@tiptap/pm/view'
 import type { Root } from 'react-dom/client'
+import { shouldRenderMermaidCodeBlock } from '../../lib/mermaid-detection'
+import { extractCodeText } from '../../lib/markdown-rich-text'
 
 type FileAccessRef = { current: FileAccessOptions | undefined }
 /** 传 null 表示当前编辑器无会话/文件上下文（如 DraftView），跳过路径解析。 */

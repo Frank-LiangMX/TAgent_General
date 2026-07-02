@@ -12,10 +12,10 @@ import { RotateCcw, Command, ArrowLeftRight, FileEdit, Globe2 } from 'lucide-rea
 import * as React from 'react'
 import { toast } from 'sonner'
 
+import { Switch } from '@tagent/ui'
 import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-defaults'
 
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import { Switch } from '@/components/ui/switch'
 import { DEFAULT_SHORTCUTS, SHORTCUT_CATEGORY_LABELS } from '@/lib/shortcut-defaults'
 import {
   getActiveAccelerator,

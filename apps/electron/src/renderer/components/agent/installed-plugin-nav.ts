@@ -2,13 +2,13 @@
  * 已安装插件侧栏导航筛选
  */
 
-import type { InstalledPluginNavFilter } from '@/atoms/app-mode'
-
 import type {
   InstalledBundleGroup,
   InstalledPluginsGrouping,
   PluginListItem,
 } from './installed-plugins-grouping'
+import type { InstalledPluginNavFilter } from '@/atoms/app-mode'
+
 
 export type { InstalledPluginNavFilter } from '@/atoms/app-mode'
 

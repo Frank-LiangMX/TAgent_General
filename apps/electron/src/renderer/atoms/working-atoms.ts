@@ -7,6 +7,7 @@
 
 import { atom } from 'jotai'
 
+import type { AgentSessionMeta } from '@tagent/shared'
 import {
   agentSessionsAtom,
   agentSessionIndicatorMapAtom,
@@ -15,7 +16,6 @@ import {
 } from './agent-atoms'
 import { draftSessionIdsAtom } from './draft-session-atoms'
 
-import type { AgentSessionMeta } from '@tagent/shared'
 
 /** Working 区域三组会话 */
 export interface WorkingSessionGroups {

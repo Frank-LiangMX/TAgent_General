@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai'
 
 import { resolveAgentSessionModelId } from '@tagent/shared'
 
+import type { Channel } from '@tagent/shared'
 import {
   agentChannelIdAtom,
   agentModelIdAtom,
@@ -10,7 +11,6 @@ import {
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 
-import type { Channel } from '@tagent/shared'
 
 interface AgentSessionChannelModel {
   channelId: string | null

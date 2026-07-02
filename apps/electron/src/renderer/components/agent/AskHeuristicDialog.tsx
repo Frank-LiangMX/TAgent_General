@@ -14,7 +14,7 @@
 import { AlertTriangle, ArrowRight, MessageCircle, X } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 
 export type AskHeuristicChoice = 'switch' | 'ask' | 'cancel'
 

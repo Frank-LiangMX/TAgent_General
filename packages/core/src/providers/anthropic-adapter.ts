@@ -23,6 +23,7 @@
  * - UA 格式：`TAgent/<version> (+https://github.com/ErlichLiu/TAgent)`
  */
 
+import type { ProviderType } from '@tagent/shared'
 import { detectThinkingCapability } from './thinking-capability.ts'
 import { normalizeAnthropicProviderUrl } from './url-utils.ts'
 import { getTAgentUserAgent } from './user-agent.ts'
@@ -37,7 +38,6 @@ import type {
   ToolDefinition,
   ContinuationMessage,
 } from './types.ts'
-import type { ProviderType } from '@tagent/shared'
 
 // ===== Anthropic 特有类型 =====
 

@@ -10,6 +10,14 @@ import React, { useEffect, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
 import { toast } from 'sonner'
 
+import type {
+  FeishuBotBridgeState,
+  FeishuBridgeState,
+  DingTalkBotBridgeState,
+  DingTalkBridgeState,
+  WpsBridgeState,
+  WorkspaceCapabilities,
+} from '@tagent/shared'
 import App from './App'
 import { advancedMaterialEnabledAtom, initializeAdvancedMaterial } from './atoms/advanced-material'
 import {
@@ -63,14 +71,6 @@ import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
 
 import type { TabItem } from './atoms/tab-atoms'
-import type {
-  FeishuBotBridgeState,
-  FeishuBridgeState,
-  DingTalkBotBridgeState,
-  DingTalkBridgeState,
-  WpsBridgeState,
-  WorkspaceCapabilities,
-} from '@tagent/shared'
 
 import './styles/globals.css'
 import 'katex/dist/katex.min.css'

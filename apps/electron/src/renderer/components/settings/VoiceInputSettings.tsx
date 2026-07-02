@@ -7,23 +7,21 @@
  * - 底部：高级选项
  */
 
-import { ExternalLink, Loader2, TestTube2, Mic, MicOff, CheckCircle2, XCircle } from 'lucide-react'
+import { ChevronRight, ExternalLink, Loader2, TestTube2, Mic, MicOff } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import type { VoiceDictationSettings, MicPermissionResult } from '../../../types'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@tagent/ui'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+  SettingsCard,
+  SettingsInput,
+  SettingsRow,
+  SettingsSection,
+  SettingsSelect,
+  SettingsTextarea,
+  SettingsToggle,
+} from './primitives'
+import type { VoiceDictationSettings, MicPermissionResult } from '../../../types'
 import { cn } from '@/lib/utils'
 
 const ENDPOINT_OPTIONS = [
@@ -145,104 +143,89 @@ export function VoiceInputSettings(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* 状态卡片 */}
-      <div className="rounded-xl border border-border/50 p-4 space-y-4">
-        {/* 权限状态 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {micGranted ? (
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Mic className="size-4 text-emerald-600" />
-              </div>
-            ) : micPermission?.status === 'denied' ? (
-              <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                <MicOff className="size-4 text-red-600" />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Mic className="size-4 text-amber-600" />
-              </div>
-            )}
-            <div>
-              <div className="text-sm font-medium text-foreground">麦克风权限</div>
-              <div className="text-xs text-muted-foreground">
+      {/* 启用 + 权限 */}
+      <SettingsSection
+        title="语音输入"
+        description="Ctrl+～ 呼起浮窗，按住说话实时转写为文本。"
+      >
+        <SettingsCard>
+          <SettingsToggle
+            label="启用语音输入"
+            description="开启后可用全局快捷键呼起语音浮窗。"
+            checked={settings.enabled}
+            onCheckedChange={(enabled) => update({ enabled })}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsRow label="麦克风权限" icon={micGranted ? <Mic className="size-4" /> : <MicOff className="size-4" />}>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'text-xs',
+                  micGranted
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : micPermission?.status === 'denied'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                )}
+              >
                 {micGranted ? '已授权' : micPermission?.status === 'denied' ? '已被拒绝' : '未授权'}
-              </div>
+              </span>
+              {!micGranted && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRequestMicPermission}
+                  disabled={requestingPermission}
+                  className="h-7 text-xs"
+                >
+                  {requestingPermission ? <Loader2 className="size-3 animate-spin" /> : '授权'}
+                </Button>
+              )}
             </div>
-          </div>
-          {!micGranted && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRequestMicPermission}
-              disabled={requestingPermission}
-            >
-              {requestingPermission ? <Loader2 className="size-3 animate-spin" /> : '授权'}
-            </Button>
-          )}
-        </div>
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
 
-        {/* 启用开关 */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/50">
-          <div>
-            <div className="text-sm font-medium text-foreground">启用语音输入</div>
-            <div className="text-xs text-muted-foreground">Ctrl+～ 呼起浮窗</div>
-          </div>
-          <Switch checked={settings.enabled} onCheckedChange={(enabled) => update({ enabled })} />
-        </div>
-      </div>
-
-      {/* 凭证配置 */}
-      <div className="space-y-3">
-        <div className="text-sm font-medium text-foreground flex items-center justify-between">
-          火山引擎凭证
+      {/* 火山引擎凭证 */}
+      <SettingsSection
+        title="火山引擎凭证"
+        description="豆包语音识别 2.0，在控制台创建应用后填写凭证。"
+        action={
           <Button
             variant="outline"
             size="sm"
             onClick={handleTest}
             disabled={testing || !settings.appId || !settings.accessToken || !settings.resourceId}
+            className="h-8 text-xs"
           >
-            {testing ? (
-              <Loader2 className="size-3 animate-spin mr-1" />
-            ) : (
-              <TestTube2 className="size-3 mr-1" />
-            )}
+            {testing ? <Loader2 className="size-3 animate-spin mr-1" /> : <TestTube2 className="size-3 mr-1" />}
             测试
           </Button>
-        </div>
-        <div className="rounded-xl border border-border/50 p-4 space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">App ID</label>
-            <Input
-              value={settings.appId}
-              onChange={(e) => update({ appId: e.target.value })}
-              placeholder="填写火山引擎 APP ID"
-              className="h-9"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">Access Token</label>
-            <Input
-              value={settings.accessToken}
-              onChange={(e) => update({ accessToken: e.target.value })}
-              placeholder="填写 Access Token"
-              type="password"
-              className="h-9"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">Resource ID</label>
-            <Input
-              value={settings.resourceId}
-              onChange={(e) => update({ resourceId: e.target.value })}
-              placeholder="volc.seedasr.sauc.duration"
-              className="h-9"
-            />
-          </div>
-        </div>
-
-        {/* 配置引导 */}
-        <div className="text-xs text-muted-foreground rounded-lg bg-muted/30 px-3 py-2.5">
+        }
+      >
+        <SettingsCard>
+          <SettingsInput
+            label="App ID"
+            value={settings.appId}
+            onChange={(v) => update({ appId: v })}
+            placeholder="填写火山引擎 APP ID"
+          />
+          <SettingsInput
+            label="Access Token"
+            type="password"
+            value={settings.accessToken}
+            onChange={(v) => update({ accessToken: v })}
+            placeholder="填写 Access Token"
+          />
+          <SettingsInput
+            label="Resource ID"
+            value={settings.resourceId}
+            onChange={(v) => update({ resourceId: v })}
+            placeholder="volc.seedasr.sauc.duration"
+          />
+        </SettingsCard>
+        <div className="text-xs text-muted-foreground rounded-md bg-muted/30 px-3 py-2.5">
           打开
           <a
             href={VOLCENGINE_SPEECH_SERVICE_URL}
@@ -255,97 +238,56 @@ export function VoiceInputSettings(): React.ReactElement {
           </a>
           ，选择豆包语音识别 2.0，填写对应凭证
         </div>
-      </div>
+      </SettingsSection>
 
       {/* 高级选项 */}
-      <div className="space-y-3">
+      <SettingsSection title="高级选项">
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          className="flex w-full items-center gap-2 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <span className={cn('transition-transform', showAdvanced && 'rotate-90')}>▸</span>
-          高级选项
+          <ChevronRight className={cn('size-3 transition-transform', showAdvanced && 'rotate-90')} />
+          连接模式 / 识别语言 / 输出方式 / 自定义热词
         </button>
         {showAdvanced && (
-          <div className="rounded-xl border border-border/50 divide-y divide-border/50 animate-in slide-in-from-top-2 duration-200">
-            {/* 连接模式 */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="text-sm text-muted-foreground">连接模式</div>
-              <Select
-                value={settings.endpointMode}
-                onValueChange={(v) =>
-                  update({ endpointMode: v as VoiceDictationSettings['endpointMode'] })
-                }
-              >
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ENDPOINT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 识别语言 */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="text-sm text-muted-foreground">识别语言</div>
-              <Select
-                value={settings.language || 'auto'}
-                onValueChange={(v) => update({ language: v === 'auto' ? '' : v })}
-              >
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 输出方式 */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="text-sm text-muted-foreground">输出方式</div>
-              <Select
-                value={settings.outputMode}
-                onValueChange={(v) =>
-                  update({ outputMode: v as VoiceDictationSettings['outputMode'] })
-                }
-              >
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {OUTPUT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 自定义热词 */}
-            <div className="px-4 py-3">
-              <div className="text-sm text-muted-foreground mb-2">自定义热词</div>
-              <Textarea
-                value={settings.customHotwords}
-                onChange={(e) => update({ customHotwords: e.target.value })}
-                placeholder="每行一个词，用于改善产品名、技术词识别"
-                className="min-h-[80px] text-xs"
-              />
-            </div>
-          </div>
+          <SettingsCard>
+            <SettingsSelect
+              label="连接模式"
+              description="优化版推荐；标准版兼容性更好但延迟略高。"
+              value={settings.endpointMode}
+              onValueChange={(v) =>
+                update({ endpointMode: v as VoiceDictationSettings['endpointMode'] })
+              }
+              options={ENDPOINT_OPTIONS}
+            />
+            <SettingsSelect
+              label="识别语言"
+              description="自动识别会根据内容判断语言。"
+              value={settings.language || 'auto'}
+              onValueChange={(v) => update({ language: v === 'auto' ? '' : v })}
+              options={LANGUAGE_OPTIONS}
+            />
+            <SettingsSelect
+              label="输出方式"
+              description="自动：识别后同时写入剪贴板和输入框。"
+              value={settings.outputMode}
+              onValueChange={(v) =>
+                update({ outputMode: v as VoiceDictationSettings['outputMode'] })
+              }
+              options={OUTPUT_OPTIONS}
+            />
+            <SettingsTextarea
+              label="自定义热词"
+              description="每行一个词，用于改善产品名、技术词识别准确率。"
+              value={settings.customHotwords}
+              onChange={(v) => update({ customHotwords: v })}
+              placeholder="每行一个词，用于改善产品名、技术词识别"
+              minHeight={80}
+            />
+          </SettingsCard>
         )}
-      </div>
+      </SettingsSection>
 
       {saving && <p className="text-xs text-muted-foreground">正在保存...</p>}
     </div>

@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
+import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
+import { Alert, AlertDescription , Badge , Button } from '@tagent/ui'
 import tagentLogo from '../../../../resources/icon.png'
 import tagentLogoDefaultLight from '../../../../resources/tagent-logo-proposals-v2/tagent-default-light.png'
 import tagentLogoDefaultDark from '../../../../resources/tagent-logo-proposals-v2/tagent-default-dark.png'
@@ -41,7 +43,6 @@ import tagentLogoPurpleDark from '../../../../resources/tagent-logo-proposals-v2
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
-import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
 
 import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import {
@@ -53,9 +54,6 @@ import {
 import { themeLogoKeyAtom } from '@/atoms/theme'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
 import { formatBytes } from '@/lib/format-bytes'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 /** 主题 logo key → 资源 映射表，随 themeLogoKeyAtom 切换 */

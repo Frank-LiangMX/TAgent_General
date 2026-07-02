@@ -11,9 +11,6 @@ import type { BuiltinMcpCatalogEntry, PluginStoreCatalog } from '@tagent/shared'
 import { Button, SearchInput, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import { useAtomValue } from 'jotai'
 
-import { pluginSidebarSectionAtom } from '@/atoms/app-mode'
-import type { PluginSidebarSection } from '@/atoms/app-mode'
-import { cn } from '@/lib/utils'
 
 import { PluginMarketplaceBundleDetail } from './PluginMarketplaceBundleDetail'
 import { PluginMarketplaceDetail } from './PluginMarketplaceDetail'
@@ -36,6 +33,9 @@ import {
   sortMarketplaceBundles,
   sortMarketplaceItems,
 } from './plugin-marketplace-shared'
+import { cn } from '@/lib/utils'
+import type { PluginSidebarSection } from '@/atoms/app-mode'
+import { pluginSidebarSectionAtom } from '@/atoms/app-mode'
 
 type StoreSelection = { kind: 'bundle'; id: string } | { kind: 'skill' | 'mcp'; id: string }
 

@@ -13,8 +13,6 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { safeStorage } from 'electron'
 
-import { getDingTalkConfigPath } from './config-paths'
-
 import type {
   DingTalkConfig,
   DingTalkConfigInput,
@@ -22,6 +20,8 @@ import type {
   DingTalkMultiBotConfig,
   DingTalkBotConfigInput,
 } from '@tagent/shared'
+import { getDingTalkConfigPath } from './config-paths'
+
 
 // ===== 加密/解密 =====
 

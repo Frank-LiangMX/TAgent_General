@@ -1,8 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
-import { getToolDisplayName, getToolIcon } from './tool-utils'
-
 import type {
   SDKContentBlock,
   SDKMessage,
@@ -10,6 +8,8 @@ import type {
   SDKToolUseBlock,
   SDKUserMessage,
 } from '@tagent/shared'
+import { getToolDisplayName, getToolIcon } from './tool-utils'
+
 
 import { cn } from '@/lib/utils'
 

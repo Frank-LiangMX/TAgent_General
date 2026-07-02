@@ -9,14 +9,7 @@ import { useAtom, useSetAtom } from 'jotai'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as React from 'react'
 
-import { ChannelForm } from './ChannelForm'
-import { KsccChannelForm } from './KsccChannelForm'
-import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
-
 import type { Channel, ModelSpeedTestResult } from '@tagent/shared'
-
-import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
-import { channelsAtom, speedTestResultsAtom } from '@/atoms/model-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,14 +19,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { KsccInstallGuide } from '@/components/agent/KsccInstallGuide'
-import { getChannelLogo } from '@/lib/model-logo'
+ Button , Switch , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { ChannelForm } from './ChannelForm'
+import { KsccChannelForm } from './KsccChannelForm'
+import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
+
+
 import { SpeedTestBadge } from './SpeedTestBadge'
 import { SpeedTestPopover } from './SpeedTestPopover'
+import { agentChannelIdAtom, agentModelIdAtom, agentChannelIdsAtom } from '@/atoms/agent-atoms'
+import { channelsAtom, speedTestResultsAtom } from '@/atoms/model-atoms'
+import { KsccInstallGuide } from '@/components/agent/KsccInstallGuide'
+import { getChannelLogo } from '@/lib/model-logo'
 
 /** 组件视图模式 */
 type ViewMode = 'list' | 'create' | 'edit' | 'edit-kscc'

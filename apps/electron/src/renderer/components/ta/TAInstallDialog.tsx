@@ -9,16 +9,16 @@ import { Circle, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-rea
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+  ScrollArea,
+} from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 /** 安装阶段（与 installer 保持一致） */

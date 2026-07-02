@@ -9,11 +9,11 @@
 import { useStore } from 'jotai'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import type { PreviewFile } from '@/atoms/preview-atoms'
 import { openPreview } from '@/components/diff/preview-opener'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** 文件存在性缓存（模块级共享，避免重复 IPC）。key = filePath + basePaths */

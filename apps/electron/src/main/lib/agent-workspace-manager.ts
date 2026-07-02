@@ -23,6 +23,28 @@ import {
 } from 'node:fs'
 import { join, resolve, relative, isAbsolute, dirname, basename } from 'node:path'
 
+import type {
+  AgentWorkspace,
+  WorkspaceMcpConfig,
+  SkillMeta,
+  SkillImportSource,
+  WorkspaceCapabilities,
+  SkillFileNode,
+  SkillFileContent,
+  PluginStoreCatalog,
+  PluginStoreSkillInstallSpec,
+  InstallStoreBundleResult,
+  WorkspacePluginsInstalledManifest,
+} from '@tagent/shared'
+import {
+  BUILTIN_MCP_CATALOG,
+  PREINSTALLED_SKILL_SLUGS,
+  buildPluginStoreCatalog,
+  getStoreSkillCatalogEntry,
+  getStorePluginBundle,
+  mcpCatalogEntryToServerEntry,
+  createEmptyPluginsInstalledManifest,
+} from '@tagent/shared'
 import {
   getAgentWorkspacesIndexPath,
   getAgentWorkspacePath,
@@ -36,28 +58,6 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-import type {
-  AgentWorkspace,
-  WorkspaceMcpConfig,
-  SkillMeta,
-  SkillImportSource,
-  WorkspaceCapabilities,
-  SkillFileNode,
-  SkillFileContent,
-  PluginStoreCatalog,
-  PluginStoreSkillInstallSpec,
-  InstallStoreBundleResult,
-} from '@tagent/shared'
-import {
-  BUILTIN_MCP_CATALOG,
-  PREINSTALLED_SKILL_SLUGS,
-  buildPluginStoreCatalog,
-  getStoreSkillCatalogEntry,
-  getStorePluginBundle,
-  mcpCatalogEntryToServerEntry,
-  type WorkspacePluginsInstalledManifest,
-  createEmptyPluginsInstalledManifest,
-} from '@tagent/shared'
 
 interface AgentWorkspacesIndex {
   version: number

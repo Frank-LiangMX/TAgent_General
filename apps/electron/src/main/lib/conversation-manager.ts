@@ -17,6 +17,12 @@ import {
 } from 'node:fs'
 import { createInterface } from 'node:readline'
 
+import type {
+  ConversationMeta,
+  ChatMessage,
+  RecentMessagesResult,
+  MessageSearchResult,
+} from '@tagent/shared'
 import { deleteConversationAttachments, deleteAttachment } from './attachment-service'
 import {
   getConversationsIndexPath,
@@ -25,12 +31,6 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-import type {
-  ConversationMeta,
-  ChatMessage,
-  RecentMessagesResult,
-  MessageSearchResult,
-} from '@tagent/shared'
 
 /**
  * 对话索引文件格式

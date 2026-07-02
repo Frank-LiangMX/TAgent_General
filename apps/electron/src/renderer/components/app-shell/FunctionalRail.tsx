@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   topLevelModeAtom,
   activeRailItemAtom,
@@ -41,7 +42,6 @@ import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { UserAvatar } from '@/components/shared/UserAvatar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 

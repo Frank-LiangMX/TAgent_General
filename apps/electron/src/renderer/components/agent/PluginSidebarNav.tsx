@@ -17,9 +17,6 @@ import * as React from 'react'
 
 import type { PluginStoreCatalog, WorkspaceCapabilities } from '@tagent/shared'
 
-import { installedPluginNavAtom, pluginSidebarSectionAtom } from '@/atoms/app-mode'
-import type { PluginSidebarSection } from '@/atoms/app-mode'
-import { cn } from '@/lib/utils'
 
 import { groupInstalledPlugins } from './installed-plugins-grouping'
 import {
@@ -30,6 +27,9 @@ import {
 import { PluginNavItem, PluginNavSlideList } from './PluginNavSlideList'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import { PLUGIN_SECTION_LABELS } from './plugin-marketplace-shared'
+import { cn } from '@/lib/utils'
+import type { PluginSidebarSection } from '@/atoms/app-mode'
+import { installedPluginNavAtom, pluginSidebarSectionAtom } from '@/atoms/app-mode'
 
 interface PluginSidebarNavProps {
   capabilities: WorkspaceCapabilities | null

@@ -7,10 +7,10 @@
 import { RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import * as React from 'react'
 
+import type { GitHubRelease } from '@tagent/shared'
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
-import type { GitHubRelease } from '@tagent/shared'
 
 /**
  * VersionHistory 组件

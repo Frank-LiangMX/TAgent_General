@@ -13,8 +13,6 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { safeStorage } from 'electron'
 
-import { getFeishuConfigPath } from './config-paths'
-
 import type {
   FeishuConfig,
   FeishuConfigInput,
@@ -22,6 +20,8 @@ import type {
   FeishuMultiBotConfig,
   FeishuBotConfigInput,
 } from '@tagent/shared'
+import { getFeishuConfigPath } from './config-paths'
+
 
 // ===== 加密/解密 =====
 

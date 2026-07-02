@@ -99,7 +99,7 @@ function pythonProjectHasConfig(pyDir: string): boolean {
  * @returns 找到的目录绝对路径；找不到返回 null
  */
 function findProjectRoot(filePath: string, markerFiles: string[]): string | null {
-  let dir = dirname(filePath)
+  const dir = dirname(filePath)
   for (let d = dir; d && d !== dirname(d); d = dirname(d)) {
     if (markerFiles.some((f) => existsSync(join(d, f)))) return d
   }

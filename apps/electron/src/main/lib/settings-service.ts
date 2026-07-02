@@ -7,10 +7,10 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-import { getSettingsPath } from './config-paths'
 import { DEFAULT_THEME_MODE } from '../../types'
 
 import type { AppSettings } from '../../types'
+import { getSettingsPath } from './config-paths'
 
 /**
  * 获取应用设置

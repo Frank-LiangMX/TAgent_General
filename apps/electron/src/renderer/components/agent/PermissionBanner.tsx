@@ -14,14 +14,13 @@ import * as React from 'react'
 
 import type { DangerLevel, PermissionRequest } from '@tagent/shared'
 
+import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   allPendingPermissionRequestsAtom,
   agentStreamingStatesAtom,
   agentAttachedDirectoriesMapAtom,
   finalizeStreamingActivities,
 } from '@/atoms/agent-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 危险等级对应的图标颜色 */
 const DANGER_ICON_STYLES: Record<DangerLevel, string> = {

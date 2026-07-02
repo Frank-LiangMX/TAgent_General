@@ -26,6 +26,7 @@ import {
 } from '@tagent/ui'
 import type { KanbanBoardMode } from '@tagent/shared'
 
+import { KanbanCreateBoardDialog } from './KanbanCreateBoardDialog'
 import {
   useKanbanBoards,
   kanbanBoardsFilterAtom,
@@ -33,7 +34,6 @@ import {
 } from '@/atoms/kanban-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
-import { KanbanCreateBoardDialog } from './KanbanCreateBoardDialog'
 /** 看板列表项 */
 function KanbanBoardItem({
   board,

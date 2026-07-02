@@ -25,6 +25,7 @@ import { join, resolve, relative, isAbsolute, sep } from 'node:path'
 import AdmZip from 'adm-zip'
 import { safeStorage } from 'electron'
 
+import type { AgentWorkspace } from '@tagent/shared'
 import {
   listAgentWorkspaces,
   getAgentWorkspace,
@@ -51,7 +52,6 @@ import {
   getChatToolsConfigPath,
 } from './config-paths'
 
-import type { AgentWorkspace } from '@tagent/shared'
 
 // ─── 类型定义 ────────────────────────────────────────────────────────────────
 

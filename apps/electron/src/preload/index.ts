@@ -31,37 +31,6 @@ import {
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
-import {
-  USER_PROFILE_IPC_CHANNELS,
-  SETTINGS_IPC_CHANNELS,
-  APP_ICON_IPC_CHANNELS,
-  DOCK_BADGE_IPC_CHANNELS,
-  STORAGE_IPC_CHANNELS,
-  QUICK_TASK_IPC_CHANNELS,
-  TRAY_IPC_CHANNELS,
-  VOICE_DICTATION_IPC_CHANNELS,
-} from '../types'
-
-import type {
-  UserProfile,
-  AppSettings,
-  QuickTaskSubmitInput,
-  QuickTaskOpenSessionData,
-  VoiceDictationAudioChunkInput,
-  VoiceDictationCommitInput,
-  VoiceDictationCommitResult,
-  VoiceDictationResizeInput,
-  VoiceDictationSettings,
-  VoiceDictationSettingsUpdate,
-  VoiceDictationStartInput,
-  VoiceDictationStateEvent,
-  VoiceDictationStopInput,
-  VoiceDictationTestResult,
-  VoiceDictationTranscriptEvent,
-  MicPermissionResult,
-  TrayCreateSessionData,
-  TrayOpenAgentSessionData,
-} from '../types'
 import type {
   RuntimeStatus,
   GitRepoStatus,
@@ -165,6 +134,37 @@ import type {
   AskStreamSwitchSuggestionEvent,
   ComposerMode,
 } from '@tagent/shared'
+import {
+  USER_PROFILE_IPC_CHANNELS,
+  SETTINGS_IPC_CHANNELS,
+  APP_ICON_IPC_CHANNELS,
+  DOCK_BADGE_IPC_CHANNELS,
+  STORAGE_IPC_CHANNELS,
+  QUICK_TASK_IPC_CHANNELS,
+  TRAY_IPC_CHANNELS,
+  VOICE_DICTATION_IPC_CHANNELS,
+} from '../types'
+
+import type {
+  UserProfile,
+  AppSettings,
+  QuickTaskSubmitInput,
+  QuickTaskOpenSessionData,
+  VoiceDictationAudioChunkInput,
+  VoiceDictationCommitInput,
+  VoiceDictationCommitResult,
+  VoiceDictationResizeInput,
+  VoiceDictationSettings,
+  VoiceDictationSettingsUpdate,
+  VoiceDictationStartInput,
+  VoiceDictationStateEvent,
+  VoiceDictationStopInput,
+  VoiceDictationTestResult,
+  VoiceDictationTranscriptEvent,
+  MicPermissionResult,
+  TrayCreateSessionData,
+  TrayOpenAgentSessionData,
+} from '../types'
 
 // 资产库相关类型（从主进程服务导出）
 interface ListAssetsParams {

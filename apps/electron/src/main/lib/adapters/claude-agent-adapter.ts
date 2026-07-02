@@ -15,12 +15,6 @@ import {
   pickResultContextWindow,
 } from '@tagent/shared'
 
-import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-spawn'
-import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
-import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
-import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
-
-import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 import type {
   AgentQueryInput,
   AgentProviderAdapter,
@@ -36,6 +30,12 @@ import type {
   TAgentPermissionMode,
   ContextUsageSnapshot,
 } from '@tagent/shared'
+import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-spawn'
+import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
+import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
+import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
+
+import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 
 /** SDK Query 对象类型（从动态导入中推断） */
 type SDKQuery = ReturnType<typeof import('@anthropic-ai/claude-agent-sdk').query>

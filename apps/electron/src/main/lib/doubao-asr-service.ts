@@ -10,6 +10,7 @@ import { gzipSync, gunzipSync } from 'node:zlib'
 
 import WebSocket from 'ws'
 
+import type { BrowserWindow } from 'electron'
 import { VOICE_DICTATION_IPC_CHANNELS } from '../../types'
 
 import type {
@@ -17,7 +18,6 @@ import type {
   VoiceDictationTranscriptEvent,
   VoiceDictationStateEvent,
 } from '../../types'
-import type { BrowserWindow } from 'electron'
 
 const PROTOCOL_VERSION = 0b0001
 const HEADER_SIZE = 0b0001

@@ -36,11 +36,6 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SearchDialog } from './SearchDialog'
-import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
-
-import type { ActiveView } from '@/atoms/active-view'
-import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import { resolveAgentSessionModelId } from '@tagent/shared'
 import type {
   ConversationMeta,
@@ -48,6 +43,31 @@ import type {
   WorkspaceCapabilities,
   AgentWorkspace,
 } from '@tagent/shared'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator, Popover, PopoverTrigger, PopoverContent , Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
+import { SearchDialog } from './SearchDialog'
+import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
+
+import type { ActiveView } from '@/atoms/active-view'
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 
 // ===== 项目分组类型 =====
 interface AgentProjectGroup {
@@ -97,7 +117,7 @@ import {
   backgroundTasksAtomFamily,
   sessionPersistedPermissionModeAtom,
   sessionExistsAtom,
-} from '@/atoms/agent-atoms'
+ conversationsAtom } from '@/atoms/agent-atoms'
 import {
   appModeAtom,
   activeRailItemAtom,
@@ -106,7 +126,6 @@ import {
   type RailItem,
   type TARailItem,
 } from '@/atoms/app-mode'
-import { conversationsAtom } from '@/atoms/agent-atoms'
 import { channelsAtom, selectedModelAtom } from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
@@ -144,49 +163,13 @@ import {
 import { TASidebar } from '@/components/ta/TASidebar'
 import { automationsAtom } from '@/atoms/automation-atoms'
 import { AutomationRailList } from '@/components/automation/AutomationRailList'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from '@/components/ui/context-menu'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useOpenSession } from '@/hooks/useOpenSession'
-import {
-  sessionListItemSelector,
-  useSessionListSlideIndicator,
-} from '@/hooks/useSessionListSlideIndicator'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import {
   replaceAgentSessionInFreshnessOrder,
   sortAgentSessionsByUpdatedAtDesc,
 } from '@/lib/agent-session-list'
-import {
-  LIST_SLIDE_HOST_CLASS,
-  LIST_SLIDE_INDICATOR_CLASS,
-  LIST_SLIDE_ITEM_GHOST_CLASS,
-  LIST_SLIDE_ITEM_SELECTED_CLASS,
-} from '@/lib/list-slide-selection'
 import { detectIsMac } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
@@ -406,7 +389,7 @@ export function LeftSidebar({
   React.useEffect(() => {
     if (!activeSessionId) return
     requestAnimationFrame(() => {
-      const el = document.querySelector(sessionListItemSelector(activeSessionId))
+      const el = document.querySelector(`[data-session-list-id="${activeSessionId}"]`)
       el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     })
   }, [activeSessionId])
@@ -1161,6 +1144,23 @@ export function LeftSidebar({
     }))
   }, [currentModeAgentSessions, draftSessionIds, workspaces])
 
+  // 选中会话变化时，如果新选中的会话在某个折叠的 group 里，自动展开该 group
+  // 避免顶栏 tab 切到折叠会话时 sidebar 找不到选中项
+  React.useEffect(() => {
+    if (!activeSessionId) return
+    const groupWithActive = agentProjectGroups.find((g) =>
+      g.sessions.some((s) => s.id === activeSessionId)
+    )
+    if (!groupWithActive) return
+    const wsId = groupWithActive.workspace.id
+    setCollapsedWorkspaceIds((prev) => {
+      if (!prev.has(wsId)) return prev
+      const next = new Set(prev)
+      next.delete(wsId)
+      return next
+    })
+  }, [activeSessionId, agentProjectGroups, setCollapsedWorkspaceIds])
+
   // 删除确认弹窗（collapsed/expanded 共享）
   const deleteDialog = (
     <AlertDialog
@@ -1607,81 +1607,12 @@ function SessionsRailContent({
   )
 
   const listRef = React.useRef<HTMLDivElement>(null)
-  const sessionLayoutKey = [
-    ...pinnedAgentSessions.map((s) => s.id),
-    ...agentProjectGroups.flatMap((g) => g.sessions.map((s) => s.id)),
-  ].join('|')
-
-  // 活跃会话是否在可见列表中（折叠的项目其会话不在 DOM 中）
-  const isActiveSessionVisible = activeSessionId
-    ? pinnedAgentSessions.some((s) => s.id === activeSessionId) ||
-      agentProjectGroups.some(
-        (g) =>
-          !collapsedWorkspaceIds.has(g.workspace.id) &&
-          g.sessions.some((s) => s.id === activeSessionId)
-      )
-    : false
-
-  const { plateStyle, accentStyle } = useSessionListSlideIndicator(
-    listRef,
-    isActiveSessionVisible ? activeSessionId : null,
-    sessionLayoutKey
-  )
-  const activeSession = activeSessionId
-    ? store.get(agentSessionsAtom).find((s) => s.id === activeSessionId)
-    : undefined
-  const activeAccent = activeSessionId
-    ? getSessionLeftAccent(
-        agentIndicatorMap.get(activeSessionId) ?? 'idle',
-        true,
-        activeSession?.manualWorking
-      )
-    : undefined
 
   return (
     <div
       ref={listRef}
-      className={cn(
-        'flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative',
-        LIST_SLIDE_HOST_CLASS
-      )}
+      className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative"
     >
-      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        {plateStyle && <div className={LIST_SLIDE_INDICATOR_CLASS} style={plateStyle} />}
-        {accentStyle && activeAccent && (
-          <>
-            <div
-              className={cn(
-                'sidebar-session-slide-accent session-sidebar-accent rounded-full',
-                SESSION_LEFT_ACCENT_CLASS[activeAccent],
-                activeAccent === 'blue' && 'animate-pulse'
-              )}
-              style={accentStyle}
-            />
-            {activeAccent === 'amber' && (
-              <Timer
-                size={12}
-                className="absolute z-[2] text-amber-600 dark:text-amber-300"
-                style={{
-                  left: `${Number(accentStyle.left || 0) + 4}px`,
-                  top: `${Number(accentStyle.top || 0) + Number(accentStyle.height || 0) / 2 - 6}px`,
-                }}
-              />
-            )}
-            {activeAccent === 'primary' && activeSession?.pinned && (
-              <Pin
-                size={11}
-                className="absolute z-[2] text-primary/60"
-                style={{
-                  left: `${Number(accentStyle.left || 0) + 4}px`,
-                  top: `${Number(accentStyle.top || 0) + Number(accentStyle.height || 0) / 2 - 5.5}px`,
-                }}
-              />
-            )}
-          </>
-        )}
-      </div>
-
       <div className="relative z-10">
         {/* 置顶分区 */}
         {pinnedAgentSessions.length > 0 && (
@@ -1697,7 +1628,6 @@ function SessionsRailContent({
                   session={session}
                   active={session.id === activeSessionId}
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
-                  useListSlideIndicator
                   leftAccent={getSessionLeftAccent(
                     agentIndicatorMap.get(session.id) ?? 'idle',
                     session.id === activeSessionId,
@@ -1898,9 +1828,7 @@ const ConversationItem = React.memo(function ConversationItem({
           }}
           className={cn(
             'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-all duration-150 titlebar-no-drag text-left',
-            active
-              ? 'session-item-selected session-glass session-glass-sidebar'
-              : 'rounded-md hover:bg-primary/5'
+            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
           )}
         >
           {/* 流式状态左侧竖线条（与 Agent 保持一致） */}
@@ -2003,8 +1931,6 @@ interface AgentSessionItemProps {
   disableMiniMap?: boolean
   /** 工作区名称 Badge（跨工作区列表时显示） */
   workspaceName?: string
-  /** 父级列表绘制滑动指示器时，本项不再铺选中玻璃底 */
-  useListSlideIndicator?: boolean
   /** 子行扩展样式 */
   childClassName?: string
   onSelect: (id: string, title: string) => void
@@ -2041,7 +1967,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   leftAccent,
   disableMiniMap,
   workspaceName,
-  useListSlideIndicator = false,
   childClassName,
   onSelect,
   onConfirmDone,
@@ -2156,14 +2081,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  // 滑动指示器接管选中态竖条/图标时，行内仍保留同宽占位，避免文本位移
-  const showSlideAccent = active && useListSlideIndicator
-  const showPrefixIcon =
-    !showSlideAccent &&
-    !active &&
-    (session.manualWorking || (session.pinned && !session.manualWorking))
-  // 工作中 normal 态：仅图标，不显示竖条
-  const showInlineAccent = !showSlideAccent && !!leftAccent && !(session.manualWorking && !active)
+  // 非选中态需要前缀图标（工作中 / 置顶）
+  const showPrefixIcon = !active && (session.manualWorking || (session.pinned && !session.manualWorking))
+  // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）
+  const showInlineAccent = !!leftAccent && !(session.manualWorking && !active)
 
   return (
     <ContextMenu>
@@ -2183,16 +2104,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           className={cn(
             'group relative w-full flex items-center gap-1 py-[7px] px-1 transition-colors duration-150 titlebar-no-drag text-left',
             childClassName,
-            active
-              ? useListSlideIndicator
-                ? cn(
-                    'session-item-selected session-item-selected--ghost',
-                    LIST_SLIDE_ITEM_SELECTED_CLASS,
-                    LIST_SLIDE_ITEM_GHOST_CLASS,
-                    'rounded-[10px] z-10'
-                  )
-                : 'session-item-selected session-glass session-glass-sidebar'
-              : 'rounded-md hover:bg-primary/5'
+            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
           )}
         >
           {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后 */}
@@ -2427,6 +2339,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
     activeSessionId && !activeIds.has(activeSessionId) && !fillIds.has(activeSessionId)
       ? (group.sessions.find((s) => s.id === activeSessionId) ?? null)
       : null
+  // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
+  const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
 
   const collapsedSessions = [
     ...activeSessions,
@@ -2468,7 +2382,10 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
           <button
             type="button"
             aria-expanded={!collapsed}
-            onClick={() => onSelectProject(group.workspace.id)}
+            onClick={() => {
+              if (hasActiveSession) return  // 选中会话所在 group 不响应折叠点击
+              onSelectProject(group.workspace.id)
+            }}
             className={cn(
               'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-colors titlebar-no-drag group-hover/project:pr-11 hover:bg-foreground/[0.025]',
               isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
@@ -2482,13 +2399,15 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
               {group.workspace.name}
             </span>
-            <ChevronRight
-              size={12}
-              className={cn(
-                'flex-shrink-0 text-foreground/30 transition-transform duration-150',
-                collapsed ? '-rotate-90' : 'rotate-90'
-              )}
-            />
+            {!hasActiveSession && (
+              <ChevronRight
+                size={12}
+                className={cn(
+                  'flex-shrink-0 text-foreground/30 transition-transform duration-150',
+                  collapsed ? '-rotate-90' : 'rotate-90'
+                )}
+              />
+            )}
           </button>
         )}
 
@@ -2568,7 +2487,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   key={session.id}
                   session={session}
                   active={session.id === activeSessionId}
-                  useListSlideIndicator
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
                   showPinIcon={!!session.pinned}
                   leftAccent={getSessionLeftAccent(

@@ -17,8 +17,6 @@ import { extname, basename, join, isAbsolute, normalize } from 'node:path'
 import { MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { dialog, BrowserWindow } from 'electron'
 
-import { getConfigDir, getConversationAttachmentsDir, resolveAttachmentPath } from './config-paths'
-
 import type {
   FileAttachment,
   AttachmentSaveInput,
@@ -28,6 +26,8 @@ import type {
   FileDialogLargeFile,
   FileDialogSkippedFile,
 } from '@tagent/shared'
+import { getConfigDir, getConversationAttachmentsDir, resolveAttachmentPath } from './config-paths'
+
 
 /** 支持的图片 MIME 类型 */
 const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])

@@ -5,19 +5,19 @@
 import { Check, Clipboard, Loader2, Mic, Square, X } from 'lucide-react'
 import * as React from 'react'
 
-import { useVoiceWindowLayout } from './use-voice-window-layout'
-import { CHUNK_BYTES, concatAudioBuffers, floatTo16BitPcm, splitChunk } from './voice-audio-utils'
-import { mergeVoiceDictationTranscript } from './voice-transcript-merge'
-
-import type { VoiceDictationTranscriptMergeState } from './voice-transcript-merge'
+import { Button } from '@tagent/ui'
 import type {
   VoiceDictationCommitResult,
   VoiceDictationSettings,
   VoiceDictationStateEvent,
   VoiceDictationTranscriptEvent,
 } from '../../../types'
+import { useVoiceWindowLayout } from './use-voice-window-layout'
+import { CHUNK_BYTES, concatAudioBuffers, floatTo16BitPcm, splitChunk } from './voice-audio-utils'
+import { mergeVoiceDictationTranscript } from './voice-transcript-merge'
 
-import { Button } from '@/components/ui/button'
+import type { VoiceDictationTranscriptMergeState } from './voice-transcript-merge'
+
 
 const MAX_QUEUED_CHUNKS = 60
 const STOP_COMMIT_TIMEOUT_MS = 1400

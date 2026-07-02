@@ -12,6 +12,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
+import { RequirementList } from './RequirementList'
 import {
   currentDraftContextAtom,
   currentDraftRequirementsAtom,
@@ -30,7 +31,6 @@ import {
 } from '@/components/diff/markdown-preview-extensions'
 import { lowlight } from '@/lib/lowlight'
 
-import { RequirementList } from './RequirementList'
 
 export function DraftEditor(): React.ReactElement {
   const [context, setContext] = useAtom(currentDraftContextAtom)

@@ -12,8 +12,6 @@ import { useEffect } from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { toast } from 'sonner'
 
-import type { AgentStreamState } from '@/atoms/agent-atoms'
-import type { NotificationSoundType } from '@/types/settings'
 import type {
   AgentStreamEvent,
   AgentStreamCompletePayload,
@@ -35,6 +33,8 @@ import {
   sumContextUsedTokens,
   resolveAgentSessionModelId,
 } from '@tagent/shared'
+import type { AgentStreamState } from '@/atoms/agent-atoms'
+import type { NotificationSoundType } from '@/types/settings'
 
 import {
   agentStreamingStatesAtom,

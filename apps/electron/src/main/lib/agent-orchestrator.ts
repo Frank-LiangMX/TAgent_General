@@ -39,6 +39,25 @@ import {
 } from '@tagent/shared'
 import { app, BrowserWindow } from 'electron'
 
+import type {
+  PermissionRequest,
+  TAgentPermissionMode,
+  AskUserRequest,
+  ExitPlanModeRequest,
+  AgentSendInput,
+  AgentMessage,
+  AgentGenerateTitleInput,
+  AgentProviderAdapter,
+  AgentSessionMeta,
+  TypedError,
+  RetryAttempt,
+  SDKMessage,
+  SDKAssistantMessage,
+  RewindSessionResult,
+  SdkBeta,
+  ProviderType,
+} from '@tagent/shared'
+import pkg from '../../../package.json' with { type: 'json' }
 import {
   isPromptTooLongError,
   isThinkingSignatureError,
@@ -100,28 +119,9 @@ import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getRuntimeStatus } from './runtime-init'
 import { getSettings } from './settings-service'
-import pkg from '../../../package.json' with { type: 'json' }
 
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
 import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
-import type {
-  PermissionRequest,
-  TAgentPermissionMode,
-  AskUserRequest,
-  ExitPlanModeRequest,
-  AgentSendInput,
-  AgentMessage,
-  AgentGenerateTitleInput,
-  AgentProviderAdapter,
-  AgentSessionMeta,
-  TypedError,
-  RetryAttempt,
-  SDKMessage,
-  SDKAssistantMessage,
-  RewindSessionResult,
-  SdkBeta,
-  ProviderType,
-} from '@tagent/shared'
 
 // ===== 类型定义 =====
 

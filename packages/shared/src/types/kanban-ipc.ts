@@ -5,8 +5,7 @@
  * 通道命名与 automation 一致：动词:名词 形式，CHANGED 为 main→renderer 广播。
  */
 
-import type { KanbanBoard, KanbanBoardMode, KanbanBoardStatus, KanbanTask } from './kanban'
-import type { CreateKanbanTaskInput } from './kanban'
+import type { KanbanBoard, KanbanBoardMode, KanbanBoardStatus, KanbanTask , CreateKanbanTaskInput } from './kanban'
 
 /** Kanban 相关 IPC 通道常量 */
 export const KANBAN_IPC_CHANNELS = {

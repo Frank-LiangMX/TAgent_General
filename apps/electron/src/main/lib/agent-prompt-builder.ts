@@ -11,12 +11,12 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
+import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
 import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
 import { getWorkspaceMcpConfig } from './agent-workspace-manager'
 import { getConfigDirName, getSoulPath, getTaSoulPath } from './config-paths'
 import { getUserProfile } from './user-profile-service'
 
-import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
 
 // ===== SOUL.md 默认内容 =====
 

@@ -11,12 +11,11 @@ import * as React from 'react'
 
 import type { DraftDocument } from '@tagent/shared'
 
+import { Dialog, DialogContent, DialogTitle , SearchInput } from '@tagent/ui'
+import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { SearchInput } from '@/components/ui/search-input'
 import { cn } from '@/lib/utils'
-import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 
 /** 简单的 HTML → 纯文本提取（复用 draft-prompt-builder 的逻辑） */
 function stripHtml(html: string): string {

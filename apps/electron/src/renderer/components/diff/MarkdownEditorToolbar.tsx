@@ -25,10 +25,7 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Button , Popover, PopoverTrigger, PopoverContent , Separator , Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface MarkdownEditorToolbarProps {

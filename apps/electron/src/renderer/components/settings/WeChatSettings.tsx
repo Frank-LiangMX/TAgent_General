@@ -10,14 +10,12 @@ import { Loader2, Power, PowerOff, LogOut, QrCode, ExternalLink } from 'lucide-r
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsRow } from './primitives/SettingsRow'
-import { SettingsSection } from './primitives/SettingsSection'
-
 import type { WeChatBridgeStatus } from '@tagent/shared'
+import { Button } from '@tagent/ui'
+import { SettingsCard , SettingsRow , SettingsSection } from './primitives'
+
 
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
-import { Button } from '@/components/ui/button'
 
 /** 安全地用系统浏览器打开链接 */
 function openLink(url: string): void {

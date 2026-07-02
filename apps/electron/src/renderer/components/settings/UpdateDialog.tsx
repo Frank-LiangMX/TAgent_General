@@ -11,12 +11,7 @@ import { useAtomValue } from 'jotai'
 import { RotateCw } from 'lucide-react'
 import * as React from 'react'
 
-import { ReleaseNotesViewer } from './ReleaseNotesViewer'
-
 import type { GitHubRelease } from '@tagent/shared'
-
-import { updateStatusAtom } from '@/atoms/updater'
-import { formatBytes } from '@/lib/format-bytes'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,7 +21,12 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/alert-dialog'
+} from '@tagent/ui'
+import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+
+
+import { updateStatusAtom } from '@/atoms/updater'
+import { formatBytes } from '@/lib/format-bytes'
 
 export function UpdateDialog(): React.ReactElement | null {
   const updateStatus = useAtomValue(updateStatusAtom)

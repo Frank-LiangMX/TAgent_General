@@ -9,6 +9,7 @@ import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { Loader2, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
+import { Button } from '@tagent/ui'
 import { EnvironmentCheckCard } from './EnvironmentCheckCard'
 
 import {
@@ -17,7 +18,6 @@ import {
   isShellEnvironmentOkAtom,
   isNodeJsOkAtom,
 } from '@/atoms/environment'
-import { Button } from '@/components/ui/button'
 
 interface EnvironmentCheckPanelProps {
   /** 首次挂载时是否自动跑一次检测（Onboarding 用），Dialog 场景可设 false */

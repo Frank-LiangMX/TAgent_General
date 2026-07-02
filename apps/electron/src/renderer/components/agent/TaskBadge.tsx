@@ -8,9 +8,9 @@
 import { Loader2, Terminal, GitBranch } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type { BackgroundTask } from '@/atoms/agent-atoms'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export interface TaskBadgeProps {

@@ -9,9 +9,7 @@ import type { PluginStoreCatalog, WorkspaceCapabilities } from '@tagent/shared'
 
 import { useAtomValue } from 'jotai'
 
-import { installedPluginNavAtom } from '@/atoms/app-mode'
 import { SearchInput } from '@tagent/ui'
-import { cn } from '@/lib/utils'
 
 import { InstalledBundleDetail } from './InstalledBundleDetail'
 import { InstalledPluginDetail } from './InstalledPluginDetail'
@@ -26,6 +24,8 @@ import {
   resolveInstalledGridView,
 } from './installed-plugin-nav'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
+import { cn } from '@/lib/utils'
+import { installedPluginNavAtom } from '@/atoms/app-mode'
 
 interface InstalledPluginsViewProps {
   capabilities: WorkspaceCapabilities | null

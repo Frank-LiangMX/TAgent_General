@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { useTocHeadings } from '@/hooks/useTocHeadings'
 import { cn } from '@/lib/utils'

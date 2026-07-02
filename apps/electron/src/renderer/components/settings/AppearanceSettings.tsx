@@ -13,9 +13,10 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Check } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import type { MarkdownFontSize, TAgentBrand, ThemeMode, ThemeStyle } from '../../../types'
 import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primitives'
 
-import type { MarkdownFontSize, TAgentBrand, ThemeMode, ThemeStyle } from '../../../types'
 
 import './appearance-overrides.css'
 
@@ -35,7 +36,6 @@ import {
   applyThemeToDOM,
 } from '@/atoms/theme'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 皮肤选项 */
 const SKIN_OPTIONS = [

@@ -17,7 +17,7 @@ import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom'
 
 import type { ComponentProps } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 // ===== Conversation 根容器 =====

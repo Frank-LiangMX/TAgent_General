@@ -24,28 +24,28 @@ import {
 } from '@tagent/shared'
 
 import {
-  agentChannelIdAtom,
-  agentModelIdAtom,
-  agentWorkspacesAtom,
-  currentAgentWorkspaceIdAtom,
-} from '@/atoms/agent-atoms'
-import { channelsAtom } from '@/atoms/model-atoms'
-import { createAutomation, updateAutomation } from '@/atoms/automation-atoms'
-import { RunHistoryPanel } from '@/components/automation/RunHistoryPanel'
-import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
-import { ScheduleEditor, type ScheduleEditorValue } from '@/components/automation/ScheduleEditor'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
+  ScrollProgressContainer,
+  Button,
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+  Switch,
+  Textarea,
+} from '@tagent/ui'
+import { ScheduleEditor, type ScheduleEditorValue } from '@/components/automation/ScheduleEditor'
+import { RunHistoryPanel } from '@/components/automation/RunHistoryPanel'
+import { createAutomation, updateAutomation } from '@/atoms/automation-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
+import {
+  agentChannelIdAtom,
+  agentModelIdAtom,
+  agentWorkspacesAtom,
+  currentAgentWorkspaceIdAtom,
+} from '@/atoms/agent-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 

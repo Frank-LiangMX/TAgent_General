@@ -3,15 +3,12 @@ import { Loader2, Save, Play, Square, TestTube2, ExternalLink, Copy } from 'luci
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsInput } from './primitives/SettingsInput'
-import { SettingsRow } from './primitives/SettingsRow'
-import { SettingsSection } from './primitives/SettingsSection'
-
 import type { WpsConfigInput } from '@tagent/shared'
+import { Button } from '@tagent/ui'
+import { SettingsCard , SettingsInput , SettingsRow , SettingsSection } from './primitives'
+
 
 import { wpsBridgeStateAtom } from '@/atoms/wps-atoms'
-import { Button } from '@/components/ui/button'
 
 const STATUS_META: Record<string, { label: string; dot: string }> = {
   disconnected: { label: '未连接', dot: 'bg-slate-400' },

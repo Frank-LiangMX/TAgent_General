@@ -9,7 +9,7 @@ import { X } from 'lucide-react'
 
 import type { ComponentProps } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 export interface ContextDividerProps extends ComponentProps<'div'> {

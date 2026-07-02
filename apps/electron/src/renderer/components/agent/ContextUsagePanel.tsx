@@ -1,17 +1,17 @@
 import type { ContextUsageSnapshot } from '@tagent/shared'
 import * as React from 'react'
 
-import {
-  categoryPercentOfWindow,
-  formatContextTokens,
-  isFreeSpaceCategory,
-} from '@/lib/context-usage-format'
-import { cn } from '@/lib/utils'
 
 import { ContextUsageTermHint } from './ContextUsageTermHint'
 import { ContextUsageCategoryGroup } from './ContextUsageCategoryGroup'
 import { ContextUsageCategoryRow } from './ContextUsageCategoryRow'
 import { ContextUsageSegmentBar } from './ContextUsageSegmentBar'
+import { cn } from '@/lib/utils'
+import {
+  categoryPercentOfWindow,
+  formatContextTokens,
+  isFreeSpaceCategory,
+} from '@/lib/context-usage-format'
 
 interface ContextUsagePanelProps {
   snapshot: ContextUsageSnapshot

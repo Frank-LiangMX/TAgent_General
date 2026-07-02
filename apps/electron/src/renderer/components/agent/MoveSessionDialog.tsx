@@ -7,22 +7,20 @@ import { toast } from 'sonner'
 
 import type { AgentWorkspace, AgentSessionMeta } from '@tagent/shared'
 
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@tagent/ui'
 
 interface MoveSessionDialogProps {
   open: boolean

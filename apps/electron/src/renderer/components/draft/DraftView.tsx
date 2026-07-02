@@ -12,20 +12,20 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { PencilLine, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  currentDraftIdAtom,
-  currentDraftAtom,
-  currentDraftTitleAtom,
-  loadDraftsAtom,
-} from '@/atoms/draft-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
 import { DraftEditor } from './DraftEditor'
 import { DraftStatusBar } from './DraftStatusBar'
 import { DraftAssistantPanel } from './DraftAssistantPanel'
 import { DraftProgressBar } from './DraftProgressBar'
 import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
+import { cn } from '@/lib/utils'
+import {
+  currentDraftIdAtom,
+  currentDraftAtom,
+  currentDraftTitleAtom,
+  loadDraftsAtom,
+} from '@/atoms/draft-atoms'
 
 interface DraftViewProps {
   draftId: string

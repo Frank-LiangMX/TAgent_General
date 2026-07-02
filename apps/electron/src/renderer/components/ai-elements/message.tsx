@@ -18,7 +18,7 @@
  */
 
 import { detectLanguage } from '@tagent/core'
-import { CodeBlock, MermaidBlock } from '@tagent/ui'
+import { CodeBlock, MermaidBlock , Button , ImageLightbox , LoadingIndicator , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 import {
   ChevronDown,
   ChevronUp,
@@ -36,15 +36,11 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import { normalizeLatexDelimiters } from '@tagent/shared'
 
-import { FilePathChip, isAbsoluteFilePath, isRelativeFilePath } from './file-path-chip'
 
 import type { FileAttachment } from '@tagent/shared'
 import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'
+import { FilePathChip, isAbsoluteFilePath, isRelativeFilePath } from './file-path-chip'
 
-import { Button } from '@/components/ui/button'
-import { ImageLightbox } from '@/components/ui/image-lightbox'
-import { LoadingIndicator } from '@/components/ui/loading-indicator'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   shouldInspectMermaidCodeBlock,
   shouldRenderMermaidCodeBlock,

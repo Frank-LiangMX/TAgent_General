@@ -1,11 +1,11 @@
 import type { ContextUsageSnapshot, GetContextUsageError } from '@tagent/shared'
 import * as React from 'react'
 
+import { useAtomValue } from 'jotai'
 import {
   bumpContextUsageRefreshNonce,
   contextUsageRefreshNonceBySessionAtom,
 } from '@/atoms/context-usage-atoms'
-import { useAtomValue } from 'jotai'
 
 interface UseContextUsageBreakdownResult {
   snapshot: ContextUsageSnapshot | null

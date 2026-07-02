@@ -9,12 +9,12 @@
 import { ReactRenderer } from '@tiptap/react'
 import { toast } from 'sonner'
 
-import { FileMentionList } from './FileMentionList'
 
-import type { FileMentionRef } from './FileMentionList'
 import type { FileIndexEntry, FileSearchResult } from '@tagent/shared'
 import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 import type React from 'react'
+import type { FileMentionRef } from './FileMentionList'
+import { FileMentionList } from './FileMentionList'
 
 import { createMentionPopup, positionPopup } from '@/components/agent/mention-popup-utils'
 

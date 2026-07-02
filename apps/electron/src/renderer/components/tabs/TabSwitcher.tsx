@@ -9,9 +9,9 @@ import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { Bot } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { AgentSessionMeta } from '@tagent/shared'
 import type { ReactElement, ReactNode } from 'react'
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 
 import {
   agentSessionIndicatorMapAtom,

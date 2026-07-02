@@ -8,6 +8,14 @@ import { toast } from 'sonner'
 
 import type { BuiltinMcpCatalogEntry, McpServerEntry, WorkspaceCapabilities } from '@tagent/shared'
 
+import { mcpCatalogEntryToServerEntry } from '@tagent/shared'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@tagent/ui'
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,
@@ -19,14 +27,6 @@ import { InstalledPluginsView } from '@/components/agent/InstalledPluginsView'
 import { PluginMarketplaceView } from '@/components/agent/PluginMarketplaceView'
 import { Panel } from '@/components/app-shell/Panel'
 import { McpServerForm } from '@/components/settings/McpServerForm'
-import { mcpCatalogEntryToServerEntry } from '@tagent/shared'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 export function SkillsMainView(): React.ReactElement {
   const section = useAtomValue(pluginSidebarSectionAtom)

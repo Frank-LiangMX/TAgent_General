@@ -6,9 +6,9 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import { safeStorage } from 'electron'
 
+import type { WpsConfig, WpsConfigInput } from '@tagent/shared'
 import { getWpsConfigPath } from './config-paths'
 
-import type { WpsConfig, WpsConfigInput } from '@tagent/shared'
 
 const DEFAULT_CONFIG: WpsConfig = {
   enabled: false,

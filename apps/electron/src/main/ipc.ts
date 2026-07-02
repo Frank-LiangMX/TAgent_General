@@ -127,6 +127,21 @@ import {
   DOCK_BADGE_IPC_CHANNELS,
   STORAGE_IPC_CHANNELS,
 } from '../types'
+import type {
+  QuickTaskSubmitInput,
+  VoiceDictationAudioChunkInput,
+  VoiceDictationCommitInput,
+  VoiceDictationCommitResult,
+  VoiceDictationResizeInput,
+  VoiceDictationSettings,
+  VoiceDictationSettingsUpdate,
+  VoiceDictationStartInput,
+  VoiceDictationStopInput,
+  VoiceDictationTestResult,
+  MicPermissionResult,
+  UserProfile,
+  AppSettings,
+} from '../types'
 import { askUserService } from './lib/agent-ask-user-service'
 import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
@@ -288,21 +303,6 @@ import { watchAttachedDirectory, unwatchAttachedDirectory } from './lib/workspac
 import { wpsBridge } from './lib/wps-bridge'
 import { getDecryptedWpsSecretKey, getWpsConfig, saveWpsConfig } from './lib/wps-config'
 
-import type {
-  QuickTaskSubmitInput,
-  VoiceDictationAudioChunkInput,
-  VoiceDictationCommitInput,
-  VoiceDictationCommitResult,
-  VoiceDictationResizeInput,
-  VoiceDictationSettings,
-  VoiceDictationSettingsUpdate,
-  VoiceDictationStartInput,
-  VoiceDictationStopInput,
-  VoiceDictationTestResult,
-  MicPermissionResult,
-  UserProfile,
-  AppSettings,
-} from '../types'
 import type { CleanupOptions } from './lib/storage-service'
 
 /** 文件浏览器中需要隐藏的系统文件 */

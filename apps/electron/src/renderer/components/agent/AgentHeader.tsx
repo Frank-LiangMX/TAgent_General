@@ -8,6 +8,7 @@ import { TAGENT_PERMISSION_MODE_CONFIG } from '@tagent/shared'
 import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { getToolDisplayName } from './tool-utils'
 
 import type { SessionIndicatorStatus, ToolActivity } from '@/atoms/agent-atoms'
@@ -23,7 +24,6 @@ import {
 import { channelsAtom } from '@/atoms/model-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { resolveModelDisplayName } from '@/lib/model-logo'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** AgentHeader 属性接口 */

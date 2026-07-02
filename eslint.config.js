@@ -117,6 +117,26 @@ export default [
       // 业务日志散落各处（main 进程、bridge、IPC handler），改 logger 是单独 refactor，
       // 现阶段先关掉警告避免污染 lint 输出。运行错误日志请用 console.error/warn（已放开）。
       'no-console': 'off',
+
+      // === UI 库迁移约束（防止 agent 写新代码时回到旧路径） ===
+      // 新代码必须从 @tagent/ui 导入基础组件，禁止 @/components/ui/* 新增 import。
+      // 存量代码（120+ 文件）暂保留，warn 级别不破坏 CI，但 agent 看到警告会自觉迁移。
+      // 详细决策树见 CLAUDE.md "UI 库使用规范"。
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/components/ui/*'],
+              message:
+                "新代码必须从 @tagent/ui 导入：import { Button } from '@tagent/ui'。存量代码可保留，但不要新增 import。详见 CLAUDE.md UI 库使用规范。",
+              allowTypeImports: false,
+            },
+          ],
+        },
+      ],
+      // 注：硬编码圆角（rounded-[10px] 等）靠 CLAUDE.md 决策树 + code review 拦截，
+      // ESLint AST selector 对 JSX 字符串字面量匹配不稳定，不在此处强制。
     },
   }),
 

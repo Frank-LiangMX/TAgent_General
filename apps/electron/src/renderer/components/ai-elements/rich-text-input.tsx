@@ -23,13 +23,13 @@ import StarterKit from '@tiptap/starter-kit'
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { useState, useEffect, useRef, useMemo } from 'react'
 
+import { Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
 import {
   createSkillMentionSuggestion,
   createMcpMentionSuggestion,
   createSessionMentionSuggestion,
 } from '@/components/agent/mention-suggestions'
 import { createFileMentionSuggestion } from '@/components/file-browser/file-mention-suggestion'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { lowlight } from '@/lib/lowlight'
 import { htmlToMarkdown } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'

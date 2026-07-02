@@ -11,8 +11,8 @@ import { useSetAtom } from 'jotai'
 import { GraduationCap, X } from 'lucide-react'
 import * as React from 'react'
 
+import { Button } from '@tagent/ui'
 import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
-import { Button } from '@/components/ui/button'
 
 export function TutorialBanner(): React.ReactElement | null {
   const [visible, setVisible] = React.useState(false)

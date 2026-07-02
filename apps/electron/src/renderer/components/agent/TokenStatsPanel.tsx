@@ -10,6 +10,8 @@ import { useAtomValue } from 'jotai'
 import { Database, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { ContextUsageBadge } from './ContextUsageBadge'
 import {
   agentContextStatusAtom,
   cacheHitRateAtom,
@@ -17,11 +19,9 @@ import {
   currentSessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 
-import { ContextUsageBadge } from './ContextUsageBadge'
 
 interface TokenStatsPanelProps {
   isProcessing?: boolean

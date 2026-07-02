@@ -21,8 +21,7 @@ import { normalizeLatexDelimiters } from '@tagent/shared'
 
 import type { ComponentProps, ReactNode } from 'react'
 
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 // ===== 上下文 =====

@@ -10,19 +10,16 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Plus, Trash2, Star } from 'lucide-react'
 import * as React from 'react'
 
-import { SettingsSection, SettingsCard, SettingsToggle } from './primitives'
 
 import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
 
+import { Button , Input , Textarea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { SettingsSection, SettingsCard, SettingsToggle } from './primitives'
 import {
   promptConfigAtom,
   selectedPromptIdAtom,
   defaultPromptIdAtom,
 } from '@/atoms/system-prompt-atoms'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** 防抖保存延迟 (ms) */

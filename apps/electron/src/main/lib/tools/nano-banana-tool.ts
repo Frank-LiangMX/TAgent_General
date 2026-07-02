@@ -8,11 +8,11 @@
 
 import { randomUUID } from 'node:crypto'
 
+import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
+import type { ChatToolMeta, FileAttachment } from '@tagent/shared'
 import { saveAttachment, readAttachmentAsBase64, isImageAttachment } from '../attachment-service'
 import { getToolCredentials } from '../tool-config'
 
-import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
-import type { ChatToolMeta, FileAttachment } from '@tagent/shared'
 
 // ===== Gemini API 类型（REST API 使用 camelCase） =====
 

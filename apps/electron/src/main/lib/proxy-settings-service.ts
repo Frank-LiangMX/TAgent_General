@@ -7,10 +7,10 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
+import type { ProxyConfig } from '@tagent/shared'
 import { getProxySettingsPath } from './config-paths'
 import { detectSystemProxy } from './system-proxy-detector'
 
-import type { ProxyConfig } from '@tagent/shared'
 
 /**
  * 默认代理配置

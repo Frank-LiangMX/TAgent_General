@@ -8,6 +8,8 @@
  * - 模式切换建议
  */
 
+import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
+import type { ChatToolMeta } from '@tagent/shared'
 import {
   CHECK_DIRECTORY_STRUCTURE_TOOL_META,
   CHECK_DIRECTORY_STRUCTURE_TOOL_DEFINITIONS,
@@ -39,8 +41,6 @@ import {
   isSwitchModeToolCall,
 } from './switch-mode-tool'
 
-import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
-import type { ChatToolMeta } from '@tagent/shared'
 
 // ===== 工具元数据 =====
 

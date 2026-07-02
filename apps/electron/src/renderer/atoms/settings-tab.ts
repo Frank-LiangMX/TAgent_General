@@ -18,14 +18,13 @@ export type SettingsTab =
   | 'appearance'
   | 'about'
   | 'prompts'
-  | 'soul'
+  | 'agent-preferences'
+  | 'agent-roles'
   | 'bots'
   | 'shortcuts'
   | 'voice-input'
   | 'insights'
   | 'agent'
-  | 'agent-behavior'
-  | 'agent-roles'
   | 'tutorial'
 
 /** 当前设置标签页（不持久化，每次打开设置默认显示渠道） */

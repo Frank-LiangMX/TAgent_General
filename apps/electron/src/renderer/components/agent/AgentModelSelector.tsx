@@ -12,6 +12,8 @@ import * as React from 'react'
 
 import type { AgentEffort, Channel, ModelOption, KsccInstallReadiness } from '@tagent/shared'
 
+import { Popover, PopoverContent, PopoverTrigger , SearchInput , SegmentedTabs, SegmentedTabsItem , Switch , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
 import {
   agentChannelIdAtom,
   agentChannelIdsAtom,
@@ -19,12 +21,6 @@ import {
   agentModelIdAtom,
   agentThinkingAtom,
 } from '@/atoms/agent-atoms'
-import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { SearchInput } from '@/components/ui/search-input'
-import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
-import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 

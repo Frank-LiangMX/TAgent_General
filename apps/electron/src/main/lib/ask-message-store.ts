@@ -11,9 +11,9 @@
 
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync } from 'node:fs'
 
+import type { AskMessage } from '@tagent/shared'
 import { getAgentSessionAskMessagesPath } from './config-paths'
 
-import type { AskMessage } from '@tagent/shared'
 
 /**
  * 读取会话的所有 Ask 消息

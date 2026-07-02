@@ -9,11 +9,9 @@ import { ArrowLeft, Loader2, Star } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsSection, SettingsCard } from './primitives'
 
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button , Switch , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { SettingsSection, SettingsCard } from './primitives'
 import { cn } from '@/lib/utils'
 
 const AUTO_SAVE_DELAY = 600

@@ -2,20 +2,23 @@
  * SettingsSecretInput - API Key 专用密码输入控件
  *
  * 内置密码显隐切换，适用于 API Key 等敏感信息输入。
+ *
+ * 左右结构：左侧 label + ? tooltip，右侧 Input + 显隐按钮。
  */
 
 import { Eye, EyeOff } from 'lucide-react'
 import * as React from 'react'
 
-import { LABEL_CLASS, DESCRIPTION_CLASS } from './SettingsUIConstants'
+import { Input } from '../input'
+import { cn } from '../../lib/utils'
+import { FieldLabel } from './FieldLabel'
+import { ROW_CLASS } from './SettingsUIConstants'
 
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
 
 interface SettingsSecretInputProps {
   /** 标签文本 */
   label: string
-  /** 描述文本（可选） */
+  /** 描述文本（可选，hover ? 图标显示 tooltip） */
   description?: string
   /** 输入值 */
   value: string
@@ -41,12 +44,11 @@ export function SettingsSecretInput({
   const [visible, setVisible] = React.useState(false)
 
   return (
-    <div className="px-4 py-3 space-y-2">
-      <div>
-        <div className={LABEL_CLASS}>{label}</div>
-        {description && <div className={cn(DESCRIPTION_CLASS, 'mt-0.5')}>{description}</div>}
+    <div className={cn(ROW_CLASS)}>
+      <div className="flex-1 min-w-0 mr-4">
+        <FieldLabel label={label} description={description} />
       </div>
-      <div className="relative">
+      <div className="relative shrink-0">
         <Input
           type={visible ? 'text' : 'password'}
           value={value}
@@ -54,7 +56,7 @@ export function SettingsSecretInput({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className="pr-10"
+          className="w-[200px] pr-10"
         />
         <button
           type="button"

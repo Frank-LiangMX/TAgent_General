@@ -14,14 +14,6 @@ import { normalizeBaseUrl, normalizeAnthropicProviderUrl, getTAgentUserAgent } f
 import { PROVIDER_DEFAULT_URLS, normalizeChannelDefaultModelId } from '@tagent/shared'
 import { safeStorage } from 'electron'
 
-import { getChannelsPath } from './config-paths'
-import { getProbeUrl, getDefaultModels as getDefaultKsccModels } from './kscc-config'
-import { getFetchFn } from './proxy-fetch'
-import { getEffectiveProxyUrl } from './proxy-settings-service'
-import { getSettings, updateSettings } from './settings-service'
-import { planKsccWindowsSpawn } from './kscc-windows-spawn'
-import pkg from '../../../package.json' with { type: 'json' }
-
 import type {
   Channel,
   ChannelCreateInput,
@@ -36,6 +28,14 @@ import type {
   SpeedTestBatchResult,
   SpeedTestInput,
 } from '@tagent/shared'
+import pkg from '../../../package.json' with { type: 'json' }
+import { getChannelsPath } from './config-paths'
+import { getProbeUrl, getDefaultModels as getDefaultKsccModels } from './kscc-config'
+import { getFetchFn } from './proxy-fetch'
+import { getEffectiveProxyUrl } from './proxy-settings-service'
+import { getSettings, updateSettings } from './settings-service'
+import { planKsccWindowsSpawn } from './kscc-windows-spawn'
+
 
 /** 当前配置版本 */
 const CONFIG_VERSION = 1

@@ -10,10 +10,9 @@ import * as React from 'react'
 
 import type { ChangedFileEntry, ChangeSource, UntrackedFileEntry } from '@tagent/shared'
 
+import { SearchInput , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { agentDiffUnseenFilesAtom, agentDiffDataAtom } from '@/atoms/agent-atoms'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
-import { SearchInput } from '@/components/ui/search-input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /** 按目录分组后的数据结构 */

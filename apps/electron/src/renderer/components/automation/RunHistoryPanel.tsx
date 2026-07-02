@@ -7,7 +7,7 @@ import * as React from 'react'
 
 import type { AutomationRun } from '@tagent/shared'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface RunHistoryPanelProps {

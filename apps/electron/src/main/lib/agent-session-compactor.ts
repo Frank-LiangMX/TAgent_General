@@ -14,9 +14,9 @@
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
+import type { CompactSessionInput, CompactSessionResult } from '@tagent/shared'
 import { getAgentSessionMessagesPath } from './config-paths'
 
-import type { CompactSessionInput, CompactSessionResult } from '@tagent/shared'
 
 /** 压缩前的单条消息（JSONL 解析结果，结构子集，index signature 允许额外字段）*/
 export interface SDKMessageRow {

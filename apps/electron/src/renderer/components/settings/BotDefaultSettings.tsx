@@ -8,12 +8,10 @@ import { useAtomValue } from 'jotai'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SettingsCard } from './primitives/SettingsCard'
-import { SettingsSection } from './primitives/SettingsSection'
-import { SettingsSelect } from './primitives/SettingsSelect'
+import { Button } from '@tagent/ui'
+import { SettingsCard , SettingsSection , SettingsSelect } from './primitives'
 
 import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
-import { Button } from '@/components/ui/button'
 
 export function BotDefaultSettings(): React.ReactElement {
   const workspaces = useAtomValue(agentWorkspacesAtom)

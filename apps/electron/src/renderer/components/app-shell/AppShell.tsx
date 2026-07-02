@@ -43,6 +43,11 @@ const RIGHT_PANEL_TOGGLE_TOP = 34
 const WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH = 126
 /** 顶栏右侧按钮与 Windows 窗口按钮同顶线对齐 */
 const TOPBAR_CONTROL_TOP = 8
+/**
+ * Mac 端顶栏右侧按钮的 right 偏移。
+ * 比 SHELL_EDGE_PADDING 略大，给按钮 hover 背景扩散 + 红点留余量，避免被 shell overflow 裁剪。
+ */
+const MAC_TOPBAR_RIGHT_INSET = 12
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
@@ -327,8 +332,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             className="right-panel-topbar-toggle pointer-events-auto absolute z-[100] titlebar-no-drag"
             style={{
               top: TOPBAR_CONTROL_TOP,
-              // Windows 右上角有窗口控制按钮，给其留位；mac/linux 贴 shell 右内边距
-              right: isWindows ? WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH : SHELL_EDGE_PADDING,
+              // Windows 右上角有窗口控制按钮，给其留位；mac/linux 略大边距，给 hover 扩散留余量
+              right: isWindows ? WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH : MAC_TOPBAR_RIGHT_INSET,
             }}
           >
             <RightPanelToggle

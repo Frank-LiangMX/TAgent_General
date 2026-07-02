@@ -24,6 +24,16 @@ import * as React from 'react'
 import type { FileEntry, AgentPendingFile } from '@tagent/shared'
 
 import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
+import {
   workspaceFilesVersionAtom,
   currentAgentWorkspaceIdAtom,
   agentWorkspacesAtom,
@@ -57,14 +67,6 @@ import {
   STICKY_ROW_BASE_CLASS,
   canBeSticky,
 } from '@/components/file-browser'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 

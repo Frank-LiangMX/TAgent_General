@@ -5,11 +5,6 @@
  * 替代原来的单例 `feishuBridge`。
  */
 
-import { resolveSessionMirrorBot } from './feishu/session-mirror'
-import { FeishuBridge } from './feishu-bridge'
-import { getFeishuMultiBotConfig, getFeishuBotById } from './feishu-config'
-import { getSettings } from './settings-service'
-
 import type {
   FeishuBridgeState,
   FeishuChatBinding,
@@ -19,6 +14,11 @@ import type {
   FeishuBotConfig,
   AgentSessionMeta,
 } from '@tagent/shared'
+import { resolveSessionMirrorBot } from './feishu/session-mirror'
+import { FeishuBridge } from './feishu-bridge'
+import { getFeishuMultiBotConfig, getFeishuBotById } from './feishu-config'
+import { getSettings } from './settings-service'
+
 
 class FeishuBridgeManager {
   /** botId → Bridge 实例 */

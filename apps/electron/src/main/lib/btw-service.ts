@@ -14,12 +14,12 @@ import { getAdapter, getTAgentUserAgent } from '@tagent/core'
 import { BTW_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
+import type { StreamRequestInput } from '@tagent/core'
+import type { ChatMessage, SDKMessage } from '@tagent/shared'
 import { getAgentSessionSDKMessages } from './agent-session-manager'
 import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
 
-import type { StreamRequestInput } from '@tagent/core'
-import type { ChatMessage, SDKMessage } from '@tagent/shared'
 
 /** 当前活跃的 BTW 请求 AbortController */
 let activeBtwController: AbortController | null = null

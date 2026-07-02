@@ -111,6 +111,118 @@
   border-radius: var(--radius-glass-sidebar);
 }
 
+/**
+ * session-list-item-active - 侧栏单行列表项选中态
+ *
+ * 调用方只需写这一个类即可获得完整的"玻璃底选中态"视觉：
+ *   - 轻量浮岛玻璃底（blur + saturate + 双层 gradient + 边框高光）
+ *   - 圆角跟随 --radius-glass-sidebar token（当前 12px）
+ *   - dark / material-frosted 主题自动适配
+ *
+ * 用法：
+ *   <div className={cn('...', active && 'session-list-item-active')}>...</div>
+ *
+ * 等价于历史上 `session-glass session-glass-sidebar rounded-glass-sidebar` 三个类的组合，
+ * 但圆角 token 化，不再需要硬编码 rounded-[10px]。
+ */
+.session-list-item-active {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-glass-sidebar);
+  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.55) 0%,
+    hsl(var(--background) / 0.62) 48%,
+    hsl(var(--background) / 0.56) 100%
+  );
+  border: 0.5px solid hsl(var(--glass-rim) / 0.82);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.45),
+    0 2px 10px -4px rgba(0, 0, 0, 0.10),
+    0 6px 18px -8px rgba(0, 0, 0, 0.08);
+}
+
+.session-list-item-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 16% 0%,
+      hsl(var(--glass-shine) / 0.50) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.65) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--glass-shine) / 0.22) 0%,
+      transparent 42%
+    );
+}
+
+.session-list-item-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.42) 28%,
+    rgba(255, 255, 255, 0.68) 50%,
+    rgba(255, 255, 255, 0.38) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.session-list-item-active > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .session-list-item-active {
+  -webkit-backdrop-filter: blur(16px) saturate(1.32) brightness(0.97);
+  backdrop-filter: blur(16px) saturate(1.32) brightness(0.97);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--background) / 0.54) 48%,
+    hsl(var(--background) / 0.48) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.55);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.09),
+    0 2px 12px -4px rgba(0, 0, 0, 0.28),
+    0 6px 20px -8px rgba(0, 0, 0, 0.22);
+}
+
+html.material-frosted .session-list-item-active {
+  -webkit-backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--muted) / var(--material-opacity-chip));
+  border-color: hsl(var(--glass-rim) / 0.58);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
 .session-glass-rail {
   border-radius: var(--radius-glass-rail);
 }
@@ -699,4 +811,63 @@ html.material-frosted .session-glass-sticky {
 html.material-frosted .session-glass-sticky:hover {
   background: hsl(var(--accent) / 0.68);
   border-color: hsl(var(--border) / 0.85);
+}
+
+/**
+ * settings-card - 设置页圆角卡片容器
+ *
+ * 高透 Liquid Glass 效果，圆角引用 --radius-glass-modal token（20px）。
+ * 浅色主题下不使用 brightness，避免 shell-glass 光斑在动画切换时产生跳变。
+ */
+.settings-card {
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid hsl(var(--border) / 0.4);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  backdrop-filter: blur(12px) saturate(130%);
+  border-radius: var(--radius-glass-modal);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 1px 0 0 rgba(255, 255, 255, 0.18),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
+}
+
+.settings-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.dark .settings-card,
+.dark:not([class*="theme-"]) .settings-card {
+  background: rgba(12, 12, 20, 0.28);
+  border: 1px solid hsl(var(--border) / 0.2);
+  -webkit-backdrop-filter: blur(14px) saturate(125%) brightness(0.96);
+  backdrop-filter: blur(14px) saturate(125%) brightness(0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 1px 0 0 rgba(255, 255, 255, 0.02),
+    0 3px 12px -4px rgba(0, 0, 0, 0.12);
+}
+
+.dark .settings-card::after,
+.dark:not([class*="theme-"]) .settings-card::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
 }

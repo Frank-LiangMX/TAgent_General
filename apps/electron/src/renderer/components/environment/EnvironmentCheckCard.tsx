@@ -21,12 +21,12 @@ import * as React from 'react'
 
 import type { InstallerDownloadRequest } from '@tagent/shared'
 
+import { Button } from '@tagent/ui'
 import {
   installerDownloadStatesAtom,
   installerManifestAtom,
   type InstallerDownloadState,
 } from '@/atoms/environment'
-import { Button } from '@/components/ui/button'
 
 type CheckStatus = 'checking' | 'success' | 'warning' | 'error'
 

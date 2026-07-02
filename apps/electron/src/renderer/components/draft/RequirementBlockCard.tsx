@@ -10,9 +10,9 @@ import * as React from 'react'
 
 import type { RequirementBlock, AcceptanceCriterion, DraftStatus } from '@tagent/shared'
 
-import { currentDraftRequirementsAtom, currentDraftAtom } from '@/atoms/draft-atoms'
+import { Badge } from '@tagent/ui'
 import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
-import { Badge } from '@/components/ui/badge'
+import { currentDraftRequirementsAtom, currentDraftAtom } from '@/atoms/draft-atoms'
 import { cn } from '@/lib/utils'
 
 interface RequirementBlockCardProps {

@@ -5,8 +5,7 @@
 import { Info } from 'lucide-react'
 import * as React from 'react'
 
-import { Input } from '@/components/ui/input'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Input , Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
 
 const namingPrefixes = [
   { type: '网格 (Mesh)', prefix: 'SM_', example: 'SM_Character_Hero' },

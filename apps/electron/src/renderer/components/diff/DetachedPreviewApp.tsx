@@ -8,14 +8,14 @@ import { useSetAtom } from 'jotai'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
+import type { DetachedPreviewWindowData } from '@tagent/shared'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
-import type { DetachedPreviewWindowData } from '@tagent/shared'
 
 import { agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 function getPreviewId(): string | null {

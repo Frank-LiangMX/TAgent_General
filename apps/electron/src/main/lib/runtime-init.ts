@@ -9,6 +9,7 @@
  * 5. Shell 环境检测（Windows - Git Bash / WSL）
  */
 
+import type { RuntimeStatus, RuntimeInitOptions, ShellEnvironmentStatus } from '@tagent/shared'
 import { detectBunRuntime } from './bun-finder'
 import { detectGitBash } from './git-bash-detector'
 import { detectGitRuntime } from './git-detector'
@@ -16,7 +17,6 @@ import { detectNodeRuntime } from './node-detector'
 import { loadShellEnv } from './shell-env'
 import { detectWsl } from './wsl-detector'
 
-import type { RuntimeStatus, RuntimeInitOptions, ShellEnvironmentStatus } from '@tagent/shared'
 
 /** 运行时状态缓存 */
 let runtimeStatusCache: RuntimeStatus | null = null

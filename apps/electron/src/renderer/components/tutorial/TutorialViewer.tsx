@@ -11,7 +11,7 @@
 import { BookOpen, ExternalLink, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 
 export function TutorialViewer(): React.ReactElement {
   const [opening, setOpening] = React.useState(false)

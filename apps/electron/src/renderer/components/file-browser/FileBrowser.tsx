@@ -24,23 +24,9 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-import { DefaultAppMenuItem } from './DefaultAppMenuItem'
-import { FileTypeIcon } from './FileTypeIcon'
-import {
-  computeTreeRowLayout,
-  AncestorGuides,
-  STICKY_ROW_BASE_CLASS,
-  canBeSticky,
-} from './tree-row-layout'
 
 import type { FileEntry } from '@tagent/shared'
 
-import {
-  workspaceFilesVersionAtom,
-  fileBrowserAutoRevealAtom,
-  recentlyModifiedPathsAtom,
-  currentAgentSessionIdAtom,
-} from '@/atoms/agent-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,17 +36,26 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import {
+ Button ,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+  DropdownMenuTrigger, ScrollArea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  computeTreeRowLayout,
+  AncestorGuides,
+  STICKY_ROW_BASE_CLASS,
+  canBeSticky,
+} from './tree-row-layout'
+import { FileTypeIcon } from './FileTypeIcon'
+import { DefaultAppMenuItem } from './DefaultAppMenuItem'
+import {
+  workspaceFilesVersionAtom,
+  fileBrowserAutoRevealAtom,
+  recentlyModifiedPathsAtom,
+  currentAgentSessionIdAtom,
+} from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
 
 /** 计算目标路径相对 rootPath 的祖先目录集合（不含 rootPath 自身、含目标的所有上级） */

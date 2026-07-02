@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { DropdownMenuItem } from '@tagent/ui'
 import { useDefaultAppForFile } from '@/hooks/useDefaultAppForFile'
 
 interface DefaultAppMenuItemProps {

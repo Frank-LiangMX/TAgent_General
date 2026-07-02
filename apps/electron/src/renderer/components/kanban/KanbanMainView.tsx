@@ -24,12 +24,12 @@ import {
 } from '@tagent/ui'
 import type { KanbanTaskStatus } from '@tagent/shared'
 
+import { KanbanTaskListItem } from './KanbanTaskListItem'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { useSelectedKanbanBoard, selectedKanbanBoardIdAtom } from '@/atoms/kanban-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
-import { KanbanTaskListItem } from './KanbanTaskListItem'
 
 /** 状态分组顺序与中文标签 */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [

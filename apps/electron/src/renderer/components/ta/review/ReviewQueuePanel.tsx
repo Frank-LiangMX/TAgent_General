@@ -8,7 +8,7 @@
 import { CheckCircle, XCircle, Clock, AlertCircle, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {

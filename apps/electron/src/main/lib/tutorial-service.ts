@@ -10,10 +10,10 @@ import { join } from 'node:path'
 
 import { app } from 'electron'
 
+import type { ConversationMeta, FileAttachment, ChatMessage } from '@tagent/shared'
 import { getConversationAttachmentsDir } from './config-paths'
 import { createConversation, appendMessage } from './conversation-manager'
 
-import type { ConversationMeta, FileAttachment, ChatMessage } from '@tagent/shared'
 
 /**
  * 获取教程文件路径

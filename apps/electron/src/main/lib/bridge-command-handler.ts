@@ -10,6 +10,7 @@
 import { AGENT_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
+import type { AgentStreamPayload } from '@tagent/shared'
 import { runAgentHeadless, agentEventBus, stopAgent, isAgentSessionActive } from './agent-service'
 import { createAgentSession, listAgentSessions, getAgentSessionMeta } from './agent-session-manager'
 import {
@@ -32,7 +33,6 @@ import {
 import { resolveWorkspaceFilesDir } from './config-paths'
 import { getSettings } from './settings-service'
 
-import type { AgentStreamPayload } from '@tagent/shared'
 
 // ===== 接口定义 =====
 

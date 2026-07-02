@@ -9,9 +9,9 @@
 import { useAtomValue, useStore } from 'jotai'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { openPreview } from '@/components/diff/preview-opener'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface PreviewOpenButtonProps {

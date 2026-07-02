@@ -6,6 +6,8 @@ import StarterKit from '@tiptap/starter-kit'
 import * as React from 'react'
 import { Markdown } from 'tiptap-markdown'
 
+import type { FileAccessOptions } from '@tagent/shared'
+import type { MarkdownStorage } from 'tiptap-markdown'
 import {
   MathBlock,
   MathInline,
@@ -21,8 +23,6 @@ import {
 import { MarkdownEditorToolbar } from './MarkdownEditorToolbar'
 import { TableBubbleMenu } from './TableBubbleMenu'
 
-import type { FileAccessOptions } from '@tagent/shared'
-import type { MarkdownStorage } from 'tiptap-markdown'
 
 import { MARKDOWN_RENDERER_VERSION, markdownToHtml } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'

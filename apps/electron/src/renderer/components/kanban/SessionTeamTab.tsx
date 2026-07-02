@@ -17,6 +17,8 @@ import type { KanbanBoard, KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 import { Badge, Button, Input } from '@tagent/ui'
 import { Loader2, Pause, Play, RefreshCw, Unlink, ArrowLeftRight } from 'lucide-react'
 
+import { KanbanTaskListItem } from './KanbanTaskListItem'
+import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 import {
   selectedKanbanTaskIdAtomFamily,
   useKanbanBoard,
@@ -25,8 +27,6 @@ import {
 import { AgentView } from '@/components/agent/AgentView'
 import { cn } from '@/lib/utils'
 
-import { KanbanTaskListItem } from './KanbanTaskListItem'
-import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 
 /** 按状态分组的顺序与中文标签 */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [

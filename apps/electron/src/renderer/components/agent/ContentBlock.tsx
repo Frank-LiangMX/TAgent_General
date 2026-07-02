@@ -19,6 +19,16 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
+import type {
+  SDKContentBlock,
+  SDKMessage,
+  SDKTextBlock,
+  SDKToolUseBlock,
+  SDKThinkingBlock,
+  SDKUserMessage,
+  SDKToolResultBlock,
+  SDKSystemMessage,
+} from '@tagent/shared'
 import { formatDuration } from './AgentMessages'
 import { getToolPhrase } from './tool-phrase'
 import { ToolResultRenderer } from './tool-result-renderers'
@@ -34,16 +44,6 @@ import {
 } from './tool-result-renderers/task-list-result'
 import { getToolIcon, extractFilePath } from './tool-utils'
 
-import type {
-  SDKContentBlock,
-  SDKMessage,
-  SDKTextBlock,
-  SDKToolUseBlock,
-  SDKThinkingBlock,
-  SDKUserMessage,
-  SDKToolResultBlock,
-  SDKSystemMessage,
-} from '@tagent/shared'
 
 import { thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { MessageResponse } from '@/components/ai-elements/message'

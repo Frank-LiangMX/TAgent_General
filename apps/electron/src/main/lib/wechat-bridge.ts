@@ -21,6 +21,12 @@ import {
 import { BrowserWindow } from 'electron'
 import QRCode from 'qrcode'
 
+import type {
+  WeChatBridgeState,
+  WeChatCredentials,
+  WeChatIncomingMessage,
+  WeChatMessageItem,
+} from '@tagent/shared'
 import { getAgentWorkspace } from './agent-workspace-manager'
 import {
   inferImageMediaType,
@@ -39,12 +45,6 @@ import {
   updateWeChatDefaultWorkspace,
 } from './wechat-config'
 
-import type {
-  WeChatBridgeState,
-  WeChatCredentials,
-  WeChatIncomingMessage,
-  WeChatMessageItem,
-} from '@tagent/shared'
 
 // ===== iLink API 常量 =====
 

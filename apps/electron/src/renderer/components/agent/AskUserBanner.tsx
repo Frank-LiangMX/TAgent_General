@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm'
 
 import type { AskUserQuestion } from '@tagent/shared'
 
+import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   allPendingAskUserRequestsAtom,
   agentStreamingStatesAtom,
@@ -22,8 +23,6 @@ import {
   type AskUserQuestionDraft,
   type AskUserRequestDraft,
 } from '@/atoms/agent-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const EMPTY_ANSWER: AskUserQuestionDraft = { selected: [], customText: '', showCustom: false }
 

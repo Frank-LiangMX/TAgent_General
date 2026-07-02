@@ -10,9 +10,9 @@ import * as React from 'react'
 
 import type { RequirementBlock } from '@tagent/shared'
 
+import { RequirementBlockCard } from './RequirementBlockCard'
 import { currentDraftRequirementsAtom } from '@/atoms/draft-atoms'
 
-import { RequirementBlockCard } from './RequirementBlockCard'
 
 interface RequirementListProps {
   requirements: RequirementBlock[]

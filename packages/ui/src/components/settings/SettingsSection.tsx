@@ -28,7 +28,6 @@ export function SettingsSection({
 }: SettingsSectionProps): React.ReactElement {
   return (
     <div className="space-y-3">
-      {/* 区块头部 */}
       <div className="flex items-start justify-between">
         <div>
           <h4 className={SECTION_TITLE_CLASS}>{title}</h4>
@@ -36,7 +35,6 @@ export function SettingsSection({
         </div>
         {action && <div className="flex-shrink-0 ml-4">{action}</div>}
       </div>
-      {/* 区块内容 */}
       {children}
     </div>
   )

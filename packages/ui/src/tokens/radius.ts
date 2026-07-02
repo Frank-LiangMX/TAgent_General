@@ -11,7 +11,7 @@
 export const radius = {
   // session-glass 系列玻璃浮层圆角
   'glass-input': '24px', // .chat-input-glass
-  'glass-sidebar': '10px', // .session-glass-sidebar
+  'glass-sidebar': '12px', // .session-glass-sidebar / .session-list-item-active 侧栏列表项选中态
   'glass-rail': '12px', // .session-glass-rail
   'glass-chip': '6px', // .session-glass-chip
   'glass-modal': '20px', // .session-glass-modal

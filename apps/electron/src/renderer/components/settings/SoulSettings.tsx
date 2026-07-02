@@ -20,8 +20,8 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button } from '../ui/button'
-import { Textarea } from '../ui/textarea'
+import { Badge, Button, Textarea } from '@tagent/ui'
+import { SettingsSection } from './primitives'
 
 import { cn } from '@/lib/utils'
 
@@ -166,110 +166,118 @@ export function SoulSettings(): React.ReactElement {
   const progressPercent = Math.min((charCount / MAX_SOUL_LENGTH) * 100, 100)
 
   return (
-    <div className="space-y-5">
-      {/* 标题行 + 状态 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-medium text-foreground">人格定义</h3>
-          {hasChanges ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-500/10 text-amber-600">
-              <AlertCircle className="size-3" />
-              未保存
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-500/10 text-emerald-600">
-              <Check className="size-3" />
-              {isDefault ? '默认' : '自定义'}
-            </span>
-          )}
-          {saveSuccess && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-500/10 text-emerald-600 animate-in fade-in duration-200">
-              <Check className="size-3" />
-              已保存
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            disabled={isSaving || isLoading}
-            className="h-7 text-xs text-muted-foreground"
-          >
-            <RotateCcw className="size-3 mr-1" />
-            重置
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving || isOverLimit}
-            className="h-7 text-xs"
-          >
-            {isSaving ? (
-              <span className="size-3 animate-spin border border-current border-t-transparent rounded-full mr-1" />
+    <div className="space-y-6">
+      <SettingsSection
+        title={
+          <span className="flex items-center gap-2">
+            人格定义
+            {hasChanges ? (
+              <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="mr-1 size-3" />
+                未保存
+              </Badge>
             ) : (
-              <Save className="size-3 mr-1" />
+              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <Check className="mr-1 size-3" />
+                {isDefault ? '默认' : '自定义'}
+              </Badge>
             )}
-            保存
-          </Button>
-        </div>
-      </div>
-
-      {/* 编辑器 */}
-      <div className="rounded-xl border border-border/50 overflow-hidden">
-        {isLoading ? (
-          <div className="min-h-[280px] flex items-center justify-center bg-muted/20">
-            <span className="size-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
-          </div>
-        ) : (
-          <>
-            <Textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              className={cn(
-                'min-h-[280px] font-mono text-[13px] leading-relaxed resize-y border-0 rounded-none focus-visible:ring-0 bg-transparent px-4 py-3 scrollbar-thin',
-                isOverLimit && 'text-destructive'
+            {saveSuccess && (
+              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-in fade-in duration-200">
+                <Check className="mr-1 size-3" />
+                已保存
+              </Badge>
+            )}
+          </span>
+        }
+        description="SOUL.md 是全局身份层（主会话「我是谁」），定义 Agent 的性格、语气和沟通风格。"
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              disabled={isSaving || isLoading}
+              className="h-8 text-xs text-muted-foreground"
+            >
+              <RotateCcw className="mr-1 size-3" />
+              重置
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!hasChanges || isSaving || isOverLimit}
+              className="h-8 text-xs"
+            >
+              {isSaving ? (
+                <span className="size-3 animate-spin border border-current border-t-transparent rounded-full mr-1" />
+              ) : (
+                <Save className="mr-1 size-3" />
               )}
-              placeholder="定义 Agent 的性格、语气和沟通风格..."
-            />
-
-            {/* 底部状态栏 */}
-            <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border/50">
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      isOverLimit
-                        ? 'bg-red-500'
-                        : progressPercent > 80
-                          ? 'bg-amber-500'
-                          : 'bg-muted-foreground/50'
-                    )}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-                <span
-                  className={cn(
-                    'text-xs font-mono',
-                    isOverLimit ? 'text-red-500' : 'text-muted-foreground'
-                  )}
-                >
-                  {charCount} / {MAX_SOUL_LENGTH}
-                </span>
-              </div>
+              保存
+            </Button>
+          </div>
+        }
+      >
+        {/* 编辑器 */}
+        <div className="settings-card overflow-hidden">
+          {isLoading ? (
+            <div className="min-h-[280px] flex items-center justify-center bg-muted/20">
+              <span className="size-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <Textarea
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                className={cn(
+                  'min-h-[280px] font-mono text-sm leading-relaxed resize-y border-0 rounded-none focus-visible:ring-0 bg-transparent px-4 py-3 scrollbar-thin',
+                  isOverLimit && 'text-destructive'
+                )}
+                placeholder="定义 Agent 的性格、语气和沟通风格..."
+              />
+
+              {/* 底部状态栏 */}
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all',
+                        isOverLimit
+                          ? 'bg-red-500'
+                          : progressPercent > 80
+                            ? 'bg-amber-500'
+                            : 'bg-muted-foreground/50'
+                      )}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs font-mono',
+                      isOverLimit ? 'text-red-500' : 'text-muted-foreground'
+                    )}
+                  >
+                    {charCount} / {MAX_SOUL_LENGTH}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </SettingsSection>
 
       {/* 预设模板 */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Sparkles className="size-3" />
-          点击模板快速应用
-        </div>
+      <SettingsSection
+        title={
+          <span className="flex items-center gap-2">
+            <Sparkles className="size-4" />
+            预设模板
+          </span>
+        }
+        description="点击模板快速应用到编辑器。"
+      >
         <div className="grid grid-cols-2 gap-2">
           {SOUL_TEMPLATES.map((template) => {
             const Icon = template.icon
@@ -279,12 +287,12 @@ export function SoulSettings(): React.ReactElement {
                 onClick={() => applyTemplate(template.content)}
                 disabled={isLoading || isSaving}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-lg border border-border/30',
-                  'hover:border-border hover:bg-muted/30 transition-colors text-left',
+                  'settings-card flex items-center gap-3 p-3 text-left',
+                  'hover:bg-muted/30 transition-colors',
                   'disabled:opacity-50 cursor-pointer'
                 )}
               >
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                   <Icon className="size-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -297,7 +305,7 @@ export function SoulSettings(): React.ReactElement {
             )
           })}
         </div>
-      </div>
+      </SettingsSection>
     </div>
   )
 }

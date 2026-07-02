@@ -7,12 +7,12 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
+import { SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import {
   agentDiffUnseenChangesAtom,
   currentAgentSessionIdAtom,
   agentDiffUnseenFilesAtom,
 } from '@/atoms/agent-atoms'
-import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 
 type DiffPanelTab = 'project' | 'activity' | 'changes'
 

@@ -10,7 +10,7 @@
 import { X, Paperclip } from 'lucide-react'
 import * as React from 'react'
 
-import { ImageLightbox } from '@/components/ui/image-lightbox'
+import { ImageLightbox } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface AttachmentPreviewItemProps {

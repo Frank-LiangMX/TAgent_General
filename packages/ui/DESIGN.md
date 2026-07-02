@@ -22,7 +22,7 @@
 | Token 名 | CSS 变量 | 值 | 用途 |
 |---|---|---|---|
 | `glass-input` | `--radius-glass-input` | 24px | `.chat-input-glass` 聊天输入框 |
-| `glass-sidebar` | `--radius-glass-sidebar` | 10px | `.session-glass-sidebar` 侧栏 |
+| `glass-sidebar` | `--radius-glass-sidebar` | 12px | `.session-glass-sidebar` / `.session-list-item-active` 侧栏列表项 |
 | `glass-rail` | `--radius-glass-rail` | 12px | `.session-glass-rail` 导航栏 |
 | `glass-chip` | `--radius-glass-chip` | 6px | `.session-glass-chip` 芯片 |
 | `glass-modal` | `--radius-glass-modal` | 20px | `.session-glass-modal` 模态框 |
@@ -125,10 +125,45 @@ import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 | `CodeBlock` | 代码块（Shiki 高亮） |
 | `MermaidBlock` | Mermaid 图表 |
 
+### 设置原语（10 个，`packages/ui/src/components/settings/`）
+| 组件 | 用途 |
+|---|---|
+| `SettingsSection` | 区块容器（title + description + action 插槽） |
+| `SettingsCard` | 圆角卡片（玻璃底 + 自动分隔线） |
+| `SettingsRow` | 左右结构行（label + ? tooltip + 右侧控件插槽） |
+| `SettingsToggle` | 开关（左 label + 右 Switch） |
+| `SettingsSelect` | 下拉选择（左 label + 右 200px Select） |
+| `SettingsInput` | 文本输入（左 label + 右 200px Input） |
+| `SettingsSecretInput` | 密码输入（API Key 专用，带显隐切换） |
+| `SettingsTextarea` | 多行文本（左 label + 右 280px Textarea） |
+| `SettingsSegmentedControl` | 分段选择（左 label + 右 SegmentedTabs） |
+| `FieldLabel` | label + ? 图标 tooltip（上述组件的内部构建块，也可单独使用） |
+
+**视觉规范**：
+- 所有设置原语都是**左右结构**（label 左，控件右），统一 `ROW_CLASS`
+- `description` 默认隐藏到 `?` 图标 tooltip，避免满屏文字
+- 卡片圆角引用 `--radius-glass-modal` token（20px），跟模态框/浮层一致
+- 调用方写 `<SettingsCard><SettingsRow .../></SettingsCard>` 即可，不需要拼 className
+
 ### Hook（1 个）
 | Hook | 用途 |
 |---|---|
 | `useSmoothStream` | 流式文本平滑输出 |
+
+### 样式类（玻璃系列，定义在 `packages/ui/styles/glass.css`）
+| 类名 | 用途 |
+|---|---|
+| `session-glass` | 强玻璃浮层（聊天输入框 / 用户消息置顶条） |
+| `session-glass-sidebar` | 侧栏浮岛玻璃（轻量，rail/chip 共享） |
+| `session-list-item-active` | 侧栏单行列表项选中态（玻璃底 + 圆角 + 折射层 + dark/material 适配）。**调用方写这一个类即可**，无需再拼 `session-glass session-glass-sidebar rounded-glass-sidebar`。圆角跟随 `--radius-glass-sidebar` token |
+| `settings-card` | 设置页圆角卡片容器（玻璃底 + 顶部高光 + dark 适配）。圆角引用 `--radius-glass-modal` token（20px） |
+| `session-glass-modal` / `session-glass-modal-lg` | 模态框玻璃 |
+| `session-glass-popover` | 弹出层玻璃 |
+| `session-glass-tooltip` | Tooltip 玻璃 |
+| `session-glass-surface` | 弹窗 / 菜单 / 选项浮层通用玻璃 |
+| `session-glass-sticky` | 吸顶元素玻璃 |
+
+**主题色覆盖**：业务侧 `globals.css` 的 4 个主题（ocean / forest / slate-light / slate-dark）通过 `.theme-xxx .session-list-item-active` 选择器覆盖背景色，调用方无需额外处理。
 
 ---
 

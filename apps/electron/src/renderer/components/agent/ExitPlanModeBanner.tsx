@@ -16,13 +16,12 @@ import * as React from 'react'
 
 import type { ExitPlanModeAction, ExitPlanAllowedPrompt } from '@tagent/shared'
 
+import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   allPendingExitPlanRequestsAtom,
   agentStreamingStatesAtom,
   finalizeStreamingActivities,
 } from '@/atoms/agent-atoms'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** 选项定义 */
 interface PlanOption {

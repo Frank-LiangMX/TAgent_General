@@ -18,7 +18,6 @@ import { toast } from 'sonner'
 
 import type { AgentWorkspace } from '@tagent/shared'
 
-import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,15 +27,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
+
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+  DialogTitle, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { cn } from '@/lib/utils'
 

@@ -9,11 +9,11 @@
 import { Hash, CornerDownLeft } from 'lucide-react'
 import * as React from 'react'
 
+import { SearchInput } from '@tagent/ui'
 import { searchSettings, type SearchResult } from './settingsSearchIndex'
 
 import type { SettingsTab } from '@/atoms/settings-tab'
 
-import { SearchInput } from '@/components/ui/search-input'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 

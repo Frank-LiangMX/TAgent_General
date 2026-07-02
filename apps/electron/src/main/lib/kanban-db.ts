@@ -9,9 +9,9 @@
  * 与 automation_* 模块命名隔离：表名一律 kanban_* 前缀，不混用。
  */
 
-import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
+import Database from 'better-sqlite3'
 import {
   type KanbanBoard,
   type KanbanBoardMode,

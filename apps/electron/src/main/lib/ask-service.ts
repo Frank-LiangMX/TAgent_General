@@ -26,6 +26,8 @@ import type {
   ChatMessage as SharedChatMessage,
 } from '@tagent/shared'
 
+import type { StreamRequestInput, ToolCall, ToolResult } from '@tagent/core'
+import type { WebContents } from 'electron'
 import { getAgentSessionSDKMessages, updateAgentSessionMeta } from './agent-session-manager'
 import { appendAskMessage, getAgentSessionAskMessages } from './ask-message-store'
 import { buildAskSystemPrompt } from './ask-prompt-builder'
@@ -39,8 +41,6 @@ import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 
-import type { StreamRequestInput, ToolCall, ToolResult } from '@tagent/core'
-import type { WebContents } from 'electron'
 
 /** Ask 上下文轮数（与 BTW 对齐） */
 const ASK_CONTEXT_TURNS = 20

@@ -17,8 +17,10 @@ export const SECTION_TITLE_CLASS = 'text-base font-semibold text-foreground'
 /** 区块描述样式 */
 export const SECTION_DESCRIPTION_CLASS = 'text-sm text-muted-foreground mt-1'
 
-/** 卡片容器样式 - 圆角卡片 */
-export const CARD_CLASS = 'rounded-xl overflow-hidden settings-card'
+/** 卡片容器样式 - 圆角卡片
+ * 圆角引用 glass-modal token（20px），与模态框/浮层保持一致的"饱满"观感。
+ */
+export const CARD_CLASS = 'rounded-glass-modal overflow-hidden settings-card'
 
 /** 卡片内行样式 */
 export const ROW_CLASS = 'flex items-center justify-between px-4 py-3'

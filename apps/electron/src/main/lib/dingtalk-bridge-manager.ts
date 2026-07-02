@@ -5,9 +5,6 @@
  * 替代原来的单例 `dingtalkBridge`。
  */
 
-import { DingTalkBridge } from './dingtalk-bridge'
-import { getDingTalkMultiBotConfig, getDingTalkBotById } from './dingtalk-config'
-
 import type {
   DingTalkBridgeState,
   DingTalkMultiBridgeState,
@@ -15,6 +12,9 @@ import type {
   DingTalkTestResult,
   DingTalkBotConfig,
 } from '@tagent/shared'
+import { DingTalkBridge } from './dingtalk-bridge'
+import { getDingTalkMultiBotConfig, getDingTalkBotById } from './dingtalk-config'
+
 
 class DingTalkBridgeManager {
   /** botId → Bridge 实例 */

@@ -9,8 +9,8 @@ import { useSetAtom } from 'jotai'
 import { Database, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
+import { Button } from '@tagent/ui'
 import { taActiveTabAtom } from '@/atoms/app-mode'
-import { Button } from '@/components/ui/button'
 
 interface AssetRecord {
   id: string

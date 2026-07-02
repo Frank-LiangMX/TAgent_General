@@ -14,11 +14,11 @@ import * as React from 'react'
 
 import type { AskMessage } from '@tagent/shared'
 
+import { Spinner } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { askStreamErrorsAtom } from '@/atoms/ask-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { Message, MessageContent, MessageHeader } from '@/components/ai-elements/message'
-import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
 interface AskMessageItemProps {

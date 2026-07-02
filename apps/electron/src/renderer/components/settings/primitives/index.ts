@@ -1,16 +1,8 @@
 /**
- * 设置组件原语导出索引
+ * 设置组件原语 - 从 @tagent/ui re-export
  *
- * 统一导出所有设置界面基础组件。
+ * 组件实现已迁入 @tagent/ui 包（packages/ui/src/components/settings/）。
+ * 此文件保留 re-export 以兼容存量 import 路径，新代码请直接从 @tagent/ui 导入。
  */
 
-export * from './SettingsUIConstants'
-export * from './SettingsSection'
-export * from './SettingsCard'
-export * from './SettingsRow'
-export * from './SettingsToggle'
-export * from './SettingsInput'
-export * from './SettingsTextarea'
-export * from './SettingsSecretInput'
-export * from './SettingsSelect'
-export * from './SettingsSegmentedControl'
+export * from '@tagent/ui'

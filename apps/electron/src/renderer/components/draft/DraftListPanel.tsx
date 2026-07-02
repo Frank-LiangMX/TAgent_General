@@ -13,37 +13,17 @@ import * as React from 'react'
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
 
 import {
-  draftsAtom,
-  currentDraftIdAtom,
-  deleteDraftAtom,
-  draftsLoadedAtom,
-  loadDraftsAtom,
-} from '@/atoms/draft-atoms'
-import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
-import { useOpenSession } from '@/hooks/useOpenSession'
-import { useDraftListSlideIndicator } from '@/hooks/useDraftListSlideIndicator'
-import {
-  LIST_SLIDE_HOST_CLASS,
-  LIST_SLIDE_INDICATOR_CLASS,
-  LIST_SLIDE_ITEM_GHOST_CLASS,
-  LIST_SLIDE_ITEM_SELECTED_CLASS,
-  listSlideItemGhostClasses,
-} from '@/lib/list-slide-selection'
-import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu'
-import {
+
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -51,9 +31,17 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+  AlertDialogTitle} from '@tagent/ui'
 import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
+import { useOpenSession } from '@/hooks/useOpenSession'
+import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
+import {
+  draftsAtom,
+  currentDraftIdAtom,
+  deleteDraftAtom,
+  draftsLoadedAtom,
+  loadDraftsAtom,
+} from '@/atoms/draft-atoms'
 import { cn } from '@/lib/utils'
 
 function groupByStatus(
@@ -95,7 +83,6 @@ function formatDraftTime(updatedAt: number): string {
 interface DraftItemProps {
   draft: DraftDocument
   active: boolean
-  useSlideIndicator: boolean
   onSelect: (draft: DraftDocument) => void
   onRequestDelete: (id: string) => void
   onRename: (id: string, newTitle: string) => void
@@ -104,7 +91,6 @@ interface DraftItemProps {
 const DraftItem = React.memo(function DraftItem({
   draft,
   active,
-  useSlideIndicator,
   onSelect,
   onRequestDelete,
   onRename,
@@ -180,17 +166,7 @@ const DraftItem = React.memo(function DraftItem({
           }}
           className={cn(
             'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-colors duration-150 titlebar-no-drag text-left',
-            useSlideIndicator && active && 'pl-5',
-            active
-              ? useSlideIndicator
-                ? cn(
-                    'session-item-selected list-slide-item--selected list-slide-item--ghost',
-                    LIST_SLIDE_ITEM_SELECTED_CLASS,
-                    LIST_SLIDE_ITEM_GHOST_CLASS,
-                    'rounded-[10px] z-10'
-                  )
-                : 'session-item-selected session-glass session-glass-sidebar'
-              : 'rounded-md hover:bg-primary/5'
+            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
           )}
         >
           <StickyNote
@@ -285,7 +261,6 @@ export function DraftListPanel(): React.ReactElement {
   }, [draftsLoaded, loadDrafts])
 
   const listRef = React.useRef<HTMLDivElement>(null)
-  const { plateStyle, accentStyle } = useDraftListSlideIndicator(listRef, currentDraftId)
 
   const groups = React.useMemo(() => groupByStatus(drafts), [drafts])
 
@@ -331,18 +306,7 @@ export function DraftListPanel(): React.ReactElement {
   return (
     <>
       <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag">
-        <div ref={listRef} className={cn('relative', LIST_SLIDE_HOST_CLASS)}>
-          {/* 滑动指示器层 */}
-          <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-            {plateStyle && <div className={LIST_SLIDE_INDICATOR_CLASS} style={plateStyle} />}
-            {accentStyle && (
-              <div
-                className="sidebar-session-slide-accent session-sidebar-accent rounded-full bg-primary/50"
-                style={accentStyle}
-              />
-            )}
-          </div>
-          {/* 列表项层 */}
+        <div ref={listRef} className="relative">
           <div className="relative z-10 flex flex-col gap-0.5">
             {groups.map(({ status, items }) => (
               <React.Fragment key={status}>
@@ -354,7 +318,6 @@ export function DraftListPanel(): React.ReactElement {
                     key={draft.id}
                     draft={draft}
                     active={draft.id === currentDraftId}
-                    useSlideIndicator
                     onSelect={handleClick}
                     onRequestDelete={handleRequestDelete}
                     onRename={handleRename}

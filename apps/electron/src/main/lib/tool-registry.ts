@@ -8,6 +8,8 @@
  * 提供统一接口获取启用的工具定义和系统提示词。
  */
 
+import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
+import type { ChatToolInfo, ChatToolMeta } from '@tagent/shared'
 import { getChatToolsConfig } from './tool-config'
 import {
   AGENT_RECOMMEND_TOOL_META,
@@ -33,8 +35,6 @@ import {
   executeTATool,
 } from './ta-tools'
 
-import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
-import type { ChatToolInfo, ChatToolMeta } from '@tagent/shared'
 
 // ===== 内置工具注册 =====
 

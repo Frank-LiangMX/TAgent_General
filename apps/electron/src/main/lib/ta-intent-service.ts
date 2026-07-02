@@ -5,10 +5,10 @@
  * 在通用模式下主动提示用户安装/启用 ta-agent-mcp。
  */
 
+import type { AgentMessage } from '@tagent/shared'
 import { getAgentSessionMeta } from './agent-session-manager'
 import { getTAMcpServerStatus, isTAMcpConfigured } from './ta-mcp-service'
 
-import type { AgentMessage } from '@tagent/shared'
 
 /** TA 相关关键词（中文+英文） */
 const TA_KEYWORDS = [

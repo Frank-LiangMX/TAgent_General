@@ -3,9 +3,9 @@ import { resolveContextUsageColor } from '@tagent/shared'
 import { ChevronDown } from 'lucide-react'
 import * as React from 'react'
 
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@tagent/ui'
 import { ContextUsageTermHint } from './ContextUsageTermHint'
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { getContextUsageLabel } from '@/lib/context-usage-labels'
 import { formatContextTokens, isFreeSpaceCategory } from '@/lib/context-usage-format'
 import { cn } from '@/lib/utils'

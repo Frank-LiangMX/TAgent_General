@@ -13,9 +13,7 @@ import * as React from 'react'
 
 import type { Editor } from '@tiptap/react'
 
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Button , Separator , Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 interface TableBubbleMenuProps {

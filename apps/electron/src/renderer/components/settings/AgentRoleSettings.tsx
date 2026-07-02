@@ -25,8 +25,19 @@ import {
 import { toast } from 'sonner'
 
 import type { AgentRoleProfile, AgentRolePermissionMode, Channel } from '@tagent/shared'
-import { Button, Badge, Input, Textarea } from '@tagent/ui'
-import { cn } from '@/lib/utils'
+import {
+  Badge,
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Textarea,
+} from '@tagent/ui'
+import { SettingsSection } from './primitives'
 import { useRefreshAgentRoles } from '@/atoms/agent-role-atoms'
 
 /** 权限模式选项 */
@@ -208,36 +219,33 @@ export function AgentRoleSettings(): React.ReactElement {
 
   return (
     <div className="space-y-4 px-1 py-4">
-      {/* 标题栏 */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
+      <SettingsSection
+        title={
+          <span className="flex items-center gap-2">
             <Users className="size-4" />
             角色库
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            定义看板 worker 的专业能力。任务绑定 roleId 后，worker 注入角色 systemPrompt +
-            模型池分配。
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => void handleReset()}>
-          <RotateCcw className="mr-1.5 size-3" />
-          重置默认
-        </Button>
-      </div>
+          </span>
+        }
+        description="定义看板 worker 的专业能力。任务绑定 roleId 后，worker 注入角色 systemPrompt + 模型池分配。"
+        action={
+          <Button variant="outline" size="sm" className="h-8" onClick={() => void handleReset()}>
+            <RotateCcw className="mr-1.5 size-3" />
+            重置默认
+          </Button>
+        }
+      >
+        {/* 角色卡片列表 */}
+        <div className="space-y-2">
+          {roles.map((role) => {
+            const editRole = editing[role.id] ?? role
+            const isExpanded = expandedId === role.id
+            const isDirty = JSON.stringify(editRole) !== JSON.stringify(role)
 
-      {/* 角色卡片列表 */}
-      <div className="space-y-2">
-        {roles.map((role) => {
-          const editRole = editing[role.id] ?? role
-          const isExpanded = expandedId === role.id
-          const isDirty = JSON.stringify(editRole) !== JSON.stringify(role)
-
-          return (
-            <div
-              key={role.id}
-              className="session-glass rounded-glass-popover border border-border/40 overflow-hidden"
-            >
+            return (
+              <div
+                key={role.id}
+                className="settings-card overflow-hidden"
+              >
               {/* 卡片头 */}
               <button
                 type="button"
@@ -254,26 +262,15 @@ export function AgentRoleSettings(): React.ReactElement {
                     <span className="text-sm font-medium text-foreground">
                       {editRole.displayName}
                     </span>
-                    <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground">
+                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
                       {editRole.id}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'text-[9px]',
-                        editRole.permissionMode === 'auto'
-                          ? 'border-amber-500/30 text-amber-600 dark:text-amber-400'
-                          : 'border-blue-500/30 text-blue-600 dark:text-blue-400'
-                      )}
-                    >
-                      {editRole.permissionMode === 'auto' ? '需审批' : '自动放行'}
                     </Badge>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {editRole.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <span className="font-mono">{editRole.modelPool.length}</span>
                   <span>模型</span>
                 </div>
@@ -281,7 +278,7 @@ export function AgentRoleSettings(): React.ReactElement {
 
               {/* 卡片体（展开时） */}
               {isExpanded && (
-                <div className="border-t border-border/40 px-4 py-3 space-y-3 bg-muted/10">
+                <div className="border-t border-border/40 px-4 py-4 space-y-4 bg-muted/10">
                   {/* 显示名 */}
                   <Field label="显示名">
                     <Input
@@ -312,12 +309,12 @@ export function AgentRoleSettings(): React.ReactElement {
 
                   {/* 模型池：列表 + 下拉添加（每行一个，从上到下优先级递减） */}
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-foreground/80">
-                      模型池（从上到下优先级递减，上面的优先用）
+                    <label className="mb-1.5 block text-xs font-medium text-foreground/80">
+                      模型池（从上到下优先级递减）
                     </label>
-                    <div className="space-y-1 rounded-glass-popover border border-border/40 bg-background/40 p-2">
+                    <div className="space-y-1">
                       {editRole.modelPool.length === 0 ? (
-                        <p className="py-2 text-center text-[11px] text-muted-foreground">
+                        <p className="py-2 text-center text-xs text-muted-foreground">
                           模型池为空，dispatcher 将用渠道默认模型
                         </p>
                       ) : (
@@ -326,40 +323,42 @@ export function AgentRoleSettings(): React.ReactElement {
                           return (
                             <div
                               key={modelId}
-                              className="flex items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1"
+                              className="flex items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5"
                             >
-                              <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-muted-foreground">
+                              <span className="w-4 shrink-0 text-center text-[10px] tabular-nums text-muted-foreground">
                                 {idx + 1}
                               </span>
                               <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
                                 {modelInfo?.label ?? modelId}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveUp(role.id, idx)}
-                                disabled={idx === 0}
-                                className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                                title="上移（提高优先级）"
-                              >
-                                <ChevronUp className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveDown(role.id, idx)}
-                                disabled={idx === editRole.modelPool.length - 1}
-                                className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                                title="下移（降低优先级）"
-                              >
-                                <ChevronDown className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveModel(role.id, modelId)}
-                                className="rounded p-0.5 text-muted-foreground hover:text-red-500"
-                                title="移除"
-                              >
-                                <X className="size-3" />
-                              </button>
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveUp(role.id, idx)}
+                                  disabled={idx === 0}
+                                  className="rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                                  title="上移（提高优先级）"
+                                >
+                                  <ChevronUp className="size-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveDown(role.id, idx)}
+                                  disabled={idx === editRole.modelPool.length - 1}
+                                  className="rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                                  title="下移（降低优先级）"
+                                >
+                                  <ChevronDown className="size-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveModel(role.id, modelId)}
+                                  className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                                  title="移除"
+                                >
+                                  <X className="size-3" />
+                                </button>
+                              </div>
                             </div>
                           )
                         })
@@ -373,97 +372,103 @@ export function AgentRoleSettings(): React.ReactElement {
                     />
                   </div>
 
-                  {/* 权限模式 + 并发上限 */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="权限模式">
-                      <select
-                        value={editRole.permissionMode}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            role.id,
-                            'permissionMode',
-                            e.target.value as AgentRolePermissionMode
-                          )
-                        }
-                        className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
-                      >
+                  {/* 权限模式 */}
+                  <Field label="权限模式">
+                    <Select
+                      value={editRole.permissionMode}
+                      onValueChange={(v) =>
+                        handleFieldChange(role.id, 'permissionMode', v as AgentRolePermissionMode)
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {PERMISSION_MODE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
+                          <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </select>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {
-                          PERMISSION_MODE_OPTIONS.find((o) => o.value === editRole.permissionMode)
-                            ?.desc
-                        }
-                      </p>
-                    </Field>
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {
+                        PERMISSION_MODE_OPTIONS.find((o) => o.value === editRole.permissionMode)
+                          ?.desc
+                      }
+                    </p>
+                  </Field>
 
+                  {/* 单模型并发上限 + 回退开关（合并一行） */}
+                  <div className="grid grid-cols-2 gap-3">
                     <Field label="单模型并发上限">
-                      <select
+                      <Select
                         value={String(editRole.maxConcurrentPerModel)}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            role.id,
-                            'maxConcurrentPerModel',
-                            Number(e.target.value)
-                          )
+                        onValueChange={(v) =>
+                          handleFieldChange(role.id, 'maxConcurrentPerModel', Number(v))
                         }
-                        className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                       >
-                        {MAX_CONCURRENT_OPTIONS.map((n) => (
-                          <option key={n} value={String(n)}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        <SelectTrigger className="h-8 w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MAX_CONCURRENT_OPTIONS.map((n) => (
+                            <SelectItem key={n} value={String(n)}>
+                              {n}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
                         避免同模型并行降智，默认 2
                       </p>
                     </Field>
+
+                    <div className="flex flex-col">
+                      <label className="mb-1.5 block text-xs font-medium text-foreground/80">
+                        模型池回退
+                      </label>
+                      <div className="flex h-8 items-center gap-2">
+                        <Switch
+                          checked={editRole.fallbackToChannelDefault}
+                          onCheckedChange={(v) =>
+                            handleFieldChange(role.id, 'fallbackToChannelDefault', v)
+                          }
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          全满时用渠道默认
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* 回退开关 */}
-                  <label className="flex items-center gap-2 text-xs text-foreground/80">
-                    <input
-                      type="checkbox"
-                      checked={editRole.fallbackToChannelDefault}
-                      onChange={(e) =>
-                        handleFieldChange(role.id, 'fallbackToChannelDefault', e.target.checked)
-                      }
-                      className="size-3.5 rounded"
-                    />
-                    模型池全满时回退到渠道默认模型
-                  </label>
-
-                  {/* 保存按钮 */}
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    {isDirty && (
-                      <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                  {/* 保存底栏 */}
+                  {isDirty && (
+                    <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-3">
+                      <span className="text-xs text-amber-600 dark:text-amber-400">
                         有未保存的修改
                       </span>
-                    )}
-                    <Button
-                      size="sm"
-                      className="h-7 text-[11px]"
-                      disabled={!isDirty || saving === role.id}
-                      onClick={() => void handleSave(role.id)}
-                    >
-                      <Save className="mr-1 size-3" />
-                      {saving === role.id ? '保存中...' : '保存'}
-                    </Button>
-                  </div>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={saving === role.id}
+                        onClick={() => void handleSave(role.id)}
+                      >
+                        <Save className="mr-1 size-3" />
+                        {saving === role.id ? '保存中...' : '保存'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )
         })}
-      </div>
+        </div>
+      </SettingsSection>
 
       {/* 说明区 */}
-      <div className="rounded-glass-popover bg-blue-500/5 p-3 border border-blue-500/20">
+      <div className="settings-card p-3 bg-blue-500/5 border-blue-500/20">
         <div className="flex items-start gap-2">
           <Lock className="mt-0.5 size-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="text-[11px] text-foreground/70 space-y-1">
@@ -518,42 +523,38 @@ function ModelPoolAddSelect({
   currentPool: string[]
   onAdd: (modelId: string) => void
 }): React.ReactElement {
-  const [value, setValue] = React.useState('')
-
   const options = React.useMemo(
     () => availableModels.filter((m) => !currentPool.includes(m.id)),
     [availableModels, currentPool]
   )
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-    const modelId = e.target.value
-    if (modelId) {
-      onAdd(modelId)
-      setValue('')
+  const handleValueChange = (v: string): void => {
+    if (v) {
+      onAdd(v)
     }
   }
 
   return (
     <div className="mt-1.5 flex items-center gap-1.5">
       <Plus className="size-3 text-muted-foreground" />
-      <select
-        value={value}
-        onChange={handleChange}
-        className="h-7 flex-1 rounded-md border border-border bg-background px-2 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <option value="">添加模型到池...</option>
-        {options.length === 0 ? (
-          <option value="" disabled>
-            （无可用模型，全部已添加或渠道未配置）
-          </option>
-        ) : (
-          options.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label} ({m.id})
-            </option>
-          ))
-        )}
-      </select>
+      <Select value="" onValueChange={handleValueChange}>
+        <SelectTrigger className="h-7 flex-1 text-xs text-muted-foreground hover:text-foreground">
+          <SelectValue placeholder="添加模型到池..." />
+        </SelectTrigger>
+        <SelectContent>
+          {options.length === 0 ? (
+            <SelectItem value="__none__" disabled>
+              （无可用模型，全部已添加或渠道未配置）
+            </SelectItem>
+          ) : (
+            options.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.label} ({m.id})
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

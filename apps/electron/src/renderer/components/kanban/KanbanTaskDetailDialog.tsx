@@ -17,8 +17,6 @@ import { toast } from 'sonner'
 
 import type { KanbanTask, KanbanTaskStatus, SDKMessage } from '@tagent/shared'
 
-import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-
 import {
   Dialog,
   DialogContent,
@@ -28,6 +26,9 @@ import {
   Badge,
   Button,
 } from '@tagent/ui'
+import { STATUS_BADGE } from './KanbanTaskListItem'
+import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
+
 import { cn } from '@/lib/utils'
 import { useOpenSession } from '@/hooks/useOpenSession'
 
@@ -37,7 +38,6 @@ import {
   getGroupId,
   buildHistoricalTaskSubjects,
 } from '@/components/agent/SDKMessageRenderer'
-import { STATUS_BADGE } from './KanbanTaskListItem'
 
 function formatDuration(ms: number): string {
   const seconds = Math.round(ms / 1000)

@@ -32,6 +32,7 @@ export * from './components/tabs'
 export * from './components/textarea'
 export * from './components/three-petal-spiral'
 export * from './components/tooltip'
+export * from './components/settings'
 
 // 富内容组件
 export { CodeBlock } from './code-block/index.ts'

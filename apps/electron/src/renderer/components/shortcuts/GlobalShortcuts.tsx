@@ -23,9 +23,8 @@ import {
   currentAgentWorkspaceIdAtom,
   agentWorkspacesAtom,
   agentAttachedFilesMapAtom,
-} from '@/atoms/agent-atoms'
+ conversationsAtom } from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
-import { conversationsAtom } from '@/atoms/agent-atoms'
 import { selectedModelAtom } from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'

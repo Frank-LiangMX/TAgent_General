@@ -9,10 +9,10 @@ import { File as PierreFile } from '@pierre/diffs/react'
 import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
+import type { FileContents } from '@pierre/diffs'
 import { CollapsibleResult } from './collapsible-result'
 import { createPierreFileCSS } from './pierre-styles'
 
-import type { FileContents } from '@pierre/diffs'
 
 import { resolvedThemeAtom } from '@/atoms/theme'
 

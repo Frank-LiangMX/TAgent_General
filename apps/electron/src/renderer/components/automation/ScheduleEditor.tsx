@@ -6,15 +6,13 @@ import * as React from 'react'
 
 import type { AutomationScheduleType } from '@tagent/shared'
 
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
+import { Input , Label ,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 export interface ScheduleEditorValue {

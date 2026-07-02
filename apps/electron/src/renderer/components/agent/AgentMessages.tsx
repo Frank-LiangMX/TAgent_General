@@ -6,11 +6,12 @@
  */
 
 import { isSdkCompactingStatusMessage } from '@tagent/shared'
-import { useSmoothStream } from '@tagent/ui'
+import { useSmoothStream , ThreePetalSpiral , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
+import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 import { AskMessageItem } from './AskMessageItem'
 import { ContentBlock } from './ContentBlock'
 import { buildLiveGroupSet } from './live-group-set'
@@ -30,7 +31,6 @@ import { parseThinkTagsFromText } from './thinking-tag-parser'
 
 import type { AgentStreamState } from '@/atoms/agent-atoms'
 import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
-import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 
 import {
   askMessagesMapAtom,
@@ -54,8 +54,6 @@ import {
 } from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
-import { ThreePetalSpiral } from '@/components/ui/three-petal-spiral'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
 import { formatMessageTime } from '@/lib/time-utils'

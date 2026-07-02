@@ -32,6 +32,11 @@ export const DRAFT_TAB_PREFIX = '__draft__:'
 /** 会话预览 Tab 的 ID 前缀：运行时临时入口，不参与持久化 */
 const PREVIEW_TAB_PREFIX = '__preview__:'
 
+/**
+ * Tab 数量上限。超过后新开 tab 自动 LRU 淘汰最久未使用的非激活 tab。
+ * 6 个对应主流窗口宽度（1280-1440）下 tab 栏不滚动，超过后自动清理。
+ */
+export const MAX_TABS = 6
 /** Draft Tab 的 ID 格式：__draft__:<draftId> */
 export function createDraftTabId(draftId: string): string {
   return `${DRAFT_TAB_PREFIX}${draftId}`
@@ -63,6 +68,8 @@ export interface TabItem {
    * 旧记录不设此字段 → 视为 'general'。
    */
   mode?: 'general' | 'ta'
+  /** 最后激活时间戳（用于 LRU 淘汰，未激活过的 tab 用创建时间） */
+  lastUsedAt?: number
 }
 
 /** Tab 持久化数据（保存到 settings.json） */
@@ -326,6 +333,21 @@ export function getPersistableTabState(
 /** 打开或聚焦会话入口。
  * 保留已有标签页，新标签追加到末尾；复用时更新标题。
  * restore 提示存在时，切回带预览的会话会一并重建其预览 Tab 并回到上次视图。 */
+/**
+ * Tab 数量超过 MAX_TABS 时，淘汰最久未使用的非激活 tab。
+ * 保留 preview tab（附属视图，不算独立 tab 占用）。
+ */
+function evictIfOverflow(tabs: TabItem[], activeTabId: string): TabItem[] {
+  if (tabs.length <= MAX_TABS) return tabs
+  // 候选：非激活、非 preview 的 tab
+  const candidates = tabs.filter((t) => t.id !== activeTabId && t.type !== 'preview')
+  if (candidates.length === 0) return tabs
+  // 按 lastUsedAt 升序（最旧的在前，未设的用 0）
+  candidates.sort((a, b) => (a.lastUsedAt ?? 0) - (b.lastUsedAt ?? 0))
+  const evictId = candidates[0]!.id
+  return tabs.filter((t) => t.id !== evictId)
+}
+
 export function openTab(
   tabs: TabItem[],
   item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
@@ -336,14 +358,15 @@ export function openTab(
     const existingIndex = tabs.findIndex((t) => t.id === draftTabId)
     const draftTab =
       existingIndex !== -1
-        ? { ...tabs[existingIndex]!, title: item.title }
-        : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title }
+        ? { ...tabs[existingIndex]!, title: item.title, lastUsedAt: Date.now() }
+        : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title, lastUsedAt: Date.now() }
     if (existingIndex !== -1) {
       const newTabs = [...tabs]
       newTabs[existingIndex] = draftTab
       return { tabs: newTabs, activeTabId: draftTabId }
     }
-    return { tabs: [...tabs, draftTab], activeTabId: draftTabId }
+    const newTabs = evictIfOverflow([...tabs, draftTab], draftTabId)
+    return { tabs: newTabs, activeTabId: draftTabId }
   }
 
   if (item.type === 'preview') {
@@ -358,6 +381,7 @@ export function openTab(
             type: 'agent' as const,
             sessionId: item.sessionId,
             title: item.title,
+            lastUsedAt: Date.now(),
           }
     const previewTab: TabItem = {
       id: createPreviewTabId(item.sessionId),
@@ -379,7 +403,7 @@ export function openTab(
       otherTabs.push(previewTab)
     }
     return {
-      tabs: otherTabs,
+      tabs: evictIfOverflow(otherTabs, previewTab.id),
       activeTabId: previewTab.id,
     }
   }
@@ -389,13 +413,14 @@ export function openTab(
   )
   const sessionTab: TabItem =
     existingIndex !== -1
-      ? { ...tabs[existingIndex]!, title: item.title }
+      ? { ...tabs[existingIndex]!, title: item.title, lastUsedAt: Date.now() }
       : {
           id: item.sessionId,
           type: item.type,
           sessionId: item.sessionId,
           title: item.title,
           mode: item.mode ?? 'general',
+          lastUsedAt: Date.now(),
         }
 
   // 切回带预览的会话：重建该会话的预览 Tab，并按 lastView 决定激活哪个。
@@ -406,7 +431,6 @@ export function openTab(
       sessionId: item.sessionId,
       title: restore.previewTitle,
     }
-    // 已有 tab 保持原位，只重建预览 tab
     const otherTabs = tabs.filter((t) => t.id !== previewTab.id)
     if (existingIndex !== -1) {
       otherTabs.splice(existingIndex, 1, sessionTab)
@@ -414,9 +438,10 @@ export function openTab(
       otherTabs.push(sessionTab)
     }
     otherTabs.push(previewTab)
+    const activeId = restore.lastView === 'preview' ? previewTab.id : sessionTab.id
     return {
-      tabs: otherTabs,
-      activeTabId: restore.lastView === 'preview' ? previewTab.id : sessionTab.id,
+      tabs: evictIfOverflow(otherTabs, activeId),
+      activeTabId: activeId,
     }
   }
 
@@ -430,8 +455,9 @@ export function openTab(
     }
   }
 
+  const newTabs = evictIfOverflow([...tabs, sessionTab], sessionTab.id)
   return {
-    tabs: [...tabs, sessionTab],
+    tabs: newTabs,
     activeTabId: sessionTab.id,
   }
 }

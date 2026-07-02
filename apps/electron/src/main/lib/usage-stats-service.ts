@@ -13,7 +13,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
 
 import type {
   ModelUsageStats,
@@ -29,6 +28,7 @@ import {
   resolveDisplayContextWindow,
   sumContextUsedTokens,
 } from '@tagent/shared'
+import { getAgentSessionsDir, getAgentSessionsIndexPath } from './config-paths'
 
 /** JSONL 消息类型（简化版，只提取需要的字段） */
 interface SessionMessage {

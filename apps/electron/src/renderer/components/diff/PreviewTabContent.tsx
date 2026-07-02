@@ -8,6 +8,7 @@ import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { PanelRight } from 'lucide-react'
 import * as React from 'react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { tearOffPreviewToSplit } from './preview-opener'
@@ -21,7 +22,6 @@ import {
   getPreviewTabTitle,
   tabsAtom,
 } from '@/atoms/tab-atoms'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface PreviewTabContentProps {
   sessionId: string

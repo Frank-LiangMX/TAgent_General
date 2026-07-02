@@ -12,9 +12,9 @@
 import { useAtomValue, useSetAtom, useAtom } from 'jotai'
 import * as React from 'react'
 
-import { ContentWindowDragBand } from '@/components/app-shell/WindowDragStrip'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
+import { ContentWindowDragBand } from '@/components/app-shell/WindowDragStrip'
 
 import { cn } from '@/lib/utils'
 

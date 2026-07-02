@@ -1,7 +1,8 @@
 /**
- * Agent 行为设置面板
+ * Agent 偏好设置面板
  *
  * 整合 Agent 行为相关配置：
+ * - 人格定义（SOUL.md）— 全局身份层
  * - auto-check hook 开关 + 语言级精细配置
  * - SubAgent 派发积极性档位
  * - 看板 worker 模型分配规则（避免并行降智）
@@ -11,13 +12,14 @@
 
 import * as React from 'react'
 import { useAtom } from 'jotai'
+import { ChevronRight } from 'lucide-react'
 
-import { subagentEagernessAtom } from '@/atoms/agent-atoms'
-import type { SubagentEagerness } from '@/atoms/agent-atoms'
 import type { AutoCheckLanguage, LanguageHookConfig } from '@tagent/shared'
+import { Badge, Switch, Input } from '@tagent/ui'
 import { SettingsSection, SettingsCard, SettingsToggle, SettingsSelect } from './primitives'
-import { Switch } from '../ui/switch'
-import { Input } from '../ui/input'
+import { SoulSettings } from './SoulSettings'
+import type { SubagentEagerness } from '@/atoms/agent-atoms'
+import { subagentEagernessAtom } from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
 
 /** SubAgent 档位选项 */
@@ -106,7 +108,7 @@ const LANGUAGE_INFO: Array<{
   },
 ]
 
-export function AgentBehaviorSettings(): React.ReactElement {
+export function AgentPreferencesSettings(): React.ReactElement {
   const [autoCheckEnabled, setAutoCheckEnabled] = React.useState<boolean>(true)
   const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
   const [languagesConfig, setLanguagesConfig] = React.useState<
@@ -233,6 +235,9 @@ export function AgentBehaviorSettings(): React.ReactElement {
 
   return (
     <div className="space-y-6">
+      {/* 人格定义（SOUL.md） */}
+      <SoulSettings />
+
       {/* 自动检查 */}
       <SettingsSection
         title="自动检查"
@@ -252,21 +257,11 @@ export function AgentBehaviorSettings(): React.ReactElement {
           <div className="mt-2">
             <button
               onClick={() => setLangPanelOpen(!langPanelOpen)}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+              className="flex w-full items-center gap-2 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <svg
+              <ChevronRight
                 className={cn('size-3 transition-transform', langPanelOpen && 'rotate-90')}
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path
-                  d="M4 2L8 6L4 10"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              />
               按语言精细配置
             </button>
             {langPanelOpen && (
@@ -284,9 +279,9 @@ export function AgentBehaviorSettings(): React.ReactElement {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{lang.label}</span>
                           {!isDefault && (
-                            <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                            <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400">
                               已自定义
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">{lang.desc}</div>
@@ -305,7 +300,7 @@ export function AgentBehaviorSettings(): React.ReactElement {
                           }}
                           className="w-[60px] h-7 text-xs"
                         />
-                        <span className="text-[10px] text-muted-foreground">秒</span>
+                        <span className="text-xs text-muted-foreground">秒</span>
                         <Switch
                           checked={enabled}
                           onCheckedChange={(checked) =>
@@ -346,16 +341,14 @@ export function AgentBehaviorSettings(): React.ReactElement {
         <SettingsCard>
           <SettingsSelect
             label="看板默认并发上限"
-            description="新建看板的最大并发任务数。kscc 有 6 个模型，建议 5 充分并行；保守场景选 3。已有看板的并发数不变。"
+            description="新建看板的最大并发任务数。kscc 6 模型建议 5；保守场景选 3。已有看板不变。"
             value={String(defaultMaxConcurrent)}
             onValueChange={handleDefaultMaxConcurrentChange}
             options={DEFAULT_MAX_CONCURRENT_OPTIONS}
           />
-        </SettingsCard>
-        <SettingsCard>
           <SettingsSelect
             label="单模型最大并发数"
-            description="同一模型同时跑的 worker 数上限，超限自动切换渠道下一个可用模型。kscc 单模型建议 2，避免限流降智。"
+            description="同一模型同时跑的 worker 上限，超限自动切换渠道下一个可用模型。kscc 建议 2。"
             value={String(maxConcurrentPerModel)}
             onValueChange={handleMaxConcurrentPerModelChange}
             options={MAX_CONCURRENT_PER_MODEL_OPTIONS}
@@ -368,8 +361,6 @@ export function AgentBehaviorSettings(): React.ReactElement {
             checked={preferFreeChannel}
             onCheckedChange={handlePreferFreeChannelChange}
           />
-        </SettingsCard>
-        <SettingsCard>
           <SettingsToggle
             label="允许使用外部模型"
             description="关闭时 worker 只用免费渠道模型；开启后可在白名单内使用外部收费模型（如 Claude / GPT）"

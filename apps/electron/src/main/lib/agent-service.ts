@@ -16,16 +16,6 @@ import { join, dirname } from 'node:path'
 import { AGENT_IPC_CHANNELS, MAX_ATTACHMENT_SIZE } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
-import {
-  ClaudeAgentAdapter,
-  scanAndKillOrphanedClaudeSubprocesses,
-} from './adapters/claude-agent-adapter'
-import { AgentEventBus } from './agent-event-bus'
-import { AgentOrchestrator } from './agent-orchestrator'
-import { setAgentStopper, setHeadlessAgentRunner } from './agent-headless-runner-registry'
-import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
-import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
-
 import type {
   AgentSendInput,
   AgentGenerateTitleInput,
@@ -38,6 +28,16 @@ import type {
   AgentExternalRunSource,
 } from '@tagent/shared'
 import type { WebContents } from 'electron'
+import {
+  ClaudeAgentAdapter,
+  scanAndKillOrphanedClaudeSubprocesses,
+} from './adapters/claude-agent-adapter'
+import { AgentEventBus } from './agent-event-bus'
+import { AgentOrchestrator } from './agent-orchestrator'
+import { setAgentStopper, setHeadlessAgentRunner } from './agent-headless-runner-registry'
+import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
+import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
+
 
 // ===== 实例创建 =====
 

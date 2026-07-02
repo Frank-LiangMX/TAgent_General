@@ -13,6 +13,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 在 UI 设计上采用更现代的方案，UI 组件推荐采用 ShadcnUI，在合适的情况下，用卡片和阴影取代边框，用符合主题的饱满色彩，设置界面要设置背景，为未来做不同主题留下空间。
 - 采用 BDD 行为驱动开发的方案。
 
+## Agent Onboarding Checklist（进入项目第一句话必须报告）
+
+新进入此工程的 AI Agent（Claude / Codex / Cursor / ...）在第一句话里必须确认以下事项：
+
+```
+我已读完 CLAUDE.md 和 docs/PROGRESS.md，了解：
+- 品牌约束：永远用 TAgent，不用 Proma；数据目录 ~/.tagent/
+- UI 库：基础组件从 @tagent/ui 导入，玻璃样式用 session-list-item-active / session-glass-* 类，圆角/颜色用 token，禁止 @/components/ui/* 新增 import（ESLint 会 warn）
+- 状态管理：全部用 Jotai
+- 中文注释优先，保留专业术语
+请问接下来需要我做什么？
+```
+
+不报告此 checklist 的 agent 视为未读规范，用户可要求重读后再继续。
+
 ## 项目概述
 
 TAgent 是一个集成通用 AI Agent 的桌面应用，采用 Electron 架构。
@@ -231,31 +246,51 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 **写任何 UI 代码前必读 `packages/ui/DESIGN.md`**。
 
-### 基础组件
+### 决策树（写 UI 时按顺序回答）
 
-- 基础 UI 组件（Button / Dialog / Tooltip / Popover / Input 等 27 个）已迁移到 `@tagent/ui` 包
-- **新代码必须**：`import { Button } from '@tagent/ui'`
-- **禁止**从 `@/components/ui/xxx` 新增 import（兼容期保留旧路径供存量代码使用，新代码禁用）
+1. **基础组件**（Button / Input / Dialog / Tooltip / Popover / Switch / Badge / Select / Sheet / ...）
+   - ✅ `import { Button } from '@tagent/ui'`
+   - ❌ `import { Button } from '@/components/ui/button'`（ESLint warn，存量可保留，新增禁止）
+
+2. **玻璃浮层样式**（侧栏列表项选中态 / 浮岛 / 模态框 / Tooltip 玻璃底 / 弹出层）
+   - ✅ 查 `packages/ui/styles/glass.css` 类清单：`session-list-item-active` / `session-glass-sidebar` / `session-glass-modal` / `session-glass-popover` / `session-glass-tooltip`
+   - ✅ 单行列表项选中态：直接写 `className="session-list-item-active"`（玻璃底 + 圆角 + 折射层已封装）
+   - ❌ 不要拼 `session-glass session-glass-sidebar rounded-[10px]`（已弃用，用 `session-list-item-active`）
+   - ❌ 不要硬编码 `rounded-[10px]` / `bg-white/10` / `backdrop-blur-md`（用 token 类）
+
+3. **视觉 token**（圆角 / 颜色 / 阴影 / 间距 / 字号 / 动效）
+   - ✅ 查 `packages/ui/src/tokens/` 源文件
+   - ✅ 圆角用 `rounded-glass-*` token 类（如 `rounded-glass-tooltip`）或 `var(--radius-glass-*)`
+   - ✅ 颜色用 Tailwind 语义类：`bg-background` / `text-foreground` / `border-border` / `bg-primary` / `text-muted-foreground`
+   - ❌ 禁止硬编码：`#fff` / `rgb(...)` / `rounded-[14px]` / `shadow-[0_4px_12px_rgba(0,0,0,0.1)]`
+
+4. **业务组件**（AgentView / DraftListPanel / KanbanMainView / ...）
+   - 放 `apps/electron/src/renderer/components/` 下
+   - 复用基础组件 + 玻璃类 + token，不要重新造轮子
+
+### 基础组件清单
+
+27 个基础组件已迁移到 `@tagent/ui`：Button / Input / SearchInput / Textarea / Switch / Slider / Label / Tooltip / Popover / Dialog / AlertDialog / Sheet / DropdownMenu / Alert / Badge / Spinner / LoadingIndicator / Separator / Collapsible / ScrollArea / ScrollProgressContainer / Select / Tabs / SegmentedTabs / ThreePetalSpiral / ImageLightbox / CodeBlock / MermaidBlock
 
 ### Token 系统
 
-- 视觉 token（圆角/颜色/阴影/间距/字号/动效）权威源在 `packages/ui/src/tokens/`
+- 视觉 token 权威源在 `packages/ui/src/tokens/`
 - 修改 token：编辑 `packages/ui/src/tokens/*.ts` → `bun run --filter @tagent/ui tokens:generate` → 全局自动更新
-- **禁止硬编码**：颜色（`#fff` / `rgb(...)`）、圆角（`rounded-[14px]`）、阴影
-- 颜色用 `bg-background` / `text-foreground` / `border-border` 等 Tailwind 语义类
-- 圆角用 `rounded-glass-*` token 类（如 `rounded-glass-tooltip`）
+- 生成产物：`packages/ui/src/tokens/__generated__/tokens.css` + `tailwind-theme.js`，**不要手改生成文件**
 
-### 新增组件
+### 新增 UI 组件流程
 
-- 放 `packages/ui/src/components/`，不放 `apps/electron/src/renderer/components/ui/`
-- 在 `packages/ui/src/index.ts` 加 export
-- 更新 `packages/ui/DESIGN.md` 组件清单
-- `bun run typecheck` 通过 + 视觉抽查
+1. 放 `packages/ui/src/components/`（不放 `apps/electron/src/renderer/components/ui/`）
+2. 在 `packages/ui/src/index.ts` 加 export
+3. 更新 `packages/ui/DESIGN.md` 组件清单
+4. `bun run typecheck` 通过 + 视觉抽查
 
-### session-glass-* 类
+### 新增玻璃样式类
 
-- 定义在 `packages/ui/styles/glass.css`，被 `globals.css` `@import`
-- 圆角引用 `--radius-glass-*` token，改 token 源全局生效
+1. 放 `packages/ui/styles/glass.css`
+2. 圆角引用 `--radius-glass-*` token（先在 `packages/ui/src/tokens/radius.ts` 加 token，再跑 `tokens:generate`）
+3. 业务侧主题色覆盖（ocean / forest / slate）放 `apps/electron/src/renderer/styles/globals.css` 的 `.theme-xxx` 块
+4. 更新 `packages/ui/DESIGN.md` 样式类清单
 
 ## Agent SDK 集成架构
 

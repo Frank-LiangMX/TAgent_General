@@ -10,8 +10,6 @@ import { toast } from 'sonner'
 
 import type { McpServerEntry, SkillMeta, WorkspaceMcpConfig } from '@tagent/shared'
 
-import { workspaceCapabilitiesVersionAtom } from '@/atoms/agent-atoms'
-import { McpServerForm } from '@/components/settings/McpServerForm'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,19 +20,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import {
+
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button, Switch } from '@tagent/ui'
+  DialogTitle, Button, Switch } from '@tagent/ui'
 import { useSetAtom } from 'jotai'
+import type { PluginListItem } from './installed-plugins-grouping'
 import { cn } from '@/lib/utils'
 
-import type { PluginListItem } from './installed-plugins-grouping'
+import { McpServerForm } from '@/components/settings/McpServerForm'
+import { workspaceCapabilitiesVersionAtom } from '@/atoms/agent-atoms'
 
 interface InstalledPluginDetailProps {
   item: PluginListItem

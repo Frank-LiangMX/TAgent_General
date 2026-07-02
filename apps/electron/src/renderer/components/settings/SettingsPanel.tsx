@@ -33,6 +33,16 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+ ScrollArea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { AboutSettings } from './AboutSettings'
 import { AppearanceSettings } from './AppearanceSettings'
 import { BotHubSettings } from './BotHubSettings'
@@ -43,9 +53,8 @@ import { PromptSettings } from './PromptSettings'
 import { ProxySettings } from './ProxySettings'
 import { SettingsSearch } from './SettingsSearch'
 import { ShortcutSettings } from './ShortcutSettings'
-import { SoulSettings } from './SoulSettings'
 import { VoiceInputSettings } from './VoiceInputSettings'
-import { AgentBehaviorSettings } from './AgentBehaviorSettings'
+import { AgentPreferencesSettings } from './AgentBehaviorSettings'
 import { AgentRoleSettings } from './AgentRoleSettings'
 
 import type { SettingsTab } from '@/atoms/settings-tab'
@@ -57,18 +66,6 @@ import {
   settingsCloseRequestedAtom,
 } from '@/atoms/settings-tab'
 import { hasUpdateAtom } from '@/atoms/updater'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   LIST_SLIDE_HOST_CLASS,
   LIST_SLIDE_INDICATOR_CLASS,
@@ -97,8 +94,7 @@ const ALL_TABS: TabItem[] = [
   { id: 'general', label: '通用', icon: <Settings size={15} />, group: 'core' },
   { id: 'channels', label: 'AI 渠道', icon: <Radio size={15} />, group: 'core' },
   { id: 'prompts', label: '提示词', icon: <BookOpen size={15} />, group: 'core' },
-  { id: 'soul', label: '人格', icon: <Sparkles size={15} />, group: 'core' },
-  { id: 'agent-behavior', label: 'Agent 行为', icon: <Wand2 size={15} />, group: 'core' },
+  { id: 'agent-preferences', label: 'Agent 偏好', icon: <Wand2 size={15} />, group: 'core' },
   { id: 'agent-roles', label: '角色库', icon: <Users size={15} />, group: 'core' },
   { id: 'bots', label: '远程', icon: <Bot size={15} />, group: 'integration' },
   { id: 'voice-input', label: '语音', icon: <Mic size={15} />, group: 'integration' },
@@ -117,10 +113,8 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
       return <ChannelSettings />
     case 'prompts':
       return <PromptSettings />
-    case 'soul':
-      return <SoulSettings />
-    case 'agent-behavior':
-      return <AgentBehaviorSettings />
+    case 'agent-preferences':
+      return <AgentPreferencesSettings />
     case 'agent-roles':
       return <AgentRoleSettings />
     case 'proxy':

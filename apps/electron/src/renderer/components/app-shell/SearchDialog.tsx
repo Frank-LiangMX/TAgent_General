@@ -36,6 +36,7 @@ import type {
   SDKUserContentBlock,
 } from '@tagent/shared'
 
+import { Dialog, DialogContent, DialogTitle , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
@@ -44,8 +45,6 @@ import {
   agentPendingPromptAtom,
 } from '@/atoms/agent-atoms'
 import { searchDialogOpenAtom } from '@/atoms/search-atoms'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'

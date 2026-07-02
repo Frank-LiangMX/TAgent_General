@@ -14,6 +14,7 @@ import * as React from 'react'
 
 import type { FileEntry } from '@tagent/shared'
 
+import { Button , Tooltip, TooltipContent, TooltipTrigger , ScrollProgressContainer } from '@tagent/ui'
 import {
   workspaceAttachedDirectoriesMapAtom,
   workspaceAttachedFilesMapAtom,
@@ -35,9 +36,6 @@ import {
   STICKY_ROW_BASE_CLASS,
   canBeSticky,
 } from '@/components/file-browser'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ScrollProgressContainer } from '@/components/ui/scroll-progress-container'
 import { useWorkspaceFileDropActions } from '@/components/agent/WorkspaceFileDropSurface'
 import { cn } from '@/lib/utils'
 

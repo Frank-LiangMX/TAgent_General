@@ -50,17 +50,20 @@ import type {
   UsageStatsOverview,
 } from '@tagent/shared'
 
-import { Button } from '@/components/ui/button'
-import { SegmentedTabs, SegmentedTabsItem } from '@/components/ui/segmented-tabs'
 import {
+  Button,
+  SegmentedTabs,
+  SegmentedTabsItem,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
