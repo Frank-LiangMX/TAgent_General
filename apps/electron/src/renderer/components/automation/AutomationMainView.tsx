@@ -32,8 +32,6 @@ import { AutomationTaskToolbar } from '@/components/automation/AutomationTaskToo
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 
-import { detectIsMac } from '@/lib/platform'
-
 export function AutomationMainView(): React.ReactElement {
   const automations = useAtomValue(automationsAtom)
   const setAutomations = useSetAtom(automationsAtom)
@@ -54,8 +52,6 @@ export function AutomationMainView(): React.ReactElement {
     })
     return cleanup
   }, [refreshAutomations])
-
-  const isMac = React.useMemo(() => detectIsMac(), [])
 
   const selected = automations.find((a) => a.id === selectedId)
 
@@ -95,22 +91,20 @@ export function AutomationMainView(): React.ReactElement {
   if (editorMode === 'create') {
     return (
       <Panel variant="grow" className="content-glass">
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
-          <RailInspectorHeader
-            crumbs={[{ label: '自动任务' }]}
-            title="新建定时任务"
-            description="配置调度、执行环境与任务指令"
-          />
-          <AutomationFormView
-            mode="create"
-            onSaved={(automation) => handleSaved(automation)}
-            onCancelCreate={() => {
-              setEditorMode('edit')
-              if (selectedId) return
-              setSelectedId(null)
-            }}
-          />
-        </div>
+        <RailInspectorHeader
+          crumbs={[{ label: '自动任务' }]}
+          title="新建定时任务"
+          description="配置调度、执行环境与任务指令"
+        />
+        <AutomationFormView
+          mode="create"
+          onSaved={(automation) => handleSaved(automation)}
+          onCancelCreate={() => {
+            setEditorMode('edit')
+            if (selectedId) return
+            setSelectedId(null)
+          }}
+        />
       </Panel>
     )
   }
@@ -118,12 +112,10 @@ export function AutomationMainView(): React.ReactElement {
   if (!selected) {
     return (
       <Panel variant="grow" className="content-glass relative">
-        {!isMac ? (
-          <div
-            className="pointer-events-none absolute inset-0 right-[126px] titlebar-drag-region"
-            aria-hidden
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 right-[126px] titlebar-drag-region"
+          aria-hidden
+        />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
           <Clock size={40} className="opacity-30" />
           <p className="text-sm">从左侧选择任务，或点击 + 创建新任务</p>
@@ -134,26 +126,24 @@ export function AutomationMainView(): React.ReactElement {
 
   return (
     <Panel variant="grow" className="content-glass">
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <RailInspectorHeader
-          crumbs={[{ label: '自动任务' }]}
-          title={selected.name}
-          description={formatScheduleLabel(selected)}
-        />
-        <AutomationTaskToolbar
-          enabled={selected.enabled}
-          running={running}
-          onRunNow={() => void handleRunNow()}
-          onToggle={() => void handleToggle()}
-          onDelete={() => setDeleteOpen(true)}
-        />
-        <AutomationFormView
-          key={selected.id}
-          mode="edit"
-          automation={selected}
-          onSaved={(automation) => handleSaved(automation)}
-        />
-      </div>
+      <RailInspectorHeader
+        crumbs={[{ label: '自动任务' }]}
+        title={selected.name}
+        description={formatScheduleLabel(selected)}
+      />
+      <AutomationTaskToolbar
+        enabled={selected.enabled}
+        running={running}
+        onRunNow={() => void handleRunNow()}
+        onToggle={() => void handleToggle()}
+        onDelete={() => setDeleteOpen(true)}
+      />
+      <AutomationFormView
+        key={selected.id}
+        mode="edit"
+        automation={selected}
+        onSaved={(automation) => handleSaved(automation)}
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

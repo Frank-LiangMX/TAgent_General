@@ -26,12 +26,15 @@ import {
   Hammer,
   MoreVertical,
   Check,
+  CheckSquare,
+  Square,
   CircleCheckBig,
   FolderOpen,
   Folder,
   Hourglass,
   Timer,
   Settings,
+  GripVertical,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -326,6 +329,16 @@ export function LeftSidebar({
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
   /** 额外展开数量：超出预览限制后用户点击"显示更多"展开的条数 */
   const [extraSessionCounts, setExtraSessionCounts] = React.useState<Map<string, number>>(new Map())
+  /** 拖拽排序：正在拖拽的工作区 ID */
+  const [dragProjectId, setDragProjectId] = React.useState<string | null>(null)
+  /** 拖拽排序：drop 指示器位置 { id, position } */
+  const [projectDropIndicator, setProjectDropIndicator] = React.useState<{ id: string; position: 'before' | 'after' } | null>(null)
+  /** 批量删除：当前在选择模式的工作区 ID（null = 未进入选择模式） */
+  const [batchSelectWorkspaceId, setBatchSelectWorkspaceId] = React.useState<string | null>(null)
+  /** 批量删除：选中的会话 ID 集合 */
+  const [batchSelectedSessionIds, setBatchSelectedSessionIds] = React.useState<Set<string>>(new Set())
+  /** 批量删除：确认弹窗是否打开 */
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = React.useState(false)
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
   const mode = useAtomValue(appModeAtom)
@@ -654,6 +667,102 @@ export function LeftSidebar({
     }
   }
 
+  /** 进入批量选择模式 */
+  const handleEnterBatchSelect = React.useCallback((workspaceId: string): void => {
+    setBatchSelectWorkspaceId(workspaceId)
+    setBatchSelectedSessionIds(new Set())
+  }, [])
+
+  /** 退出批量选择模式 */
+  const handleExitBatchSelect = React.useCallback((): void => {
+    setBatchSelectWorkspaceId(null)
+    setBatchSelectedSessionIds(new Set())
+  }, [])
+
+  /** 切换会话选中状态 */
+  const handleToggleBatchSelect = React.useCallback((sessionId: string): void => {
+    setBatchSelectedSessionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) next.delete(sessionId)
+      else next.add(sessionId)
+      return next
+    })
+  }, [])
+
+  /** 请求批量删除（打开确认弹窗） */
+  const handleRequestBatchDelete = React.useCallback((): void => {
+    if (batchSelectedSessionIds.size === 0) return
+    setBatchDeleteConfirmOpen(true)
+  }, [batchSelectedSessionIds.size])
+
+  /** 确认批量删除 */
+  const handleConfirmBatchDelete = async (): Promise<void> => {
+    if (batchSelectedSessionIds.size === 0) return
+    const ids = [...batchSelectedSessionIds]
+
+    // 关闭相关 tab（批量）
+    const tabsToClose = tabs.filter((t) => ids.includes(t.sessionId))
+    let currentTabs = tabs
+    let currentActive = activeTabId
+    for (const tab of tabsToClose) {
+      const result = closeTab(currentTabs, currentActive, tab.id)
+      currentTabs = result.tabs
+      currentActive = result.activeTabId
+    }
+    setTabs(currentTabs)
+    setActiveTabId(currentActive)
+    if (tabsToClose.some((t) => t.id === activeTabId)) {
+      const newActive = currentActive ? currentTabs.find((t) => t.id === currentActive) ?? null : null
+      syncActiveTabSideEffects(newActive)
+    }
+
+    // 清理各种 atom 条目
+    for (const id of ids) {
+      setDraftSessionIds((prev: Set<string>) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      cleanupMapAtoms(id)
+      setWorkingDone((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setAgentMessagesCache((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Map(prev)
+        next.delete(id)
+        return next
+      })
+    }
+
+    // 调 IPC 删除（逐个，失败的不阻断后续）
+    if (mode === 'agent') {
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            await window.electronAPI.deleteAgentSession(id)
+          } catch (error) {
+            console.error(`[侧边栏] 批量删除会话 ${id} 失败:`, error)
+          }
+        })
+      )
+      try {
+        const sessions = await window.electronAPI.listAgentSessions()
+        setAgentSessions(sessions)
+      } catch (error) {
+        console.error('[侧边栏] 批量删除后刷新会话列表失败:', error)
+        setAgentSessions((prev) => prev.filter((s) => !ids.includes(s.id)))
+      }
+    }
+
+    handleExitBatchSelect()
+    setBatchDeleteConfirmOpen(false)
+  }
+
   /** 创建新草稿 */
   const handleNewDraft = async (): Promise<void> => {
     try {
@@ -809,6 +918,96 @@ export function LeftSidebar({
   /** 请求删除项目（弹出二次确认框） */
   const handleRequestDeleteWorkspace = React.useCallback((workspaceId: string): void => {
     setPendingDeleteWorkspaceId(workspaceId)
+  }, [])
+
+  /** 开始拖拽项目排序 */
+  const handleProjectDragStart = React.useCallback((e: React.DragEvent, workspaceId: string): void => {
+    setDragProjectId(workspaceId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', workspaceId)
+  }, [])
+
+  /** 根据鼠标位置计算项目插入点 */
+  const handleProjectDragOver = React.useCallback(
+    (e: React.DragEvent, workspaceId: string): void => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      if (!dragProjectId || dragProjectId === workspaceId) {
+        setProjectDropIndicator(null)
+        return
+      }
+      const rect = e.currentTarget.getBoundingClientRect()
+      const ratio = (e.clientY - rect.top) / rect.height
+      const position: 'before' | 'after' = ratio < 0.5 ? 'before' : 'after'
+      setProjectDropIndicator((prev) =>
+        prev?.id === workspaceId && prev.position === position
+          ? prev
+          : { id: workspaceId, position }
+      )
+    },
+    [dragProjectId]
+  )
+
+  const handleProjectDragLeave = React.useCallback((e: React.DragEvent): void => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setProjectDropIndicator(null)
+    }
+  }, [])
+
+  /** 完成项目排序并持久化 */
+  const handleProjectDrop = React.useCallback(
+    async (e: React.DragEvent, targetWorkspaceId: string): Promise<void> => {
+      e.preventDefault()
+      const indicator = projectDropIndicator
+      if (
+        !dragProjectId ||
+        dragProjectId === targetWorkspaceId ||
+        !indicator ||
+        indicator.id !== targetWorkspaceId
+      ) {
+        setDragProjectId(null)
+        setProjectDropIndicator(null)
+        return
+      }
+
+      const ids = workspaces.map((w) => w.id)
+      const fromIndex = ids.indexOf(dragProjectId)
+      const toIndex = ids.indexOf(targetWorkspaceId)
+      if (fromIndex === -1 || toIndex === -1) {
+        setDragProjectId(null)
+        setProjectDropIndicator(null)
+        return
+      }
+
+      // 计算新顺序：移除源位置，按 indicator 插入目标位置
+      const newIds = ids.filter((id) => id !== dragProjectId)
+      let insertAt = newIds.indexOf(targetWorkspaceId)
+      if (insertAt === -1) insertAt = newIds.length
+      if (indicator.position === 'after') insertAt += 1
+      newIds.splice(insertAt, 0, dragProjectId)
+
+      setDragProjectId(null)
+      setProjectDropIndicator(null)
+
+      // 乐观更新 + 持久化
+      const byId = new Map(workspaces.map((w) => [w.id, w]))
+      const reordered = newIds.map((id) => byId.get(id)!).filter(Boolean)
+      setWorkspaces(reordered)
+      try {
+        const saved = await window.electronAPI.reorderAgentWorkspaces(newIds)
+        setWorkspaces(saved)
+      } catch (error) {
+        console.error('[工作区排序] 持久化失败:', error)
+        // 回滚：重新读取
+        // 注：这里不主动 refetch，让用户看到失败后手动刷新
+      }
+    },
+    [dragProjectId, projectDropIndicator, workspaces, setWorkspaces]
+  )
+
+  const handleProjectDragEnd = React.useCallback((): void => {
+    setDragProjectId(null)
+    setProjectDropIndicator(null)
   }, [])
 
   /** 确认删除项目及其绑定资源 */
@@ -1144,6 +1343,30 @@ export function LeftSidebar({
     }))
   }, [currentModeAgentSessions, draftSessionIds, workspaces])
 
+  // 会话列表变化时，清理多余的 extraSessionCounts：
+  // 如果某工作区已无"可额外展开"的会话（remainingSessions 为空），移除其展开 state，避免"收起"按钮残留
+  React.useEffect(() => {
+    setExtraSessionCounts((prev) => {
+      if (prev.size === 0) return prev
+      let changed = false
+      const next = new Map(prev)
+      for (const group of agentProjectGroups) {
+        const extraCount = next.get(group.workspace.id)
+        if (extraCount === undefined) continue
+        // 估算 remainingSessions 是否为空（与 AgentProjectGroupItem 内部逻辑一致）
+        // 简化判断：会话总数 ≤ 预览限制 + 置顶/工作中数，说明没有可展开的额外会话
+        const previewCapacity =
+          PROJECT_SESSION_PREVIEW_LIMIT +
+          group.sessions.filter((s) => s.pinned || s.manualWorking).length
+        if (group.sessions.length <= previewCapacity) {
+          next.delete(group.workspace.id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [agentProjectGroups])
+
   // 选中会话变化时，如果新选中的会话在某个折叠的 group 里，自动展开该 group
   // 避免顶栏 tab 切到折叠会话时 sidebar 找不到选中项
   React.useEffect(() => {
@@ -1231,6 +1454,34 @@ export function LeftSidebar({
     </AlertDialog>
   )
 
+  // 批量删除确认弹窗
+  const batchDeleteDialog = (
+    <AlertDialog
+      open={batchDeleteConfirmOpen}
+      onOpenChange={(open) => {
+        if (!open) setBatchDeleteConfirmOpen(false)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认批量删除 {batchSelectedSessionIds.size} 个会话</AlertDialogTitle>
+          <AlertDialogDescription>
+            删除后将无法恢复，确定要删除选中的 {batchSelectedSessionIds.size} 个会话吗？
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmBatchDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
   // 迁移会话对话框（collapsed/expanded 共享）
   const moveDialog = (
     <MoveSessionDialog
@@ -1280,6 +1531,21 @@ export function LeftSidebar({
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
             onRenameWorkspace={handleWorkspaceRename}
             onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+            dragProjectId={dragProjectId}
+            projectDropIndicator={projectDropIndicator}
+            onProjectDragStart={handleProjectDragStart}
+            onProjectDragOver={handleProjectDragOver}
+            onProjectDragLeave={handleProjectDragLeave}
+            onProjectDrop={handleProjectDrop}
+            onProjectDragEnd={handleProjectDragEnd}
+            batchSelectWorkspaceId={batchSelectWorkspaceId}
+            batchSelectedSessionIds={batchSelectedSessionIds}
+            onEnterBatchSelect={handleEnterBatchSelect}
+            onExitBatchSelect={handleExitBatchSelect}
+            onToggleBatchSelect={handleToggleBatchSelect}
+            onBatchUpdateSelected={setBatchSelectedSessionIds}
+            onRequestBatchDelete={handleRequestBatchDelete}
+            onConfirmBatchDelete={handleConfirmBatchDelete}
           />
         )
       }
@@ -1328,6 +1594,21 @@ export function LeftSidebar({
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
             onRenameWorkspace={handleWorkspaceRename}
             onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+            dragProjectId={dragProjectId}
+            projectDropIndicator={projectDropIndicator}
+            onProjectDragStart={handleProjectDragStart}
+            onProjectDragOver={handleProjectDragOver}
+            onProjectDragLeave={handleProjectDragLeave}
+            onProjectDrop={handleProjectDrop}
+            onProjectDragEnd={handleProjectDragEnd}
+            batchSelectWorkspaceId={batchSelectWorkspaceId}
+            batchSelectedSessionIds={batchSelectedSessionIds}
+            onEnterBatchSelect={handleEnterBatchSelect}
+            onExitBatchSelect={handleExitBatchSelect}
+            onToggleBatchSelect={handleToggleBatchSelect}
+            onBatchUpdateSelected={setBatchSelectedSessionIds}
+            onRequestBatchDelete={handleRequestBatchDelete}
+            onConfirmBatchDelete={handleConfirmBatchDelete}
           />
         )
     }
@@ -1352,28 +1633,6 @@ export function LeftSidebar({
           aria-hidden
         />
       )}
-      {/* 会话页顶栏 */}
-      {activeRailItem === 'sessions' ? (
-        <div className="shrink-0 flex items-center justify-between px-3 pt-2 pb-1 titlebar-no-drag">
-          <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
-            项目
-          </span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => void createProject()}
-                className="size-5 flex items-center justify-center rounded-md text-foreground/35 hover:bg-foreground/[0.06] hover:text-foreground/60 transition-colors"
-                aria-label="新建项目"
-              >
-                <Plus size={13} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">新建项目</TooltipContent>
-          </Tooltip>
-        </div>
-      ) : null}
-
       {/* 新会话按钮 + 搜索按钮（仅 Agent 会话功能区显示） */}
       {activeRailItem === 'sessions' && (
         <div className="nav-island-action-row px-3 gap-1.5">
@@ -1396,6 +1655,28 @@ export function LeftSidebar({
             <TooltipContent side="bottom">
               搜索 ({getAcceleratorDisplay(getActiveAccelerator('global-search'))})
             </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* 项目标题行 + 新建项目按钮（仅 Agent 会话功能区显示，放在新会话下方） */}
+      {activeRailItem === 'sessions' && (
+        <div className="shrink-0 flex items-center justify-between px-3 pt-2 pb-1 titlebar-no-drag">
+          <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
+            项目
+          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => void createProject()}
+                className="size-5 flex items-center justify-center rounded-md text-foreground/35 hover:bg-foreground/[0.06] hover:text-foreground/60 transition-colors"
+                aria-label="新建项目"
+              >
+                <Plus size={13} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">新建项目</TooltipContent>
           </Tooltip>
         </div>
       )}
@@ -1502,6 +1783,7 @@ export function LeftSidebar({
 
       {deleteDialog}
       {projectDeleteDialog}
+      {batchDeleteDialog}
       {moveDialog}
       <SearchDialog />
       <DraftSearchDialog />
@@ -1535,6 +1817,21 @@ function SessionsRailContent({
   handleNewSessionInWorkspace,
   onRenameWorkspace,
   onRequestDeleteWorkspace,
+  dragProjectId,
+  projectDropIndicator,
+  onProjectDragStart,
+  onProjectDragOver,
+  onProjectDragLeave,
+  onProjectDrop,
+  onProjectDragEnd,
+  batchSelectWorkspaceId,
+  batchSelectedSessionIds,
+  onEnterBatchSelect,
+  onExitBatchSelect,
+  onToggleBatchSelect,
+  onBatchUpdateSelected,
+  onRequestBatchDelete,
+  onConfirmBatchDelete,
 }: {
   activeSessionId: string | null
   agentProjectGroups: AgentProjectGroup[]
@@ -1558,6 +1855,21 @@ function SessionsRailContent({
   handleNewSessionInWorkspace: (workspaceId: string) => Promise<void>
   onRenameWorkspace: (workspaceId: string, name: string) => Promise<void>
   onRequestDeleteWorkspace: (workspaceId: string) => void
+  dragProjectId: string | null
+  projectDropIndicator: { id: string; position: 'before' | 'after' } | null
+  onProjectDragStart: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragOver: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragLeave: (e: React.DragEvent) => void
+  onProjectDrop: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragEnd: () => void
+  batchSelectWorkspaceId: string | null
+  batchSelectedSessionIds: Set<string>
+  onEnterBatchSelect: (workspaceId: string) => void
+  onExitBatchSelect: () => void
+  onToggleBatchSelect: (sessionId: string) => void
+  onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
+  onRequestBatchDelete: () => void
+  onConfirmBatchDelete: () => Promise<void>
 }): React.ReactElement {
   const store = useStore()
 
@@ -1686,6 +1998,21 @@ function SessionsRailContent({
                 handleToggleArchiveAgent={handleToggleArchiveAgent}
                 handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
                 handleRequestMove={handleRequestMove}
+                dragProjectId={dragProjectId}
+                projectDropIndicator={projectDropIndicator}
+                onProjectDragStart={onProjectDragStart}
+                onProjectDragOver={onProjectDragOver}
+                onProjectDragLeave={onProjectDragLeave}
+                onProjectDrop={onProjectDrop}
+                onProjectDragEnd={onProjectDragEnd}
+                batchSelectWorkspaceId={batchSelectWorkspaceId}
+                batchSelectedSessionIds={batchSelectedSessionIds}
+                onEnterBatchSelect={onEnterBatchSelect}
+                onExitBatchSelect={onExitBatchSelect}
+                onToggleBatchSelect={onToggleBatchSelect}
+                onBatchUpdateSelected={onBatchUpdateSelected}
+                onRequestBatchDelete={onRequestBatchDelete}
+                onConfirmBatchDelete={onConfirmBatchDelete}
               />
             ))}
           </div>
@@ -1933,6 +2260,12 @@ interface AgentSessionItemProps {
   workspaceName?: string
   /** 子行扩展样式 */
   childClassName?: string
+  /** 批量选择模式：是否在选择模式 */
+  isBatchMode?: boolean
+  /** 批量选择模式：是否被选中 */
+  isBatchSelected?: boolean
+  /** 批量选择模式：切换选中 */
+  onToggleBatchSelect?: (id: string) => void
   onSelect: (id: string, title: string) => void
   onConfirmDone: (id: string) => Promise<void>
   onRequestDelete: (id: string) => void
@@ -1968,6 +2301,9 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   disableMiniMap,
   workspaceName,
   childClassName,
+  isBatchMode = false,
+  isBatchSelected = false,
+  onToggleBatchSelect,
   onSelect,
   onConfirmDone,
   onRequestDelete,
@@ -1982,7 +2318,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   const [menuOpen, setMenuOpen] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const justStartedEditing = React.useRef(false)
-  const preview = useSessionMiniMapHover(300, disableMiniMap || menuOpen)
+  const preview = useSessionMiniMapHover(300, disableMiniMap || menuOpen || isBatchMode)
 
   const startEdit = (): void => {
     setEditTitle(session.title)
@@ -2081,10 +2417,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  // 非选中态需要前缀图标（工作中 / 置顶）
-  const showPrefixIcon = !active && (session.manualWorking || (session.pinned && !session.manualWorking))
-  // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）
-  const showInlineAccent = !!leftAccent && !(session.manualWorking && !active)
+  // 非选中态需要前缀图标（工作中 / 置顶）；选择模式下隐藏，避免跟 checkbox 冲突
+  const showPrefixIcon = !isBatchMode && !active && (session.manualWorking || (session.pinned && !session.manualWorking))
+  // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）；选择模式下隐藏
+  const showInlineAccent = !isBatchMode && !!leftAccent && !(session.manualWorking && !active)
 
   return (
     <ContextMenu>
@@ -2094,7 +2430,13 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           data-session-list-id={session.id}
           role="button"
           tabIndex={0}
-          onClick={() => onSelect(session.id, session.title)}
+          onClick={() => {
+            if (isBatchMode) {
+              onToggleBatchSelect?.(session.id)
+            } else {
+              onSelect(session.id, session.title)
+            }
+          }}
           onMouseEnter={preview.handleMouseEnter}
           onMouseLeave={preview.handleMouseLeave}
           onDoubleClick={(e) => {
@@ -2104,11 +2446,33 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           className={cn(
             'group relative w-full flex items-center gap-1 py-[7px] px-1 transition-colors duration-150 titlebar-no-drag text-left',
             childClassName,
-            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
+            isBatchSelected
+              ? 'rounded-md bg-primary/10'
+              : active
+                ? 'session-list-item-active'
+                : 'rounded-md hover:bg-primary/5'
           )}
         >
-          {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后 */}
-          <div className="flex-shrink-0 w-[18px]" aria-hidden />
+          {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后；批量模式下替换为 checkbox */}
+          {isBatchMode ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleBatchSelect?.(session.id)
+              }}
+              className="flex-shrink-0 w-[18px] flex items-center justify-center text-foreground/60 hover:text-foreground"
+              aria-label={isBatchSelected ? '取消选中' : '选中'}
+            >
+              {isBatchSelected ? (
+                <CheckSquare className="size-3.5 text-primary" />
+              ) : (
+                <Square className="size-3.5" />
+              )}
+            </button>
+          ) : (
+            <div className="flex-shrink-0 w-[18px]" aria-hidden />
+          )}
           {showInlineAccent && leftAccent && (
             <span
               className={cn(
@@ -2145,18 +2509,21 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             ) : (
               <div
                 className={cn(
-                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1 group-hover:pr-4',
+                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
+                  !isBatchMode && 'group-hover:pr-4',
                   active ? 'text-foreground' : 'text-foreground/80'
                 )}
               >
                 <span className="truncate flex-1 min-w-0">{session.title}</span>
-                <span className="flex-shrink-0 text-[9px] text-foreground/30 tabular-nums">
-                  {formatSessionTime(session.updatedAt)}
-                </span>
+                {!isBatchMode && (
+                  <span className="flex-shrink-0 text-[9px] text-foreground/30 tabular-nums">
+                    {formatSessionTime(session.updatedAt)}
+                  </span>
+                )}
               </div>
             )}
           </div>
-          {!editing && (
+          {!editing && !isBatchMode && (
             <div
               className="absolute right-0 top-1/2 -translate-y-1/2"
               onClick={(e) => e.stopPropagation()}
@@ -2230,6 +2597,21 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleToggleArchiveAgent,
   handleConfirmWorkingDoneAgent,
   handleRequestMove,
+  dragProjectId,
+  projectDropIndicator,
+  onProjectDragStart,
+  onProjectDragOver,
+  onProjectDragLeave,
+  onProjectDrop,
+  onProjectDragEnd,
+  batchSelectWorkspaceId,
+  batchSelectedSessionIds,
+  onEnterBatchSelect,
+  onExitBatchSelect,
+  onToggleBatchSelect,
+  onBatchUpdateSelected,
+  onRequestBatchDelete,
+  onConfirmBatchDelete,
 }: {
   group: AgentProjectGroup
   currentWorkspaceId: string | null
@@ -2254,6 +2636,21 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleToggleArchiveAgent: (id: string) => Promise<void>
   handleConfirmWorkingDoneAgent: (id: string) => Promise<void>
   handleRequestMove: (id: string) => void
+  dragProjectId: string | null
+  projectDropIndicator: { id: string; position: 'before' | 'after' } | null
+  onProjectDragStart: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragOver: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragLeave: (e: React.DragEvent) => void
+  onProjectDrop: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragEnd: () => void
+  batchSelectWorkspaceId: string | null
+  batchSelectedSessionIds: Set<string>
+  onEnterBatchSelect: (workspaceId: string) => void
+  onExitBatchSelect: () => void
+  onToggleBatchSelect: (sessionId: string) => void
+  onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
+  onRequestBatchDelete: () => void
+  onConfirmBatchDelete: () => Promise<void>
 }): React.ReactElement {
   const isCurrent = group.workspace.id === currentWorkspaceId
   const [renaming, setRenaming] = React.useState(false)
@@ -2353,13 +2750,42 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   const sessions = [...collapsedSessions, ...extraSessions]
   const hiddenCount = Math.max(0, group.sessions.length - sessions.length)
 
+  const isDragging = dragProjectId === group.workspace.id
+  const isBatchMode = batchSelectWorkspaceId === group.workspace.id
+  const batchSelectedCount = isBatchMode
+    ? group.sessions.filter((s) => batchSelectedSessionIds.has(s.id)).length
+    : 0
+  const dropPosition =
+    projectDropIndicator?.id === group.workspace.id ? projectDropIndicator.position : null
+
   return (
-    <section className="py-0.5">
+    <section
+      className={cn('relative py-0.5 transition-opacity', isDragging && 'opacity-45')}
+      onDragOver={(e) => onProjectDragOver(e, group.workspace.id)}
+      onDragLeave={onProjectDragLeave}
+      onDrop={(e) => onProjectDrop(e, group.workspace.id)}
+      onDragEnd={onProjectDragEnd}
+    >
+      {dropPosition === 'before' && (
+        <div className="absolute -top-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
+      )}
       <div className="group/project relative flex items-center">
+        {/* 拖拽手柄：hover 显示，draggable 触发排序（选择模式下隐藏） */}
+        {!isBatchMode && (
+          <span
+            draggable
+            onDragStart={(e) => onProjectDragStart(e, group.workspace.id)}
+            title="拖拽排序"
+            className="absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing"
+            aria-hidden="true"
+          >
+            <GripVertical size={12} />
+          </span>
+        )}
         {renaming ? (
           <div
             className={cn(
-              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag',
+              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11',
               isCurrent ? 'text-foreground' : 'text-foreground/65'
             )}
           >
@@ -2379,6 +2805,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             />
           </div>
         ) : (
+          !isBatchMode && (
           <button
             type="button"
             aria-expanded={!collapsed}
@@ -2387,7 +2814,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               onSelectProject(group.workspace.id)
             }}
             className={cn(
-              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-colors titlebar-no-drag group-hover/project:pr-11 hover:bg-foreground/[0.025]',
+              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11 hover:bg-foreground/[0.025]',
               isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
             )}
           >
@@ -2409,25 +2836,76 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               />
             )}
           </button>
+          )
         )}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={`在「${group.workspace.name}」中新建会话`}
-              onClick={(e) => {
-                e.stopPropagation()
-                onNewSession(group.workspace.id)
-              }}
-              className="absolute right-5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag"
+        {!isBatchMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={`在「${group.workspace.name}」中新建会话`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNewSession(group.workspace.id)
+                }}
+                className="absolute right-5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag"
             >
               <Plus size={13} />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">在此项目中新建会话</TooltipContent>
         </Tooltip>
+        )}
 
+        {isBatchMode ? (
+          <div className="flex flex-1 items-center gap-1 px-2 py-1">
+            <span className="text-[12px] font-medium text-foreground/80 mr-1">
+              已选 {batchSelectedCount} / {group.sessions.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const allIds = group.sessions.map((s) => s.id)
+                const allSelected = allIds.every((id) => batchSelectedSessionIds.has(id))
+                if (allSelected) {
+                  onBatchUpdateSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const id of allIds) next.delete(id)
+                    return next
+                  })
+                } else {
+                  onBatchUpdateSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const id of allIds) next.add(id)
+                    return next
+                  })
+                }
+              }}
+              className="h-6 px-2 rounded-md text-[11px] text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground transition-colors"
+            >
+              {group.sessions.length > 0 &&
+              group.sessions.every((s) => batchSelectedSessionIds.has(s.id))
+                ? '取消全选'
+                : '全选'}
+            </button>
+            <button
+              type="button"
+              onClick={onRequestBatchDelete}
+              disabled={batchSelectedCount === 0}
+              className="h-6 px-2 rounded-md text-[11px] text-red-600 dark:text-red-400 hover:bg-red-500/10 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+            >
+              删除{batchSelectedCount > 0 ? ` ${batchSelectedCount}` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={onExitBatchSelect}
+              className="h-6 px-2 rounded-md text-[11px] text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground transition-colors ml-auto"
+            >
+              取消
+            </button>
+          </div>
+        ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -2460,6 +2938,13 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               <Settings size={14} />
               配置 MCP 与 Skills
             </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs py-1 [&>svg]:size-3.5"
+              onSelect={() => onEnterBatchSelect(group.workspace.id)}
+            >
+              <CheckSquare size={14} />
+              批量删除会话
+            </DropdownMenuItem>
             <DropdownMenuSeparator className="my-0.5" />
             <DropdownMenuItem
               className={cn(
@@ -2473,6 +2958,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
 
       <div
@@ -2497,6 +2983,9 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   workspaceName={
                     session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
                   }
+                  isBatchMode={isBatchMode}
+                  isBatchSelected={batchSelectedSessionIds.has(session.id)}
+                  onToggleBatchSelect={onToggleBatchSelect}
                   onSelect={onSelectSession}
                   onRequestDelete={handleRequestDelete}
                   onRequestMove={handleRequestMove}
@@ -2514,10 +3003,10 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   className="w-full flex items-center gap-1 px-1 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
                 >
                   <span className="flex-shrink-0 w-[18px]" aria-hidden />
-                  <span>显示更多</span>
+                  <span>显示更多（{hiddenCount}）</span>
                 </button>
               )}
-              {expanded && (
+              {expanded && extraSessions.length > 0 && (
                 <button
                   type="button"
                   onClick={() => onCollapseExtra(group.workspace.id)}
@@ -2536,6 +3025,9 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
           ) : null}
         </div>
       </div>
+      {dropPosition === 'after' && (
+        <div className="absolute -bottom-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
+      )}
     </section>
   )
 })

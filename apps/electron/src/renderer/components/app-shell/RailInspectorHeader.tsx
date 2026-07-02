@@ -1,11 +1,14 @@
 /**
  * RailInspectorHeader — 主从布局主区顶栏（面包屑 + 标题 + 操作区）
+ *
+ * 全局顶栏拖拽规则：Mac 和 Windows 都在顶栏区域渲染 titlebar-drag-region，
+ * 让用户能拖动窗口。Windows 额外避让右上角窗口控制按钮。
  */
 
 import { ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
-import { detectIsWindows } from '@/lib/platform'
+import { detectIsMac, detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 export interface RailInspectorCrumb {
@@ -30,6 +33,7 @@ export function RailInspectorHeader({
   className,
   reserveWindowControls = true,
 }: RailInspectorHeaderProps): React.ReactElement {
+  const isMac = React.useMemo(() => detectIsMac(), [])
   const isWindows = React.useMemo(() => detectIsWindows(), [])
   const reserveControls = reserveWindowControls && isWindows
 
@@ -41,14 +45,14 @@ export function RailInspectorHeader({
         className
       )}
     >
-      {reserveControls ? (
-        <div
-          className="pointer-events-none absolute inset-0 right-[126px] z-[1] titlebar-drag-region"
-          aria-hidden
-        />
-      ) : null}
+      {/* 全局顶栏拖拽区：Mac 全宽，Windows 避让右上角窗口控制按钮 */}
+      <div
+        className="absolute inset-0 z-[1] titlebar-drag-region"
+        style={reserveControls ? { right: 126 } : undefined}
+        aria-hidden
+      />
 
-      <div className="relative z-[2] flex flex-col gap-2">
+      <div className="relative z-[2] flex flex-col gap-2 titlebar-no-drag">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             {crumbs.length > 0 ? (
@@ -78,7 +82,7 @@ export function RailInspectorHeader({
             ) : null}
           </div>
           {actions ? (
-            <div className="titlebar-no-drag relative z-[20] flex shrink-0 flex-wrap items-center gap-2">
+            <div className="relative z-[20] flex shrink-0 flex-wrap items-center gap-2">
               {actions}
             </div>
           ) : null}
