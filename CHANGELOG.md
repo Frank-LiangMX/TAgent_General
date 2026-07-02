@@ -21,6 +21,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-07-02
+
+### Added
+
+- **看板多 Agent 协作系统（B1–B10）** — 完整的看板编排内核与 UI 全链路，支持多 board 并发、per-board 并发隔离、DAG 依赖解析、事件驱动重派。包含 `kanban-db`（better-sqlite3 + WAL 三表结构）、`kanban-dispatcher`（30s tick + per-board 模型轮询避免降智）、`kanban-worker-service`（强制 bypassPermissions + 防递归 prompt + powerSaveBlocker 防休眠）、6 个 `kanban_*` Agent 工具（create_board / list_boards / add_task / list_tasks / block / comment）、8 个看板 UI 组件（KanbanMainView / BoardSummary / CreateBoardDialog / CreateTaskDialog / RailContent / SwitcherDialog / TaskDetailDialog / TaskListItem / SessionTeamTab）
+- **角色库系统** — `agent-role-service` + `AgentRoleSettings` UI，支持 modelPool / maxConcurrentPerModel / fallbackToChannelDefault 配置；dispatcher 按 role.modelPool 分配模型，避免同模型过度并发降智
+- **看板完成事件回流** — `onBoardCompleted` 回调：worker 完成后检测 board 全部任务终态时触发，`requireSummary=true` 时自动注入主会话汇总消息
+- **任务进度 Dock** — `TaskProgressDock` 组件，看板任务执行状态实时展示
+- **上游 v0.13.4 对齐** — bridge 自愈机制、headless registry、后台任务唤醒、qwen-anthropic provider 适配（PR #16）
+- **P2 预览路由 + automation skill** — 上游对齐的预览路由与自动化 skill 注入
+- **automation agent MCP 工具** — 自动化 Agent 的 MCP 工具桥接
+- **Context 分项 stale-while-revalidate** — Context 各分项独立缓存与刷新，避免整体失效
+- **Superpowers 全套 14 个 skill 收录** — frontmatter 对齐 Claude Code
+- **auto-check PostToolUse 钩子机制** — 工具调用后自动检查 + Agent 行为设置面板
+- **消息布局瘦身 + 全局按钮圆角统一 + 过渡动画** — UI 视觉一致性优化
+- **会话列表选中蒙版定位 + TA 图标 + Badge Tooltip** — 侧栏交互修复
+- **设计文档** — kanban 探索报告、v1 产品设计、session handoff、agent 主动增强设计、kscc 流式与卡顿分析等 4+ 份
+
+### Changed
+
+- **CI 配置** — better-sqlite3 ABI 兼容修复（Node 24 + Electron ABI 分离）、`--ignore-scripts` 跳过 postinstall、`npm rebuild better-sqlite3` 重新编译、手动触发 Electron 二进制下载
+- **`.prettierignore`** — 排除 `__generated__/` 自动生成目录
+- **vitest.config.ts** — 本地 skip better-sqlite3 native module 测试，CI 跑全量
+
+### Fixed
+
+- **P0 上游稳定性对齐 Proma v0.13.3** — 一系列稳定性修复
+- **kanban-dispatcher 测试 CI 超时** — B1-B10 引入 `assignModelForTask` 后，测试未传 `getAvailableModels` 回调导致任务卡在 ready；补上 mock + `maxConcurrentPerModel: 5` 解除单模型并发上限限制
+- **ask-service.test.ts mock 不生效** — `vi.spyOn(cp, 'getConfigDir')` 不影响模块内部直接调用的 `getConfigDir`，改用 `vi.mock('./config-paths')` 替换整个模块的 `getAgentSessionAskMessagesPath`
+- **format:check 31 个文件需 prettier 格式化** — 开发期未跑 format:write 导致 CI 失败
+
+### Removed
+
+- (none)
+
+---
+
 ## [1.3.1] - 2026-06-29
 
 ### Added
