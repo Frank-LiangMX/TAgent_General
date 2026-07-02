@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { BrowserWindow } from 'electron'
 
 import { hideMainWindowToTray, registerMainWindowBridge } from './main-window-bridge'
 
 describe('hideMainWindowToTray', () => {
-  const hideToTray = mock((_win: BrowserWindow) => {})
+  const hideToTray = vi.fn((_win: BrowserWindow) => {})
 
   beforeEach(() => {
     hideToTray.mockClear()

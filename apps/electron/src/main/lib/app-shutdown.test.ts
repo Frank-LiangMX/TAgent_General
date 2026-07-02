@@ -1,48 +1,48 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-const appQuit = mock(() => {})
-const setQuitting = mock(() => {})
-const getIsQuitting = mock(() => false)
+const appQuit = vi.fn(() => {})
+const setQuitting = vi.fn(() => {})
+const getIsQuitting = vi.fn(() => false)
 
-mock.module('electron', () => ({
-  app: { quit: appQuit, exit: mock(() => {}) },
+vi.mock('electron', () => ({
+  app: { quit: appQuit, exit: vi.fn(() => {}) },
   BrowserWindow: {
     getAllWindows: () => [],
   },
 }))
 
-mock.module('./agent-service', () => ({
-  stopAllAgents: mock(() => {}),
-  killOrphanedClaudeSubprocesses: mock(() => {}),
+vi.mock('./agent-service', () => ({
+  stopAllAgents: vi.fn(() => {}),
+  killOrphanedClaudeSubprocesses: vi.fn(() => {}),
 }))
 
-mock.module('./app-lifecycle', () => ({
+vi.mock('./app-lifecycle', () => ({
   getIsQuitting,
   setQuitting,
 }))
 
-mock.module('./auto-archive-scheduler', () => ({ stopAutoArchiveScheduler: mock(() => {}) }))
-mock.module('./bridge-registry', () => ({
-  stopAllBridges: mock(() => {}),
-  stopBridgeSelfHealing: mock(() => {}),
+vi.mock('./auto-archive-scheduler', () => ({ stopAutoArchiveScheduler: vi.fn(() => {}) }))
+vi.mock('./bridge-registry', () => ({
+  stopAllBridges: vi.fn(() => {}),
+  stopBridgeSelfHealing: vi.fn(() => {}),
 }))
-mock.module('./detached-preview-window', () => ({
-  destroyAllDetachedPreviewWindows: mock(() => {}),
+vi.mock('./detached-preview-window', () => ({
+  destroyAllDetachedPreviewWindows: vi.fn(() => {}),
 }))
-mock.module('./feishu-sleep-blocker', () => ({ stopFeishuSyncSleepBlocker: mock(() => {}) }))
-mock.module('./global-shortcut-service', () => ({
-  unregisterAllGlobalShortcuts: mock(() => {}),
+vi.mock('./feishu-sleep-blocker', () => ({ stopFeishuSyncSleepBlocker: vi.fn(() => {}) }))
+vi.mock('./global-shortcut-service', () => ({
+  unregisterAllGlobalShortcuts: vi.fn(() => {}),
 }))
-mock.module('./quick-task-window', () => ({ destroyQuickTaskWindow: mock(() => {}) }))
-mock.module('./tool-config-watcher', () => ({ stopChatToolsWatcher: mock(() => {}) }))
-mock.module('./updater/auto-updater', () => ({
-  cleanupUpdater: mock(() => {}),
+vi.mock('./quick-task-window', () => ({ destroyQuickTaskWindow: vi.fn(() => {}) }))
+vi.mock('./tool-config-watcher', () => ({ stopChatToolsWatcher: vi.fn(() => {}) }))
+vi.mock('./updater/auto-updater', () => ({
+  cleanupUpdater: vi.fn(() => {}),
   getIsQuittingForUpdate: () => false,
 }))
-mock.module('./voice-dictation-window', () => ({
-  destroyVoiceDictationWindow: mock(() => {}),
+vi.mock('./voice-dictation-window', () => ({
+  destroyVoiceDictationWindow: vi.fn(() => {}),
 }))
-mock.module('./workspace-watcher', () => ({ stopWorkspaceWatcher: mock(() => {}) }))
+vi.mock('./workspace-watcher', () => ({ stopWorkspaceWatcher: vi.fn(() => {}) }))
 
 describe('requestApplicationQuit', () => {
   beforeEach(() => {
