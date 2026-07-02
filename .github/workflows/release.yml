@@ -98,8 +98,7 @@ jobs:
       - name: Package (electron-builder)
         working-directory: ${{ matrix.workdir }}
         env:
-          # Skip code signing in CI; platform signing can be added later.
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder ${{ matrix.package_args }} --publish never
 
       - name: Upload artifacts
