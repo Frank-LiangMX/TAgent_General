@@ -135,6 +135,7 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   autoUpdater.on('error', (err) => {
     console.error('[更新] 更新出错:', err)
+    console.error('[更新] 错误堆栈:', err instanceof Error ? err.stack : String(err))
     setStatus({
       status: 'error',
       error: err.message,

@@ -312,8 +312,18 @@ function UpdateSection(): React.ReactElement | null {
           <RefreshCw size={16} className="text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">软件更新</span>
         </div>
-        <UpdateStatusBadge status={status.status} version={status.version} />
+        <UpdateStatusBadge status={status.status} version={status.version} error={status.error} />
       </div>
+
+      {/* 错误详情（可展开） */}
+      {status.status === 'error' && status.error && (
+        <div className="border-t px-4 py-2.5">
+          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive dark:text-destructive">
+            <div className="font-medium mb-0.5">更新失败</div>
+            <div className="text-[11px] break-all opacity-90">{status.error}</div>
+          </div>
+        </div>
+      )}
 
       {/* Release Notes 展开 */}
       {status.status === 'available' && hasReleaseNotes && (
@@ -344,9 +354,11 @@ function UpdateSection(): React.ReactElement | null {
 function UpdateStatusBadge({
   status,
   version,
+  error,
 }: {
   status: string
   version?: string
+  error?: string
 }): React.ReactElement {
   switch (status) {
     case 'checking':
