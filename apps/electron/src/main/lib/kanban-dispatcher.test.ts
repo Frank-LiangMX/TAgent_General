@@ -181,6 +181,7 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         getAvailableModels: () => ['m_test'],
+        maxConcurrentPerModel: 5,
       })
       startKanbanDispatcher()
 
@@ -223,6 +224,7 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         getAvailableModels: () => ['m_test'],
+        maxConcurrentPerModel: 5,
       })
       startKanbanDispatcher()
 
@@ -288,6 +290,7 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         getAvailableModels: () => ['m_test'],
+        maxConcurrentPerModel: 5,
       })
 
       // 暂停看板
