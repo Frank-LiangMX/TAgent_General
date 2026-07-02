@@ -79,7 +79,9 @@ jobs:
           npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
         run: |
-          bun install --frozen-lockfile
+          bun install --frozen-lockfile --ignore-scripts
+          # 手动触发 electron 二进制下载（--ignore-scripts 跳过了 install.js）
+          node node_modules/electron/install.js
 
       - name: Rebuild native modules for Electron
         working-directory: ${{ matrix.workdir }}
