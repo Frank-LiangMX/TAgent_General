@@ -375,6 +375,23 @@
 
 ## 历史进度
 
+### 2026-07-02
+
+**产出**：v1.4.0 发布 + 看板多 Agent 协作系统 + 上游 v0.13.4 对齐
+
+| 任务 | 内容 |
+| ---- | ---- |
+| **v1.4.0 发布** | 看板系统 + 角色库 + 上游 v0.13.4 对齐 + Superpowers 14 skill + auto-check 钩子，三平台安装包（mac/win/linux 共 13 资产约 1.8 GB）发布到 GitHub Release |
+| **PR #17 看板系统** | B1–B10 看板内核（`kanban-db` better-sqlite3 + WAL 三表、`kanban-dispatcher` 30s tick + per-board 模型轮询避免降智、`kanban-worker-service` 强制 bypassPermissions + 防递归 + powerSaveBlocker）+ 6 个 `kanban_*` Agent 工具 + 8 个 UI 组件 + 角色库（`agent-role-service` + `AgentRoleSettings`）+ worker 生命周期 |
+| **PR #16 上游 v0.13.4 对齐** | bridge 自愈机制、headless registry、后台任务唤醒、qwen-anthropic provider、P2 预览路由 + automation skill、P3 UI 修复 + auto-mode 权限路由 |
+| Context 优化 | Context 分项 stale-while-revalidate，各分项独立缓存与刷新 |
+| Skills 收录 | Superpowers 全套 14 个 skill，frontmatter 对齐 Claude Code |
+| Hooks 机制 | auto-check PostToolUse 钩子 + Agent 行为设置面板 |
+| CI 修复 | better-sqlite3 ABI 兼容（Node 24 + Electron ABI 分离）、`--ignore-scripts` 跳过 postinstall、`npm rebuild better-sqlite3` 重新编译、手动触发 Electron 二进制下载 |
+| Release CI 修复 | `release.yml` install 加 `--ignore-scripts` 跳过有 bug 的 node-gyp 9.4.1 install 脚本（ubuntu 上 Makefile `missing separator`），手动 `node node_modules/electron/install.js` 触发二进制下载 |
+| 测试修复 | `kanban-dispatcher.test.ts` 补 `getAvailableModels` mock + `maxConcurrentPerModel: 5`；`ask-service.test.ts` 改用 `vi.mock('./config-paths')` 替换整个模块 |
+| **里程碑** | **看板多 Agent 协作系统 v1 内核落地；上游 v0.13.4 基本对齐完成；v1.4.0 三平台发布** |
+
 ### 2026-06-30
 
 **产出**：上游 Proma v0.13.4 全量扫描 + 进度文档校准
