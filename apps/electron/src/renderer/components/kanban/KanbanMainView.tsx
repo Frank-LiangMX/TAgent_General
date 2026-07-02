@@ -14,7 +14,14 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { KanbanSquare, Loader2, Gauge, Pause, Play } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@tagent/ui'
+import {
+  Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@tagent/ui'
 import type { KanbanTaskStatus } from '@tagent/shared'
 
 import { Panel } from '@/components/app-shell/Panel'
@@ -60,7 +67,8 @@ export function KanbanMainView(): React.ReactElement {
             <KanbanSquare className="size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">从左侧列表选择看板查看进度</p>
             <p className="text-xs text-muted-foreground/70">
-              看板不支持直接创建。在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
+              看板不支持直接创建。在会话里告诉 Agent
+              你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
             </p>
           </div>
         </div>
@@ -138,7 +146,9 @@ export function KanbanMainView(): React.ReactElement {
       {/* 看板工具栏：进度 + 并发 + 暂停（独立行，避免顶栏右侧 WindowControls 避让区留白） */}
       <div className="flex items-center gap-2 border-b border-border/40 px-5 py-2">
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground tabular-nums">
-          <span>{done}/{total}</span>
+          <span>
+            {done}/{total}
+          </span>
           <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-blue-500 transition-all duration-300"
@@ -181,7 +191,9 @@ export function KanbanMainView(): React.ReactElement {
                 )}
               >
                 <span className="tabular-nums">{n}</span>
-                {board.maxConcurrent === n && <span className="text-[10px] text-muted-foreground">当前</span>}
+                {board.maxConcurrent === n && (
+                  <span className="text-[10px] text-muted-foreground">当前</span>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

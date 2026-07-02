@@ -124,9 +124,7 @@ export function AgentHeader({ sessionId, rightSlot }: AgentHeaderProps): React.R
         </div>
       </div>
       {rightSlot && (
-        <div className="relative z-10 flex shrink-0 items-center gap-2">
-          {rightSlot}
-        </div>
+        <div className="relative z-10 flex shrink-0 items-center gap-2">{rightSlot}</div>
       )}
     </div>
   )

@@ -112,9 +112,7 @@ export function unblockKanbanTask(input: UnblockKanbanTaskInput): void {
     status: 'ready',
     blockedReason: undefined,
   })
-  console.log(
-    `[看板] 解除阻塞: ${input.taskId}${input.reason ? `（原因：${input.reason}）` : ''}`
-  )
+  console.log(`[看板] 解除阻塞: ${input.taskId}${input.reason ? `（原因：${input.reason}）` : ''}`)
   broadcastKanbanChanged()
 }
 
@@ -225,9 +223,7 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
   // 5. 广播变更
   broadcastKanbanChanged()
 
-  console.log(
-    `[看板] 草稿升级建板: board=${board.id}, tasks=${tasks.length}, session=${sessionId}`
-  )
+  console.log(`[看板] 草稿升级建板: board=${board.id}, tasks=${tasks.length}, session=${sessionId}`)
 
   return { boardId: board.id, tasks, board }
 }
@@ -367,12 +363,9 @@ export function registerKanbanIpcHandlers(): void {
     return getKanbanBoard(boardId)
   })
 
-  ipcMain.handle(
-    KANBAN_IPC_CHANNELS.LIST_BOARDS,
-    async (_event, input?: ListKanbanBoardsInput) => {
-      return listKanbanBoards(input)
-    }
-  )
+  ipcMain.handle(KANBAN_IPC_CHANNELS.LIST_BOARDS, async (_event, input?: ListKanbanBoardsInput) => {
+    return listKanbanBoards(input)
+  })
 
   ipcMain.handle(
     KANBAN_IPC_CHANNELS.CREATE_BOARD,

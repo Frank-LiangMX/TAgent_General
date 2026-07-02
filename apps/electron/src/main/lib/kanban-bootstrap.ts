@@ -13,10 +13,7 @@
  */
 
 import { kanbanDbService } from './kanban-db'
-import {
-  configureKanbanDispatcher,
-  startKanbanDispatcher,
-} from './kanban-dispatcher'
+import { configureKanbanDispatcher, startKanbanDispatcher } from './kanban-dispatcher'
 import { broadcastKanbanChanged, broadcastBoardCompleted } from './kanban-ipc'
 import { createKanbanHeadlessRunner } from './kanban-worker-service'
 import { listChannels } from './channel-manager'

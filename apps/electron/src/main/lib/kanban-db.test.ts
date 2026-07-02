@@ -246,7 +246,12 @@ describe('KanbanDbService', () => {
       let promoted = db.resolveReadyTasks()
       expect(promoted.map((t) => t.title)).toEqual(['A'])
       expect(db.listTasksByStatus('ready').map((t) => t.title)).toEqual(['A'])
-      expect(db.listTasksByStatus('pending').map((t) => t.title).sort()).toEqual(['B', 'C'])
+      expect(
+        db
+          .listTasksByStatus('pending')
+          .map((t) => t.title)
+          .sort()
+      ).toEqual(['B', 'C'])
 
       // A 完成 → B 可提升
       db.updateTaskStatus(a.id, { status: 'done' })

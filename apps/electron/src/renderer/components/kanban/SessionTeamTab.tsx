@@ -47,9 +47,7 @@ export interface SessionTeamTabProps {
 
 export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): React.ReactElement {
   const { tasks, board, loading, refresh } = useKanbanBoard(sessionId)
-  const [selectedTaskId, setSelectedTaskId] = useAtom(
-    selectedKanbanTaskIdAtomFamily(boardId)
-  )
+  const [selectedTaskId, setSelectedTaskId] = useAtom(selectedKanbanTaskIdAtomFamily(boardId))
   // B5：paused 从 board 派生（切换看板时同步反映真实状态，不再用 local state）
   const paused = board?.paused ?? false
   const [unblockReason, setUnblockReason] = React.useState('')
@@ -196,9 +194,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
             </div>
           )}
           {!loading && tasks.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground">
-              暂无任务
-            </div>
+            <div className="py-8 text-center text-xs text-muted-foreground">暂无任务</div>
           )}
           {STATUS_GROUPS.map(({ status, label }) => {
             const groupTasks = grouped.get(status)
@@ -258,9 +254,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
             <div className="text-center">
               <p>选择左侧任务查看详情</p>
               {board && (
-                <p className="mt-1 text-[11px] text-muted-foreground/70">
-                  看板：{board.id}
-                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground/70">看板：{board.id}</p>
               )}
             </div>
           </div>
@@ -317,9 +311,7 @@ function TaskDetailView({
           <div>
             <h3 className="mb-1.5 text-xs font-medium text-foreground">完成摘要</h3>
             <div className="rounded-glass-popover bg-emerald-500/5 p-3 border border-emerald-500/20">
-              <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                {task.resultSummary}
-              </p>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{task.resultSummary}</p>
             </div>
           </div>
         )}
@@ -328,9 +320,7 @@ function TaskDetailView({
           <div>
             <h3 className="mb-1.5 text-xs font-medium text-foreground">阻塞原因</h3>
             <div className="rounded-glass-popover bg-red-500/5 p-3 border border-red-500/20">
-              <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                {task.blockedReason}
-              </p>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{task.blockedReason}</p>
             </div>
           </div>
         )}
@@ -356,11 +346,7 @@ function TaskDetailView({
                 placeholder="解除原因（可选）"
                 className="flex-1"
               />
-              <Button
-                onClick={onUnblock}
-                disabled={unblocking}
-                className="shrink-0"
-              >
+              <Button onClick={onUnblock} disabled={unblocking} className="shrink-0">
                 {unblocking ? <Loader2 className="size-3.5 animate-spin" /> : '解除阻塞'}
               </Button>
             </div>

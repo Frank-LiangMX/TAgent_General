@@ -10,20 +10,10 @@
  */
 
 import * as React from 'react'
-import {
-  ListTodo,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  CheckCircle2,
-  Circle,
-} from 'lucide-react'
+import { ListTodo, ChevronDown, ChevronUp, Loader2, CheckCircle2, Circle } from 'lucide-react'
 
 import { aggregateTaskItems, type TaskItem } from './task-progress'
-import {
-  buildAllTaskActivities,
-  buildHistoricalTaskSubjects,
-} from './SDKMessageRenderer'
+import { buildAllTaskActivities, buildHistoricalTaskSubjects } from './SDKMessageRenderer'
 
 import type { SDKMessage } from '@tagent/shared'
 
@@ -42,10 +32,7 @@ export function TaskProgressDock({
 }: TaskProgressDockProps): React.ReactElement | null {
   const [expanded, setExpanded] = React.useState(false)
 
-  const activities = React.useMemo(
-    () => buildAllTaskActivities(allMessages),
-    [allMessages]
-  )
+  const activities = React.useMemo(() => buildAllTaskActivities(allMessages), [allMessages])
   const historicalTaskSubjects = React.useMemo(
     () => buildHistoricalTaskSubjects(allMessages),
     [allMessages]
@@ -63,8 +50,7 @@ export function TaskProgressDock({
   const totalCount = items.length
   const currentTask = items.find((t) => t.status === 'in_progress')
   const currentText = currentTask?.activeForm ?? currentTask?.subject ?? ''
-  const percent =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   return (
     <div className="mx-4 mb-1.5">
@@ -79,9 +65,7 @@ export function TaskProgressDock({
         aria-expanded={expanded}
       >
         <ListTodo className="size-3.5 text-muted-foreground shrink-0" />
-        <span className="text-xs font-medium text-foreground/80 shrink-0">
-          任务进度
-        </span>
+        <span className="text-xs font-medium text-foreground/80 shrink-0">任务进度</span>
         <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
           {completedCount}/{totalCount}
         </span>
@@ -137,15 +121,9 @@ function DockTaskRow({ item }: DockTaskRowProps): React.ReactElement {
       )}
     >
       <span className="flex items-center justify-center size-2.5 shrink-0">
-        {item.status === 'pending' && (
-          <Circle className="size-2.5 text-muted-foreground/40" />
-        )}
-        {isInProgress && (
-          <Loader2 className="size-2 animate-spin text-blue-500" />
-        )}
-        {isCompleted && (
-          <CheckCircle2 className="size-2.5 text-green-500" />
-        )}
+        {item.status === 'pending' && <Circle className="size-2.5 text-muted-foreground/40" />}
+        {isInProgress && <Loader2 className="size-2 animate-spin text-blue-500" />}
+        {isCompleted && <CheckCircle2 className="size-2.5 text-green-500" />}
       </span>
       <span
         className={cn(

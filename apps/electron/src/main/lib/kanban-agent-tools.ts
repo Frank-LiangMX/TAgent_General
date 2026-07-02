@@ -69,15 +69,7 @@ export interface KanbanAddTaskArgs {
 
 export interface KanbanListTasksArgs {
   boardId: string
-  status?:
-    | 'pending'
-    | 'ready'
-    | 'running'
-    | 'blocked'
-    | 'review'
-    | 'done'
-    | 'failed'
-    | 'cancelled'
+  status?: 'pending' | 'ready' | 'running' | 'blocked' | 'review' | 'done' | 'failed' | 'cancelled'
 }
 
 export interface KanbanListBoardsArgs {
@@ -154,9 +146,7 @@ const ALLOWED_BOARD_STATUSES: ReadonlySet<string> = new Set(['active', 'complete
 
 function parseBoardStatus(value: unknown): KanbanListBoardsArgs['status'] | undefined {
   if (typeof value !== 'string') return undefined
-  return ALLOWED_BOARD_STATUSES.has(value)
-    ? (value as KanbanListBoardsArgs['status'])
-    : undefined
+  return ALLOWED_BOARD_STATUSES.has(value) ? (value as KanbanListBoardsArgs['status']) : undefined
 }
 
 const ALLOWED_STATUSES: ReadonlySet<string> = new Set([
@@ -186,7 +176,8 @@ const kanbanCreateBoardSchema: Record<string, unknown> = {
     },
     parentSessionId: {
       type: 'string',
-      description: '可选：发起该看板的 Agent 会话 ID（用于侧栏父子会话关联）。B4 起看板可脱离会话独立存在。',
+      description:
+        '可选：发起该看板的 Agent 会话 ID（用于侧栏父子会话关联）。B4 起看板可脱离会话独立存在。',
     },
     title: {
       type: 'string',
@@ -307,7 +298,7 @@ export async function handleCreateBoard(args: Record<string, unknown>): Promise<
     maxConcurrent:
       typeof args.maxConcurrent === 'number' && Number.isFinite(args.maxConcurrent)
         ? args.maxConcurrent
-        : getSettings().agentBehavior?.defaultMaxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT,
+        : (getSettings().agentBehavior?.defaultMaxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT),
   }
   const board: KanbanBoard = kanbanDbService.createBoard(input)
   // 传了 parentSessionId 且会话存在时，自动写回 meta.boardId（触发「团队」Tab 显示）
@@ -338,7 +329,9 @@ export async function handleAddTask(args: Record<string, unknown>): Promise<Kanb
     channelId: assertNonBlank(args.channelId, 'channelId'),
     modelId: optionalString(args.modelId),
     priority:
-      typeof args.priority === 'number' && Number.isFinite(args.priority) ? args.priority : undefined,
+      typeof args.priority === 'number' && Number.isFinite(args.priority)
+        ? args.priority
+        : undefined,
     parentTaskId: optionalString(args.parentTaskId),
   }
   const task: KanbanTask = kanbanDbService.createTask(input)
@@ -425,8 +418,7 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
     },
     kanban_comment: {
       name: 'kanban_comment',
-      description:
-        '向任务的 blackboard 写入注释（任意方可调用，用于跨任务共享上下文 / 备注）。',
+      description: '向任务的 blackboard 写入注释（任意方可调用，用于跨任务共享上下文 / 备注）。',
       inputSchema: kanbanCommentSchema,
       handler: handleComment,
     },

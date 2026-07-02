@@ -61,7 +61,9 @@ export function loadRoles(): AgentRoleProfile[] {
     if (missingBuiltins.length > 0) {
       const merged = [...parsed, ...missingBuiltins]
       saveRoles(merged)
-      console.log(`[角色库] 补齐 ${missingBuiltins.length} 个内置角色: ${missingBuiltins.map((r) => r.id).join(', ')}`)
+      console.log(
+        `[角色库] 补齐 ${missingBuiltins.length} 个内置角色: ${missingBuiltins.map((r) => r.id).join(', ')}`
+      )
       return merged
     }
 
@@ -103,7 +105,11 @@ export function saveRole(role: AgentRoleProfile): AgentRoleProfile[] {
 }
 
 /** 删除角色（内置角色不可删，返回 false） */
-export function deleteRole(roleId: string): { roles: AgentRoleProfile[]; deleted: boolean; reason?: string } {
+export function deleteRole(roleId: string): {
+  roles: AgentRoleProfile[]
+  deleted: boolean
+  reason?: string
+} {
   if (BUILTIN_ROLE_IDS.has(roleId)) {
     return {
       roles: loadRoles(),

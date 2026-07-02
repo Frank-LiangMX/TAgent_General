@@ -26,7 +26,11 @@ import { powerSaveBlocker } from 'electron'
 
 import type { AgentExternalRunSource, SDKMessage } from '@tagent/shared'
 
-import { createAgentSession, getAgentSessionSDKMessages, updateAgentSessionMeta } from './agent-session-manager'
+import {
+  createAgentSession,
+  getAgentSessionSDKMessages,
+  updateAgentSessionMeta,
+} from './agent-session-manager'
 import { runRegisteredHeadlessAgent } from './agent-headless-runner-registry'
 import { kanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
@@ -207,7 +211,10 @@ function extractLastAssistantSummary(sessionId: string): string | undefined {
       (b): b is { type: 'text'; text: string } => b.type === 'text' && typeof b.text === 'string'
     )
     if (textBlocks.length === 0) continue
-    const text = textBlocks.map((b) => b.text).join('').trim()
+    const text = textBlocks
+      .map((b) => b.text)
+      .join('')
+      .trim()
     if (!text) continue
     return text
   }

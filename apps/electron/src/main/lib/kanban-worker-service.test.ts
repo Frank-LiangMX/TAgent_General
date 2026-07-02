@@ -154,10 +154,7 @@ describe('runKanbanTaskHeadless', () => {
   })
 
   test('task.permissionMode=auto 时透传', async () => {
-    const promise = runKanbanTaskHeadless(
-      { ...baseTask, permissionMode: 'auto' },
-      baseBoard
-    )
+    const promise = runKanbanTaskHeadless({ ...baseTask, permissionMode: 'auto' }, baseBoard)
     expect(capturedRuns[0]!.input.permissionModeOverride).toBe('auto')
     completeLatestRun()
     await promise
@@ -165,16 +162,11 @@ describe('runKanbanTaskHeadless', () => {
 
   test('创建子会话（mode=general）并写入 parentBoardId / sourceKanbanTaskId', async () => {
     const promise = runKanbanTaskHeadless(baseTask, baseBoard)
-    expect(mocks.createSession).toHaveBeenCalledWith(
-      '测试任务',
-      'ch_test',
-      undefined,
-      'general'
-    )
-    expect(mocks.updateMeta).toHaveBeenCalledWith(
-      expect.any(String),
-      { parentBoardId: 'b_test1', sourceKanbanTaskId: 't_test1' }
-    )
+    expect(mocks.createSession).toHaveBeenCalledWith('测试任务', 'ch_test', undefined, 'general')
+    expect(mocks.updateMeta).toHaveBeenCalledWith(expect.any(String), {
+      parentBoardId: 'b_test1',
+      sourceKanbanTaskId: 't_test1',
+    })
     completeLatestRun()
     await promise
   })
@@ -303,15 +295,15 @@ describe('buildKanbanAgentTools', () => {
 
   test('kanban_block handler 字段齐全后调用 kanban-db（未接线时抛错）', async () => {
     const tools = buildKanbanAgentTools()
-    await expect(
-      tools.kanban_block!.handler({ taskId: 't_1', reason: '缺信息' })
-    ).rejects.toThrow(/kanban-db 尚未接线/)
+    await expect(tools.kanban_block!.handler({ taskId: 't_1', reason: '缺信息' })).rejects.toThrow(
+      /kanban-db 尚未接线/
+    )
   })
 
   test('kanban_comment handler 抛「未实现」错误（待 Phase D）', async () => {
     const tools = buildKanbanAgentTools()
-    await expect(
-      tools.kanban_comment!.handler({ taskId: 't_1', comment: 'hi' })
-    ).rejects.toThrow(/kanban_comment 尚未实现/)
+    await expect(tools.kanban_comment!.handler({ taskId: 't_1', comment: 'hi' })).rejects.toThrow(
+      /kanban_comment 尚未实现/
+    )
   })
 })

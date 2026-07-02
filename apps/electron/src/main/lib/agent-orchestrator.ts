@@ -1190,11 +1190,7 @@ export class AgentOrchestrator {
       if (!Array.isArray(content)) return m
       let modified = false
       const newContent = content.map((block) => {
-        if (
-          block.type !== 'tool_use' ||
-          block.name !== 'kanban_add_task' ||
-          !block.input
-        ) {
+        if (block.type !== 'tool_use' || block.name !== 'kanban_add_task' || !block.input) {
           return block
         }
         const input = block.input as Record<string, unknown>

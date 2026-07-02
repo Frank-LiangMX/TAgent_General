@@ -11,7 +11,17 @@
  */
 
 import * as React from 'react'
-import { RotateCcw, Save, ChevronDown, ChevronRight, ChevronUp, Users, Lock, Plus, X } from 'lucide-react'
+import {
+  RotateCcw,
+  Save,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Users,
+  Lock,
+  Plus,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { AgentRoleProfile, AgentRolePermissionMode, Channel } from '@tagent/shared'
@@ -20,7 +30,11 @@ import { cn } from '@/lib/utils'
 import { useRefreshAgentRoles } from '@/atoms/agent-role-atoms'
 
 /** 权限模式选项 */
-const PERMISSION_MODE_OPTIONS: Array<{ value: AgentRolePermissionMode; label: string; desc: string }> = [
+const PERMISSION_MODE_OPTIONS: Array<{
+  value: AgentRolePermissionMode
+  label: string
+  desc: string
+}> = [
   { value: 'bypassPermissions', label: '自动放行', desc: '无人值守写操作必备' },
   { value: 'auto', label: '需审批', desc: '写操作走权限弹窗（审核角色用）' },
 ]
@@ -202,7 +216,8 @@ export function AgentRoleSettings(): React.ReactElement {
             角色库
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            定义看板 worker 的专业能力。任务绑定 roleId 后，worker 注入角色 systemPrompt + 模型池分配。
+            定义看板 worker 的专业能力。任务绑定 roleId 后，worker 注入角色 systemPrompt +
+            模型池分配。
           </p>
         </div>
         <Button variant="outline" size="sm" className="h-8" onClick={() => void handleReset()}>
@@ -236,7 +251,9 @@ export function AgentRoleSettings(): React.ReactElement {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{editRole.displayName}</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {editRole.displayName}
+                    </span>
                     <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground">
                       {editRole.id}
                     </Badge>
@@ -252,7 +269,9 @@ export function AgentRoleSettings(): React.ReactElement {
                       {editRole.permissionMode === 'auto' ? '需审批' : '自动放行'}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{editRole.description}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {editRole.description}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   <span className="font-mono">{editRole.modelPool.length}</span>
@@ -360,7 +379,11 @@ export function AgentRoleSettings(): React.ReactElement {
                       <select
                         value={editRole.permissionMode}
                         onChange={(e) =>
-                          handleFieldChange(role.id, 'permissionMode', e.target.value as AgentRolePermissionMode)
+                          handleFieldChange(
+                            role.id,
+                            'permissionMode',
+                            e.target.value as AgentRolePermissionMode
+                          )
                         }
                         className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                       >
@@ -371,7 +394,10 @@ export function AgentRoleSettings(): React.ReactElement {
                         ))}
                       </select>
                       <p className="mt-1 text-[10px] text-muted-foreground">
-                        {PERMISSION_MODE_OPTIONS.find((o) => o.value === editRole.permissionMode)?.desc}
+                        {
+                          PERMISSION_MODE_OPTIONS.find((o) => o.value === editRole.permissionMode)
+                            ?.desc
+                        }
                       </p>
                     </Field>
 
@@ -379,7 +405,11 @@ export function AgentRoleSettings(): React.ReactElement {
                       <select
                         value={String(editRole.maxConcurrentPerModel)}
                         onChange={(e) =>
-                          handleFieldChange(role.id, 'maxConcurrentPerModel', Number(e.target.value))
+                          handleFieldChange(
+                            role.id,
+                            'maxConcurrentPerModel',
+                            Number(e.target.value)
+                          )
                         }
                         className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                       >
@@ -411,7 +441,9 @@ export function AgentRoleSettings(): React.ReactElement {
                   {/* 保存按钮 */}
                   <div className="flex items-center justify-end gap-2 pt-1">
                     {isDirty && (
-                      <span className="text-[10px] text-amber-600 dark:text-amber-400">有未保存的修改</span>
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                        有未保存的修改
+                      </span>
                     )}
                     <Button
                       size="sm"
@@ -436,13 +468,17 @@ export function AgentRoleSettings(): React.ReactElement {
           <Lock className="mt-0.5 size-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="text-[11px] text-foreground/70 space-y-1">
             <p>
-              <strong>与 SOUL.md 的关系</strong>：SOUL.md 是全局身份层（主会话「我是谁」），角色库是任务职责层（worker「这个任务交给谁干」），两者正交。
+              <strong>与 SOUL.md 的关系</strong>：SOUL.md
+              是全局身份层（主会话「我是谁」），角色库是任务职责层（worker「这个任务交给谁干」），两者正交。
             </p>
             <p>
-              <strong>使用方式</strong>：Agent 建任务时传 <code className="rounded bg-muted/50 px-1 py-0.5 font-mono">roleId</code> 参数绑定角色。未绑定的任务用渠道默认模型。
+              <strong>使用方式</strong>：Agent 建任务时传{' '}
+              <code className="rounded bg-muted/50 px-1 py-0.5 font-mono">roleId</code>{' '}
+              参数绑定角色。未绑定的任务用渠道默认模型。
             </p>
             <p>
-              <strong>模型池</strong>：严格用渠道已有模型（kscc: glm-5.1/5.2、kimi-k2.5/2.6、mimo-v2.5/pro）。前面的优先用，满了才换下一个。
+              <strong>模型池</strong>：严格用渠道已有模型（kscc:
+              glm-5.1/5.2、kimi-k2.5/2.6、mimo-v2.5/pro）。前面的优先用，满了才换下一个。
             </p>
           </div>
         </div>
@@ -452,7 +488,13 @@ export function AgentRoleSettings(): React.ReactElement {
 }
 
 /** 字段包装：label + content */
-function Field({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}): React.ReactElement {
   return (
     <div>
       <label className="mb-1 block text-[11px] font-medium text-foreground/80">{label}</label>

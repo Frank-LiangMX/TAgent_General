@@ -32,9 +32,7 @@ import type { KanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
 
 /** 工人执行器：领取 running 任务后调用，返回摘要或错误 */
-export type KanbanWorkerRunner = (
-  task: KanbanTask
-) => Promise<{ summary?: string; error?: string }>
+export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string }>
 
 /**
  * 渠道可用模型查询器

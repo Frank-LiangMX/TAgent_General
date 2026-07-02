@@ -11,9 +11,19 @@
 
 import { ipcMain } from 'electron'
 
-import { AGENT_ROLE_IPC_CHANNELS, type SaveAgentRoleInput, type DeleteAgentRoleInput } from '@tagent/shared'
+import {
+  AGENT_ROLE_IPC_CHANNELS,
+  type SaveAgentRoleInput,
+  type DeleteAgentRoleInput,
+} from '@tagent/shared'
 
-import { loadRoles, getRoleById, saveRole, deleteRole, resetDefaultRoles } from './agent-role-service'
+import {
+  loadRoles,
+  getRoleById,
+  saveRole,
+  deleteRole,
+  resetDefaultRoles,
+} from './agent-role-service'
 
 /** 注册角色库 IPC 处理器 */
 export function registerAgentRoleIpcHandlers(): void {

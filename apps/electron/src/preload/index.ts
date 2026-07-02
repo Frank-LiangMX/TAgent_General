@@ -1226,9 +1226,15 @@ export interface ElectronAPI {
     /** 获取单个角色 by id */
     get: (roleId: string) => Promise<import('@tagent/shared').AgentRoleProfile | undefined>
     /** 保存角色（新增或覆盖） */
-    save: (input: import('@tagent/shared').SaveAgentRoleInput) => Promise<import('@tagent/shared').AgentRoleProfile[]>
+    save: (
+      input: import('@tagent/shared').SaveAgentRoleInput
+    ) => Promise<import('@tagent/shared').AgentRoleProfile[]>
     /** 删除角色（内置不可删） */
-    delete: (input: import('@tagent/shared').DeleteAgentRoleInput) => Promise<{ roles: import('@tagent/shared').AgentRoleProfile[]; deleted: boolean; reason?: string }>
+    delete: (input: import('@tagent/shared').DeleteAgentRoleInput) => Promise<{
+      roles: import('@tagent/shared').AgentRoleProfile[]
+      deleted: boolean
+      reason?: string
+    }>
     /** 重置为默认角色 */
     resetDefault: () => Promise<import('@tagent/shared').AgentRoleProfile[]>
   }
@@ -1310,9 +1316,7 @@ export interface ElectronAPI {
 
   kanban: {
     listTasks: (boardId: string) => Promise<import('@tagent/shared').KanbanTask[]>
-    getBoard: (
-      boardId: string
-    ) => Promise<import('@tagent/shared').KanbanBoard | null>
+    getBoard: (boardId: string) => Promise<import('@tagent/shared').KanbanBoard | null>
     /** 列出所有看板（B4：全局看板视图） */
     listBoards: (
       input?: import('@tagent/shared').ListKanbanBoardsInput
@@ -1336,9 +1340,7 @@ export interface ElectronAPI {
     ) => Promise<import('@tagent/shared').CreateBoardFromDraftResult>
     pauseBoard: (boardId: string) => Promise<void>
     resumeBoard: (boardId: string) => Promise<void>
-    unblockTask: (
-      input: import('@tagent/shared').UnblockKanbanTaskInput
-    ) => Promise<void>
+    unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) => Promise<void>
     retryTask: (taskId: string) => Promise<void>
     attachBoardToSession: (
       input: import('@tagent/shared').AttachBoardToSessionInput
@@ -3453,12 +3455,10 @@ const electronAPI: ElectronAPI = {
     createBoardFromDraft: (input: import('@tagent/shared').CreateBoardFromDraftInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.CREATE_BOARD_FROM_DRAFT, input),
     pauseBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.PAUSE_BOARD, boardId),
-    resumeBoard: (boardId: string) =>
-      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RESUME_BOARD, boardId),
+    resumeBoard: (boardId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RESUME_BOARD, boardId),
     unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.UNBLOCK_TASK, input),
-    retryTask: (taskId: string) =>
-      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RETRY_TASK, taskId),
+    retryTask: (taskId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RETRY_TASK, taskId),
     attachBoardToSession: (input: import('@tagent/shared').AttachBoardToSessionInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.ATTACH_BOARD_TO_SESSION, input),
     detachBoardFromSession: (input: import('@tagent/shared').DetachBoardFromSessionInput) =>
@@ -3497,8 +3497,7 @@ const electronAPI: ElectronAPI = {
   // ===== 窗口关闭确认 =====
 
   onWindowCloseRequest: (callback: (data?: { runningTaskCount?: number }) => void) => {
-    const listener = (_event: unknown, data?: { runningTaskCount?: number }): void =>
-      callback(data)
+    const listener = (_event: unknown, data?: { runningTaskCount?: number }): void => callback(data)
     ipcRenderer.on(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)
     return () => {
       ipcRenderer.removeListener(WINDOW_CLOSE_IPC_CHANNELS.REQUEST, listener)

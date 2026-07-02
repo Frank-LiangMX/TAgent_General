@@ -40,7 +40,10 @@ function computeDuration(task: KanbanTask): number {
 }
 
 /** 状态 → 徽章样式与中文标签 */
-export const STATUS_BADGE: Record<KanbanTaskStatus, { label: string; className: string; dot: string }> = {
+export const STATUS_BADGE: Record<
+  KanbanTaskStatus,
+  { label: string; className: string; dot: string }
+> = {
   pending: {
     label: '待办',
     className: 'bg-muted text-muted-foreground border-transparent',

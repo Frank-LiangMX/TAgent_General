@@ -49,7 +49,8 @@ export function WindowCloseConfirmDialog({
               </span>
             </div>
             <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-400/80">
-              最小化到托盘可让任务继续执行；退出会中断所有任务（下次启动会自动恢复为 ready 重新派工）。
+              最小化到托盘可让任务继续执行；退出会中断所有任务（下次启动会自动恢复为 ready
+              重新派工）。
             </p>
           </div>
         )}

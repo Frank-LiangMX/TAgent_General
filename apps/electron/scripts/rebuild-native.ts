@@ -48,10 +48,7 @@ function getElectronVersion(): string {
 function getNodeGypBin(): string {
   const binDir = join(electronPkgRoot, '../../node_modules/.bin')
   const binName = process.platform === 'win32' ? 'node-gyp.cmd' : 'node-gyp'
-  const candidates = [
-    join(binDir, binName),
-    join(binDir, 'node-gyp.exe'),
-  ]
+  const candidates = [join(binDir, binName), join(binDir, 'node-gyp.exe')]
   for (const p of candidates) {
     if (existsSync(p)) return p
   }
@@ -67,9 +64,7 @@ function verifyArtifact(bsqDir: string): void {
   }
   const stat = statSync(nodeFile)
   if (stat.size < 100_000) {
-    throw new Error(
-      `编译产物异常：文件大小 ${stat.size} bytes，预期 > 100KB\n产物: ${nodeFile}`
-    )
+    throw new Error(`编译产物异常：文件大小 ${stat.size} bytes，预期 > 100KB\n产物: ${nodeFile}`)
   }
   console.log(`[rebuild-native] 校验通过: ${nodeFile} (${(stat.size / 1024).toFixed(0)} KB)`)
 }
@@ -106,9 +101,10 @@ function main(): void {
     `--target=${electronVersion}`,
     '--disturl=https://electronjs.org/headers',
   ]
-  const cmd = nodeGyp.endsWith('npx.cmd') || nodeGyp === 'npx'
-    ? `${nodeGyp} node-gyp ${args.join(' ')}`
-    : `"${nodeGyp}" ${args.join(' ')}`
+  const cmd =
+    nodeGyp.endsWith('npx.cmd') || nodeGyp === 'npx'
+      ? `${nodeGyp} node-gyp ${args.join(' ')}`
+      : `"${nodeGyp}" ${args.join(' ')}`
 
   execSync(cmd, { cwd: bsqDir, stdio: 'inherit' })
 

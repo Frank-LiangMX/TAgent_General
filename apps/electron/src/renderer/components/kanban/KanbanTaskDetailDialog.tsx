@@ -264,9 +264,7 @@ export function KanbanTaskDetailDialog({
                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : groups.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted-foreground">
-                    工人尚未产出消息
-                  </p>
+                  <p className="py-4 text-center text-xs text-muted-foreground">工人尚未产出消息</p>
                 ) : (
                   <div className="space-y-2">
                     {groups.map((group) => (

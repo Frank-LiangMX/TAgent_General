@@ -10,20 +10,39 @@ import { Check, Loader2 } from 'lucide-react'
 
 import type { KanbanBoard, KanbanBoardMode, KanbanBoardStatus } from '@tagent/shared'
 
-import { Badge, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@tagent/ui'
+import {
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@tagent/ui'
 
 import { cn } from '@/lib/utils'
 
 /** 模式徽章 */
 const MODE_BADGE: Record<KanbanBoardMode, { label: string; className: string }> = {
-  general: { label: '通用', className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-transparent' },
-  ta: { label: 'TA', className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-transparent' },
+  general: {
+    label: '通用',
+    className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-transparent',
+  },
+  ta: {
+    label: 'TA',
+    className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-transparent',
+  },
 }
 
 /** 状态徽章 */
 const STATUS_BADGE: Record<KanbanBoardStatus, { label: string; className: string }> = {
-  active: { label: '进行中', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent' },
-  completed: { label: '已完成', className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-transparent' },
+  active: {
+    label: '进行中',
+    className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent',
+  },
+  completed: {
+    label: '已完成',
+    className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-transparent',
+  },
   cancelled: { label: '已取消', className: 'bg-muted text-muted-foreground border-transparent' },
 }
 
@@ -89,19 +108,28 @@ export function KanbanSwitcherDialog({
                     'session-glass w-full rounded-glass-popover px-3 py-2.5 text-left transition-all',
                     'hover:bg-background/60 hover:shadow-md',
                     isCurrent && 'ring-2 ring-blue-500/50 bg-background/70',
-                    isCancelled && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:shadow-none'
+                    isCancelled &&
+                      'opacity-50 cursor-not-allowed hover:bg-transparent hover:shadow-none'
                   )}
                 >
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-medium text-foreground">{title}</span>
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {title}
+                        </span>
                       </div>
                       <div className="mt-1 flex items-center gap-1.5">
-                        <Badge variant="outline" className={cn('text-[9px] px-1 py-0', modeBadge.className)}>
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[9px] px-1 py-0', modeBadge.className)}
+                        >
                           {modeBadge.label}
                         </Badge>
-                        <Badge variant="outline" className={cn('text-[9px] px-1 py-0', statusBadge.className)}>
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[9px] px-1 py-0', statusBadge.className)}
+                        >
                           {statusBadge.label}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">

@@ -97,7 +97,9 @@ describe('isAutoModeAutoAllowTool（带 cwd）', () => {
 
   test('Bash cat cwd 内文件 → 静默放行', () => {
     expect(isAutoModeAutoAllowTool('Bash', { command: 'cat README.md' }, cwd)).toBe(true)
-    expect(isAutoModeAutoAllowTool('Bash', { command: 'cat F:/TAgent_General/x.ts' }, cwd)).toBe(true)
+    expect(isAutoModeAutoAllowTool('Bash', { command: 'cat F:/TAgent_General/x.ts' }, cwd)).toBe(
+      true
+    )
   })
 
   test('Bash cat cwd 外文件 → 需确认', () => {

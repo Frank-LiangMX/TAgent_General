@@ -33,11 +33,7 @@ async function waitForAllSettled(
 }
 
 /** 轮询直到断言函数返回 true */
-async function waitFor(
-  fn: () => boolean,
-  timeoutMs = 2000,
-  msg = 'waitFor 超时'
-): Promise<void> {
+async function waitFor(fn: () => boolean, timeoutMs = 2000, msg = 'waitFor 超时'): Promise<void> {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (fn()) return
@@ -173,7 +169,11 @@ describe('KanbanDispatcher', () => {
       startKanbanDispatcher()
 
       // 等待 3 个工人被领取
-      await waitFor(() => pendingResolvers.size === 3, 2000, `期望 3 个工人被领取，实际 ${pendingResolvers.size}`)
+      await waitFor(
+        () => pendingResolvers.size === 3,
+        2000,
+        `期望 3 个工人被领取，实际 ${pendingResolvers.size}`
+      )
 
       // 此时应只有 3 个 running，2 个 ready
       expect(maxObservedConcurrent).toBe(3)
@@ -235,7 +235,11 @@ describe('KanbanDispatcher', () => {
       startKanbanDispatcher()
 
       // 各自跑 2 个，总共 4 个 running
-      await waitFor(() => pendingResolvers.size === 4, 2000, `期望 4 个工人被领取，实际 ${pendingResolvers.size}`)
+      await waitFor(
+        () => pendingResolvers.size === 4,
+        2000,
+        `期望 4 个工人被领取，实际 ${pendingResolvers.size}`
+      )
       expect(getRunningTaskIdsByBoard(boardA.id).size).toBe(2)
       expect(getRunningTaskIdsByBoard(boardB.id).size).toBe(2)
       expect(getRunningTaskIds().size).toBe(4)

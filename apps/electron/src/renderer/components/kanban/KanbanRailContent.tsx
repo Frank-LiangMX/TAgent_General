@@ -26,7 +26,11 @@ import {
 } from '@tagent/ui'
 import type { KanbanBoardMode } from '@tagent/shared'
 
-import { useKanbanBoards, kanbanBoardsFilterAtom, selectedKanbanBoardIdAtom } from '@/atoms/kanban-atoms'
+import {
+  useKanbanBoards,
+  kanbanBoardsFilterAtom,
+  selectedKanbanBoardIdAtom,
+} from '@/atoms/kanban-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 import { KanbanCreateBoardDialog } from './KanbanCreateBoardDialog'
@@ -38,7 +42,14 @@ function KanbanBoardItem({
   onRename,
   onDelete,
 }: {
-  board: { id: string; title?: string; rootGoal: string; mode: string; status: string; updatedAt: number }
+  board: {
+    id: string
+    title?: string
+    rootGoal: string
+    mode: string
+    status: string
+    updatedAt: number
+  }
   selected: boolean
   onOpen: () => void
   onRename: () => void
@@ -52,9 +63,7 @@ function KanbanBoardItem({
     <div
       className={cn(
         'group relative flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors',
-        selected
-          ? 'bg-blue-500/10 ring-1 ring-blue-500/30'
-          : 'hover:bg-muted/40',
+        selected ? 'bg-blue-500/10 ring-1 ring-blue-500/30' : 'hover:bg-muted/40',
         isCancelled && 'opacity-50'
       )}
       onClick={onOpen}
@@ -67,7 +76,12 @@ function KanbanBoardItem({
         <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
           <span>{board.mode === 'ta' ? 'TA' : '通用'}</span>
           <span>·</span>
-          <span>{new Date(board.updatedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}</span>
+          <span>
+            {new Date(board.updatedAt).toLocaleDateString('zh-CN', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
           {isCancelled && (
             <>
               <span>·</span>
@@ -141,8 +155,12 @@ export function KanbanRailContent(): React.ReactElement {
   }, [topLevelMode, filter, setFilter, setStoredFilter])
 
   // Dialog 状态：重命名 / 删除（新建看板入口已移除）
-  const [renameTarget, setRenameTarget] = React.useState<{ boardId: string; title: string } | null>(null)
-  const [deleteTarget, setDeleteTarget] = React.useState<{ boardId: string; title: string } | null>(null)
+  const [renameTarget, setRenameTarget] = React.useState<{ boardId: string; title: string } | null>(
+    null
+  )
+  const [deleteTarget, setDeleteTarget] = React.useState<{ boardId: string; title: string } | null>(
+    null
+  )
 
   const handleOpen = (boardId: string): void => {
     setSelectedBoardId(boardId)
@@ -202,11 +220,11 @@ export function KanbanRailContent(): React.ReactElement {
       {/* 模式过滤切换（segmented control 风格） */}
       <div className="flex items-center gap-1 px-3 pb-2">
         <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
-          {([
+          {[
             { value: 'general' as const, label: '通用' },
             { value: 'ta' as const, label: 'TA' },
             { value: 'all' as const, label: '全部' },
-          ]).map((tab) => {
+          ].map((tab) => {
             const currentValue = filter.mode ?? 'all'
             const isActive = currentValue === tab.value
             return (
@@ -244,7 +262,11 @@ export function KanbanRailContent(): React.ReactElement {
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <KanbanSquare className="size-8 text-muted-foreground/40 mb-2" />
             <p className="text-xs text-muted-foreground mb-1">
-              {filter.mode === 'ta' ? 'TA 模式暂无看板' : filter.mode === 'general' ? '通用模式暂无看板' : '暂无看板'}
+              {filter.mode === 'ta'
+                ? 'TA 模式暂无看板'
+                : filter.mode === 'general'
+                  ? '通用模式暂无看板'
+                  : '暂无看板'}
             </p>
             <p className="text-[10px] text-muted-foreground/70 max-w-[200px] leading-relaxed">
               在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。

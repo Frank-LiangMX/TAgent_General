@@ -503,7 +503,8 @@ function createWindow(): void {
           let runningTaskCount = 0
           try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { kanbanDbService } = require('./lib/kanban-db') as typeof import('./lib/kanban-db')
+            const { kanbanDbService } =
+              require('./lib/kanban-db') as typeof import('./lib/kanban-db')
             if (kanbanDbService.isInitialized()) {
               runningTaskCount = kanbanDbService.listTasksByStatus('running').length
             }

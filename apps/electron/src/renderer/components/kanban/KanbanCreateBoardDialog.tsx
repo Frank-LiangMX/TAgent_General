@@ -121,7 +121,8 @@ export function KanbanCreateBoardDialog({
           ) : null}
           <div className="space-y-1.5">
             <Label htmlFor="board-title" className="text-xs">
-              看板标题{isCreate ? '（可选）' : ' '} <span className="text-red-500">{!isCreate ? '*' : ''}</span>
+              看板标题{isCreate ? '（可选）' : ' '}{' '}
+              <span className="text-red-500">{!isCreate ? '*' : ''}</span>
             </Label>
             <Input
               id="board-title"

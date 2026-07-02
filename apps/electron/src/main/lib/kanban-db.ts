@@ -348,9 +348,9 @@ export class KanbanDbService {
   private migrateV1ToV2(): void {
     if (!this.db) return
     // 检查 kanban_tasks 的外键是否引用了 kanban_boards_old
-    const tasksSchema = this.db.prepare(
-      "SELECT sql FROM sqlite_master WHERE type='table' AND name='kanban_tasks'"
-    ).get() as { sql: string } | undefined
+    const tasksSchema = this.db
+      .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='kanban_tasks'")
+      .get() as { sql: string } | undefined
 
     if (!tasksSchema) return
     if (!tasksSchema.sql.includes('kanban_boards_old')) {
@@ -514,9 +514,9 @@ export class KanbanDbService {
   /** 获取看板 */
   getBoard(boardId: string): KanbanBoard | null {
     const db = this.requireDb()
-    const row = db
-      .prepare('SELECT * FROM kanban_boards WHERE id = ?')
-      .get(boardId) as KanbanBoardRow | undefined
+    const row = db.prepare('SELECT * FROM kanban_boards WHERE id = ?').get(boardId) as
+      | KanbanBoardRow
+      | undefined
     return row ? rowToBoard(row) : null
   }
 
@@ -666,9 +666,9 @@ export class KanbanDbService {
   /** 获取单个任务 */
   getTask(taskId: string): KanbanTask | null {
     const db = this.requireDb()
-    const row = db
-      .prepare('SELECT * FROM kanban_tasks WHERE id = ?')
-      .get(taskId) as KanbanTaskRow | undefined
+    const row = db.prepare('SELECT * FROM kanban_tasks WHERE id = ?').get(taskId) as
+      | KanbanTaskRow
+      | undefined
     return row ? rowToTask(row) : null
   }
 
@@ -691,18 +691,18 @@ export class KanbanDbService {
    */
   updateTaskModel(taskId: string, modelId: string | undefined): void {
     const db = this.requireDb()
-    db.prepare(
-      `UPDATE kanban_tasks SET model_id = ?, updated_at = ? WHERE id = ?`
-    ).run(modelId ?? null, Date.now(), taskId)
+    db.prepare(`UPDATE kanban_tasks SET model_id = ?, updated_at = ? WHERE id = ?`).run(
+      modelId ?? null,
+      Date.now(),
+      taskId
+    )
   }
 
   /** 列出某状态的所有任务（按优先级降序、创建时间升序） */
   listTasksByStatus(status: KanbanTaskStatus): KanbanTask[] {
     const db = this.requireDb()
     const rows = db
-      .prepare(
-        'SELECT * FROM kanban_tasks WHERE status = ? ORDER BY priority DESC, created_at ASC'
-      )
+      .prepare('SELECT * FROM kanban_tasks WHERE status = ? ORDER BY priority DESC, created_at ASC')
       .all(status) as KanbanTaskRow[]
     return rows.map(rowToTask)
   }
@@ -819,7 +819,7 @@ export class KanbanDbService {
   listBlockingLinks(taskId: string): KanbanTaskLink[] {
     const db = this.requireDb()
     const rows = db
-      .prepare('SELECT * FROM kanban_task_links WHERE to_task_id = ? AND type = \'blocks\'')
+      .prepare("SELECT * FROM kanban_task_links WHERE to_task_id = ? AND type = 'blocks'")
       .all(taskId) as KanbanTaskLinkRow[]
     return rows.map((row) => ({
       fromTaskId: row.from_task_id,
@@ -857,7 +857,7 @@ export class KanbanDbService {
 
     const now = Date.now()
     const promote = db.prepare(
-      'UPDATE kanban_tasks SET status = \'ready\', updated_at = ? WHERE id = ?'
+      "UPDATE kanban_tasks SET status = 'ready', updated_at = ? WHERE id = ?"
     )
     const promoted: KanbanTask[] = []
     const tx = db.transaction(() => {
