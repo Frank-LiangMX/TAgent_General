@@ -20,12 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle, Button, Switch } from '@tagent/ui'
+  DialogTitle,
+  Button,
+  Switch,
+} from '@tagent/ui'
 import { useSetAtom } from 'jotai'
 import type { PluginListItem } from './installed-plugins-grouping'
 import { cn } from '@/lib/utils'

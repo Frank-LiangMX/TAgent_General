@@ -14,7 +14,6 @@ import type { ConversationMeta, FileAttachment, ChatMessage } from '@tagent/shar
 import { getConversationAttachmentsDir } from './config-paths'
 import { createConversation, appendMessage } from './conversation-manager'
 
-
 /**
  * 获取教程文件路径
  *

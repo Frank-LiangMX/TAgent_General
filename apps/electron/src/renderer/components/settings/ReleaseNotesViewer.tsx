@@ -4,7 +4,7 @@
  * 显示 GitHub Release 的发布说明（Markdown 格式）
  */
 
-import { CodeBlock , Badge , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { CodeBlock, Badge, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { ExternalLink } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'

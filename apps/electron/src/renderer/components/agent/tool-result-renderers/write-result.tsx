@@ -11,7 +11,6 @@ import * as React from 'react'
 import type { FileContents } from '@pierre/diffs'
 import { PIERRE_DIFF_CSS } from './pierre-styles'
 
-
 import { resolvedThemeAtom } from '@/atoms/theme'
 import { FilePathChip } from '@/components/ai-elements/file-path-chip'
 

@@ -12,7 +12,16 @@ import * as React from 'react'
 
 import type { TAgentPermissionMode } from '@tagent/shared'
 
-import { Button , Popover, PopoverContent, PopoverTrigger , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@tagent/ui'
 import {
   agentPermissionModeMapAtom,
   agentDefaultPermissionModeAtom,

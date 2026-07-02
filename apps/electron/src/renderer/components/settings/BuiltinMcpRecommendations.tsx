@@ -9,7 +9,7 @@ import * as React from 'react'
 
 import { getRecommendedDevMcps, getTaMcps, type BuiltinMcpCatalogEntry } from '@tagent/shared'
 
-import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 export type BuiltinMcpInfo = BuiltinMcpCatalogEntry & {

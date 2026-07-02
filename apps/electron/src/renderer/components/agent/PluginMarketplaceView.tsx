@@ -11,7 +11,6 @@ import type { BuiltinMcpCatalogEntry, PluginStoreCatalog } from '@tagent/shared'
 import { Button, SearchInput, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import { useAtomValue } from 'jotai'
 
-
 import { PluginMarketplaceBundleDetail } from './PluginMarketplaceBundleDetail'
 import { PluginMarketplaceDetail } from './PluginMarketplaceDetail'
 import { PluginToolbarButton } from './plugin-toolbar-button'

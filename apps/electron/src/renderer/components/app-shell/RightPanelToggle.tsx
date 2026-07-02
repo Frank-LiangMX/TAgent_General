@@ -8,7 +8,7 @@ import { useAtomValue } from 'jotai'
 import { PanelRight, PanelRightClose } from 'lucide-react'
 import * as React from 'react'
 
-import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { workspaceFilesVersionAtom } from '@/atoms/agent-atoms'
 import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'

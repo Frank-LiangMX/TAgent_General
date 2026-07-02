@@ -12,8 +12,7 @@ import { toast } from 'sonner'
 
 import type { WeChatBridgeStatus } from '@tagent/shared'
 import { Button } from '@tagent/ui'
-import { SettingsCard , SettingsRow , SettingsSection } from './primitives'
-
+import { SettingsCard, SettingsRow, SettingsSection } from './primitives'
 
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
 

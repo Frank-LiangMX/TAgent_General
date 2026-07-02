@@ -20,7 +20,6 @@ import { getAgentSessionSDKMessages } from './agent-session-manager'
 import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
 
-
 /** 当前活跃的 BTW 请求 AbortController */
 let activeBtwController: AbortController | null = null
 

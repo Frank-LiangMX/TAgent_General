@@ -14,7 +14,6 @@ import DOMPurify from 'dompurify'
 import katex from 'katex'
 import { createRoot } from 'react-dom/client'
 
-
 import type { HighlightTokensResult } from '@tagent/core'
 import type { FileAccessOptions } from '@tagent/shared'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'

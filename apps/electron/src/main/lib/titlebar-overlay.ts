@@ -4,7 +4,6 @@ import type { ThemeMode, ThemeStyle } from '../../types'
 import { getSettings } from './settings-service'
 import { resolveLogoKey } from './theme-icon-resolver'
 
-
 interface OverlayColors {
   color: string
   symbolColor: string

@@ -11,7 +11,6 @@ import { getMainWindow } from '../index'
 import type { VoiceDictationCommitResult, VoiceDictationSettings } from '../../types'
 import { pasteTextAtCurrentCursor } from './text-insertion-service'
 
-
 let targetWasTAgentInput = false
 
 /** 在显示语音浮窗前记录目标是否为 TAgent 主窗口。 */

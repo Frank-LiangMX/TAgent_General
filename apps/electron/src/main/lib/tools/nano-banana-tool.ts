@@ -13,7 +13,6 @@ import type { ChatToolMeta, FileAttachment } from '@tagent/shared'
 import { saveAttachment, readAttachmentAsBase64, isImageAttachment } from '../attachment-service'
 import { getToolCredentials } from '../tool-config'
 
-
 // ===== Gemini API 类型（REST API 使用 camelCase） =====
 
 interface GeminiInlineData {

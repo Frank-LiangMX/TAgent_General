@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
- Button } from '@tagent/ui'
+  Button,
+} from '@tagent/ui'
 import { toast } from 'sonner'
 
 interface KsccInstallGuideProps {

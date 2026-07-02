@@ -14,7 +14,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { PluginConfigDialog } from './plugin-config-dialog'
 import { PluginToolbarButton } from './plugin-toolbar-button'
 
-
 import {
   agentChannelIdAtom,
   agentModelIdAtom,

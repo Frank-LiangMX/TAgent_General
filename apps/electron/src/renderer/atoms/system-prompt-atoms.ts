@@ -14,7 +14,6 @@ import { atomWithStorage } from 'jotai/utils'
 import type { SystemPromptConfig, SystemPrompt } from '@tagent/shared'
 import { userProfileAtom } from './user-profile'
 
-
 /** 提示词编辑侧栏是否打开 */
 export const promptSidebarOpenAtom = atom<boolean>(false)
 

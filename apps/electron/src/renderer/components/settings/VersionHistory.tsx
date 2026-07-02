@@ -11,7 +11,6 @@ import type { GitHubRelease } from '@tagent/shared'
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
-
 /**
  * VersionHistory 组件
  */

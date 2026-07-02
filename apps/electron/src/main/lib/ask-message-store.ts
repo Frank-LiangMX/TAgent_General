@@ -14,7 +14,6 @@ import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync } f
 import type { AskMessage } from '@tagent/shared'
 import { getAgentSessionAskMessagesPath } from './config-paths'
 
-
 /**
  * 读取会话的所有 Ask 消息
  */

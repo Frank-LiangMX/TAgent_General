@@ -8,7 +8,6 @@
 import { ArrowLeft, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import * as React from 'react'
 
-
 import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@tagent/shared'
 
 import { Button } from '@tagent/ui'

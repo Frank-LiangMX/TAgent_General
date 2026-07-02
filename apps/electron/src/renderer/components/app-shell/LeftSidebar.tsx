@@ -55,7 +55,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
@@ -65,7 +64,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator, Popover, PopoverTrigger, PopoverContent , Tooltip, TooltipTrigger, TooltipContent } from '@tagent/ui'
+  DropdownMenuSeparator,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@tagent/ui'
 import { SearchDialog } from './SearchDialog'
 import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 
@@ -120,7 +126,8 @@ import {
   backgroundTasksAtomFamily,
   sessionPersistedPermissionModeAtom,
   sessionExistsAtom,
- conversationsAtom } from '@/atoms/agent-atoms'
+  conversationsAtom,
+} from '@/atoms/agent-atoms'
 import {
   appModeAtom,
   activeRailItemAtom,
@@ -332,11 +339,16 @@ export function LeftSidebar({
   /** 拖拽排序：正在拖拽的工作区 ID */
   const [dragProjectId, setDragProjectId] = React.useState<string | null>(null)
   /** 拖拽排序：drop 指示器位置 { id, position } */
-  const [projectDropIndicator, setProjectDropIndicator] = React.useState<{ id: string; position: 'before' | 'after' } | null>(null)
+  const [projectDropIndicator, setProjectDropIndicator] = React.useState<{
+    id: string
+    position: 'before' | 'after'
+  } | null>(null)
   /** 批量删除：当前在选择模式的工作区 ID（null = 未进入选择模式） */
   const [batchSelectWorkspaceId, setBatchSelectWorkspaceId] = React.useState<string | null>(null)
   /** 批量删除：选中的会话 ID 集合 */
-  const [batchSelectedSessionIds, setBatchSelectedSessionIds] = React.useState<Set<string>>(new Set())
+  const [batchSelectedSessionIds, setBatchSelectedSessionIds] = React.useState<Set<string>>(
+    new Set()
+  )
   /** 批量删除：确认弹窗是否打开 */
   const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = React.useState(false)
   const [userProfile, setUserProfile] = useAtom(userProfileAtom)
@@ -712,7 +724,9 @@ export function LeftSidebar({
     setTabs(currentTabs)
     setActiveTabId(currentActive)
     if (tabsToClose.some((t) => t.id === activeTabId)) {
-      const newActive = currentActive ? currentTabs.find((t) => t.id === currentActive) ?? null : null
+      const newActive = currentActive
+        ? (currentTabs.find((t) => t.id === currentActive) ?? null)
+        : null
       syncActiveTabSideEffects(newActive)
     }
 
@@ -921,11 +935,14 @@ export function LeftSidebar({
   }, [])
 
   /** 开始拖拽项目排序 */
-  const handleProjectDragStart = React.useCallback((e: React.DragEvent, workspaceId: string): void => {
-    setDragProjectId(workspaceId)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', workspaceId)
-  }, [])
+  const handleProjectDragStart = React.useCallback(
+    (e: React.DragEvent, workspaceId: string): void => {
+      setDragProjectId(workspaceId)
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', workspaceId)
+    },
+    []
+  )
 
   /** 根据鼠标位置计算项目插入点 */
   const handleProjectDragOver = React.useCallback(
@@ -2418,7 +2435,8 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   )
 
   // 非选中态需要前缀图标（工作中 / 置顶）；选择模式下隐藏，避免跟 checkbox 冲突
-  const showPrefixIcon = !isBatchMode && !active && (session.manualWorking || (session.pinned && !session.manualWorking))
+  const showPrefixIcon =
+    !isBatchMode && !active && (session.manualWorking || (session.pinned && !session.manualWorking))
   // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）；选择模式下隐藏
   const showInlineAccent = !isBatchMode && !!leftAccent && !(session.manualWorking && !active)
 
@@ -2806,36 +2824,36 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
           </div>
         ) : (
           !isBatchMode && (
-          <button
-            type="button"
-            aria-expanded={!collapsed}
-            onClick={() => {
-              if (hasActiveSession) return  // 选中会话所在 group 不响应折叠点击
-              onSelectProject(group.workspace.id)
-            }}
-            className={cn(
-              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11 hover:bg-foreground/[0.025]',
-              isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
-            )}
-          >
-            {!collapsed ? (
-              <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
-            ) : (
-              <Folder size={13} className="flex-shrink-0 text-foreground/40" />
-            )}
-            <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
-              {group.workspace.name}
-            </span>
-            {!hasActiveSession && (
-              <ChevronRight
-                size={12}
-                className={cn(
-                  'flex-shrink-0 text-foreground/30 transition-transform duration-150',
-                  collapsed ? '-rotate-90' : 'rotate-90'
-                )}
-              />
-            )}
-          </button>
+            <button
+              type="button"
+              aria-expanded={!collapsed}
+              onClick={() => {
+                if (hasActiveSession) return // 选中会话所在 group 不响应折叠点击
+                onSelectProject(group.workspace.id)
+              }}
+              className={cn(
+                'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11 hover:bg-foreground/[0.025]',
+                isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
+              )}
+            >
+              {!collapsed ? (
+                <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+              ) : (
+                <Folder size={13} className="flex-shrink-0 text-foreground/40" />
+              )}
+              <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
+                {group.workspace.name}
+              </span>
+              {!hasActiveSession && (
+                <ChevronRight
+                  size={12}
+                  className={cn(
+                    'flex-shrink-0 text-foreground/30 transition-transform duration-150',
+                    collapsed ? '-rotate-90' : 'rotate-90'
+                  )}
+                />
+              )}
+            </button>
           )
         )}
 
@@ -2850,12 +2868,12 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   onNewSession(group.workspace.id)
                 }}
                 className="absolute right-5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag"
-            >
-              <Plus size={13} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">在此项目中新建会话</TooltipContent>
-        </Tooltip>
+              >
+                <Plus size={13} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">在此项目中新建会话</TooltipContent>
+          </Tooltip>
         )}
 
         {isBatchMode ? (
@@ -2906,58 +2924,58 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             </button>
           </div>
         ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="项目菜单"
-              className="absolute right-0 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/60 group-hover/project:opacity-100 data-[state=open]:opacity-100 titlebar-no-drag"
-            >
-              <MoreVertical size={13} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44 z-[9999] min-w-0 p-0.5">
-            <DropdownMenuItem
-              className="text-xs py-1 [&>svg]:size-3.5"
-              onSelect={() => onSelectProject(group.workspace.id)}
-            >
-              <FolderOpen size={14} />
-              设为当前项目
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs py-1 [&>svg]:size-3.5"
-              onSelect={handleStartRename}
-            >
-              <Pencil size={14} />
-              重命名
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs py-1 [&>svg]:size-3.5"
-              onSelect={() => onConfigureProject(group.workspace.id)}
-            >
-              <Settings size={14} />
-              配置 MCP 与 Skills
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs py-1 [&>svg]:size-3.5"
-              onSelect={() => onEnterBatchSelect(group.workspace.id)}
-            >
-              <CheckSquare size={14} />
-              批量删除会话
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-0.5" />
-            <DropdownMenuItem
-              className={cn(
-                'text-xs py-1 [&>svg]:size-3.5',
-                'text-destructive focus:text-destructive'
-              )}
-              onSelect={() => onRequestDeleteWorkspace(group.workspace.id)}
-            >
-              <Trash2 size={14} />
-              删除项目
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="项目菜单"
+                className="absolute right-0 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/60 group-hover/project:opacity-100 data-[state=open]:opacity-100 titlebar-no-drag"
+              >
+                <MoreVertical size={13} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44 z-[9999] min-w-0 p-0.5">
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onSelectProject(group.workspace.id)}
+              >
+                <FolderOpen size={14} />
+                设为当前项目
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={handleStartRename}
+              >
+                <Pencil size={14} />
+                重命名
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onConfigureProject(group.workspace.id)}
+              >
+                <Settings size={14} />
+                配置 MCP 与 Skills
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onEnterBatchSelect(group.workspace.id)}
+              >
+                <CheckSquare size={14} />
+                批量删除会话
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-0.5" />
+              <DropdownMenuItem
+                className={cn(
+                  'text-xs py-1 [&>svg]:size-3.5',
+                  'text-destructive focus:text-destructive'
+                )}
+                onSelect={() => onRequestDeleteWorkspace(group.workspace.id)}
+              >
+                <Trash2 size={14} />
+                删除项目
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

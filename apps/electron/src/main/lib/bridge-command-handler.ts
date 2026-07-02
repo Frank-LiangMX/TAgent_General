@@ -33,7 +33,6 @@ import {
 import { resolveWorkspaceFilesDir } from './config-paths'
 import { getSettings } from './settings-service'
 
-
 // ===== 接口定义 =====
 
 /** 平台适配器 — 各 Bridge 只需实现此接口 */

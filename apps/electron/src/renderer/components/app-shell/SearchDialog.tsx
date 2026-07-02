@@ -36,7 +36,14 @@ import type {
   SDKUserContentBlock,
 } from '@tagent/shared'
 
-import { Dialog, DialogContent, DialogTitle , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,

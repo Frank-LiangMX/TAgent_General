@@ -324,14 +324,13 @@ export async function installTAMcpServer(
 /** 获取当前安装任务状态 */
 export function getInstallState(): 'idle' | 'running' | 'success' | 'failed' | 'cancelled' {
   // 动态 import 避免循环依赖
-   
+
   const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
   return taMcpInstaller.getState()
 }
 
 /** 取消当前安装 */
 export function cancelTAMcpInstall(): void {
-   
   const { taMcpInstaller } = require('./ta-mcp-installer') as typeof import('./ta-mcp-installer')
   taMcpInstaller.cancel()
 }

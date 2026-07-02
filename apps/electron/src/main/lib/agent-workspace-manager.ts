@@ -58,7 +58,6 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-
 interface AgentWorkspacesIndex {
   version: number
   workspaces: AgentWorkspace[]

@@ -42,7 +42,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
- ScrollArea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { AboutSettings } from './AboutSettings'
 import { AppearanceSettings } from './AppearanceSettings'
 import { BotHubSettings } from './BotHubSettings'

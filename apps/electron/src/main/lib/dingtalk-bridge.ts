@@ -29,7 +29,6 @@ import { BridgeCommandHandler, type BridgeAttachment } from './bridge-command-ha
 import { getDecryptedBotClientSecret } from './dingtalk-config'
 import { getSettings } from './settings-service'
 
-
 // ===== 类型声明 =====
 
 interface DWClientModule {

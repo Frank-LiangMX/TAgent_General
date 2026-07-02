@@ -41,7 +41,6 @@ import {
   isSwitchModeToolCall,
 } from './switch-mode-tool'
 
-
 // ===== 工具元数据 =====
 
 export const TA_TOOL_META: ChatToolMeta = {

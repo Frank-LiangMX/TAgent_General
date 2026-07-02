@@ -56,7 +56,7 @@ import type {
   SDKToolResultBlock,
   RecoveryAction,
 } from '@tagent/shared'
-import { Badge , Button , ImageLightbox , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Badge, Button, ImageLightbox, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { DurationBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
 import {

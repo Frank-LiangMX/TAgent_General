@@ -1,7 +1,6 @@
 import type { ContextUsageSnapshot } from '@tagent/shared'
 import * as React from 'react'
 
-
 import { ContextUsageTermHint } from './ContextUsageTermHint'
 import { ContextUsageCategoryGroup } from './ContextUsageCategoryGroup'
 import { ContextUsageCategoryRow } from './ContextUsageCategoryRow'

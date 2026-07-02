@@ -144,10 +144,7 @@ export function VoiceInputSettings(): React.ReactElement {
   return (
     <div className="space-y-6">
       {/* 启用 + 权限 */}
-      <SettingsSection
-        title="语音输入"
-        description="Ctrl+～ 呼起浮窗，按住说话实时转写为文本。"
-      >
+      <SettingsSection title="语音输入" description="Ctrl+～ 呼起浮窗，按住说话实时转写为文本。">
         <SettingsCard>
           <SettingsToggle
             label="启用语音输入"
@@ -157,7 +154,10 @@ export function VoiceInputSettings(): React.ReactElement {
           />
         </SettingsCard>
         <SettingsCard>
-          <SettingsRow label="麦克风权限" icon={micGranted ? <Mic className="size-4" /> : <MicOff className="size-4" />}>
+          <SettingsRow
+            label="麦克风权限"
+            icon={micGranted ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+          >
             <div className="flex items-center gap-2">
               <span
                 className={cn(
@@ -199,7 +199,11 @@ export function VoiceInputSettings(): React.ReactElement {
             disabled={testing || !settings.appId || !settings.accessToken || !settings.resourceId}
             className="h-8 text-xs"
           >
-            {testing ? <Loader2 className="size-3 animate-spin mr-1" /> : <TestTube2 className="size-3 mr-1" />}
+            {testing ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <TestTube2 className="size-3 mr-1" />
+            )}
             测试
           </Button>
         }
@@ -247,7 +251,9 @@ export function VoiceInputSettings(): React.ReactElement {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="flex w-full items-center gap-2 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronRight className={cn('size-3 transition-transform', showAdvanced && 'rotate-90')} />
+          <ChevronRight
+            className={cn('size-3 transition-transform', showAdvanced && 'rotate-90')}
+          />
           连接模式 / 识别语言 / 输出方式 / 自定义热词
         </button>
         {showAdvanced && (

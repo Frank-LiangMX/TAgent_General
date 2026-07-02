@@ -279,7 +279,10 @@ export function AgentPreferencesSettings(): React.ReactElement {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{lang.label}</span>
                           {!isDefault && (
-                            <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400"
+                            >
                               已自定义
                             </Badge>
                           )}

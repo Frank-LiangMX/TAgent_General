@@ -15,7 +15,6 @@ import { BrowserWindow } from 'electron'
 
 import { getChatToolsConfigPath } from './config-paths'
 
-
 /** debounce 延迟（ms） */
 const DEBOUNCE_MS = 500
 

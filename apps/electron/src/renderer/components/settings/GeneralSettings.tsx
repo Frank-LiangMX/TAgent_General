@@ -362,11 +362,22 @@ interface SoundRowProps {
   onSoundChange: (type: NotificationSoundType, soundId: NotificationSoundId) => void
 }
 
-function SoundRow({ label, type, sounds, disabled, onSoundChange }: SoundRowProps): React.ReactElement {
+function SoundRow({
+  label,
+  type,
+  sounds,
+  disabled,
+  onSoundChange,
+}: SoundRowProps): React.ReactElement {
   const currentId = sounds[type] ?? DEFAULT_NOTIFICATION_SOUNDS[type]
 
   return (
-    <div className={cn('flex items-center justify-between px-4 py-3', disabled && 'opacity-50 pointer-events-none')}>
+    <div
+      className={cn(
+        'flex items-center justify-between px-4 py-3',
+        disabled && 'opacity-50 pointer-events-none'
+      )}
+    >
       <span className="text-sm font-medium text-foreground">{label}</span>
       <div className="flex items-center gap-1.5">
         <Select

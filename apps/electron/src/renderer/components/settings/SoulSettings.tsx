@@ -172,18 +172,27 @@ export function SoulSettings(): React.ReactElement {
           <span className="flex items-center gap-2">
             人格定义
             {hasChanges ? (
-              <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400">
+              <Badge
+                variant="outline"
+                className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400"
+              >
                 <AlertCircle className="mr-1 size-3" />
                 未保存
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+              <Badge
+                variant="outline"
+                className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+              >
                 <Check className="mr-1 size-3" />
                 {isDefault ? '默认' : '自定义'}
               </Badge>
             )}
             {saveSuccess && (
-              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-in fade-in duration-200">
+              <Badge
+                variant="outline"
+                className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-in fade-in duration-200"
+              >
                 <Check className="mr-1 size-3" />
                 已保存
               </Badge>

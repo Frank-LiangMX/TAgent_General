@@ -17,7 +17,6 @@ import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 
-
 /** 格式化耗时（ms → "12s" / "3m 45s" / "1h 12m"） */
 function formatDuration(ms: number): string {
   const seconds = Math.round(ms / 1000)

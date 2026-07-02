@@ -14,7 +14,6 @@ import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
-
 import { agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
 

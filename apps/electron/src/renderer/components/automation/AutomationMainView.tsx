@@ -112,10 +112,7 @@ export function AutomationMainView(): React.ReactElement {
   if (!selected) {
     return (
       <Panel variant="grow" className="content-glass relative">
-        <div
-          className="absolute inset-0 right-[126px] titlebar-drag-region"
-          aria-hidden
-        />
+        <div className="absolute inset-0 right-[126px] titlebar-drag-region" aria-hidden />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
           <Clock size={40} className="opacity-30" />
           <p className="text-sm">从左侧选择任务，或点击 + 创建新任务</p>

@@ -359,7 +359,13 @@ export function openTab(
     const draftTab =
       existingIndex !== -1
         ? { ...tabs[existingIndex]!, title: item.title, lastUsedAt: Date.now() }
-        : { id: draftTabId, type: 'draft' as const, sessionId: item.sessionId, title: item.title, lastUsedAt: Date.now() }
+        : {
+            id: draftTabId,
+            type: 'draft' as const,
+            sessionId: item.sessionId,
+            title: item.title,
+            lastUsedAt: Date.now(),
+          }
     if (existingIndex !== -1) {
       const newTabs = [...tabs]
       newTabs[existingIndex] = draftTab

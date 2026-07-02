@@ -50,7 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
- Button ,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -61,9 +61,11 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
-import { SettingsCard , SettingsInput , SettingsSecretInput , SettingsSection } from './primitives'
-
+  SelectValue,
+  SegmentedTabs,
+  SegmentedTabsItem,
+} from '@tagent/ui'
+import { SettingsCard, SettingsInput, SettingsSecretInput, SettingsSection } from './primitives'
 
 import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
 import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'

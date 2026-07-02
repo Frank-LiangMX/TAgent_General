@@ -5,7 +5,6 @@
  * 凭据存储在 ~/.tagent/chat-tools.json 的 toolCredentials 中。
  */
 
-
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'
 import { getToolCredentials } from '../tool-config'

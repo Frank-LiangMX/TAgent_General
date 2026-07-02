@@ -31,7 +31,6 @@ import {
 } from './config-paths'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
-
 /**
  * 对话索引文件格式
  */

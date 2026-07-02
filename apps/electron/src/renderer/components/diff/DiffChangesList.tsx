@@ -10,7 +10,7 @@ import * as React from 'react'
 
 import type { ChangedFileEntry, ChangeSource, UntrackedFileEntry } from '@tagent/shared'
 
-import { SearchInput , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { SearchInput, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { agentDiffUnseenFilesAtom, agentDiffDataAtom } from '@/atoms/agent-atoms'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
 import { cn } from '@/lib/utils'

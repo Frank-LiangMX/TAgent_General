@@ -17,7 +17,6 @@ import { detectNodeRuntime } from './node-detector'
 import { loadShellEnv } from './shell-env'
 import { detectWsl } from './wsl-detector'
 
-
 /** 运行时状态缓存 */
 let runtimeStatusCache: RuntimeStatus | null = null
 

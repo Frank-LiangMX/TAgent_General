@@ -6,7 +6,9 @@ import * as React from 'react'
 
 import type { AutomationScheduleType } from '@tagent/shared'
 
-import { Input , Label ,
+import {
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,

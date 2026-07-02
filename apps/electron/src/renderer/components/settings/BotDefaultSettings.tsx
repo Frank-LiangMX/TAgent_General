@@ -9,7 +9,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@tagent/ui'
-import { SettingsCard , SettingsSection , SettingsSelect } from './primitives'
+import { SettingsCard, SettingsSection, SettingsSelect } from './primitives'
 
 import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 

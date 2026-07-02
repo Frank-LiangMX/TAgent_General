@@ -17,7 +17,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type { MarkdownFontSize, TAgentBrand, ThemeMode, ThemeStyle } from '../../../types'
 import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primitives'
 
-
 import './appearance-overrides.css'
 
 import {

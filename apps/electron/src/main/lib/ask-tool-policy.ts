@@ -19,7 +19,6 @@
  * 不复用 tool-registry（后者会拉起所有 builtin tool）。
  */
 
-
 import type { ToolDefinition, ToolParameterProperty } from '@tagent/core'
 import type { AskMessage, ChatToolActivity } from '@tagent/shared'
 import { getChatToolsConfig } from './tool-config'

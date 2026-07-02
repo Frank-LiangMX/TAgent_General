@@ -18,7 +18,6 @@ import { mergeVoiceDictationTranscript } from './voice-transcript-merge'
 
 import type { VoiceDictationTranscriptMergeState } from './voice-transcript-merge'
 
-
 const MAX_QUEUED_CHUNKS = 60
 const STOP_COMMIT_TIMEOUT_MS = 1400
 const FINAL_COMMIT_DELAY_MS = 180

@@ -8,7 +8,7 @@ import { useAtomValue } from 'jotai'
 import { ExternalLink, File, FolderOpen, FolderSearch, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button , ScrollProgressContainer } from '@tagent/ui'
+import { Button, ScrollProgressContainer } from '@tagent/ui'
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,

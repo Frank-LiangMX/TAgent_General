@@ -5,7 +5,6 @@
 import { ArrowLeft, Plug, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
-
 import type { InstalledBundleGroup, PluginListItem } from './installed-plugins-grouping'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import { cn } from '@/lib/utils'

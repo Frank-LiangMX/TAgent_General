@@ -16,7 +16,6 @@ import type { SDKMessage } from '@tagent/shared'
 import { aggregateTaskItems, type TaskItem } from './task-progress'
 import { buildAllTaskActivities, buildHistoricalTaskSubjects } from './SDKMessageRenderer'
 
-
 import { cn } from '@/lib/utils'
 
 export interface TaskProgressDockProps {

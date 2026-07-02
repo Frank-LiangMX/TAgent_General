@@ -11,7 +11,6 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import type { ChatToolsFileConfig, ChatToolState, ChatToolMeta } from '@tagent/shared'
 import { getChatToolsConfigPath } from './config-paths'
 
-
 /** 默认配置 */
 const DEFAULT_CONFIG: ChatToolsFileConfig = {
   toolStates: {

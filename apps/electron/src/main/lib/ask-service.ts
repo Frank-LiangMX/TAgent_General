@@ -41,7 +41,6 @@ import { getChannelById, decryptApiKey } from './channel-manager'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 
-
 /** Ask 上下文轮数（与 BTW 对齐） */
 const ASK_CONTEXT_TURNS = 20
 

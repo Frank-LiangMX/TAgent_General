@@ -12,7 +12,18 @@ import * as React from 'react'
 
 import type { AgentEffort, Channel, ModelOption, KsccInstallReadiness } from '@tagent/shared'
 
-import { Popover, PopoverContent, PopoverTrigger , SearchInput , SegmentedTabs, SegmentedTabsItem , Switch , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  SearchInput,
+  SegmentedTabs,
+  SegmentedTabsItem,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
 import {
   agentChannelIdAtom,

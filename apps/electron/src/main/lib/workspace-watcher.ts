@@ -19,7 +19,6 @@ import { AGENT_IPC_CHANNELS } from '@tagent/shared'
 import type { BrowserWindow } from 'electron'
 import { getAgentWorkspacesDir } from './config-paths'
 
-
 /** debounce 延迟（ms） */
 const DEBOUNCE_MS = 300
 

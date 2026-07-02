@@ -25,7 +25,7 @@ import {
 import * as React from 'react'
 
 import type { EnvironmentCheckResult, RuntimeStatus } from '@tagent/shared'
-import { Alert, AlertDescription , Badge , Button } from '@tagent/ui'
+import { Alert, AlertDescription, Badge, Button } from '@tagent/ui'
 import tagentLogo from '../../../../resources/icon.png'
 import tagentLogoDefaultLight from '../../../../resources/tagent-logo-proposals-v2/tagent-default-light.png'
 import tagentLogoDefaultDark from '../../../../resources/tagent-logo-proposals-v2/tagent-default-dark.png'
@@ -42,7 +42,6 @@ import tagentLogoPurpleDark from '../../../../resources/tagent-logo-proposals-v2
 
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
-
 
 import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import {

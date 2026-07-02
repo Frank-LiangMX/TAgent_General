@@ -27,12 +27,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+  DialogTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { cn } from '@/lib/utils'

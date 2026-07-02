@@ -22,7 +22,6 @@ import type {
 } from '@tagent/shared'
 import { getDingTalkConfigPath } from './config-paths'
 
-
 // ===== 加密/解密 =====
 
 function encryptSecret(plainSecret: string): string {

@@ -12,7 +12,13 @@ import { Code2, Copy, Check, Eye, List, Pencil, RefreshCw, Save, X } from 'lucid
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Tooltip, TooltipContent, TooltipTrigger , SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  SegmentedTabs,
+  SegmentedTabsItem,
+} from '@tagent/ui'
 import { DiffView } from './DiffView'
 import { MarkdownRichEditor } from './MarkdownRichEditor'
 import { MarkdownToc } from './MarkdownToc'

@@ -17,7 +17,6 @@ import * as React from 'react'
 
 import type { PluginStoreCatalog, WorkspaceCapabilities } from '@tagent/shared'
 
-
 import { groupInstalledPlugins } from './installed-plugins-grouping'
 import {
   bundleNavId,

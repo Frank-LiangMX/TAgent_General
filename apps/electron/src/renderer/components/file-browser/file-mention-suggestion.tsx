@@ -9,7 +9,6 @@
 import { ReactRenderer } from '@tiptap/react'
 import { toast } from 'sonner'
 
-
 import type { FileIndexEntry, FileSearchResult } from '@tagent/shared'
 import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 import type React from 'react'

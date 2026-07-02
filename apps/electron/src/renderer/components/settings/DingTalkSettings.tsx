@@ -35,9 +35,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
- Button } from '@tagent/ui'
-import { SettingsCard , SettingsInput , SettingsSecretInput , SettingsSection } from './primitives'
-
+  Button,
+} from '@tagent/ui'
+import { SettingsCard, SettingsInput, SettingsSecretInput, SettingsSection } from './primitives'
 
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { cn } from '@/lib/utils'

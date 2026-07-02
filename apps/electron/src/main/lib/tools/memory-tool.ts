@@ -10,7 +10,6 @@ import type { ChatToolMeta } from '@tagent/shared'
 import { getMemoryConfig } from '../memory-service'
 import { searchMemory, addMemory, formatSearchResult } from '../memos-client'
 
-
 // ===== 工具元数据 =====
 
 export const MEMORY_TOOL_META: ChatToolMeta = {

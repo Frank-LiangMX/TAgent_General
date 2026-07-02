@@ -52,7 +52,6 @@ import {
   getChatToolsConfigPath,
 } from './config-paths'
 
-
 // ─── 类型定义 ────────────────────────────────────────────────────────────────
 
 export type MigrationMode = 'personal' | 'share'

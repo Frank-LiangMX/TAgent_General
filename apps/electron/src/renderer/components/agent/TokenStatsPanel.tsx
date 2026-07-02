@@ -22,7 +22,6 @@ import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 
-
 interface TokenStatsPanelProps {
   isProcessing?: boolean
   onCompact?: () => void

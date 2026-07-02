@@ -25,7 +25,7 @@ import type {
 
 import { toast } from 'sonner'
 
-import { Button , SearchInput , SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import { Button, SearchInput, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 type StoreTab = 'skill' | 'mcp'

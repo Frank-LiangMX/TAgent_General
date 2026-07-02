@@ -24,7 +24,6 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-
 import type { FileEntry } from '@tagent/shared'
 
 import {
@@ -36,12 +35,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
- Button ,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger, ScrollArea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+  DropdownMenuTrigger,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import {
   computeTreeRowLayout,
   AncestorGuides,

@@ -10,7 +10,6 @@ import type {
 } from '@tagent/shared'
 import { getToolDisplayName, getToolIcon } from './tool-utils'
 
-
 import { cn } from '@/lib/utils'
 
 interface ProcessBlockGroupProps {

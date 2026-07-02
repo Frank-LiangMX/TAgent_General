@@ -14,7 +14,6 @@ import { cn } from '../../lib/utils'
 import { FieldLabel } from './FieldLabel'
 import { ROW_CLASS } from './SettingsUIConstants'
 
-
 /** 分段选项定义 */
 interface SegmentOption {
   value: string
@@ -49,11 +48,7 @@ export function SettingsSegmentedControl({
       <div className="flex-1 min-w-0 mr-4">
         <FieldLabel label={label} description={description} />
       </div>
-      <SegmentedTabs
-        className="shrink-0"
-        value={value}
-        onValueChange={onValueChange}
-      >
+      <SegmentedTabs className="shrink-0" value={value} onValueChange={onValueChange}>
         {options.map((option) => (
           <SegmentedTabsItem key={option.value} value={option.value} disabled={disabled}>
             {option.label}

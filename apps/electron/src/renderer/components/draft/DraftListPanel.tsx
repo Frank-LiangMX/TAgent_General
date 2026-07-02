@@ -18,7 +18,6 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -31,7 +30,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle} from '@tagent/ui'
+  AlertDialogTitle,
+} from '@tagent/ui'
 import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'

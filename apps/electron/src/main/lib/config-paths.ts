@@ -29,7 +29,6 @@ export function getConfigDirName(): string {
       _configDirName = '.tagent-dev'
     } else {
       try {
-         
         const { app } = require('electron')
         _configDirName = app.isPackaged ? '.tagent' : '.tagent-dev'
       } catch {
@@ -408,7 +407,6 @@ export function getInactiveSkillsDir(slug: string): string {
  * 获取 app bundle 内的 default-skills 目录（插件商店 Skill 源）
  */
 export function getBundledSkillsDir(): string {
-   
   const { app } = require('electron')
   return app.isPackaged
     ? join(process.resourcesPath, 'default-skills')

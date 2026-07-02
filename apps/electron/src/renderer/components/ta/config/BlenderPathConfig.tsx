@@ -5,7 +5,7 @@
 import { FolderOpen, Check, AlertCircle } from 'lucide-react'
 import * as React from 'react'
 
-import { Button , Input } from '@tagent/ui'
+import { Button, Input } from '@tagent/ui'
 
 export function BlenderPathConfig(): React.ReactElement {
   const [blenderPath, setBlenderPath] = React.useState('')

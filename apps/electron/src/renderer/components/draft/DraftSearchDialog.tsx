@@ -11,7 +11,7 @@ import * as React from 'react'
 
 import type { DraftDocument } from '@tagent/shared'
 
-import { Dialog, DialogContent, DialogTitle , SearchInput } from '@tagent/ui'
+import { Dialog, DialogContent, DialogTitle, SearchInput } from '@tagent/ui'
 import { STATUS_STYLES, STATUS_LABELS } from './draft-status-styles'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'

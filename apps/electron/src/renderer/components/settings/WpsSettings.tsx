@@ -5,8 +5,7 @@ import { toast } from 'sonner'
 
 import type { WpsConfigInput } from '@tagent/shared'
 import { Button } from '@tagent/ui'
-import { SettingsCard , SettingsInput , SettingsRow , SettingsSection } from './primitives'
-
+import { SettingsCard, SettingsInput, SettingsRow, SettingsSection } from './primitives'
 
 import { wpsBridgeStateAtom } from '@/atoms/wps-atoms'
 

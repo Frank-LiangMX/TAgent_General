@@ -11,7 +11,6 @@ import type { ProxyConfig } from '@tagent/shared'
 import { getProxySettingsPath } from './config-paths'
 import { detectSystemProxy } from './system-proxy-detector'
 
-
 /**
  * 默认代理配置
  */

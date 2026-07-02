@@ -19,7 +19,6 @@ import { join } from 'node:path'
 import type { GitBashStatus } from '@tagent/shared'
 import { getGitForWindowsInstallPath } from './windows-env'
 
-
 /**
  * 获取 Git for Windows 常见安装路径列表
  *

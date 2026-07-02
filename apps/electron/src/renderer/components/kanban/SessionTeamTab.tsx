@@ -27,7 +27,6 @@ import {
 import { AgentView } from '@/components/agent/AgentView'
 import { cn } from '@/lib/utils'
 
-
 /** 按状态分组的顺序与中文标签 */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
   { status: 'running', label: '执行中' },

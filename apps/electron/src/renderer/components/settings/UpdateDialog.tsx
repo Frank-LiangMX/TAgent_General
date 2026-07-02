@@ -24,7 +24,6 @@ import {
 } from '@tagent/ui'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
 
-
 import { updateStatusAtom } from '@/atoms/updater'
 import { formatBytes } from '@/lib/format-bytes'
 

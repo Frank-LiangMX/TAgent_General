@@ -19,11 +19,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
- Button , Switch , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+  Button,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { ChannelForm } from './ChannelForm'
 import { KsccChannelForm } from './KsccChannelForm'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
-
 
 import { SpeedTestBadge } from './SpeedTestBadge'
 import { SpeedTestPopover } from './SpeedTestPopover'

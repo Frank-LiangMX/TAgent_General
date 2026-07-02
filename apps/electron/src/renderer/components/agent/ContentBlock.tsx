@@ -44,7 +44,6 @@ import {
 } from './tool-result-renderers/task-list-result'
 import { getToolIcon, extractFilePath } from './tool-utils'
 
-
 import { thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { MessageResponse } from '@/components/ai-elements/message'
 import { cn } from '@/lib/utils'

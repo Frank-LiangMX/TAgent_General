@@ -12,7 +12,7 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { GraduationCap, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { Button , ScrollArea , Sheet, SheetContent, SheetHeader, SheetTitle } from '@tagent/ui'
+import { Button, ScrollArea, Sheet, SheetContent, SheetHeader, SheetTitle } from '@tagent/ui'
 import { isShellEnvironmentOkAtom } from '@/atoms/environment'
 import { EnvironmentCheckPanel } from '@/components/environment/EnvironmentCheckPanel'
 import { TutorialViewer } from '@/components/tutorial/TutorialViewer'

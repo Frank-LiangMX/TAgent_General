@@ -23,7 +23,8 @@ import {
   currentAgentWorkspaceIdAtom,
   agentWorkspacesAtom,
   agentAttachedFilesMapAtom,
- conversationsAtom } from '@/atoms/agent-atoms'
+  conversationsAtom,
+} from '@/atoms/agent-atoms'
 import { appModeAtom } from '@/atoms/app-mode'
 import { selectedModelAtom } from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'

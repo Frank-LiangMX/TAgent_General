@@ -11,7 +11,6 @@ import {
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 
-
 interface AgentSessionChannelModel {
   channelId: string | null
   channel: Channel | undefined

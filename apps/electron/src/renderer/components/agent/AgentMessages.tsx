@@ -6,7 +6,13 @@
  */
 
 import { isSdkCompactingStatusMessage } from '@tagent/shared'
-import { useSmoothStream , ThreePetalSpiral , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  useSmoothStream,
+  ThreePetalSpiral,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import * as React from 'react'

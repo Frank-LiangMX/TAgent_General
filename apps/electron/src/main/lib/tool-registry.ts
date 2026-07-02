@@ -35,7 +35,6 @@ import {
   executeTATool,
 } from './ta-tools'
 
-
 // ===== 内置工具注册 =====
 
 /** 内置工具列表（元数据 + 获取 ToolDefinition 的方法） */

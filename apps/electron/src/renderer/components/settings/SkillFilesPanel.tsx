@@ -22,10 +22,9 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-
 import type { SkillFileNode, SkillFileContent } from '@tagent/shared'
 
-import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { SettingsCard } from './primitives'
 import { cn } from '@/lib/utils'
 

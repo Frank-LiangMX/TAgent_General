@@ -13,7 +13,6 @@ import type { RequirementBlock } from '@tagent/shared'
 import { RequirementBlockCard } from './RequirementBlockCard'
 import { currentDraftRequirementsAtom } from '@/atoms/draft-atoms'
 
-
 interface RequirementListProps {
   requirements: RequirementBlock[]
 }

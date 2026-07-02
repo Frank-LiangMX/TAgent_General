@@ -11,7 +11,6 @@ import { Separator } from '../separator'
 import { cn } from '../../lib/utils'
 import { CARD_CLASS, DIVIDER_CLASS } from './SettingsUIConstants'
 
-
 interface SettingsCardProps {
   /** 子内容 */
   children: React.ReactNode

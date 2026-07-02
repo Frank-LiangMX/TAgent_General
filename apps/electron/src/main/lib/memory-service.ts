@@ -10,7 +10,6 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import type { MemoryConfig } from '@tagent/shared'
 import { getMemoryConfigPath } from './config-paths'
 
-
 /** 默认记忆配置 */
 const DEFAULT_MEMORY_CONFIG: MemoryConfig = {
   enabled: false,

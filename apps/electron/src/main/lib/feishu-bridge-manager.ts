@@ -19,7 +19,6 @@ import { FeishuBridge } from './feishu-bridge'
 import { getFeishuMultiBotConfig, getFeishuBotById } from './feishu-config'
 import { getSettings } from './settings-service'
 
-
 class FeishuBridgeManager {
   /** botId → Bridge 实例 */
   private bridges = new Map<string, FeishuBridge>()

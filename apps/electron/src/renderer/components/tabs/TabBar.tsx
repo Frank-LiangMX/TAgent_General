@@ -158,7 +158,7 @@ function TabBarInner({
 
   const { indicatorStyle } = useTabSlideIndicator(scrollRef, activeTabId)
   // active tab 运行中时，底部已有蓝色流光条标识，不再渲染 slide indicator 的主题色条，避免视觉冲突
-  const activeTabStreaming = activeTabId ? streamingMap.get(activeTabId) ?? 'idle' : 'idle'
+  const activeTabStreaming = activeTabId ? (streamingMap.get(activeTabId) ?? 'idle') : 'idle'
   const showIndicatorLine = indicatorStyle && activeTabStreaming === 'idle'
 
   const handleDragStartWithTearOff = React.useCallback(

@@ -72,7 +72,6 @@ export function runApplicationShutdown(): void {
   stopWorkspaceWatcher()
   stopChatToolsWatcher()
   try {
-     
     const { stopScheduler } =
       require('./automation-scheduler') as typeof import('./automation-scheduler')
     stopScheduler()
@@ -81,7 +80,7 @@ export function runApplicationShutdown(): void {
   }
   try {
     // 停止看板调度器（worker 子会话由 stopAllAgents 统一停，dispatcher 只清 tick timer）
-     
+
     const { stopKanbanDispatcher } =
       require('./kanban-dispatcher') as typeof import('./kanban-dispatcher')
     stopKanbanDispatcher()

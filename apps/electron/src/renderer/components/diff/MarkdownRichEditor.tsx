@@ -23,7 +23,6 @@ import {
 import { MarkdownEditorToolbar } from './MarkdownEditorToolbar'
 import { TableBubbleMenu } from './TableBubbleMenu'
 
-
 import { MARKDOWN_RENDERER_VERSION, markdownToHtml } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'
 

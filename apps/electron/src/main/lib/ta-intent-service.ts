@@ -9,7 +9,6 @@ import type { AgentMessage } from '@tagent/shared'
 import { getAgentSessionMeta } from './agent-session-manager'
 import { getTAMcpServerStatus, isTAMcpConfigured } from './ta-mcp-service'
 
-
 /** TA 相关关键词（中文+英文） */
 const TA_KEYWORDS = [
   // 模型相关

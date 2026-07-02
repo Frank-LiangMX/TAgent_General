@@ -14,7 +14,6 @@ import { atom } from 'jotai'
 import type { AskMessage, AgentSwitchSuggestion } from '@tagent/shared'
 import { currentAgentSessionIdAtom } from './agent-atoms'
 
-
 /** 全局 Ask 消息缓存 Map — agentSessionId → AskMessage[] */
 export const askMessagesMapAtom = atom<Map<string, AskMessage[]>>(new Map())
 

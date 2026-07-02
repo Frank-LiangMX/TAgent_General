@@ -15,7 +15,6 @@ import type {
 import { DingTalkBridge } from './dingtalk-bridge'
 import { getDingTalkMultiBotConfig, getDingTalkBotById } from './dingtalk-config'
 
-
 class DingTalkBridgeManager {
   /** botId → Bridge 实例 */
   private bridges = new Map<string, DingTalkBridge>()

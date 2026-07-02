@@ -13,7 +13,6 @@ import { safeStorage } from 'electron'
 import type { WeChatConfig, WeChatCredentials } from '@tagent/shared'
 import { getWeChatConfigPath } from './config-paths'
 
-
 /** 默认配置 */
 const DEFAULT_CONFIG: WeChatConfig = {
   enabled: false,

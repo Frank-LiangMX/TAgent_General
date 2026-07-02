@@ -9,7 +9,6 @@ import type {
 } from './installed-plugins-grouping'
 import type { InstalledPluginNavFilter } from '@/atoms/app-mode'
 
-
 export type { InstalledPluginNavFilter } from '@/atoms/app-mode'
 
 export function bundleNavId(bundleId: string): InstalledPluginNavFilter {

@@ -9,13 +9,22 @@ import { Loader2, Minimize2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Button , Popover, PopoverContent, PopoverTrigger , ScrollProgressContainer , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  ScrollProgressContainer,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { ContextUsagePanel } from './ContextUsagePanel'
 import { ContextUsageTermHint } from './ContextUsageTermHint'
 import { useContextUsageBreakdown } from '@/hooks/useContextUsageBreakdown'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 import { cn } from '@/lib/utils'
-
 
 /** 压缩阈值比例（SDK 在 ~77.5% 窗口大小时自动压缩） */
 const COMPACT_THRESHOLD_RATIO = 0.775

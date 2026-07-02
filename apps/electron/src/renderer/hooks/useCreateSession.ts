@@ -10,13 +10,13 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import type { AgentSessionMeta } from '@tagent/shared'
 import { useOpenSession } from './useOpenSession'
 
-
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
   agentChannelIdAtom,
   currentAgentWorkspaceIdAtom,
- conversationsAtom } from '@/atoms/agent-atoms'
+  conversationsAtom,
+} from '@/atoms/agent-atoms'
 import { selectedModelAtom } from '@/atoms/model-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'

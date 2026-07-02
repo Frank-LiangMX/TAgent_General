@@ -171,6 +171,7 @@ export default [
       '**/default-skills/**/assets/**',
       // 临时开发目录
       '**/temp-*/**',
+      '**/.tmp/**',
     ],
   },
 ]

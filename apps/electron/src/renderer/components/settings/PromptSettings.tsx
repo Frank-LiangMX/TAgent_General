@@ -10,10 +10,9 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Plus, Trash2, Star } from 'lucide-react'
 import * as React from 'react'
 
-
 import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } from '@tagent/shared'
 
-import { Button , Input , Textarea , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Input, Textarea, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { SettingsSection, SettingsCard, SettingsToggle } from './primitives'
 import {
   promptConfigAtom,

@@ -26,7 +26,6 @@ import { decryptEventData, generateKso1AuthHeader, verifyEventSignature } from '
 import { parseWpsMessage } from './wps-message-parser'
 import { wpsOAuthTokenManager } from './wps-oauth'
 
-
 const MAX_BODY_SIZE = 2 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 20_000
 const DEDUP_MAX = 200

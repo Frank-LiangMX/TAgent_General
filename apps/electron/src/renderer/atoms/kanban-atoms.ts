@@ -10,7 +10,7 @@ import { useEffect, useCallback, useState } from 'react'
 import { atom, useAtomValue, useSetAtom } from 'jotai'
 import { atomFamily } from 'jotai/utils'
 
-import type { KanbanBoard, KanbanTask , KanbanBoardMode, KanbanBoardStatus } from '@tagent/shared'
+import type { KanbanBoard, KanbanTask, KanbanBoardMode, KanbanBoardStatus } from '@tagent/shared'
 
 import { agentSessionsAtom } from './agent-atoms'
 
@@ -115,7 +115,6 @@ export function useKanbanBoard(sessionId: string): {
 }
 
 // ===== B4：全局看板列表（独立实体，不依赖 session） =====
-
 
 /** 全局看板列表 atom（不依赖 session） */
 export const kanbanBoardsAtom = atom<KanbanBoard[]>([])

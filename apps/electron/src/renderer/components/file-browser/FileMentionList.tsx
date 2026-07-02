@@ -17,7 +17,6 @@
 import { ChevronRight, Folder } from 'lucide-react'
 import * as React from 'react'
 
-
 import type { FileIndexEntry } from '@tagent/shared'
 
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@tagent/ui'

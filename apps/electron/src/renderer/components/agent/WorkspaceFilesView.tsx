@@ -14,7 +14,13 @@ import * as React from 'react'
 
 import type { FileEntry } from '@tagent/shared'
 
-import { Button , Tooltip, TooltipContent, TooltipTrigger , ScrollProgressContainer } from '@tagent/ui'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  ScrollProgressContainer,
+} from '@tagent/ui'
 import {
   workspaceAttachedDirectoriesMapAtom,
   workspaceAttachedFilesMapAtom,

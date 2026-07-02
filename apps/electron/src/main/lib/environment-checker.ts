@@ -8,7 +8,6 @@ import type { EnvironmentCheckResult } from '@tagent/shared'
 import { detectGitRuntime } from './git-detector'
 import { detectNodeRuntime, checkNodeVersion } from './node-detector'
 
-
 /**
  * 获取下载链接
  *

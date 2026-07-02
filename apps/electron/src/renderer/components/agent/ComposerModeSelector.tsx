@@ -13,7 +13,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { MessageSquareText } from 'lucide-react'
 import * as React from 'react'
 
-import { Button , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import {
   currentComposerModeAtom,

@@ -11,7 +11,6 @@ import { join } from 'path'
 import type { GitRuntimeStatus, GitRepoStatus } from '@tagent/shared'
 import { getGitForWindowsInstallPath } from './windows-env'
 
-
 /**
  * 从系统 PATH 查找 Git
  *

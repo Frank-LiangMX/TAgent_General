@@ -21,7 +21,7 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { SearchInput , Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { SearchInput, Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 // 资产类型图标

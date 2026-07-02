@@ -11,7 +11,6 @@ import { join } from 'path'
 import type { NodeRuntimeStatus } from '@tagent/shared'
 import { getNodeInstallPathFromRegistry } from './windows-env'
 
-
 /**
  * 从系统 PATH 查找 Node.js
  *

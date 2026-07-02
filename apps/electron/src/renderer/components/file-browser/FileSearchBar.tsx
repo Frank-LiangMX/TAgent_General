@@ -8,10 +8,9 @@
 import { useSetAtom } from 'jotai'
 import * as React from 'react'
 
-
 import type { FileIndexEntry } from '@tagent/shared'
 
-import { SearchInput , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { SearchInput, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { FileTypeIcon } from './FileTypeIcon'
 import { fileBrowserAutoRevealAtom } from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'

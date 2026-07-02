@@ -17,7 +17,15 @@
 import { MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
 
-import { Button , Popover, PopoverContent, PopoverTrigger , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 export interface ToolbarItem {

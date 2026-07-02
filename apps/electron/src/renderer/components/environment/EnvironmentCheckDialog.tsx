@@ -5,15 +5,8 @@
  * 复用 EnvironmentCheckPanel。
  */
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@tagent/ui'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@tagent/ui'
 import { EnvironmentCheckPanel } from './EnvironmentCheckPanel'
-
 
 interface EnvironmentCheckDialogProps {
   open: boolean

@@ -14,7 +14,7 @@ import * as React from 'react'
 
 import type { DangerLevel, PermissionRequest } from '@tagent/shared'
 
-import { Button , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import {
   allPendingPermissionRequestsAtom,
   agentStreamingStatesAtom,

@@ -28,7 +28,6 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 
-
 import type {
   Channel,
   ChannelCreateInput,
@@ -47,7 +46,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
- Button , Input , ScrollArea , SearchInput , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+  Button,
+  Input,
+  ScrollArea,
+  SearchInput,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import {
   SettingsSection,
   SettingsCard,

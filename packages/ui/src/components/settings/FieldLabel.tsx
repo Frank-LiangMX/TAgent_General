@@ -14,7 +14,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip'
 import { cn } from '../../lib/utils'
 import { LABEL_CLASS } from './SettingsUIConstants'
 
-
 interface FieldLabelProps {
   /** 标签文本 */
   label: React.ReactNode

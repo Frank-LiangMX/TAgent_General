@@ -38,7 +38,6 @@ import { setAgentStopper, setHeadlessAgentRunner } from './agent-headless-runner
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { getAgentSessionWorkspacePath, getWorkspaceFilesDir } from './config-paths'
 
-
 // ===== 实例创建 =====
 
 const eventBus = new AgentEventBus()

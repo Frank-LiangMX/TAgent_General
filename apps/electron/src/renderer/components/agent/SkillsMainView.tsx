@@ -9,13 +9,7 @@ import { toast } from 'sonner'
 import type { BuiltinMcpCatalogEntry, McpServerEntry, WorkspaceCapabilities } from '@tagent/shared'
 
 import { mcpCatalogEntryToServerEntry } from '@tagent/shared'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@tagent/ui'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@tagent/ui'
 import {
   agentWorkspacesAtom,
   currentAgentWorkspaceIdAtom,

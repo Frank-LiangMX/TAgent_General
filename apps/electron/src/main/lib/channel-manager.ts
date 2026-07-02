@@ -36,7 +36,6 @@ import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getSettings, updateSettings } from './settings-service'
 import { planKsccWindowsSpawn } from './kscc-windows-spawn'
 
-
 /** 当前配置版本 */
 const CONFIG_VERSION = 1
 

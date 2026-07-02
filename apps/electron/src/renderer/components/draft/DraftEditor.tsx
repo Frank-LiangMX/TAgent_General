@@ -31,7 +31,6 @@ import {
 } from '@/components/diff/markdown-preview-extensions'
 import { lowlight } from '@/lib/lowlight'
 
-
 export function DraftEditor(): React.ReactElement {
   const [context, setContext] = useAtom(currentDraftContextAtom)
   const loaded = useAtomValue(draftsLoadedAtom)

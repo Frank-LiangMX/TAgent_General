@@ -18,7 +18,6 @@ import type {
 } from '@tagent/shared'
 import { getSystemPromptsPath } from './config-paths'
 
-
 /** 默认配置 */
 function getDefaultConfig(): SystemPromptConfig {
   return {

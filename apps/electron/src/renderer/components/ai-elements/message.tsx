@@ -18,7 +18,17 @@
  */
 
 import { detectLanguage } from '@tagent/core'
-import { CodeBlock, MermaidBlock , Button , ImageLightbox , LoadingIndicator , Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
+import {
+  CodeBlock,
+  MermaidBlock,
+  Button,
+  ImageLightbox,
+  LoadingIndicator,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@tagent/ui'
 import {
   ChevronDown,
   ChevronUp,
@@ -35,7 +45,6 @@ import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import { normalizeLatexDelimiters } from '@tagent/shared'
-
 
 import type { FileAttachment } from '@tagent/shared'
 import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'

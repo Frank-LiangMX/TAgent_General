@@ -10,17 +10,10 @@
 
 import * as React from 'react'
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select'
 import { cn } from '../../lib/utils'
 import { FieldLabel } from './FieldLabel'
 import { ROW_CLASS } from './SettingsUIConstants'
-
 
 /** 选项定义 */
 export interface SelectOption {

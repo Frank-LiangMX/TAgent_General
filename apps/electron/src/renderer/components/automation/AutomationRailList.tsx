@@ -9,7 +9,13 @@ import * as React from 'react'
 import type { Automation } from '@tagent/shared'
 import { formatScheduleLabel } from '@tagent/shared'
 
-import { Button , ScrollProgressContainer , Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Button,
+  ScrollProgressContainer,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { WindowDragStrip } from '@/components/app-shell/WindowDragStrip'
 import {
   automationsAtom,

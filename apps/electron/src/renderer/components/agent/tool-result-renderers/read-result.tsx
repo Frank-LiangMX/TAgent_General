@@ -13,7 +13,6 @@ import type { FileContents } from '@pierre/diffs'
 import { CollapsibleResult } from './collapsible-result'
 import { createPierreFileCSS } from './pierre-styles'
 
-
 import { resolvedThemeAtom } from '@/atoms/theme'
 
 function cheapHash(s: string): number {

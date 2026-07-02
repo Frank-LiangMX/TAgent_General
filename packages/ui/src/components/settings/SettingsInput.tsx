@@ -14,7 +14,6 @@ import { cn } from '../../lib/utils'
 import { FieldLabel } from './FieldLabel'
 import { ROW_CLASS } from './SettingsUIConstants'
 
-
 interface SettingsInputProps {
   /** 标签文本 */
   label: string

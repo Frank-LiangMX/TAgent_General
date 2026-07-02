@@ -16,7 +16,6 @@ import {
 } from './agent-atoms'
 import { draftSessionIdsAtom } from './draft-session-atoms'
 
-
 /** Working 区域三组会话 */
 export interface WorkingSessionGroups {
   todo: AgentSessionMeta[]

@@ -19,7 +19,6 @@ import { app } from 'electron'
 import type { ShellEnvResult } from '@tagent/shared'
 import { loadWindowsEnv } from './windows-env'
 
-
 /**
  * 获取用户默认 Shell 路径
  * 优先使用 SHELL 环境变量，fallback 到 /bin/zsh
