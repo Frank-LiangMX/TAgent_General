@@ -123,10 +123,11 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       # 重新编译 better-sqlite3 for 当前 Node ABI
-      # （bun install 可能用不同 Node 版本编译，导致运行时 ABI 不匹配）
+      # （跳过 @tagent/electron 的 postinstall，因为它 rebuild for Electron ABI，
+      # CI 跑 vitest 用 Node runtime，不需要 Electron ABI）
       - name: Rebuild better-sqlite3 for current Node
         run: npm rebuild better-sqlite3
 
