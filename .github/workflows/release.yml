@@ -122,6 +122,11 @@ jobs:
       - name: List artifacts
         run: ls -laR artifacts/ || true
 
+      # Release notes body 从仓库根目录的 RELEASE_NOTES.md 读取。
+      # 维护规则：发版前更新该文件为当前要发的版本内容，发版后清空或写下一版待定。
+      # 历史版本在 GitHub Release 页面永久可见，无需在本文件保留。
+      # 注意：softprops/action-gh-release@v2 在 release 已存在时不会覆盖 body，
+      # 只覆盖 files。如 body 未生效，用 `gh release edit <tag> --notes-file RELEASE_NOTES.md` 补救。
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:

@@ -1,15 +1,4 @@
-# Release Notes
-
-当前要发布的版本发版介绍。`release.yml` 已配置 `body_path: RELEASE_NOTES.md`，CI 自动读取本文件作为 GitHub Release 的 body。
-
-**维护规则**：
-- 发版前更新本文件为当前要发的版本内容
-- 发版后清空内容或写下一版待定（历史版本在 GitHub Release 页面永久可见）
-- 适中详略：分类区块 + 每项 1 行，不提根因/代码路径
-
----
-
-## v1.4.2
+# v1.4.2
 
 稳定性补丁版本。落地 hermes-agent 借鉴清单首批 6 项，外加 4 项独立修复。
 
