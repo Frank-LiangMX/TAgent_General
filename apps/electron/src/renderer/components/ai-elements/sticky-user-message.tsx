@@ -86,13 +86,30 @@ export function StickyUserMessage({ userMessages }: StickyUserMessageProps): Rea
           break
         }
       }
-      setStickyMessage(found)
+      // id 去重：即使 userMessages 引用变化导致 messageMap 重建，
+      // 只要当前 sticky 的 msgId 不变就不触发 re-render（避免输入时 transition 反复插值抖动）
+      setStickyMessage((prev) => {
+        const prevId = prev?.id ?? null
+        const foundId = found?.id ?? null
+        if (prevId === foundId) return prev
+        return found
+      })
+    }
+
+    // rAF 节流：合并同帧多次 ResizeObserver 回调，避免输入框高度变化时高频触发 check
+    let rafId: number | null = null
+    const scheduleCheck = (): void => {
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        check()
+      })
     }
 
     el.addEventListener('scroll', check, { passive: true })
 
-    // 监听容器尺寸变化
-    const resizeObserver = new ResizeObserver(check)
+    // 监听容器尺寸变化（用 rAF 节流，避免输入框高度变化时高频回调）
+    const resizeObserver = new ResizeObserver(scheduleCheck)
     resizeObserver.observe(el)
 
     // 监听内容区域 DOM 变化（流式输出、消息加载后及时检测）
@@ -102,12 +119,13 @@ export function StickyUserMessage({ userMessages }: StickyUserMessageProps): Rea
     }
 
     // 延迟一帧执行初始检查，确保 DOM 已完成渲染
-    const rafId = requestAnimationFrame(check)
+    const initialRafId = requestAnimationFrame(check)
 
     return () => {
       el.removeEventListener('scroll', check)
       resizeObserver.disconnect()
-      cancelAnimationFrame(rafId)
+      cancelAnimationFrame(initialRafId)
+      if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [scrollRef, userMessages, messageMap, stickyEnabled])
 
