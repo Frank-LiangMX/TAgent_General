@@ -1339,6 +1339,29 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     }
   }, [sessionId, setAttachedDirsMap])
 
+  /** 移除附加文件夹（拖拽 / 加号添加的目录附件） */
+  const handleDetachDirectory = React.useCallback(
+    async (dirPath: string): Promise<void> => {
+      try {
+        const updated = await window.electronAPI.detachDirectory({
+          sessionId,
+          directoryPath: dirPath,
+        })
+        setAttachedDirsMap((prev) => {
+          const map = new Map(prev)
+          map.set(sessionId, updated)
+          return map
+        })
+        const dirName = dirPath.split('/').pop() || dirPath
+        toast.success(`已移除目录: ${dirName}`)
+      } catch (error) {
+        console.error('[AgentView] 移除附加目录失败:', error)
+        toast.error('移除附加目录失败')
+      }
+    },
+    [sessionId, setAttachedDirsMap]
+  )
+
   /** 语音输入 */
   const handleSpeech = React.useCallback(async (): Promise<void> => {
     try {
@@ -2843,8 +2866,21 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                           )}
 
                           {/* 附件 + 引用选中文本 Chip（同排并排） */}
-                          {(pendingFiles.length > 0 || currentQuotedSelection) && (
+                          {(pendingFiles.length > 0 ||
+                            currentQuotedSelection ||
+                            attachedDirs.length > 0) && (
                             <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
+                              {attachedDirs.map((dirPath) => {
+                                const dirName = dirPath.split('/').pop() || dirPath
+                                return (
+                                  <AttachmentPreviewItem
+                                    key={dirPath}
+                                    filename={dirName}
+                                    mediaType="inode/directory"
+                                    onRemove={() => handleDetachDirectory(dirPath)}
+                                  />
+                                )
+                              })}
                               {pendingFiles.map((file) => (
                                 <AttachmentPreviewItem
                                   key={file.id}

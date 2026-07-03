@@ -7,7 +7,7 @@
  * - hover 显示关闭按钮
  */
 
-import { X, Paperclip } from 'lucide-react'
+import { X, Paperclip, Folder } from 'lucide-react'
 import * as React from 'react'
 
 import { ImageLightbox } from '@tagent/ui'
@@ -93,6 +93,38 @@ export function AttachmentPreviewItem({
           open={lightboxOpen}
           onOpenChange={setLightboxOpen}
         />
+      </div>
+    )
+  }
+
+  // 文件夹预览 — 蓝色标签 + Folder 图标（区别于文件的 teal）
+  if (mediaType === 'inode/directory') {
+    return (
+      <div
+        className={cn(
+          'group/attachment relative flex items-center gap-2 shrink-0',
+          'rounded-lg bg-blue-500/10 border border-blue-500/20',
+          'pl-2.5 pr-7 py-1.5 text-[13px] text-blue-500 dark:text-blue-400',
+          'transition-colors hover:bg-blue-500/15',
+          className
+        )}
+        title={filename}
+      >
+        <Folder className="size-4 shrink-0" />
+        <span className="max-w-[160px] truncate">{truncateName(filename)}</span>
+        <button
+          type="button"
+          onClick={handleRemoveClick}
+          onKeyDown={handleRemoveKeyDown}
+          className={cn(
+            'absolute top-1/2 right-1.5 -translate-y-1/2 size-[18px] rounded-full',
+            'flex items-center justify-center',
+            'text-blue-500/60 dark:text-blue-400/60 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/20',
+            'opacity-0 group-hover/attachment:opacity-100 transition-all duration-200'
+          )}
+        >
+          <X className="size-3" />
+        </button>
       </div>
     )
   }
