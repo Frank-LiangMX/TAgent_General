@@ -65,15 +65,15 @@ const SUSPICIOUS_PATTERNS: ReadonlyArray<RegExp> = [
  */
 const INVISIBLE_UNICODE_PATTERNS: ReadonlyArray<RegExp> = [
   // 零宽字符族（U+200B ~ U+200D, U+2060, U+FEFF）
-  /[​-‍⁠﻿]/g,
+  /[\u{200B}-\u{200D}\u{2060}\u{FEFF}]/gu,
   // 方向控制字符（LRE/RLE/PDF/LRO/RLO 等，U+202A ~ U+202E）
-  /[‪-‮]/g,
+  /[\u{202A}-\u{202E}]/gu,
   // Bidi isolate（U+2066 ~ U+2069）
-  /[⁦-⁩]/g,
+  /[\u{2066}-\u{2069}]/gu,
   // 其他不可见/格式字符（U+00AD 软连字符、U+180E 蒙古元音分隔符）
-  /[­᠎]/g,
+  /[\u{00AD}\u{180E}]/gu,
   // U+2061 ~ U+2064 函数应用/invisible times 等（数学不可见字符）
-  /[⁡-⁤]/g,
+  /[\u{2061}-\u{2064}]/gu,
 ]
 
 /** 扫描结果 */
