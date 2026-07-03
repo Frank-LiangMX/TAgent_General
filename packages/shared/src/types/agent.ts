@@ -471,6 +471,7 @@ export interface RecoveryAction {
     | 'open_environment_check'
     | 'open_channel_settings'
     | 'open_external'
+    | 'report_feedback'
     | (string & {})
   /** 操作附带的载荷，例如 open_external 的 URL */
   payload?: string

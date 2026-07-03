@@ -306,6 +306,9 @@ export interface ElectronAPI {
   /** 在系统默认浏览器中打开外部链接 */
   openExternal: (url: string) => Promise<void>
 
+  /** 用系统文件管理器打开 TAgent 数据目录（~/.tagent/） */
+  openDataDir: () => Promise<{ opened: boolean; path: string }>
+
   // ===== 窗口控制（Windows 自定义标题栏）=====
 
   /** 最小化窗口 */
@@ -1682,6 +1685,14 @@ const electronAPI: ElectronAPI = {
   // 通用工具
   openExternal: (url: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.OPEN_EXTERNAL, url)
+  },
+
+  // 用系统文件管理器打开 TAgent 数据目录（~/.tagent/）
+  openDataDir: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.OPEN_DATA_DIR) as Promise<{
+      opened: boolean
+      path: string
+    }>
   },
 
   // 窗口控制

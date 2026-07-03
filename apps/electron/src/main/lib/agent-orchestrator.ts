@@ -1269,7 +1269,8 @@ export class AgentOrchestrator {
         _createdAt: Date.now(),
         _errorCode: typedError.code,
         _errorTitle: typedError.title,
-        _errorDetails: typedError.details,
+        _errorDetails:
+          typedError.details ?? (typedError.originalError ? [typedError.originalError] : undefined),
         _errorCanRetry: typedError.canRetry,
         _errorActions: typedError.actions,
       } as unknown as SDKMessage
@@ -2573,7 +2574,9 @@ export class AgentOrchestrator {
                   _createdAt: Date.now(),
                   _errorCode: typedError.code,
                   _errorTitle: typedError.title,
-                  _errorDetails: typedError.details,
+                  _errorDetails:
+                    typedError.details ??
+                    (typedError.originalError ? [typedError.originalError] : undefined),
                   _errorCanRetry: typedError.canRetry,
                   _errorActions: typedError.actions,
                 } as unknown as SDKMessage

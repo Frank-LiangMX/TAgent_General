@@ -41,6 +41,7 @@ import {
   ExternalLink,
   Quote,
   RefreshCw,
+  MessageSquareWarning,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -79,6 +80,7 @@ import { activeSessionIdAtom } from '@/atoms/tab-atoms'
 import { useOpenPreview } from '@/components/diff/preview-opener'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
+import { feedbackDialogAtom } from '@/atoms/feedback'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
@@ -1241,8 +1243,10 @@ function ErrorMessage({
   const isPromptTooLong = errorCode === 'prompt_too_long'
 
   const setEnvDialogOpen = useSetAtom(environmentCheckDialogOpenAtom)
+  const setFeedbackDialog = useSetAtom(feedbackDialogAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const setSettingsTab = useSetAtom(settingsTabAtom)
+  const activeSessionId = useAtomValue(activeSessionIdAtom)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
   const contentText =
@@ -1255,12 +1259,21 @@ function ErrorMessage({
   const displayTitle =
     errorTitle ?? (isThinkingSignature ? THINKING_SIGNATURE_ERROR_TITLE : undefined)
   const displayContentText = isThinkingSignature ? THINKING_SIGNATURE_ERROR_MESSAGE : contentText
-  const displayedErrorActions = (errorActions ?? []).filter((action) => {
+  const baseErrorActions = (errorActions ?? []).filter((action) => {
     if (action.action === 'retry' && !onRetry) return false
     if (action.action === 'compact' && !onCompact) return false
     if (action.action === 'retry_in_new_session' && !onRetryInNewSession) return false
     return true
   })
+  // 有原始错误详情时自动追加「反馈给开发者」按钮（便于用户提交诊断信息给开发者排查）
+  const hasFeedbackAction = baseErrorActions.some((a) => a.action === 'report_feedback')
+  const displayedErrorActions =
+    !!errorDetails && !hasFeedbackAction
+      ? [
+          ...baseErrorActions,
+          { key: 'f', label: '反馈给开发者', action: 'report_feedback' as const },
+        ]
+      : baseErrorActions
 
   const handleRecoveryAction = (action: RecoveryAction) => {
     switch (action.action) {
@@ -1299,6 +1312,22 @@ function ErrorMessage({
         // 跳转到 TA 模式（通过 custom event 通知主 shell）
         window.dispatchEvent(new CustomEvent('tagent:open-ta-mode'))
         break
+      case 'report_feedback': {
+        const modelId =
+          typeof msgAny._channelModelId === 'string' ? msgAny._channelModelId : undefined
+        setFeedbackDialog({
+          open: true,
+          data: {
+            errorCode,
+            errorTitle,
+            errorMessage: errorText,
+            errorDetails,
+            modelId,
+            sessionId: activeSessionId ?? undefined,
+          },
+        })
+        break
+      }
       default:
         console.warn('[ErrorMessage] 未处理的 recovery action:', action)
     }
@@ -1319,6 +1348,8 @@ function ErrorMessage({
         return <Minimize2 className="size-3.5 mr-1.5" />
       case 'retry_in_new_session':
         return <Plus className="size-3.5 mr-1.5" />
+      case 'report_feedback':
+        return <MessageSquareWarning className="size-3.5 mr-1.5" />
       default:
         return null
     }

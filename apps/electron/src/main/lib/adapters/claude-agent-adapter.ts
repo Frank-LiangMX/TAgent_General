@@ -220,7 +220,7 @@ const FRIENDLY_ERROR_MESSAGES: Array<{ pattern: RegExp; message: string }> = [
   },
   {
     pattern: /validation error/i,
-    message: 'API 请求格式校验失败，请重试或开启新会话',
+    message: 'API 请求格式校验失败，请点击下方「查看诊断详情」获取服务端返回的具体错误信息，或开启新会话',
   },
 ]
 

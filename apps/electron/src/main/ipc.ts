@@ -229,6 +229,7 @@ import {
   getAgentWorkspacesDir,
   getWorkspaceSkillsDir,
   getWorkspaceFilesDir,
+  getConfigDir,
 } from './lib/config-paths'
 import { listConversations, deleteConversation } from './lib/conversation-manager'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
@@ -1267,6 +1268,13 @@ export function registerIpcHandlers(): void {
       return { opened: true }
     }
   )
+
+  // 用系统文件管理器打开 TAgent 数据目录（~/.tagent/），便于用户查看 channels.json / 会话 JSONL / 设置等
+  ipcMain.handle(IPC_CHANNELS.OPEN_DATA_DIR, async (): Promise<{ opened: boolean; path: string }> => {
+    const dataDir = getConfigDir()
+    await shell.openPath(dataDir)
+    return { opened: true, path: dataDir }
+  })
 
   // ===== 附件管理相关 =====
 

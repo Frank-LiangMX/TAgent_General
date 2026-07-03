@@ -7,6 +7,7 @@ import { environmentCheckDialogOpenAtom } from './atoms/environment'
 import { tabsAtom, activeTabIdAtom, openTab } from './atoms/tab-atoms'
 import { AppShell } from './components/app-shell/AppShell'
 import { EnvironmentCheckDialog } from './components/environment/EnvironmentCheckDialog'
+import { FeedbackDialog } from './components/agent/FeedbackDialog'
 import { OnboardingView } from './components/onboarding/OnboardingView'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { TutorialBanner } from './components/tutorial/TutorialBanner'
@@ -104,6 +105,7 @@ export default function App(): React.ReactElement {
       <SettingsDialog />
       <TutorialBanner />
       <GlobalEnvironmentCheckDialog />
+      <FeedbackDialog />
     </TooltipProvider>
   )
 }

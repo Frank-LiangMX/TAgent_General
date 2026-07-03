@@ -21,6 +21,7 @@ import {
   BookOpen,
   Terminal,
   Github,
+  FolderOpen,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -200,6 +201,15 @@ function HeroSection(): React.ReactElement {
           >
             <BookOpen size={14} />
             {openingTutorial ? '正在打开…' : '打开教程'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => window.electronAPI.openDataDir()}
+          >
+            <FolderOpen size={14} />
+            打开数据目录
           </Button>
           <CheckUpdateButton />
         </div>

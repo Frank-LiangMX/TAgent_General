@@ -353,6 +353,8 @@ export const IPC_CHANNELS = {
   GET_WORKTREE_CHANGES: 'git:get-worktree-changes',
   /** 在系统默认浏览器中打开外部链接 */
   OPEN_EXTERNAL: 'shell:open-external',
+  /** 用系统文件管理器打开 TAgent 数据目录（~/.tagent/） */
+  OPEN_DATA_DIR: 'shell:open-data-dir',
   /** 用系统默认应用打开任意文件 */
   SYSTEM_OPEN_FILE: 'shell:system-open-file',
   /** 扫描系统中可用的编辑器应用 */
