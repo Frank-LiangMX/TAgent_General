@@ -1794,7 +1794,9 @@ const electronAPI: ElectronAPI = {
   },
 
   listCommands: (category?: CommandCategory) => {
-    return ipcRenderer.invoke(COMMAND_IPC_CHANNELS.LIST_COMMANDS, { category }) as Promise<CommandMeta[]>
+    return ipcRenderer.invoke(COMMAND_IPC_CHANNELS.LIST_COMMANDS, { category }) as Promise<
+      CommandMeta[]
+    >
   },
 
   getContextUsage: (sessionId: string) => {
@@ -3480,8 +3482,10 @@ const electronAPI: ElectronAPI = {
     onPromptBlocked: (
       callback: (event: import('@tagent/shared').AutomationPromptBlockedEvent) => void
     ) => {
-      const listener = (_: unknown, event: import('@tagent/shared').AutomationPromptBlockedEvent): void =>
-        callback(event)
+      const listener = (
+        _: unknown,
+        event: import('@tagent/shared').AutomationPromptBlockedEvent
+      ): void => callback(event)
       ipcRenderer.on(AUTOMATION_IPC_CHANNELS.PROMPT_BLOCKED, listener)
       return () => {
         ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.PROMPT_BLOCKED, listener)
@@ -3493,10 +3497,7 @@ const electronAPI: ElectronAPI = {
     deleteBlockedLog: (fileName: string) =>
       ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.DELETE_BLOCKED_LOG, fileName),
     clearBlockedLogsForAutomation: (automationId: string) =>
-      ipcRenderer.invoke(
-        AUTOMATION_IPC_CHANNELS.CLEAR_BLOCKED_LOGS_FOR_AUTOMATION,
-        automationId
-      ),
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.CLEAR_BLOCKED_LOGS_FOR_AUTOMATION, automationId),
   },
 
   // ===== Draft 需求草稿 =====

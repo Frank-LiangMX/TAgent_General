@@ -712,9 +712,9 @@ export class KanbanDbService {
     entry: import('@tagent/shared').BlockedApprovalRecord
   ): void {
     const db = this.requireDb()
-    const row = db
-      .prepare('SELECT metadata FROM kanban_tasks WHERE id = ?')
-      .get(taskId) as { metadata: string | null } | undefined
+    const row = db.prepare('SELECT metadata FROM kanban_tasks WHERE id = ?').get(taskId) as
+      | { metadata: string | null }
+      | undefined
     if (!row) return
     const existing = row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : {}
     const list = Array.isArray(existing.blockedApprovals)

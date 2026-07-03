@@ -363,7 +363,10 @@ describe('runKanbanTaskHeadless', () => {
       blockedReason: expect.stringContaining('执行超时'),
     })
     // 验证回流 failed + 超时错误
-    expect(updater.markTaskFailed).toHaveBeenCalledWith('t_test1', expect.stringContaining('执行超时'))
+    expect(updater.markTaskFailed).toHaveBeenCalledWith(
+      't_test1',
+      expect.stringContaining('执行超时')
+    )
     expect(onTaskCompleted).toHaveBeenCalledWith(
       't_test1',
       'failed',

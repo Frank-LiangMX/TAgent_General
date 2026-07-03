@@ -1274,11 +1274,14 @@ export function registerIpcHandlers(): void {
   )
 
   // 用系统文件管理器打开 TAgent 数据目录（~/.tagent/），便于用户查看 channels.json / 会话 JSONL / 设置等
-  ipcMain.handle(IPC_CHANNELS.OPEN_DATA_DIR, async (): Promise<{ opened: boolean; path: string }> => {
-    const dataDir = getConfigDir()
-    await shell.openPath(dataDir)
-    return { opened: true, path: dataDir }
-  })
+  ipcMain.handle(
+    IPC_CHANNELS.OPEN_DATA_DIR,
+    async (): Promise<{ opened: boolean; path: string }> => {
+      const dataDir = getConfigDir()
+      await shell.openPath(dataDir)
+      return { opened: true, path: dataDir }
+    }
+  )
 
   // ===== 附件管理相关 =====
 
@@ -4415,13 +4418,10 @@ export function registerIpcHandlers(): void {
     return listBlockedLogs()
   })
 
-  ipcMain.handle(
-    AUTOMATION_IPC_CHANNELS.GET_BLOCKED_LOG_DETAIL,
-    async (_, fileName: string) => {
-      const { getBlockedLogDetail } = await import('./lib/automation-blocked-log')
-      return getBlockedLogDetail(fileName)
-    }
-  )
+  ipcMain.handle(AUTOMATION_IPC_CHANNELS.GET_BLOCKED_LOG_DETAIL, async (_, fileName: string) => {
+    const { getBlockedLogDetail } = await import('./lib/automation-blocked-log')
+    return getBlockedLogDetail(fileName)
+  })
 
   ipcMain.handle(AUTOMATION_IPC_CHANNELS.DELETE_BLOCKED_LOG, async (_, fileName: string) => {
     const { deleteBlockedLog } = await import('./lib/automation-blocked-log')

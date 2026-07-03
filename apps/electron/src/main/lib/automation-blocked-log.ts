@@ -8,7 +8,14 @@
  * 同时维护一个 index.json 索引（按时间倒序），便于 UI 列表加载。
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+} from 'node:fs'
 import { join } from 'node:path'
 
 import { getConfigDir } from './config-paths'

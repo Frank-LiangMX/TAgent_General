@@ -62,8 +62,9 @@ describe('planDropOldToolResults (P1-3 + 3.7)', () => {
 
   test('Given 消息数 <= PROTECT_FIRST_N + PROTECT_LAST_N When plan Then 不处理原样返回', () => {
     // 边界: 总数恰好 = 9 (3+6), 不分段
-    const msgs: SDKMessageRow[] = Array.from({ length: PROTECT_FIRST_N + PROTECT_LAST_N }, (_, i) =>
-      i % 2 === 0 ? userText(`u${i}`) : assistantText(`a${i}`)
+    const msgs: SDKMessageRow[] = Array.from(
+      { length: PROTECT_FIRST_N + PROTECT_LAST_N },
+      (_, i) => (i % 2 === 0 ? userText(`u${i}`) : assistantText(`a${i}`))
     )
     const { kept, dropped } = planDropOldToolResults(msgs)
     expect(kept.length).toBe(msgs.length)
@@ -471,11 +472,7 @@ describe('planKeepLastN (P1-3 + 3.7)', () => {
   })
 
   test('Given N 大于消息总数 When plan Then 全保留, dropped 空', () => {
-    const msgs: SDKMessageRow[] = [
-      { type: 'system' },
-      userText('Q1'),
-      assistantText('A1'),
-    ]
+    const msgs: SDKMessageRow[] = [{ type: 'system' }, userText('Q1'), assistantText('A1')]
     const { kept, dropped } = planKeepLastN(msgs, 100)
     // effectiveLastN = max(100, 6) = 100, slice(-100) 全部
     // 首 3 + 尾 100 全部, 去重后 = 全部 3 条

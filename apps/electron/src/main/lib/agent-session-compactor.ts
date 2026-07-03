@@ -45,16 +45,9 @@ export interface SDKMessageRow {
 /**
  * 判断消息是否仅含指定块类型（用于识别可丢的纯 tool 消息）
  */
-function isPureToolBlock(
-  msg: SDKMessageRow,
-  blockType: 'tool_use' | 'tool_result'
-): boolean {
+function isPureToolBlock(msg: SDKMessageRow, blockType: 'tool_use' | 'tool_result'): boolean {
   const content = msg.message?.content
-  return (
-    Array.isArray(content) &&
-    content.length > 0 &&
-    content.every((b) => b.type === blockType)
-  )
+  return Array.isArray(content) && content.length > 0 && content.every((b) => b.type === blockType)
 }
 
 /**

@@ -2154,7 +2154,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       const result = (await window.electronAPI.runCommand({
         commandId: 'agent.compact',
         context: { sessionId },
-      })) as { success: boolean; droppedCount: number; beforeCount: number; afterCount: number; message: string } | null
+      })) as {
+        success: boolean
+        droppedCount: number
+        beforeCount: number
+        afterCount: number
+        message: string
+      } | null
       if (!result) {
         toast.error('客户端压缩失败: 命令未注册')
         return

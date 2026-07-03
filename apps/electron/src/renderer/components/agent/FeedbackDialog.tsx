@@ -51,7 +51,7 @@ function findChannel(channels: Channel[], data: FeedbackDialogData | null): Chan
 /** 生成脱敏后的诊断信息 Markdown（不读 channel.apiKey） */
 function buildDiagnosticMarkdown(
   data: FeedbackDialogData | null,
-  channel: Channel | undefined,
+  channel: Channel | undefined
 ): string {
   if (!data) return ''
   const lines: string[] = []
@@ -112,7 +112,7 @@ export function FeedbackDialog(): React.ReactElement {
 
   const setOpen = React.useCallback(
     (next: boolean) => setFeedbackDialog((prev) => ({ ...prev, open: next })),
-    [setFeedbackDialog],
+    [setFeedbackDialog]
   )
 
   const handleCopy = React.useCallback(async () => {
@@ -143,7 +143,7 @@ export function FeedbackDialog(): React.ReactElement {
     if (url.length > GITHUB_ISSUE_URL_MAX) {
       // URL 过长会被浏览器 / Electron 截断 —— 提示用户改用文件方式
       alert(
-        `诊断信息过长（URL 总长 ${url.length} 字符），浏览器可能无法打开。\n请改用「保存文件」方式，然后手动将文件附加到 Issue 中。`,
+        `诊断信息过长（URL 总长 ${url.length} 字符），浏览器可能无法打开。\n请改用「保存文件」方式，然后手动将文件附加到 Issue 中。`
       )
       return
     }

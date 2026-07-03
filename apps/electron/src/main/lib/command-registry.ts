@@ -12,11 +12,7 @@
  * 详见 CLAUDE.md「能力新增 Footprint Ladder」段。
  */
 
-import type {
-  CommandCategory,
-  CommandContext,
-  CommandMeta,
-} from '@tagent/shared'
+import type { CommandCategory, CommandContext, CommandMeta } from '@tagent/shared'
 import type { CompactSessionInput, CompactSessionResult } from '@tagent/shared'
 
 /** 命令定义：handler 在 main 进程执行 */
@@ -85,10 +81,7 @@ export function listCommands(category?: CommandCategory): CommandMeta[] {
  * @returns 命令 handler 的返回值
  * @throws 命令未注册时抛错
  */
-export async function runCommand(
-  id: string,
-  ctx: CommandContext
-): Promise<unknown> {
+export async function runCommand(id: string, ctx: CommandContext): Promise<unknown> {
   const cmd = commands.get(id)
   if (!cmd) {
     throw new Error(`命令未注册: ${id}`)

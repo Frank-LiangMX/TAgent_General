@@ -2069,7 +2069,10 @@ export class AgentOrchestrator {
           kanbanDbService.appendBlockedApproval(taskId, entry)
         } catch (err) {
           // 记录失败不阻断 deny 决策（deny 已返回）
-          console.warn(`[Agent canUseTool] 记录 blockedApproval 失败: task=${taskId}, tool=${tool}`, err)
+          console.warn(
+            `[Agent canUseTool] 记录 blockedApproval 失败: task=${taskId}, tool=${tool}`,
+            err
+          )
         }
       }
 

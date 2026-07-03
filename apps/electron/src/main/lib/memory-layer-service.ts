@@ -100,9 +100,10 @@ export class MemoryLayerService {
    * @param options.dbPathOverride 测试注入：覆盖默认 getMemoryDir 计算的 db 路径。
    *   生产不传，走 `~/.tagent[-dev]/memory/sessions.db`；测试可传 `:memory:` 或临时路径。
    */
-  initialize(options?: {
-    dbPathOverride?: Partial<Record<MemoryMode, string>>
-  }): { success: boolean; error?: string } {
+  initialize(options?: { dbPathOverride?: Partial<Record<MemoryMode, string>> }): {
+    success: boolean
+    error?: string
+  } {
     try {
       // 确保目录存在（仅在生产路径下创建；测试 :memory: 路径跳过）
       if (!options?.dbPathOverride?.general) {
@@ -431,19 +432,19 @@ export class MemoryLayerService {
   async recordSession(params: RecordSessionParams): Promise<void> {
     const db = this.getL4Db(params.mode)
     if (!db) {
-      console.warn(
-        `[MemoryLayerService] L4 ${params.mode} 数据库未初始化，跳过 recordSession`
-      )
+      console.warn(`[MemoryLayerService] L4 ${params.mode} 数据库未初始化，跳过 recordSession`)
       return
     }
 
     try {
       const now = Date.now()
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO sessions
           (session_slug, title, summary, key_facts, tools_used, mode, workspace_slug, created_at, ended_at)
         VALUES (@session_slug, @title, @summary, @key_facts, @tools_used, @mode, @workspace_slug, @created_at, @ended_at)
-      `).run({
+      `
+      ).run({
         session_slug: params.sessionId,
         title: params.title || null,
         summary: params.summary || null,

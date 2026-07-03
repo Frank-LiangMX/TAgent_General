@@ -101,10 +101,11 @@ interface BlockedHistoryItemProps {
 
 function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(false)
-  const [detail, setDetail] = React.useState<
-    | { originalPrompt: string; sanitizedPrompt: string; strippedInvisibleCount: number }
-    | null
-  >(null)
+  const [detail, setDetail] = React.useState<{
+    originalPrompt: string
+    sanitizedPrompt: string
+    strippedInvisibleCount: number
+  } | null>(null)
   const [loadingDetail, setLoadingDetail] = React.useState(false)
 
   const handleExpand = async (): Promise<void> => {
@@ -168,9 +169,7 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
               </span>
             ))}
             {log.patterns.length > 2 ? (
-              <span className="text-[10px] text-muted-foreground">
-                +{log.patterns.length - 2}
-              </span>
+              <span className="text-[10px] text-muted-foreground">+{log.patterns.length - 2}</span>
             ) : null}
           </div>
         </div>
@@ -213,9 +212,7 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
             </pre>
           </div>
           <div>
-            <p className="mb-1 text-[10px] font-medium text-muted-foreground">
-              剥离不可见字符后
-            </p>
+            <p className="mb-1 text-[10px] font-medium text-muted-foreground">剥离不可见字符后</p>
             <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded bg-emerald-500/5 px-2 py-1 text-[10px] text-emerald-700 dark:text-emerald-300">
               {detail.sanitizedPrompt}
             </pre>

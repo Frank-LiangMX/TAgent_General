@@ -306,7 +306,9 @@ export async function runKanbanTaskHeadless(
       // 超时保护：worker 跑超过 30 分钟强制标记为 blocked（而非 failed），便于用户手动 unblock / cancel
       // 参考 automation-scheduler.ts:166 的 timeoutTimer 模式
       const timeoutTimer = setTimeout(() => {
-        console.warn(`[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），标记为 blocked`)
+        console.warn(
+          `[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），标记为 blocked`
+        )
         // 直接写 DB 标记 blocked（updater 可能是 createRunningOnlyUpdater，done/failed 是 no-op）
         kanbanDbService.updateTaskStatus(task.id, {
           status: 'blocked',
