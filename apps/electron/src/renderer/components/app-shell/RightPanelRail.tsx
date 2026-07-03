@@ -90,9 +90,9 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   return (
     <div
       className={cn(
-        'right-panel-rail nav-island-glass nav-island-glass--float',
-        'flex flex-col items-center gap-1 px-1 py-2',
-        'titlebar-no-drag shrink-0',
+        'right-panel-rail h-full w-[44px] shrink-0',
+        'flex flex-col items-center justify-start gap-1 py-2',
+        'titlebar-no-drag',
         className
       )}
     >

@@ -199,13 +199,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             {/* 拖拽调整宽度的接缝（仅在面板展开时可见） */}
             {isPanelOpen && (
               <div
-                className="absolute bottom-0 left-0 top-0 z-10 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
+                className="absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
                 onMouseDown={handleMouseDown}
               />
             )}
 
-            {/* 右侧统一浮岛：面板内容 + 按钮列一体（参考左侧 NavIsland 的 rail + sidebar 组合）
-                width 跟随 isPanelOpen 过渡：展开 = rail + 面板宽；折叠 = 仅 rail 细条 */}
+            {/* 右侧浮岛：会话面板（铺满到圆角边缘）+ rail 浮在面板右侧上方
+                width 跟随 isPanelOpen 过渡：展开 = 面板宽；折叠 = 仅 rail 细条 */}
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
@@ -216,17 +216,23 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               style={{
                 width: isPanelOpen ? rightColumnOuterWidth : NAV_RAIL_WIDTH + SHELL_EDGE_PADDING,
                 ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
+                ['--right-panel-rail-width' as string]: `${NAV_RAIL_WIDTH}px`,
               }}
             >
-              {/* 面板内容（仅展开时渲染） */}
+              {/* 会话面板内容（仅展开时渲染，铺满浮岛；padding-right 给 rail 让位） */}
               {isPanelOpen && (
-                <div className="nav-island-body relative flex min-h-0 flex-1 flex-col">
+                <div
+                  className="nav-island-body relative flex min-h-0 flex-1 flex-col"
+                  style={{ paddingRight: NAV_RAIL_WIDTH }}
+                >
                   <RightSidePanel width={clampedRightPanelWidth} />
                 </div>
               )}
 
-              {/* 按钮列（永远可见，折叠时单独显示为细条） */}
-              <RightPanelRail panelOpen={isPanelOpen} />
+              {/* 按钮列：absolute 浮在会话面板右侧上方（z-10），永远可见 */}
+              <div className="pointer-events-auto absolute bottom-0 right-0 top-0 z-10 flex items-stretch">
+                <RightPanelRail panelOpen={isPanelOpen} />
+              </div>
             </div>
           </div>
         )}
