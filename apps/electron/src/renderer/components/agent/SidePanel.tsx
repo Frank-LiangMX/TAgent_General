@@ -53,7 +53,6 @@ import {
 } from '@/atoms/preview-atoms'
 import { useOpenPreview } from '@/components/diff/preview-opener'
 import { DiffChangesList } from '@/components/diff/DiffChangesList'
-import { DiffPanelTabBar } from '@/components/diff/DiffPanelTabBar'
 import { WorktreeSelector } from '@/components/diff/WorktreeSelector'
 import {
   FileBrowser,
@@ -358,10 +357,8 @@ export function SidePanel({
           aria-hidden
         />
       )}
-      {/* 面板内容 */}
+      {/* 面板内容（tab 切换由外部 RightPanelRail 接管） */}
       <div className="w-full h-full flex flex-col">
-        <DiffPanelTabBar activeTab={activeTab} onTabChange={onTabChange} />
-
         {activeTab === 'changes' ? (
           sessionPath ? (
             <>

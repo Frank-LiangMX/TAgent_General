@@ -12,7 +12,7 @@ import * as React from 'react'
 import { FunctionalRail } from './FunctionalRail'
 import { LeftSidebar } from './LeftSidebar'
 import { NavIsland } from './NavIsland'
-import { RightPanelToggle } from './RightPanelToggle'
+import { RightPanelRail } from './RightPanelRail'
 import { RightSidePanel } from './RightSidePanel'
 
 import {
@@ -327,20 +327,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </div>
         )}
 
+        {/* 右侧竖向按钮列（参考 Kun WorkbenchSideRail），永远可见 */}
         {showRightPanel && (
-          <div
-            className="right-panel-topbar-toggle pointer-events-auto absolute z-[100] titlebar-no-drag"
-            style={{
-              top: TOPBAR_CONTROL_TOP,
-              // Windows 右上角有窗口控制按钮，给其留位；mac/linux 略大边距，给 hover 扩散留余量
-              right: isWindows ? WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH : MAC_TOPBAR_RIGHT_INSET,
-            }}
-          >
-            <RightPanelToggle
-              open={isPanelOpen}
-              onToggle={toggleRightPanel}
-              className="right-panel-topbar-toggle-button"
-            />
+          <div className="relative z-[70] flex shrink-0 items-stretch self-stretch py-2 pr-2">
+            <RightPanelRail panelOpen={isPanelOpen} />
           </div>
         )}
       </div>
