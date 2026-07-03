@@ -99,7 +99,7 @@ Nudge 触发条件苛刻，L0/L2 也几乎没数据
 - 修复 3（Nudge 升级）：v1.5，1-2 天
 - **总计**：v1.4.2 之前完成修复 1+2，v1.5 完成修复 3
 
-**状态**：✅ 评审通过，最高优先级，v1.4.2 之前必须完成修复 1+2
+**状态**：✅ 已落地（v1.4.2，修复 1+2 完成；修复 3 Nudge 写入升级推到 v1.5）
 
 **对其他条目的影响**：
 - 第五条方案 D（跨会话工作流识别）：依赖 L4 数据，修复 2 完成后才能跑
@@ -259,7 +259,7 @@ Feature: Automation Prompt Injection 防护
 4. 拦截日志 `~/.tagent/automation/logs/{jobId}.json`
 5. 设置页"自动化"Tab 加拦截历史列表
 
-**状态**：✅ 评审通过，待排期（v1.4.2 补丁）
+**状态**：✅ 已落地（v1.4.2，commit `9bbbcb7`）
 
 ---
 
@@ -330,7 +330,7 @@ Feature: Worker Approval 防死锁
 3. reviewer 角色在 worker 场景自动降级 bypassPermissions（`resolvePermissionMode` 加角色类型判断）
 4. 设置页加 `workerApprovalMode` 配置项
 
-**状态**：✅ 评审通过，待排期（v1.4.2 补丁）
+**状态**：✅ 已落地（v1.4.2，commit `9bbbcb7`）
 
 ---
 
@@ -516,7 +516,7 @@ v1.6（独立 UI 功能，1-2 周）：
 5. Cmd+K 全局命令面板 UI（接 registry，模糊搜索 + 键盘导航）
 6. 逐步迁移常用命令到 catalog（`reset`、`settings`、`new`、`fast`、`usage` 等的 UI 按钮 + 快捷键）
 
-**状态**：✅ 评审通过，待排期（v1.4.2 轻量 + v1.6 完整 UI）
+**状态**：✅ 已落地（v1.4.2 轻量部分，command-registry 已建；v1.6 完整 UI 待做）
 
 ---
 
@@ -1153,7 +1153,7 @@ function planDropOldToolResults(messages: SDKMessage[]) {
 - summarize 策略（v1.6 再说）
 - on_session_end hook（SDK 已管）
 
-**状态**：✅ 评审通过，待排期（v1.4.2 补丁，0.5 天）
+**状态**：✅ 已落地（v1.4.2，commit `edaf944`，protect_first_n/last_n）
 
 ---
 

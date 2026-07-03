@@ -1,16 +1,15 @@
 # Release Notes
 
-发版时把对应版本的内容复制到 GitHub Release 的 body 字段。
-`release.yml` 已配置 `body_path: RELEASE_NOTES.md`，CI 会自动读取本文件作为发版介绍。
+当前要发布的版本发版介绍。`release.yml` 已配置 `body_path: RELEASE_NOTES.md`，CI 自动读取本文件作为 GitHub Release 的 body。
 
 **维护规则**：
-- 每次发版前更新对应版本的内容
-- 旧版本保留在下方"历史版本"区
+- 发版前更新本文件为当前要发的版本内容
+- 发版后清空内容或写下一版待定（历史版本在 GitHub Release 页面永久可见）
 - 适中详略：分类区块 + 每项 1 行，不提根因/代码路径
 
 ---
 
-## v1.4.2（待发布）
+## v1.4.2
 
 稳定性补丁版本。落地 hermes-agent 借鉴清单首批 6 项，外加 4 项独立修复。
 
@@ -41,38 +40,3 @@
 ## 🧹 清理
 - 删除一次性 codemod 与 hooks 测试脚本
 - ESLint 忽略 .tmp 目录 + prettier 统一
-
----
-
-## v1.4.1
-
-v1.4.0 发布后的两个紧急修复。
-
-## 🐛 修复
-- macOS 安装包"已损坏"（代码签名 ad-hoc fallback 回归）
-- 自动更新"检查失败"看不到错误详情（AboutSettings 显示具体错误信息）
-
-## 📋 已知限制
-- 自动更新失败根因待用户日志确认，后续考虑加镜像下载源
-
----
-
-## v1.4.0
-
-看板多 Agent 协作系统正式落地，同时完成上游 Proma v0.13.4 全量对齐。TAgent 历史上最大一次更新。
-
-## ✨ 新功能
-- 看板多 Agent 协作系统（B1–B10）：看板内核 + worker 生命周期 + 6 个 Agent 工具 + 8 个 UI 组件 + 角色库
-- 上游 Proma v0.13.4 对齐：bridge 自愈、headless registry、后台任务唤醒、qwen-anthropic provider、Automation MCP 工具
-- Superpowers 全套 14 个 skill 收录
-- auto-check PostToolUse 钩子（TAgent 独有）
-- Context 分项 stale-while-revalidate
-
-## 🎨 改进
-- 消息布局瘦身 + 全局按钮圆角统一 + 过渡动画
-- 关于页 logo 跟随主题切换 + 重做托盘图标
-- 会话列表选中蒙版定位 + 跨面板可选择
-
-## 🐛 修复
-- P0 上游稳定性对齐
-- CI 流水线：better-sqlite3 ABI 兼容、Electron 二进制下载

@@ -409,9 +409,9 @@ React UI 更新
 
 ## 当前进度与下一步
 
-**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成；看板多 Agent 协作系统（B1–B10）已合入 `main`。当前活跃开发主线为 **上游 v0.13.4 对齐**（已基本完成）+ **看板 v1 产品化**。
+**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成；看板多 Agent 协作系统（B1–B10）已合入 `main`。当前活跃开发主线为 **v1.4.2 稳定性补丁已发布** + **看板 v1 产品化**（下一阶段）。
 
-**已完成**（截至 2026-07-02）：
+**已完成**（截至 2026-07-03）：
 
 - Tier 1+2 品牌清理（全清 "proma" 标识 → "tagent"）
 - Ask 档位统一 Composer + Chat 主路径退役
@@ -426,22 +426,23 @@ React UI 更新
 - **v1.3.0 发布**（2026-06-29）：插件市场/已安装页重构 + `@tagent/ui` 迁移 + 侧栏手风琴布局
 - **v1.3.1 发布**（2026-06-29）：kscc 渠道 Bash/ripgrep 工具修复 + dev 启动脚本闪退修复 + 1.3.0 遗留 typecheck 错误清理
 - **v1.4.0 发布**（2026-07-02）：看板多 Agent 协作系统 B1–B10 + 角色库 + worker 生命周期（PR #17）+ 上游 v0.13.4 对齐（PR #16）+ Superpowers 14 skill + auto-check PostToolUse 钩子
+- **v1.4.1 发布**（2026-07-02）：macOS 安装包"已损坏"修复（ad-hoc 签名回归）+ 自动更新错误信息可见
+- **v1.4.2 发布**（2026-07-03）：稳定性补丁 6 项（hermes-borrow-plan §5.1）+ 4 项独立修复 + CI 修复（eslint / prettier / FTS5 SQL）
 
 **活跃待办**：
 
-- **看板 v1 产品化**（当前主线）— `docs/plans/2026-06-30-kanban-v1-product-design.md`（B1–B10 内核已落地，UI/体验打磨 + 真实任务跑通中）
+- **看板 v1 产品化**（下一主线）— `docs/plans/2026-06-30-kanban-v1-product-design.md`（B1–B10 内核已落地，UI/体验打磨 + 真实任务跑通中）
+- **hermes-borrow-plan §5.2 v1.5 主线**：Skill Curator 自进化 + 看板 goal_mode judge gate + Nudge 写入升级 + Memory Graph 阶段一 + 孤儿引用修复
 - **上游 v0.13.4 对齐收尾** — `docs/plans/2026-06-24-upstream-feature-roadmap.md`（Issue A/E 部分完成）
 - 协作子会话 v1 — `docs/plans/2026-06-24-collaboration-design.md`
 - Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
-**最近完成**（2026-07-02）：
+**最近完成**（2026-07-03）：
 
-- **v1.4.0 发布**：看板多 Agent 协作系统（kanban-db + dispatcher + worker-service + 6 Agent 工具 + 8 UI 组件）+ 角色库（agent-role-service + AgentRoleSettings）+ 上游 v0.13.4 对齐（bridge 自愈、headless registry、qwen-anthropic provider）+ Context 分项 stale-while-revalidate + Superpowers 14 skill + auto-check PostToolUse 钩子
-- **PR #17 看板系统**：B1–B10 看板内核（better-sqlite3 + WAL 三表、30s tick + per-board 模型轮询、强制 bypassPermissions + 防递归）+ 角色库 + worker 生命周期
-- **PR #16 上游 v0.13.4 对齐**：bridge 自愈、headless registry、后台任务唤醒、qwen-anthropic provider、P2/P3 UI 修复
-- **CI 修复**：better-sqlite3 ABI 兼容（Node 24 + Electron ABI 分离）、`--ignore-scripts` 跳过 postinstall、`npm rebuild better-sqlite3` 重新编译、手动触发 Electron 二进制下载
+- **v1.4.2 发布**：hermes-borrow-plan §5.1 6 项落地（记忆系统修复 + Cron Injection 防护 + Worker Approval 防死锁 + Prompt Cache 宪章 + Footprint Ladder + Context 压缩首尾保护）+ 用户反馈功能 + 工作区拖拽排序 + 侧栏 UI 统一 + 附件卡片抖动修复（Windows）+ session-not-found 卡死修复 + sticky-message 抖动修复 + CI 修复（eslint 不可见 Unicode / prettier 格式 / FTS5 SQL 别名）+ release workflow 修复（body_path + RELEASE_NOTES.md）
+- **CI 修复**：automation-prompt-scanner.ts 不可见 Unicode 字符转义 `\u{XXXX}`、16 个文件 prettier --write、memory-layer-service.ts FTS5 SQL 用别名 `fts` 替代原表名 `sessions_fts`
 
 **最近完成**（2026-06-29）：
 

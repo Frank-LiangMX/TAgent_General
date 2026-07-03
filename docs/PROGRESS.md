@@ -45,20 +45,15 @@
 
 ---
 
-## 当前状态（2026-06-30）
+## 当前状态（2026-07-03）
 
-**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。v1.3.0 / v1.3.1 已发布。Agent Hooks（auto-check）与 Superpowers skill 包已合入 `main`。上游 Proma v0.13.4 对齐已合入 `main`（PR #16，2026-06-30）。当前活跃开发主线为 **看板 + 多 Agent 协同 Phase A 探索**（`feature/kanban-exploration` 分支）。
+**阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。看板多 Agent 协作系统（B1–B10）已合入 `main`（PR #17）。上游 Proma v0.13.4 对齐已合入 `main`（PR #16）。**v1.4.0 / v1.4.1 / v1.4.2 已发布**。当前活跃开发主线为 **看板 v1 产品化**（下一阶段）+ **hermes-borrow-plan §5.2 v1.5 主线**。
 
-🔵 **Kanban 探索分支 `feature/kanban-exploration` 进行中** — Phase A 内核 + 团队 Tab UI + demo seed 已落地；Windows dev 启动与 `better-sqlite3` 重建已补丁。**明天继续请先读** [`2026-06-30-kanban-session-handoff.md`](plans/2026-06-30-kanban-session-handoff.md)。
+**v1.4.2（2026-07-03）**：稳定性补丁版本，落地 hermes-borrow-plan §5.1 全部 6 项 + 4 项独立修复 + CI 修复。详见 `RELEASE_NOTES.md`。
 
-**分支最新能力（2026-06-30 夜）**：
+**v1.4.1（2026-07-02）**：macOS 安装包"已损坏"修复（ad-hoc 签名回归）+ 自动更新错误信息可见。
 
-- ✅ `kanban-db` + `kanban-dispatcher` + IPC + preload
-- ✅ Agent 会话 **对话 | 团队** Tab + Master-Detail + 「加载看板演示」
-- ✅ Windows：`Start-TAgent-Dev.bat`（bun/electron/native 自检）
-- ⏳ Phase B：草稿升级建板、真实 headless worker、orchestrator 工具注入
-
-**历史 spike**：Worker S/A/B 并行探索 — 详见 [`2026-06-30-kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md)。
+**v1.4.0（2026-07-02）**：看板多 Agent 协作系统 B1–B10 + 角色库 + worker 生命周期（PR #17）+ 上游 v0.13.4 对齐（PR #16）+ Superpowers 14 skill + auto-check PostToolUse 钩子。
 
 **当前判断**：
 
