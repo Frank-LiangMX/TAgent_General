@@ -366,8 +366,8 @@ export class MemoryLayerService {
       const stmt = db.prepare(`
         SELECT s.* FROM sessions s
         JOIN sessions_fts fts ON s.rowid = fts.rowid
-        WHERE sessions_fts MATCH ?
-        ORDER BY bm25(sessions_fts) ASC
+        WHERE fts MATCH ?
+        ORDER BY bm25(fts) ASC
         LIMIT ?
       `)
       return stmt.all(ftsQuery, limit) as SessionMemoryRecord[]
