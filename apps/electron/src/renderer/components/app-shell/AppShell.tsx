@@ -6,7 +6,7 @@
  * - 视觉动画在浮岛自身边界内完成，不让元素越过底板圆角边界
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import { FunctionalRail } from './FunctionalRail'
@@ -28,7 +28,6 @@ import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
 import {
   detectIsMac,
-  detectIsWindows,
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
   NAV_RAIL_WIDTH,
@@ -37,22 +36,8 @@ import {
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
-/** 右栏动画锚点沿用顶栏附近的垂直位置 */
-const RIGHT_PANEL_TOGGLE_TOP = 34
-/** Windows 自定义窗口按钮占用的右上角区域，TabBar 也使用同一避让宽度 */
-const WINDOWS_WINDOW_CONTROLS_RESERVED_WIDTH = 126
-/** 顶栏右侧按钮与 Windows 窗口按钮同顶线对齐 */
-const TOPBAR_CONTROL_TOP = 8
-/**
- * Mac 端顶栏右侧按钮的 right 偏移。
- * 比 SHELL_EDGE_PADDING 略大，给按钮 hover 背景扩散 + 红点留余量，避免被 shell overflow 裁剪。
- */
-const MAC_TOPBAR_RIGHT_INSET = 12
-
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
-/** 与 CSS 收回动画时长一致，供卸载列延迟使用 */
-const PANEL_COLLAPSE_MS = 240
 
 function clampRightPanelWidth(width: number): number {
   return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, width))
@@ -65,18 +50,12 @@ export interface AppShellProps {
 
 export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const isMac = React.useMemo(() => detectIsMac(), [])
-  const isWindows = React.useMemo(() => detectIsWindows(), [])
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
-  const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const showRightPanel = topLevelMode === 'general' && appMode === 'agent' && !!currentSessionId
-
-  const toggleRightPanel = React.useCallback(() => {
-    setPanelOpen((open) => !open)
-  }, [setPanelOpen])
 
   const showLeftSidebar =
     topLevelMode === 'general'
@@ -98,62 +77,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
-  /** 关闭后延迟卸载列，给 scale 退场留时间 */
-  const [panelColumnMounted, setPanelColumnMounted] = React.useState(isPanelOpen)
-  /** 列可见 = 打开态 或 退场动画中（与 inset 严格同步） */
-  const panelColumnShown = isPanelOpen || panelColumnMounted
-  /** 仅驱动 scale / 内容渐显，不参与布局 */
-  const [shellAnimExpanded, setShellAnimExpanded] = React.useState(isPanelOpen)
-  const skipPanelEnterAnimRef = React.useRef(isPanelOpen)
-
   const rightColumnOuterWidth = clampedRightPanelWidth + SHELL_EDGE_PADDING
-
-  React.useEffect(() => {
-    if (isPanelOpen) {
-      setPanelColumnMounted(true)
-      return
-    }
-    const timer = window.setTimeout(() => setPanelColumnMounted(false), PANEL_COLLAPSE_MS)
-    return () => clearTimeout(timer)
-  }, [isPanelOpen])
-
-  React.useEffect(() => {
-    if (!isPanelOpen) return
-    if (!panelColumnShown) return
-
-    if (skipPanelEnterAnimRef.current) {
-      setShellAnimExpanded(true)
-      skipPanelEnterAnimRef.current = false
-      return
-    }
-
-    setShellAnimExpanded(false)
-    let cancelled = false
-    let nextFrame = 0
-    // Windows/Chromium 可能把首帧折叠态与展开态合并绘制，双 RAF 保证过渡有起点。
-    const firstFrame = requestAnimationFrame(() => {
-      nextFrame = requestAnimationFrame(() => {
-        if (!cancelled) setShellAnimExpanded(true)
-      })
-    })
-    return () => {
-      cancelled = true
-      cancelAnimationFrame(firstFrame)
-      if (nextFrame) cancelAnimationFrame(nextFrame)
-    }
-  }, [isPanelOpen, panelColumnShown])
-
-  React.useLayoutEffect(() => {
-    if (!panelColumnMounted && !isPanelOpen) {
-      setShellAnimExpanded(false)
-    }
-  }, [panelColumnMounted, isPanelOpen])
 
   /**
    * 底板边界是主窗口的视觉边界，不跟随右栏卸载跳变。
    * 右栏关闭时只收回浮岛内容，底板仍稳定延伸到全局圆角边界，避免右边缘闪烁。
    */
-  const contentBaseInsetRight = showRightPanel ? clampedRightPanelWidth : 0
+  const contentBaseInsetRight = showRightPanel && isPanelOpen ? clampedRightPanelWidth : 0
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -193,9 +123,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     [clampedRightPanelWidth, setRightPanelWidth]
   )
 
-  const shellExpanded = isPanelOpen && shellAnimExpanded
-  const bodyVisible = isPanelOpen && shellAnimExpanded
-
   return (
     <AppShellProvider value={contextValue}>
       <WindowControls />
@@ -227,12 +154,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <div className="app-content-boundary-rim" aria-hidden />
 
-        <div
-          className={cn(
-            'relative z-[60] min-w-0 flex-1 p-2',
-            showRightPanel && panelColumnShown && 'pr-0'
-          )}
-        >
+        <div className="relative z-[60] min-w-0 flex-1 p-2">
           <div
             className={cn(
               'content-main-shell relative h-full min-h-0',
@@ -244,7 +166,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
               ['--content-chrome-bleed-right' as string]:
-                showRightPanel && panelColumnShown ? `${SHELL_EDGE_PADDING}px` : '0px',
+                showRightPanel && isPanelOpen ? `${SHELL_EDGE_PADDING}px` : '0px',
               transition:
                 '--content-base-inset-left 300ms cubic-bezier(0.16, 1, 0.3, 1), --content-base-fade-width 300ms cubic-bezier(0.16, 1, 0.3, 1)',
             }}
@@ -272,65 +194,40 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </div>
         </div>
 
-        {showRightPanel && panelColumnShown && (
-          <div
-            className="right-panel-layout-column relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0"
-            style={{ width: shellExpanded ? rightColumnOuterWidth : 0 }}
-          >
-            <div className="relative flex h-full min-h-0 w-full items-stretch">
-              {shellExpanded && (
-                <div
-                  className="absolute bottom-0 left-0 top-0 z-10 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
-                  onMouseDown={handleMouseDown}
-                />
-              )}
-              <div
-                className={cn(
-                  'right-panel-shadow-frame relative ml-auto flex h-full min-h-0 w-full',
-                  shellExpanded && 'right-panel-shadow-frame--expanded'
-                )}
-                style={{
-                  ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
-                  ['--right-panel-reveal-width' as string]: `${clampedRightPanelWidth}px`,
-                }}
-              >
-                <div
-                  className={cn(
-                    'right-panel-reveal-mask ml-auto flex h-full min-h-0',
-                    shellExpanded && 'right-panel-reveal-mask--expanded'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'right-panel-expand-shell right-nav-island-glass nav-island-glass nav-island-glass--float',
-                      'relative flex h-full min-h-0 w-full flex-col overflow-hidden',
-                      shellExpanded && 'right-panel-expand-shell--expanded',
-                      isMac && 'right-nav-island-glass--mac'
-                    )}
-                    style={{
-                      ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
-                      ['--right-panel-toggle-y' as string]: `${RIGHT_PANEL_TOGGLE_TOP + 18}px`,
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        'right-panel-expand-body nav-island-body relative flex min-h-0 flex-1 flex-col',
-                        bodyVisible && 'right-panel-expand-body--visible'
-                      )}
-                    >
-                      <RightSidePanel width={clampedRightPanelWidth} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 右侧竖向按钮列（参考 Kun WorkbenchSideRail），永远可见 */}
         {showRightPanel && (
-          <div className="relative z-[70] flex shrink-0 items-stretch self-stretch py-2 pr-2">
-            <RightPanelRail panelOpen={isPanelOpen} />
+          <div className="relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0">
+            {/* 拖拽调整宽度的接缝（仅在面板展开时可见） */}
+            {isPanelOpen && (
+              <div
+                className="absolute bottom-0 left-0 top-0 z-10 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
+                onMouseDown={handleMouseDown}
+              />
+            )}
+
+            {/* 右侧统一浮岛：面板内容 + 按钮列一体（参考左侧 NavIsland 的 rail + sidebar 组合）
+                width 跟随 isPanelOpen 过渡：展开 = rail + 面板宽；折叠 = 仅 rail 细条 */}
+            <div
+              className={cn(
+                'right-nav-island-glass nav-island-glass nav-island-glass--float',
+                'relative ml-auto flex h-full min-h-0 flex-row overflow-hidden',
+                'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                isMac && 'right-nav-island-glass--mac'
+              )}
+              style={{
+                width: isPanelOpen ? rightColumnOuterWidth : NAV_RAIL_WIDTH + SHELL_EDGE_PADDING,
+                ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
+              }}
+            >
+              {/* 面板内容（仅展开时渲染） */}
+              {isPanelOpen && (
+                <div className="nav-island-body relative flex min-h-0 flex-1 flex-col">
+                  <RightSidePanel width={clampedRightPanelWidth} />
+                </div>
+              )}
+
+              {/* 按钮列（永远可见，折叠时单独显示为细条） */}
+              <RightPanelRail panelOpen={isPanelOpen} />
+            </div>
           </div>
         )}
       </div>
