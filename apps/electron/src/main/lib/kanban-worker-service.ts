@@ -139,6 +139,15 @@ export interface RunKanbanTaskHeadlessOptions {
 }
 
 /**
+ * worker 任务执行超时上限：30 分钟
+ *
+ * worker 任务通常比 automation 短（分析 / 编码 / 审核），30 分钟足够。
+ * 超时后标记任务为 blocked（而非 failed），便于用户在看板详情页手动 unblock 或 cancel。
+ * 参考 automation-scheduler.ts:50 的 RUN_TIMEOUT_MS 模式（2h），worker 用更短的 30min。
+ */
+const WORKER_TIMEOUT_MS = 30 * 60 * 1000
+
+/**
  * 防递归 prompt 前缀：告诉工人这是看板任务执行，不要再创建看板 / automation。
  * 对标 automation-scheduler 的 automationContext 思路。
  *
@@ -174,16 +183,30 @@ function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoa
  * 解析 worker 的权限模式
  *
  * 优先级：
- * 1. task.permissionMode（显式指定，最高）
- * 2. role.permissionMode（task 绑定 roleId 时，角色库定义）
+ * 1. task.permissionMode（显式指定，最高；用户显式要 auto 时不降级，让 canUseTool 的 worker auto 分支处理）
+ * 2. role.permissionMode（task 绑定 roleId 时，角色库定义；auto 角色在 worker 场景强制降级）
  * 3. 默认 bypassPermissions（与 automation 一致，无人值守写操作必备）
+ *
+ * reviewer 角色降级：role.permissionMode === 'auto' 时（如内置 reviewer）强制降级为 bypassPermissions。
+ * 理由：worker 无人值守，auto 模式触发 PermissionBanner 无响应 → 死锁。
+ * reviewer 想要的"只读"约束通过 systemPrompt 实现（"不修改任何文件"），不依赖 permissionMode。
+ * 用户若显式 task.permissionMode='auto'，保留 auto（让 canUseTool 根据 workerApprovalMode 决定 deny/approve）。
  */
 function resolvePermissionMode(task: KanbanWorkerTask): 'auto' | 'bypassPermissions' {
+  // 1. task 显式指定：透传（用户明确要 auto 时不降级）
   if (task.permissionMode) return task.permissionMode
+
+  // 2. role.permissionMode：reviewer 类（auto）强制降级
   if (task.roleId) {
     const role = getRoleById(task.roleId)
-    if (role?.permissionMode) return role.permissionMode
+    if (role?.permissionMode === 'auto') {
+      // worker 场景 auto 角色无法交互审批，降级 bypassPermissions
+      return 'bypassPermissions'
+    }
+    if (role?.permissionMode === 'bypassPermissions') return 'bypassPermissions'
   }
+
+  // 3. 默认
   return 'bypassPermissions'
 }
 
@@ -267,6 +290,7 @@ export async function runKanbanTaskHeadless(
       const finish = (status: 'done' | 'failed', error?: string): void => {
         if (settled) return
         settled = true
+        if (timeoutTimer) clearTimeout(timeoutTimer)
         if (status === 'done') {
           // done + summary 由 dispatcher 根据 runner 返回值写
           // （createKanbanHeadlessRunner 的 runner 会从工人会话提取 summary 返回）
@@ -278,6 +302,19 @@ export async function runKanbanTaskHeadless(
         options.onTaskCompleted?.(task.id, status, undefined, error)
         resolve()
       }
+
+      // 超时保护：worker 跑超过 30 分钟强制标记为 blocked（而非 failed），便于用户手动 unblock / cancel
+      // 参考 automation-scheduler.ts:166 的 timeoutTimer 模式
+      const timeoutTimer = setTimeout(() => {
+        console.warn(`[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），标记为 blocked`)
+        // 直接写 DB 标记 blocked（updater 可能是 createRunningOnlyUpdater，done/failed 是 no-op）
+        kanbanDbService.updateTaskStatus(task.id, {
+          status: 'blocked',
+          blockedReason: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
+        })
+        // 通过 finish 回流 onTaskCompleted('failed')，让 dispatcher 推进状态机
+        finish('failed', `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`)
+      }, WORKER_TIMEOUT_MS)
 
       runRegisteredHeadlessAgent(
         {

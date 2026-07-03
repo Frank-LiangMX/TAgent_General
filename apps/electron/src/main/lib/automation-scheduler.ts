@@ -16,7 +16,7 @@
  * - 防休眠：任务执行期间调用 powerSaveBlocker 防止系统休眠
  */
 
-import { BrowserWindow, powerSaveBlocker } from 'electron'
+import { BrowserWindow, Notification, powerSaveBlocker } from 'electron'
 import {
   AUTOMATION_IPC_CHANNELS,
   AUTOMATION_DEFAULT_SESSION_MODE,
@@ -42,6 +42,8 @@ import {
 import { getContextUsageCache } from './context-usage-cache'
 import { runAgentHeadless, isAgentSessionActive } from './agent-service'
 import { notifyAutomationRunFinished } from './automation-notification-service'
+import { scanAutomationPrompt, type BlockedLogEntry } from './automation-prompt-scanner'
+import { writeBlockedLog } from './automation-blocked-log'
 
 /** tick 周期：每 30s 检查一次到期任务（短轮询，抗休眠漂移） */
 const TICK_INTERVAL_MS = 30_000
@@ -57,6 +59,50 @@ function dispatchRunNotification(automation: Automation, run: AutomationRun): vo
   void notifyAutomationRunFinished({ automation, run }).catch((err) => {
     console.error(`[定时任务] 发送完成通知失败: ${automation.name}`, err)
   })
+}
+
+/**
+ * 拦截时通知用户：系统通知 + IPC 推送前端
+ *
+ * 系统通知让用户即使不在应用窗口也能看到；IPC 推送让前端可以弹 toast
+ * 并刷新拦截历史列表。
+ */
+function notifyBlockedAutomation(
+  automation: Automation,
+  scanResult: ReturnType<typeof scanAutomationPrompt>
+): void {
+  // 系统通知
+  try {
+    const notification = new Notification({
+      title: `⛔ 定时任务被安全拦截`,
+      body: `「${automation.name}」的指令命中可疑模式: ${scanResult.patterns.slice(0, 2).join(', ')}${scanResult.patterns.length > 2 ? '...' : ''}。任务未执行，请到设置查看详情。`,
+      silent: false,
+    })
+    notification.on('click', () => {
+      const mainWindow = BrowserWindow.getAllWindows().find((win) => !win.isDestroyed())
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore()
+        mainWindow.focus()
+      }
+    })
+    notification.show()
+  } catch (err) {
+    console.error(`[定时任务拦截] 系统通知发送失败: ${automation.name}`, err)
+  }
+
+  // IPC 推送：复用 CHANGED 通道触发列表刷新，PROMPT_BLOCKED 通道让前端弹 toast
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(AUTOMATION_IPC_CHANNELS.CHANGED)
+      win.webContents.send(AUTOMATION_IPC_CHANNELS.PROMPT_BLOCKED, {
+        automationId: automation.id,
+        automationName: automation.name,
+        patterns: scanResult.patterns,
+        reasons: scanResult.reasons,
+        timestamp: Date.now(),
+      })
+    }
+  }
 }
 
 /** 向所有渲染窗口广播任务列表变更，触发前端刷新 */
@@ -94,6 +140,54 @@ export async function runAutomation(automation: Automation, manual = false): Pro
   const blockerId = powerSaveBlocker.start('prevent-app-suspension')
 
   try {
+    // ===== Prompt 安全扫描（runtime 防御性二次校验） =====
+    // manager.create/update 已扫过一次，这里再扫一次：
+    // 1. 防止 automations.json 被外部篡改后注入恶意 prompt
+    // 2. 未来若加入 skill 内容加载，runtime 是最后一道防线
+    const assembledPrompt = automation.prompt + '\n<!--TAGENT_SCHEDULED_RUN-->'
+    const scanResult = scanAutomationPrompt(assembledPrompt)
+    if (scanResult.blocked) {
+      console.warn(
+        `[定时任务拦截] ${automation.name}（${automation.id}）执行前命中可疑模式，已拦截: ${scanResult.patterns.join(', ')}`
+      )
+
+      // 写拦截日志（含原始 / sanitized prompt，便于审计）
+      const entry: BlockedLogEntry = {
+        timestamp: runAt,
+        automationId: automation.id,
+        automationName: automation.name,
+        reasons: scanResult.reasons,
+        patterns: scanResult.patterns,
+        originalPrompt: assembledPrompt,
+        sanitizedPrompt: scanResult.sanitizedPrompt,
+        strippedInvisibleCount: scanResult.strippedInvisibleCount,
+        stage: 'runtime',
+      }
+      try {
+        writeBlockedLog(entry)
+      } catch (logErr) {
+        console.error('[定时任务拦截] 写入拦截日志失败:', logErr)
+      }
+
+      // 记录一条 skipped run，便于在运行历史中看到本次拦截
+      const run: AutomationRun = {
+        runAt,
+        sessionId: '',
+        status: 'skipped',
+        skipReason: `指令安全拦截: ${scanResult.patterns.join(', ')}`,
+      }
+      appendRun(automation.id, run)
+      broadcastChanged()
+      // 不调 updateAfterRun：拦截不算失败，不应触发连续失败退避
+      // 但要推进 nextRunAt，否则下个 tick 还会再触发一次
+      updateAfterRun(automation.id, { status: 'succeeded' })
+
+      // 通知用户：系统通知 + IPC 推送前端弹 toast
+      notifyBlockedAutomation(automation, scanResult)
+
+      return
+    }
+
     // 根据 sessionMode 决定新建或复用子会话
     //  - reuse：lastSessionId 存在且会话还活着就复用，否则新建
     //  - daily：再叠加一层「同一自然日」+「上下文占用率 < 阈值」双重判断
@@ -171,10 +265,13 @@ export async function runAutomation(automation: Automation, manual = false): Pro
       // 防递归：注入 automationContext 告诉 Agent 不要再创建定时任务
       const automationContext = `这是定时任务「${automation.name}」的自动执行（ID: ${automation.id}，${formatScheduleLabel(automation)}）。这本身就是定时任务，不要建议用户再创建定时任务。直接执行任务即可。如发现本任务连续失败、输出价值低、频率不合适或提示词不完整，可以使用 automation 工具读取并更新当前任务。`
 
+      // 用 sanitizedPrompt（已剥离 invisible unicode）执行，避免 Agent 看不到的位置藏匿 payload
+      const finalUserMessage = scanResult.sanitizedPrompt
+
       runAgentHeadless(
         {
           sessionId: targetSessionId,
-          userMessage: automation.prompt + '\n<!--TAGENT_SCHEDULED_RUN-->',
+          userMessage: finalUserMessage,
           automationContext,
           channelId: automation.channelId,
           modelId: automation.modelId,

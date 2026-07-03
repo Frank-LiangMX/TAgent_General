@@ -1,97 +1,22 @@
-# Pull Request
+## Summary
 
-> Review is risk-based: high-risk changes need 2 reviewers; normal code / CI / release changes need at least 1 reviewer or CODEOWNER; all required CI must be green before merge.
+<1-3 句话概括改动>
 
-## Why
+## Cache 影响
 
-[Explain *why* this change is needed. Not just *what* — *why* this approach.]
+- [ ] 改动不影响 system prompt 组装顺序
+- [ ] 改动不动态增删工具
+- [ ] 改动不插入新消息到会话中部
+- [ ] 改动不翻转消息顺序
 
-## What
+若任一未勾选：在此论证 cache 影响与替代方案，或说明属于"用户主动操作失效点"（permissionMode / mode / SOUL.md / eagerness）。详见 `CLAUDE.md` "Prompt Cache 不可侵犯" 段。
 
-[List the changes. File-level + key design decisions.]
+## Test plan
 
-## How to Test
+- [ ] `bun run typecheck` 通过
+- [ ] `bun test` 通过
+- [ ] 手动验证：<列出关键场景>
 
-[Manual steps / unit tests / screenshots]
+## 关联
 
-## Risks
-
-[Potential risks + how to rollback]
-
-## Screenshots (if UI change)
-
-[Attach or link]
-
-## Related
-
-- Issue: #<n> / "no related issue"
-- Design doc: `docs/plans/...` / "no design doc"
-- ADR: `docs/decisions/NNNN-...` / "no ADR"
-
----
-
-## Reviewer Checklist
-
-### 正确性
-
-- [ ] 代码确实解决了 _why_
-- [ ] 边界条件覆盖（空输入 / 并发 / Unicode）
-- [ ] 错误处理完整
-- [ ] 公共 API 行为不变
-
-### 测试
-
-- [ ] 单元测试覆盖新功能
-- [ ] 覆盖率 ≥ 80%
-- [ ] 集成测试（如果跨模块）
-
-### 设计
-
-- [ ] 符合 `AGENTS.md` §3-5 硬性约束
-- [ ] 不违反双模式隔离
-- [ ] 不动"绝对边界"
-
-### 代码风格
-
-- [ ] 通过 ruff / eslint / prettier
-- [ ] 命名一致
-- [ ] 没有重复代码
-- [ ] 没有死代码
-
-### 文档
-
-- [ ] CHANGELOG.md 更新
-- [ ] 公共 API 改动 → README
-- [ ] 架构变更 → ADR
-
-### 安全
-
-- [ ] 不引入 CVE
-- [ ] 凭证不写入代码
-- [ ] 无注入漏洞
-
-### 性能
-
-- [ ] 无 N+1
-- [ ] 无不必要大循环
-- [ ] 资源正确释放
-
----
-
-## Author Checklist
-
-- [ ] PR description 完整
-- [ ] 自查过 reviewer checklist
-- [ ] 截图（UI 改动）
-- [ ] 关联 issue / ADR / design doc
-- [ ] 按风险分级 request reviewer
-- [ ] 所有 CI 检查通过
-
-## Reviewers
-
-<!-- GitHub auto-assigns CODEOWNERS. Manual: @user1 @user2 -->
-
-| Reviewer                       | Status       |
-| ------------------------------ | ------------ |
-| @primary-reviewer              | ⏳ / ✅ / ❌ |
-| @second-reviewer-for-high-risk | ⏳ / ✅ / ❌ |
+<关联的 plan 文档 / issue / PR>

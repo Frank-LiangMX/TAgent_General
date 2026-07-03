@@ -20,6 +20,7 @@ import { getIsQuitting, setQuitting } from './lib/app-lifecycle'
 import { registerBridge, startAllBridges, startBridgeSelfHealing } from './lib/bridge-registry'
 import { startChatToolsWatcher } from './lib/tool-config-watcher'
 import { seedDefaultSkills } from './lib/config-paths'
+import { registerBuiltinCommands } from './lib/command-registry'
 import { dingtalkBridgeManager } from './lib/dingtalk-bridge-manager'
 import { getDingTalkMultiBotConfig } from './lib/dingtalk-config'
 import { feishuBridgeManager } from './lib/feishu-bridge-manager'
@@ -573,6 +574,8 @@ async function bootstrap(): Promise<void> {
 
   // Register IPC handlers
   registerIpcHandlers()
+  // 注册内置命令到 command-registry（agent.compact 等命令统一入口）
+  safeRun('registerBuiltinCommands', registerBuiltinCommands)
   safeRun('startAutoArchiveScheduler', startAutoArchiveScheduler)
 
   // Set dock icon on macOS

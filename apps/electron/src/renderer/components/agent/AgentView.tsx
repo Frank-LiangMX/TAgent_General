@@ -2146,14 +2146,19 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   /**
    * P1-3: 客户端压缩 (LLM compact_session tool 失败时的 fallback)
-   * 走 IPC 调 main 进程的 compactSession(), 直接改 session.jsonl
+   * 走 command-registry 统一路由（agent.compact 命令），最终调 main 进程的 compactSession()
    */
   const handleClientCompact = React.useCallback(async (): Promise<void> => {
     if (!sessionId) return
     try {
-      const result = await window.electronAPI.compactSession(sessionId, {
-        strategy: 'drop_old_tool_results',
-      })
+      const result = (await window.electronAPI.runCommand({
+        commandId: 'agent.compact',
+        context: { sessionId },
+      })) as { success: boolean; droppedCount: number; beforeCount: number; afterCount: number; message: string } | null
+      if (!result) {
+        toast.error('客户端压缩失败: 命令未注册')
+        return
+      }
       if (result.success) {
         toast.success(
           `客户端压缩: ${result.droppedCount} 条已压缩 (${result.beforeCount} -> ${result.afterCount})`

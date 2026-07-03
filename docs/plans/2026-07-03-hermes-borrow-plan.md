@@ -417,12 +417,14 @@ TAgent 现状接近最优，cache 命中风险等级 = **低**：
 
 仅 4 个风险点，全是用户主动操作（permissionMode 切换 / mode 切换 / SOUL.md 编辑 / eagerness 档位变更），cache 失效合理，无需修复。
 
+**偏差澄清**：原描述"SOUL.md / skills 不进 system prompt"与现状不符——SOUL.md 实际进 system prompt（`agent-prompt-builder.ts:462-466`），skills 才走 SDK plugin 不进。宪章文档已据此修正描述。
+
 **落地范围**：
 1. CLAUDE.md 加"Prompt Cache 不可侵犯"段落
 2. Agent Onboarding Checklist 加一条
 3. `.github/pull_request_template.md` 加 cache 影响 checklist 项
 
-**状态**：✅ 评审通过，待排期（v1.4.2 补丁，纯文档半天）
+**状态**：✅ 已落地（v1.4.2）
 
 ---
 

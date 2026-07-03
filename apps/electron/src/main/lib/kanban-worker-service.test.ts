@@ -66,6 +66,7 @@ vi.mock('./agent-headless-runner-registry', () => ({
 vi.mock('./kanban-db', () => ({
   kanbanDbService: {
     updateTaskStatus: vi.fn(),
+    appendBlockedApproval: vi.fn(),
     isInitialized: vi.fn(() => true),
   },
 }))
@@ -104,11 +105,15 @@ const { runKanbanTaskHeadless } = await import('./kanban-worker-service')
 const { buildKanbanAgentTools } = await import('./kanban-agent-tools')
 const agentSessionManager = await import('./agent-session-manager')
 const headlessRegistry = await import('./agent-headless-runner-registry')
+const roleService = await import('./agent-role-service')
+const kanbanDb = await import('./kanban-db')
 const electron = await import('electron')
 
 const mockCreateSession = vi.mocked(agentSessionManager.createAgentSession)
 const mockUpdateMeta = vi.mocked(agentSessionManager.updateAgentSessionMeta)
 const mockRunHeadless = vi.mocked(headlessRegistry.runRegisteredHeadlessAgent)
+const mockGetRoleById = vi.mocked(roleService.getRoleById)
+const mockUpdateTaskStatus = vi.mocked(kanbanDb.kanbanDbService.updateTaskStatus)
 const mockPowerStart = vi.mocked(electron.powerSaveBlocker.start)
 
 beforeEach(() => {
@@ -116,6 +121,8 @@ beforeEach(() => {
   mockUpdateMeta.mockClear()
   mockRunHeadless.mockClear()
   mockPowerStart.mockClear()
+  mockGetRoleById.mockReset()
+  mockUpdateTaskStatus.mockClear()
   capturedRuns = []
 })
 
@@ -270,6 +277,103 @@ describe('runKanbanTaskHeadless', () => {
     expect(mockPowerStart).toHaveBeenCalledWith('prevent-app-suspension')
     completeLatestRun()
     await promise
+  })
+
+  test('reviewer 角色（permissionMode=auto）自动降级为 bypassPermissions', async () => {
+    mockGetRoleById.mockReturnValue({
+      id: 'reviewer',
+      displayName: '审核工人',
+      description: '审查代码',
+      systemPrompt: '你是审核工人',
+      permissionMode: 'auto',
+      modelPool: ['kimi-k2.6'],
+      maxConcurrentPerModel: 2,
+      fallbackToChannelDefault: true,
+    })
+
+    const promise = runKanbanTaskHeadless({ ...baseTask, roleId: 'reviewer' }, baseBoard)
+    expect(capturedRuns[0]!.input.permissionModeOverride).toBe('bypassPermissions')
+    completeLatestRun()
+    await promise
+  })
+
+  test('非 reviewer 角色（permissionMode=bypassPermissions）保持原值', async () => {
+    mockGetRoleById.mockReturnValue({
+      id: 'coder',
+      displayName: '编码工人',
+      description: '实现功能',
+      systemPrompt: '你是编码工人',
+      permissionMode: 'bypassPermissions',
+      modelPool: ['glm-5.2'],
+      maxConcurrentPerModel: 2,
+      fallbackToChannelDefault: true,
+    })
+
+    const promise = runKanbanTaskHeadless({ ...baseTask, roleId: 'coder' }, baseBoard)
+    expect(capturedRuns[0]!.input.permissionModeOverride).toBe('bypassPermissions')
+    completeLatestRun()
+    await promise
+  })
+
+  test('task.permissionMode=auto 显式指定时不降级（透传 auto）', async () => {
+    // 即使是 reviewer 角色，用户显式要 auto 时透传，让 canUseTool 根据 workerApprovalMode 处理
+    mockGetRoleById.mockReturnValue({
+      id: 'reviewer',
+      displayName: '审核工人',
+      description: '审查代码',
+      systemPrompt: '你是审核工人',
+      permissionMode: 'auto',
+      modelPool: ['kimi-k2.6'],
+      maxConcurrentPerModel: 2,
+      fallbackToChannelDefault: true,
+    })
+
+    const promise = runKanbanTaskHeadless(
+      { ...baseTask, roleId: 'reviewer', permissionMode: 'auto' },
+      baseBoard
+    )
+    expect(capturedRuns[0]!.input.permissionModeOverride).toBe('auto')
+    completeLatestRun()
+    await promise
+  })
+
+  test('执行超时 30 分钟后标记任务为 blocked', async () => {
+    // 用 fake timer 模拟超时：runRegisteredHeadlessAgent 不回调，setTimeout 触发
+    vi.useFakeTimers()
+    const updater = {
+      markTaskRunning: vi.fn(),
+      markTaskDone: vi.fn(),
+      markTaskFailed: vi.fn(),
+    }
+    const onTaskCompleted = vi.fn()
+
+    const promise = runKanbanTaskHeadless(baseTask, baseBoard, {
+      updater,
+      onTaskCompleted,
+    })
+
+    // 推进 30 分钟 + 1ms 触发超时
+    await vi.advanceTimersByTimeAsync(30 * 60 * 1000 + 1)
+
+    await promise
+
+    // 验证标 blocked
+    expect(mockUpdateTaskStatus).toHaveBeenCalledWith('t_test1', {
+      status: 'blocked',
+      blockedReason: expect.stringContaining('执行超时'),
+    })
+    // 验证回流 failed + 超时错误
+    expect(updater.markTaskFailed).toHaveBeenCalledWith('t_test1', expect.stringContaining('执行超时'))
+    expect(onTaskCompleted).toHaveBeenCalledWith(
+      't_test1',
+      'failed',
+      undefined,
+      expect.stringContaining('执行超时')
+    )
+
+    vi.useRealTimers()
+    // 清理挂起的 run（避免影响后续测试）
+    capturedRuns = []
   })
 })
 

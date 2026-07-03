@@ -698,6 +698,37 @@ export class KanbanDbService {
     )
   }
 
+  /**
+   * 追加一条 blockedApproval 记录到 task.metadata.blockedApprovals
+   *
+   * worker 场景防死锁用：worker 在 auto 模式下触发任何 approval（含 ExitPlanMode / AskUserQuestion）
+   * 都会被自动 deny 并追加到此列表，便于事后审计。
+   *
+   * 实现：读 → 合并 → 写。metadata 为空时初始化为 { blockedApprovals: [entry] }。
+   * 不动 status / started_at / finished_at 等其他字段。
+   */
+  appendBlockedApproval(
+    taskId: string,
+    entry: import('@tagent/shared').BlockedApprovalRecord
+  ): void {
+    const db = this.requireDb()
+    const row = db
+      .prepare('SELECT metadata FROM kanban_tasks WHERE id = ?')
+      .get(taskId) as { metadata: string | null } | undefined
+    if (!row) return
+    const existing = row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : {}
+    const list = Array.isArray(existing.blockedApprovals)
+      ? (existing.blockedApprovals as unknown[])
+      : []
+    list.push(entry)
+    const merged = { ...existing, blockedApprovals: list }
+    db.prepare(`UPDATE kanban_tasks SET metadata = ?, updated_at = ? WHERE id = ?`).run(
+      JSON.stringify(merged),
+      Date.now(),
+      taskId
+    )
+  }
+
   /** 列出某状态的所有任务（按优先级降序、创建时间升序） */
   listTasksByStatus(status: KanbanTaskStatus): KanbanTask[] {
     const db = this.requireDb()

@@ -23,6 +23,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - UI 库：基础组件从 @tagent/ui 导入，玻璃样式用 session-list-item-active / session-glass-* 类，圆角/颜色用 token，禁止 @/components/ui/* 新增 import（ESLint 会 warn）
 - 状态管理：全部用 Jotai
 - 中文注释优先，保留专业术语
+- Prompt Cache：长会话每轮复用 cached prefix，禁止中途切换 toolset / 重建 system prompt / 注入 system message（详见"Prompt Cache 不可侵犯"段）
+- Footprint Ladder：新增能力按 6 级阶梯选择（扩展已有代码 > Skill > MCP Server > Service-gated Tool > Plugin > Core Tool），3+ 同类 PR 必须设计 ABC + orchestrator
 请问接下来需要我做什么？
 ```
 
@@ -206,6 +208,57 @@ bun run build:resources   # 复制 resources/ 到 dist/
 - 尽可能使用 `import type` 进行仅类型导入
 - 注释和日志采用中文，保留专业术语
 - **路径别名**：`@/` → `apps/electron/src/renderer/`
+
+## Prompt Cache 不可侵犯
+
+**核心约束**：长会话每轮复用 cached prefix，cache 命中直接影响成本与延迟（cache miss 翻倍成本）。TAgent 用 Claude Agent SDK，cache 机制由 SDK 黑盒管理，TAgent 是 SDK 上层，约束目标是"不破坏 SDK 已享受的 cache"。
+
+**当前架构已对齐**（explorer 2026-07-03 验证）：
+- ✅ 主拼装顺序稳定（`agent-prompt-builder.ts:455-836` 用 `sections[]` 固定顺序 push）
+- ✅ 工具列表不进 system prompt（走 SDK `mcpServers` + `agents` 独立字段）
+- ✅ skills 不进 system prompt（走 SDK plugin 机制自动发现）
+- ✅ 动态内容隔离到 user message（时间/MCP 状态/工作目录走 `<workspace_state>` XML 块）
+- ✅ 无中途注入 system message
+
+**禁止行为**（除非论证无 cache 影响）：
+- 中途切换 toolset（增删工具）
+- 重建 system prompt（顺序调整、内容追加）
+- 中途注入新的 system message
+- 翻转消息顺序
+
+**唯一例外**：context compression（`compact_session`）
+
+**用户主动操作的 cache 失效点**（合理，无需修复）：
+1. permissionMode 切换（plan / auto / bypassPermissions）
+2. mode 切换（general / ta）
+3. SOUL.md 编辑（用户保存后下一条消息 system prompt 变化）
+4. SubAgent eagerness 档位变更（never / conservative / balanced / aggressive）
+
+**PR 审查 checklist**：
+- [ ] 改动是否影响 system prompt 组装顺序？
+- [ ] 改动是否动态增删工具？
+- [ ] 改动是否插入新消息到会话中部？
+- 若任一为是：在 PR 描述中论证 cache 影响与替代方案
+
+## 能力新增 Footprint Ladder
+
+新增能力按以下阶梯选择（从轻到重）：
+
+1. **扩展已有代码**：能改现有 service / atom 就改，不新建
+2. **Skill**：写到 `~/.tagent/agent-workspaces/{ws}/skills/`，用 SKILL.md 描述
+3. **MCP Server**：通过 workspace `mcp.json` 配置，按需加载
+4. **Service-gated Tool**：带权限检查的工具（`check_fn`），走 IPC 通道
+5. **Plugin**：独立包，按需加载（未来规划）
+6. **Core Tool**：最后手段，需 PR 评审 + 架构论证
+
+**强制规则**：3+ 同类 PR 必须设计 ABC（Abstract Base Class）+ orchestrator，避免核心膨胀。
+
+**命令路由（v1.4.2 引入）**：
+- 命令注册表：`apps/electron/src/main/lib/command-registry.ts`（统一注册表，纯逻辑）
+- 命令路由三类：desktop / agent / model
+- 触发方式：UI 按钮 + 未来 Cmd+K 全局命令面板（v1.6）
+- **不引入 slash command 文本语法**（与现有 `/` = TipTap Mention skill 触发冲突，且非桌面原生方案）
+- **不引入 `~` 触发字符**（CLI 思维，桌面应用不需要）
 
 ## UI 风格规范
 

@@ -56,6 +56,7 @@ import type {
   RewindSessionResult,
   SdkBeta,
   ProviderType,
+  BlockedApprovalRecord,
 } from '@tagent/shared'
 import pkg from '../../../package.json' with { type: 'json' }
 import {
@@ -113,12 +114,14 @@ import {
 } from './config-paths'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { getMemoryConfig } from './memory-service'
+import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 import { getContextUsageCache } from './context-usage-cache'
 import { searchMemory, addMemory, formatSearchResult } from './memos-client'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getRuntimeStatus } from './runtime-init'
 import { getSettings } from './settings-service'
+import { kanbanDbService } from './kanban-db'
 
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
 import type { PermissionResult, CanUseToolOptions } from './agent-permission-service'
@@ -1365,6 +1368,51 @@ export class AgentOrchestrator {
       this.sessionPermissionModes.delete(sessionId)
       this.queuedMessageUuids.delete(sessionId)
     }
+    /**
+     * 把本次流写入 L4 sessions.db（fire-and-forget，不阻塞 IPC）
+     *
+     * 从已持久化的 AgentMessage 中提取（仅扫最后 20 条，避免大对话内存压力）：
+     * - title：首条 user message 截断 100 字
+     * - summary：最后一条 assistant 消息文本截断 500 字
+     * - toolsUsed：扫描所有 tool_start 事件的 toolName 去重
+     *
+     * 失败不抛异常，仅打印 warn —— L4 写入失败不影响主流程。
+     * v1.5 由 Reflect 提炼后回填 keyFacts，当前暂为空数组。
+     */
+    const recordSessionToMemory = (): void => {
+      try {
+        const allMessages = getAgentSessionMessages(sessionId)
+        // 仅扫描最后 20 条消息，提取 toolsUsed + 最后一条 assistant 文本
+        const recentMessages = allMessages.slice(-20)
+        const toolsUsed = new Set<string>()
+        let lastAssistantText = ''
+        for (const msg of recentMessages) {
+          if (msg.events) {
+            for (const evt of msg.events) {
+              if (evt.type === 'tool_start' && evt.toolName) {
+                toolsUsed.add(evt.toolName)
+              }
+            }
+          }
+          if (msg.role === 'assistant' && msg.content) {
+            lastAssistantText = msg.content
+          }
+        }
+        const sessionMeta = getAgentSessionMeta(sessionId)
+        const memoryMode: MemoryMode = sessionMeta?.mode === 'ta' ? 'ta' : 'general'
+        void memoryLayerService.recordSession({
+          sessionId,
+          title: userMessage.slice(0, 100),
+          summary: lastAssistantText.slice(0, 500),
+          keyFacts: [],
+          toolsUsed: Array.from(toolsUsed),
+          mode: memoryMode,
+          workspaceSlug: workspaceSlug ?? '',
+        })
+      } catch (e) {
+        console.warn('[Agent 编排] L4 recordSession 失败:', e)
+      }
+    }
     const completeRun = (
       messages?: AgentMessage[],
       opts?: {
@@ -1372,9 +1420,14 @@ export class AgentOrchestrator {
         startedAt?: number
         resultSubtype?: string
         backgroundTasksPending?: boolean
+        /** 跳过 L4 记忆写入（错误/中止路径不应污染会话日志） */
+        skipMemory?: boolean
       }
     ): void => {
       releaseActiveRun()
+      if (!opts?.skipMemory) {
+        recordSessionToMemory()
+      }
       callbacks.onComplete(messages, opts)
     }
     /** 轻量完成：turn 结束但后台任务仍在飞行，保留 active slot 等待 task_notification 续轮 */
@@ -1994,6 +2047,32 @@ export class AgentOrchestrator {
         // 真正退出必须等待用户审批结果，不能在这里提前清掉计划态。
       }
 
+      /**
+       * 记录被自动拒绝的 approval 到 task.metadata.blockedApprovals
+       *
+       * worker 场景防死锁用：worker 在 auto 模式下触发任何 approval（含 ExitPlanMode / AskUserQuestion）
+       * 都会被自动 deny 并追加到此列表，便于事后审计工人执行过程中的卡点。
+       */
+      const recordBlockedApproval = (
+        taskId: string,
+        tool: string,
+        input: unknown,
+        reason: string
+      ): void => {
+        const entry: BlockedApprovalRecord = {
+          tool,
+          input,
+          reason,
+          timestamp: Date.now(),
+        }
+        try {
+          kanbanDbService.appendBlockedApproval(taskId, entry)
+        } catch (err) {
+          // 记录失败不阻断 deny 决策（deny 已返回）
+          console.warn(`[Agent canUseTool] 记录 blockedApproval 失败: task=${taskId}, tool=${tool}`, err)
+        }
+      }
+
       // 动态 canUseTool：每次调用读取当前权限模式，支持运行中切换
       const canUseTool = async (
         toolName: string,
@@ -2047,6 +2126,33 @@ export class AgentOrchestrator {
                 `Please split the write into smaller sequential steps: write the first portion of the file now, then use Edit tool to append remaining sections incrementally.`,
             }
           }
+        }
+
+        // ── Worker 场景防死锁：无人值守时不走任何交互式 approval UI ──
+        // worker 子会话通过 sourceKanbanTaskId 标识（kanban-worker-service 创建会话时写入）
+        // 主会话无此字段，完全跳过本分支，不影响主会话的 approval 流程
+        const sessionMeta = getAgentSessionMeta(sessionId)
+        const workerTaskId = sessionMeta?.sourceKanbanTaskId
+        if (workerTaskId) {
+          // ExitPlanMode / AskUserQuestion 总是 deny（UI 不能交互，无论 permissionMode）
+          if (toolName === 'ExitPlanMode' || toolName === 'AskUserQuestion') {
+            const reason = 'worker 场景不支持交互式 approval'
+            recordBlockedApproval(workerTaskId, toolName, input, reason)
+            return { behavior: 'deny' as const, message: reason }
+          }
+          // auto 模式：根据 workerApprovalMode 决定 deny / approve
+          if (currentMode === 'auto') {
+            const workerMode = getSettings().agentBehavior?.workerApprovalMode ?? 'auto_deny'
+            if (workerMode === 'auto_approve') {
+              // YOLO 通道：信任工人，直接 allow
+              return { behavior: 'allow' as const, updatedInput: input }
+            }
+            // auto_deny（默认）：所有 approval deny + 记录到 blockedApprovals
+            const reason = 'worker auto_deny（auto 模式无人值守）'
+            recordBlockedApproval(workerTaskId, toolName, input, reason)
+            return { behavior: 'deny' as const, message: reason }
+          }
+          // bypassPermissions / plan 模式：继续走原逻辑（plan 下 worker 也受限，但 worker 一般不进 plan）
         }
 
         // ── EnterPlanMode / ExitPlanMode 处理 ──
@@ -2385,6 +2491,7 @@ export class AgentOrchestrator {
               completeRun(getAgentSessionMessages(sessionId), {
                 stoppedByUser: wasStoppedByUser,
                 startedAt: streamStartedAt,
+                skipMemory: true,
               })
               return
             }
@@ -2610,7 +2717,10 @@ export class AgentOrchestrator {
                 } catch {
                   /* 忽略 */
                 }
-                completeRun(getAgentSessionMessages(sessionId), { startedAt: streamStartedAt })
+                completeRun(getAgentSessionMessages(sessionId), {
+                  startedAt: streamStartedAt,
+                  skipMemory: true,
+                })
                 return
               }
             }
@@ -2777,6 +2887,7 @@ export class AgentOrchestrator {
             completeRun(getAgentSessionMessages(sessionId), {
               stoppedByUser: wasStoppedByUser,
               startedAt: streamStartedAt,
+              skipMemory: true,
             })
             return
           }

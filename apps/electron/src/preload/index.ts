@@ -28,6 +28,7 @@ import {
   DRAFT_IPC_CHANNELS,
   KANBAN_IPC_CHANNELS,
   AGENT_ROLE_IPC_CHANNELS,
+  COMMAND_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -133,6 +134,11 @@ import type {
   AskStreamErrorEvent,
   AskStreamSwitchSuggestionEvent,
   ComposerMode,
+  RunCommandInput,
+  ListCommandsInput,
+  CommandMeta,
+  CommandCategory,
+  CommandContext,
 } from '@tagent/shared'
 import {
   USER_PROFILE_IPC_CHANNELS,
@@ -222,15 +228,16 @@ interface ReviewHistoryRecord {
 }
 
 interface SessionMemoryRecord {
-  id: string
+  id: number
   session_slug: string
   title: string
   summary: string
   key_facts: string
   tools_used: string
+  mode: string | null
+  workspace_slug: string | null
   created_at: number
-  last_referenced_at: number
-  reference_count: number
+  ended_at: number | null
 }
 
 interface MemoryLayerStats {
@@ -350,6 +357,19 @@ export interface ElectronAPI {
 
   /** P1-3: 客户端压缩会话历史（LLM compact_session tool 失败时的 fallback）*/
   compactSession: (sessionId: string, input: CompactSessionInput) => Promise<CompactSessionResult>
+
+  /**
+   * 执行已注册命令（走 command-registry 统一路由）
+   * @param input 命令 ID + 上下文
+   * @returns 命令 handler 的返回值（按 commandId 自行 cast 类型）
+   */
+  runCommand: (input: RunCommandInput) => Promise<unknown>
+
+  /**
+   * 列出已注册命令元信息（用于命令面板 / UI 按钮动态发现）
+   * @param category 可选分类过滤
+   */
+  listCommands: (category?: CommandCategory) => Promise<CommandMeta[]>
 
   /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
   getContextUsage: (sessionId: string) => Promise<GetContextUsageResponse>
@@ -1297,6 +1317,20 @@ export interface ElectronAPI {
     toggle: (id: string) => Promise<import('@tagent/shared').Automation>
     runNow: (id: string) => Promise<void>
     onChanged: (callback: () => void) => () => void
+    /** runtime 拦截事件订阅（main → renderer） */
+    onPromptBlocked: (
+      callback: (event: import('@tagent/shared').AutomationPromptBlockedEvent) => void
+    ) => () => void
+    /** 列出所有拦截日志摘要（按时间倒序） */
+    listBlockedLogs: () => Promise<import('@tagent/shared').AutomationBlockedLogSummary[]>
+    /** 获取单条拦截日志详情（含完整 prompt） */
+    getBlockedLogDetail: (
+      fileName: string
+    ) => Promise<import('@tagent/shared').AutomationBlockedLogDetail | null>
+    /** 删除单条拦截日志 */
+    deleteBlockedLog: (fileName: string) => Promise<boolean>
+    /** 清空指定 automation 的所有拦截日志 */
+    clearBlockedLogsForAutomation: (automationId: string) => Promise<number>
   }
 
   // ===== Draft 需求草稿 =====
@@ -1753,6 +1787,14 @@ const electronAPI: ElectronAPI = {
 
   compactSession: (sessionId: string, input: CompactSessionInput) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.COMPACT_SESSION, sessionId, input)
+  },
+
+  runCommand: (input: RunCommandInput) => {
+    return ipcRenderer.invoke(COMMAND_IPC_CHANNELS.RUN_COMMAND, input)
+  },
+
+  listCommands: (category?: CommandCategory) => {
+    return ipcRenderer.invoke(COMMAND_IPC_CHANNELS.LIST_COMMANDS, { category }) as Promise<CommandMeta[]>
   },
 
   getContextUsage: (sessionId: string) => {
@@ -3435,6 +3477,26 @@ const electronAPI: ElectronAPI = {
         ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.CHANGED, listener)
       }
     },
+    onPromptBlocked: (
+      callback: (event: import('@tagent/shared').AutomationPromptBlockedEvent) => void
+    ) => {
+      const listener = (_: unknown, event: import('@tagent/shared').AutomationPromptBlockedEvent): void =>
+        callback(event)
+      ipcRenderer.on(AUTOMATION_IPC_CHANNELS.PROMPT_BLOCKED, listener)
+      return () => {
+        ipcRenderer.removeListener(AUTOMATION_IPC_CHANNELS.PROMPT_BLOCKED, listener)
+      }
+    },
+    listBlockedLogs: () => ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.LIST_BLOCKED_LOGS),
+    getBlockedLogDetail: (fileName: string) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.GET_BLOCKED_LOG_DETAIL, fileName),
+    deleteBlockedLog: (fileName: string) =>
+      ipcRenderer.invoke(AUTOMATION_IPC_CHANNELS.DELETE_BLOCKED_LOG, fileName),
+    clearBlockedLogsForAutomation: (automationId: string) =>
+      ipcRenderer.invoke(
+        AUTOMATION_IPC_CHANNELS.CLEAR_BLOCKED_LOGS_FOR_AUTOMATION,
+        automationId
+      ),
   },
 
   // ===== Draft 需求草稿 =====

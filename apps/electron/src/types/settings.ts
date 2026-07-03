@@ -297,6 +297,17 @@ export interface AgentBehaviorSettings {
   externalModelWhitelist?: string[]
   /** 看板默认最大并发任务数（新建看板的默认 maxConcurrent，默认 3） */
   defaultMaxConcurrent?: number
+  /**
+   * Worker Approval 处理策略（worker 场景防死锁用）
+   *
+   * worker 在 auto 权限模式下触发任何 approval 时的处理方式：
+   * - 'auto_deny'（默认）：自动 deny 并记录到 task.metadata.blockedApprovals，安全优先
+   * - 'auto_approve'：自动 allow（YOLO 通道，信任的批量任务用）
+   *
+   * ExitPlanMode / AskUserQuestion 不受此项控制，worker 场景总是 deny（UI 不能交互）。
+   * bypassPermissions 模式下不触发 approval，此项不生效。
+   */
+  workerApprovalMode?: 'auto_deny' | 'auto_approve'
 }
 
 /** 主窗口大小、位置和最大化状态 */

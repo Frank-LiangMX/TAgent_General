@@ -48,6 +48,12 @@ const DEFAULT_MAX_CONCURRENT_OPTIONS = [
   { value: '8', label: '8（高并行，适合批量任务）' },
 ]
 
+/** Worker Approval 处理策略选项 */
+const WORKER_APPROVAL_MODE_OPTIONS = [
+  { value: 'auto_deny', label: '自动拒绝（推荐，安全优先）' },
+  { value: 'auto_approve', label: '自动放行（YOLO，信任批量任务）' },
+]
+
 /** 各语言的展示信息 + 默认配置 */
 const LANGUAGE_INFO: Array<{
   id: AutoCheckLanguage
@@ -121,6 +127,10 @@ export function AgentPreferencesSettings(): React.ReactElement {
   const [allowExternalModels, setAllowExternalModels] = React.useState<boolean>(false)
   // 看板默认并发上限
   const [defaultMaxConcurrent, setDefaultMaxConcurrent] = React.useState<number>(3)
+  // Worker Approval 处理策略
+  const [workerApprovalMode, setWorkerApprovalMode] = React.useState<'auto_deny' | 'auto_approve'>(
+    'auto_deny'
+  )
   const [loaded, setLoaded] = React.useState(false)
 
   React.useEffect(() => {
@@ -136,6 +146,7 @@ export function AgentPreferencesSettings(): React.ReactElement {
         setPreferFreeChannel(ab?.preferFreeChannel ?? true)
         setAllowExternalModels(ab?.allowExternalModels ?? false)
         setDefaultMaxConcurrent(ab?.defaultMaxConcurrent ?? 3)
+        setWorkerApprovalMode(ab?.workerApprovalMode ?? 'auto_deny')
         setLoaded(true)
       })
       .catch((err) => {
@@ -211,6 +222,18 @@ export function AgentPreferencesSettings(): React.ReactElement {
       })
     } catch (error) {
       console.error('[Agent 行为设置] 更新默认并发上限失败:', error)
+    }
+  }
+
+  const handleWorkerApprovalModeChange = async (value: string): Promise<void> => {
+    const v = value as 'auto_deny' | 'auto_approve'
+    setWorkerApprovalMode(v)
+    try {
+      await window.electronAPI.updateSettings({
+        agentBehavior: { workerApprovalMode: v },
+      })
+    } catch (error) {
+      console.error('[Agent 行为设置] 更新 Worker Approval 策略失败:', error)
     }
   }
 
@@ -369,6 +392,15 @@ export function AgentPreferencesSettings(): React.ReactElement {
             description="关闭时 worker 只用免费渠道模型；开启后可在白名单内使用外部收费模型（如 Claude / GPT）"
             checked={allowExternalModels}
             onCheckedChange={handleAllowExternalModelsChange}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsSelect
+            label="Worker Approval 处理策略"
+            description="看板 worker 在 auto 权限模式下触发 approval 时的处理方式。ExitPlanMode/AskUserQuestion 始终 deny（UI 不能交互）。bypassPermissions 模式不触发 approval。"
+            value={workerApprovalMode}
+            onValueChange={handleWorkerApprovalModeChange}
+            options={WORKER_APPROVAL_MODE_OPTIONS}
           />
         </SettingsCard>
       </SettingsSection>

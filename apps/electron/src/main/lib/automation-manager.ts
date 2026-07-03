@@ -30,6 +30,8 @@ export { computeNextRunAt, formatScheduleLabel, isSameLocalDay }
 
 import { getConfigDir } from './config-paths'
 import { readJsonFileSafe, writeJsonFileAtomic } from './safe-file'
+import { scanAutomationPrompt, type BlockedLogEntry } from './automation-prompt-scanner'
+import { writeBlockedLog } from './automation-blocked-log'
 
 // ===== 持久化 =====
 
@@ -69,13 +71,43 @@ export function getAutomation(id: string): Automation | undefined {
 
 /** 创建定时任务 */
 export function createAutomation(input: CreateAutomationInput): Automation {
+  // Prompt 安全扫描：命中可疑模式直接抛错，不入库
+  // invisible unicode 会被剥离后存储，避免 runtime 时再处理
+  const scanResult = scanAutomationPrompt(input.prompt)
+  if (scanResult.blocked) {
+    const entry: BlockedLogEntry = {
+      timestamp: Date.now(),
+      automationId: 'pending',
+      automationName: input.name,
+      reasons: scanResult.reasons,
+      patterns: scanResult.patterns,
+      originalPrompt: input.prompt,
+      sanitizedPrompt: scanResult.sanitizedPrompt,
+      strippedInvisibleCount: scanResult.strippedInvisibleCount,
+      stage: 'create',
+    }
+    try {
+      writeBlockedLog(entry)
+    } catch (err) {
+      console.error('[定时任务拦截] 写入拦截日志失败:', err)
+    }
+    throw new Error(`任务指令存在安全风险，已拦截: ${scanResult.reasons.join(', ')}`)
+  }
+
+  const sanitizedPrompt = scanResult.sanitizedPrompt
+  if (scanResult.strippedInvisibleCount > 0) {
+    console.warn(
+      `[定时任务拦截] 创建任务「${input.name}」时剥离了 ${scanResult.strippedInvisibleCount} 个不可见字符`
+    )
+  }
+
   const store = readStore()
   const now = Date.now()
 
   const automation: Automation = {
     id: randomUUID(),
     name: input.name,
-    prompt: input.prompt,
+    prompt: sanitizedPrompt,
     enabled: input.active ?? true,
     scheduleType: input.scheduleType,
     intervalMinutes: input.intervalMinutes,
@@ -118,14 +150,50 @@ export function createAutomation(input: CreateAutomationInput): Automation {
 
 /** 更新定时任务 */
 export function updateAutomation(input: UpdateAutomationInput): Automation {
+  // Prompt 安全扫描：仅当 input.prompt 存在时才扫描（部分更新可能不含 prompt）
+  let finalPrompt: string | undefined
+  if (input.prompt !== undefined) {
+    const scanResult = scanAutomationPrompt(input.prompt)
+    if (scanResult.blocked) {
+      const store = readStore()
+      const existing = store.automations.find((a) => a.id === input.id)
+      const entry: BlockedLogEntry = {
+        timestamp: Date.now(),
+        automationId: input.id,
+        automationName: existing?.name ?? input.id,
+        reasons: scanResult.reasons,
+        patterns: scanResult.patterns,
+        originalPrompt: input.prompt,
+        sanitizedPrompt: scanResult.sanitizedPrompt,
+        strippedInvisibleCount: scanResult.strippedInvisibleCount,
+        stage: 'update',
+      }
+      try {
+        writeBlockedLog(entry)
+      } catch (err) {
+        console.error('[定时任务拦截] 写入拦截日志失败:', err)
+      }
+      throw new Error(`任务指令存在安全风险，已拦截: ${scanResult.reasons.join(', ')}`)
+    }
+
+    finalPrompt = scanResult.sanitizedPrompt
+    if (scanResult.strippedInvisibleCount > 0) {
+      console.warn(
+        `[定时任务拦截] 更新任务 ${input.id} 时剥离了 ${scanResult.strippedInvisibleCount} 个不可见字符`
+      )
+    }
+  }
+
   const store = readStore()
   const idx = store.automations.findIndex((a) => a.id === input.id)
   if (idx === -1) throw new Error(`定时任务不存在: ${input.id}`)
 
   const existing = store.automations[idx]!
+  // 用 finalPrompt（已 sanitize）替换 input.prompt，避免 sanitized 版本被原 prompt 覆盖
+  const inputWithSanitized = finalPrompt !== undefined ? { ...input, prompt: finalPrompt } : input
   const updated: Automation = {
     ...existing,
-    ...Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)),
+    ...Object.fromEntries(Object.entries(inputWithSanitized).filter(([, v]) => v !== undefined)),
     updatedAt: Date.now(),
   }
 

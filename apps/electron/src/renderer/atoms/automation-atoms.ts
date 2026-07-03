@@ -3,7 +3,14 @@
  */
 
 import { atom } from 'jotai'
-import type { Automation, CreateAutomationInput, UpdateAutomationInput } from '@tagent/shared'
+import type {
+  Automation,
+  AutomationBlockedLogDetail,
+  AutomationBlockedLogSummary,
+  AutomationPromptBlockedEvent,
+  CreateAutomationInput,
+  UpdateAutomationInput,
+} from '@tagent/shared'
 
 /** 定时任务列表 */
 export const automationsAtom = atom<Automation[]>([])
@@ -16,6 +23,15 @@ export const selectedAutomationIdAtom = atom<string | null>(null)
 
 /** 编辑器模式：浏览已有 / 新建 */
 export const automationEditorModeAtom = atom<'edit' | 'create'>('edit')
+
+/** 拦截日志列表（按时间倒序） */
+export const blockedLogsAtom = atom<AutomationBlockedLogSummary[]>([])
+
+/** 拦截日志是否正在加载 */
+export const blockedLogsLoadingAtom = atom<boolean>(false)
+
+/** 最近一次 runtime 拦截事件（用于触发 toast） */
+export const lastBlockedEventAtom = atom<AutomationPromptBlockedEvent | null>(null)
 
 /** 按状态分组 */
 export const automationsGroupedAtom = atom((get) => {
@@ -63,4 +79,26 @@ export async function toggleAutomation(id: string): Promise<Automation> {
 
 export async function runAutomationNow(id: string): Promise<void> {
   await window.electronAPI.automation.runNow(id)
+}
+
+/** 加载拦截日志列表 */
+export async function loadBlockedLogs(): Promise<AutomationBlockedLogSummary[]> {
+  return window.electronAPI.automation.listBlockedLogs()
+}
+
+/** 获取单条拦截日志详情 */
+export async function getBlockedLogDetail(
+  fileName: string
+): Promise<AutomationBlockedLogDetail | null> {
+  return window.electronAPI.automation.getBlockedLogDetail(fileName)
+}
+
+/** 删除单条拦截日志 */
+export async function deleteBlockedLog(fileName: string): Promise<boolean> {
+  return window.electronAPI.automation.deleteBlockedLog(fileName)
+}
+
+/** 清空指定 automation 的所有拦截日志 */
+export async function clearBlockedLogsForAutomation(automationId: string): Promise<number> {
+  return window.electronAPI.automation.clearBlockedLogsForAutomation(automationId)
 }

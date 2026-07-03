@@ -8,6 +8,7 @@ import path from 'path'
 const nativeModuleTests = [
   'apps/electron/src/main/lib/kanban-db.test.ts',
   'apps/electron/src/main/lib/kanban-dispatcher.test.ts',
+  'apps/electron/src/main/lib/memory-layer-service.test.ts',
 ]
 
 const isCI = !!process.env.CI

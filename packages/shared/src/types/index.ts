@@ -78,3 +78,6 @@ export * from './kanban-ipc'
 
 // Agent 角色库（看板 worker 角色定义）
 export * from './agent-role'
+
+// 命令注册表（command-registry 统一命令路由）
+export * from './command'

@@ -3,7 +3,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Loader2, Save } from 'lucide-react'
+import { Loader2, Save, ShieldAlert } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -38,7 +38,9 @@ import {
 } from '@tagent/ui'
 import { ScheduleEditor, type ScheduleEditorValue } from '@/components/automation/ScheduleEditor'
 import { RunHistoryPanel } from '@/components/automation/RunHistoryPanel'
+import { AutomationBlockedHistory } from '@/components/automation/AutomationBlockedHistory'
 import { createAutomation, updateAutomation } from '@/atoms/automation-atoms'
+import { blockedLogsAtom } from '@/atoms/automation-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import {
   agentChannelIdAtom,
@@ -149,6 +151,7 @@ export function AutomationFormView({
   const defaultChannelId = useAtomValue(agentChannelIdAtom)
   const defaultModelId = useAtomValue(agentModelIdAtom)
   const defaultWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
+  const blockedLogs = useAtomValue(blockedLogsAtom)
   const defaultModelForAutomation = React.useMemo(() => {
     if (!defaultChannelId) return defaultModelId ?? undefined
     const channel = channels.find((c) => c.id === defaultChannelId && c.enabled)
@@ -457,6 +460,18 @@ export function AutomationFormView({
                   openSession('agent', sessionId, automation.name)
                 }}
               />
+            </section>
+          ) : null}
+
+          {blockedLogs.length > 0 ? (
+            <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <ShieldAlert size={14} className="text-red-500" />
+                <h3 className="text-xs font-medium text-foreground/80">
+                  指令拦截历史（{blockedLogs.length}）
+                </h3>
+              </div>
+              <AutomationBlockedHistory />
             </section>
           ) : null}
         </div>

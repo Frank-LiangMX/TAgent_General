@@ -33,6 +33,7 @@ import {
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
   KANBAN_IPC_CHANNELS,
+  COMMAND_IPC_CHANNELS,
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
@@ -115,6 +116,9 @@ import type {
   RevertFileInput,
   FileAccessOptions,
   ResolvedFileUrl,
+  RunCommandInput,
+  ListCommandsInput,
+  CommandMeta,
 } from '@tagent/shared'
 import { ipcMain, nativeTheme, shell, dialog, BrowserWindow, app } from 'electron'
 
@@ -4404,6 +4408,34 @@ export function registerIpcHandlers(): void {
     return runAutomationNow(id)
   })
 
+  // ===== Automation Prompt 拦截日志 =====
+
+  ipcMain.handle(AUTOMATION_IPC_CHANNELS.LIST_BLOCKED_LOGS, async () => {
+    const { listBlockedLogs } = await import('./lib/automation-blocked-log')
+    return listBlockedLogs()
+  })
+
+  ipcMain.handle(
+    AUTOMATION_IPC_CHANNELS.GET_BLOCKED_LOG_DETAIL,
+    async (_, fileName: string) => {
+      const { getBlockedLogDetail } = await import('./lib/automation-blocked-log')
+      return getBlockedLogDetail(fileName)
+    }
+  )
+
+  ipcMain.handle(AUTOMATION_IPC_CHANNELS.DELETE_BLOCKED_LOG, async (_, fileName: string) => {
+    const { deleteBlockedLog } = await import('./lib/automation-blocked-log')
+    return deleteBlockedLog(fileName)
+  })
+
+  ipcMain.handle(
+    AUTOMATION_IPC_CHANNELS.CLEAR_BLOCKED_LOGS_FOR_AUTOMATION,
+    async (_, automationId: string) => {
+      const { clearBlockedLogsForAutomation } = await import('./lib/automation-blocked-log')
+      return clearBlockedLogsForAutomation(automationId)
+    }
+  )
+
   // ===== Draft 需求草稿 =====
 
   ipcMain.handle(DRAFT_IPC_CHANNELS.LIST, async () => {
@@ -4452,4 +4484,22 @@ export function registerIpcHandlers(): void {
   // ===== Agent 角色库 =====
 
   registerAgentRoleIpcHandlers()
+
+  // ===== 命令注册表（command-registry 统一命令路由） =====
+
+  ipcMain.handle(
+    COMMAND_IPC_CHANNELS.RUN_COMMAND,
+    async (_, input: RunCommandInput): Promise<unknown> => {
+      const { runCommand } = await import('./lib/command-registry')
+      return runCommand(input.commandId, input.context)
+    }
+  )
+
+  ipcMain.handle(
+    COMMAND_IPC_CHANNELS.LIST_COMMANDS,
+    async (_, input: ListCommandsInput | undefined): Promise<CommandMeta[]> => {
+      const { listCommands } = await import('./lib/command-registry')
+      return listCommands(input?.category)
+    }
+  )
 }

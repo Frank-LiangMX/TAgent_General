@@ -217,4 +217,68 @@ export const AUTOMATION_IPC_CHANNELS = {
   RUN_NOW: 'automation:run-now',
   /** 任务列表变更事件（main → renderer，运行完成/状态变化时推送） */
   CHANGED: 'automation:changed',
+  /** Prompt 被安全拦截事件（main → renderer，runtime 拦截时推送，前端弹 toast） */
+  PROMPT_BLOCKED: 'automation:prompt-blocked',
+  /** 列出所有拦截日志摘要（不含完整 prompt 文本） */
+  LIST_BLOCKED_LOGS: 'automation:list-blocked-logs',
+  /** 获取单条拦截日志详情（含 originalPrompt / sanitizedPrompt） */
+  GET_BLOCKED_LOG_DETAIL: 'automation:get-blocked-log-detail',
+  /** 删除单条拦截日志 */
+  DELETE_BLOCKED_LOG: 'automation:delete-blocked-log',
+  /** 清空指定 automation 的所有拦截日志 */
+  CLEAR_BLOCKED_LOGS_FOR_AUTOMATION: 'automation:clear-blocked-logs-for-automation',
 } as const
+
+/** 拦截来源：create / update / runtime */
+export type AutomationBlockedStage = 'create' | 'update' | 'runtime'
+
+/** 拦截日志摘要（列表展示用，不含完整 prompt 文本） */
+export interface AutomationBlockedLogSummary {
+  /** 日志文件名（用于查详情 / 删除） */
+  fileName: string
+  /** 拦截时间戳（毫秒） */
+  timestamp: number
+  /** 触发拦截的 automation ID */
+  automationId: string
+  /** automation 名称 */
+  automationName: string
+  /** 拦截原因列表 */
+  reasons: string[]
+  /** 命中的可疑模式源字符串 */
+  patterns: string[]
+  /** 拦截来源 */
+  stage: AutomationBlockedStage
+  /** 被剥离的 invisible unicode 字符数 */
+  strippedInvisibleCount: number
+}
+
+/** 拦截日志详情（含完整 prompt 文本） */
+export interface AutomationBlockedLogDetail {
+  /** 拦截时间戳（毫秒） */
+  timestamp: number
+  /** 触发拦截的 automation ID */
+  automationId: string
+  /** automation 名称 */
+  automationName: string
+  /** 拦截原因列表 */
+  reasons: string[]
+  /** 命中的可疑模式源字符串 */
+  patterns: string[]
+  /** 原始 prompt（含 invisible unicode） */
+  originalPrompt: string
+  /** 剥离 invisible unicode 后的 prompt */
+  sanitizedPrompt: string
+  /** 被剥离的 invisible unicode 字符数 */
+  strippedInvisibleCount: number
+  /** 拦截来源 */
+  stage: AutomationBlockedStage
+}
+
+/** runtime 拦截时通过 PROMPT_BLOCKED 通道推送给前端的事件 payload */
+export interface AutomationPromptBlockedEvent {
+  automationId: string
+  automationName: string
+  patterns: string[]
+  reasons: string[]
+  timestamp: number
+}

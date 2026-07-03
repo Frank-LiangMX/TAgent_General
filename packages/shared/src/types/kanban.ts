@@ -75,7 +75,36 @@ export interface KanbanTask {
   /** 阻塞原因（status === 'blocked' 时） */
   blockedReason?: string
   /** blackboard 共享上下文（Phase D） */
-  metadata?: Record<string, unknown>
+  metadata?: KanbanTaskMetadata
+}
+
+/**
+ * 看板任务元数据（blackboard 共享上下文）
+ *
+ * 松散结构：字段都是可选，按需写入。KanbanTask.metadata 历史为 Record<string, unknown>，
+ * 此 interface 定义推荐 shape，便于 TypeScript 使用者获得类型提示；
+ * 运行时不强制校验，未知字段保留兼容。
+ */
+export interface KanbanTaskMetadata extends Record<string, unknown> {
+  /**
+   * 被自动拒绝的 approval 列表（worker 场景防死锁用）
+   *
+   * worker 在 auto 模式下触发任何 approval（包括 ExitPlanMode / AskUserQuestion）
+   * 都会被自动 deny 并追加到此列表，便于事后审计工人执行过程中的卡点。
+   */
+  blockedApprovals?: BlockedApprovalRecord[]
+}
+
+/** 单条被自动拒绝的 approval 记录 */
+export interface BlockedApprovalRecord {
+  /** 触发 approval 的工具名（如 'Write' / 'ExitPlanMode' / 'AskUserQuestion'） */
+  tool: string
+  /** 工具入参（用于审计具体调用） */
+  input: unknown
+  /** 拒绝原因（如 'worker auto_deny' / 'worker 场景不支持交互式 approval'） */
+  reason: string
+  /** 拒绝时间戳（ms） */
+  timestamp: number
 }
 
 // ===== 看板 =====

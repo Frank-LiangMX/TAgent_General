@@ -38,17 +38,41 @@ function getMemoryDir(mode: MemoryMode): string {
 
 /**
  * L4 会话记录类型
+ *
+ * 对应 sessions 表的行结构。id 由 SQLite AUTOINCREMENT 生成；
+ * key_facts / tools_used 为 JSON 序列化后的字符串。
  */
 export interface SessionMemoryRecord {
-  id: string
+  id: number
   session_slug: string
   title: string
   summary: string
-  key_facts: string // JSON array
-  tools_used: string // JSON array
+  key_facts: string
+  tools_used: string
+  mode: string | null
+  workspace_slug: string | null
   created_at: number
-  last_referenced_at: number
-  reference_count: number
+  ended_at: number | null
+}
+
+/**
+ * recordSession 写入参数
+ */
+export interface RecordSessionParams {
+  /** 会话 UUID，写入 session_slug 列 */
+  sessionId: string
+  /** 会话标题（首条 user message 截断） */
+  title: string
+  /** 本次流的关键事件摘要（最后一条 assistant 消息截断） */
+  summary: string
+  /** 关键事实（v1.5 由 Reflect 提炼后回填） */
+  keyFacts: string[]
+  /** 本次流中使用的工具名去重列表 */
+  toolsUsed: string[]
+  /** 记忆模式 */
+  mode: MemoryMode
+  /** 工作区 slug */
+  workspaceSlug: string
 }
 
 /**
@@ -66,29 +90,37 @@ export interface MemoryLayerStats {
 /**
  * MemoryLayerService
  */
-class MemoryLayerService {
+export class MemoryLayerService {
   private l4DbGeneral: Database.Database | null = null
   private l4DbTa: Database.Database | null = null
 
   /**
    * 初始化服务
+   *
+   * @param options.dbPathOverride 测试注入：覆盖默认 getMemoryDir 计算的 db 路径。
+   *   生产不传，走 `~/.tagent[-dev]/memory/sessions.db`；测试可传 `:memory:` 或临时路径。
    */
-  initialize(): { success: boolean; error?: string } {
+  initialize(options?: {
+    dbPathOverride?: Partial<Record<MemoryMode, string>>
+  }): { success: boolean; error?: string } {
     try {
-      // 确保目录存在
-      const generalDir = getMemoryDir('general')
-      const taDir = getMemoryDir('ta')
-
-      if (!fs.existsSync(generalDir)) {
-        fs.mkdirSync(generalDir, { recursive: true })
+      // 确保目录存在（仅在生产路径下创建；测试 :memory: 路径跳过）
+      if (!options?.dbPathOverride?.general) {
+        const generalDir = getMemoryDir('general')
+        if (!fs.existsSync(generalDir)) {
+          fs.mkdirSync(generalDir, { recursive: true })
+        }
       }
-      if (!fs.existsSync(taDir)) {
-        fs.mkdirSync(taDir, { recursive: true })
+      if (!options?.dbPathOverride?.ta) {
+        const taDir = getMemoryDir('ta')
+        if (!fs.existsSync(taDir)) {
+          fs.mkdirSync(taDir, { recursive: true })
+        }
       }
 
-      // 初始化 L4 SQLite（如果存在）
-      this.initL4Db('general')
-      this.initL4Db('ta')
+      // 初始化 L4 SQLite（自动建库 + schema）
+      this.initL4Db('general', options?.dbPathOverride?.general)
+      this.initL4Db('ta', options?.dbPathOverride?.ta)
 
       return { success: true }
     } catch (error) {
@@ -99,23 +131,62 @@ class MemoryLayerService {
   }
 
   /**
-   * 初始化 L4 SQLite 数据库
+   * 初始化 L4 SQLite 数据库（可写 + 自动建库）
+   *
+   * - 不存在时自动创建（better-sqlite3 默认行为）
+   * - 建 sessions 表 + FTS5 全文索引 + 同步触发器（幂等）
+   * - WAL 模式提升并发读
+   *
+   * @param dbPathOverride 测试注入路径（:memory: 或临时文件）
    */
-  private initL4Db(mode: MemoryMode): void {
-    const dbPath = path.join(getMemoryDir(mode), 'sessions.db')
+  private initL4Db(mode: MemoryMode, dbPathOverride?: string): void {
+    const dbPath = dbPathOverride ?? path.join(getMemoryDir(mode), 'sessions.db')
 
-    if (!fs.existsSync(dbPath)) {
-      // 数据库不存在，不自动创建（ta_agent MCP Server 有写权）
-      return
-    }
-
-    const db = new Database(dbPath, {
-      readonly: true,
-      fileMustExist: true,
-    })
-
+    // 可写模式打开（不存在则创建）
+    const db = new Database(dbPath)
     db.pragma('journal_mode = WAL')
-    db.pragma('query_only = true')
+
+    // 建 schema（幂等）：sessions 主表 + FTS5 全文索引 + 触发器同步
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_slug TEXT NOT NULL,
+        title TEXT,
+        summary TEXT,
+        key_facts TEXT,
+        tools_used TEXT,
+        mode TEXT,
+        workspace_slug TEXT,
+        created_at INTEGER NOT NULL,
+        ended_at INTEGER
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_mode ON sessions(mode);
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS sessions_fts USING fts5(
+        title, summary, key_facts,
+        content='sessions',
+        content_rowid='id'
+      );
+
+      CREATE TRIGGER IF NOT EXISTS sessions_ai AFTER INSERT ON sessions BEGIN
+        INSERT INTO sessions_fts(rowid, title, summary, key_facts)
+        VALUES (new.id, new.title, new.summary, new.key_facts);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS sessions_ad AFTER DELETE ON sessions BEGIN
+        INSERT INTO sessions_fts(sessions_fts, rowid, title, summary, key_facts)
+        VALUES ('delete', old.id, old.title, old.summary, old.key_facts);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS sessions_au AFTER UPDATE ON sessions BEGIN
+        INSERT INTO sessions_fts(sessions_fts, rowid, title, summary, key_facts)
+        VALUES ('delete', old.id, old.title, old.summary, old.key_facts);
+        INSERT INTO sessions_fts(rowid, title, summary, key_facts)
+        VALUES (new.id, new.title, new.summary, new.key_facts);
+      END;
+    `)
 
     if (mode === 'general') {
       this.l4DbGeneral = db
@@ -346,6 +417,45 @@ class MemoryLayerService {
       return stmt.all(limit) as SessionMemoryRecord[]
     } catch {
       return []
+    }
+  }
+
+  /**
+   * 记录一次会话到 L4 sessions.db
+   *
+   * 在 Agent 流结束后调用，写入会话元数据。
+   * FTS5 触发器会自动同步全文索引，无需手动维护。
+   *
+   * 失败不抛异常，仅打印 warn —— 不影响主流程。
+   */
+  async recordSession(params: RecordSessionParams): Promise<void> {
+    const db = this.getL4Db(params.mode)
+    if (!db) {
+      console.warn(
+        `[MemoryLayerService] L4 ${params.mode} 数据库未初始化，跳过 recordSession`
+      )
+      return
+    }
+
+    try {
+      const now = Date.now()
+      db.prepare(`
+        INSERT INTO sessions
+          (session_slug, title, summary, key_facts, tools_used, mode, workspace_slug, created_at, ended_at)
+        VALUES (@session_slug, @title, @summary, @key_facts, @tools_used, @mode, @workspace_slug, @created_at, @ended_at)
+      `).run({
+        session_slug: params.sessionId,
+        title: params.title || null,
+        summary: params.summary || null,
+        key_facts: JSON.stringify(params.keyFacts),
+        tools_used: JSON.stringify(params.toolsUsed),
+        mode: params.mode,
+        workspace_slug: params.workspaceSlug || null,
+        created_at: now,
+        ended_at: now,
+      })
+    } catch (error) {
+      console.error('[MemoryLayerService] recordSession 失败:', error)
     }
   }
 

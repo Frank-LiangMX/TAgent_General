@@ -21,8 +21,11 @@ import { formatScheduleLabel } from '@tagent/shared'
 import {
   automationsAtom,
   automationEditorModeAtom,
+  blockedLogsAtom,
   deleteAutomation,
+  lastBlockedEventAtom,
   loadAutomations,
+  loadBlockedLogs,
   runAutomationNow,
   selectedAutomationIdAtom,
   toggleAutomation,
@@ -35,6 +38,8 @@ import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 export function AutomationMainView(): React.ReactElement {
   const automations = useAtomValue(automationsAtom)
   const setAutomations = useSetAtom(automationsAtom)
+  const setBlockedLogs = useSetAtom(blockedLogsAtom)
+  const setLastBlockedEvent = useSetAtom(lastBlockedEventAtom)
   const [selectedId, setSelectedId] = useAtom(selectedAutomationIdAtom)
   const [editorMode, setEditorMode] = useAtom(automationEditorModeAtom)
   const [running, setRunning] = React.useState(false)
@@ -45,13 +50,30 @@ export function AutomationMainView(): React.ReactElement {
     setAutomations(data)
   }, [setAutomations])
 
+  const refreshBlockedLogs = React.useCallback(async () => {
+    const data = await loadBlockedLogs()
+    setBlockedLogs(data)
+  }, [setBlockedLogs])
+
   React.useEffect(() => {
     void refreshAutomations()
-    const cleanup = window.electronAPI.automation.onChanged(() => {
+    void refreshBlockedLogs()
+    const cleanupAutomations = window.electronAPI.automation.onChanged(() => {
       void refreshAutomations()
     })
-    return cleanup
-  }, [refreshAutomations])
+    // runtime 拦截时弹 toast 并刷新拦截列表
+    const cleanupBlocked = window.electronAPI.automation.onPromptBlocked((event) => {
+      setLastBlockedEvent(event)
+      toast.error(
+        `「${event.automationName}」指令被安全拦截: ${event.patterns.slice(0, 2).join(', ')}`
+      )
+      void refreshBlockedLogs()
+    })
+    return () => {
+      cleanupAutomations()
+      cleanupBlocked()
+    }
+  }, [refreshAutomations, refreshBlockedLogs, setLastBlockedEvent])
 
   const selected = automations.find((a) => a.id === selectedId)
 
