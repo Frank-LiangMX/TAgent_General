@@ -7,7 +7,7 @@
 
 import { TAGENT_PERMISSION_MODE_CONFIG, TAGENT_PERMISSION_MODE_ORDER } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Zap, Compass, Map as MapIcon } from 'lucide-react'
+import { Zap, Compass, Map as MapIcon, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 
 import type { TAgentPermissionMode } from '@tagent/shared'
@@ -126,12 +126,17 @@ export function PermissionModeSelector({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
               aria-label={config.label}
               disabled
-              className={cn('size-[36px] rounded-full opacity-40 cursor-not-allowed', colorClass)}
+              className={cn(
+                'h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5 opacity-50 cursor-not-allowed',
+                'text-[12px] font-medium',
+                colorClass
+              )}
             >
-              <Icon className="size-5" />
+              <Icon className="size-3.5 shrink-0" />
+              <span className="shrink-0">{config.label}</span>
+              <ChevronDown className="size-3 shrink-0 opacity-60" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-[220px]">
@@ -154,15 +159,20 @@ export function PermissionModeSelector({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
                 aria-label={config.label}
-                className={cn('size-[36px] rounded-full', colorClass)}
+                className={cn(
+                  'h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5',
+                  'text-[12px] font-medium hover:bg-accent',
+                  colorClass
+                )}
               >
-                <Icon className="size-5" />
+                <Icon className="size-3.5 shrink-0" />
+                <span className="shrink-0">{config.label}</span>
+                <ChevronDown className="size-3 shrink-0 opacity-60" />
               </Button>
             </TooltipTrigger>
           </PopoverTrigger>
-          <TooltipContent side="bottom" className="max-w-[200px]">
+          <TooltipContent side="bottom" className="max-w-[220px]">
             <p className="font-medium">{config.label}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
             <p className="text-xs text-muted-foreground mt-1">点击切换模式</p>
