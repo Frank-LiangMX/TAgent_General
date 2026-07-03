@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto'
 import {
   isDangerousCommand,
   hasDangerousStructure,
+  hasWriteStructure,
   isAutoModeAutoAllowTool,
   parseMcpToolName,
 } from '@tagent/shared'
@@ -278,9 +279,10 @@ export class AgentPermissionService {
 
     // Bash 工具：先过危险兜底，再判断是否放行
     const command = typeof input.command === 'string' ? input.command : ''
-    // 危险命令/危险结构一律重新询问（即使会话内选过「总是允许」）
-    if (hasDangerousStructure(command)) return false
+    // 真正危险的命令（rm/sudo/git push 等）和写文件结构（重定向/$()/反引号/-exec）一律重新询问
+    // 注意：不再因 && / | / ; 等中性结构重新询问——Claude Code 原生也不拦截
     if (isDangerousCommand(command)) return false
+    if (hasWriteStructure(command)) return false
     // 用户对任一 Bash 选过「总是允许」→ 整个会话放行所有非危险 Bash
     if (whitelist.allowedTools.has('Bash')) return true
     // 回退：细粒度匹配（兼容旧白名单数据）

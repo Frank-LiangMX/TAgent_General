@@ -189,6 +189,25 @@ export function hasDangerousStructure(command: string): boolean {
 }
 
 /**
+ * 检测 Bash 命令是否包含真正会写文件 / 执行任意命令的结构
+ *
+ * 与 hasDangerousStructure 的差异：不再把命令链接（&&/;）和管道（|）判为危险，
+ * 因为这些结构本身不写文件、不执行任意命令，只是组合命令的方式。
+ *
+ * 用于 isWhitelisted：用户选过"总是允许 Bash"后，只对真正能绕过工具分类
+ * 直接修改文件系统的结构重新询问，不再因中性结构（&&/|）反复弹窗。
+ */
+export function hasWriteStructure(command: string): boolean {
+  // 输出重定向（> / >>）— 可写文件
+  if (/>{1,2}/.test(command)) return true
+  // find -exec / -delete — 可执行任意命令 / 删除文件
+  if (/(?:^|\s)-exec\b/.test(command) || /(?:^|\s)-delete\b/.test(command)) return true
+  // 子 shell / 命令替换（$(...) 和反引号）— 可执行任意命令
+  if (/\$\(/.test(command) || /`/.test(command)) return true
+  return false
+}
+
+/**
  * 判断 Bash 命令是否匹配安全模式
  */
 export function isSafeBashCommand(command: string): boolean {

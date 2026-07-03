@@ -4,6 +4,7 @@ import {
   isAutoModeAutoAllowTool,
   isDangerousCommand,
   isProjectLocalReadOnlyBash,
+  hasWriteStructure,
   requiresAutoModeConfirmation,
   resolveSdkPermissionModeForTAgent,
 } from './permission-rules'
@@ -290,5 +291,51 @@ describe('isDangerousCommand（token-based 前缀匹配）', () => {
   test('空命令 → false', () => {
     expect(isDangerousCommand('')).toBe(false)
     expect(isDangerousCommand('   ')).toBe(false)
+  })
+})
+
+describe('hasWriteStructure（写文件/执行任意命令的结构）', () => {
+  // 真正危险：能写文件或执行任意命令
+  test('输出重定向 > → true', () => {
+    expect(hasWriteStructure('echo x > file.txt')).toBe(true)
+  })
+  test('输出重定向 >> → true', () => {
+    expect(hasWriteStructure('echo x >> file.txt')).toBe(true)
+  })
+  test('find -exec → true', () => {
+    expect(hasWriteStructure('find . -exec rm {} \\;')).toBe(true)
+  })
+  test('find -delete → true', () => {
+    expect(hasWriteStructure('find . -name "*.tmp" -delete')).toBe(true)
+  })
+  test('命令替换 $() → true', () => {
+    expect(hasWriteStructure('echo $(whoami)')).toBe(true)
+  })
+  test('反引号命令替换 → true', () => {
+    expect(hasWriteStructure('echo `whoami`')).toBe(true)
+  })
+
+  // 中性结构：不写文件、不执行任意命令，不再拦截白名单
+  test('命令链接 && → false', () => {
+    expect(hasWriteStructure('cd src && ls')).toBe(false)
+  })
+  test('命令链接 ; → false', () => {
+    expect(hasWriteStructure('grep x; ls')).toBe(false)
+  })
+  test('管道 | → false', () => {
+    expect(hasWriteStructure('cat file | head')).toBe(false)
+  })
+  test('复杂中性组合 → false', () => {
+    expect(hasWriteStructure('cd packages && ls -la | head -10')).toBe(false)
+  })
+
+  // 边界：纯命令、空命令
+  test('纯只读命令 → false', () => {
+    expect(hasWriteStructure('ls -la')).toBe(false)
+    expect(hasWriteStructure('cat README.md')).toBe(false)
+    expect(hasWriteStructure('git status')).toBe(false)
+  })
+  test('空命令 → false', () => {
+    expect(hasWriteStructure('')).toBe(false)
   })
 })
