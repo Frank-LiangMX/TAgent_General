@@ -2802,7 +2802,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                         </div>
                         <div
                           className={cn(
-                            'session-glass chat-input-glass transition-all duration-200',
+                            'session-glass chat-input-glass transition-colors duration-200',
                             (isPlanMode || isPermissionPlanMode) &&
                               !isDragOver &&
                               'plan-mode-border',
