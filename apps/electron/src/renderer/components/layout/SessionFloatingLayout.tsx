@@ -29,14 +29,31 @@ export function SessionFloatingLayout({
     const bottomEl = bottomRef.current
     if (!body || !bottomEl) return
 
-    const syncReserve = (): void => {
+    const applyReserve = (): void => {
       body.style.setProperty('--session-bottom-reserve', `${bottomEl.offsetHeight}px`)
     }
 
-    syncReserve()
-    const observer = new ResizeObserver(syncReserve)
+    // 首次同步执行，确保首帧用真实高度而非 fallback 140px
+    applyReserve()
+
+    // rAF 节流：合并同帧多次 ResizeObserver 回调，避免输入框高度微变时
+    // 高频写 --session-bottom-reserve → 下游 use-stick-to-bottom contentRef
+    // ResizeObserver 触发 scrollToBottom rAF 循环 → 整体内容 spring 滚动抖动
+    let rafId: number | null = null
+    const scheduleSync = (): void => {
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        applyReserve()
+      })
+    }
+
+    const observer = new ResizeObserver(scheduleSync)
     observer.observe(bottomEl)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
   }, [])
 
   return (

@@ -1180,6 +1180,12 @@ button:active:not(:disabled) {
 .scrollbar-none > * {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* 强制不保留滚动条槽位：覆盖 use-stick-to-bottom 在 scrollRef div 上
+   * 设置的 inline style `scrollbar-gutter: stable both-edges`。
+   * stable 会在滚动状态切换时让内容区两侧槽位 appear/disappear，
+   * 导致内容区有效宽度 sub-pixel 变化 → flex-wrap wrap 点变化 →
+   * 附件卡片"行内 chip 抖、最后结尾的不抖"。auto 让槽位恒为 0。 */
+  scrollbar-gutter: auto !important;
 }
 .scrollbar-none::-webkit-scrollbar,
 .scrollbar-none > *::-webkit-scrollbar {
