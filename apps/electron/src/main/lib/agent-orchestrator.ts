@@ -2758,6 +2758,46 @@ export class AgentOrchestrator {
 
             // Turn 结束时：持久化累积消息
             if (msg.type === 'result') {
+              // 错误 result 检查：SDK 通过 result 消息流式报错（而非 assistant.error 或 throw）
+              // 典型场景：resume 时 SDK session 已失效，SDK 先分配新 session ID 再立即 result 错误
+              // 若不在此处恢复，错误 result 会被当成正常完成处理，sdkSessionId 被覆盖成无效值，
+              // 下次发消息又 resume 无效 session 又错误 result，会话永久卡死
+              const resultErrorMsg = msg as { subtype?: string; errors?: string[] }
+              if (
+                typeof resultErrorMsg.subtype === 'string' &&
+                resultErrorMsg.subtype.startsWith('error') &&
+                Array.isArray(resultErrorMsg.errors) &&
+                resultErrorMsg.errors.length > 0
+              ) {
+                const resultErrorText = resultErrorMsg.errors.join('\n')
+                // Session 不存在错误：清除 sdkSessionId，切换到上下文回填模式重试
+                if (isSessionNotFoundError(resultErrorText) && existingSdkSessionId) {
+                  existingSdkSessionId = undefined
+                  capturedSdkSessionId = undefined
+                  if (canAutoRetry(attempt)) {
+                    lastRetryableError = this.prepareSessionNotFoundRecovery(
+                      sessionId,
+                      queryOptions,
+                      contextualMessage,
+                      agentCwd,
+                      accumulatedMessages,
+                      queryStartedAt
+                    )
+                    shouldRetryFromError = true
+                    break
+                  }
+                  // 重试次数用完：仍清除 sdkSessionId 避免下次 resume 失效 session
+                  try {
+                    updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+                  } catch (err) {
+                    console.warn('[Agent 编排] 清除 sdkSessionId 失败:', err)
+                  }
+                  console.warn(
+                    `[Agent 编排] session-not-found 重试次数用尽 (attempt ${attempt}/${MAX_AUTO_RETRIES})，已清除 sdkSessionId 避免下次 resume 失效 session`
+                  )
+                }
+              }
+
               capturedResultSubtype = (msg as { subtype?: string }).subtype
               this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
               accumulatedMessages.length = 0
