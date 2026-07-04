@@ -227,7 +227,7 @@ export function FilePathChip({
           type="button"
           onClick={handleClick}
           className={cn(
-            'inline-flex items-center gap-1 rounded px-1.5 py-[2px] text-[12px] font-medium leading-[1.6]',
+            'inline-flex items-center gap-1 rounded-md px-1.5 py-[2px] text-[12px] font-medium leading-[1.6]',
             'cursor-pointer transition-colors duration-150',
             'align-baseline not-prose',
             // 所有状态都预留 1px border 空间，避免 idle→broken 切换时
