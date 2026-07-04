@@ -1,25 +1,18 @@
 /**
  * DraftAssistantPanel — AI 助手侧边栏
  *
- * 提供 5 个框架按钮（3 组）和一个简易对话界面。
- * 点击框架按钮时，将草稿全文 + 框架指令拼接为 prompt 发送至 btw 通道。
+ * 提供智能分析和对话功能：
+ * - 内置迷你模型选择器，用户可切换渠道/模型
+ * - 支持自由对话追问
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import {
-  Send,
-  Loader2,
-  Search,
-  Globe,
-  ListChecks,
-  Pencil,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
+import { Send, Loader2, Sparkles, Wand2, MessageCircle, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import type { BtwMessage } from '@tagent/shared'
+import type { BtwMessage, Channel, ModelOption } from '@tagent/shared'
+import { isAgentCompatibleProvider } from '@tagent/shared'
 
 import {
   currentDraftAtom,
@@ -32,51 +25,44 @@ import {
   btwMessagesAtom,
   btwStreamingAtom,
   btwErrorAtom,
-  btwChannelIdAtom,
-  btwModelIdAtom,
 } from '@/atoms/btw-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
+import { Popover, PopoverContent, PopoverTrigger } from '@tagent/ui'
+import { getModelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
-/** 框架按钮定义 */
-interface FrameworkDef {
-  group: string
+/** 分析类型 */
+type AnalysisType = 'clarify' | 'structure' | 'check'
+
+/** 分析按钮定义 */
+const ANALYSIS_ACTIONS: Array<{
+  id: AnalysisType
   label: string
+  description: string
   icon: React.ReactNode
   instruction: string
-}
-
-const FRAMEWORKS: FrameworkDef[] = [
+}> = [
   {
-    group: '澄清',
+    id: 'clarify',
     label: '澄清需求',
-    icon: <Search size={15} />,
+    description: '找出模糊、矛盾或缺失的地方',
+    icon: <Wand2 size={14} />,
     instruction:
       '请仔细阅读以下需求草稿，指出其中模糊、矛盾或缺失的地方，用提问的方式引导作者澄清。',
   },
   {
-    group: '澄清',
-    label: '研究',
-    icon: <Globe size={15} />,
-    instruction:
-      '请根据以下需求草稿，从技术和产品角度进行调研：列出相关技术方案、竞品对比、潜在风险。',
-  },
-  {
-    group: '结构',
-    label: '结构化',
-    icon: <ListChecks size={15} />,
+    id: 'structure',
+    label: '结构优化',
+    description: '重新组织为更清晰的格式',
+    icon: <Sparkles size={14} />,
     instruction:
       '请将以下需求草稿重新组织为更结构化的格式：每个需求块提炼出明确的标题、描述和验收标准。',
   },
   {
-    group: '结构',
-    label: '润色',
-    icon: <Pencil size={15} />,
-    instruction: '请对以下需求草稿进行文字润色：改善措辞、消除歧义、统一术语，保持原意不变。',
-  },
-  {
-    group: '检查',
+    id: 'check',
     label: '完整性检查',
-    icon: <ShieldCheck size={15} />,
+    description: '检查边界条件、异常处理等',
+    icon: <MessageCircle size={14} />,
     instruction:
       '请对以下需求草稿进行完整性检查：是否缺少边界条件、异常处理、性能要求、兼容性说明等。',
   },
@@ -91,21 +77,163 @@ function serializeDraft(title: string, context: string, requirements: string): s
   return parts.join('\n\n')
 }
 
+/** 判断草稿状态并推荐分析类型 */
+function suggestAnalysis(
+  context: string,
+  requirements: unknown[]
+): { type: AnalysisType; reason: string } {
+  if (!context.trim() && requirements.length === 0) {
+    return { type: 'clarify', reason: '草稿为空，建议先明确需求背景' }
+  }
+  if (!context.trim()) {
+    return { type: 'clarify', reason: '缺少背景上下文，建议补充' }
+  }
+  if (requirements.length === 0) {
+    return { type: 'structure', reason: '建议将需求拆分为具体任务块' }
+  }
+  if (requirements.length < 3) {
+    return { type: 'check', reason: '需求块较少，建议检查是否遗漏' }
+  }
+  return { type: 'check', reason: '可以进行完整性检查' }
+}
+
+/** 从渠道列表构建模型选项（排除 kscc） */
+function buildModelOptions(channels: Channel[]): ModelOption[] {
+  const options: ModelOption[] = []
+  for (const channel of channels) {
+    if (!channel.enabled) continue
+    // 排除 kscc（使用 CLI，不支持 HTTP API）
+    if (channel.provider === 'kscc-internal') continue
+    // 只保留 Agent 兼容渠道
+    if (!isAgentCompatibleProvider(channel.provider)) continue
+    for (const model of channel.models) {
+      if (!model.enabled) continue
+      options.push({
+        channelId: channel.id,
+        channelName: channel.name,
+        provider: channel.provider,
+        modelId: model.id,
+        modelName: model.name,
+      })
+    }
+  }
+  return options
+}
+
+/** 迷你模型选择器 */
+function MiniModelSelector({
+  channelId,
+  modelId,
+  channels,
+  onSelect,
+}: {
+  channelId: string | null
+  modelId: string | null
+  channels: Channel[]
+  onSelect: (channelId: string, modelId: string) => void
+}): React.ReactElement {
+  const [open, setOpen] = React.useState(false)
+  const modelOptions = React.useMemo(() => buildModelOptions(channels), [channels])
+
+  // 当前选中的模型信息
+  const currentModel = React.useMemo(
+    () => modelOptions.find((o) => o.channelId === channelId && o.modelId === modelId),
+    [modelOptions, channelId, modelId]
+  )
+
+  const logoSrc = currentModel
+    ? getModelLogo(currentModel.modelId, currentModel.provider)
+    : DefaultLogo
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors',
+            currentModel
+              ? 'bg-primary/10 text-primary hover:bg-primary/15'
+              : 'bg-orange-500/10 text-orange-600 hover:bg-orange-500/15'
+          )}
+        >
+          <img src={logoSrc} alt="" className="size-3.5 rounded object-cover" />
+          <span className="max-w-[100px] truncate">
+            {currentModel ? currentModel.modelName : '选择模型'}
+          </span>
+          <ChevronDown size={12} className="opacity-60" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-64 p-2 max-h-64 overflow-y-auto scrollbar-thin"
+      >
+        {modelOptions.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            暂无可用渠道，请先在设置中配置
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {modelOptions.map((opt) => {
+              const optLogoSrc = getModelLogo(opt.modelId, opt.provider)
+              const isSelected = opt.channelId === channelId && opt.modelId === modelId
+              return (
+                <button
+                  key={`${opt.channelId}-${opt.modelId}`}
+                  type="button"
+                  onClick={() => {
+                    onSelect(opt.channelId, opt.modelId)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
+                    isSelected
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-muted/50 text-foreground'
+                  )}
+                >
+                  <img src={optLogoSrc} alt="" className="size-3.5 rounded object-cover" />
+                  <span className="truncate">{opt.modelName}</span>
+                  <span className="text-muted-foreground ml-auto truncate max-w-[60px]">
+                    {opt.channelName}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export function DraftAssistantPanel(): React.ReactElement {
   const draft = useAtomValue(currentDraftAtom)
   const title = useAtomValue(currentDraftTitleAtom)
   const context = useAtomValue(currentDraftContextAtom)
   const requirements = useAtomValue(currentDraftRequirementsAtom)
+  const channels = useAtomValue(channelsAtom)
+
+  // 内置模型选择（不依赖全局 atom）
+  const [channelId, setChannelId] = React.useState<string | null>(null)
+  const [modelId, setModelId] = React.useState<string | null>(null)
 
   const setOpen = useSetAtom(btwOpenAtom)
   const [messages, setMessages] = useAtom(btwMessagesAtom)
   const setStreaming = useSetAtom(btwStreamingAtom)
   const setError = useSetAtom(btwErrorAtom)
-  const channelId = useAtomValue(btwChannelIdAtom)
-  const modelId = useAtomValue(btwModelIdAtom)
 
   const [input, setInput] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+
+  // 是否已选择模型
+  const isConfigured = !!(channelId && modelId)
+
+  // 推荐分析类型
+  const suggestion = React.useMemo(
+    () => suggestAnalysis(context, requirements),
+    [context, requirements]
+  )
 
   // 自动滚到底部
   React.useEffect(() => {
@@ -121,16 +249,16 @@ export function DraftAssistantPanel(): React.ReactElement {
     }
   }, [setOpen, setMessages])
 
-  /** 发送框架 prompt */
-  const handleFrameworkClick = (fw: FrameworkDef): void => {
+  /** 发送分析请求 */
+  const handleAnalysis = (action: (typeof ANALYSIS_ACTIONS)[number]): void => {
     if (!channelId || !modelId) {
-      toast.error('请先配置渠道和模型')
+      toast.error('请先选择模型')
       return
     }
 
     const reqText = JSON.stringify(requirements, null, 2)
     const draftText = serializeDraft(title, context, reqText)
-    const prompt = `${fw.instruction}\n\n---\n\n${draftText}`
+    const prompt = `${action.instruction}\n\n---\n\n${draftText}`
     sendPrompt(prompt)
   }
 
@@ -145,7 +273,7 @@ export function DraftAssistantPanel(): React.ReactElement {
   /** 通用发送逻辑 */
   const sendPrompt = (text: string): void => {
     if (!channelId || !modelId) {
-      toast.error('请先配置渠道和模型')
+      toast.error('请先选择模型')
       return
     }
 
@@ -203,42 +331,56 @@ export function DraftAssistantPanel(): React.ReactElement {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 框架按钮区 */}
-      <div className="px-4 pt-4 pb-2 shrink-0 border-b border-border/30">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Sparkles size={13} className="text-primary/70" />
-          <span className="text-xs font-medium text-foreground/60">AI 助手</span>
+      {/* 顶部：模型选择器 */}
+      <div className="px-4 pt-3 pb-2 shrink-0 border-b border-border/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-primary/70" />
+            <span className="text-xs font-medium text-foreground/60">AI 助手</span>
+          </div>
+          <MiniModelSelector
+            channelId={channelId}
+            modelId={modelId}
+            channels={channels}
+            onSelect={(chId, mId) => {
+              setChannelId(chId)
+              setModelId(mId)
+            }}
+          />
         </div>
-        <div className="space-y-2.5">
-          {['澄清', '结构', '检查'].map((group) => {
-            const items = FRAMEWORKS.filter((f) => f.group === group)
-            return (
-              <div key={group}>
-                <p className="text-[10px] text-muted-foreground/50 mb-1 uppercase tracking-wider">
-                  {group}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {items.map((fw) => (
-                    <button
-                      key={fw.label}
-                      type="button"
-                      onClick={() => handleFrameworkClick(fw)}
-                      disabled={streaming}
-                      className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors',
-                        'bg-primary/8 hover:bg-primary/15 text-foreground/70 hover:text-foreground',
-                        'border border-border/30 hover:border-border/50',
-                        'disabled:opacity-40 disabled:cursor-not-allowed'
-                      )}
-                    >
-                      {fw.icon}
-                      {fw.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+      </div>
+
+      {/* 分析按钮区 */}
+      <div className="px-4 pt-3 pb-3 shrink-0">
+        {/* 已配置：显示推荐提示 */}
+        {isConfigured && (
+          <div className="mb-2.5 px-2.5 py-1.5 rounded-lg bg-primary/5 border border-primary/10">
+            <p className="text-[11px] text-primary/80">
+              💡 {suggestion.reason}
+            </p>
+          </div>
+        )}
+
+        {/* 分析按钮 */}
+        <div className="flex flex-wrap gap-1.5">
+          {ANALYSIS_ACTIONS.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => handleAnalysis(action)}
+              disabled={streaming || !isConfigured}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors',
+                action.id === suggestion.type && isConfigured
+                  ? 'bg-primary/15 text-primary border border-primary/20'
+                  : 'bg-muted/30 hover:bg-muted/50 text-foreground/70 hover:text-foreground border border-border/30',
+                'disabled:opacity-40 disabled:cursor-not-allowed'
+              )}
+            >
+              {action.icon}
+              <span>{action.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -250,9 +392,15 @@ export function DraftAssistantPanel(): React.ReactElement {
         )}
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-1.5 text-foreground/40">
-            <p className="text-sm">点击上方按钮快速分析</p>
-            <p className="text-[11px]">或在下方输入自由提问</p>
+          <div className="flex flex-col items-center justify-center h-full text-center gap-2 text-foreground/40 px-4">
+            <p className="text-sm">
+              {isConfigured ? '点击上方按钮分析草稿' : '选择模型后即可使用'}
+            </p>
+            {isConfigured && (
+              <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+                AI 会帮你找出需求中的问题，并提供改进建议
+              </p>
+            )}
           </div>
         ) : (
           messages.map((msg) => (
@@ -283,10 +431,10 @@ export function DraftAssistantPanel(): React.ReactElement {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入问题…"
+            placeholder={isConfigured ? '追问或补充…' : '请先选择模型'}
             rows={1}
             className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-[13px] leading-relaxed text-foreground placeholder:text-foreground/40 outline-none max-h-24 disabled:opacity-50"
-            disabled={streaming}
+            disabled={streaming || !isConfigured}
             onInput={(e) => {
               const target = e.currentTarget
               target.style.height = 'auto'
@@ -296,10 +444,10 @@ export function DraftAssistantPanel(): React.ReactElement {
           <button
             type="button"
             onClick={handleSend}
-            disabled={!input.trim() || streaming}
+            disabled={!input.trim() || streaming || !isConfigured}
             className={cn(
               'h-7 w-7 rounded-full shrink-0 flex items-center justify-center transition-colors',
-              input.trim() && !streaming
+              input.trim() && !streaming && isConfigured
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'bg-muted/40 text-foreground/30 cursor-not-allowed'
             )}

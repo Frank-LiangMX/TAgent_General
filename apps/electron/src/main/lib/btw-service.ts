@@ -163,6 +163,11 @@ export async function sendBtwMessage(input: {
     throw new Error(`渠道不存在: ${channelId}`)
   }
 
+  // kscc 渠道使用 CLI 而非 HTTP API，btw-service 暂不支持
+  if (channel.provider === 'kscc-internal') {
+    throw new Error('kscc 内网渠道暂不支持侧面提问，请选择其他渠道')
+  }
+
   // 解密 API Key（decryptApiKey 接收 channelId，内部查找渠道并解密 apiKey）
   const apiKey = decryptApiKey(channelId)
   if (!apiKey) {

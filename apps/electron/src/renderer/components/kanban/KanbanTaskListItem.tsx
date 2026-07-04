@@ -135,9 +135,8 @@ export function KanbanTaskListItem({
         type="button"
         onClick={handleClick}
         className={cn(
-          'session-glass w-full rounded-glass-popover px-2.5 py-2 text-left transition-all',
-          'hover:shadow-md hover:bg-background/60',
-          selected && 'ring-2 ring-blue-500/50 bg-background/70'
+          'session-list-row group w-full px-2.5 py-2 text-left titlebar-no-drag',
+          selected ? 'session-list-item-active' : 'rounded-glass-sidebar hover:bg-primary/5'
         )}
       >
         {/* 第一行：状态色点 + 标题 + 状态徽章 */}

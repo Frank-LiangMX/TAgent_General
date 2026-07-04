@@ -2780,15 +2780,16 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     <>
       <AgentSessionProvider sessionId={sessionId}>
         <div className="relative flex flex-col h-full flex-1 min-w-0">
-          {/* Agent Header（右侧合并二级 Tab + 看板缩略） */}
-          <AgentHeader
-            sessionId={sessionId}
-            rightSlot={
-              showKanbanTeamTab ? (
-                <>
-                  <SegmentedTabs
-                    value={subTab}
-                    onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
+          {/* Agent Header（右侧合并二级 Tab + 看板缩略） — 嵌套工人会话隐藏，保持对话面板干净 */}
+          {!isNestedWorker && (
+            <AgentHeader
+              sessionId={sessionId}
+              rightSlot={
+                showKanbanTeamTab ? (
+                  <>
+                    <SegmentedTabs
+                      value={subTab}
+                      onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
                     className="text-xs"
                   >
                     <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
@@ -2812,6 +2813,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
               ) : null
             }
           />
+          )}
 
           {showKanbanTeamTab && subTab === 'team' && boardId ? (
             <SessionTeamTab sessionId={sessionId} boardId={boardId} />
@@ -2828,7 +2830,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                         <span>Ask 档位：仅对话，不修改文件或执行命令</span>
                       </div>
                     )}
-                    {!hasBannerOverlay && (
+                    {!hasBannerOverlay && !isNestedWorker && (
                       <div
                         className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
                         data-input-mode="agent"
@@ -3013,12 +3015,14 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                 />
               </SessionFloatingLayout>
 
-              {/* 底栏：Context 占用 + 累计 Token 统计 */}
-              <TokenStatsPanel
-                isProcessing={streaming}
-                onCompact={handleCompact}
-                onClientCompact={handleClientCompact}
-              />
+              {/* 底栏：Context 占用 + 累计 Token 统计 — 嵌套工人会话隐藏 */}
+              {!isNestedWorker && (
+                <TokenStatsPanel
+                  isProcessing={streaming}
+                  onCompact={handleCompact}
+                  onClientCompact={handleClientCompact}
+                />
+              )}
             </>
           )}
         </div>

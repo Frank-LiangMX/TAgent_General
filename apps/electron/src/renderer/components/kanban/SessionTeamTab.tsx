@@ -14,8 +14,9 @@ import { useAtom } from 'jotai'
 
 import type { KanbanBoard, KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
-import { Badge, Button, Input } from '@tagent/ui'
-import { Loader2, Pause, Play, RefreshCw, Unlink, ArrowLeftRight } from 'lucide-react'
+import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input } from '@tagent/ui'
+import { ArrowLeftRight, Gauge, KanbanSquare, Loader2, Pause, Play, RefreshCw, Unlink } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
 import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
@@ -25,13 +26,15 @@ import {
   useKanbanBoards,
 } from '@/atoms/kanban-atoms'
 import { AgentView } from '@/components/agent/AgentView'
+import { Panel } from '@/components/app-shell/Panel'
+import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
-/** 按状态分组的顺序与中文标签 */
+/** 按状态分组的顺序与中文标签（与 KanbanMainView 保持一致） */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
-  { status: 'running', label: '执行中' },
   { status: 'ready', label: '待派工' },
   { status: 'pending', label: '待办（依赖未满足）' },
+  { status: 'running', label: '执行中' },
   { status: 'blocked', label: '阻塞' },
   { status: 'review', label: '待验收' },
   { status: 'done', label: '已完成' },
@@ -75,6 +78,8 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
 
   const total = tasks.length
   const doneCount = grouped.get('done')?.length ?? 0
+  const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0
+  const isMac = React.useMemo(() => detectIsMac(), [])
 
   const handlePauseResume = async (): Promise<void> => {
     if (paused) {
@@ -130,143 +135,213 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1">
-      {/* 左栏：任务列表 */}
-      <aside className="flex w-[240px] shrink-0 flex-col border-r border-border/40 bg-background/30">
-        {/* 顶栏：进度 + 操作 */}
-        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40">
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="font-medium text-foreground">进度</span>
-            <span className="tabular-nums text-muted-foreground">
-              {doneCount}/{total}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-7 rounded-full p-0"
-              onClick={() => setSwitcherOpen(true)}
-              title="切换看板"
-            >
-              <ArrowLeftRight className="size-3.5 text-foreground/60" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-7 rounded-full p-0"
-              onClick={() => void handleDetach()}
-              title="解绑看板"
-            >
-              <Unlink className="size-3.5 text-foreground/60" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-7 rounded-full p-0"
-              onClick={() => void refresh()}
-              title="刷新"
-            >
-              <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-7 rounded-full p-0"
-              onClick={() => void handlePauseResume()}
-              title={paused ? '继续调度' : '暂停调度'}
-            >
-              {paused ? (
-                <Play className="size-3.5 text-amber-600 dark:text-amber-400" />
-              ) : (
-                <Pause className="size-3.5 text-foreground/60" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* 任务列表（按状态分组） */}
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 scrollbar-thin">
-          {loading && tasks.length === 0 && (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-            </div>
-          )}
-          {!loading && tasks.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground">暂无任务</div>
-          )}
-          {STATUS_GROUPS.map(({ status, label }) => {
-            const groupTasks = grouped.get(status)
-            if (!groupTasks || groupTasks.length === 0) return null
-            return (
-              <div key={status}>
-                <div className="mb-1.5 flex items-center gap-1.5 px-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/70">·</span>
-                  <span className="text-[10px] text-muted-foreground/70">{groupTasks.length}</span>
-                </div>
-                <div className="space-y-1.5">
-                  {groupTasks.map((task) => (
-                    <KanbanTaskListItem
-                      key={task.id}
-                      task={task}
-                      selected={task.id === selectedTaskId}
-                      onSelect={setSelectedTaskId}
-                      showDetailDialog={false}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </aside>
-
-      {/* 右栏：任务详情 / 嵌套 AgentView */}
-      <section className="flex min-w-0 flex-1 flex-col">
-        {selectedTask ? (
-          selectedTask.assigneeSessionId ? (
-            <div className="flex h-full min-h-0 flex-1 flex-col">
-              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-background/30">
-                <span className="text-xs text-muted-foreground">工人会话</span>
-                <span className="text-xs font-mono text-foreground/70">
-                  {selectedTask.assigneeSessionId}
-                </span>
-              </div>
-              <div className="flex-1 min-h-0">
-                <AgentView sessionId={selectedTask.assigneeSessionId} />
-              </div>
-            </div>
-          ) : (
-            <TaskDetailView
-              task={selectedTask}
-              unblockReason={unblockReason}
-              setUnblockReason={setUnblockReason}
-              onUnblock={handleUnblock}
-              unblocking={unblocking}
-            />
-          )
-        ) : (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            <div className="text-center">
-              <p>选择左侧任务查看详情</p>
-              {board && (
-                <p className="mt-1 text-[11px] text-muted-foreground/70">看板：{board.id}</p>
-              )}
-            </div>
-          </div>
+    <Panel variant="grow" className="content-glass">
+      {/* 顶栏：横跨左右栏（与 KanbanMainView 工具栏一致，避免 240px 左栏容不下） */}
+      <div
+        className={cn(
+          'flex items-center gap-2 border-b border-border/40 px-5 py-2',
+          !isMac && 'pt-6'
         )}
-      </section>
-      <KanbanSwitcherDialog
-        open={switcherOpen}
-        onOpenChange={setSwitcherOpen}
-        boards={boards}
-        currentBoardId={boardId}
-        onSelect={handleSwitchBoard}
-      />
-    </div>
+      >
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground tabular-nums">
+          <span>
+            {doneCount}/{total}
+          </span>
+          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        {/* 并发上限 quick edit（B10） */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              title="调整并发上限"
+            >
+              <Gauge className="size-3" />
+              <span className="tabular-nums">{board?.maxConcurrent ?? 3}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="z-[9999]">
+            <div className="px-2 py-1 text-[10px] text-muted-foreground">并发上限</div>
+            {[1, 2, 3, 4, 5, 6, 8].map((n) => (
+              <DropdownMenuItem
+                key={n}
+                onClick={() => {
+                  void window.electronAPI.kanban
+                    .updateBoard({ boardId, maxConcurrent: n })
+                    .then(() => {
+                      toast.success(`并发上限已调整为 ${n}`)
+                    })
+                    .catch((err) => {
+                      toast.error('调整失败', {
+                        description: err instanceof Error ? err.message : undefined,
+                      })
+                    })
+                }}
+                className={cn(
+                  'flex items-center justify-between gap-2 text-xs',
+                  board?.maxConcurrent === n && 'bg-muted'
+                )}
+              >
+                <span className="tabular-nums">{n}</span>
+                {board?.maxConcurrent === n && (
+                  <span className="text-[10px] text-muted-foreground">当前</span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {/* requireSummary 标记（B9） */}
+        {board?.requireSummary && (
+          <Badge
+            variant="outline"
+            className="border-blue-500/30 text-blue-600 dark:text-blue-400 text-[10px]"
+            title="该看板全部完成后会自动触发主会话汇总结果"
+          >
+            完成后汇总
+          </Badge>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => setSwitcherOpen(true)}
+            title="切换看板"
+          >
+            <ArrowLeftRight className="size-3.5 text-foreground/60" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => void handleDetach()}
+            title="解绑看板"
+          >
+            <Unlink className="size-3.5 text-foreground/60" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => void refresh()}
+            title="刷新"
+          >
+            <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => void handlePauseResume()}
+            title={paused ? '继续调度' : '暂停调度'}
+          >
+            {paused ? (
+              <Play className="size-3.5 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <Pause className="size-3.5 text-foreground/60" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* 双栏内容区 */}
+      <div className="flex min-h-0 flex-1">
+        {/* 左栏：任务列表 */}
+        <aside className="flex w-[240px] shrink-0 flex-col border-r border-border/40 bg-background/30">
+          {/* 任务列表（按状态分组） */}
+          <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 scrollbar-thin">
+            {loading && tasks.length === 0 && (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+              </div>
+            )}
+            {!loading && tasks.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <KanbanSquare className="size-10 text-muted-foreground/30 mb-2" />
+                <p className="text-xs text-muted-foreground mb-1">该看板暂无任务</p>
+                <p className="text-[11px] text-muted-foreground/70 max-w-[200px]">
+                  在会话里让 Agent 追加子任务，或从草稿升级补充
+                </p>
+              </div>
+            )}
+            {STATUS_GROUPS.map(({ status, label }) => {
+              const groupTasks = grouped.get(status)
+              if (!groupTasks || groupTasks.length === 0) return null
+              return (
+                <div key={status}>
+                  <div className="mb-1.5 flex items-center gap-2 px-1">
+                    <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+                    <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                      {groupTasks.length}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {groupTasks.map((task) => (
+                      <KanbanTaskListItem
+                        key={task.id}
+                        task={task}
+                        selected={task.id === selectedTaskId}
+                        onSelect={setSelectedTaskId}
+                        showDetailDialog={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </aside>
+
+        {/* 右栏：任务详情 / 嵌套 AgentView */}
+        <section className="flex min-w-0 flex-1 flex-col">
+          {selectedTask ? (
+            selectedTask.assigneeSessionId ? (
+              <div className="flex h-full min-h-0 flex-1 flex-col">
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-background/30">
+                  <span className="text-xs text-muted-foreground">工人会话</span>
+                  <span className="text-xs font-mono text-foreground/70">
+                    {selectedTask.assigneeSessionId}
+                  </span>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <AgentView sessionId={selectedTask.assigneeSessionId} />
+                </div>
+              </div>
+            ) : (
+              <TaskDetailView
+                task={selectedTask}
+                unblockReason={unblockReason}
+                setUnblockReason={setUnblockReason}
+                onUnblock={handleUnblock}
+                unblocking={unblocking}
+              />
+            )
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              <div className="text-center">
+                <p>选择左侧任务查看详情</p>
+                {board && (
+                  <p className="mt-1 text-[11px] text-muted-foreground/70">看板：{board.id}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+        <KanbanSwitcherDialog
+          open={switcherOpen}
+          onOpenChange={setSwitcherOpen}
+          boards={boards}
+          currentBoardId={boardId}
+          onSelect={handleSwitchBoard}
+        />
+      </div>
+    </Panel>
   )
 }
 

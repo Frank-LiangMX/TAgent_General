@@ -11,7 +11,7 @@
 
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { KanbanSquare, Loader2, Gauge, Pause, Play } from 'lucide-react'
+import { KanbanSquare, Loader2, Gauge, Pause, Play, RefreshCw, ArrowLeftRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -25,9 +25,14 @@ import {
 import type { KanbanTaskStatus } from '@tagent/shared'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
+import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
-import { useSelectedKanbanBoard, selectedKanbanBoardIdAtom } from '@/atoms/kanban-atoms'
+import {
+  selectedKanbanBoardIdAtom,
+  useKanbanBoards,
+  useSelectedKanbanBoard,
+} from '@/atoms/kanban-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -46,8 +51,10 @@ const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
 export function KanbanMainView(): React.ReactElement {
   const selectedBoardId = useAtomValue(selectedKanbanBoardIdAtom)
   const setSelectedBoardId = useSetAtom(selectedKanbanBoardIdAtom)
-  const { board, tasks, loading } = useSelectedKanbanBoard(selectedBoardId)
+  const { board, tasks, loading, refresh } = useSelectedKanbanBoard(selectedBoardId)
+  const { boards } = useKanbanBoards()
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
+  const [switcherOpen, setSwitcherOpen] = React.useState(false)
   const isMac = React.useMemo(() => detectIsMac(), [])
   // Windows 顶栏需避让窗口控制按钮（与 LeftSidebar pt-[28px] 对齐）
   const headerClassName = cn(!isMac && 'pt-6')
@@ -208,20 +215,42 @@ export function KanbanMainView(): React.ReactElement {
             完成后汇总
           </Badge>
         )}
-        {/* 暂停/继续调度（B5） */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto size-7 rounded-full p-0"
-          onClick={() => void handlePauseResume()}
-          title={board.paused ? '继续调度' : '暂停调度'}
-        >
-          {board.paused ? (
-            <Play className="size-3.5 text-amber-600 dark:text-amber-400" />
-          ) : (
-            <Pause className="size-3.5 text-foreground/60" />
-          )}
-        </Button>
+        <div className="ml-auto flex items-center gap-1">
+          {/* 切换看板 */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => setSwitcherOpen(true)}
+            title="切换看板"
+          >
+            <ArrowLeftRight className="size-3.5 text-foreground/60" />
+          </Button>
+          {/* 刷新 */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => void refresh()}
+            title="刷新"
+          >
+            <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
+          </Button>
+          {/* 暂停/继续调度（B5） */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 rounded-full p-0"
+            onClick={() => void handlePauseResume()}
+            title={board.paused ? '继续调度' : '暂停调度'}
+          >
+            {board.paused ? (
+              <Play className="size-3.5 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <Pause className="size-3.5 text-foreground/60" />
+            )}
+          </Button>
+        </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {tasks.length === 0 ? (
@@ -261,6 +290,16 @@ export function KanbanMainView(): React.ReactElement {
           </div>
         )}
       </div>
+      <KanbanSwitcherDialog
+        open={switcherOpen}
+        onOpenChange={setSwitcherOpen}
+        boards={boards}
+        currentBoardId={board.id}
+        onSelect={async (targetBoardId) => {
+          setSelectedBoardId(targetBoardId)
+          setSwitcherOpen(false)
+        }}
+      />
     </Panel>
   )
 }

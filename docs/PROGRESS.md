@@ -129,9 +129,9 @@
   - **小修**：`@` 引用弹窗（`FileMentionList` / `MentionList`）滚动条统一 `scrollbar-thin`；Context 底栏词条 Tooltip；Token 底栏隐藏费用展示
 - ✅ **Agent Hooks + auto-check** 已完成（2026-06-30，commits on `main`）— PostToolUse 多语言检查钩子 + `AgentBehaviorSettings` 语言级配置；**TAgent 独有，Proma 无**
 - ✅ **Superpowers 14 skill** 已收录（2026-06-30）
-- 🟢 **上游 Proma v0.13.4 对齐**（`feature/upstream-v0.13.4-alignment`）— P0–P3 已落地，**PR #16 已合 main**（2026-06-30）；跟踪 [`2026-06-30-upstream-alignment-tracker.md`](plans/2026-06-30-upstream-alignment-tracker.md)
+- ✅ **上游 Proma v0.13.4 对齐已完成**（PR #16 已合 main，2026-06-30）— P0–P3 全部落地；custom cron / WPS 增强 / #915 / Nowledge Mem 不纳入上游对齐（独立线或明确跳过）；跟踪 [`2026-06-30-upstream-alignment-tracker.md`](plans/2026-06-30-upstream-alignment-tracker.md)
 - **本分支已完成（2026-06-30）**：P0 稳定性、P1 Bridge/Automation MCP/headless、P2 预览路由 + Automation Skill、P3 #904–#912 + 侧栏删项确认、自动审批权限路由（避免 SDK classifier 硬拒）
-- **本分支未做 / 跳过**：custom cron（M4）、WPS 增强（独立线）、#915 双界面、Nowledge Mem
+- **上游对齐跳过项**：custom cron（独立功能，Proma 亦无）、WPS 增强（TAgent 独立线）、#915 双界面（用户明确不需要）、Nowledge Mem（TAgent 自有记忆系统）
 
 **2026-06-24 / 06-25 规划文档**：
 

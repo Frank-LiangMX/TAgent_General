@@ -13,6 +13,7 @@ import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import { RequirementList } from './RequirementList'
+import { DraftEmptyState } from './DraftEmptyState'
 import {
   currentDraftContextAtom,
   currentDraftRequirementsAtom,
@@ -35,6 +36,12 @@ export function DraftEditor(): React.ReactElement {
   const [context, setContext] = useAtom(currentDraftContextAtom)
   const loaded = useAtomValue(draftsLoadedAtom)
   const requirements = useAtomValue(currentDraftRequirementsAtom)
+
+  // 判断是否为空草稿（无背景 + 无需求块）
+  const isEmpty = React.useMemo(
+    () => !context?.trim() && requirements.length === 0,
+    [context, requirements]
+  )
 
   // 用 ref 追踪最新内容，避免 onUpdate → atom 变化 → 重新 setContent 死循环
   const contextRef = React.useRef(context)
@@ -81,12 +88,17 @@ export function DraftEditor(): React.ReactElement {
     }
   }, [loaded, editor])
 
+  // 空草稿：显示引导页面
+  if (loaded && isEmpty) {
+    return <DraftEmptyState />
+  }
+
   return (
     <div className="px-8 pt-6 pb-8">
       <div className="max-w-3xl mx-auto">
         {/* 背景上下文编辑器 */}
         <div className="mb-6">
-          <h2 className="text-sm font-medium text-foreground/70 mb-2">背景上下文</h2>
+          <h3 className="text-sm font-medium text-foreground/70 mb-2">背景上下文</h3>
           {loaded ? (
             <EditorContent
               editor={editor}
