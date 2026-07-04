@@ -27,6 +27,7 @@ import {
   KANBAN_TICK_INTERVAL_MS,
   KANBAN_DEFAULT_MAX_CONCURRENT,
   type KanbanTask,
+  type KanbanChannelModelsGetter,
 } from '@tagent/shared'
 import type { KanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
@@ -35,10 +36,9 @@ import { getRoleById } from './agent-role-service'
 export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string }>
 
 /**
- * 渠道可用模型查询器
+ * 渠道可用模型查询器（旧版，已废弃）
  *
- * 返回指定渠道的所有已启用模型 ID 列表（用于 dispatcher 轮询分配，避免同模型过度并发降智）。
- * 调用方注入真实实现（读 channel.models），测试可注入 mock。
+ * @deprecated 请使用 KanbanChannelModelsGetter（支持跨渠道轮询 + kscc 合规检查）
  */
 export type KanbanAvailableModelsGetter = (channelId: string) => string[]
 
@@ -50,12 +50,42 @@ export interface KanbanDispatcherOptions {
   db: KanbanDbService
   /** 状态变更回调（用于触发 UI 广播，避免 dispatcher 直接依赖 kanban-ipc） */
   onTaskStatusChanged?: (taskId: string, status: string) => void
-  /** 渠道可用模型查询器（用于模型轮询分配，可选，未注入则用 task.modelId 或渠道默认） */
+
+  // ===== 模型分配配置（支持跨渠道轮询） =====
+
+  /**
+   * 渠道模型查询器（新版，支持跨渠道轮询 + kscc 合规检查）
+   *
+   * 推荐使用此接口替代旧的 getAvailableModels。
+   * - kscc 看板：只从 kscc 内部分配（禁止跳外部）
+   * - 外部 API 看板：可轮询所有外部渠道模型
+   * - 角色库 channelId：可指定渠道，但需检查合规性
+   */
+  channelModelsGetter?: KanbanChannelModelsGetter
+
+  /**
+   * 根据模型 ID 反查所属渠道
+   *
+   * 用于检查显式指定 task.modelId 或角色库 modelPool 的合规性。
+   *
+   * @param modelId 模型 ID
+   * @returns 该模型所属渠道 ID，找不到返回 undefined
+   */
+  findModelChannel?: (modelId: string) => string | undefined
+
+  /**
+   * 渠道可用模型查询器（旧版，已废弃）
+   * @deprecated 请使用 channelModelsGetter
+   */
   getAvailableModels?: KanbanAvailableModelsGetter
+
   /** 单模型最大并发数（静态值，避免降智，默认 2） */
   maxConcurrentPerModel?: number
   /** 单模型最大并发数动态查询器（设置页热更新用，优先于 maxConcurrentPerModel） */
   getMaxConcurrentPerModel?: () => number
+
+  // ===== 看板完成回调 =====
+
   /** 看板全部任务完成回调（事件回流方案 B）
    *
    * 触发条件：某 worker 完成后，检测该 board 下所有任务均进入终态（done/failed/cancelled），
@@ -95,76 +125,199 @@ export function configureKanbanDispatcher(options: KanbanDispatcherOptions): voi
 }
 
 /**
- * 为任务分配模型 ID（避免同模型过度并发降智）
+ * 为任务分配模型 ID（支持跨外部渠道轮询 + kscc 合规检查）
+ *
+ * 核心改进（2026-07-04）：
+ * - kscc 看板：只从 kscc 内部分配模型（禁止跳外部 API）
+ * - 外部 API 看板：可轮询所有外部渠道模型（充分利用资源）
+ * - 角色库 channelId：可指定渠道，但需检查合规性（kscc 看板不能跳外部）
+ * - 显式指定 task.modelId：直接用，但 kscc 任务会检查是否合规
  *
  * 分配顺序：
- * 1. task.modelId 显式指定 → 直接用（用户/Agent 手动指定，最高优先级）
- * 2. task.roleId 存在 → 查角色库，按 role.modelPool 顺序找未满 role.maxConcurrentPerModel 的
- *    a. modelPool 全满且 fallbackToChannelDefault=true → 回退到渠道可用模型 round-robin
- *    b. modelPool 全满且 fallbackToChannelDefault=false → 返回 undefined（任务保持 ready）
- * 3. task.roleId 为空 → 从渠道可用模型 round-robin（现有逻辑）
- * 4. 全满 → 返回 undefined（任务保持 ready，等下一个 worker 释放）
+ * 1. task.modelId 显式指定 → 检查合规性后直接用（kscc 任务禁止外部模型）
+ * 2. task.roleId 存在 → 查角色库
+ *    a. role.channelId 指定 → 检查合规性（kscc 看板不能跳外部）
+ *    b. role.modelPool → 按顺序找未满的
+ *    c. fallbackToChannelDefault → 回退到看板渠道范围内轮询
+ * 3. 未指定 → 按看板渠道类型决定分配范围
+ *    a. kscc 看板 → 只从 kscc 内部分配
+ *    b. 外部 API 看板 → 轮询所有外部渠道模型
+ * 4. 全满 → 返回 undefined（任务保持 ready）
  *
  * maxConcurrentPerModel 优先级：role.maxConcurrentPerModel > 全局 getMaxConcurrentPerModel() > 默认 2
  *
+ * @param task 待分配的任务
+ * @param boardId 看板 ID（用于模型计数）
  * @returns 分配到的 modelId，或 undefined（无可用模型，任务保持 ready）
  */
 function assignModelForTask(task: KanbanTask, boardId: string): string | undefined {
   const opts = dispatcherOptions
   if (!opts) return task.modelId
-  // 动态读全局 maxConcurrentPerModel（支持设置页热更新）
+
+  const getter = opts.channelModelsGetter
   const globalMaxPerModel = opts.getMaxConcurrentPerModel?.() ?? opts.maxConcurrentPerModel ?? 2
 
-  // 1. 显式指定 → 直接用（不检查并发上限，用户显式指定优先级最高）
-  if (task.modelId) return task.modelId
+  // ========== 0. 无新 getter → 回退旧逻辑（兼容性） ==========
+  if (!getter) {
+    // 使用旧的 getAvailableModels（单渠道锁定）
+    const oldGetter = opts.getAvailableModels
+    if (!oldGetter) return task.modelId
 
-  // 2. task 绑定 roleId → 查角色库，按 modelPool 分配
+    // 显式指定 → 直接用
+    if (task.modelId) return task.modelId
+
+    // 角色库逻辑（简化版）
+    if (task.roleId) {
+      const role = getRoleById(task.roleId)
+      if (role && role.modelPool && role.modelPool.length > 0) {
+        for (const modelId of role.modelPool) {
+          const count = getOrCreateModelCounts(boardId).get(modelId) ?? 0
+          if (count < (role.maxConcurrentPerModel ?? globalMaxPerModel)) {
+            return modelId
+          }
+        }
+        if (!role.fallbackToChannelDefault) return undefined
+      }
+    }
+
+    // 单渠道轮询
+    const available = oldGetter(task.channelId)
+    return assignFromPool(available, undefined, boardId, globalMaxPerModel)
+  }
+
+  // ========== 1. 显式指定 task.modelId ==========
+  if (task.modelId) {
+    // 检查合规性：kscc 任务不能用外部模型
+    // 用 task.channelId（继承自 board 或创建时指定）判断看板渠道类型
+    if (getter.isKsccChannel(task.channelId)) {
+      const modelChannel = opts.findModelChannel?.(task.modelId)
+      if (modelChannel && !getter.isKsccChannel(modelChannel)) {
+        console.warn(`[看板] kscc 任务禁止用外部模型 ${task.modelId}，忽略显式指定`)
+        // 继续走下面的分配逻辑
+      } else {
+        return task.modelId // 合规，直接用
+      }
+    } else {
+      // 外部看板：直接用显式指定（允许外部→kscc）
+      return task.modelId
+    }
+  }
+
+  // ========== 2. 角色库指定 ==========
   if (task.roleId) {
     const role = getRoleById(task.roleId)
     if (role) {
-      const modelCounts = getOrCreateModelCounts(boardId)
-      const roleMaxPerModel = role.maxConcurrentPerModel ?? globalMaxPerModel
-
-      // 按 modelPool 顺序找第一个未满的
-      for (const modelId of role.modelPool) {
-        const count = modelCounts.get(modelId) ?? 0
-        if (count < roleMaxPerModel) {
-          return modelId
+      // 2a. 检查角色 channelId 合规性
+      if (role.channelId) {
+        const board = opts.db.getBoard(boardId)
+        // 用 task.channelId（继承自 board 或创建时指定）判断看板渠道类型
+        if (board && getter.isKsccChannel(task.channelId) && !getter.isKsccChannel(role.channelId)) {
+          console.warn(`[看板] kscc 看板禁止用外部角色 ${role.displayName}，回退到看板渠道`)
+        } else {
+          // 用角色指定的渠道（合规）
+          const roleModels = getter.getModels(role.channelId)
+          const assigned = assignFromPool(roleModels, role.modelPool, boardId, role.maxConcurrentPerModel ?? globalMaxPerModel)
+          if (assigned) return assigned
+          // 全满，继续 fallback
         }
       }
 
-      // modelPool 全满，检查是否回退到渠道默认
-      if (!role.fallbackToChannelDefault) {
-        return undefined // 不回退，任务保持 ready
+      // 2b. 无 role.channelId → 用角色 modelPool（从看板渠道范围内）
+      if (role.modelPool && role.modelPool.length > 0) {
+        const boardChannelModels = getBoardChannelModels(boardId, task.channelId, getter)
+        const availableModels = role.modelPool.filter(m => boardChannelModels.includes(m))
+        const assigned = assignFromPool(availableModels, role.modelPool, boardId, role.maxConcurrentPerModel ?? globalMaxPerModel)
+        if (assigned) return assigned
+
+        // 全满，检查是否 fallback
+        if (!role.fallbackToChannelDefault) return undefined
       }
-      // fallback 到渠道可用模型 round-robin（继续走下面的逻辑）
-    } else {
-      console.warn(`[看板] 角色 ${task.roleId} 不存在，回退到渠道模型轮询`)
     }
   }
 
-  // 3. 未指定 roleId 或角色不存在或 fallback → 从渠道可用模型轮询
-  const getter = opts.getAvailableModels
-  if (!getter) return undefined
-  const available = getter(task.channelId)
-  if (available.length === 0) return undefined
+  // ========== 3. 未指定 → 按看板渠道类型分配 ==========
+  const board = opts.db.getBoard(boardId)
+  if (!board) return undefined
+
+  if (getter.isKsccChannel(task.channelId)) {
+    // kscc 看板：只从 kscc 内部分配
+    const ksccModels = getter.getModels(task.channelId)
+    return assignFromPool(ksccModels, undefined, boardId, globalMaxPerModel)
+  } else {
+    // 外部 API 看板：轮询所有外部渠道
+    const externalChannels = getter.getExternalChannels()
+    const allExternalModels = externalChannels.flatMap(ch => getter.getModels(ch))
+    return assignFromPool(allExternalModels, undefined, boardId, globalMaxPerModel)
+  }
+}
+
+/**
+ * 从模型池分配模型（支持 modelPool 顺序优先 + round-robin 轮询）
+ *
+ * @param availableModels 可用模型列表（已过滤）
+ * @param modelPool 角色库优先顺序（可选，按此顺序优先分配）
+ * @param boardId 看板 ID（用于模型计数）
+ * @param maxPerModel 单模型最大并发
+ * @returns 分配到的 modelId，或 undefined（全满）
+ */
+function assignFromPool(
+  availableModels: string[],
+  modelPool: string[] | undefined,
+  boardId: string,
+  maxPerModel: number
+): string | undefined {
+  if (availableModels.length === 0) return undefined
 
   const modelCounts = getOrCreateModelCounts(boardId)
-  const cursor = modelRotationCursorByBoard.get(boardId) ?? 0
 
-  // round-robin 从游标位置开始找第一个未满的
-  for (let i = 0; i < available.length; i++) {
-    const idx = (cursor + i) % available.length
-    const modelId = available[idx]!
+  // 1. 若有 modelPool，按顺序找第一个未满的
+  if (modelPool && modelPool.length > 0) {
+    for (const modelId of modelPool) {
+      // 只考虑在 availableModels 内的（合规过滤）
+      if (!availableModels.includes(modelId)) continue
+      const count = modelCounts.get(modelId) ?? 0
+      if (count < maxPerModel) return modelId
+    }
+  }
+
+  // 2. 无 modelPool 或全满 → round-robin 轮询
+  const cursor = modelRotationCursorByBoard.get(boardId) ?? 0
+  for (let i = 0; i < availableModels.length; i++) {
+    const idx = (cursor + i) % availableModels.length
+    const modelId = availableModels[idx]!
     const count = modelCounts.get(modelId) ?? 0
-    if (count < globalMaxPerModel) {
+    if (count < maxPerModel) {
       // 记录游标为下一个位置（下次从这里继续轮询）
-      modelRotationCursorByBoard.set(boardId, (idx + 1) % available.length)
+      modelRotationCursorByBoard.set(boardId, (idx + 1) % availableModels.length)
       return modelId
     }
   }
-  // 全满
+
+  // 3. 全满
   return undefined
+}
+
+/**
+ * 获取看板渠道范围内可用模型
+ *
+ * - kscc 看板 → 只返回 kscc 渠道模型
+ * - 外部看板 → 返回所有外部渠道模型
+ *
+ * @param boardId 看板 ID（用于日志）
+ * @param taskChannelId 任务渠道 ID（继承自 board 或创建时指定）
+ * @param getter 渠道模型查询器
+ */
+function getBoardChannelModels(
+  boardId: string,
+  taskChannelId: string,
+  getter: KanbanChannelModelsGetter
+): string[] {
+  if (getter.isKsccChannel(taskChannelId)) {
+    return getter.getModels(taskChannelId)
+  } else {
+    const externalChannels = getter.getExternalChannels()
+    return externalChannels.flatMap(ch => getter.getModels(ch))
+  }
 }
 
 /** 获取或创建某 board 的模型在途计数 Map */

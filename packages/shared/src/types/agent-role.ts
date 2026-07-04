@@ -37,6 +37,16 @@ export interface AgentRoleProfile {
   maxConcurrentPerModel: number
   /** 模型池全满时是否回退到渠道默认模型（默认 true） */
   fallbackToChannelDefault: boolean
+  /**
+   * 角色默认渠道 ID（可选，2026-07-04 跨渠道分配用）
+   *
+   * - 未指定 → 继承看板渠道（kscc 看板用 kscc 模型，外部看板轮询外部渠道）
+   * - 已指定 → 检查合规性（kscc 看板禁止跳外部渠道，但外部看板可用 kscc）
+   *
+   * 例：coder 角色可指定 channelId='kscc-internal' 强制用内网免费模型，
+   *     reviewer 角色可指定 channelId='openai' 用外部高质量模型审核
+   */
+  channelId?: string
 }
 
 /**

@@ -387,4 +387,124 @@ describe('KanbanDispatcher', () => {
       await releaseAllUntilDone(db, board.id, pendingResolvers)
     })
   })
+
+  describe('跨渠道模型分配（2026-07-04 改进）', () => {
+    test('kscc 看板只从 kscc 模型分配（禁止跳外部）', async () => {
+      const board = db.createBoard({ rootGoal: 'kscc 测试', parentSessionId: 's1' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: '任务1',
+        channelId: 'kscc-internal', // kscc 渠道
+      })
+
+      const pendingResolvers = new Map<string, () => void>()
+      const mockRunner: KanbanWorkerRunner = async (task) => {
+        await new Promise<void>((resolve) => {
+          pendingResolvers.set(task.id, resolve)
+        })
+        return { summary: 'done' }
+      }
+
+      // 注入新版 getter：kscc 只有 glm-5.1，外部有 gpt-4o
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        channelModelsGetter: {
+          getModels: (ch) => ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o'],
+          isKsccChannel: (ch) => ch === 'kscc-internal',
+          getExternalChannels: () => ['openai'],
+        },
+        maxConcurrentPerModel: 2,
+      })
+
+      dispatchKanbanTick()
+      await waitFor(() => pendingResolvers.size === 1, 1000)
+
+      // 验证：任务应该用 glm-5.1（kscc 模型），不是 gpt-4o
+      const runningTask = db.getTask(task.id)
+      expect(runningTask?.modelId).toBe('glm-5.1')
+
+      await releaseAllUntilDone(db, board.id, pendingResolvers)
+    })
+
+    test('外部看板可跨渠道轮询', async () => {
+      const board = db.createBoard({ rootGoal: '外部测试', parentSessionId: 's1' })
+      // 创建 3 个任务，测试轮询
+      db.createTask({ boardId: board.id, title: '任务1', channelId: 'openai' })
+      db.createTask({ boardId: board.id, title: '任务2', channelId: 'openai' })
+      db.createTask({ boardId: board.id, title: '任务3', channelId: 'openai' })
+
+      const pendingResolvers = new Map<string, () => void>()
+      const mockRunner: KanbanWorkerRunner = async (task) => {
+        await new Promise<void>((resolve) => {
+          pendingResolvers.set(task.id, resolve)
+        })
+        return { summary: 'done' }
+      }
+
+      // 注入 getter：外部有 openai + deepseek 两个渠道
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        channelModelsGetter: {
+          getModels: (ch) => ch === 'openai' ? ['gpt-4o'] : ['deepseek-chat'],
+          isKsccChannel: () => false, // 外部渠道
+          getExternalChannels: () => ['openai', 'deepseek'],
+        },
+        maxConcurrentPerModel: 2,
+      })
+
+      dispatchKanbanTick()
+      await waitFor(() => pendingResolvers.size === 3, 1000)
+
+      // 验证：3 个任务应该用不同渠道模型（轮询）
+      const tasks = db.listTasksByBoard(board.id)
+      const modelIds = tasks.filter(t => t.status === 'running').map(t => t.modelId)
+
+      // 应该有 gpt-4o 和 deepseek-chat 两种模型（轮询分配）
+      expect(modelIds.some(m => m === 'gpt-4o')).toBe(true)
+      expect(modelIds.some(m => m === 'deepseek-chat')).toBe(true)
+
+      await releaseAllUntilDone(db, board.id, pendingResolvers)
+    })
+
+    test('kscc 任务显式指定外部模型被拦截', async () => {
+      const board = db.createBoard({ rootGoal: '拦截测试', parentSessionId: 's1' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: '任务1',
+        channelId: 'kscc-internal', // kscc 渠道
+        modelId: 'gpt-4o', // 显式指定外部模型（应被拦截）
+      })
+
+      const pendingResolvers = new Map<string, () => void>()
+      const mockRunner: KanbanWorkerRunner = async (task) => {
+        await new Promise<void>((resolve) => {
+          pendingResolvers.set(task.id, resolve)
+        })
+        return { summary: 'done' }
+      }
+
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        channelModelsGetter: {
+          getModels: (ch) => ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o'],
+          isKsccChannel: (ch) => ch === 'kscc-internal',
+          getExternalChannels: () => ['openai'],
+        },
+        findModelChannel: (modelId) => modelId === 'gpt-4o' ? 'openai' : 'kscc-internal',
+        maxConcurrentPerModel: 2,
+      })
+
+      dispatchKanbanTick()
+      await waitFor(() => pendingResolvers.size === 1, 1000)
+
+      // 验证：显式指定的 gpt-4o 被拦截，实际用 glm-5.1
+      const runningTask = db.getTask(task.id)
+      expect(runningTask?.modelId).toBe('glm-5.1')
+
+      await releaseAllUntilDone(db, board.id, pendingResolvers)
+    })
+  })
 })

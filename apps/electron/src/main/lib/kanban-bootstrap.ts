@@ -16,43 +16,86 @@ import { kanbanDbService } from './kanban-db'
 import { configureKanbanDispatcher, startKanbanDispatcher } from './kanban-dispatcher'
 import { broadcastKanbanChanged, broadcastBoardCompleted } from './kanban-ipc'
 import { createKanbanHeadlessRunner } from './kanban-worker-service'
-import { listChannels } from './channel-manager'
+import { listChannels, getChannelById } from './channel-manager'
 import { getSettings } from './settings-service'
+import type { KanbanChannelModelsGetter } from '@tagent/shared'
 
 /**
- * 渠道可用模型查询器（注入 dispatcher，用于模型轮询分配避免降智）
+ * 渠道模型查询器（新版，支持跨渠道轮询 + kscc 合规检查）
  *
- * 返回指定渠道的所有已启用模型 ID 列表。严格用渠道已有模型，不创造。
- * 优先 kscc 渠道（免费），其他渠道按需返回。
+ * 核心逻辑：
+ * - kscc 看板：只从 kscc 内部分配模型（禁止跳外部 API）
+ * - 外部 API 看板：可轮询所有外部渠道模型（充分利用资源）
+ * - 角色库 channelId：可指定渠道，但需检查合规性（kscc 看板不能跳外部）
+ */
+const channelModelsGetter: KanbanChannelModelsGetter = {
+  /**
+   * 获取指定渠道的所有已启用模型 ID
+   */
+  getModels: (channelId: string): string[] => {
+    const channel = getChannelById(channelId)
+    if (!channel) return []
+    const enabledModels = channel.models.filter((m: { enabled: boolean; id: string }) => m.enabled).map((m: { id: string }) => m.id)
+    if (enabledModels.length === 0) return []
+
+    // 优先免费渠道：kscc 的模型按能力优先级排序
+    const settings = getSettings()
+    const preferFree = settings.agentBehavior?.preferFreeChannel ?? true
+    if (preferFree && channel.provider === 'kscc-internal') {
+      const priority = ['glm-5.1', 'glm-5.2', 'kimi-k2.5', 'kimi-k2.6', 'mimo-v2.5', 'mimo-v2.5-pro']
+      return [...enabledModels].sort((a, b) => {
+        const ai = priority.indexOf(a)
+        const bi = priority.indexOf(b)
+        if (ai === -1 && bi === -1) return 0
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      })
+    }
+    return enabledModels
+  },
+
+  /**
+   * 判断渠道是否为 kscc 内网
+   */
+  isKsccChannel: (channelId: string): boolean => {
+    const channel = getChannelById(channelId)
+    return channel?.provider === 'kscc-internal'
+  },
+
+  /**
+   * 获取所有外部 API 渠道 ID 列表（用于外部看板轮询）
+   */
+  getExternalChannels: (): string[] => {
+    const channels = listChannels()
+    return channels
+      .filter(ch => ch.enabled && ch.provider !== 'kscc-internal')
+      .map(ch => ch.id)
+  }
+}
+
+/**
+ * 根据模型 ID 反查所属渠道
  *
- * 优先级：若设置页 preferFreeChannel=true（默认），kscc 渠道的模型排前面；
- * 否则按渠道 models 顺序返回。
+ * 用于检查显式指定 task.modelId 或角色库 modelPool 的合规性。
+ */
+function findModelChannelById(modelId: string): string | undefined {
+  const channels = listChannels()
+  for (const ch of channels) {
+    if (ch.models?.some(m => m.id === modelId && m.enabled)) {
+      return ch.id
+    }
+  }
+  return undefined
+}
+
+/**
+ * 渠道可用模型查询器（旧版，已废弃）
+ *
+ * @deprecated 保留兼容性，实际使用 channelModelsGetter
  */
 function getAvailableModelsForChannel(channelId: string): string[] {
-  const channels = listChannels()
-  const channel = channels.find((c) => c.id === channelId)
-  if (!channel) return []
-  const enabledModels = channel.models.filter((m) => m.enabled).map((m) => m.id)
-  if (enabledModels.length === 0) return []
-
-  // 优先免费渠道：kscc 的模型排前面（如果当前渠道不是 kscc 但也是免费的，保持原序）
-  // 这里只做渠道内排序，不跨渠道混合
-  const settings = getSettings()
-  const preferFree = settings.agentBehavior?.preferFreeChannel ?? true
-  if (preferFree && channel.provider === 'kscc-internal') {
-    // kscc 渠道内模型按能力优先级排（glm-5.1 通用、glm-5.2 强、kimi 系列备选）
-    const priority = ['glm-5.1', 'glm-5.2', 'kimi-k2.5', 'kimi-k2.6', 'mimo-v2.5', 'mimo-v2.5-pro']
-    return [...enabledModels].sort((a, b) => {
-      const ai = priority.indexOf(a)
-      const bi = priority.indexOf(b)
-      // 不在 priority 列表的排最后，保持原序
-      if (ai === -1 && bi === -1) return 0
-      if (ai === -1) return 1
-      if (bi === -1) return -1
-      return ai - bi
-    })
-  }
-  return enabledModels
+  return channelModelsGetter.getModels(channelId)
 }
 
 /**
@@ -76,15 +119,21 @@ export function initKanbanSubsystem(): void {
     console.log(`[看板] 启动恢复：${recovered} 个残留 running 任务已重置为 ready，将重新派工`)
   }
 
-  // 2. 配置 dispatcher（注入真实 headless runner + 状态变更广播 + 模型轮询）
+  // 2. 配置 dispatcher（注入真实 headless runner + 状态变更广播 + 跨渠道模型分配）
   // B5：并发上限改为 per-board（board.maxConcurrent），dispatcher 不再持有全局 maxConcurrent
-  // 模型分配：未指定 modelId 的任务按渠道可用模型 round-robin，单模型并发上限避免降智
-  // maxConcurrentPerModel 通过 getMaxConcurrentPerModel 动态读设置（支持热更新，无需重启 dispatcher）
+  // 模型分配（2026-07-04 改进）：
+  // - kscc 看板：只从 kscc 内部分配（禁止跳外部）
+  // - 外部看板：轮询所有外部渠道模型
+  // - 角色库 channelId：可指定渠道，但需检查合规性
   const agentBehavior = getSettings().agentBehavior
   const initialMaxPerModel = agentBehavior?.maxConcurrentPerModel ?? 2
   configureKanbanDispatcher({
     runner: createKanbanHeadlessRunner(),
     db: kanbanDbService,
+    // 新版：支持跨渠道轮询 + kscc 合规检查
+    channelModelsGetter,
+    findModelChannel: findModelChannelById,
+    // 旧版（兼容性保留）
     getAvailableModels: getAvailableModelsForChannel,
     maxConcurrentPerModel: initialMaxPerModel,
     getMaxConcurrentPerModel: () => getSettings().agentBehavior?.maxConcurrentPerModel ?? 2,

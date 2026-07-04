@@ -245,3 +245,41 @@ export const KANBAN_DEFAULT_MAX_CONCURRENT = 3
 
 /** 调度器 tick 周期：每 30s 扫描一次 ready 任务 */
 export const KANBAN_TICK_INTERVAL_MS = 30_000
+
+// ===== 渠道模型查询器（跨渠道分配用） =====
+
+/**
+ * 渠道模型查询器（用于看板跨渠道模型分配）
+ *
+ * 支持场景：
+ * - kscc 看板：只从 kscc 内部分配模型（禁止跳外部）
+ * - 外部 API 看板：可轮询所有外部渠道模型（充分利用资源）
+ * - 角色库 channelId：可指定渠道，但需检查合规性（kscc 看板不能跳外部）
+ */
+export interface KanbanChannelModelsGetter {
+  /**
+   * 获取指定渠道的所有可用模型 ID
+   *
+   * @param channelId 渠道 ID
+   * @returns 该渠道下已启用模型的 ID 列表
+   */
+  getModels: (channelId: string) => string[]
+
+  /**
+   * 判断渠道是否为 kscc 内网
+   *
+   * @param channelId 渠道 ID
+   * @returns true = kscc 内网渠道（禁止跳外部 API）
+   */
+  isKsccChannel: (channelId: string) => boolean
+
+  /**
+   * 获取所有外部 API 渠道 ID 列表
+   *
+   * 用于外部看板轮询分配时，获取所有可用外部渠道（openai/deepseek/claude/gemini 等）。
+   * kscc 渠道不在此列表中。
+   *
+   * @returns 外部 API 渠道 ID 列表（已启用且非 kscc）
+   */
+  getExternalChannels: () => string[]
+}
