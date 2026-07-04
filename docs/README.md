@@ -58,7 +58,7 @@
 | [`plans/2026-05-18-proactive-scheduler-monitor-design.md`](plans/2026-05-18-proactive-scheduler-monitor-design.md) | Proma Proactive Center 设计（v0.13.3 Automation 已吸收核心思想） |
 | [`plans/2026-06-09-agent-ui-optimization-plan.md`](plans/2026-06-09-agent-ui-optimization-plan.md) | Agent UI 优化规划                                   |
 | [`plans/2026-06-09-verification-checklist.md`](plans/2026-06-09-verification-checklist.md)         | 2026-06-09 验证清单（决策 #15 实施）                |
-| [`plans/2026-06-16-wps-bridge-landing.md`](plans/2026-06-16-wps-bridge-landing.md)                 | WPS 协作 Bridge 落地说明                            |
+| [`plans/2026-06-16-wps-bridge-landing.md`](plans/2026-06-16-wps-bridge-landing.md)                 | WPS 协作 Bridge 落地说明 + 完整配置流程 + 排查       |
 
 ---
 

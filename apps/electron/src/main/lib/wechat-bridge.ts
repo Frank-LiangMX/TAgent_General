@@ -556,6 +556,33 @@ export class WeChatBridge {
     console.log('[微信 Bridge] 已登出')
   }
 
+  /**
+   * 主动向指定聊天发送文本（看板通知等主动推送场景）
+   *
+   * 与 BridgeCommandHandler.adapter.sendText 区别：那个是 Agent 回复路径专用，
+   * 这个是主动推送入口，不依赖会话上下文。
+   *
+   * @param chatId 目标聊天 ID（from_user_id，看板 originChatId）
+   * @param text 文本内容（超过 4000 字符自动分段）
+   * @param contextToken 上下文 token，主动推送传空字符串
+   */
+  async sendTextMessage(chatId: string, text: string, contextToken = ''): Promise<void> {
+    if (this.state.status !== 'connected' || !this.client) {
+      throw new Error('微信未连接，无法发送消息')
+    }
+    const MAX_LEN = 4000
+    const chunks =
+      text.length <= MAX_LEN
+        ? [text]
+        : (text.match(new RegExp(`.{1,${MAX_LEN}}`, 'gs')) ?? [text])
+    for (const chunk of chunks) {
+      const resp = await this.client.sendText(chatId, chunk, contextToken)
+      if (resp.ret !== 0) {
+        throw new Error(`微信发送失败: ret=${resp.ret} errmsg=${resp.errmsg ?? ''}`)
+      }
+    }
+  }
+
   // ===== 内部方法 =====
 
   private async fetchQRCode(): Promise<QRCodeResponse> {

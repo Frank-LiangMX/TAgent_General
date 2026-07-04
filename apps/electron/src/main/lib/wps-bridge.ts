@@ -104,6 +104,23 @@ class WpsBridge {
     console.log('[WPS Bridge] 已停止')
   }
 
+  /**
+   * 主动向指定 WPS 聊天发送文本（看板通知等主动推送场景）
+   *
+   * 包装 private sendTextMessage，加上连接态检查，作为公开 API。
+   * 与 BridgeCommandHandler.adapter.sendText 区别：那个是 Agent 回复路径专用，
+   * 这个是主动推送入口。
+   *
+   * @param chatId WPS chat.id（看板 originChatId）
+   * @param text 文本内容
+   */
+  async sendTextToChat(chatId: string, text: string): Promise<void> {
+    if (this.state.status !== 'connected') {
+      throw new Error('WPS Bridge 未连接，无法发送消息')
+    }
+    await this.sendTextMessage(chatId, text)
+  }
+
   async testConnection(appId: string, secretKey: string, apiUrl: string): Promise<WpsTestResult> {
     try {
       await wpsOAuthTokenManager.getAccessToken(appId, secretKey, apiUrl, true)

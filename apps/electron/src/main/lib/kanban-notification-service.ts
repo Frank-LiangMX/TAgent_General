@@ -18,6 +18,8 @@ import type { KanbanBoard, KanbanTask } from '@tagent/shared'
 import { getAgentSessionSDKMessages } from './agent-session-manager'
 import { extractAssistantText } from './automation-notification-format'
 import { feishuBridgeManager } from './feishu-bridge-manager'
+import { wechatBridge } from './wechat-bridge'
+import { wpsBridge } from './wps-bridge'
 
 // ===== 通知事件类型 =====
 
@@ -235,26 +237,103 @@ function buildFeishuContentLines(payload: KanbanNotificationPayload): string[] {
   }
 }
 
-// ===== 微信/WPS 通知 =====
+// ===== 微信/WPS 通知（纯文本，共用文本构建逻辑） =====
+
+/**
+ * 构建微信/WPS 通知文本（纯文本 + emoji 模拟卡片效果）
+ *
+ * 微信 iLink Bot API 和 WPS /v7/messages/create 当前只支持纯文本，
+ * 用 emoji + 分段强化视觉层次。
+ */
+function buildImTextNotification(payload: KanbanNotificationPayload): string {
+  const { event, board, task, summary, blockedReason, completionStats } = payload
+  const boardTitle = board.title ?? board.rootGoal
+
+  const headerEmoji = {
+    board_created: '📋',
+    task_started: '▶️',
+    task_done: '✅',
+    task_blocked: '⚠️',
+    board_completed: '🎉',
+  }[event]
+
+  const headerTitle = {
+    board_created: '看板已创建',
+    task_started: '任务开始执行',
+    task_done: '任务完成',
+    task_blocked: '任务阻塞',
+    board_completed: '看板全部完成',
+  }[event]
+
+  const lines: string[] = [`${headerEmoji} ${headerTitle}`, `看板：${boardTitle}`, '']
+
+  switch (event) {
+    case 'board_created':
+      lines.push(`任务数：${completionStats?.total ?? 0}`, '', '已开始执行，可在 TAgent 中查看进度')
+      break
+    case 'task_started':
+      if (!task) break
+      lines.push(`任务：${task.title}`, '状态：执行中', task.modelId ? `模型：${task.modelId}` : '')
+      break
+    case 'task_done':
+      if (!task) break
+      const taskSummary = summary ?? extractTaskSummary(task)
+      lines.push(
+        `任务：${task.title}`,
+        '状态：✅ 完成',
+        '',
+        truncate(taskSummary.trim() || '无摘要', 2000)
+      )
+      break
+    case 'task_blocked':
+      if (!task) break
+      lines.push(
+        `任务：${task.title}`,
+        '状态：⚠️ 阻塞',
+        '',
+        `阻塞原因：${blockedReason ?? task.blockedReason ?? '未知'}`,
+        '',
+        '请在 TAgent 中处理或在 IM 回复「解除阻塞」'
+      )
+      break
+    case 'board_completed':
+      const stats = completionStats ?? { total: 0, done: 0, failed: 0 }
+      const duration = board.updatedAt - board.createdAt
+      lines.push(
+        `完成：${stats.done}/${stats.total}`,
+        `失败：${stats.failed}`,
+        `耗时：${formatBoardDuration(duration)}`,
+        '',
+        '全部任务已完成'
+      )
+      break
+  }
+
+  return lines.join('\n').trim()
+}
 
 async function sendWechatNotification(
   chatId: string,
   payload: KanbanNotificationPayload
 ): Promise<void> {
-  // 微信通知需要通过 WeChatBridge.sendTextMessage 发送
-  // 当前 WeChatBridge 类未暴露公开发送方法，需要后续扩展
-  // Phase C MVP：仅打印日志，飞书已实现，微信/WPS 待后续完善
-  console.warn('[看板通知] 微信通知待后续完善，chatId:', chatId, 'event:', payload.event)
+  if (wechatBridge.getStatus().status !== 'connected') {
+    console.warn('[看板通知] 微信未连接，跳过推送:', payload.event)
+    return
+  }
+  const text = buildImTextNotification(payload)
+  await wechatBridge.sendTextMessage(chatId, text)
 }
 
 async function sendWpsNotification(
   chatId: string,
   payload: KanbanNotificationPayload
 ): Promise<void> {
-  // WPS 通知需要通过 WPS API 发送
-  // 当前需要 wpsOAuthTokenManager + generateKso1AuthHeader
-  // Phase C MVP：仅打印日志，飞书已实现，WPS 待后续完善
-  console.warn('[看板通知] WPS 通知待后续完善，chatId:', chatId, 'event:', payload.event)
+  if (wpsBridge.getStatus().status !== 'connected') {
+    console.warn('[看板通知] WPS 未连接，跳过推送:', payload.event)
+    return
+  }
+  const text = buildImTextNotification(payload)
+  await wpsBridge.sendTextToChat(chatId, text)
 }
 
 // ===== 主通知函数 =====
