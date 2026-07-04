@@ -230,9 +230,13 @@ export function FilePathChip({
             'inline-flex items-center gap-1 rounded px-1.5 py-[2px] text-[12px] font-medium leading-[1.6]',
             'cursor-pointer transition-colors duration-150',
             'align-baseline not-prose',
+            // 所有状态都预留 1px border 空间，避免 idle→broken 切换时
+            // border 从无到有挤压 content area 导致 chip 自身抖动
+            // （box-sizing:border-box 下外尺寸不变，但内部文字/图标会位移 1-2px）
+            'border',
             fileStatus === 'broken'
-              ? 'opacity-50 border border-dashed border-muted-foreground/30 text-muted-foreground hover:opacity-70 hover:bg-muted/20'
-              : 'bg-primary/10 text-primary hover:bg-primary/20',
+              ? 'border-dashed border-muted-foreground/30 text-muted-foreground opacity-50 hover:opacity-70 hover:bg-muted/20'
+              : 'border-transparent bg-primary/10 text-primary hover:bg-primary/20',
             className
           )}
         >
