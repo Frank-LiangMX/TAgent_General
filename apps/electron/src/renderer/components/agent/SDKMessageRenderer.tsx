@@ -154,7 +154,7 @@ function PermissionDeniedNotice({ message }: { message: SDKSystemMessage }): Rea
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-foreground">自动审批已拒绝操作</span>
             {toolName && (
-              <span className="rounded bg-background/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+              <span className="rounded-md bg-background/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                 {toolName}
               </span>
             )}

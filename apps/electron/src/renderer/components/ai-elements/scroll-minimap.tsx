@@ -45,7 +45,7 @@ const PREVIEW_MD_COMPONENTS = {
     <pre className="text-[11px] opacity-70 truncate">{children}</pre>
   ),
   code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>
+    <code className="text-[11px] bg-muted/50 px-0.5 rounded-md">{children}</code>
   ),
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,

@@ -307,7 +307,7 @@ function MentionChip({ type, value }: { type: MentionType; value: string }): Rea
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 rounded px-1 py-[1px] text-[13px] font-medium whitespace-nowrap align-baseline',
+            'inline-flex items-center gap-0.5 rounded-md px-1 py-[1px] text-[13px] font-medium whitespace-nowrap align-baseline',
             style.className
           )}
         >
@@ -581,7 +581,7 @@ const MarkdownInlineCode = React.memo(function MarkdownInlineCode({
 
   return (
     <code
-      className="rounded bg-foreground/10 px-[0.35em] py-[0.15em] text-[0.875em] font-mono font-medium"
+      className="rounded-md bg-foreground/10 px-[0.35em] py-[0.15em] text-[0.875em] font-mono font-medium"
       {...codeProps}
     >
       {codeChildren}
