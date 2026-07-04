@@ -31,6 +31,7 @@ import {
 } from '@tagent/shared'
 import type { KanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
+import { notifyTaskDone, notifyBoardCompleted } from './kanban-notification-service'
 
 /** 工人执行器：领取 running 任务后调用，返回摘要或错误 */
 export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string }>
@@ -378,6 +379,12 @@ function checkBoardCompletion(boardId: string): void {
   const board = db.getBoard(boardId)
   const requireSummary = board?.requireSummary === true
   notifiedCompletedBoards.add(boardId)
+
+  // 看板完成通知（Phase C）
+  if (board) {
+    void notifyBoardCompleted(board, { total: allTasks.length, done, failed })
+  }
+
   try {
     opts.onBoardCompleted(boardId, board?.parentSessionId, requireSummary, {
       total: allTasks.length,
@@ -480,6 +487,16 @@ async function runWorker(
       db.updateTaskStatus(task.id, { status: 'done', resultSummary: result.summary })
       onTaskStatusChanged?.(task.id, 'done')
       console.log(`[看板] 任务完成: ${task.id} (${task.title})`)
+
+      // 任务完成通知（Phase C）
+      const board = db.getBoard(boardId)
+      if (board) {
+        // 重新读取任务以获取最新状态（含 assigneeSessionId）
+        const updatedTask = db.getTask(task.id)
+        if (updatedTask) {
+          void notifyTaskDone(board, updatedTask)
+        }
+      }
     }
   } catch (err) {
     const error = err instanceof Error ? err.message : '未知错误'

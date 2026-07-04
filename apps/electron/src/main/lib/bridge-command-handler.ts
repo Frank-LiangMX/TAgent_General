@@ -7,7 +7,7 @@
  * 飞书 Bridge 使用独立的卡片消息格式，暂不接入此模块。
  */
 
-import { AGENT_IPC_CHANNELS } from '@tagent/shared'
+import { AGENT_IPC_CHANNELS, KANBAN_IPC_CHANNELS } from '@tagent/shared'
 import { BrowserWindow } from 'electron'
 
 import type { AgentStreamPayload } from '@tagent/shared'
@@ -32,6 +32,8 @@ import {
 } from './bridge-model-utils'
 import { resolveWorkspaceFilesDir } from './config-paths'
 import { getSettings } from './settings-service'
+import { kanbanDbService } from './kanban-db'
+import { pauseKanbanBoard, resumeKanbanBoard } from './kanban-ipc'
 
 // ===== 接口定义 =====
 
@@ -249,6 +251,11 @@ export class BridgeCommandHandler {
         await this.handleModelCommand(chatId, arg, contextData)
         break
 
+      case '/kanban':
+      case '/kb':
+        await this.handleKanbanCommand(chatId, arg, contextData)
+        break
+
       default:
         await this.send(chatId, `未知命令: ${command}。输入 /help 查看帮助。`, contextData)
     }
@@ -268,6 +275,7 @@ export class BridgeCommandHandler {
       '/workspace (/ws) [名称] — 查看或切换工作区',
       '/model (/m) [渠道 [模型]] — 查看或切换渠道/模型',
       '/now — 查看当前状态',
+      '/kanban (/kb) <pause|resume|list> — 看板控制',
     ]
     await this.send(chatId, lines.join('\n'), contextData)
   }
@@ -808,5 +816,176 @@ export class BridgeCommandHandler {
     if (win && !win.isDestroyed()) {
       win.webContents.send(AGENT_IPC_CHANNELS.TITLE_UPDATED, { sessionId, title })
     }
+  }
+
+  // ===== 看板控制命令（Phase C） =====
+
+  private async handleKanbanCommand(
+    chatId: string,
+    arg: string,
+    contextData?: unknown
+  ): Promise<void> {
+    const [subCommand, ...subArgs] = arg.split(/\s+/)
+    const subArg = subArgs.join(' ').trim()
+
+    switch (subCommand?.toLowerCase()) {
+      case 'pause':
+      case 'p':
+        await this.handleKanbanPause(chatId, subArg, contextData)
+        break
+
+      case 'resume':
+      case 'r':
+        await this.handleKanbanResume(chatId, subArg, contextData)
+        break
+
+      case 'list':
+      case 'ls':
+        await this.handleKanbanList(chatId, contextData)
+        break
+
+      case 'status':
+      case 'st':
+        await this.handleKanbanStatus(chatId, subArg, contextData)
+        break
+
+      default:
+        await this.send(
+          chatId,
+          '看板命令用法:\n/kanban pause <看板ID> — 暂停看板\n/kanban resume <看板ID> — 继续看板\n/kanban list — 列出进行中的看板\n/kanban status <看板ID> — 查看看板状态',
+          contextData
+        )
+    }
+  }
+
+  private async handleKanbanPause(
+    chatId: string,
+    boardIdArg: string,
+    contextData?: unknown
+  ): Promise<void> {
+    if (!boardIdArg) {
+      const boards = kanbanDbService.listBoards({ status: 'active' })
+      if (boards.length === 0) {
+        await this.send(chatId, '当前没有进行中的看板。', contextData)
+        return
+      }
+      const lines = boards.map((b, i) => `${i + 1}. ${b.title ?? b.rootGoal} (${b.id.slice(0, 8)})`)
+      await this.send(
+        chatId,
+        `请指定看板ID:\n${lines.join('\n')}\n\n用法: /kanban pause <看板ID>`,
+        contextData
+      )
+      return
+    }
+
+    try {
+      pauseKanbanBoard(boardIdArg)
+      await this.send(chatId, `✅ 看板已暂停: ${boardIdArg.slice(0, 8)}`, contextData)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '未知错误'
+      await this.send(chatId, `❌ 暂停失败: ${msg}`, contextData)
+    }
+  }
+
+  private async handleKanbanResume(
+    chatId: string,
+    boardIdArg: string,
+    contextData?: unknown
+  ): Promise<void> {
+    if (!boardIdArg) {
+      const boards = kanbanDbService.listBoards({ status: 'active' }).filter((b) => b.paused)
+      if (boards.length === 0) {
+        await this.send(chatId, '当前没有已暂停的看板。', contextData)
+        return
+      }
+      const lines = boards.map((b, i) => `${i + 1}. ${b.title ?? b.rootGoal} (${b.id.slice(0, 8)})`)
+      await this.send(
+        chatId,
+        `请指定看板ID:\n${lines.join('\n')}\n\n用法: /kanban resume <看板ID>`,
+        contextData
+      )
+      return
+    }
+
+    try {
+      resumeKanbanBoard(boardIdArg)
+      await this.send(chatId, `✅ 看板已恢复: ${boardIdArg.slice(0, 8)}`, contextData)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '未知错误'
+      await this.send(chatId, `❌ 恢复失败: ${msg}`, contextData)
+    }
+  }
+
+  private async handleKanbanList(chatId: string, contextData?: unknown): Promise<void> {
+    const boards = kanbanDbService.listBoards({ status: 'active' })
+    if (boards.length === 0) {
+      await this.send(chatId, '当前没有进行中的看板。', contextData)
+      return
+    }
+
+    const lines = [
+      `📋 进行中的看板 (${boards.length}):`,
+      '',
+      ...boards.map((b, i) => {
+        const tasks = kanbanDbService.listTasksByBoard(b.id)
+        const done = tasks.filter((t) => t.status === 'done').length
+        const running = tasks.filter((t) => t.status === 'running').length
+        const paused = b.paused ? ' [暂停]' : ''
+        return `${i + 1}. ${b.title ?? b.rootGoal} (${done}/${tasks.length} 完成, ${running} 执行中${paused})`
+      }),
+    ]
+    await this.send(chatId, lines.join('\n'), contextData)
+  }
+
+  private async handleKanbanStatus(
+    chatId: string,
+    boardIdArg: string,
+    contextData?: unknown
+  ): Promise<void> {
+    if (!boardIdArg) {
+      await this.send(chatId, '用法: /kanban status <看板ID>', contextData)
+      return
+    }
+
+    const board = kanbanDbService.getBoard(boardIdArg)
+    if (!board) {
+      await this.send(chatId, `❌ 看板不存在: ${boardIdArg}`, contextData)
+      return
+    }
+
+    const tasks = kanbanDbService.listTasksByBoard(boardIdArg)
+    const statusCounts: Record<string, number> = {
+      pending: 0,
+      ready: 0,
+      running: 0,
+      blocked: 0,
+      review: 0,
+      done: 0,
+      failed: 0,
+      cancelled: 0,
+    }
+    for (const t of tasks) {
+      const count = statusCounts[t.status]
+      if (count !== undefined) {
+        statusCounts[t.status] = count + 1
+      }
+    }
+
+    const duration = board.updatedAt - board.createdAt
+    const lines = [
+      `📋 看板: ${board.title ?? board.rootGoal}`,
+      `状态: ${board.paused ? '暂停' : '进行中'}`,
+      `创建: ${new Date(board.createdAt).toLocaleString()}`,
+      `耗时: ${Math.round(duration / 60000)} 分钟`,
+      '',
+      `任务统计 (${tasks.length}):`,
+      `- 完成: ${statusCounts.done}`,
+      `- 执行中: ${statusCounts.running}`,
+      `- 待派工: ${statusCounts.ready}`,
+      `- 待办: ${statusCounts.pending}`,
+      `- 阻塞: ${statusCounts.blocked}`,
+      `- 失败: ${statusCounts.failed}`,
+    ]
+    await this.send(chatId, lines.join('\n'), contextData)
   }
 }
