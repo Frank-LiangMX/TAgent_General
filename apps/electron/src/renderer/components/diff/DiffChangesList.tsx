@@ -231,10 +231,11 @@ export const DiffChangesList = React.memo(function DiffChangesList({
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* 搜索框 — 有改动文件时才显示 */}
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-content-area px-2 pt-1.5 pb-1">
+      <div className="flex-shrink-0 sticky top-0 z-10 px-2 pt-1.5 pb-1">
         <SearchInput
           variant="muted"
           size="sm"
+          containerClassName="bg-transparent border-border/40"
           aria-label="搜索改动文件"
           placeholder="搜索改动文件..."
           value={searchQuery}
@@ -261,40 +262,53 @@ export const DiffChangesList = React.memo(function DiffChangesList({
             const isCollapsed = collapsedDirs.has(group.gitRoot)
             return (
               <div key={group.gitRoot}>
-                {/* 文件夹 bar */}
+                {/* 文件夹 bar：两行 — 上工作区名，下来源 badge + 统计 */}
                 <button
                   type="button"
                   onClick={() => toggleDir(group.gitRoot)}
-                  className="flex items-center gap-1 w-full px-2 py-2 text-[13px] font-medium text-foreground/60 hover:bg-foreground/[0.04] transition-colors"
+                  className="flex w-full gap-1 px-2 py-2 text-left hover:bg-foreground/[0.04] transition-colors"
                 >
                   <ChevronRight
-                    className={cn('size-3 transition-transform', !isCollapsed && 'rotate-90')}
+                    className={cn(
+                      'size-3 shrink-0 mt-0.5 text-foreground/60 transition-transform',
+                      !isCollapsed && 'rotate-90'
+                    )}
                   />
-                  <span className="truncate">{group.dirName}</span>
-                  {/* 文件夹层级的来源 badges */}
-                  {group.sources.map((src) => {
-                    const cfg = SOURCE_CONFIG[src] ?? SOURCE_CONFIG.none!
-                    return (
-                      <span
-                        key={src}
-                        className={cn(
-                          'rounded px-1 py-0.5 text-[12px] leading-none shrink-0',
-                          cfg.color
-                        )}
-                      >
-                        {cfg.label}
+                  <div className="min-w-0 flex-1 flex flex-col gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="block truncate text-[13px] font-medium text-foreground/75">
+                          {group.dirName}
+                        </span>
+                      </TooltipTrigger>
+                      {group.gitRoot && group.gitRoot !== group.dirName && (
+                        <TooltipContent side="bottom" className="max-w-[320px] break-all text-xs">
+                          {group.gitRoot}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      {group.sources.map((src) => {
+                        const cfg = SOURCE_CONFIG[src] ?? SOURCE_CONFIG.none!
+                        return (
+                          <span
+                            key={src}
+                            className={cn(
+                              'rounded px-1 py-0.5 text-[11px] leading-none shrink-0',
+                              cfg.color
+                            )}
+                          >
+                            {cfg.label}
+                          </span>
+                        )
+                      })}
+                      <span className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] text-foreground/30">
+                        <span>{group.files.length} changed files</span>
+                        {group.totalAdditions > 0 && <span>+{group.totalAdditions}</span>}
+                        {group.totalDeletions > 0 && <span>-{group.totalDeletions}</span>}
                       </span>
-                    )
-                  })}
-                  <span className="ml-auto shrink-0 flex items-center gap-1.5">
-                    <span className="text-foreground/30">{group.files.length} changed files</span>
-                    {group.totalAdditions > 0 && (
-                      <span className="text-foreground/30">+{group.totalAdditions}</span>
-                    )}
-                    {group.totalDeletions > 0 && (
-                      <span className="text-foreground/30">-{group.totalDeletions}</span>
-                    )}
-                  </span>
+                    </div>
+                  </div>
                 </button>
 
                 {/* 文件列表 */}

@@ -8,6 +8,9 @@ export const SHELL_EDGE_PADDING = 8
 /** 导航 Rail 宽度 */
 export const NAV_RAIL_WIDTH = 60
 
+/** Agent 右侧面板 Rail 宽度（展开/折叠一致） */
+export const RIGHT_PANEL_RAIL_WIDTH = 38
+
 /** 导航浮岛外轮廓圆角（与 content 底板左缘对齐） */
 export const NAV_ISLAND_OUTER_RADIUS = 20
 

@@ -32,6 +32,7 @@ import {
   NAV_ISLAND_OUTER_RADIUS,
   NAV_RAIL_WIDTH,
   NAV_SIDEBAR_WIDTH,
+  RIGHT_PANEL_RAIL_WIDTH,
   SHELL_EDGE_PADDING,
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
@@ -55,7 +56,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
-  const showRightPanel = topLevelMode === 'general' && appMode === 'agent' && !!currentSessionId
+  const showRightPanel =
+    activeRailItem === 'sessions' && appMode === 'agent' && !!currentSessionId
 
   const showLeftSidebar =
     topLevelMode === 'general'
@@ -77,13 +79,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
-  const rightColumnOuterWidth = clampedRightPanelWidth + SHELL_EDGE_PADDING
+  const rightIslandWidth = isPanelOpen
+    ? clampedRightPanelWidth + RIGHT_PANEL_RAIL_WIDTH
+    : RIGHT_PANEL_RAIL_WIDTH
 
   /**
-   * 底板边界是主窗口的视觉边界，不跟随右栏卸载跳变。
-   * 右栏关闭时只收回浮岛内容，底板仍稳定延伸到全局圆角边界，避免右边缘闪烁。
+   * 底板向右延伸量，镜像左侧 navIslandWidth + SHELL_EDGE_PADDING。
+   * rail 始终叠在底板上；面板展开/收起只改变 inset 中的面板段，避免 rail 与主区出现背景隔断。
    */
-  const contentBaseInsetRight = showRightPanel && isPanelOpen ? clampedRightPanelWidth : 0
+  const contentBaseInsetRight = showRightPanel ? rightIslandWidth + SHELL_EDGE_PADDING : 0
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -152,23 +156,24 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
-        <div className="app-content-boundary-rim" aria-hidden />
+        {/* 右侧 rail 存在时由浮岛承担窗口右缘，隐藏全局 rim 避免与底板右缘叠出竖线 */}
+        {!showRightPanel && <div className="app-content-boundary-rim" aria-hidden />}
 
         <div className="relative z-[60] min-w-0 flex-1 p-2">
           <div
             className={cn(
               'content-main-shell relative h-full min-h-0',
-              contentBaseInsetRight > 0 && 'content-main-shell--right-inset'
+              showRightPanel && 'content-main-shell--right-rail',
+              showRightPanel && isPanelOpen && 'content-main-shell--right-inset'
             )}
             style={{
               ['--content-base-inset-left' as string]: `${contentBaseInsetLeft}px`,
               ['--content-base-inset-right' as string]: `${contentBaseInsetRight}px`,
               ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
-              ['--content-chrome-bleed-right' as string]:
-                showRightPanel && isPanelOpen ? `${SHELL_EDGE_PADDING}px` : '0px',
-              transition:
-                '--content-base-inset-left 300ms cubic-bezier(0.16, 1, 0.3, 1), --content-base-fade-width 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+              ['--content-chrome-bleed-right' as string]: showRightPanel
+                ? `${SHELL_EDGE_PADDING}px`
+                : '0px',
             }}
           >
             <div className="content-base-plate content-base-plate--body" aria-hidden />
@@ -204,35 +209,31 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               />
             )}
 
-            {/* 右侧浮岛：会话面板（铺满到圆角边缘）+ rail 浮在面板右侧上方
-                width 跟随 isPanelOpen 过渡：展开 = 面板宽；折叠 = 仅 rail 细条 */}
+            {/* 右侧浮岛：会话面板 + rail 并列（镜像左侧 NavIsland 的 rail + sidebar）
+                width 跟随 isPanelOpen 过渡：展开 = 面板宽 + rail；折叠 = 仅 rail */}
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
                 'relative ml-auto flex h-full min-h-0 flex-row overflow-hidden',
                 'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                isPanelOpen && 'nav-island-glass--expanded',
                 isMac && 'right-nav-island-glass--mac'
               )}
               style={{
-                width: isPanelOpen ? rightColumnOuterWidth : NAV_RAIL_WIDTH + SHELL_EDGE_PADDING,
+                width: rightIslandWidth,
                 ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
-                ['--right-panel-rail-width' as string]: `${NAV_RAIL_WIDTH}px`,
+                ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}
             >
-              {/* 会话面板内容（仅展开时渲染，铺满浮岛；padding-right 给 rail 让位） */}
+              {/* 会话面板内容（flex-1 占满 rail 左侧空间，仅展开时渲染） */}
               {isPanelOpen && (
-                <div
-                  className="nav-island-body relative flex min-h-0 flex-1 flex-col"
-                  style={{ paddingRight: NAV_RAIL_WIDTH }}
-                >
+                <div className="nav-island-sidebar nav-island-body relative z-[1] h-full flex min-h-0 flex-1 flex-col overflow-hidden">
                   <RightSidePanel width={clampedRightPanelWidth} />
                 </div>
               )}
 
-              {/* 按钮列：absolute 浮在会话面板右侧上方（z-10），永远可见 */}
-              <div className="pointer-events-auto absolute bottom-0 right-0 top-0 z-10 flex items-stretch">
-                <RightPanelRail panelOpen={isPanelOpen} />
-              </div>
+              {/* rail：和会话面板并列在 flex 流里（镜像左侧 FunctionalRail） */}
+              <RightPanelRail panelOpen={isPanelOpen} />
             </div>
           </div>
         )}

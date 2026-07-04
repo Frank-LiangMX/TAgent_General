@@ -1,12 +1,16 @@
 /**
- * 列表滑动选中态 — 侧栏会话列表 / 设置页左侧 Tab 共用
+ * 列表滑动选中态 — 设置页左侧 Tab / 插件侧栏导航共用
  */
 
+/** 与主内容区底板一致的 ease-out-expo 感，比 Material 默认曲线更柔和 */
+const LIST_SLIDE_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
+const LIST_SLIDE_DURATION = '280ms'
+
 export const LIST_SLIDE_TRANSITION =
-  'top 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1), left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1)'
+  `top ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, height ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, left ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, width ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}`
 
 export const LIST_SLIDE_ACCENT_TRANSITION =
-  'top 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1), left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1)'
+  `top ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, height ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, left ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}, background-color ${LIST_SLIDE_DURATION} ${LIST_SLIDE_EASE}`
 
 /** 滑动指示器容器 */
 export const LIST_SLIDE_HOST_CLASS = 'list-slide-host'

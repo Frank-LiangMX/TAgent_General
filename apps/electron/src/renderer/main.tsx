@@ -680,6 +680,9 @@ function extractLegacyActiveTabId(tabState: unknown): string | null {
   return panels[focusedIndex]?.activeTabId ?? panels[0]?.activeTabId ?? null
 }
 
+/** dev StrictMode 会双调 effect，TabRestore 日志只打一次 */
+let tabRestoreLogged = false
+
 function TabStatePersistenceInitializer(): null {
   const store = useStore()
   const restoredRef = useRef(false)
@@ -749,9 +752,12 @@ function TabStatePersistenceInitializer(): null {
           store.set(currentAgentSessionIdAtom, activeTab.sessionId)
         }
 
-        console.log(
-          `[TabRestore] 已恢复当前会话入口，历史标签 ${validTabs.length} 个已收敛到左侧列表`
-        )
+        if (!tabRestoreLogged) {
+          tabRestoreLogged = true
+          console.log(
+            `[TabRestore] 已恢复当前会话入口，历史标签 ${validTabs.length} 个已收敛到左侧列表`
+          )
+        }
       })
       .catch((err) => console.error('[TabRestore] 恢复标签页失败:', err))
       .finally(() => {

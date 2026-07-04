@@ -14,6 +14,17 @@ import type { KanbanBoard, KanbanTask, KanbanBoardMode, KanbanBoardStatus } from
 
 import { agentSessionsAtom } from './agent-atoms'
 
+/** 同一条看板 IPC 错误只打一次，避免 StrictMode / 多 hook 订阅刷屏 */
+const kanbanErrorLogKeys = new Set<string>()
+
+function logKanbanErrorOnce(scope: string, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err)
+  const key = `${scope}:${message}`
+  if (kanbanErrorLogKeys.has(key)) return
+  kanbanErrorLogKeys.add(key)
+  console.error(`[看板] ${scope}:`, err)
+}
+
 /** 按 boardId 缓存的 tasks atom family */
 export const kanbanTasksAtomFamily = atomFamily((boardId: string) => {
   return atom<KanbanTask[]>([])
@@ -92,7 +103,7 @@ export function useKanbanBoard(sessionId: string): {
       setBoard(boardData)
       setTasks(taskList)
     } catch (err) {
-      console.error('[看板] 加载失败:', err)
+      logKanbanErrorOnce('加载失败', err)
     } finally {
       setLoading(false)
     }
@@ -159,7 +170,7 @@ export function useKanbanBoards(): {
       const list = await window.electronAPI.kanban.listBoards(filter)
       setBoards(list)
     } catch (err) {
-      console.error('[看板] 加载看板列表失败:', err)
+      logKanbanErrorOnce('加载看板列表失败', err)
     } finally {
       setLoading(false)
     }

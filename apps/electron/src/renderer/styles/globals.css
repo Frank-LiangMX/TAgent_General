@@ -2810,7 +2810,11 @@ html:not(.dark) .btw-panel-glass::after,
   width: var(--nav-rail-width, 60px);
 }
 
-/* Rail 与 Sidebar 之间的内缝（非外轮廓间隙） */
+.right-panel-rail {
+  width: var(--nav-rail-width, 38px);
+}
+
+/* Rail 与 Sidebar 之间的内缝（非外轮廓间隙）；右侧 rail 镜像到左缘 */
 .nav-island-glass--expanded .nav-island-rail::after {
   content: '';
   position: absolute;
@@ -2827,6 +2831,11 @@ html:not(.dark) .btw-panel-glass::after,
     hsl(var(--foreground) / 0.10) 82%,
     transparent 100%
   );
+}
+
+.nav-island-glass--expanded .right-panel-rail::after {
+  right: auto;
+  left: 0;
 }
 
 .nav-island-sidebar {
@@ -2935,6 +2944,104 @@ html:not(.dark) .btw-panel-glass::after,
 }
 
 /**
+ * 右侧 rail 折叠态（无 nav-island-glass--expanded）：降低视觉权重，hover 恢复 affordance
+ */
+.right-nav-island-glass.nav-island-glass--float {
+  transition:
+    width 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease,
+    -webkit-backdrop-filter 280ms ease,
+    backdrop-filter 280ms ease;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  backdrop-filter: blur(10px) saturate(1.05);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.28) 0%,
+    hsl(var(--background) / 0.14) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.22);
+  box-shadow: none;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::before {
+  opacity: 0.25;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::after {
+  opacity: 0.2;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.48) 0%,
+    hsl(var(--background) / 0.32) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.42);
+  box-shadow: none;
+}
+
+.dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.18) 0%,
+    hsl(var(--background) / 0.08) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.16);
+  box-shadow: none;
+}
+
+.dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.34) 0%,
+    hsl(var(--background) / 0.22) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.32);
+  box-shadow: none;
+}
+
+.right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
+  color: hsl(var(--foreground) / 0.30);
+}
+
+.right-nav-island-glass:not(.nav-island-glass--expanded):hover .right-panel-rail .rail-island-btn,
+.right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.58);
+}
+
+.dark .right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
+  color: hsl(var(--foreground) / 0.26);
+}
+
+.dark
+  .right-nav-island-glass:not(.nav-island-glass--expanded):hover
+  .right-panel-rail
+  .rail-island-btn,
+.dark
+  .right-nav-island-glass:not(.nav-island-glass--expanded)
+  .right-panel-rail
+  .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.52);
+}
+
+/* 有未读改动时略提高存在感，避免完全「消失」 */
+.right-panel-rail--notify .rail-island-btn {
+  color: hsl(var(--foreground) / 0.42);
+}
+
+.dark .right-panel-rail--notify .rail-island-btn {
+  color: hsl(var(--foreground) / 0.36);
+}
+
+/**
  * right-panel-plate-toggle - 锚定于 shell p-2 右缘，开/关完整显示
  */
 .right-panel-plate-toggle {
@@ -3038,6 +3145,10 @@ html:not(.dark) .btw-panel-glass::after,
 .content-main-shell {
   --content-plate-radius: 20px;
   --content-base-fade-width: 280px;
+  /* 仅左 inset / fade 参与过渡；右 inset 故意不在此列表，切页时底板右缘瞬间对齐 */
+  transition:
+    --content-base-inset-left 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    --content-base-fade-width 300ms cubic-bezier(0.16, 1, 0.3, 1);
   /* 顶/底横线：自右（主区）向左渐隐，在 Nav 浮岛前消失 */
   --content-plate-hairline-tone: linear-gradient(
     to right,
@@ -3132,6 +3243,17 @@ html:not(.dark) .btw-panel-glass::after,
   border-bottom-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
 }
 
+/* 仅 rail 折叠态：底板仍延伸，但不画右缘竖线/内阴影（避免 rail 左侧出现隔断感） */
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate-edge {
+  display: none;
+}
+
 .content-main-shell--right-inset .content-base-plate--body {
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.34),
@@ -3194,7 +3316,7 @@ html:not(.dark) .btw-panel-glass::after,
 
 /*
  * content-base-plate-edge - 底板右缘竖边。
- * 右侧栏开关不改变底板边界，因此右缘必须始终保留 tone + glint，避免与窗口背景融合。
+ * 右侧 rail 折叠时由 --right-rail 规则隐藏；面板展开时恢复右缘描边。
  */
 .content-base-plate-edge {
   border-style: solid;
@@ -3270,6 +3392,12 @@ html:not(.dark) .btw-panel-glass::after,
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.12),
     inset -2px 0 0 rgba(0, 0, 0, 0.18),
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.14),
     0 2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -3416,6 +3544,14 @@ html.material-frosted .content-main-shell .content-glass {
     rgba(255, 255, 255, 0.08) 74%,
     rgba(255, 255, 255, 0) 100%
   );
+}
+
+/* 右侧 rail 折叠态：覆盖上方 nav-island-glass--float 的全局外阴影 */
+.right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+.right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover,
+.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  box-shadow: none;
 }
 
 /**
@@ -4174,6 +4310,13 @@ html.material-frosted .nav-island-glass.nav-island-glass--float {
     0 30px 68px rgba(0, 0, 0, 0.08);
 }
 
+html.material-frosted
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+html.material-frosted
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  box-shadow: none;
+}
+
 html.material-frosted .content-glass {
   -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
   backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
@@ -4200,6 +4343,12 @@ html.material-frosted .content-main-shell--right-inset .content-base-plate--body
   box-shadow:
     inset -1px 0 0 0 var(--material-edge-inset),
     inset -2px 0 0 0 var(--material-edge-outer);
+}
+
+html.material-frosted
+  .content-main-shell--right-rail:not(.content-main-shell--right-inset)
+  .content-base-plate--body {
+  box-shadow: none;
 }
 
 html.material-frosted .content-base-plate-edge--tone {

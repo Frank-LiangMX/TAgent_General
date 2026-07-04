@@ -17,7 +17,7 @@ export const radius = {
   'glass-modal': '20px', // .session-glass-modal
   'glass-modal-lg': '24px', // .session-glass-modal-lg
   'glass-popover': '14px', // .session-glass-popover
-  'glass-sticky': '12px', // .session-glass-sticky
+  'glass-sticky': '20px', // .session-glass-sticky 会话吸顶用户消息条
   'glass-tooltip': '20px', // .session-glass-tooltip（已迁到 Tailwind rounded-2xl，token 保留作为权威源）
 
   // 通用控件圆角（暂用 Tailwind 默认值，未来可统一接管）

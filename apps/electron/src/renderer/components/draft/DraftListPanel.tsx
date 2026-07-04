@@ -165,7 +165,7 @@ const DraftItem = React.memo(function DraftItem({
             startEdit()
           }}
           className={cn(
-            'group relative w-full flex items-center gap-2 px-3 py-[7px] transition-colors duration-150 titlebar-no-drag text-left',
+            'session-list-row group relative w-full flex items-center gap-2 px-3 py-[7px] titlebar-no-drag text-left',
             active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
           )}
         >

@@ -552,6 +552,14 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
   const [subTab, setSubTab] = useAtom(sessionAgentSubTabAtomFamily(sessionId))
   const kanbanBoard = useKanbanBoard(sessionId)
+  /** 主会话绑定看板后才显示「对话 | 团队」二级 Tab（见 kanban v1 设计 §5.2） */
+  const showKanbanTeamTab = !isNestedWorker && !!boardId
+
+  React.useEffect(() => {
+    if (!showKanbanTeamTab && subTab === 'team') {
+      setSubTab('chat')
+    }
+  }, [showKanbanTeamTab, subTab, setSubTab])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
@@ -2776,7 +2784,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           <AgentHeader
             sessionId={sessionId}
             rightSlot={
-              !isNestedWorker ? (
+              showKanbanTeamTab ? (
                 <>
                   <SegmentedTabs
                     value={subTab}
@@ -2786,7 +2794,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
                     <SegmentedTabsItem value="team">
                       团队
-                      {boardId && kanbanBoard.tasks.length > 0 && (
+                      {kanbanBoard.tasks.length > 0 && (
                         <span className="ml-1 tabular-nums text-muted-foreground">
                           {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
                           {kanbanBoard.tasks.length}
@@ -2794,7 +2802,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                       )}
                     </SegmentedTabsItem>
                   </SegmentedTabs>
-                  {boardId && subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
+                  {subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
                     <KanbanBoardSummary
                       tasks={kanbanBoard.tasks}
                       onOpenTeam={() => setSubTab('team')}
@@ -2805,7 +2813,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             }
           />
 
-          {subTab === 'team' && boardId && !isNestedWorker ? (
+          {showKanbanTeamTab && subTab === 'team' && boardId ? (
             <SessionTeamTab sessionId={sessionId} boardId={boardId} />
           ) : (
             <>

@@ -49,6 +49,12 @@ export function MainArea(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
+  const setTabSwitching = useSetAtom(tabSwitchingAtom)
+
+  // 切换左侧 rail 时清掉 tab 切换蒙版，避免切回会话页时白屏遮罩残留
+  React.useLayoutEffect(() => {
+    setTabSwitching(false)
+  }, [activeRailItem, setTabSwitching])
 
   // TA 模式 + 选中「会话」时，强制 appMode='agent' 让 TabContent 走 agent 渲染分支
   React.useEffect(() => {
@@ -85,11 +91,14 @@ export function MainArea(): React.ReactElement {
     return <GeneralMainArea />
   }
 
-  // rail 切换时整体淡入（key 变化触发重挂）；会话内 tab 切换不经过此 key，不受影响
+  // rail 切换时整体淡入（key 变化触发重挂）；会话页不做 fade-in，避免切回时整页发白
   return (
     <div
       key={`${topLevelMode}:${activeRailItem}`}
-      className="h-full min-h-0 animate-in fade-in duration-300"
+      className={cn(
+        'h-full min-h-0',
+        activeRailItem !== 'sessions' && 'animate-in fade-in duration-300'
+      )}
     >
       {renderRailContent()}
     </div>
@@ -153,6 +162,13 @@ function GeneralMainArea(): React.ReactElement {
   // 这里订阅它显示蒙版；deferredActiveTabId 追上后设 false（新内容渲染完，蒙版淡出）。
   // 强制蒙版至少显示 300ms，避免会话渲染太快时蒙版一闪而过用户感知不到"加载中"。
   const [switching, setSwitching] = useAtom(tabSwitchingAtom)
+
+  // 挂载/卸载时强制清蒙版，避免从其他 rail 切回会话页时白屏遮罩残留
+  React.useLayoutEffect(() => {
+    setSwitching(false)
+    return () => setSwitching(false)
+  }, [setSwitching])
+
   const switchingSinceRef = React.useRef<number>(0)
   React.useEffect(() => {
     if (switching) {

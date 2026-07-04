@@ -1,16 +1,12 @@
 /**
- * RightPanelRail — 右侧竖向按钮列（参考 Kun WorkbenchSideRail）
+ * RightPanelRail — 右侧竖向按钮列（镜像左侧 FunctionalRail）
  *
- * 永远可见的细条按钮列，点击切换右侧面板内容：
- * - 项目文件 / 文件活动 / 代码改动
- * - 点同一按钮再点收起面板，按钮列保留
- * - active 高亮 + 未读 badge
- *
- * 替代原 RightPanelToggle（顶部小按钮）+ DiffPanelTabBar（面板内 tab 栏）。
+ * 单个文件夹图标按钮，点击切换会话面板（RightSidePanel）展开/折叠。
+ * 面板内部的 tab 切换（项目文件/文件活动/代码改动）由 DiffPanelTabBar 接管。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, Activity, FileEdit } from 'lucide-react'
+import { FolderOpen, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -19,24 +15,9 @@ import {
   agentDiffUnseenFilesAtom,
   agentSidePanelOpenAtom,
   currentAgentSessionIdAtom,
-  agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
 import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
-
-type RailTab = 'project' | 'activity' | 'changes'
-
-interface RailItem {
-  tab: RailTab
-  label: string
-  Icon: React.ComponentType<{ className?: string }>
-}
-
-const RAIL_ITEMS: readonly RailItem[] = [
-  { tab: 'project', label: '项目文件', Icon: FolderOpen },
-  { tab: 'activity', label: '文件活动', Icon: Activity },
-  { tab: 'changes', label: '代码改动', Icon: FileEdit },
-]
 
 interface RightPanelRailProps {
   /** 面板当前是否展开（控制 active 高亮） */
@@ -44,92 +25,64 @@ interface RightPanelRailProps {
   className?: string
 }
 
+const RAIL_ICON: LucideIcon = FolderOpen
+
 export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
-  const diffPanelTabMap = useAtomValue(agentDiffPanelTabAtom)
-  const setDiffPanelTabMap = useSetAtom(agentDiffPanelTabAtom)
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)
 
-  const activeTab = currentSessionId
-    ? (diffPanelTabMap.get(currentSessionId) ?? 'project')
-    : 'project'
-
   const unseenChanges = currentSessionId ? (unseenChangesMap.get(currentSessionId) ?? false) : false
   const unseenFilesCount = currentSessionId ? (unseenFilesMap.get(currentSessionId)?.size ?? 0) : 0
+  const showBadge = !panelOpen && (unseenChanges || unseenFilesCount > 0)
 
-  const setTab = React.useCallback(
-    (tab: RailTab) => {
-      if (!currentSessionId) return
-      // 同 tab 再点 → 收起面板；不同 tab → 切换 + 确保面板展开
-      const isSameTabAndOpen = panelOpen && activeTab === tab
-      if (isSameTabAndOpen) {
-        setPanelOpen(false)
-        return
-      }
-      setDiffPanelTabMap((prev) => {
-        const next = new Map(prev)
-        next.set(currentSessionId, tab)
-        return next
-      })
-      setPanelOpen(true)
-    },
-    [currentSessionId, panelOpen, activeTab, setDiffPanelTabMap, setPanelOpen]
-  )
-
-  // ⌘⇧B / Ctrl+Shift+B 快捷键：切换项目文件面板（沿用原 RightPanelToggle 行为）
-  const toggleProject = React.useCallback(() => {
-    setTab('project')
-  }, [setTab])
+  const togglePanel = React.useCallback(() => {
+    setPanelOpen((open) => !open)
+  }, [setPanelOpen])
 
   React.useEffect(() => {
-    return registerShortcut('toggle-right-panel', toggleProject)
-  }, [toggleProject])
+    return registerShortcut('toggle-right-panel', togglePanel)
+  }, [togglePanel])
 
   return (
     <div
       className={cn(
-        'right-panel-rail h-full w-[44px] shrink-0',
-        'flex flex-col items-center justify-start gap-1 py-2',
-        'titlebar-no-drag',
+        'nav-island-rail right-panel-rail relative z-[1] h-full flex flex-col items-center px-1.5 pb-2 shrink-0',
+        !panelOpen && showBadge && 'right-panel-rail--notify',
         className
       )}
     >
-      {RAIL_ITEMS.map(({ tab, label, Icon }) => {
-        const isActive = panelOpen && activeTab === tab
-        const showBadge =
-          tab === 'activity' && unseenFilesCount > 0 && !isActive
-            ? true
-            : tab === 'changes' && unseenChanges && !isActive
-        return (
-          <Tooltip key={tab}>
+      <div className="nav-island-body-start w-full flex flex-col items-center">
+        <div className="rail-slide-host relative flex flex-col items-center gap-1 w-full">
+          <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => setTab(tab)}
-                aria-pressed={isActive}
-                aria-label={label}
-                title={label}
+                onClick={togglePanel}
+                aria-pressed={panelOpen}
+                aria-label="文件面板"
                 className={cn(
-                  'relative size-8 rounded-[10px] flex items-center justify-center transition-colors',
-                  isActive
-                    ? 'bg-foreground/[0.08] text-foreground'
-                    : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.04]'
+                  'rail-island-btn size-8 flex items-center justify-center rounded-[9px] titlebar-no-drag relative z-[2]',
+                  panelOpen && 'rail-island-btn--active rail-island-btn--ghost'
                 )}
               >
-                <Icon className="size-4" />
+                <RAIL_ICON size={12} strokeWidth={1.75} />
                 {showBadge && (
-                  <span className="absolute right-1 top-1 size-2 rounded-full bg-primary ring-1 ring-background" />
+                  <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-primary ring-1 ring-background" />
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="text-xs">
-              {label}
+            <TooltipContent side="left">
+              <div className="text-xs">
+                <div className="font-medium">文件面板</div>
+              </div>
             </TooltipContent>
           </Tooltip>
-        )
-      })}
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0" />
     </div>
   )
 }

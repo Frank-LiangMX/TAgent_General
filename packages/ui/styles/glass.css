@@ -120,11 +120,27 @@
  *   - dark / material-frosted 主题自动适配
  *
  * 用法：
- *   <div className={cn('...', active && 'session-list-item-active')}>...</div>
+ *   <div className={cn('session-list-row ...', active && 'session-list-item-active')}>...</div>
  *
  * 等价于历史上 `session-glass session-glass-sidebar rounded-glass-sidebar` 三个类的组合，
  * 但圆角 token 化，不再需要硬编码 rounded-[10px]。
  */
+.session-list-row {
+  transition:
+    background 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    backdrop-filter 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    -webkit-backdrop-filter 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.session-list-row .session-sidebar-accent--inline {
+  transition:
+    opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .session-list-item-active {
   position: relative;
   isolation: isolate;
