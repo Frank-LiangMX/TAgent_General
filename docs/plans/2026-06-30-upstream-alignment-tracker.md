@@ -48,7 +48,7 @@
 | P2-2 | `previewModePreference` 预览路由 | ✅ | useOpenPreview + 设置页 |
 | P2-3 | 外部 MCP type 推断 | ✅ | 已在 agent-workspace-manager |
 | P2-4 | Context Usage 显示精度 | ✅ | TAgent 自有方案 + 切会话清 stableRef |
-| P2-5 | Automation NL 创建 + custom cron | 部分 ✅ | Skill + prompt + 工具编码修复 + 自动审批权限；custom cron 未做（Proma 亦无） |
+| P2-5 | Automation NL 创建 + custom cron | ✅ | Skill + prompt + 工具编码修复 + 自动审批权限；custom cron 为独立功能（Proma 亦无），不纳入上游对齐 |
 | P2-6 | Nowledge Mem（可选） | ⏭️ | 用户跳过：TAgent 自有记忆系统 |
 
 ---
@@ -59,7 +59,7 @@
 | --- | --- | --- |
 | P3-1 | #904–#912 输入预览小修（逐项验证） | ✅ | #904/#906/#908/#911/#912；#909 跳过 |
 | P3-2 | 项目重命名 + 删除确认 | ✅ | 侧栏内联删除确认 + 重命名刷新 atom |
-| P3-3 | WPS 协作增强 | ⏳（独立线，非 Proma 对齐） |
+| P3-3 | WPS 协作增强 | ⏭️ | 非上游功能，TAgent 独立线，不纳入上游对齐 |
 
 ---
 
@@ -76,7 +76,7 @@
 | `f77ee38b` | P3 UI 小修 + 自动审批权限路由 + automation 工具修复 |
 | `f8ef76df` | 文档：tracker / PROGRESS 验收状态 |
 
-**分支状态（2026-06-30）**：P0–P3（除 custom cron / WPS / #915 / Nowledge Mem）已落地，**待用户验收后合 PR**。
+**分支状态（2026-07-03）**：P0–P3 全部落地完成，**已合入 main（PR #16）**。上游 v0.13.4 对齐任务完成。
 
 ---
 
