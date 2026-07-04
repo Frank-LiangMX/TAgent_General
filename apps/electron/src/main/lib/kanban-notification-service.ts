@@ -241,18 +241,20 @@ async function sendWechatNotification(
   chatId: string,
   payload: KanbanNotificationPayload
 ): Promise<void> {
-  // TODO: 微信 Bridge 发送文本消息
-  // 当前微信 Bridge 仅支持入站，出站待 Phase C 完善
-  console.warn('[看板通知] 微信通知暂未实现，chatId:', chatId)
+  // 微信通知需要通过 WeChatBridge.sendTextMessage 发送
+  // 当前 WeChatBridge 类未暴露公开发送方法，需要后续扩展
+  // Phase C MVP：仅打印日志，飞书已实现，微信/WPS 待后续完善
+  console.warn('[看板通知] 微信通知待后续完善，chatId:', chatId, 'event:', payload.event)
 }
 
 async function sendWpsNotification(
   chatId: string,
   payload: KanbanNotificationPayload
 ): Promise<void> {
-  // TODO: WPS Bridge 发送文本消息
-  // 当前 WPS Bridge 仅支持入站，出站待 Phase C 完善
-  console.warn('[看板通知] WPS通知暂未实现，chatId:', chatId)
+  // WPS 通知需要通过 WPS API 发送
+  // 当前需要 wpsOAuthTokenManager + generateKso1AuthHeader
+  // Phase C MVP：仅打印日志，飞书已实现，WPS 待后续完善
+  console.warn('[看板通知] WPS 通知待后续完善，chatId:', chatId, 'event:', payload.event)
 }
 
 // ===== 主通知函数 =====

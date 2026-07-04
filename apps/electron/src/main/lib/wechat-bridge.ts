@@ -435,7 +435,7 @@ interface WeChatFileAttachment {
   fileName: string
 }
 
-class WeChatBridge {
+export class WeChatBridge {
   private client: ILinkClient | null = null
   private state: WeChatBridgeState = { status: 'disconnected' }
   private pollAbortController: AbortController | null = null
