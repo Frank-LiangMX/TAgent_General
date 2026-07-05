@@ -1835,6 +1835,8 @@ export const AGENT_IPC_CHANNELS = {
   GET_MEMORY_MD_CONTENT: 'agent:get-memory-md-content',
   /** 获取 L3 纠错记录 */
   GET_MEMORY_CORRECTIONS: 'agent:get-memory-corrections',
+  /** 列出 SDK auto-memory 重定向目录 agent_self/ 下的 .md 文件 */
+  LIST_AGENT_SELF_FILES: 'agent:list-agent-self-files',
 } as const
 
 /**

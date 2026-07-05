@@ -5,6 +5,10 @@
  * - 不打断对话，5s 自动消失
  * - 用户点"记" / "不记" / "稍后"
  * - 使用 sonner toast 实现
+ *
+ * 历史 bug：2026-07-05 之前 correction 类型只显示 3s 提示就 return，
+ * 注释说"自动记录"但代码没自动 accept → 即使字段名 bug 修了，L3 仍不会被写。
+ * 现已对 correction 类型显式调 respondNudge('accept') 完成自动记录。
  */
 
 import { toast } from 'sonner'
@@ -24,8 +28,12 @@ export function showNudgeToast(
   sessionId: string,
   mode: 'general' | 'ta'
 ): string | number {
-  // 纠正类型自动记录，显示简单确认
+  // 纠正类型：自动记录（设计文档要求 L3 自动写），但仍调 respondNudge('accept')
+  // 触发主进程落盘。历史 bug：之前只显示 3s 提示没调 accept，导致 L3 永不写入。
   if (nudge.type === 'correction') {
+    void window.electronAPI
+      .respondNudge(sessionId, nudge.id, 'accept', mode)
+      .catch(console.error)
     return toast(nudge.userMessage, {
       duration: 3000,
       position: 'bottom-right',

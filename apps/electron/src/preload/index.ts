@@ -764,6 +764,11 @@ export interface ElectronAPI {
     limit?: number
   ) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
 
+  /** 列出 SDK auto-memory 重定向目录 agent_self/ 下的 .md 文件（LLM 主动写） */
+  listAgentSelfFiles: () => Promise<
+    Array<{ filename: string; content: string; mtime: number }>
+  >
+
   // ===== Pipeline 流水线管理 =====
 
   /** 获取流水线列表 */
@@ -912,8 +917,10 @@ export interface ElectronAPI {
     mode: 'general' | 'ta'
   ) => Promise<void>
 
-  /** 监听 Nudge 事件 */
-  onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => () => void
+  /** 监听 Nudge 事件（payload 为 nudges 数组，与主进程 agent-orchestrator 推送字段对齐） */
+  onNudgeEvent: (
+    callback: (event: { type: string; nudges: NudgeCandidate[] }) => void
+  ) => () => void
 
   // ===== TA 意图检测 =====
 
@@ -2317,10 +2324,10 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.RESPOND_NUDGE, sessionId, nudgeId, action, mode)
   },
 
-  onNudgeEvent: (callback: (event: { type: string; nudge: NudgeCandidate }) => void) => {
+  onNudgeEvent: (callback: (event: { type: string; nudges: NudgeCandidate[] }) => void) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
-      data: { type: string; nudge: NudgeCandidate }
+      data: { type: string; nudges: NudgeCandidate[] }
     ) => callback(data)
     ipcRenderer.on(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
     return () => ipcRenderer.removeListener(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
@@ -3386,6 +3393,12 @@ const electronAPI: ElectronAPI = {
 
   getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_CORRECTIONS, mode, limit)
+  },
+
+  listAgentSelfFiles: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_AGENT_SELF_FILES) as Promise<
+      Array<{ filename: string; content: string; mtime: number }>
+    >
   },
 
   // ===== Pipeline 流水线管理 =====

@@ -476,7 +476,7 @@ function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.Rea
   )
 }
 
-export function AgentMessages({
+function AgentMessagesImpl({
   sessionId,
   sessionModelId,
   messagesLoaded,
@@ -955,3 +955,14 @@ export function AgentMessages({
     </BasePathsProvider>
   )
 }
+
+/**
+ * 性能优化（2026-07-05）：用 React.memo 包装，避免父组件 AgentView 因输入框按键
+ * 引发的 re-render 串到 24 轮 100+ 条消息列表。AgentMessages 的 props 大多是稳定
+ * 引用（useCallback / useMemo / useState setter），唯一频繁变化的是 persistedSDKMessages
+ * （流式追加时）和 streaming（开关切换），这些场景下重渲染是必要的。
+ *
+ * 输入框打字时 AgentView 因订阅 inputContent 重渲染，但传给 AgentMessages 的 props
+ * 引用都没变，memo 浅比较后跳过重渲染，输入框打字不再卡顿。
+ */
+export const AgentMessages = React.memo(AgentMessagesImpl)

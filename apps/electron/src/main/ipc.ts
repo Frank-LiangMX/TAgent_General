@@ -2104,8 +2104,9 @@ export function registerIpcHandlers(): void {
     MEMORY_IPC_CHANNELS.GET_PENDING_NUDGES,
     async (_, sessionId: string): Promise<NudgeCandidate[]> => {
       const { nudgeService } = await import('./lib/nudge-service')
-      // 从 nudgeService 获取候选项（实际由 turn_start 触发）
-      return []
+      // 历史 bug：2026-07-05 之前直接 `return []`，没读 nudgeService.pendingNudges。
+      // 主流程靠事件推送不靠拉取，但有些 UI 入口（如设置页"待处理记忆"列表）会调此通道。
+      return nudgeService.getPendingNudges(sessionId)
     }
   )
 
@@ -4163,6 +4164,12 @@ export function registerIpcHandlers(): void {
       return memoryLayerService.getCorrections(mode, limit)
     }
   )
+
+  // 列出 SDK auto-memory 重定向目录 agent_self/ 下的 .md 文件
+  ipcMain.handle(AGENT_IPC_CHANNELS.LIST_AGENT_SELF_FILES, async () => {
+    const { memoryLayerService } = await import('./lib/memory-layer-service')
+    return memoryLayerService.listAgentSelfFiles()
+  })
 
   // ===== Pipeline 流水线相关 =====
 

@@ -1095,6 +1095,21 @@ export const agentSessionDraftHtmlAtomFamily = atomFamily((sessionId: string) =>
 )
 
 /**
+ * 单个 session 是否有草稿文本（boolean 派生 atom）
+ *
+ * 性能优化（2026-07-05）：AgentView 之前订阅 inputContent（string），每次按键都 re-render
+ * 整个 AgentView（3000+ 行组件树，含 AgentMessages / TokenStatsPanel / 工具栏）。
+ * 改用 hasDraft（boolean）后，只在 empty↔non-empty 切换时变化一次，打字时不触发 re-render。
+ * 真正的 inputContent 订阅移到 RichTextInputWrapper 内部，仅输入框自己 re-render。
+ */
+export const agentSessionHasDraftAtomFamily = atomFamily((sessionId: string) =>
+  atom((get) => {
+    const text = get(agentSessionDraftsAtom).get(sessionId) ?? ''
+    return text.trim().length > 0
+  })
+)
+
+/**
  * 会话附加目录 Map — 以 sessionId 为 key
  * 存储每个会话通过"附加文件夹"功能关联的外部目录路径列表。
  * 这些路径作为 SDK additionalDirectories 参数传递。

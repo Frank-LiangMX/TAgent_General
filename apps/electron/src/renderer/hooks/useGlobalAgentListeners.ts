@@ -1341,16 +1341,19 @@ export function useGlobalAgentListeners(): void {
     })
 
     // ===== 5. Nudge 事件 =====
+    // 字段为 `nudges`（复数，与主进程 agent-orchestrator 推送 + preload 类型对齐）
+    // 历史 bug：2026-07-05 之前读 `event.nudge`（单数），条件永远 false，toast 永远不弹，
+    // 记忆永不写入。已统一为复数。
     const cleanupNudge = window.electronAPI.onNudgeEvent((event) => {
-      if (event.type === 'nudge_candidates' && event.nudge) {
+      if (event.type === 'nudge_candidates' && event.nudges && event.nudges.length > 0) {
         // 获取当前会话的 mode
         const sessions = store.get(agentSessionsAtom)
         const currentSession = sessions.find((s) => s.id === store.get(currentAgentSessionIdAtom))
         const mode = currentSession?.mode === 'ta' ? 'ta' : 'general'
-        // 显示 Nudge toast
+        // 显示 Nudge toast（批量串行，避免重叠）
         import('@/components/memory/NudgeToast')
-          .then(({ showNudgeToast }) => {
-            showNudgeToast(event.nudge, store.get(currentAgentSessionIdAtom) || '', mode)
+          .then(({ showNudgeToasts }) => {
+            showNudgeToasts(event.nudges, store.get(currentAgentSessionIdAtom) || '', mode)
           })
           .catch(console.error)
       }

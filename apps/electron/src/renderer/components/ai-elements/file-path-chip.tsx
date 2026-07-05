@@ -135,15 +135,27 @@ export function FilePathChip({
   const isAbsolute = cleanPath.startsWith('/') || /^[A-Z]:\\/.test(cleanPath)
 
   const chipRef = React.useRef<HTMLButtonElement>(null)
-  const [fileStatus, setFileStatus] = React.useState<'idle' | 'resolved' | 'broken'>('idle')
   const store = useStore()
 
   // 候选基础目录列表：优先使用 basePaths；否则退化到 basePath 单值
+  // 注意：必须在 fileStatus 之前定义，因为 fileStatus 的初始值要读 cache
   const candidateBases = React.useMemo<string[]>(() => {
     if (basePaths && basePaths.length > 0) return basePaths.filter(Boolean)
     if (basePath) return [basePath]
     return []
   }, [basePath, basePaths])
+
+  // fileStatus 初始值：如果 cache 命中，直接用 cache 的值，避免 re-mount 时 idle→broken 切换
+  // 历史 bug：b2a3016 修了 border-width 占位，但 chip re-mount 时 fileStatus 重置为 'idle'，
+  // IntersectionObserver 触发后切换到 'broken'，transition-colors 把切换动画化 → 颜色闪烁/抖动。
+  // 修复：cache 命中时初始值直接是 resolved/broken，零切换零动画。
+  const [fileStatus, setFileStatus] = React.useState<'idle' | 'resolved' | 'broken'>(() => {
+    const key = existsCacheKey(cleanPath, candidateBases)
+    if (fileExistsCache.has(key)) {
+      return fileExistsCache.get(key) ? 'resolved' : 'broken'
+    }
+    return 'idle'
+  })
 
   // 用于 title 提示：绝对路径直接展示；相对路径优先匹配首段对应的 base 目录
   const displayPath = React.useMemo(() => {
@@ -228,7 +240,9 @@ export function FilePathChip({
           onClick={handleClick}
           className={cn(
             'inline-flex items-center gap-1 rounded-md px-1.5 py-[2px] text-[12px] font-medium leading-[1.6]',
-            'cursor-pointer transition-colors duration-150',
+            // 不用 transition-colors：idle→broken 切换时颜色变化会被 150ms 动画化，
+            // 叠加 chip re-mount 会造成视觉闪烁/抖动。改为瞬时切换。
+            'cursor-pointer',
             'align-baseline not-prose',
             // 所有状态都预留 1px border 空间，避免 idle→broken 切换时
             // border 从无到有挤压 content area 导致 chip 自身抖动

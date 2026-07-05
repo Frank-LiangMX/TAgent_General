@@ -366,6 +366,23 @@ function resolveSDKCliPath(): string {
 const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 
 /**
+ * P2 主动兜底压缩：context 占用超阈值时 fire-and-forget 调 compactSession
+ *
+ * kscc 渠道下 SDK 自动 compaction 失效（每轮 spawn 新进程，无连续 query 状态），
+ * LLM 也看不到 token 数。主进程在 result 后检测到高占用（> 85%）时主动压缩，
+ * 避免下轮 prompt_too_long 终止会话。失败只 warn，不影响主流程。
+ */
+async function compactSessionProactive(sessionId: string): Promise<void> {
+  try {
+    const { compactSession } = await import('./agent-session-compactor')
+    await compactSession(sessionId, { strategy: 'drop_old_tool_results' })
+    console.log(`[Agent 编排] 主动兜底压缩完成: sessionId=${sessionId}`)
+  } catch (err) {
+    console.warn(`[Agent 编排] 主动兜底压缩失败: sessionId=${sessionId}`, err)
+  }
+}
+
+/**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要
  *
  * 扫描 tool_use 块，提取工具名称和关键参数，帮助新 SDK 会话理解之前做过什么。
@@ -1601,6 +1618,9 @@ export class AgentOrchestrator {
       const nudgeCandidates = nudgeService.onTurnStart(sessionId, recentMsgs, sessionMode)
       if (nudgeCandidates.length > 0) {
         // 通过 IPC 推送 Nudge 候选项到渲染进程
+        // 字段名 `nudges`（复数，与 preload 类型签名 + 渲染进程接收对齐）
+        // 历史 bug：2026-07-05 之前主进程发 `nudges` 但渲染进程读 `event.nudge`（单数），
+        // 条件永远 false，toast 永远不弹，记忆永不写入。已统一为复数。
         const { BrowserWindow } = await import('electron')
         const win = BrowserWindow.getAllWindows()[0]
         if (win && !win.isDestroyed()) {
@@ -2427,13 +2447,29 @@ export class AgentOrchestrator {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
           setSessionContextWindow(sessionId, cw) // P0-1
         },
+        // P2 主动兜底（2026-07-05）：result 后检测 context 占用，超 85% 主动压缩
+        // kscc 渠道下 SDK 自动 compaction 失效（每轮 spawn 新进程，无连续 query 状态），
+        // LLM 也看不到 token 数。主进程在这里主动 fire-and-forget 调 compactSession，
+        // 避免下轮 prompt_too_long 终止会话。
+        onContextUsage: (usedTokens, totalTokens) => {
+          if (totalTokens <= 0) return
+          const ratio = usedTokens / totalTokens
+          if (ratio < 0.85) return
+          // 单会话单次压缩去重：本轮已压缩过就不再压
+          if (proactiveCompactionDoneThisTurn) return
+          proactiveCompactionDoneThisTurn = true
+          console.warn(
+            `[Agent 编排] Context 占用 ${Math.round(ratio * 100)}% (${usedTokens}/${totalTokens})，主动 fire-and-forget 调 compactSession(drop_old_tool_results)`
+          )
+          void compactSessionProactive(sessionId)
+        },
       }
       markPhase('buildQueryOptions')
 
       // 输出阶段级耗时（排查"会话发起后很久才回复"，定位卡在哪一步）
       const totalPreflightMs = Object.values(timings).reduce((a, b) => a + b, 0)
       console.log(
-        `[Agent 编排] 启动阶段耗时（总计 ${totalPreflightMs}ms）: ${JSON.stringify(timings)}`
+        `[Agent 编排] [session=${sessionId}] 启动阶段耗时（总计 ${totalPreflightMs}ms）: ${JSON.stringify(timings)}`
       )
 
       console.log(`[Agent 编排] 开始通过 Adapter 遍历事件流...`)
@@ -2446,6 +2482,8 @@ export class AgentOrchestrator {
       let skipNextRetryDelay = false
       let thinkingSignatureRecoveryAttempted = false
       let invisibleRecoveryAttempts = 0
+      // P2 主动兜底压缩：本轮 result 后是否已主动调过 compactSession，避免重复压缩
+      let proactiveCompactionDoneThisTurn = false
       const canAutoRetry = (attempt: number): boolean =>
         attempt <= MAX_AUTO_RETRIES && retryDelayElapsedMs < MAX_AUTO_RETRY_WAIT_MS
 
@@ -2713,6 +2751,22 @@ export class AgentOrchestrator {
                 const errorContent = typedError.title
                   ? `${typedError.title}: ${typedError.message}`
                   : typedError.message
+                // 收集错误详情：typedError 自带 details + originalError + kscc stderr
+                // 历史 bug：2026-07-05 之前 typed_error 路径只塞 typedError.details/originalError，
+                // 不塞 stderr，导致 kscc 子进程报错时 UI"查看诊断详情"按钮不出现。已补 stderr。
+                const typedErrorDetails: string[] = []
+                if (Array.isArray(typedError.details)) {
+                  for (const d of typedError.details) {
+                    if (d && !typedErrorDetails.includes(d)) typedErrorDetails.push(d)
+                  }
+                }
+                if (typedError.originalError && !typedErrorDetails.includes(typedError.originalError)) {
+                  typedErrorDetails.push(typedError.originalError)
+                }
+                const stderrStr = stderrChunks.join('').trim()
+                if (stderrStr && !typedErrorDetails.includes(stderrStr)) {
+                  typedErrorDetails.push(stderrStr.slice(0, 2000))
+                }
                 const errorSDKMsg: SDKMessage = {
                   type: 'assistant',
                   message: {
@@ -2723,9 +2777,7 @@ export class AgentOrchestrator {
                   _createdAt: Date.now(),
                   _errorCode: typedError.code,
                   _errorTitle: typedError.title,
-                  _errorDetails:
-                    typedError.details ??
-                    (typedError.originalError ? [typedError.originalError] : undefined),
+                  _errorDetails: typedErrorDetails.length > 0 ? typedErrorDetails : undefined,
                   _errorCanRetry: typedError.canRetry,
                   _errorActions: typedError.actions,
                 } as unknown as SDKMessage
@@ -2812,6 +2864,24 @@ export class AgentOrchestrator {
                 resultErrorMsg.errors.length > 0
               ) {
                 const resultErrorText = resultErrorMsg.errors.join('\n')
+
+                // P1 修复（2026-07-05）：错误 result 时主动回滚 sdkSessionId
+                // 不只限 session-not-found。SDK 在错误 result 前可能已通过 onSessionId
+                // 把"新分配但失效"的 sdkSessionId 写入磁盘，此处主动回滚到 existing 值，
+                // 避免下轮 resume 一个无效 session。严格限定 result 是 error subtype（已在外层 if）。
+                if (capturedSdkSessionId !== existingSdkSessionId) {
+                  const staleSdkSessionId = capturedSdkSessionId
+                  console.warn(
+                    `[Agent 编排] 错误 result 检测到 sdkSessionId 被覆盖（${existingSdkSessionId ?? '无'} → ${staleSdkSessionId ?? '无'}），主动回滚避免持久化无效值`
+                  )
+                  capturedSdkSessionId = existingSdkSessionId
+                  try {
+                    updateAgentSessionMeta(sessionId, { sdkSessionId: existingSdkSessionId })
+                  } catch (err) {
+                    console.warn('[Agent 编排] 回滚 sdkSessionId 失败:', err)
+                  }
+                }
+
                 // Session 不存在错误：清除 sdkSessionId，切换到上下文回填模式重试
                 if (isSessionNotFoundError(resultErrorText) && existingSdkSessionId) {
                   existingSdkSessionId = undefined
@@ -3064,8 +3134,12 @@ export class AgentOrchestrator {
             )
           } else {
             userFacingError = friendlyErrorMessage(errorMessage)
-            // SDK 子进程 exit code 1 时 error.message 往往不含 stderr，补上便于排查
-            if (/exited with code 1/i.test(errorMessage) && stderrOutput.trim()) {
+            // P4 修复（2026-07-05）：放宽 stderr hint 条件
+            // 历史 bug：之前只在 `/exited with code 1/i` 时补 stderr，kscc 其他错误场景
+            // （spawn ENOENT / stream-json 解析失败 / Claude Code CLI panic）都不补，
+            // userFacingError 只有泛化的"执行错误"，用户看不到真实原因。
+            // 现改为所有 stderr 非空场景都补 800 字符 hint。完整 stderr 仍在 _errorDetails。
+            if (stderrOutput.trim()) {
               const stderrHint = stderrOutput.trim().slice(0, 800)
               if (!userFacingError.includes(stderrHint)) {
                 userFacingError = `${userFacingError}\n\n${stderrHint}`

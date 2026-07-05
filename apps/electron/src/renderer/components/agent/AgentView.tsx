@@ -101,6 +101,7 @@ import {
   agentSessionDraftAtomFamily,
   agentSessionDraftHtmlAtom,
   agentSessionDraftHtmlAtomFamily,
+  agentSessionHasDraftAtomFamily,
   agentPromptSuggestionsAtom,
   agentMessageRefreshAtom,
   agentSDKMessagesCacheAtom,
@@ -677,9 +678,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     ? (wsAttachedFilesMap.get(currentWorkspaceId) ?? [])
     : []
 
-  // 按 sessionId 切片订阅 drafts/draftHtml：仅本 session 草稿变化才让 AgentView 重渲染。
-  // 输入框每次按键都会写整 Map atom，若直接订阅整 Map，AgentView 跟着每键重渲染。
-  const inputContent = useAtomValue(agentSessionDraftAtomFamily(sessionId))
+  // 性能优化（2026-07-05）：AgentView 不再订阅 inputContent / inputHtmlContent，
+  // 改用 hasDraft（boolean）—— 只在 empty↔non-empty 切换时变化一次，打字时不触发 re-render。
+  // 之前每次按键都让 AgentView re-render，3000+ 行组件树（含 AgentMessages / TokenStatsPanel /
+  // 工具栏）全部 diff，24 轮长会话卡顿明显。
+  // 真正的 inputContent 订阅移到 RichTextInputWrapper 内部，仅输入框自己 re-render。
+  const hasDraft = useAtomValue(agentSessionHasDraftAtomFamily(sessionId))
   const setDraftsMap = useSetAtom(agentSessionDraftsAtom)
   const setInputContent = React.useCallback(
     (value: string) => {
@@ -695,7 +699,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     },
     [sessionId, setDraftsMap]
   )
-  const inputHtmlContent = useAtomValue(agentSessionDraftHtmlAtomFamily(sessionId))
   const setDraftHtmlMap = useSetAtom(agentSessionDraftHtmlAtom)
   const setInputHtmlContent = React.useCallback(
     (html: string) => {
@@ -1638,7 +1641,10 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       // 决策 #15：Shift+Enter = 打断当前 turn 立即注入；纯 Enter = 排队等当前 turn 完成
       const wantsInterrupt = submitOpts?.shiftKey ?? false
       const overrideText = submitOpts?.overrideText
-      const text = (overrideText ?? inputContent).trim()
+      // 性能优化：不从闭包读 inputContent（会让 handleSend 依赖 inputContent 每键重建），
+      // 改用 store.get 实时读 atomFamily。handleSend 不再依赖 inputContent，引用稳定。
+      const currentDraft = overrideText ?? store.get(agentSessionDraftAtomFamily(sessionId))
+      const text = currentDraft.trim()
 
       // /btw 侧面提问检测
       if (text.startsWith('/btw ') || text === '/btw') {
@@ -2050,7 +2056,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       })
     },
     [
-      inputContent,
+      // inputContent 不再订阅，handleSend 内部用 store.get 实时读，避免依赖 inputContent 每键重建
       attachedDirs,
       attachedFileDirectories,
       sessionId,
@@ -2636,7 +2642,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     return registerShortcut('toggle-preview-panel', togglePreviewPanel)
   }, [togglePreviewPanel])
 
-  const hasTextInput = inputContent.trim().length > 0
+  const hasTextInput = hasDraft
   const canSend =
     messagesLoaded &&
     (hasTextInput || pendingFiles.length > 0 || !!suggestion) &&
@@ -2949,9 +2955,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                             streaming={streaming}
                           />
 
-                          <RichTextInput
-                            value={inputContent}
+                          <AgentRichTextInputBridge
                             onChange={setInputContent}
+                            onHtmlChange={setInputHtmlContent}
                             onSubmit={handleSend}
                             onPasteFiles={handlePasteFiles}
                             onPasteLongText={handlePasteLongText}
@@ -2977,8 +2983,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                             sessionId={sessionId}
                             attachedDirs={workspaceMentionPaths}
                             sessionAttachedDirs={sessionMentionPaths}
-                            htmlValue={inputHtmlContent}
-                            onHtmlChange={setInputHtmlContent}
                             sendWithCmdEnter={sendWithCmdEnter}
                           />
 
@@ -3074,3 +3078,27 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     </>
   )
 }
+
+/**
+ * RichTextInput 与 jotai 状态的桥接组件 — 性能优化（2026-07-05）
+ *
+ * 之前 AgentView 直接订阅 inputContent / inputHtmlContent，每次按键都让整个 AgentView
+ * （3000+ 行组件树，含 AgentMessages / TokenStatsPanel / 工具栏）re-render。
+ * 改用 wrapper 后：
+ * - AgentView 只订阅 hasDraft（boolean），仅 empty↔non-empty 切换时变化
+ * - inputContent / inputHtmlContent 在 wrapper 内部订阅，仅输入框自己 re-render
+ * - onChange / onHtmlChange 用 AgentView 传入的 setInputContent / setInputHtmlContent
+ *   （useCallback 稳定引用，不触发 wrapper 重渲染）
+ */
+type RichTextInputProps = React.ComponentProps<typeof RichTextInput>
+function AgentRichTextInputBridgeImpl(
+  props: Omit<RichTextInputProps, 'value' | 'htmlValue'> & {
+    sessionId: string
+  }
+): React.ReactElement {
+  const { sessionId, ...rest } = props
+  const value = useAtomValue(agentSessionDraftAtomFamily(sessionId))
+  const htmlValue = useAtomValue(agentSessionDraftHtmlAtomFamily(sessionId))
+  return <RichTextInput {...rest} value={value} htmlValue={htmlValue} />
+}
+const AgentRichTextInputBridge = React.memo(AgentRichTextInputBridgeImpl)

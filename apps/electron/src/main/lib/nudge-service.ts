@@ -383,6 +383,16 @@ class NudgeService {
   }
 
   /**
+   * 获取指定会话待处理的 Nudge 候选项
+   *
+   * 由 IPC `GET_PENDING_NUDGES` 通道调用，供 UI（如设置页"待处理记忆"列表）拉取。
+   * 主流程仍走事件推送（onTurnStart → memory:nudge-event），此方法仅作拉取兜底。
+   */
+  getPendingNudges(sessionId: string): NudgeCandidate[] {
+    return this.pendingNudges.get(sessionId) ?? []
+  }
+
+  /**
    * 处理用户对 Nudge 的响应
    *
    * @param sessionId 会话 ID

@@ -34,6 +34,7 @@ import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
 import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
 import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
+import { getAgentSelfMemoryDir } from '../memory-layer-service'
 
 import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 
@@ -169,6 +170,12 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   onModelResolved?: (model: string) => void
   /** 上下文窗口缓存回调 */
   onContextWindow?: (contextWindow: number) => void
+  /**
+   * 上下文使用量回调（result 后由 cacheContextUsageFromQuery 触发）
+   * 用于 orchestrator 检测高占用（> 85%）时主动 fire-and-forget 调 compactSession，
+   * 避免下轮 prompt_too_long（kscc 渠道下 SDK 自动 compaction 失效）。
+   */
+  onContextUsage?: (usedTokens: number, totalTokens: number) => void
 
   // ===== SDK 0.2.52 ~ 0.2.63 新增选项 =====
 
@@ -598,11 +605,21 @@ const FORCE_KILL_GRACE_MS = 10_000
 /** 后台任务挂起时无活动的空闲上限（1 小时），与 SDK ScheduleWakeup 上界对齐 */
 const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
 
-async function cacheContextUsageFromQuery(sessionId: string, query: SDKQuery): Promise<void> {
+async function cacheContextUsageFromQuery(
+  sessionId: string,
+  query: SDKQuery,
+  onContextUsage?: (usedTokens: number, totalTokens: number) => void
+): Promise<void> {
   if (typeof query.getContextUsage !== 'function') return
   try {
     const response = await query.getContextUsage()
-    setContextUsageCache(sessionId, mapSdkContextUsageResponse(response))
+    const snapshot = mapSdkContextUsageResponse(response)
+    setContextUsageCache(sessionId, snapshot)
+    // 通知 orchestrator 当前使用量，用于高占用时主动 fire-and-forget 调 compactSession
+    // （kscc 渠道下 SDK 自动 compaction 失效，需要主进程兜底）
+    if (onContextUsage && snapshot.maxTokens > 0) {
+      onContextUsage(snapshot.totalTokens, snapshot.maxTokens)
+    }
   } catch (error) {
     console.warn(`[Claude 适配器] 缓存 Context 分项失败: sessionId=${sessionId}`, error)
   }
@@ -741,6 +758,13 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     const controller = new AbortController()
     activeControllers.set(options.sessionId, controller)
 
+    // 打点：spawn 开始 / 首字节 / result 总耗时（排查发送延迟瓶颈）
+    const timingTag = `[Agent 编排] [session=${options.sessionId}]`
+    const queryStartAt = Date.now()
+    let spawnStartAt = 0
+    let spawnEndAt = 0
+    let firstByteAt = 0
+
     // 创建 Query 就绪 Promise（队列消息会等待此 Promise）
     const readyPromise = new Promise<void>((resolve) => {
       queryReadyResolvers.set(options.sessionId, resolve)
@@ -774,9 +798,24 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         includePartialMessages: false,
         // 关闭 SDK 自动 prompt_suggestion：它在每轮 result 之后才到达，是旧版「收到 result 后
         // 仍需等 2s 尾部消息」约束的根源。关闭后 result 即本轮最后一条消息，adapter 可在 result
-        // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行该计划」建议由
+        // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行计划」建议由
         // orchestrator 自行注入，不依赖此选项，故功能不受影响。（对齐 Proma #913）
         promptSuggestions: false,
+        // SDK auto-memory 重定向到 TAgent 记忆目录的子目录 agent_self/
+        //
+        // 历史 bug（2026-07-05）：尝试用 `autoMemoryEnabled: false` 禁用 SDK auto-memory，
+        // 但 SDK 0.3.153 该选项是空壳（schema 有定义，逻辑未实现），LLM 仍按 SDK 内置
+        // system prompt 主动写记忆文件到 sdk-config/projects/{cwd-slug}/memory/，TAgent UI
+        // 读自己的 ~/.tagent/memory/L0-L5 目录看不到 LLM 写的内容。
+        //
+        // 解决方案：用 autoMemoryDirectory 把 SDK auto-memory 重定向到
+        // ~/.tagent[-dev]/memory/agent_self/ 子目录。LLM 主动写的能力保留，写入位置对齐
+        // TAgent 记忆根目录，UI 能读到。与 Nudge 系统写的 L0-L5 文件名不重叠，互不干扰。
+        // 长期可关注 SDK 修复 autoMemoryEnabled 后移除此重定向。
+        autoMemoryDirectory: getAgentSelfMemoryDir(),
+        // autoMemoryEnabled: false 已无法禁用 SDK auto-memory，保留注释说明
+        // 实际禁用靠 autoMemoryDirectory 重定向 + system prompt 反向指令（如需）
+        // autoMemoryEnabled: false,
         cwd: options.cwd,
         abortController: controller,
         env: options.env,
@@ -847,6 +886,7 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         spawnClaudeCodeProcess: (
           spawnOpts: import('@anthropic-ai/claude-agent-sdk').SpawnOptions
         ) => {
+          spawnStartAt = Date.now()
           // kscc 在 Windows 上是 .cmd 脚本，spawn 无法直接执行，
           // 需要 cmd.exe /c 来运行，否则 EINVAL
           const isKscc = options.isKsccChannel ?? false
@@ -897,6 +937,10 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
               }
             })
           }
+          spawnEndAt = Date.now()
+          console.log(
+            `${timingTag} [kscc 打点] spawn 耗时: ${spawnEndAt - spawnStartAt}ms (pid=${child.pid ?? 'N/A'})`
+          )
           return child as unknown as import('@anthropic-ai/claude-agent-sdk').SpawnedProcess
         },
       } as import('@anthropic-ai/claude-agent-sdk').Options
@@ -952,6 +996,17 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
       for await (const sdkMessage of queryIterator) {
         if (controller.signal.aborted) break
 
+        // 打点：第一个 SDK message yield（首字节）
+        if (firstByteAt === 0) {
+          firstByteAt = Date.now()
+          const spawnMs = spawnEndAt - spawnStartAt
+          const firstByteMs = firstByteAt - spawnEndAt
+          const totalMs = firstByteAt - queryStartAt
+          console.log(
+            `${timingTag} [kscc 打点] 首字节: spawn 后 ${firstByteMs}ms, 总耗时 ${totalMs}ms (spawn=${spawnMs}ms)`
+          )
+        }
+
         const msg = sdkMessage as Record<string, unknown>
 
         // 捕获 SDK session_id
@@ -978,14 +1033,24 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           const resultMsg = msg as {
             modelUsage?: Record<string, { contextWindow?: number }>
             terminal_reason?: string
+            subtype?: string
           }
+          // 打点：result 总耗时
+          const resultTotalMs = Date.now() - queryStartAt
+          console.log(
+            `${timingTag} [kscc 打点] result 到达: subtype=${resultMsg.subtype ?? 'unknown'}, 总耗时 ${resultTotalMs}ms`
+          )
           const contextWindow = pickResultContextWindow(resultMsg.modelUsage)
           if (contextWindow) {
             options.onContextWindow?.(contextWindow)
           }
           const liveQuery = activeQueries.get(options.sessionId)
           if (liveQuery) {
-            void cacheContextUsageFromQuery(options.sessionId, liveQuery)
+            void cacheContextUsageFromQuery(
+              options.sessionId,
+              liveQuery,
+              options.onContextUsage
+            )
           }
           const keepForReason = shouldKeepChannelOpen(resultMsg.terminal_reason)
           const keepForTasks = backgroundTasksPending
