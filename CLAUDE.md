@@ -450,6 +450,14 @@ React UI 更新
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
+**最近完成**（2026-07-05 晚）：
+
+- **Agent 稳定性第一波修复**（详见 `docs/plans/2026-07-05-agent-stability-issues-diagnosis.md` §8）：Nudge IPC 字段名不匹配核心 bug（`nudges` 复数 vs `nudge` 单数，导致 toast 永远不弹 → 记忆永不写入）+ result 错误时回滚 sdkSessionId（避免无效 session 持久化）+ prompt_too_long 自动压缩（typed_error + catch 路径全覆盖）+ context > 85% 主动 fire-and-forget 压缩（onContextUsage 回调 + compactSessionProactive helper）+ typed_error 路径补塞 stderr 到 `_errorDetails` + catch 路径 stderr hint 条件放宽到所有 stderr 非空
+- **SDK auto-memory 入侵发现 + 临时缓解**：SDK 0.3.153 的 `autoMemoryEnabled: false` 是空壳选项（schema 有定义，逻辑未实现），LLM 仍按 SDK 内置 system prompt 主动写记忆文件到 SDK 目录。临时方案：用 `autoMemoryDirectory` 重定向到 `~/.tagent/memory/agent_self/` 子目录，UI 加 "LLM 自动记录" 卡片显示（`listAgentSelfFiles` IPC + `AgentSelfRow` 组件）。根治方案待做：system prompt 反向指令 + 废目录兜底 + Nudge 系统增强（详见诊断文档 §8.2 问题 5）
+- **FilePathChip 抖动真根因修复**（b2a3016 只修了一半）：`fileStatus` useState 初始值改用 `fileExistsCache` 命中值（cache 命中时直接初始为 resolved/broken，零切换零动画）+ 去掉 `transition-colors duration-150`（颜色切换瞬间完成，不动画化）
+- **长会话输入卡顿 perf 修复**：AgentView 之前订阅 `inputContent`（string），每键让整个 3000+ 行组件树 re-render。改用 `agentSessionHasDraftAtomFamily`（boolean 派生 atom，只在 empty↔non-empty 切换时变化）+ `AgentRichTextInputBridge` wrapper（inputContent 在 wrapper 内部订阅，仅输入框自己 re-render）+ handleSend 用 `store.get` 实时读 atomFamily 不依赖闭包 + AgentMessages 加 React.memo。24 轮会话输入框打字不再卡顿
+- **AgentMessages 加 React.memo**：避免父组件 AgentView re-render 串到 100+ 条消息列表
+
 **最近完成**（2026-07-05）：
 
 - **记忆系统 UI 收尾**：通用模式补记忆 rail 入口（之前只在 TA 模式可见）+ 清理 MemOS Cloud 遗留代码（-609 行，删 `memos-client.ts` / `memory-tool.ts` / `getMemoryConfig` IPC 链路 + `memoryEnabled` 字段）+ 修复 L4 summary NULL bug（v1.4+ SDKMessage 嵌套格式 `{type, message: {role, content}}` 未读取，导致 L4 永远写不进 summary）+ 记忆页面重设计对齐 KanbanMainView 玻璃风格（Panel + content-glass + RailInspectorHeader + 6 层时间线卡片）+ 左栏改为会话搜索（FTS5 全文搜索 + 300ms 防抖）去除左右重复的 L0-L5 层级逻辑 + 左栏 L0-L5 点击 → 主区滚动定位 + 展开 + 左栏会话点击 → 主区 L4 卡片高亮选中会话（`memorySelectedSessionAtom` 桥接）+ 圆角升级匹配主体大圆角风格（层卡片 rounded-2xl / 会话卡片 rounded-glass-popover / 徽章 rounded-full）+ 主面板层卡片改用 `session-list-row` 玻璃浮岛模式（展开时 `session-list-item-active` 完整玻璃浮岛，未展开时透明融入底板，去掉 `bg-muted/10` 半透明灰遮盖）

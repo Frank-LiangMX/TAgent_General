@@ -267,78 +267,132 @@ kscc stderr → adapter.spawnClaudeCodeProcess (875-885, 转发到 onStderr 回�
 
 ## 4. 问题 1:发送延迟瓶颈定位
 
-### 各阶段耗时分析
+> **状态**:已实测验证,2026-07-05 抓到 18 轮真实打点数据,**否定了原始诊断的"spawn + 重放 JSONL"推测**,真正瓶颈是 kscc 内部 LLM 服务端延迟波动。
 
-TAgent 主流程 `sendMessage` 已埋点 `markPhase`,日志在 `agent-orchestrator.ts:2381-2384` 输出 `[Agent 编排] 启动阶段耗时...`,**先开 DevTools 抓这条日志拿真实数据**。
+### 实测数据(18 轮长会话)
 
-| 阶段 | 调用点 | 推测耗时 | 备注 |
-|------|--------|---------|------|
-| preflight | `buildSdkEnv` line 1461 | 5-30ms | env 拼装,同步 |
-| persistUserMsg | line 1517 | <5ms | JSONL append |
-| nudgeDetect | line 1563 | 5-20ms | slice + filter |
-| sdkImport | line 1576 | 首次 100-300ms / 后续 <5ms | `await import('SDK')`,有模块缓存 |
-| buildMcpConfig | line 1753 | <10ms | `buildMcpServers` 是同步函数(line 736-775) |
-| injectNanoBanana/CompactSession/Automation/Kanban/TA | line 1755-1795 | **50-300ms** | 全是 `createSdkMcpServer` in-process,**不 spawn 子进程**,但每次都重建对象 |
-| buildContextPrompt | line 1857 | 10-50ms | `buildSystemPrompt` 无缓存,每次重拼字符串(line 452) |
-| buildQueryOptions | line 2378 | <10ms | 纯对象组装 |
-| **adapter.query 调用** | line 2476 | **→ spawn kscc** | **真正的延迟主战场** |
+测试环境:kscc 内网渠道 + GLM-5.1 模型,同一会话连续发 18+ 条消息。打点位置在 `claude-agent-adapter.ts` 加了 3 个计时器(spawn / 首字节 / result)。
 
-`adapter.query` 内部(line 737-895):
-- line 763 `await import('SDK')` — 已缓存
-- line 847-895 `spawnClaudeCodeProcess` 自定义 spawn — Node spawn kscc,Windows 走 `where kscc` + `.cmd` 兼容,macOS/Linux 直接 spawn
-- SDK 把整段历史 prompt 通过 stdin 喂给 kscc(`--input-format stream-json`)— **历史越长,stdin 写入越慢,kscc 解析越慢**
-- kscc 启动后走公司代理认证握手 — **不可控外部延迟**
-- LLM 首字节流回吐
+| 轮次 | preflight(ms) | spawn(ms) | **首字节(ms)** | result 总(ms) |
+|------|--------------|----------|--------------|--------------|
+| 1 | 73 | 1 | **955** | 3,508 |
+| 2 | 14 | 0 | 7,325 | 12,001 |
+| 3 | 11 | 0 | 7,307 | 9,710 |
+| 4 | — | 1 | **17,273** | 26,323 |
+| 5 | — | 0 | 7,933 | 16,247 |
+| 6 | — | 0 | 10,171 | 33,358 |
+| 7 | — | 1 | 8,057 | 39,306 |
+| 8 | — | 0 | 6,604 | 28,723 |
+| 9 | — | 1 | 14,928 | (无 result) |
+| 10 | — | 1 | 996 | 115,108 |
+| 11 | — | 1 | 6,747 | 20,022 |
+| 12 | — | 1 | 5,516 | 19,564 |
+| 13 | — | 1 | 10,383 | 30,429 |
+| 14 | — | 1 | 14,051 | 30,343 |
+| 15 | — | 1 | **19,967** | 42,221 |
+| 16 | — | 1 | 15,806 | 719,245 ⚠ 异常 |
+| 17 | — | 0 | 6,866 | 28,245 |
+| 18 | — | 1 | 7,772 | 22,363 |
+| 19 | — | 1 | **41,534** ⚠ | 62,084 |
+| 20 | — | 1 | 16,302 | 41,342 |
+| 21 | — | 1 | 12,324 | 40,829 |
+| 22 | — | 1 | 11,933 | — |
+| 23 | — | 1 | 1,650 | 93,290 |
 
-### 瓶颈定位
+### 实测结论
 
-**主因(80% 概率):每条消息重新 spawn kscc 子进程 + SDK 通过 stdin 重放完整 JSONL 历史**
+**1. TAgent 主进程组装完全不是瓶颈**
 
-- 历史越长 → SDK 拼 prompt 越慢 → kscc 解析 stdin 越慢 → **延迟随轮次累积**
-- kscc 启动加载(`~/.claude/CLAUDE.md`、settings.json、skills 索引)每轮重做一次
-- 公司代理握手每轮重做一次
+preflight 11-74ms,占总耗时 < 1%。所有"短期优化"(缓存 buildSystemPrompt / 并行化 inject* / 预热 SDK)**对发送延迟完全无效**。
 
-**次因:`buildSystemPrompt`(`agent-prompt-builder.ts:452`)无缓存**,每次重新拼 SOUL.md + 工具指南 + 看板指南 + SubAgent 策略 + ... 估 10-50ms,小但可省。
+**2. spawn kscc 子进程几乎为 0**
 
-### 修复方案
+所有轮次 spawn 在 0-2ms。**会话级长驻子进程方案收益极小**——省不掉任何明显延迟。
 
-**短期(不改架构)**
+**3. 真正瓶颈是 spawn 后到首字节的延迟(5-41 秒剧烈波动)**
 
-1. **先抓数据**:让用户复现延迟,在 DevTools 控制台搜 `[Agent 编排] 启动阶段耗时`,把 timings JSON 贴出来。如果 `totalPreflightMs < 200ms`,瓶颈 100% 在 spawn kscc + LLM 首字节;如果某个 inject* 阶段异常大,先优化它
-2. **加 kscc spawn 计时**:在 `claude-agent-adapter.ts:866` spawn 之后立刻 `Date.now()`,在第一个 SDK message yield 时打 `kscc_first_byte_ms`。区分"spawn 本身"vs"LLM 首字节"
-3. **缓存 buildSystemPrompt**:对相同 `(workspaceSlug, sessionId, permissionMode, modelId)` 做内存 LRU 缓存,失效条件 = workspace 配置变更。省 10-50ms/轮
-4. **并行化 inject\* 链**:line 1755-1795 当前是串行 `await`,改 `Promise.all` 可省一半时间(in-process 创建本身很快,但 await import zod/compactor 有微开销)
-5. **预热 SDK import**:在 app ready 时 `import('@anthropic-ai/claude-agent-sdk')`,省首次 100-300ms
+- 范围:0.9 秒到 41.5 秒,**8 倍波动**
+- 平均:~10 秒
+- 占总延迟的 70-90%
 
-**长期(架构级)**
+**4. 历史长度不是主因(否定原始推测)**
 
-1. **会话级长驻 kscc 子进程**:不再每条消息 spawn 一次,而是首次 sendMessage 时 spawn,后续消息通过 stdin 追加到同一进程的 stream-json 输入。SDK 已支持 `streamInput()`,但 adapter 现在主动 `channel.close()` 触发 EOF 退出,需要改为不 close、保持长连接。**这是最大杠杆,可省 80% 启动延迟**,但要处理子进程崩溃恢复
-2. **resume 改为增量推送**:目前 SDK `--resume` 把整段 JSONL 拼成 prompt 喂给 kscc。如果 kscc 支持 resumeSessionId 协议(让 kscc 自己读 JSONL),TAgent 只发增量消息即可。需评估 kscc 是否支持
-3. **MCP 配置缓存**:buildMcpServers 结果按 workspaceSlug 缓存,workspace 配置变更时失效
+如果首字节随历史 token 线性增长,曲线应该平滑上升。实测:
+- 轮次 5(短历史):7.9s,轮次 8(更长历史):6.6s — **历史更长了反而更慢**
+- 轮次 22(很长历史):11.9s,轮次 23(最长历史):1.6s — **历史最长但首字节最快**
+
+→ 历史长度不是决定性因素。**Prompt Cache 即使生效,效果也有限**。
+
+**5. 服务端延迟波动是主因**
+
+5-41 秒的剧烈波动是典型服务端拥塞特征:
+- 公司代理 LLM 排队(同时段多人共用)
+- GLM/Kimi/MiMo 服务端冷启动/热加载
+- 公司代理负载均衡轮询到不同实例
+- 网络抖动
+
+**6. 异常情况**
+
+- 轮次 9 无 result(可能 abort 或断连)
+- 轮次 16 result 719 秒(kscc 卡住,可能需要超时兜底)
+- 轮次 19 首字节 41 秒(服务端严重拥塞)
+
+### 优化方向重新评估
+
+| 方案 | 原推测收益 | 实测评估 |
+|------|----------|---------|
+| 缓存 buildSystemPrompt | 省 7ms | **无效**(瓶颈在服务端) |
+| 并行化 inject* 链 | 省 5ms | **无效** |
+| 预热 SDK import | 省 46ms | **无效** |
+| 会话级长驻子进程 | 省 spawn + 重放 | **收益极小**(spawn=0ms,重放也不是主因) |
+| Prompt Cache | 可能省 80% prefill | **效果有限**(历史 prefill 不是主因) |
+| **超时重试** | — | **新方案,可能有效** |
+| **多渠道备选** | — | **新方案,可能有效** |
+| **首字节骨架屏** | — | **新方案,改善体验** |
+
+### 修复方案(基于实测数据重写)
+
+**短期(改善体验,不改架构)**
+
+1. **首字节骨架屏**:首字节前显示"正在思考..."动画,降低用户焦虑
+2. **首字节超时重试**:首字节 > 30s 自动 abort + 提示用户重试(可能命中更快实例)
+3. **保留打点代码**:已有 3 个打点(`spawn 耗时` / `首字节` / `result 到达`),后续可加 UI 展示,让用户看到当前延迟
+
+**长期(架构级,收益不确定)**
+
+1. **多渠道备选**:同时探测 kscc 多个模型(GLM-5.1 / GLM-5.2 / Kimi-K2.5 / Kimi-K2.6)的实时延迟,选当前最快的
+2. **会话级长驻子进程**:实测收益小,但可省掉每轮 spawn + 历史重放开销(占总延迟 < 5%),优先级降低
+3. **服务端探测 + 提示**:首字节 > 20s 时 UI 提示"服务端拥塞,可尝试切换渠道"
+4. **超时降级**:轮次 16 那种 719 秒 result 必须有超时保护,默认 120s 强制 abort
+
+**不推荐做的**
+
+- ~~缓存 buildSystemPrompt~~(实测无效)
+- ~~并行化 inject* 链~~(实测无效)
+- ~~预热 SDK import~~(实测无效)
+- ~~会话级长驻子进程作为主要优化手段~~(实测收益小,但作为副作用优化可考虑)
 
 ### 关键代码位置
 
-- `apps/electron/src/main/lib/agent-orchestrator.ts:1294-1298` — timings 埋点定义
-- `apps/electron/src/main/lib/agent-orchestrator.ts:2381-2384` — **已有耗时日志输出**
-- `apps/electron/src/main/lib/agent-orchestrator.ts:1461` — buildSdkEnv
-- `apps/electron/src/main/lib/agent-orchestrator.ts:1753-1795` — MCP 注入串行 await 链
-- `apps/electron/src/main/lib/agent-orchestrator.ts:2280` — buildSystemPrompt(无缓存调用)
-- `apps/electron/src/main/lib/agent-orchestrator.ts:2476` — adapter.query 入口
-- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:737-895` — query 实现 + spawn kscc
-- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:847-895` — 自定义 spawnClaudeCodeProcess
-- `apps/electron/src/main/lib/agent-prompt-builder.ts:452` — buildSystemPrompt(同步,无 cache)
-- `apps/electron/src/main/lib/agent-orchestrator.ts:736-775` — buildMcpServers(同步)
+- `apps/electron/src/main/lib/agent-orchestrator.ts:1294-1298` — timings 埋点定义(preflight 阶段)
+- `apps/electron/src/main/lib/agent-orchestrator.ts:2435-2437` — preflight 耗时日志输出
+- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:737` — query 函数入口(queryStartAt)
+- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:850` — spawn hook(spawnStartAt)
+- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:908-913` — spawn 完成 + 耗时日志
+- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:957-965` — 首字节耗时日志
+- `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts:1004-1010` — result 到达耗时日志
 
-### 验证步骤
+### 验证步骤(已完成)
 
-1. 让用户复现延迟,DevTools 搜 `启动阶段耗时` 拿真实 timings
-2. 若 totalPreflightMs < 200ms → 瓶颈在 spawn kscc + LLM,走长期方案 1(长驻子进程)
-3. 若某 inject* 阶段 > 200ms → 短期方案 4(并行化)
-4. 在 `claude-agent-adapter.ts:866` 加 spawn→first-byte 计时,区分 spawn 本身 vs LLM 首字节
+1. ✅ 在 DevTools 抓 `[Agent 编排] 启动阶段耗时` 拿真实 timings → preflight 11-74ms
+2. ✅ totalPreflightMs < 200ms → 瓶颈在 spawn kscc + LLM 首字节(确认)
+3. ✅ 在 `claude-agent-adapter.ts` 加 spawn→first-byte 计时 → 区分 spawn(0-2ms) vs LLM 首字节(0.9-41 秒)
+4. ✅ 18 轮长会话数据 → 否定"历史越长越慢"推测,确认服务端延迟是主因
 
-**结论**:最可能的主因是每条消息重新 spawn kscc + SDK 重放完整 JSONL 历史。先用现有 timings 日志验证,再加 spawn 计时打点区分 spawn vs LLM,再决定走短期缓存还是长期长驻子进程。
+**最终结论**:发送延迟的真正瓶颈是 kscc 内部 LLM 服务端延迟波动(5-41 秒),TAgent 客户端无法直接优化。短期改善体验(骨架屏 / 超时重试),长期考虑多渠道备选。
 
 ---
+
 
 ## 5. 修复路线图(建议执行顺序)
 
@@ -384,7 +438,7 @@ TAgent 主流程 `sendMessage` 已埋点 `markPhase`,日志在 `agent-orchestrat
 | 3 | resume sessionId 错乱 | 🟡 中(代码事实+推测) | P0 强 / P1 需谨慎 | P1 可能误伤正常会话切换 | 是(P1 边界) |
 | 2 | context 爆终止 | 🟢 较强(白名单直接事实) | (a)(b) 强 / (c) 需验证 | 清 resume 后 SDK 行为未实测 | 是(compaction 真实行为) |
 | 4 | kscc 报错丢失 | 🟢 强(直接代码事实) | 短期强 / 长期中 | typed_error 路径需单独处理 | 否(短期可直接改) |
-| 1 | 发送延迟 | 🔴 弱(纯理论推测) | 短期中 / 长期高风险 | 长驻子进程是大改动 | 是(必须先抓数据) |
+| 1 | 发送延迟 | 🟢 强(已实测 18 轮数据) | 短期体验优化强 / 长期架构收益不确定 | 服务端拥塞是主因,TAgent 控制不了 | 已完成验证(详见 §4) |
 
 ### 6.2 各问题详细评估
 
@@ -459,4 +513,84 @@ TAgent 主流程 `sendMessage` 已埋点 `markPhase`,日志在 `agent-orchestrat
 
 ---
 
-**最后更新**:2026-07-05 — 4 个稳定性问题排查完毕 + 可信度评估 + 验证清单。**本报告是线索不是答案,修复前必读 §6 验证清单**。修复时按"§5 修复路线图"分三波执行,每波修复前先做对应的验证步骤。
+**最后更新**:2026-07-05 (晚 22:50) — 第一波修复已落地 + 新发现 3 个问题(SDK auto-memory 入侵 / 输入卡顿真根因 / FilePathChip 抖动真根因)。**本报告是线索不是答案,修复前必读 §6 验证清单**。
+
+---
+
+## 8. 第一波修复落地（2026-07-05 晚）
+
+### 8.1 已落地修复
+
+| 修复 | 文件 | 说明 |
+|------|------|------|
+| Nudge IPC 字段名不匹配（核心 bug） | agent-orchestrator.ts / preload / useGlobalAgentListeners / NudgeToast | 主进程发 `nudges`（复数）但渲染进程读 `event.nudge`（单数）→ toast 永远不弹 → 记忆永不写入。已统一为 `nudges`。同时修了 L3 correction 不调 accept 的 bug + GET_PENDING_NUDGES 硬编码返回空 |
+| 问题 3 P0：扩展 isSessionNotFoundError | agent-orchestrator.ts | 已是扩展的多模式正则集合（中英文 + kscc 错误特征） |
+| 问题 3 P1：result 错误时回滚 sdkSessionId | agent-orchestrator.ts | 错误 result 检测到 sdkSessionId 被覆盖时主动回滚到 existing 值，避免无效 session 被持久化 |
+| 问题 2 (a)(b)：prompt_too_long 自动压缩 | agent-orchestrator.ts | typed_error + catch 路径均已实现 preparePromptTooLongRecovery |
+| 问题 2 (c)：context > 85% 主动压缩 | claude-agent-adapter.ts / agent-orchestrator.ts | 新增 onContextUsage 回调 + compactSessionProactive helper，result 后检测占用 > 85% 主动 fire-and-forget 压缩 |
+| 问题 4 短期：errMsg 塞 _errorDetails + 放宽 stderr hint | agent-orchestrator.ts | typed_error 路径补塞 stderr；catch 路径 stderr hint 条件从 `/exited with code 1/i` 放宽到所有 stderr 非空 |
+| typecheck 验证 | 全 4 包 | shared / core / ui / electron 全过 |
+
+### 8.2 新发现 3 个问题
+
+#### 问题 5：SDK auto-memory 入侵，L0-L5 系统被架空 ⚠️ 高优先级
+
+**现象**：用户说"我叫 frank"，LLM 主动用 Write 工具写 `user_name.md` + `MEMORY.md` 到 SDK 目录 `~/.tagent-dev/sdk-config/projects/.../memory/`，**TAgent 自研的 L0-L5 系统全空**。
+
+**根因**：
+- `autoMemoryEnabled: false` 在 SDK 0.3.153 是**空壳选项**（schema 有定义，逻辑未实现），LLM 仍按 SDK 内置 system prompt 主动写记忆文件
+- 写入位置是 SDK 目录，TAgent UI 只读 `~/.tagent/memory/`，两套系统并存但互不可见
+- 与渠道无关（kscc + GLM-5.1 / Anthropic + Claude 都中招），因为 system prompt 是 SDK 注入的
+
+**临时方案**（已落地）：用 `autoMemoryDirectory` 把 SDK auto-memory 重定向到 `~/.tagent/memory/agent_self/` 子目录，UI 加 "LLM 自动记录" 卡片显示。但这是临时方案——LLM 仍主动写，与 L0-L5 设计冲突。
+
+**根治方案**（待做）：
+1. system prompt 加反向指令（"记忆文件由 TAgent 自研系统管理，禁止主动用 Write 工具写任何 .md 文件到 memory/ 目录"）
+2. `autoMemoryDirectory` 重定向到 `/tmp/tagent-discarded-memory/` 废目录兜底
+3. Nudge 系统降低门槛（1 轮就检测 + 放宽正则 + 自动写不需确认）
+
+**架构核对**：对照 `docs/plans/2026-06-05-tagent-fusion-design.md` §6.5.4，原始设计里 L0-L3 全部由 Nudge 系统触发（用户确认后写），L5 由 Reflect 服务提炼，L4 是会话日志。**LLM 不应该主动写 .md 文件**。SDK auto-memory 是入侵者，必须屏蔽。
+
+#### 问题 6：长会话输入卡顿真根因 ⚠️ 已修
+
+**现象**：24 轮会话输入框打字特别卡，51 轮会话反而不卡。
+
+**根因**：AgentView 订阅 `inputContent`（string atom），每次按键都让整个 AgentView re-render。AgentView 是 3000+ 行组件树（含 AgentMessages / TokenStatsPanel / 工具栏），re-render 时全部 diff。24 轮会话某条消息体特别大（大 tool_result / base64 图片），diff 成本高 → 卡顿明显；51 轮会话消息体均匀，单次 diff 还能容忍 → 不卡。
+
+**修复**（agent-atoms.ts / AgentView.tsx）：
+1. 新增 `agentSessionHasDraftAtomFamily`（boolean 派生 atom），只在 empty↔non-empty 切换时变化
+2. AgentView 改用 `hasDraft`，不再订阅 inputContent
+3. handleSend 用 `store.get` 实时读 atomFamily，不依赖闭包
+4. handleSend useCallback 依赖数组移除 inputContent
+5. 新增 `AgentRichTextInputBridge` wrapper，inputContent / inputHtmlContent 在 wrapper 内部订阅，仅输入框自己 re-render
+6. AgentMessages 加 React.memo，进一步跳过父组件 re-render
+
+#### 问题 7：FilePathChip 抖动真根因 ⚠️ 已修
+
+**现象**：b2a3016 修了 border-width 占位，但抖动仍在。
+
+**根因**：b2a3016 只修了一半——border-width 占位修了，但**两个颜色动画化源**没修：
+1. `transition-colors duration-150` —— idle→broken 颜色切换被 150ms 动画化
+2. chip re-mount 时 `fileStatus` useState 写死 'idle'，不读 cache —— re-mount 时重置回 idle，IntersectionObserver 触发后切到 broken，transition-colors 把切换动画化 → 颜色闪烁/抖动
+
+**修复**（file-path-chip.tsx）：
+1. `fileStatus` 初始值用 cache 命中值（cache 命中时直接初始为 resolved/broken，零切换零动画）
+2. 去掉 `transition-colors duration-150`，颜色切换瞬间完成
+
+### 8.3 待办（第二波）
+
+| 优先级 | 任务 | 关联 |
+|--------|------|------|
+| P0 | SDK auto-memory 根治方案（system prompt 反向指令 + 废目录兜底 + Nudge 增强） | 问题 5 |
+| P1 | context 预算管理可视化 | 问题 2 第二波 |
+| P1 | 日志文件兜底（kscc stderr 落盘） | 问题 4 长期 |
+| P2 | streamState 残留清理 | 问题 3 长期 |
+
+### 8.4 验证清单
+
+重启 dev 后按顺序测：
+1. **Nudge 记忆**：发 5-10 条"我叫 X" / "我喜欢简洁" / "我叫 Frank"，看右下角 toast 是否弹 + 点"记住"后 `~/.tagent/memory/L2_facts.md` 是否有内容
+2. **输入卡顿**：24 轮会话输入框快速打字 30 字符，应流畅无卡顿
+3. **FilePathChip 抖动**：让 Agent 输出文件名，broken 状态虚线框在打字时不应抖动
+4. **SDK auto-memory**：让 LLM 主动写记忆，应写到 `agent_self/`（临时方案），记忆页面 "LLM 自动记录" 卡片应显示文件
+5. **prompt_too_long 自动压缩**（可选）：长会话观察 dev 控制台是否出现 `Context 占用 XX% (>85%)，主动 fire-and-forget 调 compactSession` 日志
