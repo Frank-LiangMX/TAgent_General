@@ -404,6 +404,17 @@ React UI 更新
 - ❌ 主会话改完多文件代码不审查 → 派 `code-reviewer`
 - ❌ 大项目分析派一个 SubAgent 硬啃 → SubAgent context 会爆，用看板拆分
 - ❌ 简单单步问答也派 SubAgent → 开销高，主会话直接干更快
+- ❌ **派发 kanban 任务 body 里只用相对路径** → worker 是 headless 子会话看不到当前 cwd，会到处 Glob/Grep 找项目根，单次任务多消耗 10K+ token。**强制要求**：body 开头必须写明 `项目根目录: <绝对路径>`，body 内所有文件引用用绝对路径或带项目根前缀。**根治方案见** `docs/plans/2026-06-30-kanban-v1-product-design.md` Phase D+1（`kanban_add_task` 自动注入项目根路径）。
+
+### 派发 body 必须带项目根路径（硬约束）
+
+**这是反复出现的工作流问题，2026-07-05 用户明确反馈必须根治**：
+
+- worker 是 headless 子会话，看不到主会话 cwd
+- body 里如果只有 `apps/electron/src/main/lib/...`，worker 不知道项目在哪
+- 单次任务可能多消耗 10K+ token 找项目根，浪费用户配额
+- **临时措施**：派发时 body 开头第一段写明 `项目根目录: /Users/frank/Downloads/TAgent_General`，body 内所有路径用绝对路径
+- **根治措施**（开发期必修）：`kanban_add_task` 工具实现里自动在 body 开头注入项目根路径，详见 `docs/plans/2026-06-30-kanban-v1-product-design.md` Phase D+1
 
 ---
 

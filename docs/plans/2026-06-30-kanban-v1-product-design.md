@@ -281,6 +281,45 @@ App 启动时：`status = running` → 标 `interrupted` → 重新 `ready` 或 
 
 - Verifier 任务类型、`kanban_comment` blackboard、decomposer LLM 自动拆单
 
+### Phase D+ — worker 体验硬伤（开发期必修，不能拖）
+
+> **背景**：2026-07-05 实战发现两类 worker 派发问题，会浪费用户大量 token：
+
+**D+1. `kanban_add_task` 自动注入项目根路径（P0，必做）**
+
+- **问题**：worker 是 headless 子会话，看不到主会话 cwd。如果 body 里只有相对路径（`apps/electron/src/main/lib/...`），worker 会到处 Glob/Grep 找项目根，单次排查可能多消耗 10K+ token。
+- **方案**：在 `kanban_add_task` 工具实现里（`apps/electron/src/main/lib/kanban-agent-tools.ts`），调用 `kanban-db.addTask()` 之前自动在 body 开头注入：
+  ```
+  ---
+  项目根目录: <当前 board 绑定的 cwd 或主进程 cwd>
+  数据目录: ~/.tagent/
+  ---
+  
+  <原 body 内容>
+  ```
+- **校验**：单元测试覆盖"body 不含绝对路径时自动注入""board 有 cwd 时用 board cwd""无 cwd 时 fallback 到主进程 cwd"。
+- **关联文件**：
+  - `apps/electron/src/main/lib/kanban-agent-tools.ts`（kanban_add_task 入口）
+  - `apps/electron/src/main/lib/kanban-db.ts`（addTask 方法可选保留注入逻辑）
+  - `packages/shared/src/types/kanban.ts`（board 表加 `cwd` 字段，建板时记录）
+
+**D+2. `kanban_comment` blackboard 实现（P1，紧跟 D+1）**
+
+- **问题**：`kanban_comment` 工具调用直接返回"尚未实现：kanban-db 未提供 addTaskComment / metadata 更新 API（待 Phase D）"，主会话没法给正在跑的 worker 补指令，也没法跨任务共享上下文。
+- **方案**：在 `kanban-db.ts` 实现 `addTaskComment(taskId, comment, author)`，写入 `task.metadata.blackboard: Array<{comment, author, ts}>`。`kanban_comment` MCP 工具透传调用。
+- **校验**：单元测试覆盖"评论按 ts 排序""author 支持 main/worker""评论不会覆盖 body"。
+- **关联文件**：
+  - `apps/electron/src/main/lib/kanban-db.ts`（addTaskComment 方法）
+  - `apps/electron/src/main/lib/kanban-agent-tools.ts`（kanban_comment 工具实现补全）
+
+**D+3. 错误来源标记（P2，长线）**
+
+- **问题**：worker 报错时，错误信息没有标记来源（kanban / worker SDK / kscc 子进程 / TAgent 主进程），主会话汇总时难以归因。
+- **方案**：worker 完成或失败时，结果对象加 `errorSource: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent'` 字段。
+- **关联文件**：
+  - `apps/electron/src/main/lib/kanban-worker-service.ts`（worker 结果包装）
+  - `apps/electron/src/main/lib/kanban-dispatcher.ts`（错误冒泡）
+
 ---
 
 ## 8. 文件清单（新增/改）
@@ -342,4 +381,4 @@ apps/electron/src/renderer/atoms/kanban-atoms.ts
 
 ---
 
-**最后更新**：2026-06-30 — v1 产品方案，整合触发/编排/UI/托盘后台，明确不做 Gateway。
+**最后更新**：2026-07-05 — 新增 Phase D+（worker 体验硬伤：自动注入项目根路径 + kanban_comment 实现 + 错误来源标记）。

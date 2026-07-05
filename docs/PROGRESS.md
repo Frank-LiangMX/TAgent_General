@@ -170,6 +170,7 @@
 | **`2026-06-24-proma-upstream-borrow-list.md`** | **活跃参考（2026-06-30 校准）** | Proma v0.11.1→v0.13.4 借鉴清单，逐项对齐状态 |
 | **`2026-06-29-agent-hooks-design.md`** | **已完成（TAgent 独有）** | PostToolUse auto-check 钩子 + 多语言精细配置 |
 | **`2026-06-30-auto-check-design.md`** | **已完成** | auto-check 语言级配置 + UI |
+| **`2026-07-05-agent-stability-issues-diagnosis.md`** | **活跃待办（已诊断,待修复）** | Agent 模式 4 个稳定性问题诊断:发送延迟 / context 爆终止 / resume sessionId 错乱 / kscc 报错无法反映。修复路线图分三波执行 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
 
