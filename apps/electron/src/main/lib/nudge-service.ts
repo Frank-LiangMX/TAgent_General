@@ -61,8 +61,14 @@ const LAYER_COOLDOWN_TURNS: Record<string, number> = {
   L3: 20,
 }
 
-/** 检测间隔 turn 数 */
-const NUUDGE_CHECK_INTERVAL = 5
+/**
+ * 检测间隔 turn 数
+ *
+ * 2026-07-05 晚：从 5 改为 1。原设计每 5 轮检测一次太慢，用户说"我叫 Frank"
+ * 要等 5 轮才弹 toast。改为每轮检测 + 阈值降低（fact ≥1 / behavior ≥2），
+ * 让 Nudge 系统真正能触发。冷却机制仍防止重复弹 toast。
+ */
+const NUUDGE_CHECK_INTERVAL = 1
 
 /** 每批最大候选数 */
 const MAX_CANDIDATES_PER_BATCH = 3
@@ -191,9 +197,9 @@ class NudgeService {
         }
       }
 
-      // ≥3 次的行为作为候选
+      // ≥2 次的行为作为候选（2026-07-05 晚：从 ≥3 降到 ≥2，降低触发门槛）
       for (const [pattern, evidence] of matches) {
-        if (evidence.length >= 3) {
+        if (evidence.length >= 2) {
           patterns.push({
             type: 'behavior_repeat',
             pattern,
@@ -214,9 +220,16 @@ class NudgeService {
     const patterns: PatternMatch[] = []
 
     // 提取事实性表述（包含"是"、"叫"、"在"等）
+    // 2026-07-05 晚：放宽正则，覆盖"我叫 X" / "我喜欢 X" / "我是 X" / "我的 X 是 Y" 等日常表达
     const factPatterns = [
-      /我[的之][^\s]{1,20}是[^\s]{1,20}/g,
-      /(名字|邮箱|账号|地址)[^\s]{0,5}[是为][^\s]{1,20}/g,
+      /我[的之][^\s]{1,20}是[^\s]{1,20}/g, // "我的名字是 Frank"
+      /(名字|邮箱|账号|地址|性别|年龄|职业|公司|学校|专业)[^\s]{0,5}[是为][^\s]{1,20}/g, // "名字是 Frank"
+      /我叫[^\s]{1,20}/g, // "我叫 Frank"
+      /我是[^\s]{1,20}/g, // "我是 Frank"
+      /我喜欢[^\s]{1,20}/g, // "我喜欢简洁"
+      /我爱[^\s]{1,20}/g, // "我爱吃火锅"
+      /我用[^\s]{1,20}/g, // "我用 Mac"
+      /我在[^\s]{1,20}/g, // "我在北京"
     ]
 
     for (const regex of factPatterns) {
@@ -233,9 +246,9 @@ class NudgeService {
         }
       }
 
-      // ≥2 次的事实作为候选
+      // ≥1 次的事实作为候选（2026-07-05 晚：从 ≥2 降到 ≥1，单次表述就触发 Nudge）
       for (const [pattern, evidence] of matches) {
-        if (evidence.length >= 2) {
+        if (evidence.length >= 1) {
           patterns.push({
             type: 'fact_repeat',
             pattern,

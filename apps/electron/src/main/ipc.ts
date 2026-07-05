@@ -4165,12 +4165,6 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  // 列出 SDK auto-memory 重定向目录 agent_self/ 下的 .md 文件
-  ipcMain.handle(AGENT_IPC_CHANNELS.LIST_AGENT_SELF_FILES, async () => {
-    const { memoryLayerService } = await import('./lib/memory-layer-service')
-    return memoryLayerService.listAgentSelfFiles()
-  })
-
   // ===== Pipeline 流水线相关 =====
 
   // 获取流水线列表

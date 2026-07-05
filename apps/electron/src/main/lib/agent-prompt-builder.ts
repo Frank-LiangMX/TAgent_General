@@ -377,6 +377,38 @@ const HOOK_AUTO_VERIFICATION_RULES = `## 工具后自动验证（PostToolUse hoo
 - 若回灌内容显示"执行失败"或"工具未安装"，说明该项目的检查工具未配置，可忽略并继续后续工作
 - 回灌内容会标注使用的检查命令（如 \`tsc --noEmit\` / \`ruff check .\`），请按对应工具的错误格式理解`
 
+/**
+ * 记忆系统管理规则 — 屏蔽 SDK 内置 auto-memory 的入侵
+ *
+ * 背景：SDK 0.3.153 的 autoMemoryEnabled: false 是空壳选项，LLM 仍按 SDK 内置
+ * system prompt 主动用 Write 工具写 .md 文件到 memory/ 目录。但 TAgent 自研了
+ * 5 层记忆系统（L0-L5），由 Nudge 系统在用户确认后写入，LLM 不应该主动写。
+ * 两套系统并存导致 L0-L5 被架空（详见 docs/plans/2026-07-05-agent-stability-issues-diagnosis.md §8.2 问题 5）。
+ *
+ * 此规则用 system prompt 反向指令屏蔽 SDK auto-memory，让 LLM 不要主动写
+ * 记忆文件。Nudge 系统降低门槛后会自动捕获用户画像，无需 LLM 主动写。
+ */
+const MEMORY_MANAGEMENT_RULES = `## 记忆系统管理（重要）
+
+TAgent 自研了 5 层记忆系统（L0 用户画像 / L1 项目画像 / L2 稳定事实 / L3 纠错记录 / L4 历史会话 / L5 提炼洞察），由 TAgent 自研的 Nudge 系统 + Reflect 服务负责写入，**LLM 不应该主动用 Write 工具写任何 .md 文件到 memory/ 目录**。
+
+**禁止行为：**
+
+- 不要用 Write 工具创建 \`memory/MEMORY.md\`、\`memory/user_profile.md\`、\`memory/user_name.md\` 等任何记忆类 .md 文件
+- 不要用 Write 工具创建或修改 \`MEMORY.md\` 索引文件
+- 不要在对话中主动说"我已记住 X"或"我已写入记忆"——记忆由系统在用户确认后自动写入，你不需要主动操作
+
+**正确行为：**
+
+- 用户说"我叫 Frank" / "我喜欢简洁"等时，正常对话回应，不要主动写文件
+- 系统会在合适时机（用户行为模式匹配后）通过 Nudge 弹 toast 询问用户是否记住，用户确认后由 TAgent 主进程写入对应层
+- 你需要记忆的内容由 system prompt 注入的 \`<workspace_state>\` 块提供（含用户画像 / 项目画像 / 最近事实等），不需要自己管理记忆文件
+
+**为什么：** SDK 内置 auto-memory 会让 LLM 主动写记忆文件，但 TAgent 的记忆系统是结构化的（5 层 + 自进化机制），LLM 主动写会破坏结构、产生重复、绕过用户确认流程。记忆的写入时机和格式由 TAgent 控制。
+
+**例外：** 用户明确要求"把 X 写到 Y 文件"时，按用户指令执行（这是文件操作，不是记忆管理）。`
+
+
 // ===== 语言指令常量 =====
 
 /**
@@ -474,6 +506,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // PostToolUse hook 自动验证规则（auto-typecheck 等）
   sections.push(HOOK_AUTO_VERIFICATION_RULES)
+
+  // 记忆系统管理规则（屏蔽 SDK auto-memory 入侵，LLM 不主动写记忆文件）
+  sections.push(MEMORY_MANAGEMENT_RULES)
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false

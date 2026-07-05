@@ -764,11 +764,6 @@ export interface ElectronAPI {
     limit?: number
   ) => Promise<Array<{ timestamp: number; correction: string; context: string }>>
 
-  /** 列出 SDK auto-memory 重定向目录 agent_self/ 下的 .md 文件（LLM 主动写） */
-  listAgentSelfFiles: () => Promise<
-    Array<{ filename: string; content: string; mtime: number }>
-  >
-
   // ===== Pipeline 流水线管理 =====
 
   /** 获取流水线列表 */
@@ -3393,12 +3388,6 @@ const electronAPI: ElectronAPI = {
 
   getMemoryCorrections: (mode: 'general' | 'ta', limit?: number) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MEMORY_CORRECTIONS, mode, limit)
-  },
-
-  listAgentSelfFiles: () => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_AGENT_SELF_FILES) as Promise<
-      Array<{ filename: string; content: string; mtime: number }>
-    >
   },
 
   // ===== Pipeline 流水线管理 =====

@@ -15,6 +15,7 @@
  */
 
 import * as fs from 'node:fs'
+import * as os from 'node:os'
 import * as path from 'node:path'
 
 import Database from 'better-sqlite3'
@@ -37,14 +38,17 @@ function getMemoryDir(mode: MemoryMode): string {
 }
 
 /**
- * 获取 SDK auto-memory 重定向目录：~/.tagent[-dev]/memory/agent_self/
+ * 获取 SDK auto-memory 废目录：/tmp/tagent-discarded-memory/
  *
  * SDK 0.3.153 的 autoMemoryEnabled: false 是空壳选项，无法真正禁用 auto-memory。
- * 用 autoMemoryDirectory 把 SDK 写入位置重定向到 TAgent 记忆目录的子目录 agent_self/，
- * 让 LLM 主动写的画像文件落到 TAgent 能读到的位置。与 Nudge 系统写的 L0-L5 文件名不重叠。
+ * 主防线是 system prompt 反向指令（agent-prompt-builder.ts 的 MEMORY_MANAGEMENT_RULES），
+ * 此处 autoMemoryDirectory 重定向到 /tmp/ 废目录作兜底——万一 LLM 不听话仍主动写，
+ * 也写到废目录不污染 ~/.tagent/memory/。L0-L5 完全由 TAgent 自研的 Nudge 系统控制。
+ *
+ * /tmp/ 路径在 macOS/Linux 自动清理，长期不会堆积；Windows 用 os.tmpdir() 同样语义。
  */
-export function getAgentSelfMemoryDir(): string {
-  return path.join(getMemoryDir('general'), 'agent_self')
+export function getDiscardedMemoryDir(): string {
+  return path.join(os.tmpdir(), 'tagent-discarded-memory')
 }
 
 /**
@@ -491,39 +495,6 @@ export class MemoryLayerService {
     }
 
     return fs.readFileSync(filePath, 'utf-8')
-  }
-
-  /**
-   * 列出 SDK auto-memory 重定向目录 agent_self/ 下的所有 .md 文件
-   *
-   * SDK auto-memory 不可禁用（0.3.153 autoMemoryEnabled:false 是空壳），改用 autoMemoryDirectory
-   * 重定向到 ~/.tagent[-dev]/memory/agent_self/。此方法列目录供 UI 渲染"LLM 自动记录"分区。
-   * 返回相对文件名 + 完整内容（文件通常很小，直接读内容避免 N 次 IPC）。
-   */
-  listAgentSelfFiles(): Array<{ filename: string; content: string; mtime: number }> {
-    const dir = getAgentSelfMemoryDir()
-    if (!fs.existsSync(dir)) return []
-    try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true })
-      const result: Array<{ filename: string; content: string; mtime: number }> = []
-      for (const entry of entries) {
-        if (!entry.isFile()) continue
-        if (!entry.name.endsWith('.md')) continue
-        const filePath = path.join(dir, entry.name)
-        try {
-          const stat = fs.statSync(filePath)
-          const content = fs.readFileSync(filePath, 'utf-8')
-          result.push({ filename: entry.name, content, mtime: stat.mtimeMs })
-        } catch {
-          // 单文件读失败跳过，不影响其他文件
-        }
-      }
-      // 按 mtime 倒序（最新在前）
-      result.sort((a, b) => b.mtime - a.mtime)
-      return result
-    } catch {
-      return []
-    }
   }
 
   /**

@@ -542,14 +542,14 @@ preflight 11-74ms,占总耗时 < 1%。所有"短期优化"(缓存 buildSystemPro
 - 写入位置是 SDK 目录，TAgent UI 只读 `~/.tagent/memory/`，两套系统并存但互不可见
 - 与渠道无关（kscc + GLM-5.1 / Anthropic + Claude 都中招），因为 system prompt 是 SDK 注入的
 
-**临时方案**（已落地）：用 `autoMemoryDirectory` 把 SDK auto-memory 重定向到 `~/.tagent/memory/agent_self/` 子目录，UI 加 "LLM 自动记录" 卡片显示。但这是临时方案——LLM 仍主动写，与 L0-L5 设计冲突。
+**根治方案**（已落地）：双防线屏蔽 SDK auto-memory，让 L0-L5 完全由 TAgent 自研系统控制：
+1. **主防线**：system prompt 加 `MEMORY_MANAGEMENT_RULES` 反向指令（agent-prompt-builder.ts），禁止 LLM 主动用 Write 工具写记忆 .md 文件
+2. **兜底防线**：`autoMemoryDirectory` 重定向到 `/tmp/tagent-discarded-memory/` 废目录（memory-layer-service.ts 的 `getDiscardedMemoryDir`），万一 LLM 不听话也不污染 `~/.tagent/memory/`
+3. **Nudge 系统降低门槛**：检测间隔从 5 轮改为 1 轮 + fact_repeat 阈值从 ≥2 降到 ≥1 + behavior_repeat 从 ≥3 降到 ≥2 + 放宽正则（加"我叫 X" / "我喜欢 X" / "我是 X" 等日常表达）
 
-**根治方案**（待做）：
-1. system prompt 加反向指令（"记忆文件由 TAgent 自研系统管理，禁止主动用 Write 工具写任何 .md 文件到 memory/ 目录"）
-2. `autoMemoryDirectory` 重定向到 `/tmp/tagent-discarded-memory/` 废目录兜底
-3. Nudge 系统降低门槛（1 轮就检测 + 放宽正则 + 自动写不需确认）
+**清理**：删除临时方案残留（agent_self/ 重定向 + listAgentSelfFiles IPC + AgentSelfRow UI 组件 + LIST_AGENT_SELF_FILES 通道常量）。
 
-**架构核对**：对照 `docs/plans/2026-06-05-tagent-fusion-design.md` §6.5.4，原始设计里 L0-L3 全部由 Nudge 系统触发（用户确认后写），L5 由 Reflect 服务提炼，L4 是会话日志。**LLM 不应该主动写 .md 文件**。SDK auto-memory 是入侵者，必须屏蔽。
+**架构核对**：对照 `docs/plans/2026-06-05-tagent-fusion-design.md` §6.5.4，原始设计里 L0-L3 全部由 Nudge 系统触发（用户确认后写），L5 由 Reflect 服务提炼，L4 是会话日志。**LLM 不应该主动写 .md 文件**。SDK auto-memory 是入侵者，已用双防线屏蔽。
 
 #### 问题 6：长会话输入卡顿真根因 ⚠️ 已修
 
@@ -581,7 +581,7 @@ preflight 11-74ms,占总耗时 < 1%。所有"短期优化"(缓存 buildSystemPro
 
 | 优先级 | 任务 | 关联 |
 |--------|------|------|
-| P0 | SDK auto-memory 根治方案（system prompt 反向指令 + 废目录兜底 + Nudge 增强） | 问题 5 |
+| ✅ 已完成 | SDK auto-memory 根治方案（system prompt 反向指令 + 废目录兜底 + Nudge 增强） | 问题 5 |
 | P1 | context 预算管理可视化 | 问题 2 第二波 |
 | P1 | 日志文件兜底（kscc stderr 落盘） | 问题 4 长期 |
 | P2 | streamState 残留清理 | 问题 3 长期 |

@@ -34,7 +34,7 @@ import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
 import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
 import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
-import { getAgentSelfMemoryDir } from '../memory-layer-service'
+import { getDiscardedMemoryDir } from '../memory-layer-service'
 
 import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
 
@@ -801,21 +801,24 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行计划」建议由
         // orchestrator 自行注入，不依赖此选项，故功能不受影响。（对齐 Proma #913）
         promptSuggestions: false,
-        // SDK auto-memory 重定向到 TAgent 记忆目录的子目录 agent_self/
+        // SDK auto-memory 重定向到废目录兜底（system prompt 反向指令是主防线）
         //
-        // 历史 bug（2026-07-05）：尝试用 `autoMemoryEnabled: false` 禁用 SDK auto-memory，
-        // 但 SDK 0.3.153 该选项是空壳（schema 有定义，逻辑未实现），LLM 仍按 SDK 内置
-        // system prompt 主动写记忆文件到 sdk-config/projects/{cwd-slug}/memory/，TAgent UI
-        // 读自己的 ~/.tagent/memory/L0-L5 目录看不到 LLM 写的内容。
+        // 历史 bug（2026-07-05）：SDK 0.3.153 的 autoMemoryEnabled: false 是空壳（schema 有
+        // 定义，逻辑未实现），LLM 仍按 SDK 内置 system prompt 主动写记忆文件到 sdk-config/
+        // projects/{cwd-slug}/memory/，TAgent UI 读自己的 ~/.tagent/memory/L0-L5 目录看不到。
         //
-        // 解决方案：用 autoMemoryDirectory 把 SDK auto-memory 重定向到
-        // ~/.tagent[-dev]/memory/agent_self/ 子目录。LLM 主动写的能力保留，写入位置对齐
-        // TAgent 记忆根目录，UI 能读到。与 Nudge 系统写的 L0-L5 文件名不重叠，互不干扰。
-        // 长期可关注 SDK 修复 autoMemoryEnabled 后移除此重定向。
-        autoMemoryDirectory: getAgentSelfMemoryDir(),
-        // autoMemoryEnabled: false 已无法禁用 SDK auto-memory，保留注释说明
-        // 实际禁用靠 autoMemoryDirectory 重定向 + system prompt 反向指令（如需）
+        // 根治方案（2026-07-05 晚）：
+        // 1. 主防线：system prompt 加 MEMORY_MANAGEMENT_RULES 反向指令，禁止 LLM 主动写
+        //    记忆文件（见 agent-prompt-builder.ts）。LLM 听话概率很高。
+        // 2. 兜底防线：autoMemoryDirectory 重定向到 /tmp/tagent-discarded-memory/，万一 LLM
+        //    不听话仍主动写，也写到废目录不污染 ~/.tagent/memory/。L0-L5 完全由 TAgent
+        //    自研的 Nudge 系统 + Reflect 服务控制。
+        //
+        // 之前临时方案曾重定向到 agent_self/ 子目录让 UI 显示，但用户反馈"自研 L0-L5 被
+        // 架空"，已改为废目录兜底 + system prompt 反向指令的双防线方案。
+        // autoMemoryEnabled: false 已确认无效（SDK 空壳选项），保留注释说明
         // autoMemoryEnabled: false,
+        autoMemoryDirectory: getDiscardedMemoryDir(),
         cwd: options.cwd,
         abortController: controller,
         env: options.env,

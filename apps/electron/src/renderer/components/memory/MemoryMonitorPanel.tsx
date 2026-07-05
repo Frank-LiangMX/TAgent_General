@@ -21,7 +21,6 @@ import {
   RefreshCw,
   ChevronDown,
   Clock,
-  Bot,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -138,11 +137,6 @@ export function MemoryMonitorPanel(): React.ReactElement {
 
   const [stats, setStats] = React.useState<MemoryLayerStats | null>(null)
   const [recentSessions, setRecentSessions] = React.useState<SessionPreview[]>([])
-  // LLM 主动写入的 SDK auto-memory 文件（重定向到 agent_self/ 子目录）
-  const [agentSelfFiles, setAgentSelfFiles] = React.useState<
-    Array<{ filename: string; content: string; mtime: number }>
-  >([])
-  const [expandedAgentSelf, setExpandedAgentSelf] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [expandedLayer, setExpandedLayer] = React.useState<LayerConfig['key'] | null>('l4')
@@ -176,14 +170,12 @@ export function MemoryMonitorPanel(): React.ReactElement {
     setError(null)
     try {
       await window.electronAPI.initMemoryLayers()
-      const [s, recent, selfFiles] = await Promise.all([
+      const [s, recent] = await Promise.all([
         window.electronAPI.getMemoryStats(mode),
         window.electronAPI.listRecentMemorySessions(mode, 6),
-        window.electronAPI.listAgentSelfFiles(),
       ])
       setStats(s)
       setRecentSessions(recent as SessionPreview[])
-      setAgentSelfFiles(selfFiles)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg)
@@ -316,13 +308,6 @@ export function MemoryMonitorPanel(): React.ReactElement {
               />
             )
           })}
-
-          {/* LLM 自动记录（SDK auto-memory 重定向到 agent_self/） */}
-          <AgentSelfRow
-            files={agentSelfFiles}
-            isExpanded={expandedAgentSelf}
-            onToggle={() => setExpandedAgentSelf((v) => !v)}
-          />
         </div>
       </div>
 
@@ -523,88 +508,3 @@ function LayerDetail({ layer, stats, recentSessions, selectedSessionId }: LayerD
   )
 }
 
-/**
- * LLM 自动记录行 — 显示 SDK auto-memory 重定向到 agent_self/ 子目录的 .md 文件
- *
- * SDK 0.3.153 的 autoMemoryEnabled:false 是空壳选项，无法真正禁用 auto-memory。
- * 改用 autoMemoryDirectory 重定向到 ~/.tagent[-dev]/memory/agent_self/。
- * 此行展示 LLM 主动写的画像文件，与 L0-L5（Nudge 系统写）互补。
- */
-function AgentSelfRow({
-  files,
-  isExpanded,
-  onToggle,
-}: {
-  files: Array<{ filename: string; content: string; mtime: number }>
-  isExpanded: boolean
-  onToggle: () => void
-}): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        'session-list-row group rounded-glass-popover transition-colors',
-        isExpanded && 'session-list-item-active'
-      )}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
-      >
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-500/10 text-violet-500">
-          <Bot size={16} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-foreground">LLM 自动记录</span>
-            <span className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-medium text-violet-500">
-              SDK auto-memory
-            </span>
-          </div>
-          <div className="truncate text-[11px] text-muted-foreground">
-            LLM 主动写入的画像文件 · 重定向到 agent_self/
-          </div>
-        </div>
-        <div className="text-[11px] text-muted-foreground tabular-nums">
-          {files.length} 个文件
-        </div>
-        <ChevronDown
-          size={14}
-          className={cn(
-            'shrink-0 text-muted-foreground transition-transform',
-            isExpanded && 'rotate-180'
-          )}
-        />
-      </button>
-      {isExpanded && (
-        <div className="space-y-2 border-t border-border/40 px-3 py-2.5">
-          {files.length === 0 ? (
-            <div className="py-2 text-[11px] text-muted-foreground/60">
-              尚无文件 — Agent 主动判断需要记忆时会写入（无需用户确认）
-            </div>
-          ) : (
-            files.map((file) => (
-              <div
-                key={file.filename}
-                className="rounded-md border border-border/30 bg-muted/20 p-2"
-              >
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="truncate font-mono text-[11px] text-foreground/80">
-                    {file.filename}
-                  </span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {formatRelativeTime(file.mtime)}
-                  </span>
-                </div>
-                <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-all text-[11px] text-muted-foreground scrollbar-thin">
-                  {file.content.slice(0, 800)}
-                  {file.content.length > 800 && '\n…'}
-                </pre>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
