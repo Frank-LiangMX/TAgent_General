@@ -265,7 +265,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
 
         <div className="ml-auto flex items-center gap-2">
           {/* 模式徽章 */}
-          <span className="rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-full border border-border/50 bg-muted/30 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {mode === 'ta' ? 'TA 模式' : '通用模式'}
           </span>
           {/* 刷新 */}
@@ -353,7 +353,7 @@ function LayerRow({
         type="button"
         onClick={onToggle}
         className={cn(
-          'group flex w-full items-center gap-3 rounded-md border border-border/40 bg-muted/10 px-3 py-2.5 transition-colors',
+          'group flex w-full items-center gap-3 rounded-2xl border border-border/40 bg-muted/10 px-3 py-2.5 transition-colors',
           'hover:bg-muted/30 hover:border-border/60',
           isExpanded && 'bg-muted/30 border-border/60'
         )}
@@ -361,7 +361,7 @@ function LayerRow({
         {/* 图标 */}
         <div
           className={cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-md',
+            'flex size-9 shrink-0 items-center justify-center rounded-xl',
             layer.accent,
             layer.color
           )}
@@ -374,7 +374,7 @@ function LayerRow({
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-medium text-foreground/90">{layer.label}</span>
             {isEmpty && (
-              <span className="rounded border border-border/40 px-1 py-0 text-[9px] text-muted-foreground/70">
+              <span className="rounded-full border border-border/40 px-1.5 py-0 text-[9px] text-muted-foreground/70">
                 空
               </span>
             )}
@@ -417,7 +417,7 @@ function LayerRow({
 
       {/* 时间线连接器 */}
       {showConnector && (
-        <div className="pointer-events-none absolute left-[27px] top-full h-2 w-px bg-border/30" aria-hidden />
+        <div className="pointer-events-none absolute left-[28px] top-full h-2 w-px bg-border/30" aria-hidden />
       )}
     </div>
   )
@@ -447,7 +447,7 @@ function LayerDetail({ layer, stats, recentSessions, selectedSessionId }: LayerD
               <div
                 key={s.id}
                 className={cn(
-                  'rounded-md border px-2.5 py-1.5 transition-colors',
+                  'rounded-glass-popover border px-3 py-2 transition-colors',
                   isActive
                     ? 'border-primary/50 bg-primary/5'
                     : 'border-border/30 bg-background/40'

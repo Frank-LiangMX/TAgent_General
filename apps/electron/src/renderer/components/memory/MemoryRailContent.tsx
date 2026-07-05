@@ -95,7 +95,7 @@ export function MemoryRailContent(): React.ReactElement {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="搜索会话..."
-          className="h-7 w-full rounded-md border border-border/40 bg-background/40 pl-7 pr-7 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-border/60 focus:outline-none focus:ring-0"
+          className="h-8 w-full rounded-xl border border-border/40 bg-background/40 pl-7 pr-7 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-border/60 focus:outline-none focus:ring-0"
         />
         {query && (
           <button
@@ -131,7 +131,7 @@ export function MemoryRailContent(): React.ReactElement {
             )}
           </div>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {sessions.map((s) => {
               const isActive = selectedSessionId === s.id
               return (
@@ -140,7 +140,7 @@ export function MemoryRailContent(): React.ReactElement {
                   type="button"
                   onClick={() => handleSessionClick(s.id)}
                   className={cn(
-                    'flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors',
+                    'flex w-full flex-col gap-0.5 rounded-xl px-2.5 py-1.5 text-left transition-colors',
                     isActive ? 'session-list-item-active' : 'hover:bg-muted/40'
                   )}
                 >
