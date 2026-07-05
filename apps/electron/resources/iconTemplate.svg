@@ -1,16 +1,27 @@
 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <!--
     TAgent 托盘图标（macOS Template / Windows tray）
-    B 方案：保留 icosahedron 识别度
+    A2 方案：保留完整 icosahedron 几何结构，单色 template
     - 实心五边形主体
-    - 右上 facet 半透明镂空（alpha 区分层次）
-    - 中心到顶部顶点中轴线（细分线）
-    单色 + alpha mask，系统自动按菜单栏明暗反色
+    - 5 条中心到顶点细分线
+    - 3 个 facet 用 alpha 区分层次（右上最亮 / 底部中等 / 左上较暗）
+    - 去掉角标勾（22px 装不下，留作 dock 图标）
+    macOS 自动按菜单栏明暗反色
   -->
-  <!-- 1. 实心五边形主体（黑色，macOS 会自动反色为白） -->
+  <!-- 1. 实心五边形主体 -->
   <polygon points="16,4 28,12 23,24 9,24 4,12" fill="#000000" fill-rule="evenodd"/>
-  <!-- 2. 右上 facet 半透明镂空（alpha=145/255 ≈ 57% 透明） -->
-  <polygon points="16,4 28,12 22,14 16,11" fill="#ffffff" fill-opacity="0.57" fill-rule="evenodd"/>
-  <!-- 3. 中心到顶部顶点中轴线（alpha=180/255 ≈ 70% 不透明） -->
-  <line x1="16" y1="16" x2="16" y2="4" stroke="#ffffff" stroke-opacity="0.7" stroke-width="1.2"/>
+  <!-- 2. 右上 facet（最亮，alpha=100/255 ≈ 39% 透明） -->
+  <polygon points="16,4 28,12 22,14 16,11" fill="#ffffff" fill-opacity="0.39" fill-rule="evenodd"/>
+  <!-- 3. 底部 facet（中等，alpha=140/255 ≈ 55% 透明） -->
+  <polygon points="9,24 12,18 20,18 23,24" fill="#ffffff" fill-opacity="0.55" fill-rule="evenodd"/>
+  <!-- 4. 左上 facet（较暗，alpha=170/255 ≈ 67% 透明） -->
+  <polygon points="16,4 16,11 12,18 4,12" fill="#ffffff" fill-opacity="0.67" fill-rule="evenodd"/>
+  <!-- 5. 5 条中心细分线（alpha=180/255 ≈ 70% 不透明） -->
+  <g stroke="#ffffff" stroke-opacity="0.7" stroke-width="1" stroke-linecap="round">
+    <line x1="16" y1="16" x2="16" y2="4"/>
+    <line x1="16" y1="16" x2="28" y2="12"/>
+    <line x1="16" y1="16" x2="23" y2="24"/>
+    <line x1="16" y1="16" x2="9" y2="24"/>
+    <line x1="16" y1="16" x2="4" y2="12"/>
+  </g>
 </svg>
