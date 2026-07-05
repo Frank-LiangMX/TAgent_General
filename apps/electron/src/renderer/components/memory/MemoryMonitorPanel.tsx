@@ -257,7 +257,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
       </div>
 
       {/* 主区：层时间线 */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
         <div className="space-y-2">
           {LAYERS.map((layer, index) => {
             const isExpanded = expandedLayer === layer.key

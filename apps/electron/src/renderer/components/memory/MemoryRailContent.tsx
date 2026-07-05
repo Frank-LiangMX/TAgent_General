@@ -121,7 +121,7 @@ export function MemoryRailContent(): React.ReactElement {
       </div>
 
       {/* L0-L5 层级导航 */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
           层级
         </div>
