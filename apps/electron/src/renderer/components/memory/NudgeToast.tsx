@@ -36,14 +36,12 @@ export function showNudgeToast(
       .catch(console.error)
     return toast(nudge.userMessage, {
       duration: 3000,
-      position: 'bottom-right',
     })
   }
 
   // 其他类型显示选项
   return toast(nudge.userMessage, {
     duration: 5000,
-    position: 'bottom-right',
     action: {
       label: '记住',
       onClick: async () => {

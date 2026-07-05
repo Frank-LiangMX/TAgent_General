@@ -457,6 +457,7 @@ React UI 更新
 - **FilePathChip 抖动真根因修复**（b2a3016 只修了一半）：`fileStatus` useState 初始值改用 `fileExistsCache` 命中值（cache 命中时直接初始为 resolved/broken，零切换零动画）+ 去掉 `transition-colors duration-150`（颜色切换瞬间完成，不动画化）
 - **长会话输入卡顿 perf 修复**：AgentView 之前订阅 `inputContent`（string），每键让整个 3000+ 行组件树 re-render。改用 `agentSessionHasDraftAtomFamily`（boolean 派生 atom，只在 empty↔non-empty 切换时变化）+ `AgentRichTextInputBridge` wrapper（inputContent 在 wrapper 内部订阅，仅输入框自己 re-render）+ handleSend 用 `store.get` 实时读 atomFamily 不依赖闭包 + AgentMessages 加 React.memo。24 轮会话输入框打字不再卡顿
 - **AgentMessages 加 React.memo**：避免父组件 AgentView re-render 串到 100+ 条消息列表
+- **Nudge toast 不显示 position bug 定位 + 部分修复**：删除 `NudgeToast.tsx` 两处 `position: 'bottom-right'`（与 `main.tsx:886` 挂载的 Toaster `position="top-right"` 不匹配，sonner 单实例只渲染匹配自己 position 的 toast，bottom-right 调用被静默丢弃 → toast 永远不显示 → 用户点不了"记住" → 记忆永不写入）。**这是 Nudge IPC 字段名 bug 修复后的下一个真因**：上一波把 `nudge` 单数修成 `nudges` 复数让事件能进 `showNudgeToast`，但 sonner position 不匹配让 toast 仍不显示。同时 `NUUDGE_CHECK_INTERVAL` 5→1 落地（CLAUDE.md 上一波已记录但代码未改）。加调试日志方便后续验证（`[Nudge] onTurnStart` / `detectPatterns` / 候选返回 + `[Agent 编排] Nudge 检测完成` / IPC 推送）。**待用户重启 dev 验证 toast 是否真弹**。已知遗留：SDK 0.3.153 → 0.3.185 升级中断（`bun install` 未跑完），`Query closed before response received` 错误仍存在
 
 **最近完成**（2026-07-05）：
 

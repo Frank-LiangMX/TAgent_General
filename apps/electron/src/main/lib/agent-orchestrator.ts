@@ -1616,6 +1616,7 @@ export class AgentOrchestrator {
           }
         })
       const nudgeCandidates = nudgeService.onTurnStart(sessionId, recentMsgs, sessionMode)
+      console.log(`[Agent 编排] Nudge 检测完成: ${nudgeCandidates.length} 个候选项`)
       if (nudgeCandidates.length > 0) {
         // 通过 IPC 推送 Nudge 候选项到渲染进程
         // 字段名 `nudges`（复数，与 preload 类型签名 + 渲染进程接收对齐）
@@ -1628,6 +1629,9 @@ export class AgentOrchestrator {
             type: 'nudge_candidates',
             nudges: nudgeCandidates,
           })
+          console.log(`[Agent 编排] 已发送 memory:nudge-event，nudges.length=${nudgeCandidates.length}`)
+        } else {
+          console.warn(`[Agent 编排] Nudge 发送失败：无可用 BrowserWindow`)
         }
       }
     } catch (e) {

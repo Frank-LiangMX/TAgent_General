@@ -120,23 +120,41 @@ class NudgeService {
     // 减少各层冷却
     this.decrementCooldowns(sessionId)
 
-    // 每 5 turn 检查一次
+    // 调试日志（2026-07-05 晚）：方便用户重启后验证 Nudge 检测是否触发
+    const userMsgs = recentMessages.filter((m) => m.role === 'user').map((m) => m.content)
+    console.log(
+      `[Nudge] onTurnStart: sessionId=${sessionId.slice(0, 8)}, turn=${currentTurn}, mode=${mode}, recentUserMsgs=${JSON.stringify(userMsgs.slice(-3))}`
+    )
+
+    // 每 1 turn 检查一次（2026-07-05 晚：从 5 改为 1）
     if (currentTurn % NUUDGE_CHECK_INTERVAL !== 0) {
+      console.log(`[Nudge] 跳过：currentTurn ${currentTurn} % ${NUUDGE_CHECK_INTERVAL} !== 0`)
       return []
     }
 
     // 检测模式
     const patterns = this.detectPatterns(recentMessages, mode)
+    console.log(`[Nudge] detectPatterns 返回 ${patterns.length} 个候选: ${JSON.stringify(patterns.map((p) => ({ type: p.type, pattern: p.pattern, count: p.count })))}`)
 
     // 过滤冷却中的层
     const candidates = patterns
-      .filter((p) => !this.isInCooldown(sessionId, this.getLayerForType(p.type)))
+      .filter((p) => {
+        const layer = this.getLayerForType(p.type)
+        const inCooldown = this.isInCooldown(sessionId, layer)
+        if (inCooldown) {
+          console.log(`[Nudge] 候选 ${p.type}（${layer}）在冷却中，过滤掉`)
+        }
+        return !inCooldown
+      })
       .slice(0, MAX_CANDIDATES_PER_BATCH)
       .map((p) => this.createNudgeCandidate(p))
 
     // 缓存候选项
     if (candidates.length > 0) {
       this.pendingNudges.set(sessionId, candidates)
+      console.log(`[Nudge] 返回 ${candidates.length} 个候选项，将弹 toast`)
+    } else {
+      console.log(`[Nudge] 返回 0 个候选项，不弹 toast`)
     }
 
     return candidates
