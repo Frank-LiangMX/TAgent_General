@@ -28,7 +28,7 @@ import { Button } from '@tagent/ui'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { memorySelectedLayerAtom } from '@/atoms/memory-atoms'
+import { memorySelectedLayerAtom, memorySelectedSessionAtom } from '@/atoms/memory-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -143,6 +143,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
 
   const selectedLayer = useAtomValue(memorySelectedLayerAtom)
   const setSelectedLayer = useSetAtom(memorySelectedLayerAtom)
+  const selectedSessionId = useAtomValue(memorySelectedSessionAtom)
 
   // 左栏点击 L0-L5 时，主区滚动定位到对应卡片 + 展开
   React.useEffect(() => {
@@ -156,6 +157,13 @@ export function MemoryMonitorPanel(): React.ReactElement {
     // 消费完重置 atom，避免重复触发
     setSelectedLayer(null)
   }, [selectedLayer, setSelectedLayer])
+
+  // 左栏点击会话时，自动展开 L4 卡片让用户看到高亮会话
+  React.useEffect(() => {
+    if (selectedSessionId !== null) {
+      setExpandedLayer('l4')
+    }
+  }, [selectedSessionId])
 
   const loadData = React.useCallback(async () => {
     setLoading(true)
@@ -292,6 +300,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
                 layer={layer}
                 stats={stats}
                 recentSessions={layer.key === 'l4' ? recentSessions : []}
+                selectedSessionId={selectedSessionId}
                 isEmpty={!!isEmpty}
                 isExpanded={isExpanded}
                 onToggle={() => setExpandedLayer(isExpanded ? null : layer.key)}
@@ -314,6 +323,7 @@ interface LayerRowProps {
   layer: LayerConfig
   stats: MemoryLayerStats | null
   recentSessions: SessionPreview[]
+  selectedSessionId: number | null
   isEmpty: boolean
   isExpanded: boolean
   onToggle: () => void
@@ -324,6 +334,7 @@ function LayerRow({
   layer,
   stats,
   recentSessions,
+  selectedSessionId,
   isEmpty,
   isExpanded,
   onToggle,
@@ -395,7 +406,12 @@ function LayerRow({
       {/* 展开内容 */}
       {isExpanded && (
         <div className="ml-3 mt-1 border-l border-border/30 pl-3">
-          <LayerDetail layer={layer} stats={stats} recentSessions={recentSessions} />
+          <LayerDetail
+            layer={layer}
+            stats={stats}
+            recentSessions={recentSessions}
+            selectedSessionId={selectedSessionId}
+          />
         </div>
       )}
 
@@ -411,9 +427,10 @@ interface LayerDetailProps {
   layer: LayerConfig
   stats: MemoryLayerStats | null
   recentSessions: SessionPreview[]
+  selectedSessionId: number | null
 }
 
-function LayerDetail({ layer, stats, recentSessions }: LayerDetailProps): React.ReactElement {
+function LayerDetail({ layer, stats, recentSessions, selectedSessionId }: LayerDetailProps): React.ReactElement {
   if (layer.key === 'l4') {
     if (recentSessions.length === 0) {
       return <div className="py-2 text-[11px] text-muted-foreground/60">暂无会话记录</div>
@@ -424,26 +441,34 @@ function LayerDetail({ layer, stats, recentSessions }: LayerDetailProps): React.
           最近会话
         </div>
         <div className="space-y-1">
-          {recentSessions.map((s) => (
-            <div
-              key={s.id}
-              className="rounded-md border border-border/30 bg-background/40 px-2.5 py-1.5"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[11px] font-medium text-foreground/90">
-                  {s.title || '（无标题）'}
-                </span>
-                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
-                  {new Date(s.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              {s.summary && (
-                <div className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground/80">
-                  {s.summary}
+          {recentSessions.map((s) => {
+            const isActive = s.id === selectedSessionId
+            return (
+              <div
+                key={s.id}
+                className={cn(
+                  'rounded-md border px-2.5 py-1.5 transition-colors',
+                  isActive
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-border/30 bg-background/40'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[11px] font-medium text-foreground/90">
+                    {s.title || '（无标题）'}
+                  </span>
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
+                    {new Date(s.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                {s.summary && (
+                  <div className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground/80">
+                    {s.summary}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     )

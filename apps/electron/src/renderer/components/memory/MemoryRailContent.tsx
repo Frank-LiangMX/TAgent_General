@@ -1,14 +1,22 @@
 /**
- * MemoryRailContent - 记忆页左栏（层级导航 + Reflect 状态 + 最近会话）
+ * MemoryRailContent - 记忆页左栏（会话搜索 + 列表）
  *
- * 与 KanbanRailContent 风格对齐：玻璃浮岛列表 + 紧凑信息密度。
+ * 设计原则：左栏做「会话级入口」，主区做「层级别监控」，避免重复。
+ * - 搜索框：调 FTS5 全文搜索 L4 sessions.db
+ * - 会话列表：默认显示最近会话，搜索时显示结果
+ * - 点击会话：通知主区滚动到 L4 卡片并展开高亮该会话
+ *
+ * 不重复主区内容：
+ * - Reflect 状态 → 主区工具栏
+ * - L0-L5 层级导航 → 主区时间线卡片
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
+import { Search, X, History } from 'lucide-react'
 import * as React from 'react'
 
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { memorySelectedLayerAtom, type MemoryLayerKey } from '@/atoms/memory-atoms'
+import { memorySelectedSessionAtom } from '@/atoms/memory-atoms'
 import { cn } from '@/lib/utils'
 
 interface RailSessionItem {
@@ -19,66 +27,24 @@ interface RailSessionItem {
   created_at: number
 }
 
-interface RailLayerItem {
-  key: MemoryLayerKey
-  label: string
-  description: string
-}
-
-const LAYER_ITEMS: RailLayerItem[] = [
-  { key: 'L0', label: '用户画像', description: '身份 / 环境 / 偏好' },
-  { key: 'L1', label: '项目画像', description: '规范 / 模板' },
-  { key: 'L2', label: '稳定事实', description: '长期记忆' },
-  { key: 'L3', label: '纠错记录', description: '纠正 + 规则' },
-  { key: 'L4', label: '历史会话', description: 'SQLite + FTS5' },
-  { key: 'L5', label: '提炼洞察', description: 'Reflect 每日提炼' },
-]
-
-function formatRelativeTime(ts: number | null): string {
-  if (!ts) return '从未运行'
-  const diff = Date.now() - ts
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return '刚刚'
-  if (hours < 24) return `${hours} 小时前`
-  const days = Math.floor(hours / 24)
-  return `${days} 天前`
-}
-
 export function MemoryRailContent(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const mode = topLevelMode === 'ta' ? 'ta' : 'general'
-  const selectedLayer = useAtomValue(memorySelectedLayerAtom)
-  const setSelectedLayer = useSetAtom(memorySelectedLayerAtom)
+  const selectedSessionId = useAtomValue(memorySelectedSessionAtom)
+  const setSelectedSessionId = useSetAtom(memorySelectedSessionAtom)
 
-  const [stats, setStats] = React.useState<{
-    total: number
-    l4Sessions: number
-    l5Lines: number
-  } | null>(null)
-  const [recentSessions, setRecentSessions] = React.useState<RailSessionItem[]>([])
-  const [reflectLastRun, setReflectLastRun] = React.useState<number | null>(null)
+  const [query, setQuery] = React.useState('')
+  const [sessions, setSessions] = React.useState<RailSessionItem[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [isSearching, setIsSearching] = React.useState(false)
 
-  const loadData = React.useCallback(async () => {
+  // 初始加载最近会话
+  const loadRecent = React.useCallback(async () => {
     setLoading(true)
     try {
       await window.electronAPI.initMemoryLayers()
-      const [s, recent] = await Promise.all([
-        window.electronAPI.getMemoryStats(mode),
-        window.electronAPI.listRecentMemorySessions(mode, 8),
-      ])
-      setStats({
-        total:
-          (s.l0.exists ? s.l0.lines : 0) +
-          (s.l1.exists ? s.l1.lines : 0) +
-          (s.l2.exists ? s.l2.lines : 0) +
-          s.l3.rawCount +
-          s.l4.sessions +
-          (s.l5.exists ? s.l5.lines : 0),
-        l4Sessions: s.l4.sessions,
-        l5Lines: s.l5.exists ? s.l5.lines : 0,
-      })
-      setRecentSessions(recent as RailSessionItem[])
+      const recent = await window.electronAPI.listRecentMemorySessions(mode, 50)
+      setSessions(recent as RailSessionItem[])
     } catch {
       // 静默失败，主区会显示完整错误
     } finally {
@@ -86,120 +52,122 @@ export function MemoryRailContent(): React.ReactElement {
     }
   }, [mode])
 
+  // 搜索（防抖 300ms）
   React.useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  // Reflect 下次运行时间：明天 03:00
-  const nextReflect = React.useMemo(() => {
-    const now = new Date()
-    const next = new Date(now)
-    next.setHours(3, 0, 0, 0)
-    if (next <= now) {
-      next.setDate(next.getDate() + 1)
+    if (!query.trim()) {
+      setIsSearching(false)
+      loadRecent()
+      return
     }
-    return next
-  }, [])
+    setIsSearching(true)
+    const timer = setTimeout(async () => {
+      try {
+        const results = await window.electronAPI.searchMemorySessions(mode, query.trim(), 50)
+        setSessions(results as RailSessionItem[])
+      } catch {
+        setSessions([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query, mode, loadRecent])
+
+  React.useEffect(() => {
+    loadRecent()
+  }, [loadRecent])
+
+  const handleSessionClick = React.useCallback(
+    (sessionId: number) => {
+      // 切换选中：再点一次取消
+      setSelectedSessionId(selectedSessionId === sessionId ? null : sessionId)
+    },
+    [selectedSessionId, setSelectedSessionId]
+  )
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-3">
-      {/* Reflect 状态卡 */}
-      <div className="rounded-md border border-border/40 bg-muted/20 p-3">
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-foreground/80">Reflect 状态</span>
-          <span className="text-[10px] text-muted-foreground/70">
-            {reflectLastRun ? `上次 ${formatRelativeTime(reflectLastRun)}` : '从未运行'}
-          </span>
-        </div>
-        <div className="text-[10px] text-muted-foreground/80">
-          下次运行 {nextReflect.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-        </div>
-        {stats && (
-          <div className="mt-2 flex items-center gap-3 text-[10px] tabular-nums">
-            <span className="text-muted-foreground/70">L4 {stats.l4Sessions}</span>
-            <span className="text-muted-foreground/70">L5 {stats.l5Lines}</span>
-            <span className="text-muted-foreground/70">总计 {stats.total}</span>
-          </div>
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2">
+      {/* 搜索框 */}
+      <div className="relative shrink-0">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="搜索会话..."
+          className="h-7 w-full rounded-md border border-border/40 bg-background/40 pl-7 pr-7 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-border/60 focus:outline-none focus:ring-0"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
         )}
       </div>
 
-      {/* L0-L5 层级导航 */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          层级
-        </div>
-        <div className="space-y-0.5">
-          {LAYER_ITEMS.map((layer) => {
-            const isActive = selectedLayer === layer.key
-            return (
-              <button
-                key={layer.key}
-                type="button"
-                onClick={() => setSelectedLayer(layer.key)}
-                className={cn(
-                  'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors',
-                  isActive
-                    ? 'session-list-item-active'
-                    : 'hover:bg-muted/40'
-                )}
-              >
-                <span
-                  className={cn(
-                    'flex size-6 shrink-0 items-center justify-center rounded-md text-[10px] font-medium',
-                    isActive
-                      ? 'bg-foreground/10 text-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {layer.key}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs font-medium text-foreground/90">{layer.label}</div>
-                  <div className="truncate text-[10px] text-muted-foreground/70">{layer.description}</div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+      {/* 列表标题 */}
+      <div className="flex shrink-0 items-center justify-between px-1">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+          {query ? `搜索结果 (${sessions.length})` : '最近会话'}
+        </span>
+        {isSearching && (
+          <span className="text-[10px] text-muted-foreground/60">搜索中…</span>
+        )}
+      </div>
 
-        {/* 最近会话 */}
-        <div className="mb-1.5 mt-4 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          最近会话
-        </div>
+      {/* 会话列表 */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {loading ? (
-          <div className="px-2 py-3 text-[11px] text-muted-foreground/60">加载中…</div>
-        ) : recentSessions.length === 0 ? (
-          <div className="px-2 py-3 text-[11px] text-muted-foreground/60">暂无会话记录</div>
+          <div className="px-2 py-4 text-center text-[11px] text-muted-foreground/60">加载中…</div>
+        ) : sessions.length === 0 ? (
+          <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center text-[11px] text-muted-foreground/60">
+            <History className="size-5 text-muted-foreground/30" />
+            <span>{query ? '无匹配会话' : '暂无会话记录'}</span>
+            {query && (
+              <span className="text-[10px] text-muted-foreground/50">试试更短的关键词</span>
+            )}
+          </div>
         ) : (
           <div className="space-y-0.5">
-            {recentSessions.map((s) => (
-              <div
-                key={s.id}
-                className="group flex flex-col gap-0.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
-              >
-                <div className="truncate text-[11px] text-foreground/90">
-                  {s.title || '（无标题）'}
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
-                  <span className="tabular-nums">
-                    {new Date(s.created_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {s.summary && (
-                    <>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="truncate">{s.summary.slice(0, 40)}</span>
-                    </>
+            {sessions.map((s) => {
+              const isActive = selectedSessionId === s.id
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSessionClick(s.id)}
+                  className={cn(
+                    'flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors',
+                    isActive ? 'session-list-item-active' : 'hover:bg-muted/40'
                   )}
-                </div>
-              </div>
-            ))}
+                >
+                  <div className="truncate text-[11px] font-medium text-foreground/90">
+                    {s.title || '（无标题）'}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                    <span className="shrink-0 tabular-nums">
+                      {new Date(s.created_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {s.summary && (
+                      <>
+                        <span className="text-muted-foreground/40">·</span>
+                        <span className="truncate">{s.summary.slice(0, 50)}</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
 
       {/* 底部提示 */}
-      <div className="shrink-0 border-t border-border/40 pt-2 text-[10px] text-muted-foreground/60">
-        记忆由 TAgent 自动维护
+      <div className="shrink-0 border-t border-border/40 pt-1.5 text-[10px] text-muted-foreground/60">
+        点击会话 → 主区 L4 高亮
       </div>
     </div>
   )
