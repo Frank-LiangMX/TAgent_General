@@ -1,7 +1,16 @@
 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <!--
     TAgent 托盘图标（macOS Template / Windows tray）
-    简化版：仅五边形实心轮廓，符合 macOS 菜单栏极简规范
+    B 方案：保留 icosahedron 识别度
+    - 实心五边形主体
+    - 右上 facet 半透明镂空（alpha 区分层次）
+    - 中心到顶部顶点中轴线（细分线）
+    单色 + alpha mask，系统自动按菜单栏明暗反色
   -->
+  <!-- 1. 实心五边形主体（黑色，macOS 会自动反色为白） -->
   <polygon points="16,4 28,12 23,24 9,24 4,12" fill="#000000" fill-rule="evenodd"/>
+  <!-- 2. 右上 facet 半透明镂空（alpha=145/255 ≈ 57% 透明） -->
+  <polygon points="16,4 28,12 22,14 16,11" fill="#ffffff" fill-opacity="0.57" fill-rule="evenodd"/>
+  <!-- 3. 中心到顶部顶点中轴线（alpha=180/255 ≈ 70% 不透明） -->
+  <line x1="16" y1="16" x2="16" y2="4" stroke="#ffffff" stroke-opacity="0.7" stroke-width="1.2"/>
 </svg>
