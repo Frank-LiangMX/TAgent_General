@@ -21,6 +21,7 @@ import {
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
 import { appModeAtom, topLevelModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
+import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
@@ -56,8 +57,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
+  const activeTab = useAtomValue(activeTabAtom)
+  // RightRail 跟随主面板激活的 tab 类型，而非左侧 railItem。
+  // 这样用户切左侧 rail 看会话/草稿列表时，主面板 tab 不被强制切走，
+  // RightRail 也不会在「draft tab + sessions rail」组合下错位显示。
   const showRightPanel =
-    activeRailItem === 'sessions' && appMode === 'agent' && !!currentSessionId
+    appMode === 'agent' && activeTab?.type === 'agent' && !!currentSessionId
 
   const showLeftSidebar =
     topLevelMode === 'general'
