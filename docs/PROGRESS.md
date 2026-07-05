@@ -45,11 +45,13 @@
 
 ---
 
-## 当前状态（2026-07-03）
+## 当前状态（2026-07-05）
 
 **阶段**：MVP / P1 / P2 / P3 主线已完成。Automation v1（M1–M3）已合入 `main`（PR #15）。kscc 内网渠道集成已完成。草稿模式重构 + Chat 残留清理已完成。看板多 Agent 协作系统（B1–B10）已合入 `main`（PR #17）。上游 Proma v0.13.4 对齐已合入 `main`（PR #16）。**v1.4.0 / v1.4.1 / v1.4.2 已发布**。当前活跃开发主线为 **看板 v1 产品化**（下一阶段）+ **hermes-borrow-plan §5.2 v1.5 主线**。
 
 **v1.4.2（2026-07-03）**：稳定性补丁版本，落地 hermes-borrow-plan §5.1 全部 6 项 + 4 项独立修复 + CI 修复。详见 `RELEASE_NOTES.md`。
+
+**2026-07-05 记忆系统 UI 收尾**：通用模式补记忆 rail 入口 + 清理 MemOS Cloud 遗留（-609 行）+ 修复 L4 summary NULL bug（SDKMessage 嵌套格式未读取）+ 记忆页面对齐 KanbanMainView 玻璃风格 + 左栏改为会话搜索（FTS5）去除与主区的层级重复 + 左右联动（L0-L5 / 会话点击 → 主区定位高亮）+ 圆角 / 玻璃浮岛模式对齐主体大圆角风格。详见 `## 历史进度 → 2026-07-05`。
 
 **v1.4.1（2026-07-02）**：macOS 安装包"已损坏"修复（ad-hoc 签名回归）+ 自动更新错误信息可见。
 
@@ -369,6 +371,21 @@
 ---
 
 ## 历史进度
+
+### 2026-07-05
+
+**产出**：记忆系统 UI 收尾 + MemOS Cloud 遗留清理 + L4 summary 数据 bug 修复（7 commits on `main`）
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 通用模式补记忆入口 | `app-mode.ts` `GeneralRailItem` 加 `'memory'`；`FunctionalRail.tsx` GENERAL_RAIL_ITEMS 加 memory 项；`AppShell.tsx` `showLeftSidebar` 条件加 `'memory'`；`LeftSidebar.tsx` `renderRailContent` switch 加 `case 'memory'`；`MainArea.tsx` `renderRailContent` 加 memory 分支。修复通用模式看不到记忆入口的回归 |
+| 清理 MemOS Cloud 遗留 | 删除 `memos-client.ts`（177 行）、`memory-tool.ts`（136 行）、`memory-service.ts` 中 `getMemoryConfig` / `injectMemoryTools` 方法、`agent-orchestrator.ts` 中 `memoryEnabled` 字段 + `injectMemoryTools` 调用、`agent-prompt-builder.ts` 44 行相关代码、`preload/index.ts` 21 行桥接、`shared/types/agent.ts` `MemoryConfig` 类型 + `memoryEnabled` 字段、`tool-config.ts` / `tool-registry.ts` 中相关注册、`McpServerForm.tsx` 旧字段引用、`chat-tool.ts` 类型。共 -609 行 + 67 行 |
+| 修 L4 summary NULL bug | `agent-orchestrator.ts:1397` `recordSessionToMemory` 读取 `msg.role` / `msg.content`，但 v1.4+ jsonl 用 SDKMessage 嵌套格式 `{type, message: {role, content}}`。改为读 `message.role` / `message.content`，旧格式 `??` 回退。修复 L4 会话 summary 永远写不进导致 FTS5 搜索失效 |
+| 记忆页面对齐 KanbanMainView | `MemoryMonitorPanel.tsx` 重写：Panel + content-glass 玻璃底 + RailInspectorHeader 面包屑顶栏（Mac/Windows 拖拽避让）+ 工具栏（总计 + Reflect 状态 + 模式徽章 + 刷新）+ 6 层时间线卡片（L0-L5 展开/收起 + 状态预览）+ 底部状态栏 |
+| 左栏去重 + 联动 | 新建 `memory-atoms.ts`（`memorySelectedLayerAtom` / `memorySelectedSessionAtom`）；`MemoryRailContent.tsx` 重写为会话搜索（FTS5 + 300ms 防抖 + 默认最近 50 条），不再重复主区的 L0-L5 层级导航；左栏 L0-L5 点击 → 主区滚动定位 + 展开（`requestAnimationFrame` 等渲染完再 `scrollIntoView`）；左栏会话点击 → 主区 L4 卡片高亮选中会话 |
+| 圆角升级 | 层卡片 `rounded-md` → `rounded-2xl`；图标 `size-8 rounded-md` → `size-9 rounded-xl`；L4 会话卡片 `rounded-md` → `rounded-glass-popover`（14px token）；模式徽章 / 空状态徽章 → `rounded-full`；左栏搜索框 `h-7 rounded-md` → `h-8 rounded-xl`；左栏会话项 → `rounded-xl`；时间线连接器 `left-[27px]` → `left-[28px]`（适配 size-9 图标） |
+| 主面板玻璃浮岛模式 | LayerRow 参照 `KanbanTaskListItem` 模式：展开时用 `session-list-item-active`（完整玻璃浮岛：blur 16px + 双层 gradient + 玻璃 rim 边框 + 高光），未展开时透明 + `rounded-glass-sidebar` + `hover:bg-primary/5`。去掉 `bg-muted/10` 半透明灰遮盖，让底板 `content-base-plate` 玻璃质感透出 |
+| **里程碑** | **记忆系统 UI 收尾完成；通用 / TA 模式都有入口；L4 数据正确写入；UI 风格对齐看板主页玻璃浮岛** |
 
 ### 2026-07-02
 

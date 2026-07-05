@@ -439,6 +439,10 @@ React UI 更新
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
+**最近完成**（2026-07-05）：
+
+- **记忆系统 UI 收尾**：通用模式补记忆 rail 入口（之前只在 TA 模式可见）+ 清理 MemOS Cloud 遗留代码（-609 行，删 `memos-client.ts` / `memory-tool.ts` / `getMemoryConfig` IPC 链路 + `memoryEnabled` 字段）+ 修复 L4 summary NULL bug（v1.4+ SDKMessage 嵌套格式 `{type, message: {role, content}}` 未读取，导致 L4 永远写不进 summary）+ 记忆页面重设计对齐 KanbanMainView 玻璃风格（Panel + content-glass + RailInspectorHeader + 6 层时间线卡片）+ 左栏改为会话搜索（FTS5 全文搜索 + 300ms 防抖）去除左右重复的 L0-L5 层级逻辑 + 左栏 L0-L5 点击 → 主区滚动定位 + 展开 + 左栏会话点击 → 主区 L4 卡片高亮选中会话（`memorySelectedSessionAtom` 桥接）+ 圆角升级匹配主体大圆角风格（层卡片 rounded-2xl / 会话卡片 rounded-glass-popover / 徽章 rounded-full）+ 主面板层卡片改用 `session-list-row` 玻璃浮岛模式（展开时 `session-list-item-active` 完整玻璃浮岛，未展开时透明融入底板，去掉 `bg-muted/10` 半透明灰遮盖）
+
 **最近完成**（2026-07-03）：
 
 - **v1.4.2 发布**：hermes-borrow-plan §5.1 6 项落地（记忆系统修复 + Cron Injection 防护 + Worker Approval 防死锁 + Prompt Cache 宪章 + Footprint Ladder + Context 压缩首尾保护）+ 用户反馈功能 + 工作区拖拽排序 + 侧栏 UI 统一 + 附件卡片抖动修复（Windows）+ session-not-found 卡死修复 + sticky-message 抖动修复 + CI 修复（eslint 不可见 Unicode / prettier 格式 / FTS5 SQL 别名）+ release workflow 修复（body_path + RELEASE_NOTES.md）
