@@ -245,14 +245,24 @@ function isAutoRetryableCatchError(
 }
 
 /**
- * 判断错误是否为 SDK session 不存在（"No conversation found with session ID"）
+ * 判断错误是否为 SDK session 不存在（resume 目标已过期或被清理）
  *
- * 当 resume 目标 session 已过期或被清理时，SDK 会抛出此错误。
+ * kscc 内网渠道的错误信息格式可能与 Anthropic 官方 SDK 不一致：
+ * 可能输出中文、`session_id invalid`、`Session expired`、stderr 中带 kscc 包装错误等。
+ * 因此扩展多模式匹配，覆盖中英文 + kscc 错误特征。
+ *
  * 此类错误可通过清除 sdkSessionId 并切换到上下文回填模式来恢复。
  */
 function isSessionNotFoundError(errorMessage: string, stderr?: string): boolean {
-  const pattern = /No conversation found.*with session/i
-  return pattern.test(errorMessage) || (!!stderr && pattern.test(stderr))
+  const patterns = [
+    /No conversation found.*with session/i,
+    /session[_ ]?id.*(not found|invalid|expired|unknown)/i,
+    /session.*not.*found/i,
+    /会话.*(不存在|已失效|已过期)/,
+    /resume.*fail/i,
+  ]
+  const text = `${errorMessage ?? ''}\n${stderr ?? ''}`
+  return patterns.some((p) => p.test(text))
 }
 
 /** 最大自动重试次数 */
@@ -1069,6 +1079,49 @@ export class AgentOrchestrator {
     queryOptions.resumeSessionAt = undefined
     queryOptions.prompt = buildRecoveryPrompt(sessionId, contextualMessage, { agentCwd })
     return retryReason
+  }
+
+  /**
+   * Prompt过长恢复：主动调用兜底压缩，清除 SDK resume 关系，触发重试。
+   *
+   * 适用于 SDK 抛 prompt_too_long 错误时（kscc 渠道下 SDK 自动 compaction 失效场景）。
+   * 与 prepareResumeFallbackRecovery 区别：先主动调 compactSession(drop_old_tool_results)
+   * 减少历史体积，再清 resume 让新 query 不再读已爆的 JSONL 全量。
+   *
+   * @returns lastRetryableError 描述字符串；压缩失败时返回 fallback 文案
+   */
+  private async preparePromptTooLongRecovery(
+    sessionId: string,
+    queryOptions: ClaudeAgentQueryOptions,
+    contextualMessage: string,
+    agentCwd: string,
+    accumulatedMessages: SDKMessage[],
+    queryStartedAt: number
+  ): Promise<string> {
+    console.log(`[Agent 编排] 检测到 prompt_too_long 错误，主动调用兜底压缩`)
+    // 先持久化当前已累积的消息
+    this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
+    accumulatedMessages.length = 0
+    // 主动调兜底压缩（不等 LLM 调，主进程直接触发）
+    try {
+      const { compactSession } = await import('./agent-session-compactor')
+      await compactSession(sessionId, { strategy: 'drop_old_tool_results' })
+      console.log(`[Agent 编排] 兜底压缩完成，准备重试`)
+    } catch (compactError) {
+      console.error(`[Agent 编排] 兜底压缩失败:`, compactError)
+      // 压缩失败也继续走 fallback recovery，至少清掉 resume 避免下次又读爆
+    }
+    // 复用 resume fallback：清 sdkSessionId + 注入 session 自引用
+    return this.prepareResumeFallbackRecovery(
+      sessionId,
+      queryOptions,
+      contextualMessage,
+      agentCwd,
+      accumulatedMessages,
+      queryStartedAt,
+      '检测到 prompt_too_long 错误，已压缩并清除 sdkSessionId，切换到上下文回填模式',
+      '上下文已自动压缩，切换到上下文回填模式'
+    )
   }
 
   /**
@@ -2589,6 +2642,24 @@ export class AgentOrchestrator {
                   break
                 }
 
+                // Prompt 过长：主动调兜底压缩 + 清 resume + 触发重试
+                // kscc 渠道下 SDK 自动 compaction 失效，需要主进程主动压缩
+                if (typedError.code === 'prompt_too_long' && canAutoRetry(attempt)) {
+                  existingSdkSessionId = undefined
+                  capturedSdkSessionId = undefined
+                  lastRetryableError = await this.preparePromptTooLongRecovery(
+                    sessionId,
+                    queryOptions,
+                    contextualMessage,
+                    agentCwd,
+                    accumulatedMessages,
+                    queryStartedAt
+                  )
+                  stderrChunks.length = 0
+                  shouldRetryFromError = true
+                  break
+                }
+
                 // Thinking signature 不兼容：通常由跨模型 resume 触发。
                 // 先自动清除 SDK resume 关系，改用 TAgent 已持久化上下文重跑一次；再失败才展示用户提示。
                 if (
@@ -3002,6 +3073,41 @@ export class AgentOrchestrator {
             }
           }
 
+          // 收集原始错误详情，UI 的"查看诊断详情"折叠按钮会读 _errorDetails
+          const errorDetails: string[] = []
+          if (stderrOutput.trim()) {
+            errorDetails.push(stderrOutput.trim().slice(0, 2000))
+          }
+          const rawErrorStack = error instanceof Error ? (error.stack ?? error.message) : String(error)
+          if (rawErrorStack && !errorDetails.includes(rawErrorStack)) {
+            errorDetails.push(rawErrorStack)
+          }
+
+          // Prompt 过长恢复：主动调兜底压缩 + 清 resume + 触发重试
+          // kscc 渠道下 SDK 自动 compaction 失效，需要主进程主动压缩
+          if (
+            isPromptTooLongError(
+              userFacingError,
+              rawErrorStack,
+              stderrOutput
+            ) &&
+            canAutoRetry(attempt)
+          ) {
+            existingSdkSessionId = undefined
+            capturedSdkSessionId = undefined
+            lastRetryableError = await this.preparePromptTooLongRecovery(
+              sessionId,
+              queryOptions,
+              contextualMessage,
+              agentCwd,
+              accumulatedMessages,
+              queryStartedAt
+            )
+            stderrChunks.length = 0
+            shouldRetryFromError = true
+            break
+          }
+
           // 保存错误消息到 JSONL
           try {
             // 检测是否为 prompt too long 错误
@@ -3028,7 +3134,7 @@ export class AgentOrchestrator {
                 ? THINKING_SIGNATURE_ERROR_TITLE
                 : '执行错误'
             const errorContent = isPromptTooLong
-              ? '上下文过长：当前对话的上下文已超出模型限制，请压缩上下文或开启新会话'
+              ? '上下文已自动压缩并重试，如仍失败请开启新会话'
               : isThinkingSignature
                 ? `${THINKING_SIGNATURE_ERROR_TITLE}：${THINKING_SIGNATURE_ERROR_MESSAGE}`
                 : userFacingError
@@ -3051,6 +3157,7 @@ export class AgentOrchestrator {
               _errorCode: errorCode,
               _errorTitle: errorTitle,
               _errorActions: errorActions,
+              _errorDetails: errorDetails.length > 0 ? errorDetails : undefined,
             } as unknown as SDKMessage
             appendSDKMessages(sessionId, [errMsg])
             console.log(`[Agent 编排] 已保存错误消息到 JSONL`)
