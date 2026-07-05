@@ -1,27 +1,37 @@
 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <!--
     TAgent 托盘图标（macOS Template / Windows tray）
-    A2 方案：保留完整 icosahedron 几何结构，单色 template
-    - 实心五边形主体
-    - 5 条中心到顶点细分线
-    - 3 个 facet 用 alpha 区分层次（右上最亮 / 底部中等 / 左上较暗）
-    - 去掉角标勾（22px 装不下，留作 dock 图标）
-    macOS 自动按菜单栏明暗反色
+    A2 方案修正版：直接用 icon.svg 真实 icosahedron 投影坐标
+    - icon.svg 1024 画布 / 半径 260 → 32 画布 / 半径 16，scale=16/260
+    - 5 主顶点 + 5 中心细分线 + 3 上半细分线 + 3 中部细分线 + 3 facet
+    - macOS 自动按菜单栏明暗反色
   -->
-  <!-- 1. 实心五边形主体 -->
-  <polygon points="16,4 28,12 23,24 9,24 4,12" fill="#000000" fill-rule="evenodd"/>
-  <!-- 2. 右上 facet（最亮，alpha=100/255 ≈ 39% 透明） -->
-  <polygon points="16,4 28,12 22,14 16,11" fill="#ffffff" fill-opacity="0.39" fill-rule="evenodd"/>
-  <!-- 3. 底部 facet（中等，alpha=140/255 ≈ 55% 透明） -->
-  <polygon points="9,24 12,18 20,18 23,24" fill="#ffffff" fill-opacity="0.55" fill-rule="evenodd"/>
-  <!-- 4. 左上 facet（较暗，alpha=170/255 ≈ 67% 透明） -->
-  <polygon points="16,4 16,11 12,18 4,12" fill="#ffffff" fill-opacity="0.67" fill-rule="evenodd"/>
-  <!-- 5. 5 条中心细分线（alpha=180/255 ≈ 70% 不透明） -->
+  <!-- 1. 实心五边形主体（5 主顶点） -->
+  <polygon points="16,0 31.38,11.08 25.54,29.85 6.46,29.85 0.62,11.08" fill="#000000" fill-rule="evenodd"/>
+  <!-- 2. 右上 facet（最亮，alpha=100/255 ≈ 39%） -->
+  <polygon points="16,0 31.38,11.08 23.54,13.54 16,8" fill="#ffffff" fill-opacity="0.39" fill-rule="evenodd"/>
+  <!-- 3. 底部 facet（中等，alpha=140/255 ≈ 55%） -->
+  <polygon points="6.46,29.85 11.23,20.46 20.77,20.46 25.54,29.85" fill="#ffffff" fill-opacity="0.55" fill-rule="evenodd"/>
+  <!-- 4. 左上 facet（较暗，alpha=170/255 ≈ 67%） -->
+  <polygon points="16,0 16,8 8.38,13.54 0.62,11.08" fill="#ffffff" fill-opacity="0.67" fill-rule="evenodd"/>
+  <!-- 5. 5 条中心到顶点主细分线 -->
   <g stroke="#ffffff" stroke-opacity="0.7" stroke-width="1" stroke-linecap="round">
-    <line x1="16" y1="16" x2="16" y2="4"/>
-    <line x1="16" y1="16" x2="28" y2="12"/>
-    <line x1="16" y1="16" x2="23" y2="24"/>
-    <line x1="16" y1="16" x2="9" y2="24"/>
-    <line x1="16" y1="16" x2="4" y2="12"/>
+    <line x1="16" y1="16" x2="16" y2="0"/>
+    <line x1="16" y1="16" x2="31.38" y2="11.08"/>
+    <line x1="16" y1="16" x2="25.54" y2="29.85"/>
+    <line x1="16" y1="16" x2="6.46" y2="29.85"/>
+    <line x1="16" y1="16" x2="0.62" y2="11.08"/>
+  </g>
+  <!-- 6. 上半部分内部细分线（icon.svg:36-38） -->
+  <g stroke="#ffffff" stroke-opacity="0.78" stroke-width="0.9" stroke-linecap="round">
+    <line x1="16" y1="8" x2="23.54" y2="13.54"/>
+    <line x1="16" y1="8" x2="8.38" y2="13.54"/>
+    <line x1="16" y1="8" x2="16" y2="16"/>
+  </g>
+  <!-- 7. 中部细分线（icon.svg:41-43） -->
+  <g stroke="#ffffff" stroke-opacity="0.78" stroke-width="0.9" stroke-linecap="round">
+    <line x1="11.23" y1="20.46" x2="20.77" y2="20.46"/>
+    <line x1="8.38" y1="13.54" x2="11.23" y2="20.46"/>
+    <line x1="23.54" y1="13.54" x2="20.77" y2="20.46"/>
   </g>
 </svg>
