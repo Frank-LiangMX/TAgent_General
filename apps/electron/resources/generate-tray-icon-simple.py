@@ -1,14 +1,16 @@
 """
-macOS 菜单栏 tray icon（最终极简版）。
+macOS 菜单栏 tray icon（线框轮廓版，参考 Cursor 风格）。
 
 历史：
-- A2 完整版：5 主顶点 + 11 条细分线 + 3 facet → 22px 糊成一坨
-- 极简放射版：五边形 + 5 条 1px 放射线 → macOS status item 渲染到 ~16pt 时
-  1px 线条消失，只剩五边形轮廓
+- A2 完整版：5 主顶点 + 11 条细分线 + 3 facet → 糊成一坨
+- 极简放射版：五边形 + 5 条放射线 → 1px 线条消失
+- 纯实心五边形：太大太黑，撑满 22px 画布
 
-最终策略：纯实心五边形主体（icosahedron 正面投影 5 主顶点），
-不画任何内部细分线和 facet。形状本身的非对称性（顶点角度不同）
-就是 icosahedron 的识别特征。
+本版策略：参考 Cursor 立方体图标的线框风格——
+- 1.5px 描边轮廓（不填充）
+- 五边形顶点保持 icosahedron 真实投影
+- 缩小到画布 70% 大小（留出边距）
+- 不画内部任何细节
 
 icon.svg 5 主顶点（1024 画布，半径 260）：
   top:         (0, -260)
@@ -17,7 +19,7 @@ icon.svg 5 主顶点（1024 画布，半径 260）：
   lower left:  (-155, 225)
   upper left:  (-250, -80)
 
-缩放：32 画布 / 半径 16，scale = 16/260
+缩放：32 画布 / 半径 12（留 8px 边距 = 4px 每边），scale = 12/260
 """
 
 from PIL import Image, ImageDraw
@@ -25,7 +27,8 @@ from pathlib import Path
 
 OUT_DIR = Path(__file__).parent
 
-SCALE = 16 / 260
+# 缩小到 70%，留出边距（参考 Cursor 立方体的留白）
+SCALE = 12 / 260
 CX = 16
 CY = 16
 
@@ -34,7 +37,7 @@ def to_canvas(x: float, y: float) -> tuple[float, float]:
     return (x * SCALE + CX, y * SCALE + CY)
 
 
-# 5 主顶点（icosahedron 正面投影）
+# 5 主顶点
 PENTAGON_OUTER = [
     to_canvas(0, -260),     # top
     to_canvas(250, -80),    # upper right
@@ -45,7 +48,7 @@ PENTAGON_OUTER = [
 
 
 def draw_tray_icon(size: int) -> Image.Image:
-    """实心五边形主体（无内部细节）。"""
+    """线框轮廓五边形（无填充）。"""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
@@ -54,8 +57,18 @@ def draw_tray_icon(size: int) -> Image.Image:
     def scale_pt(p: tuple[float, float]) -> tuple[float, float]:
         return (p[0] * s, p[1] * s)
 
+    # 1.5px 描边轮廓（参考 Cursor 的细线风格）
+    line_w = max(1, round(1.5 * s))
     pent = [scale_pt(p) for p in PENTAGON_OUTER]
-    draw.polygon(pent, fill=(255, 255, 255, 255))
+    # 用 line 而非 polygon，line 描边更清晰，polygon 会自带填充
+    # 闭合：把首点接到末点
+    points = pent + [pent[0]]
+    draw.line(
+        points,
+        fill=(255, 255, 255, 255),
+        width=line_w,
+        joint="curve",
+    )
 
     return img
 
