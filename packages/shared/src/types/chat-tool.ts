@@ -2,8 +2,7 @@
  * Chat Tool 模块化系统类型定义
  *
  * Chat 模式的工具（function calling）注册、配置、执行相关的共享类型。
- * 记忆凭据保留在 memory.json（Chat + Agent 共用），
- * chat-tools.json 管理工具开关和非记忆工具凭据。
+ * chat-tools.json 管理工具开关和工具凭据。
  */
 
 // ===== 工具元数据 =====

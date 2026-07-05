@@ -6,30 +6,12 @@
 
 import type { ComposerMode } from './ask'
 
-// ===== 记忆配置 =====
-
-/** 全局记忆配置（MemOS Cloud） */
-export interface MemoryConfig {
-  /** 是否启用记忆功能 */
-  enabled: boolean
-  /** MemOS Cloud API Key */
-  apiKey: string
-  /** 用户标识 */
-  userId: string
-  /** 自定义 API 地址（可选，默认 MemOS Cloud） */
-  baseUrl?: string
-}
+// ===== 记忆 IPC 通道 =====
 
 /**
- * 全局记忆配置 IPC 通道常量
+ * 记忆系统 IPC 通道常量（Nudge 机制 + L0-L5 本地记忆层）
  */
 export const MEMORY_IPC_CHANNELS = {
-  /** 获取全局记忆配置 */
-  GET_CONFIG: 'memory:get-config',
-  /** 保存全局记忆配置 */
-  SET_CONFIG: 'memory:set-config',
-  /** 测试记忆连接 */
-  TEST_CONNECTION: 'memory:test-connection',
   // ===== Nudge 相关 =====
   /** 获取待处理的 Nudge 候选项 */
   GET_PENDING_NUDGES: 'memory:get-pending-nudges',

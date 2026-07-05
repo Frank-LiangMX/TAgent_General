@@ -286,28 +286,9 @@ export function McpServerForm({
           {/* 内置 MCP 引导提示 */}
           {isBuiltin && (
             <div className="px-4 py-3 text-sm bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-md mx-4 mt-3">
-              <div className="font-medium">内置记忆服务 (MemOS Cloud)</div>
+              <div className="font-medium">内置 MCP 服务</div>
               <div className="text-xs mt-1 opacity-90">
-                前往{' '}
-                <a
-                  href="https://memos-dashboard.openmem.net/apikeys/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  memos-dashboard.openmem.net
-                </a>{' '}
-                注册并获取 API Key 和 User ID，填入下方环境变量后启用。
-              </div>
-              <div className="text-xs mt-2 opacity-80 space-y-0.5">
-                <div>
-                  <code className="font-mono">MEMOS_API_KEY</code> — 你的 API 密钥，在控制台 API
-                  Keys 页面生成
-                </div>
-                <div>
-                  <code className="font-mono">MEMOS_USER_ID</code> — 你的用户
-                  ID，在控制台个人设置中查看
-                </div>
+                该服务由 TAgent 内置提供，无需额外配置。
               </div>
             </div>
           )}

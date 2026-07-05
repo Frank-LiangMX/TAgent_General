@@ -186,14 +186,6 @@ export function getSystemPromptsPath(): string {
   return join(getConfigDir(), 'system-prompts.json')
 }
 
-/**
- * 获取记忆配置文件路径
- *
- * @returns ~/.tagent/memory.json
- */
-export function getMemoryConfigPath(): string {
-  return join(getConfigDir(), 'memory.json')
-}
 
 /**
  * 获取 Chat 工具配置文件路径

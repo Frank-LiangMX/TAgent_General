@@ -113,10 +113,8 @@ import {
   getConfigDirName,
 } from './config-paths'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
-import { getMemoryConfig } from './memory-service'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 import { getContextUsageCache } from './context-usage-cache'
-import { searchMemory, addMemory, formatSearchResult } from './memos-client'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getRuntimeStatus } from './runtime-init'
@@ -777,66 +775,6 @@ export class AgentOrchestrator {
   }
 
   /**
-   * 注入 SDK 内置记忆工具（全局，不依赖工作区）
-   */
-  private async injectMemoryTools(
-    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
-    mcpServers: Record<string, Record<string, unknown>>
-  ): Promise<void> {
-    const memoryConfig = getMemoryConfig()
-    const memUserId = memoryConfig.userId?.trim() || 'tagent-user'
-    if (!memoryConfig.enabled || !memoryConfig.apiKey) return
-
-    try {
-      const { z } = await import('zod')
-      const memosServer = sdk.createSdkMcpServer({
-        name: 'mem',
-        version: '1.0.0',
-        tools: [
-          sdk.tool(
-            'recall_memory',
-            'Search user memories (facts and preferences) from MemOS Cloud. Use this to recall relevant context about the user.',
-            {
-              query: z.string().describe('Search query for memory retrieval'),
-              limit: z.number().optional().describe('Max results (default 6)'),
-            },
-            async (args) => {
-              const result = await searchMemory(
-                { apiKey: memoryConfig.apiKey, userId: memUserId, baseUrl: memoryConfig.baseUrl },
-                args.query,
-                args.limit
-              )
-              return { content: [{ type: 'text' as const, text: formatSearchResult(result) }] }
-            },
-            { annotations: { readOnlyHint: true } }
-          ),
-          sdk.tool(
-            'add_memory',
-            'Store a conversation message pair into MemOS Cloud for long-term memory. Call this after meaningful exchanges worth remembering.',
-            {
-              userMessage: z.string().describe('The user message to store'),
-              assistantMessage: z.string().optional().describe('The assistant response to store'),
-              conversationId: z.string().optional().describe('Conversation ID for grouping'),
-              tags: z.array(z.string()).optional().describe('Tags for categorization'),
-            },
-            async (args) => {
-              await addMemory(
-                { apiKey: memoryConfig.apiKey, userId: memUserId, baseUrl: memoryConfig.baseUrl },
-                args
-              )
-              return { content: [{ type: 'text' as const, text: 'Memory stored successfully.' }] }
-            }
-          ),
-        ],
-      })
-      mcpServers['mem'] = memosServer as unknown as Record<string, unknown>
-      console.log(`[Agent 编排] 已注入内置记忆工具 (mem)`)
-    } catch (err) {
-      console.error(`[Agent 编排] 注入记忆工具失败:`, err)
-    }
-  }
-
-  /**
    * P1-3: 注入 SDK 内置 compact_session 工具
    *
    * 当 Claude Agent SDK 服务端 compaction 失败时 (9120caac 那类),
@@ -1387,15 +1325,51 @@ export class AgentOrchestrator {
         const toolsUsed = new Set<string>()
         let lastAssistantText = ''
         for (const msg of recentMessages) {
-          if (msg.events) {
-            for (const evt of msg.events) {
+          // v1.4+ jsonl 存的是 SDKMessage 格式：{ type, message: { role, content: [{type, text}] } }
+          // 旧格式是顶层 role/content。两种格式都要兼容。
+          const message = (msg as { message?: { role?: string; content?: unknown } }).message
+          const role = message?.role ?? (msg as { role?: string }).role
+          const content = message?.content ?? (msg as { content?: unknown }).content
+
+          // 兼容旧格式 AgentMessage.events（v1.4 之前 tool_start 事件）
+          const events = (msg as { events?: Array<{ type: string; toolName?: string }> }).events
+          if (events) {
+            for (const evt of events) {
               if (evt.type === 'tool_start' && evt.toolName) {
                 toolsUsed.add(evt.toolName)
               }
             }
           }
-          if (msg.role === 'assistant' && msg.content) {
-            lastAssistantText = msg.content
+
+          // v1.4+ 格式：content 是 block 数组，从 tool_use block 提取工具名
+          if (Array.isArray(content)) {
+            for (const block of content) {
+              if (
+                block &&
+                typeof block === 'object' &&
+                'type' in block &&
+                block.type === 'tool_use' &&
+                'name' in block &&
+                typeof block.name === 'string'
+              ) {
+                toolsUsed.add(block.name)
+              }
+            }
+          }
+
+          // 提取最后一条 assistant 文本
+          if (role === 'assistant') {
+            if (typeof content === 'string') {
+              lastAssistantText = content
+            } else if (Array.isArray(content)) {
+              const textBlock = content.find(
+                (b): b is { type: 'text'; text: string } =>
+                  !!b && typeof b === 'object' && 'type' in b && b.type === 'text' && 'text' in b && typeof (b as { text: unknown }).text === 'string'
+              )
+              if (textBlock) {
+                lastAssistantText = textBlock.text
+              }
+            }
           }
         }
         const sessionMeta = getAgentSessionMeta(sessionId)
@@ -1775,11 +1749,9 @@ export class AgentOrchestrator {
         )
       }
 
-      // 10. 构建 MCP 服务器配置 + 记忆工具 + 生图工具 + 自定义工具
+      // 10. 构建 MCP 服务器配置 + 生图工具 + 自定义工具
       const mcpServers = this.buildMcpServers(workspaceSlug)
       markPhase('buildMcpConfig')
-      await this.injectMemoryTools(sdk, mcpServers)
-      markPhase('injectMemory')
       await this.injectNanoBananaTools(sdk, mcpServers, sessionId, agentCwd)
       markPhase('injectNanoBanana')
       await this.injectCompactSessionTool(sdk, mcpServers, sessionId)
@@ -2310,10 +2282,6 @@ export class AgentOrchestrator {
             workspaceSlug,
             sessionId,
             permissionMode: initialPermissionMode,
-            memoryEnabled: (() => {
-              const mc = getMemoryConfig()
-              return mc.enabled && !!mc.apiKey
-            })(),
             claudeAvailable,
             deepSeekSubagentModel: modelRouting.subagentModel,
             ksccProvider: channel.provider === 'kscc-internal',

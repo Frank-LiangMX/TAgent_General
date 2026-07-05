@@ -16,7 +16,6 @@ import {
   AGENT_RECOMMEND_TOOL_DEFINITIONS,
   isAgentRecommendAvailable,
 } from './tools/agent-recommend-tool'
-import { MEMORY_TOOL_META, MEMORY_TOOL_DEFINITIONS, isMemoryAvailable } from './tools/memory-tool'
 import {
   NANO_BANANA_TOOL_META,
   NANO_BANANA_TOOL_DEFINITIONS,
@@ -46,11 +45,6 @@ interface BuiltinToolEntry {
 
 /** 所有内置工具 */
 const BUILTIN_TOOLS: BuiltinToolEntry[] = [
-  {
-    meta: MEMORY_TOOL_META,
-    getDefinitions: () => MEMORY_TOOL_DEFINITIONS,
-    checkAvailable: isMemoryAvailable,
-  },
   {
     meta: WEB_SEARCH_TOOL_META,
     getDefinitions: () => WEB_SEARCH_TOOL_DEFINITIONS,

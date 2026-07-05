@@ -70,6 +70,12 @@ const GENERAL_RAIL_ITEMS: Array<{
     icon: <Clock size={17} />,
     description: '定时任务与调度',
   },
+  {
+    id: 'memory',
+    label: '记忆',
+    icon: <Brain size={17} />,
+    description: 'L0-L5 记忆层监控',
+  },
 ]
 
 /** 双模式常驻功能区（Rail 顶端） */

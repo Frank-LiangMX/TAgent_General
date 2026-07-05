@@ -37,7 +37,6 @@ import {
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
-  MemoryConfig,
   CompactSessionInput,
   CompactSessionResult,
   RuntimeStatus,
@@ -282,7 +281,6 @@ import {
 } from './lib/installer-downloader'
 import { fetchInstallerManifest, findInstallerSource } from './lib/installer-manifest'
 import { registerTAgentFilePath } from './lib/local-file-protocol'
-import { getMemoryConfig, setMemoryConfig } from './lib/memory-service'
 import { getProxySettings, saveProxySettings } from './lib/proxy-settings-service'
 import { getRuntimeStatus, getGitRepoStatus, reinitializeRuntime } from './lib/runtime-init'
 import { getSettings, updateSettings } from './lib/settings-service'
@@ -2095,44 +2093,6 @@ export function registerIpcHandlers(): void {
           console.warn(`[IPC] 运行中权限模式切换失败: sessionId=${sessionId}`, err)
           throw err
         })
-      }
-    }
-  )
-
-  // 全局记忆配置
-  ipcMain.handle(MEMORY_IPC_CHANNELS.GET_CONFIG, async (): Promise<MemoryConfig> => {
-    return getMemoryConfig()
-  })
-
-  ipcMain.handle(MEMORY_IPC_CHANNELS.SET_CONFIG, async (_, config: MemoryConfig): Promise<void> => {
-    setMemoryConfig(config)
-  })
-
-  ipcMain.handle(
-    MEMORY_IPC_CHANNELS.TEST_CONNECTION,
-    async (): Promise<{ success: boolean; message: string }> => {
-      const config = getMemoryConfig()
-      if (!config.apiKey) {
-        return { success: false, message: '请先填写 API Key' }
-      }
-      try {
-        const { searchMemory } = await import('./lib/memos-client')
-        const result = await searchMemory(
-          {
-            apiKey: config.apiKey,
-            userId: config.userId?.trim() || 'tagent-user',
-            baseUrl: config.baseUrl,
-          },
-          'test connection',
-          1
-        )
-        return {
-          success: true,
-          message: `连接成功，已检索到 ${result.facts.length} 条事实、${result.preferences.length} 条偏好`,
-        }
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error)
-        return { success: false, message: `连接失败: ${msg}` }
       }
     }
   )

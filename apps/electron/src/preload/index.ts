@@ -88,7 +88,6 @@ import type {
   SystemPrompt,
   SystemPromptCreateInput,
   SystemPromptUpdateInput,
-  MemoryConfig,
   AgentMessageSearchResult,
   AgentSessionReferenceSearchInput,
   AgentSessionReferenceSearchResult,
@@ -899,14 +898,6 @@ export interface ElectronAPI {
   /** 热切换指定会话的权限模式（运行中生效，仅影响该 session） */
   updateSessionPermissionMode: (sessionId: string, mode: TAgentPermissionMode) => Promise<void>
 
-  /** 获取全局记忆配置 */
-  getMemoryConfig: () => Promise<MemoryConfig>
-
-  /** 保存全局记忆配置 */
-  setMemoryConfig: (config: MemoryConfig) => Promise<void>
-
-  /** 测试记忆连接 */
-  testMemoryConnection: () => Promise<{ success: boolean; message: string }>
 
   // ===== Nudge 机制 =====
 
@@ -2310,18 +2301,6 @@ const electronAPI: ElectronAPI = {
 
   updateSessionPermissionMode: (sessionId: string, mode: TAgentPermissionMode) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SESSION_PERMISSION_MODE, sessionId, mode)
-  },
-
-  getMemoryConfig: () => {
-    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.GET_CONFIG)
-  },
-
-  setMemoryConfig: (config: MemoryConfig) => {
-    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.SET_CONFIG, config)
-  },
-
-  testMemoryConnection: () => {
-    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.TEST_CONNECTION)
   },
 
   // Nudge 机制

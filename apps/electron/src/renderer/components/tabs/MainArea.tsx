@@ -87,6 +87,10 @@ export function MainArea(): React.ReactElement {
       return <KanbanMainView />
     }
 
+    if (activeRailItem === 'memory') {
+      return <MemoryMonitorPanel />
+    }
+
     // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染
     return <GeneralMainArea />
   }

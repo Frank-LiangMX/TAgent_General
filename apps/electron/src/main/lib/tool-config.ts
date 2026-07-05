@@ -2,8 +2,7 @@
  * 工具配置服务
  *
  * 管理 ~/.tagent/chat-tools.json 的读写。
- * 存储工具开关状态和非记忆工具的凭据。
- * 记忆凭据保留在 memory.json（Chat + Agent 共用）。
+ * 存储工具开关状态和工具凭据。
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
@@ -14,7 +13,6 @@ import { getChatToolsConfigPath } from './config-paths'
 /** 默认配置 */
 const DEFAULT_CONFIG: ChatToolsFileConfig = {
   toolStates: {
-    memory: { enabled: true },
     'agent-mode-recommend': { enabled: true },
     'web-search': { enabled: false },
     'nano-banana': { enabled: false },
