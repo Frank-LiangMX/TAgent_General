@@ -61,8 +61,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   // RightRail 跟随主面板激活的 tab 类型，而非左侧 railItem。
   // 这样用户切左侧 rail 看会话/草稿列表时，主面板 tab 不被强制切走，
   // RightRail 也不会在「draft tab + sessions rail」组合下错位显示。
+  // 仅在 sessions rail（会话列表）下显示，看板/自动任务/记忆/skills 等面板不显示
   const showRightPanel =
-    appMode === 'agent' && activeTab?.type === 'agent' && !!currentSessionId
+    appMode === 'agent' &&
+    activeTab?.type === 'agent' &&
+    !!currentSessionId &&
+    activeRailItem === 'sessions'
 
   const showLeftSidebar =
     topLevelMode === 'general'
