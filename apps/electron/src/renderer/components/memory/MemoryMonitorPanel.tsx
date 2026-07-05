@@ -9,7 +9,7 @@
  * - 底部状态栏
  */
 
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import {
   User,
   FolderTree,
@@ -28,6 +28,7 @@ import { Button } from '@tagent/ui'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { topLevelModeAtom } from '@/atoms/app-mode'
+import { memorySelectedLayerAtom } from '@/atoms/memory-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -139,6 +140,22 @@ export function MemoryMonitorPanel(): React.ReactElement {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [expandedLayer, setExpandedLayer] = React.useState<LayerConfig['key'] | null>('l4')
+
+  const selectedLayer = useAtomValue(memorySelectedLayerAtom)
+  const setSelectedLayer = useSetAtom(memorySelectedLayerAtom)
+
+  // 左栏点击 L0-L5 时，主区滚动定位到对应卡片 + 展开
+  React.useEffect(() => {
+    if (!selectedLayer) return
+    setExpandedLayer(selectedLayer.toLowerCase() as LayerConfig['key'])
+    // 等下一帧渲染完（展开后高度才正确）再滚动
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`memory-layer-${selectedLayer}`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    // 消费完重置 atom，避免重复触发
+    setSelectedLayer(null)
+  }, [selectedLayer, setSelectedLayer])
 
   const loadData = React.useCallback(async () => {
     setLoading(true)
@@ -320,7 +337,7 @@ function LayerRow({
         : null
 
   return (
-    <div className="relative">
+    <div id={`memory-layer-${layer.key.toUpperCase()}`} className="relative scroll-mt-4">
       <button
         type="button"
         onClick={onToggle}

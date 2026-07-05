@@ -4,10 +4,11 @@
  * 与 KanbanRailContent 风格对齐：玻璃浮岛列表 + 紧凑信息密度。
  */
 
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
 import { topLevelModeAtom } from '@/atoms/app-mode'
+import { memorySelectedLayerAtom, type MemoryLayerKey } from '@/atoms/memory-atoms'
 import { cn } from '@/lib/utils'
 
 interface RailSessionItem {
@@ -19,7 +20,7 @@ interface RailSessionItem {
 }
 
 interface RailLayerItem {
-  key: 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5'
+  key: MemoryLayerKey
   label: string
   description: string
 }
@@ -46,6 +47,8 @@ function formatRelativeTime(ts: number | null): string {
 export function MemoryRailContent(): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const mode = topLevelMode === 'ta' ? 'ta' : 'general'
+  const selectedLayer = useAtomValue(memorySelectedLayerAtom)
+  const setSelectedLayer = useSetAtom(memorySelectedLayerAtom)
 
   const [stats, setStats] = React.useState<{
     total: number
@@ -126,21 +129,37 @@ export function MemoryRailContent(): React.ReactElement {
           层级
         </div>
         <div className="space-y-0.5">
-          {LAYER_ITEMS.map((layer) => (
-            <button
-              key={layer.key}
-              type="button"
-              className="session-list-item-active group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted/40"
-            >
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
-                {layer.key}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium text-foreground/90">{layer.label}</div>
-                <div className="truncate text-[10px] text-muted-foreground/70">{layer.description}</div>
-              </div>
-            </button>
-          ))}
+          {LAYER_ITEMS.map((layer) => {
+            const isActive = selectedLayer === layer.key
+            return (
+              <button
+                key={layer.key}
+                type="button"
+                onClick={() => setSelectedLayer(layer.key)}
+                className={cn(
+                  'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors',
+                  isActive
+                    ? 'session-list-item-active'
+                    : 'hover:bg-muted/40'
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-6 shrink-0 items-center justify-center rounded-md text-[10px] font-medium',
+                    isActive
+                      ? 'bg-foreground/10 text-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {layer.key}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-medium text-foreground/90">{layer.label}</div>
+                  <div className="truncate text-[10px] text-muted-foreground/70">{layer.description}</div>
+                </div>
+              </button>
+            )
+          })}
         </div>
 
         {/* 最近会话 */}
