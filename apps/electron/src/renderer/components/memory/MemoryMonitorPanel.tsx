@@ -353,9 +353,10 @@ function LayerRow({
         type="button"
         onClick={onToggle}
         className={cn(
-          'group flex w-full items-center gap-3 rounded-2xl border border-border/40 bg-muted/10 px-3 py-2.5 transition-colors',
-          'hover:bg-muted/30 hover:border-border/60',
-          isExpanded && 'bg-muted/30 border-border/60'
+          'session-list-row group flex w-full items-center gap-3 px-3 py-2.5 text-left titlebar-no-drag',
+          isExpanded
+            ? 'session-list-item-active'
+            : 'rounded-glass-sidebar hover:bg-primary/5'
         )}
       >
         {/* 图标 */}
