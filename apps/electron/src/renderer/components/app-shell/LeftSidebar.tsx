@@ -165,6 +165,7 @@ import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
 import { KanbanRailContent } from '@/components/kanban/KanbanRailContent'
+import { MemoryRailContent } from '@/components/memory/MemoryRailContent'
 import {
   SessionMiniMapPopover,
   useSessionMiniMapHover,
@@ -1585,6 +1586,8 @@ export function LeftSidebar({
         return <DraftListPanel />
       case 'kanban':
         return <KanbanRailContent />
+      case 'memory':
+        return <MemoryRailContent />
       case 'sessions':
       default:
         return (

@@ -70,7 +70,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         activeRailItem === 'skills' ||
         activeRailItem === 'draft' ||
         activeRailItem === 'automation' ||
-        activeRailItem === 'kanban'
+        activeRailItem === 'kanban' ||
+        activeRailItem === 'memory'
       : activeRailItem !== 'draft'
 
   const navRailWidth = NAV_RAIL_WIDTH
