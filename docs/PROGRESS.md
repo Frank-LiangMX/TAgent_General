@@ -373,7 +373,49 @@
 
 ## 历史进度
 
-### 2026-07-06
+### 2026-07-06（v1.5.0 记忆系统全面改造）
+
+**产出**：记忆系统全面改造 — 静默记忆 + Frozen snapshot + Memory Graph + UI 重设计（未正式 release，仅本地打包测试）
+
+基于 Hermes Agent / GenericAgent / TencentDB-Agent-Memory 三个项目的源码调研，对记忆系统进行全面改造。
+
+| 模块 | 内容 | 状态 |
+| ---- | ---- | ---- |
+| P0 临时止血 | fact_repeat ≥1→≥3，behavior_repeat ≥2→≥5，检测间隔 1→5 turn，L2 冷却 3→10 turn | ✅ |
+| P1.1 L0/L1/L2 eager 创建 | `memory-layer-service.ts` `initialize()` 加 `ensureLayerFiles()`，App 启动时创建 3 个 md 空文件（带 header） | ✅ |
+| P1.2 L4 会话合并 | 同 sessionId + 30 分钟内合并为一条（一天 50 条 → 5-10 条主题会话），schema 加 5 个新字段 | ✅ |
+| P1.3 Frozen snapshot | 会话启动时一次性注入 L0/L1/L2 到 system prompt，会话中写入不改 prompt（保 Prompt Cache） | ✅ |
+| P1.4 patch-only | 写入接口拆分 addOperation/replaceOperation/removeOperation，禁用整文件 overwrite | ✅ |
+| P2.1 Turn-based Nudge + LLM review | 每 10 轮 user turn 触发后台 LLM review（fire-and-forget），LLM 自主判断"Nothing to save"/"值得记" | ✅ |
+| P2.2 写入门控三态 | allow/blocked/stage（background → stage 队列，不立刻弹 toast），待审批 UI | ✅ |
+| P2.3 warm-up 指数触发 | 1→2→4→8→10→10...（新会话早提取，老会话省成本） | ✅ |
+| P3.2 drift 检测 | 写入前比对文件 hash，外部篡改 → backup 到 `nudges/drift_backup/` | ✅ |
+| P3.3 5s recall 超时降级 | 文件大小限制 512KB，超大文件跳过注入 | ✅ |
+| P3.4 PersonaTrigger 自修复 | L0/L1/L2 被误删时自动重建（带 header） | ✅ |
+| P4.1 META-SOP 注入 | system prompt 含记忆管理元规则（8 条） | ✅ |
+| P4.2 L1 ≤30 行约束 | 写入前校验超限拒绝写入 | ✅ |
+| P4.3 禁易变状态白名单 | 时间戳/PID/SessionID/绝对路径/设备信息拒绝写入 | ✅ |
+| Memory Graph | d3-force Canvas radial timeline + 数据装配器 + 交互 + 入口 | ✅ |
+| UI 重设计 | 主面板极简仪表盘 + 左栏快捷入口 + Soft UI Evolution 样式 | ✅ |
+| Bug 修复 | 切换会话上下文警告误触发 + GLM-5.1 context window + 1M 模型映射修正 | ✅ |
+| 文档 | 8 份调研 → 3 份 + 总设计文档（`docs/plans/2026-07-06-silent-memory-research/`） | ✅ |
+
+**新增文件**：
+- `main/lib/nudge-llm-review.ts`（LLM review 调用）
+- `main/lib/stage-queue-service.ts`（stage 队列管理）
+- `main/lib/learning-graph-service.ts`（Memory Graph 数据装配器）
+- `renderer/components/memory/MemoryGraph.tsx`（Memory Graph 渲染）
+- `renderer/components/memory/StageQueueCard.tsx`（待审批 UI）
+
+**未做（等记忆积累后）**：
+- P3.1 两阶段去重（FTS5 + LLM 批量判定）—— 当前 L0/L1/L2 无记忆
+- P4.4 ROI 公式用于 L1 清理 —— 当前 L1 空文件
+
+**里程碑**：记忆系统从"每轮检测 + 弹窗打扰"改造为"后台 LLM review + stage 队列静默积累 + Frozen snapshot 保 Cache"
+
+---
+
+### 2026-07-06（Nudge toast 修复）
 
 **产出**：Nudge toast 不弹真根因修复 + 玻璃卡片样式（2 commits on `main`）
 

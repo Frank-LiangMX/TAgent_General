@@ -420,7 +420,7 @@ React UI 更新
 
 ## 当前进度与下一步
 
-**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成；看板多 Agent 协作系统（B1–B10）已合入 `main`。当前活跃开发主线为 **v1.4.2 稳定性补丁已发布** + **看板 v1 产品化**（下一阶段）。
+**当前阶段**：MVP / P1 / P2 / P3 主线已完成；Automation v1（M1–M3）已合入 `main`；kscc 内网渠道集成已完成；草稿模式重构 + Chat 残留清理已完成；看板多 Agent 协作系统（B1–B10）已合入 `main`。当前活跃开发主线为 **v1.5.0 记忆系统全面改造已完成**（未正式 release）+ **看板 v1 产品化**（下一阶段）。
 
 **已完成**（截至 2026-07-03）：
 
@@ -450,9 +450,20 @@ React UI 更新
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
-**最近完成**（2026-07-06）：
+**最近完成**（2026-07-06 v1.5.0 记忆系统全面改造，未正式 release）：
 
-- **Nudge toast 不弹真根因修复**：`agent-orchestrator.ts` 3 处用 `BrowserWindow.getAllWindows()[0]` 推 IPC 事件，但子窗口（quick-task / voice-dictation / detached-preview）可能排在数组前面，事件发到子窗口主窗口 listener 收不到。**修复**：`agent-service.ts` 导出 `getMainRendererWebContents` + 新增 `getSessionWebContents(sessionId)`（复用已有 `sessionWebContents` 映射，兜底回退主窗口，过滤子窗口）；3 处替换：Nudge 推送 / TA 意图推送 / Context 用量推送。重启 dev 后"我叫 Frank" Nudge toast 正常弹出，点"记住"后 `~/.tagent-dev/memory/L2_facts.md` 写入成功
+- **记忆系统全面改造**：基于 Hermes Agent / GenericAgent / TencentDB-Agent-Memory 三个项目源码调研，全面改造记忆系统（详见 `docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md`）
+- **P0 临时止血**：fact_repeat ≥1→≥3，behavior_repeat ≥2→≥5，检测间隔 1→5 turn，L2 冷却 3→10 turn
+- **P1 基础架构**：L0/L1/L2 eager 创建 + L4 会话合并（30 分钟内同 sessionId 合并）+ Frozen snapshot（会话启动注入一次，中途写入不改 prompt）+ patch-only invariant
+- **P2 触发机制**：warm-up 指数触发（1→2→4→8→10）+ LLM review（fire-and-forget 后台判断）+ 写入门控三态（allow/blocked/stage）+ stage 队列 UI
+- **P3 质量保障**：drift 检测（文件 hash 比对 + backup）+ 5s recall 超时降级 + PersonaTrigger 自修复 + Memory Graph 可视化（d3-force Canvas radial timeline）
+- **P4 元规则**：META-SOP 注入 + L1 ≤30 行硬约束 + 禁易变状态白名单
+- **UI 重设计**：主面板极简仪表盘（2x3 网格卡片）+ 左栏快捷入口 + 按日期分组时间线 + Soft UI Evolution 样式
+- **Bug 修复**：切换会话上下文警告误触发 + GLM-5.1 context window 映射 + 1M 模型映射修正
+- **默认主题**：改为浅色
+- **文档整合**：8 份调研 → 3 份 + 总设计文档
+
+**最近完成**（2026-07-06 Nudge toast 修复）：`agent-orchestrator.ts` 3 处用 `BrowserWindow.getAllWindows()[0]` 推 IPC 事件，但子窗口（quick-task / voice-dictation / detached-preview）可能排在数组前面，事件发到子窗口主窗口 listener 收不到。**修复**：`agent-service.ts` 导出 `getMainRendererWebContents` + 新增 `getSessionWebContents(sessionId)`（复用已有 `sessionWebContents` 映射，兜底回退主窗口，过滤子窗口）；3 处替换：Nudge 推送 / TA 意图推送 / Context 用量推送。重启 dev 后"我叫 Frank" Nudge toast 正常弹出，点"记住"后 `~/.tagent-dev/memory/L2_facts.md` 写入成功
 - **toast 玻璃卡片样式**：新增 `session-glass-toast` 玻璃类（light + dark，`--radius-glass-modal` 20px 大圆角 + 玻璃底 + 高光，与模态框/设置卡片同款）；`sonner.tsx` Toaster 默认 `toastOptions.classNames.toast` 改用该类，所有 toast（Nudge / ContextUsage / 附件提示等）自动跟随全局视觉
 
 **最近完成**（2026-07-05 晚）：
