@@ -116,7 +116,7 @@ export function getSessionWebContents(sessionId: string): WebContents | null {
 // ===== EventBus IPC 转发中间件 =====
 
 eventBus.use((sessionId, payload, next) => {
-  const wc = sessionWebContents.get(sessionId)
+  const wc = getSessionWebContents(sessionId)
   if (wc && !wc.isDestroyed()) {
     try {
       wc.send(AGENT_IPC_CHANNELS.STREAM_EVENT, { sessionId, payload } as AgentStreamEvent)

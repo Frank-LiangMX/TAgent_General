@@ -67,7 +67,7 @@ import {
 } from './ProcessBlockGroup'
 import { extractToolResultText, parseTaskCreateResult, TASK_TOOL_NAMES } from './task-progress'
 import { TaskProgressCard } from './TaskProgressCard'
-import { normalizeThinkTagsInContentBlocks } from './thinking-tag-parser'
+import { normalizeThinkTagsInContentBlocks, parseThinkTagsFromText } from './thinking-tag-parser'
 import { TurnFileChangesSummary } from './TurnFileChangesSummary'
 
 import type { ToolActivity } from '@/atoms/agent-atoms'
@@ -607,6 +607,8 @@ export interface AssistantTurnRendererProps {
   onCompact?: () => void
   /** 是否正在流式输出中（隐藏操作栏） */
   isStreaming?: boolean
+  /** 流式平滑渲染文本，isStreaming 时替换顶层 text block 内容 */
+  streamingText?: string
   /** 是否被用户中断 */
   stoppedByUser?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
@@ -625,6 +627,7 @@ export function AssistantTurnRenderer({
   onRetryInNewSession,
   onCompact,
   isStreaming,
+  streamingText,
   stoppedByUser,
   sessionModelId: _sessionModelId,
 }: AssistantTurnRendererProps): React.ReactElement | null {
@@ -685,6 +688,19 @@ export function AssistantTurnRenderer({
     } else {
       topLevelBlocks.push(eb.block)
     }
+  }
+
+  // 流式渲染：isStreaming 时用平滑文本替换顶层 text/thinking block，
+  // 避免 SDK 消息内容滞后导致文本冻结
+  if (isStreaming && streamingText) {
+    const parsed = normalizeThinkTagsInContentBlocks(
+      parseThinkTagsFromText(streamingText)
+    )
+    const toolBlocks = topLevelBlocks.filter(
+      (b) => b.type !== 'text' && b.type !== 'thinking'
+    )
+    topLevelBlocks.length = 0
+    topLevelBlocks.push(...parsed, ...toolBlocks)
   }
 
   // 检测是否有主要内容（text 块），用于决定 tool/thinking 是否 dimmed
@@ -1480,6 +1496,8 @@ export interface MessageGroupRendererProps {
   onCompact?: () => void
   /** 是否正在流式输出中（隐藏操作栏） */
   isStreaming?: boolean
+  /** 流式平滑渲染文本，传递给 AssistantTurnRenderer */
+  streamingText?: string
   /** SDK 是否处于 compacting 状态（控制 status=compacting 分隔符显示） */
   isContextCompacting?: boolean
   /** 是否被用户中断 */
@@ -1583,6 +1601,7 @@ export function MessageGroupRenderer({
   onRetryInNewSession,
   onCompact,
   isStreaming,
+  streamingText,
   isContextCompacting,
   stoppedByUser,
   sessionModelId,
@@ -1648,6 +1667,7 @@ export function MessageGroupRenderer({
         onRetryInNewSession={onRetryInNewSession}
         onCompact={onCompact}
         isStreaming={isStreaming}
+        streamingText={streamingText}
         stoppedByUser={stoppedByUser}
         sessionModelId={sessionModelId}
       />

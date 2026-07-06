@@ -880,6 +880,7 @@ function AgentMessagesImpl({
                     onRetryInNewSession={shouldDisableActions ? undefined : onRetryInNewSession}
                     onCompact={shouldDisableActions ? undefined : onCompact}
                     isStreaming={isLive || undefined}
+                    streamingText={isLive && hasLiveAssistantContent ? smoothContent : undefined}
                     isContextCompacting={streamState?.isCompacting}
                     stoppedByUser={isLastAssistantTurn || undefined}
                     sessionModelId={sessionModelId}
