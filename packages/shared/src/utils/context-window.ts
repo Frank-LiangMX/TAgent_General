@@ -53,6 +53,7 @@ export function inferContextWindow(model?: string): number | undefined {
     m.includes('gpt4-turbo')
   )
     return 128_000
+  if (m.includes('glm-5.1') || m.includes('glm5.1')) return 200_000
   if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5'))
     return 128_000
   if (
@@ -81,8 +82,16 @@ export function resolveDisplayContextWindow(
   const inferred = inferContextWindow(modelId) ?? DEFAULT_CONTEXT_WINDOW
   if (sdkWindow === undefined) return inferred
 
-  // SDK 已给出大于默认 200K 的值，直接信任（如端点回报 512K）
-  if (sdkWindow > DEFAULT_CONTEXT_WINDOW) return sdkWindow
+  // SDK 已给出大于默认 200K 的值，先检查模型是否有明确映射
+  if (sdkWindow > DEFAULT_CONTEXT_WINDOW) {
+    // 如果模型有明确映射（不是默认 200k），且映射值比 SDK 返回的小，用映射值
+    // 避免 SDK 对兼容端点返回错误的默认值（如 glm-5.1 实际 200k 但 SDK 返回 1M）
+    const hasExplicitMapping = inferred !== DEFAULT_CONTEXT_WINDOW
+    if (hasExplicitMapping && inferred < sdkWindow) {
+      return inferred
+    }
+    return sdkWindow
+  }
 
   const model = modelId?.toLowerCase() ?? ''
   const isCompatUnderreport =
