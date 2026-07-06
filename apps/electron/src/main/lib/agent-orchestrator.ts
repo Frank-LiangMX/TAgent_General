@@ -1622,16 +1622,21 @@ export class AgentOrchestrator {
         // 字段名 `nudges`（复数，与 preload 类型签名 + 渲染进程接收对齐）
         // 历史 bug：2026-07-05 之前主进程发 `nudges` 但渲染进程读 `event.nudge`（单数），
         // 条件永远 false，toast 永远不弹，记忆永不写入。已统一为复数。
-        const { BrowserWindow } = await import('electron')
-        const win = BrowserWindow.getAllWindows()[0]
-        if (win && !win.isDestroyed()) {
-          win.webContents.send('memory:nudge-event', {
+        //
+        // 2026-07-06 修复：原用 BrowserWindow.getAllWindows()[0] 拿窗口，但子窗口
+        // （quick-task / voice-dictation / detached-preview）可能排在前面，事件发到
+        // 子窗口主窗口 listener 收不到。改用 sessionId 查 sessionWebContents 映射，
+        // 兜底回退到主窗口（agent-service.ts 的 getSessionWebContents 已处理）。
+        const { getSessionWebContents } = await import('./agent-service')
+        const wc = getSessionWebContents(sessionId)
+        if (wc && !wc.isDestroyed()) {
+          wc.send('memory:nudge-event', {
             type: 'nudge_candidates',
             nudges: nudgeCandidates,
           })
           console.log(`[Agent 编排] 已发送 memory:nudge-event，nudges.length=${nudgeCandidates.length}`)
         } else {
-          console.warn(`[Agent 编排] Nudge 发送失败：无可用 BrowserWindow`)
+          console.warn(`[Agent 编排] Nudge 发送失败：无可用 webContents`)
         }
       }
     } catch (e) {
@@ -1768,10 +1773,10 @@ export class AgentOrchestrator {
           const recentAgentMsgs = getAgentSessionMessages(sessionId).slice(-5)
           const taPrompt = checkAndGeneratePrompt(sessionId, workspaceSlug, recentAgentMsgs)
           if (taPrompt) {
-            const { BrowserWindow } = await import('electron')
-            const win = BrowserWindow.getAllWindows()[0]
-            if (win && !win.isDestroyed()) {
-              win.webContents.send('agent:ta-intent-prompt', {
+            const { getSessionWebContents } = await import('./agent-service')
+            const wc = getSessionWebContents(sessionId)
+            if (wc && !wc.isDestroyed()) {
+              wc.send('agent:ta-intent-prompt', {
                 prompt: taPrompt.prompt,
                 confidence: taPrompt.confidence,
                 reason: taPrompt.reason,
@@ -3618,14 +3623,16 @@ export class AgentOrchestrator {
       .refreshContextUsage(sessionId)
       .then((updated) => {
         if (!updated) return
-        try {
-          const win = BrowserWindow.getAllWindows()[0]
-          if (win && !win.isDestroyed()) {
-            win.webContents.send(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, { sessionId })
-          }
-        } catch (err) {
-          console.warn(`[Agent 编排] 推送 Context 分项更新通知失败: sessionId=${sessionId}`, err)
-        }
+        void import('./agent-service')
+          .then(({ getSessionWebContents }) => {
+            const wc = getSessionWebContents(sessionId)
+            if (wc && !wc.isDestroyed()) {
+              wc.send(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, { sessionId })
+            }
+          })
+          .catch((err) => {
+            console.warn(`[Agent 编排] 推送 Context 分项更新通知失败: sessionId=${sessionId}`, err)
+          })
       })
       .finally(() => {
         this.contextUsageRefreshing.delete(sessionId)

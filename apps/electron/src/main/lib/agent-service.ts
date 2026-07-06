@@ -95,9 +95,22 @@ function isMainRendererWindow(win: BrowserWindow): boolean {
   )
 }
 
-function getMainRendererWebContents(): WebContents | null {
+export function getMainRendererWebContents(): WebContents | null {
   const win = BrowserWindow.getAllWindows().find(isMainRendererWindow)
   return win && !win.webContents.isDestroyed() ? win.webContents : null
+}
+
+/**
+ * 按 sessionId 查 webContents，找不到则回退到主窗口。
+ *
+ * 用于 orchestrator 推送 IPC 事件——不能直接用 BrowserWindow.getAllWindows()[0]，
+ * 因为子窗口（quick-task / voice-dictation / detached-preview）可能排在前面，
+ * 事件会发到子窗口导致主窗口 listener 收不到。
+ */
+export function getSessionWebContents(sessionId: string): WebContents | null {
+  const wc = sessionWebContents.get(sessionId)
+  if (wc && !wc.isDestroyed()) return wc
+  return getMainRendererWebContents()
 }
 
 // ===== EventBus IPC 转发中间件 =====

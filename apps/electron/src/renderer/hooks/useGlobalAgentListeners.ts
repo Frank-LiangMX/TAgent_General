@@ -1348,12 +1348,13 @@ export function useGlobalAgentListeners(): void {
       if (event.type === 'nudge_candidates' && event.nudges && event.nudges.length > 0) {
         // 获取当前会话的 mode
         const sessions = store.get(agentSessionsAtom)
-        const currentSession = sessions.find((s) => s.id === store.get(currentAgentSessionIdAtom))
+        const currentSessionId = store.get(currentAgentSessionIdAtom)
+        const currentSession = sessions.find((s) => s.id === currentSessionId)
         const mode = currentSession?.mode === 'ta' ? 'ta' : 'general'
         // 显示 Nudge toast（批量串行，避免重叠）
         import('@/components/memory/NudgeToast')
           .then(({ showNudgeToasts }) => {
-            showNudgeToasts(event.nudges, store.get(currentAgentSessionIdAtom) || '', mode)
+            showNudgeToasts(event.nudges, currentSessionId || '', mode)
           })
           .catch(console.error)
       }

@@ -162,6 +162,7 @@ import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 | `session-glass-tooltip` | Tooltip 玻璃 |
 | `session-glass-surface` | 弹窗 / 菜单 / 选项浮层通用玻璃 |
 | `session-glass-sticky` | 吸顶元素玻璃 |
+| `session-glass-toast` | sonner Toast 玻璃卡片（大圆角 20px + 玻璃底 + 高光，与模态框/设置卡片同款） |
 
 **主题色覆盖**：业务侧 `globals.css` 的 4 个主题（ocean / forest / slate-light / slate-dark）通过 `.theme-xxx .session-list-item-active` 选择器覆盖背景色，调用方无需额外处理。
 
