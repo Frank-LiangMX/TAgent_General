@@ -16,6 +16,7 @@ import {
   agentSidePanelOpenAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
+import { detectIsMac } from '@/lib/platform'
 import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)
+  const isMac = React.useMemo(() => detectIsMac(), [])
 
   const unseenChanges = currentSessionId ? (unseenChangesMap.get(currentSessionId) ?? false) : false
   const unseenFilesCount = currentSessionId ? (unseenFilesMap.get(currentSessionId)?.size ?? 0) : 0
@@ -53,6 +55,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
         className
       )}
     >
+      {!isMac ? <div className="w-full shrink-0 h-[30px]" aria-hidden /> : null}
       <div className="nav-island-body-start w-full flex flex-col items-center">
         <div className="rail-slide-host relative flex flex-col items-center gap-1 w-full">
           <Tooltip>
