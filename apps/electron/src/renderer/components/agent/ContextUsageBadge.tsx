@@ -160,9 +160,18 @@ export function ContextUsageBadge({
     }
   }
 
-  // P2-1: Nudges 阈值追踪 ref — 记录上次弹过的阈值, 避免重复弹
-  // 用 'none' / '80' / '90' 三个状态机
-  const lastNudgeFiredRef = React.useRef<'none' | '80' | '90'>('none')
+  // P2-1: Nudges 阈值追踪 ref — 按 sessionId 存储，避免切换会话时误触发
+  // 用 Map<sessionId, 'none' | '80' | '90'> 三个状态机
+  const lastNudgeFiredMapRef = React.useRef<Map<string, 'none' | '80' | '90'>>(new Map())
+
+  // 切换会话时重置当前会话的 nudge 状态
+  React.useEffect(() => {
+    if (sessionId && !lastNudgeFiredMapRef.current.has(sessionId)) {
+      lastNudgeFiredMapRef.current.set(sessionId, 'none')
+    }
+  }, [sessionId])
+
+  const lastNudgeFired = sessionId ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none') : 'none'
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
@@ -217,12 +226,16 @@ export function ContextUsageBadge({
       : undefined
 
   React.useEffect(() => {
-    const ratioForNudge = authoritativeSnapshot
-      ? authoritativeSnapshot.percentage / 100
-      : streamRatio
+    // 只在权威快照可用时触发 nudge，避免流式 usage 误触发
+    // 切换会话时 authoritativeSnapshot 可能是 null（加载中），此时流式 usage 可能是旧会话残留
+    if (!authoritativeSnapshot || !sessionId) return
+    const ratioForNudge = authoritativeSnapshot.percentage / 100
     if (ratioForNudge == null) return
-    if (ratioForNudge >= NUDGE_90_RATIO && lastNudgeFiredRef.current !== '90') {
-      lastNudgeFiredRef.current = '90'
+
+    const currentNudgeState = lastNudgeFiredMapRef.current.get(sessionId) ?? 'none'
+
+    if (ratioForNudge >= NUDGE_90_RATIO && currentNudgeState !== '90') {
+      lastNudgeFiredMapRef.current.set(sessionId, '90')
       toast.warning('上下文危险 (>90%)，建议立即压缩或新建会话', {
         duration: 8000,
         action: {
@@ -230,8 +243,8 @@ export function ContextUsageBadge({
           onClick: () => onCompact(),
         },
       })
-    } else if (ratioForNudge >= NUDGE_80_RATIO && lastNudgeFiredRef.current === 'none') {
-      lastNudgeFiredRef.current = '80'
+    } else if (ratioForNudge >= NUDGE_80_RATIO && currentNudgeState === 'none') {
+      lastNudgeFiredMapRef.current.set(sessionId, '80')
       toast('上下文已用 80%，建议压缩或开新会话', {
         duration: 6000,
         action: {
@@ -239,10 +252,10 @@ export function ContextUsageBadge({
           onClick: () => onCompact(),
         },
       })
-    } else if (ratioForNudge < NUDGE_80_RATIO && lastNudgeFiredRef.current !== 'none') {
-      lastNudgeFiredRef.current = 'none'
+    } else if (ratioForNudge < NUDGE_80_RATIO && currentNudgeState !== 'none') {
+      lastNudgeFiredMapRef.current.set(sessionId, 'none')
     }
-  }, [authoritativeSnapshot, streamRatio, onCompact])
+  }, [authoritativeSnapshot, sessionId, onCompact])
 
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
