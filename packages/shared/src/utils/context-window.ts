@@ -11,21 +11,19 @@ export const ONE_MILLION_CONTEXT_WINDOW = 1_000_000
 /**
  * 是否支持 1M context（与 Claude Code 判定对齐的子集）
  *
- * 注意：Claude Sonnet/Opus 4 的 1M 是 beta 特性，需要申请，标准是 200k。
- * 这里只列明确支持 1M 的模型，不列 beta/未确认的。
+ * 只列确认支持 1M 的模型。
+ * Claude Sonnet/Opus 4 标准 200k，1M 需申请 beta，不默认开启。
  */
 export function supports1MContext(modelId: string): boolean {
   if (!modelId) return false
   const m = modelId.toLowerCase()
   if (m.includes('haiku')) return false
-  // Claude 系列：标准 200k，1M 需申请 beta，不默认开启
-  if (m.includes('claude')) return false
-  // DeepSeek V3 确认是 128k，不支持 1M
-  // DeepSeek V4 未确认，不标 1M
-  // Mimo V2.5/V2 Pro 未确认，不标 1M
-  // GLM-5.2 未确认，不标 1M
-  // MiniMax M3 可能 1M，但未确认，不标 1M
-  if (m.includes('glm-x-preview[1m]')) return true  // 显式声明 1M
+  if (m.includes('claude')) return false  // 标准 200k，1M 需申请
+  if (m.includes('mimo-v2.5') || m.includes('mimo2.5')) return true
+  if (m.includes('glm-5.2') || m.includes('glm5.2')) return true
+  if (m.includes('deepseek-v4') || m.includes('deepseekv4')) return true
+  if (m.includes('minimax-m3') || m.includes('minimaxm3')) return true
+  if (m.includes('glm-x-preview[1m]')) return true
   return false
 }
 
@@ -42,11 +40,12 @@ export function inferContextWindow(model?: string): number | undefined {
   if (m.includes('gemini-2') && m.includes('pro')) return 2_000_000
   if (m.includes('gemini-2.0-pro') || m.includes('gemini-2.5-pro')) return 2_000_000
 
-  // 1M（明确支持的）
+  // 1M（确认支持的）
   if (m.includes('gemini-2') && m.includes('flash')) return 1_000_000
   if (m.includes('llama-4-maverick') || m.includes('llama4-maverick') || m.includes('maverick'))
     return 1_000_000
-  if (m.includes('glm-x-preview[1m]')) return 1_000_000  // 显式声明 1M
+  if (m.includes('glm-x-preview[1m]')) return 1_000_000
+  if (supports1MContext(model)) return ONE_MILLION_CONTEXT_WINDOW
 
   // 200k
   if (m.includes('claude-sonnet-4') || m.includes('claude-opus-4')) return 200_000  // 标准 200k，1M 需申请
@@ -58,8 +57,7 @@ export function inferContextWindow(model?: string): number | undefined {
   // 128k
   if (m.includes('gpt-4o') || m.includes('gpt-4-turbo') || m.includes('gpt4o') || m.includes('gpt4-turbo'))
     return 128_000
-  if (m.includes('deepseek-v3') || m.includes('deepseek-v4') || m.includes('deepseek'))
-    return 128_000
+  if (m.includes('deepseek-v3') || m.includes('deepseek')) return 128_000  // V3=128k, V4=1M（走 supports1MContext）
   if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5'))
     return 128_000
   if (m.includes('qwen-2.5') || m.includes('qwen2.5') || m.includes('qwen-2') || m.includes('qwen2'))
