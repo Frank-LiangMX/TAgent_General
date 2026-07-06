@@ -8,20 +8,24 @@
 export const DEFAULT_CONTEXT_WINDOW = 200_000
 export const ONE_MILLION_CONTEXT_WINDOW = 1_000_000
 
-/** 是否支持 1M context beta（与 Claude Code 判定对齐的子集） */
+/**
+ * 是否支持 1M context（与 Claude Code 判定对齐的子集）
+ *
+ * 注意：Claude Sonnet/Opus 4 的 1M 是 beta 特性，需要申请，标准是 200k。
+ * 这里只列明确支持 1M 的模型，不列 beta/未确认的。
+ */
 export function supports1MContext(modelId: string): boolean {
   if (!modelId) return false
   const m = modelId.toLowerCase()
   if (m.includes('haiku')) return false
-  if (m.includes('claude')) {
-    if (m.includes('sonnet-4')) return true
-    if (m.includes('opus-4')) return true
-    return false
-  }
-  if (m.includes('deepseek-v4') || m.includes('deepseek-v3')) return true
-  if (m.includes('mimo-v2.5') || m.includes('mimo-v2-pro')) return true
-  if (m.includes('glm-5.2') || m.includes('glm-x-preview[1m]')) return true
-  if (m.includes('minimax-m3')) return true
+  // Claude 系列：标准 200k，1M 需申请 beta，不默认开启
+  if (m.includes('claude')) return false
+  // DeepSeek V3 确认是 128k，不支持 1M
+  // DeepSeek V4 未确认，不标 1M
+  // Mimo V2.5/V2 Pro 未确认，不标 1M
+  // GLM-5.2 未确认，不标 1M
+  // MiniMax M3 可能 1M，但未确认，不标 1M
+  if (m.includes('glm-x-preview[1m]')) return true  // 显式声明 1M
   return false
 }
 
@@ -30,41 +34,39 @@ export function inferContextWindow(model?: string): number | undefined {
   if (!model) return undefined
   const m = model.toLowerCase()
 
+  // 10M
   if (m.includes('llama-4-scout') || m.includes('llama4-scout') || m.includes('scout'))
     return 10_000_000
 
+  // 2M
   if (m.includes('gemini-2') && m.includes('pro')) return 2_000_000
   if (m.includes('gemini-2.0-pro') || m.includes('gemini-2.5-pro')) return 2_000_000
 
-  if (supports1MContext(model)) return ONE_MILLION_CONTEXT_WINDOW
-
+  // 1M（明确支持的）
   if (m.includes('gemini-2') && m.includes('flash')) return 1_000_000
   if (m.includes('llama-4-maverick') || m.includes('llama4-maverick') || m.includes('maverick'))
     return 1_000_000
+  if (m.includes('glm-x-preview[1m]')) return 1_000_000  // 显式声明 1M
 
+  // 200k
+  if (m.includes('claude-sonnet-4') || m.includes('claude-opus-4')) return 200_000  // 标准 200k，1M 需申请
   if (m.includes('claude-haiku')) return 200_000
   if (m.includes('openai-o1') || m.includes('openai-o3') || m.includes('/o1') || m.includes('/o3'))
     return 200_000
-
-  if (
-    m.includes('gpt-4o') ||
-    m.includes('gpt-4-turbo') ||
-    m.includes('gpt4o') ||
-    m.includes('gpt4-turbo')
-  )
-    return 128_000
   if (m.includes('glm-5.1') || m.includes('glm5.1')) return 200_000
+
+  // 128k
+  if (m.includes('gpt-4o') || m.includes('gpt-4-turbo') || m.includes('gpt4o') || m.includes('gpt4-turbo'))
+    return 128_000
+  if (m.includes('deepseek-v3') || m.includes('deepseek-v4') || m.includes('deepseek'))
+    return 128_000
   if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5'))
     return 128_000
-  if (
-    m.includes('qwen-2.5') ||
-    m.includes('qwen2.5') ||
-    m.includes('qwen-2') ||
-    m.includes('qwen2')
-  )
+  if (m.includes('qwen-2.5') || m.includes('qwen2.5') || m.includes('qwen-2') || m.includes('qwen2'))
     return 128_000
   if (m.includes('mistral-large') || m.includes('mistral large')) return 128_000
 
+  // 默认 200k
   return DEFAULT_CONTEXT_WINDOW
 }
 
