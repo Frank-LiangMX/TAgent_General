@@ -4,20 +4,30 @@
  * 根据设计文档 §6.5.5 实现：
  * - 每日 03:00（或启动时距上次 >36h）触发
  * - 从 L2_facts + L4_sessions 提炼洞察写入 L5
- * - anti_echo_filter 防回音壁
- * - contradiction_check 矛盾检查
+ * - anti_echo_filter 防回音壁（简化版：关键词重叠过滤）
+ * - contradiction_check 矛盾检查（v1.6 待实现）
  *
  * 触发条件：
  * - 定时：每日 03:00
  * - 启动时：距上次 >36h
+ *
+ * LLM 提炼（v1.5 升级）：
+ * - 复用主会话默认渠道 + 模型（settings.agentChannelId / agentModelId）
+ * - kscc 渠道走 CLI 不支持 SSE，回退到规则版关键词提取
+ * - LLM 失败时也回退规则版，保证 Reflect 不阻塞
  */
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import { app } from 'electron'
+import { getAdapter, getTAgentUserAgent } from '@tagent/core'
+import type { StreamRequestInput } from '@tagent/core'
 
+import { getChannelById, decryptApiKey } from './channel-manager'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
+import { getFetchFn } from './proxy-fetch'
+import { getSettings } from './settings-service'
 
 // ===== 类型定义 =====
 
@@ -187,8 +197,8 @@ class ReflectService {
         return { ...result, success: true }
       }
 
-      // 5. 提炼洞察（简化版：从事实中提取模式）
-      const newInsights = this.extractInsights(l2Facts, l4Sessions, existingInsights)
+      // 5. 提炼洞察（LLM 优先，失败回退规则版）
+      const newInsights = await this.extractInsights(l2Facts, l4Sessions, existingInsights)
 
       // 6. anti_echo_filter: 过滤重复
       const filteredInsights = newInsights.filter((insight) => {
@@ -259,29 +269,240 @@ class ReflectService {
   }
 
   /**
-   * 提炼洞察（简化版）
+   * 提炼洞察（LLM 优先，失败回退规则版）
    *
-   * 生产环境应调用 LLM 进行提炼
+   * v1.5 升级：从关键词计数改为 LLM 提炼，产出真正的"偏好 / 工作流规律 / 领域洞察"。
+   * 设计 §6.5.5：cheap 模型 max 500 tokens。
+   *
+   * LLM 不可用（kscc 渠道 / 无渠道配置 / 调用失败）时回退规则版，保证 Reflect 不阻塞。
    */
-  private extractInsights(
+  private async extractInsights(
     l2Facts: string[],
     l4Sessions: string[],
     existingInsights: string[]
-  ): string[] {
-    const insights: string[] = []
+  ): Promise<string[]> {
+    // 先尝试 LLM 提炼
+    try {
+      const llmInsights = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights)
+      if (llmInsights.length > 0) {
+        console.log(`[ReflectService] LLM 提炼出 ${llmInsights.length} 条洞察`)
+        return llmInsights
+      }
+      console.log('[ReflectService] LLM 未产出洞察，回退规则版')
+    } catch (e) {
+      console.warn('[ReflectService] LLM 提炼失败，回退规则版:', e)
+    }
 
-    // 简化版：从事实中提取关键词模式
+    // 回退：规则版关键词提取
+    return this.extractInsightsWithRules(l2Facts, existingInsights)
+  }
+
+  /**
+   * 调 LLM 完整文本（非流式 UI，但 provider adapter 只有流式接口，复用并累积）
+   *
+   * 复用主会话默认渠道 + 模型。kscc 渠道走 CLI 不支持 SSE，抛错由上层回退。
+   */
+  private async callLLM(systemPrompt: string, userPrompt: string): Promise<string> {
+    const settings = getSettings()
+    const channelId = settings.agentChannelId
+    const modelId = settings.agentModelId || 'claude-sonnet-4-6'
+    if (!channelId) {
+      throw new Error('未配置默认渠道')
+    }
+
+    const channel = getChannelById(channelId)
+    if (!channel) {
+      throw new Error(`渠道不存在: ${channelId}`)
+    }
+    if (channel.provider === 'kscc-internal') {
+      throw new Error('kscc 渠道不支持 SSE，跳过 LLM 提炼')
+    }
+
+    const apiKey = decryptApiKey(channelId)
+    if (!apiKey) {
+      throw new Error('无法解密 API Key')
+    }
+
+    const adapter = getAdapter(channel.provider)
+    const fetchFn = getFetchFn()
+
+    const streamInput: StreamRequestInput = {
+      modelId,
+      history: [
+        { id: 'reflect-system', role: 'system', content: systemPrompt, createdAt: Date.now() },
+      ],
+      userMessage: userPrompt,
+      apiKey,
+      baseUrl: channel.baseUrl,
+      readImageAttachments: () => [],
+    }
+
+    const request = adapter.buildStreamRequest(streamInput)
+
+    const response = await fetchFn(request.url, {
+      method: 'POST',
+      headers: { ...request.headers, 'User-Agent': getTAgentUserAgent() },
+      body: request.body,
+    })
+
+    if (!response.ok) {
+      throw new Error(`LLM 请求失败: ${response.status} ${response.statusText}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法获取响应流')
+    }
+
+    const decoder = new TextDecoder()
+    let accumulatedText = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const jsonStr = line.slice(6).trim()
+        if (!jsonStr || jsonStr === '[DONE]') continue
+
+        try {
+          const json = JSON.parse(jsonStr)
+          const text =
+            json.choices?.[0]?.delta?.content ||
+            json.delta?.text ||
+            json.message?.content ||
+            ''
+          if (text) {
+            accumulatedText += text
+          }
+        } catch {
+          // 部分 chunk 可能不是完整 JSON，跳过
+        }
+      }
+    }
+
+    return accumulatedText
+  }
+
+  /**
+   * LLM 提炼洞察
+   */
+  private async extractInsightsWithLLM(
+    l2Facts: string[],
+    l4Sessions: string[],
+    existingInsights: string[]
+  ): Promise<string[]> {
+    const systemPrompt = `你是一个记忆反思助手。基于用户最近 7 天的稳定事实（L2）和会话摘要（L4），提炼出 3-5 条高阶洞察。
+
+要求：
+1. 每条洞察必须是**抽象结论**（不是事实复述），例如"用户偏好 X" / "工作流规律是 Y" / "领域知识 Z"
+2. 跨 session 共性优先（多个事实/会话共同指向的结论）
+3. 不要与现有洞察重复
+4. 用中文，每条 ≤50 字
+5. 输出严格的 JSON 数组格式：["洞察1", "洞察2", "洞察3"]
+
+现有洞察（避免重复）：
+${existingInsights.length > 0 ? existingInsights.map((i) => `- ${i}`).join('\n') : '（暂无）'}`
+
+    const userPrompt = `=== L2 稳定事实 ===
+${l2Facts.length > 0 ? l2Facts.map((f) => `- ${f}`).join('\n') : '（暂无）'}
+
+=== L4 会话摘要（最近 7 天）===
+${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂无）'}
+
+请提炼 3-5 条洞察，输出 JSON 数组：`
+
+    const text = await this.callLLM(systemPrompt, userPrompt)
+    return this.parseInsightsJSON(text)
+  }
+
+  /**
+   * 为指定会话异步提炼 keyFacts 并回填 L4
+   *
+   * 在会话流结束后 fire-and-forget 调用，不阻塞 UI。
+   * LLM 失败时静默跳过（keyFacts 保持空数组，不影响主流程）。
+   */
+  async backfillKeyFactsForSession(
+    sessionId: string,
+    title: string,
+    summary: string,
+    mode: MemoryMode
+  ): Promise<void> {
+    if (!title && !summary) return
+
+    try {
+      const systemPrompt = `你是一个会话关键事实提取器。基于会话标题和摘要，提取 1-3 个关键事实（key facts）。
+
+要求：
+1. 每条事实是**具体信息**（不是抽象结论），例如"用户名叫 Frank" / "项目用 React + TypeScript" / "调试了 Nudge toast 不弹的 bug"
+2. 用中文，每条 ≤30 字
+3. 输出严格的 JSON 数组格式：["事实1", "事实2"]`
+
+      const userPrompt = `=== 会话标题 ===
+${title || '（无）'}
+
+=== 会话摘要 ===
+${summary || '（无）'}
+
+请提取 1-3 个关键事实，输出 JSON 数组：`
+
+      const text = await this.callLLM(systemPrompt, userPrompt)
+      const keyFacts = this.parseInsightsJSON(text)
+
+      if (keyFacts.length > 0) {
+        memoryLayerService.updateSessionKeyFacts(sessionId, keyFacts, mode)
+        console.log(
+          `[ReflectService] 会话 ${sessionId.slice(0, 8)} keyFacts 回填 ${keyFacts.length} 条`
+        )
+      }
+    } catch (e) {
+      console.warn(`[ReflectService] backfillKeyFacts 失败 sessionId=${sessionId.slice(0, 8)}:`, e)
+    }
+  }
+
+  /**
+   * 解析 LLM 输出的 JSON 数组（容错：提取首个 JSON 数组）
+   */
+  private parseInsightsJSON(text: string): string[] {
+    const trimmed = text.trim()
+    // 找首个 [ 到匹配的 ]
+    const start = trimmed.indexOf('[')
+    const end = trimmed.lastIndexOf(']')
+    if (start === -1 || end === -1 || end <= start) {
+      console.warn('[ReflectService] LLM 输出未找到 JSON 数组:', trimmed.slice(0, 200))
+      return []
+    }
+
+    try {
+      const arr = JSON.parse(trimmed.slice(start, end + 1))
+      if (!Array.isArray(arr)) return []
+      return arr.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    } catch (e) {
+      console.warn('[ReflectService] JSON 解析失败:', e)
+      return []
+    }
+  }
+
+  /**
+   * 规则版关键词提取（fallback）
+   *
+   * LLM 不可用时用，产出质量较低但保证 Reflect 不阻塞。
+   */
+  private extractInsightsWithRules(l2Facts: string[], existingInsights: string[]): string[] {
+    const insights: string[] = []
     const keywordCounts = new Map<string, number>()
 
     for (const fact of l2Facts) {
-      // 提取关键词（简化版）
       const keywords = fact.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || []
       for (const keyword of keywords) {
         keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1)
       }
     }
 
-    // 出现 ≥2 次的关键词可能形成洞察
     for (const [keyword, count] of keywordCounts) {
       if (count >= 2 && !existingInsights.some((i) => i.includes(keyword))) {
         const relatedFacts = l2Facts.filter((f) => f.includes(keyword))
@@ -291,7 +512,7 @@ class ReflectService {
       }
     }
 
-    return insights.slice(0, 5) // 最多 5 条
+    return insights.slice(0, 5)
   }
 
   /**

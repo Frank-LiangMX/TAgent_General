@@ -182,8 +182,60 @@ class NudgeService {
     const correctionPatterns = this.detectCorrections(messages)
     patterns.push(...correctionPatterns)
 
-    // 4. 检测项目重复（需要历史数据，暂不实现）
-    // TODO: 实现 project_repeat 检测
+    // 4. 检测项目重复（同一 workspace_slug 下 ≥2 个会话 → 候选 L1）
+    const projectPatterns = this.detectProjectRepeat(mode)
+    patterns.push(...projectPatterns)
+
+    return patterns
+  }
+
+  /**
+   * 检测项目重复
+   *
+   * 设计文档 §6.5.4：用户加载项目 ≥2 次相似 → 候选 L1（询问是否存为模板）。
+   *
+   * 实现：读 L4 最近 50 个会话，按 workspace_slug 分组，
+   * 同一 workspace 下 ≥2 个会话即触发（简化版，不做标题相似度判断）。
+   *
+   * 跨 session 检测——与 fact_repeat / behavior_repeat（当前 session 内检测）不同，
+   * project_repeat 依赖 L4 历史数据，是真正的跨会话记忆。
+   */
+  private detectProjectRepeat(mode: MemoryMode): PatternMatch[] {
+    const patterns: PatternMatch[] = []
+
+    try {
+      const sessions = memoryLayerService.listRecentSessions(mode, 50)
+      if (sessions.length < 2) return patterns
+
+      // 按 workspace_slug 分组（跳过 null）
+      const byWorkspace = new Map<string, typeof sessions>()
+      for (const s of sessions) {
+        if (!s.workspace_slug) continue
+        const arr = byWorkspace.get(s.workspace_slug) ?? []
+        arr.push(s)
+        byWorkspace.set(s.workspace_slug, arr)
+      }
+
+      // 同一 workspace ≥2 个会话 → 候选
+      for (const [slug, group] of byWorkspace) {
+        if (group.length < 2) continue
+
+        const titles = group
+          .map((s) => s.title || '')
+          .filter(Boolean)
+          .slice(0, 5) // 证据最多 5 条
+        if (titles.length === 0) continue
+
+        patterns.push({
+          type: 'project_repeat',
+          pattern: slug,
+          count: group.length,
+          evidence: titles,
+        })
+      }
+    } catch (e) {
+      console.warn('[Nudge] detectProjectRepeat 失败:', e)
+    }
 
     return patterns
   }
@@ -373,7 +425,7 @@ class NudgeService {
       case 'correction':
         return `我把你这次的纠正记下来了`
       case 'project_repeat':
-        return `我看到你做项目都用类似结构，要存为模板吗？`
+        return `你在「${pattern.pattern}」项目下有过 ${pattern.count} 次会话，要我存为项目模板吗？`
     }
   }
 

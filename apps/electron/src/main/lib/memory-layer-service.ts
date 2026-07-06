@@ -476,6 +476,38 @@ export class MemoryLayerService {
   }
 
   /**
+   * 按 session_slug 更新 L4 会话的 key_facts 字段
+   *
+   * 用于会话结束后异步回填 keyFacts（LLM 提炼完成后调）。
+   * FTS5 触发器会自动同步全文索引，无需手动维护。
+   *
+   * 失败不抛异常，仅打印 warn —— 不影响主流程。
+   */
+  updateSessionKeyFacts(sessionId: string, keyFacts: string[], mode: MemoryMode): void {
+    const db = this.getL4Db(mode)
+    if (!db) {
+      console.warn(
+        `[MemoryLayerService] L4 ${mode} 数据库未初始化，跳过 updateSessionKeyFacts`
+      )
+      return
+    }
+
+    try {
+      const result = db
+        .prepare('UPDATE sessions SET key_facts = ? WHERE session_slug = ?')
+        .run(JSON.stringify(keyFacts), sessionId)
+
+      if (result.changes === 0) {
+        console.warn(
+          `[MemoryLayerService] updateSessionKeyFacts 未匹配到行: sessionId=${sessionId}`
+        )
+      }
+    } catch (error) {
+      console.error('[MemoryLayerService] updateSessionKeyFacts 失败:', error)
+    }
+  }
+
+  /**
    * 获取 Markdown 文件内容
    */
   getMdContent(mode: MemoryMode, layer: 'L0' | 'L1' | 'L2' | 'L5'): string | null {
