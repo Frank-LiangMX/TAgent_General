@@ -897,6 +897,8 @@ html.material-frosted .session-glass-sticky:hover {
 .session-glass-toast {
   --glass-bg: var(--popover);
   --glass-fg: var(--popover-foreground);
+  /* 覆盖 sonner 默认 --border-radius:8px，让 [data-styled=true] 用我们的 24px */
+  --border-radius: var(--radius-glass-modal-lg);
   border-radius: var(--radius-glass-modal-lg);
   -webkit-backdrop-filter: blur(24px) saturate(1.55) brightness(1.04);
   backdrop-filter: blur(24px) saturate(1.55) brightness(1.04);
