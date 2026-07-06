@@ -783,3 +783,15 @@ export function getTaSoulPath(): string {
 export function getAgentRolesPath(): string {
   return join(getConfigDir(), 'agent-roles.json')
 }
+
+/**
+ * 角色商店 catalog 缓存路径
+ *
+ * 主进程从 GitHub Raw 拉取最新 catalog 后写入此文件作为本地缓存，
+ * 下次拉取失败时降级使用缓存版本。
+ *
+ * @returns ~/.tagent/role-store-catalog.json
+ */
+export function getRoleStoreCatalogPath(): string {
+  return join(getConfigDir(), 'role-store-catalog.json')
+}

@@ -1284,6 +1284,16 @@ export interface ElectronAPI {
     }>
     /** 重置为默认角色 */
     resetDefault: () => Promise<import('@tagent/shared').AgentRoleProfile[]>
+    /** 获取角色商店 catalog（远程优先，失败降级本地） */
+    storeList: () => Promise<import('@tagent/shared').RoleStoreCatalogResult>
+    /** 从商店安装单个角色 */
+    storeInstall: (roleId: string) => Promise<import('@tagent/shared').InstallStoreRoleResult>
+    /** 从 .md 文件导入角色（打开文件对话框 + 导入） */
+    importMd: () => Promise<import('@tagent/shared').ImportRoleFromMdResult>
+    /** 查找相似角色 */
+    findSimilar: (displayName: string) => Promise<import('@tagent/shared').AgentRoleProfile[]>
+    /** 批量删除角色 */
+    deleteBatch: (roleIds: string[]) => Promise<import('@tagent/shared').DeleteRolesResult>
   }
 
   // ===== 自动更新 =====
@@ -2847,6 +2857,14 @@ const electronAPI: ElectronAPI = {
     delete: (input: import('@tagent/shared').DeleteAgentRoleInput) =>
       ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.DELETE, input),
     resetDefault: () => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.RESET_DEFAULT),
+    storeList: () => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.STORE_LIST),
+    storeInstall: (roleId: string) =>
+      ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.STORE_INSTALL, roleId),
+    importMd: () => ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.IMPORT_MD),
+    findSimilar: (displayName: string) =>
+      ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.FIND_SIMILAR, displayName),
+    deleteBatch: (roleIds: string[]) =>
+      ipcRenderer.invoke(AGENT_ROLE_IPC_CHANNELS.DELETE_BATCH, roleIds),
   },
 
   // 自动更新
