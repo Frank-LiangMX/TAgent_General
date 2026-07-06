@@ -375,14 +375,15 @@
 
 ### 2026-07-06
 
-**产出**：Nudge toast 不显示 position bug 定位 + 部分修复（1 commit on `main`）
+**产出**：Nudge toast 不弹真根因修复 + 玻璃卡片样式（2 commits on `main`）
 
 | 任务 | 内容 |
 | ---- | ---- |
-| Nudge toast position bug 修复 | `NudgeToast.tsx` 删除两处 `position: 'bottom-right'`。与 `main.tsx:886` 挂载的 Toaster `position="top-right"` 不匹配，sonner 单实例只渲染匹配自己 position 的 toast，bottom-right 调用被静默丢弃 → toast 永远不显示 → 用户点不了"记住" → 记忆永不写入。这是 Nudge IPC 字段名 bug（`nudge` 单数 → `nudges` 复数）修复后的下一个真因：上一波让事件能进 `showNudgeToast`，但 sonner position 不匹配让 toast 仍不显示 |
+| Nudge toast position bug 修复（已合入 v1.4.2） | `NudgeToast.tsx` 删除两处 `position: 'bottom-right'`。与 `main.tsx:886` 挂载的 Toaster `position="top-right"` 不匹配，sonner 单实例只渲染匹配自己 position 的 toast，bottom-right 调用被静默丢弃 → toast 永远不显示 |
 | `NUUDGE_CHECK_INTERVAL` 5→1 落地 | `nudge-service.ts` 上一波 CLAUDE.md 已记录但代码未改，本次落地。原 5 轮检测一次太慢，用户说"我叫 Frank" 要等 5 轮才弹 toast |
-| 调试日志 | `nudge-service.ts` + `agent-orchestrator.ts` 加 `[Nudge] onTurnStart` / `detectPatterns` / 候选返回 + `[Agent 编排] Nudge 检测完成` / IPC 推送日志，方便后续验证 toast 是否真弹 |
-| **待验证** | **用户重启 dev 跑"我叫 Frank"，看右上角是否弹 toast + 主进程日志是否有 `[Nudge] detectPatterns 返回 N 个候选`** |
+| **Nudge toast 真根因修复** | **`agent-orchestrator.ts` 3 处 `BrowserWindow.getAllWindows()[0]` 推 IPC 事件，但子窗口（quick-task / voice-dictation / detached-preview）可能排在数组前面，事件发到子窗口主窗口 listener 收不到**。`agent-service.ts` 导出 `getMainRendererWebContents` + 新增 `getSessionWebContents(sessionId)`（复用已有 `sessionWebContents` 映射，兜底回退主窗口，过滤子窗口）。3 处替换：Nudge 推送 / TA 意图推送 / Context 用量推送 |
+| toast 玻璃卡片样式 | 新增 `session-glass-toast` 玻璃类（light + dark，`--radius-glass-modal` 20px 大圆角 + 玻璃底 + 高光，与模态框/设置卡片同款）；`sonner.tsx` Toaster 默认 `toastOptions.classNames.toast` 改用该类，所有 toast（Nudge / ContextUsage / 附件提示等）自动跟随全局视觉 |
+| **已验证** | **重启 dev 后"我叫 Frank" Nudge toast 正常弹出，点"记住"后 `~/.tagent-dev/memory/L2_facts.md` 写入成功** |
 | **已知遗留** | SDK 0.3.153 → 0.3.185 升级中断（`bun install` 未跑完），`Query closed before response received` 错误仍存在，明天再装 |
 
 ### 2026-07-05

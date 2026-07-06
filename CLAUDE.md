@@ -450,6 +450,11 @@ React UI 更新
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
 - 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
 
+**最近完成**（2026-07-06）：
+
+- **Nudge toast 不弹真根因修复**：`agent-orchestrator.ts` 3 处用 `BrowserWindow.getAllWindows()[0]` 推 IPC 事件，但子窗口（quick-task / voice-dictation / detached-preview）可能排在数组前面，事件发到子窗口主窗口 listener 收不到。**修复**：`agent-service.ts` 导出 `getMainRendererWebContents` + 新增 `getSessionWebContents(sessionId)`（复用已有 `sessionWebContents` 映射，兜底回退主窗口，过滤子窗口）；3 处替换：Nudge 推送 / TA 意图推送 / Context 用量推送。重启 dev 后"我叫 Frank" Nudge toast 正常弹出，点"记住"后 `~/.tagent-dev/memory/L2_facts.md` 写入成功
+- **toast 玻璃卡片样式**：新增 `session-glass-toast` 玻璃类（light + dark，`--radius-glass-modal` 20px 大圆角 + 玻璃底 + 高光，与模态框/设置卡片同款）；`sonner.tsx` Toaster 默认 `toastOptions.classNames.toast` 改用该类，所有 toast（Nudge / ContextUsage / 附件提示等）自动跟随全局视觉
+
 **最近完成**（2026-07-05 晚）：
 
 - **Agent 稳定性第一波修复**（详见 `docs/plans/2026-07-05-agent-stability-issues-diagnosis.md` §8）：Nudge IPC 字段名不匹配核心 bug（`nudges` 复数 vs `nudge` 单数，导致 toast 永远不弹 → 记忆永不写入）+ result 错误时回滚 sdkSessionId（避免无效 session 持久化）+ prompt_too_long 自动压缩（typed_error + catch 路径全覆盖）+ context > 85% 主动 fire-and-forget 压缩（onContextUsage 回调 + compactSessionProactive helper）+ typed_error 路径补塞 stderr 到 `_errorDetails` + catch 路径 stderr hint 条件放宽到所有 stderr 非空
