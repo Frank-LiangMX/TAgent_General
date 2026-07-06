@@ -30,7 +30,8 @@ function getCachedThemeMode(): ThemeMode {
   } catch {
     // localStorage 不可用时忽略
   }
-  return 'dark'
+  // localStorage 无缓存时默认浅色
+  return 'light'
 }
 
 /**
