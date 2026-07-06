@@ -539,15 +539,15 @@ class NudgeService {
     switch (nudge.targetLayer) {
       case 'L0':
         // L0 用户画像 - 追加到 peer_view
-        await this.appendMdFile(path.join(dir, 'L0_user.md'), 'peer_view', nudge.suggestedContent)
+        await this.appendMdFileWithDedup(path.join(dir, 'L0_user.md'), 'peer_view', nudge)
         break
       case 'L1':
         // L1 项目画像
-        await this.appendMdFile(path.join(dir, 'L1_project.md'), 'project', nudge.suggestedContent)
+        await this.appendMdFileWithDedup(path.join(dir, 'L1_project.md'), 'project', nudge)
         break
       case 'L2':
         // L2 稳定事实
-        await this.appendMdFile(path.join(dir, 'L2_facts.md'), 'fact', nudge.suggestedContent)
+        await this.appendMdFileWithDedup(path.join(dir, 'L2_facts.md'), 'fact', nudge)
         break
       case 'L3':
         // L3 纠错记录 - 追加到 corrections.jsonl
@@ -557,20 +557,100 @@ class NudgeService {
   }
 
   /**
-   * 追加内容到 Markdown 文件
+   * 追加内容到 Markdown 文件（带去重 + 结构化元数据）
+   *
+   * v1.5 升级（hermes-borrow-plan §5.2 修复 3）：
+   * - 格式：`- [日期] 内容 <!-- hit:N last_ref:YYYY-MM-DD src:session8 -->`
+   * - 去重：pattern 已存在则更新 hit_count + last_referenced_at，不重复写
+   * - 元数据用 HTML 注释，markdown 渲染器忽略，人类仍可读
+   * - 供 LRU / Self-Repair 使用
    */
-  private async appendMdFile(filePath: string, section: string, content: string): Promise<void> {
+  private async appendMdFileWithDedup(
+    filePath: string,
+    section: string,
+    nudge: NudgeCandidate
+  ): Promise<void> {
     const timestamp = new Date().toISOString().slice(0, 10)
-    const line = `- [${timestamp}] ${content}\n`
+    const content = nudge.suggestedContent
+    const sourceSession = nudge.evidence[0]?.slice(0, 8) ?? ''
 
     if (!fs.existsSync(filePath)) {
       // 创建新文件
-      const header = `# ${section}\n\n${line}`
+      const line = this.formatMemoryLine(timestamp, content, 1, timestamp, sourceSession)
+      const header = `# ${section}\n\n${line}\n`
       await fs.promises.writeFile(filePath, header, 'utf-8')
-    } else {
-      // 追加
-      await fs.promises.appendFile(filePath, line, 'utf-8')
+      return
     }
+
+    // 读现有内容，找是否已存在相同 pattern
+    const existing = await fs.promises.readFile(filePath, 'utf-8')
+    const dedupResult = this.findExistingLine(existing, content)
+
+    if (dedupResult.found && dedupResult.line) {
+      // 已存在：更新 hit_count + last_referenced_at
+      const updatedLine = this.bumpHitCount(dedupResult.line, timestamp, sourceSession)
+      const newContent = existing.replace(dedupResult.line, updatedLine)
+      await fs.promises.writeFile(filePath, newContent, 'utf-8')
+      console.log(
+        `[Nudge] 去重更新：pattern="${content.slice(0, 30)}..." hit_count 增加`
+      )
+    } else {
+      // 新增
+      const line = this.formatMemoryLine(timestamp, content, 1, timestamp, sourceSession)
+      await fs.promises.appendFile(filePath, line + '\n', 'utf-8')
+    }
+  }
+
+  /**
+   * 格式化记忆行（带结构化元数据注释）
+   */
+  private formatMemoryLine(
+    date: string,
+    content: string,
+    hitCount: number,
+    lastRef: string,
+    sourceSession: string
+  ): string {
+    return `- [${date}] ${content} <!-- hit:${hitCount} last_ref:${lastRef} src:${sourceSession} -->`
+  }
+
+  /**
+   * 在现有 .md 内容中查找已存在相同 pattern 的行
+   *
+   * 匹配规则：行包含 pattern 文本（去除元数据注释后比较）
+   */
+  private findExistingLine(
+    content: string,
+    pattern: string
+  ): { found: boolean; line?: string } {
+    const lines = content.split('\n')
+    for (const line of lines) {
+      if (!line.startsWith('- ')) continue
+      // 去掉 HTML 注释后的纯文本
+      const textOnly = line.replace(/<!--.*?-->/, '').trim()
+      if (textOnly.includes(pattern)) {
+        return { found: true, line }
+      }
+    }
+    return { found: false }
+  }
+
+  /**
+   * 增加 hit_count + 更新 last_referenced_at
+   */
+  private bumpHitCount(line: string, newDate: string, sourceSession: string): string {
+    const match = line.match(/<!-- hit:(\d+) last_ref:([^ ]+) src:([^ ]*) -->/)
+    if (!match) {
+      // 老格式行（无元数据），补上元数据
+      const textOnly = line.replace(/<!--.*?-->/, '').trim()
+      return `${textOnly} <!-- hit:2 last_ref:${newDate} src:${sourceSession} -->`
+    }
+    const currentHit = parseInt(match[1] ?? '1', 10)
+    const newHit = currentHit + 1
+    return line.replace(
+      /<!-- hit:\d+ last_ref:[^ ]+ src:[^ ]* -->/,
+      `<!-- hit:${newHit} last_ref:${newDate} src:${sourceSession} -->`
+    )
   }
 
   /**

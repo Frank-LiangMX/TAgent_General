@@ -198,7 +198,7 @@ class ReflectService {
       }
 
       // 5. 提炼洞察（LLM 优先，失败回退规则版）
-      const newInsights = await this.extractInsights(l2Facts, l4Sessions, existingInsights)
+      const newInsights = await this.extractInsights(l2Facts, l4Sessions, existingInsights, dir)
 
       // 6. anti_echo_filter: 过滤重复
       const filteredInsights = newInsights.filter((insight) => {
@@ -279,11 +279,12 @@ class ReflectService {
   private async extractInsights(
     l2Facts: string[],
     l4Sessions: string[],
-    existingInsights: string[]
+    existingInsights: string[],
+    dir: string
   ): Promise<string[]> {
     // 先尝试 LLM 提炼
     try {
-      const llmInsights = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights)
+      const llmInsights = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights, dir)
       if (llmInsights.length > 0) {
         console.log(`[ReflectService] LLM 提炼出 ${llmInsights.length} 条洞察`)
         return llmInsights
@@ -390,22 +391,28 @@ class ReflectService {
 
   /**
    * LLM 提炼洞察
+   *
+   * 输出结构化 JSON：{ insights: string[], contradictions: string[] }
+   * - insights: 新洞察，写入 L5
+   * - contradictions: 与现有 L5 矛盾的洞察，写入 L3 corrections（设计 §6.5.5 contradiction_check）
    */
   private async extractInsightsWithLLM(
     l2Facts: string[],
     l4Sessions: string[],
-    existingInsights: string[]
+    existingInsights: string[],
+    dir: string
   ): Promise<string[]> {
-    const systemPrompt = `你是一个记忆反思助手。基于用户最近 7 天的稳定事实（L2）和会话摘要（L4），提炼出 3-5 条高阶洞察。
+    const systemPrompt = `你是一个记忆反思助手。基于用户最近 7 天的稳定事实（L2）和会话摘要（L4），提炼高阶洞察。
 
 要求：
 1. 每条洞察必须是**抽象结论**（不是事实复述），例如"用户偏好 X" / "工作流规律是 Y" / "领域知识 Z"
 2. 跨 session 共性优先（多个事实/会话共同指向的结论）
 3. 不要与现有洞察重复
 4. 用中文，每条 ≤50 字
-5. 输出严格的 JSON 数组格式：["洞察1", "洞察2", "洞察3"]
+5. 如果新洞察与现有洞察**矛盾**（如"喜欢简洁" vs "喜欢详细"），放入 contradictions 数组
+6. 输出严格的 JSON 对象：{"insights": ["洞察1", "洞察2"], "contradictions": ["矛盾1"]}
 
-现有洞察（避免重复）：
+现有洞察（避免重复 / 检查矛盾）：
 ${existingInsights.length > 0 ? existingInsights.map((i) => `- ${i}`).join('\n') : '（暂无）'}`
 
     const userPrompt = `=== L2 稳定事实 ===
@@ -414,10 +421,76 @@ ${l2Facts.length > 0 ? l2Facts.map((f) => `- ${f}`).join('\n') : '（暂无）'}
 === L4 会话摘要（最近 7 天）===
 ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂无）'}
 
-请提炼 3-5 条洞察，输出 JSON 数组：`
+请提炼 3-5 条洞察，并标注与现有洞察矛盾的项，输出 JSON 对象：`
 
     const text = await this.callLLM(systemPrompt, userPrompt)
-    return this.parseInsightsJSON(text)
+    const parsed = this.parseInsightsResponse(text)
+
+    // contradictions 写入 L3 corrections（设计 §6.5.5 contradiction_check）
+    if (parsed.contradictions.length > 0) {
+      try {
+        await this.appendContradictionsToL3(dir, parsed.contradictions)
+        console.log(
+          `[ReflectService] ${parsed.contradictions.length} 条矛盾洞察写入 L3 corrections`
+        )
+      } catch (e) {
+        console.warn('[ReflectService] 写入 L3 contradictions 失败:', e)
+      }
+    }
+
+    return parsed.insights
+  }
+
+  /**
+   * 解析 LLM 输出（容错：提取首个 JSON 对象，兼容旧版纯数组输出）
+   */
+  private parseInsightsResponse(text: string): { insights: string[]; contradictions: string[] } {
+    const trimmed = text.trim()
+
+    // 优先尝试对象格式 {"insights": [...], "contradictions": [...]}
+    const objStart = trimmed.indexOf('{')
+    const objEnd = trimmed.lastIndexOf('}')
+    if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+      try {
+        const obj = JSON.parse(trimmed.slice(objStart, objEnd + 1)) as {
+          insights?: unknown
+          contradictions?: unknown
+        }
+        const insights = Array.isArray(obj.insights)
+          ? obj.insights.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+          : []
+        const contradictions = Array.isArray(obj.contradictions)
+          ? obj.contradictions.filter(
+              (s): s is string => typeof s === 'string' && s.trim().length > 0
+            )
+          : []
+        return { insights, contradictions }
+      } catch {
+        // 降级到数组解析
+      }
+    }
+
+    // 兼容旧版纯数组输出
+    return { insights: this.parseInsightsJSON(trimmed), contradictions: [] }
+  }
+
+  /**
+   * 把矛盾洞察写入 L3 corrections.jsonl
+   *
+   * 设计 §6.5.5：新 insight 与现有 L5 矛盾 → 写 L3 raw 而非 L5
+   */
+  private async appendContradictionsToL3(dir: string, contradictions: string[]): Promise<void> {
+    const filePath = path.join(dir, 'corrections.jsonl')
+    const timestamp = Date.now()
+    const lines = contradictions
+      .map((c) => JSON.stringify({ timestamp, correction: c, context: 'L5 contradiction' }))
+      .join('\n') + '\n'
+
+    if (!fs.existsSync(filePath)) {
+      await fs.promises.writeFile(filePath, lines, 'utf-8')
+    } else {
+      await fs.promises.appendFile(filePath, lines, 'utf-8')
+    }
   }
 
   /**

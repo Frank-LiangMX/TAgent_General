@@ -620,9 +620,11 @@ async function bootstrap(): Promise<void> {
     const { memoryLayerService } = require('./lib/memory-layer-service')
     const { reflectService } = require('./lib/reflect-service')
     const { scheduledCleanupService } = require('./lib/scheduled-cleanup-service')
+    const { selfRepairService } = require('./lib/self-repair-service')
     memoryLayerService.initialize()
     reflectService.initialize()
     scheduledCleanupService.initialize()
+    selfRepairService.initialize()
   })
 
   // 生产环境下初始化自动更新
