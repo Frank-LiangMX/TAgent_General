@@ -130,17 +130,14 @@ class SelfRepairService {
 
   /**
    * 检查并运行 Self-Repair
+   *
+   * 首次运行或距上次 >35 天才执行。去重判断，避免重复触发。
    */
   private checkAndRun(mode: MemoryMode): void {
     const state = this.states.get(mode)
     if (!state) return
 
     const now = Date.now()
-    if (state.lastRunTime && now - state.lastRunTime < SELF_REPAIR_INTERVAL_MS) {
-      return
-    }
-
-    // 启动时距上次 >35 天才立即跑，否则等定时
     if (state.lastRunTime && now - state.lastRunTime < SELF_REPAIR_INTERVAL_MS) {
       return
     }
@@ -152,25 +149,25 @@ class SelfRepairService {
 
   /**
    * 计算下次运行时间（下月 1 日 04:00）
+   *
+   * 长延时超 32 位上限会触发 TimeoutOverflowWarning，
+   * 改为每天检查一次是否到月初。
    */
   private scheduleNextRun(): void {
-    const now = new Date()
-    const next = new Date(now)
-    next.setDate(1)
-    next.setMonth(next.getMonth() + 1)
-    next.setHours(4, 0, 0, 0)
+    // 每 6 小时检查一次是否到月初 04:00
+    const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
 
-    const delay = next.getTime() - now.getTime()
+    this.timerId = setInterval(() => {
+      const now = new Date()
+      if (now.getDate() === 1 && now.getHours() >= 4) {
+        this.runSelfRepair('general').catch(console.error)
+        this.runSelfRepair('ta').catch(console.error)
+      }
+    }, CHECK_INTERVAL_MS)
 
     console.log(
-      `[SelfRepairService] 下次运行时间: ${next.toISOString()}, 距今 ${Math.round(delay / 1000 / 60 / 60)} 小时`
+      `[SelfRepairService] 定时检查已启动：每 6 小时检查一次月初，下月 1 日 04:00 触发`
     )
-
-    this.timerId = setTimeout(() => {
-      this.runSelfRepair('general').catch(console.error)
-      this.runSelfRepair('ta').catch(console.error)
-      this.scheduleNextRun()
-    }, delay)
   }
 
   /**
@@ -438,7 +435,7 @@ class SelfRepairService {
    */
   close(): void {
     if (this.timerId) {
-      clearTimeout(this.timerId)
+      clearInterval(this.timerId)
       this.timerId = null
     }
   }
