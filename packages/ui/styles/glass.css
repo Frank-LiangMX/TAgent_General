@@ -936,3 +936,9 @@ html.material-frosted .session-glass-sticky:hover {
     0 8px 28px -6px rgba(0, 0, 0, 0.36),
     0 20px 48px -12px rgba(0, 0, 0, 0.28);
 }
+
+/* toast 内按钮圆角：覆盖 sonner 默认 4px，与 ui 库 Button rounded-lg 一致 */
+.session-glass-toast [data-button],
+.session-glass-toast [data-cancel] {
+  border-radius: var(--radius-glass-chip);
+}
