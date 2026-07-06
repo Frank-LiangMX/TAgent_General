@@ -482,7 +482,8 @@ export interface ElectronAPI {
     title?: string,
     channelId?: string,
     workspaceId?: string,
-    mode?: 'general' | 'ta'
+    mode?: 'general' | 'ta',
+    modelId?: string
   ) => Promise<AgentSessionMeta>
 
   /** 获取 Agent 会话 SDKMessage（Phase 4 新格式） */
@@ -490,6 +491,9 @@ export interface ElectronAPI {
 
   /** 更新 Agent 会话标题 */
   updateAgentSessionTitle: (id: string, title: string) => Promise<AgentSessionMeta>
+
+  /** 更新 Agent 会话元数据（channelId, modelId 等） */
+  updateAgentSessionMeta: (id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>) => Promise<AgentSessionMeta>
 
   /** 删除 Agent 会话 */
   deleteAgentSession: (id: string) => Promise<void>
@@ -1937,14 +1941,16 @@ const electronAPI: ElectronAPI = {
     title?: string,
     channelId?: string,
     workspaceId?: string,
-    mode?: 'general' | 'ta'
+    mode?: 'general' | 'ta',
+    modelId?: string
   ) => {
     return ipcRenderer.invoke(
       AGENT_IPC_CHANNELS.CREATE_SESSION,
       title,
       channelId,
       workspaceId,
-      mode
+      mode,
+      modelId
     )
   },
 
@@ -1954,6 +1960,10 @@ const electronAPI: ElectronAPI = {
 
   updateAgentSessionTitle: (id: string, title: string) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_TITLE, id, title)
+  },
+
+  updateAgentSessionMeta: (id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SESSION_META, id, updates)
   },
 
   deleteAgentSession: (id: string) => {

@@ -26,6 +26,8 @@ interface CreateSessionOptions {
   draft?: boolean
   /** 覆盖默认渠道 ID（仅 Agent 会话） */
   channelId?: string
+  /** 覆盖默认模型 ID（仅 Agent 会话） */
+  modelId?: string
   /**
    * 顶层模式：'general'（默认）| 'ta'
    * TA 模式创建的会话在 agent_sessions 中带 mode='ta' 标记，与通用模式数据隔离。
@@ -72,7 +74,8 @@ export function useCreateSession(): CreateSessionActions {
         undefined,
         options?.channelId ?? agentChannelId ?? undefined,
         currentWorkspaceId || undefined,
-        options?.mode
+        options?.mode,
+        options?.modelId
       )
       setAgentSessions((prev) => [meta, ...prev])
       openSession('agent', meta.id, meta.title, options?.mode)

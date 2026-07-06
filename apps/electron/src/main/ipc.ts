@@ -1553,9 +1553,10 @@ export function registerIpcHandlers(): void {
       title?: string,
       channelId?: string,
       workspaceId?: string,
-      mode?: 'general' | 'ta'
+      mode?: 'general' | 'ta',
+      modelId?: string
     ): Promise<AgentSessionMeta> => {
-      const session = createAgentSession(title, channelId, workspaceId, mode)
+      const session = createAgentSession(title, channelId, workspaceId, mode, modelId)
       feishuBridgeManager.ensureSessionMirror(session).catch((error) => {
         console.error('[飞书 Session 镜像] 新会话建群失败:', error)
       })
@@ -1576,6 +1577,14 @@ export function registerIpcHandlers(): void {
     AGENT_IPC_CHANNELS.UPDATE_TITLE,
     async (_, id: string, title: string): Promise<AgentSessionMeta> => {
       return updateAgentSessionMeta(id, { title })
+    }
+  )
+
+  // 更新 Agent 会话元数据（channelId, modelId 等）
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.UPDATE_SESSION_META,
+    async (_, id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>): Promise<AgentSessionMeta> => {
+      return updateAgentSessionMeta(id, updates)
     }
   )
 

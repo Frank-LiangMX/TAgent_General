@@ -127,7 +127,8 @@ export function createAgentSession(
   title?: string,
   channelId?: string,
   workspaceId?: string,
-  mode?: 'general' | 'ta'
+  mode?: 'general' | 'ta',
+  modelId?: string
 ): AgentSessionMeta {
   const index = readIndex()
   const now = Date.now()
@@ -137,6 +138,7 @@ export function createAgentSession(
     title: title || (mode === 'ta' ? 'TA 会话' : '新 Agent 会话'),
     mode: mode ?? 'general',
     channelId,
+    modelId,
     workspaceId,
     createdAt: now,
     updatedAt: now,
@@ -427,6 +429,7 @@ export function updateAgentSessionMeta(
       AgentSessionMeta,
       | 'title'
       | 'channelId'
+      | 'modelId'
       | 'sdkSessionId'
       | 'workspaceId'
       | 'pinned'

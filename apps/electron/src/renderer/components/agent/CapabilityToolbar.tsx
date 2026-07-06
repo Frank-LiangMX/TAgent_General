@@ -85,7 +85,7 @@ export function CapabilityToolbar({
 
     setConfigSubmitting(true)
     try {
-      const session = await createAgent({ channelId: agentChannelId })
+      const session = await createAgent({ channelId: agentChannelId, modelId: agentModelId })
       if (!session) {
         toast.error('创建配置会话失败')
         return

@@ -1560,12 +1560,15 @@ export class AgentOrchestrator {
         console.log(
           `[Agent 编排] 渠道变更 ${sessionMeta?.channelId} → ${channelId}，清除 sdkSessionId`
         )
-        updateAgentSessionMeta(sessionId, { sdkSessionId: undefined, channelId })
+        updateAgentSessionMeta(sessionId, { sdkSessionId: undefined, channelId, modelId })
         existingSdkSessionId = undefined
       } else {
-        // 首次发消息时记录渠道
-        updateAgentSessionMeta(sessionId, { channelId })
+        // 首次发消息时记录渠道和模型
+        updateAgentSessionMeta(sessionId, { channelId, modelId })
       }
+    } else if (modelId && modelId !== sessionMeta?.modelId) {
+      // 渠道未变但模型变了
+      updateAgentSessionMeta(sessionId, { modelId })
     }
 
     // 4.1 检测回退后的 resume 截断点（快照回退功能）

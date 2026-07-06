@@ -747,6 +747,8 @@ export interface AgentSessionMeta {
   mode?: 'general' | 'ta'
   /** 使用的渠道 ID */
   channelId?: string
+  /** 使用的模型 ID（持久化，重启后恢复） */
+  modelId?: string
   /** SDK 内部会话 ID（用于 resume 衔接上下文） */
   sdkSessionId?: string
   /** 所属工作区 ID */
@@ -1549,6 +1551,8 @@ export const AGENT_IPC_CHANNELS = {
   GET_SDK_MESSAGES: 'agent:get-sdk-messages',
   /** 更新会话标题 */
   UPDATE_TITLE: 'agent:update-title',
+  /** 更新会话元数据（channelId, modelId 等） */
+  UPDATE_SESSION_META: 'agent:update-session-meta',
   /** 删除会话 */
   DELETE_SESSION: 'agent:delete-session',
   /** 迁移 Chat 对话记录到 Agent 会话 */

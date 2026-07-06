@@ -570,22 +570,27 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   const stableChannelIdRef = React.useRef(agentChannelId)
   if (agentChannelId) stableChannelIdRef.current = agentChannelId
 
-  // 已有会话首次打开时，从渠道默认 / 旧版全局默认初始化 per-session map（不写 settings）
+  // 已有会话首次打开时，从持久化 session meta 初始化 per-session map（不写 settings）
+  // 优先读 session meta 中已持久化的 channelId/modelId，避免组件重挂载时丢失用户选择
   React.useEffect(() => {
     if (!sessionId) return
-    if (defaultChannelId) {
+    const meta = sessions.find((s) => s.id === sessionId)
+    const persistedChannelId = meta?.channelId ?? defaultChannelId
+    if (persistedChannelId) {
       setSessionChannelMap((prev) => {
         if (prev.has(sessionId)) return prev
         const map = new Map(prev)
-        map.set(sessionId, defaultChannelId)
+        map.set(sessionId, persistedChannelId)
         return map
       })
     }
-    const channelId = defaultChannelId
+    const channelId = persistedChannelId
     const channel = channelId
       ? globalChannels.find((c) => c.id === channelId && c.enabled)
       : undefined
-    const resolvedModelId = resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+    const persistedModelId = meta?.modelId
+    const resolvedModelId = persistedModelId
+      ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
@@ -599,6 +604,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     defaultChannelId,
     legacyGlobalModelId,
     globalChannels,
+    sessions,
     setSessionChannelMap,
     setSessionModelMap,
   ])
@@ -1599,6 +1605,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         map.set(sessionId, option.modelId)
         return map
       })
+
+      // 持久化到 session meta，防止组件重挂载丢失选择
+      window.electronAPI
+        .updateAgentSessionMeta(sessionId, { channelId: option.channelId, modelId: option.modelId })
+        .catch(console.error)
 
       // 自动将选中的渠道加入 Agent 可用渠道白名单
       const updatedChannelIds = agentChannelIds.includes(option.channelId)
