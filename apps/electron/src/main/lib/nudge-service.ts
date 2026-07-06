@@ -207,10 +207,14 @@ class NudgeService {
       const sessions = memoryLayerService.listRecentSessions(mode, 50)
       if (sessions.length < 2) return patterns
 
-      // 按 workspace_slug 分组（跳过 null）
+      // 已处理过的 workspace（用户点过"记住"或"不记"）不再触发
+      const handledSlugs = this.loadHandledProjects(mode)
+
+      // 按 workspace_slug 分组（跳过 null + 跳过已处理）
       const byWorkspace = new Map<string, typeof sessions>()
       for (const s of sessions) {
         if (!s.workspace_slug) continue
+        if (handledSlugs.has(s.workspace_slug)) continue
         const arr = byWorkspace.get(s.workspace_slug) ?? []
         arr.push(s)
         byWorkspace.set(s.workspace_slug, arr)
@@ -238,6 +242,62 @@ class NudgeService {
     }
 
     return patterns
+  }
+
+  /**
+   * 加载已处理过的 project workspace slug 集合
+   *
+   * 用户点过"记住"（写入 L1_project.md）或"不记"（写入 nudges/rejected.jsonl）
+   * 的 workspace，不再重复触发 project_repeat Nudge。
+   *
+   * 跨 session 持久化——与 L0/L1/L2/L3 冷却（按 sessionId 隔离）不同，
+   * project_repeat 是跨 session 检测，已处理的 workspace 应该永久跳过。
+   */
+  private loadHandledProjects(mode: MemoryMode): Set<string> {
+    const handled = new Set<string>()
+    const dir = this.getMemoryDir(mode)
+
+    // 1. 从 L1_project.md 读已存为模板的 workspace slug
+    //    （L1 写入格式：`- [日期] 内容 <!-- ... src:slug8 -->`，但 pattern 字段就是 slug）
+    const l1Path = path.join(dir, 'L1_project.md')
+    if (fs.existsSync(l1Path)) {
+      try {
+        const content = fs.readFileSync(l1Path, 'utf-8')
+        const lines = content.split('\n').filter((l) => l.startsWith('- '))
+        for (const line of lines) {
+          // 提取 src:xxx 元数据，或回退到整行包含 slug
+          const srcMatch = line.match(/src:([^\s>]+)/)
+          if (srcMatch) {
+            handled.add(srcMatch[1]!)
+          }
+        }
+      } catch {
+        // 忽略读取失败
+      }
+    }
+
+    // 2. 从 nudges/rejected.jsonl 读已拒绝的 project_repeat
+    const rejectedPath = path.join(dir, 'nudges', 'rejected.jsonl')
+    if (fs.existsSync(rejectedPath)) {
+      try {
+        const content = fs.readFileSync(rejectedPath, 'utf-8')
+        const lines = content.split('\n').filter((l) => l.trim())
+        for (const line of lines) {
+          try {
+            const record = JSON.parse(line) as { type?: string; pattern?: string }
+            if (record.type === 'project_repeat' && record.pattern) {
+              handled.add(record.pattern)
+            }
+          } catch {
+            // 跳过无法解析的行
+          }
+        }
+      } catch {
+        // 忽略读取失败
+      }
+    }
+
+    return handled
   }
 
   /**
