@@ -6,11 +6,16 @@
  * - 检测重复行为/事实/纠正
  * - 弹出提示询问用户是否记住
  *
- * 检测模式：
- * - 行为重复：同一行为 ≥3 次/5turn → L0 (peer_view)
- * - 事实重复：同一事实 ≥2 次跨 session → L2
+ * 检测模式（2026-07-06 P0 临时止血后阈值）：
+ * - 行为重复：同一行为 ≥5 次 → L0 (peer_view)
+ * - 事实重复：同一事实 ≥3 次 → L2
  * - 显式纠正："不是 X，是 Y" → L3 raw（自动写）
  * - 项目重复：加载项目 ≥2 次相似 → L1
+ *
+ * 2026-07-06 P0 临时止血：原阈值（fact ≥1 / behavior ≥2 / 间隔 1 turn / L2 冷却 3）
+ * 导致 toast 频繁弹窗打扰用户。调整后预计 toast 频率下降 70%+。
+ * 后续 P2 将改造为 Turn-based Nudge（每 10 轮后台 fork review + LLM 自主判断），
+ * 彻底解决打扰问题，详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md
  */
 
 import * as fs from 'node:fs'
@@ -53,31 +58,87 @@ interface PatternMatch {
 
 // ===== 配置 =====
 
-/** 各层冷却 turn 数 */
+/** 各层冷却 turn 数
+ *
+ * 2026-07-06 P0 临时止血：冷却时间统一加长，减少 toast 频率。
+ * 原值 L0=5 / L1=10 / L2=3 / L3=20 → 新值 L0=10 / L1=20 / L2=10 / L3=30。
+ * 配合检测阈值提高（fact ≥3 / behavior ≥5）+ 检测间隔加长（5 turn），
+ * 整体 toast 频率预计下降 70%+。
+ */
 const LAYER_COOLDOWN_TURNS: Record<string, number> = {
-  L0: 5,
-  L1: 10,
-  L2: 3,
-  L3: 20,
+  L0: 10,
+  L1: 20,
+  L2: 10,
+  L3: 30,
 }
 
 /**
  * 检测间隔 turn 数
  *
- * 2026-07-05 晚：从 5 改为 1。原设计每 5 轮检测一次太慢，用户说"我叫 Frank"
- * 要等 5 轮才弹 toast。改为每轮检测 + 阈值降低（fact ≥1 / behavior ≥2），
- * 让 Nudge 系统真正能触发。冷却机制仍防止重复弹 toast。
+ * 2026-07-06 P0 临时止血：从 1 改回 5。
+ * 2026-07-05 晚从 5 改为 1 是为了"让 Nudge 真正能触发"，但实际副作用是 toast 太频繁。
+ * 现在配合阈值提高（fact ≥3 / behavior ≥5），检测间隔改回 5 turn，
+ * 减少检测开销 + 降低 toast 频率。后续 P2 改造为 Turn-based Nudge（每 10 轮后台 fork）。
+ *
+ * 2026-07-06 P2.3 warm-up：此常量保留作为"老会话固定间隔"，
+ * 新会话用 warm-up 序列 1→2→4→8→10（见 getWarmUpThreshold）。
  */
-const NUUDGE_CHECK_INTERVAL = 1
+const NUUDGE_CHECK_INTERVAL = 5
+
+/**
+ * warm-up 指数触发阈值序列（借鉴 TencentDB）
+ *
+ * 新会话早提取（1→2→4→8→10），老会话固定 10。
+ * 避免新会话等待太久才第一次提取，老会话省成本。
+ *
+ * 第 N 次触发（1-indexed）的阈值：
+ * - 1st: 1 turn
+ * - 2nd: 2 turn（累计）
+ * - 3rd: 4 turn
+ * - 4th: 8 turn
+ * - 5th+: 10 turn（固定）
+ *
+ * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §6.4.4 / §7.2.3
+ */
+const WARMUP_THRESHOLDS = [1, 2, 4, 8, 10]
+const MATURE_THRESHOLD = 10
+
+/**
+ * 获取下一次触发的累计 turn 阈值
+ *
+ * @param triggerCount 已触发次数（0 = 首次，1 = 第二次，...）
+ * @returns 累计 turn 阈值
+ */
+function getWarmUpThreshold(triggerCount: number): number {
+  if (triggerCount < WARMUP_THRESHOLDS.length) {
+    return WARMUP_THRESHOLDS[triggerCount] ?? MATURE_THRESHOLD
+  }
+  // 进入成熟期后固定 10 轮一次
+  const lastWarmup = WARMUP_THRESHOLDS[WARMUP_THRESHOLDS.length - 1] ?? MATURE_THRESHOLD
+  return lastWarmup + (triggerCount - WARMUP_THRESHOLDS.length + 1) * MATURE_THRESHOLD
+}
 
 /** 每批最大候选数 */
 const MAX_CANDIDATES_PER_BATCH = 3
+
+/**
+ * L1 索引层行数硬约束（P4.2，借鉴 GenericAgent L1 ≤30 行）
+ *
+ * L1 只放反直觉触发词（2-4 字），禁写机制/方法/步骤。
+ * 超过此行数拒绝写入，需要用户清理后重试。
+ *
+ * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §6.4.1
+ */
+const MAX_L1_LINES = 30
 
 // ===== NudgeService =====
 
 class NudgeService {
   /** 各会话的 turn 计数 */
   private sessionTurnCounts: Map<string, number> = new Map()
+
+  /** 各会话的 review 触发次数（warm-up 用，决定下次触发的累计 turn 阈值） */
+  private sessionTriggerCounts: Map<string, number> = new Map()
 
   /** 各会话的各层冷却计数 */
   private sessionLayerCooldowns: Map<string, Map<string, number>> = new Map()
@@ -88,6 +149,17 @@ class NudgeService {
   /** Nudge 结果回调 */
   private nudgeCallbacks: Map<string, (nudge: NudgeCandidate, result: NudgeResult) => void> =
     new Map()
+
+  /**
+   * drift 检测用文件 hash 缓存（P3.2）
+   *
+   * 记录上次读取记忆文件时的 hash，写入前比对。
+   * 如果 hash 变了，说明被外部改过（用户手动编辑 / 外部工具），
+   * 备份当前文件到 nudges/drift_backup/ 后再覆盖。
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.2 / §6.4.5
+   */
+  private fileHashes: Map<string, string> = new Map()
 
   /**
    * 获取记忆目录路径
@@ -120,44 +192,171 @@ class NudgeService {
     // 减少各层冷却
     this.decrementCooldowns(sessionId)
 
-    // 调试日志（2026-07-05 晚）：方便用户重启后验证 Nudge 检测是否触发
     const userMsgs = recentMessages.filter((m) => m.role === 'user').map((m) => m.content)
     console.log(
       `[Nudge] onTurnStart: sessionId=${sessionId.slice(0, 8)}, turn=${currentTurn}, mode=${mode}, recentUserMsgs=${JSON.stringify(userMsgs.slice(-3))}`
     )
 
-    // 每 1 turn 检查一次（2026-07-05 晚：从 5 改为 1）
-    if (currentTurn % NUUDGE_CHECK_INTERVAL !== 0) {
-      console.log(`[Nudge] 跳过：currentTurn ${currentTurn} % ${NUUDGE_CHECK_INTERVAL} !== 0`)
+    // warm-up 指数触发（P2.3）：1→2→4→8→10→10... 替代固定间隔
+    // 借鉴 TencentDB，让新会话早提取、老会话省成本
+    const triggerCount = this.sessionTriggerCounts.get(sessionId) || 0
+    const nextThreshold = getWarmUpThreshold(triggerCount)
+    if (currentTurn < nextThreshold) {
+      console.log(
+        `[Nudge] 跳过：currentTurn ${currentTurn} < nextThreshold ${nextThreshold}（triggerCount=${triggerCount}）`
+      )
       return []
     }
 
-    // 检测模式
-    const patterns = this.detectPatterns(recentMessages, mode)
-    console.log(`[Nudge] detectPatterns 返回 ${patterns.length} 个候选: ${JSON.stringify(patterns.map((p) => ({ type: p.type, pattern: p.pattern, count: p.count })))}`)
+    // 达到阈值：递增 triggerCount + fire-and-forget LLM review
+    this.sessionTriggerCounts.set(sessionId, triggerCount + 1)
+    console.log(
+      `[Nudge] 触发 LLM review（第 ${triggerCount + 1} 次，threshold=${nextThreshold}）`
+    )
 
-    // 过滤冷却中的层
-    const candidates = patterns
-      .filter((p) => {
-        const layer = this.getLayerForType(p.type)
-        const inCooldown = this.isInCooldown(sessionId, layer)
-        if (inCooldown) {
-          console.log(`[Nudge] 候选 ${p.type}（${layer}）在冷却中，过滤掉`)
-        }
-        return !inCooldown
-      })
-      .slice(0, MAX_CANDIDATES_PER_BATCH)
-      .map((p) => this.createNudgeCandidate(p))
+    // fire-and-forget：不阻塞主对话，LLM 判断完成后回调处理
+    void this.runLLMReview(sessionId, recentMessages, mode).catch((e) => {
+      console.warn(`[Nudge] LLM review 失败:`, e)
+    })
 
-    // 缓存候选项
-    if (candidates.length > 0) {
-      this.pendingNudges.set(sessionId, candidates)
-      console.log(`[Nudge] 返回 ${candidates.length} 个候选项，将弹 toast`)
-    } else {
-      console.log(`[Nudge] 返回 0 个候选项，不弹 toast`)
+    // 同步返回空（不立刻弹 toast），LLM review 完成后异步处理候选
+    return []
+  }
+
+  /**
+   * 后台 LLM review（P2.1，借鉴 Hermes Turn-based Nudge）
+   *
+   * 不阻塞主对话，LLM 自主判断"Nothing to save" / "值得记"。
+   * LLM 判断"值得记" → 输出候选 → 走写入门控（P2.2 stage 队列，暂时仍走原 toast 路径）。
+   *
+   * 失败不抛错，仅打印 warn——LLM review 失败不影响主流程。
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.2
+   */
+  private async runLLMReview(
+    sessionId: string,
+    recentMessages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    mode: MemoryMode
+  ): Promise<void> {
+    // 用户消息去空 + 取最近 20 条（避免 prompt 过长）
+    const userMessages = recentMessages
+      .filter((m) => m.role === 'user' && m.content.trim())
+      .slice(-20)
+      .map((m) => m.content)
+
+    if (userMessages.length === 0) {
+      console.log(`[Nudge] LLM review 跳过：无用户消息`)
+      return
     }
 
-    return candidates
+    const systemPrompt = `你是 TAgent 的记忆系统审查 agent。请审查最近的用户消息，判断是否值得记入长期记忆。
+
+**判断标准：**
+- 用户画像（L0）：用户偏好、习惯、工作风格（如"不要 emoji"、"保持简洁"）
+- 稳定事实（L2）：长期不变的事实（如"我叫 Frank"、"我用 Mac"）
+- 纠错（L3）：显式纠正（如"不是 X，是 Y"）
+
+**不值得记：**
+- 临时性内容（当前任务、当前问题）
+- 通用常识（LLM 已有知识）
+- 一次性提问
+
+**输出格式（严格 JSON）：**
+- 如果不值得记：\`{"action":"nothing"}\`
+- 如果值得记：\`{"action":"save","items":[{"type":"fact|behavior|correction","content":"记忆内容","targetLayer":"L0|L2|L3"}]}\`
+
+只输出 JSON，不要其他文本。如果不确定，选 \`{"action":"nothing"}\`。`
+
+    const userPrompt = `最近用户消息（按时间顺序）：
+
+${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
+
+请审查并输出 JSON。`
+
+    try {
+      const { callLLMForNudgeReview } = await import('./nudge-llm-review')
+      const result = await callLLMForNudgeReview(systemPrompt, userPrompt)
+      await this.handleLLMReviewResult(sessionId, mode, result, recentMessages)
+    } catch (e) {
+      console.warn(`[Nudge] LLM review 调用失败，跳过本次审查:`, e)
+    }
+  }
+
+  /**
+   * 处理 LLM review 结果
+   *
+   * - nothing → 什么都不做
+   * - save → 创建 NudgeCandidate + 走原 pendingNudges 路径弹 toast
+   *   （P2.2 将改为走 stage 队列，不立刻弹 toast）
+   */
+  private async handleLLMReviewResult(
+    sessionId: string,
+    mode: MemoryMode,
+    result: { action: 'nothing' | 'save'; items?: Array<{ type: string; content: string; targetLayer: string }> },
+    recentMessages: Array<{ role: 'user' | 'assistant'; content: string }>
+  ): Promise<void> {
+    if (result.action !== 'save' || !result.items || result.items.length === 0) {
+      console.log(`[Nudge] LLM review: Nothing to save`)
+      return
+    }
+
+    console.log(
+      `[Nudge] LLM review: 值得记 ${result.items.length} 项: ${JSON.stringify(result.items)}`
+    )
+
+    // 转换为 NudgeCandidate
+    const candidates: NudgeCandidate[] = result.items
+      .slice(0, MAX_CANDIDATES_PER_BATCH)
+      .map((item) => ({
+        id: `nudge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: (item.type === 'behavior'
+          ? 'behavior_repeat'
+          : item.type === 'correction'
+            ? 'correction'
+            : 'fact_repeat') as NudgeType,
+        targetLayer: (item.targetLayer === 'L0'
+          ? 'L0'
+          : item.targetLayer === 'L3'
+            ? 'L3'
+            : 'L2') as 'L0' | 'L1' | 'L2' | 'L3',
+        pattern: item.content,
+        evidence: recentMessages
+          .filter((m) => m.role === 'user')
+          .map((m) => m.content.slice(0, 100)),
+        suggestedContent: item.content,
+        userMessage: `LLM 审查建议记忆：${item.content}`,
+      }))
+
+    if (candidates.length === 0) {
+      return
+    }
+
+    // 过滤冷却中的层
+    const filtered = candidates.filter((c) => {
+      const inCooldown = this.isInCooldown(sessionId, c.targetLayer)
+      if (inCooldown) {
+        console.log(`[Nudge] 候选 ${c.type}（${c.targetLayer}）在冷却中，过滤掉`)
+      }
+      return !inCooldown
+    })
+
+    if (filtered.length === 0) {
+      return
+    }
+
+    // P2.2 写入门控三态：background nudge → stage 队列（不立刻弹 toast）
+    // 用户可在记忆页面批量 accept/reject
+    // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.3
+    const { enqueueStage } = await import('./stage-queue-service')
+    for (const candidate of filtered) {
+      enqueueStage(mode, candidate)
+    }
+
+    // 缓存候选项（兼容旧 toast 路径，P2.2 后 toast 不再触发）
+    this.pendingNudges.set(sessionId, filtered)
+    console.log(
+      `[Nudge] ${filtered.length} 项候选已入 stage 队列（不弹 toast，等待用户批量审批）`
+    )
   }
 
   /**
@@ -327,9 +526,12 @@ class NudgeService {
         }
       }
 
-      // ≥2 次的行为作为候选（2026-07-05 晚：从 ≥3 降到 ≥2，降低触发门槛）
+      // ≥5 次的行为作为候选
+      // 2026-07-06 P0 临时止血：从 ≥2 改到 ≥5。原 ≥2 太敏感，用户说两次就弹窗，烦人。
+      // 真正稳定的偏好会重复 ≥5 次，避免一次性提及被误判。
+      // 后续 P2 改造为 Turn-based Nudge（每 10 轮后台 fork review + LLM 自主判断）。
       for (const [pattern, evidence] of matches) {
-        if (evidence.length >= 2) {
+        if (evidence.length >= 5) {
           patterns.push({
             type: 'behavior_repeat',
             pattern,
@@ -376,9 +578,12 @@ class NudgeService {
         }
       }
 
-      // ≥1 次的事实作为候选（2026-07-05 晚：从 ≥2 降到 ≥1，单次表述就触发 Nudge）
+      // ≥3 次的事实作为候选
+      // 2026-07-06 P0 临时止血：从 ≥1 改到 ≥3。原 ≥1 让用户说一次"我叫 Frank"就弹窗，最烦人。
+      // 改为 ≥3 次：用户需要在多个场景重复陈述才会触发，避免一次性随口提及被误记。
+      // 后续 P2 改造为 Turn-based Nudge（每 10 轮后台 fork review + LLM 自主判断 ROI）。
       for (const [pattern, evidence] of matches) {
-        if (evidence.length >= 1) {
+        if (evidence.length >= 3) {
           patterns.push({
             type: 'fact_repeat',
             pattern,
@@ -592,8 +797,23 @@ class NudgeService {
 
   /**
    * 写入对应层
+   *
+   * 禁易变状态白名单校验（P4.3，借鉴 GenericAgent "禁止存储易变状态"公理）：
+   * - 严禁存储：时间戳 / PID / 临时 SessionID / 具体绝对路径 / 连接设备信息
+   * - 校验失败 → 拒绝写入 + 日志告知
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §4.3
    */
   private async writeToLayer(nudge: NudgeCandidate, mode: MemoryMode): Promise<void> {
+    // P4.3 禁易变状态白名单校验
+    const violation = this.checkVolatileState(nudge.suggestedContent)
+    if (violation !== null) {
+      console.warn(
+        `[Nudge] 禁易变状态校验失败（${violation}），拒绝写入: ${nudge.suggestedContent.slice(0, 50)}`
+      )
+      return
+    }
+
     const dir = this.getMemoryDir(mode)
 
     switch (nudge.targetLayer) {
@@ -602,8 +822,21 @@ class NudgeService {
         await this.appendMdFileWithDedup(path.join(dir, 'L0_user.md'), 'peer_view', nudge)
         break
       case 'L1':
-        // L1 项目画像
-        await this.appendMdFileWithDedup(path.join(dir, 'L1_project.md'), 'project', nudge)
+        // L1 项目画像 + 索引层（P4.2 ≤30 行硬约束，借鉴 GenericAgent L1 极简索引）
+        const l1Path = path.join(dir, 'L1_project.md')
+        if (fs.existsSync(l1Path)) {
+          const l1Content = fs.readFileSync(l1Path, 'utf-8')
+          const l1Lines = l1Content
+            .split('\n')
+            .filter((l) => l.trim() && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('>')).length
+          if (l1Lines >= MAX_L1_LINES) {
+            console.warn(
+              `[Nudge] L1 索引层行数约束：当前 ${l1Lines} 行 >= ${MAX_L1_LINES} 行硬约束，拒绝写入。请清理 L1 后重试。`
+            )
+            break
+          }
+        }
+        await this.appendMdFileWithDedup(l1Path, 'project', nudge)
         break
       case 'L2':
         // L2 稳定事实
@@ -617,6 +850,75 @@ class NudgeService {
   }
 
   /**
+   * 禁易变状态白名单校验（P4.3）
+   *
+   * 检查写入内容是否包含以下禁止存储的内容：
+   * - 时间戳（ISO 8601 / Unix timestamp）
+   * - PID（进程 ID，纯数字 4-6 位）
+   * - 临时 SessionID（UUID 格式）
+   * - 具体绝对路径（/Users/... 或 /home/... 或 C:\...）
+   * - 连接设备信息（IP 地址 / MAC 地址 / 端口号）
+   *
+   * 返回违反类型（字符串），无违反返回 null。
+   */
+  private checkVolatileState(content: string): string | null {
+    // 时间戳（ISO 8601：2026-07-06T12:34:56 / Unix timestamp：1719999999）
+    if (/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}/.test(content)) return 'ISO 8601 时间戳'
+    if (/\b1[67]\d{8}\b/.test(content)) return 'Unix 时间戳'
+
+    // PID（4-6 位纯数字，排除常见非 PID 数字）
+    if (/\bpid[:\s]*\d{4,6}\b/i.test(content)) return 'PID'
+
+    // 临时 SessionID（UUID 格式：8-4-4-4-12）
+    if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(content))
+      return '临时 SessionID (UUID)'
+
+    // 具体绝对路径（macOS/Linux /Users/... /home/... 或 Windows C:\... D:\...）
+    if (/(\/Users\/|\/home\/|\/tmp\/)[^\s]{5,}/.test(content)) return '绝对路径 (macOS/Linux)'
+    if (/[A-Z]:\\[^\s]{5,}/.test(content)) return '绝对路径 (Windows)'
+
+    // 连接设备信息（IP 地址）
+    if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d{1,5})?\b/.test(content)) return 'IP 地址'
+
+    // MAC 地址
+    if (/\b[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}\b/i.test(
+      content
+    ))
+      return 'MAC 地址'
+
+    return null
+  }
+
+  /**
+   * Stage 队列条目写入对应层（P2.2，公开方法供 IPC 调用）
+   *
+   * 用户在记忆页面点 accept 后，IPC 处理器调此方法。
+   * 复用 writeToLayer 的 patch-only + 去重逻辑。
+   */
+  async writeStageEntryToLayer(
+    entry: {
+      type: NudgeType
+      targetLayer: 'L0' | 'L1' | 'L2' | 'L3'
+      pattern: string
+      evidence: string[]
+      suggestedContent: string
+      userMessage: string
+    },
+    mode: MemoryMode
+  ): Promise<void> {
+    const nudge: NudgeCandidate = {
+      id: `stage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: entry.type,
+      targetLayer: entry.targetLayer,
+      pattern: entry.pattern,
+      evidence: entry.evidence,
+      suggestedContent: entry.suggestedContent,
+      userMessage: entry.userMessage,
+    }
+    await this.writeToLayer(nudge, mode)
+  }
+
+  /**
    * 追加内容到 Markdown 文件（带去重 + 结构化元数据）
    *
    * v1.5 升级（hermes-borrow-plan §5.2 修复 3）：
@@ -624,6 +926,19 @@ class NudgeService {
    * - 去重：pattern 已存在则更新 hit_count + last_referenced_at，不重复写
    * - 元数据用 HTML 注释，markdown 渲染器忽略，人类仍可读
    * - 供 LRU / Self-Repair 使用
+   *
+   * Patch-only 原则（v1.5 新增，借鉴 GenericAgent "神圣不可删改 + 只 patch 不 overwrite"）：
+   * - 新增条目：appendFile 追加单行（不覆盖整文件）
+   * - 更新 hit_count：read full → 单行 string.replace → write back（语义上是行级 patch）
+   * - 创建文件：写 header + 首行（仅当文件不存在时）
+   * - 严禁整文件 overwrite 已有内容（会丢失用户手编辑的条目）
+   *
+   * drift 检测（P3.2，借鉴 Hermes）：
+   * - 写入前读取文件时记录 hash
+   * - 更新 hit_count 时比对 hash，如果变了说明被外部改过（用户手动编辑 / 外部工具）
+   * - 备份当前文件到 nudges/drift_backup/ 后再覆盖
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.5 / §3.2
    */
   private async appendMdFileWithDedup(
     filePath: string,
@@ -635,29 +950,107 @@ class NudgeService {
     const sourceSession = nudge.evidence[0]?.slice(0, 8) ?? ''
 
     if (!fs.existsSync(filePath)) {
-      // 创建新文件
+      // 创建新文件（header + 首行）
       const line = this.formatMemoryLine(timestamp, content, 1, timestamp, sourceSession)
       const header = `# ${section}\n\n${line}\n`
       await fs.promises.writeFile(filePath, header, 'utf-8')
+      // 记录 hash
+      this.fileHashes.set(filePath, this.computeFileHash(header))
       return
     }
 
-    // 读现有内容，找是否已存在相同 pattern
+    // 读现有内容
     const existing = await fs.promises.readFile(filePath, 'utf-8')
     const dedupResult = this.findExistingLine(existing, content)
 
     if (dedupResult.found && dedupResult.line) {
-      // 已存在：更新 hit_count + last_referenced_at
+      // drift 检测：更新 hit_count 前，比对文件 hash 是否被外部改过
+      const currentHash = this.computeFileHash(existing)
+      const cachedHash = this.fileHashes.get(filePath)
+      if (cachedHash !== undefined && cachedHash !== currentHash) {
+        // drift 检测：文件被外部改过，备份当前文件后覆盖
+        console.warn(
+          `[Nudge] drift 检测：${filePath} 被外部修改（hash 变化），备份到 drift_backup/`
+        )
+        await this.backupDriftFile(filePath)
+      }
+
+      // 单行 patch 更新 hit_count + last_referenced_at
       const updatedLine = this.bumpHitCount(dedupResult.line, timestamp, sourceSession)
       const newContent = existing.replace(dedupResult.line, updatedLine)
+      // Patch-only invariant 校验：新内容必须保留原有所有行（除了被 patch 的那一行）
+      const existingLineCount = existing.split('\n').length
+      const newLineCount = newContent.split('\n').length
+      if (newLineCount !== existingLineCount) {
+        console.error(
+          `[Nudge] patch-only invariant 违反：行数从 ${existingLineCount} 变为 ${newLineCount}，拒绝写入（防止丢内容）`
+        )
+        return
+      }
       await fs.promises.writeFile(filePath, newContent, 'utf-8')
+      // 更新 hash
+      this.fileHashes.set(filePath, this.computeFileHash(newContent))
       console.log(
         `[Nudge] 去重更新：pattern="${content.slice(0, 30)}..." hit_count 增加`
       )
     } else {
-      // 新增
+      // 新增：appendFile 追加单行（patch 语义，不动现有内容）
       const line = this.formatMemoryLine(timestamp, content, 1, timestamp, sourceSession)
       await fs.promises.appendFile(filePath, line + '\n', 'utf-8')
+      // 更新 hash（读文件重新计算，因为 appendFile 后文件内容变了）
+      const updated = await fs.promises.readFile(filePath, 'utf-8')
+      this.fileHashes.set(filePath, this.computeFileHash(updated))
+    }
+  }
+
+  /**
+   * drift 检测辅助：计算文件内容 hash（P3.2）
+   *
+   * 用简单字符串 hash（非加密），足够检测外部篡改。
+   */
+  private computeFileHash(content: string): string {
+    // 简单 DJB2 hash，64-bit，足够检测内容变化
+    let hash = 5381n
+    for (let i = 0; i < content.length; i++) {
+      hash = ((hash << 5n) + hash + BigInt(content.charCodeAt(i))) & 0xffffffffn
+    }
+    return hash.toString(16)
+  }
+
+  /**
+   * drift 检测辅助：备份文件到 nudges/drift_backup/（P3.2）
+   *
+   * 文件名格式：{原文件名}.{timestamp}.bak
+   * 保留最近 10 个备份（防止无限堆积）。
+   */
+  private async backupDriftFile(filePath: string): Promise<void> {
+    try {
+      const dir = path.dirname(filePath)
+      const backupDir = path.join(dir, 'nudges', 'drift_backup')
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true })
+      }
+
+      const fileName = path.basename(filePath)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const backupPath = path.join(backupDir, `${fileName}.${timestamp}.bak`)
+
+      const content = await fs.promises.readFile(filePath, 'utf-8')
+      await fs.promises.writeFile(backupPath, content, 'utf-8')
+      console.log(`[Nudge drift] 备份 ${fileName} → ${backupPath}`)
+
+      // 保留最近 10 个备份（清理旧的）
+      const backups = fs.readdirSync(backupDir)
+        .filter((f) => f.startsWith(fileName + '.') && f.endsWith('.bak'))
+        .sort()
+      while (backups.length > 10) {
+        const oldest = backups.shift()
+        if (oldest) {
+          fs.unlinkSync(path.join(backupDir, oldest))
+        }
+      }
+    } catch (e) {
+      console.warn(`[Nudge drift] 备份失败:`, e)
     }
   }
 

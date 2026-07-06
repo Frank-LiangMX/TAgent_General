@@ -27,6 +27,21 @@ import { app } from 'electron'
 export type MemoryMode = 'general' | 'ta'
 
 /**
+ * 记忆文件大小限制（P3.3，借鉴 TencentDB 5s recall 超时降级）
+ *
+ * 同步场景用大小限制替代超时——超过 512KB 的记忆文件跳过注入，避免卡 buildSystemPrompt。
+ * 正常 L0/L1/L2 单文件 <10KB，512KB 是极端情况（比如用户手编辑或 bug 导致无限追加）。
+ */
+const MAX_MEMORY_FILE_SIZE = 512 * 1024 // 512KB
+
+/** PersonaTrigger 重建用的文件 header 映射 */
+const LAYER_FILE_HEADERS: Record<string, string> = {
+  'L0_user.md': `# User Profile\n\n> 用户画像（半自动写入，patch-only）\n> 标签格式：- [日期] 内容 <!-- hit:N last_ref:YYYY-MM-DD src:session8 source_msgs:[msg_id] -->\n`,
+  'L1_project.md': `# Project Profile & Index\n\n> 项目画像 + L1 索引层（≤30 行硬约束，<1k tokens 期望）\n> 存在性编码：只放反直觉触发词（2-4 字），禁写机制/方法/步骤\n> 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §6.4.1\n`,
+  'L2_facts.md': `# Facts\n\n> 稳定事实（半自动写入，patch-only）\n> 标签格式：- [日期] 内容 <!-- hit:N last_ref:YYYY-MM-DD src:session8 source_msgs:[msg_id] -->\n`,
+}
+
+/**
  * 获取记忆目录路径
  */
 function getMemoryDir(mode: MemoryMode): string {
@@ -138,11 +153,71 @@ export class MemoryLayerService {
       this.initL4Db('general', options?.dbPathOverride?.general)
       this.initL4Db('ta', options?.dbPathOverride?.ta)
 
+      // eager 创建 L0/L1/L2 空文件（带 header）
+      // 解决"文件从未创建"问题：原 lazy 创建依赖 Nudge toast 路径跑通，
+      // 但 toast 从未真正弹过 → writeToLayer 从未触发 → 文件不存在。
+      // eager 创建保证 Frozen snapshot 注入时文件存在 + 记忆页面不显示空状态。
+      // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §三
+      if (!options?.dbPathOverride?.general) {
+        this.ensureLayerFiles('general')
+      }
+      if (!options?.dbPathOverride?.ta) {
+        this.ensureLayerFiles('ta')
+      }
+
       return { success: true }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       console.error('[MemoryLayerService] 初始化失败:', error)
       return { success: false, error: msg }
+    }
+  }
+
+  /**
+   * eager 创建 L0/L1/L2 空文件（带 header）
+   *
+   * session 1 启动时（实际是 App 启动时）创建空 md 文件，保证：
+   * 1. Frozen snapshot 注入时文件存在，不会因 fs.existsSync 返回 false 跳过注入
+   * 2. 记忆页面 getStats 不返回 {exists: false}，UI 不显示空状态
+   * 3. 用户可手动编辑空文件初始化偏好（不依赖 Nudge）
+   *
+   * 幂等：已存在的文件不覆盖（保护用户手编辑内容）。
+   */
+  private ensureLayerFiles(mode: MemoryMode): void {
+    const dir = getMemoryDir(mode)
+    const files = [
+      {
+        name: 'L0_user.md',
+        header: `# User Profile
+
+> 用户画像（半自动写入，patch-only）
+> 标签格式：- [日期] 内容 <!-- hit:N last_ref:YYYY-MM-DD src:session8 source_msgs:[msg_id] -->
+`,
+      },
+      {
+        name: 'L1_project.md',
+        header: `# Project Profile & Index
+
+> 项目画像 + L1 索引层（≤30 行硬约束，<1k tokens 期望）
+> 存在性编码：只放反直觉触发词（2-4 字），禁写机制/方法/步骤
+> 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §6.4.1
+`,
+      },
+      {
+        name: 'L2_facts.md',
+        header: `# Facts
+
+> 稳定事实（半自动写入，patch-only）
+> 标签格式：- [日期] 内容 <!-- hit:N last_ref:YYYY-MM-DD src:session8 source_msgs:[msg_id] -->
+`,
+      },
+    ]
+    for (const { name, header } of files) {
+      const filePath = path.join(dir, name)
+      if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, header, 'utf-8')
+        console.log(`[MemoryLayerService] eager 创建 ${mode}/${name}`)
+      }
     }
   }
 
@@ -204,10 +279,60 @@ export class MemoryLayerService {
       END;
     `)
 
+    // 幂等加 5 个新字段（v1.5 会话合并 + 分级存储支持）
+    // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §七
+    this.addColumnIfNotExists(db, 'sessions', 'message_count', 'INTEGER DEFAULT 0')
+    this.addColumnIfNotExists(db, 'sessions', 'msg_ids', "TEXT DEFAULT '[]'")
+    this.addColumnIfNotExists(db, 'sessions', 'parent_session_id', 'TEXT')
+    this.addColumnIfNotExists(db, 'sessions', 'is_archived', 'INTEGER DEFAULT 0')
+    this.addColumnIfNotExists(db, 'sessions', 'is_old', 'INTEGER DEFAULT 0')
+
     if (mode === 'general') {
       this.l4DbGeneral = db
     } else {
       this.l4DbTa = db
+    }
+  }
+
+  /**
+   * PersonaTrigger 自修复：重建被误删的记忆文件（P3.4）
+   *
+   * 5 条触发：主动请求 / 冷启动 / 正文丢失恢复 / 首次场景 / 阈值
+   * 此方法实现"正文丢失恢复"——读 L0/L1/L2 时发现文件不存在，自动重建。
+   * 只重建文件（带 header），不恢复内容（内容丢失不可逆，但比文件完全不存在好）。
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §6.4.5
+   */
+  private recreateLayerFile(mode: MemoryMode, fileName: string): void {
+    const dir = getMemoryDir(mode)
+    const header = LAYER_FILE_HEADERS[fileName]
+    if (!header) return
+    const filePath = path.join(dir, fileName)
+    try {
+      fs.writeFileSync(filePath, header, 'utf-8')
+      console.log(`[MemoryLayerService] PersonaTrigger: ${mode}/${fileName} 重建成功`)
+    } catch (e) {
+      console.warn(`[MemoryLayerService] PersonaTrigger: ${mode}/${fileName} 重建失败:`, e)
+    }
+  }
+
+  /**
+   * 幂等加列（ALTER TABLE ADD COLUMN，已存在则跳过）
+   *
+   * SQLite 不支持 IF NOT EXISTS 语法，需要先查 pragma_table_info 判断列是否存在。
+   */
+  private addColumnIfNotExists(
+    db: Database.Database,
+    table: string,
+    column: string,
+    definition: string
+  ): void {
+    const exists = db
+      .prepare(`SELECT COUNT(*) as c FROM pragma_table_info(?) WHERE name = ?`)
+      .get(table, column) as { c: number }
+    if (exists.c === 0) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+      console.log(`[MemoryLayerService] 加列 ${table}.${column}`)
     }
   }
 
@@ -453,11 +578,71 @@ export class MemoryLayerService {
 
     try {
       const now = Date.now()
+
+      // v1.5 会话合并：同 workspace + 同 mode + 同 session_slug + 时间间隔 <30 分钟 → UPDATE 现有会话
+      // 解决"一天大量 worker 子任务导致 L4 膨胀"问题（71 条会话里每条 title 都是任务开头）
+      // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §七
+      const MERGE_WINDOW_MS = 30 * 60 * 1000 // 30 分钟
+      const lastSession = db
+        .prepare(
+          `SELECT id, session_slug, tools_used, message_count, msg_ids, ended_at
+           FROM sessions
+           WHERE mode = ? AND workspace_slug IS ?
+             AND is_archived = 0
+           ORDER BY created_at DESC
+           LIMIT 1`
+        )
+        .get(params.mode, params.workspaceSlug || null) as
+        | {
+            id: number
+            session_slug: string
+            tools_used: string
+            message_count: number
+            msg_ids: string
+            ended_at: number
+          }
+        | undefined
+
+      const canMerge =
+        lastSession !== undefined &&
+        lastSession.session_slug === params.sessionId &&
+        now - lastSession.ended_at < MERGE_WINDOW_MS
+
+      if (canMerge) {
+        // 合并：UPDATE 现有会话
+        const existingTools = JSON.parse(lastSession.tools_used || '[]') as string[]
+        const mergedTools = Array.from(new Set([...existingTools, ...params.toolsUsed]))
+        const existingMsgIds = JSON.parse(lastSession.msg_ids || '[]') as string[]
+        const newMsgId = `msg_${now}_${Math.random().toString(36).slice(2, 8)}`
+        const mergedMsgIds = [...existingMsgIds, newMsgId]
+
+        db.prepare(
+          `UPDATE sessions SET
+             message_count = message_count + 1,
+             msg_ids = @msg_ids,
+             ended_at = @ended_at,
+             summary = @summary,
+             tools_used = @tools_used
+           WHERE id = @id`
+        ).run({
+          msg_ids: JSON.stringify(mergedMsgIds),
+          ended_at: now,
+          summary: params.summary || null,
+          tools_used: JSON.stringify(mergedTools),
+          id: lastSession.id,
+        })
+        return
+      }
+
+      // 新建：INSERT
+      const newMsgId = `msg_${now}_${Math.random().toString(36).slice(2, 8)}`
       db.prepare(
         `
         INSERT INTO sessions
-          (session_slug, title, summary, key_facts, tools_used, mode, workspace_slug, created_at, ended_at)
-        VALUES (@session_slug, @title, @summary, @key_facts, @tools_used, @mode, @workspace_slug, @created_at, @ended_at)
+          (session_slug, title, summary, key_facts, tools_used, mode, workspace_slug,
+           created_at, ended_at, message_count, msg_ids)
+        VALUES (@session_slug, @title, @summary, @key_facts, @tools_used, @mode, @workspace_slug,
+                @created_at, @ended_at, 1, @msg_ids)
       `
       ).run({
         session_slug: params.sessionId,
@@ -469,9 +654,58 @@ export class MemoryLayerService {
         workspace_slug: params.workspaceSlug || null,
         created_at: now,
         ended_at: now,
+        msg_ids: JSON.stringify([newMsgId]),
       })
     } catch (error) {
       console.error('[MemoryLayerService] recordSession 失败:', error)
+    }
+  }
+
+  /**
+   * 读取 L0/L1/L2 记忆快照（Frozen snapshot 模式专用）
+   *
+   * 会话启动时由 agent-orchestrator 调用，读 L0/L1/L2 文件内容供 buildSystemPrompt 注入。
+   * - 文件不存在时返回空字符串（不抛错，让上层跳过注入）
+   * - 文件被误删时自动重建（PersonaTrigger P3.4 自修复）
+   * - 文件过大时跳过（避免读超大文件卡，借鉴 TencentDB 5s recall 超时降级，同步场景用大小限制替代）
+   * - 只读 raw 文件内容（包含 header 注释 + 记忆条目），上层自己决定要不要 trim header
+   * - 不读 L3/L4/L5：L3 是纠错（不注入 system prompt）、L4 是会话历史（不注入）、L5 由 Reflect 服务管理
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.1 / §3.4 / §6.4.5
+   */
+  readMemorySnapshot(mode: MemoryMode): {
+    l0User: string
+    l1Project: string
+    l2Facts: string
+  } {
+    const dir = getMemoryDir(mode)
+    const readSafe = (name: string): string => {
+      try {
+        const filePath = path.join(dir, name)
+        if (!fs.existsSync(filePath)) {
+          // PersonaTrigger P3.4：文件被误删时自动重建（带 header）
+          console.warn(`[MemoryLayerService] readMemorySnapshot: ${name} 不存在，自动重建`)
+          this.recreateLayerFile(mode, name)
+          return ''
+        }
+        const stats = fs.statSync(filePath)
+        if (stats.size > MAX_MEMORY_FILE_SIZE) {
+          // P3.3：文件过大跳过（避免读超大文件卡）
+          console.warn(
+            `[MemoryLayerService] readMemorySnapshot: ${name} 过大（${(stats.size / 1024).toFixed(1)}KB），跳过注入`
+          )
+          return ''
+        }
+        return fs.readFileSync(filePath, 'utf-8')
+      } catch (e) {
+        console.warn(`[MemoryLayerService] readMemorySnapshot 读 ${name} 失败:`, e)
+        return ''
+      }
+    }
+    return {
+      l0User: readSafe('L0_user.md'),
+      l1Project: readSafe('L1_project.md'),
+      l2Facts: readSafe('L2_facts.md'),
     }
   }
 

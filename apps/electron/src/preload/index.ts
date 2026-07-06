@@ -125,6 +125,8 @@ import type {
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
   NudgeCandidate,
+  StageEntry,
+  GraphPayload,
   AskMessage,
   AskSendInput,
   AskStreamChunkEvent,
@@ -920,6 +922,28 @@ export interface ElectronAPI {
   onNudgeEvent: (
     callback: (event: { type: string; nudges: NudgeCandidate[] }) => void
   ) => () => void
+
+  // ===== Stage 队列（P2.2 写入门控三态） =====
+
+  /** 获取 stage 待审批列表 */
+  getStageQueue: (mode: 'general' | 'ta') => Promise<StageEntry[]>
+
+  /** 批量 accept（写入 L0/L1/L2 + 清空队列） */
+  acceptStageAll: (mode: 'general' | 'ta') => Promise<{ accepted: number }>
+
+  /** 批量 reject（记录到 rejected.jsonl + 清空队列） */
+  rejectStageAll: (mode: 'general' | 'ta', reason?: string) => Promise<{ rejected: number }>
+
+  /** 单条 accept */
+  acceptStageOne: (mode: 'general' | 'ta', id: string) => Promise<void>
+
+  /** 单条 reject */
+  rejectStageOne: (mode: 'general' | 'ta', id: string, reason?: string) => Promise<void>
+
+  // ===== Memory Graph 可视化（P3-MG.1） =====
+
+  /** 获取 Memory Graph 数据（nodes + edges + stats） */
+  getGraphData: (mode: 'general' | 'ta', workspaceSlug?: string) => Promise<GraphPayload>
 
   // ===== TA 意图检测 =====
 
@@ -2336,6 +2360,40 @@ const electronAPI: ElectronAPI = {
     ) => callback(data)
     ipcRenderer.on(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
     return () => ipcRenderer.removeListener(MEMORY_IPC_CHANNELS.NUdge_EVENT, handler)
+  },
+
+  // Stage 队列（P2.2 写入门控三态）
+  getStageQueue: (mode: 'general' | 'ta') => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.GET_STAGE_QUEUE, mode) as Promise<StageEntry[]>
+  },
+
+  acceptStageAll: (mode: 'general' | 'ta') => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.ACCEPT_STAGE_ALL, mode) as Promise<{
+      accepted: number
+    }>
+  },
+
+  rejectStageAll: (mode: 'general' | 'ta', reason?: string) => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.REJECT_STAGE_ALL, mode, reason) as Promise<{
+      rejected: number
+    }>
+  },
+
+  acceptStageOne: (mode: 'general' | 'ta', id: string) => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.ACCEPT_STAGE_ONE, mode, id) as Promise<void>
+  },
+
+  rejectStageOne: (mode: 'general' | 'ta', id: string, reason?: string) => {
+    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.REJECT_STAGE_ONE, mode, id, reason) as Promise<void>
+  },
+
+  // Memory Graph 可视化（P3-MG.1）
+  getGraphData: (mode: 'general' | 'ta', workspaceSlug?: string) => {
+    return ipcRenderer.invoke(
+      MEMORY_IPC_CHANNELS.GET_GRAPH_DATA,
+      mode,
+      workspaceSlug
+    ) as Promise<GraphPayload>
   },
 
   // TA 意图检测

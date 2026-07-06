@@ -19,6 +19,22 @@ export const MEMORY_IPC_CHANNELS = {
   RESPOND_NUDGE: 'memory:respond-nudge',
   /** Nudge 事件通知 */
   NUdge_EVENT: 'memory:nudge-event',
+
+  // ===== Stage 队列相关（P2.2 写入门控三态） =====
+  /** 获取 stage 待审批列表 */
+  GET_STAGE_QUEUE: 'memory:get-stage-queue',
+  /** 批量 accept stage 条目（写入 L0/L1/L2） */
+  ACCEPT_STAGE_ALL: 'memory:accept-stage-all',
+  /** 批量 reject stage 条目（记录到 rejected.jsonl） */
+  REJECT_STAGE_ALL: 'memory:reject-stage-all',
+  /** 单条 accept */
+  ACCEPT_STAGE_ONE: 'memory:accept-stage-one',
+  /** 单条 reject */
+  REJECT_STAGE_ONE: 'memory:reject-stage-one',
+
+  // ===== Memory Graph 可视化（P3-MG.1） =====
+  /** 获取 Memory Graph 数据（nodes + edges + stats） */
+  GET_GRAPH_DATA: 'memory:get-graph-data',
 } as const
 
 /**
@@ -55,6 +71,72 @@ export interface NudgeCandidate {
   evidence: string[]
   suggestedContent: string
   userMessage: string
+}
+
+/**
+ * Stage 队列条目（P2.2 写入门控三态）
+ *
+ * background nudge（LLM review）写入暂存到此队列，
+ * 用户批量 accept 后才写入 L0/L1/L2。
+ */
+export interface StageEntry {
+  /** 唯一 id（与 NudgeCandidate.id 共享） */
+  id: string
+  /** 入队时间戳 */
+  enqueuedAt: number
+  /** 来源：background（LLM review 自动） */
+  origin: 'background'
+  /** Nudge 类型 */
+  type: NudgeType
+  /** 目标层 */
+  targetLayer: 'L0' | 'L1' | 'L2' | 'L3'
+  /** 记忆内容 */
+  pattern: string
+  /** 证据消息（用户消息截断） */
+  evidence: string[]
+  /** 建议内容 */
+  suggestedContent: string
+  /** 用户友好提示 */
+  userMessage: string
+  /** 来源会话 id 前 8 位 */
+  sourceSession: string
+}
+
+/**
+ * Memory Graph 节点（P3-MG.1）
+ */
+export interface GraphNode {
+  id: string
+  kind: 'memory' | 'skill'
+  shape: 'diamond' | 'circle'
+  source?: 'L0' | 'L2' | 'L5'
+  title: string
+  content: string
+  timestamp: number
+  useCount?: number
+}
+
+/**
+ * Memory Graph 边（P3-MG.1）
+ */
+export interface GraphEdge {
+  source: string
+  target: string
+  type: 'skill-skill' | 'memory-skill'
+  weight?: number
+}
+
+/**
+ * Memory Graph 装配结果（P3-MG.1）
+ */
+export interface GraphPayload {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  stats: {
+    memoryNodes: number
+    skillNodes: number
+    edges: number
+  }
 }
 
 // ===== Btw (By The Way) 侧面提问 =====

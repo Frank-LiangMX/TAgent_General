@@ -2391,6 +2391,11 @@ export class AgentOrchestrator {
               channel.provider === 'kscc-internal' ? modelRouting.subagentModel : undefined,
             subagentEagerness: appSettings.subagentEagerness,
             mode: getAgentSessionMeta(sessionId)?.mode,
+            // Frozen snapshot：会话启动时一次性读 L0/L1/L2 注入，会话进行中写入不改 system prompt
+            // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.1
+            memorySnapshot: memoryLayerService.readMemorySnapshot(
+              getAgentSessionMeta(sessionId)?.mode === 'ta' ? 'ta' : 'general'
+            ),
           }),
         },
         resumeSessionId: existingSdkSessionId,

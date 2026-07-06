@@ -402,11 +402,26 @@ TAgent 自研了 5 层记忆系统（L0 用户画像 / L1 项目画像 / L2 稳�
 
 - 用户说"我叫 Frank" / "我喜欢简洁"等时，正常对话回应，不要主动写文件
 - 系统会在合适时机（用户行为模式匹配后）通过 Nudge 弹 toast 询问用户是否记住，用户确认后由 TAgent 主进程写入对应层
-- 你需要记忆的内容由 system prompt 注入的 \`<workspace_state>\` 块提供（含用户画像 / 项目画像 / 最近事实等），不需要自己管理记忆文件
+- 你需要的记忆内容由 system prompt 的 \`## 记忆快照\` 段提供（含 L0 用户画像 / L1 项目画像 / L2 稳定事实），本会话内固定不变，新写入的记忆下一会话才会生效——不需要自己管理记忆文件，也不要尝试修改 \`## 记忆快照\` 段的内容
 
-**为什么：** SDK 内置 auto-memory 会让 LLM 主动写记忆文件，但 TAgent 的记忆系统是结构化的（5 层 + 自进化机制），LLM 主动写会破坏结构、产生重复、绕过用户确认流程。记忆的写入时机和格式由 TAgent 控制。
+**为什么：** SDK 内置 auto-memory 会让 LLM 主动写记忆文件，但 TAgent 的记忆系统是结构化的（5 层 + 自进化机制），LLM 主动写会破坏结构、产生重复、绕过用户确认流程。记忆的写入时机和格式由 TAgent 控制。Frozen snapshot 模式保证 Prompt Cache 命中率不被破坏。
 
-**例外：** 用户明确要求"把 X 写到 Y 文件"时，按用户指令执行（这是文件操作，不是记忆管理）。`
+**例外：** 用户明确要求"把 X 写到 Y 文件"时，按用户指令执行（这是文件操作，不是记忆管理）。
+
+**META-SOP：记忆管理元规则（P4.1，借鉴 GenericAgent "如何管理记忆"本身写成 SOP）**
+
+以下是记忆系统的元规则，当你被问到"如何管理记忆"或需要参考记忆系统设计时，按以下规则回答：
+
+1. **写入规则**：所有记忆写入由 Nudge 系统（background review + 用户审批）或 Reflect 服务（每日提炼）控制，LLM 不主动写。
+2. **存储规则**：L0/L1/L2 用 Markdown 文件（白盒可审计），L3 用 JSONL（结构化），L4 用 SQLite + FTS5（可索引），L5 用 Markdown。
+3. **去重规则**：写入前先查找已有条目，pattern 已存在则更新 hit_count，不重复新增。
+4. **patch-only**：严禁整文件 overwrite，只能 add/replace/remove 操作。
+5. **禁易变状态**：时间戳/PID/SessionID/绝对路径/设备信息禁止写入记忆。
+6. **索引约束**：L1 索引层 ≤30 行硬约束 + <1k tokens 期望，只放反直觉触发词。
+7. **清理规则**：L4 >30 天归档，L3 >1000 条压缩到 500，L1 用 ROI 公式清理。
+8. **自进化**：5 个机制（写入时/Nudge/Reflect/Cleanup/Self-Repair），详见设计文档。
+
+这些规则是系统级约束，不需要你主动执行——系统会自动维护。你只需要知道这些规则存在，以便在被问到时正确回答。`
 
 
 // ===== 语言指令常量 =====
@@ -467,6 +482,23 @@ interface SystemPromptContext {
    * - 'general' 或不传：通用模式，不注入
    */
   mode?: 'general' | 'ta'
+
+  /**
+   * 记忆快照（Frozen snapshot 模式，v1.5 新增）
+   *
+   * 会话启动时一次性读取 L0/L1/L2 内容传入，会话进行中记忆写入不改 system prompt，
+   * 下一会话启动时才刷新。这样保证 Prompt Cache 命中率不被破坏。
+   *
+   * 调用方（agent-orchestrator.ts）负责在会话启动时读 L0/L1/L2 文件内容传入。
+   * 不传或为空字符串时跳过注入（向后兼容）。
+   *
+   * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.1
+   */
+  memorySnapshot?: {
+    l0User?: string
+    l1Project?: string
+    l2Facts?: string
+  }
 }
 
 /** 主 Agent 派发 SubAgent 的积极性档位 */
@@ -689,6 +721,29 @@ ${subagentList}
   sections.push(`## 用户信息
 
 - 用户名: ${userName}`)
+
+  // 记忆快照（Frozen snapshot 模式）
+  // 会话启动时一次性注入 L0/L1/L2，会话进行中记忆写入不改本节（保 Prompt Cache）
+  // 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.1
+  if (ctx.memorySnapshot) {
+    const memoryLines: string[] = []
+    if (ctx.memorySnapshot.l0User?.trim()) {
+      memoryLines.push(`### 用户画像（L0）\n${ctx.memorySnapshot.l0User.trim()}`)
+    }
+    if (ctx.memorySnapshot.l1Project?.trim()) {
+      memoryLines.push(`### 项目画像与索引（L1）\n${ctx.memorySnapshot.l1Project.trim()}`)
+    }
+    if (ctx.memorySnapshot.l2Facts?.trim()) {
+      memoryLines.push(`### 稳定事实（L2）\n${ctx.memorySnapshot.l2Facts.trim()}`)
+    }
+    if (memoryLines.length > 0) {
+      sections.push(`## 记忆快照
+
+以下是系统从长期记忆中为你加载的画像与事实（本会话内固定，不随写入刷新；新写入的记忆下一会话才会生效）：
+
+${memoryLines.join('\n\n')}`)
+    }
+  }
 
   // 工作区信息
   if (ctx.workspaceName && ctx.workspaceSlug) {

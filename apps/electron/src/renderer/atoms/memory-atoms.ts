@@ -29,3 +29,14 @@ export const memorySelectedLayerAtom = atom<MemoryLayerKey | null>(null)
  * 不会自动重置 — 选中态持续到用户切换或清空搜索。
  */
 export const memorySelectedSessionAtom = atom<number | null>(null)
+
+/**
+ * 记忆页视图模式
+ *
+ * 左栏快捷入口点击后设值，主区根据此 atom 切换视图。
+ * - 'layers'：层视图（6 个层卡片网格）
+ * - 'graph'：Memory Graph 星图
+ * - 'pending'：待审批列表（StageQueueCard 独立视图）
+ */
+export type MemoryViewMode = 'layers' | 'graph' | 'pending'
+export const memoryViewModeAtom = atom<MemoryViewMode>('layers')

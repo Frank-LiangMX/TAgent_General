@@ -37,6 +37,7 @@ import {
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
+  StageEntry,
   CompactSessionInput,
   CompactSessionResult,
   RuntimeStatus,
@@ -2131,6 +2132,106 @@ export function registerIpcHandlers(): void {
     ): Promise<void> => {
       const { nudgeService } = await import('./lib/nudge-service')
       await nudgeService.handleNudgeResponse(sessionId, nudgeId, action, mode)
+    }
+  )
+
+  // ===== Stage 队列（P2.2 写入门控三态） =====
+
+  // 获取 stage 待审批列表
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.GET_STAGE_QUEUE,
+    async (_, mode: 'general' | 'ta'): Promise<StageEntry[]> => {
+      const { readStageQueue } = await import('./lib/stage-queue-service')
+      return readStageQueue(mode)
+    }
+  )
+
+  // 批量 accept：写入 L0/L1/L2 + 清空队列
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.ACCEPT_STAGE_ALL,
+    async (_, mode: 'general' | 'ta'): Promise<{ accepted: number }> => {
+      const { acceptAll } = await import('./lib/stage-queue-service')
+      const { nudgeService } = await import('./lib/nudge-service')
+      const entries = acceptAll(mode)
+      for (const entry of entries) {
+        await nudgeService.writeStageEntryToLayer(entry, mode)
+      }
+      return { accepted: entries.length }
+    }
+  )
+
+  // 批量 reject：记录到 rejected.jsonl + 清空队列
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.REJECT_STAGE_ALL,
+    async (_, mode: 'general' | 'ta', reason?: string): Promise<{ rejected: number }> => {
+      const { rejectAll } = await import('./lib/stage-queue-service')
+      const entries = rejectAll(mode, reason ?? 'batch_rejected')
+      return { rejected: entries.length }
+    }
+  )
+
+  // 单条 accept
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.ACCEPT_STAGE_ONE,
+    async (_, mode: 'general' | 'ta', id: string): Promise<void> => {
+      const { readStageQueue, removeFromStage } = await import('./lib/stage-queue-service')
+      const { nudgeService } = await import('./lib/nudge-service')
+      const entries = readStageQueue(mode)
+      const entry = entries.find((e) => e.id === id)
+      if (entry) {
+        await nudgeService.writeStageEntryToLayer(entry, mode)
+        removeFromStage(mode, id)
+      }
+    }
+  )
+
+  // 单条 reject
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.REJECT_STAGE_ONE,
+    async (_, mode: 'general' | 'ta', id: string, reason?: string): Promise<void> => {
+      const { readStageQueue, removeFromStage } = await import('./lib/stage-queue-service')
+      const entries = readStageQueue(mode)
+      const entry = entries.find((e) => e.id === id)
+      if (entry) {
+        // 记录到 rejected.jsonl
+        const { rejectAll } = await import('./lib/stage-queue-service')
+        // rejectAll 会清空整个队列，这里只想 reject 一条
+        // 直接操作 rejected.jsonl + removeFromStage
+        const fs = await import('node:fs')
+        const path = await import('node:path')
+        const { app } = await import('electron')
+        const isDev = !app.isPackaged
+        const baseDir = isDev
+          ? path.join(app.getPath('home'), '.tagent-dev')
+          : path.join(app.getPath('home'), '.tagent')
+        const memoryDir =
+          mode === 'general' ? path.join(baseDir, 'memory') : path.join(baseDir, 'ta', 'memory')
+        const rejectedPath = path.join(memoryDir, 'nudges', 'rejected.jsonl')
+        const rejectedDir = path.dirname(rejectedPath)
+        if (!fs.existsSync(rejectedDir)) {
+          fs.mkdirSync(rejectedDir, { recursive: true })
+        }
+        const rejectLine =
+          JSON.stringify({
+            id: entry.id,
+            timestamp: Date.now(),
+            type: entry.type,
+            pattern: entry.pattern,
+            reason: reason ?? 'single_rejected',
+          }) + '\n'
+        fs.appendFileSync(rejectedPath, rejectLine, 'utf-8')
+        removeFromStage(mode, id)
+      }
+    }
+  )
+
+  // ===== Memory Graph 可视化（P3-MG.1） =====
+
+  ipcMain.handle(
+    MEMORY_IPC_CHANNELS.GET_GRAPH_DATA,
+    async (_, mode: 'general' | 'ta', workspaceSlug?: string) => {
+      const { buildGraphPayload } = await import('./lib/learning-graph-service')
+      return buildGraphPayload(mode, workspaceSlug)
     }
   )
 
