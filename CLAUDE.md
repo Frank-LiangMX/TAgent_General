@@ -378,7 +378,7 @@ React UI 更新
 - ✅ Agent SDK 集成：基于 Claude Agent SDK 的完整 Agent 模式
 - ✅ 工作区管理：多工作区隔离、MCP Server 配置、Skills 管理
 - ✅ 权限系统：工具权限检查、用户确认流程
-- ✅ 记忆系统：跨会话记忆存储与检索
+- ✅ 记忆系统：5 层（L0-L5）+ 4 自进化机制（Nudge / Reflect / Scheduled Cleanup / Self-Repair），详见 `docs/memory-system.md`
 - ✅ 自动更新：Electron Updater 集成
 - ✅ 多模态支持：图片、文档附件
 
