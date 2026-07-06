@@ -715,6 +715,13 @@ export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
 export type AgentStreamPayload =
   | { kind: 'sdk_message'; message: SDKMessage }
   | { kind: 'tagent_event'; event: TAgentEvent }
+  | {
+      kind: 'stream_text_delta'
+      /** 本次增量文本（已拆分为字符粒度由渲染层 useSmoothStream 入队） */
+      text: string
+      /** SubAgent 父 tool_use_id（顶层 Agent 为 undefined） */
+      parentToolUseId?: string
+    }
 
 // ===== Agent 会话管理 =====
 

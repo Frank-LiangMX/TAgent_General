@@ -635,11 +635,17 @@ export const agentSessionIndicatorMapAtom = atom<Map<string, SessionIndicatorSta
 export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): AgentStreamState {
   switch (event.type) {
     case 'text_delta':
-      // 开始接收文本 - 清除重试状态（重试成功）
+      // SubAgent partial 不累积到顶层 state.content：
+      // SubAgent 文本走 liveMessagesMap 的 SDKAssistantMessage（含 parent_tool_use_id）单独渲染子气泡，
+      // 若此处也累积会导致 SubAgent 输出串到主回复里。
+      if (event.parentToolUseId) return prev
+      // 顶层 Agent 文本：开始接收 - 清除重试状态（重试成功）
       return { ...prev, content: prev.content + event.text, retrying: undefined }
 
     case 'text_complete':
-      // 用完整文本替换增量累积的文本（用于回放场景：只需 text_complete 即可重建文本状态）
+      // SubAgent 完整文本走 liveMessagesMap 单独渲染，不覆盖顶层 state.content
+      if (event.parentToolUseId) return prev
+      // 顶层 Agent：用完整文本替换增量累积的文本（用于回放场景：只需 text_complete 即可重建文本状态）
       return { ...prev, content: event.text }
 
     case 'tool_start': {

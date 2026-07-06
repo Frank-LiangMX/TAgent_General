@@ -167,6 +167,18 @@ function buildUsageUpdateFromAssistant(aMsg: SDKAssistantMessage): AgentEvent | 
 }
 
 function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
+  if (payload.kind === 'stream_text_delta') {
+    // 流式 partial 文本：转成 text_delta 喂给 applyAgentEvent 累积到 state.content，
+    // useSmoothStream 会消费 state.content 做打字机渲染。
+    // parentToolUseId 用于 SubAgent 嵌套场景，顶层 Agent 为 undefined。
+    return [
+      {
+        type: 'text_delta',
+        text: payload.text,
+        parentToolUseId: payload.parentToolUseId,
+      },
+    ]
+  }
   if (payload.kind === 'tagent_event') {
     const evt = payload.event
     switch (evt.type) {

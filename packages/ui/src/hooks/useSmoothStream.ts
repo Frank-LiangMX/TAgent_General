@@ -87,51 +87,6 @@ export function useSmoothStream({
   // 同步 streamDone 状态
   streamDoneRef.current = !isStreaming
 
-  // 检测内容变化，计算 delta 并入队
-  useEffect(() => {
-    const prevContent = prevContentRef.current
-    const newContent = content
-
-    if (newContent === prevContent) return
-
-    // 检测是否为追加（正常流式）
-    const isAppend = newContent.startsWith(prevContent)
-
-    if (isAppend) {
-      // 增量部分拆分为字符后入队
-      const delta = newContent.slice(prevContent.length)
-      if (delta) {
-        const chars = segmentText(delta)
-        chunkQueueRef.current.push(...chars)
-      }
-    } else {
-      // 内容重置（用户重新发送等场景）
-      chunkQueueRef.current = []
-      displayedRef.current = newContent
-      setDisplayedContent(newContent)
-    }
-
-    prevContentRef.current = newContent
-  }, [content])
-
-  // 非流式状态时，确保最终内容一致（安全网，不立即 flush 队列）
-  useEffect(() => {
-    if (!isStreaming) {
-      // 如果 rAF 循环仍在运行，让它自然排空队列
-      if (rafRef.current) return
-
-      // rAF 已停止：同步剩余内容
-      if (chunkQueueRef.current.length > 0) {
-        displayedRef.current += chunkQueueRef.current.join('')
-        chunkQueueRef.current = []
-      }
-      if (displayedRef.current !== content) {
-        displayedRef.current = content
-      }
-      setDisplayedContent(displayedRef.current)
-    }
-  }, [isStreaming, content])
-
   // 渲染循环
   const renderLoop = useCallback(
     (currentTime: number) => {
@@ -184,6 +139,55 @@ export function useSmoothStream({
     },
     [minDelay]
   )
+
+  // 检测内容变化，计算 delta 并入队
+  useEffect(() => {
+    const prevContent = prevContentRef.current
+    const newContent = content
+
+    if (newContent === prevContent) return
+
+    // 检测是否为追加（正常流式）
+    const isAppend = newContent.startsWith(prevContent)
+
+    if (isAppend) {
+      // 增量部分拆分为字符后入队
+      const delta = newContent.slice(prevContent.length)
+      if (delta) {
+        const chars = segmentText(delta)
+        chunkQueueRef.current.push(...chars)
+        // 入队后主动启动渲染循环（可能 renderLoop 已停止）
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(renderLoop)
+        }
+      }
+    } else {
+      // 内容重置（用户重新发送等场景）
+      chunkQueueRef.current = []
+      displayedRef.current = newContent
+      setDisplayedContent(newContent)
+    }
+
+    prevContentRef.current = newContent
+  }, [content, renderLoop])
+
+  // 非流式状态时，确保最终内容一致（安全网，不立即 flush 队列）
+  useEffect(() => {
+    if (!isStreaming) {
+      // 如果 rAF 循环仍在运行，让它自然排空队列
+      if (rafRef.current) return
+
+      // rAF 已停止：同步剩余内容
+      if (chunkQueueRef.current.length > 0) {
+        displayedRef.current += chunkQueueRef.current.join('')
+        chunkQueueRef.current = []
+      }
+      if (displayedRef.current !== content) {
+        displayedRef.current = content
+      }
+      setDisplayedContent(displayedRef.current)
+    }
+  }, [isStreaming, content])
 
   // 启动/重启渲染循环（流结束后也继续运行直到队列排空）
   useEffect(() => {

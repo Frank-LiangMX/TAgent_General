@@ -2415,6 +2415,12 @@ export class AgentOrchestrator {
         })(),
         // 启用文件检查点，支持 rewindFiles 回退
         enableFileCheckpointing: true,
+        // 流式 partial 事件：启用后 SDK 会 yield SDKPartialAssistantMessage（type: 'stream_event'），
+        // 含 BetaRawContentBlockDeltaEvent（text_delta / input_json_delta 等）。
+        // 主进程提取 text_delta 透传到渲染层，驱动 useSmoothStream 打字机效果，
+        // 避免 kscc 等长 turn 渠道在 SDK 内部逐 token 生成期间 UI 一直显示"运行中"无反馈。
+        // 不影响 Prompt Cache：仅改 SDK yield 给上层的频率，不改发给 API 的请求结构。
+        includePartialMessages: true,
         // SDK 0.2.52+ 新增选项（从 settings 读取）
         ...(appSettings.agentThinking && { thinking: appSettings.agentThinking }),
         effort: appSettings.agentEffort ?? 'high',
@@ -2635,6 +2641,29 @@ export class AgentOrchestrator {
 
             pendingNext = null
             const msg = iterResult.value
+
+            // 流式 partial 事件：SDK 启用 includePartialMessages 后逐 token yield。
+            // 提取 text_delta 透传到渲染层驱动打字机，不持久化、不走 shouldEmit 过滤。
+            // partial 仅用于实时显示，最终完整 assistant 消息仍由后续 SDKAssistantMessage yield 触发持久化和渲染。
+            if (msg.type === 'stream_event') {
+              const partial = msg as {
+                type: 'stream_event'
+                event: { type: string; delta?: { type: string; text?: string } }
+                parent_tool_use_id?: string | null
+              }
+              const evt = partial.event
+              if (evt?.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                const text = evt.delta.text
+                if (typeof text === 'string' && text.length > 0) {
+                  this.eventBus.emit(sessionId, {
+                    kind: 'stream_text_delta',
+                    text,
+                    parentToolUseId: partial.parent_tool_use_id ?? undefined,
+                  })
+                }
+              }
+              continue
+            }
 
             if (awaitingBackgroundWake) {
               const sub = msg.type === 'system' ? (msg as { subtype?: string }).subtype : undefined

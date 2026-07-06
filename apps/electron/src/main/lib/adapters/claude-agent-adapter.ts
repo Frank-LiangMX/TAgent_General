@@ -176,6 +176,13 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
    * 避免下轮 prompt_too_long（kscc 渠道下 SDK 自动 compaction 失效）。
    */
   onContextUsage?: (usedTokens: number, totalTokens: number) => void
+  /**
+   * 启用 SDK 流式 partial 事件（SDKPartialAssistantMessage / type: 'stream_event'）。
+   * 默认 false：每轮 turn 结束才 yield 完整 SDKAssistantMessage。
+   * 启用后 SDK 逐 token yield text_delta，orchestrator 提取后透传到渲染层驱动打字机渲染。
+   * 不影响 Prompt Cache：仅改 SDK yield 给上层的频率，不改发给 API 的请求结构。
+   */
+  includePartialMessages?: boolean
 
   // ===== SDK 0.2.52 ~ 0.2.63 新增选项 =====
 
@@ -794,8 +801,9 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
         ...(options.maxTurns != null && { maxTurns: options.maxTurns }),
         permissionMode: options.sdkPermissionMode,
         allowDangerouslySkipPermissions: options.allowDangerouslySkipPermissions,
-        // 关键：false 获取完整消息，与 v2 stream() 返回格式一致
-        includePartialMessages: false,
+        // 流式 partial 事件：默认关闭（保持向后兼容），由 orchestrator 显式启用。
+        // 启用后 SDK 逐 token yield SDKPartialAssistantMessage，orchestrator 提取 text_delta 透传到渲染层。
+        includePartialMessages: options.includePartialMessages ?? false,
         // 关闭 SDK 自动 prompt_suggestion：它在每轮 result 之后才到达，是旧版「收到 result 后
         // 仍需等 2s 尾部消息」约束的根源。关闭后 result 即本轮最后一条消息，adapter 可在 result
         // 后立即主动终止 iterator（见下方终止分支）。Plan 模式的「请执行计划」建议由
@@ -943,6 +951,10 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           spawnEndAt = Date.now()
           console.log(
             `${timingTag} [kscc 打点] spawn 耗时: ${spawnEndAt - spawnStartAt}ms (pid=${child.pid ?? 'N/A'})`
+          )
+          // 调试：打印实际传给 kscc 的完整命令行，验证 --include-partial-messages 是否真的传入
+          console.log(
+            `${timingTag} [kscc 打点] spawn command: ${spawnCommand} ${spawnArgs.join(' ')}`
           )
           return child as unknown as import('@anthropic-ai/claude-agent-sdk').SpawnedProcess
         },
