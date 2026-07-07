@@ -184,8 +184,8 @@ export function BtwPanel(): React.ReactElement | null {
     <div
       className={cn(
         'btw-panel-glass',
-        'absolute w-[360px] max-h-[min(70vh,520px)] flex flex-col overflow-hidden z-50',
-        'bottom-full right-0 mb-2',
+        'fixed w-[360px] max-h-[min(70vh,520px)] flex flex-col overflow-hidden z-50',
+        'bottom-[88px] right-[56px]', // 定位在右下角，靠近 RightPanelRail
         isClosing ? 'btw-panel-exit' : 'btw-panel-enter'
       )}
     >

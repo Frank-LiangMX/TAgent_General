@@ -71,7 +71,6 @@ import { AgentModelSelector } from './AgentModelSelector'
 import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
-import { BtwFloatingTrigger } from './BtwFloatingTrigger'
 import { BtwPanel } from './BtwPanel'
 import { ComposerModeSelector } from './ComposerModeSelector'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
@@ -2852,10 +2851,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                         className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
                         data-input-mode="agent"
                       >
-                        <div className="absolute bottom-full right-[18px] mb-2 z-50">
-                          <BtwFloatingTrigger sessionId={sessionId} streaming={streaming} />
-                          <BtwPanel />
-                        </div>
+                        <BtwPanel />
                         <div
                           className={cn(
                             'session-glass chat-input-glass transition-colors duration-200',
