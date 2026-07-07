@@ -1430,6 +1430,9 @@ export interface ElectronAPI {
         summary: { total: number; done: number; failed: number }
       }) => void
     ) => () => void
+    onTaskProgress: (
+      callback: (payload: import('@tagent/shared').TaskProgressPayload) => void
+    ) => () => void
   }
 
   // GitHub Release
@@ -3636,6 +3639,18 @@ const electronAPI: ElectronAPI = {
       ipcRenderer.on(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
       return () => {
         ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
+      }
+    },
+    onTaskProgress: (
+      callback: (payload: import('@tagent/shared').TaskProgressPayload) => void
+    ) => {
+      const listener = (
+        _event: unknown,
+        payload: import('@tagent/shared').TaskProgressPayload
+      ): void => callback(payload)
+      ipcRenderer.on(KANBAN_IPC_CHANNELS.TASK_PROGRESS, listener)
+      return () => {
+        ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.TASK_PROGRESS, listener)
       }
     },
   },

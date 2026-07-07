@@ -100,6 +100,14 @@ export interface KanbanTaskMetadata extends Record<string, unknown> {
    * 摘要注入 body，作为跨任务上下文交接（参考 hermes kanban_comment）。
    */
   blackboard?: BlackboardComment[]
+  /**
+   * 进度日志列表（worker 执行过程中的 task_progress 事件记录）
+   *
+   * 实时推送：orchestrator 收到 SDK task_progress 后追加到此数组，
+   * 并通过 kanban:task-progress IPC 广播给前端。
+   * 任务终态后不再追加新条目。
+   */
+  progressLogs?: ProgressLogEntry[]
 }
 
 /** 单条 blackboard 评论（跨任务交接通道） */
@@ -108,6 +116,18 @@ export interface BlackboardComment {
   comment: string
   /** 作者（'main' / 'worker' / worker session id 等） */
   author: string
+  /** 时间戳（ms） */
+  ts: number
+}
+
+/** 单条进度日志（task_progress SDK 事件） */
+export interface ProgressLogEntry {
+  /** 进度描述（如 "正在分析代码..."） */
+  text: string
+  /** 当前状态（如 "analyzing" / "writing" / "reviewing"） */
+  status?: string
+  /** 最近使用的工具名 */
+  lastToolName?: string
   /** 时间戳（ms） */
   ts: number
 }

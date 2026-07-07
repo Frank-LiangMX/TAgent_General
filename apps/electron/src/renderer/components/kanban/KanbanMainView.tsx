@@ -1,17 +1,13 @@
 /**
  * KanbanMainView — 看板详情主视图（B4）
  *
- * 选中看板后主区域渲染：RailInspectorHeader 顶栏 + 任务列表。
- * 任务按状态分组展示，复用 KanbanTaskListItem 卡片。
- * 未选中看板时显示空态引导（去会话或草稿建板）。
- *
- * 三系统关系调整（2026-07-01）：看板页不再支持建板/建任务，
- * 任务只从会话（Agent 拆解）或草稿（用户拆 + 计划层）来。
+ * 选中看板后显示看板详情，未选中时显示空态引导。
+ * 角色库入口已移到 LeftSidebar（2026-07-07），主区只显示任务内容。
  */
 
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { KanbanSquare, Loader2, Gauge, Pause, Play, RefreshCw, ArrowLeftRight } from 'lucide-react'
+import { KanbanSquare, Loader2, Gauge, Pause, Play, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -26,101 +22,46 @@ import type { KanbanTaskStatus } from '@tagent/shared'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
 import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
+import { AgentRoleSettings } from '@/components/settings/AgentRoleSettings'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import {
   selectedKanbanBoardIdAtom,
   useKanbanBoards,
   useSelectedKanbanBoard,
+  kanbanActiveTabAtom,
 } from '@/atoms/kanban-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 /** 状态分组顺序与中文标签 */
-const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
-  { status: 'ready', label: '待派工' },
-  { status: 'pending', label: '待办（依赖未满足）' },
-  { status: 'running', label: '执行中' },
-  { status: 'blocked', label: '阻塞' },
-  { status: 'review', label: '待验收' },
-  { status: 'done', label: '已完成' },
-  { status: 'failed', label: '失败' },
-  { status: 'cancelled', label: '已取消' },
+const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string; desc: string }> = [
+  { status: 'ready', label: '待派工', desc: '等待分配 worker' },
+  { status: 'pending', label: '待办', desc: '依赖未满足' },
+  { status: 'running', label: '执行中', desc: 'worker 正在运行' },
+  { status: 'blocked', label: '阻塞', desc: '需要外部输入' },
+  { status: 'review', label: '待验收', desc: '等待确认结果' },
+  { status: 'done', label: '已完成', desc: '任务成功结束' },
+  { status: 'failed', label: '失败', desc: '执行出错' },
+  { status: 'cancelled', label: '已取消', desc: '被手动停止' },
 ]
 
-export function KanbanMainView(): React.ReactElement {
-  const selectedBoardId = useAtomValue(selectedKanbanBoardIdAtom)
-  const setSelectedBoardId = useSetAtom(selectedKanbanBoardIdAtom)
-  const { board, tasks, loading, refresh } = useSelectedKanbanBoard(selectedBoardId)
-  const { boards } = useKanbanBoards()
-  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
-  const [switcherOpen, setSwitcherOpen] = React.useState(false)
-  const isMac = React.useMemo(() => detectIsMac(), [])
-  // Windows 顶栏需避让窗口控制按钮（与 LeftSidebar pt-[28px] 对齐）
-  const headerClassName = cn(!isMac && 'pt-6')
-
-  // 空态：未选中看板
-  if (!selectedBoardId) {
-    return (
-      <Panel variant="grow" className="content-glass">
-        <RailInspectorHeader
-          crumbs={[{ label: '看板' }]}
-          title="看板"
-          description="任务执行容器与监控仪表盘"
-          className={headerClassName}
-        />
-        <div className="flex flex-1 min-h-0 items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-center px-6 max-w-md">
-            <KanbanSquare className="size-12 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">从左侧列表选择看板查看进度</p>
-            <p className="text-xs text-muted-foreground/70">
-              看板不支持直接创建。在会话里告诉 Agent
-              你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
-            </p>
-          </div>
-        </div>
-      </Panel>
-    )
-  }
-
-  // 加载中
-  if (loading && !board) {
-    return (
-      <Panel variant="grow" className="content-glass">
-        <RailInspectorHeader
-          crumbs={[{ label: '看板' }]}
-          title="加载中..."
-          className={headerClassName}
-        />
-        <div className="flex flex-1 min-h-0 items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      </Panel>
-    )
-  }
-
-  // 看板不存在
-  if (!board) {
-    return (
-      <Panel variant="grow" className="content-glass">
-        <RailInspectorHeader
-          crumbs={[{ label: '看板' }]}
-          title="看板不存在"
-          description="该看板可能已被删除"
-          className={headerClassName}
-        />
-        <div className="flex flex-1 min-h-0 items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-center px-6">
-            <KanbanSquare className="size-12 text-muted-foreground/30" />
-            <Button variant="ghost" size="sm" onClick={() => setSelectedBoardId(null)}>
-              返回看板列表
-            </Button>
-          </div>
-        </div>
-      </Panel>
-    )
-  }
-
+/** 任务 Tab 内容（看板详情） */
+function TasksTabContent({
+  board,
+  tasks,
+  loading,
+  selectedTaskId,
+  setSelectedTaskId,
+  refresh,
+}: {
+  board: NonNullable<ReturnType<typeof useSelectedKanbanBoard>['board']>
+  tasks: ReturnType<typeof useSelectedKanbanBoard>['tasks']
+  loading: boolean
+  selectedTaskId: string | null
+  setSelectedTaskId: (id: string | null) => void
+  refresh: () => Promise<void>
+}): React.ReactElement {
   const displayName = board.title ?? board.rootGoal.slice(0, 60)
   const done = tasks.filter((t) => t.status === 'done').length
   const total = tasks.length
@@ -143,14 +84,8 @@ export function KanbanMainView(): React.ReactElement {
   }
 
   return (
-    <Panel variant="grow" className="content-glass">
-      <RailInspectorHeader
-        crumbs={[{ label: '看板' }, { label: board.mode === 'ta' ? 'TA' : '通用' }]}
-        title={displayName}
-        description={board.rootGoal}
-        className={headerClassName}
-      />
-      {/* 看板工具栏：进度 + 并发 + 暂停（独立行，避免顶栏右侧 WindowControls 避让区留白） */}
+    <>
+      {/* 看板工具栏：进度 + 并发 + 暂停 */}
       <div className="flex items-center gap-2 border-b border-border/40 px-5 py-2">
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground tabular-nums">
           <span>
@@ -216,16 +151,6 @@ export function KanbanMainView(): React.ReactElement {
           </Badge>
         )}
         <div className="ml-auto flex items-center gap-1">
-          {/* 切换看板 */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="size-7 rounded-full p-0"
-            onClick={() => setSwitcherOpen(true)}
-            title="切换看板"
-          >
-            <ArrowLeftRight className="size-3.5 text-foreground/60" />
-          </Button>
           {/* 刷新 */}
           <Button
             variant="ghost"
@@ -262,25 +187,24 @@ export function KanbanMainView(): React.ReactElement {
             </p>
           </div>
         ) : (
-          <div className="px-4 py-3 space-y-4">
-            {STATUS_GROUPS.map(({ status, label }) => {
+          <div className="p-4 space-y-5">
+            {STATUS_GROUPS.map(({ status, label, desc }) => {
               const groupTasks = tasks.filter((t) => t.status === status)
               if (groupTasks.length === 0) return null
               return (
                 <div key={status}>
-                  <div className="flex items-center gap-2 mb-1.5 px-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-foreground">{label}</span>
                     <span className="text-[10px] text-muted-foreground/60 tabular-nums">
                       {groupTasks.length}
                     </span>
+                    <span className="text-[9px] text-muted-foreground/40">{desc}</span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="grid grid-cols-3 gap-2.5">
                     {groupTasks.map((task) => (
                       <KanbanTaskListItem
                         key={task.id}
                         task={task}
-                        selected={selectedTaskId === task.id}
-                        onSelect={setSelectedTaskId}
                       />
                     ))}
                   </div>
@@ -290,6 +214,119 @@ export function KanbanMainView(): React.ReactElement {
           </div>
         )}
       </div>
+    </>
+  )
+}
+
+export function KanbanMainView(): React.ReactElement {
+  const selectedBoardId = useAtomValue(selectedKanbanBoardIdAtom)
+  const setSelectedBoardId = useSetAtom(selectedKanbanBoardIdAtom)
+  const { board, tasks, loading, refresh } = useSelectedKanbanBoard(selectedBoardId)
+  const { boards } = useKanbanBoards()
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
+  const [switcherOpen, setSwitcherOpen] = React.useState(false)
+  const activeTab = useAtomValue(kanbanActiveTabAtom)
+  const isMac = React.useMemo(() => detectIsMac(), [])
+  // Windows 顶栏需避让窗口控制按钮（与 LeftSidebar pt-[28px] 对齐）
+  const headerClassName = cn(!isMac && 'pt-6')
+
+  // 角色库模式（由 Sidebar 的角色库按钮触发）
+  if (activeTab === 'roles') {
+    return (
+      <Panel variant="grow" className="content-glass">
+        <RailInspectorHeader
+          crumbs={[{ label: '看板' }, { label: '角色库' }]}
+          title="角色库"
+          description="定义看板 worker 的专业能力"
+          className={headerClassName}
+        />
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AgentRoleSettings />
+        </div>
+      </Panel>
+    )
+  }
+
+  // 空态：未选中看板
+  if (!selectedBoardId) {
+    return (
+      <Panel variant="grow" className="content-glass">
+        <RailInspectorHeader
+          crumbs={[{ label: '看板' }]}
+          title="看板"
+          description="任务执行容器与监控仪表盘"
+          className={headerClassName}
+        />
+        <div className="flex flex-1 min-h-0 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center px-6 max-w-md">
+            <KanbanSquare className="size-12 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">从左侧列表选择看板查看进度</p>
+            <p className="text-xs text-muted-foreground/70">
+              看板不支持直接创建。在会话里告诉 Agent
+              你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
+            </p>
+          </div>
+        </div>
+      </Panel>
+    )
+  }
+
+  // 加载中
+  if (loading && !board) {
+    return (
+      <Panel variant="grow" className="content-glass">
+        <RailInspectorHeader
+          crumbs={[{ label: '看板' }]}
+          title="加载中..."
+          className={headerClassName}
+        />
+        <div className="flex flex-1 min-h-0 items-center justify-center">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      </Panel>
+    )
+  }
+
+  // 看板不存在
+  if (!board) {
+    return (
+      <Panel variant="grow" className="content-glass">
+        <RailInspectorHeader
+          crumbs={[{ label: '看板' }]}
+          title="看板不存在"
+          description="该看板可能已被删除"
+          className={headerClassName}
+        />
+        <div className="flex flex-1 min-h-0 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center px-6">
+            <KanbanSquare className="size-12 text-muted-foreground/30" />
+            <Button variant="ghost" size="sm" onClick={() => setSelectedBoardId(null)}>
+              返回看板列表
+            </Button>
+          </div>
+        </div>
+      </Panel>
+    )
+  }
+
+  const displayName = board.title ?? board.rootGoal.slice(0, 60)
+
+  return (
+    <Panel variant="grow" className="content-glass">
+      <RailInspectorHeader
+        crumbs={[{ label: '看板' }, { label: displayName }]}
+        title={displayName}
+        description={board.rootGoal}
+        className={headerClassName}
+      />
+      <TasksTabContent
+        board={board}
+        tasks={tasks}
+        loading={loading}
+        selectedTaskId={selectedTaskId}
+        setSelectedTaskId={setSelectedTaskId}
+        refresh={refresh}
+      />
       <KanbanSwitcherDialog
         open={switcherOpen}
         onOpenChange={setSwitcherOpen}

@@ -10,10 +10,9 @@ import type {
   KanbanBoardMode,
   KanbanBoardStatus,
   KanbanTask,
+  ProgressLogEntry,
   CreateKanbanTaskInput,
 } from './kanban'
-
-/** Kanban 相关 IPC 通道常量 */
 export const KANBAN_IPC_CHANNELS = {
   /** 列出某看板下全部任务 */
   LIST_TASKS: 'kanban:list-tasks',
@@ -51,7 +50,19 @@ export const KANBAN_IPC_CHANNELS = {
   ATTACH_BOARD_TO_SESSION: 'kanban:attach-board-to-session',
   /** 解绑会话的看板（清除 session meta.boardId，隐藏团队 Tab） */
   DETACH_BOARD_FROM_SESSION: 'kanban:detach-board-from-session',
+  /** 任务进度日志实时推送（main → renderer，task_progress SDK 事件） */
+  TASK_PROGRESS: 'kanban:task-progress',
 } as const
+
+/** 任务进度日志实时推送 payload（main → renderer） */
+export interface TaskProgressPayload {
+  /** 任务 ID */
+  taskId: string
+  /** 新追加的进度条目 */
+  entry: ProgressLogEntry
+  /** 当前完整日志列表 */
+  logs: ProgressLogEntry[]
+}
 
 /** 解除阻塞输入 */
 export interface UnblockKanbanTaskInput {

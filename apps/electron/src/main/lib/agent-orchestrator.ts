@@ -84,6 +84,7 @@ import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
 import { injectAutomationMcpServer } from './automation-agent-tools'
 import { injectKanbanMcpServer } from './kanban-agent-tools'
+import { broadcastKanbanTaskProgress } from './kanban-ipc'
 import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
   appendSDKMessages,
@@ -369,9 +370,8 @@ const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 /**
  * P2 主动兜底压缩：context 占用超阈值时 fire-and-forget 调 compactSession
  *
- * kscc 渠道下 SDK 自动 compaction 失效（每轮 spawn 新进程，无连续 query 状态），
- * LLM 也看不到 token 数。主进程在 result 后检测到高占用（> 85%）时主动压缩，
- * 避免下轮 prompt_too_long 终止会话。失败只 warn，不影响主流程。
+ * 每轮 turn 后检测到高占用（> 77.5%）时主动压缩，对齐 SDK 内置压缩阈值。
+ * 避免 context 积累到 100% 才压缩。失败只 warn，不影响主流程。
  */
 async function compactSessionProactive(sessionId: string): Promise<void> {
   try {
@@ -1786,7 +1786,7 @@ export class AgentOrchestrator {
             console.log(`[Agent 编排] 使用 session 级别 cwd: ${agentCwd} (${ws.name}/${sessionId})`)
           }
 
-          ensurePluginManifest(ws.slug, ws.name)
+          ensurePluginManifest(ws.slug) // 修复：函数只接受 workspaceSlug 一个参数
 
           if (existingSdkSessionId) {
             console.log(`[Agent 编排] 将尝试 resume: ${existingSdkSessionId}`)
@@ -2499,14 +2499,13 @@ export class AgentOrchestrator {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
           setSessionContextWindow(sessionId, cw) // P0-1
         },
-        // P2 主动兜底（2026-07-05）：result 后检测 context 占用，超 85% 主动压缩
-        // kscc 渠道下 SDK 自动 compaction 失效（每轮 spawn 新进程，无连续 query 状态），
-        // LLM 也看不到 token 数。主进程在这里主动 fire-and-forget 调 compactSession，
-        // 避免下轮 prompt_too_long 终止会话。
+        // P2 主动兜底：每轮 turn 后检测 context 占用，超 77.5% 主动压缩
+        // 阈值对齐 SDK 内置压缩阈值，不等 result 后 context 已满才处理
         onContextUsage: (usedTokens, totalTokens) => {
           if (totalTokens <= 0) return
           const ratio = usedTokens / totalTokens
-          if (ratio < 0.85) return
+          const threshold = 0.775 // 77.5%，与 SDK 内置阈值对齐
+          if (ratio < threshold) return
           // 单会话单次压缩去重：本轮已压缩过就不再压
           if (proactiveCompactionDoneThisTurn) return
           proactiveCompactionDoneThisTurn = true
@@ -2698,6 +2697,31 @@ export class AgentOrchestrator {
                   kind: 'tagent_event',
                   event: { type: 'run_resumed', sessionId },
                 })
+              }
+            }
+
+            // ── Kanban worker 进度捕获 ──
+            // task_progress SDK 事件：推送到看板任务进度日志，前端卡片实时滚动显示
+            if (msg.type === 'system') {
+              const sysMsg = msg as { subtype?: string; description?: string; status?: string; last_tool_name?: string }
+              if (sysMsg.subtype === 'task_progress') {
+                const meta = getAgentSessionMeta(sessionId)
+                const workerTaskId = meta?.sourceKanbanTaskId
+                if (workerTaskId && sysMsg.description) {
+                  try {
+                    broadcastKanbanTaskProgress(workerTaskId, {
+                      text: sysMsg.description,
+                      status: sysMsg.status,
+                      lastToolName: sysMsg.last_tool_name,
+                      ts: Date.now(),
+                    })
+                  } catch (err) {
+                    // 看板未初始化（kanban-db 未启动）时静默跳过
+                    if (!String(err).includes('未就绪')) {
+                      console.warn(`[看板] 推送进度日志失败: task=${workerTaskId}`, err)
+                    }
+                  }
+                }
               }
             }
 

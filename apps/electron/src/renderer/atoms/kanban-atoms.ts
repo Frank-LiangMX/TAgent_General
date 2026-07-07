@@ -7,12 +7,30 @@
  */
 
 import { useEffect, useCallback, useState } from 'react'
-import { atom, useAtomValue, useSetAtom } from 'jotai'
+import { atom, useAtomValue, useSetAtom, getDefaultStore } from 'jotai'
 import { atomFamily } from 'jotai/utils'
 
-import type { KanbanBoard, KanbanTask, KanbanBoardMode, KanbanBoardStatus } from '@tagent/shared'
+import type {
+  KanbanBoard,
+  KanbanTask,
+  KanbanBoardMode,
+  KanbanBoardStatus,
+  ProgressLogEntry,
+  TaskProgressPayload,
+} from '@tagent/shared'
 
 import { agentSessionsAtom } from './agent-atoms'
+
+/**
+ * 按 taskId 缓存的实时进度日志 atom family
+ *
+ * 区别于 DB 中的 metadata.progressLogs（随 CHANGED 事件全量刷新），
+ * 本 atom 通过 TASK_PROGRESS IPC 实时追加更新，提供更低延迟的滚动日志展示。
+ * task 终态后 logs 不会再有新条目，但保留最后状态供回顾。
+ */
+export const taskProgressLogsAtomFamily = atomFamily((taskId: string) => {
+  return atom<ProgressLogEntry[]>([])
+})
 
 /** 同一条看板 IPC 错误只打一次，避免 StrictMode / 多 hook 订阅刷屏 */
 const kanbanErrorLogKeys = new Set<string>()
@@ -242,5 +260,21 @@ export function useSelectedKanbanBoard(boardId: string | null): {
     return unsubscribe
   }, [boardId, loadBoard])
 
+  // 订阅实时进度日志（TASK_PROGRESS IPC）
+  useEffect(() => {
+    if (!boardId) return
+    const unsubscribe = window.electronAPI.kanban.onTaskProgress(
+      (payload: TaskProgressPayload) => {
+        // 只更新当前看板下的 task 进度（避免全局无关任务刷日志）
+        const store = getDefaultStore()
+        store.set(taskProgressLogsAtomFamily(payload.taskId), payload.logs)
+      }
+    )
+    return unsubscribe
+  }, [boardId])
+
   return { boardId, board, tasks, loading, refresh: loadBoard }
 }
+
+/** 看板页当前 Tab（任务 / 角色） */
+export const kanbanActiveTabAtom = atom<'tasks' | 'roles'>('tasks')

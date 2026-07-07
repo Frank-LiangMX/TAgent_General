@@ -1,21 +1,41 @@
 /**
- * KanbanTaskListItem — 看板任务左栏卡片（简化版）
+ * KanbanTaskListItem — 看板任务卡片（带实时进度日志滚动区域）
  *
- * 紧凑显示：状态色条 + 标题 + 迷你进度条 + 耗时 + 模型徽章。
- * 点击整张卡片弹出 KanbanTaskDetailDialog 查看完整详情。
- *
- * running 任务的耗时每秒刷新（组件内部 setInterval），done/failed 显示总耗时。
+ * running 任务展示实时进度日志（TASK_PROGRESS IPC 推送）；
+ * done/failed 展示结果摘要或错误信息。
+ * 角色标识突出 + 模型 + 开始时间 + 进度条。
  */
 
 import * as React from 'react'
-import { Loader2, Square } from 'lucide-react'
+import { useAtomValue } from 'jotai'
+import { Loader2, Square, CheckCircle2, XCircle, Clock } from 'lucide-react'
+
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import type { KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
-import { Badge } from '@tagent/ui'
+import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
+import { taskProgressLogsAtomFamily } from '@/atoms/kanban-atoms'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
+
+/** 格式化开始时间（timestamp → "今天 14:23" / "昨天 09:00" / "07-05 12:30"） */
+function formatStartTime(timestamp: number): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+  if (isToday) return `今天 ${timeStr}`
+  if (isYesterday) return `昨天 ${timeStr}`
+  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' + timeStr
+}
 
 /** 格式化耗时（ms → "12s" / "3m 45s" / "1h 12m"） */
 function formatDuration(ms: number): string {
@@ -87,8 +107,6 @@ export const STATUS_BADGE: Record<
 
 export interface KanbanTaskListItemProps {
   task: KanbanTask
-  selected: boolean
-  onSelect: (taskId: string) => void
   /** 点击卡片是否弹出详情弹窗（默认 true）。
    * SessionTeamTab 等已有右栏详情的视图设为 false，避免弹窗+右栏重复。 */
   showDetailDialog?: boolean
@@ -96,11 +114,11 @@ export interface KanbanTaskListItemProps {
 
 export function KanbanTaskListItem({
   task,
-  selected,
-  onSelect,
   showDetailDialog = true,
 }: KanbanTaskListItemProps): React.ReactElement {
   const [detailOpen, setDetailOpen] = React.useState(false)
+  // 订阅实时进度日志
+  const progressLogs = useAtomValue(taskProgressLogsAtomFamily(task.id))
   // running 时每秒触发 re-render 让耗时实时刷新
   const [, setTick] = React.useState(0)
   React.useEffect(() => {
@@ -109,10 +127,17 @@ export function KanbanTaskListItem({
     return () => clearInterval(timer)
   }, [task.status])
 
+  // 新日志到达时自动滚动到底部
+  const logsEndRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [progressLogs.length])
+
   const badge = STATUS_BADGE[task.status]
   const isRunning = task.status === 'running'
   const isDone = task.status === 'done'
   const isFailed = task.status === 'failed'
+  const hasLogs = progressLogs.length > 0
 
   // 角色映射：roleId → displayName（首次渲染时触发角色列表加载）
   const roleMap = useAgentRoleMap()
@@ -125,7 +150,6 @@ export function KanbanTaskListItem({
   const showDuration = isRunning || isDone || isFailed
 
   const handleClick = (): void => {
-    onSelect(task.id)
     if (showDetailDialog) setDetailOpen(true)
   }
 
@@ -140,74 +164,190 @@ export function KanbanTaskListItem({
         type="button"
         onClick={handleClick}
         className={cn(
-          'session-list-row group w-full px-2.5 py-2 text-left titlebar-no-drag',
-          selected ? 'session-list-item-active' : 'rounded-glass-sidebar hover:bg-primary/5'
+          'group w-full text-left titlebar-no-drag rounded-xl transition-all',
+          'bg-card hover:bg-muted/40 border border-border/60 hover:border-border shadow-sm hover:shadow-md'
         )}
       >
-        {/* 第一行：状态色点 + 标题 + 状态徽章 */}
-        <div className="flex items-center gap-1.5">
-          <span className={cn('size-1.5 shrink-0 rounded-full', badge.dot)} />
-          <span className="flex min-w-0 flex-1 items-center gap-1 text-xs font-medium text-foreground line-clamp-1">
-            {isRunning && <Loader2 className="size-3 shrink-0 animate-spin text-amber-500" />}
-            {task.title}
-          </span>
-          <Badge variant="outline" className={cn('shrink-0 text-[9px] px-1 py-0', badge.className)}>
-            {badge.label}
-          </Badge>
-        </div>
+        <div className="p-4">
+          {/* 第一行：角色头像 + 名称 + 模型 */}
+          <div className="flex items-center gap-2 mb-2">
+            {roleDisplayName ? (
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <div className="size-7 shrink-0 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                    {roleDisplayName.charAt(0)}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground truncate">{roleDisplayName}</div>
+                  <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                    {task.modelId && (
+                      <span className="font-mono truncate max-w-[80px]" title={task.modelId}>
+                        {task.modelId}
+                      </span>
+                    )}
+                    {!task.modelId && task.roleId && (
+                      <span className="font-mono truncate max-w-[80px]" title={task.roleId}>
+                        {task.roleId.slice(0, 12)}...
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0 flex-1">
+                <div className="size-7 rounded-lg bg-muted border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                  <span className="text-xs">?</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs truncate">未分配角色</div>
+                  {task.modelId && (
+                    <div className="text-[9px] text-muted-foreground font-mono truncate max-w-[80px]" title={task.modelId}>
+                      {task.modelId}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <Badge variant="outline" className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}>
+              <span className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)} />
+              {badge.label}
+            </Badge>
+          </div>
 
-        {/* 第二行：迷你进度条 + 耗时 + 模型 */}
-        <div className="mt-1.5 flex items-center gap-2">
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+          {/* 第二行：任务标题（一行） */}
+          <div className="flex items-center gap-1 mb-2">
+            {isRunning && <Loader2 className="size-3 shrink-0 animate-spin text-amber-500" />}
+            <span className="text-[11px] text-foreground line-clamp-1 flex-1">{task.title}</span>
+          </div>
+
+          {/* 第三行：开始时间 */}
+          {task.startedAt && (
+            <div className="mb-2 text-[9px] text-muted-foreground tabular-nums">
+              <Clock className="inline-block size-3 mr-1 align-middle" />
+              {formatStartTime(task.startedAt)}
+            </div>
+          )}
+
+          {/* ── 第五行（条件显示）：进度日志滚动区域 ── */}
+          {(isRunning || hasLogs) && (
             <div
               className={cn(
-                'h-full rounded-full transition-all duration-300',
-                isDone && 'bg-emerald-500',
-                isRunning && 'bg-amber-500',
-                isFailed && 'bg-red-500',
-                !isDone && !isRunning && !isFailed && 'bg-transparent'
+                'mb-2 rounded-lg border overflow-y-auto scrollbar-thin',
+                isRunning
+                  ? 'border-amber-500/20 bg-amber-500/5'
+                  : isFailed
+                    ? 'border-red-500/20 bg-red-500/5'
+                    : isDone
+                      ? 'border-emerald-500/20 bg-emerald-500/5'
+                      : 'border-border/40 bg-muted/20'
               )}
-              style={{ width: `${progress}%` }}
-            />
+              style={{ maxHeight: '96px', minHeight: progressLogs.length > 0 ? '48px' : '32px' }}
+            >
+              {progressLogs.length > 0 ? (
+                <div className="p-2 space-y-1">
+                  {progressLogs.map((entry, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5 text-[10px] leading-tight">
+                      {isRunning && idx === progressLogs.length - 1 ? (
+                        <span className="mt-0.5 size-1.5 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+                      ) : (
+                        <span
+                          className={cn(
+                            'mt-0.5 size-1.5 shrink-0 rounded-full',
+                            isDone ? 'bg-emerald-500' : isFailed ? 'bg-red-500' : 'bg-muted-foreground/40'
+                          )}
+                        />
+                      )}
+                      <span className="text-muted-foreground/60 tabular-nums shrink-0">
+                        {new Date(entry.ts).toLocaleTimeString('zh-CN', {
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </span>
+                      <div className="text-foreground/80 break-words min-w-0 prose-sm">
+                        <Markdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <span className="m-0">{children}</span>,
+                            a: ({ href, children }) => (
+                              <a href={href} className="underline text-blue-500" target="_blank" rel="noreferrer">{children}</a>
+                            ),
+                            code: ({ children }) => (
+                              <code className="text-[9px] px-1 py-0.5 rounded bg-muted font-mono">{children}</code>
+                            ),
+                            pre: ({ children }) => <span className="m-0 block">{children}</span>,
+                          }}
+                        >
+                          {entry.text}
+                        </Markdown>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={logsEndRef} />
+                </div>
+              ) : isRunning ? (
+                <div className="flex items-center gap-2 p-2 text-[10px] text-muted-foreground">
+                  <Loader2 className="size-3 animate-spin shrink-0" />
+                  <span>等待进度...</span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* 结果摘要 / 错误信息（done/failed 时显示） */}
+          {isDone && task.resultSummary && (
+            <div className="mb-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+              <div className="flex items-start gap-1.5 text-[10px] leading-tight">
+                <CheckCircle2 className="size-3 mt-0.5 shrink-0 text-emerald-500" />
+                <span className="text-foreground/80 line-clamp-3 break-words">
+                  {task.resultSummary}
+                </span>
+              </div>
+            </div>
+          )}
+          {isFailed && task.error && (
+            <div className="mb-2 rounded-lg border border-red-500/20 bg-red-500/5 p-2">
+              <div className="flex items-start gap-1.5 text-[10px] leading-tight">
+                <XCircle className="size-3 mt-0.5 shrink-0 text-red-500" />
+                <span className="text-red-600/80 dark:text-red-400/80 line-clamp-3 break-words">
+                  {task.error}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 第六行：迷你进度条 + 耗时 + 停止 */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <div className="h-2 overflow-hidden rounded-full bg-muted/60">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500',
+                    isDone && 'bg-emerald-500',
+                    isRunning && 'bg-amber-500',
+                    isFailed && 'bg-red-500',
+                    !isDone && !isRunning && !isFailed && 'bg-transparent'
+                  )}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            {showDuration && durationMs > 0 && (
+              <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
+                {formatDuration(durationMs)}
+              </span>
+            )}
+            {isRunning && (
+              <button
+                type="button"
+                onClick={handleAbort}
+                title="停止 worker"
+                className="size-6 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-500 shrink-0"
+              >
+                <Square className="size-3 fill-current" />
+              </button>
+            )}
           </div>
-          {showDuration && durationMs > 0 && (
-            <span
-              className={cn(
-                'shrink-0 tabular-nums text-[10px]',
-                isRunning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
-              )}
-              title="耗时"
-            >
-              {formatDuration(durationMs)}
-            </span>
-          )}
-          {isRunning && (
-            <button
-              type="button"
-              onClick={handleAbort}
-              title="停止 worker"
-              className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-500/15 dark:text-red-400"
-            >
-              <Square className="size-3 fill-current" />
-            </button>
-          )}
-          {roleDisplayName && (
-            <Badge
-              variant="outline"
-              className="shrink-0 border-purple-500/30 bg-purple-500/10 px-1 py-0 text-[9px] text-purple-600 dark:text-purple-400"
-              title={`角色: ${task.roleId}`}
-            >
-              {roleDisplayName}
-            </Badge>
-          )}
-          {task.modelId && (
-            <span
-              className="max-w-[90px] shrink-0 truncate text-[10px] text-muted-foreground"
-              title={`模型: ${task.modelId}`}
-            >
-              {task.modelId}
-            </span>
-          )}
         </div>
       </button>
 

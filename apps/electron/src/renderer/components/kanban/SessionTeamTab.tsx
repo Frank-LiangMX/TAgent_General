@@ -286,8 +286,6 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
                       <KanbanTaskListItem
                         key={task.id}
                         task={task}
-                        selected={task.id === selectedTaskId}
-                        onSelect={setSelectedTaskId}
                         showDetailDialog={false}
                       />
                     ))}

@@ -16,6 +16,7 @@ import {
   type KanbanBoard,
   type KanbanTask,
   type KanbanTaskStatus,
+  type ProgressLogEntry,
   type UnblockKanbanTaskInput,
   type CommentKanbanTaskInput,
   type CreateBoardFromDraftInput,
@@ -87,6 +88,35 @@ export function broadcastBoardCompleted(
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.send(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, payload)
+    }
+  }
+}
+
+/** 任务进度日志 payload（main → renderer 实时推送） */
+export interface TaskProgressPayload {
+  taskId: string
+  entry: ProgressLogEntry
+  /** 当前完整日志列表（前端可直接替换，无需增量合并） */
+  logs: ProgressLogEntry[]
+}
+
+/**
+ * 向所有渲染窗口广播任务进度日志
+ *
+ * 由 orchestrator 的 task_progress 处理点调用。
+ * 同时写入 kanban-db，前端收到后实时更新卡片上的滚动日志区域。
+ */
+export function broadcastKanbanTaskProgress(taskId: string, entry: ProgressLogEntry): void {
+  if (!kanbanDbService.isInitialized()) return
+  kanbanDbService.updateTaskProgress(taskId, entry)
+
+  // 读回完整 logs（含刚刚写入的 entry）推给前端
+  const task = kanbanDbService.getTask(taskId)
+  const logs = task?.metadata?.progressLogs ?? []
+  const payload: TaskProgressPayload = { taskId, entry, logs }
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(KANBAN_IPC_CHANNELS.TASK_PROGRESS, payload)
     }
   }
 }

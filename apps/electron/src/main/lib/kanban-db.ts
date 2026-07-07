@@ -20,6 +20,8 @@ import {
   type KanbanTaskLink,
   type KanbanTaskLinkType,
   type KanbanTaskStatus,
+  type KanbanTaskMetadata,
+  type ProgressLogEntry,
   type CreateKanbanBoardInput,
   type CreateKanbanTaskInput,
   type UpdateKanbanTaskStatusInput,
@@ -909,6 +911,33 @@ export class KanbanDbService {
       finished_at: finishedAt,
       updated_at: now,
     })
+  }
+
+  /**
+   * 追加进度日志到任务 metadata
+   *
+   * 读取当前 metadata，追加一条 ProgressLogEntry，写回数据库。
+   * 并发安全：SQLite WAL 模式 + 单连接序列化，不会丢失条目。
+   */
+  updateTaskProgress(taskId: string, entry: ProgressLogEntry): void {
+    const db = this.requireDb()
+    const row = db.prepare('SELECT metadata FROM kanban_tasks WHERE id = ?').get(taskId) as
+      | { metadata: string | null }
+      | undefined
+    if (!row) return
+
+    const meta: KanbanTaskMetadata = row.metadata ? (JSON.parse(row.metadata) as KanbanTaskMetadata) : {}
+    const logs = meta.progressLogs ?? []
+    logs.push(entry)
+    // 最多保留 200 条，防单任务无限膨胀
+    if (logs.length > 200) logs.splice(0, logs.length - 200)
+    meta.progressLogs = logs
+
+    db.prepare('UPDATE kanban_tasks SET metadata = ?, updated_at = ? WHERE id = ?').run(
+      JSON.stringify(meta),
+      Date.now(),
+      taskId
+    )
   }
 
   // ===== 依赖关系 =====
