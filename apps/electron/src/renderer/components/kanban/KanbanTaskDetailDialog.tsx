@@ -238,6 +238,9 @@ export function KanbanTaskDetailDialog({
             </section>
           )}
 
+          {/* D+2: blackboard 跨任务交接评论 */}
+          <BlackboardSection task={task} />
+
           {task.error && (
             <section>
               <h3 className="mb-1.5 text-xs font-medium text-foreground">错误信息</h3>
@@ -355,5 +358,95 @@ function InfoRow({
         )}
       </span>
     </div>
+  )
+}
+
+/**
+ * D+2: blackboard 跨任务交接评论区
+ *
+ * 显示 task.metadata.blackboard 评论列表（按 ts 升序）+ 输入框让用户主动添加评论。
+ * 评论会被下一个 worker 启动时注入 body，作为跨任务上下文交接。
+ */
+function BlackboardSection({ task }: { task: KanbanTask }): React.ReactElement {
+  const comments = task.metadata?.blackboard ?? []
+  const [newComment, setNewComment] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+
+  const handleSubmit = async (): Promise<void> => {
+    const trimmed = newComment.trim()
+    if (!trimmed) return
+    setSubmitting(true)
+    try {
+      // author='main'：UI 提交的评论来源是主会话用户
+      await window.electronAPI.kanban.commentTask({
+        taskId: task.id,
+        comment: trimmed,
+        author: 'main',
+      })
+      setNewComment('')
+      toast.success('评论已写入 blackboard')
+    } catch (err) {
+      toast.error('评论失败', {
+        description: err instanceof Error ? err.message : undefined,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground">
+        Blackboard
+        <span className="text-[10px] text-muted-foreground">
+          · 跨任务交接（{comments.length}）
+        </span>
+      </h3>
+      <div className="rounded-glass-popover bg-muted/20 p-3 space-y-2">
+        {comments.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-2">
+            暂无评论。主会话调 kanban_comment 或在此输入，下一个 worker 启动时会注入 body。
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {comments.map((c, idx) => (
+              <li key={`${c.ts}-${idx}`} className="text-xs">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium text-foreground/70">{c.author}</span>
+                  <span>·</span>
+                  <span>{new Date(c.ts).toLocaleString()}</span>
+                </div>
+                <p className="mt-0.5 text-foreground/80 whitespace-pre-wrap">{c.comment}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex gap-1.5 pt-1.5 border-t border-border/30">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="补充上下文 / 给下一个 worker 的发现..."
+            className="flex-1 rounded-glass-popover bg-background/50 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+            disabled={submitting}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !submitting) {
+                e.preventDefault()
+                void handleSubmit()
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleSubmit}
+            disabled={submitting || !newComment.trim()}
+            className="h-7 px-2 text-xs"
+          >
+            发送
+          </Button>
+        </div>
+      </div>
+    </section>
   )
 }

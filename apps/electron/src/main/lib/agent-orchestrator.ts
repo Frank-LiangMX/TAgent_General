@@ -94,6 +94,7 @@ import {
   truncateSDKMessages,
   resolveUserUuidFromSDK,
   rewindFilesFromSnapshot,
+  findSdkSessionJsonl,
 } from './agent-session-manager'
 import { validateToolInput } from './agent-tool-input-validator'
 import { estimateTokenCount, WRITE_CONTENT_TOKEN_THRESHOLD } from './agent-tool-token-estimator'
@@ -1553,6 +1554,16 @@ export class AgentOrchestrator {
     const sessionMeta = getAgentSessionMeta(sessionId)
     let existingSdkSessionId = sessionMeta?.sdkSessionId
 
+    // P2 修复：sdkSessionId 持久化但 JSONL 已被外部删除时，主动清空避免 resume 死循环
+    // 兜底场景：用户清理 SDK 缓存目录、跨设备同步漏了 SDK 目录等
+    if (existingSdkSessionId && !findSdkSessionJsonl(existingSdkSessionId)) {
+      console.warn(
+        `[Agent 编排] sdkSessionId 的 JSONL 不存在，清空无效值: ${existingSdkSessionId}`
+      )
+      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+      existingSdkSessionId = undefined
+    }
+
     // 4.0 渠道切换时清空 SDK session：旧 session 绑定了前一个渠道的 CLI/API，
     //     resume 回旧 CLI 会导致认证失败或协议不兼容
     if (channelId !== sessionMeta?.channelId) {
@@ -1883,6 +1894,7 @@ export class AgentOrchestrator {
             sessionId,
             channelId,
             triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
+            agentCwd,
           })
         } catch (err) {
           console.error('[Agent 编排] 注入看板工具集失败:', err)

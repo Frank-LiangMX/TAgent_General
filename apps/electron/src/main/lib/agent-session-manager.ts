@@ -1135,7 +1135,7 @@ export function resolveUserUuidFromSDK(
  * @param projectDir 项目目录（可选，优先在此目录的哈希下查找）
  * @returns JSONL 文件路径，找不到返回 undefined
  */
-function findSdkSessionJsonl(sdkSessionId: string, _projectDir?: string): string | undefined {
+export function findSdkSessionJsonl(sdkSessionId: string, _projectDir?: string): string | undefined {
   const sdkConfigDir = getSdkConfigDir()
 
   // 遍历所有项目目录查找匹配的 session JSONL

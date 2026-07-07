@@ -1413,6 +1413,8 @@ export interface ElectronAPI {
     resumeBoard: (boardId: string) => Promise<void>
     unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) => Promise<void>
     retryTask: (taskId: string) => Promise<void>
+    abortTask: (taskId: string) => Promise<void>
+    commentTask: (input: import('@tagent/shared').CommentKanbanTaskInput) => Promise<void>
     attachBoardToSession: (
       input: import('@tagent/shared').AttachBoardToSessionInput
     ) => Promise<void>
@@ -3600,6 +3602,9 @@ const electronAPI: ElectronAPI = {
     unblockTask: (input: import('@tagent/shared').UnblockKanbanTaskInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.UNBLOCK_TASK, input),
     retryTask: (taskId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.RETRY_TASK, taskId),
+    abortTask: (taskId: string) => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.ABORT_TASK, taskId),
+    commentTask: (input: import('@tagent/shared').CommentKanbanTaskInput) =>
+      ipcRenderer.invoke(KANBAN_IPC_CHANNELS.COMMENT_TASK, input),
     attachBoardToSession: (input: import('@tagent/shared').AttachBoardToSessionInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.ATTACH_BOARD_TO_SESSION, input),
     detachBoardFromSession: (input: import('@tagent/shared').DetachBoardFromSessionInput) =>

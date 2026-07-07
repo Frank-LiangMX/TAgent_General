@@ -285,7 +285,7 @@ App 启动时：`status = running` → 标 `interrupted` → 重新 `ready` 或 
 
 > **背景**：2026-07-05 实战发现两类 worker 派发问题，会浪费用户大量 token：
 
-**D+1. `kanban_add_task` 自动注入项目根路径（P0，必做）**
+**D+1. `kanban_add_task` 自动注入项目根路径（P0，必做）✅ 已落地（2026-07-07）**
 
 - **问题**：worker 是 headless 子会话，看不到主会话 cwd。如果 body 里只有相对路径（`apps/electron/src/main/lib/...`），worker 会到处 Glob/Grep 找项目根，单次排查可能多消耗 10K+ token。
 - **方案**：在 `kanban_add_task` 工具实现里（`apps/electron/src/main/lib/kanban-agent-tools.ts`），调用 `kanban-db.addTask()` 之前自动在 body 开头注入：
@@ -303,7 +303,7 @@ App 启动时：`status = running` → 标 `interrupted` → 重新 `ready` 或 
   - `apps/electron/src/main/lib/kanban-db.ts`（addTask 方法可选保留注入逻辑）
   - `packages/shared/src/types/kanban.ts`（board 表加 `cwd` 字段，建板时记录）
 
-**D+2. `kanban_comment` blackboard 实现（P1，紧跟 D+1）**
+**D+2. `kanban_comment` blackboard 实现（P1，紧跟 D+1）✅ 已落地（2026-07-07）**
 
 - **问题**：`kanban_comment` 工具调用直接返回"尚未实现：kanban-db 未提供 addTaskComment / metadata 更新 API（待 Phase D）"，主会话没法给正在跑的 worker 补指令，也没法跨任务共享上下文。
 - **方案**：在 `kanban-db.ts` 实现 `addTaskComment(taskId, comment, author)`，写入 `task.metadata.blackboard: Array<{comment, author, ts}>`。`kanban_comment` MCP 工具透传调用。
@@ -311,6 +311,7 @@ App 启动时：`status = running` → 标 `interrupted` → 重新 `ready` 或 
 - **关联文件**：
   - `apps/electron/src/main/lib/kanban-db.ts`（addTaskComment 方法）
   - `apps/electron/src/main/lib/kanban-agent-tools.ts`（kanban_comment 工具实现补全）
+- **落地补充**：① `BlackboardComment` 类型加到 `packages/shared/src/types/kanban.ts`；② `KanbanTaskDetailDialog` 加 `BlackboardSection` 组件（评论列表 + 输入框，UI 提交 author='main'）；③ `KANBAN_IPC_CHANNELS.COMMENT_TASK` + `CommentKanbanTaskInput` 类型 + `commentKanbanTask` 函数 + IPC handler + preload 桥接；④ `kanban-worker-service.ts` `buildKanbanWorkerContext` 启动时把同板其他 task 的 blackboard 摘要注入 worker automationContext（让 worker 知道前置任务的关键发现）；⑤ `handleComment` 改为真实实现（不再 throw "待 Phase D"）。**worker 子会话因防递归不注入 kanban 工具集，故 worker 主动写 blackboard 暂未实现，只有主会话能写**（同 hermes 防递归边界）。
 
 **D+3. 错误来源标记（P2，长线）**
 
@@ -319,6 +320,75 @@ App 启动时：`status = running` → 标 `interrupted` → 重新 `ready` 或 
 - **关联文件**：
   - `apps/electron/src/main/lib/kanban-worker-service.ts`（worker 结果包装）
   - `apps/electron/src/main/lib/kanban-dispatcher.ts`（错误冒泡）
+
+**D+4. worker 主动写 blackboard（P2，后续评估，2026-07-07 探索归档）**
+
+> **状态**：探索完成，未实现。记录归档供后续评估是否做 + 何时做。
+
+**当前现状**：D+2 已落地主会话写 blackboard + worker 启动时读同板其他 task 的 blackboard 摘要。但 **worker 子会话自己不能调 `kanban_comment`** —— 因为 `agent-orchestrator.ts:1891` 的防递归判断 `if (triggeredBy !== 'kanban')` 让 worker 子会话完全不注入 kanban 工具集。
+
+**与 hermes 的差异**：hermes 的 worker 是**同进程 Python agent**，工具是 Python 函数，能用 `_strip_blocked_tools`（`tools/delegate_tool.py:766`）按 toolset **粒度精细过滤**：注入 `kanban_comment` / `kanban_block`（写 blackboard + 标自己 blocked），不注入 `kanban_create_board` / `delegate_task`（防递归建子板）。
+
+TAgent 的 worker 是 **SDK 子会话**（独立 SDK query 进程），工具通过 MCP server 注入，当前 `injectKanbanMcpServer` 是**全有或全无** —— 整个 kanban MCP server 要么全注入（主会话）要么全不注入（worker），没有中间态。
+
+**矛盾本质**：两个需求对"kanban 工具集注入"是相反要求：
+- 防递归：worker **不注入** `kanban_create_board` / `kanban_add_task`（避免建子板）
+- worker 写 blackboard：worker **要注入** `kanban_comment`
+
+全注入会递归，全不注入 worker 写不了 blackboard。需要按工具粒度拆分。
+
+**实现方案（若做）**：
+
+1. 拆 `kanban-agent-tools.ts` 的 `buildKanbanAgentTools` 为两套：
+   - `buildKanbanAgentToolsFull`：含 `kanban_create_board` / `kanban_add_task` / `kanban_list_tasks` / `kanban_block` / `kanban_comment` / `kanban_unblock_task` / `kanban_abort_task` 等全部工具，给主会话用
+   - `buildKanbanAgentToolsSafe`：只含 `kanban_comment` / `kanban_block` / `kanban_list_tasks`（只读 + 写自己 blackboard + 标自己 blocked），给 worker 用
+2. `injectKanbanMcpServer` 加 `mode: 'full' | 'safe'` 参数
+3. `agent-orchestrator.ts:1891` 改判断：`triggeredBy === 'kanban'` 时也注入，但传 `mode: 'safe'`；主会话路径传 `mode: 'full'`
+4. `buildKanbanWorkerContext`（`kanban-worker-service.ts:157`）的提示改了：当前写"工人子会话不注入看板工具集（防递归）"，改为"工人可调 kanban_comment 写 blackboard + kanban_block 标自己 blocked，但不可建子板 / 加任务 / 中止其他任务"
+5. 测防递归边界：单测覆盖"worker 调 kanban_create_board 被拒（工具不存在）""worker 调 kanban_comment 成功""worker 调 kanban_add_task 被拒"
+
+**工作量**：1-2 天（不是 1-2 小时）。涉及：
+- `kanban-agent-tools.ts` 拆 `buildKanbanAgentTools` 为 full + safe 两套，调整 `injectKanbanMcpServer` 签名
+- `agent-orchestrator.ts` 区分主会话和 worker 子会话的注入路径
+- 单测覆盖防递归边界（worker 调建板工具必须被拒）
+- 端到端测试：worker 跑到一半调 `kanban_comment` 写"发现 X 文件有 bug" → 主会话在 KanbanTaskDetailDialog 看到 → task B 启动读到该评论
+
+**为什么短期不做（三个原因）**：
+
+**1. 触发场景少**
+
+TAgent 的 worker 是**一次性外包**（跑完即销），不像 hermes worker 是常驻能持续写。worker 主动写 blackboard 的实际时机有限：
+- 跑完前：worker 在最后一条 assistant 消息里说"我发现 X 文件有 bug" → 主会话看 resultSummary 就知道，不需要 blackboard
+- 跑到一半想留遗言：但 worker 跑一半不会主动停下写 blackboard，除非 SDK query 自己 yield，那也是 LLM 决定的（不可控）
+- 标自己 blocked：worker 调 `kanban_block` 标自己 blocked 是有价值的（"我缺信息，需要用户 unblock"），但 TAgent 已有 worker auto_deny blockedApprovals 机制（`kanban-worker-service.ts:740` `appendBlockedApproval`）部分覆盖
+
+**2. 主会话写 blackboard 已覆盖 80% 场景**
+
+D+2 落地后，**主会话**能写 blackboard 给 worker 用。实际跨任务交接场景：
+- task A 跑完，主会话看 resultSummary 发现"前端比预期复杂"
+- 主会话调 `kanban_comment` 写到 task A 的 blackboard："前端复杂，后续 task 留更多时间"
+- task B 启动时读到 task A 的 blackboard 摘要
+
+主会话替 worker 写 blackboard 这条路已通，worker 主动写的边际价值低。
+
+**3. 防递归边界要小心测**
+
+把 kanban 工具集精细注入 worker，最大风险是**递归**：worker 调 `kanban_add_task` 给自己加任务、或 worker 调 `kanban_create_board` 建子板，调度器又派工新 worker，新 worker 又能调 kanban 工具... 无限递归烧 token。
+
+hermes 通过 `_strip_blocked_tools` 精细过滤 + `delegation.max_spawn_depth` 兜底防递归。TAgent 没这套基础设施，要做 worker 写 blackboard 得先把防递归边界摸清楚 + 测稳，不然翻车风险高。
+
+**触发再评估的信号**：
+
+- 真跑大型看板（5+ worker 并发）发现"worker 想主动汇报但没渠道"，且主会话代写 blackboard 不够用
+- 协作子会话 v1（`docs/plans/2026-06-24-collaboration-design.md`）启动开发，那个设计本来就涉及 worker 长会话 + 防递归精细化，D+4 可以一起做
+- 用户明确反馈"worker 跑偏了但没主动停下来汇报"导致损失
+
+**关联文件**（若做时参考）：
+- `apps/electron/src/main/lib/kanban-agent-tools.ts`（`buildKanbanAgentTools` 拆分 + `injectKanbanMcpServer` 加 mode 参数）
+- `apps/electron/src/main/lib/agent-orchestrator.ts:1891`（防递归判断改 mode-based）
+- `apps/electron/src/main/lib/kanban-worker-service.ts:157`（`buildKanbanWorkerContext` 提示更新）
+- `F:/hermes-agent/tools/delegate_tool.py:766`（`_strip_blocked_tools` 参考实现）
+- `F:/hermes-agent/tools/kanban_tools.py:797`（`_handle_comment` 参考实现，author 用 `HERMES_PROFILE` 环境变量）
 
 ---
 

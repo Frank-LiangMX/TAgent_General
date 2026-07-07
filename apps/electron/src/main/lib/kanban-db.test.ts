@@ -62,6 +62,27 @@ describe('KanbanDbService', () => {
       expect(board.mode).toBe('general')
     })
 
+    // ===== D+1: board.cwd 字段（worker 子会话项目根） =====
+
+    test('createBoard 写入 cwd 并通过 getBoard 读回', () => {
+      const board = db.createBoard({
+        rootGoal: '测试 D+1',
+        cwd: 'F:/TAgent_General',
+      })
+      expect(board.cwd).toBe('F:/TAgent_General')
+
+      const fetched = db.getBoard(board.id)
+      expect(fetched?.cwd).toBe('F:/TAgent_General')
+    })
+
+    test('createBoard 未传 cwd 时返回 undefined（旧看板兼容）', () => {
+      const board = db.createBoard({ rootGoal: '无 cwd' })
+      expect(board.cwd).toBeUndefined()
+
+      const fetched = db.getBoard(board.id)
+      expect(fetched?.cwd).toBeUndefined()
+    })
+
     test('listBoards 返回所有看板，按 updated_at DESC 排序', () => {
       const b1 = db.createBoard({ rootGoal: 'G1', mode: 'general' })
       const b2 = db.createBoard({ rootGoal: 'G2', mode: 'ta' })

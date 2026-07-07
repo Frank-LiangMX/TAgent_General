@@ -93,6 +93,23 @@ export interface KanbanTaskMetadata extends Record<string, unknown> {
    * 都会被自动 deny 并追加到此列表，便于事后审计工人执行过程中的卡点。
    */
   blockedApprovals?: BlockedApprovalRecord[]
+  /**
+   * blackboard 评论列表（D+2 跨任务交接通道）
+   *
+   * 主会话 / worker 都可写。下一个 worker 启动时会把同板其他 task 的 blackboard
+   * 摘要注入 body，作为跨任务上下文交接（参考 hermes kanban_comment）。
+   */
+  blackboard?: BlackboardComment[]
+}
+
+/** 单条 blackboard 评论（跨任务交接通道） */
+export interface BlackboardComment {
+  /** 评论内容 */
+  comment: string
+  /** 作者（'main' / 'worker' / worker session id 等） */
+  author: string
+  /** 时间戳（ms） */
+  ts: number
 }
 
 /** 单条被自动拒绝的 approval 记录 */
@@ -158,6 +175,14 @@ export interface KanbanBoard {
    *   交付物是独立文件/资产/task.resultSummary，只发通知不触发主会话
    */
   requireSummary?: boolean
+  /**
+   * 看板工作目录（worker 子会话项目根）
+   *
+   * 建板时从主会话 cwd 记录。kanban_add_task 注入 body 时优先用此字段，
+   * 让 worker headless 子会话拿到绝对路径，避免到处 Glob/Grep 找项目根。
+   * 未记录时 fallback 到主进程 cwd。
+   */
+  cwd?: string
 }
 
 // ===== 任务依赖 =====
@@ -200,6 +225,8 @@ export interface CreateKanbanBoardInput {
   maxConcurrent?: number
   /** 完成后是否需要主会话汇总（B9，默认 false） */
   requireSummary?: boolean
+  /** 看板工作目录（worker 子会话项目根，未传则由 orchestrator 兜底填主会话 cwd） */
+  cwd?: string
 }
 
 /** 创建任务的输入 */

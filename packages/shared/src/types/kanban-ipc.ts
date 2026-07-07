@@ -43,6 +43,10 @@ export const KANBAN_IPC_CHANNELS = {
   UNBLOCK_TASK: 'kanban:unblock-task',
   /** 重试失败任务（failed → ready，让 dispatcher 重新派工） */
   RETRY_TASK: 'kanban:retry-task',
+  /** 中止正在执行的任务（running → cancelled，调 stopRegisteredAgent 停掉 worker SDK query） */
+  ABORT_TASK: 'kanban:abort-task',
+  /** 给任务写 blackboard 评论（D+2 跨任务交接通道，主会话 / UI 调用） */
+  COMMENT_TASK: 'kanban:comment-task',
   /** 把已有看板绑定到会话（写回 session meta.boardId，显示团队 Tab） */
   ATTACH_BOARD_TO_SESSION: 'kanban:attach-board-to-session',
   /** 解绑会话的看板（清除 session meta.boardId，隐藏团队 Tab） */
@@ -55,6 +59,16 @@ export interface UnblockKanbanTaskInput {
   taskId: string
   /** 可选：解除原因（写入 metadata.unblockReason） */
   reason?: string
+}
+
+/** 写 blackboard 评论输入（D+2） */
+export interface CommentKanbanTaskInput {
+  /** 任务 ID */
+  taskId: string
+  /** 评论内容 */
+  comment: string
+  /** 作者（'main' / 'worker' / sessionId 等，UI 默认 'main'） */
+  author: string
 }
 
 /** 草稿升级自动建板输入 */

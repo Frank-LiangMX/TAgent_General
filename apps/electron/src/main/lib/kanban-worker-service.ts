@@ -31,7 +31,7 @@ import {
   getAgentSessionSDKMessages,
   updateAgentSessionMeta,
 } from './agent-session-manager'
-import { runRegisteredHeadlessAgent } from './agent-headless-runner-registry'
+import { runRegisteredHeadlessAgent, stopRegisteredAgent } from './agent-headless-runner-registry'
 import { kanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
 import type { KanbanWorkerRunner } from './kanban-dispatcher'
@@ -171,10 +171,43 @@ function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoa
 
   lines.push(
     `这是看板「${board.id}」任务「${task.title}」(${task.id}) 的自动执行。`,
-    '本任务由看板调度器派工，请直接执行任务内容，不要建议用户再创建看板或定时任务。',
+    '本任务由看板调度器派工，请直接执行任务内容,不要建议用户再创建看板或定时任务。',
     '完成后请在回复中给出完整的结论摘要（无长度限制，系统会自动提取最后一条 assistant 回复作为任务结果存储）。',
     '不要尝试调用 kanban_comment / kanban_complete 等工具，工人子会话不注入看板工具集（防递归）。'
   )
+
+  // D+2: 跨任务 blackboard 摘要注入
+  // 把同板其他 task 的 blackboard 评论摘要注入 worker 上下文，
+  // 让 worker 知道前置任务/同板其他任务的关键发现，避免重复踩坑。
+  try {
+    const allTasks = kanbanDbService.listTasksByBoard(board.id)
+    const otherTasks = allTasks.filter((t) => t.id !== task.id)
+    const blackboardEntries: Array<{ taskTitle: string; taskStatus: string; author: string; comment: string; ts: number }> = []
+    for (const t of otherTasks) {
+      const bb = t.metadata?.blackboard
+      if (!Array.isArray(bb) || bb.length === 0) continue
+      for (const entry of bb) {
+        blackboardEntries.push({
+          taskTitle: t.title,
+          taskStatus: t.status,
+          author: entry.author,
+          comment: entry.comment,
+          ts: entry.ts,
+        })
+      }
+    }
+    if (blackboardEntries.length > 0) {
+      // 按 ts 升序（旧 → 新），让 worker 看到时间顺序的上下文
+      blackboardEntries.sort((a, b) => a.ts - b.ts)
+      lines.push('')
+      lines.push('【同板其他任务的 blackboard 上下文】（来自 kanban_comment，参考但不必严格遵循）')
+      for (const e of blackboardEntries) {
+        lines.push(`- [${e.taskTitle}] (${e.taskStatus}) ${e.author}: ${e.comment}`)
+      }
+    }
+  } catch (err) {
+    console.warn(`[看板] worker 注入 blackboard 摘要失败（task ${task.id}）:`, err)
+  }
 
   return lines.join('\n')
 }
@@ -303,16 +336,22 @@ export async function runKanbanTaskHeadless(
         resolve()
       }
 
-      // 超时保护：worker 跑超过 30 分钟强制标记为 blocked（而非 failed），便于用户手动 unblock / cancel
-      // 参考 automation-scheduler.ts:166 的 timeoutTimer 模式
+      // 超时保护：worker 跑超过 30 分钟强制中止 SDK query + 标 failed
+      // 改用真 abort（stopRegisteredAgent），不再只标 blocked 让 worker 僵死后任务卡 running
+      // 参考 hermes interrupt_subagent + automation-scheduler.ts:166 timeoutTimer 模式
       const timeoutTimer = setTimeout(() => {
         console.warn(
-          `[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），标记为 blocked`
+          `[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），主动中止 worker 会话 ${session.id}`
         )
-        // 直接写 DB 标记 blocked（updater 可能是 createRunningOnlyUpdater，done/failed 是 no-op）
+        try {
+          stopRegisteredAgent(session.id)
+        } catch (err) {
+          console.warn(`[看板] 超时 stopRegisteredAgent 失败（worker ${session.id}）:`, err)
+        }
+        // 直接写 DB 标记 failed（updater 可能是 createRunningOnlyUpdater，done/failed 是 no-op）
         kanbanDbService.updateTaskStatus(task.id, {
-          status: 'blocked',
-          blockedReason: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
+          status: 'failed',
+          error: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
         })
         // 通过 finish 回流 onTaskCompleted('failed')，让 dispatcher 推进状态机
         finish('failed', `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`)

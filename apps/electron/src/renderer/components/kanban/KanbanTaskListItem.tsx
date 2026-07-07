@@ -8,7 +8,7 @@
  */
 
 import * as React from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Square } from 'lucide-react'
 
 import type { KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
@@ -129,6 +129,11 @@ export function KanbanTaskListItem({
     if (showDetailDialog) setDetailOpen(true)
   }
 
+  const handleAbort = (e: React.MouseEvent): void => {
+    e.stopPropagation()
+    void window.electronAPI.kanban.abortTask(task.id)
+  }
+
   return (
     <>
       <button
@@ -175,6 +180,16 @@ export function KanbanTaskListItem({
             >
               {formatDuration(durationMs)}
             </span>
+          )}
+          {isRunning && (
+            <button
+              type="button"
+              onClick={handleAbort}
+              title="停止 worker"
+              className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-500/15 dark:text-red-400"
+            >
+              <Square className="size-3 fill-current" />
+            </button>
           )}
           {roleDisplayName && (
             <Badge

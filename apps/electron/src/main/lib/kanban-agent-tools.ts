@@ -12,7 +12,7 @@
  * - kanban_add_task：主 Agent / 调度器追加任务
  * - kanban_list_tasks：列出看板下任务（支持状态过滤）
  * - kanban_block：工人标记任务阻塞（缺信息 / 等待外部）
- * - kanban_comment：blackboard 风格注释（任意方；kanban-db 暂无对应 API，待 Phase D）
+ * - kanban_comment：blackboard 跨任务交接评论（D+2，主会话给 worker 补上下文 / 跨任务传递发现）
  *
  * 模式隔离：v1 仅 general 模式注入；TA 模式禁止注入本工具集（见 §6.1） */
 
@@ -118,6 +118,20 @@ function assertNonBlank(value: unknown, field: string): string {
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
+}
+
+/**
+ * 在 body 开头注入项目根目录元信息块，让 worker headless 子会话拿到绝对路径
+ *
+ * worker 看不到主会话 cwd，单凭相对路径会到处 Glob/Grep 找项目根（单次 10K+ token 浪费）。
+ * 注入格式遵循 CLAUDE.md "派发 body 必须带项目根路径" 硬约束。
+ *
+ * 幂等：若 body 已手动写入 "项目根目录:" 头部，则不重复注入（尊重主会话 LLM 显式输入）。
+ */
+export function injectProjectRootHeader(body: string, projectCwd: string): string {
+  const header = `---\n项目根目录: ${projectCwd}\n数据目录: ~/.tagent/\n---\n\n`
+  if (body.startsWith('---\n项目根目录:')) return body
+  return header + body
 }
 
 const ALLOWED_ORIGIN_BRIDGES: ReadonlySet<string> = new Set([
@@ -299,6 +313,8 @@ export async function handleCreateBoard(args: Record<string, unknown>): Promise<
       typeof args.maxConcurrent === 'number' && Number.isFinite(args.maxConcurrent)
         ? args.maxConcurrent
         : (getSettings().agentBehavior?.defaultMaxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT),
+    // D+1: 记录主会话 cwd 作为 worker 子会话项目根（kanban_add_task 注入 body 用）
+    cwd: optionalString(args.cwd),
   }
   const board: KanbanBoard = kanbanDbService.createBoard(input)
   // 传了 parentSessionId 且会话存在时，自动写回 meta.boardId（触发「团队」Tab 显示）
@@ -321,10 +337,24 @@ export async function handleListBoards(args: Record<string, unknown>): Promise<K
 }
 
 export async function handleAddTask(args: Record<string, unknown>): Promise<KanbanToolResult> {
+  const boardId = assertNonBlank(args.boardId, 'boardId')
+  // D+1: 查 board.cwd 作为 worker 子会话项目根，缺则用 ctx 兜底，再缺用主进程 cwd
+  const board = kanbanDbService.getBoard(boardId)
+  if (!board) {
+    throw new Error(`[看板工具] kanban_add_task 失败：看板 ${boardId} 不存在`)
+  }
+  const projectCwd =
+    board.cwd ??
+    (typeof args.__projectCwd === 'string' && args.__projectCwd.trim()
+      ? args.__projectCwd.trim()
+      : undefined) ??
+    process.cwd()
+  const rawBody = optionalString(args.body) ?? ''
+  const body = injectProjectRootHeader(rawBody, projectCwd)
   const input: CreateKanbanTaskInput = {
-    boardId: assertNonBlank(args.boardId, 'boardId'),
+    boardId,
     title: assertNonBlank(args.title, 'title'),
-    body: optionalString(args.body) ?? '',
+    body,
     roleId: optionalString(args.roleId),
     channelId: assertNonBlank(args.channelId, 'channelId'),
     modelId: optionalString(args.modelId),
@@ -359,16 +389,22 @@ export async function handleBlock(args: Record<string, unknown>): Promise<Kanban
   return jsonResult({ taskId, status: 'blocked', reason })
 }
 
-export async function handleComment(args: Record<string, unknown>): Promise<KanbanToolResult> {
+export async function handleComment(
+  args: Record<string, unknown>,
+  author: string = 'main'
+): Promise<KanbanToolResult> {
   const taskId = assertNonBlank(args.taskId, 'taskId')
   const comment = assertNonBlank(args.comment, 'comment')
-  // TODO(kanban): kanban-db 尚未提供 addTaskComment / metadata 更新 API，
-  // Phase D blackboard 落地后补齐。当前返回「未实现」错误，调用方应感知。
-  void taskId
-  void comment
-  throw new Error(
-    '[看板工具] kanban_comment 尚未实现：kanban-db 未提供 addTaskComment / metadata 更新 API（待 Phase D）'
-  )
+  // D+2: blackboard 跨任务交接通道。主会话 / worker 都可写。
+  // 评论按 ts 排序写入 task.metadata.blackboard，下一个 worker 启动时注入 body。
+  const blackboard = kanbanDbService.addTaskComment(taskId, comment, author)
+  broadcastKanbanChanged()
+  const lastComment = blackboard[blackboard.length - 1]
+  return jsonResult({
+    taskId,
+    commentId: lastComment ? `c_${lastComment.ts}` : `c_${Date.now()}`,
+    count: blackboard.length,
+  })
 }
 
 // ===== 构建工具表 =====
@@ -435,6 +471,13 @@ export interface KanbanAgentToolContext {
   channelId?: string
   /** 触发来源（防递归：'kanban' 时不应注入，由 orchestrator 提前判断） */
   triggeredBy?: 'user' | 'automation' | 'delegation' | 'kanban'
+  /**
+   * 当前会话工作目录（worker 子会话项目根）
+   *
+   * kanban_create_board 时写入 board.cwd；kanban_add_task 注入 body 项目根时
+   * 优先用 board.cwd，缺则用此字段兜底，再缺则用 process.cwd()。
+   */
+  agentCwd?: string
 }
 
 /**
@@ -525,9 +568,11 @@ export async function injectKanbanMcpServer(
         async (args: Record<string, unknown>) => {
           // parentSessionId 未传时用当前会话 ID 兜底，确保建板后自动绑定到当前会话
           // 否则团队 Tab 拿不到 boardId，无法显示任务进度
+          // D+1: cwd 未传时用 ctx.agentCwd 兜底，让 kanban_add_task 能注入项目根到 body
           const enriched = {
             ...args,
             parentSessionId: args.parentSessionId ?? ctx.sessionId,
+            cwd: args.cwd ?? ctx.agentCwd,
           }
           return handleCreateBoard(enriched)
         }
@@ -544,7 +589,12 @@ export async function injectKanbanMcpServer(
         '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务。',
         addTaskSchema,
         async (args: Record<string, unknown>) => {
-          const enriched = { ...args, channelId: args.channelId ?? ctx.channelId }
+          // D+1: 透传 ctx.agentCwd 作为 __projectCwd 兜底（board.cwd 优先）
+          const enriched = {
+            ...args,
+            channelId: args.channelId ?? ctx.channelId,
+            __projectCwd: ctx.agentCwd,
+          }
           return handleAddTask(enriched)
         }
       ),

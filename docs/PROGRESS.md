@@ -170,7 +170,7 @@
 | **`2026-06-24-proma-upstream-borrow-list.md`** | **活跃参考（2026-06-30 校准）** | Proma v0.11.1→v0.13.4 借鉴清单，逐项对齐状态 |
 | **`2026-06-29-agent-hooks-design.md`** | **已完成（TAgent 独有）** | PostToolUse auto-check 钩子 + 多语言精细配置 |
 | **`2026-06-30-auto-check-design.md`** | **已完成** | auto-check 语言级配置 + UI |
-| **`2026-07-05-agent-stability-issues-diagnosis.md`** | **活跃待办（已诊断,待修复）** | Agent 模式 4 个稳定性问题诊断:发送延迟 / context 爆终止 / resume sessionId 错乱 / kscc 报错无法反映。修复路线图分三波执行 |
+| **`2026-07-05-agent-stability-issues-diagnosis.md`** | **活跃待办（短期止血全部完成,长期根治待做）** | Agent 模式 4 个稳定性问题诊断:发送延迟 / context 爆终止 / resume sessionId 错乱 / kscc 报错无法反映。问题 1 已实测验证（根因在 kscc 服务端，TAgent 无可修）；问题 2/3/4 短期止血全部落地（2026-07-05 + 2026-07-07）；长期根治（context 预算管理 / STREAM_ERROR IPC 升级 / 日志文件兜底等）待做 |
 | `archive/reports/2026-06-05-brand-migration.md` | 历史归档 | 合并原三份品牌迁移 / codemod 报告，作为后续追溯入口 |
 | `archive/sessions/2026-06-06-progress.md` | 历史归档 | 2026-06-06 当日 26 commits 进度笔记（从 `.context/` 迁移） |
 
@@ -373,6 +373,26 @@
 
 ## 历史进度
 
+### 2026-07-07（看板 worker 中断 + D+1 项目根注入 + D+2 blackboard + Agent 稳定性 4 问题全部清盘 + SDK 0.3.185 收尾确认）
+
+**产出**：看板 worker 中断功能（手动停止 + 超时兜底，跟 hermes interrupt_subagent 对齐）+ 看板 v1 产品化 D+1（`kanban_add_task` 自动注入项目根路径）+ D+2（`kanban_comment` blackboard 跨任务交接）+ Agent 稳定性 4 个问题全部清盘 + SDK 0.3.185 升级收尾确认
+
+| 任务 | 内容 |
+| ---- | ---- |
+| 看板 D+2 blackboard 跨任务交接 | 跟 hermes `kanban_comment` 对齐：① `packages/shared/src/types/kanban.ts` 新增 `BlackboardComment` 类型 + `KanbanTaskMetadata.blackboard?: BlackboardComment[]` 字段；② `kanban-db.ts` 新增 `addTaskComment(taskId, comment, author)` 方法（读-合并-写，按 ts 升序排序）；③ `kanban-agent-tools.ts` `handleComment` 改为真实实现（调 addTaskComment，不再 throw "待 Phase D"）；④ `KANBAN_IPC_CHANNELS.COMMENT_TASK` 新通道 + `CommentKanbanTaskInput` 类型；⑤ `kanban-ipc.ts` 新增 `commentKanbanTask` 函数 + IPC handler；⑥ preload 桥接 `commentTask`；⑦ `KanbanTaskDetailDialog` 新增 `BlackboardSection` 组件（评论列表 + 输入框，UI 提交 author='main'）；⑧ `kanban-worker-service.ts` `buildKanbanWorkerContext` 启动时把同板其他 task 的 blackboard 摘要注入 worker automationContext（让 worker 知道前置任务的关键发现，避免重复踩坑） |
+| 看板 worker 中断（手动 + 超时） | 跟 hermes `interrupt_subagent` 对齐：① `KANBAN_IPC_CHANNELS.ABORT_TASK` 新通道；② `kanban-ipc.ts` 新增 `abortKanbanTask(taskId)` 函数（查 task.running → 调 `stopRegisteredAgent(assigneeSessionId)` 停 SDK query → 标 `cancelled` + error="用户中止"）；③ `kanban-ipc.ts` 注册 ABORT_TASK handler；④ preload 桥接 `abortTask`；⑤ `KanbanTaskListItem` running 状态显示红色"停止"按钮（Square 图标，stopPropagation 避免触发卡片 onSelect）；⑥ `kanban-worker-service.ts` 超时从"标 blocked 让 worker 僵死"改为"真 abort + 标 failed"（调 `stopRegisteredAgent` 停掉 SDK query） |
+| 看板 D+1 P0 必做项落地 | `kanban_add_task` 调用前自动在 body 开头注入 `---\n项目根目录: <board.cwd 或主进程 cwd>\n数据目录: ~/.tagent/\n---\n\n`，worker headless 子会话拿到绝对路径，单次任务节省 10K+ token。改动：① `packages/shared/src/types/kanban.ts` `KanbanBoard` + `CreateKanbanBoardInput` 加 `cwd?: string`；② `kanban-db.ts` schema v4→v5 迁移加 `cwd TEXT` 列 + `createBoard` / `rowToBoard` 读写；③ `kanban-agent-tools.ts` 新增 `injectProjectRootHeader` helper（幂等：用户手动写了"项目根目录:"就不覆盖）+ `handleAddTask` 查 `board.cwd` 优先、`__projectCwd` 兜底、`process.cwd()` 最终兜底；`handleCreateBoard` 接 `cwd` 字段；`KanbanAgentToolContext` 加 `agentCwd`；`injectKanbanMcpServer` 闭包透传 ctx.agentCwd；④ `agent-orchestrator.ts:1893` 调用 `injectKanbanMcpServer` 传 `agentCwd` |
+| 测试 | 新增 `kanban-agent-tools.test.ts` 6 测试（`injectProjectRootHeader` 空 body / 多行 body / 幂等 / 中文路径 / 反斜杠路径）；`kanban-db.test.ts` 加 2 测试（`createBoard` 写入 cwd / 未传 cwd 兼容）— 本地 vitest 排除 better-sqlite3 文件，CI 跑全量 |
+| SDK 0.3.185 收尾确认 | 之前 PROGRESS.md 备注"SDK 0.3.153 → 0.3.185 升级中断（bun install 未跑完）"已过期。实际验证：主包 + win32-x64 平台子包均 0.3.185；bun.lock 全平台解析到 0.3.185；typecheck 4 包全过；主进程 esbuild 打包 19.5mb 正常；dev 实测 `Query closed before response received` 已消失 |
+| Agent 稳定性问题 3 P2 兜底修复 | `agent-session-manager.ts:1138` `findSdkSessionJsonl` 加 `export`；`agent-orchestrator.ts:97` import 加 `findSdkSessionJsonl`；`agent-orchestrator.ts:1554` 之后加 P2 兜底：sdkSessionId 持久化但对应 JSONL 已被外部删除时，主动清空避免 resume 死循环 |
+| Agent 稳定性问题 1 发送延迟 | 已实测验证（2026-07-05 抓到 18 轮真实打点数据），**否定了原始诊断的"spawn + 重放 JSONL"推测**，真正瓶颈是 kscc 内部 LLM 服务端延迟波动。TAgent 端无可修代码路径 |
+| Agent 稳定性问题 2 context 爆终止（短期止血已落地） | (a) `agent-orchestrator.ts:2759-2773` prompt_too_long 主动调兜底压缩 + 清 resume + 触发重试（`preparePromptTooLongRecovery`）；(b) `agent-orchestrator.ts:3284-3285` 错误降级文案改为"上下文已自动压缩并重试，如仍失败请开启新会话"；(c) `agent-orchestrator.ts:2505-2516` onContextUsage 回调 + `compactSessionProactive` helper，context > 85% 时 fire-and-forget 调 compactSession(drop_old_tool_results) |
+| Agent 稳定性问题 4 kscc 报错无法反映到 UI（短期修复已落地） | (1) `agent-orchestrator.ts:3224-3308` catch 块构建 errorDetails（stderr 非空就 push 2000 字符 + errorStack），塞到 errMsg `_errorDetails`，SDKMessageRenderer 现成的"查看诊断详情"折叠按钮立刻生效；(2) `agent-orchestrator.ts:3215` 把"补 800 字符 stderr hint"条件从 `/exited with code 1/i` 放宽到所有 stderr 非空场景；typed_error 路径（line 2854）也塞了 `_errorDetails` |
+| 文档 | 更新 PROGRESS.md / CLAUDE.md SDK 升级备注；`2026-07-05-agent-stability-issues-diagnosis.md` 问题 2/3/4 状态改为"✅ 短期止血已落地"；`2026-06-30-kanban-v1-product-design.md` Phase D+1 / D+2 标记"✅ 已落地（2026-07-07）" |
+| **里程碑** | **看板 v1 产品化 D+1 / D+2 / worker 中断全部落地；Agent 稳定性 4 问题短期止血全部完成；剩余只有长期根治（context 预算管理 / STREAM_ERROR IPC 升级 / 日志文件兜底）+ 看板 D+3 错误来源标记 + kscc 服务端优化，都不阻塞** |
+
+---
+
 ### 2026-07-06（v1.5.0 记忆系统全面改造）
 
 **产出**：记忆系统全面改造 — 静默记忆 + Frozen snapshot + Memory Graph + UI 重设计（未正式 release，仅本地打包测试）
@@ -426,7 +446,7 @@
 | **Nudge toast 真根因修复** | **`agent-orchestrator.ts` 3 处 `BrowserWindow.getAllWindows()[0]` 推 IPC 事件，但子窗口（quick-task / voice-dictation / detached-preview）可能排在数组前面，事件发到子窗口主窗口 listener 收不到**。`agent-service.ts` 导出 `getMainRendererWebContents` + 新增 `getSessionWebContents(sessionId)`（复用已有 `sessionWebContents` 映射，兜底回退主窗口，过滤子窗口）。3 处替换：Nudge 推送 / TA 意图推送 / Context 用量推送 |
 | toast 玻璃卡片样式 | 新增 `session-glass-toast` 玻璃类（light + dark，`--radius-glass-modal` 20px 大圆角 + 玻璃底 + 高光，与模态框/设置卡片同款）；`sonner.tsx` Toaster 默认 `toastOptions.classNames.toast` 改用该类，所有 toast（Nudge / ContextUsage / 附件提示等）自动跟随全局视觉 |
 | **已验证** | **重启 dev 后"我叫 Frank" Nudge toast 正常弹出，点"记住"后 `~/.tagent-dev/memory/L2_facts.md` 写入成功** |
-| **已知遗留** | SDK 0.3.153 → 0.3.185 升级中断（`bun install` 未跑完），`Query closed before response received` 错误仍存在，明天再装 |
+| **已知遗留** | ~~SDK 0.3.153 → 0.3.185 升级中断~~ → **已确认完成**（2026-07-07 验证：主包 + win32-x64 平台子包均 0.3.185；bun.lock 全平台解析到 0.3.185；typecheck 4 包全过；主进程 esbuild 打包 19.5mb 正常；dev 实测 `Query closed before response received` 已消失） |
 
 ### 2026-07-05
 

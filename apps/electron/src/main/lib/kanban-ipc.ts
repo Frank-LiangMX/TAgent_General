@@ -17,6 +17,7 @@ import {
   type KanbanTask,
   type KanbanTaskStatus,
   type UnblockKanbanTaskInput,
+  type CommentKanbanTaskInput,
   type CreateBoardFromDraftInput,
   type CreateBoardFromDraftResult,
   type ListKanbanBoardsInput,
@@ -30,6 +31,7 @@ import {
 
 import { kanbanDbService } from './kanban-db'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
+import { stopRegisteredAgent } from './agent-headless-runner-registry'
 
 /** 启动时 init 失败（如 better-sqlite3 ABI 不匹配）时，IPC 侧再试一次并给出修复指引 */
 function ensureKanbanDb(): void {
@@ -137,6 +139,59 @@ export function retryKanbanTask(taskId: string): void {
     resultSummary: undefined,
   })
   console.log(`[看板] 重试任务: ${taskId}（${task.title}）`)
+  broadcastKanbanChanged()
+}
+
+/**
+ * 中止正在执行的任务
+ *
+ * 调 stopRegisteredAgent 停掉 worker 的 SDK query（adapter.abort），task 状态改 cancelled。
+ * 与 hermes interrupt_subagent 对齐：用户主动止损，不依赖 AI 判断跑偏。
+ *
+ * 仅 running 状态可中止；pending/ready/blocked 等终态或非派工态拒绝。
+ */
+export function abortKanbanTask(taskId: string): void {
+  ensureKanbanDb()
+  const task = kanbanDbService.getTask(taskId)
+  if (!task) {
+    throw new Error(`任务不存在: ${taskId}`)
+  }
+  if (task.status !== 'running') {
+    throw new Error(`只有 running 状态的任务可中止，当前状态: ${task.status}`)
+  }
+  if (!task.assigneeSessionId) {
+    throw new Error(`任务 ${taskId} 没有 assigneeSessionId，无法定位 worker 子会话`)
+  }
+  try {
+    stopRegisteredAgent(task.assigneeSessionId)
+    console.log(`[看板] 中止任务: ${taskId}（${task.title}），已停掉 worker 会话 ${task.assigneeSessionId}`)
+  } catch (err) {
+    console.warn(`[看板] stopRegisteredAgent 失败（任务 ${taskId}，worker ${task.assigneeSessionId}）:`, err)
+    // 即使 stop 失败也标 cancelled，避免 worker 僵死后任务卡 running
+  }
+  kanbanDbService.updateTaskStatus(taskId, {
+    status: 'cancelled',
+    error: '用户中止',
+  })
+  broadcastKanbanChanged()
+}
+
+/**
+ * 写 blackboard 评论（D+2 跨任务交接通道）
+ *
+ * 主会话 / UI 调用，把评论追加到 task.metadata.blackboard。
+ * 下一个 worker 启动时会读取同板其他 task 的 blackboard 摘要注入 body。
+ *
+ * 与 hermes kanban_comment 对齐：评论是跨任务交接通道，不限制调用方身份。
+ */
+export function commentKanbanTask(input: CommentKanbanTaskInput): void {
+  ensureKanbanDb()
+  const { taskId, comment, author } = input
+  if (!taskId || !comment || !author) {
+    throw new Error('commentKanbanTask 需要 taskId / comment / author 三个非空字段')
+  }
+  kanbanDbService.addTaskComment(taskId, comment, author)
+  console.log(`[看板] 写入 blackboard 评论: task=${taskId}, author=${author}, comment=${comment.slice(0, 80)}...`)
   broadcastKanbanChanged()
 }
 
@@ -419,6 +474,14 @@ export function registerKanbanIpcHandlers(): void {
 
   ipcMain.handle(KANBAN_IPC_CHANNELS.RETRY_TASK, async (_event, taskId: string) => {
     retryKanbanTask(taskId)
+  })
+
+  ipcMain.handle(KANBAN_IPC_CHANNELS.ABORT_TASK, async (_event, taskId: string) => {
+    abortKanbanTask(taskId)
+  })
+
+  ipcMain.handle(KANBAN_IPC_CHANNELS.COMMENT_TASK, async (_event, input: CommentKanbanTaskInput) => {
+    commentKanbanTask(input)
   })
 
   ipcMain.handle(

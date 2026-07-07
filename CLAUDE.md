@@ -413,8 +413,7 @@ React UI 更新
 - worker 是 headless 子会话，看不到主会话 cwd
 - body 里如果只有 `apps/electron/src/main/lib/...`，worker 不知道项目在哪
 - 单次任务可能多消耗 10K+ token 找项目根，浪费用户配额
-- **临时措施**：派发时 body 开头第一段写明 `项目根目录: /Users/frank/Downloads/TAgent_General`，body 内所有路径用绝对路径
-- **根治措施**（开发期必修）：`kanban_add_task` 工具实现里自动在 body 开头注入项目根路径，详见 `docs/plans/2026-06-30-kanban-v1-product-design.md` Phase D+1
+- **根治措施已落地**（2026-07-07，看板 v1 产品化 D+1）：`kanban_add_task` 工具实现里自动在 body 开头注入 `---\n项目根目录: <board.cwd 或主进程 cwd>\n数据目录: ~/.tagent/\n---\n\n`。`board.cwd` 建板时由 orchestrator 从主会话 cwd 写入；旧看板无 cwd 时 fallback 到 `process.cwd()`。worker 子会话拿到的 body 开头就有绝对路径，无需 Glob/Grep 找项目根。幂等：用户手动在 body 写了"项目根目录:"就不覆盖。详见 `docs/plans/2026-06-30-kanban-v1-product-design.md` Phase D+1
 
 ---
 
@@ -473,7 +472,7 @@ React UI 更新
 - **FilePathChip 抖动真根因修复**（b2a3016 只修了一半）：`fileStatus` useState 初始值改用 `fileExistsCache` 命中值（cache 命中时直接初始为 resolved/broken，零切换零动画）+ 去掉 `transition-colors duration-150`（颜色切换瞬间完成，不动画化）
 - **长会话输入卡顿 perf 修复**：AgentView 之前订阅 `inputContent`（string），每键让整个 3000+ 行组件树 re-render。改用 `agentSessionHasDraftAtomFamily`（boolean 派生 atom，只在 empty↔non-empty 切换时变化）+ `AgentRichTextInputBridge` wrapper（inputContent 在 wrapper 内部订阅，仅输入框自己 re-render）+ handleSend 用 `store.get` 实时读 atomFamily 不依赖闭包 + AgentMessages 加 React.memo。24 轮会话输入框打字不再卡顿
 - **AgentMessages 加 React.memo**：避免父组件 AgentView re-render 串到 100+ 条消息列表
-- **Nudge toast 不显示 position bug 定位 + 部分修复**：删除 `NudgeToast.tsx` 两处 `position: 'bottom-right'`（与 `main.tsx:886` 挂载的 Toaster `position="top-right"` 不匹配，sonner 单实例只渲染匹配自己 position 的 toast，bottom-right 调用被静默丢弃 → toast 永远不显示 → 用户点不了"记住" → 记忆永不写入）。**这是 Nudge IPC 字段名 bug 修复后的下一个真因**：上一波把 `nudge` 单数修成 `nudges` 复数让事件能进 `showNudgeToast`，但 sonner position 不匹配让 toast 仍不显示。同时 `NUUDGE_CHECK_INTERVAL` 5→1 落地（CLAUDE.md 上一波已记录但代码未改）。加调试日志方便后续验证（`[Nudge] onTurnStart` / `detectPatterns` / 候选返回 + `[Agent 编排] Nudge 检测完成` / IPC 推送）。**待用户重启 dev 验证 toast 是否真弹**。已知遗留：SDK 0.3.153 → 0.3.185 升级中断（`bun install` 未跑完），`Query closed before response received` 错误仍存在
+- **Nudge toast 不显示 position bug 定位 + 部分修复**：删除 `NudgeToast.tsx` 两处 `position: 'bottom-right'`（与 `main.tsx:886` 挂载的 Toaster `position="top-right"` 不匹配，sonner 单实例只渲染匹配自己 position 的 toast，bottom-right 调用被静默丢弃 → toast 永远不显示 → 用户点不了"记住" → 记忆永不写入）。**这是 Nudge IPC 字段名 bug 修复后的下一个真因**：上一波把 `nudge` 单数修成 `nudges` 复数让事件能进 `showNudgeToast`，但 sonner position 不匹配让 toast 仍不显示。同时 `NUUDGE_CHECK_INTERVAL` 5→1 落地（CLAUDE.md 上一波已记录但代码未改）。加调试日志方便后续验证（`[Nudge] onTurnStart` / `detectPatterns` / 候选返回 + `[Agent 编排] Nudge 检测完成` / IPC 推送）。**待用户重启 dev 验证 toast 是否真弹**。SDK 0.3.185 升级已确认完成（2026-07-07 验证：主包 + win32-x64 子包均 0.3.185；typecheck 4 包全过；主进程 esbuild 打包正常；dev 实测 `Query closed before response received` 已消失）
 
 **最近完成**（2026-07-05）：
 

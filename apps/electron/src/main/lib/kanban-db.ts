@@ -55,6 +55,7 @@ interface KanbanBoardRow {
   max_concurrent: number
   paused: number
   require_summary: number | null
+  cwd: string | null
   created_at: number
   updated_at: number
 }
@@ -103,6 +104,7 @@ function rowToBoard(row: KanbanBoardRow): KanbanBoard {
     maxConcurrent: row.max_concurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT,
     paused: (row.paused ?? 0) === 1,
     requireSummary: (row.require_summary ?? 0) === 1 ? true : false,
+    cwd: row.cwd ?? undefined,
   }
 }
 
@@ -191,6 +193,7 @@ export class KanbanDbService {
         max_concurrent INTEGER NOT NULL DEFAULT 3,
         paused INTEGER NOT NULL DEFAULT 0,
         require_summary INTEGER NOT NULL DEFAULT 0,
+        cwd TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
@@ -276,6 +279,12 @@ export class KanbanDbService {
     if (currentVersion < 4) {
       this.migrateV3ToV4()
       this.db.pragma('user_version = 4')
+    }
+
+    // v4 → v5：D+1 新增 cwd 列（worker 子会话项目根）
+    if (currentVersion < 5) {
+      this.migrateV4ToV5()
+      this.db.pragma('user_version = 5')
     }
   }
 
@@ -447,6 +456,25 @@ export class KanbanDbService {
     console.log('[看板] schema 迁移完成：新增 require_summary 列（B9）')
   }
 
+  /**
+   * v4 → v5 迁移：新增 cwd 列（D+1 worker 子会话项目根）
+   *
+   * 用 ALTER TABLE ADD COLUMN 补列，允许 NULL（旧看板无 cwd，由 kanban_add_task
+   * 调用时 fallback 到主进程 cwd）。新建看板时由 orchestrator 主动写入主会话 cwd。
+   */
+  private migrateV4ToV5(): void {
+    if (!this.db) return
+    const tableInfo = this.db.prepare('PRAGMA table_info(kanban_boards)').all() as Array<{
+      name: string
+    }>
+    const columns = new Set(tableInfo.map((c) => c.name))
+
+    if (!columns.has('cwd')) {
+      this.db.exec('ALTER TABLE kanban_boards ADD COLUMN cwd TEXT')
+    }
+    console.log('[看板] schema 迁移完成：新增 cwd 列（D+1 worker 项目根）')
+  }
+
   /** 关闭数据库连接 */
   close(): void {
     if (this.db) {
@@ -488,11 +516,12 @@ export class KanbanDbService {
       maxConcurrent: input.maxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT,
       paused: false,
       requireSummary: input.requireSummary ?? false,
+      cwd: input.cwd,
     }
     db.prepare(
       `INSERT INTO kanban_boards
-        (id, root_goal, parent_session_id, title, mode, origin_chat_id, origin_bridge, status, max_concurrent, paused, require_summary, created_at, updated_at)
-       VALUES (@id, @root_goal, @parent_session_id, @title, @mode, @origin_chat_id, @origin_bridge, @status, @max_concurrent, @paused, @require_summary, @created_at, @updated_at)`
+        (id, root_goal, parent_session_id, title, mode, origin_chat_id, origin_bridge, status, max_concurrent, paused, require_summary, cwd, created_at, updated_at)
+       VALUES (@id, @root_goal, @parent_session_id, @title, @mode, @origin_chat_id, @origin_bridge, @status, @max_concurrent, @paused, @require_summary, @cwd, @created_at, @updated_at)`
     ).run({
       id: board.id,
       root_goal: board.rootGoal,
@@ -505,6 +534,7 @@ export class KanbanDbService {
       max_concurrent: board.maxConcurrent,
       paused: board.paused ? 1 : 0,
       require_summary: board.requireSummary ? 1 : 0,
+      cwd: board.cwd ?? null,
       created_at: board.createdAt,
       updated_at: board.updatedAt,
     })
@@ -727,6 +757,52 @@ export class KanbanDbService {
       Date.now(),
       taskId
     )
+  }
+
+  /**
+   * 追加一条 blackboard 评论到 task.metadata.blackboard（D+2 跨任务交接通道）
+   *
+   * 主会话 / worker 都可写。下一个 worker 启动时会把同板其他 task 的 blackboard
+   * 摘要注入 body，作为跨任务上下文交接（参考 hermes kanban_comment）。
+   *
+   * 实现：读 → 合并 → 写。按 ts 排序（旧 → 新），便于 UI 与注入时显示时间顺序。
+   * 不动 status / started_at / finished_at 等其他字段。
+   *
+   * @returns 追加后的完整 blackboard 列表（便于调用方立即拿到，无需再读一次）
+   */
+  addTaskComment(
+    taskId: string,
+    comment: string,
+    author: string
+  ): import('@tagent/shared').BlackboardComment[] {
+    const db = this.requireDb()
+    const row = db.prepare('SELECT metadata FROM kanban_tasks WHERE id = ?').get(taskId) as
+      | { metadata: string | null }
+      | undefined
+    if (!row) {
+      throw new Error(`任务不存在: ${taskId}`)
+    }
+    const entry: import('@tagent/shared').BlackboardComment = {
+      comment,
+      author,
+      ts: Date.now(),
+    }
+    const existing = row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : {}
+    const list = Array.isArray(existing.blackboard) ? (existing.blackboard as unknown[]) : []
+    list.push(entry)
+    // 按 ts 升序排序（旧 → 新）
+    list.sort((a, b) => {
+      const aTs = (a as { ts?: number }).ts ?? 0
+      const bTs = (b as { ts?: number }).ts ?? 0
+      return aTs - bTs
+    })
+    const merged = { ...existing, blackboard: list }
+    db.prepare(`UPDATE kanban_tasks SET metadata = ?, updated_at = ? WHERE id = ?`).run(
+      JSON.stringify(merged),
+      Date.now(),
+      taskId
+    )
+    return merged.blackboard as import('@tagent/shared').BlackboardComment[]
   }
 
   /** 列出某状态的所有任务（按优先级降序、创建时间升序） */
