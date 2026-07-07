@@ -37,7 +37,7 @@ import {
   AGENT_IPC_CHANNELS,
   supports1MContext,
 } from '@tagent/shared'
-import { app, BrowserWindow } from 'electron'
+import { app } from 'electron'
 
 import type {
   PermissionRequest,

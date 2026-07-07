@@ -8,7 +8,6 @@ import { diffCapabilities, isAgentCompatibleProvider } from '@tagent/shared'
 import { useSetAtom, useAtomValue, useStore } from 'jotai'
 import React, { useEffect, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
-import { toast } from 'sonner'
 
 import type {
   FeishuBotBridgeState,
@@ -68,7 +67,6 @@ import { Toaster } from './components/ui/sonner'
 import { useGlobalAgentListeners } from './hooks/useGlobalAgentListeners'
 import { useGlobalAskListeners } from './hooks/useGlobalAskListeners'
 import { showCapabilityChangeToasts } from './lib/capabilities-toast'
-import { htmlToMarkdown, markdownToHtml } from './lib/markdown-rich-text'
 
 import type { TabItem } from './atoms/tab-atoms'
 

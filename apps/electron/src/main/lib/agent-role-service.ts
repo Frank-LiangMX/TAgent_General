@@ -17,7 +17,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, dirname, extname } from 'node:path'
+import { basename, extname } from 'node:path'
 
 import { DEFAULT_ROLES, type AgentRoleProfile, type ImportRoleFromMdResult } from '@tagent/shared'
 

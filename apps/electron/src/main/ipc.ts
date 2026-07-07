@@ -4,10 +4,9 @@
  * 负责注册主进程和渲染进程之间的通信处理器
  */
 
-import { existsSync, realpathSync, rmSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
+import { existsSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve, sep, dirname } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 
 import {
   IPC_CHANNELS,
@@ -32,7 +31,6 @@ import {
   isTAgentPermissionMode,
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
-  KANBAN_IPC_CHANNELS,
   COMMAND_IPC_CHANNELS,
 } from '@tagent/shared'
 import type {
@@ -52,7 +50,6 @@ import type {
   SpeedTestInput,
   SpeedTestBatchResult,
   ConversationMeta,
-  ChatMessage,
   FileDialogResult,
   AgentSessionMeta,
   AgentSendInput,
@@ -873,7 +870,7 @@ function cacheNull(key: string): null {
  * 解析应用图标变体的文件路径
  * 当前仅保留主图标，所有变体请求统一回退到 icon.png
  */
-export function resolveAppIconPath(_variantId: string): string | null {
+export function resolveAppIconPath(): string | null {
   const resourcesDir = getBundledResourcesDir()
   return join(resourcesDir, 'icon.png')
 }
@@ -2193,10 +2190,7 @@ export function registerIpcHandlers(): void {
       const entries = readStageQueue(mode)
       const entry = entries.find((e) => e.id === id)
       if (entry) {
-        // 记录到 rejected.jsonl
-        const { rejectAll } = await import('./lib/stage-queue-service')
-        // rejectAll 会清空整个队列，这里只想 reject 一条
-        // 直接操作 rejected.jsonl + removeFromStage
+        // 记录到 rejected.jsonl（直接操作，不调用 rejectAll）
         const fs = await import('node:fs')
         const path = await import('node:path')
         const { app } = await import('electron')

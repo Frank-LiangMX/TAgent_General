@@ -239,7 +239,7 @@ export function createAgentWorkspace(name: string): AgentWorkspace {
   }
 
   getAgentWorkspacePath(slug)
-  ensurePluginManifest(slug, name)
+  ensurePluginManifest(slug)
   copyDefaultSkills(slug)
 
   index.workspaces.unshift(workspace)
@@ -273,7 +273,7 @@ export function createProjectWorkspace(projectDirectory: string): AgentWorkspace
   }
 
   getAgentWorkspacePath(slug)
-  ensurePluginManifest(slug, dirName)
+  ensurePluginManifest(slug)
   copyDefaultSkills(slug)
 
   index.workspaces.unshift(workspace)
@@ -345,7 +345,7 @@ export function ensureDefaultWorkspace(): AgentWorkspace {
     }
 
     getAgentWorkspacePath('default')
-    ensurePluginManifest('default', '默认工作区')
+    ensurePluginManifest('default')
     copyDefaultSkills('default')
 
     index.workspaces.push(defaultWs)
@@ -354,7 +354,7 @@ export function ensureDefaultWorkspace(): AgentWorkspace {
     console.log('[Agent 工作区] 已创建默认工作区')
   } else {
     // 迁移兼容：确保已有默认工作区包含 plugin manifest
-    ensurePluginManifest(defaultWs.slug, defaultWs.name)
+    ensurePluginManifest(defaultWs.slug)
   }
 
   return defaultWs
@@ -686,7 +686,7 @@ function compareSemver(a: string, b: string): number {
 // ===== Plugin Manifest（SDK 插件发现） =====
 
 /** 确保工作区包含 .claude-plugin/plugin.json，SDK 需要此文件发现 skills */
-export function ensurePluginManifest(workspaceSlug: string, _workspaceName: string): void {
+export function ensurePluginManifest(workspaceSlug: string): void {
   const wsPath = getAgentWorkspacePath(workspaceSlug)
   const pluginDir = join(wsPath, '.claude-plugin')
   const manifestPath = join(pluginDir, 'plugin.json')
@@ -786,8 +786,8 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
     'category',
     'compatibility',
   ])
-  // 列表类型字段（值是 - item 数组）
-  const listKeys = new Set(['allowed-tools', 'allowed_tools'])
+  // 列表类型字段（值是 - item 数组）——用于判断是否进入 list 模式
+  const _listKeys = new Set(['allowed-tools', 'allowed_tools'])
   const entries: Record<string, string> = {}
   const listEntries: Record<string, string[]> = {}
   const mapEntries: Record<string, Record<string, string>> = {}

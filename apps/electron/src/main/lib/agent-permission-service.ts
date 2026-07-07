@@ -23,14 +23,9 @@ import {
 import type {
   PermissionRequest,
   PermissionUpdate,
-  PermissionUpdateDestination,
-  PermissionRuleValue,
   DangerLevel,
   AskUserRequest,
 } from '@tagent/shared'
-
-/** SDK PermissionBehavior */
-type PermissionBehavior = 'allow' | 'deny'
 
 /** SDK PermissionDecisionClassification（匹配 SDK 0.2.120） */
 type PermissionDecisionClassification = 'user_temporary' | 'user_permanent' | 'user_reject'

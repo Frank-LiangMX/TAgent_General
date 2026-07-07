@@ -54,8 +54,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = join(__dirname, '..')
 const ELECTRON_DIR = ROOT_DIR
 
-// 平台特定格式映射
-const PLATFORM_FORMATS: Record<string, string[]> = {
+// 平台特定格式映射（用于文档/调试）
+const _PLATFORM_FORMATS: Record<string, string[]> = {
   mac: ['dmg', 'zip', 'dir'],
   win: ['nsis', 'portable', 'dir'],
   linux: ['AppImage', 'deb', 'rpm', 'tar.gz', 'dir'],
@@ -127,7 +127,7 @@ function detectCurrentPlatform(): 'mac' | 'win' | 'linux' {
   }
 }
 
-function getWorkDir(_platform: 'mac' | 'win' | 'linux'): string {
+function getWorkDir(): string {
   return ELECTRON_DIR
 }
 
@@ -207,7 +207,7 @@ function main(): void {
   const opts = parseArgs()
   const platform = opts.platform === 'auto' ? detectCurrentPlatform() : opts.platform
   const arch = opts.arch === 'auto' ? process.arch : opts.arch
-  const workDir = getWorkDir(platform)
+  const workDir = getWorkDir()
   const results: StepResult[] = []
 
   // 打印配置信息

@@ -11,7 +11,6 @@ import * as React from 'react'
 import { Info } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip'
-import { cn } from '../../lib/utils'
 import { LABEL_CLASS } from './SettingsUIConstants'
 
 interface FieldLabelProps {

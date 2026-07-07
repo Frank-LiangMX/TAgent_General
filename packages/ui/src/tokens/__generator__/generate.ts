@@ -12,7 +12,7 @@
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 import { radius, shadows, spacing, fontSize, motion, colors, tailwindColorTokens } from '../index'
 
