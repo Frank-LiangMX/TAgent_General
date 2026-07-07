@@ -1,9 +1,8 @@
 /**
  * RightPanelRail — 右侧竖向按钮列（镜像左侧 FunctionalRail）
  *
- * 包含文件面板按钮和侧面提问（btw）按钮。
- * 点击文件按钮切换会话面板（RightSidePanel）展开/折叠。
- * 点击 btw 按钮打开侧面提问面板。
+ * 包含文件面板按钮和旁注（btw）按钮。
+ * 点击按钮切换 rightRailItemAtom，右侧边栏根据状态显示对应面板。
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -18,13 +17,12 @@ import {
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
 import {
-  btwOpenAtom,
-  btwMessagesAtom,
   btwChannelIdAtom,
   btwModelIdAtom,
   btwSourceSessionIdAtom,
 } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
+import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { detectIsMac } from '@/lib/platform'
 import { registerShortcut } from '@/lib/shortcut-registry'
@@ -50,17 +48,8 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const unseenFilesCount = currentSessionId ? (unseenFilesMap.get(currentSessionId)?.size ?? 0) : 0
   const showBadge = !panelOpen && (unseenChanges || unseenFilesCount > 0)
 
-  const togglePanel = React.useCallback(() => {
-    setPanelOpen((open) => !open)
-  }, [setPanelOpen])
-
-  React.useEffect(() => {
-    return registerShortcut('toggle-right-panel', togglePanel)
-  }, [togglePanel])
-
-  // ===== BTW 按钮 =====
-  const [btwOpen, setBtwOpen] = useAtom(btwOpenAtom)
-  const setBtwMessages = useSetAtom(btwMessagesAtom)
+  // 右侧 Rail 切换逻辑（镜像左侧）
+  const [rightRailItem, setRightRailItem] = useAtom(rightRailItemAtom)
   const setBtwChannelId = useSetAtom(btwChannelIdAtom)
   const setBtwModelId = useSetAtom(btwModelIdAtom)
   const setBtwSourceSessionId = useSetAtom(btwSourceSessionIdAtom)
@@ -76,13 +65,34 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
     return ch?.enabled && ch.models.some((m) => m.enabled)
   }, [channels, channelId])
 
+  const togglePanel = React.useCallback(() => {
+    if (panelOpen && rightRailItem === 'files') {
+      // 文件面板已打开且当前是文件 → 折叠
+      setPanelOpen(false)
+    } else {
+      // 其他情况 → 切换到文件面板并打开
+      setRightRailItem('files')
+      setPanelOpen(true)
+    }
+  }, [setPanelOpen, panelOpen, rightRailItem, setRightRailItem])
+
+  React.useEffect(() => {
+    return registerShortcut('toggle-right-panel', togglePanel)
+  }, [togglePanel])
+
   const handleBtwClick = React.useCallback(() => {
-    setBtwMessages([])
-    if (channelId) setBtwChannelId(channelId)
-    if (modelId) setBtwModelId(modelId)
-    if (currentSessionId) setBtwSourceSessionId(currentSessionId)
-    setBtwOpen(true)
-  }, [channelId, modelId, currentSessionId, setBtwMessages, setBtwChannelId, setBtwModelId, setBtwSourceSessionId, setBtwOpen])
+    if (panelOpen && rightRailItem === 'btw') {
+      // btw 面板已打开且当前是 btw → 折叠
+      setPanelOpen(false)
+    } else {
+      // 其他情况 → 切换到 btw 面板并打开
+      setRightRailItem('btw')
+      if (channelId) setBtwChannelId(channelId)
+      if (modelId) setBtwModelId(modelId)
+      if (currentSessionId) setBtwSourceSessionId(currentSessionId)
+      setPanelOpen(true)
+    }
+  }, [panelOpen, rightRailItem, channelId, modelId, currentSessionId, setRightRailItem, setBtwChannelId, setBtwModelId, setBtwSourceSessionId, setPanelOpen])
 
   return (
     <div
@@ -101,11 +111,11 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
               <button
                 type="button"
                 onClick={togglePanel}
-                aria-pressed={panelOpen}
+                aria-pressed={panelOpen && rightRailItem === 'files'}
                 aria-label="文件面板"
                 className={cn(
                   'rail-island-btn size-8 flex items-center justify-center rounded-[9px] titlebar-no-drag relative z-[2]',
-                  panelOpen && 'rail-island-btn--active rail-island-btn--ghost'
+                  panelOpen && rightRailItem === 'files' && 'rail-island-btn--active rail-island-btn--ghost'
                 )}
               >
                 <RAIL_ICON size={12} strokeWidth={1.75} />
@@ -121,18 +131,18 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
             </TooltipContent>
           </Tooltip>
 
-          {/* 侧面提问（btw）按钮 */}
+          {/* 旁注（btw）按钮 */}
           {hasChannel && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={handleBtwClick}
-                  aria-pressed={btwOpen}
-                  aria-label="侧面提问"
+                  aria-pressed={panelOpen && rightRailItem === 'btw'}
+                  aria-label="旁注"
                   className={cn(
                     'rail-island-btn size-8 flex items-center justify-center rounded-[9px] titlebar-no-drag relative z-[2]',
-                    btwOpen && 'rail-island-btn--active rail-island-btn--ghost'
+                    panelOpen && rightRailItem === 'btw' && 'rail-island-btn--active rail-island-btn--ghost'
                   )}
                 >
                   <BTW_ICON size={12} strokeWidth={1.75} />

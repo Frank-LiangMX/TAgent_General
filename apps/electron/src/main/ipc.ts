@@ -1434,7 +1434,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(APP_ICON_IPC_CHANNELS.SET, async (_, variantId: string): Promise<boolean> => {
     try {
       // 解析图标文件路径
-      const iconPath = resolveAppIconPath(variantId)
+      const iconPath = resolveAppIconPath() // 修复：函数不接受参数
       if (!iconPath || !existsSync(iconPath)) {
         console.warn('[图标] 图标文件不存在:', iconPath)
         return false

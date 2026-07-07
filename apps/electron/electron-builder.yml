@@ -80,6 +80,31 @@ extraResources:
     filter:
       - '**/*.png'
   # TA MCP Server 离线 wheelhouse（一键安装依赖）
+  # ??????????????????????????????
+  - from: resources/theme-icons/tagent-default-light.png
+    to: theme-icons/tagent-default-light.png
+  - from: resources/theme-icons/tagent-default-dark.png
+    to: theme-icons/tagent-default-dark.png
+  - from: resources/theme-icons/tagent-ocean-light.png
+    to: theme-icons/tagent-ocean-light.png
+  - from: resources/theme-icons/tagent-ocean-dark.png
+    to: theme-icons/tagent-ocean-dark.png
+  - from: resources/theme-icons/tagent-forest-light.png
+    to: theme-icons/tagent-forest-light.png
+  - from: resources/theme-icons/tagent-forest-dark.png
+    to: theme-icons/tagent-forest-dark.png
+  - from: resources/theme-icons/tagent-slate-light.png
+    to: theme-icons/tagent-slate-light.png
+  - from: resources/theme-icons/tagent-slate-dark.png
+    to: theme-icons/tagent-slate-dark.png
+  - from: resources/theme-icons/tagent-orange-light.png
+    to: theme-icons/tagent-orange-light.png
+  - from: resources/theme-icons/tagent-orange-dark.png
+    to: theme-icons/tagent-orange-dark.png
+  - from: resources/theme-icons/tagent-purple-light.png
+    to: theme-icons/tagent-purple-light.png
+  - from: resources/theme-icons/tagent-purple-dark.png
+    to: theme-icons/tagent-purple-dark.png
   - from: ta-agent-mcp-wheels
     to: ta-agent-mcp-wheels
     filter:

@@ -1,17 +1,15 @@
 /**
- * KanbanRailContent — 侧栏全局看板列表（B4）
+ * KanbanRailContent — 侧栏看板列表 + 角色库入口
  *
- * 列出所有看板（按 mode 过滤），点击进入看板详情。
- * 不依赖会话，看板作为独立实体存在。
- *
- * 三系统关系调整（2026-07-01）：看板页不再支持建板，
- * 任务只从会话（Agent 拆解）或草稿（用户拆 + 计划层）来。
- * 列表为纯监控视图，空态引导去会话或草稿。
+ * 2026-07-07 改动：
+ * - 添加角色库入口按钮（在标题栏下方）
+ * - 移除模式筛选 Tab，根据 topLevelMode 自动过滤
+ * - 点击角色库按钮切换主区到角色库 Tab
  */
 
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { KanbanSquare, MoreHorizontal, Trash2, Pencil } from 'lucide-react'
+import { KanbanSquare, MoreHorizontal, Trash2, Pencil, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -23,6 +21,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Button,
 } from '@tagent/ui'
 import type { KanbanBoardMode } from '@tagent/shared'
 
@@ -31,6 +30,7 @@ import {
   useKanbanBoards,
   kanbanBoardsFilterAtom,
   selectedKanbanBoardIdAtom,
+  kanbanActiveTabAtom,
 } from '@/atoms/kanban-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
@@ -140,21 +140,19 @@ export function KanbanRailContent(): React.ReactElement {
   const setStoredFilter = useSetAtom(kanbanBoardsFilterAtom)
   const selectedBoardId = useAtomValue(selectedKanbanBoardIdAtom)
   const setSelectedBoardId = useSetAtom(selectedKanbanBoardIdAtom)
+  const setActiveTab = useSetAtom(kanbanActiveTabAtom)
 
-  // 首次挂载时按当前模式初始化过滤（用 ref 避免点「全部」后被重置）
-  const initializedRef = React.useRef(false)
+  // 根据顶层模式自动过滤看板（无手动筛选）
   React.useEffect(() => {
-    if (initializedRef.current) return
-    initializedRef.current = true
-    if (!filter.mode) {
-      const modeFilter: KanbanBoardMode = topLevelMode === 'ta' ? 'ta' : 'general'
+    const modeFilter: KanbanBoardMode = topLevelMode === 'ta' ? 'ta' : 'general'
+    if (filter.mode !== modeFilter) {
       const newFilter = { ...filter, mode: modeFilter }
       setFilter(newFilter)
       setStoredFilter(newFilter)
     }
   }, [topLevelMode, filter, setFilter, setStoredFilter])
 
-  // Dialog 状态：重命名 / 删除（新建看板入口已移除）
+  // Dialog 状态：重命名 / 删除
   const [renameTarget, setRenameTarget] = React.useState<{ boardId: string; title: string } | null>(
     null
   )
@@ -164,6 +162,12 @@ export function KanbanRailContent(): React.ReactElement {
 
   const handleOpen = (boardId: string): void => {
     setSelectedBoardId(boardId)
+    setActiveTab('tasks') // 打开看板时切换到任务 Tab
+  }
+
+  const handleOpenRoles = (): void => {
+    setSelectedBoardId(null) // 清空选中看板
+    setActiveTab('roles') // 切换到角色库 Tab
   }
 
   const handleRenameClick = (boardId: string, currentTitle: string): void => {
@@ -189,7 +193,6 @@ export function KanbanRailContent(): React.ReactElement {
     try {
       await window.electronAPI.kanban.deleteBoard({ boardId: deleteTarget.boardId })
       toast.success('看板已删除（软删除，可恢复）')
-      // 若删除的是当前选中看板，清空选中
       if (selectedBoardId === deleteTarget.boardId) {
         setSelectedBoardId(null)
       }
@@ -206,7 +209,7 @@ export function KanbanRailContent(): React.ReactElement {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 标题栏（无新建按钮，看板只从会话/草稿来） */}
+      {/* 标题栏 */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-1.5">
           <KanbanSquare className="size-3.5 text-foreground/60" />
@@ -217,39 +220,17 @@ export function KanbanRailContent(): React.ReactElement {
         </div>
       </div>
 
-      {/* 模式过滤切换（segmented control 风格） */}
-      <div className="flex items-center gap-1 px-3 pb-2">
-        <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
-          {[
-            { value: 'general' as const, label: '通用' },
-            { value: 'ta' as const, label: 'TA' },
-            { value: 'all' as const, label: '全部' },
-          ].map((tab) => {
-            const currentValue = filter.mode ?? 'all'
-            const isActive = currentValue === tab.value
-            return (
-              <button
-                key={tab.value}
-                className={cn(
-                  'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
-                  isActive
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-                onClick={() => {
-                  const newFilter = {
-                    ...filter,
-                    mode: tab.value === 'all' ? undefined : tab.value,
-                  }
-                  setFilter(newFilter)
-                  setStoredFilter(newFilter)
-                }}
-              >
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
+      {/* 角色库入口按钮 */}
+      <div className="px-3 pb-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-8 text-xs justify-start gap-2"
+          onClick={handleOpenRoles}
+        >
+          <Users className="size-3.5" />
+          <span>角色库</span>
+        </Button>
       </div>
 
       {/* 看板列表 */}
@@ -262,11 +243,7 @@ export function KanbanRailContent(): React.ReactElement {
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <KanbanSquare className="size-8 text-muted-foreground/40 mb-2" />
             <p className="text-xs text-muted-foreground mb-1">
-              {filter.mode === 'ta'
-                ? 'TA 模式暂无看板'
-                : filter.mode === 'general'
-                  ? '通用模式暂无看板'
-                  : '暂无看板'}
+              {topLevelMode === 'ta' ? 'TA 模式暂无看板' : '通用模式暂无看板'}
             </p>
             <p className="text-[10px] text-muted-foreground/70 max-w-[200px] leading-relaxed">
               在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
@@ -286,7 +263,7 @@ export function KanbanRailContent(): React.ReactElement {
         )}
       </div>
 
-      {/* 重命名看板 Dialog（保留，管理操作） */}
+      {/* 重命名看板 Dialog */}
       <KanbanCreateBoardDialog
         open={renameTarget !== null}
         onOpenChange={(open) => {

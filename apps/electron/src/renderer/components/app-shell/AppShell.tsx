@@ -20,7 +20,7 @@ import {
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, topLevelModeAtom, activeRailItemAtom } from '@/atoms/app-mode'
+import { appModeAtom, topLevelModeAtom, activeRailItemAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
@@ -56,6 +56,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
+  const rightRailItem = useAtomValue(rightRailItemAtom) // 右侧边栏当前功能项
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
   // RightRail 跟随主面板激活的 tab 类型，而非左侧 railItem。

@@ -1,78 +1,20 @@
 """
-Generate tray icon (iconTemplate.png + @2x + @3x) from a simple geometric design.
+Generate macOS status bar template icons directly from the current TAgent logo pattern.
 
-For macOS Template icons + Windows tray:
-  - Monochrome (black on transparent)
-  - macOS auto-tints based on menu bar theme
-  - 3 sizes: 22x22 (1x), 44x44 (2x Retina), 66x66 (3x)
+This keeps the menu bar mark visually aligned with the shipped icon language:
+- uses the existing pattern-only logo as the source of truth
+- converts the mark to a monochrome template image
+- keeps transparent background for macOS automatic tinting
+- exports 22x22, 44x44, and 66x66 variants
 """
 
-from PIL import Image, ImageDraw
 from pathlib import Path
 
-OUT_DIR = Path(r"F:\TAgent_General\apps\electron\resources")
+from PIL import Image
 
-# icosahedron simplified: pentagon with internal facet lines
-# (centered at 0,0; scale = half-width)
-PENTAGON_OUTER = [
-    (0, -12),     # top
-    (12, -4),     # upper right
-    (7, 11),      # lower right
-    (-7, 11),     # lower left
-    (-12, -4),    # upper left
-]
-CENTER = (0, 0)
-# Internal facet lines (center to each vertex except bottom two)
-INNER_LINES = [
-    ((0, 0), (0, -12)),
-    ((0, 0), (12, -4)),
-    ((0, 0), (-12, -4)),
-    ((0, 0), (7, 11)),
-    ((0, 0), (-7, 11)),
-    # Upper internal division line (between top and upper-mid)
-    ((-6, -2), (6, -2)),
-]
-
-
-def draw_tray_icon(size: int) -> Image.Image:
-    """Draw monochrome (white) icosahedron at given size."""
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    s = size / 32.0  # scale factor (design is in 32x32 coords)
-
-    # Center
-    cx, cy = size / 2, size / 2
-
-    # Pentagon outer (solid white)
-    pent = [(x * s + cx, y * s + cy) for x, y in PENTAGON_OUTER]
-    draw.polygon(pent, fill=(255, 255, 255, 255))
-
-    # Carve internal "facet" cuts with semi-transparent gaps
-    line_w = max(1, int(1.5 * s))
-    for (x1, y1), (x2, y2) in INNER_LINES:
-        draw.line(
-            [(x1 * s + cx, y1 * s + cy), (x2 * s + cx, y2 * s + cy)],
-            fill=(0, 0, 0, 0),
-            width=line_w,
-        )
-
-    # Make 2 facets appear darker (carve with semi-transparent cuts)
-    cut_ul = [
-        (0 * s + cx, -12 * s + cy),
-        (0 * s + cx, 0 * s + cy),
-        (-12 * s + cx, -4 * s + cy),
-    ]
-    draw.polygon(cut_ul, fill=(255, 255, 255, 110))
-    cut_b = [
-        (0 * s + cx, 0 * s + cy),
-        (7 * s + cx, 11 * s + cy),
-        (-7 * s + cx, 11 * s + cy),
-    ]
-    draw.polygon(cut_b, fill=(255, 255, 255, 110))
-
-    return img
-
+ROOT = Path(__file__).resolve().parent
+PATTERN_SOURCE = ROOT / "tagent-logo-proposals-v2" / "tagent-dark-pattern-only.png"
+OUT_DIR = ROOT
 
 SIZES = [
     ("iconTemplate.png", 22),
@@ -80,8 +22,46 @@ SIZES = [
     ("iconTemplate@3x.png", 66),
 ]
 
-for name, size in SIZES:
-    img = draw_tray_icon(size)
-    out = OUT_DIR / name
-    img.save(out, format="PNG", optimize=True)
-    print(f"[OK] {out.name} ({size}x{size}) -> {out.stat().st_size} bytes")
+PADDING_RATIO = 0.14
+
+
+def extract_pattern_alpha(source: Image.Image) -> Image.Image:
+    """Crop the visible logo pattern to its alpha bounds."""
+    rgba = source.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    bbox = alpha.getbbox()
+    if bbox is None:
+        raise ValueError("Pattern source has no visible alpha content")
+    return rgba.crop(bbox)
+
+
+def make_template_icon(pattern: Image.Image, size: int) -> Image.Image:
+    """Render the existing logo pattern as a white template icon."""
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+
+    alpha = pattern.getchannel("A")
+    white_pattern = Image.new("RGBA", pattern.size, (255, 255, 255, 255))
+    white_pattern.putalpha(alpha)
+
+    inner = max(1, round(size * (1 - PADDING_RATIO * 2)))
+    resized = white_pattern.resize((inner, inner), Image.Resampling.LANCZOS)
+    offset = ((size - inner) // 2, (size - inner) // 2)
+    canvas.paste(resized, offset, resized)
+    return canvas
+
+
+def main() -> None:
+    if not PATTERN_SOURCE.exists():
+        raise FileNotFoundError(f"Pattern source not found: {PATTERN_SOURCE}")
+
+    pattern = extract_pattern_alpha(Image.open(PATTERN_SOURCE))
+
+    for name, size in SIZES:
+        icon = make_template_icon(pattern, size)
+        out = OUT_DIR / name
+        icon.save(out, format="PNG", optimize=True)
+        print(f"[OK] {out.name} ({size}x{size})")
+
+
+if __name__ == "__main__":
+    main()

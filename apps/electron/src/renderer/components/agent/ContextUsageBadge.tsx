@@ -195,8 +195,9 @@ export function ContextUsageBadge({
   const streamTokens = hasCurrent ? inputTokens : stable?.inputTokens
   const streamWindow = hasCurrent ? contextWindow : stable?.contextWindow
 
+  // 流式预览：允许超过 100% 显示，避免压缩过程中圆环消失
   const streamPreview =
-    streamWindow && streamTokens && streamTokens > 0 && streamTokens <= streamWindow
+    streamWindow && streamTokens && streamTokens > 0
       ? { totalTokens: streamTokens, maxTokens: streamWindow }
       : null
 
@@ -211,9 +212,10 @@ export function ContextUsageBadge({
   // SDK / 缓存快照（不含流式估算预览）— 圆环与百分比以此为准
   const authoritativeSnapshot = snapshot && !isStreamPreview ? snapshot : null
 
-  // 圆环与百分比：优先 SDK 分项（准确）；流式 usage 仅作加载前兜底，且超过 100% 时不展示以免误导
+  // 圆环与百分比：优先 SDK 分项（准确）；流式 usage 作加载前兜底
+  // 超过 100% 时也显示，用红色警告
   const streamRatio =
-    streamWindow && streamTokens && streamTokens <= streamWindow
+    streamWindow && streamTokens && streamTokens > 0
       ? streamTokens / streamWindow
       : undefined
   const displayTokens = authoritativeSnapshot?.totalTokens ?? streamTokens
@@ -260,16 +262,20 @@ export function ContextUsageBadge({
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
+  // 超过 100% 时强制显示危险色（红色）
   const isWarning = authoritativeSnapshot
     ? ratio >= COMPACT_THRESHOLD_RATIO * WARNING_RATIO
     : compactThreshold && displayTokens
       ? displayTokens / compactThreshold >= WARNING_RATIO
       : false
-  const isDanger = ratio >= DANGER_RATIO
+  const isDanger =
+    ratio >= DANGER_RATIO ||
+    (displayTokens != null && displayWindow != null && displayTokens > displayWindow)
 
   const showPercentPlaceholder = !authoritativeSnapshot && (breakdownLoading || breakdownRefreshing)
   const effectivePercent = showPercentPlaceholder ? undefined : percent
-  const effectiveRatio = showPercentPlaceholder ? 0 : ratio
+  // 超过 100% 时圆环仍显示，用满圆（ratio=1）+ 红色
+  const effectiveRatio = showPercentPlaceholder ? 0 : Math.min(1, ratio)
 
   const toneClass = isDanger
     ? 'text-red-600 dark:text-red-400'

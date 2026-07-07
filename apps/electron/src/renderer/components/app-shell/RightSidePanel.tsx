@@ -1,9 +1,9 @@
 /**
  * RightSidePanel — 右侧边栏容器
  *
- * 在 Agent 模式下显示文件面板，样式与 LeftSidebar 一致。
+ * 在 Agent 模式下显示文件面板或 btw 面板，样式与 LeftSidebar 一致。
  * 从全局 atom 读取当前会话 ID 和路径。
- * 管理「项目文件 / 文件活动 / 代码改动」Tab 切换。
+ * 根据 rightRailItemAtom 切换显示内容（镜像左侧 LeftSidebar 机制）。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -14,8 +14,9 @@ import {
   agentSessionPathMapAtom,
   agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
+import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import { SidePanel } from '@/components/agent/SidePanel'
+import { BtwPanel } from '@/components/agent/BtwPanel' // 重新使用 BtwPanel（样式已适配）
 
 export function RightSidePanel({ width }: { width?: number }): React.ReactElement | null {
   const appMode = useAtomValue(appModeAtom)
@@ -23,6 +24,7 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
   const sessionPathMap = useAtomValue(agentSessionPathMapAtom)
   const diffPanelTabMap = useAtomValue(agentDiffPanelTabAtom)
   const setDiffPanelTabMap = useSetAtom(agentDiffPanelTabAtom)
+  const rightRailItem = useAtomValue(rightRailItemAtom)
 
   const setActiveTab = React.useCallback(
     (tab: 'project' | 'activity' | 'changes') => {
@@ -41,6 +43,12 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
     ? (diffPanelTabMap.get(currentSessionId) ?? 'project')
     : 'project'
 
+  // 根据 rightRailItem 切换显示内容
+  if (rightRailItem === 'btw') {
+    return <BtwPanel width={width} />
+  }
+
+  // 默认显示文件面板
   return (
     <SidePanel
       sessionId={currentSessionId ?? ''}

@@ -180,20 +180,24 @@ function AgentSettingsInitializer(): null {
         setChannelsLoaded(true)
 
         const channelIds = new Set(channels.map((c) => c.id))
+        const enabledChannelIds = new Set(
+          channels.filter((c) => c.enabled).map((c) => c.id)
+        )
 
         // 验证 Chat 模式的全局默认模型（localStorage 持久化的可能指向已删除渠道）
         const chatModel = store.get(selectedModelAtom)
-        if (chatModel && !channelIds.has(chatModel.channelId)) {
-          console.warn('[AgentSettings] Chat selectedModel 指向已删除的渠道，清除')
+        if (chatModel && !enabledChannelIds.has(chatModel.channelId)) {
+          console.warn('[AgentSettings] Chat selectedModel 指向已禁用或已删除的渠道，清除')
           store.set(selectedModelAtom, null)
         }
 
         // 验证并加载 Agent 渠道/模型
-        if (settings.agentChannelId && channelIds.has(settings.agentChannelId)) {
+        // 修复：检查渠道是否存在且已启用（之前只检查存在，导致禁用 kscc 后 agentChannelId 仍指向它）
+        if (settings.agentChannelId && enabledChannelIds.has(settings.agentChannelId)) {
           setAgentChannelId(settings.agentChannelId)
-        } else if (settings.agentChannelId && !channelIds.has(settings.agentChannelId)) {
-          // 渠道已删除，清除无效设置
-          console.warn('[AgentSettings] agentChannelId 指向已删除的渠道，清除')
+        } else if (settings.agentChannelId && !enabledChannelIds.has(settings.agentChannelId)) {
+          // 渠道已删除或已禁用，清除无效设置
+          console.warn('[AgentSettings] agentChannelId 指向已删除或已禁用的渠道，清除')
           window.electronAPI
             .updateSettings({ agentChannelId: undefined, agentModelId: undefined })
             .catch(console.error)

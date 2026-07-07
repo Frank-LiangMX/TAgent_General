@@ -71,7 +71,6 @@ import { AgentModelSelector } from './AgentModelSelector'
 import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
-import { BtwPanel } from './BtwPanel'
 import { ComposerModeSelector } from './ComposerModeSelector'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
@@ -2851,7 +2850,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                         className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
                         data-input-mode="agent"
                       >
-                        <BtwPanel />
                         <div
                           className={cn(
                             'session-glass chat-input-glass transition-colors duration-200',

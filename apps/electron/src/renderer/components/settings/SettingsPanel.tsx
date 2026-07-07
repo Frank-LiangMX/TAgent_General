@@ -29,7 +29,6 @@ import {
   BarChart3,
   Sparkles,
   Wand2,
-  Users,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -59,7 +58,7 @@ import { SettingsSearch } from './SettingsSearch'
 import { ShortcutSettings } from './ShortcutSettings'
 import { VoiceInputSettings } from './VoiceInputSettings'
 import { AgentPreferencesSettings } from './AgentBehaviorSettings'
-import { AgentRoleSettings } from './AgentRoleSettings'
+// AgentRoleSettings 已迁移到看板页（2026-07-07）
 
 import type { SettingsTab } from '@/atoms/settings-tab'
 
@@ -99,7 +98,7 @@ const ALL_TABS: TabItem[] = [
   { id: 'channels', label: 'AI 渠道', icon: <Radio size={15} />, group: 'core' },
   { id: 'prompts', label: '提示词', icon: <BookOpen size={15} />, group: 'core' },
   { id: 'agent-preferences', label: 'Agent 偏好', icon: <Wand2 size={15} />, group: 'core' },
-  { id: 'agent-roles', label: '角色库', icon: <Users size={15} />, group: 'core' },
+  // 角色库已迁移到看板页（2026-07-07）
   { id: 'bots', label: '远程', icon: <Bot size={15} />, group: 'integration' },
   { id: 'voice-input', label: '语音', icon: <Mic size={15} />, group: 'integration' },
   { id: 'proxy', label: '代理', icon: <Globe size={15} />, group: 'integration' },
@@ -119,8 +118,6 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
       return <PromptSettings />
     case 'agent-preferences':
       return <AgentPreferencesSettings />
-    case 'agent-roles':
-      return <AgentRoleSettings />
     case 'proxy':
       return <ProxySettings />
     case 'appearance':

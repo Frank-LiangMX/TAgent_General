@@ -5,19 +5,16 @@
  * 并定位到 resources/theme-icons/ 下的 PNG 文件。
  *
  * 逻辑与 titlebar-overlay.ts 的颜色解析保持一致，确保图标和标题栏颜色同步切换。
+ * 生产包里若 extraResources 落位发生差异，会按候选路径回退，避免静默退回旧 exe 图标。
  */
 
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { app } from 'electron'
 
 import type { ThemeMode, ThemeStyle } from '../../types'
 
-/**
- * 主题图标 key（12 个变体）
- *
- * 对应 resources/theme-icons/tagent-{key}.png 文件。
- */
 export type LogoKey =
   | 'default-light'
   | 'default-dark'
@@ -32,16 +29,6 @@ export type LogoKey =
   | 'purple-light'
   | 'purple-dark'
 
-/**
- * 从主题设置解析图标 key
- *
- * 解析规则：
- * - special + 非 default 风格 → 直接用 themeStyle（如 'ocean-light'）
- * - special + default/undefined → 按系统明暗 fallback（与 system 模式一致）
- * - system → 跟随系统明暗
- * - dark → 'default-dark'
- * - light → 'default-light'
- */
 export function resolveLogoKey(
   mode: ThemeMode,
   style: ThemeStyle | undefined,
@@ -50,7 +37,6 @@ export function resolveLogoKey(
   if (mode === 'special' && style && style !== 'default') {
     return style as LogoKey
   }
-  // system / special+default / special+undefined → 按系统明暗
   if (mode === 'light') {
     return 'default-light'
   }
@@ -60,29 +46,26 @@ export function resolveLogoKey(
   return systemIsDark ? 'default-dark' : 'default-light'
 }
 
-/**
- * 获取主题图标文件路径
- *
- * dev: __dirname/resources/theme-icons/tagent-{key}.png
- * prod: process.resourcesPath/theme-icons/tagent-{key}.png
- */
-export function getThemeIconPath(key: LogoKey): string {
-  const resourcesDir = app.isPackaged ? process.resourcesPath : join(__dirname, 'resources')
-  return join(resourcesDir, 'theme-icons', `tagent-${key}.png`)
+export function getThemeIconCandidatePaths(
+  key: LogoKey
+): Array<{ path: string; exists: boolean }> {
+  const relativePath = join('theme-icons', `tagent-${key}.png`)
+  const candidates = app.isPackaged
+    ? [
+        join(process.resourcesPath, relativePath),
+        join(process.resourcesPath, 'resources', relativePath),
+        join(app.getAppPath(), 'dist', 'resources', relativePath),
+        join(app.getAppPath(), 'resources', relativePath),
+      ]
+    : [join(__dirname, 'resources', relativePath)]
+
+  return candidates.map((path) => ({ path, exists: existsSync(path) }))
 }
 
-/**
- * 解析应用主题对应的 nativeTheme.themeSource 值
- *
- * 用于让 Electron 原生菜单（托盘菜单、应用菜单、系统对话框）跟随应用主题明暗。
- * 未设置时原生菜单跟随系统主题，与应用主题不同步。
- *
- * - light → 'light'
- * - dark → 'dark'
- * - system → 'system'（跟随系统）
- * - special + 非 default 风格 → 按风格后缀（-light/-dark）
- * - special + default/undefined → 'system'（跟随系统）
- */
+export function getThemeIconPath(key: LogoKey): string {
+  return getThemeIconCandidatePaths(key).find((candidate) => candidate.exists)?.path ?? ''
+}
+
 export function resolveNativeThemeSource(
   mode: ThemeMode,
   style: ThemeStyle | undefined
@@ -90,10 +73,8 @@ export function resolveNativeThemeSource(
   if (mode === 'light') return 'light'
   if (mode === 'dark') return 'dark'
   if (mode === 'system') return 'system'
-  // special + 非 default 风格 → 按后缀
   if (style && style !== 'default') {
     return style.endsWith('-light') ? 'light' : 'dark'
   }
-  // special + default/undefined → 跟随系统
   return 'system'
 }

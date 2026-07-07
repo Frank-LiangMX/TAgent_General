@@ -1043,6 +1043,19 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           }
         }
 
+        // 每轮 assistant 消息后刷新 context 缓存，不等 result
+        // 避免整轮 turn 期间缓存陈旧，context 到 100% 才反映到 UI
+        if (msg.type === 'assistant') {
+          const liveQuery = activeQueries.get(options.sessionId)
+          if (liveQuery && typeof liveQuery.getContextUsage === 'function') {
+            void cacheContextUsageFromQuery(
+              options.sessionId,
+              liveQuery,
+              options.onContextUsage
+            )
+          }
+        }
+
         // 捕获 result 中的 contextWindow
         if (msg.type === 'result') {
           const resultMsg = msg as {
