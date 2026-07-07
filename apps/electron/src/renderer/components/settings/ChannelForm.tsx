@@ -24,6 +24,7 @@ import {
   Zap,
   Download,
   Star,
+  AlertTriangle,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -136,6 +137,16 @@ const ANTHROPIC_PROTOCOL_PROVIDERS: ReadonlySet<ProviderType> = new Set<Provider
 ])
 
 /**
+ * Token Plan（订阅/按次计费）供应商
+ * Agent 模式多轮工具调用会快速消耗调用次数配额。
+ */
+const TOKEN_PLAN_PROVIDERS: ReadonlySet<ProviderType> = new Set<ProviderType>([
+  'kimi-coding',
+  'zhipu-coding',
+  'xiaomi-token-plan',
+])
+
+/**
  * 生成 API 端点预览 URL
  *
  * Anthropic 协议供应商：复用 normalizeAnthropicProviderUrl 计算 base，再拼 /messages，
@@ -195,6 +206,7 @@ export function ChannelForm({
   const [fetchResult, setFetchResult] = React.useState<FetchModelsResult | null>(null)
   const [apiKeyLoaded, setApiKeyLoaded] = React.useState(false)
   const [showExitDialog, setShowExitDialog] = React.useState(false)
+  const [showTokenPlanWarning, setShowTokenPlanWarning] = React.useState(true)
 
   const setChannelFormDirty = useSetAtom(channelFormDirtyAtom)
   const lastAgentEligibleRef = React.useRef(channel ? isAgentEligibleChannel(channel) : false)
@@ -218,6 +230,16 @@ export function ChannelForm({
         })
     }
   }, [isEdit, channel, apiKeyLoaded])
+
+  /** 加载全局设置中的 Token Plan 提醒开关 */
+  React.useEffect(() => {
+    window.electronAPI
+      .getSettings()
+      .then((settings) => {
+        setShowTokenPlanWarning(settings.showTokenPlanWarning ?? true)
+      })
+      .catch(console.error)
+  }, [])
 
   // ===== Auto-save（仅编辑模式） =====
   const autoSaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -609,6 +631,23 @@ export function ChannelForm({
             options={PROVIDER_SELECT_OPTIONS}
             placeholder="选择供应商"
           />
+
+          {/* Token Plan 供应商消费提醒 */}
+          {showTokenPlanWarning && TOKEN_PLAN_PROVIDERS.has(provider) && (
+            <div className="mx-4 mb-2 flex items-start gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 text-xs dark:border-amber-600/30 dark:bg-amber-950/30">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="space-y-1 text-amber-800 dark:text-amber-200">
+                <p className="font-medium">Token Plan 注意</p>
+                <p>
+                  该供应商按 API 调用次数计费。Agent 模式每次工具调用都会发起一次独立的 API 请求，复杂任务可能消耗大量配额。
+                  建议优先使用按 Token 计费的渠道（如 DeepSeek、OpenAI）运行 Agent 任务。
+                </p>
+                <p className="text-amber-600/70 dark:text-amber-400/70">
+                  可在「通用设置」中关闭此提醒。
+                </p>
+              </div>
+            </div>
+          )}
           <SettingsInput
             label="供应商名称"
             value={name}

@@ -644,6 +644,13 @@ export type AgentEvent =
       turnId?: string
       parentToolUseId?: string
     }
+  | { type: 'thinking_delta'; text: string; turnId?: string; parentToolUseId?: string }
+  | {
+      type: 'thinking_complete'
+      text: string
+      turnId?: string
+      parentToolUseId?: string
+    }
   // 工具执行
   | {
       type: 'tool_start'
@@ -800,6 +807,13 @@ export type AgentStreamPayload =
   | {
       kind: 'stream_text_delta'
       /** 本次增量文本（已拆分为字符粒度由渲染层 useSmoothStream 入队） */
+      text: string
+      /** SubAgent 父 tool_use_id（顶层 Agent 为 undefined） */
+      parentToolUseId?: string
+    }
+  | {
+      kind: 'stream_thinking_delta'
+      /** 本次 thinking 增量（extended thinking / adaptive thinking） */
       text: string
       /** SubAgent 父 tool_use_id（顶层 Agent 为 undefined） */
       parentToolUseId?: string

@@ -28,6 +28,7 @@ export function getSettings(): AppSettings {
       notificationsEnabled: true,
       feishuSessionMirror: { mode: 'off' },
       subagentEagerness: 'conservative',
+      showTokenPlanWarning: true,
     }
   }
 
@@ -41,6 +42,7 @@ export function getSettings(): AppSettings {
       environmentCheckSkipped: data.environmentCheckSkipped ?? false,
       notificationsEnabled: data.notificationsEnabled ?? true,
       feishuSessionMirror: data.feishuSessionMirror ?? { mode: 'off' },
+      showTokenPlanWarning: data.showTokenPlanWarning ?? true,
     }
   } catch (error) {
     console.error('[设置] 读取失败:', error)
@@ -51,6 +53,7 @@ export function getSettings(): AppSettings {
       notificationsEnabled: true,
       feishuSessionMirror: { mode: 'off' },
       subagentEagerness: 'conservative',
+      showTokenPlanWarning: true,
     }
   }
 }

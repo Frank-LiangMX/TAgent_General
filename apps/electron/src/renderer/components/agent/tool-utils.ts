@@ -3,96 +3,19 @@
  * 供 SDK 内容块、任务进度卡片等组件复用。
  */
 
-import {
-  BookOpen,
-  Bot,
-  CalendarClock,
-  CalendarDays,
-  CalendarX,
-  ClipboardList,
-  Database,
-  Download,
-  FilePenLine,
-  SquareCheck,
-  FileSearch,
-  FileText,
-  FolderSearch,
-  GitBranch,
-  Globe,
-  ImagePlus,
-  Layers,
-  List,
-  ListChecks,
-  LogIn,
-  LogOut,
-  Map,
-  MapPinOff,
-  MessageCircleQuestion,
-  OctagonX,
-  Pencil,
-  Plug,
-  Radio,
-  Search,
-  Send,
-  Server,
-  Terminal,
-  Wrench,
-  Zap,
-} from 'lucide-react'
+import type { SessionIconComponent } from './session-icons'
+import { getSessionToolIcon, SESSION_TOOL_ICONS, SessionMcpIcon, SessionToolFallbackIcon } from './session-icons'
 
-import type { LucideIcon } from 'lucide-react'
-
-/** 工具名称到图标组件的映射 */
-export const TOOL_ICONS: Record<string, LucideIcon> = {
-  Edit: Pencil,
-  Write: FilePenLine,
-  Read: FileText,
-  Bash: Terminal,
-  Glob: FolderSearch,
-  Grep: Search,
-  Task: GitBranch,
-  WebFetch: Download,
-  WebSearch: Globe,
-  NotebookEdit: BookOpen,
-  Skill: Zap,
-  TodoWrite: ListChecks,
-  TodoRead: ClipboardList,
-  TaskCreate: SquareCheck,
-  TaskUpdate: ListChecks,
-  TaskGet: FileSearch,
-  TaskList: List,
-  Agent: Bot,
-  EnterPlanMode: Map,
-  ExitPlanMode: MapPinOff,
-  generate_image: ImagePlus,
-  TaskOutput: Layers,
-  TaskStop: OctagonX,
-  AskUserQuestion: MessageCircleQuestion,
-  REPL: Terminal,
-  Workflow: GitBranch,
-  ScheduleWakeup: CalendarClock,
-  Monitor: Radio,
-  PushNotification: Send,
-  CronCreate: CalendarClock,
-  CronDelete: CalendarX,
-  CronList: CalendarDays,
-  RemoteTrigger: Radio,
-  EnterWorktree: LogIn,
-  ExitWorktree: LogOut,
-  ReadMcpResourceTool: Database,
-  ListMcpResourcesTool: Server,
-  SendMessage: Send,
-}
+/** 工具名称到图标组件的映射（reicon） */
+export const TOOL_ICONS: Record<string, SessionIconComponent> = SESSION_TOOL_ICONS
 
 /**
  * 根据工具名称获取对应的图标组件
  * MCP 工具（mcp__serverName__toolName）使用 Plug 图标
- * 未匹配时返回默认的 Wrench 图标
+ * 未匹配时返回默认工具图标
  */
-export function getToolIcon(toolName: string): LucideIcon {
-  if (TOOL_ICONS[toolName]) return TOOL_ICONS[toolName]
-  if (toolName.startsWith('mcp__')) return Plug
-  return Wrench
+export function getToolIcon(toolName: string): SessionIconComponent {
+  return getSessionToolIcon(toolName)
 }
 
 /** 内置工具显示名称映射 */
@@ -481,3 +404,6 @@ export function formatElapsed(seconds: number): string {
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes}m ${remainingSeconds}s`
 }
+
+// 兼容旧 import（部分模块可能引用默认 MCP / fallback 图标）
+export { SessionMcpIcon, SessionToolFallbackIcon }

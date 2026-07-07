@@ -76,7 +76,10 @@ export function finalizeStreamingActivities(toolActivities: ToolActivity[]): {
 /** Agent 会话的流式状态 */
 export interface AgentStreamState {
   running: boolean
+  /** 当前流式 text 段累积内容（typing 打字机） */
   content: string
+  /** 当前流式 thinking 段累积内容（extended / adaptive thinking） */
+  thinkingContent?: string
   toolActivities: ToolActivity[]
   model?: string
   /** 当前输入 token 数（上下文使用量） */
@@ -640,13 +643,31 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
       // 若此处也累积会导致 SubAgent 输出串到主回复里。
       if (event.parentToolUseId) return prev
       // 顶层 Agent 文本：开始接收 - 清除重试状态（重试成功）
-      return { ...prev, content: prev.content + event.text, retrying: undefined }
+      // text 段开始意味着 thinking 段已结束，清空 thinkingContent 避免与落盘块重复渲染
+      return {
+        ...prev,
+        content: prev.content + event.text,
+        thinkingContent: '',
+        retrying: undefined,
+      }
 
     case 'text_complete':
       // SubAgent 完整文本走 liveMessagesMap 单独渲染，不覆盖顶层 state.content
       if (event.parentToolUseId) return prev
       // 顶层 Agent：用完整文本替换增量累积的文本（用于回放场景：只需 text_complete 即可重建文本状态）
-      return { ...prev, content: event.text }
+      return { ...prev, content: event.text, thinkingContent: '' }
+
+    case 'thinking_delta':
+      if (event.parentToolUseId) return prev
+      return {
+        ...prev,
+        thinkingContent: (prev.thinkingContent ?? '') + event.text,
+        retrying: undefined,
+      }
+
+    case 'thinking_complete':
+      if (event.parentToolUseId) return prev
+      return { ...prev, thinkingContent: event.text }
 
     case 'tool_start': {
       const existing = prev.toolActivities.find((t) => t.toolUseId === event.toolUseId)
@@ -669,6 +690,8 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
       }
       return {
         ...prev,
+        // 新工具段开始：清空顶层流式文本，避免跨段累积导致打字机吞字/乱序
+        ...(event.parentToolUseId ? {} : { content: '', thinkingContent: '' }),
         toolActivities: [
           ...prev.toolActivities,
           {

@@ -109,11 +109,11 @@ export function MessageHeader({
       {...props}
     >
       {logo && (
-        <div className="flex size-[35px] shrink-0 items-center justify-center overflow-hidden rounded-[25%]">
+        <div className="flex size-[32px] shrink-0 items-center justify-center overflow-hidden rounded-[25%]">
           {logo}
         </div>
       )}
-      <div className="flex flex-col justify-between h-[35px]">
+      <div className="flex flex-col justify-between h-[32px]">
         {model && (
           <span className="text-sm font-semibold text-foreground/60 leading-none">{model}</span>
         )}
@@ -693,7 +693,7 @@ export const UserMessageContent = React.memo(
     return (
       <div
         className={cn(
-          'relative inline-block max-w-full rounded-[10px] bg-primary/10 px-3.5 py-2.5',
+          'agent-user-bubble relative inline-block max-w-full px-3.5 py-2.5',
           shouldCollapse && !isExpanded && 'pb-6',
           className
         )}
@@ -721,7 +721,7 @@ export const UserMessageContent = React.memo(
             className={cn(
               'flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors mt-1',
               !isExpanded &&
-                'absolute bottom-0 left-0 right-0 px-3.5 pb-2.5 pt-4 rounded-b-[10px] bg-gradient-to-t from-primary/10 to-transparent'
+                'agent-user-bubble-fade absolute bottom-0 left-0 right-0 px-3.5 pb-2.5 pt-4'
             )}
           >
             {isExpanded ? (

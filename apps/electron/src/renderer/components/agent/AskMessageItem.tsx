@@ -9,7 +9,6 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Bot } from 'lucide-react'
 import * as React from 'react'
 
 import type { AskMessage } from '@tagent/shared'
@@ -18,8 +17,15 @@ import { Spinner } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { askStreamErrorsAtom } from '@/atoms/ask-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
+import {
+  AssistantMessageLogo,
+  MESSAGE_AVATAR_SIZE,
+} from '@/components/ai-elements/message-avatar'
 import { Message, MessageContent, MessageHeader } from '@/components/ai-elements/message'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { cn } from '@/lib/utils'
+
+import { SessionAssistantIcon } from './session-icons'
 
 interface AskMessageItemProps {
   message: AskMessage
@@ -38,19 +44,16 @@ function AskKindBadge(): React.ReactElement {
   )
 }
 
-function AssistantLogo({ model }: { model?: string }): React.ReactElement {
+function AskAssistantLogo({ model }: { model?: string }): React.ReactElement {
   if (model) {
     return (
-      <div className="size-[35px] rounded-[25%] bg-blue-500/10 flex items-center justify-center">
-        <Bot size={18} className="text-blue-500" />
+      <div className="size-[32px] rounded-[25%] bg-blue-500/10 flex items-center justify-center">
+        <SessionAssistantIcon className="size-4 text-blue-500" />
       </div>
     )
   }
-  return (
-    <div className="size-[35px] rounded-[25%] bg-blue-500/10 flex items-center justify-center">
-      <Bot size={18} className="text-blue-500" />
-    </div>
-  )
+
+  return <AssistantMessageLogo model={model} />
 }
 
 /** 简单 Markdown-lite 渲染（不引入完整 MD 解析器） */
@@ -72,9 +75,9 @@ export const AskMessageItem = React.memo(function AskMessageItem({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end my-3">
-        <div className="flex items-start gap-2 max-w-[80%]">
-          <div className="flex flex-col items-end gap-1">
-            <div className="rounded-2xl rounded-tr-md bg-primary/10 px-4 py-2.5 text-foreground">
+        <div className="flex items-start gap-2.5 max-w-[80%]">
+          <div className="flex flex-col items-end gap-1 min-w-0">
+            <div className="agent-user-bubble px-4 py-2.5 text-foreground">
               {message.attachments && message.attachments.length > 0 && (
                 <div className="text-xs text-muted-foreground mb-1">
                   📎 {message.attachments.length} 个附件
@@ -83,17 +86,7 @@ export const AskMessageItem = React.memo(function AskMessageItem({
               <PlainContent text={message.content} />
             </div>
           </div>
-          {userProfile.avatar ? (
-            <img
-              src={userProfile.avatar}
-              alt="user"
-              className="size-7 rounded-full mt-1 object-cover shrink-0"
-            />
-          ) : (
-            <div className="size-7 rounded-full bg-primary/20 flex items-center justify-center mt-1 text-xs font-medium shrink-0">
-              {userProfile.userName?.slice(0, 1) ?? '我'}
-            </div>
-          )}
+          <UserAvatar avatar={userProfile.avatar} size={MESSAGE_AVATAR_SIZE} />
         </div>
       </div>
     )
@@ -109,7 +102,7 @@ export const AskMessageItem = React.memo(function AskMessageItem({
             hour: '2-digit',
             minute: '2-digit',
           })}
-          logo={<AssistantLogo model={message.modelId} />}
+          logo={<AskAssistantLogo model={message.modelId} />}
         />
         <div className="mb-1">
           <AskKindBadge />

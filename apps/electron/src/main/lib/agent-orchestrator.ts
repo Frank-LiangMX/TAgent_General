@@ -2667,7 +2667,10 @@ export class AgentOrchestrator {
             if (msg.type === 'stream_event') {
               const partial = msg as {
                 type: 'stream_event'
-                event: { type: string; delta?: { type: string; text?: string } }
+                event: {
+                  type: string
+                  delta?: { type: string; text?: string; thinking?: string }
+                }
                 parent_tool_use_id?: string | null
               }
               const evt = partial.event
@@ -2677,6 +2680,18 @@ export class AgentOrchestrator {
                   this.eventBus.emit(sessionId, {
                     kind: 'stream_text_delta',
                     text,
+                    parentToolUseId: partial.parent_tool_use_id ?? undefined,
+                  })
+                }
+              } else if (
+                evt?.type === 'content_block_delta' &&
+                evt.delta?.type === 'thinking_delta'
+              ) {
+                const thinking = evt.delta.thinking
+                if (typeof thinking === 'string' && thinking.length > 0) {
+                  this.eventBus.emit(sessionId, {
+                    kind: 'stream_thinking_delta',
+                    text: thinking,
                     parentToolUseId: partial.parent_tool_use_id ?? undefined,
                   })
                 }

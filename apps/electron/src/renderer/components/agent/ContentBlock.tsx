@@ -9,14 +9,10 @@
 
 import { useAtomValue } from 'jotai'
 import {
-  ChevronRight,
   ChevronDown,
   ChevronUp,
-  XCircle,
-  Loader2,
-  Brain,
-  MessageSquareText,
 } from 'lucide-react'
+import { ThreePetalSpiral } from '@tagent/ui'
 import * as React from 'react'
 
 import type {
@@ -43,10 +39,25 @@ import {
   type ParsedTaskListItem,
 } from './tool-result-renderers/task-list-result'
 import { getToolIcon, extractFilePath } from './tool-utils'
+import {
+  SessionChevronRight,
+  SessionErrorIcon,
+  SessionMessageTextIcon,
+  SessionThinkingIcon,
+} from './session-icons'
 
 import { thinkingExpandedAtom } from '@/atoms/model-atoms'
 import { MessageResponse } from '@/components/ai-elements/message'
 import { cn } from '@/lib/utils'
+
+/** 流式进行中的工具行指示器 */
+function ToolStreamingIndicator(): React.ReactElement {
+  return (
+    <span className="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden>
+      <ThreePetalSpiral size={14} />
+    </span>
+  )
+}
 
 // ===== useToolResult Hook =====
 
@@ -237,7 +248,7 @@ function PromptRow({
         className="flex items-center gap-2 py-0.5 text-left hover:opacity-70 transition-opacity group"
         onClick={() => setExpanded(!expanded)}
       >
-        <MessageSquareText
+        <SessionMessageTextIcon
           className={cn(
             'size-3.5 shrink-0',
             dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
@@ -262,7 +273,7 @@ function PromptRow({
           {preview}
         </span>
 
-        <ChevronRight
+        <SessionChevronRight
           className={cn(
             'shrink-0 size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-all duration-150',
             expanded && 'rotate-90 opacity-100'
@@ -416,7 +427,11 @@ function ToolUseBlock({
   if (isAgentTool) {
     return (
       <div
-        className={cn(animate && 'animate-in fade-in duration-150 fill-mode-both')}
+        className={cn(
+          'agent-tool-row',
+          !isCompleted && isStreaming && 'is-active',
+          animate && 'animate-in fade-in duration-150 fill-mode-both'
+        )}
         style={animate ? { animationDelay: delay } : undefined}
       >
         {/* 头部行：折叠箭头 + 状态 + 语义短语 */}
@@ -425,7 +440,7 @@ function ToolUseBlock({
           className="w-full flex items-center gap-2 py-0.5 text-left hover:opacity-70 transition-opacity group"
           onClick={() => setChildrenExpanded(!childrenExpanded)}
         >
-          <ChevronRight
+          <SessionChevronRight
             className={cn(
               'size-3 text-muted-foreground/50 transition-transform duration-150 shrink-0',
               childrenExpanded && 'rotate-90'
@@ -434,9 +449,9 @@ function ToolUseBlock({
 
           {/* 状态指示：仅流式中的未完成工具才显示 spinner */}
           {!isCompleted && isStreaming ? (
-            <Loader2 className="size-3.5 animate-spin text-primary/50 shrink-0" />
+            <ToolStreamingIndicator />
           ) : isError ? (
-            <XCircle className="size-3.5 text-destructive/70 shrink-0" />
+            <SessionErrorIcon className="size-3.5 text-destructive/70 shrink-0" />
           ) : null}
 
           <ToolIcon
@@ -449,7 +464,8 @@ function ToolUseBlock({
           <span
             className={cn(
               'truncate text-[14px]',
-              dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+              dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground',
+              !isCompleted && isStreaming && 'agent-shiny-text'
             )}
           >
             {displayLabel}
@@ -477,7 +493,7 @@ function ToolUseBlock({
         {childrenExpanded && (
           <div
             className={cn(
-              'pl-5 mt-1.5 space-y-2 border-l-2 border-primary/20 ml-[5px]',
+              'agent-tool-detail pl-1 mt-1.5 ml-[5px] space-y-2',
               animate && 'animate-in fade-in slide-in-from-top-1 duration-150'
             )}
           >
@@ -520,7 +536,11 @@ function ToolUseBlock({
   // ===== 普通工具：语义化短语 + 结构化结果 =====
   return (
     <div
-      className={cn(animate && 'animate-in fade-in duration-150 fill-mode-both')}
+      className={cn(
+        'agent-tool-row',
+        !isCompleted && isStreaming && 'is-active',
+        animate && 'animate-in fade-in duration-150 fill-mode-both'
+      )}
       style={animate ? { animationDelay: delay } : undefined}
     >
       <button
@@ -532,9 +552,9 @@ function ToolUseBlock({
         onClick={() => setExpanded(!expanded)}
       >
         {!isCompleted && isStreaming ? (
-          <Loader2 className="size-3.5 animate-spin text-primary/50 shrink-0" />
+          <ToolStreamingIndicator />
         ) : isError ? (
-          <XCircle className="size-3.5 text-destructive/70 shrink-0" />
+          <SessionErrorIcon className="size-3.5 text-destructive/70 shrink-0" />
         ) : null}
 
         <ToolIcon
@@ -548,7 +568,8 @@ function ToolUseBlock({
           className={cn(
             'min-w-0 truncate text-[14px]',
             taskGetSummary || taskListSummary ? 'shrink-0' : '',
-            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground',
+            !isCompleted && isStreaming && 'agent-shiny-text'
           )}
         >
           {displayLabel}
@@ -578,7 +599,7 @@ function ToolUseBlock({
           </span>
         )}
 
-        <ChevronRight
+        <SessionChevronRight
           className={cn(
             'shrink-0 size-3 text-muted-foreground/45 transition-transform duration-150',
             expanded && 'rotate-90'
@@ -591,7 +612,7 @@ function ToolUseBlock({
       {shouldShowResult && resultText && expanded && (
         <div
           className={cn(
-            'ml-5.5 mt-1 mb-2 pl-3 border-l-2 border-border/30',
+            'agent-tool-detail ml-1 mt-1 mb-2',
             animate && 'animate-in fade-in slide-in-from-top-1 duration-150'
           )}
         >
@@ -643,9 +664,9 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
   }, [])
 
   return (
-    <div className="relative mb-3">
+    <div className="agent-thinking-block relative mb-3">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Brain
+        <SessionThinkingIcon
           className={cn('size-3.5', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')}
         />
         <span
@@ -659,14 +680,9 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
       </div>
       <div
         className={cn(
-          'relative rounded-lg px-3.5 py-2.5',
-          dimmed ? 'bg-muted/30' : 'bg-muted/50',
+          'agent-thinking-body relative px-3.5 py-2.5',
           shouldCollapse && !isExpanded && 'pb-7'
         )}
-        style={{
-          border: 'none',
-          backgroundImage: `url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='8' ry='8' stroke='${dimmed ? 'rgba(128,128,128,0.3)' : 'rgba(128,128,128,0.5)'}' stroke-width='1.5' stroke-dasharray='8%2c 6' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e")`,
-        }}
       >
         <div
           ref={contentRef}
@@ -683,9 +699,8 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
             type="button"
             onClick={toggleExpand}
             className={cn(
-              'flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors mt-1',
-              !isExpanded &&
-                'absolute bottom-0 left-0 right-0 px-3.5 pb-2 pt-4 rounded-b-lg bg-gradient-to-t from-muted/80 to-transparent'
+              'agent-thinking-fade flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors mt-1',
+              !isExpanded && 'absolute bottom-0 left-0 right-0 px-3.5 pb-2 pt-4'
             )}
           >
             {isExpanded ? (

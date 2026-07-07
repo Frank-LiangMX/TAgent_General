@@ -1,0 +1,133 @@
+/**
+ * Agent 会话线程视觉 — 扁平风格（与铺平会话底板一致，无玻璃/阴影）
+ * 挂载点：.tagent-agent-thread（ConversationContent）
+ */
+
+.tagent-agent-thread {
+  --agent-avatar-size: 32px;
+  --agent-content-indent: 52px;
+  --agent-surface-radius: 14px;
+  --agent-surface-bg: hsl(var(--muted) / 0.42);
+  --agent-surface-border: hsl(var(--border) / 0.55);
+}
+
+.dark .tagent-agent-thread {
+  --agent-surface-bg: hsl(var(--muted) / 0.28);
+  --agent-surface-border: hsl(var(--border) / 0.45);
+}
+
+/* ===== 过程组 ===== */
+
+.tagent-agent-thread .agent-process-group__toggle {
+  border-radius: 8px;
+  padding: 0.125rem 0.5rem;
+  margin-left: -0.5rem;
+  transition: background 150ms ease;
+}
+
+.tagent-agent-thread .agent-process-group__toggle:hover {
+  background: hsl(var(--muted) / 0.38);
+}
+
+.tagent-agent-thread .agent-process-stack {
+  margin-left: 0.35rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid hsl(var(--border) / 0.35);
+}
+
+/* ===== 工具行 ===== */
+
+.tagent-agent-thread .agent-tool-row > button,
+.tagent-agent-thread .agent-tool-row > div[role='button'] {
+  border-radius: 8px;
+  padding: 0.125rem 0.375rem;
+  margin-left: -0.375rem;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.tagent-agent-thread .agent-tool-row > button:hover,
+.tagent-agent-thread .agent-tool-row > div[role='button']:hover {
+  background: hsl(var(--muted) / 0.35);
+}
+
+.tagent-agent-thread .agent-tool-detail {
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem;
+  margin-left: 0.15rem;
+  border-radius: var(--agent-surface-radius);
+  border: 1px solid var(--agent-surface-border);
+  background: var(--agent-surface-bg);
+  padding: 0.65rem 0.85rem;
+  box-shadow: none;
+}
+
+/* ===== Thinking ===== */
+
+.tagent-agent-thread .agent-thinking-block .agent-thinking-body {
+  border-radius: var(--agent-surface-radius) !important;
+  border: 1px dashed var(--agent-surface-border) !important;
+  background: var(--agent-surface-bg) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ===== 用户气泡 ===== */
+
+.tagent-agent-thread .agent-user-bubble {
+  border-radius: var(--agent-surface-radius);
+  border: 1px solid var(--agent-surface-border);
+  background: var(--agent-surface-bg);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.58;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade,
+.tagent-agent-thread .agent-thinking-block .agent-thinking-fade {
+  border-bottom-left-radius: var(--agent-surface-radius);
+  border-bottom-right-radius: var(--agent-surface-radius);
+  background: linear-gradient(to top, var(--agent-surface-bg) 0%, transparent 100%);
+}
+
+/* ===== 流式 shimmer（进行中工具/过程标题） ===== */
+
+.tagent-agent-thread .agent-shiny-text {
+  --agent-shine-base: hsl(var(--muted-foreground) / 0.88);
+  --agent-shine-peak: hsl(var(--primary) / 0.95);
+  background-image: linear-gradient(
+    90deg,
+    var(--agent-shine-base) 0%,
+    var(--agent-shine-base) 30%,
+    var(--agent-shine-peak) 50%,
+    var(--agent-shine-base) 70%,
+    var(--agent-shine-base) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: agent-shiny-text 2s linear infinite;
+}
+
+@keyframes agent-shiny-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagent-agent-thread .agent-shiny-text {
+    animation: none;
+    -webkit-text-fill-color: inherit;
+    background: none;
+  }
+}

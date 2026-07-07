@@ -14,13 +14,18 @@ import {
   TooltipTrigger,
 } from '@tagent/ui'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { Bot, RotateCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
 import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 import { AskMessageItem } from './AskMessageItem'
 import { ContentBlock } from './ContentBlock'
 import { buildLiveGroupSet } from './live-group-set'
+import {
+  SessionAlertIcon,
+  SessionChevronDown,
+  SessionChevronRight,
+  SessionRefreshIcon,
+} from './session-icons'
 import {
   groupIntoTurns,
   MessageGroupRenderer,
@@ -53,6 +58,10 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
 import {
+  AssistantMessageLogo,
+  MESSAGE_AVATAR_CONTENT_INDENT_PX,
+} from '@/components/ai-elements/message-avatar'
+import {
   Message,
   MessageHeader,
   MessageContent,
@@ -61,7 +70,7 @@ import {
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
-import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { resolveModelDisplayName } from '@/lib/model-logo'
 import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
 
@@ -185,23 +194,6 @@ function EmptyState(): React.ReactElement {
   )
 }
 
-function AssistantLogo({ model }: { model?: string }): React.ReactElement {
-  if (model) {
-    return (
-      <img
-        src={getModelLogo(model)}
-        alt={model}
-        className="size-[35px] rounded-[25%] object-cover"
-      />
-    )
-  }
-  return (
-    <div className="size-[35px] rounded-[25%] bg-primary/10 flex items-center justify-center">
-      <Bot size={18} className="text-primary" />
-    </div>
-  )
-}
-
 /** 重试提示组件 - 折叠式 */
 function RetryingNotice({
   retrying,
@@ -249,9 +241,9 @@ function RetryingNotice({
         onClick={() => setExpanded(!expanded)}
       >
         {retrying.failed ? (
-          <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <SessionAlertIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
         ) : (
-          <RotateCw className="size-4 animate-spin text-amber-600 dark:text-amber-400 shrink-0" />
+          <SessionRefreshIcon className="size-4 animate-spin text-amber-600 dark:text-amber-400 shrink-0" />
         )}
         <span className="text-sm text-amber-900 dark:text-amber-100 flex-1">
           {retrying.failed
@@ -263,9 +255,9 @@ function RetryingNotice({
             ` · ${retrying.history[retrying.history.length - 1]?.reason}`}
         </span>
         {expanded ? (
-          <ChevronDown className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <SessionChevronDown className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
         ) : (
-          <ChevronRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <SessionChevronRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
         )}
       </button>
 
@@ -285,14 +277,14 @@ function RetryingNotice({
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 pl-6">
               {countdown > 0 ? (
                 <>
-                  <RotateCw className="size-3 animate-spin" />
+                  <SessionRefreshIcon className="size-3 animate-spin" />
                   <span>
                     等待 {countdown} 秒后开始第 {retrying.currentAttempt} 次尝试
                   </span>
                 </>
               ) : (
                 <>
-                  <RotateCw className="size-3 animate-spin" />
+                  <SessionRefreshIcon className="size-3 animate-spin" />
                   <span>正在进行第 {retrying.currentAttempt} 次尝试...</span>
                 </>
               )}
@@ -355,9 +347,9 @@ function RetryAttemptItem({
                 onClick={() => setShowStderr(!showStderr)}
               >
                 {showStderr ? (
-                  <ChevronDown className="size-3" />
+                  <SessionChevronDown className="size-3" />
                 ) : (
-                  <ChevronRight className="size-3" />
+                  <SessionChevronRight className="size-3" />
                 )}
                 显示 stderr 输出
               </button>
@@ -378,9 +370,9 @@ function RetryAttemptItem({
                 onClick={() => setShowStack(!showStack)}
               >
                 {showStack ? (
-                  <ChevronDown className="size-3" />
+                  <SessionChevronDown className="size-3" />
                 ) : (
-                  <ChevronRight className="size-3" />
+                  <SessionChevronRight className="size-3" />
                 )}
                 显示堆栈跟踪
               </button>
@@ -566,6 +558,7 @@ function AgentMessagesImpl({
 
   // 从 streamState 属性中计算派生值
   const streamingContent = streamState?.content ?? ''
+  const streamingThinkingContent = streamState?.thinkingContent ?? ''
   const agentStreamingModel = streamState?.model
     ? resolveModelDisplayName(streamState.model, channels)
     : undefined
@@ -576,12 +569,17 @@ function AgentMessagesImpl({
     content: streamingContent,
     isStreaming: streaming,
   })
+  const { displayedContent: rawSmoothThinking } = useSmoothStream({
+    content: streamingThinkingContent,
+    isStreaming: streaming,
+  })
 
   // 防闪屏守卫：useSmoothStream 通过 useEffect 重置 displayedContent，比 render 晚一帧。
   // 当 streamingContent 已清空但 smoothContent 仍持有旧值时，
   // 会导致 fallback 气泡与持久化消息同时渲染一帧（重复内容闪烁）。
   // 用原始 streamingContent 作为守卫：内容已清空且不在流式中，立即归零。
   const smoothContent = streaming || streamingContent ? rawSmoothContent : ''
+  const smoothThinking = streaming || streamingThinkingContent ? rawSmoothThinking : ''
   const smoothContentBlocks = React.useMemo(() => {
     if (!smoothContent) return []
     return parseThinkTagsFromText(smoothContent)
@@ -603,7 +601,11 @@ function AgentMessagesImpl({
   // liveMessages 非空说明持久化消息还没加载完（加载完后会清空 liveMessages）
   const needsInstant =
     !streaming &&
-    (!!streamingContent || !!smoothContent || (liveMessages != null && liveMessages.length > 0))
+    (!!streamingContent ||
+      !!streamingThinkingContent ||
+      !!smoothContent ||
+      !!smoothThinking ||
+      (liveMessages != null && liveMessages.length > 0))
 
   React.useEffect(() => {
     // 刚从 streaming → not-streaming：启动 cooldown
@@ -828,7 +830,12 @@ function AgentMessagesImpl({
         }
       >
         <ScrollPositionManager id={sessionId} ready={ready} />
-        <ConversationContent className={floatingInput ? 'conversation-floating-input' : undefined}>
+        <ConversationContent
+          className={cn(
+            'tagent-agent-thread',
+            floatingInput ? 'conversation-floating-input' : undefined
+          )}
+        >
           {!hasContent && !streaming ? (
             <EmptyState />
           ) : (
@@ -881,6 +888,9 @@ function AgentMessagesImpl({
                     onCompact={shouldDisableActions ? undefined : onCompact}
                     isStreaming={isLive || undefined}
                     streamingText={isLive && hasLiveAssistantContent ? smoothContent : undefined}
+                    streamingThinking={
+                      isLive && hasLiveAssistantContent ? smoothThinking : undefined
+                    }
                     isContextCompacting={streamState?.isCompacting}
                     stoppedByUser={isLastAssistantTurn || undefined}
                     sessionModelId={sessionModelId}
@@ -892,7 +902,10 @@ function AgentMessagesImpl({
               {/* 不使用 mt：ConversationContent 的 gap-1(4px) 已提供间距，
                 匹配内部 MessageActions 的 gap-0.5(2px)+mt-0.5(2px)=4px 间距 */}
               {hasLiveAssistantContent && !suppressAgentRunning && (
-                <div className="pl-[56px] min-h-[28px]">
+                <div
+                  className="min-h-[28px]"
+                  style={{ paddingLeft: MESSAGE_AVATAR_CONTENT_INDENT_PX }}
+                >
                   {retrying && <RetryingNotice retrying={retrying} />}
                   {streaming && <AgentRunningIndicator startedAt={startedAt} />}
                 </div>
@@ -902,18 +915,34 @@ function AgentMessagesImpl({
               {/* 注意：工具活动已通过 SDK 渲染路径（liveGroups）展示 */}
               {!hasLiveAssistantContent &&
                 !suppressAgentRunning &&
-                (streaming || smoothContent || retrying) && (
+                (streaming || smoothContent || smoothThinking || retrying) && (
                   <Message from="assistant">
                     <MessageHeader
                       model={agentStreamingModel}
                       time={formatMessageTime(Date.now())}
-                      logo={<AssistantLogo model={agentStreamingModel} />}
+                      logo={<AssistantMessageLogo model={agentStreamingModel} />}
                     />
                     <MessageContent>
                       {retrying && <RetryingNotice retrying={retrying} />}
-                      {smoothContent ? (
+                      {smoothThinking || smoothContent ? (
                         <>
                           <div className={cn('space-y-2')}>
+                            {smoothThinking ? (
+                              <ContentBlock
+                                block={{ type: 'thinking', thinking: smoothThinking }}
+                                allMessages={allSDKMessages}
+                                basePath={
+                                  (attachedDirs?.length ?? 0) > 0
+                                    ? undefined
+                                    : sessionPath || undefined
+                                }
+                                basePaths={
+                                  (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
+                                }
+                                index={-1}
+                                isStreaming={streaming}
+                              />
+                            ) : null}
                             {smoothContentBlocks.map((block, index) => (
                               <ContentBlock
                                 key={index}

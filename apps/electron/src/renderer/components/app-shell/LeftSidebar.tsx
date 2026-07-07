@@ -92,9 +92,7 @@ const ACTIVE_SESSION_STATUS_PRIORITY: Record<SessionIndicatorStatus, number> = {
   completed: 2,
   idle: 3,
 }
-const PROJECT_SESSION_PREVIEW_LIMIT = 5
 const PROJECT_SESSION_RECENT_WINDOW_MS = 3 * 86_400_000
-const PROJECT_SESSION_EXPAND_STEP = 10
 
 import { activeViewAtom } from '@/atoms/active-view'
 import {
@@ -335,8 +333,6 @@ export function LeftSidebar({
   const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
   /** 折叠状态：用户手动折叠的项目 ID 集合 */
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
-  /** 额外展开数量：超出预览限制后用户点击"显示更多"展开的条数 */
-  const [extraSessionCounts, setExtraSessionCounts] = React.useState<Map<string, number>>(new Map())
   /** 拖拽排序：正在拖拽的工作区 ID */
   const [dragProjectId, setDragProjectId] = React.useState<string | null>(null)
   /** 拖拽排序：drop 指示器位置 { id, position } */
@@ -1099,13 +1095,6 @@ export function LeftSidebar({
       setWorkspaces(remainingWorkspaces)
       setAgentSessions(sessions)
 
-      setExtraSessionCounts((prev) => {
-        if (!prev.has(workspaceId)) return prev
-        const next = new Map(prev)
-        next.delete(workspaceId)
-        return next
-      })
-
       setCollapsedWorkspaceIds((prev) => {
         if (!prev.has(workspaceId)) return prev
         const next = new Set(prev)
@@ -1361,30 +1350,6 @@ export function LeftSidebar({
     }))
   }, [currentModeAgentSessions, draftSessionIds, workspaces])
 
-  // 会话列表变化时，清理多余的 extraSessionCounts：
-  // 如果某工作区已无"可额外展开"的会话（remainingSessions 为空），移除其展开 state，避免"收起"按钮残留
-  React.useEffect(() => {
-    setExtraSessionCounts((prev) => {
-      if (prev.size === 0) return prev
-      let changed = false
-      const next = new Map(prev)
-      for (const group of agentProjectGroups) {
-        const extraCount = next.get(group.workspace.id)
-        if (extraCount === undefined) continue
-        // 估算 remainingSessions 是否为空（与 AgentProjectGroupItem 内部逻辑一致）
-        // 简化判断：会话总数 ≤ 预览限制 + 置顶/工作中数，说明没有可展开的额外会话
-        const previewCapacity =
-          PROJECT_SESSION_PREVIEW_LIMIT +
-          group.sessions.filter((s) => s.pinned || s.manualWorking).length
-        if (group.sessions.length <= previewCapacity) {
-          next.delete(group.workspace.id)
-          changed = true
-        }
-      }
-      return changed ? next : prev
-    })
-  }, [agentProjectGroups])
-
   // 选中会话变化时，如果新选中的会话在某个折叠的 group 里，自动展开该 group
   // 避免顶栏 tab 切到折叠会话时 sidebar 找不到选中项
   React.useEffect(() => {
@@ -1532,8 +1497,6 @@ export function LeftSidebar({
             agentIndicatorMap={agentIndicatorMap}
             collapsedWorkspaceIds={collapsedWorkspaceIds}
             setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
-            extraSessionCounts={extraSessionCounts}
-            setExtraSessionCounts={setExtraSessionCounts}
             currentWorkspaceId={currentWorkspaceId}
             pinnedAgentSessions={pinnedAgentSessions}
             handleRequestDelete={handleRequestDelete}
@@ -1597,8 +1560,6 @@ export function LeftSidebar({
             agentIndicatorMap={agentIndicatorMap}
             collapsedWorkspaceIds={collapsedWorkspaceIds}
             setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
-            extraSessionCounts={extraSessionCounts}
-            setExtraSessionCounts={setExtraSessionCounts}
             currentWorkspaceId={currentWorkspaceId}
             pinnedAgentSessions={pinnedAgentSessions}
             handleRequestDelete={handleRequestDelete}
@@ -1790,6 +1751,7 @@ export function LeftSidebar({
                           onTogglePin={handleTogglePinAgent}
                           onToggleManualWorking={handleToggleManualWorkingAgent}
                           onToggleArchive={handleToggleArchiveAgent}
+                          disableMiniMap
                         />
                       ))}
                     </div>
@@ -1820,8 +1782,6 @@ function SessionsRailContent({
   agentIndicatorMap,
   collapsedWorkspaceIds,
   setCollapsedWorkspaceIds,
-  extraSessionCounts,
-  setExtraSessionCounts,
   currentWorkspaceId,
   pinnedAgentSessions,
   handleRequestDelete,
@@ -1858,8 +1818,6 @@ function SessionsRailContent({
   agentIndicatorMap: Map<string, SessionIndicatorStatus>
   collapsedWorkspaceIds: Set<string>
   setCollapsedWorkspaceIds: React.Dispatch<React.SetStateAction<Set<string>>>
-  extraSessionCounts: Map<string, number>
-  setExtraSessionCounts: React.Dispatch<React.SetStateAction<Map<string, number>>>
   currentWorkspaceId: string | null
   pinnedAgentSessions: AgentSessionMeta[]
   handleRequestDelete: (id: string) => void
@@ -1903,28 +1861,6 @@ function SessionsRailContent({
       })
     },
     [setCollapsedWorkspaceIds]
-  )
-
-  const showMore = React.useCallback(
-    (workspaceId: string): void => {
-      setExtraSessionCounts((prev) => {
-        const next = new Map(prev)
-        next.set(workspaceId, (prev.get(workspaceId) ?? 0) + PROJECT_SESSION_EXPAND_STEP)
-        return next
-      })
-    },
-    [setExtraSessionCounts]
-  )
-
-  const collapseExtra = React.useCallback(
-    (workspaceId: string): void => {
-      setExtraSessionCounts((prev) => {
-        const next = new Map(prev)
-        next.delete(workspaceId)
-        return next
-      })
-    },
-    [setExtraSessionCounts]
   )
 
   const handleRenameWorkspace = onRenameWorkspace
@@ -1976,6 +1912,7 @@ function SessionsRailContent({
                   onTogglePin={handleTogglePinAgent}
                   onToggleManualWorking={handleToggleManualWorkingAgent}
                   onToggleArchive={handleToggleArchiveAgent}
+                  disableMiniMap
                 />
               ))}
             </div>
@@ -1997,8 +1934,6 @@ function SessionsRailContent({
                 collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
                 activeSessionId={activeSessionId}
                 agentIndicatorMap={agentIndicatorMap}
-                expanded={extraSessionCounts.has(group.workspace.id)}
-                extraCount={extraSessionCounts.get(group.workspace.id) ?? 0}
                 workspaceNameMap={workspaceNameMap}
                 onSelectProject={(id) => {
                   selectWorkspace(id)
@@ -2009,8 +1944,6 @@ function SessionsRailContent({
                 onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
                 onConfigureProject={handleConfigureProject}
                 onSelectSession={handleSelectAgentSession}
-                onShowMore={showMore}
-                onCollapseExtra={collapseExtra}
                 handleRequestDelete={handleRequestDelete}
                 handleAgentRename={handleAgentRename}
                 handleTogglePinAgent={handleTogglePinAgent}
@@ -2600,8 +2533,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   collapsed,
   activeSessionId,
   agentIndicatorMap,
-  expanded,
-  extraCount,
   workspaceNameMap,
   onSelectProject,
   onNewSession,
@@ -2609,8 +2540,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onRequestDeleteWorkspace,
   onConfigureProject,
   onSelectSession,
-  onShowMore,
-  onCollapseExtra,
   handleRequestDelete,
   handleAgentRename,
   handleTogglePinAgent,
@@ -2639,8 +2568,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   collapsed: boolean
   activeSessionId: string | null
   agentIndicatorMap: Map<string, SessionIndicatorStatus>
-  expanded: boolean
-  extraCount: number
   workspaceNameMap: Map<string, string>
   onSelectProject: (id: string) => void
   onNewSession: (workspaceId: string) => void
@@ -2648,8 +2575,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onRequestDeleteWorkspace: (id: string) => void
   onConfigureProject: (id: string) => void
   onSelectSession: (id: string, title: string) => void
-  onShowMore: (workspaceId: string) => void
-  onCollapseExtra: (workspaceId: string) => void
   handleRequestDelete: (id: string) => void
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
@@ -2746,11 +2671,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
       if (pa !== pb) return pa - pb
       return b.updatedAt - a.updatedAt
     })
-    .slice(
-      0,
-      PROJECT_SESSION_PREVIEW_LIMIT +
-        group.sessions.filter((s) => s.pinned || s.manualWorking).length
-    )
   const fillIds = new Set(fillSessions.map((s) => s.id))
 
   const currentSession =
@@ -2760,16 +2680,11 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
   const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
 
-  const collapsedSessions = [
+  const sessions = [
     ...activeSessions,
-    ...(currentSession ? [currentSession] : []),
     ...fillSessions,
+    ...(currentSession ? [currentSession] : []),
   ]
-  const collapsedIds = new Set(collapsedSessions.map((s) => s.id))
-  const remainingSessions = group.sessions.filter((s) => !collapsedIds.has(s.id))
-  const extraSessions = remainingSessions.slice(0, extraCount)
-  const sessions = [...collapsedSessions, ...extraSessions]
-  const hiddenCount = Math.max(0, group.sessions.length - sessions.length)
 
   const isDragging = dragProjectId === group.workspace.id
   const isBatchMode = batchSelectWorkspaceId === group.workspace.id
@@ -3015,28 +2930,10 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   onToggleManualWorking={handleToggleManualWorkingAgent}
                   onToggleArchive={handleToggleArchiveAgent}
                   onConfirmDone={handleConfirmWorkingDoneAgent}
+                  disableMiniMap
                 />
               ))}
-              {hiddenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onShowMore(group.workspace.id)}
-                  className="w-full flex items-center gap-1 px-1 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
-                >
-                  <span className="flex-shrink-0 w-[18px]" aria-hidden />
-                  <span>显示更多（{hiddenCount}）</span>
-                </button>
-              )}
-              {expanded && extraSessions.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onCollapseExtra(group.workspace.id)}
-                  className="w-full flex items-center gap-1 px-1 py-1 rounded-md text-[12px] text-foreground/35 hover:bg-foreground/[0.03] hover:text-foreground/60 transition-colors titlebar-no-drag"
-                >
-                  <span className="flex-shrink-0 w-[18px]" aria-hidden />
-                  <span>收起</span>
-                </button>
-              )}
+              {/* 移除折叠查看更多机制：现在所有会话直接展示 */}
             </div>
           ) : !collapsed ? (
             <div className="flex items-center gap-1 px-1 py-0.5 text-[12px] text-foreground/22 select-none">

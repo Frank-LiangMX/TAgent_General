@@ -2,6 +2,7 @@
 @import '@tagent/ui/styles/glass.css';
 @import '@tagent/ui/styles/search.css';
 @import '@tagent/ui/styles/segmented-tabs.css';
+@import './agent-thread.css';
 
 @tailwind base;
 @tailwind components;

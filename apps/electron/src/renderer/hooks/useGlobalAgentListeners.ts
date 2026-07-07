@@ -179,6 +179,15 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
       },
     ]
   }
+  if (payload.kind === 'stream_thinking_delta') {
+    return [
+      {
+        type: 'thinking_delta',
+        text: payload.text,
+        parentToolUseId: payload.parentToolUseId,
+      },
+    ]
+  }
   if (payload.kind === 'tagent_event') {
     const evt = payload.event
     switch (evt.type) {
@@ -249,6 +258,12 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
             type: 'text_complete',
             text: (block as { text: string }).text,
             isIntermediate: false,
+            parentToolUseId: aMsg.parent_tool_use_id ?? undefined,
+          })
+        } else if (block.type === 'thinking' && 'thinking' in block) {
+          events.push({
+            type: 'thinking_complete',
+            text: (block as { thinking: string }).thinking,
             parentToolUseId: aMsg.parent_tool_use_id ?? undefined,
           })
         } else if (block.type === 'tool_use') {

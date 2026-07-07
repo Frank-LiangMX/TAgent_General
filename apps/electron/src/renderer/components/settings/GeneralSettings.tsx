@@ -87,6 +87,7 @@ export function GeneralSettings(): React.ReactElement {
   const [nameInput, setNameInput] = React.useState(userProfile.userName)
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false)
   const [archiveAfterDays, setArchiveAfterDays] = React.useState<number>(7)
+  const [showTokenPlanWarning, setShowTokenPlanWarning] = React.useState(true)
   const [isDarkMode, setIsDarkMode] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -108,6 +109,7 @@ export function GeneralSettings(): React.ReactElement {
       .getSettings()
       .then((settings) => {
         setArchiveAfterDays(settings.archiveAfterDays ?? 7)
+        setShowTokenPlanWarning(settings.showTokenPlanWarning ?? true)
       })
       .catch(console.error)
   }, [])
@@ -119,6 +121,15 @@ export function GeneralSettings(): React.ReactElement {
       await window.electronAPI.updateSettings({ archiveAfterDays: days })
     } catch (error) {
       console.error('[通用设置] 更新归档天数失败:', error)
+    }
+  }
+
+  const handleTokenPlanWarningChange = async (checked: boolean): Promise<void> => {
+    setShowTokenPlanWarning(checked)
+    try {
+      await window.electronAPI.updateSettings({ showTokenPlanWarning: checked })
+    } catch (error) {
+      console.error('[通用设置] 更新 Token Plan 提醒开关失败:', error)
     }
   }
 
@@ -289,6 +300,13 @@ export function GeneralSettings(): React.ReactElement {
               setStickyUserMessageEnabled(checked)
               updateStickyUserMessageEnabled(checked)
             }}
+          />
+          <SettingsToggle
+            label="Token Plan 消费提醒"
+            icon={<Volume2 className="size-4" />}
+            description="选择 Token Plan（按次计费）供应商时，提示 Agent 模式多轮调用会消耗大量配额。"
+            checked={showTokenPlanWarning}
+            onCheckedChange={handleTokenPlanWarningChange}
           />
         </SettingsCard>
       </SettingsSection>

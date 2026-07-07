@@ -277,6 +277,8 @@ export interface AppSettings {
   autoCleanupArchivedDays?: number
   /** 主窗口状态（大小、位置、是否最大化） */
   mainWindowState?: MainWindowState
+  /** 在渠道表单中选择 Token Plan 供应商时显示消费提醒（默认 true） */
+  showTokenPlanWarning?: boolean
   /** @deprecated 关闭按钮已固定为隐藏到托盘，此字段不再使用 */
   closeAction?: 'minimize-to-tray' | 'quit'
   /** 全局 hook 开关配置（auto-typecheck 等，默认全开） */

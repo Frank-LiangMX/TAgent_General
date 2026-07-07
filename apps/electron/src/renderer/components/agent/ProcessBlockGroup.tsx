@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
 import type {
@@ -8,6 +7,7 @@ import type {
   SDKToolUseBlock,
   SDKUserMessage,
 } from '@tagent/shared'
+import { SessionChevronRight } from './session-icons'
 import { getToolDisplayName, getToolIcon } from './tool-utils'
 
 import { cn } from '@/lib/utils'
@@ -52,6 +52,100 @@ export function buildCompletedToolResultIds(turnMessages: SDKMessage[]): Set<str
     }
   }
   return ids
+}
+
+function getTrailingBlockRunStart(blocks: SDKContentBlock[], blockType: 'text' | 'thinking'): number {
+  let index = blocks.length
+  while (index > 0 && blocks[index - 1]?.type === blockType) {
+    index -= 1
+  }
+  return index
+}
+
+interface MergeStreamingContentOptions {
+  streamingText?: string
+  streamingThinking?: string
+  parseStreamingText: (text: string) => SDKContentBlock[]
+}
+
+/**
+ * 将实时流式 text/thinking 合并进 SDK 块序列，保持时间顺序：
+ * - 已落盘的 thinking 块不会被后续 text 流覆盖
+ * - 仅替换末尾滞后的 text，或更新/追加 thinking
+ */
+export function mergeStreamingContentIntoBlocks(
+  blocks: SDKContentBlock[],
+  options: MergeStreamingContentOptions
+): SDKContentBlock[] {
+  const { streamingText, streamingThinking, parseStreamingText } = options
+  if (!streamingText && !streamingThinking) return blocks
+
+  let result = [...blocks]
+
+  const applyThinkingContent = (thinking: string): void => {
+    const trimmed = thinking.trim()
+    if (!trimmed) return
+
+    const trailingTextStart = getTrailingBlockRunStart(result, 'text')
+    const trailingThinkingStart = getTrailingBlockRunStart(result, 'thinking')
+
+    if (
+      trailingThinkingStart < result.length &&
+      trailingThinkingStart >= trailingTextStart
+    ) {
+      result.splice(trailingThinkingStart, result.length - trailingThinkingStart, {
+        type: 'thinking',
+        thinking: trimmed,
+      })
+      return
+    }
+
+    if (result[result.length - 1]?.type === 'thinking') {
+      result[result.length - 1] = { type: 'thinking', thinking: trimmed }
+      return
+    }
+
+    result.push({ type: 'thinking', thinking: trimmed })
+  }
+
+  if (streamingThinking) {
+    applyThinkingContent(streamingThinking)
+  }
+
+  if (streamingText) {
+    const parsed = parseStreamingText(streamingText)
+    if (parsed.length > 0) {
+      const parsedThinking = parsed
+        .filter((block) => block.type === 'thinking')
+        .map((block) => (block as { thinking: string }).thinking)
+        .join('\n\n')
+      const parsedNonThinking = parsed.filter((block) => block.type !== 'thinking')
+
+      if (!streamingThinking && parsedThinking) {
+        applyThinkingContent(parsedThinking)
+      }
+
+      if (parsedNonThinking.length > 0) {
+        const trailingTextStart = getTrailingBlockRunStart(result, 'text')
+        if (trailingTextStart < result.length) {
+          result.splice(trailingTextStart, result.length - trailingTextStart, ...parsedNonThinking)
+        } else {
+          result.push(...parsedNonThinking)
+        }
+      }
+    }
+  }
+
+  return result
+}
+
+/** @deprecated 使用 mergeStreamingContentIntoBlocks */
+export function mergeStreamingTextIntoBlocks(
+  blocks: SDKContentBlock[],
+  streamingText: string,
+  parseStreamingText: (text: string) => SDKContentBlock[]
+): SDKContentBlock[] {
+  return mergeStreamingContentIntoBlocks(blocks, { streamingText, parseStreamingText })
 }
 
 function getTrailingTextStartIndex(blocks: SDKContentBlock[]): number | null {
@@ -260,11 +354,11 @@ export function ProcessBlockGroup({
   const hiddenToolCount = Math.max(0, toolNames.length - visibleToolNames.length)
 
   return (
-    <div className="space-y-1.5">
+    <div className="agent-process-group space-y-1.5">
       <button
         type="button"
         className={cn(
-          'flex max-w-full items-center gap-2 py-0.5 text-left transition-opacity group',
+          'agent-process-group__toggle flex max-w-full items-center gap-2 py-0.5 text-left transition-opacity group',
           'hover:opacity-70'
         )}
         onClick={() => {
@@ -274,13 +368,20 @@ export function ProcessBlockGroup({
           setExpanded((prev) => !prev)
         }}
       >
-        <ChevronRight
+        <SessionChevronRight
           className={cn(
             'size-3 shrink-0 text-muted-foreground/40 transition-transform duration-150',
             expanded && 'rotate-90'
           )}
         />
-        <span className="min-w-0 truncate text-[14px] text-muted-foreground">{summary}</span>
+        <span
+          className={cn(
+            'min-w-0 truncate text-[14px] text-muted-foreground',
+            isStreaming && 'agent-shiny-text'
+          )}
+        >
+          {summary}
+        </span>
         {collapseCountdown !== null && (
           <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground/50">
             （{collapseCountdown}）
@@ -315,8 +416,7 @@ export function ProcessBlockGroup({
             opacity: expanded ? 1 : 0,
           }}
         >
-          <div className="min-h-0 overflow-hidden">
-            <div className="ml-[5px] space-y-2 border-l-2 border-border/30 pl-4">
+            <div className="agent-process-stack min-h-0 overflow-hidden space-y-2">
               {children}
               <button
                 type="button"
@@ -328,11 +428,10 @@ export function ProcessBlockGroup({
                   setExpanded(false)
                 }}
               >
-                <ChevronRight className="size-3 -rotate-90" />
+                <SessionChevronRight className="size-3 -rotate-90" />
                 <span>收起</span>
               </button>
             </div>
-          </div>
         </div>
       )}
     </div>

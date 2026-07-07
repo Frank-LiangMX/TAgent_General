@@ -25,23 +25,7 @@ import {
 } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
-  Bot,
   Loader2,
-  AlertTriangle,
-  FileText,
-  FileImage,
-  Download,
-  Split,
-  Undo2,
-  RotateCw,
-  Plus,
-  Minimize2,
-  Wrench,
-  Settings,
-  ExternalLink,
-  Quote,
-  RefreshCw,
-  MessageSquareWarning,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -61,9 +45,26 @@ import { Badge, Button, ImageLightbox, Tooltip, TooltipContent, TooltipTrigger }
 import { DurationBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
 import {
+  SessionAlertIcon,
+  SessionDocumentIcon,
+  SessionDownloadIcon,
+  SessionExternalLinkIcon,
+  SessionImageFileIcon,
+  SessionMinimizeIcon,
+  SessionPlusIcon,
+  SessionQuoteIcon,
+  SessionRefreshIcon,
+  SessionSettingsIcon,
+  SessionSplitIcon,
+  SessionToolFallbackIcon,
+  SessionUndoIcon,
+  SessionWarningMessageIcon,
+} from './session-icons'
+import {
   ProcessBlockGroup,
   buildAssistantTurnRenderItems,
   buildCompletedToolResultIds,
+  mergeStreamingContentIntoBlocks,
 } from './ProcessBlockGroup'
 import { extractToolResultText, parseTaskCreateResult, TASK_TOOL_NAMES } from './task-progress'
 import { TaskProgressCard } from './TaskProgressCard'
@@ -84,6 +85,11 @@ import { feedbackDialogAtom } from '@/atoms/feedback'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
+  AssistantMessageLogo,
+  ErrorMessageLogo,
+  MESSAGE_AVATAR_SIZE,
+} from '@/components/ai-elements/message-avatar'
+import {
   Message,
   MessageHeader,
   MessageContent,
@@ -94,7 +100,7 @@ import {
 } from '@/components/ai-elements/message'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { UserAvatar } from '@/components/shared/UserAvatar'
-import { getModelLogo, resolveModelDisplayName } from '@/lib/model-logo'
+import { resolveModelDisplayName } from '@/lib/model-logo'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { getFileParentPath } from '@/lib/file-utils'
 import { formatMessageTime } from '@/lib/time-utils'
@@ -149,7 +155,7 @@ function PermissionDeniedNotice({ message }: { message: SDKSystemMessage }): Rea
   return (
     <div className="my-3 pl-[46px] pr-1">
       <div className="flex items-start gap-2.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs text-foreground/80">
-        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+        <SessionAlertIcon className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-foreground">自动审批已拒绝操作</span>
@@ -276,25 +282,6 @@ function isUserInputMessage(message: SDKUserMessage): boolean {
   const content = message.message?.content
   if (Array.isArray(content) && content.some((b) => b.type === 'tool_result')) return false
   return extractUserText(message) !== null
-}
-
-// ===== 助手头像 =====
-
-function AssistantLogo({ model }: { model?: string }): React.ReactElement {
-  if (model) {
-    return (
-      <img
-        src={getModelLogo(model)}
-        alt={model}
-        className="size-[35px] rounded-[25%] object-cover"
-      />
-    )
-  }
-  return (
-    <div className="size-[35px] rounded-[25%] bg-primary/10 flex items-center justify-center">
-      <Bot size={18} className="text-primary" />
-    </div>
-  )
 }
 
 // ===== Turn 分组类型 =====
@@ -609,6 +596,8 @@ export interface AssistantTurnRendererProps {
   isStreaming?: boolean
   /** 流式平滑渲染文本，isStreaming 时替换顶层 text block 内容 */
   streamingText?: string
+  /** 流式平滑渲染 thinking，isStreaming 时更新/追加 thinking block */
+  streamingThinking?: string
   /** 是否被用户中断 */
   stoppedByUser?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
@@ -628,6 +617,7 @@ export function AssistantTurnRenderer({
   onCompact,
   isStreaming,
   streamingText,
+  streamingThinking,
   stoppedByUser,
   sessionModelId: _sessionModelId,
 }: AssistantTurnRendererProps): React.ReactElement | null {
@@ -690,17 +680,16 @@ export function AssistantTurnRenderer({
     }
   }
 
-  // 流式渲染：isStreaming 时用平滑文本替换顶层 text/thinking block，
-  // 避免 SDK 消息内容滞后导致文本冻结
-  if (isStreaming && streamingText) {
-    const parsed = normalizeThinkTagsInContentBlocks(
-      parseThinkTagsFromText(streamingText)
-    )
-    const toolBlocks = topLevelBlocks.filter(
-      (b) => b.type !== 'text' && b.type !== 'thinking'
-    )
+  // 流式渲染：更新末尾实时 text/thinking，保留已落盘块与时间顺序
+  if (isStreaming && (streamingText || streamingThinking)) {
+    const merged = mergeStreamingContentIntoBlocks(topLevelBlocks, {
+      streamingText,
+      streamingThinking,
+      parseStreamingText: (text) =>
+        normalizeThinkTagsInContentBlocks(parseThinkTagsFromText(text)),
+    })
     topLevelBlocks.length = 0
-    topLevelBlocks.push(...parsed, ...toolBlocks)
+    topLevelBlocks.push(...merged)
   }
 
   // 检测是否有主要内容（text 块），用于决定 tool/thinking 是否 dimmed
@@ -795,7 +784,7 @@ export function AssistantTurnRenderer({
       <MessageHeader
         model={turn.model ? resolveModelDisplayName(turn.model, channels) : undefined}
         time={turn.createdAt ? formatMessageTime(turn.createdAt) : undefined}
-        logo={<AssistantLogo model={turn.model} />}
+        logo={<AssistantMessageLogo model={turn.model} />}
       />
       <MessageContent>
         <div className={cn('space-y-2')}>
@@ -857,12 +846,12 @@ export function AssistantTurnRenderer({
               {textContent && <CopyButton content={textContent} />}
               {onFork && lastUuid && (
                 <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>
-                  <Split className="size-3.5" />
+                  <SessionSplitIcon className="size-3.5" />
                 </MessageAction>
               )}
               {onRewind && lastUuid && (
                 <MessageAction tooltip="回退到此处" onClick={() => onRewind(lastUuid)}>
-                  <Undo2 className="size-3.5" />
+                  <SessionUndoIcon className="size-3.5" />
                 </MessageAction>
               )}
               {showStoppedBadge && (
@@ -924,7 +913,7 @@ export function SDKMessageRenderer({
           <MessageHeader
             model={model ? resolveModelDisplayName(model, channels) : undefined}
             time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
-            logo={<AssistantLogo model={model} />}
+            logo={<AssistantMessageLogo model={model} />}
           />
         )}
         <MessageContent>
@@ -1090,7 +1079,7 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
             onClick={handleSave}
             className="absolute bottom-2 right-2 p-1.5 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
           >
-            <Download className="size-4" />
+            <SessionDownloadIcon className="size-4" />
           </button>
         </TooltipTrigger>
         <TooltipContent>保存图片</TooltipContent>
@@ -1109,7 +1098,7 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
 /** 文件附件芯片 */
 function AttachedFileChip({ file }: { file: AttachedFileRef }): React.ReactElement {
   const isImg = isImageFile(file.filename)
-  const Icon = isImg ? FileImage : FileText
+  const Icon = isImg ? SessionImageFileIcon : SessionDocumentIcon
   const activeSessionId = useAtomValue(activeSessionIdAtom)
   const openPreview = useOpenPreview()
 
@@ -1145,7 +1134,7 @@ function AttachedFileChip({ file }: { file: AttachedFileRef }): React.ReactEleme
 function QuoteChip({ quote }: { quote: QuotedFileRef }): React.ReactElement {
   return (
     <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/8 border border-primary/20 px-2.5 py-1 text-[12px] text-muted-foreground">
-      <Quote className="size-3.5 shrink-0 text-primary/60" />
+      <SessionQuoteIcon className="size-3.5 shrink-0 text-primary/60" />
       <span className="truncate max-w-[200px]">{quote.filename}</span>
     </div>
   )
@@ -1213,14 +1202,14 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
               {text && <CopyButton content={text} />}
               {text && (
                 <MessageAction tooltip="重新发送" onClick={handleResend}>
-                  <RefreshCw className="size-3.5" />
+                  <SessionRefreshIcon className="size-3.5" />
                 </MessageAction>
               )}
             </MessageActions>
           )}
         </div>
         {/* 用户头像（气泡右侧，顶部对齐，与 assistant 头像同尺寸 35px） */}
-        <UserAvatar avatar={userProfile.avatar} size={35} />
+        <UserAvatar avatar={userProfile.avatar} size={MESSAGE_AVATAR_SIZE} />
       </div>
     </Message>
   )
@@ -1352,20 +1341,20 @@ function ErrorMessage({
   const iconForAction = (action: RecoveryAction['action']) => {
     switch (action) {
       case 'open_environment_check':
-        return <Wrench className="size-3.5 mr-1.5" />
+        return <SessionToolFallbackIcon className="size-3.5 mr-1.5" />
       case 'open_channel_settings':
       case 'settings':
-        return <Settings className="size-3.5 mr-1.5" />
+        return <SessionSettingsIcon className="size-3.5 mr-1.5" />
       case 'open_external':
-        return <ExternalLink className="size-3.5 mr-1.5" />
+        return <SessionExternalLinkIcon className="size-3.5 mr-1.5" />
       case 'retry':
-        return <RotateCw className="size-3.5 mr-1.5" />
+        return <SessionRefreshIcon className="size-3.5 mr-1.5" />
       case 'compact':
-        return <Minimize2 className="size-3.5 mr-1.5" />
+        return <SessionMinimizeIcon className="size-3.5 mr-1.5" />
       case 'retry_in_new_session':
-        return <Plus className="size-3.5 mr-1.5" />
+        return <SessionPlusIcon className="size-3.5 mr-1.5" />
       case 'report_feedback':
-        return <MessageSquareWarning className="size-3.5 mr-1.5" />
+        return <SessionWarningMessageIcon className="size-3.5 mr-1.5" />
       default:
         return null
     }
@@ -1383,11 +1372,7 @@ function ErrorMessage({
       <MessageHeader
         model={undefined}
         time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
-        logo={
-          <div className="size-[35px] rounded-[25%] bg-destructive/10 flex items-center justify-center">
-            <AlertTriangle size={18} className="text-destructive" />
-          </div>
-        }
+        logo={<ErrorMessageLogo />}
       />
       <MessageContent>
         {displayTitle && (
@@ -1430,7 +1415,7 @@ function ErrorMessage({
               ))}
             {!hasStructuredActions && isPromptTooLong && onCompact && (
               <Button size="sm" onClick={onCompact}>
-                <Minimize2 className="size-3.5 mr-1.5" />
+                <SessionMinimizeIcon className="size-3.5 mr-1.5" />
                 压缩上下文
               </Button>
             )}
@@ -1438,7 +1423,7 @@ function ErrorMessage({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button size="sm" onClick={onRetryInNewSession}>
-                    <Plus className="size-3.5 mr-1.5" />
+                    <SessionPlusIcon className="size-3.5 mr-1.5" />
                     在新对话继续
                   </Button>
                 </TooltipTrigger>
@@ -1451,7 +1436,7 @@ function ErrorMessage({
                 variant={isPromptTooLong || isThinkingSignature ? 'outline' : 'default'}
                 onClick={onRetry}
               >
-                <RotateCw className="size-3.5 mr-1.5" />
+                <SessionRefreshIcon className="size-3.5 mr-1.5" />
                 重试
               </Button>
             )}
@@ -1459,7 +1444,7 @@ function ErrorMessage({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button size="sm" variant="outline" onClick={onRetryInNewSession}>
-                    <Plus className="size-3.5 mr-1.5" />
+                    <SessionPlusIcon className="size-3.5 mr-1.5" />
                     在新会话中重试
                   </Button>
                 </TooltipTrigger>
@@ -1498,6 +1483,8 @@ export interface MessageGroupRendererProps {
   isStreaming?: boolean
   /** 流式平滑渲染文本，传递给 AssistantTurnRenderer */
   streamingText?: string
+  /** 流式平滑渲染 thinking，传递给 AssistantTurnRenderer */
+  streamingThinking?: string
   /** SDK 是否处于 compacting 状态（控制 status=compacting 分隔符显示） */
   isContextCompacting?: boolean
   /** 是否被用户中断 */
@@ -1602,6 +1589,7 @@ export function MessageGroupRenderer({
   onCompact,
   isStreaming,
   streamingText,
+  streamingThinking,
   isContextCompacting,
   stoppedByUser,
   sessionModelId,
@@ -1668,6 +1656,7 @@ export function MessageGroupRenderer({
         onCompact={onCompact}
         isStreaming={isStreaming}
         streamingText={streamingText}
+        streamingThinking={streamingThinking}
         stoppedByUser={stoppedByUser}
         sessionModelId={sessionModelId}
       />

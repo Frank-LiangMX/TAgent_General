@@ -240,18 +240,24 @@ export function MemoryGraph({
 
   const handleWheel = React.useCallback(
     (e: React.WheelEvent) => {
-      const delta = e.deltaY > 0 ? 0.9 : 1.1
-      transformRef.current.scale = Math.max(0.3, Math.min(3, transformRef.current.scale * delta))
-      if (canvasRef.current) {
-        drawCanvas(
-          canvasRef.current,
-          nodesRef.current,
-          edgesRef.current,
-          hoveredNode,
-          selectedNode,
-          transformRef.current
-        )
-      }
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const t = transformRef.current
+
+      const oldScale = t.scale
+      const newScale = Math.max(0.3, Math.min(3, oldScale * (e.deltaY > 0 ? 0.9 : 1.1)))
+
+      // 鼠标相对于 canvas 的位置（CSS 像素）
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
+
+      // 调整 x/y，使鼠标所指的逻辑坐标点保持不动
+      t.x = mouseX - (mouseX - t.x) * (newScale / oldScale)
+      t.y = mouseY - (mouseY - t.y) * (newScale / oldScale)
+      t.scale = newScale
+
+      drawCanvas(canvas, nodesRef.current, edgesRef.current, hoveredNode, selectedNode, t)
     },
     [hoveredNode, selectedNode]
   )

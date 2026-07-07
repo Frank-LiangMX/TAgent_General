@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 interface UserAvatarProps {
   /** 头像内容（emoji 字符串 或 data:image/* URL） */
   avatar: string
-  /** 尺寸（像素），默认 35 */
+  /** 尺寸（像素），默认 32（与会话区 Agent 头像一致） */
   size?: number
   className?: string
   onClick?: React.MouseEventHandler<HTMLDivElement>
@@ -28,7 +28,7 @@ function isImageUrl(avatar: string): boolean {
 
 export function UserAvatar({
   avatar,
-  size = 35,
+  size = 32,
   className,
   onClick,
 }: UserAvatarProps): React.ReactElement {
@@ -38,7 +38,7 @@ export function UserAvatar({
     return (
       <div
         className={cn(
-          'shrink-0 overflow-hidden rounded-[20%] border-[0.5px] border-foreground/10',
+          'shrink-0 overflow-hidden rounded-[25%] border-[0.5px] border-foreground/10',
           onClick && 'cursor-pointer hover:opacity-80 transition-opacity',
           className
         )}
@@ -54,7 +54,7 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        'shrink-0 flex items-center justify-center rounded-[20%]',
+        'shrink-0 flex items-center justify-center rounded-[25%]',
         'bg-foreground/[0.04] dark:bg-foreground/[0.08] border-[0.5px] border-foreground/10',
         onClick && 'cursor-pointer hover:opacity-80 transition-opacity',
         className
