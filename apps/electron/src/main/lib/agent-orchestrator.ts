@@ -84,6 +84,7 @@ import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
 import { injectAutomationMcpServer } from './automation-agent-tools'
 import { injectKanbanMcpServer } from './kanban-agent-tools'
+import { injectWpsCliMcpServer } from './tools/wps-cli-mcp'
 import { broadcastKanbanTaskProgress } from './kanban-ipc'
 import { buildPostToolUseHooks } from './hooks/post-tool-use'
 import {
@@ -1901,6 +1902,14 @@ export class AgentOrchestrator {
         }
       }
       markPhase('injectKanban')
+
+      // 注入 WPS CLI 工具集
+      try {
+        await injectWpsCliMcpServer(sdk, mcpServers, sessionId)
+      } catch (err) {
+        console.error('[Agent 编排] 注入 WPS CLI 工具集失败:', err)
+      }
+      markPhase('injectWpsCli')
 
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {

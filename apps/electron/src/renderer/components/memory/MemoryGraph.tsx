@@ -81,6 +81,23 @@ export function MemoryGraph({
   const isDragging = React.useRef(false)
   const dragStart = React.useRef({ x: 0, y: 0 })
 
+  // 响应式 canvas 尺寸（初始 null，等 ResizeObserver 返回实际尺寸后再渲染）
+  const [canvasSize, setCanvasSize] = React.useState<{ width: number; height: number } | null>(null)
+
+  React.useEffect(() => {
+    if (!containerRef.current) return
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          setCanvasSize({ width: Math.floor(width), height: Math.floor(height) })
+        }
+      }
+    })
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
+
   // 加载数据
   React.useEffect(() => {
     setLoading(true)
@@ -97,12 +114,13 @@ export function MemoryGraph({
       })
   }, [mode, workspaceSlug])
 
-  // 构建 simulation
+  // 构建 simulation（payload 和 canvasSize 都就绪后才启动）
   React.useEffect(() => {
-    if (!payload || !canvasRef.current) return
+    if (!payload || !canvasSize) return
+    if (!canvasRef.current) return
     const canvas = canvasRef.current
-    const width = canvas.width
-    const height = canvas.height
+    const width = canvasSize.width
+    const height = canvasSize.height
     const centerX = width / 2
     const centerY = height / 2
 
@@ -159,7 +177,7 @@ export function MemoryGraph({
     return () => {
       simulation.stop()
     }
-  }, [payload])
+  }, [payload, canvasSize])
 
   // 重绘（hover/selection 变化时）
   React.useEffect(() => {
@@ -262,22 +280,13 @@ export function MemoryGraph({
     [hoveredNode, selectedNode]
   )
 
-  // 响应式 canvas 尺寸（必须在条件渲染之前，遵守 hooks 规则）
-  const [canvasSize, setCanvasSize] = React.useState({ width: 800, height: 600 })
-
-  React.useEffect(() => {
-    if (!containerRef.current) return
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        if (width > 0 && height > 0) {
-          setCanvasSize({ width: Math.floor(width), height: Math.floor(height) })
-        }
-      }
-    })
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [])
+  if (!canvasSize) {
+    return (
+      <div ref={containerRef} className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+        初始化图表...
+      </div>
+    )
+  }
 
   if (loading) {
     return (

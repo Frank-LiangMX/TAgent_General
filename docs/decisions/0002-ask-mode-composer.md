@@ -1,66 +1,42 @@
-# ADR-0002: Ask 档位统一 Composer（替代独立 Chat 模式）
-
-> **Status**: Implemented  
+﻿# ADR-0002: Ask 妗ｄ綅缁熶竴 Composer锛堟浛浠ｇ嫭绔?Chat 妯″紡锛?
+> **Status**: Superseded in part by ADR-0004  
 > **Date**: 2026-06-13  
 > **Implemented**: 2026-06-14  
-> **Deciders**: 产品方向（用户确认）+ 工程实施待办
+> **Deciders**: 浜у搧鏂瑰悜锛堢敤鎴风‘璁わ級+ 宸ョ▼瀹炴柦寰呭姙
 
 ## Context
 
-TAgent 长期维护 **Chat 模式** 与 **Agent 模式** 两套 UI、两套会话存储（`conversations/*` vs `agent-sessions/*`）和全局 `appMode` 互斥切换。Chat 入口分散（欢迎页、设置、快捷键），与 Rail「会话」图标语义冲突，且相对网页端 Chat 产品缺乏独占价值。
-
-同时 Agent 场景需要 **轻量问答**（解释上下文、短问短答、不触发工具权限），已有 `/btw` 侧面提问与 `btw-service` 实现了类似能力，但与主 Composer 割裂。
-
+TAgent 闀挎湡缁存姢 **Chat 妯″紡** 涓?**Agent 妯″紡** 涓ゅ UI銆佷袱濂椾細璇濆瓨鍌紙`conversations/*` vs `agent-sessions/*`锛夊拰鍏ㄥ眬 `appMode` 浜掓枼鍒囨崲銆侰hat 鍏ュ彛鍒嗘暎锛堟杩庨〉銆佽缃€佸揩鎹烽敭锛夛紝涓?Rail銆屼細璇濄€嶅浘鏍囪涔夊啿绐侊紝涓旂浉瀵圭綉椤电 Chat 浜у搧缂轰箯鐙崰浠峰€笺€?
+鍚屾椂 Agent 鍦烘櫙闇€瑕?**杞婚噺闂瓟**锛堣В閲婁笂涓嬫枃銆佺煭闂煭绛斻€佷笉瑙﹀彂宸ュ叿鏉冮檺锛夛紝宸叉湁 `/btw` 渚ч潰鎻愰棶涓?`btw-service` 瀹炵幇浜嗙被浼艰兘鍔涳紝浣嗕笌涓?Composer 鍓茶銆?
 ## Decision
 
-1. **以 Agent 会话为唯一主会话模型**；不再将 Chat 作为与 Agent 平级的顶层 `appMode`。
-2. 在 **Agent 输入区** 增加 Composer 档位：`agent`（默认）与 `ask`（轻量对话），交互对标 Cursor Ask / Agent 切换。
-3. **Ask 后端** 复用 `@tagent/core` Provider 流式与 `chat-service` 编排经验，但绑定 `agentSessionId`，消息存入独立 `ask.jsonl`，不写入 SDK JSONL。
-4. Ask 请求注入 **权限边界契约**（系统提示）；通过白名单工具 `suggest_agent_switch` 引导用户切回 Agent 档位（同会话、预填 prompt），而非新建 Chat 会话。
-5. **渐进退役** 独立 Chat UI 与 `conversations/*` 主路径；旧数据只读或导出，不自动删除用户文件。
-
-详细实施见 [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md)。
-
+1. **浠?Agent 浼氳瘽涓哄敮涓€涓讳細璇濇ā鍨?*锛涗笉鍐嶅皢 Chat 浣滀负涓?Agent 骞崇骇鐨勯《灞?`appMode`銆?2. 鍦?**Agent 杈撳叆鍖?* 澧炲姞 Composer 妗ｄ綅锛歚agent`锛堥粯璁わ級涓?`ask`锛堣交閲忓璇濓級锛屼氦浜掑鏍?Cursor Ask / Agent 鍒囨崲銆?3. **Ask 鍚庣** 澶嶇敤 `@tagent/core` Provider 娴佸紡涓?`chat-service` 缂栨帓缁忛獙锛屼絾缁戝畾 `agentSessionId`锛屾秷鎭瓨鍏ョ嫭绔?`ask.jsonl`锛屼笉鍐欏叆 SDK JSONL銆?4. Ask 璇锋眰娉ㄥ叆 **鏉冮檺杈圭晫濂戠害**锛堢郴缁熸彁绀猴級锛涢€氳繃鐧藉悕鍗曞伐鍏?`suggest_agent_switch` 寮曞鐢ㄦ埛鍒囧洖 Agent 妗ｄ綅锛堝悓浼氳瘽銆侀濉?prompt锛夛紝鑰岄潪鏂板缓 Chat 浼氳瘽銆?5. **娓愯繘閫€褰?* 鐙珛 Chat UI 涓?`conversations/*` 涓昏矾寰勶紱鏃ф暟鎹彧璇绘垨瀵煎嚭锛屼笉鑷姩鍒犻櫎鐢ㄦ埛鏂囦欢銆?
+璇︾粏瀹炴柦瑙?[`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md)銆?
 ## Consequences
 
 ### Positive
 
-- 单一主界面、单侧栏、单 Tab 类型，降低导航与对齐成本。
-- Ask 与 Agent 共享会话上下文与时间线，符合「先问再做」工作流。
-- 明确能力边界，减少模型幻觉执行文件/命令。
-- 可复用现有 `suggest_agent_mode` 与 `AgentRecommendBanner` 逻辑。
-
+- 鍗曚竴涓荤晫闈€佸崟渚ф爮銆佸崟 Tab 绫诲瀷锛岄檷浣庡鑸笌瀵归綈鎴愭湰銆?- Ask 涓?Agent 鍏变韩浼氳瘽涓婁笅鏂囦笌鏃堕棿绾匡紝绗﹀悎銆屽厛闂啀鍋氥€嶅伐浣滄祦銆?- 鏄庣‘鑳藉姏杈圭晫锛屽噺灏戞ā鍨嬪够瑙夋墽琛屾枃浠?鍛戒护銆?- 鍙鐢ㄧ幇鏈?`suggest_agent_mode` 涓?`AgentRecommendBanner` 閫昏緫銆?
 ### Negative
 
-- 需合并时间线渲染（SDK 消息 + Ask 消息）。
-- 迁移期需维护 Chat 只读或兼容代码直至 P3 删除。
-- 全渠道 Ask 与 Agent 渠道能力不一致需在 UI 说明。
-
+- 闇€鍚堝苟鏃堕棿绾挎覆鏌擄紙SDK 娑堟伅 + Ask 娑堟伅锛夈€?- 杩佺Щ鏈熼渶缁存姢 Chat 鍙鎴栧吋瀹逛唬鐮佺洿鑷?P3 鍒犻櫎銆?- 鍏ㄦ笭閬?Ask 涓?Agent 娓犻亾鑳藉姏涓嶄竴鑷撮渶鍦?UI 璇存槑銆?
 ### Neutral
 
-- `packages/core` Provider 适配器保留；`chat-service` 可能拆分为共享流式内核 + `ask-service`。
-- `/btw` 与 Ask 关系需在 P2 收敛（合并或 deprecate）。
-
+- `packages/core` Provider 閫傞厤鍣ㄤ繚鐣欙紱`chat-service` 鍙兘鎷嗗垎涓哄叡浜祦寮忓唴鏍?+ `ask-service`銆?- `/btw` 涓?Ask 鍏崇郴闇€鍦?P2 鏀舵暃锛堝悎骞舵垨 deprecate锛夈€?
 ## Alternatives Considered
 
-### Option A: 保留双模式，仅优化侧栏 Chip 切换
+### Option A: 淇濈暀鍙屾ā寮忥紝浠呬紭鍖栦晶鏍?Chip 鍒囨崲
 
-- Pros: 改动小。
-- Cons: 仍双列表、双存储、`appMode` 心智负担不变；未解决「Chat 无独占价值」问题。
+- Pros: 鏀瑰姩灏忋€?- Cons: 浠嶅弻鍒楄〃銆佸弻瀛樺偍銆乣appMode` 蹇冩櫤璐熸媴涓嶅彉锛涙湭瑙ｅ喅銆孋hat 鏃犵嫭鍗犱环鍊笺€嶉棶棰樸€?
+### Option B: 瀹屽叏鍒犻櫎 Chat 鏍堬紝Ask 涓嶅鐢?chat-service
 
-### Option B: 完全删除 Chat 栈，Ask 不复用 chat-service
-
-- Pros: 代码删得多。
-- Cons: 重复实现流式、工具、附件；工期更长。
-
-### Option C: Ask 写入 SDK 会话（无工具）
-
-- Pros: 单一 JSONL。
-- Cons: SDK 消息 schema 与 Provider 混用复杂；污染 Agent resume 上下文。
-
+- Pros: 浠ｇ爜鍒犲緱澶氥€?- Cons: 閲嶅瀹炵幇娴佸紡銆佸伐鍏枫€侀檮浠讹紱宸ユ湡鏇撮暱銆?
+### Option C: Ask 鍐欏叆 SDK 浼氳瘽锛堟棤宸ュ叿锛?
+- Pros: 鍗曚竴 JSONL銆?- Cons: SDK 娑堟伅 schema 涓?Provider 娣风敤澶嶆潅锛涙薄鏌?Agent resume 涓婁笅鏂囥€?
 ## References
 
 - [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md)
 - `apps/electron/src/main/lib/btw-service.ts`
 - `apps/electron/src/main/lib/chat-tools/agent-recommend-tool.ts`
 - `apps/electron/src/renderer/components/chat/AgentRecommendBanner.tsx`
+

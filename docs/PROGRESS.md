@@ -17,6 +17,7 @@
 > **看板探索报告**：`docs/plans/2026-06-30-kanban-exploration-report.md`（Phase A 验证范围、基础设施盘点、风险矩阵、E2E 清单）
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
+> **WPS CLI 集成**：`docs/plans/2026-07-08-wps-cli-integration.md`（主动调用 WPS API，与 Bridge 互补）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
 
 ---
@@ -368,6 +369,15 @@
 | ✅ **MCP 设置页面集成**                | **已完成** | BuiltinMcpRecommendations 组件 + 分类展示 + 一键安装（2026-06-11）                                |
 | ✅ **Agent 对话智能引导**              | **已完成** | TA 意图检测 + toast 提示 + 引导安装（2026-06-11）                                                 |
 | ✅ **`/btw` 侧面提问**                 | **已完成** | 上下文共享（20 轮 history）+ 分叉到新会话 + 浮窗触发（流式期间/旁注按钮）+ 不进历史（2026-06-11） |
+
+**WPS CLI 集成 + 用户 OAuth 登录（2026-07-08）**：技术验证 + 集成开发已完成。见 [`docs/plans/2026-07-08-wps-cli-integration.md`](plans/2026-07-08-wps-cli-integration.md)。
+
+- 调研 WPS365 CLI v0.2.0（7 大业务域、101 命令、OAuth 2.0 双模式）
+- CLI 封装层 + MCP Server 注入 + IPC 通道 + Preload API（8 个 Agent 工具）
+- 凭证双模式：环境变量（开发者部署）→ wps.json（用户配置），7 层 fallback
+- 用户 Delegated OAuth 登录：浏览器授权 → 回调 → 换 token → 存储加密
+- CLI 调用自动识别用户身份（有用户 token 则用 Delegated 模式，否则 App 模式）
+- 设置页新增"登录 WPS"按钮，显示登录状态、用户信息、退出登录
 
 ---
 
