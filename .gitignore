@@ -121,3 +121,4 @@ F:*.tmp_*.txt
 .tmp_errs2.txt
 .tmp_files.txt
 .tmp-pip/
+.kun-canvas/
