@@ -75,15 +75,32 @@ export function getWpsConfig(): WpsConfig {
     const raw = readFileSync(configPath, 'utf-8')
     const parsed = JSON.parse(raw) as Partial<WpsConfig>
     const config = { ...DEFAULT_CONFIG, ...parsed }
-    // secretKey 永远不存明文到文件；用户没填时从内置解码 fallback
-    if (!config.secretKey) {
-      config.secretKey = BUILTIN_SECRET_KEY
-    }
+    // 注意：secretKey 不在此处 fallback 到 BUILTIN_SECRET_KEY！
+    // secretKey 的语义是 safeStorage 加密后的 base64，而 BUILTIN_SECRET_KEY
+    // 是原始明文，不能写进 secretKey 字段。调用方请用 resolveSecretKey()。
     return config
   } catch (error) {
     console.error('[WPS配置] 读取失败:', error)
-    return { ...DEFAULT_CONFIG, secretKey: BUILTIN_SECRET_KEY }
+    return { ...DEFAULT_CONFIG }
   }
+}
+
+/**
+ * 解析当前的 Secret Key（明文）
+ *
+ * 优先级：用户填写的加密 secretKey → 内置混淆密钥
+ */
+export function resolveSecretKey(): string {
+  const config = getWpsConfig()
+  if (config.secretKey) {
+    try {
+      const decrypted = decryptText(config.secretKey)
+      if (decrypted) return decrypted
+    } catch {
+      // 解密失败，fallback 到内置
+    }
+  }
+  return BUILTIN_SECRET_KEY
 }
 
 export function saveWpsConfig(input: WpsConfigInput): WpsConfig {
@@ -112,7 +129,7 @@ export function saveWpsConfig(input: WpsConfigInput): WpsConfig {
 }
 
 export function getDecryptedWpsSecretKey(): string {
-  return decryptText(getWpsConfig().secretKey)
+  return resolveSecretKey()
 }
 
 export function getDecryptedWpsEncryptKey(): string {

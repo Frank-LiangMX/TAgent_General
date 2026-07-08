@@ -6,7 +6,7 @@
  * 登录完成后，CLI 将 token 存储在系统钥匙串，TAgent 通过 auth token 命令提取并加密存储。
  */
 
-import { getWpsConfig, updateWpsUserAuth, clearWpsUserAuth } from './wps-config'
+import { getWpsConfig, resolveSecretKey, updateWpsUserAuth, clearWpsUserAuth } from './wps-config'
 import { decryptText } from './wps-config'
 import { getCliPath, ensureCliInstalled } from './wps-cli-tools'
 import { execFile } from 'node:child_process'
@@ -143,10 +143,10 @@ class WpsUserAuthManager {
       return
     }
 
-    const secretKey = decryptText(config.secretKey)
+    const secretKey = resolveSecretKey()
     if (!secretKey) {
       this.state = 'error'
-      this.errorMessage = 'Secret Key 解密失败，请重新配置'
+      this.errorMessage = 'Secret Key 不可用，请检查配置或环境变量'
       this.notify()
       return
     }
