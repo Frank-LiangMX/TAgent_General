@@ -315,34 +315,15 @@ export function WpsSettings(): React.ReactElement {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="连接配置" description="来自 WPS 开放平台应用配置">
+      <SettingsSection title="连接配置" description="高级用户可自定义覆盖内置配置">
         <SettingsCard data-search-id="wps-credentials">
-          <SettingsRow label="App ID">
-            <SettingsInput
-              label="App ID"
-              value={form.appId}
-              onChange={(value) => setForm((prev) => ({ ...prev, appId: value }))}
-              placeholder="请输入 WPS App ID"
-            />
-          </SettingsRow>
-
-          <SettingsRow label="Secret Key">
-            <SettingsInput
-              label="Secret Key"
-              type="password"
-              value={form.secretKey}
-              onChange={(value) => setForm((prev) => ({ ...prev, secretKey: value }))}
-              placeholder="留空则不修改"
-            />
-          </SettingsRow>
-
           <SettingsRow label="Encrypt Key">
             <SettingsInput
               label="Encrypt Key"
               type="password"
               value={form.encryptKey ?? ''}
               onChange={(value) => setForm((prev) => ({ ...prev, encryptKey: value }))}
-              placeholder="可选，留空沿用 Secret Key；填空字符串将清空"
+              placeholder="可选，留空沿用内置值"
             />
           </SettingsRow>
 
