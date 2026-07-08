@@ -1,0 +1,78 @@
+/**
+ * Neumorphism-UI token 体系 — 移植自 nregret/Neumorphism-UI
+ * https://github.com/nregret/Neumorphism-UI
+ */
+:root {
+  --bg-color: #e0e5ec;
+  --text-color: #333333;
+  --text-muted: #666666;
+  --shadow-light: #ffffff;
+  --shadow-dark: #a3b1c6;
+  --accent: #4f46e5;
+
+  --neu-scale: 1;
+
+  --neu-d1: calc(3px * var(--neu-scale));
+  --neu-d1-n: calc(-3px * var(--neu-scale));
+  --neu-b1: calc(7px * var(--neu-scale));
+
+  --neu-d2: calc(6px * var(--neu-scale));
+  --neu-d2-n: calc(-6px * var(--neu-scale));
+  --neu-b2: calc(14px * var(--neu-scale));
+
+  --neu-d3: calc(12px * var(--neu-scale));
+  --neu-d3-n: calc(-12px * var(--neu-scale));
+  --neu-b3: calc(26px * var(--neu-scale));
+
+  --neu-radius-scale: 1;
+  --neu-radius-sm: calc(8px * var(--neu-radius-scale));
+  --neu-radius-md: calc(16px * var(--neu-radius-scale));
+  --neu-radius-lg: calc(24px * var(--neu-radius-scale));
+}
+
+.theme-dark {
+  --bg-color: #292d32;
+  --text-color: #e0e5ec;
+  --text-muted: #a0a5aa;
+  --shadow-light: #353a40;
+  --shadow-dark: #1d1f24;
+  --accent: #6366f1;
+}
+
+.shadow-neu-flat-sm {
+  box-shadow: var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+              var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+}
+.shadow-neu-pressed-sm {
+  box-shadow: inset var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+              inset var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+}
+.shadow-neu-flat {
+  box-shadow: var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+              var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+}
+.shadow-neu-pressed {
+  box-shadow: inset var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+              inset var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+}
+.shadow-neu-flat-lg {
+  box-shadow: var(--neu-d3) var(--neu-d3) var(--neu-b3) var(--shadow-dark),
+              var(--neu-d3-n) var(--neu-d3-n) var(--neu-b3) var(--shadow-light);
+}
+.shadow-neu-pressed-lg {
+  box-shadow: inset var(--neu-d3) var(--neu-d3) var(--neu-b3) var(--shadow-dark),
+              inset var(--neu-d3-n) var(--neu-d3-n) var(--neu-b3) var(--shadow-light);
+}
+
+.shadow-neu-sidebar {
+  box-shadow: var(--neu-d3) 0 var(--neu-b3) var(--shadow-dark),
+              var(--neu-d1) 0 var(--neu-b2) var(--shadow-light);
+}
+
+.rounded-neu-sm { border-radius: var(--neu-radius-sm); }
+.rounded-neu-md { border-radius: var(--neu-radius-md); }
+.rounded-neu-lg { border-radius: var(--neu-radius-lg); }
+
+.neu-transition {
+  transition: box-shadow 0.3s ease, transform 0.3s ease, color 0.3s ease;
+}

@@ -1,0 +1,265 @@
+/**
+ * TAgent 浮岛布局 — 主面板全幅铺底，NavIsland / RightNav 叠在上面
+ */
+:root {
+  --shell-pad: 8px;
+  --island-radius: 20px;
+  --rail-width: 60px;
+  --sidebar-width: 240px;
+  --right-panel-width: 220px;
+  --right-rail-width: 42px;
+  --left-float-w: calc(var(--rail-width) + var(--sidebar-width));
+  --right-float-w: calc(var(--right-panel-width) + var(--right-rail-width));
+  --right-island-w: var(--right-float-w);
+  --island-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shell-scene {
+  position: relative;
+  height: 100vh;
+  padding: var(--shell-pad);
+  overflow: hidden;
+}
+
+.content-scene {
+  position: absolute;
+  inset: var(--shell-pad);
+  z-index: 10;
+}
+
+.content-base-plate {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--island-radius);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.content-foreground {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── 左侧 NavIsland：Rail + Sidebar 一体浮岛 ── */
+.overlay-left {
+  position: absolute;
+  top: var(--shell-pad);
+  bottom: var(--shell-pad);
+  left: var(--shell-pad);
+  z-index: 70;
+  pointer-events: none;
+}
+
+.overlay-left > * {
+  pointer-events: auto;
+}
+
+.nav-island {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: var(--left-float-w);
+  border-radius: var(--island-radius);
+  overflow: hidden;
+}
+
+.nav-island-rail {
+  width: var(--rail-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 0 10px;
+  gap: 6px;
+  position: relative;
+}
+
+.nav-island-rail::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  right: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--text-color, #333) 12%, transparent) 18%,
+    color-mix(in srgb, var(--text-color, #333) 12%, transparent) 82%,
+    transparent 100%
+  );
+}
+
+.nav-island-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-inner {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 12px 12px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail-tab {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rail-spacer {
+  flex: 1;
+  min-height: 8px;
+}
+
+/* ── 右侧浮岛：Panel + Rail，可折叠 ── */
+.overlay-right {
+  position: absolute;
+  top: var(--shell-pad);
+  bottom: var(--shell-pad);
+  right: var(--shell-pad);
+  z-index: 70;
+  pointer-events: none;
+}
+
+.overlay-right > * {
+  pointer-events: auto;
+}
+
+.right-island {
+  height: 100%;
+  width: var(--right-island-w);
+  border-radius: var(--island-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  transition:
+    width 300ms var(--island-ease),
+    box-shadow 280ms ease,
+    opacity 280ms ease;
+}
+
+.right-island--collapsed {
+  --right-island-w: var(--right-rail-width);
+}
+
+.right-island--expanded {
+  --right-island-w: calc(var(--right-panel-width) + var(--right-rail-width));
+}
+
+.right-panel-wrap {
+  width: var(--right-panel-width);
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    width 300ms var(--island-ease),
+    opacity 220ms ease;
+}
+
+.right-island--collapsed .right-panel-wrap {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.right-panel-inner {
+  width: var(--right-panel-width);
+  padding: 14px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.right-rail {
+  width: var(--right-rail-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0 10px;
+  gap: 6px;
+  position: relative;
+}
+
+.right-rail::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--text-color, #333) 12%, transparent) 18%,
+    color-mix(in srgb, var(--text-color, #333) 12%, transparent) 82%,
+    transparent 100%
+  );
+}
+
+.right-island--collapsed .right-rail::before {
+  display: none;
+}
+
+.right-rail-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 主内容区在 content-body 内用 padding 避让浮岛 */
+.content-foreground .agent-header,
+.content-foreground .messages {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.agent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 输入框：flex 底栏，不用 absolute，避免伸到 sidebar 底下 */
+.input-dock-wrap {
+  flex-shrink: 0;
+  padding: 0 0 16px;
+}

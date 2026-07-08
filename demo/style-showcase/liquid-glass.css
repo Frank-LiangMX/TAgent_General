@@ -1,0 +1,99 @@
+/**
+ * Apple Liquid Glass 分层材质 — 参考掘金 WWDC25 文章 + Zettersten glass-card 模板
+ * 脏感来源：高饱和底 + 低 alpha 全局 blur → 改用「白雾 tint + 适度 blur + 边缘高光」
+ */
+
+.lg-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow:
+    0 10px 40px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+/* Layer 0 — 折射 / 磨砂（卡片有 blur，按钮可关） */
+.lg-refract {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  backdrop-filter: blur(18px) saturate(1.35) brightness(1.04);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35) brightness(1.04);
+}
+
+/* Chromium：SVG 边缘置换（Liquid Glass 核心，非全局拉丝） */
+@supports (backdrop-filter: url(#liquid-glass-filter)) {
+  .lg-refract--lens {
+    backdrop-filter: blur(14px) url(#liquid-glass-filter) saturate(1.4) brightness(1.05);
+    -webkit-backdrop-filter: blur(14px) url(#liquid-glass-filter) saturate(1.4) brightness(1.05);
+  }
+}
+
+/* Layer 1 — 白色雾面 tint（提高不透明度 = 更干净，不透脏色） */
+.lg-tint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.theme-dark .lg-tint {
+  background: rgba(28, 32, 40, 0.55);
+}
+
+/* Layer 2 — 边缘高光 + 细边框（文章：边缘高光 + 浮动阴影） */
+.lg-specular {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.18),
+    inset 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset -1px 0 0 rgba(255, 255, 255, 0.22);
+}
+
+.theme-dark .lg-specular {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.lg-content {
+  position: relative;
+  z-index: 3;
+}
+
+/* 高透态（工具栏按钮 / 激活 rail）— 文章：切换态无 blur */
+.lg-clear .lg-refract {
+  backdrop-filter: saturate(1.15) brightness(1.02);
+  -webkit-backdrop-filter: saturate(1.15) brightness(1.02);
+}
+
+.lg-clear .lg-tint {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.theme-dark .lg-clear .lg-tint {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .lg-refract {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .lg-tint {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}

@@ -1,0 +1,191 @@
+/**
+ * Neu + Glass 混合层 — 在 NeuUI 阴影上叠轻微透感与边缘光泽
+ * 强度刻意克制，避免盖掉新拟态体积感
+ */
+:root {
+  --neu-glass-bg: color-mix(in srgb, var(--bg-color) 78%, transparent);
+  --neu-glass-bg-strong: color-mix(in srgb, var(--bg-color) 88%, transparent);
+  --neu-glass-rim: rgba(255, 255, 255, 0.52);
+  --neu-glass-shine: rgba(255, 255, 255, 0.75);
+  --neu-glass-blur: 14px;
+}
+
+.theme-dark {
+  --neu-glass-bg: color-mix(in srgb, var(--bg-color) 62%, transparent);
+  --neu-glass-bg-strong: color-mix(in srgb, var(--bg-color) 72%, transparent);
+  --neu-glass-rim: rgba(255, 255, 255, 0.14);
+  --neu-glass-shine: rgba(255, 255, 255, 0.18);
+}
+
+/* 环境微渐变 — 让 blur 有东西可透 */
+.shell-scene.neu-glass-env {
+  background:
+    radial-gradient(ellipse 55% 45% at 12% 8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 58%),
+    radial-gradient(ellipse 50% 40% at 92% 88%, color-mix(in srgb, var(--shadow-dark) 12%, transparent), transparent 55%),
+    var(--bg-color);
+}
+
+.neu-glass-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    148deg,
+    color-mix(in srgb, var(--bg-color) 84%, transparent) 0%,
+    var(--neu-glass-bg) 48%,
+    color-mix(in srgb, var(--bg-color) 70%, transparent) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(var(--neu-glass-blur)) saturate(1.18);
+  backdrop-filter: blur(var(--neu-glass-blur)) saturate(1.18);
+}
+
+/* 左上环境光 */
+.neu-glass-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 6%, transparent) 0%,
+    rgba(255, 255, 255, 0.14) 22%,
+    transparent 52%,
+    color-mix(in srgb, var(--shadow-light) 8%, transparent) 100%
+  );
+}
+
+/* 边缘光泽 rim */
+.neu-glass-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  border: 1px solid var(--neu-glass-rim);
+  box-shadow:
+    inset 0 1px 0 0 var(--neu-glass-shine),
+    inset 0 -0.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset 1px 0 0 rgba(255, 255, 255, 0.16),
+    inset -1px 0 0 rgba(255, 255, 255, 0.10);
+}
+
+.neu-glass-surface > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* 主底板：更实一点，只留轻微雾面 */
+.neu-glass-plate {
+  background: linear-gradient(
+    168deg,
+    var(--neu-glass-bg-strong) 0%,
+    color-mix(in srgb, var(--bg-color) 76%, transparent) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.neu-glass-plate::before {
+  opacity: 0.65;
+}
+
+.neu-glass-plate::after {
+  border-color: color-mix(in srgb, var(--neu-glass-rim) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--neu-glass-shine) 55%, transparent),
+    inset 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 浮岛：Neu 阴影 + 玻璃 inset 高光 */
+.island-float.neu-glass-surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    var(--neu-d3) var(--neu-d3) var(--neu-b3) var(--shadow-dark),
+    var(--neu-d3-n) var(--neu-d3-n) var(--neu-b3) var(--shadow-light);
+}
+
+.right-island--collapsed.island-float.neu-glass-surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+    var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+}
+
+.theme-dark .island-float.neu-glass-surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    var(--neu-d3) var(--neu-d3) var(--neu-b3) var(--shadow-dark),
+    var(--neu-d3-n) var(--neu-d3-n) var(--neu-b3) var(--shadow-light);
+}
+
+/* 控件：轻雾面 */
+.neu-glass-control {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-color) 80%, transparent),
+    color-mix(in srgb, var(--bg-color) 65%, transparent)
+  ) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(1.12);
+  backdrop-filter: blur(8px) saturate(1.12);
+}
+
+.neu-glass-control::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--neu-glass-rim) 65%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.theme-dark .neu-glass-control::after {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Tab 选中：玻璃衔接 */
+.tab-item.neu-tab.active.neu-glass-tab {
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  backdrop-filter: blur(8px) saturate(1.15);
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg-color) 72%, transparent) 0%,
+    color-mix(in srgb, var(--bg-color) 88%, transparent) 100%
+  ) !important;
+  border-color: var(--neu-glass-rim) !important;
+  box-shadow:
+    inset 0 1px 0 var(--neu-glass-shine),
+    var(--neu-d1) calc(-1 * var(--neu-d1)) var(--neu-b1) var(--shadow-dark) !important;
+}
+
+/* 带 shadow 工具类的卡片/输入 — 叠 rim */
+.shadow-neu-flat.neu-glass-control,
+.shadow-neu-pressed.neu-glass-control,
+.shadow-neu-pressed-sm.neu-glass-control,
+.shadow-neu-flat-sm.neu-glass-control {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+    var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+}
+
+.shadow-neu-pressed.neu-glass-surface,
+.shadow-neu-pressed-lg.neu-glass-plate {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+    inset var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+}
+
+.shadow-neu-pressed-lg.neu-glass-plate {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset var(--neu-d3) var(--neu-d3) var(--neu-b3) var(--shadow-dark),
+    inset var(--neu-d3-n) var(--neu-d3-n) var(--neu-b3) var(--shadow-light);
+}

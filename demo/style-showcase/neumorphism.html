@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — Neumorphism-UI 浮岛</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="neu-ui-tokens.css" />
+  <link rel="stylesheet" href="neu-glass.css" />
+  <link rel="stylesheet" href="floating-shell.css" />
+  <link rel="stylesheet" href="tab-bar.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: Inter, 'Poppins', -apple-system, system-ui, sans-serif;
+      font-size: 13px;
+      background: var(--bg-color);
+      color: var(--text-color);
+      overflow: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .shell-scene { /* 背景：neu-glass-env */ }
+
+    .agent-title { font-size: 14px; font-weight: 600; }
+    .agent-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .toolbar { display: flex; gap: 8px; }
+
+    .neu-btn {
+      border: none; cursor: pointer;
+      background: var(--bg-color);
+      color: var(--text-muted);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+    }
+    .neu-btn.circle { border-radius: 50%; }
+    .neu-btn.icon-sm { width: 36px; height: 36px; }
+    .neu-btn:not(.active):not(:disabled) {
+      box-shadow: var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+                  var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+    }
+    .neu-btn:not(.active):hover {
+      box-shadow: var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+                  var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+    }
+    .neu-btn:active, .neu-btn.active {
+      box-shadow: inset var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+                  inset var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+      color: var(--accent);
+      transform: scale(0.98);
+    }
+    .neu-btn.primary { color: var(--accent); font-weight: 700; }
+
+    /* Rail tab：每个独立悬浮 pill */
+    .rail-tab {
+      background: var(--bg-color);
+      color: var(--text-muted);
+      transition: box-shadow 0.3s ease, transform 0.3s ease, color 0.3s ease;
+    }
+    .rail-tab:not(.active) {
+      box-shadow: var(--neu-d2) var(--neu-d2) var(--neu-b2) var(--shadow-dark),
+                  var(--neu-d2-n) var(--neu-d2-n) var(--neu-b2) var(--shadow-light);
+    }
+    .rail-tab:not(.active):hover {
+      box-shadow: var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+                  var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+      color: color-mix(in srgb, var(--text-color) 72%, transparent);
+    }
+    .rail-tab.active {
+      box-shadow: inset var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+                  inset var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* NavIsland 体积 + 玻璃：neu-glass.css */
+
+    .right-rail-btn {
+      background: var(--bg-color);
+      color: var(--text-muted);
+      transition: box-shadow 0.3s ease, color 0.3s ease, transform 0.3s ease;
+    }
+    .right-rail-btn:not(.active) {
+      box-shadow: var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+                  var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+    }
+    .right-rail-btn.active {
+      box-shadow: inset var(--neu-d1) var(--neu-d1) var(--neu-b1) var(--shadow-dark),
+                  inset var(--neu-d1-n) var(--neu-d1-n) var(--neu-b1) var(--shadow-light);
+      color: var(--accent);
+    }
+
+    .sidebar-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; padding: 0 4px; }
+
+    .neu-search {
+      height: 38px; padding: 0 14px;
+      font-size: 12px; color: var(--text-muted);
+      background: var(--bg-color);
+      border: none; outline: none;
+      border-radius: var(--neu-radius-md);
+      margin-bottom: 10px; width: 100%;
+    }
+
+    .session-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .neu-nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; cursor: pointer;
+      background: var(--bg-color);
+      border-radius: var(--neu-radius-sm);
+      color: color-mix(in srgb, var(--text-color) 70%, transparent);
+      transition: box-shadow 0.3s ease, color 0.3s ease;
+    }
+    .session-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-time { font-size: 10px; color: var(--text-muted); }
+
+    .neu-cards {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-top: 12px; padding-top: 12px;
+    }
+    .neu-card {
+      padding: 12px 8px; text-align: center;
+      background: var(--bg-color);
+      border-radius: var(--neu-radius-md);
+    }
+    .neu-card .label { font-size: 10px; color: var(--text-muted); }
+    .neu-card .value { font-size: 18px; font-weight: 700; color: var(--accent); margin-top: 2px; }
+
+    .msg-user {
+      align-self: flex-end; max-width: 72%; padding: 12px 16px;
+      border-radius: var(--neu-radius-md) var(--neu-radius-md) 4px var(--neu-radius-md);
+      line-height: 1.55;
+      background: color-mix(in srgb, var(--accent) 8%, var(--bg-color));
+      border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    .msg-assistant { max-width: 92%; line-height: 1.65; }
+    .msg-assistant p { margin-bottom: 8px; }
+    .msg-assistant code {
+      font-size: 12px; padding: 2px 8px; border-radius: 6px;
+      background: var(--bg-color); color: var(--accent);
+    }
+    .msg-assistant a { color: var(--accent); }
+
+    .input-dock {
+      padding: 14px 16px 12px;
+      border-radius: var(--neu-radius-lg);
+      background: var(--bg-color);
+    }
+    .input-area {
+      width: 100%; min-height: 40px; border: none; background: transparent;
+      resize: none; font: inherit; color: var(--text-color); outline: none;
+    }
+    .input-area::placeholder { color: color-mix(in srgb, var(--text-color) 45%, transparent); }
+    .input-toolbar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+
+    .right-panel-inner h3 {
+      font-size: 11px; font-weight: 700;
+      color: color-mix(in srgb, var(--text-color) 40%, transparent);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+    }
+    .file-item {
+      padding: 9px 11px; margin-bottom: 8px;
+      border-radius: var(--neu-radius-sm);
+      font-size: 12px; cursor: pointer;
+      background: var(--bg-color);
+      color: color-mix(in srgb, var(--text-color) 85%, transparent);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .demo-bar {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 100;
+      display: flex; align-items: center; gap: 12px; padding: 8px 16px;
+      border-radius: 999px; font-size: 12px;
+      background: var(--bg-color);
+    }
+    .demo-bar a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .demo-bar label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+    .demo-bar input[type=range] { width: 80px; accent-color: var(--accent); }
+
+    .spec {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;
+      font-size: 10px; color: var(--text-muted);
+      background: var(--bg-color); padding: 6px 14px;
+      border-radius: var(--neu-radius-sm);
+    }
+    .spec a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="demo-bar shadow-neu-flat-sm neu-glass-surface neu-glass-control rounded-neu-md neu-transition">
+    <span>NeuUI 浮岛</span>
+    <a href="index.html">← 返回</a>
+    <a href="glassmorphism.html">Glass</a>
+    <label>深度 <input type="range" id="neuScale" min="40" max="140" value="100" /><span id="scaleVal">1.0</span></label>
+    <button type="button" class="neu-btn icon-sm circle neu-transition" id="themeToggle" title="深/浅色">◐</button>
+  </div>
+
+  <div class="shell-scene neu-glass-env">
+    <!-- 主面板：全幅铺底 -->
+    <div class="content-scene">
+      <div class="content-base-plate neu-glass-surface neu-glass-plate shadow-neu-pressed-lg rounded-neu-lg" aria-hidden="true"></div>
+      <div class="content-foreground">
+        <div class="tab-bar chrome-bleed">
+          <div id="tabBarScroll" class="tab-bar-scroll">
+            <span id="tabIndicator" class="tab-slide-indicator" aria-hidden="true"></span>
+            <div class="tab-item-wrap" data-tab-id="tab-1" data-tab-title="记忆系统 UI 收尾">
+              <button type="button" class="tab-item neu-tab neu-glass-tab active" aria-selected="true">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">记忆系统 UI 收尾</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+            <div class="tab-item-wrap" data-tab-id="tab-2" data-tab-title="看板 v1 产品化">
+              <button type="button" class="tab-item neu-tab" aria-selected="false">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">看板 v1 产品化</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+            <div class="tab-item-wrap" data-tab-id="tab-3" data-tab-title="IPC 通道新增">
+              <button type="button" class="tab-item neu-tab" aria-selected="false">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">IPC 通道新增</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="content-body">
+        <header class="agent-header">
+          <div>
+            <div class="agent-title" id="agentTitle">记忆系统 UI 收尾</div>
+            <div class="agent-sub">Neu + 轻玻璃 · TabBar · 右 Rail 展开/折叠</div>
+          </div>
+          <div class="toolbar">
+            <button type="button" class="neu-btn icon-sm circle neu-transition">Ctx</button>
+            <button type="button" class="neu-btn icon-sm circle neu-transition">Plan</button>
+            <button type="button" class="neu-btn icon-sm circle neu-transition">Think</button>
+          </div>
+        </header>
+        <div class="messages">
+          <div class="msg-user">LeftSidebar + LeftRail 一体；还要顶部 TabBar。</div>
+          <div class="msg-assistant">
+            <p>已补全会话页顶部 <strong>TabBar</strong>（对齐 <code>TabBar.tsx</code>）：</p>
+            <p>1. 点击标签切换会话，标题同步更新</p>
+            <p>2. 底部 accent 指示条滑动动画</p>
+            <p>3. hover 显示 × 关闭（至少保留一个标签）</p>
+          </div>
+        </div>
+        <div class="input-dock-wrap">
+          <div class="input-dock shadow-neu-pressed neu-glass-surface neu-transition rounded-neu-lg">
+            <textarea class="input-area" rows="1" placeholder="输入消息…"></textarea>
+            <div class="input-toolbar">
+              <button type="button" class="neu-btn icon-sm circle neu-transition">+</button>
+              <button type="button" class="neu-btn icon-sm circle neu-transition primary">↑</button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左侧 NavIsland：Rail + Sidebar 一体 -->
+    <div class="overlay-left">
+      <aside class="nav-island island-float neu-glass-surface rounded-neu-lg">
+        <nav class="nav-island-rail" aria-label="功能 Rail">
+          <button type="button" class="rail-tab active primary" data-rail>◎</button>
+          <button type="button" class="rail-tab" data-rail>▦</button>
+          <button type="button" class="rail-tab" data-rail>◈</button>
+          <button type="button" class="rail-tab" data-rail>✎</button>
+          <div class="rail-spacer"></div>
+          <button type="button" class="rail-tab primary" data-rail>F</button>
+        </nav>
+        <div class="nav-island-sidebar">
+          <div class="sidebar-inner">
+            <div class="sidebar-title">会话</div>
+            <input class="neu-search shadow-neu-pressed-sm neu-glass-control rounded-neu-md" placeholder="搜索会话…" />
+            <div class="session-list">
+              <div class="neu-nav-item shadow-neu-pressed-sm active rounded-neu-sm">
+                <span class="session-text">记忆系统 UI 收尾</span>
+                <span class="session-time">刚刚</span>
+              </div>
+              <div class="neu-nav-item shadow-neu-flat-sm rounded-neu-sm">
+                <span class="session-text">看板 v1 产品化</span>
+                <span class="session-time">2h</span>
+              </div>
+              <div class="neu-nav-item shadow-neu-flat-sm rounded-neu-sm">
+                <span class="session-text">IPC 通道新增</span>
+                <span class="session-time">昨天</span>
+              </div>
+            </div>
+            <div class="neu-cards">
+            <div class="neu-card shadow-neu-flat neu-glass-control rounded-neu-md"><div class="label">L2</div><div class="value">12</div></div>
+            <div class="neu-card shadow-neu-flat neu-glass-control rounded-neu-md"><div class="label">L4</div><div class="value">48</div></div>
+            <div class="neu-card shadow-neu-flat neu-glass-control rounded-neu-md"><div class="label">待写</div><div class="value">3</div></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 右侧：Panel + Rail，Rail 点击展开/折叠 -->
+    <div class="overlay-right">
+      <aside id="rightIsland" class="right-island island-float neu-glass-surface rounded-neu-lg right-island--expanded">
+        <div class="right-panel-wrap">
+          <div class="right-panel-inner">
+            <h3>工作区</h3>
+            <div class="file-item shadow-neu-flat-sm">MemoryMonitorPanel.tsx</div>
+            <div class="file-item shadow-neu-flat-sm">NeuCard.vue</div>
+            <div class="file-item shadow-neu-flat-sm">floating-shell.css</div>
+          </div>
+        </div>
+        <nav class="right-rail" aria-label="右 Rail">
+          <button type="button" id="rightPanelToggle" class="right-rail-btn active" aria-pressed="true">📁</button>
+        </nav>
+      </aside>
+    </div>
+  </div>
+
+  <p class="spec shadow-neu-flat-sm">
+    浮岛叠层 · <a href="https://github.com/nregret/Neumorphism-UI">Neumorphism-UI</a> token
+  </p>
+
+  <script src="floating-shell.js"></script>
+  <script>
+    document.getElementById('neuScale').addEventListener('input', (e) => {
+      const v = e.target.value / 100;
+      document.documentElement.style.setProperty('--neu-scale', String(v));
+      document.getElementById('scaleVal').textContent = v.toFixed(2);
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('theme-dark');
+    });
+
+    initRightPanelToggle({
+      islandSelector: '#rightIsland',
+      toggleSelector: '#rightPanelToggle',
+      initialOpen: true,
+    });
+
+    initTabBar({
+      scrollSelector: '#tabBarScroll',
+      indicatorSelector: '#tabIndicator',
+      titleSelector: '#agentTitle',
+    });
+
+    document.querySelectorAll('.neu-nav-item').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.neu-nav-item').forEach(i => {
+          i.classList.remove('active', 'shadow-neu-pressed-sm');
+          i.classList.add('shadow-neu-flat-sm');
+        });
+        el.classList.add('active', 'shadow-neu-pressed-sm');
+        el.classList.remove('shadow-neu-flat-sm');
+      });
+    });
+
+    document.querySelectorAll('[data-rail]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-rail]').forEach(b => b.classList.remove('active', 'primary'));
+        btn.classList.add('active');
+        if (btn.textContent === 'F' || btn.textContent === '◎') btn.classList.add('primary');
+      });
+    });
+  </script>
+</body>
+</html>

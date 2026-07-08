@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — Liquid Glass 浮岛</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <link rel="stylesheet" href="floating-shell.css" />
+  <link rel="stylesheet" href="tab-bar.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      font-size: 13px;
+      color: #1e293b;
+      overflow: hidden;
+    }
+    body.theme-dark { color: #e2e8f0; }
+
+    .shell-scene {
+      background:
+        radial-gradient(ellipse 70% 55% at 18% 12%, rgba(186, 210, 255, 0.45), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 88% 78%, rgba(210, 200, 255, 0.32), transparent 52%),
+        radial-gradient(ellipse 50% 40% at 55% 95%, rgba(180, 230, 220, 0.22), transparent 50%),
+        linear-gradient(168deg, #e9eef5 0%, #f6f8fb 42%, #eef2f8 100%);
+    }
+    body.theme-dark .shell-scene {
+      background:
+        radial-gradient(ellipse 65% 50% at 15% 20%, rgba(60, 80, 140, 0.35), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 85% 75%, rgba(80, 60, 120, 0.28), transparent 50%),
+        linear-gradient(168deg, #0c0e14 0%, #141820 50%, #101218 100%);
+    }
+
+    .content-base-plate.lg-surface { border-radius: var(--island-radius); }
+    .content-base-plate .lg-tint { background: rgba(255,255,255,0.52); }
+    body.theme-dark .content-base-plate .lg-tint { background: rgba(30,35,45,0.55); }
+
+    .agent-title { font-size: 14px; font-weight: 600; }
+    .agent-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    body.theme-dark .agent-sub { color: #94a3b8; }
+    .toolbar { display: flex; gap: 6px; }
+
+    .rail-tab.lg-clear { width: 40px; height: 40px; padding: 0; border: none; cursor: pointer; background: transparent; }
+    .rail-tab.lg-clear .lg-surface { width: 100%; height: 100%; border-radius: 12px; }
+    .rail-tab.lg-clear .lg-content {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: #64748b;
+    }
+    .rail-tab.lg-clear.active .lg-content { color: #4f46e5; }
+    .rail-tab.lg-clear:not(.active) .lg-tint { background: rgba(255,255,255,0.22); }
+
+    .nav-island.lg-surface,
+    .right-island.lg-surface { border-radius: var(--island-radius); height: 100%; }
+
+    .right-island--collapsed.lg-surface .lg-tint { background: rgba(255,255,255,0.22); }
+    .right-island--collapsed.lg-surface .lg-refract {
+      backdrop-filter: blur(10px) saturate(1.05);
+      -webkit-backdrop-filter: blur(10px) saturate(1.05);
+    }
+    body.theme-dark .right-island--collapsed.lg-surface .lg-tint { background: rgba(30,35,45,0.35); }
+
+    .right-rail-btn.lg-clear { width: 32px; height: 32px; padding: 0; border: none; cursor: pointer; background: transparent; }
+    .right-rail-btn.lg-clear .lg-surface { width: 100%; height: 100%; border-radius: 9px; }
+    .right-rail-btn.lg-clear .lg-content {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .right-rail-btn.lg-clear.active .lg-content { color: #4f46e5; }
+
+    .sidebar-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; padding: 0 2px; }
+    .search-wrap { height: 36px; margin-bottom: 8px; border-radius: 12px; }
+    .search-wrap .lg-surface { height: 100%; border-radius: 12px; box-shadow: none; }
+    .search-wrap .lg-tint { background: rgba(255,255,255,0.35); }
+    .search-wrap .lg-content {
+      height: 100%; display: flex; align-items: center; padding: 0 12px;
+      font-size: 12px; color: #64748b;
+    }
+    body.theme-dark .search-wrap .lg-content { color: #94a3b8; }
+
+    .session-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    .session-row { border-radius: 12px; cursor: pointer; }
+    .session-row .lg-surface { border-radius: 12px; box-shadow: none; }
+    .session-row .lg-content {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px; color: #334155;
+    }
+    body.theme-dark .session-row .lg-content { color: #cbd5e1; }
+    .session-row:not(.active) .lg-tint { background: rgba(255,255,255,0.12); }
+    .session-row:not(.active) .lg-refract { backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); }
+    .session-row.active .lg-content { color: #4f46e5; font-weight: 500; }
+    .session-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-time { font-size: 10px; color: #94a3b8; }
+
+    .tool-btn { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+    .tool-btn .lg-surface { border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .tool-btn .lg-content {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; color: #64748b;
+    }
+
+    .msg-user { align-self: flex-end; max-width: 72%; border-radius: 16px; }
+    .msg-user .lg-surface { border-radius: 16px 16px 4px 16px; }
+    .msg-user .lg-tint { background: rgba(255,255,255,0.72); }
+    .msg-user .lg-content { padding: 11px 14px; line-height: 1.55; }
+    .msg-assistant { max-width: 90%; line-height: 1.65; color: #334155; }
+    body.theme-dark .msg-assistant { color: #cbd5e1; }
+    .msg-assistant p { margin-bottom: 8px; }
+    .msg-assistant code {
+      font-size: 12px; padding: 2px 6px; border-radius: 6px;
+      background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.6);
+    }
+    .msg-assistant a { color: #4f46e5; }
+
+    .input-dock.lg-surface { border-radius: 22px; }
+    .input-dock .lg-tint { background: rgba(255,255,255,0.68); }
+    .input-dock .lg-content { padding: 12px 14px 10px; }
+    .input-area {
+      width: 100%; min-height: 38px; border: none; background: transparent;
+      resize: none; font: inherit; color: inherit; outline: none;
+    }
+    .input-toolbar { display: flex; justify-content: space-between; margin-top: 6px; }
+    .send-mini {
+      width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(79,70,229,0.9); color: white; font-weight: 700;
+    }
+
+    .right-panel-inner h3 {
+      font-size: 11px; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+    }
+    .file-item {
+      padding: 7px 9px; border-radius: 10px; font-size: 12px;
+      color: #475569; cursor: pointer; margin-bottom: 4px;
+    }
+    body.theme-dark .file-item { color: #94a3b8; }
+    .file-item:hover { background: rgba(255,255,255,0.25); }
+
+    .demo-bar {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 100;
+      display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+      border-radius: 999px; font-size: 12px;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(20px) saturate(1.3);
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: 0 8px 24px rgba(15,23,42,0.1);
+    }
+    body.theme-dark .demo-bar { background: rgba(30,35,45,0.8); border-color: rgba(255,255,255,0.12); color: #e2e8f0; }
+    .demo-bar a { color: #4f46e5; text-decoration: none; font-weight: 500; }
+    .demo-bar button {
+      padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08);
+      background: rgba(255,255,255,0.6); cursor: pointer; font-size: 11px;
+    }
+    .spec {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;
+      font-size: 10px; color: #64748b; padding: 5px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="liquid-glass-filter" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+        <feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cdefs%3E%3CradialGradient id='m' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='62%25' stop-color='rgb(128,128,128)'/%3E%3Cstop offset='88%25' stop-color='rgb(148,128,118)'/%3E%3Cstop offset='100%25' stop-color='rgb(168,128,108)'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23m)'/%3E%3C/svg%3E" result="dispMap" preserveAspectRatio="none"/>
+        <feDisplacementMap in="SourceGraphic" in2="dispMap" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="demo-bar">
+    <span>Liquid Glass 浮岛</span>
+    <a href="index.html">← 返回</a>
+    <a href="neumorphism.html">Neumorphism</a>
+    <button type="button" id="themeToggle">深/浅色</button>
+  </div>
+
+  <div class="shell-scene">
+    <div class="content-scene">
+      <div class="content-base-plate lg-surface" aria-hidden="true">
+        <div class="lg-refract lg-refract--lens"></div>
+        <div class="lg-tint"></div>
+        <div class="lg-specular"></div>
+      </div>
+      <div class="content-foreground">
+        <div class="tab-bar chrome-bleed">
+          <div id="tabBarScroll" class="tab-bar-scroll">
+            <span id="tabIndicator" class="tab-slide-indicator" aria-hidden="true"></span>
+            <div class="tab-item-wrap" data-tab-id="tab-1" data-tab-title="记忆系统 UI 收尾">
+              <button type="button" class="tab-item glass-tab active" aria-selected="true">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">记忆系统 UI 收尾</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+            <div class="tab-item-wrap" data-tab-id="tab-2" data-tab-title="看板 v1 产品化">
+              <button type="button" class="tab-item glass-tab" aria-selected="false">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">看板 v1 产品化</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+            <div class="tab-item-wrap" data-tab-id="tab-3" data-tab-title="IPC 通道新增">
+              <button type="button" class="tab-item glass-tab" aria-selected="false">
+                <span class="tab-item-icon">💬</span>
+                <span class="tab-item-title">IPC 通道新增</span>
+                <span class="tab-item-close" aria-label="关闭">×</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="content-body">
+        <header class="agent-header">
+          <div>
+            <div class="agent-title" id="agentTitle">记忆系统 UI 收尾</div>
+            <div class="agent-sub">NavIsland 一体 · TabBar · 右 Rail 展开/折叠</div>
+          </div>
+          <div class="toolbar">
+            <div class="tool-btn lg-clear"><div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">Ctx</div></div></div>
+            <div class="tool-btn lg-clear"><div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">Plan</div></div></div>
+            <div class="tool-btn lg-clear"><div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">Think</div></div></div>
+          </div>
+        </header>
+        <div class="messages">
+          <div class="msg-user lg-surface">
+            <div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+            <div class="lg-content">LeftSidebar + LeftRail 一体；还要 TabBar。</div>
+          </div>
+          <div class="msg-assistant">
+            <p>顶部 <strong>TabBar</strong> 已对齐生产：</p>
+            <p>1. 圆角标签 + 玻璃选中态</p>
+            <p>2. 点击切换 + 底部指示条滑动</p>
+            <p>3. × 关闭标签（至少保留一个）</p>
+          </div>
+        </div>
+        <div class="input-dock-wrap">
+          <div class="input-dock lg-surface">
+            <div class="lg-refract lg-refract--lens"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+            <div class="lg-content">
+              <textarea class="input-area" rows="1" placeholder="输入消息…"></textarea>
+              <div class="input-toolbar">
+                <div class="tool-btn lg-clear"><div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">+</div></div></div>
+                <button class="send-mini">↑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay-left">
+      <aside class="nav-island lg-surface">
+        <div class="lg-refract lg-refract--lens"></div>
+        <div class="lg-tint"></div>
+        <div class="lg-specular"></div>
+        <div class="lg-content" style="display:flex;height:100%;width:100%">
+          <nav class="nav-island-rail">
+            <button type="button" class="rail-tab active lg-clear" data-rail>
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">◎</div></div>
+            </button>
+            <button type="button" class="rail-tab lg-clear" data-rail>
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">▦</div></div>
+            </button>
+            <button type="button" class="rail-tab lg-clear" data-rail>
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">◈</div></div>
+            </button>
+            <button type="button" class="rail-tab lg-clear" data-rail>
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">✎</div></div>
+            </button>
+            <div class="rail-spacer"></div>
+            <button type="button" class="rail-tab lg-clear" data-rail>
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">F</div></div>
+            </button>
+          </nav>
+          <div class="nav-island-sidebar">
+            <div class="sidebar-inner">
+              <div class="sidebar-title">会话</div>
+              <div class="search-wrap lg-surface">
+                <div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+                <div class="lg-content">搜索会话…</div>
+              </div>
+              <div class="session-list">
+                <div class="session-row active lg-surface">
+                  <div class="lg-refract lg-refract--lens"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+                  <div class="lg-content"><span class="session-text">记忆系统 UI 收尾</span><span class="session-time">刚刚</span></div>
+                </div>
+                <div class="session-row lg-surface">
+                  <div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+                  <div class="lg-content"><span class="session-text">看板 v1 产品化</span><span class="session-time">2h</span></div>
+                </div>
+                <div class="session-row lg-surface">
+                  <div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div>
+                  <div class="lg-content"><span class="session-text">IPC 通道新增</span><span class="session-time">昨天</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="overlay-right">
+      <aside id="rightIsland" class="right-island lg-surface right-island--expanded">
+        <div class="lg-refract lg-refract--lens"></div>
+        <div class="lg-tint"></div>
+        <div class="lg-specular"></div>
+        <div class="lg-content" style="display:flex;height:100%;width:100%">
+          <div class="right-panel-wrap">
+            <div class="right-panel-inner">
+              <h3>工作区</h3>
+              <div class="file-item">liquid-glass.css</div>
+              <div class="file-item">glass.css</div>
+              <div class="file-item">floating-shell.css</div>
+            </div>
+          </div>
+          <nav class="right-rail">
+            <button type="button" id="rightPanelToggle" class="right-rail-btn active lg-clear" aria-pressed="true">
+              <div class="lg-surface"><div class="lg-refract"></div><div class="lg-tint"></div><div class="lg-specular"></div><div class="lg-content">📁</div></div>
+            </button>
+          </nav>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <p class="spec">浮岛叠层 · Liquid Glass 主面板全幅铺底</p>
+
+  <script src="floating-shell.js"></script>
+  <script>
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('theme-dark');
+    });
+
+    initRightPanelToggle({
+      islandSelector: '#rightIsland',
+      toggleSelector: '#rightPanelToggle',
+      initialOpen: true,
+    });
+
+    initTabBar({
+      scrollSelector: '#tabBarScroll',
+      indicatorSelector: '#tabIndicator',
+      titleSelector: '#agentTitle',
+    });
+
+    document.querySelectorAll('[data-rail]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-rail]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

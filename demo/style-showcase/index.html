@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent 风格对比 — Glass vs Neumorphism</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #f8fafc;
+      padding: 24px;
+    }
+    .hub {
+      max-width: 720px;
+      width: 100%;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 560px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 24px;
+      border-radius: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover { transform: translateY(-4px); }
+    .card-glass {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .card-glass:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 28px 70px rgba(0,0,0,0.45); }
+    .card-neu {
+      background: #e0e5ec;
+      color: #333333;
+      box-shadow: 12px 12px 26px #a3b1c6, -12px -12px 26px #ffffff;
+    }
+    .card-neu:hover { box-shadow: 14px 14px 28px #a3b1c6, -14px -14px 28px #ffffff; }
+    .card-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .card-glass .card-icon {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .card-neu .card-icon {
+      background: #e0e5ec;
+      box-shadow: inset 6px 6px 14px #a3b1c6, inset -6px -6px 14px #ffffff;
+    }
+    .card h2 { font-size: 18px; font-weight: 600; }
+    .card p { font-size: 13px; opacity: 0.75; line-height: 1.5; }
+    .card .cta {
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .card-glass .cta { color: #7dd3fc; }
+    .card-neu .cta { color: #6366f1; }
+    .note {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="hub">
+    <div class="badge">TAgent UI · Style Showcase</div>
+    <h1>两套风格对比演示</h1>
+    <p class="subtitle">
+      基于 TAgent 浮岛布局：主面板全幅铺底，左右 Sidebar / Rail 叠在上面。<br />
+      玻璃参考 Liquid Glass（WWDC25）；拟态参考 <a href="https://github.com/nregret/Neumorphism-UI" style="color:#94a3b8">Neumorphism-UI</a>。
+    </p>
+    <div class="cards">
+      <a class="card card-glass" href="glassmorphism.html">
+        <div class="card-icon">◇</div>
+        <h2>Liquid Glass 液态玻璃</h2>
+        <p>WWDC25 分层材质：白雾 tint + 边缘 SVG 折射 + 干净背景（非高饱和脏 blur）</p>
+        <span class="cta">打开演示 →</span>
+      </a>
+      <a class="card card-neu" href="neumorphism.html">
+        <div class="card-icon">◉</div>
+        <h2>Neumorphism-UI</h2>
+        <p>对齐 nregret/Neumorphism-UI：#e0e5ec 基色 + sm/md/lg 三层深度 + flat/pressed 双态</p>
+        <span class="cta">打开演示 →</span>
+      </a>
+    </div>
+    <p class="note">
+      本地预览：直接用浏览器打开此文件，或在项目根目录运行<br />
+      <code style="color:#94a3b8">cd demo/style-showcase && python3 -m http.server 8765</code>
+    </p>
+  </div>
+</body>
+</html>
