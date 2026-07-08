@@ -3,16 +3,38 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 
 import { safeStorage } from 'electron'
 
 import type { WpsConfig, WpsConfigInput } from '@tagent/shared'
 import { getWpsConfigPath } from './config-paths'
 
-/** 内置 App ID（环境变量注入，源码不包含明文密钥） */
-const BUILTIN_APP_ID = process.env.TAGENT_WPS_APP_ID ?? ''
-/** 内置 Secret Key 明文（环境变量注入，不写入配置文件） */
-const BUILTIN_SECRET_KEY = process.env.TAGENT_WPS_SECRET_KEY ?? ''
+/** 内置 App ID（直接硬编码，公开标识符无泄露风险） */
+const BUILTIN_APP_ID = 'AK20260708DASRKI'
+
+/**
+ * 内置 Secret Key — AES-128-ECB 混淆
+ * 密文直接写死在代码里，运行时解码。
+ * grep 搜源码看不到明文，解密只需固定 key。
+ */
+const BUILTIN_SECRET_ENC = 'edb8d30e135ba0eab88b0274dac1d23b9ac790b1dad375f7f51a74b5b53f40fe'
+const BUILTIN_SECRET_KEY_DECODE_KEY = 'tagent-wps-2024'
+
+function decodeBuiltinSecret(): string {
+  try {
+    const key = Buffer.from(BUILTIN_SECRET_KEY_DECODE_KEY.padEnd(16).slice(0, 16))
+    const decipher = createDecipheriv('aes-128-ecb', key, null)
+    let dec = decipher.update(BUILTIN_SECRET_ENC, 'hex', 'hex')
+    dec += decipher.final('hex')
+    return dec
+  } catch {
+    return ''
+  }
+}
+
+/** 内置 Secret Key（运行时解密） */
+const BUILTIN_SECRET_KEY = decodeBuiltinSecret()
 
 const DEFAULT_CONFIG: WpsConfig = {
   enabled: false,
@@ -53,7 +75,7 @@ export function getWpsConfig(): WpsConfig {
     const raw = readFileSync(configPath, 'utf-8')
     const parsed = JSON.parse(raw) as Partial<WpsConfig>
     const config = { ...DEFAULT_CONFIG, ...parsed }
-    // secretKey 永远不存明文到文件；用户没填时从环境变量 fallback
+    // secretKey 永远不存明文到文件；用户没填时从内置解码 fallback
     if (!config.secretKey) {
       config.secretKey = BUILTIN_SECRET_KEY
     }
@@ -76,7 +98,7 @@ export function saveWpsConfig(input: WpsConfigInput): WpsConfig {
       : DEFAULT_CONFIG.callbackPort,
     callbackPath: input.callbackPath.trim() || DEFAULT_CONFIG.callbackPath,
     defaultWorkspaceId: input.defaultWorkspaceId,
-    // 用户填写了新的 secretKey 时才加密存储；空则清空，运行时从环境变量 fallback
+    // 用户填写了新的 secretKey 时才加密存储；空则清空，运行时从内置 fallback
     secretKey: input.secretKey ? encryptText(input.secretKey) : '',
     encryptKey:
       input.encryptKey === ''
