@@ -161,7 +161,7 @@ function PlatformCard({
         )}
       >
         {platform.iconSrc ? (
-          <img src={platform.iconSrc} alt={platform.name} className="w-7 h-7 object-contain" />
+          <img src={platform.iconSrc} alt={platform.name} className="w-7 h-7 object-contain rounded-md" />
         ) : platform.Icon ? (
           <platform.Icon className="w-5 h-5 text-muted-foreground" />
         ) : (
