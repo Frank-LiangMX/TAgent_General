@@ -8,7 +8,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Bot, Cable, Settings, Diamond } from 'lucide-react'
+import { Bot, Cable, Settings } from 'lucide-react'
 import * as React from 'react'
 
 import { BotDefaultSettings } from './BotDefaultSettings'
@@ -20,6 +20,7 @@ import { WpsSettings } from './WpsSettings'
 import dingtalkLogo from '@/assets/bots/dingding.png'
 import feishuLogo from '@/assets/bots/feishu.png'
 import wechatLogo from '@/assets/bots/wechat.png'
+import wpsLogo from '@/assets/bots/wps.png'
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from '@/atoms/feishu-atoms'
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
@@ -71,9 +72,9 @@ const PLATFORMS: readonly PlatformDef[] = [
     id: 'wps',
     name: 'WPS 协作',
     description: 'WPS365 远程连通',
+    iconSrc: wpsLogo,
     iconBgClass: 'bg-violet-500/10',
     accentColor: 'text-violet-600 dark:text-violet-400',
-    Icon: Diamond,
   },
 ]
 
