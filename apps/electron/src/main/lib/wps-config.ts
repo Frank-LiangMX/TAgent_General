@@ -9,10 +9,15 @@ import { safeStorage } from 'electron'
 import type { WpsConfig, WpsConfigInput } from '@tagent/shared'
 import { getWpsConfigPath } from './config-paths'
 
+/** 内置 App ID（环境变量注入，源码不包含明文密钥） */
+const BUILTIN_APP_ID = process.env.TAGENT_WPS_APP_ID ?? ''
+/** 内置 Secret Key 明文（环境变量注入，不写入配置文件） */
+const BUILTIN_SECRET_KEY = process.env.TAGENT_WPS_SECRET_KEY ?? ''
+
 const DEFAULT_CONFIG: WpsConfig = {
   enabled: false,
-  appId: '',
-  secretKey: '',
+  appId: BUILTIN_APP_ID,
+  secretKey: '', // secretKey 不写进 DEFAULT_CONFIG，由 getWpsConfig 动态合并
   encryptKey: '',
   apiUrl: 'https://openapi.wps.cn',
   callbackPort: 19086,
@@ -47,10 +52,15 @@ export function getWpsConfig(): WpsConfig {
   try {
     const raw = readFileSync(configPath, 'utf-8')
     const parsed = JSON.parse(raw) as Partial<WpsConfig>
-    return { ...DEFAULT_CONFIG, ...parsed }
+    const config = { ...DEFAULT_CONFIG, ...parsed }
+    // secretKey 永远不存明文到文件；用户没填时从环境变量 fallback
+    if (!config.secretKey) {
+      config.secretKey = BUILTIN_SECRET_KEY
+    }
+    return config
   } catch (error) {
     console.error('[WPS配置] 读取失败:', error)
-    return { ...DEFAULT_CONFIG }
+    return { ...DEFAULT_CONFIG, secretKey: BUILTIN_SECRET_KEY }
   }
 }
 
@@ -66,7 +76,8 @@ export function saveWpsConfig(input: WpsConfigInput): WpsConfig {
       : DEFAULT_CONFIG.callbackPort,
     callbackPath: input.callbackPath.trim() || DEFAULT_CONFIG.callbackPath,
     defaultWorkspaceId: input.defaultWorkspaceId,
-    secretKey: input.secretKey ? encryptText(input.secretKey) : existing.secretKey,
+    // 用户填写了新的 secretKey 时才加密存储；空则清空，运行时从环境变量 fallback
+    secretKey: input.secretKey ? encryptText(input.secretKey) : '',
     encryptKey:
       input.encryptKey === ''
         ? ''
