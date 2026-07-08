@@ -3,7 +3,7 @@ import { Loader2, Save, Play, Square, TestTube2, ExternalLink, Copy } from 'luci
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import type { WpsConfigInput } from '@tagent/shared'
+import type { WpsConfigInput, WpsUserAuthState } from '@tagent/shared'
 import { Button } from '@tagent/ui'
 import { SettingsCard, SettingsInput, SettingsRow, SettingsSection } from './primitives'
 
@@ -25,6 +25,8 @@ export function WpsSettings(): React.ReactElement {
   const [loaded, setLoaded] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [testing, setTesting] = React.useState(false)
+  const [userAuth, setUserAuth] = React.useState<WpsUserAuthState>({ loggedIn: false })
+  const [loggingIn, setLoggingIn] = React.useState(false)
   const [form, setForm] = React.useState<WpsConfigInput>({
     enabled: false,
     appId: '',
@@ -38,8 +40,13 @@ export function WpsSettings(): React.ReactElement {
 
   React.useEffect(() => {
     let mounted = true
-    Promise.all([window.electronAPI.getWpsConfig(), window.electronAPI.getWpsStatus()])
-      .then(([config, status]) => {
+    ;(async () => {
+      try {
+        const [config, status, auth] = await Promise.all([
+          window.electronAPI.getWpsConfig(),
+          window.electronAPI.getWpsStatus(),
+          window.electronAPI.getWpsUserAuth(),
+        ])
         if (!mounted) return
         setForm({
           enabled: config.enabled,
@@ -52,13 +59,14 @@ export function WpsSettings(): React.ReactElement {
           defaultWorkspaceId: config.defaultWorkspaceId ?? '',
         })
         setBridgeState(status)
+        setUserAuth(auth)
         setLoaded(true)
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         console.error('[WPS 设置] 加载配置失败:', error)
         toast.error(`加载 WPS 配置失败: ${error instanceof Error ? error.message : String(error)}`)
         if (mounted) setLoaded(true)
-      })
+      }
+    })()
     return () => {
       mounted = false
     }
@@ -68,6 +76,46 @@ export function WpsSettings(): React.ReactElement {
     const off = window.electronAPI.onWpsStatusChanged((state) => setBridgeState(state))
     return off
   }, [setBridgeState])
+
+  // 登录状态变化推送监听（后端主动推送）
+  React.useEffect(() => {
+    const off = window.electronAPI.onWpsUserAuthChanged((auth) => {
+      setUserAuth(auth)
+      if (!auth.loggedIn) {
+        toast.warning('WPS 登录已失效（可能在其他设备登录），请重新登录')
+      }
+    })
+    return off
+  }, [])
+
+  // 定期健康检查（每 5 分钟检测 token 是否被踢）
+  React.useEffect(() => {
+    // 页面加载时先检测一次（直接从后端读状态）
+    ;(async () => {
+      const auth = await window.electronAPI.getWpsUserAuth()
+      if (auth.loggedIn) {
+        const stillValid = await window.electronAPI.checkWpsUserAuth()
+        if (!stillValid) {
+          setUserAuth({ loggedIn: false })
+          toast.warning('WPS 登录已失效（可能在其他设备登录），请重新登录')
+        }
+      }
+    })()
+
+    const interval = setInterval(async () => {
+      // 先读本地状态，如果已显示未登录就不重复检查
+      const auth = await window.electronAPI.getWpsUserAuth()
+      if (auth.loggedIn) {
+        const stillValid = await window.electronAPI.checkWpsUserAuth()
+        if (!stillValid) {
+          setUserAuth({ loggedIn: false })
+          toast.warning('WPS 登录已失效（可能在其他设备登录），请重新登录')
+        }
+      }
+    }, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSave = React.useCallback(async () => {
     setSaving(true)
@@ -118,6 +166,48 @@ export function WpsSettings(): React.ReactElement {
     toast.info('WPS Bridge 已停止')
   }, [])
 
+  const handleUserLogin = React.useCallback(async () => {
+    setLoggingIn(true)
+    try {
+      const result = await window.electronAPI.wpsUserLogin()
+      if (result.loading) {
+        toast.info('请在浏览器中完成 WPS 登录授权')
+      }
+      // 轮询检查登录状态
+      const check = setInterval(async () => {
+        const auth = await window.electronAPI.getWpsUserAuth()
+        if (auth.loggedIn || (auth.errorMessage && !auth.loading)) {
+          clearInterval(check)
+          setUserAuth(auth)
+          setLoggingIn(false)
+          if (auth.loggedIn) {
+            toast.success(`WPS 登录成功: ${auth.userName}`)
+          } else if (auth.errorMessage) {
+            toast.error(`登录失败: ${auth.errorMessage}`)
+          }
+        }
+      }, 1000)
+      // 5 分钟超时
+      setTimeout(() => {
+        clearInterval(check)
+        if (loggingIn) setLoggingIn(false)
+      }, 5 * 60 * 1000)
+    } catch (error) {
+      setLoggingIn(false)
+      toast.error(`登录失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }, [])
+
+  const handleUserLogout = React.useCallback(async () => {
+    try {
+      await window.electronAPI.wpsUserLogout()
+      setUserAuth({ loggedIn: false })
+      toast.success('WPS 已退出登录')
+    } catch (error) {
+      toast.error(`退出登录失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }, [])
+
   const callbackUrl = React.useMemo(() => {
     const path = form.callbackPath.startsWith('/') ? form.callbackPath : `/${form.callbackPath}`
     return bridgeState.callbackUrl ?? `http://127.0.0.1:${form.callbackPort}${path}`
@@ -166,6 +256,62 @@ export function WpsSettings(): React.ReactElement {
               onChange={(e) => setForm((prev) => ({ ...prev, enabled: e.target.checked }))}
             />
           </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="用户登录" description="登录 WPS 账号以操作个人日历、文档">
+        <SettingsCard>
+          <SettingsRow label="登录状态">
+            <div className="flex items-center gap-3">
+              {userAuth.loggedIn ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm text-muted-foreground">
+                    已登录: {userAuth.userName}{userAuth.userEmail ? ` (${userAuth.userEmail})` : ''}
+                  </span>
+                  {userAuth.expiresAt && (
+                    <span className="text-xs text-muted-foreground/60">
+                      Token 过期: {new Date(userAuth.expiresAt).toLocaleString('zh-CN')}
+                    </span>
+                  )}
+                  <Button variant="outline" size="sm" onClick={handleUserLogout}>
+                    退出登录
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-slate-400" />
+                  <span className="text-sm text-muted-foreground">未登录</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUserLogin}
+                    disabled={loggingIn || !form.appId.trim()}
+                  >
+                    {loggingIn ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    {loggingIn ? '登录中...' : '登录 WPS'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground underline"
+                    onClick={() =>
+                      window.electronAPI.openExternal('https://open.wps.cn/')
+                    }
+                  >
+                    开放平台
+                    <ExternalLink className="h-3 w-3" />
+                  </button>
+                </>
+              )}
+            </div>
+          </SettingsRow>
+          {userAuth.errorMessage && (
+            <SettingsRow label="错误信息">
+              <span className="text-sm text-red-500">{userAuth.errorMessage}</span>
+            </SettingsRow>
+          )}
         </SettingsCard>
       </SettingsSection>
 

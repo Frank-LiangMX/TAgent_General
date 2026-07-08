@@ -893,8 +893,12 @@ html.material-frosted .session-glass-sticky:hover {
  * 用于 sonner Toaster 的单条 toast（NudgeToast / ContextUsageBadge / AgentView 等）。
  * 与模态框/设置卡片同款大圆角（--radius-glass-modal 20px）+ 玻璃底 + 高光，
  * 保持全局视觉一致。toast 是右上角浮层，不需要 ::after 折射层（避免遮挡按钮）。
+ *
+ * 特异性说明: sonner 用 [data-sonner-toast][data-styled='true']（0-2-0）设置 background，
+ * 我们的 .session-glass-toast（0-1-0）覆盖不了。这里用 [data-sonner-toast][data-styled='true']
+ * 前缀提升到 0-3-0 确保覆盖 sonner 的默认白/黑背景。
  */
-.session-glass-toast {
+[data-sonner-toast][data-styled='true'].session-glass-toast {
   --glass-bg: var(--popover);
   --glass-fg: var(--popover-foreground);
   /* 覆盖 sonner 默认 --border-radius:8px，让 [data-styled=true] 用我们的 24px */
@@ -918,7 +922,7 @@ html.material-frosted .session-glass-sticky:hover {
     0 20px 48px -14px rgba(0, 0, 0, 0.14);
 }
 
-.dark .session-glass-toast {
+.dark [data-sonner-toast][data-styled='true'].session-glass-toast {
   -webkit-backdrop-filter: blur(24px) saturate(1.48) brightness(0.95);
   backdrop-filter: blur(24px) saturate(1.48) brightness(0.95);
   background: linear-gradient(

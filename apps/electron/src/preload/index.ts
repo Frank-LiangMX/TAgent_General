@@ -122,6 +122,7 @@ import type {
   WpsConfigInput,
   WpsBridgeState,
   WpsTestResult,
+  WpsUserAuthState,
   AgentQueueMessageInput,
   PendingRequestsSnapshot,
   NudgeCandidate,
@@ -1569,6 +1570,32 @@ export interface ElectronAPI {
   stopWpsBridge: () => Promise<void>
   getWpsStatus: () => Promise<WpsBridgeState>
   onWpsStatusChanged: (callback: (state: WpsBridgeState) => void) => () => void
+
+  // WPS 用户登录
+  wpsUserLogin: () => Promise<WpsUserAuthState>
+  wpsUserLogout: () => Promise<void>
+  getWpsUserAuth: () => Promise<WpsUserAuthState>
+  checkWpsUserAuth: () => Promise<boolean>
+  onWpsUserAuthChanged: (callback: (auth: WpsUserAuthState) => void) => () => void
+
+  // WPS CLI 工具
+  wpsCliListUsers: (params?: { status?: string; pageSize?: number }) => Promise<any>
+  wpsCliSearchUsers: (query: string) => Promise<any>
+  wpsCliListCalendars: () => Promise<any>
+  wpsCliListEvents: (calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => Promise<any>
+  wpsCliCreateEvent: (params: { calendar_id: string; summary: string; from: string; to: string; description?: string; attendees?: string[]; location?: string }) => Promise<any>
+  wpsCliQueryFreebusy: (params: { users: string[]; from: string; to: string }) => Promise<any>
+  wpsCliSendMessage: (params: { to: string[]; text: string }) => Promise<any>
+  wpsCliListChats: () => Promise<any>
+  wpsCliCreateChat: (params: { name: string; members?: string[] }) => Promise<any>
+  wpsCliListFiles: (params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }) => Promise<any>
+  wpsCliSearchFiles: (params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }) => Promise<any>
+  wpsCliCreateShareLink: (params: { file_id: string; link_type?: string; expire_time?: string }) => Promise<any>
+  wpsCliListRecords: (params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }) => Promise<any>
+  wpsCliCreateRecord: (params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => Promise<any>
+  wpsCliApiGet: (endpoint: string) => Promise<any>
+  wpsCliApiPost: (params: { endpoint: string; data: any }) => Promise<any>
+  wpsCliHttpRequest: (params: { method: string; endpoint: string; body?: any }) => Promise<any>
 
   /** 订阅菜单关闭标签页事件（Cmd+W 被菜单拦截后转发） */
   onMenuCloseTab: (callback: () => void) => () => void
@@ -3091,6 +3118,80 @@ const electronAPI: ElectronAPI = {
     return () => {
       ipcRenderer.removeListener(WPS_IPC_CHANNELS.STATUS_CHANGED, listener)
     }
+  },
+
+  // ===== WPS 用户登录 =====
+  wpsUserLogin: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.USER_LOGIN)
+  },
+  wpsUserLogout: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.USER_LOGOUT)
+  },
+  getWpsUserAuth: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.GET_USER_AUTH)
+  },
+  checkWpsUserAuth: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CHECK_USER_AUTH)
+  },
+  onWpsUserAuthChanged: (callback: (auth: WpsUserAuthState) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, auth: WpsUserAuthState) => callback(auth)
+    ipcRenderer.on(WPS_IPC_CHANNELS.USER_AUTH_CHANGED, listener)
+    return () => {
+      ipcRenderer.removeListener(WPS_IPC_CHANNELS.USER_AUTH_CHANGED, listener)
+    }
+  },
+
+  // ===== WPS CLI 工具 =====
+  wpsCliListUsers: (params?: { status?: string; pageSize?: number }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_USERS, params)
+  },
+  wpsCliSearchUsers: (query: string) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_SEARCH_USERS, query)
+  },
+  wpsCliListCalendars: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_CALENDARS)
+  },
+  wpsCliListEvents: (calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_EVENTS, calendarId, params)
+  },
+  wpsCliCreateEvent: (params: { calendar_id: string; summary: string; from: string; to: string; description?: string; attendees?: string[]; location?: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_EVENT, params)
+  },
+  wpsCliQueryFreebusy: (params: { users: string[]; from: string; to: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_QUERY_FREEBUSY, params)
+  },
+  wpsCliSendMessage: (params: { to: string[]; text: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_SEND_MESSAGE, params)
+  },
+  wpsCliListChats: () => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_CHATS)
+  },
+  wpsCliCreateChat: (params: { name: string; members?: string[] }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_CHAT, params)
+  },
+  wpsCliListFiles: (params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_FILES, params)
+  },
+  wpsCliSearchFiles: (params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_SEARCH_FILES, params)
+  },
+  wpsCliCreateShareLink: (params: { file_id: string; link_type?: string; expire_time?: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_SHARE_LINK, params)
+  },
+  wpsCliListRecords: (params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_RECORDS, params)
+  },
+  wpsCliCreateRecord: (params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_RECORD, params)
+  },
+  wpsCliApiGet: (endpoint: string) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_API_GET, endpoint)
+  },
+  wpsCliApiPost: (params: { endpoint: string; data: any }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_API_POST, params)
+  },
+  wpsCliHttpRequest: (params: { method: string; endpoint: string; body?: any }) => {
+    return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_HTTP_REQUEST, params)
   },
 
   // ===== 钉钉集成 =====

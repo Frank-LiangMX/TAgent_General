@@ -39,6 +39,8 @@ function decryptText(encryptedText: string): string {
   }
 }
 
+export { encryptText, decryptText }
+
 export function getWpsConfig(): WpsConfig {
   const configPath = getWpsConfigPath()
   if (!existsSync(configPath)) return { ...DEFAULT_CONFIG }
@@ -89,5 +91,39 @@ export function getDecryptedWpsEncryptKey(): string {
 export function updateWpsDefaultWorkspace(workspaceId: string): void {
   const existing = getWpsConfig()
   const next: WpsConfig = { ...existing, defaultWorkspaceId: workspaceId }
+  writeFileSync(getWpsConfigPath(), JSON.stringify(next, null, 2), 'utf-8')
+}
+
+/** 更新用户 OAuth 认证信息 */
+export function updateWpsUserAuth(params: {
+  accessToken: string
+  refreshToken?: string
+  expiresAt: number
+  userName?: string
+  userEmail?: string
+}): void {
+  const existing = getWpsConfig()
+  const next: WpsConfig = {
+    ...existing,
+    userAccessToken: encryptText(params.accessToken),
+    userRefreshToken: params.refreshToken ? encryptText(params.refreshToken) : existing.userRefreshToken,
+    userTokenExpiresAt: params.expiresAt,
+    userName: params.userName,
+    userEmail: params.userEmail,
+  }
+  writeFileSync(getWpsConfigPath(), JSON.stringify(next, null, 2), 'utf-8')
+}
+
+/** 清除用户 OAuth 认证信息 */
+export function clearWpsUserAuth(): void {
+  const existing = getWpsConfig()
+  const next: WpsConfig = {
+    ...existing,
+    userAccessToken: undefined,
+    userRefreshToken: undefined,
+    userTokenExpiresAt: undefined,
+    userName: undefined,
+    userEmail: undefined,
+  }
   writeFileSync(getWpsConfigPath(), JSON.stringify(next, null, 2), 'utf-8')
 }
