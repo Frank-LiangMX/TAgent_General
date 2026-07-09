@@ -1,0 +1,764 @@
+/*
+  soft   · 轻拟态 Soft Glass
+  liquid · 液态玻璃 Liquid Glass
+
+  Liquid must NOT inherit Soft's dual-elevation language.
+  Override every soft shadow / clay surface with clear-lens optics.
+*/
+
+:root,
+[data-material="soft"] {
+  --material-blur: 32px;
+  --material-blur-sm: 16px;
+  --material-blur-lg: 36px;
+  --material-saturate: 130%;
+  --material-saturate-lg: 145%;
+}
+
+[data-material="liquid"] {
+  --material-blur: 40px;
+  --material-blur-sm: 22px;
+  --material-blur-lg: 48px;
+  --material-saturate: 175%;
+  --material-saturate-lg: 190%;
+  --blur: var(--material-blur);
+  --lg-specular-x: 32%;
+  --lg-specular-y: 18%;
+
+  /* Kill Soft dual-elevation tokens globally */
+  --elev-dark: transparent;
+  --elev-light: transparent;
+  --shadow-light: transparent;
+  --neu-out: none;
+  --neu-out-sm: none;
+  --neu-in: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --neu-in-sm: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/*
+  Liquid light — thin clear glass over a quiet, low-sat atmosphere.
+  No forced warm/cool layer clash; wash provides soft depth.
+*/
+[data-material="liquid"][data-mode="light"] {
+  --surface: #e8ebf1;
+  --surface-raised: #eef1f6;
+  --surface-sunken: #e0e4eb;
+  --wallpaper-top: #eef1f6;
+  --wallpaper-mid: #e8ebf1;
+  --wallpaper-bot: #e2e6ed;
+
+  --glass: rgba(255, 255, 255, 0.22);
+  --glass-soft: rgba(255, 255, 255, 0.14);
+  --glass-strong: rgba(255, 255, 255, 0.34);
+  --glass-well: rgba(255, 255, 255, 0.12);
+  --process-bg: rgba(255, 255, 255, 0.16);
+  --code-bg: rgba(255, 255, 255, 0.28);
+  --blockquote-bg: rgba(255, 255, 255, 0.18);
+
+  --rim: rgba(255, 255, 255, 0.55);
+  --rim-soft: rgba(255, 255, 255, 0.3);
+  --hover-fill: rgba(255, 255, 255, 0.22);
+
+  --inset-hi: rgba(255, 255, 255, 0.72);
+  --inset-hi-strong: rgba(255, 255, 255, 0.88);
+  --inset-hi-soft: rgba(255, 255, 255, 0.36);
+  --chroma-mid: rgba(255, 255, 255, 0.48);
+  --specular-peak: rgba(255, 255, 255, 0.65);
+  --specular-mid: rgba(255, 255, 255, 0.1);
+  --specular-opacity: 0.48;
+  --shimmer-peak: #fff;
+
+  --text: #2a3340;
+  --text-soft: #5a6574;
+  --text-faint: #838e9c;
+
+  --ambient-shadow: rgba(100, 115, 135, 0.1);
+  --shadow-dark: rgba(100, 115, 135, 0.08);
+
+  /* Light: let theme wash read through thin glass */
+  --wash-opacity: 0.42;
+
+  --plate-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 16px 40px rgba(100, 115, 135, 0.09);
+
+  --send-shadow:
+    0 10px 26px color-mix(in srgb, var(--accent) 26%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  --send-shadow-hover:
+    0 14px 32px color-mix(in srgb, var(--accent) 32%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/*
+  Liquid dark — keep theme surface hues (Mist/Ocean/Moss/Dusk).
+  Glass is tinted slate frost, not milky white overlays.
+*/
+[data-material="liquid"][data-mode="dark"] {
+  --glass: color-mix(in srgb, var(--surface-raised) 46%, transparent);
+  --glass-soft: color-mix(in srgb, var(--surface) 32%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface-raised) 62%, transparent);
+  /* Wells sit above the island — lift above sunken so lists don't read as voids */
+  --glass-well: color-mix(in srgb, var(--surface) 42%, transparent);
+  --process-bg: color-mix(in srgb, var(--surface-sunken) 44%, transparent);
+  --code-bg: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+  --blockquote-bg: color-mix(in srgb, var(--surface) 36%, transparent);
+
+  --rim: rgba(255, 255, 255, 0.14);
+  --rim-soft: rgba(255, 255, 255, 0.08);
+  --hover-fill: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+
+  --inset-hi: rgba(255, 255, 255, 0.12);
+  --inset-hi-strong: rgba(255, 255, 255, 0.2);
+  --inset-hi-soft: rgba(255, 255, 255, 0.06);
+  --chroma-mid: rgba(255, 255, 255, 0.16);
+  --specular-peak: rgba(255, 255, 255, 0.12);
+  --specular-mid: rgba(255, 255, 255, 0.02);
+  --specular-opacity: 0.14;
+  --shimmer-peak: rgba(255, 255, 255, 0.45);
+
+  --ambient-shadow: rgba(0, 0, 0, 0.45);
+  --shadow-dark: rgba(0, 0, 0, 0.4);
+  --wash-opacity: 0.22;
+
+  --plate-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 24px 56px rgba(0, 0, 0, 0.45);
+
+  --send-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --send-shadow-hover:
+    0 14px 32px rgba(0, 0, 0, 0.52),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  --neu-in: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --neu-in-sm: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── Nuke Soft dual-elevation wherever tagent.css hardcodes it ── */
+[data-material="liquid"] .soft-raised,
+[data-material="liquid"] .soft-inset {
+  box-shadow: none !important;
+  background: transparent;
+}
+
+[data-material="liquid"] .content-base-plate,
+[data-material="liquid"] .glass-island {
+  border: 1px solid var(--rim);
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.05) 36%,
+      transparent 70%
+    ),
+    var(--glass);
+  backdrop-filter: blur(var(--material-blur-lg)) saturate(var(--material-saturate-lg));
+  -webkit-backdrop-filter: blur(var(--material-blur-lg)) saturate(var(--material-saturate-lg));
+  box-shadow: var(--plate-shadow) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .content-base-plate,
+[data-material="liquid"][data-mode="light"] .glass-island {
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0.12) 40%,
+      rgba(255, 255, 255, 0.06) 100%
+    ),
+    var(--glass);
+  backdrop-filter: blur(36px) saturate(140%);
+  -webkit-backdrop-filter: blur(36px) saturate(140%);
+}
+
+[data-material="liquid"][data-mode="light"] .chroma-edge {
+  opacity: 0.5;
+}
+
+[data-material="liquid"][data-mode="light"] .specular {
+  opacity: 0.48;
+}
+
+[data-material="liquid"][data-mode="dark"] .content-base-plate,
+[data-material="liquid"][data-mode="dark"] .glass-island {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--surface-raised) 55%, transparent) 0%,
+      color-mix(in srgb, var(--surface) 28%, transparent) 42%,
+      transparent 74%
+    ),
+    var(--glass);
+  border-color: var(--rim);
+}
+
+[data-material="liquid"] .specular {
+  z-index: 4;
+  opacity: var(--specular-opacity);
+  mix-blend-mode: soft-light;
+  background: radial-gradient(
+    28% 22% at var(--lg-specular-x) var(--lg-specular-y),
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 42%,
+    transparent 72%
+  );
+}
+
+[data-material="liquid"][data-mode="dark"] .specular {
+  opacity: 0.1;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(
+    48% 36% at var(--lg-specular-x) var(--lg-specular-y),
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.02) 52%,
+    transparent 82%
+  );
+}
+
+[data-material="liquid"] .chroma-edge {
+  z-index: 5;
+  opacity: 0.85;
+  padding: 1px;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(150, 210, 255, 0.45) 28%,
+    rgba(255, 255, 255, 0.1) 52%,
+    rgba(255, 170, 210, 0.35) 100%
+  );
+}
+
+[data-material="liquid"][data-mode="dark"] .chroma-edge {
+  opacity: 0.45;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    color-mix(in srgb, var(--accent) 35%, transparent) 32%,
+    rgba(255, 255, 255, 0.04) 58%,
+    color-mix(in srgb, var(--accent) 18%, transparent) 100%
+  );
+}
+
+/* Large shells keep ambient depth; small controls stay flat */
+[data-material="liquid"] .input-dock,
+[data-material="liquid"] .input-dock.soft-raised,
+[data-material="liquid"] .msg-user,
+[data-material="liquid"] .code-block,
+[data-material="liquid"] .theme-dock {
+  border: 1px solid var(--rim) !important;
+  background: var(--glass-strong) !important;
+  backdrop-filter: blur(var(--material-blur-sm)) saturate(var(--material-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--material-blur-sm)) saturate(var(--material-saturate)) !important;
+  box-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    0 14px 36px var(--ambient-shadow) !important;
+}
+
+[data-material="liquid"] .input-dock,
+[data-material="liquid"] .input-dock.soft-raised {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 55%, transparent),
+    var(--glass-strong) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .input-dock,
+[data-material="liquid"][data-mode="light"] .input-dock.soft-raised,
+[data-material="liquid"][data-mode="light"] .theme-dock {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.2) 52%, rgba(255, 255, 255, 0.12)),
+    var(--glass-strong) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(26px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(145%) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.88) inset,
+    inset 1px 0 0 rgba(170, 195, 225, 0.16),
+    inset -1px 0 0 rgba(200, 195, 215, 0.1),
+    0 12px 32px rgba(100, 115, 135, 0.1) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .msg-user {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 8px 20px rgba(100, 115, 135, 0.06) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .code-block {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(12px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(125%) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset !important;
+  color: var(--text) !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .input-dock,
+[data-material="liquid"][data-mode="dark"] .input-dock.soft-raised,
+[data-material="liquid"][data-mode="dark"] .msg-user,
+[data-material="liquid"][data-mode="dark"] .code-block {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-raised) 40%, transparent),
+      transparent 58%
+    ),
+    var(--glass-strong) !important;
+  border-color: var(--rim) !important;
+}
+
+[data-material="liquid"] .input-dock:focus-within {
+  box-shadow:
+    0 1px 0 var(--inset-hi-strong) inset,
+    0 18px 44px var(--ambient-shadow) !important;
+  transform: none;
+}
+
+/*
+  Switches / lists / rails — FLAT liquid chips
+  No dual elevation, no ambient lift, no emboss.
+*/
+[data-material="liquid"] .seg,
+[data-material="liquid"] .glass-seg,
+[data-material="liquid"] .tool-cluster {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .seg,
+[data-material="liquid"][data-mode="dark"] .glass-seg,
+[data-material="liquid"][data-mode="dark"] .tool-cluster {
+  background: color-mix(in srgb, var(--surface-sunken) 55%, transparent) !important;
+  border: 1px solid var(--rim-soft) !important;
+}
+
+[data-material="liquid"] .seg button,
+[data-material="liquid"] .tool-cluster button {
+  box-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  transform: none !important;
+}
+
+[data-material="liquid"] .seg button:hover,
+[data-material="liquid"] .tool-cluster button:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+[data-material="liquid"] .tool-cluster button.accent {
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  box-shadow: none !important;
+}
+
+/* List wells — more transparent so wash shows through */
+[data-material="liquid"] .session-well,
+[data-material="liquid"] .file-well,
+[data-material="liquid"] .process-group,
+[data-material="liquid"] .think-block,
+[data-material="liquid"] .table-wrap {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(18px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(175%) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .session-well,
+[data-material="liquid"][data-mode="light"] .file-well,
+[data-material="liquid"][data-mode="light"] .process-group,
+[data-material="liquid"][data-mode="light"] .think-block,
+[data-material="liquid"][data-mode="light"] .table-wrap {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .seg,
+[data-material="liquid"][data-mode="light"] .glass-seg,
+[data-material="liquid"][data-mode="light"] .tool-cluster {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .session-well,
+[data-material="liquid"][data-mode="dark"] .file-well,
+[data-material="liquid"][data-mode="dark"] .process-group,
+[data-material="liquid"][data-mode="dark"] .think-block,
+[data-material="liquid"][data-mode="dark"] .table-wrap {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-raised) 28%, transparent),
+      transparent 70%
+    ),
+    var(--glass-well) !important;
+  border: 1px solid var(--rim-soft) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+[data-material="liquid"] .session-row,
+[data-material="liquid"] .file-item,
+[data-material="liquid"] .rail-btn,
+[data-material="liquid"] .right-rail-btn,
+[data-material="liquid"] .tool-row,
+[data-material="liquid"] .icon-tile,
+[data-material="liquid"] .archive,
+[data-material="liquid"] .ghost-plus,
+[data-material="liquid"] .project-toggle {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  transform: none !important;
+  background: transparent !important;
+}
+
+[data-material="liquid"] .tab {
+  box-shadow: none !important;
+  background: transparent !important;
+  transform: none !important;
+}
+
+/*
+  Tab selected plate — same structure as Soft (bottom-open sliding pill),
+  not the list-chip lens treatment.
+*/
+[data-material="liquid"] .tab-indicator {
+  background: var(--glass-strong) !important;
+  border: 1px solid var(--rim) !important;
+  border-bottom: 0 !important;
+  box-shadow: 0 1px 0 var(--inset-hi) inset !important;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+[data-material="liquid"][data-mode="light"] .tab-indicator {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.38) 100%
+    ),
+    var(--glass-strong) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .tab-indicator {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-raised) 58%, transparent),
+      color-mix(in srgb, var(--surface) 36%, transparent)
+    ),
+    var(--glass-strong) !important;
+  border-color: var(--rim) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset !important;
+}
+
+[data-material="liquid"] .session-row:hover,
+[data-material="liquid"] .file-item:hover,
+[data-material="liquid"] .rail-btn:hover,
+[data-material="liquid"] .right-rail-btn:hover,
+[data-material="liquid"] .tool-row:hover,
+[data-material="liquid"] .icon-tile:hover,
+[data-material="liquid"] .archive:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-color: transparent !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .session-row:hover,
+[data-material="liquid"][data-mode="dark"] .file-item:hover,
+[data-material="liquid"][data-mode="dark"] .rail-btn:hover,
+[data-material="liquid"][data-mode="dark"] .right-rail-btn:hover {
+  background: var(--hover-fill) !important;
+}
+
+/*
+  Selected state = liquid glass lens chip
+  Strong specular + chromatic rim + refraction-like edge
+*/
+[data-material="liquid"] .session-row.is-active,
+[data-material="liquid"] .file-item.is-active,
+[data-material="liquid"] .rail-btn.is-active,
+[data-material="liquid"] .right-rail-btn.is-active,
+[data-material="liquid"] .tool-row.is-running,
+[data-material="liquid"] .seg button.is-active {
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.14) 42%,
+      rgba(255, 255, 255, 0.08) 100%
+    ),
+    color-mix(in srgb, var(--accent) 8%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(185%) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    inset 1px 0 0 rgba(140, 210, 255, 0.28),
+    inset -1px 0 0 rgba(255, 170, 210, 0.2),
+    0 4px 12px rgba(40, 70, 120, 0.08) !important;
+  transform: none !important;
+}
+
+[data-material="liquid"][data-mode="light"] .session-row.is-active,
+[data-material="liquid"][data-mode="light"] .file-item.is-active,
+[data-material="liquid"][data-mode="light"] .rail-btn.is-active,
+[data-material="liquid"][data-mode="light"] .right-rail-btn.is-active,
+[data-material="liquid"][data-mode="light"] .seg button.is-active {
+  color: var(--text) !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.38) 50%,
+      rgba(255, 255, 255, 0.24) 100%
+    ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    inset 1px 0 0 rgba(170, 195, 220, 0.2),
+    inset -1px 0 0 rgba(195, 190, 210, 0.12),
+    0 3px 10px rgba(100, 115, 135, 0.07) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .session-row.is-active .session-text {
+  color: var(--text) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .session-row.is-active .session-meta {
+  color: var(--text-soft) !important;
+}
+
+[data-material="liquid"][data-mode="light"] .icon-tile,
+[data-material="liquid"][data-mode="light"] .archive,
+[data-material="liquid"][data-mode="light"] .pill {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  box-shadow: none !important;
+  color: var(--text-soft) !important;
+}
+
+[data-material="liquid"] .session-row.is-active::before,
+[data-material="liquid"] .file-item.is-active::before,
+[data-material="liquid"] .rail-btn.is-active::before,
+[data-material="liquid"] .right-rail-btn.is-active::before,
+[data-material="liquid"] .seg button.is-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    34% 48% at var(--lg-specular-x) 18%,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+}
+
+[data-material="liquid"][data-mode="dark"] .session-row.is-active::before,
+[data-material="liquid"][data-mode="dark"] .file-item.is-active::before,
+[data-material="liquid"][data-mode="dark"] .rail-btn.is-active::before,
+[data-material="liquid"][data-mode="dark"] .right-rail-btn.is-active::before,
+[data-material="liquid"][data-mode="dark"] .seg button.is-active::before {
+  background: radial-gradient(
+    46% 56% at var(--lg-specular-x) 18%,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.015) 50%,
+    transparent 74%
+  );
+  opacity: 0.55;
+}
+
+[data-material="liquid"] .session-row.is-active,
+[data-material="liquid"] .file-item.is-active,
+[data-material="liquid"] .rail-btn.is-active,
+[data-material="liquid"] .right-rail-btn.is-active,
+[data-material="liquid"] .seg button.is-active {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-material="liquid"] .session-row.is-active > *,
+[data-material="liquid"] .file-item.is-active > *,
+[data-material="liquid"] .rail-btn.is-active > *,
+[data-material="liquid"] .right-rail-btn.is-active > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-material="liquid"] .session-row.is-active .session-text,
+[data-material="liquid"] .session-row.is-active .session-meta {
+  color: var(--text) !important;
+}
+
+[data-material="liquid"] .session-row.is-active .session-text {
+  font-weight: 600;
+}
+
+[data-material="liquid"][data-mode="dark"] .session-row.is-active,
+[data-material="liquid"][data-mode="dark"] .file-item.is-active,
+[data-material="liquid"][data-mode="dark"] .rail-btn.is-active,
+[data-material="liquid"][data-mode="dark"] .right-rail-btn.is-active,
+[data-material="liquid"][data-mode="dark"] .tool-row.is-running,
+[data-material="liquid"][data-mode="dark"] .seg button.is-active {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--rim)) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-raised) 70%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--glass-strong)) 55%,
+      color-mix(in srgb, var(--surface) 50%, transparent) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    inset 1px 0 0 color-mix(in srgb, var(--accent) 22%, transparent),
+    inset -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 4px 14px rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .input-dock,
+[data-material="liquid"][data-mode="dark"] .theme-dock {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-raised) 48%, transparent),
+      color-mix(in srgb, var(--surface) 22%, transparent) 55%
+    ),
+    var(--glass-strong) !important;
+  border: 1px solid var(--rim) !important;
+}
+
+[data-material="liquid"] .tool-row.is-done {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+[data-material="liquid"] .icon-tile,
+[data-material="liquid"] .archive,
+[data-material="liquid"] .pill {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
+}
+
+[data-material="liquid"][data-mode="dark"] .icon-tile,
+[data-material="liquid"][data-mode="dark"] .archive,
+[data-material="liquid"][data-mode="dark"] .pill {
+  background: color-mix(in srgb, var(--surface-raised) 50%, transparent) !important;
+  border: 1px solid var(--rim-soft) !important;
+}
+
+[data-material="liquid"] .pill-accent {
+  background: color-mix(in srgb, var(--accent) 22%, transparent) !important;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+/* Atmosphere: light reads more color; dark stays soft */
+[data-material="liquid"] .wash {
+  filter: blur(140px) saturate(0.7);
+  animation: none;
+}
+
+[data-material="liquid"][data-mode="light"] .wash {
+  filter: blur(145px) saturate(0.78);
+  opacity: var(--wash-opacity);
+}
+
+[data-material="liquid"][data-mode="dark"] .wash {
+  filter: blur(160px) saturate(0.42);
+  opacity: var(--wash-opacity);
+}
+
+/* Soft multi-stop field — depth without warm/cool layer clash */
+[data-material="liquid"][data-mode="light"] .wallpaper {
+  filter: none;
+  background:
+    radial-gradient(120% 90% at 12% 8%, color-mix(in srgb, var(--wash-a) 48%, transparent), transparent 58%),
+    radial-gradient(100% 80% at 88% 18%, color-mix(in srgb, var(--wash-b) 40%, transparent), transparent 55%),
+    radial-gradient(110% 85% at 42% 92%, color-mix(in srgb, var(--wash-c) 42%, transparent), transparent 60%),
+    linear-gradient(
+      165deg,
+      var(--wallpaper-top) 0%,
+      var(--wallpaper-mid) 48%,
+      var(--wallpaper-bot) 100%
+    );
+}
+
+[data-material="liquid"][data-mode="dark"] .wallpaper {
+  background:
+    radial-gradient(120% 90% at 14% 10%, color-mix(in srgb, var(--wash-a) 18%, transparent), transparent 62%),
+    radial-gradient(100% 80% at 86% 20%, color-mix(in srgb, var(--wash-b) 14%, transparent), transparent 58%),
+    radial-gradient(110% 85% at 44% 90%, color-mix(in srgb, var(--wash-c) 16%, transparent), transparent 64%),
+    linear-gradient(
+      165deg,
+      var(--wallpaper-top) 0%,
+      var(--wallpaper-mid) 48%,
+      var(--wallpaper-bot) 100%
+    );
+}
+
+[data-material="liquid"][data-mode="light"] .answer-stream,
+[data-material="liquid"][data-mode="light"] .agent-header h1,
+[data-material="liquid"][data-mode="light"] .session-text {
+  color: var(--text);
+}
+
+[data-material="liquid"] .msg-user:hover {
+  transform: none;
+  box-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    0 16px 40px var(--ambient-shadow) !important;
+}
+
+/* Material switcher chrome */
+.material-seg { margin: 0; }
+
+.theme-dock {
+  flex-wrap: wrap;
+  max-width: min(92vw, 560px);
+  justify-content: flex-end;
+  border-radius: 22px;
+  gap: 6px;
+}
+
+.theme-dock-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

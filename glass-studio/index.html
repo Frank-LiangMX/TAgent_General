@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glass Studio — Soft UI Desktop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="desktop" aria-hidden="true">
+    <div class="wallpaper"></div>
+    <div class="wash wash-a"></div>
+    <div class="wash wash-b"></div>
+    <div class="wash wash-c"></div>
+  </div>
+
+  <div class="app-window liquid-glass" role="application" aria-label="Glass Studio">
+    <div class="specular" aria-hidden="true"></div>
+    <div class="chroma-edge" aria-hidden="true"></div>
+
+    <!-- Title bar -->
+    <header class="titlebar">
+      <div class="traffic" aria-hidden="true">
+        <span class="dot close"></span>
+        <span class="dot minimize"></span>
+        <span class="dot zoom"></span>
+      </div>
+      <p class="window-title">Glass Studio</p>
+      <div class="titlebar-actions">
+        <button type="button" class="icon-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M16 16l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4v10M8.5 7.5 12 4l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 12v5.5A1.5 1.5 0 0 0 7.5 19h9a1.5 1.5 0 0 0 1.5-1.5V12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <!-- Sidebar -->
+      <aside class="sidebar" aria-label="Sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-orb" aria-hidden="true"></span>
+          <div>
+            <strong>Glass Studio</strong>
+            <span>Desktop</span>
+          </div>
+        </div>
+
+        <nav class="nav-group" aria-label="Primary">
+          <p class="nav-label">Library</p>
+          <a class="nav-item is-active" href="#">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-5v-5H10v5H5a1 1 0 0 1-1-1v-8.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            Home
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.5"/></svg>
+            Projects
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Recent
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 19V8.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1V19l-5-2.5L7 19Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            Saved
+          </a>
+        </nav>
+
+        <nav class="nav-group" aria-label="System">
+          <p class="nav-label">System</p>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.4 6.4l1.4 1.4M16.2 16.2l1.4 1.4M17.6 6.4l-1.4 1.4M7.8 16.2l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Settings
+          </a>
+        </nav>
+
+        <div class="sidebar-footer liquid-glass-inset">
+          <div class="avatar" aria-hidden="true">GS</div>
+          <div>
+            <strong>Studio Pro</strong>
+            <span>Synced</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main column -->
+      <div class="main">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h1>Projects</h1>
+            <span class="badge">12</span>
+          </div>
+          <div class="toolbar-right">
+            <div class="segmented liquid-glass-inset" role="tablist" aria-label="View">
+              <button type="button" class="seg is-active" role="tab" aria-selected="true">Board</button>
+              <button type="button" class="seg" role="tab" aria-selected="false">List</button>
+            </div>
+            <button type="button" class="btn-primary">New Project</button>
+          </div>
+        </div>
+
+        <div class="content">
+          <section class="stats">
+            <article class="stat-card liquid-glass-inset">
+              <span class="stat-label">Active</span>
+              <strong>8</strong>
+              <span class="stat-meta">+2 this week</span>
+            </article>
+            <article class="stat-card liquid-glass-inset">
+              <span class="stat-label">In review</span>
+              <strong>3</strong>
+              <span class="stat-meta">Needs attention</span>
+            </article>
+            <article class="stat-card liquid-glass-inset">
+              <span class="stat-label">Shipped</span>
+              <strong>24</strong>
+              <span class="stat-meta">Last 90 days</span>
+            </article>
+          </section>
+
+          <section class="panel liquid-glass-inset">
+            <header class="panel-head">
+              <h2>Workspace</h2>
+              <button type="button" class="text-btn">View all</button>
+            </header>
+
+            <div class="project-grid">
+              <article class="project-card">
+                <div class="project-thumb t1" aria-hidden="true"></div>
+                <div class="project-body">
+                  <h3>Aurora Notes</h3>
+                  <p>Liquid glass editor · Updated 2h ago</p>
+                </div>
+                <span class="status">Active</span>
+              </article>
+              <article class="project-card">
+                <div class="project-thumb t2" aria-hidden="true"></div>
+                <div class="project-body">
+                  <h3>Northwind CRM</h3>
+                  <p>Desktop shell · Updated yesterday</p>
+                </div>
+                <span class="status muted">Review</span>
+              </article>
+              <article class="project-card">
+                <div class="project-thumb t3" aria-hidden="true"></div>
+                <div class="project-body">
+                  <h3>Pulse Analytics</h3>
+                  <p>Dashboard kit · Updated 3d ago</p>
+                </div>
+                <span class="status">Active</span>
+              </article>
+              <article class="project-card">
+                <div class="project-thumb t4" aria-hidden="true"></div>
+                <div class="project-body">
+                  <h3>Studio Mail</h3>
+                  <p>Inbox layout · Updated 1w ago</p>
+                </div>
+                <span class="status muted">Paused</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="split">
+            <article class="panel liquid-glass-inset activity">
+              <header class="panel-head">
+                <h2>Activity</h2>
+              </header>
+              <ul class="activity-list">
+                <li>
+                  <span class="dot-soft"></span>
+                  <div>
+                    <strong>Exported Aurora Notes</strong>
+                    <span>Today · 14:20</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="dot-soft"></span>
+                  <div>
+                    <strong>Synced design tokens</strong>
+                    <span>Today · 11:05</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="dot-soft"></span>
+                  <div>
+                    <strong>Invited 2 collaborators</strong>
+                    <span>Yesterday</span>
+                  </div>
+                </li>
+              </ul>
+            </article>
+
+            <article class="panel liquid-glass-inset inspector">
+              <header class="panel-head">
+                <h2>Inspector</h2>
+              </header>
+              <dl class="kv">
+                <div><dt>Material</dt><dd>Soft UI + Glass</dd></div>
+                <div><dt>Surface</dt><dd>#E4E9F0</dd></div>
+                <div><dt>Depth</dt><dd>Dual shadow</dd></div>
+                <div><dt>Accent</dt><dd>#4F7CFF</dd></div>
+              </dl>
+              <button type="button" class="btn-secondary">Apply preset</button>
+            </article>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce) return;
+
+      const root = document.documentElement;
+      let mx = 0.5, my = 0.35, tx = mx, ty = my;
+
+      window.addEventListener("pointermove", (e) => {
+        tx = e.clientX / window.innerWidth;
+        ty = e.clientY / window.innerHeight;
+      }, { passive: true });
+
+      const tick = () => {
+        mx += (tx - mx) * 0.06;
+        my += (ty - my) * 0.06;
+        root.style.setProperty("--lx", (mx * 100).toFixed(2) + "%");
+        root.style.setProperty("--ly", (my * 100).toFixed(2) + "%");
+        root.style.setProperty("--lxn", (mx - 0.5).toFixed(3));
+        root.style.setProperty("--lyn", (my - 0.5).toFixed(3));
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", (e) => {
+          e.preventDefault();
+          document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("is-active"));
+          item.classList.add("is-active");
+        });
+      });
+
+      document.querySelectorAll(".seg").forEach((seg) => {
+        seg.addEventListener("click", () => {
+          document.querySelectorAll(".seg").forEach((s) => {
+            s.classList.remove("is-active");
+            s.setAttribute("aria-selected", "false");
+          });
+          seg.classList.add("is-active");
+          seg.setAttribute("aria-selected", "true");
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
