@@ -383,11 +383,43 @@
 
   <script>
     (() => {
+      // ========== Mock Data ==========
+      const mockData = {
+        projects: [
+          { id: 'p1', name: 'Glass Studio', expanded: true },
+          { id: 'p2', name: 'TAgent Core', expanded: true }
+        ],
+        sessions: [
+          { id: 's1', title: '记忆系统 UI 收尾', projectId: 'p1', pinned: true, lastActive: '刚刚', messages: [] },
+          { id: 's2', title: '看板 v1 产品化', projectId: 'p1', lastActive: '2h', messages: [] },
+          { id: 's3', title: 'IPC 通道新增', projectId: 'p1', lastActive: '昨天', messages: [] },
+          { id: 's4', title: '浮岛布局对齐', projectId: 'p1', lastActive: '3d', messages: [] },
+          { id: 's5', title: '记忆层监控', projectId: 'p2', lastActive: '上周', messages: [] },
+          { id: 's6', title: '权限模式重构', projectId: 'p2', lastActive: '上周', messages: [] }
+        ],
+        files: {
+          projectFiles: ['tagent.html', 'tagent.css', 'themes.css', 'materials.css', 'index.html', 'styles.css'],
+          fileActivity: [
+            { file: 'tagent.css', action: '修改', time: '刚刚' },
+            { file: 'tagent.html', action: '修改', time: '2分钟前' },
+            { file: 'themes.css', action: '新增', time: '1小时前' }
+          ],
+          codeChanges: [
+            { file: 'tagent.css', additions: 96, deletions: 20 },
+            { file: 'tagent.html', additions: 48, deletions: 12 }
+          ]
+        }
+      };
+
+      // ========== DOM References ==========
       const tabs = [...document.querySelectorAll(".tab")];
       const indicator = document.getElementById("tabIndicator");
       const title = document.getElementById("agentTitle");
       const messages = document.getElementById("messages");
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const inputArea = document.querySelector(".input-area");
+      const sendBtn = document.querySelector(".send-btn");
+      const sessionScroll = document.querySelector(".session-scroll");
 
       const moveIndicator = (tab) => {
         if (!tab || !indicator) return;

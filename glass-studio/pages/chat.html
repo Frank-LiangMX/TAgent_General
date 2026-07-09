@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist" data-mode="light" data-material="soft">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — Agent 会话</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../themes.css" />
+  <link rel="stylesheet" href="../tagent.css" />
+  <link rel="stylesheet" href="../materials.css" />
+  <link rel="stylesheet" href="../components/shared.css" />
+</head>
+<body>
+  <!-- 主题切换器 -->
+  <div class="theme-dock" role="region" aria-label="主题与材质">
+    <div class="theme-dock-row">
+      <div class="theme-swatches">
+        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮 Mist" aria-label="云絮"></button>
+        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海 Ocean" aria-label="碧海"></button>
+        <button type="button" class="theme-swatch" data-pick="moss" title="青苔 Moss" aria-label="青苔"></button>
+        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭 Dusk" aria-label="暮霭"></button>
+      </div>
+      <span class="theme-name" id="themeName">云絮 · 浅色 · 轻拟态</span>
+    </div>
+    <div class="theme-dock-row">
+      <div class="seg glass-seg material-seg" role="group" aria-label="界面材质">
+        <button type="button" class="is-active" data-material="soft">轻拟态</button>
+        <button type="button" data-material="liquid">液态玻璃</button>
+      </div>
+      <div class="seg glass-seg" role="group" aria-label="明暗">
+        <button type="button" class="is-active" data-mode="light">浅色</button>
+        <button type="button" data-mode="dark">深色</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 桌面背景 -->
+  <div class="desktop" aria-hidden="true">
+    <div class="wallpaper"></div>
+    <div class="wash wash-a"></div>
+    <div class="wash wash-b"></div>
+    <div class="wash wash-c"></div>
+  </div>
+
+  <div class="shell-scene">
+    <!-- 中央内容区 -->
+    <div class="content-scene">
+      <div class="content-base-plate" aria-hidden="true">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+      </div>
+
+      <div class="content-foreground">
+        <!-- Tab 栏 -->
+        <div class="tab-bar" id="tabBar">
+          <div class="tab-scroll" id="tabScroll">
+            <span class="tab-indicator" id="tabIndicator" aria-hidden="true"></span>
+            <button type="button" class="tab is-active" data-title="记忆系统 UI 收尾" aria-selected="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span>记忆系统 UI 收尾</span>
+              <i class="tab-close" aria-label="关闭">×</i>
+            </button>
+            <button type="button" class="tab" data-title="看板 v1 产品化" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span>看板 v1 产品化</span>
+              <i class="tab-close" aria-label="关闭">×</i>
+            </button>
+            <button type="button" class="tab" data-title="IPC 通道新增" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span>IPC 通道新增</span>
+              <i class="tab-close" aria-label="关闭">×</i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 内容主体 -->
+        <div class="content-body">
+          <header class="agent-header">
+            <div class="header-left">
+              <h1 id="agentTitle">记忆系统 UI 收尾</h1>
+              <div class="pill-row" role="list">
+                <span class="pill">Claude Sonnet</span>
+                <span class="pill">自动审批</span>
+                <span class="pill pill-accent">空闲</span>
+              </div>
+            </div>
+            <div class="tool-cluster" role="group" aria-label="工具">
+              <button type="button">Ctx</button>
+              <button type="button">Plan</button>
+              <button type="button">Think</button>
+            </div>
+          </header>
+
+          <div class="session-body" id="sessionBody">
+            <div class="messages" id="messages">
+              <!-- 用户消息 -->
+              <div class="msg msg-user">
+                帮我把会话列表和流式输出样式一起收一下，参考 TAgent 真实的 agent 输出格式。
+              </div>
+
+              <!-- 助手回复 -->
+              <div class="turn">
+                <div class="process-group is-open">
+                  <button type="button" class="process-summary" id="processToggle" aria-expanded="true">
+                    <span class="process-caret" aria-hidden="true"></span>
+                    <span class="process-label">执行过程：3 次工具调用，1 条思考</span>
+                    <span class="process-meta">12s</span>
+                  </button>
+
+                  <div class="process-body">
+                    <div class="think-block">
+                      <div class="think-head">
+                        <span class="think-badge">思考</span>
+                        <span class="think-state shiny">整理输出结构…</span>
+                      </div>
+                      <div class="think-content">
+                        先对齐生产里的 turn 分层：工具与思考进「执行过程」，最终回答单独成文；流式时用平滑揭示，不用闪烁光标。
+                      </div>
+                    </div>
+
+                    <div class="tool-row is-done">
+                      <span class="tool-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H10l2 2h5.5A1.5 1.5 0 0 1 19 9.5v7A1.5 1.5 0 0 1 17.5 18h-11A1.5 1.5 0 0 1 5 16.5v-9Z" stroke="currentColor" stroke-width="1.5"/></svg>
+                      </span>
+                      <span class="tool-phrase">读取 <button type="button" class="file-chip">tagent.css</button></span>
+                    </div>
+
+                    <div class="tool-row is-done">
+                      <span class="tool-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M7 7h10M7 12h7M7 17h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/></svg>
+                      </span>
+                      <span class="tool-phrase">搜索内容 <code>/stream|markdown|tool/</code></span>
+                    </div>
+
+                    <div class="tool-row is-running">
+                      <span class="tool-spinner" aria-hidden="true"></span>
+                      <span class="tool-phrase shiny">正在编辑 <button type="button" class="file-chip">tagent.html</button>…</span>
+                      <span class="diff-stats"><em>+48</em><i>-12</i></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="answer">
+                  <div class="answer-stream" id="answerStream">
+                    <p>可以。Agent 输出建议分成两层：</p>
+                    <ol>
+                      <li><strong>执行过程</strong>：思考、工具短语、进行中状态</li>
+                      <li><strong>最终回答</strong>：完整 Markdown 正文</li>
+                    </ol>
+                    <p>常见块类型：段落、列表、引用、代码块、表格、文件芯片等。</p>
+                  </div>
+
+                  <div class="turn-footer">
+                    <div class="file-changes">
+                      <span class="change-chip">tagent.html <em>+48</em><i>-12</i></span>
+                      <span class="change-chip">tagent.css <em>+96</em><i>-20</i></span>
+                    </div>
+                    <div class="turn-actions">
+                      <span class="running-badge"><span class="tool-spinner sm"></span>运行中 12s</span>
+                      <button type="button">复制</button>
+                      <button type="button">分叉</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="scroll-rail" id="scrollRail" aria-hidden="true">
+              <div class="scroll-thumb" id="scrollThumb"></div>
+            </div>
+
+            <div class="session-bottom-stack" id="sessionBottom">
+              <div class="input-dock-wrap">
+                <div class="input-dock">
+                  <textarea class="input-area" id="inputArea" rows="2" placeholder="输入消息... (Enter 发送 · @ 文件 · / Skill · # MCP)"></textarea>
+                  <div class="input-toolbar">
+                    <div class="input-left">
+                      <button type="button" class="icon-tile" aria-label="更多">+</button>
+                      <div class="seg glass-seg" role="group" aria-label="模式">
+                        <button type="button" class="is-active">Agent</button>
+                        <button type="button">Ask</button>
+                      </div>
+                      <div class="seg glass-seg" role="group" aria-label="权限">
+                        <button type="button" class="is-active">自动审批</button>
+                        <button type="button">计划模式</button>
+                      </div>
+                    </div>
+                    <button type="button" class="send-btn" id="sendBtn" aria-label="发送">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 19V5M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="token-bar" id="tokenBar">
+            <span class="ring" aria-hidden="true"></span>
+            <span>Context 42%</span>
+            <span class="sep">·</span>
+            <span>输入 1.2k</span>
+            <span class="sep">·</span>
+            <span>输出 860</span>
+            <span class="sep">·</span>
+            <span>3 轮</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左侧浮岛 -->
+    <div class="overlay-left">
+      <aside class="nav-island glass-island">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+        <div class="mac-chrome" aria-hidden="true">
+          <span class="dot close"></span>
+          <span class="dot minimize"></span>
+          <span class="dot zoom"></span>
+        </div>
+        <div class="nav-island-body">
+          <nav class="nav-rail" aria-label="功能栏">
+            <button type="button" class="rail-btn is-active" data-rail="chat" title="会话">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="kanban" onclick="window.location.href='kanban.html'" title="看板">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="automation" onclick="window.location.href='automation.html'" title="自动任务">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="draft" onclick="window.location.href='draft.html'" title="草稿">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="memory" onclick="window.location.href='memory.html'" title="记忆">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h5A3.5 3.5 0 0 1 18 8.5v7A3.5 3.5 0 0 1 14.5 19h-5A3.5 3.5 0 0 1 6 15.5v-7Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <div class="rail-spacer"></div>
+            <button type="button" class="rail-btn avatar-btn" id="settingsBtn" title="设置">F</button>
+          </nav>
+
+          <div class="nav-sidebar">
+            <div class="sidebar-inner">
+              <div class="sidebar-head">
+                <h2>会话</h2>
+                <div class="tool-cluster" role="group" aria-label="会话操作">
+                  <button type="button" class="accent" id="newSessionBtn">新会话</button>
+                  <button type="button" class="icon" id="searchBtn" aria-label="搜索">
+                    <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.25" stroke="currentColor" stroke-width="1.5"/><path d="M16 16l3.25 3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="session-well">
+                <div class="session-scroll" id="sessionScroll">
+                  <div class="session-group">
+                    <div class="group-label"><span>置顶</span></div>
+                    <button type="button" class="session-row is-active">
+                      <span class="session-text">记忆系统 UI 收尾</span>
+                      <span class="session-meta">刚刚</span>
+                    </button>
+                  </div>
+
+                  <div class="session-group">
+                    <div class="group-label">
+                      <button type="button" class="project-toggle" aria-expanded="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <span>Glass Studio</span>
+                      </button>
+                      <button type="button" class="ghost-plus" aria-label="新建项目会话">+</button>
+                    </div>
+                    <button type="button" class="session-row">
+                      <span class="session-text">看板 v1 产品化</span>
+                      <span class="session-meta">2h</span>
+                    </button>
+                    <button type="button" class="session-row">
+                      <span class="session-text">IPC 通道新增</span>
+                      <span class="session-meta">昨天</span>
+                    </button>
+                    <button type="button" class="session-row">
+                      <span class="session-text">浮岛布局对齐</span>
+                      <span class="session-meta">3d</span>
+                    </button>
+                  </div>
+
+                  <div class="session-group">
+                    <div class="group-label">
+                      <button type="button" class="project-toggle" aria-expanded="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <span>TAgent Core</span>
+                      </button>
+                      <button type="button" class="ghost-plus" aria-label="新建项目会话">+</button>
+                    </div>
+                    <button type="button" class="session-row">
+                      <span class="session-text">记忆层监控</span>
+                      <span class="session-meta">上周</span>
+                    </button>
+                    <button type="button" class="session-row">
+                      <span class="session-text">权限模式重构</span>
+                      <span class="session-meta">上周</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="archive">已归档 (2)</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 右侧浮岛 -->
+    <div class="overlay-right">
+      <aside id="rightIsland" class="right-island glass-island is-expanded">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+        <div class="right-island-body">
+          <div class="right-panel">
+            <div class="seg glass-seg right-tabs" role="tablist" aria-label="右侧面板">
+              <button type="button" class="right-tab is-active">项目文件</button>
+              <button type="button" class="right-tab">文件活动</button>
+              <button type="button" class="right-tab">代码改动</button>
+            </div>
+            <div class="file-well" id="fileWell">
+              <button type="button" class="file-item">tagent.html</button>
+              <button type="button" class="file-item">tagent.css</button>
+              <button type="button" class="file-item">themes.css</button>
+              <button type="button" class="file-item">materials.css</button>
+              <button type="button" class="file-item">index.html</button>
+              <button type="button" class="file-item">styles.css</button>
+            </div>
+          </div>
+          <nav class="right-rail" aria-label="右侧栏">
+            <button type="button" id="rightToggle" class="right-rail-btn is-active" title="文件面板" aria-pressed="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6H10l2 2h6.5A1.5 1.5 0 0 1 20 9.5v7A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="right-rail-btn" title="旁注">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5v5A2.5 2.5 0 0 1 15.5 15H12l-3 2.5V15H8.5A2.5 2.5 0 0 1 6 12.5v-5Z" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </nav>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="max-width:640px;max-height:80vh;overflow-y:auto;">
+      <div class="modal-header">
+        <h3 class="modal-title">设置</h3>
+        <button type="button" class="modal-close" data-modal-close>×</button>
+      </div>
+      <div class="modal-body">
+        <!-- 设置内容 -->
+        <div class="tabs-nav" style="margin-bottom:16px;">
+          <button type="button" class="tabs-tab is-active" data-settings-tab="account">账户</button>
+          <button type="button" class="tabs-tab" data-settings-tab="theme">主题</button>
+          <button type="button" class="tabs-tab" data-settings-tab="shortcuts">快捷键</button>
+          <button type="button" class="tabs-tab" data-settings-tab="api">API</button>
+        </div>
+
+        <div id="settingsContent">
+          <!-- 账户设置 -->
+          <div class="settings-panel is-active" data-panel="account">
+            <div class="form-group">
+              <label class="form-label">用户名</label>
+              <input type="text" class="form-input" value="Frank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">邮箱</label>
+              <input type="email" class="form-input" value="frank@example.com">
+            </div>
+          </div>
+
+          <!-- 主题设置 -->
+          <div class="settings-panel" data-panel="theme" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">颜色主题</label>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button type="button" class="theme-swatch is-active" data-pick="mist" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c5d0e2, #5b7fd4);"></button>
+                <button type="button" class="theme-swatch" data-pick="ocean" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c2d2e0, #4f8fc4);"></button>
+                <button type="button" class="theme-swatch" data-pick="moss" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c6d4ca, #5a8f72);"></button>
+                <button type="button" class="theme-swatch" data-pick="dusk" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #d4ccc2, #a07a5e);"></button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">界面模式</label>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <span style="font-size:13px;color:var(--text-soft);">深色模式</span>
+                <div class="toggle-switch" id="darkModeToggle"></div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:var(--text-soft);">液态玻璃效果</span>
+                <div class="toggle-switch" id="liquidToggle"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 快捷键设置 -->
+          <div class="settings-panel" data-panel="shortcuts" style="display:none;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
+                <span style="font-size:13px;">新会话</span>
+                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+N</code>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
+                <span style="font-size:13px;">搜索</span>
+                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+K</code>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
+                <span style="font-size:13px;">打开设置</span>
+                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+/</code>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
+                <span style="font-size:13px;">关闭对话框</span>
+                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Esc</code>
+              </div>
+            </div>
+          </div>
+
+          <!-- API 设置 -->
+          <div class="settings-panel" data-panel="api" style="display:none;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--glass-soft);border-radius:var(--r-md);">
+                <div>
+                  <div style="font-size:14px;font-weight:500;">Anthropic API</div>
+                  <div style="font-size:12px;color:var(--text-faint);">已配置</div>
+                </div>
+                <button type="button" class="btn-secondary">更新</button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--glass-soft);border-radius:var(--r-md);">
+                <div>
+                  <div style="font-size:14px;font-weight:500;">OpenAI API</div>
+                  <div style="font-size:12px;color:var(--text-faint);">未配置</div>
+                </div>
+                <button type="button" class="btn-primary">配置</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../mock/data.js"></script>
+  <script src="../components/shared.js"></script>
+  <script>
+    (() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const root = document.documentElement;
+
+      // ========== Tab 切换 ==========
+      const tabs = [...document.querySelectorAll(".tab")];
+      const indicator = document.getElementById("tabIndicator");
+
+      const moveIndicator = (tab) => {
+        if (!tab || !indicator) return;
+        indicator.style.width = `${tab.offsetWidth}px`;
+        indicator.style.transform = `translateX(${tab.offsetLeft}px)`;
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", (e) => {
+          if (e.target.closest(".tab-close")) return;
+          tabs.forEach((t) => {
+            t.classList.toggle("is-active", t === tab);
+            t.setAttribute("aria-selected", t === tab ? "true" : "false");
+          });
+          moveIndicator(tab);
+        });
+      });
+
+      moveIndicator(document.querySelector(".tab.is-active"));
+
+      // ========== Rail 切换 ==========
+      document.querySelectorAll(".rail-btn[data-rail]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.onclick) return; // 有 onclick 跳转
+          document.querySelectorAll(".rail-btn[data-rail]").forEach((b) => b.classList.remove("is-active"));
+          btn.classList.add("is-active");
+        });
+      });
+
+      // ========== 会话列表交互 ==========
+      document.querySelectorAll(".session-row").forEach((row) => {
+        row.addEventListener("click", () => {
+          document.querySelectorAll(".session-row").forEach((r) => r.classList.remove("is-active"));
+          row.classList.add("is-active");
+        });
+      });
+
+      document.querySelectorAll(".project-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          const expanded = toggle.getAttribute("aria-expanded") === "true";
+          toggle.setAttribute("aria-expanded", !expanded);
+          toggle.closest(".session-group").classList.toggle("is-collapsed", expanded);
+        });
+      });
+
+      // ========== 右侧面板 ==========
+      const island = document.getElementById("rightIsland");
+      const toggle = document.getElementById("rightToggle");
+      toggle?.addEventListener("click", () => {
+        const open = island.classList.toggle("is-expanded");
+        island.classList.toggle("is-collapsed", !open);
+        toggle.classList.toggle("is-active", open);
+        toggle.setAttribute("aria-pressed", open ? "true" : "false");
+        document.documentElement.style.setProperty(
+          "--content-right-pad",
+          open ? "calc(var(--right-panel-width) + var(--right-rail-width) + 16px)" : "calc(var(--right-rail-width) + 16px)"
+        );
+      });
+
+      document.querySelectorAll(".right-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".right-tab").forEach((t) => t.classList.remove("is-active"));
+          tab.classList.add("is-active");
+        });
+      });
+
+      // ========== 执行过程折叠 ==========
+      const processToggle = document.getElementById("processToggle");
+      const processGroup = processToggle?.closest(".process-group");
+      processToggle?.addEventListener("click", () => {
+        const open = processGroup.classList.toggle("is-open");
+        processToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+
+      // ========== 设置弹窗 ==========
+      document.getElementById("settingsBtn")?.addEventListener("click", () => {
+        Modal.open("settingsModal");
+      });
+
+      // 设置 Tab 切换
+      document.querySelectorAll("[data-settings-tab]").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll("[data-settings-tab]").forEach((t) => t.classList.remove("is-active"));
+          tab.classList.add("is-active");
+          const panel = tab.dataset.settingsTab;
+          document.querySelectorAll(".settings-panel").forEach((p) => {
+            p.style.display = p.dataset.panel === panel ? "block" : "none";
+          });
+        });
+      });
+
+      // 深色模式开关
+      const darkToggle = document.getElementById("darkModeToggle");
+      if (darkToggle) {
+        darkToggle.classList.toggle("is-active", root.dataset.mode === "dark");
+        darkToggle.addEventListener("click", () => {
+          const newMode = root.dataset.mode === "dark" ? "light" : "dark";
+          ThemeManager.apply(root.dataset.theme, newMode, root.dataset.material);
+          darkToggle.classList.toggle("is-active", newMode === "dark");
+        });
+      }
+
+      // 液态玻璃开关
+      const liquidToggle = document.getElementById("liquidToggle");
+      if (liquidToggle) {
+        liquidToggle.classList.toggle("is-active", root.dataset.material === "liquid");
+        liquidToggle.addEventListener("click", () => {
+          const newMaterial = root.dataset.material === "liquid" ? "soft" : "liquid";
+          ThemeManager.apply(root.dataset.theme, root.dataset.mode, newMaterial);
+          liquidToggle.classList.toggle("is-active", newMaterial === "liquid");
+        });
+      }
+
+      // ========== 输入栏 ==========
+      const inputArea = document.getElementById("inputArea");
+      const sendBtn = document.getElementById("sendBtn");
+
+      if (inputArea) {
+        inputArea.addEventListener("input", () => {
+          inputArea.style.height = "auto";
+          inputArea.style.height = Math.min(inputArea.scrollHeight, 200) + "px";
+        });
+
+        inputArea.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            // 发送消息
+            const content = inputArea.value.trim();
+            if (content) {
+              Toast.success("消息已发送");
+              inputArea.value = "";
+              inputArea.style.height = "auto";
+            }
+          }
+        });
+      }
+
+      sendBtn?.addEventListener("click", () => {
+        const content = inputArea?.value.trim();
+        if (content) {
+          Toast.success("消息已发送");
+          inputArea.value = "";
+          inputArea.style.height = "auto";
+        }
+      });
+
+      // ========== 新会话 ==========
+      document.getElementById("newSessionBtn")?.addEventListener("click", () => {
+        Toast.info("新建会话功能开发中...");
+      });
+
+      // ========== 滚动条 ==========
+      const messages = document.getElementById("messages");
+      const sessionBody = document.getElementById("sessionBody");
+      const sessionBottom = document.getElementById("sessionBottom");
+      const scrollRail = document.getElementById("scrollRail");
+      const scrollThumb = document.getElementById("scrollThumb");
+
+      const syncBottomReserve = () => {
+        if (!sessionBody || !sessionBottom) return;
+        sessionBody.style.setProperty(
+          "--session-bottom-reserve",
+          `${Math.ceil(sessionBottom.offsetHeight)}px`
+        );
+      };
+
+      const syncScrollThumb = () => {
+        if (!messages || !scrollThumb || !scrollRail) return;
+        const { scrollTop, scrollHeight, clientHeight } = messages;
+        const track = scrollRail.clientHeight;
+        if (scrollHeight <= clientHeight + 1) {
+          scrollRail.classList.remove("is-visible");
+          scrollThumb.style.height = "0px";
+          return;
+        }
+        const thumbH = Math.max(28, (clientHeight / scrollHeight) * track);
+        const maxTop = track - thumbH;
+        const top = maxTop * (scrollTop / (scrollHeight - clientHeight));
+        scrollThumb.style.height = `${thumbH}px`;
+        scrollThumb.style.transform = `translate(-50%, ${top}px)`;
+        scrollRail.classList.add("is-visible");
+      };
+
+      syncBottomReserve();
+      syncScrollThumb();
+      if (sessionBottom && "ResizeObserver" in window) {
+        new ResizeObserver(() => {
+          syncBottomReserve();
+          syncScrollThumb();
+        }).observe(sessionBottom);
+      }
+      messages?.addEventListener("scroll", syncScrollThumb, { passive: true });
+      window.addEventListener("resize", () => {
+        syncBottomReserve();
+        syncScrollThumb();
+      });
+    })();
+  </script>
+</body>
+</html>

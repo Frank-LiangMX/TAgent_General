@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist" data-mode="light" data-material="soft">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — 自动任务</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../themes.css" />
+  <link rel="stylesheet" href="../tagent.css" />
+  <link rel="stylesheet" href="../materials.css" />
+  <link rel="stylesheet" href="../components/shared.css" />
+  <style>
+    .automation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .automation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .automation-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border-radius: var(--r-lg);
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 1px 0 var(--inset-hi) inset, 0 6px 18px var(--ambient-shadow);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+
+    .automation-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 1px 0 var(--inset-hi-strong) inset, 0 10px 24px var(--ambient-shadow);
+    }
+
+    .automation-card.is-paused {
+      opacity: 0.65;
+    }
+
+    .automation-status {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--r-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .automation-status.success { background: rgba(63, 154, 106, 0.12); }
+    .automation-status.running { background: var(--accent-soft); }
+    .automation-status.failed { background: rgba(196, 91, 91, 0.12); }
+
+    .automation-status-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .automation-status.success .automation-status-icon { color: var(--success); }
+    .automation-status.running .automation-status-icon { color: var(--accent); }
+    .automation-status.failed .automation-status-icon { color: var(--danger); }
+
+    .automation-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .automation-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .automation-desc {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+    }
+
+    .automation-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    .automation-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .schedule-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--glass-soft);
+      border: 1px solid var(--rim-soft);
+      color: var(--text-soft);
+    }
+
+    .schedule-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* 新建任务表单 */
+    .schedule-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .schedule-option {
+      padding: 16px;
+      border-radius: var(--r-md);
+      background: var(--glass-soft);
+      border: 1px solid var(--rim-soft);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .schedule-option:hover {
+      border-color: var(--accent-border);
+    }
+
+    .schedule-option.is-selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .schedule-option-icon {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 8px;
+      color: var(--text-soft);
+    }
+
+    .schedule-option-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .schedule-option-desc {
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 主题切换器 -->
+  <div class="theme-dock" role="region" aria-label="主题与材质">
+    <div class="theme-dock-row">
+      <div class="theme-swatches">
+        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮 Mist" aria-label="云絮"></button>
+        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海 Ocean" aria-label="碧海"></button>
+        <button type="button" class="theme-swatch" data-pick="moss" title="青苔 Moss" aria-label="青苔"></button>
+        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭 Dusk" aria-label="暮霭"></button>
+      </div>
+      <span class="theme-name" id="themeName">云絮 · 浅色 · 轻拟态</span>
+    </div>
+    <div class="theme-dock-row">
+      <div class="seg glass-seg material-seg" role="group" aria-label="界面材质">
+        <button type="button" class="is-active" data-material="soft">轻拟态</button>
+        <button type="button" data-material="liquid">液态玻璃</button>
+      </div>
+      <div class="seg glass-seg" role="group" aria-label="明暗">
+        <button type="button" class="is-active" data-mode="light">浅色</button>
+        <button type="button" data-mode="dark">深色</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 桌面背景 -->
+  <div class="desktop" aria-hidden="true">
+    <div class="wallpaper"></div>
+    <div class="wash wash-a"></div>
+    <div class="wash wash-b"></div>
+    <div class="wash wash-c"></div>
+  </div>
+
+  <div class="shell-scene">
+    <!-- 左侧导航 -->
+    <div class="overlay-left">
+      <aside class="nav-island glass-island" style="width:var(--rail-width);">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+        <nav class="nav-rail" style="width:100%;border-right:none;" aria-label="功能栏">
+          <a href="../index.html" class="rail-btn" data-nav="dashboard" title="工作台">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </a>
+          <a href="chat.html" class="rail-btn" data-nav="chat" title="会话">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <button type="button" class="rail-btn is-active" data-rail="automation" title="自动任务">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="rail-spacer"></div>
+          <a href="settings.html" class="rail-btn" data-nav="settings" title="设置">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </a>
+        </nav>
+      </aside>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="content-scene">
+      <div class="content-base-plate" aria-hidden="true">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+      </div>
+
+      <div class="content-foreground">
+        <div class="content-body" style="padding:24px;">
+          <div class="automation-header">
+            <div>
+              <h1 style="margin:0;font-size:20px;font-weight:600;color:var(--text);">自动任务</h1>
+              <p style="margin:4px 0 0;font-size:13px;color:var(--text-soft);">管理和监控定时任务</p>
+            </div>
+            <button type="button" class="btn-primary" id="newTaskBtn">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right:6px;">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              新建任务
+            </button>
+          </div>
+
+          <!-- 筛选栏 -->
+          <div style="display:flex;gap:12px;margin-bottom:20px;">
+            <div class="seg glass-seg" role="group" aria-label="状态筛选">
+              <button type="button" class="is-active" data-filter="all">全部</button>
+              <button type="button" data-filter="active">运行中</button>
+              <button type="button" data-filter="paused">已暂停</button>
+            </div>
+          </div>
+
+          <!-- 任务列表 -->
+          <div class="automation-list" id="automationList">
+            <!-- 由 JS 渲染 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建任务模态框 -->
+  <div class="modal-overlay" id="newTaskModal">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">新建自动任务</h3>
+        <button type="button" class="modal-close" data-modal-close aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="taskName">任务名称</label>
+          <input type="text" class="form-input" id="taskName" placeholder="例如：每日代码审查">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="taskDesc">任务描述</label>
+          <textarea class="form-input form-textarea" id="taskDesc" placeholder="描述任务要执行的操作..."></textarea>
+        </div>
+        <label class="form-label">调度类型</label>
+        <div class="schedule-options">
+          <div class="schedule-option is-selected" data-schedule="daily">
+            <svg class="schedule-option-icon" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="schedule-option-title">每天</div>
+            <div class="schedule-option-desc">在指定时间运行</div>
+          </div>
+          <div class="schedule-option" data-schedule="weekly">
+            <svg class="schedule-option-icon" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4 10h16" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            <div class="schedule-option-title">每周</div>
+            <div class="schedule-option-desc">在指定日期运行</div>
+          </div>
+          <div class="schedule-option" data-schedule="interval">
+            <svg class="schedule-option-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            <div class="schedule-option-title">间隔</div>
+            <div class="schedule-option-desc">每隔 N 分钟</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="form-label" for="taskTime">执行时间</label>
+              <input type="time" class="form-input" id="taskTime" value="09:00">
+            </div>
+            <div id="taskIntervalGroup" style="display:none;">
+              <label class="form-label" for="taskInterval">间隔分钟</label>
+              <input type="number" class="form-input" id="taskInterval" value="30" min="5" max="1440">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-modal-close>取消</button>
+        <button type="button" class="btn-primary" id="createTaskBtn">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../mock/data.js"></script>
+  <script src="../components/shared.js"></script>
+  <script>
+    (() => {
+      const state = {
+        automations: mockData.automations,
+        filter: 'all',
+        scheduleType: 'daily'
+      };
+
+      function getScheduleText(auto) {
+        if (auto.schedule === 'daily') return `每天 ${auto.time}`;
+        if (auto.schedule === 'weekly') {
+          const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          return `每${days[auto.dayOfWeek]} ${auto.time}`;
+        }
+        if (auto.schedule === 'interval') return `每 ${auto.intervalMinutes} 分钟`;
+        return auto.schedule;
+      }
+
+      function renderList() {
+        const container = document.getElementById('automationList');
+        if (!container) return;
+
+        let filtered = state.automations;
+        if (state.filter === 'active') filtered = filtered.filter(a => a.active);
+        if (state.filter === 'paused') filtered = filtered.filter(a => !a.active);
+
+        if (filtered.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <div class="empty-state-title">暂无任务</div>
+              <div class="empty-state-desc">点击上方按钮创建新任务</div>
+            </div>`;
+          return;
+        }
+
+        const statusIcons = {
+          success: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+          running: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+          failed: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+        };
+
+        container.innerHTML = filtered.map(a => `
+          <div class="automation-card ${a.active ? '' : 'is-paused'}" data-id="${a.id}">
+            <div class="automation-status ${a.status}">
+              <span class="automation-status-icon">${statusIcons[a.status] || statusIcons.success}</span>
+            </div>
+            <div class="automation-content">
+              <div class="automation-title">${a.name}</div>
+              <div class="automation-desc">${a.description}</div>
+              <div class="automation-meta">
+                <span class="schedule-badge">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/></svg>
+                  ${getScheduleText(a)}
+                </span>
+                <span>已运行 ${a.runs} 次</span>
+                <span>上次: ${a.lastRun}</span>
+              </div>
+            </div>
+            <div class="automation-actions">
+              <button type="button" class="icon-tile" data-run="${a.id}" title="立即运行" ${!a.active ? 'disabled' : ''}>
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                  <path d="M6 4l12 8-12 8V4z" fill="currentColor"/>
+                </svg>
+              </button>
+              <div class="toggle-switch ${a.active ? 'is-active' : ''}" data-toggle="${a.id}" title="${a.active ? '暂停' : '启用'}"></div>
+              <button type="button" class="icon-tile" data-delete="${a.id}" title="删除">
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                  <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        bindEvents();
+      }
+
+      function bindEvents() {
+        // 切换开关
+        document.querySelectorAll('[data-toggle]').forEach(toggle => {
+          toggle.addEventListener('click', () => {
+            const id = toggle.dataset.toggle;
+            const auto = state.automations.find(a => a.id === id);
+            if (auto) {
+              auto.active = !auto.active;
+              renderList();
+              Toast.success(auto.active ? '任务已启用' : '任务已暂停');
+            }
+          });
+        });
+
+        // 立即运行
+        document.querySelectorAll('[data-run]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.run;
+            Toast.info('任务已启动');
+          });
+        });
+
+        // 删除
+        document.querySelectorAll('[data-delete]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.delete;
+            state.automations = state.automations.filter(a => a.id !== id);
+            renderList();
+            Toast.success('任务已删除');
+          });
+        });
+      }
+
+      function init() {
+        renderList();
+
+        // 筛选
+        document.querySelectorAll('[data-filter]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            state.filter = btn.dataset.filter;
+            renderList();
+          });
+        });
+
+        // 新建任务
+        document.getElementById('newTaskBtn')?.addEventListener('click', () => {
+          Modal.open('newTaskModal');
+        });
+
+        // 调度类型选择
+        document.querySelectorAll('.schedule-option').forEach(opt => {
+          opt.addEventListener('click', () => {
+            document.querySelectorAll('.schedule-option').forEach(o => o.classList.remove('is-selected'));
+            opt.classList.add('is-selected');
+            state.scheduleType = opt.dataset.schedule;
+
+            // 显示/隐藏间隔输入
+            document.getElementById('taskIntervalGroup').style.display =
+              state.scheduleType === 'interval' ? 'block' : 'none';
+          });
+        });
+
+        // 创建任务
+        document.getElementById('createTaskBtn')?.addEventListener('click', () => {
+          const name = document.getElementById('taskName').value.trim();
+          const desc = document.getElementById('taskDesc').value.trim();
+          const time = document.getElementById('taskTime').value;
+          const interval = document.getElementById('taskInterval').value;
+
+          if (!name) {
+            Toast.warning('请输入任务名称');
+            return;
+          }
+
+          const newTask = {
+            id: `auto${Date.now()}`,
+            name,
+            description: desc || '自动任务',
+            schedule: state.scheduleType,
+            time,
+            intervalMinutes: parseInt(interval) || 30,
+            active: true,
+            lastRun: '-',
+            status: 'pending',
+            runs: 0
+          };
+
+          if (state.scheduleType === 'daily') {
+            newTask.nextRun = `明天 ${time}`;
+          } else if (state.scheduleType === 'weekly') {
+            newTask.dayOfWeek = 1;
+            newTask.nextRun = `下周一 ${time}`;
+          } else {
+            newTask.nextRun = `${interval} 分钟后`;
+          }
+
+          state.automations.unshift(newTask);
+          renderList();
+          Modal.close('newTaskModal');
+          Toast.success('任务已创建');
+
+          // 清空表单
+          document.getElementById('taskName').value = '';
+          document.getElementById('taskDesc').value = '';
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

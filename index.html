@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist" data-mode="light" data-material="soft">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAgent — 工作台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="glass-studio/themes.css" />
+  <link rel="stylesheet" href="glass-studio/tagent.css" />
+  <link rel="stylesheet" href="glass-studio/materials.css" />
+  <link rel="stylesheet" href="glass-studio/components/shared.css" />
+  <style>
+    /* 工作台特定样式 */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 20px;
+      border-radius: var(--r-lg);
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 1px 0 var(--inset-hi) inset, 0 8px 24px var(--ambient-shadow);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-meta {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      padding: 20px;
+      border-radius: var(--r-lg);
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 1px 0 var(--inset-hi) inset, 0 6px 18px var(--ambient-shadow);
+      cursor: pointer;
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+
+    .project-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 1px 0 var(--inset-hi-strong) inset, 0 12px 28px var(--ambient-shadow);
+    }
+
+    .project-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .project-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .project-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .project-desc {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .project-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--rim-soft);
+    }
+
+    .project-stat {
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    .project-stat strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--r-md);
+      background: var(--glass-soft);
+      border: 1px solid var(--rim-soft);
+    }
+
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--r-sm);
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-text {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .activity-time {
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .quick-action {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: var(--r-lg);
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      color: var(--text-soft);
+      font-size: 13px;
+      font-weight: 500;
+      transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+    }
+
+    .quick-action:hover {
+      transform: translateY(-2px);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .quick-action svg {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 主题切换器 -->
+  <div class="theme-dock" role="region" aria-label="主题与材质">
+    <div class="theme-dock-row">
+      <div class="theme-swatches">
+        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮 Mist" aria-label="云絮"></button>
+        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海 Ocean" aria-label="碧海"></button>
+        <button type="button" class="theme-swatch" data-pick="moss" title="青苔 Moss" aria-label="青苔"></button>
+        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭 Dusk" aria-label="暮霭"></button>
+      </div>
+      <span class="theme-name" id="themeName">云絮 · 浅色 · 轻拟态</span>
+    </div>
+    <div class="theme-dock-row">
+      <div class="seg glass-seg material-seg" role="group" aria-label="界面材质">
+        <button type="button" class="is-active" data-material="soft">轻拟态</button>
+        <button type="button" data-material="liquid">液态玻璃</button>
+      </div>
+      <div class="seg glass-seg" role="group" aria-label="明暗">
+        <button type="button" class="is-active" data-mode="light">浅色</button>
+        <button type="button" data-mode="dark">深色</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 桌面背景 -->
+  <div class="desktop" aria-hidden="true">
+    <div class="wallpaper"></div>
+    <div class="wash wash-a"></div>
+    <div class="wash wash-b"></div>
+    <div class="wash wash-c"></div>
+  </div>
+
+  <div class="shell-scene">
+    <!-- 主内容区 -->
+    <div class="content-scene" style="left:0;">
+      <div class="content-base-plate" aria-hidden="true">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+      </div>
+
+      <div class="content-foreground" style="padding:24px;">
+        <!-- 页面头部 -->
+        <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+          <div>
+            <h1 style="margin:0;font-size:24px;font-weight:700;color:var(--text);">工作台</h1>
+            <p style="margin:4px 0 0;font-size:14px;color:var(--text-soft);">欢迎回来，Frank</p>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <a href="glass-studio/pages/chat.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              新会话
+            </a>
+          </div>
+        </header>
+
+        <!-- 统计卡片 -->
+        <div class="dashboard-grid" id="statsGrid">
+          <!-- 由 JS 渲染 -->
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="page-card" style="margin-bottom:24px;">
+          <div class="page-card-header">
+            <h3 class="page-card-title">快捷操作</h3>
+          </div>
+          <div class="quick-actions" id="quickActions">
+            <!-- 由 JS 渲染 -->
+          </div>
+        </div>
+
+        <!-- 项目列表 -->
+        <div class="page-card" style="margin-bottom:24px;">
+          <div class="page-card-header">
+            <h3 class="page-card-title">项目</h3>
+            <button type="button" class="btn-secondary" id="newProjectBtn">新建项目</button>
+          </div>
+          <div class="projects-grid" id="projectsGrid">
+            <!-- 由 JS 渲染 -->
+          </div>
+        </div>
+
+        <!-- 最近活动 -->
+        <div class="page-card">
+          <div class="page-card-header">
+            <h3 class="page-card-title">最近活动</h3>
+          </div>
+          <div class="activity-list" id="activityList">
+            <!-- 由 JS 渲染 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;height:56px;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;background:var(--glass-strong);border-top:1px solid var(--rim);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);">
+      <a href="index.html" class="rail-btn is-active" data-nav="dashboard" title="工作台">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </a>
+      <a href="glass-studio/pages/chat.html" class="rail-btn" data-nav="chat" title="会话">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a href="glass-studio/pages/automation.html" class="rail-btn" data-nav="automation" title="自动任务">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <a href="glass-studio/pages/settings.html" class="rail-btn" data-nav="settings" title="设置">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </nav>
+  </div>
+
+  <script src="glass-studio/mock/data.js"></script>
+  <script src="glass-studio/components/shared.js"></script>
+  <script>
+    (() => {
+      // 渲染统计卡片
+      function renderStats() {
+        const container = document.getElementById('statsGrid');
+        if (!container) return;
+
+        const stats = mockData.dashboard.stats;
+        const items = [
+          { label: '活跃会话', value: stats.activeSessions, meta: '+2 本周', icon: '💬' },
+          { label: '运行中 Agent', value: stats.runningAgents, meta: '实时监控', icon: '🤖' },
+          { label: '待审查', value: stats.pendingReviews, meta: '需要关注', icon: '📋' },
+          { label: '今日完成', value: stats.completedToday, meta: '较昨日 +1', icon: '✅' }
+        ];
+
+        container.innerHTML = items.map(item => `
+          <div class="stat-card">
+            <span class="stat-label">${item.label}</span>
+            <span class="stat-value">${item.value}</span>
+            <span class="stat-meta">${item.meta}</span>
+          </div>
+        `).join('');
+      }
+
+      // 渲染快捷操作
+      function renderQuickActions() {
+        const container = document.getElementById('quickActions');
+        if (!container) return;
+
+        const actions = [
+          { icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>', label: '新会话', href: 'glass-studio/pages/chat.html?action=new' },
+          { icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6H10l2 2h6.5A1.5 1.5 0 0 1 20 9.5v7A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.5"/></svg>', label: '新项目', action: 'newProject' },
+          { icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>', label: '新任务', href: 'glass-studio/pages/automation.html?action=new' }
+        ];
+
+        container.innerHTML = actions.map(a => `
+          <a class="quick-action" href="${a.href || '#'}" ${a.action ? `data-action="${a.action}"` : ''}>
+            ${a.icon}
+            <span>${a.label}</span>
+          </a>
+        `).join('');
+      }
+
+      // 渲染项目列表
+      function renderProjects() {
+        const container = document.getElementById('projectsGrid');
+        if (!container) return;
+
+        container.innerHTML = mockData.projects.map(p => `
+          <div class="project-card" data-project="${p.id}">
+            <div class="project-header">
+              <div class="project-icon" style="background:${p.color};">${p.name.charAt(0)}</div>
+              <div>
+                <div class="project-title">${p.name}</div>
+                <div class="project-desc">${p.description}</div>
+              </div>
+            </div>
+            <div class="project-stats">
+              <span class="project-stat"><strong>${p.sessionCount}</strong> 会话</span>
+              <span class="project-stat">活跃 ${p.lastActive}</span>
+            </div>
+          </div>
+        `).join('');
+
+        // 点击跳转
+        container.querySelectorAll('.project-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const projectId = card.dataset.project;
+            window.location.href = `glass-studio/pages/chat.html?project=${projectId}`;
+          });
+        });
+      }
+
+      // 渲染活动列表
+      function renderActivity() {
+        const container = document.getElementById('activityList');
+        if (!container) return;
+
+        const icons = {
+          session: '<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>',
+          file: '<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6H10l2 2h6.5A1.5 1.5 0 0 1 20 9.5v7A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.5"/></svg>',
+          automation: '<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+        };
+
+        container.innerHTML = mockData.dashboard.recentActivity.map(a => `
+          <div class="activity-item">
+            <div class="activity-icon">${icons[a.type] || icons.session}</div>
+            <div class="activity-content">
+              <div class="activity-text">${a.action} <strong>${a.target}</strong></div>
+              <div class="activity-time">${a.time}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 初始化
+      function init() {
+        renderStats();
+        renderQuickActions();
+        renderProjects();
+        renderActivity();
+
+        // 新建项目
+        document.getElementById('newProjectBtn')?.addEventListener('click', () => {
+          Toast.info('新建项目功能开发中...');
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
