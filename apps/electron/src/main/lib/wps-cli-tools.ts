@@ -267,7 +267,7 @@ export async function wpsListUsers(params?: {
  * 搜索用户
  */
 export async function wpsSearchUsers(query: string): Promise<any> {
-  return callWpsCliJson(['user', 'search', '--query', query])
+  return callWpsCliJson(['user', 'search', '--keyword', query])
 }
 
 // -------------------- 日历 --------------------
