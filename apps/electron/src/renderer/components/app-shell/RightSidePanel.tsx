@@ -17,6 +17,7 @@ import {
 import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import { SidePanel } from '@/components/agent/SidePanel'
 import { BtwPanel } from '@/components/agent/BtwPanel' // 重新使用 BtwPanel（样式已适配）
+import { WpsBrowserPanel } from '@/components/agent/WpsBrowserPanel'
 
 export function RightSidePanel({ width }: { width?: number }): React.ReactElement | null {
   const appMode = useAtomValue(appModeAtom)
@@ -46,6 +47,10 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
   // 根据 rightRailItem 切换显示内容
   if (rightRailItem === 'btw') {
     return <BtwPanel width={width} />
+  }
+
+  if (rightRailItem === 'browser') {
+    return <WpsBrowserPanel width={width} />
   }
 
   // 默认显示文件面板

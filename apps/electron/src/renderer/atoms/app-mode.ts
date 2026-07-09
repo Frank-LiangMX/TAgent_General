@@ -126,8 +126,8 @@ export const activeRailItemAtom = atom<RailItem, [RailItem], void>(
 
 // ===== Right Rail Item Atoms（右侧边栏功能切换，镜像左侧） =====
 
-/** 右侧边栏功能项：文件面板 / 旁注 */
-export type RightRailItem = 'files' | 'btw'
+/** 右侧边栏功能项：文件面板 / 旁注 / 浏览器预览 */
+export type RightRailItem = 'files' | 'btw' | 'browser'
 
 /** 右侧边栏功能项 atom */
 export const rightRailItemAtom = atomWithStorage<RightRailItem>('tagent-right-rail', 'files')

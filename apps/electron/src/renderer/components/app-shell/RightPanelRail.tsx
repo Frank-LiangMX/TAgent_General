@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageCircle, type LucideIcon } from 'lucide-react'
+import { FolderOpen, MessageCircle, Globe2, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -36,6 +36,7 @@ interface RightPanelRailProps {
 
 const RAIL_ICON: LucideIcon = FolderOpen
 const BTW_ICON: LucideIcon = MessageCircle
+const BROWSER_ICON: LucideIcon = Globe2
 
 export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
@@ -59,6 +60,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const { channelId, modelId } = useAgentSessionChannelModel(currentSessionId ?? '')
   const isFilesActive = panelOpen && rightRailItem === 'files'
   const isBtwActive = panelOpen && rightRailItem === 'btw'
+  const isBrowserActive = panelOpen && rightRailItem === 'browser'
 
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
@@ -95,6 +97,17 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
       setPanelOpen(true)
     }
   }, [panelOpen, rightRailItem, channelId, modelId, currentSessionId, setRightRailItem, setBtwChannelId, setBtwModelId, setBtwSourceSessionId, setPanelOpen])
+
+  const handleBrowserClick = React.useCallback(() => {
+    if (panelOpen && rightRailItem === 'browser') {
+      // 浏览器面板已打开且当前是浏览器 → 折叠
+      setPanelOpen(false)
+    } else {
+      // 其他情况 → 切换到浏览器面板并打开
+      setRightRailItem('browser')
+      setPanelOpen(true)
+    }
+  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
 
   return (
     <div
@@ -158,6 +171,30 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
               </TooltipContent>
             </Tooltip>
           )}
+
+          {/* 浏览器预览按钮 */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleBrowserClick}
+                aria-pressed={isBrowserActive}
+                aria-label="浏览器预览"
+                className={cn(
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  isBrowserActive && 'rail-island-btn--active'
+                )}
+              >
+                <BROWSER_ICON size={13} strokeWidth={1.8} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <div className="text-xs">
+                <div className="font-medium">预览</div>
+                <div className="text-muted-foreground">预览 WPS 文档或网页</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
