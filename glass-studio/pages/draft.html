@@ -12,80 +12,20 @@
   <link rel="stylesheet" href="../materials.css" />
   <link rel="stylesheet" href="../components/shared.css" />
   <style>
-    .draft-layout {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 20px;
-      height: calc(100vh - 140px);
-    }
-
-    .draft-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-    }
-
-    .draft-item {
-      padding: 14px;
-      border-radius: var(--r-md);
-      background: var(--glass-soft);
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: border-color 150ms ease, background 150ms ease;
-    }
-
-    .draft-item:hover {
-      background: var(--glass-strong);
-    }
-
-    .draft-item.is-active {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-
-    .draft-item-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .draft-item-title {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .draft-item-status {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: var(--glass-strong);
-      color: var(--text-faint);
-      flex-shrink: 0;
-    }
-
-    .draft-item-status.ready { background: var(--accent-soft); color: var(--accent); }
-    .draft-item-status.executing { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
-
-    .draft-item-meta {
-      font-size: 11px;
-      color: var(--text-faint);
-    }
-
+    /* 草稿详情布局 */
     .draft-detail {
       display: flex;
       flex-direction: column;
       gap: 16px;
       overflow-y: auto;
+      height: calc(100vh - 100px);
     }
 
     .draft-detail-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding-bottom: 12px;
     }
 
     .draft-detail-title {
@@ -95,7 +35,7 @@
     }
 
     .draft-context {
-      padding: 16px;
+      padding: 14px;
       border-radius: var(--r-lg);
       background: var(--glass-soft);
       border: 1px solid var(--rim-soft);
@@ -107,11 +47,11 @@
     .requirements-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .requirement-block {
-      padding: 16px;
+      padding: 14px;
       border-radius: var(--r-lg);
       background: var(--glass-strong);
       border: 1px solid var(--rim);
@@ -121,7 +61,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .requirement-label {
@@ -140,13 +80,13 @@
       font-size: 14px;
       font-weight: 500;
       color: var(--text);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .requirement-desc {
       font-size: 13px;
       color: var(--text-soft);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .acceptance-list {
@@ -159,7 +99,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: var(--r-sm);
       background: var(--glass-soft);
     }
@@ -196,6 +136,78 @@
       text-decoration: line-through;
     }
 
+    /* 草稿列表项 */
+    .draft-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: background 150ms ease;
+    }
+
+    .draft-item:hover {
+      background: var(--hover-fill);
+    }
+
+    .draft-item.is-active {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+    }
+
+    .draft-item-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--r-sm);
+      background: var(--glass-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-soft);
+      flex-shrink: 0;
+    }
+
+    .draft-item-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .draft-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .draft-item-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .draft-item-meta {
+      font-size: 10px;
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .draft-item-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--glass-strong);
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+
+    .draft-item-status.ready { background: var(--accent-soft); color: var(--accent); }
+    .draft-item-status.executing { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -204,39 +216,42 @@
       height: 100%;
       text-align: center;
       color: var(--text-faint);
+      padding: 40px;
     }
 
     .empty-state-icon {
-      width: 48px;
-      height: 48px;
-      margin-bottom: 16px;
+      width: 40px;
+      height: 40px;
+      margin-bottom: 12px;
       opacity: 0.5;
     }
   </style>
 </head>
 <body>
+  <!-- 主题切换器 -->
   <div class="theme-dock" role="region" aria-label="主题与材质">
     <div class="theme-dock-row">
       <div class="theme-swatches">
-        <button type="button" class="theme-swatch is-active" data-pick="mist"></button>
-        <button type="button" class="theme-swatch" data-pick="ocean"></button>
-        <button type="button" class="theme-swatch" data-pick="moss"></button>
-        <button type="button" class="theme-swatch" data-pick="dusk"></button>
+        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮 Mist" aria-label="云絮"></button>
+        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海 Ocean" aria-label="碧海"></button>
+        <button type="button" class="theme-swatch" data-pick="moss" title="青苔 Moss" aria-label="青苔"></button>
+        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭 Dusk" aria-label="暮霭"></button>
       </div>
-      <span class="theme-name" id="themeName">云絮 · 浅色 · 轻拟态</span>
+      <span class="theme-name" id="themeName">云絮 · 浅色 · 软拟态</span>
     </div>
     <div class="theme-dock-row">
-      <div class="seg glass-seg material-seg">
-        <button type="button" class="is-active" data-material="soft">轻拟态</button>
+      <div class="seg glass-seg material-seg" role="group" aria-label="界面材质">
+        <button type="button" class="is-active" data-material="soft">软拟态</button>
         <button type="button" data-material="liquid">液态玻璃</button>
       </div>
-      <div class="seg glass-seg">
+      <div class="seg glass-seg" role="group" aria-label="明暗">
         <button type="button" class="is-active" data-mode="light">浅色</button>
         <button type="button" data-mode="dark">深色</button>
       </div>
     </div>
   </div>
 
+  <!-- 桌面背景 -->
   <div class="desktop" aria-hidden="true">
     <div class="wallpaper"></div>
     <div class="wash wash-a"></div>
@@ -244,35 +259,8 @@
     <div class="wash wash-c"></div>
   </div>
 
-  <div class="shell-scene">
-    <div class="overlay-left">
-      <aside class="nav-island glass-island" style="width:var(--rail-width);">
-        <div class="specular"></div>
-        <div class="chroma-edge"></div>
-        <nav class="nav-rail" style="width:100%;border-right:none;">
-          <a href="../index.html" class="rail-btn" title="工作台">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <a href="chat.html" class="rail-btn" title="会话">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <a href="kanban.html" class="rail-btn" title="看板">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <button type="button" class="rail-btn is-active" title="草稿">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-          <a href="memory.html" class="rail-btn" title="记忆">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h5A3.5 3.5 0 0 1 18 8.5v7A3.5 3.5 0 0 1 14.5 19h-5A3.5 3.5 0 0 1 6 15.5v-7Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </a>
-          <div class="rail-spacer"></div>
-          <a href="settings.html" class="rail-btn" title="设置">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </a>
-        </nav>
-      </aside>
-    </div>
-
+  <div class="shell-scene has-left-sidebar">
+    <!-- 中央内容区 -->
     <div class="content-scene">
       <div class="content-base-plate" aria-hidden="true">
         <div class="specular"></div>
@@ -280,159 +268,337 @@
       </div>
 
       <div class="content-foreground">
-        <div class="content-body" style="padding:20px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <h1 style="margin:0;font-size:18px;font-weight:600;color:var(--text);">草稿</h1>
-            <button type="button" class="btn-primary" id="newDraftBtn">新建草稿</button>
-          </div>
-
-          <div class="draft-layout">
-            <div class="draft-list" id="draftList">
-              <!-- 由 JS 渲染 -->
-            </div>
-            <div class="draft-detail" id="draftDetail">
-              <div class="empty-state">
-                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none">
-                  <path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/>
-                  <path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-                <div class="empty-state-title">选择或新建草稿</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="../mock/data.js"></script>
-  <script src="../components/shared.js"></script>
-  <script>
-    (() => {
-      const state = {
-        drafts: [],
-        currentDraftId: null
-      };
-
-      function renderList() {
-        const container = document.getElementById('draftList');
-        container.innerHTML = state.drafts.map(d => `
-          <div class="draft-item ${d.id === state.currentDraftId ? 'is-active' : ''}" data-draft="${d.id}">
-            <div class="draft-item-header">
-              <div class="draft-item-title">${d.title}</div>
-              <span class="draft-item-status ${d.status}">${getStatusText(d.status)}</span>
-            </div>
-            <div class="draft-item-meta">${d.requirements.length} 个需求块 · ${formatTime(d.updatedAt)}</div>
-          </div>
-        `).join('');
-
-        container.querySelectorAll('.draft-item').forEach(el => {
-          el.addEventListener('click', () => {
-            state.currentDraftId = el.dataset.draft;
-            renderList();
-            renderDetail();
-          });
-        });
-      }
-
-      function renderDetail() {
-        const container = document.getElementById('draftDetail');
-        const draft = state.drafts.find(d => d.id === state.currentDraftId);
-
-        if (!draft) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none">
-                <path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-              <div class="empty-state-title">选择草稿查看详情</div>
-            </div>`;
-          return;
-        }
-
-        container.innerHTML = `
+        <!-- 草稿详情 -->
+        <div class="draft-detail" id="draftDetail">
           <div class="draft-detail-header">
-            <h2 class="draft-detail-title">${draft.title}</h2>
-            <div style="display:flex;gap:8px;">
-              <button type="button" class="btn-secondary" id="editDraftBtn">编辑</button>
-              <button type="button" class="btn-primary" id="upgradeDraftBtn">升级为会话</button>
+            <h1 class="draft-detail-title">Glass Studio 前端重构</h1>
+            <div class="tool-cluster" role="group" aria-label="草稿操作">
+              <button type="button">编辑</button>
+              <button type="button" class="accent" id="upgradeBtn">升级为会话</button>
             </div>
           </div>
 
           <div>
             <h3 style="font-size:13px;font-weight:500;color:var(--text-soft);margin-bottom:8px;">背景</h3>
-            <div class="draft-context">${draft.context}</div>
+            <div class="draft-context">
+              将 Glass Studio 的前端原型与 TAgent 真实功能页面对齐，确保布局一致、红绿灯对齐、侧边栏完整。目标是先完成前端原型，后续再接入后端逻辑。
+            </div>
           </div>
 
           <div>
             <h3 style="font-size:13px;font-weight:500;color:var(--text-soft);margin-bottom:8px;">需求块</h3>
             <div class="requirements-list">
-              ${draft.requirements.map(r => `
-                <div class="requirement-block">
-                  <div class="requirement-header">
-                    <span class="requirement-label">${r.label}</span>
+              <!-- 需求块 1 -->
+              <div class="requirement-block">
+                <div class="requirement-header">
+                  <span class="requirement-label">功能</span>
+                </div>
+                <div class="requirement-title">看板页左侧 sidebar</div>
+                <div class="requirement-desc">看板页需要添加完整的左侧 sidebar，包含红绿灯、nav-rail 和看板项目列表。</div>
+                <div class="acceptance-list">
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">红绿灯与 chat.html 对齐</span>
                   </div>
-                  <div class="requirement-title">${r.title}</div>
-                  <div class="requirement-desc">${r.description}</div>
-                  <div class="acceptance-list">
-                    ${r.acceptanceCriteria.map(ac => `
-                      <div class="acceptance-item">
-                        <div class="acceptance-checkbox ${ac.checked ? 'checked' : ''}" data-ac="${ac.id}"></div>
-                        <span class="acceptance-text ${ac.checked ? 'completed' : ''}">${ac.text}</span>
-                      </div>
-                    `).join('')}
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">看板列表项样式一致</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">角色库入口按钮</span>
                   </div>
                 </div>
-              `).join('')}
+              </div>
+
+              <!-- 需求块 2 -->
+              <div class="requirement-block">
+                <div class="requirement-header">
+                  <span class="requirement-label">功能</span>
+                </div>
+                <div class="requirement-title">草稿页左侧 sidebar</div>
+                <div class="requirement-desc">草稿页需要添加完整的左侧 sidebar，包含红绿灯、nav-rail 和草稿项目列表。</div>
+                <div class="acceptance-list">
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">红绿灯与 chat.html 对齐</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">草稿列表项样式一致</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">状态分组（按草稿/就绪/执行中）</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 需求块 3 -->
+              <div class="requirement-block">
+                <div class="requirement-header">
+                  <span class="requirement-label">功能</span>
+                </div>
+                <div class="requirement-title">记忆页左侧 sidebar</div>
+                <div class="requirement-desc">记忆页需要添加完整的左侧 sidebar，包含红绿灯、nav-rail 和记忆项目列表。</div>
+                <div class="acceptance-list">
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">红绿灯与 chat.html 对齐</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">记忆列表项样式一致</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">类型筛选（按 user/feedback/project/reference）</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 需求块 4 -->
+              <div class="requirement-block">
+                <div class="requirement-header">
+                  <span class="requirement-label">架构</span>
+                </div>
+                <div class="requirement-title">设置页改为弹窗</div>
+                <div class="requirement-desc">将设置从独立页面改为弹窗/模态框形式，确保所有设置选项完整。</div>
+                <div class="acceptance-list">
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">模态框样式一致</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">设置选项完整（模型、权限、自动化等）</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">每个页面都有设置按钮入口</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 需求块 5 -->
+              <div class="requirement-block">
+                <div class="requirement-header">
+                  <span class="requirement-label">UI</span>
+                </div>
+                <div class="requirement-title">红绿灯对齐统一</div>
+                <div class="requirement-desc">确保所有页面的红绿灯和 lefttrail 对齐方式一致。</div>
+                <div class="acceptance-list">
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">chat.html 红绿灯位置正确</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox checked"></div>
+                    <span class="acceptance-text completed">kanban.html 红绿灯位置正确</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">draft.html 红绿灯位置正确</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">memory.html 红绿灯位置正确</span>
+                  </div>
+                  <div class="acceptance-item">
+                    <div class="acceptance-checkbox"></div>
+                    <span class="acceptance-text">automation.html 红绿灯位置正确</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn-secondary" style="width:100%;margin-top:12px;">+ 添加需求块</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左侧浮岛 -->
+    <div class="overlay-left">
+      <aside class="nav-island glass-island">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+        <!-- 红绿灯 -->
+        <div class="mac-chrome" aria-hidden="true">
+          <span class="dot close"></span>
+          <span class="dot minimize"></span>
+          <span class="dot zoom"></span>
+        </div>
+        <div class="nav-island-body">
+          <!-- Nav Rail -->
+          <nav class="nav-rail" aria-label="功能栏">
+            <button type="button" class="rail-btn" data-rail="chat" onclick="window.location.href='chat.html'" title="会话">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="kanban" onclick="window.location.href='kanban.html'" title="看板">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="automation" onclick="window.location.href='automation.html'" title="自动任务">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" class="rail-btn is-active" data-rail="draft" title="草稿">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="memory" onclick="window.location.href='memory.html'" title="记忆">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h5A3.5 3.5 0 0 1 18 8.5v7A3.5 3.5 0 0 1 14.5 19h-5A3.5 3.5 0 0 1 6 15.5v-7Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <div class="rail-spacer"></div>
+            <button type="button" class="rail-btn avatar-btn" id="settingsBtn" title="设置">F</button>
+          </nav>
+
+          <!-- 草稿列表 Sidebar -->
+          <div class="nav-sidebar">
+            <div class="sidebar-inner">
+              <div class="sidebar-head">
+                <h2>草稿</h2>
+                <span class="sidebar-count">5</span>
+              </div>
+
+              <!-- 草稿列表 -->
+              <div class="sidebar-list">
+                <button type="button" class="draft-item is-active" data-draft="d1">
+                  <div class="draft-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="draft-item-content">
+                    <div class="draft-item-title">Glass Studio 前端重构</div>
+                    <div class="draft-item-meta">
+                      <span>5 个需求</span>
+                      <span>·</span>
+                      <span>刚刚</span>
+                    </div>
+                  </div>
+                  <span class="draft-item-status ready">就绪</span>
+                </button>
+                <button type="button" class="draft-item" data-draft="d2">
+                  <div class="draft-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="draft-item-content">
+                    <div class="draft-item-title">看板 v1 产品化</div>
+                    <div class="draft-item-meta">
+                      <span>3 个需求</span>
+                      <span>·</span>
+                      <span>2h</span>
+                    </div>
+                  </div>
+                  <span class="draft-item-status executing">执行中</span>
+                </button>
+                <button type="button" class="draft-item" data-draft="d3">
+                  <div class="draft-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="draft-item-content">
+                    <div class="draft-item-title">IPC 通道新增</div>
+                    <div class="draft-item-meta">
+                      <span>2 个需求</span>
+                      <span>·</span>
+                      <span>昨天</span>
+                    </div>
+                  </div>
+                  <span class="draft-item-status">草稿</span>
+                </button>
+                <button type="button" class="draft-item" data-draft="d4">
+                  <div class="draft-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="draft-item-content">
+                    <div class="draft-item-title">记忆层监控</div>
+                    <div class="draft-item-meta">
+                      <span>4 个需求</span>
+                      <span>·</span>
+                      <span>上周</span>
+                    </div>
+                  </div>
+                  <span class="draft-item-status">草稿</span>
+                </button>
+                <button type="button" class="draft-item" data-draft="d5">
+                  <div class="draft-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="draft-item-content">
+                    <div class="draft-item-title">权限模式重构</div>
+                    <div class="draft-item-meta">
+                      <span>1 个需求</span>
+                      <span>·</span>
+                      <span>上周</span>
+                    </div>
+                  </div>
+                  <span class="draft-item-status">草稿</span>
+                </button>
+              </div>
+
+              <!-- 新建草稿按钮 -->
+              <button type="button" class="sidebar-action-btn" id="newDraftBtn">
+                <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span>新建草稿</span>
+              </button>
             </div>
           </div>
+        </div>
+      </aside>
+    </div>
+  </div>
 
-          <button type="button" class="btn-secondary" id="addRequirementBtn" style="width:100%;">+ 添加需求块</button>
-        `;
+  <!-- 设置弹窗 -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <h3>设置</h3>
+        <button type="button" class="modal-close" data-modal-close>×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-grid">
+          <!-- 设置项由 JS 渲染 -->
+        </div>
+      </div>
+    </div>
+  </div>
 
-        document.getElementById('upgradeDraftBtn')?.addEventListener('click', () => {
-          Toast.success('草稿已升级为会话');
+  <script src="../components/shared.js"></script>
+  <script>
+    (() => {
+      // 草稿切换
+      document.querySelectorAll('.draft-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.draft-item').forEach(e => e.classList.remove('is-active'));
+          el.classList.add('is-active');
+          Toast.info('切换草稿功能开发中...');
         });
+      });
 
-        document.getElementById('addRequirementBtn')?.addEventListener('click', () => {
-          Toast.info('添加需求块功能开发中...');
+      // 新建草稿
+      document.getElementById('newDraftBtn').addEventListener('click', () => {
+        Toast.info('新建草稿功能开发中...');
+      });
+
+      // 升级为会话
+      document.getElementById('upgradeBtn').addEventListener('click', () => {
+        Toast.success('草稿已升级为会话');
+      });
+
+      // 设置按钮
+      document.getElementById('settingsBtn').addEventListener('click', () => {
+        Modal.open('settingsModal');
+      });
+
+      // Acceptance checkbox 点击
+      document.querySelectorAll('.acceptance-checkbox').forEach(el => {
+        el.addEventListener('click', () => {
+          el.classList.toggle('checked');
+          const text = el.nextElementSibling;
+          if (el.classList.contains('checked')) {
+            text.classList.add('completed');
+          } else {
+            text.classList.remove('completed');
+          }
         });
-      }
-
-      function getStatusText(status) {
-        const map = { draft: '草稿', ready: '就绪', executing: '执行中', done: '完成', verified: '已验证' };
-        return map[status] || status;
-      }
-
-      function formatTime(ts) {
-        const diff = Date.now() - ts;
-        const hours = Math.floor(diff / 3600000);
-        if (hours < 1) return '刚刚';
-        if (hours < 24) return `${hours}小时前`;
-        const days = Math.floor(hours / 24);
-        return `${days}天前`;
-      }
-
-      async function init() {
-        state.drafts = await api.getDrafts();
-        renderList();
-
-        if (state.drafts.length > 0) {
-          state.currentDraftId = state.drafts[0].id;
-          renderList();
-          renderDetail();
-        }
-
-        document.getElementById('newDraftBtn').addEventListener('click', () => {
-          Toast.info('新建草稿功能开发中...');
-        });
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
+      });
     })();
   </script>
 </body>

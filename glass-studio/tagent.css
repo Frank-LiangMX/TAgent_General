@@ -161,6 +161,77 @@ button {
   border: none;
 }
 
+/*
+  Soft press — click sinks into clay (neu-in + slight scale).
+  Applied to all primary interactive controls on the main shell.
+*/
+.rail-btn,
+.right-rail-btn,
+.avatar-btn,
+.tool-cluster button,
+.seg button,
+.glass-seg button,
+.icon-tile,
+.send-btn,
+.turn-actions button,
+.session-row,
+.project-toggle,
+.archive,
+.pill,
+.tab,
+.file-item,
+.file-chip,
+.right-tab,
+.theme-swatch,
+.btn-primary,
+.btn-secondary,
+.btn-icon,
+.btn-sm {
+  transition:
+    color var(--motion-fast) var(--island-ease),
+    background var(--motion-fast) var(--island-ease),
+    border-color var(--motion) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease),
+    transform var(--motion-fast) var(--island-ease),
+    filter var(--motion-fast) var(--island-ease);
+}
+
+.rail-btn:active,
+.right-rail-btn:active,
+.avatar-btn:active,
+.tool-cluster button:active,
+.seg button:active,
+.glass-seg button:active,
+.icon-tile:active,
+.turn-actions button:active,
+.session-row:active,
+.project-toggle:active,
+.archive:active,
+.pill:active,
+.tab:active,
+.file-item:active,
+.file-chip:active,
+.right-tab:active,
+.theme-swatch:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-icon:active,
+.btn-sm:active {
+  transform: scale(0.97);
+  box-shadow: var(--neu-in-sm);
+}
+
+.send-btn:active {
+  transform: scale(0.94);
+  box-shadow: var(--neu-in-sm);
+}
+
+.rail-btn:active svg,
+.right-rail-btn:active svg,
+.send-btn:active svg {
+  transform: none;
+}
+
 /* Shell */
 .shell-scene {
   position: relative;
@@ -174,6 +245,11 @@ button {
   inset: var(--shell-pad);
   z-index: 10;
   animation: rise-in var(--motion-slow) var(--island-ease) both;
+}
+
+/* 有左侧 sidebar 时，主内容区向右偏移 */
+.shell-scene.has-left-sidebar .content-scene {
+  left: calc(var(--shell-pad) + var(--left-float-w) + 8px);
 }
 
 .content-base-plate {
@@ -291,7 +367,11 @@ button {
   font-weight: 500;
   color: var(--text-soft);
   max-width: 180px;
-  transition: color var(--motion-fast) var(--island-ease), transform var(--motion-fast) var(--island-ease);
+  transition:
+    color var(--motion-fast) var(--island-ease),
+    transform var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease),
+    background var(--motion-fast) var(--island-ease);
 }
 
 .tab:hover {
@@ -414,7 +494,10 @@ button {
   background: var(--glass-soft);
   border: 1px solid var(--rim-soft);
   box-shadow: 0 1px 0 var(--inset-hi) inset;
-  transition: transform var(--motion-fast) var(--island-ease), background var(--motion-fast) var(--island-ease);
+  transition:
+    transform var(--motion-fast) var(--island-ease),
+    background var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease);
 }
 
 .pill:hover {
@@ -453,17 +536,14 @@ button {
   transition:
     background var(--motion-fast) var(--island-ease),
     color var(--motion-fast) var(--island-ease),
-    transform var(--motion-fast) var(--island-ease);
+    transform var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease);
 }
 
 .tool-cluster button:hover {
   color: var(--text);
   background: var(--hover-fill);
   transform: translateY(-1px);
-}
-
-.tool-cluster button:active {
-  transform: translateY(0) scale(0.97);
 }
 
 .tool-cluster button.accent {
@@ -526,10 +606,6 @@ button {
     -2px -2px 5px var(--elev-light);
 }
 
-.seg button:active {
-  transform: scale(0.97);
-}
-
 .icon-tile {
   width: 32px;
   height: 32px;
@@ -553,10 +629,6 @@ button {
   color: var(--text);
   background: var(--glass-strong);
   transform: translateY(-1px);
-}
-
-.icon-tile:active {
-  transform: scale(0.96);
 }
 
 /* Messages: full session height; content scrolls under glass composer */
@@ -876,7 +948,10 @@ button {
   color: var(--accent);
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
-  transition: transform var(--motion-fast) var(--island-ease), background var(--motion-fast) var(--island-ease);
+  transition:
+    transform var(--motion-fast) var(--island-ease),
+    background var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease);
 }
 
 .file-chip:hover {
@@ -1122,7 +1197,11 @@ button {
   font-size: 11px;
   font-weight: 550;
   color: var(--text-faint);
-  transition: background var(--motion-fast) var(--island-ease), color var(--motion-fast) var(--island-ease);
+  transition:
+    background var(--motion-fast) var(--island-ease),
+    color var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease),
+    transform var(--motion-fast) var(--island-ease);
 }
 
 .turn-actions button:hover {
@@ -1255,10 +1334,6 @@ button {
 
 .send-btn:hover svg {
   transform: translateY(-1px);
-}
-
-.send-btn:active {
-  transform: scale(0.94);
 }
 
 /* Token bar: reserved chrome below session — content cannot scroll here */
@@ -1471,10 +1546,6 @@ button {
     -2px -2px 6px var(--elev-light);
 }
 
-.rail-btn:active {
-  transform: scale(0.95);
-}
-
 .rail-spacer {
   flex: 1;
 }
@@ -1571,6 +1642,8 @@ button {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  border-radius: 8px;
+  padding: 2px 4px;
 }
 
 .project-toggle svg {
@@ -1679,10 +1752,6 @@ button {
     -2px -2px 6px var(--elev-light);
 }
 
-.session-row:active {
-  transform: scale(0.985);
-}
-
 .session-row.is-active .session-text {
   color: var(--accent);
   font-weight: 600;
@@ -1700,6 +1769,11 @@ button {
   background: var(--glass-soft);
   border: 1px solid var(--rim-soft);
   box-shadow: 0 1px 0 var(--inset-hi-soft) inset;
+  transition:
+    color var(--motion-fast) var(--island-ease),
+    background var(--motion-fast) var(--island-ease),
+    box-shadow var(--motion-fast) var(--island-ease),
+    transform var(--motion-fast) var(--island-ease);
 }
 
 .archive:hover {
@@ -1857,10 +1931,6 @@ button {
     -2px -2px 6px var(--elev-light);
 }
 
-.right-rail-btn:active {
-  transform: scale(0.95);
-}
-
 @media (max-width: 1100px) {
   :root {
     --sidebar-width: 200px;
@@ -1920,17 +1990,28 @@ button {
   .header-left h1,
   .rail-btn,
   .right-rail-btn,
+  .avatar-btn,
   .tool-cluster button,
   .seg button,
+  .glass-seg button,
   .icon-tile,
   .send-btn,
+  .turn-actions button,
   .session-row,
-  .file-item,
+  .project-toggle,
+  .archive,
   .pill,
   .tab,
+  .file-item,
+  .file-chip,
+  .right-tab,
+  .theme-swatch,
+  .btn-primary,
+  .btn-secondary,
+  .btn-icon,
+  .btn-sm,
   .input-dock,
-  .msg-user,
-  .file-chip {
+  .msg-user {
     transition: none !important;
   }
 

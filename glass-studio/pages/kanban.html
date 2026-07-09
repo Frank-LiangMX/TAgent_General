@@ -12,17 +12,19 @@
   <link rel="stylesheet" href="../materials.css" />
   <link rel="stylesheet" href="../components/shared.css" />
   <style>
+    /* 看板主布局 */
     .kanban-layout {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 120px);
+      height: calc(100vh - 100px);
     }
 
+    /* 看板头部 */
     .kanban-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .kanban-board-selector {
@@ -31,15 +33,10 @@
       gap: 12px;
     }
 
-    .kanban-board-select {
-      padding: 8px 12px;
-      border-radius: var(--r-md);
-      background: var(--glass-strong);
-      border: 1px solid var(--rim);
+    .kanban-board-name {
+      font-size: 18px;
+      font-weight: 600;
       color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
     }
 
     .kanban-board-stats {
@@ -60,16 +57,17 @@
       color: var(--text);
     }
 
+    /* 看板列 */
     .kanban-columns {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       flex: 1;
       overflow-x: auto;
-      padding-bottom: 16px;
+      padding-bottom: 12px;
     }
 
     .kanban-column {
-      flex: 0 0 280px;
+      flex: 0 0 260px;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -79,7 +77,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: var(--r-md) var(--r-md) 0 0;
       background: var(--glass-soft);
       border: 1px solid var(--rim);
@@ -106,17 +104,18 @@
     .kanban-column-body {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
+      padding: 10px;
       border-radius: 0 0 var(--r-md) var(--r-md);
       background: var(--glass-well);
       border: 1px solid var(--rim);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
+    /* 任务卡片 */
     .kanban-task {
-      padding: 14px;
+      padding: 12px;
       border-radius: var(--r-md);
       background: var(--glass-strong);
       border: 1px solid var(--rim);
@@ -133,13 +132,13 @@
       font-size: 13px;
       font-weight: 500;
       color: var(--text);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .kanban-task-meta {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       font-size: 11px;
       color: var(--text-faint);
     }
@@ -159,27 +158,76 @@
       border: 1px solid var(--rim-soft);
     }
 
-    .kanban-task-status.running {
-      border-left: 3px solid var(--accent);
+    /* 状态颜色 */
+    .kanban-task-status.running { border-left: 3px solid var(--accent); }
+    .kanban-task-status.done { border-left: 3px solid var(--success); }
+    .kanban-task-status.failed { border-left: 3px solid var(--danger); }
+
+    .column-pending .kanban-column-header { border-left: 3px solid var(--text-faint); }
+    .column-ready .kanban-column-header { border-left: 3px solid var(--accent); }
+    .column-running .kanban-column-header { border-left: 3px solid #3b82f6; }
+    .column-done .kanban-column-header { border-left: 3px solid var(--success); }
+    .column-failed .kanban-column-header { border-left: 3px solid var(--danger); }
+
+    /* 看板列表项 */
+    .board-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: background 150ms ease;
     }
 
-    .kanban-task-status.done {
-      border-left: 3px solid var(--success);
+    .board-item:hover {
+      background: var(--hover-fill);
     }
 
-    .kanban-task-status.blocked,
-    .kanban-task-status.failed {
-      border-left: 3px solid var(--danger);
+    .board-item.is-active {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+    }
+
+    .board-item-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--r-sm);
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .board-item-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .board-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .board-item-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .board-item-meta {
+      font-size: 10px;
+      color: var(--text-faint);
+      display: flex;
+      gap: 4px;
     }
 
     /* 任务详情模态框 */
-    .task-detail-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
     .task-detail-status {
       display: inline-flex;
       align-items: center;
@@ -197,7 +245,7 @@
     .task-detail-status.failed { background: rgba(196, 91, 91, 0.12); color: var(--danger); }
 
     .task-detail-body {
-      padding: 14px;
+      padding: 12px;
       border-radius: var(--r-md);
       background: var(--glass-soft);
       border: 1px solid var(--rim-soft);
@@ -206,13 +254,6 @@
       color: var(--text-soft);
       white-space: pre-wrap;
     }
-
-    /* 状态列颜色 */
-    .column-pending .kanban-column-header { border-left: 3px solid var(--text-faint); }
-    .column-ready .kanban-column-header { border-left: 3px solid var(--accent); }
-    .column-running .kanban-column-header { border-left: 3px solid #3b82f6; }
-    .column-done .kanban-column-header { border-left: 3px solid var(--success); }
-    .column-failed .kanban-column-header { border-left: 3px solid var(--danger); }
   </style>
 </head>
 <body>
@@ -220,25 +261,26 @@
   <div class="theme-dock" role="region" aria-label="主题与材质">
     <div class="theme-dock-row">
       <div class="theme-swatches">
-        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮"></button>
-        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海"></button>
-        <button type="button" class="theme-swatch" data-pick="moss" title="青苔"></button>
-        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭"></button>
+        <button type="button" class="theme-swatch is-active" data-pick="mist" title="云絮 Mist" aria-label="云絮"></button>
+        <button type="button" class="theme-swatch" data-pick="ocean" title="碧海 Ocean" aria-label="碧海"></button>
+        <button type="button" class="theme-swatch" data-pick="moss" title="青苔 Moss" aria-label="青苔"></button>
+        <button type="button" class="theme-swatch" data-pick="dusk" title="暮霭 Dusk" aria-label="暮霭"></button>
       </div>
-      <span class="theme-name" id="themeName">云絮 · 浅色 · 轻拟态</span>
+      <span class="theme-name" id="themeName">云絮 · 浅色 · 软拟态</span>
     </div>
     <div class="theme-dock-row">
-      <div class="seg glass-seg material-seg">
-        <button type="button" class="is-active" data-material="soft">轻拟态</button>
+      <div class="seg glass-seg material-seg" role="group" aria-label="界面材质">
+        <button type="button" class="is-active" data-material="soft">软拟态</button>
         <button type="button" data-material="liquid">液态玻璃</button>
       </div>
-      <div class="seg glass-seg">
+      <div class="seg glass-seg" role="group" aria-label="明暗">
         <button type="button" class="is-active" data-mode="light">浅色</button>
         <button type="button" data-mode="dark">深色</button>
       </div>
     </div>
   </div>
 
+  <!-- 桌面背景 -->
   <div class="desktop" aria-hidden="true">
     <div class="wallpaper"></div>
     <div class="wash wash-a"></div>
@@ -246,37 +288,8 @@
     <div class="wash wash-c"></div>
   </div>
 
-  <div class="shell-scene">
-    <!-- 左侧导航 -->
-    <div class="overlay-left">
-      <aside class="nav-island glass-island" style="width:var(--rail-width);">
-        <div class="specular"></div>
-        <div class="chroma-edge"></div>
-        <nav class="nav-rail" style="width:100%;border-right:none;">
-          <a href="../index.html" class="rail-btn" title="工作台">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <a href="chat.html" class="rail-btn" title="会话">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <button type="button" class="rail-btn is-active" title="看板">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-          <a href="draft.html" class="rail-btn" title="草稿">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
-          </a>
-          <a href="memory.html" class="rail-btn" title="记忆">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h5A3.5 3.5 0 0 1 18 8.5v7A3.5 3.5 0 0 1 14.5 19h-5A3.5 3.5 0 0 1 6 15.5v-7Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </a>
-          <div class="rail-spacer"></div>
-          <a href="settings.html" class="rail-btn" title="设置">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </a>
-        </nav>
-      </aside>
-    </div>
-
-    <!-- 主内容区 -->
+  <div class="shell-scene has-left-sidebar">
+    <!-- 中央内容区 -->
     <div class="content-scene">
       <div class="content-base-plate" aria-hidden="true">
         <div class="specular"></div>
@@ -284,39 +297,276 @@
       </div>
 
       <div class="content-foreground">
-        <div class="content-body" style="padding:20px;">
-          <div class="kanban-layout">
-            <div class="kanban-header">
-              <div class="kanban-board-selector">
-                <select class="kanban-board-select" id="boardSelect"></select>
-                <div class="kanban-board-stats" id="boardStats"></div>
+        <!-- 看板头部工具栏 -->
+        <div class="kanban-header">
+          <div class="kanban-board-selector">
+            <span class="kanban-board-name" id="boardName">Glass Studio 开发看板</span>
+            <div class="kanban-board-stats" id="boardStats">
+              <span class="kanban-stat">任务 <span class="kanban-stat-value">12</span></span>
+              <span class="kanban-stat">完成 <span class="kanban-stat-value">5</span></span>
+              <span class="kanban-stat">并发 <span class="kanban-stat-value">2</span></span>
+            </div>
+          </div>
+          <div class="tool-cluster" role="group" aria-label="看板操作">
+            <button type="button" id="newBoardBtn">新建看板</button>
+            <button type="button" class="accent" id="newTaskBtn">添加任务</button>
+          </div>
+        </div>
+
+        <!-- 看板主体 -->
+        <div class="kanban-columns" id="kanbanColumns">
+          <!-- 待办列 -->
+          <div class="kanban-column column-pending">
+            <div class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span>⏳</span>
+                <span>待办</span>
               </div>
-              <div style="display:flex;gap:8px;">
-                <button type="button" class="btn-secondary" id="newBoardBtn">新建看板</button>
-                <button type="button" class="btn-primary" id="newTaskBtn">添加任务</button>
+              <span class="kanban-column-count">3</span>
+            </div>
+            <div class="kanban-column-body">
+              <div class="kanban-task" data-task="t1">
+                <div class="kanban-task-title">记忆系统 UI 收尾</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P10</span>
+                  <span class="kanban-task-role">设计师</span>
+                </div>
+              </div>
+              <div class="kanban-task" data-task="t2">
+                <div class="kanban-task-title">IPC 通道新增</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P8</span>
+                </div>
+              </div>
+              <div class="kanban-task" data-task="t3">
+                <div class="kanban-task-title">权限模式重构</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P6</span>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="kanban-columns" id="kanbanColumns">
-              <!-- 由 JS 渲染 -->
+          <!-- 可领取列 -->
+          <div class="kanban-column column-ready">
+            <div class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span>📋</span>
+                <span>可领取</span>
+              </div>
+              <span class="kanban-column-count">2</span>
+            </div>
+            <div class="kanban-column-body">
+              <div class="kanban-task" data-task="t4">
+                <div class="kanban-task-title">浮岛布局对齐</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P5</span>
+                  <span class="kanban-task-role">前端</span>
+                </div>
+              </div>
+              <div class="kanban-task" data-task="t5">
+                <div class="kanban-task-title">看板 v1 产品化</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P7</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 执行中列 -->
+          <div class="kanban-column column-running">
+            <div class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span>🔄</span>
+                <span>执行中</span>
+              </div>
+              <span class="kanban-column-count">2</span>
+            </div>
+            <div class="kanban-column-body">
+              <div class="kanban-task kanban-task-status.running" data-task="t6">
+                <div class="kanban-task-title">草稿页样式完善</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P4</span>
+                  <span class="kanban-task-role">前端</span>
+                  <span>会话 S1</span>
+                </div>
+              </div>
+              <div class="kanban-task kanban-task-status.running" data-task="t7">
+                <div class="kanban-task-title">自动化测试覆盖</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P3</span>
+                  <span class="kanban-task-role">测试</span>
+                  <span>会话 S2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 完成列 -->
+          <div class="kanban-column column-done">
+            <div class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span>✅</span>
+                <span>完成</span>
+              </div>
+              <span class="kanban-column-count">5</span>
+            </div>
+            <div class="kanban-column-body">
+              <div class="kanban-task kanban-task-status.done" data-task="t8">
+                <div class="kanban-task-title">Glass Studio 主题迁移</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P2</span>
+                </div>
+              </div>
+              <div class="kanban-task kanban-task-status.done" data-task="t9">
+                <div class="kanban-task-title">浮岛布局原型</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P1</span>
+                </div>
+              </div>
+              <div class="kanban-task kanban-task-status.done" data-task="t10">
+                <div class="kanban-task-title">Tab 栏组件化</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P2</span>
+                </div>
+              </div>
+              <div class="kanban-task kanban-task-status.done" data-task="t11">
+                <div class="kanban-task-title">会话列表样式</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P3</span>
+                </div>
+              </div>
+              <div class="kanban-task kanban-task-status.done" data-task="t12">
+                <div class="kanban-task-title">基础样式收尾</div>
+                <div class="kanban-task-meta">
+                  <span class="kanban-task-priority">P1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 失败列 -->
+          <div class="kanban-column column-failed">
+            <div class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span>❌</span>
+                <span>失败</span>
+              </div>
+              <span class="kanban-column-count">0</span>
+            </div>
+            <div class="kanban-column-body">
+              <!-- 空列 -->
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 左侧浮岛 -->
+    <div class="overlay-left">
+      <aside class="nav-island glass-island">
+        <div class="specular"></div>
+        <div class="chroma-edge"></div>
+        <!-- 红绿灯 -->
+        <div class="mac-chrome" aria-hidden="true">
+          <span class="dot close"></span>
+          <span class="dot minimize"></span>
+          <span class="dot zoom"></span>
+        </div>
+        <div class="nav-island-body">
+          <!-- Nav Rail -->
+          <nav class="nav-rail" aria-label="功能栏">
+            <button type="button" class="rail-btn" data-rail="chat" onclick="window.location.href='chat.html'" title="会话">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn is-active" data-rail="kanban" title="看板">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="automation" onclick="window.location.href='automation.html'" title="自动任务">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="draft" onclick="window.location.href='draft.html'" title="草稿">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 7.5V12H18" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button type="button" class="rail-btn" data-rail="memory" onclick="window.location.href='memory.html'" title="记忆">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h5A3.5 3.5 0 0 1 18 8.5v7A3.5 3.5 0 0 1 14.5 19h-5A3.5 3.5 0 0 1 6 15.5v-7Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <div class="rail-spacer"></div>
+            <button type="button" class="rail-btn avatar-btn" id="settingsBtn" title="设置">F</button>
+          </nav>
+
+          <!-- 看板列表 Sidebar -->
+          <div class="nav-sidebar">
+            <div class="sidebar-inner">
+              <div class="sidebar-head">
+                <h2>看板</h2>
+                <span class="sidebar-count">3</span>
+              </div>
+
+              <!-- 角色库入口 -->
+              <button type="button" class="sidebar-action-btn" id="rolesBtn">
+                <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.5"/></svg>
+                <span>角色库</span>
+              </button>
+
+              <!-- 看板列表 -->
+              <div class="sidebar-list">
+                <button type="button" class="board-item is-active" data-board="b1">
+                  <div class="board-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="board-item-content">
+                    <div class="board-item-title">Glass Studio 开发看板</div>
+                    <div class="board-item-meta">
+                      <span>TA</span>
+                      <span>·</span>
+                      <span>7月10日</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="board-item" data-board="b2">
+                  <div class="board-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="board-item-content">
+                    <div class="board-item-title">TAgent Core 重构</div>
+                    <div class="board-item-meta">
+                      <span>通用</span>
+                      <span>·</span>
+                      <span>7月8日</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="board-item" data-board="b3">
+                  <div class="board-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </div>
+                  <div class="board-item-content">
+                    <div class="board-item-title">记忆层监控</div>
+                    <div class="board-item-meta">
+                      <span>TA</span>
+                      <span>·</span>
+                      <span>上周</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
   </div>
 
   <!-- 任务详情模态框 -->
   <div class="modal-overlay" id="taskDetailModal">
-    <div class="modal-content" style="max-width:520px;">
+    <div class="modal-content" style="max-width:480px;">
       <div class="modal-header">
-        <div>
-          <span class="task-detail-status" id="taskDetailStatus">pending</span>
-        </div>
+        <span class="task-detail-status" id="taskDetailStatus">pending</span>
         <button type="button" class="modal-close" data-modal-close>×</button>
       </div>
       <div class="modal-body">
-        <h3 style="margin:0 0 12px;font-size:16px;" id="taskDetailTitle">任务标题</h3>
+        <h3 style="margin:0 0 12px;font-size:15px;" id="taskDetailTitle">任务标题</h3>
         <div class="task-detail-body" id="taskDetailBody">任务描述...</div>
         <div style="margin-top:16px;display:flex;gap:12px;">
           <div class="form-group" style="flex:1;">
@@ -336,141 +586,92 @@
     </div>
   </div>
 
-  <script src="../mock/data.js"></script>
+  <!-- 设置弹窗 -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <h3>设置</h3>
+        <button type="button" class="modal-close" data-modal-close>×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-grid">
+          <!-- 设置项由 JS 渲染 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../components/shared.js"></script>
   <script>
     (() => {
-      const state = {
-        boards: [],
-        tasks: [],
-        currentBoardId: null
+      // 任务数据
+      const tasks = {
+        t1: { title: '记忆系统 UI 收尾', status: 'pending', priority: 10, role: '设计师', body: '完善记忆页面的样式，与 TAgent 真实实现保持一致。' },
+        t2: { title: 'IPC 通道新增', status: 'pending', priority: 8, role: null, body: '新增 Electron IPC 通道，支持前后端通信。' },
+        t3: { title: '权限模式重构', status: 'pending', priority: 6, role: null, body: '重构权限模式，支持自动审批和手动审批。' },
+        t4: { title: '浮岛布局对齐', status: 'ready', priority: 5, role: '前端', body: '确保所有页面的红绿灯和 lefttrail 对齐。' },
+        t5: { title: '看板 v1 产品化', status: 'ready', priority: 7, role: null, body: '完善看板页，支持任务管理、角色分配。' },
+        t6: { title: '草稿页样式完善', status: 'running', priority: 4, role: '前端', body: '完善草稿页样式，添加左侧 sidebar。', session: 'S1' },
+        t7: { title: '自动化测试覆盖', status: 'running', priority: 3, role: '测试', body: '增加自动化测试覆盖率。', session: 'S2' },
+        t8: { title: 'Glass Studio 主题迁移', status: 'done', priority: 2, role: null, body: '已完成主题迁移。' },
+        t9: { title: '浮岛布局原型', status: 'done', priority: 1, role: null, body: '已完成浮岛布局原型。' },
+        t10: { title: 'Tab 栏组件化', status: 'done', priority: 2, role: null, body: '已完成 Tab 栏组件化。' },
+        t11: { title: '会话列表样式', status: 'done', priority: 3, role: null, body: '已完成会话列表样式。' },
+        t12: { title: '基础样式收尾', status: 'done', priority: 1, role: null, body: '已完成基础样式收尾。' }
       };
 
-      const COLUMNS = [
-        { status: 'pending', label: '待办', icon: '⏳' },
-        { status: 'ready', label: '可领取', icon: '📋' },
-        { status: 'running', label: '执行中', icon: '🔄' },
-        { status: 'done', label: '完成', icon: '✅' },
-        { status: 'failed', label: '失败', icon: '❌' }
-      ];
+      // 任务点击事件
+      document.querySelectorAll('.kanban-task').forEach(el => {
+        el.addEventListener('click', () => {
+          const taskId = el.dataset.task;
+          const task = tasks[taskId];
+          if (!task) return;
 
-      function renderBoardSelect() {
-        const select = document.getElementById('boardSelect');
-        select.innerHTML = state.boards.map(b =>
-          `<option value="${b.id}">${b.title}</option>`
-        ).join('');
-        if (!state.currentBoardId && state.boards.length > 0) {
-          state.currentBoardId = state.boards[0].id;
-        }
-        select.value = state.currentBoardId;
-      }
+          document.getElementById('taskDetailStatus').textContent = task.status;
+          document.getElementById('taskDetailStatus').className = `task-detail-status ${task.status}`;
+          document.getElementById('taskDetailTitle').textContent = task.title;
+          document.getElementById('taskDetailBody').textContent = task.body;
+          document.getElementById('taskDetailPriority').textContent = task.priority;
+          document.getElementById('taskDetailRole').textContent = task.role || '-';
 
-      function renderBoardStats() {
-        const board = state.boards.find(b => b.id === state.currentBoardId);
-        const container = document.getElementById('boardStats');
-        if (!board) { container.innerHTML = ''; return; }
-
-        container.innerHTML = `
-          <span class="kanban-stat">任务 <span class="kanban-stat-value">${board.taskCount}</span></span>
-          <span class="kanban-stat">完成 <span class="kanban-stat-value">${board.completedCount}</span></span>
-          <span class="kanban-stat">并发 <span class="kanban-stat-value">${board.maxConcurrent}</span></span>
-        `;
-      }
-
-      function renderColumns() {
-        const container = document.getElementById('kanbanColumns');
-        const boardTasks = state.tasks.filter(t => t.boardId === state.currentBoardId);
-
-        container.innerHTML = COLUMNS.map(col => {
-          const columnTasks = boardTasks.filter(t => t.status === col.status);
-          return `
-            <div class="kanban-column column-${col.status}">
-              <div class="kanban-column-header">
-                <div class="kanban-column-title">
-                  <span>${col.icon}</span>
-                  <span>${col.label}</span>
-                </div>
-                <span class="kanban-column-count">${columnTasks.length}</span>
-              </div>
-              <div class="kanban-column-body">
-                ${columnTasks.map(t => renderTask(t)).join('')}
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        bindTaskEvents();
-      }
-
-      function renderTask(task) {
-        return `
-          <div class="kanban-task kanban-task-status-${task.status}" data-task="${task.id}">
-            <div class="kanban-task-title">${task.title}</div>
-            <div class="kanban-task-meta">
-              <span class="kanban-task-priority">P${task.priority}</span>
-              ${task.roleId ? `<span class="kanban-task-role">${task.roleId}</span>` : ''}
-              ${task.assigneeSessionId ? `<span>会话 ${task.assigneeSessionId}</span>` : ''}
-            </div>
-          </div>
-        `;
-      }
-
-      function bindTaskEvents() {
-        document.querySelectorAll('.kanban-task').forEach(el => {
-          el.addEventListener('click', () => {
-            const taskId = el.dataset.task;
-            showTaskDetail(taskId);
-          });
+          Modal.open('taskDetailModal');
         });
-      }
+      });
 
-      function showTaskDetail(taskId) {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (!task) return;
-
-        document.getElementById('taskDetailStatus').textContent = task.status;
-        document.getElementById('taskDetailStatus').className = `task-detail-status ${task.status}`;
-        document.getElementById('taskDetailTitle').textContent = task.title;
-        document.getElementById('taskDetailBody').textContent = task.body || '暂无详细描述';
-        document.getElementById('taskDetailPriority').textContent = task.priority;
-        document.getElementById('taskDetailRole').textContent = task.roleId || '-';
-
-        Modal.open('taskDetailModal');
-      }
-
-      async function init() {
-        state.boards = await api.getKanbanBoards();
-        state.tasks = await api.getKanbanTasks();
-
-        renderBoardSelect();
-        renderBoardStats();
-        renderColumns();
-
-        document.getElementById('boardSelect').addEventListener('change', (e) => {
-          state.currentBoardId = e.target.value;
-          renderBoardStats();
-          renderColumns();
+      // 看板切换
+      document.querySelectorAll('.board-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.board-item').forEach(e => e.classList.remove('is-active'));
+          el.classList.add('is-active');
+          Toast.info('切换看板功能开发中...');
         });
+      });
 
-        document.getElementById('newTaskBtn').addEventListener('click', () => {
-          Toast.info('新建任务功能开发中...');
-        });
+      // 新建任务
+      document.getElementById('newTaskBtn').addEventListener('click', () => {
+        Toast.info('新建任务功能开发中...');
+      });
 
-        document.getElementById('newBoardBtn').addEventListener('click', () => {
-          Toast.info('新建看板功能开发中...');
-        });
+      // 新建看板
+      document.getElementById('newBoardBtn').addEventListener('click', () => {
+        Toast.info('新建看板功能开发中...');
+      });
 
-        document.getElementById('taskRunBtn').addEventListener('click', () => {
-          Toast.success('任务已启动');
-          Modal.close('taskDetailModal');
-        });
-      }
+      // 角色库
+      document.getElementById('rolesBtn').addEventListener('click', () => {
+        Toast.info('角色库功能开发中...');
+      });
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
+      // 立即执行
+      document.getElementById('taskRunBtn').addEventListener('click', () => {
+        Toast.success('任务已启动');
+        Modal.close('taskDetailModal');
+      });
+
+      // 设置按钮
+      document.getElementById('settingsBtn').addEventListener('click', () => {
+        Modal.open('settingsModal');
+      });
     })();
   </script>
 </body>

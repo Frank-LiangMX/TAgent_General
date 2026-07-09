@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../tagent.css" />
   <link rel="stylesheet" href="../materials.css" />
   <link rel="stylesheet" href="../components/shared.css" />
+  <link rel="stylesheet" href="../components/settings-dialog.css" />
 </head>
 <body>
   <!-- 主题切换器 -->
@@ -348,106 +349,8 @@
     </div>
   </div>
 
-  <!-- 设置弹窗 -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal-content" style="max-width:640px;max-height:80vh;overflow-y:auto;">
-      <div class="modal-header">
-        <h3 class="modal-title">设置</h3>
-        <button type="button" class="modal-close" data-modal-close>×</button>
-      </div>
-      <div class="modal-body">
-        <!-- 设置内容 -->
-        <div class="tabs-nav" style="margin-bottom:16px;">
-          <button type="button" class="tabs-tab is-active" data-settings-tab="account">账户</button>
-          <button type="button" class="tabs-tab" data-settings-tab="theme">主题</button>
-          <button type="button" class="tabs-tab" data-settings-tab="shortcuts">快捷键</button>
-          <button type="button" class="tabs-tab" data-settings-tab="api">API</button>
-        </div>
-
-        <div id="settingsContent">
-          <!-- 账户设置 -->
-          <div class="settings-panel is-active" data-panel="account">
-            <div class="form-group">
-              <label class="form-label">用户名</label>
-              <input type="text" class="form-input" value="Frank">
-            </div>
-            <div class="form-group">
-              <label class="form-label">邮箱</label>
-              <input type="email" class="form-input" value="frank@example.com">
-            </div>
-          </div>
-
-          <!-- 主题设置 -->
-          <div class="settings-panel" data-panel="theme" style="display:none;">
-            <div class="form-group">
-              <label class="form-label">颜色主题</label>
-              <div style="display:flex;gap:8px;margin-top:8px;">
-                <button type="button" class="theme-swatch is-active" data-pick="mist" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c5d0e2, #5b7fd4);"></button>
-                <button type="button" class="theme-swatch" data-pick="ocean" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c2d2e0, #4f8fc4);"></button>
-                <button type="button" class="theme-swatch" data-pick="moss" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #c6d4ca, #5a8f72);"></button>
-                <button type="button" class="theme-swatch" data-pick="dusk" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #d4ccc2, #a07a5e);"></button>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:16px;">
-              <label class="form-label">界面模式</label>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
-                <span style="font-size:13px;color:var(--text-soft);">深色模式</span>
-                <div class="toggle-switch" id="darkModeToggle"></div>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:12px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="font-size:13px;color:var(--text-soft);">液态玻璃效果</span>
-                <div class="toggle-switch" id="liquidToggle"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 快捷键设置 -->
-          <div class="settings-panel" data-panel="shortcuts" style="display:none;">
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
-                <span style="font-size:13px;">新会话</span>
-                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+N</code>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
-                <span style="font-size:13px;">搜索</span>
-                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+K</code>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
-                <span style="font-size:13px;">打开设置</span>
-                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Ctrl+/</code>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px;background:var(--glass-soft);border-radius:var(--r-sm);">
-                <span style="font-size:13px;">关闭对话框</span>
-                <code style="padding:2px 8px;background:var(--glass-strong);border-radius:var(--r-xs);font-size:12px;">Esc</code>
-              </div>
-            </div>
-          </div>
-
-          <!-- API 设置 -->
-          <div class="settings-panel" data-panel="api" style="display:none;">
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--glass-soft);border-radius:var(--r-md);">
-                <div>
-                  <div style="font-size:14px;font-weight:500;">Anthropic API</div>
-                  <div style="font-size:12px;color:var(--text-faint);">已配置</div>
-                </div>
-                <button type="button" class="btn-secondary">更新</button>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--glass-soft);border-radius:var(--r-md);">
-                <div>
-                  <div style="font-size:14px;font-weight:500;">OpenAI API</div>
-                  <div style="font-size:12px;color:var(--text-faint);">未配置</div>
-                </div>
-                <button type="button" class="btn-primary">配置</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- 设置弹窗（SettingsModal 渲染双浮岛内容） -->
+  <div class="modal-overlay settings-dialog-overlay" id="settingsModal"></div>
 
   <script src="../mock/data.js"></script>
   <script src="../components/shared.js"></script>
@@ -533,35 +436,7 @@
         processToggle.setAttribute("aria-expanded", open ? "true" : "false");
       });
 
-      // ========== 设置弹窗 ==========
-      document.getElementById("settingsBtn")?.addEventListener("click", () => {
-        Modal.open("settingsModal");
-      });
-
-      // 设置 Tab 切换
-      document.querySelectorAll("[data-settings-tab]").forEach((tab) => {
-        tab.addEventListener("click", () => {
-          document.querySelectorAll("[data-settings-tab]").forEach((t) => t.classList.remove("is-active"));
-          tab.classList.add("is-active");
-          const panel = tab.dataset.settingsTab;
-          document.querySelectorAll(".settings-panel").forEach((p) => {
-            p.style.display = p.dataset.panel === panel ? "block" : "none";
-          });
-        });
-      });
-
-      // 深色模式开关
-      const darkToggle = document.getElementById("darkModeToggle");
-      if (darkToggle) {
-        darkToggle.classList.toggle("is-active", root.dataset.mode === "dark");
-        darkToggle.addEventListener("click", () => {
-          const newMode = root.dataset.mode === "dark" ? "light" : "dark";
-          ThemeManager.apply(root.dataset.theme, newMode, root.dataset.material);
-          darkToggle.classList.toggle("is-active", newMode === "dark");
-        });
-      }
-
-      // 液态玻璃开关
+      // ========== 液态玻璃开关 ==========
       const liquidToggle = document.getElementById("liquidToggle");
       if (liquidToggle) {
         liquidToggle.classList.toggle("is-active", root.dataset.material === "liquid");
@@ -585,7 +460,6 @@
         inputArea.addEventListener("keydown", (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            // 发送消息
             const content = inputArea.value.trim();
             if (content) {
               Toast.success("消息已发送");

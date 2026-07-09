@@ -146,7 +146,9 @@
 }
 
 [data-material="liquid"] .content-base-plate,
-[data-material="liquid"] .glass-island {
+[data-material="liquid"] .glass-island,
+[data-material="liquid"] .settings-nav-island,
+[data-material="liquid"] .settings-content-island {
   border: 1px solid var(--rim);
   background:
     linear-gradient(
@@ -162,7 +164,9 @@
 }
 
 [data-material="liquid"][data-mode="light"] .content-base-plate,
-[data-material="liquid"][data-mode="light"] .glass-island {
+[data-material="liquid"][data-mode="light"] .glass-island,
+[data-material="liquid"][data-mode="light"] .settings-nav-island,
+[data-material="liquid"][data-mode="light"] .settings-content-island {
   background:
     linear-gradient(
       165deg,
@@ -184,7 +188,9 @@
 }
 
 [data-material="liquid"][data-mode="dark"] .content-base-plate,
-[data-material="liquid"][data-mode="dark"] .glass-island {
+[data-material="liquid"][data-mode="dark"] .glass-island,
+[data-material="liquid"][data-mode="dark"] .settings-nav-island,
+[data-material="liquid"][data-mode="dark"] .settings-content-island {
   background:
     linear-gradient(
       165deg,
