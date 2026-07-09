@@ -420,8 +420,9 @@ export function ScrollMinimap({ items }: ScrollMinimapProps): React.ReactElement
             <div className="px-3 py-2 border-b shrink-0">
               <SearchInput
                 ref={searchInputRef}
-                variant="muted"
+                variant="plain"
                 size="sm"
+                containerClassName="app-search-shell app-search-shell--compact"
                 placeholder="搜索消息..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

@@ -331,8 +331,8 @@ export function TabSwitcher(): ReactElement | null {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div className="session-glass-overlay absolute inset-0" />
 
-      <div className="session-glass-surface session-glass-modal relative min-w-[420px] max-w-[540px] overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-b border-border/40 bg-muted/30">
+      <div className="session-glass-surface session-glass-modal material-switcher-shell relative min-w-[420px] max-w-[540px] overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-border/40 bg-muted/30 px-5 py-2.5">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[13px] font-medium text-foreground">切换会话</span>
           </div>
@@ -379,7 +379,7 @@ export function TabSwitcher(): ReactElement | null {
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-2 px-5 py-2 border-t border-border/40 bg-muted/30 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-t border-border/40 bg-muted/30 px-5 py-2 text-[11px] text-muted-foreground">
           <span className="truncate">松开 Ctrl 确认，也可以直接点击选择</span>
           <div className="flex items-center gap-1 shrink-0">
             <Kbd>Esc</Kbd>
@@ -416,7 +416,7 @@ function SwitcherCandidateRow({
       className={cn(
         'relative flex items-center gap-3 w-full pl-5 pr-5 py-2.5 text-[15px] text-left cursor-default transition-colors',
         active
-          ? 'bg-primary/15 text-foreground'
+          ? 'material-switcher-row-active text-foreground'
           : hoverEnabled
             ? 'text-muted-foreground hover:bg-muted/40'
             : 'text-muted-foreground'
@@ -437,13 +437,13 @@ function SwitcherCandidateRow({
           aria-hidden="true"
         />
       )}
-      <span className="w-auto px-2 shrink-0 text-[10px] leading-4 rounded-full bg-foreground/[0.06] text-foreground/45 font-medium flex items-center gap-1">
+      <span className="material-inline-chip flex w-auto shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] leading-4 font-medium text-foreground/45">
         <Bot className="size-2.5" />
         Agent
       </span>
       <span className="flex-1 min-w-0 truncate">{candidate.title}</span>
       {candidate.workspaceName && (
-        <span className="shrink-0 px-1.5 py-0 rounded-full bg-primary/10 text-[10px] leading-4 workspace-badge font-medium truncate max-w-[110px]">
+        <span className="material-inline-chip workspace-badge max-w-[110px] shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] leading-4 font-medium">
           {candidate.workspaceName}
         </span>
       )}
@@ -453,7 +453,7 @@ function SwitcherCandidateRow({
 
 function Kbd({ children }: { children: ReactNode }): ReactElement {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded border border-border/60 bg-background/80 text-[10px] font-medium text-foreground/80 shadow-sm">
+    <kbd className="material-inline-chip inline-flex h-[18px] min-w-[20px] items-center justify-center rounded-full border border-border/60 px-1.5 text-[10px] font-medium text-foreground/80 shadow-sm">
       {children}
     </kbd>
   )

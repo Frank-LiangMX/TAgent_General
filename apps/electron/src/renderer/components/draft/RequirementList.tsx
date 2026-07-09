@@ -48,7 +48,7 @@ export function RequirementList({ requirements }: RequirementListProps): React.R
       <h2 className="text-sm font-medium text-foreground/70">需求列表</h2>
 
       {requirements.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/40 bg-muted/20 px-6 py-8 text-center">
+        <div className="material-flat-input rounded-xl border border-dashed border-border/40 bg-muted/20 px-6 py-8 text-center">
           <p className="text-sm text-muted-foreground/50 mb-1">暂无需求块</p>
           <p className="text-[11px] text-muted-foreground/40">点击下方按钮添加第一个需求</p>
         </div>
@@ -62,7 +62,7 @@ export function RequirementList({ requirements }: RequirementListProps): React.R
       <button
         type="button"
         onClick={addRequirement}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-border/40 text-[12px] text-foreground/40 hover:text-foreground/60 hover:border-border/60 hover:bg-muted/10 transition-colors"
+        className="material-inline-chip w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 py-2.5 text-[12px] text-foreground/40 transition-colors hover:border-border/60 hover:bg-muted/10 hover:text-foreground/60"
       >
         <Plus size={14} />
         <span>添加需求</span>

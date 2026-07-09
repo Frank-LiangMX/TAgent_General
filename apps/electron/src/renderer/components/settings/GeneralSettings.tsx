@@ -171,10 +171,10 @@ export function GeneralSettings(): React.ReactElement {
     <div className="space-y-6">
       {/* 用户档案 */}
       <SettingsSection title="用户档案" description="头像与昵称，用于会话中显示你的身份。">
-        <div className="settings-card flex items-center gap-4 p-4">
+        <div className="settings-card settings-profile-card flex items-center gap-4 p-4">
           <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
             <PopoverTrigger asChild>
-              <div className="relative group/avatar cursor-pointer shrink-0">
+              <div className="settings-profile-avatar relative group/avatar cursor-pointer shrink-0">
                 <UserAvatar avatar={userProfile.avatar} size={48} />
                 <div className="absolute inset-0 rounded-[20%] flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                   <Camera className="size-4 text-white" />
@@ -185,7 +185,7 @@ export function GeneralSettings(): React.ReactElement {
               side="right"
               align="start"
               sideOffset={8}
-              className="w-auto p-0 border-none shadow-xl overflow-hidden"
+              className="settings-profile-popover w-auto p-0 border-none shadow-xl overflow-hidden"
               onWheel={(e) => e.stopPropagation()}
             >
               <Picker
@@ -200,7 +200,7 @@ export function GeneralSettings(): React.ReactElement {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                className="settings-profile-upload-btn w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               >
                 <ImagePlus className="size-3.5" />
                 上传图片
@@ -231,9 +231,12 @@ export function GeneralSettings(): React.ReactElement {
                   }}
                   maxLength={30}
                   autoFocus
-                  className="text-base font-medium bg-transparent border-b border-primary outline-none w-[140px]"
+                  className="settings-profile-name-input w-[176px] text-base font-medium outline-none"
                 />
-                <button onClick={handleSaveName} className="p-1 hover:bg-muted rounded">
+                <button
+                  onClick={handleSaveName}
+                  className="settings-profile-action-btn settings-profile-action-btn--confirm"
+                >
                   <Check className="size-3.5 text-primary" />
                 </button>
                 <button
@@ -241,7 +244,7 @@ export function GeneralSettings(): React.ReactElement {
                     setNameInput(userProfile.userName)
                     setIsEditingName(false)
                   }}
-                  className="p-1 hover:bg-muted rounded"
+                  className="settings-profile-action-btn"
                 >
                   <X className="size-3.5 text-muted-foreground" />
                 </button>
@@ -252,7 +255,7 @@ export function GeneralSettings(): React.ReactElement {
                   setNameInput(userProfile.userName)
                   setIsEditingName(true)
                 }}
-                className="text-base font-medium text-foreground hover:text-primary transition-colors"
+                className="settings-profile-name-button text-base font-medium text-foreground transition-colors"
               >
                 {userProfile.userName}
               </button>
@@ -402,7 +405,7 @@ function SoundRow({
           value={currentId}
           onValueChange={(v) => onSoundChange(type, v as NotificationSoundId)}
         >
-          <SelectTrigger className="w-[120px] h-8 text-xs bg-transparent border-border/50">
+          <SelectTrigger className="w-[120px] h-8 rounded-[14px] text-xs bg-transparent border-border/50">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -418,7 +421,7 @@ function SoundRow({
           type="button"
           onClick={() => playNotificationSound(currentId)}
           disabled={currentId === 'none'}
-          className="p-1.5 rounded hover:bg-muted disabled:opacity-50"
+          className="settings-profile-action-btn p-1.5 disabled:opacity-50"
         >
           <Volume2 className="size-3.5 text-muted-foreground" />
         </button>

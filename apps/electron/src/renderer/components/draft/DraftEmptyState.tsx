@@ -5,7 +5,16 @@
  */
 
 import { useSetAtom } from 'jotai'
-import { FileText, ListChecks, CheckCircle2, Rocket, Sparkles, ArrowRight } from 'lucide-react'
+import {
+  FileText,
+  ListChecks,
+  CheckCircle2,
+  Rocket,
+  Sparkles,
+  ArrowRight,
+  PencilRuler,
+  Workflow,
+} from 'lucide-react'
 import * as React from 'react'
 
 import type { RequirementBlock } from '@tagent/shared'
@@ -142,6 +151,9 @@ export function DraftEmptyState(): React.ReactElement {
       <div className="max-w-3xl mx-auto px-8 py-10">
         {/* 标题区 */}
         <div className="text-center mb-8">
+          <div className="material-panel-card mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl">
+            <PencilRuler size={24} className="text-primary" />
+          </div>
           <h1 className="text-2xl font-semibold text-foreground mb-2">📝 需求草稿</h1>
           <p className="text-sm text-muted-foreground">
             清晰描述你的需求，让 Agent 准确理解并执行
@@ -150,8 +162,8 @@ export function DraftEmptyState(): React.ReactElement {
 
         {/* 步骤引导 */}
         <div className="grid grid-cols-3 gap-4 mb-10">
-          <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <div className="material-panel-card rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+            <div className="material-inline-chip mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <FileText size={18} className="text-primary" />
             </div>
             <h3 className="text-sm font-medium text-foreground mb-1">背景上下文</h3>
@@ -159,8 +171,8 @@ export function DraftEmptyState(): React.ReactElement {
               项目目标、约束条件、技术栈
             </p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <div className="material-panel-card rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+            <div className="material-inline-chip mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <ListChecks size={18} className="text-primary" />
             </div>
             <h3 className="text-sm font-medium text-foreground mb-1">需求拆解</h3>
@@ -168,8 +180,8 @@ export function DraftEmptyState(): React.ReactElement {
               把大需求拆成可执行的小任务
             </p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <div className="material-panel-card rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+            <div className="material-inline-chip mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <CheckCircle2 size={18} className="text-primary" />
             </div>
             <h3 className="text-sm font-medium text-foreground mb-1">验收标准</h3>
@@ -181,11 +193,11 @@ export function DraftEmptyState(): React.ReactElement {
 
         {/* 快速开始按钮 */}
         <div className="flex justify-center gap-3 mb-10">
-          <Button onClick={startFromScratch} className="gap-2">
+          <Button onClick={startFromScratch} className="material-cta gap-2 rounded-full border-0">
             <Rocket size={14} />
             从空白开始
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="material-secondary-btn gap-2 rounded-full border-0">
             <Sparkles size={14} />
             让 AI 帮我拆解
           </Button>
@@ -203,7 +215,7 @@ export function DraftEmptyState(): React.ReactElement {
                 key={template.id}
                 type="button"
                 onClick={() => applyTemplate(template)}
-                className="group w-full text-left rounded-xl border border-border/50 bg-card/30 hover:bg-card/60 hover:border-border/70 px-5 py-4 transition-all"
+                className="material-panel-card group w-full text-left rounded-xl border border-border/50 bg-card/30 hover:bg-card/60 hover:border-border/70 px-5 py-4 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -219,7 +231,7 @@ export function DraftEmptyState(): React.ReactElement {
                       {template.requirements.map((req) => (
                         <span
                           key={req.label}
-                          className="inline-flex items-center rounded-md bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground/70"
+                          className="material-inline-chip inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground/70"
                         >
                           {req.label}
                         </span>
@@ -233,7 +245,10 @@ export function DraftEmptyState(): React.ReactElement {
         </div>
 
         {/* 流程说明 */}
-        <div className="rounded-xl border border-border/30 bg-muted/20 px-5 py-4">
+        <div className="material-flat-input rounded-xl border border-border/30 bg-muted/20 px-5 py-4">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-foreground/60">
+            <Workflow size={14} className="text-primary/80" />
+          </div>
           <h3 className="text-xs font-medium text-foreground/60 mb-2">💡 工作流程</h3>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70">
             <span className="px-2 py-0.5 rounded bg-muted/40">草稿</span>

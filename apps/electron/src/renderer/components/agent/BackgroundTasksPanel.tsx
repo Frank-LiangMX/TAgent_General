@@ -35,7 +35,7 @@ export function BackgroundTasksPanel({
       <div className="text-xs text-foreground/60 mb-1.5 px-0.5">{tasks.length} 个后台任务：</div>
 
       {/* 任务表格 */}
-      <div className="rounded-md border border-border/50 overflow-hidden bg-muted/20">
+      <div className="material-panel-card overflow-hidden rounded-xl border border-border/50 bg-muted/20">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border/50 bg-muted/30">
@@ -58,7 +58,7 @@ export function BackgroundTasksPanel({
               return (
                 <tr
                   key={task.toolUseId}
-                  className="border-b border-border/30 last:border-b-0 hover:bg-muted/30 transition-colors"
+                  className="border-b border-border/30 transition-colors last:border-b-0 hover:bg-muted/30"
                 >
                   {/* 序号 */}
                   <td className="py-1.5 px-2 text-foreground/40 font-mono text-[10px]">
@@ -75,7 +75,7 @@ export function BackgroundTasksPanel({
 
                   {/* 状态 */}
                   <td className="py-1.5 px-2">
-                    <div className="flex items-center gap-1">
+                    <div className="material-inline-chip inline-flex items-center gap-1 rounded-full px-2 py-0.5">
                       <Loader2 className="size-2.5 animate-spin text-primary" />
                       <span className="text-primary font-medium text-[11px]">运行中</span>
                     </div>

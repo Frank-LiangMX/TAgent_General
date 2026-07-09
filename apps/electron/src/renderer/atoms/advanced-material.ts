@@ -1,43 +1,87 @@
 /**
- * 高级材质（玻璃质感）偏好
+ * 高级材质偏好
  *
- * 开启：高透玻璃（backdrop-filter + 环境高光伪元素）
- * 关闭：普通材质（html.material-frosted，适度 blur + 半透明，无伪元素折射）
+ * - glass: 高透玻璃
+ * - frosted: 低透磨砂玻璃
+ * - neumorph: 轻拟态
  */
 
 import { atom } from 'jotai'
 
-import { DEFAULT_ADVANCED_MATERIAL_ENABLED } from '../../types'
+import {
+  DEFAULT_ADVANCED_MATERIAL_ENABLED,
+  DEFAULT_ADVANCED_MATERIAL_MODE,
+  type AdvancedMaterialMode,
+  type AppSettings,
+} from '../../types'
 
-/** 是否启用高级材质（高透玻璃） */
-export const advancedMaterialEnabledAtom = atom<boolean>(DEFAULT_ADVANCED_MATERIAL_ENABLED)
+export const advancedMaterialModeAtom = atom<AdvancedMaterialMode>(
+  DEFAULT_ADVANCED_MATERIAL_MODE
+)
 
-/** 将材质偏好应用到 DOM */
-export function applyAdvancedMaterialToDOM(enabled: boolean): void {
-  document.documentElement.classList.toggle('material-frosted', !enabled)
+function isAdvancedMaterialMode(value: unknown): value is AdvancedMaterialMode {
+  return value === 'glass' || value === 'frosted' || value === 'neumorph'
 }
 
-/** 从主进程加载并应用 */
+function resolveAdvancedMaterialMode(settings: Partial<AppSettings>): AdvancedMaterialMode {
+  if (isAdvancedMaterialMode(settings.advancedMaterialMode)) {
+    return settings.advancedMaterialMode
+  }
+
+  if (settings.themeStyle === 'neumorph-light' || settings.themeStyle === 'neumorph-dark') {
+    return 'neumorph'
+  }
+
+  if (typeof settings.advancedMaterialEnabled === 'boolean') {
+    return settings.advancedMaterialEnabled ? 'glass' : 'frosted'
+  }
+
+  return DEFAULT_ADVANCED_MATERIAL_MODE
+}
+
+function syncNeumorphThemeClass(mode: AdvancedMaterialMode): void {
+  const html = document.documentElement
+  html.classList.remove('theme-neumorph-light', 'theme-neumorph-dark')
+
+  if (mode !== 'neumorph') return
+
+  html.classList.add(html.classList.contains('dark') ? 'theme-neumorph-dark' : 'theme-neumorph-light')
+}
+
+export function applyAdvancedMaterialToDOM(mode: AdvancedMaterialMode): void {
+  const html = document.documentElement
+
+  html.classList.toggle('material-frosted', mode === 'frosted')
+  html.classList.toggle('material-neumorph', mode === 'neumorph')
+  syncNeumorphThemeClass(mode)
+}
+
 export async function initializeAdvancedMaterial(
-  setEnabled: (enabled: boolean) => void
+  setMode: (mode: AdvancedMaterialMode) => void
 ): Promise<void> {
   try {
     const settings = await window.electronAPI.getSettings()
-    const enabled = settings.advancedMaterialEnabled ?? DEFAULT_ADVANCED_MATERIAL_ENABLED
-    setEnabled(enabled)
-    applyAdvancedMaterialToDOM(enabled)
+    const mode = resolveAdvancedMaterialMode(settings)
+    setMode(mode)
+    applyAdvancedMaterialToDOM(mode)
   } catch (error) {
-    console.error('[高级材质] 初始化失败:', error)
-    applyAdvancedMaterialToDOM(DEFAULT_ADVANCED_MATERIAL_ENABLED)
+    console.error('[高级材质] 初始化失败', error)
+    applyAdvancedMaterialToDOM(DEFAULT_ADVANCED_MATERIAL_MODE)
   }
 }
 
-/** 更新并持久化 */
-export async function updateAdvancedMaterialEnabled(enabled: boolean): Promise<void> {
-  applyAdvancedMaterialToDOM(enabled)
+export async function updateAdvancedMaterialMode(mode: AdvancedMaterialMode): Promise<void> {
+  applyAdvancedMaterialToDOM(mode)
   try {
-    await window.electronAPI.updateSettings({ advancedMaterialEnabled: enabled })
+    await window.electronAPI.updateSettings({
+      advancedMaterialMode: mode,
+      advancedMaterialEnabled: mode === 'glass',
+    })
   } catch (error) {
-    console.error('[高级材质] 持久化失败:', error)
+    console.error('[高级材质] 持久化失败', error)
   }
+}
+
+export function getLegacyAdvancedMaterialDefault(): boolean {
+  return DEFAULT_ADVANCED_MATERIAL_ENABLED
 }

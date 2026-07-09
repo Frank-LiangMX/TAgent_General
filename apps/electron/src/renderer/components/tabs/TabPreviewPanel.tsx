@@ -33,7 +33,7 @@ const PREVIEW_MD_COMPONENTS = {
     <pre className="text-[11px] opacity-70 truncate">{children}</pre>
   ),
   code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="text-[11px] bg-muted/50 px-0.5 rounded">{children}</code>
+    <code className="material-inline-chip rounded px-1 py-0.5 text-[11px]">{children}</code>
   ),
   img: () => null as unknown as React.ReactElement,
   a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
@@ -92,7 +92,7 @@ export function TabPreviewPanel({
       style={{ maxHeight: 'min(420px, 60vh)' }}
     >
       {/* 标题栏 */}
-      <div className="relative z-10 flex items-center justify-between px-3 py-2 border-b shrink-0 bg-muted/30">
+      <div className="relative z-10 flex shrink-0 items-center justify-between border-b bg-muted/30 px-3 py-2">
         <span className="text-xs font-medium text-popover-foreground/90 truncate flex-1 min-w-0">
           {title}
         </span>
@@ -109,7 +109,7 @@ export function TabPreviewPanel({
           items.map((item) => (
             <div
               key={item.id}
-              className="flex items-start gap-2 w-full rounded-md px-2 py-1.5 text-left"
+              className="flex w-full items-start gap-2 rounded-xl px-2 py-1.5 text-left"
             >
               <ItemIcon item={item} />
               <div className="flex-1 min-w-0">

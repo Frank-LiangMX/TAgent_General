@@ -98,7 +98,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
    * 底板向右延伸量，镜像左侧 navIslandWidth + SHELL_EDGE_PADDING。
    * rail 始终叠在底板上；面板展开/收起只改变 inset 中的面板段，避免 rail 与主区出现背景隔断。
    */
-  const contentBaseInsetRight = showRightPanel ? rightIslandWidth + SHELL_EDGE_PADDING : 0
+  const contentBaseInsetRight =
+    showRightPanel && isPanelOpen ? rightIslandWidth + SHELL_EDGE_PADDING : 0
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -153,24 +154,23 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         }}
       >
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
-          <NavIsland
-            showSidebar={showLeftSidebar}
-            sidebarWidth={navSidebarWidth}
-            railWidth={navRailWidth}
-          >
+          <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth} railWidth={navRailWidth}>
             <FunctionalRail />
-            {showLeftSidebar && (
-              <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
-            )}
+            {showLeftSidebar && <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />}
           </NavIsland>
         </div>
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
         {/* 右侧 rail 存在时由浮岛承担窗口右缘，隐藏全局 rim 避免与底板右缘叠出竖线 */}
-        {!showRightPanel && <div className="app-content-boundary-rim" aria-hidden />}
+        {(!showRightPanel || !isPanelOpen) && <div className="app-content-boundary-rim" aria-hidden />}
 
-        <div className="relative z-[60] min-w-0 flex-1 p-2">
+        <div
+          className={cn(
+            'relative z-[60] min-w-0 flex-1 p-2',
+            showRightPanel && isPanelOpen && 'pr-0'
+          )}
+        >
           <div
             className={cn(
               'content-main-shell relative h-full min-h-0',
@@ -182,9 +182,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               ['--content-base-inset-right' as string]: `${contentBaseInsetRight}px`,
               ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
-              ['--content-chrome-bleed-right' as string]: showRightPanel
+              ['--content-chrome-bleed-right' as string]: showRightPanel && isPanelOpen
                 ? `${SHELL_EDGE_PADDING}px`
                 : '0px',
+              ['--content-foreground-safe-right' as string]:
+                showRightPanel && !isPanelOpen
+                  ? `${RIGHT_PANEL_RAIL_WIDTH}px`
+                  : '0px',
             }}
           >
             <div className="content-base-plate content-base-plate--body" aria-hidden />
@@ -211,7 +215,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         </div>
 
         {showRightPanel && (
-          <div className="relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0">
+          <div
+            className={cn(
+              isPanelOpen
+                ? 'relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0'
+                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch p-2 pl-0'
+            )}
+          >
             {/* 拖拽调整宽度的接缝（仅在面板展开时可见） */}
             {isPanelOpen && (
               <div
@@ -225,7 +235,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
-                'relative ml-auto flex h-full min-h-0 flex-row overflow-hidden',
+                'relative ml-auto flex h-full min-h-0 flex-row justify-end overflow-hidden',
                 'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                 isPanelOpen && 'nav-island-glass--expanded',
                 isMac && 'right-nav-island-glass--mac'

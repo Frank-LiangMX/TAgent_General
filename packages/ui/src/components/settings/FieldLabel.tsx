@@ -32,7 +32,7 @@ export function FieldLabel({ label, description, icon }: FieldLabelProps): React
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              className="settings-inline-help flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
               onClick={(e) => e.preventDefault()}
             >
               <Info className="size-3.5" />

@@ -1338,15 +1338,15 @@ export function useGlobalAgentListeners(): void {
             return map
           })
 
-          // 递增消息刷新版本号，通知 AgentView 重新加载消息
-          const state = store.get(agentStreamingStatesAtom).get(data.sessionId)
-          if (!state?.running) {
-            store.set(agentMessageRefreshAtom, (prev) => {
-              const map = new Map(prev)
-              map.set(data.sessionId, (prev.get(data.sessionId) ?? 0) + 1)
-              return map
-            })
-          }
+          // 无条件 bumpRefresh，确保乐观消息被清理
+          // （并发守卫拒绝、IPC 失败等场景都会发送 STREAM_ERROR）
+          // 如果流式仍在运行（running=true），AgentView 的 refreshVersion useEffect 会跳过清理 liveMessages
+          // 只有在 running=false 时才会清理乐观消息并重新加载持久化消息
+          store.set(agentMessageRefreshAtom, (prev) => {
+            const map = new Map(prev)
+            map.set(data.sessionId, (prev.get(data.sessionId) ?? 0) + 1)
+            return map
+          })
         }) // unstable_batchedUpdates
       }
     )

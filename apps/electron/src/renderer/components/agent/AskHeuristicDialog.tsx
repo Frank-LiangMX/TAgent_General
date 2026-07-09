@@ -40,14 +40,14 @@ export function AskHeuristicDialog({
       onClick={() => onChoice('cancel')}
     >
       <div
-        className="bg-card rounded-xl shadow-2xl w-[min(90vw,440px)] p-5 animate-in zoom-in-95 duration-200"
+        className="material-panel-card w-[min(90vw,440px)] rounded-xl bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <div className="material-inline-chip flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
               <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
             </div>
             <h2 className="text-sm font-medium text-foreground">这条消息可能需要 Agent 档位</h2>
@@ -67,7 +67,7 @@ export function AskHeuristicDialog({
           运行命令 / 写代码…），建议切到 Agent 档位。
         </p>
 
-        <div className="rounded-md bg-muted/50 px-3 py-2 mb-4 max-h-32 overflow-y-auto">
+        <div className="material-flat-input mb-4 max-h-32 overflow-y-auto rounded-md bg-muted/50 px-3 py-2">
           <div className="text-[10px] font-medium text-muted-foreground mb-1">消息预览</div>
           <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
             {truncated}

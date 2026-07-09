@@ -20,7 +20,7 @@ export function RunHistoryPanel({ runs, onOpenSession }: RunHistoryPanelProps): 
 
   if (ordered.length === 0) {
     return (
-      <div className="rounded-xl bg-muted/20 px-4 py-8 text-center text-xs text-muted-foreground">
+      <div className="material-panel-card rounded-xl bg-muted/20 px-4 py-8 text-center text-xs text-muted-foreground">
         暂无运行记录
       </div>
     )
@@ -45,7 +45,7 @@ function RunHistoryItem({
   const statusMeta = getStatusMeta(run.status)
 
   return (
-    <div className="flex gap-3 rounded-xl border border-border/40 bg-card/40 px-3 py-2.5 shadow-sm">
+    <div className="material-panel-card flex gap-3 rounded-xl border border-border/40 bg-card/40 px-3 py-2.5 shadow-sm">
       <div className={cn('mt-0.5 shrink-0', statusMeta.className)}>{statusMeta.icon}</div>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center justify-between gap-2">
@@ -66,7 +66,7 @@ function RunHistoryItem({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[10px] text-blue-500 hover:text-blue-400"
+            className="material-inline-chip h-7 rounded-full px-2 text-[10px] text-blue-500 hover:text-blue-400"
             onClick={() => onOpenSession(run.sessionId)}
           >
             <ExternalLink size={12} className="mr-1" />

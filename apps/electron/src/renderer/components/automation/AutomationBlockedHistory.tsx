@@ -73,7 +73,7 @@ export function AutomationBlockedHistory(): React.ReactElement {
 
   if (blockedLogs.length === 0) {
     return (
-      <div className="rounded-xl bg-muted/20 px-4 py-8 text-center text-xs text-muted-foreground">
+      <div className="material-panel-card rounded-xl bg-muted/20 px-4 py-8 text-center text-xs text-muted-foreground">
         暂无拦截记录
       </div>
     )
@@ -134,7 +134,7 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
   }
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card/40 px-3 py-2.5 shadow-sm">
+    <div className="material-panel-card rounded-xl border border-border/40 bg-card/40 px-3 py-2.5 shadow-sm">
       <div className="flex items-start gap-2">
         <AlertTriangle size={14} className="mt-0.5 shrink-0 text-red-500" />
         <div className="min-w-0 flex-1 space-y-1">
@@ -149,21 +149,21 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
           <div className="flex flex-wrap items-center gap-1">
             <span
               className={cn(
-                'rounded px-1.5 py-0.5 text-[10px] font-medium',
+                'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
                 STAGE_CLASS[log.stage]
               )}
             >
               {STAGE_LABEL[log.stage]}
             </span>
             {log.strippedInvisibleCount > 0 ? (
-              <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-600 dark:text-blue-400">
+              <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-600 dark:text-blue-400">
                 剥离不可见字符 × {log.strippedInvisibleCount}
               </span>
             ) : null}
             {log.patterns.slice(0, 2).map((p) => (
               <span
                 key={p}
-                className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                className="material-inline-chip rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground"
               >
                 {p}
               </span>
@@ -178,7 +178,7 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
             type="button"
             variant="ghost"
             size="icon"
-            className="size-6 rounded-md text-muted-foreground hover:text-foreground"
+            className="material-inline-chip size-6 rounded-full text-muted-foreground hover:text-foreground"
             onClick={handleExpand}
             aria-label={expanded ? '收起' : '展开详情'}
           >
@@ -194,7 +194,7 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
             type="button"
             variant="ghost"
             size="icon"
-            className="size-6 rounded-md text-muted-foreground hover:text-red-500"
+            className="material-inline-chip size-6 rounded-full text-muted-foreground hover:text-red-500"
             onClick={onDelete}
             aria-label="删除"
           >
@@ -207,13 +207,13 @@ function BlockedHistoryItem({ log, onDelete }: BlockedHistoryItemProps): React.R
         <div className="mt-2 space-y-2 pl-5">
           <div>
             <p className="mb-1 text-[10px] font-medium text-muted-foreground">原始 prompt</p>
-            <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded bg-red-500/5 px-2 py-1 text-[10px] text-red-700 dark:text-red-300">
+            <pre className="material-flat-input max-h-32 overflow-auto whitespace-pre-wrap rounded px-2 py-1 text-[10px] text-red-700 dark:text-red-300">
               {detail.originalPrompt}
             </pre>
           </div>
           <div>
             <p className="mb-1 text-[10px] font-medium text-muted-foreground">剥离不可见字符后</p>
-            <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded bg-emerald-500/5 px-2 py-1 text-[10px] text-emerald-700 dark:text-emerald-300">
+            <pre className="material-flat-input max-h-32 overflow-auto whitespace-pre-wrap rounded px-2 py-1 text-[10px] text-emerald-700 dark:text-emerald-300">
               {detail.sanitizedPrompt}
             </pre>
           </div>

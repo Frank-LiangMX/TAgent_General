@@ -82,9 +82,9 @@ export function ComposerModeSelector({
             aria-label={isAskMode ? 'Ask 模式（点击切回 Agent）' : '切换到 Ask 模式'}
             onClick={toggleMode}
             className={cn(
-              'size-[36px] rounded-full',
+              'agent-toolbar-icon-btn size-[36px] rounded-full',
               isAskMode
-                ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10'
+                ? 'agent-toolbar-icon-btn--active text-primary'
                 : 'text-foreground/60 hover:text-foreground',
               className
             )}

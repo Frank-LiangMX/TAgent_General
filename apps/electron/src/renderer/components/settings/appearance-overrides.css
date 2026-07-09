@@ -772,6 +772,15 @@
   border: 1px solid hsl(var(--border) / 0.4);
 }
 
+.tagent-material-preview-neumorph {
+  background: linear-gradient(145deg, hsl(220 20% 96%) 0%, hsl(220 18% 90%) 100%);
+  border: 1px solid hsl(220 18% 88%);
+  box-shadow:
+    -5px -5px 10px rgba(255, 255, 255, 0.9),
+    5px 5px 12px rgba(148, 163, 184, 0.28),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.92);
+}
+
 .tagent-material-name {
   font-size: 0.7rem;
   font-weight: 500;

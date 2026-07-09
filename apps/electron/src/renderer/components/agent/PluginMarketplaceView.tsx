@@ -385,7 +385,7 @@ function MarketplaceBundleCard({
         }
       }}
       className={cn(
-        'flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
+        'material-panel-card flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
         'transition-colors hover:border-border/70 hover:bg-card/70',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
       )}
@@ -400,7 +400,7 @@ function MarketplaceBundleCard({
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
             {item.tier === 'recommended' ? (
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+              <span className="material-inline-chip rounded-full px-1.5 py-0.5 text-[9px] font-medium text-primary">
                 推荐
               </span>
             ) : null}
@@ -415,7 +415,7 @@ function MarketplaceBundleCard({
       </p>
       <div className="mt-4 flex justify-end">
         {installed ? (
-          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+          <span className="material-inline-chip inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 size={12} />
             已安装
           </span>
@@ -462,7 +462,7 @@ function MarketplaceItemCard({
         }
       }}
       className={cn(
-        'flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
+        'material-panel-card flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
         'transition-colors hover:border-border/70 hover:bg-card/70',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
       )}
@@ -482,7 +482,7 @@ function MarketplaceItemCard({
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
             {item.tier === 'recommended' ? (
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+              <span className="material-inline-chip rounded-full px-1.5 py-0.5 text-[9px] font-medium text-primary">
                 推荐
               </span>
             ) : null}
@@ -497,7 +497,7 @@ function MarketplaceItemCard({
       </p>
       <div className="mt-4 flex justify-end">
         {installed ? (
-          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+          <span className="material-inline-chip inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 size={12} />
             已安装
           </span>

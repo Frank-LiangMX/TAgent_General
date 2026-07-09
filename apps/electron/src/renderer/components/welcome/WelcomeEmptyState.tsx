@@ -73,6 +73,10 @@ export function WelcomeEmptyState(): React.ReactElement {
       {/* 操作提示 — supporting */}
       <p className="mt-2.5 text-[13px] text-muted-foreground">{tipText}</p>
 
+      <div className="material-inline-chip mt-6 inline-flex items-center rounded-full px-4 py-2 text-[11px] text-muted-foreground/75">
+        {isTAMode ? '先配置项目规则，再开始 TA 会话' : '从一个新会话开始，让 Agent 接入你的当前工作'}
+      </div>
+
       {/* 呼吸空间 — 信息区与操作区分离 */}
       <div className="h-14" />
 
@@ -84,7 +88,7 @@ export function WelcomeEmptyState(): React.ReactElement {
         }}
         disabled={creating}
         className={cn(
-          'mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-60'
+          'material-cta mt-3 inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-medium text-primary-foreground transition-colors disabled:pointer-events-none disabled:opacity-60'
         )}
       >
         {creating ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} />}

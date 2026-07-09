@@ -236,8 +236,8 @@ export function ProjectManagerDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md gap-0 p-0 overflow-hidden">
-          <DialogHeader className="px-5 py-4 border-b border-border/40">
+        <DialogContent className="session-glass-modal max-w-md gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b border-border/40 px-5 py-4">
             <DialogTitle>项目管理</DialogTitle>
             <DialogDescription className="mt-1 text-xs">
               每个项目对应一个本地代码目录，Agent 将在该目录内工作。
@@ -245,13 +245,13 @@ export function ProjectManagerDialog({
           </DialogHeader>
 
           {/* 顶部操作条：新建项目 */}
-          <div className="px-4 py-2 border-b border-border/30 flex-shrink-0">
+          <div className="shrink-0 border-b border-border/30 px-4 py-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={handleCreateProject}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors border border-dashed border-[hsl(var(--dashed-border))] hover:border-[hsl(var(--dashed-border-hover))]"
+                  className="material-inline-chip w-full rounded-xl border border-dashed border-[hsl(var(--dashed-border))] px-3 py-2 text-[12px] font-medium text-foreground/70 transition-colors hover:border-[hsl(var(--dashed-border-hover))] hover:bg-primary/10"
                 >
                   <Plus size={13} />
                   <span>选择目录新建项目</span>
@@ -278,9 +278,9 @@ export function ProjectManagerDialog({
                   onDragEnd={handleDragEnd}
                   onClick={() => handleSelect(ws)}
                   className={cn(
-                    'group w-full flex items-center gap-2 px-2 py-2 rounded-md text-[13px] transition-colors duration-100 cursor-pointer',
+                    'group material-inline-chip flex w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-[13px] transition-colors duration-100',
                     ws.id === currentWorkspaceId
-                      ? 'bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+                      ? 'material-selected-chip text-foreground'
                       : 'text-foreground/70 hover:bg-foreground/[0.04]',
                     dragId === ws.id && 'opacity-40'
                   )}
@@ -315,7 +315,7 @@ export function ProjectManagerDialog({
                       </div>
 
                       {ws.id === currentWorkspaceId && (
-                        <span className="flex-shrink-0 text-[10px] font-medium text-primary/70 uppercase tracking-wide">
+                        <span className="material-inline-chip flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary/70">
                           当前
                         </span>
                       )}
@@ -325,7 +325,7 @@ export function ProjectManagerDialog({
                           <TooltipTrigger asChild>
                             <button
                               onClick={(e) => handleStartRename(e, ws)}
-                              className="p-1 rounded hover:bg-foreground/[0.08] text-foreground/30 hover:text-foreground/60 transition-colors"
+                               className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-foreground/60"
                             >
                               <Pencil size={12} />
                             </button>
@@ -337,7 +337,7 @@ export function ProjectManagerDialog({
                             <TooltipTrigger asChild>
                               <button
                                 onClick={(e) => handleStartDelete(e, ws.id)}
-                                className="p-1 rounded hover:bg-destructive/10 text-foreground/30 hover:text-destructive transition-colors"
+                                 className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-destructive"
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -372,7 +372,7 @@ export function ProjectManagerDialog({
           if (!v) setDeleteTargetId(null)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="session-glass-modal">
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除项目</AlertDialogTitle>
             <AlertDialogDescription>

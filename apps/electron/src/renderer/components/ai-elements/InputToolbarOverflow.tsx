@@ -180,7 +180,7 @@ export function InputToolbarOverflow({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-[36px] shrink-0 rounded-full text-foreground/60 hover:text-foreground"
+                    className="agent-toolbar-icon-btn size-[36px] shrink-0 rounded-full text-foreground/60 hover:text-foreground"
                     aria-label="更多工具"
                   >
                     <MoreHorizontal className="size-5" />
@@ -194,7 +194,7 @@ export function InputToolbarOverflow({
             <PopoverContent
               side="top"
               align="end"
-              className="w-auto p-1.5"
+              className="agent-toolbar-popover w-auto p-1.5"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <div className="flex items-center gap-1.5">

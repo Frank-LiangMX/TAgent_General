@@ -627,37 +627,36 @@ export function SearchDialog(): React.ReactElement {
         <DialogTitle className="sr-only">搜索对话</DialogTitle>
         {/* 搜索输入框 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-          <Search size={16} className="text-foreground/40 flex-shrink-0" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={handleInputChange}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-            onKeyDown={handleKeyDown}
-            placeholder="输入关键词，按 Enter 或点击搜索"
-            className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-foreground/40 outline-none"
-          />
-          {query && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleClearQuery}
-                  className="p-0.5 rounded text-foreground/30 hover:text-foreground/60 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>清空</TooltipContent>
-            </Tooltip>
-          )}
+          <div className="app-search-shell app-search-shell--dialog flex-1 min-w-0">
+            <Search size={16} className="app-search-icon flex-shrink-0" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={handleInputChange}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
+              onKeyDown={handleKeyDown}
+              placeholder="输入关键词，按 Enter 或点击搜索"
+              className="app-search-field"
+            />
+            {query && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={handleClearQuery} className="app-search-clear">
+                    <X size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>清空</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <button
             onClick={() => void runSearch()}
             disabled={!canSearch}
             className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors',
+              'flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors',
               canSearch
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                ? 'material-cta text-primary-foreground'
                 : 'bg-foreground/[0.06] text-foreground/30 cursor-not-allowed'
             )}
           >
@@ -670,9 +669,9 @@ export function SearchDialog(): React.ReactElement {
                 onClick={() => void handleAgentSearch()}
                 disabled={trimmedQuery.length < 2}
                 className={cn(
-                  'flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors',
+                  'flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors',
                   trimmedQuery.length >= 2
-                    ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
+                    ? 'material-inline-chip text-blue-500 hover:bg-blue-500/20'
                     : 'bg-foreground/[0.06] text-foreground/30 cursor-not-allowed'
                 )}
               >
@@ -711,7 +710,7 @@ export function SearchDialog(): React.ReactElement {
                 <span>未找到匹配结果</span>
                 <button
                   onClick={() => void handleAgentSearch()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
+                  className="material-inline-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-blue-500 transition-colors hover:bg-blue-500/20"
                 >
                   <Bot size={12} />
                   <span>试试 Agent 搜索</span>
@@ -748,7 +747,7 @@ export function SearchDialog(): React.ReactElement {
                       (() => {
                         const wsName = getAgentWorkspaceName(result.id)
                         return wsName ? (
-                          <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-foreground/[0.06] text-[10px] leading-4 text-foreground/40 font-medium truncate max-w-[80px]">
+                          <span className="material-inline-chip max-w-[80px] flex-shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] leading-4 font-medium text-foreground/40">
                             {wsName}
                           </span>
                         ) : null
@@ -796,7 +795,7 @@ export function SearchDialog(): React.ReactElement {
                           (() => {
                             const wsName = getAgentWorkspaceName(result.id)
                             return wsName ? (
-                              <span className="flex-shrink-0 px-1.5 py-0 rounded-full bg-foreground/[0.06] text-[10px] leading-4 text-foreground/40 font-medium truncate max-w-[80px]">
+                              <span className="material-inline-chip max-w-[80px] flex-shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] leading-4 font-medium text-foreground/40">
                                 {wsName}
                               </span>
                             ) : null
@@ -825,17 +824,17 @@ export function SearchDialog(): React.ReactElement {
         {/* 底部快捷键提示 */}
         <div className="flex items-center gap-3 px-4 py-2 border-t border-border/30 text-[11px] text-foreground/30">
           <span className="flex items-center gap-1">
-            <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">↵</kbd>
+            <kbd className="material-inline-chip rounded-full px-1.5 py-0.5 font-mono">↵</kbd>
             <span>{isQueryDirty || !hasSearched ? '搜索' : '打开'}</span>
           </span>
           {allResults.length > 0 && (
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">↑↓</kbd>
+              <kbd className="material-inline-chip rounded-full px-1.5 py-0.5 font-mono">↑↓</kbd>
               <span>选择</span>
             </span>
           )}
           <span className="flex items-center gap-1">
-            <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">Esc</kbd>
+            <kbd className="material-inline-chip rounded-full px-1.5 py-0.5 font-mono">Esc</kbd>
             <span>关闭</span>
           </span>
         </div>

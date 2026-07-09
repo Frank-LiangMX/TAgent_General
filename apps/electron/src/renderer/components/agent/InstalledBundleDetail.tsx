@@ -26,7 +26,7 @@ export function InstalledBundleDetail({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft size={14} strokeWidth={1.75} />
           返回
@@ -57,7 +57,7 @@ export function InstalledBundleDetail({
                 <button
                   type="button"
                   onClick={() => onSelectItem(item)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-3 text-left transition-colors hover:border-border/70 hover:bg-card/70"
+                  className="material-panel-card flex w-full items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-3 text-left transition-colors hover:border-border/70 hover:bg-card/70"
                 >
                   <span
                     className={cn(
@@ -83,7 +83,7 @@ export function InstalledBundleDetail({
                   </div>
                   <span
                     className={cn(
-                      'shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium',
+                      'material-inline-chip shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium',
                       item.enabled
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                         : 'bg-muted text-muted-foreground'

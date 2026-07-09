@@ -471,6 +471,73 @@
     --dashed-border: 280 70% 65% / 0.35;
     --dashed-border-hover: 280 70% 65% / 0.50;
   }
+
+  /* ===== Soft UI / Neumorph ===== */
+
+  .theme-neumorph-light {
+    --background: 220 24% 92%;
+    --foreground: 220 18% 28%;
+    --content-area: 220 22% 94%;
+    --muted: 220 20% 88%;
+    --muted-foreground: 220 10% 46%;
+    --border: 220 16% 84%;
+    --primary: 220 20% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 18% 90%;
+    --secondary-foreground: 220 18% 28%;
+    --accent: 220 18% 86%;
+    --accent-foreground: 220 22% 30%;
+    --ring: 220 20% 56%;
+    --card: 220 22% 91%;
+    --card-foreground: 220 18% 28%;
+    --input: 220 22% 90%;
+    --popover: 220 20% 93%;
+    --popover-foreground: 220 18% 28%;
+    --dialog: 220 22% 94%;
+    --dialog-foreground: 220 18% 28%;
+    --tooltip: 220 18% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 220 12% 72%;
+    --code-bg: 220 16% 18%;
+    --dashed-border: 220 18% 45% / 0.28;
+    --dashed-border-hover: 220 18% 45% / 0.42;
+    --glass-ambient: 220 18% 94%;
+    --glass-rim: 220 16% 82%;
+    --shell-blob: 220 20% 84%;
+  }
+
+  .theme-neumorph-dark {
+    --background: 220 16% 16%;
+    --foreground: 220 15% 88%;
+    --content-area: 220 16% 14%;
+    --muted: 220 14% 19%;
+    --muted-foreground: 220 10% 64%;
+    --border: 220 12% 24%;
+    --input: 220 14% 19%;
+    --primary: 220 18% 72%;
+    --primary-foreground: 220 22% 14%;
+    --secondary: 220 12% 20%;
+    --secondary-foreground: 220 15% 88%;
+    --accent: 220 12% 22%;
+    --accent-foreground: 220 15% 88%;
+    --ring: 220 18% 72%;
+    --card: 220 16% 17%;
+    --card-foreground: 220 15% 88%;
+    --popover: 220 16% 17%;
+    --popover-foreground: 220 15% 88%;
+    --dialog: 220 14% 18%;
+    --dialog-foreground: 220 15% 88%;
+    --tooltip: 220 12% 24%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 220 10% 72%;
+    --code-bg: 220 16% 12%;
+    --dashed-border: 220 16% 76% / 0.24;
+    --dashed-border-hover: 220 16% 76% / 0.38;
+    --glass-shine: 220 14% 78%;
+    --glass-ambient: 220 10% 24%;
+    --glass-rim: 220 10% 30%;
+    --shell-blob: 220 12% 34%;
+  }
 }
 
 /*
@@ -989,6 +1056,8 @@ html.material-frosted .app-content-boundary-rim {
   pointer-events: none;
   isolation: isolate;
   will-change: top, left, width, height, opacity, transform;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 /* 跨组切换淡出层叠在按钮之上 */
@@ -1087,6 +1156,1171 @@ button:active:not(:disabled) {
   box-shadow:
     0 0 0 2px var(--tagent-brand-soft),
     0 0 12px -4px var(--tagent-brand-glow);
+}
+
+.settings-nav-group-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 0.4rem;
+  border: 1px solid hsl(var(--border) / 0.36);
+  background: hsl(var(--background) / 0.22);
+}
+
+.settings-nav-group-label {
+  padding: 0 0.35rem 0.4rem;
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground) / 0.78);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.settings-nav-item {
+  border: 1px solid transparent;
+}
+
+.settings-nav-item--active {
+  color: hsl(var(--foreground));
+}
+
+.settings-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--background) / 0.72);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.settings-search-shell:focus-within {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.04),
+    0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+.settings-search-icon {
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-search-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: hsl(var(--foreground));
+}
+
+.settings-search-field::placeholder {
+  color: hsl(var(--muted-foreground) / 0.78);
+}
+
+.settings-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-search-clear:hover {
+  background: hsl(var(--foreground) / 0.05);
+  color: hsl(var(--foreground));
+}
+
+.settings-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.55rem;
+  padding-inline: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.64);
+  background: hsl(var(--muted) / 0.55);
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.settings-search-results {
+  padding: 0.35rem;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--popover) / 0.96);
+  box-shadow:
+    0 16px 36px -22px hsl(var(--foreground) / 0.22),
+    0 8px 18px -14px hsl(var(--foreground) / 0.12);
+}
+
+html.theme-neumorph-light,
+html.theme-neumorph-dark {
+  --neumorph-light-edge: rgba(255, 255, 255, 0.92);
+  --neumorph-light-edge-soft: rgba(255, 255, 255, 0.52);
+  --neumorph-dark-edge: rgba(10, 18, 30, 0.28);
+  --neumorph-dark-edge-soft: rgba(10, 18, 30, 0.14);
+  --neumorph-shadow-hi: -10px -10px 24px var(--neumorph-light-edge-soft);
+  --neumorph-shadow-lo: 12px 12px 28px var(--neumorph-dark-edge-soft);
+  --neumorph-inset:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.34);
+}
+
+html.theme-neumorph-dark {
+  --neumorph-light-edge: rgba(255, 255, 255, 0.08);
+  --neumorph-light-edge-soft: rgba(255, 255, 255, 0.04);
+  --neumorph-dark-edge: rgba(0, 0, 0, 0.46);
+  --neumorph-dark-edge-soft: rgba(0, 0, 0, 0.28);
+}
+
+html.theme-neumorph-light .settings-glass,
+html.theme-neumorph-dark .settings-glass {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  border-color: hsl(var(--border) / 0.82);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-glass::before,
+html.theme-neumorph-light .settings-glass::after,
+html.theme-neumorph-dark .settings-glass::before,
+html.theme-neumorph-dark .settings-glass::after {
+  display: none;
+}
+
+html.theme-neumorph-light .settings-card,
+html.theme-neumorph-dark .settings-card {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  border: 1px solid hsl(var(--border) / 0.88);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-card::after,
+html.theme-neumorph-dark .settings-card::after {
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+}
+
+html.theme-neumorph-light .settings-nav-group-card,
+html.theme-neumorph-dark .settings-nav-group-card {
+  padding: 0.5rem;
+  border-radius: 18px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.4rem)) calc(-1 * max(6px, 0.4rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.4rem) max(6px, 0.4rem) 18px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-nav-group-label,
+html.theme-neumorph-dark .settings-nav-group-label {
+  padding: 0.1rem 0.45rem 0.45rem;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.1em;
+}
+
+html.theme-neumorph-light .settings-nav-group-card .list-slide-indicator,
+html.theme-neumorph-dark .settings-nav-group-card .list-slide-indicator {
+  display: none;
+}
+
+html.theme-neumorph-light .list-slide-host .list-slide-indicator,
+html.theme-neumorph-dark .list-slide-host .list-slide-indicator {
+  display: none;
+}
+
+html.theme-neumorph-light .settings-nav-item,
+html.theme-neumorph-dark .settings-nav-item {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    transform 80ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+html.theme-neumorph-light .settings-nav-item:hover,
+html.theme-neumorph-dark .settings-nav-item:hover {
+  background: hsl(var(--foreground) / 0.03);
+}
+
+html.theme-neumorph-light .settings-nav-item:active,
+html.theme-neumorph-dark .settings-nav-item:active,
+html.theme-neumorph-light .rail-island-btn:active,
+html.theme-neumorph-dark .rail-island-btn:active,
+html.theme-neumorph-light .agent-toolbar-icon-btn:active,
+html.theme-neumorph-dark .agent-toolbar-icon-btn:active,
+html.theme-neumorph-light .agent-toolbar-pill-btn:active,
+html.theme-neumorph-dark .agent-toolbar-pill-btn:active {
+  transform: scale(0.97);
+}
+
+html.theme-neumorph-light .settings-nav-item--active,
+html.theme-neumorph-dark .settings-nav-item--active {
+  border-color: hsl(var(--border) / 0.95);
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft),
+    1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .settings-nav-item--active .shrink-0,
+html.theme-neumorph-dark .settings-nav-item--active .shrink-0 {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .settings-nav-item.list-slide-item--ghost,
+html.theme-neumorph-dark .settings-nav-item.list-slide-item--ghost {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help),
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help) {
+  border: 1px solid hsl(var(--border) / 0.82);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.35rem)) calc(-1 * max(6px, 0.35rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.35rem) max(6px, 0.35rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover,
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--border));
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .settings-search-results)
+  :is(input, textarea, select, button[role='combobox']),
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .settings-search-results)
+  :is(input, textarea, select, button[role='combobox']) {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  border: 1px solid hsl(var(--border) / 0.92);
+  border-radius: 16px;
+  box-shadow:
+    inset 4px 4px 10px var(--neumorph-dark-edge-soft),
+    inset -4px -4px 10px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass)
+  :is(input, textarea, select, button[role='combobox']):focus,
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass)
+  :is(input, textarea, select, button[role='combobox']):focus {
+  box-shadow:
+    inset 4px 4px 10px var(--neumorph-dark-edge-soft),
+    inset -4px -4px 10px var(--neumorph-light-edge-soft),
+    0 0 0 2px hsl(var(--primary) / 0.18);
+}
+
+html.theme-neumorph-light .settings-inline-help,
+html.theme-neumorph-dark .settings-inline-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-inline-help:hover,
+html.theme-neumorph-dark .settings-inline-help:hover {
+  transform: none;
+  border-color: transparent;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-search-shell,
+html.theme-neumorph-dark .settings-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  height: 2.2rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .settings-search-shell:focus-within,
+html.theme-neumorph-dark .settings-search-shell:focus-within {
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+html.theme-neumorph-light .settings-search-icon,
+html.theme-neumorph-dark .settings-search-icon {
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .settings-search-field,
+html.theme-neumorph-dark .settings-search-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .settings-search-field::placeholder,
+html.theme-neumorph-dark .settings-search-field::placeholder {
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+html.theme-neumorph-light .settings-search-clear,
+html.theme-neumorph-dark .settings-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .settings-search-clear:hover,
+html.theme-neumorph-dark .settings-search-clear:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .settings-search-kbd,
+html.theme-neumorph-dark .settings-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  height: 1.5rem;
+  padding-inline: 0.5rem;
+  border-color: hsl(var(--border) / 0.8);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(3px, 0.2rem)) calc(-1 * max(3px, 0.2rem)) 8px var(--neumorph-light-edge-soft),
+    max(3px, 0.2rem) max(3px, 0.2rem) 10px var(--neumorph-dark-edge-soft);
+}
+
+html.theme-neumorph-light .app-search-shell,
+html.theme-neumorph-dark .app-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.88);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .app-search-shell:focus-within,
+html.theme-neumorph-dark .app-search-shell:focus-within {
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+html.theme-neumorph-light .app-search-shell--compact,
+html.theme-neumorph-dark .app-search-shell--compact {
+  height: 2rem;
+  padding: 0 0.7rem;
+}
+
+html.theme-neumorph-light .app-search-shell--dialog,
+html.theme-neumorph-dark .app-search-shell--dialog {
+  height: 2.25rem;
+  padding: 0 0.78rem;
+}
+
+html.theme-neumorph-light .app-search-icon,
+html.theme-neumorph-dark .app-search-icon {
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .app-search-shell > input,
+html.theme-neumorph-dark .app-search-shell > input,
+html.theme-neumorph-light .ui-search-input.app-search-shell > input,
+html.theme-neumorph-dark .ui-search-input.app-search-shell > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.88rem;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .app-search-field::placeholder,
+html.theme-neumorph-dark .app-search-field::placeholder,
+html.theme-neumorph-light .app-search-shell > input::placeholder,
+html.theme-neumorph-dark .app-search-shell > input::placeholder {
+  color: hsl(var(--muted-foreground) / 0.7);
+}
+
+html.theme-neumorph-light .ui-search-input.app-search-shell > div,
+html.theme-neumorph-dark .ui-search-input.app-search-shell > div {
+  gap: 0.35rem;
+}
+
+html.theme-neumorph-light .app-search-clear,
+html.theme-neumorph-dark .app-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .app-search-clear:hover,
+html.theme-neumorph-dark .app-search-clear:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .shell-glass,
+html.theme-neumorph-dark .shell-glass {
+  background:
+    radial-gradient(circle at 14% 12%, hsl(var(--foreground) / 0.045), transparent 24%),
+    radial-gradient(circle at 85% 10%, hsl(var(--foreground) / 0.035), transparent 22%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+}
+
+html.theme-neumorph-light .nav-island-glass,
+html.theme-neumorph-dark .nav-island-glass,
+html.theme-neumorph-light .right-nav-island-glass.nav-island-glass,
+html.theme-neumorph-dark .right-nav-island-glass.nav-island-glass {
+  border: 1px solid hsl(var(--border) / 0.94);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(10px, 0.6rem)) calc(-1 * max(10px, 0.6rem)) 24px var(--neumorph-light-edge-soft),
+    max(10px, 0.6rem) max(10px, 0.6rem) 28px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .nav-island-glass::before,
+html.theme-neumorph-light .nav-island-glass::after,
+html.theme-neumorph-dark .nav-island-glass::before,
+html.theme-neumorph-dark .nav-island-glass::after,
+html.theme-neumorph-light .content-glass::before,
+html.theme-neumorph-light .content-glass::after,
+html.theme-neumorph-dark .content-glass::before,
+html.theme-neumorph-dark .content-glass::after,
+html.theme-neumorph-light .session-glass-surface::before,
+html.theme-neumorph-light .session-glass-surface::after,
+html.theme-neumorph-dark .session-glass-surface::before,
+html.theme-neumorph-dark .session-glass-surface::after,
+html.theme-neumorph-light .chat-input-glass::before,
+html.theme-neumorph-light .chat-input-glass::after,
+html.theme-neumorph-dark .chat-input-glass::before,
+html.theme-neumorph-dark .chat-input-glass::after {
+  display: none;
+}
+
+html.theme-neumorph-light
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+html.theme-neumorph-dark
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  border: 1px solid hsl(var(--border) / 0.38);
+  border-left-color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      hsl(var(--card) / 0.08) 10px,
+      hsl(var(--card) / 0.18) 18px,
+      hsl(var(--card) / 0.3) 28px
+    ),
+    linear-gradient(145deg, hsl(var(--card) / 0.5) 0%, hsl(var(--muted) / 0.44) 100%);
+  box-shadow: inset 1px 1px 0 hsl(var(--background) / 0.18);
+}
+
+html.theme-neumorph-light
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover,
+html.theme-neumorph-dark
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  border: 1px solid hsl(var(--border) / 0.68);
+  border-left-color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      hsl(var(--card) / 0.34) 10px,
+      hsl(var(--card) / 0.72) 18px,
+      hsl(var(--card) / 0.92) 28px
+    ),
+    linear-gradient(145deg, hsl(var(--card) / 0.92) 0%, hsl(var(--muted) / 0.88) 100%);
+  box-shadow:
+    0 1px 0 var(--neumorph-light-edge),
+    max(8px, 0.5rem) max(8px, 0.5rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .content-base-plate--body,
+html.theme-neumorph-dark .content-base-plate--body {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    inset -1px -1px 0 hsl(var(--foreground) / 0.03),
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px hsl(var(--background) / 0.7),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px hsl(var(--foreground) / 0.05);
+}
+
+html.theme-neumorph-light .content-main-shell .content-glass,
+html.theme-neumorph-dark .content-main-shell .content-glass {
+  background: linear-gradient(145deg, hsl(var(--card) / 0.54) 0%, hsl(var(--background) / 0.3) 100%);
+  border-color: hsl(var(--border) / 0.42);
+  box-shadow:
+    calc(-1 * max(5px, 0.3rem)) calc(-1 * max(5px, 0.3rem)) 14px hsl(var(--background) / 0.7),
+    max(5px, 0.3rem) max(5px, 0.3rem) 16px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 hsl(var(--background) / 0.46);
+}
+
+html.theme-neumorph-light .nav-island-header-row > *,
+html.theme-neumorph-dark .nav-island-header-row > * {
+  border: 1px solid hsl(var(--border) / 0.86);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 10px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 12px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .rail-island-btn,
+html.theme-neumorph-dark .rail-island-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .rail-island-btn:hover,
+html.theme-neumorph-dark .rail-island-btn:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .rail-island-btn--active,
+html.theme-neumorph-dark .rail-island-btn--active,
+html.theme-neumorph-light .session-list-item-active,
+html.theme-neumorph-dark .session-list-item-active,
+html.theme-neumorph-light .session-item-selected,
+html.theme-neumorph-dark .session-item-selected {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.22),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .right-rail-btn.rail-island-btn--active,
+html.theme-neumorph-dark .right-rail-btn.rail-island-btn--active {
+  box-shadow:
+    0 4px 10px -9px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .session-list-row,
+html.theme-neumorph-dark .session-list-row {
+  position: relative;
+  isolation: isolate;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+html.theme-neumorph-light .session-list-row:hover:not(.session-list-item-active),
+html.theme-neumorph-dark .session-list-row:hover:not(.session-list-item-active) {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .session-list-item-active::after,
+html.theme-neumorph-dark .session-list-item-active::after,
+html.theme-neumorph-light .session-item-selected::after,
+html.theme-neumorph-dark .session-item-selected::after {
+  content: '';
+  position: absolute;
+  left: 0.45rem;
+  top: 50%;
+  width: 0.28rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.45) 100%);
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.16);
+  pointer-events: none;
+}
+
+html.theme-neumorph-light .session-list-item-active .session-sidebar-accent--inline,
+html.theme-neumorph-dark .session-list-item-active .session-sidebar-accent--inline {
+  display: none;
+}
+
+html.theme-neumorph-light .session-list-item-active .workspace-badge,
+html.theme-neumorph-dark .session-list-item-active .workspace-badge,
+html.theme-neumorph-light .session-item-selected .workspace-badge,
+html.theme-neumorph-dark .session-item-selected .workspace-badge,
+html.theme-neumorph-light .rail-island-btn--active,
+html.theme-neumorph-dark .rail-island-btn--active {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .app-search-result-item,
+html.theme-neumorph-dark .app-search-result-item,
+html.theme-neumorph-light .settings-search-result-item,
+html.theme-neumorph-dark .settings-search-result-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .app-search-result-item--active,
+html.theme-neumorph-dark .app-search-result-item--active,
+html.theme-neumorph-light .settings-search-result-item--active,
+html.theme-neumorph-dark .settings-search-result-item--active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .app-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-dark .app-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-light .settings-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-dark .settings-search-result-item--active :is(svg, .text-muted-foreground) {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn,
+html.theme-neumorph-dark .agent-toolbar-icon-btn,
+html.theme-neumorph-light .agent-toolbar-pill-btn,
+html.theme-neumorph-dark .agent-toolbar-pill-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    transform 80ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn:hover,
+html.theme-neumorph-dark .agent-toolbar-icon-btn:hover,
+html.theme-neumorph-light .agent-toolbar-pill-btn:hover,
+html.theme-neumorph-dark .agent-toolbar-pill-btn:hover {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn--active,
+html.theme-neumorph-dark .agent-toolbar-icon-btn--active,
+html.theme-neumorph-light .agent-toolbar-pill-btn--active,
+html.theme-neumorph-dark .agent-toolbar-pill-btn--active {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.22),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .agent-toolbar-pill-btn,
+html.theme-neumorph-dark .agent-toolbar-pill-btn {
+  min-height: 2rem;
+  padding-inline: 0.72rem;
+  border-radius: 999px;
+}
+
+html.theme-neumorph-light .agent-toolbar-popover,
+html.theme-neumorph-dark .agent-toolbar-popover {
+  border-radius: 22px;
+  border: 1px solid hsl(var(--border) / 0.92);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item,
+html.theme-neumorph-dark .agent-toolbar-popover-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item:hover:not(:disabled),
+html.theme-neumorph-dark .agent-toolbar-popover-item:hover:not(:disabled) {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item--active,
+html.theme-neumorph-dark .agent-toolbar-popover-item--active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.06);
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented.ui-segmented-tabs,
+html.theme-neumorph-dark .agent-toolbar-segmented.ui-segmented-tabs {
+  padding: 5px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-indicator,
+html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-indicator {
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px) / var(--ui-segmented-count));
+  border-radius: 14px;
+  border: 1px solid hsl(var(--border) / 0.86);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.07) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.04);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-item,
+html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-item {
+  min-height: 34px;
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .ui-switch,
+html.theme-neumorph-dark .ui-switch {
+  border: 1px solid hsl(var(--border) / 0.9);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .agent-toolbar-switch.ui-switch,
+html.theme-neumorph-dark .agent-toolbar-switch.ui-switch {
+  border-color: hsl(var(--border) / 0.82);
+  background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 2px 2px 5px var(--neumorph-dark-edge-soft),
+    inset -2px -2px 5px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-switch.ui-switch[data-state='checked'],
+html.theme-neumorph-dark .agent-toolbar-switch.ui-switch[data-state='checked'] {
+  background: linear-gradient(145deg, hsl(var(--primary) / 0.18) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 2px 2px 5px hsl(var(--primary) / 0.14),
+    inset -2px -2px 5px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-switch .ui-switch-thumb,
+html.theme-neumorph-dark .agent-toolbar-switch .ui-switch-thumb {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    0 3px 8px -8px hsl(var(--foreground) / 0.3),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .chat-input-glass,
+html.theme-neumorph-dark .chat-input-glass {
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(9px, 0.55rem)) calc(-1 * max(9px, 0.55rem)) 20px var(--neumorph-light-edge-soft),
+    max(9px, 0.55rem) max(9px, 0.55rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .chat-input-glass:focus-within,
+html.theme-neumorph-dark .chat-input-glass:focus-within {
+  box-shadow:
+    calc(-1 * max(9px, 0.55rem)) calc(-1 * max(9px, 0.55rem)) 20px var(--neumorph-light-edge-soft),
+    max(9px, 0.55rem) max(9px, 0.55rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+html.theme-neumorph-light .session-glass-surface,
+html.theme-neumorph-light .session-glass-sidebar,
+html.theme-neumorph-light .session-glass-modal,
+html.theme-neumorph-light .session-glass-modal-lg,
+html.theme-neumorph-light .session-glass-popover,
+html.theme-neumorph-dark .session-glass-surface,
+html.theme-neumorph-dark .session-glass-sidebar,
+html.theme-neumorph-dark .session-glass-modal,
+html.theme-neumorph-dark .session-glass-modal-lg,
+html.theme-neumorph-dark .session-glass-popover {
+  border: 1px solid hsl(var(--border) / 0.92);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(8px, 0.5rem)) calc(-1 * max(8px, 0.5rem)) 20px var(--neumorph-light-edge-soft),
+    max(8px, 0.5rem) max(8px, 0.5rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .tabbar-bg,
+html.theme-neumorph-dark .tabbar-bg {
+  background: linear-gradient(180deg, hsl(var(--background) / 0.34) 0%, hsl(var(--background) / 0.12) 100%);
+  box-shadow: inset 0 -1px 0 hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .tab-item-selected,
+html.theme-neumorph-dark .tab-item-selected {
+  border-color: hsl(var(--border) / 0.9);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-neumorph-light .neumorph-panel-card,
+html.theme-neumorph-dark .neumorph-panel-card,
+html.theme-neumorph-light .material-panel-card,
+html.theme-neumorph-dark .material-panel-card,
+html.theme-neumorph-light .neumorph-dialog-shell,
+html.theme-neumorph-dark .neumorph-dialog-shell {
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.38rem)) calc(-1 * max(6px, 0.38rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.38rem) max(6px, 0.38rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-flat-input,
+html.theme-neumorph-dark .neumorph-flat-input,
+html.theme-neumorph-light .material-flat-input,
+html.theme-neumorph-dark .material-flat-input,
+html.theme-neumorph-light .neumorph-placeholder-shell,
+html.theme-neumorph-dark .neumorph-placeholder-shell,
+html.theme-neumorph-light .neumorph-footer-bar,
+html.theme-neumorph-dark .neumorph-footer-bar {
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: linear-gradient(145deg, hsl(var(--muted) / 0.72) 0%, hsl(var(--background) / 0.66) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .neumorph-inline-chip,
+html.theme-neumorph-dark .neumorph-inline-chip {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+html.theme-neumorph-light .material-inline-chip,
+html.theme-neumorph-dark .material-inline-chip {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+html.theme-neumorph-light .neumorph-inline-chip:hover,
+html.theme-neumorph-dark .neumorph-inline-chip:hover {
+  border-color: hsl(var(--border) / 0.78);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 72%);
+  box-shadow:
+    0 5px 12px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .material-inline-chip:hover,
+html.theme-neumorph-dark .material-inline-chip:hover {
+  border-color: hsl(var(--border) / 0.78);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 72%);
+  box-shadow:
+    0 5px 12px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-cta,
+html.theme-neumorph-dark .neumorph-cta,
+html.theme-neumorph-light .material-cta,
+html.theme-neumorph-dark .material-cta {
+  border: 1px solid hsl(var(--primary) / 0.22);
+  background:
+    linear-gradient(145deg, hsl(var(--primary) / 0.92) 0%, hsl(var(--primary) / 0.72) 100%),
+    linear-gradient(180deg, hsl(var(--background) / 0.08) 0%, transparent 100%);
+  box-shadow:
+    0 10px 20px -14px hsl(var(--primary) / 0.5),
+    inset 1px 1px 0 hsl(255 255 255 / 0.34);
+}
+
+html.theme-neumorph-light .neumorph-cta:hover,
+html.theme-neumorph-dark .neumorph-cta:hover,
+html.theme-neumorph-light .material-cta:hover,
+html.theme-neumorph-dark .material-cta:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 22px -14px hsl(var(--primary) / 0.56),
+    inset 1px 1px 0 hsl(255 255 255 / 0.4);
+}
+
+html.theme-neumorph-light .neumorph-secondary-btn,
+html.theme-neumorph-dark .neumorph-secondary-btn,
+html.theme-neumorph-light .material-secondary-btn,
+html.theme-neumorph-dark .material-secondary-btn {
+  border: 1px solid hsl(var(--border) / 0.88);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(5px, 0.32rem)) calc(-1 * max(5px, 0.32rem)) 14px var(--neumorph-light-edge-soft),
+    max(5px, 0.32rem) max(5px, 0.32rem) 16px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-switcher-shell,
+html.theme-neumorph-dark .neumorph-switcher-shell,
+html.theme-neumorph-light .material-switcher-shell,
+html.theme-neumorph-dark .material-switcher-shell {
+  border-radius: 26px;
+}
+
+html.theme-neumorph-light .neumorph-switcher-row-active,
+html.theme-neumorph-dark .neumorph-switcher-row-active,
+html.theme-neumorph-light .material-switcher-row-active,
+html.theme-neumorph-dark .material-switcher-row-active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 4px 10px -10px hsl(var(--foreground) / 0.2);
+}
+
+html.theme-neumorph-light .neumorph-workspace-active,
+html.theme-neumorph-dark .neumorph-workspace-active,
+html.theme-neumorph-light .material-selected-chip,
+html.theme-neumorph-dark .material-selected-chip {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-footer-bar,
+html.theme-neumorph-dark .neumorph-footer-bar {
+  border-width: 1px 0 0;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(180deg, hsl(var(--background) / 0.14) 0%, transparent 100%),
+    linear-gradient(145deg, hsl(var(--muted) / 0.66) 0%, hsl(var(--background) / 0.62) 100%);
+}
+
+html.theme-neumorph-light .neumorph-footer-separator,
+html.theme-neumorph-dark .neumorph-footer-separator {
+  background: linear-gradient(180deg, transparent 0%, hsl(var(--foreground) / 0.12) 50%, transparent 100%);
+}
+
+html.theme-neumorph-light .settings-search-results,
+html.theme-neumorph-dark .settings-search-results {
+  padding: 0.35rem;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    var(--neumorph-shadow-hi),
+    var(--neumorph-shadow-lo),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-search-result-item,
+html.theme-neumorph-dark .settings-search-result-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .settings-search-result-item:hover,
+html.theme-neumorph-dark .settings-search-result-item:hover {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .settings-search-result-item.bg-accent,
+html.theme-neumorph-dark .settings-search-result-item.bg-accent {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .settings-profile-card,
+html.theme-neumorph-dark .settings-profile-card {
+  align-items: center;
+}
+
+html.theme-neumorph-light .settings-profile-avatar,
+html.theme-neumorph-dark .settings-profile-avatar {
+  border-radius: 20px;
+}
+
+html.theme-neumorph-light .settings-profile-popover,
+html.theme-neumorph-dark .settings-profile-popover {
+  border-radius: 24px;
+}
+
+html.theme-neumorph-light .settings-profile-upload-btn,
+html.theme-neumorph-dark .settings-profile-upload-btn {
+  border-width: 0;
+  border-top: 1px solid hsl(var(--border) / 0.7);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-profile-upload-btn:hover,
+html.theme-neumorph-dark .settings-profile-upload-btn:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.04);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-profile-name-button,
+html.theme-neumorph-dark .settings-profile-name-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 16px;
+}
+
+html.theme-neumorph-light .settings-profile-name-input,
+html.theme-neumorph-dark .settings-profile-name-input {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+}
+
+html.theme-neumorph-light .settings-profile-action-btn,
+html.theme-neumorph-dark .settings-profile-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
 }
 
 /* 会话输入框聚焦发光效果 */
@@ -3174,6 +4408,10 @@ html:not(.dark) .btw-panel-glass::after,
   min-height: 0;
 }
 
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-main-foreground {
+  padding-right: var(--content-foreground-safe-right, 0px);
+}
+
 .content-main-body {
   border-radius:
     var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
@@ -3772,15 +5010,20 @@ html.material-frosted .content-main-shell .content-glass {
   border: 1px solid transparent;
   box-shadow: none;
   transition:
+    transform 0.08s ease,
     color 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .rail-island-btn:hover {
   color: hsl(var(--foreground) / 0.72);
   background: hsl(var(--foreground) / 0.05);
+}
+
+.rail-island-btn:active {
+  transform: scale(0.96);
 }
 
 .rail-island-btn--active {
@@ -4033,6 +5276,17 @@ html:not(.dark) .rail-slide-indicator {
     transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
     width 260ms cubic-bezier(0.16, 1, 0.3, 1),
     height 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.theme-neumorph-light .agent-model-list-selection--neumorph,
+html.theme-neumorph-dark .agent-model-list-selection--neumorph {
+  border: 1px solid hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -12px hsl(var(--foreground) / 0.18),
+    inset 1px 1px 0 var(--neumorph-light-edge);
 }
 
 .dark .agent-model-popover {

@@ -129,7 +129,7 @@ export function PermissionModeSelector({
               aria-label={config.label}
               disabled
               className={cn(
-                'h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5 opacity-50 cursor-not-allowed',
+                'agent-toolbar-pill-btn agent-toolbar-pill-btn--disabled h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5 opacity-50 cursor-not-allowed',
                 'text-[12px] font-medium',
                 colorClass
               )}
@@ -161,8 +161,9 @@ export function PermissionModeSelector({
                 variant="ghost"
                 aria-label={config.label}
                 className={cn(
-                  'h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5',
+                  'agent-toolbar-pill-btn h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5',
                   'text-[12px] font-medium hover:bg-accent',
+                  open && 'agent-toolbar-pill-btn--active',
                   colorClass
                 )}
               >
@@ -183,7 +184,7 @@ export function PermissionModeSelector({
         side="top"
         align="center"
         sideOffset={8}
-        className="w-auto min-w-[200px] p-2"
+        className="agent-toolbar-popover w-auto min-w-[200px] p-2"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col gap-0.5">
@@ -198,9 +199,9 @@ export function PermissionModeSelector({
                   selectMode(k)
                 }}
                 className={cn(
-                  'flex items-start gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors',
+                  'agent-toolbar-popover-item flex items-start gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors',
                   'hover:bg-accent hover:text-accent-foreground',
-                  mode === k && 'bg-accent/50'
+                  mode === k && 'agent-toolbar-popover-item--active'
                 )}
               >
                 <ModeIcon className="size-4 mt-0.5 shrink-0 text-foreground/70" />

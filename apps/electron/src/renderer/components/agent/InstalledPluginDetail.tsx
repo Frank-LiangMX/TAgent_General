@@ -57,7 +57,7 @@ export function InstalledPluginDetail({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft size={14} strokeWidth={1.75} />
           返回
@@ -163,7 +163,7 @@ function InstalledSkillDetail({
             </div>
           </div>
           {skill ? (
-            <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2">
+            <div className="material-panel-card flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2">
               <span className="text-[11px] text-muted-foreground">启用</span>
               <Switch
                 checked={skill.enabled}
@@ -194,7 +194,7 @@ function InstalledSkillDetail({
         {body ? (
           <section className="space-y-2">
             <h3 className="text-[12px] font-semibold text-foreground">说明预览</h3>
-            <div className="max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-muted/10 p-4 scrollbar-thin">
+            <div className="material-flat-input max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-muted/10 p-4 scrollbar-thin">
               <div className="prose prose-sm dark:prose-invert max-w-none text-[12px] leading-6 text-foreground/85">
                 <Markdown remarkPlugins={[remarkGfm]}>{body}</Markdown>
               </div>
@@ -367,7 +367,7 @@ function InstalledMcpDetail({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2">
+            <div className="material-panel-card flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2">
               <span className="text-[11px] text-muted-foreground">启用</span>
               <Switch
                 checked={entry.enabled}
@@ -394,25 +394,26 @@ function InstalledMcpDetail({
             <Button
               variant="outline"
               size="sm"
+              className="material-secondary-btn rounded-full border-0"
               onClick={() => void handleTest()}
               disabled={testing}
             >
               {testing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               <span className="ml-1">{testing ? '测试中' : '测试连接'}</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Button variant="outline" size="sm" className="material-secondary-btn rounded-full border-0" onClick={() => setEditOpen(true)}>
               <Pencil size={14} />
               <span className="ml-1">编辑连接</span>
             </Button>
             {!entry.isBuiltin ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={deleting}>
+                  <Button variant="outline" size="sm" className="material-secondary-btn rounded-full border-0" disabled={deleting}>
                     <Trash2 size={14} />
                     <span className="ml-1">删除</span>
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="session-glass-modal">
                   <AlertDialogHeader>
                     <AlertDialogTitle>删除 MCP 服务器</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -472,7 +473,7 @@ function McpEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
+      <DialogContent className="session-glass-modal max-h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
         <DialogHeader className="px-6 pb-4 pt-6">
           <DialogTitle>编辑 MCP：{serverName}</DialogTitle>
           <DialogDescription>修改连接配置后保存即可生效</DialogDescription>

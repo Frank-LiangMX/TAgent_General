@@ -14,14 +14,20 @@ import { Check } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
-import type { MarkdownFontSize, TAgentBrand, ThemeMode, ThemeStyle } from '../../../types'
+import type {
+  AdvancedMaterialMode,
+  MarkdownFontSize,
+  TAgentBrand,
+  ThemeMode,
+  ThemeStyle,
+} from '../../../types'
 import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primitives'
 
 import './appearance-overrides.css'
 
 import {
-  advancedMaterialEnabledAtom,
-  updateAdvancedMaterialEnabled,
+  advancedMaterialModeAtom,
+  updateAdvancedMaterialMode,
 } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
@@ -82,7 +88,17 @@ interface SpecialStyle {
   variant: 'light' | 'dark'
   tag: string
   previewClass: string
-  deco: 'cloud' | 'wave' | 'leaf' | 'star' | 'moon' | 'gem' | 'sun' | 'flame' | 'flower' | 'orb'
+  deco:
+    | 'cloud'
+    | 'wave'
+    | 'leaf'
+    | 'star'
+    | 'moon'
+    | 'gem'
+    | 'sun'
+    | 'flame'
+    | 'flower'
+    | 'orb'
 }
 
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
@@ -182,7 +198,7 @@ export function AppearanceSettings(): React.ReactElement {
   const systemIsDark = useAtomValue(systemIsDarkAtom)
   const [markdownFontSize, setMarkdownFontSize] = useAtom(markdownFontSizeAtom)
   const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
-  const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
+  const [advancedMaterialMode, setAdvancedMaterialMode] = useAtom(advancedMaterialModeAtom)
   const [tagentBrand, setTagentBrand] = useAtom(tagentBrandAtom)
 
   /** 切换皮肤 */
@@ -243,11 +259,11 @@ export function AppearanceSettings(): React.ReactElement {
 
   /** 切换高级材质 */
   const handleAdvancedMaterialChange = React.useCallback(
-    (checked: boolean) => {
-      setAdvancedMaterialEnabled(checked)
-      void updateAdvancedMaterialEnabled(checked)
+    (mode: AdvancedMaterialMode) => {
+      setAdvancedMaterialMode(mode)
+      void updateAdvancedMaterialMode(mode)
     },
-    [setAdvancedMaterialEnabled]
+    [setAdvancedMaterialMode]
   )
 
   /** 切换品牌色 */
@@ -320,13 +336,16 @@ export function AppearanceSettings(): React.ReactElement {
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">高级材质</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {advancedMaterialEnabled
-                  ? '当前：高透玻璃 · backdrop-filter + 折射伪元素'
-                  : '当前：轻量磨砂 · 适度模糊 + 半透明，无折射'}
+                {advancedMaterialMode === 'glass' &&
+                  '当前：高透玻璃，强调通透、折射和悬浮感'}
+                {advancedMaterialMode === 'frosted' &&
+                  '当前：磨砂玻璃，保留层次感，但更克制、更稳'}
+                {advancedMaterialMode === 'neumorph' &&
+                  '当前：轻拟态，整体转为柔和起伏的实体材质语言'}
               </div>
             </div>
             <MaterialPreview
-              enabled={advancedMaterialEnabled}
+              mode={advancedMaterialMode}
               onToggle={handleAdvancedMaterialChange}
             />
           </div>
@@ -717,45 +736,61 @@ function FontSizeSlider({ value, onChange }: FontSizePreviewProps): React.ReactE
 }
 
 interface MaterialPreviewProps {
-  enabled: boolean
-  onToggle: (enabled: boolean) => void
+  mode: AdvancedMaterialMode
+  onToggle: (mode: AdvancedMaterialMode) => void
 }
 
 /** 高级材质：玻璃/磨砂 二选一预览 */
-function MaterialPreview({ enabled, onToggle }: MaterialPreviewProps): React.ReactElement {
+function MaterialPreview({ mode, onToggle }: MaterialPreviewProps): React.ReactElement {
   return (
     <div className="tagent-material-pair">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggle(true)}
-            aria-pressed={enabled}
-            data-selected={enabled}
+            onClick={() => onToggle('glass')}
+            aria-pressed={mode === 'glass'}
+            data-selected={mode === 'glass'}
             className="tagent-material-tile"
           >
             <div className="tagent-material-preview tagent-material-preview-glass" />
-            <div className="tagent-material-name">高透</div>
+            <div className="tagent-material-name">高透玻璃</div>
             <div className="tagent-material-tag">Glass</div>
           </button>
         </TooltipTrigger>
-        <TooltipContent>高透玻璃</TooltipContent>
+        <TooltipContent>透明感最强，悬浮和高光最明显</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggle(false)}
-            aria-pressed={!enabled}
-            data-selected={!enabled}
+            onClick={() => onToggle('frosted')}
+            aria-pressed={mode === 'frosted'}
+            data-selected={mode === 'frosted'}
             className="tagent-material-tile"
           >
             <div className="tagent-material-preview tagent-material-preview-frosted" />
-            <div className="tagent-material-name">磨砂</div>
+            <div className="tagent-material-name">磨砂玻璃</div>
             <div className="tagent-material-tag">Frosted</div>
           </button>
         </TooltipTrigger>
-        <TooltipContent>轻量磨砂</TooltipContent>
+        <TooltipContent>更内敛的玻璃层次，适合长期使用</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onToggle('neumorph')}
+            aria-pressed={mode === 'neumorph'}
+            data-selected={mode === 'neumorph'}
+            className="tagent-material-tile"
+          >
+            <div className="tagent-material-preview tagent-material-preview-neumorph" />
+            <div className="tagent-material-name">轻拟态</div>
+            <div className="tagent-material-tag">Neumorph</div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>统一转为柔和实体表面，不再混用玻璃高光</TooltipContent>
       </Tooltip>
     </div>
   )

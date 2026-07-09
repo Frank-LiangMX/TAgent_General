@@ -7,10 +7,30 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-import { DEFAULT_THEME_MODE } from '../../types'
+import { DEFAULT_THEME_MODE, DEFAULT_ADVANCED_MATERIAL_MODE } from '../../types'
 
 import type { AppSettings } from '../../types'
 import { getSettingsPath } from './config-paths'
+
+function resolveAdvancedMaterialMode(data: Partial<AppSettings>): AppSettings['advancedMaterialMode'] {
+  if (
+    data.advancedMaterialMode === 'glass' ||
+    data.advancedMaterialMode === 'frosted' ||
+    data.advancedMaterialMode === 'neumorph'
+  ) {
+    return data.advancedMaterialMode
+  }
+
+  if (data.themeStyle === 'neumorph-light' || data.themeStyle === 'neumorph-dark') {
+    return 'neumorph'
+  }
+
+  if (typeof data.advancedMaterialEnabled === 'boolean') {
+    return data.advancedMaterialEnabled ? 'glass' : 'frosted'
+  }
+
+  return DEFAULT_ADVANCED_MATERIAL_MODE
+}
 
 /**
  * 获取应用设置
@@ -23,6 +43,7 @@ export function getSettings(): AppSettings {
   if (!existsSync(filePath)) {
     return {
       themeMode: DEFAULT_THEME_MODE,
+      advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
       onboardingCompleted: false,
       environmentCheckSkipped: false,
       notificationsEnabled: true,
@@ -38,6 +59,7 @@ export function getSettings(): AppSettings {
     return {
       ...data,
       themeMode: data.themeMode || DEFAULT_THEME_MODE,
+      advancedMaterialMode: resolveAdvancedMaterialMode(data),
       onboardingCompleted: data.onboardingCompleted ?? false,
       environmentCheckSkipped: data.environmentCheckSkipped ?? false,
       notificationsEnabled: data.notificationsEnabled ?? true,
@@ -48,6 +70,7 @@ export function getSettings(): AppSettings {
     console.error('[设置] 读取失败:', error)
     return {
       themeMode: DEFAULT_THEME_MODE,
+      advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
       onboardingCompleted: false,
       environmentCheckSkipped: false,
       notificationsEnabled: true,

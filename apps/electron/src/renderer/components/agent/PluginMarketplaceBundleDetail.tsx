@@ -58,7 +58,7 @@ export function PluginMarketplaceBundleDetail({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft size={14} strokeWidth={1.75} />
           返回
@@ -126,14 +126,14 @@ export function PluginMarketplaceBundleDetail({
               </div>
 
               {fullyInstalled ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-[12px] font-medium text-emerald-700 dark:text-emerald-300">
+                <span className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-medium text-emerald-700 dark:text-emerald-300">
                   <CheckCircle2 size={14} />
                   已安装 {installedCount}/{totalItems}
                 </span>
               ) : (
                 <Button
                   size="sm"
-                  className="shrink-0 px-5"
+                  className="material-cta shrink-0 rounded-full border-0 px-5"
                   disabled={installing}
                   onClick={onInstall}
                 >
@@ -211,7 +211,7 @@ function BundleSubItem({
   installed: boolean
 }): React.ReactElement {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-card/40 p-4">
+    <div className="material-panel-card flex items-start gap-3 rounded-xl border border-border/50 bg-card/40 p-4">
       <span
         className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', iconClass)}
       >
@@ -221,7 +221,7 @@ function BundleSubItem({
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-[13px] font-medium text-foreground">{title}</p>
           {installed ? (
-            <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
+            <span className="material-inline-chip rounded-full px-1.5 py-0.5 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
               已安装
             </span>
           ) : null}

@@ -90,9 +90,9 @@ export function RequirementBlockCard({
   }
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] overflow-hidden">
+    <div className="material-panel-card overflow-hidden rounded-xl border border-border/50 bg-card/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.06)]">
       {/* 卡片头部：标签 + 完整性指示 + 标题 + 状态 */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30">
+      <div className="flex items-center gap-2.5 border-b border-border/30 px-4 py-3">
         <Badge
           variant="secondary"
           className={cn(
@@ -141,7 +141,7 @@ export function RequirementBlockCard({
             onChange={(e) => updateField('description', e.target.value)}
             placeholder="详细描述这个需求…"
             rows={3}
-            className="w-full text-sm text-foreground/80 bg-muted/30 rounded-lg px-3 py-2 outline-none resize-y min-h-[60px] placeholder:text-muted-foreground/40 focus:bg-muted/40 transition-colors"
+            className="material-flat-input min-h-[60px] w-full resize-y rounded-lg bg-muted/30 px-3 py-2 text-sm text-foreground/80 outline-none transition-colors placeholder:text-muted-foreground/40 focus:bg-muted/40"
           />
         )}
       </div>
@@ -152,12 +152,12 @@ export function RequirementBlockCard({
           <p className="text-[11px] font-medium text-foreground/50 mb-1.5">验收标准</p>
           <div className="space-y-1">
             {block.acceptanceCriteria.map((criterion) => (
-              <div key={criterion.id} className="flex items-center gap-2 group">
+              <div key={criterion.id} className="group flex items-center gap-2 rounded-full px-2 py-1">
                 <button
                   type="button"
                   onClick={() => updateCriterion(criterion.id, { checked: !criterion.checked })}
                   className={cn(
-                    'size-4 rounded-[4px] border shrink-0 flex items-center justify-center transition-colors',
+                    'flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors',
                     criterion.checked
                       ? 'bg-primary border-primary text-primary-foreground'
                       : 'border-border/60 hover:border-primary/50'
@@ -182,7 +182,7 @@ export function RequirementBlockCard({
                 <button
                   type="button"
                   onClick={() => removeCriterion(criterion.id)}
-                  className="p-0.5 rounded text-foreground/25 hover:text-destructive/70 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  className="shrink-0 rounded p-0.5 text-foreground/25 opacity-0 transition-all hover:text-destructive/70 group-hover:opacity-100"
                   aria-label="删除标准"
                 >
                   <X size={12} />
@@ -198,7 +198,7 @@ export function RequirementBlockCard({
         <button
           type="button"
           onClick={addCriterion}
-          className="flex items-center gap-1 text-[11px] text-foreground/40 hover:text-foreground/60 transition-colors"
+          className="material-inline-chip flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-foreground/40 transition-colors hover:text-foreground/60"
         >
           <Plus size={11} />
           <span>添加验收标准</span>

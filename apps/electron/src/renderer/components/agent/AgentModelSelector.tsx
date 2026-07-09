@@ -347,7 +347,7 @@ export function AgentModelSelector({
           {compact ? (
             <button
               type="button"
-              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="agent-toolbar-pill-btn flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <Cpu className="size-3.5" />
               <span className="max-w-[120px] truncate">
@@ -410,7 +410,7 @@ export function AgentModelSelector({
                   </div>
                 </div>
               </div>
-              <div className="rounded-md bg-foreground/6 px-2 py-1 text-[10px] text-muted-foreground ring-1 ring-foreground/6">
+              <div className="material-inline-chip px-2.5 py-1 text-[10px] text-muted-foreground">
                 {flatOptions.length} 个可用
               </div>
             </div>
@@ -424,6 +424,7 @@ export function AgentModelSelector({
               <SegmentedTabs
                 value={thinkingEnabled ? 'on' : 'off'}
                 onValueChange={(next) => handleThinkingSelect(next === 'on')}
+                className="agent-toolbar-segmented"
               >
                 <SegmentedTabsItem value="off">关闭思考</SegmentedTabsItem>
                 <SegmentedTabsItem value="on">自适应思考</SegmentedTabsItem>
@@ -431,16 +432,14 @@ export function AgentModelSelector({
 
               {thinkingEnabled ? (
                 <div className="space-y-2">
-                  <div className="flex w-full items-center justify-between rounded-xl bg-background/18 px-2.5 py-1.5 text-[11px] text-muted-foreground shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.16)]">
+                  <div className="material-flat-input flex w-full items-center justify-between px-3 py-2 text-[11px] text-muted-foreground">
                     <span>消息中展开思考内容</span>
                     <Switch
                       checked={thinkingExpanded}
                       onCheckedChange={setThinkingExpanded}
                       className={cn(
-                        'h-5 w-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0',
-                        'data-[state=unchecked]:bg-foreground/10 dark:data-[state=unchecked]:bg-foreground/18',
-                        'data-[state=checked]:!bg-foreground/18 dark:data-[state=checked]:!bg-foreground/24',
-                        'shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.24),0_0_0_1px_hsl(var(--foreground)/0.08)]'
+                        'agent-toolbar-switch',
+                        'h-5 w-9 focus-visible:ring-0 focus-visible:ring-offset-0'
                       )}
                     />
                   </div>
@@ -448,6 +447,7 @@ export function AgentModelSelector({
                   <SegmentedTabs
                     value={effectiveEffort}
                     onValueChange={(next) => handleEffortSelect(next as AgentEffort)}
+                    className="agent-toolbar-segmented"
                   >
                     {EFFORT_OPTIONS.map((option) => (
                       <SegmentedTabsItem
@@ -466,7 +466,7 @@ export function AgentModelSelector({
                   </SegmentedTabs>
                 </div>
               ) : (
-                <div className="rounded-xl bg-background/14 px-2.5 py-2 text-[11px] text-muted-foreground ring-1 ring-foreground/6">
+                <div className="material-flat-input px-2.5 py-2 text-[11px] text-muted-foreground">
                   当前不会请求模型输出思考内容。
                 </div>
               )}
@@ -486,7 +486,7 @@ export function AgentModelSelector({
           <div className="max-h-[340px] overflow-y-auto p-1.5 scrollbar-thin">
             {filteredGrouped.size === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
-                <div className="mb-2 flex size-9 items-center justify-center rounded-xl bg-foreground/6">
+                <div className="material-inline-chip mb-2 flex size-9 items-center justify-center">
                   <Search className="size-4 text-muted-foreground" />
                 </div>
                 <div className="text-sm font-medium text-foreground">未找到模型</div>
@@ -499,7 +499,7 @@ export function AgentModelSelector({
                   <div ref={listContentRef} className="relative">
                     {modelSelectionStyle && (
                       <div
-                        className="agent-model-list-selection session-item-selected session-glass session-glass-sidebar"
+                        className="agent-model-list-selection agent-model-list-selection--neumorph"
                         style={modelSelectionStyle}
                       />
                     )}
@@ -556,13 +556,13 @@ export function AgentModelSelector({
                                     }}
                                     onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
                                     className={cn(
-                                      'relative z-10 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors',
+                                      'relative z-10 flex w-full items-center gap-2 rounded-[12px] px-2.5 py-1.5 text-left transition-colors',
                                       'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
                                       option.disabled
                                         ? 'cursor-not-allowed opacity-50'
                                         : isSelected
                                           ? 'text-foreground'
-                                          : 'hover:bg-primary/5 text-foreground/78',
+                                          : 'hover:bg-foreground/4 text-foreground/78',
                                       isHighlighted &&
                                         !isSelected &&
                                         !option.disabled &&
@@ -583,7 +583,7 @@ export function AgentModelSelector({
                                       {option.modelName}
                                     </span>
                                     {option.badge && !option.disabled && (
-                                      <span className="ml-1 shrink-0 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
+                                      <span className="material-inline-chip ml-1 shrink-0 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
                                         {option.badge}
                                       </span>
                                     )}

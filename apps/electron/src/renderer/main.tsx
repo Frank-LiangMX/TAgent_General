@@ -18,7 +18,11 @@ import type {
   WorkspaceCapabilities,
 } from '@tagent/shared'
 import App from './App'
-import { advancedMaterialEnabledAtom, initializeAdvancedMaterial } from './atoms/advanced-material'
+import {
+  advancedMaterialModeAtom,
+  applyAdvancedMaterialToDOM,
+  initializeAdvancedMaterial,
+} from './atoms/advanced-material'
 import {
   agentChannelIdAtom,
   agentModelIdAtom,
@@ -93,6 +97,7 @@ function ThemeInitializer(): null {
   const setThemeMode = useSetAtom(themeModeAtom)
   const setThemeStyle = useSetAtom(themeStyleAtom)
   const setSystemIsDark = useSetAtom(systemIsDarkAtom)
+  const advancedMaterialMode = useAtomValue(advancedMaterialModeAtom)
   const themeMode = useAtomValue(themeModeAtom)
   const themeStyle = useAtomValue(themeStyleAtom)
   const systemIsDark = useAtomValue(systemIsDarkAtom)
@@ -133,7 +138,8 @@ function ThemeInitializer(): null {
 
   useEffect(() => {
     applyThemeToDOM(themeMode, themeStyle, systemIsDark)
-  }, [themeSignature])
+    applyAdvancedMaterialToDOM(advancedMaterialMode)
+  }, [themeSignature, advancedMaterialMode, themeMode, themeStyle, systemIsDark])
 
   return null
 }
@@ -475,11 +481,11 @@ function MarkdownFontSizeInitializer(): null {
  * 高级材质初始化：高透玻璃 / 低透磨砂
  */
 function AdvancedMaterialInitializer(): null {
-  const setAdvancedMaterialEnabled = useSetAtom(advancedMaterialEnabledAtom)
+  const setAdvancedMaterialMode = useSetAtom(advancedMaterialModeAtom)
 
   useEffect(() => {
-    void initializeAdvancedMaterial(setAdvancedMaterialEnabled)
-  }, [setAdvancedMaterialEnabled])
+    void initializeAdvancedMaterial(setAdvancedMaterialMode)
+  }, [setAdvancedMaterialMode])
 
   return null
 }

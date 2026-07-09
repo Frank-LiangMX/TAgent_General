@@ -178,6 +178,8 @@ export type ThemeStyle =
   | 'slate-dark'
   | 'orange-light'
   | 'orange-dark'
+  | 'neumorph-light'
+  | 'neumorph-dark'
   | 'purple-light'
   | 'purple-dark'
 
@@ -192,6 +194,12 @@ export type MarkdownFontSize = 'small' | 'medium' | 'large'
 
 /** 默认 Markdown 字号档位 */
 export const DEFAULT_MARKDOWN_FONT_SIZE: MarkdownFontSize = 'medium'
+
+/** 楂樼骇鏉愯川妯″紡 */
+export type AdvancedMaterialMode = 'glass' | 'frosted' | 'neumorph'
+
+/** 榛樿楂樼骇鏉愯川妯″紡 */
+export const DEFAULT_ADVANCED_MATERIAL_MODE: AdvancedMaterialMode = 'glass'
 
 /** 默认启用高级材质（高透玻璃）；关闭时为低透磨砂玻璃 */
 export const DEFAULT_ADVANCED_MATERIAL_ENABLED = true
@@ -261,6 +269,8 @@ export interface AppSettings {
   markdownFontSize?: MarkdownFontSize
   /** 高级材质：true = 高透玻璃，false = 低透磨砂玻璃 */
   advancedMaterialEnabled?: boolean
+  /** 楂樼骇鏉愯川妯″紡 */
+  advancedMaterialMode?: AdvancedMaterialMode
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand
   /** 上次是否在草稿页（用于重启恢复） */

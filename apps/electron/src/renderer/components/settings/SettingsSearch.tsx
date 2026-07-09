@@ -6,10 +6,9 @@
  * 快捷键：macOS ⌘K / Windows & Linux Ctrl+K（按平台自动切换）
  */
 
-import { Hash, CornerDownLeft } from 'lucide-react'
+import { Hash, CornerDownLeft, Search, X } from 'lucide-react'
 import * as React from 'react'
 
-import { SearchInput } from '@tagent/ui'
 import { searchSettings, type SearchResult } from './settingsSearchIndex'
 
 import type { SettingsTab } from '@/atoms/settings-tab'
@@ -95,36 +94,47 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
 
   return (
     <div ref={containerRef} className={cn('relative w-full', !fullWidth && 'max-w-md')}>
-      <SearchInput
-        ref={inputRef}
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={handleKeyDown}
-        placeholder="搜索设置项..."
-        onClear={() => {
-          setQuery('')
-          inputRef.current?.focus()
-        }}
-        trailing={
-          !query ? (
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 h-5 rounded border border-border/60 bg-background text-[10px] text-muted-foreground font-sans">
-              <span className="text-[10px]">{modKeyLabel}</span>
-              <span>K</span>
-            </kbd>
-          ) : undefined
-        }
-      />
+      <div className="settings-search-shell">
+        <Search size={18} className="settings-search-icon" strokeWidth={2} aria-hidden />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="搜索设置项..."
+          className="settings-search-field"
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('')
+              inputRef.current?.focus()
+            }}
+            className="settings-search-clear"
+            aria-label="清空搜索"
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
+        ) : (
+          <kbd className="settings-search-kbd hidden sm:inline-flex items-center gap-0.5 px-1.5 text-[10px] text-muted-foreground font-sans">
+            <span className="text-[10px]">{modKeyLabel}</span>
+            <span>K</span>
+          </kbd>
+        )}
+      </div>
 
       {/* 结果下拉面板 */}
       {open && query && (
         <div
           className={cn(
+            'settings-search-results',
             'absolute top-full left-0 right-0 mt-1.5 z-50',
-            'rounded-lg border border-border/60 bg-popover shadow-lg',
             'max-h-[60vh] overflow-y-auto',
             'scrollbar-thin'
           )}
@@ -169,8 +179,10 @@ function SearchResultItem({
       onClick={onClick}
       onMouseEnter={onHover}
       className={cn(
-        'w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-left transition-colors',
-        active ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/40'
+        'settings-search-result-item w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-colors',
+        active
+          ? 'settings-search-result-item--active text-foreground'
+          : 'text-foreground hover:bg-foreground/4'
       )}
     >
       <Hash size={12} className="text-muted-foreground shrink-0" />

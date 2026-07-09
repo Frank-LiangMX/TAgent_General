@@ -57,6 +57,8 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
 
   // 获取当前会话的渠道和模型
   const { channelId, modelId } = useAgentSessionChannelModel(currentSessionId ?? '')
+  const isFilesActive = panelOpen && rightRailItem === 'files'
+  const isBtwActive = panelOpen && rightRailItem === 'btw'
 
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
@@ -111,14 +113,14 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
               <button
                 type="button"
                 onClick={togglePanel}
-                aria-pressed={panelOpen && rightRailItem === 'files'}
+                aria-pressed={isFilesActive}
                 aria-label="文件面板"
                 className={cn(
-                  'rail-island-btn size-8 flex items-center justify-center rounded-[9px] titlebar-no-drag relative z-[2]',
-                  panelOpen && rightRailItem === 'files' && 'rail-island-btn--active rail-island-btn--ghost'
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  isFilesActive && 'rail-island-btn--active'
                 )}
               >
-                <RAIL_ICON size={12} strokeWidth={1.75} />
+                <RAIL_ICON size={13} strokeWidth={1.8} />
                 {showBadge && (
                   <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-primary ring-1 ring-background" />
                 )}
@@ -138,14 +140,14 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                 <button
                   type="button"
                   onClick={handleBtwClick}
-                  aria-pressed={panelOpen && rightRailItem === 'btw'}
+                  aria-pressed={isBtwActive}
                   aria-label="旁注"
                   className={cn(
-                    'rail-island-btn size-8 flex items-center justify-center rounded-[9px] titlebar-no-drag relative z-[2]',
-                    panelOpen && rightRailItem === 'btw' && 'rail-island-btn--active rail-island-btn--ghost'
+                    'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                    isBtwActive && 'rail-island-btn--active'
                   )}
                 >
-                  <BTW_ICON size={12} strokeWidth={1.75} />
+                  <BTW_ICON size={13} strokeWidth={1.8} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left">

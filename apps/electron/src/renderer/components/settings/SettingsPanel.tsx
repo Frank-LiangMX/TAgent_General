@@ -312,10 +312,8 @@ function TabGroup({
   }, [exitTabId, tabs])
 
   return (
-    <div>
-      <div className="px-2 pt-1 pb-0.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-        {groupLabel}
-      </div>
+    <div className="settings-nav-group-card">
+      <div className="settings-nav-group-label">{groupLabel}</div>
       <div ref={containerRef} className={cn('relative', LIST_SLIDE_HOST_CLASS)}>
         {/* 指示器单独一层，避免占位触发 space-y 给首个按钮加 margin */}
         <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
@@ -338,9 +336,10 @@ function TabGroup({
                 data-tab-id={tab.id}
                 onClick={() => onTabChange(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-2 px-2 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors duration-150 cursor-pointer text-left relative z-10',
+                  'settings-nav-item w-full flex items-center gap-2 px-2 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors duration-150 cursor-pointer text-left relative z-10',
                   isActive
                     ? cn(
+                        'settings-nav-item--active',
                         LIST_SLIDE_ITEM_SELECTED_CLASS,
                         LIST_SLIDE_ITEM_GHOST_CLASS,
                         'text-foreground'
@@ -513,7 +512,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
 
           {/* 列表 */}
           <ScrollArea className="flex-1 min-h-0">
-            <nav className="px-1.5 py-1.5 space-y-2.5">
+            <nav className="px-2 py-2 space-y-2.5">
               {TAB_GROUPS.map((group) => {
                 const groupTabs = ALL_TABS.filter((t) => t.group === group.key)
                 if (groupTabs.length === 0) return null

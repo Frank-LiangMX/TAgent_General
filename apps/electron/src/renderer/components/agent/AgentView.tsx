@@ -260,7 +260,11 @@ function SubagentEagernessSelector({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn('size-[36px] rounded-full', colorClass)}
+              className={cn(
+                'agent-toolbar-icon-btn size-[36px] rounded-full',
+                open && 'agent-toolbar-icon-btn--active',
+                colorClass
+              )}
             >
               <Bot className="size-5" />
             </Button>
@@ -276,7 +280,7 @@ function SubagentEagernessSelector({
         side="top"
         align="center"
         sideOffset={8}
-        className="w-auto min-w-[180px] p-2"
+        className="agent-toolbar-popover w-auto min-w-[180px] p-2"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col gap-0.5">
@@ -289,9 +293,9 @@ function SubagentEagernessSelector({
                 setOpen(false)
               }}
               className={cn(
-                'flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left transition-colors',
+                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left transition-colors',
                 'hover:bg-accent hover:text-accent-foreground',
-                value === k && 'bg-accent/50'
+                value === k && 'agent-toolbar-popover-item--active bg-accent/50'
               )}
             >
               <span className="text-xs">{SUBAGENT_EAGERNESS_LABELS[k]!.label}</span>
@@ -336,7 +340,7 @@ function InputMorePopover({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-[36px] rounded-full text-foreground/60 hover:text-foreground"
+              className="agent-toolbar-icon-btn size-[36px] rounded-full text-foreground/60 hover:text-foreground"
             >
               <Plus className="size-5" />
             </Button>
@@ -350,7 +354,7 @@ function InputMorePopover({
         side="top"
         align="center"
         sideOffset={8}
-        className="w-auto min-w-[160px] p-2"
+        className="agent-toolbar-popover w-auto min-w-[160px] p-2"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col gap-0.5">
@@ -363,7 +367,7 @@ function InputMorePopover({
               }
             }}
             disabled={disableAttachments}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            className="agent-toolbar-popover-item flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <Paperclip className="size-4 text-foreground/70" />
             <span className="text-xs">添加附件</span>
@@ -377,7 +381,7 @@ function InputMorePopover({
               }
             }}
             disabled={disableAttachments}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            className="agent-toolbar-popover-item flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <FolderPlus className="size-4 text-foreground/70" />
             <span className="text-xs">添加文件夹</span>
@@ -388,7 +392,7 @@ function InputMorePopover({
               onSpeech()
               setOpen(false)
             }}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="agent-toolbar-popover-item flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <MicIcon className="size-4 text-foreground/70" />
             <span className="text-xs">语音输入</span>
@@ -439,7 +443,8 @@ function DisplayOptionsPopover({
           variant="ghost"
           size="icon"
           className={cn(
-            'size-[36px] rounded-full',
+            'agent-toolbar-icon-btn size-[36px] rounded-full',
+            open && 'agent-toolbar-icon-btn--active',
             hasEnabledOption ? 'text-green-500' : 'text-foreground/60 hover:text-foreground'
           )}
           aria-label="显示选项"
@@ -453,7 +458,7 @@ function DisplayOptionsPopover({
         side="top"
         align="center"
         sideOffset={8}
-        className="w-auto min-w-[190px] p-2 px-2.5"
+        className="agent-toolbar-popover w-auto min-w-[190px] p-2 px-2.5"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -464,7 +469,7 @@ function DisplayOptionsPopover({
             <Switch
               checked={autoPreviewEnabled}
               onCheckedChange={onAutoPreviewChange}
-              className="h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
+              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
             />
           </div>
           <div className="h-px bg-border" />
@@ -473,7 +478,7 @@ function DisplayOptionsPopover({
             <Switch
               checked={processGroupsKeepExpanded}
               onCheckedChange={onProcessGroupsKeepExpandedChange}
-              className="h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
+              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
             />
           </div>
         </div>
@@ -2805,7 +2810,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     <SegmentedTabs
                       value={subTab}
                       onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
-                    className="text-xs"
+                    className="agent-toolbar-segmented text-xs"
                   >
                     <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
                     <SegmentedTabsItem value="team">

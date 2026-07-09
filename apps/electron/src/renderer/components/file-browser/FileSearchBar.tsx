@@ -251,9 +251,10 @@ export function FileSearchBar({
     <div ref={containerRef} className="relative mx-2 flex-shrink-0">
       <SearchInput
         ref={inputRef}
-        variant="muted"
+        variant="plain"
         size="sm"
         loading={searching}
+        containerClassName="app-search-shell app-search-shell--compact"
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -348,8 +349,8 @@ function ResultItem({
         <button
           type="button"
           className={cn(
-            'w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors',
-            isSelected ? 'bg-accent' : 'hover:bg-accent/40'
+            'app-search-result-item w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors',
+            isSelected ? 'app-search-result-item--active' : 'hover:bg-accent/40'
           )}
           onClick={() => onClick(entry)}
           onMouseEnter={onHover}

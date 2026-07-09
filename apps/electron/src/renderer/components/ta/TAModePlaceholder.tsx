@@ -43,10 +43,10 @@ const taFeatures = [
 
 export function TAModePlaceholder(): React.ReactElement {
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-background rounded-2xl shadow-xl">
+    <div className="material-flat-input flex h-full flex-col items-center justify-center rounded-2xl bg-background shadow-xl">
       {/* Logo 和标题 */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
+        <div className="material-panel-card flex size-12 items-center justify-center rounded-xl bg-primary/10">
           <Boxes className="size-6 text-primary" />
         </div>
         <div>
@@ -61,7 +61,7 @@ export function TAModePlaceholder(): React.ReactElement {
           <div
             key={title}
             className={cn(
-              'flex flex-col gap-2 p-4 rounded-xl border transition-colors',
+              'material-panel-card flex flex-col gap-2 rounded-xl border p-4 transition-colors',
               status === 'available'
                 ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
                 : 'bg-muted/50 border-muted-foreground/20'

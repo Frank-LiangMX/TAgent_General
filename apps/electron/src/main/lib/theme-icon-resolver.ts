@@ -35,6 +35,13 @@ export function resolveLogoKey(
   systemIsDark: boolean
 ): LogoKey {
   if (mode === 'special' && style && style !== 'default') {
+    // Neumorph is currently a settings-page material experiment; reuse default light/dark icons.
+    if (style === 'neumorph-light') {
+      return 'default-light'
+    }
+    if (style === 'neumorph-dark') {
+      return 'default-dark'
+    }
     return style as LogoKey
   }
   if (mode === 'light') {

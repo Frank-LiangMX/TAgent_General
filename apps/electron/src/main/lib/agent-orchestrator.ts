@@ -1256,7 +1256,8 @@ export class AgentOrchestrator {
     if (this.activeSessions.has(sessionId)) {
       console.warn(`[Agent 编排] 会话 ${sessionId} 正在处理中，拒绝新请求`)
       callbacks.onError('上一条消息仍在处理中，请稍候再试')
-      callbacks.onComplete([], { startedAt: input.startedAt })
+      // 注意：不调用 onComplete，避免发送 STREAM_COMPLETE 导致竞态
+      // （STREAM_ERROR 已足够通知渲染进程清理乐观消息）
       return
     }
 
