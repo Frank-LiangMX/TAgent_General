@@ -132,7 +132,7 @@ const Navigation = {
       dashboard: '../index.html',
       chat: 'chat.html',
       automation: 'automation.html',
-      settings: 'chat.html?settings'
+      settings: 'settings.html'
     };
     if (pages[page]) {
       window.location.href = pages[page];
@@ -143,13 +143,12 @@ const Navigation = {
 // ========== 模态框系统 ==========
 
 const Modal = {
-  _escBound: false,
-
   open(id) {
     const modal = document.getElementById(id);
     if (modal) {
       modal.classList.add('is-open');
       document.body.style.overflow = 'hidden';
+      // 聚焦第一个输入框
       const firstInput = modal.querySelector('input, textarea, select');
       if (firstInput) firstInput.focus();
     }
@@ -163,10 +162,8 @@ const Modal = {
     }
   },
 
-  bindCloseButtons(root = document) {
-    root.querySelectorAll('[data-modal-close]').forEach((btn) => {
-      if (btn.dataset.modalCloseBound === '1') return;
-      btn.dataset.modalCloseBound = '1';
+  bindCloseButtons(container) {
+    container.querySelectorAll('[data-modal-close]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modal = btn.closest('.modal-overlay');
         if (modal) this.close(modal.id);
@@ -175,25 +172,22 @@ const Modal = {
   },
 
   init() {
-    document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-      if (overlay.dataset.modalOverlayBound === '1') return;
-      overlay.dataset.modalOverlayBound = '1';
+    // 点击遮罩层关闭
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) this.close(overlay.id);
+        if (e.target === overlay) {
+          this.close(overlay.id);
+        }
       });
     });
 
-    if (!this._escBound) {
-      this._escBound = true;
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const openModal = document.querySelector('.modal-overlay.is-open');
-          if (openModal) this.close(openModal.id);
-        }
-      });
-    }
-
-    this.bindCloseButtons();
+    // ESC 关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const openModal = document.querySelector('.modal-overlay.is-open');
+        if (openModal) this.close(openModal.id);
+      }
+    });
   }
 };
 
@@ -298,7 +292,7 @@ const Utils = {
 // ========== 设置弹窗（双浮岛 Soft Glass） ==========
 
 const SettingsModal = {
-  currentSection: 'account',
+  currentSection: 'general',
   _bound: false,
   _observer: null,
 
@@ -311,8 +305,6 @@ const SettingsModal = {
     Modal.open('settingsModal');
     this.bindInner();
     this.syncAppearanceControls();
-    this.renderShortcuts();
-    this.renderApiKeys();
   },
 
   close() {
@@ -324,10 +316,494 @@ const SettingsModal = {
     if (!container) return;
 
     container.classList.add('settings-dialog-overlay');
-    container.innerHTML =
-      '<div class="modal-content settings-dialog" role="dialog" aria-modal="true" aria-label="设置">' +
-      "<div class=\"specular\" aria-hidden=\"true\"></div><div class=\"chroma-edge\" aria-hidden=\"true\"></div><div class=\"settings-shell\">\n      <!-- Left nav island -->\n      <aside class=\"settings-nav-island\" aria-label=\"\u8bbe\u7f6e\u5bfc\u822a\">\n        <div class=\"settings-nav-head\">\n          <svg viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">\n            <circle cx=\"12\" cy=\"12\" r=\"3\" stroke=\"currentColor\" stroke-width=\"1.5\"/>\n            <path d=\"M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.4 6.4l1.4 1.4M16.2 16.2l1.4 1.4M17.6 6.4l-1.4 1.4M7.8 16.2l-1.4 1.4\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n          </svg>\n          \u8bbe\u7f6e\n        </div>\n        <nav class=\"settings-nav-scroll\" id=\"settingsNav\">\n          <div class=\"settings-nav-group\">\n            <div class=\"settings-nav-group-label\">\u901a\u7528</div>\n            <div class=\"settings-nav-list\">\n              <button type=\"button\" class=\"settings-nav-item is-active\" data-section=\"account\">\n                <svg viewBox=\"0 0 24 24\" fill=\"none\"><circle cx=\"12\" cy=\"8\" r=\"4\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M5 20a7 7 0 0114 0\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>\n                \u8d26\u6237\n              </button>\n              <button type=\"button\" class=\"settings-nav-item\" data-section=\"appearance\">\n                <svg viewBox=\"0 0 24 24\" fill=\"none\"><circle cx=\"12\" cy=\"12\" r=\"4\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M12 4v2M12 18v2M4 12h2M18 12h2\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>\n                \u5916\u89c2\n              </button>\n              <button type=\"button\" class=\"settings-nav-item\" data-section=\"shortcuts\">\n                <svg viewBox=\"0 0 24 24\" fill=\"none\"><rect x=\"3\" y=\"6\" width=\"18\" height=\"12\" rx=\"2\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M7 10h2M15 10h2M7 14h10\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>\n                \u5feb\u6377\u952e\n              </button>\n            </div>\n          </div>\n          <div class=\"settings-nav-group\">\n            <div class=\"settings-nav-group-label\">\u8fde\u63a5</div>\n            <div class=\"settings-nav-list\">\n              <button type=\"button\" class=\"settings-nav-item\" data-section=\"api\">\n                <svg viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>\n                API \u914d\u7f6e\n              </button>\n            </div>\n          </div>\n          <div class=\"settings-nav-group\">\n            <div class=\"settings-nav-group-label\">\u5173\u4e8e</div>\n            <div class=\"settings-nav-list\">\n              <button type=\"button\" class=\"settings-nav-item\" data-section=\"about\">\n                <svg viewBox=\"0 0 24 24\" fill=\"none\"><circle cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M12 16v-4M12 8h.01\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>\n                \u5173\u4e8e\n              </button>\n            </div>\n          </div>\n        </nav>\n      </aside>\n\n      <!-- Right content island -->\n      <section class=\"settings-content-island\">\n        <div class=\"settings-content-top\">\n          <input class=\"settings-search\" type=\"search\" placeholder=\"\u641c\u7d22\u8bbe\u7f6e\u2026\" aria-label=\"\u641c\u7d22\u8bbe\u7f6e\" />\n          <button type=\"button\" class=\"settings-close\" data-modal-close aria-label=\"\u5173\u95ed\u8bbe\u7f6e\" title=\"\u5173\u95ed\">\n            <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M6 6l12 12M18 6L6 18\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"/></svg>\n          </button>\n        </div>\n\n        <div class=\"settings-content-scroll\">\n          <div class=\"settings-content-inner\" id=\"settingsContent\">\n            <!-- Account -->\n            <div class=\"settings-section is-active\" id=\"section-account\">\n              <h1 class=\"settings-section-title\">\u8d26\u6237</h1>\n              <p class=\"settings-section-desc\">\u7ba1\u7406\u4e2a\u4eba\u8d44\u6599\u4e0e\u7528\u91cf\u4fe1\u606f</p>\n\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"settings-profile\">\n                  <div class=\"settings-avatar\">F</div>\n                  <div>\n                    <div class=\"settings-profile-name\">Frank</div>\n                    <div class=\"settings-profile-meta\">frank@example.com</div>\n                    <span class=\"badge badge-accent\" style=\"margin-top:6px;display:inline-flex;\">Pro</span>\n                  </div>\n                </div>\n              </div>\n\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"settings-row\">\n                  <div>\n                    <div class=\"settings-row-label\">\u7528\u6237\u540d</div>\n                    <div class=\"settings-row-desc\">\u663e\u793a\u5728\u754c\u9762\u548c\u534f\u4f5c\u4e2d</div>\n                  </div>\n                  <div class=\"settings-row-action\">\n                    <input type=\"text\" class=\"settings-input\" value=\"Frank\" />\n                  </div>\n                </div>\n                <div class=\"settings-row\">\n                  <div>\n                    <div class=\"settings-row-label\">\u90ae\u7bb1</div>\n                    <div class=\"settings-row-desc\">\u7528\u4e8e\u901a\u77e5\u548c\u8d26\u6237\u6062\u590d</div>\n                  </div>\n                  <div class=\"settings-row-action\">\n                    <input type=\"email\" class=\"settings-input\" value=\"frank@example.com\"  />\n                  </div>\n                </div>\n                <div class=\"settings-row\">\n                  <div>\n                    <div class=\"settings-row-label\">\u4f7f\u7528\u91cf\u7edf\u8ba1</div>\n                    <div class=\"settings-row-desc\">Context 42% \u00b7 \u8f93\u5165 1.2k \u00b7 \u8f93\u51fa 860</div>\n                  </div>\n                  <div class=\"settings-row-action\">\n                    <button type=\"button\" class=\"btn-secondary\">\u67e5\u770b\u8be6\u60c5</button>\n                  </div>\n                </div>\n              </div>\n            </div>\n\n            <!-- Appearance -->\n            <div class=\"settings-section\" id=\"section-appearance\">\n              <h1 class=\"settings-section-title\">\u5916\u89c2</h1>\n              <p class=\"settings-section-desc\">4 \u5927\u5bb6\u65cf \u00d7 \u660e\u6697 \u00d7 Soft / Liquid</p>\n\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"settings-row\">\n                  <div>\n                    <div class=\"settings-row-label\">\u6df1\u8272\u6a21\u5f0f</div>\n                    <div class=\"settings-row-desc\">\u5207\u6362\u754c\u9762\u660e\u6697</div>\n                  </div>\n                  <div class=\"settings-row-action\">\n                    <div class=\"toggle-switch\" id=\"darkModeToggle\" role=\"switch\" aria-checked=\"false\" tabindex=\"0\"></div>\n                  </div>\n                </div>\n              </div>\n\n              <h2 style=\"margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);\">\u4e3b\u9898\u5bb6\u65cf</h2>\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"theme-grid\" id=\"themeGrid\">\n                  <button type=\"button\" class=\"theme-card is-selected\" data-theme-pick=\"mist\">\n                    <span class=\"theme-card-check\">\u2713</span>\n                    <div class=\"theme-card-swatch\" style=\"background:linear-gradient(135deg,#c5d0e2,#5b7fd4);\"></div>\n                    <div class=\"theme-card-name\">\u4e91\u7d6e</div>\n                    <div class=\"theme-card-sub\">Mist</div>\n                  </button>\n                  <button type=\"button\" class=\"theme-card\" data-theme-pick=\"ocean\">\n                    <span class=\"theme-card-check\">\u2713</span>\n                    <div class=\"theme-card-swatch\" style=\"background:linear-gradient(135deg,#c2d2e0,#4f8fc4);\"></div>\n                    <div class=\"theme-card-name\">\u78a7\u6d77</div>\n                    <div class=\"theme-card-sub\">Ocean</div>\n                  </button>\n                  <button type=\"button\" class=\"theme-card\" data-theme-pick=\"moss\">\n                    <span class=\"theme-card-check\">\u2713</span>\n                    <div class=\"theme-card-swatch\" style=\"background:linear-gradient(135deg,#c6d4ca,#5a8f72);\"></div>\n                    <div class=\"theme-card-name\">\u9752\u82d4</div>\n                    <div class=\"theme-card-sub\">Moss</div>\n                  </button>\n                  <button type=\"button\" class=\"theme-card\" data-theme-pick=\"dusk\">\n                    <span class=\"theme-card-check\">\u2713</span>\n                    <div class=\"theme-card-swatch\" style=\"background:linear-gradient(135deg,#d4ccc2,#a07a5e);\"></div>\n                    <div class=\"theme-card-name\">\u66ae\u972d</div>\n                    <div class=\"theme-card-sub\">Dusk</div>\n                  </button>\n                </div>\n              </div>\n\n              <h2 style=\"margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);\">\u754c\u9762\u6750\u8d28</h2>\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"material-pair\" id=\"materialPair\">\n                  <button type=\"button\" class=\"material-tile is-selected\" data-material-pick=\"soft\">\n                    <div class=\"material-preview material-preview-soft\"></div>\n                    <div class=\"material-name\">\u8f7b\u62df\u6001</div>\n                    <div class=\"material-tag\">Soft Glass</div>\n                  </button>\n                  <button type=\"button\" class=\"material-tile\" data-material-pick=\"liquid\">\n                    <div class=\"material-preview material-preview-liquid\"></div>\n                    <div class=\"material-name\">\u6db2\u6001\u73bb\u7483</div>\n                    <div class=\"material-tag\">Liquid Glass</div>\n                  </button>\n                </div>\n              </div>\n            </div>\n\n            <!-- Shortcuts -->\n            <div class=\"settings-section\" id=\"section-shortcuts\">\n              <h1 class=\"settings-section-title\">\u5feb\u6377\u952e</h1>\n              <p class=\"settings-section-desc\">\u5e38\u7528\u64cd\u4f5c\u7684\u952e\u76d8\u6620\u5c04</p>\n              <div class=\"settings-card settings-card--flush\" id=\"shortcutsList\"></div>\n            </div>\n\n            <!-- API -->\n            <div class=\"settings-section\" id=\"section-api\">\n              <h1 class=\"settings-section-title\">API \u914d\u7f6e</h1>\n              <p class=\"settings-section-desc\">\u7ba1\u7406\u6a21\u578b\u670d\u52a1\u5546\u5bc6\u94a5</p>\n              <div class=\"settings-card settings-card--flush\">\n                <div id=\"apiKeysList\"></div>\n                <div class=\"settings-card-footer\">\n                  <button type=\"button\" class=\"btn-secondary\" id=\"addApiKeyBtn\">+ \u6dfb\u52a0 API \u5bc6\u94a5</button>\n                </div>\n              </div>\n            </div>\n\n            <!-- About -->\n            <div class=\"settings-section\" id=\"section-about\">\n              <h1 class=\"settings-section-title\">\u5173\u4e8e</h1>\n              <p class=\"settings-section-desc\">\u7248\u672c\u4e0e\u4ea7\u54c1\u4fe1\u606f</p>\n              <div class=\"settings-card settings-card--flush\">\n                <div class=\"about-hero\">\n                  <div class=\"about-logo\">T</div>\n                  <div class=\"about-title\">TAgent</div>\n                  <div class=\"about-version\">\u7248\u672c 1.0.0 \u00b7 Glass Studio</div>\n                  <div class=\"about-copy\">\n                    Soft Glass \u6d6e\u5c9b\u58f3\u5c42\u539f\u578b\u3002<br />\n                    \u652f\u6301 Mist / Ocean / Moss / Dusk \u00d7 Soft / Liquid\u3002<br /><br />\n                    \u00a9 2026 TAgent Team\n                  </div>\n                </div>\n              </div>\n            </div>\n          </div>\n        </div>\n      </section>\n    </div>" +
-      '</div>';
+    container.innerHTML = `
+<div class="modal-content settings-dialog" role="dialog" aria-modal="true" aria-label="设置">
+<div class="specular" aria-hidden="true"></div><div class="chroma-edge" aria-hidden="true"></div>
+<div class="settings-shell">
+  <!-- 左侧导航 -->
+  <aside class="settings-nav-island" aria-label="设置导航">
+    <div class="settings-nav-head">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.4 6.4l1.4 1.4M16.2 16.2l1.4 1.4M17.6 6.4l-1.4 1.4M7.8 16.2l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      设置
+    </div>
+    <nav class="settings-nav-scroll" id="settingsNav">
+      <div class="settings-nav-group">
+        <div class="settings-nav-group-label">核心</div>
+        <div class="settings-nav-list">
+          <button type="button" class="settings-nav-item is-active" data-section="general">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/></svg>
+            通用
+          </button>
+          <button type="button" class="settings-nav-item" data-section="channels">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            AI 渠道
+          </button>
+          <button type="button" class="settings-nav-item" data-section="prompts">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5"/></svg>
+            提示词
+          </button>
+          <button type="button" class="settings-nav-item" data-section="agent">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7L12 15l-6.3 4 2.3-7-6-4.6h7.6L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            Agent 偏好
+          </button>
+        </div>
+      </div>
+      <div class="settings-nav-group">
+        <div class="settings-nav-group-label">集成</div>
+        <div class="settings-nav-list">
+          <button type="button" class="settings-nav-item" data-section="bots">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="1.5"/><path d="M8 11V7a4 4 0 118 0v4" stroke="currentColor" stroke-width="1.5"/></svg>
+            远程
+          </button>
+          <button type="button" class="settings-nav-item" data-section="voice">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="currentColor" stroke-width="1.5"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            语音
+          </button>
+          <button type="button" class="settings-nav-item" data-section="proxy">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke="currentColor" stroke-width="1.5"/></svg>
+            代理
+          </button>
+        </div>
+      </div>
+      <div class="settings-nav-group">
+        <div class="settings-nav-group-label">高级</div>
+        <div class="settings-nav-list">
+          <button type="button" class="settings-nav-item" data-section="shortcuts">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10h2M15 10h2M7 14h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            快捷键
+          </button>
+          <button type="button" class="settings-nav-item" data-section="insights">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            数据
+          </button>
+          <button type="button" class="settings-nav-item" data-section="appearance">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            外观
+          </button>
+          <button type="button" class="settings-nav-item" data-section="about">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            关于
+          </button>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 右侧内容 -->
+  <section class="settings-content-island">
+    <div class="settings-content-top">
+      <input class="settings-search" type="search" placeholder="搜索设置…" aria-label="搜索设置" />
+      <button type="button" class="settings-close" data-modal-close aria-label="关闭设置" title="关闭">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="settings-content-scroll">
+      <div class="settings-content-inner" id="settingsContent">
+
+        <!-- 通用设置 -->
+        <div class="settings-section is-active" id="section-general">
+          <h1 class="settings-section-title">通用</h1>
+          <p class="settings-section-desc">语言、归档、通知等基础偏好</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-profile">
+              <div class="settings-avatar">F</div>
+              <div>
+                <div class="settings-profile-name">Frank</div>
+                <div class="settings-profile-meta">frank@example.com</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">语言</div><div class="settings-row-desc">界面显示语言</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option selected>简体中文</option><option>English</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">自动归档</div><div class="settings-row-desc">会话超过指定天数未活动时自动归档</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option>禁用</option><option selected>7 天</option><option>14 天</option><option>30 天</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">桌面通知</div><div class="settings-row-desc">任务完成、权限审批等事件触发系统通知</div></div>
+              <div class="toggle-switch is-active" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">消息置顶条</div><div class="settings-row-desc">将指定用户消息置顶显示，方便对照需求写代码</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">Token Plan 消费提醒</div><div class="settings-row-desc">选择 Token Plan（按次计费）供应商时提示</div></div>
+              <div class="toggle-switch is-active" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">通知提示音</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">启用提示音</div><div class="settings-row-desc">开启后任务完成、权限审批等事件会播放提示音</div></div>
+              <div class="toggle-switch is-active" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">任务完成</div><div class="settings-row-desc">任务执行完成时的提示音</div></div>
+              <select class="settings-input" style="width:100px;padding:6px 12px;"><option selected>默认</option><option>清脆</option><option>柔和</option><option>无</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">权限审批</div><div class="settings-row-desc">需要审批时的提示音</div></div>
+              <select class="settings-input" style="width:100px;padding:6px 12px;"><option selected>默认</option><option>清脆</option><option>柔和</option><option>无</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">计划审批</div><div class="settings-row-desc">退出计划模式时的提示音</div></div>
+              <select class="settings-input" style="width:100px;padding:6px 12px;"><option selected>默认</option><option>清脆</option><option>柔和</option><option>无</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 渠道 -->
+        <div class="settings-section" id="section-channels">
+          <h1 class="settings-section-title">AI 渠道</h1>
+          <p class="settings-section-desc">配置 AI 模型渠道，支持多渠道切换</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">C</div>
+                <div>
+                  <div class="api-key-name">Claude 渠道</div>
+                  <div class="api-key-status" style="color:var(--success);">已激活 · Claude Sonnet 5</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">编辑</button>
+            </div>
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon" style="background:linear-gradient(135deg,#10a37f,#1a7f64);">O</div>
+                <div>
+                  <div class="api-key-name">OpenAI 渠道</div>
+                  <div class="api-key-status">未配置</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">配置</button>
+            </div>
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">K</div>
+                <div>
+                  <div class="api-key-name">Kscc 渠道</div>
+                  <div class="api-key-status" style="color:var(--success);">已激活 · 免费</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">编辑</button>
+            </div>
+            <div class="settings-card-footer">
+              <button type="button" class="btn-secondary" style="width:100%;">+ 添加渠道</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 提示词 -->
+        <div class="settings-section" id="section-prompts">
+          <h1 class="settings-section-title">提示词</h1>
+          <p class="settings-section-desc">自定义提示词模板</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 002 17V6.5A2.5 2.5 0 014.5 4H20v16M4 19.5A2.5 2.5 0 006.5 17H20" stroke="currentColor" stroke-width="1.5"/></svg>
+                </div>
+                <div>
+                  <div class="api-key-name">代码审查</div>
+                  <div class="api-key-status">自动审查代码变更</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">编辑</button>
+            </div>
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 002 17V6.5A2.5 2.5 0 014.5 4H20v16M4 19.5A2.5 2.5 0 006.5 17H20" stroke="currentColor" stroke-width="1.5"/></svg>
+                </div>
+                <div>
+                  <div class="api-key-name">文档生成</div>
+                  <div class="api-key-status">自动生成文档注释</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">编辑</button>
+            </div>
+            <div class="api-key-card">
+              <div class="api-key-info">
+                <div class="api-key-icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 002 17V6.5A2.5 2.5 0 014.5 4H20v16M4 19.5A2.5 2.5 0 006.5 17H20" stroke="currentColor" stroke-width="1.5"/></svg>
+                </div>
+                <div>
+                  <div class="api-key-name">错误修复</div>
+                  <div class="api-key-status">自动修复常见错误</div>
+                </div>
+              </div>
+              <button type="button" class="btn-secondary">编辑</button>
+            </div>
+            <div class="settings-card-footer">
+              <button type="button" class="btn-secondary" style="width:100%;">+ 新建提示词</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent 偏好 -->
+        <div class="settings-section" id="section-agent">
+          <h1 class="settings-section-title">Agent 偏好</h1>
+          <p class="settings-section-desc">Agent 行为、自动检查、SubAgent 派发等配置</p>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">自动检查</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">改代码后自动检查</div><div class="settings-row-desc">支持 TypeScript/JavaScript/Python/Rust/Go/Lua/C++/Java</div></div>
+              <div class="toggle-switch is-active" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">SubAgent 派发</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">派发积极性</div><div class="settings-row-desc">never=从不派发 / conservative=批量≥5才派（默认）</div></div>
+              <select class="settings-input" style="width:160px;padding:6px 12px;"><option>从不派发</option><option selected>保守（推荐）</option><option>平衡</option><option>积极</option></select>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">看板 worker 模型分配</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">看板默认并发上限</div><div class="settings-row-desc">新建看板的最大并发任务数</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option>3（保守）</option><option selected>5（推荐）</option><option>8（高并行）</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">单模型最大并发数</div><div class="settings-row-desc">同一模型同时跑的 worker 上限</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option selected>2（推荐）</option><option>3</option><option>4</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">优先免费渠道</div><div class="settings-row-desc">未指定模型时优先用 kscc（免费）渠道</div></div>
+              <div class="toggle-switch is-active" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">允许使用外部模型</div><div class="settings-row-desc">开启后可在白名单内使用外部收费模型</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">Worker Approval 处理策略</div><div class="settings-row-desc">看板 worker 在 auto 权限模式下触发 approval 时的处理</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option selected>自动拒绝（推荐）</option><option>自动放行</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 远程 -->
+        <div class="settings-section" id="section-bots">
+          <h1 class="settings-section-title">远程 Bot</h1>
+          <p class="settings-section-desc">配置远程 Bot Hub，支持远程 Agent 执行</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">Bot Hub 地址</div><div class="settings-row-desc">远程 Bot 服务的 URL 地址</div></div>
+              <input type="text" class="settings-input" placeholder="https://bot-hub.example.com" style="width:200px;">
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">API 密钥</div><div class="settings-row-desc">用于认证的 API 密钥</div></div>
+              <input type="password" class="settings-input" placeholder="sk-xxx" style="width:200px;">
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">启用远程 Bot</div><div class="settings-row-desc">开启后将任务委派给远程 Bot 执行</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 语音 -->
+        <div class="settings-section" id="section-voice">
+          <h1 class="settings-section-title">语音输入</h1>
+          <p class="settings-section-desc">配置语音识别和输入设置</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">启用语音输入</div><div class="settings-row-desc">允许通过麦克风进行语音输入</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">语音识别服务</div><div class="settings-row-desc">选择语音识别服务提供商</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option selected>系统默认</option><option>Whisper</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">自动发送</div><div class="settings-row-desc">语音识别完成后自动发送消息</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 代理 -->
+        <div class="settings-section" id="section-proxy">
+          <h1 class="settings-section-title">代理配置</h1>
+          <p class="settings-section-desc">配置 HTTP/HTTPS 代理服务器</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">启用代理</div><div class="settings-row-desc">通过代理服务器访问网络</div></div>
+              <div class="toggle-switch" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">代理地址</div><div class="settings-row-desc">代理服务器的地址</div></div>
+              <input type="text" class="settings-input" placeholder="127.0.0.1:7890" style="width:200px;">
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">代理类型</div><div class="settings-row-desc">选择代理协议类型</div></div>
+              <select class="settings-input" style="width:140px;padding:6px 12px;"><option selected>HTTP</option><option>HTTPS</option><option>SOCKS5</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快捷键 -->
+        <div class="settings-section" id="section-shortcuts">
+          <h1 class="settings-section-title">快捷键</h1>
+          <p class="settings-section-desc">常用操作的键盘映射</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="shortcut-item"><span class="shortcut-action">新会话</span><span class="shortcut-key">⌘ N</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">搜索</span><span class="shortcut-key">⌘ K</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">打开设置</span><span class="shortcut-key">⌘ /</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">关闭对话框</span><span class="shortcut-key">Esc</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">发送消息</span><span class="shortcut-key">Enter</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">换行</span><span class="shortcut-key">Shift + Enter</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">放大界面</span><span class="shortcut-key">⌘ +</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">缩小界面</span><span class="shortcut-key">⌘ -</span></div>
+            <div class="shortcut-item"><span class="shortcut-action">重置缩放</span><span class="shortcut-key">⌘ 0</span></div>
+          </div>
+        </div>
+
+        <!-- 数据 -->
+        <div class="settings-section" id="section-insights">
+          <h1 class="settings-section-title">数据统计</h1>
+          <p class="settings-section-desc">使用量和运行数据概览</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">本月会话数</div><div class="settings-row-desc">已创建的会话总数</div></div>
+              <span style="font-size:18px;font-weight:600;color:var(--text);">127</span>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">本月消息数</div><div class="settings-row-desc">发送和接收的消息总数</div></div>
+              <span style="font-size:18px;font-weight:600;color:var(--text);">1,842</span>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">Token 用量</div><div class="settings-row-desc">本月消耗的 Token 总数</div></div>
+              <span style="font-size:18px;font-weight:600;color:var(--text);">892K</span>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">任务完成数</div><div class="settings-row-desc">已完成的工作任务数</div></div>
+              <span style="font-size:18px;font-weight:600;color:var(--text);">43</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 外观 -->
+        <div class="settings-section" id="section-appearance">
+          <h1 class="settings-section-title">外观</h1>
+          <p class="settings-section-desc">4 大家族 × 明暗 × Soft / Liquid</p>
+
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">深色模式</div><div class="settings-row-desc">切换界面明暗</div></div>
+              <div class="toggle-switch" id="darkModeToggle" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">主题家族</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="theme-grid" id="themeGrid">
+              <button type="button" class="theme-card is-selected" data-theme-pick="mist">
+                <span class="theme-card-check">✓</span>
+                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#c5d0e2,#5b7fd4);"></div>
+                <div class="theme-card-name">云絮</div>
+                <div class="theme-card-sub">Mist</div>
+              </button>
+              <button type="button" class="theme-card" data-theme-pick="ocean">
+                <span class="theme-card-check">✓</span>
+                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#c2d2e0,#4f8fc4);"></div>
+                <div class="theme-card-name">碧海</div>
+                <div class="theme-card-sub">Ocean</div>
+              </button>
+              <button type="button" class="theme-card" data-theme-pick="moss">
+                <span class="theme-card-check">✓</span>
+                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#c6d4ca,#5a8f72);"></div>
+                <div class="theme-card-name">青苔</div>
+                <div class="theme-card-sub">Moss</div>
+              </button>
+              <button type="button" class="theme-card" data-theme-pick="dusk">
+                <span class="theme-card-check">✓</span>
+                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#d4ccc2,#a07a5e);"></div>
+                <div class="theme-card-name">暮霭</div>
+                <div class="theme-card-sub">Dusk</div>
+              </button>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">界面材质</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="material-pair" id="materialPair">
+              <button type="button" class="material-tile is-selected" data-material-pick="soft">
+                <div class="material-preview material-preview-soft"></div>
+                <div class="material-name">轻拟态</div>
+                <div class="material-tag">Soft Glass</div>
+              </button>
+              <button type="button" class="material-tile" data-material-pick="liquid">
+                <div class="material-preview material-preview-liquid"></div>
+                <div class="material-name">液态玻璃</div>
+                <div class="material-tag">Liquid Glass</div>
+              </button>
+            </div>
+          </div>
+
+          <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">排版</h2>
+          <div class="settings-card settings-card--flush">
+            <div class="settings-row">
+              <div><div class="settings-row-label">阅读字号</div><div class="settings-row-desc">AI 回复与 Markdown 编辑器的正文字号</div></div>
+              <select class="settings-input" style="width:100px;padding:6px 12px;"><option>小</option><option selected>中</option><option>大</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-row-label">Agent 预览展开方式</div><div class="settings-row-desc">点击「预览」时的默认位置</div></div>
+              <select class="settings-input" style="width:120px;padding:6px 12px;"><option selected>标签页</option><option>侧边分屏</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关于 -->
+        <div class="settings-section" id="section-about">
+          <h1 class="settings-section-title">关于</h1>
+          <p class="settings-section-desc">版本与产品信息</p>
+          <div class="settings-card settings-card--flush">
+            <div class="about-hero">
+              <div class="about-logo">T</div>
+              <div class="about-title">TAgent</div>
+              <div class="about-version">版本 1.0.0 · Glass Studio</div>
+              <div class="about-copy">
+                Soft Glass 浮岛壳层原型。<br>
+                支持 Mist / Ocean / Moss / Dusk × Soft / Liquid。<br><br>
+                © 2026 TAgent Team
+              </div>
+              <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;">
+                <a href="#" class="about-link">查看文档</a>
+                <a href="#" class="about-link">GitHub</a>
+                <a href="#" class="about-link">问题反馈</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+`;
 
     Modal.bindCloseButtons(container);
   },
@@ -389,13 +865,16 @@ const SettingsModal = {
       });
     }
 
-    const addApi = document.getElementById('addApiKeyBtn');
-    if (addApi && addApi.dataset.bound !== '1') {
-      addApi.dataset.bound = '1';
-      addApi.addEventListener('click', () => {
-        Toast.info('API 密钥配置功能开发中...');
+    // Toggle switches
+    modal.querySelectorAll('.toggle-switch').forEach((toggle) => {
+      if (toggle.dataset.bound === '1') return;
+      toggle.dataset.bound = '1';
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('is-active');
+        const isActive = toggle.classList.contains('is-active');
+        toggle.setAttribute('aria-checked', isActive ? 'true' : 'false');
       });
-    }
+    });
 
     if (this._observer) this._observer.disconnect();
     this._observer = new MutationObserver(() => this.syncAppearanceControls());
@@ -432,38 +911,6 @@ const SettingsModal = {
     document.querySelectorAll('#settingsModal [data-material-pick]').forEach((el) => {
       el.classList.toggle('is-selected', el.dataset.materialPick === material);
     });
-  },
-
-  renderShortcuts() {
-    const container = document.getElementById('shortcutsList');
-    if (!container || typeof mockData === 'undefined') return;
-    container.innerHTML = mockData.settings.shortcuts.map((s) => `
-      <div class="shortcut-item">
-        <span class="shortcut-action">${s.action}</span>
-        <span class="shortcut-key">${s.key}</span>
-      </div>
-    `).join('');
-  },
-
-  renderApiKeys() {
-    const container = document.getElementById('apiKeysList');
-    if (!container || typeof mockData === 'undefined') return;
-    container.innerHTML = mockData.settings.apiKeys.map((api) => `
-      <div class="api-key-card">
-        <div class="api-key-info">
-          <div class="api-key-icon">
-            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="api-key-name">${api.name}</div>
-            <div class="api-key-status">${api.configured ? `上次使用: ${api.lastUsed || '今天'}` : '未配置'}</div>
-          </div>
-        </div>
-        <button type="button" class="btn-secondary">${api.configured ? '更新' : '配置'}</button>
-      </div>
-    `).join('');
   }
 };
 
