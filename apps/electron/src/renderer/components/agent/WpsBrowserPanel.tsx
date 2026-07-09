@@ -1,8 +1,11 @@
 /**
- * WpsBrowserPanel — WPS 文档预览面板
+ * BrowserPanel — 通用网页预览面板
  *
- * 参考 Kun 的 DevBrowserPanel，在右侧面板内嵌入 <webview> 预览 WPS 文档。
- * 支持地址栏输入、前进/后退/刷新、新标签页打开等功能。
+ * 参考 Kun 的 DevBrowserPanel，在右侧面板内嵌入 <webview> 预览任意网页。
+ * 支持：
+ * - 远程 URL（https://）
+ * - 本地 HTML 文件（file:// 或拖拽）
+ * - 前进/后退/刷新/外部打开
  */
 
 import type { ReactElement } from 'react'
@@ -14,6 +17,7 @@ import {
   Globe2,
   Loader2,
   RefreshCw,
+  FileCode,
   X,
 } from 'lucide-react'
 
@@ -44,19 +48,13 @@ type WebviewTitleEvent = Event & {
   title: string
 }
 
-const WPS_PREVIEW_DOMAINS = ['365.kdocs.cn', 'kdocs.cn', 'wps.cn', 'open.wps.cn']
-
-function isWpsUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    return WPS_PREVIEW_DOMAINS.some((d) => parsed.hostname.endsWith(d))
-  } catch {
-    return false
-  }
-}
-
 function formatAddressInput(url: string): string {
   try {
+    // file:// 协议显示文件名
+    if (url.startsWith('file://')) {
+      const parts = url.split('/')
+      return parts[parts.length - 1] || url
+    }
     const parsed = new URL(url)
     const path = parsed.pathname === '/' ? '' : parsed.pathname
     return `${parsed.host}${path}${parsed.search}${parsed.hash}`
@@ -65,8 +63,8 @@ function formatAddressInput(url: string): string {
   }
 }
 
-interface WpsBrowserPanelProps {
-  /** 初始 URL（可选，Agent 传入的分享链接） */
+interface BrowserPanelProps {
+  /** 初始 URL（可选，外部传入） */
   initialUrl?: string | null
   /** 面板宽度 */
   width?: number
@@ -74,11 +72,11 @@ interface WpsBrowserPanelProps {
   onCollapse?: () => void
 }
 
-export function WpsBrowserPanel({
+export function BrowserPanel({
   initialUrl,
   width = 400,
   onCollapse,
-}: WpsBrowserPanelProps): ReactElement {
+}: BrowserPanelProps): ReactElement {
   const webviewRef = useRef<DevWebviewTag | null>(null)
   const [activeUrl, setActiveUrl] = useState<string | null>(initialUrl ?? null)
   const [draftUrl, setDraftUrl] = useState(() =>
@@ -180,9 +178,20 @@ export function WpsBrowserPanel({
     e.preventDefault()
     if (!draftUrl.trim()) return
     let url = draftUrl.trim()
-    if (!/^https?:\/\//i.test(url)) {
+
+    // 本地文件路径（Windows: C:/... 或 Linux/Mac: /...）
+    if (/^[A-Za-z]:[/\\]|^[/~]/.test(url)) {
+      try {
+        // 需要 file:// 协议
+        const { pathToFileURL } = require('url')
+        url = pathToFileURL(url).href
+      } catch {
+        url = 'file://' + url
+      }
+    } else if (!/^https?:\/\//i.test(url) && !/^file:\/\//i.test(url)) {
       url = 'https://' + url
     }
+
     try {
       new URL(url) // validate
       setActiveUrl(url)
@@ -190,7 +199,25 @@ export function WpsBrowserPanel({
       setLoading(true)
       setLoadError(null)
     } catch {
-      setLoadError('无效的 URL')
+      setLoadError('无效的 URL 或文件路径')
+    }
+  }
+
+  // 文件拖拽支持
+  const handleDrop = (e: React.DragEvent): void => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+    const filePath = (file as unknown as { path?: string }).path || file.name
+    if (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+      const { pathToFileURL } = require('url')
+      const url = pathToFileURL(filePath).href
+      setActiveUrl(url)
+      setDraftUrl(formatAddressInput(url))
+      setLoading(true)
+      setLoadError(null)
+    } else {
+      setLoadError('只支持 HTML 文件')
     }
   }
 
@@ -198,6 +225,8 @@ export function WpsBrowserPanel({
     <div
       className="flex flex-col h-full bg-background"
       style={{ width }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
     >
       {/* 顶部工具栏 */}
       <div className="flex items-center gap-1 px-2 h-10 border-b border-border shrink-0">
@@ -261,7 +290,7 @@ export function WpsBrowserPanel({
               type="text"
               value={draftUrl}
               onChange={(e) => setDraftUrl(e.target.value)}
-              placeholder="输入网址或 WPS 分享链接..."
+              placeholder="输入网址或拖入 HTML 文件..."
               className={cn(
                 'w-full h-7 pl-7 pr-2 text-xs rounded-md border border-input bg-background',
                 'focus:outline-none focus:ring-1 focus:ring-ring',
@@ -325,17 +354,20 @@ export function WpsBrowserPanel({
           <webview
             ref={webviewRef as React.RefObject<HTMLElement>}
             src={activeUrl}
-            partition="persist:wps-browser"
+            partition="persist:browser-preview"
             webpreferences="contextIsolation=yes,nodeIntegration=no,sandbox=yes"
             className="absolute inset-0 w-full h-full"
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
-            <Globe2 size={32} className="mb-2 opacity-40" />
-            <p>输入 WPS 分享链接或网址预览文档</p>
+            <FileCode size={32} className="mb-2 opacity-40" />
+            <p>输入网址或拖入 HTML 文件预览</p>
           </div>
         )}
       </div>
     </div>
   )
 }
+
+// 保持旧名称兼容
+export const WpsBrowserPanel = BrowserPanel
