@@ -317,11 +317,20 @@ const SettingsModal = {
 
     container.classList.add('settings-dialog-overlay');
     container.innerHTML = `
-<div class="modal-content settings-dialog" role="dialog" aria-modal="true" aria-label="设置">
-<div class="specular" aria-hidden="true"></div><div class="chroma-edge" aria-hidden="true"></div>
+<div class="modal-content settings-dialog" role="dialog" aria-modal="true" aria-label="settings">
+<!-- 顶部工具栏（在所有浮岛之上） -->
+<div class="settings-top-bar">
+  <input class="settings-search" type="search" placeholder="搜索设置…" aria-label="搜索设置" />
+  <button type="button" class="settings-close" data-modal-close aria-label="关闭设置" title="关闭">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
 <div class="settings-shell">
-  <!-- 左侧导航 -->
-  <aside class="settings-nav-island" aria-label="设置导航">
+  <!-- 左侧导航浮岛（覆盖在右侧主面板之上） -->
+  <aside class="settings-nav-island glass-island" aria-label="设置导航">
+    <div class="specular" aria-hidden="true"></div>
+    <div class="chroma-edge" aria-hidden="true"></div>
     <div class="settings-nav-head">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
@@ -392,20 +401,18 @@ const SettingsModal = {
     </nav>
   </aside>
 
-  <!-- 右侧内容 -->
-  <section class="settings-content-island">
+  <!-- 右侧内容浮岛 -->
+  <section class="settings-content-island glass-island">
+    <div class="specular" aria-hidden="true"></div>
+    <div class="chroma-edge" aria-hidden="true"></div>
     <div class="settings-content-top">
-      <input class="settings-search" type="search" placeholder="搜索设置…" aria-label="搜索设置" />
-      <button type="button" class="settings-close" data-modal-close aria-label="关闭设置" title="关闭">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
+      <span class="settings-section-title" id="settingsSectionTitle">通用</span>
     </div>
     <div class="settings-content-scroll">
       <div class="settings-content-inner" id="settingsContent">
 
         <!-- 通用设置 -->
         <div class="settings-section is-active" id="section-general">
-          <h1 class="settings-section-title">通用</h1>
           <p class="settings-section-desc">语言、归档、通知等基础偏好</p>
 
           <div class="settings-card settings-card--flush">
@@ -464,7 +471,6 @@ const SettingsModal = {
 
         <!-- AI 渠道 -->
         <div class="settings-section" id="section-channels">
-          <h1 class="settings-section-title">AI 渠道</h1>
           <p class="settings-section-desc">配置 AI 模型渠道，支持多渠道切换</p>
 
           <div class="settings-card settings-card--flush">
@@ -506,7 +512,6 @@ const SettingsModal = {
 
         <!-- 提示词 -->
         <div class="settings-section" id="section-prompts">
-          <h1 class="settings-section-title">提示词</h1>
           <p class="settings-section-desc">自定义提示词模板</p>
 
           <div class="settings-card settings-card--flush">
@@ -554,7 +559,6 @@ const SettingsModal = {
 
         <!-- Agent 偏好 -->
         <div class="settings-section" id="section-agent">
-          <h1 class="settings-section-title">Agent 偏好</h1>
           <p class="settings-section-desc">Agent 行为、自动检查、SubAgent 派发等配置</p>
 
           <h2 style="margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--text-soft);">自动检查</h2>
@@ -598,9 +602,8 @@ const SettingsModal = {
           </div>
         </div>
 
-        <!-- 远程 -->
+        <!-- 远程 Bot -->
         <div class="settings-section" id="section-bots">
-          <h1 class="settings-section-title">远程 Bot</h1>
           <p class="settings-section-desc">配置远程 Bot Hub，支持远程 Agent 执行</p>
 
           <div class="settings-card settings-card--flush">
@@ -621,7 +624,6 @@ const SettingsModal = {
 
         <!-- 语音 -->
         <div class="settings-section" id="section-voice">
-          <h1 class="settings-section-title">语音输入</h1>
           <p class="settings-section-desc">配置语音识别和输入设置</p>
 
           <div class="settings-card settings-card--flush">
@@ -642,7 +644,6 @@ const SettingsModal = {
 
         <!-- 代理 -->
         <div class="settings-section" id="section-proxy">
-          <h1 class="settings-section-title">代理配置</h1>
           <p class="settings-section-desc">配置 HTTP/HTTPS 代理服务器</p>
 
           <div class="settings-card settings-card--flush">
@@ -663,7 +664,6 @@ const SettingsModal = {
 
         <!-- 快捷键 -->
         <div class="settings-section" id="section-shortcuts">
-          <h1 class="settings-section-title">快捷键</h1>
           <p class="settings-section-desc">常用操作的键盘映射</p>
 
           <div class="settings-card settings-card--flush">
@@ -681,7 +681,6 @@ const SettingsModal = {
 
         <!-- 数据 -->
         <div class="settings-section" id="section-insights">
-          <h1 class="settings-section-title">数据统计</h1>
           <p class="settings-section-desc">使用量和运行数据概览</p>
 
           <div class="settings-card settings-card--flush">
@@ -706,7 +705,6 @@ const SettingsModal = {
 
         <!-- 外观 -->
         <div class="settings-section" id="section-appearance">
-          <h1 class="settings-section-title">外观</h1>
           <p class="settings-section-desc">4 大家族 × 明暗 × Soft / Liquid</p>
 
           <div class="settings-card settings-card--flush">
@@ -777,7 +775,6 @@ const SettingsModal = {
 
         <!-- 关于 -->
         <div class="settings-section" id="section-about">
-          <h1 class="settings-section-title">关于</h1>
           <p class="settings-section-desc">版本与产品信息</p>
           <div class="settings-card settings-card--flush">
             <div class="about-hero">
@@ -891,6 +888,14 @@ const SettingsModal = {
     document.querySelectorAll('#settingsModal .settings-section').forEach((sec) => {
       sec.classList.toggle('is-active', sec.id === `section-${section}`);
     });
+
+    // 更新顶部标题
+    const titleEl = document.getElementById('settingsSectionTitle');
+    const activeItem = document.querySelector(`#settingsModal .settings-nav-item[data-section="${section}"]`);
+    if (titleEl && activeItem) {
+      const labelText = activeItem.textContent.trim();
+      titleEl.textContent = labelText;
+    }
   },
 
   syncAppearanceControls() {

@@ -1,4 +1,4 @@
-/* ========== Settings Dialog — Soft UI window (index.html language) ========== */
+/* ========== Settings Dialog — Dual Floating Islands ========== */
 
 .settings-dialog-overlay.modal-overlay {
   padding: 28px;
@@ -11,8 +11,8 @@
   position: relative;
   width: min(1080px, 94vw);
   max-width: min(1080px, 94vw);
-  height: min(720px, 86vh);
-  max-height: min(720px, 86vh);
+  height: min(800px, 92vh);
+  max-height: min(800px, 92vh);
   display: flex;
   flex-direction: column;
   border-radius: 22px;
@@ -21,66 +21,250 @@
   overflow: hidden;
   background: var(--glass);
   border: 1px solid var(--rim);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    18px 18px 40px color-mix(in srgb, var(--shadow-dark) 70%, transparent),
-    -12px -12px 32px color-mix(in srgb, var(--shadow-light) 85%, transparent);
   backdrop-filter: blur(var(--blur, 36px)) saturate(160%);
   -webkit-backdrop-filter: blur(var(--blur, 36px)) saturate(160%);
+  box-shadow: var(--plate-shadow);
   transform: translateY(16px) scale(0.985);
   transition: transform 280ms var(--island-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+/* 顶部工具栏：浮在主面板之上 */
+.settings-top-bar {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  height: 30px;
+}
+
+.settings-search {
+  flex: 1;
+  max-width: 280px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--glass-strong);
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: var(--neu-in-sm);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.settings-search::placeholder {
+  color: var(--text-faint);
+}
+
+.settings-search:focus {
+  outline: none;
+  box-shadow:
+    var(--neu-in-sm),
+    0 0 0 2px var(--accent-soft);
+}
+
+.settings-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: var(--glass-strong);
+  color: var(--text-soft);
+  cursor: pointer;
+  box-shadow: var(--neu-out-sm);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    color 160ms var(--island-ease),
+    box-shadow 160ms var(--island-ease),
+    transform 160ms var(--island-ease);
+}
+
+.settings-close:hover {
+  color: var(--text);
+}
+
+.settings-close:active {
+  box-shadow: var(--neu-in-sm);
+  transform: scale(0.95);
 }
 
 .modal-overlay.is-open .settings-dialog {
   transform: translateY(0) scale(1);
 }
 
-.settings-dialog > .specular,
-.settings-dialog > .chroma-edge {
-  border-radius: inherit;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.settings-dialog > .chroma-edge {
-  z-index: 6;
-}
-
 .settings-dialog .settings-shell {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 4;
-  inset: auto;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
   display: flex;
   gap: 0;
-  background: var(--surface);
+  background: transparent;
 }
 
-/* Soft: clay interior panels (no glass islands) */
-[data-material="soft"] .settings-nav-island,
+/* ========== Right Content Panel (Main Panel, Full Width) ========== */
+
+.settings-content-island {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--rim);
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(130%);
+  -webkit-backdrop-filter: blur(30px) saturate(130%);
+  box-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    10px 14px 28px var(--ambient-shadow),
+    -6px -6px 18px var(--elev-light);
+}
+
+/* Soft: 主面板透明，继承外层容器背景 */
 [data-material="soft"] .settings-content-island {
   background: transparent;
-  border: 0;
-  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-radius: 0;
+  border: 0;
+  box-shadow: none;
 }
+
+/* Liquid: 主面板有玻璃背景 */
+[data-material="liquid"] .settings-content-island {
+  background: var(--glass);
+}
+
+/* Specular & chroma-edge for content island */
+.settings-content-island > .specular,
+.settings-content-island > .chroma-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.settings-content-island > .specular {
+  z-index: 2;
+  background: radial-gradient(
+    120% 80% at 55% 28%,
+    var(--specular-peak) 0%,
+    var(--specular-mid) 32%,
+    transparent 58%
+  );
+  mix-blend-mode: soft-light;
+  opacity: var(--specular-opacity);
+}
+
+.settings-content-island > .chroma-edge {
+  z-index: 3;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--chroma-a),
+    var(--chroma-mid) 40%,
+    var(--chroma-b) 70%,
+    var(--chroma-c)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.35;
+}
+
+/* ========== Left Navigation Island (Above Main Panel, z-index: 70) ========== */
 
 .settings-nav-island {
   position: relative;
+  z-index: 70;
   width: 232px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface) 100%);
-  border-right: 1px solid color-mix(in srgb, var(--shadow-light) 55%, transparent);
+  border-radius: var(--island-radius);
+  border: 1px solid var(--rim);
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(130%);
+  -webkit-backdrop-filter: blur(30px) saturate(130%);
+  box-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    10px 14px 28px var(--ambient-shadow),
+    -6px -6px 18px var(--elev-light);
+  margin: 8px 0 8px 8px;
+}
+
+/* Specular & chroma-edge for nav island */
+.settings-nav-island > .specular,
+.settings-nav-island > .chroma-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.settings-nav-island > .specular {
+  z-index: 2;
+  background: radial-gradient(
+    120% 80% at 55% 28%,
+    var(--specular-peak) 0%,
+    var(--specular-mid) 32%,
+    transparent 58%
+  );
+  mix-blend-mode: soft-light;
+  opacity: var(--specular-opacity);
+}
+
+.settings-nav-island > .chroma-edge {
+  z-index: 3;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--chroma-a),
+    var(--chroma-mid) 40%,
+    var(--chroma-b) 70%,
+    var(--chroma-c)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.35;
+}
+
+/* Soft: 左侧浮岛覆盖在主面板上 */
+[data-material="soft"] .settings-nav-island {
+  background: var(--glass);
+}
+
+/* Liquid: 左侧浮岛有液态玻璃效果 */
+[data-material="liquid"] .settings-nav-island {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
+  box-shadow: var(--plate-shadow);
 }
 
 .settings-nav-head {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -101,6 +285,8 @@
 }
 
 .settings-nav-scroll {
+  position: relative;
+  z-index: 4;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -179,87 +365,51 @@
   transform: scale(0.98);
 }
 
-.settings-content-island {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--surface);
-}
-
 .settings-content-top {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 10px;
   height: 48px;
   padding: 0 16px;
+  padding-left: calc(232px + 24px); /* 左侧浮岛宽度 + 间距 */
   flex-shrink: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--shadow-light) 45%, transparent);
   background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
 }
 
-.settings-search {
-  flex: 1;
-  min-width: 0;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 0;
-  background: var(--surface-sunken);
+/* Soft: 顶部栏无背景和边框，避免延伸到浮岛下方 */
+[data-material="soft"] .settings-content-top {
+  background: transparent;
+  border-bottom: 0;
+}
+
+/* Liquid: 顶部栏有玻璃背景 */
+[data-material="liquid"] .settings-content-top {
+  background: var(--glass-soft);
+}
+
+.settings-section-title {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text);
-  font-size: 12px;
-  box-shadow: var(--neu-in-sm);
-}
-
-.settings-search::placeholder {
-  color: var(--text-faint);
-}
-
-.settings-search:focus {
-  outline: none;
-  box-shadow:
-    var(--neu-in-sm),
-    0 0 0 3px var(--accent-soft);
-}
-
-.settings-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  cursor: pointer;
-  box-shadow: var(--neu-out-sm);
-  transition:
-    color 160ms var(--island-ease),
-    box-shadow 160ms var(--island-ease),
-    transform 160ms var(--island-ease);
-}
-
-.settings-close:hover {
-  color: var(--text);
-}
-
-.settings-close:active {
-  box-shadow: var(--neu-in-sm);
-  transform: scale(0.97);
+  letter-spacing: -0.02em;
 }
 
 .settings-content-scroll {
+  position: relative;
+  z-index: 4;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 22px 28px 36px;
+  /* 内容区不需要额外 padding-left，因为顶部栏已经处理了 */
 }
 
 .settings-content-inner {
   max-width: 640px;
-  margin: 0 auto;
+  margin-left: calc(232px + 20px); /* 浮岛宽度 + 间距，让内容区在浮岛右侧 */
 }
 
 .settings-section {
@@ -276,19 +426,142 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.settings-section-title {
-  margin: 0 0 6px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.02em;
-}
-
 .settings-section-desc {
   margin: 0 0 18px;
   font-size: 13px;
   color: var(--text-soft);
   line-height: 1.5;
+}
+
+.settings-group-title {
+  margin: 18px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.settings-value {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.settings-stat {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-row-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.btn-icon-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  cursor: pointer;
+  box-shadow: var(--neu-out-sm);
+  font-size: 12px;
+  transition:
+    color 160ms var(--island-ease),
+    box-shadow 160ms var(--island-ease),
+    transform 160ms var(--island-ease);
+}
+
+.btn-icon-small:hover {
+  color: var(--text);
+}
+
+.btn-icon-small:active {
+  box-shadow: var(--neu-in-sm);
+  transform: scale(0.95);
+}
+
+/* ========== Left Navigation Island (Floating Above Main Panel) ========== */
+
+.settings-nav-island {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  z-index: 70;
+  width: 232px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--island-radius);
+  border: 1px solid var(--rim);
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(130%);
+  -webkit-backdrop-filter: blur(30px) saturate(130%);
+  box-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    10px 14px 28px var(--ambient-shadow),
+    -6px -6px 18px var(--elev-light);
+}
+
+/* Specular & chroma-edge for nav island */
+.settings-nav-island > .specular,
+.settings-nav-island > .chroma-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.settings-nav-island > .specular {
+  z-index: 2;
+  background: radial-gradient(
+    120% 80% at 55% 28%,
+    var(--specular-peak) 0%,
+    var(--specular-mid) 32%,
+    transparent 58%
+  );
+  mix-blend-mode: soft-light;
+  opacity: var(--specular-opacity);
+}
+
+.settings-nav-island > .chroma-edge {
+  z-index: 3;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--chroma-a),
+    var(--chroma-mid) 40%,
+    var(--chroma-b) 70%,
+    var(--chroma-c)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.35;
+}
+
+/* Soft: 左侧浮岛覆盖在主面板上 */
+[data-material="soft"] .settings-nav-island {
+  background: var(--glass);
+}
+
+/* Liquid: 左侧浮岛有液态玻璃效果 */
+[data-material="liquid"] .settings-nav-island {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
+  box-shadow: var(--plate-shadow);
 }
 
 .settings-card {
@@ -684,47 +957,15 @@
   background: #fff;
 }
 
-/* Liquid keeps clear-lens islands */
-[data-material="liquid"] .settings-dialog.modal-content {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  padding: 10px;
-  gap: 10px;
-  border-radius: calc(var(--island-radius) + 4px);
+/* ========== Liquid Material Overrides ========== */
+
+/* Liquid: 装饰层可见 */
+[data-material="liquid"] .settings-nav-island > .specular,
+[data-material="liquid"] .settings-content-island > .specular {
+  opacity: var(--specular-opacity);
 }
 
-[data-material="liquid"] .settings-dialog .settings-shell {
-  gap: 10px;
-  background: transparent;
-}
-
-[data-material="liquid"] .settings-dialog > .specular,
-[data-material="liquid"] .settings-dialog > .chroma-edge {
-  display: none;
-}
-
-[data-material="liquid"] .settings-nav-island,
-[data-material="liquid"] .settings-content-island {
-  border-radius: var(--island-radius);
-  border: 1px solid var(--rim);
-  box-shadow: var(--plate-shadow);
-  backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--blur, 32px)) saturate(140%);
-  overflow: hidden;
-}
-
-[data-material="liquid"] .settings-nav-island {
-  background: var(--glass);
-  border-right: 1px solid var(--rim);
-}
-
-[data-material="liquid"] .settings-content-island {
-  background: var(--glass-strong);
-}
-
+/* Liquid: 导航项样式 */
 [data-material="liquid"] .settings-nav-item.is-active,
 [data-material="liquid"] .settings-nav-item:hover {
   box-shadow: none;
@@ -732,27 +973,23 @@
   color: var(--text);
 }
 
+/* Liquid: 卡片样式 */
 [data-material="liquid"] .settings-card,
 [data-material="liquid"] .theme-card,
 [data-material="liquid"] .material-tile,
-[data-material="liquid"] .settings-search,
-[data-material="liquid"] .settings-input,
 [data-material="liquid"] .shortcut-key,
-[data-material="liquid"] .settings-close,
 [data-material="liquid"] .settings-dialog .btn-secondary {
   background: var(--glass-soft);
   border: 1px solid var(--rim-soft);
   box-shadow: 0 1px 0 var(--inset-hi-soft, rgba(255,255,255,0.35)) inset;
 }
 
+/* Liquid: 顶部工具栏按钮 */
 [data-material="liquid"] .settings-search,
-[data-material="liquid"] .settings-input {
+[data-material="liquid"] .settings-close {
   background: var(--glass-strong);
-  border-radius: 999px;
-}
-
-[data-material="liquid"] .settings-input {
-  border-radius: var(--r-sm);
+  border: 1px solid var(--rim);
+  box-shadow: 0 1px 0 var(--inset-hi-soft) inset;
 }
 
 @media (max-width: 860px) {
