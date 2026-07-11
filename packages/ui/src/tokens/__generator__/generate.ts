@@ -12,13 +12,13 @@
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { radius, shadows, spacing, fontSize, motion, colors, tailwindColorTokens } from '../index'
 
-const __dirname = new URL('.', import.meta.url).pathname
-  // Windows 路径修正（/F:/ → F:/）
-  .replace(/^\/([A-Za-z]:)/, '$1')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const generatedDir = resolve(__dirname, '..', '__generated__')
 
@@ -52,6 +52,18 @@ function buildTailwindObject(category: string, tokens: Record<string, string>): 
   return `{\n${lines.join('\n')}\n}`
 }
 
+/**
+ * 将 ThemeName 映射到 CSS 选择器
+ * 'default-light' → ':root'
+ * 'default-dark' → '.dark'
+ * 'ocean-light' → '.theme-ocean-light'
+ */
+function themeNameToSelector(name: string): string {
+  if (name === 'default-light') return ':root'
+  if (name === 'default-dark') return '.dark'
+  return `.theme-${name}`
+}
+
 function generateTokensCss(): string {
   const blocks: string[] = []
 
@@ -61,8 +73,17 @@ function generateTokensCss(): string {
   blocks.push(buildCssBlock('font', fontSize))
   blocks.push(buildCssBlock('motion', motion))
 
-  // 颜色 token：阶段 1 不产出 CSS 变量（现有变量在 globals.css）
-  // 阶段 5 填充 colors 对象后，生成器会产出 .theme-xxx { ... } 块
+  // 颜色 token：为每个主题产出 CSS 变量块
+  const themeEntries = Object.entries(colors)
+  if (themeEntries.length > 0) {
+    for (const [themeName, themeColors] of themeEntries) {
+      const selector = themeNameToSelector(themeName)
+      const lines = Object.entries(themeColors).map(
+        ([key, value]) => `  --${key}: ${value};`
+      )
+      blocks.push(`${selector} {\n${lines.join('\n')}\n}`)
+    }
+  }
 
   const nonEmpty = blocks.filter(Boolean).join('\n')
 
@@ -85,8 +106,7 @@ function generateTailwindThemeJs(): string {
   const fontSizeObj = buildTailwindObject('font', fontSize as Record<string, string>)
   const motionObj = buildTailwindObject('motion', motion as Record<string, string>)
 
-  // colors：阶段 1 用 tailwindColorTokens（指向现有 CSS 变量）
-  // 阶段 5 后改为从 colors 对象生成
+  // colors：用 tailwindColorTokens（指向现有 CSS 变量）
   const colorsJson = JSON.stringify(tailwindColorTokens, null, 2)
 
   return `/* ============================================
@@ -130,7 +150,7 @@ function main(): void {
   console.log(`  - spacing tokens: ${Object.keys(spacing).length} 个`)
   console.log(`  - fontSize tokens: ${Object.keys(fontSize).length} 个`)
   console.log(`  - motion tokens: ${Object.keys(motion).length} 个`)
-  console.log(`  - color themes: ${Object.keys(colors).length} 个（阶段 1 跳过 CSS 变量产出）`)
+  console.log(`  - color themes: ${Object.keys(colors).length} 个`)
 }
 
 main()

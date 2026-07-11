@@ -1527,6 +1527,7 @@ export function LeftSidebar({
             onBatchUpdateSelected={setBatchSelectedSessionIds}
             onRequestBatchDelete={handleRequestBatchDelete}
             onConfirmBatchDelete={handleConfirmBatchDelete}
+            onCreateProject={createProject}
           />
         )
       }
@@ -1590,6 +1591,7 @@ export function LeftSidebar({
             onBatchUpdateSelected={setBatchSelectedSessionIds}
             onRequestBatchDelete={handleRequestBatchDelete}
             onConfirmBatchDelete={handleConfirmBatchDelete}
+            onCreateProject={createProject}
           />
         )
     }
@@ -1600,7 +1602,7 @@ export function LeftSidebar({
       className={cn(
         'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
         'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-        !isMac && 'pt-[28px]'
+        !isMac && 'pt-[16px]'
       )}
       style={{
         width: width ?? 240,
@@ -1614,154 +1616,148 @@ export function LeftSidebar({
           aria-hidden
         />
       )}
-      {/* 新会话按钮 + 搜索按钮（仅 Agent 会话功能区显示） */}
-      {activeRailItem === 'sessions' && (
-        <div className="nav-island-action-row px-3 gap-1.5">
-          <button
-            onClick={handleNewAgentSession}
-            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+      {/* 会话 / 草稿：对齐 glass-studio .sidebar-inner 结构 */}
+      {activeRailItem === 'sessions' ? (
+        <div className="sidebar-inner">
+          <div className="sidebar-head titlebar-no-drag">
+            <h2 className="sidebar-head-title">会话</h2>
+            <div className="tool-cluster" role="group" aria-label="会话操作">
+              <button type="button" className="tool-cluster-accent" onClick={handleNewAgentSession}>
+                新会话
+              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="tool-cluster-icon"
+                    onClick={() => setSearchDialogOpen(true)}
+                    aria-label="搜索"
+                  >
+                    <Search size={14} strokeWidth={1.5} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  搜索 ({getAcceleratorDisplay(getActiveAccelerator('global-search'))})
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          <div
+            key={activeRailItem}
+            className="flex min-h-0 flex-1 flex-col"
           >
-            <Plus size={14} />
-            <span>新会话</span>
-          </button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => setSearchDialogOpen(true)}
-                className="flex-shrink-0 size-[36px] flex items-center justify-center rounded-[10px] text-foreground/40 bg-primary/5 hover:bg-primary/10 hover:text-foreground/60 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
-              >
-                <Search size={14} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              搜索 ({getAcceleratorDisplay(getActiveAccelerator('global-search'))})
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      )}
+            {renderRailContent()}
+          </div>
 
-      {/* 项目标题行 + 新建项目按钮（仅 Agent 会话功能区显示，放在新会话下方） */}
-      {activeRailItem === 'sessions' && (
-        <div className="shrink-0 flex items-center justify-between px-3 pt-2 pb-1 titlebar-no-drag">
-          <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
-            项目
-          </span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => void createProject()}
-                className="size-5 flex items-center justify-center rounded-md text-foreground/35 hover:bg-foreground/[0.06] hover:text-foreground/60 transition-colors"
-                aria-label="新建项目"
-              >
-                <Plus size={13} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">新建项目</TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* 新草稿按钮 + 搜索按钮（仅草稿功能区显示） */}
-      {activeRailItem === 'draft' && (
-        <div className="nav-island-action-row px-3 gap-1.5">
-          <button
-            onClick={handleNewDraft}
-            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
-          >
-            <Plus size={14} />
-            <span>新草稿</span>
-          </button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => setDraftSearchOpen(true)}
-                className="flex-shrink-0 size-[36px] flex items-center justify-center rounded-[10px] text-foreground/40 bg-primary/5 hover:bg-primary/10 hover:text-foreground/60 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
-              >
-                <Search size={14} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">搜索草稿</TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* 功能区内容：切换 Rail 时淡入，避免侧栏翼内容突变生硬 */}
-      <div
-        key={activeRailItem}
-        className={cn(
-          'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200'
-        )}
-      >
-        {renderRailContent()}
-      </div>
-
-      {/* 已归档 Popover 入口：固定在底部，点击展开成完整列表（不切换整页 viewMode） */}
-      {activeRailItem === 'sessions' && (
-        <div className="px-3 pb-1 flex-shrink-0">
           {mode === 'agent' && archivedAgentSessionCount > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-foreground/40 hover:bg-foreground/[0.04] hover:text-foreground/60 transition-colors titlebar-no-drag">
-                  <Archive size={13} className="text-foreground/30" />
-                  <span>已归档 ({archivedAgentSessionCount})</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="start"
-                sideOffset={6}
-                className="w-72 p-0 overflow-hidden"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-              >
-                <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
-                  <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
-                    已归档会话 · {archivedAgentSessionCount}
-                  </span>
-                </div>
-                <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
-                  {archivedAgentSessionsList.length === 0 ? (
-                    <div className="py-3 text-center text-[12px] text-foreground/40">
-                      暂无已归档会话
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      {archivedAgentSessionsList.map((session) => (
-                        <AgentSessionItem
-                          key={session.id}
-                          session={session}
-                          active={session.id === activeSessionId}
-                          indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
-                          leftAccent={getSessionLeftAccent(
-                            agentIndicatorMap.get(session.id) ?? 'idle',
-                            session.id === activeSessionId,
-                            session.manualWorking
-                          )}
-                          showPinIcon={!!session.pinned}
-                          workspaceName={
-                            session.workspaceId
-                              ? workspaceNameMap.get(session.workspaceId)
-                              : undefined
-                          }
-                          onSelect={handleSelectAgentSession}
-                          onConfirmDone={handleConfirmWorkingDoneAgent}
-                          onRequestDelete={handleRequestDelete}
-                          onRequestMove={handleRequestMove}
-                          onRename={handleAgentRename}
-                          onTogglePin={handleTogglePinAgent}
-                          onToggleManualWorking={handleToggleManualWorkingAgent}
-                          onToggleArchive={handleToggleArchiveAgent}
-                          disableMiniMap
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div className="flex-shrink-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="sidebar-archive-btn flex items-center justify-center gap-2 titlebar-no-drag">
+                    <Archive size={13} className="opacity-70" />
+                    <span>已归档 ({archivedAgentSessionCount})</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  align="start"
+                  sideOffset={6}
+                  className="w-72 p-0 overflow-hidden"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
+                    <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
+                      已归档会话 · {archivedAgentSessionCount}
+                    </span>
+                  </div>
+                  <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
+                    {archivedAgentSessionsList.length === 0 ? (
+                      <div className="py-3 text-center text-[12px] text-foreground/40">
+                        暂无已归档会话
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">
+                        {archivedAgentSessionsList.map((session) => (
+                          <AgentSessionItem
+                            key={session.id}
+                            session={session}
+                            active={session.id === activeSessionId}
+                            indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                            leftAccent={getSessionLeftAccent(
+                              agentIndicatorMap.get(session.id) ?? 'idle',
+                              session.id === activeSessionId,
+                              session.manualWorking
+                            )}
+                            showPinIcon={!!session.pinned}
+                            workspaceName={
+                              session.workspaceId
+                                ? workspaceNameMap.get(session.workspaceId)
+                                : undefined
+                            }
+                            onSelect={handleSelectAgentSession}
+                            onConfirmDone={handleConfirmWorkingDoneAgent}
+                            onRequestDelete={handleRequestDelete}
+                            onRequestMove={handleRequestMove}
+                            onRename={handleAgentRename}
+                            onTogglePin={handleTogglePinAgent}
+                            onToggleManualWorking={handleToggleManualWorkingAgent}
+                            onToggleArchive={handleToggleArchiveAgent}
+                            disableMiniMap
+                            surface="compact"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           )}
         </div>
+      ) : activeRailItem === 'draft' ? (
+        <div className="sidebar-inner">
+          <div className="sidebar-head titlebar-no-drag">
+            <h2 className="sidebar-head-title">草稿</h2>
+            <div className="tool-cluster" role="group" aria-label="草稿操作">
+              <button type="button" className="tool-cluster-accent" onClick={handleNewDraft}>
+                新草稿
+              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="tool-cluster-icon"
+                    onClick={() => setDraftSearchOpen(true)}
+                    aria-label="搜索草稿"
+                  >
+                    <Search size={14} strokeWidth={1.5} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">搜索草稿</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          <div
+            key={activeRailItem}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            {renderRailContent()}
+          </div>
+        </div>
+      ) : (
+        <div
+          key={activeRailItem}
+          className={cn(
+            'flex min-h-0 flex-1 flex-col'
+          )}
+        >
+          {renderRailContent()}
+        </div>
       )}
+
+      {/* 已归档入口已移入 sidebar-inner（sessions） */}
 
       {deleteDialog}
       {projectDeleteDialog}
@@ -1812,6 +1808,7 @@ function SessionsRailContent({
   onBatchUpdateSelected,
   onRequestBatchDelete,
   onConfirmBatchDelete,
+  onCreateProject,
 }: {
   activeSessionId: string | null
   agentProjectGroups: AgentProjectGroup[]
@@ -1877,19 +1874,18 @@ function SessionsRailContent({
   const listRef = React.useRef<HTMLDivElement>(null)
 
   return (
-    <div
-      ref={listRef}
-      className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative"
-    >
-      <div className="relative z-10">
-        {/* 置顶分区 */}
+    <div className="session-well flex-1 min-h-0 titlebar-no-drag">
+      <div
+        ref={listRef}
+        className="session-scroll scrollbar-thin min-h-0 relative"
+      >
+        {/* 置顶分区（原型：位于 session-well 最上方） */}
         {pinnedAgentSessions.length > 0 && (
-          <div className="mb-1.5">
-            <div className="flex items-center gap-1 px-1 pb-0.5">
-              <Pin size={11} className="text-foreground/30" />
-              <span className="text-[11px] font-medium text-foreground/35">置顶</span>
+          <div className="session-group">
+            <div className="group-label">
+              <span>置顶</span>
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col">
               {pinnedAgentSessions.map((session) => (
                 <AgentSessionItem
                   key={session.id}
@@ -1921,11 +1917,29 @@ function SessionsRailContent({
 
         {/* 项目分组 */}
         {agentProjectGroups.length === 0 && pinnedAgentSessions.length === 0 ? (
-          <div className="px-2 py-3 text-[11px] text-foreground/30 text-center select-none">
-            暂无项目，点击上方"+新会话"创建
+          <div className="session-group">
+            <div className="group-label">
+              <span>项目</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="ghost-plus opacity-100"
+                    onClick={() => void onCreateProject()}
+                    aria-label="新建项目"
+                  >
+                    +
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">新建项目</TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="px-2 py-2 text-[11px] text-foreground/30 text-center select-none">
+              暂无项目
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-3">
             {agentProjectGroups.map((group) => (
               <AgentProjectGroupItem
                 key={group.workspace.id}
@@ -2107,7 +2121,7 @@ const ConversationItem = React.memo(function ConversationItem({
             startEdit()
           }}
           className={cn(
-            'session-list-row group relative w-full flex items-center gap-2 px-3 py-[7px] titlebar-no-drag text-left',
+            'session-list-row group relative w-full px-3 py-[7px] titlebar-no-drag text-left',
             active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
           )}
         >
@@ -2134,7 +2148,7 @@ const ConversationItem = React.memo(function ConversationItem({
               <div
                 className={cn(
                   'truncate text-[13px] leading-5 flex items-center gap-1.5',
-                  active ? 'text-foreground' : 'text-foreground/80'
+                  active ? 'session-row-title' : 'text-foreground/80'
                 )}
               >
                 {/* 置顶标记 */}
@@ -2213,6 +2227,8 @@ interface AgentSessionItemProps {
   workspaceName?: string
   /** 子行扩展样式 */
   childClassName?: string
+  /** well=会话井（带阴影承载壳）；compact=归档弹层等紧凑列表 */
+  surface?: 'well' | 'compact'
   /** 批量选择模式：是否在选择模式 */
   isBatchMode?: boolean
   /** 批量选择模式：是否被选中 */
@@ -2254,6 +2270,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   disableMiniMap,
   workspaceName,
   childClassName,
+  surface = 'well',
   isBatchMode = false,
   isBatchSelected = false,
   onToggleBatchSelect,
@@ -2376,6 +2393,18 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）；选择模式下隐藏
   const showInlineAccent = !isBatchMode && !!leftAccent && !(session.manualWorking && !active)
 
+  const rowClassName = cn(
+    'session-list-row group relative min-w-0 titlebar-no-drag text-left',
+    surface === 'well' && 'session-row-shell w-full',
+    surface === 'compact' && 'w-full py-[7px] px-1',
+    childClassName,
+    isBatchSelected
+      ? 'rounded-md bg-primary/10'
+      : active
+        ? 'session-list-item-active'
+        : 'rounded-md hover:bg-primary/5'
+  )
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -2397,18 +2426,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             e.stopPropagation()
             startEdit()
           }}
-          className={cn(
-            'session-list-row group relative w-full flex items-center gap-1 py-[7px] px-1 titlebar-no-drag text-left',
-            childClassName,
-            isBatchSelected
-              ? 'rounded-md bg-primary/10'
-              : active
-                ? 'session-list-item-active'
-                : 'rounded-md hover:bg-primary/5'
-          )}
+          className={rowClassName}
         >
-          {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后；批量模式下替换为 checkbox */}
-          {isBatchMode ? (
+          {/* 批量模式下显示 checkbox */}
+          {isBatchMode && (
             <button
               type="button"
               onClick={(e) => {
@@ -2424,8 +2445,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                 <Square className="size-3.5" />
               )}
             </button>
-          ) : (
-            <div className="flex-shrink-0 w-[18px]" aria-hidden />
           )}
           {showInlineAccent && leftAccent && (
             <span
@@ -2465,12 +2484,19 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                 className={cn(
                   'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
                   !isBatchMode && 'group-hover:pr-4',
-                  active ? 'text-foreground' : 'text-foreground/80'
+                  !active && 'text-foreground/80'
                 )}
               >
-                <span className="truncate flex-1 min-w-0">{session.title}</span>
+                <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
+                  {session.title}
+                </span>
                 {!isBatchMode && (
-                  <span className="flex-shrink-0 text-[9px] text-foreground/30 tabular-nums">
+                  <span
+                    className={cn(
+                      'flex-shrink-0 text-[9px] tabular-nums',
+                      active ? 'session-row-meta' : 'text-foreground/30'
+                    )}
+                  >
                     {formatSessionTime(session.updatedAt)}
                   </span>
                 )}
@@ -2901,9 +2927,9 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
         className="mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className="overflow-hidden">
+        <div className={cn('min-h-0', collapsed ? 'overflow-hidden' : 'overflow-visible')}>
           {!collapsed && sessions.length > 0 ? (
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col">
               {sessions.map((session) => (
                 <AgentSessionItem
                   key={session.id}

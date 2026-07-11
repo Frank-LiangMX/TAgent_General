@@ -1,68 +1,49 @@
 /**
- * 会话消息头像 — 用户 / Agent 统一尺寸与圆角
+ * MessageAvatar - 消息头像组件
+ *
+ * 已迁入 @tagent/ui，此文件保留为 re-export 以保持向后兼容。
+ * 应用层传入 logoResolver 回调以解析模型 logo。
  */
 
-import * as React from 'react'
+import {
+  AssistantMessageLogo as BaseAssistantMessageLogo,
+  ErrorMessageLogo as BaseErrorMessageLogo,
+  MESSAGE_AVATAR_SIZE,
+  MESSAGE_AVATAR_CONTENT_INDENT_PX,
+} from '@tagent/ui'
 
-import { SessionAlertIcon, SessionAssistantIcon } from '@/components/agent/session-icons'
 import { getModelLogo } from '@/lib/model-logo'
-import { cn } from '@/lib/utils'
+import { SessionAlertIcon, SessionAssistantIcon } from '@/components/agent/session-icons'
 
-/** 会话区头像边长（px）— 用户与 Agent 统一 */
-export const MESSAGE_AVATAR_SIZE = 32
+import type { ComponentProps } from 'react'
 
-/**
- * Agent 正文相对会话左缘的缩进（Message px-2.5 + avatar + gap-2.5）
- * 用于运行指示器等与 assistant 正文对齐
- */
-export const MESSAGE_AVATAR_CONTENT_INDENT_PX = 52
+// ===== AssistantMessageLogo（包装 logoResolver） =====
 
-interface AssistantMessageLogoProps {
-  model?: string
-  className?: string
-}
+interface AssistantMessageLogoProps extends ComponentProps<typeof BaseAssistantMessageLogo> {}
 
-/** Agent / 模型头像（与 UserAvatar 同尺寸） */
-export function AssistantMessageLogo({
-  model,
-  className,
-}: AssistantMessageLogoProps): React.ReactElement {
-  if (model) {
-    return (
-      <img
-        src={getModelLogo(model)}
-        alt={model}
-        className={cn('size-[32px] rounded-[25%] object-cover', className)}
-      />
-    )
-  }
+export function AssistantMessageLogo(props: AssistantMessageLogoProps) {
+  const handleLogoResolver = (model: string) => getModelLogo(model)
 
   return (
-    <div
-      className={cn(
-        'size-[32px] rounded-[25%] bg-primary/10 flex items-center justify-center',
-        className
-      )}
-    >
-      <SessionAssistantIcon className="size-4 text-primary" />
-    </div>
+    <BaseAssistantMessageLogo
+      {...props}
+      logoResolver={props.logoResolver ?? handleLogoResolver}
+      fallbackIcon={props.fallbackIcon ?? <SessionAssistantIcon className="size-4 text-primary" />}
+    />
   )
 }
 
-interface ErrorMessageLogoProps {
-  className?: string
-}
+// ===== ErrorMessageLogo（包装 errorIcon） =====
 
-/** 错误消息头像占位 */
-export function ErrorMessageLogo({ className }: ErrorMessageLogoProps): React.ReactElement {
+interface ErrorMessageLogoProps extends ComponentProps<typeof BaseErrorMessageLogo> {}
+
+export function ErrorMessageLogo(props: ErrorMessageLogoProps) {
   return (
-    <div
-      className={cn(
-        'size-[32px] rounded-[25%] bg-destructive/10 flex items-center justify-center',
-        className
-      )}
-    >
-      <SessionAlertIcon className="size-4 text-destructive" />
-    </div>
+    <BaseErrorMessageLogo
+      {...props}
+      errorIcon={props.errorIcon ?? <SessionAlertIcon className="size-4 text-destructive" />}
+    />
   )
 }
+
+export { MESSAGE_AVATAR_SIZE, MESSAGE_AVATAR_CONTENT_INDENT_PX }

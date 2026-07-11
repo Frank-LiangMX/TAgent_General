@@ -10,425 +10,222 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* 非颜色 token（颜色变量由 tokens.css 定义） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --dialog: 0 0% 100%;
-    --dialog-foreground: 0 0% 3.9%;
-    --content-area: 0 0% 100%;            /* 主内容区域背景 */
-    /* 毛玻璃 Tooltip：深色半透明背景 + 白色文字 */
-    --tooltip: 0 0% 15%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 0 0% 75%;
     /* 代码块背景 */
-    --code-bg: 210 13% 12%;                   /* #1e2228 */
-    /* 虚线边框色（新会话按钮、搜索按钮） */
-    --dashed-border: 0 0% 9% / 0.35;
-    --dashed-border-hover: 0 0% 9% / 0.50;
-    /* Markdown 预览正文字号（medium 档默认；initializer 加载用户偏好后会覆盖） */
+    --code-bg: 220 12% 14%;
+    /* 虚线边框色 */
+    --dashed-border: 223 53% 59% / 0.35;
+    --dashed-border-hover: 223 53% 59% / 0.50;
+    /* Markdown 预览正文字号 */
     --md-preview-font-size: 15px;
-    /* 浅色玻璃装饰色：勿用 --foreground/--primary（纯白主题下为近黑，会在顶部画出脏边） */
+    /* 浅色玻璃装饰色 */
     --glass-shine: 0 0% 100%;
-    --glass-ambient: 220 20% 96%;
-    --glass-rim: 220 14% 86%;
-    /* 外壳团雾光斑色（勿用 --primary，纯白主题下 primary 近黑会画出脏斑） */
-    --shell-blob: 220 28% 92%;
-    /* 主窗口内容边界：所有内容必须被裁在底板圆角矩形内 */
+    --glass-ambient: 220 14% 94%;
+    --glass-rim: 220 10% 86%;
+    /* 外壳团雾光斑色 */
+    --shell-blob: 220 16% 90%;
+    /* 主窗口内容边界 */
     --app-content-boundary-inset: 8px;
     --app-content-boundary-radius: 20px;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.72);
+    --session-rim: hsl(var(--glass-rim) / 0.45);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(220 10% 50% / 0.22);
+    --session-elev-light: hsl(var(--glass-shine) / 0.5);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   .dark {
-    --background: 0 0% 7%;                /* 统一背景色 zinc-900 */
-    --foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --accent: 0 0% 40%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 55% 45%;
-    --destructive-foreground: 0 0% 98%;
+    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 40%, 18%);
-    --card: 0 0% 7%;                      /* 卡片背景 = 背景色 */
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%;                   /* 弹出层 = 背景色 */
-    --popover-foreground: 0 0% 98%;
-    --dialog: 0 0% 12%;                   /* 设置弹窗：比背景更亮，悬浮感 */
-    --dialog-foreground: 0 0% 98%;
-    --content-area: 0 0% 7%;              /* 主内容区域背景 zinc-900 */
-    /* 毛玻璃 Tooltip：深色半透明背景 + 白色文字 */
-    --tooltip: 0 0% 20%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 0 0% 70%;
     /* 代码块背景 */
-    --code-bg: 210 13% 12%;                   /* #1e2228 */
-    /* 虚线边框色（新会话按钮、搜索按钮） */
-    --dashed-border: 0 0% 98% / 0.34;
-    --dashed-border-hover: 0 0% 98% / 0.48;
-    --shell-blob: 220 15% 55%;
-    /* 深色玻璃装饰色：勿沿用浅色高亮，否则弹窗左上/右下团雾过亮 */
+    --code-bg: 220 16% 14%;
+    /* 虚线边框色 */
+    --dashed-border: 223 53% 65% / 0.34;
+    --dashed-border-hover: 223 53% 65% / 0.48;
+    --shell-blob: 220 14% 35%;
+    /* 深色玻璃装饰色 */
     --glass-shine: 220 14% 68%;
     --glass-ambient: 220 12% 26%;
     --glass-rim: 220 10% 30%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(var(--foreground) / 0.14);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 特殊风格主题 ===== */
 
   /* 晴空碧海 (ocean-light) */
   .theme-ocean-light {
-    --background: 205 35% 94%;            /* #ecf2f7 背景（侧边栏）- 调浅 */
-    --foreground: 210 30% 15%;            /* #1b2632 前景文字 */
-    --content-area: 205 30% 97%;          /* #f4f7fa 内容区域 */
-    --muted: 205 35% 88%;                 /* #d7e4ef 次要背景 */
-    --muted-foreground: 210 15% 40%;      /* #576675 次要文字 */
-    --border: 205 30% 82%;                /* #c3d5e5 边框 */
-    --primary: 205 50% 50%;               /* #408abf 主色 */
-    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
-    --secondary: 205 35% 91%;             /* #e2ebf3 二级背景 */
-    --secondary-foreground: 210 30% 20%;  /* #243342 二级前景 */
-    --accent: 205 35% 82%;                /* #c1d6e7 强调背景 */
-    --accent-foreground: 205 50% 30%;     /* #265373 强调文字 */
-    --ring: 205 50% 50%;                  /* #408abf 聚焦环 */
-    --card: 205 30% 97%;                  /* #f4f7fa 卡片背景 */
-    --card-foreground: 210 30% 15%;       /* #1b2632 卡片前景 */
-    --input: 205 35% 91%;                 /* #e2ebf3 输入框背景 */
-    --popover: 205 30% 97%;               /* #f4f7fa 弹出层 */
-    --popover-foreground: 210 30% 15%;    /* #1b2632 弹出前景 */
-    --dialog: 0 0% 100%;                  /* #ffffff 弹窗背景 */
-    --dialog-foreground: 210 30% 15%;     /* #1b2632 弹窗前景 */
-    --destructive: 0 84.2% 60.2%;         /* #ef4444 危险色 */
-    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --tooltip: 210 45% 18%;               /* #192e43 Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 210 20% 75%;         /* #b3bfcc Tooltip弱 */
-    /* 代码块背景 - 蓝调 */
-    --code-bg: 210 35% 14%;               /* #172030 深蓝 */
-    /* 虚线边框色 */
-    --dashed-border: 205 50% 50% / 0.30;
-    --dashed-border-hover: 205 50% 50% / 0.45;
-    --glass-ambient: 205 35% 92%;
-    --glass-rim: 205 30% 84%;
-    --shell-blob: 205 45% 78%;
+    --session-row-accent: hsl(var(--primary));
+    --code-bg: 210 20% 14%;
+    --dashed-border: 205 45% 55% / 0.30;
+    --dashed-border-hover: 205 45% 55% / 0.45;
+    --glass-ambient: 205 18% 93%;
+    --glass-rim: 205 14% 85%;
+    --shell-blob: 205 30% 82%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.72);
+    --session-rim: hsl(var(--glass-rim) / 0.45);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(205 14% 50% / 0.22);
+    --session-elev-light: hsl(var(--glass-shine) / 0.5);
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   /* 苍穹暮色 (ocean-dark) */
   .theme-ocean-dark {
-    --background: 210 35% 13%;            /* #182434 背景（侧边栏） */
-    --foreground: 210 20% 92%;            /* #e7ebef 前景文字 */
-    --content-area: 210 40% 8%;           /* #0c141d 内容区域 */
-    --muted: 210 30% 14%;                 /* #19242e 次要背景 */
-    --muted-foreground: 210 15% 55%;      /* #7b8c9d 次要文字 */
-    --border: 210 30% 18%;                /* #202e3c 边框 */
-    --primary: 205 87% 24%;               /* #084672 主色（与 mode-slider 一致） */
-    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
-    --secondary: 210 30% 16%;             /* #1d2935 二级背景 */
-    --secondary-foreground: 210 20% 90%;  /* #e0e6eb 二级前景 */
-    --accent: 210 40% 22%;                /* #22384f 强调背景 */
-    --accent-foreground: 205 60% 70%;     /* #85bae0 强调文字 */
-    --ring: 205 87% 24%;                  /* #084672 聚焦环（与主色一致） */
-    --card: 210 35% 11%;                  /* #121c26 卡片背景 */
-    --card-foreground: 210 20% 92%;       /* #e7ebef 卡片前景 */
-    --input: 210 30% 14%;                 /* #19242e 输入框背景 */
-    --popover: 210 35% 13%;               /* #16212d 弹出层 */
-    --popover-foreground: 210 20% 92%;    /* #e7ebef 弹出前景 */
-    --dialog: 210 25% 16%;                /* #1f2933 弹窗背景 */
-    --dialog-foreground: 210 20% 92%;     /* #e7ebef 弹窗前景 */
-    --destructive: 0 55% 45%;              /* 中饱和度红 */
-    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
-    --tooltip: 210 40% 22%;               /* #22384f Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 210 20% 70%;         /* #a3b3c2 Tooltip弱 */
-    /* 代码块背景 - 深海蓝 */
-    --code-bg: 210 50% 6%;                /* #081219 更深的海蓝 */
-    /* 虚线边框色 */
-    --dashed-border: 205 60% 55% / 0.35;
-    --dashed-border-hover: 205 60% 55% / 0.50;
+    --session-row-accent: hsl(var(--primary));
+    --code-bg: 210 20% 12%;
+    --dashed-border: 205 45% 60% / 0.35;
+    --dashed-border-hover: 205 45% 60% / 0.50;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(210 14% 50% / 0.42);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 森系色系 ===== */
 
   /* 森息晨光（浅色） - 自然绿调，清新明亮 */
   .theme-forest-light {
-    --background: 140 25% 95%;            /* #eff5f1 背景 */
-    --foreground: 150 25% 15%;            /* #1d3026 前景文字 */
-    --content-area: 140 20% 97%;          /* #f6f9f7 内容区域 */
-    --muted: 140 15% 90%;                 /* #e2e9e4 次要背景 */
-    --muted-foreground: 145 10% 45%;      /* #677e71 次要文字 */
-    --border: 140 15% 82%;                /* #cad8cf 边框 */
-    --primary: 150 35% 38%;               /* #3f8361 主色 */
-    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
-    --secondary: 140 15% 92%;             /* #e8eeea 二级背景 */
-    --secondary-foreground: 150 20% 20%;  /* #293d33 二级前景 */
-    --accent: 145 20% 88%;                /* #dae7df 强调背景 */
-    --accent-foreground: 150 30% 30%;     /* #36634d 强调文字 */
-    --ring: 150 35% 38%;                  /* #3f8361 聚焦环 */
-    --card: 140 20% 97%;                  /* #f6f9f7 卡片背景 */
-    --card-foreground: 150 25% 15%;       /* #1d3026 卡片前景 */
-    --input: 140 18% 92%;                 /* #e7eee9 输入框背景 */
-    --popover: 140 18% 98%;               /* #f9fbfa 弹出层 */
-    --popover-foreground: 150 25% 15%;    /* #1d3026 弹出前景 */
-    --dialog: 140 15% 96%;                /* #f3f6f4 弹窗背景 */
-    --dialog-foreground: 150 25% 15%;     /* #1d3026 弹窗前景 */
-    --destructive: 0 72% 51%;             /* #dc2828 危险色 */
-    --destructive-foreground: 0 0% 100%;  /* #ffffff 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 70%, 50%, 0.12);
-    --tooltip: 150 20% 18%;               /* #25372e Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 140 10% 60%;         /* #8fa396 Tooltip弱 */
-    /* 代码块背景 - 森林绿调 */
-    --code-bg: 150 35% 12%;               /* #142820 深森绿 */
-    /* 虚线边框色 */
-    --dashed-border: 150 35% 38% / 0.35;
-    --dashed-border-hover: 150 35% 38% / 0.50;
-    --glass-ambient: 140 22% 93%;
-    --glass-rim: 140 15% 84%;
-    --shell-blob: 150 30% 82%;
+    --code-bg: 145 12% 14%;
+    --dashed-border: 140 30% 50% / 0.35;
+    --dashed-border-hover: 140 30% 50% / 0.50;
+    --glass-ambient: 140 14% 93%;
+    --glass-rim: 140 10% 85%;
+    --shell-blob: 140 18% 84%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.72);
+    --session-rim: hsl(var(--glass-rim) / 0.45);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(140 10% 50% / 0.2);
+    --session-elev-light: hsl(var(--glass-shine) / 0.5);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   /* 森息夜语（深色） */
   .theme-forest-dark {
-    --background: 147 14% 15%;            /* #212c26 背景（侧边栏） */
-    --foreground: 140 10% 90%;            /* #e3e8e5 前景文字 */
-    --content-area: 150 20% 8%;           /* #101814 内容区域 */
-    --muted: 150 18% 13%;                 /* #1b2721 次要背景 */
-    --muted-foreground: 140 10% 55%;      /* #819888 次要文字 */
-    --border: 150 18% 17%;                /* #24332b 边框 */
-    --primary: 151 55% 21%;               /* #185337 主色 */
-    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
-    --secondary: 150 16% 15%;             /* #202c26 二级背景 */
-    --secondary-foreground: 140 10% 88%;  /* #dde3df 二级前景 */
-    --accent: 155 25% 18%;                /* #223930 强调背景 */
-    --accent-foreground: 150 30% 65%;     /* #8bc1a6 强调文字 */
-    --ring: 150 35% 42%;                  /* #46916b 聚焦环 */
-    --card: 150 18% 11%;                  /* #17211c 卡片背景 */
-    --card-foreground: 140 10% 90%;       /* #e3e8e5 卡片前景 */
-    --input: 150 18% 13%;                 /* #1b2721 输入框背景 */
-    --popover: 150 18% 13%;               /* #1b2721 弹出层 */
-    --popover-foreground: 140 10% 90%;    /* #e3e8e5 弹出前景 */
-    --dialog: 150 15% 15%;                /* #212c26 弹窗背景 */
-    --dialog-foreground: 140 10% 90%;     /* #e3e8e5 弹窗前景 */
-    --destructive: 0 55% 45%;              /* 中饱和度红 */
-    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
-    --tooltip: 150 25% 20%;               /* #264033 Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 140 10% 65%;         /* #9dafa3 Tooltip弱 */
-    /* 代码块背景 - 深绿调 */
-    --code-bg: 150 25% 8%;                /* #0f1a14 深林绿 */
-    /* 虚线边框色 */
-    --dashed-border: 150 35% 45% / 0.35;
-    --dashed-border-hover: 150 35% 45% / 0.50;
+    --code-bg: 145 14% 12%;
+    --dashed-border: 140 35% 50% / 0.35;
+    --dashed-border-hover: 140 35% 50% / 0.50;
+    /* Session 选中态 token */
+    --dashed-border-hover: 140 35% 50% / 0.50;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(140 14% 50% / 0.42);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 赛博朋克色系 ===== */
 
   /* 云朵舞者（浅色） - 温暖灰调，柔和舒适 */
   .theme-slate-light {
-    /* 基础色 - sidebar 比主题色深一点 */
-    --background: 40 6% 88%;              /* #e3e1dc 侧边栏背景（比主题色深） */
-    --foreground: 40 8% 18%;              /* #312f2a 前景文字 */
-    --content-area: 40 8% 94%;            /* #f0efec 内容区域（RGB 240,239,236 主题色） */
-    /* 次要色 */
-    --muted: 40 6% 85%;                   /* #dbd8d2 次要背景 */
-    --muted-foreground: 40 5% 45%;        /* #787568 次要文字 */
-    --border: 40 6% 80%;                  /* #d0cdc6 边框 */
-    /* 交互色 */
-    --primary: 18 20% 67%;                /* #bda59b 主色（RGB 189,165,155） */
-    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景（白色文字） */
-    --secondary: 40 6% 90%;               /* #e8e6e2 二级背景 */
-    --secondary-foreground: 40 8% 22%;    /* #3c3933 二级前景 */
-    --accent: 40 6% 86%;                  /* #dddad4 强调背景 */
-    --accent-foreground: 40 10% 30%;      /* #554f44 强调文字 */
-    --ring: 18 20% 67%;                   /* #bda59b 聚焦环 */
-    /* 组件色 */
-    --card: 40 8% 96%;                    /* #f6f5f2 卡片背景 */
-    --card-foreground: 40 8% 18%;         /* #312f2a 卡片前景 */
-    --input: 40 6% 90%;                   /* #e8e6e2 输入框背景 */
-    --popover: 40 8% 96%;                 /* #f6f5f2 弹出层 */
-    --popover-foreground: 40 8% 18%;      /* #312f2a 弹出前景 */
-    --dialog: 40 8% 94%;                  /* #f0efec 弹窗背景（主题色） */
-    --dialog-foreground: 40 8% 18%;       /* #312f2a 弹窗前景 */
-    /* 功能色 */
-    --destructive: 0 65% 50%;             /* #d43c3c 危险色 */
-    --destructive-foreground: 0 0% 100%;  /* #ffffff 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 60%, 50%, 0.12);
-    --tooltip: 40 8% 20%;                 /* #37352e Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 40 5% 55%;           /* #928e84 Tooltip弱 */
-    /* 代码块背景 - 与主色相近的深暖棕 */
-    --code-bg: 18 15% 18%;                /* #362f2b 深暖棕（主色深版） */
-    /* 虚线边框色 */
-    --dashed-border: 18 20% 50% / 0.40;
-    --dashed-border-hover: 18 20% 50% / 0.55;
+    --code-bg: 40 10% 15%;
+    --dashed-border: 25 30% 52% / 0.40;
+    --dashed-border-hover: 25 30% 52% / 0.55;
     --glass-ambient: 40 10% 94%;
-    --glass-rim: 40 8% 82%;
-    --shell-blob: 18 18% 82%;
+    --glass-rim: 40 8% 83%;
+    --shell-blob: 40 12% 85%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.72);
+    --session-rim: hsl(var(--glass-rim) / 0.45);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(40 10% 50% / 0.2);
+    --session-elev-light: hsl(var(--glass-shine) / 0.5);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   /* 莫兰迪夜（深色） */
   .theme-slate-dark {
-    /* 基础色 - 侧边栏与内容区对调 */
-    --background: 260 6% 12%;             /* #1d1b20 背景（侧边栏） */
-    --foreground: 30 10% 90%;             /* #e9e6e3 温暖前景文字 */
-    --content-area: 270 8% 9%;            /* #161418 内容区域 */
-    /* 次要色 - 淡紫灰调 */
-    --muted: 260 6% 16%;                  /* #272429 次要背景 */
-    --muted-foreground: 30 8% 60%;        /* #9f9690 次要文字 */
-    --border: 260 8% 20%;                 /* #322e36 边框 */
-    /* 交互色 - 莫兰迪粉 */
-    --primary: 15 25% 68%;                /* #c9a89e 淡杏粉主色 */
-    --primary-foreground: 270 8% 9%;      /* #161418 主色前景 */
-    --secondary: 260 5% 18%;              /* #2c2930 二级背景 */
-    --secondary-foreground: 30 10% 88%;   /* #e5e1dc 二级前景 */
-    --accent: 200 12% 22%;                /* #303740 淡蓝灰强调背景 */
-    --accent-foreground: 200 25% 75%;     /* #a5c4d1 淡天蓝强调文字 */
-    --ring: 15 25% 68%;                   /* #c9a89e 聚焦环 */
-    /* 组件色 */
-    --card: 260 6% 13%;                   /* #201e22 卡片背景 */
-    --card-foreground: 30 10% 90%;        /* #e9e6e3 卡片前景 */
-    --input: 260 6% 16%;                  /* #272429 输入框背景 */
-    --popover: 260 6% 15%;                /* #252228 弹出层 */
-    --popover-foreground: 30 10% 90%;     /* #e9e6e3 弹出前景 */
-    --dialog: 260 5% 16%;                 /* #282528 弹窗背景 */
-    --dialog-foreground: 30 10% 90%;      /* #e9e6e3 弹窗前景 */
-    /* 功能色 */
-    --destructive: 0 45% 50%;              /* #b8635f 柔和危险色 */
-    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 25%, 20%);
-    --tooltip: 260 8% 22%;                /* #38343d Tooltip */
-    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
-    --tooltip-muted: 30 8% 65%;           /* #aca49d Tooltip弱 */
-    /* 代码块背景 - 莫兰迪紫调 */
-    --code-bg: 270 10% 10%;               /* #1a171d 淡紫深灰 */
-    /* 虚线边框色 */
-    --dashed-border: 15 25% 68% / 0.30;
-    --dashed-border-hover: 15 25% 68% / 0.45;
+    --code-bg: 40 8% 12%;
+    --dashed-border: 25 30% 55% / 0.30;
+    --dashed-border-hover: 25 30% 55% / 0.45;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(260 10% 50% / 0.42);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 爱马仕橙 ===== */
 
   /* 暖陶（浅色） - 温暖米陶色调 */
   .theme-orange-light {
-    --background: 30 35% 93%;
-    --foreground: 22 35% 18%;
-    --content-area: 30 30% 96%;
-    --muted: 28 30% 88%;
-    --muted-foreground: 22 15% 42%;
-    --border: 28 30% 80%;
-    --primary: 20 80% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 25% 90%;
-    --secondary-foreground: 22 30% 22%;
-    --accent: 30 30% 85%;
-    --accent-foreground: 20 70% 30%;
-    --ring: 20 80% 50%;
-    --card: 30 30% 97%;
-    --card-foreground: 22 35% 18%;
-    --input: 30 28% 92%;
-    --popover: 30 30% 97%;
-    --popover-foreground: 22 35% 18%;
-    --dialog: 0 0% 100%;
-    --dialog-foreground: 22 35% 18%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --tooltip: 22 40% 18%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 22 20% 70%;
     --code-bg: 20 35% 14%;
     --dashed-border: 20 80% 50% / 0.35;
     --dashed-border-hover: 20 80% 50% / 0.50;
     --glass-ambient: 30 30% 92%;
     --glass-rim: 28 25% 84%;
     --shell-blob: 22 45% 78%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.78);
+    --session-rim: hsl(var(--glass-rim) / 0.48);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(var(--foreground) / 0.09);
+    --session-elev-light: hsl(var(--glass-shine) / 0.38);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   /* 深铜（深色） - 暗陶铜色调 */
   .theme-orange-dark {
-    --background: 18 25% 13%;
-    --foreground: 28 30% 88%;
-    --content-area: 18 30% 8%;
-    --muted: 18 22% 15%;
-    --muted-foreground: 25 15% 55%;
-    --border: 18 22% 19%;
-    --primary: 20 75% 55%;
-    --primary-foreground: 18 35% 10%;
-    --secondary: 18 20% 15%;
-    --secondary-foreground: 28 30% 88%;
-    --accent: 20 30% 20%;
-    --accent-foreground: 22 70% 70%;
-    --ring: 20 75% 55%;
-    --card: 18 28% 11%;
-    --card-foreground: 28 30% 88%;
-    --input: 18 22% 14%;
-    --popover: 18 28% 11%;
-    --popover-foreground: 28 30% 88%;
-    --dialog: 18 20% 16%;
-    --dialog-foreground: 28 30% 88%;
-    --destructive: 0 55% 45%;
-    --destructive-foreground: 0 0% 98%;
+    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
-    --tooltip: 20 30% 22%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 22 20% 65%;
     --code-bg: 18 30% 6%;
     --dashed-border: 20 75% 55% / 0.35;
     --dashed-border-hover: 20 75% 55% / 0.50;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(18 25% 50% / 0.42);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 紫藤色系 ===== */
 
   /* 藤息晨光（浅色） - 紫藤淡雅 */
   .theme-purple-light {
-    --background: 280 25% 92%;
-    --foreground: 280 30% 22%;
-    --content-area: 285 30% 96%;
-    --muted: 280 25% 88%;
-    --muted-foreground: 280 15% 45%;
-    --border: 280 25% 82%;
-    --primary: 280 65% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 285 25% 90%;
-    --secondary-foreground: 280 30% 25%;
-    --accent: 280 30% 85%;
-    --accent-foreground: 280 60% 35%;
-    --ring: 280 65% 55%;
-    --card: 285 30% 97%;
-    --card-foreground: 280 30% 22%;
-    --input: 280 25% 92%;
-    --popover: 285 30% 97%;
-    --popover-foreground: 280 30% 22%;
-    --dialog: 0 0% 100%;
-    --dialog-foreground: 280 30% 22%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --tooltip: 280 35% 22%;
+    --code-bg: 280 14% 14%;
     --tooltip-foreground: 0 0% 98%;
     --tooltip-muted: 280 20% 70%;
     --code-bg: 280 30% 14%;
@@ -437,99 +234,54 @@
     --glass-ambient: 285 25% 92%;
     --glass-rim: 280 20% 84%;
     --shell-blob: 280 45% 80%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.78);
+    --session-rim: hsl(var(--glass-rim) / 0.48);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(var(--foreground) / 0.09);
+    --session-elev-light: hsl(var(--glass-shine) / 0.38);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   /* 藤息夜语（深色） - 紫藤夜色 */
   .theme-purple-dark {
-    --background: 280 22% 14%;
-    --foreground: 285 25% 88%;
-    --content-area: 280 28% 8%;
-    --muted: 280 20% 15%;
-    --muted-foreground: 280 15% 55%;
-    --border: 280 20% 19%;
-    --primary: 280 70% 65%;
-    --primary-foreground: 280 35% 10%;
-    --secondary: 280 18% 16%;
-    --secondary-foreground: 285 25% 88%;
-    --accent: 285 30% 22%;
-    --accent-foreground: 280 70% 75%;
-    --ring: 280 70% 65%;
-    --card: 280 25% 11%;
-    --card-foreground: 285 25% 88%;
-    --input: 280 20% 14%;
-    --popover: 280 25% 11%;
-    --popover-foreground: 285 25% 88%;
-    --dialog: 280 18% 16%;
-    --dialog-foreground: 285 25% 88%;
-    --destructive: 0 55% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --stop-hover-bg: hsl(0, 35%, 18%);
-    --tooltip: 280 30% 22%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 280 20% 65%;
-    --code-bg: 280 30% 6%;
-    --dashed-border: 280 70% 65% / 0.35;
-    --dashed-border-hover: 280 70% 65% / 0.50;
+    /* 非颜色 token */
+    --code-bg: 280 12% 10%;
+    --dashed-border: 280 50% 60% / 0.35;
+    --dashed-border-hover: 280 50% 60% / 0.50;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(280 22% 50% / 0.42);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== Soft UI / Neumorph ===== */
 
   .theme-neumorph-light {
-    --background: 220 24% 92%;
-    --foreground: 220 18% 28%;
-    --content-area: 220 22% 94%;
-    --muted: 220 20% 88%;
-    --muted-foreground: 220 10% 46%;
-    --border: 220 16% 84%;
-    --primary: 220 20% 56%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 18% 90%;
-    --secondary-foreground: 220 18% 28%;
-    --accent: 220 18% 86%;
-    --accent-foreground: 220 22% 30%;
-    --ring: 220 20% 56%;
-    --card: 220 22% 91%;
-    --card-foreground: 220 18% 28%;
-    --input: 220 22% 90%;
-    --popover: 220 20% 93%;
-    --popover-foreground: 220 18% 28%;
-    --dialog: 220 22% 94%;
-    --dialog-foreground: 220 18% 28%;
-    --tooltip: 220 18% 22%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 220 12% 72%;
+    /* 非颜色 token */
     --code-bg: 220 16% 18%;
     --dashed-border: 220 18% 45% / 0.28;
     --dashed-border-hover: 220 18% 45% / 0.42;
     --glass-ambient: 220 18% 94%;
     --glass-rim: 220 16% 82%;
     --shell-blob: 220 20% 84%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--card) / 0.78);
+    --session-rim: hsl(var(--glass-rim) / 0.48);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
+    --session-elev-dark: hsl(var(--foreground) / 0.09);
+    --session-elev-light: hsl(var(--glass-shine) / 0.38);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
   .theme-neumorph-dark {
-    --background: 220 16% 16%;
-    --foreground: 220 15% 88%;
-    --content-area: 220 16% 14%;
-    --muted: 220 14% 19%;
-    --muted-foreground: 220 10% 64%;
-    --border: 220 12% 24%;
-    --input: 220 14% 19%;
-    --primary: 220 18% 72%;
-    --primary-foreground: 220 22% 14%;
-    --secondary: 220 12% 20%;
-    --secondary-foreground: 220 15% 88%;
-    --accent: 220 12% 22%;
-    --accent-foreground: 220 15% 88%;
-    --ring: 220 18% 72%;
-    --card: 220 16% 17%;
-    --card-foreground: 220 15% 88%;
-    --popover: 220 16% 17%;
-    --popover-foreground: 220 15% 88%;
-    --dialog: 220 14% 18%;
-    --dialog-foreground: 220 15% 88%;
-    --tooltip: 220 12% 24%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 220 10% 72%;
+    /* 非颜色 token */
     --code-bg: 220 16% 12%;
     --dashed-border: 220 16% 76% / 0.24;
     --dashed-border-hover: 220 16% 76% / 0.38;
@@ -537,6 +289,14 @@
     --glass-ambient: 220 10% 24%;
     --glass-rim: 220 10% 30%;
     --shell-blob: 220 12% 34%;
+    /* Session 选中态 token */
+    --session-glass-strong: hsl(var(--muted) / 0.55);
+    --session-rim: hsl(var(--glass-rim) / 0.32);
+    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    --session-elev-dark: hsl(var(--foreground) / 0.14);
+    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-row-accent: hsl(var(--primary));
+    --session-row-meta: hsl(var(--primary) / 0.52);
   }
 }
 
@@ -780,6 +540,16 @@ html.material-frosted .app-content-boundary-rim {
   color: #ffffff !important;
 }
 
+/* ===== 莫兰迪主题：模式切换器选中状态 ===== */
+/* 莫兰迪夜：淡杏粉滑块 + 深色文字 */
+.theme-slate-dark .mode-slider {
+  background: hsl(15 25% 68%) !important;   /* #c9a89e 淡杏粉主色 */
+  box-shadow: 0 2px 4px rgba(201, 168, 158, 0.3);
+}
+.theme-slate-dark .mode-btn-selected {
+  color: hsl(270 8% 12%) !important;        /* 深色文字 */
+}
+
 /* ===== Tab 选中态：轻度玻璃光泽 ===== */
 .tab-item-selected {
   position: relative;
@@ -811,107 +581,41 @@ html.material-frosted .app-content-boundary-rim {
     0 1px 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* ===== 碧海主题：会话/工作区选中状态 ===== */
-/* 晴空碧海：浅蓝背景 + 深蓝文字 */
-.theme-ocean-light .session-item-selected,
-.theme-ocean-light .session-list-item-active,
-.theme-ocean-light .workspace-item-selected,
-.theme-ocean-light .tab-item-selected {
-  background: hsl(205 35% 82%) !important;  /* 浅蓝色背景 */
-  color: hsl(205 50% 25%) !important;       /* 深蓝色文字 */
+/* ===== 统一选中态：使用 TAgent 品牌签名色（与"新会话"按钮一致） ===== */
+.session-item-selected,
+.session-list-item-active,
+.workspace-item-selected,
+.tab-item-selected {
+  background: var(--session-glass-strong) !important;
+  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  border: 1px solid var(--session-rim) !important;
+  box-shadow:
+    0 1px 0 var(--session-inset-hi) inset,
+    3px 3px 9px var(--session-elev-dark),
+    -2px -2px 6px var(--session-elev-light) !important;
 }
-.theme-ocean-light .session-item-selected *,
-.theme-ocean-light .session-list-item-active *,
-.theme-ocean-light .workspace-item-selected *,
-.theme-ocean-light .tab-item-selected * {
+
+.session-item-selected *,
+.session-list-item-active *,
+.workspace-item-selected *,
+.tab-item-selected * {
   color: inherit !important;
 }
 
-/* 苍穹暮色：深蓝背景 + 亮蓝文字 */
-.theme-ocean-dark .session-item-selected.session-item-selected,
-.theme-ocean-dark .session-list-item-active.session-list-item-active,
-.theme-ocean-dark .workspace-item-selected.workspace-item-selected,
-.theme-ocean-dark .tab-item-selected.tab-item-selected {
-  background-color: hsl(210 40% 18%) !important;  /* 深蓝色背景 */
-  color: hsl(205 70% 75%) !important;       /* 亮蓝色文字 */
-}
-.theme-ocean-dark .session-item-selected *,
-.theme-ocean-dark .session-list-item-active *,
-.theme-ocean-dark .workspace-item-selected *,
-.theme-ocean-dark .tab-item-selected * {
-  color: inherit !important;
+/* 选中行/标签标题与副信息：跟随 TAgent 品牌签名色 --tagent-brand */
+.session-row-title {
+  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  font-weight: 600;
 }
 
-/* ===== 森系主题：会话/工作区选中状态 ===== */
-/* 森息晨光：浅绿背景 + 深绿文字 */
-.theme-forest-light .session-item-selected,
-.theme-forest-light .session-list-item-active,
-.theme-forest-light .workspace-item-selected,
-.theme-forest-light .tab-item-selected {
-  background: hsl(145 25% 82%) !important;  /* 浅绿色背景 */
-  color: hsl(150 35% 25%) !important;       /* 深绿色文字 */
-}
-.theme-forest-light .session-item-selected *,
-.theme-forest-light .session-list-item-active *,
-.theme-forest-light .workspace-item-selected *,
-.theme-forest-light .tab-item-selected * {
-  color: inherit !important;
+.session-row-meta {
+  color: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 55%, transparent) !important;
+  font-weight: 500;
 }
 
-/* 森息夜语：深绿背景 + 亮绿文字 */
-.theme-forest-dark .session-item-selected.session-item-selected,
-.theme-forest-dark .session-list-item-active.session-list-item-active,
-.theme-forest-dark .workspace-item-selected.workspace-item-selected,
-.theme-forest-dark .tab-item-selected.tab-item-selected {
-  background-color: hsl(150 25% 18%) !important;  /* 深绿色背景 */
-  color: hsl(150 40% 70%) !important;       /* 亮绿色文字 */
-}
-.theme-forest-dark .session-item-selected *,
-.theme-forest-dark .session-list-item-active *,
-.theme-forest-dark .workspace-item-selected *,
-.theme-forest-dark .tab-item-selected * {
-  color: inherit !important;
-}
-
-/* ===== 莫兰迪主题：模式切换器选中状态 ===== */
-/* 莫兰迪夜：淡杏粉滑块 + 深色文字 */
-.theme-slate-dark .mode-slider {
-  background: hsl(15 25% 68%) !important;   /* #c9a89e 淡杏粉主色 */
-  box-shadow: 0 2px 4px rgba(201, 168, 158, 0.3);
-}
-.theme-slate-dark .mode-btn-selected {
-  color: hsl(270 8% 12%) !important;        /* 深色文字 */
-}
-
-/* ===== 莫兰迪主题：会话/工作区选中状态 ===== */
-/* 莫兰迪夜：淡紫灰背景 + 温暖杏粉文字 */
-.theme-slate-dark .session-item-selected.session-item-selected,
-.theme-slate-dark .session-list-item-active.session-list-item-active,
-.theme-slate-dark .workspace-item-selected.workspace-item-selected,
-.theme-slate-dark .tab-item-selected.tab-item-selected {
-  background-color: hsl(260 10% 22%) !important;  /* 淡紫灰背景 */
-  color: hsl(15 30% 75%) !important;        /* 淡杏粉文字 */
-}
-.theme-slate-dark .session-item-selected *,
-.theme-slate-dark .session-list-item-active *,
-.theme-slate-dark .workspace-item-selected *,
-.theme-slate-dark .tab-item-selected * {
-  color: inherit !important;
-}
-
-/* ===== 云朵舞者主题：会话/工作区选中状态 ===== */
-.theme-slate-light .session-item-selected,
-.theme-slate-light .session-list-item-active,
-.theme-slate-light .workspace-item-selected,
-.theme-slate-light .tab-item-selected {
-  background: hsl(40 8% 84%) !important;    /* 温暖灰背景 */
-  color: hsl(40 10% 25%) !important;        /* 深暖灰文字 */
-}
-.theme-slate-light .session-item-selected *,
-.theme-slate-light .session-list-item-active *,
-.theme-slate-light .workspace-item-selected *,
-.theme-slate-light .tab-item-selected * {
-  color: inherit !important;
+/* 标签页底部滑动选中条：跟随 TAgent 品牌签名色 */
+.tab-indicator-line {
+  background-color: var(--tagent-brand, hsl(var(--primary)));
 }
 
 /* ===== 工作区 Badge 文字颜色（追踪 workspace-item-selected 的字色） ===== */
@@ -1142,8 +846,8 @@ html.material-frosted .app-content-boundary-rim {
   animation: settings-dialog-out 0.2s ease-out forwards;
 }
 
-/* 按钮点击缩放反馈：轻微收缩 */
-button:active:not(:disabled) {
+/* 按钮点击缩放反馈：轻微收缩（tool-cluster / ghost-plus 等自管交互，排除） */
+button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):not(.ghost-plus):not(.sidebar-archive-btn) {
   transform: scale(0.97);
   transition: transform 0.1s ease;
 }
@@ -1798,7 +1502,7 @@ html.theme-neumorph-dark .session-item-selected {
     0 6px 14px -10px hsl(var(--foreground) / 0.22),
     0 1px 2px hsl(var(--foreground) / 0.06),
     0 0 0 1px hsl(var(--primary) / 0.08);
-  color: hsl(var(--foreground));
+  color: var(--tagent-brand, hsl(var(--primary)));
 }
 
 html.theme-neumorph-light .right-rail-btn.rail-island-btn--active,
@@ -3830,16 +3534,28 @@ html:not(.dark) .btw-panel-glass::after,
 /**
  * shell-bg - 外壳背景
  * 多重彩色光斑+渐变叠加，让液态玻璃折射效果可见
+ *
+ * 设计参考：glass-studio 原型 wash 光斑布局
+ * - wash-a: 左上偏移，光斑偏冷（蓝紫）
+ * - wash-b: 右上偏移，光斑偏暖（紫粉）
+ * - wash-c: 底部居中偏左，光斑偏青绿
  */
 .shell-glass {
   position: relative;
   /* 团雾光斑用 --shell-blob，避免纯白/纯黑主题下 --primary 与背景对比极端 */
   background:
-    radial-gradient(ellipse 90% 75% at 20% 25%, hsl(var(--shell-blob) / 0.32) 0%, transparent 60%),
-    radial-gradient(ellipse 80% 65% at 80% 20%, hsl(var(--shell-blob) / 0.24) 0%, transparent 55%),
-    radial-gradient(ellipse 85% 70% at 15% 80%, hsl(var(--shell-blob) / 0.20) 0%, transparent 60%),
-    radial-gradient(ellipse 90% 75% at 85% 85%, hsl(var(--shell-blob) / 0.26) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 60% at 50% 50%, hsl(var(--shell-blob) / 0.14) 0%, transparent 70%),
+    /* 第1层：左上光斑 - 偏冷色调，原型 wash-a 风格 */
+    radial-gradient(ellipse 80% 70% at 18% 22%, hsl(var(--shell-blob) / 0.28) 0%, transparent 58%),
+    /* 第2层：右上光斑 - 偏暖色调，原型 wash-b 风格 */
+    radial-gradient(ellipse 75% 68% at 82% 18%, hsl(var(--shell-blob) / 0.22) 0%, transparent 52%),
+    /* 第3层：左下光斑 - 原型 wash-c 风格 */
+    radial-gradient(ellipse 85% 72% at 12% 82%, hsl(var(--shell-blob) / 0.18) 0%, transparent 60%),
+    /* 第4层：右下光斑 */
+    radial-gradient(ellipse 78% 65% at 88% 88%, hsl(var(--shell-blob) / 0.24) 0%, transparent 58%),
+    /* 第5层：顶部居中淡化层 */
+    radial-gradient(ellipse 60% 50% at 50% 8%, hsl(var(--shell-blob) / 0.12) 0%, transparent 50%),
+    /* 第6层：底部暖色光斑 - 新增，参考原型 wash-c 偏青绿调 */
+    radial-gradient(ellipse 70% 55% at 42% 92%, hsl(160 25% 75% / 0.15) 0%, transparent 55%),
     hsl(var(--background));
 }
 
@@ -4094,9 +3810,518 @@ html:not(.dark) .btw-panel-glass::after,
 .nav-island-action-row {
   display: flex;
   align-items: center;
-  padding-top: var(--nav-island-gap);
-  min-height: var(--nav-island-row-h);
+  min-height: 0;
   box-sizing: border-box;
+}
+
+/* 对齐 glass-studio .sidebar-inner（tagent.css:1569-1576） */
+.sidebar-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 12px 12px 8px;
+  box-sizing: border-box;
+}
+
+.sidebar-inner > .sidebar-head {
+  flex-shrink: 0;
+}
+
+/* ===== 侧栏标题 + 工具簇（glass-studio .sidebar-head / .tool-cluster）===== */
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.sidebar-head-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: hsl(var(--foreground));
+}
+
+.tool-cluster {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-glass-rail);
+  background: hsl(var(--background) / 0.4);
+  border: 1px solid hsl(var(--glass-shine) / 0.45);
+  box-shadow:
+    0 1px 0 hsl(var(--glass-shine) / 0.35) inset,
+    0 2px 8px hsl(var(--foreground) / 0.04);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.tool-cluster button {
+  min-height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: calc(var(--radius-glass-rail) - 2px);
+  font-size: 11px;
+  font-weight: 550;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  cursor: pointer;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .tool-cluster button:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--foreground) / 0.06);
+  }
+
+  .tool-cluster button.tool-cluster-accent:hover {
+    color: var(--tagent-brand, hsl(var(--primary)));
+    background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 18%, transparent);
+  }
+
+  .tool-cluster button.tool-cluster-icon:hover {
+    color: hsl(var(--foreground) / 0.82);
+    background: hsl(var(--foreground) / 0.06);
+  }
+}
+
+.tool-cluster button:active {
+  transform: scale(0.98);
+}
+
+.tool-cluster button.tool-cluster-accent {
+  color: var(--tagent-brand, hsl(var(--primary)));
+  background: var(--tagent-brand-soft, hsl(var(--primary) / 0.12));
+}
+
+.tool-cluster button.tool-cluster-accent:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 22%, transparent);
+}
+
+.tool-cluster button.tool-cluster-icon {
+  width: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.tool-cluster button.tool-cluster-icon:active {
+  color: hsl(var(--foreground) / 0.88);
+  background: hsl(var(--foreground) / 0.08);
+}
+
+.tool-cluster button.tool-cluster-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tool-cluster button.tool-cluster-icon:active svg {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-cluster button,
+  .tool-cluster button.tool-cluster-icon svg {
+    transition: none;
+  }
+
+  .tool-cluster button:hover,
+  .tool-cluster button:active {
+    transform: none;
+  }
+
+  .tool-cluster button.tool-cluster-icon:active svg {
+    transform: none;
+  }
+}
+
+.dark .tool-cluster,
+.theme-ocean-dark .tool-cluster,
+.theme-forest-dark .tool-cluster,
+.theme-slate-dark .tool-cluster {
+  background: hsl(var(--background) / 0.32);
+  border-color: hsl(var(--glass-shine) / 0.16);
+  box-shadow:
+    0 1px 0 hsl(var(--glass-shine) / 0.06) inset,
+    0 2px 8px hsl(var(--foreground) / 0.08);
+}
+
+@media (hover: hover) {
+  .dark .tool-cluster button:hover,
+  .theme-ocean-dark .tool-cluster button:hover,
+  .theme-forest-dark .tool-cluster button:hover,
+  .theme-slate-dark .tool-cluster button:hover {
+    background: hsl(var(--foreground) / 0.06);
+  }
+
+  .dark .tool-cluster button.tool-cluster-accent:hover,
+  .theme-ocean-dark .tool-cluster button.tool-cluster-accent:hover,
+  .theme-forest-dark .tool-cluster button.tool-cluster-accent:hover,
+  .theme-slate-dark .tool-cluster button.tool-cluster-accent:hover {
+    background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 22%, transparent);
+  }
+
+  .dark .tool-cluster button.tool-cluster-icon:hover,
+  .theme-ocean-dark .tool-cluster button.tool-cluster-icon:hover,
+  .theme-forest-dark .tool-cluster button.tool-cluster-icon:hover,
+  .theme-slate-dark .tool-cluster button.tool-cluster-icon:hover {
+    background: hsl(var(--foreground) / 0.08);
+  }
+}
+
+html.theme-neumorph-light .tool-cluster,
+html.theme-neumorph-dark .tool-cluster {
+  border: 1px solid hsl(var(--border) / 0.86);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(3px, 0.2rem)) calc(-1 * max(3px, 0.2rem)) 8px var(--neumorph-light-edge-soft),
+    max(3px, 0.2rem) max(3px, 0.2rem) 10px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (hover: hover) {
+  html.theme-neumorph-light .tool-cluster button:hover,
+  html.theme-neumorph-dark .tool-cluster button:hover {
+    transform: none;
+    background: hsl(var(--foreground) / 0.04);
+  }
+}
+
+html.theme-neumorph-light .tool-cluster button:active,
+html.theme-neumorph-dark .tool-cluster button:active {
+  transform: scale(0.98);
+  box-shadow:
+    inset 1px 1px 3px var(--neumorph-dark-edge-soft),
+    inset -1px -1px 3px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .tool-cluster button.tool-cluster-accent,
+html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent {
+  color: var(--tagent-brand, hsl(var(--primary)));
+  background: var(--tagent-brand-soft, hsl(var(--primary) / 0.12));
+}
+
+html.theme-neumorph-light .tool-cluster button.tool-cluster-accent:hover,
+html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent:hover {
+  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 20%, transparent);
+}
+
+html.theme-neumorph-light .tool-cluster button.tool-cluster-accent:active,
+html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent:active {
+  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 26%, transparent);
+}
+
+html.material-frosted .tool-cluster {
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.tool-cluster button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 3px hsl(var(--primary) / 0.45);
+}
+
+/* ===== 会话列表井（glass-studio .session-well tagent.css:1592-1605）
+ * 原型：glass-well 底 + rim 边 + 顶缘高光 inset + 轻 ambient 外投影
+ * 刻意省略原型底部 inset（0 -1px 0 … inset），避免「凹托盘」感
+ */
+.session-well {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 4px;
+  position: relative;
+  isolation: isolate;
+  /* 关键：圆角 + backdrop-filter 会隐式裁切子元素；内容层必须 overflow:visible */
+  overflow: visible;
+  border-radius: var(--radius-glass-popover);
+  background: transparent;
+  border: 1px solid hsl(var(--glass-shine) / 0.38);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.34),
+    0 8px 20px hsl(var(--foreground) / 0.045);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 毛玻璃底板单独成层，避免 backdrop-filter 裁切列表项外阴影 */
+.session-well::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: hsl(var(--muted) / 0.38);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  backdrop-filter: blur(20px) saturate(145%);
+}
+
+.session-well > .session-scroll {
+  position: relative;
+  z-index: 1;
+  /* 横向留白给外阴影，行本身 w-full 不再加 margin 避免溢出裁切 */
+  padding: 4px 10px;
+  box-sizing: border-box;
+}
+
+/* 阴影承载壳：仅纵向 margin；横向留白交给 .session-scroll padding，避免 w-full+margin 溢出裁切 */
+.session-well .session-row-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 6px 0;
+  padding: 9px 10px;
+  overflow: visible;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-glass-rail) - 1px);
+  transition:
+    background 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.session-well .session-row-shell:not(.session-list-item-active):hover {
+  background: var(--hover-fill, hsl(var(--foreground) / 0.05));
+  color: var(--foreground);
+  transform: translateX(2px);
+}
+
+/* session-well 内列表行（非 shell 场景，如归档弹层 compact） */
+.session-well .session-list-row:not(.session-row-shell) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-glass-rail) - 1px);
+  overflow: visible;
+  transition:
+    background 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.session-well .session-list-row:not(.session-row-shell):not(.session-list-item-active):hover {
+  background: var(--hover-fill, hsl(var(--foreground) / 0.05));
+  color: var(--foreground);
+  transform: translateX(2px);
+}
+
+.session-well .session-sidebar-accent--inline {
+  display: none;
+}
+
+/* 选中行：轻拟态「浮起」— 平面底色 + 顶缘细线 + 外阴影；文字/材质跟随 TAgent 主题 token */
+.session-well .session-row-shell.session-list-item-active,
+.session-well .session-list-row.session-list-item-active {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  overflow: visible;
+  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--session-glass-strong) !important;
+  border: 1px solid var(--session-rim) !important;
+  box-shadow:
+    0 1px 0 var(--session-inset-hi) inset,
+    3px 3px 9px var(--session-elev-dark),
+    -2px -2px 6px var(--session-elev-light) !important;
+}
+
+.session-well .session-list-item-active::before,
+.session-well .session-list-item-active::after {
+  content: none;
+  display: none;
+}
+
+.session-scroll {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.session-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+}
+
+.group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 22px;
+  padding: 2px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground) / 0.72);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ghost-plus {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-glass-chip);
+  color: hsl(var(--muted-foreground) / 0.7);
+  font-size: 14px;
+  line-height: 1;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.session-group:hover .ghost-plus,
+.group-label:hover .ghost-plus,
+.ghost-plus:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .ghost-plus:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--foreground) / 0.06);
+    transform: translateY(-1px);
+  }
+}
+
+.ghost-plus:active {
+  transform: translateY(0) scale(0.94);
+  box-shadow: inset 0 1px 3px hsl(var(--foreground) / 0.1);
+}
+
+.sidebar-archive-btn {
+  width: 100%;
+  height: 34px;
+  border: 1px solid hsl(var(--glass-shine) / 0.28);
+  border-radius: var(--radius-glass-rail);
+  font-size: 12px;
+  color: hsl(var(--muted-foreground) / 0.8);
+  background: hsl(var(--background) / 0.32);
+  box-shadow: 0 1px 0 hsl(var(--glass-shine) / 0.3) inset;
+  cursor: pointer;
+  transition:
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .sidebar-archive-btn:hover {
+    color: hsl(var(--foreground) / 0.72);
+    background: hsl(var(--background) / 0.48);
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 hsl(var(--glass-shine) / 0.35) inset,
+      0 3px 10px hsl(var(--foreground) / 0.06);
+  }
+}
+
+.sidebar-archive-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow:
+    inset 0 2px 5px hsl(var(--foreground) / 0.1),
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.15);
+}
+
+.dark .session-well,
+.theme-ocean-dark .session-well,
+.theme-forest-dark .session-well,
+.theme-slate-dark .session-well {
+  border-color: hsl(var(--glass-shine) / 0.14);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.08),
+    0 8px 20px hsl(var(--foreground) / 0.1);
+}
+
+.dark .session-well::before,
+.theme-ocean-dark .session-well::before,
+.theme-forest-dark .session-well::before,
+.theme-slate-dark .session-well::before {
+  background: hsl(var(--muted) / 0.28);
+}
+
+html.theme-neumorph-light .session-well,
+html.theme-neumorph-dark .session-well {
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--background) / 0.48);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.28),
+    0 4px 12px hsl(var(--foreground) / 0.04);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-neumorph-light .session-well .session-list-item-active,
+html.theme-neumorph-dark .session-well .session-list-item-active {
+  background: var(--session-glass-strong) !important;
+  border-color: var(--session-rim) !important;
+  box-shadow:
+    0 1px 0 var(--session-inset-hi) inset,
+    3px 3px 9px var(--session-elev-dark),
+    -2px -2px 6px var(--session-elev-light) !important;
+}
+
+/* session-well 内覆盖 neumorph 全局 overflow:hidden，否则外阴影被按钮自身裁切 */
+html.theme-neumorph-light .session-well .session-row-shell,
+html.theme-neumorph-dark .session-well .session-row-shell,
+html.theme-neumorph-light .session-well .session-list-row,
+html.theme-neumorph-dark .session-well .session-list-row,
+html.theme-neumorph-light .session-well .session-list-item-active,
+html.theme-neumorph-dark .session-well .session-list-item-active {
+  overflow: visible;
+}
+
+/* session-well 选中态用轻拟态阴影，不用 neumorph 主题的 ::after 左侧竖条 */
+html.theme-neumorph-light .session-well .session-list-item-active::after,
+html.theme-neumorph-dark .session-well .session-list-item-active::after {
+  content: none;
+  display: none;
 }
 
 /* macOS 顶栏：左翼红绿灯安全区 + 右翼侧栏标题（与主区 TabBar 同高语义） */

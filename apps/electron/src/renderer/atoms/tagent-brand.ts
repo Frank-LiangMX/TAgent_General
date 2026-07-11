@@ -19,10 +19,10 @@ const BRAND_HSL: Record<
   { base: string; soft: string; glow: string; foreground: string }
 > = {
   cyan: {
-    base: 'hsl(195 90% 55%)',
-    soft: 'hsl(195 90% 55% / 0.15)',
-    glow: 'hsl(195 90% 55% / 0.45)',
-    foreground: 'hsl(195 30% 95%)',
+    base: 'hsl(223 53% 59%)',
+    soft: 'hsl(223 53% 59% / 0.15)',
+    glow: 'hsl(223 53% 59% / 0.45)',
+    foreground: 'hsl(220 18% 10%)',
   },
   violet: {
     base: 'hsl(265 85% 65%)',

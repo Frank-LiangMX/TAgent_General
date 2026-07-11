@@ -22,7 +22,12 @@ export const spacing = {}
 
 export const fontSize = {}
 
-export const motion = {}
+export const motion = {
+  'ease-island': 'var(--motion-ease-island)',
+  'duration-fast': 'var(--motion-duration-fast)',
+  'duration-normal': 'var(--motion-duration-normal)',
+  'duration-slow': 'var(--motion-duration-slow)',
+}
 
 export const colors = {
   "border": "hsl(var(--border) / <alpha-value>)",

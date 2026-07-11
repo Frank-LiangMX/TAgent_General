@@ -71,7 +71,7 @@ interface BrandSwatch {
 }
 
 const BRAND_SWATCHES: readonly BrandSwatch[] = [
-  { id: 'cyan', name: '焕蓝', solid: 'hsl(195 90% 55%)' },
+  { id: 'cyan', name: '柔蓝', solid: 'hsl(223 53% 59%)' },
   { id: 'violet', name: '锐紫', solid: 'hsl(265 85% 65%)' },
   { id: 'amber', name: '橙陶', solid: 'hsl(28 95% 55%)' },
   { id: 'forest', name: '森绿', solid: 'hsl(150 60% 45%)' },

@@ -17,8 +17,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['apps/**/*.test.ts', 'packages/**/*.test.ts'],
+    include: ['apps/**/*.test.ts', 'packages/**/*.test.ts', 'packages/**/*.test.tsx'],
     exclude: ['node_modules/**', ...(isCI ? [] : nativeModuleTests)],
+    environmentMatchGlobs: [
+      ['packages/ui/**/*.test.tsx', 'jsdom'],
+    ],
   },
   resolve: {
     alias: {

@@ -33,6 +33,13 @@ export * from './components/textarea'
 export * from './components/three-petal-spiral'
 export * from './components/tooltip'
 export * from './components/settings'
+export * from './components/context-divider'
+export * from './components/conversation'
+export * from './components/reasoning'
+export * from './components/message'
+export * from './components/message-avatar'
+export { UserAvatar } from './components/user-avatar'
+export type { UserAvatarProps } from './components/user-avatar'
 
 // 富内容组件
 export { CodeBlock } from './code-block/index.ts'
