@@ -43,6 +43,8 @@ export * from './components/speech-button'
 export * from './components/sticky-user-message'
 export * from './components/scroll-minimap'
 export * from './components/file-path-chip'
+export * from './components/copy-button'
+export * from './components/attachment-preview-item'
 export { UserAvatar } from './components/user-avatar'
 export type { UserAvatarProps } from './components/user-avatar'
 
