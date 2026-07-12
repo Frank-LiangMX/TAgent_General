@@ -41,10 +41,7 @@
     --session-elev-light: transparent;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
-    /*
-     * 会话行 / sticky hover：不透明柔和色（与 glass.css frosted 表一致）
-     * 近白 dialog 上混一点 foreground，避免半透明「脏雾」
-     */
+    /* 与 md-surface.css --md-state-hover 对齐（md-surface 后加载会覆盖；此处防闪） */
     --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
   }
 
@@ -3759,11 +3756,10 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   isolation: isolate;
   -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
   backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
-  /* frosted 默认实色：opacity=1 时等价于不透 */
-  background: hsl(var(--background) / var(--surface-opacity, 1));
-  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
-  border-radius: 20px;
-  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  background: var(--surface-bg, hsl(var(--md-surface-container-low)));
+  border: 1px solid var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  border-radius: var(--md-shape-xl, 20px);
+  box-shadow: var(--surface-shadow, var(--md-elevation-1));
 }
 
 .panel-glass::before {
@@ -4980,10 +4976,9 @@ html.material-frosted .tool-cluster {
   border: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: hsl(var(--content-area));
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.03);
+  /* MD surface：主内容画布 */
+  background: hsl(var(--md-surface, var(--content-area)));
+  box-shadow: var(--md-elevation-1);
   transition: left 300ms ease-in-out;
 }
 
@@ -5131,12 +5126,10 @@ html.material-frosted .tool-cluster {
   opacity: 0.42;
 }
 
-/* dark frosted 背板：仍实色 */
+/* dark frosted 背板：MD surface */
 .dark .content-base-plate--body {
-  background: hsl(var(--content-area));
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.08);
+  background: hsl(var(--md-surface, var(--content-area)));
+  box-shadow: var(--md-elevation-1);
 }
 
 .dark .content-main-shell--right-inset .content-base-plate--body {
