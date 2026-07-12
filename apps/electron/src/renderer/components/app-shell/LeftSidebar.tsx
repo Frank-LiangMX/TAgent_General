@@ -23,16 +23,13 @@ import {
   Search,
   Archive,
   ArchiveRestore,
-  Hammer,
   MoreVertical,
   Check,
   CheckSquare,
   Square,
-  CircleCheckBig,
   FolderOpen,
   Folder,
   Hourglass,
-  Timer,
   Settings,
   GripVertical,
 } from 'lucide-react'
@@ -157,7 +154,7 @@ import {
 } from '@/atoms/tab-atoms'
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
+
 import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
@@ -521,9 +518,6 @@ export function LeftSidebar({
       .catch(console.error)
   }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
 
-  /** Working 区域状态（供归档区判断用） */
-  const workingSessionIds = useAtomValue(workingSessionIdsSetAtom)
-
   /** 置顶会话列表（非归档、非草稿） */
   const pinnedAgentSessions = React.useMemo(
     () =>
@@ -533,27 +527,23 @@ export function LeftSidebar({
     [currentModeAgentSessions, draftSessionIds]
   )
 
-  /** 已归档 Agent 会话数量（当前工作区） */
+  /**
+   * 已归档 Agent 会话数量（当前模式全部工作区）。
+   * 只要任一工作区有归档就显示底栏入口，不随「当前选中工作区」隐藏。
+   */
   const archivedAgentSessionCount = React.useMemo(
     () =>
-      currentModeAgentSessions.filter(
-        (s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId)
-      ).length,
-    [currentModeAgentSessions, currentWorkspaceId]
+      currentModeAgentSessions.filter((s) => s.archived && !draftSessionIds.has(s.id)).length,
+    [currentModeAgentSessions, draftSessionIds]
   )
 
-  /** 归档的 Agent 会话列表（按 updatedAt 倒序，平铺） */
+  /** 归档会话列表：跨工作区汇总，按 updatedAt 倒序（行内仍展示工作区名） */
   const archivedAgentSessionsList = React.useMemo(
     () =>
       currentModeAgentSessions
-        .filter(
-          (s) =>
-            s.archived &&
-            (!currentWorkspaceId || s.workspaceId === currentWorkspaceId) &&
-            !draftSessionIds.has(s.id)
-        )
+        .filter((s) => s.archived && !draftSessionIds.has(s.id))
         .sort((a, b) => b.updatedAt - a.updatedAt),
-    [currentModeAgentSessions, currentWorkspaceId, draftSessionIds]
+    [currentModeAgentSessions, draftSessionIds]
   )
 
   // 初始加载对话列表 + 用户档案 + Agent 会话
@@ -1171,72 +1161,6 @@ export function LeftSidebar({
     [store, setAgentSessions]
   )
 
-  /** 切换 Agent 会话手动工作中状态 */
-  const handleToggleManualWorkingAgent = React.useCallback(
-    async (id: string): Promise<void> => {
-      try {
-        const isCurrentlyInWorking = store.get(workingSessionIdsSetAtom).has(id)
-        if (isCurrentlyInWorking) {
-          // 从工作中移出：清除 manualWorking + 清除 workingDone
-          const session = store.get(agentSessionsAtom).find((s) => s.id === id)
-          if (session?.manualWorking) {
-            const updated = await window.electronAPI.toggleManualWorkingAgentSession(id)
-            setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
-          }
-          setWorkingDone((prev) => {
-            if (!prev.has(id)) return prev
-            const next = new Set(prev)
-            next.delete(id)
-            return next
-          })
-        } else {
-          // 加入工作中
-          const original = store.get(agentSessionsAtom).find((s) => s.id === id)
-          const updated = await window.electronAPI.toggleManualWorkingAgentSession(id)
-          setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
-          if (original?.archived && updated.manualWorking && !updated.archived) {
-            toast.success('已取消归档并标记为工作中')
-          }
-        }
-      } catch (error) {
-        console.error('[Sidebar] Failed to toggle manual working:', error)
-        toast.error('操作失败')
-      }
-    },
-    [store, setAgentSessions, setWorkingDone]
-  )
-
-  /** 确认已完成：从 Working 中移出，但会话仍可通过搜索或最近工作找到 */
-  const handleConfirmWorkingDoneAgent = React.useCallback(
-    async (id: string): Promise<void> => {
-      try {
-        // 通过 IPC 清除持久化的 completedButUnconfirmed 和 manualWorking 状态
-        const updated = await window.electronAPI.confirmWorkingDoneAgentSession(id)
-        setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
-
-        setWorkingDone((prev) => {
-          if (!prev.has(id)) return prev
-          const next = new Set(prev)
-          next.delete(id)
-          return next
-        })
-        setUnviewedCompleted((prev) => {
-          if (!prev.has(id)) return prev
-          const next = new Set(prev)
-          next.delete(id)
-          return next
-        })
-
-        toast.success('已标记为完成', {
-          description: '之后可以通过搜索或最近工作找到这个会话',
-        })
-      } catch (error) {
-        console.error('[侧边栏] 标记完成失败:', error)
-        toast.error('标记完成失败')
-      }
-    },
-    [setAgentSessions, setWorkingDone, setUnviewedCompleted]
-  )
 
   /** 切换 Agent 会话归档状态 */
   const handleToggleArchiveAgent = React.useCallback(
@@ -1503,9 +1427,7 @@ export function LeftSidebar({
             handleSelectAgentSession={handleSelectAgentSession}
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
-            handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
             handleToggleArchiveAgent={handleToggleArchiveAgent}
-            handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
             handleRequestMove={handleRequestMove}
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
@@ -1567,9 +1489,7 @@ export function LeftSidebar({
             handleSelectAgentSession={handleSelectAgentSession}
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
-            handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
             handleToggleArchiveAgent={handleToggleArchiveAgent}
-            handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
             handleRequestMove={handleRequestMove}
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
@@ -1689,19 +1609,16 @@ export function LeftSidebar({
                               session.id === activeSessionId,
                               session.manualWorking
                             )}
-                            showPinIcon={!!session.pinned}
                             workspaceName={
                               session.workspaceId
                                 ? workspaceNameMap.get(session.workspaceId)
                                 : undefined
                             }
                             onSelect={handleSelectAgentSession}
-                            onConfirmDone={handleConfirmWorkingDoneAgent}
                             onRequestDelete={handleRequestDelete}
                             onRequestMove={handleRequestMove}
                             onRename={handleAgentRename}
                             onTogglePin={handleTogglePinAgent}
-                            onToggleManualWorking={handleToggleManualWorkingAgent}
                             onToggleArchive={handleToggleArchiveAgent}
                             disableMiniMap
                             surface="compact"
@@ -1747,12 +1664,8 @@ export function LeftSidebar({
           </div>
         </div>
       ) : (
-        <div
-          key={activeRailItem}
-          className={cn(
-            'flex min-h-0 flex-1 flex-col'
-          )}
-        >
+        /* 与会话/草稿一致：sidebar-inner 提供与外层浮岛的 inset，list-well 不再左右贴边 */
+        <div key={activeRailItem} className="sidebar-inner">
           {renderRailContent()}
         </div>
       )}
@@ -1784,9 +1697,7 @@ function SessionsRailContent({
   handleSelectAgentSession,
   handleAgentRename,
   handleTogglePinAgent,
-  handleToggleManualWorkingAgent,
   handleToggleArchiveAgent,
-  handleConfirmWorkingDoneAgent,
   handleRequestMove,
   workspaceNameMap,
   selectWorkspace,
@@ -1821,9 +1732,7 @@ function SessionsRailContent({
   handleSelectAgentSession: (id: string, title: string) => void
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
-  handleToggleManualWorkingAgent: (id: string) => Promise<void>
   handleToggleArchiveAgent: (id: string) => Promise<void>
-  handleConfirmWorkingDoneAgent: (id: string) => Promise<void>
   handleRequestMove: (id: string) => void
   workspaceNameMap: Map<string, string>
   selectWorkspace: (id: string) => void
@@ -1874,7 +1783,7 @@ function SessionsRailContent({
   const listRef = React.useRef<HTMLDivElement>(null)
 
   return (
-    <div className="session-well flex-1 min-h-0 titlebar-no-drag">
+    <div className="list-well session-well flex-1 min-h-0 titlebar-no-drag">
       <div
         ref={listRef}
         className="session-scroll scrollbar-thin min-h-0 relative"
@@ -1901,12 +1810,10 @@ function SessionsRailContent({
                     session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
                   }
                   onSelect={handleSelectAgentSession}
-                  onConfirmDone={handleConfirmWorkingDoneAgent}
                   onRequestDelete={handleRequestDelete}
                   onRequestMove={handleRequestMove}
                   onRename={handleAgentRename}
                   onTogglePin={handleTogglePinAgent}
-                  onToggleManualWorking={handleToggleManualWorkingAgent}
                   onToggleArchive={handleToggleArchiveAgent}
                   disableMiniMap
                 />
@@ -1939,50 +1846,47 @@ function SessionsRailContent({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {agentProjectGroups.map((group) => (
-              <AgentProjectGroupItem
-                key={group.workspace.id}
-                group={group}
-                currentWorkspaceId={currentWorkspaceId}
-                collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
-                activeSessionId={activeSessionId}
-                agentIndicatorMap={agentIndicatorMap}
-                workspaceNameMap={workspaceNameMap}
-                onSelectProject={(id) => {
-                  selectWorkspace(id)
-                  toggleCollapsed(id)
-                }}
-                onNewSession={handleNewSessionInWorkspace}
-                onRenameWorkspace={handleRenameWorkspace}
-                onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
-                onConfigureProject={handleConfigureProject}
-                onSelectSession={handleSelectAgentSession}
-                handleRequestDelete={handleRequestDelete}
-                handleAgentRename={handleAgentRename}
-                handleTogglePinAgent={handleTogglePinAgent}
-                handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
-                handleToggleArchiveAgent={handleToggleArchiveAgent}
-                handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
-                handleRequestMove={handleRequestMove}
-                dragProjectId={dragProjectId}
-                projectDropIndicator={projectDropIndicator}
-                onProjectDragStart={onProjectDragStart}
-                onProjectDragOver={onProjectDragOver}
-                onProjectDragLeave={onProjectDragLeave}
-                onProjectDrop={onProjectDrop}
-                onProjectDragEnd={onProjectDragEnd}
-                batchSelectWorkspaceId={batchSelectWorkspaceId}
-                batchSelectedSessionIds={batchSelectedSessionIds}
-                onEnterBatchSelect={onEnterBatchSelect}
-                onExitBatchSelect={onExitBatchSelect}
-                onToggleBatchSelect={onToggleBatchSelect}
-                onBatchUpdateSelected={onBatchUpdateSelected}
-                onRequestBatchDelete={onRequestBatchDelete}
-                onConfirmBatchDelete={onConfirmBatchDelete}
-              />
-            ))}
-          </div>
+          /* 与置顶分区同级，统一吃 .session-scroll 的 gap，避免工作区之间再叠 gap-3 */
+          agentProjectGroups.map((group) => (
+            <AgentProjectGroupItem
+              key={group.workspace.id}
+              group={group}
+              currentWorkspaceId={currentWorkspaceId}
+              collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
+              activeSessionId={activeSessionId}
+              agentIndicatorMap={agentIndicatorMap}
+              workspaceNameMap={workspaceNameMap}
+              onSelectProject={(id) => {
+                selectWorkspace(id)
+                toggleCollapsed(id)
+              }}
+              onNewSession={handleNewSessionInWorkspace}
+              onRenameWorkspace={handleRenameWorkspace}
+              onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+              onConfigureProject={handleConfigureProject}
+              onSelectSession={handleSelectAgentSession}
+              handleRequestDelete={handleRequestDelete}
+              handleAgentRename={handleAgentRename}
+              handleTogglePinAgent={handleTogglePinAgent}
+              handleToggleArchiveAgent={handleToggleArchiveAgent}
+              handleRequestMove={handleRequestMove}
+              dragProjectId={dragProjectId}
+              projectDropIndicator={projectDropIndicator}
+              onProjectDragStart={onProjectDragStart}
+              onProjectDragOver={onProjectDragOver}
+              onProjectDragLeave={onProjectDragLeave}
+              onProjectDrop={onProjectDrop}
+              onProjectDragEnd={onProjectDragEnd}
+              batchSelectWorkspaceId={batchSelectWorkspaceId}
+              batchSelectedSessionIds={batchSelectedSessionIds}
+              onEnterBatchSelect={onEnterBatchSelect}
+              onExitBatchSelect={onExitBatchSelect}
+              onToggleBatchSelect={onToggleBatchSelect}
+              onBatchUpdateSelected={onBatchUpdateSelected}
+              onRequestBatchDelete={onRequestBatchDelete}
+              onConfirmBatchDelete={onConfirmBatchDelete}
+            />
+          ))
         )}
       </div>
     </div>
@@ -2125,12 +2029,9 @@ const ConversationItem = React.memo(function ConversationItem({
             active ? 'session-list-item-active' : 'rounded-md'
           )}
         >
-          {/* 流式状态左侧竖线条（与 Agent 保持一致） */}
+          {/* 流式状态底部横条（与 Agent 会话 / 标签页统一） */}
           {streaming && (
-            <span
-              className="session-sidebar-accent left-1.5 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary animate-pulse pointer-events-none"
-              aria-hidden="true"
-            />
+            <span className="session-status-line tab-status-streaming" aria-hidden="true" />
           )}
           <div className="flex-1 min-w-0">
             {editing ? (
@@ -2203,23 +2104,26 @@ const ConversationItem = React.memo(function ConversationItem({
 
 // ===== Agent 会话列表项 =====
 
-/** 会话行左侧状态色块的颜色 — 与 SessionIndicatorStatus 呼应 */
+/**
+ * 会话行底部状态横条 — 与标签页 TabBar 状态线统一
+ * running → tab-status-streaming 流光动画
+ * completed / blocked / primary 与 Tab 色一致
+ */
 type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary' | 'amber' | 'idle'
-const SESSION_LEFT_ACCENT_CLASS: Record<SessionLeftAccent, string> = {
+const SESSION_STATUS_LINE_CLASS: Record<SessionLeftAccent, string | null> = {
   orange: 'bg-orange-500',
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  primary: 'bg-primary',
+  blue: 'tab-status-streaming',
+  green: 'bg-emerald-500',
+  primary: 'tab-indicator-line',
   amber: 'bg-amber-500',
-  idle: 'bg-transparent',
+  idle: null,
 }
 
 interface AgentSessionItemProps {
   session: AgentSessionMeta
   active: boolean
   indicatorStatus: SessionIndicatorStatus
-  showPinIcon?: boolean
-  /** 行左侧状态色块；未传则不显示 */
+  /** 行底部状态横条语义；idle / 未传则不显示 */
   leftAccent?: SessionLeftAccent
   /** 是否禁用悬浮 Mini 地图 */
   disableMiniMap?: boolean
@@ -2236,12 +2140,10 @@ interface AgentSessionItemProps {
   /** 批量选择模式：切换选中 */
   onToggleBatchSelect?: (id: string) => void
   onSelect: (id: string, title: string) => void
-  onConfirmDone: (id: string) => Promise<void>
   onRequestDelete: (id: string) => void
   onRequestMove: (id: string) => void
   onRename: (id: string, newTitle: string) => Promise<void>
   onTogglePin: (id: string) => Promise<void>
-  onToggleManualWorking: (id: string) => Promise<void>
   onToggleArchive: (id: string) => Promise<void>
 }
 
@@ -2265,7 +2167,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   session,
   active,
   indicatorStatus,
-  showPinIcon,
   leftAccent,
   disableMiniMap,
   workspaceName,
@@ -2275,12 +2176,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   isBatchSelected = false,
   onToggleBatchSelect,
   onSelect,
-  onConfirmDone,
   onRequestDelete,
   onRequestMove,
   onRename,
   onTogglePin,
-  onToggleManualWorking,
   onToggleArchive,
 }: AgentSessionItemProps): React.ReactElement {
   const [editing, setEditing] = React.useState(false)
@@ -2321,7 +2220,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     }
   }
 
-  const isWorking = session.manualWorking
   const canMove = indicatorStatus === 'idle' || indicatorStatus === 'completed'
 
   const menuItems = (
@@ -2333,29 +2231,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
         {session.pinned ? <PinOff size={14} /> : <Pin size={14} />}
         {session.pinned ? '取消置顶' : '置顶会话'}
       </MenuItem>
-      <MenuItem
-        className="text-xs py-1 [&>svg]:size-3.5"
-        disabled={indicatorStatus === 'running'}
-        onSelect={() => {
-          if (indicatorStatus !== 'running') onToggleManualWorking(session.id)
-        }}
-      >
-        <Hammer size={14} className={isWorking ? 'fill-current' : ''} />
-        {indicatorStatus === 'running'
-          ? '运行中无法移出'
-          : isWorking
-            ? '取消工作中'
-            : '标记为工作中'}
-      </MenuItem>
-      {isWorking && (
-        <MenuItem
-          className="text-xs py-1 [&>svg]:size-3.5"
-          onSelect={() => onConfirmDone(session.id)}
-        >
-          <CircleCheckBig size={14} />
-          标记为完成
-        </MenuItem>
-      )}
       {canMove && (
         <MenuItem
           className="text-xs py-1 [&>svg]:size-3.5"
@@ -2387,11 +2262,9 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  // 非选中态需要前缀图标（工作中 / 置顶）；选择模式下隐藏，避免跟 checkbox 冲突
-  const showPrefixIcon =
-    !isBatchMode && !active && (session.manualWorking || (session.pinned && !session.manualWorking))
-  // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）；选择模式下隐藏
-  const showInlineAccent = !isBatchMode && !!leftAccent && !(session.manualWorking && !active)
+  // 底部状态横条（与标签页一致）；批量选择模式隐藏
+  const statusLineClass =
+    !isBatchMode && leftAccent ? SESSION_STATUS_LINE_CLASS[leftAccent] : null
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
@@ -2446,27 +2319,13 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               )}
             </button>
           )}
-          {showInlineAccent && leftAccent && (
+          {/* 底部状态横条：贴合选择态下沿，运行动画与标签页 tab-status-streaming 统一 */}
+          {statusLineClass && (
             <span
-              className={cn(
-                'session-sidebar-accent session-sidebar-accent--inline absolute left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
-                SESSION_LEFT_ACCENT_CLASS[leftAccent],
-                leftAccent === 'blue' && 'animate-pulse'
-              )}
+              className={cn('session-status-line', statusLineClass)}
+              aria-hidden="true"
             />
           )}
-          {showPrefixIcon &&
-            (session.manualWorking ? (
-              <Timer
-                size={12}
-                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400 pointer-events-none"
-              />
-            ) : (
-              <Pin
-                size={11}
-                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-primary/60 pointer-events-none"
-              />
-            ))}
           <div className="flex-1 min-w-0">
             {editing ? (
               <input
@@ -2494,7 +2353,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                   <span
                     className={cn(
                       'flex-shrink-0 text-[9px] tabular-nums',
-                      active ? 'session-row-meta' : 'text-foreground/30'
+                      active ? 'session-row-meta' : 'md-text-faint'
                     )}
                   >
                     {formatSessionTime(session.updatedAt)}
@@ -2569,9 +2428,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleRequestDelete,
   handleAgentRename,
   handleTogglePinAgent,
-  handleToggleManualWorkingAgent,
   handleToggleArchiveAgent,
-  handleConfirmWorkingDoneAgent,
   handleRequestMove,
   dragProjectId,
   projectDropIndicator,
@@ -2604,9 +2461,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleRequestDelete: (id: string) => void
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
-  handleToggleManualWorkingAgent: (id: string) => Promise<void>
   handleToggleArchiveAgent: (id: string) => Promise<void>
-  handleConfirmWorkingDoneAgent: (id: string) => Promise<void>
   handleRequestMove: (id: string) => void
   dragProjectId: string | null
   projectDropIndicator: { id: string; position: 'before' | 'after' } | null
@@ -2936,7 +2791,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   session={session}
                   active={session.id === activeSessionId}
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
-                  showPinIcon={!!session.pinned}
                   leftAccent={getSessionLeftAccent(
                     agentIndicatorMap.get(session.id) ?? 'idle',
                     session.id === activeSessionId,
@@ -2953,9 +2807,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   onRequestMove={handleRequestMove}
                   onRename={handleAgentRename}
                   onTogglePin={handleTogglePinAgent}
-                  onToggleManualWorking={handleToggleManualWorkingAgent}
                   onToggleArchive={handleToggleArchiveAgent}
-                  onConfirmDone={handleConfirmWorkingDoneAgent}
                   disableMiniMap
                 />
               ))}

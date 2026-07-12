@@ -58,12 +58,7 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
 import {
-  AssistantMessageLogo,
-  MESSAGE_AVATAR_CONTENT_INDENT_PX,
-} from '@/components/ai-elements/message-avatar'
-import {
   Message,
-  MessageHeader,
   MessageContent,
   BasePathsProvider,
 } from '@/components/ai-elements/message'
@@ -71,7 +66,6 @@ import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { resolveModelDisplayName } from '@/lib/model-logo'
-import { formatMessageTime } from '@/lib/time-utils'
 import { cn } from '@/lib/utils'
 
 function stableStringify(value: unknown): string {
@@ -417,7 +411,92 @@ export function buildUsageTooltip(durationMs: number, usage?: AgentEventUsage): 
   return lines.join('\n')
 }
 
-/** 耗时徽章 — 悬浮显示 token 用量明细 */
+/**
+ * 运行 / 完成 状态胶囊 — 对齐 glass-studio `.running-badge`
+ * - running：spinner + 扫光 + 实时秒数
+ * - completed：同款样式，文案「完成」+ 固定耗时（无动画）
+ */
+export function AgentStatusBadge({
+  status,
+  startedAt,
+  durationMs,
+  usage,
+}: {
+  status: 'running' | 'completed'
+  /** running 时用开始时间实时计时 */
+  startedAt?: number
+  /** completed 时用最终耗时（ms） */
+  durationMs?: number
+  usage?: AgentEventUsage
+}): React.ReactElement {
+  const [elapsedSec, setElapsedSec] = React.useState(0)
+  const isRunning = status === 'running'
+
+  React.useEffect(() => {
+    if (!isRunning) return
+    const start = startedAt ?? Date.now()
+    const update = (): void => setElapsedSec(Math.floor((Date.now() - start) / 1000))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
+  }, [isRunning, startedAt])
+
+  const formatLiveTime = (seconds: number): string => {
+    if (seconds < 60) return `${seconds}s`
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}m ${s}s`
+  }
+
+  const timeLabel = isRunning
+    ? formatLiveTime(elapsedSec)
+    : formatDuration(durationMs ?? elapsedSec * 1000)
+  const title = isRunning ? '运行中' : '完成'
+  const ariaLabel = `${title} ${timeLabel}`
+
+  const badge = (
+    <div
+      className={cn(
+        'agent-running-badge select-none',
+        !isRunning && 'agent-running-badge--done'
+      )}
+      role="status"
+      aria-live={isRunning ? 'polite' : 'off'}
+      aria-label={ariaLabel}
+    >
+      {isRunning ? (
+        <span className="agent-running-badge__spinner" aria-hidden />
+      ) : (
+        <span className="agent-running-badge__check" aria-hidden>
+          ✓
+        </span>
+      )}
+      <span className="agent-running-badge__label">
+        {title}
+        <span className="agent-running-badge__time tabular-nums">{timeLabel}</span>
+      </span>
+      {isRunning && <span className="agent-running-badge__pulse" aria-hidden />}
+    </div>
+  )
+
+  // 完成态：悬浮显示 token 明细（兼容原 DurationBadge）
+  if (!isRunning && durationMs != null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-default">{badge}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p className="whitespace-pre-line text-left">{buildUsageTooltip(durationMs, usage)}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return badge
+}
+
+/** @deprecated 使用 AgentStatusBadge status=completed；保留导出以免外部引用断裂 */
 export function DurationBadge({
   durationMs,
   usage,
@@ -425,48 +504,14 @@ export function DurationBadge({
   durationMs: number
   usage?: AgentEventUsage
 }): React.ReactElement {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="text-[15px] tabular-nums font-light cursor-default">
-          {formatDuration(durationMs)}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        <p className="whitespace-pre-line text-left">{buildUsageTooltip(durationMs, usage)}</p>
-      </TooltipContent>
-    </Tooltip>
-  )
+  return <AgentStatusBadge status="completed" durationMs={durationMs} usage={usage} />
 }
 
-/** Agent 运行指示器 — 三瓣螺旋动画 + 运行时间 */
+/** 流式运行指示器 */
 function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.ReactElement {
-  const [elapsed, setElapsed] = React.useState(0)
-
-  React.useEffect(() => {
-    const start = startedAt ?? Date.now()
-    const update = (): void => setElapsed((Date.now() - start) / 1000)
-    update()
-    const timer = setInterval(update, 100)
-    return () => clearInterval(timer)
-  }, [startedAt])
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds.toFixed(0)}s`
-    const m = Math.floor(seconds / 60)
-    const s = Math.floor(seconds % 60)
-    return `${m}m ${s}s`
-  }
-
-  return (
-    <div className="flex items-center gap-1.5 min-h-[28px] select-none">
-      <span className="tool-spinner-ring sm" />
-      <span className="text-[13px] font-light text-muted-foreground/75 tabular-nums">
-        运行中 {formatTime(elapsed)}
-      </span>
-    </div>
-  )
+  return <AgentStatusBadge status="running" startedAt={startedAt} />
 }
+
 
 function AgentMessagesImpl({
   sessionId,
@@ -560,6 +605,10 @@ function AgentMessagesImpl({
   const streamingContent = streamState?.content ?? ''
   const streamingThinkingContent = streamState?.thinkingContent ?? ''
   const agentStreamingModel = streamState?.model
+  const agentStreamingModelLabel = React.useMemo(
+    () => (agentStreamingModel ? resolveModelDisplayName(agentStreamingModel, channels) : undefined),
+    [agentStreamingModel, channels]
+  )
     ? resolveModelDisplayName(streamState.model, channels)
     : undefined
   const retrying = streamState?.retrying
@@ -902,70 +951,89 @@ function AgentMessagesImpl({
               {/* 不使用 mt：ConversationContent 的 gap-1(4px) 已提供间距，
                 匹配内部 MessageActions 的 gap-0.5(2px)+mt-0.5(2px)=4px 间距 */}
               {hasLiveAssistantContent && !suppressAgentRunning && (
-                <div
-                  className="min-h-[28px]"
-                  style={{ paddingLeft: MESSAGE_AVATAR_CONTENT_INDENT_PX }}
-                >
-                  {retrying && <RetryingNotice retrying={retrying} />}
-                  {streaming && <AgentRunningIndicator startedAt={startedAt} />}
+                <div className="agent-turn-footer agent-turn-footer--live">
+                  <div className="agent-turn-footer__meta">
+                    {retrying && <RetryingNotice retrying={retrying} />}
+                    {streaming && <AgentRunningIndicator startedAt={startedAt} />}
+                  </div>
                 </div>
               )}
 
-              {/* 无实时助手内容时：显示完整气泡（含头像/名称/时间） */}
-              {/* 注意：工具活动已通过 SDK 渲染路径（liveGroups）展示 */}
+              {/* 无实时助手内容时：标题行模型名 + 通栏内容；运行中胶囊在左侧 footer */}
               {!hasLiveAssistantContent &&
                 !suppressAgentRunning &&
                 (streaming || smoothContent || smoothThinking || retrying) && (
                   <Message from="assistant">
-                    <MessageHeader
-                      model={agentStreamingModel}
-                      time={formatMessageTime(Date.now())}
-                      logo={<AssistantMessageLogo model={agentStreamingModel} />}
-                    />
                     <MessageContent>
                       {retrying && <RetryingNotice retrying={retrying} />}
                       {smoothThinking || smoothContent ? (
                         <>
-                          <div className={cn('space-y-2')}>
+                          <div className="agent-turn flex flex-col gap-3">
+                            {agentStreamingModelLabel && (
+                              <div className="agent-turn-title">{agentStreamingModelLabel}</div>
+                            )}
                             {smoothThinking ? (
-                              <ContentBlock
-                                block={{ type: 'thinking', thinking: smoothThinking }}
-                                allMessages={allSDKMessages}
-                                basePath={
-                                  (attachedDirs?.length ?? 0) > 0
-                                    ? undefined
-                                    : sessionPath || undefined
-                                }
-                                basePaths={
-                                  (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
-                                }
-                                index={-1}
-                                isStreaming={streaming}
-                              />
+                              <div className="agent-turn-process">
+                                <ContentBlock
+                                  block={{ type: 'thinking', thinking: smoothThinking }}
+                                  allMessages={allSDKMessages}
+                                  basePath={
+                                    (attachedDirs?.length ?? 0) > 0
+                                      ? undefined
+                                      : sessionPath || undefined
+                                  }
+                                  basePaths={
+                                    (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
+                                  }
+                                  index={-1}
+                                  isStreaming={streaming}
+                                />
+                              </div>
                             ) : null}
-                            {smoothContentBlocks.map((block, index) => (
-                              <ContentBlock
-                                key={index}
-                                block={block}
-                                allMessages={allSDKMessages}
-                                basePath={
-                                  (attachedDirs?.length ?? 0) > 0
-                                    ? undefined
-                                    : sessionPath || undefined
-                                }
-                                basePaths={
-                                  (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
-                                }
-                                index={index}
-                                dimmed={hasSmoothTextContent && block.type !== 'text'}
-                                isStreaming={streaming}
-                              />
-                            ))}
+                            {smoothContentBlocks.length > 0 && (
+                              <div className="agent-turn-answer">
+                                {smoothContentBlocks.map((block, index) => (
+                                  <ContentBlock
+                                    key={index}
+                                    block={block}
+                                    allMessages={allSDKMessages}
+                                    basePath={
+                                      (attachedDirs?.length ?? 0) > 0
+                                        ? undefined
+                                        : sessionPath || undefined
+                                    }
+                                    basePaths={
+                                      (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
+                                    }
+                                    index={index}
+                                    dimmed={hasSmoothTextContent && block.type !== 'text'}
+                                    isStreaming={streaming}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          {streaming && <AgentRunningIndicator startedAt={startedAt} />}
+                          {streaming && (
+                            <div className="agent-turn-footer agent-turn-footer--live mt-2">
+                              <div className="agent-turn-footer__meta">
+                                <AgentRunningIndicator startedAt={startedAt} />
+                              </div>
+                            </div>
+                          )}
                         </>
                       ) : (
-                        streaming && <AgentRunningIndicator startedAt={startedAt} />
+                        streaming && (
+                          <div className="agent-turn flex flex-col gap-3">
+                            {agentStreamingModelLabel && (
+                              <div className="agent-turn-title">{agentStreamingModelLabel}</div>
+                            )}
+                            <div className="agent-turn-footer agent-turn-footer--live">
+                              <div className="agent-turn-footer__meta">
+                                <AgentRunningIndicator startedAt={startedAt} />
+                              </div>
+                            </div>
+                          </div>
+                        )
                       )}
                     </MessageContent>
                   </Message>

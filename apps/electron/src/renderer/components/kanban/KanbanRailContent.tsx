@@ -61,19 +61,44 @@ function KanbanBoardItem({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className={cn(
-        'group relative flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors',
-        selected ? 'bg-blue-500/10 ring-1 ring-blue-500/30' : 'hover:bg-muted/40',
+        'session-list-row group relative cursor-pointer titlebar-no-drag',
+        selected && 'session-list-item-active',
         isCancelled && 'opacity-50'
       )}
       onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
     >
-      <div className="flex size-7 items-center justify-center rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
+      <div
+        className={cn(
+          'flex size-7 shrink-0 items-center justify-center rounded-md',
+          selected ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary/80'
+        )}
+      >
         <KanbanSquare className="size-3.5" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-foreground truncate">{displayName}</div>
-        <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+        <div
+          className={cn(
+            'text-xs font-medium truncate',
+            selected ? 'session-row-title' : 'text-foreground'
+          )}
+        >
+          {displayName}
+        </div>
+        <div
+          className={cn(
+            'text-[10px] flex items-center gap-1.5',
+            selected ? 'session-row-meta' : 'text-muted-foreground'
+          )}
+        >
           <span>{board.mode === 'ta' ? 'TA' : '通用'}</span>
           <span>·</span>
           <span>
@@ -208,9 +233,9 @@ export function KanbanRailContent(): React.ReactElement {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* 标题栏 */}
-      <div className="flex items-center justify-between px-3 py-2.5">
+    <div className="flex h-full min-h-0 flex-col gap-2.5">
+      {/* 标题栏（左右 inset 由 sidebar-inner 负责） */}
+      <div className="flex shrink-0 items-center justify-between titlebar-no-drag">
         <div className="flex items-center gap-1.5">
           <KanbanSquare className="size-3.5 text-foreground/60" />
           <span className="text-xs font-medium text-foreground">看板</span>
@@ -220,8 +245,8 @@ export function KanbanRailContent(): React.ReactElement {
         </div>
       </div>
 
-      {/* 角色库入口按钮 */}
-      <div className="px-3 pb-2">
+      {/* 角色库入口 */}
+      <div className="shrink-0 titlebar-no-drag">
         <Button
           variant="outline"
           size="sm"
@@ -233,34 +258,38 @@ export function KanbanRailContent(): React.ReactElement {
         </Button>
       </div>
 
-      {/* 看板列表 */}
-      <div className="flex-1 overflow-y-auto px-2 pb-3 scrollbar-thin">
-        {loading && boards.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <span className="size-4 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
-          </div>
-        ) : boards.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-            <KanbanSquare className="size-8 text-muted-foreground/40 mb-2" />
-            <p className="text-xs text-muted-foreground mb-1">
-              {topLevelMode === 'ta' ? 'TA 模式暂无看板' : '通用模式暂无看板'}
-            </p>
-            <p className="text-[10px] text-muted-foreground/70 max-w-[200px] leading-relaxed">
-              在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
-            </p>
-          </div>
-        ) : (
-          boards.map((board) => (
-            <KanbanBoardItem
-              key={board.id}
-              board={board}
-              selected={selectedBoardId === board.id}
-              onOpen={() => handleOpen(board.id)}
-              onRename={() => handleRenameClick(board.id, board.title ?? board.rootGoal)}
-              onDelete={() => handleDeleteClick(board.id, board.title ?? board.rootGoal)}
-            />
-          ))
-        )}
+      {/* 看板列表井（inset 由 LeftSidebar .sidebar-inner 统一提供） */}
+      <div className="list-well flex-1 min-h-0">
+        <div className="session-scroll scrollbar-thin min-h-0">
+          {loading && boards.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <span className="size-4 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+            </div>
+          ) : boards.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <KanbanSquare className="size-8 text-muted-foreground/40 mb-2" />
+              <p className="text-xs text-muted-foreground mb-1">
+                {topLevelMode === 'ta' ? 'TA 模式暂无看板' : '通用模式暂无看板'}
+              </p>
+              <p className="text-[10px] text-muted-foreground/70 max-w-[200px] leading-relaxed">
+                在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {boards.map((board) => (
+                <KanbanBoardItem
+                  key={board.id}
+                  board={board}
+                  selected={selectedBoardId === board.id}
+                  onOpen={() => handleOpen(board.id)}
+                  onRename={() => handleRenameClick(board.id, board.title ?? board.rootGoal)}
+                  onDelete={() => handleDeleteClick(board.id, board.title ?? board.rootGoal)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 重命名看板 Dialog */}

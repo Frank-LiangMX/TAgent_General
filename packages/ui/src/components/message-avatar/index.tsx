@@ -16,7 +16,8 @@ export const MESSAGE_AVATAR_SIZE = 32
  * Agent 正文相对会话左缘的缩进（Message px-2.5 + avatar + gap-2.5）
  * 用于运行指示器等与 assistant 正文对齐
  */
-export const MESSAGE_AVATAR_CONTENT_INDENT_PX = 52
+/** @deprecated 助手 turn 已通栏，不再左缩进对齐头像；保留常量以免外部引用断裂 */
+export const MESSAGE_AVATAR_CONTENT_INDENT_PX = 0
 
 interface AssistantMessageLogoProps {
   model?: string

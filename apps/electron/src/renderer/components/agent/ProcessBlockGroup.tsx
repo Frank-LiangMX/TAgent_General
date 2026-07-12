@@ -354,12 +354,11 @@ export function ProcessBlockGroup({
   const hiddenToolCount = Math.max(0, toolNames.length - visibleToolNames.length)
 
   return (
-    <div className="agent-process-group space-y-1.5">
+    <div className="agent-process-group">
       <button
         type="button"
         className={cn(
-          'agent-process-group__toggle flex max-w-full items-center gap-2 py-0.5 text-left transition-opacity group',
-          'hover:opacity-70'
+          'agent-process-group__toggle group flex w-full max-w-full items-center gap-2 text-left'
         )}
         onClick={() => {
           userToggledRef.current = true
@@ -370,25 +369,25 @@ export function ProcessBlockGroup({
       >
         <SessionChevronRight
           className={cn(
-            'size-3 shrink-0 text-muted-foreground/40 transition-transform duration-150',
+            'size-3 shrink-0 text-muted-foreground/50 transition-transform duration-150',
             expanded && 'rotate-90'
           )}
         />
         <span
           className={cn(
-            'min-w-0 truncate text-[14px] text-muted-foreground',
+            'min-w-0 flex-1 truncate text-[12.5px] font-medium text-muted-foreground',
             isStreaming && 'agent-shiny-text'
           )}
         >
           {summary}
         </span>
         {collapseCountdown !== null && (
-          <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground/50">
-            （{collapseCountdown}）
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/50">
+            {collapseCountdown}s
           </span>
         )}
         {visibleToolNames.length > 0 && (
-          <span className="flex shrink-0 items-center gap-1 text-muted-foreground/60">
+          <span className="flex shrink-0 items-center gap-1 text-muted-foreground/55">
             {visibleToolNames.map((toolName) => {
               const ToolIcon = getToolIcon(toolName)
               return (
@@ -400,7 +399,7 @@ export function ProcessBlockGroup({
               )
             })}
             {hiddenToolCount > 0 && (
-              <span className="text-[11px] tabular-nums text-muted-foreground/60">
+              <span className="text-[11px] tabular-nums text-muted-foreground/55">
                 +{hiddenToolCount}
               </span>
             )}
@@ -416,22 +415,22 @@ export function ProcessBlockGroup({
             opacity: expanded ? 1 : 0,
           }}
         >
-            <div className="agent-process-stack min-h-0 overflow-hidden space-y-2">
-              {children}
-              <button
-                type="button"
-                className="flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors"
-                onClick={() => {
-                  userToggledRef.current = true
-                  clearAutoCollapseTimers()
-                  setCollapseCountdown(null)
-                  setExpanded(false)
-                }}
-              >
-                <SessionChevronRight className="size-3 -rotate-90" />
-                <span>收起</span>
-              </button>
-            </div>
+          <div className="agent-process-stack min-h-0 overflow-hidden space-y-1.5">
+            {children}
+            <button
+              type="button"
+              className="agent-process-group__collapse flex items-center gap-1 text-[11px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+              onClick={() => {
+                userToggledRef.current = true
+                clearAutoCollapseTimers()
+                setCollapseCountdown(null)
+                setExpanded(false)
+              }}
+            >
+              <SessionChevronRight className="size-3 -rotate-90" />
+              <span>收起</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

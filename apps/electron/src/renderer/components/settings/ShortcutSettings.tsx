@@ -1,18 +1,23 @@
 /**
- * ShortcutSettings — 快捷键设置面板
+ * ShortcutSettings — 快捷键设置
  *
- * 现代卡片网格布局：
- * - 发送消息单独展示
- * - 快捷键以卡片网格形式展示（每个快捷键一个独立卡片）
- * - 点击卡片录制，右侧开关控制启用/禁用
+ * 与其他设置页统一：SettingsSection + SettingsCard + SettingsRow。
+ * 点击右侧键位胶囊可录制；开关控制启用。
  */
 
 import { useAtom } from 'jotai'
-import { RotateCcw, Command, ArrowLeftRight, FileEdit, Globe2 } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Switch } from '@tagent/ui'
+import {
+  Button,
+  Switch,
+  SettingsCard,
+  SettingsRow,
+  SettingsSection,
+  SettingsSegmentedControl,
+} from '@tagent/ui'
 import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-defaults'
 
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
@@ -137,48 +142,83 @@ function RecordingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-background rounded-xl border border-border p-5 w-[280px] shadow-xl animate-in zoom-in-95 duration-150">
-        <div className="text-sm font-medium text-foreground mb-3">{shortcutName}</div>
+      <div className="session-glass-surface session-glass-modal relative w-[min(320px,90vw)] p-5 animate-in zoom-in-95 duration-150">
+        <div className="text-sm font-medium md-text mb-3">{shortcutName}</div>
 
-        {/* 录制区域 */}
         <div
           className={cn(
-            'rounded-lg p-4 text-center mb-4',
-            conflict ? 'bg-red-500/10' : pendingKeys ? 'bg-muted' : 'bg-muted/50'
+            'rounded-xl px-3 py-4 text-center mb-4 border',
+            conflict
+              ? 'bg-destructive/8 border-destructive/20'
+              : pendingKeys
+                ? 'bg-muted/50 border-border/50'
+                : 'bg-muted/30 border-border/40'
           )}
         >
           {conflict ? (
-            <div className="text-red-600 text-xs">
+            <div className="text-destructive text-xs leading-relaxed">
               <span className="font-mono">{getAcceleratorDisplay(pendingKeys)}</span>
-              <span className="ml-2">与「{conflict}」冲突</span>
+              <span className="ml-1.5">与「{conflict}」冲突</span>
             </div>
           ) : pendingKeys ? (
-            <span className="font-mono text-sm text-foreground">
+            <span className="font-mono text-sm md-text">
               {getAcceleratorDisplay(pendingKeys)}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">按下快捷键组合...</span>
+            <span className="text-xs md-text-faint">按下快捷键组合…</span>
           )}
         </div>
 
-        {/* 操作按钮 */}
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-muted"
-          >
+          <Button type="button" variant="ghost" size="sm" className="rounded-xl" onClick={onCancel}>
             取消
-          </button>
-          <button
-            onClick={handleSave}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => void handleSave()}
             disabled={!!(!pendingKeys || conflict || saving)}
-            className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded hover:bg-primary/90 disabled:opacity-50"
           >
-            {saving ? '保存中...' : '保存'}
-          </button>
+            {saving ? '保存中…' : '保存'}
+          </Button>
         </div>
       </div>
     </div>
+  )
+}
+
+// ===== 键位胶囊 =====
+
+function ShortcutKeycap({
+  label,
+  muted,
+  onClick,
+  disabled,
+}: {
+  label: string
+  muted?: boolean
+  onClick?: () => void
+  disabled?: boolean
+}): React.ReactElement {
+  const Comp = onClick && !disabled ? 'button' : 'span'
+  return (
+    <Comp
+      type={onClick && !disabled ? 'button' : undefined}
+      onClick={disabled ? undefined : onClick}
+      className={cn(
+        'inline-flex items-center justify-center min-w-[3.5rem] h-7 px-2.5 rounded-lg text-[11px] font-mono tabular-nums border transition-colors',
+        muted
+          ? 'border-transparent bg-muted/40 md-text-faint italic'
+          : 'border-border/50 bg-muted/45 md-text-variant',
+        onClick &&
+          !disabled &&
+          'cursor-pointer hover:bg-accent hover:border-border/70 hover:text-foreground',
+        disabled && 'cursor-default opacity-70'
+      )}
+    >
+      {label}
+    </Comp>
   )
 }
 
@@ -242,7 +282,6 @@ export function ShortcutSettings(): React.ReactElement {
         ? { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: undefined } }
         : { ...overrides, [shortcutId]: { ...overrides[shortcutId], [key]: null } }
 
-      // 如果启用且没有默认值，删除整个 override
       if (enable && newOverrides[shortcutId]?.[key] === undefined) {
         const cleanOverrides = { ...newOverrides }
         delete cleanOverrides[shortcutId]
@@ -250,6 +289,8 @@ export function ShortcutSettings(): React.ReactElement {
           await window.electronAPI.updateSettings({ shortcutOverrides: cleanOverrides })
           setOverrides(cleanOverrides)
           updateShortcutOverrides(cleanOverrides)
+          const def = DEFAULT_SHORTCUTS.find((s) => s.id === shortcutId)
+          if (def?.global) await reregisterGlobalShortcut(shortcutId)
         } catch {
           toast.error('操作失败')
         }
@@ -258,95 +299,116 @@ export function ShortcutSettings(): React.ReactElement {
           await window.electronAPI.updateSettings({ shortcutOverrides: newOverrides })
           setOverrides(newOverrides)
           updateShortcutOverrides(newOverrides)
+          const def = DEFAULT_SHORTCUTS.find((s) => s.id === shortcutId)
+          if (def?.global) await reregisterGlobalShortcut(shortcutId)
         } catch {
           toast.error('操作失败')
         }
       }
     },
-    [overrides, setOverrides]
+    [overrides, reregisterGlobalShortcut, setOverrides]
   )
 
-  const handleToggleSendKey = React.useCallback(() => {
-    const newValue = !sendWithCmdEnter
-    setSendWithCmdEnter(newValue)
-    window.electronAPI
-      .updateSettings({ sendWithCmdEnter: newValue })
-      .then(() => toast.success('已保存'))
-      .catch(() => toast.error('保存失败'))
-  }, [sendWithCmdEnter, setSendWithCmdEnter])
+  const handleSendKeyChange = React.useCallback(
+    (value: string) => {
+      const next = value === 'cmd-enter'
+      setSendWithCmdEnter(next)
+      window.electronAPI
+        .updateSettings({ sendWithCmdEnter: next })
+        .then(() => toast.success('已保存'))
+        .catch(() => toast.error('保存失败'))
+    },
+    [setSendWithCmdEnter]
+  )
 
   const hasOverrides = Object.keys(overrides).length > 0
   const categoryOrder: ShortcutCategory[] = ['app', 'navigation', 'edit', 'global']
-  const categoryIcons: Record<ShortcutCategory, React.ReactNode> = {
-    app: <Command className="size-4" />,
-    navigation: <ArrowLeftRight className="size-4" />,
-    edit: <FileEdit className="size-4" />,
-    global: <Globe2 className="size-4" />,
-  }
 
   return (
     <div className="space-y-6">
-      {/* 发送消息 */}
-      <div className="grid grid-cols-2 gap-3">
-        <ShortcutTile
-          name="Enter 发送"
-          active={!sendWithCmdEnter}
-          onClick={() => sendWithCmdEnter && handleToggleSendKey()}
-          readonly
-        />
-        <ShortcutTile
-          name={`${isMac ? '⌘' : 'Ctrl'}+Enter`}
-          active={sendWithCmdEnter}
-          onClick={() => !sendWithCmdEnter && handleToggleSendKey()}
-          readonly
-        />
-      </div>
+      <SettingsSection
+        title="发送消息"
+        description="选择在输入框中发送消息的快捷键"
+      >
+        <SettingsCard>
+          <SettingsSegmentedControl
+            label="发送快捷键"
+            description="Enter 直接发送，或使用修饰键+Enter"
+            value={sendWithCmdEnter ? 'cmd-enter' : 'enter'}
+            onValueChange={handleSendKeyChange}
+            options={[
+              { value: 'enter', label: 'Enter' },
+              { value: 'cmd-enter', label: `${isMac ? '⌘' : 'Ctrl'}+Enter` },
+            ]}
+          />
+        </SettingsCard>
+      </SettingsSection>
 
-      {/* 分类快捷键 */}
       {categoryOrder.map((category) => {
         const shortcuts = grouped.get(category)
         if (!shortcuts) return null
 
+        const visible = shortcuts.filter(
+          (def) => !def.readonly || (isMac ? def.defaultMac : def.defaultWin)
+        )
+        if (visible.length === 0) return null
+
         return (
-          <div key={category} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">{categoryIcons[category]}</span>
-              <span className="text-sm font-medium text-foreground">
-                {SHORTCUT_CATEGORY_LABELS[category]}
-              </span>
-            </div>
+          <SettingsSection key={category} title={SHORTCUT_CATEGORY_LABELS[category]}>
+            <SettingsCard>
+              {visible.map((def) => {
+                const currentAccel = getActiveAccelerator(def.id)
+                const platformOverride = overrides[def.id]?.[isMac ? 'mac' : 'win']
+                const isDisabled = platformOverride === null
+                const display =
+                  def.readonly
+                    ? (isMac ? def.defaultMac : def.defaultWin)
+                    : currentAccel
 
-            <div className="grid grid-cols-2 gap-2">
-              {shortcuts
-                .filter((def) => !def.readonly || (isMac ? def.defaultMac : def.defaultWin))
-                .map((def) => {
-                  const currentAccel = getActiveAccelerator(def.id)
-                  const platformOverride = overrides[def.id]?.[isMac ? 'mac' : 'win']
-                  const isDisabled = platformOverride === null
-
-                  return (
-                    <ShortcutTile
-                      key={def.id}
-                      name={def.name}
-                      shortcut={
-                        def.readonly ? (isMac ? def.defaultMac : def.defaultWin) : currentAccel
-                      }
-                      active={currentAccel !== null}
-                      onClick={() =>
-                        !def.readonly && setRecordingShortcut({ id: def.id, name: def.name })
-                      }
-                      onToggle={() => !def.readonly && handleToggle(def.id, currentAccel === null)}
-                      disabled={def.readonly}
-                      global={def.global}
-                    />
-                  )
-                })}
-            </div>
-          </div>
+                return (
+                  <SettingsRow
+                    key={def.id}
+                    label={def.name}
+                    description={
+                      def.global
+                        ? '全局快捷键，应用未聚焦时也可触发'
+                        : def.readonly
+                          ? '系统保留，不可修改'
+                          : undefined
+                    }
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <ShortcutKeycap
+                        label={
+                          display
+                            ? getAcceleratorDisplay(display)
+                            : isDisabled
+                              ? '已禁用'
+                              : '点击设置'
+                        }
+                        muted={!display}
+                        disabled={def.readonly}
+                        onClick={
+                          def.readonly
+                            ? undefined
+                            : () => setRecordingShortcut({ id: def.id, name: def.name })
+                        }
+                      />
+                      {!def.readonly && (
+                        <Switch
+                          checked={currentAccel !== null}
+                          onCheckedChange={(checked) => void handleToggle(def.id, checked)}
+                        />
+                      )}
+                    </div>
+                  </SettingsRow>
+                )
+              })}
+            </SettingsCard>
+          </SettingsSection>
         )
       })}
 
-      {/* 录制弹窗 */}
       {recordingShortcut && (
         <RecordingModal
           shortcutId={recordingShortcut.id}
@@ -356,85 +418,28 @@ export function ShortcutSettings(): React.ReactElement {
         />
       )}
 
-      {/* 恢复全部 */}
       {hasOverrides && (
-        <button
-          onClick={async () => {
-            try {
-              await window.electronAPI.updateSettings({ shortcutOverrides: {} })
-              setOverrides({})
-              updateShortcutOverrides({})
-              await window.electronAPI.reregisterGlobalShortcuts()
-              toast.success('已恢复默认')
-            } catch {
-              toast.error('恢复失败')
-            }
-          }}
-          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-        >
-          <RotateCcw className="size-3" />
-          恢复全部默认
-        </button>
-      )}
-    </div>
-  )
-}
-
-// ===== 快捷键卡片组件 =====
-
-interface ShortcutTileProps {
-  name: string
-  shortcut?: string | null
-  active: boolean
-  onClick?: () => void
-  onToggle?: () => void
-  disabled?: boolean
-  readonly?: boolean
-  global?: boolean
-}
-
-function ShortcutTile({
-  name,
-  shortcut,
-  active,
-  onClick,
-  onToggle,
-  disabled,
-  readonly,
-  global,
-}: ShortcutTileProps): React.ReactElement {
-  return (
-    <div
-      onClick={disabled || readonly ? undefined : onClick}
-      className={cn(
-        'rounded-lg p-3 transition-colors cursor-pointer',
-        active ? 'bg-muted/40 border border-border/50' : 'bg-muted/20 border border-transparent',
-        disabled && 'opacity-50 cursor-default',
-        !disabled && !readonly && 'hover:bg-muted/60 hover:border-border/30'
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm text-foreground truncate">{name}</span>
-          {global && <span className="text-xs text-muted-foreground/50 shrink-0">全局</span>}
-        </div>
-
-        {/* 快捷键显示 */}
-        <div className="shrink-0">
-          {shortcut ? (
-            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
-              {getAcceleratorDisplay(shortcut)}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground/50 italic">禁用</span>
-          )}
-        </div>
-      </div>
-
-      {/* 开关（非 readonly 时显示） */}
-      {!readonly && onToggle && (
-        <div className="mt-2 flex justify-end">
-          <Switch checked={active} onCheckedChange={onToggle} className="scale-75" />
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="rounded-xl text-muted-foreground"
+            onClick={async () => {
+              try {
+                await window.electronAPI.updateSettings({ shortcutOverrides: {} })
+                setOverrides({})
+                updateShortcutOverrides({})
+                await window.electronAPI.reregisterGlobalShortcuts()
+                toast.success('已恢复默认')
+              } catch {
+                toast.error('恢复失败')
+              }
+            }}
+          >
+            <RotateCcw className="size-3.5" />
+            恢复全部默认
+          </Button>
         </div>
       )}
     </div>

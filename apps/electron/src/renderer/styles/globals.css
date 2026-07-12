@@ -1,6 +1,7 @@
 @import '@tagent/ui/src/tokens/__generated__/tokens.css';
 @import '@tagent/ui/styles/md-surface.css';
 @import '@tagent/ui/styles/glass.css';
+@import '@tagent/ui/styles/pressable.css';
 @import '@tagent/ui/styles/search.css';
 @import '@tagent/ui/styles/segmented-tabs.css';
 @import './agent-thread.css';
@@ -15,9 +16,21 @@
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     /* 代码块背景 */
     --code-bg: 220 12% 14%;
-    /* 虚线边框色 */
-    --dashed-border: 223 53% 59% / 0.35;
-    --dashed-border-hover: 223 53% 59% / 0.50;
+    /*
+     * 强调色一律跟随主题 --primary（已取消独立签名色）。
+     * --tagent-brand* 仅作兼容别名，供存量 CSS/内联 style 使用。
+     */
+    --tagent-brand: hsl(var(--primary));
+    --tagent-brand-soft: hsl(var(--primary) / 0.15);
+    --tagent-brand-glow: hsl(var(--primary) / 0.45);
+    --tagent-brand-foreground: hsl(var(--primary-foreground));
+    /* Rail 选中图案 / 头像渐变 */
+    --rail-accent: hsl(var(--primary));
+    --rail-avatar-a: color-mix(in srgb, hsl(var(--primary)) 55%, white);
+    --rail-avatar-b: color-mix(in srgb, hsl(var(--primary)) 40%, hsl(var(--secondary)));
+    /* 虚线边框：HSL 分量 + alpha，供 hsl(var(--dashed-border)) */
+    --dashed-border: var(--primary) / 0.35;
+    --dashed-border-hover: var(--primary) / 0.5;
     /* Markdown 预览正文字号 */
     --md-preview-font-size: 15px;
     /* 浅色玻璃装饰色 */
@@ -50,9 +63,15 @@
     --stop-hover-bg: hsl(0, 40%, 18%);
     /* 代码块背景 */
     --code-bg: 220 16% 14%;
-    /* 虚线边框色 */
-    --dashed-border: 223 53% 65% / 0.34;
-    --dashed-border-hover: 223 53% 65% / 0.48;
+    --tagent-brand: hsl(var(--primary));
+    --tagent-brand-soft: hsl(var(--primary) / 0.18);
+    --tagent-brand-glow: hsl(var(--primary) / 0.4);
+    --tagent-brand-foreground: hsl(var(--primary-foreground));
+    --rail-accent: hsl(var(--primary));
+    --rail-avatar-a: color-mix(in srgb, hsl(var(--primary)) 50%, hsl(var(--card)));
+    --rail-avatar-b: color-mix(in srgb, hsl(var(--primary)) 35%, hsl(var(--muted)));
+    --dashed-border: var(--primary) / 0.34;
+    --dashed-border-hover: var(--primary) / 0.48;
     --shell-blob: 220 14% 35%;
     /* 深色玻璃装饰色 */
     --glass-shine: 220 14% 68%;
@@ -97,10 +116,10 @@
     --glass-strong: rgba(242, 245, 249, 0.72);
     /* 分隔线 */
     --divider: rgba(47, 58, 72, 0.12);
-    /* 品牌色 */
-    --accent: #5b7fd4;
-    --avatar-a: #7a96c8;
-    --avatar-b: #8a7ab8;
+    /* 强调 / 头像渐变：跟随主题 primary，不用写死蓝 */
+    --accent: hsl(var(--primary));
+    --avatar-a: color-mix(in srgb, hsl(var(--primary)) 55%, white);
+    --avatar-b: color-mix(in srgb, hsl(var(--primary)) 40%, hsl(var(--secondary)));
     /* Hover */
     --hover-fill: rgba(255, 255, 255, 0.32);
     /* Session 选中态：轻拟态边缘高光 + 柔和阴影 */
@@ -125,9 +144,9 @@
     --glass-soft: rgba(54, 62, 78, 0.38);
     --glass-strong: rgba(62, 72, 90, 0.68);
     --divider: rgba(255, 255, 255, 0.1);
-    --accent: #8aa6e8;
-    --avatar-a: #6f8ec8;
-    --avatar-b: #7d6eae;
+    --accent: hsl(var(--primary));
+    --avatar-a: color-mix(in srgb, hsl(var(--primary)) 50%, hsl(var(--card)));
+    --avatar-b: color-mix(in srgb, hsl(var(--primary)) 35%, hsl(var(--muted)));
     --hover-fill: rgba(255, 255, 255, 0.08);
     /* Session 选中态：深色轻拟态 */
     --session-glass-strong: rgba(62, 72, 90, 0.75);
@@ -270,14 +289,11 @@
 
   /* ===== 特殊风格主题 ===== */
 
-  /* 晴空碧海 (ocean-light) */
+  /* 晴空碧海 (ocean-light) — dashed-border 已全局跟 primary，此处只补装饰 token */
   .theme-ocean-light {
-    /* 非颜色 token（不改材质 surface / session 选中语言） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     --session-row-accent: hsl(var(--primary));
     --code-bg: 210 20% 14%;
-    --dashed-border: 205 45% 55% / 0.30;
-    --dashed-border-hover: 205 45% 55% / 0.45;
     --glass-ambient: 205 18% 93%;
     --glass-rim: 205 14% 85%;
     --shell-blob: 205 30% 82%;
@@ -286,24 +302,17 @@
 
   /* 苍穹暮色 (ocean-dark) */
   .theme-ocean-dark {
-    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
     --session-row-accent: hsl(var(--primary));
     --code-bg: 210 20% 12%;
-    --dashed-border: 205 45% 60% / 0.35;
-    --dashed-border-hover: 205 45% 60% / 0.50;
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 森系色系 ===== */
 
-  /* 森息晨光（浅色） - 自然绿调，清新明亮 */
   .theme-forest-light {
-    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 70%, 50%, 0.12);
     --code-bg: 145 12% 14%;
-    --dashed-border: 140 30% 50% / 0.35;
-    --dashed-border-hover: 140 30% 50% / 0.50;
     --glass-ambient: 140 14% 93%;
     --glass-rim: 140 10% 85%;
     --shell-blob: 140 18% 84%;
@@ -311,27 +320,18 @@
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
-  /* 森息夜语（深色） */
   .theme-forest-dark {
-    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
     --code-bg: 145 14% 12%;
-    --dashed-border: 140 35% 50% / 0.35;
-    --dashed-border-hover: 140 35% 50% / 0.50;
-    --dashed-border-hover: 140 35% 50% / 0.50;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
-  /* ===== 赛博朋克色系 ===== */
+  /* ===== 云朵 / 莫兰迪 ===== */
 
-  /* 云朵舞者（浅色） - 温暖灰调，柔和舒适 */
   .theme-slate-light {
-    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 60%, 50%, 0.12);
     --code-bg: 40 10% 15%;
-    --dashed-border: 25 30% 52% / 0.40;
-    --dashed-border-hover: 25 30% 52% / 0.55;
     --glass-ambient: 40 10% 94%;
     --glass-rim: 40 8% 83%;
     --shell-blob: 40 12% 85%;
@@ -339,26 +339,18 @@
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
-  /* 莫兰迪夜（深色） */
   .theme-slate-dark {
-    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 25%, 20%);
     --code-bg: 40 8% 12%;
-    --dashed-border: 25 30% 55% / 0.30;
-    --dashed-border-hover: 25 30% 55% / 0.45;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 爱马仕橙 ===== */
 
-  /* 暖陶（浅色） - 温暖米陶色调 */
   .theme-orange-light {
-    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     --code-bg: 20 35% 14%;
-    --dashed-border: 20 80% 50% / 0.35;
-    --dashed-border-hover: 20 80% 50% / 0.50;
     --glass-ambient: 30 30% 92%;
     --glass-rim: 28 25% 84%;
     --shell-blob: 22 45% 78%;
@@ -366,29 +358,18 @@
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
-  /* 深铜（深色） - 暗陶铜色调 */
   .theme-orange-dark {
-    /* 非颜色 token */
     --stop-hover-bg: hsl(0, 35%, 18%);
     --code-bg: 18 30% 6%;
-    --dashed-border: 20 75% 55% / 0.35;
-    --dashed-border-hover: 20 75% 55% / 0.50;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
   /* ===== 紫藤色系 ===== */
 
-  /* 藤息晨光（浅色） - 紫藤淡雅 */
   .theme-purple-light {
-    /* 非颜色 token */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --code-bg: 280 14% 14%;
-    --tooltip-foreground: 0 0% 98%;
-    --tooltip-muted: 280 20% 70%;
     --code-bg: 280 30% 14%;
-    --dashed-border: 280 65% 55% / 0.35;
-    --dashed-border-hover: 280 65% 55% / 0.50;
     --glass-ambient: 285 25% 92%;
     --glass-rim: 280 20% 84%;
     --shell-blob: 280 45% 80%;
@@ -396,12 +377,8 @@
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
-  /* 藤息夜语（深色） - 紫藤夜色 */
   .theme-purple-dark {
-    /* 非颜色 token */
     --code-bg: 280 12% 10%;
-    --dashed-border: 280 50% 60% / 0.35;
-    --dashed-border-hover: 280 50% 60% / 0.50;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -409,10 +386,7 @@
   /* ===== Soft UI / Neumorph ===== */
 
   .theme-neumorph-light {
-    /* 非颜色 token */
     --code-bg: 220 16% 18%;
-    --dashed-border: 220 18% 45% / 0.28;
-    --dashed-border-hover: 220 18% 45% / 0.42;
     --glass-ambient: 220 18% 94%;
     --glass-rim: 220 16% 82%;
     --shell-blob: 220 20% 84%;
@@ -421,10 +395,7 @@
   }
 
   .theme-neumorph-dark {
-    /* 非颜色 token */
     --code-bg: 220 16% 12%;
-    --dashed-border: 220 16% 76% / 0.24;
-    --dashed-border-hover: 220 16% 76% / 0.38;
     --glass-shine: 220 14% 78%;
     --glass-ambient: 220 10% 24%;
     --glass-rim: 220 10% 30%;
@@ -730,13 +701,13 @@ html.material-frosted .app-content-boundary-rim {
     0 1px 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* ===== 统一选中态：使用 TAgent 品牌签名色（与"新会话"按钮一致） ===== */
+/* ===== 统一选中态：跟随主题 primary ===== */
 .session-item-selected,
 .session-list-item-active,
 .workspace-item-selected,
 .tab-item-selected {
   background: var(--session-glass-strong) !important;
-  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  color: hsl(var(--primary)) !important;
   border: 1px solid var(--session-rim) !important;
   box-shadow:
     0 1px 0 var(--session-inset-hi) inset,
@@ -751,48 +722,34 @@ html.material-frosted .app-content-boundary-rim {
   color: inherit !important;
 }
 
-/* 选中行/标签标题与副信息：跟随 TAgent 品牌签名色 --tagent-brand */
+/* 选中行/标签标题与副信息：跟随主题 primary */
 .session-row-title {
-  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  color: hsl(var(--primary)) !important;
   font-weight: 600;
 }
 
 .session-row-meta {
-  color: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 55%, transparent) !important;
+  color: hsl(var(--primary) / 0.55) !important;
   font-weight: 500;
 }
 
-/* 会话行通用 hover 态（匹配 glass-studio 设计原型） */
-.session-list-row {
-  transition:
-    background 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
+/* 会话行 hover：实色 hover-fill；transition/active 由 pressable.css 统一 */
 .session-list-row:hover:not(.session-list-item-active) {
-  /* 必须用不透明 --hover-fill，禁止半透明 fallback */
   background: var(
     --hover-fill,
     color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
   );
-  color: var(--foreground);
-  transform: translateX(2px);
+  color: var(--md-on-surface, hsl(var(--foreground)));
 }
 
-/* 按下态：轻拟态材质下才有立体内阴影 */
-.session-list-row:active:not(.session-list-item-active) {
-  transform: scale(0.97);
+/* frosted：hover 不横向挪动，避免和 press scale 抢戏；soft 可保留微位移 */
+[data-material='soft'] .session-list-row:hover:not(.session-list-item-active) {
+  transform: translateX(1px);
 }
 
-[data-material="soft"] .session-list-row:active:not(.session-list-item-active) {
-  box-shadow: inset 2px 2px 6px hsl(var(--foreground) / 0.12), inset -2px -2px 6px hsl(0 0% 100% / 0.08);
-}
-
-/* 标签页底部滑动选中条：跟随 TAgent 品牌签名色 */
+/* 标签页底部滑动选中条：跟随主题 primary */
 .tab-indicator-line {
-  background-color: var(--tagent-brand, hsl(var(--primary)));
+  background-color: hsl(var(--primary));
 }
 
 /* ===== 工作区 Badge 文字颜色（追踪 workspace-item-selected 的字色） ===== */
@@ -1029,82 +986,140 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   transition: transform 0.1s ease;
 }
 
-/* 设置页输入框聚焦发光效果 */
+/* 设置页输入框聚焦发光效果：跟随主题 primary */
 .settings-card input:focus,
 .settings-card textarea:focus,
 .settings-card select:focus {
   outline: none;
   box-shadow:
-    0 0 0 2px var(--tagent-brand-soft),
-    0 0 12px -4px var(--tagent-brand-glow);
+    0 0 0 2px hsl(var(--primary) / 0.15),
+    0 0 12px -4px hsl(var(--primary) / 0.45);
 }
 
+/*
+ * 设置左栏分组：扁平导航（无 list-well）。
+ * 选中态 / hover / 过渡与会话列表一致：session-list-row + session-list-item-active。
+ */
 .settings-nav-group-card {
   position: relative;
-  border-radius: 14px;
-  padding: 0.4rem;
-  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
-  /* 普通材质：近白 elevated，柔和 MD */
-  background: var(--surface-bg-well, hsl(var(--dialog)));
-  box-shadow: var(--surface-shadow-well, 0 1px 2px rgba(15, 23, 42, 0.04));
+  border-radius: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
-.dark .settings-nav-group-card {
-  background: var(--surface-bg-well, hsl(var(--card)));
-}
-
-[data-material='glass'] .settings-nav-group-card {
-  background: hsl(var(--background) / 0.22);
-  border-color: hsl(var(--border) / 0.36);
+.dark .settings-nav-group-card,
+[data-material='glass'] .settings-nav-group-card,
+[data-material='soft'] .settings-nav-group-card,
+[data-material='frosted'] .settings-nav-group-card {
+  background: transparent;
+  border: none;
   box-shadow: none;
 }
 
 .settings-nav-group-label {
-  padding: 0 0.35rem 0.4rem;
+  padding: 0 0.5rem 0.35rem;
   font-size: 10px;
   font-weight: 600;
-  color: hsl(var(--muted-foreground) / 0.78);
+  color: hsl(var(--muted-foreground) / 0.72);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .settings-nav-item {
   border: 1px solid transparent;
+  border-radius: calc(var(--radius-glass-rail) - 1px);
 }
 
+/* 选中色由 .session-list-item-active 统一；此处只补字重 */
 .settings-nav-item--active {
-  color: hsl(var(--foreground));
+  font-weight: 600;
 }
 
+/*
+ * 设置页搜索 — 对齐 glass-studio 原型
+ * 紧凑 30px 胶囊、内凹 well、右上角与关闭并排
+ */
 .settings-search-shell {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.4rem;
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0 0.9rem;
+  max-width: 280px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
-  background: var(--surface-bg-chip, hsl(var(--secondary)));
-  box-shadow: none;
+  border: 0;
+  background: var(--surface-bg-well, var(--md-surface-container-lowest, hsl(var(--muted))));
+  box-shadow:
+    inset 1px 1px 2px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent),
+    inset -1px -1px 1px color-mix(in srgb, hsl(var(--background)) 70%, transparent);
+  transition:
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.dark .settings-search-shell {
+  background: color-mix(in srgb, hsl(var(--foreground)) 6%, hsl(var(--background)));
+  box-shadow:
+    inset 1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 14%, transparent),
+    inset -1px -1px 1px color-mix(in srgb, hsl(var(--background)) 40%, transparent);
+}
+
+/* soft：更明显 neu-in 内凹 */
+[data-material='soft'] .settings-search-shell {
+  background: color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background)));
+  border: 1px solid color-mix(in srgb, hsl(var(--border)) 55%, transparent);
+  box-shadow:
+    inset 2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent),
+    inset -2px -2px 5px color-mix(in srgb, hsl(var(--background)) 80%, transparent);
+}
+
+[data-material='soft'].dark .settings-search-shell {
+  background: color-mix(in srgb, hsl(var(--foreground)) 8%, hsl(var(--background)));
+  box-shadow:
+    inset 2px 2px 6px color-mix(in srgb, hsl(var(--foreground)) 18%, transparent),
+    inset -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 50%, transparent);
+}
+
+/* glass：轻透 + 细 rim */
 [data-material='glass'] .settings-search-shell {
-  border-color: hsl(var(--border) / 0.72);
-  background: hsl(var(--background) / 0.72);
-  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+  background: color-mix(in srgb, hsl(var(--background)) 55%, transparent);
+  border: 0.5px solid var(--surface-rim, hsl(var(--border) / 0.5));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.28),
+    inset 0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
 }
 
 .settings-search-shell:focus-within {
-  border-color: hsl(var(--primary) / 0.3);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.04),
-    0 0 0 2px hsl(var(--primary) / 0.1);
+    inset 1px 1px 2px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent),
+    inset -1px -1px 1px color-mix(in srgb, hsl(var(--background)) 70%, transparent),
+    0 0 0 2px hsl(var(--primary) / 0.14);
+}
+
+[data-material='soft'] .settings-search-shell:focus-within {
+  box-shadow:
+    inset 2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent),
+    inset -2px -2px 5px color-mix(in srgb, hsl(var(--background)) 80%, transparent),
+    0 0 0 2px hsl(var(--primary) / 0.16);
+}
+
+[data-material='glass'] .settings-search-shell:focus-within {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.32),
+    0 0 0 2px hsl(var(--primary) / 0.18);
 }
 
 .settings-search-icon {
   flex-shrink: 0;
-  color: hsl(var(--muted-foreground));
+  width: 13px;
+  height: 13px;
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.72));
 }
 
 .settings-search-field {
@@ -1116,29 +1131,40 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   background: transparent;
   box-shadow: none;
   outline: none;
-  font-size: 0.95rem;
+  font-size: 12px;
+  line-height: 1;
   color: hsl(var(--foreground));
 }
 
 .settings-search-field::placeholder {
-  color: hsl(var(--muted-foreground) / 0.78);
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.65));
+}
+
+/* type=search 自带清除钮与自定义 clear 重复，隐藏原生 */
+.settings-search-field::-webkit-search-cancel-button,
+.settings-search-field::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .settings-search-clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: hsl(var(--muted-foreground));
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground)));
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .settings-search-clear:hover {
-  background: hsl(var(--foreground) / 0.05);
+  background: color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
   color: hsl(var(--foreground));
 }
 
@@ -1146,23 +1172,76 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 1.55rem;
-  padding-inline: 0.5rem;
+  height: 18px;
+  padding-inline: 0.35rem;
+  gap: 1px;
+  border-radius: 6px;
+  border: 0;
+  background: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.7));
+  font-size: 10px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+/* 关闭按钮：原型 30px 圆钮 */
+.settings-top-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
   border-radius: 999px;
-  border: 1px solid hsl(var(--border) / 0.64);
-  background: hsl(var(--muted) / 0.55);
-  color: hsl(var(--muted-foreground));
-  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground)));
+  box-shadow: var(--surface-shadow-chip, none);
+  cursor: pointer;
+  transition:
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-top-close:hover {
+  color: hsl(var(--foreground));
+  background: color-mix(in srgb, hsl(var(--foreground)) 6%, hsl(var(--secondary)));
+}
+
+.settings-top-close:active {
+  transform: scale(0.95);
+}
+
+[data-material='soft'] .settings-top-close {
+  background: hsl(var(--card));
+  border: 1px solid color-mix(in srgb, hsl(var(--border)) 60%, transparent);
+  box-shadow:
+    1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent),
+    -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 70%, transparent);
+}
+
+[data-material='glass'] .settings-top-close {
+  background: color-mix(in srgb, hsl(var(--background)) 50%, transparent);
+  border: 0.5px solid var(--surface-rim, hsl(var(--border) / 0.5));
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.28);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .settings-search-results {
-  padding: 0.35rem;
-  border-radius: 20px;
-  border: 1px solid hsl(var(--border) / 0.72);
-  background: hsl(var(--popover) / 0.96);
-  box-shadow:
-    0 16px 36px -22px hsl(var(--foreground) / 0.22),
-    0 8px 18px -14px hsl(var(--foreground) / 0.12);
+  padding: 0.3rem;
+  border-radius: var(--radius-glass-popover, 14px);
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  background: var(--surface-bg-popover, hsl(var(--popover)));
+  box-shadow: var(--surface-shadow-elevated, var(--md-elevation-2));
+  -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px));
+}
+
+.settings-search-result-item--active {
+  background: var(--md-primary-container, color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card))));
+  color: var(--md-on-primary-container, hsl(var(--primary)));
 }
 
 html.theme-neumorph-light,
@@ -1229,16 +1308,14 @@ html.theme-neumorph-dark .settings-card::after {
   );
 }
 
+/* neumorph：分组同样扁平，选中态只做 item 凹/凸，不叠整组 well */
 html.theme-neumorph-light .settings-nav-group-card,
 html.theme-neumorph-dark .settings-nav-group-card {
-  padding: 0.5rem;
-  border-radius: 18px;
-  border: 1px solid hsl(var(--border) / 0.9);
-  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  box-shadow:
-    calc(-1 * max(6px, 0.4rem)) calc(-1 * max(6px, 0.4rem)) 16px var(--neumorph-light-edge-soft),
-    max(6px, 0.4rem) max(6px, 0.4rem) 18px var(--neumorph-dark-edge-soft),
-    var(--neumorph-inset);
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 html.theme-neumorph-light .settings-nav-group-label,
@@ -1288,31 +1365,17 @@ html.theme-neumorph-dark .agent-toolbar-pill-btn:active {
   transform: scale(0.97);
 }
 
-html.theme-neumorph-light .settings-nav-item--active,
-html.theme-neumorph-dark .settings-nav-item--active {
-  border-color: hsl(var(--border) / 0.95);
-  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-  box-shadow:
-    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
-    inset -3px -3px 8px var(--neumorph-light-edge-soft),
-    1px 1px 0 var(--neumorph-light-edge);
-}
-
-html.theme-neumorph-light .settings-nav-item--active .shrink-0,
-html.theme-neumorph-dark .settings-nav-item--active .shrink-0 {
+/* neumorph：选中跟 session-list-item-active 一致（primary tint），不再单独做凹槽 ghost 板 */
+html.theme-neumorph-light .settings-nav-item.session-list-item-active .shrink-0,
+html.theme-neumorph-dark .settings-nav-item.session-list-item-active .shrink-0 {
   color: hsl(var(--primary));
 }
 
-html.theme-neumorph-light .settings-nav-item.list-slide-item--ghost,
-html.theme-neumorph-dark .settings-nav-item.list-slide-item--ghost {
-  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-}
-
 html.theme-neumorph-light
-  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  :is(.settings-card, .settings-glass)
   button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help),
 html.theme-neumorph-dark
-  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  :is(.settings-card, .settings-glass)
   button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help) {
   border: 1px solid hsl(var(--border) / 0.82);
   background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
@@ -1323,10 +1386,10 @@ html.theme-neumorph-dark
 }
 
 html.theme-neumorph-light
-  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  :is(.settings-card, .settings-glass)
   button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover,
 html.theme-neumorph-dark
-  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  :is(.settings-card, .settings-glass)
   button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover {
   transform: translateY(-1px);
   border-color: hsl(var(--border));
@@ -1379,30 +1442,31 @@ html.theme-neumorph-dark .settings-inline-help:hover {
   box-shadow: none;
 }
 
+/* neumorph：与原型一致 — 30px 内凹 well，非凸起大胶囊 */
 html.theme-neumorph-light .settings-search-shell,
 html.theme-neumorph-dark .settings-search-shell {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.4rem;
   width: 100%;
-  height: 2.2rem;
-  padding: 0 0.72rem;
+  max-width: 280px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid hsl(var(--border) / 0.9);
-  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
   box-shadow:
-    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
-    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
-    inset 1px 1px 0 var(--neumorph-light-edge);
+    inset 3px 3px 7px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 7px var(--neumorph-light-edge-soft);
 }
 
 html.theme-neumorph-light .settings-search-shell:focus-within,
 html.theme-neumorph-dark .settings-search-shell:focus-within {
   box-shadow:
-    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
-    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
-    inset 1px 1px 0 var(--neumorph-light-edge),
-    0 0 0 2px hsl(var(--primary) / 0.12);
+    inset 3px 3px 7px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 7px var(--neumorph-light-edge-soft),
+    0 0 0 2px hsl(var(--primary) / 0.14);
 }
 
 html.theme-neumorph-light .settings-search-icon,
@@ -1777,8 +1841,8 @@ html.theme-neumorph-dark .agent-toolbar-popover-item--active {
 
 html.theme-neumorph-light .agent-toolbar-segmented.ui-segmented-tabs,
 html.theme-neumorph-dark .agent-toolbar-segmented.ui-segmented-tabs {
-  padding: 5px;
-  border-radius: 18px;
+  padding: 3px;
+  border-radius: 999px;
   background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
   box-shadow:
     inset 3px 3px 8px var(--neumorph-dark-edge-soft),
@@ -1787,27 +1851,33 @@ html.theme-neumorph-dark .agent-toolbar-segmented.ui-segmented-tabs {
 
 html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-indicator,
 html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-indicator {
-  top: 5px;
-  bottom: 5px;
-  left: 5px;
-  width: calc((100% - 10px) / var(--ui-segmented-count));
-  border-radius: 14px;
-  border: 1px solid hsl(var(--border) / 0.86);
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--ui-segmented-count));
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--border)));
   background:
     linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
-    linear-gradient(135deg, hsl(var(--primary) / 0.07) 0%, transparent 72%);
+    linear-gradient(135deg, hsl(var(--primary) / 0.16) 0%, transparent 72%);
   box-shadow:
-    0 6px 14px -10px hsl(var(--foreground) / 0.2),
+    0 6px 14px -10px hsl(var(--primary) / 0.22),
     0 1px 2px hsl(var(--foreground) / 0.06),
-    0 0 0 1px hsl(var(--primary) / 0.04);
+    0 0 0 1px hsl(var(--primary) / 0.1);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
+html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-item--active,
+html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-item--active {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
 html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-item,
 html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-item {
-  min-height: 34px;
-  border-radius: 14px;
+  min-height: 30px;
+  border-radius: 999px;
 }
 
 html.theme-neumorph-light .ui-switch,
@@ -2135,13 +2205,13 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   );
 }
 
-/* 会话输入框聚焦发光效果 */
+/* 会话输入框聚焦发光效果：跟随主题 primary */
 .chat-input-glass:focus-within {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     inset 1px 0 0 rgba(255, 255, 255, 0.2),
-    0 0 0 2px var(--tagent-brand-soft),
-    0 0 16px -4px var(--tagent-brand-glow);
+    0 0 0 2px hsl(var(--primary) / 0.15),
+    0 0 16px -4px hsl(var(--primary) / 0.45);
   transition: box-shadow 0.2s ease;
 }
 
@@ -2149,8 +2219,32 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 1px 0 0 rgba(255, 255, 255, 0.03),
-    0 0 0 2px var(--tagent-brand-soft),
-    0 0 12px -4px var(--tagent-brand-glow);
+    0 0 0 2px hsl(var(--primary) / 0.18),
+    0 0 12px -4px hsl(var(--primary) / 0.4);
+}
+
+/*
+ * 输入框 / 工具栏图标按钮 hover：用 --hover-fill 轻底，压过 ghost 默认 accent
+ * 发送主按钮（bg-primary）排除；停止按钮用 --stop-hover-bg
+ */
+@media (hover: hover) {
+  .chat-input-glass button.agent-toolbar-icon-btn:hover:not(:disabled):not(
+      .agent-toolbar-icon-btn--active
+    ),
+  .chat-input-glass button[data-variant='ghost']:hover:not(:disabled),
+  button.agent-toolbar-icon-btn:hover:not(:disabled):not(.agent-toolbar-icon-btn--active) {
+    background: var(
+      --hover-fill,
+      color-mix(in srgb, hsl(var(--primary)) 7%, hsl(var(--card)))
+    ) !important;
+    color: hsl(var(--foreground));
+  }
+
+  /* 主发送按钮保持 primary，不套轻 hover */
+  .chat-input-glass button.bg-primary:hover:not(:disabled) {
+    background: hsl(var(--primary) / 0.9) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
 }
 
 /* 旧的选中态样式：普通材质实色；glass 才高透 */
@@ -2518,12 +2612,176 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
 }
 
-/* ===== 深色主题：迷你导航当前可见范围指示器 — 加亮 ===== */
-.theme-ocean-dark .minimap-visible-indicator {
-  background-color: hsl(205 60% 55%) !important;   /* 更亮的蓝 */
+/* ===== 消息导航刻度（右上角紧凑簇） ===== */
+/* 始终清晰可见；当前视口最亮，用户消息次之，助手略淡 */
+.message-nav-bar {
+  background: hsl(var(--primary) / 0.38);
 }
-.theme-forest-dark .minimap-visible-indicator {
-  background-color: hsl(151 40% 45%) !important;   /* 更亮的绿 */
+
+.message-nav-bar:hover {
+  background: hsl(var(--primary) / 0.58);
+}
+
+.message-nav-bar-user {
+  background: hsl(var(--primary) / 0.32);
+}
+
+.message-nav-bar-assistant {
+  background: hsl(var(--primary) / 0.42);
+}
+
+.message-nav-bar-status {
+  background: hsl(var(--destructive) / 0.55);
+}
+
+.message-nav-bar-visible {
+  background: hsl(var(--primary) / 0.78);
+}
+
+.dark .message-nav-bar {
+  background: hsl(var(--primary) / 0.42);
+}
+
+.dark .message-nav-bar:hover {
+  background: hsl(var(--primary) / 0.62);
+}
+
+.dark .message-nav-bar-user {
+  background: hsl(var(--primary) / 0.34);
+}
+
+.dark .message-nav-bar-assistant {
+  background: hsl(var(--primary) / 0.48);
+}
+
+.dark .message-nav-bar-visible {
+  background: hsl(var(--primary) / 0.82);
+}
+
+/* ===== 消息导航弹出面板（时间线预览） ===== */
+.message-nav-popover {
+  min-height: 168px;
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+.message-nav-popover-enter {
+  animation: message-nav-popover-in 170ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.message-nav-popover-exit {
+  animation: message-nav-popover-out 90ms ease-in both;
+}
+
+@keyframes message-nav-popover-in {
+  from {
+    opacity: 0;
+    transform: translate3d(6px, -4px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes message-nav-popover-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(4px, -2px, 0) scale(0.985);
+  }
+}
+
+.message-nav-popover-header {
+  /* 头区融入面板，不用硬边分隔 */
+  background: color-mix(in srgb, hsl(var(--foreground)) 2.5%, transparent);
+}
+
+.dark .message-nav-popover-header {
+  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+}
+
+/* 聊天气泡：用户右 / 助手左；选中态落在气泡本身 */
+.message-nav-bubble {
+  display: block;
+}
+
+.message-nav-bubble-user {
+  background: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--background)));
+  color: hsl(var(--foreground));
+  border-radius: 12px 12px 4px 12px;
+}
+
+.message-nav-bubble-assistant {
+  background: color-mix(in srgb, hsl(var(--foreground)) 5.5%, hsl(var(--background)));
+  color: hsl(var(--foreground));
+  border-radius: 12px 12px 12px 4px;
+}
+
+.message-nav-bubble-status {
+  background: color-mix(in srgb, hsl(var(--destructive)) 9%, hsl(var(--background)));
+  border-radius: 10px;
+  max-width: 100%;
+}
+
+.dark .message-nav-bubble-user {
+  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--background)));
+}
+
+.dark .message-nav-bubble-assistant {
+  background: color-mix(in srgb, hsl(var(--foreground)) 8%, hsl(var(--background)));
+}
+
+.dark .message-nav-bubble-status {
+  background: color-mix(in srgb, hsl(var(--destructive)) 14%, hsl(var(--background)));
+}
+
+/* 悬停：略提亮，不抢选中 */
+.message-nav-bubble-user:hover,
+.message-nav-bubble-assistant:hover,
+.message-nav-bubble-status:hover {
+  filter: brightness(1.03);
+}
+
+/* 视口内：极轻 primary 描边，不占布局 */
+.message-nav-bubble-inview:not(.message-nav-bubble-anchor) {
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.18);
+}
+
+.dark .message-nav-bubble-inview:not(.message-nav-bubble-anchor) {
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.26);
+}
+
+/* 当前锚点：柔和外环 + 略强填充，无左侧硬条、无徽章 */
+.message-nav-bubble-anchor {
+  box-shadow:
+    0 0 0 1.5px hsl(var(--primary) / 0.45),
+    0 1px 6px -2px hsl(var(--primary) / 0.22);
+}
+
+.message-nav-bubble-user.message-nav-bubble-anchor {
+  background: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--background)));
+}
+
+.message-nav-bubble-assistant.message-nav-bubble-anchor {
+  background: color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--background)));
+}
+
+.dark .message-nav-bubble-anchor {
+  box-shadow:
+    0 0 0 1.5px hsl(var(--primary) / 0.55),
+    0 1px 8px -2px hsl(var(--primary) / 0.28);
+}
+
+.dark .message-nav-bubble-user.message-nav-bubble-anchor {
+  background: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--background)));
+}
+
+.dark .message-nav-bubble-assistant.message-nav-bubble-anchor {
+  background: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background)));
 }
 
 /* ===== 液态玻璃（Btw 面板） — Liquid Glass (macOS Sonoma 风格) ===== */
@@ -2939,102 +3197,34 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   );
 }
 
-/* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== *//* 默认亮色主题 */
+/* ===== 通用滚动进度条（ScrollProgressContainer 等） ===== */
 .scroll-progress-thumb {
   background-color: transparent;
   transition: background-color 0.2s ease;
 }
 
-/* 隐藏滚动条上下小箭头（Webkit 浏览器为可滚动区域自动渲染） */
 .scroll-progress-container::-webkit-scrollbar-button,
 .scroll-progress-container > *::-webkit-scrollbar-button {
   display: none;
 }
 .scroll-progress-thumb:hover {
-  background-color: hsl(var(--foreground) / 0.20);
+  background-color: hsl(var(--primary) / 0.24);
 }
 .scroll-progress-thumb-visible {
-  background-color: hsl(var(--foreground) / 0.18);
+  background-color: hsl(var(--primary) / 0.18);
 }
 .scroll-progress-thumb-active {
-  background-color: hsl(var(--foreground) / 0.32) !important;
+  background-color: hsl(var(--primary) / 0.36) !important;
 }
 
-/* 默认深色主题 */
-.dark:not([class*="theme-"]) .scroll-progress-thumb {
-  background-color: transparent;
+.dark .scroll-progress-thumb:hover {
+  background-color: hsl(var(--primary) / 0.28);
 }
-.dark:not([class*="theme-"]) .scroll-progress-thumb:hover {
-  background-color: hsl(var(--foreground) / 0.18);
+.dark .scroll-progress-thumb-visible {
+  background-color: hsl(var(--primary) / 0.22);
 }
-.dark:not([class*="theme-"]) .scroll-progress-thumb-active {
-  background-color: hsl(var(--foreground) / 0.30) !important;
-}
-
-/* 晴空碧海 ocean-light */
-.theme-ocean-light .scroll-progress-thumb {
-  background-color: hsl(205 50% 50% / 0.18);
-}
-.theme-ocean-light .scroll-progress-thumb:hover {
-  background-color: hsl(205 50% 50% / 0.30);
-}
-.theme-ocean-light .scroll-progress-thumb-active {
-  background-color: hsl(205 50% 50% / 0.40) !important;
-}
-
-/* 苍穹暮色 ocean-dark */
-.theme-ocean-dark .scroll-progress-thumb {
-  background-color: hsl(205 60% 55% / 0.20);
-}
-.theme-ocean-dark .scroll-progress-thumb:hover {
-  background-color: hsl(205 60% 55% / 0.32);
-}
-.theme-ocean-dark .scroll-progress-thumb-active {
-  background-color: hsl(205 60% 55% / 0.42) !important;
-}
-
-/* 森息晨光 forest-light */
-.theme-forest-light .scroll-progress-thumb {
-  background-color: hsl(150 35% 38% / 0.18);
-}
-.theme-forest-light .scroll-progress-thumb:hover {
-  background-color: hsl(150 35% 38% / 0.30);
-}
-.theme-forest-light .scroll-progress-thumb-active {
-  background-color: hsl(150 35% 38% / 0.40) !important;
-}
-
-/* 森息夜语 forest-dark */
-.theme-forest-dark .scroll-progress-thumb {
-  background-color: hsl(151 40% 45% / 0.20);
-}
-.theme-forest-dark .scroll-progress-thumb:hover {
-  background-color: hsl(151 40% 45% / 0.32);
-}
-.theme-forest-dark .scroll-progress-thumb-active {
-  background-color: hsl(151 40% 45% / 0.42) !important;
-}
-
-/* 云朵舞者 slate-light */
-.theme-slate-light .scroll-progress-thumb {
-  background-color: hsl(18 20% 67% / 0.22);
-}
-.theme-slate-light .scroll-progress-thumb:hover {
-  background-color: hsl(18 20% 67% / 0.35);
-}
-.theme-slate-light .scroll-progress-thumb-active {
-  background-color: hsl(18 20% 67% / 0.45) !important;
-}
-
-/* 莫兰迪夜 slate-dark */
-.theme-slate-dark .scroll-progress-thumb {
-  background-color: hsl(15 25% 68% / 0.18);
-}
-.theme-slate-dark .scroll-progress-thumb:hover {
-  background-color: hsl(15 25% 68% / 0.30);
-}
-.theme-slate-dark .scroll-progress-thumb-active {
-  background-color: hsl(15 25% 68% / 0.40) !important;
+.dark .scroll-progress-thumb-active {
+  background-color: hsl(var(--primary) / 0.4) !important;
 }
 
 /* ===== 计划模式：输入框定位上下文 ===== */
@@ -4002,19 +4192,21 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   box-sizing: border-box;
 }
 
-/* 对齐 glass-studio .sidebar-inner（tagent.css:1569-1576） */
+/* 对齐 glass-studio .sidebar-inner；左右 inset 略收，给列表行更多可用宽 */
 .sidebar-inner {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 4px 12px 12px 8px;
+  /* 标题/「新会话」行 与下方 list-well 之间要拉开，避免贴死 */
+  gap: 16px;
+  padding: 4px 8px 10px 6px;
   box-sizing: border-box;
 }
 
 .sidebar-inner > .sidebar-head {
   flex-shrink: 0;
+  margin-bottom: 2px;
 }
 
 /* ===== 侧栏标题 + 工具簇（glass-studio .sidebar-head / .tool-cluster）===== */
@@ -4088,12 +4280,8 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   }
 
   .tool-cluster button.tool-cluster-accent:hover {
-    color: var(--tagent-brand, hsl(var(--primary)));
-    background: color-mix(
-      in srgb,
-      var(--tagent-brand, hsl(var(--primary))) 18%,
-      hsl(var(--muted))
-    );
+    color: hsl(var(--primary));
+    background: color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--muted)));
   }
 
   .tool-cluster button.tool-cluster-icon:hover {
@@ -4110,13 +4298,13 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 }
 
 .tool-cluster button.tool-cluster-accent {
-  color: var(--tagent-brand, hsl(var(--primary)));
-  background: var(--tagent-brand-soft, hsl(var(--primary) / 0.12));
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.12);
 }
 
 .tool-cluster button.tool-cluster-accent:active {
   transform: scale(0.98);
-  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 22%, transparent);
+  background: hsl(var(--primary) / 0.22);
 }
 
 .tool-cluster button.tool-cluster-icon {
@@ -4181,7 +4369,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   .theme-ocean-dark .tool-cluster button.tool-cluster-accent:hover,
   .theme-forest-dark .tool-cluster button.tool-cluster-accent:hover,
   .theme-slate-dark .tool-cluster button.tool-cluster-accent:hover {
-    background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 22%, transparent);
+    background: hsl(var(--primary) / 0.22);
   }
 
   .dark .tool-cluster button.tool-cluster-icon:hover,
@@ -4222,18 +4410,18 @@ html.theme-neumorph-dark .tool-cluster button:active {
 
 html.theme-neumorph-light .tool-cluster button.tool-cluster-accent,
 html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent {
-  color: var(--tagent-brand, hsl(var(--primary)));
-  background: var(--tagent-brand-soft, hsl(var(--primary) / 0.12));
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.12);
 }
 
 html.theme-neumorph-light .tool-cluster button.tool-cluster-accent:hover,
 html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent:hover {
-  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 20%, transparent);
+  background: hsl(var(--primary) / 0.2);
 }
 
 html.theme-neumorph-light .tool-cluster button.tool-cluster-accent:active,
 html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent:active {
-  background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 26%, transparent);
+  background: hsl(var(--primary) / 0.26);
 }
 
 html.material-frosted .tool-cluster {
@@ -4251,28 +4439,34 @@ html.material-frosted .tool-cluster {
 }
 
 /*
- * 会话列表井 — MD surface-container-lowest + elevation-1
+ * 侧栏主列表井 list-well — MD surface-container-lowest + elevation-1
+ * session-well 为兼容别名（会话列表存量 class）
  */
-.session-well {
+:is(.list-well, .session-well) {
   flex: 1;
   min-height: 0;
+  /* 水平/底边距由 .sidebar-inner 统一提供，不在 well 上再写死 margin */
   margin: 0;
-  padding: 8px;
+  /* 井内边距收紧：避免与 .session-scroll 横向叠加成大空白 */
+  padding: 4px;
   border-radius: var(--md-shape-lg, 16px);
   background: var(--surface-bg-well, var(--md-surface-container-lowest));
   border: 1px solid var(--surface-rim, var(--md-outline));
   box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
-.dark .session-well {
+.dark :is(.list-well, .session-well) {
   background: var(--surface-bg-well, var(--md-surface-container-lowest));
   border-color: var(--surface-rim, var(--md-outline));
   box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
 }
 
-[data-material='glass'] .session-well {
+[data-material='glass'] :is(.list-well, .session-well) {
   background: var(--well-bg, rgba(230, 235, 242, 0.45));
   border: 1px solid var(--well-rim, rgba(255, 255, 255, 0.45));
   box-shadow:
@@ -4283,8 +4477,9 @@ html.material-frosted .tool-cluster {
   backdrop-filter: blur(20px) saturate(145%);
 }
 
-[data-material='soft'] .session-well {
-  background: var(--well-bg, hsl(var(--card)));
+[data-material='soft'] :is(.list-well, .session-well) {
+  /* 与 frosted 同沉 well，不用最亮 card */
+  background: var(--well-bg, var(--surface-bg-well, var(--md-surface-container-lowest)));
   border: 1px solid var(--well-rim, hsl(var(--border) / 0.45));
   box-shadow:
     0 1px 0 var(--well-inset-hi, rgba(255, 255, 255, 0.45)) inset,
@@ -4294,31 +4489,31 @@ html.material-frosted .tool-cluster {
   backdrop-filter: none;
 }
 
-[data-material="frosted"].dark .session-well {
+[data-material="frosted"].dark :is(.list-well, .session-well) {
   border: 1px solid hsl(var(--border) / 0.20);
   box-shadow: none;
 }
 
-.session-well > .session-scroll {
+:is(.list-well, .session-well) > .session-scroll {
   position: relative;
   z-index: 1;
-  /* 横向留白给外阴影，行本身 w-full 不再加 margin 避免溢出裁切 */
-  padding: 4px 10px;
+  /* 仅留极薄内边距，避免行左右「悬空」空白过大 */
+  padding: 2px;
   box-sizing: border-box;
 }
 
-/* 阴影承载壳：仅纵向 margin；横向留白交给 .session-scroll padding，避免 w-full+margin 溢出裁切 */
-.session-well .session-row-shell {
+/* 会话行：更紧凑的横纵间距 */
+:is(.list-well, .session-well) .session-row-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  margin: 6px 0;
-  padding: 9px 10px;
+  margin: 2px 0;
+  padding: 7px 8px;
   overflow: visible;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
@@ -4330,7 +4525,7 @@ html.material-frosted .tool-cluster {
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.session-well .session-row-shell:not(.session-list-item-active):hover {
+:is(.list-well, .session-well) .session-row-shell:not(.session-list-item-active):hover {
   background: var(
     --hover-fill,
     color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
@@ -4339,13 +4534,13 @@ html.material-frosted .tool-cluster {
   transform: translateX(2px);
 }
 
-/* session-well 内列表行（非 shell 场景，如归档弹层 compact） */
-.session-well .session-list-row:not(.session-row-shell) {
-  display: grid;
-  grid-template-columns: 1fr auto;
+/* well 内列表行（非 shell 场景，如草稿 / 看板 / 归档 compact） */
+:is(.list-well, .session-well) .session-list-row:not(.session-row-shell) {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 10px;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 8px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
   overflow: visible;
@@ -4356,7 +4551,8 @@ html.material-frosted .tool-cluster {
     box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.session-well .session-list-row:not(.session-row-shell):not(.session-list-item-active):hover {
+:is(.list-well, .session-well)
+  .session-list-row:not(.session-row-shell):not(.session-list-item-active):hover {
   background: var(
     --hover-fill,
     color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
@@ -4365,18 +4561,16 @@ html.material-frosted .tool-cluster {
   transform: translateX(2px);
 }
 
-.session-well .session-sidebar-accent--inline {
-  display: none;
-}
+/* 会话状态线改为底部横条后，well 内也显示（不再隐藏） */
 
-/* 选中行：轻拟态「浮起」— 平面底色 + 顶缘细线 + 外阴影；文字/材质跟随 TAgent 主题 token */
-.session-well .session-row-shell.session-list-item-active,
-.session-well .session-list-row.session-list-item-active {
+/* 选中行：跟随主题 primary */
+:is(.list-well, .session-well) .session-row-shell.session-list-item-active,
+:is(.list-well, .session-well) .session-list-row.session-list-item-active {
   position: relative;
   z-index: 1;
   isolation: isolate;
   overflow: visible;
-  color: var(--tagent-brand, hsl(var(--primary))) !important;
+  color: hsl(var(--primary)) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: var(--session-glass-strong) !important;
@@ -4389,8 +4583,8 @@ html.material-frosted .tool-cluster {
     -2px -2px 6px var(--session-elev-light) !important;
 }
 
-.session-well .session-list-item-active::before,
-.session-well .session-list-item-active::after {
+:is(.list-well, .session-well) .session-list-item-active::before,
+:is(.list-well, .session-well) .session-list-item-active::after {
   content: none;
   display: none;
 }
@@ -4401,14 +4595,15 @@ html.material-frosted .tool-cluster {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  /* 置顶 / 各工作区分组间距统一（子项须同为 session-scroll 直接子级） */
+  gap: 6px;
   box-sizing: border-box;
 }
 
 .session-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   overflow: visible;
 }
 
@@ -4417,11 +4612,11 @@ html.material-frosted .tool-cluster {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  min-height: 22px;
-  padding: 2px 8px 4px;
-  font-size: 11px;
+  min-height: 20px;
+  padding: 1px 6px 2px;
+  font-size: var(--md-type-label-sm, 11px);
   font-weight: 600;
-  color: hsl(var(--muted-foreground) / 0.72);
+  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.72));
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -4499,20 +4694,20 @@ html.material-frosted .tool-cluster {
     inset 0 1px 0 hsl(var(--glass-shine) / 0.15);
 }
 
-.dark .session-well,
-.theme-ocean-dark .session-well,
-.theme-forest-dark .session-well,
-.theme-slate-dark .session-well {
+.dark :is(.list-well, .session-well),
+.theme-ocean-dark :is(.list-well, .session-well),
+.theme-forest-dark :is(.list-well, .session-well),
+.theme-slate-dark :is(.list-well, .session-well) {
   border-color: hsl(var(--glass-shine) / 0.14);
   box-shadow:
     inset 0 1px 0 hsl(var(--glass-shine) / 0.08),
     0 8px 20px hsl(var(--foreground) / 0.1);
 }
 
-.dark .session-well::before,
-.theme-ocean-dark .session-well::before,
-.theme-forest-dark .session-well::before,
-.theme-slate-dark .session-well::before {
+.dark :is(.list-well, .session-well)::before,
+.theme-ocean-dark :is(.list-well, .session-well)::before,
+.theme-forest-dark :is(.list-well, .session-well)::before,
+.theme-slate-dark :is(.list-well, .session-well)::before {
   background: hsl(var(--muted) / 0.28);
 }
 
@@ -5553,18 +5748,37 @@ html.material-frosted .content-main-shell .content-glass {
   bottom: calc(var(--session-bottom-reserve, 140px) + 12px);
 }
 
-/* 与玻璃底板同步滑动的左侧状态竖条（仅会话列表） */
+/* 与玻璃底板同步滑动的指示器（兼容旧名） */
 .sidebar-session-slide-accent {
   pointer-events: none;
   will-change: top, height, left, background-color;
   z-index: 2 !important;
 }
 
-/* 非当前选中行上的状态竖条：淡入淡出，避免与滑动竖条抢戏 */
+/*
+ * 会话行底部状态横条 — 对齐标签页 TabBarItem status line
+ * 贴合选择态下沿；左右 inset 与行内 padding 协调
+ */
+.session-status-line {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  /* 比 Tab 状态线更细，避免会话行选中态显得厚重 */
+  height: 1px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 10;
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 兼容旧 class（若仍有引用） */
 .session-sidebar-accent--inline {
   transition:
     opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Rail 功能区按钮：默认扁平，选中浮岛 + 主题描边 */
@@ -5585,6 +5799,13 @@ html.material-frosted .content-main-shell .content-glass {
   width: 18px;
   height: 18px;
   transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 右侧 rail：图标比左侧更精巧（组件 size=13 曾被上面 18px 盖掉） */
+.right-panel-rail .rail-island-btn svg,
+.right-rail-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .rail-island-btn:hover {
@@ -5642,10 +5863,14 @@ html:not(.dark) .rail-island-btn--active {
     -2px -2px 6px var(--rail-elev-light, rgba(255, 255, 255, 0.1));
 }
 
-/* 用户头像按钮（首字母 + 渐变背景） */
+/* 用户头像按钮（首字母 + 渐变背景，跟随主题 primary） */
 .rail-avatar-btn {
-  color: #fff !important;
-  background: linear-gradient(145deg, var(--rail-avatar-a, #7a96c8), var(--rail-avatar-b, #8a7ab8)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  background: linear-gradient(
+    145deg,
+    var(--rail-avatar-a, color-mix(in srgb, hsl(var(--primary)) 55%, white)),
+    var(--rail-avatar-b, color-mix(in srgb, hsl(var(--primary)) 40%, hsl(var(--secondary))))
+  ) !important;
   border: 1px solid transparent !important;
   box-shadow: 0 2px 8px var(--well-ambient, rgba(145, 158, 175, 0.16)) !important;
   transition:
@@ -5671,8 +5896,9 @@ html:not(.dark) .rail-island-btn--active {
   user-select: none;
 }
 
+/* 深色 rail 选中：图标走 primary，背景轻 tint（覆盖上方 soft 拟态块） */
 .dark .rail-island-btn--active {
-  color: hsl(var(--foreground));
+  color: var(--rail-accent, hsl(var(--primary)));
   border-color: hsl(var(--primary) / 0.45);
   background: linear-gradient(
     168deg,
@@ -5687,7 +5913,7 @@ html:not(.dark) .rail-island-btn--active {
 }
 
 
-/* 侧栏状态竖条：置于玻璃伪元素之上 */
+/* 侧栏状态线：置于玻璃伪元素之上（横/竖兼容） */
 .session-sidebar-accent {
   position: absolute !important;
   z-index: 10 !important;
@@ -6221,59 +6447,23 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
 }
 
 /* =============================================================
- *  settings-glass - 设置面板玻璃态浮岛
- *  与主界面 panel-glass / nav-island-glass 同源：半透明渐变 +
- *  主题色微光 + 顶部 1px 高光描边。
- *  半径 16px（比主面板略小，更紧凑）、阴影更克制。
+ *  settings-glass - 设置左栏浮岛
+ *  frosted（默认）：扁平 MD 实色，弱 rim，无多层阴影/高光（降立体感）
+ *  soft / glass：高级材质保留光学层次
  * ============================================================= */
 .settings-glass {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.22) 0%,
-    hsl(var(--background) / 0.10) 100%
-  );
-  border: 1px solid hsl(var(--foreground) / 0.08);
   border-radius: 16px;
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.05),
-    0 8px 28px rgba(0, 0, 0, 0.03);
+  background: var(--md-surface-container-low, hsl(var(--card)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 42%, transparent);
+  box-shadow: none;
 }
 
-/* 主题色微光层（极轻，5% 透明度） */
-.settings-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary) / 0.04) 0%,
-    transparent 35%,
-    transparent 65%,
-    hsl(var(--primary) / 0.03) 100%
-  );
-}
-
-/* 顶部 1px 高光描边（白边） */
+.settings-glass::before,
 .settings-glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.30) 0%,
-    rgba(255, 255, 255, 0.05) 30%,
-    transparent 60%
-  );
+  content: none;
+  display: none;
 }
 
 .settings-glass > * {
@@ -6281,38 +6471,149 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
   z-index: 1;
 }
 
-/* 深色主题：更厚的玻璃感 + 更深阴影 */
 .dark .settings-glass {
-  background: hsl(var(--background) / 0.10);
+  background: var(--md-surface-container-low, hsl(var(--card)));
+  border-color: color-mix(in srgb, var(--md-outline, hsl(var(--border))) 50%, transparent);
+  box-shadow: none;
+}
+
+/* soft：轻粘土抬起（允许一点立体） */
+[data-material='soft'] .settings-glass {
+  background: hsl(var(--card));
+  border: 1px solid color-mix(in srgb, hsl(var(--border)) 70%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent) inset,
+    0 2px 10px -4px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent),
+    0 6px 18px -10px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+}
+
+[data-material='soft'].dark .settings-glass {
+  background: hsl(var(--card) / 0.96);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+/* glass：半透 + 微光（高级材质） */
+[data-material='glass'] .settings-glass {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.42) 0%,
+    hsl(var(--background) / 0.28) 100%
+  );
+  border: 0.5px solid var(--surface-rim, hsl(var(--border) / 0.5));
+  box-shadow: var(--surface-shadow, 0 2px 12px rgba(0, 0, 0, 0.05));
+  -webkit-backdrop-filter: blur(var(--surface-blur, 20px)) saturate(var(--surface-saturate, 1.3));
+  backdrop-filter: blur(var(--surface-blur, 20px)) saturate(var(--surface-saturate, 1.3));
+}
+
+[data-material='glass'] .settings-glass::before,
+[data-material='glass'] .settings-glass::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+[data-material='glass'] .settings-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.05) 0%,
+    transparent 40%,
+    transparent 60%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+[data-material='glass'] .settings-glass::after {
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.06) 28%,
+    transparent 55%
+  );
+}
+
+.dark[data-material='glass'] .settings-glass,
+[data-material='glass'].dark .settings-glass {
+  background: hsl(var(--background) / 0.22);
   box-shadow:
     0 3px 16px rgba(0, 0, 0, 0.14),
     0 12px 36px rgba(0, 0, 0, 0.08);
 }
 
-.dark .settings-glass::before {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary) / 0.06) 0%,
-    transparent 35%,
-    transparent 65%,
-    hsl(var(--primary) / 0.04) 100%
-  );
-}
-
-.dark .settings-glass::after {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.10) 0%,
-    rgba(255, 255, 255, 0.02) 30%,
-    transparent 60%
-  );
-}
-
-/* 降透明度偏好 */
 @media (prefers-reduced-transparency: reduce) {
-  .settings-glass {
-    background: hsl(var(--background) / 0.85);
+  [data-material='glass'] .settings-glass {
+    background: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
+}
+
+/*
+ * frosted 设置页控件：进一步压立体
+ * 卡片/搜索/关闭/聚焦光晕都走扁平 MD
+ */
+:root:not([data-material]) .settings-card,
+[data-material='frosted'] .settings-card,
+html.material-frosted .settings-card {
+  background: var(--md-surface-container-low, hsl(var(--card)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 38%, transparent);
+  box-shadow: none;
+}
+
+:root:not([data-material]) .settings-card::after,
+[data-material='frosted'] .settings-card::after,
+html.material-frosted .settings-card::after {
+  opacity: 0;
+}
+
+:root:not([data-material]) .settings-search-shell,
+[data-material='frosted'] .settings-search-shell,
+html.material-frosted .settings-search-shell {
+  background: var(--md-surface-container, hsl(var(--secondary)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 40%, transparent);
+  box-shadow: none;
+}
+
+:root:not([data-material]) .settings-search-shell:focus-within,
+[data-material='frosted'] .settings-search-shell:focus-within,
+html.material-frosted .settings-search-shell:focus-within {
+  border-color: hsl(var(--primary) / 0.28);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.08);
+}
+
+:root:not([data-material]) .settings-top-close,
+[data-material='frosted'] .settings-top-close,
+html.material-frosted .settings-top-close {
+  background: var(--md-surface-container, hsl(var(--secondary)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 36%, transparent);
+  box-shadow: none;
+}
+
+:root:not([data-material]) .settings-card input:focus,
+:root:not([data-material]) .settings-card textarea:focus,
+:root:not([data-material]) .settings-card select:focus,
+[data-material='frosted'] .settings-card input:focus,
+[data-material='frosted'] .settings-card textarea:focus,
+[data-material='frosted'] .settings-card select:focus,
+html.material-frosted .settings-card input:focus,
+html.material-frosted .settings-card textarea:focus,
+html.material-frosted .settings-card select:focus {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+/* frosted 选中导航：略淡，避免整块「浮岛」抢戏 */
+:root:not([data-material]) .settings-nav-item.session-list-item-active,
+[data-material='frosted'] .settings-nav-item.session-list-item-active,
+html.material-frosted .settings-nav-item.session-list-item-active {
+  box-shadow: none;
 }
 
 /* Emoji Mart 选择器样式修复 - 去除多余滚动区域 */
@@ -6458,11 +6759,11 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 }
 
 /**
- * Tab 运行中状态条 — 流光 + 发光动画
+ * Tab / 会话 运行中状态条 — 流光 + 发光动画
  *
- * 比 Tailwind 的 animate-pulse 更显眼：
- * - 流光：背景渐变横向滚动，像数据在流动
- * - 发光：蓝色光晕呼吸，提升存在感
+ * 一律跟随主题 --primary（标签页底线、会话行底线共用 .tab-status-streaming）
+ * - 流光：primary 渐变横向滚动
+ * - 发光：primary 光晕呼吸
  */
 @keyframes tab-streaming-flow {
   0% {
@@ -6473,35 +6774,36 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   }
 }
 
+/* 扫光：低曝光，避免 primary 满饱和中心 + 大光晕刺眼 */
 @keyframes tab-streaming-glow {
-  0%, 100% {
-    box-shadow: 0 0 6px 0 rgba(59, 130, 246, 0.4);
+  0%,
+  100% {
+    box-shadow: 0 0 2px 0 hsl(var(--primary) / 0.12);
   }
   50% {
-    box-shadow: 0 0 10px 1px rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 4px 0 hsl(var(--primary) / 0.22);
   }
 }
 
 .tab-status-streaming {
   background: linear-gradient(
     90deg,
-    rgba(59, 130, 246, 0.3) 0%,
-    rgba(59, 130, 246, 1) 50%,
-    rgba(59, 130, 246, 0.3) 100%
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--primary) / 0.42) 50%,
+    hsl(var(--primary) / 0.08) 100%
   );
   background-size: 200% 100%;
   animation:
-    tab-streaming-flow 2.5s linear infinite,
-    tab-streaming-glow 2.2s ease-in-out infinite;
+    tab-streaming-flow 3s linear infinite,
+    tab-streaming-glow 2.6s ease-in-out infinite;
 }
 
-/* 暗色主题下蓝色更亮，提升对比 */
 .dark .tab-status-streaming {
   background: linear-gradient(
     90deg,
-    rgba(96, 165, 250, 0.3) 0%,
-    rgba(96, 165, 250, 1) 50%,
-    rgba(96, 165, 250, 0.3) 100%
+    hsl(var(--primary) / 0.1) 0%,
+    hsl(var(--primary) / 0.48) 50%,
+    hsl(var(--primary) / 0.1) 100%
   );
   background-size: 200% 100%;
 }
@@ -6547,10 +6849,9 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 /* 轻拟态输入框不透明规则统一在 packages/ui/styles/glass.css 维护，
    此处不再重复，避免 !important 冲突覆盖 neumorph 主题凸起阴影 */
 
-[data-material="soft"] .session-well,
+[data-material="soft"] :is(.list-well, .session-well),
 [data-material="soft"] .settings-card,
 [data-material="soft"] .settings-glass,
-[data-material="soft"] .settings-search-shell,
 [data-material="soft"] .app-search-shell,
 [data-material="soft"] .chat-input-glass,
 [data-material="soft"] .content-glass,
@@ -6570,10 +6871,9 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   border-right-color: rgba(255, 255, 255, 0.45);
 }
 
-[data-material="soft"].dark .session-well,
+[data-material="soft"].dark :is(.list-well, .session-well),
 [data-material="soft"].dark .settings-card,
 [data-material="soft"].dark .settings-glass,
-[data-material="soft"].dark .settings-search-shell,
 [data-material="soft"].dark .app-search-shell,
 [data-material="soft"].dark .chat-input-glass,
 [data-material="soft"].dark .content-glass,
@@ -6615,16 +6915,24 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   box-shadow: none !important;
 }
 
-/* Session Well 下的选中态：扁平化（覆盖更具体的选择器） */
-[data-material="frosted"] .session-well .session-row-shell.session-list-item-active,
-[data-material="frosted"] .session-well .session-list-row.session-list-item-active {
+/* list-well / session-well 下的选中态：扁平化（覆盖更具体的选择器） */
+[data-material="frosted"]
+  :is(.list-well, .session-well)
+  .session-row-shell.session-list-item-active,
+[data-material="frosted"]
+  :is(.list-well, .session-well)
+  .session-list-row.session-list-item-active {
   background: hsl(var(--primary) / 0.08) !important;
   border: 1px solid hsl(var(--primary) / 0.18) !important;
   box-shadow: none !important;
 }
 
-[data-material="frosted"].dark .session-well .session-row-shell.session-list-item-active,
-[data-material="frosted"].dark .session-well .session-list-row.session-list-item-active {
+[data-material="frosted"].dark
+  :is(.list-well, .session-well)
+  .session-row-shell.session-list-item-active,
+[data-material="frosted"].dark
+  :is(.list-well, .session-well)
+  .session-list-row.session-list-item-active {
   background: hsl(var(--primary) / 0.12) !important;
   border: 1px solid hsl(var(--primary) / 0.22) !important;
   box-shadow: none !important;

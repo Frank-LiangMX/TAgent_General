@@ -151,7 +151,7 @@ export function StickyUserMessage({
           : 'opacity-0 -translate-y-2 pointer-events-none'
       )}
     >
-      <div className="mx-8 px-2.5 pt-2 flex justify-center">
+      <div className="mx-8 px-2.5 pt-0.5 flex justify-center">
         <div
           className="session-glass session-glass-sticky w-full cursor-pointer"
           onClick={scrollToOriginal}

@@ -168,7 +168,7 @@ export function ThreePetalSpiral({
       ref={svgRef}
       viewBox="28 28 44 44"
       className={cn('overflow-visible', className)}
-      style={{ width: size, height: size, color: 'var(--tagent-brand)' }}
+      style={{ width: size, height: size, color: 'hsl(var(--primary))' }}
       aria-hidden="true"
     />
   )

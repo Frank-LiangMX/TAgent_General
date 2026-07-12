@@ -171,9 +171,9 @@ export function MemoryRailContent(): React.ReactElement {
   ]
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* 快捷入口 — Minimalism: 大留白 */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/15 px-3 py-3">
+    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-hidden">
+      {/* 快捷入口（左右 inset 由 sidebar-inner 负责） */}
+      <div className="flex shrink-0 items-center gap-2 titlebar-no-drag">
         {quickEntries.map((entry) => (
           <button
             key={entry.key}
@@ -197,23 +197,22 @@ export function MemoryRailContent(): React.ReactElement {
         ))}
       </div>
 
-      {/* 最近活动 */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        {loading ? (
-          <div className="flex items-center justify-center py-8 text-[11px] text-muted-foreground/40">
-            加载中…
-          </div>
-        ) : dayGroups.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground/40">
-            <Layers className="size-5" />
-            <span className="text-[11px]">暂无活动记录</span>
-          </div>
-        ) : (
-          <div className="px-2 py-2">
-            {dayGroups.map((group) => (
-              <div key={group.label} className="mb-3">
-                {/* 日期标题 */}
-                <div className="mb-1.5 flex items-center gap-2 px-1.5">
+      {/* 最近活动 — 列表井 */}
+      <div className="list-well flex-1 min-h-0">
+        <div className="session-scroll scrollbar-thin min-h-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-8 text-[11px] text-muted-foreground/40">
+              加载中…
+            </div>
+          ) : dayGroups.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground/40">
+              <Layers className="size-5" />
+              <span className="text-[11px]">暂无活动记录</span>
+            </div>
+          ) : (
+            dayGroups.map((group) => (
+              <div key={group.label} className="mb-2">
+                <div className="mb-1 flex items-center gap-2 px-1">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
                     {group.label}
                   </span>
@@ -223,8 +222,7 @@ export function MemoryRailContent(): React.ReactElement {
                   </span>
                 </div>
 
-                {/* 会话列表 */}
-                <div className="space-y-0.5">
+                <div className="flex flex-col gap-0.5">
                   {group.sessions.map((s) => {
                     const isActive = selectedSessionId === s.id
                     return (
@@ -233,22 +231,27 @@ export function MemoryRailContent(): React.ReactElement {
                         type="button"
                         onClick={() => handleSessionClick(s.id)}
                         className={cn(
-                          'flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-all',
-                          isActive
-                            ? 'bg-primary/5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
-                            : 'hover:bg-muted/15'
+                          'session-list-row w-full text-left items-start',
+                          isActive && 'session-list-item-active'
                         )}
                       >
-                        {/* 时间 */}
-                        <span className="shrink-0 pt-px text-[10px] tabular-nums text-muted-foreground/40 w-10">
+                        <span
+                          className={cn(
+                            'shrink-0 pt-px text-[10px] tabular-nums w-10',
+                            isActive ? 'session-row-meta' : 'text-muted-foreground/40'
+                          )}
+                        >
                           {group.label === '今天' || group.label === '昨天'
                             ? formatTime(s.created_at)
                             : formatDate(s.created_at)}
                         </span>
-
-                        {/* 内容 */}
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-[11px] text-foreground/80">
+                          <div
+                            className={cn(
+                              'truncate text-[11px]',
+                              isActive ? 'session-row-title' : 'text-foreground/80'
+                            )}
+                          >
                             {s.title || '（无标题）'}
                           </div>
                         </div>
@@ -257,13 +260,12 @@ export function MemoryRailContent(): React.ReactElement {
                   })}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
 
-      {/* 底部 */}
-      <div className="shrink-0 border-t border-border/20 px-3 py-1.5 text-[9px] text-muted-foreground/30">
+      <div className="shrink-0 py-0.5 text-[9px] text-muted-foreground/30 titlebar-no-drag">
         {sessions.length} 个会话
       </div>
     </div>

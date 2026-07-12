@@ -12,6 +12,25 @@
 2. **组件从 `@tagent/ui` import**：`import { Button } from '@tagent/ui'`。不要从 `@/components/ui/xxx` 新增 import（兼容期保留旧路径，但新代码必须用 `@tagent/ui`）。
 3. **禁止硬编码视觉值**：颜色（`#fff` / `rgb(...)`）、圆角（`rounded-[14px]`）、阴影、间距。必须用 token 类或 Tailwind 语义类。
 4. **新组件放 packages/ui**：`packages/ui/src/components/`，不放 `apps/electron/src/renderer/components/ui/`。
+5. **主题 × 材质双轴**：主题只定 hue / primary / 近中性 surface；材质（`frosted` 默认 / 高级 `glass`·`soft`）只换光学表（blur / 阴影 / press）。**高级材质是可选档位，不是另一套颜色产品。**
+
+### 三级字色（全材质共用）
+
+| 类 / 变量 | 用途 |
+|-----------|------|
+| `.md-text` / `--md-on-surface` | 正文、主标题 |
+| `.md-text-variant` / `--md-on-surface-variant` | 次要说明、图标默认 |
+| `.md-text-faint` / `--md-on-surface-faint` | 时间戳、弱标签、分组标题 |
+
+避免新增 `text-foreground/40` 一类零散透明度。
+
+### 按压语义 `.ui-pressable`（`styles/pressable.css`）
+
+- 语义全材质共用；光学读 `--press-scale` / `--press-shadow`（在 `glass.css` 材质表）
+- **frosted**：轻 scale，无粘土 inset
+- **soft**：更强 scale + neu-in 式 inset
+- **glass**：最轻 scale，无粘土 inset
+- 选中态（`session-list-item-active` 等）不施加 press 阴影
 
 ---
 
@@ -27,7 +46,7 @@
 | `glass-chip` | `--radius-glass-chip` | 6px | `.session-glass-chip` 芯片 |
 | `glass-modal` | `--radius-glass-modal` | 20px | `.session-glass-modal` 模态框 |
 | `glass-modal-lg` | `--radius-glass-modal-lg` | 24px | `.session-glass-modal-lg` 大模态框 |
-| `glass-popover` | `--radius-glass-popover` | 14px | `.session-glass-popover` 弹出层 |
+| `glass-popover` | `--radius-glass-popover` | 18px | `.session-glass-popover` 弹出层 / Select·Dropdown |
 | `glass-sticky` | `--radius-glass-sticky` | 12px | `.session-glass-sticky` 吸顶元素 |
 | `glass-tooltip` | `--radius-glass-tooltip` | 16px | `.session-glass-tooltip` Tooltip |
 

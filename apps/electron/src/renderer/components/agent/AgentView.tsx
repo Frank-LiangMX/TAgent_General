@@ -2852,7 +2852,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     )}
                     {!hasBannerOverlay && !isNestedWorker && (
                       <div
-                        className="session-input-dock content-shell-chrome-bleed relative pb-1 md:pb-2.5"
+                        className="session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1"
                         data-input-mode="agent"
                       >
                         <div

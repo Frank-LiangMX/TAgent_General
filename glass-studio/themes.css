@@ -131,7 +131,7 @@
   - Glass / shadows / text stay gray-first; tint only slightly
 */
 
-/* ── Ocean Light · 薄雾青蓝 ── */
+/* ── Ocean Light · 天青 teal（与 Mist 冷蓝明显拉开） ── */
 [data-theme="ocean"][data-mode="light"] {
   color-scheme: light;
 
@@ -146,13 +146,14 @@
   --text-soft: #62707c;
   --text-faint: #87939e;
 
-  --accent: #4f8fc4;
-  --accent-hover: #437fb2;
-  --accent-soft: rgba(79, 143, 196, 0.12);
-  --accent-border: rgba(79, 143, 196, 0.16);
-  --accent-strong: rgba(79, 143, 196, 0.45);
-  --accent-grad-a: #6ea6d0;
-  --accent-grad-b: #4f8fc4;
+  /* 原 #4f8fc4 与 Mist #5b7fd4 过近 → 改为 teal #3a9bb0 */
+  --accent: #3a9bb0;
+  --accent-hover: #328a9d;
+  --accent-soft: rgba(58, 155, 176, 0.12);
+  --accent-border: rgba(58, 155, 176, 0.16);
+  --accent-strong: rgba(58, 155, 176, 0.45);
+  --accent-grad-a: #5cb3c4;
+  --accent-grad-b: #3a9bb0;
 
   --glass: rgba(235, 241, 246, 0.55);
   --glass-soft: rgba(235, 241, 246, 0.4);
@@ -190,7 +191,7 @@
   --blockquote-bg: rgba(228, 235, 242, 0.5);
 }
 
-/* ── Ocean Dark · 静海蓝灰 ── */
+/* ── Ocean Dark · 天青夜（teal，与 Mist 冷蓝可辨） ── */
 [data-theme="ocean"][data-mode="dark"] {
   color-scheme: dark;
 
@@ -205,13 +206,13 @@
   --text-soft: #b6c2ce;
   --text-faint: #8794a2;
 
-  --accent: #7eb4dc;
-  --accent-hover: #90c2e6;
-  --accent-soft: rgba(126, 180, 220, 0.18);
-  --accent-border: rgba(126, 180, 220, 0.28);
-  --accent-strong: rgba(126, 180, 220, 0.58);
-  --accent-grad-a: #90c2e6;
-  --accent-grad-b: #6aa0c8;
+  --accent: #6ec4d4;
+  --accent-hover: #82d0de;
+  --accent-soft: rgba(110, 196, 212, 0.18);
+  --accent-border: rgba(110, 196, 212, 0.28);
+  --accent-strong: rgba(110, 196, 212, 0.58);
+  --accent-grad-a: #82d0de;
+  --accent-grad-b: #5ab0c0;
 
   --glass: rgba(46, 58, 72, 0.52);
   --glass-soft: rgba(52, 64, 78, 0.38);
@@ -627,7 +628,7 @@
 }
 
 .theme-swatch[data-pick="ocean"] {
-  background: linear-gradient(135deg, #c2d2e0, #4f8fc4);
+  background: linear-gradient(135deg, #c2d8dc, #3a9bb0);
 }
 
 .theme-swatch[data-pick="moss"] {

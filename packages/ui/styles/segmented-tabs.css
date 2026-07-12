@@ -1,133 +1,213 @@
 /**
- * 横向分段 Tab — 插件页 MCP/Skill 同款滑动指示器
+ * 横向分段 Tab — 胶囊轨道 + 滑动指示器
  *
- * 走 surface token（ADR-0005）：默认 frosted 扁平；glass/soft 由 data-material 表驱动。
+ * 默认 frosted：扁平 MD，弱 rim，无深立体
+ * soft / glass：由 data-material 带一点光学层次
  */
 
 .ui-segmented-tabs {
   --ui-segmented-count: 2;
+  --ui-segmented-pad: 3px;
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--ui-segmented-count), minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
-  padding: 4px;
-  border-radius: var(--radius-glass-popover);
-  /* frosted：柔和 secondary 轨道，近白指示器（见下） */
-  background: var(--surface-bg-chip, var(--md-surface-container, hsl(var(--secondary))));
-  box-shadow: none;
-  border: 1px solid var(--surface-rim, var(--md-outline, hsl(var(--border))));
+  padding: var(--ui-segmented-pad);
+  border-radius: 999px;
+  /* 轨道再沉一点，和选中胶囊拉开对比 */
+  background: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 42%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
 }
 
-/* glass：轨道更透、带轻微高光 */
+/* glass：轻透轨道 */
 [data-material='glass'] .ui-segmented-tabs {
-  background:
-    linear-gradient(180deg, hsl(var(--glass-shine) / 0.1), transparent 70%),
-    hsl(var(--background) / 0.24);
-  box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.18);
-  border-color: hsl(var(--glass-rim) / 0.45);
+  background: color-mix(in srgb, hsl(var(--background)) 45%, transparent);
+  border-color: var(--surface-rim, hsl(var(--border) / 0.5));
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.22);
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
 }
 
-/* soft：近实色 + 拟态内凹 */
+/* soft：内凹 well */
 [data-material='soft'] .ui-segmented-tabs {
-  background: hsl(var(--muted) / 0.55);
+  background: color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background)));
+  border-color: color-mix(in srgb, hsl(var(--border)) 55%, transparent);
   box-shadow:
-    inset 1px 1px 3px rgba(145, 158, 175, 0.18),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.35);
-  border-color: hsl(var(--border) / 0.4);
+    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 9%, transparent),
+    inset -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 75%, transparent);
 }
 
 .dark[data-material='soft'] .ui-segmented-tabs,
 [data-material='soft'].dark .ui-segmented-tabs {
+  background: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)));
   box-shadow:
-    inset 1px 1px 3px rgba(0, 0, 0, 0.28),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.06);
+    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 16%, transparent),
+    inset -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 45%, transparent);
 }
 
+/* 滑动指示器（选中胶囊）— primary-container，和轨道灰底拉开 */
 .ui-segmented-tabs-indicator {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
+  top: var(--ui-segmented-pad);
+  bottom: var(--ui-segmented-pad);
+  left: var(--ui-segmented-pad);
   z-index: 0;
-  width: calc((100% - 8px) / var(--ui-segmented-count));
-  border-radius: var(--radius-glass-sidebar);
+  width: calc((100% - var(--ui-segmented-pad) * 2) / var(--ui-segmented-count));
+  border-radius: 999px;
   pointer-events: none;
-  -webkit-backdrop-filter: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
-  backdrop-filter: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
-  background: var(--surface-bg-chip);
-  border: var(--surface-rim-width, 1px) solid var(--surface-rim);
-  box-shadow: var(--surface-shadow-chip, 0 1px 2px rgba(0, 0, 0, 0.04));
-  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* frosted 指示器：近白 elevated */
-:root .ui-segmented-tabs-indicator,
-[data-material='frosted'] .ui-segmented-tabs-indicator {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: var(--surface-bg-well, var(--md-surface-container-lowest, hsl(var(--dialog))));
-  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
-  border-color: var(--surface-rim, var(--md-outline, hsl(var(--border))));
+  background: var(
+    --md-primary-container,
+    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
+  );
+  border: 1px solid var(
+    --md-primary-outline,
+    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
+    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent),
+    0 2px 8px -3px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .ui-segmented-tabs-indicator,
 .dark[data-material='frosted'] .ui-segmented-tabs-indicator,
 [data-material='frosted'].dark .ui-segmented-tabs-indicator {
-  background: var(--surface-bg-well, var(--md-surface-container-lowest, hsl(var(--card))));
-  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
+  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 36%, hsl(var(--border)));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 1px 4px color-mix(in srgb, hsl(var(--primary)) 28%, transparent),
+    0 3px 10px -4px rgba(0, 0, 0, 0.35);
 }
 
-/* glass 指示器：用 chip 表面 token（已是高透渐变） */
+/* frosted：实色选中，无 blur */
+:root .ui-segmented-tabs-indicator,
+[data-material='frosted'] .ui-segmented-tabs-indicator {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* glass 指示器：primary 透底 */
 [data-material='glass'] .ui-segmented-tabs-indicator {
-  background: var(--surface-bg-chip);
-  box-shadow: var(--surface-shadow-chip);
-  border-color: var(--surface-rim);
+  background: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--background) / 0.55));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 40%, transparent);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.4),
+    0 1px 6px color-mix(in srgb, hsl(var(--primary)) 22%, transparent);
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px));
 }
 
-/* soft 指示器：凸起拟态 */
+/* soft 指示器：primary 凸起胶囊 */
 [data-material='soft'] .ui-segmented-tabs-indicator {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: hsl(var(--card));
-  box-shadow: var(--surface-shadow-chip);
-  border-color: var(--surface-rim);
+  background: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--border)));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 85%, transparent) inset,
+    2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent),
+    -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 70%, transparent),
+    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
 }
 
 .ui-segmented-tabs-item {
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: 32px;
+  min-height: 30px;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-glass-sidebar);
-  padding: 6px 8px;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
   color: hsl(var(--muted-foreground));
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
+  letter-spacing: -0.01em;
   line-height: 1;
+  cursor: pointer;
   transition:
-    color 160ms ease,
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 160ms ease;
 }
 
-.ui-segmented-tabs-item:hover:not(:disabled) {
-  color: hsl(var(--foreground) / 0.88);
+.ui-segmented-tabs-item:hover:not(:disabled):not(.ui-segmented-tabs-item--active) {
+  color: hsl(var(--foreground) / 0.78);
 }
 
 .ui-segmented-tabs-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.22);
 }
 
 .ui-segmented-tabs-item:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
+/* 选中文字：主题 primary，对比未选中 muted 更清晰 */
 .ui-segmented-tabs-item--active {
-  color: hsl(var(--foreground));
+  color: var(--md-on-primary-container, hsl(var(--primary)));
+  font-weight: 600;
+}
+
+/* ===== 基础 Tabs（Radix TabsList / TabsTrigger）— 同款胶囊语言 ===== */
+.ui-tabs-list {
+  background: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
+  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 42%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+}
+
+[data-material='glass'] .ui-tabs-list {
+  background: color-mix(in srgb, hsl(var(--background)) 45%, transparent);
+  border-color: var(--surface-rim, hsl(var(--border) / 0.5));
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.22);
+}
+
+[data-material='soft'] .ui-tabs-list {
+  background: color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background)));
+  box-shadow:
+    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 9%, transparent),
+    inset -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 75%, transparent);
+}
+
+.ui-tabs-trigger[data-state='active'] {
+  color: var(--md-on-primary-container, hsl(var(--primary)));
+  font-weight: 600;
+  background: var(
+    --md-primary-container,
+    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
+  );
+  border: 1px solid var(
+    --md-primary-outline,
+    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
+    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent);
+}
+
+.dark .ui-tabs-trigger[data-state='active'] {
+  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 36%, hsl(var(--border)));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 1px 4px color-mix(in srgb, hsl(var(--primary)) 28%, transparent);
+}
+
+[data-material='soft'] .ui-tabs-trigger[data-state='active'] {
+  background: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 85%, transparent) inset,
+    2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
+}
+
+.ui-tabs-trigger:hover:not(:disabled):not([data-state='active']) {
+  color: hsl(var(--foreground) / 0.78);
 }

@@ -997,7 +997,7 @@
 }
 
 .theme-swatch-sm[data-pick="mist"] { background: linear-gradient(135deg, #c5d0e2, #5b7fd4); }
-.theme-swatch-sm[data-pick="ocean"] { background: linear-gradient(135deg, #c2d2e0, #4f8fc4); }
+.theme-swatch-sm[data-pick="ocean"] { background: linear-gradient(135deg, #c2d8dc, #3a9bb0); }
 .theme-swatch-sm[data-pick="moss"] { background: linear-gradient(135deg, #c6d4ca, #5a8f72); }
 .theme-swatch-sm[data-pick="dusk"] { background: linear-gradient(135deg, #d4ccc2, #a07a5e); }
 

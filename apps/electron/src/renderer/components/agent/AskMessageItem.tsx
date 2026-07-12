@@ -1,11 +1,8 @@
 /**
  * AskMessageItem — Composer Ask 档位的单条消息气泡
  *
- * 与 ChatMessageItem / SDKMessageRenderer 平行：
- * - 用户消息：右侧气泡 + 用户头像
- * - 助手消息：左侧气泡 + 模型 logo，带蓝色细左边色条标识 Ask 档位
- *
- * 比 Agent 工具块更轻（无 ProcessBlock，无工具活动，无 Reasoning 元数据展示）。
+ * - 用户消息：右对齐气泡（无头像，与 Agent 通栏一致）
+ * - 助手消息：通栏 + Ask 标识，无左侧模型头像栏
  */
 
 import { useAtomValue } from 'jotai'
@@ -16,16 +13,8 @@ import type { AskMessage } from '@tagent/shared'
 import { Spinner } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { askStreamErrorsAtom } from '@/atoms/ask-atoms'
-import { userProfileAtom } from '@/atoms/user-profile'
-import {
-  AssistantMessageLogo,
-  MESSAGE_AVATAR_SIZE,
-} from '@/components/ai-elements/message-avatar'
-import { Message, MessageContent, MessageHeader } from '@/components/ai-elements/message'
-import { UserAvatar } from '@/components/shared/UserAvatar'
+import { Message, MessageContent } from '@/components/ai-elements/message'
 import { cn } from '@/lib/utils'
-
-import { SessionAssistantIcon } from './session-icons'
 
 interface AskMessageItemProps {
   message: AskMessage
@@ -34,7 +23,7 @@ interface AskMessageItemProps {
   sessionId?: string
 }
 
-/** Ask 助手气泡左侧蓝色色条（视觉区分 Ask 与 Agent 工具块） */
+/** Ask 标识（视觉区分 Ask 与 Agent） */
 function AskKindBadge(): React.ReactElement {
   return (
     <div className="flex items-center gap-1.5">
@@ -44,19 +33,6 @@ function AskKindBadge(): React.ReactElement {
   )
 }
 
-function AskAssistantLogo({ model }: { model?: string }): React.ReactElement {
-  if (model) {
-    return (
-      <div className="size-[32px] rounded-[25%] bg-blue-500/10 flex items-center justify-center">
-        <SessionAssistantIcon className="size-4 text-blue-500" />
-      </div>
-    )
-  }
-
-  return <AssistantMessageLogo model={model} />
-}
-
-/** 简单 Markdown-lite 渲染（不引入完整 MD 解析器） */
 function PlainContent({ text }: { text: string }): React.ReactElement {
   return <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text}</div>
 }
@@ -66,7 +42,6 @@ export const AskMessageItem = React.memo(function AskMessageItem({
   isStreaming = false,
   sessionId,
 }: AskMessageItemProps): React.ReactElement {
-  const userProfile = useAtomValue(userProfileAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const errorsMap = useAtomValue(askStreamErrorsAtom)
   const effectiveSessionId = sessionId ?? currentSessionId
@@ -75,18 +50,13 @@ export const AskMessageItem = React.memo(function AskMessageItem({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end my-3">
-        <div className="flex items-start gap-2.5 max-w-[80%]">
-          <div className="flex flex-col items-end gap-1 min-w-0">
-            <div className="agent-user-bubble px-4 py-2.5 text-foreground">
-              {message.attachments && message.attachments.length > 0 && (
-                <div className="text-xs text-muted-foreground mb-1">
-                  📎 {message.attachments.length} 个附件
-                </div>
-              )}
-              <PlainContent text={message.content} />
+        <div className="agent-user-bubble max-w-[80%] px-4 py-2.5 text-foreground">
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="text-xs text-muted-foreground mb-1">
+              📎 {message.attachments.length} 个附件
             </div>
-          </div>
-          <UserAvatar avatar={userProfile.avatar} size={MESSAGE_AVATAR_SIZE} />
+          )}
+          <PlainContent text={message.content} />
         </div>
       </div>
     )
@@ -96,14 +66,6 @@ export const AskMessageItem = React.memo(function AskMessageItem({
   return (
     <div className="my-3">
       <Message from="assistant">
-        <MessageHeader
-          model={message.modelId}
-          time={new Date(message.createdAt).toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-          logo={<AskAssistantLogo model={message.modelId} />}
-        />
         <div className="mb-1">
           <AskKindBadge />
         </div>
@@ -126,7 +88,6 @@ export const AskMessageItem = React.memo(function AskMessageItem({
             <div className="text-sm text-muted-foreground italic">（空响应）</div>
           )}
 
-          {/* 中止 / 错误标记 */}
           {message.partial && (
             <div
               className={cn(
@@ -140,7 +101,6 @@ export const AskMessageItem = React.memo(function AskMessageItem({
             </div>
           )}
 
-          {/* 流式错误（非 partial 但有 error 字段） */}
           {!message.partial && error && effectiveSessionId && (
             <div className="mt-2 text-xs px-2 py-1 rounded-md inline-block bg-destructive/10 text-destructive">
               {error}

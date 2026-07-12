@@ -42,7 +42,7 @@ import type {
   RecoveryAction,
 } from '@tagent/shared'
 import { Badge, Button, ImageLightbox, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
-import { DurationBadge } from './AgentMessages'
+import { AgentStatusBadge } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
 import {
   SessionAlertIcon,
@@ -83,12 +83,7 @@ import { channelsAtom } from '@/atoms/model-atoms'
 import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
 import { feedbackDialogAtom } from '@/atoms/feedback'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
-import { userProfileAtom } from '@/atoms/user-profile'
-import {
-  AssistantMessageLogo,
-  ErrorMessageLogo,
-  MESSAGE_AVATAR_SIZE,
-} from '@/components/ai-elements/message-avatar'
+import { ErrorMessageLogo } from '@/components/ai-elements/message-avatar'
 import {
   Message,
   MessageHeader,
@@ -99,7 +94,6 @@ import {
   UserMessageContent,
 } from '@/components/ai-elements/message'
 import { CopyButton } from '@/components/shared/CopyButton'
-import { UserAvatar } from '@/components/shared/UserAvatar'
 import { resolveModelDisplayName } from '@/lib/model-logo'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { getFileParentPath } from '@/lib/file-utils'
@@ -153,7 +147,7 @@ function PermissionDeniedNotice({ message }: { message: SDKSystemMessage }): Rea
   const reason = typeof message.decision_reason === 'string' ? message.decision_reason : undefined
 
   return (
-    <div className="my-3 pl-[46px] pr-1">
+    <div className="my-3 pr-1">
       <div className="flex items-start gap-2.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs text-foreground/80">
         <SessionAlertIcon className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
         <div className="min-w-0 space-y-1">
@@ -779,92 +773,103 @@ export function AssistantTurnRenderer({
     )
   }
 
+  // 过程区 / 回答区 DOM 脱钩（视觉分层；分组逻辑仍由 buildAssistantTurnRenderItems）
+  const processItems = renderItems.filter(
+    (item): item is Extract<(typeof renderItems)[number], { type: 'process-group' }> =>
+      item.type === 'process-group'
+  )
+  const answerItems = renderItems.filter(
+    (item): item is Extract<(typeof renderItems)[number], { type: 'block' }> =>
+      item.type === 'block'
+  )
+
+  const modelLabel = turn.model ? resolveModelDisplayName(turn.model, channels) : undefined
+  const textContent = topLevelBlocks
+    .filter((b) => b.type === 'text' && 'text' in b)
+    .map((b) => (b as { text: string }).text)
+    .join('\n\n')
+  // 仅取主线 assistant 消息的 uuid 作为 fork/rewind 截断点。
+  const mainlineAssistants = turn.assistantMessages.filter((m) => !m.parent_tool_use_id)
+  const lastUuid =
+    mainlineAssistants.length > 0
+      ? mainlineAssistants[mainlineAssistants.length - 1]?.uuid
+      : undefined
+  const hasDuration = durationMs != null
+  // 流式中不在 turn 内塞脚注（运行中由 AgentMessages 挂）；结束后再出 footer
+  const showFooter =
+    !isStreaming && (hasDuration || !!textContent || !!lastUuid || showStoppedBadge)
+
   return (
     <Message from="assistant">
-      <MessageHeader
-        model={turn.model ? resolveModelDisplayName(turn.model, channels) : undefined}
-        time={turn.createdAt ? formatMessageTime(turn.createdAt) : undefined}
-        logo={<AssistantMessageLogo model={turn.model} />}
-      />
       <MessageContent>
-        <div className={cn('space-y-2')}>
-          {renderItems.map((item) => {
-            if (item.type === 'block') {
-              return renderTopLevelBlock(item.item.block, item.item.index)
-            }
+        <div className="agent-turn flex flex-col gap-3">
+          {/* 模型名作标题行（纯文字，替代左侧头像栏 / 脚注 chip） */}
+          {modelLabel && <div className="agent-turn-title">{modelLabel}</div>}
 
-            const groupBlocks = item.items.map((groupItem) => groupItem.block)
-            const firstIndex = item.items[0]?.index ?? 0
-            return (
-              <ProcessBlockGroup
-                key={`process-${firstIndex}`}
-                blocks={groupBlocks}
-                isStreaming={isStreaming}
-                keepExpandedAfterComplete={processGroupsKeepExpanded}
-              >
-                {item.items.map((groupItem) =>
-                  renderProcessGroupBlock(groupItem.block, groupItem.index)
-                )}
-              </ProcessBlockGroup>
-            )
-          })}
+          {processItems.length > 0 && (
+            <div className="agent-turn-process">
+              {processItems.map((item) => {
+                const groupBlocks = item.items.map((groupItem) => groupItem.block)
+                const firstIndex = item.items[0]?.index ?? 0
+                return (
+                  <ProcessBlockGroup
+                    key={`process-${firstIndex}`}
+                    blocks={groupBlocks}
+                    isStreaming={isStreaming}
+                    keepExpandedAfterComplete={processGroupsKeepExpanded}
+                  >
+                    {item.items.map((groupItem) =>
+                      renderProcessGroupBlock(groupItem.block, groupItem.index)
+                    )}
+                  </ProcessBlockGroup>
+                )
+              })}
+            </div>
+          )}
+
+          {(answerItems.length > 0 || (hasError && errorContent && topLevelBlocks.length > 0)) && (
+            <div className="agent-turn-answer">
+              {answerItems.map((item) =>
+                renderTopLevelBlock(item.item.block, item.item.index)
+              )}
+              {hasError && errorContent && topLevelBlocks.length > 0 && (
+                <div className="mt-2 text-sm text-destructive">
+                  {isThinkingSignatureError(errorContent.error?.message)
+                    ? `${THINKING_SIGNATURE_ERROR_TITLE}：${THINKING_SIGNATURE_ERROR_MESSAGE}`
+                    : (errorContent.error?.message ?? '未知错误')}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        {/* 如果有错误但也有内容块，在末尾显示错误 */}
-        {hasError && errorContent && topLevelBlocks.length > 0 && (
-          <div className="mt-3 text-sm text-destructive">
-            {isThinkingSignatureError(errorContent.error?.message)
-              ? `${THINKING_SIGNATURE_ERROR_TITLE}：${THINKING_SIGNATURE_ERROR_MESSAGE}`
-              : (errorContent.error?.message ?? '未知错误')}
-          </div>
-        )}
       </MessageContent>
-      {/* 文件改动汇总：流式结束后展示本轮所有 Edit/Write/MultiEdit/NotebookEdit 文件 */}
       {!isStreaming && (
         <TurnFileChangesSummary turnMessages={turn.turnMessages} basePath={basePath} />
       )}
-      {/* 操作栏：流式输出完成后显示操作按钮 */}
-      {!isStreaming &&
-        (() => {
-          const textContent = topLevelBlocks
-            .filter((b) => b.type === 'text' && 'text' in b)
-            .map((b) => (b as { text: string }).text)
-            .join('\n\n')
-          // 仅取主线 assistant 消息的 uuid 作为 fork/rewind 截断点。
-          // SDK forkSession 内部会过滤掉 sidechain（parent_tool_use_id 非空的子代理消息），
-          // 若把子代理 uuid 传过去会触发 "Message <uuid> not found in session" 错误。
-          const mainlineAssistants = turn.assistantMessages.filter((m) => !m.parent_tool_use_id)
-          const lastUuid =
-            mainlineAssistants.length > 0
-              ? mainlineAssistants[mainlineAssistants.length - 1]?.uuid
-              : undefined
-          const hasActions = !!(textContent || (onFork && lastUuid) || (onRewind && lastUuid))
-          const hasDuration = durationMs != null
-          if (!hasDuration && !hasActions && !showStoppedBadge) return null
-          return (
-            <MessageActions className="pl-[46px] mt-0.5 min-h-[28px] justify-start">
-              {hasDuration && <DurationBadge durationMs={durationMs!} usage={usage} />}
-              {textContent && <CopyButton content={textContent} />}
-              {onFork && lastUuid && (
-                <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>
-                  <SessionSplitIcon className="size-3.5" />
-                </MessageAction>
-              )}
-              {onRewind && lastUuid && (
-                <MessageAction tooltip="回退到此处" onClick={() => onRewind(lastUuid)}>
-                  <SessionUndoIcon className="size-3.5" />
-                </MessageAction>
-              )}
-              {showStoppedBadge && (
-                <Badge
-                  variant="outline"
-                  className="text-xs text-muted-foreground/70 border-muted-foreground/30 shrink-0"
-                >
-                  已被用户中断
-                </Badge>
-              )}
-            </MessageActions>
-          )
-        })()}
+      {showFooter && (
+        <div className="agent-turn-footer">
+          {/* 全部靠左：完成状态 + 操作 */}
+          <div className="agent-turn-footer__meta">
+            {hasDuration && (
+              <AgentStatusBadge status="completed" durationMs={durationMs!} usage={usage} />
+            )}
+            {showStoppedBadge && (
+              <span className="agent-turn-footer__stopped">已中断</span>
+            )}
+            {textContent && <CopyButton content={textContent} />}
+            {onFork && lastUuid && (
+              <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>
+                <SessionSplitIcon className="size-3.5" />
+              </MessageAction>
+            )}
+            {onRewind && lastUuid && (
+              <MessageAction tooltip="回退到此处" onClick={() => onRewind(lastUuid)}>
+                <SessionUndoIcon className="size-3.5" />
+              </MessageAction>
+            )}
+          </div>
+        </div>
+      )}
     </Message>
   )
 }
@@ -900,35 +905,32 @@ export function SDKMessageRenderer({
     if (blocks.length === 0) return null
 
     const model = aMsg._channelModelId || aMsg.message?.model || sessionModelId
-    const meta = extractMeta(message)
 
     // 检测是否有主要内容（text 块）
     const hasTextContent = blocks.some(
       (b) => b.type === 'text' && 'text' in b && !!(b as { text: string }).text
     )
 
+    const label = model ? resolveModelDisplayName(model, channels) : undefined
+
     return (
       <Message from="assistant">
-        {showHeader && (
-          <MessageHeader
-            model={model ? resolveModelDisplayName(model, channels) : undefined}
-            time={meta.createdAt ? formatMessageTime(meta.createdAt) : undefined}
-            logo={<AssistantMessageLogo model={model} />}
-          />
-        )}
         <MessageContent>
-          <div className={cn('space-y-2')}>
-            {blocks.map((block, i) => (
-              <ContentBlock
-                key={i}
-                block={block}
-                allMessages={allMessages}
-                basePath={basePath}
-                basePaths={basePaths}
-                index={i}
-                dimmed={hasTextContent && block.type !== 'text'}
-              />
-            ))}
+          <div className={cn('agent-turn flex flex-col gap-3')}>
+            {label && <div className="agent-turn-title">{label}</div>}
+            <div className="space-y-2">
+              {blocks.map((block, i) => (
+                <ContentBlock
+                  key={i}
+                  block={block}
+                  allMessages={allMessages}
+                  basePath={basePath}
+                  basePaths={basePaths}
+                  index={i}
+                  dimmed={hasTextContent && block.type !== 'text'}
+                />
+              ))}
+            </div>
           </div>
         </MessageContent>
       </Message>
@@ -1143,7 +1145,6 @@ function QuoteChip({ quote }: { quote: QuotedFileRef }): React.ReactElement {
 // ===== 用户输入消息渲染 =====
 
 function UserInputMessage({ message }: { message: SDKUserMessage }): React.ReactElement {
-  const userProfile = useAtomValue(userProfileAtom)
   const setCurrentDraft = useSetAtom(currentAgentSessionDraftAtom)
   const rawText = extractUserText(message) ?? ''
   const { files: attachedFiles, quotes, text } = parseAttachedFiles(rawText)
@@ -1161,55 +1162,47 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
 
   return (
     <Message from="user">
-      <div className="flex items-start gap-2.5">
-        {/* 气泡 + 操作行（纵向容器，整体右对齐） */}
-        <div className="flex flex-col items-end gap-1 min-w-0">
-          <MessageContent>
-            {/* 引用文件 Chip */}
-            {quotes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
-                {quotes.map((q, i) => (
-                  <QuoteChip key={`${q.path}:${i}`} quote={q} />
-                ))}
-              </div>
-            )}
-            {/* 图片缩略图 */}
-            {imageFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2.5 mb-2 justify-end">
-                {imageFiles.map((file) => (
-                  <AttachedImageThumb key={file.path} file={file} />
-                ))}
-              </div>
-            )}
-            {/* 非图片文件芯片 */}
-            {nonImageFiles.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
-                {nonImageFiles.map((file) => (
-                  <AttachedFileChip key={file.path} file={file} />
-                ))}
-              </div>
-            )}
-            {text && <UserMessageContent>{text}</UserMessageContent>}
-          </MessageContent>
-          {/* 时间 + 复制 + 重新发送按钮同一行：复用 MessageActions 的浅色→hover 变深行为，与 assistant 回答一致 */}
-          {(meta.createdAt || text) && (
-            <MessageActions className="min-h-[28px] justify-end">
-              {meta.createdAt && (
-                <span className="text-[10px] text-muted-foreground/60 leading-none tabular-nums">
-                  {formatMessageTime(meta.createdAt)}
-                </span>
-              )}
-              {text && <CopyButton content={text} />}
-              {text && (
-                <MessageAction tooltip="重新发送" onClick={handleResend}>
-                  <SessionRefreshIcon className="size-3.5" />
-                </MessageAction>
-              )}
-            </MessageActions>
+      {/* 操作在气泡下方（文档流），不盖住正文；固定高度避免跳动 */}
+      <div className="agent-user-block min-w-0 max-w-full">
+        <MessageContent>
+          {quotes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
+              {quotes.map((q, i) => (
+                <QuoteChip key={`${q.path}:${i}`} quote={q} />
+              ))}
+            </div>
           )}
-        </div>
-        {/* 用户头像（气泡右侧，顶部对齐，与 assistant 头像同尺寸 35px） */}
-        <UserAvatar avatar={userProfile.avatar} size={MESSAGE_AVATAR_SIZE} />
+          {imageFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2.5 mb-2 justify-end">
+              {imageFiles.map((file) => (
+                <AttachedImageThumb key={file.path} file={file} />
+              ))}
+            </div>
+          )}
+          {nonImageFiles.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2 justify-end">
+              {nonImageFiles.map((file) => (
+                <AttachedFileChip key={file.path} file={file} />
+              ))}
+            </div>
+          )}
+          {text && <UserMessageContent>{text}</UserMessageContent>}
+        </MessageContent>
+        {(meta.createdAt || text) && (
+          <div className="agent-user-toolbar" aria-label="消息操作">
+            {meta.createdAt && (
+              <span className="agent-user-toolbar__time tabular-nums">
+                {formatMessageTime(meta.createdAt)}
+              </span>
+            )}
+            {text && <CopyButton content={text} />}
+            {text && (
+              <MessageAction tooltip="重新发送" onClick={handleResend}>
+                <SessionRefreshIcon className="size-3.5" />
+              </MessageAction>
+            )}
+          </div>
+        )}
       </div>
     </Message>
   )
@@ -1456,7 +1449,7 @@ function ErrorMessage({
           </div>
         )}
       </MessageContent>
-      <MessageActions className="pl-[46px] mt-0.5">
+      <MessageActions className="agent-turn-footer mt-1.5">
         <CopyButton content={displayContentText} />
       </MessageActions>
     </Message>

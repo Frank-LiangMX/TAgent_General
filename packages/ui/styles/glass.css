@@ -60,6 +60,12 @@
 
   --hover-fill: var(--md-state-hover);
 
+  /* pressable：普通材质 — 轻 scale，无粘土双阴影 */
+  --press-scale: 0.985;
+  --press-shadow: none;
+  --press-duration: var(--motion-duration-fast, 160ms);
+  --press-ease: var(--motion-ease-island, cubic-bezier(0.16, 1, 0.3, 1));
+
   --surface-overlay-bg: color-mix(in srgb, hsl(var(--foreground)) 28%, transparent);
   --surface-overlay-blur: 2px;
 }
@@ -95,6 +101,11 @@
   --session-inset-hi: transparent;
 
   --hover-fill: var(--md-state-hover);
+
+  --press-scale: 0.985;
+  --press-shadow: none;
+  --press-duration: var(--motion-duration-fast, 160ms);
+  --press-ease: var(--motion-ease-island, cubic-bezier(0.16, 1, 0.3, 1));
 
   --surface-overlay-bg: rgba(0, 0, 0, 0.48);
   --surface-overlay-blur: 2px;
@@ -173,6 +184,12 @@
   --session-inset-hi: hsl(var(--glass-shine) / 0.4);
   --surface-overlay-bg: rgba(0, 0, 0, 0.16);
   --surface-overlay-blur: 8px;
+
+  /* pressable：玻璃 — 更轻 scale，无粘土 inset */
+  --press-scale: 0.99;
+  --press-shadow: none;
+  --press-duration: var(--motion-duration-fast, 160ms);
+  --press-ease: var(--motion-ease-island, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dark[data-material='glass'],
@@ -269,6 +286,14 @@
   --session-inset-hi: rgba(255, 255, 255, 0.55);
   --surface-overlay-bg: rgba(0, 0, 0, 0.18);
   --surface-overlay-blur: 6px;
+
+  /* pressable：粘土 — 略强 scale + 双阴影 inset */
+  --press-scale: 0.97;
+  --press-shadow:
+    inset 2px 2px 6px rgba(145, 158, 175, 0.22),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.45);
+  --press-duration: var(--motion-duration-fast, 160ms);
+  --press-ease: var(--motion-ease-island, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dark[data-material='soft'],
@@ -277,6 +302,10 @@
   --surface-bg-elevated: hsl(var(--card) / 0.96);
   --surface-bg-chip: hsl(var(--card));
   --surface-rim: hsl(var(--border) / 0.5);
+  --press-scale: 0.97;
+  --press-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.28),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.06);
   --surface-shadow:
     inset 0 1px 0 hsl(var(--glass-shine) / 0.16),
     0 2px 8px rgba(0, 0, 0, 0.15);
@@ -507,7 +536,8 @@
   box-shadow: inset 0 1px 3px hsl(var(--foreground) / 0.08);
 }
 
-.session-list-row .session-sidebar-accent--inline {
+.session-list-row .session-sidebar-accent--inline,
+.session-list-row .session-status-line {
   transition:
     opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
     background-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -525,7 +555,7 @@
   background: var(--session-glass-strong, var(--md-primary-container));
   border: 1px solid var(--session-rim, var(--md-primary-outline));
   box-shadow: 0 1px 0 var(--session-inset-hi) inset;
-  color: var(--tagent-brand, var(--md-on-primary-container, hsl(var(--primary))));
+  color: var(--md-on-primary-container, hsl(var(--primary)));
 }
 
 .session-list-item-active > * {
@@ -615,8 +645,9 @@
   backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate))
     brightness(var(--surface-brightness));
   background: var(--surface-bg-tooltip);
-  border: var(--surface-rim-width) solid hsl(var(--tooltip-foreground) / 0.12);
-  box-shadow: var(--surface-shadow-elevated);
+  /* 跟 popover 同款 rim，避免深字/浅字反相导致 rim 过重 */
+  border: var(--surface-rim-width) solid var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: var(--surface-shadow-elevated, var(--md-elevation-2));
 }
 
 .session-glass-tooltip::before {
@@ -630,10 +661,10 @@
   background:
     radial-gradient(
       ellipse 85% 65% at 16% 0%,
-      hsl(var(--tooltip-foreground) / 0.1) 0%,
+      hsl(var(--glass-shine, 0 0% 100%) / 0.35) 0%,
       transparent 58%
     ),
-    linear-gradient(to bottom, hsl(var(--tooltip-foreground) / 0.06) 0%, transparent 42%);
+    linear-gradient(to bottom, hsl(var(--glass-shine, 0 0% 100%) / 0.18) 0%, transparent 42%);
 }
 
 .session-glass-tooltip::after {
@@ -885,11 +916,20 @@
 .settings-card {
   position: relative;
   isolation: isolate;
-  background: var(--surface-bg-elevated);
-  border: var(--surface-rim-width) solid var(--surface-rim);
+  /* frosted 默认扁平；soft/glass 由 --surface-shadow-elevated 带一点抬起 */
+  background: var(--surface-bg, var(--surface-bg-elevated));
+  border: var(--surface-rim-width) solid
+    color-mix(in srgb, var(--surface-rim, hsl(var(--border))) 70%, transparent);
   -webkit-backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate));
   backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate));
   border-radius: var(--radius-glass-modal);
+  box-shadow: var(--surface-shadow-chip, none);
+}
+
+[data-material='soft'] .settings-card,
+[data-material='glass'] .settings-card {
+  background: var(--surface-bg-elevated);
+  border: var(--surface-rim-width) solid var(--surface-rim);
   box-shadow: var(--surface-shadow-elevated);
 }
 
@@ -911,28 +951,13 @@
   pointer-events: none;
 }
 
-/* frosted：极轻顶边分隔，非玻璃高光 */
+/* frosted：关掉顶边「高光分隔」，避免假立体 */
 [data-material='frosted'] .settings-card::after,
-:root:not([data-material]) .settings-card::after {
-  opacity: 0.35;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--border) / 0.8) 50%,
-    transparent 100%
-  );
-}
-
+:root:not([data-material]) .settings-card::after,
 .dark[data-material='frosted'] .settings-card::after,
 .dark:not([data-material]) .settings-card::after,
 [data-material='frosted'].dark .settings-card::after {
-  opacity: 0.4;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--border) / 0.6) 50%,
-    transparent 100%
-  );
+  opacity: 0;
 }
 
 /* ============================================================================

@@ -56,7 +56,7 @@ export function Message({ className, from, ...props }: MessageProps): React.Reac
     <div
       className={cn(
         'group flex w-full flex-col gap-0.5 rounded-[10px] px-2.5 py-2.5',
-        from === 'user' ? 'is-user items-end' : 'is-assistant',
+        from === 'user' ? 'is-user items-end' : 'is-assistant agent-turn-message',
         className
       )}
       {...props}
@@ -115,8 +115,8 @@ type MessageContentProps = HTMLAttributes<HTMLDivElement>
 
 /**
  * 消息内容区域
- * - user 消息：右对齐，无左缩进
- * - assistant 消息：pl-[46px] 与头像对齐
+ * - user 消息：右对齐
+ * - assistant 消息：通栏（模型信息改到脚注 chip，不再左缩进对齐头像）
  */
 export function MessageContent({
   children,
@@ -128,7 +128,7 @@ export function MessageContent({
       className={cn(
         'flex max-w-full min-w-0 flex-col gap-2 overflow-hidden',
         'group-[.is-user]:items-end group-[.is-user]:text-foreground',
-        'group-[.is-assistant]:w-full group-[.is-assistant]:text-foreground group-[.is-assistant]:pl-[46px]',
+        'group-[.is-assistant]:w-full group-[.is-assistant]:text-foreground',
         className
       )}
       {...props}

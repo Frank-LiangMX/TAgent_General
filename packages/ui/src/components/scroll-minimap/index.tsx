@@ -1,19 +1,20 @@
 /**
  * ScrollMinimap — 消息导航迷你地图 + 滚动进度条
  *
- * 在消息区域右侧显示：
- * 1. 短横杠代表每条消息的位置（迷你地图），悬浮时弹出消息预览列表
- * 2. 可拖拽的滚动进度条，提供丝滑的滚动体验
+ * 会话区右上角：
+ * 1. 消息刻度条（始终可见，悬浮打开预览列表）
+ * 2. 右侧可拖拽滚动 thumb（滚动/悬停时显现）
+ *
+ * 预览面板：无头像/名称，用户右对齐、助手左对齐气泡。
  * 必须放在 StickToBottom（Conversation）内部使用。
  */
 
-import { AlertTriangle } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
 
-import { SearchInput, UserAvatar } from '@tagent/ui'
+import { SearchInput } from '@tagent/ui'
 import { cn } from '../../lib/utils'
 
 export interface MinimapItem {
@@ -34,6 +35,10 @@ interface ScrollMinimapProps {
 
 const MIN_ITEMS = 1
 const MAX_BARS = 20
+/** 每条刻度视觉高度（含间距） */
+const BAR_SLOT = 9
+const BAR_HEIGHT = 4
+const BAR_WIDTH = 12
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
@@ -62,7 +67,8 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMinimapProps): React.ReactElement | null {
+export function ScrollMinimap({ items, onShortcutOpen }: ScrollMinimapProps): React.ReactElement | null {
+  // getModelLogo 仍在 Props 中以兼容调用方；预览为纯气泡对齐，不再渲染头像
   const { scrollRef, stopScroll, state: stickyState } = useStickToBottomContext()
   const [hovered, setHovered] = React.useState(false)
   const [isLeaving, setIsLeaving] = React.useState(false)
@@ -122,12 +128,12 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
       for (const node of nodes) {
         const top = getOffsetTopRelativeTo(node, el)
         const bottom = top + node.offsetHeight
+        const id = node.getAttribute('data-message-id')
         if (bottom > scrollTop && top < scrollTop + clientHeight) {
-          const id = node.getAttribute('data-message-id')
           if (id) ids.add(id)
         }
         if (centerId === undefined && top <= viewportCenter && bottom > viewportCenter) {
-          centerId = node.getAttribute('data-message-id') ?? undefined
+          centerId = id ?? undefined
         }
       }
       setVisibleIds(ids)
@@ -187,7 +193,6 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
     setHovered(true)
   }, [])
 
-  // 应用层注入快捷键，不再使用 useShortcut
   React.useEffect(() => {
     if (onShortcutOpen && items.length >= MIN_ITEMS && canScroll) {
       const handler = (e: KeyboardEvent) => {
@@ -246,13 +251,22 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
       const offsetTop = getOffsetTopRelativeTo(target, el)
       const targetHeight = target.offsetHeight
       const viewportHeight = el.clientHeight
-      const scrollTarget = targetHeight < viewportHeight
-        ? offsetTop - (viewportHeight - targetHeight) / 2
-        : offsetTop - 32
+      const scrollTarget =
+        targetHeight < viewportHeight
+          ? offsetTop - (viewportHeight - targetHeight) / 2
+          : offsetTop - 32
       el.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
       setHovered(false)
     },
     [scrollRef, stopScroll, stickyState]
+  )
+
+  const scrollToGroup = React.useCallback(
+    (start: number) => {
+      const item = items[start]
+      if (item) scrollToMessage(item.id)
+    },
+    [items, scrollToMessage]
   )
 
   const filteredItems = React.useMemo(() => {
@@ -330,46 +344,59 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
   if (items.length < MIN_ITEMS || !canScroll) return null
 
   const barCount = Math.min(items.length, MAX_BARS)
+  const bars = Array.from({ length: barCount }, (_, i) => {
+    const start = Math.floor((i * items.length) / barCount)
+    const end = Math.floor(((i + 1) * items.length) / barCount)
+    const group = items.slice(start, end)
+    return {
+      index: i,
+      start,
+      isVisible: group.some((it) => visibleIds.has(it.id)),
+      hasUser: group.some((it) => it.role === 'user'),
+      hasStatus: group.some((it) => it.role === 'status'),
+    }
+  })
 
   const { scrollTop, scrollHeight, clientHeight } = scrollMetrics
   const scrollRange = scrollHeight - clientHeight
   const thumbRatio = scrollHeight > 0 ? Math.min(clientHeight / scrollHeight, 1) : 1
   const thumbHeightPct = Math.max(10, thumbRatio * 100)
   const thumbTopPct = scrollRange > 0 ? (scrollTop / scrollRange) * (100 - thumbHeightPct) : 0
-  const controlsVisible = hovered || isDragging || isScrollActive || isColumnHovered
+  const thumbVisible = hovered || isDragging || isScrollActive || isColumnHovered
 
   return (
     <div
-      className="absolute right-1 top-0 bottom-0 z-30 flex w-8 justify-end pointer-events-auto"
+      className="absolute right-1 top-0 bottom-0 z-30 flex w-9 justify-end pointer-events-auto"
       onMouseEnter={() => setIsColumnHovered(true)}
       onMouseLeave={() => setIsColumnHovered(false)}
     >
       <div className="flex items-start h-full">
+        {/* 悬浮消息预览面板 — 轻量时间线，不是侧栏列表 */}
         {hovered && (
           <div
             className={cn(
-              'session-glass-surface session-glass-popover mr-1 w-[280px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
-              isLeaving
-                ? 'animate-out fade-out-0 zoom-out-95 duration-75'
-                : 'animate-in fade-in-0 zoom-in-95 duration-150'
+              'session-glass-surface session-glass-popover message-nav-popover mr-1.5 w-[300px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
+              isLeaving ? 'message-nav-popover-exit' : 'message-nav-popover-enter'
             )}
-            style={{ maxHeight: 'min(420px, 60vh)', marginTop: 12 }}
+            style={{ maxHeight: 'min(460px, 64vh)', marginTop: 10 }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-              <span className="text-xs font-medium text-popover-foreground/70">消息导航</span>
-              <span className="text-[11px] text-muted-foreground tabular-nums">
-                {visibleIds.size}/{items.length}
-              </span>
-            </div>
-            <div className="px-3 py-2 border-b shrink-0">
+            <div className="message-nav-popover-header shrink-0 px-3 pt-2.5 pb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[11px] font-medium tracking-wide md-text-variant">
+                  消息导航
+                </span>
+                <span className="text-[10px] tabular-nums md-text-faint">
+                  {visibleIds.size} / {items.length}
+                </span>
+              </div>
               <SearchInput
                 ref={searchInputRef}
                 variant="plain"
                 size="sm"
-                containerClassName="app-search-shell app-search-shell--compact"
-                placeholder="搜索消息..."
+                containerClassName="app-search-shell app-search-shell--compact message-nav-search"
+                placeholder="搜索消息…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => {
@@ -379,69 +406,89 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
                 }}
               />
             </div>
-            <div ref={listRef} className="overflow-y-auto flex-1 p-2 space-y-1 scrollbar-thin">
+
+            <div
+              ref={listRef}
+              className="message-nav-popover-list overflow-y-auto flex-1 px-2.5 pb-2.5 pt-0.5 scrollbar-thin"
+            >
               {filteredItems.length === 0 ? (
-                <div className="py-6 text-center text-xs text-muted-foreground">未找到匹配消息</div>
+                <div className="py-10 text-center text-[11px] md-text-faint">未找到匹配消息</div>
               ) : (
-                filteredItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    data-minimap-visible={item.id === anchorId ? 'true' : undefined}
-                    className={cn(
-                      'flex items-start gap-2 w-full rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-accent',
-                      visibleIds.has(item.id) && 'bg-accent/50'
-                    )}
-                    onClick={() => scrollToMessage(item.id)}
-                  >
-                    <ItemIcon item={item} getModelLogo={getModelLogo} />
-                    <div className="flex-1 min-w-0">
-                      <HighlightedPreview text={item.preview} query={searchQuery} />
-                    </div>
-                  </button>
-                ))
+                <div className="flex flex-col gap-1.5">
+                  {filteredItems.map((item) => {
+                    const isAnchor = item.id === anchorId
+                    const isInView = visibleIds.has(item.id)
+                    const isUser = item.role === 'user'
+                    const isStatus = item.role === 'status'
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        data-minimap-visible={isAnchor ? 'true' : undefined}
+                        className={cn(
+                          'message-nav-row flex w-full border-0 bg-transparent p-0',
+                          isUser ? 'justify-end' : 'justify-start'
+                        )}
+                        onClick={() => scrollToMessage(item.id)}
+                      >
+                        <span
+                          className={cn(
+                            'message-nav-bubble max-w-[88%] px-2.5 py-1.5 text-left transition-[background,box-shadow,filter] duration-150',
+                            isUser && 'message-nav-bubble-user',
+                            !isUser && !isStatus && 'message-nav-bubble-assistant',
+                            isStatus && 'message-nav-bubble-status',
+                            isAnchor && 'message-nav-bubble-anchor',
+                            !isAnchor && isInView && 'message-nav-bubble-inview'
+                          )}
+                        >
+                          <HighlightedPreview text={item.preview} query={searchQuery} />
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </div>
           </div>
         )}
 
+        {/* 右上角消息刻度簇 — 始终清晰可见 */}
         <div
-          className="relative mt-3 flex-shrink-0 pointer-events-auto"
-          style={{ width: 14, height: barCount * 8 }}
+          className="message-nav-bars relative mt-3 flex-shrink-0 pointer-events-auto"
+          style={{ width: BAR_WIDTH, height: barCount * BAR_SLOT }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {Array.from({ length: barCount }, (_, i) => {
-            const start = Math.floor((i * items.length) / barCount)
-            const end = Math.floor(((i + 1) * items.length) / barCount)
-            const group = items.slice(start, end)
-            const isVisible = group.some((it) => visibleIds.has(it.id))
-            const hasUser = group.some((it) => it.role === 'user')
-            const top = ((i + 0.5) / barCount) * 100
-            return (
-              <div
-                key={i}
-                className={cn(
-                  'absolute left-0 h-[5px] w-[14px] rounded-md transition-colors',
-                  isVisible
-                    ? 'bg-primary dark:bg-primary/70 minimap-visible-indicator'
-                    : hasUser
-                      ? 'bg-primary/30 dark:bg-primary/20'
-                      : 'bg-primary/50 dark:bg-primary/35'
-                )}
-                style={{ top: `${top}%` }}
-              />
-            )
-          })}
+          {bars.map((bar) => (
+            <button
+              key={bar.index}
+              type="button"
+              aria-label={`跳转到消息组 ${bar.start + 1}`}
+              className={cn(
+                'message-nav-bar absolute left-0 rounded-full border-0 p-0 cursor-pointer transition-colors duration-150',
+                bar.isVisible && 'message-nav-bar-visible',
+                bar.hasStatus && !bar.isVisible && 'message-nav-bar-status',
+                bar.hasUser && !bar.isVisible && !bar.hasStatus && 'message-nav-bar-user',
+                !bar.isVisible && !bar.hasUser && !bar.hasStatus && 'message-nav-bar-assistant'
+              )}
+              style={{
+                top: bar.index * BAR_SLOT + (BAR_SLOT - BAR_HEIGHT) / 2,
+                width: BAR_WIDTH,
+                height: BAR_HEIGHT,
+              }}
+              onClick={() => scrollToGroup(bar.start)}
+            />
+          ))}
         </div>
       </div>
 
+      {/* 滚动 thumb：滚动/悬停时显现 */}
       <div
         className={cn(
-          'relative ml-[4px] py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
-          controlsVisible ? 'opacity-100' : 'opacity-0'
+          'relative ml-1 py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
+          thumbVisible ? 'opacity-100' : 'opacity-0'
         )}
-        style={{ width: 7 }}
+        style={{ width: 6 }}
       >
         <div
           ref={trackRef}
@@ -453,7 +500,7 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
               'absolute left-0 right-0 rounded-full transition-colors duration-100 scroll-progress-thumb',
               isDragging
                 ? 'scroll-progress-thumb-active cursor-grabbing'
-                : controlsVisible
+                : thumbVisible
                   ? 'scroll-progress-thumb-visible cursor-grab'
                   : 'cursor-grab'
             )}
@@ -469,42 +516,19 @@ export function ScrollMinimap({ items, onShortcutOpen, getModelLogo }: ScrollMin
   )
 }
 
-function ItemIcon({ item, getModelLogo }: { item: MinimapItem; getModelLogo?: (model: string) => string | null }): React.ReactElement {
-  if (item.role === 'user' && item.avatar) {
-    return <UserAvatar avatar={item.avatar} size={16} className="mt-0.5" />
-  }
-  if (item.role === 'assistant' && item.model) {
-    const logoUrl = getModelLogo?.(item.model)
-    if (logoUrl) {
-      return (
-        <img
-          src={logoUrl}
-          alt=""
-          className="size-4 shrink-0 mt-0.5 rounded-[20%] object-cover"
-        />
-      )
-    }
-    return <div className="size-4 shrink-0 mt-0.5 rounded-[20%] bg-primary/10" />
-  }
-  if (item.role === 'status') {
-    return <AlertTriangle className="size-4 shrink-0 mt-0.5 text-destructive" />
-  }
-  return <div className="size-4 shrink-0 mt-0.5 rounded-[20%] bg-muted" />
-}
-
 function HighlightedPreview({ text, query }: { text: string; query: string }): React.ReactElement {
   if (!text) {
-    return <span className="text-xs opacity-40">(空消息)</span>
+    return <span className="text-[11px] leading-4 md-text-faint">(空消息)</span>
   }
 
   if (query.trim()) {
     const escaped = escapeRegExp(query)
     const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
     return (
-      <span className="text-xs text-popover-foreground/80 line-clamp-3">
+      <span className="text-[11px] leading-4 md-text line-clamp-2">
         {parts.map((part, i) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-primary/20 text-primary rounded-sm px-0.5">
+            <mark key={i} className="bg-primary/15 text-primary rounded-sm px-0.5">
               {part}
             </mark>
           ) : (
@@ -516,7 +540,7 @@ function HighlightedPreview({ text, query }: { text: string; query: string }): R
   }
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none text-xs text-popover-foreground/80 prose-p:my-0 prose-headings:my-0.5 prose-headings:text-xs prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 line-clamp-3 overflow-hidden">
+    <div className="prose prose-sm dark:prose-invert max-w-none text-[11px] leading-4 md-text-variant prose-p:my-0 prose-headings:my-0.5 prose-headings:text-[11px] prose-li:my-0 prose-pre:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 line-clamp-2 overflow-hidden">
       <Markdown remarkPlugins={PREVIEW_REMARK_PLUGINS} components={PREVIEW_MD_COMPONENTS}>
         {text}
       </Markdown>

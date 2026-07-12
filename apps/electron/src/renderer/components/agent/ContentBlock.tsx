@@ -473,10 +473,7 @@ function ToolUseBlock({
 
           {/* SubAgent 标识 */}
           {isAgentTool && (
-            <span
-              className="ml-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
-              style={{ background: 'var(--tagent-brand-soft)', color: 'var(--tagent-brand)' }}
-            >
+            <span className="ml-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-primary/12 text-primary">
               SubAgent
             </span>
           )}
@@ -664,31 +661,29 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
   }, [])
 
   return (
-    <div className="agent-thinking-block relative mb-3">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <SessionThinkingIcon
-          className={cn('size-3.5', dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground')}
-        />
-        <span
-          className={cn(
-            'text-[14px]',
-            dimmed ? 'text-muted-foreground/70' : 'text-muted-foreground'
-          )}
-        >
-          思考
-        </span>
-      </div>
+    <div
+      className={cn(
+        'agent-thinking-block relative',
+        dimmed && 'agent-thinking-block--dimmed'
+      )}
+    >
+      {/* 对齐原型 think-block：badge 在虚线卡内头部 */}
       <div
         className={cn(
-          'agent-thinking-body relative px-3.5 py-2.5',
-          shouldCollapse && !isExpanded && 'pb-7'
+          'agent-thinking-body relative',
+          shouldCollapse && !isExpanded && 'agent-thinking-body--collapsed'
         )}
       >
+        <div className="agent-thinking-head">
+          <span className="agent-thinking-badge">思考</span>
+          <SessionThinkingIcon className="agent-thinking-head-icon" aria-hidden={true} />
+        </div>
         <div
           ref={contentRef}
           className={cn(
-            'prose prose-sm dark:prose-invert max-w-none prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-[14px] leading-relaxed overflow-hidden transition-[max-height] duration-200',
-            dimmed ? 'text-muted-foreground' : 'text-foreground/90',
+            'agent-thinking-content prose prose-sm dark:prose-invert max-w-none',
+            'prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+            'overflow-hidden transition-[max-height] duration-200',
             shouldCollapse && !isExpanded && 'max-h-[5.6em]'
           )}
         >
@@ -699,8 +694,8 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
             type="button"
             onClick={toggleExpand}
             className={cn(
-              'agent-thinking-fade flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors mt-1',
-              !isExpanded && 'absolute bottom-0 left-0 right-0 px-3.5 pb-2 pt-4'
+              'agent-thinking-fade flex items-center gap-1 transition-colors',
+              !isExpanded && 'absolute bottom-0 left-0 right-0'
             )}
           >
             {isExpanded ? (

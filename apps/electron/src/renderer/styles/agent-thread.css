@@ -2,9 +2,9 @@
  * Agent 会话线程视觉
  *
  * 设计参考：glass-studio 原型
- * - 消息气泡采用更大的圆角 (22px)，模仿真实聊天气泡
- * - 用户气泡右对齐，助手消息左对齐
- * - 工具调用行增加状态区分 (done/running)
+ * - 过程区 = muted surface 卡；回答区 = 干净 prose（DOM 脱钩）
+ * - 用户气泡右对齐、大圆角
+ * - 工具行 done / running 状态区分
  *
  * 挂载点：.tagent-agent-thread（ConversationContent）
  */
@@ -12,26 +12,31 @@
 .tagent-agent-thread {
   --agent-avatar-size: 32px;
   --agent-content-indent: 52px;
-  /* 默认圆角 - 用于工具行、思考块等内部元素 */
   --agent-surface-radius: 14px;
-  /* 大圆角 - 用于用户/助手消息气泡，模仿真实聊天气泡 */
   --agent-bubble-radius: 20px;
-  /* 普通材质：MD secondary-container（完整色值） */
   --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
   --agent-surface-border: var(--md-outline, hsl(var(--border)));
   --agent-bubble-blur: 0px;
+  /* 过程卡：比 secondary 再沉一点，和回答区拉开 */
+  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 58%, hsl(var(--background)));
+  --agent-process-border: color-mix(in srgb, hsl(var(--border)) 48%, transparent);
+  /* 轮次间距：避免助手脚注与下一条用户气泡「夹心」 */
+  gap: 1.125rem !important;
 }
 
 .dark .tagent-agent-thread {
   --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
   --agent-surface-border: var(--md-outline, hsl(var(--border)));
   --agent-bubble-blur: 0px;
+  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
+  --agent-process-border: color-mix(in srgb, hsl(var(--border)) 55%, transparent);
 }
 
-/* 高级高透：半透明 + 轻 blur */
 [data-material='glass'] .tagent-agent-thread {
   --agent-surface-bg: hsl(var(--muted) / 0.42);
   --agent-bubble-blur: 8px;
+  --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 42%, transparent);
+  --agent-process-border: var(--surface-rim, hsl(var(--border) / 0.45));
 }
 
 .dark[data-material='glass'] .tagent-agent-thread,
@@ -40,26 +45,109 @@
   --agent-bubble-blur: 8px;
 }
 
-/* ===== 过程组 ===== */
+[data-material='soft'] .tagent-agent-thread {
+  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 50%, hsl(var(--background)));
+}
+
+/* ===== Turn：过程 / 回答脱钩 ===== */
+
+.tagent-agent-thread .agent-turn {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 模型名：第一行标题 + 圆角矩形描边 */
+.tagent-agent-thread .agent-turn-title {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, hsl(var(--border)) 70%, transparent);
+  background: color-mix(in srgb, hsl(var(--muted)) 35%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: hsl(var(--muted-foreground));
+  user-select: none;
+}
+
+.dark .tagent-agent-thread .agent-turn-title {
+  border-color: color-mix(in srgb, hsl(var(--border)) 80%, transparent);
+  background: color-mix(in srgb, hsl(var(--muted)) 45%, transparent);
+}
+
+/* 过程区：轻 surface 卡，包住 thinking + tools */
+.tagent-agent-thread .agent-turn-process {
+  border-radius: var(--agent-surface-radius);
+  background: var(--agent-process-bg);
+  border: 1px solid var(--agent-process-border);
+  padding: 6px 8px 8px;
+  box-shadow: none;
+}
+
+[data-material='glass'] .tagent-agent-thread .agent-turn-process {
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.2);
+}
+
+[data-material='soft'] .tagent-agent-thread .agent-turn-process {
+  box-shadow:
+    inset 1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 7%, transparent),
+    inset -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 70%, transparent);
+}
+
+/* 回答区：裸 prose，无灰底 */
+.tagent-agent-thread .agent-turn-answer {
+  min-width: 0;
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 1.65;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* ===== 过程组（卡内 header + 内容） ===== */
+
+.tagent-agent-thread .agent-process-group {
+  min-width: 0;
+}
+
+.tagent-agent-thread .agent-process-group + .agent-process-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, hsl(var(--border)) 40%, transparent);
+}
 
 .tagent-agent-thread .agent-process-group__toggle {
-  border-radius: 8px;
-  padding: 0.125rem 0.5rem;
-  margin-left: -0.5rem;
+  border-radius: 10px;
+  padding: 4px 6px;
+  margin: 0;
   transition: background 150ms ease;
 }
 
 .tagent-agent-thread .agent-process-group__toggle:hover {
   background: var(
     --hover-fill,
-    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+    color-mix(in srgb, hsl(var(--foreground)) 6%, transparent)
   );
 }
 
+/* 去掉旧左边线：内容在卡内平铺 */
 .tagent-agent-thread .agent-process-stack {
-  margin-left: 0.35rem;
-  padding-left: 0.85rem;
-  border-left: 1px solid hsl(var(--border) / 0.35);
+  margin-left: 0;
+  padding: 4px 4px 0 22px;
+  border-left: none;
+}
+
+.tagent-agent-thread .agent-process-group__collapse {
+  margin-top: 2px;
+  padding: 2px 0;
 }
 
 /* ===== 工具行 ===== */
@@ -86,40 +174,152 @@
   margin-top: 0.35rem;
   margin-bottom: 0.5rem;
   margin-left: 0.15rem;
-  border-radius: var(--agent-surface-radius);
+  border-radius: calc(var(--agent-surface-radius) - 2px);
   border: 1px solid var(--agent-surface-border);
-  background: var(--agent-surface-bg);
+  background: color-mix(in srgb, hsl(var(--background)) 55%, transparent);
   padding: 0.65rem 0.85rem;
   box-shadow: none;
 }
 
-/* ===== Thinking ===== */
+/* ===== Thinking：对齐原型；在过程卡内要明显抬起一层 ===== */
 
-.tagent-agent-thread .agent-thinking-block .agent-thinking-body {
-  border-radius: var(--agent-surface-radius) !important;
-  border: 1px dashed var(--agent-surface-border) !important;
-  background: var(--agent-surface-bg) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.tagent-agent-thread .agent-thinking-block {
+  min-width: 0;
 }
 
-/* ===== 用户气泡 =====
- * 模仿原型：使用更大的圆角 (20px)，右下角更尖 (10px)
- * 增加轻微背景层次，让气泡更有质感
+/*
+ * 过程卡底是 muted 灰；思考块用「更亮的 card + 轻 primary 虚线」
+ * 与工具行、过程底拉开对比
  */
+.tagent-agent-thread .agent-thinking-body {
+  border-radius: calc(var(--agent-surface-radius) - 2px);
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--card)) 88%, hsl(var(--primary)) 4%);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
+    0 1px 3px color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+}
+
+.dark .tagent-agent-thread .agent-thinking-body {
+  border-color: color-mix(in srgb, hsl(var(--primary)) 32%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--card)) 78%, hsl(var(--primary)) 8%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* 过程卡内再抬一层：背景更接近 dialog/lowest */
+.tagent-agent-thread .agent-turn-process .agent-thinking-body {
+  background: var(--md-surface-container-lowest, hsl(var(--dialog)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 32%, hsl(var(--border)));
+}
+
+.dark .tagent-agent-thread .agent-turn-process .agent-thinking-body {
+  background: color-mix(in srgb, hsl(var(--card)) 92%, hsl(var(--primary)) 6%);
+}
+
+.tagent-agent-thread .agent-thinking-body--collapsed {
+  padding-bottom: 1.75rem;
+}
+
+.tagent-agent-thread .agent-thinking-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.tagent-agent-thread .agent-thinking-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--md-on-primary-container, hsl(var(--primary)));
+  background: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
+  border: 1px solid color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--border)));
+}
+
+.dark .tagent-agent-thread .agent-thinking-badge {
+  background: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+}
+
+.tagent-agent-thread .agent-thinking-head-icon {
+  width: 12px;
+  height: 12px;
+  color: color-mix(in srgb, hsl(var(--primary)) 55%, hsl(var(--muted-foreground)));
+}
+
+.tagent-agent-thread .agent-thinking-content {
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+  color: hsl(var(--muted-foreground));
+  font-weight: 400;
+}
+
+.tagent-agent-thread .agent-thinking-content :where(p, li, span, code) {
+  color: inherit;
+}
+
+.tagent-agent-thread .agent-thinking-block--dimmed .agent-thinking-content {
+  color: hsl(var(--muted-foreground) / 0.78);
+}
+
+.tagent-agent-thread .agent-thinking-fade {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground) / 0.55);
+  padding: 0.35rem 0 0;
+}
+
+.tagent-agent-thread .agent-thinking-fade:hover {
+  color: hsl(var(--muted-foreground) / 0.85);
+}
+
+.tagent-agent-thread .agent-thinking-body--collapsed .agent-thinking-fade {
+  padding: 1rem 12px 8px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--md-surface-container-lowest, hsl(var(--dialog))) 92%, transparent) 40%,
+    transparent 100%
+  );
+}
+
+.tagent-agent-thread .agent-turn-process .agent-thinking-body--collapsed .agent-thinking-fade {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--md-surface-container-lowest, hsl(var(--dialog))) 95%, transparent) 42%,
+    transparent 100%
+  );
+}
+
+[data-material='glass'] .tagent-agent-thread .agent-thinking-body {
+  background: color-mix(in srgb, hsl(var(--card)) 55%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+[data-material='soft'] .tagent-agent-thread .agent-thinking-body {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent) inset,
+    1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+}
+
+/* ===== 用户气泡 ===== */
 
 .tagent-agent-thread .agent-user-bubble {
-  /* 原型风格：大气泡，右下角收尖 */
-  border-radius: var(--agent-bubble-radius);
   border-radius: 20px 20px 10px 20px;
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
   line-height: 1.58;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  /* 普通材质 blur=0；glass 时 --agent-bubble-blur=8px */
   backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
   -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
 }
@@ -136,14 +336,228 @@
     0 4px 12px hsl(var(--background) / 0.12);
 }
 
-.tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade,
-.tagent-agent-thread .agent-thinking-block .agent-thinking-fade {
+.tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade {
   border-bottom-left-radius: var(--agent-bubble-radius);
   border-bottom-right-radius: 10px;
   background: linear-gradient(to top, var(--agent-surface-bg) 0%, transparent 100%);
 }
 
-/* ===== 流式 shimmer（进行中工具/过程标题） ===== */
+/*
+ * Turn footer：全部靠左 — 完成 / 运行中 + 复制/分叉/回退
+ */
+.tagent-agent-thread .agent-turn-footer {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 28px;
+  margin-top: 8px;
+}
+
+.tagent-agent-thread .agent-turn-footer--live {
+  margin-top: 6px;
+}
+
+.tagent-agent-thread .agent-turn-footer__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tagent-agent-thread .agent-turn-footer__stopped {
+  font-size: 11px;
+  font-weight: 550;
+  color: hsl(var(--muted-foreground) / 0.7);
+  padding: 0 4px;
+}
+
+/*
+ * 用户操作：气泡下方文档流，固定高度、右对齐
+ * 不 absolute，绝不盖住正文；始终可见不跳动
+ */
+.tagent-agent-thread .agent-user-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 100%;
+  gap: 4px;
+}
+
+.tagent-agent-thread .agent-user-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  min-height: 24px;
+  padding: 0 2px;
+  color: hsl(var(--muted-foreground) / 0.55);
+}
+
+.tagent-agent-thread .agent-user-toolbar:hover,
+.tagent-agent-thread .agent-user-toolbar:focus-within {
+  color: hsl(var(--muted-foreground) / 0.9);
+}
+
+.tagent-agent-thread .agent-user-toolbar__time {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground) / 0.6);
+  padding: 0 6px 0 4px;
+  line-height: 1;
+}
+
+/* ===== 运行中胶囊（原型 .running-badge） ===== */
+
+.tagent-agent-thread .agent-running-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 11px 0 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+  font-size: 11.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  color: var(--md-on-primary-container, hsl(var(--primary)));
+  background: var(
+    --md-primary-container,
+    color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)))
+  );
+  border: 1px solid
+    var(--md-primary-outline, color-mix(in srgb, hsl(var(--primary)) 26%, hsl(var(--border))));
+  box-shadow: 0 1px 2px color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
+  cursor: default;
+}
+
+/* 完成态：同款胶囊，无扫光；勾替换 spinner */
+.tagent-agent-thread .agent-running-badge--done {
+  /* 与 running 同色，仅去掉动效；略稳一点阴影 */
+  box-shadow: 0 1px 2px color-mix(in srgb, hsl(var(--primary)) 10%, transparent);
+}
+
+.tagent-agent-thread .agent-running-badge__check {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--md-on-primary-container, hsl(var(--primary)));
+}
+
+.dark .tagent-agent-thread .agent-running-badge {
+  background: color-mix(in srgb, hsl(var(--primary)) 20%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--primary)) 34%, hsl(var(--border)));
+  box-shadow: 0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent);
+}
+
+[data-material='soft'] .tagent-agent-thread .agent-running-badge {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent) inset,
+    1px 1px 3px color-mix(in srgb, hsl(var(--primary)) 14%, transparent);
+}
+
+[data-material='glass'] .tagent-agent-thread .agent-running-badge {
+  background: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background) / 0.55));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.tagent-agent-thread .agent-running-badge__spinner {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, hsl(var(--primary)) 28%, transparent);
+  border-top-color: hsl(var(--primary));
+  border-right-color: color-mix(in srgb, hsl(var(--primary)) 65%, transparent);
+  animation: agent-running-spin 0.8s linear infinite;
+}
+
+.tagent-agent-thread .agent-running-badge__label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  line-height: 1;
+}
+
+.tagent-agent-thread .agent-running-badge__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 1.6em;
+}
+
+/*
+ * 扫光：窄色带 translateX，起止都在胶囊外（看不见的地方接循环）
+ * 避免 background-position 循环时色块跳回左侧闪一下
+ */
+.tagent-agent-thread .agent-running-badge__pulse {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  width: 42%;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, hsl(var(--primary)) 22%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-130%);
+  animation: agent-running-shimmer 2.2s linear infinite;
+  will-change: transform;
+}
+
+@keyframes agent-running-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 0% / 100% 都在屏幕外；中间扫过；两端各留一点「空档」便于无缝循环 */
+@keyframes agent-running-shimmer {
+  0% {
+    transform: translateX(-130%);
+  }
+  12% {
+    transform: translateX(-130%);
+  }
+  78% {
+    transform: translateX(260%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagent-agent-thread .agent-running-badge__spinner {
+    animation: none;
+    border-top-color: hsl(var(--primary));
+    opacity: 0.85;
+  }
+
+  .tagent-agent-thread .agent-running-badge__pulse {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ===== 流式 shimmer ===== */
 
 .tagent-agent-thread .agent-shiny-text {
   --agent-shine-base: hsl(var(--muted-foreground) / 0.88);

@@ -93,12 +93,18 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
   }
 
   return (
-    <div ref={containerRef} className={cn('relative w-full', !fullWidth && 'max-w-md')}>
+    <div
+      ref={containerRef}
+      className={cn(
+        'relative',
+        fullWidth ? 'w-full max-w-[280px]' : 'w-[min(100%,280px)]'
+      )}
+    >
       <div className="settings-search-shell">
-        <Search size={18} className="settings-search-icon" strokeWidth={2} aria-hidden />
+        <Search className="settings-search-icon" strokeWidth={2} aria-hidden />
         <input
           ref={inputRef}
-          type="text"
+          type="search"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -106,7 +112,8 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="搜索设置项..."
+          placeholder="搜索设置…"
+          aria-label="搜索设置"
           className="settings-search-field"
         />
         {query ? (
@@ -119,11 +126,11 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
             className="settings-search-clear"
             aria-label="清空搜索"
           >
-            <X size={14} strokeWidth={2} />
+            <X size={12} strokeWidth={2} />
           </button>
         ) : (
-          <kbd className="settings-search-kbd hidden sm:inline-flex items-center gap-0.5 px-1.5 text-[10px] text-muted-foreground font-sans">
-            <span className="text-[10px]">{modKeyLabel}</span>
+          <kbd className="settings-search-kbd hidden sm:inline-flex font-sans" aria-hidden>
+            <span>{modKeyLabel}</span>
             <span>K</span>
           </kbd>
         )}
@@ -133,15 +140,15 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
       {open && query && (
         <div
           className={cn(
-            'settings-search-results',
+            'settings-search-results session-glass-surface session-glass-popover',
             'absolute top-full left-0 right-0 mt-1.5 z-50',
-            'max-h-[60vh] overflow-y-auto',
+            'max-h-[min(360px,50vh)] overflow-y-auto',
             'scrollbar-thin'
           )}
         >
           {results.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">
-              没有找到匹配「<span className="font-medium text-foreground">{query}</span>」的设置项
+            <div className="px-3 py-5 text-center text-xs md-text-faint">
+              没有找到匹配「<span className="md-text font-medium">{query}</span>」的设置项
             </div>
           ) : (
             <div className="p-1">
@@ -179,18 +186,18 @@ function SearchResultItem({
       onClick={onClick}
       onMouseEnter={onHover}
       className={cn(
-        'settings-search-result-item w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-colors',
+        'settings-search-result-item w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors',
         active
-          ? 'settings-search-result-item--active text-foreground'
-          : 'text-foreground hover:bg-foreground/4'
+          ? 'settings-search-result-item--active'
+          : 'md-text hover:bg-[var(--hover-fill,hsl(var(--accent)))]'
       )}
     >
-      <Hash size={12} className="text-muted-foreground shrink-0" />
+      <Hash size={11} className="md-text-faint shrink-0 opacity-70" />
       <div className="min-w-0 flex-1">
-        <div className="text-sm truncate">
+        <div className="text-xs truncate leading-snug">
           {result.item ? (
             <>
-              <span className="text-muted-foreground">{result.tab.tabLabel} / </span>
+              <span className="md-text-faint">{result.tab.tabLabel} / </span>
               <span className="font-medium">{result.item.title}</span>
             </>
           ) : (
@@ -198,12 +205,12 @@ function SearchResultItem({
           )}
         </div>
         {result.item?.description && (
-          <div className="text-xs text-muted-foreground truncate mt-0.5">
+          <div className="text-[11px] md-text-faint truncate mt-0.5 leading-snug">
             {result.item.description}
           </div>
         )}
       </div>
-      <CornerDownLeft size={12} className="text-muted-foreground shrink-0" />
+      {active && <CornerDownLeft size={11} className="md-text-faint shrink-0 opacity-70" />}
     </button>
   )
 }

@@ -60,7 +60,7 @@ export function SettingsSelect({
         <FieldLabel label={label} icon={icon} description={description} />
       </div>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="w-[200px] shrink-0">
+        <SelectTrigger className="w-[200px] shrink-0 rounded-xl">
           <SelectValue placeholder={placeholder}>
             {selected ? (
               <span className="flex items-center gap-2">

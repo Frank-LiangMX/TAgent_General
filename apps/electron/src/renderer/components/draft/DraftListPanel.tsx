@@ -2,12 +2,13 @@
  * DraftListPanel — 侧边栏草稿列表
  *
  * 列出 draftsAtom 中的所有草稿，按状态分组。
- * 选中态与会话列表一致：玻璃底板滑动动画 + 左侧状态竖条。
+ * 行布局 / 选中态与会话列表对齐（session-row-shell + session-list-item-active），
+ * 避免图标+徽章占满横向导致标题几乎不可见。
  * 交互：点击选中、右键菜单、三点下拉、双击重命名。
  */
 
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { StickyNote, Trash2, MoreHorizontal, Pencil } from 'lucide-react'
+import { Trash2, MoreVertical, Pencil } from 'lucide-react'
 import * as React from 'react'
 
 import type { DraftStatus, DraftDocument } from '@tagent/shared'
@@ -32,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@tagent/ui'
-import { STATUS_STYLES, STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
+import { STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
 import {
@@ -165,15 +166,10 @@ const DraftItem = React.memo(function DraftItem({
             startEdit()
           }}
           className={cn(
-            'session-list-row group relative w-full flex items-center gap-2 px-3 py-[7px] titlebar-no-drag text-left',
-            active ? 'session-list-item-active' : 'rounded-md'
+            'session-list-row session-row-shell group relative w-full min-w-0 titlebar-no-drag text-left',
+            active ? 'session-list-item-active' : undefined
           )}
         >
-          <StickyNote
-            size={14}
-            className={cn('flex-shrink-0', active ? 'text-primary/60' : 'text-foreground/30')}
-          />
-
           <div className="flex-1 min-w-0">
             {editing ? (
               <input
@@ -189,15 +185,18 @@ const DraftItem = React.memo(function DraftItem({
             ) : (
               <div
                 className={cn(
-                  'truncate text-[13px] leading-5 flex items-center gap-1.5',
-                  active ? 'session-row-title' : 'text-foreground/80'
+                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
+                  'group-hover:pr-4',
+                  !active && 'text-foreground/80'
                 )}
               >
-                <span className="truncate flex-1 min-w-0">{draft.title || '未命名草稿'}</span>
+                <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
+                  {draft.title || '未命名草稿'}
+                </span>
                 <span
                   className={cn(
-                    'flex-shrink-0 text-[10px] tabular-nums',
-                    active ? 'session-row-meta' : 'text-foreground/35'
+                    'flex-shrink-0 text-[9px] tabular-nums',
+                    active ? 'session-row-meta' : 'md-text-faint'
                   )}
                 >
                   {formatDraftTime(draft.updatedAt)}
@@ -206,24 +205,16 @@ const DraftItem = React.memo(function DraftItem({
             )}
           </div>
 
-          {/* 状态徽章 */}
+          {/* 三点菜单：绝对定位，不占标题横向空间（与会话行一致） */}
           {!editing && (
-            <span
-              className={cn(
-                'inline-flex items-center rounded px-1 py-0.5 text-[9px] font-medium shrink-0',
-                STATUS_STYLES[draft.status]
-              )}
+            <div
+              className="absolute right-0 top-1/2 -translate-y-1/2"
+              onClick={(e) => e.stopPropagation()}
             >
-              {STATUS_LABELS[draft.status]}
-            </span>
-          )}
-
-          {/* 三点菜单按钮（hover 时可见） */}
-          {!editing && (
-            <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu onOpenChange={setMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
+                    type="button"
                     className={cn(
                       'p-1 rounded-md text-foreground/30 hover:bg-foreground/[0.08] hover:text-foreground/60 transition-colors',
                       'opacity-0 pointer-events-none',
@@ -231,7 +222,7 @@ const DraftItem = React.memo(function DraftItem({
                       'data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto'
                     )}
                   >
-                    <MoreHorizontal size={14} />
+                    <MoreVertical size={14} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-36 z-[9999] min-w-0 p-0.5">
@@ -305,19 +296,25 @@ export function DraftListPanel(): React.ReactElement {
   }
 
   if (drafts.length === 0) {
-    return <div className="px-4 py-6 text-center text-[12px] text-foreground/30">暂无需求草稿</div>
+    return (
+      <div className="list-well flex-1 min-h-0 titlebar-no-drag">
+        <div className="session-scroll scrollbar-thin flex items-center justify-center">
+          <p className="px-4 py-6 text-center text-[12px] text-foreground/30">暂无需求草稿</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag">
-        <div ref={listRef} className="relative">
-          <div className="relative z-10 flex flex-col gap-0.5">
-            {groups.map(({ status, items }) => (
-              <React.Fragment key={status}>
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1 px-1 pt-1">
-                  {STATUS_LABELS[status]}
-                </p>
+      <div className="list-well flex-1 min-h-0 titlebar-no-drag">
+        <div ref={listRef} className="session-scroll scrollbar-thin min-h-0 relative">
+          {groups.map(({ status, items }) => (
+            <div key={status} className="session-group">
+              <div className="group-label">
+                <span>{STATUS_LABELS[status]}</span>
+              </div>
+              <div className="flex flex-col">
                 {items.map((draft) => (
                   <DraftItem
                     key={draft.id}
@@ -328,9 +325,9 @@ export function DraftListPanel(): React.ReactElement {
                     onRename={handleRename}
                   />
                 ))}
-              </React.Fragment>
-            ))}
-          </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -25,13 +25,12 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        // 主题自定义色 + 轻量浮岛毛玻璃（采样背后页面内容）
-        'session-glass-tooltip z-[10050] overflow-hidden rounded-glass-tooltip px-3 py-2 text-xs',
+        // 跟主题 surface 对齐（浅色亮底 / 深色抬升底），不再反相深色气泡
+        'session-glass-tooltip z-[10050] overflow-hidden rounded-glass-tooltip px-3 py-1.5 text-xs',
         'text-tooltip-foreground',
         'animate-in fade-in-0 zoom-in-95',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
         'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-        // 内部次要文字使用 tooltip-muted 颜色
         '[&_.text-muted-foreground]:text-tooltip-muted',
         className
       )}

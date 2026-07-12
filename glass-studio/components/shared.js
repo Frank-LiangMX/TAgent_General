@@ -725,7 +725,7 @@ const SettingsModal = {
               </button>
               <button type="button" class="theme-card" data-theme-pick="ocean">
                 <span class="theme-card-check">✓</span>
-                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#c2d2e0,#4f8fc4);"></div>
+                <div class="theme-card-swatch" style="background:linear-gradient(135deg,#c2d8dc,#3a9bb0);"></div>
                 <div class="theme-card-name">碧海</div>
                 <div class="theme-card-sub">Ocean</div>
               </button>

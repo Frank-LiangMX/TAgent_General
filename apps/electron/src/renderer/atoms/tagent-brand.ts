@@ -1,87 +1,44 @@
 /**
- * TAgent 品牌色状态原子
+ * TAgent 强调色（兼容旧 --tagent-brand 变量名）
  *
- * 5 种品牌色（青/紫/橙/森/晶）对应一组 CSS 变量
- * （--tagent-brand / --tagent-brand-soft / --tagent-brand-glow /
- *  --tagent-brand-foreground），仅影响品牌签名、风格卡片、装饰高亮，
- * 不动主题 token（--primary 等）。
- *
- * 持久化到 ~/.tagent/settings.json。
+ * 产品决策：取消独立「签名色」，一律跟随当前主题 --primary。
+ * 本模块保留 atom/API 以免调用方炸掉，但 DOM 只清掉内联覆盖，
+ * 让 CSS 中的 `hsl(var(--primary))` 生效。
  */
 
 import { atom } from 'jotai'
 
 import { DEFAULT_TAGENT_BRAND, type TAgentBrand } from '../../types'
 
-/** 品牌色到 CSS HSL 值的映射 */
-const BRAND_HSL: Record<
-  TAgentBrand,
-  { base: string; soft: string; glow: string; foreground: string }
-> = {
-  cyan: {
-    base: 'hsl(223 53% 59%)',
-    soft: 'hsl(223 53% 59% / 0.15)',
-    glow: 'hsl(223 53% 59% / 0.45)',
-    foreground: 'hsl(220 18% 10%)',
-  },
-  violet: {
-    base: 'hsl(265 85% 65%)',
-    soft: 'hsl(265 85% 65% / 0.15)',
-    glow: 'hsl(265 85% 65% / 0.45)',
-    foreground: 'hsl(265 30% 95%)',
-  },
-  amber: {
-    base: 'hsl(28 95% 55%)',
-    soft: 'hsl(28 95% 55% / 0.15)',
-    glow: 'hsl(28 95% 55% / 0.45)',
-    foreground: 'hsl(28 35% 12%)',
-  },
-  forest: {
-    base: 'hsl(150 60% 45%)',
-    soft: 'hsl(150 60% 45% / 0.15)',
-    glow: 'hsl(150 60% 45% / 0.45)',
-    foreground: 'hsl(150 25% 10%)',
-  },
-  slate: {
-    base: 'hsl(220 15% 55%)',
-    soft: 'hsl(220 15% 55% / 0.15)',
-    glow: 'hsl(220 15% 55% / 0.45)',
-    foreground: 'hsl(220 15% 12%)',
-  },
-}
-
-/** 当前 TAgent 品牌色 */
+/** @deprecated 已废弃独立品牌色，保留类型兼容 */
 export const tagentBrandAtom = atom<TAgentBrand>(DEFAULT_TAGENT_BRAND)
 
-/** 将品牌色应用到 :root CSS 变量 */
-export function applyTAgentBrandToDOM(brand: TAgentBrand): void {
+/**
+ * 清除可能写在 html 上的旧签名色内联变量，强制走主题 primary。
+ */
+export function applyTAgentBrandToDOM(_brand?: TAgentBrand): void {
   const root = document.documentElement
-  const tokens = BRAND_HSL[brand]
-  root.style.setProperty('--tagent-brand', tokens.base)
-  root.style.setProperty('--tagent-brand-soft', tokens.soft)
-  root.style.setProperty('--tagent-brand-glow', tokens.glow)
-  root.style.setProperty('--tagent-brand-foreground', tokens.foreground)
+  root.style.removeProperty('--tagent-brand')
+  root.style.removeProperty('--tagent-brand-soft')
+  root.style.removeProperty('--tagent-brand-glow')
+  root.style.removeProperty('--tagent-brand-foreground')
 }
 
-/** 从主进程加载并应用 */
+/** 初始化：清掉旧内联签名色 */
 export async function initializeTAgentBrand(setBrand: (brand: TAgentBrand) => void): Promise<void> {
   try {
     const settings = await window.electronAPI.getSettings()
     const brand = settings.tagentBrand ?? DEFAULT_TAGENT_BRAND
     setBrand(brand)
-    applyTAgentBrandToDOM(brand)
   } catch (error) {
-    console.error('[TAgent品牌色] 初始化失败:', error)
-    applyTAgentBrandToDOM(DEFAULT_TAGENT_BRAND)
+    console.error('[TAgent强调色] 初始化失败:', error)
   }
+  applyTAgentBrandToDOM()
 }
 
-/** 更新并持久化 */
+/**
+ * 兼容旧调用：不再持久化独立签名色，仅确保 DOM 走 primary。
+ */
 export async function updateTAgentBrand(brand: TAgentBrand): Promise<void> {
   applyTAgentBrandToDOM(brand)
-  try {
-    await window.electronAPI.updateSettings({ tagentBrand: brand })
-  } catch (error) {
-    console.error('[TAgent品牌色] 持久化失败:', error)
-  }
 }

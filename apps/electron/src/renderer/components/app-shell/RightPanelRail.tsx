@@ -133,7 +133,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                   isFilesActive && 'rail-island-btn--active'
                 )}
               >
-                <RAIL_ICON size={13} strokeWidth={1.8} />
+                <RAIL_ICON size={14} strokeWidth={1.75} />
                 {showBadge && (
                   <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-primary ring-1 ring-background" />
                 )}
@@ -160,7 +160,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                     isBtwActive && 'rail-island-btn--active'
                   )}
                 >
-                  <BTW_ICON size={13} strokeWidth={1.8} />
+                  <BTW_ICON size={14} strokeWidth={1.75} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left">
@@ -185,7 +185,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                   isBrowserActive && 'rail-island-btn--active'
                 )}
               >
-                <BROWSER_ICON size={13} strokeWidth={1.8} />
+                <BROWSER_ICON size={14} strokeWidth={1.75} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="left">

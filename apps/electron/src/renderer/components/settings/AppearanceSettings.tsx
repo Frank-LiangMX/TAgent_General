@@ -1,12 +1,11 @@
 /**
- * AppearanceSettings - TAgent 视觉签名
+ * AppearanceSettings - 外观与材质
  *
  * 布局：
- *   1. Slim 头部（logo + 标题 + 5 色色板内联）
- *   2. TAgent 皮肤（皮肤选择 + 5×2 风格库网格）
- *   3. 排版与材质（界面缩放 / 阅读字号滑杆 / 高级材质）
+ *   1. 皮肤（浅/深/系统/风格库）
+ *   2. 排版与材质
  *
- * 通过 Jotai atom 管理状态，持久化到 ~/.tagent/settings.json。
+ * 强调色跟随主题 --primary，无独立签名色选项。
  */
 
 import { useAtom, useAtomValue } from 'jotai'
@@ -18,7 +17,6 @@ import type {
   AdvancedMaterialMode,
   AdvancedMaterialOnMode,
   MarkdownFontSize,
-  TAgentBrand,
   ThemeMode,
   ThemeStyle,
 } from '../../../types'
@@ -34,7 +32,6 @@ import {
 } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
-import { tagentBrandAtom, updateTAgentBrand } from '@/atoms/tagent-brand'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -64,21 +61,6 @@ const READING_FONT_SIZE_OPTIONS = [
 const PREVIEW_MODE_OPTIONS: { value: PreviewModePreference; label: string }[] = [
   { value: 'tab', label: '标签页' },
   { value: 'split', label: '侧边分屏' },
-]
-
-/** 品牌色板定义 */
-interface BrandSwatch {
-  id: TAgentBrand
-  name: string
-  solid: string
-}
-
-const BRAND_SWATCHES: readonly BrandSwatch[] = [
-  { id: 'cyan', name: '柔蓝', solid: 'hsl(223 53% 59%)' },
-  { id: 'violet', name: '锐紫', solid: 'hsl(265 85% 65%)' },
-  { id: 'amber', name: '橙陶', solid: 'hsl(28 95% 55%)' },
-  { id: 'forest', name: '森绿', solid: 'hsl(150 60% 45%)' },
-  { id: 'slate', name: '晶灰', solid: 'hsl(220 15% 55%)' },
 ]
 
 /** 特殊风格 ID（排除 default） */
@@ -203,7 +185,6 @@ export function AppearanceSettings(): React.ReactElement {
   const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
   const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
-  const [tagentBrand, setTagentBrand] = useAtom(tagentBrandAtom)
 
   /** 切换皮肤 */
   const handleThemeChange = React.useCallback(
@@ -220,7 +201,7 @@ export function AppearanceSettings(): React.ReactElement {
     [setThemeMode, setThemeStyle, systemIsDark]
   )
 
-  /** 选择风格库中的风格（自动联动签名色） */
+  /** 选择风格库中的风格（强调色自动随主题 primary） */
   const handleStyleSelect = React.useCallback(
     (style: ThemeStyle) => {
       setThemeMode('special')
@@ -228,27 +209,8 @@ export function AppearanceSettings(): React.ReactElement {
       updateThemeMode('special')
       updateThemeStyle(style)
       applyThemeToDOM('special', style, systemIsDark)
-
-      // 根据主题色系自动联动签名色
-      const styleToBrand: Record<string, TAgentBrand> = {
-        'slate-light': 'slate',
-        'slate-dark': 'slate',
-        'ocean-light': 'cyan',
-        'ocean-dark': 'cyan',
-        'forest-light': 'forest',
-        'forest-dark': 'forest',
-        'orange-light': 'amber',
-        'orange-dark': 'amber',
-        'purple-light': 'violet',
-        'purple-dark': 'violet',
-      }
-      const matchedBrand = styleToBrand[style]
-      if (matchedBrand && matchedBrand !== tagentBrand) {
-        setTagentBrand(matchedBrand)
-        void updateTAgentBrand(matchedBrand)
-      }
     },
-    [setThemeMode, setThemeStyle, systemIsDark, tagentBrand, setTagentBrand]
+    [setThemeMode, setThemeStyle, systemIsDark]
   )
 
   /** 切换阅读字号 */
@@ -280,22 +242,9 @@ export function AppearanceSettings(): React.ReactElement {
     [setAdvancedMaterialOnMode]
   )
 
-  /** 切换品牌色 */
-  const handleBrandChange = React.useCallback(
-    (brand: TAgentBrand) => {
-      setTagentBrand(brand)
-      void updateTAgentBrand(brand)
-    },
-    [setTagentBrand]
-  )
-
   return (
     <div className="space-y-4">
-      {/* Slim 头部：logo + 标题 + 5 色色板内联 */}
-      <TAgentSlimHeader brand={tagentBrand} onBrandChange={handleBrandChange} />
-
-      {/* TAgent 皮肤 + 风格库 */}
-      <SettingsSection title="TAgent 皮肤" description="浅色 / 深色 / 跟随系统 / 风格库 6 选 1">
+      <SettingsSection title="主题皮肤" description="浅色 / 深色 / 跟随系统 / 风格库">
         <SettingsCard>
           <SettingsSegmentedControl
             label="皮肤模式"
@@ -306,7 +255,7 @@ export function AppearanceSettings(): React.ReactElement {
           />
 
           {themeMode === 'special' && (
-            <div className="px-4 pb-4 pt-1 space-y-2">
+            <div className="px-4 pb-3.5 pt-0.5">
               <div className="tagent-style-grid">
                 {SPECIAL_STYLES.map((style) => (
                   <StyleCard
@@ -379,72 +328,7 @@ export function AppearanceSettings(): React.ReactElement {
 }
 
 // =====================================================================
-// Slim 头部（紧凑、含内联色板）
-// =====================================================================
-
-interface TAgentSlimHeaderProps {
-  brand: TAgentBrand
-  onBrandChange: (brand: TAgentBrand) => void
-}
-
-/** 紧凑头部：左侧 logo+标题，右侧签名色行内选择 */
-function TAgentSlimHeader({ brand, onBrandChange }: TAgentSlimHeaderProps): React.ReactElement {
-  return (
-    <div className="tagent-slim-header">
-      <div className="tagent-slim-header-left">
-        <div className="tagent-slim-header-logo" aria-hidden="true">
-          TA
-        </div>
-        <div className="tagent-slim-header-text">
-          <div className="tagent-slim-header-title">
-            TAgent 视觉签名
-            <span className="tagent-slim-header-tag">v1 · TA Skin</span>
-          </div>
-          <div className="tagent-slim-header-subtitle">
-            为双模式通用 + 游戏 TA 工作台定制的视觉皮肤系统
-          </div>
-        </div>
-      </div>
-
-      <div className="tagent-brand-palette" role="radiogroup" aria-label="品牌签名色">
-        {BRAND_SWATCHES.map((swatch) => (
-          <BrandChip
-            key={swatch.id}
-            swatch={swatch}
-            isSelected={brand === swatch.id}
-            onSelect={() => onBrandChange(swatch.id)}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface BrandChipProps {
-  swatch: BrandSwatch
-  isSelected: boolean
-  onSelect: () => void
-}
-
-/** 签名色 chip：纯色圆点 + 名称，选中态仅边框 */
-function BrandChip({ swatch, isSelected, onSelect }: BrandChipProps): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-label={swatch.name}
-      aria-pressed={isSelected}
-      data-selected={isSelected}
-      className="tagent-brand-chip"
-    >
-      <span className="tagent-brand-chip-dot" style={{ background: swatch.solid }} />
-      <span className="tagent-brand-chip-label">{swatch.name}</span>
-    </button>
-  )
-}
-
-// =====================================================================
-// 主题风格卡（紧凑、主题色 hover/selected + 一次性角标+脉冲）
+// 主题风格卡
 // =====================================================================
 
 interface StyleCardProps {
@@ -453,7 +337,7 @@ interface StyleCardProps {
   onSelect: () => void
 }
 
-/** 单个主题风格卡：紧凑横向比例 + 主题色 hover/selected + 一次性旋转光环 */
+/** 单个主题风格卡：轻预览 + 名称，选中用 primary 描边 */
 function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.ReactElement {
   return (
     <button
@@ -461,42 +345,19 @@ function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.React
       onClick={onSelect}
       aria-pressed={isSelected}
       data-style={style.id}
-      data-selected={isSelected}
-      className={cn(
-        'tagent-style-card',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-        isSelected ? 'focus-visible:ring-2' : 'focus-visible:ring-1'
-      )}
-      style={
-        isSelected
-          ? ({ '--tw-ring-color': 'var(--theme-glow)' } as React.CSSProperties)
-          : ({ '--tw-ring-color': 'var(--theme-soft)' } as React.CSSProperties)
-      }
+      data-selected={isSelected || undefined}
+      className="tagent-style-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
     >
       <div className="tagent-style-preview-wrap">
         <ThemePreview previewClass={style.previewClass} deco={style.deco} />
-
         {isSelected && (
-          <>
-            <span className="tagent-corner tagent-corner-tl" aria-hidden="true" />
-            <span className="tagent-corner tagent-corner-tr" aria-hidden="true" />
-            <span className="tagent-corner tagent-corner-bl" aria-hidden="true" />
-            <span className="tagent-corner tagent-corner-br" aria-hidden="true" />
-          </>
+          <span className="tagent-style-check" aria-hidden="true">
+            ✓
+          </span>
         )}
-
-        {isSelected && (
-          <>
-            <div className="tagent-card-pulse" aria-hidden="true" />
-            <div className="tagent-card-pulse tagent-card-pulse-2" aria-hidden="true" />
-          </>
-        )}
-
-        <div className="tagent-theme-watermark">{style.tag}</div>
       </div>
-
       <div className="tagent-style-card-label">
-        <span>{style.name}</span>
+        <span className="tagent-style-card-name">{style.name}</span>
         <span className="tagent-style-card-label-tag">
           {style.variant === 'light' ? '亮' : '暗'}
         </span>
