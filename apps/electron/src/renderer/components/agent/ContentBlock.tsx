@@ -54,7 +54,7 @@ import { cn } from '@/lib/utils'
 function ToolStreamingIndicator(): React.ReactElement {
   return (
     <span className="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden>
-      <ThreePetalSpiral size={14} />
+      <span className="tool-spinner-ring sm" />
     </span>
   )
 }

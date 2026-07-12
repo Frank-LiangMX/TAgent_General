@@ -198,11 +198,17 @@ export const DEFAULT_MARKDOWN_FONT_SIZE: MarkdownFontSize = 'medium'
 /** 高级材质模式 */
 export type AdvancedMaterialMode = 'glass' | 'frosted' | 'soft'
 
-/** 榛樿楂樼骇鏉愯川妯″紡 */
-export const DEFAULT_ADVANCED_MATERIAL_MODE: AdvancedMaterialMode = 'glass'
+/** 高级材质开关打开时的材质选择（不含磨砂玻璃） */
+export type AdvancedMaterialOnMode = 'glass' | 'soft'
 
-/** 默认启用高级材质（高透玻璃）；关闭时为低透磨砂玻璃 */
-export const DEFAULT_ADVANCED_MATERIAL_ENABLED = true
+/** 默认高级材质模式 */
+export const DEFAULT_ADVANCED_MATERIAL_MODE: AdvancedMaterialMode = 'frosted'
+
+/** 默认高级材质开关状态（关闭 = 磨砂玻璃） */
+export const DEFAULT_ADVANCED_MATERIAL_ENABLED = false
+
+/** 默认高级材质开关打开时的材质选择 */
+export const DEFAULT_ADVANCED_MATERIAL_ON_MODE: AdvancedMaterialOnMode = 'glass'
 
 /** TAgent 品牌色（仅影响品牌签名/装饰元素高亮，不影响主题 token） */
 export type TAgentBrand = 'cyan' | 'violet' | 'amber' | 'forest' | 'slate'
@@ -267,9 +273,11 @@ export interface AppSettings {
   stickyUserMessageEnabled?: boolean
   /** Markdown 预览字号档位（默认 'medium'，对应 15px） */
   markdownFontSize?: MarkdownFontSize
-  /** 高级材质：true = 高透玻璃，false = 低透磨砂玻璃 */
+  /** 高级材质：true = 开启，false = 关闭（磨砂玻璃） */
   advancedMaterialEnabled?: boolean
-  /** 楂樼骇鏉愯川妯″紡 */
+  /** 高级材质开关打开时的材质选择（glass 或 soft） */
+  advancedMaterialOnMode?: AdvancedMaterialOnMode
+  /** 高级材质模式（实际生效值，由 enabled 和 onMode 计算得出） */
   advancedMaterialMode?: AdvancedMaterialMode
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand

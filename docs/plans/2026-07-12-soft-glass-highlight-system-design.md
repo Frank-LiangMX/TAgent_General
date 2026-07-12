@@ -1,5 +1,12 @@
 # 轻拟态全局高光系统设计
 
+> **状态说明（2026-07-12）**  
+> 本文档中「变量驱动 / soft 高光」原则仍然有效，但 **整体材质架构** 已由  
+> [`2026-07-12-material-surface-token-architecture.md`](./2026-07-12-material-surface-token-architecture.md)  
+> + [ADR-0005](../decisions/0005-material-surface-token-architecture.md) 接管：  
+> 基线改为 **frosted（扁平 + 轻磨砂）**，soft 仅为高级材质的 surface token 表之一。  
+> 实现新 CSS 时请以 Surface Token 架构为准，勿再按「基类高透 + 后补 frosted」扩展。
+
 ## 1. 背景
 
 ### 1.1 问题

@@ -16,6 +16,7 @@ import * as React from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type {
   AdvancedMaterialMode,
+  AdvancedMaterialOnMode,
   MarkdownFontSize,
   TAgentBrand,
   ThemeMode,
@@ -26,8 +27,10 @@ import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primi
 import './appearance-overrides.css'
 
 import {
-  advancedMaterialModeAtom,
-  updateAdvancedMaterialMode,
+  advancedMaterialEnabledAtom,
+  advancedMaterialOnModeAtom,
+  updateAdvancedMaterialEnabled,
+  updateAdvancedMaterialOnMode,
 } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
@@ -198,7 +201,8 @@ export function AppearanceSettings(): React.ReactElement {
   const systemIsDark = useAtomValue(systemIsDarkAtom)
   const [markdownFontSize, setMarkdownFontSize] = useAtom(markdownFontSizeAtom)
   const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
-  const [advancedMaterialMode, setAdvancedMaterialMode] = useAtom(advancedMaterialModeAtom)
+  const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
+  const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
   const [tagentBrand, setTagentBrand] = useAtom(tagentBrandAtom)
 
   /** 切换皮肤 */
@@ -257,13 +261,23 @@ export function AppearanceSettings(): React.ReactElement {
     [setMarkdownFontSize]
   )
 
-  /** 切换高级材质 */
-  const handleAdvancedMaterialChange = React.useCallback(
-    (mode: AdvancedMaterialMode) => {
-      setAdvancedMaterialMode(mode)
-      void updateAdvancedMaterialMode(mode)
+  /** 切换高级材质开关 */
+  const handleAdvancedMaterialEnabledChange = React.useCallback(
+    (enabled: boolean) => {
+      setAdvancedMaterialEnabled(enabled)
+      // 开启时沿用当前 onMode（glass / soft），关闭时强制 frosted
+      void updateAdvancedMaterialEnabled(enabled, advancedMaterialOnMode)
     },
-    [setAdvancedMaterialMode]
+    [setAdvancedMaterialEnabled, advancedMaterialOnMode]
+  )
+
+  /** 切换高级材质模式（仅开关开启时调用） */
+  const handleAdvancedMaterialOnModeChange = React.useCallback(
+    (onMode: AdvancedMaterialOnMode) => {
+      setAdvancedMaterialOnMode(onMode)
+      void updateAdvancedMaterialOnMode(onMode)
+    },
+    [setAdvancedMaterialOnMode]
   )
 
   /** 切换品牌色 */
@@ -336,17 +350,18 @@ export function AppearanceSettings(): React.ReactElement {
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">高级材质</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {advancedMaterialMode === 'glass' &&
-                  '当前：高透玻璃，强调通透、折射和悬浮感'}
-                {advancedMaterialMode === 'frosted' &&
-                  '当前：磨砂玻璃，保留层次感，但更克制、更稳'}
-                {advancedMaterialMode === 'soft' &&
-                  '当前：轻拟态，柔和玻璃质感，匹配设计原型风格'}
+                {advancedMaterialEnabled ? (
+                  advancedMaterialOnMode === 'glass'
+                    ? '高透玻璃：强调通透、折射和悬浮感'
+                    : '轻拟态：柔和玻璃质感，边缘高光与阴影'
+                ) : '磨砂玻璃：更内敛、更稳的玻璃层次'}
               </div>
             </div>
-            <MaterialPreview
-              mode={advancedMaterialMode}
-              onToggle={handleAdvancedMaterialChange}
+            <MaterialToggle
+              enabled={advancedMaterialEnabled}
+              onMode={advancedMaterialOnMode}
+              onEnabledChange={handleAdvancedMaterialEnabledChange}
+              onModeChange={handleAdvancedMaterialOnModeChange}
             />
           </div>
 
@@ -735,63 +750,83 @@ function FontSizeSlider({ value, onChange }: FontSizePreviewProps): React.ReactE
   )
 }
 
-interface MaterialPreviewProps {
-  mode: AdvancedMaterialMode
-  onToggle: (mode: AdvancedMaterialMode) => void
+interface MaterialToggleProps {
+  enabled: boolean
+  onMode: AdvancedMaterialOnMode
+  onEnabledChange: (enabled: boolean) => void
+  onModeChange: (onMode: AdvancedMaterialOnMode) => void
 }
 
-/** 高级材质：玻璃/磨砂 二选一预览 */
-function MaterialPreview({ mode, onToggle }: MaterialPreviewProps): React.ReactElement {
+/**
+ * 高级材质控制组件
+ * - 开关：控制是否启用高级材质
+ * - 开关关闭时：显示磨砂玻璃状态
+ * - 开关打开时：显示 glass 和 soft 两个选项
+ */
+function MaterialToggle({
+  enabled,
+  onMode,
+  onEnabledChange,
+  onModeChange,
+}: MaterialToggleProps): React.ReactElement {
   return (
-    <div className="tagent-material-pair">
+    <div className="flex items-center gap-3">
+      {/* 开关 */}
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggle('glass')}
-            aria-pressed={mode === 'glass'}
-            data-selected={mode === 'glass'}
-            className="tagent-material-tile"
+            role="switch"
+            aria-checked={enabled}
+            onClick={() => onEnabledChange(!enabled)}
+            className={cn(
+              'tagent-material-switch',
+              enabled && 'tagent-material-switch--on'
+            )}
           >
-            <div className="tagent-material-preview tagent-material-preview-glass" />
-            <div className="tagent-material-name">高透玻璃</div>
-            <div className="tagent-material-tag">Glass</div>
+            <span className="tagent-material-switch-thumb" />
           </button>
         </TooltipTrigger>
-        <TooltipContent>透明感最强，悬浮和高光最明显</TooltipContent>
+        <TooltipContent>
+          {enabled ? '点击关闭高级材质，恢复磨砂玻璃' : '点击开启高级材质'}
+        </TooltipContent>
       </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={() => onToggle('frosted')}
-            aria-pressed={mode === 'frosted'}
-            data-selected={mode === 'frosted'}
-            className="tagent-material-tile"
-          >
-            <div className="tagent-material-preview tagent-material-preview-frosted" />
-            <div className="tagent-material-name">磨砂玻璃</div>
-            <div className="tagent-material-tag">Frosted</div>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>更内敛的玻璃层次，适合长期使用</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={() => onToggle('soft')}
-            aria-pressed={mode === 'soft'}
-            data-selected={mode === 'soft'}
-            className="tagent-material-tile"
-          >
-            <div className="tagent-material-preview tagent-material-preview-soft" />
-            <div className="tagent-material-name">轻拟态</div>
-            <div className="tagent-material-tag">Soft Glass</div>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>柔和玻璃质感，匹配设计原型风格</TooltipContent>
-      </Tooltip>
+
+      {/* 材质选择（仅开关打开时显示） */}
+      {enabled && (
+        <div className="flex gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onModeChange('glass')}
+                aria-pressed={onMode === 'glass'}
+                data-selected={onMode === 'glass'}
+                className="tagent-material-tile tagent-material-tile--compact"
+              >
+                <div className="tagent-material-preview tagent-material-preview-glass" />
+                <div className="tagent-material-name">高透玻璃</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>透明感最强，悬浮和高光最明显</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onModeChange('soft')}
+                aria-pressed={onMode === 'soft'}
+                data-selected={onMode === 'soft'}
+                className="tagent-material-tile tagent-material-tile--compact"
+              >
+                <div className="tagent-material-preview tagent-material-preview-soft" />
+                <div className="tagent-material-name">轻拟态</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>柔和玻璃质感，边缘高光与阴影</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </div>
   )
 }

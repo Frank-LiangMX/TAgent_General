@@ -792,13 +792,18 @@ export function applyAgentEvent(prev: AgentStreamState, event: AgentEvent): Agen
       return prev
 
     case 'complete': {
-      // 成功完成 — 清除 retrying，但保持 running: true
+      // 成功完成 — 清除 retrying，设置 running: false
+      // 注意：之前保持 running: true 等待 STREAM_COMPLETE IPC，但主进程发送 IPC 前有
+      // recordSessionToMemory 等延迟操作，导致 UI 显示"运行中"时间过长。
+      // 现在直接在这里设置 running: false，让 UI 立即响应完成状态。
+      // STREAM_COMPLETE IPC 仍会处理其他清理工作（如 liveMessages 清理、会话列表刷新等）。
       // token 计数默认只信任流式 usage_update（单条模型调用 ≈ 当轮完整 prompt）。
       // result.usage 是整个 query 内多次 model call 的累计，直接覆盖会虚高（Proma #821）。
       // GLM 等兼容端点无流式 usage 时，才从 result.usage 兜底。
       const needResultFallback = !prev.inputTokens || prev.inputTokens <= 0
       return {
         ...prev,
+        running: false,
         ...(event.usage
           ? {
               ...(event.usage.costUsd != null && { costUsd: event.usage.costUsd }),

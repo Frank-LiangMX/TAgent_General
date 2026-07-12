@@ -1489,10 +1489,12 @@ export class AgentOrchestrator {
       }
     ): void => {
       releaseActiveRun()
+      // 先发送 STREAM_COMPLETE IPC，让 UI 立即更新状态
+      // 然后再执行 L4 记忆写入（可能耗时）
+      callbacks.onComplete(messages, opts)
       if (!opts?.skipMemory) {
         recordSessionToMemory()
       }
-      callbacks.onComplete(messages, opts)
     }
     /** 轻量完成：turn 结束但后台任务仍在飞行，保留 active slot 等待 task_notification 续轮 */
     const idleComplete = (

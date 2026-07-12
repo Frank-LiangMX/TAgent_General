@@ -460,7 +460,7 @@ function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.Rea
 
   return (
     <div className="flex items-center gap-1.5 min-h-[28px] select-none">
-      <ThreePetalSpiral size={16} />
+      <span className="tool-spinner-ring sm" />
       <span className="text-[13px] font-light text-muted-foreground/75 tabular-nums">
         运行中 {formatTime(elapsed)}
       </span>

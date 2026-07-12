@@ -81,7 +81,7 @@ export function TokenStatsPanel({
   if (!hasTokenStats && !showContextUsage) return null
 
   return (
-    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-4 px-4 py-2 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground">
+    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-3 px-1 py-1 text-[10px] text-muted-foreground/50">
       {showContextUsage && (
         <>
           <ContextUsageBadge
@@ -99,29 +99,29 @@ export function TokenStatsPanel({
             onCompact={onCompact}
             onClientCompact={onClientCompact}
           />
-          {hasTokenStats && <div className="h-3 w-px bg-border/50" />}
+          {hasTokenStats && <div className="h-2.5 w-px bg-border/30" />}
         </>
       )}
 
       {hasTokenStats && (
         <>
           <StatItem
-            icon={<TrendingDown size={12} />}
+            icon={<TrendingDown size={10} />}
             label="输入"
             value={formatTokens(stats.totalInputTokens)}
             tooltip={getContextUsageDescription('累计输入')}
           />
           <StatItem
-            icon={<TrendingUp size={12} />}
+            icon={<TrendingUp size={10} />}
             label="输出"
             value={formatTokens(stats.totalOutputTokens)}
             tooltip={getContextUsageDescription('累计输出')}
           />
           {hasCacheData && (
             <>
-              <div className="h-3 w-px bg-border/50" />
+              <div className="h-2.5 w-px bg-border/30" />
               <StatItem
-                icon={<Database size={12} />}
+                icon={<Database size={10} />}
                 label="缓存读取"
                 value={formatHitRate(cacheHitRate)}
                 highlight={cacheHitRate !== null && cacheHitRate > 0.5}
@@ -131,7 +131,7 @@ export function TokenStatsPanel({
           )}
           {stats.turnCount > 0 && (
             <>
-              <div className="h-3 w-px bg-border/50" />
+              <div className="h-2.5 w-px bg-border/30" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="cursor-help text-muted-foreground/60">{stats.turnCount} 轮</span>
