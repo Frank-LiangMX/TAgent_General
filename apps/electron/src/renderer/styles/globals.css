@@ -67,154 +67,163 @@
 
   /* ===== 材质覆盖（平行切换，不硬编码组件） ===== */
 
-  /* 轻拟态 Soft Glass */
+  /*
+   * 轻拟态 Soft Glass
+   *
+   * 设计原则：所有带框元素顶部+右侧有白色高光边缘，底部有深色阴影
+   * 核心变量：--inset-hi / --rim / --elev-dark / --elev-light / --ambient-shadow
+   * 组件通过 ::after 伪元素自动获得高光，无需逐个设置
+   */
   [data-material="soft"] {
-    --session-glass-strong: hsl(var(--card) / 0.72);
-    --session-rim: hsl(var(--glass-rim) / 0.45);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(220 10% 50% / 0.22);
-    --session-elev-light: hsl(var(--glass-shine) / 0.5);
-    --hover-fill: hsl(0 0% 100% / 0.32);
-    --well-bg: rgba(230, 235, 242, 0.45);
-    --well-rim: rgba(255, 255, 255, 0.45);
-    --well-inset-hi: rgba(255, 255, 255, 0.45);
-    --well-inset-lo: rgba(120, 135, 155, 0.12);
-    --well-ambient: rgba(145, 158, 175, 0.16);
-    /* Rail 材质变量 */
-    --rail-glass-soft: rgba(236, 240, 246, 0.4);
-    --rail-glass-strong: rgba(242, 245, 249, 0.72);
-    --rail-rim: rgba(255, 255, 255, 0.45);
-    --rail-rim-soft: rgba(255, 255, 255, 0.35);
-    --rail-inset-hi: rgba(255, 255, 255, 0.55);
-    --rail-elev-dark: rgba(145, 158, 175, 0.22);
-    --rail-elev-light: rgba(255, 255, 255, 0.5);
-    --rail-accent: #5b7fd4;
-    --rail-avatar-a: #7a96c8;
-    --rail-avatar-b: #8a7ab8;
-    /* 边缘分隔线 */
+    /* 边缘高光（全局统一） */
+    --inset-hi: rgba(255, 255, 255, 0.45);
+    --inset-hi-strong: rgba(255, 255, 255, 0.55);
+    --inset-hi-soft: rgba(255, 255, 255, 0.32);
+    --inset-lo: rgba(120, 135, 155, 0.12);
+    /* 边框 */
+    --rim: rgba(255, 255, 255, 0.45);
+    --rim-soft: rgba(255, 255, 255, 0.35);
+    /* 阴影 */
+    --elev-dark: rgba(145, 158, 175, 0.22);
+    --elev-light: rgba(255, 255, 255, 0.5);
+    --ambient-shadow: rgba(145, 158, 175, 0.16);
+    /* 玻璃材质 */
+    --glass: rgba(230, 235, 242, 0.45);
+    --glass-soft: rgba(236, 240, 246, 0.4);
+    --glass-strong: rgba(242, 245, 249, 0.72);
+    /* 分隔线 */
     --divider: rgba(47, 58, 72, 0.12);
-    /* 浮岛边缘高光 */
-    --island-inset-hi: rgba(255, 255, 255, 0.45);
-    --island-rim: rgba(255, 255, 255, 0.45);
-    --island-ambient: rgba(145, 158, 175, 0.16);
+    /* 品牌色 */
+    --accent: #5b7fd4;
+    --avatar-a: #7a96c8;
+    --avatar-b: #8a7ab8;
+    /* Hover */
+    --hover-fill: rgba(255, 255, 255, 0.32);
   }
 
   [data-material="soft"].dark {
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(var(--foreground) / 0.14);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
-    --hover-fill: hsl(0 0% 100% / 0.08);
-    --well-bg: rgba(36, 42, 56, 0.55);
-    --well-rim: rgba(255, 255, 255, 0.16);
-    --well-inset-hi: rgba(255, 255, 255, 0.14);
-    --well-inset-lo: rgba(0, 0, 0, 0.12);
-    --well-ambient: rgba(8, 12, 20, 0.4);
-    /* Rail 材质变量 */
-    --rail-glass-soft: rgba(54, 62, 78, 0.38);
-    --rail-glass-strong: rgba(62, 72, 90, 0.68);
-    --rail-rim: rgba(255, 255, 255, 0.16);
-    --rail-rim-soft: rgba(255, 255, 255, 0.1);
-    --rail-inset-hi: rgba(255, 255, 255, 0.2);
-    --rail-elev-dark: rgba(8, 12, 20, 0.42);
-    --rail-elev-light: rgba(255, 255, 255, 0.1);
-    --rail-accent: #8aa6e8;
-    --rail-avatar-a: #6f8ec8;
-    --rail-avatar-b: #7d6eae;
-    /* 边缘分隔线 */
+    --inset-hi: rgba(255, 255, 255, 0.14);
+    --inset-hi-strong: rgba(255, 255, 255, 0.2);
+    --inset-hi-soft: rgba(255, 255, 255, 0.08);
+    --inset-lo: rgba(0, 0, 0, 0.12);
+    --rim: rgba(255, 255, 255, 0.16);
+    --rim-soft: rgba(255, 255, 255, 0.1);
+    --elev-dark: rgba(8, 12, 20, 0.42);
+    --elev-light: rgba(255, 255, 255, 0.1);
+    --ambient-shadow: rgba(8, 12, 20, 0.4);
+    --glass: rgba(36, 42, 56, 0.55);
+    --glass-soft: rgba(54, 62, 78, 0.38);
+    --glass-strong: rgba(62, 72, 90, 0.68);
     --divider: rgba(255, 255, 255, 0.1);
-    /* 浮岛边缘高光 */
-    --island-inset-hi: rgba(255, 255, 255, 0.14);
-    --island-rim: rgba(255, 255, 255, 0.16);
-    --island-ambient: rgba(8, 12, 20, 0.4);
+    --accent: #8aa6e8;
+    --avatar-a: #6f8ec8;
+    --avatar-b: #7d6eae;
+    --hover-fill: rgba(255, 255, 255, 0.08);
   }
 
   /* 液态玻璃 Liquid Glass */
   [data-material="liquid"] {
-    --session-glass-strong: hsl(var(--card) / 0.14);
-    --session-rim: hsl(0 0% 100% / 0.35);
-    --session-inset-hi: hsl(0 0% 100% / 0.45);
-    --session-elev-dark: hsl(0 0% 0% / 0.08);
-    --session-elev-light: hsl(0 0% 100% / 0.12);
-    --hover-fill: hsl(0 0% 100% / 0.1);
-    --well-bg: rgba(255, 255, 255, 0.08);
-    --well-rim: rgba(255, 255, 255, 0.22);
-    --well-inset-hi: rgba(255, 255, 255, 0.35);
-    --well-inset-lo: transparent;
-    --well-ambient: rgba(0, 0, 0, 0.08);
+    --inset-hi: rgba(255, 255, 255, 0.35);
+    --inset-hi-strong: rgba(255, 255, 255, 0.45);
+    --inset-hi-soft: rgba(255, 255, 255, 0.2);
+    --inset-lo: transparent;
+    --rim: rgba(255, 255, 255, 0.22);
+    --rim-soft: rgba(255, 255, 255, 0.12);
+    --elev-dark: rgba(0, 0, 0, 0.08);
+    --elev-light: rgba(255, 255, 255, 0.12);
+    --ambient-shadow: rgba(0, 0, 0, 0.08);
+    --glass: rgba(255, 255, 255, 0.08);
+    --glass-soft: rgba(255, 255, 255, 0.04);
+    --glass-strong: rgba(255, 255, 255, 0.14);
+    --divider: rgba(255, 255, 255, 0.1);
+    --hover-fill: rgba(255, 255, 255, 0.1);
   }
 
   [data-material="liquid"].dark {
-    --session-glass-strong: hsl(var(--card) / 0.08);
-    --session-rim: hsl(0 0% 100% / 0.16);
-    --session-inset-hi: hsl(0 0% 100% / 0.14);
-    --session-elev-dark: hsl(0 0% 0% / 0.2);
-    --session-elev-light: hsl(0 0% 100% / 0.06);
-    --hover-fill: hsl(0 0% 100% / 0.08);
-    --well-bg: rgba(255, 255, 255, 0.04);
-    --well-rim: rgba(255, 255, 255, 0.12);
-    --well-inset-hi: rgba(255, 255, 255, 0.08);
-    --well-inset-lo: transparent;
-    --well-ambient: rgba(0, 0, 0, 0.2);
+    --inset-hi: rgba(255, 255, 255, 0.1);
+    --inset-hi-strong: rgba(255, 255, 255, 0.14);
+    --inset-hi-soft: rgba(255, 255, 255, 0.06);
+    --inset-lo: transparent;
+    --rim: rgba(255, 255, 255, 0.1);
+    --rim-soft: rgba(255, 255, 255, 0.06);
+    --elev-dark: rgba(0, 0, 0, 0.2);
+    --elev-light: rgba(255, 255, 255, 0.06);
+    --ambient-shadow: rgba(0, 0, 0, 0.2);
+    --glass: rgba(255, 255, 255, 0.04);
+    --glass-soft: rgba(255, 255, 255, 0.02);
+    --glass-strong: rgba(255, 255, 255, 0.08);
+    --divider: rgba(255, 255, 255, 0.06);
+    --hover-fill: rgba(255, 255, 255, 0.06);
   }
 
   /* 磨砂玻璃 Frosted Glass */
   [data-material="frosted"] {
-    --session-glass-strong: hsl(var(--card) / 0.45);
-    --session-rim: hsl(0 0% 100% / 0.25);
-    --session-inset-hi: hsl(0 0% 100% / 0.3);
-    --session-elev-dark: hsl(0 0% 0% / 0.12);
-    --session-elev-light: hsl(0 0% 100% / 0.15);
-    --hover-fill: hsl(0 0% 100% / 0.18);
-    --well-bg: rgba(255, 255, 255, 0.18);
-    --well-rim: rgba(255, 255, 255, 0.25);
-    --well-inset-hi: rgba(255, 255, 255, 0.3);
-    --well-inset-lo: rgba(0, 0, 0, 0.06);
-    --well-ambient: rgba(0, 0, 0, 0.1);
+    --inset-hi: rgba(255, 255, 255, 0.3);
+    --inset-hi-strong: rgba(255, 255, 255, 0.4);
+    --inset-hi-soft: rgba(255, 255, 255, 0.18);
+    --inset-lo: rgba(0, 0, 0, 0.06);
+    --rim: rgba(255, 255, 255, 0.25);
+    --rim-soft: rgba(255, 255, 255, 0.15);
+    --elev-dark: rgba(0, 0, 0, 0.12);
+    --elev-light: rgba(255, 255, 255, 0.15);
+    --ambient-shadow: rgba(0, 0, 0, 0.1);
+    --glass: rgba(255, 255, 255, 0.18);
+    --glass-soft: rgba(255, 255, 255, 0.1);
+    --glass-strong: rgba(255, 255, 255, 0.32);
+    --divider: rgba(0, 0, 0, 0.08);
+    --hover-fill: rgba(255, 255, 255, 0.18);
   }
 
   [data-material="frosted"].dark {
-    --session-glass-strong: hsl(var(--card) / 0.32);
-    --session-rim: hsl(0 0% 100% / 0.12);
-    --session-inset-hi: hsl(0 0% 100% / 0.1);
-    --session-elev-dark: hsl(0 0% 0% / 0.25);
-    --session-elev-light: hsl(0 0% 100% / 0.05);
-    --hover-fill: hsl(0 0% 100% / 0.06);
-    --well-bg: rgba(255, 255, 255, 0.1);
-    --well-rim: rgba(255, 255, 255, 0.12);
-    --well-inset-hi: rgba(255, 255, 255, 0.1);
-    --well-inset-lo: rgba(0, 0, 0, 0.1);
-    --well-ambient: rgba(0, 0, 0, 0.25);
+    --inset-hi: rgba(255, 255, 255, 0.1);
+    --inset-hi-strong: rgba(255, 255, 255, 0.14);
+    --inset-hi-soft: rgba(255, 255, 255, 0.06);
+    --inset-lo: rgba(0, 0, 0, 0.1);
+    --rim: rgba(255, 255, 255, 0.12);
+    --rim-soft: rgba(255, 255, 255, 0.08);
+    --elev-dark: rgba(0, 0, 0, 0.25);
+    --elev-light: rgba(255, 255, 255, 0.05);
+    --ambient-shadow: rgba(0, 0, 0, 0.25);
+    --glass: rgba(255, 255, 255, 0.1);
+    --glass-soft: rgba(255, 255, 255, 0.06);
+    --glass-strong: rgba(255, 255, 255, 0.18);
+    --divider: rgba(255, 255, 255, 0.06);
+    --hover-fill: rgba(255, 255, 255, 0.06);
   }
 
   /* 高透玻璃 High-Transparent Glass */
   [data-material="glass"] {
-    --session-glass-strong: hsl(var(--card) / 0.08);
-    --session-rim: hsl(0 0% 100% / 0.2);
-    --session-inset-hi: hsl(0 0% 100% / 0.35);
-    --session-elev-dark: hsl(0 0% 0% / 0.06);
-    --session-elev-light: hsl(0 0% 100% / 0.1);
-    --hover-fill: hsl(0 0% 100% / 0.12);
-    --well-bg: rgba(255, 255, 255, 0.05);
-    --well-rim: rgba(255, 255, 255, 0.2);
-    --well-inset-hi: rgba(255, 255, 255, 0.35);
-    --well-inset-lo: transparent;
-    --well-ambient: rgba(0, 0, 0, 0.06);
+    --inset-hi: rgba(255, 255, 255, 0.35);
+    --inset-hi-strong: rgba(255, 255, 255, 0.45);
+    --inset-hi-soft: rgba(255, 255, 255, 0.2);
+    --inset-lo: transparent;
+    --rim: rgba(255, 255, 255, 0.2);
+    --rim-soft: rgba(255, 255, 255, 0.1);
+    --elev-dark: rgba(0, 0, 0, 0.06);
+    --elev-light: rgba(255, 255, 255, 0.1);
+    --ambient-shadow: rgba(0, 0, 0, 0.06);
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-soft: rgba(255, 255, 255, 0.03);
+    --glass-strong: rgba(255, 255, 255, 0.08);
+    --divider: rgba(255, 255, 255, 0.08);
+    --hover-fill: rgba(255, 255, 255, 0.12);
   }
 
   [data-material="glass"].dark {
-    --session-glass-strong: hsl(var(--card) / 0.05);
-    --session-rim: hsl(0 0% 100% / 0.1);
-    --session-inset-hi: hsl(0 0% 100% / 0.1);
-    --session-elev-dark: hsl(0 0% 0% / 0.15);
-    --session-elev-light: hsl(0 0% 100% / 0.04);
-    --hover-fill: hsl(0 0% 100% / 0.06);
-    --well-bg: rgba(255, 255, 255, 0.03);
-    --well-rim: rgba(255, 255, 255, 0.1);
-    --well-inset-hi: rgba(255, 255, 255, 0.1);
-    --well-inset-lo: transparent;
-    --well-ambient: rgba(0, 0, 0, 0.15);
+    --inset-hi: rgba(255, 255, 255, 0.1);
+    --inset-hi-strong: rgba(255, 255, 255, 0.14);
+    --inset-hi-soft: rgba(255, 255, 255, 0.06);
+    --inset-lo: transparent;
+    --rim: rgba(255, 255, 255, 0.1);
+    --rim-soft: rgba(255, 255, 255, 0.06);
+    --elev-dark: rgba(0, 0, 0, 0.15);
+    --elev-light: rgba(255, 255, 255, 0.04);
+    --ambient-shadow: rgba(0, 0, 0, 0.15);
+    --glass: rgba(255, 255, 255, 0.03);
+    --glass-soft: rgba(255, 255, 255, 0.02);
+    --glass-strong: rgba(255, 255, 255, 0.05);
+    --divider: rgba(255, 255, 255, 0.04);
+    --hover-fill: rgba(255, 255, 255, 0.06);
   }
 
   /* ===== 特殊风格主题 ===== */
@@ -5023,29 +5032,6 @@ html.material-frosted .content-main-shell .content-glass {
     0 32px 76px rgba(0, 0, 0, 0.16);
 }
 
-/* 轻拟态浮岛边缘高光：border 做宽度 + box-shadow inset 做厚度 */
-[data-material="soft"] .nav-island-glass.nav-island-glass--float {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid rgba(255, 255, 255, 0.7);
-  border-right: 2px solid rgba(255, 255, 255, 0.55);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset -1px 0 0 rgba(255, 255, 255, 0.3),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 14px 40px rgba(0, 0, 0, 0.06);
-}
-
-[data-material="soft"].dark .nav-island-glass.nav-island-glass--float {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 2px solid rgba(255, 255, 255, 0.25);
-  border-right: 2px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset -1px 0 0 rgba(255, 255, 255, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.18),
-    0 14px 40px rgba(0, 0, 0, 0.20);
-}
-
 .dark .nav-island-glass.nav-island-glass--float::before {
   background: linear-gradient(
     145deg,
@@ -6360,6 +6346,43 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
  * 设计原则：所有带框的元素在轻拟态材质下，顶部和右侧有白色高光边缘
  * 通过全局 ::after 伪元素实现，不依赖各组件单独设置
  */
+
+/* 所有需要高光的容器元素添加 .glass-panel 类 */
+.glass-panel {
+  position: relative;
+  isolation: isolate;
+}
+
+/* 全局高光：顶部 + 右侧渐变 */
+[data-material="soft"] .glass-panel::after,
+[data-material="liquid"] .glass-panel::after,
+[data-material="frosted"] .glass-panel::after,
+[data-material="glass"] .glass-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background:
+    linear-gradient(
+      to right,
+      var(--inset-hi) 0%,
+      var(--inset-hi) 25%,
+      transparent 80%
+    ),
+    linear-gradient(
+      to bottom,
+      var(--inset-hi) 0%,
+      var(--inset-hi) 25%,
+      transparent 80%
+    );
+}
+
+/* 自动为常见带框元素添加高光 */
 [data-material="soft"] .session-well,
 [data-material="soft"] .nav-island-glass,
 [data-material="soft"] .settings-card,
@@ -6387,8 +6410,59 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"] .material-secondary-btn,
 [data-material="soft"] .ui-switch,
 [data-material="soft"] .session-list-item-active {
-  border-top-color: rgba(255, 255, 255, 0.6) !important;
-  border-right-color: rgba(255, 255, 255, 0.45) !important;
+  position: relative;
+  isolation: isolate;
+}
+
+[data-material="soft"] .session-well::after,
+[data-material="soft"] .nav-island-glass::after,
+[data-material="soft"] .settings-card::after,
+[data-material="soft"] .settings-glass::after,
+[data-material="soft"] .settings-search-shell::after,
+[data-material="soft"] .app-search-shell::after,
+[data-material="soft"] .chat-input-glass::after,
+[data-material="soft"] .content-glass::after,
+[data-material="soft"] .session-glass-popover::after,
+[data-material="soft"] .session-glass-surface::after,
+[data-material="soft"] .session-glass-sidebar::after,
+[data-material="soft"] .shell-glass::after,
+[data-material="soft"] .pill::after,
+[data-material="soft"] .tab::after,
+[data-material="soft"] .tool-cluster button::after,
+[data-material="soft"] .msg-user::after,
+[data-material="soft"] .process-group::after,
+[data-material="soft"] .think-block::after,
+[data-material="soft"] .sidebar-archive-btn::after,
+[data-material="soft"] .agent-toolbar-pill-btn::after,
+[data-material="soft"] .neumorph-chip::after,
+[data-material="soft"] .neumorph-dialog-shell::after,
+[data-material="soft"] .neumorph-footer-bar::after,
+[data-material="soft"] .material-cta::after,
+[data-material="soft"] .material-secondary-btn::after,
+[data-material="soft"] .ui-switch::after,
+[data-material="soft"] .session-list-item-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background:
+    linear-gradient(
+      to right,
+      var(--inset-hi) 0%,
+      var(--inset-hi) 25%,
+      transparent 80%
+    ),
+    linear-gradient(
+      to bottom,
+      var(--inset-hi) 0%,
+      var(--inset-hi) 25%,
+      transparent 80%
+    );
 }
 
 [data-material="soft"].dark .session-well,
@@ -6418,6 +6492,5 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"].dark .material-secondary-btn,
 [data-material="soft"].dark .ui-switch,
 [data-material="soft"].dark .session-list-item-active {
-  border-top-color: rgba(255, 255, 255, 0.2) !important;
-  border-right-color: rgba(255, 255, 255, 0.14) !important;
+  /* 高光由全局 ::after 规则处理 */
 }
