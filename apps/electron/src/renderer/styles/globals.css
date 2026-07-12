@@ -6893,6 +6893,27 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   border-right-color: rgba(255, 255, 255, 0.14);
 }
 
+/*
+ * 主区 content-glass 只作为布局容器，视觉由 content-base-plate 承担。
+ * 高级材质的全局 .content-glass 规则会重新加背景/阴影，和左侧 Nav 浮岛叠出实体隔断感；
+ * 这里放在材质规则后面，确保主区不重复画第二层 surface。
+ */
+[data-material="glass"] .content-main-shell .content-glass,
+[data-material="soft"] .content-main-shell .content-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+[data-material="glass"] .content-main-shell .content-glass::before,
+[data-material="glass"] .content-main-shell .content-glass::after,
+[data-material="soft"] .content-main-shell .content-glass::before,
+[data-material="soft"] .content-main-shell .content-glass::after {
+  display: none;
+}
+
 /* ===== 普通材质（磨砂玻璃）扁平化覆盖：移除所有模拟阴影和边缘高光 ===== */
 
 /* Session 选中态：扁平化，保留可见的颜色差异 */
