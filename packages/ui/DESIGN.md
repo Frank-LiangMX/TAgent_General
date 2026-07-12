@@ -247,9 +247,29 @@ import { Button } from '@/components/ui/button'
 
 ---
 
-## 主题切换
+## 材质 × 主题（双轴正交）
 
-### 主题命名约定
+> **目标架构**（ADR-0005 Accepted，PR-1 基线已落地）：见  
+> `docs/plans/2026-07-12-material-surface-token-architecture.md` 与  
+> `docs/decisions/0005-material-surface-token-architecture.md`。  
+> **新代码必须走 surface token**；禁止再给高透基类叠 frosted 补丁。
+
+### 材质轴（`html[data-material]`）
+
+| 值 | 用户入口 | 目标观感 |
+|----|----------|----------|
+| `frosted` | 高级材质 **关**（默认） | 柔和 Material Design · **实色不透明**；表面层级 dim→surface→well（近白），**禁止 muted 叠灰** |
+| `glass` | 高级材质开 → 高透玻璃 | 高透 / 强 blur / 折射高光 |
+| `soft` | 高级材质开 → 轻拟态 | 近不透明 + 内外高光阴影 |
+
+- 运行时：`apps/electron/src/renderer/atoms/advanced-material.ts` → `applyAdvancedMaterialToDOM`
+- **Surface token**（目标）：`--surface-blur` / `--surface-opacity` / `--surface-rim` / `--surface-shadow` / `--surface-shine-opacity` …
+- 表面类（`session-glass-*` / `settings-card` / toast 等）**只读 token**，禁止写死 `blur(28px)` 类高透值
+- 过渡期可能仍存在 `html.material-frosted` class，**新 CSS 禁止再依赖**
+
+### 主题轴（颜色）
+
+#### 主题命名约定
 
 `.theme-{name}-{light|dark}` class，应用到 `<html>` 元素。
 
@@ -261,27 +281,33 @@ import { Button } from '@/components/ui/button'
 - `.theme-orange-light/dark`
 - `.theme-purple-light/dark`（莫兰迪夜）
 
-### 主题切换实现
+#### 主题切换实现
 
 - 状态管理：`apps/electron/src/renderer/atoms/theme.ts`（jotai atoms）
 - DOM 操作：`applyThemeToDOM()` 在 `<html>` 上 toggle `dark` + `theme-{style}` class
 - localStorage 缓存：`tagent-theme-mode` / `tagent-theme-style`
 
-### 颜色 token 与主题的关系
+#### 颜色 token 与主题的关系
 
-当前阶段（阶段 1）：颜色 CSS 变量仍定义在 `globals.css` 的 `:root` 和 `.theme-*` 块。Tailwind 颜色类通过 `hsl(var(--xxx))` 引用，切换主题时 CSS 变量自动变化。
+语义色权威源：`packages/ui/src/tokens/colors.ts` → 生成器产出 `tokens/__generated__/tokens.css`（`:root` / `.dark` / `.theme-*`）。  
+Tailwind 通过 `hsl(var(--xxx))` 引用。  
+业务侧 `globals.css` 仍可放材质装饰变量、shell 光斑等非语义色。
 
-阶段 5（可选优化，主线稳后做）：把颜色变量迁入 `packages/ui/src/tokens/colors.ts`，生成器产出完整 CSS 变量文件。
+**禁止**：主题选择器修改 `--surface-blur` 或写死某主题的高透/拟态阴影（破坏正交）。
 
 ---
 
 ## session-glass-* 类
 
-定义在 `packages/ui/styles/glass.css`，被 `globals.css` `@import`。这些是毛玻璃浮层样式，圆角引用 `--radius-glass-*` token。
+定义在 `packages/ui/styles/glass.css`，被 `globals.css` `@import`。表面样式圆角引用 `--radius-glass-*` token。
 
 修改圆角：改 `packages/ui/src/tokens/radius.ts` → 跑生成器 → 全局自动更新。
 
-修改其他视觉属性（backdrop-filter / background / box-shadow）：直接改 `glass.css`。
+修改 blur / 透明度 / 高光 / 阴影：
+
+- **改** `packages/ui/styles/glass.css` 顶部的 `--surface-*` / `[data-material]` 表
+- 表面类（`session-glass-*` / `settings-card` / toast）只读 token
+- 业务壳（`panel-glass` / `nav-island` / `content-glass` / `btw-*`）已读 surface token；`html.material-frosted` 仅残留 content-base-plate / shell 等兼容
 
 ---
 

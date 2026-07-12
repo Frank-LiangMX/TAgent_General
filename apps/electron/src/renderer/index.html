@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TAgent</title>
     <script>
-      // 主题初始化脚本（在 React 加载前执行，避免闪烁）
-      // 从 localStorage 缓存读取主题模式和特殊风格，立即应用类名
+      // 主题 + 材质初始化（React 加载前，避免闪高透 / 闪主题）
+      // 主题：localStorage 缓存；材质：默认 frosted（高级材质关），与 ADR-0005 对齐
       ;(function() {
-        var mode = localStorage.getItem('tagent-theme-mode') || 'dark'
+        var mode = localStorage.getItem('tagent-theme-mode') || 'light'
         var style = localStorage.getItem('tagent-theme-style')
+        var material = localStorage.getItem('tagent-material-mode') || 'frosted'
         var html = document.documentElement
 
         if (mode === 'special' && style && style !== 'default') {
@@ -26,6 +27,15 @@
           }
         }
         // mode === 'light' 时不添加 dark 类
+
+        // 材质轴：唯一权威 data-material；material-frosted class 仅兼容旧选择器
+        if (material !== 'glass' && material !== 'soft' && material !== 'frosted') {
+          material = 'frosted'
+        }
+        html.setAttribute('data-material', material)
+        if (material === 'frosted') {
+          html.classList.add('material-frosted')
+        }
       })()
     </script>
   </head>

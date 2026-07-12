@@ -91,7 +91,7 @@ function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactE
           ? 'text-red-500 dark:text-red-400'
           : isWarning
             ? 'text-amber-500 dark:text-amber-400'
-            : 'text-foreground/70'
+            : 'text-primary'
       )}
       aria-hidden="true"
     >

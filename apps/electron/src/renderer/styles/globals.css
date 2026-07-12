@@ -28,16 +28,23 @@
     /* 主窗口内容边界 */
     --app-content-boundary-inset: 8px;
     --app-content-boundary-radius: 20px;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.72);
-    --session-rim: hsl(var(--glass-rim) / 0.45);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(220 10% 50% / 0.22);
-    --session-elev-light: hsl(var(--glass-shine) / 0.5);
+    /*
+     * Session 选中态 — 默认 frosted（扁平 MD + 轻 tint）
+     * 权威 surface 表在 packages/ui/styles/glass.css；此处与 :root 对齐防闪
+     * glass / soft 由 [data-material] 覆盖（glass.css 优先，此处作业务壳兼容）
+     */
+    --session-glass-strong: hsl(var(--primary) / 0.06);
+    --session-rim: hsl(var(--border) / 0.5);
+    --session-inset-hi: transparent;
+    --session-elev-dark: hsl(220 10% 50% / 0.12);
+    --session-elev-light: transparent;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
-    /* 会话行 hover 填充色（白色半透明，匹配 glass-studio 设计原型） */
-    --hover-fill: hsl(0 0% 100% / 0.32);
+    /*
+     * 会话行 / sticky hover：不透明柔和色（与 glass.css frosted 表一致）
+     * 近白 dialog 上混一点 foreground，避免半透明「脏雾」
+     */
+    --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
   }
 
   .dark {
@@ -53,16 +60,15 @@
     --glass-shine: 220 14% 68%;
     --glass-ambient: 220 12% 26%;
     --glass-rim: 220 10% 30%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
+    /* Session 选中态 — 默认 frosted dark */
+    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)));
+    --session-rim: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+    --session-inset-hi: transparent;
     --session-elev-dark: hsl(var(--foreground) / 0.14);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
+    --session-elev-light: transparent;
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
-    /* 会话行 hover 填充色（白色半透明，匹配 glass-studio 设计原型） */
-    --hover-fill: hsl(0 0% 100% / 0.08);
+    --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
   }
 
   /* ===== 材质覆盖（平行切换，不硬编码组件） ===== */
@@ -99,6 +105,12 @@
     --avatar-b: #8a7ab8;
     /* Hover */
     --hover-fill: rgba(255, 255, 255, 0.32);
+    /* Session 选中态：轻拟态边缘高光 + 柔和阴影 */
+    --session-glass-strong: rgba(242, 245, 249, 0.82);
+    --session-rim: rgba(255, 255, 255, 0.52);
+    --session-inset-hi: rgba(255, 255, 255, 0.55);
+    --session-elev-dark: rgba(145, 158, 175, 0.25);
+    --session-elev-light: rgba(255, 255, 255, 0.48);
   }
 
   [data-material="soft"].dark {
@@ -119,6 +131,12 @@
     --avatar-a: #6f8ec8;
     --avatar-b: #7d6eae;
     --hover-fill: rgba(255, 255, 255, 0.08);
+    /* Session 选中态：深色轻拟态 */
+    --session-glass-strong: rgba(62, 72, 90, 0.75);
+    --session-rim: rgba(255, 255, 255, 0.18);
+    --session-inset-hi: rgba(255, 255, 255, 0.18);
+    --session-elev-dark: rgba(8, 12, 20, 0.45);
+    --session-elev-light: rgba(255, 255, 255, 0.08);
   }
 
   /* 液态玻璃 Liquid Glass */
@@ -156,39 +174,53 @@
     --hover-fill: rgba(255, 255, 255, 0.06);
   }
 
-  /* 磨砂玻璃 Frosted Glass */
+  /*
+   * frosted — 业务壳兼容变量（panel/nav 等仍可能读 --inset-hi / --rim）
+   * session-glass-* 表面由 packages/ui/styles/glass.css surface token 负责
+   * Session 选中：primary tint（与 glass.css 一致），非纯灰块
+   */
   [data-material="frosted"] {
-    --inset-hi: rgba(255, 255, 255, 0.3);
-    --inset-hi-strong: rgba(255, 255, 255, 0.4);
-    --inset-hi-soft: rgba(255, 255, 255, 0.18);
-    --inset-lo: rgba(0, 0, 0, 0.06);
-    --rim: rgba(255, 255, 255, 0.25);
-    --rim-soft: rgba(255, 255, 255, 0.15);
-    --elev-dark: rgba(0, 0, 0, 0.12);
-    --elev-light: rgba(255, 255, 255, 0.15);
-    --ambient-shadow: rgba(0, 0, 0, 0.1);
-    --glass: rgba(255, 255, 255, 0.18);
-    --glass-soft: rgba(255, 255, 255, 0.1);
-    --glass-strong: rgba(255, 255, 255, 0.32);
-    --divider: rgba(0, 0, 0, 0.08);
-    --hover-fill: rgba(255, 255, 255, 0.18);
+    --inset-hi: transparent;
+    --inset-hi-strong: transparent;
+    --inset-hi-soft: transparent;
+    --inset-lo: transparent;
+    --rim: rgba(0, 0, 0, 0.06);
+    --rim-soft: rgba(0, 0, 0, 0.04);
+    --elev-dark: rgba(0, 0, 0, 0.04);
+    --elev-light: transparent;
+    --ambient-shadow: rgba(0, 0, 0, 0.03);
+    --glass: rgba(255, 255, 255, 1);
+    --glass-soft: rgba(255, 255, 255, 1);
+    --glass-strong: rgba(255, 255, 255, 1);
+    --divider: rgba(0, 0, 0, 0.06);
+    --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
+    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--dialog)));
+    --session-rim: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--border)));
+    --session-inset-hi: transparent;
+    --session-elev-dark: transparent;
+    --session-elev-light: transparent;
   }
 
   [data-material="frosted"].dark {
-    --inset-hi: rgba(255, 255, 255, 0.1);
-    --inset-hi-strong: rgba(255, 255, 255, 0.14);
-    --inset-hi-soft: rgba(255, 255, 255, 0.06);
-    --inset-lo: rgba(0, 0, 0, 0.1);
-    --rim: rgba(255, 255, 255, 0.12);
-    --rim-soft: rgba(255, 255, 255, 0.08);
-    --elev-dark: rgba(0, 0, 0, 0.25);
-    --elev-light: rgba(255, 255, 255, 0.05);
-    --ambient-shadow: rgba(0, 0, 0, 0.25);
-    --glass: rgba(255, 255, 255, 0.1);
-    --glass-soft: rgba(255, 255, 255, 0.06);
-    --glass-strong: rgba(255, 255, 255, 0.18);
+    --inset-hi: transparent;
+    --inset-hi-strong: transparent;
+    --inset-hi-soft: transparent;
+    --inset-lo: transparent;
+    --rim: rgba(255, 255, 255, 0.06);
+    --rim-soft: rgba(255, 255, 255, 0.04);
+    --elev-dark: rgba(0, 0, 0, 0.08);
+    --elev-light: transparent;
+    --ambient-shadow: rgba(0, 0, 0, 0.06);
+    --glass: hsl(var(--card));
+    --glass-soft: hsl(var(--card));
+    --glass-strong: hsl(var(--card));
     --divider: rgba(255, 255, 255, 0.06);
-    --hover-fill: rgba(255, 255, 255, 0.06);
+    --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
+    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)));
+    --session-rim: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+    --session-inset-hi: transparent;
+    --session-elev-dark: transparent;
+    --session-elev-light: transparent;
   }
 
   /* 高透玻璃 High-Transparent Glass */
@@ -207,6 +239,12 @@
     --glass-strong: rgba(255, 255, 255, 0.08);
     --divider: rgba(255, 255, 255, 0.08);
     --hover-fill: rgba(255, 255, 255, 0.12);
+    /* Session 选中态：高透玻璃浮起感 */
+    --session-glass-strong: rgba(255, 255, 255, 0.18);
+    --session-rim: rgba(255, 255, 255, 0.28);
+    --session-inset-hi: rgba(255, 255, 255, 0.42);
+    --session-elev-dark: rgba(0, 0, 0, 0.08);
+    --session-elev-light: rgba(255, 255, 255, 0.15);
   }
 
   [data-material="glass"].dark {
@@ -224,13 +262,19 @@
     --glass-strong: rgba(255, 255, 255, 0.05);
     --divider: rgba(255, 255, 255, 0.04);
     --hover-fill: rgba(255, 255, 255, 0.06);
+    /* Session 选中态：深色高透玻璃 */
+    --session-glass-strong: rgba(255, 255, 255, 0.08);
+    --session-rim: rgba(255, 255, 255, 0.12);
+    --session-inset-hi: rgba(255, 255, 255, 0.12);
+    --session-elev-dark: rgba(0, 0, 0, 0.18);
+    --session-elev-light: rgba(255, 255, 255, 0.06);
   }
 
   /* ===== 特殊风格主题 ===== */
 
   /* 晴空碧海 (ocean-light) */
   .theme-ocean-light {
-    /* 非颜色 token */
+    /* 非颜色 token（不改材质 surface / session 选中语言） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     --session-row-accent: hsl(var(--primary));
     --code-bg: 210 20% 14%;
@@ -239,12 +283,6 @@
     --glass-ambient: 205 18% 93%;
     --glass-rim: 205 14% 85%;
     --shell-blob: 205 30% 82%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.72);
-    --session-rim: hsl(var(--glass-rim) / 0.45);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(205 14% 50% / 0.22);
-    --session-elev-light: hsl(var(--glass-shine) / 0.5);
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
 
@@ -256,12 +294,6 @@
     --code-bg: 210 20% 12%;
     --dashed-border: 205 45% 60% / 0.35;
     --dashed-border-hover: 205 45% 60% / 0.50;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(210 14% 50% / 0.42);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
 
@@ -277,12 +309,6 @@
     --glass-ambient: 140 14% 93%;
     --glass-rim: 140 10% 85%;
     --shell-blob: 140 18% 84%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.72);
-    --session-rim: hsl(var(--glass-rim) / 0.45);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(140 10% 50% / 0.2);
-    --session-elev-light: hsl(var(--glass-shine) / 0.5);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
@@ -294,14 +320,7 @@
     --code-bg: 145 14% 12%;
     --dashed-border: 140 35% 50% / 0.35;
     --dashed-border-hover: 140 35% 50% / 0.50;
-    /* Session 选中态 token */
     --dashed-border-hover: 140 35% 50% / 0.50;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(140 14% 50% / 0.42);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -318,12 +337,6 @@
     --glass-ambient: 40 10% 94%;
     --glass-rim: 40 8% 83%;
     --shell-blob: 40 12% 85%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.72);
-    --session-rim: hsl(var(--glass-rim) / 0.45);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(40 10% 50% / 0.2);
-    --session-elev-light: hsl(var(--glass-shine) / 0.5);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
@@ -335,12 +348,6 @@
     --code-bg: 40 8% 12%;
     --dashed-border: 25 30% 55% / 0.30;
     --dashed-border-hover: 25 30% 55% / 0.45;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(260 10% 50% / 0.42);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -357,12 +364,6 @@
     --glass-ambient: 30 30% 92%;
     --glass-rim: 28 25% 84%;
     --shell-blob: 22 45% 78%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.78);
-    --session-rim: hsl(var(--glass-rim) / 0.48);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(var(--foreground) / 0.09);
-    --session-elev-light: hsl(var(--glass-shine) / 0.38);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
@@ -374,12 +375,6 @@
     --code-bg: 18 30% 6%;
     --dashed-border: 20 75% 55% / 0.35;
     --dashed-border-hover: 20 75% 55% / 0.50;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(18 25% 50% / 0.42);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -399,12 +394,6 @@
     --glass-ambient: 285 25% 92%;
     --glass-rim: 280 20% 84%;
     --shell-blob: 280 45% 80%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.78);
-    --session-rim: hsl(var(--glass-rim) / 0.48);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(var(--foreground) / 0.09);
-    --session-elev-light: hsl(var(--glass-shine) / 0.38);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
@@ -415,12 +404,6 @@
     --code-bg: 280 12% 10%;
     --dashed-border: 280 50% 60% / 0.35;
     --dashed-border-hover: 280 50% 60% / 0.50;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(280 22% 50% / 0.42);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -435,12 +418,6 @@
     --glass-ambient: 220 18% 94%;
     --glass-rim: 220 16% 82%;
     --shell-blob: 220 20% 84%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--card) / 0.78);
-    --session-rim: hsl(var(--glass-rim) / 0.48);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.4);
-    --session-elev-dark: hsl(var(--foreground) / 0.09);
-    --session-elev-light: hsl(var(--glass-shine) / 0.38);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.48);
   }
@@ -454,12 +431,6 @@
     --glass-ambient: 220 10% 24%;
     --glass-rim: 220 10% 30%;
     --shell-blob: 220 12% 34%;
-    /* Session 选中态 token */
-    --session-glass-strong: hsl(var(--muted) / 0.55);
-    --session-rim: hsl(var(--glass-rim) / 0.32);
-    --session-inset-hi: hsl(var(--glass-shine) / 0.16);
-    --session-elev-dark: hsl(var(--foreground) / 0.14);
-    --session-elev-light: hsl(var(--glass-shine) / 0.1);
     --session-row-accent: hsl(var(--primary));
     --session-row-meta: hsl(var(--primary) / 0.52);
   }
@@ -715,10 +686,24 @@ html.material-frosted .app-content-boundary-rim {
   color: hsl(270 8% 12%) !important;        /* 深色文字 */
 }
 
-/* ===== Tab 选中态：轻度玻璃光泽 ===== */
+/* ===== Tab 选中态：普通材质实色；glass 才有玻璃光泽 ===== */
 .tab-item-selected {
   position: relative;
   isolation: isolate;
+  border-color: hsl(var(--border) / 0.55);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--content-area));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .tab-item-selected {
+  border-color: hsl(var(--border) / 0.5);
+  background: hsl(var(--background));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+[data-material='glass'] .tab-item-selected {
   border-color: hsl(var(--glass-rim) / 0.45);
   -webkit-backdrop-filter: blur(8px) saturate(1.2) brightness(1.01);
   backdrop-filter: blur(8px) saturate(1.2) brightness(1.01);
@@ -729,20 +714,21 @@ html.material-frosted .app-content-boundary-rim {
     hsl(var(--content-area)) 100%
   );
   box-shadow:
-    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.18),
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.45)) inset,
     0 1px 4px -2px rgba(0, 0, 0, 0.06);
 }
 
-.dark .tab-item-selected {
+.dark[data-material='glass'] .tab-item-selected,
+[data-material='glass'].dark .tab-item-selected {
   border-color: hsl(var(--primary) / 0.16);
   background: linear-gradient(
     168deg,
     hsl(var(--primary) / 0.07) 0%,
-    hsl(var(--background) / 0.80) 40%,
+    hsl(var(--background) / 0.8) 40%,
     hsl(var(--background) / 0.72) 100%
   );
   box-shadow:
-    inset 0 1px 0 0 hsl(var(--primary) / 0.10),
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.14)) inset,
     0 1px 4px -2px rgba(0, 0, 0, 0.08);
 }
 
@@ -788,13 +774,21 @@ html.material-frosted .app-content-boundary-rim {
 }
 
 .session-list-row:hover:not(.session-list-item-active) {
-  background: var(--hover-fill, hsl(0 0% 100% / 0.32));
+  /* 必须用不透明 --hover-fill，禁止半透明 fallback */
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
   color: var(--foreground);
   transform: translateX(2px);
 }
 
+/* 按下态：轻拟态材质下才有立体内阴影 */
 .session-list-row:active:not(.session-list-item-active) {
   transform: scale(0.97);
+}
+
+[data-material="soft"] .session-list-row:active:not(.session-list-item-active) {
   box-shadow: inset 2px 2px 6px hsl(var(--foreground) / 0.12), inset -2px -2px 6px hsl(0 0% 100% / 0.08);
 }
 
@@ -1051,8 +1045,20 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   position: relative;
   border-radius: 14px;
   padding: 0.4rem;
-  border: 1px solid hsl(var(--border) / 0.36);
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  /* 普通材质：近白 elevated，柔和 MD */
+  background: var(--surface-bg-well, hsl(var(--dialog)));
+  box-shadow: var(--surface-shadow-well, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.dark .settings-nav-group-card {
+  background: var(--surface-bg-well, hsl(var(--card)));
+}
+
+[data-material='glass'] .settings-nav-group-card {
   background: hsl(var(--background) / 0.22);
+  border-color: hsl(var(--border) / 0.36);
+  box-shadow: none;
 }
 
 .settings-nav-group-label {
@@ -1080,7 +1086,13 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   min-height: 2.75rem;
   padding: 0 0.9rem;
   border-radius: 999px;
-  border: 1px solid hsl(var(--border) / 0.72);
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  box-shadow: none;
+}
+
+[data-material='glass'] .settings-search-shell {
+  border-color: hsl(var(--border) / 0.72);
   background: hsl(var(--background) / 0.72);
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
 }
@@ -1606,6 +1618,25 @@ html.theme-neumorph-dark
     inset 1px 1px 0 var(--neumorph-light-edge);
 }
 
+/* 轻拟态：右 rail 折叠态 hover 恢复高光+阴影 */
+[data-material="soft"] .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  border-color: hsl(var(--glass-rim) / 0.42);
+  box-shadow:
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.45)) inset,
+    2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.35)) inset,
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.06);
+}
+
+[data-material="soft"].dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  border-color: hsl(var(--glass-rim) / 0.32);
+  box-shadow:
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.14)) inset,
+    2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.1)) inset,
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
 html.theme-neumorph-light .content-base-plate--body,
 html.theme-neumorph-dark .content-base-plate--body {
   background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
@@ -2096,6 +2127,16 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-radius: 999px;
 }
 
+/* 会话输入框不透明：只提升原 background token 的不透明度，不改变颜色体系。 */
+.chat-input-glass {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--background)) 0%,
+    hsl(var(--background)) 52%,
+    hsl(var(--background)) 100%
+  );
+}
+
 /* 会话输入框聚焦发光效果 */
 .chat-input-glass:focus-within {
   box-shadow:
@@ -2114,28 +2155,45 @@ html.theme-neumorph-dark .settings-profile-action-btn {
     0 0 12px -4px var(--tagent-brand-glow);
 }
 
-/* 旧的选中态样式（保留作为备用） */
+/* 旧的选中态样式：普通材质实色；glass 才高透 */
 .settings-tab-active {
   position: relative;
   isolation: isolate;
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: 10px;
+  box-shadow: var(--surface-shadow, 0 1px 2px rgba(15, 23, 42, 0.04));
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.settings-tab-active::after {
+  display: none;
+}
+
+.dark .settings-tab-active {
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: var(--surface-shadow, 0 1px 3px rgba(0, 0, 0, 0.2));
+}
+
+[data-material='glass'] .settings-tab-active {
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.25);
   -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(108%);
   backdrop-filter: blur(12px) saturate(140%) brightness(108%);
-  border-radius: 10px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 1px 0 0 rgba(255, 255, 255, 0.15),
     0 2px 8px -2px rgba(0, 0, 0, 0.04);
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    backdrop-filter 0.25s ease;
-  animation: settings-tab-glass-in 0.3s ease-out;
 }
 
-.settings-tab-active::after {
+[data-material='glass'] .settings-tab-active::after {
+  display: block;
   content: '';
   position: absolute;
   top: 0;
@@ -2152,18 +2210,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   pointer-events: none;
 }
 
-@keyframes settings-tab-glass-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.dark .settings-tab-active {
+.dark[data-material='glass'] .settings-tab-active,
+[data-material='glass'].dark .settings-tab-active {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   -webkit-backdrop-filter: blur(14px) saturate(130%) brightness(1.02);
@@ -2172,15 +2220,6 @@ html.theme-neumorph-dark .settings-profile-action-btn {
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 1px 0 0 rgba(255, 255, 255, 0.03),
     0 2px 6px -2px rgba(0, 0, 0, 0.12);
-}
-
-.dark .settings-tab-active::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    transparent 100%
-  );
 }
 
 /* 隐藏滚动条但保留滚动功能 */
@@ -2448,6 +2487,39 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 .spinner-cube:nth-child(8) { animation-delay: 0.1s; }
 .spinner-cube:nth-child(9) { animation-delay: 0.2s; }
 
+/* 设计原型转圈加载动画（轻拟态用） */
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
+
+.tool-spinner-ring {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid hsl(var(--border) / 0.5);
+  border-top-color: var(--rail-accent, hsl(var(--primary)));
+  border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
+  animation: spin-ring 0.85s linear infinite;
+}
+
+.tool-spinner-ring.sm {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+[data-material="soft"] .tool-spinner-ring {
+  border-color: hsl(var(--foreground) / 0.15);
+  border-top-color: var(--rail-accent, hsl(var(--primary)));
+  border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
+}
+
+[data-material="soft"].dark .tool-spinner-ring {
+  border-color: hsl(var(--foreground) / 0.2);
+  border-top-color: var(--rail-accent, hsl(var(--primary)));
+  border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
+}
+
 /* ===== 深色主题：迷你导航当前可见范围指示器 — 加亮 ===== */
 .theme-ocean-dark .minimap-visible-indicator {
   background-color: hsl(205 60% 55%) !important;   /* 更亮的蓝 */
@@ -2468,34 +2540,44 @@ html.theme-neumorph-dark .settings-profile-action-btn {
  * 性能：blur(28px) saturate(180%) 在中端 GPU 上仍可保持 60fps，
  *     但建议在大面板（>500x500）上谨慎使用，必要时降到 blur(16px)。
  */
+/*
+ * btw-glass — 基线 frosted（surface token）；glass 材质恢复强 Liquid 效果
+ */
 .btw-glass {
-  /* 半透明白色底层（浅色主题：水洗感；深色主题会被下面的 dark 覆盖为暗色） */
+  background: hsl(var(--card) / var(--surface-opacity, 1));
+  -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  border-radius: 20px;
+  isolation: isolate;
+  box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+[data-material='glass'] .btw-glass {
   background-color: rgba(255, 255, 255, 0.45);
   -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(105%);
   backdrop-filter: blur(28px) saturate(180%) brightness(105%);
   border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 20px;
-  isolation: isolate;
-
-  /* 多层阴影：内边光 + 外发光 + 立体悬浮 */
   box-shadow:
-    /* 玻璃边缘内反光：顶部最强高光 */
     inset 0 1.5px 0 0 rgba(255, 255, 255, 0.6),
-    /* 左侧内反光 */
     inset 1px 0 0 0 rgba(255, 255, 255, 0.35),
-    /* 底部内阴影（玻璃厚度感）*/
     inset 0 -1px 0 0 rgba(0, 0, 0, 0.04),
-    /* 右侧轻微内阴影（光从左上来） */
     inset -1px 0 0 0 rgba(0, 0, 0, 0.03),
-    /* 外悬浮阴影 1：主投影 */
     0 20px 40px -12px rgba(0, 0, 0, 0.18),
-    /* 外悬浮阴影 2：近距投影 */
-    0 8px 16px -4px rgba(0, 0, 0, 0.10),
-    /* 外悬浮阴影 3：极细外描边光晕 */
+    0 8px 16px -4px rgba(0, 0, 0, 0.1),
     0 0 0 0.5px rgba(255, 255, 255, 0.4);
 }
 
-/* 环境光叠加层：用 ::before 模拟光线穿透玻璃 */
+[data-material='soft'] .btw-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--card));
+  box-shadow: var(--surface-shadow-elevated);
+}
+
+/* 环境光叠加层：opacity 跟 surface-shine；frosted 默认 0 */
 .btw-glass::before {
   content: '';
   position: absolute;
@@ -2503,6 +2585,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-radius: inherit;
   pointer-events: none;
   z-index: -1;
+  opacity: var(--surface-shine-opacity, 0);
   background:
     /* 左上光源：暖色高光 */
     radial-gradient(
@@ -2534,7 +2617,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   );
 }
 
-/* 顶部 spec 高光：模拟光源在玻璃顶部的反射带 */
+/* 顶部 spec 高光：frosted 下 shine-opacity=0 */
 .btw-glass::after {
   content: '';
   position: absolute;
@@ -2542,6 +2625,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   left: 10%;
   right: 10%;
   height: 1px;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -2718,28 +2802,42 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   );
 }
 
-/* ===== BTW 面板 — 统一毛玻璃（与 .btw-glass 同一视觉语言）=====
- * 整面同一材质：blur + 半透明底 + 极淡环境光
- * 边缘厚度仅用 1px 级 inset 阴影与顶光暗示，不用厚环带
- */
+/* ===== BTW 面板 — surface token 基线 frosted ===== */
 .btw-panel-glass {
   position: relative;
   isolation: isolate;
   border-radius: 20px;
+  background-color: hsl(var(--background) / var(--surface-opacity, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+[data-material='glass'] .btw-panel-glass {
   background-color: hsl(var(--background) / 0.44);
-  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-color: hsl(var(--foreground) / 0.08);
   -webkit-backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
   backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1),
     inset 1px 0 0 hsl(var(--foreground) / 0.04),
     inset 0 -1px 0 hsl(var(--foreground) / 0.05),
     inset -1px 0 0 hsl(var(--foreground) / 0.03),
-    0 12px 32px hsl(var(--foreground) / 0.10),
+    0 12px 32px hsl(var(--foreground) / 0.1),
     0 4px 10px hsl(var(--foreground) / 0.05);
 }
 
-/* 整面环境光：大半径渐变，边缘自然变亮/变暗，无硬分界 */
+[data-material='soft'] .btw-panel-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: hsl(var(--card));
+  box-shadow: var(--surface-shadow-elevated);
+}
+
+/* 整面环境光：frosted 下 shine-opacity=0 */
 .btw-panel-glass::before {
   content: '';
   position: absolute;
@@ -2747,6 +2845,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
+  opacity: var(--surface-shine-opacity, 0);
   background:
     radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.07), transparent 58%),
     radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.06), transparent 52%),
@@ -2764,6 +2863,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -2777,10 +2877,11 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   z-index: 1;
 }
 
-html:not(.dark) .btw-panel-glass,
-.theme-ocean-light .btw-panel-glass,
-.theme-forest-light .btw-panel-glass,
-.theme-slate-light .btw-panel-glass {
+/* 仅 glass 材质保留旧主题微调（避免 frosted 被 inset 高光盖掉） */
+html:not(.dark)[data-material='glass'] .btw-panel-glass,
+[data-material='glass'].theme-ocean-light .btw-panel-glass,
+[data-material='glass'].theme-forest-light .btw-panel-glass,
+[data-material='glass'].theme-slate-light .btw-panel-glass {
   background-color: hsl(var(--background) / 0.52);
   border-color: hsl(var(--foreground) / 0.07);
   box-shadow:
@@ -2791,10 +2892,10 @@ html:not(.dark) .btw-panel-glass,
     0 4px 10px hsl(var(--foreground) / 0.04);
 }
 
-html:not(.dark) .btw-panel-glass::after,
-.theme-ocean-light .btw-panel-glass::after,
-.theme-forest-light .btw-panel-glass::after,
-.theme-slate-light .btw-panel-glass::after {
+html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
+[data-material='glass'].theme-ocean-light .btw-panel-glass::after,
+[data-material='glass'].theme-forest-light .btw-panel-glass::after,
+[data-material='glass'].theme-slate-light .btw-panel-glass::after {
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -2803,17 +2904,17 @@ html:not(.dark) .btw-panel-glass::after,
   );
 }
 
-.dark .btw-panel-glass,
-.theme-ocean-dark .btw-panel-glass,
-.theme-forest-dark .btw-panel-glass,
-.theme-slate-dark .btw-panel-glass {
+.dark[data-material='glass'] .btw-panel-glass,
+[data-material='glass'].theme-ocean-dark .btw-panel-glass,
+[data-material='glass'].theme-forest-dark .btw-panel-glass,
+[data-material='glass'].theme-slate-dark .btw-panel-glass {
   background-color: hsl(var(--background) / 0.32);
   border-color: hsl(var(--foreground) / 0.09);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.14),
     inset 1px 0 0 hsl(var(--foreground) / 0.06),
     inset 0 -1px 0 hsl(var(--foreground) / 0.14),
-    inset -1px 0 0 hsl(var(--foreground) / 0.10),
+    inset -1px 0 0 hsl(var(--foreground) / 0.1),
     0 14px 36px rgba(0, 0, 0, 0.26),
     0 4px 12px rgba(0, 0, 0, 0.16);
 }
@@ -3455,23 +3556,39 @@ html:not(.dark) .btw-panel-glass::after,
   }
 }
 
-/* BTW side panel input: readable inner glass well. */
+/* BTW side panel input — surface token 基线 frosted */
 .btw-input-glass {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: hsl(var(--background) / 0.35);
-  border: 1px solid hsl(var(--border) / 0.50);
+  background: hsl(var(--muted) / var(--surface-opacity-chip, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   color: hsl(var(--foreground));
+  backdrop-filter: blur(var(--surface-blur-chip, 0px)) saturate(var(--surface-saturate, 1));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 0px))
+    saturate(var(--surface-saturate, 1));
+  box-shadow: var(--surface-shadow-chip, none);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+[data-material='glass'] .btw-input-glass {
+  background: hsl(var(--background) / 0.35);
+  border-color: hsl(var(--border) / 0.5);
   backdrop-filter: blur(8px) saturate(120%);
   -webkit-backdrop-filter: blur(8px) saturate(120%);
   box-shadow:
     0 1px 2px hsl(var(--foreground) / 0.08),
     inset 0 1px 0 hsl(var(--background) / 0.35);
-  transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+}
+
+[data-material='soft'] .btw-input-glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: hsl(var(--card));
+  box-shadow: var(--surface-shadow-chip);
 }
 
 .btw-input-glass::before {
@@ -3632,32 +3749,28 @@ html:not(.dark) .btw-panel-glass::after,
  * panel-glass - 主面板精致卡片
  * 半透明渐变背景 + 顶部高光边框 + 内阴影层次
  */
-/* ===== 主布局面板液态玻璃（恢复原状：不用 filter）=====
- * 主面板保持原有用 ::before/::after + background 渐变的方式
- * 之前用 backdrop-filter 没效果是因为它被 CSS 链吃掉了
- * 现在保留原始的精致卡片样式
+/*
+ * panel-glass — 主布局面板（ADR-0005 surface token）
+ * 基线 frosted：轻磨砂近实色；glass 高透 + 折射；soft 近不透明
  */
 .panel-glass {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.20) 0%,
-    hsl(var(--background) / 0.10) 100%
-  );
-  border: 1px solid hsl(var(--foreground) / 0.10);
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  /* frosted 默认实色：opacity=1 时等价于不透 */
+  background: hsl(var(--background) / var(--surface-opacity, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   border-radius: 20px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    0 12px 40px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
-/* 主题色微光层 */
 .panel-glass::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     135deg,
     hsl(var(--primary) / 0.06) 0%,
@@ -3668,12 +3781,12 @@ html:not(.dark) .btw-panel-glass::after,
   pointer-events: none;
 }
 
-/* 白色边框层 */
 .panel-glass::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -3694,56 +3807,38 @@ html:not(.dark) .btw-panel-glass::after,
   z-index: 1;
 }
 
-/* 深色主题 */
-.dark .panel-glass {
+/* glass：更透的面板底（覆盖默认 surface-bg 实色感） */
+[data-material='glass'] .panel-glass {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.2) 0%,
+    hsl(var(--background) / 0.1) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.1);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.04);
+}
+
+.dark[data-material='glass'] .panel-glass,
+[data-material='glass'].dark .panel-glass {
   background: hsl(var(--background) / 0.12);
   box-shadow:
     0 4px 24px rgba(0, 0, 0, 0.15),
     0 16px 48px rgba(0, 0, 0, 0.08);
 }
 
-.dark .panel-glass::before {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary) / 0.08) 0%,
-    transparent 30%,
-    transparent 70%,
-    hsl(var(--primary) / 0.05) 100%
-  );
-}
-
-/* 纯黑主题：降低白色边框光晕的亮度，避免在深色背景上过于刺眼 */
-.dark .panel-glass::after {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.06) 30%,
-    rgba(255, 255, 255, 0.10) 50%,
-    rgba(255, 255, 255, 0.06) 70%,
-    rgba(255, 255, 255, 0) 100%
-  );
-}
-
-/* 主题色覆盖 */
-.theme-ocean-light .panel-glass {
-  background: hsl(205 35% 98% / 0.18);
-}
-
-.theme-forest-light .panel-glass {
-  background: hsl(140 25% 98% / 0.18);
-}
-
-.theme-ocean-dark .panel-glass {
-  background: hsl(210 35% 11% / 0.15);
-}
-
-.theme-forest-dark .panel-glass {
-  background: hsl(150 30% 11% / 0.15);
+/* soft：不透明拟态 */
+[data-material='soft'] .panel-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--card));
+  box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.08));
 }
 
 /**
  * nav-island-glass - Rail + Sidebar 统一导航浮岛
- * 单块圆角矩形；Rail 右翼线（翼线）向右延伸包裹 Sidebar
+ * 基线 frosted（surface token）；float 变体见下方 --float 规则
  */
 .nav-island-glass {
   position: relative;
@@ -3751,17 +3846,12 @@ html:not(.dark) .btw-panel-glass::after,
   --nav-island-pt: 8px;
   --nav-island-row-h: 40px;
   --nav-island-gap: 6px;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background) / 0.20) 0%,
-    hsl(var(--background) / 0.10) 100%
-  );
-  border: 1px solid var(--island-rim, hsl(var(--foreground) / 0.10));
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  background: hsl(var(--background) / var(--surface-opacity, 1));
+  border: 1px solid var(--surface-rim, var(--island-rim, hsl(var(--border) / 0.55)));
   border-radius: var(--nav-island-outer-radius, 20px);
-  box-shadow:
-    0 1px 0 var(--island-inset-hi, rgba(255, 255, 255, 0.25)) inset,
-    0 4px 20px var(--island-ambient, rgba(0, 0, 0, 0.08)),
-    0 12px 40px var(--island-ambient, rgba(0, 0, 0, 0.04));
+  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
 .nav-island-glass::before {
@@ -3770,6 +3860,7 @@ html:not(.dark) .btw-panel-glass::after,
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     135deg,
     hsl(var(--primary) / 0.06) 0%,
@@ -3785,6 +3876,7 @@ html:not(.dark) .btw-panel-glass::after,
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  opacity: var(--surface-shine-opacity, 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -3805,7 +3897,21 @@ html:not(.dark) .btw-panel-glass::after,
   );
 }
 
-.dark .nav-island-glass {
+[data-material='glass'] .nav-island-glass:not(.nav-island-glass--float) {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.2) 0%,
+    hsl(var(--background) / 0.1) 100%
+  );
+  border-color: var(--island-rim, hsl(var(--foreground) / 0.1));
+  box-shadow:
+    0 1px 0 var(--island-inset-hi, rgba(255, 255, 255, 0.25)) inset,
+    0 4px 20px var(--island-ambient, rgba(0, 0, 0, 0.08)),
+    0 12px 40px var(--island-ambient, rgba(0, 0, 0, 0.04));
+}
+
+.dark[data-material='glass'] .nav-island-glass:not(.nav-island-glass--float),
+[data-material='glass'].dark .nav-island-glass:not(.nav-island-glass--float) {
   background: hsl(var(--background) / 0.12);
   box-shadow:
     0 1px 0 var(--island-inset-hi, rgba(255, 255, 255, 0.08)) inset,
@@ -3813,6 +3919,7 @@ html:not(.dark) .btw-panel-glass::after,
     0 16px 48px var(--island-ambient, rgba(0, 0, 0, 0.08));
 }
 
+/* 保留 dark 下 glass 折射层渐变定义（opacity 由 shine-opacity 控） */
 .dark .nav-island-glass::before {
   background: linear-gradient(
     135deg,
@@ -3937,6 +4044,15 @@ html:not(.dark) .btw-panel-glass::after,
   padding: 3px;
   gap: 2px;
   border-radius: var(--radius-glass-rail);
+  /* 普通材质：柔和 secondary chip，不用 muted 深灰 */
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-material='glass'] .tool-cluster {
   background: hsl(var(--background) / 0.4);
   border: 1px solid hsl(var(--glass-shine) / 0.45);
   box-shadow:
@@ -3967,17 +4083,27 @@ html:not(.dark) .btw-panel-glass::after,
 @media (hover: hover) {
   .tool-cluster button:hover {
     color: hsl(var(--foreground));
-    background: hsl(var(--foreground) / 0.06);
+    background: var(
+      --hover-fill,
+      color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted)))
+    );
   }
 
   .tool-cluster button.tool-cluster-accent:hover {
     color: var(--tagent-brand, hsl(var(--primary)));
-    background: color-mix(in srgb, var(--tagent-brand, hsl(var(--primary))) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--tagent-brand, hsl(var(--primary))) 18%,
+      hsl(var(--muted))
+    );
   }
 
   .tool-cluster button.tool-cluster-icon:hover {
     color: hsl(var(--foreground) / 0.82);
-    background: hsl(var(--foreground) / 0.06);
+    background: var(
+      --hover-fill,
+      color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted)))
+    );
   }
 }
 
@@ -4113,8 +4239,10 @@ html.theme-neumorph-dark .tool-cluster button.tool-cluster-accent:active {
 }
 
 html.material-frosted .tool-cluster {
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
-  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  box-shadow: none;
 }
 
 .tool-cluster button:focus-visible {
@@ -4124,13 +4252,30 @@ html.material-frosted .tool-cluster {
     0 0 0 3px hsl(var(--primary) / 0.45);
 }
 
-/* ===== 会话列表井（glass-studio .session-well tagent.css:1592-1605） */
+/*
+ * 会话列表井 — 柔和 MD：近白 elevated 表面 + 轻阴影
+ * 禁止用 muted 叠在侧栏灰底上（会显脏）
+ */
 .session-well {
   flex: 1;
   min-height: 0;
   margin: 0;
   padding: 8px;
-  border-radius: 20px;
+  border-radius: 16px;
+  background: var(--surface-bg-well, hsl(var(--dialog)));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: var(--surface-shadow-well, 0 1px 2px rgba(15, 23, 42, 0.04));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.dark .session-well {
+  background: var(--surface-bg-well, hsl(var(--card)));
+  border-color: var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: var(--surface-shadow-well, 0 1px 3px rgba(0, 0, 0, 0.24));
+}
+
+[data-material='glass'] .session-well {
   background: var(--well-bg, rgba(230, 235, 242, 0.45));
   border: 1px solid var(--well-rim, rgba(255, 255, 255, 0.45));
   box-shadow:
@@ -4139,6 +4284,22 @@ html.material-frosted .tool-cluster {
     0 10px 24px var(--well-ambient, rgba(145, 158, 175, 0.16));
   -webkit-backdrop-filter: blur(20px) saturate(145%);
   backdrop-filter: blur(20px) saturate(145%);
+}
+
+[data-material='soft'] .session-well {
+  background: var(--well-bg, hsl(var(--card)));
+  border: 1px solid var(--well-rim, hsl(var(--border) / 0.45));
+  box-shadow:
+    0 1px 0 var(--well-inset-hi, rgba(255, 255, 255, 0.45)) inset,
+    0 -1px 0 var(--well-inset-lo, rgba(120, 135, 155, 0.12)) inset,
+    0 4px 12px var(--well-ambient, rgba(145, 158, 175, 0.12));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-material="frosted"].dark .session-well {
+  border: 1px solid hsl(var(--border) / 0.20);
+  box-shadow: none;
 }
 
 .session-well > .session-scroll {
@@ -4173,7 +4334,10 @@ html.material-frosted .tool-cluster {
 }
 
 .session-well .session-row-shell:not(.session-list-item-active):hover {
-  background: var(--hover-fill, hsl(var(--foreground) / 0.05));
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
   color: var(--foreground);
   transform: translateX(2px);
 }
@@ -4196,7 +4360,10 @@ html.material-frosted .tool-cluster {
 }
 
 .session-well .session-list-row:not(.session-row-shell):not(.session-list-item-active):hover {
-  background: var(--hover-fill, hsl(var(--foreground) / 0.05));
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
   color: var(--foreground);
   transform: translateX(2px);
 }
@@ -4217,6 +4384,8 @@ html.material-frosted .tool-cluster {
   backdrop-filter: none;
   background: var(--session-glass-strong) !important;
   border: 1px solid var(--session-rim) !important;
+  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.55)) !important;
+  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.45)) !important;
   box-shadow:
     0 1px 0 var(--session-inset-hi) inset,
     3px 3px 9px var(--session-elev-dark),
@@ -4442,7 +4611,33 @@ html.material-frosted .tool-cluster {
     backdrop-filter 280ms ease;
 }
 
+/* 右 rail 折叠：普通材质实色窄条；glass 才半透 */
 .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--background));
+  border-color: hsl(var(--border) / 0.4);
+  box-shadow: none;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::before,
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::after {
+  opacity: 0;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
+  border-color: hsl(var(--border) / 0.5);
+  box-shadow: none;
+}
+
+[data-material='glass']
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
   -webkit-backdrop-filter: blur(10px) saturate(1.05);
   backdrop-filter: blur(10px) saturate(1.05);
   background: linear-gradient(
@@ -4451,18 +4646,20 @@ html.material-frosted .tool-cluster {
     hsl(var(--background) / 0.14) 100%
   );
   border-color: hsl(var(--glass-rim) / 0.22);
-  box-shadow: none;
 }
 
-.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::before {
+[data-material='glass']
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::before {
   opacity: 0.25;
 }
 
-.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::after {
+[data-material='glass']
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::after {
   opacity: 0.2;
 }
 
-.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+[data-material='glass']
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   backdrop-filter: blur(16px) saturate(1.2);
   background: linear-gradient(
@@ -4471,7 +4668,9 @@ html.material-frosted .tool-cluster {
     hsl(var(--background) / 0.32) 100%
   );
   border-color: hsl(var(--glass-rim) / 0.42);
-  box-shadow: none;
+  box-shadow:
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.45)) inset,
+    0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
@@ -4491,7 +4690,9 @@ html.material-frosted .tool-cluster {
     hsl(var(--background) / 0.22) 100%
   );
   border-color: hsl(var(--glass-rim) / 0.32);
-  box-shadow: none;
+  box-shadow:
+    0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.14)) inset,
+    0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
@@ -4614,6 +4815,15 @@ html.material-frosted .tool-cluster {
     transform 320ms cubic-bezier(0.22, 1.08, 0.36, 1) 80ms;
 }
 
+/* 轻拟态：右 sidebar 展开后左侧边缘高光 */
+[data-material="soft"] .right-panel-expand-body--visible {
+  box-shadow: 2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.35)) inset;
+}
+
+[data-material="soft"].dark .right-panel-expand-body--visible {
+  box-shadow: 2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.1)) inset;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .right-panel-expand-shell,
   .right-panel-expand-shell--expanded,
@@ -4683,6 +4893,12 @@ html.material-frosted .tool-cluster {
 .content-main-shell .token-stats-bar.content-shell-chrome-bleed {
   padding-left: calc(var(--content-chrome-bleed-left, 0px) + 1rem);
   padding-right: calc(var(--content-chrome-bleed-right, 0px) + 1rem);
+  background: transparent;
+  border: none;
+}
+
+.token-stats-bar .sep {
+  opacity: 0.5;
 }
 
 /* TabBar / 底部输入 dock：越过主区左右 padding，与两侧浮岛右/左缘对齐 */
@@ -4752,11 +4968,41 @@ html.material-frosted .tool-cluster {
     0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
+/*
+ * content-base-plate — 默认 frosted：实色不透明
+ * 高透渐变仅 [data-material=glass] 启用（见下方）
+ */
 .content-base-plate--body {
   z-index: 0;
   isolation: isolate;
   overflow: hidden;
   border: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--content-area));
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: left 300ms ease-in-out;
+}
+
+/* 描边/分割线叠在 TabBar 之上，避免选中标签盖住顶线 */
+.content-base-plate-frame {
+  z-index: 2;
+}
+
+/* frosted：不要渐变透底伪层 */
+.content-base-plate--body::before {
+  content: none;
+  display: none;
+}
+
+.content-base-plate--body::after {
+  display: none;
+}
+
+/* glass：恢复高透背板 + 边缘渐隐 */
+[data-material='glass'] .content-base-plate--body {
   background:
     linear-gradient(
       to right,
@@ -4768,21 +5014,16 @@ html.material-frosted .tool-cluster {
     linear-gradient(
       to bottom,
       hsl(var(--content-area) / 0.18) 0%,
-      hsl(var(--content-area) / 0.10) 100%
+      hsl(var(--content-area) / 0.1) 100%
     );
   box-shadow:
     0 6px 28px rgba(0, 0, 0, 0.05),
     0 2px 8px rgba(0, 0, 0, 0.03);
-  transition: left 300ms ease-in-out;
 }
 
-/* 描边/分割线叠在 TabBar 之上，避免选中标签盖住顶线 */
-.content-base-plate-frame {
-  z-index: 2;
-}
-
-.content-base-plate--body::before {
+[data-material='glass'] .content-base-plate--body::before {
   content: '';
+  display: block;
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -4800,8 +5041,38 @@ html.material-frosted .tool-cluster {
   );
 }
 
-.content-base-plate--body::after {
-  display: none;
+.dark[data-material='glass'] .content-base-plate--body,
+[data-material='glass'].dark .content-base-plate--body {
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.02) 0%,
+      hsl(var(--content-area) / 0.05) calc(var(--content-base-fade-width) * 0.45),
+      hsl(var(--content-area) / 0.1) calc(var(--content-base-fade-width) * 0.78),
+      hsl(var(--content-area) / 0.15) var(--content-base-fade-width)
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--content-area) / 0.15) 0%,
+      hsl(var(--content-area) / 0.08) 100%
+    );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark[data-material='glass'] .content-base-plate--body::before,
+[data-material='glass'].dark .content-base-plate--body::before {
+  background: linear-gradient(
+    to right,
+    hsl(var(--background) / 0.98) 0%,
+    hsl(var(--background) / 0.9) calc(var(--content-base-inset-left, 0px) * 0.12),
+    hsl(var(--background) / 0.78) calc(var(--content-base-fade-width) * 0.22),
+    hsl(var(--background) / 0.46) calc(var(--content-base-fade-width) * 0.48),
+    hsl(var(--background) / 0.18) calc(var(--content-base-fade-width) * 0.72),
+    hsl(var(--background) / 0.05) calc(var(--content-base-fade-width) * 0.9),
+    transparent var(--content-base-fade-width)
+  );
 }
 
 /*
@@ -4859,50 +5130,26 @@ html.material-frosted .tool-cluster {
   opacity: 0.42;
 }
 
+/* dark frosted 背板：仍实色 */
 .dark .content-base-plate--body {
-  background:
-    linear-gradient(
-      to right,
-      hsl(var(--content-area) / 0.02) 0%,
-      hsl(var(--content-area) / 0.05) calc(var(--content-base-fade-width) * 0.45),
-      hsl(var(--content-area) / 0.10) calc(var(--content-base-fade-width) * 0.78),
-      hsl(var(--content-area) / 0.15) var(--content-base-fade-width)
-    ),
-    linear-gradient(
-      to bottom,
-      hsl(var(--content-area) / 0.15) 0%,
-      hsl(var(--content-area) / 0.08) 100%
-    );
+  background: hsl(var(--content-area));
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.14),
-    0 2px 10px rgba(0, 0, 0, 0.08);
+    0 2px 10px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .dark .content-main-shell--right-inset .content-base-plate--body {
   box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.12),
-    inset -2px 0 0 rgba(0, 0, 0, 0.18),
-    0 8px 32px rgba(0, 0, 0, 0.14),
-    0 2px 10px rgba(0, 0, 0, 0.08);
+    inset -1px 0 0 rgba(255, 255, 255, 0.08),
+    inset -2px 0 0 rgba(0, 0, 0, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .dark .content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.14),
-    0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-.dark .content-base-plate--body::before {
-  background: linear-gradient(
-    to right,
-    hsl(var(--background) / 0.98) 0%,
-    hsl(var(--background) / 0.9) calc(var(--content-base-inset-left, 0px) * 0.12),
-    hsl(var(--background) / 0.78) calc(var(--content-base-fade-width) * 0.22),
-    hsl(var(--background) / 0.46) calc(var(--content-base-fade-width) * 0.48),
-    hsl(var(--background) / 0.18) calc(var(--content-base-fade-width) * 0.72),
-    hsl(var(--background) / 0.05) calc(var(--content-base-fade-width) * 0.9),
-    transparent var(--content-base-fade-width)
-  );
+    0 2px 10px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .dark .content-base-plate-edge--tone {
@@ -4959,26 +5206,22 @@ html.material-frosted .content-main-shell .content-glass {
   backdrop-filter: none;
 }
 
-/* Nav 浮岛：更强悬浮 + 玻璃质感（叠在底板之上，尺寸不变） */
+/*
+ * Nav 浮岛 float — 基线 frosted（surface token）
+ * glass/soft 由 data-material 增强；勿再写死 blur(24px) 高透
+ */
 .nav-island-glass.nav-island-glass--float {
-  -webkit-backdrop-filter: blur(24px) saturate(1.45);
-  backdrop-filter: blur(24px) saturate(1.45);
-  background: linear-gradient(
-    145deg,
-    hsl(var(--background) / 0.82) 0%,
-    hsl(var(--background) / 0.66) 46%,
-    hsl(var(--background) / 0.58) 100%
-  );
-  border-color: hsl(var(--glass-rim) / 0.78);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.50),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.10),
-    0 2px 6px rgba(0, 0, 0, 0.05),
-    0 10px 28px rgba(0, 0, 0, 0.10),
-    0 28px 64px rgba(0, 0, 0, 0.09);
+  -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
+    saturate(var(--surface-saturate, 1));
+  background: hsl(var(--background) / var(--surface-opacity-elevated, 1));
+  border-color: var(--surface-rim, hsl(var(--border) / 0.55));
+  box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.06));
 }
 
 .nav-island-glass.nav-island-glass--float::before {
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     145deg,
     hsl(var(--primary) / 0.09) 0%,
@@ -4989,17 +5232,61 @@ html.material-frosted .content-main-shell .content-glass {
 }
 
 .nav-island-glass.nav-island-glass--float::after {
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.30) 26%,
+    rgba(255, 255, 255, 0.3) 26%,
     rgba(255, 255, 255, 0.52) 50%,
     rgba(255, 255, 255, 0.28) 74%,
     rgba(255, 255, 255, 0) 100%
   );
 }
 
-/* 轻拟态浮岛：用 border-image 做边缘高光 */
+/* glass：高透悬浮浮岛 */
+[data-material='glass'] .nav-island-glass.nav-island-glass--float {
+  -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(var(--surface-saturate))
+    brightness(var(--surface-brightness));
+  backdrop-filter: blur(var(--surface-blur)) saturate(var(--surface-saturate))
+    brightness(var(--surface-brightness));
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.82) 0%,
+    hsl(var(--background) / 0.66) 46%,
+    hsl(var(--background) / 0.58) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.78);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.1),
+    0 28px 64px rgba(0, 0, 0, 0.09);
+}
+
+[data-material='glass'] .nav-island-glass.nav-island-glass--float::before,
+[data-material='glass'] .nav-island-glass.nav-island-glass--float::after {
+  opacity: 1;
+}
+
+.dark[data-material='glass'] .nav-island-glass.nav-island-glass--float,
+[data-material='glass'].dark .nav-island-glass.nav-island-glass--float {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.56) 0%,
+    hsl(var(--background) / 0.42) 46%,
+    hsl(var(--background) / 0.34) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.52);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 14px 40px rgba(0, 0, 0, 0.2),
+    0 32px 76px rgba(0, 0, 0, 0.16);
+}
+
+/* 轻拟态浮岛：透明化 ::before/::after，用 box-shadow inset 做高光 */
 [data-material="soft"] .nav-island-glass.nav-island-glass--float::before {
   background: transparent;
 }
@@ -5016,22 +5303,7 @@ html.material-frosted .content-main-shell .content-glass {
   background: transparent;
 }
 
-.dark .nav-island-glass.nav-island-glass--float {
-  background: linear-gradient(
-    145deg,
-    hsl(var(--background) / 0.56) 0%,
-    hsl(var(--background) / 0.42) 46%,
-    hsl(var(--background) / 0.34) 100%
-  );
-  border-color: hsl(var(--glass-rim) / 0.52);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.18),
-    0 14px 40px rgba(0, 0, 0, 0.20),
-    0 32px 76px rgba(0, 0, 0, 0.16);
-}
-
+/* frosted dark：沿用 base surface token；glass dark 见上方 [data-material=glass] 块 */
 .dark .nav-island-glass.nav-island-glass--float::before {
   background: linear-gradient(
     145deg,
@@ -5046,46 +5318,60 @@ html.material-frosted .content-main-shell .content-glass {
   background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.10) 26%,
+    rgba(255, 255, 255, 0.1) 26%,
     rgba(255, 255, 255, 0.18) 50%,
     rgba(255, 255, 255, 0.08) 74%,
     rgba(255, 255, 255, 0) 100%
   );
 }
 
-/* 右侧 rail 折叠态：覆盖上方 nav-island-glass--float 的全局外阴影 */
+/* ===== 轻拟态 nav 浮岛高光（必须在 .dark 规则后面，否则被覆盖） ===== */
+[data-material="soft"] .nav-island-glass.nav-island-glass--float {
+  border-top: 2px solid rgba(255, 255, 255, 0.7);
+  border-right: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset -2px 0 0 rgba(255, 255, 255, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 14px 40px rgba(0, 0, 0, 0.06);
+}
+
+[data-material="soft"].dark .nav-island-glass.nav-island-glass--float {
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  border-right: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset -2px 0 0 rgba(255, 255, 255, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 14px 40px rgba(0, 0, 0, 0.20);
+}
+
+/* 右侧 rail 折叠态：覆盖上方 nav-island-glass--float 的全局外阴影（仅 normal 态） */
 .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
-.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
-.right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover,
-.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
   box-shadow: none;
 }
 
 /**
- * rail-glass - FunctionalRail 专用液态玻璃
- * 竖向布局，更紧凑的视觉效果
+ * rail-glass — surface token 基线 frosted
  */
 .rail-glass {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--background) / 0.20) 0%,
-    hsl(var(--background) / 0.10) 100%
-  );
-  border: 1px solid hsl(var(--foreground) / 0.10);
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  background: hsl(var(--background) / var(--surface-opacity, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   border-radius: 20px;
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
-/* 主题色微光层 */
 .rail-glass::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     to bottom,
     hsl(var(--primary) / 0.04) 0%,
@@ -5096,12 +5382,12 @@ html.material-frosted .content-main-shell .content-glass {
   pointer-events: none;
 }
 
-/* 白色边框层 */
 .rail-glass::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -5122,58 +5408,53 @@ html.material-frosted .content-main-shell .content-glass {
   z-index: 1;
 }
 
-/* 深色主题 */
-.dark .rail-glass {
+[data-material='glass'] .rail-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.2) 0%,
+    hsl(var(--background) / 0.1) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.1);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.dark[data-material='glass'] .rail-glass,
+[data-material='glass'].dark .rail-glass {
   background: hsl(var(--background) / 0.15);
   box-shadow:
     0 2px 16px rgba(0, 0, 0, 0.12),
     0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
-.dark .rail-glass::before {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--primary) / 0.08) 0%,
-    transparent 30%,
-    transparent 70%,
-    hsl(var(--primary) / 0.04) 100%
-  );
-}
-
-/* 主题覆盖 */
-.theme-ocean-light .rail-glass {
-  background: hsl(205 35% 98% / 0.22);
-}
-
-.theme-forest-light .rail-glass {
-  background: hsl(140 25% 98% / 0.22);
+[data-material='soft'] .rail-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--card));
+  box-shadow: var(--surface-shadow-chip, 0 2px 6px rgba(0, 0, 0, 0.08));
 }
 
 /**
- * content-glass - 主内容区液态玻璃
- * 更亮的背景，作为内容画布
+ * content-glass — 主内容画布，surface token 基线 frosted
  */
 .content-glass {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--content-area) / 0.18) 0%,
-    hsl(var(--content-area) / 0.10) 100%
-  );
-  border: 1px solid hsl(var(--foreground) / 0.08);
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  background: hsl(var(--content-area) / var(--surface-opacity, 1));
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.5));
   border-radius: 20px;
-  box-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.05),
-    0 8px 28px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
-/* 主题色微光层 */
 .content-glass::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   background: linear-gradient(
     135deg,
     hsl(var(--primary) / 0.03) 0%,
@@ -5184,12 +5465,12 @@ html.material-frosted .content-main-shell .content-glass {
   pointer-events: none;
 }
 
-/* 白色边框层 */
 .content-glass::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  opacity: var(--surface-shine-opacity, 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -5210,12 +5491,31 @@ html.material-frosted .content-main-shell .content-glass {
   z-index: 1;
 }
 
-/* 深色主题 */
-.dark .content-glass {
+[data-material='glass'] .content-glass {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--content-area) / 0.18) 0%,
+    hsl(var(--content-area) / 0.1) 100%
+  );
+  border-color: hsl(var(--foreground) / 0.08);
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.03);
+}
+
+.dark[data-material='glass'] .content-glass,
+[data-material='glass'].dark .content-glass {
   background: hsl(var(--content-area) / 0.15);
   box-shadow:
-    0 2px 20px rgba(0, 0, 0, 0.10),
+    0 2px 20px rgba(0, 0, 0, 0.1),
     0 12px 36px rgba(0, 0, 0, 0.06);
+}
+
+[data-material='soft'] .content-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--content-area));
+  box-shadow: var(--surface-shadow, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 .dark .content-glass::before {
@@ -5228,12 +5528,14 @@ html.material-frosted .content-main-shell .content-glass {
   );
 }
 
-/* 主题覆盖 */
-.theme-ocean-light .content-glass {
+/* 主题仅在 glass 材质下微调 content 色相，不改 frosted 实色 */
+[data-material='glass'].theme-ocean-light .content-glass,
+.theme-ocean-light[data-material='glass'] .content-glass {
   background: hsl(205 35% 98% / 0.22);
 }
 
-.theme-forest-light .content-glass {
+[data-material='glass'].theme-forest-light .content-glass,
+.theme-forest-light[data-material='glass'] .content-glass {
   background: hsl(140 25% 98% / 0.22);
 }
 
@@ -5311,43 +5613,12 @@ html.material-frosted .content-main-shell .content-glass {
   color: var(--rail-accent, hsl(var(--primary)));
 }
 
-/* 滑动指示器模式下，激活按钮自身背景透明，露出背后的滑动玻璃浮岛 */
-.rail-slide-host .rail-island-btn--active.rail-island-btn--ghost {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* 轻拟态材质：按钮自身显示 active 态，不用滑动指示器 */
-[data-material="soft"] .rail-slide-host .rail-island-btn--active.rail-island-btn--ghost {
-  background: var(--rail-glass-strong, hsl(var(--card) / 0.72)) !important;
-  background-color: var(--rail-glass-strong, hsl(var(--card) / 0.72)) !important;
-  border-color: var(--rail-rim, hsl(var(--glass-rim) / 0.45)) !important;
-  box-shadow:
-    0 1px 0 var(--rail-inset-hi, hsl(var(--glass-shine) / 0.4)) inset,
-    3px 3px 8px var(--rail-elev-dark, hsl(220 10% 50% / 0.22)),
-    -2px -2px 6px var(--rail-elev-light, hsl(var(--glass-shine) / 0.5)) !important;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-[data-material="soft"].dark .rail-slide-host .rail-island-btn--active.rail-island-btn--ghost {
-  background: var(--rail-glass-strong, rgba(62, 72, 90, 0.68)) !important;
-  background-color: var(--rail-glass-strong, rgba(62, 72, 90, 0.68)) !important;
-  border-color: var(--rail-rim, rgba(255, 255, 255, 0.16)) !important;
-  box-shadow:
-    0 1px 0 var(--rail-inset-hi, rgba(255, 255, 255, 0.2)) inset,
-    3px 3px 8px var(--rail-elev-dark, rgba(8, 12, 20, 0.42)),
-    -2px -2px 6px var(--rail-elev-light, rgba(255, 255, 255, 0.1)) !important;
-}
-
 /* 轻拟态激活态 */
 html:not(.dark) .rail-island-btn--active {
   color: var(--rail-accent, hsl(var(--primary)));
   border-color: var(--rail-rim, hsl(var(--glass-rim) / 0.45));
+  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.55));
+  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.45));
   background: var(--rail-glass-strong, hsl(var(--card) / 0.72));
   box-shadow:
     0 1px 0 var(--rail-inset-hi, hsl(var(--glass-shine) / 0.4)) inset,
@@ -5368,6 +5639,8 @@ html:not(.dark) .rail-island-btn--active {
 .dark .rail-island-btn--active {
   color: var(--rail-accent, hsl(var(--primary)));
   border-color: var(--rail-rim, rgba(255, 255, 255, 0.16));
+  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.2));
+  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.14));
   background: var(--rail-glass-strong, rgba(62, 72, 90, 0.68));
   box-shadow:
     0 1px 0 var(--rail-inset-hi, rgba(255, 255, 255, 0.2)) inset,
@@ -5419,54 +5692,6 @@ html:not(.dark) .rail-island-btn--active {
     0 2px 10px -4px rgba(0, 0, 0, 0.35);
 }
 
-/* Rail 滑动指示器：玻璃浮岛，跟随激活按钮滑动 */
-.rail-slide-indicator {
-  position: absolute;
-  left: 50%;
-  width: 40px;
-  z-index: 1;
-  pointer-events: none;
-  isolation: isolate;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  transform: translateX(-50%);
-  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
-  backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
-  will-change: top, height, opacity;
-}
-
-/* 轻拟态材质：隐藏滑动指示器，由按钮自身显示 active 态 */
-[data-material="soft"] .rail-slide-indicator {
-  opacity: 0;
-}
-
-html:not(.dark) .rail-slide-indicator {
-  border-color: hsl(var(--glass-rim) / 0.82);
-  background: linear-gradient(
-    168deg,
-    hsl(var(--glass-ambient) / 0.92) 0%,
-    hsl(var(--background) / 0.74) 52%,
-    hsl(var(--background) / 0.66) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.72),
-    0 4px 14px -5px rgba(0, 0, 0, 0.05),
-    0 2px 8px -4px rgba(0, 0, 0, 0.04);
-}
-
-.dark .rail-slide-indicator {
-  border-color: hsl(var(--primary) / 0.45);
-  background: linear-gradient(
-    168deg,
-    hsl(var(--primary) / 0.22) 0%,
-    hsl(var(--background) / 0.56) 52%,
-    hsl(var(--background) / 0.48) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 0 hsl(var(--primary) / 0.26),
-    0 4px 16px -6px hsl(var(--primary) / 0.32),
-    0 2px 10px -4px rgba(0, 0, 0, 0.35);
-}
 
 /* 侧栏状态竖条：置于玻璃伪元素之上 */
 .session-sidebar-accent {
@@ -5474,10 +5699,18 @@ html:not(.dark) .rail-slide-indicator {
   z-index: 10 !important;
 }
 
-/* Agent 模型选择浮窗：更明显的背景玻璃 + 轻量展开/收回动画 */
+/* Agent 模型选择浮窗：普通材质实色；glass 才强玻璃 */
 .agent-model-popover {
   border-radius: 20px;
   transform-origin: var(--radix-popover-content-transform-origin);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--popover));
+  border-color: hsl(var(--border) / 0.55);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+[data-material='glass'] .agent-model-popover {
   -webkit-backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
   backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
   background:
@@ -5494,7 +5727,7 @@ html:not(.dark) .rail-slide-indicator {
     linear-gradient(
       168deg,
       hsl(var(--popover) / 0.62) 0%,
-      hsl(var(--background) / 0.70) 48%,
+      hsl(var(--background) / 0.7) 48%,
       hsl(var(--popover) / 0.58) 100%
     );
   border-color: hsl(var(--glass-rim) / 0.92);
@@ -5516,6 +5749,10 @@ html:not(.dark) .rail-slide-indicator {
 }
 
 .agent-model-popover-header {
+  background: hsl(var(--muted));
+}
+
+[data-material='glass'] .agent-model-popover-header {
   background:
     linear-gradient(180deg, hsl(var(--glass-shine) / 0.15), transparent 72%),
     hsl(var(--background) / 0.12);
@@ -5523,12 +5760,20 @@ html:not(.dark) .rail-slide-indicator {
 
 .context-usage-popover {
   border-radius: 20px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+[data-material='glass'] .context-usage-popover {
   -webkit-backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
   backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
   background:
     radial-gradient(
       ellipse 82% 62% at 18% 0%,
-      hsl(var(--glass-shine) / 0.30),
+      hsl(var(--glass-shine) / 0.3),
       transparent 64%
     ),
     radial-gradient(
@@ -5539,9 +5784,11 @@ html:not(.dark) .rail-slide-indicator {
     linear-gradient(
       168deg,
       hsl(var(--popover) / 0.62) 0%,
-      hsl(var(--background) / 0.70) 50%,
+      hsl(var(--background) / 0.7) 50%,
       hsl(var(--popover) / 0.56) 100%
     );
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .context-usage-scroll {
@@ -5588,6 +5835,12 @@ html:not(.dark) .rail-slide-indicator {
 }
 
 .dark .context-usage-popover {
+  background: hsl(var(--popover));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.dark[data-material='glass'] .context-usage-popover,
+[data-material='glass'].dark .context-usage-popover {
   -webkit-backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
   backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
   background:
@@ -5604,7 +5857,7 @@ html:not(.dark) .rail-slide-indicator {
     linear-gradient(
       168deg,
       hsl(var(--popover) / 0.48) 0%,
-      hsl(var(--background) / 0.60) 50%,
+      hsl(var(--background) / 0.6) 50%,
       hsl(var(--popover) / 0.44) 100%
     );
 }
@@ -5811,18 +6064,11 @@ html.material-frosted.dark {
   --material-edge-outer: rgba(255, 255, 255, 0.05);
 }
 
-/* 普通材质：关闭折射团雾（::before），保留轻量边缘光泽（::after） */
-html.material-frosted .session-glass::before,
-html.material-frosted .chat-input-glass::before,
-html.material-frosted .session-glass-surface::before,
-html.material-frosted .session-glass-sidebar::before,
-html.material-frosted .session-glass-rail::before,
-html.material-frosted .session-glass-chip::before,
-html.material-frosted .session-glass-tooltip::before,
-html.material-frosted .panel-glass::before,
-html.material-frosted .rail-glass::before,
-html.material-frosted .nav-island-glass::before,
-html.material-frosted .content-glass::before,
+/*
+ * frosted 兼容层（已收敛）
+ * panel / rail / nav / content 基类已读 surface token，不再在此重复覆盖。
+ * 仅保留：shell 底板、content-base-plate、btw 未完全 token 化的表面、右侧 rail 折叠态。
+ */
 html.material-frosted .content-base-plate--body::before,
 html.material-frosted .btw-panel-glass::before,
 html.material-frosted .btw-input-glass::before,
@@ -5830,18 +6076,6 @@ html.material-frosted .btw-glass::before {
   display: none !important;
 }
 
-html.material-frosted .session-glass::after,
-html.material-frosted .chat-input-glass::after,
-html.material-frosted .session-glass-surface::after,
-html.material-frosted .session-glass-sidebar::after,
-html.material-frosted .session-glass-rail::after,
-html.material-frosted .session-glass-chip::after,
-html.material-frosted .session-glass-tooltip::after,
-html.material-frosted .session-glass-modal::after,
-html.material-frosted .session-glass-modal-lg::after,
-html.material-frosted .panel-glass::after,
-html.material-frosted .rail-glass::after,
-html.material-frosted .nav-island-glass::after,
 html.material-frosted .btw-panel-glass::after,
 html.material-frosted .btw-input-glass::after,
 html.material-frosted .btw-glass::after {
@@ -5852,7 +6086,7 @@ html.material-frosted .btw-glass::after {
   pointer-events: none;
   z-index: 0;
   display: block !important;
-  opacity: 0.36;
+  opacity: 0.18;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -5871,45 +6105,6 @@ html.material-frosted .shell-glass {
   background: hsl(var(--background));
 }
 
-html.material-frosted.dark .button-glass {
-  background: hsl(var(--muted) / 0.80);
-  border-color: hsl(var(--foreground) / 0.20);
-  box-shadow:
-    inset 0 1px 0 var(--material-edge-inset),
-    0 2px 6px rgba(0, 0, 0, 0.26),
-    0 0 0 1px rgba(0, 0, 0, 0.16);
-}
-
-html.material-frosted.dark .button-glass:hover {
-  background: hsl(var(--muted) / 0.92);
-  border-color: hsl(var(--foreground) / 0.26);
-}
-
-html.material-frosted .panel-glass,
-html.material-frosted .rail-glass,
-html.material-frosted .nav-island-glass {
-  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  background: hsl(var(--background) / var(--material-opacity-surface));
-  border-color: hsl(var(--glass-rim) / 0.55);
-  box-shadow:
-    inset 0 1px 0 0 var(--material-edge-inset),
-    0 2px 12px rgba(0, 0, 0, 0.07);
-}
-
-html.material-frosted .nav-island-glass.nav-island-glass--float {
-  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
-  backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
-  background: hsl(var(--background) / var(--material-opacity-elevated));
-  border-color: hsl(var(--glass-rim) / 0.68);
-  box-shadow:
-    inset 0 1px 0 0 var(--material-edge-inset),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.06),
-    0 4px 14px rgba(0, 0, 0, 0.09),
-    0 16px 40px rgba(0, 0, 0, 0.10),
-    0 30px 68px rgba(0, 0, 0, 0.08);
-}
-
 html.material-frosted
   .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
 html.material-frosted
@@ -5917,26 +6112,18 @@ html.material-frosted
   box-shadow: none;
 }
 
-html.material-frosted .content-glass {
-  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  background: hsl(var(--content-area) / var(--material-opacity-surface));
-  border-color: hsl(var(--border) / 0.5);
-  box-shadow: none;
-}
-
+/* material-frosted 兼容：与基线一致实色（基类已不透，此处防旧规则回潮） */
 html.material-frosted .content-base-plate--body {
-  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
-  background:
-    linear-gradient(
-      to right,
-      hsl(var(--content-area) / 0.03) 0%,
-      hsl(var(--content-area) / 0.22) calc(var(--content-base-fade-width) * 0.5),
-      hsl(var(--content-area) / var(--material-opacity-surface)) var(--content-base-fade-width)
-    );
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: hsl(var(--content-area)) !important;
   box-shadow: none;
   transition: left 300ms ease-in-out;
+}
+
+html.material-frosted .content-base-plate--body::before {
+  content: none !important;
+  display: none !important;
 }
 
 html.material-frosted .content-main-shell--right-inset .content-base-plate--body {
@@ -6001,23 +6188,7 @@ html.material-frosted .content-base-plate-hairline--glint {
   opacity: 0.3;
 }
 
-html.material-frosted .btw-panel-glass {
-  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
-  backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
-  background: hsl(var(--background) / var(--material-opacity-elevated));
-  border-color: hsl(var(--glass-rim) / 0.6);
-  box-shadow:
-    inset 0 1px 0 0 var(--material-edge-inset),
-    0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-html.material-frosted .btw-input-glass {
-  -webkit-backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
-  backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
-  background: hsl(var(--muted) / var(--material-opacity-chip));
-  border-color: hsl(var(--border) / 0.7);
-  box-shadow: none;
-}
+/* btw-panel / btw-input 基类已 surface token 化，不再在 material-frosted 下重复覆盖 */
 
 /* 压过特殊主题下的半透明 content/panel 覆盖 */
 html.material-frosted.theme-ocean-light .content-glass,
@@ -6347,21 +6518,42 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
  * 实现方式：border-top-color + border-right-color（不影响 box-shadow 和 ::after）
  */
 
-/* 给没有 border 的元素加上 border（透明底色，高光用 color 差异实现） */
+/* 给没有 border 的元素加上完整视觉层次（匹配设计原型 pill 样式） */
 [data-material="soft"] .pill,
 [data-material="soft"] .tab,
 [data-material="soft"] .msg-user,
 [data-material="soft"] .process-group,
 [data-material="soft"] .think-block,
-[data-material="soft"] .tool-cluster button,
 [data-material="soft"] .sidebar-archive-btn,
-[data-material="soft"] .agent-toolbar-pill-btn {
-  border: 1px solid transparent;
+[data-material="soft"] .agent-toolbar-pill-btn,
+[data-material="soft"] .header-status-chip {
+  background: var(--glass-soft, rgba(236, 240, 246, 0.4));
+  border: 1px solid var(--rim-soft, rgba(255, 255, 255, 0.35));
+  box-shadow:
+    0 3px 0 var(--inset-hi, rgba(255, 255, 255, 0.45)) inset,
+    0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-/* 所有常见带框元素统一高光 */
+[data-material="soft"].dark .pill,
+[data-material="soft"].dark .tab,
+[data-material="soft"].dark .msg-user,
+[data-material="soft"].dark .process-group,
+[data-material="soft"].dark .think-block,
+[data-material="soft"].dark .sidebar-archive-btn,
+[data-material="soft"].dark .agent-toolbar-pill-btn,
+[data-material="soft"].dark .header-status-chip {
+  background: var(--glass-soft, rgba(54, 62, 78, 0.38));
+  border: 1px solid var(--rim-soft, rgba(255, 255, 255, 0.1));
+  box-shadow:
+    0 3px 0 var(--inset-hi, rgba(255, 255, 255, 0.14)) inset,
+    0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* 所有常见带框元素统一高光（box-shadow inset 实现顶部高光） */
+/* 轻拟态输入框不透明规则统一在 packages/ui/styles/glass.css 维护，
+   此处不再重复，避免 !important 冲突覆盖 neumorph 主题凸起阴影 */
+
 [data-material="soft"] .session-well,
-[data-material="soft"] .nav-island-glass,
 [data-material="soft"] .settings-card,
 [data-material="soft"] .settings-glass,
 [data-material="soft"] .settings-search-shell,
@@ -6372,27 +6564,19 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"] .session-glass-surface,
 [data-material="soft"] .session-glass-sidebar,
 [data-material="soft"] .shell-glass,
-[data-material="soft"] .pill,
-[data-material="soft"] .tab,
-[data-material="soft"] .tool-cluster button,
-[data-material="soft"] .msg-user,
-[data-material="soft"] .process-group,
-[data-material="soft"] .think-block,
-[data-material="soft"] .sidebar-archive-btn,
-[data-material="soft"] .agent-toolbar-pill-btn,
 [data-material="soft"] .neumorph-chip,
 [data-material="soft"] .neumorph-dialog-shell,
 [data-material="soft"] .neumorph-footer-bar,
 [data-material="soft"] .material-cta,
 [data-material="soft"] .material-secondary-btn,
 [data-material="soft"] .ui-switch,
-[data-material="soft"] .session-list-item-active {
+[data-material="soft"] .session-list-item-active,
+[data-material="soft"] .rail-island-btn--active {
   border-top-color: rgba(255, 255, 255, 0.6);
   border-right-color: rgba(255, 255, 255, 0.45);
 }
 
 [data-material="soft"].dark .session-well,
-[data-material="soft"].dark .nav-island-glass,
 [data-material="soft"].dark .settings-card,
 [data-material="soft"].dark .settings-glass,
 [data-material="soft"].dark .settings-search-shell,
@@ -6403,21 +6587,110 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"].dark .session-glass-surface,
 [data-material="soft"].dark .session-glass-sidebar,
 [data-material="soft"].dark .shell-glass,
-[data-material="soft"].dark .pill,
-[data-material="soft"].dark .tab,
-[data-material="soft"].dark .tool-cluster button,
-[data-material="soft"].dark .msg-user,
-[data-material="soft"].dark .process-group,
-[data-material="soft"].dark .think-block,
-[data-material="soft"].dark .sidebar-archive-btn,
-[data-material="soft"].dark .agent-toolbar-pill-btn,
 [data-material="soft"].dark .neumorph-chip,
 [data-material="soft"].dark .neumorph-dialog-shell,
 [data-material="soft"].dark .neumorph-footer-bar,
 [data-material="soft"].dark .material-cta,
 [data-material="soft"].dark .material-secondary-btn,
 [data-material="soft"].dark .ui-switch,
-[data-material="soft"].dark .session-list-item-active {
+[data-material="soft"].dark .session-list-item-active,
+[data-material="soft"].dark .rail-island-btn--active {
   border-top-color: rgba(255, 255, 255, 0.2);
   border-right-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ===== 普通材质（磨砂玻璃）扁平化覆盖：移除所有模拟阴影和边缘高光 ===== */
+
+/* Session 选中态：扁平化，保留可见的颜色差异 */
+[data-material="frosted"] .session-item-selected,
+[data-material="frosted"] .session-list-item-active,
+[data-material="frosted"] .workspace-item-selected,
+[data-material="frosted"] .tab-item-selected {
+  background: hsl(var(--primary) / 0.08) !important;
+  border: 1px solid hsl(var(--primary) / 0.18) !important;
+  box-shadow: none !important;
+}
+
+/* 深色模式 Session 选中态 */
+[data-material="frosted"].dark .session-item-selected,
+[data-material="frosted"].dark .session-list-item-active,
+[data-material="frosted"].dark .workspace-item-selected,
+[data-material="frosted"].dark .tab-item-selected {
+  background: hsl(var(--primary) / 0.12) !important;
+  border: 1px solid hsl(var(--primary) / 0.22) !important;
+  box-shadow: none !important;
+}
+
+/* Session Well 下的选中态：扁平化（覆盖更具体的选择器） */
+[data-material="frosted"] .session-well .session-row-shell.session-list-item-active,
+[data-material="frosted"] .session-well .session-list-row.session-list-item-active {
+  background: hsl(var(--primary) / 0.08) !important;
+  border: 1px solid hsl(var(--primary) / 0.18) !important;
+  box-shadow: none !important;
+}
+
+[data-material="frosted"].dark .session-well .session-row-shell.session-list-item-active,
+[data-material="frosted"].dark .session-well .session-list-row.session-list-item-active {
+  background: hsl(var(--primary) / 0.12) !important;
+  border: 1px solid hsl(var(--primary) / 0.22) !important;
+  box-shadow: none !important;
+}
+
+/* Session 按下态：移除 inset shadow */
+[data-material="frosted"] .session-list-row:active:not(.session-list-item-active) {
+  box-shadow: none;
+}
+
+/* Rail 选中态：扁平化，仅保留背景色和边框 */
+[data-material="frosted"]:not(.dark) .rail-island-btn--active {
+  color: hsl(var(--primary));
+  background: hsl(var(--muted) / 0.42);
+  border: 1px solid hsl(var(--border) / 0.38);
+  box-shadow: none;
+}
+
+[data-material="frosted"].dark .rail-island-btn--active {
+  color: hsl(var(--primary));
+  background: hsl(var(--muted) / 0.36);
+  border: 1px solid hsl(var(--border) / 0.32);
+  box-shadow: none;
+}
+
+/* Rail 按下态：移除 inset shadow */
+[data-material="frosted"] .rail-island-btn:active {
+  box-shadow: none;
+}
+
+/* Rail hover 态：移除 translateY，保持扁平 */
+[data-material="frosted"] .rail-island-btn:hover {
+  transform: none;
+}
+
+/* 已归档按钮：扁平化，移除所有立体效果 */
+[data-material="frosted"] .sidebar-archive-btn {
+  border: 1px solid hsl(var(--border) / 0.25);
+  background: hsl(var(--background) / 0.32);
+  box-shadow: none;
+}
+
+[data-material="frosted"] .sidebar-archive-btn:hover {
+  background: hsl(var(--background) / 0.48);
+  transform: none;
+  box-shadow: none;
+}
+
+[data-material="frosted"] .sidebar-archive-btn:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+[data-material="frosted"].dark .sidebar-archive-btn {
+  border: 1px solid hsl(var(--border) / 0.20);
+  background: hsl(var(--background) / 0.28);
+  box-shadow: none;
+}
+
+[data-material="frosted"].dark .sidebar-archive-btn:hover {
+  background: hsl(var(--background) / 0.42);
+  box-shadow: none;
 }

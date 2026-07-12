@@ -19,6 +19,8 @@ import type {
 } from '@tagent/shared'
 import App from './App'
 import {
+  advancedMaterialEnabledAtom,
+  advancedMaterialOnModeAtom,
   advancedMaterialModeAtom,
   applyAdvancedMaterialToDOM,
   initializeAdvancedMaterial,
@@ -478,14 +480,16 @@ function MarkdownFontSizeInitializer(): null {
 }
 
 /**
- * 高级材质初始化：高透玻璃 / 低透磨砂
+ * 高级材质初始化：开关状态 + 材质选择
  */
 function AdvancedMaterialInitializer(): null {
-  const setAdvancedMaterialMode = useSetAtom(advancedMaterialModeAtom)
+  const setAdvancedMaterialEnabled = useSetAtom(advancedMaterialEnabledAtom)
+  const setAdvancedMaterialOnMode = useSetAtom(advancedMaterialOnModeAtom)
 
   useEffect(() => {
-    void initializeAdvancedMaterial(setAdvancedMaterialMode)
-  }, [setAdvancedMaterialMode])
+    // mode 由 enabled + onMode 派生 atom 计算，无需 setMode
+    void initializeAdvancedMaterial(setAdvancedMaterialEnabled, setAdvancedMaterialOnMode)
+  }, [setAdvancedMaterialEnabled, setAdvancedMaterialOnMode])
 
   return null
 }

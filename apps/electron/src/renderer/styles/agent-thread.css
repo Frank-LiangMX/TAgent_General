@@ -16,13 +16,28 @@
   --agent-surface-radius: 14px;
   /* 大圆角 - 用于用户/助手消息气泡，模仿真实聊天气泡 */
   --agent-bubble-radius: 20px;
-  --agent-surface-bg: hsl(var(--muted) / 0.42);
+  /* 普通材质：柔和 MD 气泡（secondary/card，不用 muted 深灰） */
+  --agent-surface-bg: hsl(var(--secondary));
   --agent-surface-border: hsl(var(--border) / 0.55);
+  --agent-bubble-blur: 0px;
 }
 
 .dark .tagent-agent-thread {
-  --agent-surface-bg: hsl(var(--muted) / 0.28);
+  --agent-surface-bg: hsl(var(--secondary));
   --agent-surface-border: hsl(var(--border) / 0.45);
+  --agent-bubble-blur: 0px;
+}
+
+/* 高级高透：半透明 + 轻 blur */
+[data-material='glass'] .tagent-agent-thread {
+  --agent-surface-bg: hsl(var(--muted) / 0.42);
+  --agent-bubble-blur: 8px;
+}
+
+.dark[data-material='glass'] .tagent-agent-thread,
+[data-material='glass'].dark .tagent-agent-thread {
+  --agent-surface-bg: hsl(var(--muted) / 0.28);
+  --agent-bubble-blur: 8px;
 }
 
 /* ===== 过程组 ===== */
@@ -35,7 +50,10 @@
 }
 
 .tagent-agent-thread .agent-process-group__toggle:hover {
-  background: hsl(var(--muted) / 0.38);
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
 }
 
 .tagent-agent-thread .agent-process-stack {
@@ -58,7 +76,10 @@
 
 .tagent-agent-thread .agent-tool-row > button:hover,
 .tagent-agent-thread .agent-tool-row > div[role='button']:hover {
-  background: hsl(var(--muted) / 0.35);
+  background: var(
+    --hover-fill,
+    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+  );
 }
 
 .tagent-agent-thread .agent-tool-detail {
@@ -97,11 +118,16 @@
   font-size: 15px;
   font-weight: 500;
   line-height: 1.58;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* 普通材质 blur=0；glass 时 --agent-bubble-blur=8px */
+  backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
+  -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
+}
+
+[data-material='glass'] .tagent-agent-thread .agent-user-bubble {
   box-shadow:
     0 1px 0 hsl(var(--background) / 0.6) inset,
     0 2px 8px hsl(var(--background) / 0.08);
-  backdrop-filter: blur(8px) saturate(1.1);
-  -webkit-backdrop-filter: blur(8px) saturate(1.1);
 }
 
 .tagent-agent-thread .agent-user-bubble:hover {
@@ -121,7 +147,7 @@
 
 .tagent-agent-thread .agent-shiny-text {
   --agent-shine-base: hsl(var(--muted-foreground) / 0.88);
-  --agent-shine-peak: hsl(var(--primary) / 0.95);
+  --agent-shine-peak: rgba(255, 255, 255, 0.85);
   background-image: linear-gradient(
     90deg,
     var(--agent-shine-base) 0%,
@@ -135,6 +161,11 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: agent-shiny-text 2s linear infinite;
+}
+
+.dark .tagent-agent-thread .agent-shiny-text {
+  --agent-shine-base: hsl(var(--muted-foreground) / 0.65);
+  --agent-shine-peak: rgba(255, 255, 255, 0.5);
 }
 
 @keyframes agent-shiny-text {

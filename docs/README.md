@@ -39,6 +39,8 @@
 | --------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | [`plans/2026-06-05-tagent-fusion-design.md`](plans/2026-06-05-tagent-fusion-design.md)               | TAgent Desktop 完整设计（13 节）                    |
 | [`plans/2026-06-05-tagent-server-design.md`](plans/2026-06-05-tagent-server-design.md)               | TAgent Server 完整设计（12 节）                     |
+| [`plans/2026-07-12-material-surface-token-architecture.md`](plans/2026-07-12-material-surface-token-architecture.md) ✨ | **材质 Surface Token 架构**（基线 frosted + 双轴正交，待实现） |
+| [`plans/2026-07-12-soft-glass-highlight-system-design.md`](plans/2026-07-12-soft-glass-highlight-system-design.md) | 轻拟态 soft 全局高光（被 Surface Token 设计吸收） |
 | [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md) | **Ask 档位统一 Composer**（替代 Chat 模式）         |
 | [`plans/2026-06-13-context-compaction-architecture.md`](plans/2026-06-13-context-compaction-architecture.md) | 双层压缩机制（已落地）                              |
 | [`plans/2026-06-13-context-usage-breakdown-design.md`](plans/2026-06-13-context-usage-breakdown-design.md) | Context Usage 分项面板设计（活跃）                  |
@@ -70,6 +72,8 @@
 | [`decisions/0001-fusion-architecture.md`](decisions/0001-fusion-architecture.md)                         | 融合架构（Proma + ta_agent）                                  |
 | [`decisions/0002-ask-mode-composer.md`](decisions/0002-ask-mode-composer.md)                             | Ask / Agent Composer 档位（替代独立 Chat 模式）               |
 | [`decisions/0003-upstream-feature-roadmap.md`](decisions/0003-upstream-feature-roadmap.md) ✨            | **上游特性对齐策略（v0.13.3 基线）**                           |
+| [`decisions/0004-btw-side-thread-and-ask-session-split.md`](decisions/0004-btw-side-thread-and-ask-session-split.md) | BTW 临时 side thread；Ask 从 Agent 会话拆分 |
+| [`decisions/0005-material-surface-token-architecture.md`](decisions/0005-material-surface-token-architecture.md) ✨ | **材质 Surface Token：基线 frosted，glass/soft 增强** |
 
 ---
 
