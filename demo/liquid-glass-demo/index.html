@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Glass Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --scene-background:
+        radial-gradient(circle at 5% 5%, hsl(215 65% 72% / 0.46) 0%, transparent 34%),
+        radial-gradient(circle at 92% 88%, hsl(260 55% 78% / 0.4) 0%, transparent 36%),
+        radial-gradient(circle at 34% 72%, hsl(190 60% 75% / 0.34) 0%, transparent 30%),
+        radial-gradient(circle at 78% 22%, hsl(170 48% 78% / 0.28) 0%, transparent 24%),
+        radial-gradient(ellipse 260px 110px at 50% 37%, transparent 96%, hsl(218 55% 50% / 0.38) 97% 98%, transparent 99%),
+        radial-gradient(ellipse 220px 80px at 32% 69%, transparent 96%, hsl(265 48% 55% / 0.3) 97% 98%, transparent 99%),
+        linear-gradient(hsl(220 24% 45% / 0.065) 1px, transparent 1px),
+        linear-gradient(90deg, hsl(220 24% 45% / 0.065) 1px, transparent 1px),
+        hsl(220 10% 96%);
+      --scene-background-size:
+        auto, auto, auto, auto, auto, auto, 32px 32px, 32px 32px, auto;
+    }
+    body {
+      min-height: 100vh;
+      background: var(--scene-background);
+      background-size: var(--scene-background-size);
+      background-attachment: fixed;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    /* === 玻璃效果 === */
+    .glass {
+      position: fixed;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      z-index: 10;
+      transition:
+        transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+      backdrop-filter: blur(1.5px) saturate(135%) contrast(1.04);
+      -webkit-backdrop-filter: blur(1.5px) saturate(135%) contrast(1.04);
+      background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.025) 0%,
+        rgba(255, 255, 255, 0.008) 52%,
+        rgba(255, 255, 255, 0.004) 100%
+      );
+      border: 1px solid rgba(255, 255, 255, 0.52);
+      will-change: transform, backdrop-filter;
+      /* 色散阴影 — 模拟光线穿过玻璃的彩虹色散 */
+      box-shadow:
+        /* 色散层：不同颜色偏移模拟色散 */
+        -4px 8px 18px -8px rgba(255, 100, 120, 0.12),
+        4px 8px 18px -8px rgba(100, 155, 255, 0.12),
+        /* 主阴影 */
+        0 16px 36px -18px rgba(45, 55, 75, 0.28),
+        0 4px 12px -6px rgba(45, 55, 75, 0.16),
+        /* 边缘厚度 — 上下强，左右弱 */
+        inset 0 1.5px 0 0 rgba(255, 255, 255, 0.72),
+        inset 1px 0 0 0 rgba(255, 255, 255, 0.24),
+        inset 0 -1px 0 0 rgba(90, 105, 130, 0.1);
+    }
+    .glass:active { cursor: grabbing; }
+    .glass:hover {
+      transform: scale(1.02);
+      box-shadow:
+        /* 色散加强 */
+        -5px 10px 22px -9px rgba(255, 100, 120, 0.16),
+        5px 10px 22px -9px rgba(100, 155, 255, 0.16),
+        /* 主阴影 */
+        0 20px 44px -18px rgba(45, 55, 75, 0.32),
+        0 6px 16px -7px rgba(45, 55, 75, 0.2),
+        /* 边缘厚度 — 上下强，左右弱 */
+        inset 0 1.5px 0 0 rgba(255, 255, 255, 0.82),
+        inset 1px 0 0 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 0 rgba(90, 105, 130, 0.12);
+    }
+    .glass:active { transform: scale(0.99); }
+
+    /*
+     * 真正的折射采样层：
+     * 复制与视口固定对齐的背景，再对副本施加 SVG displacement。
+     * background-attachment: fixed 让玻璃拖动时仍采样当前位置的场景。
+     */
+    .glass-refraction {
+      position: absolute;
+      inset: -18px;
+      z-index: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: var(--scene-background);
+      background-size: var(--scene-background-size);
+      background-attachment: fixed;
+      filter: url(#liquid-backdrop-refraction);
+      -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 52%,
+        rgba(0, 0, 0, 0.24) 72%,
+        rgba(0, 0, 0, 0.82) 92%,
+        #000 100%
+      );
+      mask-image: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 52%,
+        rgba(0, 0, 0, 0.24) 72%,
+        rgba(0, 0, 0, 0.82) 92%,
+        #000 100%
+      );
+      transform: scale(1.08) translate(
+        calc(var(--refract-x, 0px) + var(--drag-refract-x, 0px)),
+        calc(var(--refract-y, 0px) + var(--drag-refract-y, 0px))
+      );
+      transform-origin: center;
+      opacity: 0.62;
+      transition:
+        transform 90ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 160ms ease;
+      will-change: transform, filter;
+    }
+    .glass.is-dragging .glass-refraction {
+      opacity: 0.58;
+      transition: none;
+    }
+    .glass-refraction::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(
+          circle at var(--mx, 50%) var(--my, 50%),
+          rgba(255, 255, 255, 0.22),
+          transparent 40%
+        ),
+        linear-gradient(
+          145deg,
+          rgba(255, 120, 145, 0.035),
+          transparent 42%,
+          rgba(100, 160, 255, 0.045)
+        );
+      mix-blend-mode: screen;
+    }
+
+    /* 玻璃底板 — 带颜色渐变 */
+    .glass-base {
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      z-index: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.035);
+    }
+    .glass-base-1 {
+      background: linear-gradient(135deg, hsl(210 40% 90%) 0%, hsl(250 30% 90%) 100%);
+    }
+    .glass-base-2 {
+      background: linear-gradient(135deg, hsl(190 30% 90%) 0%, hsl(270 25% 90%) 100%);
+    }
+    .glass-base-3 {
+      background: linear-gradient(135deg, hsl(340 25% 90%) 0%, hsl(210 35% 90%) 100%);
+    }
+    body.dark .glass-base-1 {
+      background: linear-gradient(135deg, hsl(210 30% 22%) 0%, hsl(250 25% 20%) 100%);
+    }
+    body.dark .glass-base-2 {
+      background: linear-gradient(135deg, hsl(190 25% 20%) 0%, hsl(270 20% 19%) 100%);
+    }
+    body.dark .glass-base-3 {
+      background: linear-gradient(135deg, hsl(340 20% 20%) 0%, hsl(210 28% 19%) 100%);
+    }
+    .glass-edge {
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      /* 上下高光强，左右弱 */
+      background:
+        /* 顶部高光 */
+        linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 8%, transparent 20%),
+        /* 底部高光（较弱） */
+        linear-gradient(to top, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 6%, transparent 15%),
+        /* 左侧极弱 */
+        linear-gradient(to right, rgba(255,255,255,0.06) 0%, transparent 5%),
+        /* 右侧极弱 */
+        linear-gradient(to left, rgba(255,255,255,0.06) 0%, transparent 5%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      padding: 2px;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.2));
+    }
+
+    /* 顶部高光条 */
+    .glass-shine {
+      position: absolute;
+      top: 0; left: 8%; right: 8%; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.55) 20%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.55) 80%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* 动态高光 — 跟随鼠标 */
+    .glass-highlight {
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255,255,255,0.34) 0%,
+        rgba(255,255,255,0.08) 24%,
+        rgba(255,255,255,0) 58%
+      );
+      mix-blend-mode: screen;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .glass:hover .glass-highlight { opacity: 1; }
+
+    .glass-content {
+      position: relative; z-index: 1;
+      padding: 28px; height: 100%;
+      display: flex; flex-direction: column; justify-content: center;
+      color: hsl(220 15% 20%);
+    }
+    .glass-content h3 {
+      font-size: 17px; font-weight: 600; margin-bottom: 6px;
+      letter-spacing: -0.2px;
+    }
+    .glass-content p {
+      font-size: 13px; line-height: 1.6;
+      color: hsl(220 10% 40%);
+    }
+    .glass-btn .glass-content {
+      align-items: center; justify-content: center;
+    }
+    .glass-btn .glass-content span {
+      font-size: 13px; font-weight: 500; letter-spacing: 1px;
+      text-transform: uppercase; color: hsl(220 15% 25%);
+    }
+
+    .demo-title {
+      position: fixed; top: 36px; left: 50%; transform: translateX(-50%);
+      color: hsl(220 15% 22%); font-size: 22px; font-weight: 600;
+      letter-spacing: 0.5px; z-index: 100;
+    }
+    .demo-subtitle {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      color: hsl(220 10% 55%); font-size: 13px; z-index: 100;
+    }
+    .demo-tip {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: hsl(220 10% 70%); font-size: 12px; z-index: 100;
+    }
+
+    /* 暗色切换按钮 */
+    .theme-toggle {
+      position: fixed; top: 36px; right: 36px; z-index: 100;
+      width: 40px; height: 40px; border-radius: 20px;
+      border: 1px solid hsl(220 10% 85%);
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: hsl(220 15% 35%);
+      transition: all 0.2s ease;
+    }
+    .theme-toggle:hover { background: rgba(255,255,255,0.7); }
+
+    /* === 暗色模式 === */
+    body.dark {
+      --scene-background:
+        radial-gradient(circle at 5% 5%, hsl(220 25% 22% / 0.55) 0%, transparent 34%),
+        radial-gradient(circle at 92% 88%, hsl(250 22% 19% / 0.52) 0%, transparent 36%),
+        radial-gradient(circle at 34% 72%, hsl(200 20% 19% / 0.46) 0%, transparent 30%),
+        radial-gradient(circle at 78% 22%, hsl(180 18% 18% / 0.38) 0%, transparent 24%),
+        radial-gradient(ellipse 260px 110px at 50% 37%, transparent 96%, hsl(220 24% 66% / 0.16) 97% 98%, transparent 99%),
+        radial-gradient(ellipse 220px 80px at 32% 69%, transparent 96%, hsl(260 22% 68% / 0.13) 97% 98%, transparent 99%),
+        linear-gradient(hsl(220 20% 70% / 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, hsl(220 20% 70% / 0.025) 1px, transparent 1px),
+        hsl(220 12% 13%);
+      background: var(--scene-background);
+      background-size: var(--scene-background-size);
+    }
+    body.dark .glass-base { opacity: 0; }
+    body.dark .glass-refraction { opacity: 0.46; }
+    body.dark .glass.is-dragging .glass-refraction { opacity: 0.56; }
+
+    body.dark .glass {
+      background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.025) 0%,
+        rgba(255, 255, 255, 0.009) 55%,
+        rgba(255, 255, 255, 0.004) 100%
+      );
+      border-color: rgba(255, 255, 255, 0.17);
+      box-shadow:
+        /* 色散 */
+        -4px 8px 18px -8px rgba(255, 100, 120, 0.09),
+        4px 8px 18px -8px rgba(100, 155, 255, 0.1),
+        /* 主阴影 */
+        0 18px 40px -16px rgba(0, 0, 0, 0.55),
+        0 5px 14px -6px rgba(0, 0, 0, 0.42),
+        /* 边缘 — 上下强，左右弱 */
+        inset 0 1.5px 0 0 rgba(255, 255, 255, 0.2),
+        inset 1px 0 0 0 rgba(255, 255, 255, 0.07),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
+    }
+    body.dark .glass:hover {
+      box-shadow:
+        /* 色散加强 */
+        -4px 8px 20px -4px rgba(255, 100, 100, 0.05),
+        4px 8px 20px -4px rgba(100, 150, 255, 0.05),
+        0px 10px 22px -4px rgba(150, 100, 255, 0.03),
+        /* 主阴影 */
+        0 12px 40px rgba(0, 0, 0, 0.35),
+        /* 边缘 — 上下强，左右弱 */
+        inset 0 2px 0 0 rgba(255, 255, 255, 0.18),
+        inset 0 4px 0 0 rgba(255, 255, 255, 0.05),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+        inset 0 -3px 0 0 rgba(0, 0, 0, 0.18),
+        inset 2px 0 0 0 rgba(255, 255, 255, 0.03),
+        inset -2px 0 0 0 rgba(255, 255, 255, 0.03),
+        inset 1px 1px 0 0 rgba(255, 255, 255, 0.12),
+        inset -1px -1px 0 0 rgba(255, 255, 255, 0.03);
+    }
+    body.dark .glass-edge { opacity: 0.5; }
+    body.dark .glass-shine { opacity: 0.4; }
+    body.dark .glass-content { color: hsl(220 15% 85%); }
+    body.dark .glass-content p { color: hsl(220 10% 55%); }
+    body.dark .glass-btn .glass-content span { color: hsl(220 15% 80%); }
+    body.dark .demo-title { color: hsl(220 15% 85%); }
+    body.dark .demo-subtitle { color: hsl(220 10% 50%); }
+    body.dark .demo-tip { color: hsl(220 10% 35%); }
+    body.dark .theme-toggle {
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: hsl(220 15% 75%);
+    }
+  </style>
+</head>
+<body>
+  <!-- 对玻璃内部的视口背景副本做真实位移，backdrop-filter 作为稳定回退。 -->
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <filter id="liquid-backdrop-refraction" x="-20%" y="-20%" width="140%" height="140%"
+            color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.012 0.025" numOctaves="2"
+                    seed="11" result="noise" />
+      <feGaussianBlur in="noise" stdDeviation="0.45" result="softNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="36"
+                         xChannelSelector="R" yChannelSelector="B" />
+    </filter>
+  </svg>
+
+  <h1 class="demo-title">Liquid Glass</h1>
+  <p class="demo-subtitle">Edge depth & refraction on muted background</p>
+  <p class="demo-tip">Drag glass · Hover for light reflection</p>
+  <button class="theme-toggle" id="themeToggle">☀</button>
+
+  <script>
+    // 暗色切换
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      document.getElementById('themeToggle').textContent = document.body.classList.contains('dark') ? '☾' : '☀';
+    });
+
+    function createGlass(opts) {
+      const el = document.createElement('div');
+      el.className = 'glass' + (opts.btn ? ' glass-btn' : '');
+      el.style.cssText = `width:${opts.w}px;height:${opts.h}px;border-radius:${opts.r}px;top:${opts.top};left:${opts.left};`;
+
+      const refraction = document.createElement('div');
+      refraction.className = 'glass-refraction';
+
+      const base = document.createElement('div');
+      base.className = 'glass-base ' + (opts.base || 'glass-base-1');
+
+      const edge = document.createElement('div');
+      edge.className = 'glass-edge';
+
+      const shine = document.createElement('div');
+      shine.className = 'glass-shine';
+
+      const highlight = document.createElement('div');
+      highlight.className = 'glass-highlight';
+
+      const content = document.createElement('div');
+      content.className = 'glass-content';
+      content.innerHTML = opts.btn
+        ? `<span>${opts.btn}</span>`
+        : `<h3>${opts.title}</h3><p>${opts.desc}</p>`;
+
+      el.appendChild(refraction);
+      el.appendChild(base);
+      el.appendChild(edge);
+      el.appendChild(shine);
+      el.appendChild(highlight);
+      el.appendChild(content);
+
+      function updateOptics(e) {
+        const rect = el.getBoundingClientRect();
+        const nx = (e.clientX - rect.left) / rect.width;
+        const ny = (e.clientY - rect.top) / rect.height;
+        el.style.setProperty('--mx', (nx * 100) + '%');
+        el.style.setProperty('--my', (ny * 100) + '%');
+        el.style.setProperty('--refract-x', ((0.5 - nx) * 12) + 'px');
+        el.style.setProperty('--refract-y', ((0.5 - ny) * 12) + 'px');
+      }
+
+      // Pointer Events + capture：鼠标、触控笔、触摸统一且拖出元素后仍持续响应
+      let drag = false, pointerId = null, sx, sy, ix, iy;
+      el.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        drag = true; sx = e.clientX; sy = e.clientY;
+        pointerId = e.pointerId;
+        const r = el.getBoundingClientRect(); ix = r.left; iy = r.top;
+        el.classList.add('is-dragging');
+        el.setPointerCapture(pointerId);
+        updateOptics(e);
+        e.preventDefault();
+      });
+
+      el.addEventListener('pointermove', (e) => {
+        updateOptics(e);
+        if (drag) {
+          const dx = e.clientX - sx;
+          const dy = e.clientY - sy;
+          el.style.left = (ix + dx) + 'px';
+          el.style.top = (iy + dy) + 'px';
+          el.style.setProperty('--drag-refract-x', Math.max(-10, Math.min(10, -dx * 0.12)) + 'px');
+          el.style.setProperty('--drag-refract-y', Math.max(-10, Math.min(10, -dy * 0.12)) + 'px');
+        }
+      });
+
+      function endDrag(e) {
+        if (!drag) return;
+        drag = false;
+        if (pointerId !== null && el.hasPointerCapture(pointerId)) {
+          el.releasePointerCapture(pointerId);
+        }
+        pointerId = null;
+        el.classList.remove('is-dragging');
+        el.style.setProperty('--drag-refract-x', '0px');
+        el.style.setProperty('--drag-refract-y', '0px');
+      }
+
+      el.addEventListener('pointerup', endDrag);
+      el.addEventListener('pointercancel', endDrag);
+      el.addEventListener('pointerleave', () => {
+        if (drag) return;
+        el.style.setProperty('--refract-x', '0px');
+        el.style.setProperty('--refract-y', '0px');
+      });
+
+      document.body.appendChild(el);
+    }
+
+    createGlass({
+      w: 300, h: 180, r: 24,
+      top: 'calc(38% - 90px)', left: 'calc(50% - 150px)',
+      base: 'glass-base-1',
+      title: 'Edge Depth', desc: 'Multi-layer inset shadows simulate glass thickness and edge refraction'
+    });
+    createGlass({
+      w: 240, h: 150, r: 20,
+      top: 'calc(68% - 75px)', left: 'calc(32% - 120px)',
+      base: 'glass-base-2',
+      title: 'Color Base', desc: 'Gradient base plate beneath glass creates chromatic depth'
+    });
+    createGlass({
+      w: 160, h: 48, r: 24,
+      top: 'calc(68% - 24px)', left: 'calc(68% - 80px)',
+      base: 'glass-base-3',
+      btn: 'Explore'
+    });
+  </script>
+</body>
+</html>

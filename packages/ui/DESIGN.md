@@ -3,6 +3,10 @@
 > 本文件是 `@tagent/ui` 包的设计规范。**写任何 UI 代码前必读本文件。**
 >
 > 修改 token：编辑 `packages/ui/src/tokens/*.ts` → `bun run --filter @tagent/ui tokens:generate` → globals.css + tailwind.config.js 自动同步。
+>
+> **Liquid Glass / 高透玻璃外部参考与 Agent 约束**（技法映射、禁止项、侧栏×主区血泪备忘）：  
+> [`docs/ui/liquid-glass-ui-reference-for-agents.md`](../../docs/ui/liquid-glass-ui-reference-for-agents.md)  
+> 主参考站：https://freefrontend.com/css-liquid-glass/
 
 ---
 

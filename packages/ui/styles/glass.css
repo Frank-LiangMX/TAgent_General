@@ -140,6 +140,13 @@
     hsl(var(--background) / 0.62) 48%,
     hsl(var(--background) / 0.56) 100%
   );
+  /* Well：内凹区域（最透，用于 sidebar 等）*/
+  --surface-bg-well: linear-gradient(
+    175deg,
+    hsl(var(--background) / 0.28) 0%,
+    hsl(var(--background) / 0.42) 52%,
+    hsl(var(--background) / 0.35) 100%
+  );
   --surface-bg-tooltip: linear-gradient(
     168deg,
     hsl(var(--tooltip) / 0.82) 0%,
@@ -176,6 +183,10 @@
     inset 0 1px 0 0 hsl(var(--glass-shine) / 0.45),
     0 2px 10px -4px rgba(0, 0, 0, 0.1),
     0 6px 18px -8px rgba(0, 0, 0, 0.08);
+  /* Well：极轻的内凹阴影（高透玻璃几乎不需要）*/
+  --surface-shadow-well:
+    inset 1px 1px 3px rgba(0, 0, 0, 0.05),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.03);
   --surface-inset-hi: hsl(var(--glass-shine) / 0.4);
   --surface-shine-opacity: 1;
   --surface-shine-opacity-soft: 0.55;
@@ -214,6 +225,13 @@
     hsl(var(--background) / 0.54) 48%,
     hsl(var(--background) / 0.48) 100%
   );
+  /* Well：深色内凹区域（更透，带 primary tint）*/
+  --surface-bg-well: linear-gradient(
+    175deg,
+    color-mix(in srgb, hsl(var(--primary)) 6%, hsl(var(--background)) / 0.32) 0%,
+    hsl(var(--background) / 0.45) 52%,
+    hsl(var(--background) / 0.38) 100%
+  );
   --surface-bg-popover: linear-gradient(
     168deg,
     hsl(var(--popover) / 0.44) 0%,
@@ -243,6 +261,10 @@
     inset 0 1px 0 0 hsl(var(--foreground) / 0.09),
     0 2px 12px -4px rgba(0, 0, 0, 0.28),
     0 6px 20px -8px rgba(0, 0, 0, 0.22);
+  /* Well：深色内凹阴影 */
+  --surface-shadow-well:
+    inset 1px 1px 4px rgba(0, 0, 0, 0.18),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.04);
   --session-glass-strong: hsl(var(--muted) / 0.55);
   --session-rim: hsl(var(--glass-rim) / 0.32);
   --session-inset-hi: hsl(var(--glass-shine) / 0.16);

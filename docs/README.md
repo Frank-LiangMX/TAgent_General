@@ -78,6 +78,14 @@
 
 ---
 
+## UI 视觉参考（Agent 必读）
+
+| 文档 | 内容 |
+| ---- | ---- |
+| [`ui/liquid-glass-ui-reference-for-agents.md`](ui/liquid-glass-ui-reference-for-agents.md) ✨ | **Liquid Glass 外部参考目录**（[freefrontend.com/css-liquid-glass](https://freefrontend.com/css-liquid-glass/)）+ 与 TAgent frosted/glass/soft 映射 + 侧栏/底板硬约束 |
+
+---
+
 ## 流程规范（`process/`）
 
 | 文档                                                                                  | 内容                              |
