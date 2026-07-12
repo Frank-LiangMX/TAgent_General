@@ -3,7 +3,7 @@
  *
  * - glass: 高透玻璃
  * - frosted: 低透磨砂玻璃
- * - neumorph: 轻拟态
+ * - soft: 轻拟态
  */
 
 import { atom } from 'jotai'
@@ -20,7 +20,7 @@ export const advancedMaterialModeAtom = atom<AdvancedMaterialMode>(
 )
 
 function isAdvancedMaterialMode(value: unknown): value is AdvancedMaterialMode {
-  return value === 'glass' || value === 'frosted' || value === 'neumorph'
+  return value === 'glass' || value === 'frosted' || value === 'soft'
 }
 
 function resolveAdvancedMaterialMode(settings: Partial<AppSettings>): AdvancedMaterialMode {
@@ -29,7 +29,7 @@ function resolveAdvancedMaterialMode(settings: Partial<AppSettings>): AdvancedMa
   }
 
   if (settings.themeStyle === 'neumorph-light' || settings.themeStyle === 'neumorph-dark') {
-    return 'neumorph'
+    return 'soft'
   }
 
   if (typeof settings.advancedMaterialEnabled === 'boolean') {
@@ -39,21 +39,11 @@ function resolveAdvancedMaterialMode(settings: Partial<AppSettings>): AdvancedMa
   return DEFAULT_ADVANCED_MATERIAL_MODE
 }
 
-function syncNeumorphThemeClass(mode: AdvancedMaterialMode): void {
-  const html = document.documentElement
-  html.classList.remove('theme-neumorph-light', 'theme-neumorph-dark')
-
-  if (mode !== 'neumorph') return
-
-  html.classList.add(html.classList.contains('dark') ? 'theme-neumorph-dark' : 'theme-neumorph-light')
-}
-
 export function applyAdvancedMaterialToDOM(mode: AdvancedMaterialMode): void {
   const html = document.documentElement
 
+  html.setAttribute('data-material', mode)
   html.classList.toggle('material-frosted', mode === 'frosted')
-  html.classList.toggle('material-neumorph', mode === 'neumorph')
-  syncNeumorphThemeClass(mode)
 }
 
 export async function initializeAdvancedMaterial(

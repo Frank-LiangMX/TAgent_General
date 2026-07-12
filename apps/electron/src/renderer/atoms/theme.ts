@@ -178,7 +178,7 @@ export async function initializeTheme(
     void window.electronAPI.updateSettings({
       themeMode: normalized.mode,
       themeStyle: 'default',
-      advancedMaterialMode: 'neumorph',
+      advancedMaterialMode: 'soft',
       advancedMaterialEnabled: false,
     })
   }

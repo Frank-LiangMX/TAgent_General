@@ -2122,7 +2122,7 @@ const ConversationItem = React.memo(function ConversationItem({
           }}
           className={cn(
             'session-list-row group relative w-full px-3 py-[7px] titlebar-no-drag text-left',
-            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
+            active ? 'session-list-item-active' : 'rounded-md'
           )}
         >
           {/* 流式状态左侧竖线条（与 Agent 保持一致） */}
@@ -2402,7 +2402,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
       ? 'rounded-md bg-primary/10'
       : active
         ? 'session-list-item-active'
-        : 'rounded-md hover:bg-primary/5'
+        : 'rounded-md'
   )
 
   return (

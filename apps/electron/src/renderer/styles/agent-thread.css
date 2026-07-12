@@ -1,12 +1,21 @@
 /**
- * Agent 会话线程视觉 — 扁平风格（与铺平会话底板一致，无玻璃/阴影）
+ * Agent 会话线程视觉
+ *
+ * 设计参考：glass-studio 原型
+ * - 消息气泡采用更大的圆角 (22px)，模仿真实聊天气泡
+ * - 用户气泡右对齐，助手消息左对齐
+ * - 工具调用行增加状态区分 (done/running)
+ *
  * 挂载点：.tagent-agent-thread（ConversationContent）
  */
 
 .tagent-agent-thread {
   --agent-avatar-size: 32px;
   --agent-content-indent: 52px;
+  /* 默认圆角 - 用于工具行、思考块等内部元素 */
   --agent-surface-radius: 14px;
+  /* 大圆角 - 用于用户/助手消息气泡，模仿真实聊天气泡 */
+  --agent-bubble-radius: 20px;
   --agent-surface-bg: hsl(var(--muted) / 0.42);
   --agent-surface-border: hsl(var(--border) / 0.55);
 }
@@ -74,24 +83,37 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* ===== 用户气泡 ===== */
+/* ===== 用户气泡 =====
+ * 模仿原型：使用更大的圆角 (20px)，右下角更尖 (10px)
+ * 增加轻微背景层次，让气泡更有质感
+ */
 
 .tagent-agent-thread .agent-user-bubble {
-  border-radius: var(--agent-surface-radius);
+  /* 原型风格：大气泡，右下角收尖 */
+  border-radius: var(--agent-bubble-radius);
+  border-radius: 20px 20px 10px 20px;
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
   font-size: 15px;
   font-weight: 500;
   line-height: 1.58;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  box-shadow:
+    0 1px 0 hsl(var(--background) / 0.6) inset,
+    0 2px 8px hsl(var(--background) / 0.08);
+  backdrop-filter: blur(8px) saturate(1.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+}
+
+.tagent-agent-thread .agent-user-bubble:hover {
+  box-shadow:
+    0 1px 0 hsl(var(--background) / 0.7) inset,
+    0 4px 12px hsl(var(--background) / 0.12);
 }
 
 .tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade,
 .tagent-agent-thread .agent-thinking-block .agent-thinking-fade {
-  border-bottom-left-radius: var(--agent-surface-radius);
-  border-bottom-right-radius: var(--agent-surface-radius);
+  border-bottom-left-radius: var(--agent-bubble-radius);
+  border-bottom-right-radius: 10px;
   background: linear-gradient(to top, var(--agent-surface-bg) 0%, transparent 100%);
 }
 

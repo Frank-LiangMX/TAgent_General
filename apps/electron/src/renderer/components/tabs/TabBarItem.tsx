@@ -123,7 +123,7 @@ export function TabBarItem({
             'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
             'border-t border-l border-r',
             isActive
-              ? 'tab-item-selected text-foreground'
+              ? 'tab-item-selected'
               : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
           )}
           onClick={onActivate}
@@ -169,7 +169,7 @@ export function TabBarItem({
           'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
           'border-t border-l border-r',
           isActive
-            ? 'tab-item-selected text-foreground'
+            ? 'tab-item-selected'
             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
           isTearingOff && 'ring-2 ring-primary/70 ring-offset-0 bg-primary/10'
         )}
@@ -178,7 +178,9 @@ export function TabBarItem({
         onPointerDown={onDragStart}
       >
         {type === 'preview' && !isNarrow && (
-          <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+          <FileText
+            className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')}
+          />
         )}
 
         {/* 标题（窄状态下隐藏，用 spacer 撑开让关闭按钮靠右） */}
@@ -187,7 +189,9 @@ export function TabBarItem({
         ) : (
           <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
             {isAgentSession && (
-              <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+              <MessageSquare
+                className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')}
+              />
             )}
             <span className="min-w-0 truncate">{title}</span>
           </span>

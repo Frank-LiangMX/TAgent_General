@@ -340,8 +340,8 @@ export function AppearanceSettings(): React.ReactElement {
                   '当前：高透玻璃，强调通透、折射和悬浮感'}
                 {advancedMaterialMode === 'frosted' &&
                   '当前：磨砂玻璃，保留层次感，但更克制、更稳'}
-                {advancedMaterialMode === 'neumorph' &&
-                  '当前：轻拟态，整体转为柔和起伏的实体材质语言'}
+                {advancedMaterialMode === 'soft' &&
+                  '当前：轻拟态，柔和玻璃质感，匹配设计原型风格'}
               </div>
             </div>
             <MaterialPreview
@@ -780,17 +780,17 @@ function MaterialPreview({ mode, onToggle }: MaterialPreviewProps): React.ReactE
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggle('neumorph')}
-            aria-pressed={mode === 'neumorph'}
-            data-selected={mode === 'neumorph'}
+            onClick={() => onToggle('soft')}
+            aria-pressed={mode === 'soft'}
+            data-selected={mode === 'soft'}
             className="tagent-material-tile"
           >
-            <div className="tagent-material-preview tagent-material-preview-neumorph" />
+            <div className="tagent-material-preview tagent-material-preview-soft" />
             <div className="tagent-material-name">轻拟态</div>
-            <div className="tagent-material-tag">Neumorph</div>
+            <div className="tagent-material-tag">Soft Glass</div>
           </button>
         </TooltipTrigger>
-        <TooltipContent>统一转为柔和实体表面，不再混用玻璃高光</TooltipContent>
+        <TooltipContent>柔和玻璃质感，匹配设计原型风格</TooltipContent>
       </Tooltip>
     </div>
   )

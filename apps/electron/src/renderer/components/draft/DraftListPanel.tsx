@@ -166,7 +166,7 @@ const DraftItem = React.memo(function DraftItem({
           }}
           className={cn(
             'session-list-row group relative w-full flex items-center gap-2 px-3 py-[7px] titlebar-no-drag text-left',
-            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
+            active ? 'session-list-item-active' : 'rounded-md'
           )}
         >
           <StickyNote
@@ -190,11 +190,16 @@ const DraftItem = React.memo(function DraftItem({
               <div
                 className={cn(
                   'truncate text-[13px] leading-5 flex items-center gap-1.5',
-                  active ? 'text-foreground' : 'text-foreground/80'
+                  active ? 'session-row-title' : 'text-foreground/80'
                 )}
               >
                 <span className="truncate flex-1 min-w-0">{draft.title || '未命名草稿'}</span>
-                <span className="flex-shrink-0 text-[10px] text-foreground/35 tabular-nums">
+                <span
+                  className={cn(
+                    'flex-shrink-0 text-[10px] tabular-nums',
+                    active ? 'session-row-meta' : 'text-foreground/35'
+                  )}
+                >
                   {formatDraftTime(draft.updatedAt)}
                 </span>
               </div>

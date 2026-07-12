@@ -195,8 +195,8 @@ export type MarkdownFontSize = 'small' | 'medium' | 'large'
 /** 默认 Markdown 字号档位 */
 export const DEFAULT_MARKDOWN_FONT_SIZE: MarkdownFontSize = 'medium'
 
-/** 楂樼骇鏉愯川妯″紡 */
-export type AdvancedMaterialMode = 'glass' | 'frosted' | 'neumorph'
+/** 高级材质模式 */
+export type AdvancedMaterialMode = 'glass' | 'frosted' | 'soft'
 
 /** 榛樿楂樼骇鏉愯川妯″紡 */
 export const DEFAULT_ADVANCED_MATERIAL_MODE: AdvancedMaterialMode = 'glass'

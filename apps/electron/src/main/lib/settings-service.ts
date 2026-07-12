@@ -16,13 +16,13 @@ function resolveAdvancedMaterialMode(data: Partial<AppSettings>): AppSettings['a
   if (
     data.advancedMaterialMode === 'glass' ||
     data.advancedMaterialMode === 'frosted' ||
-    data.advancedMaterialMode === 'neumorph'
+    data.advancedMaterialMode === 'soft'
   ) {
     return data.advancedMaterialMode
   }
 
   if (data.themeStyle === 'neumorph-light' || data.themeStyle === 'neumorph-dark') {
-    return 'neumorph'
+    return 'soft'
   }
 
   if (typeof data.advancedMaterialEnabled === 'boolean') {

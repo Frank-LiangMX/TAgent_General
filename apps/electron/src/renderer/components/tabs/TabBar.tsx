@@ -297,7 +297,7 @@ function TabBarInner({
       >
         {showIndicatorLine && (
           <span
-            className="absolute rounded-full bg-primary pointer-events-none"
+            className="tab-indicator-line absolute rounded-full pointer-events-none"
             style={{ ...indicatorStyle, zIndex: 2 }}
             aria-hidden="true"
           />
