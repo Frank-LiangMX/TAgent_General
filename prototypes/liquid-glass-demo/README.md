@@ -28,9 +28,13 @@ Apple风格的玻璃效果UI演示，参考了 [liquid-glass-react](https://gith
 - 弹性缩放算法
 - 动态参数调整
 
+## 位置
+
+`prototypes/liquid-glass-demo/`（仓库统一前端原型目录，见 [`../README.md`](../README.md)）
+
 ## 使用方法
 
-1. 直接在浏览器中打开 `index.html` 文件
+1. 直接在浏览器中打开本目录下的 `index.html` 文件
 2. 使用底部的控制面板调整效果参数：
    - **Blur**：控制模糊强度（0-30px）
    - **Saturation**：控制色彩饱和度（100-200%）

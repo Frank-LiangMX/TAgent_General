@@ -83,6 +83,7 @@
 | 文档 | 内容 |
 | ---- | ---- |
 | [`ui/liquid-glass-ui-reference-for-agents.md`](ui/liquid-glass-ui-reference-for-agents.md) ✨ | **Liquid Glass 外部参考目录**（[freefrontend.com/css-liquid-glass](https://freefrontend.com/css-liquid-glass/)）+ 与 TAgent frosted/glass/soft 映射 + 侧栏/底板硬约束 |
+| [`../prototypes/README.md`](../prototypes/README.md) ✨ | **前端静态原型统一目录**（原 glass-studio / ui-prototype / demo 合并） |
 
 ---
 

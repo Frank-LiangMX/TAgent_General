@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN" data-theme="mist" data-mode="light" data-material="soft">
 <head>
   <meta charset="UTF-8" />
@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="glass-studio/themes.css" />
-  <link rel="stylesheet" href="glass-studio/tagent.css" />
-  <link rel="stylesheet" href="glass-studio/materials.css" />
-  <link rel="stylesheet" href="glass-studio/components/shared.css" />
+  <link rel="stylesheet" href="prototypes/glass-studio/themes.css" />
+  <link rel="stylesheet" href="prototypes/glass-studio/tagent.css" />
+  <link rel="stylesheet" href="prototypes/glass-studio/materials.css" />
+  <link rel="stylesheet" href="prototypes/glass-studio/components/shared.css" />
   <style>
     /* 工作台特定样式 */
     .dashboard-grid {
@@ -243,7 +243,7 @@
             <p style="margin:4px 0 0;font-size:14px;color:var(--text-soft);">欢迎回来，Frank</p>
           </div>
           <div style="display:flex;gap:12px;">
-            <a href="glass-studio/pages/chat.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+            <a href="prototypes/glass-studio/pages/chat.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
               <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
@@ -299,18 +299,18 @@
           <rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </a>
-      <a href="glass-studio/pages/chat.html" class="rail-btn" data-nav="chat" title="会话">
+      <a href="prototypes/glass-studio/pages/chat.html" class="rail-btn" data-nav="chat" title="会话">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
           <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         </svg>
       </a>
-      <a href="glass-studio/pages/automation.html" class="rail-btn" data-nav="automation" title="自动任务">
+      <a href="prototypes/glass-studio/pages/automation.html" class="rail-btn" data-nav="automation" title="自动任务">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
           <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
           <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </a>
-      <a href="glass-studio/pages/settings.html" class="rail-btn" data-nav="settings" title="设置">
+      <a href="prototypes/glass-studio/pages/settings.html" class="rail-btn" data-nav="settings" title="设置">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
           <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -319,8 +319,8 @@
     </nav>
   </div>
 
-  <script src="glass-studio/mock/data.js"></script>
-  <script src="glass-studio/components/shared.js"></script>
+  <script src="prototypes/glass-studio/mock/data.js"></script>
+  <script src="prototypes/glass-studio/components/shared.js"></script>
   <script>
     (() => {
       // 渲染统计卡片
@@ -351,9 +351,9 @@
         if (!container) return;
 
         const actions = [
-          { icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>', label: '新会话', href: 'glass-studio/pages/chat.html?action=new' },
+          { icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" stroke-width="1.5"/></svg>', label: '新会话', href: 'prototypes/glass-studio/pages/chat.html?action=new' },
           { icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6H10l2 2h6.5A1.5 1.5 0 0 1 20 9.5v7A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.5"/></svg>', label: '新项目', action: 'newProject' },
-          { icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>', label: '新任务', href: 'glass-studio/pages/automation.html?action=new' }
+          { icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>', label: '新任务', href: 'prototypes/glass-studio/pages/automation.html?action=new' }
         ];
 
         container.innerHTML = actions.map(a => `
@@ -389,7 +389,7 @@
         container.querySelectorAll('.project-card').forEach(card => {
           card.addEventListener('click', () => {
             const projectId = card.dataset.project;
-            window.location.href = `glass-studio/pages/chat.html?project=${projectId}`;
+            window.location.href = `prototypes/glass-studio/pages/chat.html?project=${projectId}`;
           });
         });
       }

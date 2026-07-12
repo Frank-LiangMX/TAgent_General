@@ -1,0 +1,254 @@
+/* ============================================
+   TAgent UI Prototype - Theme Variables
+   Using TAgent naming: --background, --foreground, etc.
+   ============================================ */
+
+/* ===== Light Mode Base ===== */
+:root,
+[data-mode="light"] {
+  color-scheme: light;
+
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 0 0% 3.9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 3.9%;
+  --dialog: 0 0% 100%;
+  --dialog-foreground: 0 0% 3.9%;
+  --content-area: 0 0% 100%;
+
+  /* Glass Tokens */
+  --glass-shine: 0 0% 100%;
+  --glass-ambient: 220 20% 96%;
+  --glass-rim: 220 14% 86%;
+
+  /* Shell Blob */
+  --shell-blob: 220 28% 92%;
+
+  /* Tooltip */
+  --tooltip: 0 0% 15%;
+  --tooltip-foreground: 0 0% 98%;
+}
+
+/* ===== Dark Mode Base ===== */
+[data-mode="dark"] {
+  color-scheme: dark;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 98%;
+  --muted: 0 0% 14.9%;
+  --muted-foreground: 0 0% 63.9%;
+  --border: 0 0% 14.9%;
+  --input: 0 0% 14.9%;
+  --ring: 0 0% 83.1%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 0 0% 40%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 55% 45%;
+  --destructive-foreground: 0 0% 98%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 98%;
+  --dialog: 0 0% 12%;
+  --dialog-foreground: 0 0% 98%;
+  --content-area: 0 0% 7%;
+
+  --glass-shine: 220 14% 68%;
+  --glass-ambient: 220 12% 26%;
+  --glass-rim: 220 10% 30%;
+
+  --shell-blob: 220 15% 55%;
+}
+
+/* ============================================
+   Theme Palettes
+   ============================================ */
+
+/* --- Ocean Light --- */
+[data-theme="ocean"][data-mode="light"] {
+  --background: 205 35% 94%;
+  --foreground: 210 30% 15%;
+  --content-area: 205 30% 97%;
+  --muted: 205 35% 88%;
+  --muted-foreground: 210 15% 40%;
+  --border: 205 30% 82%;
+  --primary: 205 50% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 205 35% 91%;
+  --secondary-foreground: 210 30% 20%;
+  --accent: 205 35% 82%;
+  --accent-foreground: 205 50% 30%;
+  --ring: 205 50% 50%;
+  --card: 205 30% 97%;
+  --card-foreground: 210 30% 15%;
+  --input: 205 35% 91%;
+  --popover: 205 30% 97%;
+  --popover-foreground: 210 30% 15%;
+  --dialog: 0 0% 100%;
+  --dialog-foreground: 210 30% 15%;
+
+  --glass-ambient: 205 35% 92%;
+  --glass-rim: 205 30% 84%;
+  --shell-blob: 205 45% 78%;
+
+  --tooltip: 210 45% 18%;
+  --tooltip-foreground: 0 0% 98%;
+}
+
+/* --- Ocean Dark --- */
+[data-theme="ocean"][data-mode="dark"] {
+  --background: 210 35% 13%;
+  --foreground: 210 20% 92%;
+  --content-area: 210 40% 8%;
+  --muted: 210 30% 14%;
+  --muted-foreground: 210 15% 55%;
+  --border: 210 30% 18%;
+  --primary: 205 87% 24%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 30% 16%;
+  --secondary-foreground: 210 20% 90%;
+  --accent: 210 40% 22%;
+  --accent-foreground: 210 20% 92%;
+  --ring: 205 87% 24%;
+  --card: 210 30% 16%;
+  --card-foreground: 210 20% 92%;
+  --input: 210 30% 18%;
+  --popover: 210 30% 12%;
+  --popover-foreground: 210 20% 92%;
+  --dialog: 210 30% 16%;
+  --dialog-foreground: 210 20% 92%;
+
+  --glass-ambient: 210 30% 18%;
+  --glass-rim: 210 25% 22%;
+  --shell-blob: 205 40% 18%;
+}
+
+/* --- Forest Light --- */
+[data-theme="forest"][data-mode="light"] {
+  --background: 140 15% 92%;
+  --foreground: 140 20% 12%;
+  --content-area: 140 18% 96%;
+  --muted: 140 15% 86%;
+  --muted-foreground: 140 10% 40%;
+  --border: 140 15% 80%;
+  --primary: 140 45% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 140 15% 90%;
+  --secondary-foreground: 140 20% 18%;
+  --accent: 140 20% 82%;
+  --accent-foreground: 140 45% 28%;
+  --ring: 140 45% 42%;
+  --card: 140 18% 96%;
+  --card-foreground: 140 20% 12%;
+  --input: 140 15% 90%;
+  --popover: 140 18% 96%;
+  --popover-foreground: 140 20% 12%;
+  --dialog: 0 0% 100%;
+  --dialog-foreground: 140 20% 12%;
+
+  --glass-ambient: 140 18% 90%;
+  --glass-rim: 140 15% 82%;
+  --shell-blob: 140 30% 75%;
+}
+
+/* --- Forest Dark --- */
+[data-theme="forest"][data-mode="dark"] {
+  --background: 150 20% 8%;
+  --foreground: 140 15% 92%;
+  --content-area: 150 25% 5%;
+  --muted: 150 18% 12%;
+  --muted-foreground: 140 10% 55%;
+  --border: 150 18% 18%;
+  --primary: 140 60% 48%;
+  --primary-foreground: 150 20% 8%;
+  --secondary: 150 18% 14%;
+  --secondary-foreground: 140 15% 88%;
+  --accent: 150 25% 20%;
+  --accent-foreground: 140 15% 92%;
+  --ring: 140 60% 48%;
+  --card: 150 18% 14%;
+  --card-foreground: 140 15% 92%;
+  --input: 150 18% 16%;
+  --popover: 150 18% 12%;
+  --popover-foreground: 140 15% 92%;
+  --dialog: 150 18% 14%;
+  --dialog-foreground: 140 15% 92%;
+
+  --glass-ambient: 150 20% 16%;
+  --glass-rim: 150 18% 22%;
+  --shell-blob: 140 30% 15%;
+}
+
+/* --- Slate Light --- */
+[data-theme="slate"][data-mode="light"] {
+  --background: 40 6% 88%;
+  --foreground: 40 8% 12%;
+  --content-area: 40 6% 94%;
+  --muted: 40 6% 82%;
+  --muted-foreground: 40 4% 40%;
+  --border: 40 6% 76%;
+  --primary: 40 50% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 6% 86%;
+  --secondary-foreground: 40 8% 18%;
+  --accent: 40 10% 78%;
+  --accent-foreground: 40 50% 32%;
+  --ring: 40 50% 48%;
+  --card: 40 6% 94%;
+  --card-foreground: 40 8% 12%;
+  --input: 40 6% 86%;
+  --popover: 40 6% 94%;
+  --popover-foreground: 40 8% 12%;
+  --dialog: 0 0% 100%;
+  --dialog-foreground: 40 8% 12%;
+
+  --glass-ambient: 40 8% 88%;
+  --glass-rim: 40 6% 80%;
+  --shell-blob: 40 20% 72%;
+}
+
+/* --- Slate Dark --- */
+[data-theme="slate"][data-mode="dark"] {
+  --background: 270 10% 10%;
+  --foreground: 40 5% 92%;
+  --content-area: 270 12% 6%;
+  --muted: 270 8% 14%;
+  --muted-foreground: 40 4% 55%;
+  --border: 270 8% 18%;
+  --primary: 40 70% 55%;
+  --primary-foreground: 270 10% 10%;
+  --secondary: 270 8% 16%;
+  --secondary-foreground: 40 5% 88%;
+  --accent: 270 12% 22%;
+  --accent-foreground: 40 5% 92%;
+  --ring: 40 70% 55%;
+  --card: 270 8% 16%;
+  --card-foreground: 40 5% 92%;
+  --input: 270 8% 18%;
+  --popover: 270 8% 14%;
+  --popover-foreground: 40 5% 92%;
+  --dialog: 270 8% 16%;
+  --dialog-foreground: 40 5% 92%;
+
+  --glass-ambient: 270 10% 18%;
+  --glass-rim: 270 8% 26%;
+  --shell-blob: 40 15% 18%;
+}

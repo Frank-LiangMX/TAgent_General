@@ -195,7 +195,7 @@ shell（外壳 wash）
 | [docs/plans/2026-07-12-material-surface-token-architecture.md](../plans/2026-07-12-material-surface-token-architecture.md) | Surface token 设计 |
 | [docs/plans/2026-07-12-material-md-surface-system.md](../plans/2026-07-12-material-md-surface-system.md) | MD 表面阶梯 |
 | [docs/plans/2026-07-12-soft-glass-highlight-system-design.md](../plans/2026-07-12-soft-glass-highlight-system-design.md) | soft 高光（已被 token 架构吸收） |
-| [glass-studio/](../../glass-studio/) | 站内静态原型（材质切换参考） |
+| [prototypes/](../../prototypes/README.md) | 站内静态原型统一目录（glass-studio / liquid-glass-demo / style-showcase / ui-prototype） |
 
 ---
 

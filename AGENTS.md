@@ -11,6 +11,7 @@ TAgent = Proma（开源通用 Agent 框架） + ta_agent（自研游戏 TA 领�
 
 - 设计系统：`packages/ui/DESIGN.md`
 - **Liquid Glass 外部参考 + Agent 约束**：`docs/ui/liquid-glass-ui-reference-for-agents.md`（入口站 [freefrontend CSS Liquid Glass](https://freefrontend.com/css-liquid-glass/)）
+- **前端静态原型（统一目录）**：`prototypes/README.md`（原 glass-studio / ui-prototype / demo）
 - 材质 ADR：`docs/decisions/0005-material-surface-token-architecture.md`
 
 - **基座 = Proma**（TypeScript + Electron + Claude Agent SDK + 12 Provider + 5 MCP）

@@ -214,6 +214,6 @@
 
 ## 6. 参考
 
-- 设计原型：`glass-studio/tagent.css` 第 1425-1438 行（`.glass-island`）
-- 设计原型：`glass-studio/themes.css` 第 490-530 行（`--inset-hi` 等变量定义）
+- 设计原型：`prototypes/glass-studio/tagent.css` 第 1425-1438 行（`.glass-island`）
+- 设计原型：`prototypes/glass-studio/themes.css` 第 490-530 行（`--inset-hi` 等变量定义）
 - 当前实现：`apps/electron/src/renderer/styles/globals.css`（材质变量层）
