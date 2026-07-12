@@ -6344,45 +6344,22 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 /*
  * 轻拟态全局高光系统
  * 设计原则：所有带框的元素在轻拟态材质下，顶部和右侧有白色高光边缘
- * 通过全局 ::after 伪元素实现，不依赖各组件单独设置
+ * 实现方式：border-top-color + border-right-color（不影响 box-shadow 和 ::after）
  */
 
-/* 所有需要高光的容器元素添加 .glass-panel 类 */
-.glass-panel {
-  position: relative;
-  isolation: isolate;
+/* 给没有 border 的元素加上 border（透明底色，高光用 color 差异实现） */
+[data-material="soft"] .pill,
+[data-material="soft"] .tab,
+[data-material="soft"] .msg-user,
+[data-material="soft"] .process-group,
+[data-material="soft"] .think-block,
+[data-material="soft"] .tool-cluster button,
+[data-material="soft"] .sidebar-archive-btn,
+[data-material="soft"] .agent-toolbar-pill-btn {
+  border: 1px solid transparent;
 }
 
-/* 全局高光：顶部 + 右侧渐变 */
-[data-material="soft"] .glass-panel::after,
-[data-material="liquid"] .glass-panel::after,
-[data-material="frosted"] .glass-panel::after,
-[data-material="glass"] .glass-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background:
-    linear-gradient(
-      to right,
-      var(--inset-hi) 0%,
-      var(--inset-hi) 25%,
-      transparent 80%
-    ),
-    linear-gradient(
-      to bottom,
-      var(--inset-hi) 0%,
-      var(--inset-hi) 25%,
-      transparent 80%
-    );
-}
-
-/* 自动为常见带框元素添加高光 */
+/* 所有常见带框元素统一高光 */
 [data-material="soft"] .session-well,
 [data-material="soft"] .nav-island-glass,
 [data-material="soft"] .settings-card,
@@ -6410,59 +6387,8 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"] .material-secondary-btn,
 [data-material="soft"] .ui-switch,
 [data-material="soft"] .session-list-item-active {
-  position: relative;
-  isolation: isolate;
-}
-
-[data-material="soft"] .session-well::after,
-[data-material="soft"] .nav-island-glass::after,
-[data-material="soft"] .settings-card::after,
-[data-material="soft"] .settings-glass::after,
-[data-material="soft"] .settings-search-shell::after,
-[data-material="soft"] .app-search-shell::after,
-[data-material="soft"] .chat-input-glass::after,
-[data-material="soft"] .content-glass::after,
-[data-material="soft"] .session-glass-popover::after,
-[data-material="soft"] .session-glass-surface::after,
-[data-material="soft"] .session-glass-sidebar::after,
-[data-material="soft"] .shell-glass::after,
-[data-material="soft"] .pill::after,
-[data-material="soft"] .tab::after,
-[data-material="soft"] .tool-cluster button::after,
-[data-material="soft"] .msg-user::after,
-[data-material="soft"] .process-group::after,
-[data-material="soft"] .think-block::after,
-[data-material="soft"] .sidebar-archive-btn::after,
-[data-material="soft"] .agent-toolbar-pill-btn::after,
-[data-material="soft"] .neumorph-chip::after,
-[data-material="soft"] .neumorph-dialog-shell::after,
-[data-material="soft"] .neumorph-footer-bar::after,
-[data-material="soft"] .material-cta::after,
-[data-material="soft"] .material-secondary-btn::after,
-[data-material="soft"] .ui-switch::after,
-[data-material="soft"] .session-list-item-active::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background:
-    linear-gradient(
-      to right,
-      var(--inset-hi) 0%,
-      var(--inset-hi) 25%,
-      transparent 80%
-    ),
-    linear-gradient(
-      to bottom,
-      var(--inset-hi) 0%,
-      var(--inset-hi) 25%,
-      transparent 80%
-    );
+  border-top-color: rgba(255, 255, 255, 0.6);
+  border-right-color: rgba(255, 255, 255, 0.45);
 }
 
 [data-material="soft"].dark .session-well,
@@ -6492,5 +6418,6 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"].dark .material-secondary-btn,
 [data-material="soft"].dark .ui-switch,
 [data-material="soft"].dark .session-list-item-active {
-  /* 高光由全局 ::after 规则处理 */
+  border-top-color: rgba(255, 255, 255, 0.2);
+  border-right-color: rgba(255, 255, 255, 0.14);
 }
