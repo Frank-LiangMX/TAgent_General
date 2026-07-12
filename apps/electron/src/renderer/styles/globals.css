@@ -3756,8 +3756,8 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   isolation: isolate;
   -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
   backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
-  background: var(--surface-bg, hsl(var(--md-surface-container-low)));
-  border: 1px solid var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  background: var(--surface-bg, var(--md-surface-container-low));
+  border: 1px solid var(--surface-rim, var(--md-outline));
   border-radius: var(--md-shape-xl, 20px);
   box-shadow: var(--surface-shadow, var(--md-elevation-1));
 }
@@ -3846,8 +3846,8 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
   backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
   /* frosted：MD surface-container-low（浮岛）；glass 仍走下方分支 */
-  background: var(--surface-bg, hsl(var(--md-surface-container-low)));
-  border: 1px solid var(--surface-rim, var(--island-rim, hsl(var(--md-outline) / 0.55)));
+  background: var(--surface-bg, var(--md-surface-container-low));
+  border: 1px solid var(--surface-rim, var(--island-rim, var(--md-outline)));
   border-radius: var(--nav-island-outer-radius, var(--md-shape-xl, 20px));
   box-shadow: var(--surface-shadow, var(--md-elevation-1));
 }
@@ -4259,16 +4259,16 @@ html.material-frosted .tool-cluster {
   margin: 0;
   padding: 8px;
   border-radius: var(--md-shape-lg, 16px);
-  background: var(--surface-bg-well, hsl(var(--md-surface-container-lowest)));
-  border: 1px solid var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  background: var(--surface-bg-well, var(--md-surface-container-lowest));
+  border: 1px solid var(--surface-rim, var(--md-outline));
   box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 .dark .session-well {
-  background: var(--surface-bg-well, hsl(var(--md-surface-container-lowest)));
-  border-color: var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  background: var(--surface-bg-well, var(--md-surface-container-lowest));
+  border-color: var(--surface-rim, var(--md-outline));
   box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
 }
 
@@ -4977,7 +4977,7 @@ html.material-frosted .tool-cluster {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   /* MD surface：主内容画布 */
-  background: hsl(var(--md-surface, var(--content-area)));
+  background: var(--md-surface, hsl(var(--content-area)));
   box-shadow: var(--md-elevation-1);
   transition: left 300ms ease-in-out;
 }
@@ -5128,7 +5128,7 @@ html.material-frosted .tool-cluster {
 
 /* dark frosted 背板：MD surface */
 .dark .content-base-plate--body {
-  background: hsl(var(--md-surface, var(--content-area)));
+  background: var(--md-surface, hsl(var(--content-area)));
   box-shadow: var(--md-elevation-1);
 }
 

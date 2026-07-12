@@ -1,89 +1,76 @@
 /**
- * Material Design 3 柔和表面角色（普通材质 frosted 的色阶权威）
+ * Material Design 3 柔和表面角色（普通材质 frosted）
  *
- * 映射现有 semantic token，避免改 hue 表也能全主题生效。
- * 角色命名对齐 M3 tone-based surfaces：
- *   https://m3.material.io/styles/color/roles
+ * 重要：以下 --md-* 变量一律存「完整颜色值」（hsl(...) 或 color-mix(...)），
+ * 业务侧直接 background: var(--md-xxx)，禁止再包一层 hsl(var(--md-xxx))。
  *
- * 用法约定（普通材质）：
- *   画布 / shell 底层     → --md-surface / --md-surface-dim
- *   侧栏岛 / 主面板       → --md-surface-container-low
- *   会话 well / 近白槽    → --md-surface-container-lowest
- *   chip / 搜索槽 / 分段  → --md-surface-container
- *   更深分组底（少用）    → --md-surface-container-high
- *   选中行                → --md-primary-container + --md-on-primary-container
- *   描边                  → --md-outline / --md-outline-variant
- *   正文 / 次要字         → --md-on-surface / --md-on-surface-variant
- *   hover state layer     → --md-state-hover（不透明 color-mix）
- *
- * 禁止：用 --muted 当大面积面板底（易灰叠脏）。muted 仅禁用/弱信息。
+ * 全部从主题 semantic token 派生，切换 ocean/forest 等会跟着变 hue。
  */
 
 :root {
-  /* —— 中性表面阶梯（浅色） —— */
-  --md-surface-dim: var(--background);
-  --md-surface: var(--background);
-  --md-surface-bright: var(--card);
+  /* —— 表面阶梯（浅色） —— */
+  --md-surface-dim: hsl(var(--background));
+  --md-surface: hsl(var(--background));
+  --md-surface-bright: hsl(var(--card));
 
-  /* lowest = 最强调「干净近白」容器（well、抬起卡片） */
-  --md-surface-container-lowest: var(--dialog);
-  /* low = 浮岛 / 侧栏 / 主面板 */
-  --md-surface-container-low: var(--card);
-  /* default container = chip、控件槽（浅，非脏灰） */
-  --md-surface-container: var(--secondary);
-  /* high = 需要略深的分组底时用；仍比旧 muted 面板克制 */
-  --md-surface-container-high: var(--muted);
-  --md-surface-container-highest: var(--border);
+  /* well / 近白卡：dialog（主题近白）+ 少量 background，保证色相跟随 */
+  --md-surface-container-lowest: color-mix(
+    in srgb,
+    hsl(var(--dialog)) 78%,
+    hsl(var(--background))
+  );
+  /* 侧栏岛 / panel */
+  --md-surface-container-low: hsl(var(--card));
+  /* chip / 搜索槽 */
+  --md-surface-container: hsl(var(--secondary));
+  --md-surface-container-high: hsl(var(--muted));
+  --md-surface-container-highest: hsl(var(--border));
 
-  --md-on-surface: var(--foreground);
-  --md-on-surface-variant: var(--muted-foreground);
+  --md-on-surface: hsl(var(--foreground));
+  --md-on-surface-variant: hsl(var(--muted-foreground));
 
-  --md-outline: var(--border);
-  --md-outline-variant: var(--border);
+  --md-outline: hsl(var(--border));
+  --md-outline-variant: color-mix(
+    in srgb,
+    hsl(var(--border)) 70%,
+    hsl(var(--background))
+  );
 
-  /* 主色容器：选中 / 轻强调（不硬铺 primary） */
+  /* 选中：primary 混 card，色相跟主题 */
   --md-primary-container: color-mix(
     in srgb,
-    hsl(var(--primary)) 12%,
-    hsl(var(--dialog))
+    hsl(var(--primary)) 16%,
+    hsl(var(--card))
   );
   --md-on-primary-container: hsl(var(--primary));
   --md-primary-outline: color-mix(
     in srgb,
-    hsl(var(--primary)) 22%,
+    hsl(var(--primary)) 28%,
     hsl(var(--border))
   );
 
-  /* 次级容器（气泡等） */
-  --md-secondary-container: var(--secondary);
-  --md-on-secondary-container: var(--secondary-foreground);
+  --md-secondary-container: hsl(var(--secondary));
+  --md-on-secondary-container: hsl(var(--secondary-foreground));
 
-  /* 状态层：不透明 mix，禁止 /0.05 半透明盖底 */
-  --md-state-hover: color-mix(
-    in srgb,
-    hsl(var(--foreground)) 4.5%,
-    hsl(var(--dialog))
-  );
-  --md-state-pressed: color-mix(
-    in srgb,
-    hsl(var(--foreground)) 8%,
-    hsl(var(--dialog))
-  );
+  /* hover：轻混 primary，切换主题可感知 */
+  --md-state-hover: color-mix(in srgb, hsl(var(--primary)) 7%, hsl(var(--card)));
+  --md-state-pressed: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
   --md-state-focus-ring: hsl(var(--ring));
 
-  /* 轻 elevation（柔和 MD，非玻璃重影） */
-  --md-elevation-1: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --md-elevation-2: 0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --md-elevation-3: 0 8px 28px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --md-elevation-1: 0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+  --md-elevation-2:
+    0 2px 8px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent),
+    0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  --md-elevation-3:
+    0 8px 28px color-mix(in srgb, hsl(var(--foreground)) 12%, transparent),
+    0 2px 8px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
 
-  /* 形状 5 档（映射业务） */
   --md-shape-xs: 4px;
   --md-shape-sm: 8px;
   --md-shape-md: 12px;
   --md-shape-lg: 16px;
   --md-shape-xl: 24px;
 
-  /* 字号型谱（桌面略紧） */
   --md-type-label-sm: 11px;
   --md-type-label-md: 12px;
   --md-type-body-sm: 13px;
@@ -95,78 +82,72 @@
 }
 
 .dark {
-  --md-surface-dim: var(--content-area);
-  --md-surface: var(--background);
-  --md-surface-bright: var(--card);
+  --md-surface-dim: hsl(var(--content-area));
+  --md-surface: hsl(var(--background));
+  --md-surface-bright: hsl(var(--card));
 
-  /* 暗色：lowest/low 用略亮的 card，避免「更深 muted」 */
-  --md-surface-container-lowest: var(--card);
-  --md-surface-container-low: var(--card);
-  --md-surface-container: var(--secondary);
-  --md-surface-container-high: var(--muted);
-  --md-surface-container-highest: var(--border);
+  --md-surface-container-lowest: hsl(var(--card));
+  --md-surface-container-low: hsl(var(--card));
+  --md-surface-container: hsl(var(--secondary));
+  --md-surface-container-high: hsl(var(--muted));
+  --md-surface-container-highest: hsl(var(--border));
 
-  --md-on-surface: var(--foreground);
-  --md-on-surface-variant: var(--muted-foreground);
-  --md-outline: var(--border);
-  --md-outline-variant: var(--border);
+  --md-on-surface: hsl(var(--foreground));
+  --md-on-surface-variant: hsl(var(--muted-foreground));
+  --md-outline: hsl(var(--border));
+  --md-outline-variant: color-mix(
+    in srgb,
+    hsl(var(--border)) 80%,
+    hsl(var(--background))
+  );
 
   --md-primary-container: color-mix(
     in srgb,
-    hsl(var(--primary)) 18%,
+    hsl(var(--primary)) 22%,
     hsl(var(--card))
   );
   --md-on-primary-container: color-mix(
     in srgb,
-    hsl(var(--primary)) 70%,
+    hsl(var(--primary)) 75%,
     hsl(var(--foreground))
   );
   --md-primary-outline: color-mix(
     in srgb,
-    hsl(var(--primary)) 32%,
+    hsl(var(--primary)) 36%,
     hsl(var(--border))
   );
 
-  --md-secondary-container: var(--secondary);
-  --md-on-secondary-container: var(--secondary-foreground);
+  --md-secondary-container: hsl(var(--secondary));
+  --md-on-secondary-container: hsl(var(--secondary-foreground));
 
-  --md-state-hover: color-mix(
-    in srgb,
-    hsl(var(--foreground)) 7%,
-    hsl(var(--card))
-  );
-  --md-state-pressed: color-mix(
-    in srgb,
-    hsl(var(--foreground)) 12%,
-    hsl(var(--card))
-  );
+  --md-state-hover: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
+  --md-state-pressed: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--card)));
+  --md-state-focus-ring: hsl(var(--ring));
 
   --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.28);
   --md-elevation-2: 0 4px 16px rgba(0, 0, 0, 0.32);
   --md-elevation-3: 0 12px 36px rgba(0, 0, 0, 0.4);
 }
 
-/**
- * utility 类：业务可直接用，减少手写 muted/bg
- */
+/* utility：直接用完整色值 */
 .md-surface {
-  background: hsl(var(--md-surface));
-  color: hsl(var(--md-on-surface));
+  background: var(--md-surface);
+  color: var(--md-on-surface);
 }
 
 .md-surface-container-lowest {
-  background: hsl(var(--md-surface-container-lowest));
-  color: hsl(var(--md-on-surface));
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface);
 }
 
 .md-surface-container-low {
-  background: hsl(var(--md-surface-container-low));
-  color: hsl(var(--md-on-surface));
+  background: var(--md-surface-container-low);
+  color: var(--md-on-surface);
 }
 
 .md-surface-container {
-  background: hsl(var(--md-surface-container));
-  color: hsl(var(--md-on-surface));
+  background: var(--md-surface-container);
+  color: var(--md-on-surface);
 }
 
 .md-primary-container {
@@ -175,11 +156,11 @@
 }
 
 .md-outline {
-  border-color: hsl(var(--md-outline) / 0.7);
+  border-color: var(--md-outline);
 }
 
 .md-text-variant {
-  color: hsl(var(--md-on-surface-variant));
+  color: var(--md-on-surface-variant);
 }
 
 .md-elevation-1 {

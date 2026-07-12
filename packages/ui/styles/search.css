@@ -17,16 +17,16 @@
 [data-material='frosted'] .ui-search-input--glass {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  background: var(--surface-bg-chip, var(--md-surface-container, hsl(var(--secondary))));
   box-shadow: none;
-  border-color: var(--surface-rim, hsl(var(--border) / 0.55)) !important;
+  border-color: var(--surface-rim, var(--md-outline, hsl(var(--border)))) !important;
 }
 
 .dark .ui-search-input--glass,
 .dark[data-material='frosted'] .ui-search-input--glass,
 [data-material='frosted'].dark .ui-search-input--glass {
-  background: var(--surface-bg-chip, hsl(var(--secondary)));
-  border-color: var(--surface-rim, hsl(var(--border) / 0.55)) !important;
+  background: var(--surface-bg-chip, var(--md-surface-container, hsl(var(--secondary))));
+  border-color: var(--surface-rim, var(--md-outline, hsl(var(--border)))) !important;
 }
 
 .ui-search-input--glass:focus-within {

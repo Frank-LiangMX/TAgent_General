@@ -14,9 +14,9 @@
   padding: 4px;
   border-radius: var(--radius-glass-popover);
   /* frosted：柔和 secondary 轨道，近白指示器（见下） */
-  background: var(--surface-bg-chip, hsl(var(--secondary)));
+  background: var(--surface-bg-chip, var(--md-surface-container, hsl(var(--secondary))));
   box-shadow: none;
-  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
+  border: 1px solid var(--surface-rim, var(--md-outline, hsl(var(--border))));
 }
 
 /* glass：轨道更透、带轻微高光 */
@@ -68,16 +68,16 @@
 [data-material='frosted'] .ui-segmented-tabs-indicator {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: var(--surface-bg-well, hsl(var(--dialog)));
-  box-shadow: var(--surface-shadow-well, 0 1px 2px rgba(15, 23, 42, 0.06));
-  border-color: var(--surface-rim, hsl(var(--border) / 0.55));
+  background: var(--surface-bg-well, var(--md-surface-container-lowest, hsl(var(--dialog))));
+  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
+  border-color: var(--surface-rim, var(--md-outline, hsl(var(--border))));
 }
 
 .dark .ui-segmented-tabs-indicator,
 .dark[data-material='frosted'] .ui-segmented-tabs-indicator,
 [data-material='frosted'].dark .ui-segmented-tabs-indicator {
-  background: var(--surface-bg-well, hsl(var(--card)));
-  box-shadow: var(--surface-shadow-well, 0 1px 3px rgba(0, 0, 0, 0.24));
+  background: var(--surface-bg-well, var(--md-surface-container-lowest, hsl(var(--card))));
+  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
 }
 
 /* glass 指示器：用 chip 表面 token（已是高透渐变） */

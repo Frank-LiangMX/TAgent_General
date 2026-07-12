@@ -33,16 +33,18 @@
   --surface-opacity-elevated: 1;
   --surface-opacity-chip: 1;
 
-  /* 映射 MD 角色 → 材质表面表 */
-  --surface-bg: hsl(var(--md-surface-container-low));
-  --surface-bg-elevated: hsl(var(--md-surface-container-lowest));
-  --surface-bg-chip: hsl(var(--md-surface-container));
-  --surface-bg-well: hsl(var(--md-surface-container-lowest));
+  /*
+   * MD 角色已是完整色值 → 直接 var()，禁止 hsl(var(--md-xxx))
+   */
+  --surface-bg: var(--md-surface-container-low);
+  --surface-bg-elevated: var(--md-surface-container-lowest);
+  --surface-bg-chip: var(--md-surface-container);
+  --surface-bg-well: var(--md-surface-container-lowest);
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
-  --surface-bg-dialog: hsl(var(--md-surface-container-lowest));
+  --surface-bg-dialog: var(--md-surface-container-lowest);
 
-  --surface-rim: hsl(var(--md-outline) / 0.65);
+  --surface-rim: color-mix(in srgb, var(--md-outline) 65%, transparent);
   --surface-rim-width: 1px;
   --surface-shadow: var(--md-elevation-1);
   --surface-shadow-elevated: var(--md-elevation-2);
@@ -52,14 +54,13 @@
   --surface-shine-opacity: 0;
   --surface-shine-opacity-soft: 0;
 
-  /* 选中 = primary-container */
   --session-glass-strong: var(--md-primary-container);
   --session-rim: var(--md-primary-outline);
   --session-inset-hi: transparent;
 
   --hover-fill: var(--md-state-hover);
 
-  --surface-overlay-bg: rgba(15, 23, 42, 0.32);
+  --surface-overlay-bg: color-mix(in srgb, hsl(var(--foreground)) 28%, transparent);
   --surface-overlay-blur: 2px;
 }
 
@@ -74,15 +75,15 @@
   --surface-opacity-elevated: 1;
   --surface-opacity-chip: 1;
 
-  --surface-bg: hsl(var(--md-surface-container-low));
-  --surface-bg-elevated: hsl(var(--md-surface-container-lowest));
-  --surface-bg-chip: hsl(var(--md-surface-container));
-  --surface-bg-well: hsl(var(--md-surface-container-lowest));
+  --surface-bg: var(--md-surface-container-low);
+  --surface-bg-elevated: var(--md-surface-container-lowest);
+  --surface-bg-chip: var(--md-surface-container);
+  --surface-bg-well: var(--md-surface-container-lowest);
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
-  --surface-bg-dialog: hsl(var(--md-surface-container-lowest));
+  --surface-bg-dialog: var(--md-surface-container-lowest);
 
-  --surface-rim: hsl(var(--md-outline) / 0.55);
+  --surface-rim: color-mix(in srgb, var(--md-outline) 55%, transparent);
   --surface-shadow: var(--md-elevation-1);
   --surface-shadow-elevated: var(--md-elevation-2);
   --surface-shadow-chip: none;

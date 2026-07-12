@@ -43,7 +43,7 @@
   --card-foreground: 213 18% 27%;
   --popover: 220 14% 97%;
   --popover-foreground: 213 18% 27%;
-  --dialog: 0 0% 100%;
+  --dialog: 220 20% 99%;
   --dialog-foreground: 213 18% 27%;
   --tooltip: 213 18% 22%;
   --tooltip-foreground: 0 0% 98%;
@@ -97,7 +97,7 @@
   --card-foreground: 210 18% 25%;
   --popover: 205 20% 97%;
   --popover-foreground: 210 18% 25%;
-  --dialog: 0 0% 100%;
+  --dialog: 205 30% 99%;
   --dialog-foreground: 210 18% 25%;
   --tooltip: 210 25% 20%;
   --tooltip-foreground: 0 0% 98%;
@@ -151,7 +151,7 @@
   --card-foreground: 150 16% 22%;
   --popover: 140 12% 97%;
   --popover-foreground: 150 16% 22%;
-  --dialog: 0 0% 100%;
+  --dialog: 140 22% 99%;
   --dialog-foreground: 150 16% 22%;
   --tooltip: 150 16% 22%;
   --tooltip-foreground: 0 0% 98%;
@@ -205,7 +205,7 @@
   --card-foreground: 40 12% 24%;
   --popover: 40 8% 97%;
   --popover-foreground: 40 12% 24%;
-  --dialog: 0 0% 100%;
+  --dialog: 40 18% 99%;
   --dialog-foreground: 40 12% 24%;
   --tooltip: 40 12% 22%;
   --tooltip-foreground: 0 0% 98%;
@@ -259,7 +259,7 @@
   --card-foreground: 25 20% 22%;
   --popover: 30 20% 97%;
   --popover-foreground: 25 20% 22%;
-  --dialog: 0 0% 100%;
+  --dialog: 30 28% 99%;
   --dialog-foreground: 25 20% 22%;
   --tooltip: 25 16% 22%;
   --tooltip-foreground: 0 0% 98%;
@@ -313,7 +313,7 @@
   --card-foreground: 280 16% 22%;
   --popover: 280 14% 97%;
   --popover-foreground: 280 16% 22%;
-  --dialog: 0 0% 100%;
+  --dialog: 280 20% 99%;
   --dialog-foreground: 280 16% 22%;
   --tooltip: 280 16% 22%;
   --tooltip-foreground: 0 0% 98%;

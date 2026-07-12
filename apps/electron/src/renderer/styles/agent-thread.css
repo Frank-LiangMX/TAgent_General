@@ -16,15 +16,15 @@
   --agent-surface-radius: 14px;
   /* 大圆角 - 用于用户/助手消息气泡，模仿真实聊天气泡 */
   --agent-bubble-radius: 20px;
-  /* 普通材质：MD secondary-container */
-  --agent-surface-bg: hsl(var(--md-secondary-container, var(--secondary)));
-  --agent-surface-border: hsl(var(--md-outline, var(--border)) / 0.55);
+  /* 普通材质：MD secondary-container（完整色值） */
+  --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
+  --agent-surface-border: var(--md-outline, hsl(var(--border)));
   --agent-bubble-blur: 0px;
 }
 
 .dark .tagent-agent-thread {
-  --agent-surface-bg: hsl(var(--md-secondary-container, var(--secondary)));
-  --agent-surface-border: hsl(var(--md-outline, var(--border)) / 0.5);
+  --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
+  --agent-surface-border: var(--md-outline, hsl(var(--border)));
   --agent-bubble-blur: 0px;
 }
 

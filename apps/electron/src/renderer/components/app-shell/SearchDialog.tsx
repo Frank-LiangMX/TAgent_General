@@ -155,7 +155,7 @@ function HighlightSnippet({
 }
 
 function SearchResultIcon({ result }: { result: SearchResult }): React.ReactElement {
-  return <Bot size={14} className="flex-shrink-0 text-blue-500/70" />
+  return <Bot size={14} className="flex-shrink-0 text-primary/70" />
 }
 
 function normalizePreviewText(text: string): string {
@@ -355,7 +355,7 @@ function SearchResultSessionPreview({
                           : item.role === 'user'
                             ? 'bg-primary/35'
                             : item.role === 'assistant'
-                              ? 'bg-blue-500/35'
+                              ? 'bg-primary/35'
                               : 'bg-foreground/20'
                       )}
                     />
@@ -671,7 +671,7 @@ export function SearchDialog(): React.ReactElement {
                 className={cn(
                   'flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors',
                   trimmedQuery.length >= 2
-                    ? 'material-inline-chip text-blue-500 hover:bg-blue-500/20'
+                    ? 'material-inline-chip text-primary hover:bg-primary/20'
                     : 'bg-foreground/[0.06] text-foreground/30 cursor-not-allowed'
                 )}
               >
@@ -710,7 +710,7 @@ export function SearchDialog(): React.ReactElement {
                 <span>未找到匹配结果</span>
                 <button
                   onClick={() => void handleAgentSearch()}
-                  className="material-inline-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-blue-500 transition-colors hover:bg-blue-500/20"
+                  className="material-inline-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
                 >
                   <Bot size={12} />
                   <span>试试 Agent 搜索</span>
