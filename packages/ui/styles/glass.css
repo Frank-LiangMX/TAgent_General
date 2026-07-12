@@ -19,11 +19,8 @@
 :root,
 [data-material='frosted'] {
   /*
-   * 普通材质 · 柔和 Material Design 表面层级（勿叠 muted 发脏）
-   *   dim（画布）     = background
-   *   surface         = card（浮起一层）
-   *   container-high  = dialog / 近白（well、列表井）
-   *   chip            = secondary（极浅，非 muted 深灰）
+   * 普通材质 · 绑定 md-surface.css 角色（M3 阶梯）
+   * 见 packages/ui/styles/md-surface.css
    */
   --surface-blur: 0px;
   --surface-blur-elevated: 0px;
@@ -36,36 +33,31 @@
   --surface-opacity-elevated: 1;
   --surface-opacity-chip: 1;
 
-  /* 主表面：略亮于画布 */
-  --surface-bg: hsl(var(--card));
-  /* 浮层 / 高一级：dialog 近白，干净 */
-  --surface-bg-elevated: hsl(var(--dialog));
-  /* chip / 控件槽：secondary 比 muted 更浅更干净 */
-  --surface-bg-chip: hsl(var(--secondary));
-  /* 列表井 / 内凹容器：近白 elevated，避免 muted 叠灰 */
-  --surface-bg-well: hsl(var(--dialog));
+  /* 映射 MD 角色 → 材质表面表 */
+  --surface-bg: hsl(var(--md-surface-container-low));
+  --surface-bg-elevated: hsl(var(--md-surface-container-lowest));
+  --surface-bg-chip: hsl(var(--md-surface-container));
+  --surface-bg-well: hsl(var(--md-surface-container-lowest));
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
-  --surface-bg-dialog: hsl(var(--dialog));
+  --surface-bg-dialog: hsl(var(--md-surface-container-lowest));
 
-  /* 柔和描边 + 轻 elevation（MD 阴影语言） */
-  --surface-rim: hsl(var(--border) / 0.7);
+  --surface-rim: hsl(var(--md-outline) / 0.65);
   --surface-rim-width: 1px;
-  --surface-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --surface-shadow-elevated: 0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --surface-shadow: var(--md-elevation-1);
+  --surface-shadow-elevated: var(--md-elevation-2);
   --surface-shadow-chip: none;
-  --surface-shadow-well: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --surface-shadow-well: var(--md-elevation-1);
   --surface-inset-hi: transparent;
   --surface-shine-opacity: 0;
   --surface-shine-opacity-soft: 0;
 
-  /* 选中：柔和 primary 容器色，非脏灰 */
-  --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--dialog)));
-  --session-rim: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--border)));
+  /* 选中 = primary-container */
+  --session-glass-strong: var(--md-primary-container);
+  --session-rim: var(--md-primary-outline);
   --session-inset-hi: transparent;
 
-  /* hover：在近白表面上的不透明浅灰，柔和 */
-  --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
+  --hover-fill: var(--md-state-hover);
 
   --surface-overlay-bg: rgba(15, 23, 42, 0.32);
   --surface-overlay-blur: 2px;
@@ -82,27 +74,26 @@
   --surface-opacity-elevated: 1;
   --surface-opacity-chip: 1;
 
-  /* 暗色：card 略亮于 background，well 用 card；避免 muted 更深更脏 */
-  --surface-bg: hsl(var(--card));
-  --surface-bg-elevated: hsl(var(--card));
-  --surface-bg-chip: hsl(var(--secondary));
-  --surface-bg-well: hsl(var(--card));
+  --surface-bg: hsl(var(--md-surface-container-low));
+  --surface-bg-elevated: hsl(var(--md-surface-container-lowest));
+  --surface-bg-chip: hsl(var(--md-surface-container));
+  --surface-bg-well: hsl(var(--md-surface-container-lowest));
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
-  --surface-bg-dialog: hsl(var(--dialog));
+  --surface-bg-dialog: hsl(var(--md-surface-container-lowest));
 
-  --surface-rim: hsl(var(--border) / 0.65);
-  --surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
-  --surface-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.32);
+  --surface-rim: hsl(var(--md-outline) / 0.55);
+  --surface-shadow: var(--md-elevation-1);
+  --surface-shadow-elevated: var(--md-elevation-2);
   --surface-shadow-chip: none;
-  --surface-shadow-well: 0 1px 3px rgba(0, 0, 0, 0.24);
+  --surface-shadow-well: var(--md-elevation-1);
   --surface-shine-opacity: 0;
 
-  --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)));
-  --session-rim: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+  --session-glass-strong: var(--md-primary-container);
+  --session-rim: var(--md-primary-outline);
   --session-inset-hi: transparent;
 
-  --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
+  --hover-fill: var(--md-state-hover);
 
   --surface-overlay-bg: rgba(0, 0, 0, 0.48);
   --surface-overlay-blur: 2px;
@@ -528,11 +519,12 @@
 .session-list-item-active {
   position: relative;
   isolation: isolate;
-  border-radius: var(--radius-glass-sidebar);
-  background: var(--session-glass-strong);
-  border: 1px solid var(--session-rim);
+  border-radius: var(--radius-glass-sidebar, var(--md-shape-md));
+  /* MD primary-container */
+  background: var(--session-glass-strong, var(--md-primary-container));
+  border: 1px solid var(--session-rim, var(--md-primary-outline));
   box-shadow: 0 1px 0 var(--session-inset-hi) inset;
-  color: var(--tagent-brand, hsl(var(--primary)));
+  color: var(--tagent-brand, var(--md-on-primary-container, hsl(var(--primary))));
 }
 
 .session-list-item-active > * {

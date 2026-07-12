@@ -1,4 +1,5 @@
 @import '@tagent/ui/src/tokens/__generated__/tokens.css';
+@import '@tagent/ui/styles/md-surface.css';
 @import '@tagent/ui/styles/glass.css';
 @import '@tagent/ui/styles/search.css';
 @import '@tagent/ui/styles/segmented-tabs.css';
@@ -3848,10 +3849,11 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   --nav-island-gap: 6px;
   -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
   backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
-  background: hsl(var(--background) / var(--surface-opacity, 1));
-  border: 1px solid var(--surface-rim, var(--island-rim, hsl(var(--border) / 0.55)));
-  border-radius: var(--nav-island-outer-radius, 20px);
-  box-shadow: var(--surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  /* frosted：MD surface-container-low（浮岛）；glass 仍走下方分支 */
+  background: var(--surface-bg, hsl(var(--md-surface-container-low)));
+  border: 1px solid var(--surface-rim, var(--island-rim, hsl(var(--md-outline) / 0.55)));
+  border-radius: var(--nav-island-outer-radius, var(--md-shape-xl, 20px));
+  box-shadow: var(--surface-shadow, var(--md-elevation-1));
 }
 
 .nav-island-glass::before {
@@ -4253,26 +4255,25 @@ html.material-frosted .tool-cluster {
 }
 
 /*
- * 会话列表井 — 柔和 MD：近白 elevated 表面 + 轻阴影
- * 禁止用 muted 叠在侧栏灰底上（会显脏）
+ * 会话列表井 — MD surface-container-lowest + elevation-1
  */
 .session-well {
   flex: 1;
   min-height: 0;
   margin: 0;
   padding: 8px;
-  border-radius: 16px;
-  background: var(--surface-bg-well, hsl(var(--dialog)));
-  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
-  box-shadow: var(--surface-shadow-well, 0 1px 2px rgba(15, 23, 42, 0.04));
+  border-radius: var(--md-shape-lg, 16px);
+  background: var(--surface-bg-well, hsl(var(--md-surface-container-lowest)));
+  border: 1px solid var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 .dark .session-well {
-  background: var(--surface-bg-well, hsl(var(--card)));
-  border-color: var(--surface-rim, hsl(var(--border) / 0.55));
-  box-shadow: var(--surface-shadow-well, 0 1px 3px rgba(0, 0, 0, 0.24));
+  background: var(--surface-bg-well, hsl(var(--md-surface-container-lowest)));
+  border-color: var(--surface-rim, hsl(var(--md-outline) / 0.55));
+  box-shadow: var(--surface-shadow-well, var(--md-elevation-1));
 }
 
 [data-material='glass'] .session-well {

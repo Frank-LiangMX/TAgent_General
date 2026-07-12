@@ -39,7 +39,8 @@
 | --------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | [`plans/2026-06-05-tagent-fusion-design.md`](plans/2026-06-05-tagent-fusion-design.md)               | TAgent Desktop 完整设计（13 节）                    |
 | [`plans/2026-06-05-tagent-server-design.md`](plans/2026-06-05-tagent-server-design.md)               | TAgent Server 完整设计（12 节）                     |
-| [`plans/2026-07-12-material-surface-token-architecture.md`](plans/2026-07-12-material-surface-token-architecture.md) ✨ | **材质 Surface Token 架构**（基线 frosted + 双轴正交，待实现） |
+| [`plans/2026-07-12-material-surface-token-architecture.md`](plans/2026-07-12-material-surface-token-architecture.md) | 材质 Surface Token 架构（基线 frosted，已合 main） |
+| [`plans/2026-07-12-material-md-surface-system.md`](plans/2026-07-12-material-md-surface-system.md) ✨ | **柔和 MD 表面阶梯**（md-surface.css + 角色映射） |
 | [`plans/2026-07-12-soft-glass-highlight-system-design.md`](plans/2026-07-12-soft-glass-highlight-system-design.md) | 轻拟态 soft 全局高光（被 Surface Token 设计吸收） |
 | [`plans/2026-06-13-ask-mode-unification-design.md`](plans/2026-06-13-ask-mode-unification-design.md) | **Ask 档位统一 Composer**（替代 Chat 模式）         |
 | [`plans/2026-06-13-context-compaction-architecture.md`](plans/2026-06-13-context-compaction-architecture.md) | 双层压缩机制（已落地）                              |

@@ -249,23 +249,37 @@ import { Button } from '@/components/ui/button'
 
 ## 材质 × 主题（双轴正交）
 
-> **目标架构**（ADR-0005 Accepted，PR-1 基线已落地）：见  
-> `docs/plans/2026-07-12-material-surface-token-architecture.md` 与  
+> **目标架构**（ADR-0005 Accepted）：见  
+> `docs/plans/2026-07-12-material-surface-token-architecture.md`、  
+> `docs/plans/2026-07-12-material-md-surface-system.md`、  
 > `docs/decisions/0005-material-surface-token-architecture.md`。  
-> **新代码必须走 surface token**；禁止再给高透基类叠 frosted 补丁。
+> **新代码必须走 surface / MD 角色 token**；禁止再给高透基类叠 frosted 补丁。
 
 ### 材质轴（`html[data-material]`）
 
 | 值 | 用户入口 | 目标观感 |
 |----|----------|----------|
-| `frosted` | 高级材质 **关**（默认） | 柔和 Material Design · **实色不透明**；表面层级 dim→surface→well（近白），**禁止 muted 叠灰** |
+| `frosted` | 高级材质 **关**（默认） | 柔和 Material Design · **实色不透明**；**M3 surface 阶梯** |
 | `glass` | 高级材质开 → 高透玻璃 | 高透 / 强 blur / 折射高光 |
 | `soft` | 高级材质开 → 轻拟态 | 近不透明 + 内外高光阴影 |
 
 - 运行时：`apps/electron/src/renderer/atoms/advanced-material.ts` → `applyAdvancedMaterialToDOM`
-- **Surface token**（目标）：`--surface-blur` / `--surface-opacity` / `--surface-rim` / `--surface-shadow` / `--surface-shine-opacity` …
-- 表面类（`session-glass-*` / `settings-card` / toast 等）**只读 token**，禁止写死 `blur(28px)` 类高透值
-- 过渡期可能仍存在 `html.material-frosted` class，**新 CSS 禁止再依赖**
+- **MD 角色**（`packages/ui/styles/md-surface.css`）：`--md-surface-container-*` / `--md-primary-container` / `--md-state-hover` / `--md-elevation-*` / `--md-shape-*` / `--md-type-*`
+- **材质桥接**（`glass.css`）：`--surface-bg*` / `--hover-fill` / `--session-glass-strong` 映射到 MD 角色
+- 表面类**只读 token**；**禁止**大面积用 `muted` 当面板底
+- 过渡期 `html.material-frosted` class 仅兼容；**新 CSS 禁止再依赖**
+
+### 普通材质表面用法（速查）
+
+| 场景 | 用 |
+|------|-----|
+| 主内容画布 | `--md-surface` |
+| 侧栏岛 / panel | `--md-surface-container-low` |
+| 会话 well / 近白卡 | `--md-surface-container-lowest` |
+| chip / 搜索槽 | `--md-surface-container` |
+| 列表选中 | `--md-primary-container` |
+| hover | `--md-state-hover`（不透明） |
+| 次要文字 | `--md-on-surface-variant` |
 
 ### 主题轴（颜色）
 
