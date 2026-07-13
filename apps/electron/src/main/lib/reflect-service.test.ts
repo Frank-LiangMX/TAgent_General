@@ -13,33 +13,20 @@
 import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest'
 
 // =========================================================================
-// Mocks — 必须在任何 import 之前，vi.mock 会被 hoist
-// 使用 vi.hoisted 保证 mock 函数在工厂之前初始化
+// Mocks — reflect-service 必须在这些 mock 注册后动态导入。
+// Bun 的 Vitest 兼容层不提供 vi.hoisted，因此直接在导入前创建 mock。
 // =========================================================================
 
-const {
-  mockListRecentSessions,
-  mockUpdateSessionKeyFacts,
-  mockStreamSSE,
-  mockGetAdapter,
-  mockGetTAgentUserAgent,
-  mockGetChannelById,
-  mockDecryptApiKey,
-  mockGetFetchFn,
-  mockGetSettings,
-  mockGetPath,
-} = vi.hoisted(() => ({
-  mockListRecentSessions: vi.fn(),
-  mockUpdateSessionKeyFacts: vi.fn(),
-  mockStreamSSE: vi.fn(),
-  mockGetAdapter: vi.fn(),
-  mockGetTAgentUserAgent: vi.fn().mockReturnValue('test-agent/1.0'),
-  mockGetChannelById: vi.fn(),
-  mockDecryptApiKey: vi.fn(),
-  mockGetFetchFn: vi.fn(),
-  mockGetSettings: vi.fn(),
-  mockGetPath: vi.fn(),
-}))
+const mockListRecentSessions = vi.fn()
+const mockUpdateSessionKeyFacts = vi.fn()
+const mockStreamSSE = vi.fn()
+const mockGetAdapter = vi.fn()
+const mockGetTAgentUserAgent = vi.fn().mockReturnValue('test-agent/1.0')
+const mockGetChannelById = vi.fn()
+const mockDecryptApiKey = vi.fn()
+const mockGetFetchFn = vi.fn()
+const mockGetSettings = vi.fn()
+const mockGetPath = vi.fn()
 
 vi.mock('./memory-layer-service', () => ({
   memoryLayerService: {
@@ -87,8 +74,11 @@ import * as path from 'node:path'
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
-import { reflectService } from './reflect-service'
 import type { SessionMemoryRecord } from './memory-layer-service'
+
+// Bun 的 ESM 装载会在静态 import 时先解析 reflect-service 的 Electron 依赖，
+// 必须像 channel-manager.test.ts 一样在 vi.mock 注册后再动态导入。
+const { reflectService } = await import('./reflect-service')
 
 // =========================================================================
 // Helpers
@@ -126,8 +116,6 @@ function readStateFile(dir: string): Record<string, unknown> {
 
 describe('ReflectService — ADR-0006 可靠性修复', () => {
   let tmpDir: string
-  let memoryDir: string
-
   function resolveMemoryDir(mode: 'general' | 'ta'): string {
     return mode === 'general'
       ? path.join(tmpDir, '.tagent-dev', 'memory')
