@@ -1459,19 +1459,20 @@ export class AgentOrchestrator {
           workspaceSlug: workspaceSlug ?? '',
         })
 
-        // 异步回填 keyFacts（fire-and-forget，不阻塞 completeRun）
-        // LLM 不可用时静默跳过，keyFacts 保持空数组
-        void import('./reflect-service')
-          .then(({ reflectService }) =>
-            reflectService.backfillKeyFactsForSession(
+        // ADR-0006 Phase 1: 不再逐 turn 调用 backfillKeyFacts LLM
+        // 将会话证据记录到 memory-evidence-sink，由后续空闲 MemoryConsolidationService 批量处理
+        void import('./memory-evidence-sink')
+          .then(({ memoryEvidenceSink }) =>
+            memoryEvidenceSink.writeSessionEvidence(
+              memoryMode,
               sessionId,
               sessionTitle,
               sessionSummary,
-              memoryMode
+              Array.from(toolsUsed)
             )
           )
           .catch((e) => {
-            console.warn('[Agent 编排] backfillKeyFacts 加载失败:', e)
+            console.warn('[Agent 编排] 写入 session evidence 失败:', e)
           })
       } catch (e) {
         console.warn('[Agent 编排] L4 recordSession 失败:', e)

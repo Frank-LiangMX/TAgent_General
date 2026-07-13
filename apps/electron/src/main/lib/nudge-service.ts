@@ -208,18 +208,35 @@ class NudgeService {
       return []
     }
 
-    // 达到阈值：递增 triggerCount + fire-and-forget LLM review
+    // 达到阈值：递增 triggerCount + 记录证据到 evidence sink（ADR-0006 Phase 1）
+    // 不再直接调用 LLM review，由后续空闲 MemoryConsolidationService 批量处理
     this.sessionTriggerCounts.set(sessionId, triggerCount + 1)
     console.log(
-      `[Nudge] 触发 LLM review（第 ${triggerCount + 1} 次，threshold=${nextThreshold}）`
+      `[Nudge] 达到阈值（第 ${triggerCount + 1} 次，threshold=${nextThreshold}），记录证据到 sink`
     )
 
-    // fire-and-forget：不阻塞主对话，LLM 判断完成后回调处理
-    void this.runLLMReview(sessionId, recentMessages, mode).catch((e) => {
-      console.warn(`[Nudge] LLM review 失败:`, e)
-    })
+    // 本地检测候选（不调用 LLM），达到阈值的候选写入 evidence sink
+    const localCandidates = this.detectPatterns(recentMessages, mode)
+    if (localCandidates.length > 0) {
+      // fire-and-forget：同步检测候选，异步写入 evidence sink
+      const candidatesToRecord = localCandidates
+        .map((pattern) => this.createNudgeCandidate(pattern))
+        .filter((c) => !this.isInCooldown(sessionId, c.targetLayer))
 
-    // 同步返回空（不立刻弹 toast），LLM review 完成后异步处理候选
+      if (candidatesToRecord.length > 0) {
+        void import('./memory-evidence-sink')
+          .then(({ memoryEvidenceSink }) => {
+            for (const candidate of candidatesToRecord) {
+              memoryEvidenceSink.writeNudgeEvidence(mode, sessionId, candidate)
+            }
+          })
+          .catch((e) => {
+            console.warn(`[Nudge] 写入 evidence sink 失败:`, e)
+          })
+      }
+    }
+
+    // 同步返回空（不立刻弹 toast），证据由空闲批次处理
     return []
   }
 
