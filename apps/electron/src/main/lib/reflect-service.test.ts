@@ -72,6 +72,10 @@ vi.mock('electron', () => ({
     isPackaged: false,
     getPath: mockGetPath,
   },
+  safeStorage: {
+    encryptString: vi.fn(),
+    decryptString: vi.fn(),
+  },
 }))
 
 // =========================================================================
@@ -401,8 +405,9 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
       lastInsights: ['旧洞察 1', '旧洞察 2'],
     })
 
-    // initialize 会 loadState，触发迁移
-    reflectService.initialize()
+    // 直接测试 loadState，不触发 checkAndRun 的异步后台任务
+    const svc = reflectService as unknown as { loadState(mode: string): void }
+    svc.loadState('general')
 
     const state = readStateFile(dir)
 
@@ -446,8 +451,9 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
       cursor: { lastProcessedSessionId: 5, lastProcessedAt: now - 3600000 },
     })
 
-    // initialize → loadState
-    reflectService.initialize()
+    // 直接测试 loadState，不触发 checkAndRun
+    const svc = reflectService as unknown as { loadState(mode: string): void }
+    svc.loadState('general')
 
     const state = readStateFile(dir)
     expect(state.lastOutcome).toBe('success')
@@ -480,5 +486,196 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
     expect(result.outcome).toBe('success')
     // "Rust" 在 L2 和 L4 中多次出现 → 应产生洞察
     expect(result.insights.some((i) => i.includes('Rust'))).toBe(true)
+  })
+
+  // ---------------------------------------------------------------
+  // 9. outputCounts 在 result 与 state 中一致
+  // ---------------------------------------------------------------
+  test('outputCounts 在 result 与 state 文件中一致', async () => {
+    const dir = resolveMemoryDir('general')
+    mkdirSync(dir, { recursive: true })
+
+    createL2(dir, ['用户偏好 TypeScript', '用户使用 React', '用户关注性能'])
+    mockListRecentSessions.mockReturnValue([
+      buildSession({ title: '优化首页', summary: '使用 React 重写首页' }),
+    ])
+
+    mockGetSettings.mockReturnValue({
+      agentChannelId: 'ch-test',
+      agentModelId: 'claude-sonnet-4-6',
+    })
+    mockGetChannelById.mockReturnValue({
+      id: 'ch-test',
+      provider: 'anthropic',
+      baseUrl: 'https://api.anthropic.com',
+    })
+    mockDecryptApiKey.mockReturnValue('sk-test-key')
+    mockGetAdapter.mockReturnValue({
+      providerType: 'anthropic',
+      buildStreamRequest: vi.fn().mockReturnValue({
+        url: 'https://api.anthropic.com/v1/messages',
+        headers: {},
+        body: '{}',
+      }),
+      parseSSELine: vi.fn(),
+      buildTitleRequest: vi.fn(),
+      parseTitleResponse: vi.fn(),
+    })
+    mockGetFetchFn.mockReturnValue(globalThis.fetch)
+
+    // streamSSE 返回包含矛盾的数据
+    mockStreamSSE.mockResolvedValue({
+      content: JSON.stringify({
+        insights: ['用户偏好函数式编程'],
+        contradictions: ['与旧洞察"喜欢命令式"矛盾'],
+      }),
+      reasoning: '',
+      thinkingBlocks: [],
+      toolCalls: [],
+      stopReason: 'end_turn',
+    })
+
+    const result = await reflectService.runReflect('general')
+
+    // result.outputCounts 与状态文件一致
+    const state = readStateFile(dir)
+    expect(result.outputCounts).toEqual(state.outputCounts)
+    expect(result.outputCounts.insightsGenerated).toBe(1)
+    // contradictions 被正确计数
+    expect(result.outputCounts.contradictionsFound).toBe(1)
+    // L3 文件已被写入矛盾
+    const l3Content = readFileSync(path.join(dir, 'corrections.jsonl'), 'utf-8')
+    expect(l3Content).toContain('矛盾')
+  })
+
+  // ---------------------------------------------------------------
+  // 10. lastRunTime 在成功 attempt 后更新
+  // ---------------------------------------------------------------
+  test('成功 attempt 更新 lastRunTime、lastAttemptTime、lastSuccessTime', async () => {
+    const dir = resolveMemoryDir('general')
+    mkdirSync(dir, { recursive: true })
+
+    createL2(dir, ['用户偏好 TypeScript'])
+    mockListRecentSessions.mockReturnValue([
+      buildSession({ title: 'Test', summary: 'Test' }),
+    ])
+
+    // 强制走 rules fallback（足够触发 success）
+    mockGetSettings.mockReturnValue({ agentChannelId: null, agentModelId: null })
+
+    const before = Date.now()
+    const result = await reflectService.runReflect('general')
+    const after = Date.now()
+
+    expect(result.outcome).toBe('success')
+
+    const state = readStateFile(dir)
+    // 三个时间戳都应在 [before, after] 范围内
+    expect(state.lastRunTime).toBeGreaterThanOrEqual(before)
+    expect(state.lastRunTime).toBeLessThanOrEqual(after)
+    expect(state.lastAttemptTime).toBeGreaterThanOrEqual(before)
+    expect(state.lastAttemptTime).toBeLessThanOrEqual(after)
+    expect(state.lastSuccessTime).toBeGreaterThanOrEqual(before)
+    expect(state.lastSuccessTime).toBeLessThanOrEqual(after)
+  })
+
+  // ---------------------------------------------------------------
+  // 11. 数据不足时 outputCounts 正确反映零产出
+  // ---------------------------------------------------------------
+  test('数据不足时 outputCounts 中 insightsGenerated 与 contradictionsFound 均为 0', async () => {
+    const dir = resolveMemoryDir('general')
+    mkdirSync(dir, { recursive: true })
+
+    writeFileSync(path.join(dir, 'L2_facts.md'), '# Facts\n', 'utf-8')
+    mockListRecentSessions.mockReturnValue([])
+
+    const result = await reflectService.runReflect('general')
+
+    expect(result.outcome).toBe('skipped_insufficient_evidence')
+    expect(result.outputCounts.insightsGenerated).toBe(0)
+    expect(result.outputCounts.contradictionsFound).toBe(0)
+
+    const state = readStateFile(dir)
+    expect(state.outputCounts.insightsGenerated).toBe(0)
+    expect(state.outputCounts.contradictionsFound).toBe(0)
+  })
+
+  // ---------------------------------------------------------------
+  // 12. LLM 成功但无矛盾时 contradictionCount 为 0
+  // ---------------------------------------------------------------
+  test('LLM 响应中 contradictions 为空时 contradictionCount 为 0', async () => {
+    const dir = resolveMemoryDir('general')
+    mkdirSync(dir, { recursive: true })
+
+    createL2(dir, ['用户偏好 TypeScript', '用户使用 React'])
+    mockListRecentSessions.mockReturnValue([
+      buildSession({ title: 'Test', summary: 'Test content' }),
+    ])
+
+    mockGetSettings.mockReturnValue({
+      agentChannelId: 'ch-test',
+      agentModelId: 'claude-sonnet-4-6',
+    })
+    mockGetChannelById.mockReturnValue({
+      id: 'ch-test',
+      provider: 'anthropic',
+      baseUrl: 'https://api.anthropic.com',
+    })
+    mockDecryptApiKey.mockReturnValue('sk-test-key')
+    mockGetAdapter.mockReturnValue({
+      providerType: 'anthropic',
+      buildStreamRequest: vi.fn().mockReturnValue({ url: '', headers: {}, body: '' }),
+      parseSSELine: vi.fn(),
+      buildTitleRequest: vi.fn(),
+      parseTitleResponse: vi.fn(),
+    })
+    mockGetFetchFn.mockReturnValue(globalThis.fetch)
+
+    mockStreamSSE.mockResolvedValue({
+      content: JSON.stringify({ insights: ['用户偏好函数式编程'], contradictions: [] }),
+      reasoning: '',
+      thinkingBlocks: [],
+      toolCalls: [],
+      stopReason: 'end_turn',
+    })
+
+    const result = await reflectService.runReflect('general')
+    expect(result.outcome).toBe('success')
+    expect(result.outputCounts.contradictionsFound).toBe(0)
+
+    // L3 文件不应被创建
+    expect(existsSync(path.join(dir, 'corrections.jsonl'))).toBe(false)
+  })
+
+  // ---------------------------------------------------------------
+  // 13. 失败 attempt 不更新 lastRunTime 和 lastSuccessTime
+  // ---------------------------------------------------------------
+  test('失败 attempt 记录 lastAttemptTime 但不更新 lastRunTime 和 lastSuccessTime', async () => {
+    const dir = resolveMemoryDir('general')
+    mkdirSync(dir, { recursive: true })
+
+    createL2(dir, ['用户偏好 TypeScript', '用户使用 React', '用户关注性能'])
+    mockListRecentSessions.mockReturnValue([
+      buildSession({ title: 'Test', summary: 'Test content' }),
+    ])
+
+    // 让 runReflect 在读取最近会话时抛错
+    mockListRecentSessions.mockImplementation(() => {
+      throw new Error('数据库连接失败')
+    })
+
+    const before = Date.now()
+    const result = await reflectService.runReflect('general')
+    const after = Date.now()
+
+    expect(result.outcome).toBe('failed')
+
+    const state = readStateFile(dir)
+    // lastAttemptTime 更新
+    expect(state.lastAttemptTime).toBeGreaterThanOrEqual(before)
+    expect(state.lastAttemptTime).toBeLessThanOrEqual(after)
+    // lastRunTime 和 lastSuccessTime 不应被更新（仍为 null）
+    expect(state.lastRunTime).toBeNull()
+    expect(state.lastSuccessTime).toBeNull()
   })
 })

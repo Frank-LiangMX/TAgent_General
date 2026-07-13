@@ -293,7 +293,12 @@ class ReflectService {
       }
 
       // 6. 提炼洞察（LLM 优先，失败回退规则版）
-      const newInsights = await this.extractInsights(l2Facts, l4Sessions, existingInsights, dir)
+      const { insights: newInsights, contradictionCount } = await this.extractInsights(
+        l2Facts,
+        l4Sessions,
+        existingInsights,
+        dir
+      )
 
       // 7. anti_echo_filter: 过滤重复
       const filteredInsights = newInsights.filter((insight) => {
@@ -319,13 +324,17 @@ class ReflectService {
         console.log(`[ReflectService] ${mode} 模式无新洞察`)
       }
 
+      // 更新输出计数 — result 与 state 必须一致
+      result.outputCounts = {
+        insightsGenerated: insightsToWrite.length,
+        contradictionsFound: contradictionCount,
+      }
+
       // 更新成功状态
+      state.lastRunTime = now // 兼容字段：每次成功 attempt 更新
       state.lastSuccessTime = now
       state.lastOutcome = result.outcome
-      state.outputCounts = {
-        insightsGenerated: insightsToWrite.length,
-        contradictionsFound: 0,
-      }
+      state.outputCounts = { ...result.outputCounts }
       state.lastInsights = insightsToWrite
       this.states.set(mode, state)
       this.saveState(mode)
@@ -423,21 +432,22 @@ class ReflectService {
     l4Sessions: string[],
     existingInsights: string[],
     dir: string
-  ): Promise<string[]> {
+  ): Promise<{ insights: string[]; contradictionCount: number }> {
     // 先尝试 LLM 提炼
     try {
-      const llmInsights = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights, dir)
-      if (llmInsights.length > 0) {
-        console.log(`[ReflectService] LLM 提炼出 ${llmInsights.length} 条洞察`)
-        return llmInsights
+      const result = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights, dir)
+      if (result.insights.length > 0) {
+        console.log(`[ReflectService] LLM 提炼出 ${result.insights.length} 条洞察`)
+        return result
       }
       console.log('[ReflectService] LLM 未产出洞察，回退规则版')
     } catch (e) {
       console.warn('[ReflectService] LLM 提炼失败，回退规则版:', e)
     }
 
-    // 回退：规则版关键词提取（同时利用 L2 和 L4）
-    return this.extractInsightsWithRules(l2Facts, l4Sessions, existingInsights)
+    // 回退：规则版关键词提取（同时利用 L2 和 L4，无矛盾检测）
+    const rulesInsights = this.extractInsightsWithRules(l2Facts, l4Sessions, existingInsights)
+    return { insights: rulesInsights, contradictionCount: 0 }
   }
 
   /**
@@ -506,7 +516,7 @@ class ReflectService {
     l4Sessions: string[],
     existingInsights: string[],
     dir: string
-  ): Promise<string[]> {
+  ): Promise<{ insights: string[]; contradictionCount: number }> {
     const systemPrompt = `你是一个记忆反思助手。基于用户最近 7 天的稳定事实（L2）和会话摘要（L4），提炼高阶洞察。
 
 要求：
@@ -532,18 +542,19 @@ ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂�
     const parsed = this.parseInsightsResponse(text)
 
     // contradictions 写入 L3 corrections（设计 §6.5.5 contradiction_check）
-    if (parsed.contradictions.length > 0) {
+    const contradictionCount = parsed.contradictions.length
+    if (contradictionCount > 0) {
       try {
         await this.appendContradictionsToL3(dir, parsed.contradictions)
         console.log(
-          `[ReflectService] ${parsed.contradictions.length} 条矛盾洞察写入 L3 corrections`
+          `[ReflectService] ${contradictionCount} 条矛盾洞察写入 L3 corrections`
         )
       } catch (e) {
         console.warn('[ReflectService] 写入 L3 contradictions 失败:', e)
       }
     }
 
-    return parsed.insights
+    return { insights: parsed.insights, contradictionCount }
   }
 
   /**
