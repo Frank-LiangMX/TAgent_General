@@ -8,6 +8,7 @@ export const borderRadius = {
   'glass-input': 'var(--radius-glass-input)',
   'glass-sidebar': 'var(--radius-glass-sidebar)',
   'glass-rail': 'var(--radius-glass-rail)',
+  'glass-tab': 'var(--radius-glass-tab)',
   'glass-chip': 'var(--radius-glass-chip)',
   'glass-modal': 'var(--radius-glass-modal)',
   'glass-modal-lg': 'var(--radius-glass-modal-lg)',

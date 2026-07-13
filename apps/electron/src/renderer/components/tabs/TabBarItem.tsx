@@ -120,7 +120,7 @@ export function TabBarItem({
           type="button"
           className={cn(
             'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[28px]',
-            'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+            'rounded-t-glass-tab text-xs transition-colors select-none cursor-pointer',
             'border-t border-l border-r',
             isActive
               ? 'tab-item-selected'
@@ -166,7 +166,7 @@ export function TabBarItem({
         type="button"
         className={cn(
           'group relative flex items-center gap-1.5 px-2.5 h-[28px] w-full',
-          'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+          'rounded-t-glass-tab text-xs transition-colors select-none cursor-pointer',
           'border-t border-l border-r',
           isActive
             ? 'tab-item-selected'
@@ -178,9 +178,7 @@ export function TabBarItem({
         onPointerDown={onDragStart}
       >
         {type === 'preview' && !isNarrow && (
-          <FileText
-            className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')}
-          />
+          <FileText className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')} />
         )}
 
         {/* 标题（窄状态下隐藏，用 spacer 撑开让关闭按钮靠右） */}

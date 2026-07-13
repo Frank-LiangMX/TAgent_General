@@ -113,6 +113,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
     <div
       className={cn(
         'nav-island-rail right-panel-rail relative z-[1] h-full flex flex-col items-center px-1.5 pb-2 shrink-0',
+        !panelOpen && 'right-panel-rail--collapsed',
         !panelOpen && showBadge && 'right-panel-rail--notify',
         className
       )}

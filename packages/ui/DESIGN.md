@@ -47,6 +47,7 @@
 | `glass-input` | `--radius-glass-input` | 24px | `.chat-input-glass` 聊天输入框 |
 | `glass-sidebar` | `--radius-glass-sidebar` | 12px | `.session-glass-sidebar` / `.session-list-item-active` 侧栏列表项 |
 | `glass-rail` | `--radius-glass-rail` | 12px | `.session-glass-rail` 导航栏 |
+| `glass-tab` | `--radius-glass-tab` | 14px | 顶部标签上边圆角（下边保持直角） |
 | `glass-chip` | `--radius-glass-chip` | 6px | `.session-glass-chip` 芯片 |
 | `glass-modal` | `--radius-glass-modal` | 20px | `.session-glass-modal` 模态框 |
 | `glass-modal-lg` | `--radius-glass-modal-lg` | 24px | `.session-glass-modal-lg` 大模态框 |

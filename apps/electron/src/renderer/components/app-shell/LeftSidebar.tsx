@@ -178,6 +178,10 @@ import {
 } from '@/lib/agent-session-list'
 import { detectIsMac } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+import {
+  getAgentSessionVisualState,
+  type SessionLeftAccent,
+} from '@/lib/agent-session-visual-state'
 import { cn } from '@/lib/utils'
 
 interface SidebarItemProps {
@@ -2144,16 +2148,6 @@ const ConversationItem = React.memo(function ConversationItem({
  * completed / blocked / primary 与 Tab 色一致
  * 注意：仅用于非选中会话（后台会话）的状态指示
  */
-type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary' | 'amber' | 'idle'
-const SESSION_STATUS_LINE_CLASS: Record<SessionLeftAccent, string | null> = {
-  orange: 'bg-orange-500',
-  blue: 'tab-status-streaming',
-  green: 'bg-emerald-500',
-  primary: 'tab-indicator-line',
-  amber: 'bg-amber-500',
-  idle: null,
-}
-
 interface AgentSessionItemProps {
   session: AgentSessionMeta
   active: boolean
@@ -2297,28 +2291,21 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  // 底部状态横条（与标签页一致）；仅用于非选中会话（后台会话）
-  // 选中会话通过修改选中态样式来显示状态（运行中扫光、阻塞变色等）
-  const statusLineClass =
-    !isBatchMode && !active && leftAccent ? SESSION_STATUS_LINE_CLASS[leftAccent] : null
+  const { selectionClassName, showRunningSweep, statusLineClass } =
+    getAgentSessionVisualState({
+      active,
+      indicatorStatus,
+      isBatchMode,
+      isBatchSelected,
+      leftAccent,
+    })
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
     surface === 'well' && 'session-row-shell w-full',
     surface === 'compact' && 'w-full py-[7px] px-1',
     childClassName,
-    // 选中态 + 状态修饰
-    isBatchSelected
-      ? 'rounded-xl bg-primary/10'
-      : active && indicatorStatus === 'running'
-        ? 'session-list-item-active session-list-item-active--running'
-        : active && indicatorStatus === 'blocked'
-          ? 'session-list-item-active session-list-item-active--blocked'
-          : active && indicatorStatus === 'completed'
-            ? 'session-list-item-active session-list-item-active--completed'
-            : active
-              ? 'session-list-item-active'
-              : 'rounded-xl'
+    selectionClassName
   )
 
   return (
@@ -2365,9 +2352,12 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           {/* 底部状态横条：仅用于非选中会话（后台会话）的状态指示 */}
           {statusLineClass && (
             <span
-              className={cn('session-status-line', statusLineClass)}
+              className={cn('session-status-line agent-session-status-line', statusLineClass)}
               aria-hidden="true"
             />
+          )}
+          {showRunningSweep && (
+            <span className="session-active-running-sweep" aria-hidden="true" />
           )}
           <div className="flex-1 min-w-0">
             {editing ? (

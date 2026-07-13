@@ -4,6 +4,29 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $electronDir = Join-Path $repoRoot 'node_modules\electron'
 $electronExe = Join-Path $electronDir 'dist\electron.exe'
+$electronPackageJson = Join-Path $electronDir 'package.json'
+$workspaceElectronPackageJson = Join-Path $repoRoot 'apps\electron\package.json'
+
+function Get-ElectronVersion {
+  param(
+    [string]$InstalledPackageJson,
+    [string]$WorkspacePackageJson
+  )
+
+  if (Test-Path $InstalledPackageJson) {
+    return (Get-Content $InstalledPackageJson | ConvertFrom-Json).version
+  }
+
+  if (Test-Path $WorkspacePackageJson) {
+    $workspacePackage = Get-Content $WorkspacePackageJson | ConvertFrom-Json
+    $declaredVersion = $workspacePackage.devDependencies.electron
+    if ($declaredVersion) {
+      return ($declaredVersion -replace '^[\^~]', '')
+    }
+  }
+
+  throw "Unable to resolve Electron version. Missing: $InstalledPackageJson and no apps/electron devDependency."
+}
 
 if (Test-Path $electronExe) {
   Write-Host '[OK] Electron binary present'
@@ -12,7 +35,7 @@ if (Test-Path $electronExe) {
 
 Write-Host '[..] Electron binary missing, downloading (~130MB)...'
 
-$version = (Get-Content (Join-Path $electronDir 'package.json') | ConvertFrom-Json).version
+$version = Get-ElectronVersion -InstalledPackageJson $electronPackageJson -WorkspacePackageJson $workspaceElectronPackageJson
 $zipName = "electron-v$version-win32-x64.zip"
 $mirrors = @(
   "https://cdn.npmmirror.com/binaries/electron/v$version/$zipName",

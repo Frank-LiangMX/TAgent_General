@@ -13,6 +13,7 @@ export const radius = {
   'glass-input': '24px', // .chat-input-glass
   'glass-sidebar': '12px', // .session-glass-sidebar / .session-list-item-active 侧栏列表项选中态
   'glass-rail': '12px', // .session-glass-rail
+  'glass-tab': '14px', // 顶部标签：仅上边圆角，下边与 TabBar 相接
   'glass-chip': '6px', // .session-glass-chip
   'glass-modal': '20px', // .session-glass-modal
   'glass-modal-lg': '24px', // .session-glass-modal-lg

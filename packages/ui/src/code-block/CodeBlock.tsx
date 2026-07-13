@@ -37,6 +37,7 @@ interface CodeBlockProps {
 
 /** 节流间隔（ms）：流式输出时限制高亮更新频率 */
 const THROTTLE_MS = 80
+const PLAIN_TEXT_LANGUAGES = new Set(['', 'text', 'plaintext', 'txt'])
 
 // ===== 工具函数 =====
 
@@ -79,6 +80,11 @@ function extractCodeInfo(children: React.ReactNode): { language: string; code: s
   }
 }
 
+/** Plain-text fences (including ASCII diagrams) should inherit the active theme foreground. */
+export function shouldUsePlainTextColors(language: string): boolean {
+  return PLAIN_TEXT_LANGUAGES.has(language.toLowerCase())
+}
+
 // ===== SVG 图标路径常量 =====
 
 const ICON_ATTRS = {
@@ -107,12 +113,14 @@ interface CodeLineProps {
   tokens: HighlightToken[]
   /** 该行的原始文本（token 未覆盖部分作为 fallback） */
   rawLine: string
+  useTokenColors: boolean
 }
 
 /** 单行代码渲染（memo 避免已稳定行重复渲染） */
 const CodeLine = React.memo(function CodeLine({
   tokens,
   rawLine,
+  useTokenColors,
 }: CodeLineProps): React.ReactElement {
   // token 覆盖的字符数
   const tokenLen = tokens.reduce((sum, t) => sum + t.content.length, 0)
@@ -120,7 +128,7 @@ const CodeLine = React.memo(function CodeLine({
   return (
     <span className="line">
       {tokens.map((token, i) => (
-        <span key={i} style={token.color ? { color: token.color } : undefined}>
+        <span key={i} style={useTokenColors && token.color ? { color: token.color } : undefined}>
           {token.content}
         </span>
       ))}
@@ -146,6 +154,7 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
 
   const trimmedCode = code.replace(/\n$/, '')
   const langOrText = language || 'text'
+  const usePlainTextColors = shouldUsePlainTextColors(language)
   const rawLines = React.useMemo(() => trimmedCode.split('\n'), [trimmedCode])
 
   // ---- 节流 token 高亮 ----
@@ -212,7 +221,7 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
   }, [trimmedCode])
 
   return (
-    <div className="code-block-wrapper group/code rounded-lg overflow-hidden my-2 border border-border/50">
+    <div className="code-block-wrapper group/code rounded-glass-modal overflow-hidden my-2 border border-border/50">
       {/* 头部栏：语言标签 + 复制按钮 */}
       <div className="flex items-center justify-between h-[34px] px-2 py-1 bg-muted/60 text-muted-foreground text-xs">
         <span className="font-medium select-none">{getDisplayName(language)}</span>
@@ -230,15 +239,20 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
       <pre
         className="shiki overflow-x-auto p-4 m-0 text-[0.875em] leading-[1.6] bg-[hsl(var(--code-bg))]"
         style={{
-          color: tokenResult?.fgColor ?? '#e1e4e8',
-          borderRadius: '0 0 8px 8px',
+          color: usePlainTextColors
+            ? 'hsl(var(--foreground))'
+            : (tokenResult?.fgColor ?? '#e1e4e8'),
         }}
       >
         <code>
           {rawLines.map((rawLine, i) => (
             <React.Fragment key={i}>
               {i > 0 && '\n'}
-              <CodeLine tokens={tokenResult?.lines[i] ?? []} rawLine={rawLine} />
+              <CodeLine
+                tokens={tokenResult?.lines[i] ?? []}
+                rawLine={rawLine}
+                useTokenColors={!usePlainTextColors}
+              />
             </React.Fragment>
           ))}
         </code>
