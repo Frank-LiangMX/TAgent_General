@@ -1090,7 +1090,7 @@ export class AgentOrchestrator {
     accumulatedMessages.length = 0
     // 清除失效的 SDK session，新 SDK 会话产生的 sdkSessionId 会通过 onSessionId 回调自动保存
     try {
-      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined }, true)
     } catch {
       /* 忽略 */
     }
@@ -1263,7 +1263,7 @@ export class AgentOrchestrator {
 
     // 0.5 清除上一轮中断标记
     try {
-      updateAgentSessionMeta(sessionId, { stoppedByUser: false })
+      updateAgentSessionMeta(sessionId, { stoppedByUser: false }, true)
     } catch {
       /* 会话可能已删除 */
     }
@@ -1564,7 +1564,7 @@ export class AgentOrchestrator {
       console.warn(
         `[Agent 编排] sdkSessionId 的 JSONL 不存在，清空无效值: ${existingSdkSessionId}`
       )
-      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+      updateAgentSessionMeta(sessionId, { sdkSessionId: undefined }, true)
       existingSdkSessionId = undefined
     }
 
@@ -1591,7 +1591,7 @@ export class AgentOrchestrator {
     if (sessionMeta?.resumeAtMessageUuid) {
       rewindResumeAt = sessionMeta.resumeAtMessageUuid
       // 消费一次后清除
-      updateAgentSessionMeta(sessionId, { resumeAtMessageUuid: undefined })
+      updateAgentSessionMeta(sessionId, { resumeAtMessageUuid: undefined }, true)
       console.log(`[Agent 编排] 检测到回退 resume: resumeSessionAt=${rewindResumeAt}`)
     }
 
@@ -1604,7 +1604,7 @@ export class AgentOrchestrator {
     const isScheduledRun =
       triggeredBy === 'automation' || userMessage.includes('TAGENT_SCHEDULED_RUN')
     if (!isScheduledRun && sessionMeta?.sourceAutomationId && !sessionMeta.automationGraduated) {
-      updateAgentSessionMeta(sessionId, { automationGraduated: true })
+      updateAgentSessionMeta(sessionId, { automationGraduated: true }, true)
       console.log(`[Agent 编排] 定时任务子会话 ${sessionId} 已被用户接管`)
     }
 
@@ -2479,7 +2479,7 @@ export class AgentOrchestrator {
           capturedSdkSessionId = sdkSessionId
           if (isNewSessionId) {
             try {
-              updateAgentSessionMeta(sessionId, { sdkSessionId })
+              updateAgentSessionMeta(sessionId, { sdkSessionId }, true)
               console.log(`[Agent 编排] 已保存 SDK session_id: ${sdkSessionId}`)
             } catch (err) {
               console.error(`[Agent 编排] 保存 SDK session_id 失败:`, err)
@@ -2609,7 +2609,7 @@ export class AgentOrchestrator {
               const wasStoppedByUser = this.consumeStoppedByUser(sessionId)
               this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
               try {
-                updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser })
+                updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser }, true)
               } catch {
                 /* 会话可能已删除 */
               }
@@ -2932,11 +2932,6 @@ export class AgentOrchestrator {
 
                 // 透传归一化后的错误消息到前端，避免 SDK 原始 API Error 直接暴露给用户。
                 this.eventBus.emit(sessionId, { kind: 'sdk_message', message: errorSDKMsg })
-                try {
-                  updateAgentSessionMeta(sessionId, {})
-                } catch {
-                  /* 忽略 */
-                }
                 completeRun(getAgentSessionMessages(sessionId), {
                   startedAt: streamStartedAt,
                   skipMemory: true,
@@ -3002,7 +2997,7 @@ export class AgentOrchestrator {
                   )
                   capturedSdkSessionId = existingSdkSessionId
                   try {
-                    updateAgentSessionMeta(sessionId, { sdkSessionId: existingSdkSessionId })
+                    updateAgentSessionMeta(sessionId, { sdkSessionId: existingSdkSessionId }, true)
                   } catch (err) {
                     console.warn('[Agent 编排] 回滚 sdkSessionId 失败:', err)
                   }
@@ -3026,7 +3021,7 @@ export class AgentOrchestrator {
                   }
                   // 重试次数用完：仍清除 sdkSessionId 避免下次 resume 失效 session
                   try {
-                    updateAgentSessionMeta(sessionId, { sdkSessionId: undefined })
+                    updateAgentSessionMeta(sessionId, { sdkSessionId: undefined }, true)
                   } catch (err) {
                     console.warn('[Agent 编排] 清除 sdkSessionId 失败:', err)
                   }
@@ -3112,7 +3107,9 @@ export class AgentOrchestrator {
           this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
 
           try {
-            updateAgentSessionMeta(sessionId, wasStoppedByUser ? { stoppedByUser: true } : {})
+            if (wasStoppedByUser) {
+              updateAgentSessionMeta(sessionId, { stoppedByUser: true }, true)
+            }
           } catch {
             /* 忽略 */
           }
@@ -3158,7 +3155,7 @@ export class AgentOrchestrator {
             this.persistSDKMessages(sessionId, accumulatedMessages, Date.now() - queryStartedAt)
             // 持久化中断状态到会话 meta
             try {
-              updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser })
+              updateAgentSessionMeta(sessionId, { stoppedByUser: wasStoppedByUser }, true)
             } catch {
               /* 会话可能已删除 */
             }
@@ -3588,7 +3585,7 @@ export class AgentOrchestrator {
     const kept = truncateSDKMessages(sessionId, assistantMessageUuid)
 
     // 3. 记录 resumeAtMessageUuid，下次发消息时 SDK 从此点继续
-    updateAgentSessionMeta(sessionId, { resumeAtMessageUuid: assistantMessageUuid })
+    updateAgentSessionMeta(sessionId, { resumeAtMessageUuid: assistantMessageUuid }, true)
 
     console.log(
       `[Agent 编排] 回退完成: sessionId=${sessionId}, 保留 ${kept.length} 条消息, 文件恢复=${fileRewindResult?.canRewind ?? '跳过'}`

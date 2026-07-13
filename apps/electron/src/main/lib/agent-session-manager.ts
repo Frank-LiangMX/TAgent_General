@@ -449,7 +449,9 @@ export function updateAgentSessionMeta(
       | 'sourceKanbanTaskId'
       | 'boardId'
     >
-  >
+  >,
+  /** 为 true 时不更新 updatedAt，避免运行时状态变更把会话顶到列表最上方 */
+  skipUpdatedAt?: boolean
 ): AgentSessionMeta {
   const index = readIndex()
   const idx = index.sessions.findIndex((s) => s.id === id)
@@ -466,7 +468,7 @@ export function updateAgentSessionMeta(
     ...existing,
     ...updates,
     ...(autoUnarchive ? { archived: false } : {}),
-    updatedAt: Date.now(),
+    ...(skipUpdatedAt ? {} : { updatedAt: Date.now() }),
   }
 
   index.sessions[idx] = updated
@@ -817,7 +819,7 @@ export async function forkAgentSession(input: ForkSessionInput): Promise<AgentSe
     sdkSessionId: forkResult.sessionId,
     forkSourceDir: sourceDir,
     forkSourceSdkSessionId: forkSourceSdkSessionId,
-  })
+  }, true)
   // 同步返回值（updateAgentSessionMeta 已写入磁盘，这里让调用方拿到最新值）
   newMeta.sdkSessionId = forkResult.sessionId
   newMeta.forkSourceDir = sourceDir

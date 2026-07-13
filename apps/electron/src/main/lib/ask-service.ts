@@ -383,12 +383,7 @@ export async function sendAskMessage(input: AskSendInput, webContents: WebConten
       appendAskMessage(agentSessionId, assistantMsg)
     }
 
-    // 13. 更新 session updatedAt
-    try {
-      updateAgentSessionMeta(agentSessionId, {})
-    } catch {
-      // 更新失败不影响主流程
-    }
+    // 13. 消息已通过 appendAskMessage 持久化，updatedAt 已由 appendMessage 更新
 
     // 14. 推 STREAM_COMPLETE
     const completeEvent: AskStreamCompleteEvent = {

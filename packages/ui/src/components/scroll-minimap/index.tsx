@@ -38,7 +38,9 @@ const MAX_BARS = 20
 /** 每条刻度视觉高度（含间距） */
 const BAR_SLOT = 9
 const BAR_HEIGHT = 4
-const BAR_WIDTH = 12
+const BAR_WIDTH = 10
+/** 刻度条圆角（让扁条更圆润） */
+const BAR_RADIUS = 2
 
 const PREVIEW_REMARK_PLUGINS = [remarkGfm]
 
@@ -475,6 +477,7 @@ export function ScrollMinimap({ items, onShortcutOpen }: ScrollMinimapProps): Re
                 top: bar.index * BAR_SLOT + (BAR_SLOT - BAR_HEIGHT) / 2,
                 width: BAR_WIDTH,
                 height: BAR_HEIGHT,
+                borderRadius: BAR_RADIUS,
               }}
               onClick={() => scrollToGroup(bar.start)}
             />

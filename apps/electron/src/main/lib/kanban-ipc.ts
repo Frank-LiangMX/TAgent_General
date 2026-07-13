@@ -235,7 +235,7 @@ export function attachBoardToSession(input: AttachBoardToSessionInput): void {
   if (!getAgentSessionMeta(input.sessionId)) {
     throw new Error(`主会话不存在: ${input.sessionId}`)
   }
-  updateAgentSessionMeta(input.sessionId, { boardId: input.boardId })
+  updateAgentSessionMeta(input.sessionId, { boardId: input.boardId }, true)
   broadcastKanbanChanged()
   console.log(`[看板] 绑定看板到会话: board=${input.boardId}, session=${input.sessionId}`)
 }
@@ -245,7 +245,7 @@ export function detachBoardFromSession(input: DetachBoardFromSessionInput): void
   if (!getAgentSessionMeta(input.sessionId)) {
     throw new Error(`主会话不存在: ${input.sessionId}`)
   }
-  updateAgentSessionMeta(input.sessionId, { boardId: undefined })
+  updateAgentSessionMeta(input.sessionId, { boardId: undefined }, true)
   broadcastKanbanChanged()
   console.log(`[看板] 解绑会话看板: session=${input.sessionId}`)
 }
@@ -278,7 +278,7 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
   })
 
   // 2. 写回主会话 meta.boardId（渲染进程据此显示「团队」Tab）
-  updateAgentSessionMeta(sessionId, { boardId: board.id })
+  updateAgentSessionMeta(sessionId, { boardId: board.id }, true)
 
   // 3. 按 requirements 建任务（R-1 优先级最高，依次递减）
   const baseTaskInput = {
@@ -344,7 +344,7 @@ export function createKanbanBoard(input: CreateKanbanBoardIpcInput): KanbanBoard
   })
   // 若提供了 parentSessionId，写回主会话 meta.boardId（触发「团队」Tab 显示）
   if (input.parentSessionId) {
-    updateAgentSessionMeta(input.parentSessionId, { boardId: board.id })
+    updateAgentSessionMeta(input.parentSessionId, { boardId: board.id }, true)
   }
   broadcastKanbanChanged()
   console.log(

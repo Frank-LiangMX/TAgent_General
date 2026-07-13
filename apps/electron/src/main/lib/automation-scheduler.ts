@@ -231,7 +231,7 @@ export async function runAutomation(automation: Automation, manual = false): Pro
         automation.channelId,
         automation.workspaceId
       )
-      updateAgentSessionMeta(created.id, { sourceAutomationId: automation.id })
+      updateAgentSessionMeta(created.id, { sourceAutomationId: automation.id }, true)
       targetSessionId = created.id
       setLastSessionId(automation.id, created.id)
     }

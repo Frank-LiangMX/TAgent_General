@@ -114,7 +114,7 @@ bun run build:resources   # 复制 resources/ 到 dist/
 | **构建工具**     | Vite                           | 6.0.3   |
 | **打包工具**     | esbuild                        | 0.24.0+ |
 | **分发工具**     | Electron Builder               | 25.1.8  |
-| **Agent SDK**    | @anthropic-ai/claude-agent-sdk | 0.3.143 |
+| **Agent SDK**    | @anthropic-ai/claude-agent-sdk | 0.3.185 |
 
 ## 核心架构
 
@@ -347,7 +347,7 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 ## Agent SDK 集成架构
 
-基于 `@anthropic-ai/claude-agent-sdk@0.3.143` 实现 Agent 模式。
+基于 `@anthropic-ai/claude-agent-sdk@0.3.185` 实现 Agent 模式。
 
 ### 核心流程
 

@@ -142,7 +142,7 @@ export async function runAgent(input: AgentSendInput, webContents: WebContents):
   registerWebContents(input.sessionId, webContents)
   // 开始新一轮执行时清除"完成未确认"标记
   try {
-    updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: false })
+    updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: false }, true)
   } catch {
     /* 新会话可能尚未写入索引 */
   }
@@ -159,7 +159,7 @@ export async function runAgent(input: AgentSendInput, webContents: WebContents):
       onComplete: (messages, opts) => {
         // 持久化"完成但未确认"状态，确保重启后仍显示在工作中列表
         try {
-          updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: true })
+          updateAgentSessionMeta(input.sessionId, { completedButUnconfirmed: true }, true)
         } catch {
           /* 会话可能已被删除 */
         }

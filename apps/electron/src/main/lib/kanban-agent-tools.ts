@@ -320,7 +320,7 @@ export async function handleCreateBoard(args: Record<string, unknown>): Promise<
   // 传了 parentSessionId 且会话存在时，自动写回 meta.boardId（触发「团队」Tab 显示）
   // 与 createKanbanBoard IPC 行为对齐，避免用户手动绑定
   if (input.parentSessionId && getAgentSessionMeta(input.parentSessionId)) {
-    updateAgentSessionMeta(input.parentSessionId, { boardId: board.id })
+    updateAgentSessionMeta(input.parentSessionId, { boardId: board.id }, true)
   }
   // 广播变更：触发渲染层刷新 agentSessionsAtom（同步 boardId）和看板 UI
   broadcastKanbanChanged()

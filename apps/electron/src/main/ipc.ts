@@ -2293,7 +2293,7 @@ export function registerIpcHandlers(): void {
           // 持久化到 session meta，和 cycleMode 路径保持一致（重启后该 session 能恢复）
           if (meta) {
             try {
-              updateAgentSessionMeta(sessionId, { permissionMode: targetMode })
+              updateAgentSessionMeta(sessionId, { permissionMode: targetMode }, true)
             } catch (err) {
               console.warn(
                 `[IPC] ExitPlanMode 持久化 session 权限模式失败: sessionId=${sessionId}`,
@@ -4554,7 +4554,7 @@ export function registerIpcHandlers(): void {
       if (!getAgentSessionMeta(agentSessionId)) {
         throw new Error(`Agent 会话不存在: ${agentSessionId}`)
       }
-      updateAgentSessionMeta(agentSessionId, { lastComposerMode: mode })
+      updateAgentSessionMeta(agentSessionId, { lastComposerMode: mode }, true)
     }
   )
 

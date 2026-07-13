@@ -307,7 +307,7 @@ export async function runKanbanTaskHeadless(
   updateAgentSessionMeta(session.id, {
     parentBoardId: boardContext.id,
     sourceKanbanTaskId: task.id,
-  })
+  }, true)
 
   // 2. 标记任务进入 running（防 dispatcher 同任务重入；记录 sessionId 便于侧栏关联）
   //    startedAt 由 kanban-db 在 status='running' 时自动写入，这里只作为回调信息透传
