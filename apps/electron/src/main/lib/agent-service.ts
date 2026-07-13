@@ -367,6 +367,11 @@ export function stopAllAgents(): void {
   orchestrator.stopAll()
 }
 
+/** 是否有任意 Agent 会话正在运行（空闲检测用） */
+export function hasActiveAgentSessions(): boolean {
+  return orchestrator.hasActiveSessions()
+}
+
 /**
  * 退出前最后兜底：扫描并强杀所有孤儿 claude-agent-sdk 子进程
  *

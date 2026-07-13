@@ -9,6 +9,10 @@ vi.mock('electron', () => ({
   BrowserWindow: {
     getAllWindows: () => [],
   },
+  safeStorage: {
+    encryptString: vi.fn(),
+    decryptString: vi.fn(),
+  },
 }))
 
 vi.mock('./agent-service', () => ({
@@ -43,6 +47,9 @@ vi.mock('./voice-dictation-window', () => ({
   destroyVoiceDictationWindow: vi.fn(() => {}),
 }))
 vi.mock('./workspace-watcher', () => ({ stopWorkspaceWatcher: vi.fn(() => {}) }))
+// Note: idle-memory-consolidation-scheduler is NOT mocked here.
+// The real stopIdleConsolidationScheduler is called during shutdown and
+// is a no-op when the scheduler was never started — harmless for tests.
 
 describe('requestApplicationQuit', () => {
   beforeEach(() => {

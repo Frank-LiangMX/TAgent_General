@@ -622,9 +622,29 @@ async function bootstrap(): Promise<void> {
     const { scheduledCleanupService } = require('./lib/scheduled-cleanup-service')
     const { selfRepairService } = require('./lib/self-repair-service')
     memoryLayerService.initialize()
-    reflectService.initialize()
     scheduledCleanupService.initialize()
     selfRepairService.initialize()
+
+    const { resolveIdleConsolidationFlag } =
+      require('./lib/idle-memory-consolidation-scheduler') as typeof import('./lib/idle-memory-consolidation-scheduler')
+    const idleConsolidationEnabled = resolveIdleConsolidationFlag(app.isPackaged)
+    if (idleConsolidationEnabled) {
+      // 新机制：只加载 Reflect 状态，不启动 LLM 调度；空闲整理接管
+      reflectService.initialize(false)
+      console.log('[启动] 空闲记忆整理已启用，旧 Reflect LLM 调度已禁用')
+    } else {
+      // 旧机制：Reflect 每日 03:00 调度 + 启动时检查
+      reflectService.initialize()
+    }
+  })
+
+  // 启动空闲记忆整理调度器（flag 开启时，异步启动，首次扫描延迟 60s）
+  await safeAwait('startIdleConsolidationScheduler', async () => {
+    const { resolveIdleConsolidationFlag, startIdleConsolidationScheduler } =
+      await import('./lib/idle-memory-consolidation-scheduler')
+    if (resolveIdleConsolidationFlag(app.isPackaged)) {
+      await startIdleConsolidationScheduler()
+    }
   })
 
   // 生产环境下初始化自动更新

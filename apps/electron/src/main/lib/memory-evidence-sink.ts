@@ -322,12 +322,9 @@ class MemoryEvidenceSink {
     // 选择性清理：只删除已处理的 sessionId 对应条目
     try {
       const entries = this.getPendingEvidence(mode)
-      const remaining = entries.filter(
-        (e) => !processedSessionIds.has(e.sessionId)
-      )
+      const remaining = entries.filter((e) => !processedSessionIds.has(e.sessionId))
       const content =
-        remaining.map((e) => JSON.stringify(e)).join('\n') +
-        (remaining.length > 0 ? '\n' : '')
+        remaining.map((e) => JSON.stringify(e)).join('\n') + (remaining.length > 0 ? '\n' : '')
       fs.writeFileSync(filePath, content, 'utf-8')
       this.lineCounts.set(mode, remaining.length)
       console.log(
@@ -336,6 +333,56 @@ class MemoryEvidenceSink {
     } catch (e) {
       console.warn(`[MemoryEvidenceSink] 选择性清理证据失败:`, e)
       this.lineCounts.delete(mode) // 标记为未同步
+    }
+  }
+
+  /**
+   * 按 entry.id 精确删除已处理证据（temp+rename 原子替换）
+   *
+   * 约束：
+   * - processedIds 空时不改文件，返回当前条数
+   * - 文件不存在返回 0
+   * - 失败时清理 tmp、lineCounts.delete(mode)、记录 warn 并抛出
+   */
+  consumeEvidenceByIds(mode: MemoryMode, processedIds: readonly string[]): number {
+    if (processedIds.length === 0) {
+      const filePath = getEvidenceFilePath(mode)
+      if (!fs.existsSync(filePath)) return 0
+      const entries = this.getPendingEvidence(mode)
+      return entries.length
+    }
+
+    const filePath = getEvidenceFilePath(mode)
+    if (!fs.existsSync(filePath)) return 0
+
+    const tmpPath = `${filePath}.tmp-${Date.now()}`
+    try {
+      const entries = this.getPendingEvidence(mode)
+      const processedSet = new Set(processedIds)
+      const remaining = entries.filter((e) => !processedSet.has(e.id))
+      const content =
+        remaining.map((e) => JSON.stringify(e)).join('\n') + (remaining.length > 0 ? '\n' : '')
+
+      const dir = path.dirname(filePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      fs.writeFileSync(tmpPath, content, 'utf-8')
+      fs.renameSync(tmpPath, filePath)
+
+      this.lineCounts.set(mode, remaining.length)
+      return remaining.length
+    } catch (e) {
+      // 清理 tmp 文件
+      try {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath)
+      } catch {
+        // ignore cleanup error
+      }
+      this.lineCounts.delete(mode)
+      console.warn(`[MemoryEvidenceSink] consumeEvidenceByIds 失败:`, e)
+      throw e
     }
   }
 

@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -39,6 +39,7 @@ const { MemoryEvidenceSink, memoryEvidenceSink } = await import('./memory-eviden
 const { NudgeService } = await import('./nudge-service')
 
 import type { NudgeCandidate } from './nudge-service'
+import type { MemoryEvidenceEntry } from './memory-evidence-sink'
 
 // ===================================================================
 // 1. MemoryEvidenceSink 基础功能
@@ -82,7 +83,10 @@ describe('MemoryEvidenceSink - 证据收集', () => {
   })
 
   test('writeSessionEvidence 写入会话证据 + 标记 dirty', () => {
-    sink.writeSessionEvidence('general', 'sess-002', '实现登录', '完成了登录功能', ['Write', 'Edit'])
+    sink.writeSessionEvidence('general', 'sess-002', '实现登录', '完成了登录功能', [
+      'Write',
+      'Edit',
+    ])
 
     expect(sink.isModeDirty('general')).toBe(true)
 
@@ -175,6 +179,108 @@ describe('MemoryEvidenceSink - 证据收集', () => {
     expect(entries.length).toBeLessThanOrEqual(500)
     const lastEntry = entries[entries.length - 1]
     expect(lastEntry!.sessionId).toBe('sess-509')
+  })
+
+  test('consumeEvidenceByIds: 同 createdAt 不同 ID 只删指定 ID', () => {
+    // 手动写入两条同 createdAt 的条目（模拟同时写入）
+    const fixedTime = 1000000
+    const entry1: MemoryEvidenceEntry = {
+      id: 'ev-same-ts-001',
+      createdAt: fixedTime,
+      mode: 'general',
+      source: 'session',
+      sessionId: 'sess-a',
+      sessionTitle: 'A',
+      sessionSummary: 'A summary',
+      toolsUsed: [],
+    }
+    const entry2: MemoryEvidenceEntry = {
+      id: 'ev-same-ts-002',
+      createdAt: fixedTime,
+      mode: 'general',
+      source: 'session',
+      sessionId: 'sess-b',
+      sessionTitle: 'B',
+      sessionSummary: 'B summary',
+      toolsUsed: [],
+    }
+
+    // 直接通过 getPendingEvidence + 手动写文件注入
+    const filePath = join(tmpDir, '.tagent-dev', 'memory', 'pending_evidence.jsonl')
+    const dir = join(tmpDir, '.tagent-dev', 'memory')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(filePath, JSON.stringify(entry1) + '\n' + JSON.stringify(entry2) + '\n', 'utf-8')
+
+    // 只消费第一条
+    const remaining = sink.consumeEvidenceByIds('general', ['ev-same-ts-001'])
+    expect(remaining).toBe(1)
+
+    const after = sink.getPendingEvidence('general')
+    expect(after).toHaveLength(1)
+    expect(after[0]!.id).toBe('ev-same-ts-002')
+    expect(after[0]!.sessionId).toBe('sess-b')
+  })
+
+  test('consumeEvidenceByIds: 返回剩余条数', () => {
+    sink.writeSessionEvidence('general', 'sess-1', 'T1', 'S1', [])
+    sink.writeSessionEvidence('general', 'sess-2', 'T2', 'S2', [])
+    sink.writeSessionEvidence('general', 'sess-3', 'T3', 'S3', [])
+
+    // 获取所有 ID
+    const all = sink.getPendingEvidence('general')
+    expect(all).toHaveLength(3)
+    const ids = all.map((e) => e.id)
+
+    // 消费 2 条
+    const remaining = sink.consumeEvidenceByIds('general', ids.slice(0, 2))
+    expect(remaining).toBe(1)
+
+    // 再消费最后 1 条
+    const remaining2 = sink.consumeEvidenceByIds('general', [ids[2]!])
+    expect(remaining2).toBe(0)
+    expect(sink.getPendingEvidence('general')).toHaveLength(0)
+  })
+
+  test('consumeEvidenceByIds: 文件不存在返回 0', () => {
+    const result = sink.consumeEvidenceByIds('general', ['ev-nonexist'])
+    expect(result).toBe(0)
+  })
+
+  test('consumeEvidenceByIds: processedIds 空时不改文件返回当前条数', () => {
+    sink.writeSessionEvidence('general', 'sess-x', 'TX', 'SX', [])
+
+    const before = sink.getPendingEvidence('general').length
+    const result = sink.consumeEvidenceByIds('general', [])
+    expect(result).toBe(before)
+    expect(sink.getPendingEvidence('general')).toHaveLength(before)
+  })
+
+  test('consumeEvidenceByIds: 消费后再 append 不会因旧 lineCount 截断', () => {
+    sink.writeSessionEvidence('general', 'sess-1', 'T1', 'S1', [])
+    sink.writeSessionEvidence('general', 'sess-2', 'T2', 'S2', [])
+    sink.writeSessionEvidence('general', 'sess-3', 'T3', 'S3', [])
+
+    const all = sink.getPendingEvidence('general')
+    expect(all).toHaveLength(3)
+
+    // 消费掉前 2 条（lineCounts 更新为 1）
+    sink.consumeEvidenceByIds('general', [all[0]!.id, all[1]!.id])
+    expect(sink.getPendingEvidence('general')).toHaveLength(1)
+
+    // 再 append 5 条 — 不应被旧 lineCount 误截断
+    sink.writeSessionEvidence('general', 'sess-new-1', 'N1', 'N1', [])
+    sink.writeSessionEvidence('general', 'sess-new-2', 'N2', 'N2', [])
+    sink.writeSessionEvidence('general', 'sess-new-3', 'N3', 'N3', [])
+    sink.writeSessionEvidence('general', 'sess-new-4', 'N4', 'N4', [])
+    sink.writeSessionEvidence('general', 'sess-new-5', 'N5', 'N5', [])
+
+    // 应有 1 (remaining) + 5 (new) = 6 条
+    const finalEntries = sink.getPendingEvidence('general')
+    expect(finalEntries).toHaveLength(6)
+    // 确认旧的被消费了，新的是完整的
+    expect(finalEntries.some((e) => e.id === all[0]!.id)).toBe(false)
+    expect(finalEntries.some((e) => e.id === all[1]!.id)).toBe(false)
+    expect(finalEntries.some((e) => e.id === all[2]!.id)).toBe(true) // 第 3 条保留
   })
 })
 
@@ -286,8 +392,8 @@ describe('NudgeService.onTurnStart - 达到阈值时证据写入 sink', () => {
     mockHome = tmpDir
     runLLMSpy = vi.spyOn(nudge as never, 'runLLMReview' as never).mockResolvedValue(undefined)
     // 重置 singleton 的内存缓存，防止跨测试 dirty/lineCount 污染
-    ;(memoryEvidenceSink as never)['dirtyFlags'] = new Map()
-    ;(memoryEvidenceSink as never)['lineCounts'] = new Map()
+    ;(memoryEvidenceSink as unknown as Record<string, unknown>)['dirtyFlags'] = new Map()
+    ;(memoryEvidenceSink as unknown as Record<string, unknown>)['lineCounts'] = new Map()
   })
 
   afterEach(() => {

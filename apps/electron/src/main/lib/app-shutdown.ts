@@ -19,6 +19,7 @@ import { stopChatToolsWatcher } from './tool-config-watcher'
 import { cleanupUpdater, getIsQuittingForUpdate } from './updater/auto-updater'
 import { destroyVoiceDictationWindow } from './voice-dictation-window'
 import { stopWorkspaceWatcher } from './workspace-watcher'
+import { stopIdleConsolidationScheduler } from './idle-memory-consolidation-scheduler'
 
 const FORCE_EXIT_MS = 5_000
 
@@ -63,6 +64,7 @@ export function runApplicationShutdown(): void {
 
   // 安装更新：仅释放可能锁住安装目录的 Agent 子进程，其余交给 NSIS 安装器
   if (getIsQuittingForUpdate()) {
+    stopIdleConsolidationScheduler()
     stopAllAgents()
     killOrphanedClaudeSubprocesses()
     cleanupUpdater()
@@ -70,6 +72,7 @@ export function runApplicationShutdown(): void {
   }
 
   destroyAllDetachedPreviewWindows()
+  stopIdleConsolidationScheduler()
   stopAllAgents()
   killOrphanedClaudeSubprocesses()
   cleanupUpdater()

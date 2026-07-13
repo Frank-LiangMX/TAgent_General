@@ -28,6 +28,7 @@ import { getChannelById, decryptApiKey } from './channel-manager'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 import { getFetchFn } from './proxy-fetch'
 import { getSettings } from './settings-service'
+import type { Insight, Contradiction } from './memory-consolidation-service'
 
 // ===== 类型定义 =====
 
@@ -90,7 +91,7 @@ class ReflectService {
   /**
    * 获取记忆目录路径
    */
-  private getMemoryDir(mode: MemoryMode): string {
+  /* internal */ getMemoryDir(mode: MemoryMode): string {
     const isDev = !app.isPackaged
     const baseDir = isDev
       ? path.join(app.getPath('home'), '.tagent-dev')
@@ -100,11 +101,21 @@ class ReflectService {
 
   /**
    * 初始化服务
+   *
+   * @param scheduleLLM 是否调度 LLM 驱动的 checkAndRun 和定时器。
+   *                     默认 true（保持向后兼容）。
+   *                     新 consolidation 上线后设为 false 只加载状态，
+   *                     不触发任何 LLM 调用，scheduler 在接线阶段禁用。
    */
-  initialize(): void {
+  initialize(scheduleLLM: boolean = true): void {
     // 加载上次运行时间
     this.loadState('general')
     this.loadState('ta')
+
+    if (!scheduleLLM) {
+      // 只加载状态，不 checkAndRun/scheduleNextRun
+      return
+    }
 
     // 检查是否需要立即运行
     this.checkAndRun('general')
@@ -340,7 +351,10 @@ class ReflectService {
       this.saveState(mode)
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
-      const errorCode = error instanceof Error && 'status' in error ? String((error as { status: unknown }).status) : 'UNKNOWN'
+      const errorCode =
+        error instanceof Error && 'status' in error
+          ? String((error as { status: unknown }).status)
+          : 'UNKNOWN'
       result.error = msg
       result.errorCode = errorCode
       result.outcome = 'failed'
@@ -546,9 +560,7 @@ ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂�
     if (contradictionCount > 0) {
       try {
         await this.appendContradictionsToL3(dir, parsed.contradictions)
-        console.log(
-          `[ReflectService] ${contradictionCount} 条矛盾洞察写入 L3 corrections`
-        )
+        console.log(`[ReflectService] ${contradictionCount} 条矛盾洞察写入 L3 corrections`)
       } catch (e) {
         console.warn('[ReflectService] 写入 L3 contradictions 失败:', e)
       }
@@ -595,12 +607,16 @@ ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂�
    *
    * 设计 §6.5.5：新 insight 与现有 L5 矛盾 → 写 L3 raw 而非 L5
    */
-  private async appendContradictionsToL3(dir: string, contradictions: string[]): Promise<void> {
+  /* internal */ async appendContradictionsToL3(
+    dir: string,
+    contradictions: string[]
+  ): Promise<void> {
     const filePath = path.join(dir, 'corrections.jsonl')
     const timestamp = Date.now()
-    const lines = contradictions
-      .map((c) => JSON.stringify({ timestamp, correction: c, context: 'L5 contradiction' }))
-      .join('\n') + '\n'
+    const lines =
+      contradictions
+        .map((c) => JSON.stringify({ timestamp, correction: c, context: 'L5 contradiction' }))
+        .join('\n') + '\n'
 
     if (!fs.existsSync(filePath)) {
       await fs.promises.writeFile(filePath, lines, 'utf-8')
@@ -721,10 +737,13 @@ ${summary || '（无）'}
   /**
    * 检查两段文本是否相似
    */
-  private isSimilar(a: string, b: string): boolean {
-    // 简化版：检查关键词重叠
+  /* internal */ isSimilar(a: string, b: string): boolean {
+    // 空关键词边沿：两段无关键词文本仅在内容完全相等时视为相似
     const keywordsA = new Set(a.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || [])
     const keywordsB = new Set(b.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || [])
+    if (keywordsA.size === 0 && keywordsB.size === 0) {
+      return a.trim().toLowerCase() === b.trim().toLowerCase()
+    }
 
     let overlap = 0
     for (const kw of keywordsA) {
@@ -739,7 +758,7 @@ ${summary || '（无）'}
   /**
    * 追加洞察到 L5_insights.md
    */
-  private async appendInsights(dir: string, insights: string[]): Promise<void> {
+  /* internal */ async appendInsights(dir: string, insights: string[]): Promise<void> {
     const filePath = path.join(dir, 'L5_insights.md')
     const timestamp = new Date().toISOString().slice(0, 10)
 
@@ -751,6 +770,129 @@ ${summary || '（无）'}
     } else {
       await fs.promises.appendFile(filePath, '\n' + lines, 'utf-8')
     }
+  }
+
+  /**
+   * 追加结构化洞察及其元数据到 L5_insights.md
+   *
+   * 每条 insight 写入两行：
+   *   - [date] content
+   *     <!-- {"confidence":0.8,"evidenceIds":["ev-1"]} -->
+   *
+   * 第二行以空格开头（非 dash），parseMdLines / runReflect 的读取不受影响，
+   * 向后兼容。不创建新文件。
+   */
+  private async appendStructuredInsights(dir: string, insights: Insight[]): Promise<void> {
+    const filePath = path.join(dir, 'L5_insights.md')
+    const timestamp = new Date().toISOString().slice(0, 10)
+
+    // markdown block with optional <!-- ... --> metadata lines
+    const mdEntries: string[] = []
+    for (const insight of insights) {
+      mdEntries.push(`- [${timestamp}] ${insight.content}`)
+      if (insight.confidence !== undefined || (insight.evidenceIds?.length ?? 0) > 0) {
+        const meta: Record<string, unknown> = {}
+        if (insight.confidence !== undefined) meta.confidence = insight.confidence
+        if (insight.evidenceIds?.length) meta.evidenceIds = insight.evidenceIds
+        mdEntries.push(`  <!-- ${JSON.stringify(meta)} -->`)
+      }
+    }
+    const text = '\n' + mdEntries.join('\n') + '\n'
+
+    if (!fs.existsSync(filePath)) {
+      const header = '# L5 提炼洞察\n\n> 每日 Reflect 自动生成\n\n'
+      await fs.promises.writeFile(filePath, header + text.trimStart(), 'utf-8')
+    } else {
+      await fs.promises.appendFile(filePath, text, 'utf-8')
+    }
+  }
+
+  /**
+   * 纯本地应用整理的 insights 与 contradictions（ADR-0006 Phase 2）
+   *
+   * 由 MemoryConsolidationService 在完成批量 LLM 整理后调用。
+   * - 不调用 LLM（纯本地）
+   * - 对 persisted 内容做 anti-echo 去重
+   * - 对 incoming batch 做内部去重（同 batch 相似 insight 只写 1 条）
+   * - 保留 provenance 元数据（confidence / evidenceIds / existingId）
+   *
+   * @param mode 记忆模式
+   * @param insights 新洞察列表（含结构化元数据，已由 consolidation 的 LLM 提取）
+   * @param contradictions 矛盾列表（含 existingId/content/evidenceIds）
+   * @returns 应用的计数
+   */
+  async applyConsolidationInsights(
+    mode: MemoryMode,
+    insights: Insight[],
+    contradictions: Contradiction[]
+  ): Promise<{ insightsApplied: number; contradictionsApplied: number }> {
+    const dir = this.getMemoryDir(mode)
+    let insightsApplied = 0
+    let contradictionsApplied = 0
+
+    // 1. 读取现有 L5 洞察做 anti-echo 过滤
+    const l5Content = this.readMdFile(path.join(dir, 'L5_insights.md'))
+    const existingInsights = this.parseMdLines(l5Content)
+
+    // 2. anti-echo 去重：对 persisted + batch-internal 都去重
+    //    使用 isSimilar 对 batch 内部做语义去重（保留每个相似 group 的首条）
+    const acceptedInsights: Insight[] = []
+    const filteredInsights = insights.filter((insight) => {
+      // 对 persisted 去重
+      if (existingInsights.some((existing) => this.isSimilar(insight.content, existing))) {
+        return false
+      }
+      // 对 batch 内部已接受的条目去重（isSimilar 语义去重）
+      if (acceptedInsights.some((acc) => this.isSimilar(acc.content, insight.content))) {
+        return false
+      }
+      acceptedInsights.push(insight)
+      return true
+    })
+
+    // 3. 写入去重后的新洞察（含 metadata）
+    if (filteredInsights.length > 0) {
+      await this.appendStructuredInsights(dir, filteredInsights)
+      insightsApplied = filteredInsights.length
+    }
+
+    // 4. contradictions 去重（按 content 与现有 corrections 比较）
+    const l3Content = this.readJsonl(path.join(dir, 'corrections.jsonl'))
+    const existingCorrections = this.parseJsonlLines(l3Content)
+    const acceptedContradictions: Contradiction[] = []
+    const filteredContradictions = contradictions.filter((c) => {
+      if (existingCorrections.some((ec) => this.isSimilar(c.content, ec))) return false
+      if (acceptedContradictions.some((acc) => this.isSimilar(acc.content, c.content))) return false
+      acceptedContradictions.push(c)
+      return true
+    })
+
+    if (filteredContradictions.length > 0) {
+      // 写入完整 provenance（correction + evidenceIds + existingId）
+      const filePath = path.join(dir, 'corrections.jsonl')
+      const timestamp = Date.now()
+      const lines =
+        filteredContradictions
+          .map((c) =>
+            JSON.stringify({
+              timestamp,
+              correction: c.content,
+              context: 'L5 contradiction',
+              evidenceIds: c.evidenceIds ?? [],
+              existingId: c.existingId ?? null,
+            })
+          )
+          .join('\n') + '\n'
+
+      if (!fs.existsSync(filePath)) {
+        await fs.promises.writeFile(filePath, lines, 'utf-8')
+      } else {
+        await fs.promises.appendFile(filePath, lines, 'utf-8')
+      }
+      contradictionsApplied = filteredContradictions.length
+    }
+
+    return { insightsApplied, contradictionsApplied }
   }
 
   /**

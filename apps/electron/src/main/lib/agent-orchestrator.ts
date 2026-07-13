@@ -1437,7 +1437,12 @@ export class AgentOrchestrator {
             } else if (Array.isArray(content)) {
               const textBlock = content.find(
                 (b): b is { type: 'text'; text: string } =>
-                  !!b && typeof b === 'object' && 'type' in b && b.type === 'text' && 'text' in b && typeof (b as { text: unknown }).text === 'string'
+                  !!b &&
+                  typeof b === 'object' &&
+                  'type' in b &&
+                  b.type === 'text' &&
+                  'text' in b &&
+                  typeof (b as { text: unknown }).text === 'string'
               )
               if (textBlock) {
                 lastAssistantText = textBlock.text
@@ -1562,9 +1567,7 @@ export class AgentOrchestrator {
     // P2 修复：sdkSessionId 持久化但 JSONL 已被外部删除时，主动清空避免 resume 死循环
     // 兜底场景：用户清理 SDK 缓存目录、跨设备同步漏了 SDK 目录等
     if (existingSdkSessionId && !findSdkSessionJsonl(existingSdkSessionId)) {
-      console.warn(
-        `[Agent 编排] sdkSessionId 的 JSONL 不存在，清空无效值: ${existingSdkSessionId}`
-      )
+      console.warn(`[Agent 编排] sdkSessionId 的 JSONL 不存在，清空无效值: ${existingSdkSessionId}`)
       updateAgentSessionMeta(sessionId, { sdkSessionId: undefined }, true)
       existingSdkSessionId = undefined
     }
@@ -1670,7 +1673,9 @@ export class AgentOrchestrator {
             type: 'nudge_candidates',
             nudges: nudgeCandidates,
           })
-          console.log(`[Agent 编排] 已发送 memory:nudge-event，nudges.length=${nudgeCandidates.length}`)
+          console.log(
+            `[Agent 编排] 已发送 memory:nudge-event，nudges.length=${nudgeCandidates.length}`
+          )
         } else {
           console.warn(`[Agent 编排] Nudge 发送失败：无可用 webContents`)
         }
@@ -2731,7 +2736,12 @@ export class AgentOrchestrator {
             // ── Kanban worker 进度捕获 ──
             // task_progress SDK 事件：推送到看板任务进度日志，前端卡片实时滚动显示
             if (msg.type === 'system') {
-              const sysMsg = msg as { subtype?: string; description?: string; status?: string; last_tool_name?: string }
+              const sysMsg = msg as {
+                subtype?: string
+                description?: string
+                status?: string
+                last_tool_name?: string
+              }
               if (sysMsg.subtype === 'task_progress') {
                 const meta = getAgentSessionMeta(sessionId)
                 const workerTaskId = meta?.sourceKanbanTaskId
@@ -2887,7 +2897,10 @@ export class AgentOrchestrator {
                     if (d && !typedErrorDetails.includes(d)) typedErrorDetails.push(d)
                   }
                 }
-                if (typedError.originalError && !typedErrorDetails.includes(typedError.originalError)) {
+                if (
+                  typedError.originalError &&
+                  !typedErrorDetails.includes(typedError.originalError)
+                ) {
                   typedErrorDetails.push(typedError.originalError)
                 }
                 const stderrStr = stderrChunks.join('').trim()
@@ -3276,7 +3289,8 @@ export class AgentOrchestrator {
           if (stderrOutput.trim()) {
             errorDetails.push(stderrOutput.trim().slice(0, 2000))
           }
-          const rawErrorStack = error instanceof Error ? (error.stack ?? error.message) : String(error)
+          const rawErrorStack =
+            error instanceof Error ? (error.stack ?? error.message) : String(error)
           if (rawErrorStack && !errorDetails.includes(rawErrorStack)) {
             errorDetails.push(rawErrorStack)
           }
@@ -3284,11 +3298,7 @@ export class AgentOrchestrator {
           // Prompt 过长恢复：主动调兜底压缩 + 清 resume + 触发重试
           // kscc 渠道下 SDK 自动 compaction 失效，需要主进程主动压缩
           if (
-            isPromptTooLongError(
-              userFacingError,
-              rawErrorStack,
-              stderrOutput
-            ) &&
+            isPromptTooLongError(userFacingError, rawErrorStack, stderrOutput) &&
             canAutoRetry(attempt)
           ) {
             existingSdkSessionId = undefined
@@ -3464,6 +3474,11 @@ export class AgentOrchestrator {
   /** 检查指定会话是否正在处理中 */
   isActive(sessionId: string): boolean {
     return this.activeSessions.has(sessionId)
+  }
+
+  /** 是否有任意会话正在处理（空闲检测用） */
+  hasActiveSessions(): boolean {
+    return this.activeSessions.size > 0
   }
 
   /**

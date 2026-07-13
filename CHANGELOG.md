@@ -9,15 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (none yet)
+- **空闲批量记忆整理调度器** — `idle-memory-consolidation-scheduler.ts`：60s tick 周期，general/ta 串行执行，真实前台活跃检测，rollout flag 控制（`TAGENT_IDLE_MEMORY_CONSOLIDATION`，dev 默认 on、packaged 默认 off）
+- **记忆证据暂存层** — `memory-evidence-sink.ts`（ADR-0006 Phase 1）：前台本地写入 Nudge 候选和 session 证据到 `pending_evidence.jsonl`，标记 dirty，不调用辅助 LLM
+- **空闲批量整理核心** — `memory-consolidation-service.ts`（ADR-0006 Phase 2）：单次 Provider 请求完成 keyFacts + memoryCandidates + insights + contradictions，persisted-local-replay、全局 lease 单并发、按 ID 精确消费、batchId 确定性派生
+- **空闲整理状态可观测** — `consolidation_state.json` 记录 lastAttemptTime / lastOutcome / cursor / inputCounts / outputCounts / requestsUsedToday 等结构化状态
 
 ### Changed
 
-- (none yet)
+- **前台记忆写入改为本地证据收集** — `recordSessionToMemory` 不再触发 `backfillKeyFacts` LLM 调用；改为写 L4 + `memoryEvidenceSink.writeSessionEvidence()` + dirty 标记，辅助 LLM 整理统一在空闲窗口执行
+- **Nudge 候选写入改为本地暂存** — `onTurnStart` 检测到候选后写入 `memory-evidence-sink`（`writeNudgeEvidence`），不再在前台发起 auxiliary LLM call
+- **Reflection 合并到空闲批量整理** — 当 `TAGENT_IDLE_MEMORY_CONSOLIDATION=1` 时，insights/contradictions 由 `MemoryConsolidationService` 的一次批量请求产出，不再独立调用 LLM；legacy Reflection 调度仅在 flag 关闭时保留
 
 ### Fixed
 
-- (none yet)
+- **Reflection never-trigger 诊断** — `lastOutcome` 包含 `skipped_clean` / `skipped_insufficient_evidence` 等精确跳过原因，不再无法区分未调度与数据不足
+- **本地 apply/consume 失败后重复付费请求** — executor 成功后立即持久化 `pendingApplication` record；apply 或 consume 失败时保留 pending，下次 run 以 `requestsUsed=0` 本地重放，不再重复发起 Provider 请求
 
 ---
 

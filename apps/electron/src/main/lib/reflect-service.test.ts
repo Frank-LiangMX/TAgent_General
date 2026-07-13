@@ -133,7 +133,9 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
   }
 
   function createL3(dir: string, corrections: string[]): void {
-    const lines = corrections.map((c) => JSON.stringify({ timestamp: Date.now(), correction: c, context: 'test' }) + '\n').join('')
+    const lines = corrections
+      .map((c) => JSON.stringify({ timestamp: Date.now(), correction: c, context: 'test' }) + '\n')
+      .join('')
     writeFileSync(path.join(dir, 'corrections.jsonl'), lines, 'utf-8')
   }
 
@@ -445,7 +447,12 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
 
     const state = readStateFile(dir)
     expect(state.lastOutcome).toBe('success')
-    expect(state.inputCounts).toEqual({ l2Facts: 3, l4Sessions: 2, l3Corrections: 0, l5Insights: 1 })
+    expect(state.inputCounts).toEqual({
+      l2Facts: 3,
+      l4Sessions: 2,
+      l3Corrections: 0,
+      l5Insights: 1,
+    })
     expect(state.outputCounts).toEqual({ insightsGenerated: 1, contradictionsFound: 0 })
     expect(state.cursor).toEqual({ lastProcessedSessionId: 5, lastProcessedAt: now - 3600000 })
   })
@@ -544,9 +551,7 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
     mkdirSync(dir, { recursive: true })
 
     createL2(dir, ['用户偏好 TypeScript'])
-    mockListRecentSessions.mockReturnValue([
-      buildSession({ title: 'Test', summary: 'Test' }),
-    ])
+    mockListRecentSessions.mockReturnValue([buildSession({ title: 'Test', summary: 'Test' })])
 
     // 强制走 rules fallback（足够触发 success）
     mockGetSettings.mockReturnValue({ agentChannelId: null, agentModelId: null })
@@ -583,9 +588,13 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
     expect(result.outputCounts.insightsGenerated).toBe(0)
     expect(result.outputCounts.contradictionsFound).toBe(0)
 
-    const state = readStateFile(dir)
-    expect(state.outputCounts.insightsGenerated).toBe(0)
-    expect(state.outputCounts.contradictionsFound).toBe(0)
+    const state = readStateFile(dir) as Record<string, unknown>
+    const outputCounts = state.outputCounts as {
+      insightsGenerated: number
+      contradictionsFound: number
+    }
+    expect(outputCounts.insightsGenerated).toBe(0)
+    expect(outputCounts.contradictionsFound).toBe(0)
   })
 
   // ---------------------------------------------------------------
@@ -658,12 +667,155 @@ describe('ReflectService — ADR-0006 可靠性修复', () => {
 
     expect(result.outcome).toBe('failed')
 
-    const state = readStateFile(dir)
+    const state = readStateFile(dir) as Record<string, unknown>
     // lastAttemptTime 更新
     expect(state.lastAttemptTime).toBeGreaterThanOrEqual(before)
     expect(state.lastAttemptTime).toBeLessThanOrEqual(after)
     // lastRunTime 和 lastSuccessTime 不应被更新（仍为 null）
     expect(state.lastRunTime).toBeNull()
     expect(state.lastSuccessTime).toBeNull()
+  })
+
+  // ---------------------------------------------------------------
+  // 14. initialize(false) — 不调度 LLM 路径
+  // ---------------------------------------------------------------
+  describe('initialize(false) — 不调度 LLM 路径', () => {
+    test('initialize(false) 只加载状态，不运行 checkAndRun 和 scheduleNextRun', () => {
+      const dir = resolveMemoryDir('general')
+      mkdirSync(dir, { recursive: true })
+      writeStateFile(dir, {
+        lastRunTime: Date.now() - 48 * 60 * 60 * 1000,
+        lastInsights: [],
+        lastAttemptTime: Date.now() - 48 * 60 * 60 * 1000,
+        lastSuccessTime: null,
+        lastOutcome: null,
+        lastErrorCode: null,
+        inputCounts: { l2Facts: 0, l4Sessions: 0, l3Corrections: 0, l5Insights: 0 },
+        outputCounts: { insightsGenerated: 0, contradictionsFound: 0 },
+        cursor: { lastProcessedSessionId: null, lastProcessedAt: null },
+      })
+
+      const svc = reflectService as unknown as {
+        checkAndRun: (mode: string) => void
+        scheduleNextRun: () => void
+      }
+      const checkSpy = vi.spyOn(svc, 'checkAndRun')
+      const scheduleSpy = vi.spyOn(svc, 'scheduleNextRun')
+
+      reflectService.initialize(false)
+
+      expect(checkSpy).not.toHaveBeenCalled()
+      expect(scheduleSpy).not.toHaveBeenCalled()
+
+      checkSpy.mockRestore()
+      scheduleSpy.mockRestore()
+    })
+  })
+
+  // ---------------------------------------------------------------
+  // 15. applyConsolidationInsights — 纯本地零 LLM
+  // ---------------------------------------------------------------
+  describe('applyConsolidationInsights — 纯本地零 LLM', () => {
+    let llmSpy: ReturnType<typeof vi.spyOn>
+    let extractSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      llmSpy = vi.spyOn(reflectService as never, 'callLLM' as never)
+      extractSpy = vi.spyOn(reflectService as never, 'extractInsightsWithLLM' as never)
+      llmSpy.mockClear()
+      extractSpy.mockClear()
+    })
+
+    afterEach(() => {
+      llmSpy.mockRestore()
+      extractSpy.mockRestore()
+    })
+
+    test('不调用 callLLM 或 extractInsightsWithLLM', async () => {
+      const dir = resolveMemoryDir('general')
+      mkdirSync(dir, { recursive: true })
+
+      const result = await reflectService.applyConsolidationInsights(
+        'general',
+        [{ content: '用户偏好 Rust', confidence: 0.9, evidenceIds: ['ev-1'] }],
+        []
+      )
+
+      expect(result.insightsApplied).toBe(1)
+      expect(result.contradictionsApplied).toBe(0)
+      expect(llmSpy).not.toHaveBeenCalled()
+      expect(extractSpy).not.toHaveBeenCalled()
+    })
+
+    test('batch anti-echo：同 batch 相似 insight 只写一条', async () => {
+      const dir = resolveMemoryDir('general')
+      mkdirSync(dir, { recursive: true })
+
+      const result = await reflectService.applyConsolidationInsights(
+        'general',
+        [
+          { content: 'TypeScript is great for frontend', confidence: 0.9, evidenceIds: ['ev-1'] },
+          { content: 'TypeScript is great for frontend', confidence: 0.8, evidenceIds: ['ev-2'] },
+          { content: 'Rust provides memory safety', confidence: 0.7, evidenceIds: ['ev-3'] },
+        ],
+        []
+      )
+
+      expect(result.insightsApplied).toBe(2) // TS (intra-batch dedup) + Rust
+
+      const l5Path = path.join(dir, 'L5_insights.md')
+      const content = readFileSync(l5Path, 'utf-8')
+      const lines = content.split('\n').filter((l) => l.startsWith('- '))
+      expect(lines).toHaveLength(2)
+    })
+
+    test('existing anti-echo：与 persisted insight 相同不写入', async () => {
+      const dir = resolveMemoryDir('general')
+      mkdirSync(dir, { recursive: true })
+
+      // 写一条
+      await reflectService.applyConsolidationInsights(
+        'general',
+        [{ content: '用户偏好 TypeScript', confidence: 0.9, evidenceIds: ['ev-1'] }],
+        []
+      )
+
+      // 再次写入完全一样的
+      const result = await reflectService.applyConsolidationInsights(
+        'general',
+        [{ content: '用户偏好 TypeScript', confidence: 0.9, evidenceIds: ['ev-2'] }],
+        []
+      )
+
+      expect(result.insightsApplied).toBe(0)
+    })
+
+    test('persisted metadata：confidence 和 evidenceIds 存储在文件中', async () => {
+      const dir = resolveMemoryDir('general')
+      mkdirSync(dir, { recursive: true })
+
+      await reflectService.applyConsolidationInsights(
+        'general',
+        [{ content: '用户偏好 Rust', confidence: 0.85, evidenceIds: ['ev-1', 'ev-2'] }],
+        [{ existingId: 'insight-old', content: '矛盾1', evidenceIds: ['ev-3'] }]
+      )
+
+      // L5: HTML comment 行包含 confidence 和 evidenceIds
+      const l5Content = readFileSync(path.join(dir, 'L5_insights.md'), 'utf-8')
+      expect(l5Content).toContain('<!--')
+      expect(l5Content).toContain('confidence')
+      expect(l5Content).toContain('evidenceIds')
+      expect(l5Content).toContain('0.85')
+      expect(l5Content).toContain('"ev-1"')
+
+      // L3 correction: evidenceIds and existingId preserved
+      const l3Path = path.join(dir, 'corrections.jsonl')
+      expect(existsSync(l3Path)).toBe(true)
+      const l3Content = readFileSync(l3Path, 'utf-8')
+      const firstL3 = JSON.parse(l3Content.trim().split('\n').filter(Boolean)[0]!)
+      expect(firstL3.evidenceIds).toEqual(['ev-3'])
+      expect(firstL3.existingId).toBe('insight-old')
+      expect(firstL3.correction).toBe('矛盾1')
+    })
   })
 })

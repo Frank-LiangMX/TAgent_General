@@ -400,6 +400,24 @@ Feature: 空闲批量记忆整理
 - 出现解析或写入问题时关闭空闲队列，保留本地 L4 与 dirty 标记；不得丢弃未处理游标。
 - 回滚不删除任何 L0-L5 数据，也不重写用户记忆历史。
 
+## Implementation Status
+
+> **Date**: 2026-07-13
+
+| Phase | Status | Notes |
+| --- | --- | --- |
+| Phase 0：测量与保护 | ⚠️ Partial | 空闲批量整理的逐次请求实际计数已实现（`requestsUsedToday`）；partial 流事件不触发整理的回归测试已实现；统一 Provider 请求用途标签（`foreground` / `memory_consolidation` 等）与全局 Provider 请求遥测仍待实现 |
+| Phase 1：移除逐 turn 辅助调用 | ✅ Implemented | `recordSessionToMemory` 只写 L4 + evidence；`backfillKeyFacts` 不再被前台触发；Nudge `onTurnStart` 本地采集 |
+| Phase 2：空闲队列与批量整理 | ✅ Implemented (dev rollout) | `MemoryConsolidationService` + `IdleConsolidationScheduler`；`TAGENT_IDLE_MEMORY_CONSOLIDATION` flag 默认 dev on / packaged off |
+| Phase 3：Reflection 可靠性修复 | ✅ Implemented | `activityAt` 时间定义；insights/contradictions 合并到批量整理（flag 开启时无独立 Reflection LLM 调用）；legacy 路径保留 |
+| Phase 4：可观测性与手动入口 | ⏳ Pending | Memory Monitor UI 展示每模式状态/输入输出/预算/跳过原因 + "立即整理"入口 |
+
+**Key safety additions in implementation:**
+- **Persisted local replay**: `pendingApplication` record saved before any local apply; apply/consume failures replay with `requestsUsed=0` (no additional Provider request)
+- **Compact batch IDs**: SHA-256-derived 16-char hex from `mode + sorted evidence IDs`; deterministic across orderings
+- **Exact evidence consumption**: `consumeEvidenceByIds` uses temp+rename atomic rewrite; only processed entry IDs are removed, remaining evidence preserved
+- **Global lease**: cross-mode shared file with 5-minute expiry; prevents concurrent general/ta batches
+
 ## References
 
 - `docs/memory-system.md`
@@ -410,4 +428,7 @@ Feature: 空闲批量记忆整理
 - `apps/electron/src/main/lib/nudge-service.ts`
 - `apps/electron/src/main/lib/reflect-service.ts`
 - `apps/electron/src/main/lib/memory-layer-service.ts`
+- `apps/electron/src/main/lib/memory-evidence-sink.ts` (Phase 1)
+- `apps/electron/src/main/lib/memory-consolidation-service.ts` (Phase 2)
+- `apps/electron/src/main/lib/idle-memory-consolidation-scheduler.ts` (Phase 2)
 - `packages/core/src/providers/sse-reader.ts`
