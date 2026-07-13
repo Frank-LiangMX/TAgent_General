@@ -90,14 +90,14 @@
 import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 ```
 
-### 表单输入（6 个）
+### 表单输入（7 个）
 | 组件 | 用途 |
 |---|---|
 | `Button` | 按钮，支持 variant（default/outline/ghost/destructive/link）+ size |
 | `Input` | 单行输入框 |
 | `SearchInput` | 统一搜索框（`rounded-glass-rail` · 图标 + 输入 + 可选清空/加载/尾部插槽） |
 | `Textarea` | 多行输入框 |
-| `Switch` | 开关 |
+| `Switch` | 开关，自动适配材质(frosted标准/glass液态融合/soft拟态) |
 | `Slider` | 滑块 |
 | `Label` | 表单标签 |
 
