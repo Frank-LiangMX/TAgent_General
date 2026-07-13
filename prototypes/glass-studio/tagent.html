@@ -416,7 +416,6 @@
       const indicator = document.getElementById("tabIndicator");
       const title = document.getElementById("agentTitle");
       const messages = document.getElementById("messages");
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const inputArea = document.querySelector(".input-area");
       const sendBtn = document.querySelector(".send-btn");
       const sessionScroll = document.querySelector(".session-scroll");
@@ -429,10 +428,6 @@
 
       const setTitle = (next) => {
         if (!title || !next || title.textContent === next) return;
-        if (reduceMotion) {
-          title.textContent = next;
-          return;
-        }
         title.classList.add("is-swap");
         window.setTimeout(() => {
           title.textContent = next;
@@ -441,7 +436,7 @@
       };
 
       const pulseMessages = () => {
-        if (!messages || reduceMotion) return;
+        if (!messages) return;
         messages.classList.add("is-fading");
         window.setTimeout(() => messages.classList.remove("is-fading"), 180);
       };
@@ -680,7 +675,7 @@
       const answer = document.getElementById("answerStream");
       const runningTool = document.querySelector(".tool-row.is-running");
       const runningBadge = document.querySelector(".running-badge");
-      if (answer && !reduceMotion) {
+      if (answer) {
         const blocks = [...answer.children];
         blocks.forEach((el) => {
           el.style.opacity = "0";

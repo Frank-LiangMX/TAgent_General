@@ -40,6 +40,12 @@ export const hasUpdateAtom = atom((get) => {
   return status === 'available' || status === 'downloading' || status === 'downloaded'
 })
 
+/** 更新已下载完成，等待重启安装 */
+export const updateDownloadedAtom = atom((get) => {
+  const s = get(updateStatusAtom)
+  return s.status === 'downloaded' ? s.version : null
+})
+
 /** updater 是否可用 */
 export const updaterAvailableAtom = atom<boolean>(() => {
   return !!window.electronAPI?.updater

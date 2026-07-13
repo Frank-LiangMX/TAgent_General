@@ -45,6 +45,8 @@ export function requestApplicationQuit(): void {
   if (!getIsQuitting()) {
     setQuitting()
   }
+  // 先立即销毁所有窗口，避免 app.quit() → Electron 发送 close 事件 → 渲染进程卸载出现白屏
+  destroyAllAppWindows()
   scheduleForceExitFallback()
   app.quit()
 }
@@ -55,6 +57,9 @@ export function runApplicationShutdown(): void {
   shutdownStarted = true
 
   setQuitting()
+
+  // 第一步：立即销毁所有窗口，阻止 Electron 给窗口发 close 事件导致白屏
+  destroyAllAppWindows()
 
   // 安装更新：仅释放可能锁住安装目录的 Agent 子进程，其余交给 NSIS 安装器
   if (getIsQuittingForUpdate()) {
@@ -93,7 +98,6 @@ export function runApplicationShutdown(): void {
   unregisterAllGlobalShortcuts()
   destroyQuickTaskWindow()
   destroyVoiceDictationWindow()
-  destroyAllAppWindows()
 }
 
 /** 正常退出若被遗留 handle 拖住，超时后强杀子进程并 app.exit(0) */

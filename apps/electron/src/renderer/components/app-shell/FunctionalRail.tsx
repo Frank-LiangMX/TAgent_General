@@ -99,7 +99,7 @@ import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { activeTabIdAtom, tabsAtom } from '@/atoms/tab-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
-import { hasUpdateAtom } from '@/atoms/updater'
+import { hasUpdateAtom, updateDownloadedAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
@@ -207,6 +207,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   const isMac = React.useMemo(() => detectIsMac(), [])
 
   const hasUpdate = useAtomValue(hasUpdateAtom)
+  const updateReadyVersion = useAtomValue(updateDownloadedAtom)
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const userProfile = useAtomValue(userProfileAtom)
@@ -428,7 +429,24 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         })}
       </div>
 
-      <div className="pt-2 pb-1">
+      <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">
+        {/* 更新就绪按钮：下载完成后显示 */}
+        {updateReadyVersion && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => window.electronAPI.updater?.quitAndInstall()}
+                className="flex items-center justify-center rounded-[10px] bg-primary/15 text-primary px-2 py-1 text-[10px] font-semibold leading-none hover:bg-primary/25 transition-colors titlebar-no-drag"
+              >
+                更新
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              v{updateReadyVersion} 已下载，重启以应用更新
+            </TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <button

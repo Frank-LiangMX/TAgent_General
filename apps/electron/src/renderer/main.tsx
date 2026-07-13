@@ -4,6 +4,8 @@
  * 挂载 React 应用，初始化主题系统。
  */
 
+declare const __APP_VERSION__: string
+
 import { diffCapabilities, isAgentCompatibleProvider } from '@tagent/shared'
 import { useSetAtom, useAtomValue, useStore } from 'jotai'
 import React, { useEffect, useMemo, useRef } from 'react'
@@ -65,6 +67,7 @@ import {
 } from './atoms/theme'
 import { stickyUserMessageEnabledAtom, initializeUiPreferences } from './atoms/ui-preferences'
 import { updateStatusAtom, initializeUpdater } from './atoms/updater'
+import { toast } from 'sonner'
 import { wpsBridgeStateAtom } from './atoms/wps-atoms'
 import { UpdateDialog } from './components/settings/UpdateDialog'
 import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
@@ -382,11 +385,37 @@ function AgentSettingsInitializer(): null {
  */
 function UpdaterInitializer(): null {
   const setUpdateStatus = useSetAtom(updateStatusAtom)
+  const updateStatus = useAtomValue(updateStatusAtom)
 
   useEffect(() => {
+    // 检测静默更新完成：比较 localStorage 中记录的上次版本与当前版本
+    try {
+      const prevVersion = localStorage.getItem('tagent-last-version')
+      const currentVersion = __APP_VERSION__
+      if (prevVersion && prevVersion !== currentVersion) {
+        toast.success(`已更新到 v${currentVersion}`, {
+          description: `从 v${prevVersion} 升级`,
+          duration: 6000,
+        })
+        localStorage.removeItem('tagent-update-downloaded-version')
+      }
+      localStorage.setItem('tagent-last-version', currentVersion)
+    } catch {
+      // localStorage 不可用时忽略
+    }
+
     const cleanup = initializeUpdater(setUpdateStatus)
     return cleanup
   }, [setUpdateStatus])
+
+  // 下载完成时持久化版本号，供下次启动检测
+  useEffect(() => {
+    if (updateStatus.status === 'downloaded' && updateStatus.version) {
+      try {
+        localStorage.setItem('tagent-update-downloaded-version', updateStatus.version)
+      } catch { /* ignore */ }
+    }
+  }, [updateStatus.status, updateStatus.version])
 
   return null
 }

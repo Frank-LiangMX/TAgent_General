@@ -739,7 +739,24 @@ export function useGlobalAgentListeners(): void {
         if (!knownSessions.some((s) => s.id === sessionId)) {
           window.electronAPI
             .listAgentSessions()
-            .then((sessions) => store.set(agentSessionsAtom, sessions))
+            .then((sessions) => {
+              store.set(agentSessionsAtom, sessions)
+              // 同步恢复 per-session 渠道/模型
+              store.set(agentSessionChannelMapAtom, (prev) => {
+                const next = new Map(prev)
+                for (const s of sessions) {
+                  if (s.channelId) next.set(s.id, s.channelId)
+                }
+                return next
+              })
+              store.set(agentSessionModelMapAtom, (prev) => {
+                const next = new Map(prev)
+                for (const s of sessions) {
+                  if (s.modelId) next.set(s.id, s.modelId)
+                }
+                return next
+              })
+            })
             .catch(console.error)
         }
 
@@ -1304,6 +1321,21 @@ export function useGlobalAgentListeners(): void {
               .listAgentSessions()
               .then((sessions) => {
                 store.set(agentSessionsAtom, sessions)
+                // 从 session metadata 恢复 per-session 渠道/模型
+                store.set(agentSessionChannelMapAtom, (prev) => {
+                  const next = new Map(prev)
+                  for (const s of sessions) {
+                    if (s.channelId) next.set(s.id, s.channelId)
+                  }
+                  return next
+                })
+                store.set(agentSessionModelMapAtom, (prev) => {
+                  const next = new Map(prev)
+                  for (const s of sessions) {
+                    if (s.modelId) next.set(s.id, s.modelId)
+                  }
+                  return next
+                })
                 // 从持久化 meta 对齐 stoppedByUser 状态
                 store.set(
                   stoppedByUserSessionsAtom,
@@ -1363,6 +1395,21 @@ export function useGlobalAgentListeners(): void {
         .listAgentSessions()
         .then((sessions) => {
           store.set(agentSessionsAtom, sessions)
+          // 同步恢复 per-session 渠道/模型
+          store.set(agentSessionChannelMapAtom, (prev) => {
+            const next = new Map(prev)
+            for (const s of sessions) {
+              if (s.channelId) next.set(s.id, s.channelId)
+            }
+            return next
+          })
+          store.set(agentSessionModelMapAtom, (prev) => {
+            const next = new Map(prev)
+            for (const s of sessions) {
+              if (s.modelId) next.set(s.id, s.modelId)
+            }
+            return next
+          })
         })
         .catch(console.error)
     })

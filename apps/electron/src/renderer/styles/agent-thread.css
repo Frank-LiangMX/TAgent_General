@@ -544,19 +544,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tagent-agent-thread .agent-running-badge__spinner {
-    animation: none;
-    border-top-color: hsl(var(--primary));
-    opacity: 0.85;
-  }
-
-  .tagent-agent-thread .agent-running-badge__pulse {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 /* ===== 流式 shimmer ===== */
 
 .tagent-agent-thread .agent-shiny-text {
@@ -588,13 +575,5 @@
   }
   100% {
     background-position: -100% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tagent-agent-thread .agent-shiny-text {
-    animation: none;
-    -webkit-text-fill-color: inherit;
-    background: none;
   }
 }

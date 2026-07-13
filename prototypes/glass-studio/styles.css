@@ -832,22 +832,6 @@ a {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .app-window {
-    animation: none;
-  }
-
-  .nav-item,
-  .project-card,
-  .btn-primary,
-  .btn-secondary,
-  .seg,
-  .icon-btn,
-  .text-btn {
-    transition: none;
-  }
-}
-
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .app-window {
     background: rgba(232, 237, 244, 0.92);

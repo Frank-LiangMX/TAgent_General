@@ -357,6 +357,8 @@ export function LeftSidebar({
 
   // Agent 模式状态
   const [agentSessions, setAgentSessions] = useAtom(agentSessionsAtom)
+  const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
+  const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
   const currentModeAgentSessions = React.useMemo(
     () => agentSessions.filter((session) => isAgentSessionInTopLevelMode(session, topLevelMode)),
     [agentSessions, topLevelMode]
@@ -375,8 +377,6 @@ export function LeftSidebar({
     const channel = channels.find((c) => c.id === agentChannelId && c.enabled)
     return resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
   }, [agentChannelId, channels, legacyGlobalModelId])
-  const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
-  const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
   const setCurrentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
   const [workspaces, setWorkspaces] = useAtom(agentWorkspacesAtom)
@@ -555,14 +555,48 @@ export function LeftSidebar({
       })
       .catch(console.error)
     window.electronAPI.getUserProfile().then(setUserProfile).catch(console.error)
-    window.electronAPI.listAgentSessions().then(setAgentSessions).catch(console.error)
-  }, [setConversations, setUserProfile, setAgentSessions])
+    window.electronAPI.listAgentSessions().then((sessions) => {
+      setAgentSessions(sessions)
+      // 从 session metadata 恢复 per-session 渠道/模型选择
+      setSessionChannelMap((prev) => {
+        const next = new Map(prev)
+        for (const s of sessions) {
+          if (s.channelId) next.set(s.id, s.channelId)
+        }
+        return next
+      })
+      setSessionModelMap((prev) => {
+        const next = new Map(prev)
+        for (const s of sessions) {
+          if (s.modelId) next.set(s.id, s.modelId)
+        }
+        return next
+      })
+    }).catch(console.error)
+  }, [setConversations, setUserProfile, setAgentSessions, setSessionChannelMap, setSessionModelMap])
 
   // 窗口聚焦时重新同步列表，修复长时间后前后端不一致
   React.useEffect(() => {
     const handleFocus = (): void => {
       window.electronAPI.listConversations().then(setConversations).catch(console.error)
-      window.electronAPI.listAgentSessions().then(setAgentSessions).catch(console.error)
+      window.electronAPI.listAgentSessions().then((sessions) => {
+        setAgentSessions(sessions)
+        // 同步恢复 per-session 渠道/模型
+        setSessionChannelMap((prev) => {
+          const next = new Map(prev)
+          for (const s of sessions) {
+            if (s.channelId) next.set(s.id, s.channelId)
+          }
+          return next
+        })
+        setSessionModelMap((prev) => {
+          const next = new Map(prev)
+          for (const s of sessions) {
+            if (s.modelId) next.set(s.id, s.modelId)
+          }
+          return next
+        })
+      }).catch(console.error)
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
@@ -2026,7 +2060,7 @@ const ConversationItem = React.memo(function ConversationItem({
           }}
           className={cn(
             'session-list-row group relative w-full px-3 py-[7px] titlebar-no-drag text-left',
-            active ? 'session-list-item-active' : 'rounded-md'
+            active ? 'session-list-item-active' : 'rounded-xl'
           )}
         >
           {/* 流式状态底部横条（与 Agent 会话 / 标签页统一） */}
@@ -2108,6 +2142,7 @@ const ConversationItem = React.memo(function ConversationItem({
  * 会话行底部状态横条 — 与标签页 TabBar 状态线统一
  * running → tab-status-streaming 流光动画
  * completed / blocked / primary 与 Tab 色一致
+ * 注意：仅用于非选中会话（后台会话）的状态指示
  */
 type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary' | 'amber' | 'idle'
 const SESSION_STATUS_LINE_CLASS: Record<SessionLeftAccent, string | null> = {
@@ -2262,20 +2297,28 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  // 底部状态横条（与标签页一致）；批量选择模式隐藏
+  // 底部状态横条（与标签页一致）；仅用于非选中会话（后台会话）
+  // 选中会话通过修改选中态样式来显示状态（运行中扫光、阻塞变色等）
   const statusLineClass =
-    !isBatchMode && leftAccent ? SESSION_STATUS_LINE_CLASS[leftAccent] : null
+    !isBatchMode && !active && leftAccent ? SESSION_STATUS_LINE_CLASS[leftAccent] : null
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
     surface === 'well' && 'session-row-shell w-full',
     surface === 'compact' && 'w-full py-[7px] px-1',
     childClassName,
+    // 选中态 + 状态修饰
     isBatchSelected
-      ? 'rounded-md bg-primary/10'
-      : active
-        ? 'session-list-item-active'
-        : 'rounded-md'
+      ? 'rounded-xl bg-primary/10'
+      : active && indicatorStatus === 'running'
+        ? 'session-list-item-active session-list-item-active--running'
+        : active && indicatorStatus === 'blocked'
+          ? 'session-list-item-active session-list-item-active--blocked'
+          : active && indicatorStatus === 'completed'
+            ? 'session-list-item-active session-list-item-active--completed'
+            : active
+              ? 'session-list-item-active'
+              : 'rounded-xl'
   )
 
   return (
@@ -2319,7 +2362,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               )}
             </button>
           )}
-          {/* 底部状态横条：贴合选择态下沿，运行动画与标签页 tab-status-streaming 统一 */}
+          {/* 底部状态横条：仅用于非选中会话（后台会话）的状态指示 */}
           {statusLineClass && (
             <span
               className={cn('session-status-line', statusLineClass)}

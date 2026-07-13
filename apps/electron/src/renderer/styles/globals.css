@@ -14,8 +14,8 @@
   :root {
     /* 非颜色 token（颜色变量由 tokens.css 定义） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    /* 代码块背景 */
-    --code-bg: 220 12% 14%;
+    /* 代码块背景 - 浅色主题使用浅灰背景 */
+    --code-bg: 220 12% 96%;
     /*
      * 强调色一律跟随主题 --primary（已取消独立签名色）。
      * --tagent-brand* 仅作兼容别名，供存量 CSS/内联 style 使用。
@@ -61,7 +61,7 @@
   .dark {
     /* 非颜色 token */
     --stop-hover-bg: hsl(0, 40%, 18%);
-    /* 代码块背景 */
+    /* 代码块背景 - 深色主题保持深色 */
     --code-bg: 220 16% 14%;
     --tagent-brand: hsl(var(--primary));
     --tagent-brand-soft: hsl(var(--primary) / 0.18);
@@ -293,7 +293,7 @@
   .theme-ocean-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     --session-row-accent: hsl(var(--primary));
-    --code-bg: 210 20% 14%;
+    --code-bg: 210 20% 96%;
     --glass-ambient: 205 18% 93%;
     --glass-rim: 205 14% 85%;
     --shell-blob: 205 30% 82%;
@@ -312,7 +312,7 @@
 
   .theme-forest-light {
     --stop-hover-bg: hsla(0, 70%, 50%, 0.12);
-    --code-bg: 145 12% 14%;
+    --code-bg: 145 12% 95%;
     --glass-ambient: 140 14% 93%;
     --glass-rim: 140 10% 85%;
     --shell-blob: 140 18% 84%;
@@ -331,7 +331,7 @@
 
   .theme-slate-light {
     --stop-hover-bg: hsla(0, 60%, 50%, 0.12);
-    --code-bg: 40 10% 15%;
+    --code-bg: 40 10% 96%;
     --glass-ambient: 40 10% 94%;
     --glass-rim: 40 8% 83%;
     --shell-blob: 40 12% 85%;
@@ -350,7 +350,7 @@
 
   .theme-orange-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --code-bg: 20 35% 14%;
+    --code-bg: 20 35% 95%;
     --glass-ambient: 30 30% 92%;
     --glass-rim: 28 25% 84%;
     --shell-blob: 22 45% 78%;
@@ -369,7 +369,7 @@
 
   .theme-purple-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --code-bg: 280 30% 14%;
+    --code-bg: 280 30% 96%;
     --glass-ambient: 285 25% 92%;
     --glass-rim: 280 20% 84%;
     --shell-blob: 280 45% 80%;
@@ -386,7 +386,7 @@
   /* ===== Soft UI / Neumorph ===== */
 
   .theme-neumorph-light {
-    --code-bg: 220 16% 18%;
+    --code-bg: 220 16% 94%;
     --glass-ambient: 220 18% 94%;
     --glass-rim: 220 16% 82%;
     --shell-blob: 220 20% 84%;
@@ -787,6 +787,7 @@ html.material-frosted .app-content-boundary-rim {
   background: var(--session-glass-strong) !important;
   color: hsl(var(--primary)) !important;
   border: 1px solid var(--session-rim) !important;
+  border-radius: 12px !important;
   box-shadow:
     0 1px 0 var(--session-inset-hi) inset,
     3px 3px 9px var(--session-elev-dark),
@@ -3018,14 +3019,6 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   );
 }
 
-/* 减少动画偏好：禁用环境光叠加层（节省渲染）*/
-@media (prefers-reduced-motion: reduce) {
-  .btw-glass::before,
-  .btw-glass::after {
-    display: none;
-  }
-}
-
 /* ===== Liquid Glass 高透模式变体 =====
  * 借鉴 liquid-glass-vue 的 overLight 概念
  * 用于浅色背景上的轻量玻璃效果：
@@ -4408,22 +4401,6 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   transform: scale(0.96);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tool-cluster button,
-  .tool-cluster button.tool-cluster-icon svg {
-    transition: none;
-  }
-
-  .tool-cluster button:hover,
-  .tool-cluster button:active {
-    transform: none;
-  }
-
-  .tool-cluster button.tool-cluster-icon:active svg {
-    transform: none;
-  }
-}
-
 .dark .tool-cluster,
 .theme-ocean-dark .tool-cluster,
 .theme-forest-dark .tool-cluster,
@@ -5098,17 +5075,6 @@ html.material-frosted .tool-cluster {
 
 [data-material="soft"].dark .right-panel-expand-body--visible {
   box-shadow: 2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.1)) inset;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .right-panel-expand-shell,
-  .right-panel-expand-shell--expanded,
-  .right-panel-expand-body,
-  .right-panel-expand-body--visible {
-    transition-duration: 1ms !important;
-    transition-delay: 0ms !important;
-    filter: none !important;
-  }
 }
 
 /**
@@ -6519,17 +6485,6 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
   background: hsl(var(--background) / var(--material-opacity-surface));
 }
 
-/* 降级样式 */
-@media (prefers-reduced-motion: reduce) {
-  .panel-glass::before,
-  .rail-glass::before,
-  .content-glass::before,
-  .settings-glass::before,
-  .settings-glass::after {
-    display: none;
-  }
-}
-
 /* =============================================================
  *  settings-glass - 设置左栏浮岛
  *  frosted（默认）：扁平 MD 实色，弱 rim，无多层阴影/高光（降立体感）
@@ -6796,15 +6751,6 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plugins-panel-grid,
-  .plugins-panel-card,
-  .plugins-inspector-body,
-  .plugins-inspector-header {
-    animation: none;
   }
 }
 
@@ -7100,4 +7046,69 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="frosted"].dark .sidebar-archive-btn:hover {
   background: hsl(var(--background) / 0.42);
   box-shadow: none;
+}
+/*
+/*
+ * Session 选中态状态修饰 — 运行中扫光、阻塞/完成变色
+ * 仅用于选中的会话，非选中会话使用底部横线指示器
+ */
+
+/* ===== 运行中选中态：主题色背景 + 扫光动画 ===== */
+.session-list-item-active--running {
+  animation: session-active-bg-shimmer 2.4s linear infinite;
+}
+
+@keyframes session-active-bg-shimmer {
+  0%, 100% {
+    background: var(--session-glass-strong);
+  }
+  50% {
+    background: color-mix(in srgb, hsl(var(--primary)) 25%, var(--session-glass-strong));
+  }
+}
+
+/* ===== 阻塞选中态：橙色背景 ===== */
+.session-list-item-active--blocked {
+  background: color-mix(in srgb, hsl(30, 80%, 50%) 18%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 35%, hsl(var(--border))) !important;
+}
+
+.session-list-item-active--blocked .session-row-title {
+  color: hsl(30, 80%, 45%) !important;
+}
+
+.session-list-item-active--blocked .session-row-meta {
+  color: hsl(30, 75%, 55%) !important;
+}
+
+.dark .session-list-item-active--blocked {
+  background: color-mix(in srgb, hsl(30, 80%, 50%) 25%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 45%, hsl(var(--border))) !important;
+}
+
+.dark .session-list-item-active--blocked .session-row-title {
+  color: hsl(30, 75%, 65%) !important;
+}
+
+/* ===== 完成选中态：绿色背景 ===== */
+.session-list-item-active--completed {
+  background: color-mix(in srgb, hsl(142, 70%, 45%) 15%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 30%, hsl(var(--border))) !important;
+}
+
+.session-list-item-active--completed .session-row-title {
+  color: hsl(142, 70%, 40%) !important;
+}
+
+.session-list-item-active--completed .session-row-meta {
+  color: hsl(142, 65%, 50%) !important;
+}
+
+.dark .session-list-item-active--completed {
+  background: color-mix(in srgb, hsl(142, 70%, 45%) 22%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 40%, hsl(var(--border))) !important;
+}
+
+.dark .session-list-item-active--completed .session-row-title {
+  color: hsl(142, 65%, 65%) !important;
 }
