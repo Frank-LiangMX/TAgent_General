@@ -1,0 +1,64 @@
+/*
+ * Session 选中态状态修饰 — 运行中扫光、阻塞/完成变色
+ * 仅用于选中的会话，非选中会话使用底部横线指示器
+ */
+
+/* ===== 运行中选中态：主题色背景 + 扫光动画 ===== */
+.session-list-item-active--running {
+  animation: session-active-bg-shimmer 2.4s linear infinite;
+}
+
+@keyframes session-active-bg-shimmer {
+  0%, 100% {
+    background: var(--session-glass-strong);
+  }
+  50% {
+    background: color-mix(in srgb, hsl(var(--primary)) 25%, var(--session-glass-strong));
+  }
+}
+
+/* ===== 阻塞选中态：橙色背景 ===== */
+.session-list-item-active--blocked {
+  background: color-mix(in srgb, hsl(30, 80%, 50%) 18%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 35%, hsl(var(--border))) !important;
+}
+
+.session-list-item-active--blocked .session-row-title {
+  color: hsl(30, 80%, 45%) !important;
+}
+
+.session-list-item-active--blocked .session-row-meta {
+  color: hsl(30, 75%, 55%) !important;
+}
+
+.dark .session-list-item-active--blocked {
+  background: color-mix(in srgb, hsl(30, 80%, 50%) 25%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 45%, hsl(var(--border))) !important;
+}
+
+.dark .session-list-item-active--blocked .session-row-title {
+  color: hsl(30, 75%, 65%) !important;
+}
+
+/* ===== 完成选中态：绿色背景 ===== */
+.session-list-item-active--completed {
+  background: color-mix(in srgb, hsl(142, 70%, 45%) 15%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 30%, hsl(var(--border))) !important;
+}
+
+.session-list-item-active--completed .session-row-title {
+  color: hsl(142, 70%, 40%) !important;
+}
+
+.session-list-item-active--completed .session-row-meta {
+  color: hsl(142, 65%, 50%) !important;
+}
+
+.dark .session-list-item-active--completed {
+  background: color-mix(in srgb, hsl(142, 70%, 45%) 22%, hsl(var(--card))) !important;
+  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 40%, hsl(var(--border))) !important;
+}
+
+.dark .session-list-item-active--completed .session-row-title {
+  color: hsl(142, 65%, 65%) !important;
+}

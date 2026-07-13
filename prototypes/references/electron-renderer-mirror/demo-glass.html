@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glass Studio — React 组件演示</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- 临时：直接引入设计稿样式 -->
+  <link rel="stylesheet" href="themes.css" />
+  <link rel="stylesheet" href="tagent.css" />
+  <link rel="stylesheet" href="materials.css" />
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .demo-container {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 32px;
+    }
+
+    .demo-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    .demo-header p {
+      opacity: 0.8;
+      margin: 0;
+    }
+
+    .demo-section {
+      margin-bottom: 32px;
+    }
+
+    .demo-section h2 {
+      color: white;
+      font-size: 1.25rem;
+      margin: 0 0 16px;
+      font-weight: 600;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .demo-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* 复用设计稿样式 */
+    .glass-demo {
+      background: var(--glass, rgba(255, 255, 255, 0.6));
+      border: 1px solid var(--rim, rgba(255, 255, 255, 0.3));
+      border-radius: var(--r-md, 12px);
+      backdrop-filter: blur(var(--material-blur-sm, 20px));
+      box-shadow: var(--neu-out-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
+    }
+
+    .btn-demo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      border-radius: var(--r-md, 12px);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--rim, rgba(255, 255, 255, 0.3));
+      background: var(--glass, rgba(255, 255, 255, 0.6));
+      backdrop-filter: blur(var(--material-blur-sm, 20px));
+    }
+
+    .btn-demo:hover {
+      background: var(--glass-strong, rgba(255, 255, 255, 0.8));
+      transform: scale(1.02);
+    }
+
+    .btn-demo:active {
+      transform: scale(0.98);
+    }
+
+    .btn-demo.accent {
+      background: var(--accent-soft, rgba(59, 130, 246, 0.15));
+      border-color: var(--accent-border, rgba(59, 130, 246, 0.3));
+      color: var(--accent, #3b82f6);
+    }
+
+    .input-demo {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--r-md, 12px);
+      border: 1px solid var(--rim, rgba(255, 255, 255, 0.3));
+      background: var(--glass-well, rgba(0, 0, 0, 0.05));
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-demo:focus {
+      border-color: var(--accent, #3b82f6);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .theme-switcher {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .theme-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .theme-btn.mist { background: #64748b; color: white; }
+    .theme-btn.ocean { background: #0ea5e9; color: white; }
+    .theme-btn.moss { background: #22c55e; color: white; }
+    .theme-btn.dusk { background: #f97316; color: white; }
+
+    .theme-btn.active {
+      border-color: white;
+      transform: scale(1.05);
+    }
+
+    .message-demo {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      max-width: 80%;
+    }
+
+    .msg-bubble.user {
+      background: var(--accent, #3b82f6);
+      color: white;
+      margin-left: auto;
+    }
+
+    .msg-bubble.assistant {
+      background: var(--glass, rgba(255, 255, 255, 0.6));
+      border: 1px solid var(--rim, rgba(255, 255, 255, 0.3));
+    }
+  </style>
+</head>
+<body data-theme="mist" data-mode="light" data-material="soft">
+  <div class="demo-container">
+    <header class="demo-header">
+      <h1>✨ Glass Studio 组件演示</h1>
+      <p>玻璃材质系统 — React 组件库预览</p>
+    </header>
+
+    <!-- 主题切换 -->
+    <div class="theme-switcher">
+      <button class="theme-btn mist active" onclick="setTheme('mist')">云絮 Mist</button>
+      <button class="theme-btn ocean" onclick="setTheme('ocean')">碧海 Ocean</button>
+      <button class="theme-btn moss" onclick="setTheme('moss')">青苔 Moss</button>
+      <button class="theme-btn dusk" onclick="setTheme('dusk')">暮霭 Dusk</button>
+    </div>
+
+    <!-- 按钮演示 -->
+    <section class="demo-section">
+      <h2>🔘 按钮 Buttons</h2>
+      <div class="demo-card glass-demo">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn-demo">默认按钮</button>
+          <button class="btn-demo accent">强调按钮</button>
+          <button class="btn-demo" style="background: transparent; border-color: transparent;">幽灵按钮</button>
+          <button class="btn-demo" disabled style="opacity: 0.5; cursor: not-allowed;">禁用状态</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 输入框演示 -->
+    <section class="demo-section">
+      <h2>📝 输入框 Inputs</h2>
+      <div class="demo-card glass-demo">
+        <input type="text" class="input-demo" placeholder="输入消息..." />
+        <div style="height: 12px;"></div>
+        <textarea class="input-demo" rows="3" placeholder="多行输入..."></textarea>
+      </div>
+    </section>
+
+    <!-- 卡片演示 -->
+    <section class="demo-section">
+      <h2>🃏 卡片 Cards</h2>
+      <div class="demo-grid">
+        <div class="demo-card glass-demo">
+          <h3 style="margin: 0 0 8px; font-size: 16px;">基础卡片</h3>
+          <p style="margin: 0; font-size: 14px; opacity: 0.8;">玻璃质感背景，圆角边框，柔和阴影。</p>
+        </div>
+        <div class="demo-card glass-demo" style="background: var(--glass-strong, rgba(255, 255, 255, 0.8));">
+          <h3 style="margin: 0 0 8px; font-size: 16px;">强调卡片</h3>
+          <p style="margin: 0; font-size: 14px; opacity: 0.8;">更强的背景色，更突出的视觉效果。</p>
+        </div>
+        <div class="demo-card glass-demo" style="background: var(--glass-well, rgba(0, 0, 0, 0.05));">
+          <h3 style="margin: 0 0 8px; font-size: 16px;">凹陷卡片</h3>
+          <p style="margin: 0; font-size: 14px; opacity: 0.8;">内凹效果，用于次要内容区域。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 消息气泡演示 -->
+    <section class="demo-section">
+      <h2>💬 消息 Messages</h2>
+      <div class="demo-card glass-demo message-demo">
+        <div class="msg-bubble user">
+          帮我实现玻璃材质系统
+        </div>
+        <div class="msg-bubble assistant">
+          好的！我已经完成了玻璃材质系统的核心实现，包括材质定义、主题系统、以及 17 个 React 组件。
+        </div>
+      </div>
+    </section>
+
+    <!-- 说明 -->
+    <section class="demo-section">
+      <div class="demo-card glass-demo" style="text-align: center;">
+        <p style="margin: 0; font-size: 14px; opacity: 0.8;">
+          📦 React 组件已创建在 <code>packages/ui/src/components/glass/</code><br/>
+          🎨 设计稿在 <code>glass-studio/</code><br/>
+          🔧 下一步：集成到 Electron 应用或创建独立演示页
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function setTheme(theme) {
+      document.body.dataset.theme = theme;
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.classList.contains(theme));
+      });
+
+      // 更新主题色
+      const colors = {
+        mist: { accent: '#3b82f6', accentSoft: 'rgba(59, 130, 246, 0.15)' },
+        ocean: { accent: '#0ea5e9', accentSoft: 'rgba(14, 165, 233, 0.15)' },
+        moss: { accent: '#22c55e', accentSoft: 'rgba(34, 197, 94, 0.15)' },
+        dusk: { accent: '#f97316', accentSoft: 'rgba(249, 115, 22, 0.15)' }
+      };
+
+      const c = colors[theme] || colors.mist;
+      document.documentElement.style.setProperty('--accent', c.accent);
+      document.documentElement.style.setProperty('--accent-soft', c.accentSoft);
+    }
+  </script>
+</body>
+</html>

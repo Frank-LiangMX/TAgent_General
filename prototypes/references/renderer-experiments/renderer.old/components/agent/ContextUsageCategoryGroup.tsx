@@ -1,0 +1,91 @@
+import type { ContextUsageCategory } from '@tagent/shared'
+import { resolveContextUsageColor } from '@tagent/shared'
+import { ChevronDown } from 'lucide-react'
+import * as React from 'react'
+
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@tagent/ui'
+import { ContextUsageTermHint } from './ContextUsageTermHint'
+
+import { getContextUsageLabel } from '@/lib/context-usage-labels'
+import { formatContextTokens, isFreeSpaceCategory } from '@/lib/context-usage-format'
+import { cn } from '@/lib/utils'
+
+interface ContextUsageCategoryGroupProps {
+  category: ContextUsageCategory
+  itemCount?: number
+  barPercent?: number
+  defaultOpen?: boolean
+  children: React.ReactNode
+}
+
+export function ContextUsageCategoryGroup({
+  category,
+  itemCount,
+  barPercent,
+  defaultOpen = false,
+  children,
+}: ContextUsageCategoryGroupProps): React.ReactElement {
+  const [open, setOpen] = React.useState(defaultOpen)
+  const label = getContextUsageLabel(category.name)
+  const swatchColor = resolveContextUsageColor(category.name, category.color)
+  const isFreeSpace = isFreeSpaceCategory(category.name)
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="group/cu-collapse">
+      <CollapsibleTrigger
+        className={cn(
+          'flex w-full flex-col gap-1.5 rounded-xl px-2 py-1.5 text-left transition-colors',
+          'hover:bg-foreground/5'
+        )}
+      >
+        <div className="grid w-full grid-cols-[1fr_auto_42px] items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <ChevronDown
+              className={cn(
+                'size-3.5 shrink-0 text-muted-foreground transition-transform duration-200',
+                'group-data-[state=open]/cu-collapse:rotate-180'
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className="size-2.5 shrink-0 rounded-[4px]"
+              style={{ backgroundColor: swatchColor }}
+              aria-hidden="true"
+            />
+            <ContextUsageTermHint
+              term={category.name}
+              className="min-w-0 flex-1 truncate text-xs text-foreground/85"
+            >
+              <span className="truncate">
+                {label}
+                {itemCount != null && itemCount > 0 ? (
+                  <span className="ml-1 text-muted-foreground">({itemCount})</span>
+                ) : null}
+              </span>
+            </ContextUsageTermHint>
+          </div>
+          <span className="shrink-0 text-xs tabular-nums text-foreground/90">
+            {formatContextTokens(category.tokens)}
+          </span>
+          <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+            {barPercent != null ? `${Math.round(barPercent)}%` : '—'}
+          </span>
+        </div>
+        {!isFreeSpace && barPercent != null && barPercent > 0 && (
+          <div className="ml-5 h-1 overflow-hidden rounded-full bg-foreground/8">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.min(100, barPercent)}%`,
+                backgroundColor: swatchColor,
+              }}
+            />
+          </div>
+        )}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-2 pb-1">
+        {open ? <div className="mt-1 flex flex-col gap-1">{children}</div> : null}
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}

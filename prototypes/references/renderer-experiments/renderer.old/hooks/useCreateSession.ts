@@ -1,0 +1,98 @@
+/**
+ * useCreateSession — 创建 Agent 会话逻辑
+ *
+ * 从 LeftSidebar 提取，供 WelcomeView 模式切换和侧边栏共同使用。
+ * P3: Chat 创建已退役，createChat 保留用于迁移兼容。
+ */
+
+import { useAtomValue, useSetAtom } from 'jotai'
+
+import type { AgentSessionMeta } from '@tagent/shared'
+import { useOpenSession } from './useOpenSession'
+
+import { activeViewAtom } from '@/atoms/active-view'
+import {
+  agentSessionsAtom,
+  agentChannelIdAtom,
+  currentAgentWorkspaceIdAtom,
+  conversationsAtom,
+} from '@/atoms/agent-atoms'
+import { selectedModelAtom } from '@/atoms/model-atoms'
+import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { promptConfigAtom, selectedPromptIdAtom } from '@/atoms/system-prompt-atoms'
+
+interface CreateSessionOptions {
+  /** 标记为草稿会话（不在侧边栏显示，发送首条消息后自动取消） */
+  draft?: boolean
+  /** 覆盖默认渠道 ID（仅 Agent 会话） */
+  channelId?: string
+  /** 覆盖默认模型 ID（仅 Agent 会话） */
+  modelId?: string
+  /**
+   * 顶层模式：'general'（默认）| 'ta'
+   * TA 模式创建的会话在 agent_sessions 中带 mode='ta' 标记，与通用模式数据隔离。
+   */
+  mode?: 'general' | 'ta'
+}
+
+interface CreateSessionActions {
+  /** 创建新 Chat 对话并打开标签页 */
+  createChat: (options?: CreateSessionOptions) => Promise<{ id: string; title: string } | undefined>
+  /** 创建新 Agent 会话并打开标签页 */
+  createAgent: (options?: CreateSessionOptions) => Promise<AgentSessionMeta | undefined>
+}
+
+export function useCreateSession(): CreateSessionActions {
+  const openSession = useOpenSession()
+  const setActiveView = useSetAtom(activeViewAtom)
+  const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
+
+  // Chat
+  const setConversations = useSetAtom(conversationsAtom)
+  const selectedModel = useAtomValue(selectedModelAtom)
+  const promptConfig = useAtomValue(promptConfigAtom)
+  const setSelectedPromptId = useSetAtom(selectedPromptIdAtom)
+
+  // Agent
+  const setAgentSessions = useSetAtom(agentSessionsAtom)
+  const agentChannelId = useAtomValue(agentChannelIdAtom)
+  const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
+
+  const createChat = async (
+    options?: CreateSessionOptions
+  ): Promise<{ id: string; title: string } | undefined> => {
+    // P3: Chat 模式已退役，此函数保留用于向后兼容但不再创建 Chat 会话
+    console.warn('[createChat] Chat 模式已退役，请使用 createAgent')
+    return undefined
+  }
+
+  const createAgent = async (
+    options?: CreateSessionOptions
+  ): Promise<AgentSessionMeta | undefined> => {
+    try {
+      const meta = await window.electronAPI.createAgentSession(
+        undefined,
+        options?.channelId ?? agentChannelId ?? undefined,
+        currentWorkspaceId || undefined,
+        options?.mode,
+        options?.modelId
+      )
+      setAgentSessions((prev) => [meta, ...prev])
+      openSession('agent', meta.id, meta.title, options?.mode)
+      setActiveView('conversations')
+      if (options?.draft) {
+        setDraftSessionIds((prev: Set<string>) => {
+          const next = new Set(prev)
+          next.add(meta.id)
+          return next
+        })
+      }
+      return meta
+    } catch (error) {
+      console.error('[创建会话] 创建 Agent 会话失败:', error)
+      return undefined
+    }
+  }
+
+  return { createChat, createAgent }
+}

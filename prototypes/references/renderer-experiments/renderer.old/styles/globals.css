@@ -1,0 +1,5997 @@
+@import '@tagent/ui/src/tokens/__generated__/tokens.css';
+@import '@tagent/ui/styles/glass.css';
+@import '@tagent/ui/styles/search.css';
+@import '@tagent/ui/styles/segmented-tabs.css';
+@import './agent-thread.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --dialog: 0 0% 100%;
+    --dialog-foreground: 0 0% 3.9%;
+    --content-area: 0 0% 100%;            /* 主内容区域背景 */
+    /* 毛玻璃 Tooltip：深色半透明背景 + 白色文字 */
+    --tooltip: 0 0% 15%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 0 0% 75%;
+    /* 代码块背景 */
+    --code-bg: 210 13% 12%;                   /* #1e2228 */
+    /* 虚线边框色（新会话按钮、搜索按钮） */
+    --dashed-border: 0 0% 9% / 0.35;
+    --dashed-border-hover: 0 0% 9% / 0.50;
+    /* Markdown 预览正文字号（medium 档默认；initializer 加载用户偏好后会覆盖） */
+    --md-preview-font-size: 15px;
+    /* 浅色玻璃装饰色：勿用 --foreground/--primary（纯白主题下为近黑，会在顶部画出脏边） */
+    --glass-shine: 0 0% 100%;
+    --glass-ambient: 220 20% 96%;
+    --glass-rim: 220 14% 86%;
+    /* 外壳团雾光斑色（勿用 --primary，纯白主题下 primary 近黑会画出脏斑） */
+    --shell-blob: 220 28% 92%;
+    /* 主窗口内容边界：所有内容必须被裁在底板圆角矩形内 */
+    --app-content-boundary-inset: 8px;
+    --app-content-boundary-radius: 20px;
+  }
+
+  .dark {
+    --background: 0 0% 7%;                /* 统一背景色 zinc-900 */
+    --foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 0 0% 40%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsl(0, 40%, 18%);
+    --card: 0 0% 7%;                      /* 卡片背景 = 背景色 */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;                   /* 弹出层 = 背景色 */
+    --popover-foreground: 0 0% 98%;
+    --dialog: 0 0% 12%;                   /* 设置弹窗：比背景更亮，悬浮感 */
+    --dialog-foreground: 0 0% 98%;
+    --content-area: 0 0% 7%;              /* 主内容区域背景 zinc-900 */
+    /* 毛玻璃 Tooltip：深色半透明背景 + 白色文字 */
+    --tooltip: 0 0% 20%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 0 0% 70%;
+    /* 代码块背景 */
+    --code-bg: 210 13% 12%;                   /* #1e2228 */
+    /* 虚线边框色（新会话按钮、搜索按钮） */
+    --dashed-border: 0 0% 98% / 0.34;
+    --dashed-border-hover: 0 0% 98% / 0.48;
+    --shell-blob: 220 15% 55%;
+    /* 深色玻璃装饰色：勿沿用浅色高亮，否则弹窗左上/右下团雾过亮 */
+    --glass-shine: 220 14% 68%;
+    --glass-ambient: 220 12% 26%;
+    --glass-rim: 220 10% 30%;
+  }
+
+  /* ===== 特殊风格主题 ===== */
+
+  /* 晴空碧海 (ocean-light) */
+  .theme-ocean-light {
+    --background: 205 35% 94%;            /* #ecf2f7 背景（侧边栏）- 调浅 */
+    --foreground: 210 30% 15%;            /* #1b2632 前景文字 */
+    --content-area: 205 30% 97%;          /* #f4f7fa 内容区域 */
+    --muted: 205 35% 88%;                 /* #d7e4ef 次要背景 */
+    --muted-foreground: 210 15% 40%;      /* #576675 次要文字 */
+    --border: 205 30% 82%;                /* #c3d5e5 边框 */
+    --primary: 205 50% 50%;               /* #408abf 主色 */
+    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
+    --secondary: 205 35% 91%;             /* #e2ebf3 二级背景 */
+    --secondary-foreground: 210 30% 20%;  /* #243342 二级前景 */
+    --accent: 205 35% 82%;                /* #c1d6e7 强调背景 */
+    --accent-foreground: 205 50% 30%;     /* #265373 强调文字 */
+    --ring: 205 50% 50%;                  /* #408abf 聚焦环 */
+    --card: 205 30% 97%;                  /* #f4f7fa 卡片背景 */
+    --card-foreground: 210 30% 15%;       /* #1b2632 卡片前景 */
+    --input: 205 35% 91%;                 /* #e2ebf3 输入框背景 */
+    --popover: 205 30% 97%;               /* #f4f7fa 弹出层 */
+    --popover-foreground: 210 30% 15%;    /* #1b2632 弹出前景 */
+    --dialog: 0 0% 100%;                  /* #ffffff 弹窗背景 */
+    --dialog-foreground: 210 30% 15%;     /* #1b2632 弹窗前景 */
+    --destructive: 0 84.2% 60.2%;         /* #ef4444 危险色 */
+    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --tooltip: 210 45% 18%;               /* #192e43 Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 210 20% 75%;         /* #b3bfcc Tooltip弱 */
+    /* 代码块背景 - 蓝调 */
+    --code-bg: 210 35% 14%;               /* #172030 深蓝 */
+    /* 虚线边框色 */
+    --dashed-border: 205 50% 50% / 0.30;
+    --dashed-border-hover: 205 50% 50% / 0.45;
+    --glass-ambient: 205 35% 92%;
+    --glass-rim: 205 30% 84%;
+    --shell-blob: 205 45% 78%;
+  }
+
+  /* 苍穹暮色 (ocean-dark) */
+  .theme-ocean-dark {
+    --background: 210 35% 13%;            /* #182434 背景（侧边栏） */
+    --foreground: 210 20% 92%;            /* #e7ebef 前景文字 */
+    --content-area: 210 40% 8%;           /* #0c141d 内容区域 */
+    --muted: 210 30% 14%;                 /* #19242e 次要背景 */
+    --muted-foreground: 210 15% 55%;      /* #7b8c9d 次要文字 */
+    --border: 210 30% 18%;                /* #202e3c 边框 */
+    --primary: 205 87% 24%;               /* #084672 主色（与 mode-slider 一致） */
+    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
+    --secondary: 210 30% 16%;             /* #1d2935 二级背景 */
+    --secondary-foreground: 210 20% 90%;  /* #e0e6eb 二级前景 */
+    --accent: 210 40% 22%;                /* #22384f 强调背景 */
+    --accent-foreground: 205 60% 70%;     /* #85bae0 强调文字 */
+    --ring: 205 87% 24%;                  /* #084672 聚焦环（与主色一致） */
+    --card: 210 35% 11%;                  /* #121c26 卡片背景 */
+    --card-foreground: 210 20% 92%;       /* #e7ebef 卡片前景 */
+    --input: 210 30% 14%;                 /* #19242e 输入框背景 */
+    --popover: 210 35% 13%;               /* #16212d 弹出层 */
+    --popover-foreground: 210 20% 92%;    /* #e7ebef 弹出前景 */
+    --dialog: 210 25% 16%;                /* #1f2933 弹窗背景 */
+    --dialog-foreground: 210 20% 92%;     /* #e7ebef 弹窗前景 */
+    --destructive: 0 55% 45%;              /* 中饱和度红 */
+    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 210 40% 22%;               /* #22384f Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 210 20% 70%;         /* #a3b3c2 Tooltip弱 */
+    /* 代码块背景 - 深海蓝 */
+    --code-bg: 210 50% 6%;                /* #081219 更深的海蓝 */
+    /* 虚线边框色 */
+    --dashed-border: 205 60% 55% / 0.35;
+    --dashed-border-hover: 205 60% 55% / 0.50;
+  }
+
+  /* ===== 森系色系 ===== */
+
+  /* 森息晨光（浅色） - 自然绿调，清新明亮 */
+  .theme-forest-light {
+    --background: 140 25% 95%;            /* #eff5f1 背景 */
+    --foreground: 150 25% 15%;            /* #1d3026 前景文字 */
+    --content-area: 140 20% 97%;          /* #f6f9f7 内容区域 */
+    --muted: 140 15% 90%;                 /* #e2e9e4 次要背景 */
+    --muted-foreground: 145 10% 45%;      /* #677e71 次要文字 */
+    --border: 140 15% 82%;                /* #cad8cf 边框 */
+    --primary: 150 35% 38%;               /* #3f8361 主色 */
+    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
+    --secondary: 140 15% 92%;             /* #e8eeea 二级背景 */
+    --secondary-foreground: 150 20% 20%;  /* #293d33 二级前景 */
+    --accent: 145 20% 88%;                /* #dae7df 强调背景 */
+    --accent-foreground: 150 30% 30%;     /* #36634d 强调文字 */
+    --ring: 150 35% 38%;                  /* #3f8361 聚焦环 */
+    --card: 140 20% 97%;                  /* #f6f9f7 卡片背景 */
+    --card-foreground: 150 25% 15%;       /* #1d3026 卡片前景 */
+    --input: 140 18% 92%;                 /* #e7eee9 输入框背景 */
+    --popover: 140 18% 98%;               /* #f9fbfa 弹出层 */
+    --popover-foreground: 150 25% 15%;    /* #1d3026 弹出前景 */
+    --dialog: 140 15% 96%;                /* #f3f6f4 弹窗背景 */
+    --dialog-foreground: 150 25% 15%;     /* #1d3026 弹窗前景 */
+    --destructive: 0 72% 51%;             /* #dc2828 危险色 */
+    --destructive-foreground: 0 0% 100%;  /* #ffffff 危险前景 */
+    --stop-hover-bg: hsla(0, 70%, 50%, 0.12);
+    --tooltip: 150 20% 18%;               /* #25372e Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 140 10% 60%;         /* #8fa396 Tooltip弱 */
+    /* 代码块背景 - 森林绿调 */
+    --code-bg: 150 35% 12%;               /* #142820 深森绿 */
+    /* 虚线边框色 */
+    --dashed-border: 150 35% 38% / 0.35;
+    --dashed-border-hover: 150 35% 38% / 0.50;
+    --glass-ambient: 140 22% 93%;
+    --glass-rim: 140 15% 84%;
+    --shell-blob: 150 30% 82%;
+  }
+
+  /* 森息夜语（深色） */
+  .theme-forest-dark {
+    --background: 147 14% 15%;            /* #212c26 背景（侧边栏） */
+    --foreground: 140 10% 90%;            /* #e3e8e5 前景文字 */
+    --content-area: 150 20% 8%;           /* #101814 内容区域 */
+    --muted: 150 18% 13%;                 /* #1b2721 次要背景 */
+    --muted-foreground: 140 10% 55%;      /* #819888 次要文字 */
+    --border: 150 18% 17%;                /* #24332b 边框 */
+    --primary: 151 55% 21%;               /* #185337 主色 */
+    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景 */
+    --secondary: 150 16% 15%;             /* #202c26 二级背景 */
+    --secondary-foreground: 140 10% 88%;  /* #dde3df 二级前景 */
+    --accent: 155 25% 18%;                /* #223930 强调背景 */
+    --accent-foreground: 150 30% 65%;     /* #8bc1a6 强调文字 */
+    --ring: 150 35% 42%;                  /* #46916b 聚焦环 */
+    --card: 150 18% 11%;                  /* #17211c 卡片背景 */
+    --card-foreground: 140 10% 90%;       /* #e3e8e5 卡片前景 */
+    --input: 150 18% 13%;                 /* #1b2721 输入框背景 */
+    --popover: 150 18% 13%;               /* #1b2721 弹出层 */
+    --popover-foreground: 140 10% 90%;    /* #e3e8e5 弹出前景 */
+    --dialog: 150 15% 15%;                /* #212c26 弹窗背景 */
+    --dialog-foreground: 140 10% 90%;     /* #e3e8e5 弹窗前景 */
+    --destructive: 0 55% 45%;              /* 中饱和度红 */
+    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 150 25% 20%;               /* #264033 Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 140 10% 65%;         /* #9dafa3 Tooltip弱 */
+    /* 代码块背景 - 深绿调 */
+    --code-bg: 150 25% 8%;                /* #0f1a14 深林绿 */
+    /* 虚线边框色 */
+    --dashed-border: 150 35% 45% / 0.35;
+    --dashed-border-hover: 150 35% 45% / 0.50;
+  }
+
+  /* ===== 赛博朋克色系 ===== */
+
+  /* 云朵舞者（浅色） - 温暖灰调，柔和舒适 */
+  .theme-slate-light {
+    /* 基础色 - sidebar 比主题色深一点 */
+    --background: 40 6% 88%;              /* #e3e1dc 侧边栏背景（比主题色深） */
+    --foreground: 40 8% 18%;              /* #312f2a 前景文字 */
+    --content-area: 40 8% 94%;            /* #f0efec 内容区域（RGB 240,239,236 主题色） */
+    /* 次要色 */
+    --muted: 40 6% 85%;                   /* #dbd8d2 次要背景 */
+    --muted-foreground: 40 5% 45%;        /* #787568 次要文字 */
+    --border: 40 6% 80%;                  /* #d0cdc6 边框 */
+    /* 交互色 */
+    --primary: 18 20% 67%;                /* #bda59b 主色（RGB 189,165,155） */
+    --primary-foreground: 0 0% 100%;      /* #ffffff 主色前景（白色文字） */
+    --secondary: 40 6% 90%;               /* #e8e6e2 二级背景 */
+    --secondary-foreground: 40 8% 22%;    /* #3c3933 二级前景 */
+    --accent: 40 6% 86%;                  /* #dddad4 强调背景 */
+    --accent-foreground: 40 10% 30%;      /* #554f44 强调文字 */
+    --ring: 18 20% 67%;                   /* #bda59b 聚焦环 */
+    /* 组件色 */
+    --card: 40 8% 96%;                    /* #f6f5f2 卡片背景 */
+    --card-foreground: 40 8% 18%;         /* #312f2a 卡片前景 */
+    --input: 40 6% 90%;                   /* #e8e6e2 输入框背景 */
+    --popover: 40 8% 96%;                 /* #f6f5f2 弹出层 */
+    --popover-foreground: 40 8% 18%;      /* #312f2a 弹出前景 */
+    --dialog: 40 8% 94%;                  /* #f0efec 弹窗背景（主题色） */
+    --dialog-foreground: 40 8% 18%;       /* #312f2a 弹窗前景 */
+    /* 功能色 */
+    --destructive: 0 65% 50%;             /* #d43c3c 危险色 */
+    --destructive-foreground: 0 0% 100%;  /* #ffffff 危险前景 */
+    --stop-hover-bg: hsla(0, 60%, 50%, 0.12);
+    --tooltip: 40 8% 20%;                 /* #37352e Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 40 5% 55%;           /* #928e84 Tooltip弱 */
+    /* 代码块背景 - 与主色相近的深暖棕 */
+    --code-bg: 18 15% 18%;                /* #362f2b 深暖棕（主色深版） */
+    /* 虚线边框色 */
+    --dashed-border: 18 20% 50% / 0.40;
+    --dashed-border-hover: 18 20% 50% / 0.55;
+    --glass-ambient: 40 10% 94%;
+    --glass-rim: 40 8% 82%;
+    --shell-blob: 18 18% 82%;
+  }
+
+  /* 莫兰迪夜（深色） */
+  .theme-slate-dark {
+    /* 基础色 - 侧边栏与内容区对调 */
+    --background: 260 6% 12%;             /* #1d1b20 背景（侧边栏） */
+    --foreground: 30 10% 90%;             /* #e9e6e3 温暖前景文字 */
+    --content-area: 270 8% 9%;            /* #161418 内容区域 */
+    /* 次要色 - 淡紫灰调 */
+    --muted: 260 6% 16%;                  /* #272429 次要背景 */
+    --muted-foreground: 30 8% 60%;        /* #9f9690 次要文字 */
+    --border: 260 8% 20%;                 /* #322e36 边框 */
+    /* 交互色 - 莫兰迪粉 */
+    --primary: 15 25% 68%;                /* #c9a89e 淡杏粉主色 */
+    --primary-foreground: 270 8% 9%;      /* #161418 主色前景 */
+    --secondary: 260 5% 18%;              /* #2c2930 二级背景 */
+    --secondary-foreground: 30 10% 88%;   /* #e5e1dc 二级前景 */
+    --accent: 200 12% 22%;                /* #303740 淡蓝灰强调背景 */
+    --accent-foreground: 200 25% 75%;     /* #a5c4d1 淡天蓝强调文字 */
+    --ring: 15 25% 68%;                   /* #c9a89e 聚焦环 */
+    /* 组件色 */
+    --card: 260 6% 13%;                   /* #201e22 卡片背景 */
+    --card-foreground: 30 10% 90%;        /* #e9e6e3 卡片前景 */
+    --input: 260 6% 16%;                  /* #272429 输入框背景 */
+    --popover: 260 6% 15%;                /* #252228 弹出层 */
+    --popover-foreground: 30 10% 90%;     /* #e9e6e3 弹出前景 */
+    --dialog: 260 5% 16%;                 /* #282528 弹窗背景 */
+    --dialog-foreground: 30 10% 90%;      /* #e9e6e3 弹窗前景 */
+    /* 功能色 */
+    --destructive: 0 45% 50%;              /* #b8635f 柔和危险色 */
+    --destructive-foreground: 0 0% 98%;   /* #fafafa 危险前景 */
+    --stop-hover-bg: hsl(0, 25%, 20%);
+    --tooltip: 260 8% 22%;                /* #38343d Tooltip */
+    --tooltip-foreground: 0 0% 98%;       /* #fafafa Tooltip前景 */
+    --tooltip-muted: 30 8% 65%;           /* #aca49d Tooltip弱 */
+    /* 代码块背景 - 莫兰迪紫调 */
+    --code-bg: 270 10% 10%;               /* #1a171d 淡紫深灰 */
+    /* 虚线边框色 */
+    --dashed-border: 15 25% 68% / 0.30;
+    --dashed-border-hover: 15 25% 68% / 0.45;
+  }
+
+  /* ===== 爱马仕橙 ===== */
+
+  /* 暖陶（浅色） - 温暖米陶色调 */
+  .theme-orange-light {
+    --background: 30 35% 93%;
+    --foreground: 22 35% 18%;
+    --content-area: 30 30% 96%;
+    --muted: 28 30% 88%;
+    --muted-foreground: 22 15% 42%;
+    --border: 28 30% 80%;
+    --primary: 20 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 25% 90%;
+    --secondary-foreground: 22 30% 22%;
+    --accent: 30 30% 85%;
+    --accent-foreground: 20 70% 30%;
+    --ring: 20 80% 50%;
+    --card: 30 30% 97%;
+    --card-foreground: 22 35% 18%;
+    --input: 30 28% 92%;
+    --popover: 30 30% 97%;
+    --popover-foreground: 22 35% 18%;
+    --dialog: 0 0% 100%;
+    --dialog-foreground: 22 35% 18%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --tooltip: 22 40% 18%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 22 20% 70%;
+    --code-bg: 20 35% 14%;
+    --dashed-border: 20 80% 50% / 0.35;
+    --dashed-border-hover: 20 80% 50% / 0.50;
+    --glass-ambient: 30 30% 92%;
+    --glass-rim: 28 25% 84%;
+    --shell-blob: 22 45% 78%;
+  }
+
+  /* 深铜（深色） - 暗陶铜色调 */
+  .theme-orange-dark {
+    --background: 18 25% 13%;
+    --foreground: 28 30% 88%;
+    --content-area: 18 30% 8%;
+    --muted: 18 22% 15%;
+    --muted-foreground: 25 15% 55%;
+    --border: 18 22% 19%;
+    --primary: 20 75% 55%;
+    --primary-foreground: 18 35% 10%;
+    --secondary: 18 20% 15%;
+    --secondary-foreground: 28 30% 88%;
+    --accent: 20 30% 20%;
+    --accent-foreground: 22 70% 70%;
+    --ring: 20 75% 55%;
+    --card: 18 28% 11%;
+    --card-foreground: 28 30% 88%;
+    --input: 18 22% 14%;
+    --popover: 18 28% 11%;
+    --popover-foreground: 28 30% 88%;
+    --dialog: 18 20% 16%;
+    --dialog-foreground: 28 30% 88%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 20 30% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 22 20% 65%;
+    --code-bg: 18 30% 6%;
+    --dashed-border: 20 75% 55% / 0.35;
+    --dashed-border-hover: 20 75% 55% / 0.50;
+  }
+
+  /* ===== 紫藤色系 ===== */
+
+  /* 藤息晨光（浅色） - 紫藤淡雅 */
+  .theme-purple-light {
+    --background: 280 25% 92%;
+    --foreground: 280 30% 22%;
+    --content-area: 285 30% 96%;
+    --muted: 280 25% 88%;
+    --muted-foreground: 280 15% 45%;
+    --border: 280 25% 82%;
+    --primary: 280 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 285 25% 90%;
+    --secondary-foreground: 280 30% 25%;
+    --accent: 280 30% 85%;
+    --accent-foreground: 280 60% 35%;
+    --ring: 280 65% 55%;
+    --card: 285 30% 97%;
+    --card-foreground: 280 30% 22%;
+    --input: 280 25% 92%;
+    --popover: 285 30% 97%;
+    --popover-foreground: 280 30% 22%;
+    --dialog: 0 0% 100%;
+    --dialog-foreground: 280 30% 22%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
+    --tooltip: 280 35% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 280 20% 70%;
+    --code-bg: 280 30% 14%;
+    --dashed-border: 280 65% 55% / 0.35;
+    --dashed-border-hover: 280 65% 55% / 0.50;
+    --glass-ambient: 285 25% 92%;
+    --glass-rim: 280 20% 84%;
+    --shell-blob: 280 45% 80%;
+  }
+
+  /* 藤息夜语（深色） - 紫藤夜色 */
+  .theme-purple-dark {
+    --background: 280 22% 14%;
+    --foreground: 285 25% 88%;
+    --content-area: 280 28% 8%;
+    --muted: 280 20% 15%;
+    --muted-foreground: 280 15% 55%;
+    --border: 280 20% 19%;
+    --primary: 280 70% 65%;
+    --primary-foreground: 280 35% 10%;
+    --secondary: 280 18% 16%;
+    --secondary-foreground: 285 25% 88%;
+    --accent: 285 30% 22%;
+    --accent-foreground: 280 70% 75%;
+    --ring: 280 70% 65%;
+    --card: 280 25% 11%;
+    --card-foreground: 285 25% 88%;
+    --input: 280 20% 14%;
+    --popover: 280 25% 11%;
+    --popover-foreground: 285 25% 88%;
+    --dialog: 280 18% 16%;
+    --dialog-foreground: 285 25% 88%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --stop-hover-bg: hsl(0, 35%, 18%);
+    --tooltip: 280 30% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 280 20% 65%;
+    --code-bg: 280 30% 6%;
+    --dashed-border: 280 70% 65% / 0.35;
+    --dashed-border-hover: 280 70% 65% / 0.50;
+  }
+
+  /* ===== Soft UI / Neumorph ===== */
+
+  .theme-neumorph-light {
+    --background: 220 24% 92%;
+    --foreground: 220 18% 28%;
+    --content-area: 220 22% 94%;
+    --muted: 220 20% 88%;
+    --muted-foreground: 220 10% 46%;
+    --border: 220 16% 84%;
+    --primary: 220 20% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 18% 90%;
+    --secondary-foreground: 220 18% 28%;
+    --accent: 220 18% 86%;
+    --accent-foreground: 220 22% 30%;
+    --ring: 220 20% 56%;
+    --card: 220 22% 91%;
+    --card-foreground: 220 18% 28%;
+    --input: 220 22% 90%;
+    --popover: 220 20% 93%;
+    --popover-foreground: 220 18% 28%;
+    --dialog: 220 22% 94%;
+    --dialog-foreground: 220 18% 28%;
+    --tooltip: 220 18% 22%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 220 12% 72%;
+    --code-bg: 220 16% 18%;
+    --dashed-border: 220 18% 45% / 0.28;
+    --dashed-border-hover: 220 18% 45% / 0.42;
+    --glass-ambient: 220 18% 94%;
+    --glass-rim: 220 16% 82%;
+    --shell-blob: 220 20% 84%;
+  }
+
+  .theme-neumorph-dark {
+    --background: 220 16% 16%;
+    --foreground: 220 15% 88%;
+    --content-area: 220 16% 14%;
+    --muted: 220 14% 19%;
+    --muted-foreground: 220 10% 64%;
+    --border: 220 12% 24%;
+    --input: 220 14% 19%;
+    --primary: 220 18% 72%;
+    --primary-foreground: 220 22% 14%;
+    --secondary: 220 12% 20%;
+    --secondary-foreground: 220 15% 88%;
+    --accent: 220 12% 22%;
+    --accent-foreground: 220 15% 88%;
+    --ring: 220 18% 72%;
+    --card: 220 16% 17%;
+    --card-foreground: 220 15% 88%;
+    --popover: 220 16% 17%;
+    --popover-foreground: 220 15% 88%;
+    --dialog: 220 14% 18%;
+    --dialog-foreground: 220 15% 88%;
+    --tooltip: 220 12% 24%;
+    --tooltip-foreground: 0 0% 98%;
+    --tooltip-muted: 220 10% 72%;
+    --code-bg: 220 16% 12%;
+    --dashed-border: 220 16% 76% / 0.24;
+    --dashed-border-hover: 220 16% 76% / 0.38;
+    --glass-shine: 220 14% 78%;
+    --glass-ambient: 220 10% 24%;
+    --glass-rim: 220 10% 30%;
+    --shell-blob: 220 12% 34%;
+  }
+}
+
+/*
+ * 主窗口全局内容边界。
+ * Electron 窗口不是视觉内容边界；底板圆角矩形才是。裁切 body 能同时约束
+ * AppShell 子树以及 Radix / Sonner 等 portal 浮层，避免动画阶段越过底板范围。
+ */
+html.tagent-app-shell-window,
+html.tagent-app-shell-window body,
+html.tagent-app-shell-window #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+html.tagent-app-shell-window body {
+  clip-path: inset(
+    var(--app-content-boundary-inset)
+    round var(--app-content-boundary-radius)
+  );
+}
+
+.app-content-boundary-rim {
+  position: absolute;
+  top: var(--app-content-boundary-inset);
+  right: var(--app-content-boundary-inset);
+  bottom: var(--app-content-boundary-inset);
+  z-index: 65;
+  width: 34px;
+  pointer-events: none;
+  border-top-right-radius: var(--app-content-boundary-radius);
+  border-bottom-right-radius: var(--app-content-boundary-radius);
+  background:
+    linear-gradient(
+      to left,
+      hsl(var(--background) / 0.42) 0,
+      hsl(var(--background) / 0.20) 3px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.48),
+    inset -2px 0 0 hsl(var(--foreground) / 0.045);
+}
+
+.dark .app-content-boundary-rim {
+  background:
+    linear-gradient(
+      to left,
+      rgba(0, 0, 0, 0.22) 0,
+      rgba(0, 0, 0, 0.10) 4px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.14),
+    inset -2px 0 0 rgba(0, 0, 0, 0.22);
+}
+
+html.material-frosted .app-content-boundary-rim {
+  background:
+    linear-gradient(
+      to left,
+      hsl(var(--background) / 0.34) 0,
+      hsl(var(--background) / 0.14) 4px,
+      transparent 24px
+    );
+  box-shadow:
+    inset -1px 0 0 var(--material-edge-inset),
+    inset -2px 0 0 var(--material-edge-outer);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    /* 桌面应用默认禁止选中文本，避免误触；会话区用 .selectable-content 单独放开 */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* 输入控件、可编辑区域：保留选中能力 */
+  input,
+  textarea,
+  [contenteditable="true"],
+  [contenteditable=""] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  /*
+   * 会话正文 / Markdown / 代码：允许选中复制。
+   * user-select 不继承，必须对子元素一并放开（* 通配符会覆盖子节点）。
+   */
+  .selectable-content,
+  .selectable-content *,
+  .prose,
+  .prose *,
+  pre,
+  pre *,
+  code,
+  code * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Draggable title bar region for Electron window */
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Left sidebar sits above the global titlebar layer, so it owns a stable top drag strip. */
+.sidebar-window-drag-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Windows 自定义窗口控制按钮
+ *
+ * 可点击性关键点（解决 Windows 用户点击失效 / 需要双击的 bug）：
+ * 1. 容器本身就是 no-drag 矩形，不靠"在 drag 区里挖三个小洞"——避免 Chromium hitmask
+ *    在小矩形 + 高 DPI 缩放下的像素对齐误差。
+ * 2. AppShell 的 drag-region 在 Windows 上不再延伸到按钮区域（见 AppShell.tsx 的 right-[126px]），
+ *    drag 与 no-drag 区域彻底解耦，OS hitmask 不会再误判。
+ * 3. 按钮尺寸与位置使用整数 px，避免 125%/150%/175% DPI 下四舍五入收缩。
+ */
+.window-controls {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  height: 28px;
+  gap: 1px;
+}
+
+.window-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: none;
+  cursor: default;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.window-control-btn:hover {
+  background-color: hsl(var(--muted) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+.window-control-btn:active {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.window-control-close:hover {
+  background-color: #c42b1c;
+  color: #fff;
+}
+
+.window-control-close:active {
+  background-color: #a01d11;
+  color: #fff;
+}
+
+.right-panel-topbar-toggle-button {
+  width: 36px !important;
+  height: 28px !important;
+  border-radius: 4px !important;
+}
+
+/* 深色特殊主题 dialog 光晕效果 */
+.theme-ocean-dark [data-radix-dialog-content],
+.theme-forest-dark [data-radix-dialog-content],
+.theme-slate-dark [data-radix-dialog-content] {
+  box-shadow:
+    0 0 40px 8px rgba(255, 255, 255, 0.06),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* 特殊主题外层缝隙背景色覆盖 */
+.theme-ocean-light .shell-bg { background: linear-gradient(135deg, hsl(205 35% 88%) 0%, hsl(205 30% 91%) 100%); }
+.theme-ocean-dark .shell-bg  { background: linear-gradient(135deg, hsl(210 45% 5%) 0%, hsl(210 35% 7%) 100%); }
+.theme-forest-light .shell-bg { background: linear-gradient(135deg, hsl(140 15% 90%) 0%, hsl(140 15% 92%) 100%); }
+.theme-forest-dark .shell-bg { background: linear-gradient(135deg, hsl(150 20% 5%) 0%, hsl(150 18% 7%) 100%); }
+.theme-slate-light .shell-bg { background: linear-gradient(135deg, hsl(40 6% 84%) 0%, hsl(40 6% 86%) 100%); }
+.theme-slate-dark .shell-bg  { background: linear-gradient(135deg, hsl(270 10% 7%) 0%, hsl(260 8% 9%) 100%); }
+
+/* ===== 特殊主题：模式切换器选中状态 ===== */
+/* 晴空碧海：蓝色背景滑块 + 白色文字 */
+.theme-ocean-light .mode-slider {
+  background: hsl(205 50% 50%) !important;  /* #408abf 主色 */
+  box-shadow: 0 2px 4px rgba(64, 138, 191, 0.3);
+}
+.theme-ocean-light .mode-btn-selected {
+  color: #ffffff !important;
+}
+
+/* 苍穹暮色：深蓝背景滑块 + 白色文字 */
+.theme-ocean-dark .mode-slider {
+  background: #084672 !important;  /* 深蓝主色 */
+  box-shadow: 0 2px 4px rgba(8, 70, 114, 0.4);
+}
+.theme-ocean-dark .mode-btn-selected {
+  color: #ffffff !important;
+}
+
+/* 森息晨光主题 */
+.theme-forest-light .mode-slider {
+  background: hsl(150 35% 38%) !important;  /* #3f8361 主色 */
+  box-shadow: 0 2px 4px rgba(63, 131, 97, 0.3);
+}
+.theme-forest-light .mode-btn-selected {
+  color: #ffffff !important;
+}
+
+/* 森息夜语主题 */
+.theme-forest-dark .mode-slider {
+  background: hsl(151 55% 21%) !important;  /* #185337 主色 */
+  box-shadow: 0 2px 4px rgba(24, 83, 55, 0.3);
+}
+.theme-forest-dark .mode-btn-selected {
+  color: #ffffff !important;
+}
+
+/* 云朵舞者主题 */
+.theme-slate-light .mode-slider {
+  background: hsl(18 20% 67%) !important;   /* #bda59b RGB(189,165,155) */
+  box-shadow: 0 2px 4px rgba(189, 165, 155, 0.4);
+}
+.theme-slate-light .mode-btn-selected {
+  color: #ffffff !important;
+}
+
+/* ===== Tab 选中态：轻度玻璃光泽 ===== */
+.tab-item-selected {
+  position: relative;
+  isolation: isolate;
+  border-color: hsl(var(--glass-rim) / 0.45);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2) brightness(1.01);
+  backdrop-filter: blur(8px) saturate(1.2) brightness(1.01);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.28) 0%,
+    hsl(var(--content-area) / 0.78) 40%,
+    hsl(var(--content-area)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.18),
+    0 1px 4px -2px rgba(0, 0, 0, 0.06);
+}
+
+.dark .tab-item-selected {
+  border-color: hsl(var(--primary) / 0.16);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.07) 0%,
+    hsl(var(--background) / 0.80) 40%,
+    hsl(var(--background) / 0.72) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--primary) / 0.10),
+    0 1px 4px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== 碧海主题：会话/工作区选中状态 ===== */
+/* 晴空碧海：浅蓝背景 + 深蓝文字 */
+.theme-ocean-light .session-item-selected,
+.theme-ocean-light .session-list-item-active,
+.theme-ocean-light .workspace-item-selected,
+.theme-ocean-light .tab-item-selected {
+  background: hsl(205 35% 82%) !important;  /* 浅蓝色背景 */
+  color: hsl(205 50% 25%) !important;       /* 深蓝色文字 */
+}
+.theme-ocean-light .session-item-selected *,
+.theme-ocean-light .session-list-item-active *,
+.theme-ocean-light .workspace-item-selected *,
+.theme-ocean-light .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* 苍穹暮色：深蓝背景 + 亮蓝文字 */
+.theme-ocean-dark .session-item-selected.session-item-selected,
+.theme-ocean-dark .session-list-item-active.session-list-item-active,
+.theme-ocean-dark .workspace-item-selected.workspace-item-selected,
+.theme-ocean-dark .tab-item-selected.tab-item-selected {
+  background-color: hsl(210 40% 18%) !important;  /* 深蓝色背景 */
+  color: hsl(205 70% 75%) !important;       /* 亮蓝色文字 */
+}
+.theme-ocean-dark .session-item-selected *,
+.theme-ocean-dark .session-list-item-active *,
+.theme-ocean-dark .workspace-item-selected *,
+.theme-ocean-dark .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* ===== 森系主题：会话/工作区选中状态 ===== */
+/* 森息晨光：浅绿背景 + 深绿文字 */
+.theme-forest-light .session-item-selected,
+.theme-forest-light .session-list-item-active,
+.theme-forest-light .workspace-item-selected,
+.theme-forest-light .tab-item-selected {
+  background: hsl(145 25% 82%) !important;  /* 浅绿色背景 */
+  color: hsl(150 35% 25%) !important;       /* 深绿色文字 */
+}
+.theme-forest-light .session-item-selected *,
+.theme-forest-light .session-list-item-active *,
+.theme-forest-light .workspace-item-selected *,
+.theme-forest-light .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* 森息夜语：深绿背景 + 亮绿文字 */
+.theme-forest-dark .session-item-selected.session-item-selected,
+.theme-forest-dark .session-list-item-active.session-list-item-active,
+.theme-forest-dark .workspace-item-selected.workspace-item-selected,
+.theme-forest-dark .tab-item-selected.tab-item-selected {
+  background-color: hsl(150 25% 18%) !important;  /* 深绿色背景 */
+  color: hsl(150 40% 70%) !important;       /* 亮绿色文字 */
+}
+.theme-forest-dark .session-item-selected *,
+.theme-forest-dark .session-list-item-active *,
+.theme-forest-dark .workspace-item-selected *,
+.theme-forest-dark .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* ===== 莫兰迪主题：模式切换器选中状态 ===== */
+/* 莫兰迪夜：淡杏粉滑块 + 深色文字 */
+.theme-slate-dark .mode-slider {
+  background: hsl(15 25% 68%) !important;   /* #c9a89e 淡杏粉主色 */
+  box-shadow: 0 2px 4px rgba(201, 168, 158, 0.3);
+}
+.theme-slate-dark .mode-btn-selected {
+  color: hsl(270 8% 12%) !important;        /* 深色文字 */
+}
+
+/* ===== 莫兰迪主题：会话/工作区选中状态 ===== */
+/* 莫兰迪夜：淡紫灰背景 + 温暖杏粉文字 */
+.theme-slate-dark .session-item-selected.session-item-selected,
+.theme-slate-dark .session-list-item-active.session-list-item-active,
+.theme-slate-dark .workspace-item-selected.workspace-item-selected,
+.theme-slate-dark .tab-item-selected.tab-item-selected {
+  background-color: hsl(260 10% 22%) !important;  /* 淡紫灰背景 */
+  color: hsl(15 30% 75%) !important;        /* 淡杏粉文字 */
+}
+.theme-slate-dark .session-item-selected *,
+.theme-slate-dark .session-list-item-active *,
+.theme-slate-dark .workspace-item-selected *,
+.theme-slate-dark .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* ===== 云朵舞者主题：会话/工作区选中状态 ===== */
+.theme-slate-light .session-item-selected,
+.theme-slate-light .session-list-item-active,
+.theme-slate-light .workspace-item-selected,
+.theme-slate-light .tab-item-selected {
+  background: hsl(40 8% 84%) !important;    /* 温暖灰背景 */
+  color: hsl(40 10% 25%) !important;        /* 深暖灰文字 */
+}
+.theme-slate-light .session-item-selected *,
+.theme-slate-light .session-list-item-active *,
+.theme-slate-light .workspace-item-selected *,
+.theme-slate-light .tab-item-selected * {
+  color: inherit !important;
+}
+
+/* ===== 工作区 Badge 文字颜色（追踪 workspace-item-selected 的字色） ===== */
+/* 默认主题（light / dark / system）兜底色：与原先 text-foreground/40 保持一致 */
+.workspace-badge {
+  color: hsl(var(--foreground) / 0.4);
+}
+/* 晴空碧海 */
+.theme-ocean-light .workspace-badge {
+  color: hsl(205 50% 25%);
+}
+/* 苍穹暮色 */
+.theme-ocean-dark .workspace-badge {
+  color: hsl(205 70% 75%);
+}
+/* 森息晨光 */
+.theme-forest-light .workspace-badge {
+  color: hsl(150 35% 25%);
+}
+/* 森息夜语 */
+.theme-forest-dark .workspace-badge {
+  color: hsl(150 40% 70%);
+}
+/* 云朵舞者 */
+.theme-slate-light .workspace-badge {
+  color: hsl(40 10% 25%);
+}
+/* 莫兰迪夜 */
+.theme-slate-dark .workspace-badge {
+  color: hsl(15 30% 75%);
+}
+
+/* ===== TabBar 背景 ===== */
+/* 默认背景 */
+.tabbar-bg {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+/* 苍穹暮色：底部浅色阴影勾勒轮廓 */
+.theme-ocean-dark .tabbar-bg {
+  box-shadow: inset 0 -1px 0 0 hsl(210 30% 20% / 0.6);
+}
+
+/* 森息夜语：底部浅色阴影勾勒轮廓 */
+.theme-forest-dark .tabbar-bg {
+  box-shadow: inset 0 -1px 0 0 hsl(150 20% 18% / 0.6);
+}
+
+/* 莫兰迪夜：底部浅色阴影勾勒轮廓 */
+.theme-slate-dark .tabbar-bg {
+  box-shadow: inset 0 -1px 0 0 hsl(260 10% 18% / 0.6);
+}
+
+/* ===== 输入框段落紧凑行距（仅作用于输入框内的 tiptap 编辑器） ===== */
+.rich-text-input .tiptap p {
+  margin: 0;
+}
+
+/* ===== 输入框内代码块：按主题分色 ===== */
+/* 浅色主题：使用深色 code-bg + 浅色文字，与 AI 代码块一致 */
+.tiptap pre {
+  background-color: hsl(var(--code-bg));
+  color: hsl(0 0% 90%);
+}
+.tiptap pre code {
+  color: inherit;
+}
+/* 深色主题：使用 muted bg + 正常前景色 */
+.dark .tiptap pre,
+.theme-ocean-dark .tiptap pre,
+.theme-slate-dark .tiptap pre {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+/* 森息夜语：加深背景，与输入框区分 */
+.theme-forest-dark .tiptap pre {
+  background-color: hsl(150 20% 9%);
+  color: hsl(var(--foreground));
+}
+
+/* ===== 深色主题：代码块标题栏 ===== */
+/* 苍穹暮色: RGB 26 34 43 */
+.theme-ocean-dark .code-block-wrapper > div:first-child {
+  background: rgb(26, 34, 43) !important;
+}
+
+/* 森息夜语: RGB 34 42 37 */
+.theme-forest-dark .code-block-wrapper > div:first-child {
+  background: rgb(34, 42, 37) !important;
+}
+
+/* 莫兰迪夜: RGB 36 35 39 */
+.theme-slate-dark .code-block-wrapper > div:first-child {
+  background: rgb(36, 35, 39) !important;
+}
+
+/* 快速任务窗口：透明背景 + 无拖拽 */
+.quick-task-container {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* 细腻卡片阴影 */
+.shadow-minimal {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.03),
+    0 1px 3px 0 rgb(0 0 0 / 0.06);
+}
+
+/* 设置页右侧内容区：无背景，直接显示在 shell-glass 底板上
+ * 左侧导航是圆角浮岛，右侧是透明，内容直接铺在底板
+ */
+.settings-content-glass {
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dark .settings-content-glass,
+.dark:not([class*="theme-"]) .settings-content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 列表滑动选中态 — 侧栏会话 / 设置 Tab 共用 */
+.list-slide-host {
+  position: relative;
+}
+
+.list-slide-indicator {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  will-change: top, left, width, height, opacity, transform;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* 跨组切换淡出层叠在按钮之上 */
+.list-slide-indicator--exit {
+  z-index: 2;
+}
+
+/* 滑动选中：行本身透明，露出背后滑动的玻璃指示器（需压住 theme 的 session-item-selected !important） */
+.list-slide-host .session-item-selected.list-slide-item--ghost,
+.list-slide-host .session-item-selected.session-item-selected--ghost,
+.list-slide-host .list-slide-item--selected.list-slide-item--ghost {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 旧的设置 Tab 指示器类名 — 与 list-slide-indicator 等价，保留兼容 */
+.settings-tab-indicator {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  will-change: top, left, width, height, opacity, transform;
+}
+
+.settings-tab-indicator--exit {
+  z-index: 2;
+}
+
+/* 设置页内容切换淡入动画 */
+@keyframes settings-content-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-settings-content-in {
+  animation: settings-content-in 0.35s ease-out;
+}
+
+/* 设置面板弹窗：从左下角（设置按钮方向）展开/收回
+   transform 必须同时包含 translate(-50%,-50%) 居中 + scale，否则缩放会丢失居中定位 */
+@keyframes settings-dialog-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes settings-dialog-out {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+
+/* Radix Dialog Content 通过 data-state 触发进/出动画 */
+.settings-dialog-animate[data-state='open'] {
+  transform-origin: bottom left;
+  animation: settings-dialog-in 0.2s ease-out;
+}
+
+.settings-dialog-animate[data-state='closed'] {
+  transform-origin: bottom left;
+  animation: settings-dialog-out 0.2s ease-out forwards;
+}
+
+/* 按钮点击缩放反馈：轻微收缩 */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* 设置页输入框聚焦发光效果 */
+.settings-card input:focus,
+.settings-card textarea:focus,
+.settings-card select:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 12px -4px var(--tagent-brand-glow);
+}
+
+.settings-nav-group-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 0.4rem;
+  border: 1px solid hsl(var(--border) / 0.36);
+  background: hsl(var(--background) / 0.22);
+}
+
+.settings-nav-group-label {
+  padding: 0 0.35rem 0.4rem;
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground) / 0.78);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.settings-nav-item {
+  border: 1px solid transparent;
+}
+
+.settings-nav-item--active {
+  color: hsl(var(--foreground));
+}
+
+.settings-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--background) / 0.72);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.settings-search-shell:focus-within {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.04),
+    0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+.settings-search-icon {
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-search-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: hsl(var(--foreground));
+}
+
+.settings-search-field::placeholder {
+  color: hsl(var(--muted-foreground) / 0.78);
+}
+
+.settings-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-search-clear:hover {
+  background: hsl(var(--foreground) / 0.05);
+  color: hsl(var(--foreground));
+}
+
+.settings-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.55rem;
+  padding-inline: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.64);
+  background: hsl(var(--muted) / 0.55);
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.settings-search-results {
+  padding: 0.35rem;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--popover) / 0.96);
+  box-shadow:
+    0 16px 36px -22px hsl(var(--foreground) / 0.22),
+    0 8px 18px -14px hsl(var(--foreground) / 0.12);
+}
+
+html.theme-neumorph-light,
+html.theme-neumorph-dark {
+  --neumorph-light-edge: rgba(255, 255, 255, 0.92);
+  --neumorph-light-edge-soft: rgba(255, 255, 255, 0.52);
+  --neumorph-dark-edge: rgba(10, 18, 30, 0.28);
+  --neumorph-dark-edge-soft: rgba(10, 18, 30, 0.14);
+  --neumorph-shadow-hi: -10px -10px 24px var(--neumorph-light-edge-soft);
+  --neumorph-shadow-lo: 12px 12px 28px var(--neumorph-dark-edge-soft);
+  --neumorph-inset:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.34);
+}
+
+html.theme-neumorph-dark {
+  --neumorph-light-edge: rgba(255, 255, 255, 0.08);
+  --neumorph-light-edge-soft: rgba(255, 255, 255, 0.04);
+  --neumorph-dark-edge: rgba(0, 0, 0, 0.46);
+  --neumorph-dark-edge-soft: rgba(0, 0, 0, 0.28);
+}
+
+html.theme-neumorph-light .settings-glass,
+html.theme-neumorph-dark .settings-glass {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  border-color: hsl(var(--border) / 0.82);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-glass::before,
+html.theme-neumorph-light .settings-glass::after,
+html.theme-neumorph-dark .settings-glass::before,
+html.theme-neumorph-dark .settings-glass::after {
+  display: none;
+}
+
+html.theme-neumorph-light .settings-card,
+html.theme-neumorph-dark .settings-card {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  border: 1px solid hsl(var(--border) / 0.88);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-card::after,
+html.theme-neumorph-dark .settings-card::after {
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+}
+
+html.theme-neumorph-light .settings-nav-group-card,
+html.theme-neumorph-dark .settings-nav-group-card {
+  padding: 0.5rem;
+  border-radius: 18px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.4rem)) calc(-1 * max(6px, 0.4rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.4rem) max(6px, 0.4rem) 18px var(--neumorph-dark-edge-soft),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-nav-group-label,
+html.theme-neumorph-dark .settings-nav-group-label {
+  padding: 0.1rem 0.45rem 0.45rem;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.1em;
+}
+
+html.theme-neumorph-light .settings-nav-group-card .list-slide-indicator,
+html.theme-neumorph-dark .settings-nav-group-card .list-slide-indicator {
+  display: none;
+}
+
+html.theme-neumorph-light .list-slide-host .list-slide-indicator,
+html.theme-neumorph-dark .list-slide-host .list-slide-indicator {
+  display: none;
+}
+
+html.theme-neumorph-light .settings-nav-item,
+html.theme-neumorph-dark .settings-nav-item {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    transform 80ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+html.theme-neumorph-light .settings-nav-item:hover,
+html.theme-neumorph-dark .settings-nav-item:hover {
+  background: hsl(var(--foreground) / 0.03);
+}
+
+html.theme-neumorph-light .settings-nav-item:active,
+html.theme-neumorph-dark .settings-nav-item:active,
+html.theme-neumorph-light .rail-island-btn:active,
+html.theme-neumorph-dark .rail-island-btn:active,
+html.theme-neumorph-light .agent-toolbar-icon-btn:active,
+html.theme-neumorph-dark .agent-toolbar-icon-btn:active,
+html.theme-neumorph-light .agent-toolbar-pill-btn:active,
+html.theme-neumorph-dark .agent-toolbar-pill-btn:active {
+  transform: scale(0.97);
+}
+
+html.theme-neumorph-light .settings-nav-item--active,
+html.theme-neumorph-dark .settings-nav-item--active {
+  border-color: hsl(var(--border) / 0.95);
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft),
+    1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .settings-nav-item--active .shrink-0,
+html.theme-neumorph-dark .settings-nav-item--active .shrink-0 {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .settings-nav-item.list-slide-item--ghost,
+html.theme-neumorph-dark .settings-nav-item.list-slide-item--ghost {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help),
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help) {
+  border: 1px solid hsl(var(--border) / 0.82);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.35rem)) calc(-1 * max(6px, 0.35rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.35rem) max(6px, 0.35rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover,
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .tagent-slim-header)
+  button:not([role='switch']):not(.settings-nav-item):not(.settings-inline-help):hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--border));
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass, .settings-search-results)
+  :is(input, textarea, select, button[role='combobox']),
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass, .settings-search-results)
+  :is(input, textarea, select, button[role='combobox']) {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  border: 1px solid hsl(var(--border) / 0.92);
+  border-radius: 16px;
+  box-shadow:
+    inset 4px 4px 10px var(--neumorph-dark-edge-soft),
+    inset -4px -4px 10px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light
+  :is(.settings-card, .settings-glass)
+  :is(input, textarea, select, button[role='combobox']):focus,
+html.theme-neumorph-dark
+  :is(.settings-card, .settings-glass)
+  :is(input, textarea, select, button[role='combobox']):focus {
+  box-shadow:
+    inset 4px 4px 10px var(--neumorph-dark-edge-soft),
+    inset -4px -4px 10px var(--neumorph-light-edge-soft),
+    0 0 0 2px hsl(var(--primary) / 0.18);
+}
+
+html.theme-neumorph-light .settings-inline-help,
+html.theme-neumorph-dark .settings-inline-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-inline-help:hover,
+html.theme-neumorph-dark .settings-inline-help:hover {
+  transform: none;
+  border-color: transparent;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-search-shell,
+html.theme-neumorph-dark .settings-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  height: 2.2rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .settings-search-shell:focus-within,
+html.theme-neumorph-dark .settings-search-shell:focus-within {
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+html.theme-neumorph-light .settings-search-icon,
+html.theme-neumorph-dark .settings-search-icon {
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .settings-search-field,
+html.theme-neumorph-dark .settings-search-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .settings-search-field::placeholder,
+html.theme-neumorph-dark .settings-search-field::placeholder {
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+html.theme-neumorph-light .settings-search-clear,
+html.theme-neumorph-dark .settings-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .settings-search-clear:hover,
+html.theme-neumorph-dark .settings-search-clear:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .settings-search-kbd,
+html.theme-neumorph-dark .settings-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  height: 1.5rem;
+  padding-inline: 0.5rem;
+  border-color: hsl(var(--border) / 0.8);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(3px, 0.2rem)) calc(-1 * max(3px, 0.2rem)) 8px var(--neumorph-light-edge-soft),
+    max(3px, 0.2rem) max(3px, 0.2rem) 10px var(--neumorph-dark-edge-soft);
+}
+
+html.theme-neumorph-light .app-search-shell,
+html.theme-neumorph-dark .app-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.88);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .app-search-shell:focus-within,
+html.theme-neumorph-dark .app-search-shell:focus-within {
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+html.theme-neumorph-light .app-search-shell--compact,
+html.theme-neumorph-dark .app-search-shell--compact {
+  height: 2rem;
+  padding: 0 0.7rem;
+}
+
+html.theme-neumorph-light .app-search-shell--dialog,
+html.theme-neumorph-dark .app-search-shell--dialog {
+  height: 2.25rem;
+  padding: 0 0.78rem;
+}
+
+html.theme-neumorph-light .app-search-icon,
+html.theme-neumorph-dark .app-search-icon {
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .app-search-shell > input,
+html.theme-neumorph-dark .app-search-shell > input,
+html.theme-neumorph-light .ui-search-input.app-search-shell > input,
+html.theme-neumorph-dark .ui-search-input.app-search-shell > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 0.88rem;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .app-search-field::placeholder,
+html.theme-neumorph-dark .app-search-field::placeholder,
+html.theme-neumorph-light .app-search-shell > input::placeholder,
+html.theme-neumorph-dark .app-search-shell > input::placeholder {
+  color: hsl(var(--muted-foreground) / 0.7);
+}
+
+html.theme-neumorph-light .ui-search-input.app-search-shell > div,
+html.theme-neumorph-dark .ui-search-input.app-search-shell > div {
+  gap: 0.35rem;
+}
+
+html.theme-neumorph-light .app-search-clear,
+html.theme-neumorph-dark .app-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: hsl(var(--muted-foreground));
+}
+
+html.theme-neumorph-light .app-search-clear:hover,
+html.theme-neumorph-dark .app-search-clear:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.05);
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .shell-glass,
+html.theme-neumorph-dark .shell-glass {
+  background:
+    radial-gradient(circle at 14% 12%, hsl(var(--foreground) / 0.045), transparent 24%),
+    radial-gradient(circle at 85% 10%, hsl(var(--foreground) / 0.035), transparent 22%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+}
+
+html.theme-neumorph-light .nav-island-glass,
+html.theme-neumorph-dark .nav-island-glass,
+html.theme-neumorph-light .right-nav-island-glass.nav-island-glass,
+html.theme-neumorph-dark .right-nav-island-glass.nav-island-glass {
+  border: 1px solid hsl(var(--border) / 0.94);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(10px, 0.6rem)) calc(-1 * max(10px, 0.6rem)) 24px var(--neumorph-light-edge-soft),
+    max(10px, 0.6rem) max(10px, 0.6rem) 28px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .nav-island-glass::before,
+html.theme-neumorph-light .nav-island-glass::after,
+html.theme-neumorph-dark .nav-island-glass::before,
+html.theme-neumorph-dark .nav-island-glass::after,
+html.theme-neumorph-light .content-glass::before,
+html.theme-neumorph-light .content-glass::after,
+html.theme-neumorph-dark .content-glass::before,
+html.theme-neumorph-dark .content-glass::after,
+html.theme-neumorph-light .session-glass-surface::before,
+html.theme-neumorph-light .session-glass-surface::after,
+html.theme-neumorph-dark .session-glass-surface::before,
+html.theme-neumorph-dark .session-glass-surface::after,
+html.theme-neumorph-light .chat-input-glass::before,
+html.theme-neumorph-light .chat-input-glass::after,
+html.theme-neumorph-dark .chat-input-glass::before,
+html.theme-neumorph-dark .chat-input-glass::after {
+  display: none;
+}
+
+html.theme-neumorph-light
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+html.theme-neumorph-dark
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  border: 1px solid hsl(var(--border) / 0.38);
+  border-left-color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      hsl(var(--card) / 0.08) 10px,
+      hsl(var(--card) / 0.18) 18px,
+      hsl(var(--card) / 0.3) 28px
+    ),
+    linear-gradient(145deg, hsl(var(--card) / 0.5) 0%, hsl(var(--muted) / 0.44) 100%);
+  box-shadow: inset 1px 1px 0 hsl(var(--background) / 0.18);
+}
+
+html.theme-neumorph-light
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover,
+html.theme-neumorph-dark
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  border: 1px solid hsl(var(--border) / 0.68);
+  border-left-color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      hsl(var(--card) / 0.34) 10px,
+      hsl(var(--card) / 0.72) 18px,
+      hsl(var(--card) / 0.92) 28px
+    ),
+    linear-gradient(145deg, hsl(var(--card) / 0.92) 0%, hsl(var(--muted) / 0.88) 100%);
+  box-shadow:
+    0 1px 0 var(--neumorph-light-edge),
+    max(8px, 0.5rem) max(8px, 0.5rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .content-base-plate--body,
+html.theme-neumorph-dark .content-base-plate--body {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    inset -1px -1px 0 hsl(var(--foreground) / 0.03),
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 12px hsl(var(--background) / 0.7),
+    max(4px, 0.25rem) max(4px, 0.25rem) 14px hsl(var(--foreground) / 0.05);
+}
+
+html.theme-neumorph-light .content-main-shell .content-glass,
+html.theme-neumorph-dark .content-main-shell .content-glass {
+  background: linear-gradient(145deg, hsl(var(--card) / 0.54) 0%, hsl(var(--background) / 0.3) 100%);
+  border-color: hsl(var(--border) / 0.42);
+  box-shadow:
+    calc(-1 * max(5px, 0.3rem)) calc(-1 * max(5px, 0.3rem)) 14px hsl(var(--background) / 0.7),
+    max(5px, 0.3rem) max(5px, 0.3rem) 16px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 hsl(var(--background) / 0.46);
+}
+
+html.theme-neumorph-light .nav-island-header-row > *,
+html.theme-neumorph-dark .nav-island-header-row > * {
+  border: 1px solid hsl(var(--border) / 0.86);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(4px, 0.25rem)) calc(-1 * max(4px, 0.25rem)) 10px var(--neumorph-light-edge-soft),
+    max(4px, 0.25rem) max(4px, 0.25rem) 12px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .rail-island-btn,
+html.theme-neumorph-dark .rail-island-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .rail-island-btn:hover,
+html.theme-neumorph-dark .rail-island-btn:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .rail-island-btn--active,
+html.theme-neumorph-dark .rail-island-btn--active,
+html.theme-neumorph-light .session-list-item-active,
+html.theme-neumorph-dark .session-list-item-active,
+html.theme-neumorph-light .session-item-selected,
+html.theme-neumorph-dark .session-item-selected {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.22),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+  color: hsl(var(--foreground));
+}
+
+html.theme-neumorph-light .right-rail-btn.rail-island-btn--active,
+html.theme-neumorph-dark .right-rail-btn.rail-island-btn--active {
+  box-shadow:
+    0 4px 10px -9px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .session-list-row,
+html.theme-neumorph-dark .session-list-row {
+  position: relative;
+  isolation: isolate;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+html.theme-neumorph-light .session-list-row:hover:not(.session-list-item-active),
+html.theme-neumorph-dark .session-list-row:hover:not(.session-list-item-active) {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .session-list-item-active::after,
+html.theme-neumorph-dark .session-list-item-active::after,
+html.theme-neumorph-light .session-item-selected::after,
+html.theme-neumorph-dark .session-item-selected::after {
+  content: '';
+  position: absolute;
+  left: 0.45rem;
+  top: 50%;
+  width: 0.28rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.45) 100%);
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.16);
+  pointer-events: none;
+}
+
+html.theme-neumorph-light .session-list-item-active .session-sidebar-accent--inline,
+html.theme-neumorph-dark .session-list-item-active .session-sidebar-accent--inline {
+  display: none;
+}
+
+html.theme-neumorph-light .session-list-item-active .workspace-badge,
+html.theme-neumorph-dark .session-list-item-active .workspace-badge,
+html.theme-neumorph-light .session-item-selected .workspace-badge,
+html.theme-neumorph-dark .session-item-selected .workspace-badge,
+html.theme-neumorph-light .rail-island-btn--active,
+html.theme-neumorph-dark .rail-island-btn--active {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .app-search-result-item,
+html.theme-neumorph-dark .app-search-result-item,
+html.theme-neumorph-light .settings-search-result-item,
+html.theme-neumorph-dark .settings-search-result-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .app-search-result-item--active,
+html.theme-neumorph-dark .app-search-result-item--active,
+html.theme-neumorph-light .settings-search-result-item--active,
+html.theme-neumorph-dark .settings-search-result-item--active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .app-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-dark .app-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-light .settings-search-result-item--active :is(svg, .text-muted-foreground),
+html.theme-neumorph-dark .settings-search-result-item--active :is(svg, .text-muted-foreground) {
+  color: hsl(var(--primary));
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn,
+html.theme-neumorph-dark .agent-toolbar-icon-btn,
+html.theme-neumorph-light .agent-toolbar-pill-btn,
+html.theme-neumorph-dark .agent-toolbar-pill-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    transform 80ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn:hover,
+html.theme-neumorph-dark .agent-toolbar-icon-btn:hover,
+html.theme-neumorph-light .agent-toolbar-pill-btn:hover,
+html.theme-neumorph-dark .agent-toolbar-pill-btn:hover {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .agent-toolbar-icon-btn--active,
+html.theme-neumorph-dark .agent-toolbar-icon-btn--active,
+html.theme-neumorph-light .agent-toolbar-pill-btn--active,
+html.theme-neumorph-dark .agent-toolbar-pill-btn--active {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.22),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html.theme-neumorph-light .agent-toolbar-pill-btn,
+html.theme-neumorph-dark .agent-toolbar-pill-btn {
+  min-height: 2rem;
+  padding-inline: 0.72rem;
+  border-radius: 999px;
+}
+
+html.theme-neumorph-light .agent-toolbar-popover,
+html.theme-neumorph-dark .agent-toolbar-popover {
+  border-radius: 22px;
+  border: 1px solid hsl(var(--border) / 0.92);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(7px, 0.45rem)) calc(-1 * max(7px, 0.45rem)) 18px var(--neumorph-light-edge-soft),
+    max(7px, 0.45rem) max(7px, 0.45rem) 20px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item,
+html.theme-neumorph-dark .agent-toolbar-popover-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item:hover:not(:disabled),
+html.theme-neumorph-dark .agent-toolbar-popover-item:hover:not(:disabled) {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .agent-toolbar-popover-item--active,
+html.theme-neumorph-dark .agent-toolbar-popover-item--active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.06);
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented.ui-segmented-tabs,
+html.theme-neumorph-dark .agent-toolbar-segmented.ui-segmented-tabs {
+  padding: 5px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-indicator,
+html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-indicator {
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px) / var(--ui-segmented-count));
+  border-radius: 14px;
+  border: 1px solid hsl(var(--border) / 0.86);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.07) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    0 0 0 1px hsl(var(--primary) / 0.04);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-neumorph-light .agent-toolbar-segmented .ui-segmented-tabs-item,
+html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-item {
+  min-height: 34px;
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .ui-switch,
+html.theme-neumorph-dark .ui-switch {
+  border: 1px solid hsl(var(--border) / 0.9);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .agent-toolbar-switch.ui-switch,
+html.theme-neumorph-dark .agent-toolbar-switch.ui-switch {
+  border-color: hsl(var(--border) / 0.82);
+  background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 2px 2px 5px var(--neumorph-dark-edge-soft),
+    inset -2px -2px 5px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-switch.ui-switch[data-state='checked'],
+html.theme-neumorph-dark .agent-toolbar-switch.ui-switch[data-state='checked'] {
+  background: linear-gradient(145deg, hsl(var(--primary) / 0.18) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    inset 2px 2px 5px hsl(var(--primary) / 0.14),
+    inset -2px -2px 5px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .agent-toolbar-switch .ui-switch-thumb,
+html.theme-neumorph-dark .agent-toolbar-switch .ui-switch-thumb {
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    0 3px 8px -8px hsl(var(--foreground) / 0.3),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .chat-input-glass,
+html.theme-neumorph-dark .chat-input-glass {
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(9px, 0.55rem)) calc(-1 * max(9px, 0.55rem)) 20px var(--neumorph-light-edge-soft),
+    max(9px, 0.55rem) max(9px, 0.55rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .chat-input-glass:focus-within,
+html.theme-neumorph-dark .chat-input-glass:focus-within {
+  box-shadow:
+    calc(-1 * max(9px, 0.55rem)) calc(-1 * max(9px, 0.55rem)) 20px var(--neumorph-light-edge-soft),
+    max(9px, 0.55rem) max(9px, 0.55rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+html.theme-neumorph-light .session-glass-surface,
+html.theme-neumorph-light .session-glass-sidebar,
+html.theme-neumorph-light .session-glass-modal,
+html.theme-neumorph-light .session-glass-modal-lg,
+html.theme-neumorph-light .session-glass-popover,
+html.theme-neumorph-dark .session-glass-surface,
+html.theme-neumorph-dark .session-glass-sidebar,
+html.theme-neumorph-dark .session-glass-modal,
+html.theme-neumorph-dark .session-glass-modal-lg,
+html.theme-neumorph-dark .session-glass-popover {
+  border: 1px solid hsl(var(--border) / 0.92);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(8px, 0.5rem)) calc(-1 * max(8px, 0.5rem)) 20px var(--neumorph-light-edge-soft),
+    max(8px, 0.5rem) max(8px, 0.5rem) 22px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .tabbar-bg,
+html.theme-neumorph-dark .tabbar-bg {
+  background: linear-gradient(180deg, hsl(var(--background) / 0.34) 0%, hsl(var(--background) / 0.12) 100%);
+  box-shadow: inset 0 -1px 0 hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .tab-item-selected,
+html.theme-neumorph-dark .tab-item-selected {
+  border-color: hsl(var(--border) / 0.9);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-neumorph-light .neumorph-panel-card,
+html.theme-neumorph-dark .neumorph-panel-card,
+html.theme-neumorph-light .material-panel-card,
+html.theme-neumorph-dark .material-panel-card,
+html.theme-neumorph-light .neumorph-dialog-shell,
+html.theme-neumorph-dark .neumorph-dialog-shell {
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    calc(-1 * max(6px, 0.38rem)) calc(-1 * max(6px, 0.38rem)) 16px var(--neumorph-light-edge-soft),
+    max(6px, 0.38rem) max(6px, 0.38rem) 18px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-flat-input,
+html.theme-neumorph-dark .neumorph-flat-input,
+html.theme-neumorph-light .material-flat-input,
+html.theme-neumorph-dark .material-flat-input,
+html.theme-neumorph-light .neumorph-placeholder-shell,
+html.theme-neumorph-dark .neumorph-placeholder-shell,
+html.theme-neumorph-light .neumorph-footer-bar,
+html.theme-neumorph-dark .neumorph-footer-bar {
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: linear-gradient(145deg, hsl(var(--muted) / 0.72) 0%, hsl(var(--background) / 0.66) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .neumorph-inline-chip,
+html.theme-neumorph-dark .neumorph-inline-chip {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+html.theme-neumorph-light .material-inline-chip,
+html.theme-neumorph-dark .material-inline-chip {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+html.theme-neumorph-light .neumorph-inline-chip:hover,
+html.theme-neumorph-dark .neumorph-inline-chip:hover {
+  border-color: hsl(var(--border) / 0.78);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 72%);
+  box-shadow:
+    0 5px 12px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .material-inline-chip:hover,
+html.theme-neumorph-dark .material-inline-chip:hover {
+  border-color: hsl(var(--border) / 0.78);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 72%);
+  box-shadow:
+    0 5px 12px -10px hsl(var(--foreground) / 0.2),
+    0 1px 2px hsl(var(--foreground) / 0.05),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-cta,
+html.theme-neumorph-dark .neumorph-cta,
+html.theme-neumorph-light .material-cta,
+html.theme-neumorph-dark .material-cta {
+  border: 1px solid hsl(var(--primary) / 0.22);
+  background:
+    linear-gradient(145deg, hsl(var(--primary) / 0.92) 0%, hsl(var(--primary) / 0.72) 100%),
+    linear-gradient(180deg, hsl(var(--background) / 0.08) 0%, transparent 100%);
+  box-shadow:
+    0 10px 20px -14px hsl(var(--primary) / 0.5),
+    inset 1px 1px 0 hsl(255 255 255 / 0.34);
+}
+
+html.theme-neumorph-light .neumorph-cta:hover,
+html.theme-neumorph-dark .neumorph-cta:hover,
+html.theme-neumorph-light .material-cta:hover,
+html.theme-neumorph-dark .material-cta:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 22px -14px hsl(var(--primary) / 0.56),
+    inset 1px 1px 0 hsl(255 255 255 / 0.4);
+}
+
+html.theme-neumorph-light .neumorph-secondary-btn,
+html.theme-neumorph-dark .neumorph-secondary-btn,
+html.theme-neumorph-light .material-secondary-btn,
+html.theme-neumorph-dark .material-secondary-btn {
+  border: 1px solid hsl(var(--border) / 0.88);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
+  box-shadow:
+    calc(-1 * max(5px, 0.32rem)) calc(-1 * max(5px, 0.32rem)) 14px var(--neumorph-light-edge-soft),
+    max(5px, 0.32rem) max(5px, 0.32rem) 16px var(--neumorph-dark-edge-soft),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-switcher-shell,
+html.theme-neumorph-dark .neumorph-switcher-shell,
+html.theme-neumorph-light .material-switcher-shell,
+html.theme-neumorph-dark .material-switcher-shell {
+  border-radius: 26px;
+}
+
+html.theme-neumorph-light .neumorph-switcher-row-active,
+html.theme-neumorph-dark .neumorph-switcher-row-active,
+html.theme-neumorph-light .material-switcher-row-active,
+html.theme-neumorph-dark .material-switcher-row-active {
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 72%);
+  box-shadow:
+    inset 1px 1px 0 var(--neumorph-light-edge),
+    0 4px 10px -10px hsl(var(--foreground) / 0.2);
+}
+
+html.theme-neumorph-light .neumorph-workspace-active,
+html.theme-neumorph-dark .neumorph-workspace-active,
+html.theme-neumorph-light .material-selected-chip,
+html.theme-neumorph-dark .material-selected-chip {
+  border-color: hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -10px hsl(var(--foreground) / 0.18),
+    0 1px 2px hsl(var(--foreground) / 0.06),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+html.theme-neumorph-light .neumorph-footer-bar,
+html.theme-neumorph-dark .neumorph-footer-bar {
+  border-width: 1px 0 0;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(180deg, hsl(var(--background) / 0.14) 0%, transparent 100%),
+    linear-gradient(145deg, hsl(var(--muted) / 0.66) 0%, hsl(var(--background) / 0.62) 100%);
+}
+
+html.theme-neumorph-light .neumorph-footer-separator,
+html.theme-neumorph-dark .neumorph-footer-separator {
+  background: linear-gradient(180deg, transparent 0%, hsl(var(--foreground) / 0.12) 50%, transparent 100%);
+}
+
+html.theme-neumorph-light .settings-search-results,
+html.theme-neumorph-dark .settings-search-results {
+  padding: 0.35rem;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    var(--neumorph-shadow-hi),
+    var(--neumorph-shadow-lo),
+    var(--neumorph-inset);
+}
+
+html.theme-neumorph-light .settings-search-result-item,
+html.theme-neumorph-dark .settings-search-result-item {
+  border-radius: 14px;
+}
+
+html.theme-neumorph-light .settings-search-result-item:hover,
+html.theme-neumorph-dark .settings-search-result-item:hover {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+html.theme-neumorph-light .settings-search-result-item.bg-accent,
+html.theme-neumorph-dark .settings-search-result-item.bg-accent {
+  background: linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  box-shadow:
+    inset 3px 3px 8px var(--neumorph-dark-edge-soft),
+    inset -3px -3px 8px var(--neumorph-light-edge-soft);
+}
+
+html.theme-neumorph-light .settings-profile-card,
+html.theme-neumorph-dark .settings-profile-card {
+  align-items: center;
+}
+
+html.theme-neumorph-light .settings-profile-avatar,
+html.theme-neumorph-dark .settings-profile-avatar {
+  border-radius: 20px;
+}
+
+html.theme-neumorph-light .settings-profile-popover,
+html.theme-neumorph-dark .settings-profile-popover {
+  border-radius: 24px;
+}
+
+html.theme-neumorph-light .settings-profile-upload-btn,
+html.theme-neumorph-dark .settings-profile-upload-btn {
+  border-width: 0;
+  border-top: 1px solid hsl(var(--border) / 0.7);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-profile-upload-btn:hover,
+html.theme-neumorph-dark .settings-profile-upload-btn:hover {
+  transform: none;
+  background: hsl(var(--foreground) / 0.04);
+  box-shadow: none;
+}
+
+html.theme-neumorph-light .settings-profile-name-button,
+html.theme-neumorph-dark .settings-profile-name-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 16px;
+}
+
+html.theme-neumorph-light .settings-profile-name-input,
+html.theme-neumorph-dark .settings-profile-name-input {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+}
+
+html.theme-neumorph-light .settings-profile-action-btn,
+html.theme-neumorph-dark .settings-profile-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+}
+
+/* 会话输入框聚焦发光效果 */
+.chat-input-glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 16px -4px var(--tagent-brand-glow);
+  transition: box-shadow 0.2s ease;
+}
+
+.dark .chat-input-glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 0 0 2px var(--tagent-brand-soft),
+    0 0 12px -4px var(--tagent-brand-glow);
+}
+
+/* 旧的选中态样式（保留作为备用） */
+.settings-tab-active {
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(108%);
+  backdrop-filter: blur(12px) saturate(140%) brightness(108%);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    backdrop-filter 0.25s ease;
+  animation: settings-tab-glass-in 0.3s ease-out;
+}
+
+.settings-tab-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+@keyframes settings-tab-glass-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dark .settings-tab-active {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(130%) brightness(1.02);
+  backdrop-filter: blur(14px) saturate(130%) brightness(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 2px 6px -2px rgba(0, 0, 0, 0.12);
+}
+
+.dark .settings-tab-active::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+.scrollbar-none,
+.scrollbar-none > * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* 强制不保留滚动条槽位：覆盖 use-stick-to-bottom 在 scrollRef div 上
+   * 设置的 inline style `scrollbar-gutter: stable both-edges`。
+   * stable 会在滚动状态切换时让内容区两侧槽位 appear/disappear，
+   * 导致内容区有效宽度 sub-pixel 变化 → flex-wrap wrap 点变化 →
+   * 附件卡片"行内 chip 抖、最后结尾的不抖"。auto 让槽位恒为 0。 */
+  scrollbar-gutter: auto !important;
+}
+.scrollbar-none::-webkit-scrollbar,
+.scrollbar-none > *::-webkit-scrollbar {
+  display: none;
+}
+
+/* 隐藏 Webkit 滚动条上下小箭头（increment/decrement buttons） */
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button,
+*:focus::-webkit-scrollbar-button,
+*:hover::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment,
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* 更强力的兜底：把所有伪元素滚动条按钮都禁用 */
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:double-button,
+::-webkit-scrollbar-button:corner-present {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 纤细滚动条 */
+.scrollbar-thin,
+.scrollbar-thin > * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar,
+.scrollbar-thin > *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track,
+.scrollbar-thin > *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb,
+.scrollbar-thin > *::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.scrollbar-thin > *::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+.scrollbar-thin::-webkit-scrollbar-corner,
+.scrollbar-thin > *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-button,
+.scrollbar-thin > *::-webkit-scrollbar-button,
+.scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
+.scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
+.scrollbar-thin > *::-webkit-scrollbar-button:vertical:start:decrement,
+.scrollbar-thin > *::-webkit-scrollbar-button:vertical:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* 滚动时才显示的滚动条 */
+.scrollbar-autohide,
+.scrollbar-autohide > * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+.scrollbar-autohide:hover,
+.scrollbar-autohide > *:hover {
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+.scrollbar-autohide::-webkit-scrollbar,
+.scrollbar-autohide > *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-autohide::-webkit-scrollbar-track,
+.scrollbar-autohide > *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-autohide::-webkit-scrollbar-thumb,
+.scrollbar-autohide > *::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb,
+.scrollbar-autohide > *:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb:hover,
+.scrollbar-autohide > *:hover::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+.scrollbar-autohide::-webkit-scrollbar-corner,
+.scrollbar-autohide > *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.scrollbar-autohide::-webkit-scrollbar-button,
+.scrollbar-autohide > *::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* 滚动区域上下渐隐遮罩 */
+.mask-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
+}
+
+
+/* Shiki 代码块样式 */
+.code-block-wrapper {
+  contain: content;
+}
+
+.code-block-wrapper pre.shiki {
+  /* 与 Tailwind font-mono / @pierre/diffs 默认保持一致，跨平台命中系统等宽字体 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+  background-color: hsl(var(--code-bg)) !important;
+}
+
+.code-block-wrapper pre.shiki,
+.mermaid-block-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+:is(.code-block-wrapper pre.shiki, .mermaid-block-scroll)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+:is(.code-block-wrapper pre.shiki, .mermaid-block-scroll)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:is(.code-block-wrapper pre.shiki, .mermaid-block-scroll)::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 999px;
+}
+
+:is(.code-block-wrapper pre.shiki, .mermaid-block-scroll)::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+:is(.code-block-wrapper pre.shiki, .mermaid-block-scroll)::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.code-block-wrapper pre.shiki code {
+  display: block;
+  font-family: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+/* 浅色主题代码块是深底，用偏浅的蓝灰选区承托白字，避免 Shiki token 内联色在选中后变黑。 */
+:root:not(.dark) :is(
+  .code-block-wrapper pre.shiki,
+  .tiptap pre
+)::selection,
+:root:not(.dark) :is(
+  .code-block-wrapper pre.shiki,
+  .tiptap pre
+) ::selection {
+  background-color: hsl(210 80% 62% / 0.32);
+  color: hsl(0 0% 98%) !important;
+  -webkit-text-fill-color: hsl(0 0% 98%);
+}
+
+:root:not(.dark) :is(
+  .code-block-wrapper pre.shiki,
+  .tiptap pre
+)::-moz-selection,
+:root:not(.dark) :is(
+  .code-block-wrapper pre.shiki,
+  .tiptap pre
+) ::-moz-selection {
+  background-color: hsl(210 80% 62% / 0.32);
+  color: hsl(0 0% 98%) !important;
+}
+
+/* 代码行：限制重排范围，GPU 合成优化 */
+.code-block-wrapper .line {
+  display: inline;
+  contain: none;
+}
+
+/* ===== Spinner 动画（SpinKit Grid）===== */
+
+@keyframes spinner {
+  0%, 70%, 100% {
+    transform: scale3D(1, 1, 1);
+  }
+  35% {
+    transform: scale3D(0, 0, 1);
+  }
+}
+
+.spinner {
+  width: 0.75em;
+  height: 0.75em;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.075em;
+}
+
+.spinner-cube {
+  background-color: currentColor;
+  animation: spinner 1.3s infinite ease-in-out;
+}
+
+/* 9 个 cube 的动画延迟（创建波浪效果） */
+.spinner-cube:nth-child(1) { animation-delay: 0.2s; }
+.spinner-cube:nth-child(2) { animation-delay: 0.3s; }
+.spinner-cube:nth-child(3) { animation-delay: 0.4s; }
+.spinner-cube:nth-child(4) { animation-delay: 0.1s; }
+.spinner-cube:nth-child(5) { animation-delay: 0.2s; }
+.spinner-cube:nth-child(6) { animation-delay: 0.3s; }
+.spinner-cube:nth-child(7) { animation-delay: 0s; }
+.spinner-cube:nth-child(8) { animation-delay: 0.1s; }
+.spinner-cube:nth-child(9) { animation-delay: 0.2s; }
+
+/* ===== 深色主题：迷你导航当前可见范围指示器 — 加亮 ===== */
+.theme-ocean-dark .minimap-visible-indicator {
+  background-color: hsl(205 60% 55%) !important;   /* 更亮的蓝 */
+}
+.theme-forest-dark .minimap-visible-indicator {
+  background-color: hsl(151 40% 45%) !important;   /* 更亮的绿 */
+}
+
+/* ===== 液态玻璃（Btw 面板） — Liquid Glass (macOS Sonoma 风格) ===== */
+/*
+ * 真正的 Liquid Glass 区别于普通 Glassmorphism 的关键：
+ * 1. **边缘折射渐隐**：用 mask-image 在边缘做柔和透明度衰减，让玻璃看起来"被压弯"
+ * 2. **环境光叠加层**：内嵌 ::before 伪元素 + radial-gradient 模拟光线穿透
+ * 3. **多通道 backdrop-filter**：blur + saturate(180%) + brightness 提升
+ * 4. **多层 inset shadow**：精确还原玻璃边缘的内反光
+ * 5. **specular highlight**：顶部 1px 高光带模拟光源反射
+ *
+ * 性能：blur(28px) saturate(180%) 在中端 GPU 上仍可保持 60fps，
+ *     但建议在大面板（>500x500）上谨慎使用，必要时降到 blur(16px)。
+ */
+.btw-glass {
+  /* 半透明白色底层（浅色主题：水洗感；深色主题会被下面的 dark 覆盖为暗色） */
+  background-color: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(105%);
+  backdrop-filter: blur(28px) saturate(180%) brightness(105%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 20px;
+  isolation: isolate;
+
+  /* 多层阴影：内边光 + 外发光 + 立体悬浮 */
+  box-shadow:
+    /* 玻璃边缘内反光：顶部最强高光 */
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.6),
+    /* 左侧内反光 */
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.35),
+    /* 底部内阴影（玻璃厚度感）*/
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.04),
+    /* 右侧轻微内阴影（光从左上来） */
+    inset -1px 0 0 0 rgba(0, 0, 0, 0.03),
+    /* 外悬浮阴影 1：主投影 */
+    0 20px 40px -12px rgba(0, 0, 0, 0.18),
+    /* 外悬浮阴影 2：近距投影 */
+    0 8px 16px -4px rgba(0, 0, 0, 0.10),
+    /* 外悬浮阴影 3：极细外描边光晕 */
+    0 0 0 0.5px rgba(255, 255, 255, 0.4);
+}
+
+/* 环境光叠加层：用 ::before 模拟光线穿透玻璃 */
+.btw-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    /* 左上光源：暖色高光 */
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.05) 40%,
+      transparent 70%
+    ),
+    /* 右下环境光：冷色微调 */
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      rgba(100, 150, 255, 0.08) 0%,
+      transparent 60%
+    );
+  /* 边缘折射渐隐 — Liquid Glass 核心效果 */
+  mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0.95) 70%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0.95) 70%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* 顶部 spec 高光：模拟光源在玻璃顶部的反射带 */
+.btw-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 深色主题：玻璃更暗、内反光更亮（增强层次感） */
+.dark .btw-glass,
+.theme-ocean-dark .btw-glass,
+.theme-forest-dark .btw-glass,
+.theme-slate-dark .btw-glass {
+  background-color: rgba(20, 20, 30, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
+    inset -1px 0 0 0 rgba(0, 0, 0, 0.15),
+    0 20px 40px -12px rgba(0, 0, 0, 0.45),
+    0 8px 16px -4px rgba(0, 0, 0, 0.25),
+    0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+.dark .btw-glass::before,
+.theme-ocean-dark .btw-glass::before,
+.theme-forest-dark .btw-glass::before,
+.theme-slate-dark .btw-glass::before {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      rgba(180, 200, 255, 0.18) 0%,
+      rgba(180, 200, 255, 0.03) 40%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      rgba(100, 120, 200, 0.12) 0%,
+      transparent 60%
+    );
+}
+
+.dark .btw-glass::after,
+.theme-ocean-dark .btw-glass::after,
+.theme-forest-dark .btw-glass::after,
+.theme-slate-dark .btw-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 100%
+  );
+}
+
+/* 减少动画偏好：禁用环境光叠加层（节省渲染）*/
+@media (prefers-reduced-motion: reduce) {
+  .btw-glass::before,
+  .btw-glass::after {
+    display: none;
+  }
+}
+
+/* ===== Liquid Glass 高透模式变体 =====
+ * 借鉴 liquid-glass-vue 的 overLight 概念
+ * 用于浅色背景上的轻量玻璃效果：
+ *   - 降低模糊强度（16px vs 28px）
+ *   - 提高背景透明度
+ *   - 减少磨砂感，更清透
+ *   - 微弱色差效果（aberration 模拟）
+ */
+.btw-glass--light {
+  background-color: rgba(255, 255, 255, 0.28);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(108%);
+  backdrop-filter: blur(16px) saturate(140%) brightness(108%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  isolation: isolate;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.02),
+    0 8px 24px -8px rgba(0, 0, 0, 0.08),
+    0 2px 8px -2px rgba(0, 0, 0, 0.04);
+}
+
+.btw-glass--light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 15% 0%,
+      rgba(255, 255, 255, 0.25) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 95% 95%,
+      rgba(80, 120, 200, 0.05) 0%,
+      transparent 60%
+    );
+  mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 1) 35%,
+    rgba(0, 0, 0, 0.9) 65%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 1) 35%,
+    rgba(0, 0, 0, 0.9) 65%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+.btw-glass--light::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 高透模式深色主题：保持清透感 */
+.dark .btw-glass--light {
+  background-color: rgba(15, 15, 25, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.15),
+    0 8px 24px -8px rgba(0, 0, 0, 0.25),
+    0 2px 8px -2px rgba(0, 0, 0, 0.12);
+}
+
+.dark .btw-glass--light::before {
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 15% 0%,
+      rgba(160, 180, 255, 0.12) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 95% 95%,
+      rgba(80, 100, 180, 0.08) 0%,
+      transparent 60%
+    );
+}
+
+.dark .btw-glass--light::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+}
+
+/* ===== BTW 面板 — 统一毛玻璃（与 .btw-glass 同一视觉语言）=====
+ * 整面同一材质：blur + 半透明底 + 极淡环境光
+ * 边缘厚度仅用 1px 级 inset 阴影与顶光暗示，不用厚环带
+ */
+.btw-panel-glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: 20px;
+  background-color: hsl(var(--background) / 0.44);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
+  backdrop-filter: blur(24px) saturate(1.7) brightness(1.03);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 1px 0 0 hsl(var(--foreground) / 0.04),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.05),
+    inset -1px 0 0 hsl(var(--foreground) / 0.03),
+    0 12px 32px hsl(var(--foreground) / 0.10),
+    0 4px 10px hsl(var(--foreground) / 0.05);
+}
+
+/* 整面环境光：大半径渐变，边缘自然变亮/变暗，无硬分界 */
+.btw-panel-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.07), transparent 58%),
+    radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.06), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, hsl(var(--primary) / 0.05), transparent 55%);
+}
+
+/* 顶部 1px 镜面高光 */
+.btw-panel-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.18) 50%,
+    transparent 100%
+  );
+}
+
+.btw-panel-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+html:not(.dark) .btw-panel-glass,
+.theme-ocean-light .btw-panel-glass,
+.theme-forest-light .btw-panel-glass,
+.theme-slate-light .btw-panel-glass {
+  background-color: hsl(var(--background) / 0.52);
+  border-color: hsl(var(--foreground) / 0.07);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.14),
+    inset 1px 0 0 hsl(var(--foreground) / 0.06),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.04),
+    0 12px 32px hsl(var(--foreground) / 0.08),
+    0 4px 10px hsl(var(--foreground) / 0.04);
+}
+
+html:not(.dark) .btw-panel-glass::after,
+.theme-ocean-light .btw-panel-glass::after,
+.theme-forest-light .btw-panel-glass::after,
+.theme-slate-light .btw-panel-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+}
+
+.dark .btw-panel-glass,
+.theme-ocean-dark .btw-panel-glass,
+.theme-forest-dark .btw-panel-glass,
+.theme-slate-dark .btw-panel-glass {
+  background-color: hsl(var(--background) / 0.32);
+  border-color: hsl(var(--foreground) / 0.09);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.14),
+    inset 1px 0 0 hsl(var(--foreground) / 0.06),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.14),
+    inset -1px 0 0 hsl(var(--foreground) / 0.10),
+    0 14px 36px rgba(0, 0, 0, 0.26),
+    0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.dark .btw-panel-glass::before,
+.theme-ocean-dark .btw-panel-glass::before,
+.theme-forest-dark .btw-panel-glass::before,
+.theme-slate-dark .btw-panel-glass::before {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.10), transparent 58%),
+    radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.08), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, hsl(var(--primary) / 0.08), transparent 55%);
+}
+
+.dark .btw-panel-glass::after,
+.theme-ocean-dark .btw-panel-glass::after,
+.theme-forest-dark .btw-panel-glass::after,
+.theme-slate-dark .btw-panel-glass::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 100%
+  );
+}
+
+/* ===== 滚动进度条 — 适配所有主题（无轨道背景，仅滑块） ===== *//* 默认亮色主题 */
+.scroll-progress-thumb {
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+/* 隐藏滚动条上下小箭头（Webkit 浏览器为可滚动区域自动渲染） */
+.scroll-progress-container::-webkit-scrollbar-button,
+.scroll-progress-container > *::-webkit-scrollbar-button {
+  display: none;
+}
+.scroll-progress-thumb:hover {
+  background-color: hsl(var(--foreground) / 0.20);
+}
+.scroll-progress-thumb-visible {
+  background-color: hsl(var(--foreground) / 0.18);
+}
+.scroll-progress-thumb-active {
+  background-color: hsl(var(--foreground) / 0.32) !important;
+}
+
+/* 默认深色主题 */
+.dark:not([class*="theme-"]) .scroll-progress-thumb {
+  background-color: transparent;
+}
+.dark:not([class*="theme-"]) .scroll-progress-thumb:hover {
+  background-color: hsl(var(--foreground) / 0.18);
+}
+.dark:not([class*="theme-"]) .scroll-progress-thumb-active {
+  background-color: hsl(var(--foreground) / 0.30) !important;
+}
+
+/* 晴空碧海 ocean-light */
+.theme-ocean-light .scroll-progress-thumb {
+  background-color: hsl(205 50% 50% / 0.18);
+}
+.theme-ocean-light .scroll-progress-thumb:hover {
+  background-color: hsl(205 50% 50% / 0.30);
+}
+.theme-ocean-light .scroll-progress-thumb-active {
+  background-color: hsl(205 50% 50% / 0.40) !important;
+}
+
+/* 苍穹暮色 ocean-dark */
+.theme-ocean-dark .scroll-progress-thumb {
+  background-color: hsl(205 60% 55% / 0.20);
+}
+.theme-ocean-dark .scroll-progress-thumb:hover {
+  background-color: hsl(205 60% 55% / 0.32);
+}
+.theme-ocean-dark .scroll-progress-thumb-active {
+  background-color: hsl(205 60% 55% / 0.42) !important;
+}
+
+/* 森息晨光 forest-light */
+.theme-forest-light .scroll-progress-thumb {
+  background-color: hsl(150 35% 38% / 0.18);
+}
+.theme-forest-light .scroll-progress-thumb:hover {
+  background-color: hsl(150 35% 38% / 0.30);
+}
+.theme-forest-light .scroll-progress-thumb-active {
+  background-color: hsl(150 35% 38% / 0.40) !important;
+}
+
+/* 森息夜语 forest-dark */
+.theme-forest-dark .scroll-progress-thumb {
+  background-color: hsl(151 40% 45% / 0.20);
+}
+.theme-forest-dark .scroll-progress-thumb:hover {
+  background-color: hsl(151 40% 45% / 0.32);
+}
+.theme-forest-dark .scroll-progress-thumb-active {
+  background-color: hsl(151 40% 45% / 0.42) !important;
+}
+
+/* 云朵舞者 slate-light */
+.theme-slate-light .scroll-progress-thumb {
+  background-color: hsl(18 20% 67% / 0.22);
+}
+.theme-slate-light .scroll-progress-thumb:hover {
+  background-color: hsl(18 20% 67% / 0.35);
+}
+.theme-slate-light .scroll-progress-thumb-active {
+  background-color: hsl(18 20% 67% / 0.45) !important;
+}
+
+/* 莫兰迪夜 slate-dark */
+.theme-slate-dark .scroll-progress-thumb {
+  background-color: hsl(15 25% 68% / 0.18);
+}
+.theme-slate-dark .scroll-progress-thumb:hover {
+  background-color: hsl(15 25% 68% / 0.30);
+}
+.theme-slate-dark .scroll-progress-thumb-active {
+  background-color: hsl(15 25% 68% / 0.40) !important;
+}
+
+/* ===== 计划模式：输入框定位上下文 ===== */
+.plan-mode-border {
+  position: relative;
+}
+/* 深色主题 plan 虚线颜色加亮 */
+.theme-ocean-dark .plan-mode-border .plan-mode-stroke {
+  stroke: hsl(205 60% 55% / 0.7);
+}
+.theme-forest-dark .plan-mode-border .plan-mode-stroke {
+  stroke: hsl(151 40% 45% / 0.7);
+}
+
+/* ===== prose inline code：移除 Tailwind Typography 默认的前后反引号伪元素 ===== */
+.prose code::before,
+.prose code::after {
+  content: none;
+}
+
+/* ===== FileBrowser 自动定位的高亮脉冲 =====
+ * 末关键帧用 transparent 是故意的：Agent 自动 reveal（select=false）一行不进入选中态，
+ * 动画结束后行需要恢复无背景色。如果改成 hsl(--accent) 等不透明色，那一行会一直停留
+ * 在高亮色直到下次重渲染。
+ *
+ * 副作用：当 reveal 同时把目标置为选中态（用户搜索点击，select=true）时，
+ * animation 在 1.2s 内会盖掉 .bg-accent，造成"先闪→变透明→才出现选中色"的视觉断层。
+ * 因此 FileTreeItem 在 select=true 路径下跳过 .file-browser-row-flash class，
+ * 直接呈现选中态，避开此冲突。详见 FileBrowser.tsx 中 reveal 分支的注释。
+ */
+@keyframes file-browser-flash {
+  0%   { background-color: hsl(var(--primary) / 0.18); }
+  50%  { background-color: hsl(var(--primary) / 0.22); }
+  100% { background-color: transparent; }
+}
+.file-browser-row-flash {
+  animation: file-browser-flash 1.2s ease-out;
+}
+
+/* ===== FileBrowser sticky 目录行：每条 sticky 链路最末一行加一道软扩散阴影 =====
+   :has() 选择器只能向后看 sticky 行同一父级内的兄弟，所以 "栈最末" 实际语义是
+   "本节点子树内不再有更深的 sticky 子行"。
+   - 单棵展开链路：只有最深一层 sticky 子行有阴影（父行的子项容器内含子 sticky，被规则排除）。
+   - 多个平行展开（多个根目录同时打开）：每条链路各自一道阴影——这里把每棵独立树视为独立视觉单元。
+   要做到全局唯一一道阴影需要 JS 监听滚动 + 展开状态动态打标记，目前不做。 */
+[data-sticky-row="true"]:not(:has(~ * [data-sticky-row="true"])) {
+  box-shadow: 0 2px 4px -1px hsl(var(--foreground) / 0.08);
+}
+
+/* ===== Office 内联预览 ===== */
+.office-preview-host {
+  min-height: 100%;
+  padding: 12px;
+  color: hsl(var(--foreground));
+  font-size: 12px;
+}
+
+.office-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.office-preview-title {
+  color: hsl(var(--foreground) / 0.72);
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.office-preview-notice,
+.office-empty {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.office-preview-notice {
+  border: 1px solid hsl(var(--border) / 0.45);
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.24);
+  padding: 8px 10px;
+}
+
+.office-sheet,
+.office-slide {
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 8px;
+  background: hsl(var(--background) / 0.72);
+  overflow: hidden;
+}
+
+.office-sheet h3,
+.office-slide h3 {
+  margin: 0;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.office-sheet h3 {
+  padding: 10px 12px;
+  border-bottom: 1px solid hsl(var(--border) / 0.45);
+}
+
+.office-table-wrap {
+  overflow: auto;
+  max-width: 100%;
+}
+
+.office-table-wrap table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.office-table-wrap th,
+.office-table-wrap td {
+  max-width: 280px;
+  min-width: 72px;
+  border-right: 1px solid hsl(var(--border) / 0.35);
+  border-bottom: 1px solid hsl(var(--border) / 0.35);
+  padding: 6px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.office-table-wrap thead th,
+.office-row-heading {
+  position: sticky;
+  z-index: 1;
+  background: hsl(var(--muted) / 0.36);
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+.office-table-wrap thead th {
+  top: 0;
+}
+
+.office-row-heading {
+  left: 0;
+  min-width: 44px;
+  text-align: right;
+}
+
+.office-slide {
+  padding: 12px;
+}
+
+.office-slide-index {
+  margin-bottom: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.office-slide ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: hsl(var(--foreground) / 0.82);
+  line-height: 1.6;
+}
+
+.office-slide li + li {
+  margin-top: 4px;
+}
+
+/* ===== 语音输入浮窗拖动区域 ===== */
+.voice-dictation-drag-region {
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+.voice-dictation-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ===== Tiptap 可编辑表格样式 ===== */
+.ProseMirror table,
+.ProseMirror table.markdown-table {
+  border: 1px solid hsl(var(--foreground) / 0.22);
+  border-collapse: separate;
+  border-radius: 6px;
+  border-spacing: 0;
+  width: 100%;
+  margin: 0.75em 0;
+  overflow: hidden;
+  table-layout: auto;
+}
+
+.ProseMirror table colgroup {
+  display: table-column-group;
+}
+
+.ProseMirror table col {
+  display: table-column;
+}
+
+.ProseMirror table tr {
+  display: table-row;
+}
+
+.ProseMirror table td,
+.ProseMirror table th,
+.ProseMirror table.markdown-table td,
+.ProseMirror table.markdown-table th,
+.ProseMirror .md-td,
+.ProseMirror .md-th {
+  background-clip: padding-box;
+  border: 0 !important;
+  border-right: 1px solid hsl(var(--foreground) / 0.28) !important;
+  border-bottom: 1px solid hsl(var(--foreground) / 0.16) !important;
+  box-shadow: inset -1px 0 0 hsl(var(--background) / 0.9);
+  min-width: 48px;
+  padding: 4px 8px;
+  position: relative;
+  vertical-align: top;
+}
+
+.ProseMirror table.markdown-table td,
+.ProseMirror table.markdown-table th {
+  border-right-color: hsl(var(--foreground) / 0.28) !important;
+}
+
+.ProseMirror table td:not(:last-child)::after,
+.ProseMirror table th:not(:last-child)::after,
+.ProseMirror table.markdown-table td:not(:last-child)::after,
+.ProseMirror table.markdown-table th:not(:last-child)::after {
+  background: hsl(var(--foreground) / 0.28);
+  bottom: 0;
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  right: -1px;
+  top: 0;
+  width: 1px;
+}
+
+.ProseMirror table tr > :last-child,
+.ProseMirror table.markdown-table tr > :last-child {
+  border-right: 0 !important;
+  box-shadow: none;
+}
+
+.ProseMirror table tr:last-child > *,
+.ProseMirror table.markdown-table tr:last-child > * {
+  border-bottom: 0 !important;
+}
+
+.ProseMirror table th,
+.ProseMirror table.markdown-table th {
+  background-color: hsl(var(--muted) / 0.5);
+  font-weight: 600;
+  text-align: left;
+}
+
+.ProseMirror table tr:nth-child(even) td,
+.ProseMirror table.markdown-table tr:nth-child(even) td {
+  background-color: hsl(var(--muted) / 0.15);
+}
+
+.ProseMirror .selectedCell::after {
+  z-index: 2;
+  position: absolute;
+  content: '';
+  inset: 0;
+  background: hsl(var(--primary) / 0.12);
+  pointer-events: none;
+}
+
+.ProseMirror:not([contenteditable='true']) .selectedCell::after {
+  display: none;
+}
+
+/* ===== Tiptap 可编辑代码块 ===== */
+.ProseMirror pre.markdown-code-block {
+  background: hsl(var(--muted) / 0.45) !important;
+  color: hsl(var(--foreground)) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.dark .ProseMirror pre.markdown-code-block,
+.theme-ocean-dark .ProseMirror pre.markdown-code-block,
+.theme-slate-dark .ProseMirror pre.markdown-code-block {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.theme-forest-dark .ProseMirror pre.markdown-code-block {
+  background: hsl(150 20% 9%) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.ProseMirror pre.markdown-code-block code,
+.ProseMirror pre.markdown-code-block code * {
+  background: transparent !important;
+  font: inherit;
+  padding: 0 !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+.ProseMirror pre.markdown-code-block .hljs-comment,
+.ProseMirror pre.markdown-code-block .hljs-quote {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+.ProseMirror pre.markdown-code-block .hljs-keyword,
+.ProseMirror pre.markdown-code-block .hljs-selector-tag,
+.ProseMirror pre.markdown-code-block .hljs-subst,
+.ProseMirror pre.markdown-code-block .hljs-doctag,
+.ProseMirror pre.markdown-code-block .hljs-template-tag,
+.ProseMirror pre.markdown-code-block .hljs-template-variable {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+.ProseMirror pre.markdown-code-block .hljs-string,
+.ProseMirror pre.markdown-code-block .hljs-regexp,
+.ProseMirror pre.markdown-code-block .hljs-title,
+.ProseMirror pre.markdown-code-block .hljs-section,
+.ProseMirror pre.markdown-code-block .hljs-name,
+.ProseMirror pre.markdown-code-block .hljs-selector-id,
+.ProseMirror pre.markdown-code-block .hljs-selector-class {
+  color: hsl(150 55% 34%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-string,
+.dark .ProseMirror pre.markdown-code-block .hljs-regexp,
+.dark .ProseMirror pre.markdown-code-block .hljs-title,
+.dark .ProseMirror pre.markdown-code-block .hljs-section,
+.dark .ProseMirror pre.markdown-code-block .hljs-name,
+.dark .ProseMirror pre.markdown-code-block .hljs-selector-id,
+.dark .ProseMirror pre.markdown-code-block .hljs-selector-class {
+  color: hsl(150 55% 62%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-number,
+.ProseMirror pre.markdown-code-block .hljs-literal,
+.ProseMirror pre.markdown-code-block .hljs-variable,
+.ProseMirror pre.markdown-code-block .hljs-template-variable,
+.ProseMirror pre.markdown-code-block .hljs-attribute,
+.ProseMirror pre.markdown-code-block .hljs-symbol,
+.ProseMirror pre.markdown-code-block .hljs-bullet {
+  color: hsl(24 80% 44%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-number,
+.dark .ProseMirror pre.markdown-code-block .hljs-literal,
+.dark .ProseMirror pre.markdown-code-block .hljs-variable,
+.dark .ProseMirror pre.markdown-code-block .hljs-template-variable,
+.dark .ProseMirror pre.markdown-code-block .hljs-attribute,
+.dark .ProseMirror pre.markdown-code-block .hljs-symbol,
+.dark .ProseMirror pre.markdown-code-block .hljs-bullet {
+  color: hsl(32 90% 64%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-built_in,
+.ProseMirror pre.markdown-code-block .hljs-type,
+.ProseMirror pre.markdown-code-block .hljs-class .hljs-title,
+.ProseMirror pre.markdown-code-block .hljs-function .hljs-title,
+.ProseMirror pre.markdown-code-block .hljs-title.function_ {
+  color: hsl(210 70% 45%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-built_in,
+.dark .ProseMirror pre.markdown-code-block .hljs-type,
+.dark .ProseMirror pre.markdown-code-block .hljs-class .hljs-title,
+.dark .ProseMirror pre.markdown-code-block .hljs-function .hljs-title,
+.dark .ProseMirror pre.markdown-code-block .hljs-title.function_ {
+  color: hsl(210 90% 70%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-attr,
+.ProseMirror pre.markdown-code-block .hljs-property,
+.ProseMirror pre.markdown-code-block .hljs-params,
+.ProseMirror pre.markdown-code-block .hljs-selector-attr,
+.ProseMirror pre.markdown-code-block .hljs-selector-pseudo {
+  color: hsl(270 55% 48%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-attr,
+.dark .ProseMirror pre.markdown-code-block .hljs-property,
+.dark .ProseMirror pre.markdown-code-block .hljs-params,
+.dark .ProseMirror pre.markdown-code-block .hljs-selector-attr,
+.dark .ProseMirror pre.markdown-code-block .hljs-selector-pseudo {
+  color: hsl(275 72% 74%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-operator,
+.ProseMirror pre.markdown-code-block .hljs-punctuation,
+.ProseMirror pre.markdown-code-block .hljs-meta,
+.ProseMirror pre.markdown-code-block .hljs-link {
+  color: hsl(190 72% 34%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-operator,
+.dark .ProseMirror pre.markdown-code-block .hljs-punctuation,
+.dark .ProseMirror pre.markdown-code-block .hljs-meta,
+.dark .ProseMirror pre.markdown-code-block .hljs-link {
+  color: hsl(190 78% 65%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-tag,
+.ProseMirror pre.markdown-code-block .hljs-tag .hljs-name {
+  color: hsl(345 72% 44%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-tag,
+.dark .ProseMirror pre.markdown-code-block .hljs-tag .hljs-name {
+  color: hsl(345 82% 70%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-addition {
+  color: hsl(145 58% 32%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-addition {
+  color: hsl(145 62% 64%);
+}
+
+.ProseMirror pre.markdown-code-block .hljs-deletion {
+  color: hsl(0 68% 48%);
+}
+
+.dark .ProseMirror pre.markdown-code-block .hljs-deletion {
+  color: hsl(0 78% 72%);
+}
+
+.ProseMirror .markdown-code-edit-layer {
+  background: transparent !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 13px !important;
+  font-variant-ligatures: none;
+  font-kerning: none;
+  letter-spacing: 0 !important;
+  line-height: 1.6 !important;
+  tab-size: 2;
+  white-space: pre !important;
+}
+
+.ProseMirror .markdown-code-edit-layer code {
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  font: inherit !important;
+  letter-spacing: 0 !important;
+  line-height: inherit !important;
+  padding: 0 !important;
+  tab-size: inherit;
+  white-space: pre !important;
+  -webkit-text-fill-color: currentColor;
+  caret-color: hsl(var(--foreground));
+}
+
+.ProseMirror .markdown-code-edit-layer ::selection {
+  background: hsl(var(--primary) / 0.22);
+}
+
+/* ===== Session Mini Map ===== */
+.session-minimap-popover {
+  transform-origin: left center;
+  will-change: transform, opacity;
+}
+
+.session-minimap-popover-enter {
+  animation: session-minimap-popover-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.session-minimap-popover-exit {
+  animation: session-minimap-popover-out 90ms ease-in both;
+}
+
+.session-minimap-content-enter {
+  animation: session-minimap-content-in 140ms ease-out both;
+}
+
+@keyframes session-minimap-popover-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-4px, 2px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes session-minimap-popover-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-3px, 1px, 0) scale(0.99);
+  }
+}
+
+@keyframes session-minimap-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* BTW side panel input: readable inner glass well. */
+.btw-input-glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: hsl(var(--background) / 0.35);
+  border: 1px solid hsl(var(--border) / 0.50);
+  color: hsl(var(--foreground));
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--background) / 0.35);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.btw-input-glass::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, hsl(var(--background) / 0.14), transparent 62%);
+  pointer-events: none;
+}
+
+.btw-input-glass::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid hsl(var(--background) / 0.18);
+  pointer-events: none;
+}
+
+.btw-input-glass:focus-within {
+  background: hsl(var(--background) / 0.45);
+  border-color: hsl(var(--border) / 0.65);
+  box-shadow:
+    0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.22),
+    0 1px 2px hsl(var(--foreground) / 0.10),
+    inset 0 1px 0 hsl(var(--background) / 0.42);
+}
+
+.btw-input-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .btw-input-glass,
+.theme-ocean-dark .btw-input-glass,
+.theme-forest-dark .btw-input-glass,
+.theme-slate-dark .btw-input-glass {
+  background: hsl(var(--background) / 0.25);
+  border-color: hsl(var(--border) / 0.50);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 hsl(var(--foreground) / 0.08);
+}
+
+.dark .btw-input-glass:focus-within,
+.theme-ocean-dark .btw-input-glass:focus-within,
+.theme-forest-dark .btw-input-glass:focus-within,
+.theme-slate-dark .btw-input-glass:focus-within {
+  background: hsl(var(--background) / 0.34);
+  border-color: hsl(var(--border) / 0.65);
+  box-shadow:
+    0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.34),
+    0 1px 2px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 hsl(var(--foreground) / 0.10);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .btw-panel-glass {
+    background: hsl(var(--background) / 0.94);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .btw-panel-glass::before,
+  .btw-panel-glass::after {
+    display: none;
+  }
+
+  .btw-input-glass {
+    background: hsl(var(--background) / 0.96);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .dark .btw-input-glass,
+  .theme-ocean-dark .btw-input-glass,
+  .theme-forest-dark .btw-input-glass,
+  .theme-slate-dark .btw-input-glass {
+    background: hsl(var(--background) / 0.96);
+  }
+}
+
+/* ===== BTW 面板弹性动画 ===== */
+/*
+ * 弹性展开动画：使用 cubic-bezier(0.34, 1.56, 0.64, 1)
+ * - 0.34: 缓慢开始，积蓄能量
+ * - 1.56: 超过目标值（ overshoot），产生弹性
+ * - 0.64: 快速回弹
+ * - 1: 平滑结束
+ *
+ * 收缩动画：使用 cubic-bezier(0.4, 0, 0.2, 1)
+ * - 平滑、无弹性的自然消退
+ */
+@keyframes btw-panel-expand {
+  0% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes btw-panel-collapse {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 面板展开动画类 */
+.btw-panel-enter {
+  animation: btw-panel-expand 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 面板收缩动画类 */
+.btw-panel-exit {
+  animation: btw-panel-collapse 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ===== 主布局精致玻璃卡片风格 ===== */
+
+/**
+ * shell-bg - 外壳背景
+ * 多重彩色光斑+渐变叠加，让液态玻璃折射效果可见
+ */
+.shell-glass {
+  position: relative;
+  /* 团雾光斑用 --shell-blob，避免纯白/纯黑主题下 --primary 与背景对比极端 */
+  background:
+    radial-gradient(ellipse 90% 75% at 20% 25%, hsl(var(--shell-blob) / 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 65% at 80% 20%, hsl(var(--shell-blob) / 0.24) 0%, transparent 55%),
+    radial-gradient(ellipse 85% 70% at 15% 80%, hsl(var(--shell-blob) / 0.20) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 75% at 85% 85%, hsl(var(--shell-blob) / 0.26) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 50%, hsl(var(--shell-blob) / 0.14) 0%, transparent 70%),
+    hsl(var(--background));
+}
+
+/**
+ * panel-glass - 主面板精致卡片
+ * 半透明渐变背景 + 顶部高光边框 + 内阴影层次
+ */
+/* ===== 主布局面板液态玻璃（恢复原状：不用 filter）=====
+ * 主面板保持原有用 ::before/::after + background 渐变的方式
+ * 之前用 backdrop-filter 没效果是因为它被 CSS 链吃掉了
+ * 现在保留原始的精致卡片样式
+ */
+.panel-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.20) 0%,
+    hsl(var(--background) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.10);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.04);
+}
+
+/* 主题色微光层 */
+.panel-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+  pointer-events: none;
+}
+
+/* 白色边框层 */
+.panel-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.panel-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题 */
+.dark .panel-glass {
+  background: hsl(var(--background) / 0.12);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.08);
+}
+
+.dark .panel-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.05) 100%
+  );
+}
+
+/* 纯黑主题：降低白色边框光晕的亮度，避免在深色背景上过于刺眼 */
+.dark .panel-glass::after {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.06) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* 主题色覆盖 */
+.theme-ocean-light .panel-glass {
+  background: hsl(205 35% 98% / 0.18);
+}
+
+.theme-forest-light .panel-glass {
+  background: hsl(140 25% 98% / 0.18);
+}
+
+.theme-ocean-dark .panel-glass {
+  background: hsl(210 35% 11% / 0.15);
+}
+
+.theme-forest-dark .panel-glass {
+  background: hsl(150 30% 11% / 0.15);
+}
+
+/**
+ * nav-island-glass - Rail + Sidebar 统一导航浮岛
+ * 单块圆角矩形；Rail 右翼线（翼线）向右延伸包裹 Sidebar
+ */
+.nav-island-glass {
+  position: relative;
+  isolation: isolate;
+  --nav-island-pt: 8px;
+  --nav-island-row-h: 40px;
+  --nav-island-gap: 6px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.20) 0%,
+    hsl(var(--background) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.10);
+  border-radius: var(--nav-island-outer-radius, 20px);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.04);
+}
+
+.nav-island-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+.nav-island-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.dark .nav-island-glass {
+  background: hsl(var(--background) / 0.12);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.08);
+}
+
+.dark .nav-island-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.05) 100%
+  );
+}
+
+.dark .nav-island-glass::after {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.06) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.nav-island-rail {
+  width: var(--nav-rail-width, 60px);
+}
+
+.right-panel-rail {
+  width: var(--nav-rail-width, 38px);
+}
+
+/* Rail 与 Sidebar 之间的内缝（非外轮廓间隙）；右侧 rail 镜像到左缘 */
+.nav-island-glass--expanded .nav-island-rail::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  right: 0;
+  width: 1px;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.10) 18%,
+    hsl(var(--foreground) / 0.10) 82%,
+    transparent 100%
+  );
+}
+
+.nav-island-glass--expanded .right-panel-rail::after {
+  right: auto;
+  left: 0;
+}
+
+.nav-island-sidebar {
+  min-width: 0;
+}
+
+/* Rail / Sidebar 首行顶距与行高对齐（跨平台共用） */
+.nav-island-body-start {
+  padding-top: var(--nav-island-pt);
+  box-sizing: border-box;
+}
+
+.nav-island-header-row {
+  display: flex;
+  align-items: center;
+  height: var(--nav-island-row-h);
+  min-height: var(--nav-island-row-h);
+  box-sizing: border-box;
+}
+
+.nav-island-action-row {
+  display: flex;
+  align-items: center;
+  padding-top: var(--nav-island-gap);
+  min-height: var(--nav-island-row-h);
+  box-sizing: border-box;
+}
+
+/* macOS 顶栏：左翼红绿灯安全区 + 右翼侧栏标题（与主区 TabBar 同高语义） */
+.nav-island-chrome {
+  position: relative;
+  border-bottom: none;
+}
+
+/* 底部分隔线：中间实、两侧渐隐（与 glass-divider 同语言） */
+.nav-island-chrome::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.08) 18%,
+    hsl(var(--foreground) / 0.14) 50%,
+    hsl(var(--foreground) / 0.08) 82%,
+    transparent 100%
+  );
+}
+
+.nav-island-chrome-lights {
+  width: var(--nav-rail-width, 60px);
+  box-sizing: border-box;
+  padding-left: 8px;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.dark .nav-island-chrome::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.10) 18%,
+    hsl(var(--foreground) / 0.16) 50%,
+    hsl(var(--foreground) / 0.10) 82%,
+    transparent 100%
+  );
+}
+
+/* macOS：略减小左上圆角，避免系统红绿灯视觉上「挂」在弧角外侧 */
+.nav-island-glass--mac {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px);
+}
+
+.nav-island-glass--mac::before,
+.nav-island-glass--mac::after {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px);
+}
+
+/* Windows：无 vibrancy 时强化圆角裁切，避免底板直角从半透明玻璃下透出 */
+.shell-glass--win .nav-island-glass.nav-island-glass--float,
+.shell-glass--win .right-nav-island-glass.nav-island-glass--float {
+  contain: paint;
+}
+
+/**
+ * RightNavIsland - 右侧文件面板浮岛容器
+ * 四个角都是圆角
+ */
+.right-nav-island-glass.nav-island-glass {
+  border-radius: var(--nav-island-outer-radius, 20px) !important;
+}
+
+/* macOS 左上角略减小圆角 */
+.right-nav-island-glass.nav-island-glass--mac {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px) !important;
+}
+
+/* 覆盖 ::before 和 ::after 的圆角 */
+.nav-island-glass--mac.right-nav-island-glass::before,
+.nav-island-glass--mac.right-nav-island-glass::after {
+  border-top-left-radius: var(--nav-island-outer-radius-tl, 14px) !important;
+}
+
+/**
+ * 右侧 rail 折叠态（无 nav-island-glass--expanded）：降低视觉权重，hover 恢复 affordance
+ */
+.right-nav-island-glass.nav-island-glass--float {
+  transition:
+    width 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease,
+    -webkit-backdrop-filter 280ms ease,
+    backdrop-filter 280ms ease;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  backdrop-filter: blur(10px) saturate(1.05);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.28) 0%,
+    hsl(var(--background) / 0.14) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.22);
+  box-shadow: none;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::before {
+  opacity: 0.25;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded)::after {
+  opacity: 0.2;
+}
+
+.right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.48) 0%,
+    hsl(var(--background) / 0.32) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.42);
+  box-shadow: none;
+}
+
+.dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.18) 0%,
+    hsl(var(--background) / 0.08) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.16);
+  box-shadow: none;
+}
+
+.dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.34) 0%,
+    hsl(var(--background) / 0.22) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.32);
+  box-shadow: none;
+}
+
+.right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
+  color: hsl(var(--foreground) / 0.30);
+}
+
+.right-nav-island-glass:not(.nav-island-glass--expanded):hover .right-panel-rail .rail-island-btn,
+.right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.58);
+}
+
+.dark .right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
+  color: hsl(var(--foreground) / 0.26);
+}
+
+.dark
+  .right-nav-island-glass:not(.nav-island-glass--expanded):hover
+  .right-panel-rail
+  .rail-island-btn,
+.dark
+  .right-nav-island-glass:not(.nav-island-glass--expanded)
+  .right-panel-rail
+  .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.52);
+}
+
+/* 有未读改动时略提高存在感，避免完全「消失」 */
+.right-panel-rail--notify .rail-island-btn {
+  color: hsl(var(--foreground) / 0.42);
+}
+
+.dark .right-panel-rail--notify .rail-island-btn {
+  color: hsl(var(--foreground) / 0.36);
+}
+
+/**
+ * right-panel-plate-toggle - 锚定于 shell p-2 右缘，开/关完整显示
+ */
+.right-panel-plate-toggle {
+  /* 容器承载固定锚点 */
+}
+
+/**
+ * right-panel-expand-shell - 从右上角锚点（圆钮）纯 scale 展开
+ * 列宽 / 底板 inset 由 React 一次性切换，此处只做过渡视觉
+ *
+ * 展开：略带回弹的 ease-out（与 btw-panel 同族）
+ * 收回：更短、更干脆的 ease-in，内容先淡出
+ */
+.right-panel-layout-column {
+  transition: width var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+.right-panel-layout-column:has(.right-panel-shadow-frame--expanded) {
+  transition-duration: var(--right-panel-expand-ms, 360ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.right-panel-shadow-frame {
+  filter:
+    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))
+    drop-shadow(0 10px 28px rgba(0, 0, 0, 0.12))
+    drop-shadow(0 28px 64px rgba(0, 0, 0, 0.10));
+  transition: filter var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .right-panel-shadow-frame {
+  filter:
+    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.18))
+    drop-shadow(0 14px 40px rgba(0, 0, 0, 0.22))
+    drop-shadow(0 32px 76px rgba(0, 0, 0, 0.18));
+}
+
+.right-panel-reveal-mask {
+  width: 0;
+  overflow: hidden;
+  border-radius: var(--nav-island-outer-radius, 20px);
+  transition: width var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+.right-panel-reveal-mask--expanded {
+  width: var(--right-panel-reveal-width, 100%);
+  transition-duration: var(--right-panel-expand-ms, 360ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.right-panel-expand-shell {
+  width: var(--right-panel-reveal-width, 100%);
+  flex-shrink: 0;
+  transform-origin: 100% var(--right-panel-toggle-y, 52px);
+  opacity: 1;
+  filter: blur(0);
+  /* 与主区底板接缝重叠 1px，避免 scale 动画后露缝 */
+  margin-left: -1px;
+}
+
+.right-panel-expand-shell--expanded {
+  opacity: 1;
+  filter: blur(0);
+}
+
+.right-panel-expand-body {
+  opacity: 0;
+  transform: translate3d(5px, 0, 0);
+  /* 收回：内容先走，避免壳已缩小时仍看到文字 */
+  transition:
+    opacity 140ms cubic-bezier(0.4, 0, 1, 1),
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.right-panel-expand-body--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  /* 展开：壳到位后再轻推内容 */
+  transition:
+    opacity 260ms ease-out 100ms,
+    transform 320ms cubic-bezier(0.22, 1.08, 0.36, 1) 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-expand-shell,
+  .right-panel-expand-shell--expanded,
+  .right-panel-expand-body,
+  .right-panel-expand-body--visible {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    filter: none !important;
+  }
+}
+
+/**
+ * content-main-shell - 主内容区容器（底板 + 内容层）
+ */
+.content-main-shell {
+  --content-plate-radius: 20px;
+  --content-base-fade-width: 280px;
+  /* 仅左 inset / fade 参与过渡；右 inset 故意不在此列表，切页时底板右缘瞬间对齐 */
+  transition:
+    --content-base-inset-left 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    --content-base-fade-width 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* 顶/底横线：自右（主区）向左渐隐，在 Nav 浮岛前消失 */
+  --content-plate-hairline-tone: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    hsl(var(--foreground) / 0.04) var(--content-base-inset-left, 0px),
+    hsl(var(--foreground) / 0.08) calc(var(--content-base-inset-left, 0px) + 36px),
+    hsl(var(--foreground) / 0.11) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+  --content-plate-hairline-glint: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    rgba(255, 255, 255, 0.06) var(--content-base-inset-left, 0px),
+    rgba(255, 255, 255, 0.14) calc(var(--content-base-inset-left, 0px) + 36px),
+    rgba(255, 255, 255, 0.26) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+}
+
+/* 内容层：顶/底 chrome 向左延伸至 Sidebar 右缘，中间内容区保留右侧圆角裁切 */
+.content-main-foreground {
+  min-height: 0;
+}
+
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-main-foreground {
+  padding-right: var(--content-foreground-safe-right, 0px);
+}
+
+.content-main-body {
+  border-radius:
+    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
+    var(--content-plate-radius)
+    var(--content-plate-radius)
+    var(--nav-island-outer-radius, var(--content-plate-radius));
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.content-main-foreground .tabbar-bg {
+  background-color: transparent;
+  border-top-right-radius: var(--content-plate-radius);
+}
+
+/* 底栏统计条：与 TabBar 同样向两侧 bleed，右侧浮岛展开时延伸至过渡区 */
+.content-main-shell .token-stats-bar.content-shell-chrome-bleed {
+  padding-left: calc(var(--content-chrome-bleed-left, 0px) + 1rem);
+  padding-right: calc(var(--content-chrome-bleed-right, 0px) + 1rem);
+}
+
+/* TabBar / 底部输入 dock：越过主区左右 padding，与两侧浮岛右/左缘对齐 */
+.content-shell-chrome-bleed {
+  box-sizing: border-box;
+  width: calc(
+    100% + var(--content-chrome-bleed-left, 0px) + var(--content-chrome-bleed-right, 0px)
+  );
+  margin-left: calc(-1 * var(--content-chrome-bleed-left, 0px));
+  margin-right: calc(-1 * var(--content-chrome-bleed-right, 0px));
+  padding-left: var(--content-chrome-bleed-left, 0px);
+  padding-right: var(--content-chrome-bleed-right, 0px);
+}
+
+/* 底栏输入 dock：左右与 Sidebar / 右浮岛对齐，内容区保留原有内边距 */
+.content-main-shell .session-input-dock.content-shell-chrome-bleed {
+  padding-left: calc(var(--content-chrome-bleed-left, 0px) + 10px);
+  padding-right: calc(var(--content-chrome-bleed-right, 0px) + 10px);
+}
+
+@media (min-width: 768px) {
+  .content-main-shell .session-input-dock.content-shell-chrome-bleed {
+    padding-right: calc(var(--content-chrome-bleed-right, 0px) + 18px);
+  }
+}
+
+/* 主区底板：左右延伸至两侧浮岛下方（与 Nav / RightNav 对称） */
+.content-base-plate--body,
+.content-base-plate-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--content-base-inset-left, 0px));
+  right: calc(-1 * var(--content-base-inset-right, 0px));
+  --content-plate-radius: 20px;
+  border-radius:
+    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
+    var(--content-plate-radius)
+    var(--content-plate-radius)
+    var(--nav-island-outer-radius, var(--content-plate-radius));
+  pointer-events: none;
+}
+
+/* 右侧浮岛展开：外缘圆角对齐浮岛（主区内容层保持圆角，与左侧 Nav 对称） */
+.content-main-shell--right-inset .content-base-plate--body,
+.content-main-shell--right-inset .content-base-plate-frame {
+  border-top-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
+  border-bottom-right-radius: var(--nav-island-outer-radius, var(--content-plate-radius));
+}
+
+/* 仅 rail 折叠态：底板仍延伸，但不画右缘竖线/内阴影（避免 rail 左侧出现隔断感） */
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate-edge {
+  display: none;
+}
+
+.content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.34),
+    inset -2px 0 0 hsl(var(--foreground) / 0.035),
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.content-base-plate--body {
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
+  border: none;
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.03) 0%,
+      hsl(var(--content-area) / 0.07) calc(var(--content-base-fade-width) * 0.45),
+      hsl(var(--content-area) / 0.14) calc(var(--content-base-fade-width) * 0.78),
+      hsl(var(--content-area) / 0.18) var(--content-base-fade-width)
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--content-area) / 0.18) 0%,
+      hsl(var(--content-area) / 0.10) 100%
+    );
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: left 300ms ease-in-out;
+}
+
+/* 描边/分割线叠在 TabBar 之上，避免选中标签盖住顶线 */
+.content-base-plate-frame {
+  z-index: 2;
+}
+
+.content-base-plate--body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    hsl(var(--background) / 1) 0%,
+    hsl(var(--background) / 0.94) calc(var(--content-base-inset-left, 0px) * 0.12),
+    hsl(var(--background) / 0.82) calc(var(--content-base-fade-width) * 0.22),
+    hsl(var(--background) / 0.52) calc(var(--content-base-fade-width) * 0.48),
+    hsl(var(--background) / 0.22) calc(var(--content-base-fade-width) * 0.72),
+    hsl(var(--background) / 0.06) calc(var(--content-base-fade-width) * 0.9),
+    transparent var(--content-base-fade-width)
+  );
+}
+
+.content-base-plate--body::after {
+  display: none;
+}
+
+/*
+ * content-base-plate-edge - 底板右缘竖边。
+ * 右侧 rail 折叠时由 --right-rail 规则隐藏；面板展开时恢复右缘描边。
+ */
+.content-base-plate-edge {
+  border-style: solid;
+  border-width: 0 1px 0 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.content-main-shell--right-inset .content-base-plate-edge {
+  border-right-width: 1px;
+}
+
+.content-base-plate-edge--tone {
+  border-color: hsl(var(--foreground) / 0.11);
+}
+
+.content-base-plate-edge--glint {
+  border-color: rgba(255, 255, 255, 0.30);
+  opacity: 0.42;
+}
+
+/*
+ * content-base-plate-hairline - 顶/底横线（在 Nav 浮岛接触前渐隐）
+ */
+.content-base-plate-hairline {
+  background-repeat: no-repeat;
+  background-size: 100% 1px, 100% 1px;
+  background-position: top center, bottom center;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0px,
+    #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0px,
+    #000 var(--nav-island-outer-radius, var(--content-plate-radius)),
+    #000 100%
+  );
+}
+
+.content-base-plate-hairline--tone {
+  background-image: var(--content-plate-hairline-tone), var(--content-plate-hairline-tone);
+}
+
+.content-base-plate-hairline--glint {
+  background-image: var(--content-plate-hairline-glint), var(--content-plate-hairline-glint);
+  opacity: 0.42;
+}
+
+.dark .content-base-plate--body {
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.02) 0%,
+      hsl(var(--content-area) / 0.05) calc(var(--content-base-fade-width) * 0.45),
+      hsl(var(--content-area) / 0.10) calc(var(--content-base-fade-width) * 0.78),
+      hsl(var(--content-area) / 0.15) var(--content-base-fade-width)
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--content-area) / 0.15) 0%,
+      hsl(var(--content-area) / 0.08) 100%
+    );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.12),
+    inset -2px 0 0 rgba(0, 0, 0, 0.18),
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .content-base-plate--body::before {
+  background: linear-gradient(
+    to right,
+    hsl(var(--background) / 0.98) 0%,
+    hsl(var(--background) / 0.9) calc(var(--content-base-inset-left, 0px) * 0.12),
+    hsl(var(--background) / 0.78) calc(var(--content-base-fade-width) * 0.22),
+    hsl(var(--background) / 0.46) calc(var(--content-base-fade-width) * 0.48),
+    hsl(var(--background) / 0.18) calc(var(--content-base-fade-width) * 0.72),
+    hsl(var(--background) / 0.05) calc(var(--content-base-fade-width) * 0.9),
+    transparent var(--content-base-fade-width)
+  );
+}
+
+.dark .content-base-plate-edge--tone {
+  border-color: hsl(var(--foreground) / 0.15);
+}
+
+.dark .content-base-plate-edge--glint {
+  border-color: rgba(255, 255, 255, 0.16);
+  opacity: 0.38;
+}
+
+.dark .content-main-shell {
+  --content-plate-hairline-tone: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    hsl(var(--foreground) / 0.05) var(--content-base-inset-left, 0px),
+    hsl(var(--foreground) / 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    hsl(var(--foreground) / 0.15) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+  --content-plate-hairline-glint: linear-gradient(
+    to right,
+    transparent 0px,
+    transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+    rgba(255, 255, 255, 0.05) var(--content-base-inset-left, 0px),
+    rgba(255, 255, 255, 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    rgba(255, 255, 255, 0.14) calc(var(--content-base-inset-left, 0px) + 64px)
+  );
+}
+
+.dark .content-base-plate-hairline--glint {
+  opacity: 0.34;
+}
+
+/* 主区内容层透明，视觉由底板承担；允许圆角露出（勿用 overflow:hidden 裁切子层圆角） */
+.content-main-shell .content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.content-main-shell .content-glass::before,
+.content-main-shell .content-glass::after {
+  display: none;
+}
+
+html.material-frosted .content-main-shell .content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Nav 浮岛：更强悬浮 + 玻璃质感（叠在底板之上，尺寸不变） */
+.nav-island-glass.nav-island-glass--float {
+  -webkit-backdrop-filter: blur(24px) saturate(1.45);
+  backdrop-filter: blur(24px) saturate(1.45);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.82) 0%,
+    hsl(var(--background) / 0.66) 46%,
+    hsl(var(--background) / 0.58) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.78);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.50),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.10),
+    0 28px 64px rgba(0, 0, 0, 0.09);
+}
+
+.nav-island-glass.nav-island-glass--float::before {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.09) 0%,
+    rgba(255, 255, 255, 0.06) 22%,
+    transparent 52%,
+    hsl(var(--primary) / 0.05) 100%
+  );
+}
+
+.nav-island-glass.nav-island-glass--float::after {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.30) 26%,
+    rgba(255, 255, 255, 0.52) 50%,
+    rgba(255, 255, 255, 0.28) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.dark .nav-island-glass.nav-island-glass--float {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.56) 0%,
+    hsl(var(--background) / 0.42) 46%,
+    hsl(var(--background) / 0.34) 100%
+  );
+  border-color: hsl(var(--glass-rim) / 0.52);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 14px 40px rgba(0, 0, 0, 0.20),
+    0 32px 76px rgba(0, 0, 0, 0.16);
+}
+
+.dark .nav-island-glass.nav-island-glass--float::before {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 22%,
+    transparent 52%,
+    hsl(var(--primary) / 0.07) 100%
+  );
+}
+
+.dark .nav-island-glass.nav-island-glass--float::after {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.10) 26%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* 右侧 rail 折叠态：覆盖上方 nav-island-glass--float 的全局外阴影 */
+.right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+.right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover,
+.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  box-shadow: none;
+}
+
+/**
+ * rail-glass - FunctionalRail 专用液态玻璃
+ * 竖向布局，更紧凑的视觉效果
+ */
+.rail-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.20) 0%,
+    hsl(var(--background) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.10);
+  border-radius: 20px;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* 主题色微光层 */
+.rail-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+/* 白色边框层 */
+.rail-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 40%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.15) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.rail-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题 */
+.dark .rail-glass {
+  background: hsl(var(--background) / 0.15);
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.dark .rail-glass::before {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary) / 0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+/* 主题覆盖 */
+.theme-ocean-light .rail-glass {
+  background: hsl(205 35% 98% / 0.22);
+}
+
+.theme-forest-light .rail-glass {
+  background: hsl(140 25% 98% / 0.22);
+}
+
+/**
+ * content-glass - 主内容区液态玻璃
+ * 更亮的背景，作为内容画布
+ */
+.content-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--content-area) / 0.18) 0%,
+    hsl(var(--content-area) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 20px;
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.03);
+}
+
+/* 主题色微光层 */
+.content-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.03) 0%,
+    transparent 25%,
+    transparent 75%,
+    hsl(var(--primary) / 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+/* 白色边框层 */
+.content-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.18) 35%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.18) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.content-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题 */
+.dark .content-glass {
+  background: hsl(var(--content-area) / 0.15);
+  box-shadow:
+    0 2px 20px rgba(0, 0, 0, 0.10),
+    0 12px 36px rgba(0, 0, 0, 0.06);
+}
+
+.dark .content-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.05) 0%,
+    transparent 25%,
+    transparent 75%,
+    hsl(var(--primary) / 0.03) 100%
+  );
+}
+
+/* 主题覆盖 */
+.theme-ocean-light .content-glass {
+  background: hsl(205 35% 98% / 0.22);
+}
+
+.theme-forest-light .content-glass {
+  background: hsl(140 25% 98% / 0.22);
+}
+
+/**
+ * session-body - 会话区悬浮底栏布局
+ * --session-bottom-reserve 由 SessionFloatingLayout 的 ResizeObserver 动态写入
+ */
+.session-body {
+  --session-bottom-reserve: 140px;
+}
+
+.session-bottom-stack > * {
+  pointer-events: auto;
+}
+
+.conversation-floating-input {
+  padding-bottom: max(1rem, var(--session-bottom-reserve, 140px));
+}
+
+.session-body [data-conversation-scroll-btn] {
+  bottom: calc(var(--session-bottom-reserve, 140px) + 12px);
+}
+
+/* 与玻璃底板同步滑动的左侧状态竖条（仅会话列表） */
+.sidebar-session-slide-accent {
+  pointer-events: none;
+  will-change: top, height, left, background-color;
+  z-index: 2 !important;
+}
+
+/* 非当前选中行上的状态竖条：淡入淡出，避免与滑动竖条抢戏 */
+.session-sidebar-accent--inline {
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Rail 功能区按钮：默认扁平，选中浮岛 + 主题描边 */
+.rail-island-btn {
+  color: hsl(var(--foreground) / 0.40);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition:
+    transform 0.08s ease,
+    color 0.15s ease,
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.72);
+  background: hsl(var(--foreground) / 0.05);
+}
+
+.rail-island-btn:active {
+  transform: scale(0.96);
+}
+
+.rail-island-btn--active {
+  color: hsl(var(--foreground));
+}
+
+/* 滑动指示器模式下，激活按钮自身背景透明，露出背后的滑动玻璃浮岛 */
+.rail-slide-host .rail-island-btn--active.rail-island-btn--ghost {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 浅色：勿用 --primary 描边（默认主题 primary 近黑），改用 glass-rim */
+html:not(.dark) .rail-island-btn--active {
+  border-color: hsl(var(--glass-rim) / 0.82);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.92) 0%,
+    hsl(var(--background) / 0.74) 52%,
+    hsl(var(--background) / 0.66) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.72),
+    0 4px 14px -5px rgba(0, 0, 0, 0.05),
+    0 2px 8px -4px rgba(0, 0, 0, 0.04);
+}
+
+.dark .rail-island-btn {
+  color: hsl(var(--foreground) / 0.46);
+}
+
+.dark .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.84);
+  background: hsl(var(--foreground) / 0.07);
+}
+
+.dark .rail-island-btn--active {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.45);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.22) 0%,
+    hsl(var(--background) / 0.56) 52%,
+    hsl(var(--background) / 0.48) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--primary) / 0.26),
+    0 4px 16px -6px hsl(var(--primary) / 0.32),
+    0 2px 10px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Rail 滑动指示器：玻璃浮岛，跟随激活按钮滑动 */
+.rail-slide-indicator {
+  position: absolute;
+  left: 50%;
+  width: 40px;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transform: translateX(-50%);
+  -webkit-backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  backdrop-filter: blur(16px) saturate(1.38) brightness(1.02);
+  will-change: top, height, opacity;
+}
+
+html:not(.dark) .rail-slide-indicator {
+  border-color: hsl(var(--glass-rim) / 0.82);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.92) 0%,
+    hsl(var(--background) / 0.74) 52%,
+    hsl(var(--background) / 0.66) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.72),
+    0 4px 14px -5px rgba(0, 0, 0, 0.05),
+    0 2px 8px -4px rgba(0, 0, 0, 0.04);
+}
+
+.dark .rail-slide-indicator {
+  border-color: hsl(var(--primary) / 0.45);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--primary) / 0.22) 0%,
+    hsl(var(--background) / 0.56) 52%,
+    hsl(var(--background) / 0.48) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--primary) / 0.26),
+    0 4px 16px -6px hsl(var(--primary) / 0.32),
+    0 2px 10px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* 侧栏状态竖条：置于玻璃伪元素之上 */
+.session-sidebar-accent {
+  position: absolute !important;
+  z-index: 10 !important;
+}
+
+/* Agent 模型选择浮窗：更明显的背景玻璃 + 轻量展开/收回动画 */
+.agent-model-popover {
+  border-radius: 20px;
+  transform-origin: var(--radix-popover-content-transform-origin);
+  -webkit-backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
+  backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 18% 0%,
+      hsl(var(--glass-shine) / 0.38),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.48),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.62) 0%,
+      hsl(var(--background) / 0.70) 48%,
+      hsl(var(--popover) / 0.58) 100%
+    );
+  border-color: hsl(var(--glass-rim) / 0.92);
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.58),
+    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.34),
+    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.36),
+    0 0 0 1px hsl(var(--glass-shine) / 0.34),
+    0 12px 34px -12px rgba(0, 0, 0, 0.24),
+    0 28px 70px -24px rgba(0, 0, 0, 0.20);
+}
+
+.agent-model-popover[data-state='open'] {
+  animation: agent-model-popover-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-model-popover[data-state='closed'] {
+  animation: agent-model-popover-out 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.agent-model-popover-header {
+  background:
+    linear-gradient(180deg, hsl(var(--glass-shine) / 0.15), transparent 72%),
+    hsl(var(--background) / 0.12);
+}
+
+.context-usage-popover {
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
+  backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.30),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 68% 58% at 100% 100%,
+      hsl(var(--glass-ambient) / 0.34),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.62) 0%,
+      hsl(var(--background) / 0.70) 50%,
+      hsl(var(--popover) / 0.56) 100%
+    );
+}
+
+.context-usage-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+.context-usage-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+
+.context-usage-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.context-usage-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+  min-height: 32px;
+}
+
+.context-usage-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+.context-usage-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Windows/Chromium：用 0 高度占位替代 display:none，避免仍渲染上下箭头 */
+.context-usage-scroll::-webkit-scrollbar-button,
+.context-usage-scroll::-webkit-scrollbar-button:vertical:start:decrement,
+.context-usage-scroll::-webkit-scrollbar-button:vertical:end:increment,
+.context-usage-scroll::-webkit-scrollbar-button:horizontal:start:decrement,
+.context-usage-scroll::-webkit-scrollbar-button:horizontal:end:increment {
+  display: block;
+  width: 6px;
+  height: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.dark .context-usage-popover {
+  -webkit-backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
+  backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.12),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 68% 58% at 100% 100%,
+      hsl(var(--primary) / 0.08),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.48) 0%,
+      hsl(var(--background) / 0.60) 50%,
+      hsl(var(--popover) / 0.44) 100%
+    );
+}
+
+.agent-model-list-selection {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 10px;
+  will-change: transform, width, height;
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.theme-neumorph-light .agent-model-list-selection--neumorph,
+html.theme-neumorph-dark .agent-model-list-selection--neumorph {
+  border: 1px solid hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
+    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
+  box-shadow:
+    0 6px 14px -12px hsl(var(--foreground) / 0.18),
+    inset 1px 1px 0 var(--neumorph-light-edge);
+}
+
+.dark .agent-model-popover {
+  -webkit-backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
+  backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
+  background:
+    radial-gradient(
+      ellipse 82% 62% at 18% 0%,
+      hsl(var(--glass-shine) / 0.14),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 100% 100%,
+      hsl(var(--primary) / 0.10),
+      transparent 64%
+    ),
+    linear-gradient(
+      168deg,
+      hsl(var(--popover) / 0.50) 0%,
+      hsl(var(--background) / 0.62) 48%,
+      hsl(var(--popover) / 0.46) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.13),
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.08),
+    inset 0 -1px 0 0 hsl(var(--glass-ambient) / 0.28),
+    0 0 0 1px hsl(var(--foreground) / 0.08),
+    0 12px 38px -12px rgba(0, 0, 0, 0.44),
+    0 28px 78px -24px rgba(0, 0, 0, 0.36);
+}
+
+@keyframes agent-model-popover-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.965);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes agent-model-popover-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.975);
+    filter: blur(1px);
+  }
+}
+
+/**
+ * button-glass - 按钮精致卡片
+ */
+.button-glass {
+  background: hsl(var(--background) / 0.70);
+  border: 1px solid hsl(var(--border) / 0.35);
+  border-top-color: hsl(var(--foreground) / 0.05);
+  transition: all 0.15s ease;
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.button-glass:hover {
+  background: hsl(var(--background) / 0.80);
+  border-color: hsl(var(--border) / 0.45);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06);
+}
+
+.button-glass.active {
+  background: hsl(var(--primary) / 0.08);
+  border-color: hsl(var(--primary) / 0.25);
+  border-top-color: hsl(var(--primary) / 0.30);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 1px 2px hsl(var(--foreground) / 0.04);
+}
+
+.dark .button-glass {
+  /* 用 muted 实底抬升，与透明 rail 背景拉开明度差 */
+  background: hsl(var(--muted) / 0.88);
+  border-color: hsl(var(--foreground) / 0.22);
+  border-top-color: hsl(var(--foreground) / 0.15);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.30),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.dark .button-glass:hover {
+  background: hsl(var(--muted) / 0.98);
+  border-color: hsl(var(--foreground) / 0.28);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+/* Rail 虚线操作按钮：复用 button-glass 实底，仅改虚线描边 */
+.button-glass-dashed {
+  border-style: dashed !important;
+  border-color: hsl(var(--dashed-border)) !important;
+}
+
+.button-glass-dashed:hover {
+  border-color: hsl(var(--dashed-border-hover)) !important;
+}
+
+.dark .button-glass.active {
+  background: hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.35);
+  border-top-color: hsl(var(--primary) / 0.40);
+}
+
+/**
+ * glass-divider - 分隔线
+ */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.55) 20%,
+    hsl(var(--border) / 0.70) 50%,
+    hsl(var(--border) / 0.55) 80%,
+    transparent 100%
+  );
+}
+
+.dark .glass-divider {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.40) 20%,
+    hsl(var(--border) / 0.55) 50%,
+    hsl(var(--border) / 0.40) 80%,
+    transparent 100%
+  );
+}
+
+/**
+ * material-frosted - 普通材质（关闭「高级材质」）
+ * 轻量 backdrop-filter 磨砂 + 半透明底色，无伪元素折射层（弱于高级材质）
+ */
+html.material-frosted {
+  --material-opacity-surface: 0.86;
+  --material-opacity-elevated: 0.91;
+  --material-opacity-overlay: 0.94;
+  --material-opacity-chip: 0.84;
+  --material-blur-mask: 14px;
+  --material-blur-surface: 16px;
+  --material-blur-elevated: 20px;
+  --material-blur-overlay: 24px;
+  --material-blur-chip: 14px;
+  --material-blur-saturate: 1.2;
+  /* 边缘光泽（克制描边高光，无折射团雾） */
+  --material-edge-inset: rgba(255, 255, 255, 0.30);
+  --material-edge-ring-mid: rgba(255, 255, 255, 0.18);
+  --material-edge-ring-peak: rgba(255, 255, 255, 0.34);
+  --material-edge-outer: rgba(255, 255, 255, 0.06);
+}
+
+html.material-frosted.dark {
+  --material-opacity-surface: 0.88;
+  --material-opacity-elevated: 0.92;
+  --material-opacity-overlay: 0.95;
+  --material-opacity-chip: 0.86;
+  --material-blur-saturate: 1.14;
+  --material-edge-inset: rgba(255, 255, 255, 0.12);
+  --material-edge-ring-mid: rgba(255, 255, 255, 0.08);
+  --material-edge-ring-peak: rgba(255, 255, 255, 0.18);
+  --material-edge-outer: rgba(255, 255, 255, 0.05);
+}
+
+/* 普通材质：关闭折射团雾（::before），保留轻量边缘光泽（::after） */
+html.material-frosted .session-glass::before,
+html.material-frosted .chat-input-glass::before,
+html.material-frosted .session-glass-surface::before,
+html.material-frosted .session-glass-sidebar::before,
+html.material-frosted .session-glass-rail::before,
+html.material-frosted .session-glass-chip::before,
+html.material-frosted .session-glass-tooltip::before,
+html.material-frosted .panel-glass::before,
+html.material-frosted .rail-glass::before,
+html.material-frosted .nav-island-glass::before,
+html.material-frosted .content-glass::before,
+html.material-frosted .content-base-plate--body::before,
+html.material-frosted .btw-panel-glass::before,
+html.material-frosted .btw-input-glass::before,
+html.material-frosted .btw-glass::before {
+  display: none !important;
+}
+
+html.material-frosted .session-glass::after,
+html.material-frosted .chat-input-glass::after,
+html.material-frosted .session-glass-surface::after,
+html.material-frosted .session-glass-sidebar::after,
+html.material-frosted .session-glass-rail::after,
+html.material-frosted .session-glass-chip::after,
+html.material-frosted .session-glass-tooltip::after,
+html.material-frosted .session-glass-modal::after,
+html.material-frosted .session-glass-modal-lg::after,
+html.material-frosted .panel-glass::after,
+html.material-frosted .rail-glass::after,
+html.material-frosted .nav-island-glass::after,
+html.material-frosted .btw-panel-glass::after,
+html.material-frosted .btw-input-glass::after,
+html.material-frosted .btw-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  display: block !important;
+  opacity: 0.36;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    var(--material-edge-ring-mid) 26%,
+    var(--material-edge-ring-peak) 50%,
+    var(--material-edge-ring-mid) 74%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+html.material-frosted .shell-glass {
+  background: hsl(var(--background));
+}
+
+html.material-frosted.dark .button-glass {
+  background: hsl(var(--muted) / 0.80);
+  border-color: hsl(var(--foreground) / 0.20);
+  box-shadow:
+    inset 0 1px 0 var(--material-edge-inset),
+    0 2px 6px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+html.material-frosted.dark .button-glass:hover {
+  background: hsl(var(--muted) / 0.92);
+  border-color: hsl(var(--foreground) / 0.26);
+}
+
+html.material-frosted .panel-glass,
+html.material-frosted .rail-glass,
+html.material-frosted .nav-island-glass {
+  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--background) / var(--material-opacity-surface));
+  border-color: hsl(var(--glass-rim) / 0.55);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 2px 12px rgba(0, 0, 0, 0.07);
+}
+
+html.material-frosted .nav-island-glass.nav-island-glass--float {
+  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
+  backdrop-filter: blur(var(--material-blur-elevated)) saturate(calc(var(--material-blur-saturate) + 0.15));
+  background: hsl(var(--background) / var(--material-opacity-elevated));
+  border-color: hsl(var(--glass-rim) / 0.68);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.06),
+    0 4px 14px rgba(0, 0, 0, 0.09),
+    0 16px 40px rgba(0, 0, 0, 0.10),
+    0 30px 68px rgba(0, 0, 0, 0.08);
+}
+
+html.material-frosted
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
+html.material-frosted
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  box-shadow: none;
+}
+
+html.material-frosted .content-glass {
+  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--content-area) / var(--material-opacity-surface));
+  border-color: hsl(var(--border) / 0.5);
+  box-shadow: none;
+}
+
+html.material-frosted .content-base-plate--body {
+  -webkit-backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-surface)) saturate(var(--material-blur-saturate));
+  background:
+    linear-gradient(
+      to right,
+      hsl(var(--content-area) / 0.03) 0%,
+      hsl(var(--content-area) / 0.22) calc(var(--content-base-fade-width) * 0.5),
+      hsl(var(--content-area) / var(--material-opacity-surface)) var(--content-base-fade-width)
+    );
+  box-shadow: none;
+  transition: left 300ms ease-in-out;
+}
+
+html.material-frosted .content-main-shell--right-inset .content-base-plate--body {
+  box-shadow:
+    inset -1px 0 0 0 var(--material-edge-inset),
+    inset -2px 0 0 0 var(--material-edge-outer);
+}
+
+html.material-frosted
+  .content-main-shell--right-rail:not(.content-main-shell--right-inset)
+  .content-base-plate--body {
+  box-shadow: none;
+}
+
+html.material-frosted .content-base-plate-edge--tone {
+  border-color: hsl(var(--glass-rim) / 0.58);
+}
+
+html.material-frosted .content-base-plate-edge--glint {
+  border-color: var(--material-edge-inset);
+  opacity: 0.46;
+}
+
+html.material-frosted .content-base-plate-hairline--tone {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      hsl(var(--glass-rim) / 0.22) var(--content-base-inset-left, 0px),
+      hsl(var(--glass-rim) / 0.42) calc(var(--content-base-inset-left, 0px) + 36px),
+      hsl(var(--glass-rim) / 0.55) calc(var(--content-base-inset-left, 0px) + 64px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      hsl(var(--glass-rim) / 0.22) var(--content-base-inset-left, 0px),
+      hsl(var(--glass-rim) / 0.42) calc(var(--content-base-inset-left, 0px) + 36px),
+      hsl(var(--glass-rim) / 0.55) calc(var(--content-base-inset-left, 0px) + 64px)
+    );
+}
+
+html.material-frosted .content-base-plate-hairline--glint {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      var(--material-edge-ring-mid) var(--content-base-inset-left, 0px),
+      var(--material-edge-ring-peak) calc(var(--content-base-inset-left, 0px) + 36px),
+      var(--material-edge-inset) calc(var(--content-base-inset-left, 0px) + 64px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 0px,
+      transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
+      var(--material-edge-ring-mid) var(--content-base-inset-left, 0px),
+      var(--material-edge-ring-peak) calc(var(--content-base-inset-left, 0px) + 36px),
+      var(--material-edge-inset) calc(var(--content-base-inset-left, 0px) + 64px)
+    );
+  opacity: 0.3;
+}
+
+html.material-frosted .btw-panel-glass {
+  -webkit-backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-elevated)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--background) / var(--material-opacity-elevated));
+  border-color: hsl(var(--glass-rim) / 0.6);
+  box-shadow:
+    inset 0 1px 0 0 var(--material-edge-inset),
+    0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+html.material-frosted .btw-input-glass {
+  -webkit-backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  backdrop-filter: blur(var(--material-blur-chip)) saturate(var(--material-blur-saturate));
+  background: hsl(var(--muted) / var(--material-opacity-chip));
+  border-color: hsl(var(--border) / 0.7);
+  box-shadow: none;
+}
+
+/* 压过特殊主题下的半透明 content/panel 覆盖 */
+html.material-frosted.theme-ocean-light .content-glass,
+html.material-frosted.theme-forest-light .content-glass,
+html.material-frosted.theme-slate-light .content-glass,
+html.material-frosted.theme-ocean-dark .content-glass,
+html.material-frosted.theme-forest-dark .content-glass,
+html.material-frosted.theme-slate-dark .content-glass {
+  background: hsl(var(--content-area) / var(--material-opacity-surface));
+}
+
+html.material-frosted.theme-ocean-light .panel-glass,
+html.material-frosted.theme-forest-light .panel-glass,
+html.material-frosted.theme-slate-light .panel-glass,
+html.material-frosted.theme-ocean-dark .panel-glass,
+html.material-frosted.theme-forest-dark .panel-glass,
+html.material-frosted.theme-slate-dark .panel-glass,
+html.material-frosted.theme-ocean-light .nav-island-glass,
+html.material-frosted.theme-forest-light .nav-island-glass,
+html.material-frosted.theme-slate-light .nav-island-glass,
+html.material-frosted.theme-ocean-dark .nav-island-glass,
+html.material-frosted.theme-forest-dark .nav-island-glass,
+html.material-frosted.theme-slate-dark .nav-island-glass {
+  background: hsl(var(--background) / var(--material-opacity-surface));
+}
+
+/* 降级样式 */
+@media (prefers-reduced-motion: reduce) {
+  .panel-glass::before,
+  .rail-glass::before,
+  .content-glass::before,
+  .settings-glass::before,
+  .settings-glass::after {
+    display: none;
+  }
+}
+
+/* =============================================================
+ *  settings-glass - 设置面板玻璃态浮岛
+ *  与主界面 panel-glass / nav-island-glass 同源：半透明渐变 +
+ *  主题色微光 + 顶部 1px 高光描边。
+ *  半径 16px（比主面板略小，更紧凑）、阴影更克制。
+ * ============================================================= */
+.settings-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.22) 0%,
+    hsl(var(--background) / 0.10) 100%
+  );
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.03);
+}
+
+/* 主题色微光层（极轻，5% 透明度） */
+.settings-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 35%,
+    transparent 65%,
+    hsl(var(--primary) / 0.03) 100%
+  );
+}
+
+/* 顶部 1px 高光描边（白边） */
+.settings-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 60%
+  );
+}
+
+.settings-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 深色主题：更厚的玻璃感 + 更深阴影 */
+.dark .settings-glass {
+  background: hsl(var(--background) / 0.10);
+  box-shadow:
+    0 3px 16px rgba(0, 0, 0, 0.14),
+    0 12px 36px rgba(0, 0, 0, 0.08);
+}
+
+.dark .settings-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 35%,
+    transparent 65%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+.dark .settings-glass::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 30%,
+    transparent 60%
+  );
+}
+
+/* 降透明度偏好 */
+@media (prefers-reduced-transparency: reduce) {
+  .settings-glass {
+    background: hsl(var(--background) / 0.85);
+  }
+}
+
+/* Emoji Mart 选择器样式修复 - 去除多余滚动区域 */
+em-emoji-picker {
+  --em-rgb-background: transparent !important;
+  border: none !important;
+}
+
+em-emoji-picker .overflow-y-auto {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+em-emoji-picker .overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 2px;
+}
+
+/* 修复 emoji picker 内部滚轮滚动问题 */
+[data-radix-popper-content-wrapper] em-emoji-picker,
+[data-radix-popper-content-wrapper] em-emoji-picker * {
+  overscroll-behavior: contain;
+}
+
+/* ===== 插件页：侧栏双列卡片 + 主区 Inspector ===== */
+
+.plugins-panel-grid {
+  animation: plugins-grid-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plugins-panel-card {
+  animation: plugins-card-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  background:
+    linear-gradient(168deg, hsl(var(--background) / 0.34) 0%, hsl(var(--card) / 0.42) 100%);
+  border: 1px solid hsl(var(--border) / 0.45);
+  box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.14);
+}
+
+.plugins-panel-card--selected {
+  background:
+    linear-gradient(168deg, hsl(var(--glass-ambient) / 0.42) 0%, hsl(var(--background) / 0.58) 100%);
+  border-color: hsl(var(--glass-rim) / 0.72);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.34),
+    0 6px 18px -12px rgba(0, 0, 0, 0.22);
+}
+
+.plugins-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.plugins-inspector-body {
+  animation: plugins-inspector-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plugins-inspector-header {
+  animation: plugins-inspector-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes plugins-grid-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes plugins-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes plugins-inspector-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugins-panel-grid,
+  .plugins-panel-card,
+  .plugins-inspector-body,
+  .plugins-inspector-header {
+    animation: none;
+  }
+}
+
+/* 关于页 logo 玻璃高光描边 — 复用 session-glass 的边缘高光逻辑 */
+/* 不用 backdrop-filter（PNG 不需要模糊），只取描边高光 + inset shadow */
+.about-logo-glow {
+  position: relative;
+  isolation: isolate;
+  border: 0.5px solid hsl(var(--glass-rim) / 0.88);
+  box-shadow:
+    inset 0 1.5px 0 0 hsl(var(--glass-shine) / 0.55),
+    inset 0 -0.5px 0 0 hsl(var(--glass-rim) / 0.35),
+    0 6px 22px -6px rgba(0, 0, 0, 0.18),
+    0 18px 48px -14px rgba(0, 0, 0, 0.14);
+}
+
+.about-logo-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.42) 28%,
+    rgba(255, 255, 255, 0.68) 50%,
+    rgba(255, 255, 255, 0.38) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/**
+ * Tab 运行中状态条 — 流光 + 发光动画
+ *
+ * 比 Tailwind 的 animate-pulse 更显眼：
+ * - 流光：背景渐变横向滚动，像数据在流动
+ * - 发光：蓝色光晕呼吸，提升存在感
+ */
+@keyframes tab-streaming-flow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes tab-streaming-glow {
+  0%, 100% {
+    box-shadow: 0 0 6px 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 10px 1px rgba(59, 130, 246, 0.7);
+  }
+}
+
+.tab-status-streaming {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(59, 130, 246, 1) 50%,
+    rgba(59, 130, 246, 0.3) 100%
+  );
+  background-size: 200% 100%;
+  animation:
+    tab-streaming-flow 2.5s linear infinite,
+    tab-streaming-glow 2.2s ease-in-out infinite;
+}
+
+/* 暗色主题下蓝色更亮，提升对比 */
+.dark .tab-status-streaming {
+  background: linear-gradient(
+    90deg,
+    rgba(96, 165, 250, 0.3) 0%,
+    rgba(96, 165, 250, 1) 50%,
+    rgba(96, 165, 250, 0.3) 100%
+  );
+  background-size: 200% 100%;
+}

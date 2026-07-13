@@ -1,0 +1,262 @@
+/**
+ * PermissionBanner — Agent 权限请求横幅
+ *
+ * 内联在 Agent 对话流底部，当有待处理的权限请求时显示。
+ * 显示工具名、命令内容、危险等级，提供允许/拒绝/总是允许操作。
+ * 支持队列模式：多个并发请求按 FIFO 逐个展示。
+ *
+ * 设计参考 Craft Agents OSS 的内联权限 UI。
+ */
+
+import { useAtom, useSetAtom } from 'jotai'
+import { Shield, ShieldAlert, FolderOpen, Check, X } from 'lucide-react'
+import * as React from 'react'
+
+import type { DangerLevel, PermissionRequest } from '@tagent/shared'
+
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  allPendingPermissionRequestsAtom,
+  agentStreamingStatesAtom,
+  agentAttachedDirectoriesMapAtom,
+  finalizeStreamingActivities,
+} from '@/atoms/agent-atoms'
+
+/** 危险等级对应的图标颜色 */
+const DANGER_ICON_STYLES: Record<DangerLevel, string> = {
+  safe: 'text-green-500',
+  normal: 'text-primary',
+  dangerous: 'text-amber-500',
+}
+
+/** 解析工具显示名称（MCP 工具显示 server / tool） */
+function formatToolName(toolName: string): string {
+  const parts = toolName.split('__')
+  if (parts[0] === 'mcp' && parts.length >= 3) {
+    return `${parts[1]} / ${parts.slice(2).join('__')}`
+  }
+  return toolName
+}
+
+/** PermissionBanner 属性接口 */
+interface PermissionBannerProps {
+  sessionId: string
+}
+
+export function PermissionBanner({ sessionId }: PermissionBannerProps): React.ReactElement | null {
+  const [allRequests, setAllRequests] = useAtom(allPendingPermissionRequestsAtom)
+  const setStreamingStates = useSetAtom(agentStreamingStatesAtom)
+  const setAttachedDirsMap = useSetAtom(agentAttachedDirectoriesMapAtom)
+  const requests = allRequests.get(sessionId) ?? []
+  const [responding, setResponding] = React.useState(false)
+  const respondRef =
+    React.useRef<
+      (behavior: 'allow' | 'deny', alwaysAllow?: boolean, addDirectories?: string[]) => void
+    >()
+
+  const request = requests[0] ?? null
+
+  // Enter 键快捷允许
+  React.useEffect(() => {
+    if (!request) return
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      )
+        return
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        respondRef.current?.('allow')
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [request?.requestId])
+
+  /** 关闭权限请求 & 终止 Agent */
+  const handleDismiss = (): void => {
+    setStreamingStates((prev) => {
+      const current = prev.get(sessionId)
+      if (!current || !current.running) return prev
+      const map = new Map(prev)
+      map.set(sessionId, {
+        ...current,
+        running: false,
+        ...finalizeStreamingActivities(current.toolActivities),
+      })
+      return map
+    })
+    setAllRequests((prev) => {
+      const map = new Map(prev)
+      map.delete(sessionId)
+      return map
+    })
+    window.electronAPI.stopAgent(sessionId).catch(console.error)
+  }
+
+  if (!request) return null
+
+  const isBlockedPath = !!request.blockedPath
+  const iconColor = isBlockedPath
+    ? 'text-blue-500 dark:text-blue-400'
+    : DANGER_ICON_STYLES[request.dangerLevel]
+  const isDangerous = !isBlockedPath && request.dangerLevel === 'dangerous'
+  const IconComponent = isBlockedPath ? FolderOpen : isDangerous ? ShieldAlert : Shield
+
+  /** 响应权限请求 */
+  const respond = async (
+    behavior: 'allow' | 'deny',
+    alwaysAllow = false,
+    addDirectories?: string[]
+  ): Promise<void> => {
+    if (responding) return
+    setResponding(true)
+
+    try {
+      await window.electronAPI.respondPermission({
+        requestId: request.requestId,
+        behavior,
+        alwaysAllow,
+        ...(addDirectories?.length ? { addDirectories } : {}),
+      })
+      // 越界目录批准后同步到渲染进程的附加目录 atom（主进程已持久化，此处仅同步本地状态）
+      if (behavior === 'allow' && addDirectories?.length) {
+        setAttachedDirsMap((prev) => {
+          const existing = prev.get(sessionId) ?? []
+          const merged = [...new Set([...existing, ...addDirectories])]
+          if (merged.length === existing.length) return prev
+          const map = new Map(prev)
+          map.set(sessionId, merged)
+          return map
+        })
+      }
+      // 移除已响应的请求（FIFO 出队）
+      setAllRequests((prev) => {
+        const map = new Map(prev)
+        const current = map.get(sessionId) ?? []
+        const newValue = current.filter((r) => r.requestId !== request.requestId)
+        if (newValue.length === 0) map.delete(sessionId)
+        else map.set(sessionId, newValue)
+        return map
+      })
+    } catch (error) {
+      console.error('[PermissionBanner] 响应失败:', error)
+    } finally {
+      setResponding(false)
+    }
+  }
+
+  respondRef.current = respond
+
+  return (
+    <div className="session-glass-modal mx-4 mb-3 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+      {/* 头部 */}
+      <div className="flex items-center justify-between px-3 py-2">
+        <div className="flex items-center gap-2">
+          <IconComponent className={`size-4 ${iconColor}`} />
+          <span className="text-sm font-medium">
+            {isBlockedPath ? 'Agent 需要访问目录' : isDangerous ? '危险操作需要确认' : '需要确认'}
+          </span>
+          {requests.length > 1 && (
+            <span className="text-xs text-muted-foreground">(+{requests.length - 1})</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground font-mono">
+            {request.sdkDisplayName ?? formatToolName(request.toolName)}
+          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="size-5 flex items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                onClick={handleDismiss}
+              >
+                <X className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>关闭并终止 Agent</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* 命令/操作内容 */}
+      <div className="px-3 pb-2 space-y-1.5">
+        {isBlockedPath ? (
+          <>
+            <p className="text-xs text-muted-foreground">此目录在当前项目范围之外</p>
+            <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all scrollbar-thin">
+              {request.blockedPath}
+            </pre>
+            <p className="text-[10px] text-muted-foreground/60">
+              允许后此目录将添加到项目附加目录，后续 Agent 可直接访问
+            </p>
+          </>
+        ) : (
+          <>
+            {/* SDK 可读标题（优先展示，描述操作意图） */}
+            {request.sdkTitle && <p className="text-xs text-foreground">{request.sdkTitle}</p>}
+            {/* SDK 详细描述（与标题不同时才展示） */}
+            {request.sdkDescription && request.sdkDescription !== request.sdkTitle && (
+              <p className="text-xs text-muted-foreground">{request.sdkDescription}</p>
+            )}
+            {/* Bash 命令：始终展示代码块 */}
+            {request.command ? (
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto scrollbar-thin">
+                {request.command}
+              </pre>
+            ) : !request.sdkTitle && Object.keys(request.toolInput).length > 0 ? (
+              <pre className="text-xs font-mono bg-foreground/[0.04] rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[120px] overflow-y-auto scrollbar-thin">
+                {JSON.stringify(request.toolInput, null, 2)}
+              </pre>
+            ) : !request.sdkTitle ? (
+              <p className="text-xs text-muted-foreground">{request.description}</p>
+            ) : null}
+          </>
+        )}
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex items-center justify-end gap-1.5 px-3 pb-2.5">
+        <span className="text-[10px] text-muted-foreground/40 mr-auto">Enter 允许</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => respond('deny')}
+          disabled={responding}
+          className="h-7 px-3 text-xs text-muted-foreground hover:text-destructive"
+        >
+          <X className="size-3 mr-1" />
+          {isBlockedPath ? '拒绝访问' : '拒绝'}
+        </Button>
+
+        {!isBlockedPath && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => respond('allow', true)}
+            disabled={responding}
+            className="h-7 px-3 text-xs"
+          >
+            本次会话总是允许
+          </Button>
+        )}
+
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() =>
+            isBlockedPath ? respond('allow', false, [request.blockedPath!]) : respond('allow')
+          }
+          disabled={responding}
+          className="h-7 px-3 text-xs"
+        >
+          <Check className="size-3 mr-1" />
+          {isBlockedPath ? '允许并附加此目录' : '允许'}
+        </Button>
+      </div>
+    </div>
+  )
+}

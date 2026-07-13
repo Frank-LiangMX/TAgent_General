@@ -68,6 +68,7 @@ Thumbs.db
 # ===== Agent Tools =====
 .agents/
 .claude/settings.local.json
+.mimocode/
 
 # ===== Logs =====
 *.log

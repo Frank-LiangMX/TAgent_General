@@ -11,6 +11,7 @@
 | [`ui-prototype/`](./ui-prototype/) | 对齐 glass-studio 视觉、TAgent 变量命名的 UI 原型 | `ui-prototype/index.html`（样式引用 `../glass-studio/`） |
 | [`liquid-glass-demo/`](./liquid-glass-demo/) | Liquid Glass 光学/滤镜参数演示 | `liquid-glass-demo/index.html` |
 | [`style-showcase/`](./style-showcase/) | 风格对照：glassmorphism / neumorphism / production glass | `style-showcase/index.html` |
+| [`references/`](./references/) | 未接入主线逻辑的参考实现、镜像页面、旧版 renderer 备份 | 仅供查阅，不参与产品构建 |
 
 ## 本地预览
 

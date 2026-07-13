@@ -1,0 +1,131 @@
+/**
+ * AgentHeader — Agent 会话头部
+ *
+ * 显示当前会话的轻量状态栏。
+ */
+
+import { TAGENT_PERMISSION_MODE_CONFIG } from '@tagent/shared'
+import { useAtomValue } from 'jotai'
+import * as React from 'react'
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { getToolDisplayName } from './tool-utils'
+
+import type { SessionIndicatorStatus, ToolActivity } from '@/atoms/agent-atoms'
+
+import {
+  agentDefaultPermissionModeAtom,
+  agentPermissionModeMapAtom,
+  agentSessionIndicatorMapAtom,
+  agentSessionsAtom,
+  agentSessionStreamingStateAtomFamily,
+  sessionPersistedPermissionModeAtom,
+} from '@/atoms/agent-atoms'
+import { channelsAtom } from '@/atoms/model-atoms'
+import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
+import { resolveModelDisplayName } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+
+/** AgentHeader 属性接口 */
+interface AgentHeaderProps {
+  sessionId: string
+  /** 右侧插槽（渲染在状态 chip 行最右，避让 WindowControls） */
+  rightSlot?: React.ReactNode
+}
+
+function HeaderStatusChip({
+  children,
+  tone = 'neutral',
+}: {
+  children: React.ReactNode
+  tone?: 'neutral' | 'running' | 'blocked' | 'completed'
+}): React.ReactElement {
+  const isStringChild = typeof children === 'string'
+  const chipClassName = cn(
+    'inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
+    tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
+    tone === 'running' && 'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
+    tone === 'blocked' &&
+      'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
+    tone === 'completed' &&
+      'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300'
+  )
+  if (isStringChild) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={chipClassName}>{children}</span>
+        </TooltipTrigger>
+        <TooltipContent>{children as string}</TooltipContent>
+      </Tooltip>
+    )
+  }
+  return <span className={chipClassName}>{children}</span>
+}
+
+function getLatestRunningTool(toolActivities: ToolActivity[] | undefined): ToolActivity | null {
+  if (!toolActivities) return null
+  for (let index = toolActivities.length - 1; index >= 0; index -= 1) {
+    const activity = toolActivities[index]
+    if (activity && !activity.done) return activity
+  }
+  return null
+}
+
+function getStatusLabel(status: SessionIndicatorStatus, runningTool: ToolActivity | null): string {
+  if (status === 'blocked') return '等待处理'
+  if (status === 'completed') return '已完成'
+  if (status === 'running') {
+    return runningTool
+      ? `运行中 · ${runningTool.displayName || getToolDisplayName(runningTool.toolName)}`
+      : '运行中'
+  }
+  return '空闲'
+}
+
+function getStatusTone(
+  status: SessionIndicatorStatus
+): 'neutral' | 'running' | 'blocked' | 'completed' {
+  if (status === 'blocked') return 'blocked'
+  if (status === 'completed') return 'completed'
+  if (status === 'running') return 'running'
+  return 'neutral'
+}
+
+export function AgentHeader({ sessionId, rightSlot }: AgentHeaderProps): React.ReactElement | null {
+  const sessions = useAtomValue(agentSessionsAtom)
+  const session = sessions.find((s) => s.id === sessionId) ?? null
+  const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))
+  const sessionIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
+  const { modelId } = useAgentSessionChannelModel(sessionId)
+  const channels = useAtomValue(channelsAtom)
+  const permissionModeMap = useAtomValue(agentPermissionModeMapAtom)
+  const persistedPermissionMode = useAtomValue(sessionPersistedPermissionModeAtom(sessionId))
+  const defaultPermissionMode = useAtomValue(agentDefaultPermissionModeAtom)
+
+  if (!session) return null
+
+  const modelLabel = modelId ? resolveModelDisplayName(modelId, channels) : '未选择模型'
+  const permissionMode =
+    permissionModeMap.get(sessionId) ?? persistedPermissionMode ?? defaultPermissionMode
+  const permissionLabel = TAGENT_PERMISSION_MODE_CONFIG[permissionMode].label
+  const status = sessionIndicatorMap.get(sessionId) ?? 'idle'
+  const runningTool = getLatestRunningTool(streamState?.toolActivities)
+  const statusLabel = getStatusLabel(status, runningTool)
+  const statusTone = getStatusTone(status)
+
+  return (
+    <div className="relative z-[51] flex h-[36px] items-center gap-2 px-4">
+      <div className="flex flex-1 min-w-0 items-center">
+        <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+          <HeaderStatusChip>{modelLabel}</HeaderStatusChip>
+          <HeaderStatusChip>{permissionLabel}</HeaderStatusChip>
+          <HeaderStatusChip tone={statusTone}>{statusLabel}</HeaderStatusChip>
+        </div>
+      </div>
+      {rightSlot && (
+        <div className="relative z-10 flex shrink-0 items-center gap-2">{rightSlot}</div>
+      )}
+    </div>
+  )
+}

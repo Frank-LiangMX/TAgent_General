@@ -1,0 +1,197 @@
+/**
+ * Glass Studio CSS Variables
+ *
+ * 将玻璃材质系统的变量映射到现有主题系统
+ * 使用方式：在 globals.css 中 import 此文件
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   基础玻璃色
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 玻璃背景层 */
+  --glass: rgba(255, 255, 255, 0.6);
+  --glass-soft: rgba(255, 255, 255, 0.4);
+  --glass-strong: rgba(255, 255, 255, 0.8);
+  --glass-well: rgba(0, 0, 0, 0.05);
+
+  /* 边框 */
+  --rim: rgba(255, 255, 255, 0.3);
+  --rim-soft: rgba(255, 255, 255, 0.15);
+
+  /* 高光 */
+  --inset-hi: rgba(255, 255, 255, 0.6);
+  --inset-hi-strong: rgba(255, 255, 255, 0.9);
+}
+
+/* 深色模式 */
+.dark {
+  --glass: rgba(30, 30, 30, 0.6);
+  --glass-soft: rgba(30, 30, 30, 0.4);
+  --glass-strong: rgba(50, 50, 50, 0.8);
+  --glass-well: rgba(0, 0, 0, 0.2);
+
+  --rim: rgba(255, 255, 255, 0.15);
+  --rim-soft: rgba(255, 255, 255, 0.08);
+
+  --inset-hi: rgba(255, 255, 255, 0.1);
+  --inset-hi-strong: rgba(255, 255, 255, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   材质效果（模糊、饱和度）
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --material-blur-sm: 20px;
+  --material-blur-md: 30px;
+  --material-blur-lg: 40px;
+  --material-saturate: 1.4;
+}
+
+/* 液态玻璃模式：更强模糊 */
+[data-material="liquid"] {
+  --material-blur-sm: 30px;
+  --material-blur-md: 45px;
+  --material-blur-lg: 60px;
+  --material-saturate: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   圆角系统
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   阴影系统
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 凸起阴影（软 + 硬边缘） */
+  --neu-out-sm:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 1px 1px rgba(255, 255, 255, 0.6) inset;
+
+  --neu-out-md:
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 1px 1px rgba(255, 255, 255, 0.6) inset;
+
+  /* 凹陷阴影 */
+  --neu-in-sm:
+    0 1px 2px rgba(0, 0, 0, 0.15) inset,
+    0 1px 1px rgba(255, 255, 255, 0.1);
+
+  /* 悬浮阴影 */
+  --elev-md: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --elev-lg: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.dark {
+  --neu-out-sm:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(255, 255, 255, 0.08) inset;
+
+  --neu-out-md:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 1px 1px rgba(255, 255, 255, 0.08) inset;
+
+  --neu-in-sm:
+    0 1px 2px rgba(0, 0, 0, 0.4) inset,
+    0 1px 1px rgba(255, 255, 255, 0.05);
+
+  --elev-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --elev-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   文本色
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --text: rgba(0, 0, 0, 0.9);
+  --text-soft: rgba(0, 0, 0, 0.7);
+  --text-faint: rgba(0, 0, 0, 0.5);
+}
+
+.dark {
+  --text: rgba(255, 255, 255, 0.9);
+  --text-soft: rgba(255, 255, 255, 0.7);
+  --text-faint: rgba(255, 255, 255, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   动画时长
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 400ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   主题色（Mist 为默认，其他主题通过 data-theme 覆盖）
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --accent: hsl(215, 90%, 50%);
+  --accent-soft: hsla(215, 90%, 50%, 0.15);
+  --accent-border: hsla(215, 90%, 50%, 0.3);
+
+  --success: hsl(160, 80%, 45%);
+  --warning: hsl(40, 90%, 50%);
+  --danger: hsl(0, 80%, 55%);
+}
+
+/* Mist 主题（默认） */
+[data-theme="mist"] {
+  --accent: hsl(215, 90%, 50%);
+  --accent-soft: hsla(215, 90%, 50%, 0.15);
+}
+
+/* Ocean 主题 */
+[data-theme="ocean"] {
+  --accent: hsl(195, 90%, 50%);
+  --accent-soft: hsla(195, 90%, 50%, 0.15);
+}
+
+/* Moss 主题 */
+[data-theme="moss"] {
+  --accent: hsl(150, 60%, 45%);
+  --accent-soft: hsla(150, 60%, 45%, 0.15);
+}
+
+/* Dusk 主题 */
+[data-theme="dusk"] {
+  --accent: hsl(25, 90%, 55%);
+  --accent-soft: hsla(25, 90%, 55%, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   工具类
+   ═══════════════════════════════════════════════════════════════ */
+
+.glass-bg {
+  background: var(--glass);
+  backdrop-filter: blur(var(--material-blur-sm)) saturate(var(--material-saturate));
+  border: 1px solid var(--rim);
+}
+
+.glass-bg-strong {
+  background: var(--glass-strong);
+  backdrop-filter: blur(var(--material-blur-md)) saturate(var(--material-saturate));
+  border: 1px solid var(--rim);
+}
+
+.glass-well {
+  background: var(--glass-well);
+  border: 1px solid var(--rim-soft);
+}

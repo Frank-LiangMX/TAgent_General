@@ -1,0 +1,287 @@
+/**
+ * TabBarItem — 单个标签页 UI
+ *
+ * 显示：入口类型 + 标题 + 流式指示器 + 关闭按钮
+ * 支持：点击聚焦、中键关闭、拖拽重排
+ * hover 预览面板由父级 TabBar 统一管理状态
+ */
+
+import { useAtomValue } from 'jotai'
+import { FileText, MessageSquare, StickyNote, X } from 'lucide-react'
+import * as React from 'react'
+import { createPortal } from 'react-dom'
+
+import { TabPreviewPanel } from './TabPreviewPanel'
+
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+import type { TabType, TabMinimapItem } from '@/atoms/tab-atoms'
+
+import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
+import { cn } from '@/lib/utils'
+
+export interface TabBarItemProps {
+  id: string
+  type: TabType
+  title: string
+  isActive: boolean
+  isStreaming: SessionIndicatorStatus
+  /** 是否显示 hover 预览面板（由父级管理） */
+  isHovered: boolean
+  /** 预览面板是否正在退出动画 */
+  isLeaving: boolean
+  /** preview Tab 拖出 TabBar 转分屏时的视觉高亮 */
+  isTearingOff?: boolean
+  onActivate: () => void
+  onClose: () => void
+  onMiddleClick: () => void
+  onDragStart: (e: React.PointerEvent) => void
+  /** hover 进入 Tab */
+  onHoverEnter: () => void
+  /** hover 离开 Tab */
+  onHoverLeave: () => void
+  /** hover 进入面板（阻止关闭） */
+  onPanelHoverEnter: () => void
+  /** hover 离开面板 */
+  onPanelHoverLeave: () => void
+}
+
+export function TabBarItem({
+  id,
+  type,
+  title,
+  isActive,
+  isStreaming,
+  isHovered,
+  isLeaving,
+  isTearingOff,
+  onActivate,
+  onClose,
+  onMiddleClick,
+  onDragStart,
+  onHoverEnter,
+  onHoverLeave,
+  onPanelHoverEnter,
+  onPanelHoverLeave,
+}: TabBarItemProps): React.ReactElement {
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  const [isNarrow, setIsNarrow] = React.useState(false)
+  const minimapCache = useAtomValue(tabMinimapCacheAtom)
+
+  React.useEffect(() => {
+    const el = buttonRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) setIsNarrow(entry.contentRect.width < 60)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const handleMouseDown = (e: React.MouseEvent): void => {
+    if (e.button === 1) {
+      e.preventDefault()
+      onMiddleClick()
+    }
+  }
+
+  const handleCloseClick = (e: React.MouseEvent): void => {
+    e.stopPropagation()
+    onClose()
+  }
+
+  const isDraft = type === 'draft'
+  const statusLineClass = isDraft
+    ? undefined
+    : isStreaming !== 'idle'
+      ? isStreaming === 'completed'
+        ? 'bg-emerald-500'
+        : isStreaming === 'blocked'
+          ? 'bg-orange-500'
+          : 'tab-status-streaming'
+      : undefined
+  const previewItems = minimapCache.get(id) ?? []
+  // 当前 active Tab 不显示预览面板
+  const showPreview = isHovered && !isActive
+  const isAgentSession = type === 'agent'
+  // P3: chat 已退役
+
+  // Scratch Pad 显示草稿图标
+  if (isDraft) {
+    return (
+      <div
+        className="relative flex-shrink-0 titlebar-no-drag"
+        data-tab-id={id}
+        onMouseEnter={onHoverEnter}
+        onMouseLeave={onHoverLeave}
+      >
+        <button
+          ref={buttonRef}
+          type="button"
+          className={cn(
+            'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[28px]',
+            'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+            'border-t border-l border-r',
+            isActive
+              ? 'tab-item-selected text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          )}
+          onClick={onActivate}
+          onMouseDown={handleMouseDown}
+          onPointerDown={onDragStart}
+        >
+          <StickyNote className="size-3.5" />
+          <span className="truncate">{title}</span>
+          {/* 关闭按钮 */}
+          <span
+            role="button"
+            tabIndex={-1}
+            className={cn(
+              'size-4 rounded-sm flex items-center justify-center shrink-0',
+              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
+              isActive && 'opacity-60'
+            )}
+            onClick={handleCloseClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ')
+                handleCloseClick(e as unknown as React.MouseEvent)
+            }}
+          >
+            <X className="size-2.5" />
+          </span>
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="relative min-w-[96px] max-w-[160px] flex-[1_0_96px] titlebar-no-drag"
+      data-tab-id={id}
+      onMouseEnter={onHoverEnter}
+      onMouseLeave={onHoverLeave}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className={cn(
+          'group relative flex items-center gap-1.5 px-2.5 h-[28px] w-full',
+          'rounded-t-[12px] text-xs transition-colors select-none cursor-pointer',
+          'border-t border-l border-r',
+          isActive
+            ? 'tab-item-selected text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+          isTearingOff && 'ring-2 ring-primary/70 ring-offset-0 bg-primary/10'
+        )}
+        onClick={onActivate}
+        onMouseDown={handleMouseDown}
+        onPointerDown={onDragStart}
+      >
+        {type === 'preview' && !isNarrow && (
+          <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+        )}
+
+        {/* 标题（窄状态下隐藏，用 spacer 撑开让关闭按钮靠右） */}
+        {isNarrow ? (
+          <span className="flex-1" />
+        ) : (
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+            {isAgentSession && (
+              <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <span className="min-w-0 truncate">{title}</span>
+          </span>
+        )}
+
+        {/* 关闭按钮（draft 类型也显示） */}
+        {!isDraft && (
+          <span
+            role="button"
+            tabIndex={-1}
+            className={cn(
+              'size-4 rounded-sm flex items-center justify-center shrink-0',
+              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
+              isActive && 'opacity-60'
+            )}
+            onClick={handleCloseClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ')
+                handleCloseClick(e as unknown as React.MouseEvent)
+            }}
+          >
+            <X className="size-2.5" />
+          </span>
+        )}
+
+        {statusLineClass && (
+          <span
+            className={cn('absolute inset-x-3 bottom-0 h-[2.5px] rounded-full', statusLineClass)}
+            aria-hidden="true"
+          />
+        )}
+      </button>
+
+      {/* 悬浮预览面板（Portal 渲染到 body） */}
+      {showPreview && (
+        <TabPreviewDropdown
+          buttonRef={buttonRef}
+          title={title}
+          items={previewItems}
+          isLeaving={isLeaving}
+          onMouseEnter={onPanelHoverEnter}
+          onMouseLeave={onPanelHoverLeave}
+        />
+      )}
+    </div>
+  )
+}
+
+/** 使用 Portal 渲染到 body，避免被容器 overflow 裁剪或被内容区遮盖 */
+function TabPreviewDropdown({
+  buttonRef,
+  title,
+  items,
+  isLeaving,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  buttonRef: React.RefObject<HTMLButtonElement | null>
+  title: string
+  items: TabMinimapItem[]
+  isLeaving: boolean
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}): React.ReactElement | null {
+  const panelWidth = 280
+  const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null)
+
+  React.useLayoutEffect(() => {
+    const btn = buttonRef.current
+    if (!btn) return
+    const rect = btn.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const top = rect.bottom
+    let left = rect.left
+    if (left + panelWidth > viewportWidth - 8) {
+      left = viewportWidth - panelWidth - 8
+    }
+    if (left < 8) {
+      left = 8
+    }
+    setPos({ top, left })
+  }, [buttonRef])
+
+  if (!pos) return null
+
+  return createPortal(
+    <div
+      className="fixed z-[9999] pt-1"
+      style={{ top: pos.top, left: pos.left }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <TabPreviewPanel title={title} items={items} isLeaving={isLeaving} />
+    </div>,
+    document.body
+  )
+}

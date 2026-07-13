@@ -1,0 +1,2951 @@
+/**
+ * LeftSidebar - 左侧功能区内容面板
+ *
+ * 根据 activeRailItem 显示不同功能区内容：
+ * - sessions: 会话列表（Chat/Agent 模式）
+ * - files: 工作区文件树
+ * - skills: 插件管理
+ * - TA 模式的各种功能面板
+ *
+ * 不再包含模式切换器（已移至 FunctionalRail）
+ */
+
+import { useAtom, useSetAtom, useAtomValue, useStore } from 'jotai'
+import {
+  Pin,
+  PinOff,
+  Plus,
+  Trash2,
+  Pencil,
+  ChevronDown,
+  ChevronRight,
+  ArrowRightLeft,
+  Search,
+  Archive,
+  ArchiveRestore,
+  Hammer,
+  MoreVertical,
+  Check,
+  CheckSquare,
+  Square,
+  CircleCheckBig,
+  FolderOpen,
+  Folder,
+  Hourglass,
+  Timer,
+  Settings,
+  GripVertical,
+} from 'lucide-react'
+import * as React from 'react'
+import { toast } from 'sonner'
+
+import { resolveAgentSessionModelId } from '@tagent/shared'
+import type {
+  ConversationMeta,
+  AgentSessionMeta,
+  WorkspaceCapabilities,
+  AgentWorkspace,
+} from '@tagent/shared'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@tagent/ui'
+import { SearchDialog } from './SearchDialog'
+import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
+
+import type { ActiveView } from '@/atoms/active-view'
+import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
+
+// ===== 项目分组类型 =====
+interface AgentProjectGroup {
+  workspace: AgentWorkspace
+  sessions: AgentSessionMeta[]
+}
+
+/** 活跃会话状态集合（运行中/阻塞/未查看已完成） */
+const ACTIVE_SESSION_STATUSES = new Set<SessionIndicatorStatus>(['running', 'blocked', 'completed'])
+const ACTIVE_SESSION_STATUS_PRIORITY: Record<SessionIndicatorStatus, number> = {
+  blocked: 0,
+  running: 1,
+  completed: 2,
+  idle: 3,
+}
+const PROJECT_SESSION_RECENT_WINDOW_MS = 3 * 86_400_000
+
+import { activeViewAtom } from '@/atoms/active-view'
+import {
+  agentSessionsAtom,
+  agentSDKMessagesCacheAtom,
+  currentAgentSessionIdAtom,
+  agentSessionIndicatorMapAtom,
+  unviewedCompletedSessionIdsAtom,
+  workingDoneSessionIdsAtom,
+  agentChannelIdAtom,
+  agentModelIdAtom,
+  agentSessionChannelMapAtom,
+  agentSessionModelMapAtom,
+  currentAgentWorkspaceIdAtom,
+  agentWorkspacesAtom,
+  workspaceCapabilitiesVersionAtom,
+  agentDiffPanelTabAtom,
+  agentDiffRefreshVersionAtom,
+  agentDiffUnseenChangesAtom,
+  agentDiffUnseenFilesAtom,
+  agentDiffDataAtom,
+  agentStreamingStatesAtom,
+  liveMessagesMapAtom,
+  agentSessionPendingFilesAtom,
+  agentSessionStreamingStateAtomFamily,
+  agentSessionDraftAtomFamily,
+  agentSessionDraftHtmlAtomFamily,
+  agentPendingFilesAtomFamily,
+  backgroundTasksAtomFamily,
+  sessionPersistedPermissionModeAtom,
+  sessionExistsAtom,
+  conversationsAtom,
+} from '@/atoms/agent-atoms'
+import {
+  appModeAtom,
+  activeRailItemAtom,
+  type AppMode,
+  topLevelModeAtom,
+  type RailItem,
+  type TARailItem,
+} from '@/atoms/app-mode'
+import { channelsAtom, selectedModelAtom } from '@/atoms/model-atoms'
+import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
+import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
+import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
+import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
+import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
+// sidebarViewModeAtom 已不再使用：归档会话由底部 Popover 展示，不再切换整页视图
+import {
+  promptConfigAtom,
+  selectedPromptIdAtom,
+  conversationPromptIdAtom,
+} from '@/atoms/system-prompt-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  activeSessionIdAtom,
+  closeTab,
+  updateTabTitle,
+  sessionViewStateMapAtom,
+} from '@/atoms/tab-atoms'
+import { hasUpdateAtom } from '@/atoms/updater'
+import { userProfileAtom } from '@/atoms/user-profile'
+import { workingSessionIdsSetAtom } from '@/atoms/working-atoms'
+import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
+import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
+import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
+import { DraftListPanel } from '@/components/draft/DraftListPanel'
+import { KanbanRailContent } from '@/components/kanban/KanbanRailContent'
+import { MemoryRailContent } from '@/components/memory/MemoryRailContent'
+import {
+  SessionMiniMapPopover,
+  useSessionMiniMapHover,
+  type SessionMiniMapType,
+} from '@/components/session-preview/SessionMiniMapPopover'
+import { TASidebar } from '@/components/ta/TASidebar'
+import { automationsAtom } from '@/atoms/automation-atoms'
+import { AutomationRailList } from '@/components/automation/AutomationRailList'
+import { useOpenSession } from '@/hooks/useOpenSession'
+import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
+import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
+import {
+  replaceAgentSessionInFreshnessOrder,
+  sortAgentSessionsByUpdatedAtDesc,
+} from '@/lib/agent-session-list'
+import { detectIsMac } from '@/lib/platform'
+import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+import { cn } from '@/lib/utils'
+
+interface SidebarItemProps {
+  icon: React.ReactNode
+  label: string
+  active?: boolean
+  /** 右侧额外元素（如展开/收起箭头） */
+  suffix?: React.ReactNode
+  onClick?: () => void
+}
+
+function SidebarItem({
+  icon,
+  label,
+  active,
+  suffix,
+  onClick,
+}: SidebarItemProps): React.ReactElement {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full flex items-center justify-between px-3 py-2 rounded-md text-[13px] transition-colors duration-100 titlebar-no-drag',
+        active
+          ? 'bg-primary/10 text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+          : 'text-foreground/60 hover:bg-primary/5 hover:text-foreground'
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex-shrink-0 w-[18px] h-[18px]">{icon}</span>
+        <span>{label}</span>
+      </div>
+      {suffix}
+    </button>
+  )
+}
+
+export interface LeftSidebarProps {
+  /** 可选固定宽度，默认使用 CSS 响应式宽度 */
+  width?: number
+  /** 当前激活的功能区 */
+  activeRailItem?: RailItem
+}
+
+/** 侧边栏导航项标识 */
+type SidebarItemId = 'pinned' | 'all-chats'
+
+/** 导航项到视图的映射 */
+const ITEM_TO_VIEW: Record<SidebarItemId, ActiveView> = {
+  pinned: 'conversations',
+  'all-chats': 'conversations',
+}
+
+/** 日期分组标签 */
+type DateGroup = '今天' | '昨天' | '更早'
+
+/** 按 updatedAt 将项目分为 今天 / 昨天 / 更早 三组 */
+function groupByDate<T extends { updatedAt: number }>(
+  items: T[]
+): Array<{ label: DateGroup; items: T[] }> {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 86_400_000
+
+  const today: T[] = []
+  const yesterday: T[] = []
+  const earlier: T[] = []
+
+  for (const item of items) {
+    if (item.updatedAt >= todayStart) {
+      today.push(item)
+    } else if (item.updatedAt >= yesterdayStart) {
+      yesterday.push(item)
+    } else {
+      earlier.push(item)
+    }
+  }
+
+  const groups: Array<{ label: DateGroup; items: T[] }> = []
+  if (today.length > 0) groups.push({ label: '今天', items: today })
+  if (yesterday.length > 0) groups.push({ label: '昨天', items: yesterday })
+  if (earlier.length > 0) groups.push({ label: '更早', items: earlier })
+  return groups
+}
+
+function getSessionLeftAccent(
+  indicatorStatus: SessionIndicatorStatus,
+  active: boolean,
+  manualWorking?: boolean
+): SessionLeftAccent {
+  if (indicatorStatus === 'blocked') return 'orange'
+  if (indicatorStatus === 'running') return 'blue'
+  if (indicatorStatus === 'completed') return 'green'
+  if (manualWorking) return 'amber'
+  if (active) return 'primary'
+  return 'idle'
+}
+
+function isAgentSessionInTopLevelMode(
+  session: AgentSessionMeta,
+  topLevelMode: 'general' | 'ta'
+): boolean {
+  // 工人子会话（由看板 dispatcher 创建）不在侧栏列表显示
+  // 原因：它们是看板任务的执行容器，通过「团队」Tab 嵌套查看，避免污染主会话列表
+  if (session.sourceKanbanTaskId) return false
+  return (session.mode ?? 'general') === topLevelMode
+}
+
+/** 与 Rail 首个按钮（size-10）齐平的顶栏控件样式 */
+const SIDEBAR_TOP_CONTROL_CLASS =
+  'h-10 rounded-[12px] border border-border/40 bg-primary/5 text-[11px] text-foreground/70 transition-colors duration-100 hover:border-border/70 hover:bg-primary/10 titlebar-no-drag'
+
+/** 侧栏顶栏行：与 Rail 首行共用 nav-island-body-start + nav-island-header-row */
+function SidebarTopControlsRow({
+  isMac,
+  children,
+}: {
+  isMac: boolean
+  children: React.ReactNode
+}): React.ReactElement {
+  return (
+    <div className="relative shrink-0 px-3 nav-island-body-start">
+      <div className="nav-island-header-row gap-1.5">{children}</div>
+    </div>
+  )
+}
+
+export function LeftSidebar({
+  width,
+  activeRailItem = 'sessions',
+}: LeftSidebarProps): React.ReactElement | null {
+  const [activeView, setActiveView] = useAtom(activeViewAtom)
+  const setSettingsTab = useSetAtom(settingsTabAtom)
+  const setSettingsOpen = useSetAtom(settingsOpenAtom)
+  const [_activeItem, setActiveItem] = React.useState<SidebarItemId>('all-chats')
+  const [conversations, setConversations] = useAtom(conversationsAtom)
+  const draftSessionIds = useAtomValue(draftSessionIdsAtom)
+  const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
+  const setAgentMessagesCache = useSetAtom(agentSDKMessagesCacheAtom)
+  const setAutomations = useSetAtom(automationsAtom)
+
+  /** 待删除对话 ID，非空时显示确认弹窗 */
+  const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
+  /** 待删除项目 ID，非空时显示项目删除确认弹窗 */
+  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = React.useState<string | null>(
+    null
+  )
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = React.useState<string | null>(null)
+  /** 待迁移会话 ID，非空时显示迁移对话框 */
+  const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
+  /** 折叠状态：用户手动折叠的项目 ID 集合 */
+  const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
+  /** 拖拽排序：正在拖拽的工作区 ID */
+  const [dragProjectId, setDragProjectId] = React.useState<string | null>(null)
+  /** 拖拽排序：drop 指示器位置 { id, position } */
+  const [projectDropIndicator, setProjectDropIndicator] = React.useState<{
+    id: string
+    position: 'before' | 'after'
+  } | null>(null)
+  /** 批量删除：当前在选择模式的工作区 ID（null = 未进入选择模式） */
+  const [batchSelectWorkspaceId, setBatchSelectWorkspaceId] = React.useState<string | null>(null)
+  /** 批量删除：选中的会话 ID 集合 */
+  const [batchSelectedSessionIds, setBatchSelectedSessionIds] = React.useState<Set<string>>(
+    new Set()
+  )
+  /** 批量删除：确认弹窗是否打开 */
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = React.useState(false)
+  const [userProfile, setUserProfile] = useAtom(userProfileAtom)
+  const selectedModel = useAtomValue(selectedModelAtom)
+  const mode = useAtomValue(appModeAtom)
+  const topLevelMode = useAtomValue(topLevelModeAtom)
+  const isMac = React.useMemo(() => detectIsMac(), [])
+  const hasUpdate = useAtomValue(hasUpdateAtom)
+  const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom)
+  const promptConfig = useAtomValue(promptConfigAtom)
+  const setSelectedPromptId = useSetAtom(selectedPromptIdAtom)
+
+  // Agent 模式状态
+  const [agentSessions, setAgentSessions] = useAtom(agentSessionsAtom)
+  const currentModeAgentSessions = React.useMemo(
+    () => agentSessions.filter((session) => isAgentSessionInTopLevelMode(session, topLevelMode)),
+    [agentSessions, topLevelMode]
+  )
+  const [drafts, setDrafts] = useAtom(draftsAtom)
+  const [draftSearchOpen, setDraftSearchOpen] = useAtom(draftSearchOpenAtom)
+  const [currentAgentSessionId, setCurrentAgentSessionId] = useAtom(currentAgentSessionIdAtom)
+  const agentIndicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
+  const unviewedCompletedSessionIds = useAtomValue(unviewedCompletedSessionIdsAtom)
+  const setUnviewedCompleted = useSetAtom(unviewedCompletedSessionIdsAtom)
+  const agentChannelId = useAtomValue(agentChannelIdAtom)
+  const legacyGlobalModelId = useAtomValue(agentModelIdAtom)
+  const channels = useAtomValue(channelsAtom)
+  const defaultModelForNewSession = React.useMemo(() => {
+    if (!agentChannelId) return undefined
+    const channel = channels.find((c) => c.id === agentChannelId && c.enabled)
+    return resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+  }, [agentChannelId, channels, legacyGlobalModelId])
+  const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
+  const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
+  const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
+  const setCurrentWorkspaceId = useSetAtom(currentAgentWorkspaceIdAtom)
+  const [workspaces, setWorkspaces] = useAtom(agentWorkspacesAtom)
+  const { selectWorkspace, createProject } = useWorkspaceActions()
+
+  /** 当前工作区名称（用于目录区顶端工作区选择按钮显示） */
+  const currentWorkspaceName = React.useMemo(
+    () => workspaces.find((w) => w.id === currentWorkspaceId)?.name ?? null,
+    [workspaces, currentWorkspaceId]
+  )
+
+  // 工作区能力（MCP + Skill 计数）
+  const [capabilities, setCapabilities] = React.useState<WorkspaceCapabilities | null>(null)
+  const capabilitiesVersion = useAtomValue(workspaceCapabilitiesVersionAtom)
+
+  // Tab 状态
+  const [tabs, setTabs] = useAtom(tabsAtom)
+  const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
+  // 会话高亮按"激活 Tab 所属会话"判定：预览 Tab 激活时其 owner 会话仍保持高亮
+  const activeSessionId = useAtomValue(activeSessionIdAtom)
+  const openSession = useOpenSession()
+  const syncActiveTabSideEffects = useSyncActiveTabSideEffects()
+  const store = useStore()
+
+  // 搜索状态（归档会话已从主列表分离，由底部 Popover 独立展示）
+  const setSearchDialogOpen = useSetAtom(searchDialogOpenAtom)
+
+  // 选中会话变化时，自动滚动侧栏使对应项可见
+  React.useEffect(() => {
+    if (!activeSessionId) return
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-session-list-id="${activeSessionId}"]`)
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    })
+  }, [activeSessionId])
+
+  // per-conversation/session Map atoms（删除时清理）
+  const setConvPromptId = useSetAtom(conversationPromptIdAtom)
+  const setPreviewPanelOpen = useSetAtom(previewPanelOpenMapAtom)
+  const setPreviewFile = useSetAtom(previewFileMapAtom)
+  const setDiffPanelTab = useSetAtom(agentDiffPanelTabAtom)
+  const setDiffRefreshVersion = useSetAtom(agentDiffRefreshVersionAtom)
+  const setDiffUnseen = useSetAtom(agentDiffUnseenChangesAtom)
+  const setDiffUnseenFiles = useSetAtom(agentDiffUnseenFilesAtom)
+  const setDiffData = useSetAtom(agentDiffDataAtom)
+  const setWorkingDone = useSetAtom(workingDoneSessionIdsAtom)
+  const setStreamingStates = useSetAtom(agentStreamingStatesAtom)
+  const setLiveMessagesMap = useSetAtom(liveMessagesMapAtom)
+  const setSessionPendingFiles = useSetAtom(agentSessionPendingFilesAtom)
+  const setSessionViewStateMap = useSetAtom(sessionViewStateMapAtom)
+
+  /** 清理 per-conversation/session Map atoms 条目 */
+  const cleanupMapAtoms = React.useCallback(
+    (id: string) => {
+      const deleteKey = <T,>(prev: Map<string, T>): Map<string, T> => {
+        if (!prev.has(id)) return prev
+        const map = new Map(prev)
+        map.delete(id)
+        return map
+      }
+      setConvPromptId(deleteKey)
+      setPreviewPanelOpen(deleteKey)
+      setPreviewFile(deleteKey)
+      setDiffPanelTab(deleteKey)
+      setDiffRefreshVersion(deleteKey)
+      setDiffUnseen(deleteKey)
+      setDiffUnseenFiles(deleteKey)
+      setDiffData(deleteKey)
+      setSessionChannelMap(deleteKey)
+      setSessionModelMap(deleteKey)
+      // 视图状态（预览开关 + 上次视图）：删除/归档是终态，统一清理避免孤立条目
+      setSessionViewStateMap(deleteKey)
+
+      // 重型流式数据：streamingStates（累积 content + toolActivities）与 liveMessages（SDK 消息数组）
+      setStreamingStates(deleteKey)
+      setLiveMessagesMap(deleteKey)
+
+      // 待发送附件：先释放 blob URL 和 window 缓存中的 base64，再删 base map entry。
+      // 与文字草稿不同，附件涉及 ObjectURL 和大体积二进制数据，删除/归档时不保留。
+      const sessionPending = store.get(agentSessionPendingFilesAtom).get(id)
+      if (sessionPending && sessionPending.length > 0) {
+        for (const f of sessionPending) {
+          if (f.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(f.previewUrl)
+          window.__pendingAgentFileData?.delete(f.id)
+        }
+        setSessionPendingFiles(deleteKey)
+      }
+
+      // atomFamily 内部缓存（Jotai 对 string key 强引用 Map，不显式 remove 永不释放）。
+      // 删除/归档是会话的终态，连同草稿一起清理，无需像关闭 Tab 那样保留可恢复输入。
+      agentSessionStreamingStateAtomFamily.remove(id)
+      agentSessionDraftAtomFamily.remove(id)
+      agentSessionDraftHtmlAtomFamily.remove(id)
+      agentPendingFilesAtomFamily.remove(id)
+      backgroundTasksAtomFamily.remove(id)
+      sessionPersistedPermissionModeAtom.remove(id)
+      sessionExistsAtom.remove(id)
+
+      clearPreviewCacheForSession(id)
+    },
+    [
+      setConvPromptId,
+      setPreviewPanelOpen,
+      setPreviewFile,
+      setDiffPanelTab,
+      setDiffRefreshVersion,
+      setDiffUnseen,
+      setDiffUnseenFiles,
+      setDiffData,
+      setSessionChannelMap,
+      setSessionModelMap,
+      setSessionViewStateMap,
+      setStreamingStates,
+      setLiveMessagesMap,
+      setSessionPendingFiles,
+      store,
+    ]
+  )
+
+  const currentWorkspaceSlug = React.useMemo(() => {
+    if (!currentWorkspaceId) return null
+    return workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null
+  }, [currentWorkspaceId, workspaces])
+
+  const workspaceNameMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    for (const w of workspaces) map.set(w.id, w.name)
+    return map
+  }, [workspaces])
+
+  React.useEffect(() => {
+    if (!currentWorkspaceSlug || mode !== 'agent') {
+      setCapabilities(null)
+      return
+    }
+    window.electronAPI
+      .getWorkspaceCapabilities(currentWorkspaceSlug)
+      .then(setCapabilities)
+      .catch(console.error)
+  }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
+
+  /** Working 区域状态（供归档区判断用） */
+  const workingSessionIds = useAtomValue(workingSessionIdsSetAtom)
+
+  /** 置顶会话列表（非归档、非草稿） */
+  const pinnedAgentSessions = React.useMemo(
+    () =>
+      currentModeAgentSessions
+        .filter((s) => s.pinned && !s.archived && !draftSessionIds.has(s.id))
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    [currentModeAgentSessions, draftSessionIds]
+  )
+
+  /** 已归档 Agent 会话数量（当前工作区） */
+  const archivedAgentSessionCount = React.useMemo(
+    () =>
+      currentModeAgentSessions.filter(
+        (s) => s.archived && (!currentWorkspaceId || s.workspaceId === currentWorkspaceId)
+      ).length,
+    [currentModeAgentSessions, currentWorkspaceId]
+  )
+
+  /** 归档的 Agent 会话列表（按 updatedAt 倒序，平铺） */
+  const archivedAgentSessionsList = React.useMemo(
+    () =>
+      currentModeAgentSessions
+        .filter(
+          (s) =>
+            s.archived &&
+            (!currentWorkspaceId || s.workspaceId === currentWorkspaceId) &&
+            !draftSessionIds.has(s.id)
+        )
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    [currentModeAgentSessions, currentWorkspaceId, draftSessionIds]
+  )
+
+  // 初始加载对话列表 + 用户档案 + Agent 会话
+  React.useEffect(() => {
+    window.electronAPI
+      .listConversations()
+      .then((list) => {
+        setConversations(list)
+      })
+      .catch(console.error)
+    window.electronAPI.getUserProfile().then(setUserProfile).catch(console.error)
+    window.electronAPI.listAgentSessions().then(setAgentSessions).catch(console.error)
+  }, [setConversations, setUserProfile, setAgentSessions])
+
+  // 窗口聚焦时重新同步列表，修复长时间后前后端不一致
+  React.useEffect(() => {
+    const handleFocus = (): void => {
+      window.electronAPI.listConversations().then(setConversations).catch(console.error)
+      window.electronAPI.listAgentSessions().then(setAgentSessions).catch(console.error)
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [setConversations, setAgentSessions])
+
+  /** 处理导航项点击 */
+  const handleItemClick = (item: SidebarItemId): void => {
+    setActiveItem(item)
+    setActiveView(ITEM_TO_VIEW[item])
+  }
+
+  /** 请求删除会话（Agent 共用，弹出确认框） */
+  const handleRequestDelete = React.useCallback((id: string): void => {
+    setPendingDeleteId(id)
+  }, [])
+
+  /** 确认删除会话（Agent / 历史 Chat 共用） */
+  const handleConfirmDelete = async (): Promise<void> => {
+    if (!pendingDeleteId) return
+
+    // 关闭对应的标签页：setTabs 与 setActiveTabId 成组更新，便于阅读，
+    // 也避免将来在两者之间意外插入 await 导致跨渲染状态不一致。
+    // （React 18 在同一事件回调中会自动批处理多次 setState，所以单次渲染
+    // 的一致性由 React 保证，这里只是保持代码组织清晰。）
+    // 注意：draft tab 的 id 格式为 __draft__:<draftId>，需要从 tabs 列表查找
+    const tabToClose = tabs.find((t) => t.sessionId === pendingDeleteId)
+    const tabIdToClose = tabToClose?.id ?? pendingDeleteId
+    const wasActive = activeTabId === tabIdToClose
+    const tabResult = closeTab(tabs, activeTabId, tabIdToClose)
+    setTabs(tabResult.tabs)
+    setActiveTabId(tabResult.activeTabId)
+
+    // 若关闭的是当前活跃标签，同步新激活标签的副作用（appMode、
+    // currentXxxId、以及右侧文件面板等 per-tab 状态），保持与 TabBar
+    // 关闭逻辑一致，避免删除/归档当前会话后新标签状态缺失。
+    if (wasActive) {
+      const newActiveTab = tabResult.activeTabId
+        ? (tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null)
+        : null
+      syncActiveTabSideEffects(newActiveTab)
+    }
+
+    // 清理 draft 标记（如有）
+    setDraftSessionIds((prev: Set<string>) => {
+      if (!prev.has(pendingDeleteId)) return prev
+      const next = new Set(prev)
+      next.delete(pendingDeleteId)
+      return next
+    })
+
+    // 清理 per-conversation/session Map atoms 条目
+    cleanupMapAtoms(pendingDeleteId)
+
+    // 从 Working Done 集合移除
+    setWorkingDone((prev) => {
+      if (!prev.has(pendingDeleteId)) return prev
+      const next = new Set(prev)
+      next.delete(pendingDeleteId)
+      return next
+    })
+
+    if (mode === 'agent') {
+      // Agent 模式：删除 Agent 会话
+      // 注意：当前会话指针（currentAgentSessionId）已由上面的
+      // syncActiveTabSideEffects 在 wasActive 分支同步到新激活标签，
+      // 这里不要再按旧闭包值强制置 null，否则会覆盖新 sessionId，
+      // 导致 RightSidePanel 消失（依赖 currentAgentSessionIdAtom）。
+      try {
+        await window.electronAPI.deleteAgentSession(pendingDeleteId)
+        // 全量刷新确保与后端同步
+        const sessions = await window.electronAPI.listAgentSessions()
+        setAgentSessions(sessions)
+      } catch (error) {
+        console.error('[侧边栏] 删除 Agent 会话失败:', error)
+        // 即使后端报错，也从本地列表移除（可能是会话已不存在）
+        setAgentSessions((prev) => prev.filter((s) => s.id !== pendingDeleteId))
+      } finally {
+        // 清理该会话的消息缓存，避免已删除会话的消息数组滞留内存
+        setAgentMessagesCache((prev) => {
+          if (!prev.has(pendingDeleteId)) return prev
+          const next = new Map(prev)
+          next.delete(pendingDeleteId)
+          return next
+        })
+        setPendingDeleteId(null)
+      }
+      return
+    }
+
+    try {
+      await window.electronAPI.deleteConversation(pendingDeleteId)
+      // 全量刷新确保与后端同步
+      const conversations = await window.electronAPI.listConversations()
+      setConversations(conversations)
+    } catch (error) {
+      console.error('[侧边栏] 删除对话失败:', error)
+      // 即使后端报错，也从本地列表移除（可能是对话已不存在）
+      setConversations((prev) => prev.filter((c) => c.id !== pendingDeleteId))
+    } finally {
+      setPendingDeleteId(null)
+    }
+  }
+
+  /** 进入批量选择模式 */
+  const handleEnterBatchSelect = React.useCallback((workspaceId: string): void => {
+    setBatchSelectWorkspaceId(workspaceId)
+    setBatchSelectedSessionIds(new Set())
+  }, [])
+
+  /** 退出批量选择模式 */
+  const handleExitBatchSelect = React.useCallback((): void => {
+    setBatchSelectWorkspaceId(null)
+    setBatchSelectedSessionIds(new Set())
+  }, [])
+
+  /** 切换会话选中状态 */
+  const handleToggleBatchSelect = React.useCallback((sessionId: string): void => {
+    setBatchSelectedSessionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) next.delete(sessionId)
+      else next.add(sessionId)
+      return next
+    })
+  }, [])
+
+  /** 请求批量删除（打开确认弹窗） */
+  const handleRequestBatchDelete = React.useCallback((): void => {
+    if (batchSelectedSessionIds.size === 0) return
+    setBatchDeleteConfirmOpen(true)
+  }, [batchSelectedSessionIds.size])
+
+  /** 确认批量删除 */
+  const handleConfirmBatchDelete = async (): Promise<void> => {
+    if (batchSelectedSessionIds.size === 0) return
+    const ids = [...batchSelectedSessionIds]
+
+    // 关闭相关 tab（批量）
+    const tabsToClose = tabs.filter((t) => ids.includes(t.sessionId))
+    let currentTabs = tabs
+    let currentActive = activeTabId
+    for (const tab of tabsToClose) {
+      const result = closeTab(currentTabs, currentActive, tab.id)
+      currentTabs = result.tabs
+      currentActive = result.activeTabId
+    }
+    setTabs(currentTabs)
+    setActiveTabId(currentActive)
+    if (tabsToClose.some((t) => t.id === activeTabId)) {
+      const newActive = currentActive
+        ? (currentTabs.find((t) => t.id === currentActive) ?? null)
+        : null
+      syncActiveTabSideEffects(newActive)
+    }
+
+    // 清理各种 atom 条目
+    for (const id of ids) {
+      setDraftSessionIds((prev: Set<string>) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      cleanupMapAtoms(id)
+      setWorkingDone((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setAgentMessagesCache((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Map(prev)
+        next.delete(id)
+        return next
+      })
+    }
+
+    // 调 IPC 删除（逐个，失败的不阻断后续）
+    if (mode === 'agent') {
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            await window.electronAPI.deleteAgentSession(id)
+          } catch (error) {
+            console.error(`[侧边栏] 批量删除会话 ${id} 失败:`, error)
+          }
+        })
+      )
+      try {
+        const sessions = await window.electronAPI.listAgentSessions()
+        setAgentSessions(sessions)
+      } catch (error) {
+        console.error('[侧边栏] 批量删除后刷新会话列表失败:', error)
+        setAgentSessions((prev) => prev.filter((s) => !ids.includes(s.id)))
+      }
+    }
+
+    handleExitBatchSelect()
+    setBatchDeleteConfirmOpen(false)
+  }
+
+  /** 创建新草稿 */
+  const handleNewDraft = async (): Promise<void> => {
+    try {
+      const doc = await window.electronAPI.draft.create({ title: '未命名草稿' })
+      setDrafts((prev) => [doc, ...prev])
+      openSession('draft', doc.id, doc.title)
+    } catch (error) {
+      console.error('[侧边栏] 创建草稿失败:', error)
+    }
+  }
+
+  /** 创建新 Agent 会话 */
+  const handleNewAgentSession = async (): Promise<void> => {
+    try {
+      // TA 模式创建的会话必须带 mode='ta' 标记，否则 TabBar 过滤后该 tab 不会显示
+      const sessionMode = topLevelMode === 'ta' ? 'ta' : 'general'
+      const meta = await window.electronAPI.createAgentSession(
+        undefined,
+        agentChannelId || undefined,
+        currentWorkspaceId || undefined,
+        sessionMode
+      )
+      setAgentSessions((prev) => [meta, ...prev])
+      // 从全局默认值初始化 per-session 渠道/模型配置
+      if (agentChannelId) {
+        setSessionChannelMap((prev) => {
+          const map = new Map(prev)
+          map.set(meta.id, agentChannelId)
+          return map
+        })
+      }
+      if (defaultModelForNewSession) {
+        setSessionModelMap((prev) => {
+          const map = new Map(prev)
+          map.set(meta.id, defaultModelForNewSession)
+          return map
+        })
+      }
+      // 打开新标签页
+      openSession('agent', meta.id, meta.title, sessionMode)
+      setActiveView('conversations')
+      setActiveItem('all-chats')
+    } catch (error) {
+      console.error('[侧边栏] 创建 Agent 会话失败:', error)
+    }
+  }
+
+  /** 在指定工作区中新建会话（项目分组 Plus 按钮使用） */
+  const handleNewSessionInWorkspace = React.useCallback(
+    async (workspaceId: string): Promise<void> => {
+      try {
+        const sessionMode = topLevelMode === 'ta' ? 'ta' : 'general'
+        const meta = await window.electronAPI.createAgentSession(
+          undefined,
+          agentChannelId || undefined,
+          workspaceId,
+          sessionMode
+        )
+        setAgentSessions((prev) => [meta, ...prev])
+        if (agentChannelId) {
+          setSessionChannelMap((prev) => {
+            const map = new Map(prev)
+            map.set(meta.id, agentChannelId)
+            return map
+          })
+        }
+        if (defaultModelForNewSession) {
+          setSessionModelMap((prev) => {
+            const map = new Map(prev)
+            map.set(meta.id, defaultModelForNewSession)
+            return map
+          })
+        }
+        openSession('agent', meta.id, meta.title, sessionMode)
+        setActiveView('conversations')
+        setActiveItem('all-chats')
+      } catch (error) {
+        console.error('[侧边栏] 在工作区中创建 Agent 会话失败:', error)
+      }
+    },
+    [
+      agentChannelId,
+      defaultModelForNewSession,
+      openSession,
+      setActiveView,
+      setActiveItem,
+      setAgentSessions,
+      setSessionChannelMap,
+      setSessionModelMap,
+      topLevelMode,
+    ]
+  )
+
+  /** 选择 Agent 会话（打开或聚焦标签页） */
+  const handleSelectAgentSession = React.useCallback(
+    (id: string, title: string): void => {
+      openSession('agent', id, title)
+      setActiveView('conversations')
+      setActiveItem('all-chats')
+      // 清除该会话的"已完成未查看"标记
+      setUnviewedCompleted((prev: Set<string>) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    },
+    [openSession, setActiveView, setUnviewedCompleted]
+  )
+
+  /** 重命名 Agent 会话标题 */
+  const handleAgentRename = React.useCallback(
+    async (id: string, newTitle: string): Promise<void> => {
+      try {
+        const updated = await window.electronAPI.updateAgentSessionTitle(id, newTitle)
+        setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+        // 同步更新标签页标题
+        setTabs((prev) => updateTabTitle(prev, id, newTitle))
+      } catch (error) {
+        console.error('[侧边栏] 重命名 Agent 会话失败:', error)
+      }
+    },
+    [setAgentSessions, setTabs]
+  )
+
+  /** 重命名工作区（项目）名称 */
+  const handleWorkspaceRename = React.useCallback(
+    async (workspaceId: string, newName: string): Promise<void> => {
+      try {
+        const updated = await window.electronAPI.updateAgentWorkspace(workspaceId, {
+          name: newName,
+        })
+        setWorkspaces((prev) => prev.map((w) => (w.id === updated.id ? updated : w)))
+      } catch (error) {
+        console.error('[侧边栏] 重命名工作区失败:', error)
+        const msg = error instanceof Error ? error.message : '重命名失败'
+        toast.error(msg)
+      }
+    },
+    [setWorkspaces]
+  )
+
+  const canDeleteWorkspace = React.useCallback(
+    (workspace: AgentWorkspace): boolean => workspace.slug !== 'default' && workspaces.length > 1,
+    [workspaces.length]
+  )
+
+  const pendingDeleteWorkspace = React.useMemo(
+    () => workspaces.find((workspace) => workspace.id === pendingDeleteWorkspaceId) ?? null,
+    [pendingDeleteWorkspaceId, workspaces]
+  )
+
+  /** 请求删除项目（弹出二次确认框） */
+  const handleRequestDeleteWorkspace = React.useCallback((workspaceId: string): void => {
+    setPendingDeleteWorkspaceId(workspaceId)
+  }, [])
+
+  /** 开始拖拽项目排序 */
+  const handleProjectDragStart = React.useCallback(
+    (e: React.DragEvent, workspaceId: string): void => {
+      setDragProjectId(workspaceId)
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', workspaceId)
+    },
+    []
+  )
+
+  /** 根据鼠标位置计算项目插入点 */
+  const handleProjectDragOver = React.useCallback(
+    (e: React.DragEvent, workspaceId: string): void => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      if (!dragProjectId || dragProjectId === workspaceId) {
+        setProjectDropIndicator(null)
+        return
+      }
+      const rect = e.currentTarget.getBoundingClientRect()
+      const ratio = (e.clientY - rect.top) / rect.height
+      const position: 'before' | 'after' = ratio < 0.5 ? 'before' : 'after'
+      setProjectDropIndicator((prev) =>
+        prev?.id === workspaceId && prev.position === position
+          ? prev
+          : { id: workspaceId, position }
+      )
+    },
+    [dragProjectId]
+  )
+
+  const handleProjectDragLeave = React.useCallback((e: React.DragEvent): void => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setProjectDropIndicator(null)
+    }
+  }, [])
+
+  /** 完成项目排序并持久化 */
+  const handleProjectDrop = React.useCallback(
+    async (e: React.DragEvent, targetWorkspaceId: string): Promise<void> => {
+      e.preventDefault()
+      const indicator = projectDropIndicator
+      if (
+        !dragProjectId ||
+        dragProjectId === targetWorkspaceId ||
+        !indicator ||
+        indicator.id !== targetWorkspaceId
+      ) {
+        setDragProjectId(null)
+        setProjectDropIndicator(null)
+        return
+      }
+
+      const ids = workspaces.map((w) => w.id)
+      const fromIndex = ids.indexOf(dragProjectId)
+      const toIndex = ids.indexOf(targetWorkspaceId)
+      if (fromIndex === -1 || toIndex === -1) {
+        setDragProjectId(null)
+        setProjectDropIndicator(null)
+        return
+      }
+
+      // 计算新顺序：移除源位置，按 indicator 插入目标位置
+      const newIds = ids.filter((id) => id !== dragProjectId)
+      let insertAt = newIds.indexOf(targetWorkspaceId)
+      if (insertAt === -1) insertAt = newIds.length
+      if (indicator.position === 'after') insertAt += 1
+      newIds.splice(insertAt, 0, dragProjectId)
+
+      setDragProjectId(null)
+      setProjectDropIndicator(null)
+
+      // 乐观更新 + 持久化
+      const byId = new Map(workspaces.map((w) => [w.id, w]))
+      const reordered = newIds.map((id) => byId.get(id)!).filter(Boolean)
+      setWorkspaces(reordered)
+      try {
+        const saved = await window.electronAPI.reorderAgentWorkspaces(newIds)
+        setWorkspaces(saved)
+      } catch (error) {
+        console.error('[工作区排序] 持久化失败:', error)
+        // 回滚：重新读取
+        // 注：这里不主动 refetch，让用户看到失败后手动刷新
+      }
+    },
+    [dragProjectId, projectDropIndicator, workspaces, setWorkspaces]
+  )
+
+  const handleProjectDragEnd = React.useCallback((): void => {
+    setDragProjectId(null)
+    setProjectDropIndicator(null)
+  }, [])
+
+  /** 确认删除项目及其绑定资源 */
+  const handleConfirmDeleteWorkspace = React.useCallback(async (): Promise<void> => {
+    const workspaceId = pendingDeleteWorkspaceId
+    const workspace = workspaces.find((item) => item.id === workspaceId)
+    if (!workspaceId || !workspace) return
+
+    if (!canDeleteWorkspace(workspace)) {
+      toast.error(workspace.slug === 'default' ? '默认项目不能删除' : '至少需要保留一个项目')
+      setPendingDeleteWorkspaceId(null)
+      return
+    }
+
+    const deletedSessionIds = new Set(
+      agentSessions
+        .filter((session) => session.workspaceId === workspaceId)
+        .map((session) => session.id)
+    )
+
+    try {
+      setDeletingWorkspaceId(workspaceId)
+
+      await window.electronAPI.deleteAgentWorkspace(workspaceId)
+
+      for (const sessionId of deletedSessionIds) {
+        cleanupMapAtoms(sessionId)
+      }
+
+      setDraftSessionIds((prev: Set<string>) => {
+        let changed = false
+        const next = new Set(prev)
+        for (const sessionId of deletedSessionIds) {
+          if (next.delete(sessionId)) changed = true
+        }
+        return changed ? next : prev
+      })
+
+      setAgentMessagesCache((prev) => {
+        let changed = false
+        const next = new Map(prev)
+        for (const sessionId of deletedSessionIds) {
+          if (next.delete(sessionId)) changed = true
+        }
+        return changed ? next : prev
+      })
+      setAutomations((prev) => prev.filter((automation) => automation.workspaceId !== workspaceId))
+
+      const currentTabs = store.get(tabsAtom)
+      const currentActiveTabId = store.get(activeTabIdAtom)
+      const nextTabs = currentTabs.filter(
+        (tab) =>
+          (tab.type !== 'agent' && tab.type !== 'preview') || !deletedSessionIds.has(tab.sessionId)
+      )
+      const nextActiveTabId =
+        currentActiveTabId && nextTabs.some((tab) => tab.id === currentActiveTabId)
+          ? currentActiveTabId
+          : (nextTabs[0]?.id ?? null)
+
+      setTabs(nextTabs)
+      setActiveTabId(nextActiveTabId)
+      syncActiveTabSideEffects(
+        nextActiveTabId ? (nextTabs.find((tab) => tab.id === nextActiveTabId) ?? null) : null
+      )
+
+      const [remainingWorkspaces, sessions] = await Promise.all([
+        window.electronAPI.listAgentWorkspaces(),
+        window.electronAPI.listAgentSessions(),
+      ])
+
+      setWorkspaces(remainingWorkspaces)
+      setAgentSessions(sessions)
+
+      setCollapsedWorkspaceIds((prev) => {
+        if (!prev.has(workspaceId)) return prev
+        const next = new Set(prev)
+        next.delete(workspaceId)
+        return next
+      })
+
+      if (workspaceId === currentWorkspaceId) {
+        const fallback =
+          remainingWorkspaces.find((item) => item.slug === 'default') ??
+          remainingWorkspaces[0] ??
+          null
+        setCurrentWorkspaceId(fallback?.id ?? null)
+        if (fallback) {
+          window.electronAPI.updateSettings({ agentWorkspaceId: fallback.id }).catch(console.error)
+        }
+      }
+
+      toast.success('项目已删除', {
+        description: `已删除「${workspace.name}」及其绑定资源`,
+      })
+    } catch (error) {
+      console.error('[侧边栏] 删除项目失败:', error)
+      const msg = error instanceof Error ? error.message : '删除项目失败'
+      toast.error(msg)
+    } finally {
+      setDeletingWorkspaceId(null)
+      setPendingDeleteWorkspaceId(null)
+    }
+  }, [
+    pendingDeleteWorkspaceId,
+    workspaces,
+    canDeleteWorkspace,
+    agentSessions,
+    cleanupMapAtoms,
+    setDraftSessionIds,
+    setAgentMessagesCache,
+    setAutomations,
+    store,
+    setTabs,
+    setActiveTabId,
+    syncActiveTabSideEffects,
+    setWorkspaces,
+    setAgentSessions,
+    currentWorkspaceId,
+    setCurrentWorkspaceId,
+  ])
+
+  /** 切换 Agent 会话置顶状态 */
+  const handleTogglePinAgent = React.useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        const original = store.get(agentSessionsAtom).find((s) => s.id === id)
+        const updated = await window.electronAPI.togglePinAgentSession(id)
+        setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+        if (updated.pinned) {
+          const isRunning = store.get(agentSessionIndicatorMapAtom).get(id) === 'running'
+          if (isRunning) {
+            toast.success('已置顶', {
+              description: '当前 Agent 正在执行中，移出工作中后会显示到置顶区域',
+            })
+          } else if (original?.archived && !updated.archived) {
+            toast.success('已置顶', { description: '已自动取消归档' })
+          } else {
+            toast.success('已置顶')
+          }
+        } else {
+          toast.success('已取消置顶')
+        }
+      } catch (error) {
+        console.error('[侧边栏] 切换 Agent 会话置顶失败:', error)
+      }
+    },
+    [store, setAgentSessions]
+  )
+
+  /** 切换 Agent 会话手动工作中状态 */
+  const handleToggleManualWorkingAgent = React.useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        const isCurrentlyInWorking = store.get(workingSessionIdsSetAtom).has(id)
+        if (isCurrentlyInWorking) {
+          // 从工作中移出：清除 manualWorking + 清除 workingDone
+          const session = store.get(agentSessionsAtom).find((s) => s.id === id)
+          if (session?.manualWorking) {
+            const updated = await window.electronAPI.toggleManualWorkingAgentSession(id)
+            setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+          }
+          setWorkingDone((prev) => {
+            if (!prev.has(id)) return prev
+            const next = new Set(prev)
+            next.delete(id)
+            return next
+          })
+        } else {
+          // 加入工作中
+          const original = store.get(agentSessionsAtom).find((s) => s.id === id)
+          const updated = await window.electronAPI.toggleManualWorkingAgentSession(id)
+          setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+          if (original?.archived && updated.manualWorking && !updated.archived) {
+            toast.success('已取消归档并标记为工作中')
+          }
+        }
+      } catch (error) {
+        console.error('[Sidebar] Failed to toggle manual working:', error)
+        toast.error('操作失败')
+      }
+    },
+    [store, setAgentSessions, setWorkingDone]
+  )
+
+  /** 确认已完成：从 Working 中移出，但会话仍可通过搜索或最近工作找到 */
+  const handleConfirmWorkingDoneAgent = React.useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        // 通过 IPC 清除持久化的 completedButUnconfirmed 和 manualWorking 状态
+        const updated = await window.electronAPI.confirmWorkingDoneAgentSession(id)
+        setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+
+        setWorkingDone((prev) => {
+          if (!prev.has(id)) return prev
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+        setUnviewedCompleted((prev) => {
+          if (!prev.has(id)) return prev
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+
+        toast.success('已标记为完成', {
+          description: '之后可以通过搜索或最近工作找到这个会话',
+        })
+      } catch (error) {
+        console.error('[侧边栏] 标记完成失败:', error)
+        toast.error('标记完成失败')
+      }
+    },
+    [setAgentSessions, setWorkingDone, setUnviewedCompleted]
+  )
+
+  /** 切换 Agent 会话归档状态 */
+  const handleToggleArchiveAgent = React.useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        const updated = await window.electronAPI.toggleArchiveAgentSession(id)
+        setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updated))
+        // 归档时自动关闭该会话的标签页，并同步新激活标签的副作用，
+        // 否则 RightSidePanel（依赖 currentAgentSessionIdAtom）会因为
+        // 指针被错误置 null 而消失。
+        if (updated.archived) {
+          const currentTabs = store.get(tabsAtom)
+          const currentActiveTabId = store.get(activeTabIdAtom)
+          const wasActive = currentActiveTabId === id
+          const tabResult = closeTab(currentTabs, currentActiveTabId, id)
+          setTabs(tabResult.tabs)
+          setActiveTabId(tabResult.activeTabId)
+          cleanupMapAtoms(id)
+          // 从 Working Done 集合移除
+          setWorkingDone((prev) => {
+            if (!prev.has(id)) return prev
+            const next = new Set(prev)
+            next.delete(id)
+            return next
+          })
+          if (wasActive) {
+            const newActiveTab = tabResult.activeTabId
+              ? (tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null)
+              : null
+            syncActiveTabSideEffects(newActiveTab)
+          }
+        }
+        toast.success(updated.archived ? '已归档' : '已取消归档')
+      } catch (error) {
+        console.error('[侧边栏] 切换 Agent 会话归档失败:', error)
+      }
+    },
+    [
+      store,
+      setAgentSessions,
+      setTabs,
+      setActiveTabId,
+      cleanupMapAtoms,
+      setWorkingDone,
+      syncActiveTabSideEffects,
+    ]
+  )
+
+  /** 请求迁移会话到其他工作区（弹出迁移对话框） */
+  const handleRequestMove = React.useCallback((id: string): void => {
+    setMoveTargetId(id)
+  }, [])
+
+  /** 迁移会话到另一个工作区后的回调 */
+  const handleSessionMoved = (
+    updatedSession: AgentSessionMeta,
+    targetWorkspaceName: string
+  ): void => {
+    setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updatedSession))
+    // 如果迁移的是当前选中的会话，取消选中并关闭标签页
+    if (currentAgentSessionId === updatedSession.id) {
+      const tabResult = closeTab(tabs, activeTabId, updatedSession.id)
+      setTabs(tabResult.tabs)
+      setActiveTabId(tabResult.activeTabId)
+      // 同步副作用到新激活标签（替代无条件 setCurrentAgentSessionId(null)）
+      const newActiveTab = tabResult.activeTabId
+        ? (tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null)
+        : null
+      syncActiveTabSideEffects(newActiveTab)
+      // 从 Working Done 集合移除
+      setWorkingDone((prev) => {
+        if (!prev.has(updatedSession.id)) return prev
+        const next = new Set(prev)
+        next.delete(updatedSession.id)
+        return next
+      })
+    }
+    setMoveTargetId(null)
+    toast.success('会话已迁移', {
+      description: `已迁移到「${targetWorkspaceName}」，请切换工作区查看`,
+    })
+  }
+
+  // ===== 项目分组数据层 =====
+  /** Agent 会话按项目（工作区）分组，平铺展示所有项目的会话 */
+  const agentProjectGroups = React.useMemo<AgentProjectGroup[]>(() => {
+    const sessionsByWorkspaceId = new Map<string, AgentSessionMeta[]>()
+    for (const workspace of workspaces) {
+      sessionsByWorkspaceId.set(workspace.id, [])
+    }
+    const defaultWsId = workspaces.find((ws) => ws.slug === 'default')?.id ?? workspaces[0]?.id
+
+    const visibleHistory = sortAgentSessionsByUpdatedAtDesc(
+      currentModeAgentSessions.filter(
+        (session) => !session.archived && !session.pinned && !draftSessionIds.has(session.id)
+      )
+    )
+
+    for (const session of visibleHistory) {
+      const targetId =
+        session.workspaceId && sessionsByWorkspaceId.has(session.workspaceId)
+          ? session.workspaceId
+          : defaultWsId
+      if (!targetId) continue
+      sessionsByWorkspaceId.get(targetId)!.push(session)
+    }
+
+    return workspaces.map((workspace) => ({
+      workspace,
+      sessions: sessionsByWorkspaceId.get(workspace.id) ?? [],
+    }))
+  }, [currentModeAgentSessions, draftSessionIds, workspaces])
+
+  // 选中会话变化时，如果新选中的会话在某个折叠的 group 里，自动展开该 group
+  // 避免顶栏 tab 切到折叠会话时 sidebar 找不到选中项
+  React.useEffect(() => {
+    if (!activeSessionId) return
+    const groupWithActive = agentProjectGroups.find((g) =>
+      g.sessions.some((s) => s.id === activeSessionId)
+    )
+    if (!groupWithActive) return
+    const wsId = groupWithActive.workspace.id
+    setCollapsedWorkspaceIds((prev) => {
+      if (!prev.has(wsId)) return prev
+      const next = new Set(prev)
+      next.delete(wsId)
+      return next
+    })
+  }, [activeSessionId, agentProjectGroups, setCollapsedWorkspaceIds])
+
+  // 删除确认弹窗（collapsed/expanded 共享）
+  const deleteDialog = (
+    <AlertDialog
+      open={pendingDeleteId !== null}
+      onOpenChange={(open) => {
+        if (!open) setPendingDeleteId(null)
+      }}
+    >
+      <AlertDialogContent
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            handleConfirmDelete()
+          }
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除对话</AlertDialogTitle>
+          <AlertDialogDescription>删除后将无法恢复，确定要删除这个对话吗？</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  const projectDeleteDialog = (
+    <AlertDialog
+      open={pendingDeleteWorkspaceId !== null}
+      onOpenChange={(open) => {
+        if (!open && !deletingWorkspaceId) setPendingDeleteWorkspaceId(null)
+      }}
+    >
+      <AlertDialogContent
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !deletingWorkspaceId) {
+            e.preventDefault()
+            void handleConfirmDeleteWorkspace()
+          }
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除项目</AlertDialogTitle>
+          <AlertDialogDescription>
+            将删除「{pendingDeleteWorkspace?.name ?? '该项目'}
+            」及其绑定的所有会话、自动任务、MCP、Skills 与工作区文件。删除后无法恢复。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={!!deletingWorkspaceId}>取消</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={!!deletingWorkspaceId}
+            onClick={() => void handleConfirmDeleteWorkspace()}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deletingWorkspaceId ? '删除中...' : '删除项目'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  // 批量删除确认弹窗
+  const batchDeleteDialog = (
+    <AlertDialog
+      open={batchDeleteConfirmOpen}
+      onOpenChange={(open) => {
+        if (!open) setBatchDeleteConfirmOpen(false)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认批量删除 {batchSelectedSessionIds.size} 个会话</AlertDialogTitle>
+          <AlertDialogDescription>
+            删除后将无法恢复，确定要删除选中的 {batchSelectedSessionIds.size} 个会话吗？
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmBatchDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  // 迁移会话对话框（collapsed/expanded 共享）
+  const moveDialog = (
+    <MoveSessionDialog
+      open={moveTargetId !== null}
+      onOpenChange={(open) => {
+        if (!open) setMoveTargetId(null)
+      }}
+      sessionId={moveTargetId ?? ''}
+      currentWorkspaceId={currentWorkspaceId ?? undefined}
+      workspaces={workspaces}
+      onMoved={handleSessionMoved}
+    />
+  )
+
+  // ===== 折叠/展开：组件始终挂载，通过外层 width/opacity transition 实现动画 =====
+  // 内容始终渲染，仅在折叠态通过外层 pointer-events-none 屏蔽交互
+
+  // ===== 展开状态：完整侧边栏 =====
+  // 根据 topLevelMode + activeRailItem 渲染不同功能区内容
+  const renderRailContent = () => {
+    // TA 模式：根据 activeRailItem 渲染。选中『会话』走通用 SessionsRailContent
+    // （数据被 agentProjectGroups 按 mode='ta' 过滤，自动数据隔离）；
+    // 其他 5 个模块走 TASidebar 的概览面板。
+    if (topLevelMode === 'ta') {
+      if (activeRailItem === 'sessions') {
+        return (
+          <SessionsRailContent
+            activeSessionId={activeSessionId}
+            agentProjectGroups={agentProjectGroups}
+            agentIndicatorMap={agentIndicatorMap}
+            collapsedWorkspaceIds={collapsedWorkspaceIds}
+            setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
+            currentWorkspaceId={currentWorkspaceId}
+            pinnedAgentSessions={pinnedAgentSessions}
+            handleRequestDelete={handleRequestDelete}
+            handleSelectAgentSession={handleSelectAgentSession}
+            handleAgentRename={handleAgentRename}
+            handleTogglePinAgent={handleTogglePinAgent}
+            handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
+            handleToggleArchiveAgent={handleToggleArchiveAgent}
+            handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
+            handleRequestMove={handleRequestMove}
+            workspaceNameMap={workspaceNameMap}
+            selectWorkspace={selectWorkspace}
+            handleNewSessionInWorkspace={handleNewSessionInWorkspace}
+            onRenameWorkspace={handleWorkspaceRename}
+            onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+            dragProjectId={dragProjectId}
+            projectDropIndicator={projectDropIndicator}
+            onProjectDragStart={handleProjectDragStart}
+            onProjectDragOver={handleProjectDragOver}
+            onProjectDragLeave={handleProjectDragLeave}
+            onProjectDrop={handleProjectDrop}
+            onProjectDragEnd={handleProjectDragEnd}
+            batchSelectWorkspaceId={batchSelectWorkspaceId}
+            batchSelectedSessionIds={batchSelectedSessionIds}
+            onEnterBatchSelect={handleEnterBatchSelect}
+            onExitBatchSelect={handleExitBatchSelect}
+            onToggleBatchSelect={handleToggleBatchSelect}
+            onBatchUpdateSelected={setBatchSelectedSessionIds}
+            onRequestBatchDelete={handleRequestBatchDelete}
+            onConfirmBatchDelete={handleConfirmBatchDelete}
+          />
+        )
+      }
+      if (activeRailItem === 'skills') {
+        return <SkillsRailContent capabilities={capabilities} />
+      }
+      if (activeRailItem === 'kanban') {
+        return <KanbanRailContent />
+      }
+      return <TASidebar activeRailItem={activeRailItem as TARailItem} />
+    }
+
+    // 通用模式根据 activeRailItem 渲染
+    switch (activeRailItem) {
+      case 'skills':
+        return <SkillsRailContent capabilities={capabilities} />
+      case 'automation':
+        return <AutomationRailList />
+      case 'draft':
+        return <DraftListPanel />
+      case 'kanban':
+        return <KanbanRailContent />
+      case 'memory':
+        return <MemoryRailContent />
+      case 'sessions':
+      default:
+        return (
+          <SessionsRailContent
+            activeSessionId={activeSessionId}
+            agentProjectGroups={agentProjectGroups}
+            agentIndicatorMap={agentIndicatorMap}
+            collapsedWorkspaceIds={collapsedWorkspaceIds}
+            setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
+            currentWorkspaceId={currentWorkspaceId}
+            pinnedAgentSessions={pinnedAgentSessions}
+            handleRequestDelete={handleRequestDelete}
+            handleSelectAgentSession={handleSelectAgentSession}
+            handleAgentRename={handleAgentRename}
+            handleTogglePinAgent={handleTogglePinAgent}
+            handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
+            handleToggleArchiveAgent={handleToggleArchiveAgent}
+            handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
+            handleRequestMove={handleRequestMove}
+            workspaceNameMap={workspaceNameMap}
+            selectWorkspace={selectWorkspace}
+            handleNewSessionInWorkspace={handleNewSessionInWorkspace}
+            onRenameWorkspace={handleWorkspaceRename}
+            onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+            dragProjectId={dragProjectId}
+            projectDropIndicator={projectDropIndicator}
+            onProjectDragStart={handleProjectDragStart}
+            onProjectDragOver={handleProjectDragOver}
+            onProjectDragLeave={handleProjectDragLeave}
+            onProjectDrop={handleProjectDrop}
+            onProjectDragEnd={handleProjectDragEnd}
+            batchSelectWorkspaceId={batchSelectWorkspaceId}
+            batchSelectedSessionIds={batchSelectedSessionIds}
+            onEnterBatchSelect={handleEnterBatchSelect}
+            onExitBatchSelect={handleExitBatchSelect}
+            onToggleBatchSelect={handleToggleBatchSelect}
+            onBatchUpdateSelected={setBatchSelectedSessionIds}
+            onRequestBatchDelete={handleRequestBatchDelete}
+            onConfirmBatchDelete={handleConfirmBatchDelete}
+          />
+        )
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
+        'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        !isMac && 'pt-[28px]'
+      )}
+      style={{
+        width: width ?? 240,
+      }}
+    >
+      {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 SidePanel / RailInspectorHeader 一致） */}
+      {!isMac && (
+        <div
+          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[28px] titlebar-drag-region"
+          style={{ right: 0 }}
+          aria-hidden
+        />
+      )}
+      {/* 新会话按钮 + 搜索按钮（仅 Agent 会话功能区显示） */}
+      {activeRailItem === 'sessions' && (
+        <div className="nav-island-action-row px-3 gap-1.5">
+          <button
+            onClick={handleNewAgentSession}
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+          >
+            <Plus size={14} />
+            <span>新会话</span>
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setSearchDialogOpen(true)}
+                className="flex-shrink-0 size-[36px] flex items-center justify-center rounded-[10px] text-foreground/40 bg-primary/5 hover:bg-primary/10 hover:text-foreground/60 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+              >
+                <Search size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              搜索 ({getAcceleratorDisplay(getActiveAccelerator('global-search'))})
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* 项目标题行 + 新建项目按钮（仅 Agent 会话功能区显示，放在新会话下方） */}
+      {activeRailItem === 'sessions' && (
+        <div className="shrink-0 flex items-center justify-between px-3 pt-2 pb-1 titlebar-no-drag">
+          <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
+            项目
+          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => void createProject()}
+                className="size-5 flex items-center justify-center rounded-md text-foreground/35 hover:bg-foreground/[0.06] hover:text-foreground/60 transition-colors"
+                aria-label="新建项目"
+              >
+                <Plus size={13} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">新建项目</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* 新草稿按钮 + 搜索按钮（仅草稿功能区显示） */}
+      {activeRailItem === 'draft' && (
+        <div className="nav-island-action-row px-3 gap-1.5">
+          <button
+            onClick={handleNewDraft}
+            className="flex-1 flex items-center gap-2 px-3 h-10 rounded-[14px] text-[13px] font-medium text-foreground/70 bg-primary/5 hover:bg-primary/10 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+          >
+            <Plus size={14} />
+            <span>新草稿</span>
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setDraftSearchOpen(true)}
+                className="flex-shrink-0 size-[36px] flex items-center justify-center rounded-[10px] text-foreground/40 bg-primary/5 hover:bg-primary/10 hover:text-foreground/60 transition-colors duration-100 titlebar-no-drag border border-border/40 hover:border-border/70"
+              >
+                <Search size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">搜索草稿</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* 功能区内容：切换 Rail 时淡入，避免侧栏翼内容突变生硬 */}
+      <div
+        key={activeRailItem}
+        className={cn(
+          'flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-200'
+        )}
+      >
+        {renderRailContent()}
+      </div>
+
+      {/* 已归档 Popover 入口：固定在底部，点击展开成完整列表（不切换整页 viewMode） */}
+      {activeRailItem === 'sessions' && (
+        <div className="px-3 pb-1 flex-shrink-0">
+          {mode === 'agent' && archivedAgentSessionCount > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[12px] text-foreground/40 hover:bg-foreground/[0.04] hover:text-foreground/60 transition-colors titlebar-no-drag">
+                  <Archive size={13} className="text-foreground/30" />
+                  <span>已归档 ({archivedAgentSessionCount})</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="start"
+                sideOffset={6}
+                className="w-72 p-0 overflow-hidden"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
+                  <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
+                    已归档会话 · {archivedAgentSessionCount}
+                  </span>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
+                  {archivedAgentSessionsList.length === 0 ? (
+                    <div className="py-3 text-center text-[12px] text-foreground/40">
+                      暂无已归档会话
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      {archivedAgentSessionsList.map((session) => (
+                        <AgentSessionItem
+                          key={session.id}
+                          session={session}
+                          active={session.id === activeSessionId}
+                          indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                          leftAccent={getSessionLeftAccent(
+                            agentIndicatorMap.get(session.id) ?? 'idle',
+                            session.id === activeSessionId,
+                            session.manualWorking
+                          )}
+                          showPinIcon={!!session.pinned}
+                          workspaceName={
+                            session.workspaceId
+                              ? workspaceNameMap.get(session.workspaceId)
+                              : undefined
+                          }
+                          onSelect={handleSelectAgentSession}
+                          onConfirmDone={handleConfirmWorkingDoneAgent}
+                          onRequestDelete={handleRequestDelete}
+                          onRequestMove={handleRequestMove}
+                          onRename={handleAgentRename}
+                          onTogglePin={handleTogglePinAgent}
+                          onToggleManualWorking={handleToggleManualWorkingAgent}
+                          onToggleArchive={handleToggleArchiveAgent}
+                          disableMiniMap
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      )}
+
+      {deleteDialog}
+      {projectDeleteDialog}
+      {batchDeleteDialog}
+      {moveDialog}
+      <SearchDialog />
+      <DraftSearchDialog />
+    </div>
+  )
+}
+
+// ===== 功能区内容组件 =====
+
+/** 会话功能区内容（仅 Agent 会话） */
+function SessionsRailContent({
+  activeSessionId,
+  agentProjectGroups,
+  agentIndicatorMap,
+  collapsedWorkspaceIds,
+  setCollapsedWorkspaceIds,
+  currentWorkspaceId,
+  pinnedAgentSessions,
+  handleRequestDelete,
+  handleSelectAgentSession,
+  handleAgentRename,
+  handleTogglePinAgent,
+  handleToggleManualWorkingAgent,
+  handleToggleArchiveAgent,
+  handleConfirmWorkingDoneAgent,
+  handleRequestMove,
+  workspaceNameMap,
+  selectWorkspace,
+  handleNewSessionInWorkspace,
+  onRenameWorkspace,
+  onRequestDeleteWorkspace,
+  dragProjectId,
+  projectDropIndicator,
+  onProjectDragStart,
+  onProjectDragOver,
+  onProjectDragLeave,
+  onProjectDrop,
+  onProjectDragEnd,
+  batchSelectWorkspaceId,
+  batchSelectedSessionIds,
+  onEnterBatchSelect,
+  onExitBatchSelect,
+  onToggleBatchSelect,
+  onBatchUpdateSelected,
+  onRequestBatchDelete,
+  onConfirmBatchDelete,
+}: {
+  activeSessionId: string | null
+  agentProjectGroups: AgentProjectGroup[]
+  agentIndicatorMap: Map<string, SessionIndicatorStatus>
+  collapsedWorkspaceIds: Set<string>
+  setCollapsedWorkspaceIds: React.Dispatch<React.SetStateAction<Set<string>>>
+  currentWorkspaceId: string | null
+  pinnedAgentSessions: AgentSessionMeta[]
+  handleRequestDelete: (id: string) => void
+  handleSelectAgentSession: (id: string, title: string) => void
+  handleAgentRename: (id: string, newTitle: string) => Promise<void>
+  handleTogglePinAgent: (id: string) => Promise<void>
+  handleToggleManualWorkingAgent: (id: string) => Promise<void>
+  handleToggleArchiveAgent: (id: string) => Promise<void>
+  handleConfirmWorkingDoneAgent: (id: string) => Promise<void>
+  handleRequestMove: (id: string) => void
+  workspaceNameMap: Map<string, string>
+  selectWorkspace: (id: string) => void
+  handleNewSessionInWorkspace: (workspaceId: string) => Promise<void>
+  onRenameWorkspace: (workspaceId: string, name: string) => Promise<void>
+  onRequestDeleteWorkspace: (workspaceId: string) => void
+  dragProjectId: string | null
+  projectDropIndicator: { id: string; position: 'before' | 'after' } | null
+  onProjectDragStart: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragOver: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragLeave: (e: React.DragEvent) => void
+  onProjectDrop: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragEnd: () => void
+  batchSelectWorkspaceId: string | null
+  batchSelectedSessionIds: Set<string>
+  onEnterBatchSelect: (workspaceId: string) => void
+  onExitBatchSelect: () => void
+  onToggleBatchSelect: (sessionId: string) => void
+  onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
+  onRequestBatchDelete: () => void
+  onConfirmBatchDelete: () => Promise<void>
+}): React.ReactElement {
+  const store = useStore()
+
+  const toggleCollapsed = React.useCallback(
+    (workspaceId: string): void => {
+      setCollapsedWorkspaceIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(workspaceId)) next.delete(workspaceId)
+        else next.add(workspaceId)
+        return next
+      })
+    },
+    [setCollapsedWorkspaceIds]
+  )
+
+  const handleRenameWorkspace = onRenameWorkspace
+  const handleRequestDeleteWorkspace = onRequestDeleteWorkspace
+
+  const handleConfigureProject = React.useCallback(
+    (workspaceId: string): void => {
+      selectWorkspace(workspaceId)
+      store.set(activeRailItemAtom, 'skills')
+    },
+    [selectWorkspace, store]
+  )
+
+  const listRef = React.useRef<HTMLDivElement>(null)
+
+  return (
+    <div
+      ref={listRef}
+      className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin min-h-0 titlebar-no-drag relative"
+    >
+      <div className="relative z-10">
+        {/* 置顶分区 */}
+        {pinnedAgentSessions.length > 0 && (
+          <div className="mb-1.5">
+            <div className="flex items-center gap-1 px-1 pb-0.5">
+              <Pin size={11} className="text-foreground/30" />
+              <span className="text-[11px] font-medium text-foreground/35">置顶</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {pinnedAgentSessions.map((session) => (
+                <AgentSessionItem
+                  key={session.id}
+                  session={session}
+                  active={session.id === activeSessionId}
+                  indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                  leftAccent={getSessionLeftAccent(
+                    agentIndicatorMap.get(session.id) ?? 'idle',
+                    session.id === activeSessionId,
+                    session.manualWorking
+                  )}
+                  workspaceName={
+                    session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
+                  }
+                  onSelect={handleSelectAgentSession}
+                  onConfirmDone={handleConfirmWorkingDoneAgent}
+                  onRequestDelete={handleRequestDelete}
+                  onRequestMove={handleRequestMove}
+                  onRename={handleAgentRename}
+                  onTogglePin={handleTogglePinAgent}
+                  onToggleManualWorking={handleToggleManualWorkingAgent}
+                  onToggleArchive={handleToggleArchiveAgent}
+                  disableMiniMap
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 项目分组 */}
+        {agentProjectGroups.length === 0 && pinnedAgentSessions.length === 0 ? (
+          <div className="px-2 py-3 text-[11px] text-foreground/30 text-center select-none">
+            暂无项目，点击上方"+新会话"创建
+          </div>
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            {agentProjectGroups.map((group) => (
+              <AgentProjectGroupItem
+                key={group.workspace.id}
+                group={group}
+                currentWorkspaceId={currentWorkspaceId}
+                collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
+                activeSessionId={activeSessionId}
+                agentIndicatorMap={agentIndicatorMap}
+                workspaceNameMap={workspaceNameMap}
+                onSelectProject={(id) => {
+                  selectWorkspace(id)
+                  toggleCollapsed(id)
+                }}
+                onNewSession={handleNewSessionInWorkspace}
+                onRenameWorkspace={handleRenameWorkspace}
+                onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+                onConfigureProject={handleConfigureProject}
+                onSelectSession={handleSelectAgentSession}
+                handleRequestDelete={handleRequestDelete}
+                handleAgentRename={handleAgentRename}
+                handleTogglePinAgent={handleTogglePinAgent}
+                handleToggleManualWorkingAgent={handleToggleManualWorkingAgent}
+                handleToggleArchiveAgent={handleToggleArchiveAgent}
+                handleConfirmWorkingDoneAgent={handleConfirmWorkingDoneAgent}
+                handleRequestMove={handleRequestMove}
+                dragProjectId={dragProjectId}
+                projectDropIndicator={projectDropIndicator}
+                onProjectDragStart={onProjectDragStart}
+                onProjectDragOver={onProjectDragOver}
+                onProjectDragLeave={onProjectDragLeave}
+                onProjectDrop={onProjectDrop}
+                onProjectDragEnd={onProjectDragEnd}
+                batchSelectWorkspaceId={batchSelectWorkspaceId}
+                batchSelectedSessionIds={batchSelectedSessionIds}
+                onEnterBatchSelect={onEnterBatchSelect}
+                onExitBatchSelect={onExitBatchSelect}
+                onToggleBatchSelect={onToggleBatchSelect}
+                onBatchUpdateSelected={onBatchUpdateSelected}
+                onRequestBatchDelete={onRequestBatchDelete}
+                onConfirmBatchDelete={onConfirmBatchDelete}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** 插件功能区内容 —— 统一插件列表 */
+function SkillsRailContent({
+  capabilities,
+}: {
+  capabilities: WorkspaceCapabilities | null
+}): React.ReactElement {
+  return <PluginSidebarNav capabilities={capabilities} />
+}
+
+// ===== 对话列表项 =====
+
+// ===== 对话列表项 =====
+
+interface ConversationItemProps {
+  conversation: ConversationMeta
+  active: boolean
+  streaming: boolean
+  /** 是否在标题旁显示 Pin 图标 */
+  showPinIcon: boolean
+  onSelect: (id: string, title: string) => void
+  onRequestDelete: (id: string) => void
+  onRename: (id: string, newTitle: string) => Promise<void>
+  onTogglePin: (id: string) => Promise<void>
+  onToggleArchive: (id: string) => Promise<void>
+}
+
+const ConversationItem = React.memo(function ConversationItem({
+  conversation,
+  active,
+  streaming,
+  showPinIcon,
+  onSelect,
+  onRequestDelete,
+  onRename,
+  onTogglePin,
+  onToggleArchive,
+}: ConversationItemProps): React.ReactElement {
+  const [editing, setEditing] = React.useState(false)
+  const [editTitle, setEditTitle] = React.useState('')
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const justStartedEditing = React.useRef(false)
+  // 菜单打开时关闭迷你地图预览，避免预览面板盖住菜单项导致点不动
+  const preview = useSessionMiniMapHover(300, menuOpen)
+
+  /** 进入编辑模式 */
+  const startEdit = (): void => {
+    setEditTitle(conversation.title)
+    setEditing(true)
+    justStartedEditing.current = true
+    // 延迟聚焦，等待 ContextMenu 完全关闭后再 focus
+    setTimeout(() => {
+      justStartedEditing.current = false
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 300)
+  }
+
+  /** 保存标题 */
+  const saveTitle = async (): Promise<void> => {
+    // ContextMenu 关闭导致的 blur，忽略
+    if (justStartedEditing.current) return
+    const trimmed = editTitle.trim()
+    if (!trimmed || trimmed === conversation.title) {
+      setEditing(false)
+      return
+    }
+    await onRename(conversation.id, trimmed)
+    setEditing(false)
+  }
+
+  /** 键盘事件 */
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveTitle()
+    } else if (e.key === 'Escape') {
+      setEditing(false)
+    }
+  }
+
+  const isPinned = !!conversation.pinned
+
+  const menuItems = (
+    MenuItem: typeof ContextMenuItem | typeof DropdownMenuItem,
+    MenuSeparator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
+  ) => (
+    <>
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5"
+        onSelect={() => onTogglePin(conversation.id)}
+      >
+        {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+        {isPinned ? '取消置顶' : '置顶对话'}
+      </MenuItem>
+      <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={() => startEdit()}>
+        <Pencil size={14} />
+        重命名
+      </MenuItem>
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5"
+        onSelect={() => onToggleArchive(conversation.id)}
+      >
+        {conversation.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+        {conversation.archived ? '取消归档' : '归档'}
+      </MenuItem>
+      <MenuSeparator className="my-0.5" />
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5 text-destructive"
+        onSelect={() => onRequestDelete(conversation.id)}
+      >
+        <Trash2 size={14} />
+        删除对话
+      </MenuItem>
+    </>
+  )
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          ref={preview.setAnchorRef}
+          role="button"
+          tabIndex={0}
+          onClick={() => onSelect(conversation.id, conversation.title)}
+          onMouseEnter={preview.handleMouseEnter}
+          onMouseLeave={preview.handleMouseLeave}
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            startEdit()
+          }}
+          className={cn(
+            'session-list-row group relative w-full flex items-center gap-2 px-3 py-[7px] titlebar-no-drag text-left',
+            active ? 'session-list-item-active' : 'rounded-md hover:bg-primary/5'
+          )}
+        >
+          {/* 流式状态左侧竖线条（与 Agent 保持一致） */}
+          {streaming && (
+            <span
+              className="session-sidebar-accent left-1.5 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500 animate-pulse pointer-events-none"
+              aria-hidden="true"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveTitle}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                maxLength={100}
+              />
+            ) : (
+              <div
+                className={cn(
+                  'truncate text-[13px] leading-5 flex items-center gap-1.5',
+                  active ? 'text-foreground' : 'text-foreground/80'
+                )}
+              >
+                {/* 置顶标记 */}
+                {showPinIcon && <Pin size={11} className="flex-shrink-0 text-primary/60" />}
+                <span className="truncate">{conversation.title}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 三点菜单按钮（hover 时可见，始终占位避免跳动） */}
+          {!editing && (
+            <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu onOpenChange={setMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      'p-1 rounded-md text-foreground/30 hover:bg-foreground/[0.08] hover:text-foreground/60 transition-colors',
+                      'opacity-0 pointer-events-none',
+                      'group-hover:opacity-100 group-hover:pointer-events-auto',
+                      'data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto'
+                    )}
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
+                  {menuItems(DropdownMenuItem, DropdownMenuSeparator)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-40 z-[9999] min-w-0 p-0.5">
+        {menuItems(ContextMenuItem, ContextMenuSeparator)}
+      </ContextMenuContent>
+      <SessionMiniMapPopover
+        target={{
+          type: 'agent', // P3: chat 已退役，此组件为遗留代码
+          sessionId: conversation.id,
+          title: conversation.title,
+        }}
+        anchorRef={preview.anchorRef}
+        open={preview.isOpen}
+        isLeaving={preview.isLeaving}
+        onMouseEnter={preview.handlePanelMouseEnter}
+        onMouseLeave={preview.handlePanelMouseLeave}
+      />
+    </ContextMenu>
+  )
+})
+
+// ===== Agent 会话列表项 =====
+
+/** 会话行左侧状态色块的颜色 — 与 SessionIndicatorStatus 呼应 */
+type SessionLeftAccent = 'orange' | 'blue' | 'green' | 'primary' | 'amber' | 'idle'
+const SESSION_LEFT_ACCENT_CLASS: Record<SessionLeftAccent, string> = {
+  orange: 'bg-orange-500',
+  blue: 'bg-blue-500',
+  green: 'bg-green-500',
+  primary: 'bg-primary',
+  amber: 'bg-amber-500',
+  idle: 'bg-transparent',
+}
+
+interface AgentSessionItemProps {
+  session: AgentSessionMeta
+  active: boolean
+  indicatorStatus: SessionIndicatorStatus
+  showPinIcon?: boolean
+  /** 行左侧状态色块；未传则不显示 */
+  leftAccent?: SessionLeftAccent
+  /** 是否禁用悬浮 Mini 地图 */
+  disableMiniMap?: boolean
+  /** 工作区名称 Badge（跨工作区列表时显示） */
+  workspaceName?: string
+  /** 子行扩展样式 */
+  childClassName?: string
+  /** 批量选择模式：是否在选择模式 */
+  isBatchMode?: boolean
+  /** 批量选择模式：是否被选中 */
+  isBatchSelected?: boolean
+  /** 批量选择模式：切换选中 */
+  onToggleBatchSelect?: (id: string) => void
+  onSelect: (id: string, title: string) => void
+  onConfirmDone: (id: string) => Promise<void>
+  onRequestDelete: (id: string) => void
+  onRequestMove: (id: string) => void
+  onRename: (id: string, newTitle: string) => Promise<void>
+  onTogglePin: (id: string) => Promise<void>
+  onToggleManualWorking: (id: string) => Promise<void>
+  onToggleArchive: (id: string) => Promise<void>
+}
+
+/** 时间显示格式：今天 HH:mm / 昨天 HH:mm / MM/DD */
+function formatSessionTime(updatedAt: number): string {
+  const date = new Date(updatedAt)
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 86_400_000
+  const pad = (n: number): string => n.toString().padStart(2, '0')
+  if (updatedAt >= todayStart) {
+    return `今天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  if (updatedAt >= yesterdayStart) {
+    return `昨天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  return `${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+const AgentSessionItem = React.memo(function AgentSessionItem({
+  session,
+  active,
+  indicatorStatus,
+  showPinIcon,
+  leftAccent,
+  disableMiniMap,
+  workspaceName,
+  childClassName,
+  isBatchMode = false,
+  isBatchSelected = false,
+  onToggleBatchSelect,
+  onSelect,
+  onConfirmDone,
+  onRequestDelete,
+  onRequestMove,
+  onRename,
+  onTogglePin,
+  onToggleManualWorking,
+  onToggleArchive,
+}: AgentSessionItemProps): React.ReactElement {
+  const [editing, setEditing] = React.useState(false)
+  const [editTitle, setEditTitle] = React.useState('')
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const justStartedEditing = React.useRef(false)
+  const preview = useSessionMiniMapHover(300, disableMiniMap || menuOpen || isBatchMode)
+
+  const startEdit = (): void => {
+    setEditTitle(session.title)
+    setEditing(true)
+    justStartedEditing.current = true
+    setTimeout(() => {
+      justStartedEditing.current = false
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 300)
+  }
+
+  const saveTitle = async (): Promise<void> => {
+    if (justStartedEditing.current) return
+    const trimmed = editTitle.trim()
+    if (!trimmed || trimmed === session.title) {
+      setEditing(false)
+      return
+    }
+    await onRename(session.id, trimmed)
+    setEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveTitle()
+    } else if (e.key === 'Escape') {
+      setEditing(false)
+    }
+  }
+
+  const isWorking = session.manualWorking
+  const canMove = indicatorStatus === 'idle' || indicatorStatus === 'completed'
+
+  const menuItems = (
+    MenuItem: typeof ContextMenuItem | typeof DropdownMenuItem,
+    MenuSeparator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
+  ) => (
+    <>
+      <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={() => onTogglePin(session.id)}>
+        {session.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+        {session.pinned ? '取消置顶' : '置顶会话'}
+      </MenuItem>
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5"
+        disabled={indicatorStatus === 'running'}
+        onSelect={() => {
+          if (indicatorStatus !== 'running') onToggleManualWorking(session.id)
+        }}
+      >
+        <Hammer size={14} className={isWorking ? 'fill-current' : ''} />
+        {indicatorStatus === 'running'
+          ? '运行中无法移出'
+          : isWorking
+            ? '取消工作中'
+            : '标记为工作中'}
+      </MenuItem>
+      {isWorking && (
+        <MenuItem
+          className="text-xs py-1 [&>svg]:size-3.5"
+          onSelect={() => onConfirmDone(session.id)}
+        >
+          <CircleCheckBig size={14} />
+          标记为完成
+        </MenuItem>
+      )}
+      {canMove && (
+        <MenuItem
+          className="text-xs py-1 [&>svg]:size-3.5"
+          onSelect={() => onRequestMove(session.id)}
+        >
+          <ArrowRightLeft size={14} />
+          迁移到其他工作区
+        </MenuItem>
+      )}
+      <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={() => startEdit()}>
+        <Pencil size={14} />
+        重命名
+      </MenuItem>
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5"
+        onSelect={() => onToggleArchive(session.id)}
+      >
+        {session.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+        {session.archived ? '取消归档' : '归档'}
+      </MenuItem>
+      <MenuSeparator className="my-0.5" />
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5 text-destructive"
+        onSelect={() => onRequestDelete(session.id)}
+      >
+        <Trash2 size={14} />
+        删除会话
+      </MenuItem>
+    </>
+  )
+
+  // 非选中态需要前缀图标（工作中 / 置顶）；选择模式下隐藏，避免跟 checkbox 冲突
+  const showPrefixIcon =
+    !isBatchMode && !active && (session.manualWorking || (session.pinned && !session.manualWorking))
+  // 选中态或 normal 态的左侧状态竖条（工作中 normal 态仅图标，不显示竖条）；选择模式下隐藏
+  const showInlineAccent = !isBatchMode && !!leftAccent && !(session.manualWorking && !active)
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          ref={preview.setAnchorRef}
+          data-session-list-id={session.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (isBatchMode) {
+              onToggleBatchSelect?.(session.id)
+            } else {
+              onSelect(session.id, session.title)
+            }
+          }}
+          onMouseEnter={preview.handleMouseEnter}
+          onMouseLeave={preview.handleMouseLeave}
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            startEdit()
+          }}
+          className={cn(
+            'session-list-row group relative w-full flex items-center gap-1 py-[7px] px-1 titlebar-no-drag text-left',
+            childClassName,
+            isBatchSelected
+              ? 'rounded-md bg-primary/10'
+              : active
+                ? 'session-list-item-active'
+                : 'rounded-md hover:bg-primary/5'
+          )}
+        >
+          {/* 固定宽度占位：竖条(3px)+图标(12px)，文本紧接其后；批量模式下替换为 checkbox */}
+          {isBatchMode ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleBatchSelect?.(session.id)
+              }}
+              className="flex-shrink-0 w-[18px] flex items-center justify-center text-foreground/60 hover:text-foreground"
+              aria-label={isBatchSelected ? '取消选中' : '选中'}
+            >
+              {isBatchSelected ? (
+                <CheckSquare className="size-3.5 text-primary" />
+              ) : (
+                <Square className="size-3.5" />
+              )}
+            </button>
+          ) : (
+            <div className="flex-shrink-0 w-[18px]" aria-hidden />
+          )}
+          {showInlineAccent && leftAccent && (
+            <span
+              className={cn(
+                'session-sidebar-accent session-sidebar-accent--inline absolute left-1.5 top-2 bottom-2 w-[3px] rounded-full pointer-events-none',
+                SESSION_LEFT_ACCENT_CLASS[leftAccent],
+                leftAccent === 'blue' && 'animate-pulse'
+              )}
+            />
+          )}
+          {showPrefixIcon &&
+            (session.manualWorking ? (
+              <Timer
+                size={12}
+                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400 pointer-events-none"
+              />
+            ) : (
+              <Pin
+                size={11}
+                className="absolute left-[10px] top-1/2 -translate-y-1/2 text-primary/60 pointer-events-none"
+              />
+            ))}
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveTitle}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                maxLength={100}
+              />
+            ) : (
+              <div
+                className={cn(
+                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
+                  !isBatchMode && 'group-hover:pr-4',
+                  active ? 'text-foreground' : 'text-foreground/80'
+                )}
+              >
+                <span className="truncate flex-1 min-w-0">{session.title}</span>
+                {!isBatchMode && (
+                  <span className="flex-shrink-0 text-[9px] text-foreground/30 tabular-nums">
+                    {formatSessionTime(session.updatedAt)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {!editing && !isBatchMode && (
+            <div
+              className="absolute right-0 top-1/2 -translate-y-1/2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenu onOpenChange={setMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      'p-1 rounded-md text-foreground/30 hover:bg-foreground/[0.08] hover:text-foreground/60 transition-colors',
+                      'opacity-0 pointer-events-none',
+                      'group-hover:opacity-100 group-hover:pointer-events-auto',
+                      'data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto'
+                    )}
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40 z-[9999] min-w-0 p-0.5">
+                  {menuItems(DropdownMenuItem, DropdownMenuSeparator)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-40 z-[9999] min-w-0 p-0.5">
+        {menuItems(ContextMenuItem, ContextMenuSeparator)}
+      </ContextMenuContent>
+      {!disableMiniMap && (
+        <SessionMiniMapPopover
+          target={{
+            type: 'agent',
+            sessionId: session.id,
+            title: session.title,
+            workspaceName,
+          }}
+          anchorRef={preview.anchorRef}
+          open={preview.isOpen}
+          isLeaving={preview.isLeaving}
+          onMouseEnter={preview.handlePanelMouseEnter}
+          onMouseLeave={preview.handlePanelMouseLeave}
+        />
+      )}
+    </ContextMenu>
+  )
+})
+
+// ===== 项目分组组件 =====
+
+const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
+  group,
+  currentWorkspaceId,
+  collapsed,
+  activeSessionId,
+  agentIndicatorMap,
+  workspaceNameMap,
+  onSelectProject,
+  onNewSession,
+  onRenameWorkspace,
+  onRequestDeleteWorkspace,
+  onConfigureProject,
+  onSelectSession,
+  handleRequestDelete,
+  handleAgentRename,
+  handleTogglePinAgent,
+  handleToggleManualWorkingAgent,
+  handleToggleArchiveAgent,
+  handleConfirmWorkingDoneAgent,
+  handleRequestMove,
+  dragProjectId,
+  projectDropIndicator,
+  onProjectDragStart,
+  onProjectDragOver,
+  onProjectDragLeave,
+  onProjectDrop,
+  onProjectDragEnd,
+  batchSelectWorkspaceId,
+  batchSelectedSessionIds,
+  onEnterBatchSelect,
+  onExitBatchSelect,
+  onToggleBatchSelect,
+  onBatchUpdateSelected,
+  onRequestBatchDelete,
+  onConfirmBatchDelete,
+}: {
+  group: AgentProjectGroup
+  currentWorkspaceId: string | null
+  collapsed: boolean
+  activeSessionId: string | null
+  agentIndicatorMap: Map<string, SessionIndicatorStatus>
+  workspaceNameMap: Map<string, string>
+  onSelectProject: (id: string) => void
+  onNewSession: (workspaceId: string) => void
+  onRenameWorkspace: (id: string, name: string) => void
+  onRequestDeleteWorkspace: (id: string) => void
+  onConfigureProject: (id: string) => void
+  onSelectSession: (id: string, title: string) => void
+  handleRequestDelete: (id: string) => void
+  handleAgentRename: (id: string, newTitle: string) => Promise<void>
+  handleTogglePinAgent: (id: string) => Promise<void>
+  handleToggleManualWorkingAgent: (id: string) => Promise<void>
+  handleToggleArchiveAgent: (id: string) => Promise<void>
+  handleConfirmWorkingDoneAgent: (id: string) => Promise<void>
+  handleRequestMove: (id: string) => void
+  dragProjectId: string | null
+  projectDropIndicator: { id: string; position: 'before' | 'after' } | null
+  onProjectDragStart: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragOver: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragLeave: (e: React.DragEvent) => void
+  onProjectDrop: (e: React.DragEvent, workspaceId: string) => void
+  onProjectDragEnd: () => void
+  batchSelectWorkspaceId: string | null
+  batchSelectedSessionIds: Set<string>
+  onEnterBatchSelect: (workspaceId: string) => void
+  onExitBatchSelect: () => void
+  onToggleBatchSelect: (sessionId: string) => void
+  onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
+  onRequestBatchDelete: () => void
+  onConfirmBatchDelete: () => Promise<void>
+}): React.ReactElement {
+  const isCurrent = group.workspace.id === currentWorkspaceId
+  const [renaming, setRenaming] = React.useState(false)
+  const [editName, setEditName] = React.useState('')
+  const editRef = React.useRef<HTMLInputElement>(null)
+  const justStartedRef = React.useRef(false)
+
+  const handleStartRename = (): void => {
+    setEditName(group.workspace.name)
+    setRenaming(true)
+    justStartedRef.current = true
+    setTimeout(() => {
+      justStartedRef.current = false
+      editRef.current?.focus()
+      editRef.current?.select()
+    }, 300)
+  }
+
+  const handleCommitRename = async (): Promise<void> => {
+    if (justStartedRef.current) return
+    const trimmed = editName.trim()
+    if (!trimmed || trimmed === group.workspace.name) {
+      setRenaming(false)
+      return
+    }
+    await onRenameWorkspace(group.workspace.id, trimmed)
+    setRenaming(false)
+  }
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      if (e.nativeEvent.isComposing) return
+      e.preventDefault()
+      void handleCommitRename()
+    } else if (e.key === 'Escape') {
+      setRenaming(false)
+    }
+  }
+
+  const recentCutoff = Date.now() - PROJECT_SESSION_RECENT_WINDOW_MS
+  const getStatus = (sessionId: string): SessionIndicatorStatus =>
+    agentIndicatorMap.get(sessionId) ?? 'idle'
+
+  // 会话排序优先级：置顶 > 工作中(running/blocked) > 工作中(done/manual) > 活跃 > 最近更新
+  const sessionPriority = (s: AgentSessionMeta): number => {
+    if (s.pinned) return 0
+    const status = getStatus(s.id)
+    if (ACTIVE_SESSION_STATUSES.has(status)) return 1 + ACTIVE_SESSION_STATUS_PRIORITY[status]
+    if (s.manualWorking) return 10
+    return 20
+  }
+
+  const activeSessions = group.sessions
+    .filter((s) => ACTIVE_SESSION_STATUSES.has(getStatus(s.id)))
+    .slice()
+    .sort((a, b) => {
+      const pa = sessionPriority(a),
+        pb = sessionPriority(b)
+      if (pa !== pb) return pa - pb
+      return b.updatedAt - a.updatedAt
+    })
+  const activeIds = new Set(activeSessions.map((s) => s.id))
+
+  const fillSessions = group.sessions
+    .filter(
+      (s) => !activeIds.has(s.id) && (s.pinned || s.manualWorking || s.updatedAt >= recentCutoff)
+    )
+    .slice()
+    .sort((a, b) => {
+      const pa = sessionPriority(a),
+        pb = sessionPriority(b)
+      if (pa !== pb) return pa - pb
+      return b.updatedAt - a.updatedAt
+    })
+  const fillIds = new Set(fillSessions.map((s) => s.id))
+
+  const currentSession =
+    activeSessionId && !activeIds.has(activeSessionId) && !fillIds.has(activeSessionId)
+      ? (group.sessions.find((s) => s.id === activeSessionId) ?? null)
+      : null
+  // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
+  const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
+
+  const sessions = [
+    ...activeSessions,
+    ...fillSessions,
+    ...(currentSession ? [currentSession] : []),
+  ]
+
+  const isDragging = dragProjectId === group.workspace.id
+  const isBatchMode = batchSelectWorkspaceId === group.workspace.id
+  const batchSelectedCount = isBatchMode
+    ? group.sessions.filter((s) => batchSelectedSessionIds.has(s.id)).length
+    : 0
+  const dropPosition =
+    projectDropIndicator?.id === group.workspace.id ? projectDropIndicator.position : null
+
+  return (
+    <section
+      className={cn('relative py-0.5 transition-opacity', isDragging && 'opacity-45')}
+      onDragOver={(e) => onProjectDragOver(e, group.workspace.id)}
+      onDragLeave={onProjectDragLeave}
+      onDrop={(e) => onProjectDrop(e, group.workspace.id)}
+      onDragEnd={onProjectDragEnd}
+    >
+      {dropPosition === 'before' && (
+        <div className="absolute -top-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
+      )}
+      <div className="group/project relative flex items-center">
+        {/* 拖拽手柄：hover 显示，draggable 触发排序（选择模式下隐藏） */}
+        {!isBatchMode && (
+          <span
+            draggable
+            onDragStart={(e) => onProjectDragStart(e, group.workspace.id)}
+            title="拖拽排序"
+            className="absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing"
+            aria-hidden="true"
+          >
+            <GripVertical size={12} />
+          </span>
+        )}
+        {renaming ? (
+          <div
+            className={cn(
+              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11',
+              isCurrent ? 'text-foreground' : 'text-foreground/65'
+            )}
+          >
+            {!collapsed ? (
+              <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+            ) : (
+              <Folder size={13} className="flex-shrink-0 text-foreground/40" />
+            )}
+            <input
+              ref={editRef}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              onBlur={() => void handleCommitRename()}
+              className="flex-1 min-w-0 bg-transparent text-[13px] font-medium text-foreground border-b border-primary/50 outline-none px-0.5 leading-[18px]"
+              maxLength={50}
+            />
+          </div>
+        ) : (
+          !isBatchMode && (
+            <button
+              type="button"
+              aria-expanded={!collapsed}
+              onClick={() => {
+                if (hasActiveSession) return // 选中会话所在 group 不响应折叠点击
+                onSelectProject(group.workspace.id)
+              }}
+              className={cn(
+                'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11 hover:bg-foreground/[0.025]',
+                isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
+              )}
+            >
+              {!collapsed ? (
+                <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
+              ) : (
+                <Folder size={13} className="flex-shrink-0 text-foreground/40" />
+              )}
+              <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
+                {group.workspace.name}
+              </span>
+              {!hasActiveSession && (
+                <ChevronRight
+                  size={12}
+                  className={cn(
+                    'flex-shrink-0 text-foreground/30 transition-transform duration-150',
+                    collapsed ? '-rotate-90' : 'rotate-90'
+                  )}
+                />
+              )}
+            </button>
+          )
+        )}
+
+        {!isBatchMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={`在「${group.workspace.name}」中新建会话`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNewSession(group.workspace.id)
+                }}
+                className="absolute right-5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag"
+              >
+                <Plus size={13} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">在此项目中新建会话</TooltipContent>
+          </Tooltip>
+        )}
+
+        {isBatchMode ? (
+          <div className="flex flex-1 items-center gap-1 px-2 py-1">
+            <span className="text-[12px] font-medium text-foreground/80 mr-1">
+              已选 {batchSelectedCount} / {group.sessions.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const allIds = group.sessions.map((s) => s.id)
+                const allSelected = allIds.every((id) => batchSelectedSessionIds.has(id))
+                if (allSelected) {
+                  onBatchUpdateSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const id of allIds) next.delete(id)
+                    return next
+                  })
+                } else {
+                  onBatchUpdateSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const id of allIds) next.add(id)
+                    return next
+                  })
+                }
+              }}
+              className="h-6 px-2 rounded-md text-[11px] text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground transition-colors"
+            >
+              {group.sessions.length > 0 &&
+              group.sessions.every((s) => batchSelectedSessionIds.has(s.id))
+                ? '取消全选'
+                : '全选'}
+            </button>
+            <button
+              type="button"
+              onClick={onRequestBatchDelete}
+              disabled={batchSelectedCount === 0}
+              className="h-6 px-2 rounded-md text-[11px] text-red-600 dark:text-red-400 hover:bg-red-500/10 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+            >
+              删除{batchSelectedCount > 0 ? ` ${batchSelectedCount}` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={onExitBatchSelect}
+              className="h-6 px-2 rounded-md text-[11px] text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground transition-colors ml-auto"
+            >
+              取消
+            </button>
+          </div>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="项目菜单"
+                className="absolute right-0 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/60 group-hover/project:opacity-100 data-[state=open]:opacity-100 titlebar-no-drag"
+              >
+                <MoreVertical size={13} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44 z-[9999] min-w-0 p-0.5">
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onSelectProject(group.workspace.id)}
+              >
+                <FolderOpen size={14} />
+                设为当前项目
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={handleStartRename}
+              >
+                <Pencil size={14} />
+                重命名
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onConfigureProject(group.workspace.id)}
+              >
+                <Settings size={14} />
+                配置 MCP 与 Skills
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-xs py-1 [&>svg]:size-3.5"
+                onSelect={() => onEnterBatchSelect(group.workspace.id)}
+              >
+                <CheckSquare size={14} />
+                批量删除会话
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-0.5" />
+              <DropdownMenuItem
+                className={cn(
+                  'text-xs py-1 [&>svg]:size-3.5',
+                  'text-destructive focus:text-destructive'
+                )}
+                onSelect={() => onRequestDeleteWorkspace(group.workspace.id)}
+              >
+                <Trash2 size={14} />
+                删除项目
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      <div
+        className="mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
+          {!collapsed && sessions.length > 0 ? (
+            <div className="flex flex-col gap-0.5">
+              {sessions.map((session) => (
+                <AgentSessionItem
+                  key={session.id}
+                  session={session}
+                  active={session.id === activeSessionId}
+                  indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                  showPinIcon={!!session.pinned}
+                  leftAccent={getSessionLeftAccent(
+                    agentIndicatorMap.get(session.id) ?? 'idle',
+                    session.id === activeSessionId,
+                    session.manualWorking
+                  )}
+                  workspaceName={
+                    session.workspaceId ? workspaceNameMap.get(session.workspaceId) : undefined
+                  }
+                  isBatchMode={isBatchMode}
+                  isBatchSelected={batchSelectedSessionIds.has(session.id)}
+                  onToggleBatchSelect={onToggleBatchSelect}
+                  onSelect={onSelectSession}
+                  onRequestDelete={handleRequestDelete}
+                  onRequestMove={handleRequestMove}
+                  onRename={handleAgentRename}
+                  onTogglePin={handleTogglePinAgent}
+                  onToggleManualWorking={handleToggleManualWorkingAgent}
+                  onToggleArchive={handleToggleArchiveAgent}
+                  onConfirmDone={handleConfirmWorkingDoneAgent}
+                  disableMiniMap
+                />
+              ))}
+              {/* 移除折叠查看更多机制：现在所有会话直接展示 */}
+            </div>
+          ) : !collapsed ? (
+            <div className="flex items-center gap-1 px-1 py-0.5 text-[12px] text-foreground/22 select-none">
+              <span className="flex-shrink-0 w-[18px]" aria-hidden />
+              <span>暂无会话</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      {dropPosition === 'after' && (
+        <div className="absolute -bottom-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
+      )}
+    </section>
+  )
+})

@@ -1,0 +1,653 @@
+/*
+  Soft Glass themes — 4 families × light/dark
+  Mist  云絮 · Ocean 碧海 · Moss 青苔 · Dusk 暮霭
+*/
+
+:root,
+[data-theme="mist"][data-mode="light"] {
+  color-scheme: light;
+
+  --surface: #e7eaef;
+  --surface-raised: #eceff3;
+  --surface-sunken: #e0e4ea;
+  --wallpaper-top: #eceff4;
+  --wallpaper-mid: #e7eaef;
+  --wallpaper-bot: #e3e7ed;
+
+  --text: #3a4452;
+  --text-soft: #66707e;
+  --text-faint: #8a93a0;
+
+  --accent: #5b7fd4;
+  --accent-hover: #4e72c4;
+  --accent-soft: rgba(91, 127, 212, 0.12);
+  --accent-border: rgba(91, 127, 212, 0.16);
+  --accent-strong: rgba(91, 127, 212, 0.45);
+  --accent-grad-a: #7a96d8;
+  --accent-grad-b: #5b7fd4;
+
+  --glass: rgba(236, 240, 246, 0.55);
+  --glass-soft: rgba(236, 240, 246, 0.4);
+  --glass-strong: rgba(242, 245, 249, 0.72);
+  --glass-well: rgba(230, 235, 242, 0.45);
+  --rim: rgba(255, 255, 255, 0.45);
+  --rim-soft: rgba(255, 255, 255, 0.35);
+
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(170, 180, 195, 0.45);
+  --elev-dark: rgba(145, 158, 175, 0.22);
+  --elev-light: rgba(255, 255, 255, 0.5);
+  --ambient-shadow: rgba(145, 158, 175, 0.16);
+
+  --wash-a: #c5d0e2;
+  --wash-b: #d0c8dc;
+  --wash-c: #c4d4d2;
+  --wash-opacity: 0.22;
+
+  --success: #3f9a6a;
+  --danger: #c45b5b;
+  --code-bg: rgba(232, 237, 244, 0.72);
+  --code-kw: #5b72b8;
+  --code-str: #4f8f6a;
+  --chroma-a: rgba(170, 185, 210, 0.28);
+  --chroma-b: rgba(195, 185, 210, 0.18);
+  --chroma-c: rgba(175, 200, 200, 0.18);
+  --avatar-a: #7a96c8;
+  --avatar-b: #8a7ab8;
+  --divider: rgba(47, 58, 72, 0.12);
+  --hover-fill: rgba(255, 255, 255, 0.32);
+  --process-bg: rgba(230, 235, 242, 0.42);
+  --think-border: rgba(120, 135, 155, 0.35);
+  --table-border: rgba(120, 135, 155, 0.12);
+  --blockquote-bg: rgba(230, 235, 242, 0.5);
+}
+
+/* ── Mist Dark · 石板夜语 ── */
+[data-theme="mist"][data-mode="dark"] {
+  color-scheme: dark;
+
+  /* Lifted slate field — room for wash + glass translucency */
+  --surface: #222833;
+  --surface-raised: #2a3140;
+  --surface-sunken: #1b2029;
+  --wallpaper-top: #262d3a;
+  --wallpaper-mid: #222833;
+  --wallpaper-bot: #1c212b;
+
+  --text: #eef1f6;
+  --text-soft: #b8c0cc;
+  --text-faint: #8a93a2;
+
+  --accent: #8aa6e8;
+  --accent-hover: #9bb4ee;
+  --accent-soft: rgba(138, 166, 232, 0.18);
+  --accent-border: rgba(138, 166, 232, 0.28);
+  --accent-strong: rgba(138, 166, 232, 0.58);
+  --accent-grad-a: #9bb4ee;
+  --accent-grad-b: #7a96d8;
+
+  /* Translucent frosted panels (not opaque slabs) */
+  --glass: rgba(48, 56, 72, 0.52);
+  --glass-soft: rgba(54, 62, 78, 0.38);
+  --glass-strong: rgba(62, 72, 90, 0.68);
+  --glass-well: rgba(36, 42, 56, 0.55);
+  --rim: rgba(255, 255, 255, 0.16);
+  --rim-soft: rgba(255, 255, 255, 0.1);
+
+  --shadow-light: rgba(255, 255, 255, 0.08);
+  --shadow-dark: rgba(8, 12, 20, 0.55);
+  --elev-dark: rgba(8, 12, 20, 0.42);
+  --elev-light: rgba(255, 255, 255, 0.1);
+  --ambient-shadow: rgba(8, 12, 20, 0.4);
+
+  --wash-a: #3a4a6a;
+  --wash-b: #4a4060;
+  --wash-c: #2e4a4e;
+  --wash-opacity: 0.42;
+
+  --success: #6fbf92;
+  --danger: #e08a8a;
+  --code-bg: rgba(32, 38, 52, 0.72);
+  --code-kw: #a8bfff;
+  --code-str: #8fd0a8;
+  --chroma-a: rgba(140, 170, 220, 0.22);
+  --chroma-b: rgba(180, 160, 210, 0.16);
+  --chroma-c: rgba(140, 190, 190, 0.14);
+  --avatar-a: #6f8ec8;
+  --avatar-b: #7d6eae;
+  --divider: rgba(255, 255, 255, 0.1);
+  --hover-fill: rgba(255, 255, 255, 0.08);
+  --process-bg: rgba(36, 42, 56, 0.5);
+  --think-border: rgba(170, 185, 205, 0.28);
+  --table-border: rgba(255, 255, 255, 0.1);
+  --blockquote-bg: rgba(48, 56, 72, 0.45);
+}
+
+/*
+  Soft Glass palette rule (match Mist optics):
+  - Surfaces stay near-neutral; hue shift is subtle (±2–4 RGB)
+  - Accent carries identity; keep similar chroma/lightness to Mist #5b7fd4
+  - Washes are soft pastels at ~0.22 / dark ~0.35 — never loud color fields
+  - Glass / shadows / text stay gray-first; tint only slightly
+*/
+
+/* ── Ocean Light · 薄雾青蓝 ── */
+[data-theme="ocean"][data-mode="light"] {
+  color-scheme: light;
+
+  --surface: #e6ebf0;
+  --surface-raised: #ebf0f4;
+  --surface-sunken: #dfe5eb;
+  --wallpaper-top: #ebf0f4;
+  --wallpaper-mid: #e6ebf0;
+  --wallpaper-bot: #e2e8ee;
+
+  --text: #36424e;
+  --text-soft: #62707c;
+  --text-faint: #87939e;
+
+  --accent: #4f8fc4;
+  --accent-hover: #437fb2;
+  --accent-soft: rgba(79, 143, 196, 0.12);
+  --accent-border: rgba(79, 143, 196, 0.16);
+  --accent-strong: rgba(79, 143, 196, 0.45);
+  --accent-grad-a: #6ea6d0;
+  --accent-grad-b: #4f8fc4;
+
+  --glass: rgba(235, 241, 246, 0.55);
+  --glass-soft: rgba(235, 241, 246, 0.4);
+  --glass-strong: rgba(242, 247, 250, 0.72);
+  --glass-well: rgba(228, 235, 242, 0.45);
+  --rim: rgba(255, 255, 255, 0.45);
+  --rim-soft: rgba(255, 255, 255, 0.35);
+
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(165, 178, 192, 0.42);
+  --elev-dark: rgba(140, 158, 175, 0.2);
+  --elev-light: rgba(255, 255, 255, 0.5);
+  --ambient-shadow: rgba(140, 158, 175, 0.15);
+
+  --wash-a: #c2d2e0;
+  --wash-b: #c8cddc;
+  --wash-c: #c2d6d4;
+  --wash-opacity: 0.22;
+
+  --success: #3f9a6a;
+  --danger: #c45b5b;
+  --code-bg: rgba(230, 237, 244, 0.72);
+  --code-kw: #4a7aa8;
+  --code-str: #4f8f6a;
+  --chroma-a: rgba(160, 190, 210, 0.26);
+  --chroma-b: rgba(180, 185, 210, 0.16);
+  --chroma-c: rgba(165, 200, 198, 0.16);
+  --avatar-a: #6ea6d0;
+  --avatar-b: #7a90c0;
+  --divider: rgba(47, 58, 72, 0.12);
+  --hover-fill: rgba(255, 255, 255, 0.32);
+  --process-bg: rgba(228, 235, 242, 0.42);
+  --think-border: rgba(120, 140, 160, 0.32);
+  --table-border: rgba(120, 140, 160, 0.12);
+  --blockquote-bg: rgba(228, 235, 242, 0.5);
+}
+
+/* ── Ocean Dark · 静海蓝灰 ── */
+[data-theme="ocean"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --surface: #202833;
+  --surface-raised: #283240;
+  --surface-sunken: #1a2029;
+  --wallpaper-top: #24303c;
+  --wallpaper-mid: #202833;
+  --wallpaper-bot: #1a222c;
+
+  --text: #eef3f7;
+  --text-soft: #b6c2ce;
+  --text-faint: #8794a2;
+
+  --accent: #7eb4dc;
+  --accent-hover: #90c2e6;
+  --accent-soft: rgba(126, 180, 220, 0.18);
+  --accent-border: rgba(126, 180, 220, 0.28);
+  --accent-strong: rgba(126, 180, 220, 0.58);
+  --accent-grad-a: #90c2e6;
+  --accent-grad-b: #6aa0c8;
+
+  --glass: rgba(46, 58, 72, 0.52);
+  --glass-soft: rgba(52, 64, 78, 0.38);
+  --glass-strong: rgba(60, 74, 90, 0.68);
+  --glass-well: rgba(34, 44, 56, 0.55);
+  --rim: rgba(255, 255, 255, 0.16);
+  --rim-soft: rgba(255, 255, 255, 0.1);
+
+  --shadow-light: rgba(255, 255, 255, 0.08);
+  --shadow-dark: rgba(6, 12, 20, 0.55);
+  --elev-dark: rgba(6, 12, 20, 0.42);
+  --elev-light: rgba(255, 255, 255, 0.1);
+  --ambient-shadow: rgba(6, 12, 20, 0.4);
+
+  --wash-a: #2e4a62;
+  --wash-b: #36405a;
+  --wash-c: #2a4a4e;
+  --wash-opacity: 0.42;
+
+  --success: #6fbf92;
+  --danger: #e08a8a;
+  --code-bg: rgba(30, 40, 52, 0.72);
+  --code-kw: #9cc8ef;
+  --code-str: #8fd0a8;
+  --chroma-a: rgba(120, 175, 210, 0.2);
+  --chroma-b: rgba(140, 160, 200, 0.14);
+  --chroma-c: rgba(120, 180, 175, 0.12);
+  --avatar-a: #6aa0c8;
+  --avatar-b: #6e88b8;
+  --divider: rgba(255, 255, 255, 0.1);
+  --hover-fill: rgba(255, 255, 255, 0.08);
+  --process-bg: rgba(34, 44, 56, 0.5);
+  --think-border: rgba(160, 185, 205, 0.28);
+  --table-border: rgba(255, 255, 255, 0.1);
+  --blockquote-bg: rgba(46, 58, 72, 0.45);
+}
+
+/* ── Moss Light · 薄雾青苔 ── */
+[data-theme="moss"][data-mode="light"] {
+  color-scheme: light;
+
+  --surface: #e7ebe8;
+  --surface-raised: #eceff0;
+  --surface-sunken: #e0e5e1;
+  --wallpaper-top: #eceff0;
+  --wallpaper-mid: #e7ebe8;
+  --wallpaper-bot: #e3e7e4;
+
+  --text: #38443c;
+  --text-soft: #64706a;
+  --text-faint: #88948c;
+
+  --accent: #5a8f72;
+  --accent-hover: #4d7f64;
+  --accent-soft: rgba(90, 143, 114, 0.12);
+  --accent-border: rgba(90, 143, 114, 0.16);
+  --accent-strong: rgba(90, 143, 114, 0.45);
+  --accent-grad-a: #74a88a;
+  --accent-grad-b: #5a8f72;
+
+  --glass: rgba(236, 241, 238, 0.55);
+  --glass-soft: rgba(236, 241, 238, 0.4);
+  --glass-strong: rgba(243, 247, 244, 0.72);
+  --glass-well: rgba(229, 235, 231, 0.45);
+  --rim: rgba(255, 255, 255, 0.45);
+  --rim-soft: rgba(255, 255, 255, 0.35);
+
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(168, 178, 170, 0.42);
+  --elev-dark: rgba(145, 160, 150, 0.2);
+  --elev-light: rgba(255, 255, 255, 0.5);
+  --ambient-shadow: rgba(145, 160, 150, 0.15);
+
+  --wash-a: #c6d4ca;
+  --wash-b: #cdd0c6;
+  --wash-c: #c4d4d0;
+  --wash-opacity: 0.22;
+
+  --success: #3f9a6a;
+  --danger: #c45b5b;
+  --code-bg: rgba(231, 237, 233, 0.72);
+  --code-kw: #4f7a62;
+  --code-str: #4a8a68;
+  --chroma-a: rgba(165, 190, 175, 0.24);
+  --chroma-b: rgba(185, 185, 165, 0.16);
+  --chroma-c: rgba(165, 195, 190, 0.16);
+  --avatar-a: #74a88a;
+  --avatar-b: #7a9a88;
+  --divider: rgba(47, 58, 52, 0.12);
+  --hover-fill: rgba(255, 255, 255, 0.32);
+  --process-bg: rgba(229, 235, 231, 0.42);
+  --think-border: rgba(120, 140, 128, 0.32);
+  --table-border: rgba(120, 140, 128, 0.12);
+  --blockquote-bg: rgba(229, 235, 231, 0.5);
+}
+
+/* ── Moss Dark · 苔石夜色 ── */
+[data-theme="moss"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --surface: #212722;
+  --surface-raised: #29312b;
+  --surface-sunken: #1a201b;
+  --wallpaper-top: #252e28;
+  --wallpaper-mid: #212722;
+  --wallpaper-bot: #1b221d;
+
+  --text: #eef2ee;
+  --text-soft: #b6c0b8;
+  --text-faint: #87928a;
+
+  --accent: #7fb896;
+  --accent-hover: #91c6a6;
+  --accent-soft: rgba(127, 184, 150, 0.18);
+  --accent-border: rgba(127, 184, 150, 0.28);
+  --accent-strong: rgba(127, 184, 150, 0.58);
+  --accent-grad-a: #91c6a6;
+  --accent-grad-b: #68a080;
+
+  --glass: rgba(48, 58, 52, 0.52);
+  --glass-soft: rgba(54, 64, 58, 0.38);
+  --glass-strong: rgba(62, 74, 66, 0.68);
+  --glass-well: rgba(36, 44, 38, 0.55);
+  --rim: rgba(255, 255, 255, 0.16);
+  --rim-soft: rgba(255, 255, 255, 0.1);
+
+  --shadow-light: rgba(255, 255, 255, 0.08);
+  --shadow-dark: rgba(8, 14, 10, 0.55);
+  --elev-dark: rgba(8, 14, 10, 0.42);
+  --elev-light: rgba(255, 255, 255, 0.1);
+  --ambient-shadow: rgba(8, 14, 10, 0.4);
+
+  --wash-a: #324a3a;
+  --wash-b: #3a4232;
+  --wash-c: #2e4a42;
+  --wash-opacity: 0.42;
+
+  --success: #7fb896;
+  --danger: #e08a8a;
+  --code-bg: rgba(32, 40, 34, 0.72);
+  --code-kw: #a0d0b4;
+  --code-str: #8fd0a8;
+  --chroma-a: rgba(130, 180, 150, 0.18);
+  --chroma-b: rgba(155, 165, 140, 0.12);
+  --chroma-c: rgba(130, 175, 165, 0.12);
+  --avatar-a: #68a080;
+  --avatar-b: #6e9880;
+  --divider: rgba(255, 255, 255, 0.1);
+  --hover-fill: rgba(255, 255, 255, 0.08);
+  --process-bg: rgba(36, 44, 38, 0.5);
+  --think-border: rgba(160, 185, 168, 0.28);
+  --table-border: rgba(255, 255, 255, 0.1);
+  --blockquote-bg: rgba(48, 58, 52, 0.45);
+}
+
+/* ── Dusk Light · 薄雾暖砂 ── */
+[data-theme="dusk"][data-mode="light"] {
+  color-scheme: light;
+
+  --surface: #ebe9e6;
+  --surface-raised: #f0eeeb;
+  --surface-sunken: #e4e1dd;
+  --wallpaper-top: #f0eeeb;
+  --wallpaper-mid: #ebe9e6;
+  --wallpaper-bot: #e7e4e0;
+
+  --text: #403a34;
+  --text-soft: #6e675f;
+  --text-faint: #928b83;
+
+  --accent: #a07a5e;
+  --accent-hover: #8f6c52;
+  --accent-soft: rgba(160, 122, 94, 0.12);
+  --accent-border: rgba(160, 122, 94, 0.16);
+  --accent-strong: rgba(160, 122, 94, 0.45);
+  --accent-grad-a: #b89276;
+  --accent-grad-b: #a07a5e;
+
+  --glass: rgba(243, 240, 236, 0.55);
+  --glass-soft: rgba(243, 240, 236, 0.4);
+  --glass-strong: rgba(248, 246, 243, 0.72);
+  --glass-well: rgba(235, 231, 226, 0.45);
+  --rim: rgba(255, 255, 255, 0.45);
+  --rim-soft: rgba(255, 255, 255, 0.35);
+
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(178, 170, 160, 0.42);
+  --elev-dark: rgba(158, 150, 140, 0.2);
+  --elev-light: rgba(255, 255, 255, 0.5);
+  --ambient-shadow: rgba(158, 150, 140, 0.15);
+
+  --wash-a: #d4ccc2;
+  --wash-b: #d2c8ce;
+  --wash-c: #ccd2c6;
+  --wash-opacity: 0.22;
+
+  --success: #4f9470;
+  --danger: #c45b5b;
+  --code-bg: rgba(237, 233, 228, 0.72);
+  --code-kw: #8a6a52;
+  --code-str: #4f8a68;
+  --chroma-a: rgba(195, 180, 165, 0.26);
+  --chroma-b: rgba(190, 175, 185, 0.16);
+  --chroma-c: rgba(175, 190, 170, 0.16);
+  --avatar-a: #b89276;
+  --avatar-b: #a08898;
+  --divider: rgba(58, 52, 46, 0.12);
+  --hover-fill: rgba(255, 255, 255, 0.32);
+  --process-bg: rgba(235, 231, 226, 0.42);
+  --think-border: rgba(140, 130, 120, 0.32);
+  --table-border: rgba(140, 130, 120, 0.12);
+  --blockquote-bg: rgba(235, 231, 226, 0.5);
+}
+
+/* ── Dusk Dark · 暖砂夜幕 ── */
+[data-theme="dusk"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --surface: #252220;
+  --surface-raised: #2e2a27;
+  --surface-sunken: #1e1b18;
+  --wallpaper-top: #2a2623;
+  --wallpaper-mid: #252220;
+  --wallpaper-bot: #1f1c19;
+
+  --text: #f3ece6;
+  --text-soft: #beb6ac;
+  --text-faint: #90867c;
+
+  --accent: #c9a07e;
+  --accent-hover: #d5af90;
+  --accent-soft: rgba(201, 160, 126, 0.18);
+  --accent-border: rgba(201, 160, 126, 0.28);
+  --accent-strong: rgba(201, 160, 126, 0.58);
+  --accent-grad-a: #d5af90;
+  --accent-grad-b: #b88a66;
+
+  --glass: rgba(56, 50, 44, 0.52);
+  --glass-soft: rgba(62, 56, 50, 0.38);
+  --glass-strong: rgba(72, 64, 56, 0.68);
+  --glass-well: rgba(42, 38, 34, 0.55);
+  --rim: rgba(255, 255, 255, 0.16);
+  --rim-soft: rgba(255, 255, 255, 0.1);
+
+  --shadow-light: rgba(255, 255, 255, 0.08);
+  --shadow-dark: rgba(12, 8, 6, 0.55);
+  --elev-dark: rgba(12, 8, 6, 0.42);
+  --elev-light: rgba(255, 255, 255, 0.1);
+  --ambient-shadow: rgba(12, 8, 6, 0.4);
+
+  --wash-a: #4a3e34;
+  --wash-b: #463a42;
+  --wash-c: #3a4234;
+  --wash-opacity: 0.42;
+
+  --success: #7fb896;
+  --danger: #e08a8a;
+  --code-bg: rgba(38, 34, 30, 0.72);
+  --code-kw: #d8b498;
+  --code-str: #8fd0a8;
+  --chroma-a: rgba(190, 160, 130, 0.18);
+  --chroma-b: rgba(175, 150, 170, 0.12);
+  --chroma-c: rgba(155, 170, 140, 0.12);
+  --avatar-a: #b88a66;
+  --avatar-b: #a07888;
+  --divider: rgba(255, 255, 255, 0.1);
+  --hover-fill: rgba(255, 255, 255, 0.08);
+  --process-bg: rgba(42, 38, 34, 0.5);
+  --think-border: rgba(185, 170, 155, 0.28);
+  --table-border: rgba(255, 255, 255, 0.1);
+  --blockquote-bg: rgba(56, 50, 44, 0.45);
+}
+
+/* Shared light/dark surface optics (Soft Glass) */
+[data-mode="light"] {
+  --inset-hi: rgba(255, 255, 255, 0.45);
+  --inset-hi-strong: rgba(255, 255, 255, 0.55);
+  --inset-hi-soft: rgba(255, 255, 255, 0.32);
+  --chroma-mid: rgba(255, 255, 255, 0.4);
+  --specular-peak: rgba(255, 255, 255, 0.28);
+  --specular-mid: rgba(255, 255, 255, 0.05);
+  --specular-opacity: 0.4;
+  --shimmer-peak: rgba(255, 255, 255, 0.95);
+  --plate-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    12px 14px 32px var(--ambient-shadow),
+    -8px -8px 24px var(--elev-light);
+  --send-shadow:
+    3px 3px 8px color-mix(in srgb, var(--accent) 28%, transparent),
+    -1px -1px 4px var(--elev-light),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --send-shadow-hover:
+    4px 6px 12px color-mix(in srgb, var(--accent) 34%, transparent),
+    -1px -1px 4px var(--elev-light),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --swatch-rim: rgba(255, 255, 255, 0.55);
+}
+
+[data-mode="dark"] {
+  /* Soft Glass dark optics: readable rim + dual elevation, not flat black */
+  --inset-hi: rgba(255, 255, 255, 0.14);
+  --inset-hi-strong: rgba(255, 255, 255, 0.2);
+  --inset-hi-soft: rgba(255, 255, 255, 0.08);
+  --chroma-mid: rgba(255, 255, 255, 0.2);
+  --specular-peak: rgba(255, 255, 255, 0.22);
+  --specular-mid: rgba(255, 255, 255, 0.06);
+  --specular-opacity: 0.45;
+  --shimmer-peak: rgba(255, 255, 255, 0.85);
+  --plate-shadow:
+    0 1px 0 var(--inset-hi) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.04) inset,
+    16px 20px 40px var(--ambient-shadow),
+    -6px -8px 20px var(--elev-light);
+  --send-shadow:
+    3px 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --send-shadow-hover:
+    4px 8px 18px rgba(0, 0, 0, 0.48),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --swatch-rim: rgba(255, 255, 255, 0.28);
+}
+
+/* Dark Soft Glass: let wash color breathe through frosted shells */
+[data-mode="dark"] .content-base-plate,
+[data-mode="dark"] .glass-island {
+  backdrop-filter: blur(36px) saturate(155%);
+  -webkit-backdrop-filter: blur(36px) saturate(155%);
+}
+
+[data-mode="dark"] .input-dock,
+[data-mode="dark"] .session-well,
+[data-mode="dark"] .file-well,
+[data-mode="dark"] .process-group,
+[data-mode="dark"] .tool-cluster,
+[data-mode="dark"] .seg,
+[data-mode="dark"] .glass-seg {
+  backdrop-filter: blur(22px) saturate(155%);
+  -webkit-backdrop-filter: blur(22px) saturate(155%);
+}
+
+[data-mode="dark"] .chroma-edge {
+  opacity: 0.5;
+}
+
+[data-mode="dark"] .specular {
+  mix-blend-mode: soft-light;
+}
+
+/* Theme switcher chrome */
+.theme-dock {
+  position: fixed;
+  top: 10px;
+  right: 14px;
+  left: auto;
+  transform: none;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  border: 1px solid var(--rim);
+  box-shadow:
+    0 1px 0 var(--inset-hi-soft) inset,
+    0 8px 24px var(--ambient-shadow);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.theme-dock .seg {
+  margin: 0;
+}
+
+.theme-swatches {
+  display: inline-flex;
+  gap: 4px;
+  padding: 0 2px;
+}
+
+.theme-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--swatch-rim);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  position: relative;
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    outline-color 160ms ease;
+}
+
+.theme-swatch:hover {
+  transform: scale(1.08);
+}
+
+.theme-swatch:active {
+  transform: scale(0.97);
+  box-shadow: var(--neu-in-sm);
+}
+
+.theme-swatch.is-active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-swatch[data-pick="mist"] {
+  background: linear-gradient(135deg, #c5d0e2, #5b7fd4);
+}
+
+.theme-swatch[data-pick="ocean"] {
+  background: linear-gradient(135deg, #c2d2e0, #4f8fc4);
+}
+
+.theme-swatch[data-pick="moss"] {
+  background: linear-gradient(135deg, #c6d4ca, #5a8f72);
+}
+
+.theme-swatch[data-pick="dusk"] {
+  background: linear-gradient(135deg, #d4ccc2, #a07a5e);
+}
+
+.theme-name {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--text-soft);
+  padding: 0 4px 0 2px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .theme-name {
+    display: none;
+  }
+}

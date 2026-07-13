@@ -1,0 +1,616 @@
+/**
+ * AgentModelSelector - Agent 模型选择器
+ *
+ * 从 ModelSelector 简化而来，仅用于 Agent 模式。
+ * P3: Chat 模式已退役，移除 Chat 相关依赖。
+ */
+
+import { isAgentCompatibleProvider } from '@tagent/shared'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { ChevronDown, Cpu, Search } from 'lucide-react'
+import * as React from 'react'
+
+import type { AgentEffort, Channel, ModelOption, KsccInstallReadiness } from '@tagent/shared'
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  SearchInput,
+  SegmentedTabs,
+  SegmentedTabsItem,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
+import { channelsAtom, channelsLoadedAtom, thinkingExpandedAtom } from '@/atoms/model-atoms'
+import {
+  agentChannelIdAtom,
+  agentChannelIdsAtom,
+  agentEffortAtom,
+  agentModelIdAtom,
+  agentThinkingAtom,
+} from '@/atoms/agent-atoms'
+import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+
+/** 从渠道列表构建扁平化的模型选项 */
+function buildModelOptions(
+  channels: Channel[],
+  filterChannelId?: string,
+  filterChannelIds?: string[],
+  ksccReadiness?: KsccInstallReadiness | null,
+  lockedProvider?: string
+): ModelOption[] {
+  const options: ModelOption[] = []
+
+  for (const channel of channels) {
+    if (!channel.enabled) continue
+    if (filterChannelId && channel.id !== filterChannelId) continue
+    if (filterChannelIds && filterChannelIds.length > 0 && !filterChannelIds.includes(channel.id))
+      continue
+
+    // 渠道互斥：kscc 开始的会话不显示外部渠道，外部渠道开始的不显示 kscc
+    if (lockedProvider) {
+      const isKsccChannel = channel.provider === 'kscc-internal'
+      if (lockedProvider === 'kscc-internal' && !isKsccChannel) continue
+      if (lockedProvider !== 'kscc-internal' && isKsccChannel) continue
+    }
+
+    // kscc 渠道特殊处理：未安装时灰显
+    const isKscc = channel.provider === 'kscc-internal'
+    const ksccDisabled = isKscc && ksccReadiness && !ksccReadiness.kscc.installed
+    const ksccDisabledReason =
+      isKscc && ksccReadiness && !ksccReadiness.kscc.installed ? '请先安装 kscc' : undefined
+
+    for (const model of channel.models) {
+      if (!model.enabled) continue
+
+      options.push({
+        channelId: channel.id,
+        channelName: channel.name,
+        modelId: model.id,
+        modelName: model.name,
+        provider: channel.provider,
+        ...(ksccDisabled && { disabled: true, disabledReason: ksccDisabledReason }),
+        ...(isKscc && !ksccDisabled && { badge: '金山云' }),
+      })
+    }
+  }
+
+  return options
+}
+
+/** 按渠道分组模型选项 */
+function groupByChannel(options: ModelOption[]): Map<string, ModelOption[]> {
+  const groups = new Map<string, ModelOption[]>()
+
+  for (const option of options) {
+    const key = option.channelId
+    const group = groups.get(key) ?? []
+    group.push(option)
+    groups.set(key, group)
+  }
+
+  return groups
+}
+
+const EFFORT_OPTIONS: Array<{
+  value: AgentEffort
+  label: string
+  desc: string
+}> = [
+  { value: 'low', label: '轻量', desc: '更快' },
+  { value: 'medium', label: '均衡', desc: '适中' },
+  { value: 'high', label: '深度', desc: '默认' },
+  { value: 'max', label: '最大', desc: '最强' },
+]
+
+/** AgentModelSelector 属性 */
+interface AgentModelSelectorProps {
+  /** 仅显示此渠道的模型 */
+  filterChannelId?: string
+  /** 仅显示这些渠道的模型（多渠道过滤） */
+  filterChannelIds?: string[]
+  /** 会话锁定的渠道类型，互斥过滤（'kscc-internal' 则只显示 kscc，其他值则隐藏 kscc） */
+  lockedProvider?: string
+  /** 外部选中模型（不传则用内部 atom） */
+  externalSelectedModel?: { channelId: string; modelId: string } | null
+  /** 外部选择回调 */
+  onModelSelect?: (option: ModelOption) => void
+  /** 隐藏触发按钮中的模型 logo，只显示文字 */
+  hideLogo?: boolean
+  /** 紧凑模式：Cpu 图标 + 模型名 pill，用于嵌入 trailing 区域 */
+  compact?: boolean
+  /** kscc 未安装时点击灰显模型的回调 */
+  onInstallGuideOpen?: () => void
+}
+
+export function AgentModelSelector({
+  filterChannelId,
+  filterChannelIds,
+  lockedProvider,
+  externalSelectedModel,
+  onModelSelect,
+  hideLogo = false,
+  compact = false,
+  onInstallGuideOpen,
+}: AgentModelSelectorProps = {}): React.ReactElement {
+  const channelId = useAtomValue(agentChannelIdAtom)
+  const modelId = useAtomValue(agentModelIdAtom)
+  const setChannelId = useSetAtom(agentChannelIdAtom)
+  const setModelId = useSetAtom(agentModelIdAtom)
+  const [agentThinking, setAgentThinking] = useAtom(agentThinkingAtom)
+  const [agentEffort, setAgentEffort] = useAtom(agentEffortAtom)
+  const [thinkingExpanded, setThinkingExpanded] = useAtom(thinkingExpandedAtom)
+  const channels = useAtomValue(channelsAtom)
+  const channelsLoaded = useAtomValue(channelsLoadedAtom)
+  const setChannels = useSetAtom(channelsAtom)
+  const [agentChannelIds, setAgentChannelIds] = useAtom(agentChannelIdsAtom)
+  const [open, setOpen] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+  const listContentRef = React.useRef<HTMLDivElement>(null)
+  const [modelSelectionStyle, setModelSelectionStyle] = React.useState<React.CSSProperties | null>(
+    null
+  )
+
+  // 外部模型优先
+  const selectedModel =
+    externalSelectedModel !== undefined ? externalSelectedModel : { channelId, modelId }
+
+  // 每次打开选择浮窗时刷新渠道列表，确保最新
+  React.useEffect(() => {
+    if (open) {
+      window.electronAPI
+        .listChannels()
+        .then((ch) => {
+          setChannels(ch)
+          // 同步 agentChannelIds 白名单，补充已启用但缺失的 Agent 兼容渠道
+          const currentIds = new Set(agentChannelIds)
+          const missingIds = ch
+            .filter(
+              (c) => c.enabled && isAgentCompatibleProvider(c.provider) && !currentIds.has(c.id)
+            )
+            .map((c) => c.id)
+          if (missingIds.length > 0) {
+            const merged = [...missingIds, ...agentChannelIds]
+            setAgentChannelIds(merged)
+            window.electronAPI.updateSettings({ agentChannelIds: merged }).catch(console.error)
+          }
+        })
+        .catch(console.error)
+      setSearch('')
+    }
+  }, [open, setChannels, agentChannelIds, setAgentChannelIds])
+
+  // kscc 安装就绪检测
+  const [ksccReadiness, setKsccReadiness] = React.useState<KsccInstallReadiness | null>(null)
+  React.useEffect(() => {
+    if (open) {
+      window.electronAPI
+        .checkKsccReadiness()
+        .then(setKsccReadiness)
+        .catch(() => setKsccReadiness(null))
+    }
+  }, [open])
+
+  const modelOptions = React.useMemo(
+    () =>
+      buildModelOptions(channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider),
+    [channels, filterChannelId, filterChannelIds, ksccReadiness, lockedProvider]
+  )
+  const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
+
+  // 搜索过滤
+  const filteredGrouped = React.useMemo(() => {
+    if (!search.trim()) return grouped
+
+    const query = search.toLowerCase()
+    const filtered = new Map<string, ModelOption[]>()
+
+    for (const [chId, options] of grouped.entries()) {
+      const matchedOptions = options.filter(
+        (o) =>
+          o.modelName.toLowerCase().includes(query) || o.channelName.toLowerCase().includes(query)
+      )
+      if (matchedOptions.length > 0) {
+        filtered.set(chId, matchedOptions)
+      }
+    }
+
+    return filtered
+  }, [grouped, search])
+
+  // 扁平化过滤后的模型列表，用于键盘导航
+  const flatOptions = React.useMemo(() => {
+    const result: ModelOption[] = []
+    for (const options of filteredGrouped.values()) {
+      result.push(...options)
+    }
+    return result
+  }, [filteredGrouped])
+
+  // 键盘高亮索引
+  const [highlightIndex, setHighlightIndex] = React.useState(-1)
+  const itemRefs = React.useRef<Map<number, HTMLButtonElement>>(new Map())
+
+  // 搜索变化时重置高亮
+  React.useEffect(() => {
+    setHighlightIndex(-1)
+  }, [search])
+
+  // 高亮项变化时滚动到可见区域
+  React.useEffect(() => {
+    if (highlightIndex < 0) return
+    const el = itemRefs.current.get(highlightIndex)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [highlightIndex])
+
+  // 查找当前选中的模型信息
+  const currentModelInfo = React.useMemo(() => {
+    if (!selectedModel?.channelId || !selectedModel?.modelId) return null
+    return (
+      modelOptions.find(
+        (o) => o.channelId === selectedModel.channelId && o.modelId === selectedModel.modelId
+      ) ?? null
+    )
+  }, [selectedModel, modelOptions])
+
+  // 保持上次有效的模型信息，避免渠道未加载时闪烁"选择模型"
+  const stableModelInfoRef = React.useRef(currentModelInfo)
+  if (currentModelInfo) stableModelInfoRef.current = currentModelInfo
+  const displayModelInfo = currentModelInfo ?? stableModelInfoRef.current
+  const thinkingEnabled = agentThinking?.type === 'adaptive'
+  const effectiveEffort = agentEffort ?? 'high'
+  const selectedModelIndex = React.useMemo(() => {
+    if (!selectedModel?.channelId || !selectedModel?.modelId) return -1
+    return flatOptions.findIndex(
+      (option) =>
+        option.channelId === selectedModel.channelId && option.modelId === selectedModel.modelId
+    )
+  }, [flatOptions, selectedModel])
+
+  React.useLayoutEffect(() => {
+    if (!open || selectedModelIndex < 0) {
+      setModelSelectionStyle(null)
+      return
+    }
+
+    const listEl = listContentRef.current
+    const itemEl = itemRefs.current.get(selectedModelIndex)
+    if (!listEl || !itemEl) {
+      setModelSelectionStyle(null)
+      return
+    }
+
+    setModelSelectionStyle({
+      transform: `translate3d(${itemEl.offsetLeft}px, ${itemEl.offsetTop}px, 0)`,
+      width: itemEl.offsetWidth,
+      height: itemEl.offsetHeight,
+    })
+  }, [open, selectedModelIndex, filteredGrouped])
+
+  /** 选择模型 */
+  const handleSelect = (option: ModelOption): void => {
+    if (onModelSelect) {
+      onModelSelect(option)
+      return
+    }
+    setChannelId(option.channelId)
+    setModelId(option.modelId)
+  }
+
+  /** 切换 Agent 思考模式：写入设置后由下一次 SDK query 生效 */
+  const handleThinkingSelect = (enabled: boolean): void => {
+    const next = enabled ? { type: 'adaptive' as const } : { type: 'disabled' as const }
+    setAgentThinking(next)
+    window.electronAPI.updateSettings({ agentThinking: next }).catch(console.error)
+  }
+
+  /** 切换 Agent 思考强度：写入设置后由下一次 SDK query 生效 */
+  const handleEffortSelect = (nextEffort: AgentEffort): void => {
+    setAgentEffort(nextEffort)
+    window.electronAPI.updateSettings({ agentEffort: nextEffort }).catch(console.error)
+  }
+
+  /** 搜索框键盘导航 */
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (flatOptions.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightIndex((prev) => (prev < flatOptions.length - 1 ? prev + 1 : 0))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightIndex((prev) => (prev > 0 ? prev - 1 : flatOptions.length - 1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const target = flatOptions[highlightIndex >= 0 ? highlightIndex : 0]
+      if (target) handleSelect(target)
+    }
+  }
+
+  if (channelsLoaded && modelOptions.length === 0) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1">
+        <Cpu className="size-3.5" />
+        <span>暂无可用模型</span>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          {compact ? (
+            <button
+              type="button"
+              className="agent-toolbar-pill-btn flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Cpu className="size-3.5" />
+              <span className="max-w-[120px] truncate">
+                {displayModelInfo ? displayModelInfo.modelName : '模型'}
+              </span>
+              <ChevronDown className="size-3 opacity-70" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {!hideLogo &&
+                (displayModelInfo ? (
+                  <img
+                    src={getModelLogo(displayModelInfo.modelId, displayModelInfo.provider)}
+                    alt={displayModelInfo.modelName}
+                    className="size-4 rounded object-cover"
+                  />
+                ) : (
+                  <Cpu className="size-3.5" />
+                ))}
+              <span className="max-w-[200px] truncate">
+                {displayModelInfo ? displayModelInfo.modelName : '选择模型'}
+              </span>
+              <ChevronDown className="size-3 opacity-70" />
+            </button>
+          )}
+        </PopoverTrigger>
+
+        <PopoverContent
+          side="top"
+          align="end"
+          sideOffset={10}
+          className="agent-model-popover w-[360px] overflow-hidden p-0"
+        >
+          <div className="agent-model-popover-header border-b border-border/30 px-3.5 py-3">
+            <div className="mb-2.5 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] font-medium text-muted-foreground">当前模型</div>
+                <div className="mt-1 flex min-w-0 items-center gap-2">
+                  {displayModelInfo ? (
+                    <img
+                      src={getModelLogo(displayModelInfo.modelId, displayModelInfo.provider)}
+                      alt={displayModelInfo.modelName}
+                      className="size-6 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-foreground/8">
+                      <Cpu className="size-3.5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-foreground">
+                      {displayModelInfo ? displayModelInfo.modelName : '未选择模型'}
+                    </div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {displayModelInfo ? displayModelInfo.channelName : '选择一个可用渠道模型'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="material-inline-chip px-2.5 py-1 text-[10px] text-muted-foreground">
+                {flatOptions.length} 个可用
+              </div>
+            </div>
+
+            <div className="mb-2.5 space-y-2">
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-muted-foreground">思考设置</span>
+                <span className="text-[10px] text-muted-foreground/70">下次发送生效</span>
+              </div>
+
+              <SegmentedTabs
+                value={thinkingEnabled ? 'on' : 'off'}
+                onValueChange={(next) => handleThinkingSelect(next === 'on')}
+                className="agent-toolbar-segmented"
+              >
+                <SegmentedTabsItem value="off">关闭思考</SegmentedTabsItem>
+                <SegmentedTabsItem value="on">自适应思考</SegmentedTabsItem>
+              </SegmentedTabs>
+
+              {thinkingEnabled ? (
+                <div className="space-y-2">
+                  <div className="material-flat-input flex w-full items-center justify-between px-3 py-2 text-[11px] text-muted-foreground">
+                    <span>消息中展开思考内容</span>
+                    <Switch
+                      checked={thinkingExpanded}
+                      onCheckedChange={setThinkingExpanded}
+                      className={cn(
+                        'agent-toolbar-switch',
+                        'h-5 w-9 focus-visible:ring-0 focus-visible:ring-offset-0'
+                      )}
+                    />
+                  </div>
+
+                  <SegmentedTabs
+                    value={effectiveEffort}
+                    onValueChange={(next) => handleEffortSelect(next as AgentEffort)}
+                    className="agent-toolbar-segmented"
+                  >
+                    {EFFORT_OPTIONS.map((option) => (
+                      <SegmentedTabsItem
+                        key={option.value}
+                        value={option.value}
+                        className="flex-col items-start"
+                      >
+                        <span className="block text-[11px] font-medium leading-none">
+                          {option.label}
+                        </span>
+                        <span className="mt-1 block text-[10px] leading-none opacity-70">
+                          {option.desc}
+                        </span>
+                      </SegmentedTabsItem>
+                    ))}
+                  </SegmentedTabs>
+                </div>
+              ) : (
+                <div className="material-flat-input px-2.5 py-2 text-[11px] text-muted-foreground">
+                  当前不会请求模型输出思考内容。
+                </div>
+              )}
+            </div>
+
+            <SearchInput
+              variant="glass"
+              size="md"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="搜索模型或渠道"
+              autoFocus
+            />
+          </div>
+
+          <div className="max-h-[340px] overflow-y-auto p-1.5 scrollbar-thin">
+            {filteredGrouped.size === 0 ? (
+              <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                <div className="material-inline-chip mb-2 flex size-9 items-center justify-center">
+                  <Search className="size-4 text-muted-foreground" />
+                </div>
+                <div className="text-sm font-medium text-foreground">未找到模型</div>
+                <div className="mt-1 text-xs text-muted-foreground">换个关键词再试试</div>
+              </div>
+            ) : (
+              (() => {
+                let flatIndex = 0
+                return (
+                  <div ref={listContentRef} className="relative">
+                    {modelSelectionStyle && (
+                      <div
+                        className="agent-model-list-selection agent-model-list-selection--neumorph"
+                        style={modelSelectionStyle}
+                      />
+                    )}
+                    {Array.from(filteredGrouped.entries()).map(([chId, options]) => {
+                      const first = options[0]
+                      if (!first) return null
+
+                      return (
+                        <div key={chId} className="mb-1.5 last:mb-0">
+                          <div className="mb-1 flex items-center justify-between gap-2 px-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <img
+                                src={(() => {
+                                  const ch = channels.find((c) => c.id === chId)
+                                  return ch ? getChannelLogo(ch) : DefaultLogo
+                                })()}
+                                alt={first.channelName}
+                                className="size-4 shrink-0 rounded object-cover"
+                              />
+                              <span className="truncate text-[11px] font-medium text-muted-foreground">
+                                {first.channelName}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground/70">
+                              {options.length}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            {options.map((option) => {
+                              const isSelected =
+                                selectedModel?.channelId === option.channelId &&
+                                selectedModel?.modelId === option.modelId
+                              const currentFlatIndex = flatIndex++
+                              const isHighlighted = currentFlatIndex === highlightIndex
+
+                              return (() => {
+                                const modelButton = (
+                                  <button
+                                    key={`${option.channelId}:${option.modelId}`}
+                                    ref={(el) => {
+                                      if (el) itemRefs.current.set(currentFlatIndex, el)
+                                      else itemRefs.current.delete(currentFlatIndex)
+                                    }}
+                                    type="button"
+                                    aria-selected={isSelected}
+                                    disabled={option.disabled}
+                                    onClick={() => {
+                                      if (option.disabled) {
+                                        onInstallGuideOpen?.()
+                                        return
+                                      }
+                                      handleSelect(option)
+                                    }}
+                                    onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                                    className={cn(
+                                      'relative z-10 flex w-full items-center gap-2 rounded-[12px] px-2.5 py-1.5 text-left transition-colors',
+                                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                                      option.disabled
+                                        ? 'cursor-not-allowed opacity-50'
+                                        : isSelected
+                                          ? 'text-foreground'
+                                          : 'hover:bg-foreground/4 text-foreground/78',
+                                      isHighlighted &&
+                                        !isSelected &&
+                                        !option.disabled &&
+                                        'bg-foreground/6'
+                                    )}
+                                  >
+                                    <img
+                                      src={getModelLogo(option.modelId, option.provider)}
+                                      alt={option.modelName}
+                                      className="size-5 shrink-0 rounded object-cover"
+                                    />
+                                    <span
+                                      className={cn(
+                                        'min-w-0 flex-1 truncate text-xs',
+                                        isSelected ? 'font-medium' : 'font-medium'
+                                      )}
+                                    >
+                                      {option.modelName}
+                                    </span>
+                                    {option.badge && !option.disabled && (
+                                      <span className="material-inline-chip ml-1 shrink-0 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">
+                                        {option.badge}
+                                      </span>
+                                    )}
+                                  </button>
+                                )
+                                if (option.disabled && option.disabledReason) {
+                                  return (
+                                    <Tooltip key={`${option.channelId}:${option.modelId}`}>
+                                      <TooltipTrigger asChild>{modelButton}</TooltipTrigger>
+                                      <TooltipContent>{option.disabledReason}</TooltipContent>
+                                    </Tooltip>
+                                  )
+                                }
+                                return modelButton
+                              })()
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
+  )
+}
