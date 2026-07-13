@@ -1214,5 +1214,6 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
   }
 }
 
-// 导出单例
+// 导出类（供测试注入独立实例）+ 单例
+export { NudgeService }
 export const nudgeService = new NudgeService()

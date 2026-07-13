@@ -11,6 +11,8 @@
  * - 幂等：clearPendingEvidence 只清理已处理的条目
  * - 模式隔离：general / ta 的 evidence 和 dirty flag 独立
  * - 不写入 L0-L5：本层只收集证据，不直接修改记忆文件
+ * - 前台热路径零全文件读取：appendEntry 只追加写 + 缓存行数计数器，
+ *   仅在行数超限时做一次全量截断（O(1) amortized）。
  *
  * 接口（Phase 2 由 MemoryConsolidationService 实现）：
  * - consumePendingEvidence(mode) → 读取并返回证据，标记已消费
@@ -90,6 +92,18 @@ class MemoryEvidenceSink {
   private dirtyFlags: Map<MemoryMode, boolean> = new Map()
 
   /**
+   * 缓存的行数计数器，按模式隔离。
+   *
+   * 前台热路径 appendEntry 只做追加写 + 自增，不读文件。
+   * 仅在行数超限时做一次全量截断。
+   * clearPendingEvidence / selective cleanup 时重置计数，
+   * 下次 append 时按需从文件重新读取。
+   *
+   * -1 表示未同步（需要从文件读取）。
+   */
+  private lineCounts: Map<MemoryMode, number> = new Map()
+
+  /**
    * 写入 Nudge 证据（Nudge 候选达到阈值时调用）
    *
    * 不调用 LLM，只将候选追加到 pending_evidence.jsonl。
@@ -136,9 +150,12 @@ class MemoryEvidenceSink {
   }
 
   /**
-   * 追加条目到 pending_evidence.jsonl
+   * 追加条目到 pending_evidence.jsonl（前台热路径）
    *
    * 文件不存在时自动创建。超出 MAX_ENTRIES 时截断旧条目。
+   *
+   * 优化：使用缓存行数计数器，前台每 turn 只做追加写 + 自增，
+   * 不读全文件。仅在计数超限时做一次全量截断（amortized O(1)）。
    */
   private appendEntry(mode: MemoryMode, entry: MemoryEvidenceEntry): void {
     const filePath = getEvidenceFilePath(mode)
@@ -150,12 +167,28 @@ class MemoryEvidenceSink {
     try {
       fs.appendFileSync(filePath, JSON.stringify(entry) + '\n', 'utf-8')
 
-      // 截断检查：如果行数超出 MAX_ENTRIES，保留最近的条目
-      const content = fs.readFileSync(filePath, 'utf-8')
-      const lines = content.split('\n').filter((l) => l.trim())
-      if (lines.length > MAX_ENTRIES) {
+      // 递增缓存行数；若未同步则先从文件读取
+      let count = this.lineCounts.get(mode) ?? -1
+      if (count < 0) {
+        // 首次访问或 clearPendingEvidence 后：从文件读取真实行数
+        try {
+          const content = fs.readFileSync(filePath, 'utf-8')
+          count = content.split('\n').filter((l) => l.trim()).length
+        } catch {
+          count = 1 // 刚写入的 1 行
+        }
+      } else {
+        count += 1
+      }
+      this.lineCounts.set(mode, count)
+
+      // 仅在超限时做全量截断（前台热路径不读文件）
+      if (count > MAX_ENTRIES) {
+        const content = fs.readFileSync(filePath, 'utf-8')
+        const lines = content.split('\n').filter((l) => l.trim())
         const trimmed = lines.slice(-MAX_ENTRIES)
         fs.writeFileSync(filePath, trimmed.join('\n') + '\n', 'utf-8')
+        this.lineCounts.set(mode, trimmed.length)
         console.log(
           `[MemoryEvidenceSink] 截断 ${mode} 证据文件：${lines.length} → ${MAX_ENTRIES} 条`
         )
@@ -167,8 +200,13 @@ class MemoryEvidenceSink {
 
   /**
    * 标记模式为 dirty（有未处理证据）
+   *
+   * 优化：dirty 已为 true 时跳过磁盘写入（前台每 turn 不重写 dirty_state.json）。
    */
   markModeDirty(mode: MemoryMode): void {
+    if (this.dirtyFlags.get(mode) === true) {
+      return // 已经是 dirty，跳过磁盘写入
+    }
     this.dirtyFlags.set(mode, true)
     const filePath = getDirtyFilePath(mode)
     const dir = path.dirname(filePath)
@@ -263,6 +301,8 @@ class MemoryEvidenceSink {
    *
    * 可选择性清理：传入已处理的 sessionId 集合，只删除这些条目。
    * 不传则清空全部。
+   *
+   * 清理后重置行数缓存，下次 appendEntry 按需重新同步。
    */
   clearPendingEvidence(mode: MemoryMode, processedSessionIds?: Set<string>): void {
     const filePath = getEvidenceFilePath(mode)
@@ -275,6 +315,7 @@ class MemoryEvidenceSink {
       } catch (e) {
         console.warn(`[MemoryEvidenceSink] 清空证据失败:`, e)
       }
+      this.lineCounts.set(mode, 0)
       return
     }
 
@@ -288,11 +329,13 @@ class MemoryEvidenceSink {
         remaining.map((e) => JSON.stringify(e)).join('\n') +
         (remaining.length > 0 ? '\n' : '')
       fs.writeFileSync(filePath, content, 'utf-8')
+      this.lineCounts.set(mode, remaining.length)
       console.log(
         `[MemoryEvidenceSink] 清理 ${mode} 证据：${entries.length} → ${remaining.length} 条`
       )
     } catch (e) {
       console.warn(`[MemoryEvidenceSink] 选择性清理证据失败:`, e)
+      this.lineCounts.delete(mode) // 标记为未同步
     }
   }
 

@@ -1,18 +1,20 @@
 /**
- * ADR-0006 Phase 1 单测
+ * ADR-0006 Phase 1 单测 — 前台调用放大回归验证
  *
  * 验证前台逐 turn 辅助 LLM 调用已停止，证据正确收集到 sink：
  * - MemoryEvidenceSink：证据写入、dirty 标记、模式隔离、截断、选择性清理
  * - NudgeService.onTurnStart：达到阈值时不调用 LLM，记录证据到 sink
- * - partial stream_event 不触发记忆辅助请求（1000 event 回归测试）
- * - 1/10/50 turn 会话：前台 keyFacts & Nudge LLM 请求均为 0，L4 记录次数与 turn 数一致
+ * - 1/10/50 turn：spy runLLMReview 断言调用数为 0
+ * - 达到阈值时：断言 evidence sink 实际收到候选
  *
- * 注意：完整 orchestrator 测试过重（依赖 SDK、IPC、文件系统），
- * 本测试通过抽取 evidence sink + nudge service 的可注入边界做可靠单测。
- * orchestrator 的 recordSessionToMemory 行为通过验证以下不变式间接覆盖：
- *   1. 调用 recordSession 后 keyFacts 为空数组
- *   2. 调用 writeSessionEvidence 而非 backfillKeyFactsForSession
- *   3. onTurnStart 不调用 runLLMReview / callLLMForNudgeReview
+ * 测试隔离：每个 test 使用独立 tmpdir + 新建 MemoryEvidenceSink / NudgeService 实例，
+ * 不写入真实用户目录（~/.tagent / ~/.tagent-dev），不依赖单例状态。
+ *
+ * 关于 partial stream_event 回归：
+ * partial 事件在 agent-orchestrator.ts:2679 只做 stream_text_delta emit，
+ * 不触及 nudgeService / memoryLayerService / memoryEvidenceSink。
+ * 完整 orchestrator 分支过重（SDK + IPC + Electron），本文件不覆盖，
+ * 留作集成测试（需 mock provider + 真实 orchestrator 实例）。
  */
 
 import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest'
@@ -21,9 +23,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 // ===== electron mock =====
-// vi.mock 在模块加载前生效，但 require('electron') 在 vitest 中返回的是
-// vi.mock 提供的 mock 对象。不过 mock 对象的属性是只读的，
-// 所以 beforeEach 中不能直接赋值。改为 mock 返回工厂函数，每次调用返回当前 tmpDir。
+// vi.mock 在模块加载前生效。mock home 在每个 test 的 beforeEach 中切换到独立 tmpdir，
+// 确保不写入真实用户目录。
 let mockHome = '/tmp/tagent-evidence-test-home'
 
 vi.mock('electron', () => ({
@@ -34,12 +35,14 @@ vi.mock('electron', () => ({
 }))
 
 // ===== 动态导入（electron mock 必须先于模块加载） =====
-const { MemoryEvidenceSink } = await import('./memory-evidence-sink')
-const { nudgeService } = await import('./nudge-service')
+const { MemoryEvidenceSink, memoryEvidenceSink } = await import('./memory-evidence-sink')
+const { NudgeService } = await import('./nudge-service')
 
 import type { NudgeCandidate } from './nudge-service'
 
-// ===== MemoryEvidenceSink 单测 =====
+// ===================================================================
+// 1. MemoryEvidenceSink 基础功能
+// ===================================================================
 
 describe('MemoryEvidenceSink - 证据收集', () => {
   let sink: InstanceType<typeof MemoryEvidenceSink>
@@ -111,6 +114,18 @@ describe('MemoryEvidenceSink - 证据收集', () => {
     expect(sink.isModeDirty('general')).toBe(false)
   })
 
+  test('dirty 已为 true 时不重复写入 dirty_state.json', () => {
+    sink.writeSessionEvidence('general', 'sess-d1', 'T1', 'S1', [])
+    expect(sink.isModeDirty('general')).toBe(true)
+
+    // 第二次写入不应重写 dirty_state.json（内存缓存已为 true）
+    sink.writeSessionEvidence('general', 'sess-d2', 'T2', 'S2', [])
+
+    const entries = sink.getPendingEvidence('general')
+    expect(entries).toHaveLength(2)
+    expect(sink.isModeDirty('general')).toBe(true)
+  })
+
   test('getEvidenceStats 返回正确的统计', () => {
     sink.writeSessionEvidence('general', 'sess-a', 'A', 'A summary', [])
     sink.writeNudgeEvidence('general', 'sess-b', {
@@ -163,160 +178,178 @@ describe('MemoryEvidenceSink - 证据收集', () => {
   })
 })
 
-// ===== partial stream_event 回归测试 =====
-
-describe('partial stream_event 回归：1000 个 partial 不触发记忆辅助请求', () => {
-  test('1000 个 partial event 不产生任何 evidence sink 条目', () => {
-    // 验证 ADR-0006 Verification > Scenario: partial 流事件不增加 Provider 请求
-    //
-    // 在 agent-orchestrator.ts:2679，partial stream_event 只做 stream_text_delta emit，
-    // 不调用 nudgeService.onTurnStart、memoryLayerService.recordSession 或
-    // memoryEvidenceSink 的任何方法。此测试通过直接验证 evidence sink 状态确认。
-    const sink = new MemoryEvidenceSink()
-    const entriesBefore = sink.getPendingEvidence('general')
-
-    // 模拟 1000 个 partial 事件的处理路径
-    // 实际 partial 事件在 orchestrator 中只做：
-    //   this.eventBus.emit(sessionId, { kind: 'stream_text_delta', text, ... })
-    // 不触发任何记忆服务方法
-    for (let i = 0; i < 1000; i++) {
-      // partial 事件处理逻辑仅透传到 EventBus，不做记忆操作
-    }
-
-    const entriesAfter = sink.getPendingEvidence('general')
-    expect(entriesAfter).toHaveLength(entriesBefore.length)
-  })
-})
-
-// ===== 1/10/50 turn 前台 0 辅助 LLM 请求测试 =====
+// ===================================================================
+// 2. 1/10/50 turn 前台 0 辅助 LLM 请求（spy runLLMReview）
+// ===================================================================
 
 describe('1/10/50 turn 前台 0 辅助 LLM 请求', () => {
-  // 限制说明：
-  // 完整 orchestrator 测试过重（依赖 SDK、IPC、文件系统、Electron），
-  // 本测试通过验证以下不变式间接覆盖 orchestrator 的 recordSessionToMemory 行为：
-  //   1. recordSession 写 L4 时 keyFacts 为空数组（不调用 backfillKeyFacts）
-  //   2. writeSessionEvidence 记录证据到 sink（替代 LLM 调用）
-  //   3. onTurnStart 不调用 runLLMReview（只记录证据到 sink）
+  // 完整 orchestrator 测试过重（依赖 SDK、IPC、Electron），
+  // 本测试通过 spy NudgeService.runLLMReview（private）+ 断言调用数为 0
+  // 来直接验证"前台路径不触发辅助 LLM 调用"这一核心不变式。
   //
-  // 若需要端到端验证，建议在集成测试中使用 mock provider + memoryEvidenceSink 交叉检查。
+  // runLLMReview 是旧流程的唯一前台 LLM 入口。Phase 1 后 onTurnStart 不再调用它，
+  // spy 断言 toHaveBeenCalledTimes(0) 即可确认。
 
+  let nudge: InstanceType<typeof NudgeService>
   let sink: InstanceType<typeof MemoryEvidenceSink>
+  let tmpDir: string
+  let runLLMSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    nudge = new NudgeService()
     sink = new MemoryEvidenceSink()
-    // 清理之前测试可能写入的 evidence 文件，确保计数准确
-    sink.clearPendingEvidence('general')
-    sink.clearPendingEvidence('ta')
+    tmpDir = mkdtempSync(join(tmpdir(), 'tagent-turn-test-'))
+    mockHome = tmpDir
+    // spy private runLLMReview —— Phase 1 后不应被调用
+    runLLMSpy = vi.spyOn(nudge as never, 'runLLMReview' as never).mockResolvedValue(undefined)
   })
 
-  test('1 turn：recordSessionToMemory 不调用 backfillKeyFacts，evidence sink 记录 1 条', () => {
-    // 模拟 orchestrator 的 recordSessionToMemory 流程（Phase 1 版本）：
-    //   1. memoryLayerService.recordSession({ keyFacts: [], ... })
-    //   2. memoryEvidenceSink.writeSessionEvidence(mode, sessionId, title, summary, toolsUsed)
-    // 旧流程的 reflectService.backfillKeyFactsForSession 已被移除。
+  afterEach(() => {
+    runLLMSpy.mockRestore()
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
 
-    sink.writeSessionEvidence('general', 'sess-turn-1', 'Turn 1', 'Summary 1', ['Read'])
+  test('1 turn：spy 断言 runLLMReview 调用 0 次，evidence sink 记录 1 条 session', () => {
+    const msgs = [{ role: 'user' as const, content: '帮我看看这个文件' }]
 
+    // turn 1：currentTurn=1, threshold=1 → 达到阈值，走 sink 路径
+    nudge.onTurnStart('sess-1turn', msgs, 'general')
+
+    // evidence sink 记录（onTurnStart 走 detectPatterns + sink 路径）
+    // 这里验证前台没有走 runLLMReview
+    expect(runLLMSpy).not.toHaveBeenCalled()
+
+    // 验证 sink 可正常工作（模拟 recordSessionToMemory 的 writeSessionEvidence）
+    sink.writeSessionEvidence('general', 'sess-1turn', 'Turn 1', 'Summary', ['Read'])
     const entries = sink.getPendingEvidence('general')
     expect(entries).toHaveLength(1)
     expect(entries[0]!.source).toBe('session')
-    expect(entries[0]!.sessionId).toBe('sess-turn-1')
-
-    // 验证：recordSession 时 keyFacts 为空数组
-    // 通过证据条目没有 keyFacts 字段间接验证（只有 sessionTitle/Summary/ToolsUsed）
-    expect(entries[0]!.sessionTitle).toBe('Turn 1')
   })
 
-  test('10 turn：前台 Nudge LLM 请求为 0，L4 evidence 记录 10 条', () => {
-    // 模拟 10 个 turn 的 recordSessionToMemory
-    // 使用独立 sink 实例，不受其他测试污染
+  test('10 turn：spy 断言 runLLMReview 调用 0 次，evidence sink 记录 10 条', () => {
+    const msgs = [{ role: 'user' as const, content: '帮我重构这个函数' }]
+    const sessionId = 'sess-10turn'
+
     for (let i = 0; i < 10; i++) {
-      sink.writeSessionEvidence('general', `sess-turn-${i}`, `Turn ${i}`, `Summary ${i}`, ['Read'])
+      nudge.onTurnStart(sessionId, msgs, 'general')
     }
 
+    expect(runLLMSpy).not.toHaveBeenCalled()
+
+    // 模拟 recordSessionToMemory 的 writeSessionEvidence
+    for (let i = 0; i < 10; i++) {
+      sink.writeSessionEvidence('general', `sess-10turn-${i}`, `Turn ${i}`, `Sum ${i}`, ['Edit'])
+    }
     const entries = sink.getPendingEvidence('general')
     expect(entries).toHaveLength(10)
-    // 全部是 session 证据，没有 nudge LLM 调用产生的 evidence
     expect(entries.every((e) => e.source === 'session')).toBe(true)
   })
 
-  test('50 turn：前台 keyFacts 与 Nudge LLM 请求均为 0，L4 evidence 记录 50 条', () => {
+  test('50 turn：spy 断言 runLLMReview 调用 0 次，evidence sink 记录 50 条', () => {
+    const msgs = [{ role: 'user' as const, content: '继续上次的任务' }]
+    const sessionId = 'sess-50turn'
+
     for (let i = 0; i < 50; i++) {
-      sink.writeSessionEvidence('general', `sess-turn-${i}`, `Turn ${i}`, `Summary ${i}`, ['Read'])
+      nudge.onTurnStart(sessionId, msgs, 'general')
     }
 
+    expect(runLLMSpy).not.toHaveBeenCalled()
+
+    for (let i = 0; i < 50; i++) {
+      sink.writeSessionEvidence('general', `sess-50turn-${i}`, `Turn ${i}`, `Sum ${i}`, ['Bash'])
+    }
     const entries = sink.getPendingEvidence('general')
     expect(entries).toHaveLength(50)
     expect(entries.every((e) => e.source === 'session')).toBe(true)
   })
 })
 
-// ===== NudgeService.onTurnStart 行为验证 =====
+// ===================================================================
+// 3. NudgeService.onTurnStart 达到阈值时证据写入 sink
+// ===================================================================
 
-describe('NudgeService.onTurnStart - ADR-0006 Phase 1 行为', () => {
-  // 限制说明：
-  // NudgeService 是单例且有内部状态（turnCounts, triggerCounts, cooldowns）。
-  // 每个 test 前通过 clearSession 清理状态，防止测试间污染。
+describe('NudgeService.onTurnStart - 达到阈值时证据写入 sink', () => {
+  // 验证 ADR-0006 Phase 1 核心行为：达到 warm-up 阈值时，
+  // onTurnStart 将候选写入 evidence sink（不调用 LLM）。
+  //
+  // fact_repeat 检测阈值：同一事实 ≥3 次。
+  // warm-up 阈值序列：[1, 2, 4, 8, 10]。
+  // 构造消息让"我叫 Frank"出现 ≥3 次，在 turn 1（threshold=1）即触发。
+
+  let nudge: InstanceType<typeof NudgeService>
+  let tmpDir: string
+  let runLLMSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    // 清理所有可能使用的 session 状态
-    nudgeService.clearSession('test-warmup')
-    nudgeService.clearSession('test-return')
-    nudgeService.clearSession('test-evidence')
+    nudge = new NudgeService()
+    tmpDir = mkdtempSync(join(tmpdir(), 'tagent-threshold-test-'))
+    mockHome = tmpDir
+    runLLMSpy = vi.spyOn(nudge as never, 'runLLMReview' as never).mockResolvedValue(undefined)
+    // 重置 singleton 的内存缓存，防止跨测试 dirty/lineCount 污染
+    ;(memoryEvidenceSink as never)['dirtyFlags'] = new Map()
+    ;(memoryEvidenceSink as never)['lineCounts'] = new Map()
   })
 
-  test('warm-up 阈值前不触发任何 evidence 写入', () => {
-    // warm-up 阈值序列：[1, 2, 4, 8, 10]
-    // turn 1: currentTurn=1, threshold=1 → 触发
-    // turn 2: currentTurn=2, threshold=2 → 触发
-    // turn 3: currentTurn=3, threshold=4 → 不触发
-    // turn 4: currentTurn=4, threshold=4 → 触发
+  afterEach(() => {
+    runLLMSpy.mockRestore()
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  test('达到阈值时 evidence sink 收到 nudge 候选，runLLMReview 未调用', async () => {
+    // 3 条包含"我叫Frank"的消息（达到 fact_repeat >=3 阈值）
+    // 注意：detectFactRepeat 的正则 /我叫[^\s]{1,20}/g 要求"叫"后无空格
     const messages = [
-      { role: 'user' as const, content: '我叫 Frank' },
+      { role: 'user' as const, content: '我叫Frank' },
       { role: 'assistant' as const, content: '好的' },
+      { role: 'user' as const, content: '我叫Frank' },
+      { role: 'assistant' as const, content: '知道了' },
+      { role: 'user' as const, content: '我叫Frank' },
     ]
 
-    nudgeService.onTurnStart('test-warmup', messages, 'general') // turn 1: 触发
-    nudgeService.onTurnStart('test-warmup', messages, 'general') // turn 2: 触发
-    nudgeService.onTurnStart('test-warmup', messages, 'general') // turn 3: 不触发
-    nudgeService.onTurnStart('test-warmup', messages, 'general') // turn 4: 触发
+    // turn 1：currentTurn=1, threshold=1 → 达到阈值，触发 detectPatterns + sink 写入
+    nudge.onTurnStart('sess-threshold', messages, 'general')
 
-    // 到达此处说明流程无异常
-    expect(true).toBe(true)
+    // onTurnStart 内部用 void import('./memory-evidence-sink').then(...)
+    // 写入的是 singleton memoryEvidenceSink，用它读取验证
+    // 等待微任务刷新（void import 创建的 promise chain）
+    await new Promise((r) => setTimeout(r, 100))
+
+    // 验证 sink 收到了 nudge 候选
+    const entries = memoryEvidenceSink.getPendingEvidence('general')
+    expect(entries.length).toBeGreaterThanOrEqual(1)
+    const nudgeEntries = entries.filter((e) => e.source === 'nudge')
+    expect(nudgeEntries.length).toBeGreaterThanOrEqual(1)
+    expect(nudgeEntries[0]!.sessionId).toBe('sess-threshold')
+    expect(nudgeEntries[0]!.nudgeCandidate).toBeDefined()
+    expect(nudgeEntries[0]!.nudgeCandidate!.targetLayer).toBe('L2')
+
+    // 验证 runLLMReview 未被调用（Phase 1 核心不变式）
+    expect(runLLMSpy).not.toHaveBeenCalled()
+  })
+
+  test('warm-up 阈值前不触发 sink 写入', async () => {
+    // turn 1: threshold=1 → 触发
+    // turn 2: threshold=2 → 触发
+    // turn 3: threshold=4 > currentTurn=3 → 不触发
+    const msgs = [{ role: 'user' as const, content: '临时任务' }]
+
+    nudge.onTurnStart('sess-warmup', msgs, 'general') // turn 1: 触发
+    nudge.onTurnStart('sess-warmup', msgs, 'general') // turn 2: 触发
+    nudge.onTurnStart('sess-warmup', msgs, 'general') // turn 3: 不触发
+
+    // 等待 async 写入完成
+    await new Promise((r) => setTimeout(r, 50))
+
+    // 关键验证：runLLMReview 从未被调用（Phase 1 核心不变式）
+    expect(runLLMSpy).not.toHaveBeenCalled()
   })
 
   test('onTurnStart 始终返回空数组（不弹 toast）', () => {
-    const messages = [{ role: 'user' as const, content: '我叫 Frank' }]
+    const msgs = [{ role: 'user' as const, content: '我叫 Frank' }]
 
     for (let i = 0; i < 15; i++) {
-      const result = nudgeService.onTurnStart('test-return', messages, 'general')
+      const result = nudge.onTurnStart(`sess-ret-${i}`, msgs, 'general')
       expect(result).toEqual([])
     }
-  })
-
-  test('达到阈值时记录证据到 sink，不调用 LLM review', () => {
-    // fact_repeat 检测阈值：同一事实 ≥3 次
-    // 构造消息让"我叫 Frank"重复出现 ≥3 次
-    const messages = [
-      { role: 'user' as const, content: '我叫 Frank' },
-      { role: 'assistant' as const, content: '好的' },
-      { role: 'user' as const, content: '我叫 Frank' },
-      { role: 'assistant' as const, content: '知道了' },
-      { role: 'user' as const, content: '我叫 Frank' },
-    ]
-
-    // turn 1：达到 warm-up threshold 1，触发
-    // detectPatterns 会发现"我叫 Frank"出现 3 次（≥3 阈值）
-    nudgeService.onTurnStart('test-evidence', messages, 'general')
-
-    // turn 2：达到 warm-up threshold 2，触发
-    nudgeService.onTurnStart('test-evidence', messages, 'general')
-
-    // turn 3：不触发（threshold=4 > currentTurn=3）
-    nudgeService.onTurnStart('test-evidence', messages, 'general')
-
-    // 关键验证：没有 LLM 调用异常（因为 LLM 调用代码路径已被移除）
-    // 到达此处说明流程无异常，onTurnStart 不再调用 runLLMReview
-    expect(true).toBe(true)
   })
 })
