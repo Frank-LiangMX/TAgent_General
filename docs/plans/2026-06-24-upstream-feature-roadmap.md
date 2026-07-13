@@ -13,7 +13,7 @@
 
 **本文要做的事**：基于对上游 Proma 仓库 `2026-06-23` 版本的全面 commit / release-notes 调研，输出一份从本地 `TAgent_General` 视角出发、按 P0~P3 优先级排序的**总特性需求清单**，并给出 5 阶段实施路线。
 
-**核心结论（2026-06-30 更新）**：Automation M1–M3、SDK 主包 0.3.185、once/maxRuns 已对齐。**仍缺三块**：(1) **#913 adapter 终止语义**（每会话 2s drain）、(2) **协作子会话**（0%）、(3) **Bridge 自愈 + 后台任务唤醒**。v0.13.4 仅新增 **#915 双界面** 与 **#920 侧栏排序**（后者 TAgent 已有等价实现）。
+**核心结论（2026-07-07 更新）**：Automation M1–M3、SDK 主包 0.3.185、once/maxRuns 已对齐。**#913 adapter 终止语义已对齐**（PR #16）。**仍缺两块**：(1) **协作子会话**（0%）、(2) **Bridge 自愈 + 后台任务唤醒**（PR #16 已完成）。v0.13.4 仅新增 **#915 双界面** 与 **#920 侧栏排序**（后者 TAgent 已有等价实现）。
 
 **不要做的事**：
 
@@ -59,7 +59,7 @@
 
 | 能力 | 严重程度 | TAgent | 上游 Proma v0.13.4 |
 | --- | --- | --- | --- |
-| #913 adapter iterator 终止 | 🔴 严重 | ❌ `promptSuggestions: true` | ✅ #913 已修 |
+| #913 adapter iterator 终止 | 🔴 严重 | ✅ `promptSuggestions: false` + `break`（PR #16） | ✅ #913 已修 |
 | 协作子会话 / Agent 委派 | 🔴 严重 | 0% | ✅ collaboration-tools |
 | Automation Agent MCP 工具 | 🟠 高 | M1–M3 ✅，无 agent-tools | ✅ |
 | Bridge 长连接自愈 | 🟠 高 | 仅 start/stop | ✅ recover + 健康检查 |

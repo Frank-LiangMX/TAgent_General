@@ -63,7 +63,7 @@
 - 通用 Agent 主链路、Ask 档位、TA 模式、记忆自进化、使用统计、`/btw`、远程连通主框架均已落地。
 - `compact_session` / 客户端压缩已实现；Context Usage 分项面板 P0-P2 已完成（P3 可选增强）。
 - WPS 协作已作为远程连通 MVP 合入（文本消息链路）；媒体、绑定持久化、公网回调配置仍是后续增强。
-- ✅ **SDK 0.3.185** 主包已升级（PR #13）；⚠️ **#913 adapter 终止语义未完全对齐**（`promptSuggestions` 仍为 `true`，每会话可能多等 2s drain timeout）；optional 平台子包仍锁 `0.3.153`。
+- ✅ **SDK 0.3.185** 主包已升级（PR #13）；✅ **#913 adapter 终止语义已对齐**（`promptSuggestions: false` + terminal result 后 `break`，消除每会话 2s drain timeout）；✅ optional 平台子包已升级至 0.3.185（PR #16）。
 - ⚠️ **#910 / #903** 写风暴 / 断连保留 session：TAgent 有自研修复，但与 Proma v0.13.3 实现需逐段 diff 确认等价性。
 - ✅ **Automation v1（M1–M3）** 已合入 `main`（PR #15，2026-06-25）：
   - M1：30s tick 调度内核、daily/reuse 会话策略、失败退避、防递归 / 防休眠
@@ -295,25 +295,25 @@
 
 **进行中 / 下一步**（2026-06-30 校准，详见 [`proma-upstream-borrow-list.md`](plans/2026-06-24-proma-upstream-borrow-list.md) §6）：
 
-### 第一梯队 — P0 稳定性（建议先做）
+### 第一梯队 — P0 稳定性 ✅ 已全部完成
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| **#913 adapter drain timeout** | ❌ 未对齐 | `claude-agent-adapter.ts`：`promptSuggestions: false` + terminal result 后 `break` |
-| **#910 写风暴** | ⚠️ 待确认 | Proma 用 `capturedSdkSessionId` 守卫；TAgent 用 `existingSdkSessionId` 同步更新 |
-| **#903 断连保留 session** | ⚠️ 待确认 | 终止分支不清 `sdkSessionId` + `TRANSIENT_NETWORK_PATTERN` 扩展 |
-| **SDK 平台子包 0.3.185** | ❌ | optionalDependencies 仍 `0.3.153` |
+| **#913 adapter drain timeout** | ✅ 已对齐 | `claude-agent-adapter.ts`：`promptSuggestions: false` + terminal result 后 `break`（PR #16） |
+| **#910 写风暴** | ✅ 已对齐 | `capturedSdkSessionId` 守卫（PR #16，commit `7c8c4f2d`） |
+| **#903 断连保留 session** | ✅ 已对齐 | 终止分支保留 `sdkSessionId` + `TRANSIENT_NETWORK_PATTERN` 扩展（PR #16） |
+| **SDK 平台子包 0.3.185** | ✅ 已对齐 | optionalDependencies 已升级至 0.3.185（PR #16） |
 
 ### 第二梯队 — 核心能力缺口
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| **协作 / 看板编排** | 🔵 Phase A 探索中 | 上游 v0.13.4 已合 main（PR #16）；探索分支 `feature/kanban-exploration` 三路工人并行 spike；见 [`kanban-exploration-report.md`](plans/2026-06-30-kanban-exploration-report.md) |
-| **Bridge 长连接自愈** | ❌ | TAgent `bridge-registry.ts` 仅 start/stop，无 recover / 健康检查 |
-| **后台任务唤醒 idle Agent** | ❌ | 依赖 Stop hook + headless runner |
-| **Automation M4** | 部分 | M1–M3 ✅；缺 `automation-agent-tools`、自然语言创建、custom cron |
-| **Issue A 1M 上下文** | ~60% | shared 已有 `inferContextWindow`，模型覆盖与 orchestrator 去重未完成 |
-| **Issue E Preview 分屏** | ~50% | 缺 `previewModePreferenceAtom` 路由；monthly 调度 ✅ |
+| **协作 / 看板编排** | ✅ 已完成 | 看板多 Agent 协作系统 B1–B10 已合入 main（PR #17，v1.4.0） |
+| **Bridge 长连接自愈** | ✅ 已完成 | `bridge-registry.ts` recover + 健康检查（PR #16） |
+| **后台任务唤醒 idle Agent** | ✅ 已完成 | Stop hook + headless runner（PR #16） |
+| **Automation M4** | 部分 | M1–M3 ✅；✅ `automation-agent-tools` 已完成（PR #16）；自然语言创建、custom cron 待做 |
+| **Issue A 1M 上下文 + qwen-anthropic** | ✅ 已完成 | shared 单一事实源 + qwen-anthropic 渠道（PR #16） |
+| **Issue E Preview 分屏** | ✅ 已完成 | `previewModePreferenceAtom` 路由（PR #16） |
 
 ### 第三梯队 — 体验 / 渠道
 
@@ -321,8 +321,8 @@
 | --- | --- | --- |
 | **#915 classic/modern 双界面** | ⏭️ 跳过 | 用户不需要；TAgent 保持现有单套 UI |
 | **#920 侧栏会话排序** | ✅ | TAgent 已有等价 `currentSession` 逻辑 |
-| **qwen-anthropic 渠道** | ❌ | Qwen3.7 1M Anthropic 协议 |
-| **Nowledge Mem 记忆卡片** | ❌ | Proma MemorySettings 引导 |
+| **qwen-anthropic 渠道** | ✅ 已完成 | Qwen3.7 1M Anthropic 协议（PR #16） |
+| **Nowledge Mem 记忆卡片** | ⏭️ 跳过 | 用户跳过：TAgent 自有记忆系统 |
 | **WPS 协作增强** | 部分 | 文本 MVP ✅；媒体/绑定/公网回调待做 |
 | **小修收口** | 待做 | `project_repeat` Nudge、TaskOutput、真实模型成本、飞书教程视频 URL |
 

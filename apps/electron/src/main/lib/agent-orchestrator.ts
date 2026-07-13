@@ -1824,6 +1824,33 @@ export class AgentOrchestrator {
       }
       markPhase('taIntent')
 
+      // 9.3.6 Automation 意图检测（检测定时任务创建意图）
+      try {
+        if (getAgentSessionMeta(sessionId)?.mode !== 'ta' && workspaceSlug) {
+          const { detectAutomationIntent } = await import('./automation-intent-detector')
+          // 获取最近一条用户消息用于意图检测
+          const recentAgentMsgs = getAgentSessionMessages(sessionId).slice(-5)
+          const lastUserMsg = [...recentAgentMsgs].reverse().find((m) => m.role === 'user')
+          if (lastUserMsg && typeof lastUserMsg.content === 'string') {
+            const intent = detectAutomationIntent(lastUserMsg.content)
+            if (intent.detected && intent.intentType === 'create' && intent.schedule) {
+              const { getSessionWebContents } = await import('./agent-service')
+              const wc = getSessionWebContents(sessionId)
+              if (wc && !wc.isDestroyed()) {
+                wc.send('agent:automation-intent-prompt', {
+                  intent,
+                  sessionId,
+                  workspaceSlug,
+                })
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Agent 编排] Automation 意图检测失败:', e)
+      }
+      markPhase('automationIntent')
+
       // 9.4.1 Fork session JSONL 迁移已在 forkAgentSession 中完成，
       // fork 后的会话直接使用自己的 cwd，无需回退到源目录。
       // forkSourceDir 仅作为备用参考字段保留，不再影响 agentCwd。
