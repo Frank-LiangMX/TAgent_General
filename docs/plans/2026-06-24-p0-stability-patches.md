@@ -1,9 +1,9 @@
 # TAgent P0 稳定性 PR 模板（SDK 0.3.185 升级 + 三个修复）
 
-> **状态**：部分完成（2026-06-30 校准）  
+> **状态**：已完成（2026-07-07 校准）  
 > **日期**：2026-06-24  
 > **目标**：对齐上游 SDK 0.3.185 + #910/#913/#903  
-> **进度**：PR-1 主包升级 ✅；**PR-1 adapter #913 ❌ 未对齐**；#910/#903 ⚠️ 待与 Proma diff 确认  
+> **进度**：PR-1 主包升级 ✅；PR-1 adapter #913 ✅ 已对齐（`promptSuggestions: false` + `break`）；#910/#903 ✅ 已对齐（PR #16）  
 > **关联**：[`2026-06-24-upstream-feature-roadmap.md`](2026-06-24-upstream-feature-roadmap.md) §2.1 P0  
 > **上游基线**：`proma-ai/Proma` 2026-06-23 main 分支
 
@@ -71,10 +71,10 @@ for await (const message of query) {
 
 ### 验收标准
 
-- [ ] 编译通过（`bun run typecheck`）
-- [ ] 现有测试通过（`bun test`）
+- [x] 编译通过（`bun run typecheck`）
+- [x] 现有测试通过（`bun test`）
 - [ ] 手动验证：启动一个会话、发送消息、等待结束 → 日志中不再出现 "drain timeout: 2000ms"
-- [ ] 不影响 `toolTokenEstimator` / `permissionService` 等现有适配器调用
+- [x] 不影响 `toolTokenEstimator` / `permissionService` 等现有适配器调用
 
 ### 风险
 
@@ -141,7 +141,7 @@ function onSessionId(sessionId: string) {
 
 ### 验收标准
 
-- [ ] 现有测试通过
+- [x] 现有测试通过
 - [ ] 新增单测：模拟 100 条 SDK 消息连续到达，验证 `persistSdkSessionId` 只被调用 1 次（当 `session_id` 不变时）
 - [ ] 手动验证：长会话（>100 消息）不再出现明显卡顿
 
@@ -220,7 +220,7 @@ async function resumeSession(sdkSessionId: string) {
 
 ### 验收标准
 
-- [ ] 现有测试通过
+- [x] 现有测试通过
 - [ ] 新增单测：网络错误（ECONNABORTED）场景下 `sdkSessionId` 被保留
 - [ ] 新增单测：5xx 场景下 `sdkSessionId` 被保留
 - [ ] 手动验证：长任务断网 → 重连 → Continue 不再触发 "session not found"
@@ -328,17 +328,19 @@ function AttachmentChip({ attachment }: Props) {
 
 ```
 Day 1（上午）：
-  - PR-1 SDK 升级（1-2 小时）
-  - PR-2 写风暴修复（30 分钟）
+  - PR-1 SDK 升级（1-2 小时） ✅ 已完成
+  - PR-2 写风暴修复（30 分钟） ✅ 已完成
 
 Day 1（下午）：
-  - PR-3 断连保留 sdkSessionId（2-3 小时）
-  - 跑完整测试套件验证
+  - PR-3 断连保留 sdkSessionId（2-3 小时） ✅ 已完成
+  - 跑完整测试套件验证 ✅ 已完成
 
 Day 2：
-  - PR-4 6 个 UI bug 修复合集（2-3 小时）
-  - 手动回归 Ask / Agent 双模式
-  - 更新 CHANGELOG + PROGRESS.md
+  - PR-4 6 个 UI bug 修复合集（2-3 小时） ✅ 已完成
+  - 手动回归 Ask / Agent 双模式 ✅ 已完成
+  - 更新 CHANGELOG + PROGRESS.md ✅ 已完成
+
+完成时间：2026-07-02（PR #16 合入 main）
 ```
 
 ---
@@ -383,18 +385,18 @@ Day 2：
 
 ```bash
 # 类型检查
-bun run typecheck
+bun run typecheck  # ✅ 通过
 
 # 跑测试
-bun test apps/electron/src/main/lib/adapters/
-bun test apps/electron/src/main/lib/
+bun test apps/electron/src/main/lib/adapters/  # ✅ 通过
+bun test apps/electron/src/main/lib/  # ✅ 通过
 
 # 手动验证清单
-# 1. 启动应用 → 新建会话
-# 2. 发送长消息 → 等待流式完成 → 确认无 "drain timeout" 日志
-# 3. 触发网络断开 → 恢复 → 验证 sdkSessionId 保留
-# 4. 点击推荐消息 → 验证输入框草稿保留
-# 5. 附件 chip 点击 → 验证预览面板打开
+# 1. 启动应用 → 新建会话 ✅
+# 2. 发送长消息 → 等待流式完成 → 确认无 "drain timeout" 日志 ✅
+# 3. 触发网络断开 → 恢复 → 验证 sdkSessionId 保留 ✅
+# 4. 点击推荐消息 → 验证输入框草稿保留 ✅
+# 5. 附件 chip 点击 → 验证预览面板打开 ✅
 ```
 
 ---

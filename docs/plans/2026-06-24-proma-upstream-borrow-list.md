@@ -49,7 +49,7 @@
 
 ## 2. 部分对齐 / 待确认（P0 稳定性，优先 diff）
 
-### 2.0 #913 SDK iterator 终止语义 — ❌ 未对齐（最高优先）
+### 2.0 #913 SDK iterator 终止语义 — ✅ 已对齐（PR #16）
 
 **来源**：v0.13.3 #913
 
@@ -59,13 +59,13 @@
 1. `promptSuggestions: false`
 2. 收到 terminal result 后 `break` for-await → 触发 `iterator.return()` → `cleanup()`
 
-**TAgent 落地**：`apps/electron/src/main/lib/adapters/claude-agent-adapter.ts`（对照 `F:\Proma` 同文件）
+**TAgent 落地**：✅ `apps/electron/src/main/lib/adapters/claude-agent-adapter.ts`（PR #16，commit `7c8c4f2d`）
 
 **成本**：低（半天） | **风险**：低
 
 ---
 
-### 2.1 #910 并发会话同步写风暴 — ⚠️ 待确认
+### 2.1 #910 并发会话同步写风暴 — ✅ 已对齐（PR #16）
 
 **来源**：v0.13.3 #910
 
@@ -73,13 +73,13 @@
 
 **Proma 做法**：用 **`capturedSdkSessionId`**（非 stale 的 `existingSdkSessionId`）比较，仅真正变化时 `updateAgentSessionMeta`。
 
-**TAgent 现状**：用 `existingSdkSessionId` 比较并在写入后同步更新——新会话场景可能已规避，但未与 Proma 逐行对齐。
+**TAgent 落地**：✅ 已与 Proma 逐行对齐（PR #16，commit `7c8c4f2d`）
 
 **成本**：低 | **风险**：低
 
 ---
 
-### 2.2 #903 长任务断连保留 sdkSessionId — ⚠️ 待确认
+### 2.2 #903 长任务断连保留 sdkSessionId — ✅ 已对齐（PR #16）
 
 **来源**：v0.13.3 #903
 
@@ -87,15 +87,17 @@
 
 **Proma 做法**：终止分支默认不清 session；扩展 `TRANSIENT_NETWORK_PATTERN`；仅 thinking-signature 跨模型不兼容时主动清除。
 
-**TAgent 落地**：`agent-orchestrator.ts` 终止分支 + `error-patterns.ts`
+**TAgent 落地**：✅ 已与 Proma 逐行对齐（PR #16，commit `7c8c4f2d`）
 
 **成本**：低 | **风险**：低
 
 ---
 
-### 2.3 SDK 平台 optional 子包版本 — ❌
+### 2.3 SDK 平台 optional 子包版本 — ✅ 已对齐（PR #16）
 
 **问题**：主包 `0.3.185`，但 `@anthropic-ai/claude-agent-sdk-win32-x64` 等仍 `0.3.153`。
+
+**TAgent 落地**：✅ 已升级至 0.3.185（PR #16，commit `7c8c4f2d`）
 
 **成本**：低（改 package.json + lock） | **风险**：低
 
