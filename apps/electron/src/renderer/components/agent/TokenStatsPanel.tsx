@@ -165,7 +165,7 @@ function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): Re
       )}
     >
       <span className="opacity-70">{icon}</span>
-      <span className="text-muted-foreground/80">{label}</span>
+      <span className="text-muted-foreground/80 whitespace-nowrap overflow-hidden">{label}</span>
       <span
         className={cn(
           'font-medium tabular-nums',

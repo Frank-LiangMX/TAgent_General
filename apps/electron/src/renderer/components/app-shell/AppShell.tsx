@@ -6,7 +6,7 @@
  * - 视觉动画在浮岛自身边界内完成，不让元素越过底板圆角边界
  */
 
-import { useAtom, useAtomValue } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
 import { FunctionalRail } from './FunctionalRail'
@@ -23,6 +23,8 @@ import {
 import { appModeAtom, topLevelModeAtom, activeRailItemAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
+import { designFullscreenAtom, designEnabledAtom } from '@/atoms/design-preview-atoms'
+import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
@@ -59,6 +61,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const rightRailItem = useAtomValue(rightRailItemAtom) // 右侧边栏当前功能项
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
+  const designFullscreen = useAtomValue(designFullscreenAtom)
+  const designEnabled = useAtomValue(designEnabledAtom)
+  const setDesignFullscreen = useSetAtom(designFullscreenAtom)
   // RightRail 跟随主面板激活的 tab 类型，而非左侧 railItem。
   // 这样用户切左侧 rail 看会话/草稿列表时，主面板 tab 不被强制切走，
   // RightRail 也不会在「draft tab + sessions rail」组合下错位显示。
@@ -213,6 +218,37 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             </div>
           </div>
         </div>
+
+        {/* 全屏设计画布模式：画布占主区域，会话缩到左侧 */}
+        {(designFullscreen && designEnabled && rightRailItem === 'design' && isPanelOpen) && (
+          <div
+            className="absolute inset-y-0 right-0 z-[90] overflow-hidden bg-background"
+            style={{ left: `${contentBaseInsetLeft + 8}px` }}
+          >
+            <div className="flex h-full w-full">
+              {/* 会话面板（左）- 全屏时左侧保持会话可交互 */}
+              <div className="flex h-full w-[32%] min-w-[320px] max-w-[440px] flex-col border-r border-border/40 bg-background shrink-0">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <MainArea />
+                </div>
+                <div className="flex items-center justify-between border-t border-border/30 px-3 py-1.5 text-xs text-muted-foreground shrink-0">
+                  <span className="text-primary font-medium">Design Preview</span>
+                  <button
+                    type="button"
+                    onClick={() => setDesignFullscreen(false)}
+                    className="text-primary hover:underline"
+                  >
+                    退出全屏
+                  </button>
+                </div>
+              </div>
+              {/* 画布（右侧） */}
+              <div className="flex-1 overflow-hidden min-w-0">
+                <DesignPreviewPanel />
+              </div>
+            </div>
+          </div>
+        )}
 
         {showRightPanel && (
           <div

@@ -168,6 +168,10 @@ import { SessionFloatingLayout } from '@/components/layout/SessionFloatingLayout
 import { AttachmentPreviewItem } from '@/components/shared/AttachmentPreviewItem'
 import { AgentSessionProvider } from '@/contexts/session-context'
 import { useOpenSession } from '@/hooks/useOpenSession'
+import { useDesignContextAugment } from '@/hooks/useDesignContextAugment'
+import { detectUIIntent, isNewDesignRequest } from '@/lib/detect-ui-intent'
+import { designSuggestionAtom, designEnabledAtom } from '@/atoms/design-preview-atoms'
+import { DesignSuggestionBanner } from '@/components/design-preview/DesignSuggestionBanner'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { isLikelyAgentIntent } from '@/lib/ask-heuristic'
 import {
@@ -1649,6 +1653,23 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     return { channelId: agentChannelId, modelId: agentModelId }
   }, [agentChannelId, agentModelId])
 
+  // Design Preview 上下文增强：在用户消息末尾附加当前画布的 HTML/CSS/框选信息
+  const { augment: augmentWithDesignContext } = useDesignContextAugment()
+
+  // Design Preview 语义检测：识别用户的 UI 设计意图
+  const setDesignSuggestion = useSetAtom(designSuggestionAtom)
+  const designEnabled = useAtomValue(designEnabledAtom)
+  const draftText = useAtomValue(agentSessionDraftAtomFamily(sessionId))
+  React.useEffect(() => {
+    if (designEnabled) return
+    if (!draftText || draftText.trim().length < 3) {
+      setDesignSuggestion(null)
+      return
+    }
+    const result = detectUIIntent(draftText)
+    setDesignSuggestion(result.detected ? result : null)
+  }, [draftText, designEnabled, setDesignSuggestion])
+
   /** 发送消息 */
   const handleSend = React.useCallback(
     async (submitOpts?: { shiftKey?: boolean; overrideText?: string }): Promise<void> => {
@@ -1977,7 +1998,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       }
 
       // 2. 构建最终消息
-      const finalMessage = fileReferences + effectiveText
+      // 如果 Design Preview 已启用，自动附加当前画布上下文（HTML/CSS/框选）到消息末尾
+      const finalMessage = augmentWithDesignContext(fileReferences + effectiveText)
 
       // 清除打断状态（上一轮的打断标记不再显示）
       store.set(stoppedByUserSessionsAtom, (prev: Set<string>) => {
@@ -2090,6 +2112,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       setLiveMessagesMap,
       permissionMode,
       messagesLoaded,
+      // Design Preview 上下文增强：augment 内部用 store.get 读最新 design state，
+      // 引用变化时让 handleSend 重建以拿到新的 augment 函数
+      augmentWithDesignContext,
     ]
   )
 
@@ -2630,6 +2655,42 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     return () => window.removeEventListener('tagent:kscc-install-request', handler)
   }, [])
 
+  // v2 design canvas: 监听"指着说话"事件，把文本追加到 chat input
+  // 来源：design-preview/LayerTreePanel 的"把这部分告诉 Agent"按钮
+  // 行为：读当前 draft + 拼接 + 写入 draft；可选聚焦 ProseMirror
+  const setInputContentRef = React.useRef(setInputContent)
+  setInputContentRef.current = setInputContent
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text: string; focus?: boolean }>).detail
+      if (!detail || typeof detail.text !== 'string' || !detail.text) return
+      // 读最新 draft（用 store.get 避免在 effect 依赖 draftText）
+      const current = store.get(agentSessionDraftAtomFamily(sessionId)) ?? ''
+      const next = current ? `${current}${detail.text}` : detail.text
+      setInputContentRef.current(next)
+      if (detail.focus !== false) {
+        // 与 tagent:focus-input 同款做法
+        requestAnimationFrame(() => {
+          const proseMirror = document.querySelector(
+            '[data-input-mode="agent"] .ProseMirror'
+          ) as HTMLElement | null
+          proseMirror?.focus()
+          // 把光标移到末尾
+          const sel = window.getSelection()
+          if (sel && proseMirror) {
+            const range = document.createRange()
+            range.selectNodeContents(proseMirror)
+            range.collapse(false)
+            sel.removeAllRanges()
+            sel.addRange(range)
+          }
+        })
+      }
+    }
+    window.addEventListener('tagent:append-chat-input', handler as EventListener)
+    return () => window.removeEventListener('tagent:append-chat-input', handler as EventListener)
+  }, [sessionId, store])
+
   const allAskUserRequests = useAtomValue(allPendingAskUserRequestsAtom)
   const allExitPlanRequests = useAtomValue(allPendingExitPlanRequestsAtom)
   const hasBannerOverlay =
@@ -2930,6 +2991,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                               )}
                             </div>
                           )}
+
+                          {/* Design Preview 建议横幅 */}
+                          <DesignSuggestionBanner />
 
                           {/* Agent 建议提示 */}
                           {suggestion && !streaming && (

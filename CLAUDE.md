@@ -118,6 +118,25 @@ bun run build:resources   # 复制 resources/ 到 dist/
 
 ## 核心架构
 
+### 画布子系统（Design Preview / v2）
+
+TAgent 的"画布"功能**只有一个实现位置**：`apps/electron/src/renderer/components/design-preview/`。
+
+- 入口组件：`DesignPreviewPanel`（右栏 Eye 图标）
+- 状态层：`apps/electron/src/renderer/atoms/design-preview-atoms.ts`
+- iframe ↔ 父窗口桥：`apps/electron/src/renderer/lib/canvas-frame-bridge.ts`
+- 选中文本生成：`apps/electron/src/renderer/lib/element-descriptor.ts`
+- 跨组件注入 chat input：`apps/electron/src/renderer/lib/chat-input-bridge.ts`（事件名 `tagent:append-chat-input`）
+- 外部导入：`apps/electron/src/renderer/lib/import-html.ts`
+- 架构文档：**必读** `docs/plans/2026-07-14-design-canvas-v2.md`
+
+**硬约束**：
+- 禁止新建画布相关目录（如 `.kun-canvas/`、`canvas/`、`whiteboard/`）
+- 禁止改 `design-preview/` 之外的画布逻辑
+- 凡是涉及"画布 / 设计预览 / Design Preview / UI 原型 / 指着元素说话"等需求，**先读 v2 文档 + 现有 `design-preview/` 代码**，再决定加/改哪里
+- 早期 v1 文档 `docs/plans/2026-07-13-design-preview-design.md` 已被 v2 替代（顶部已标注），不要按 v1 实现
+- 参考 F:/Kun 的设计模式时：只读 `docs/DESIGN_MODE.md` 与 `src/renderer/src/design/`，不抄代码，仅借鉴交互范式
+
 ### IPC 通信模式（最重要的架构模式）
 
 类型定义 → 主进程处理 → Preload 桥接 → 渲染进程调用：
@@ -298,6 +317,13 @@ bun run build:resources   # 复制 resources/ 到 dist/
 ## UI 库使用规范
 
 **写任何 UI 代码前必读 `packages/ui/DESIGN.md`**。
+
+### UI 原型放置硬约束
+
+- 静态设计原型、镜像 HTML/CSS、旧版 renderer 参考件只能放在 `prototypes/` 下
+- 禁止把这类文件散落到 `apps/`、`packages/` 或仓库根目录
+- 仓库用 `bun run check:prototypes` 与 `bun run lint` 强制校验，违反会直接报错
+- 生产代码只能“参考并提取规则”，不能把 demo / prototype 文件直接当运行入口
 
 ### 决策树（写 UI 时按顺序回答）
 

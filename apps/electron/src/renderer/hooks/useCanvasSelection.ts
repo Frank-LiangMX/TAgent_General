@@ -1,0 +1,108 @@
+/**
+ * useCanvasSelection — 画布选中态 hook（v2）
+ *
+ * 职责：
+ *  1) 创建并维护 FrameBridgeClient 实例（生命周期 = 组件生命周期）
+ *  2) 把 iframe 上报的 layers / click / hover 路由到 jotai atoms
+ *  3) 把 jotai 中 selectedElementIds 同步回 iframe（高亮）
+ *
+ * 设计来源：docs/plans/2026-07-14-design-canvas-v2.md §4.1-§4.2
+ */
+
+import { useAtomValue, useSetAtom } from 'jotai'
+import * as React from 'react'
+
+import {
+  canvasLayersAtom,
+  designActiveToolAtom,
+  hoveredElementIdAtom,
+  selectedElementIdsAtom,
+  type CanvasElement,
+} from '@/atoms/design-preview-atoms'
+
+import { FrameBridgeClient } from '@/lib/canvas-frame-bridge'
+
+export interface UseCanvasSelectionResult {
+  bridge: React.MutableRefObject<FrameBridgeClient | null>
+  /** iframe onLoad 时调用，把 iframe 绑到 bridge */
+  attachToIframe: (iframe: HTMLIFrameElement) => void
+  /** iframe contentWindow 重写后调用（srcDoc reload） */
+  onIframeReloaded: () => void
+}
+
+/**
+ * 父组件用法：
+ *   const { attachToIframe } = useCanvasSelection()
+ *   <iframe ref={el => el && attachToIframe(el)} ... />
+ *
+ * 设计上 bridge 自身单例；handlers 在 hook 内稳定绑定，组件不需关心。
+ */
+export function useCanvasSelection(): UseCanvasSelectionResult {
+  const setLayers = useSetAtom(canvasLayersAtom)
+  const setHovered = useSetAtom(hoveredElementIdAtom)
+  const setSelected = useSetAtom(selectedElementIdsAtom)
+  const selectedIds = useAtomValue(selectedElementIdsAtom)
+
+  // 单例 client：每次 render 不重建
+  const bridgeRef = React.useRef<FrameBridgeClient | null>(null)
+  if (bridgeRef.current === null) {
+    bridgeRef.current = new FrameBridgeClient()
+  }
+
+  // 监听 tool 模式变化 → 同步到 iframe
+  const activeTool = useAtomValue(designActiveToolAtom)
+  React.useEffect(() => {
+    bridgeRef.current?.setMode(activeTool)
+  }, [activeTool])
+
+  // stable handlers：每次 render 复用同一函数引用（闭包捕获 setXxx 函数引用稳定）
+  const handlersRef = React.useRef({
+    onLayers: (layers: CanvasElement[]) => setLayers(layers),
+    onElementClicked: (id: string, _bounds: CanvasElement['bounds'], additive: boolean) => {
+      setSelected((prev) => {
+        if (additive) {
+          return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        }
+        // 非 add：单选切换；已选中的再次点击 → 清空
+        return prev.includes(id) && prev.length === 1 ? [] : [id]
+      })
+    },
+    onElementHovered: (id: string | null) => setHovered(id),
+  })
+
+  const attachToIframe = React.useCallback((iframe: HTMLIFrameElement) => {
+    const client = bridgeRef.current
+    if (!client) return
+    client.attach(iframe, handlersRef.current)
+  }, [])
+
+  /** iframe contentWindow 重写后（srcDoc reload）必须调一次，否则 message 收不到 */
+  const onIframeReloaded = React.useCallback(() => {
+    bridgeRef.current?.onIframeReloaded()
+  }, [])
+
+  // 选中态变化时同步到 iframe 高亮
+  React.useEffect(() => {
+    const client = bridgeRef.current
+    if (!client) return
+    if (selectedIds.length > 0) {
+      client.setHighlight(selectedIds)
+    } else {
+      client.clearHighlight()
+    }
+  }, [selectedIds])
+
+  // 卸载时 detach
+  React.useEffect(() => {
+    const client = bridgeRef.current
+    return () => {
+      client?.detach()
+    }
+  }, [])
+
+  return {
+    bridge: bridgeRef,
+    attachToIframe,
+    onIframeReloaded,
+  }
+}

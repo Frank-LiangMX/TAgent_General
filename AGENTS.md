@@ -12,6 +12,7 @@ TAgent = Proma（开源通用 Agent 框架） + ta_agent（自研游戏 TA 领�
 - 设计系统：`packages/ui/DESIGN.md`
 - **Liquid Glass 外部参考 + Agent 约束**：`docs/ui/liquid-glass-ui-reference-for-agents.md`（入口站 [freefrontend CSS Liquid Glass](https://freefrontend.com/css-liquid-glass/)）
 - **前端静态原型（统一目录）**：`prototypes/README.md`（原 glass-studio / ui-prototype / demo）
+- **硬约束**：UI 设计原型、镜像页面、旧版 renderer 参考实现只能放在 `prototypes/` 内，禁止散落到 `apps/`、`packages/` 或仓库根目录
 - 材质 ADR：`docs/decisions/0005-material-surface-token-architecture.md`
 
 - **基座 = Proma**（TypeScript + Electron + Claude Agent SDK + 12 Provider + 5 MCP）
@@ -27,6 +28,11 @@ TAgent = Proma（开源通用 Agent 框架） + ta_agent（自研游戏 TA 领�
 2. `docs\plans\2026-06-05-tagent-fusion-design.md` — TAgent Desktop 设计（13 节）
 3. `docs\plans\2026-06-05-tagent-server-design.md` — TAgent Server 设计（12 节）
 4. `docs\decisions\0001-fusion-architecture.md` — 融合架构决策（ADR）
+
+**涉及画布 / 设计预览 / UI 原型 / 指着元素说话等任务时，还要读**：
+- `docs\plans\2026-07-14-design-canvas-v2.md` — 画布 v2 架构
+- `apps\electron\src\renderer\components\design-preview\README.md` — 唯一画布实现位置的模块清单
+- v1 文档 `docs\plans\2026-07-13-design-preview-design.md` 已废弃（顶部已标注），**不要按它实现**
 
 **不读就开干 = 必然跑偏**。
 
