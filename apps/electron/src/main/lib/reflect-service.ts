@@ -21,26 +21,52 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import { app } from 'electron'
-import { getAdapter, getTAgentUserAgent } from '@tagent/core'
+import { getAdapter, getTAgentUserAgent, streamSSE } from '@tagent/core'
 import type { StreamRequestInput } from '@tagent/core'
 
 import { getChannelById, decryptApiKey } from './channel-manager'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 import { getFetchFn } from './proxy-fetch'
 import { getSettings } from './settings-service'
+import type { Insight, Contradiction } from './memory-consolidation-service'
 
 // ===== 类型定义 =====
+
+/** Reflect 执行结果 outcome */
+export type ReflectionOutcome =
+  | 'success'
+  | 'skipped_clean'
+  | 'skipped_insufficient_evidence'
+  | 'skipped_budget'
+  | 'failed'
 
 /** Reflect 执行结果 */
 export interface ReflectResult {
   success: boolean
+  outcome: ReflectionOutcome
   insightsGenerated: number
   insights: string[]
   error?: string
+  errorCode?: string
+  inputCounts: { l2Facts: number; l4Sessions: number; l3Corrections: number; l5Insights: number }
+  outputCounts: { insightsGenerated: number; contradictionsFound: number }
 }
 
-/** Reflect 状态 */
-interface ReflectState {
+/** Reflect 状态（v2 — 可观测） */
+interface ReflectionState {
+  lastRunTime: number | null // 兼容旧版本
+  lastInsights: string[] // 兼容旧版本
+  lastAttemptTime: number | null
+  lastSuccessTime: number | null
+  lastOutcome: ReflectionOutcome | null
+  lastErrorCode: string | null
+  inputCounts: { l2Facts: number; l4Sessions: number; l3Corrections: number; l5Insights: number }
+  outputCounts: { insightsGenerated: number; contradictionsFound: number }
+  cursor: { lastProcessedSessionId: number | null; lastProcessedAt: number | null }
+}
+
+// 旧状态格式，用于向后兼容迁移
+interface LegacyReflectState {
   lastRunTime: number | null
   lastInsights: string[]
 }
@@ -57,7 +83,7 @@ const MAX_INSIGHTS = 20
 
 class ReflectService {
   /** 各模式的 Reflect 状态 */
-  private states: Map<MemoryMode, ReflectState> = new Map()
+  private states: Map<MemoryMode, ReflectionState> = new Map()
 
   /** 定时器 ID */
   private timerId: NodeJS.Timeout | null = null
@@ -65,7 +91,7 @@ class ReflectService {
   /**
    * 获取记忆目录路径
    */
-  private getMemoryDir(mode: MemoryMode): string {
+  /* internal */ getMemoryDir(mode: MemoryMode): string {
     const isDev = !app.isPackaged
     const baseDir = isDev
       ? path.join(app.getPath('home'), '.tagent-dev')
@@ -75,11 +101,21 @@ class ReflectService {
 
   /**
    * 初始化服务
+   *
+   * @param scheduleLLM 是否调度 LLM 驱动的 checkAndRun 和定时器。
+   *                     默认 true（保持向后兼容）。
+   *                     新 consolidation 上线后设为 false 只加载状态，
+   *                     不触发任何 LLM 调用，scheduler 在接线阶段禁用。
    */
-  initialize(): void {
+  initialize(scheduleLLM: boolean = true): void {
     // 加载上次运行时间
     this.loadState('general')
     this.loadState('ta')
+
+    if (!scheduleLLM) {
+      // 只加载状态，不 checkAndRun/scheduleNextRun
+      return
+    }
 
     // 检查是否需要立即运行
     this.checkAndRun('general')
@@ -99,14 +135,53 @@ class ReflectService {
     try {
       if (fs.existsSync(statePath)) {
         const content = fs.readFileSync(statePath, 'utf-8')
-        const state = JSON.parse(content) as ReflectState
-        this.states.set(mode, state)
+        const raw = JSON.parse(content)
+
+        // 检测旧格式（仅有 lastRunTime + lastInsights）
+        if ('lastRunTime' in raw && 'inputCounts' in raw === false) {
+          const legacy = raw as LegacyReflectState
+          const migrated: ReflectionState = {
+            lastRunTime: legacy.lastRunTime,
+            lastInsights: legacy.lastInsights,
+            lastAttemptTime: legacy.lastRunTime,
+            lastSuccessTime: legacy.lastRunTime,
+            lastOutcome: legacy.lastRunTime ? 'success' : null,
+            lastErrorCode: null,
+            inputCounts: { l2Facts: 0, l4Sessions: 0, l3Corrections: 0, l5Insights: 0 },
+            outputCounts: {
+              insightsGenerated: legacy.lastInsights.length,
+              contradictionsFound: 0,
+            },
+            cursor: { lastProcessedSessionId: null, lastProcessedAt: legacy.lastRunTime },
+          }
+          this.states.set(mode, migrated)
+          // 立即写回新版状态
+          this.saveState(mode)
+        } else {
+          this.states.set(mode, raw as ReflectionState)
+        }
       } else {
-        this.states.set(mode, { lastRunTime: null, lastInsights: [] })
+        this.createFreshState(mode)
       }
     } catch {
-      this.states.set(mode, { lastRunTime: null, lastInsights: [] })
+      this.createFreshState(mode)
     }
+  }
+
+  private createFreshState(mode: MemoryMode): ReflectionState {
+    const state: ReflectionState = {
+      lastRunTime: null,
+      lastInsights: [],
+      lastAttemptTime: null,
+      lastSuccessTime: null,
+      lastOutcome: null,
+      lastErrorCode: null,
+      inputCounts: { l2Facts: 0, l4Sessions: 0, l3Corrections: 0, l5Insights: 0 },
+      outputCounts: { insightsGenerated: 0, contradictionsFound: 0 },
+      cursor: { lastProcessedSessionId: null, lastProcessedAt: null },
+    }
+    this.states.set(mode, state)
+    return state
   }
 
   /**
@@ -133,8 +208,9 @@ class ReflectService {
     const state = this.states.get(mode)
     const now = Date.now()
 
-    // 首次运行或距上次 >36h
-    if (!state?.lastRunTime || now - state.lastRunTime > REFLECT_INTERVAL_MS) {
+    // 使用 lastAttemptTime 判断（兼容旧版 lastRunTime）
+    const lastCheck = state?.lastAttemptTime ?? state?.lastRunTime ?? null
+    if (!lastCheck || now - lastCheck > REFLECT_INTERVAL_MS) {
       this.runReflect(mode).catch((e) => {
         console.warn(`[ReflectService] ${mode} 模式 Reflect 失败:`, e)
       })
@@ -160,9 +236,12 @@ class ReflectService {
       `[ReflectService] 下次运行时间: ${next3AM.toISOString()}, 距今 ${Math.round(delay / 1000 / 60)} 分钟`
     )
 
-    this.timerId = setTimeout(() => {
-      this.runReflect('general').catch(console.error)
-      this.runReflect('ta').catch(console.error)
+    this.timerId = setTimeout(async () => {
+      const resultGeneral = await this.runReflect('general')
+      const resultTa = await this.runReflect('ta')
+      console.log(
+        `[ReflectService] 定时触发的 Reflect 完成: general=${resultGeneral.outcome}(insights=${resultGeneral.insightsGenerated}), ta=${resultTa.outcome}(insights=${resultTa.insightsGenerated})`
+      )
       // 递归调度下一次
       this.scheduleNextRun()
     }, delay)
@@ -173,65 +252,118 @@ class ReflectService {
    */
   async runReflect(mode: MemoryMode): Promise<ReflectResult> {
     const dir = this.getMemoryDir(mode)
+    const now = Date.now()
+    const state = this.states.get(mode) || this.createFreshState(mode)
+
     const result: ReflectResult = {
       success: false,
+      outcome: 'failed',
       insightsGenerated: 0,
       insights: [],
+      inputCounts: { l2Facts: 0, l4Sessions: 0, l3Corrections: 0, l5Insights: 0 },
+      outputCounts: { insightsGenerated: 0, contradictionsFound: 0 },
     }
 
     try {
+      // 记录本次调度尝试
+      state.lastAttemptTime = now
+      state.lastErrorCode = null
+
       // 1. 读取 L2_facts
       const l2Content = this.readMdFile(path.join(dir, 'L2_facts.md'))
       const l2Facts = this.parseMdLines(l2Content)
 
-      // 2. 读取 L4_sessions（最近 7 天）
+      // 2. 读取 L4_sessions（最近 7 天，按 activityAt 判断）
       const l4Sessions = this.getRecentSessions(mode, 7)
 
-      // 3. 读取现有 L5_insights
+      // 3. 读取 L3 corrections
+      const l3Content = this.readJsonl(path.join(dir, 'corrections.jsonl'))
+      const l3Corrections = this.parseJsonlLines(l3Content)
+
+      // 4. 读取现有 L5_insights
       const l5Content = this.readMdFile(path.join(dir, 'L5_insights.md'))
       const existingInsights = this.parseMdLines(l5Content)
 
-      // 4. 如果数据不足，跳过
+      // 记录输入计数
+      result.inputCounts = {
+        l2Facts: l2Facts.length,
+        l4Sessions: l4Sessions.length,
+        l3Corrections: l3Corrections.length,
+        l5Insights: existingInsights.length,
+      }
+      state.inputCounts = { ...result.inputCounts }
+
+      // 5. 如果数据不足，跳过
       if (l2Facts.length < 2 && l4Sessions.length < 1) {
         console.log(`[ReflectService] ${mode} 模式数据不足，跳过 Reflect`)
-        return { ...result, success: true }
+        state.lastOutcome = 'skipped_insufficient_evidence'
+        this.states.set(mode, state)
+        this.saveState(mode)
+        result.outcome = 'skipped_insufficient_evidence'
+        return result
       }
 
-      // 5. 提炼洞察（LLM 优先，失败回退规则版）
-      const newInsights = await this.extractInsights(l2Facts, l4Sessions, existingInsights, dir)
+      // 6. 提炼洞察（LLM 优先，失败回退规则版）
+      const { insights: newInsights, contradictionCount } = await this.extractInsights(
+        l2Facts,
+        l4Sessions,
+        existingInsights,
+        dir
+      )
 
-      // 6. anti_echo_filter: 过滤重复
+      // 7. anti_echo_filter: 过滤重复
       const filteredInsights = newInsights.filter((insight) => {
-        // 检查是否与现有 L5 重复
         return !existingInsights.some((existing) => this.isSimilar(insight, existing))
       })
 
-      // 7. 限制数量
+      // 8. 限制数量
       const insightsToWrite = filteredInsights.slice(0, MAX_INSIGHTS - existingInsights.length)
 
       if (insightsToWrite.length > 0) {
-        // 8. 写入 L5_insights.md
+        // 9. 写入 L5_insights.md
         await this.appendInsights(dir, insightsToWrite)
 
         result.success = true
         result.insightsGenerated = insightsToWrite.length
         result.insights = insightsToWrite
+        result.outcome = 'success'
 
         console.log(`[ReflectService] ${mode} 模式生成了 ${insightsToWrite.length} 条新洞察`)
       } else {
         result.success = true
+        result.outcome = 'success'
         console.log(`[ReflectService] ${mode} 模式无新洞察`)
       }
 
-      // 更新状态
-      const state = this.states.get(mode) || { lastRunTime: null, lastInsights: [] }
-      state.lastRunTime = Date.now()
+      // 更新输出计数 — result 与 state 必须一致
+      result.outputCounts = {
+        insightsGenerated: insightsToWrite.length,
+        contradictionsFound: contradictionCount,
+      }
+
+      // 更新成功状态
+      state.lastRunTime = now // 兼容字段：每次成功 attempt 更新
+      state.lastSuccessTime = now
+      state.lastOutcome = result.outcome
+      state.outputCounts = { ...result.outputCounts }
       state.lastInsights = insightsToWrite
       this.states.set(mode, state)
       this.saveState(mode)
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
+      const errorCode =
+        error instanceof Error && 'status' in error
+          ? String((error as { status: unknown }).status)
+          : 'UNKNOWN'
       result.error = msg
+      result.errorCode = errorCode
+      result.outcome = 'failed'
+
+      state.lastOutcome = 'failed'
+      state.lastErrorCode = errorCode
+      this.states.set(mode, state)
+      this.saveState(mode)
+
       console.error(`[ReflectService] ${mode} 模式 Reflect 失败:`, error)
     }
 
@@ -259,13 +391,46 @@ class ReflectService {
   }
 
   /**
+   * 读取 JSONL 文件
+   */
+  private readJsonl(filePath: string): string {
+    if (!fs.existsSync(filePath)) {
+      return ''
+    }
+    return fs.readFileSync(filePath, 'utf-8')
+  }
+
+  /**
+   * 解析 JSONL 行
+   */
+  private parseJsonlLines(content: string): string[] {
+    return content
+      .split('\n')
+      .filter((line) => line.trim())
+      .map((line) => {
+        try {
+          const parsed = JSON.parse(line)
+          return typeof parsed.correction === 'string' ? parsed.correction : line
+        } catch {
+          return line
+        }
+      })
+  }
+
+  /**
    * 获取最近的 L4 会话
    */
   private getRecentSessions(mode: MemoryMode, days: number): string[] {
     const sessions = memoryLayerService.listRecentSessions(mode, 50)
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
 
-    return sessions.filter((s) => s.created_at > cutoff).map((s) => `${s.title}: ${s.summary}`)
+    return sessions
+      .filter((s) => {
+        // activityAt = max(created_at, ended_at ?? created_at)
+        const activityAt = Math.max(s.created_at, s.ended_at ?? s.created_at)
+        return activityAt > cutoff
+      })
+      .map((s) => `${s.title}: ${s.summary}`)
   }
 
   /**
@@ -281,25 +446,26 @@ class ReflectService {
     l4Sessions: string[],
     existingInsights: string[],
     dir: string
-  ): Promise<string[]> {
+  ): Promise<{ insights: string[]; contradictionCount: number }> {
     // 先尝试 LLM 提炼
     try {
-      const llmInsights = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights, dir)
-      if (llmInsights.length > 0) {
-        console.log(`[ReflectService] LLM 提炼出 ${llmInsights.length} 条洞察`)
-        return llmInsights
+      const result = await this.extractInsightsWithLLM(l2Facts, l4Sessions, existingInsights, dir)
+      if (result.insights.length > 0) {
+        console.log(`[ReflectService] LLM 提炼出 ${result.insights.length} 条洞察`)
+        return result
       }
       console.log('[ReflectService] LLM 未产出洞察，回退规则版')
     } catch (e) {
       console.warn('[ReflectService] LLM 提炼失败，回退规则版:', e)
     }
 
-    // 回退：规则版关键词提取
-    return this.extractInsightsWithRules(l2Facts, existingInsights)
+    // 回退：规则版关键词提取（同时利用 L2 和 L4，无矛盾检测）
+    const rulesInsights = this.extractInsightsWithRules(l2Facts, l4Sessions, existingInsights)
+    return { insights: rulesInsights, contradictionCount: 0 }
   }
 
   /**
-   * 调 LLM 完整文本（非流式 UI，但 provider adapter 只有流式接口，复用并累积）
+   * 调 LLM 完整文本（非流式 UI，复用 streamSSE 并累积）
    *
    * 复用主会话默认渠道 + 模型。kscc 渠道走 CLI 不支持 SSE，抛错由上层回退。
    */
@@ -339,54 +505,17 @@ class ReflectService {
     }
 
     const request = adapter.buildStreamRequest(streamInput)
+    // 注入 User-Agent
+    request.headers['User-Agent'] = getTAgentUserAgent()
 
-    const response = await fetchFn(request.url, {
-      method: 'POST',
-      headers: { ...request.headers, 'User-Agent': getTAgentUserAgent() },
-      body: request.body,
+    const result = await streamSSE({
+      request,
+      adapter,
+      onEvent: () => {}, // callLLM 只需要累积文本，无需实时事件
+      fetchFn,
     })
 
-    if (!response.ok) {
-      throw new Error(`LLM 请求失败: ${response.status} ${response.statusText}`)
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('无法获取响应流')
-    }
-
-    const decoder = new TextDecoder()
-    let accumulatedText = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const jsonStr = line.slice(6).trim()
-        if (!jsonStr || jsonStr === '[DONE]') continue
-
-        try {
-          const json = JSON.parse(jsonStr)
-          const text =
-            json.choices?.[0]?.delta?.content ||
-            json.delta?.text ||
-            json.message?.content ||
-            ''
-          if (text) {
-            accumulatedText += text
-          }
-        } catch {
-          // 部分 chunk 可能不是完整 JSON，跳过
-        }
-      }
-    }
-
-    return accumulatedText
+    return result.content
   }
 
   /**
@@ -401,7 +530,7 @@ class ReflectService {
     l4Sessions: string[],
     existingInsights: string[],
     dir: string
-  ): Promise<string[]> {
+  ): Promise<{ insights: string[]; contradictionCount: number }> {
     const systemPrompt = `你是一个记忆反思助手。基于用户最近 7 天的稳定事实（L2）和会话摘要（L4），提炼高阶洞察。
 
 要求：
@@ -427,18 +556,17 @@ ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂�
     const parsed = this.parseInsightsResponse(text)
 
     // contradictions 写入 L3 corrections（设计 §6.5.5 contradiction_check）
-    if (parsed.contradictions.length > 0) {
+    const contradictionCount = parsed.contradictions.length
+    if (contradictionCount > 0) {
       try {
         await this.appendContradictionsToL3(dir, parsed.contradictions)
-        console.log(
-          `[ReflectService] ${parsed.contradictions.length} 条矛盾洞察写入 L3 corrections`
-        )
+        console.log(`[ReflectService] ${contradictionCount} 条矛盾洞察写入 L3 corrections`)
       } catch (e) {
         console.warn('[ReflectService] 写入 L3 contradictions 失败:', e)
       }
     }
 
-    return parsed.insights
+    return { insights: parsed.insights, contradictionCount }
   }
 
   /**
@@ -479,12 +607,16 @@ ${l4Sessions.length > 0 ? l4Sessions.map((s) => `- ${s}`).join('\n') : '（暂�
    *
    * 设计 §6.5.5：新 insight 与现有 L5 矛盾 → 写 L3 raw 而非 L5
    */
-  private async appendContradictionsToL3(dir: string, contradictions: string[]): Promise<void> {
+  /* internal */ async appendContradictionsToL3(
+    dir: string,
+    contradictions: string[]
+  ): Promise<void> {
     const filePath = path.join(dir, 'corrections.jsonl')
     const timestamp = Date.now()
-    const lines = contradictions
-      .map((c) => JSON.stringify({ timestamp, correction: c, context: 'L5 contradiction' }))
-      .join('\n') + '\n'
+    const lines =
+      contradictions
+        .map((c) => JSON.stringify({ timestamp, correction: c, context: 'L5 contradiction' }))
+        .join('\n') + '\n'
 
     if (!fs.existsSync(filePath)) {
       await fs.promises.writeFile(filePath, lines, 'utf-8')
@@ -565,21 +697,35 @@ ${summary || '（无）'}
    *
    * LLM 不可用时用，产出质量较低但保证 Reflect 不阻塞。
    */
-  private extractInsightsWithRules(l2Facts: string[], existingInsights: string[]): string[] {
+  private extractInsightsWithRules(
+    l2Facts: string[],
+    l4Sessions: string[],
+    existingInsights: string[]
+  ): string[] {
     const insights: string[] = []
     const keywordCounts = new Map<string, number>()
 
+    // 同时从 L2 事实和 L4 会话中提取关键词
     for (const fact of l2Facts) {
       const keywords = fact.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || []
       for (const keyword of keywords) {
         keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1)
       }
     }
+    for (const session of l4Sessions) {
+      const keywords = session.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || []
+      for (const keyword of keywords) {
+        keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1)
+      }
+    }
+
+    // 合并所有文本用于关联检查
+    const allTexts = [...l2Facts, ...l4Sessions]
 
     for (const [keyword, count] of keywordCounts) {
       if (count >= 2 && !existingInsights.some((i) => i.includes(keyword))) {
-        const relatedFacts = l2Facts.filter((f) => f.includes(keyword))
-        if (relatedFacts.length >= 2) {
+        const relatedTexts = allTexts.filter((t) => t.includes(keyword))
+        if (relatedTexts.length >= 2) {
           insights.push(`用户在多个场景提到「${keyword}」，可能是一个重要偏好`)
         }
       }
@@ -591,10 +737,13 @@ ${summary || '（无）'}
   /**
    * 检查两段文本是否相似
    */
-  private isSimilar(a: string, b: string): boolean {
-    // 简化版：检查关键词重叠
+  /* internal */ isSimilar(a: string, b: string): boolean {
+    // 空关键词边沿：两段无关键词文本仅在内容完全相等时视为相似
     const keywordsA = new Set(a.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || [])
     const keywordsB = new Set(b.match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || [])
+    if (keywordsA.size === 0 && keywordsB.size === 0) {
+      return a.trim().toLowerCase() === b.trim().toLowerCase()
+    }
 
     let overlap = 0
     for (const kw of keywordsA) {
@@ -609,7 +758,7 @@ ${summary || '（无）'}
   /**
    * 追加洞察到 L5_insights.md
    */
-  private async appendInsights(dir: string, insights: string[]): Promise<void> {
+  /* internal */ async appendInsights(dir: string, insights: string[]): Promise<void> {
     const filePath = path.join(dir, 'L5_insights.md')
     const timestamp = new Date().toISOString().slice(0, 10)
 
@@ -621,6 +770,129 @@ ${summary || '（无）'}
     } else {
       await fs.promises.appendFile(filePath, '\n' + lines, 'utf-8')
     }
+  }
+
+  /**
+   * 追加结构化洞察及其元数据到 L5_insights.md
+   *
+   * 每条 insight 写入两行：
+   *   - [date] content
+   *     <!-- {"confidence":0.8,"evidenceIds":["ev-1"]} -->
+   *
+   * 第二行以空格开头（非 dash），parseMdLines / runReflect 的读取不受影响，
+   * 向后兼容。不创建新文件。
+   */
+  private async appendStructuredInsights(dir: string, insights: Insight[]): Promise<void> {
+    const filePath = path.join(dir, 'L5_insights.md')
+    const timestamp = new Date().toISOString().slice(0, 10)
+
+    // markdown block with optional <!-- ... --> metadata lines
+    const mdEntries: string[] = []
+    for (const insight of insights) {
+      mdEntries.push(`- [${timestamp}] ${insight.content}`)
+      if (insight.confidence !== undefined || (insight.evidenceIds?.length ?? 0) > 0) {
+        const meta: Record<string, unknown> = {}
+        if (insight.confidence !== undefined) meta.confidence = insight.confidence
+        if (insight.evidenceIds?.length) meta.evidenceIds = insight.evidenceIds
+        mdEntries.push(`  <!-- ${JSON.stringify(meta)} -->`)
+      }
+    }
+    const text = '\n' + mdEntries.join('\n') + '\n'
+
+    if (!fs.existsSync(filePath)) {
+      const header = '# L5 提炼洞察\n\n> 每日 Reflect 自动生成\n\n'
+      await fs.promises.writeFile(filePath, header + text.trimStart(), 'utf-8')
+    } else {
+      await fs.promises.appendFile(filePath, text, 'utf-8')
+    }
+  }
+
+  /**
+   * 纯本地应用整理的 insights 与 contradictions（ADR-0006 Phase 2）
+   *
+   * 由 MemoryConsolidationService 在完成批量 LLM 整理后调用。
+   * - 不调用 LLM（纯本地）
+   * - 对 persisted 内容做 anti-echo 去重
+   * - 对 incoming batch 做内部去重（同 batch 相似 insight 只写 1 条）
+   * - 保留 provenance 元数据（confidence / evidenceIds / existingId）
+   *
+   * @param mode 记忆模式
+   * @param insights 新洞察列表（含结构化元数据，已由 consolidation 的 LLM 提取）
+   * @param contradictions 矛盾列表（含 existingId/content/evidenceIds）
+   * @returns 应用的计数
+   */
+  async applyConsolidationInsights(
+    mode: MemoryMode,
+    insights: Insight[],
+    contradictions: Contradiction[]
+  ): Promise<{ insightsApplied: number; contradictionsApplied: number }> {
+    const dir = this.getMemoryDir(mode)
+    let insightsApplied = 0
+    let contradictionsApplied = 0
+
+    // 1. 读取现有 L5 洞察做 anti-echo 过滤
+    const l5Content = this.readMdFile(path.join(dir, 'L5_insights.md'))
+    const existingInsights = this.parseMdLines(l5Content)
+
+    // 2. anti-echo 去重：对 persisted + batch-internal 都去重
+    //    使用 isSimilar 对 batch 内部做语义去重（保留每个相似 group 的首条）
+    const acceptedInsights: Insight[] = []
+    const filteredInsights = insights.filter((insight) => {
+      // 对 persisted 去重
+      if (existingInsights.some((existing) => this.isSimilar(insight.content, existing))) {
+        return false
+      }
+      // 对 batch 内部已接受的条目去重（isSimilar 语义去重）
+      if (acceptedInsights.some((acc) => this.isSimilar(acc.content, insight.content))) {
+        return false
+      }
+      acceptedInsights.push(insight)
+      return true
+    })
+
+    // 3. 写入去重后的新洞察（含 metadata）
+    if (filteredInsights.length > 0) {
+      await this.appendStructuredInsights(dir, filteredInsights)
+      insightsApplied = filteredInsights.length
+    }
+
+    // 4. contradictions 去重（按 content 与现有 corrections 比较）
+    const l3Content = this.readJsonl(path.join(dir, 'corrections.jsonl'))
+    const existingCorrections = this.parseJsonlLines(l3Content)
+    const acceptedContradictions: Contradiction[] = []
+    const filteredContradictions = contradictions.filter((c) => {
+      if (existingCorrections.some((ec) => this.isSimilar(c.content, ec))) return false
+      if (acceptedContradictions.some((acc) => this.isSimilar(acc.content, c.content))) return false
+      acceptedContradictions.push(c)
+      return true
+    })
+
+    if (filteredContradictions.length > 0) {
+      // 写入完整 provenance（correction + evidenceIds + existingId）
+      const filePath = path.join(dir, 'corrections.jsonl')
+      const timestamp = Date.now()
+      const lines =
+        filteredContradictions
+          .map((c) =>
+            JSON.stringify({
+              timestamp,
+              correction: c.content,
+              context: 'L5 contradiction',
+              evidenceIds: c.evidenceIds ?? [],
+              existingId: c.existingId ?? null,
+            })
+          )
+          .join('\n') + '\n'
+
+      if (!fs.existsSync(filePath)) {
+        await fs.promises.writeFile(filePath, lines, 'utf-8')
+      } else {
+        await fs.promises.appendFile(filePath, lines, 'utf-8')
+      }
+      contradictionsApplied = filteredContradictions.length
+    }
+
+    return { insightsApplied, contradictionsApplied }
   }
 
   /**

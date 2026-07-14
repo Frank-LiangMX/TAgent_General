@@ -89,14 +89,16 @@ export function readStageQueue(mode: MemoryMode): StageEntry[] {
         if (now - entry.enqueuedAt < AUTO_REJECT_MS) {
           entries.push(entry)
         }
-      } catch {
-        // 单行解析失败跳过
+      } catch (parseErr) {
+        console.warn(
+          `[StageQueue] 单行 JSON 解析失败，跳过: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`
+        )
       }
     }
 
     return entries
   } catch (e) {
-    console.warn(`[StageQueue] 读取失败: ${filePath}`, e)
+    console.warn(`[StageQueue] 读取队列文件失败: ${filePath}`, e)
     return []
   }
 }
@@ -104,6 +106,7 @@ export function readStageQueue(mode: MemoryMode): StageEntry[] {
 /**
  * 入队 stage（background nudge 写入暂存）
  *
+ * 幂等：相同 id 的条目不重复入队（内部查重，不改变 public contract）。
  * 文件不存在时自动创建（lazy）。
  */
 export function enqueueStage(mode: MemoryMode, candidate: NudgeCandidate): void {
@@ -111,6 +114,31 @@ export function enqueueStage(mode: MemoryMode, candidate: NudgeCandidate): void 
   const dir = path.dirname(filePath)
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
+  }
+
+  // 幂等检查：相同 id 的条目不重复入队
+  if (fs.existsSync(filePath)) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8')
+      for (const line of content.split('\n')) {
+        if (!line.trim()) continue
+        try {
+          const existing = JSON.parse(line) as StageEntry
+          if (existing.id === candidate.id) {
+            console.log(`[StageQueue] 跳过重复入队: ${candidate.id}`)
+            return
+          }
+        } catch (parseErr) {
+          console.warn(
+            `[StageQueue] 幂等检查：单行解析失败跳过: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`
+          )
+        }
+      }
+    } catch (readErr) {
+      console.warn(
+        `[StageQueue] 幂等检查：读取失败，跳过去重: ${readErr instanceof Error ? readErr.message : String(readErr)}`
+      )
+    }
   }
 
   const entry: StageEntry = {
@@ -127,7 +155,9 @@ export function enqueueStage(mode: MemoryMode, candidate: NudgeCandidate): void 
   }
 
   fs.appendFileSync(filePath, JSON.stringify(entry) + '\n', 'utf-8')
-  console.log(`[StageQueue] 入队 ${mode}/pending_approval: ${candidate.id} (${candidate.targetLayer})`)
+  console.log(
+    `[StageQueue] 入队 ${mode}/pending_approval: ${candidate.id} (${candidate.targetLayer})`
+  )
 }
 
 /**
@@ -153,7 +183,8 @@ function writeStageQueue(mode: MemoryMode, entries: StageEntry[]): void {
     fs.mkdirSync(dir, { recursive: true })
   }
 
-  const content = entries.map((e) => JSON.stringify(e)).join('\n') + (entries.length > 0 ? '\n' : '')
+  const content =
+    entries.map((e) => JSON.stringify(e)).join('\n') + (entries.length > 0 ? '\n' : '')
   fs.writeFileSync(filePath, content, 'utf-8')
 }
 
@@ -195,9 +226,9 @@ export function rejectAll(mode: MemoryMode, reason: string = 'batch_rejected'): 
   }
 
   const now = Date.now()
-  const rejectLines = entries
-    .map(
-      (e) =>
+  const rejectLines =
+    entries
+      .map((e) =>
         JSON.stringify({
           id: e.id,
           timestamp: now,
@@ -205,8 +236,8 @@ export function rejectAll(mode: MemoryMode, reason: string = 'batch_rejected'): 
           pattern: e.pattern,
           reason,
         })
-    )
-    .join('\n') + '\n'
+      )
+      .join('\n') + '\n'
   fs.appendFileSync(rejectedPath, rejectLines, 'utf-8')
 
   // 清空队列
