@@ -50,7 +50,7 @@ export const AskMessageItem = React.memo(function AskMessageItem({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end my-3">
-        <div className="agent-user-bubble max-w-[80%] px-4 py-2.5 text-foreground">
+        <div className="agent-user-bubble max-w-[80%] px-4 py-2.5">
           {message.attachments && message.attachments.length > 0 && (
             <div className="text-xs text-muted-foreground mb-1">
               📎 {message.attachments.length} 个附件

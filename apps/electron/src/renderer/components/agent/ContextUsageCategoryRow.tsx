@@ -62,11 +62,8 @@ export function ContextUsageCategoryRow({
       {!isFreeSpace && barPercent != null && barPercent > 0 && (
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-foreground/8">
           <div
-            className="h-full rounded-full transition-[width] duration-300"
-            style={{
-              width: `${Math.min(100, barPercent)}%`,
-              backgroundColor: swatchColor,
-            }}
+            className="h-full rounded-full bg-foreground/22 transition-[width] duration-300"
+            style={{ width: `${Math.min(100, barPercent)}%` }}
           />
         </div>
       )}

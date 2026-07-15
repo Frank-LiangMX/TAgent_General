@@ -14,8 +14,10 @@
   --agent-content-indent: 52px;
   --agent-surface-radius: 14px;
   --agent-bubble-radius: 20px;
-  --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
-  --agent-surface-border: var(--md-outline, hsl(var(--border)));
+  /* 用户气泡：主色容器 tint，融入主题色 */
+  --agent-surface-bg: var(--md-primary-container, hsl(var(--secondary)));
+  --agent-surface-border: var(--md-primary-outline, hsl(var(--border)));
+  --agent-surface-on: var(--md-on-primary-container, hsl(var(--foreground)));
   --agent-bubble-blur: 0px;
   /* 过程卡：比 secondary 再沉一点，和回答区拉开 */
   --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 58%, hsl(var(--background)));
@@ -25,15 +27,16 @@
 }
 
 .dark .tagent-agent-thread {
-  --agent-surface-bg: var(--md-secondary-container, hsl(var(--secondary)));
-  --agent-surface-border: var(--md-outline, hsl(var(--border)));
+  --agent-surface-bg: var(--md-primary-container, hsl(var(--secondary)));
+  --agent-surface-border: var(--md-primary-outline, hsl(var(--border)));
+  --agent-surface-on: var(--md-on-primary-container, hsl(var(--foreground)));
   --agent-bubble-blur: 0px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
   --agent-process-border: color-mix(in srgb, hsl(var(--border)) 55%, transparent);
 }
 
 [data-material='glass'] .tagent-agent-thread {
-  --agent-surface-bg: hsl(var(--muted) / 0.42);
+  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--muted) / 0.42));
   --agent-bubble-blur: 8px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 42%, transparent);
   --agent-process-border: var(--surface-rim, hsl(var(--border) / 0.45));
@@ -41,7 +44,7 @@
 
 .dark[data-material='glass'] .tagent-agent-thread,
 [data-material='glass'].dark .tagent-agent-thread {
-  --agent-surface-bg: hsl(var(--muted) / 0.28);
+  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--muted) / 0.28));
   --agent-bubble-blur: 8px;
 }
 
@@ -316,6 +319,7 @@
   border-radius: 20px 20px 10px 20px;
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
+  color: var(--agent-surface-on);
   font-size: 14.5px;
   font-weight: 500;
   line-height: 1.58;
@@ -326,14 +330,14 @@
 
 [data-material='glass'] .tagent-agent-thread .agent-user-bubble {
   box-shadow:
-    0 1px 0 hsl(var(--background) / 0.6) inset,
-    0 2px 8px hsl(var(--background) / 0.08);
+    0 1px 0 hsl(var(--glass-shine) / 0.52) inset,
+    0 2px 8px hsl(var(--primary) / 0.08);
 }
 
 .tagent-agent-thread .agent-user-bubble:hover {
   box-shadow:
-    0 1px 0 hsl(var(--background) / 0.7) inset,
-    0 4px 12px hsl(var(--background) / 0.12);
+    0 1px 0 hsl(var(--glass-shine) / 0.62) inset,
+    0 4px 12px hsl(var(--primary) / 0.12);
 }
 
 .tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade {
