@@ -46,7 +46,7 @@ import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import { createApplicationMenu } from './menu'
 import { createTray, destroyTray, getTray, hideWindowToTray, prepareWindowFromTray } from './tray'
 import { updateWindowIcon } from './lib/window-icon'
-import { resolveNativeThemeSource } from './lib/theme-icon-resolver'
+import { resolveLogoKey, resolveNativeThemeSource, getThemeIconPath } from './lib/theme-icon-resolver'
 
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
@@ -328,16 +328,15 @@ function showAndFocusMainWindow(): void {
  * Get the appropriate app icon path for the current platform
  */
 function getIconPath(): string {
-  // resources 在 build:resources 阶段被复制到 dist/ 下，与 main.cjs 同级
-  const resourcesDir = join(__dirname, 'resources')
-
+  // 直接解析主题图标，不再引用废弃的四角黑 icon.ico/icon.png
+  const settings = getSettings()
   if (process.platform === 'darwin') {
-    return join(resourcesDir, 'icon.icns')
-  } else if (process.platform === 'win32') {
-    return join(resourcesDir, 'icon.ico')
-  } else {
-    return join(resourcesDir, 'icon.png')
+    // macOS 用 iconTemplate.png（系统自动适配明暗），打包版在 extraResources
+    const resourcesDir = app.isPackaged ? process.resourcesPath : join(__dirname, 'resources')
+    return join(resourcesDir, 'iconTemplate.png')
   }
+  const key = resolveLogoKey(settings.themeMode, settings.themeStyle, nativeTheme.shouldUseDarkColors)
+  return getThemeIconPath(key)
 }
 
 function saveMainWindowState(): void {
@@ -423,6 +422,11 @@ function createWindow(): void {
   mainWindow.once('ready-to-show', () => {
     if (savedState?.isMaximized ?? true) {
       mainWindow?.maximize()
+    }
+    // Windows 任务栏图标在窗口 show 后再设一次，确保图标正确刷新
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const s = getSettings()
+      updateWindowIcon(mainWindow, s.themeMode, s.themeStyle, nativeTheme.shouldUseDarkColors)
     }
     if (process.platform === 'darwin' && app.dock) {
       app.dock.show()
