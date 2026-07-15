@@ -408,7 +408,7 @@ export const selectedElementIdsAtom = atom(
 )
 
 /** 当前 iframe 内采集到的 layers */
-export const canvasLayersAtom = atom<CanvasElement[]>(
+export const canvasLayersAtom = atom(
   (get) => get(currentDesignSessionAtom).layers ?? [],
   (get, set, layers: CanvasElement[]) => {
     const sessionId = get(currentAgentSessionIdAtom)
@@ -418,7 +418,7 @@ export const canvasLayersAtom = atom<CanvasElement[]>(
 )
 
 /** hover 中的元素 id */
-export const hoveredElementIdAtom = atom<string | null>(
+export const hoveredElementIdAtom = atom(
   (get) => get(currentDesignSessionAtom).hoveredElementId ?? null,
   (get, set, id: string | null) => {
     const sessionId = get(currentAgentSessionIdAtom)
@@ -428,7 +428,7 @@ export const hoveredElementIdAtom = atom<string | null>(
 )
 
 /** 版本快照列表 */
-export const designSnapshotsAtom = atom<DesignSnapshot[]>(
+export const designSnapshotsAtom = atom(
   (get) => get(currentDesignSessionAtom).snapshots ?? [],
   (get, set, snapshots: DesignSnapshot[]) => {
     const sessionId = get(currentAgentSessionIdAtom)
@@ -438,7 +438,7 @@ export const designSnapshotsAtom = atom<DesignSnapshot[]>(
 )
 
 /** 用户当前查看的快照 id（null = 看最新） */
-export const activeSnapshotIdAtom = atom<string | null>(
+export const activeSnapshotIdAtom = atom(
   (get) => get(currentDesignSessionAtom).activeSnapshotId ?? null,
   (get, set, id: string | null) => {
     const sessionId = get(currentAgentSessionIdAtom)

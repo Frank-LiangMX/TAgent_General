@@ -54,7 +54,7 @@ export function parseHtmlDocument(text: string): ParsedHtml {
   let m: RegExpExecArray | null
   const styleRe = new RegExp(STYLE_BLOCK_RE.source, STYLE_BLOCK_RE.flags)
   while ((m = styleRe.exec(text)) !== null) {
-    cssChunks.push(m[1])
+    cssChunks.push(m[1]!)
   }
   const css = cssChunks.length > 0 ? cssChunks.join('\n\n') : null
 
@@ -69,7 +69,7 @@ export function parseHtmlDocument(text: string): ParsedHtml {
   const langMatch2 = /lang=["']([^"']+)/i.exec(langAttr)
   const lang = langMatch2?.[1] ?? null
 
-  return { html: html.trim(), css, meta: { title, lang } }
+  return { html: html!.trim(), css, meta: { title, lang } }
 }
 
 // ==================== ZIP 解压（最小实现） ====================

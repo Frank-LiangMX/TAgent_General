@@ -610,7 +610,7 @@ function AgentMessagesImpl({
     () => (agentStreamingModel ? resolveModelDisplayName(agentStreamingModel, channels) : undefined),
     [agentStreamingModel, channels]
   )
-    ? resolveModelDisplayName(streamState.model, channels)
+    ? resolveModelDisplayName(streamState!.model!, channels)
     : undefined
   const retrying = streamState?.retrying
   const startedAt = streamState?.startedAt

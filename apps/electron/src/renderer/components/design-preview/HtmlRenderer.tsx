@@ -105,7 +105,7 @@ export const HtmlRenderer = React.memo(function HtmlRenderer({
   React.useEffect(() => {
     const iframe = iframeRef.current
     if (!iframe || !onIframeLoadedRef.current) return
-    const handler = () => onIframeLoadedRef.current()
+    const handler = () => onIframeLoadedRef.current?.()
     iframe.addEventListener('load', handler)
     return () => {
       iframe.removeEventListener('load', handler)

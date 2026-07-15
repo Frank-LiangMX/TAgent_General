@@ -146,9 +146,10 @@ export function removeShapeTree(id: string, doc: CanvasDocument): CanvasDocument
   }
   // 从父节点的 children 中移除
   if (shape.parentId && newShapes[shape.parentId]) {
+    const parent = newShapes[shape.parentId]!
     newShapes[shape.parentId] = {
-      ...newShapes[shape.parentId],
-      children: newShapes[shape.parentId].children.filter((c) => c !== id),
+      ...parent,
+      children: parent.children.filter((c) => c !== id),
     }
   }
   const newRootIds = doc.rootIds.filter((r) => r !== id)

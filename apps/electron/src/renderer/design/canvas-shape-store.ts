@@ -37,7 +37,7 @@ export const setDocumentAtom = atom(
 
 /** 按 sessionId 获取文档（atomFamily 实现按需订阅） */
 export const canvasDocumentFamily = atomFamily((key: string | null) =>
-  atom((get) => {
+  atom<CanvasDocument>((get) => {
     if (!key) return createEmptyDocument()
     return get(documentsAtom).get(key) ?? createEmptyDocument()
   }),
@@ -56,8 +56,7 @@ function updateDocument(
   updater: (doc: CanvasDocument) => CanvasDocument,
 ): (get: (atom: unknown) => unknown, set: (atom: unknown, val: unknown) => void) => void {
   return (get, set) => {
-    const doc = get(canvasDocumentFamily(key))
-    if (!doc) return
+    const doc = get(canvasDocumentFamily(key)) as CanvasDocument
     set(setDocumentAtom, { key, doc: updater(doc) })
   }
 }

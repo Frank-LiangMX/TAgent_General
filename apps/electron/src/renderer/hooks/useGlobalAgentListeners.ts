@@ -763,7 +763,7 @@ export function useGlobalAgentListeners(): void {
             store.set(applyShapeOpsAtom, { ops: evt.shapeOps, trigger: evt.name ?? '设计更新' })
           } else if (evt.html) {
             // v2 向后兼容：agent 输出 HTML
-            store.set(setDesignHtmlAtom, { html: evt.html, css: evt.css ?? null })
+            store.set(setDesignHtmlAtom, { html: evt.html, css: evt.css ?? undefined })
           }
 
           if (evt.device === 'mobile' || evt.device === 'tablet' || evt.device === 'desktop') {

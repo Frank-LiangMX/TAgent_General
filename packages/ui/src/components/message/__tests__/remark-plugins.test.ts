@@ -19,7 +19,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children).toHaveLength(3)
     expect(paragraph.children[0]).toEqual({ type: 'text', value: 'Check ' })
     expect(paragraph.children[1]).toEqual({
@@ -46,7 +46,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children[1]).toEqual({
       type: 'link',
       url: 'mention://skill/code-review',
@@ -70,7 +70,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children[1]).toEqual({
       type: 'link',
       url: 'mention://mcp/my-server',
@@ -94,7 +94,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children[1]).toEqual({
       type: 'link',
       url: 'mention://session/abc123',
@@ -118,7 +118,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children).toHaveLength(1)
     expect(paragraph.children[0]).toEqual({ type: 'text', value: 'No mentions here' })
   })
@@ -141,7 +141,7 @@ describe('remarkMentions', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     // inlineCode should not be processed
     expect(paragraph.children[1]).toEqual({ type: 'inlineCode', value: '@file:test.ts' })
   })
@@ -164,7 +164,7 @@ describe('remarkPreserveBreaks', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children).toHaveLength(5) // text, break, text, break, text
     expect(paragraph.children[0]).toEqual({ type: 'text', value: 'Line 1' })
     expect(paragraph.children[1]).toEqual({ type: 'break' })
@@ -189,7 +189,7 @@ describe('remarkPreserveBreaks', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     expect(paragraph.children).toHaveLength(1)
     expect(paragraph.children[0]).toEqual({ type: 'text', value: 'No newlines' })
   })
@@ -211,7 +211,7 @@ describe('remarkPreserveBreaks', () => {
 
     plugin(tree)
 
-    const paragraph = tree.children[0]
+    const paragraph = tree.children[0]!
     // text should be processed into [text, break, text]
     expect(paragraph.children[0]).toEqual({ type: 'text', value: 'Before' })
     expect(paragraph.children[1]).toEqual({ type: 'break' })

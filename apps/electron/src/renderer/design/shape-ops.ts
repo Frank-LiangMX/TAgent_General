@@ -207,7 +207,7 @@ function executeReparentShape(doc: CanvasDocument, op: ReparentShapeOp): { doc: 
   let updated = doc
   // 从旧父节点移除
   if (shape.parentId && updated.shapes[shape.parentId]) {
-    const oldParent = updated.shapes[shape.parentId]
+    const oldParent = updated.shapes[shape.parentId]!
     updated = {
       ...updated,
       shapes: {
@@ -230,8 +230,8 @@ function executeReparentShape(doc: CanvasDocument, op: ReparentShapeOp): { doc: 
     ...updated,
     shapes: {
       ...updated.shapes,
-      [op.newParentId]: { ...updated.shapes[op.newParentId], children: newChildren },
-      [op.id]: { ...updated.shapes[op.id], parentId: op.newParentId },
+      [op.newParentId]: { ...updated.shapes[op.newParentId]!, children: newChildren },
+      [op.id]: { ...updated.shapes[op.id]!, parentId: op.newParentId },
     },
   }
   return { doc: updated }

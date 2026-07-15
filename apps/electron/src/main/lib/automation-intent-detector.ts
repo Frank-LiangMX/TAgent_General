@@ -194,7 +194,7 @@ function parseScheduleExpression(message: string): ParsedSchedule | null {
     // 解析时间点
     const timeOfDay = parseTimeOfDay(message)
     if (timeOfDay) {
-      const [h, m] = timeOfDay.split(':').map(Number)
+      const [h, m] = timeOfDay.split(':').map(Number) as [number, number]
       baseDate.setHours(h, m, 0, 0)
     } else {
       baseDate.setHours(9, 0, 0, 0) // 默认上午 9 点
@@ -204,7 +204,7 @@ function parseScheduleExpression(message: string): ParsedSchedule | null {
       scheduleType: 'once',
       scheduledAt: baseDate.getTime(),
       confidence: 'high',
-      rawExpression: relativeMatch[1],
+      rawExpression: relativeMatch[1]!,
     }
   }
 
@@ -239,8 +239,8 @@ function parseScheduleExpression(message: string): ParsedSchedule | null {
   // 2. 尝试匹配 HH:MM 时间格式
   const timeMatch = message.match(/(\d{1,2}):(\d{2})/)
   if (timeMatch) {
-    const hours = parseInt(timeMatch[1], 10)
-    const minutes = parseInt(timeMatch[2], 10)
+    const hours = parseInt(timeMatch[1]!, 10)
+    const minutes = parseInt(timeMatch[2]!, 10)
     if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
       // 根据上下文判断是 daily 还是 once
       const isRecurring =
@@ -262,8 +262,8 @@ function parseTimeOfDay(message: string): string | undefined {
   // 1. 匹配 HH:MM 格式
   const timeMatch = message.match(/(\d{1,2}):(\d{2})/)
   if (timeMatch) {
-    const hours = parseInt(timeMatch[1], 10)
-    const minutes = parseInt(timeMatch[2], 10)
+    const hours = parseInt(timeMatch[1]!, 10)
+    const minutes = parseInt(timeMatch[2]!, 10)
     if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
     }
@@ -279,7 +279,7 @@ function parseTimeOfDay(message: string): string | undefined {
   // 3. 匹配数字 + 点/点钟
   const hourMatch = message.match(/(\d{1,2})\s*点(?:钟)?/)
   if (hourMatch) {
-    const hours = parseInt(hourMatch[1], 10)
+    const hours = parseInt(hourMatch[1]!, 10)
     if (hours >= 0 && hours <= 23) {
       return `${hours.toString().padStart(2, '0')}:00`
     }

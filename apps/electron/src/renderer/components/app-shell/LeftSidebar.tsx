@@ -1792,6 +1792,7 @@ function SessionsRailContent({
   onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
   onRequestBatchDelete: () => void
   onConfirmBatchDelete: () => Promise<void>
+  onCreateProject: () => Promise<AgentWorkspace | null>
 }): React.ReactElement {
   const store = useStore()
 
@@ -1923,6 +1924,7 @@ function SessionsRailContent({
               onBatchUpdateSelected={onBatchUpdateSelected}
               onRequestBatchDelete={onRequestBatchDelete}
               onConfirmBatchDelete={onConfirmBatchDelete}
+              onCreateProject={onCreateProject}
             />
           ))
         )}
@@ -2478,6 +2480,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onBatchUpdateSelected,
   onRequestBatchDelete,
   onConfirmBatchDelete,
+  onCreateProject,
 }: {
   group: AgentProjectGroup
   currentWorkspaceId: string | null
@@ -2511,6 +2514,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
   onRequestBatchDelete: () => void
   onConfirmBatchDelete: () => Promise<void>
+  onCreateProject: () => Promise<AgentWorkspace | null>
 }): React.ReactElement {
   const isCurrent = group.workspace.id === currentWorkspaceId
   const [renaming, setRenaming] = React.useState(false)

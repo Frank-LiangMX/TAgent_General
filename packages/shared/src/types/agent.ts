@@ -796,6 +796,14 @@ export type TAgentEvent =
       startedAt: number
     }
   | { type: 'run_resumed'; sessionId: string }
+  | {
+      type: 'design_preview_update'
+      html?: string
+      css?: string
+      shapeOps?: unknown[]
+      name?: string
+      device?: string
+    }
 
 /** 外部入口触发 Agent 运行的来源 */
 export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'

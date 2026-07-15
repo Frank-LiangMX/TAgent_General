@@ -31,9 +31,9 @@ export function describeElement(el: CanvasElement): string {
 /** 选中多个元素 → 整段描述（用于 prompt 注入） */
 export function describeElements(elements: CanvasElement[]): string {
   if (elements.length === 0) return ''
-  if (elements.length === 1) return describeElement(elements[0])
+  if (elements.length === 1) return describeElement(elements[0]!)
   if (elements.length === 2) {
-    return `${describeElement(elements[0])}和${describeElement(elements[1])}`
+    return `${describeElement(elements[0]!)}和${describeElement(elements[1]!)}`
   }
   // 3 个及以上：列出前 2 个 + 其余数量
   const first = elements.slice(0, 2).map(describeElement).join('、')

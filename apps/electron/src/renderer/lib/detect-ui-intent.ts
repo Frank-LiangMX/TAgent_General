@@ -94,7 +94,7 @@ export function detectUIIntent(message: string): UIIntentResult {
       detected: true,
       confidence: 'high',
       matchedKeywords: highMatches,
-      label: highMatches[0],
+      label: highMatches[0]!,
     }
   }
 
@@ -111,8 +111,8 @@ export function detectUIIntent(message: string): UIIntentResult {
     return {
       detected: true,
       confidence: 'medium',
-      matchedKeywords: [mediumMatches[0], ...lowMatches.slice(0, 2)],
-      label: mediumMatches[0],
+      matchedKeywords: [mediumMatches[0]!, ...lowMatches.slice(0, 2)],
+      label: mediumMatches[0]!,
     }
   }
 

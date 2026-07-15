@@ -21,10 +21,11 @@ export function FilePathChip(props: FilePathChipProps) {
 
   const handleResolveFile = async (path: string, bases?: string[]): Promise<string | null> => {
     const sessionId = store.get(currentAgentSessionIdAtom)
-    return window.electronAPI.resolveFilePath(path, {
+    const result = await window.electronAPI.resolveFilePath(path, {
       sessionId: sessionId ?? undefined,
       candidateBasePaths: bases,
     })
+    return typeof result === 'string' ? result : result?.url ?? null
   }
 
   const handleOpenFile = (filePath: string, options?: { basePaths?: string[] }) => {
@@ -45,7 +46,7 @@ export function FilePathChip(props: FilePathChipProps) {
       onResolveFile={props.onResolveFile ?? handleResolveFile}
       onOpenFile={props.onOpenFile ?? handleOpenFile}
       getSessionId={props.getSessionId ?? handleGetSessionId}
-      FileIcon={props.FileIcon ?? FileTypeIcon}
+      FileIcon={props.FileIcon ?? (FileTypeIcon as React.ComponentType<{ name: string; isDirectory?: boolean; size?: number }>)}
     />
   )
 }
