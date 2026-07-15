@@ -1046,13 +1046,25 @@
   pointer-events: none;
 }
 
-/* frosted：关掉顶边「高光分隔」，避免假立体 */
+/* frosted：主题色微光渐变（与 panel-glass 同款），替代纯高光线 */
 [data-material='frosted'] .settings-card::after,
 :root:not([data-material]) .settings-card::after,
 .dark[data-material='frosted'] .settings-card::after,
 .dark:not([data-material]) .settings-card::after,
 [data-material='frosted'].dark .settings-card::after {
-  opacity: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: auto;
+  bottom: 0;
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.05) 0%,
+    transparent 28%,
+    transparent 72%,
+    hsl(var(--primary) / 0.03) 100%
+  );
 }
 
 /* ============================================================================

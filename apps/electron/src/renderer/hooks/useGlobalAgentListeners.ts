@@ -84,7 +84,14 @@ import {
   bumpContextUsageRefreshNonce,
   contextUsageRefreshNonceBySessionAtom,
 } from '@/atoms/context-usage-atoms'
-import { appModeAtom } from '@/atoms/app-mode'
+import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
+import {
+  setDesignHtmlAtom,
+  setDesignDeviceAtom,
+  toggleDesignEnabledAtom,
+} from '@/atoms/design-preview-atoms'
+import { applyShapeOpsAtom } from '@/design/agent-ops-bridge'
+import type { ShapeOp } from '@/design/shape-ops'
 import {
   notificationsEnabledAtom,
   notificationSoundEnabledAtom,
@@ -732,6 +739,39 @@ export function useGlobalAgentListeners(): void {
 
         if (payload.kind === 'tagent_event' && payload.event.type === 'external_run_started') {
           activateExternalAgentRun(payload.event)
+        }
+
+        // Design Preview 更新事件：Agent 调用 design_preview_update 工具后推送设计
+        // v3：支持 shapeOps（节点树）和 html（向后兼容）
+        if (
+          payload.kind === 'tagent_event' &&
+          payload.event.type === 'design_preview_update'
+        ) {
+          const evt = payload.event as {
+            html?: string
+            css?: string
+            shapeOps?: ShapeOp[]
+            name?: string
+            device?: string
+          }
+          store.set(toggleDesignEnabledAtom, true)
+          store.set(rightRailItemAtom, 'design')
+          store.set(agentSidePanelOpenAtom, true)
+
+          if (evt.shapeOps && Array.isArray(evt.shapeOps) && evt.shapeOps.length > 0) {
+            // v3：节点树模式 - agent 输出 shape ops
+            store.set(applyShapeOpsAtom, { ops: evt.shapeOps, trigger: evt.name ?? '设计更新' })
+          } else if (evt.html) {
+            // v2 向后兼容：agent 输出 HTML
+            store.set(setDesignHtmlAtom, { html: evt.html, css: evt.css ?? null })
+          }
+
+          if (evt.device === 'mobile' || evt.device === 'tablet' || evt.device === 'desktop') {
+            store.set(setDesignDeviceAtom, evt.device)
+          }
+          console.log(
+            `[Design Preview] Agent 推送更新: "${evt.name ?? '未命名'}" (${evt.device ?? 'desktop'})`
+          )
         }
 
         // 如果收到未知会话的事件（跨工作区场景），立即刷新会话列表

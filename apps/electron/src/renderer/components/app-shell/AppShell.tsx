@@ -1,9 +1,9 @@
 /**
  * AppShell - 应用主布局容器
  *
- * 右侧浮岛动画原则（避免底板弹到窗口边界）：
- * - 右栏列宽跟 panelColumnShown 同步；底板右边界保持稳定，不跟右栏卸载跳变
- * - 视觉动画在浮岛自身边界内完成，不让元素越过底板圆角边界
+ * Design Preview 两种扩展布局（覆盖层 + 轻量进退场动画）：
+ * - 放大模式（fullscreen）：覆盖主内容区，仍露出左侧导航浮岛
+ * - 沉浸全屏（immersive）：盖住整个壳层，只留会话 + 画布
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -23,7 +23,12 @@ import {
 import { appModeAtom, topLevelModeAtom, activeRailItemAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
-import { designFullscreenAtom, designEnabledAtom } from '@/atoms/design-preview-atoms'
+import {
+  designFullscreenAtom,
+  designEnabledAtom,
+  designImmersiveAtom,
+} from '@/atoms/design-preview-atoms'
+import { DesignImmersiveLayout } from '@/components/design-preview/DesignImmersiveLayout'
 import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
@@ -42,13 +47,38 @@ import { cn } from '@/lib/utils'
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
+/** 覆盖层退场动画时长，需与 CSS transition 对齐 */
+const DESIGN_MODE_EXIT_MS = 260
 
 function clampRightPanelWidth(width: number): number {
   return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, width))
 }
 
+/** 延迟卸载：先播退场动画再 unmount */
+function useDelayedMount(active: boolean, exitMs = DESIGN_MODE_EXIT_MS): {
+  mounted: boolean
+  open: boolean
+} {
+  const [mounted, setMounted] = React.useState(active)
+  const [open, setOpen] = React.useState(active)
+
+  React.useEffect(() => {
+    if (active) {
+      setMounted(true)
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setOpen(true))
+      })
+      return () => cancelAnimationFrame(id)
+    }
+    setOpen(false)
+    const t = window.setTimeout(() => setMounted(false), exitMs)
+    return () => window.clearTimeout(t)
+  }, [active, exitMs])
+
+  return { mounted, open }
+}
+
 export interface AppShellProps {
-  /** Context 值，用于传递给子组件 */
   contextValue: AppShellContextType
 }
 
@@ -58,16 +88,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
-  const rightRailItem = useAtomValue(rightRailItemAtom) // 右侧边栏当前功能项
+  const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
+  const designImmersive = useAtomValue(designImmersiveAtom)
   const setDesignFullscreen = useSetAtom(designFullscreenAtom)
-  // RightRail 跟随主面板激活的 tab 类型，而非左侧 railItem。
-  // 这样用户切左侧 rail 看会话/草稿列表时，主面板 tab 不被强制切走，
-  // RightRail 也不会在「draft tab + sessions rail」组合下错位显示。
-  // 仅在 sessions rail（会话列表）下显示，看板/自动任务/记忆/skills 等面板不显示
+  const setDesignImmersive = useSetAtom(designImmersiveAtom)
+
   const showRightPanel =
     appMode === 'agent' &&
     activeTab?.type === 'agent' &&
@@ -90,7 +119,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
-
   const [rightPanelWidth, setRightPanelWidth] = useAtom(agentSidePanelWidthAtom)
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
@@ -99,10 +127,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     ? clampedRightPanelWidth + RIGHT_PANEL_RAIL_WIDTH
     : RIGHT_PANEL_RAIL_WIDTH
 
-  /**
-   * 底板向右延伸量，镜像左侧 navIslandWidth + SHELL_EDGE_PADDING。
-   * rail 始终叠在底板上；面板展开/收起只改变 inset 中的面板段，避免 rail 与主区出现背景隔断。
-   */
   const contentBaseInsetRight =
     showRightPanel && isPanelOpen ? rightIslandWidth + SHELL_EDGE_PADDING : 0
 
@@ -126,8 +150,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         rafId = requestAnimationFrame(() => {
           rafId = 0
           const delta = startX - ev.clientX
-          const newWidth = clampRightPanelWidth(startWidth + delta)
-          setRightPanelWidth(newWidth)
+          setRightPanelWidth(clampRightPanelWidth(startWidth + delta))
         })
       }
 
@@ -143,6 +166,26 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     },
     [clampedRightPanelWidth, setRightPanelWidth]
   )
+
+  const wantMagnify =
+    designFullscreen && designEnabled && rightRailItem === 'design' && isPanelOpen && !designImmersive
+  const wantImmersive = designImmersive && designEnabled
+
+  const magnify = useDelayedMount(wantMagnify)
+  const immersive = useDelayedMount(wantImmersive)
+
+  // Esc 退出沉浸全屏
+  React.useEffect(() => {
+    if (!wantImmersive) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      setDesignImmersive(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [wantImmersive, setDesignImmersive])
 
   return (
     <AppShellProvider value={contextValue}>
@@ -161,13 +204,14 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
           <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth} railWidth={navRailWidth}>
             <FunctionalRail />
-            {showLeftSidebar && <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />}
+            {showLeftSidebar && (
+              <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
+            )}
           </NavIsland>
         </div>
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
-        {/* 右侧 rail 存在时由浮岛承担窗口右缘，隐藏全局 rim 避免与底板右缘叠出竖线 */}
         {(!showRightPanel || !isPanelOpen) && <div className="app-content-boundary-rim" aria-hidden />}
 
         <div
@@ -187,13 +231,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               ['--content-base-inset-right' as string]: `${contentBaseInsetRight}px`,
               ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
-              ['--content-chrome-bleed-right' as string]: showRightPanel && isPanelOpen
-                ? `${SHELL_EDGE_PADDING}px`
-                : '0px',
+              ['--content-chrome-bleed-right' as string]:
+                showRightPanel && isPanelOpen ? `${SHELL_EDGE_PADDING}px` : '0px',
+              // 仅 right rail 时：会话前景区右侧让出 rail 宽度，避免内容钻到 rail 下方
+              // 须与 globals.css 的 --content-foreground-safe-right 对齐
               ['--content-foreground-safe-right' as string]:
-                showRightPanel && !isPanelOpen
-                  ? `${RIGHT_PANEL_RAIL_WIDTH}px`
-                  : '0px',
+                showRightPanel && !isPanelOpen ? `${RIGHT_PANEL_RAIL_WIDTH}px` : '0px',
             }}
           >
             <div className="content-base-plate content-base-plate--body" aria-hidden />
@@ -219,46 +262,49 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </div>
         </div>
 
-        {/* 全屏设计画布模式：画布占主区域，会话缩到左侧 */}
-        {(designFullscreen && designEnabled && rightRailItem === 'design' && isPanelOpen) && (
+        {/* 放大模式覆盖层 */}
+        {magnify.mounted && (
           <div
-            className="absolute inset-y-0 right-0 z-[90] overflow-hidden bg-background"
+            className="design-mode-overlay design-mode-overlay--magnify"
+            data-open={magnify.open ? 'true' : 'false'}
             style={{ left: `${contentBaseInsetLeft + 8}px` }}
+            aria-hidden={!magnify.open}
           >
-            <div className="flex h-full w-full">
-              {/* 会话面板（左）- 全屏时左侧保持会话可交互 */}
-              <div className="flex h-full w-[32%] min-w-[320px] max-w-[440px] flex-col border-r border-border/40 bg-background shrink-0">
-                <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex min-h-0 flex-1">
+              <div className="design-theater-chat flex h-full shrink-0 flex-col border-r border-border/40 bg-background">
+                <div className="design-theater-chat-inner min-h-0 flex-1">
                   <MainArea />
                 </div>
-                <div className="flex items-center justify-between border-t border-border/30 px-3 py-1.5 text-xs text-muted-foreground shrink-0">
-                  <span className="text-primary font-medium">Design Preview</span>
+                <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-3 py-1.5 text-xs text-muted-foreground">
+                  <span className="font-medium text-primary">放大模式</span>
                   <button
                     type="button"
                     onClick={() => setDesignFullscreen(false)}
                     className="text-primary hover:underline"
                   >
-                    退出全屏
+                    退出放大
                   </button>
                 </div>
               </div>
-              {/* 画布（右侧） */}
-              <div className="flex-1 overflow-hidden min-w-0">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <DesignPreviewPanel />
               </div>
             </div>
           </div>
         )}
 
+        {/* 沉浸全屏覆盖层（盖住整个壳层；操作在 Dock） */}
+        {immersive.mounted && <DesignImmersiveLayout open={immersive.open} />}
+
         {showRightPanel && (
           <div
             className={cn(
               isPanelOpen
                 ? 'relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0'
-                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch p-2 pl-0'
+                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch p-2 pl-0',
+              wantImmersive && 'pointer-events-none opacity-0'
             )}
           >
-            {/* 拖拽调整宽度的接缝（仅在面板展开时可见） */}
             {isPanelOpen && (
               <div
                 className="absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
@@ -266,8 +312,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               />
             )}
 
-            {/* 右侧浮岛：会话面板 + rail 并列（镜像左侧 NavIsland 的 rail + sidebar）
-                width 跟随 isPanelOpen 过渡：展开 = 面板宽 + rail；折叠 = 仅 rail */}
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
@@ -282,14 +326,12 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                 ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}
             >
-              {/* 会话面板内容（flex-1 占满 rail 左侧空间，仅展开时渲染） */}
               {isPanelOpen && (
-                <div className="nav-island-sidebar nav-island-body relative z-[1] h-full flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="nav-island-sidebar nav-island-body relative z-[1] flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                   <RightSidePanel width={clampedRightPanelWidth} />
                 </div>
               )}
 
-              {/* rail：和会话面板并列在 flex 流里（镜像左侧 FunctionalRail） */}
               <RightPanelRail panelOpen={isPanelOpen} />
             </div>
           </div>

@@ -35,7 +35,7 @@ const INNER_SCRIPT_JS = `
 (function () {
   if (window.__tagent_design_v2__) return;
   window.__tagent_design_v2__ = { ready: false };
-  var currentMode = 'select'; // 'select' | 'interact' | 'pan'
+  var currentMode = 'interact'; // 'select' | 'interact' | 'pan'
 
   var SKIP_TAGS = {
     SCRIPT: 1, STYLE: 1, META: 1, LINK: 1, BR: 1, HR: 1, NOSCRIPT: 1,
@@ -83,6 +83,35 @@ const INNER_SCRIPT_JS = `
     return { role: role, text: text };
   }
 
+  function buildSelector(el) {
+    var parts = [];
+    var cur = el;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      var tag = cur.tagName.toLowerCase();
+      if (cur.id) {
+        parts.unshift('#' + cur.id);
+        break;
+      }
+      var cls = '';
+      if (cur.className && typeof cur.className === 'string') {
+        cls = cur.className.trim().split(/\s+/).slice(0, 2).join('.');
+        if (cls) cls = '.' + cls;
+      }
+      // 同级索引
+      var parent = cur.parentElement;
+      var index = 1;
+      if (parent) {
+        var siblings = parent.querySelectorAll(':scope > ' + tag);
+        for (var si = 0; si < siblings.length; si++) {
+          if (siblings[si] === cur) { index = si + 1; break; }
+        }
+      }
+      parts.unshift(tag + cls + ':nth-child(' + index + ')');
+      cur = cur.parentElement;
+    }
+    return parts.join(' > ');
+  }
+
   function walk(root, parentId, out) {
     if (shouldSkip(root)) return;
     var id = nextId();
@@ -105,6 +134,8 @@ const INNER_SCRIPT_JS = `
       tag: root.tagName.toUpperCase(),
       text: info.text,
       role: info.role,
+      className: (root.className && typeof root.className === 'string') ? root.className.trim().split(/\s+/).slice(0, 5).join(' ') : '',
+      selector: buildSelector(root),
       parentId: parentId,
       childIds: childIds,
       bounds: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
@@ -133,21 +164,77 @@ const INNER_SCRIPT_JS = `
     return null;
   }
 
-  document.addEventListener('click', function (e) {
-    if (currentMode !== 'select') return; // 非选择模式：不捕获点击，让控件正常工作
+  // 中键：任意模式都通知父窗口平移（iframe 会吞掉事件，必须从内部转发 move/end）
+  var middlePanning = false;
+  document.addEventListener('mousedown', function (e) {
+    if (e.button !== 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    middlePanning = true;
+    parent.postMessage({ type: 'pan:start', screenX: e.screenX, screenY: e.screenY }, '*');
+  }, true);
+
+  document.addEventListener('mousemove', function (e) {
+    if (!middlePanning) return;
+    parent.postMessage({ type: 'pan:move', screenX: e.screenX, screenY: e.screenY }, '*');
+  }, true);
+
+  function endMiddlePan() {
+    if (!middlePanning) return;
+    middlePanning = false;
+    parent.postMessage({ type: 'pan:end' }, '*');
+  }
+  document.addEventListener('mouseup', endMiddlePan, true);
+  window.addEventListener('blur', endMiddlePan);
+
+  // 阻止中键默认自动滚动
+  document.addEventListener('auxclick', function (e) {
+    if (e.button === 1) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  // 选择模式：在 mousedown 阶段完成选中（不依赖 click）。
+  // 原因：部分控件/浏览器路径会吞掉 click；选中应在按下时就固定住。
+  // 不 preventDefault mousedown（避免干扰），用 stopPropagation + focusin blur 阻止原生交互。
+  document.addEventListener('mousedown', function (e) {
+    if (currentMode !== 'select') return;
+    if (e.button !== 0) return; // 只处理左键
+    e.stopPropagation();
     var el = findElId(e.target);
-    if (!el) return;
+    if (!el) {
+      parent.postMessage({ type: 'element:clicked', id: null, bounds: null, additive: false }, '*');
+      return;
+    }
     var id = el.getAttribute('data-design-id');
     var rect = el.getBoundingClientRect();
-    // 选择模式：停止事件传播，让控件不响应（输入框不聚焦、按钮不触发、链接不跳转）
-    e.stopPropagation();
-    e.preventDefault();
     parent.postMessage({
       type: 'element:clicked',
       id: id,
       bounds: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
       additive: !!(e.metaKey || e.ctrlKey || e.shiftKey),
     }, '*');
+  }, true);
+
+  // 选择模式：拦截 focusin，防止输入框获得焦点
+  document.addEventListener('focusin', function (e) {
+    if (currentMode !== 'select') return;
+    e.target.blur();
+  }, true);
+
+  // 选择模式：拦截键盘事件，防止在已聚焦的输入框中输入
+  document.addEventListener('keydown', function (e) {
+    if (currentMode !== 'select') return;
+    if (e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+  }, true);
+
+  // 选择模式：拦截 click，阻止链接跳转 / 按钮默认行为（选中已在 mousedown 完成）
+  document.addEventListener('click', function (e) {
+    if (currentMode !== 'select') return;
+    e.stopPropagation();
+    e.preventDefault();
   }, true);
 
   // hover 节流：mouseover 在画布内可能 1s 触发数百次；
@@ -169,6 +256,7 @@ const INNER_SCRIPT_JS = `
   }, true);
 
   // 选择模式时光标覆盖：强制所有元素显示指针光标（避免输入框 I 型光标干扰选中）
+  // 平移模式：抓手光标
   var cursorStyleId = '__tagent_cursor_override__';
   function updateCursorForMode(mode) {
     var el = document.getElementById(cursorStyleId);
@@ -179,6 +267,13 @@ const INNER_SCRIPT_JS = `
         document.head.appendChild(el);
       }
       el.textContent = '*, *::before, *::after { cursor: pointer !important; }';
+    } else if (mode === 'pan') {
+      if (!el) {
+        el = document.createElement('style');
+        el.id = cursorStyleId;
+        document.head.appendChild(el);
+      }
+      el.textContent = '*, *::before, *::after { cursor: grab !important; }';
     } else {
       if (el) el.textContent = '';
     }
@@ -242,9 +337,13 @@ export function buildFrameInjectionScript(): string {
 
 export interface FrameBridgeHandlers {
   onLayers: (layers: CanvasElement[]) => void
-  onElementClicked: (id: string, bounds: CanvasElement['bounds'], additive: boolean) => void
+  onElementClicked: (id: string | null, bounds: CanvasElement['bounds'] | null, additive: boolean) => void
   onElementHovered: (id: string | null) => void
   onReady?: () => void
+  /** iframe 内中键按下，发起画布平移 */
+  onPanStart?: (screenX: number, screenY: number) => void
+  onPanMove?: (screenX: number, screenY: number) => void
+  onPanEnd?: () => void
 }
 
 /**
@@ -299,6 +398,15 @@ export class FrameBridgeClient {
         break
       case 'iframe:ready':
         this.handlers?.onReady?.()
+        break
+      case 'pan:start':
+        this.handlers?.onPanStart?.(data.screenX, data.screenY)
+        break
+      case 'pan:move':
+        this.handlers?.onPanMove?.(data.screenX, data.screenY)
+        break
+      case 'pan:end':
+        this.handlers?.onPanEnd?.()
         break
     }
   }

@@ -84,6 +84,7 @@ import { environmentCheckDialogOpenAtom } from '@/atoms/environment'
 import { feedbackDialogAtom } from '@/atoms/feedback'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import { ErrorMessageLogo } from '@/components/ai-elements/message-avatar'
+import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
 import {
   Message,
   MessageHeader,
@@ -1147,7 +1148,8 @@ function QuoteChip({ quote }: { quote: QuotedFileRef }): React.ReactElement {
 function UserInputMessage({ message }: { message: SDKUserMessage }): React.ReactElement {
   const setCurrentDraft = useSetAtom(currentAgentSessionDraftAtom)
   const rawText = extractUserText(message) ?? ''
-  const { files: attachedFiles, quotes, text } = parseAttachedFiles(rawText)
+  const { displayText: cleanedRaw, hadDesignContext } = stripDesignContextFromUserMessage(rawText)
+  const { files: attachedFiles, quotes, text } = parseAttachedFiles(cleanedRaw)
   const imageFiles = attachedFiles.filter((f) => isImageFile(f.filename))
   const nonImageFiles = attachedFiles.filter((f) => !isImageFile(f.filename))
   const meta = extractMeta(message as unknown as SDKMessage)
@@ -1187,6 +1189,9 @@ function UserInputMessage({ message }: { message: SDKUserMessage }): React.React
             </div>
           )}
           {text && <UserMessageContent>{text}</UserMessageContent>}
+          {hadDesignContext && (
+            <div className="mt-1 text-right text-[10px] text-muted-foreground/60">含画布上下文</div>
+          )}
         </MessageContent>
         {(meta.createdAt || text) && (
           <div className="agent-user-toolbar" aria-label="消息操作">
@@ -1542,8 +1547,9 @@ export function getGroupId(group: MessageGroup): string {
  */
 export function getGroupPreview(group: MessageGroup): string {
   if (group.type === 'user') {
-    return (extractUserText(group.message) ?? '')
-      .replace(/<attached_files>[\s\S]*?<\/attached_files>\n*/, '')
+    const raw = extractUserText(group.message) ?? ''
+    return stripDesignContextFromUserMessage(raw)
+      .displayText.replace(/<attached_files>[\s\S]*?<\/attached_files>\n*/, '')
       .replace(/<quoted_file[^>]*>[\s\S]*?<\/quoted_file>\n*/g, '')
       .slice(0, 200)
   }

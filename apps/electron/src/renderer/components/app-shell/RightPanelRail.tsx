@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageCircle, Globe2, type LucideIcon } from 'lucide-react'
+import { FolderOpen, MessageCircle, Globe2, Palette, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -37,6 +37,7 @@ interface RightPanelRailProps {
 const RAIL_ICON: LucideIcon = FolderOpen
 const BTW_ICON: LucideIcon = MessageCircle
 const BROWSER_ICON: LucideIcon = Globe2
+const DESIGN_ICON: LucideIcon = Palette
 
 export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
@@ -61,6 +62,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const isFilesActive = panelOpen && rightRailItem === 'files'
   const isBtwActive = panelOpen && rightRailItem === 'btw'
   const isBrowserActive = panelOpen && rightRailItem === 'browser'
+  const isDesignActive = panelOpen && rightRailItem === 'design'
 
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
@@ -105,6 +107,17 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
     } else {
       // 其他情况 → 切换到浏览器面板并打开
       setRightRailItem('browser')
+      setPanelOpen(true)
+    }
+  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
+
+  const handleDesignClick = React.useCallback(() => {
+    if (panelOpen && rightRailItem === 'design') {
+      // Design 面板已打开且当前是 Design → 折叠
+      setPanelOpen(false)
+    } else {
+      // 其他情况 → 切换到 Design 面板并打开
+      setRightRailItem('design')
       setPanelOpen(true)
     }
   }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
@@ -193,6 +206,30 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
               <div className="text-xs">
                 <div className="font-medium">预览</div>
                 <div className="text-muted-foreground">预览 WPS 文档或网页</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Design Preview 按钮 */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleDesignClick}
+                aria-pressed={isDesignActive}
+                aria-label="Design Preview"
+                className={cn(
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  isDesignActive && 'rail-island-btn--active'
+                )}
+              >
+                <DESIGN_ICON size={14} strokeWidth={1.75} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <div className="text-xs">
+                <div className="font-medium">Design Preview</div>
+                <div className="text-muted-foreground">AI 生成 UI 原型的即时预览</div>
               </div>
             </TooltipContent>
           </Tooltip>

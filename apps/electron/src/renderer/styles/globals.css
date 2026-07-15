@@ -6171,11 +6171,24 @@ html:not(.dark) .rail-island-btn--active {
   z-index: 0;
   pointer-events: none;
   border-radius: 10px;
+  border: 1px solid hsl(var(--primary) / 0.28);
+  background: hsl(var(--md-primary-container));
+  box-shadow: 0 2px 8px -6px hsl(var(--primary) / 0.34);
   will-change: transform, width, height;
   transition:
     transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
     width 260ms cubic-bezier(0.16, 1, 0.3, 1),
     height 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-material='glass'] .agent-model-list-selection {
+  border-color: hsl(var(--glass-rim) / 0.72);
+  background:
+    linear-gradient(145deg, hsl(var(--glass-shine) / 0.26), transparent 72%),
+    hsl(var(--primary) / 0.16);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine) / 0.42),
+    0 4px 12px -8px hsl(var(--primary) / 0.42);
 }
 
 html.theme-neumorph-light .agent-model-list-selection--neumorph,
@@ -6533,8 +6546,39 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
 
 .settings-glass::before,
 .settings-glass::after {
-  content: none;
-  display: none;
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 主题色微光渐变 — 与 nav-island-glass / panel-glass 同款 */
+.settings-glass::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.06) 0%,
+    transparent 30%,
+    transparent 70%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+}
+
+/* 顶部高光边描 — 与 panel-glass 同款 */
+.settings-glass::after {
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .settings-glass > * {
@@ -6637,12 +6681,6 @@ html.material-frosted .settings-card {
   background: var(--md-surface-container-low, hsl(var(--card)));
   border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 38%, transparent);
   box-shadow: none;
-}
-
-:root:not([data-material]) .settings-card::after,
-[data-material='frosted'] .settings-card::after,
-html.material-frosted .settings-card::after {
-  opacity: 0;
 }
 
 :root:not([data-material]) .settings-search-shell,
@@ -7164,4 +7202,137 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 
 .dark .session-list-item-active--completed .session-row-title {
   color: hsl(142, 65%, 65%) !important;
+}
+
+/* ==================== Design Preview 放大 / 沉浸全屏 ==================== */
+
+.design-mode-overlay {
+  position: absolute;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: hsl(var(--background));
+  opacity: 0;
+  transform: translateY(6px) scale(0.992);
+  pointer-events: none;
+  transition:
+    opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.design-mode-overlay[data-open='true'] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.design-mode-overlay--magnify {
+  inset-block: 0;
+  right: 0;
+}
+
+.design-mode-overlay--immersive {
+  inset: 0;
+  z-index: 96;
+}
+
+/* 会话列：给输入框足够横向空间，避免被 overflow / bleed 裁切 */
+.design-theater-chat {
+  --content-chrome-bleed-left: 0px;
+  --content-chrome-bleed-right: 0px;
+  width: clamp(480px, 48%, 720px);
+  min-width: 480px;
+  max-width: min(720px, 55vw);
+  overflow: hidden;
+  transition:
+    width 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    min-width 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease,
+    border-color 180ms ease;
+}
+
+.design-mode-overlay--magnify .design-theater-chat {
+  width: clamp(460px, 44%, 680px);
+  min-width: 460px;
+  max-width: min(680px, 50vw);
+}
+
+/* 沉浸全屏：会话列视觉变窄，内容等比 scale 缩小（绝对定位铺满，避免底部留白 / 圆环被裁） */
+.design-mode-overlay--immersive .design-theater-chat {
+  --design-theater-chat-scale: 0.88;
+  /* 视觉占位宽度（缩小后的列宽） */
+  width: clamp(340px, 32%, 420px);
+  min-width: 320px;
+  max-width: min(420px, 36vw);
+  position: relative;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+.design-mode-overlay--immersive .design-theater-chat-inner {
+  /* 先按未缩放尺寸排版（≈ 视觉宽 / scale，足够放下 Context 圆环），再整体缩小铺满列 */
+  position: absolute;
+  inset: 0 auto auto 0;
+  min-width: 0 !important;
+  width: calc(100% / var(--design-theater-chat-scale));
+  height: calc(100% / var(--design-theater-chat-scale));
+  transform: scale(var(--design-theater-chat-scale));
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+.design-theater-chat--hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  opacity: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.design-theater-chat-inner {
+  height: 100%;
+  min-width: 460px;
+  overflow: hidden;
+}
+
+.design-theater-chat--hidden .design-theater-chat-inner {
+  visibility: hidden;
+}
+
+/* 剧院会话内：取消主区圆角裁切，输入 dock 用固定内边距 */
+.design-theater-chat .content-main-body {
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.design-theater-chat .content-glass {
+  overflow: hidden;
+}
+
+.design-theater-chat .session-input-dock.content-shell-chrome-bleed {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
+}
+
+/* Token / Context 底栏：左右留白，避免圆环贴边被 overflow 裁切 */
+.design-theater-chat .token-stats-bar.content-shell-chrome-bleed {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
+}
+
+.design-theater-chat .session-bottom-stack {
+  padding-left: 0;
+  padding-right: 0;
 }

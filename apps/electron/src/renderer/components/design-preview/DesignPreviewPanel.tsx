@@ -2,14 +2,14 @@
  * DesignPreviewPanel — 右侧 Design Preview 面板
  *
  * 作为 rightRail 的 Design 入口，展示 DesignCanvas 主组件。
- * 与现有 SidePanel / BtwPanel 风格一致。
- *
- * 设计来源：docs/plans/2026-07-13-design-preview-design.md §5.1
+ * 沉浸全屏时隐藏面板标题栏，把空间留给画布。
  */
 
+import { useAtomValue } from 'jotai'
 import { Eye } from 'lucide-react'
 import * as React from 'react'
 
+import { designImmersiveAtom } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
 
 import { DesignCanvas } from './DesignCanvas'
@@ -40,12 +40,14 @@ export function DesignPreviewPanel({
   width,
   className,
 }: DesignPreviewPanelProps): React.ReactElement {
+  const immersive = useAtomValue(designImmersiveAtom)
+
   return (
     <div
       className={cn('flex h-full flex-col bg-background', className)}
       style={width ? { width } : undefined}
     >
-      <DesignPanelHeader />
+      {!immersive && <DesignPanelHeader />}
       <div className="flex-1 overflow-hidden">
         <DesignCanvas />
       </div>

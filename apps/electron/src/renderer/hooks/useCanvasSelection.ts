@@ -30,6 +30,13 @@ export interface UseCanvasSelectionResult {
   onIframeReloaded: () => void
 }
 
+export interface UseCanvasSelectionOptions {
+  /** iframe 内中键平移（screen 坐标） */
+  onPanStart?: (screenX: number, screenY: number) => void
+  onPanMove?: (screenX: number, screenY: number) => void
+  onPanEnd?: () => void
+}
+
 /**
  * 父组件用法：
  *   const { attachToIframe } = useCanvasSelection()
@@ -37,11 +44,20 @@ export interface UseCanvasSelectionResult {
  *
  * 设计上 bridge 自身单例；handlers 在 hook 内稳定绑定，组件不需关心。
  */
-export function useCanvasSelection(): UseCanvasSelectionResult {
+export function useCanvasSelection(
+  options?: UseCanvasSelectionOptions,
+): UseCanvasSelectionResult {
   const setLayers = useSetAtom(canvasLayersAtom)
   const setHovered = useSetAtom(hoveredElementIdAtom)
   const setSelected = useSetAtom(selectedElementIdsAtom)
   const selectedIds = useAtomValue(selectedElementIdsAtom)
+
+  const onPanStartRef = React.useRef(options?.onPanStart)
+  onPanStartRef.current = options?.onPanStart
+  const onPanMoveRef = React.useRef(options?.onPanMove)
+  onPanMoveRef.current = options?.onPanMove
+  const onPanEndRef = React.useRef(options?.onPanEnd)
+  onPanEndRef.current = options?.onPanEnd
 
   // 单例 client：每次 render 不重建
   const bridgeRef = React.useRef<FrameBridgeClient | null>(null)
@@ -49,31 +65,57 @@ export function useCanvasSelection(): UseCanvasSelectionResult {
     bridgeRef.current = new FrameBridgeClient()
   }
 
-  // 监听 tool 模式变化 → 同步到 iframe
+  // 监听 tool 模式变化 → 同步到 iframe；离开选择模式时销毁选中/hover 高亮框
   const activeTool = useAtomValue(designActiveToolAtom)
   React.useEffect(() => {
     bridgeRef.current?.setMode(activeTool)
-  }, [activeTool])
+    if (activeTool !== 'select') {
+      setSelected([])
+      setHovered(null)
+      bridgeRef.current?.clearHighlight()
+    }
+  }, [activeTool, setSelected, setHovered])
 
   // stable handlers：每次 render 复用同一函数引用（闭包捕获 setXxx 函数引用稳定）
   const handlersRef = React.useRef({
     onLayers: (layers: CanvasElement[]) => setLayers(layers),
-    onElementClicked: (id: string, _bounds: CanvasElement['bounds'], additive: boolean) => {
-      setSelected((prev) => {
+    onElementClicked: (id: string | null, _bounds: CanvasElement['bounds'] | null, additive: boolean) => {
+      if (id === null) {
+        // 点击空白区域：取消所有选中
+        setSelected([])
+        return
+      }
+      setSelected((prev: string[]) => {
         if (additive) {
-          return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+          return prev.includes(id) ? prev.filter((x: string) => x !== id) : [...prev, id]
         }
-        // 非 add：单选切换；已选中的再次点击 → 清空
-        return prev.includes(id) && prev.length === 1 ? [] : [id]
+        // 非 add：点击元素直接选中（不 toggle），已选中的同一个元素保持选中
+        return prev.includes(id) ? prev : [id]
       })
     },
     onElementHovered: (id: string | null) => setHovered(id),
+    onPanStart: (screenX: number, screenY: number) => {
+      onPanStartRef.current?.(screenX, screenY)
+    },
+    onPanMove: (screenX: number, screenY: number) => {
+      onPanMoveRef.current?.(screenX, screenY)
+    },
+    onPanEnd: () => {
+      onPanEndRef.current?.()
+    },
   })
+
+  // 用 ref 避免 useEffect 的闭包陈旧问题
+  const activeToolRef = React.useRef(activeTool)
+  activeToolRef.current = activeTool
 
   const attachToIframe = React.useCallback((iframe: HTMLIFrameElement) => {
     const client = bridgeRef.current
     if (!client) return
     client.attach(iframe, handlersRef.current)
+    // attach 完成后立即把当前 mode 同步过去
+    const tool = activeToolRef.current
+    if (tool) client.setMode(tool)
   }, [])
 
   /** iframe contentWindow 重写后（srcDoc reload）必须调一次，否则 message 收不到 */

@@ -40,7 +40,7 @@ hooks/
 ├── useCanvasSelection.ts     v2：bridge 生命周期 + 选中态
 ├── useVersionSnapshot.ts     v2：自动建快照 + 切换 viewing / promote 基线
 ├── useDesignContext.ts       v1：拼 <design-context> 文本
-├── useDesignContextAugment.ts v1：把 context 追加到 userMessage
+├── useDesignContextAugment.ts 发送时追加精简 design-context（仅 wire；气泡显示原文）
 └── useSelectionScreenshot.ts 截图工具
 
 atoms/

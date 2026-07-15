@@ -66,6 +66,7 @@ import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { resolveModelDisplayName } from '@/lib/model-logo'
+import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
 import { cn } from '@/lib/utils'
 
 function stableStringify(value: unknown): string {
@@ -783,7 +784,8 @@ function AgentMessagesImpl({
       .filter((g): g is MessageGroup & { type: 'user' } => g.type === 'user')
       .map((g) => {
         const rawText = extractUserText(g.message) ?? ''
-        const { files, text } = sdkParseAttachedFiles(rawText)
+        const cleaned = stripDesignContextFromUserMessage(rawText).displayText
+        const { files, text } = sdkParseAttachedFiles(cleaned)
         return {
           id: getGroupId(g),
           text,

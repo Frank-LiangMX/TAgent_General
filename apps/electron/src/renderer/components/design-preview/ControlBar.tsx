@@ -21,7 +21,6 @@ import {
 import * as React from 'react'
 
 import {
-  type DeviceType,
   clearDesignCanvasAtom,
   designDeviceAtom,
   designZoomAtom,
@@ -30,6 +29,12 @@ import {
   setDesignZoomAtom,
 } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@tagent/ui'
 
 /** 缩放档位 */
 const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
@@ -39,6 +44,23 @@ export interface ControlBarProps {
   hasContent: boolean
   /** 自定义类名 */
   className?: string
+}
+
+function BarTooltip({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactElement
+}): React.ReactElement {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function ControlBar({ hasContent, className }: ControlBarProps): React.ReactElement {
@@ -59,7 +81,6 @@ export function ControlBar({ hasContent, className }: ControlBarProps): React.Re
     if (currentIndex < ZOOM_LEVELS.length - 1 && currentIndex >= 0) {
       setZoom(ZOOM_LEVELS[currentIndex + 1]!)
     } else if (currentIndex === -1) {
-      // 当前 zoom 不在档位列表中，找到下一个
       const next = ZOOM_LEVELS.find((z) => z > zoom)
       if (next) setZoom(next)
     }
@@ -74,72 +95,84 @@ export function ControlBar({ hasContent, className }: ControlBarProps): React.Re
   }, [setZoom])
 
   return (
-    <div
-      className={cn(
-        'flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/40 bg-background/60 px-2.5 py-1.5 backdrop-blur',
-        className
-      )}
-    >
-      {/* 缩放控制（紧凑） */}
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          disabled={zoom <= ZOOM_LEVELS[0]}
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-          title="缩小"
-        >
-          <Minus className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={handleZoomReset}
-          className="min-w-[2.5rem] rounded px-1 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="重置缩放"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]!}
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-          title="放大"
-        >
-          <Plus className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={handleFit}
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="适应屏幕"
-        >
-          <Maximize2 className="size-3" />
-        </button>
-      </div>
+    <TooltipProvider delayDuration={300}>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/40 bg-background/60 px-2.5 py-1.5 backdrop-blur',
+          className,
+        )}
+      >
+        <div className="flex items-center gap-0.5">
+          <BarTooltip label="缩小">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              disabled={zoom <= ZOOM_LEVELS[0]!}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              aria-label="缩小"
+            >
+              <Minus className="size-3" />
+            </button>
+          </BarTooltip>
+          <BarTooltip label="重置缩放">
+            <button
+              type="button"
+              onClick={handleZoomReset}
+              className="min-w-[2.5rem] rounded px-1 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={`缩放 ${Math.round(zoom * 100)}%`}
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+          </BarTooltip>
+          <BarTooltip label="放大">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]!}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              aria-label="放大"
+            >
+              <Plus className="size-3" />
+            </button>
+          </BarTooltip>
+          <BarTooltip label="适应屏幕">
+            <button
+              type="button"
+              onClick={handleFit}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="适应屏幕"
+            >
+              <Maximize2 className="size-3" />
+            </button>
+          </BarTooltip>
+        </div>
 
-      {/* 右侧：刷新、清空 */}
-      <div className="ml-auto flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={() => refresh()}
-          disabled={!hasContent}
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-          title="刷新画布"
-        >
-          <RefreshCw className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => clear()}
-          disabled={!hasContent}
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-          title="清空画布"
-        >
-          <Trash2 className="size-3" />
-        </button>
+        <div className="ml-auto flex items-center gap-0.5">
+          <BarTooltip label="刷新画布">
+            <button
+              type="button"
+              onClick={() => refresh()}
+              disabled={!hasContent}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              aria-label="刷新画布"
+            >
+              <RefreshCw className="size-3" />
+            </button>
+          </BarTooltip>
+          <BarTooltip label="清空画布">
+            <button
+              type="button"
+              onClick={() => clear()}
+              disabled={!hasContent}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              aria-label="清空画布"
+            >
+              <Trash2 className="size-3" />
+            </button>
+          </BarTooltip>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
 
@@ -153,46 +186,50 @@ export function ControlBarCompact({
   const refresh = useSetAtom(refreshDesignCanvasAtom)
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
-      <button
-        type="button"
-        onClick={() => setDevice('mobile')}
-        className={cn(
-          'rounded px-2 py-1 text-xs',
-          device === 'mobile' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
-        )}
-      >
-        M
-      </button>
-      <button
-        type="button"
-        onClick={() => setDevice('tablet')}
-        className={cn(
-          'rounded px-2 py-1 text-xs',
-          device === 'tablet' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
-        )}
-      >
-        T
-      </button>
-      <button
-        type="button"
-        onClick={() => setDevice('desktop')}
-        className={cn(
-          'rounded px-2 py-1 text-xs',
-          device === 'desktop' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
-        )}
-      >
-        D
-      </button>
-      <button
-        type="button"
-        onClick={() => hasContent && refresh()}
-        disabled={!hasContent}
-        className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-        title="刷新"
-      >
-        <RefreshCw className="size-3.5" />
-      </button>
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className={cn('flex items-center gap-1', className)}>
+        <button
+          type="button"
+          onClick={() => setDevice('mobile')}
+          className={cn(
+            'rounded px-2 py-1 text-xs',
+            device === 'mobile' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+          )}
+        >
+          M
+        </button>
+        <button
+          type="button"
+          onClick={() => setDevice('tablet')}
+          className={cn(
+            'rounded px-2 py-1 text-xs',
+            device === 'tablet' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+          )}
+        >
+          T
+        </button>
+        <button
+          type="button"
+          onClick={() => setDevice('desktop')}
+          className={cn(
+            'rounded px-2 py-1 text-xs',
+            device === 'desktop' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+          )}
+        >
+          D
+        </button>
+        <BarTooltip label="刷新">
+          <button
+            type="button"
+            onClick={() => hasContent && refresh()}
+            disabled={!hasContent}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+            aria-label="刷新"
+          >
+            <RefreshCw className="size-3.5" />
+          </button>
+        </BarTooltip>
+      </div>
+    </TooltipProvider>
   )
 }

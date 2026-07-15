@@ -1997,9 +1997,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         })
       }
 
-      // 2. 构建最终消息
-      // 如果 Design Preview 已启用，自动附加当前画布上下文（HTML/CSS/框选）到消息末尾
-      const finalMessage = augmentWithDesignContext(fileReferences + effectiveText)
+      // 2. 构建消息：displayText 给人看；wireText 给 Agent（末尾追加精简 design-context）
+      const displayText = fileReferences + effectiveText
+      const wireText = augmentWithDesignContext(displayText)
 
       // 清除打断状态（上一轮的打断标记不再显示）
       store.set(stoppedByUserSessionsAtom, (prev: Set<string>) => {
@@ -2034,11 +2034,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         return map
       })
 
-      // 乐观更新：SDKMessage 格式的用户消息（Phase 4）
+      // 乐观更新：气泡只显示用户原文，不含 design-context
       const tempUserSDKMsg: SDKMessage = {
         type: 'user',
         message: {
-          content: [{ type: 'text', text: finalMessage }],
+          content: [{ type: 'text', text: displayText }],
         },
         parent_tool_use_id: null,
         _createdAt: Date.now(),
@@ -2047,7 +2047,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
       const input: AgentSendInput = {
         sessionId,
-        userMessage: finalMessage,
+        userMessage: wireText,
         channelId: agentChannelId,
         modelId: agentModelId || undefined,
         workspaceId: currentWorkspaceId || undefined,

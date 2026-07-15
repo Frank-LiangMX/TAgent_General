@@ -24,6 +24,7 @@ import {
   appModeAtom,
   type TARailItem,
 } from '@/atoms/app-mode'
+import { designImmersiveAtom } from '@/atoms/design-preview-atoms'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
 import {
   activeTabIdAtom,
@@ -197,6 +198,7 @@ function GeneralMainArea(): React.ReactElement {
   const previewOpenMap = useAtomValue(previewPanelOpenMapAtom)
   const [splitRatio, setSplitRatio] = useAtom(previewSplitRatioAtom)
   const previewDragging = React.useRef(false)
+  const designImmersive = useAtomValue(designImmersiveAtom)
 
   const previewOpen =
     activeTab?.type === 'agent' && (previewOpenMap.get(activeTab.sessionId) ?? false)
@@ -308,7 +310,7 @@ function GeneralMainArea(): React.ReactElement {
             视觉上像"内容从右向左推送"。让左侧瞬间变宽，由右侧 absolute 滑出动画
             覆盖期内呈现"被剥离"的视觉效果。 */}
         <div className="flex flex-col min-w-0 h-full relative" style={leftFlexStyle}>
-          {!showSessionWelcome && <TabBar />}
+          {!showSessionWelcome && !designImmersive && <TabBar />}
           <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1 relative">
             {showSessionWelcome || tabs.length === 0 ? (
               <>

@@ -1,116 +1,109 @@
 /**
- * useDesignContextAugment — 提供当前 Design Context 给消费组件
+ * useDesignContextAugment — 发送时把精简 Design Context 追加到 userMessage（仅 wire）
  *
- * 这个 hook 不再直接 patch sendAgentMessage（window.electronAPI 是只读）。
- * 而是提供 augment 函数，让消费组件（如 AgentView）在发送消息时调用。
- *
- * 推荐使用方式：
- * 1. 在 AgentView 中调用 useDesignContext() 获取 ctx
- * 2. 发送消息时调用 augmentMessageWithDesignContext(userMessage, ctx)
- *
- * 设计来源：docs/plans/2026-07-13-design-preview-design.md §5.2
+ * 委托 useDesignContext 的 formatDesignContextForMessage，不再前置整页 HTML/CSS。
+ * 可见气泡应使用未 augment 的原文（见 AgentView display/wire 分离）。
  */
 
 import { useStore } from 'jotai'
 
 import {
-  designCssAtom,
+  canvasLayersAtom,
+  designDeviceAtom,
   designEnabledAtom,
   designHtmlAtom,
   designSelectionAtom,
+  selectedElementIdsAtom,
+  type CanvasElement,
+  type DesignContextForAgent,
 } from '@/atoms/design-preview-atoms'
 
-/** 截断长度 */
-const MAX_CONTENT_CHARS = 6000
+import {
+  augmentMessageWithDesignContext,
+} from '@/hooks/useDesignContext'
 
-/** 截断字符串 */
-function truncate(
-  value: string | null | undefined,
-  max: number = MAX_CONTENT_CHARS
-): string | undefined {
-  if (!value) return undefined
-  if (value.length <= max) return value
-  return value.slice(0, max) + `\n\n... (截断，原始内容 ${value.length} 字符)`
+function summarizeHtml(html: string): string {
+  const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
+  const text = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  return text.slice(0, 500)
 }
 
-/** 收集当前 Design 上下文 */
+/** 从 jotai store 即时组装 DesignContextForAgent（发送瞬间快照） */
+function buildLiveContext(store: ReturnType<typeof useStore>): DesignContextForAgent | null {
+  const enabled = store.get(designEnabledAtom)
+  if (!enabled) return null
+
+  const html = store.get(designHtmlAtom)
+  const device = store.get(designDeviceAtom)
+  const selection = store.get(designSelectionAtom)
+  const layers = store.get(canvasLayersAtom)
+  const selectedIds = store.get(selectedElementIdsAtom)
+
+  const ctx: DesignContextForAgent = {
+    designModeEnabled: true,
+    device,
+  }
+
+  if (html) {
+    ctx.htmlSummary = summarizeHtml(html)
+  }
+
+  if (selection || selectedIds.length > 0) {
+    const userSelection: NonNullable<DesignContextForAgent['userSelection']> = {
+      region: selection ?? { x: 0, y: 0, width: 0, height: 0 },
+    }
+    if (selectedIds.length > 0) {
+      const elements = selectedIds
+        .map((id) => layers.find((l) => l.id === id))
+        .filter((el): el is CanvasElement => !!el)
+      userSelection.elements = elements.map((el) => ({
+        id: el.id,
+        tag: el.tag,
+        text: el.text,
+        role: el.role,
+        className: el.className,
+        selector: el.selector,
+        bounds: { ...el.bounds },
+      }))
+      const first = elements[0]
+      if (first) {
+        userSelection.elementText = first.text
+        userSelection.elementTag = first.tag
+        userSelection.selector = first.selector
+      }
+    }
+    ctx.userSelection = userSelection
+  }
+
+  return ctx
+}
+
 export interface DesignContextSnapshot {
   enabled: boolean
-  html: string | null
-  css: string | null
-  selection: { x: number; y: number; width: number; height: number } | null
+  hasSelection: boolean
+  hasHtml: boolean
 }
 
 export function useDesignContextAugment(): {
   snapshot: DesignContextSnapshot
+  /** 仅 wire：原文 + 精简 design-context；UI 请用未调用的原文 */
   augment: (userMessage: string) => string
 } {
   const store = useStore()
 
+  const enabled = store.get(designEnabledAtom)
   const snapshot: DesignContextSnapshot = {
-    enabled: store.get(designEnabledAtom),
-    html: store.get(designHtmlAtom),
-    css: store.get(designCssAtom),
-    selection: store.get(designSelectionAtom),
+    enabled,
+    hasSelection: Boolean(store.get(designSelectionAtom) || store.get(selectedElementIdsAtom).length > 0),
+    hasHtml: Boolean(store.get(designHtmlAtom)),
   }
 
   const augment = (userMessage: string): string => {
-    if (!snapshot.enabled) return userMessage
-    const ctxText = buildContextBlock(snapshot)
-    if (!ctxText) return userMessage
-    // 把上下文放到用户消息前面，Agent 会优先看到
-    return `${ctxText}\n\n----- 以下是用户的实际问题 -----\n\n${userMessage}`
+    const ctx = buildLiveContext(store)
+    return augmentMessageWithDesignContext(userMessage, ctx)
   }
 
   return { snapshot, augment }
 }
 
-/** 构造注入文本 */
-function buildContextBlock(ctx: DesignContextSnapshot): string {
-  if (!ctx.enabled) return ''
-  const lines: string[] = []
-  lines.push('===== DESIGN_PREVIEW 上下文 START =====')
-  lines.push('【必读】以下内容是 Design Preview 画布当前状态，请仔细查看：')
-  lines.push('  • 设备类型、框选区域、当前 HTML/CSS')
-  lines.push('  • 用户在画布上框选了某个区域，结合框选坐标理解用户意图')
-  lines.push('  • 修改 HTML/CSS 后，请明确告诉用户修改了什么')
-  lines.push('')
-
-  lines.push(`[设备] ${ctx.enabled ? '已启用' : '未启用'}`)
-  if (ctx.selection) {
-    const { x, y, width, height } = ctx.selection
-    lines.push(
-      `[框选区域] x=${Math.round(x)}, y=${Math.round(y)}, w=${Math.round(width)}, h=${Math.round(height)}`
-    )
-  } else {
-    lines.push('[框选区域] 无（用户尚未框选）')
-  }
-
-  if (ctx.html) {
-    const truncated = truncate(ctx.html)
-    if (truncated) {
-      lines.push('')
-      lines.push('[当前 HTML]')
-      lines.push('```html')
-      lines.push(truncated)
-      lines.push('```')
-    }
-  } else {
-    lines.push('')
-    lines.push('[当前 HTML] 无')
-  }
-  if (ctx.css) {
-    const truncated = truncate(ctx.css)
-    if (truncated) {
-      lines.push('')
-      lines.push('[当前 CSS]')
-      lines.push('```css')
-      lines.push(truncated)
-      lines.push('```')
-    }
-  }
-
-  lines.push('')
-  lines.push('===== DESIGN_PREVIEW 上下文 END =====')
-  return lines.join('\n')
-}
+export { augmentMessageWithDesignContext }

@@ -59,6 +59,10 @@ export interface CanvasElement {
   text: string
   /** 元素的语义角色（button/input/img/heading/text/link/container/none） */
   role: CanvasElementRole
+  /** 元素的 class 名（前 5 个） */
+  className?: string
+  /** CSS 选择器路径（如 div.page > form > button.login-btn:nth-child(2)） */
+  selector?: string
   /** 父元素 id；根 body 元素 parentId 为 null */
   parentId: string | null
   /** 子元素 id 列表（按文档顺序） */
@@ -80,10 +84,14 @@ export type CanvasElementRole =
 /** iframe → 父窗口的 postMessage 协议 */
 export type CanvasFrameMessage =
   | { type: 'layers:report'; layers: CanvasElement[] }
-  | { type: 'element:clicked'; id: string; bounds: CanvasElement['bounds']; additive: boolean }
+  | { type: 'element:clicked'; id: string | null; bounds: CanvasElement['bounds'] | null; additive: boolean }
   | { type: 'element:hovered'; id: string | null }
   | { type: 'element:rect-select'; rect: SelectionRegion; hits: string[] }
   | { type: 'iframe:ready' }
+  /** 中键按下：任意模式都可从 iframe 内发起画布平移（screen 坐标跨帧一致） */
+  | { type: 'pan:start'; screenX: number; screenY: number }
+  | { type: 'pan:move'; screenX: number; screenY: number }
+  | { type: 'pan:end' }
 
 /** 父窗口 → iframe 的 postMessage 协议 */
 export type CanvasFrameCommand =
@@ -112,7 +120,15 @@ export interface DesignSessionState {
   enabled: boolean
   version: number
   viewport: DesignViewport
+  /**
+   * 放大模式（原 fullscreen）：画布放大覆盖主内容区，仍保留左侧导航浮岛。
+   * UI 文案用「放大」，字段名保留 fullscreen 以兼容 localStorage。
+   */
   fullscreen: boolean
+  /** 沉浸全屏：隐藏 left rail / sidebar / tabs，只留会话 + 画布 */
+  immersive: boolean
+  /** 沉浸全屏下隐藏会话面板（纯画布） */
+  immersiveHideChat: boolean
 }
 
 /** 单个版本快照 */
@@ -142,6 +158,8 @@ const DEFAULT_SESSION_STATE: DesignSessionState = {
   version: 0,
   viewport: { panX: 0, panY: 0 },
   fullscreen: false,
+  immersive: false,
+  immersiveHideChat: false,
 }
 
 // ==================== 持久化存储 ====================
@@ -186,6 +204,8 @@ function migrateSessionState(raw: unknown): DesignSessionState {
         ? (v.viewport as DesignViewport)
         : { panX: 0, panY: 0 },
     fullscreen: typeof v.fullscreen === 'boolean' ? v.fullscreen : false,
+    immersive: typeof v.immersive === 'boolean' ? v.immersive : false,
+    immersiveHideChat: typeof v.immersiveHideChat === 'boolean' ? v.immersiveHideChat : false,
   }
 }
 
@@ -333,7 +353,7 @@ export const designViewportAtom = atom(
   }
 )
 
-/** 全屏模式（按会话隔离） */
+/** 放大模式（原 fullscreen）：画布放大覆盖主内容区，仍保留左侧导航 */
 export const designFullscreenAtom = atom(
   (get) => {
     const state = get(currentDesignSessionAtom)
@@ -346,18 +366,44 @@ export const designFullscreenAtom = atom(
   }
 )
 
+/** 沉浸全屏：隐藏壳层导航与标签，只显示会话 + 画布 */
+export const designImmersiveAtom = atom(
+  (get) => get(currentDesignSessionAtom).immersive ?? false,
+  (get, set, immersive: boolean) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(designSessionStateFamily(sessionId), {
+      immersive,
+      // 进入沉浸时默认显示会话；退出时清掉隐藏态
+      ...(immersive ? { immersiveHideChat: false, fullscreen: false } : { immersiveHideChat: false }),
+    } as Partial<DesignSessionState>)
+  }
+)
+
+/** 沉浸全屏下是否隐藏会话（纯画布） */
+export const designImmersiveHideChatAtom = atom(
+  (get) => get(currentDesignSessionAtom).immersiveHideChat ?? false,
+  (get, set, hide: boolean) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(designSessionStateFamily(sessionId), { immersiveHideChat: hide } as Partial<DesignSessionState>)
+  }
+)
+
 /** 派生 atom：完整 Design Canvas 状态 */
 export const designCanvasStateAtom = atom<DesignSessionState>((get) => get(currentDesignSessionAtom))
 
 // ==================== v2 字段级读写 Atom ====================
 
-/** 当前选中的元素 id 列表 */
-export const selectedElementIdsAtom = atom<string[]>(
+/** 当前选中的元素 id 列表（支持直接赋值或 updater 回调） */
+export const selectedElementIdsAtom = atom(
   (get) => get(currentDesignSessionAtom).selectedElementIds ?? [],
-  (get, set, ids: string[]) => {
+  (get, set, ids: string[] | ((prev: string[]) => string[])) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
-    set(designSessionStateFamily(sessionId), { selectedElementIds: ids } as Partial<DesignSessionState>)
+    const prev = get(designSessionStateFamily(sessionId)).selectedElementIds ?? []
+    const next = typeof ids === 'function' ? ids(prev) : ids
+    set(designSessionStateFamily(sessionId), { selectedElementIds: next } as Partial<DesignSessionState>)
   }
 )
 
@@ -531,7 +577,8 @@ export const designSuggestionAtom = atom<DesignSuggestion | null>(null)
 
 export type DesignCanvasTool = 'pan' | 'select' | 'interact'
 
-export const designActiveToolAtom = atom<DesignCanvasTool>('select')
+/** 默认进入画布为交互模式（可点击原型）；选择 / 平移需手动切换 */
+export const designActiveToolAtom = atom<DesignCanvasTool>('interact')
 
 // ==================== 预留扩展字段 ====================
 
@@ -571,6 +618,18 @@ export interface DesignContextForAgent {
     screenshot?: string
     elementText?: string
     elementTag?: string
+    /** v2.2: CSS 选择器路径 */
+    selector?: string
+    /** v2.2: 选中的元素结构化列表 */
+    elements?: Array<{
+      id: string
+      tag: string
+      text: string
+      role: string
+      className?: string
+      selector?: string
+      bounds: { x: number; y: number; width: number; height: number }
+    }>
   }
   _future?: {
     surfaces?: unknown[]

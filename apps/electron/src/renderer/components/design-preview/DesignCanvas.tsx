@@ -1,13 +1,13 @@
 /**
- * DesignCanvas — Design Preview 画布（v2）
+ * DesignCanvas — Design Preview 画布（v3）
  *
- * v1 → v2 关键变化：
- *  1) 接入 FrameBridgeClient：iframe 内点选/hover 通过 postMessage 回流到 jotai atoms
- *  2) 选中元素后用 iframe 内部 outline 高亮（不走父窗口 SelectionOverlay 单矩形）
- *  3) 容器尺寸内的右键空白处：框选（v2 第一版暂保留原拖拽框选为 fallback）
- *  4) 在画布容器内嵌入 LayerTreePanel（左侧可折叠栏）
+ * 双模渲染：
+ *  - v3 节点树：CanvasRenderer（SVG），数据源 currentDocumentAtom
+ *  - v2 兼容：HtmlRenderer（iframe），数据源 designHtmlAtom
  *
- * 设计来源：docs/plans/2026-07-14-design-canvas-v2.md §3-§4
+ * 优先级：v3 > v2。有 ShapeOp 形状时走 SVG，否则 fallback HTML。
+ *
+ * 设计来源：docs/plans/2026-07-14-design-canvas-v3.md
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -15,26 +15,24 @@ import { Eye, Layers as LayersIcon, Sparkles, X } from 'lucide-react'
 import * as React from 'react'
 
 import {
-  canvasLayersAtom,
-  designActiveToolAtom,
-  designCanvasStateAtom,
-  designDeviceAtom,
-  designEnabledAtom,
-  designFullscreenAtom,
-  designSelectionAtom,
+  designHtmlAtom,
+  designCssAtom,
   designVersionAtom,
-  designViewportAtom,
-  designZoomAtom,
+  designDeviceAtom,
   selectedElementIdsAtom,
-  setDesignZoomAtom,
+  designActiveToolAtom,
   type DesignCanvasTool,
 } from '@/atoms/design-preview-atoms'
+import { selectedShapeIdsAtom, selectShapeAtom, hoveredShapeIdAtom, clearSelectionAtom } from '@/design/canvas-selection-store'
+import { currentDocumentAtom } from '@/design/canvas-shape-store'
+import { viewportAtom } from '@/design/canvas-viewport-store'
+import { CanvasRenderer } from '@/design/canvas-renderer'
 import { useCanvasSelection } from '@/hooks/useCanvasSelection'
-import { useVersionSnapshotWatcher, useViewingState } from '@/hooks/useVersionSnapshot'
 import { cn } from '@/lib/utils'
 
 import { DesignDock } from './DesignDock'
 import { DeviceFrame } from './DeviceFrame'
+import { CanvasMinimap } from './CanvasMinimap'
 import { ElementHighlightOverlay } from './ElementHighlightOverlay'
 import { HtmlRenderer } from './HtmlRenderer'
 import { ImportDropZone } from './ImportDropZone'
@@ -73,374 +71,378 @@ function EmptyState(): React.ReactElement {
   )
 }
 
-/** 小地图预览（左下角） */
-function MiniMap({
-  html,
-  css,
-  device,
-  zoom,
-  viewport,
-}: {
-  html: string
-  css?: string | null
-  device: { width: number; height: number }
-  zoom: number
-  viewport: { panX: number; panY: number }
-}): React.ReactElement {
-  const [expanded, setExpanded] = React.useState(false)
-  const mmW = expanded ? 200 : 120
-  const mmH = expanded ? (200 * device.height) / device.width : (120 * device.height) / device.width
-  const mmScale = mmW / device.width
-
-  const vpW = mmW / zoom
-  const vpH = mmH / zoom
-  const vpX = -viewport.panX * mmScale
-  const vpY = -viewport.panY * mmScale
-
-  return (
-    <div
-      className="absolute bottom-3 left-3 z-50 overflow-hidden rounded-lg border border-border/40 bg-background/90 shadow-lg backdrop-blur-sm transition-all cursor-pointer"
-      style={{ width: mmW, height: mmH }}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-    >
-      <div className="relative w-full h-full overflow-hidden">
-        <iframe
-          srcDoc={`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0;overflow:hidden}body{font-family:system-ui,sans-serif;background:#fff;color:#1a1a1a;width:${device.width}px;height:${device.height}px;transform:scale(${mmScale});transform-origin:0 0}${css ?? ''}</style></head><body>${html}</body></html>`}
-          sandbox="allow-scripts"
-          title="minimap"
-          className="border-0 bg-white pointer-events-none"
-          style={{ width: device.width, height: device.height }}
-        />
-        <div
-          className="absolute border-[1.5px] border-primary/70 bg-primary/8 pointer-events-none rounded-sm"
-          style={{
-            left: Math.max(0, vpX),
-            top: Math.max(0, vpY),
-            width: Math.min(vpW, mmW - vpX),
-            height: Math.min(vpH, mmH - vpY),
-          }}
-        />
-      </div>
-    </div>
-  )
+/** 是否在可编辑区域（输入框等），空格键不应触发平移 */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  if (target.isContentEditable) return true
+  return Boolean(target.closest('[contenteditable="true"]'))
 }
 
 export function DesignCanvas({ className }: DesignCanvasProps): React.ReactElement {
-  const enabled = useAtomValue(designEnabledAtom)
-  // v2: viewing 状态——优先返回 activeSnapshotId 对应的快照；否则当前 base
-  const viewing = useViewingState()
-  const html = viewing.html
-  const css = viewing.css
-  const device = useAtomValue(designDeviceAtom)
-  const zoom = useAtomValue(designZoomAtom)
+  // ── v3 节点树数据 ──
+  const doc = useAtomValue(currentDocumentAtom)
+  const selectedIds = useAtomValue(selectedShapeIdsAtom)
+  const hoveredId = useAtomValue(hoveredShapeIdAtom)
+  const selectShape = useSetAtom(selectShapeAtom)
+  const setHovered = useSetAtom(hoveredShapeIdAtom)
+  const clearSel = useSetAtom(clearSelectionAtom)
+  const [viewport, setViewport] = useAtom(viewportAtom)
+
+  // ── v2 HTML 兼容数据 ──
+  const html = useAtomValue(designHtmlAtom)
+  const css = useAtomValue(designCssAtom)
   const version = useAtomValue(designVersionAtom)
-  const viewport = useAtomValue(designViewportAtom)
-  const setViewport = useSetAtom(designViewportAtom)
-  const setZoom = useSetAtom(setDesignZoomAtom)
-  const [selection, setSelection] = useAtom(designSelectionAtom)
-  useAtomValue(designCanvasStateAtom)
-  useAtomValue(designFullscreenAtom)
+  const device = useAtomValue(designDeviceAtom)
+  const [activeTool, setActiveTool] = useAtom(designActiveToolAtom)
+  const setV2SelectedIds = useSetAtom(selectedElementIdsAtom)
 
-  // v2: 选中元素 id 列表（来自 iframe 内点选 / 框选）
-  const selectedIds = useAtomValue(selectedElementIdsAtom)
-  const setSelected = useSetAtom(selectedElementIdsAtom)
-  const layers = useAtomValue(canvasLayersAtom)
+  const [layersOpen, setLayersOpen] = React.useState(true)
 
-  // v2: bridge hook（创建 + attachToIframe）
-  const { attachToIframe, onIframeReloaded } = useCanvasSelection()
+  // ── iframe bridge（连接注入脚本 → 选中态/分层） ──
+  const [iframeEl, setIframeEl] = React.useState<HTMLIFrameElement | null>(null)
 
-  // v2: 监听 html/css 变化 → 自动建快照
-  useVersionSnapshotWatcher()
+  // ── 拖拽平移（screen 坐标：iframe 内中键与父窗口一致）──
+  const dragRef = React.useRef<{ sx: number; sy: number; px: number; py: number; moved: boolean } | null>(null)
+  const viewportRef = React.useRef(viewport)
+  viewportRef.current = viewport
 
-  // v2: 监听 bridge 的 iframe 就绪回调——确保 attach 后再 postMessage 才有 e.source 命中
+  const beginPanAtScreen = React.useCallback((screenX: number, screenY: number) => {
+    const vp = viewportRef.current
+    dragRef.current = { sx: screenX, sy: screenY, px: vp.panX, py: vp.panY, moved: false }
+  }, [])
+
+  const applyPanAtScreen = React.useCallback(
+    (screenX: number, screenY: number) => {
+      const d = dragRef.current
+      if (!d) return
+      const dx = screenX - d.sx
+      const dy = screenY - d.sy
+      if (!d.moved && Math.abs(dx) + Math.abs(dy) < 4) return
+      d.moved = true
+      setViewport((prev) => ({ ...prev, panX: d.px + dx, panY: d.py + dy }))
+    },
+    [setViewport],
+  )
+
+  const endPan = React.useCallback(() => {
+    dragRef.current = null
+  }, [])
+
+  const beginPan = React.useCallback(
+    (e: React.MouseEvent | MouseEvent) => {
+      e.preventDefault()
+      beginPanAtScreen(e.screenX, e.screenY)
+    },
+    [beginPanAtScreen],
+  )
+
+  // ── 临时平移（空格 / 中键）：按住切 pan，松开恢复之前工具 ──
+  const activeToolRef = React.useRef(activeTool)
+  activeToolRef.current = activeTool
+  const toolBeforeTempPanRef = React.useRef<DesignCanvasTool | null>(null)
+  const tempPanHoldCountRef = React.useRef(0)
+  const middleHeldRef = React.useRef(false)
+
+  const enterTempPan = React.useCallback(() => {
+    if (tempPanHoldCountRef.current === 0) {
+      toolBeforeTempPanRef.current = activeToolRef.current
+      if (activeToolRef.current !== 'pan') {
+        setActiveTool('pan')
+      }
+    }
+    tempPanHoldCountRef.current += 1
+  }, [setActiveTool])
+
+  const exitTempPan = React.useCallback(() => {
+    if (tempPanHoldCountRef.current <= 0) return
+    tempPanHoldCountRef.current -= 1
+    if (tempPanHoldCountRef.current > 0) return
+    const prev = toolBeforeTempPanRef.current
+    toolBeforeTempPanRef.current = null
+    if (prev != null) setActiveTool(prev)
+  }, [setActiveTool])
+
+  const beginMiddleTempPan = React.useCallback(
+    (screenX: number, screenY: number) => {
+      if (middleHeldRef.current) {
+        // 已在中键临时平移中（例如重复 pan:start），只更新拖拽起点
+        beginPanAtScreen(screenX, screenY)
+        return
+      }
+      middleHeldRef.current = true
+      enterTempPan()
+      beginPanAtScreen(screenX, screenY)
+    },
+    [beginPanAtScreen, enterTempPan],
+  )
+
+  const endMiddleTempPan = React.useCallback(() => {
+    if (!middleHeldRef.current) {
+      endPan()
+      return
+    }
+    middleHeldRef.current = false
+    endPan()
+    exitTempPan()
+  }, [endPan, exitTempPan])
+
+  const { attachToIframe } = useCanvasSelection({
+    onPanStart: beginMiddleTempPan,
+    onPanMove: applyPanAtScreen,
+    onPanEnd: endMiddleTempPan,
+  })
   const handleIframeReady = React.useCallback(
     (iframe: HTMLIFrameElement) => {
+      setIframeEl(iframe)
       attachToIframe(iframe)
     },
     [attachToIframe],
   )
-  const handleIframeLoaded = React.useCallback(() => {
-    onIframeReloaded()
-  }, [onIframeReloaded])
 
-  // v2: layers 面板折叠
-  const [layersOpen, setLayersOpen] = React.useState(true)
+  const hasV3Content = Object.keys(doc.shapes).length > 1 // 多于 __root__
+  const hasHtmlContent = Boolean(html)
+  const hasContent = hasV3Content || hasHtmlContent
 
-  const activeTool = useAtomValue(designActiveToolAtom)
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const [containerEl, setContainerEl] = React.useState<HTMLDivElement | null>(null)
+  const containerRefCallback = React.useCallback((el: HTMLDivElement | null) => {
+    containerRef.current = el
+    setContainerEl(el)
+  }, [])
 
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const iframeContainerRef = React.useRef<HTMLDivElement>(null)
-  const iframeElRef = React.useRef<HTMLIFrameElement | null>(null)
-  const deviceSize = { width: 1280, height: 800 }
-
-  // ── Ctrl+滚轮缩放（保留 v1 行为） ──
-  // 用 native event listener + {passive: false} 才能 preventDefault；
-  // React 17+ 的 onWheel 会被注册为 passive，preventDefault 会报警告。
+  // ── Ctrl+滚轮缩放 ──
   React.useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const handler = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
-      // 读最新 zoom：依赖 atom 单值
-      const z = currentZoomRef.current
       const dir = e.deltaY < 0 ? 1 : -1
-      const step = z * 0.1
-      const next = Math.max(0.25, Math.min(2, z + dir * step))
-      if (next !== z) setZoom(next)
+      setViewport((prev) => {
+        const step = prev.zoom * 0.1
+        const next = Math.max(0.1, Math.min(4, prev.zoom + dir * step))
+        return next === prev.zoom ? prev : { ...prev, zoom: next }
+      })
     }
     el.addEventListener('wheel', handler, { passive: false })
-    return () => {
-      el.removeEventListener('wheel', handler)
-    }
-  }, [setZoom])
-
-  const currentZoomRef = React.useRef(zoom)
-  currentZoomRef.current = zoom
-
-  // 保留旧 onWheel 给 React 渲染类型校验；运行时靠上面 native listener
-  const handleWheel = React.useCallback((_e: React.WheelEvent) => {
-    /* noop: 真实逻辑在 native listener 中 */
-  }, [])
-
-  // ── 拖拽平移 ──
-  // v2 默认行为：在画布空白处（不在 iframe 上）按住左键 = 平移。
-  // 拖到 iframe 上 / 点 iframe 内元素 → 走 iframe 内 click 选中。
-  // 中键 / Shift+左键 / 触摸板右键 也走平移。
-  // 拖拽距离 > 4px 才算拖（避免和点击冲突）。
-  const dragRef = React.useRef<{
-    startX: number
-    startY: number
-    panX: number
-    panY: number
-    moved: boolean
-  } | null>(null)
-  const handleMouseDown = React.useCallback(
-    (e: React.MouseEvent) => {
-      // 交互模式：禁止所有平移，让 iframe 内控件正常工作
-      if (activeTool === 'interact') return
-
-      // 平移模式：任何左键/中键/右键都平移
-      if (activeTool === 'pan') {
-        e.preventDefault()
-        dragRef.current = {
-          startX: e.clientX,
-          startY: e.clientY,
-          panX: viewport.panX,
-          panY: viewport.panY,
-          moved: false,
-        }
-        return
-      }
-
-      // 选择模式：e.target 在 iframe 内 → 让 iframe 处理点击/选中
-      if ((e.target as HTMLElement).tagName === 'IFRAME') {
-        const isPanGesture =
-          e.button === 1 || (e.button === 0 && (e.shiftKey || e.metaKey || e.altKey)) || e.button === 2
-        if (!isPanGesture) return
-      }
-      // 中键 / Shift+左键 / Meta+左键 / Alt+左键 / 触摸板右键 → 平移
-      const isPanGesture =
-        e.button === 1 ||
-        (e.button === 0 && (e.shiftKey || e.metaKey || e.altKey)) ||
-        e.button === 2
-      const isLeftDrag = e.button === 0 && !e.shiftKey && !e.metaKey && !e.altKey
-      if (!isPanGesture && !isLeftDrag) return
-      e.preventDefault()
-      dragRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        panX: viewport.panX,
-        panY: viewport.panY,
-        moved: false,
-      }
-    },
-    [viewport, activeTool],
-  )
-
-  // 全局鼠标监听：用 native listener 保证 mousemove 能正确触发
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const d = dragRef.current
-      if (!d) return
-      const dx = e.clientX - d.startX
-      const dy = e.clientY - d.startY
-      if (!d.moved && Math.abs(dx) + Math.abs(dy) < 4) return
-      d.moved = true
-      setViewport({ panX: d.panX + dx, panY: d.panY + dy })
-    }
-    const handleMouseUp = () => {
-      // 移动距离 < 4px 视为点击——不重置 viewport，但清 drag 状态
-      dragRef.current = null
-    }
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
+    return () => el.removeEventListener('wheel', handler)
   }, [setViewport])
 
-  // 阻止画布内右键菜单，避免右键平移时被系统菜单打断
+  // ── 空格键临时平移（与中键同一套 enter/exit）──
   React.useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const handler = (e: MouseEvent) => {
-      if (e.button === 2) e.preventDefault()
+    let spaceHeld = false
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' && e.key !== ' ') return
+      if (isEditableTarget(e.target)) return
+      if (e.repeat) return
+      if (spaceHeld) return
+      e.preventDefault()
+      spaceHeld = true
+      enterTempPan()
     }
-    el.addEventListener('contextmenu', handler)
-    return () => el.removeEventListener('contextmenu', handler)
-  }, [])
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' && e.key !== ' ') return
+      if (!spaceHeld) return
+      spaceHeld = false
+      exitTempPan()
+    }
+    const onBlur = () => {
+      if (spaceHeld) {
+        spaceHeld = false
+        exitTempPan()
+      }
+      if (middleHeldRef.current) {
+        endMiddleTempPan()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [enterTempPan, exitTempPan, endMiddleTempPan])
 
-  if (!enabled) {
-    return (
-      <div className={cn('flex h-full flex-col', className)}>
-        <div
-          className="flex-1 overflow-hidden bg-background"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle, hsl(var(--muted-foreground) / 0.12) 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-          }}
-        >
-          <DisabledState />
-        </div>
-      </div>
-    )
-  }
+  /** 中键：临时切平移并开始拖拽（空白区域；iframe 内由 bridge 转发） */
+  const handleContainerMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button === 1) {
+        e.preventDefault()
+        beginMiddleTempPan(e.screenX, e.screenY)
+      }
+    },
+    [beginMiddleTempPan],
+  )
 
-  const hasContent = Boolean(html)
-  const sel = selection
+  /** 平移工具 / 临时平移：覆盖层左键拖拽 */
+  const handlePanOverlayMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return
+      beginPan(e)
+    },
+    [beginPan],
+  )
+
+  // 选择模式下点击画布空白区域取消 v2 选中
+  const handleContainerClick = React.useCallback(
+    (e: React.MouseEvent) => {
+      if (activeTool !== 'select') return
+      if (e.target !== e.currentTarget) return
+      setV2SelectedIds([])
+    },
+    [activeTool, setV2SelectedIds],
+  )
+
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      applyPanAtScreen(e.screenX, e.screenY)
+    }
+    const onUp = (e: MouseEvent) => {
+      if (e.button === 1) {
+        endMiddleTempPan()
+        return
+      }
+      // 左键松开：只结束拖拽，不恢复工具（空格仍可能按住）
+      if (e.button === 0) endPan()
+    }
+    // 阻止中键自动滚动（autoscroll）
+    const onAuxClick = (e: MouseEvent) => {
+      if (e.button === 1) e.preventDefault()
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    document.addEventListener('auxclick', onAuxClick)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('auxclick', onAuxClick)
+    }
+  }, [applyPanAtScreen, endPan, endMiddleTempPan])
+
+  const isPanTool = activeTool === 'pan'
 
   return (
     <div className={cn('flex h-full w-full', className)}>
-      {/* 左侧 Layers（v2 新增） */}
-      {layersOpen && (
+      {/* 左侧 Layers（v2 HTML 模式也有分层） */}
+      {layersOpen && hasContent && (
         <div className="w-56 shrink-0">
           <LayerTreePanel />
         </div>
       )}
 
       <div className="flex flex-1 flex-col relative min-w-0">
-        {/* v2: 顶部 toolbar：layers 开关 + 选中信息 */}
+        {/* 顶部 toolbar */}
         <div className="flex items-center gap-2 border-b border-border/40 bg-background/60 px-3 py-1.5 backdrop-blur">
           <button
             type="button"
-            className={cn(
-              'flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted',
-              layersOpen && 'bg-muted',
-            )}
+            className={cn('flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted', layersOpen && 'bg-muted')}
             onClick={() => setLayersOpen((v) => !v)}
+            disabled={!hasContent}
           >
             <LayersIcon className="size-3.5" />
             <span>分层</span>
           </button>
-
           <div className="ml-1">
             <ImportDropZone />
           </div>
           {selectedIds.length > 0 && (
             <>
-              <div className="ml-2 text-[11px] text-muted-foreground">
-                已选中 {selectedIds.length} 个元素
-              </div>
+              <div className="ml-2 text-[11px] text-muted-foreground">已选中 {selectedIds.length} 个元素</div>
               <button
                 type="button"
                 className="ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() => setSelected([])}
+                onClick={() => clearSel()}
               >
-                <X className="size-3" />
-                取消选中
+                <X className="size-3" /> 取消选中
               </button>
             </>
           )}
-          {viewing.isViewingHistory && (
-            <div className="ml-auto rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-600 dark:text-amber-400">
-              查看历史 v{viewing.fromSnapshot?.version}（只读）
-            </div>
-          )}
         </div>
 
-        {/* v2: 版本时间线 */}
-        <VersionTimeline />
+        {/* 版本时间线（仅 v3 模式） */}
+        {hasV3Content && <VersionTimeline />}
 
+        {/* 画布区域（relative 用于覆盖层定位） */}
         <div
-          ref={containerRef}
-          className="flex-1 overflow-hidden"
-          onMouseDown={handleMouseDown}
-          onWheel={handleWheel}
+          ref={containerRefCallback}
+          className={cn('flex-1 overflow-hidden relative', isPanTool && 'cursor-grab')}
+          onMouseDown={handleContainerMouseDown}
+          onClick={handleContainerClick}
           style={{
             backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.12) 1px, transparent 1px)`,
-            backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
             backgroundColor: 'hsl(var(--background))',
           }}
         >
-          {hasContent && html ? (
+          {hasV3Content ? (
             <div
-              className="flex items-start justify-center"
               style={{
-                transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${zoom})`,
+                transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
                 transformOrigin: '0 0',
-                minWidth: '100%',
-                minHeight: '100%',
+                width: '100%',
+                height: '100%',
               }}
             >
-              <div className="p-6" ref={iframeContainerRef}>
+              <CanvasRenderer
+                document={doc}
+                selectedIds={selectedIds}
+                hoveredId={hoveredId}
+                onShapeClick={(id, _e) => selectShape(id)}
+                onShapeHover={(id) => setHovered(id)}
+              />
+            </div>
+          ) : hasHtmlContent ? (
+            <div
+              className="flex items-start justify-center p-6"
+              style={{
+                transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
+                transformOrigin: '0 0',
+              }}
+            >
+              {/* relative 包裹：高亮层与 DeviceFrame 同坐标系，跟随 pan/zoom transform */}
+              <div className="relative inline-block">
                 <DeviceFrame device={device}>
                   <HtmlRenderer
-                    html={html}
+                    html={html!}
                     css={css}
                     device={device}
                     version={version}
-                    onIframeReady={(el) => {
-                      iframeElRef.current = el
-                      handleIframeReady(el)
-                    }}
-                    onIframeLoaded={handleIframeLoaded}
+                    onIframeReady={handleIframeReady}
                   />
                 </DeviceFrame>
+                <ElementHighlightOverlay iframeEl={iframeEl} />
               </div>
-              {/* v2: 保留 v1 的单矩形框选用于 v1 兼容；新选中用 iframe outline */}
-              {sel && (
-                <div
-                  className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
-                  style={{
-                    left: sel.x,
-                    top: sel.y,
-                    width: sel.width,
-                    height: sel.height,
-                  }}
-                >
-                  <div className="absolute -top-6 left-0 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground whitespace-nowrap">
-                    {Math.round(sel.width)} × {Math.round(sel.height)}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <EmptyState />
           )}
+
+          {/* 平移覆盖层：挡住 iframe，让左键拖拽能平移（否则事件被 iframe 吞掉） */}
+          {isPanTool && hasContent && (
+            <div
+              className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing"
+              onMouseDown={handlePanOverlayMouseDown}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* 左下角常驻缩略图 */}
+          {hasContent && (
+            <div className="pointer-events-none absolute bottom-3 left-3 z-40">
+              <CanvasMinimap containerEl={containerEl} />
+            </div>
+          )}
         </div>
 
-        {hasContent && html && (
-          <MiniMap html={html} css={css} device={deviceSize} zoom={zoom} viewport={viewport} />
-        )}
-
-        {hasContent && html && (
+        {/* Dock */}
+        {hasContent && (
           <div className="absolute bottom-3 right-3 z-50 pointer-events-none">
             <DesignDock />
           </div>
-        )}
-
-        {/* v2: 选中元素高亮覆盖层（仅选择模式显示） */}
-        {hasContent && html && activeTool === 'select' && (
-          <ElementHighlightOverlay
-            geometry={{
-              iframeEl: iframeElRef.current,
-              zoom,
-            }}
-          />
         )}
       </div>
     </div>

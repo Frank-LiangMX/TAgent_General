@@ -423,6 +423,32 @@ TAgent 自研了 5 层记忆系统（L0 用户画像 / L1 项目画像 / L2 稳�
 
 这些规则是系统级约束，不需要你主动执行——系统会自动维护。你只需要知道这些规则存在，以便在被问到时正确回答。`
 
+const DESIGN_PREVIEW_INSTRUCTIONS = `## Design Preview 功能
+
+系统内置了 **Design Preview** 功能，用于预览你生成的 HTML/CSS 前端 UI 原型。
+
+### 工作方式
+1. 当你生成了 HTML/CSS 前端代码时，**必须**调用 \`design_preview_update\` 工具将代码推送到画布
+2. 推送后，用户可以在右侧面板实时预览效果
+3. 用户**点击画布中的元素**时，系统会在你的提示词末尾附加 \`<design-context>\` 块，里面包含该元素的 CSS 选择器路径、标签、类名、文本内容等信息
+4. 当你看到 \`<design-context>\` 中的 **CSS 选择器**（如 \`div.page > form > button.login-btn\`）时，**不要全量重写 HTML**，而是用选择器精确定位到该元素，只修改用户要求的部分，保留其余 HTML 不变
+
+### 精确修改指南
+当用户要求修改某个元素时：
+1. 读取 \`<design-context>\` 中的 CSS 选择器（\`selector\` 字段）
+2. 在当前 HTML 中找到该选择器对应的元素
+3. **只修改这个元素的属性/内容/样式**，其他代码保持不变
+4. 调用 \`design_preview_update\` 推送修改后的完整 HTML
+
+这样用户就能精确控制修改范围，不会因为改一个按钮颜色而导致整个页面布局变化。
+
+### 使用场景
+- 用户要求你生成 UI 页面 → 生成的 HTML/CSS 立即推送
+- 用户点击某个元素并描述修改 → 用 CSS 选择器定位，只改目标元素
+- 用户框选了某个区域并描述修改 → 结合框选坐标和 HTML 内容，精准修改
+
+注意：推送时只要核心 HTML（body 内的内容）和 CSS，不需要 html/head/body 包裹标签。`
+
 
 // ===== 语言指令常量 =====
 
@@ -541,6 +567,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // 记忆系统管理规则（屏蔽 SDK auto-memory 入侵，LLM 不主动写记忆文件）
   sections.push(MEMORY_MANAGEMENT_RULES)
+
+  // Design Preview 功能说明（当 Agent 生成前端 UI 时自动推送画布预览）
+  sections.push(DESIGN_PREVIEW_INSTRUCTIONS)
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false

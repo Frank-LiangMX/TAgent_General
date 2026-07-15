@@ -855,6 +855,90 @@ export class AgentOrchestrator {
   }
 
   /**
+   * 注入 Design Preview 工具集
+   *
+   * 让 Agent 能够将生成的 HTML/CSS 推送到 Design Preview 画布，
+   * 用户可以实时预览和框选反馈。
+   */
+  private async injectDesignPreviewTool(
+    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+    mcpServers: Record<string, Record<string, unknown>>,
+    sessionId: string
+  ): Promise<void> {
+    try {
+      const { z } = await import('zod')
+
+      const server = sdk.createSdkMcpServer({
+        name: 'tagent-design-preview',
+        version: '1.0.0',
+        tools: [
+          sdk.tool(
+            'design_preview_update',
+            `更新 Design Preview 画布的显示内容。
+
+当你生成了 UI 设计（HTML/CSS）时，调用此工具将代码推送到画布。
+用户可以在右侧面板实时预览效果。`,
+            {
+              html: z
+                .string()
+                .describe('完整的 HTML 内容（含 body 内的标记，不含 html/head/body 包裹标签）'),
+              css: z
+                .string()
+                .optional()
+                .describe('可选的 CSS 样式内容'),
+              name: z
+                .string()
+                .optional()
+                .describe('页面名称（如"登录页"、"仪表盘"），用于标识'),
+              device: z
+                .enum(['mobile', 'tablet', 'desktop'])
+                .optional()
+                .describe('推荐预览设备，默认 desktop'),
+            },
+            async (args: {
+              html: string
+              css?: string
+              name?: string
+              device?: 'mobile' | 'tablet' | 'desktop'
+            }) => {
+              this.eventBus.emit(sessionId, {
+                kind: 'tagent_event',
+                event: {
+                  type: 'design_preview_update',
+                  html: args.html,
+                  css: args.css ?? '',
+                  name: args.name ?? '预览',
+                  device: args.device ?? 'desktop',
+                },
+              })
+
+              const deviceLabel =
+                args.device === 'mobile'
+                  ? '手机'
+                  : args.device === 'tablet'
+                    ? '平板'
+                    : '桌面'
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: `✅ 已更新 Design Preview 画布（${args.name ?? '预览'}，${deviceLabel}）。用户可以查看预览效果并框选反馈。`,
+                  },
+                ],
+              }
+            }
+          ),
+        ],
+      })
+
+      mcpServers['tagent-design-preview'] = server as unknown as Record<string, unknown>
+      console.log(`[Agent 编排] 已注入 Design Preview 工具 (tagent-design-preview)`)
+    } catch (err) {
+      console.error(`[Agent 编排] 注入 Design Preview 工具失败:`, err)
+    }
+  }
+
+  /**
    * 注入 TA 工具集（命名规范、目录检查等）
    *
    * 仅当 Agent 会话 mode==='ta' 时由 sendMessage 显式调用。
@@ -1946,6 +2030,14 @@ export class AgentOrchestrator {
         console.error('[Agent 编排] 注入 WPS CLI 工具集失败:', err)
       }
       markPhase('injectWpsCli')
+
+      // 注入 Design Preview 工具集（适用于所有模式）
+      try {
+        await this.injectDesignPreviewTool(sdk, mcpServers, sessionId)
+      } catch (err) {
+        console.error('[Agent 编排] 注入 Design Preview 工具集失败:', err)
+      }
+      markPhase('injectDesignPreview')
 
       // TA 模式：注入 TA 工具集（命名规范、目录检查等）
       if (getAgentSessionMeta(sessionId)?.mode === 'ta') {

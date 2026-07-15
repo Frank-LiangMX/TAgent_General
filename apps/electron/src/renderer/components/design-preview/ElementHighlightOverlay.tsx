@@ -1,159 +1,182 @@
 /**
- * SelectionOverlay — Design Preview v2 选中元素高亮覆盖层
+ * ElementHighlightOverlay — 选中 / hover 元素高亮覆盖层
  *
- * 取代 v1 的 SelectionOverlay（单矩形）。
- * v2 行为：根据 selectedElements + bounds 在 iframe 之上画多个虚线框。
+ * v2 HTML 模式：必须放在画布 transform（pan/zoom）容器内部，
+ * 与 iframe 共用同一套 CSS transform，这样拖拽/缩放时高亮框自然跟随，不会偏移。
  *
- * 数据源：useViewingState() 从 useViewingState 提供 active snapshot 的话层；
- * 元素 bounds 来自 canvasLayersAtom。
- *
- * 为什么用父窗口覆盖层而不是 iframe 内 outline：
- *  - 跨 origin/iframe 重写场景稳定（iframe 内 outline 会被 srcDoc 重写清掉）
- *  - 视觉风格可与画布控件统一
- *  - 支持 hover 态（半透明虚线）
+ * 坐标：iframe 相对本层的本地偏移 + CanvasElement.bounds（均为未缩放 CSS px）。
  */
 
 import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
-import {
-  canvasLayersAtom,
-  hoveredElementIdAtom,
-  selectedElementIdsAtom,
-  type CanvasElement,
-} from '@/atoms/design-preview-atoms'
+import { currentDocumentAtom } from '@/design/canvas-shape-store'
+import { selectedShapeIdsAtom, hoveredShapeIdAtom } from '@/design/canvas-selection-store'
+import { canvasLayersAtom, selectedElementIdsAtom, hoveredElementIdAtom } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
 
 export interface ElementHighlightOverlayProps {
   className?: string
-  /** iframe 位置 + 缩放系数 */
-  geometry: {
-    /** iframe 元素（用于取 bounding rect） */
-    iframeEl: HTMLIFrameElement | null
-    /** 当前 zoom 系数 */
-    zoom: number
-  }
+  /** iframe 元素（v2 模式） */
+  iframeEl?: HTMLIFrameElement | null
 }
 
-/**
- * 把 iframe 内的 bounds 转换成父窗口坐标系下的矩形位置。
- */
-function boundsToClientRect(
-  bounds: { x: number; y: number; width: number; height: number },
-  iframeRect: DOMRect,
-  zoom: number,
-): { left: number; top: number; width: number; height: number } {
-  return {
-    left: iframeRect.left + bounds.x * zoom,
-    top: iframeRect.top + bounds.y * zoom,
-    width: bounds.width * zoom,
-    height: bounds.height * zoom,
+interface LocalRect {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+/** 把 iframe 的视口矩形换算成相对 overlayRoot 的本地（未缩放）坐标 */
+function measureIframeLocal(
+  iframeEl: HTMLIFrameElement,
+  overlayRoot: HTMLElement,
+): LocalRect | null {
+  try {
+    const ir = iframeEl.getBoundingClientRect()
+    const rr = overlayRoot.getBoundingClientRect()
+    // 祖先 transform: scale 会同等放大两者的 getBoundingClientRect；
+    // 用 overlay 的 offsetWidth 反推 scale，得到未缩放本地坐标。
+    const scale = rr.width > 0 && overlayRoot.offsetWidth > 0
+      ? rr.width / overlayRoot.offsetWidth
+      : 1
+    if (scale <= 0) return null
+    return {
+      left: (ir.left - rr.left) / scale,
+      top: (ir.top - rr.top) / scale,
+      width: ir.width / scale,
+      height: ir.height / scale,
+    }
+  } catch {
+    return null
   }
 }
 
 export function ElementHighlightOverlay({
   className,
-  geometry,
+  iframeEl,
 }: ElementHighlightOverlayProps): React.ReactElement | null {
-  const layers = useAtomValue(canvasLayersAtom)
-  const selectedIds = useAtomValue(selectedElementIdsAtom)
-  const hoveredId = useAtomValue(hoveredElementIdAtom)
+  const v3Doc = useAtomValue(currentDocumentAtom)
+  const v3Selected = useAtomValue(selectedShapeIdsAtom)
+  const v3Hovered = useAtomValue(hoveredShapeIdAtom)
+  const hasV3 = Object.keys(v3Doc.shapes).length > 1
 
-  const [iframeRect, setIframeRect] = React.useState<DOMRect | null>(null)
+  const v2Layers = useAtomValue(canvasLayersAtom)
+  const v2Selected = useAtomValue(selectedElementIdsAtom)
+  const v2Hovered = useAtomValue(hoveredElementIdAtom)
 
-  // 监听 iframe 位置变化（resize/scroll/zoom）
-  React.useEffect(() => {
-    const ifr = geometry.iframeEl
-    if (!ifr) return
-    const update = () => {
-      try {
-        setIframeRect(ifr.getBoundingClientRect())
-      } catch {
-        setIframeRect(null)
-      }
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const [iframeLocal, setIframeLocal] = React.useState<LocalRect | null>(null)
+
+  const refresh = React.useCallback(() => {
+    const root = rootRef.current
+    if (!root || !iframeEl) {
+      setIframeLocal(null)
+      return
     }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(ifr)
-    window.addEventListener('scroll', update, true)
-    window.addEventListener('resize', update)
+    setIframeLocal(measureIframeLocal(iframeEl, root))
+  }, [iframeEl])
+
+  React.useLayoutEffect(() => {
+    refresh()
+  }, [refresh, v2Selected, v2Hovered, v2Layers])
+
+  React.useEffect(() => {
+    if (!iframeEl) return
+    const ro = new ResizeObserver(() => refresh())
+    ro.observe(iframeEl)
+    const root = rootRef.current
+    if (root) ro.observe(root)
+    window.addEventListener('resize', refresh)
     return () => {
       ro.disconnect()
-      window.removeEventListener('scroll', update, true)
-      window.removeEventListener('resize', update)
+      window.removeEventListener('resize', refresh)
     }
-  }, [geometry.iframeEl])
-
-  // 计算选中元素 + hover 元素 的覆盖矩形（必须在 iframeRect 判断之前，遵守 hooks 规则）
-  const layersById = React.useMemo(() => {
-    const m = new Map<string, CanvasElement>()
-    for (const l of layers) m.set(l.id, l)
-    return m
-  }, [layers])
+  }, [iframeEl, refresh])
 
   const rects = React.useMemo(() => {
-    if (!iframeRect) return []
     const result: Array<{
       id: string
       left: number
       top: number
       width: number
       height: number
-      type: 'selected' | 'hover' | 'empty'
+      type: 'selected' | 'hover'
     }> = []
 
-    // 1) 选中元素（蓝色实线）
-    for (const id of selectedIds) {
-      const el = layersById.get(id)
-      if (!el) continue
-      const r = boundsToClientRect(el.bounds, iframeRect, geometry.zoom)
-      result.push({ id, ...r, type: 'selected' })
-    }
-    // 2) hover 元素（如果不是已选中的，灰色虚线 + 半透明覆盖）
-    if (hoveredId && !selectedIds.includes(hoveredId)) {
-      const el = layersById.get(hoveredId)
-      if (el) {
-        const r = boundsToClientRect(el.bounds, iframeRect, geometry.zoom)
-        result.push({ id: hoveredId, ...r, type: 'hover' })
+    if (hasV3) {
+      for (const id of v3Selected) {
+        const shape = v3Doc.shapes[id]
+        if (!shape) continue
+        result.push({
+          id,
+          left: shape.bounds.x,
+          top: shape.bounds.y,
+          width: shape.bounds.width,
+          height: shape.bounds.height,
+          type: 'selected',
+        })
       }
-    }
-    // 3) 选中列表里如果某个 id 没有 layer（已 stale），仍占位显示一个空标注
-    for (const id of selectedIds) {
-      if (!layersById.get(id)) {
-        result.push({ id, left: 0, top: 0, width: 0, height: 0, type: 'empty' })
+      if (v3Hovered && !v3Selected.includes(v3Hovered)) {
+        const shape = v3Doc.shapes[v3Hovered]
+        if (shape) {
+          result.push({
+            id: v3Hovered,
+            left: shape.bounds.x,
+            top: shape.bounds.y,
+            width: shape.bounds.width,
+            height: shape.bounds.height,
+            type: 'hover',
+          })
+        }
       }
+      return result
     }
-    return result
-  }, [layersById, selectedIds, hoveredId, iframeRect, geometry.zoom])
 
-  if (rects.length === 0) return null
+    if (!iframeLocal || v2Layers.length === 0) return result
+
+    const push = (id: string, type: 'selected' | 'hover') => {
+      const el = v2Layers.find((l) => l.id === id)
+      if (!el) return
+      result.push({
+        id,
+        left: iframeLocal.left + el.bounds.x,
+        top: iframeLocal.top + el.bounds.y,
+        width: el.bounds.width,
+        height: el.bounds.height,
+        type,
+      })
+    }
+
+    for (const id of v2Selected) push(id, 'selected')
+    if (v2Hovered && !v2Selected.includes(v2Hovered)) push(v2Hovered, 'hover')
+
+    return result
+  }, [hasV3, v3Doc, v3Selected, v3Hovered, v2Layers, v2Selected, v2Hovered, iframeLocal])
+
+  if (!hasV3 && !iframeEl) return null
+  if (rects.length === 0 && !iframeEl) return null
 
   return (
     <div
-      className={cn('pointer-events-none fixed inset-0 z-40', className)}
+      ref={rootRef}
+      className={cn('pointer-events-none absolute inset-0 z-10', className)}
       aria-hidden="true"
     >
-      {rects.map((r) =>
-        r.type === 'empty' ? null : (
-          <div
-            key={r.id}
-            data-element-highlight={r.id}
-            className={cn(
-              'absolute',
-              r.type === 'selected' &&
-                'border-2 border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(255,255,255,0.5)]',
-              r.type === 'hover' &&
-                'border border-dashed border-muted-foreground/70 bg-muted-foreground/5',
-            )}
-            style={{
-              left: r.left,
-              top: r.top,
-              width: r.width,
-              height: r.height,
-            }}
-          />
-        ),
-      )}
+      {rects.map((r) => (
+        <div
+          key={`${r.type}-${r.id}`}
+          className={cn(
+            'absolute',
+            r.type === 'selected' &&
+              'border-2 border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(255,255,255,0.5)]',
+            r.type === 'hover' &&
+              'border border-dashed border-muted-foreground/70 bg-muted-foreground/5',
+          )}
+          style={{ left: r.left, top: r.top, width: r.width, height: r.height }}
+        />
+      ))}
     </div>
   )
 }

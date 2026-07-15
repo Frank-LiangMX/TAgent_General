@@ -1,215 +1,183 @@
 /**
- * LayerTreePanel — 画布左侧分层树面板（v2）
+ * LayerTreePanel — 左侧分层树面板
  *
- * 设计来源：docs/plans/2026-07-14-design-canvas-v2.md §4.1
- *
- * 数据源：canvasLayersAtom（iframe postMessage 上报的最新 layers）
- * 选中态：selectedElementIdsAtom
- * Hover：hoveredElementIdAtom（仅高亮，不影响选中）
- *
- * 视觉：与 design-preview 现有暗色玻璃风格保持一致
+ * 双数据源：
+ *  - v3 优先：currentDocumentAtom（CanvasDocument.shapes）
+ *  - v2 回退：canvasLayersAtom（iframe postMessage）
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
 import { ChevronDown, ChevronRight, Layers, Send } from 'lucide-react'
 import * as React from 'react'
 
-import {
-  canvasLayersAtom,
-  hoveredElementIdAtom,
-  selectedElementIdsAtom,
-  type CanvasElement,
-  type CanvasElementRole,
-} from '@/atoms/design-preview-atoms'
-import { buildPromptFromSelection } from '@/lib/element-descriptor'
+import { currentDocumentAtom } from '@/design/canvas-shape-store'
+import { buildLayerTree, type LayerTreeNode } from '@/design/canvas-layer-tree'
+import { selectedShapeIdsAtom, selectShapeAtom } from '@/design/canvas-selection-store'
+import { canvasLayersAtom, selectedElementIdsAtom, type CanvasElement } from '@/atoms/design-preview-atoms'
 import { dispatchAppendChatInput } from '@/lib/chat-input-bridge'
 import { cn } from '@/lib/utils'
 
-const ROLE_LABEL: Record<CanvasElementRole, string> = {
-  button: '按钮',
-  input: '输入',
-  image: '图片',
-  heading: '标题',
-  text: '文本',
-  link: '链接',
-  container: '容器',
-  none: '元素',
+const TYPE_LABEL: Record<string, string> = {
+  frame: '页面', rect: '矩形', ellipse: '椭圆', text: '文本',
+  image: '图片', group: '编组', line: '线条', arrow: '箭头',
+  button: '按钮', input: '输入', heading: '标题', link: '链接', container: '容器', none: '元素',
 }
 
-/** 用 tag + text 给出简洁可读标签 */
-function describe(el: CanvasElement): string {
-  const role = el.role
-  const base = ROLE_LABEL[role] || el.tag
-  const text = el.text.trim()
-  if (!text) return `<${el.tag.toLowerCase()}>`
-  return `${base} · ${text.length > 18 ? text.slice(0, 18) + '…' : text}`
+function describeTag(tag: string, role: string, text: string): string {
+  const label = TYPE_LABEL[role] || role || tag.toLowerCase()
+  if (!text) return `<${tag.toLowerCase()}>`
+  return `${label} · ${text.length > 18 ? text.slice(0, 18) + '…' : text}`
 }
 
-/** 递归树节点 */
-interface TreeNodeProps {
-  element: CanvasElement
-  childMap: Map<string | null, CanvasElement[]>
+function buildPromptFromText(elements: Array<{ name: string }>): string {
+  if (elements.length === 0) return ''
+  const names = elements.map((e) => `"${e.name}"`).join('、')
+  return `把${names}改一下：`
+}
+
+interface TreeItem {
+  id: string
+  name: string
+  children: string[]
   depth: number
-  selectedIds: string[]
-  hoveredId: string | null
-  onSelect: (id: string, additive: boolean) => void
-  onHover: (id: string | null) => void
-  expanded: Set<string>
-  toggleExpand: (id: string) => void
 }
 
-function TreeNode({
-  element,
-  childMap,
-  depth,
+function TreeView({
+  items,
   selectedIds,
-  hoveredId,
   onSelect,
-  onHover,
   expanded,
   toggleExpand,
-}: TreeNodeProps): React.ReactElement {
-  const isSelected = selectedIds.includes(element.id)
-  const isHovered = hoveredId === element.id
-  const children = childMap.get(element.id) ?? []
-  const hasChildren = children.length > 0
-  const isOpen = expanded.has(element.id)
+}: {
+  items: TreeItem[]
+  selectedIds: string[]
+  onSelect: (id: string) => void
+  expanded: Set<string>
+  toggleExpand: (id: string) => void
+}): React.ReactElement {
+  const itemMap = React.useMemo(() => {
+    const m = new Map(items.map((i) => [i.id, i]))
+    return m
+  }, [items])
 
-  return (
-    <>
-      <div
-        className={cn(
-          'group flex items-center gap-1 rounded px-1.5 py-1 text-xs cursor-pointer select-none',
-          isSelected && 'bg-primary/15 text-primary',
-          !isSelected && isHovered && 'bg-muted/60',
-          !isSelected && !isHovered && 'hover:bg-muted/40',
-        )}
-        style={{ paddingLeft: 4 + depth * 12 }}
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(element.id, e.metaKey || e.ctrlKey || e.shiftKey)
-        }}
-        onMouseEnter={() => onHover(element.id)}
-        onMouseLeave={() => onHover(null)}
-      >
-        {hasChildren ? (
-          <button
-            type="button"
-            className="size-3.5 flex items-center justify-center text-muted-foreground hover:text-foreground"
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleExpand(element.id)
-            }}
-          >
-            {isOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
-          </button>
-        ) : (
-          <span className="size-3.5" />
-        )}
-        <span className="truncate">{describe(element)}</span>
-      </div>
-      {hasChildren && isOpen &&
-        children.map((c) => (
-          <TreeNode
-            key={c.id}
-            element={c}
-            childMap={childMap}
-            depth={depth + 1}
-            selectedIds={selectedIds}
-            hoveredId={hoveredId}
-            onSelect={onSelect}
-            onHover={onHover}
-            expanded={expanded}
-            toggleExpand={toggleExpand}
-          />
-        ))}
-    </>
-  )
+  const roots = items.filter((i) => i.depth === 0)
+
+  function renderNode(item: TreeItem): React.ReactElement {
+    const isSelected = selectedIds.includes(item.id)
+    const hasChildren = item.children.length > 0
+    const isOpen = expanded.has(item.id)
+
+    return (
+      <React.Fragment key={item.id}>
+        <div
+          className={cn(
+            'group flex items-center gap-1 rounded px-1.5 py-1 text-xs cursor-pointer select-none',
+            isSelected && 'bg-primary/15 text-primary',
+            !isSelected && 'hover:bg-muted/40',
+          )}
+          style={{ paddingLeft: 4 + item.depth * 12 }}
+          onClick={() => onSelect(item.id)}
+        >
+          {hasChildren ? (
+            <button
+              type="button"
+              className="size-3.5 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); toggleExpand(item.id) }}
+            >
+              {isOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+            </button>
+          ) : (
+            <span className="size-3.5" />
+          )}
+          <span className="truncate">{item.name}</span>
+        </div>
+        {hasChildren && isOpen &&
+          item.children.map((cid) => {
+            const child = itemMap.get(cid)
+            return child ? renderNode(child) : null
+          })}
+      </React.Fragment>
+    )
+  }
+
+  return <>{roots.map(renderNode)}</>
 }
 
-export interface LayerTreePanelProps {
-  className?: string
-  /** 默认全部展开 */
-  defaultExpanded?: boolean
-}
+export function LayerTreePanel({ className }: { className?: string }): React.ReactElement | null {
+  // v3 数据源
+  const doc = useAtomValue(currentDocumentAtom)
+  const v3Nodes = React.useMemo(() => buildLayerTree(doc), [doc])
+  const v3Selected = useAtomValue(selectedShapeIdsAtom)
+  const v3Select = useSetAtom(selectShapeAtom)
 
-export function LayerTreePanel({
-  className,
-  defaultExpanded = true,
-}: LayerTreePanelProps): React.ReactElement {
-  const layers = useAtomValue(canvasLayersAtom)
-  const selectedIds = useAtomValue(selectedElementIdsAtom)
-  const hoveredId = useAtomValue(hoveredElementIdAtom)
-  const setSelected = useSetAtom(selectedElementIdsAtom)
-  const setHovered = useSetAtom(hoveredElementIdAtom)
+  // v2 数据源
+  const v2Layers = useAtomValue(canvasLayersAtom)
+  const v2Selected = useAtomValue(selectedElementIdsAtom)
+  const v2SetSelected = useSetAtom(selectedElementIdsAtom)
 
-  // v2: 选中元素 → 描述 → 注入 chat input
-  // 兜底：selectedIds 偶尔可能是非数组（HMR / localStorage 脏数据），强制按数组处理
-  const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : []
-  const selectedElements = React.useMemo<CanvasElement[]>(
-    () => safeSelectedIds
-      .map((id) => layers.find((l) => l.id === id))
-      .filter((x): x is CanvasElement => !!x),
-    [safeSelectedIds, layers],
-  )
-  const handleTellAgent = React.useCallback(() => {
-    const prompt = buildPromptFromSelection(selectedElements)
-    if (!prompt) return
-    dispatchAppendChatInput(prompt)
-  }, [selectedElements])
+  const hasV3 = Object.keys(doc.shapes).length > 1
 
-  // 收集 children 到 parentId 的反向映射
-  const childMap = React.useMemo(() => {
-    const map = new Map<string | null, CanvasElement[]>()
-    for (const el of layers) {
-      const arr = map.get(el.parentId) ?? []
-      arr.push(el)
-      map.set(el.parentId, arr)
+  // 根据数据源决定内容
+  const items = React.useMemo<TreeItem[]>(() => {
+    if (hasV3) {
+      return v3Nodes.map((n) => ({
+        id: n.id,
+        name: n.name,
+        children: n.childIds,
+        depth: n.depth,
+      }))
     }
-    return map
-  }, [layers])
+    // v2: 从 CanvasElement[] 构建树
+    if (v2Layers.length === 0) return []
+    const v2Items: TreeItem[] = []
+    function walk(id: string, depth: number, visited: Set<string>) {
+      if (visited.has(id)) return
+      visited.add(id)
+      const el = v2Layers.find((l) => l.id === id)
+      if (!el) return
+      v2Items.push({
+        id: el.id,
+        name: describeTag(el.tag, el.role, el.text),
+        children: el.childIds,
+        depth,
+      })
+      for (const cid of el.childIds) walk(cid, depth + 1, visited)
+    }
+    const roots = v2Layers.filter((l) => l.parentId === null)
+    const visited = new Set<string>()
+    for (const r of roots) walk(r.id, 0, visited)
+    return v2Items
+  }, [hasV3, v3Nodes, v2Layers])
 
-  // 默认展开：根节点 + 根的直系子节点
+  const selectedIds = hasV3 ? v3Selected : v2Selected
+  const handleSelect = hasV3 ? v3Select : (id: string) => v2SetSelected([id])
+
   const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set())
   React.useEffect(() => {
-    if (layers.length === 0) return
-    if (expanded.size > 0) return
-    const roots = childMap.get(null) ?? []
+    if (items.length === 0 || expanded.size > 0) return
     const next = new Set<string>()
-    if (defaultExpanded) {
-      for (const r of roots) {
-        next.add(r.id)
-        // 也展开第一层
-        for (const c of childMap.get(r.id) ?? []) {
-          next.add(c.id)
-        }
-      }
+    for (const item of items.slice(0, 3)) {
+      next.add(item.id)
     }
     setExpanded(next)
-  }, [layers, childMap, defaultExpanded, expanded.size])
+  }, [items, expanded.size])
 
   const toggleExpand = React.useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    setExpanded((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }, [])
 
-  const handleSelect = React.useCallback(
-    (id: string, additive: boolean) => {
-      setSelected((prev) => {
-        if (additive) {
-          return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-        }
-        return prev.includes(id) && prev.length === 1 ? [] : [id]
-      })
-    },
-    [setSelected],
+  const selectedNames = React.useMemo(
+    () => items.filter((i) => selectedIds.includes(i.id)).map((i) => ({ name: i.name })),
+    [items, selectedIds],
   )
 
-  const roots = childMap.get(null) ?? []
+  const handleTellAgent = React.useCallback(() => {
+    const prompt = buildPromptFromText(selectedNames)
+    if (!prompt) return
+    dispatchAppendChatInput(prompt)
+  }, [selectedNames])
+
+  if (items.length === 0) return null
 
   return (
     <div className={cn('flex h-full flex-col border-r border-border/40 bg-background/60 backdrop-blur', className)}>
@@ -219,13 +187,10 @@ export function LayerTreePanel({
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-xs font-medium text-foreground truncate">分层</h3>
-          <p className="text-[10px] text-muted-foreground">
-            {layers.length > 0 ? `${layers.length} 个元素` : '等待画布内容'}
-          </p>
+          <p className="text-[10px] text-muted-foreground">{items.length} 个元素</p>
         </div>
       </div>
 
-      {/* v2: 选中后出现"告诉 Agent"按钮 */}
       {selectedIds.length > 0 && (
         <div className="border-b border-border/40 px-3 py-2">
           <button
@@ -240,28 +205,8 @@ export function LayerTreePanel({
       )}
 
       <div className="flex-1 overflow-y-auto px-1.5 py-2">
-        {layers.length === 0 ? (
-          <div className="flex h-full items-center justify-center px-3 text-center">
-            <p className="text-[11px] text-muted-foreground">
-              画布内有内容后，分层会自动出现
-            </p>
-          </div>
-        ) : (
-          roots.map((root) => (
-            <TreeNode
-              key={root.id}
-              element={root}
-              childMap={childMap}
-              depth={0}
-              selectedIds={selectedIds}
-              hoveredId={hoveredId}
-              onSelect={handleSelect}
-              onHover={(id) => setHovered(id)}
-              expanded={expanded}
-              toggleExpand={toggleExpand}
-            />
-          ))
-        )}
+        <TreeView items={items} selectedIds={selectedIds} onSelect={handleSelect}
+          expanded={expanded} toggleExpand={toggleExpand} />
       </div>
     </div>
   )
