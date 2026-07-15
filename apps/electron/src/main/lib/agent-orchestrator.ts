@@ -121,7 +121,7 @@ import { getContextUsageCache } from './context-usage-cache'
 import { getFetchFn } from './proxy-fetch'
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getRuntimeStatus } from './runtime-init'
-import { getSettings } from './settings-service'
+import { getSettings, isAgentStreamingEnabled } from './settings-service'
 import { kanbanDbService } from './kanban-db'
 
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
@@ -2577,7 +2577,7 @@ export class AgentOrchestrator {
         // 主进程提取 text_delta 透传到渲染层，驱动 useSmoothStream 打字机效果，
         // 避免 kscc 等长 turn 渠道在 SDK 内部逐 token 生成期间 UI 一直显示"运行中"无反馈。
         // 不影响 Prompt Cache：仅改 SDK yield 给上层的频率，不改发给 API 的请求结构。
-        includePartialMessages: true,
+        includePartialMessages: isAgentStreamingEnabled(appSettings),
         // SDK 0.2.52+ 新增选项（从 settings 读取）
         ...(appSettings.agentThinking && { thinking: appSettings.agentThinking }),
         effort: appSettings.agentEffort ?? 'high',
