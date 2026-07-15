@@ -198,6 +198,106 @@ def confirm_or_abort(args: argparse.Namespace, tag: str) -> None:
         raise ReleaseError("Aborted.")
 
 
+def preflight_checks(tag: str) -> None:
+    """发布前自动检查，不通过则中止。
+
+    检查项：
+    1. apps/electron/package.json 版本号与 tag 匹配
+    2. bun run typecheck 通过（0 error）
+    3. bun run eslint . --quiet 通过（0 error）
+    4. RELEASE_NOTES.md 包含当前版本标题
+    """
+    errors: list[str] = []
+
+    # --- 1. 版本号匹配 ---
+    print("[preflight] 检查版本号匹配...")
+    electron_pkg = REPO_ROOT / "apps" / "electron" / "package.json"
+    if electron_pkg.exists():
+        pkg = json.loads(electron_pkg.read_text(encoding="utf-8"))
+        pkg_version = pkg.get("version", "")
+        tag_version = tag.lstrip("v")
+        if pkg_version != tag_version:
+            errors.append(
+                f"版本号不匹配: apps/electron/package.json={pkg_version!r}, tag={tag_version!r}\n"
+                f"  → 修复: 将 apps/electron/package.json 的 version 改为 {tag_version}"
+            )
+        else:
+            print(f"  ✓ 版本号匹配: {pkg_version}")
+    else:
+        errors.append(f"找不到 {electron_pkg}")
+
+    # --- 2. Release notes 存在且包含版本标题 ---
+    print("[preflight] 检查 release notes...")
+    notes_file = REPO_ROOT / "RELEASE_NOTES.md"
+    if notes_file.exists():
+        notes_text = notes_file.read_text(encoding="utf-8")
+        expected_title = f"# {tag}"
+        if expected_title not in notes_text:
+            errors.append(
+                f"RELEASE_NOTES.md 中未找到 {expected_title!r} 标题\n"
+                f"  → 修复: 在 RELEASE_NOTES.md 中添加 {expected_title} 段落"
+            )
+        else:
+            print(f"  ✓ RELEASE_NOTES.md 包含 {expected_title}")
+    else:
+        errors.append("RELEASE_NOTES.md 文件不存在")
+
+    # --- 3. TypeScript 类型检查 ---
+    print("[preflight] 运行 typecheck...")
+    result = subprocess.run(
+        ["bun", "run", "typecheck"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        # 提取 error 行
+        error_lines = [l for l in result.stdout.splitlines() if "error TS" in l]
+        errors.append(
+            f"typecheck 失败 ({len(error_lines)} errors):\n"
+            + "\n".join(error_lines[:10])
+            + ("\n  ..." if len(error_lines) > 10 else "")
+        )
+    else:
+        print("  ✓ typecheck 通过")
+
+    # --- 4. ESLint 检查 ---
+    print("[preflight] 运行 eslint...")
+    result = subprocess.run(
+        ["bun", "run", "eslint", ".", "--quiet"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        error_lines = [l for l in result.stdout.splitlines() if " error " in l]
+        errors.append(
+            f"eslint 失败 ({len(error_lines)} errors):\n"
+            + "\n".join(error_lines[:10])
+            + ("\n  ..." if len(error_lines) > 10 else "")
+        )
+    else:
+        print("  ✓ eslint 通过（0 errors）")
+
+    # --- 汇总 ---
+    if errors:
+        print("\n" + "=" * 60)
+        print(f"preflight 失败: {len(errors)} 项不通过")
+        print("=" * 60)
+        for i, err in enumerate(errors, 1):
+            print(f"\n[{i}] {err}")
+        print()
+        raise ReleaseError(
+            "发布前检查未通过，请修复上述问题后重新运行。"
+            "如确认跳过，可使用 --skip-preflight。"
+        )
+    print("\n✓ 所有 preflight 检查通过\n")
+
+
 def dispatch_workflow(workflow: str, ref: str, tag: str, dry_run: bool) -> tuple[str | None, str | None]:
     cmd = ["gh", "workflow", "run", workflow, "--ref", ref, "-f", f"tag_name={tag}"]
     if dry_run:
@@ -290,6 +390,9 @@ def cmd_publish(args: argparse.Namespace) -> int:
             "intend to rerun and overwrite assets."
         )
 
+    if not args.skip_preflight:
+        preflight_checks(tag)
+
     confirm_or_abort(args, tag)
 
     run_id, run_url = dispatch_workflow(args.workflow, args.ref, tag, args.dry_run)
@@ -339,6 +442,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow dispatch when the GitHub Release already exists.",
     )
+    publish.add_argument(
+        "--skip-preflight",
+        action="store_true",
+        help="Skip preflight checks (typecheck, eslint, version match, release notes).",
+    )
     publish.set_defaults(func=cmd_publish)
 
     ship = sub.add_parser("ship", help="Alias for publish")
@@ -352,6 +460,7 @@ def build_parser() -> argparse.ArgumentParser:
     ship.add_argument("--no-watch", dest="watch", action="store_false")
     ship.add_argument("--timeout-minutes", type=int, default=75)
     ship.add_argument("--allow-existing-release", action="store_true")
+    ship.add_argument("--skip-preflight", action="store_true")
     ship.set_defaults(func=cmd_publish)
 
     return parser
