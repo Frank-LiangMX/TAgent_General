@@ -174,6 +174,7 @@ function buildUsageUpdateFromAssistant(aMsg: SDKAssistantMessage): AgentEvent | 
 }
 
 function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
+  if (payload.kind === 'call_stats') return []
   if (payload.kind === 'stream_text_delta') {
     // 流式 partial 文本：转成 text_delta 喂给 applyAgentEvent 累积到 state.content，
     // useSmoothStream 会消费 state.content 做打字机渲染。
@@ -854,6 +855,21 @@ export function useGlobalAgentListeners(): void {
         }
 
         // Phase 1 兼容：将新 AgentStreamPayload 转换为旧 AgentEvent[]
+        if (payload.kind === 'call_stats') {
+          store.set(sessionTokenStatsAtom, (prev) => {
+            const map = new Map(prev)
+            const current = map.get(sessionId) ?? {
+              totalInputTokens: 0,
+              totalOutputTokens: 0,
+              totalCacheReadTokens: 0,
+              totalCacheCreationTokens: 0,
+              totalCostUsd: 0,
+              turnCount: 0,
+            }
+            map.set(sessionId, { ...current, lastCallStats: payload.stats })
+            return map
+          })
+        }
         const legacyEvents = payloadToLegacyEvents(payload)
 
         for (const event of legacyEvents) {

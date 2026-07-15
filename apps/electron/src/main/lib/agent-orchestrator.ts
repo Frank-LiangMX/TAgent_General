@@ -57,6 +57,7 @@ import type {
   SdkBeta,
   ProviderType,
   BlockedApprovalRecord,
+  AgentCallStats,
 } from '@tagent/shared'
 import pkg from '../../../package.json' with { type: 'json' }
 import {
@@ -67,6 +68,7 @@ import {
   extractErrorDetails,
   shouldKeepChannelOpen,
 } from './adapters/claude-agent-adapter'
+import { createAgentCallStats } from './agent-call-stats'
 import { askUserService } from './agent-ask-user-service'
 import {
   MAX_TOOL_SUMMARY_LENGTH,
@@ -1567,6 +1569,7 @@ export class AgentOrchestrator {
         console.warn('[Agent 编排] L4 recordSession 失败:', e)
       }
     }
+    const callStats: AgentCallStats = createAgentCallStats()
     const completeRun = (
       messages?: AgentMessage[],
       opts?: {
@@ -1579,6 +1582,7 @@ export class AgentOrchestrator {
       }
     ): void => {
       releaseActiveRun()
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       // 先发送 STREAM_COMPLETE IPC，让 UI 立即更新状态
       // 然后再执行 L4 记忆写入（可能耗时）
       callbacks.onComplete(messages, opts)
@@ -1591,6 +1595,7 @@ export class AgentOrchestrator {
       messages?: AgentMessage[],
       opts?: { startedAt?: number; resultSubtype?: string }
     ): void => {
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       callbacks.onComplete(messages, { ...opts, backgroundTasksPending: true })
     }
     const failRun = (
@@ -1599,6 +1604,7 @@ export class AgentOrchestrator {
       opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
     ): void => {
       releaseActiveRun()
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       callbacks.onError(error)
       callbacks.onComplete(messages, opts)
     }
@@ -2614,6 +2620,7 @@ export class AgentOrchestrator {
           // SDK 初始化完成后立即触发标题生成，使多会话并发时用户能快速区分
           if (!titleGenerationStarted) {
             titleGenerationStarted = true
+            callStats.titleRequests += 1
             this.autoGenerateTitle(
               sessionId,
               userMessage,
@@ -2635,6 +2642,9 @@ export class AgentOrchestrator {
         onContextWindow: (cw: number) => {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
           setSessionContextWindow(sessionId, cw) // P0-1
+        },
+        onContextUsageRequest: () => {
+          callStats.contextUsageRequests += 1
         },
         // P2 主动兜底：每轮 turn 后检测 context 占用，超 77.5% 主动压缩
         // 阈值对齐 SDK 内置压缩阈值，不等 result 后 context 已满才处理
@@ -2687,6 +2697,7 @@ export class AgentOrchestrator {
       for (let attempt = 1; attempt <= MAX_AUTO_RETRIES + 1; attempt++) {
         // 非首次尝试：等待 + 发送重试事件到 UI
         if (attempt > 1) {
+          callStats.retryAttempts += 1
           if (skipNextRetryDelay) {
             skipNextRetryDelay = false
             console.log(`[Agent 编排] 已切换到上下文回填模式，立即重试`)
@@ -2752,6 +2763,7 @@ export class AgentOrchestrator {
 
         try {
           // 获取异步迭代器（手动 .next() 以支持 Promise.race 中断）
+          callStats.queryAttempts += 1
           const queryIterable = this.adapter.query(queryOptions)
           const queryIterator = queryIterable[Symbol.asyncIterator]()
 
@@ -2797,6 +2809,11 @@ export class AgentOrchestrator {
 
             pendingNext = null
             const msg = iterResult.value
+
+            if (msg.type === 'assistant' && !(msg as SDKAssistantMessage).isReplay) {
+              if ((msg as SDKAssistantMessage).parent_tool_use_id) callStats.subagentCalls += 1
+              else callStats.modelCalls += 1
+            }
 
             // 流式 partial 事件：SDK 启用 includePartialMessages 后逐 token yield。
             // 提取 text_delta 透传到渲染层驱动打字机，不持久化、不走 shouldEmit 过滤。

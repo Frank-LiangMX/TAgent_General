@@ -812,6 +812,7 @@ export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
 export type AgentStreamPayload =
   | { kind: 'sdk_message'; message: SDKMessage }
   | { kind: 'tagent_event'; event: TAgentEvent }
+  | { kind: 'call_stats'; stats: AgentCallStats }
   | {
       kind: 'stream_text_delta'
       /** 本次增量文本（已拆分为字符粒度由渲染层 useSmoothStream 入队） */
@@ -826,6 +827,22 @@ export type AgentStreamPayload =
       /** SubAgent 父 tool_use_id（顶层 Agent 为 undefined） */
       parentToolUseId?: string
     }
+
+/** 本轮 Agent 调用统计（仅统计本轮运行期间已观测到的调用） */
+export interface AgentCallStats {
+  /** 顶层 Agent 模型响应次数 */
+  modelCalls: number
+  /** SubAgent 模型响应次数 */
+  subagentCalls: number
+  /** SDK query 尝试次数（包含重试） */
+  queryAttempts: number
+  /** 自动获取 Context Usage 的控制请求次数 */
+  contextUsageRequests: number
+  /** 标题生成请求次数 */
+  titleRequests: number
+  /** 自动重试 / 恢复次数 */
+  retryAttempts: number
+}
 
 // ===== Agent 会话管理 =====
 

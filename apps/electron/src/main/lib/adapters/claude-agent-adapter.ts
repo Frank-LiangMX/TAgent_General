@@ -170,6 +170,8 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   onModelResolved?: (model: string) => void
   /** 上下文窗口缓存回调 */
   onContextWindow?: (contextWindow: number) => void
+  /** 记录一次自动 getContextUsage 控制请求 */
+  onContextUsageRequest?: () => void
   /**
    * 上下文使用量回调（result 后由 cacheContextUsageFromQuery 触发）
    * 用于 orchestrator 检测高占用（> 85%）时主动 fire-and-forget 调 compactSession，
@@ -615,10 +617,12 @@ const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
 async function cacheContextUsageFromQuery(
   sessionId: string,
   query: SDKQuery,
-  onContextUsage?: (usedTokens: number, totalTokens: number) => void
+  onContextUsage?: (usedTokens: number, totalTokens: number) => void,
+  onContextUsageRequest?: () => void
 ): Promise<void> {
   if (typeof query.getContextUsage !== 'function') return
   try {
+    onContextUsageRequest?.()
     const response = await query.getContextUsage()
     const snapshot = mapSdkContextUsageResponse(response)
     setContextUsageCache(sessionId, snapshot)
@@ -1051,7 +1055,8 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             void cacheContextUsageFromQuery(
               options.sessionId,
               liveQuery,
-              options.onContextUsage
+              options.onContextUsage,
+              options.onContextUsageRequest
             )
           }
         }
@@ -1077,7 +1082,8 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
             void cacheContextUsageFromQuery(
               options.sessionId,
               liveQuery,
-              options.onContextUsage
+              options.onContextUsage,
+              options.onContextUsageRequest
             )
           }
           const keepForReason = shouldKeepChannelOpen(resultMsg.terminal_reason)
