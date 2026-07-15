@@ -111,17 +111,19 @@ function buildSystemBody(payload: KanbanNotificationPayload): string {
       return `已开始，共 ${completionStats?.total ?? 0} 个任务`
     case 'task_started':
       return task ? `任务「${task.title}」开始执行` : ''
-    case 'task_done':
+    case 'task_done': {
       if (!task) return ''
       const taskSummary = summary ?? extractTaskSummary(task)
       return `${task.title} · 完成\n${truncate(taskSummary.trim() || '无摘要', 500)}`
+    }
     case 'task_blocked':
       if (!task) return ''
       return `${task.title} · 等你确认\n${blockedReason ?? task.blockedReason ?? '阻塞原因未知'}`
-    case 'board_completed':
+    case 'board_completed': {
       const stats = completionStats ?? { total: 0, done: 0, failed: 0 }
       const duration = board.updatedAt - board.createdAt
       return `全部完成（${stats.done}/${stats.total}，失败 ${stats.failed}）\n耗时 ${formatBoardDuration(duration)}`
+    }
     default:
       return ''
   }
@@ -200,7 +202,7 @@ function buildFeishuContentLines(payload: KanbanNotificationPayload): string[] {
         `**状态**: 执行中`,
         task.modelId ? `**模型**: ${task.modelId}` : '',
       ]
-    case 'task_done':
+    case 'task_done': {
       if (!task) return baseLines
       const taskSummary = summary ?? extractTaskSummary(task)
       return [
@@ -210,6 +212,7 @@ function buildFeishuContentLines(payload: KanbanNotificationPayload): string[] {
         '',
         truncate(taskSummary.trim() || '无摘要', 12_000),
       ]
+    }
     case 'task_blocked':
       if (!task) return baseLines
       return [
@@ -221,7 +224,7 @@ function buildFeishuContentLines(payload: KanbanNotificationPayload): string[] {
         '',
         '请在 TAgent 中处理或在 IM 回复「解除阻塞」',
       ]
-    case 'board_completed':
+    case 'board_completed': {
       const stats = completionStats ?? { total: 0, done: 0, failed: 0 }
       const duration = board.updatedAt - board.createdAt
       return [
@@ -232,6 +235,7 @@ function buildFeishuContentLines(payload: KanbanNotificationPayload): string[] {
         '',
         '全部任务已完成',
       ]
+    }
     default:
       return baseLines
   }
@@ -275,7 +279,7 @@ function buildImTextNotification(payload: KanbanNotificationPayload): string {
       if (!task) break
       lines.push(`任务：${task.title}`, '状态：执行中', task.modelId ? `模型：${task.modelId}` : '')
       break
-    case 'task_done':
+    case 'task_done': {
       if (!task) break
       const taskSummary = summary ?? extractTaskSummary(task)
       lines.push(
@@ -285,6 +289,7 @@ function buildImTextNotification(payload: KanbanNotificationPayload): string {
         truncate(taskSummary.trim() || '无摘要', 2000)
       )
       break
+    }
     case 'task_blocked':
       if (!task) break
       lines.push(
@@ -296,7 +301,7 @@ function buildImTextNotification(payload: KanbanNotificationPayload): string {
         '请在 TAgent 中处理或在 IM 回复「解除阻塞」'
       )
       break
-    case 'board_completed':
+    case 'board_completed': {
       const stats = completionStats ?? { total: 0, done: 0, failed: 0 }
       const duration = board.updatedAt - board.createdAt
       lines.push(
@@ -307,6 +312,7 @@ function buildImTextNotification(payload: KanbanNotificationPayload): string {
         '全部任务已完成'
       )
       break
+    }
   }
 
   return lines.join('\n').trim()

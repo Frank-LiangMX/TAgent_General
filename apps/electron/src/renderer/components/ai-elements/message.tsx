@@ -27,7 +27,7 @@ import type { ComponentProps } from 'react'
 
 // ===== MessageResponse（注入 onOpenExternal） =====
 
-interface MessageResponseProps extends ComponentProps<typeof BaseMessageResponse> {}
+export type MessageResponseProps = ComponentProps<typeof BaseMessageResponse>
 
 export const MessageResponse = function MessageResponse(props: MessageResponseProps) {
   const handleOpenExternal = (url: string) => {
@@ -39,7 +39,7 @@ export const MessageResponse = function MessageResponse(props: MessageResponsePr
 
 // ===== UserMessageContent（注入 onOpenExternal） =====
 
-interface UserMessageContentProps extends ComponentProps<typeof BaseUserMessageContent> {}
+export type UserMessageContentProps = ComponentProps<typeof BaseUserMessageContent>
 
 export const UserMessageContent = function UserMessageContent(props: UserMessageContentProps) {
   const handleOpenExternal = (url: string) => {
@@ -51,7 +51,7 @@ export const UserMessageContent = function UserMessageContent(props: UserMessage
 
 // ===== MessageAttachments（注入 Electron API 回调） =====
 
-interface MessageAttachmentsProps extends ComponentProps<typeof BaseMessageAttachments> {}
+export type MessageAttachmentsProps = ComponentProps<typeof BaseMessageAttachments>
 
 export const MessageAttachments = function MessageAttachments(props: MessageAttachmentsProps) {
   const handleReadAttachment = async (localPath: string): Promise<string> => {
@@ -87,12 +87,7 @@ export {
   remarkPreserveBreaks,
 }
 
-export type {
-  MessageResponseProps,
-  UserMessageContentProps,
-  MessageAttachmentsProps,
-  RemarkPluginFn,
-}
+export type { RemarkPluginFn }
 
 /** 重新导出类型 */
 export type { FileAttachment } from '@tagent/shared'

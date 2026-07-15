@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 
 // ===== Reasoning 根组件（包装 onOpenExternal） =====
 
-interface ReasoningProps extends ComponentProps<typeof BaseReasoning> {}
+export type ReasoningProps = ComponentProps<typeof BaseReasoning>
 
 export const Reasoning = function Reasoning(props: ReasoningProps) {
   const handleOpenExternal = (url: string) => {

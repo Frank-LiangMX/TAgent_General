@@ -11,7 +11,7 @@ import type { ComponentProps } from 'react'
 import { useShortcut } from '@/hooks/useShortcut'
 import { getModelLogo } from '@/lib/model-logo'
 
-interface ScrollMinimapProps extends ComponentProps<typeof BaseScrollMinimap> {}
+export type ScrollMinimapProps = ComponentProps<typeof BaseScrollMinimap>
 
 export function ScrollMinimap(props: ScrollMinimapProps) {
   const handleShortcutOpen = () => {

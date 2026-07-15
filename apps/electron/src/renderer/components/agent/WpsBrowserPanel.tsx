@@ -354,7 +354,9 @@ export function BrowserPanel({
           <webview
             ref={webviewRef as React.RefObject<HTMLElement>}
             src={activeUrl}
+            // eslint-disable-next-line react/no-unknown-property
             partition="persist:browser-preview"
+            // eslint-disable-next-line react/no-unknown-property
             webpreferences="contextIsolation=yes,nodeIntegration=no,sandbox=yes"
             className="absolute inset-0 w-full h-full"
           />

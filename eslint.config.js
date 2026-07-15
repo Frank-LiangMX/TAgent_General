@@ -137,6 +137,9 @@ export default [
       ],
       // 注：硬编码圆角（rounded-[10px] 等）靠 CLAUDE.md 决策树 + code review 拦截，
       // ESLint AST selector 对 JSX 字符串字面量匹配不稳定，不在此处强制。
+
+      // template literal 内注入 iframe 的 JS 代码含 /\s+/ 等 regex，eslint 误报
+      'no-useless-escape': 'warn',
     },
   }),
 
@@ -172,6 +175,8 @@ export default [
       // 临时开发目录
       '**/temp-*/**',
       '**/.tmp/**',
+      // prototypes 是参考快照，不应被 lint
+      '**/prototypes/**',
     ],
   },
 ]

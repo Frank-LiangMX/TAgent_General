@@ -19,7 +19,7 @@ import type { ComponentProps } from 'react'
 
 // ===== AssistantMessageLogo（包装 logoResolver） =====
 
-interface AssistantMessageLogoProps extends ComponentProps<typeof BaseAssistantMessageLogo> {}
+export type AssistantMessageLogoProps = ComponentProps<typeof BaseAssistantMessageLogo>
 
 export function AssistantMessageLogo(props: AssistantMessageLogoProps) {
   const handleLogoResolver = (model: string) => getModelLogo(model)
@@ -35,7 +35,7 @@ export function AssistantMessageLogo(props: AssistantMessageLogoProps) {
 
 // ===== ErrorMessageLogo（包装 errorIcon） =====
 
-interface ErrorMessageLogoProps extends ComponentProps<typeof BaseErrorMessageLogo> {}
+export type ErrorMessageLogoProps = ComponentProps<typeof BaseErrorMessageLogo>
 
 export function ErrorMessageLogo(props: ErrorMessageLogoProps) {
   return (

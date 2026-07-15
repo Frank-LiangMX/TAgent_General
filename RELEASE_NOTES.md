@@ -1,96 +1,75 @@
-# v1.5.0
+# v1.6.0
 
-记忆系统全面改造 + 看板增强 + Agent 稳定性修复。
+画布沉浸式设计 + 设计系统材质全面重构 + CI 稳定性修复。
 
 ## 🎉 新功能
 
-### Memory System v2.0 — 记忆系统全面改造
-- **静默记忆机制**：后台自动沉淀，不再干扰主对话流
-- **Frozen Snapshot**：关键记忆冻结保存，防止误覆盖
-- **Memory Graph**：知识图谱可视化，L0-L5 层级联动
-- **自进化机制**：contradiction_check（矛盾检测）、Nudge 结构化写入、Self-Repair（自我修复）、project_repeat（重复检测）
-- **记忆页面重设计**：左栏会话搜索 + 主区 L4 高亮 + 点击定位滚动
-- **玻璃浮岛卡片**：session-list-row 风格统一
+### Design Canvas 画布 v2
+- **沉浸全屏模式**：画布可切换沉浸视图，最大化设计空间
+- **Minimap 缩略图**：左下角实时缩略导航
+- **分层/点选/指着说话**：节点树操作 + 元素高亮 + 自然语言交互
+- **版本快照**：设计状态版本化管理，支持回溯
+- **外部 HTML 导入**：支持拖拽导入 HTML 文件到画布
+- **Design Preview 放大/沉浸布局**：会话列 + 画布双栏沉浸排版
 
-### Kanban 看板增强
-- **Worker 中断机制**：支持中途打断并恢复
-- **项目根注入 D+1**：自动注入项目根目录上下文
-- **Blackboard D+2**：看板全局黑板共享
-- **IM 通知渠道 Phase C**：微信/WPS 消息推送 + Bridge 入站控制
-- **跨渠道模型分配**：worker 可绑定不同模型
-- **v1 产品化验收手册**：配套文档完善
+### UI 材质系统全面重构（ADR-0005）
+- **M3 Surface 角色体系**：引入 MD surface-container / primary-container 等角色 token
+- **三材质正交架构**：frosted（默认实色）/ glass（高透液态）/ soft（轻拟态）
+- **表面色跟随主题 hue**：去掉硬编码蓝与纯白，全部走 MD 角色 token
+- **Glass 材质液态效果**：Switch + Sticky + Input 组件 neonav 风格
+- **Soft Glass 表面重构**：data-material 架构 + rail/会话列表样式对齐设计原型
+- **CopyButton / AttachmentPreviewItem**：迁入 @tagent/ui 统一管理
 
-### Agent Role 角色库商店
-- **角色商店入口**：浏览预置角色模板
-- **.md 导入**：从 Markdown 文件导入角色定义
-- **内置角色升级**：升级现有角色配置
+### 自动化意图检测（M4）
+- **自然语言意图识别**：用户输入自动识别自动化创建意图
 
-### UI/UX 改进
-- **右侧 Rail 重设计**：镜像左侧 NavIsland 浮岛布局
-- **BTW 按钮位置调整**：旁注触发按钮移至 RightPanelRail
-- **拖拽文件夹 Chip**：蓝色标识 + 可删除
-- **权限模式胶囊选择器**：图标+文字样式
-- **草稿模式 UI 优化**：看板团队 Tab 体验改进
-
----
+### 记忆系统增强
+- **Idle Consolidation Pipeline**：空闲时自动记忆整理
+- **ADR-0006**：记忆合并架构决策
 
 ## 🐛 修复
 
-### Agent 稳定性修复
-- **kscc 报错反映**：正确展示错误信息
-- **sessionId 错乱**：修复会话 ID 传递问题
-- **prompt_too_long 兜底**：超长提示容错处理
-- **会话模型/渠道选择重置**：防止默认值回退
-- **SDK auto-memory 入侵**：根治 memory 劫持问题
+### UI/UX 修复
+- **用户气泡融入主题色**：从 `--md-secondary-container` 改为 `--md-primary-container`，6 主题自动生效
+- **Context 分项进度条去色块重复**：进度条改为中性色，不再与色块 swatch 撞色
+- **模型选择器选中态**：补全列表背景、边框、阴影，glass/soft 材质适配
+- **设置页主题色融入**：浮岛和卡片加主色微光渐变，与主界面对齐
+- **会话视觉打磨**：session-list-row 样式优化 + streaming UX 修复
 
-### Context 上下文修复
-- **模型 context window 映射**：修正 glm-5.1 等模型上下文窗口值
-- **切换会话上下文警告误触发**：修复警告误报
-- **1M 模型映射确认**：补充已确认的 1M 上下文模型
+### CI/开发稳定性
+- **TypeScript 0 error**：修复 shared/ui/electron 三包 30+ 处类型错误
+- **ESLint 0 error**：修复 prototype placement 检查脚本缺失 + lint error 清零
+- **Prettier 格式统一**：组件库格式化规范化
 
-### Streaming 流式输出
-- **kscc 渠道流式文本冻结**：启用 SDK includePartialMessages
-- **透传修复**：流式内容实时显示
-
-### Memory 记忆系统
-- **project_repeat 跨 session 重复触发**：修复跨会话误检测
-- **Self-Repair 定时器溢出**：32 位整数溢出导致无限循环
-- **Nudge toast 不弹**：根因修复 + 玻璃卡片样式
-
-### UI 样式修复
-- **FilePathChip 抖动**：三态统一预留 border 占位
-- **圆角统一**：rounded-md / rounded-lg 标准化
-- **Toast 圆角覆盖**：--border-radius 变量覆盖 sonner 默认值
-- **RightRail 显示错位**：跟随主面板 tab 类型
-- **Windows rail 按钮**：与窗口控件间距调整
-- **默认主题**：改为浅色模式
-- **托盘图标**：简化为五边形轮廓（macOS）
+### Agent 稳定性
+- **Agent Session Meta 持久化**：修复会话元数据不刷新顺序问题
+- **Memory Reflection 可观测**：修复 reflection 结果统计 + 可靠性
+- **Memory 前台调用放大**：修复辅助 LLM 调用在前台被放大
+- **WPS CLI 集成修复**：多设备登录检测 + Secret Key 多层 fallback
 
 ---
 
 ## 🔧 重构
 
-- **右侧 rail 简化**：单按钮 + 浮岛布局
-- **记忆左栏重构**：会话搜索 + L4 高亮
-- **BTW 触发按钮重构**：移至 RightPanelRail
-- **清理废弃文件**：项目归档整理
+- **设置页浮岛布局重构**：统一设计语言，左导航 + 右内容双浮岛
+- **会话信息流脚注重构**：token 统计 / context 用量 / 模型信息整合
+- **@tagent/ui 组件库迁移**：统一 UI 库管理，颜色 token 集中化
+- **原型文件归档**：前端原型统一迁入 `prototypes/` 目录
 
 ---
 
 ## 📝 文档
 
-- 记忆系统实现现状文档 + CLAUDE.md 链接
-- 自进化机制同步到 PROGRESS.md
-- Agent 稳定性诊断文档
-- Ask 模式重构设计（独立会话类型）
-- 微信/WPS 通知配置说明
+- Design Canvas v2 架构文档
+- Liquid Glass UI Agent 参考文档
+- Memory Idle Consolidation Pipeline 文档
+- ADR-0005 Material Surface Token Architecture
+- Glass Studio 原型 README
 
 ---
 
 ## 升级说明
 
-本次版本包含记忆系统重大改造，升级后：
-1. 首次启动会自动迁移旧记忆数据
-2. 新的静默记忆机制默认启用
-3. Memory Graph 可在左侧栏「记忆」入口查看
-4. 自进化检测（矛盾/重复/修复）后台自动运行
+1. 材质系统重构影响所有 UI 组件，升级后视觉效果更统一
+2. 画布 v2 需要刷新页面才能加载新的沉浸布局
+3. CI 流水线已全面修复，`bun run typecheck` + `bun run lint` 均 0 error

@@ -838,7 +838,7 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
         // L0 用户画像 - 追加到 peer_view
         await this.appendMdFileWithDedup(path.join(dir, 'L0_user.md'), 'peer_view', nudge)
         break
-      case 'L1':
+      case 'L1': {
         // L1 项目画像 + 索引层（P4.2 ≤30 行硬约束，借鉴 GenericAgent L1 极简索引）
         const l1Path = path.join(dir, 'L1_project.md')
         if (fs.existsSync(l1Path)) {
@@ -855,6 +855,7 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
         }
         await this.appendMdFileWithDedup(l1Path, 'project', nudge)
         break
+      }
       case 'L2':
         // L2 稳定事实
         await this.appendMdFileWithDedup(path.join(dir, 'L2_facts.md'), 'fact', nudge)

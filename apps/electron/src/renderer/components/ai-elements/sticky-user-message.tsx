@@ -13,7 +13,7 @@ import type { ComponentProps } from 'react'
 
 import { stickyUserMessageEnabledAtom } from '@/atoms/ui-preferences'
 
-interface StickyUserMessageProps extends ComponentProps<typeof BaseStickyUserMessage> {}
+export type StickyUserMessageProps = ComponentProps<typeof BaseStickyUserMessage>
 
 export function StickyUserMessage(props: StickyUserMessageProps) {
   const stickyEnabled = useAtomValue(stickyUserMessageEnabledAtom)

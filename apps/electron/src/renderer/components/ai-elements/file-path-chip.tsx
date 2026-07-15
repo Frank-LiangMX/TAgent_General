@@ -14,7 +14,7 @@ import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { openPreview } from '@/components/diff/preview-opener'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
 
-interface FilePathChipProps extends ComponentProps<typeof BaseFilePathChip> {}
+export type FilePathChipProps = ComponentProps<typeof BaseFilePathChip>
 
 export function FilePathChip(props: FilePathChipProps) {
   const store = useStore()

@@ -10,7 +10,7 @@ import { SpeechButton as BaseSpeechButton } from '@tagent/ui'
 
 import type { ComponentProps } from 'react'
 
-interface SpeechButtonProps extends ComponentProps<typeof BaseSpeechButton> {}
+export type SpeechButtonProps = ComponentProps<typeof BaseSpeechButton>
 
 export function SpeechButton(props: SpeechButtonProps) {
   const handleActivate = async () => {
