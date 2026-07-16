@@ -244,7 +244,11 @@ const kanbanAddTaskSchema: Record<string, unknown> = {
     boardId: { type: 'string', description: '所属看板 ID' },
     title: { type: 'string', description: '任务标题（一行简述）' },
     body: { type: 'string', description: '给工人的完整 prompt' },
-    roleId: { type: 'string', description: '可选：绑定角色库 ID（决定 model / 权限）' },
+    roleId: {
+      type: 'string',
+      description:
+        '推荐必填：角色库 ID。内置：generalist（兜底）/ coder / analyst / reviewer / writer（工程文档）/ doc-writer（办公文档）/ data-analyst / chat。不传则自动落到 generalist',
+    },
     channelId: {
       type: 'string',
       description: '可选：覆盖看板默认渠道（v1 不推荐跨渠道）',
@@ -315,6 +319,8 @@ export async function handleCreateBoard(args: Record<string, unknown>): Promise<
         : (getSettings().agentBehavior?.defaultMaxConcurrent ?? KANBAN_DEFAULT_MAX_CONCURRENT),
     // D+1: 记录主会话 cwd 作为 worker 子会话项目根（kanban_add_task 注入 body 用）
     cwd: optionalString(args.cwd),
+    // worker skills：记录工作区 ID，worker 启动时挂载已安装 Skills
+    workspaceId: optionalString(args.workspaceId),
   }
   const board: KanbanBoard = kanbanDbService.createBoard(input)
   // 传了 parentSessionId 且会话存在时，自动写回 meta.boardId（触发「团队」Tab 显示）
@@ -478,6 +484,12 @@ export interface KanbanAgentToolContext {
    * 优先用 board.cwd，缺则用此字段兜底，再缺则用 process.cwd()。
    */
   agentCwd?: string
+  /**
+   * 当前会话工作区 ID（worker 挂载 skills）
+   *
+   * kanban_create_board 时写入 board.workspaceId；旧板缺省时 worker 再从 parentSession 兜底。
+   */
+  workspaceId?: string
 }
 
 /**
@@ -532,7 +544,12 @@ export async function injectKanbanMcpServer(
     boardId: z.string().describe('所属看板 ID'),
     title: z.string().describe('任务标题（一行简述）'),
     body: z.string().optional().describe('给工人的完整 prompt'),
-    roleId: z.string().optional().describe('绑定角色库 ID（决定 model / 权限）'),
+    roleId: z
+      .string()
+      .optional()
+      .describe(
+        '推荐必填：角色库 ID（generalist/coder/analyst/reviewer/writer/doc-writer/data-analyst/chat；不传则 generalist）'
+      ),
     channelId: z.string().optional().describe('任务渠道 ID（不传则用当前会话渠道）'),
     modelId: z.string().optional().describe('指定模型 ID（否则由 roleId 解析）'),
     priority: z.number().optional().describe('优先级（数字越大越优先；默认 0）'),
@@ -569,10 +586,12 @@ export async function injectKanbanMcpServer(
           // parentSessionId 未传时用当前会话 ID 兜底，确保建板后自动绑定到当前会话
           // 否则团队 Tab 拿不到 boardId，无法显示任务进度
           // D+1: cwd 未传时用 ctx.agentCwd 兜底，让 kanban_add_task 能注入项目根到 body
+          // worker skills: workspaceId 未传时用 ctx.workspaceId 兜底
           const enriched = {
             ...args,
             parentSessionId: args.parentSessionId ?? ctx.sessionId,
             cwd: args.cwd ?? ctx.agentCwd,
+            workspaceId: args.workspaceId ?? ctx.workspaceId,
           }
           return handleCreateBoard(enriched)
         }

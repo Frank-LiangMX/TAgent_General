@@ -25,6 +25,7 @@ import {
   type CreateKanbanBoardInput,
   type CreateKanbanTaskInput,
   type UpdateKanbanTaskStatusInput,
+  DEFAULT_KANBAN_ROLE_ID,
   KANBAN_DEFAULT_MAX_CONCURRENT,
 } from '@tagent/shared'
 import { getConfigDir } from './config-paths'
@@ -58,6 +59,7 @@ interface KanbanBoardRow {
   paused: number
   require_summary: number | null
   cwd: string | null
+  workspace_id: string | null
   created_at: number
   updated_at: number
 }
@@ -107,6 +109,7 @@ function rowToBoard(row: KanbanBoardRow): KanbanBoard {
     paused: (row.paused ?? 0) === 1,
     requireSummary: (row.require_summary ?? 0) === 1 ? true : false,
     cwd: row.cwd ?? undefined,
+    workspaceId: row.workspace_id ?? undefined,
   }
 }
 
@@ -196,6 +199,7 @@ export class KanbanDbService {
         paused INTEGER NOT NULL DEFAULT 0,
         require_summary INTEGER NOT NULL DEFAULT 0,
         cwd TEXT,
+        workspace_id TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
@@ -250,14 +254,16 @@ export class KanbanDbService {
    * - version 2：修复 B4 迁移遗留的 kanban_tasks 外键引用错误（指向已删除的 kanban_boards_old）
    * - version 3：B5 新增 max_concurrent / paused 列（per-board 并发 + 暂停隔离）
    * - version 4：B9 新增 require_summary 列（事件回流区分是否回调主会话）
+   * - version 5：D+1 新增 cwd 列（worker 子会话项目根）
+   * - version 6：worker skills 新增 workspace_id 列
    *
-   * 新 DB 直接建到 version 4，不需要迁移。旧 DB 检测到 version < 4 时执行对应迁移。
+   * 新 DB 的 createSchema 已直接包含最新列；旧 DB 检测到 version < 6 时执行对应迁移。
    */
   private migrateSchema(): void {
     if (!this.db) return
     const currentVersion = this.db.pragma('user_version', { simple: true }) as number
 
-    if (currentVersion >= 4) return
+    if (currentVersion >= 6) return
 
     // v0 → v1：B4 迁移（parent_session_id 改 NULLABLE + 新增 title/mode 列）
     if (currentVersion < 1) {
@@ -287,6 +293,12 @@ export class KanbanDbService {
     if (currentVersion < 5) {
       this.migrateV4ToV5()
       this.db.pragma('user_version = 5')
+    }
+
+    // v5 → v6：worker skills — 新增 workspace_id 列（挂载已安装 skills plugin）
+    if (currentVersion < 6) {
+      this.migrateV5ToV6()
+      this.db.pragma('user_version = 6')
     }
   }
 
@@ -477,6 +489,25 @@ export class KanbanDbService {
     console.log('[看板] schema 迁移完成：新增 cwd 列（D+1 worker 项目根）')
   }
 
+  /**
+   * v5 → v6 迁移：新增 workspace_id 列（worker 挂载已安装 skills）
+   *
+   * 允许 NULL：旧看板无 workspace_id，worker 启动时 fallback 到 parentSession 的 workspaceId。
+   * 新建看板时由 kanban_create_board 写入主会话 workspaceId。
+   */
+  private migrateV5ToV6(): void {
+    if (!this.db) return
+    const tableInfo = this.db.prepare('PRAGMA table_info(kanban_boards)').all() as Array<{
+      name: string
+    }>
+    const columns = new Set(tableInfo.map((c) => c.name))
+
+    if (!columns.has('workspace_id')) {
+      this.db.exec('ALTER TABLE kanban_boards ADD COLUMN workspace_id TEXT')
+    }
+    console.log('[看板] schema 迁移完成：新增 workspace_id 列（worker skills）')
+  }
+
   /** 关闭数据库连接 */
   close(): void {
     if (this.db) {
@@ -519,11 +550,12 @@ export class KanbanDbService {
       paused: false,
       requireSummary: input.requireSummary ?? false,
       cwd: input.cwd,
+      workspaceId: input.workspaceId,
     }
     db.prepare(
       `INSERT INTO kanban_boards
-        (id, root_goal, parent_session_id, title, mode, origin_chat_id, origin_bridge, status, max_concurrent, paused, require_summary, cwd, created_at, updated_at)
-       VALUES (@id, @root_goal, @parent_session_id, @title, @mode, @origin_chat_id, @origin_bridge, @status, @max_concurrent, @paused, @require_summary, @cwd, @created_at, @updated_at)`
+        (id, root_goal, parent_session_id, title, mode, origin_chat_id, origin_bridge, status, max_concurrent, paused, require_summary, cwd, workspace_id, created_at, updated_at)
+       VALUES (@id, @root_goal, @parent_session_id, @title, @mode, @origin_chat_id, @origin_bridge, @status, @max_concurrent, @paused, @require_summary, @cwd, @workspace_id, @created_at, @updated_at)`
     ).run({
       id: board.id,
       root_goal: board.rootGoal,
@@ -537,6 +569,7 @@ export class KanbanDbService {
       paused: board.paused ? 1 : 0,
       require_summary: board.requireSummary ? 1 : 0,
       cwd: board.cwd ?? null,
+      workspace_id: board.workspaceId ?? null,
       created_at: board.createdAt,
       updated_at: board.updatedAt,
     })
@@ -647,6 +680,8 @@ export class KanbanDbService {
   createTask(input: CreateKanbanTaskInput): KanbanTask {
     const db = this.requireDb()
     const now = Date.now()
+    // 未指定 roleId 时落到通用执行者，保证每个 worker 都有角色定义
+    const roleId = input.roleId?.trim() || DEFAULT_KANBAN_ROLE_ID
     const task: KanbanTask = {
       id: generateTaskId(),
       boardId: input.boardId,
@@ -654,7 +689,7 @@ export class KanbanDbService {
       title: input.title,
       body: input.body ?? '',
       status: 'pending',
-      roleId: input.roleId,
+      roleId,
       channelId: input.channelId,
       modelId: input.modelId,
       priority: input.priority ?? 0,
@@ -712,6 +747,13 @@ export class KanbanDbService {
         'SELECT * FROM kanban_tasks WHERE board_id = ? ORDER BY priority DESC, created_at ASC'
       )
       .all(boardId) as KanbanTaskRow[]
+    return rows.map(rowToTask)
+  }
+
+  /** 列出所有任务（用于统计聚合，扫描全表） */
+  listAllTasks(): KanbanTask[] {
+    const db = this.requireDb()
+    const rows = db.prepare('SELECT * FROM kanban_tasks').all() as KanbanTaskRow[]
     return rows.map(rowToTask)
   }
 

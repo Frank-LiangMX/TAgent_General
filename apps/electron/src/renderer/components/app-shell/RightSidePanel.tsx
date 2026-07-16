@@ -19,6 +19,7 @@ import { SidePanel } from '@/components/agent/SidePanel'
 import { BtwPanel } from '@/components/agent/BtwPanel' // 重新使用 BtwPanel（样式已适配）
 import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
 import { WpsBrowserPanel } from '@/components/agent/WpsBrowserPanel'
+import { KanbanCrewPanel } from '@/components/kanban/KanbanCrewPanel'
 
 export function RightSidePanel({ width }: { width?: number }): React.ReactElement | null {
   const appMode = useAtomValue(appModeAtom)
@@ -56,6 +57,10 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
 
   if (rightRailItem === 'design') {
     return <DesignPreviewPanel width={width} />
+  }
+
+  if (rightRailItem === 'crew') {
+    return <KanbanCrewPanel width={width} />
   }
 
   // 默认显示文件面板

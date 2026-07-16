@@ -18,7 +18,6 @@ import * as React from 'react'
 
 import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 import { AskMessageItem } from './AskMessageItem'
-import { ContentBlock } from './ContentBlock'
 import { buildLiveGroupSet } from './live-group-set'
 import {
   SessionAlertIcon,
@@ -38,7 +37,6 @@ import {
   buildHistoricalTaskSubjects,
   type MessageGroup,
 } from './SDKMessageRenderer'
-import { parseThinkTagsFromText } from './thinking-tag-parser'
 
 import type { AgentStreamState } from '@/atoms/agent-atoms'
 import type { MinimapItem } from '@/components/ai-elements/scroll-minimap'
@@ -49,7 +47,6 @@ import {
   currentAskRefreshVersionAtom,
   currentAskStreamStateAtom,
 } from '@/atoms/ask-atoms'
-import { channelsAtom } from '@/atoms/model-atoms'
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
@@ -57,11 +54,10 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
-import { Message, MessageContent, BasePathsProvider } from '@/components/ai-elements/message'
+import { BasePathsProvider } from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
-import { resolveModelDisplayName } from '@/lib/model-logo'
 import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
 import { cn } from '@/lib/utils'
 
@@ -186,7 +182,7 @@ function EmptyState(): React.ReactElement {
 }
 
 /** 重试提示组件 - 折叠式 */
-function RetryingNotice({
+export function RetryingNotice({
   retrying,
 }: {
   retrying: NonNullable<AgentStreamState['retrying']>
@@ -501,11 +497,6 @@ export function DurationBadge({
   return <AgentStatusBadge status="completed" durationMs={durationMs} usage={usage} />
 }
 
-/** 流式运行指示器 */
-function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.ReactElement {
-  return <AgentStatusBadge status="running" startedAt={startedAt} />
-}
-
 function AgentMessagesImpl({
   sessionId,
   sessionModelId,
@@ -526,7 +517,6 @@ function AgentMessagesImpl({
 }: AgentMessagesProps): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
-  const channels = useAtomValue(channelsAtom)
   const store = useStore()
   /** 淡入控制：切换会话时先隐藏，等布局完成后再显示。 */
   const [ready, setReady] = React.useState(false)
@@ -597,14 +587,6 @@ function AgentMessagesImpl({
   // 从 streamState 属性中计算派生值
   const streamingContent = streamState?.content ?? ''
   const streamingThinkingContent = streamState?.thinkingContent ?? ''
-  const agentStreamingModel = streamState?.model
-  const agentStreamingModelLabel = React.useMemo(
-    () =>
-      agentStreamingModel ? resolveModelDisplayName(agentStreamingModel, channels) : undefined,
-    [agentStreamingModel, channels]
-  )
-    ? resolveModelDisplayName(streamState!.model!, channels)
-    : undefined
   const retrying = streamState?.retrying
   const startedAt = streamState?.startedAt
 
@@ -623,11 +605,6 @@ function AgentMessagesImpl({
   // 用原始 streamingContent 作为守卫：内容已清空且不在流式中，立即归零。
   const smoothContent = streaming || streamingContent ? rawSmoothContent : ''
   const smoothThinking = streaming || streamingThinkingContent ? rawSmoothThinking : ''
-  const smoothContentBlocks = React.useMemo(() => {
-    if (!smoothContent) return []
-    return parseThinkTagsFromText(smoothContent)
-  }, [smoothContent])
-  const hasSmoothTextContent = smoothContentBlocks.some((block) => block.type === 'text')
 
   /**
    * 流式完成过渡：streaming 结束到持久化消息加载完成之间，
@@ -705,12 +682,6 @@ function AgentMessagesImpl({
     return [...persistedWithKeys.slice(0, persistedWithKeys.length - overlap), ...liveWithKeys]
   }, [persistedSDKMessages, liveMessages, streaming])
   const hasContent = allSDKMessages.length > 0
-
-  // 压缩流程进行中（含收尾窗口：compact_boundary 已到但 result 未到）
-  // → 一律抑制 AgentRunningIndicator，避免压缩分隔符切换期间闪烁。
-  // compactInFlight 从点击压缩 / SDK compacting 事件开始为 true，
-  // 直到整个 stream 结束（stream state 被删除）才消失。
-  const suppressAgentRunning = streamState?.isCompacting || streamState?.compactInFlight
 
   // 统一分组：将持久化 + 实时消息合并后再分组，确保 system 消息（如压缩分割线）出现在正确位置
   const allGroups = React.useMemo(() => {
@@ -938,101 +909,11 @@ function AgentMessagesImpl({
                     isContextCompacting={streamState?.isCompacting}
                     stoppedByUser={isLastAssistantTurn || undefined}
                     sessionModelId={sessionModelId}
+                    streamStartedAt={isLive ? startedAt : undefined}
+                    retrying={isLive ? retrying : undefined}
                   />
                 )
               })}
-
-              {/* 有实时助手内容时：显示运行指示器或占位（防止 streaming 结束到 Actions Bar 出现之间的高度跳动） */}
-              {/* 不使用 mt：ConversationContent 的 gap-1(4px) 已提供间距，
-                匹配内部 MessageActions 的 gap-0.5(2px)+mt-0.5(2px)=4px 间距 */}
-              {hasLiveAssistantContent && !suppressAgentRunning && (
-                <div className="agent-turn-footer agent-turn-footer--live">
-                  <div className="agent-turn-footer__meta">
-                    {retrying && <RetryingNotice retrying={retrying} />}
-                    {streaming && <AgentRunningIndicator startedAt={startedAt} />}
-                  </div>
-                </div>
-              )}
-
-              {/* 无实时助手内容时：标题行模型名 + 通栏内容；运行中胶囊在左侧 footer */}
-              {!hasLiveAssistantContent &&
-                !suppressAgentRunning &&
-                (streaming || smoothContent || smoothThinking || retrying) && (
-                  <Message from="assistant">
-                    <MessageContent>
-                      {retrying && <RetryingNotice retrying={retrying} />}
-                      {smoothThinking || smoothContent ? (
-                        <>
-                          <div className="agent-turn flex flex-col gap-3">
-                            {agentStreamingModelLabel && (
-                              <div className="agent-turn-title">{agentStreamingModelLabel}</div>
-                            )}
-                            {smoothThinking ? (
-                              <div className="agent-turn-process">
-                                <ContentBlock
-                                  block={{ type: 'thinking', thinking: smoothThinking }}
-                                  allMessages={allSDKMessages}
-                                  basePath={
-                                    (attachedDirs?.length ?? 0) > 0
-                                      ? undefined
-                                      : sessionPath || undefined
-                                  }
-                                  basePaths={
-                                    (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
-                                  }
-                                  index={-1}
-                                  isStreaming={streaming}
-                                />
-                              </div>
-                            ) : null}
-                            {smoothContentBlocks.length > 0 && (
-                              <div className="agent-turn-answer">
-                                {smoothContentBlocks.map((block, index) => (
-                                  <ContentBlock
-                                    key={index}
-                                    block={block}
-                                    allMessages={allSDKMessages}
-                                    basePath={
-                                      (attachedDirs?.length ?? 0) > 0
-                                        ? undefined
-                                        : sessionPath || undefined
-                                    }
-                                    basePaths={
-                                      (attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined
-                                    }
-                                    index={index}
-                                    dimmed={hasSmoothTextContent && block.type !== 'text'}
-                                    isStreaming={streaming}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          {streaming && (
-                            <div className="agent-turn-footer agent-turn-footer--live mt-2">
-                              <div className="agent-turn-footer__meta">
-                                <AgentRunningIndicator startedAt={startedAt} />
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        streaming && (
-                          <div className="agent-turn flex flex-col gap-3">
-                            {agentStreamingModelLabel && (
-                              <div className="agent-turn-title">{agentStreamingModelLabel}</div>
-                            )}
-                            <div className="agent-turn-footer agent-turn-footer--live">
-                              <div className="agent-turn-footer__meta">
-                                <AgentRunningIndicator startedAt={startedAt} />
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </MessageContent>
-                  </Message>
-                )}
 
               {/* SDK status=compacting 到达后会在时间线内联显示；此处仅作事件到达前的兜底 */}
               {streamState?.isCompacting && !hasInlineCompactingIndicator && (

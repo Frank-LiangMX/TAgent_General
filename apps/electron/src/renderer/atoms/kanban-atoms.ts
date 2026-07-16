@@ -6,7 +6,7 @@
  * tasks 通过 atomFamily(boardId) 缓存，CHANGED 事件触发重新加载。
  */
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useMemo, useState } from 'react'
 import { atom, useAtomValue, useSetAtom, getDefaultStore } from 'jotai'
 import { atomFamily } from 'jotai/utils'
 
@@ -62,6 +62,18 @@ export const sessionBoardIdAtomFamily = atomFamily((sessionId: string) => {
   })
 })
 
+/**
+ * 班组墙用的看板 ID：主会话 meta.boardId，工人会话回退 parentBoardId。
+ * 避免切到工人会话后右栏班组空态。
+ */
+export const sessionCrewBoardIdAtomFamily = atomFamily((sessionId: string) => {
+  return atom<string | undefined>((get) => {
+    const sessions = get(agentSessionsAtom)
+    const meta = sessions.find((s) => s.id === sessionId)
+    return meta?.boardId ?? meta?.parentBoardId
+  })
+})
+
 /** 按 sessionId 缓存的 sourceKanbanTaskId 派生 atom（判断是否为工人嵌套会话） */
 export const sessionSourceKanbanTaskIdAtomFamily = atomFamily((sessionId: string) => {
   return atom<string | undefined>((get) => {
@@ -87,22 +99,15 @@ const kanbanLoadingAtomFamily = atomFamily((boardId: string) => {
 })
 
 /**
- * Hook：加载并订阅某 session 的看板数据
- *
- * - 从 session meta 派生 boardId
- * - boardId 存在时加载 board + tasks
- * - 订阅 KANBAN_CHANGED 事件，变更时重新加载
- *
- * @returns { boardId, tasks, board, loading, refresh }
+ * Hook：按 boardId 加载并订阅看板数据
  */
-export function useKanbanBoard(sessionId: string): {
+export function useKanbanBoardById(boardId: string | undefined): {
   boardId: string | undefined
   tasks: KanbanTask[]
   board: KanbanBoard | null
   loading: boolean
   refresh: () => Promise<void>
 } {
-  const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
   const tasks = useAtomValue(kanbanTasksAtomFamily(boardId ?? '__none__'))
   const board = useAtomValue(kanbanBoardAtomFamily(boardId ?? '__none__'))
   const loading = useAtomValue(kanbanLoadingAtomFamily(boardId ?? '__none__'))
@@ -141,6 +146,55 @@ export function useKanbanBoard(sessionId: string): {
   }, [boardId, loadBoard])
 
   return { boardId, tasks, board, loading, refresh: loadBoard }
+}
+
+/**
+ * Hook：加载并订阅某 session「拥有」的看板（meta.boardId）
+ *
+ * 班组墙请用 useKanbanCrewBoard（含工人 parentBoardId 回退）。
+ */
+export function useKanbanBoard(sessionId: string): {
+  boardId: string | undefined
+  tasks: KanbanTask[]
+  board: KanbanBoard | null
+  loading: boolean
+  refresh: () => Promise<void>
+} {
+  const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
+  return useKanbanBoardById(boardId)
+}
+
+/**
+ * Hook：班组墙数据 — 主会话 boardId，工人会话回退 parentBoardId
+ */
+export function useKanbanCrewBoard(sessionId: string): {
+  boardId: string | undefined
+  tasks: KanbanTask[]
+  board: KanbanBoard | null
+  loading: boolean
+  refresh: () => Promise<void>
+  /** 当前会话是否工人子会话（只读班组，不切换/解绑） */
+  isWorkerSession: boolean
+  /** 写回 meta.boardId 时应使用的主会话 ID */
+  ownerSessionId: string | undefined
+} {
+  const sessions = useAtomValue(agentSessionsAtom)
+  const crewBoardId = useAtomValue(sessionCrewBoardIdAtomFamily(sessionId))
+  const ownedBoardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
+  const data = useKanbanBoardById(crewBoardId)
+
+  const meta = sessions.find((s) => s.id === sessionId)
+  const isWorkerSession = !!meta?.sourceKanbanTaskId || (!!meta?.parentBoardId && !meta?.boardId)
+
+  const ownerSessionId = useMemo(() => {
+    if (ownedBoardId) return sessionId
+    const fromBoard = data.board?.parentSessionId
+    if (fromBoard) return fromBoard
+    if (!crewBoardId) return undefined
+    return sessions.find((s) => s.boardId === crewBoardId)?.id
+  }, [ownedBoardId, sessionId, data.board?.parentSessionId, crewBoardId, sessions])
+
+  return { ...data, isWorkerSession, ownerSessionId }
 }
 
 // ===== B4：全局看板列表（独立实体，不依赖 session） =====

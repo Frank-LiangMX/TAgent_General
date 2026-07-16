@@ -1,9 +1,8 @@
 /**
- * KanbanTaskListItem — 看板任务卡片（带实时进度日志滚动区域）
+ * KanbanTaskListItem — 数字员工卡（跨 MD / glass / soft 三材质）
  *
- * running 任务展示实时进度日志（TASK_PROGRESS IPC 推送）；
- * done/failed 展示结果摘要或错误信息。
- * 角色标识突出 + 模型 + 开始时间 + 进度条。
+ * 表面走 session-list-row / session-list-item-active，不写死 border/shadow。
+ * 隐喻：工牌上的数字员工（角色 + 工号 + 人态），不是 Jira 小票。
  */
 
 import * as React from 'react'
@@ -13,13 +12,21 @@ import { Loader2, Square, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-import type { KanbanTask, KanbanTaskStatus } from '@tagent/shared'
+import type { KanbanTask } from '@tagent/shared'
 
 import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 import { taskProgressLogsAtomFamily } from '@/atoms/kanban-atoms'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
+import {
+  CREW_STATUS_BADGE,
+  parseCrewBadge,
+  roleAvatarTint,
+} from '@/lib/kanban-crew-status'
+
+/** @deprecated 使用 CREW_STATUS_BADGE；保留导出供详情弹窗兼容 */
+export const STATUS_BADGE = CREW_STATUS_BADGE
 
 /** 格式化开始时间（timestamp → "今天 14:23" / "昨天 09:00" / "07-05 12:30"） */
 function formatStartTime(timestamp: number): string {
@@ -62,68 +69,30 @@ function computeDuration(task: KanbanTask): number {
   return end - task.startedAt
 }
 
-/** 状态 → 徽章样式与中文标签 */
-export const STATUS_BADGE: Record<
-  KanbanTaskStatus,
-  { label: string; className: string; dot: string }
-> = {
-  pending: {
-    label: '待办',
-    className: 'bg-muted text-muted-foreground border-transparent',
-    dot: 'bg-muted-foreground/50',
-  },
-  ready: {
-    label: '待派工',
-    className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-transparent',
-    dot: 'bg-blue-500',
-  },
-  running: {
-    label: '执行中',
-    className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-transparent',
-    dot: 'bg-amber-500',
-  },
-  blocked: {
-    label: '阻塞',
-    className: 'bg-red-500/15 text-red-600 dark:text-red-400 border-transparent',
-    dot: 'bg-red-500',
-  },
-  review: {
-    label: '待验收',
-    className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-transparent',
-    dot: 'bg-purple-500',
-  },
-  done: {
-    label: '完成',
-    className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent',
-    dot: 'bg-emerald-500',
-  },
-  failed: {
-    label: '失败',
-    className: 'bg-red-500/15 text-red-600 dark:text-red-400 border-transparent',
-    dot: 'bg-red-500',
-  },
-  cancelled: {
-    label: '已取消',
-    className: 'bg-muted text-muted-foreground border-transparent',
-    dot: 'bg-muted-foreground/30',
-  },
-}
-
 export interface KanbanTaskListItemProps {
   task: KanbanTask
   /** 点击卡片是否弹出详情弹窗（默认 true）。
    * SessionTeamTab 等已有右栏详情的视图设为 false，避免弹窗+右栏重复。 */
   showDetailDialog?: boolean
+  /**
+   * 角色显示标签（含同角色多实例编号，如「通用执行者 01」）
+   * 由父组件用 buildKanbanRoleInstanceLabels 基于整板任务计算后传入。
+   */
+  roleLabel?: string
+  /**
+   * 同角色当前在岗人数（≥2 时显示「×N」角标）
+   */
+  sameRoleActiveCount?: number
 }
 
 export function KanbanTaskListItem({
   task,
   showDetailDialog = true,
+  roleLabel,
+  sameRoleActiveCount,
 }: KanbanTaskListItemProps): React.ReactElement {
   const [detailOpen, setDetailOpen] = React.useState(false)
-  // 订阅实时进度日志
   const progressLogs = useAtomValue(taskProgressLogsAtomFamily(task.id))
-  // running 时每秒触发 re-render 让耗时实时刷新
   const [, setTick] = React.useState(0)
   React.useEffect(() => {
     if (task.status !== 'running') return
@@ -131,27 +100,28 @@ export function KanbanTaskListItem({
     return () => clearInterval(timer)
   }, [task.status])
 
-  // 新日志到达时自动滚动到底部
   const logsEndRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [progressLogs.length])
 
-  const badge = STATUS_BADGE[task.status]
+  const badge = CREW_STATUS_BADGE[task.status]
   const isRunning = task.status === 'running'
   const isDone = task.status === 'done'
   const isFailed = task.status === 'failed'
   const hasLogs = progressLogs.length > 0
 
-  // 角色映射：roleId → displayName（首次渲染时触发角色列表加载）
   const roleMap = useAgentRoleMap()
   const roleDisplayName = task.roleId ? roleMap.get(task.roleId) : undefined
+  const roleTitle = roleLabel ?? roleDisplayName
+  const roleInitial = roleDisplayName?.charAt(0) ?? roleTitle?.charAt(0) ?? '?'
+  const crewNo = parseCrewBadge(roleLabel)
+  const avatarTint = roleAvatarTint(task.roleId)
 
-  // 进度估算：done=100%、running=50%（未细分阶段）、其他=0%
   const progress = isDone ? 100 : isRunning ? 50 : 0
-  // 耗时标签：running 中或已完成（done/failed）且有 startedAt 时显示
   const durationMs = computeDuration(task)
   const showDuration = isRunning || isDone || isFailed
+  const latestLog = progressLogs.length > 0 ? progressLogs[progressLogs.length - 1] : undefined
 
   const handleClick = (): void => {
     if (showDetailDialog) setDetailOpen(true)
@@ -172,162 +142,139 @@ export function KanbanTaskListItem({
           if (e.key === 'Enter' || e.key === ' ') handleClick()
         }}
         className={cn(
-          'group w-full text-left titlebar-no-drag rounded-xl transition-all cursor-pointer',
-          'bg-card hover:bg-muted/40 border border-border/60 hover:border-border shadow-sm hover:shadow-md'
+          'group w-full text-left titlebar-no-drag ui-pressable cursor-pointer',
+          'session-list-row rounded-glass-popover border border-border/50 bg-background/55 shadow-sm transition-colors hover:border-border/80',
+          (isRunning || detailOpen) && 'session-list-item-active'
         )}
       >
-        <div className="p-4">
-          {/* 第一行：角色头像 + 名称 + 模型 */}
-          <div className="flex items-center gap-2 mb-2">
-            {roleDisplayName ? (
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <div className="size-7 shrink-0 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center">
-                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                    {roleDisplayName.charAt(0)}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-foreground truncate">
-                    {roleDisplayName}
-                  </div>
-                  <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                    {task.modelId && (
-                      <span className="font-mono truncate max-w-[80px]" title={task.modelId}>
-                        {task.modelId}
-                      </span>
-                    )}
-                    {!task.modelId && task.roleId && (
-                      <span className="font-mono truncate max-w-[80px]" title={task.roleId}>
-                        {task.roleId.slice(0, 12)}...
-                      </span>
-                    )}
-                  </div>
-                </div>
+        <div className="p-3.5">
+          {/* 工牌头：头像 + 角色/工号 + 人态 */}
+          <div className="flex items-start gap-2.5 mb-2.5">
+            <div className="relative shrink-0">
+              <div
+                className={cn(
+                  'size-10 rounded-full flex items-center justify-center font-semibold text-base',
+                  roleTitle ? avatarTint.wrap : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {roleInitial}
               </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0 flex-1">
-                <div className="size-7 rounded-lg bg-muted border border-dashed border-muted-foreground/30 flex items-center justify-center">
-                  <span className="text-xs">?</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs truncate">未分配角色</div>
-                  {task.modelId && (
-                    <div
-                      className="text-[9px] text-muted-foreground font-mono truncate max-w-[80px]"
-                      title={task.modelId}
-                    >
-                      {task.modelId}
-                    </div>
+              {crewNo && (
+                <span className="absolute -bottom-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-background text-[9px] font-mono tabular-nums flex items-center justify-center text-muted-foreground ring-1 ring-border/60">
+                  {crewNo}
+                </span>
+              )}
+              {isRunning && (
+                <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-amber-500 animate-pulse ring-2 ring-background" />
+              )}
+              {sameRoleActiveCount != null && sameRoleActiveCount >= 2 && (
+                <span className="absolute -top-1 -left-1 size-4 rounded-full bg-violet-500 text-[9px] font-bold text-white flex items-center justify-center shadow-sm">
+                  ×{sameRoleActiveCount}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-foreground truncate">
+                  {roleTitle ?? '未分配角色'}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
+                >
+                  <span
+                    className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
+                  />
+                  {badge.label}
+                </Badge>
+              </div>
+              {/* Running 时：任务标题 + 实时计时 */}
+              {isRunning ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs text-foreground/80 truncate flex-1">
+                    {task.title}
+                  </span>
+                  {task.startedAt && (
+                    <span className="shrink-0 text-[11px] tabular-nums text-amber-600 dark:text-amber-400 font-medium">
+                      {formatDuration(durationMs)}
+                    </span>
                   )}
                 </div>
-              </div>
-            )}
-            <Badge
-              variant="outline"
-              className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
-            >
-              <span
-                className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
-              />
-              {badge.label}
-            </Badge>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                  <span className="truncate">{task.title}</span>
+                </div>
+              )}
+              {/* Idle 态（无 running/终态） */}
+              {!isRunning && !isDone && !isFailed && (
+                <div className="text-[10px] text-muted-foreground/60 mt-0.5">待机中</div>
+              )}
+            </div>
           </div>
 
-          {/* 第二行：任务标题（一行） */}
-          <div className="flex items-center gap-1 mb-2">
-            {isRunning && <Loader2 className="size-3 shrink-0 animate-spin text-amber-500" />}
-            <span className="text-[11px] text-foreground line-clamp-1 flex-1">{task.title}</span>
-          </div>
-
-          {/* 第三行：开始时间 */}
-          {task.startedAt && (
-            <div className="mb-2 text-[9px] text-muted-foreground tabular-nums">
-              <Clock className="inline-block size-3 mr-1 align-middle" />
-              {formatStartTime(task.startedAt)}
+          {/* 忙碌时：一行工作汇报 */}
+          {isRunning && (
+            <div className="mb-2 flex items-start gap-1.5 text-[10px] text-muted-foreground">
+              <Loader2 className="size-3 shrink-0 mt-0.5 animate-spin text-amber-500" />
+              <span className="line-clamp-2 break-words">
+                {latestLog?.text?.trim() || '正在上岗…'}
+              </span>
             </div>
           )}
 
-          {/* ── 第五行（条件显示）：进度日志滚动区域 ── */}
-          {(isRunning || hasLogs) && (
+          {/* 展开进度日志（有多条时） */}
+          {(hasLogs || isRunning) && progressLogs.length > 1 && (
             <div
               className={cn(
-                'mb-2 rounded-lg border overflow-y-auto scrollbar-thin',
-                isRunning
-                  ? 'border-amber-500/20 bg-amber-500/5'
-                  : isFailed
-                    ? 'border-red-500/20 bg-red-500/5'
-                    : isDone
-                      ? 'border-emerald-500/20 bg-emerald-500/5'
-                      : 'border-border/40 bg-muted/20'
+                'mb-2 rounded-glass-chip overflow-y-auto scrollbar-thin bg-foreground/[0.03]',
+                isRunning && 'bg-amber-500/5'
               )}
-              style={{ maxHeight: '96px', minHeight: progressLogs.length > 0 ? '48px' : '32px' }}
+              style={{ maxHeight: '72px' }}
             >
-              {progressLogs.length > 0 ? (
-                <div className="p-2 space-y-1">
-                  {progressLogs.map((entry, idx) => (
-                    <div key={idx} className="flex items-start gap-1.5 text-[10px] leading-tight">
-                      {isRunning && idx === progressLogs.length - 1 ? (
-                        <span className="mt-0.5 size-1.5 shrink-0 rounded-full bg-amber-500 animate-pulse" />
-                      ) : (
-                        <span
-                          className={cn(
-                            'mt-0.5 size-1.5 shrink-0 rounded-full',
-                            isDone
-                              ? 'bg-emerald-500'
-                              : isFailed
-                                ? 'bg-red-500'
-                                : 'bg-muted-foreground/40'
-                          )}
-                        />
-                      )}
-                      <span className="text-muted-foreground/60 tabular-nums shrink-0">
-                        {new Date(entry.ts).toLocaleTimeString('zh-CN', {
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </span>
-                      <div className="text-foreground/80 break-words min-w-0 prose-sm">
-                        <Markdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            p: ({ children }) => <span className="m-0">{children}</span>,
-                            a: ({ href, children }) => (
-                              <a
-                                href={href}
-                                className="underline text-blue-500"
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {children}
-                              </a>
-                            ),
-                            code: ({ children }) => (
-                              <code className="text-[9px] px-1 py-0.5 rounded bg-muted font-mono">
-                                {children}
-                              </code>
-                            ),
-                            pre: ({ children }) => <span className="m-0 block">{children}</span>,
-                          }}
-                        >
-                          {entry.text}
-                        </Markdown>
-                      </div>
+              <div className="p-2 space-y-1">
+                {progressLogs.map((entry, idx) => (
+                  <div key={idx} className="flex items-start gap-1.5 text-[10px] leading-tight">
+                    <span className="text-muted-foreground/60 tabular-nums shrink-0">
+                      {new Date(entry.ts).toLocaleTimeString('zh-CN', {
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </span>
+                    <div className="text-foreground/80 break-words min-w-0">
+                      <Markdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <span className="m-0">{children}</span>,
+                          a: ({ href, children }) => (
+                            <a
+                              href={href}
+                              className="underline text-blue-500"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          code: ({ children }) => (
+                            <code className="text-[9px] px-1 py-0.5 rounded bg-muted font-mono">
+                              {children}
+                            </code>
+                          ),
+                          pre: ({ children }) => <span className="m-0 block">{children}</span>,
+                        }}
+                      >
+                        {entry.text}
+                      </Markdown>
                     </div>
-                  ))}
-                  <div ref={logsEndRef} />
-                </div>
-              ) : isRunning ? (
-                <div className="flex items-center gap-2 p-2 text-[10px] text-muted-foreground">
-                  <Loader2 className="size-3 animate-spin shrink-0" />
-                  <span>等待进度...</span>
-                </div>
-              ) : null}
+                  </div>
+                ))}
+                <div ref={logsEndRef} />
+              </div>
             </div>
           )}
 
-          {/* 结果摘要 / 错误信息（done/failed 时显示） */}
           {isDone && task.resultSummary && (
-            <div className="mb-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+            <div className="mb-2 rounded-glass-chip bg-emerald-500/5 p-2">
               <div className="flex items-start gap-1.5 text-[10px] leading-tight">
                 <CheckCircle2 className="size-3 mt-0.5 shrink-0 text-emerald-500" />
                 <span className="text-foreground/80 line-clamp-3 break-words">
@@ -337,7 +284,7 @@ export function KanbanTaskListItem({
             </div>
           )}
           {isFailed && task.error && (
-            <div className="mb-2 rounded-lg border border-red-500/20 bg-red-500/5 p-2">
+            <div className="mb-2 rounded-glass-chip bg-red-500/5 p-2">
               <div className="flex items-start gap-1.5 text-[10px] leading-tight">
                 <XCircle className="size-3 mt-0.5 shrink-0 text-red-500" />
                 <span className="text-red-600/80 dark:text-red-400/80 line-clamp-3 break-words">
@@ -347,10 +294,10 @@ export function KanbanTaskListItem({
             </div>
           )}
 
-          {/* 第六行：迷你进度条 + 耗时 + 停止 */}
+          {/* 底栏：进度 + 耗时 + 停止 */}
           <div className="flex items-center gap-2">
             <div className="flex-1">
-              <div className="h-2 overflow-hidden rounded-full bg-muted/60">
+              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-500',
@@ -363,16 +310,32 @@ export function KanbanTaskListItem({
                 />
               </div>
             </div>
-            {showDuration && durationMs > 0 && (
-              <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
-                {formatDuration(durationMs)}
+            {task.startedAt && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[9px] text-muted-foreground tabular-nums shrink-0 flex items-center gap-0.5">
+                    <Clock className="size-2.5" />
+                    {showDuration && durationMs > 0
+                      ? formatDuration(durationMs)
+                      : formatStartTime(task.startedAt)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>开始于 {formatStartTime(task.startedAt)}</TooltipContent>
+              </Tooltip>
+            )}
+            {task.modelId && (
+              <span
+                className="text-[9px] text-muted-foreground font-mono truncate max-w-[64px] shrink-0"
+                title={task.modelId}
+              >
+                {task.modelId}
               </span>
             )}
             {isRunning && (
               <button
                 type="button"
                 onClick={handleAbort}
-                title="停止 worker"
+                title="停止这位员工"
                 className="size-6 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-500 shrink-0"
               >
                 <Square className="size-3 fill-current" />
@@ -383,7 +346,12 @@ export function KanbanTaskListItem({
       </div>
 
       {showDetailDialog ? (
-        <KanbanTaskDetailDialog task={task} open={detailOpen} onOpenChange={setDetailOpen} />
+        <KanbanTaskDetailDialog
+          task={task}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          roleLabel={roleTitle}
+        />
       ) : null}
     </>
   )

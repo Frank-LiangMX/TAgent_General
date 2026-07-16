@@ -28,9 +28,11 @@ import {
   type CreateKanbanTaskIpcInput,
   type AttachBoardToSessionInput,
   type DetachBoardFromSessionInput,
+  type KanbanCrewStats,
 } from '@tagent/shared'
 
 import { kanbanDbService } from './kanban-db'
+import { kanbanCrewStatsService } from './kanban-crew-stats'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { stopRegisteredAgent } from './agent-headless-runner-registry'
 
@@ -47,6 +49,8 @@ function ensureKanbanDb(): void {
 
 /** 向所有渲染窗口广播看板数据变更，触发前端刷新 */
 export function broadcastKanbanChanged(): void {
+  // 统计缓存失效（下次 GET_CREW_STATS 重新计算）
+  kanbanCrewStatsService.invalidate()
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.send(KANBAN_IPC_CHANNELS.CHANGED)
@@ -277,11 +281,12 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
     throw new Error(`主会话不存在: ${sessionId}`)
   }
 
-  // 1. 创建看板
+  // 1. 创建看板（写入 workspaceId，worker 才能挂载已安装 Skills）
   const board = kanbanDbService.createBoard({
     rootGoal,
     parentSessionId: sessionId,
     originBridge: 'desktop',
+    workspaceId: workspaceId ?? sessionMeta.workspaceId,
   })
 
   // 2. 写回主会话 meta.boardId（渲染进程据此显示「团队」Tab）
@@ -291,7 +296,6 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
   const baseTaskInput = {
     boardId: board.id,
     channelId,
-    ...(workspaceId ? { metadata: { workspaceId } } : {}),
   }
   const tasks = requirements.map((req, idx) => {
     const bodyParts = [req.description]
@@ -537,4 +541,8 @@ export function registerKanbanIpcHandlers(): void {
       detachBoardFromSession(input)
     }
   )
+
+  ipcMain.handle(KANBAN_IPC_CHANNELS.GET_CREW_STATS, async () => {
+    return kanbanCrewStatsService.compute()
+  })
 }

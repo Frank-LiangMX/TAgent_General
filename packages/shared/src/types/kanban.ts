@@ -203,6 +203,14 @@ export interface KanbanBoard {
    * 未记录时 fallback 到主进程 cwd。
    */
   cwd?: string
+  /**
+   * 工作区 ID（决定 worker 挂载的 skills / MCP plugin）
+   *
+   * 建板时从主会话 workspaceId 记录。worker 启动时传给 orchestrator，
+   * 以便 SDK `plugins: [{ type: 'local', path: workspace }]` 发现已安装 skills。
+   * 未记录时 fallback 到 parentSessionId 对应会话的 workspaceId。
+   */
+  workspaceId?: string
 }
 
 // ===== 任务依赖 =====
@@ -247,6 +255,8 @@ export interface CreateKanbanBoardInput {
   requireSummary?: boolean
   /** 看板工作目录（worker 子会话项目根，未传则由 orchestrator 兜底填主会话 cwd） */
   cwd?: string
+  /** 工作区 ID（worker 挂载 skills/MCP，未传则由工具上下文 / 父会话兜底） */
+  workspaceId?: string
 }
 
 /** 创建任务的输入 */
@@ -283,6 +293,59 @@ export interface UpdateKanbanTaskStatusInput {
   blockedReason?: string
   /** 执行子会话 ID */
   assigneeSessionId?: string
+}
+
+/**
+ * 看板数字员工单周期统计
+ *
+ * 用于 RoleWorkStats.windows 中的 day / week / month 分段。
+ */
+export interface PeriodStats {
+  /** 本周期完成（含失败）任务数 */
+  taskCount: number
+  /** 本周期累计工作时长 ms */
+  totalDurationMs: number
+  /** 本周期平均工作时长 ms（taskCount > 0 时有效） */
+  avgDurationMs: number
+}
+
+/**
+ * 看板数字员工角色统计
+ *
+ * 主进程启动时扫描全量 kanban.db 计算一次（异步），之后增量更新。
+ * 缓存于内存，IPC 下发渲染进程。
+ */
+export interface RoleWorkStats {
+  /** 角色 ID */
+  roleId: string
+  /** 累计工作次数（终态任务数：done + failed） */
+  totalTasks: number
+  /** 累计工作总时长 ms（仅终态任务累加） */
+  totalDurationMs: number
+  /** 失败次数 */
+  failedCount: number
+  /** 平均工作时长 ms（totalTasks > 0 时有效） */
+  avgDurationMs: number
+  /** 日/周/月分段统计 */
+  windows: {
+    day: PeriodStats
+    week: PeriodStats
+    month: PeriodStats
+  }
+}
+
+/**
+ * 看板数字员工全局统计（聚合所有角色）
+ */
+export interface KanbanCrewStats {
+  /** 各角色统计 */
+  byRole: RoleWorkStats[]
+  /** 全局累计工作次数 */
+  totalTasks: number
+  /** 全局累计工作时长 ms */
+  totalDurationMs: number
+  /** 当前在岗人数（running 任务数） */
+  activeCount: number
 }
 
 // ===== 调度器配置 =====

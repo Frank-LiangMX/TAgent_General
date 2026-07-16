@@ -1,4 +1,8 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import Database from 'better-sqlite3'
 import type { KanbanTask } from '@tagent/shared'
 import { KanbanDbService } from './kanban-db'
 
@@ -13,6 +17,88 @@ describe('KanbanDbService', () => {
 
   afterEach(() => {
     db.close()
+  })
+
+  describe('schema 迁移回归', () => {
+    test('旧版 user_version=4 数据库初始化后会补齐 cwd/workspace_id 列', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'tagent-kanban-migrate-'))
+      const dbPath = join(dir, 'kanban.db')
+      const legacyDb = new Database(dbPath)
+
+      try {
+        legacyDb.exec(`
+          CREATE TABLE kanban_boards (
+            id TEXT PRIMARY KEY,
+            root_goal TEXT NOT NULL,
+            parent_session_id TEXT,
+            title TEXT,
+            mode TEXT NOT NULL DEFAULT 'general',
+            origin_chat_id TEXT,
+            origin_bridge TEXT,
+            status TEXT NOT NULL DEFAULT 'active',
+            max_concurrent INTEGER NOT NULL DEFAULT 3,
+            paused INTEGER NOT NULL DEFAULT 0,
+            require_summary INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+
+          CREATE TABLE kanban_tasks (
+            id TEXT PRIMARY KEY,
+            board_id TEXT NOT NULL,
+            parent_task_id TEXT,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'pending',
+            role_id TEXT,
+            assignee_session_id TEXT,
+            channel_id TEXT NOT NULL,
+            model_id TEXT,
+            priority INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            started_at INTEGER,
+            finished_at INTEGER,
+            error TEXT,
+            result_summary TEXT,
+            blocked_reason TEXT,
+            metadata TEXT,
+            FOREIGN KEY (board_id) REFERENCES kanban_boards(id) ON DELETE CASCADE
+          );
+
+          CREATE TABLE kanban_task_links (
+            from_task_id TEXT NOT NULL,
+            to_task_id TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'blocks',
+            PRIMARY KEY (from_task_id, to_task_id),
+            FOREIGN KEY (from_task_id) REFERENCES kanban_tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (to_task_id) REFERENCES kanban_tasks(id) ON DELETE CASCADE
+          );
+        `)
+        legacyDb.pragma('user_version = 4')
+      } finally {
+        legacyDb.close()
+      }
+
+      const migrated = new KanbanDbService(dbPath)
+      try {
+        const result = migrated.initialize()
+        expect(result.success).toBe(true)
+
+        const board = migrated.createBoard({
+          rootGoal: '迁移回归',
+          cwd: 'F:/TAgent_General',
+          workspaceId: 'ws_123',
+        })
+
+        const fetched = migrated.getBoard(board.id)
+        expect(fetched?.cwd).toBe('F:/TAgent_General')
+        expect(fetched?.workspaceId).toBe('ws_123')
+      } finally {
+        migrated.close()
+        rmSync(dir, { recursive: true, force: true })
+      }
+    })
   })
 
   describe('看板 CRUD', () => {
@@ -81,6 +167,17 @@ describe('KanbanDbService', () => {
 
       const fetched = db.getBoard(board.id)
       expect(fetched?.cwd).toBeUndefined()
+    })
+
+    test('createBoard 写入 workspaceId 并通过 getBoard 读回', () => {
+      const board = db.createBoard({
+        rootGoal: '测试 workspace',
+        workspaceId: 'ws_main',
+      })
+      expect(board.workspaceId).toBe('ws_main')
+
+      const fetched = db.getBoard(board.id)
+      expect(fetched?.workspaceId).toBe('ws_main')
     })
 
     test('listBoards 返回所有看板，按 updated_at DESC 排序', () => {
@@ -165,12 +262,59 @@ describe('KanbanDbService', () => {
       expect(task.id).toMatch(/^t_/)
       expect(task.status).toBe('pending')
       expect(task.priority).toBe(0)
+      // 未传 roleId 时兜底为通用执行者
+      expect(task.roleId).toBe('generalist')
 
       const fetched = db.getTask(task.id)
       expect(fetched).not.toBeNull()
       expect(fetched?.status).toBe('pending')
       expect(fetched?.title).toBe('任务 A')
       expect(fetched?.boardId).toBe(board.id)
+      expect(fetched?.roleId).toBe('generalist')
+    })
+
+    test('createTask 未传 roleId 时落到 generalist', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({ boardId: board.id, title: 'T', channelId: 'c1' })
+      expect(task.roleId).toBe('generalist')
+    })
+
+    test('createTask 空白 roleId 时落到 generalist', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: 'T',
+        channelId: 'c1',
+        roleId: '   ',
+      })
+      expect(task.roleId).toBe('generalist')
+    })
+
+    test('createTask 显式 roleId 保持原值', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: 'T',
+        channelId: 'c1',
+        roleId: 'data-analyst',
+      })
+      expect(task.roleId).toBe('data-analyst')
+
+      const chatTask = db.createTask({
+        boardId: board.id,
+        title: '聊天整理',
+        channelId: 'c1',
+        roleId: 'chat',
+      })
+      expect(chatTask.roleId).toBe('chat')
+
+      const docTask = db.createTask({
+        boardId: board.id,
+        title: '写方案',
+        channelId: 'c1',
+        roleId: 'doc-writer',
+      })
+      expect(docTask.roleId).toBe('doc-writer')
     })
 
     test('updateTaskStatus 维护 startedAt / finishedAt 时间戳', () => {

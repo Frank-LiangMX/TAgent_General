@@ -1,8 +1,8 @@
 /**
  * TaskProgressDock — 输入框上方的任务进度预览条
  *
- * 当会话中有进行中的任务（in_progress）时，在输入框上方显示单行预览。
- * 点击展开查看完整任务列表。所有任务完成（无 in_progress）时自动隐藏。
+ * 仅在「当前流式回合」存在进行中任务（in_progress）时显示。
+ * 流式结束后立即隐藏；历史回合遗留的未完成任务不会在下次运行时复活。
  *
  * 与会话流里的 TaskProgressCard 互补：
  * - TaskProgressCard 在消息流中，会随消息滚动走
@@ -12,17 +12,40 @@
 import * as React from 'react'
 import { ListTodo, ChevronDown, ChevronUp, Loader2, CheckCircle2, Circle } from 'lucide-react'
 
-import type { SDKMessage } from '@tagent/shared'
+import type { SDKMessage, SDKUserMessage } from '@tagent/shared'
 import { aggregateTaskItems, type TaskItem } from './task-progress'
-import { buildAllTaskActivities, buildHistoricalTaskSubjects } from './SDKMessageRenderer'
+import {
+  buildAllTaskActivities,
+  buildHistoricalTaskSubjects,
+  extractUserText,
+} from './SDKMessageRenderer'
 
 import { cn } from '@/lib/utils'
 
 export interface TaskProgressDockProps {
-  /** 当前会话所有 SDK 消息（用于聚合任务状态） */
+  /** 当前会话所有 SDK 消息（持久化 + 实时合并后） */
   allMessages: SDKMessage[]
   /** 是否正在流式输出 */
   streaming: boolean
+}
+
+/** 截取最近一次真实用户输入之后的消息（当前回合），排除 tool_result / 合成消息 */
+export function sliceCurrentTurnMessages(allMessages: SDKMessage[]): SDKMessage[] {
+  let lastUserIdx = -1
+  for (let i = allMessages.length - 1; i >= 0; i--) {
+    const msg = allMessages[i]
+    if (!msg || msg.type !== 'user') continue
+    const userMsg = msg as SDKUserMessage
+    if (userMsg.parent_tool_use_id) continue
+    if (userMsg.isSynthetic) continue
+    const content = userMsg.message?.content
+    if (Array.isArray(content) && content.some((b) => b.type === 'tool_result')) continue
+    if (extractUserText(userMsg) === null) continue
+    lastUserIdx = i
+    break
+  }
+  if (lastUserIdx < 0) return []
+  return allMessages.slice(lastUserIdx)
 }
 
 export function TaskProgressDock({
@@ -31,7 +54,12 @@ export function TaskProgressDock({
 }: TaskProgressDockProps): React.ReactElement | null {
   const [expanded, setExpanded] = React.useState(false)
 
-  const activities = React.useMemo(() => buildAllTaskActivities(allMessages), [allMessages])
+  // 流式结束后立即隐藏，避免输入框长期被进度条占用
+  const turnMessages = React.useMemo(
+    () => (streaming ? sliceCurrentTurnMessages(allMessages) : []),
+    [allMessages, streaming]
+  )
+  const activities = React.useMemo(() => buildAllTaskActivities(turnMessages), [turnMessages])
   const historicalTaskSubjects = React.useMemo(
     () => buildHistoricalTaskSubjects(allMessages),
     [allMessages]
@@ -41,7 +69,9 @@ export function TaskProgressDock({
     [activities, streaming, historicalTaskSubjects]
   )
 
-  // 无任务或无进行中任务时不显示
+  if (!streaming) return null
+
+  // 当前回合无进行中任务时不显示（历史遗留 in_progress 已被 turn 切片排除）
   const hasInProgress = items.some((t) => t.status === 'in_progress')
   if (items.length === 0 || !hasInProgress) return null
 

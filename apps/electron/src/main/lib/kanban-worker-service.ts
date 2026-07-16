@@ -28,6 +28,7 @@ import type { AgentExternalRunSource, SDKMessage } from '@tagent/shared'
 
 import {
   createAgentSession,
+  getAgentSessionMeta,
   getAgentSessionSDKMessages,
   updateAgentSessionMeta,
 } from './agent-session-manager'
@@ -73,6 +74,43 @@ export interface KanbanWorkerBoardContext {
   originChatId?: string
   /** IM 来源桥（可选，与 originChatId 一起用于 IM 通知） */
   originBridge?: 'wechat' | 'wps' | 'feishu' | 'dingtalk' | 'desktop'
+  /**
+   * 工作区 ID（挂载 skills / MCP）
+   *
+   * 优先用看板持久化值；缺省时由 resolveWorkerWorkspaceId 从父会话兜底。
+   */
+  workspaceId?: string
+}
+
+/**
+ * 解析 worker 应挂载的工作区 ID（skills / MCP plugin 根）
+ *
+ * 优先级：
+ * 1. task.workspaceId（显式）
+ * 2. board.workspaceId（建板时写入）
+ * 3. parentSession 的 workspaceId（旧看板兼容）
+ * 4. task.metadata.workspaceId（草稿升级历史路径）
+ */
+export function resolveWorkerWorkspaceId(
+  task: KanbanWorkerTask & { metadata?: Record<string, unknown> },
+  board: KanbanWorkerBoardContext
+): string | undefined {
+  const fromTask = task.workspaceId?.trim()
+  if (fromTask) return fromTask
+
+  const fromBoard = board.workspaceId?.trim()
+  if (fromBoard) return fromBoard
+
+  if (board.parentSessionId) {
+    const parentMeta = getAgentSessionMeta(board.parentSessionId)
+    const fromParent = parentMeta?.workspaceId?.trim()
+    if (fromParent) return fromParent
+  }
+
+  const metaWs = task.metadata?.workspaceId
+  if (typeof metaWs === 'string' && metaWs.trim()) return metaWs.trim()
+
+  return undefined
 }
 
 /**
@@ -154,7 +192,11 @@ const WORKER_TIMEOUT_MS = 30 * 60 * 1000
  * 如果 task.roleId 存在，查角色库追加 role.systemPrompt（定义工人专业能力边界）。
  * role.systemPrompt 放在防递归前缀之前，让工人先理解自己的角色，再接收执行约束。
  */
-function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoardContext): string {
+function buildKanbanWorkerContext(
+  task: KanbanWorkerTask,
+  board: KanbanWorkerBoardContext,
+  workspaceId?: string
+): string {
   const lines: string[] = []
 
   // 角色库 prompt（如果 task 绑定了 roleId）
@@ -175,6 +217,16 @@ function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoa
     '完成后请在回复中给出完整的结论摘要（无长度限制，系统会自动提取最后一条 assistant 回复作为任务结果存储）。',
     '不要尝试调用 kanban_comment / kanban_complete 等工具，工人子会话不注入看板工具集（防递归）。'
   )
+
+  // 已安装 skills：orchestrator 通过 workspace plugin 挂载，引导工人主动复用
+  if (workspaceId) {
+    lines.push(
+      '',
+      '【工作区 Skills】',
+      '当前工作区已通过 SDK plugin 注册用户安装的 Skills。',
+      '执行任务前先评估是否有可直接复用的 Skill；有则优先按 Skill 指引执行，不要重复发明流程。'
+    )
+  }
 
   // D+2: 跨任务 blackboard 摘要注入
   // 把同板其他 task 的 blackboard 评论摘要注入 worker 上下文，
@@ -308,8 +360,16 @@ export async function runKanbanTaskHeadless(
   const updater = options.updater ?? createKanbanDbUpdater()
   const startedAt = Date.now()
 
+  // 解析工作区：挂载用户已安装 skills（SDK local plugin）
+  const workspaceId = resolveWorkerWorkspaceId(task, boardContext)
+  if (!workspaceId) {
+    console.warn(
+      `[看板] 任务 ${task.id} 无 workspaceId，worker 将无法使用工作区已安装 Skills（board=${boardContext.id}）`
+    )
+  }
+
   // 1. 创建子会话（标题用任务标题，便于侧栏识别）；mode 强制 general，TA 模式禁止创建看板
-  const session = createAgentSession(task.title, task.channelId, task.workspaceId, 'general')
+  const session = createAgentSession(task.title, task.channelId, workspaceId, 'general')
   updateAgentSessionMeta(
     session.id,
     {
@@ -371,10 +431,10 @@ export async function runKanbanTaskHeadless(
         {
           sessionId: session.id,
           userMessage: task.body + '\n<!--TAGENT_KANBAN_WORKER-->',
-          automationContext: buildKanbanWorkerContext(task, boardContext),
+          automationContext: buildKanbanWorkerContext(task, boardContext, workspaceId),
           channelId: task.channelId,
           modelId: task.modelId,
-          workspaceId: task.workspaceId,
+          workspaceId,
           // 权限模式优先级：task.permissionMode > role.permissionMode > 默认 bypassPermissions
           permissionModeOverride: resolvePermissionMode(task),
           triggeredBy: 'kanban',
@@ -442,6 +502,7 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
       parentSessionId: board.parentSessionId,
       originChatId: board.originChatId,
       originBridge: board.originBridge,
+      workspaceId: board.workspaceId,
     }
     let capturedError: string | undefined
     let workerSessionId: string | undefined

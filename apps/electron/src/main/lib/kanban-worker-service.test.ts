@@ -41,6 +41,7 @@ vi.mock('./agent-session-manager', () => ({
   ),
   updateAgentSessionMeta: vi.fn(),
   getAgentSessionSDKMessages: vi.fn(() => []),
+  getAgentSessionMeta: vi.fn(() => undefined),
 }))
 
 // Mock agent-headless-runner-registry：捕获 input + callbacks
@@ -60,6 +61,7 @@ vi.mock('./agent-headless-runner-registry', () => ({
       })
     }
   ),
+  stopRegisteredAgent: vi.fn(),
 }))
 
 // Mock kanban-db：默认 updater 调用 kanbanDbService.updateTaskStatus
@@ -67,6 +69,8 @@ vi.mock('./kanban-db', () => ({
   kanbanDbService: {
     updateTaskStatus: vi.fn(),
     appendBlockedApproval: vi.fn(),
+    listTasksByBoard: vi.fn(() => []),
+    addTaskComment: vi.fn(() => ({ id: 't_1' })),
     isInitialized: vi.fn(() => true),
   },
 }))
@@ -101,7 +105,7 @@ interface CapturedRun {
 }
 let capturedRuns: CapturedRun[] = []
 
-const { runKanbanTaskHeadless } = await import('./kanban-worker-service')
+const { runKanbanTaskHeadless, resolveWorkerWorkspaceId } = await import('./kanban-worker-service')
 const { buildKanbanAgentTools } = await import('./kanban-agent-tools')
 const agentSessionManager = await import('./agent-session-manager')
 const headlessRegistry = await import('./agent-headless-runner-registry')
@@ -111,6 +115,7 @@ const electron = await import('electron')
 
 const mockCreateSession = vi.mocked(agentSessionManager.createAgentSession)
 const mockUpdateMeta = vi.mocked(agentSessionManager.updateAgentSessionMeta)
+const mockGetSessionMeta = vi.mocked(agentSessionManager.getAgentSessionMeta)
 const mockRunHeadless = vi.mocked(headlessRegistry.runRegisteredHeadlessAgent)
 const mockGetRoleById = vi.mocked(roleService.getRoleById)
 const mockUpdateTaskStatus = vi.mocked(kanbanDb.kanbanDbService.updateTaskStatus)
@@ -119,6 +124,8 @@ const mockPowerStart = vi.mocked(electron.powerSaveBlocker.start)
 beforeEach(() => {
   mockCreateSession.mockClear()
   mockUpdateMeta.mockClear()
+  mockGetSessionMeta.mockReset()
+  mockGetSessionMeta.mockReturnValue(undefined)
   mockRunHeadless.mockClear()
   mockPowerStart.mockClear()
   mockGetRoleById.mockReset()
@@ -188,12 +195,72 @@ describe('runKanbanTaskHeadless', () => {
   test('创建子会话（mode=general）并写入 parentBoardId / sourceKanbanTaskId', async () => {
     const promise = runKanbanTaskHeadless(baseTask, baseBoard)
     expect(mockCreateSession).toHaveBeenCalledWith('测试任务', 'ch_test', undefined, 'general')
-    expect(mockUpdateMeta).toHaveBeenCalledWith(expect.any(String), {
-      parentBoardId: 'b_test1',
-      sourceKanbanTaskId: 't_test1',
-    })
+    expect(mockUpdateMeta).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        parentBoardId: 'b_test1',
+        sourceKanbanTaskId: 't_test1',
+      },
+      true
+    )
     completeLatestRun()
     await promise
+  })
+
+  test('board.workspaceId 传给 createAgentSession 与 headless runner（挂载 skills）', async () => {
+    const promise = runKanbanTaskHeadless(baseTask, {
+      ...baseBoard,
+      workspaceId: 'ws_skills',
+    })
+    expect(mockCreateSession).toHaveBeenCalledWith('测试任务', 'ch_test', 'ws_skills', 'general')
+    expect(capturedRuns[0]!.input.workspaceId).toBe('ws_skills')
+    expect(capturedRuns[0]!.input.automationContext as string).toContain('【工作区 Skills】')
+    completeLatestRun()
+    await promise
+  })
+
+  test('无 board.workspaceId 时从 parentSession 兜底', async () => {
+    mockGetSessionMeta.mockReturnValue({
+      id: 's_parent',
+      workspaceId: 'ws_from_parent',
+    } as ReturnType<typeof agentSessionManager.getAgentSessionMeta>)
+    const promise = runKanbanTaskHeadless(baseTask, {
+      ...baseBoard,
+      parentSessionId: 's_parent',
+    })
+    expect(mockCreateSession).toHaveBeenCalledWith(
+      '测试任务',
+      'ch_test',
+      'ws_from_parent',
+      'general'
+    )
+    completeLatestRun()
+    await promise
+  })
+
+  test('resolveWorkerWorkspaceId 优先级：task > board > parent > metadata', () => {
+    expect(
+      resolveWorkerWorkspaceId(
+        { ...baseTask, workspaceId: 'ws_task' },
+        { ...baseBoard, workspaceId: 'ws_board' }
+      )
+    ).toBe('ws_task')
+    expect(
+      resolveWorkerWorkspaceId(baseTask, { ...baseBoard, workspaceId: 'ws_board' })
+    ).toBe('ws_board')
+    mockGetSessionMeta.mockReturnValue({
+      workspaceId: 'ws_parent',
+    } as ReturnType<typeof agentSessionManager.getAgentSessionMeta>)
+    expect(
+      resolveWorkerWorkspaceId(baseTask, { ...baseBoard, parentSessionId: 's1' })
+    ).toBe('ws_parent')
+    mockGetSessionMeta.mockReturnValue(undefined)
+    expect(
+      resolveWorkerWorkspaceId(
+        { ...baseTask, metadata: { workspaceId: 'ws_meta' } },
+        baseBoard
+      )
+    ).toBe('ws_meta')
   })
 
   test('完成时调用 updater.markTaskDone + onTaskCompleted(done)', async () => {
@@ -337,7 +404,7 @@ describe('runKanbanTaskHeadless', () => {
     await promise
   })
 
-  test('执行超时 30 分钟后标记任务为 blocked', async () => {
+  test('执行超时 30 分钟后标记任务为 failed 并中止 worker', async () => {
     // 用 fake timer 模拟超时：runRegisteredHeadlessAgent 不回调，setTimeout 触发
     vi.useFakeTimers()
     const updater = {
@@ -357,10 +424,10 @@ describe('runKanbanTaskHeadless', () => {
 
     await promise
 
-    // 验证标 blocked
+    // 验证标 failed（超时真 abort，不再标 blocked）
     expect(mockUpdateTaskStatus).toHaveBeenCalledWith('t_test1', {
-      status: 'blocked',
-      blockedReason: expect.stringContaining('执行超时'),
+      status: 'failed',
+      error: expect.stringContaining('执行超时'),
     })
     // 验证回流 failed + 超时错误
     expect(updater.markTaskFailed).toHaveBeenCalledWith(
@@ -407,10 +474,10 @@ describe('buildKanbanAgentTools', () => {
     await expect(tools.kanban_block!.handler({ taskId: 't_1' })).rejects.toThrow(/reason/)
   })
 
-  test('kanban_comment handler 抛「未实现」错误（待 Phase D）', async () => {
+  test('kanban_comment handler 写入 blackboard 评论', async () => {
     const tools = buildKanbanAgentTools()
-    await expect(tools.kanban_comment!.handler({ taskId: 't_1', comment: 'hi' })).rejects.toThrow(
-      /尚未实现/
-    )
+    const result = await tools.kanban_comment!.handler({ taskId: 't_1', comment: 'hi' })
+    expect(kanbanDb.kanbanDbService.addTaskComment).toHaveBeenCalled()
+    expect(result).toBeDefined()
   })
 })

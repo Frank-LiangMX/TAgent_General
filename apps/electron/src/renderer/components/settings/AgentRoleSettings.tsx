@@ -33,12 +33,15 @@ import type {
   RoleStoreCatalogEntry,
   RoleStoreCategory,
   Channel,
+  KanbanCrewStats,
+  RoleWorkStats,
 } from '@tagent/shared'
 import {
   Badge,
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   Input,
@@ -67,6 +70,8 @@ import {
 import { useAtomValue } from 'jotai'
 import { cn } from '@/lib/utils'
 import { markdownToHtml } from '@/lib/markdown-rich-text'
+import { RoleCard } from '@/components/kanban/RoleCard'
+import { RoleDetailDialog } from '@/components/kanban/RoleDetailDialog'
 
 const PERMISSION_MODE_OPTIONS: Array<{
   value: AgentRolePermissionMode
@@ -78,7 +83,16 @@ const PERMISSION_MODE_OPTIONS: Array<{
 ]
 
 const MAX_CONCURRENT_OPTIONS = [1, 2, 3, 4, 5]
-const BUILTIN_IDS = new Set(['analyst', 'coder', 'reviewer', 'writer'])
+const BUILTIN_IDS = new Set([
+  'analyst',
+  'coder',
+  'reviewer',
+  'writer',
+  'generalist',
+  'data-analyst',
+  'chat',
+  'doc-writer',
+])
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: '全部',
@@ -137,14 +151,41 @@ function MyRolesTab(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [channels, setChannels] = React.useState<Channel[]>([])
+  const [crewStats, setCrewStats] = React.useState<KanbanCrewStats | null>(null)
   const refreshAgentRoles = useRefreshAgentRoles()
 
+  const loadCrewStats = React.useCallback(async () => {
+    try {
+      const stats = await window.electronAPI.kanban.getCrewStats()
+      setCrewStats(stats)
+    } catch {
+      // stats 是辅助信息，加载失败不阻塞主流程
+    }
+  }, [])
+
+  React.useEffect(() => {
+    void loadCrewStats()
+  }, [loadCrewStats])
+
+  // 看板数据变更时刷新统计
+  React.useEffect(() => {
+    return window.electronAPI.kanban.onChanged(() => {
+      void loadCrewStats()
+    })
+  }, [loadCrewStats])
+
+  // 加载渠道列表（模型池下拉用）
   React.useEffect(() => {
     window.electronAPI
       .listChannels()
       .then((list: Channel[]) => setChannels(list.filter((c) => c.enabled)))
       .catch(() => {})
   }, [])
+
+  const statsByRole = React.useMemo(() => {
+    if (!crewStats) return new Map<string, RoleWorkStats>()
+    return new Map(crewStats.byRole.map((s) => [s.roleId, s]))
+  }, [crewStats])
 
   const availableModels = React.useMemo(() => {
     const seen = new Set<string>()
@@ -352,7 +393,12 @@ function MyRolesTab(): React.ReactElement {
         ) : (
           <div className="grid grid-cols-3 gap-3 px-4 pb-4">
             {filteredRoles.map((role) => (
-              <RoleCard key={role.id} role={role} onClick={() => handleCardClick(role)} />
+              <RoleCard
+                key={role.id}
+                role={role}
+                stats={statsByRole.get(role.id)}
+                onClick={() => handleCardClick(role)}
+              />
             ))}
           </div>
         )}
@@ -362,9 +408,9 @@ function MyRolesTab(): React.ReactElement {
       {editingRole && (
         <RoleDetailDialog
           role={editingRole}
+          stats={statsByRole.get(editingRole.id)}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onClose={handleCloseDialog}
           availableModels={availableModels}
           saving={saving}
           onSave={handleSave}
@@ -378,270 +424,7 @@ function MyRolesTab(): React.ReactElement {
   )
 }
 
-// ─── 角色卡片 ────────────────────────────────────────────────
-
-function RoleCard({
-  role,
-  onClick,
-}: {
-  role: AgentRoleProfile
-  onClick: () => void
-}): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="session-list-item-active group flex flex-col gap-2 p-3 text-left transition-colors hover:bg-primary/5"
-    >
-      {/* 标题行：名称 + 内置标记 */}
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-sm font-medium text-foreground truncate flex-1">
-          {role.displayName}
-        </span>
-        {BUILTIN_IDS.has(role.id) && (
-          <Badge
-            variant="outline"
-            className="text-[9px] px-1 py-0 shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400"
-          >
-            内置
-          </Badge>
-        )}
-      </div>
-
-      {/* 描述 */}
-      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">{role.description}</p>
-
-      {/* 底部信息：ID + 模型数 */}
-      <div className="flex items-center gap-1.5 mt-auto pt-1">
-        <Badge variant="outline" className="text-[10px] font-mono">
-          {role.id}
-        </Badge>
-        <span className="text-[10px] text-muted-foreground ml-auto tabular-nums">
-          {role.modelPool.length} 模型
-        </span>
-      </div>
-    </button>
-  )
-}
-
-// ─── 角色详情弹窗 ────────────────────────────────────────────────
-
-function RoleDetailDialog({
-  role,
-  open,
-  onOpenChange,
-  onClose,
-  availableModels,
-  saving,
-  onSave,
-  onDelete,
-  onFieldChange,
-  onAddModel,
-  onRemoveModel,
-}: {
-  role: AgentRoleProfile
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onClose: () => void
-  availableModels: Array<{ id: string; label: string }>
-  saving: boolean
-  onSave: () => Promise<void>
-  onDelete: () => Promise<void>
-  onFieldChange: (
-    field: keyof AgentRoleProfile,
-    value: string | string[] | number | boolean
-  ) => void
-  onAddModel: (modelId: string) => void
-  onRemoveModel: (modelId: string) => void
-}): React.ReactElement {
-  const isDirty = JSON.stringify(role) !== JSON.stringify(role) // 简化：始终可保存
-  const isBuiltin = BUILTIN_IDS.has(role.id)
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[800px] h-[80vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <span>{role.displayName}</span>
-            <Badge variant="outline" className="text-[10px] font-mono">
-              {role.id}
-            </Badge>
-            {isBuiltin && (
-              <Badge
-                variant="outline"
-                className="text-[9px] px-1 py-0 border-blue-500/30 text-blue-600 dark:text-blue-400"
-              >
-                内置
-              </Badge>
-            )}
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* 内容区 */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-4 p-2">
-            <Field label="显示名">
-              <Input
-                value={role.displayName}
-                onChange={(e) => onFieldChange('displayName', e.target.value)}
-                className="h-8 text-xs"
-              />
-            </Field>
-
-            <Field label="职责描述">
-              <Input
-                value={role.description}
-                onChange={(e) => onFieldChange('description', e.target.value)}
-                className="h-8 text-xs"
-              />
-            </Field>
-
-            <Field label="系统提示词（注入 worker 子会话）">
-              <Textarea
-                value={role.systemPrompt}
-                onChange={(e) => onFieldChange('systemPrompt', e.target.value)}
-                className="min-h-[200px] text-xs font-mono"
-                placeholder="定义角色的专业能力边界、输出格式、约束..."
-              />
-            </Field>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/80">
-                模型池（从上到下优先级递减）
-              </label>
-              <div className="space-y-1">
-                {role.modelPool.length === 0 ? (
-                  <p className="py-2 text-center text-xs text-muted-foreground">
-                    模型池为空，dispatcher 将用渠道默认模型
-                  </p>
-                ) : (
-                  role.modelPool.map((modelId, idx) => {
-                    const modelInfo = availableModels.find((m) => m.id === modelId)
-                    return (
-                      <div
-                        key={modelId}
-                        className="flex items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5"
-                      >
-                        <span className="w-4 shrink-0 text-center text-[10px] tabular-nums text-muted-foreground">
-                          {idx + 1}
-                        </span>
-                        <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
-                          {modelInfo?.label ?? modelId}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveModel(modelId)}
-                          className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
-                          title="移除"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-              <ModelPoolAddSelect
-                availableModels={availableModels}
-                currentPool={role.modelPool}
-                onAdd={onAddModel}
-              />
-            </div>
-
-            <Field label="权限模式">
-              <Select
-                value={role.permissionMode}
-                onValueChange={(v) => onFieldChange('permissionMode', v as AgentRolePermissionMode)}
-              >
-                <SelectTrigger className="h-8 w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PERMISSION_MODE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {PERMISSION_MODE_OPTIONS.find((o) => o.value === role.permissionMode)?.desc}
-              </p>
-            </Field>
-
-            <Field label="单模型并发上限">
-              <Select
-                value={String(role.maxConcurrentPerModel)}
-                onValueChange={(v) => onFieldChange('maxConcurrentPerModel', Number(v))}
-              >
-                <SelectTrigger className="h-8 w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MAX_CONCURRENT_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-xs text-muted-foreground">避免同模型并行降智，默认 2</p>
-            </Field>
-
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={role.fallbackToChannelDefault}
-                onChange={(e) => onFieldChange('fallbackToChannelDefault', e.target.checked)}
-                className="size-3.5 rounded border-muted-foreground/30"
-              />
-              模型池全满时回退到渠道默认模型
-            </label>
-          </div>
-        </ScrollArea>
-
-        {/* 底部操作栏 */}
-        <div className="flex items-center justify-between border-t border-border/40 px-4 py-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {isBuiltin ? '内置角色' : '自定义角色'}
-            </span>
-            {!isBuiltin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                    onClick={() => void onDelete()}
-                  >
-                    <Trash2 className="mr-1 size-3" />
-                    删除
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>删除此角色（不可恢复）</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              disabled={saving}
-              onClick={() => void onSave()}
-            >
-              <Save className="mr-1 size-3" />
-              {saving ? '保存中...' : '保存'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
+// ─── 角色卡片 / 详情弹窗已迁移到 @/components/kanban/ ───
 
 // ─── 角色商店 Tab ────────────────────────────────────────────────
 
@@ -916,6 +699,9 @@ function StoreRoleDetailDialog({
               </Badge>
             )}
           </DialogTitle>
+          <DialogDescription>
+            查看角色来源、定位和系统提示词预览，并决定是否安装到本地角色库。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">

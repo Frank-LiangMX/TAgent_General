@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageCircle, Globe2, Palette, type LucideIcon } from 'lucide-react'
+import { FolderOpen, MessageCircle, Globe2, Palette, Users, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -19,6 +19,7 @@ import {
 import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { detectIsMac } from '@/lib/platform'
 import { registerShortcut } from '@/lib/shortcut-registry'
@@ -34,6 +35,7 @@ const RAIL_ICON: LucideIcon = FolderOpen
 const BTW_ICON: LucideIcon = MessageCircle
 const BROWSER_ICON: LucideIcon = Globe2
 const DESIGN_ICON: LucideIcon = Palette
+const CREW_ICON: LucideIcon = Users
 
 export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
@@ -59,6 +61,15 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const isBtwActive = panelOpen && rightRailItem === 'btw'
   const isBrowserActive = panelOpen && rightRailItem === 'browser'
   const isDesignActive = panelOpen && rightRailItem === 'design'
+  const isCrewActive = panelOpen && rightRailItem === 'crew'
+
+  // 班组角标：含工人 parentBoardId；忙碌/求助中时提示（面板已打开班组时不显示）
+  const crewBoardId = useAtomValue(sessionCrewBoardIdAtomFamily(currentSessionId ?? ''))
+  const { tasks: crewTasks } = useKanbanBoardById(crewBoardId)
+  const showCrewBadge =
+    !!crewBoardId &&
+    !isCrewActive &&
+    crewTasks.some((t) => t.status === 'running' || t.status === 'blocked')
 
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
@@ -125,6 +136,15 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
     } else {
       // 其他情况 → 切换到 Design 面板并打开
       setRightRailItem('design')
+      setPanelOpen(true)
+    }
+  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
+
+  const handleCrewClick = React.useCallback(() => {
+    if (panelOpen && rightRailItem === 'crew') {
+      setPanelOpen(false)
+    } else {
+      setRightRailItem('crew')
       setPanelOpen(true)
     }
   }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
@@ -237,6 +257,33 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
               <div className="text-xs">
                 <div className="font-medium">Design Preview</div>
                 <div className="text-muted-foreground">AI 生成 UI 原型的即时预览</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* 班组墙（数字员工队列） */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleCrewClick}
+                aria-pressed={isCrewActive}
+                aria-label="班组"
+                className={cn(
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  isCrewActive && 'rail-island-btn--active'
+                )}
+              >
+                <CREW_ICON size={14} strokeWidth={1.75} />
+                {showCrewBadge && (
+                  <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-amber-500 ring-1 ring-background" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <div className="text-xs">
+                <div className="font-medium">班组</div>
+                <div className="text-muted-foreground">本会话数字员工与派活进度</div>
               </div>
             </TooltipContent>
           </Tooltip>

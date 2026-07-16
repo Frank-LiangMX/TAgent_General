@@ -1415,6 +1415,8 @@ export interface ElectronAPI {
     detachBoardFromSession: (
       input: import('@tagent/shared').DetachBoardFromSessionInput
     ) => Promise<void>
+    /** 获取数字员工全局统计 */
+    getCrewStats: () => Promise<import('@tagent/shared').KanbanCrewStats>
     onChanged: (callback: () => void) => () => void
     onBoardCompleted: (
       callback: (payload: {
@@ -3759,6 +3761,7 @@ const electronAPI: ElectronAPI = {
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.ATTACH_BOARD_TO_SESSION, input),
     detachBoardFromSession: (input: import('@tagent/shared').DetachBoardFromSessionInput) =>
       ipcRenderer.invoke(KANBAN_IPC_CHANNELS.DETACH_BOARD_FROM_SESSION, input),
+    getCrewStats: () => ipcRenderer.invoke(KANBAN_IPC_CHANNELS.GET_CREW_STATS),
     onChanged: (callback: () => void) => {
       const listener = (): void => callback()
       ipcRenderer.on(KANBAN_IPC_CHANNELS.CHANGED, listener)
