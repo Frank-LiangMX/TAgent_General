@@ -1585,7 +1585,47 @@ export function getGroupPreview(group: MessageGroup): string {
   return texts.join(' ').slice(0, 200)
 }
 
-export function MessageGroupRenderer({
+/**
+ * areMessageGroupPropsEqual — MessageGroupRenderer 的 React.memo 比较器
+ *
+ * 按 stable group ID 比较，流式期间非 live 组跳过 re-render（useSmoothStream 每帧
+ * setState 不再串到全量消息树），仅 live 组因 streamingText 变化而重渲染。
+ *
+ * 额外检查 assistant-turn 的 turnMessages 长度：新的 tool_result 到达时确保重渲染。
+ */
+function areMessageGroupPropsEqual(
+  prev: Readonly<MessageGroupRendererProps>,
+  next: Readonly<MessageGroupRendererProps>
+): boolean {
+  // Group identity：用 stable uuid 而非对象引用
+  if (getGroupId(prev.group) !== getGroupId(next.group)) return false
+
+  // Streaming 内容变化 → 需重渲染
+  if (prev.streamingText !== next.streamingText) return false
+  if (prev.streamingThinking !== next.streamingThinking) return false
+  if (prev.isStreaming !== next.isStreaming) return false
+  if (prev.retrying !== next.retrying) return false
+
+  // 视觉状态变化
+  if (prev.stoppedByUser !== next.stoppedByUser) return false
+  if (prev.isContextCompacting !== next.isContextCompacting) return false
+
+  // Session 元数据
+  if (prev.sessionModelId !== next.sessionModelId) return false
+  if (prev.streamStartedAt !== next.streamStartedAt) return false
+  if (prev.basePath !== next.basePath) return false
+
+  // 同组内新 tool_result 到达 → turnMessages 增长 → 需重渲染
+  if (prev.group.type === 'assistant-turn' && next.group.type === 'assistant-turn') {
+    if (prev.group.turnMessages.length !== next.group.turnMessages.length) return false
+  }
+
+  return true
+}
+
+export const MessageGroupRenderer = React.memo(MessageGroupRendererImpl, areMessageGroupPropsEqual)
+
+function MessageGroupRendererImpl({
   group,
   allMessages,
   historicalTaskSubjects,

@@ -52,7 +52,7 @@ function formatHitRate(rate: number | null): string {
   return `${Math.round(rate * 100)}%`
 }
 
-export function TokenStatsPanel({
+export const TokenStatsPanel = React.memo(function TokenStatsPanel({
   isProcessing = false,
   onCompact,
   onClientCompact,
@@ -189,7 +189,7 @@ export function TokenStatsPanel({
       )}
     </div>
   )
-}
+})
 
 function CallStatRow({ label, value }: { label: string; value: number }): React.ReactElement {
   return (
