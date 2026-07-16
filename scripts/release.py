@@ -112,7 +112,7 @@ def release_view(tag: str) -> dict[str, Any] | None:
             "view",
             tag,
             "--json",
-            "tagName,url,isDraft,isPrerelease,name,assets",
+            "tagName,url,isDraft,isPrerelease,name,assets,body",
         ],
         check=False,
     )
@@ -123,13 +123,42 @@ def release_view(tag: str) -> dict[str, Any] | None:
 
 def print_release_summary(release: dict[str, Any]) -> None:
     assets = release.get("assets") or []
+    body = (release.get("body") or "").strip()
     print(f"Release: {release.get('url')}")
     print(f"Name: {release.get('name')}  Tag: {release.get('tagName')}")
     print(f"Draft: {release.get('isDraft')}  Prerelease: {release.get('isPrerelease')}")
+    print(f"Notes: {'present' if body else 'EMPTY (missing RELEASE_NOTES body!)'}")
     print(f"Assets: {len(assets)}")
     for asset in assets:
         size_mb = int(asset.get("size") or 0) / 1024 / 1024
         print(f"  - {asset.get('name')} ({size_mb:.1f} MB)")
+
+
+def sync_release_notes(tag: str) -> None:
+    """Force GitHub Release body from RELEASE_NOTES.md.
+
+    softprops/action-gh-release may create a release with empty body when the
+    workflow job did not checkout the repo (historical bug) or when updating
+    an existing release. Always re-apply notes after a successful publish.
+    """
+    notes_file = REPO_ROOT / "RELEASE_NOTES.md"
+    if not notes_file.exists():
+        raise ReleaseError("RELEASE_NOTES.md missing; cannot sync release body")
+    notes_text = notes_file.read_text(encoding="utf-8").strip()
+    if not notes_text:
+        raise ReleaseError("RELEASE_NOTES.md is empty; refuse to publish blank notes")
+    expected_title = f"# {tag}"
+    if expected_title not in notes_text:
+        raise ReleaseError(
+            f"RELEASE_NOTES.md must contain {expected_title!r} before syncing release body"
+        )
+    print(f"[postflight] Syncing GitHub Release notes from RELEASE_NOTES.md → {tag}")
+    run(["gh", "release", "edit", tag, "--notes-file", str(notes_file)])
+    release = release_view(tag)
+    body = ((release or {}).get("body") or "").strip()
+    if not body:
+        raise ReleaseError(f"Release {tag} body is still empty after notes sync")
+    print("  ✓ Release notes synced")
 
 
 def latest_workflow_runs(workflow: str, limit: int) -> list[dict[str, Any]]:
@@ -226,7 +255,7 @@ def preflight_checks(tag: str) -> None:
     else:
         errors.append(f"找不到 {electron_pkg}")
 
-    # --- 2. Release notes 存在且包含版本标题 ---
+    # --- 2. Release notes 存在且包含版本标题，且正文非空 ---
     print("[preflight] 检查 release notes...")
     notes_file = REPO_ROOT / "RELEASE_NOTES.md"
     if notes_file.exists():
@@ -236,6 +265,11 @@ def preflight_checks(tag: str) -> None:
             errors.append(
                 f"RELEASE_NOTES.md 中未找到 {expected_title!r} 标题\n"
                 f"  → 修复: 在 RELEASE_NOTES.md 中添加 {expected_title} 段落"
+            )
+        elif len(notes_text.strip()) < 40:
+            errors.append(
+                "RELEASE_NOTES.md 内容过短，疑似未写完整发布说明\n"
+                "  → 修复: 补齐本版新功能 / 修复 / 清理条目"
             )
         else:
             print(f"  ✓ RELEASE_NOTES.md 包含 {expected_title}")
@@ -406,13 +440,24 @@ def cmd_publish(args: argparse.Namespace) -> int:
 
     if args.watch:
         watch_run(run_id, args.timeout_minutes)
+        # softprops 历史上可能写出空 body；成功后强制用 RELEASE_NOTES.md 覆盖一次
+        sync_release_notes(tag)
         final_release = release_view(tag)
         if final_release is None:
             raise ReleaseError(f"Workflow succeeded, but release {tag} was not found.")
         print_release_summary(final_release)
+        if not (final_release.get("body") or "").strip():
+            raise ReleaseError(
+                f"Release {tag} has empty body after sync. Fix RELEASE_NOTES.md and run:\n"
+                f"  gh release edit {tag} --notes-file RELEASE_NOTES.md"
+            )
     else:
         print("Not watching run. Check it here:")
         print(run_url)
+        print(
+            f"After the workflow finishes, sync notes with:\n"
+            f"  gh release edit {tag} --notes-file RELEASE_NOTES.md"
+        )
 
     return 0
 

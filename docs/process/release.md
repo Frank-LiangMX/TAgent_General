@@ -75,6 +75,13 @@ python scripts/release.py publish v1.0.1 --yes
 bun run release:publish -- v1.0.1 --yes
 ```
 
+发布成功后脚本会**强制**用 `RELEASE_NOTES.md` 同步 GitHub Release 正文（避免 Action 漏挂 notes）。
+若仍为空，手动补救：
+
+```bash
+gh release edit v1.0.1 --notes-file RELEASE_NOTES.md
+```
+
 只触发，不等待：
 
 ```bash

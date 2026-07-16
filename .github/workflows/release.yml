@@ -114,6 +114,10 @@ jobs:
     needs: [build-desktop]
     runs-on: ubuntu-latest
     steps:
+      # 必须 checkout：Create Release 的 body_path 依赖仓库根目录 RELEASE_NOTES.md。
+      # 以前只 download-artifact、不 checkout，导致 GitHub Release 正文长期为空。
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts/
@@ -122,11 +126,15 @@ jobs:
       - name: List artifacts
         run: ls -laR artifacts/ || true
 
+      - name: Verify RELEASE_NOTES.md
+        run: |
+          test -f RELEASE_NOTES.md
+          head -n 5 RELEASE_NOTES.md
+
       # Release notes body 从仓库根目录的 RELEASE_NOTES.md 读取。
-      # 维护规则：发版前更新该文件为当前要发的版本内容，发版后清空或写下一版待定。
+      # 维护规则：发版前更新该文件为当前要发的版本内容。
       # 历史版本在 GitHub Release 页面永久可见，无需在本文件保留。
-      # 注意：softprops/action-gh-release@v2 在 release 已存在时不会覆盖 body，
-      # 只覆盖 files。如 body 未生效，用 `gh release edit <tag> --notes-file RELEASE_NOTES.md` 补救。
+      # softprops 在 release 已存在时可能不覆盖 body；publish 脚本成功后会再 sync 一次。
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
