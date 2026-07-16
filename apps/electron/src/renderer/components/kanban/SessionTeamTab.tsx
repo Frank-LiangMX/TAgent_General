@@ -48,18 +48,7 @@ import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-
-/** 按状态分组的顺序与中文标签（与 KanbanMainView 保持一致） */
-const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
-  { status: 'ready', label: '待派工' },
-  { status: 'pending', label: '待办（依赖未满足）' },
-  { status: 'running', label: '执行中' },
-  { status: 'blocked', label: '阻塞' },
-  { status: 'review', label: '待验收' },
-  { status: 'done', label: '已完成' },
-  { status: 'failed', label: '失败' },
-  { status: 'cancelled', label: '已取消' },
-]
+import { CREW_STATUS_GROUPS } from '@/lib/kanban-crew-status'
 
 export interface SessionTeamTabProps {
   sessionId: string
@@ -288,13 +277,13 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
             {!loading && tasks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <KanbanSquare className="size-10 text-muted-foreground/30 mb-2" />
-                <p className="text-xs text-muted-foreground mb-1">该看板暂无任务</p>
+                <p className="text-xs text-muted-foreground mb-1">还没有数字员工上岗</p>
                 <p className="text-[11px] text-muted-foreground/70 max-w-[200px]">
-                  在会话里让 Agent 追加子任务，或从草稿升级补充
+                  在对话里让主 Agent 点将派活
                 </p>
               </div>
             )}
-            {STATUS_GROUPS.map(({ status, label }) => {
+            {CREW_STATUS_GROUPS.map(({ status, label }) => {
               const groupTasks = grouped.get(status)
               if (!groupTasks || groupTasks.length === 0) return null
               return (

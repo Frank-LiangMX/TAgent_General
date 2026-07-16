@@ -18,7 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@tagent/ui'
-import type { KanbanTaskStatus } from '@tagent/shared'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
 import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
@@ -35,18 +34,7 @@ import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-
-/** 状态分组顺序与中文标签 */
-const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string; desc: string }> = [
-  { status: 'ready', label: '待派工', desc: '等待分配 worker' },
-  { status: 'pending', label: '待办', desc: '依赖未满足' },
-  { status: 'running', label: '执行中', desc: 'worker 正在运行' },
-  { status: 'blocked', label: '阻塞', desc: '需要外部输入' },
-  { status: 'review', label: '待验收', desc: '等待确认结果' },
-  { status: 'done', label: '已完成', desc: '任务成功结束' },
-  { status: 'failed', label: '失败', desc: '执行出错' },
-  { status: 'cancelled', label: '已取消', desc: '被手动停止' },
-]
+import { CREW_STATUS_GROUPS } from '@/lib/kanban-crew-status'
 
 /** 任务 Tab 内容（看板详情） */
 function TasksTabContent({
@@ -188,14 +176,14 @@ function TasksTabContent({
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <KanbanSquare className="size-10 text-muted-foreground/30 mb-2" />
-            <p className="text-xs text-muted-foreground mb-1">该看板暂无任务</p>
+            <p className="text-xs text-muted-foreground mb-1">还没有数字员工上岗</p>
             <p className="text-[11px] text-muted-foreground/70 max-w-sm">
-              看板不支持直接创建任务。请在会话里让 Agent 追加子任务，或从草稿升级补充。
+              在会话里让主 Agent 点将派活，或从草稿升级补充任务。
             </p>
           </div>
         ) : (
           <div className="p-4 space-y-5">
-            {STATUS_GROUPS.map(({ status, label, desc }) => {
+            {CREW_STATUS_GROUPS.map(({ status, label, desc }) => {
               const groupTasks = tasks.filter((t) => t.status === status)
               if (groupTasks.length === 0) return null
               return (
@@ -205,7 +193,9 @@ function TasksTabContent({
                     <span className="text-[10px] text-muted-foreground/60 tabular-nums">
                       {groupTasks.length}
                     </span>
-                    <span className="text-[9px] text-muted-foreground/40">{desc}</span>
+                    {desc ? (
+                      <span className="text-[9px] text-muted-foreground/40">{desc}</span>
+                    ) : null}
                   </div>
                   <div className="grid grid-cols-3 gap-2.5">
                     {groupTasks.map((task) => (
