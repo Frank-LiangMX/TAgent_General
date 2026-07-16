@@ -277,11 +277,12 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
     throw new Error(`主会话不存在: ${sessionId}`)
   }
 
-  // 1. 创建看板
+  // 1. 创建看板（写入 workspaceId，worker 才能挂载已安装 Skills）
   const board = kanbanDbService.createBoard({
     rootGoal,
     parentSessionId: sessionId,
     originBridge: 'desktop',
+    workspaceId: workspaceId ?? sessionMeta.workspaceId,
   })
 
   // 2. 写回主会话 meta.boardId（渲染进程据此显示「团队」Tab）
@@ -291,7 +292,6 @@ export function createBoardFromDraft(input: CreateBoardFromDraftInput): CreateBo
   const baseTaskInput = {
     boardId: board.id,
     channelId,
-    ...(workspaceId ? { metadata: { workspaceId } } : {}),
   }
   const tasks = requirements.map((req, idx) => {
     const bodyParts = [req.description]

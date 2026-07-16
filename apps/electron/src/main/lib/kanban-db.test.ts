@@ -165,12 +165,59 @@ describe('KanbanDbService', () => {
       expect(task.id).toMatch(/^t_/)
       expect(task.status).toBe('pending')
       expect(task.priority).toBe(0)
+      // 未传 roleId 时兜底为通用执行者
+      expect(task.roleId).toBe('generalist')
 
       const fetched = db.getTask(task.id)
       expect(fetched).not.toBeNull()
       expect(fetched?.status).toBe('pending')
       expect(fetched?.title).toBe('任务 A')
       expect(fetched?.boardId).toBe(board.id)
+      expect(fetched?.roleId).toBe('generalist')
+    })
+
+    test('createTask 未传 roleId 时落到 generalist', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({ boardId: board.id, title: 'T', channelId: 'c1' })
+      expect(task.roleId).toBe('generalist')
+    })
+
+    test('createTask 空白 roleId 时落到 generalist', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: 'T',
+        channelId: 'c1',
+        roleId: '   ',
+      })
+      expect(task.roleId).toBe('generalist')
+    })
+
+    test('createTask 显式 roleId 保持原值', () => {
+      const board = db.createBoard({ rootGoal: 'G' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: 'T',
+        channelId: 'c1',
+        roleId: 'data-analyst',
+      })
+      expect(task.roleId).toBe('data-analyst')
+
+      const chatTask = db.createTask({
+        boardId: board.id,
+        title: '聊天整理',
+        channelId: 'c1',
+        roleId: 'chat',
+      })
+      expect(chatTask.roleId).toBe('chat')
+
+      const docTask = db.createTask({
+        boardId: board.id,
+        title: '写方案',
+        channelId: 'c1',
+        roleId: 'doc-writer',
+      })
+      expect(docTask.roleId).toBe('doc-writer')
     })
 
     test('updateTaskStatus 维护 startedAt / finishedAt 时间戳', () => {

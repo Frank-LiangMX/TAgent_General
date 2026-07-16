@@ -322,7 +322,23 @@ const KANBAN_ORCHESTRATION_GUIDE = `## 看板多 Agent 编排指南
 3. **拆任务**：列出 3-8 个子任务，每个调用 \`kanban_add_task\`：
    - title：一行简述（"分析项目依赖树" / "扫描入口模块"）
    - body：**完整的工人 prompt**——工人是独立子会话，看不到当前对话上下文，body 必须自包含（包含目标、路径、输出格式）
+   - roleId：**推荐必填**，按任务类型选角色（见下表）；不传则系统自动落到 \`generalist\`
    - priority：数字越大越优先；有依赖的下游任务 priority 调低
+
+### 角色选用（roleId）
+
+| roleId | 何时用 |
+|--------|--------|
+| \`coder\` | 写代码、改实现、修 bug |
+| \`analyst\` | 架构设计、技术方案、权衡决策 |
+| \`reviewer\` | 代码审查、质量/安全检查 |
+| \`writer\` | 工程文档（README / API / 开发者教程） |
+| \`doc-writer\` | 办公文档（方案 / PPT 页纲 / Excel 表 / Markdown 纪要） |
+| \`data-analyst\` | 表格、日志、指标解读与结论 |
+| \`chat\` | 问答、头脑风暴、沟通整理 |
+| \`generalist\` | 杂项 / 说不清专精 / 不确定时的兜底 |
+
+不确定就用 \`generalist\`，不要省略 roleId。
 4. **告知用户**：建完看板后回复用户："已创建看板，N 个任务已派发，调度器会自动执行，你可以在看板页查看进度"。
 5. **不要自己执行**：看板建好后，调度器会在 30s 内自动派工给工人子会话。你不要自己领任务做，让系统自动派。
    - 若 requireSummary=true，board 完成后系统会自动触发你汇总，无需用户手动询问。
@@ -340,10 +356,10 @@ const KANBAN_ORCHESTRATION_GUIDE = `## 看板多 Agent 编排指南
 
 \`\`\`text
 1. kanban_create_board({ rootGoal: "分析 F:/某项目工程", title: "某项目分析" })
-2. kanban_add_task({ boardId, title: "读取 README 与文档", body: "读取 F:/某项目/README.md 与 docs/ 目录所有 .md 文件，输出项目定位、核心功能、技术栈摘要", channelId, priority: 10 })
-3. kanban_add_task({ boardId, title: "扫描架构与目录结构", body: "列出 F:/某项目顶层目录树（2 层），识别 src/ tests/ config/ 等约定目录，输出架构模式判断（monorepo / 单应用 / 库）", channelId, priority: 8 })
-4. kanban_add_task({ boardId, title: "分析依赖与技术栈", body: "读取 F:/某项目/package.json / requirements.txt / go.mod 等依赖清单文件，输出核心依赖列表 + 版本 + 用途判断", channelId, priority: 8 })
-5. kanban_add_task({ boardId, title: "识别入口与主流程", body: "找出 F:/某项目的入口文件（main.ts / index.js / __main__.py 等），跟踪顶层调用链 3 层，输出主流程时序描述", channelId, priority: 5 })
+2. kanban_add_task({ boardId, title: "读取 README 与文档", body: "读取 F:/某项目/README.md 与 docs/ 目录所有 .md 文件，输出项目定位、核心功能、技术栈摘要", roleId: "writer", channelId, priority: 10 })
+3. kanban_add_task({ boardId, title: "扫描架构与目录结构", body: "列出 F:/某项目顶层目录树（2 层），识别 src/ tests/ config/ 等约定目录，输出架构模式判断（monorepo / 单应用 / 库）", roleId: "analyst", channelId, priority: 8 })
+4. kanban_add_task({ boardId, title: "分析依赖与技术栈", body: "读取 F:/某项目/package.json / requirements.txt / go.mod 等依赖清单文件，输出核心依赖列表 + 版本 + 用途判断", roleId: "data-analyst", channelId, priority: 8 })
+5. kanban_add_task({ boardId, title: "识别入口与主流程", body: "找出 F:/某项目的入口文件（main.ts / index.js / __main__.py 等），跟踪顶层调用链 3 层，输出主流程时序描述", roleId: "coder", channelId, priority: 5 })
 6. 回复用户："已创建看板「某项目分析」，4 个分析任务已派发，调度器会自动执行，你可以在看板页查看进度"
 \`\`\`
 

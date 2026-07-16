@@ -46,6 +46,8 @@ import { AgentView } from '@/components/agent/AgentView'
 import { Panel } from '@/components/app-shell/Panel'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
+import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
+import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 
 /** 按状态分组的顺序与中文标签（与 KanbanMainView 保持一致） */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string }> = [
@@ -75,6 +77,11 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
 
   // 全局看板列表（切换看板用）
   const { boards } = useKanbanBoards()
+  const roleMap = useAgentRoleMap()
+  const roleLabels = React.useMemo(
+    () => buildKanbanRoleInstanceLabels(tasks, roleMap),
+    [tasks, roleMap]
+  )
 
   // 选中任务对象（tasks 变更后保持选中态）
   const selectedTask = React.useMemo(
@@ -300,7 +307,12 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
                   </div>
                   <div className="space-y-1.5">
                     {groupTasks.map((task) => (
-                      <KanbanTaskListItem key={task.id} task={task} showDetailDialog={false} />
+                      <KanbanTaskListItem
+                        key={task.id}
+                        task={task}
+                        showDetailDialog={false}
+                        roleLabel={roleLabels.get(task.id)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -327,6 +339,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
             ) : (
               <TaskDetailView
                 task={selectedTask}
+                roleLabel={roleLabels.get(selectedTask.id)}
                 unblockReason={unblockReason}
                 setUnblockReason={setUnblockReason}
                 onUnblock={handleUnblock}
@@ -359,12 +372,14 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
 /** 任务详情视图（无 assigneeSessionId 时显示 task.body + blocked 解除 UI） */
 function TaskDetailView({
   task,
+  roleLabel,
   unblockReason,
   setUnblockReason,
   onUnblock,
   unblocking,
 }: {
   task: KanbanTask
+  roleLabel?: string
   unblockReason: string
   setUnblockReason: (v: string) => void
   onUnblock: () => void
@@ -452,7 +467,7 @@ function TaskDetailView({
           {task.roleId && (
             <div>
               <span className="text-muted-foreground">角色：</span>
-              <span className="font-mono text-foreground/70">{task.roleId}</span>
+              <span className="text-foreground/70">{roleLabel ?? task.roleId}</span>
             </div>
           )}
           <div>

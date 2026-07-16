@@ -65,12 +65,15 @@ export interface KanbanTaskDetailDialogProps {
   task: KanbanTask
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** 角色显示标签（含同角色多实例编号，如「通用执行者 01」） */
+  roleLabel?: string
 }
 
 export function KanbanTaskDetailDialog({
   task,
   open,
   onOpenChange,
+  roleLabel,
 }: KanbanTaskDetailDialogProps): React.ReactElement {
   const badge = STATUS_BADGE[task.status]
   const isRunning = task.status === 'running'
@@ -78,7 +81,7 @@ export function KanbanTaskDetailDialog({
   const [retrying, setRetrying] = React.useState(false)
 
   const roleMap = useAgentRoleMap()
-  const roleDisplayName = task.roleId ? roleMap.get(task.roleId) : undefined
+  const roleDisplayName = roleLabel ?? (task.roleId ? roleMap.get(task.roleId) : undefined)
 
   const handleRetry = async (): Promise<void> => {
     setRetrying(true)

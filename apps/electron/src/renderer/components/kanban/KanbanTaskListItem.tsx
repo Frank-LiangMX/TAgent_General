@@ -114,11 +114,17 @@ export interface KanbanTaskListItemProps {
   /** 点击卡片是否弹出详情弹窗（默认 true）。
    * SessionTeamTab 等已有右栏详情的视图设为 false，避免弹窗+右栏重复。 */
   showDetailDialog?: boolean
+  /**
+   * 角色显示标签（含同角色多实例编号，如「通用执行者 01」）
+   * 由父组件用 buildKanbanRoleInstanceLabels 基于整板任务计算后传入。
+   */
+  roleLabel?: string
 }
 
 export function KanbanTaskListItem({
   task,
   showDetailDialog = true,
+  roleLabel,
 }: KanbanTaskListItemProps): React.ReactElement {
   const [detailOpen, setDetailOpen] = React.useState(false)
   // 订阅实时进度日志
@@ -146,6 +152,9 @@ export function KanbanTaskListItem({
   // 角色映射：roleId → displayName（首次渲染时触发角色列表加载）
   const roleMap = useAgentRoleMap()
   const roleDisplayName = task.roleId ? roleMap.get(task.roleId) : undefined
+  // 优先用父组件传入的带编号标签
+  const roleTitle = roleLabel ?? roleDisplayName
+  const roleInitial = roleDisplayName?.charAt(0) ?? roleTitle?.charAt(0)
 
   // 进度估算：done=100%、running=50%（未细分阶段）、其他=0%
   const progress = isDone ? 100 : isRunning ? 50 : 0
@@ -179,16 +188,16 @@ export function KanbanTaskListItem({
         <div className="p-4">
           {/* 第一行：角色头像 + 名称 + 模型 */}
           <div className="flex items-center gap-2 mb-2">
-            {roleDisplayName ? (
+            {roleTitle ? (
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <div className="size-7 shrink-0 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                    {roleDisplayName.charAt(0)}
+                    {roleInitial}
                   </span>
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-foreground truncate">
-                    {roleDisplayName}
+                    {roleTitle}
                   </div>
                   <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
                     {task.modelId && (
@@ -383,7 +392,12 @@ export function KanbanTaskListItem({
       </div>
 
       {showDetailDialog ? (
-        <KanbanTaskDetailDialog task={task} open={detailOpen} onOpenChange={setDetailOpen} />
+        <KanbanTaskDetailDialog
+          task={task}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          roleLabel={roleTitle}
+        />
       ) : null}
     </>
   )

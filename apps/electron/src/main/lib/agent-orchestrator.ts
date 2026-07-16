@@ -1906,6 +1906,7 @@ export class AgentOrchestrator {
             channelId,
             triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
             agentCwd,
+            workspaceId,
           })
         } catch (err) {
           console.error('[Agent 编排] 注入看板工具集失败:', err)

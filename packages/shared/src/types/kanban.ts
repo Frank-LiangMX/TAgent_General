@@ -203,6 +203,14 @@ export interface KanbanBoard {
    * 未记录时 fallback 到主进程 cwd。
    */
   cwd?: string
+  /**
+   * 工作区 ID（决定 worker 挂载的 skills / MCP plugin）
+   *
+   * 建板时从主会话 workspaceId 记录。worker 启动时传给 orchestrator，
+   * 以便 SDK `plugins: [{ type: 'local', path: workspace }]` 发现已安装 skills。
+   * 未记录时 fallback 到 parentSessionId 对应会话的 workspaceId。
+   */
+  workspaceId?: string
 }
 
 // ===== 任务依赖 =====
@@ -247,6 +255,8 @@ export interface CreateKanbanBoardInput {
   requireSummary?: boolean
   /** 看板工作目录（worker 子会话项目根，未传则由 orchestrator 兜底填主会话 cwd） */
   cwd?: string
+  /** 工作区 ID（worker 挂载 skills/MCP，未传则由工具上下文 / 父会话兜底） */
+  workspaceId?: string
 }
 
 /** 创建任务的输入 */

@@ -33,6 +33,8 @@ import {
 } from '@/atoms/kanban-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
+import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
+import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 
 /** 状态分组顺序与中文标签 */
 const STATUS_GROUPS: Array<{ status: KanbanTaskStatus; label: string; desc: string }> = [
@@ -66,6 +68,11 @@ function TasksTabContent({
   const done = tasks.filter((t) => t.status === 'done').length
   const total = tasks.length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
+  const roleMap = useAgentRoleMap()
+  const roleLabels = React.useMemo(
+    () => buildKanbanRoleInstanceLabels(tasks, roleMap),
+    [tasks, roleMap]
+  )
 
   const handlePauseResume = async (): Promise<void> => {
     try {
@@ -202,7 +209,11 @@ function TasksTabContent({
                   </div>
                   <div className="grid grid-cols-3 gap-2.5">
                     {groupTasks.map((task) => (
-                      <KanbanTaskListItem key={task.id} task={task} />
+                      <KanbanTaskListItem
+                        key={task.id}
+                        task={task}
+                        roleLabel={roleLabels.get(task.id)}
+                      />
                     ))}
                   </div>
                 </div>
