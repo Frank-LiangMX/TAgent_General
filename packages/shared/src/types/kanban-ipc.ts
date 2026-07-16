@@ -32,6 +32,8 @@ export const KANBAN_IPC_CHANNELS = {
   CREATE_BOARD_FROM_DRAFT: 'kanban:create-board-from-draft',
   /** 看板数据变更事件（main → renderer，任务状态变化时推送） */
   CHANGED: 'kanban:changed',
+  /** 获取数字员工角色统计（缓存于内存） */
+  GET_CREW_STATS: 'kanban:get-crew-stats',
   /** 看板全部任务完成事件（main → renderer，事件回流方案 B） */
   BOARD_COMPLETED: 'kanban:board-completed',
   /** 暂停看板调度（停止 tick，不清空在途任务） */

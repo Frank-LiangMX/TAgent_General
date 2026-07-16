@@ -1,8 +1,8 @@
 # 看板数字员工轻量拟人化与面板整合
 
-> **状态**：P0 实施中（文档 + 派发话术 + 员工卡跨材质）  
-> **日期**：2026-07-16  
-> **前置**：PR #24 / `feature/kanban-roles-and-worker-skills`（默认角色 / 工号 / worker Skills）  
+> **状态**：角色统计体系 + 档案卡落地（2026-07-16）
+> **日期**：2026-07-16
+> **前置**：PR #24 / `feature/kanban-roles-and-worker-skills`（默认角色 / 工号 / worker Skills）
 > **非目标**：瞬知 / 马维斯式虚拟办公室（远期可选，独立入口）
 
 ---
@@ -41,8 +41,8 @@
   └─ 派发话术：点将 / 安排同事 / 交卷汇总
 
 右栏（伴生面板，对齐 Design Preview）
-  └─ 班组墙：本会话 board 的员工卡队列
-       └─ 点任务 → 摘要；有工人会话 → 打开会话（不嵌 AgentView）
+  └─ 班组墙：本会话 board 的员工卡队列（工人会话用 parentBoardId 回退）
+       └─ 点任务 → 底部摘要 +「查看详情」弹窗（不切换主区会话）
 
 左栏「看板」页（全局）
   └─ 同一套 KanbanBoardView / 员工卡
@@ -110,29 +110,90 @@ KanbanBoardView           # 模式：page | session-rail
 
 ---
 
-## 4. 派发话术（主 Agent）
+## 4. 数字员工统计体系
 
-更新 `KANBAN_ORCHESTRATION_GUIDE`：
+### 4.1 数据模型
 
-1. 拆任务时 **必带 roleId**，优先点名角色显示名  
-2. 建板后回复模板偏向：  
-   - 「我安排了 N 位同事：…」  
-   - 「他们已开工；可在右侧班组面板看进度，完成后我会汇总。」  
-3. 少对用户说：`kanban` / `boardId` / `worker` / `roleId`  
-4. 技术字段仍走工具参数，不进用户可见叙述
+现有字段已足够：
+- `startedAt` / `finishedAt` → 单次工作时长
+- `status === 'running'` → 当前在岗
+- `roleId` → 按角色聚合
+- `createdAt` → 日/周/月时间窗口
+
+**新增类型**（`kanban.ts`）：
+
+```typescript
+interface PeriodStats {
+  taskCount: number
+  totalDurationMs: number
+  avgDurationMs: number
+}
+
+interface RoleWorkStats {
+  roleId: string
+  totalTasks: number        // done + failed
+  totalDurationMs: number
+  failedCount: number
+  avgDurationMs: number
+  windows: { day: PeriodStats; week: PeriodStats; month: PeriodStats }
+}
+
+interface KanbanCrewStats {
+  byRole: RoleWorkStats[]
+  totalTasks: number
+  totalDurationMs: number
+  activeCount: number        // 当前在岗人数
+}
+```
+
+### 4.2 统计服务（主进程）
+
+`kanban-crew-stats.ts`：主进程启动时扫描全量 `kanban.db` 计算一次（异步），缓存于内存。任务状态变更时 invalidate。
+
+IPC：`kanban:getCrewStats` → `KanbanCrewStats`
+
+### 4.3 角色库 Tab（统计面板）
+
+`RoleStatsCard` 组件：顶部三个数字（累计上岗 / 累计工时 / 平均工时）+ 日/周/月 SegmentedTabs 切换 + 进度条。
+
+`RoleCard`（列表卡片）：顶部角色色条 + 角色头像 + 累计上岗徽章 + 均时 + 失败计数。
+
+### 4.4 角色档案弹窗（拟人化）
+
+左侧：统计面板 + 基本信息。右侧：角色配置（displayName / systemPrompt / 模型池 / 权限 / 并发上限）。
 
 ---
 
-## 5. 实施分期
+## 5. 数字员工卡（增强）
+
+### 5.1 Running 任务卡
+
+- 头像放大（size-10），工号角标左下角
+- 同 roleId ≥2 running 时头像右上角紫色徽章「×N」
+- 角色名 + 状态徽章 + 任务标题 + **实时计时**（每秒刷新）
+- 底部进度条
+
+### 5.2 Idle / 终态卡
+
+- Idle（无 running/终态）：显示「待机中」
+- done：结果摘要高亮（绿色）
+- failed：红色错误提示
+- blocked：橙色求助原因
+
+### 5.3 同岗计数
+
+`KanbanCrewTaskList` 计算 `sameRoleActiveCountMap`：每个 running task 的同 roleId running 总数，传给 `KanbanTaskListItem` 渲染「×N」角标。
+
+---
+
+## 6. 实施分期（更新）
 
 | 阶段 | 内容 | 验收 |
 |------|------|------|
-| **P0** | 本文档 + 派发话术 + `KanbanWorkerCard` 跨材质改造 | 三材质抽查；派发回复有点将感 |
-| **P1** | 抽 `KanbanBoardToolbar` / 分组常量；MainView 与 Team 共用 | 两处工具栏无复制逻辑 |
-| **P2** | 右栏班组面板入口；有 boardId 时角标 | 会话中可不进整页团队也能盯进度 |
-| **P3** | 会话「团队」整页降级 / 嵌套 AgentView 改为开会话 | 无窄栏嵌套聊天 |
-
-本波优先 **P0**，P1 能顺手抽则抽；P2/P3 可随后 PR。
+| **D+1** | 统计类型 + 主进程统计服务 + IPC | typecheck |
+| **D+2** | `RoleStatsCard` + 角色库接入统计 | 角色卡片有上岗次数徽章 |
+| **D+3** | 角色档案弹窗拟人化 | 弹窗左侧有统计、右侧有配置 |
+| **D+4** | 员工卡 running 实时计时 + 同岗角标 | 运行中任务卡显示计时 + ×N 徽章 |
 
 ---
 
@@ -145,17 +206,20 @@ KanbanBoardView           # 模式：page | session-rail
 
 ---
 
-## 7. 相关文件
+## 8. 相关文件
 
 | 文件 | 角色 |
 |------|------|
-| `apps/electron/src/renderer/components/kanban/KanbanTaskListItem.tsx` | → 升级为员工卡 |
-| `apps/electron/src/renderer/components/kanban/KanbanMainView.tsx` | page 表面 |
-| `apps/electron/src/renderer/components/kanban/SessionTeamTab.tsx` | 过渡；P3 降级 |
-| `apps/electron/src/main/lib/agent-prompt-builder.ts` | 派发话术 |
-| `apps/electron/src/renderer/lib/kanban-role-labels.ts` | 工号 |
-| `packages/ui/DESIGN.md` / `glass.css` | 材质表面规范 |
-| `docs/plans/2026-06-30-kanban-v1-product-design.md` | 原 Team Tab 设计（本波演进） |
+| `packages/shared/src/types/kanban.ts` | `RoleWorkStats` / `KanbanCrewStats` / `PeriodStats` 类型 |
+| `apps/electron/src/main/lib/kanban-crew-stats.ts` | 统计服务（缓存 + 增量更新） |
+| `apps/electron/src/main/lib/kanban-ipc.ts` | `GET_CREW_STATS` IPC handler |
+| `apps/electron/src/preload/index.ts` | `getCrewStats` 暴露 |
+| `apps/electron/src/renderer/components/kanban/RoleStatsCard.tsx` | 统计面板（PeriodStats） |
+| `apps/electron/src/renderer/components/kanban/RoleCard.tsx` | 角色卡片（加色条 + 上岗徽章） |
+| `apps/electron/src/renderer/components/kanban/RoleDetailDialog.tsx` | 角色档案弹窗（拟人化布局） |
+| `apps/electron/src/renderer/components/settings/AgentRoleSettings.tsx` | 接入统计 + 新组件 |
+| `apps/electron/src/renderer/components/kanban/KanbanTaskListItem.tsx` | running 实时计时 + 同岗计数 + 待机中文案 |
+| `apps/electron/src/renderer/components/kanban/KanbanCrewTaskList.tsx` | `sameRoleActiveCountMap` 计算 |
 
 ---
 

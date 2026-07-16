@@ -28,9 +28,11 @@ import {
   type CreateKanbanTaskIpcInput,
   type AttachBoardToSessionInput,
   type DetachBoardFromSessionInput,
+  type KanbanCrewStats,
 } from '@tagent/shared'
 
 import { kanbanDbService } from './kanban-db'
+import { kanbanCrewStatsService } from './kanban-crew-stats'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { stopRegisteredAgent } from './agent-headless-runner-registry'
 
@@ -47,6 +49,8 @@ function ensureKanbanDb(): void {
 
 /** 向所有渲染窗口广播看板数据变更，触发前端刷新 */
 export function broadcastKanbanChanged(): void {
+  // 统计缓存失效（下次 GET_CREW_STATS 重新计算）
+  kanbanCrewStatsService.invalidate()
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.send(KANBAN_IPC_CHANNELS.CHANGED)
@@ -537,4 +541,8 @@ export function registerKanbanIpcHandlers(): void {
       detachBoardFromSession(input)
     }
   )
+
+  ipcMain.handle(KANBAN_IPC_CHANNELS.GET_CREW_STATS, async () => {
+    return kanbanCrewStatsService.compute()
+  })
 }

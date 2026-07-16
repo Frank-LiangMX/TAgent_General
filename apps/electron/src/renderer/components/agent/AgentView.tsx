@@ -122,6 +122,7 @@ import {
   finalizeStreamingActivities,
   agentProcessGroupsKeepExpandedAtom,
   sessionTokenStatsAtom,
+  agentSidePanelOpenAtom,
 } from '@/atoms/agent-atoms'
 import { askMessagesMapAtom, askStreamingStatesAtom } from '@/atoms/ask-atoms'
 import {
@@ -151,10 +152,9 @@ import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
   sessionBoardIdAtomFamily,
   sessionSourceKanbanTaskIdAtomFamily,
-  sessionAgentSubTabAtomFamily,
   useKanbanBoard,
 } from '@/atoms/kanban-atoms'
-import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
+import { rightRailItemAtom } from '@/atoms/app-mode'
 import {
   InputToolbarOverflow,
   type ToolbarItem,
@@ -552,20 +552,34 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     return meta.workspaceId ?? null // 数据已加载，以会话自身为准
   }, [sessions, sessionId, globalWorkspaceId])
 
-  // ===== Kanban 团队 Tab 集成 =====
-  // 嵌套工人会话（sourceKanbanTaskId 存在）隐藏二级 Tab，避免递归
+  // ===== Kanban 班组入口（右栏伴生面板，不再整页切换） =====
   const isNestedWorker = useAtomValue(sessionSourceKanbanTaskIdAtomFamily(sessionId)) !== undefined
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
-  const [subTab, setSubTab] = useAtom(sessionAgentSubTabAtomFamily(sessionId))
   const kanbanBoard = useKanbanBoard(sessionId)
-  /** 主会话绑定看板后才显示「对话 | 团队」二级 Tab（见 kanban v1 设计 §5.2） */
-  const showKanbanTeamTab = !isNestedWorker && !!boardId
+  const [rightRailItem, setRightRailItem] = useAtom(rightRailItemAtom)
+  const [sidePanelOpen, setSidePanelOpen] = useAtom(agentSidePanelOpenAtom)
+  /** 主会话绑定看板后显示顶栏班组进度芯片 */
+  const showKanbanCrewChip = !isNestedWorker && !!boardId
+  const isCrewPanelActive = sidePanelOpen && rightRailItem === 'crew'
+  const previousBoardIdRef = React.useRef<string | undefined>(boardId)
 
   React.useEffect(() => {
-    if (!showKanbanTeamTab && subTab === 'team') {
-      setSubTab('chat')
+    const previousBoardId = previousBoardIdRef.current
+    if (!isNestedWorker && !previousBoardId && boardId) {
+      setRightRailItem('crew')
+      setSidePanelOpen(true)
     }
-  }, [showKanbanTeamTab, subTab, setSubTab])
+    previousBoardIdRef.current = boardId
+  }, [boardId, isNestedWorker, setRightRailItem, setSidePanelOpen])
+
+  const toggleCrewPanel = React.useCallback(() => {
+    if (isCrewPanelActive) {
+      setSidePanelOpen(false)
+      return
+    }
+    setRightRailItem('crew')
+    setSidePanelOpen(true)
+  }, [isCrewPanelActive, setRightRailItem, setSidePanelOpen])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
@@ -1022,7 +1036,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     }
   }, [sessionId, refreshVersion, setStreamingStates, setLiveMessagesMap, setMessagesCache, store])
 
-  // 从会话元数据初始化附加目录（仅冷启动水合，后续由 handleAttachFolder/handleDetachDirectory 实时写入）
+  // 从会话元数据初始化附加目录（仅冷启动水合，后续由 handleAttachFolder 等实时写入）
   React.useEffect(() => {
     const meta = sessions.find((s) => s.id === sessionId)
     const dirs = meta?.attachedDirectories ?? []
@@ -1360,29 +1374,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       toast.error('附加文件夹失败')
     }
   }, [sessionId, setAttachedDirsMap])
-
-  /** 移除附加文件夹（拖拽 / 加号添加的目录附件） */
-  const handleDetachDirectory = React.useCallback(
-    async (dirPath: string): Promise<void> => {
-      try {
-        const updated = await window.electronAPI.detachDirectory({
-          sessionId,
-          directoryPath: dirPath,
-        })
-        setAttachedDirsMap((prev) => {
-          const map = new Map(prev)
-          map.set(sessionId, updated)
-          return map
-        })
-        const dirName = dirPath.split('/').pop() || dirPath
-        toast.success(`已移除目录: ${dirName}`)
-      } catch (error) {
-        console.error('[AgentView] 移除附加目录失败:', error)
-        toast.error('移除附加目录失败')
-      }
-    },
-    [sessionId, setAttachedDirsMap]
-  )
 
   /** 语音输入 */
   const handleSpeech = React.useCallback(async (): Promise<void> => {
@@ -2864,13 +2855,14 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             <AgentHeader
               sessionId={sessionId}
               rightSlot={
-                showKanbanTeamTab && kanbanBoard.tasks.length > 0 ? (
+                showKanbanCrewChip && kanbanBoard.tasks.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() => setSubTab(subTab === 'team' ? 'chat' : 'team')}
+                    onClick={toggleCrewPanel}
+                    title={isCrewPanelActive ? '收起班组面板' : '打开班组面板'}
                     className={cn(
                       'flex items-center gap-2 rounded-full px-2.5 py-1 text-left transition-all hover:shadow-sm',
-                      subTab === 'team'
+                      isCrewPanelActive
                         ? 'bg-primary/10 hover:bg-primary/15'
                         : 'bg-muted/50 hover:bg-muted'
                     )}
@@ -2878,63 +2870,55 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     <Users
                       className={cn(
                         'size-3.5',
-                        subTab === 'team' ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
+                        isCrewPanelActive
+                          ? 'text-primary'
+                          : 'text-blue-600 dark:text-blue-400'
                       )}
                     />
                     <span className="text-[11px] font-medium tabular-nums">
-                      {subTab === 'team' ? (
-                        '会话'
-                      ) : (
-                        <>
-                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
-                          {kanbanBoard.tasks.length}
-                        </>
-                      )}
+                      {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
+                      {kanbanBoard.tasks.length}
                     </span>
-                    {subTab === 'chat' &&
-                      (() => {
-                        const running = kanbanBoard.tasks.filter(
-                          (t) => t.status === 'running'
-                        ).length
-                        const blocked = kanbanBoard.tasks.filter(
-                          (t) => t.status === 'blocked'
-                        ).length
-                        return (
-                          <>
-                            {running > 0 && (
-                              <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-                                ·{running}
-                              </span>
-                            )}
-                            {blocked > 0 && (
-                              <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
-                                ·{blocked}
-                              </span>
-                            )}
-                            <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={cn(
-                                  'h-full rounded-full bg-blue-500 transition-all duration-300',
-                                  blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
-                                )}
-                                style={{
-                                  width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
-                                }}
-                              />
-                            </div>
-                          </>
-                        )
-                      })()}
+                    {(() => {
+                      const running = kanbanBoard.tasks.filter(
+                        (t) => t.status === 'running'
+                      ).length
+                      const blocked = kanbanBoard.tasks.filter(
+                        (t) => t.status === 'blocked'
+                      ).length
+                      return (
+                        <>
+                          {running > 0 && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+                              ·{running}
+                            </span>
+                          )}
+                          {blocked > 0 && (
+                            <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
+                              ·{blocked}
+                            </span>
+                          )}
+                          <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={cn(
+                                'h-full rounded-full bg-blue-500 transition-all duration-300',
+                                blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+                              )}
+                              style={{
+                                width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </>
+                      )
+                    })()}
                   </button>
                 ) : null
               }
             />
           )}
 
-          {showKanbanTeamTab && subTab === 'team' && boardId ? (
-            <SessionTeamTab sessionId={sessionId} boardId={boardId} />
-          ) : (
-            <>
+          <>
               <SessionFloatingLayout
                 bottom={
                   <>
@@ -2987,22 +2971,9 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                             </div>
                           )}
 
-                          {/* 附件 + 引用选中文本 Chip（同排并排） */}
-                          {(pendingFiles.length > 0 ||
-                            currentQuotedSelection ||
-                            attachedDirs.length > 0) && (
+                          {/* 待发送附件 + 引用选中文本 Chip */}
+                          {(pendingFiles.length > 0 || currentQuotedSelection) && (
                             <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
-                              {attachedDirs.map((dirPath) => {
-                                const dirName = dirPath.split('/').pop() || dirPath
-                                return (
-                                  <AttachmentPreviewItem
-                                    key={dirPath}
-                                    filename={dirName}
-                                    mediaType="inode/directory"
-                                    onRemove={() => handleDetachDirectory(dirPath)}
-                                  />
-                                )
-                              })}
                               {pendingFiles.map((file) => (
                                 <AttachmentPreviewItem
                                   key={file.id}
@@ -3058,9 +3029,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                             </div>
                           )}
 
-                          {/* 任务进度预览条：长任务进行中时显示在输入框上方，避免随会话滚走 */}
+                          {/* 任务进度预览条：仅当前流式回合有进行中任务时显示 */}
                           <TaskProgressDock
-                            allMessages={persistedSDKMessages}
+                            allMessages={
+                              liveMessages.length > 0
+                                ? [...persistedSDKMessages, ...liveMessages]
+                                : persistedSDKMessages
+                            }
                             streaming={streaming}
                           />
 
@@ -3137,7 +3112,6 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                 />
               )}
             </>
-          )}
         </div>
       </AgentSessionProvider>
 

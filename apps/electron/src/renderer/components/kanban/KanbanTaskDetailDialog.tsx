@@ -139,34 +139,39 @@ export function KanbanTaskDetailDialog({
       return
     }
     let cancelled = false
-    setLoadingMessages(true)
-    window.electronAPI
-      .getAgentSessionSDKMessages(assigneeSessionId)
-      .then((msgs: SDKMessage[]) => {
+    let firstLoad = true
+    let timer: ReturnType<typeof setInterval> | null = null
+
+    const loadMessages = async (): Promise<void> => {
+      if (firstLoad) setLoadingMessages(true)
+      try {
+        const msgs = await window.electronAPI.getAgentSessionSDKMessages(assigneeSessionId)
         if (!cancelled) {
           setWorkerMessages(msgs)
-          setLoadingMessages(false)
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!cancelled) {
           console.error('[看板] 加载工人子会话消息失败:', err)
-          setWorkerMessages([])
-          setLoadingMessages(false)
+          if (firstLoad) setWorkerMessages([])
         }
-      })
+      } finally {
+        if (!cancelled && firstLoad) {
+          setLoadingMessages(false)
+          firstLoad = false
+        }
+      }
+    }
+
+    void loadMessages()
+    if (task.status === 'running') {
+      timer = setInterval(() => {
+        void loadMessages()
+      }, 1500)
+    }
+
     return () => {
       cancelled = true
-    }
-  }, [open, assigneeSessionId])
-
-  // 任务状态变化时（如 running → done）重新加载消息拿最终摘要
-  React.useEffect(() => {
-    if (open && assigneeSessionId && task.status === 'done') {
-      window.electronAPI
-        .getAgentSessionSDKMessages(assigneeSessionId)
-        .then((msgs: SDKMessage[]) => setWorkerMessages(msgs))
-        .catch(() => {})
+      if (timer) clearInterval(timer)
     }
   }, [open, assigneeSessionId, task.status])
 

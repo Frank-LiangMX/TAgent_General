@@ -79,12 +79,17 @@ export interface KanbanTaskListItemProps {
    * 由父组件用 buildKanbanRoleInstanceLabels 基于整板任务计算后传入。
    */
   roleLabel?: string
+  /**
+   * 同角色当前在岗人数（≥2 时显示「×N」角标）
+   */
+  sameRoleActiveCount?: number
 }
 
 export function KanbanTaskListItem({
   task,
   showDetailDialog = true,
   roleLabel,
+  sameRoleActiveCount,
 }: KanbanTaskListItemProps): React.ReactElement {
   const [detailOpen, setDetailOpen] = React.useState(false)
   const progressLogs = useAtomValue(taskProgressLogsAtomFamily(task.id))
@@ -138,17 +143,17 @@ export function KanbanTaskListItem({
         }}
         className={cn(
           'group w-full text-left titlebar-no-drag ui-pressable cursor-pointer',
-          'session-list-row rounded-glass-popover',
+          'session-list-row rounded-glass-popover border border-border/50 bg-background/55 shadow-sm transition-colors hover:border-border/80',
           (isRunning || detailOpen) && 'session-list-item-active'
         )}
       >
         <div className="p-3.5">
           {/* 工牌头：头像 + 角色/工号 + 人态 */}
-          <div className="flex items-center gap-2.5 mb-2.5">
+          <div className="flex items-start gap-2.5 mb-2.5">
             <div className="relative shrink-0">
               <div
                 className={cn(
-                  'size-9 rounded-full flex items-center justify-center font-semibold text-sm',
+                  'size-10 rounded-full flex items-center justify-center font-semibold text-base',
                   roleTitle ? avatarTint.wrap : 'bg-muted text-muted-foreground'
                 )}
               >
@@ -160,26 +165,51 @@ export function KanbanTaskListItem({
                 </span>
               )}
               {isRunning && (
-                <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-amber-500 animate-pulse ring-2 ring-background" />
+                <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-amber-500 animate-pulse ring-2 ring-background" />
+              )}
+              {sameRoleActiveCount != null && sameRoleActiveCount >= 2 && (
+                <span className="absolute -top-1 -left-1 size-4 rounded-full bg-violet-500 text-[9px] font-bold text-white flex items-center justify-center shadow-sm">
+                  ×{sameRoleActiveCount}
+                </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-foreground truncate">
-                {roleTitle ?? '未分配角色'}
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-foreground truncate">
+                  {roleTitle ?? '未分配角色'}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
+                >
+                  <span
+                    className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
+                  />
+                  {badge.label}
+                </Badge>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <span className="truncate">{task.title}</span>
-              </div>
+              {/* Running 时：任务标题 + 实时计时 */}
+              {isRunning ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs text-foreground/80 truncate flex-1">
+                    {task.title}
+                  </span>
+                  {task.startedAt && (
+                    <span className="shrink-0 text-[11px] tabular-nums text-amber-600 dark:text-amber-400 font-medium">
+                      {formatDuration(durationMs)}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                  <span className="truncate">{task.title}</span>
+                </div>
+              )}
+              {/* Idle 态（无 running/终态） */}
+              {!isRunning && !isDone && !isFailed && (
+                <div className="text-[10px] text-muted-foreground/60 mt-0.5">待机中</div>
+              )}
             </div>
-            <Badge
-              variant="outline"
-              className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
-            >
-              <span
-                className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
-              />
-              {badge.label}
-            </Badge>
           </div>
 
           {/* 忙碌时：一行工作汇报 */}

@@ -254,14 +254,16 @@ export class KanbanDbService {
    * - version 2：修复 B4 迁移遗留的 kanban_tasks 外键引用错误（指向已删除的 kanban_boards_old）
    * - version 3：B5 新增 max_concurrent / paused 列（per-board 并发 + 暂停隔离）
    * - version 4：B9 新增 require_summary 列（事件回流区分是否回调主会话）
+   * - version 5：D+1 新增 cwd 列（worker 子会话项目根）
+   * - version 6：worker skills 新增 workspace_id 列
    *
-   * 新 DB 直接建到 version 4，不需要迁移。旧 DB 检测到 version < 4 时执行对应迁移。
+   * 新 DB 的 createSchema 已直接包含最新列；旧 DB 检测到 version < 6 时执行对应迁移。
    */
   private migrateSchema(): void {
     if (!this.db) return
     const currentVersion = this.db.pragma('user_version', { simple: true }) as number
 
-    if (currentVersion >= 4) return
+    if (currentVersion >= 6) return
 
     // v0 → v1：B4 迁移（parent_session_id 改 NULLABLE + 新增 title/mode 列）
     if (currentVersion < 1) {
@@ -745,6 +747,13 @@ export class KanbanDbService {
         'SELECT * FROM kanban_tasks WHERE board_id = ? ORDER BY priority DESC, created_at ASC'
       )
       .all(boardId) as KanbanTaskRow[]
+    return rows.map(rowToTask)
+  }
+
+  /** 列出所有任务（用于统计聚合，扫描全表） */
+  listAllTasks(): KanbanTask[] {
+    const db = this.requireDb()
+    const rows = db.prepare('SELECT * FROM kanban_tasks').all() as KanbanTaskRow[]
     return rows.map(rowToTask)
   }
 

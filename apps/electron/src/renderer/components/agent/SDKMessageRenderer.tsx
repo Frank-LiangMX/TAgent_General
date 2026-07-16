@@ -40,7 +40,7 @@ import type {
   RecoveryAction,
 } from '@tagent/shared'
 import { Badge, Button, ImageLightbox, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
-import { AgentStatusBadge } from './AgentMessages'
+import { AgentStatusBadge, RetryingNotice } from './AgentMessages'
 import { ContentBlock } from './ContentBlock'
 import {
   SessionAlertIcon,
@@ -69,7 +69,7 @@ import { TaskProgressCard } from './TaskProgressCard'
 import { normalizeThinkTagsInContentBlocks, parseThinkTagsFromText } from './thinking-tag-parser'
 import { TurnFileChangesSummary } from './TurnFileChangesSummary'
 
-import type { ToolActivity } from '@/atoms/agent-atoms'
+import type { AgentStreamState, ToolActivity } from '@/atoms/agent-atoms'
 
 import {
   agentProcessGroupsKeepExpandedAtom,
@@ -595,6 +595,10 @@ export interface AssistantTurnRendererProps {
   stoppedByUser?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
   sessionModelId?: string
+  /** 流式开始时间戳（运行中胶囊实时计时） */
+  streamStartedAt?: number
+  /** 重试状态（流式中展示重试提示） */
+  retrying?: AgentStreamState['retrying']
 }
 
 export function AssistantTurnRenderer({
@@ -613,6 +617,8 @@ export function AssistantTurnRenderer({
   streamingThinking,
   stoppedByUser,
   sessionModelId: _sessionModelId,
+  streamStartedAt,
+  retrying,
 }: AssistantTurnRendererProps): React.ReactElement | null {
   const channels = useAtomValue(channelsAtom)
   const processGroupsKeepExpanded = useAtomValue(agentProcessGroupsKeepExpandedAtom)
@@ -793,8 +799,7 @@ export function AssistantTurnRenderer({
       ? mainlineAssistants[mainlineAssistants.length - 1]?.uuid
       : undefined
   const hasDuration = durationMs != null
-  // 流式中不在 turn 内塞脚注（运行中由 AgentMessages 挂）；结束后再出 footer
-  const showFooter =
+  const showCompletedFooter =
     !isStreaming && (hasDuration || !!textContent || !!lastUuid || showStoppedBadge)
 
   return (
@@ -842,7 +847,15 @@ export function AssistantTurnRenderer({
       {!isStreaming && (
         <TurnFileChangesSummary turnMessages={turn.turnMessages} basePath={basePath} />
       )}
-      {showFooter && (
+      {isStreaming && (
+        <div className="agent-turn-footer">
+          <div className="agent-turn-footer__meta">
+            {retrying && <RetryingNotice retrying={retrying} />}
+            <AgentStatusBadge status="running" startedAt={streamStartedAt} />
+          </div>
+        </div>
+      )}
+      {showCompletedFooter && (
         <div className="agent-turn-footer">
           {/* 全部靠左：完成状态 + 操作 */}
           <div className="agent-turn-footer__meta">
@@ -1484,6 +1497,10 @@ export interface MessageGroupRendererProps {
   basePaths?: string[]
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
   sessionModelId?: string
+  /** 流式开始时间戳（运行中胶囊实时计时） */
+  streamStartedAt?: number
+  /** 重试状态（流式中展示重试提示） */
+  retrying?: AgentStreamState['retrying']
 }
 
 /**
@@ -1585,6 +1602,8 @@ export function MessageGroupRenderer({
   isContextCompacting,
   stoppedByUser,
   sessionModelId,
+  streamStartedAt,
+  retrying,
 }: MessageGroupRendererProps): React.ReactElement | null {
   const groupId = getGroupId(group)
 
@@ -1651,6 +1670,8 @@ export function MessageGroupRenderer({
         streamingThinking={streamingThinking}
         stoppedByUser={stoppedByUser}
         sessionModelId={sessionModelId}
+        streamStartedAt={streamStartedAt}
+        retrying={retrying}
       />
     </div>
   )
