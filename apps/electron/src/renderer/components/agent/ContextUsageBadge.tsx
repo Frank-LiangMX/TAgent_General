@@ -1,7 +1,7 @@
 /**
  * ContextUsageBadge — 上下文使用量指示器
  *
- * 占用比以 SDK getContextUsage() 为准（与分项面板同源），避免流式 usage 在部分模型上虚高。
+ * 占用比以流式 usage 为准，不再调用 SDK getContextUsage()。
  */
 
 import { COMPACTION_IN_PROGRESS_LABEL } from '@tagent/shared'
@@ -14,15 +14,12 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  ScrollProgressContainer,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@tagent/ui'
-import { ContextUsagePanel } from './ContextUsagePanel'
 import { ContextUsageTermHint } from './ContextUsageTermHint'
-import { useContextUsageBreakdown } from '@/hooks/useContextUsageBreakdown'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 import { cn } from '@/lib/utils'
 
@@ -201,38 +198,20 @@ export function ContextUsageBadge({
       ? { totalTokens: streamTokens, maxTokens: streamWindow }
       : null
 
-  const {
-    snapshot,
-    error: breakdownError,
-    loading: breakdownLoading,
-    refreshing: breakdownRefreshing,
-    isStreamPreview,
-  } = useContextUsageBreakdown(sessionId, !!sessionId, streamPreview, open || isProcessing)
-
-  // SDK / 缓存快照（不含流式估算预览）— 圆环与百分比以此为准
-  const authoritativeSnapshot = snapshot && !isStreamPreview ? snapshot : null
-
-  // 圆环与百分比：优先 SDK 分项（准确）；流式 usage 作加载前兜底
-  // 超过 100% 时也显示，用红色警告
+  // 不再调用 SDK getContextUsage，直接使用流式 usage 数据
+  // 直接使用流式 usage 数据（不再调用 SDK getContextUsage）
   const streamRatio =
     streamWindow && streamTokens && streamTokens > 0
       ? streamTokens / streamWindow
       : undefined
-  const displayTokens = authoritativeSnapshot?.totalTokens ?? streamTokens
-  const displayWindow = authoritativeSnapshot?.maxTokens ?? streamWindow
-  const ratio = authoritativeSnapshot ? authoritativeSnapshot.percentage / 100 : (streamRatio ?? 0)
-  const percent = authoritativeSnapshot
-    ? Math.round(authoritativeSnapshot.percentage)
-    : streamRatio != null
-      ? Math.round(streamRatio * 100)
-      : undefined
+  const displayTokens = streamTokens
+  const displayWindow = streamWindow
+  const ratio = streamRatio ?? 0
+  const percent = streamRatio != null ? Math.round(streamRatio * 100) : undefined
 
   React.useEffect(() => {
-    // 只在权威快照可用时触发 nudge，避免流式 usage 误触发
-    // 切换会话时 authoritativeSnapshot 可能是 null（加载中），此时流式 usage 可能是旧会话残留
-    if (!authoritativeSnapshot || !sessionId) return
-    const ratioForNudge = authoritativeSnapshot.percentage / 100
-    if (ratioForNudge == null) return
+    if (!sessionId || ratio <= 0) return
+    const ratioForNudge = ratio
 
     const currentNudgeState = lastNudgeFiredMapRef.current.get(sessionId) ?? 'none'
 
@@ -257,22 +236,20 @@ export function ContextUsageBadge({
     } else if (ratioForNudge < NUDGE_80_RATIO && currentNudgeState !== 'none') {
       lastNudgeFiredMapRef.current.set(sessionId, 'none')
     }
-  }, [authoritativeSnapshot, sessionId, onCompact])
+  }, [ratio, sessionId, onCompact])
 
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
   // 超过 100% 时强制显示危险色（红色）
-  const isWarning = authoritativeSnapshot
-    ? ratio >= COMPACT_THRESHOLD_RATIO * WARNING_RATIO
-    : compactThreshold && displayTokens
+  const isWarning = compactThreshold && displayTokens
       ? displayTokens / compactThreshold >= WARNING_RATIO
       : false
   const isDanger =
     ratio >= DANGER_RATIO ||
     (displayTokens != null && displayWindow != null && displayTokens > displayWindow)
 
-  const showPercentPlaceholder = !authoritativeSnapshot && (breakdownLoading || breakdownRefreshing)
+  const showPercentPlaceholder = false
   const effectivePercent = showPercentPlaceholder ? undefined : percent
   // 超过 100% 时圆环仍显示，用满圆（ratio=1）+ 红色
   const effectiveRatio = showPercentPlaceholder ? 0 : Math.min(1, ratio)
@@ -326,15 +303,13 @@ export function ContextUsageBadge({
     )
   }
 
-  if (!snapshot && !breakdownLoading && (!displayTokens || displayTokens <= 0)) return null
+  if (!displayTokens || displayTokens <= 0) return null
 
   const handleCompactClick = (): void => {
     if (isProcessing) return
     onCompact()
     setOpen(false)
   }
-  const showFullSkeleton = breakdownLoading && !snapshot
-  const panelDetailsLoading = breakdownRefreshing || isStreamPreview
 
   const popoverContent = (
     <PopoverContent
@@ -342,37 +317,71 @@ export function ContextUsageBadge({
       align={isInline ? 'start' : 'center'}
       sideOffset={8}
       className={cn(
-        'context-usage-popover grid w-[360px] max-h-[min(76vh,560px)] grid-rows-[minmax(300px,1fr)_auto] overflow-hidden p-0',
-        isInline ? 'max-w-[360px]' : ''
+        'context-usage-popover w-[280px] overflow-hidden p-3',
+        isInline ? 'max-w-[280px]' : ''
       )}
       onMouseEnter={isInline ? undefined : cancelClose}
       onMouseLeave={isInline ? undefined : scheduleClose}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <ScrollProgressContainer className="h-full min-h-0" contentClassName="p-3 pr-4">
-        {showFullSkeleton ? (
-          <div className="flex flex-col gap-3 rounded-2xl bg-background/16 p-3">
-            <div className="h-4 w-32 animate-pulse rounded-full bg-muted/60" />
-            <div className="h-2.5 w-full animate-pulse rounded-full bg-muted/50" />
-            <div className="space-y-1.5">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-7 animate-pulse rounded-xl bg-muted/35" />
-              ))}
+      <div className="space-y-3">
+        {/* 占用概览 */}
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-foreground/80">Context 占用</div>
+          {displayWindow && displayTokens != null ? (
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-semibold tabular-nums text-foreground">
+                {formatTokens(displayTokens)}
+              </span>
+              <span className="text-xs text-muted-foreground/60">
+                / {formatTokens(displayWindow)}
+              </span>
+              {percent != null && (
+                <span className={cn(
+                  'text-xs font-medium',
+                  percent >= 90 ? 'text-red-500' : percent >= 80 ? 'text-amber-500' : 'text-muted-foreground/60'
+                )}>
+                  {percent}%
+                </span>
+              )}
             </div>
+          ) : (
+            <div className="text-xs text-muted-foreground/50">等待数据...</div>
+          )}
+        </div>
+
+        {/* Token 明细 */}
+        <div className="space-y-1 rounded-lg bg-background/50 p-2">
+          <ContextUsageTermHint term="输入" display="输入 Token" inline />
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground/60">本次输入</span>
+            <span className="tabular-nums text-foreground/80">
+              {inputTokens != null ? formatTokens(inputTokens) : '—'}
+            </span>
           </div>
-        ) : snapshot ? (
-          <ContextUsagePanel
-            snapshot={snapshot}
-            detailsLoading={panelDetailsLoading}
-            isStreamPreview={isStreamPreview}
-          />
-        ) : breakdownError ? (
-          <p className="text-xs leading-relaxed text-muted-foreground">{breakdownError.message}</p>
-        ) : null}
-      </ScrollProgressContainer>
+          {outputTokens != null && outputTokens > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground/60">输出</span>
+              <span className="tabular-nums text-foreground/80">{formatTokens(outputTokens)}</span>
+            </div>
+          )}
+          {cacheReadTokens != null && cacheReadTokens > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground/60">缓存读取</span>
+              <span className="tabular-nums text-foreground/80">{formatTokens(cacheReadTokens)}</span>
+            </div>
+          )}
+          {cacheCreationTokens != null && cacheCreationTokens > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground/60">缓存写入</span>
+              <span className="tabular-nums text-foreground/80">{formatTokens(cacheCreationTokens)}</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="shrink-0 bg-background/12 px-3 pb-3 pt-2 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.14)]">
-        {!authoritativeSnapshot && !showFullSkeleton && displayWindow && streamRatio != null ? (
+        {displayWindow && streamRatio != null ? (
           <div className="mb-2.5 flex flex-col gap-1 text-xs">
             <div className="flex items-center justify-between gap-3">
               <ContextUsageTermHint term="流式估算" display="流式估算（仅供参考）" inline />

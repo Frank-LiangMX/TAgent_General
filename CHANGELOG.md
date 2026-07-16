@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Reflection never-trigger 诊断** — `lastOutcome` 包含 `skipped_clean` / `skipped_insufficient_evidence` 等精确跳过原因，不再无法区分未调度与数据不足
 - **本地 apply/consume 失败后重复付费请求** — executor 成功后立即持久化 `pendingApplication` record；apply 或 consume 失败时保留 pending，下次 run 以 `requestsUsed=0` 本地重放，不再重复发起 Provider 请求
+- **GLM Agent 调用数异常（+1745 行移除）** — 移除 `getContextUsage` 调用链，修复 v1.1.0 引入的 `query.getContextUsage()` 循环触发问题。该链路在每次 `refreshContextUsageInBackground` 完成后发 IPC 通知，触发渲染进程重新调用 `getContextUsage`，形成循环。修复后对齐 Proma 行为，Context 圆环改用流式 usage 数据。详见 `docs/reports/2026-07-16-glm-agent-call-count-diagnosis.md`
 
 ---
 

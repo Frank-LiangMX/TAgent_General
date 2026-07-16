@@ -160,11 +160,13 @@ export function KanbanTaskListItem({
 
   return (
     <>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick() }}
         className={cn(
-          'group w-full text-left titlebar-no-drag rounded-xl transition-all',
+          'group w-full text-left titlebar-no-drag rounded-xl transition-all cursor-pointer',
           'bg-card hover:bg-muted/40 border border-border/60 hover:border-border shadow-sm hover:shadow-md'
         )}
       >
@@ -349,7 +351,7 @@ export function KanbanTaskListItem({
             )}
           </div>
         </div>
-      </button>
+      </div>
 
       {showDetailDialog ? (
         <KanbanTaskDetailDialog task={task} open={detailOpen} onOpenChange={setDetailOpen} />

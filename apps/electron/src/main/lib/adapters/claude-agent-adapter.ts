@@ -11,7 +11,6 @@ import {
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
   isThinkingSignatureError as matchesThinkingSignatureError,
-  normalizeContextUsageSnapshot,
   pickResultContextWindow,
 } from '@tagent/shared'
 
@@ -28,12 +27,9 @@ import type {
   JsonSchemaOutputFormat,
   SDKMessage,
   TAgentPermissionMode,
-  ContextUsageSnapshot,
 } from '@tagent/shared'
 import { decodeWindowsChildStderr, planKsccWindowsSpawn } from '../kscc-windows-spawn'
 import { TRANSIENT_NETWORK_PATTERN } from '../error-patterns'
-import { getContextUsageCache, setContextUsageCache } from '../context-usage-cache'
-import { ContextUsageFetchError, mapSdkContextUsageResponse } from '../context-usage-mapper'
 import { getDiscardedMemoryDir } from '../memory-layer-service'
 
 import type { CanUseToolOptions, PermissionResult } from '../agent-permission-service'
@@ -170,14 +166,6 @@ export interface ClaudeAgentQueryOptions extends AgentQueryInput {
   onModelResolved?: (model: string) => void
   /** 上下文窗口缓存回调 */
   onContextWindow?: (contextWindow: number) => void
-  /** 记录一次自动 getContextUsage 控制请求 */
-  onContextUsageRequest?: () => void
-  /**
-   * 上下文使用量回调（result 后由 cacheContextUsageFromQuery 触发）
-   * 用于 orchestrator 检测高占用（> 85%）时主动 fire-and-forget 调 compactSession，
-   * 避免下轮 prompt_too_long（kscc 渠道下 SDK 自动 compaction 失效）。
-   */
-  onContextUsage?: (usedTokens: number, totalTokens: number) => void
   /**
    * 启用 SDK 流式 partial 事件（SDKPartialAssistantMessage / type: 'stream_event'）。
    * 默认 false：每轮 turn 结束才 yield 完整 SDKAssistantMessage。
@@ -614,28 +602,6 @@ const FORCE_KILL_GRACE_MS = 10_000
 /** 后台任务挂起时无活动的空闲上限（1 小时），与 SDK ScheduleWakeup 上界对齐 */
 const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
 
-async function cacheContextUsageFromQuery(
-  sessionId: string,
-  query: SDKQuery,
-  onContextUsage?: (usedTokens: number, totalTokens: number) => void,
-  onContextUsageRequest?: () => void
-): Promise<void> {
-  if (typeof query.getContextUsage !== 'function') return
-  try {
-    onContextUsageRequest?.()
-    const response = await query.getContextUsage()
-    const snapshot = mapSdkContextUsageResponse(response)
-    setContextUsageCache(sessionId, snapshot)
-    // 通知 orchestrator 当前使用量，用于高占用时主动 fire-and-forget 调 compactSession
-    // （kscc 渠道下 SDK 自动 compaction 失效，需要主进程兜底）
-    if (onContextUsage && snapshot.maxTokens > 0) {
-      onContextUsage(snapshot.totalTokens, snapshot.maxTokens)
-    }
-  } catch (error) {
-    console.warn(`[Claude 适配器] 缓存 Context 分项失败: sessionId=${sessionId}`, error)
-  }
-}
-
 /**
  * 平台差异化强制终止：macOS/Linux 用 SIGKILL，Windows 用 taskkill /F /T 级联杀子孙
  *
@@ -1047,20 +1013,6 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           }
         }
 
-        // 每轮 assistant 消息后刷新 context 缓存，不等 result
-        // 避免整轮 turn 期间缓存陈旧，context 到 100% 才反映到 UI
-        if (msg.type === 'assistant') {
-          const liveQuery = activeQueries.get(options.sessionId)
-          if (liveQuery && typeof liveQuery.getContextUsage === 'function') {
-            void cacheContextUsageFromQuery(
-              options.sessionId,
-              liveQuery,
-              options.onContextUsage,
-              options.onContextUsageRequest
-            )
-          }
-        }
-
         // 捕获 result 中的 contextWindow
         if (msg.type === 'result') {
           const resultMsg = msg as {
@@ -1076,15 +1028,6 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
           const contextWindow = pickResultContextWindow(resultMsg.modelUsage)
           if (contextWindow) {
             options.onContextWindow?.(contextWindow)
-          }
-          const liveQuery = activeQueries.get(options.sessionId)
-          if (liveQuery) {
-            void cacheContextUsageFromQuery(
-              options.sessionId,
-              liveQuery,
-              options.onContextUsage,
-              options.onContextUsageRequest
-            )
           }
           const keepForReason = shouldKeepChannelOpen(resultMsg.terminal_reason)
           const keepForTasks = backgroundTasksPending
@@ -1186,62 +1129,6 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     console.log(`[Claude 适配器] 权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
 
-  /**
-   * 获取当前活跃 Query 的 Context 分项占用（与 Claude Code /context 同源）
-   */
-  async getContextUsage(sessionId: string): Promise<ContextUsageSnapshot> {
-    // stale-while-revalidate: 优先返回缓存（可能略旧），由 orchestrator 后台刷新 + IPC 通知更新
-    const cached = getContextUsageCache(sessionId)
-    if (cached) {
-      return normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() })
-    }
-
-    // 无缓存才同步调 SDK（首次打开 / 会话刚开始）
-    const query = activeQueries.get(sessionId)
-    if (query) {
-      if (typeof query.getContextUsage !== 'function') {
-        throw new ContextUsageFetchError('UNSUPPORTED', '当前 SDK 版本不支持 Context 分项查询')
-      }
-      try {
-        const response = await query.getContextUsage()
-        const snapshot = mapSdkContextUsageResponse(response)
-        setContextUsageCache(sessionId, snapshot)
-        return snapshot
-      } catch (error) {
-        console.error(`[Claude 适配器] getContextUsage 失败: sessionId=${sessionId}`, error)
-        if (error instanceof ContextUsageFetchError) throw error
-        throw new ContextUsageFetchError(
-          'SDK_ERROR',
-          error instanceof Error ? error.message : 'SDK getContextUsage 调用失败'
-        )
-      }
-    }
-
-    throw new ContextUsageFetchError(
-      'NO_ACTIVE_QUERY',
-      '当前会话无活跃 Agent 查询，发送一条 Agent 消息后可查看分项'
-    )
-  }
-
-  /**
-   * 后台刷新 Context 分项缓存（stale-while-revalidate 的 revalidate 部分）。
-   * 由 orchestrator 在 getContextUsage 返回缓存后 fire-and-forget 调用，
-   * 刷新完成后 orchestrator 通过 IPC 通知渲染进程重新获取（命中刚更新的缓存）。
-   *
-   * @returns 是否成功刷新（true = 缓存已更新，需通知渲染进程）
-   */
-  async refreshContextUsage(sessionId: string): Promise<boolean> {
-    const query = activeQueries.get(sessionId)
-    if (!query || typeof query.getContextUsage !== 'function') return false
-    try {
-      const response = await query.getContextUsage()
-      setContextUsageCache(sessionId, mapSdkContextUsageResponse(response))
-      return true
-    } catch (error) {
-      console.warn(`[Claude 适配器] 后台刷新 Context 分项失败: sessionId=${sessionId}`, error)
-      return false
-    }
-  }
 }
 
 /**
