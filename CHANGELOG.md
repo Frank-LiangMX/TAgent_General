@@ -24,7 +24,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Reflection never-trigger 诊断** — `lastOutcome` 包含 `skipped_clean` / `skipped_insufficient_evidence` 等精确跳过原因，不再无法区分未调度与数据不足
 - **本地 apply/consume 失败后重复付费请求** — executor 成功后立即持久化 `pendingApplication` record；apply 或 consume 失败时保留 pending，下次 run 以 `requestsUsed=0` 本地重放，不再重复发起 Provider 请求
-- **GLM Agent 调用数异常（+1745 行移除）** — 移除 `getContextUsage` 调用链，修复 v1.1.0 引入的 `query.getContextUsage()` 循环触发问题。该链路在每次 `refreshContextUsageInBackground` 完成后发 IPC 通知，触发渲染进程重新调用 `getContextUsage`，形成循环。修复后对齐 Proma 行为，Context 圆环改用流式 usage 数据。详见 `docs/reports/2026-07-16-glm-agent-call-count-diagnosis.md`
+
+---
+
+## [1.6.1] - 2026-07-16
+
+### Added
+
+- **看板默认角色 / 工号 / worker Skills** — 默认角色补齐、同板同角色编号、worker 挂载 workspace Skills
+- **数字员工轻量拟人化** — 点将话术 + 跨材质工牌卡（人态文案：待命/忙碌/已交卷等）
+- **右栏班组墙** — `KanbanCrewPanel` 伴生面板；员工队列与任务摘要，不切主区会话
+- **角色统计与档案** — `kanban-crew-stats` + `RoleStatsCard` / `RoleDetailDialog`（上岗次数、工时、日/周/月）
+- **流式输出设置** — 可开关流式渲染
+- **单次 Agent 通话统计** — 展示本轮调用相关统计
+
+### Changed
+
+- **SessionTeamTab 降级** — 班组主路径改到右栏；输入框不再常驻附加目录 chip
+
+### Fixed
+
+- **GLM Agent 调用数异常** — 移除 `getContextUsage` 调用链，消除循环触发；Context 圆环改用流式 usage（详见 `docs/reports/2026-07-16-glm-agent-call-count-diagnosis.md`）
+- **运行中计时胶囊错位** — 胶囊改回 assistant turn 内 footer，与完成态左对齐
+- **任务进度条常驻** — `TaskProgressDock` 仅当前流式回合有 `in_progress` 任务时显示
+- **打包任务栏图标** — 跟随主题材质
+
+### Chore
+
+- **release preflight** — 发布脚本校验 package 版本、`RELEASE_NOTES.md` 标题、typecheck、eslint
 
 ---
 
