@@ -7,16 +7,17 @@
 
 import * as React from 'react'
 import { useAtom, useAtomValue } from 'jotai'
-import { ArrowLeftRight, Unlink, Users } from 'lucide-react'
+import { ArrowLeftRight, Building2, List, Unlink, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { KanbanTask } from '@tagent/shared'
 
-import { Button } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { KanbanBoardToolbar, KanbanToolbarIconButton } from './KanbanBoardToolbar'
 import { KanbanCrewTaskList } from './KanbanCrewTaskList'
 import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
+import { AiOfficeContainer } from '@/components/ai-office/AiOfficeContainer'
 
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
@@ -123,7 +124,10 @@ function CrewTaskDetail({
   )
 }
 
+type CrewViewMode = 'list' | 'office'
+
 export function KanbanCrewPanel({ width }: { width?: number }): React.ReactElement {
+  const [viewMode, setViewMode] = React.useState<CrewViewMode>('list')
   const sessionId = useAtomValue(currentAgentSessionIdAtom) ?? ''
   const { tasks, board, boardId, loading, refresh, isWorkerSession, ownerSessionId } =
     useKanbanCrewBoard(sessionId)
@@ -260,6 +264,26 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
         extraActions={
           isWorkerSession ? null : (
             <>
+              {/* View toggle: list / office */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode(viewMode === 'list' ? 'office' : 'list')}
+                    className="rail-island-btn size-7 flex items-center justify-center rounded-[8px]"
+                    title={viewMode === 'list' ? '切换到办公室视图' : '切换到列表视图'}
+                  >
+                    {viewMode === 'list' ? (
+                      <Building2 size={13} strokeWidth={1.75} />
+                    ) : (
+                      <List size={13} strokeWidth={1.75} />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {viewMode === 'list' ? '办公室视图' : '列表视图'}
+                </TooltipContent>
+              </Tooltip>
               <KanbanToolbarIconButton
                 icon={ArrowLeftRight}
                 title="切换看板"
@@ -276,15 +300,21 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
         }
       />
 
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-2.5">
-        <KanbanCrewTaskList
-          tasks={tasks}
-          layout="stack"
-          showDetailDialog={false}
-          onTaskClick={handleTaskClick}
-          selectedTaskId={selectedTaskId}
-        />
-      </div>
+      {viewMode === 'list' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-2.5">
+          <KanbanCrewTaskList
+            tasks={tasks}
+            layout="stack"
+            showDetailDialog={false}
+            onTaskClick={handleTaskClick}
+            selectedTaskId={selectedTaskId}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0">
+          <AiOfficeContainer tasks={tasks} />
+        </div>
+      )}
 
       {selectedTask ? (
         <CrewTaskDetail

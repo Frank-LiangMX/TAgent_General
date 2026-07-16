@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室，6 个矢量角色各有独特外观（发型/衬衫/肤色），支持工作/行走/思考/说话动画，工位拜访交互，滚轮缩放 + 拖拽移动 + 双击重置视图
+- **Kanban → Office 状态映射** — 看板任务状态实时映射为办公室 Agent 状态（running→working, blocked→thinking, pending→idle）
+- **Pixi.js 依赖** — 新增 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`（Spine 暂未启用，使用矢量回退）
+
 - **空闲批量记忆整理调度器** — `idle-memory-consolidation-scheduler.ts`：60s tick 周期，general/ta 串行执行，真实前台活跃检测，rollout flag 控制（`TAGENT_IDLE_MEMORY_CONSOLIDATION`，dev 默认 on、packaged 默认 off）
 - **记忆证据暂存层** — `memory-evidence-sink.ts`（ADR-0006 Phase 1）：前台本地写入 Nudge 候选和 session 证据到 `pending_evidence.jsonl`，标记 dirty，不调用辅助 LLM
 - **空闲批量整理核心** — `memory-consolidation-service.ts`（ADR-0006 Phase 2）：单次 Provider 请求完成 keyFacts + memoryCandidates + insights + contradictions，persisted-local-replay、全局 lease 单并发、按 ID 精确消费、batchId 确定性派生
