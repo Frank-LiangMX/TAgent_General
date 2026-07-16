@@ -25,7 +25,7 @@ export function FilePathChip(props: FilePathChipProps) {
       sessionId: sessionId ?? undefined,
       candidateBasePaths: bases,
     })
-    return typeof result === 'string' ? result : result?.url ?? null
+    return typeof result === 'string' ? result : (result?.url ?? null)
   }
 
   const handleOpenFile = (filePath: string, options?: { basePaths?: string[] }) => {
@@ -46,7 +46,14 @@ export function FilePathChip(props: FilePathChipProps) {
       onResolveFile={props.onResolveFile ?? handleResolveFile}
       onOpenFile={props.onOpenFile ?? handleOpenFile}
       getSessionId={props.getSessionId ?? handleGetSessionId}
-      FileIcon={props.FileIcon ?? (FileTypeIcon as React.ComponentType<{ name: string; isDirectory?: boolean; size?: number }>)}
+      FileIcon={
+        props.FileIcon ??
+        (FileTypeIcon as React.ComponentType<{
+          name: string
+          isDirectory?: boolean
+          size?: number
+        }>)
+      }
     />
   )
 }

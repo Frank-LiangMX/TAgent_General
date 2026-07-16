@@ -79,7 +79,9 @@ export function WelcomeEmptyState(): React.ReactElement {
       {/* 提示标签 */}
       <div className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-3.5 py-1.5 text-[11px] text-muted-foreground/70">
         <Sparkles size={12} className="opacity-60" />
-        {isTAMode ? '先配置项目规则，再开始 TA 会话' : '从一个新会话开始，让 Agent 接入你的当前工作'}
+        {isTAMode
+          ? '先配置项目规则，再开始 TA 会话'
+          : '从一个新会话开始，让 Agent 接入你的当前工作'}
       </div>
 
       {/* 主按钮 */}

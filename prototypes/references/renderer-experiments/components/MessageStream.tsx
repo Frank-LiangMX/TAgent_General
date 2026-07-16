@@ -81,7 +81,7 @@ export function MessageStream({ turns, isStreaming }: MessageStreamProps) {
 
   return (
     <div className="messages" ref={messagesRef}>
-      {turns.map((turn, i) => (
+      {turns.map((turn, i) =>
         turn.type === 'user' ? (
           <div key={turn.id || i} className="msg msg-user">
             {turn.content}
@@ -89,7 +89,7 @@ export function MessageStream({ turns, isStreaming }: MessageStreamProps) {
         ) : (
           <AssistantTurn key={turn.id || i} turn={turn} />
         )
-      ))}
+      )}
     </div>
   )
 }
@@ -108,16 +108,14 @@ function AssistantTurn({ turn }: AssistantTurnProps) {
     return (
       <div className="turn">
         <div className="answer">
-          <div className="answer-stream">
-            {turn.content}
-          </div>
+          <div className="answer-stream">{turn.content}</div>
         </div>
       </div>
     )
   }
 
   const { process, answer, fileChanges } = turn
-  const runningTools = process.toolCalls.filter(t => t.status === 'running')
+  const runningTools = process.toolCalls.filter((t) => t.status === 'running')
 
   return (
     <div className="turn">
@@ -139,12 +137,10 @@ function AssistantTurn({ turn }: AssistantTurnProps) {
 
         <div className="process-body">
           {/* 思考块 */}
-          {process.thinkBlock && (
-            <ThinkBlockComponent block={process.thinkBlock} />
-          )}
+          {process.thinkBlock && <ThinkBlockComponent block={process.thinkBlock} />}
 
           {/* 工具调用列表 */}
-          {process.toolCalls.map(tool => (
+          {process.toolCalls.map((tool) => (
             <ToolRow key={tool.id} tool={tool} />
           ))}
         </div>
@@ -159,10 +155,10 @@ function AssistantTurn({ turn }: AssistantTurnProps) {
         </div>
 
         {/* Turn 底部：文件变更 + 操作 */}
-        {(fileChanges && fileChanges.length > 0) && (
+        {fileChanges && fileChanges.length > 0 && (
           <div className="turn-footer">
             <div className="file-changes">
-              {fileChanges.map(change => (
+              {fileChanges.map((change) => (
                 <span key={change.file} className="change-chip">
                   {change.file}
                   <em>+{change.additions}</em>
@@ -200,9 +196,7 @@ function ThinkBlockComponent({ block }: ThinkBlockComponentProps) {
         <span className="think-badge">思考</span>
         <span className="think-state shiny">{block.state}</span>
       </div>
-      <div className="think-content">
-        {block.content}
-      </div>
+      <div className="think-content">{block.content}</div>
     </div>
   )
 }
@@ -225,7 +219,11 @@ function ToolRow({ tool }: ToolRowProps) {
       )}
       <span className={`tool-phrase ${tool.status === 'running' ? 'shiny' : ''}`}>
         {tool.phrase}
-        {tool.file && <button type="button" className="file-chip">{tool.file}</button>}
+        {tool.file && (
+          <button type="button" className="file-chip">
+            {tool.file}
+          </button>
+        )}
       </span>
       {tool.diffStats && tool.status === 'running' && (
         <span className="diff-stats">
@@ -240,15 +238,50 @@ function ToolRow({ tool }: ToolRowProps) {
 function getToolIcon(type: ToolCall['type']) {
   switch (type) {
     case 'read':
-      return <svg viewBox="0 0 24 24" fill="none"><path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H10l2 2h5.5A1.5 1.5 0 0 1 19 9.5v7A1.5 1.5 0 0 1 17.5 18h-11A1.5 1.5 0 0 1 5 16.5v-9Z" stroke="currentColor" strokeWidth="1.5"/></svg>
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M5 7.5A1.5 1.5 0 0 1 6.5 6H10l2 2h5.5A1.5 1.5 0 0 1 19 9.5v7A1.5 1.5 0 0 1 17.5 18h-11A1.5 1.5 0 0 1 5 16.5v-9Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )
     case 'edit':
-      return <svg viewBox="0 0 24 24" fill="none"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.121 2.121 0 0 1 3 3L12 17l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.5"/></svg>
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.121 2.121 0 0 1 3 3L12 17l-4 1 1-4 9.5-9.5z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )
     case 'bash':
-      return <svg viewBox="0 0 24 24" fill="none"><path d="M7 7h10M7 12h7M7 17h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5"/></svg>
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M7 7h10M7 12h7M7 17h8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      )
     case 'search':
-      return <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M16 16l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M16 16l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      )
     default:
-      return <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5"/></svg>
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      )
   }
 }
 
@@ -277,9 +310,13 @@ function AnswerBlockComponent({ block }: AnswerBlockComponentProps) {
         <div className="code-block">
           <div className="code-head">
             <span>{block.content.language}</span>
-            <button type="button" className="code-copy">复制</button>
+            <button type="button" className="code-copy">
+              复制
+            </button>
           </div>
-          <pre><code>{block.content.code}</code></pre>
+          <pre>
+            <code>{block.content.code}</code>
+          </pre>
         </div>
       )
 
@@ -315,7 +352,9 @@ function AnswerBlockComponent({ block }: AnswerBlockComponentProps) {
         <p>
           相关文件：
           {block.content.map((file: string, i: number) => (
-            <button key={i} type="button" className="file-chip">{file}</button>
+            <button key={i} type="button" className="file-chip">
+              {file}
+            </button>
           ))}
         </p>
       )

@@ -449,7 +449,6 @@ const DESIGN_PREVIEW_INSTRUCTIONS = `## Design Preview 功能
 
 注意：推送时只要核心 HTML（body 内的内容）和 CSS，不需要 html/head/body 包裹标签。`
 
-
 // ===== 语言指令常量 =====
 
 /**

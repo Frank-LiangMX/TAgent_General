@@ -165,9 +165,7 @@ class SelfRepairService {
       }
     }, CHECK_INTERVAL_MS)
 
-    console.log(
-      `[SelfRepairService] 定时检查已启动：每 6 小时检查一次月初，下月 1 日 04:00 触发`
-    )
+    console.log(`[SelfRepairService] 定时检查已启动：每 6 小时检查一次月初，下月 1 日 04:00 触发`)
   }
 
   /**
@@ -334,9 +332,7 @@ class SelfRepairService {
         }
 
         // 检查 L2/L4 是否还有任意关键词
-        const hasReference = keywords.some(
-          (kw) => l2Content.includes(kw) || l4Content.includes(kw)
-        )
+        const hasReference = keywords.some((kw) => l2Content.includes(kw) || l4Content.includes(kw))
 
         if (hasReference) {
           keepLines.push(line)

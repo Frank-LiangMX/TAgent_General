@@ -592,8 +592,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       ? globalChannels.find((c) => c.id === channelId && c.enabled)
       : undefined
     const persistedModelId = meta?.modelId
-    const resolvedModelId = persistedModelId
-      ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+    const resolvedModelId =
+      persistedModelId ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
@@ -2810,29 +2810,29 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     <SegmentedTabs
                       value={subTab}
                       onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
-                    className="agent-toolbar-segmented text-xs"
-                  >
-                    <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
-                    <SegmentedTabsItem value="team">
-                      团队
-                      {kanbanBoard.tasks.length > 0 && (
-                        <span className="ml-1 tabular-nums text-muted-foreground">
-                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
-                          {kanbanBoard.tasks.length}
-                        </span>
-                      )}
-                    </SegmentedTabsItem>
-                  </SegmentedTabs>
-                  {subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
-                    <KanbanBoardSummary
-                      tasks={kanbanBoard.tasks}
-                      onOpenTeam={() => setSubTab('team')}
-                    />
-                  )}
-                </>
-              ) : null
-            }
-          />
+                      className="agent-toolbar-segmented text-xs"
+                    >
+                      <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
+                      <SegmentedTabsItem value="team">
+                        团队
+                        {kanbanBoard.tasks.length > 0 && (
+                          <span className="ml-1 tabular-nums text-muted-foreground">
+                            {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
+                            {kanbanBoard.tasks.length}
+                          </span>
+                        )}
+                      </SegmentedTabsItem>
+                    </SegmentedTabs>
+                    {subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
+                      <KanbanBoardSummary
+                        tasks={kanbanBoard.tasks}
+                        onOpenTeam={() => setSubTab('team')}
+                      />
+                    )}
+                  </>
+                ) : null
+              }
+            />
           )}
 
           {showKanbanTeamTab && subTab === 'team' && boardId ? (

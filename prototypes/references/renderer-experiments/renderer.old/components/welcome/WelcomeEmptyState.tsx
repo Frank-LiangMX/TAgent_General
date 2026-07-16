@@ -74,7 +74,9 @@ export function WelcomeEmptyState(): React.ReactElement {
       <p className="mt-2.5 text-[13px] text-muted-foreground">{tipText}</p>
 
       <div className="material-inline-chip mt-6 inline-flex items-center rounded-full px-4 py-2 text-[11px] text-muted-foreground/75">
-        {isTAMode ? '先配置项目规则，再开始 TA 会话' : '从一个新会话开始，让 Agent 接入你的当前工作'}
+        {isTAMode
+          ? '先配置项目规则，再开始 TA 会话'
+          : '从一个新会话开始，让 Agent 接入你的当前工作'}
       </div>
 
       {/* 呼吸空间 — 信息区与操作区分离 */}

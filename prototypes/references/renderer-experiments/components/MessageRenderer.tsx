@@ -251,7 +251,12 @@ interface ContentBlockProps {
 }
 
 /** 内容块渲染器 */
-function ContentBlock({ block, allMessages, basePath, isStreaming }: ContentBlockProps): React.ReactElement | null {
+function ContentBlock({
+  block,
+  allMessages,
+  basePath,
+  isStreaming,
+}: ContentBlockProps): React.ReactElement | null {
   // text 块
   if (block.type === 'text') {
     const textBlock = block as SDKTextBlock
@@ -266,13 +271,7 @@ function ContentBlock({ block, allMessages, basePath, isStreaming }: ContentBloc
   // tool_use 块
   if (block.type === 'tool_use') {
     const toolBlock = block as SDKToolUseBlock
-    return (
-      <ToolUseBlock
-        block={toolBlock}
-        allMessages={allMessages}
-        isStreaming={isStreaming}
-      />
-    )
+    return <ToolUseBlock block={toolBlock} allMessages={allMessages} isStreaming={isStreaming} />
   }
 
   // thinking 块
@@ -286,7 +285,13 @@ function ContentBlock({ block, allMessages, basePath, isStreaming }: ContentBloc
 }
 
 /** Markdown 内容渲染（简化版，后续可接入完整 Markdown 渲染器） */
-function MarkdownContent({ text, basePath }: { text: string; basePath?: string }): React.ReactElement {
+function MarkdownContent({
+  text,
+  basePath,
+}: {
+  text: string
+  basePath?: string
+}): React.ReactElement {
   // 简化实现：直接渲染文本，后续可接入完整 Markdown 渲染
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -309,11 +314,7 @@ function ThinkingBlock({ thinking }: { thinking: string }): React.ReactElement {
       <div className="think-head">
         <span className="think-badge">思考</span>
       </div>
-      {expanded && (
-        <div className="think-content">
-          {thinking}
-        </div>
-      )}
+      {expanded && <div className="think-content">{thinking}</div>}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -342,7 +343,9 @@ function ToolUseBlock({ block, allMessages, isStreaming }: ToolUseBlockProps): R
   const toolPhrase = getToolPhrase(toolName, block.input)
 
   return (
-    <div className={`tool-row ${isCompleted ? 'is-done' : ''} ${!isCompleted && isStreaming ? 'is-running' : ''}`}>
+    <div
+      className={`tool-row ${isCompleted ? 'is-done' : ''} ${!isCompleted && isStreaming ? 'is-running' : ''}`}
+    >
       <button
         type="button"
         className="w-full flex items-center gap-2 text-left"
@@ -376,7 +379,10 @@ function ToolIcon({ name }: { name: string }): React.ReactElement {
 }
 
 /** 工具短语生成 */
-function getToolPhrase(name: string, input: Record<string, unknown>): { label: string; loadingLabel: string } {
+function getToolPhrase(
+  name: string,
+  input: Record<string, unknown>
+): { label: string; loadingLabel: string } {
   // 简化实现：根据工具名生成短语
   const phrases: Record<string, string> = {
     Read: '读取文件',
@@ -405,7 +411,11 @@ interface ProcessBlockGroupProps {
 }
 
 /** 工具过程组 */
-function ProcessBlockGroup({ blocks, isStreaming, children }: ProcessBlockGroupProps): React.ReactElement {
+function ProcessBlockGroup({
+  blocks,
+  isStreaming,
+  children,
+}: ProcessBlockGroupProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(!!isStreaming)
 
   const toolCount = blocks.filter((b) => b.type === 'tool_use').length
@@ -415,20 +425,12 @@ function ProcessBlockGroup({ blocks, isStreaming, children }: ProcessBlockGroupP
 
   return (
     <div className={`process-group ${expanded ? 'is-open' : ''}`}>
-      <button
-        type="button"
-        className="process-summary"
-        onClick={() => setExpanded(!expanded)}
-      >
+      <button type="button" className="process-summary" onClick={() => setExpanded(!expanded)}>
         <span className={`process-caret ${expanded ? 'rotate-45' : ''}`} />
         <span>{summary}</span>
       </button>
 
-      {expanded && (
-        <div className="process-body">
-          {children}
-        </div>
-      )}
+      {expanded && <div className="process-body">{children}</div>}
     </div>
   )
 }
@@ -476,9 +478,7 @@ export function AssistantTurnRenderer({
   if (enrichedBlocks.length === 0 && hasError && errorContent) {
     return (
       <div className="turn">
-        <div className="text-destructive">
-          {errorContent.error?.message ?? '未知错误'}
-        </div>
+        <div className="text-destructive">{errorContent.error?.message ?? '未知错误'}</div>
       </div>
     )
   }
@@ -490,7 +490,8 @@ export function AssistantTurnRenderer({
   const topLevelBlocks = [...enrichedBlocks]
   if (isStreaming && streamingText) {
     // 查找最后一个 text 块并更新
-    const lastTextIndex = topLevelBlocks.length - 1 - [...topLevelBlocks].reverse().findIndex((b) => b.type === 'text')
+    const lastTextIndex =
+      topLevelBlocks.length - 1 - [...topLevelBlocks].reverse().findIndex((b) => b.type === 'text')
     if (lastTextIndex >= 0 && lastTextIndex < topLevelBlocks.length) {
       topLevelBlocks[lastTextIndex] = { type: 'text', text: streamingText } as SDKTextBlock
     } else {
@@ -575,9 +576,7 @@ function UserInputMessage({ message }: UserInputMessageProps): React.ReactElemen
     <div className="msg-user">
       {text && <div>{text}</div>}
       {meta.createdAt && (
-        <div className="mt-2 text-xs text-muted-foreground">
-          {formatTime(meta.createdAt)}
-        </div>
+        <div className="mt-2 text-xs text-muted-foreground">{formatTime(meta.createdAt)}</div>
       )}
     </div>
   )

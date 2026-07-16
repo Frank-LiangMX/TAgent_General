@@ -14,7 +14,7 @@ describe('AssistantMessageLogo', () => {
   test('renders image when logoResolver returns a URL', () => {
     const logoResolver = vi.fn().mockReturnValue('https://example.com/logo.png')
     render(<AssistantMessageLogo model="gpt-4" logoResolver={logoResolver} />)
-    
+
     const img = screen.getByRole('img')
     expect(img).toHaveAttribute('src', 'https://example.com/logo.png')
     expect(logoResolver).toHaveBeenCalledWith('gpt-4')
@@ -23,7 +23,7 @@ describe('AssistantMessageLogo', () => {
   test('renders fallback when logoResolver returns null', () => {
     const logoResolver = vi.fn().mockReturnValue(null)
     render(<AssistantMessageLogo model="unknown" logoResolver={logoResolver} />)
-    
+
     const container = screen.getByTestId('fallback-container')
     expect(container).toHaveClass('size-[32px]')
   })

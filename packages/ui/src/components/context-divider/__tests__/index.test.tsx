@@ -15,17 +15,17 @@ describe('ContextDivider', () => {
     const user = userEvent.setup()
     const handleDelete = vi.fn()
     render(<ContextDivider messageId="msg-123" onDelete={handleDelete} />)
-    
+
     const closeButton = screen.getByRole('button', { name: '删除分隔线' })
     await user.click(closeButton)
-    
+
     expect(handleDelete).toHaveBeenCalledWith('msg-123')
   })
 
   test('does not throw when onDelete is not provided', async () => {
     const user = userEvent.setup()
     render(<ContextDivider messageId="msg-1" />)
-    
+
     const closeButton = screen.getByRole('button', { name: '删除分隔线' })
     await user.click(closeButton)
     // Should not throw

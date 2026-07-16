@@ -103,7 +103,10 @@ export interface OpResult {
  * 执行一个 shape op，返回新的 document（不可变）。
  * 如果 op 失败，返回原 document + error。
  */
-export function executeOp(doc: CanvasDocument, op: ShapeOp): { doc: CanvasDocument; error?: string } {
+export function executeOp(
+  doc: CanvasDocument,
+  op: ShapeOp
+): { doc: CanvasDocument; error?: string } {
   try {
     switch (op.type) {
       case 'addShape':
@@ -130,7 +133,10 @@ export function executeOp(doc: CanvasDocument, op: ShapeOp): { doc: CanvasDocume
   }
 }
 
-function executeAddShape(doc: CanvasDocument, op: AddShapeOp): { doc: CanvasDocument; error?: string } {
+function executeAddShape(
+  doc: CanvasDocument,
+  op: AddShapeOp
+): { doc: CanvasDocument; error?: string } {
   const id = op.id ?? createShapeId()
   const parentId = op.parentId ?? '__root__'
   const parent = doc.shapes[parentId]
@@ -172,7 +178,10 @@ function executeAddShape(doc: CanvasDocument, op: AddShapeOp): { doc: CanvasDocu
   }
 }
 
-function executeUpdateShape(doc: CanvasDocument, op: UpdateShapeOp): { doc: CanvasDocument; error?: string } {
+function executeUpdateShape(
+  doc: CanvasDocument,
+  op: UpdateShapeOp
+): { doc: CanvasDocument; error?: string } {
   const existing = doc.shapes[op.id]
   if (!existing) return { doc, error: `Shape ${op.id} not found` }
   return {
@@ -183,11 +192,17 @@ function executeUpdateShape(doc: CanvasDocument, op: UpdateShapeOp): { doc: Canv
   }
 }
 
-function executeDeleteShape(doc: CanvasDocument, op: DeleteShapeOp): { doc: CanvasDocument; error?: string } {
+function executeDeleteShape(
+  doc: CanvasDocument,
+  op: DeleteShapeOp
+): { doc: CanvasDocument; error?: string } {
   return { doc: removeShapeTree(op.id, doc) }
 }
 
-function executeMoveShape(doc: CanvasDocument, op: MoveShapeOp): { doc: CanvasDocument; error?: string } {
+function executeMoveShape(
+  doc: CanvasDocument,
+  op: MoveShapeOp
+): { doc: CanvasDocument; error?: string } {
   const existing = doc.shapes[op.id]
   if (!existing) return { doc, error: `Shape ${op.id} not found` }
   return {
@@ -198,7 +213,10 @@ function executeMoveShape(doc: CanvasDocument, op: MoveShapeOp): { doc: CanvasDo
   }
 }
 
-function executeReparentShape(doc: CanvasDocument, op: ReparentShapeOp): { doc: CanvasDocument; error?: string } {
+function executeReparentShape(
+  doc: CanvasDocument,
+  op: ReparentShapeOp
+): { doc: CanvasDocument; error?: string } {
   const shape = doc.shapes[op.id]
   if (!shape) return { doc, error: `Shape ${op.id} not found` }
   const newParent = doc.shapes[op.newParentId]
@@ -237,7 +255,10 @@ function executeReparentShape(doc: CanvasDocument, op: ReparentShapeOp): { doc: 
   return { doc: updated }
 }
 
-function executeReorderChildren(doc: CanvasDocument, op: ReorderChildrenOp): { doc: CanvasDocument; error?: string } {
+function executeReorderChildren(
+  doc: CanvasDocument,
+  op: ReorderChildrenOp
+): { doc: CanvasDocument; error?: string } {
   const parent = doc.shapes[op.parentId]
   if (!parent) return { doc, error: `Parent ${op.parentId} not found` }
   return {
@@ -257,7 +278,7 @@ function executeReorderChildren(doc: CanvasDocument, op: ReorderChildrenOp): { d
  */
 export function executeOps(
   doc: CanvasDocument,
-  ops: ShapeOp[],
+  ops: ShapeOp[]
 ): { doc: CanvasDocument; results: OpResult[] } {
   let current = doc
   const results: OpResult[] = []

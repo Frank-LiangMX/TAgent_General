@@ -24,11 +24,12 @@ import { currentAgentSessionIdAtom } from './agent-atoms'
 export type DeviceType = 'mobile' | 'tablet' | 'desktop'
 
 /** 设备尺寸预设 */
-export const DEVICE_PRESETS: Record<DeviceType, { width: number; height: number; label: string }> = {
-  mobile: { width: 390, height: 844, label: 'Mobile' },
-  tablet: { width: 768, height: 1024, label: 'Tablet' },
-  desktop: { width: 1280, height: 800, label: 'Desktop' },
-}
+export const DEVICE_PRESETS: Record<DeviceType, { width: number; height: number; label: string }> =
+  {
+    mobile: { width: 390, height: 844, label: 'Mobile' },
+    tablet: { width: 768, height: 1024, label: 'Tablet' },
+    desktop: { width: 1280, height: 800, label: 'Desktop' },
+  }
 
 /** 框选区域（基于设备视口坐标） */
 export interface SelectionRegion {
@@ -84,7 +85,12 @@ export type CanvasElementRole =
 /** iframe → 父窗口的 postMessage 协议 */
 export type CanvasFrameMessage =
   | { type: 'layers:report'; layers: CanvasElement[] }
-  | { type: 'element:clicked'; id: string | null; bounds: CanvasElement['bounds'] | null; additive: boolean }
+  | {
+      type: 'element:clicked'
+      id: string | null
+      bounds: CanvasElement['bounds'] | null
+      additive: boolean
+    }
   | { type: 'element:hovered'; id: string | null }
   | { type: 'element:rect-select'; rect: SelectionRegion; hits: string[] }
   | { type: 'iframe:ready' }
@@ -178,7 +184,9 @@ function migrateSessionState(raw: unknown): DesignSessionState {
     html: typeof v.html === 'string' ? v.html : null,
     css: typeof v.css === 'string' ? v.css : null,
     device:
-      v.device === 'mobile' || v.device === 'tablet' || v.device === 'desktop' ? v.device : 'desktop',
+      v.device === 'mobile' || v.device === 'tablet' || v.device === 'desktop'
+        ? v.device
+        : 'desktop',
     zoom: typeof v.zoom === 'number' ? v.zoom : 1.0,
     selection:
       v.selection && typeof v.selection === 'object' && 'x' in v.selection
@@ -212,21 +220,28 @@ function migrateSessionState(raw: unknown): DesignSessionState {
 /**
  * 基础存储 atom：自动持久化到 localStorage。
  */
-const designSessionStatesStorageAtom = atomWithStorage<
-  Record<string, DesignSessionState>
->(DESIGN_SESSION_STORAGE_KEY, {})
+const designSessionStatesStorageAtom = atomWithStorage<Record<string, DesignSessionState>>(
+  DESIGN_SESSION_STORAGE_KEY,
+  {}
+)
 
 /**
  * 写入会话状态 Map 并同步到 localStorage。
  */
 export const writeSessionStatesAtom = atom(
   null,
-  (_get, set, update: (prev: Map<string, DesignSessionState>) => Map<string, DesignSessionState>) => {
+  (
+    _get,
+    set,
+    update: (prev: Map<string, DesignSessionState>) => Map<string, DesignSessionState>
+  ) => {
     const stored = _get(designSessionStatesStorageAtom)
     const prev = new Map(Object.entries(stored))
     const next = update(prev)
     const obj: Record<string, DesignSessionState> = {}
-    next.forEach((value, key) => { obj[key] = value })
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
     set(designSessionStatesStorageAtom, obj)
   }
 )
@@ -234,19 +249,21 @@ export const writeSessionStatesAtom = atom(
 /**
  * 所有会话的 Design Preview 状态 Map（从 localStorage 恢复）
  */
-export const designSessionStatesAtom = atom<Map<string, DesignSessionState>>(
-  (get) => {
-    const stored = get(designSessionStatesStorageAtom)
-    const entries = Object.entries(stored).map(([k, v]) => [k, migrateSessionState(v)] as const)
-    return new Map(entries)
-  }
-)
+export const designSessionStatesAtom = atom<Map<string, DesignSessionState>>((get) => {
+  const stored = get(designSessionStatesStorageAtom)
+  const entries = Object.entries(stored).map(([k, v]) => [k, migrateSessionState(v)] as const)
+  return new Map(entries)
+})
 
 /** 按 sessionId 获取会话状态的 atomFamily */
 export const designSessionStateFamily = atomFamily((sessionId: string) =>
   atom(
     (get) => get(designSessionStatesAtom).get(sessionId) ?? DEFAULT_SESSION_STATE,
-    (_get, set, update: Partial<DesignSessionState> | ((prev: DesignSessionState) => DesignSessionState)) => {
+    (
+      _get,
+      set,
+      update: Partial<DesignSessionState> | ((prev: DesignSessionState) => DesignSessionState)
+    ) => {
       set(writeSessionStatesAtom, (prev) => {
         const current = prev.get(sessionId) ?? DEFAULT_SESSION_STATE
         const next = typeof update === 'function' ? update(current) : { ...current, ...update }
@@ -295,7 +312,10 @@ export const designDeviceAtom = atom(
   (get, set, device: DeviceType) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
-    set(designSessionStateFamily(sessionId), { device, selection: null } as Partial<DesignSessionState>)
+    set(designSessionStateFamily(sessionId), {
+      device,
+      selection: null,
+    } as Partial<DesignSessionState>)
   }
 )
 
@@ -375,7 +395,9 @@ export const designImmersiveAtom = atom(
     set(designSessionStateFamily(sessionId), {
       immersive,
       // 进入沉浸时默认显示会话；退出时清掉隐藏态
-      ...(immersive ? { immersiveHideChat: false, fullscreen: false } : { immersiveHideChat: false }),
+      ...(immersive
+        ? { immersiveHideChat: false, fullscreen: false }
+        : { immersiveHideChat: false }),
     } as Partial<DesignSessionState>)
   }
 )
@@ -386,12 +408,16 @@ export const designImmersiveHideChatAtom = atom(
   (get, set, hide: boolean) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
-    set(designSessionStateFamily(sessionId), { immersiveHideChat: hide } as Partial<DesignSessionState>)
+    set(designSessionStateFamily(sessionId), {
+      immersiveHideChat: hide,
+    } as Partial<DesignSessionState>)
   }
 )
 
 /** 派生 atom：完整 Design Canvas 状态 */
-export const designCanvasStateAtom = atom<DesignSessionState>((get) => get(currentDesignSessionAtom))
+export const designCanvasStateAtom = atom<DesignSessionState>((get) =>
+  get(currentDesignSessionAtom)
+)
 
 // ==================== v2 字段级读写 Atom ====================
 
@@ -403,7 +429,9 @@ export const selectedElementIdsAtom = atom(
     if (!sessionId) return
     const prev = get(designSessionStateFamily(sessionId)).selectedElementIds ?? []
     const next = typeof ids === 'function' ? ids(prev) : ids
-    set(designSessionStateFamily(sessionId), { selectedElementIds: next } as Partial<DesignSessionState>)
+    set(designSessionStateFamily(sessionId), {
+      selectedElementIds: next,
+    } as Partial<DesignSessionState>)
   }
 )
 
@@ -423,7 +451,9 @@ export const hoveredElementIdAtom = atom(
   (get, set, id: string | null) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
-    set(designSessionStateFamily(sessionId), { hoveredElementId: id } as Partial<DesignSessionState>)
+    set(designSessionStateFamily(sessionId), {
+      hoveredElementId: id,
+    } as Partial<DesignSessionState>)
   }
 )
 
@@ -443,7 +473,9 @@ export const activeSnapshotIdAtom = atom(
   (get, set, id: string | null) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
-    set(designSessionStateFamily(sessionId), { activeSnapshotId: id } as Partial<DesignSessionState>)
+    set(designSessionStateFamily(sessionId), {
+      activeSnapshotId: id,
+    } as Partial<DesignSessionState>)
   }
 )
 
@@ -462,11 +494,7 @@ const MAX_SNAPSHOTS_PER_SESSION = 50
  */
 export const appendSnapshotAtom = atom(
   null,
-  (
-    get,
-    set,
-    payload: { html: string; css: string | null; trigger?: string },
-  ) => {
+  (get, set, payload: { html: string; css: string | null; trigger?: string }) => {
     const sessionId = get(currentAgentSessionIdAtom)
     if (!sessionId) return
     const cur = get(designSnapshotsAtom)
@@ -488,7 +516,7 @@ export const appendSnapshotAtom = atom(
         ? next.slice(next.length - MAX_SNAPSHOTS_PER_SESSION)
         : next
     set(designSnapshotsAtom, trimmed)
-  },
+  }
 )
 
 // ==================== 写入操作（基于当前会话） ====================
@@ -517,7 +545,10 @@ export const setDesignHtmlAtom = atom(null, (get, set, payload: { html: string; 
 export const setDesignDeviceAtom = atom(null, (get, set, device: DeviceType) => {
   const sessionId = get(currentAgentSessionIdAtom)
   if (!sessionId) return
-  set(designSessionStateFamily(sessionId), { device, selection: null } as Partial<DesignSessionState>)
+  set(designSessionStateFamily(sessionId), {
+    device,
+    selection: null,
+  } as Partial<DesignSessionState>)
 })
 
 /** 设置缩放 */
@@ -547,7 +578,9 @@ export const toggleDesignEnabledAtom = atom(null, (get, set, enabled?: boolean) 
   const sessionId = get(currentAgentSessionIdAtom)
   if (!sessionId) return
   const current = get(designSessionStateFamily(sessionId))
-  set(designSessionStateFamily(sessionId), { enabled: enabled ?? !current.enabled } as Partial<DesignSessionState>)
+  set(designSessionStateFamily(sessionId), {
+    enabled: enabled ?? !current.enabled,
+  } as Partial<DesignSessionState>)
 })
 
 /** 强制刷新画布 */
@@ -555,14 +588,18 @@ export const refreshDesignCanvasAtom = atom(null, (get, set) => {
   const sessionId = get(currentAgentSessionIdAtom)
   if (!sessionId) return
   const current = get(designSessionStateFamily(sessionId))
-  set(designSessionStateFamily(sessionId), { version: current.version + 1 } as Partial<DesignSessionState>)
+  set(designSessionStateFamily(sessionId), {
+    version: current.version + 1,
+  } as Partial<DesignSessionState>)
 })
 
 /** 重置视口 */
 export const resetDesignViewportAtom = atom(null, (get, set) => {
   const sessionId = get(currentAgentSessionIdAtom)
   if (!sessionId) return
-  set(designSessionStateFamily(sessionId), { viewport: { panX: 0, panY: 0 } } as Partial<DesignSessionState>)
+  set(designSessionStateFamily(sessionId), {
+    viewport: { panX: 0, panY: 0 },
+  } as Partial<DesignSessionState>)
 })
 
 // ==================== 全局（不绑定会话） ====================

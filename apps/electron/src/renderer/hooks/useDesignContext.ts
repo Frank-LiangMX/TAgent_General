@@ -24,8 +24,13 @@ import {
 } from '@/atoms/design-preview-atoms'
 
 function summarizeHtml(html: string): string {
-  const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
-  const text = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const cleaned = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+  const text = cleaned
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   return text.slice(0, 500)
 }
 
@@ -103,8 +108,7 @@ export function formatDesignContextForMessage(ctx: DesignContextForAgent | null)
   const sel = ctx.userSelection
   const hasElements = Boolean(sel?.elements && sel.elements.length > 0)
   const hasMeaningfulRegion =
-    Boolean(sel?.region) &&
-    (sel!.region.width > 0 || sel!.region.height > 0)
+    Boolean(sel?.region) && (sel!.region.width > 0 || sel!.region.height > 0)
 
   if (hasElements && sel?.elements) {
     lines.push('[选中的元素]')
@@ -114,17 +118,15 @@ export function formatDesignContextForMessage(ctx: DesignContextForAgent | null)
       lines.push(
         `  - id: ${el.id}, tag: ${el.tag}, role: ${el.role}` +
           `${text ? `, text: "${text}"` : ''}` +
-          `${cls ? `, class: "${cls}"` : ''}`,
+          `${cls ? `, class: "${cls}"` : ''}`
       )
       if (el.selector) lines.push(`    CSS 选择器: ${el.selector}`)
     }
-    lines.push(
-      '使用说明：用 CSS 选择器定位选中元素，只修改该部分，不要全量重写 HTML。',
-    )
+    lines.push('使用说明：用 CSS 选择器定位选中元素，只修改该部分，不要全量重写 HTML。')
   } else if (hasMeaningfulRegion && sel?.region) {
     const r = sel.region
     lines.push(
-      `[框选区域] x=${Math.round(r.x)}, y=${Math.round(r.y)}, w=${Math.round(r.width)}, h=${Math.round(r.height)}`,
+      `[框选区域] x=${Math.round(r.x)}, y=${Math.round(r.y)}, w=${Math.round(r.width)}, h=${Math.round(r.height)}`
     )
   }
 
@@ -142,7 +144,7 @@ export function formatDesignContextForMessage(ctx: DesignContextForAgent | null)
 /** 用户可见原文 + 精简 design-context（追加在后，供 Agent wire） */
 export function augmentMessageWithDesignContext(
   userMessage: string,
-  ctx: DesignContextForAgent | null,
+  ctx: DesignContextForAgent | null
 ): string {
   const ctxText = formatDesignContextForMessage(ctx)
   if (!ctxText) return userMessage

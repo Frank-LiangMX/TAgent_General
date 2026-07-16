@@ -204,7 +204,11 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
       { id: 'theme-style', title: '皮肤风格', description: '10 种主题风格' },
       { id: 'brand-color', title: '品牌色', description: 'TAgent 品牌色' },
       { id: 'markdown-font-size', title: 'Markdown 字号', description: '阅读字号档位' },
-      { id: 'advanced-material', title: '高级材质', description: '高透玻璃 / 低透磨砂玻璃 / 轻拟态' },
+      {
+        id: 'advanced-material',
+        title: '高级材质',
+        description: '高透玻璃 / 低透磨砂玻璃 / 轻拟态',
+      },
     ],
   },
   {

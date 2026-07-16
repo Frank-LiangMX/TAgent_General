@@ -168,7 +168,9 @@ export function ContextUsageBadge({
     }
   }, [sessionId])
 
-  const lastNudgeFired = sessionId ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none') : 'none'
+  const lastNudgeFired = sessionId
+    ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none')
+    : 'none'
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
@@ -201,9 +203,7 @@ export function ContextUsageBadge({
   // 不再调用 SDK getContextUsage，直接使用流式 usage 数据
   // 直接使用流式 usage 数据（不再调用 SDK getContextUsage）
   const streamRatio =
-    streamWindow && streamTokens && streamTokens > 0
-      ? streamTokens / streamWindow
-      : undefined
+    streamWindow && streamTokens && streamTokens > 0 ? streamTokens / streamWindow : undefined
   const displayTokens = streamTokens
   const displayWindow = streamWindow
   const ratio = streamRatio ?? 0
@@ -242,9 +242,8 @@ export function ContextUsageBadge({
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
     : undefined
   // 超过 100% 时强制显示危险色（红色）
-  const isWarning = compactThreshold && displayTokens
-      ? displayTokens / compactThreshold >= WARNING_RATIO
-      : false
+  const isWarning =
+    compactThreshold && displayTokens ? displayTokens / compactThreshold >= WARNING_RATIO : false
   const isDanger =
     ratio >= DANGER_RATIO ||
     (displayTokens != null && displayWindow != null && displayTokens > displayWindow)
@@ -337,10 +336,16 @@ export function ContextUsageBadge({
                 / {formatTokens(displayWindow)}
               </span>
               {percent != null && (
-                <span className={cn(
-                  'text-xs font-medium',
-                  percent >= 90 ? 'text-red-500' : percent >= 80 ? 'text-amber-500' : 'text-muted-foreground/60'
-                )}>
+                <span
+                  className={cn(
+                    'text-xs font-medium',
+                    percent >= 90
+                      ? 'text-red-500'
+                      : percent >= 80
+                        ? 'text-amber-500'
+                        : 'text-muted-foreground/60'
+                  )}
+                >
                   {percent}%
                 </span>
               )}
@@ -368,13 +373,17 @@ export function ContextUsageBadge({
           {cacheReadTokens != null && cacheReadTokens > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground/60">缓存读取</span>
-              <span className="tabular-nums text-foreground/80">{formatTokens(cacheReadTokens)}</span>
+              <span className="tabular-nums text-foreground/80">
+                {formatTokens(cacheReadTokens)}
+              </span>
             </div>
           )}
           {cacheCreationTokens != null && cacheCreationTokens > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground/60">缓存写入</span>
-              <span className="tabular-nums text-foreground/80">{formatTokens(cacheCreationTokens)}</span>
+              <span className="tabular-nums text-foreground/80">
+                {formatTokens(cacheCreationTokens)}
+              </span>
             </div>
           )}
         </div>

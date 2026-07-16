@@ -57,7 +57,13 @@ export function AssistantMessageLogo({
       )}
     >
       {fallbackIcon ?? (
-        <svg className="size-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="size-4 text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" />
           <path d="M12 8v4l3 3" />
         </svg>
@@ -73,7 +79,10 @@ interface ErrorMessageLogoProps {
 }
 
 /** 错误消息头像占位 */
-export function ErrorMessageLogo({ className, errorIcon }: ErrorMessageLogoProps): React.ReactElement {
+export function ErrorMessageLogo({
+  className,
+  errorIcon,
+}: ErrorMessageLogoProps): React.ReactElement {
   return (
     <div
       data-testid="error-container"
@@ -83,7 +92,13 @@ export function ErrorMessageLogo({ className, errorIcon }: ErrorMessageLogoProps
       )}
     >
       {errorIcon ?? (
-        <svg className="size-4 text-destructive" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="size-4 text-destructive"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />

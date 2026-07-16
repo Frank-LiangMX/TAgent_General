@@ -32,7 +32,7 @@ export const setDocumentAtom = atom(
       next.set(key, doc)
       return next
     })
-  },
+  }
 )
 
 /** 按 sessionId 获取文档（atomFamily 实现按需订阅） */
@@ -40,7 +40,7 @@ export const canvasDocumentFamily = atomFamily((key: string | null) =>
   atom<CanvasDocument>((get) => {
     if (!key) return createEmptyDocument()
     return get(documentsAtom).get(key) ?? createEmptyDocument()
-  }),
+  })
 )
 
 /** 当前会话的文档 */
@@ -53,7 +53,7 @@ export const currentDocumentAtom = atom<CanvasDocument>((get) => {
 
 function updateDocument(
   key: string,
-  updater: (doc: CanvasDocument) => CanvasDocument,
+  updater: (doc: CanvasDocument) => CanvasDocument
 ): (get: (atom: unknown) => unknown, set: (atom: unknown, val: unknown) => void) => void {
   return (get, set) => {
     const doc = get(canvasDocumentFamily(key)) as CanvasDocument
@@ -71,7 +71,7 @@ export const addShapeAtom = atom(
       shape: Omit<CanvasShape, 'id'>
       parentId?: string
       documentKey?: string
-    },
+    }
   ) => {
     const key = params.documentKey ?? get(currentAgentSessionIdAtom)
     if (!key) return
@@ -93,17 +93,13 @@ export const addShapeAtom = atom(
       },
     })
     return id
-  },
+  }
 )
 
 /** 更新形状属性 */
 export const updateShapeAtom = atom(
   null,
-  (
-    get,
-    set,
-    params: { id: string; patch: Partial<CanvasShape>; documentKey?: string },
-  ) => {
+  (get, set, params: { id: string; patch: Partial<CanvasShape>; documentKey?: string }) => {
     const key = params.documentKey ?? get(currentAgentSessionIdAtom)
     if (!key) return
     const doc = get(canvasDocumentFamily(key))
@@ -116,7 +112,7 @@ export const updateShapeAtom = atom(
         shapes: { ...doc.shapes, [params.id]: { ...existing, ...params.patch } },
       },
     })
-  },
+  }
 )
 
 /** 删除形状 */
@@ -128,17 +124,13 @@ export const deleteShapeAtom = atom(
     const doc = get(canvasDocumentFamily(key))
     const updated = removeShapeTree(params.id, doc)
     set(setDocumentAtom, { key, doc: updated })
-  },
+  }
 )
 
 /** 移动形状（改 bounds） */
 export const moveShapeAtom = atom(
   null,
-  (
-    get,
-    set,
-    params: { id: string; bounds: BoxBounds; documentKey?: string },
-  ) => {
+  (get, set, params: { id: string; bounds: BoxBounds; documentKey?: string }) => {
     const key = params.documentKey ?? get(currentAgentSessionIdAtom)
     if (!key) return
     const doc = get(canvasDocumentFamily(key))
@@ -154,17 +146,13 @@ export const moveShapeAtom = atom(
         },
       },
     })
-  },
+  }
 )
 
 /** 重排子节点顺序 */
 export const reorderChildAtom = atom(
   null,
-  (
-    get,
-    set,
-    params: { parentId: string; childIds: string[]; documentKey?: string },
-  ) => {
+  (get, set, params: { parentId: string; childIds: string[]; documentKey?: string }) => {
     const key = params.documentKey ?? get(currentAgentSessionIdAtom)
     if (!key) return
     const doc = get(canvasDocumentFamily(key))
@@ -180,7 +168,7 @@ export const reorderChildAtom = atom(
         },
       },
     })
-  },
+  }
 )
 
 /** 重置文档（清空所有形状，仅保留根） */

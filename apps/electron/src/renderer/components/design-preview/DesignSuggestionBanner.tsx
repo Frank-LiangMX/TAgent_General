@@ -95,10 +95,7 @@ export function DesignSuggestionBanner({
         )}
       >
         <Palette
-          className={cn(
-            'size-4',
-            isHighConfidence ? 'text-primary' : 'text-muted-foreground'
-          )}
+          className={cn('size-4', isHighConfidence ? 'text-primary' : 'text-muted-foreground')}
         />
       </div>
 

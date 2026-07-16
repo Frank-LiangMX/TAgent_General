@@ -18,13 +18,16 @@ import {
   type DesignContextForAgent,
 } from '@/atoms/design-preview-atoms'
 
-import {
-  augmentMessageWithDesignContext,
-} from '@/hooks/useDesignContext'
+import { augmentMessageWithDesignContext } from '@/hooks/useDesignContext'
 
 function summarizeHtml(html: string): string {
-  const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
-  const text = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const cleaned = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+  const text = cleaned
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   return text.slice(0, 500)
 }
 
@@ -94,7 +97,9 @@ export function useDesignContextAugment(): {
   const enabled = store.get(designEnabledAtom)
   const snapshot: DesignContextSnapshot = {
     enabled,
-    hasSelection: Boolean(store.get(designSelectionAtom) || store.get(selectedElementIdsAtom).length > 0),
+    hasSelection: Boolean(
+      store.get(designSelectionAtom) || store.get(selectedElementIdsAtom).length > 0
+    ),
     hasHtml: Boolean(store.get(designHtmlAtom)),
   }
 

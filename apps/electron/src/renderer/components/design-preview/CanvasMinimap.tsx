@@ -51,7 +51,9 @@ function unionRect(a: WorldRect, b: WorldRect): WorldRect {
   return { x, y, width: right - x, height: bottom - y }
 }
 
-function computeV3ContentBounds(shapes: Record<string, { bounds: WorldRect; id: string }>): WorldRect {
+function computeV3ContentBounds(
+  shapes: Record<string, { bounds: WorldRect; id: string }>
+): WorldRect {
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -144,7 +146,7 @@ export function CanvasMinimap({
       x: MAP_PAD + (wx - world.x) * mapScale,
       y: MAP_PAD + (wy - world.y) * mapScale,
     }),
-    [world, mapScale],
+    [world, mapScale]
   )
 
   const toWorld = React.useCallback(
@@ -152,7 +154,7 @@ export function CanvasMinimap({
       x: world.x + (mx - MAP_PAD) / mapScale,
       y: world.y + (my - MAP_PAD) / mapScale,
     }),
-    [world, mapScale],
+    [world, mapScale]
   )
 
   const contentMap = toMap(contentRect.x, contentRect.y)
@@ -174,7 +176,7 @@ export function CanvasMinimap({
         panY: -worldY * prev.zoom,
       }))
     },
-    [setViewport],
+    [setViewport]
   )
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -244,7 +246,9 @@ export function CanvasMinimap({
   const thumbShapes = React.useMemo(() => {
     if (!hasV3) return []
     const list = Object.values(doc.shapes)
-      .filter((s) => s.id !== '__root__' && s.visible && (s.bounds.width > 0 || s.bounds.height > 0))
+      .filter(
+        (s) => s.id !== '__root__' && s.visible && (s.bounds.width > 0 || s.bounds.height > 0)
+      )
       .slice(0, 40)
     return list
   }, [hasV3, doc.shapes])
@@ -254,7 +258,7 @@ export function CanvasMinimap({
       className={cn(
         'pointer-events-auto select-none overflow-hidden rounded-lg border border-border/50',
         'bg-background/90 shadow-lg backdrop-blur-sm',
-        className,
+        className
       )}
       style={{ width: MAP_W, height: MAP_H }}
       onPointerDown={handlePointerDown}

@@ -156,7 +156,9 @@ export function updateWpsUserAuth(params: {
   const next: WpsConfig = {
     ...existing,
     userAccessToken: encryptText(params.accessToken),
-    userRefreshToken: params.refreshToken ? encryptText(params.refreshToken) : existing.userRefreshToken,
+    userRefreshToken: params.refreshToken
+      ? encryptText(params.refreshToken)
+      : existing.userRefreshToken,
     userTokenExpiresAt: params.expiresAt,
     userName: params.userName,
     userEmail: params.userEmail,

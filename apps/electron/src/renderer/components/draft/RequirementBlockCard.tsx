@@ -152,7 +152,10 @@ export function RequirementBlockCard({
           <p className="text-[11px] font-medium text-foreground/50 mb-1.5">验收标准</p>
           <div className="space-y-1">
             {block.acceptanceCriteria.map((criterion) => (
-              <div key={criterion.id} className="group flex items-center gap-2 rounded-full px-2 py-1">
+              <div
+                key={criterion.id}
+                className="group flex items-center gap-2 rounded-full px-2 py-1"
+              >
                 <button
                   type="button"
                   onClick={() => updateCriterion(criterion.id, { checked: !criterion.checked })}

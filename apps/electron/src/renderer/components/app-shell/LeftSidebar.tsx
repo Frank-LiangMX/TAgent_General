@@ -536,8 +536,7 @@ export function LeftSidebar({
    * 只要任一工作区有归档就显示底栏入口，不随「当前选中工作区」隐藏。
    */
   const archivedAgentSessionCount = React.useMemo(
-    () =>
-      currentModeAgentSessions.filter((s) => s.archived && !draftSessionIds.has(s.id)).length,
+    () => currentModeAgentSessions.filter((s) => s.archived && !draftSessionIds.has(s.id)).length,
     [currentModeAgentSessions, draftSessionIds]
   )
 
@@ -559,33 +558,11 @@ export function LeftSidebar({
       })
       .catch(console.error)
     window.electronAPI.getUserProfile().then(setUserProfile).catch(console.error)
-    window.electronAPI.listAgentSessions().then((sessions) => {
-      setAgentSessions(sessions)
-      // 从 session metadata 恢复 per-session 渠道/模型选择
-      setSessionChannelMap((prev) => {
-        const next = new Map(prev)
-        for (const s of sessions) {
-          if (s.channelId) next.set(s.id, s.channelId)
-        }
-        return next
-      })
-      setSessionModelMap((prev) => {
-        const next = new Map(prev)
-        for (const s of sessions) {
-          if (s.modelId) next.set(s.id, s.modelId)
-        }
-        return next
-      })
-    }).catch(console.error)
-  }, [setConversations, setUserProfile, setAgentSessions, setSessionChannelMap, setSessionModelMap])
-
-  // 窗口聚焦时重新同步列表，修复长时间后前后端不一致
-  React.useEffect(() => {
-    const handleFocus = (): void => {
-      window.electronAPI.listConversations().then(setConversations).catch(console.error)
-      window.electronAPI.listAgentSessions().then((sessions) => {
+    window.electronAPI
+      .listAgentSessions()
+      .then((sessions) => {
         setAgentSessions(sessions)
-        // 同步恢复 per-session 渠道/模型
+        // 从 session metadata 恢复 per-session 渠道/模型选择
         setSessionChannelMap((prev) => {
           const next = new Map(prev)
           for (const s of sessions) {
@@ -600,7 +577,35 @@ export function LeftSidebar({
           }
           return next
         })
-      }).catch(console.error)
+      })
+      .catch(console.error)
+  }, [setConversations, setUserProfile, setAgentSessions, setSessionChannelMap, setSessionModelMap])
+
+  // 窗口聚焦时重新同步列表，修复长时间后前后端不一致
+  React.useEffect(() => {
+    const handleFocus = (): void => {
+      window.electronAPI.listConversations().then(setConversations).catch(console.error)
+      window.electronAPI
+        .listAgentSessions()
+        .then((sessions) => {
+          setAgentSessions(sessions)
+          // 同步恢复 per-session 渠道/模型
+          setSessionChannelMap((prev) => {
+            const next = new Map(prev)
+            for (const s of sessions) {
+              if (s.channelId) next.set(s.id, s.channelId)
+            }
+            return next
+          })
+          setSessionModelMap((prev) => {
+            const next = new Map(prev)
+            for (const s of sessions) {
+              if (s.modelId) next.set(s.id, s.modelId)
+            }
+            return next
+          })
+        })
+        .catch(console.error)
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
@@ -1199,7 +1204,6 @@ export function LeftSidebar({
     [store, setAgentSessions]
   )
 
-
   /** 切换 Agent 会话归档状态 */
   const handleToggleArchiveAgent = React.useCallback(
     async (id: string): Promise<void> => {
@@ -1601,10 +1605,7 @@ export function LeftSidebar({
             </div>
           </div>
 
-          <div
-            key={activeRailItem}
-            className="flex min-h-0 flex-1 flex-col"
-          >
+          <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
             {renderRailContent()}
           </div>
 
@@ -1694,10 +1695,7 @@ export function LeftSidebar({
             </div>
           </div>
 
-          <div
-            key={activeRailItem}
-            className="flex min-h-0 flex-1 flex-col"
-          >
+          <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
             {renderRailContent()}
           </div>
         </div>
@@ -1823,10 +1821,7 @@ function SessionsRailContent({
 
   return (
     <div className="list-well session-well flex-1 min-h-0 titlebar-no-drag">
-      <div
-        ref={listRef}
-        className="session-scroll scrollbar-thin min-h-0 relative"
-      >
+      <div ref={listRef} className="session-scroll scrollbar-thin min-h-0 relative">
         {/* 置顶分区（原型：位于 session-well 最上方） */}
         {pinnedAgentSessions.length > 0 && (
           <div className="session-group">
@@ -2293,14 +2288,13 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     </>
   )
 
-  const { selectionClassName, showRunningSweep, statusLineClass } =
-    getAgentSessionVisualState({
-      active,
-      indicatorStatus,
-      isBatchMode,
-      isBatchSelected,
-      leftAccent,
-    })
+  const { selectionClassName, showRunningSweep, statusLineClass } = getAgentSessionVisualState({
+    active,
+    indicatorStatus,
+    isBatchMode,
+    isBatchSelected,
+    leftAccent,
+  })
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
@@ -2358,9 +2352,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               aria-hidden="true"
             />
           )}
-          {showRunningSweep && (
-            <span className="session-active-running-sweep" aria-hidden="true" />
-          )}
+          {showRunningSweep && <span className="session-active-running-sweep" aria-hidden="true" />}
           <div className="flex-1 min-w-0">
             {editing ? (
               <input
@@ -2598,11 +2590,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
   const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
 
-  const sessions = [
-    ...activeSessions,
-    ...fillSessions,
-    ...(currentSession ? [currentSession] : []),
-  ]
+  const sessions = [...activeSessions, ...fillSessions, ...(currentSession ? [currentSession] : [])]
 
   const isDragging = dragProjectId === group.workspace.id
   const isBatchMode = batchSelectWorkspaceId === group.workspace.id

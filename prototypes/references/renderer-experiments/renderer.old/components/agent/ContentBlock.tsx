@@ -8,10 +8,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import {
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { ThreePetalSpiral } from '@tagent/ui'
 import * as React from 'react'
 

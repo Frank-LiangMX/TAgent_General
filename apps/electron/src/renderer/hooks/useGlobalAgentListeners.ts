@@ -726,10 +726,7 @@ export function useGlobalAgentListeners(): void {
 
         // Design Preview 更新事件：Agent 调用 design_preview_update 工具后推送设计
         // v3：支持 shapeOps（节点树）和 html（向后兼容）
-        if (
-          payload.kind === 'tagent_event' &&
-          payload.event.type === 'design_preview_update'
-        ) {
+        if (payload.kind === 'tagent_event' && payload.event.type === 'design_preview_update') {
           const evt = payload.event as {
             html?: string
             css?: string

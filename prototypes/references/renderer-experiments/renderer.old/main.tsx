@@ -186,9 +186,7 @@ function AgentSettingsInitializer(): null {
         setChannelsLoaded(true)
 
         const channelIds = new Set(channels.map((c) => c.id))
-        const enabledChannelIds = new Set(
-          channels.filter((c) => c.enabled).map((c) => c.id)
-        )
+        const enabledChannelIds = new Set(channels.filter((c) => c.enabled).map((c) => c.id))
 
         // 验证 Chat 模式的全局默认模型（localStorage 持久化的可能指向已删除渠道）
         const chatModel = store.get(selectedModelAtom)

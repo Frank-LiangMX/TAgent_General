@@ -119,18 +119,12 @@ export function SelectionOverlay({
 
   return (
     <div
-      className={cn(
-        'absolute inset-0 cursor-crosshair',
-        drag ? 'select-none' : '',
-        className
-      )}
+      className={cn('absolute inset-0 cursor-crosshair', drag ? 'select-none' : '', className)}
       onMouseDown={handleMouseDown}
       style={{ userSelect: 'none' }}
     >
       {/* 半透明遮罩，提示用户可以框选 */}
-      {rect === null && (
-        <div className="pointer-events-none absolute inset-0 bg-primary/[0.02]" />
-      )}
+      {rect === null && <div className="pointer-events-none absolute inset-0 bg-primary/[0.02]" />}
 
       {/* 框选矩形 */}
       {rect && (

@@ -720,9 +720,7 @@ export class MemoryLayerService {
   updateSessionKeyFacts(sessionId: string, keyFacts: string[], mode: MemoryMode): void {
     const db = this.getL4Db(mode)
     if (!db) {
-      console.warn(
-        `[MemoryLayerService] L4 ${mode} 数据库未初始化，跳过 updateSessionKeyFacts`
-      )
+      console.warn(`[MemoryLayerService] L4 ${mode} 数据库未初始化，跳过 updateSessionKeyFacts`)
       return
     }
 

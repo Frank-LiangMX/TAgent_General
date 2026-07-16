@@ -16,18 +16,64 @@ export const VIDEO_EXTS = new Set(['mp4', 'webm', 'mov'])
  * 需与主进程 file-preview-service.ts 的 CODE_EXTENSIONS + MARKDOWN_EXTENSIONS 保持一致
  */
 export const CODE_EXTS = new Set([
-  'md', 'markdown', 'json', 'jsonc', 'json5', 'xml', 'html', 'htm',
-  'txt', 'log', 'csv', 'yaml', 'yml', 'toml', 'ini', 'env', 'lock',
-  'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'py', 'go', 'rs', 'java',
-  'kt', 'swift', 'c', 'h', 'cpp', 'hpp', 'cs', 'sh', 'bash', 'zsh',
-  'fish', 'css', 'scss', 'less', 'sql', 'rb', 'php', 'diff', 'patch',
+  'md',
+  'markdown',
+  'json',
+  'jsonc',
+  'json5',
+  'xml',
+  'html',
+  'htm',
+  'txt',
+  'log',
+  'csv',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'env',
+  'lock',
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'mjs',
+  'cjs',
+  'py',
+  'go',
+  'rs',
+  'java',
+  'kt',
+  'swift',
+  'c',
+  'h',
+  'cpp',
+  'hpp',
+  'cs',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'css',
+  'scss',
+  'less',
+  'sql',
+  'rb',
+  'php',
+  'diff',
+  'patch',
 ])
 
 /** 文档扩展名 */
 export const DOC_EXTS = new Set(['pdf', 'docx'])
 
 /** 所有可预览的扩展名集合 */
-export const ALL_PREVIEWABLE_EXTS = new Set([...IMAGE_EXTS, ...VIDEO_EXTS, ...CODE_EXTS, ...DOC_EXTS])
+export const ALL_PREVIEWABLE_EXTS = new Set([
+  ...IMAGE_EXTS,
+  ...VIDEO_EXTS,
+  ...CODE_EXTS,
+  ...DOC_EXTS,
+])
 
 /** 文件存在性缓存（模块级共享） */
 const fileExistsCache = new Map<string, boolean>()

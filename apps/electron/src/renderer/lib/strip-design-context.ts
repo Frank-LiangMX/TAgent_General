@@ -42,7 +42,8 @@ export function stripDesignContextFromUserMessage(raw: string): StripDesignConte
   // 旧格式：前缀上下文 + 分隔符 + 用户正文 → 只保留分隔符之后
   if (/----- 以下是用户的实际问题 -----/.test(text)) {
     const parts = text.split(/----- 以下是用户的实际问题 -----\s*/)
-    text = parts.length > 1 ? parts.slice(1).join('').trim() : text.replace(USER_QUESTION_SEPARATOR, '')
+    text =
+      parts.length > 1 ? parts.slice(1).join('').trim() : text.replace(USER_QUESTION_SEPARATOR, '')
   } else {
     text = text.replace(USER_QUESTION_SEPARATOR, '')
   }

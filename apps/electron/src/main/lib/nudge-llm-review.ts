@@ -170,9 +170,7 @@ function validateResult(raw: unknown): NudgeReviewResult {
   const validLayers = new Set(['L0', 'L2', 'L3'])
 
   const items = obj.items
-    .filter((item): item is Record<string, unknown> =>
-      typeof item === 'object' && item !== null
-    )
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
     .filter((item) => typeof item.content === 'string' && item.content.trim())
     .filter((item) => validTypes.has(item.type as string))
     .filter((item) => validLayers.has(item.targetLayer as string))

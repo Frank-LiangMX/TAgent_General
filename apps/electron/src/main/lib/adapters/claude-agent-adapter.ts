@@ -1128,7 +1128,6 @@ export class ClaudeAgentAdapter implements AgentProviderAdapter {
     ).setPermissionMode(mode as import('@anthropic-ai/claude-agent-sdk').PermissionMode)
     console.log(`[Claude 适配器] 权限模式已切换: sessionId=${sessionId}, mode=${mode}`)
   }
-
 }
 
 /**

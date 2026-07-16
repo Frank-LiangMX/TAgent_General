@@ -8,10 +8,7 @@
  */
 
 import { useAtomValue } from 'jotai'
-import {
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { ThreePetalSpiral } from '@tagent/ui'
 import * as React from 'react'
 
@@ -661,12 +658,7 @@ function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.Rea
   }, [])
 
   return (
-    <div
-      className={cn(
-        'agent-thinking-block relative',
-        dimmed && 'agent-thinking-block--dimmed'
-      )}
-    >
+    <div className={cn('agent-thinking-block relative', dimmed && 'agent-thinking-block--dimmed')}>
       {/* 对齐原型 think-block：badge 在虚线卡内头部 */}
       <div
         className={cn(

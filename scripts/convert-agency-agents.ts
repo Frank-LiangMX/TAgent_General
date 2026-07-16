@@ -112,7 +112,7 @@ async function main() {
 
     const dirPath = join(repoPath, dirName)
     const files = await readdir(dirPath)
-    const mdFiles = files.filter(f => f.endsWith('.md'))
+    const mdFiles = files.filter((f) => f.endsWith('.md'))
 
     for (const file of mdFiles) {
       const filePath = join(dirPath, file)

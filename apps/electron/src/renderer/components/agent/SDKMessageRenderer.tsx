@@ -24,9 +24,7 @@ import {
   readCompactBoundaryMetadata,
 } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
-import {
-  Loader2,
-} from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import type {
@@ -680,8 +678,7 @@ export function AssistantTurnRenderer({
     const merged = mergeStreamingContentIntoBlocks(topLevelBlocks, {
       streamingText,
       streamingThinking,
-      parseStreamingText: (text) =>
-        normalizeThinkTagsInContentBlocks(parseThinkTagsFromText(text)),
+      parseStreamingText: (text) => normalizeThinkTagsInContentBlocks(parseThinkTagsFromText(text)),
     })
     topLevelBlocks.length = 0
     topLevelBlocks.push(...merged)
@@ -830,9 +827,7 @@ export function AssistantTurnRenderer({
 
           {(answerItems.length > 0 || (hasError && errorContent && topLevelBlocks.length > 0)) && (
             <div className="agent-turn-answer">
-              {answerItems.map((item) =>
-                renderTopLevelBlock(item.item.block, item.item.index)
-              )}
+              {answerItems.map((item) => renderTopLevelBlock(item.item.block, item.item.index))}
               {hasError && errorContent && topLevelBlocks.length > 0 && (
                 <div className="mt-2 text-sm text-destructive">
                   {isThinkingSignatureError(errorContent.error?.message)
@@ -854,9 +849,7 @@ export function AssistantTurnRenderer({
             {hasDuration && (
               <AgentStatusBadge status="completed" durationMs={durationMs!} usage={usage} />
             )}
-            {showStoppedBadge && (
-              <span className="agent-turn-footer__stopped">已中断</span>
-            )}
+            {showStoppedBadge && <span className="agent-turn-footer__stopped">已中断</span>}
             {textContent && <CopyButton content={textContent} />}
             {onFork && lastUuid && (
               <MessageAction tooltip="从此处分叉" onClick={() => onFork(lastUuid)}>

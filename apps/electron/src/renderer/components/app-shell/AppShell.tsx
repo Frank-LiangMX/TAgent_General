@@ -20,7 +20,12 @@ import {
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, topLevelModeAtom, activeRailItemAtom, rightRailItemAtom } from '@/atoms/app-mode'
+import {
+  appModeAtom,
+  topLevelModeAtom,
+  activeRailItemAtom,
+  rightRailItemAtom,
+} from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
@@ -55,7 +60,10 @@ function clampRightPanelWidth(width: number): number {
 }
 
 /** 延迟卸载：先播退场动画再 unmount */
-function useDelayedMount(active: boolean, exitMs = DESIGN_MODE_EXIT_MS): {
+function useDelayedMount(
+  active: boolean,
+  exitMs = DESIGN_MODE_EXIT_MS
+): {
   mounted: boolean
   open: boolean
 } {
@@ -168,7 +176,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   )
 
   const wantMagnify =
-    designFullscreen && designEnabled && rightRailItem === 'design' && isPanelOpen && !designImmersive
+    designFullscreen &&
+    designEnabled &&
+    rightRailItem === 'design' &&
+    isPanelOpen &&
+    !designImmersive
   const wantImmersive = designImmersive && designEnabled
 
   const magnify = useDelayedMount(wantMagnify)
@@ -202,7 +214,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         }}
       >
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
-          <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth} railWidth={navRailWidth}>
+          <NavIsland
+            showSidebar={showLeftSidebar}
+            sidebarWidth={navSidebarWidth}
+            railWidth={navRailWidth}
+          >
             <FunctionalRail />
             {showLeftSidebar && (
               <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
@@ -212,7 +228,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
-        {(!showRightPanel || !isPanelOpen) && <div className="app-content-boundary-rim" aria-hidden />}
+        {(!showRightPanel || !isPanelOpen) && (
+          <div className="app-content-boundary-rim" aria-hidden />
+        )}
 
         <div
           className={cn(

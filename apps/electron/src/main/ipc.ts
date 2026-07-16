@@ -1599,7 +1599,11 @@ export function registerIpcHandlers(): void {
   // 更新 Agent 会话元数据（channelId, modelId 等）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.UPDATE_SESSION_META,
-    async (_, id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>): Promise<AgentSessionMeta> => {
+    async (
+      _,
+      id: string,
+      updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>
+    ): Promise<AgentSessionMeta> => {
       return updateAgentSessionMeta(id, updates)
     }
   )
@@ -3748,24 +3752,30 @@ export function registerIpcHandlers(): void {
   )
 
   // WPS 用户登录
-  ipcMain.handle(WPS_IPC_CHANNELS.USER_LOGIN, async (): Promise<import('@tagent/shared').WpsUserAuthState> => {
-    wpsUserAuthManager.login().catch((err: unknown) => {
-      console.error('[WPS 用户登录] 登录失败:', err)
-    })
-    return {
-      loggedIn: false,
-      loading: true,
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.USER_LOGIN,
+    async (): Promise<import('@tagent/shared').WpsUserAuthState> => {
+      wpsUserAuthManager.login().catch((err: unknown) => {
+        console.error('[WPS 用户登录] 登录失败:', err)
+      })
+      return {
+        loggedIn: false,
+        loading: true,
+      }
     }
-  })
+  )
 
   ipcMain.handle(WPS_IPC_CHANNELS.USER_LOGOUT, async (): Promise<void> => {
     wpsUserAuthManager.logout()
   })
 
-  ipcMain.handle(WPS_IPC_CHANNELS.GET_USER_AUTH, async (): Promise<import('@tagent/shared').WpsUserAuthState> => {
-    const stored = wpsUserAuthManager.getStoredUserAuth()
-    return stored
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.GET_USER_AUTH,
+    async (): Promise<import('@tagent/shared').WpsUserAuthState> => {
+      const stored = wpsUserAuthManager.getStoredUserAuth()
+      return stored
+    }
+  )
 
   ipcMain.handle(WPS_IPC_CHANNELS.CHECK_USER_AUTH, async (): Promise<boolean> => {
     const valid = await wpsUserAuthManager.checkLoginStatus()
@@ -3783,9 +3793,12 @@ export function registerIpcHandlers(): void {
     return valid
   })
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_LIST_USERS, async (_, params?: { status?: 'active' | 'notactive' | 'disabled'; pageSize?: number }) => {
-    return wpsListUsers(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_LIST_USERS,
+    async (_, params?: { status?: 'active' | 'notactive' | 'disabled'; pageSize?: number }) => {
+      return wpsListUsers(params)
+    }
+  )
 
   ipcMain.handle(WPS_IPC_CHANNELS.CLI_SEARCH_USERS, async (_, query: string) => {
     return wpsSearchUsers(query)
@@ -3795,62 +3808,118 @@ export function registerIpcHandlers(): void {
     return wpsListCalendars()
   })
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_LIST_EVENTS, async (_, calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => {
-    return wpsListEvents(calendarId, params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_LIST_EVENTS,
+    async (_, calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => {
+      return wpsListEvents(calendarId, params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_CREATE_EVENT, async (_, params: { calendar_id: string; summary: string; from: string; to: string; description?: string; attendees?: string[]; location?: string }) => {
-    return wpsCreateEvent(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_CREATE_EVENT,
+    async (
+      _,
+      params: {
+        calendar_id: string
+        summary: string
+        from: string
+        to: string
+        description?: string
+        attendees?: string[]
+        location?: string
+      }
+    ) => {
+      return wpsCreateEvent(params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_QUERY_FREEBUSY, async (_, params: { users: string[]; from: string; to: string }) => {
-    return wpsQueryFreebusy(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_QUERY_FREEBUSY,
+    async (_, params: { users: string[]; from: string; to: string }) => {
+      return wpsQueryFreebusy(params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_SEND_MESSAGE, async (_, params: { to: string[]; text: string }) => {
-    return wpsSendMessage(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_SEND_MESSAGE,
+    async (_, params: { to: string[]; text: string }) => {
+      return wpsSendMessage(params)
+    }
+  )
 
   ipcMain.handle(WPS_IPC_CHANNELS.CLI_LIST_CHATS, async () => {
     return wpsListChats()
   })
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_CREATE_CHAT, async (_, params: { name: string; members?: string[] }) => {
-    return wpsCreateChat(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_CREATE_CHAT,
+    async (_, params: { name: string; members?: string[] }) => {
+      return wpsCreateChat(params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_LIST_FILES, async (_, params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }) => {
-    return wpsListFiles(params.drive_id, params.parent_id, params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_LIST_FILES,
+    async (
+      _,
+      params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }
+    ) => {
+      return wpsListFiles(params.drive_id, params.parent_id, params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_SEARCH_FILES, async (_, params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }) => {
-    return wpsSearchFiles(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_SEARCH_FILES,
+    async (
+      _,
+      params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }
+    ) => {
+      return wpsSearchFiles(params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_CREATE_SHARE_LINK, async (_, params: { file_id: string; link_type?: 'view' | 'edit'; expire_time?: string }) => {
-    return wpsCreateShareLink(params.file_id, params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_CREATE_SHARE_LINK,
+    async (_, params: { file_id: string; link_type?: 'view' | 'edit'; expire_time?: string }) => {
+      return wpsCreateShareLink(params.file_id, params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_LIST_RECORDS, async (_, params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }) => {
-    return wpsListRecords(params.file_id, params.sheet_id, params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_LIST_RECORDS,
+    async (
+      _,
+      params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }
+    ) => {
+      return wpsListRecords(params.file_id, params.sheet_id, params)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_CREATE_RECORD, async (_, params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => {
-    return wpsCreateRecord(params)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_CREATE_RECORD,
+    async (_, params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => {
+      return wpsCreateRecord(params)
+    }
+  )
 
   ipcMain.handle(WPS_IPC_CHANNELS.CLI_API_GET, async (_, endpoint: string) => {
     return wpsApiGet(endpoint)
   })
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_API_POST, async (_, params: { endpoint: string; data: any }) => {
-    return wpsApiPost(params.endpoint, params.data)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_API_POST,
+    async (_, params: { endpoint: string; data: any }) => {
+      return wpsApiPost(params.endpoint, params.data)
+    }
+  )
 
-  ipcMain.handle(WPS_IPC_CHANNELS.CLI_HTTP_REQUEST, async (_, params: { method: string; endpoint: string; body?: any }) => {
-    const { wpsHttpRequest } = await import('./lib/wps-cli-tools')
-    return wpsHttpRequest(params as any)
-  })
+  ipcMain.handle(
+    WPS_IPC_CHANNELS.CLI_HTTP_REQUEST,
+    async (_, params: { method: string; endpoint: string; body?: any }) => {
+      const { wpsHttpRequest } = await import('./lib/wps-cli-tools')
+      return wpsHttpRequest(params as any)
+    }
+  )
 
   console.log('[IPC] IPC 处理器注册完成')
 

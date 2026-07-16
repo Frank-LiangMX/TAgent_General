@@ -10,9 +10,7 @@ describe('remarkMentions', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'Check @file:src/utils.ts for details' },
-          ],
+          children: [{ type: 'text', value: 'Check @file:src/utils.ts for details' }],
         },
       ],
     }
@@ -37,9 +35,7 @@ describe('remarkMentions', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'Use /skill:code-review' },
-          ],
+          children: [{ type: 'text', value: 'Use /skill:code-review' }],
         },
       ],
     }
@@ -61,9 +57,7 @@ describe('remarkMentions', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'Call #mcp:my-server' },
-          ],
+          children: [{ type: 'text', value: 'Call #mcp:my-server' }],
         },
       ],
     }
@@ -85,9 +79,7 @@ describe('remarkMentions', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'See &session:abc123' },
-          ],
+          children: [{ type: 'text', value: 'See &session:abc123' }],
         },
       ],
     }
@@ -109,9 +101,7 @@ describe('remarkMentions', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'No mentions here' },
-          ],
+          children: [{ type: 'text', value: 'No mentions here' }],
         },
       ],
     }
@@ -155,9 +145,7 @@ describe('remarkPreserveBreaks', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'Line 1\nLine 2\nLine 3' },
-          ],
+          children: [{ type: 'text', value: 'Line 1\nLine 2\nLine 3' }],
         },
       ],
     }
@@ -180,9 +168,7 @@ describe('remarkPreserveBreaks', () => {
       children: [
         {
           type: 'paragraph',
-          children: [
-            { type: 'text', value: 'No newlines' },
-          ],
+          children: [{ type: 'text', value: 'No newlines' }],
         },
       ],
     }

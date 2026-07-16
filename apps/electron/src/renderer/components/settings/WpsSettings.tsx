@@ -102,17 +102,20 @@ export function WpsSettings(): React.ReactElement {
       }
     })()
 
-    const interval = setInterval(async () => {
-      // 先读本地状态，如果已显示未登录就不重复检查
-      const auth = await window.electronAPI.getWpsUserAuth()
-      if (auth.loggedIn) {
-        const stillValid = await window.electronAPI.checkWpsUserAuth()
-        if (!stillValid) {
-          setUserAuth({ loggedIn: false })
-          toast.warning('WPS 登录已失效（可能在其他设备登录），请重新登录')
+    const interval = setInterval(
+      async () => {
+        // 先读本地状态，如果已显示未登录就不重复检查
+        const auth = await window.electronAPI.getWpsUserAuth()
+        if (auth.loggedIn) {
+          const stillValid = await window.electronAPI.checkWpsUserAuth()
+          if (!stillValid) {
+            setUserAuth({ loggedIn: false })
+            toast.warning('WPS 登录已失效（可能在其他设备登录），请重新登录')
+          }
         }
-      }
-    }, 5 * 60 * 1000)
+      },
+      5 * 60 * 1000
+    )
 
     return () => clearInterval(interval)
   }, [])
@@ -188,10 +191,13 @@ export function WpsSettings(): React.ReactElement {
         }
       }, 1000)
       // 5 分钟超时
-      setTimeout(() => {
-        clearInterval(check)
-        if (loggingIn) setLoggingIn(false)
-      }, 5 * 60 * 1000)
+      setTimeout(
+        () => {
+          clearInterval(check)
+          if (loggingIn) setLoggingIn(false)
+        },
+        5 * 60 * 1000
+      )
     } catch (error) {
       setLoggingIn(false)
       toast.error(`登录失败: ${error instanceof Error ? error.message : String(error)}`)
@@ -267,7 +273,8 @@ export function WpsSettings(): React.ReactElement {
                 <>
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   <span className="text-sm text-muted-foreground">
-                    已登录: {userAuth.userName}{userAuth.userEmail ? ` (${userAuth.userEmail})` : ''}
+                    已登录: {userAuth.userName}
+                    {userAuth.userEmail ? ` (${userAuth.userEmail})` : ''}
                   </span>
                   {userAuth.expiresAt && (
                     <span className="text-xs text-muted-foreground/60">
@@ -288,17 +295,13 @@ export function WpsSettings(): React.ReactElement {
                     onClick={handleUserLogin}
                     disabled={loggingIn || !form.appId.trim()}
                   >
-                    {loggingIn ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : null}
+                    {loggingIn ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
                     {loggingIn ? '登录中...' : '登录 WPS'}
                   </Button>
                   <button
                     type="button"
                     className="inline-flex items-center gap-1 text-xs text-muted-foreground underline"
-                    onClick={() =>
-                      window.electronAPI.openExternal('https://open.wps.cn/')
-                    }
+                    onClick={() => window.electronAPI.openExternal('https://open.wps.cn/')}
                   >
                     开放平台
                     <ExternalLink className="h-3 w-3" />

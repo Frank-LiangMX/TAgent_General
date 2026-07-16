@@ -46,7 +46,11 @@ import { getDecryptedWpsSecretKey, getWpsConfig } from './lib/wps-config'
 import { createApplicationMenu } from './menu'
 import { createTray, destroyTray, getTray, hideWindowToTray, prepareWindowFromTray } from './tray'
 import { updateWindowIcon } from './lib/window-icon'
-import { resolveLogoKey, resolveNativeThemeSource, getThemeIconPath } from './lib/theme-icon-resolver'
+import {
+  resolveLogoKey,
+  resolveNativeThemeSource,
+  getThemeIconPath,
+} from './lib/theme-icon-resolver'
 
 // Dev 与正式版使用独立的 userData 目录，避免共享 Chromium SingletonLock 导致 dev 启动被静默退出
 // 必须在任何会读取 userData 路径的模块加载之前执行
@@ -335,7 +339,11 @@ function getIconPath(): string {
     const resourcesDir = app.isPackaged ? process.resourcesPath : join(__dirname, 'resources')
     return join(resourcesDir, 'iconTemplate.png')
   }
-  const key = resolveLogoKey(settings.themeMode, settings.themeStyle, nativeTheme.shouldUseDarkColors)
+  const key = resolveLogoKey(
+    settings.themeMode,
+    settings.themeStyle,
+    nativeTheme.shouldUseDarkColors
+  )
   return getThemeIconPath(key)
 }
 

@@ -337,7 +337,11 @@ export function buildFrameInjectionScript(): string {
 
 export interface FrameBridgeHandlers {
   onLayers: (layers: CanvasElement[]) => void
-  onElementClicked: (id: string | null, bounds: CanvasElement['bounds'] | null, additive: boolean) => void
+  onElementClicked: (
+    id: string | null,
+    bounds: CanvasElement['bounds'] | null,
+    additive: boolean
+  ) => void
   onElementHovered: (id: string | null) => void
   onReady?: () => void
   /** iframe 内中键按下，发起画布平移 */
@@ -445,7 +449,7 @@ export function iframeBoundsToCanvas(
   bounds: CanvasElement['bounds'],
   iframeRect: DOMRect,
   zoom: number,
-  pan: DesignViewport,
+  pan: DesignViewport
 ): { x: number; y: number; width: number; height: number } {
   return {
     x: iframeRect.left + bounds.x * zoom + pan.panX,

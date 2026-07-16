@@ -926,7 +926,9 @@ export class KanbanDbService {
       | undefined
     if (!row) return
 
-    const meta: KanbanTaskMetadata = row.metadata ? (JSON.parse(row.metadata) as KanbanTaskMetadata) : {}
+    const meta: KanbanTaskMetadata = row.metadata
+      ? (JSON.parse(row.metadata) as KanbanTaskMetadata)
+      : {}
     const logs = meta.progressLogs ?? []
     logs.push(entry)
     // 最多保留 200 条，防单任务无限膨胀

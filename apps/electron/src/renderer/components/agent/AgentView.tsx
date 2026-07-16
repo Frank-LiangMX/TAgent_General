@@ -594,8 +594,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       ? globalChannels.find((c) => c.id === channelId && c.enabled)
       : undefined
     const persistedModelId = meta?.modelId
-    const resolvedModelId = persistedModelId
-      ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+    const resolvedModelId =
+      persistedModelId ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
@@ -2875,42 +2875,56 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                         : 'bg-muted/50 hover:bg-muted'
                     )}
                   >
-                    <Users className={cn('size-3.5', subTab === 'team' ? 'text-primary' : 'text-blue-600 dark:text-blue-400')} />
+                    <Users
+                      className={cn(
+                        'size-3.5',
+                        subTab === 'team' ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
+                      )}
+                    />
                     <span className="text-[11px] font-medium tabular-nums">
-                      {subTab === 'team' ? '会话' : (
+                      {subTab === 'team' ? (
+                        '会话'
+                      ) : (
                         <>
                           {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
                           {kanbanBoard.tasks.length}
                         </>
                       )}
                     </span>
-                    {subTab === 'chat' && (() => {
-                      const running = kanbanBoard.tasks.filter((t) => t.status === 'running').length
-                      const blocked = kanbanBoard.tasks.filter((t) => t.status === 'blocked').length
-                      return (
-                        <>
-                          {running > 0 && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-                              ·{running}
-                            </span>
-                          )}
-                          {blocked > 0 && (
-                            <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
-                              ·{blocked}
-                            </span>
-                          )}
-                          <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className={cn(
-                                'h-full rounded-full bg-blue-500 transition-all duration-300',
-                                blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
-                              )}
-                              style={{ width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%` }}
-                            />
-                          </div>
-                        </>
-                      )
-                    })()}
+                    {subTab === 'chat' &&
+                      (() => {
+                        const running = kanbanBoard.tasks.filter(
+                          (t) => t.status === 'running'
+                        ).length
+                        const blocked = kanbanBoard.tasks.filter(
+                          (t) => t.status === 'blocked'
+                        ).length
+                        return (
+                          <>
+                            {running > 0 && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+                                ·{running}
+                              </span>
+                            )}
+                            {blocked > 0 && (
+                              <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
+                                ·{blocked}
+                              </span>
+                            )}
+                            <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  'h-full rounded-full bg-blue-500 transition-all duration-300',
+                                  blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+                                )}
+                                style={{
+                                  width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
+                                }}
+                              />
+                            </div>
+                          </>
+                        )
+                      })()}
                   </button>
                 ) : null
               }

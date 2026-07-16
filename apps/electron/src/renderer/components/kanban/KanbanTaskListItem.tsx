@@ -30,7 +30,11 @@ function formatStartTime(timestamp: number): string {
   yesterday.setDate(yesterday.getDate() - 1)
   const isYesterday = date.toDateString() === yesterday.toDateString()
 
-  const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const timeStr = date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 
   if (isToday) return `今天 ${timeStr}`
   if (isYesterday) return `昨天 ${timeStr}`
@@ -164,7 +168,9 @@ export function KanbanTaskListItem({
         role="button"
         tabIndex={0}
         onClick={handleClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick() }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') handleClick()
+        }}
         className={cn(
           'group w-full text-left titlebar-no-drag rounded-xl transition-all cursor-pointer',
           'bg-card hover:bg-muted/40 border border-border/60 hover:border-border shadow-sm hover:shadow-md'
@@ -181,7 +187,9 @@ export function KanbanTaskListItem({
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-foreground truncate">{roleDisplayName}</div>
+                  <div className="text-xs font-semibold text-foreground truncate">
+                    {roleDisplayName}
+                  </div>
                   <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
                     {task.modelId && (
                       <span className="font-mono truncate max-w-[80px]" title={task.modelId}>
@@ -204,15 +212,23 @@ export function KanbanTaskListItem({
                 <div className="min-w-0">
                   <div className="text-xs truncate">未分配角色</div>
                   {task.modelId && (
-                    <div className="text-[9px] text-muted-foreground font-mono truncate max-w-[80px]" title={task.modelId}>
+                    <div
+                      className="text-[9px] text-muted-foreground font-mono truncate max-w-[80px]"
+                      title={task.modelId}
+                    >
                       {task.modelId}
                     </div>
                   )}
                 </div>
               </div>
             )}
-            <Badge variant="outline" className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}>
-              <span className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)} />
+            <Badge
+              variant="outline"
+              className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
+            >
+              <span
+                className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
+              />
               {badge.label}
             </Badge>
           </div>
@@ -256,7 +272,11 @@ export function KanbanTaskListItem({
                         <span
                           className={cn(
                             'mt-0.5 size-1.5 shrink-0 rounded-full',
-                            isDone ? 'bg-emerald-500' : isFailed ? 'bg-red-500' : 'bg-muted-foreground/40'
+                            isDone
+                              ? 'bg-emerald-500'
+                              : isFailed
+                                ? 'bg-red-500'
+                                : 'bg-muted-foreground/40'
                           )}
                         />
                       )}
@@ -272,10 +292,19 @@ export function KanbanTaskListItem({
                           components={{
                             p: ({ children }) => <span className="m-0">{children}</span>,
                             a: ({ href, children }) => (
-                              <a href={href} className="underline text-blue-500" target="_blank" rel="noreferrer">{children}</a>
+                              <a
+                                href={href}
+                                className="underline text-blue-500"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {children}
+                              </a>
                             ),
                             code: ({ children }) => (
-                              <code className="text-[9px] px-1 py-0.5 rounded bg-muted font-mono">{children}</code>
+                              <code className="text-[9px] px-1 py-0.5 rounded bg-muted font-mono">
+                                {children}
+                              </code>
                             ),
                             pre: ({ children }) => <span className="m-0 block">{children}</span>,
                           }}

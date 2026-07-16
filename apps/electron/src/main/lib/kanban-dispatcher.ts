@@ -212,12 +212,21 @@ function assignModelForTask(task: KanbanTask, boardId: string): string | undefin
       if (role.channelId) {
         const board = opts.db.getBoard(boardId)
         // 用 task.channelId（继承自 board 或创建时指定）判断看板渠道类型
-        if (board && getter.isKsccChannel(task.channelId) && !getter.isKsccChannel(role.channelId)) {
+        if (
+          board &&
+          getter.isKsccChannel(task.channelId) &&
+          !getter.isKsccChannel(role.channelId)
+        ) {
           console.warn(`[看板] kscc 看板禁止用外部角色 ${role.displayName}，回退到看板渠道`)
         } else {
           // 用角色指定的渠道（合规）
           const roleModels = getter.getModels(role.channelId)
-          const assigned = assignFromPool(roleModels, role.modelPool, boardId, role.maxConcurrentPerModel ?? globalMaxPerModel)
+          const assigned = assignFromPool(
+            roleModels,
+            role.modelPool,
+            boardId,
+            role.maxConcurrentPerModel ?? globalMaxPerModel
+          )
           if (assigned) return assigned
           // 全满，继续 fallback
         }
@@ -226,8 +235,13 @@ function assignModelForTask(task: KanbanTask, boardId: string): string | undefin
       // 2b. 无 role.channelId → 用角色 modelPool（从看板渠道范围内）
       if (role.modelPool && role.modelPool.length > 0) {
         const boardChannelModels = getBoardChannelModels(boardId, task.channelId, getter)
-        const availableModels = role.modelPool.filter(m => boardChannelModels.includes(m))
-        const assigned = assignFromPool(availableModels, role.modelPool, boardId, role.maxConcurrentPerModel ?? globalMaxPerModel)
+        const availableModels = role.modelPool.filter((m) => boardChannelModels.includes(m))
+        const assigned = assignFromPool(
+          availableModels,
+          role.modelPool,
+          boardId,
+          role.maxConcurrentPerModel ?? globalMaxPerModel
+        )
         if (assigned) return assigned
 
         // 全满，检查是否 fallback
@@ -247,7 +261,7 @@ function assignModelForTask(task: KanbanTask, boardId: string): string | undefin
   } else {
     // 外部 API 看板：轮询所有外部渠道
     const externalChannels = getter.getExternalChannels()
-    const allExternalModels = externalChannels.flatMap(ch => getter.getModels(ch))
+    const allExternalModels = externalChannels.flatMap((ch) => getter.getModels(ch))
     return assignFromPool(allExternalModels, undefined, boardId, globalMaxPerModel)
   }
 }
@@ -317,7 +331,7 @@ function getBoardChannelModels(
     return getter.getModels(taskChannelId)
   } else {
     const externalChannels = getter.getExternalChannels()
-    return externalChannels.flatMap(ch => getter.getModels(ch))
+    return externalChannels.flatMap((ch) => getter.getModels(ch))
   }
 }
 

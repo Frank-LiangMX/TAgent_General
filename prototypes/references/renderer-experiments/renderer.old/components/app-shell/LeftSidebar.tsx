@@ -2680,11 +2680,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
   const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
 
-  const sessions = [
-    ...activeSessions,
-    ...fillSessions,
-    ...(currentSession ? [currentSession] : []),
-  ]
+  const sessions = [...activeSessions, ...fillSessions, ...(currentSession ? [currentSession] : [])]
 
   const isDragging = dragProjectId === group.workspace.id
   const isBatchMode = batchSelectWorkspaceId === group.workspace.id

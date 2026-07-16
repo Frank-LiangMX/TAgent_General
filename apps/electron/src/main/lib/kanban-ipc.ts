@@ -194,9 +194,14 @@ export function abortKanbanTask(taskId: string): void {
   }
   try {
     stopRegisteredAgent(task.assigneeSessionId)
-    console.log(`[看板] 中止任务: ${taskId}（${task.title}），已停掉 worker 会话 ${task.assigneeSessionId}`)
+    console.log(
+      `[看板] 中止任务: ${taskId}（${task.title}），已停掉 worker 会话 ${task.assigneeSessionId}`
+    )
   } catch (err) {
-    console.warn(`[看板] stopRegisteredAgent 失败（任务 ${taskId}，worker ${task.assigneeSessionId}）:`, err)
+    console.warn(
+      `[看板] stopRegisteredAgent 失败（任务 ${taskId}，worker ${task.assigneeSessionId}）:`,
+      err
+    )
     // 即使 stop 失败也标 cancelled，避免 worker 僵死后任务卡 running
   }
   kanbanDbService.updateTaskStatus(taskId, {
@@ -221,7 +226,9 @@ export function commentKanbanTask(input: CommentKanbanTaskInput): void {
     throw new Error('commentKanbanTask 需要 taskId / comment / author 三个非空字段')
   }
   kanbanDbService.addTaskComment(taskId, comment, author)
-  console.log(`[看板] 写入 blackboard 评论: task=${taskId}, author=${author}, comment=${comment.slice(0, 80)}...`)
+  console.log(
+    `[看板] 写入 blackboard 评论: task=${taskId}, author=${author}, comment=${comment.slice(0, 80)}...`
+  )
   broadcastKanbanChanged()
 }
 
@@ -510,9 +517,12 @@ export function registerKanbanIpcHandlers(): void {
     abortKanbanTask(taskId)
   })
 
-  ipcMain.handle(KANBAN_IPC_CHANNELS.COMMENT_TASK, async (_event, input: CommentKanbanTaskInput) => {
-    commentKanbanTask(input)
-  })
+  ipcMain.handle(
+    KANBAN_IPC_CHANNELS.COMMENT_TASK,
+    async (_event, input: CommentKanbanTaskInput) => {
+      commentKanbanTask(input)
+    }
+  )
 
   ipcMain.handle(
     KANBAN_IPC_CHANNELS.ATTACH_BOARD_TO_SESSION,

@@ -328,11 +328,12 @@ function parseMdFrontmatter(content: string): { meta: Record<string, string>; bo
 
 /** 中文/英文名转 kebab-case id */
 function toKebabCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z0-9一-鿿-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    || 'imported-role'
+  return (
+    str
+      .toLowerCase()
+      .replace(/[\s_]+/g, '-')
+      .replace(/[^a-z0-9一-鿿-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'imported-role'
+  )
 }

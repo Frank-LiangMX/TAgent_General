@@ -24,13 +24,7 @@ import {
   CodeBlock,
   ImageLightbox,
 } from '@tagent/ui'
-import {
-  ChevronDown,
-  ChevronUp,
-  Paperclip,
-  Download,
-  MessageSquareText,
-} from 'lucide-react'
+import { ChevronDown, ChevronUp, Paperclip, Download, MessageSquareText } from 'lucide-react'
 import * as React from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
@@ -232,7 +226,9 @@ export interface MessageStoppedProps {
 /** "已停止生成" 状态标记 */
 export function MessageStopped({ className }: MessageStoppedProps): React.ReactElement {
   return (
-    <div className={cn('flex items-center gap-1.5 py-2 text-xs text-muted-foreground/50', className)}>
+    <div
+      className={cn('flex items-center gap-1.5 py-2 text-xs text-muted-foreground/50', className)}
+    >
       <MessageSquareText className="size-3.5" />
       <span>已停止生成</span>
     </div>
@@ -295,7 +291,11 @@ export const MessageResponse = React.memo(
 
     const components = React.useMemo(
       () => ({
-        a: ({ href, children: linkChildren, ...linkProps }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+        a: ({
+          href,
+          children: linkChildren,
+          ...linkProps
+        }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
           <Tooltip>
             <TooltipTrigger asChild>
               <a
@@ -334,9 +334,7 @@ export const MessageResponse = React.memo(
     )
 
     const normalizedContent = React.useMemo(() => {
-      return children
-        .replace(/\$\$/g, '$$$$$$')
-        .replace(/\$/g, '$')
+      return children.replace(/\$\$/g, '$$$$$$').replace(/\$/g, '$')
     }, [children])
 
     return (
@@ -414,9 +412,7 @@ export const UserMessageContent = React.memo(
             shouldCollapse && !isExpanded && 'max-h-[6.5em]'
           )}
         >
-          <MessageResponse
-            className="prose-p:my-0.5 prose-headings:my-1.5"
-          >
+          <MessageResponse className="prose-p:my-0.5 prose-headings:my-1.5">
             {children}
           </MessageResponse>
         </div>

@@ -182,7 +182,13 @@ function buildKanbanWorkerContext(task: KanbanWorkerTask, board: KanbanWorkerBoa
   try {
     const allTasks = kanbanDbService.listTasksByBoard(board.id)
     const otherTasks = allTasks.filter((t) => t.id !== task.id)
-    const blackboardEntries: Array<{ taskTitle: string; taskStatus: string; author: string; comment: string; ts: number }> = []
+    const blackboardEntries: Array<{
+      taskTitle: string
+      taskStatus: string
+      author: string
+      comment: string
+      ts: number
+    }> = []
     for (const t of otherTasks) {
       const bb = t.metadata?.blackboard
       if (!Array.isArray(bb) || bb.length === 0) continue
@@ -304,10 +310,14 @@ export async function runKanbanTaskHeadless(
 
   // 1. 创建子会话（标题用任务标题，便于侧栏识别）；mode 强制 general，TA 模式禁止创建看板
   const session = createAgentSession(task.title, task.channelId, task.workspaceId, 'general')
-  updateAgentSessionMeta(session.id, {
-    parentBoardId: boardContext.id,
-    sourceKanbanTaskId: task.id,
-  }, true)
+  updateAgentSessionMeta(
+    session.id,
+    {
+      parentBoardId: boardContext.id,
+      sourceKanbanTaskId: task.id,
+    },
+    true
+  )
 
   // 2. 标记任务进入 running（防 dispatcher 同任务重入；记录 sessionId 便于侧栏关联）
   //    startedAt 由 kanban-db 在 status='running' 时自动写入，这里只作为回调信息透传

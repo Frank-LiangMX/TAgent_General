@@ -24,9 +24,7 @@ import {
   readCompactBoundaryMetadata,
 } from '@tagent/shared'
 import { useAtomValue, useSetAtom } from 'jotai'
-import {
-  Loader2,
-} from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import type {
@@ -685,8 +683,7 @@ export function AssistantTurnRenderer({
     const merged = mergeStreamingContentIntoBlocks(topLevelBlocks, {
       streamingText,
       streamingThinking,
-      parseStreamingText: (text) =>
-        normalizeThinkTagsInContentBlocks(parseThinkTagsFromText(text)),
+      parseStreamingText: (text) => normalizeThinkTagsInContentBlocks(parseThinkTagsFromText(text)),
     })
     topLevelBlocks.length = 0
     topLevelBlocks.push(...merged)

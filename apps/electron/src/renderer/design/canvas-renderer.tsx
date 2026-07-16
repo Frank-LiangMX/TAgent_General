@@ -19,7 +19,10 @@ export interface CanvasRendererProps {
 
 /** 计算文档的总边界（用于 SVG viewBox） */
 function computeDocBounds(doc: CanvasDocument) {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity
   for (const shape of Object.values(doc.shapes)) {
     const b = shape.bounds
     if (b.width === 0 && b.height === 0) continue
@@ -57,14 +60,16 @@ function ShapeNode({
   const isHovered = hovered && !isSelected
 
   const baseProps = {
-    onClick: (e: React.MouseEvent) => { e.stopPropagation(); onClick(shape.id, e) },
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onClick(shape.id, e)
+    },
     onMouseEnter: () => onHover(shape.id),
     onMouseLeave: () => onHover(null),
     style: { cursor: 'pointer' as const },
   }
 
-  const children = shape.children
-    .map((cid) => ({} as CanvasShape))
+  const children = shape.children.map((cid) => ({}) as CanvasShape)
   void children
 
   switch (shape.type) {
@@ -74,8 +79,12 @@ function ShapeNode({
       return (
         <g key={shape.id} {...baseProps}>
           <rect
-            x={x} y={y} width={width} height={height}
-            rx={shape.cornerRadius} ry={shape.cornerRadius}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            rx={shape.cornerRadius}
+            ry={shape.cornerRadius}
             fill={fillColor}
             fillOpacity={fillOpacity}
             stroke={isSelected ? '#3b82f6' : isHovered ? '#94a3b8' : strokeColor}
@@ -84,7 +93,8 @@ function ShapeNode({
           />
           {shape.text && (
             <text
-              x={x + 12} y={y + (shape.fontSize ?? 14) + 4}
+              x={x + 12}
+              y={y + (shape.fontSize ?? 14) + 4}
               fontSize={shape.fontSize ?? 14}
               fontFamily={shape.fontFamily ?? 'system-ui'}
               fontWeight={shape.fontWeight ?? 400}
@@ -100,8 +110,10 @@ function ShapeNode({
       return (
         <g key={shape.id} {...baseProps}>
           <ellipse
-            cx={x + width / 2} cy={y + height / 2}
-            rx={width / 2} ry={height / 2}
+            cx={x + width / 2}
+            cy={y + height / 2}
+            rx={width / 2}
+            ry={height / 2}
             fill={fillColor}
             fillOpacity={fillOpacity}
             stroke={isSelected ? '#3b82f6' : isHovered ? '#94a3b8' : strokeColor}
@@ -115,7 +127,8 @@ function ShapeNode({
       return (
         <g key={shape.id} {...baseProps}>
           <text
-            x={x} y={y + (shape.fontSize ?? 14)}
+            x={x}
+            y={y + (shape.fontSize ?? 14)}
             fontSize={shape.fontSize ?? 14}
             fontFamily={shape.fontFamily ?? 'system-ui'}
             fontWeight={shape.fontWeight ?? 400}
@@ -131,14 +144,20 @@ function ShapeNode({
         <g key={shape.id} {...baseProps}>
           <image
             href={shape.imageSrc}
-            x={x} y={y} width={width} height={height}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
             preserveAspectRatio="xMidYMid slice"
           />
         </g>
       ) : (
         <g key={shape.id} {...baseProps}>
           <rect
-            x={x} y={y} width={width} height={height}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
             fill="#e2e8f0"
             stroke="#94a3b8"
             strokeWidth={1}
@@ -154,8 +173,10 @@ function ShapeNode({
       return (
         <line
           key={shape.id}
-          x1={x} y1={y}
-          x2={x + width} y2={y + height}
+          x1={x}
+          y1={y}
+          x2={x + width}
+          y2={y + height}
           stroke={strokeColor || '#1a1a1a'}
           strokeWidth={strokeWidth || 2}
           {...baseProps}
@@ -166,8 +187,10 @@ function ShapeNode({
       return (
         <g key={shape.id} {...baseProps}>
           <line
-            x1={x} y1={y}
-            x2={x + width} y2={y + height}
+            x1={x}
+            y1={y}
+            x2={x + width}
+            y2={y + height}
             stroke={strokeColor || '#1a1a1a'}
             strokeWidth={strokeWidth || 2}
             markerEnd="url(#arrowhead)"
@@ -193,10 +216,17 @@ export function CanvasRenderer({
 
   if (!hasContent) {
     return (
-      <div className={className ?? ''} style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100%', color: '#94a3b8', fontSize: 14,
-      }}>
+      <div
+        className={className ?? ''}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          color: '#94a3b8',
+          fontSize: 14,
+        }}
+      >
         等待 agent 生成设计
       </div>
     )

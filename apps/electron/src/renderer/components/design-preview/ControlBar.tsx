@@ -11,13 +11,7 @@
  */
 
 import { useAtom, useSetAtom } from 'jotai'
-import {
-  Maximize2,
-  Minus,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+import { Maximize2, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -29,12 +23,7 @@ import {
   setDesignZoomAtom,
 } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@tagent/ui'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 
 /** 缩放档位 */
 const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
@@ -99,7 +88,7 @@ export function ControlBar({ hasContent, className }: ControlBarProps): React.Re
       <div
         className={cn(
           'flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/40 bg-background/60 px-2.5 py-1.5 backdrop-blur',
-          className,
+          className
         )}
       >
         <div className="flex items-center gap-0.5">
@@ -177,10 +166,7 @@ export function ControlBar({ hasContent, className }: ControlBarProps): React.Re
 }
 
 /** 简单版工具栏（用于未来嵌入更紧凑场景） */
-export function ControlBarCompact({
-  hasContent,
-  className,
-}: ControlBarProps): React.ReactElement {
+export function ControlBarCompact({ hasContent, className }: ControlBarProps): React.ReactElement {
   const [device] = useAtom(designDeviceAtom)
   const setDevice = useSetAtom(setDesignDeviceAtom)
   const refresh = useSetAtom(refreshDesignCanvasAtom)
@@ -193,7 +179,7 @@ export function ControlBarCompact({
           onClick={() => setDevice('mobile')}
           className={cn(
             'rounded px-2 py-1 text-xs',
-            device === 'mobile' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+            device === 'mobile' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
           )}
         >
           M
@@ -203,7 +189,7 @@ export function ControlBarCompact({
           onClick={() => setDevice('tablet')}
           className={cn(
             'rounded px-2 py-1 text-xs',
-            device === 'tablet' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+            device === 'tablet' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
           )}
         >
           T
@@ -213,7 +199,7 @@ export function ControlBarCompact({
           onClick={() => setDevice('desktop')}
           className={cn(
             'rounded px-2 py-1 text-xs',
-            device === 'desktop' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+            device === 'desktop' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
           )}
         >
           D

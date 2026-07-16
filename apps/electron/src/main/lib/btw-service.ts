@@ -1,15 +1,15 @@
 /**
- * Btw Service - ²àÃæÌáÎÊ·þÎñ
+ * Btw Service - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê·ï¿½ï¿½ï¿½
  *
- * ¶ÔÍâÈÔÈ»±£³Ö BTW µÄÇáÁ¿ IPC Ð­Òé£º
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½ BTW ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IPC Ð­ï¿½é£º
  * - `text`
  * - `complete`
  * - `error`
  *
- * µ«µ×²ã²»ÔÙÖ±Á¬ provider SSE£¬¶øÊÇ¸´ÓÃ Agent runtime£º
- * - ÓÐÀ´Ô´»á»°Ê±ÓÅÏÈ fork ÕæÕýµÄ Agent »á»°£¬¼Ì³Ð Claude Code SDK / kscc ÄÜÁ¦
- * - ÎÞÀ´Ô´»á»°Ê±ÍË»¯ÎªÁÙÊ± Agent »á»°
- * - Ö»ÇÅ½Ó´¿ÎÄ±¾Êä³ö£¬²»Í¸´«¹¤¾ßµ÷ÓÃ¡¢Ë¼¿¼¹ý³ÌµÈÖÐ¼äÊÂ¼þ
+ * ï¿½ï¿½ï¿½×²ã²»ï¿½ï¿½Ö±ï¿½ï¿½ provider SSEï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ Agent runtimeï¿½ï¿½
+ * - ï¿½ï¿½ï¿½ï¿½Ô´ï¿½á»°Ê±ï¿½ï¿½ï¿½ï¿½ fork ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Agent ï¿½á»°ï¿½ï¿½ï¿½Ì³ï¿½ Claude Code SDK / kscc ï¿½ï¿½ï¿½ï¿½
+ * - ï¿½ï¿½ï¿½ï¿½Ô´ï¿½á»°Ê±ï¿½Ë»ï¿½Îªï¿½ï¿½Ê± Agent ï¿½á»°
+ * - Ö»ï¿½Å½Ó´ï¿½ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½ï¿½Ã¡ï¿½Ë¼ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½Ð¼ï¿½ï¿½Â¼ï¿½
  */
 
 import { BTW_IPC_CHANNELS } from '@tagent/shared'
@@ -28,7 +28,7 @@ import {
   stopAgent,
 } from './agent-service'
 
-/** µ±Ç°»îÔ¾µÄ BTW ÔËÐÐÌ¬ */
+/** ï¿½ï¿½Ç°ï¿½ï¿½Ô¾ï¿½ï¿½ BTW ï¿½ï¿½ï¿½ï¿½Ì¬ */
 interface ActiveBtwRun {
   cancelled: boolean
   forkSessionId: string
@@ -36,11 +36,10 @@ interface ActiveBtwRun {
   unsubscribe: () => void
 }
 
-/** µ±Ç°»îÔ¾ BTW */
+/** ï¿½ï¿½Ç°ï¿½ï¿½Ô¾ BTW */
 let activeBtwRun: ActiveBtwRun | null = null
 
-
-// ===== SDKMessage -> ChatMessage ×ª»»Æ÷£¨±£Áô¸ø ask-service ¸´ÓÃ£© =====
+// ===== SDKMessage -> ChatMessage ×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ask-service ï¿½ï¿½ï¿½Ã£ï¿½ =====
 
 interface ContentBlockShape {
   type?: string
@@ -67,7 +66,7 @@ function extractTextBlocks(content: unknown): string {
     } else if (b.type === 'thinking' && typeof b.thinking === 'string') {
       parts.push(`[thinking: ${b.thinking}]`)
     } else if (b.type === 'tool_use' && typeof b.name === 'string') {
-      parts.push(`[µ÷ÓÃ¹¤¾ß ${b.name}]`)
+      parts.push(`[ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½ ${b.name}]`)
     }
   }
   return parts.join('\n')
@@ -87,7 +86,7 @@ function extractUserText(content: unknown): string {
 }
 
 /**
- * °ÑÖ÷»á»° SDKMessage[] ×ª»»³É ChatMessage[]£¬×÷Îª btw ÇëÇóµÄ history¡£
+ * ï¿½ï¿½ï¿½ï¿½ï¿½á»° SDKMessage[] ×ªï¿½ï¿½ï¿½ï¿½ ChatMessage[]ï¿½ï¿½ï¿½ï¿½Îª btw ï¿½ï¿½ï¿½ï¿½ï¿½ historyï¿½ï¿½
  */
 export function convertSDKMessagesToChatHistory(
   sdkMessages: SDKMessage[],
@@ -144,7 +143,7 @@ export function convertSDKMessagesToChatHistory(
 function getBtwRenderer() {
   const webContents = getMainRendererWebContents()
   if (!webContents || webContents.isDestroyed()) {
-    throw new Error('Ö÷´°¿ÚÒÑ¹Ø±Õ')
+    throw new Error('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹Ø±ï¿½')
   }
   return webContents
 }
@@ -176,7 +175,7 @@ async function createBtwSession(input: {
   if (sourceSessionId) {
     const sourceMeta = getAgentSessionMeta(sourceSessionId)
     if (!sourceMeta) {
-      throw new Error(`À´Ô´»á»°²»´æÔÚ: ${sourceSessionId}`)
+      throw new Error(`ï¿½ï¿½Ô´ï¿½á»°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ${sourceSessionId}`)
     }
 
     const forked = await forkAgentSession({ sessionId: sourceSessionId })
@@ -215,16 +214,16 @@ function bridgeAgentPayloadToBtw(
 }
 
 /**
- * ·¢ËÍ²àÃæÌáÎÊ
+ * ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 export async function sendBtwMessage(input: {
   channelId: string
   modelId: string
   message: string
   messageId: string
-  /** ¸¸»á»° ID£¨ÓÃÓÚ fork Ö÷»á»°ÉÏÏÂÎÄ£© */
+  /** ï¿½ï¿½ï¿½á»° IDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fork ï¿½ï¿½ï¿½á»°ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ */
   sourceSessionId?: string
-  /** ÉÏÏÂÎÄÂÖÊý£¨µ±Ç°½Ó¿Ú±£Áô£¬µ×²ãÒÑ¸ÄÎª fork£¬²»ÔÙÖ±½ÓÏû·Ñ£© */
+  /** ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ó¿Ú±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½ï¿½Ñ¸ï¿½Îª forkï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ñ£ï¿½ */
   contextTurns?: number
 }): Promise<void> {
   const { channelId, modelId, message, messageId, sourceSessionId } = input
@@ -233,7 +232,7 @@ export async function sendBtwMessage(input: {
     cancelBtw()
   }
 
-  // ÏÈÈ·ÈÏÖ÷´°¿Ú»¹»î×Å£¬±ÜÃâ´´½¨³ö¹Â¶ù fork »á»°
+  // ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½â´´ï¿½ï¿½ï¿½ï¿½ï¿½Â¶ï¿½ fork ï¿½á»°
   getBtwRenderer()
 
   let run: ActiveBtwRun | null = null
@@ -243,7 +242,7 @@ export async function sendBtwMessage(input: {
     const sessionMeta = getAgentSessionMeta(forkSessionId)
 
     if (!sessionMeta) {
-      throw new Error(`BTW fork »á»°²»´æÔÚ: ${forkSessionId}`)
+      throw new Error(`BTW fork ï¿½á»°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ${forkSessionId}`)
     }
 
     const unsubscribe = agentEventBus.on((sessionId, payload) => {
@@ -271,7 +270,7 @@ export async function sendBtwMessage(input: {
     await runAgentHeadless(agentInput, {
       source: 'bridge',
       onTitleUpdated: () => {
-        // BTW Ãæ°å²»¹ØÐÄ fork »á»°±êÌâ
+        // BTW ï¿½ï¿½å²»ï¿½ï¿½ï¿½ï¿½ fork ï¿½á»°ï¿½ï¿½ï¿½ï¿½
       },
       onError: (error) => {
         if (!run || run.cancelled) return
@@ -297,7 +296,7 @@ export async function sendBtwMessage(input: {
     emitBtwEvent({
       type: 'error',
       messageId,
-      error: error instanceof Error ? error.message : 'Î´Öª´íÎó',
+      error: error instanceof Error ? error.message : 'Î´Öªï¿½ï¿½ï¿½ï¿½',
     })
     throw error
   } finally {
@@ -306,7 +305,7 @@ export async function sendBtwMessage(input: {
 }
 
 /**
- * È¡Ïû²àÃæÌáÎÊ
+ * È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 export function cancelBtw(): void {
   if (!activeBtwRun) return
@@ -315,4 +314,3 @@ export function cancelBtw(): void {
   stopAgent(activeBtwRun.forkSessionId)
   cleanupActiveRun(activeBtwRun)
 }
-

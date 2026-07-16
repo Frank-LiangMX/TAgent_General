@@ -54,7 +54,10 @@ export function buildCompletedToolResultIds(turnMessages: SDKMessage[]): Set<str
   return ids
 }
 
-function getTrailingBlockRunStart(blocks: SDKContentBlock[], blockType: 'text' | 'thinking'): number {
+function getTrailingBlockRunStart(
+  blocks: SDKContentBlock[],
+  blockType: 'text' | 'thinking'
+): number {
   let index = blocks.length
   while (index > 0 && blocks[index - 1]?.type === blockType) {
     index -= 1
@@ -89,10 +92,7 @@ export function mergeStreamingContentIntoBlocks(
     const trailingTextStart = getTrailingBlockRunStart(result, 'text')
     const trailingThinkingStart = getTrailingBlockRunStart(result, 'thinking')
 
-    if (
-      trailingThinkingStart < result.length &&
-      trailingThinkingStart >= trailingTextStart
-    ) {
+    if (trailingThinkingStart < result.length && trailingThinkingStart >= trailingTextStart) {
       result.splice(trailingThinkingStart, result.length - trailingThinkingStart, {
         type: 'thinking',
         thinking: trimmed,
@@ -416,22 +416,22 @@ export function ProcessBlockGroup({
             opacity: expanded ? 1 : 0,
           }}
         >
-            <div className="agent-process-stack min-h-0 overflow-hidden space-y-2">
-              {children}
-              <button
-                type="button"
-                className="flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors"
-                onClick={() => {
-                  userToggledRef.current = true
-                  clearAutoCollapseTimers()
-                  setCollapseCountdown(null)
-                  setExpanded(false)
-                }}
-              >
-                <SessionChevronRight className="size-3 -rotate-90" />
-                <span>收起</span>
-              </button>
-            </div>
+          <div className="agent-process-stack min-h-0 overflow-hidden space-y-2">
+            {children}
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/70 transition-colors"
+              onClick={() => {
+                userToggledRef.current = true
+                clearAutoCollapseTimers()
+                setCollapseCountdown(null)
+                setExpanded(false)
+              }}
+            >
+              <SessionChevronRight className="size-3 -rotate-90" />
+              <span>收起</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

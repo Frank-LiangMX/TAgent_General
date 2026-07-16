@@ -25,10 +25,7 @@ import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primi
 
 import './appearance-overrides.css'
 
-import {
-  advancedMaterialModeAtom,
-  updateAdvancedMaterialMode,
-} from '@/atoms/advanced-material'
+import { advancedMaterialModeAtom, updateAdvancedMaterialMode } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
 import { tagentBrandAtom, updateTAgentBrand } from '@/atoms/tagent-brand'
@@ -88,17 +85,7 @@ interface SpecialStyle {
   variant: 'light' | 'dark'
   tag: string
   previewClass: string
-  deco:
-    | 'cloud'
-    | 'wave'
-    | 'leaf'
-    | 'star'
-    | 'moon'
-    | 'gem'
-    | 'sun'
-    | 'flame'
-    | 'flower'
-    | 'orb'
+  deco: 'cloud' | 'wave' | 'leaf' | 'star' | 'moon' | 'gem' | 'sun' | 'flame' | 'flower' | 'orb'
 }
 
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
@@ -336,18 +323,13 @@ export function AppearanceSettings(): React.ReactElement {
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">高级材质</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {advancedMaterialMode === 'glass' &&
-                  '当前：高透玻璃，强调通透、折射和悬浮感'}
-                {advancedMaterialMode === 'frosted' &&
-                  '当前：磨砂玻璃，保留层次感，但更克制、更稳'}
+                {advancedMaterialMode === 'glass' && '当前：高透玻璃，强调通透、折射和悬浮感'}
+                {advancedMaterialMode === 'frosted' && '当前：磨砂玻璃，保留层次感，但更克制、更稳'}
                 {advancedMaterialMode === 'neumorph' &&
                   '当前：轻拟态，整体转为柔和起伏的实体材质语言'}
               </div>
             </div>
-            <MaterialPreview
-              mode={advancedMaterialMode}
-              onToggle={handleAdvancedMaterialChange}
-            />
+            <MaterialPreview mode={advancedMaterialMode} onToggle={handleAdvancedMaterialChange} />
           </div>
 
           <SettingsSegmentedControl

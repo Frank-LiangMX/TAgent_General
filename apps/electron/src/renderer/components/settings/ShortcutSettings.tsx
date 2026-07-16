@@ -161,9 +161,7 @@ function RecordingModal({
               <span className="ml-1.5">与「{conflict}」冲突</span>
             </div>
           ) : pendingKeys ? (
-            <span className="font-mono text-sm md-text">
-              {getAcceleratorDisplay(pendingKeys)}
-            </span>
+            <span className="font-mono text-sm md-text">{getAcceleratorDisplay(pendingKeys)}</span>
           ) : (
             <span className="text-xs md-text-faint">按下快捷键组合…</span>
           )}
@@ -326,10 +324,7 @@ export function ShortcutSettings(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      <SettingsSection
-        title="发送消息"
-        description="选择在输入框中发送消息的快捷键"
-      >
+      <SettingsSection title="发送消息" description="选择在输入框中发送消息的快捷键">
         <SettingsCard>
           <SettingsSegmentedControl
             label="发送快捷键"
@@ -360,10 +355,11 @@ export function ShortcutSettings(): React.ReactElement {
                 const currentAccel = getActiveAccelerator(def.id)
                 const platformOverride = overrides[def.id]?.[isMac ? 'mac' : 'win']
                 const isDisabled = platformOverride === null
-                const display =
-                  def.readonly
-                    ? (isMac ? def.defaultMac : def.defaultWin)
-                    : currentAccel
+                const display = def.readonly
+                  ? isMac
+                    ? def.defaultMac
+                    : def.defaultWin
+                  : currentAccel
 
                 return (
                   <SettingsRow

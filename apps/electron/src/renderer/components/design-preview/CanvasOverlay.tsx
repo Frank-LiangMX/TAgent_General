@@ -61,7 +61,12 @@ export function CanvasOverlay({
     const y = e.clientY - rect.top
 
     if (activeTool === 'pan') {
-      const state: DragState = { startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY }
+      const state: DragState = {
+        startX: e.clientX,
+        startY: e.clientY,
+        currentX: e.clientX,
+        currentY: e.clientY,
+      }
       dragRef.current = state
       setDisplayDrag(state)
       return

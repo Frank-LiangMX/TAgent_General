@@ -79,19 +79,13 @@ export function registerAgentRoleIpcHandlers(): void {
     return importRoleFromMd(result.filePaths[0]!)
   })
 
-  ipcMain.handle(
-    AGENT_ROLE_IPC_CHANNELS.FIND_SIMILAR,
-    async (_event, displayName: string) => {
-      return findSimilarRoles(displayName)
-    }
-  )
+  ipcMain.handle(AGENT_ROLE_IPC_CHANNELS.FIND_SIMILAR, async (_event, displayName: string) => {
+    return findSimilarRoles(displayName)
+  })
 
-  ipcMain.handle(
-    AGENT_ROLE_IPC_CHANNELS.DELETE_BATCH,
-    async (_event, roleIds: string[]) => {
-      return deleteRoles(roleIds)
-    }
-  )
+  ipcMain.handle(AGENT_ROLE_IPC_CHANNELS.DELETE_BATCH, async (_event, roleIds: string[]) => {
+    return deleteRoles(roleIds)
+  })
 
   console.log('[角色库] IPC 处理器已注册')
 }

@@ -63,21 +63,16 @@ export async function injectWpsCliMcpServer(
           }
         }
       ),
-      sdk.tool(
-        'wps_list_calendars',
-        'List all calendars for the current user.',
-        {},
-        async () => {
-          try {
-            const result = await wpsCliTools.wpsListCalendars()
-            return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] }
-          } catch (error) {
-            const msg = error instanceof Error ? error.message : String(error)
-            console.error('[WPS CLI MCP] wps_list_calendars failed:', error)
-            return { content: [{ type: 'text' as const, text: `Error: ${msg}` }], isError: true }
-          }
+      sdk.tool('wps_list_calendars', 'List all calendars for the current user.', {}, async () => {
+        try {
+          const result = await wpsCliTools.wpsListCalendars()
+          return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] }
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error)
+          console.error('[WPS CLI MCP] wps_list_calendars failed:', error)
+          return { content: [{ type: 'text' as const, text: `Error: ${msg}` }], isError: true }
         }
-      ),
+      }),
       sdk.tool(
         'wps_create_event',
         'Create a calendar event.',
@@ -174,7 +169,11 @@ export async function injectWpsCliMcpServer(
           endpoint: z.string().describe('API endpoint path, e.g. /v7/airpage/create'),
           body: z.any().optional().describe('Request body (for POST/PUT/PATCH)'),
         },
-        async (args: { method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; endpoint: string; body?: any }) => {
+        async (args: {
+          method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+          endpoint: string
+          body?: any
+        }) => {
           try {
             const result = await wpsCliTools.wpsHttpRequest(args)
             return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }

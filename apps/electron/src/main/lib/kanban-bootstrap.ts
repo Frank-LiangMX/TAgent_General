@@ -35,14 +35,23 @@ const channelModelsGetter: KanbanChannelModelsGetter = {
   getModels: (channelId: string): string[] => {
     const channel = getChannelById(channelId)
     if (!channel) return []
-    const enabledModels = channel.models.filter((m: { enabled: boolean; id: string }) => m.enabled).map((m: { id: string }) => m.id)
+    const enabledModels = channel.models
+      .filter((m: { enabled: boolean; id: string }) => m.enabled)
+      .map((m: { id: string }) => m.id)
     if (enabledModels.length === 0) return []
 
     // 优先免费渠道：kscc 的模型按能力优先级排序
     const settings = getSettings()
     const preferFree = settings.agentBehavior?.preferFreeChannel ?? true
     if (preferFree && channel.provider === 'kscc-internal') {
-      const priority = ['glm-5.1', 'glm-5.2', 'kimi-k2.5', 'kimi-k2.6', 'mimo-v2.5', 'mimo-v2.5-pro']
+      const priority = [
+        'glm-5.1',
+        'glm-5.2',
+        'kimi-k2.5',
+        'kimi-k2.6',
+        'mimo-v2.5',
+        'mimo-v2.5-pro',
+      ]
       return [...enabledModels].sort((a, b) => {
         const ai = priority.indexOf(a)
         const bi = priority.indexOf(b)
@@ -68,10 +77,8 @@ const channelModelsGetter: KanbanChannelModelsGetter = {
    */
   getExternalChannels: (): string[] => {
     const channels = listChannels()
-    return channels
-      .filter(ch => ch.enabled && ch.provider !== 'kscc-internal')
-      .map(ch => ch.id)
-  }
+    return channels.filter((ch) => ch.enabled && ch.provider !== 'kscc-internal').map((ch) => ch.id)
+  },
 }
 
 /**
@@ -82,7 +89,7 @@ const channelModelsGetter: KanbanChannelModelsGetter = {
 function findModelChannelById(modelId: string): string | undefined {
   const channels = listChannels()
   for (const ch of channels) {
-    if (ch.models?.some(m => m.id === modelId && m.enabled)) {
+    if (ch.models?.some((m) => m.id === modelId && m.enabled)) {
       return ch.id
     }
   }

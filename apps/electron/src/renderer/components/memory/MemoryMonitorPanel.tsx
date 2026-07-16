@@ -28,7 +28,12 @@ import { Button } from '@tagent/ui'
 import { Panel } from '@/components/app-shell/Panel'
 import { RailInspectorHeader } from '@/components/app-shell/RailInspectorHeader'
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { memorySelectedLayerAtom, memorySelectedSessionAtom, memoryViewModeAtom, type MemoryViewMode } from '@/atoms/memory-atoms'
+import {
+  memorySelectedLayerAtom,
+  memorySelectedSessionAtom,
+  memoryViewModeAtom,
+  type MemoryViewMode,
+} from '@/atoms/memory-atoms'
 import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 import { StageQueueCard } from './StageQueueCard'
@@ -198,18 +203,12 @@ export function MemoryMonitorPanel(): React.ReactElement {
     )
   }
 
-  const totalMemories = stats
-    ? LAYERS.reduce((sum, l) => sum + l.getCount(stats), 0)
-    : 0
+  const totalMemories = stats ? LAYERS.reduce((sum, l) => sum + l.getCount(stats), 0) : 0
 
   return (
     <Panel variant="grow" className="content-glass">
       {/* 顶部 */}
-      <RailInspectorHeader
-        crumbs={[{ label: '记忆' }]}
-        title="记忆"
-        className={headerClassName}
-      />
+      <RailInspectorHeader crumbs={[{ label: '记忆' }]} title="记忆" className={headerClassName} />
 
       {/* 概览栏 — Minimalism: 大留白 + 极简 */}
       <div className="flex items-center justify-between border-b border-border/15 px-6 py-4">
@@ -255,7 +254,10 @@ export function MemoryMonitorPanel(): React.ReactElement {
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground/70 hover:text-foreground'
               )}
-              onClick={() => { setViewMode('layers'); setAtomViewMode('layers') }}
+              onClick={() => {
+                setViewMode('layers')
+                setAtomViewMode('layers')
+              }}
             >
               层
             </button>
@@ -266,7 +268,10 @@ export function MemoryMonitorPanel(): React.ReactElement {
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground/70 hover:text-foreground'
               )}
-              onClick={() => { setViewMode('graph'); setAtomViewMode('graph') }}
+              onClick={() => {
+                setViewMode('graph')
+                setAtomViewMode('graph')
+              }}
             >
               图
             </button>
@@ -322,9 +327,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
                     'hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_2px_4px_rgba(0,0,0,0.04)]',
                     'dark:shadow-[0_1px_3px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.3)]',
                     'dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.3),0_2px_4px_rgba(0,0,0,0.2)]',
-                    isSelected
-                      ? 'ring-1 ring-primary/20 shadow-[0_4px_12px_rgba(0,0,0,0.08)]'
-                      : ''
+                    isSelected ? 'ring-1 ring-primary/20 shadow-[0_4px_12px_rgba(0,0,0,0.08)]' : ''
                   )}
                 >
                   {/* 图标 */}
@@ -350,9 +353,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
                       {count > 0 ? (
                         <>
                           <span className="font-medium text-foreground/80">{count}</span>
-                          <span className="ml-0.5">
-                            {layer.key === 'l4' ? '个会话' : '条'}
-                          </span>
+                          <span className="ml-0.5">{layer.key === 'l4' ? '个会话' : '条'}</span>
                         </>
                       ) : (
                         <span className="text-muted-foreground/40">空</span>
@@ -427,9 +428,7 @@ function LayerDetail({
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground/60">
-            共 {stats.l4.sessions} 个会话
-          </span>
+          <span className="text-muted-foreground/60">共 {stats.l4.sessions} 个会话</span>
           {stats.l4.oldestDate && stats.l4.newestDate && (
             <span className="text-muted-foreground/40">
               {new Date(stats.l4.oldestDate).toLocaleDateString('zh-CN')} →{' '}
@@ -445,13 +444,15 @@ function LayerDetail({
   }
 
   // 其他层详情
-  const layerInfo = stats[layer.key] as { exists: boolean; lines: number; lastUpdated: number | null }
+  const layerInfo = stats[layer.key] as {
+    exists: boolean
+    lines: number
+    lastUpdated: number | null
+  }
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-muted-foreground/60">
-          {layerInfo.lines} 条记录
-        </span>
+        <span className="text-muted-foreground/60">{layerInfo.lines} 条记录</span>
         <span className="text-muted-foreground/40">
           更新 {formatRelativeTime(layerInfo.lastUpdated)}
         </span>

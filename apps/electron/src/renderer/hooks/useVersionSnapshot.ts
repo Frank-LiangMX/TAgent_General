@@ -107,7 +107,7 @@ export function usePromoteSnapshotToCurrent(): (id: string) => boolean {
       setActive(null)
       return true
     },
-    [snapshots, setHtml, setActive],
+    [snapshots, setHtml, setActive]
   )
 }
 

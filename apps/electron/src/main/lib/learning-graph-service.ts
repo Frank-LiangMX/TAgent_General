@@ -165,7 +165,10 @@ function buildMemoryNodes(mode: MemoryMode): GraphNode[] {
           kind: 'memory',
           shape: 'diamond',
           source,
-          title: title.replace(/<!--.*?-->/g, '').replace(/^-\s*\[\d{4}-\d{2}-\d{2}\]\s*/, '').trim(),
+          title: title
+            .replace(/<!--.*?-->/g, '')
+            .replace(/^-\s*\[\d{4}-\d{2}-\d{2}\]\s*/, '')
+            .trim(),
           content: nodeContent,
           timestamp,
         })
