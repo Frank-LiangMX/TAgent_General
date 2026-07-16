@@ -1,29 +1,22 @@
-# v1.6.0
+# v1.6.1
 
-画布沉浸式设计 + 材质系统全面重构 + CI 稳定性修复。
+看板数字员工体验 + Agent 输入区稳定性 + 流式/统计补丁。
 
 ## ✨ 新功能
-- Design Canvas 画布 v2 — 沉浸全屏 + Minimap + 分层/点选/指着说话 + 版本快照
-- 外部 HTML 导入到画布
-- M3 Surface 角色体系 — 三材质正交架构（frosted/glass/soft）
-- Glass 材质液态效果 — Switch + Sticky + Input 组件
-- Soft Glass 表面重构 + data-material 架构
-- 自动化意图检测（M4）
-- 记忆系统 Idle Consolidation Pipeline
+- 看板默认角色补齐、角色工号与 worker Skills 挂载
+- 数字员工轻量拟人化 — 点将话术 + 跨材质工牌卡（人态文案）
+- 右栏班组墙 — 伴生面板看员工队列与任务摘要
+- 角色统计体系 — 上岗/工时/日周月窗口 + 角色档案弹窗
+- 流式输出设置（可开关）
+- 单次 Agent 通话统计展示
 
 ## 🐛 修复
-- 用户气泡融入主题色 — 6 主题 × light/dark 自动生效
-- Context 分项进度条去色块重复
-- 模型选择器列表选中态补全
-- 设置页浮岛/卡片主题色融入
-- Agent Session Meta 持久化修复
-- Memory Reflection 可靠性修复
-- TypeScript 30+ 处类型错误清零（shared/ui/electron 三包 0 error）
-- ESLint 0 error — prototype placement 脚本 + lint 规则修复
-- electron-builder theme-icons EEXIST 打包冲突
+- 移除 `getContextUsage` 调用链，修复 GLM 等渠道异常高频调用
+- 运行中计时胶囊与会话内容左对齐（执行过程 shell 展开时不再偏移）
+- 任务进度条仅在当前流式回合有进行中任务时显示，结束后立即隐藏
+- 输入框不再常驻附加目录 chip（关闭即卸载干扰输入）
+- 打包后任务栏图标跟随主题
 
 ## 🧹 清理
-- 设置页浮岛布局重构，统一设计语言
-- 前端原型统一迁入 prototypes/ 目录
-- @tagent/ui 组件库迁移 — 颜色 token 集中化
-- CopyButton / AttachmentPreviewItem 迁入 @tagent/ui
+- SessionTeamTab 降级，班组主路径改到右栏
+- release 脚本增加 preflight（版本号 / notes / typecheck / eslint）
