@@ -23,7 +23,12 @@ import {
   designActiveToolAtom,
   type DesignCanvasTool,
 } from '@/atoms/design-preview-atoms'
-import { selectedShapeIdsAtom, selectShapeAtom, hoveredShapeIdAtom, clearSelectionAtom } from '@/design/canvas-selection-store'
+import {
+  selectedShapeIdsAtom,
+  selectShapeAtom,
+  hoveredShapeIdAtom,
+  clearSelectionAtom,
+} from '@/design/canvas-selection-store'
 import { currentDocumentAtom } from '@/design/canvas-shape-store'
 import { viewportAtom } from '@/design/canvas-viewport-store'
 import { CanvasRenderer } from '@/design/canvas-renderer'
@@ -104,7 +109,13 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
   const [iframeEl, setIframeEl] = React.useState<HTMLIFrameElement | null>(null)
 
   // ── 拖拽平移（screen 坐标：iframe 内中键与父窗口一致）──
-  const dragRef = React.useRef<{ sx: number; sy: number; px: number; py: number; moved: boolean } | null>(null)
+  const dragRef = React.useRef<{
+    sx: number
+    sy: number
+    px: number
+    py: number
+    moved: boolean
+  } | null>(null)
   const viewportRef = React.useRef(viewport)
   viewportRef.current = viewport
 
@@ -123,7 +134,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       d.moved = true
       setViewport((prev) => ({ ...prev, panX: d.px + dx, panY: d.py + dy }))
     },
-    [setViewport],
+    [setViewport]
   )
 
   const endPan = React.useCallback(() => {
@@ -135,7 +146,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       e.preventDefault()
       beginPanAtScreen(e.screenX, e.screenY)
     },
-    [beginPanAtScreen],
+    [beginPanAtScreen]
   )
 
   // ── 临时平移（空格 / 中键）：按住切 pan，松开恢复之前工具 ──
@@ -175,7 +186,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       enterTempPan()
       beginPanAtScreen(screenX, screenY)
     },
-    [beginPanAtScreen, enterTempPan],
+    [beginPanAtScreen, enterTempPan]
   )
 
   const endMiddleTempPan = React.useCallback(() => {
@@ -198,7 +209,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       setIframeEl(iframe)
       attachToIframe(iframe)
     },
-    [attachToIframe],
+    [attachToIframe]
   )
 
   const hasV3Content = Object.keys(doc.shapes).length > 1 // 多于 __root__
@@ -275,7 +286,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
         beginMiddleTempPan(e.screenX, e.screenY)
       }
     },
-    [beginMiddleTempPan],
+    [beginMiddleTempPan]
   )
 
   /** 平移工具 / 临时平移：覆盖层左键拖拽 */
@@ -284,7 +295,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       if (e.button !== 0) return
       beginPan(e)
     },
-    [beginPan],
+    [beginPan]
   )
 
   // 选择模式下点击画布空白区域取消 v2 选中
@@ -294,7 +305,7 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
       if (e.target !== e.currentTarget) return
       setV2SelectedIds([])
     },
-    [activeTool, setV2SelectedIds],
+    [activeTool, setV2SelectedIds]
   )
 
   React.useEffect(() => {
@@ -339,7 +350,10 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
         <div className="flex items-center gap-2 border-b border-border/40 bg-background/60 px-3 py-1.5 backdrop-blur">
           <button
             type="button"
-            className={cn('flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted', layersOpen && 'bg-muted')}
+            className={cn(
+              'flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted',
+              layersOpen && 'bg-muted'
+            )}
             onClick={() => setLayersOpen((v) => !v)}
             disabled={!hasContent}
           >
@@ -351,7 +365,9 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
           </div>
           {selectedIds.length > 0 && (
             <>
-              <div className="ml-2 text-[11px] text-muted-foreground">已选中 {selectedIds.length} 个元素</div>
+              <div className="ml-2 text-[11px] text-muted-foreground">
+                已选中 {selectedIds.length} 个元素
+              </div>
               <button
                 type="button"
                 className="ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"

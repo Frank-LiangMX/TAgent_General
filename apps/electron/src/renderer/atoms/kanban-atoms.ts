@@ -263,13 +263,11 @@ export function useSelectedKanbanBoard(boardId: string | null): {
   // 订阅实时进度日志（TASK_PROGRESS IPC）
   useEffect(() => {
     if (!boardId) return
-    const unsubscribe = window.electronAPI.kanban.onTaskProgress(
-      (payload: TaskProgressPayload) => {
-        // 只更新当前看板下的 task 进度（避免全局无关任务刷日志）
-        const store = getDefaultStore()
-        store.set(taskProgressLogsAtomFamily(payload.taskId), payload.logs)
-      }
-    )
+    const unsubscribe = window.electronAPI.kanban.onTaskProgress((payload: TaskProgressPayload) => {
+      // 只更新当前看板下的 task 进度（避免全局无关任务刷日志）
+      const store = getDefaultStore()
+      store.set(taskProgressLogsAtomFamily(payload.taskId), payload.logs)
+    })
     return unsubscribe
   }, [boardId])
 

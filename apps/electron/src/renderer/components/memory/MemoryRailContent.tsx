@@ -13,7 +13,11 @@ import { Bell, Clock, GitBranch, Layers } from 'lucide-react'
 import * as React from 'react'
 
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { memorySelectedSessionAtom, memoryViewModeAtom, type MemoryViewMode } from '@/atoms/memory-atoms'
+import {
+  memorySelectedSessionAtom,
+  memoryViewModeAtom,
+  type MemoryViewMode,
+} from '@/atoms/memory-atoms'
 import { cn } from '@/lib/utils'
 
 // ===== 类型 =====
@@ -129,7 +133,9 @@ export function MemoryRailContent(): React.ReactElement {
       }
     }
     void load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [mode])
 
   const handleSessionClick = React.useCallback(

@@ -48,9 +48,7 @@ function MobileFrame({
       {/* 顶部刘海 */}
       <div className="absolute left-1/2 top-1 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-zinc-900" />
       {/* 内容区域 */}
-      <div className="h-full w-full overflow-hidden rounded-[28px] bg-white">
-        {children}
-      </div>
+      <div className="h-full w-full overflow-hidden rounded-[28px] bg-white">{children}</div>
       {/* 底部 Home Indicator */}
       <div className="absolute bottom-1 left-1/2 h-1 w-28 -translate-x-1/2 rounded-full bg-zinc-700" />
     </div>
@@ -76,9 +74,7 @@ function TabletFrame({
         height: frameHeight,
       }}
     >
-      <div className="h-full w-full overflow-hidden rounded-[8px] bg-white">
-        {children}
-      </div>
+      <div className="h-full w-full overflow-hidden rounded-[8px] bg-white">{children}</div>
     </div>
   )
 }
@@ -120,11 +116,7 @@ function DesktopFrame({
   )
 }
 
-export function DeviceFrame({
-  device,
-  children,
-  className,
-}: DeviceFrameProps): React.ReactElement {
+export function DeviceFrame({ device, children, className }: DeviceFrameProps): React.ReactElement {
   const size = DEVICE_PRESETS[device]
 
   return (

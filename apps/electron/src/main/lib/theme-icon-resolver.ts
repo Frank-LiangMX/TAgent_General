@@ -53,9 +53,7 @@ export function resolveLogoKey(
   return systemIsDark ? 'default-dark' : 'default-light'
 }
 
-export function getThemeIconCandidatePaths(
-  key: LogoKey
-): Array<{ path: string; exists: boolean }> {
+export function getThemeIconCandidatePaths(key: LogoKey): Array<{ path: string; exists: boolean }> {
   const relativePath = join('theme-icons', `tagent-${key}.png`)
   const candidates = app.isPackaged
     ? [

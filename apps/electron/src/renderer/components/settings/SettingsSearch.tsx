@@ -95,10 +95,7 @@ export function SettingsSearch({ onNavigate, fullWidth }: SettingsSearchProps): 
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'relative',
-        fullWidth ? 'w-full max-w-[280px]' : 'w-[min(100%,280px)]'
-      )}
+      className={cn('relative', fullWidth ? 'w-full max-w-[280px]' : 'w-[min(100%,280px)]')}
     >
       <div className="settings-search-shell">
         <Search className="settings-search-icon" strokeWidth={2} aria-hidden />

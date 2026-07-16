@@ -78,9 +78,7 @@ function generateTokensCss(): string {
   if (themeEntries.length > 0) {
     for (const [themeName, themeColors] of themeEntries) {
       const selector = themeNameToSelector(themeName)
-      const lines = Object.entries(themeColors).map(
-        ([key, value]) => `  --${key}: ${value};`
-      )
+      const lines = Object.entries(themeColors).map(([key, value]) => `  --${key}: ${value};`)
       blocks.push(`${selector} {\n${lines.join('\n')}\n}`)
     }
   }

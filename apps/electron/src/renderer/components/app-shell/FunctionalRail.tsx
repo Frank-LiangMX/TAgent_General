@@ -9,12 +9,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import {
-  Settings,
-  Loader2,
-  Sparkles,
-  PencilRuler,
-} from 'lucide-react'
+import { Settings, Loader2, Sparkles, PencilRuler } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -22,7 +17,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 /** 设计原型自定义 SVG 图标 */
 const IconChat = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <path
+      d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
   </svg>
 )
 
@@ -43,29 +43,54 @@ const IconClock = (props: React.SVGProps<SVGSVGElement>) => (
 
 const IconDraft = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <path
+      d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
     <path d="M13.5 7.5V12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 )
 
 const IconMemory = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2Z" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path
+      d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
     <circle cx="12" cy="12" r="1.5" fill="currentColor" />
   </svg>
 )
 
 const IconAssets = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <path
+      d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
   </svg>
 )
 
 const IconReview = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M8 12l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M8 12l3 3 5-6"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 )
 
@@ -74,7 +99,12 @@ const IconPipeline = (props: React.SVGProps<SVGSVGElement>) => (
     <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.5" />
     <circle cx="18" cy="6" r="2" stroke="currentColor" strokeWidth="1.5" />
     <circle cx="12" cy="18" r="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M6 8v4l6 4M18 8v4l-6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path
+      d="M6 8v4l6 4M18 8v4l-6 4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
   </svg>
 )
 

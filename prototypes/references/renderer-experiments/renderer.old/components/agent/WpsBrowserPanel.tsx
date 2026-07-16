@@ -79,9 +79,7 @@ export function BrowserPanel({
 }: BrowserPanelProps): ReactElement {
   const webviewRef = useRef<DevWebviewTag | null>(null)
   const [activeUrl, setActiveUrl] = useState<string | null>(initialUrl ?? null)
-  const [draftUrl, setDraftUrl] = useState(() =>
-    initialUrl ? formatAddressInput(initialUrl) : ''
-  )
+  const [draftUrl, setDraftUrl] = useState(() => (initialUrl ? formatAddressInput(initialUrl) : ''))
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pageTitle, setPageTitle] = useState('')
@@ -272,11 +270,7 @@ export function BrowserPanel({
               onClick={handleReload}
               disabled={!activeUrl}
             >
-              {loading ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <RefreshCw size={14} />
-              )}
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">刷新</TooltipContent>
@@ -320,12 +314,7 @@ export function BrowserPanel({
         {onCollapse && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7"
-                onClick={onCollapse}
-              >
+              <Button variant="ghost" size="icon" className="size-7" onClick={onCollapse}>
                 <X size={14} />
               </Button>
             </TooltipTrigger>

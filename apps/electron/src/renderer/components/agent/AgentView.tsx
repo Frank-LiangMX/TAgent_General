@@ -33,6 +33,7 @@ import {
   Eye,
   Bot,
   MessageSquareText,
+  Users,
 } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
@@ -46,8 +47,6 @@ import type {
   SDKMessage,
 } from '@tagent/shared'
 import {
-  SegmentedTabs,
-  SegmentedTabsItem,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -156,7 +155,6 @@ import {
   useKanbanBoard,
 } from '@/atoms/kanban-atoms'
 import { SessionTeamTab } from '@/components/kanban/SessionTeamTab'
-import { KanbanBoardSummary } from '@/components/kanban/KanbanBoardSummary'
 import {
   InputToolbarOverflow,
   type ToolbarItem,
@@ -596,8 +594,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       ? globalChannels.find((c) => c.id === channelId && c.enabled)
       : undefined
     const persistedModelId = meta?.modelId
-    const resolvedModelId = persistedModelId
-      ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
+    const resolvedModelId =
+      persistedModelId ?? resolveAgentSessionModelId(channel, undefined, legacyGlobalModelId)
     if (resolvedModelId) {
       setSessionModelMap((prev) => {
         if (prev.has(sessionId)) return prev
@@ -2861,39 +2859,76 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
     <>
       <AgentSessionProvider sessionId={sessionId}>
         <div className="relative flex flex-col h-full flex-1 min-w-0">
-          {/* Agent Header（右侧合并二级 Tab + 看板缩略） — 嵌套工人会话隐藏，保持对话面板干净 */}
+          {/* Agent Header（右侧看板进度 + 切换） — 嵌套工人会话隐藏 */}
           {!isNestedWorker && (
             <AgentHeader
               sessionId={sessionId}
               rightSlot={
-                showKanbanTeamTab ? (
-                  <>
-                    <SegmentedTabs
-                      value={subTab}
-                      onValueChange={(v) => setSubTab(v === 'team' ? 'team' : 'chat')}
-                    className="agent-toolbar-segmented text-xs"
+                showKanbanTeamTab && kanbanBoard.tasks.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSubTab(subTab === 'team' ? 'chat' : 'team')}
+                    className={cn(
+                      'flex items-center gap-2 rounded-full px-2.5 py-1 text-left transition-all hover:shadow-sm',
+                      subTab === 'team'
+                        ? 'bg-primary/10 hover:bg-primary/15'
+                        : 'bg-muted/50 hover:bg-muted'
+                    )}
                   >
-                    <SegmentedTabsItem value="chat">对话</SegmentedTabsItem>
-                    <SegmentedTabsItem value="team">
-                      团队
-                      {kanbanBoard.tasks.length > 0 && (
-                        <span className="ml-1 tabular-nums text-muted-foreground">
+                    <Users
+                      className={cn(
+                        'size-3.5',
+                        subTab === 'team' ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
+                      )}
+                    />
+                    <span className="text-[11px] font-medium tabular-nums">
+                      {subTab === 'team' ? (
+                        '会话'
+                      ) : (
+                        <>
                           {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
                           {kanbanBoard.tasks.length}
-                        </span>
+                        </>
                       )}
-                    </SegmentedTabsItem>
-                  </SegmentedTabs>
-                  {subTab === 'chat' && kanbanBoard.tasks.length > 0 && (
-                    <KanbanBoardSummary
-                      tasks={kanbanBoard.tasks}
-                      onOpenTeam={() => setSubTab('team')}
-                    />
-                  )}
-                </>
-              ) : null
-            }
-          />
+                    </span>
+                    {subTab === 'chat' &&
+                      (() => {
+                        const running = kanbanBoard.tasks.filter(
+                          (t) => t.status === 'running'
+                        ).length
+                        const blocked = kanbanBoard.tasks.filter(
+                          (t) => t.status === 'blocked'
+                        ).length
+                        return (
+                          <>
+                            {running > 0 && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+                                ·{running}
+                              </span>
+                            )}
+                            {blocked > 0 && (
+                              <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
+                                ·{blocked}
+                              </span>
+                            )}
+                            <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  'h-full rounded-full bg-blue-500 transition-all duration-300',
+                                  blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+                                )}
+                                style={{
+                                  width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
+                                }}
+                              />
+                            </div>
+                          </>
+                        )
+                      })()}
+                  </button>
+                ) : null
+              }
+            />
           )}
 
           {showKanbanTeamTab && subTab === 'team' && boardId ? (

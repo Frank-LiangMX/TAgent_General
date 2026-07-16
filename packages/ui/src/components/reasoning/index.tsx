@@ -16,16 +16,8 @@ import remarkMath from 'remark-math'
 
 import type { ComponentProps, ReactNode } from 'react'
 
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '../collapsible'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '../tooltip'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../collapsible'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip'
 import { cn } from '../../lib/utils'
 
 // ===== 上下文 =====
@@ -216,9 +208,7 @@ export const ReasoningContent = React.memo(
     // 预处理 LaTeX 原生分隔符
     const normalizedContent = React.useMemo(() => {
       // 简单的 LaTeX 分隔符标准化（避免依赖 @tagent/shared）
-      return children
-        .replace(/\$\$/g, '$$$$$$')
-        .replace(/\$/g, '$')
+      return children.replace(/\$\$/g, '$$$$$$').replace(/\$/g, '$')
     }, [children])
 
     const handleLinkClick = React.useCallback(

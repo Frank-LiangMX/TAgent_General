@@ -4,7 +4,12 @@
  */
 
 import type { SessionIconComponent } from './session-icons'
-import { getSessionToolIcon, SESSION_TOOL_ICONS, SessionMcpIcon, SessionToolFallbackIcon } from './session-icons'
+import {
+  getSessionToolIcon,
+  SESSION_TOOL_ICONS,
+  SessionMcpIcon,
+  SessionToolFallbackIcon,
+} from './session-icons'
 
 /** 工具名称到图标组件的映射（reicon） */
 export const TOOL_ICONS: Record<string, SessionIconComponent> = SESSION_TOOL_ICONS

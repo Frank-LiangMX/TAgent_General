@@ -812,6 +812,7 @@ export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
 export type AgentStreamPayload =
   | { kind: 'sdk_message'; message: SDKMessage }
   | { kind: 'tagent_event'; event: TAgentEvent }
+  | { kind: 'call_stats'; stats: AgentCallStats }
   | {
       kind: 'stream_text_delta'
       /** 本次增量文本（已拆分为字符粒度由渲染层 useSmoothStream 入队） */
@@ -826,6 +827,22 @@ export type AgentStreamPayload =
       /** SubAgent 父 tool_use_id（顶层 Agent 为 undefined） */
       parentToolUseId?: string
     }
+
+/** 本轮 Agent 调用统计（仅统计本轮运行期间已观测到的调用） */
+export interface AgentCallStats {
+  /** 顶层 Agent 模型响应次数 */
+  modelCalls: number
+  /** SubAgent 模型响应次数 */
+  subagentCalls: number
+  /** SDK query 尝试次数（包含重试） */
+  queryAttempts: number
+  /** 自动获取 Context Usage 的控制请求次数 */
+  contextUsageRequests: number
+  /** 标题生成请求次数 */
+  titleRequests: number
+  /** 自动重试 / 恢复次数 */
+  retryAttempts: number
+}
 
 // ===== Agent 会话管理 =====
 
@@ -1701,12 +1718,6 @@ export const AGENT_IPC_CHANNELS = {
   // P1-3: Context 压缩
   /** 客户端主动压缩会话历史（SDK 压缩失败时的 fallback）*/
   COMPACT_SESSION: 'agent:compact-session',
-  /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
-  GET_CONTEXT_USAGE: 'agent:get-context-usage',
-  /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
-  GET_CONTEXT_USAGE_CACHED: 'agent:get-context-usage-cached',
-  /** 后台刷新 Context 分项缓存完成后，主进程 → 渲染进程的更新通知（stale-while-revalidate） */
-  CONTEXT_USAGE_UPDATED: 'agent:context-usage-updated',
   // 消息发送
   /** 发送消息（触发 Agent 流式响应） */
   SEND_MESSAGE: 'agent:send-message',

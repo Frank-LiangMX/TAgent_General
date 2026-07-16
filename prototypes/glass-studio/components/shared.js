@@ -12,9 +12,9 @@ const ThemeManager = {
   materials: { soft: '轻拟态', liquid: '液态玻璃' },
 
   init() {
-    const saved = this.load();
-    this.apply(saved.theme, saved.mode, saved.material, false);
-    this.bindEvents();
+    const saved = this.load()
+    this.apply(saved.theme, saved.mode, saved.material, false)
+    this.bindEvents()
   },
 
   load() {
@@ -22,72 +22,72 @@ const ThemeManager = {
       return {
         theme: localStorage.getItem('tagent-theme') || 'mist',
         mode: localStorage.getItem('tagent-mode') || 'light',
-        material: localStorage.getItem('tagent-material') || 'soft'
-      };
+        material: localStorage.getItem('tagent-material') || 'soft',
+      }
     } catch {
-      return { theme: 'mist', mode: 'light', material: 'soft' };
+      return { theme: 'mist', mode: 'light', material: 'soft' }
     }
   },
 
   save(theme, mode, material) {
     try {
-      localStorage.setItem('tagent-theme', theme);
-      localStorage.setItem('tagent-mode', mode);
-      localStorage.setItem('tagent-material', material);
+      localStorage.setItem('tagent-theme', theme)
+      localStorage.setItem('tagent-mode', mode)
+      localStorage.setItem('tagent-material', material)
     } catch {}
   },
 
   apply(theme, mode, material, persist = true) {
-    const root = document.documentElement;
-    root.dataset.theme = this.themes[theme] ? theme : 'mist';
-    root.dataset.mode = mode === 'dark' ? 'dark' : 'light';
-    root.dataset.material = this.materials[material] ? material : 'soft';
+    const root = document.documentElement
+    root.dataset.theme = this.themes[theme] ? theme : 'mist'
+    root.dataset.mode = mode === 'dark' ? 'dark' : 'light'
+    root.dataset.material = this.materials[material] ? material : 'soft'
 
     // 更新 UI 状态
-    document.querySelectorAll('[data-pick]').forEach(el => {
-      el.classList.toggle('is-active', el.dataset.pick === theme);
-    });
-    document.querySelectorAll('[data-mode]').forEach(el => {
-      el.classList.toggle('is-active', el.dataset.mode === mode);
-    });
-    document.querySelectorAll('[data-material]').forEach(el => {
-      el.classList.toggle('is-active', el.dataset.material === material);
-    });
+    document.querySelectorAll('[data-pick]').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.pick === theme)
+    })
+    document.querySelectorAll('[data-mode]').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.mode === mode)
+    })
+    document.querySelectorAll('[data-material]').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.material === material)
+    })
 
     // 更新主题名称显示
-    const themeNameEl = document.getElementById('themeName');
+    const themeNameEl = document.getElementById('themeName')
     if (themeNameEl) {
-      themeNameEl.textContent = `${this.themes[root.dataset.theme]} · ${this.modes[root.dataset.mode]} · ${this.materials[root.dataset.material]}`;
+      themeNameEl.textContent = `${this.themes[root.dataset.theme]} · ${this.modes[root.dataset.mode]} · ${this.materials[root.dataset.material]}`
     }
 
-    if (persist) this.save(theme, mode, material);
+    if (persist) this.save(theme, mode, material)
   },
 
   bindEvents() {
-    const root = document.documentElement;
+    const root = document.documentElement
 
     // 主题色切换
-    document.querySelectorAll('[data-pick]').forEach(el => {
+    document.querySelectorAll('[data-pick]').forEach((el) => {
       el.addEventListener('click', () => {
-        this.apply(el.dataset.pick, root.dataset.mode, root.dataset.material);
-      });
-    });
+        this.apply(el.dataset.pick, root.dataset.mode, root.dataset.material)
+      })
+    })
 
     // 明暗模式切换
-    document.querySelectorAll('[data-mode]').forEach(el => {
+    document.querySelectorAll('[data-mode]').forEach((el) => {
       el.addEventListener('click', () => {
-        this.apply(root.dataset.theme, el.dataset.mode, root.dataset.material);
-      });
-    });
+        this.apply(root.dataset.theme, el.dataset.mode, root.dataset.material)
+      })
+    })
 
     // 材质切换
-    document.querySelectorAll('[data-material]').forEach(el => {
+    document.querySelectorAll('[data-material]').forEach((el) => {
       el.addEventListener('click', () => {
-        this.apply(root.dataset.theme, root.dataset.mode, el.dataset.material);
-      });
-    });
-  }
-};
+        this.apply(root.dataset.theme, root.dataset.mode, el.dataset.material)
+      })
+    })
+  },
+}
 
 // ========== 导航系统 ==========
 
@@ -95,36 +95,36 @@ const Navigation = {
   currentPage: '',
 
   init() {
-    this.currentPage = this.getCurrentPage();
-    this.updateActiveState();
-    this.bindEvents();
+    this.currentPage = this.getCurrentPage()
+    this.updateActiveState()
+    this.bindEvents()
   },
 
   getCurrentPage() {
-    const path = window.location.pathname;
-    const filename = path.split('/').pop() || 'index.html';
-    return filename.replace('.html', '');
+    const path = window.location.pathname
+    const filename = path.split('/').pop() || 'index.html'
+    return filename.replace('.html', '')
   },
 
   updateActiveState() {
-    document.querySelectorAll('[data-nav]').forEach(link => {
-      const linkPage = link.dataset.nav;
-      link.classList.toggle('is-active', linkPage === this.currentPage);
-    });
+    document.querySelectorAll('[data-nav]').forEach((link) => {
+      const linkPage = link.dataset.nav
+      link.classList.toggle('is-active', linkPage === this.currentPage)
+    })
   },
 
   bindEvents() {
-    document.querySelectorAll('[data-nav]').forEach(link => {
+    document.querySelectorAll('[data-nav]').forEach((link) => {
       link.addEventListener('click', (e) => {
-        const href = link.getAttribute('href');
+        const href = link.getAttribute('href')
         if (href) {
           // 允许正常导航
-          return;
+          return
         }
-        e.preventDefault();
-        this.navigate(link.dataset.nav);
-      });
-    });
+        e.preventDefault()
+        this.navigate(link.dataset.nav)
+      })
+    })
   },
 
   navigate(page) {
@@ -132,162 +132,171 @@ const Navigation = {
       dashboard: '../index.html',
       chat: 'chat.html',
       automation: 'automation.html',
-      settings: 'settings.html'
-    };
-    if (pages[page]) {
-      window.location.href = pages[page];
+      settings: 'settings.html',
     }
-  }
-};
+    if (pages[page]) {
+      window.location.href = pages[page]
+    }
+  },
+}
 
 // ========== 模态框系统 ==========
 
 const Modal = {
   open(id) {
-    const modal = document.getElementById(id);
+    const modal = document.getElementById(id)
     if (modal) {
-      modal.classList.add('is-open');
-      document.body.style.overflow = 'hidden';
+      modal.classList.add('is-open')
+      document.body.style.overflow = 'hidden'
       // 聚焦第一个输入框
-      const firstInput = modal.querySelector('input, textarea, select');
-      if (firstInput) firstInput.focus();
+      const firstInput = modal.querySelector('input, textarea, select')
+      if (firstInput) firstInput.focus()
     }
   },
 
   close(id) {
-    const modal = document.getElementById(id);
+    const modal = document.getElementById(id)
     if (modal) {
-      modal.classList.remove('is-open');
-      document.body.style.overflow = '';
+      modal.classList.remove('is-open')
+      document.body.style.overflow = ''
     }
   },
 
   bindCloseButtons(container) {
-    container.querySelectorAll('[data-modal-close]').forEach(btn => {
+    container.querySelectorAll('[data-modal-close]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const modal = btn.closest('.modal-overlay');
-        if (modal) this.close(modal.id);
-      });
-    });
+        const modal = btn.closest('.modal-overlay')
+        if (modal) this.close(modal.id)
+      })
+    })
   },
 
   init() {
     // 点击遮罩层关闭
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    document.querySelectorAll('.modal-overlay').forEach((overlay) => {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
-          this.close(overlay.id);
+          this.close(overlay.id)
         }
-      });
-    });
+      })
+    })
 
     // ESC 关闭
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const openModal = document.querySelector('.modal-overlay.is-open');
-        if (openModal) this.close(openModal.id);
+        const openModal = document.querySelector('.modal-overlay.is-open')
+        if (openModal) this.close(openModal.id)
       }
-    });
-  }
-};
+    })
+  },
+}
 
 // ========== Toast 通知 ==========
 
 const Toast = {
   show(message, type = 'info', duration = 3000) {
-    const container = document.getElementById('toast-container') || this.createContainer();
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    const container = document.getElementById('toast-container') || this.createContainer()
+    const toast = document.createElement('div')
+    toast.className = `toast toast-${type}`
     toast.innerHTML = `
       <span class="toast-message">${message}</span>
       <button class="toast-close" aria-label="关闭">×</button>
-    `;
+    `
 
-    container.appendChild(toast);
+    container.appendChild(toast)
 
     // 触发动画
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    requestAnimationFrame(() => toast.classList.add('is-visible'))
 
     // 自动关闭
-    const timeout = setTimeout(() => this.dismiss(toast), duration);
+    const timeout = setTimeout(() => this.dismiss(toast), duration)
 
     // 手动关闭
     toast.querySelector('.toast-close').addEventListener('click', () => {
-      clearTimeout(timeout);
-      this.dismiss(toast);
-    });
+      clearTimeout(timeout)
+      this.dismiss(toast)
+    })
   },
 
   createContainer() {
-    const container = document.createElement('div');
-    container.id = 'toast-container';
-    container.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;';
-    document.body.appendChild(container);
-    return container;
+    const container = document.createElement('div')
+    container.id = 'toast-container'
+    container.style.cssText =
+      'position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;'
+    document.body.appendChild(container)
+    return container
   },
 
   dismiss(toast) {
-    toast.classList.remove('is-visible');
-    setTimeout(() => toast.remove(), 200);
+    toast.classList.remove('is-visible')
+    setTimeout(() => toast.remove(), 200)
   },
 
-  success(message) { this.show(message, 'success'); },
-  error(message) { this.show(message, 'error'); },
-  warning(message) { this.show(message, 'warning'); },
-  info(message) { this.show(message, 'info'); }
-};
+  success(message) {
+    this.show(message, 'success')
+  },
+  error(message) {
+    this.show(message, 'error')
+  },
+  warning(message) {
+    this.show(message, 'warning')
+  },
+  info(message) {
+    this.show(message, 'info')
+  },
+}
 
 // ========== 工具函数 ==========
 
 const Utils = {
   // 格式化时间
   formatTime(date) {
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const now = new Date()
+    const diff = now - date
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
 
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
-    return date.toLocaleDateString('zh-CN');
+    if (minutes < 1) return '刚刚'
+    if (minutes < 60) return `${minutes}分钟前`
+    if (hours < 24) return `${hours}小时前`
+    if (days < 7) return `${days}天前`
+    return date.toLocaleDateString('zh-CN')
   },
 
   // 防抖
   debounce(fn, delay = 300) {
-    let timer;
+    let timer
     return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
-    };
+      clearTimeout(timer)
+      timer = setTimeout(() => fn.apply(this, args), delay)
+    }
   },
 
   // 节流
   throttle(fn, delay = 100) {
-    let last = 0;
+    let last = 0
     return (...args) => {
-      const now = Date.now();
+      const now = Date.now()
       if (now - last >= delay) {
-        last = now;
-        fn.apply(this, args);
+        last = now
+        fn.apply(this, args)
       }
-    };
+    }
   },
 
   // 生成唯一 ID
   uuid() {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
   },
 
   // 安全的 innerHTML
   escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-};
+    const div = document.createElement('div')
+    div.textContent = str
+    return div.innerHTML
+  },
+}
 
 // ========== 设置弹窗（双浮岛 Soft Glass） ==========
 
@@ -297,25 +306,25 @@ const SettingsModal = {
   _observer: null,
 
   init() {
-    this.bindOpeners();
+    this.bindOpeners()
   },
 
   open() {
-    this.render();
-    Modal.open('settingsModal');
-    this.bindInner();
-    this.syncAppearanceControls();
+    this.render()
+    Modal.open('settingsModal')
+    this.bindInner()
+    this.syncAppearanceControls()
   },
 
   close() {
-    Modal.close('settingsModal');
+    Modal.close('settingsModal')
   },
 
   render() {
-    const container = document.getElementById('settingsModal');
-    if (!container) return;
+    const container = document.getElementById('settingsModal')
+    if (!container) return
 
-    container.classList.add('settings-dialog-overlay');
+    container.classList.add('settings-dialog-overlay')
     container.innerHTML = `
 <div class="modal-content settings-dialog" role="dialog" aria-modal="true" aria-label="settings">
 <!-- 顶部工具栏（在所有浮岛之上） -->
@@ -800,139 +809,144 @@ const SettingsModal = {
   </section>
 </div>
 </div>
-`;
+`
 
-    Modal.bindCloseButtons(container);
+    Modal.bindCloseButtons(container)
   },
 
   bindOpeners() {
     document.querySelectorAll('#settingsBtn, [data-settings]').forEach((btn) => {
-      if (btn.dataset.settingsBound === '1') return;
-      btn.dataset.settingsBound = '1';
+      if (btn.dataset.settingsBound === '1') return
+      btn.dataset.settingsBound = '1'
       btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.open();
-      });
-    });
+        e.preventDefault()
+        this.open()
+      })
+    })
   },
 
   bindInner() {
-    const root = document.documentElement;
-    const modal = document.getElementById('settingsModal');
-    if (!modal) return;
+    const root = document.documentElement
+    const modal = document.getElementById('settingsModal')
+    if (!modal) return
 
     modal.querySelectorAll('.settings-nav-item').forEach((item) => {
-      if (item.dataset.bound === '1') return;
-      item.dataset.bound = '1';
-      item.addEventListener('click', () => this.switchSection(item.dataset.section));
-    });
+      if (item.dataset.bound === '1') return
+      item.dataset.bound = '1'
+      item.addEventListener('click', () => this.switchSection(item.dataset.section))
+    })
 
     modal.querySelectorAll('[data-theme-pick]').forEach((card) => {
-      if (card.dataset.bound === '1') return;
-      card.dataset.bound = '1';
+      if (card.dataset.bound === '1') return
+      card.dataset.bound = '1'
       card.addEventListener('click', () => {
-        ThemeManager.apply(card.dataset.themePick, root.dataset.mode, root.dataset.material);
-        this.syncAppearanceControls();
-      });
-    });
+        ThemeManager.apply(card.dataset.themePick, root.dataset.mode, root.dataset.material)
+        this.syncAppearanceControls()
+      })
+    })
 
     modal.querySelectorAll('[data-material-pick]').forEach((tile) => {
-      if (tile.dataset.bound === '1') return;
-      tile.dataset.bound = '1';
+      if (tile.dataset.bound === '1') return
+      tile.dataset.bound = '1'
       tile.addEventListener('click', () => {
-        ThemeManager.apply(root.dataset.theme, root.dataset.mode, tile.dataset.materialPick);
-        this.syncAppearanceControls();
-      });
-    });
+        ThemeManager.apply(root.dataset.theme, root.dataset.mode, tile.dataset.materialPick)
+        this.syncAppearanceControls()
+      })
+    })
 
-    const darkToggle = document.getElementById('darkModeToggle');
+    const darkToggle = document.getElementById('darkModeToggle')
     if (darkToggle && darkToggle.dataset.bound !== '1') {
-      darkToggle.dataset.bound = '1';
+      darkToggle.dataset.bound = '1'
       const toggleMode = () => {
-        const next = root.dataset.mode === 'dark' ? 'light' : 'dark';
-        ThemeManager.apply(root.dataset.theme, next, root.dataset.material);
-        this.syncAppearanceControls();
-      };
-      darkToggle.addEventListener('click', toggleMode);
+        const next = root.dataset.mode === 'dark' ? 'light' : 'dark'
+        ThemeManager.apply(root.dataset.theme, next, root.dataset.material)
+        this.syncAppearanceControls()
+      }
+      darkToggle.addEventListener('click', toggleMode)
       darkToggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleMode();
+          e.preventDefault()
+          toggleMode()
         }
-      });
+      })
     }
 
     // Toggle switches
     modal.querySelectorAll('.toggle-switch').forEach((toggle) => {
-      if (toggle.dataset.bound === '1') return;
-      toggle.dataset.bound = '1';
+      if (toggle.dataset.bound === '1') return
+      toggle.dataset.bound = '1'
       toggle.addEventListener('click', () => {
-        toggle.classList.toggle('is-active');
-        const isActive = toggle.classList.contains('is-active');
-        toggle.setAttribute('aria-checked', isActive ? 'true' : 'false');
-      });
-    });
+        toggle.classList.toggle('is-active')
+        const isActive = toggle.classList.contains('is-active')
+        toggle.setAttribute('aria-checked', isActive ? 'true' : 'false')
+      })
+    })
 
-    if (this._observer) this._observer.disconnect();
-    this._observer = new MutationObserver(() => this.syncAppearanceControls());
-    this._observer.observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-mode', 'data-material'] });
+    if (this._observer) this._observer.disconnect()
+    this._observer = new MutationObserver(() => this.syncAppearanceControls())
+    this._observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-mode', 'data-material'],
+    })
 
-    this.switchSection(this.currentSection);
+    this.switchSection(this.currentSection)
   },
 
   switchSection(section) {
-    this.currentSection = section;
+    this.currentSection = section
     document.querySelectorAll('#settingsModal .settings-nav-item').forEach((item) => {
-      item.classList.toggle('is-active', item.dataset.section === section);
-    });
+      item.classList.toggle('is-active', item.dataset.section === section)
+    })
     document.querySelectorAll('#settingsModal .settings-section').forEach((sec) => {
-      sec.classList.toggle('is-active', sec.id === `section-${section}`);
-    });
+      sec.classList.toggle('is-active', sec.id === `section-${section}`)
+    })
 
     // 更新顶部标题
-    const titleEl = document.getElementById('settingsSectionTitle');
-    const activeItem = document.querySelector(`#settingsModal .settings-nav-item[data-section="${section}"]`);
+    const titleEl = document.getElementById('settingsSectionTitle')
+    const activeItem = document.querySelector(
+      `#settingsModal .settings-nav-item[data-section="${section}"]`
+    )
     if (titleEl && activeItem) {
-      const labelText = activeItem.textContent.trim();
-      titleEl.textContent = labelText;
+      const labelText = activeItem.textContent.trim()
+      titleEl.textContent = labelText
     }
   },
 
   syncAppearanceControls() {
-    const root = document.documentElement;
-    const mode = root.dataset.mode;
-    const material = root.dataset.material;
-    const theme = root.dataset.theme;
+    const root = document.documentElement
+    const mode = root.dataset.mode
+    const material = root.dataset.material
+    const theme = root.dataset.theme
 
-    const darkToggle = document.getElementById('darkModeToggle');
+    const darkToggle = document.getElementById('darkModeToggle')
     if (darkToggle) {
-      darkToggle.classList.toggle('is-active', mode === 'dark');
-      darkToggle.setAttribute('aria-checked', mode === 'dark' ? 'true' : 'false');
+      darkToggle.classList.toggle('is-active', mode === 'dark')
+      darkToggle.setAttribute('aria-checked', mode === 'dark' ? 'true' : 'false')
     }
 
     document.querySelectorAll('#settingsModal [data-theme-pick]').forEach((el) => {
-      el.classList.toggle('is-selected', el.dataset.themePick === theme);
-    });
+      el.classList.toggle('is-selected', el.dataset.themePick === theme)
+    })
     document.querySelectorAll('#settingsModal [data-material-pick]').forEach((el) => {
-      el.classList.toggle('is-selected', el.dataset.materialPick === material);
-    });
-  }
-};
+      el.classList.toggle('is-selected', el.dataset.materialPick === material)
+    })
+  },
+}
 
 // ========== 初始化 ==========
 
 document.addEventListener('DOMContentLoaded', () => {
-  ThemeManager.init();
-  Navigation.init();
-  Modal.init();
-  SettingsModal.init();
+  ThemeManager.init()
+  Navigation.init()
+  Modal.init()
+  SettingsModal.init()
 
   if (new URLSearchParams(location.search).has('settings')) {
-    SettingsModal.open();
+    SettingsModal.open()
   }
-});
+})
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ThemeManager, Navigation, Modal, Toast, Utils, SettingsModal };
+  module.exports = { ThemeManager, Navigation, Modal, Toast, Utils, SettingsModal }
 }

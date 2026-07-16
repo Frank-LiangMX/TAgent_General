@@ -87,11 +87,16 @@ export interface ZipEntry {
  * 第一版只支持 store（method 0）和 deflate（method 8）单文件场景。
  * 对真实 Figma 导出的 zip（一般是多文件 store 模式），可能失败并报错让用户手动解压。
  */
-export async function unzipFirstHtml(file: File): Promise<{ html: ParsedHtml; candidates: ZipEntry[] }> {
+export async function unzipFirstHtml(
+  file: File
+): Promise<{ html: ParsedHtml; candidates: ZipEntry[] }> {
   // 不引入新依赖：直接交给用户提示"请先解压 zip"作为降级路径
   // ——否则要自己实现完整的 zip reader（PKWARE 格式：local file header + central directory），
   // 工作量大且与本期目标不符。
-  throw new ImportError('ZIP 导入在第一版暂未实现，请先解压 zip 后导入主 HTML 文件', 'zip-not-supported')
+  throw new ImportError(
+    'ZIP 导入在第一版暂未实现，请先解压 zip 后导入主 HTML 文件',
+    'zip-not-supported'
+  )
 }
 
 export class ImportError extends Error {
@@ -107,7 +112,12 @@ export class ImportError extends Error {
 export function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (file.size > MAX_HTML_BYTES) {
-      reject(new ImportError(`文件过大（${(file.size / 1024 / 1024).toFixed(2)}MB > 2MB），跳过`, 'too-large'))
+      reject(
+        new ImportError(
+          `文件过大（${(file.size / 1024 / 1024).toFixed(2)}MB > 2MB），跳过`,
+          'too-large'
+        )
+      )
       return
     }
     const reader = new FileReader()
@@ -120,7 +130,12 @@ export function readFileAsText(file: File): Promise<string> {
 export function readFileAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (file.size > MAX_HTML_BYTES) {
-      reject(new ImportError(`图片过大（${(file.size / 1024 / 1024).toFixed(2)}MB > 2MB），跳过`, 'too-large'))
+      reject(
+        new ImportError(
+          `图片过大（${(file.size / 1024 / 1024).toFixed(2)}MB > 2MB），跳过`,
+          'too-large'
+        )
+      )
       return
     }
     const reader = new FileReader()

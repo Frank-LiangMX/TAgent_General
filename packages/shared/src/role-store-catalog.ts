@@ -40,7 +40,6 @@ export function searchRoleStoreEntries(
   const q = query.toLowerCase().trim()
   if (!q) return entries
   return entries.filter(
-    (e) =>
-      e.displayName.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)
+    (e) => e.displayName.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)
   )
 }

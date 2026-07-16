@@ -69,7 +69,10 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-export function ScrollMinimap({ items, onShortcutOpen }: ScrollMinimapProps): React.ReactElement | null {
+export function ScrollMinimap({
+  items,
+  onShortcutOpen,
+}: ScrollMinimapProps): React.ReactElement | null {
   // getModelLogo 仍在 Props 中以兼容调用方；预览为纯气泡对齐，不再渲染头像
   const { scrollRef, stopScroll, state: stickyState } = useStickToBottomContext()
   const [hovered, setHovered] = React.useState(false)

@@ -18,7 +18,7 @@ export function supports1MContext(modelId: string): boolean {
   if (!modelId) return false
   const m = modelId.toLowerCase()
   if (m.includes('haiku')) return false
-  if (m.includes('claude')) return false  // 标准 200k，1M 需申请
+  if (m.includes('claude')) return false // 标准 200k，1M 需申请
   if (m.includes('mimo-v2.5') || m.includes('mimo2.5')) return true
   if (m.includes('glm-5.2') || m.includes('glm5.2')) return true
   if (m.includes('deepseek-v4') || m.includes('deepseekv4')) return true
@@ -48,19 +48,29 @@ export function inferContextWindow(model?: string): number | undefined {
   if (supports1MContext(model)) return ONE_MILLION_CONTEXT_WINDOW
 
   // 200k
-  if (m.includes('claude-sonnet-4') || m.includes('claude-opus-4')) return 200_000  // 标准 200k，1M 需申请
+  if (m.includes('claude-sonnet-4') || m.includes('claude-opus-4')) return 200_000 // 标准 200k，1M 需申请
   if (m.includes('claude-haiku')) return 200_000
   if (m.includes('openai-o1') || m.includes('openai-o3') || m.includes('/o1') || m.includes('/o3'))
     return 200_000
   if (m.includes('glm-5.1') || m.includes('glm5.1')) return 200_000
 
   // 128k
-  if (m.includes('gpt-4o') || m.includes('gpt-4-turbo') || m.includes('gpt4o') || m.includes('gpt4-turbo'))
+  if (
+    m.includes('gpt-4o') ||
+    m.includes('gpt-4-turbo') ||
+    m.includes('gpt4o') ||
+    m.includes('gpt4-turbo')
+  )
     return 128_000
-  if (m.includes('deepseek-v3') || m.includes('deepseek')) return 128_000  // V3=128k, V4=1M（走 supports1MContext）
+  if (m.includes('deepseek-v3') || m.includes('deepseek')) return 128_000 // V3=128k, V4=1M（走 supports1MContext）
   if (m.includes('glm-4') || m.includes('glm-5') || m.includes('glm4') || m.includes('glm5'))
     return 128_000
-  if (m.includes('qwen-2.5') || m.includes('qwen2.5') || m.includes('qwen-2') || m.includes('qwen2'))
+  if (
+    m.includes('qwen-2.5') ||
+    m.includes('qwen2.5') ||
+    m.includes('qwen-2') ||
+    m.includes('qwen2')
+  )
     return 128_000
   if (m.includes('mistral-large') || m.includes('mistral large')) return 128_000
 

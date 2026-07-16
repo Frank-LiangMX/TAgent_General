@@ -17,10 +17,7 @@ import { Spinner } from '@tagent/ui'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { askStreamErrorsAtom } from '@/atoms/ask-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
-import {
-  AssistantMessageLogo,
-  MESSAGE_AVATAR_SIZE,
-} from '@/components/ai-elements/message-avatar'
+import { AssistantMessageLogo, MESSAGE_AVATAR_SIZE } from '@/components/ai-elements/message-avatar'
 import { Message, MessageContent, MessageHeader } from '@/components/ai-elements/message'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { cn } from '@/lib/utils'

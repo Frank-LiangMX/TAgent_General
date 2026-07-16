@@ -44,9 +44,7 @@ export interface UseCanvasSelectionOptions {
  *
  * 设计上 bridge 自身单例；handlers 在 hook 内稳定绑定，组件不需关心。
  */
-export function useCanvasSelection(
-  options?: UseCanvasSelectionOptions,
-): UseCanvasSelectionResult {
+export function useCanvasSelection(options?: UseCanvasSelectionOptions): UseCanvasSelectionResult {
   const setLayers = useSetAtom(canvasLayersAtom)
   const setHovered = useSetAtom(hoveredElementIdAtom)
   const setSelected = useSetAtom(selectedElementIdsAtom)
@@ -79,7 +77,11 @@ export function useCanvasSelection(
   // stable handlers：每次 render 复用同一函数引用（闭包捕获 setXxx 函数引用稳定）
   const handlersRef = React.useRef({
     onLayers: (layers: CanvasElement[]) => setLayers(layers),
-    onElementClicked: (id: string | null, _bounds: CanvasElement['bounds'] | null, additive: boolean) => {
+    onElementClicked: (
+      id: string | null,
+      _bounds: CanvasElement['bounds'] | null,
+      additive: boolean
+    ) => {
       if (id === null) {
         // 点击空白区域：取消所有选中
         setSelected([])

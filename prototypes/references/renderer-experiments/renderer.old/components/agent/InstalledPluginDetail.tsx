@@ -401,14 +401,24 @@ function InstalledMcpDetail({
               {testing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               <span className="ml-1">{testing ? '测试中' : '测试连接'}</span>
             </Button>
-            <Button variant="outline" size="sm" className="material-secondary-btn rounded-full border-0" onClick={() => setEditOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="material-secondary-btn rounded-full border-0"
+              onClick={() => setEditOpen(true)}
+            >
               <Pencil size={14} />
               <span className="ml-1">编辑连接</span>
             </Button>
             {!entry.isBuiltin ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="material-secondary-btn rounded-full border-0" disabled={deleting}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="material-secondary-btn rounded-full border-0"
+                    disabled={deleting}
+                  >
                     <Trash2 size={14} />
                     <span className="ml-1">删除</span>
                   </Button>

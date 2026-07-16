@@ -635,12 +635,16 @@ export function ChannelForm({
           {/* Token Plan 供应商消费提醒 */}
           {showTokenPlanWarning && TOKEN_PLAN_PROVIDERS.has(provider) && (
             <div className="mx-4 mb-2 flex items-start gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 text-xs dark:border-amber-600/30 dark:bg-amber-950/30">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle
+                size={14}
+                className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+              />
               <div className="space-y-1 text-amber-800 dark:text-amber-200">
                 <p className="font-medium">Token Plan 注意</p>
                 <p>
-                  该供应商按 API 调用次数计费。Agent 模式每次工具调用都会发起一次独立的 API 请求，复杂任务可能消耗大量配额。
-                  建议优先使用按 Token 计费的渠道（如 DeepSeek、OpenAI）运行 Agent 任务。
+                  该供应商按 API 调用次数计费。Agent 模式每次工具调用都会发起一次独立的 API
+                  请求，复杂任务可能消耗大量配额。 建议优先使用按 Token 计费的渠道（如
+                  DeepSeek、OpenAI）运行 Agent 任务。
                 </p>
                 <p className="text-amber-600/70 dark:text-amber-400/70">
                   可在「通用设置」中关闭此提醒。

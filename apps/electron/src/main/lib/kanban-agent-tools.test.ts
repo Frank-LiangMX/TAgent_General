@@ -4,9 +4,7 @@ import { injectProjectRootHeader } from './kanban-agent-tools'
 describe('injectProjectRootHeader', () => {
   test('空 body 注入完整 header', () => {
     const result = injectProjectRootHeader('', 'F:/TAgent_General')
-    expect(result).toBe(
-      '---\n项目根目录: F:/TAgent_General\n数据目录: ~/.tagent/\n---\n\n'
-    )
+    expect(result).toBe('---\n项目根目录: F:/TAgent_General\n数据目录: ~/.tagent/\n---\n\n')
   })
 
   test('已有 body 前插 header，原 body 完整保留', () => {

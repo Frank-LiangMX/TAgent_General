@@ -13,14 +13,29 @@ import * as React from 'react'
 import { currentDocumentAtom } from '@/design/canvas-shape-store'
 import { buildLayerTree, type LayerTreeNode } from '@/design/canvas-layer-tree'
 import { selectedShapeIdsAtom, selectShapeAtom } from '@/design/canvas-selection-store'
-import { canvasLayersAtom, selectedElementIdsAtom, type CanvasElement } from '@/atoms/design-preview-atoms'
+import {
+  canvasLayersAtom,
+  selectedElementIdsAtom,
+  type CanvasElement,
+} from '@/atoms/design-preview-atoms'
 import { dispatchAppendChatInput } from '@/lib/chat-input-bridge'
 import { cn } from '@/lib/utils'
 
 const TYPE_LABEL: Record<string, string> = {
-  frame: '页面', rect: '矩形', ellipse: '椭圆', text: '文本',
-  image: '图片', group: '编组', line: '线条', arrow: '箭头',
-  button: '按钮', input: '输入', heading: '标题', link: '链接', container: '容器', none: '元素',
+  frame: '页面',
+  rect: '矩形',
+  ellipse: '椭圆',
+  text: '文本',
+  image: '图片',
+  group: '编组',
+  line: '线条',
+  arrow: '箭头',
+  button: '按钮',
+  input: '输入',
+  heading: '标题',
+  link: '链接',
+  container: '容器',
+  none: '元素',
 }
 
 function describeTag(tag: string, role: string, text: string): string {
@@ -73,7 +88,7 @@ function TreeView({
           className={cn(
             'group flex items-center gap-1 rounded px-1.5 py-1 text-xs cursor-pointer select-none',
             isSelected && 'bg-primary/15 text-primary',
-            !isSelected && 'hover:bg-muted/40',
+            !isSelected && 'hover:bg-muted/40'
           )}
           style={{ paddingLeft: 4 + item.depth * 12 }}
           onClick={() => onSelect(item.id)}
@@ -82,7 +97,10 @@ function TreeView({
             <button
               type="button"
               className="size-3.5 flex items-center justify-center text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); toggleExpand(item.id) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleExpand(item.id)
+              }}
             >
               {isOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
             </button>
@@ -91,7 +109,8 @@ function TreeView({
           )}
           <span className="truncate">{item.name}</span>
         </div>
-        {hasChildren && isOpen &&
+        {hasChildren &&
+          isOpen &&
           item.children.map((cid) => {
             const child = itemMap.get(cid)
             return child ? renderNode(child) : null
@@ -163,12 +182,16 @@ export function LayerTreePanel({ className }: { className?: string }): React.Rea
   }, [items, expanded.size])
 
   const toggleExpand = React.useCallback((id: string) => {
-    setExpanded((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setExpanded((prev) => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
   }, [])
 
   const selectedNames = React.useMemo(
     () => items.filter((i) => selectedIds.includes(i.id)).map((i) => ({ name: i.name })),
-    [items, selectedIds],
+    [items, selectedIds]
   )
 
   const handleTellAgent = React.useCallback(() => {
@@ -180,7 +203,12 @@ export function LayerTreePanel({ className }: { className?: string }): React.Rea
   if (items.length === 0) return null
 
   return (
-    <div className={cn('flex h-full flex-col border-r border-border/40 bg-background/60 backdrop-blur', className)}>
+    <div
+      className={cn(
+        'flex h-full flex-col border-r border-border/40 bg-background/60 backdrop-blur',
+        className
+      )}
+    >
       <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
         <div className="flex size-5 items-center justify-center rounded bg-primary/10">
           <Layers className="size-3 text-primary" />
@@ -205,8 +233,13 @@ export function LayerTreePanel({ className }: { className?: string }): React.Rea
       )}
 
       <div className="flex-1 overflow-y-auto px-1.5 py-2">
-        <TreeView items={items} selectedIds={selectedIds} onSelect={handleSelect}
-          expanded={expanded} toggleExpand={toggleExpand} />
+        <TreeView
+          items={items}
+          selectedIds={selectedIds}
+          onSelect={handleSelect}
+          expanded={expanded}
+          toggleExpand={toggleExpand}
+        />
       </div>
     </div>
   )

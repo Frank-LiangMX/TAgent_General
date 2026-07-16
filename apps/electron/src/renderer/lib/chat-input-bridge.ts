@@ -32,10 +32,7 @@ export interface AppendChatInputDetail {
  * 用法：
  *   dispatchAppendChatInput('把「登录」按钮改成圆角')
  */
-export function dispatchAppendChatInput(
-  text: string,
-  options: { focus?: boolean } = {},
-): void {
+export function dispatchAppendChatInput(text: string, options: { focus?: boolean } = {}): void {
   if (!text) return
   const detail: AppendChatInputDetail = {
     text,

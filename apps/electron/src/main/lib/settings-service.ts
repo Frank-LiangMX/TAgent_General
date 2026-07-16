@@ -12,7 +12,14 @@ import { DEFAULT_THEME_MODE, DEFAULT_ADVANCED_MATERIAL_MODE } from '../../types'
 import type { AppSettings } from '../../types'
 import { getSettingsPath } from './config-paths'
 
-function resolveAdvancedMaterialMode(data: Partial<AppSettings>): AppSettings['advancedMaterialMode'] {
+/** Resolve the streaming flag while keeping older settings files compatible. */
+export function isAgentStreamingEnabled(settings: Pick<AppSettings, 'agentStreaming'>): boolean {
+  return settings.agentStreaming ?? true
+}
+
+function resolveAdvancedMaterialMode(
+  data: Partial<AppSettings>
+): AppSettings['advancedMaterialMode'] {
   if (
     data.advancedMaterialMode === 'glass' ||
     data.advancedMaterialMode === 'frosted' ||
@@ -47,6 +54,7 @@ export function getSettings(): AppSettings {
       onboardingCompleted: false,
       environmentCheckSkipped: false,
       notificationsEnabled: true,
+      agentStreaming: true,
       feishuSessionMirror: { mode: 'off' },
       subagentEagerness: 'conservative',
       showTokenPlanWarning: true,
@@ -63,6 +71,7 @@ export function getSettings(): AppSettings {
       onboardingCompleted: data.onboardingCompleted ?? false,
       environmentCheckSkipped: data.environmentCheckSkipped ?? false,
       notificationsEnabled: data.notificationsEnabled ?? true,
+      agentStreaming: data.agentStreaming ?? true,
       feishuSessionMirror: data.feishuSessionMirror ?? { mode: 'off' },
       showTokenPlanWarning: data.showTokenPlanWarning ?? true,
     }
@@ -74,6 +83,7 @@ export function getSettings(): AppSettings {
       onboardingCompleted: false,
       environmentCheckSkipped: false,
       notificationsEnabled: true,
+      agentStreaming: true,
       feishuSessionMirror: { mode: 'off' },
       subagentEagerness: 'conservative',
       showTokenPlanWarning: true,

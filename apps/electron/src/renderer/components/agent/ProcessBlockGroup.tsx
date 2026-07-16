@@ -54,7 +54,10 @@ export function buildCompletedToolResultIds(turnMessages: SDKMessage[]): Set<str
   return ids
 }
 
-function getTrailingBlockRunStart(blocks: SDKContentBlock[], blockType: 'text' | 'thinking'): number {
+function getTrailingBlockRunStart(
+  blocks: SDKContentBlock[],
+  blockType: 'text' | 'thinking'
+): number {
   let index = blocks.length
   while (index > 0 && blocks[index - 1]?.type === blockType) {
     index -= 1
@@ -89,10 +92,7 @@ export function mergeStreamingContentIntoBlocks(
     const trailingTextStart = getTrailingBlockRunStart(result, 'text')
     const trailingThinkingStart = getTrailingBlockRunStart(result, 'thinking')
 
-    if (
-      trailingThinkingStart < result.length &&
-      trailingThinkingStart >= trailingTextStart
-    ) {
+    if (trailingThinkingStart < result.length && trailingThinkingStart >= trailingTextStart) {
       result.splice(trailingThinkingStart, result.length - trailingThinkingStart, {
         type: 'thinking',
         thinking: trimmed,

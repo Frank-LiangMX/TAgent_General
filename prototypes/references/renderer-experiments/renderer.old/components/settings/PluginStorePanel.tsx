@@ -484,7 +484,7 @@ function StoreSkillDetail({
       <div className="shrink-0 space-y-4 p-4 pb-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-              <span className="material-inline-chip inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+            <span className="material-inline-chip inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
               Skill
             </span>
             {installed ? (
@@ -507,7 +507,11 @@ function StoreSkillDetail({
           <DetailMetaRow label="版本" value={skill.version || '—'} />
           <DetailMetaRow
             label="标识"
-            value={<code className="material-inline-chip rounded-full px-2 py-0.5 font-mono text-[10px]">{skill.slug}</code>}
+            value={
+              <code className="material-inline-chip rounded-full px-2 py-0.5 font-mono text-[10px]">
+                {skill.slug}
+              </code>
+            }
           />
         </div>
       </div>
@@ -525,7 +529,12 @@ function StoreSkillDetail({
         {installed ? (
           <p className="text-[11px] text-muted-foreground">此 Skill 已安装到当前工作区</p>
         ) : (
-          <Button size="sm" className="material-cta rounded-full border-0" disabled={installing} onClick={onInstall}>
+          <Button
+            size="sm"
+            className="material-cta rounded-full border-0"
+            disabled={installing}
+            onClick={onInstall}
+          >
             {installing ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
@@ -562,7 +571,7 @@ function StoreMcpDetail({
       <div className="shrink-0 space-y-4 p-4 pb-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-              <span className="material-inline-chip inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+            <span className="material-inline-chip inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
               MCP
             </span>
             {mcp.category === 'ta' ? (
@@ -585,14 +594,20 @@ function StoreMcpDetail({
           <DetailMetaRow label="分类" value={CATEGORY_LABELS[mcp.category] ?? mcp.category} />
           <DetailMetaRow
             label="启动"
-            value={<code className="material-inline-chip break-all rounded-full px-2 py-0.5 font-mono text-[10px]">{installPreview}</code>}
+            value={
+              <code className="material-inline-chip break-all rounded-full px-2 py-0.5 font-mono text-[10px]">
+                {installPreview}
+              </code>
+            }
           />
           {mcp.envHints && mcp.envHints.length > 0 ? (
             <div className="space-y-1.5 pt-1">
               <div className="text-[10px] text-muted-foreground">环境变量</div>
               {mcp.envHints.map((hint) => (
                 <div key={hint.key} className="text-[10px] text-muted-foreground">
-                  <code className="material-inline-chip rounded-full px-2 py-0.5 font-mono">{hint.key}</code>
+                  <code className="material-inline-chip rounded-full px-2 py-0.5 font-mono">
+                    {hint.key}
+                  </code>
                   {hint.required ? <span className="ml-1 text-red-500">*</span> : null}
                   <span className="ml-1">— {hint.description}</span>
                 </div>
@@ -611,7 +626,12 @@ function StoreMcpDetail({
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border/40 bg-background/90 px-4 py-3 backdrop-blur-sm">
         {mcp.docsUrl ? (
-          <Button variant="outline" size="sm" className="material-secondary-btn rounded-full border-0" onClick={() => window.open(mcp.docsUrl, '_blank')}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="material-secondary-btn rounded-full border-0"
+            onClick={() => window.open(mcp.docsUrl, '_blank')}
+          >
             <ExternalLink size={14} />
             文档
           </Button>
@@ -619,7 +639,12 @@ function StoreMcpDetail({
         {installed ? (
           <p className="text-[11px] text-muted-foreground">此 MCP 已添加到当前工作区</p>
         ) : (
-          <Button size="sm" className="material-cta rounded-full border-0" disabled={installing} onClick={onInstall}>
+          <Button
+            size="sm"
+            className="material-cta rounded-full border-0"
+            disabled={installing}
+            onClick={onInstall}
+          >
             {installing ? (
               <>
                 <Loader2 size={14} className="animate-spin" />

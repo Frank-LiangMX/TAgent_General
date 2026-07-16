@@ -11,19 +11,24 @@
 
 /** 形状类型 */
 export type ShapeType =
-  | 'frame'    // 容器/页面
-  | 'rect'     // 矩形
-  | 'ellipse'  // 椭圆
-  | 'text'     // 文本
-  | 'image'    // 图片
-  | 'group'    // 编组
-  | 'line'     // 线条
-  | 'arrow'    // 箭头
+  | 'frame' // 容器/页面
+  | 'rect' // 矩形
+  | 'ellipse' // 椭圆
+  | 'text' // 文本
+  | 'image' // 图片
+  | 'group' // 编组
+  | 'line' // 线条
+  | 'arrow' // 箭头
 
 /** 填充类型 */
 export type Fill = { type: 'solid'; color: string; opacity: number }
 export type GradientStop = { offset: number; color: string; opacity?: number }
-export type GradientFill = { type: 'linear' | 'radial'; stops: GradientStop[]; angle?: number; opacity: number }
+export type GradientFill = {
+  type: 'linear' | 'radial'
+  stops: GradientStop[]
+  angle?: number
+  opacity: number
+}
 
 /** 描边 */
 export interface Stroke {
@@ -57,9 +62,9 @@ export interface CanvasShape {
   type: ShapeType
   name: string
   parentId: string | null
-  children: string[]  // 子节点 id 列表（有序）
+  children: string[] // 子节点 id 列表（有序）
   bounds: BoxBounds
-  rotation: number     // 度
+  rotation: number // 度
   opacity: number
   visible: boolean
   locked: boolean
@@ -85,7 +90,7 @@ export const ROOT_SHAPE_ID = '__root__'
 /** 完整画本文档 */
 export interface CanvasDocument {
   shapes: Record<string, CanvasShape>
-  rootIds: string[]       // 顶层节点 id 列表（通常只有一个 "__root__"）
+  rootIds: string[] // 顶层节点 id 列表（通常只有一个 "__root__"）
 }
 
 /** 创建空文档 */

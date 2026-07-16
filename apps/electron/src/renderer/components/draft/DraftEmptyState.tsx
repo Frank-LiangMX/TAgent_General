@@ -28,13 +28,19 @@ const TEMPLATES: Array<{
   title: string
   description: string
   context: string
-  requirements: Array<{ label: string; title: string; description: string; acceptanceCriteria: string[] }>
+  requirements: Array<{
+    label: string
+    title: string
+    description: string
+    acceptanceCriteria: string[]
+  }>
 }> = [
   {
     id: 'login-system',
     title: '登录系统',
     description: '手机号验证码登录、OAuth 第三方登录',
-    context: '开发一个用户登录系统，支持手机号 + 验证码登录，以及微信/Google OAuth 登录。需要考虑安全性（防刷、防爆破）和用户体验。',
+    context:
+      '开发一个用户登录系统，支持手机号 + 验证码登录，以及微信/Google OAuth 登录。需要考虑安全性（防刷、防爆破）和用户体验。',
     requirements: [
       {
         label: 'R-1',
@@ -60,7 +66,8 @@ const TEMPLATES: Array<{
     id: 'crud-admin',
     title: 'CRUD 管理后台',
     description: '增删改查数据管理页面',
-    context: '开发一个通用的 CRUD 管理后台，用于管理用户数据。需要表格展示、搜索筛选、分页、新增/编辑/删除操作。',
+    context:
+      '开发一个通用的 CRUD 管理后台，用于管理用户数据。需要表格展示、搜索筛选、分页、新增/编辑/删除操作。',
     requirements: [
       {
         label: 'R-1',
@@ -86,7 +93,8 @@ const TEMPLATES: Array<{
     id: 'api-service',
     title: 'API 服务开发',
     description: 'RESTful API 接口设计与实现',
-    context: '开发一套 RESTful API 服务，提供用户管理、数据查询等接口。需要考虑认证、鉴权、限流、文档。',
+    context:
+      '开发一套 RESTful API 服务，提供用户管理、数据查询等接口。需要考虑认证、鉴权、限流、文档。',
     requirements: [
       {
         label: 'R-1',
@@ -155,9 +163,7 @@ export function DraftEmptyState(): React.ReactElement {
             <PencilRuler size={24} className="text-primary" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground mb-2">📝 需求草稿</h1>
-          <p className="text-sm text-muted-foreground">
-            清晰描述你的需求，让 Agent 准确理解并执行
-          </p>
+          <p className="text-sm text-muted-foreground">清晰描述你的需求，让 Agent 准确理解并执行</p>
         </div>
 
         {/* 步骤引导 */}
@@ -198,8 +204,7 @@ export function DraftEmptyState(): React.ReactElement {
             从空白开始
           </Button>
           <Button variant="outline" className="material-secondary-btn gap-2 rounded-full border-0">
-            <Sparkles size={14} />
-            让 AI 帮我拆解
+            <Sparkles size={14} />让 AI 帮我拆解
           </Button>
         </div>
 
@@ -226,7 +231,9 @@ export function DraftEmptyState(): React.ReactElement {
                         className="text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all"
                       />
                     </h3>
-                    <p className="text-[12px] text-muted-foreground/60 mb-2">{template.description}</p>
+                    <p className="text-[12px] text-muted-foreground/60 mb-2">
+                      {template.description}
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {template.requirements.map((req) => (
                         <span

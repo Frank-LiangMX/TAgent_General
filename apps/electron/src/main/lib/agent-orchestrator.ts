@@ -21,19 +21,13 @@ import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 
-import {
-  getAdapter,
-  fetchTitle,
-  normalizeAnthropicBaseUrlForSdk,
-  getTAgentUserAgent,
-} from '@tagent/core'
+import { normalizeAnthropicBaseUrlForSdk, getTAgentUserAgent } from '@tagent/core'
 import {
   TAGENT_DEFAULT_PERMISSION_MODE,
   resolveSdkPermissionModeForTAgent,
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_MESSAGE,
   THINKING_SIGNATURE_ERROR_TITLE,
-  normalizeContextUsageSnapshot,
   AGENT_IPC_CHANNELS,
   supports1MContext,
 } from '@tagent/shared'
@@ -57,6 +51,7 @@ import type {
   SdkBeta,
   ProviderType,
   BlockedApprovalRecord,
+  AgentCallStats,
 } from '@tagent/shared'
 import pkg from '../../../package.json' with { type: 'json' }
 import {
@@ -67,6 +62,8 @@ import {
   extractErrorDetails,
   shouldKeepChannelOpen,
 } from './adapters/claude-agent-adapter'
+import { createAgentCallStats } from './agent-call-stats'
+import { generateLocalTitle } from './local-title-generator'
 import { askUserService } from './agent-ask-user-service'
 import {
   MAX_TOOL_SUMMARY_LENGTH,
@@ -80,6 +77,7 @@ import {
 import { AgentEventBus } from './agent-event-bus'
 import { exitPlanService, type ExitPlanPermissionResult } from './agent-exit-plan-service'
 import { applyAgentModelRoutingToEnv, resolveAgentModelRouting } from './agent-model-routing'
+import { clearAgentProviderEnv, applyAgentProviderEnv } from './agent-provider-env'
 import { permissionService } from './agent-permission-service'
 import { buildSystemPrompt, buildDynamicContext, buildBuiltinAgents } from './agent-prompt-builder'
 import { injectAutomationMcpServer } from './automation-agent-tools'
@@ -107,7 +105,7 @@ import {
   getWorkspaceAttachedDirectories,
   getWorkspaceAttachedFiles,
 } from './agent-workspace-manager'
-import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
+import { decryptApiKey, getChannelById } from './channel-manager'
 import {
   getAgentWorkspacePath,
   getAgentSessionWorkspacePath,
@@ -117,11 +115,10 @@ import {
 } from './config-paths'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
-import { getContextUsageCache } from './context-usage-cache'
-import { getFetchFn } from './proxy-fetch'
+
 import { getEffectiveProxyUrl } from './proxy-settings-service'
 import { getRuntimeStatus } from './runtime-init'
-import { getSettings } from './settings-service'
+import { getSettings, isAgentStreamingEnabled } from './settings-service'
 import { kanbanDbService } from './kanban-db'
 
 import type { ClaudeAgentQueryOptions } from './adapters/claude-agent-adapter'
@@ -369,22 +366,6 @@ function resolveSDKCliPath(): string {
 const MAX_CONTEXT_MESSAGES_FALLBACK = 20
 
 /**
- * P2 主动兜底压缩：context 占用超阈值时 fire-and-forget 调 compactSession
- *
- * 每轮 turn 后检测到高占用（> 77.5%）时主动压缩，对齐 SDK 内置压缩阈值。
- * 避免 context 积累到 100% 才压缩。失败只 warn，不影响主流程。
- */
-async function compactSessionProactive(sessionId: string): Promise<void> {
-  try {
-    const { compactSession } = await import('./agent-session-compactor')
-    await compactSession(sessionId, { strategy: 'drop_old_tool_results' })
-    console.log(`[Agent 编排] 主动兜底压缩完成: sessionId=${sessionId}`)
-  } catch (err) {
-    console.warn(`[Agent 编排] 主动兜底压缩失败: sessionId=${sessionId}`, err)
-  }
-}
-
-/**
  * 从 SDKMessage assistant 消息的 content 中提取工具活动摘要
  *
  * 扫描 tool_use 块，提取工具名称和关键参数，帮助新 SDK 会话理解之前做过什么。
@@ -560,13 +541,6 @@ function buildReferencedSessionsPrompt(
   return `<referenced_sessions>\n用户在消息中明确引用了以下同工作区 Agent 会话。不要假设这些会话的内容；需要上下文时，请先读取对应的 History path，再基于读取结果继续完成任务。\n${sessionBlocks.join('\n\n')}\n</referenced_sessions>`
 }
 
-/** 标题生成 Prompt */
-const TITLE_PROMPT =
-  '根据用户的第一条消息，生成一个简短的对话标题（10字以内）。只输出标题，不要有任何其他内容、标点符号或引号。\n\n用户消息：'
-
-/** 标题最大长度 */
-const MAX_TITLE_LENGTH = 20
-
 /** 默认会话标题（用于判断是否需要自动生成） */
 const DEFAULT_SESSION_TITLES = new Set(['新 Agent 会话', 'TA 会话'])
 
@@ -709,29 +683,14 @@ export class AgentOrchestrator {
       }
     }
 
-    // 认证方式按 provider 分支
-    // - kscc 内网渠道：kscc CLI 自行处理认证，不注入任何 ANTHROPIC_* 凭证
-    // - Kimi Coding Plan：只认 Bearer，通过 ANTHROPIC_CUSTOM_HEADERS 注入 TAgent UA
-    // - MiniMax Coding Plan：Claude Code 场景使用 Bearer（ANTHROPIC_AUTH_TOKEN）
-    // - 通过 ANTHROPIC_AUTH_TOKEN 让 SDK 发 Authorization: Bearer
-    // - 其它：ANTHROPIC_API_KEY（SDK 内部会同时带上 x-api-key 和 Bearer）
+    // 认证方式按 provider 分支（纯函数，不操作 process.env）
+    // 先清理残留的 ANTHROPIC_* 变量，防止上一轮渠道的凭证泄漏到本轮
+    clearAgentProviderEnv(sdkEnv)
+    // kscc 内网渠道：kscc CLI 自行处理认证，不注入任何 ANTHROPIC_* 凭证，直接返回
     if (provider === 'kscc-internal') {
-      // kscc 自管认证，保留 CLAUDE_CONFIG_DIR / CLAUDE_CODE_SHELL 等公共配置即可
       return sdkEnv
-    } else if (
-      provider === 'kimi-coding' ||
-      provider === 'zhipu-coding' ||
-      provider === 'xiaomi-token-plan'
-    ) {
-      sdkEnv.ANTHROPIC_AUTH_TOKEN = apiKey
-      sdkEnv.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
-    } else if (provider === 'minimax') {
-      sdkEnv.ANTHROPIC_AUTH_TOKEN = apiKey
-      sdkEnv.API_TIMEOUT_MS = '3000000'
-      sdkEnv.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
-    } else {
-      sdkEnv.ANTHROPIC_API_KEY = apiKey
     }
+    applyAgentProviderEnv(sdkEnv, provider, apiKey, getTAgentUserAgent(pkg.version))
 
     // 显式控制 ANTHROPIC_BASE_URL：仅在用户配置了自定义 Base URL 时注入
     // 使用统一的 normalizeAnthropicBaseUrlForSdk 规范化，SDK 内部会自动拼接 /v1/messages
@@ -882,14 +841,8 @@ export class AgentOrchestrator {
               html: z
                 .string()
                 .describe('完整的 HTML 内容（含 body 内的标记，不含 html/head/body 包裹标签）'),
-              css: z
-                .string()
-                .optional()
-                .describe('可选的 CSS 样式内容'),
-              name: z
-                .string()
-                .optional()
-                .describe('页面名称（如"登录页"、"仪表盘"），用于标识'),
+              css: z.string().optional().describe('可选的 CSS 样式内容'),
+              name: z.string().optional().describe('页面名称（如"登录页"、"仪表盘"），用于标识'),
               device: z
                 .enum(['mobile', 'tablet', 'desktop'])
                 .optional()
@@ -913,11 +866,7 @@ export class AgentOrchestrator {
               })
 
               const deviceLabel =
-                args.device === 'mobile'
-                  ? '手机'
-                  : args.device === 'tablet'
-                    ? '平板'
-                    : '桌面'
+                args.device === 'mobile' ? '手机' : args.device === 'tablet' ? '平板' : '桌面'
               return {
                 content: [
                   {
@@ -1042,84 +991,40 @@ export class AgentOrchestrator {
   }
 
   /**
-   * 生成 Agent 会话标题
+   * 生成 Agent 会话标题（本地确定性规则，不调用 Provider）
    *
-   * 使用 Provider 适配器系统，支持所有渠道。任何错误返回 null。
+   * 取第一条非空文本行，合并连续空白，按本地标题规则截断。
+   * 保留 IPC/Promise contract 供外部调用；内部 autoGenerateTitle 也使用此方法。
    */
   async generateTitle(input: AgentGenerateTitleInput): Promise<string | null> {
-    const { userMessage, channelId, modelId } = input
-    console.log('[Agent 标题生成] 开始生成标题:', {
-      channelId,
-      modelId,
-      userMessage: userMessage.slice(0, 50),
-    })
-
-    try {
-      const channels = listChannels()
-      const channel = channels.find((c) => c.id === channelId)
-      if (!channel) {
-        console.warn('[Agent 标题生成] 渠道不存在:', channelId)
-        return null
-      }
-
-      const apiKey = decryptApiKey(channelId)
-      const providerAdapter = getAdapter(channel.provider)
-      const request = providerAdapter.buildTitleRequest({
-        baseUrl: channel.baseUrl,
-        apiKey,
-        modelId,
-        prompt: TITLE_PROMPT + userMessage,
-      })
-
-      const proxyUrl = await getEffectiveProxyUrl()
-      const fetchFn = getFetchFn(proxyUrl)
-      const title = await fetchTitle(request, providerAdapter, fetchFn)
-      if (!title) {
-        console.warn('[Agent 标题生成] API 返回空标题')
-        return null
-      }
-
-      const cleaned = title
-        .trim()
-        .replace(/^["'""''「《]+|["'""''」》]+$/g, '')
-        .trim()
-      const result = cleaned.slice(0, MAX_TITLE_LENGTH) || null
-
-      console.log(`[Agent 标题生成] 生成标题成功: "${result}"`)
-      return result
-    } catch (error) {
-      console.warn('[Agent 标题生成] 生成失败:', error)
-      return null
-    }
+    const { userMessage } = input
+    return generateLocalTitle(userMessage)
   }
 
   /**
-   * 流完成后自动生成标题
+   * 流完成后自动生成标题（本地确定性规则，不调用 Provider）
    *
-   * 如果会话标题仍为默认值，自动调用标题生成并通过回调通知。
+   * 如果会话标题仍为默认值，使用本地规则生成标题并通过回调通知。
    */
   private async autoGenerateTitle(
     sessionId: string,
     userMessage: string,
-    channelId: string,
-    modelId: string,
+    _channelId: string,
+    _modelId: string,
     callbacks: SessionCallbacks
   ): Promise<void> {
     try {
       const meta = getAgentSessionMeta(sessionId)
       if (!meta || !DEFAULT_SESSION_TITLES.has(meta.title)) return
 
-      const title = await this.generateTitle({ userMessage, channelId, modelId })
-      // API 生成失败时，用用户消息首行作为兜底标题
-      const fallback = userMessage.split('\n')[0]?.trim().slice(0, MAX_TITLE_LENGTH) || null
-      const finalTitle = title || fallback
-      if (!finalTitle) return
+      const title = generateLocalTitle(userMessage)
+      if (!title) return
 
-      updateAgentSessionMeta(sessionId, { title: finalTitle })
-      callbacks.onTitleUpdated(finalTitle)
-      console.log(`[Agent 编排] 自动标题生成完成: "${finalTitle}"${title ? '' : '（兜底）'}`)
+      updateAgentSessionMeta(sessionId, { title })
+      callbacks.onTitleUpdated(title)
+      console.log(`[Agent 编排] 本地标题生成完成: "${title}"`)
     } catch (error) {
-      console.warn('[Agent 编排] 自动标题生成失败:', error)
+      console.warn('[Agent 编排] 本地标题生成失败:', error)
     }
   }
 
@@ -1567,6 +1472,7 @@ export class AgentOrchestrator {
         console.warn('[Agent 编排] L4 recordSession 失败:', e)
       }
     }
+    const callStats: AgentCallStats = createAgentCallStats()
     const completeRun = (
       messages?: AgentMessage[],
       opts?: {
@@ -1579,6 +1485,7 @@ export class AgentOrchestrator {
       }
     ): void => {
       releaseActiveRun()
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       // 先发送 STREAM_COMPLETE IPC，让 UI 立即更新状态
       // 然后再执行 L4 记忆写入（可能耗时）
       callbacks.onComplete(messages, opts)
@@ -1591,6 +1498,7 @@ export class AgentOrchestrator {
       messages?: AgentMessage[],
       opts?: { startedAt?: number; resultSubtype?: string }
     ): void => {
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       callbacks.onComplete(messages, { ...opts, backgroundTasksPending: true })
     }
     const failRun = (
@@ -1599,6 +1507,7 @@ export class AgentOrchestrator {
       opts?: { stoppedByUser?: boolean; startedAt?: number; resultSubtype?: string }
     ): void => {
       releaseActiveRun()
+      this.eventBus.emit(sessionId, { kind: 'call_stats', stats: { ...callStats } })
       callbacks.onError(error)
       callbacks.onComplete(messages, opts)
     }
@@ -1606,27 +1515,8 @@ export class AgentOrchestrator {
     // 3. 构建环境变量
     // 同步凭证到 process.env（SDK in-process 代码可能直接读取 process.env）
     // 先清理再注入，确保 SDK 无论从 env 选项还是 process.env 都拿到正确值
-    delete process.env.ANTHROPIC_API_KEY
-    delete process.env.ANTHROPIC_AUTH_TOKEN
-    delete process.env.ANTHROPIC_BASE_URL
-    delete process.env.ANTHROPIC_CUSTOM_HEADERS
-    if (channel.provider === 'kscc-internal') {
-      // kscc 自管认证，不注入任何凭证，也不设置 ANTHROPIC_BASE_URL
-      // （kscc CLI 内部已配置 endpoint）
-    } else if (channel.provider === 'kimi-coding') {
-      // Kimi Coding Plan：只用 Bearer + 必须带 User-Agent
-      process.env.ANTHROPIC_AUTH_TOKEN = apiKey
-      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
-    } else if (channel.provider === 'xiaomi-token-plan') {
-      // 小米 Token Plan：Bearer + 必须带 User-Agent
-      process.env.ANTHROPIC_AUTH_TOKEN = apiKey
-      process.env.ANTHROPIC_CUSTOM_HEADERS = `User-Agent: ${getTAgentUserAgent(pkg.version)}`
-    } else if (channel.provider === 'minimax') {
-      // MiniMax Coding Plan：Claude Code 兼容配置使用 Bearer
-      process.env.ANTHROPIC_AUTH_TOKEN = apiKey
-    } else {
-      process.env.ANTHROPIC_API_KEY = apiKey
-    }
+    clearAgentProviderEnv(process.env)
+    applyAgentProviderEnv(process.env, channel.provider, apiKey, getTAgentUserAgent(pkg.version))
     // 使用与 buildSdkEnv 相同的规范化逻辑，确保 process.env 和 sdkEnv 中的 URL 一致
     if (
       channel.provider !== 'kscc-internal' &&
@@ -2577,7 +2467,7 @@ export class AgentOrchestrator {
         // 主进程提取 text_delta 透传到渲染层，驱动 useSmoothStream 打字机效果，
         // 避免 kscc 等长 turn 渠道在 SDK 内部逐 token 生成期间 UI 一直显示"运行中"无反馈。
         // 不影响 Prompt Cache：仅改 SDK yield 给上层的频率，不改发给 API 的请求结构。
-        includePartialMessages: true,
+        includePartialMessages: isAgentStreamingEnabled(appSettings),
         // SDK 0.2.52+ 新增选项（从 settings 读取）
         ...(appSettings.agentThinking && { thinking: appSettings.agentThinking }),
         effort: appSettings.agentEffort ?? 'high',
@@ -2636,21 +2526,6 @@ export class AgentOrchestrator {
           console.log(`[Agent 编排] 缓存 contextWindow: ${cw}`)
           setSessionContextWindow(sessionId, cw) // P0-1
         },
-        // P2 主动兜底：每轮 turn 后检测 context 占用，超 77.5% 主动压缩
-        // 阈值对齐 SDK 内置压缩阈值，不等 result 后 context 已满才处理
-        onContextUsage: (usedTokens, totalTokens) => {
-          if (totalTokens <= 0) return
-          const ratio = usedTokens / totalTokens
-          const threshold = 0.775 // 77.5%，与 SDK 内置阈值对齐
-          if (ratio < threshold) return
-          // 单会话单次压缩去重：本轮已压缩过就不再压
-          if (proactiveCompactionDoneThisTurn) return
-          proactiveCompactionDoneThisTurn = true
-          console.warn(
-            `[Agent 编排] Context 占用 ${Math.round(ratio * 100)}% (${usedTokens}/${totalTokens})，主动 fire-and-forget 调 compactSession(drop_old_tool_results)`
-          )
-          void compactSessionProactive(sessionId)
-        },
       }
       markPhase('buildQueryOptions')
 
@@ -2670,8 +2545,6 @@ export class AgentOrchestrator {
       let skipNextRetryDelay = false
       let thinkingSignatureRecoveryAttempted = false
       let invisibleRecoveryAttempts = 0
-      // P2 主动兜底压缩：本轮 result 后是否已主动调过 compactSession，避免重复压缩
-      let proactiveCompactionDoneThisTurn = false
       const canAutoRetry = (attempt: number): boolean =>
         attempt <= MAX_AUTO_RETRIES && retryDelayElapsedMs < MAX_AUTO_RETRY_WAIT_MS
 
@@ -2687,6 +2560,7 @@ export class AgentOrchestrator {
       for (let attempt = 1; attempt <= MAX_AUTO_RETRIES + 1; attempt++) {
         // 非首次尝试：等待 + 发送重试事件到 UI
         if (attempt > 1) {
+          callStats.retryAttempts += 1
           if (skipNextRetryDelay) {
             skipNextRetryDelay = false
             console.log(`[Agent 编排] 已切换到上下文回填模式，立即重试`)
@@ -2752,6 +2626,7 @@ export class AgentOrchestrator {
 
         try {
           // 获取异步迭代器（手动 .next() 以支持 Promise.race 中断）
+          callStats.queryAttempts += 1
           const queryIterable = this.adapter.query(queryOptions)
           const queryIterator = queryIterable[Symbol.asyncIterator]()
 
@@ -2797,6 +2672,11 @@ export class AgentOrchestrator {
 
             pendingNext = null
             const msg = iterResult.value
+
+            if (msg.type === 'assistant' && !(msg as SDKAssistantMessage).isReplay) {
+              if ((msg as SDKAssistantMessage).parent_tool_use_id) callStats.subagentCalls += 1
+              else callStats.modelCalls += 1
+            }
 
             // 流式 partial 事件：SDK 启用 includePartialMessages 后逐 token yield。
             // 提取 text_delta 透传到渲染层驱动打字机，不持久化、不走 shouldEmit 过滤。
@@ -3825,82 +3705,5 @@ export class AgentOrchestrator {
     }
 
     return uuid
-  }
-
-  /** 获取当前会话 Context 分项占用（stale-while-revalidate：有缓存立即返回，后台刷新 + IPC 通知更新） */
-  async getContextUsage(
-    sessionId: string
-  ): Promise<import('@tagent/shared').GetContextUsageResponse> {
-    if (!this.adapter.getContextUsage) {
-      return {
-        ok: false,
-        code: 'UNSUPPORTED',
-        message: '当前 Provider 不支持 Context 分项查询',
-      }
-    }
-    try {
-      const snapshot = await this.adapter.getContextUsage(sessionId)
-      // 返回缓存后，后台刷新并通知渲染进程重新获取（命中刚更新的缓存）
-      this.refreshContextUsageInBackground(sessionId)
-      return { ok: true, snapshot }
-    } catch (error) {
-      const { toGetContextUsageError } = await import('./context-usage-mapper')
-      const mapped = toGetContextUsageError(error)
-      // 空闲会话无活跃 Query 是正常状态，不应刷 warn
-      if (mapped.code !== 'NO_ACTIVE_QUERY' && mapped.code !== 'NO_CACHE') {
-        console.warn(
-          `[Agent 编排] getContextUsage 失败: sessionId=${sessionId}, code=${mapped.code}`
-        )
-      }
-      return { ok: false, code: mapped.code, message: mapped.message }
-    }
-  }
-
-  /** 后台刷新中的会话，防止并发刷新 Context 分项 */
-  private readonly contextUsageRefreshing = new Set<string>()
-
-  /**
-   * 后台刷新 Context 分项缓存，完成后通过 IPC 通知渲染进程重新获取。
-   * fire-and-forget，不阻塞 getContextUsage 返回。同会话并发刷新只跑一个。
-   */
-  private refreshContextUsageInBackground(sessionId: string): void {
-    if (!this.adapter.refreshContextUsage) return
-    if (this.contextUsageRefreshing.has(sessionId)) return
-
-    this.contextUsageRefreshing.add(sessionId)
-    void this.adapter
-      .refreshContextUsage(sessionId)
-      .then((updated) => {
-        if (!updated) return
-        void import('./agent-service')
-          .then(({ getSessionWebContents }) => {
-            const wc = getSessionWebContents(sessionId)
-            if (wc && !wc.isDestroyed()) {
-              wc.send(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, { sessionId })
-            }
-          })
-          .catch((err) => {
-            console.warn(`[Agent 编排] 推送 Context 分项更新通知失败: sessionId=${sessionId}`, err)
-          })
-      })
-      .finally(() => {
-        this.contextUsageRefreshing.delete(sessionId)
-      })
-  }
-
-  /** 读取会话 Context 分项缓存（不调用 SDK，用于面板优先展示） */
-  getContextUsageCached(sessionId: string): import('@tagent/shared').GetContextUsageResponse {
-    const cached = getContextUsageCache(sessionId)
-    if (!cached) {
-      return {
-        ok: false,
-        code: 'NO_CACHE',
-        message: '暂无 Context 分项缓存',
-      }
-    }
-    return {
-      ok: true,
-      snapshot: normalizeContextUsageSnapshot({ ...cached, fetchedAt: Date.now() }),
-    }
   }
 }

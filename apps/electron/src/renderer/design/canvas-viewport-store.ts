@@ -18,17 +18,17 @@ export const zoomAtom = atom(
   (get) => get(viewportAtom).zoom,
   (_get, set, zoom: number) => {
     set(viewportAtom, (prev) => ({ ...prev, zoom: Math.max(0.1, Math.min(4, zoom)) }))
-  },
+  }
 )
 
 export const panXAtom = atom(
   (get) => get(viewportAtom).panX,
-  (_get, set, panX: number) => set(viewportAtom, (prev) => ({ ...prev, panX })),
+  (_get, set, panX: number) => set(viewportAtom, (prev) => ({ ...prev, panX }))
 )
 
 export const panYAtom = atom(
   (get) => get(viewportAtom).panY,
-  (_get, set, panY: number) => set(viewportAtom, (prev) => ({ ...prev, panY })),
+  (_get, set, panY: number) => set(viewportAtom, (prev) => ({ ...prev, panY }))
 )
 
 export const resetViewportAtom = atom(null, (_get, set) => {

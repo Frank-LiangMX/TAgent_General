@@ -398,10 +398,7 @@ export async function notifyKanbanEvent(payload: KanbanNotificationPayload): Pro
 // ===== 便捷函数（dispatcher 调用） =====
 
 /** 看板创建时推送通知 */
-export async function notifyBoardCreated(
-  board: KanbanBoard,
-  totalTasks: number
-): Promise<void> {
+export async function notifyBoardCreated(board: KanbanBoard, totalTasks: number): Promise<void> {
   await notifyKanbanEvent({
     event: 'board_created',
     board,

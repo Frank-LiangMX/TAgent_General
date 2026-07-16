@@ -31,9 +31,7 @@ export function showNudgeToast(
   // 纠正类型：自动记录（设计文档要求 L3 自动写），但仍调 respondNudge('accept')
   // 触发主进程落盘。历史 bug：之前只显示 3s 提示没调 accept，导致 L3 永不写入。
   if (nudge.type === 'correction') {
-    void window.electronAPI
-      .respondNudge(sessionId, nudge.id, 'accept', mode)
-      .catch(console.error)
+    void window.electronAPI.respondNudge(sessionId, nudge.id, 'accept', mode).catch(console.error)
     return toast(nudge.userMessage, {
       duration: 3000,
     })

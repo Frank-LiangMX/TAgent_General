@@ -18,12 +18,7 @@ import { applyShapeOpsAtom } from '@/design/agent-ops-bridge'
 import { dispatchAppendChatInput } from '@/lib/chat-input-bridge'
 import { detectImportKind, readFileAsText } from '@/lib/import-html'
 import { cn } from '@/lib/utils'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@tagent/ui'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 
 export interface ImportDropZoneProps {
   className?: string
@@ -60,11 +55,11 @@ export function ImportDropZone({ className }: ImportDropZoneProps): React.ReactE
           // 把 HTML 内容注入 chat input 让 agent 读取
           const snippet = text.length > 2000 ? text.slice(0, 2000) + '\n\n...(截断)' : text
           dispatchAppendChatInput(
-            `\n[我导入了一个 HTML 文件 "${file.name}"，内容如下：]\n\`\`\`html\n${snippet}\n\`\`\`\n请根据这个复刻为一个节点树设计`,
+            `\n[我导入了一个 HTML 文件 "${file.name}"，内容如下：]\n\`\`\`html\n${snippet}\n\`\`\`\n请根据这个复刻为一个节点树设计`
           )
         } else if (kind === 'image') {
           dispatchAppendChatInput(
-            `\n[我上传了一张设计稿 "${file.name}"，请按这张图复刻为节点树设计]`,
+            `\n[我上传了一张设计稿 "${file.name}"，请按这张图复刻为节点树设计]`
           )
         } else {
           setError('不支持的文件类型，请使用 .html / .png / .jpg')
@@ -75,7 +70,7 @@ export function ImportDropZone({ className }: ImportDropZoneProps): React.ReactE
         setBusy(false)
       }
     },
-    [applyOps],
+    [applyOps]
   )
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +100,13 @@ export function ImportDropZone({ className }: ImportDropZoneProps): React.ReactE
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <input ref={inputRef} type="file" accept=".html,.htm,.png,.jpg,.jpeg,.webp,.gif" className="hidden" onChange={onChange} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".html,.htm,.png,.jpg,.jpeg,.webp,.gif"
+        className="hidden"
+        onChange={onChange}
+      />
       {error && <span className="text-[10px] text-red-600 dark:text-red-400">{error}</span>}
     </div>
   )

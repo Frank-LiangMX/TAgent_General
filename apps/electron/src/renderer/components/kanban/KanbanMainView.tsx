@@ -202,10 +202,7 @@ function TasksTabContent({
                   </div>
                   <div className="grid grid-cols-3 gap-2.5">
                     {groupTasks.map((task) => (
-                      <KanbanTaskListItem
-                        key={task.id}
-                        task={task}
-                      />
+                      <KanbanTaskListItem key={task.id} task={task} />
                     ))}
                   </div>
                 </div>

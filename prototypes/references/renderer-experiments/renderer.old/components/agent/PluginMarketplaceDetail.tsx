@@ -178,11 +178,13 @@ export function PluginMarketplaceDetail({
                     </p>
                   ) : null}
                   {mcp.envHints && mcp.envHints.length > 0 ? (
-                  <div className="mt-3 space-y-1.5 border-t border-border/40 pt-3">
+                    <div className="mt-3 space-y-1.5 border-t border-border/40 pt-3">
                       <p className="text-[10px] font-medium text-muted-foreground">环境变量</p>
                       {mcp.envHints.map((hint) => (
                         <p key={hint.key} className="text-[10px] text-muted-foreground">
-                          <code className="material-inline-chip rounded-full px-2 py-0.5 font-mono">{hint.key}</code>
+                          <code className="material-inline-chip rounded-full px-2 py-0.5 font-mono">
+                            {hint.key}
+                          </code>
                           {hint.required ? <span className="ml-1 text-red-500">*</span> : null}
                           <span className="ml-1">— {hint.description}</span>
                         </p>

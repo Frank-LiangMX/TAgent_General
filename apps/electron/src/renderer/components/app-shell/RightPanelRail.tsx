@@ -16,11 +16,7 @@ import {
   agentSidePanelOpenAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
-import {
-  btwChannelIdAtom,
-  btwModelIdAtom,
-  btwSourceSessionIdAtom,
-} from '@/atoms/btw-atoms'
+import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
@@ -98,7 +94,18 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
       if (currentSessionId) setBtwSourceSessionId(currentSessionId)
       setPanelOpen(true)
     }
-  }, [panelOpen, rightRailItem, channelId, modelId, currentSessionId, setRightRailItem, setBtwChannelId, setBtwModelId, setBtwSourceSessionId, setPanelOpen])
+  }, [
+    panelOpen,
+    rightRailItem,
+    channelId,
+    modelId,
+    currentSessionId,
+    setRightRailItem,
+    setBtwChannelId,
+    setBtwModelId,
+    setBtwSourceSessionId,
+    setPanelOpen,
+  ])
 
   const handleBrowserClick = React.useCallback(() => {
     if (panelOpen && rightRailItem === 'browser') {

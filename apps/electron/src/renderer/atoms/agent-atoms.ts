@@ -24,6 +24,7 @@ import type {
   SDKMessage,
   UnstagedChangesResult,
   ConversationMeta,
+  AgentCallStats,
 } from '@tagent/shared'
 
 import { calculateDockBadgeCount, countPendingRequests } from '@/lib/dock-badge-count'
@@ -988,6 +989,8 @@ export interface SessionTokenStats {
   totalCostUsd: number
   /** 累计 turn 数 */
   turnCount: number
+  /** 最近一轮 Agent 调用明细 */
+  lastCallStats?: AgentCallStats
 }
 
 /** 所有会话的累计 token 统计 Map — 以 sessionId 为 key */

@@ -116,6 +116,7 @@ const LANGUAGE_INFO: Array<{
 
 export function AgentPreferencesSettings(): React.ReactElement {
   const [autoCheckEnabled, setAutoCheckEnabled] = React.useState<boolean>(true)
+  const [agentStreaming, setAgentStreaming] = React.useState<boolean>(true)
   const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
   const [languagesConfig, setLanguagesConfig] = React.useState<
     Partial<Record<AutoCheckLanguage, LanguageHookConfig>>
@@ -139,6 +140,7 @@ export function AgentPreferencesSettings(): React.ReactElement {
       .then((settings) => {
         const enabled = settings.hooks?.autoCheck ?? settings.hooks?.autoTypecheck ?? true
         setAutoCheckEnabled(enabled)
+        setAgentStreaming(settings.agentStreaming ?? true)
         setLanguagesConfig(settings.hooks?.languages ?? {})
         // 看板模型分配设置（默认值：2 / true / false）
         const ab = settings.agentBehavior
@@ -162,6 +164,16 @@ export function AgentPreferencesSettings(): React.ReactElement {
     } catch (error) {
       console.error('[Agent 行为设置] 更新 auto-check 失败:', error)
       setAutoCheckEnabled(!checked)
+    }
+  }
+
+  const handleAgentStreamingChange = async (checked: boolean): Promise<void> => {
+    setAgentStreaming(checked)
+    try {
+      await window.electronAPI.updateSettings({ agentStreaming: checked })
+    } catch (error) {
+      console.error('[Agent behavior settings] failed to update streaming output:', error)
+      setAgentStreaming(!checked)
     }
   }
 
@@ -260,6 +272,20 @@ export function AgentPreferencesSettings(): React.ReactElement {
     <div className="space-y-6">
       {/* 人格定义（SOUL.md） */}
       <SoulSettings />
+
+      <SettingsSection
+        title="流式输出"
+        description="控制 Agent 是否接收 SDK 的流式事件。关闭后等待完整回复，可减少流式事件计数。"
+      >
+        <SettingsCard>
+          <SettingsToggle
+            label="启用流式输出"
+            description="开启后实时显示打字机效果；关闭后在完整回复生成后显示，设置将在下一次 Agent 请求生效。"
+            checked={agentStreaming}
+            onCheckedChange={handleAgentStreamingChange}
+          />
+        </SettingsCard>
+      </SettingsSection>
 
       {/* 自动检查 */}
       <SettingsSection

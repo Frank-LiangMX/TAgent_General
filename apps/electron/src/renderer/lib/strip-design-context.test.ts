@@ -60,7 +60,7 @@ describe('formatDesignContextForMessage', () => {
       formatDesignContextForMessage({
         designModeEnabled: false,
         device: 'desktop',
-      }),
+      })
     ).toBe('')
   })
 

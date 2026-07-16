@@ -9,7 +9,11 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Check, Eye, RotateCcw } from 'lucide-react'
 import * as React from 'react'
 
-import { canvasSnapshotsAtom, activeCanvasSnapshotIdAtom, addCanvasSnapshotAtom } from '@/design/canvas-snapshot'
+import {
+  canvasSnapshotsAtom,
+  activeCanvasSnapshotIdAtom,
+  addCanvasSnapshotAtom,
+} from '@/design/canvas-snapshot'
 import { cn } from '@/lib/utils'
 
 function relTime(ts: number, now: number = Date.now()): string {
@@ -43,7 +47,7 @@ function SnapshotChip({
           ? 'border-primary bg-primary/10 text-primary'
           : isLatest
             ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300'
-            : 'border-border/40 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground',
+            : 'border-border/40 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
       )}
     >
       <button type="button" className="flex items-center gap-1 px-2 py-1" onClick={onActivate}>
@@ -56,7 +60,10 @@ function SnapshotChip({
         <button
           type="button"
           className="flex items-center justify-center gap-1 border-t border-primary/30 px-2 py-1 text-[10px] hover:bg-primary/15"
-          onClick={(e) => { e.stopPropagation(); onPromote() }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onPromote()
+          }}
         >
           <RotateCcw className="size-3" />
           从这版继续
@@ -83,8 +90,15 @@ export function VersionTimeline({ className }: { className?: string }): React.Re
   }
 
   return (
-    <div className={cn('flex items-center gap-1.5 border-b border-border/40 bg-background/70 px-3 py-1.5 backdrop-blur', className)}>
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">版本</span>
+    <div
+      className={cn(
+        'flex items-center gap-1.5 border-b border-border/40 bg-background/70 px-3 py-1.5 backdrop-blur',
+        className
+      )}
+    >
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        版本
+      </span>
       <div className="flex flex-1 items-center gap-1 overflow-x-auto">
         {snapshots.map((snap) => (
           <SnapshotChip

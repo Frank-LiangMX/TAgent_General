@@ -12,7 +12,11 @@ import * as React from 'react'
 
 import { currentDocumentAtom } from '@/design/canvas-shape-store'
 import { selectedShapeIdsAtom, hoveredShapeIdAtom } from '@/design/canvas-selection-store'
-import { canvasLayersAtom, selectedElementIdsAtom, hoveredElementIdAtom } from '@/atoms/design-preview-atoms'
+import {
+  canvasLayersAtom,
+  selectedElementIdsAtom,
+  hoveredElementIdAtom,
+} from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
 
 export interface ElementHighlightOverlayProps {
@@ -31,16 +35,15 @@ interface LocalRect {
 /** 把 iframe 的视口矩形换算成相对 overlayRoot 的本地（未缩放）坐标 */
 function measureIframeLocal(
   iframeEl: HTMLIFrameElement,
-  overlayRoot: HTMLElement,
+  overlayRoot: HTMLElement
 ): LocalRect | null {
   try {
     const ir = iframeEl.getBoundingClientRect()
     const rr = overlayRoot.getBoundingClientRect()
     // 祖先 transform: scale 会同等放大两者的 getBoundingClientRect；
     // 用 overlay 的 offsetWidth 反推 scale，得到未缩放本地坐标。
-    const scale = rr.width > 0 && overlayRoot.offsetWidth > 0
-      ? rr.width / overlayRoot.offsetWidth
-      : 1
+    const scale =
+      rr.width > 0 && overlayRoot.offsetWidth > 0 ? rr.width / overlayRoot.offsetWidth : 1
     if (scale <= 0) return null
     return {
       left: (ir.left - rr.left) / scale,
@@ -172,7 +175,7 @@ export function ElementHighlightOverlay({
             r.type === 'selected' &&
               'border-2 border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(255,255,255,0.5)]',
             r.type === 'hover' &&
-              'border border-dashed border-muted-foreground/70 bg-muted-foreground/5',
+              'border border-dashed border-muted-foreground/70 bg-muted-foreground/5'
           )}
           style={{ left: r.left, top: r.top, width: r.width, height: r.height }}
         />

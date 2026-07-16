@@ -68,7 +68,11 @@ import { useAtomValue } from 'jotai'
 import { cn } from '@/lib/utils'
 import { markdownToHtml } from '@/lib/markdown-rich-text'
 
-const PERMISSION_MODE_OPTIONS: Array<{ value: AgentRolePermissionMode; label: string; desc: string }> = [
+const PERMISSION_MODE_OPTIONS: Array<{
+  value: AgentRolePermissionMode
+  label: string
+  desc: string
+}> = [
   { value: 'bypassPermissions', label: '自动放行', desc: '无人值守写操作必备' },
   { value: 'auto', label: '需审批', desc: '写操作走权限弹窗（审核角色用）' },
 ]
@@ -77,9 +81,19 @@ const MAX_CONCURRENT_OPTIONS = [1, 2, 3, 4, 5]
 const BUILTIN_IDS = new Set(['analyst', 'coder', 'reviewer', 'writer'])
 
 const CATEGORY_LABELS: Record<string, string> = {
-  all: '全部', coding: '编码', analysis: '分析', writing: '撰写', review: '审核',
-  design: '设计', management: '管理', devops: '运维', data: '数据',
-  education: '教育', marketing: '营销', security: '安全', general: '通用',
+  all: '全部',
+  coding: '编码',
+  analysis: '分析',
+  writing: '撰写',
+  review: '审核',
+  design: '设计',
+  management: '管理',
+  devops: '运维',
+  data: '数据',
+  education: '教育',
+  marketing: '营销',
+  security: '安全',
+  general: '通用',
 }
 
 export function AgentRoleSettings(): React.ReactElement {
@@ -91,10 +105,16 @@ export function AgentRoleSettings(): React.ReactElement {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
         <SegmentedTabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'mine' | 'store')}>
           <SegmentedTabsItem value="mine">
-            <span className="flex items-center gap-1.5"><Users className="size-3.5" />我的角色</span>
+            <span className="flex items-center gap-1.5">
+              <Users className="size-3.5" />
+              我的角色
+            </span>
           </SegmentedTabsItem>
           <SegmentedTabsItem value="store">
-            <span className="flex items-center gap-1.5"><Store className="size-3.5" />角色商店</span>
+            <span className="flex items-center gap-1.5">
+              <Store className="size-3.5" />
+              角色商店
+            </span>
           </SegmentedTabsItem>
         </SegmentedTabs>
       </div>
@@ -120,7 +140,8 @@ function MyRolesTab(): React.ReactElement {
   const refreshAgentRoles = useRefreshAgentRoles()
 
   React.useEffect(() => {
-    window.electronAPI.listChannels()
+    window.electronAPI
+      .listChannels()
       .then((list: Channel[]) => setChannels(list.filter((c) => c.enabled)))
       .catch(() => {})
   }, [])
@@ -150,16 +171,19 @@ function MyRolesTab(): React.ReactElement {
     }
   }, [])
 
-  React.useEffect(() => { void loadRoles() }, [loadRoles])
+  React.useEffect(() => {
+    void loadRoles()
+  }, [loadRoles])
 
   // 搜索过滤
   const filteredRoles = React.useMemo(() => {
     if (!searchQuery.trim()) return roles
     const q = searchQuery.toLowerCase().trim()
-    return roles.filter((r) =>
-      r.displayName.toLowerCase().includes(q) ||
-      r.id.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q)
+    return roles.filter(
+      (r) =>
+        r.displayName.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q)
     )
   }, [roles, searchQuery])
 
@@ -176,7 +200,10 @@ function MyRolesTab(): React.ReactElement {
   }
 
   // 字段修改
-  const handleFieldChange = (field: keyof AgentRoleProfile, value: string | string[] | number | boolean): void => {
+  const handleFieldChange = (
+    field: keyof AgentRoleProfile,
+    value: string | string[] | number | boolean
+  ): void => {
     if (!editingRole) return
     setEditingRole({ ...editingRole, [field]: value })
   }
@@ -184,14 +211,20 @@ function MyRolesTab(): React.ReactElement {
   // 添加模型
   const handleAddModel = (modelId: string): void => {
     if (!modelId || !editingRole) return
-    if (editingRole.modelPool.includes(modelId)) { toast.warning('该模型已在池中'); return }
+    if (editingRole.modelPool.includes(modelId)) {
+      toast.warning('该模型已在池中')
+      return
+    }
     setEditingRole({ ...editingRole, modelPool: [...editingRole.modelPool, modelId] })
   }
 
   // 移除模型
   const handleRemoveModel = (modelId: string): void => {
     if (!editingRole) return
-    setEditingRole({ ...editingRole, modelPool: editingRole.modelPool.filter((m) => m !== modelId) })
+    setEditingRole({
+      ...editingRole,
+      modelPool: editingRole.modelPool.filter((m) => m !== modelId),
+    })
   }
 
   // 保存角色
@@ -279,11 +312,23 @@ function MyRolesTab(): React.ReactElement {
           className="h-8 w-[200px]"
           showClear={searchQuery.length > 0}
         />
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => void handleImportMd()}>
-          <FileUp className="mr-1 size-3" />导入
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          onClick={() => void handleImportMd()}
+        >
+          <FileUp className="mr-1 size-3" />
+          导入
         </Button>
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => void handleReset()}>
-          <RotateCcw className="mr-1 size-3" />重置
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          onClick={() => void handleReset()}
+        >
+          <RotateCcw className="mr-1 size-3" />
+          重置
         </Button>
         {searchQuery && (
           <Badge variant="outline" className="text-[10px]">
@@ -307,11 +352,7 @@ function MyRolesTab(): React.ReactElement {
         ) : (
           <div className="grid grid-cols-3 gap-3 px-4 pb-4">
             {filteredRoles.map((role) => (
-              <RoleCard
-                key={role.id}
-                role={role}
-                onClick={() => handleCardClick(role)}
-              />
+              <RoleCard key={role.id} role={role} onClick={() => handleCardClick(role)} />
             ))}
           </div>
         )}
@@ -358,16 +399,17 @@ function RoleCard({
           {role.displayName}
         </span>
         {BUILTIN_IDS.has(role.id) && (
-          <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400">
+          <Badge
+            variant="outline"
+            className="text-[9px] px-1 py-0 shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400"
+          >
             内置
           </Badge>
         )}
       </div>
 
       {/* 描述 */}
-      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
-        {role.description}
-      </p>
+      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">{role.description}</p>
 
       {/* 底部信息：ID + 模型数 */}
       <div className="flex items-center gap-1.5 mt-auto pt-1">
@@ -405,7 +447,10 @@ function RoleDetailDialog({
   saving: boolean
   onSave: () => Promise<void>
   onDelete: () => Promise<void>
-  onFieldChange: (field: keyof AgentRoleProfile, value: string | string[] | number | boolean) => void
+  onFieldChange: (
+    field: keyof AgentRoleProfile,
+    value: string | string[] | number | boolean
+  ) => void
   onAddModel: (modelId: string) => void
   onRemoveModel: (modelId: string) => void
 }): React.ReactElement {
@@ -418,9 +463,14 @@ function RoleDetailDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <span>{role.displayName}</span>
-            <Badge variant="outline" className="text-[10px] font-mono">{role.id}</Badge>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {role.id}
+            </Badge>
             {isBuiltin && (
-              <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-500/30 text-blue-600 dark:text-blue-400">
+              <Badge
+                variant="outline"
+                className="text-[9px] px-1 py-0 border-blue-500/30 text-blue-600 dark:text-blue-400"
+              >
                 内置
               </Badge>
             )}
@@ -468,7 +518,10 @@ function RoleDetailDialog({
                   role.modelPool.map((modelId, idx) => {
                     const modelInfo = availableModels.find((m) => m.id === modelId)
                     return (
-                      <div key={modelId} className="flex items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5">
+                      <div
+                        key={modelId}
+                        className="flex items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5"
+                      >
                         <span className="w-4 shrink-0 text-center text-[10px] tabular-nums text-muted-foreground">
                           {idx + 1}
                         </span>
@@ -505,7 +558,9 @@ function RoleDetailDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {PERMISSION_MODE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -524,7 +579,9 @@ function RoleDetailDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {MAX_CONCURRENT_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -558,7 +615,8 @@ function RoleDetailDialog({
                     className="h-7 px-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10"
                     onClick={() => void onDelete()}
                   >
-                    <Trash2 className="mr-1 size-3" />删除
+                    <Trash2 className="mr-1 size-3" />
+                    删除
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>删除此角色（不可恢复）</TooltipContent>
@@ -569,7 +627,12 @@ function RoleDetailDialog({
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onClose}>
               取消
             </Button>
-            <Button size="sm" className="h-7 text-xs" disabled={saving} onClick={() => void onSave()}>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={saving}
+              onClick={() => void onSave()}
+            >
               <Save className="mr-1 size-3" />
               {saving ? '保存中...' : '保存'}
             </Button>
@@ -596,7 +659,10 @@ function RoleStoreTab(): React.ReactElement {
   const [selectedEntry, setSelectedEntry] = React.useState<RoleStoreCatalogEntry | null>(null)
   const [detailOpen, setDetailOpen] = React.useState(false)
 
-  const installedIds = React.useMemo(() => new Set(installedRoles.map((r) => r.id)), [installedRoles])
+  const installedIds = React.useMemo(
+    () => new Set(installedRoles.map((r) => r.id)),
+    [installedRoles]
+  )
 
   const categories = React.useMemo(() => {
     const cats = new Set<string>()
@@ -609,9 +675,8 @@ function RoleStoreTab(): React.ReactElement {
     if (category !== 'all') result = result.filter((e) => e.category === category)
     if (search.trim()) {
       const q = search.toLowerCase().trim()
-      result = result.filter((e) =>
-        e.displayName.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q)
+      result = result.filter(
+        (e) => e.displayName.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)
       )
     }
     return result
@@ -680,7 +745,8 @@ function RoleStoreTab(): React.ReactElement {
             source === 'builtin' && 'text-muted-foreground'
           )}
         >
-          {source === 'remote' ? '在线' : source === 'cached' ? '缓存' : '内置'} · {filtered.length} 个
+          {source === 'remote' ? '在线' : source === 'cached' ? '缓存' : '内置'} · {filtered.length}{' '}
+          个
         </Badge>
       </div>
 
@@ -764,7 +830,9 @@ function StoreRoleCard({
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onClick()
+      }}
       className="session-list-item-active flex flex-col gap-2 p-3 text-left transition-colors hover:bg-primary/5 cursor-pointer"
     >
       {/* 标题行：名称 + 推荐标记 */}
@@ -780,9 +848,7 @@ function StoreRoleCard({
       </div>
 
       {/* 描述 */}
-      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
-        {entry.description}
-      </p>
+      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">{entry.description}</p>
 
       {/* 底部：ID + 安装按钮 */}
       <div className="flex items-center gap-1.5 mt-auto pt-1">
@@ -791,8 +857,12 @@ function StoreRoleCard({
         </Badge>
         <div className="ml-auto">
           {isInstalled ? (
-            <Badge variant="outline" className="text-[10px] text-green-600 dark:text-green-400 border-green-500/30">
-              <Check className="mr-0.5 size-2.5" />已安装
+            <Badge
+              variant="outline"
+              className="text-[10px] text-green-600 dark:text-green-400 border-green-500/30"
+            >
+              <Check className="mr-0.5 size-2.5" />
+              已安装
             </Badge>
           ) : (
             <Button
@@ -800,7 +870,10 @@ function StoreRoleCard({
               variant="outline"
               className="h-6 px-1.5 text-[10px]"
               disabled={installing}
-              onClick={(e) => { e.stopPropagation(); onInstall() }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onInstall()
+              }}
             >
               <Download className="size-3" />
             </Button>
@@ -834,7 +907,9 @@ function StoreRoleDetailDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>{entry.displayName}</span>
-            <Badge variant="outline" className="text-[10px] font-mono">{entry.id}</Badge>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {entry.id}
+            </Badge>
             {entry.tier === 'recommended' && (
               <Badge className="text-[9px] px-1 py-0 bg-primary/10 text-primary border-primary/20">
                 推荐
@@ -867,7 +942,9 @@ function StoreRoleDetailDialog({
             <ScrollArea className="mt-1 h-[200px] rounded-md border border-border/40 bg-muted/10">
               <div
                 className="p-3 text-xs text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(entry.role.systemPrompt.substring(0, 800)) }}
+                dangerouslySetInnerHTML={{
+                  __html: markdownToHtml(entry.role.systemPrompt.substring(0, 800)),
+                }}
               />
             </ScrollArea>
           </div>
@@ -894,16 +971,15 @@ function StoreRoleDetailDialog({
         {/* 底部操作栏 */}
         <div className="flex items-center justify-end border-t border-border/40 pt-3">
           {isInstalled ? (
-            <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400 border-green-500/30">
-              <Check className="mr-1 size-3" />已安装
+            <Badge
+              variant="outline"
+              className="text-xs text-green-600 dark:text-green-400 border-green-500/30"
+            >
+              <Check className="mr-1 size-3" />
+              已安装
             </Badge>
           ) : (
-            <Button
-              size="sm"
-              className="h-8 text-xs"
-              disabled={installing}
-              onClick={onInstall}
-            >
+            <Button size="sm" className="h-8 text-xs" disabled={installing} onClick={onInstall}>
               <Download className="mr-1 size-3" />
               {installing ? '安装中...' : '安装此角色'}
             </Button>
@@ -916,7 +992,13 @@ function StoreRoleDetailDialog({
 
 // ─── 辅助组件 ────────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}): React.ReactElement {
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-foreground/80">{label}</label>
@@ -947,10 +1029,14 @@ function ModelPoolAddSelect({
         </SelectTrigger>
         <SelectContent>
           {options.length === 0 ? (
-            <SelectItem value="__none__" disabled>（无可用模型）</SelectItem>
+            <SelectItem value="__none__" disabled>
+              （无可用模型）
+            </SelectItem>
           ) : (
             options.map((m) => (
-              <SelectItem key={m.id} value={m.id}>{m.label} ({m.id})</SelectItem>
+              <SelectItem key={m.id} value={m.id}>
+                {m.label} ({m.id})
+              </SelectItem>
             ))
           )}
         </SelectContent>

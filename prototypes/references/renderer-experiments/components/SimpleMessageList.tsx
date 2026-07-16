@@ -68,10 +68,7 @@ export function SimpleMessageList({ messages }: SimpleMessageListProps) {
         const role = getRole(msg)
 
         return (
-          <div
-            key={i}
-            className={`msg ${role === 'user' ? 'msg-user' : ''}`}
-          >
+          <div key={i} className={`msg ${role === 'user' ? 'msg-user' : ''}`}>
             {content}
           </div>
         )

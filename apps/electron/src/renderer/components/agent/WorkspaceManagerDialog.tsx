@@ -325,7 +325,7 @@ export function ProjectManagerDialog({
                           <TooltipTrigger asChild>
                             <button
                               onClick={(e) => handleStartRename(e, ws)}
-                               className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-foreground/60"
+                              className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-foreground/60"
                             >
                               <Pencil size={12} />
                             </button>
@@ -337,7 +337,7 @@ export function ProjectManagerDialog({
                             <TooltipTrigger asChild>
                               <button
                                 onClick={(e) => handleStartDelete(e, ws.id)}
-                                 className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-destructive"
+                                className="material-inline-chip rounded-full p-1 text-foreground/30 transition-colors hover:text-destructive"
                               >
                                 <Trash2 size={12} />
                               </button>

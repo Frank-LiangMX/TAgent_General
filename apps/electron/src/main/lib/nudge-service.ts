@@ -309,7 +309,10 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
   private async handleLLMReviewResult(
     sessionId: string,
     mode: MemoryMode,
-    result: { action: 'nothing' | 'save'; items?: Array<{ type: string; content: string; targetLayer: string }> },
+    result: {
+      action: 'nothing' | 'save'
+      items?: Array<{ type: string; content: string; targetLayer: string }>
+    },
     recentMessages: Array<{ role: 'user' | 'assistant'; content: string }>
   ): Promise<void> {
     if (result.action !== 'save' || !result.items || result.items.length === 0) {
@@ -371,9 +374,7 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
 
     // 缓存候选项（兼容旧 toast 路径，P2.2 后 toast 不再触发）
     this.pendingNudges.set(sessionId, filtered)
-    console.log(
-      `[Nudge] ${filtered.length} 项候选已入 stage 队列（不弹 toast，等待用户批量审批）`
-    )
+    console.log(`[Nudge] ${filtered.length} 项候选已入 stage 队列（不弹 toast，等待用户批量审批）`)
   }
 
   /**
@@ -845,7 +846,9 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
           const l1Content = fs.readFileSync(l1Path, 'utf-8')
           const l1Lines = l1Content
             .split('\n')
-            .filter((l) => l.trim() && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('>')).length
+            .filter(
+              (l) => l.trim() && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('>')
+            ).length
           if (l1Lines >= MAX_L1_LINES) {
             console.warn(
               `[Nudge] L1 索引层行数约束：当前 ${l1Lines} 行 >= ${MAX_L1_LINES} 行硬约束，拒绝写入。请清理 L1 后重试。`
@@ -899,9 +902,9 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
     if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d{1,5})?\b/.test(content)) return 'IP 地址'
 
     // MAC 地址
-    if (/\b[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}\b/i.test(
-      content
-    ))
+    if (
+      /\b[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}\b/i.test(content)
+    )
       return 'MAC 地址'
 
     return null
@@ -1008,9 +1011,7 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
       await fs.promises.writeFile(filePath, newContent, 'utf-8')
       // 更新 hash
       this.fileHashes.set(filePath, this.computeFileHash(newContent))
-      console.log(
-        `[Nudge] 去重更新：pattern="${content.slice(0, 30)}..." hit_count 增加`
-      )
+      console.log(`[Nudge] 去重更新：pattern="${content.slice(0, 30)}..." hit_count 增加`)
     } else {
       // 新增：appendFile 追加单行（patch 语义，不动现有内容）
       const line = this.formatMemoryLine(timestamp, content, 1, timestamp, sourceSession)
@@ -1058,7 +1059,8 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
       console.log(`[Nudge drift] 备份 ${fileName} → ${backupPath}`)
 
       // 保留最近 10 个备份（清理旧的）
-      const backups = fs.readdirSync(backupDir)
+      const backups = fs
+        .readdirSync(backupDir)
         .filter((f) => f.startsWith(fileName + '.') && f.endsWith('.bak'))
         .sort()
       while (backups.length > 10) {
@@ -1090,10 +1092,7 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
    *
    * 匹配规则：行包含 pattern 文本（去除元数据注释后比较）
    */
-  private findExistingLine(
-    content: string,
-    pattern: string
-  ): { found: boolean; line?: string } {
+  private findExistingLine(content: string, pattern: string): { found: boolean; line?: string } {
     const lines = content.split('\n')
     for (const line of lines) {
       if (!line.startsWith('- ')) continue

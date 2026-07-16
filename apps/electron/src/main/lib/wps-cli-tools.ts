@@ -126,7 +126,10 @@ async function ensureCliInstalled(): Promise<void> {
   // 解压
   if (process.platform === 'win32') {
     // Windows: 使用 PowerShell 解压
-    await exec(`powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${cliDir}' -Force"`, { cwd: cliDir })
+    await exec(
+      `powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${cliDir}' -Force"`,
+      { cwd: cliDir }
+    )
   } else {
     // macOS/Linux: 使用 tar
     await exec(`tar -xzf "${archivePath}" -C "${cliDir}"`, { cwd: cliDir })
@@ -159,11 +162,15 @@ async function callWpsCli(args: string[]): Promise<string> {
   }
 
   if (!appId) {
-    throw new Error('WPS 未配置 App ID。开发者可设置环境变量 WPS365_CLIENT_ID，或用户在设置页配置 WPS 协作。')
+    throw new Error(
+      'WPS 未配置 App ID。开发者可设置环境变量 WPS365_CLIENT_ID，或用户在设置页配置 WPS 协作。'
+    )
   }
 
   if (!secretKey) {
-    throw new Error('WPS 未配置 Secret Key。开发者可设置环境变量 WPS365_CLIENT_SECRET，或用户在设置页配置。')
+    throw new Error(
+      'WPS 未配置 Secret Key。开发者可设置环境变量 WPS365_CLIENT_SECRET，或用户在设置页配置。'
+    )
   }
 
   // 检查用户是否已 OAuth 登录（Delegated 模式）
@@ -186,7 +193,7 @@ async function callWpsCli(args: string[]): Promise<string> {
   // 构建环境变量
   // 优先级：用户 token > App 模式 > 系统环境变量
   const env: Record<string, string> = {
-    ...process.env as Record<string, string>,
+    ...(process.env as Record<string, string>),
     WPS365_OUTPUT: 'json',
     WPS365_QUIET: '1',
   }
@@ -310,10 +317,16 @@ export async function wpsCreateEvent(params: {
   location?: string
 }): Promise<any> {
   const args = [
-    'calendar', 'events', 'create', params.calendar_id,
-    '--name', params.summary,
-    '--from', params.from,
-    '--to', params.to,
+    'calendar',
+    'events',
+    'create',
+    params.calendar_id,
+    '--name',
+    params.summary,
+    '--from',
+    params.from,
+    '--to',
+    params.to,
   ]
   if (params.description) args.push('--description', params.description)
   if (params.location) args.push('--location', params.location)
@@ -340,10 +353,7 @@ export async function wpsQueryFreebusy(params: {
 /**
  * 发送消息
  */
-export async function wpsSendMessage(params: {
-  to: string[]
-  text: string
-}): Promise<any> {
+export async function wpsSendMessage(params: { to: string[]; text: string }): Promise<any> {
   const args = ['im', 'messages', 'send']
   for (const recipient of params.to) {
     args.push('--to', recipient)
@@ -362,10 +372,7 @@ export async function wpsListChats(): Promise<any> {
 /**
  * 创建群聊
  */
-export async function wpsCreateChat(params: {
-  name: string
-  members?: string[]
-}): Promise<any> {
+export async function wpsCreateChat(params: { name: string; members?: string[] }): Promise<any> {
   const args = ['im', 'chats', 'create', '--name', params.name]
   if (params.members) {
     for (const member of params.members) {
@@ -378,9 +385,12 @@ export async function wpsCreateChat(params: {
 /**
  * 获取群聊消息列表
  */
-export async function wpsListChatMessages(chatId: string, params?: {
-  pageSize?: number
-}): Promise<any> {
+export async function wpsListChatMessages(
+  chatId: string,
+  params?: {
+    pageSize?: number
+  }
+): Promise<any> {
   const args = ['im', 'chat-message', 'list', chatId]
   if (params?.pageSize) args.push('--page-size', String(params.pageSize))
   return callWpsCliJson(args)
@@ -431,10 +441,13 @@ export async function wpsGetFile(driveId: string, fileId: string): Promise<any> 
 /**
  * 创建分享链接
  */
-export async function wpsCreateShareLink(fileId: string, params?: {
-  link_type?: 'view' | 'edit'
-  expire_time?: string
-}): Promise<any> {
+export async function wpsCreateShareLink(
+  fileId: string,
+  params?: {
+    link_type?: 'view' | 'edit'
+    expire_time?: string
+  }
+): Promise<any> {
   const args = ['drive', 'file-link', 'create', '--file-id', fileId]
   if (params?.link_type) args.push('--link-type', params.link_type)
   if (params?.expire_time) args.push('--expire-time', params.expire_time)
@@ -477,10 +490,13 @@ export async function wpsCreateRecord(params: {
 }): Promise<any> {
   const recordsBody = JSON.stringify([{ fields_value: JSON.stringify(params.fields) }])
   const args = [
-    'dbsheet', 'records', 'create',
+    'dbsheet',
+    'records',
+    'create',
     params.file_id,
     params.sheet_id,
-    '--records-body', recordsBody,
+    '--records-body',
+    recordsBody,
   ]
   return callWpsCliJson(args)
 }
@@ -495,11 +511,17 @@ export async function wpsUpdateRecord(params: {
   fields: Record<string, any>
 }): Promise<any> {
   const args = [
-    'dbsheet', 'record', 'update',
-    '--file-id', params.file_id,
-    '--sheet-id', params.sheet_id,
-    '--record-id', params.record_id,
-    '--fields', JSON.stringify(params.fields),
+    'dbsheet',
+    'record',
+    'update',
+    '--file-id',
+    params.file_id,
+    '--sheet-id',
+    params.sheet_id,
+    '--record-id',
+    params.record_id,
+    '--fields',
+    JSON.stringify(params.fields),
   ]
   return callWpsCliJson(args)
 }
@@ -524,10 +546,14 @@ export async function wpsCreateMeeting(params: {
   description?: string
 }): Promise<any> {
   const args = [
-    'meeting', 'create',
-    '--subject', params.subject,
-    '--from', params.from,
-    '--to', params.to,
+    'meeting',
+    'create',
+    '--subject',
+    params.subject,
+    '--from',
+    params.from,
+    '--to',
+    params.to,
   ]
   if (params.description) args.push('--description', params.description)
   if (params.attendees) {
@@ -569,7 +595,12 @@ export async function wpsHttpRequest(params: {
 
   // 优先用用户 token，其次是环境变量
   let token = process.env.WPS365_ACCESS_TOKEN || ''
-  if (!token && config.userAccessToken && config.userTokenExpiresAt && config.userTokenExpiresAt > Date.now()) {
+  if (
+    !token &&
+    config.userAccessToken &&
+    config.userTokenExpiresAt &&
+    config.userTokenExpiresAt > Date.now()
+  ) {
     token = decryptText(config.userAccessToken)
   }
 
@@ -627,7 +658,12 @@ async function getAirpageCreds(): Promise<AirpageCreds> {
     // 也检查 WPS-AirPage-Skill 的凭据文件
     try {
       const raw = await fs.readFile(
-        path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'secrets', 'wps365.json'),
+        path.join(
+          process.env.HOME || process.env.USERPROFILE || '',
+          '.claude',
+          'secrets',
+          'wps365.json'
+        ),
         'utf-8'
       )
       return JSON.parse(raw)
@@ -647,11 +683,14 @@ async function saveAirpageCreds(creds: AirpageCreds): Promise<void> {
 /**
  * 发送 AirPage API 请求
  */
-async function airpageFetch(endpoint: string, options: {
-  method?: string
-  body?: any
-  needCsrf?: boolean
-} = {}): Promise<any> {
+async function airpageFetch(
+  endpoint: string,
+  options: {
+    method?: string
+    body?: any
+    needCsrf?: boolean
+  } = {}
+): Promise<any> {
   const creds = await getAirpageCreds()
   const url = `${AIRPAGE_BASE}${endpoint}`
   const headers: Record<string, string> = {
@@ -727,7 +766,9 @@ export async function airpageGetStatus(): Promise<AirpageStatus> {
 export async function airpageLogout(): Promise<void> {
   try {
     await fs.unlink(AIRPAGE_CRED_FILE)
-  } catch { /* 文件不存在忽略 */ }
+  } catch {
+    /* 文件不存在忽略 */
+  }
 }
 
 // 暴露供内部使用
@@ -736,12 +777,16 @@ export { getAirpageCreds, saveAirpageCreds, airpageFetch, airpageExecute, AIRPAG
 /**
  * 创建 AirPage 智能文档
  */
-export async function airpageCreateDocument(name: string): Promise<{ fileid: string; doc_url: string }> {
+export async function airpageCreateDocument(
+  name: string
+): Promise<{ fileid: string; doc_url: string }> {
   const data = await airpageFetch('/api/v3/office/new/o/file', {
     method: 'POST',
     body: { fname: name },
   })
-  const fileId = String(data.fileid || data.data?.fileid || data.data?.file_id || data.file_id || '')
+  const fileId = String(
+    data.fileid || data.data?.fileid || data.data?.file_id || data.file_id || ''
+  )
   if (!fileId) throw new Error(`创建 AirPage 失败: ${JSON.stringify(data)}`)
 
   // 设置文档标题
@@ -757,15 +802,19 @@ export async function airpageCreateDocument(name: string): Promise<{ fileid: str
         command: 'http.otl.exec',
         param: {
           subtype: 'block.update',
-          params: [{
-            operation: 'update_content',
-            blockId: titleBlock.id,
-            content: [{ type: 'text', content: name }],
-          }],
+          params: [
+            {
+              operation: 'update_content',
+              blockId: titleBlock.id,
+              content: [{ type: 'text', content: name }],
+            },
+          ],
         },
       })
     }
-  } catch { /* 标题设置失败不影响主流程 */ }
+  } catch {
+    /* 标题设置失败不影响主流程 */
+  }
 
   const docUrl = `https://365.kdocs.cn/office/o/${fileId}`
   return { fileid: fileId, doc_url: docUrl }
@@ -805,7 +854,9 @@ export async function airpageQueryDocument(fileId: string, blockId = 'doc'): Pro
  * 搜索 AirPage 文档
  */
 export async function airpageSearchDocuments(keyword: string, count = 10): Promise<any> {
-  return airpageFetch(`/3rd/drive/api/v6/search/files?searchname=${encodeURIComponent(keyword)}&count=${count}`)
+  return airpageFetch(
+    `/3rd/drive/api/v6/search/files?searchname=${encodeURIComponent(keyword)}&count=${count}`
+  )
 }
 
 // -------------------- 可用性检查 --------------------

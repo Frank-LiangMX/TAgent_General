@@ -331,20 +331,6 @@ export function stopAgent(sessionId: string): void {
 setHeadlessAgentRunner(runAgentHeadless)
 setAgentStopper(stopAgent)
 
-/** 获取指定会话的 Context 分项占用 */
-export async function getAgentContextUsage(
-  sessionId: string
-): Promise<import('@tagent/shared').GetContextUsageResponse> {
-  return orchestrator.getContextUsage(sessionId)
-}
-
-/** 读取会话 Context 分项缓存（快速路径，不调用 SDK） */
-export function getAgentContextUsageCached(
-  sessionId: string
-): import('@tagent/shared').GetContextUsageResponse {
-  return orchestrator.getContextUsageCached(sessionId)
-}
-
 /**
  * 快照回退：回退到指定消息点，恢复文件 + 截断对话
  */

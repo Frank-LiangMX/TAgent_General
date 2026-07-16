@@ -41,7 +41,6 @@ import type {
   ChannelTestResult,
   CompactSessionInput,
   CompactSessionResult,
-  GetContextUsageResponse,
   ChannelModelValidateInput,
   FetchModelsInput,
   FetchModelsResult,
@@ -373,12 +372,6 @@ export interface ElectronAPI {
    */
   listCommands: (category?: CommandCategory) => Promise<CommandMeta[]>
 
-  /** 获取当前会话 Context 分项占用（SDK getContextUsage） */
-  getContextUsage: (sessionId: string) => Promise<GetContextUsageResponse>
-
-  /** 读取会话 Context 分项缓存（内存/磁盘，不调用 SDK） */
-  getContextUsageCached: (sessionId: string) => Promise<GetContextUsageResponse>
-
   /** 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道） */
   fetchModels: (input: FetchModelsInput) => Promise<FetchModelsResult>
 
@@ -496,7 +489,10 @@ export interface ElectronAPI {
   updateAgentSessionTitle: (id: string, title: string) => Promise<AgentSessionMeta>
 
   /** 更新 Agent 会话元数据（channelId, modelId 等） */
-  updateAgentSessionMeta: (id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>) => Promise<AgentSessionMeta>
+  updateAgentSessionMeta: (
+    id: string,
+    updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>
+  ) => Promise<AgentSessionMeta>
 
   /** 删除 Agent 会话 */
   deleteAgentSession: (id: string) => Promise<void>
@@ -894,8 +890,6 @@ export interface ElectronAPI {
   onAgentTitleUpdated: (
     callback: (data: { sessionId: string; title: string }) => void
   ) => () => void
-  /** 订阅 Context 分项后台刷新完成事件（stale-while-revalidate：后台刷新完缓存后重新获取） */
-  onContextUsageUpdated: (callback: (data: { sessionId: string }) => void) => () => void
 
   // ===== Agent 权限系统 =====
 
@@ -904,7 +898,6 @@ export interface ElectronAPI {
 
   /** 热切换指定会话的权限模式（运行中生效，仅影响该 session） */
   updateSessionPermissionMode: (sessionId: string, mode: TAgentPermissionMode) => Promise<void>
-
 
   // ===== Nudge 机制 =====
 
@@ -1582,17 +1575,51 @@ export interface ElectronAPI {
   wpsCliListUsers: (params?: { status?: string; pageSize?: number }) => Promise<any>
   wpsCliSearchUsers: (query: string) => Promise<any>
   wpsCliListCalendars: () => Promise<any>
-  wpsCliListEvents: (calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => Promise<any>
-  wpsCliCreateEvent: (params: { calendar_id: string; summary: string; from: string; to: string; description?: string; attendees?: string[]; location?: string }) => Promise<any>
+  wpsCliListEvents: (
+    calendarId: string,
+    params?: { from?: string; to?: string; pageSize?: number }
+  ) => Promise<any>
+  wpsCliCreateEvent: (params: {
+    calendar_id: string
+    summary: string
+    from: string
+    to: string
+    description?: string
+    attendees?: string[]
+    location?: string
+  }) => Promise<any>
   wpsCliQueryFreebusy: (params: { users: string[]; from: string; to: string }) => Promise<any>
   wpsCliSendMessage: (params: { to: string[]; text: string }) => Promise<any>
   wpsCliListChats: () => Promise<any>
   wpsCliCreateChat: (params: { name: string; members?: string[] }) => Promise<any>
-  wpsCliListFiles: (params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }) => Promise<any>
-  wpsCliSearchFiles: (params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }) => Promise<any>
-  wpsCliCreateShareLink: (params: { file_id: string; link_type?: string; expire_time?: string }) => Promise<any>
-  wpsCliListRecords: (params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }) => Promise<any>
-  wpsCliCreateRecord: (params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => Promise<any>
+  wpsCliListFiles: (params: {
+    drive_id: string
+    parent_id: string
+    pageSize?: number
+    pageToken?: string
+  }) => Promise<any>
+  wpsCliSearchFiles: (params: {
+    keyword: string
+    driveIds?: string
+    fileType?: string
+    pageSize?: number
+  }) => Promise<any>
+  wpsCliCreateShareLink: (params: {
+    file_id: string
+    link_type?: string
+    expire_time?: string
+  }) => Promise<any>
+  wpsCliListRecords: (params: {
+    file_id: string
+    sheet_id: string
+    pageSize?: number
+    pageToken?: string
+  }) => Promise<any>
+  wpsCliCreateRecord: (params: {
+    file_id: string
+    sheet_id: string
+    fields: Record<string, any>
+  }) => Promise<any>
   wpsCliApiGet: (endpoint: string) => Promise<any>
   wpsCliApiPost: (params: { endpoint: string; data: any }) => Promise<any>
   wpsCliHttpRequest: (params: { method: string; endpoint: string; body?: any }) => Promise<any>
@@ -1862,20 +1889,6 @@ const electronAPI: ElectronAPI = {
     >
   },
 
-  getContextUsage: (sessionId: string) => {
-    return ipcRenderer.invoke(
-      AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE,
-      sessionId
-    ) as Promise<GetContextUsageResponse>
-  },
-
-  getContextUsageCached: (sessionId: string) => {
-    return ipcRenderer.invoke(
-      AGENT_IPC_CHANNELS.GET_CONTEXT_USAGE_CACHED,
-      sessionId
-    ) as Promise<GetContextUsageResponse>
-  },
-
   fetchModels: (input: FetchModelsInput) => {
     return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.FETCH_MODELS, input)
   },
@@ -2028,7 +2041,10 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_TITLE, id, title)
   },
 
-  updateAgentSessionMeta: (id: string, updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>) => {
+  updateAgentSessionMeta: (
+    id: string,
+    updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>
+  ) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SESSION_META, id, updates)
   },
 
@@ -2363,15 +2379,6 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  // Context 分项后台刷新完成通知（stale-while-revalidate：后台刷新完缓存后通知渲染进程重新获取）
-  onContextUsageUpdated: (callback: (data: { sessionId: string }) => void) => {
-    const listener = (_: unknown, data: { sessionId: string }): void => callback(data)
-    ipcRenderer.on(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, listener)
-    return () => {
-      ipcRenderer.removeListener(AGENT_IPC_CHANNELS.CONTEXT_USAGE_UPDATED, listener)
-    }
-  },
-
   // Agent 权限系统
   respondPermission: (response: PermissionResponse) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.PERMISSION_RESPOND, response)
@@ -2426,7 +2433,12 @@ const electronAPI: ElectronAPI = {
   },
 
   rejectStageOne: (mode: 'general' | 'ta', id: string, reason?: string) => {
-    return ipcRenderer.invoke(MEMORY_IPC_CHANNELS.REJECT_STAGE_ONE, mode, id, reason) as Promise<void>
+    return ipcRenderer.invoke(
+      MEMORY_IPC_CHANNELS.REJECT_STAGE_ONE,
+      mode,
+      id,
+      reason
+    ) as Promise<void>
   },
 
   // Memory Graph 可视化（P3-MG.1）
@@ -3151,10 +3163,21 @@ const electronAPI: ElectronAPI = {
   wpsCliListCalendars: () => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_CALENDARS)
   },
-  wpsCliListEvents: (calendarId: string, params?: { from?: string; to?: string; pageSize?: number }) => {
+  wpsCliListEvents: (
+    calendarId: string,
+    params?: { from?: string; to?: string; pageSize?: number }
+  ) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_EVENTS, calendarId, params)
   },
-  wpsCliCreateEvent: (params: { calendar_id: string; summary: string; from: string; to: string; description?: string; attendees?: string[]; location?: string }) => {
+  wpsCliCreateEvent: (params: {
+    calendar_id: string
+    summary: string
+    from: string
+    to: string
+    description?: string
+    attendees?: string[]
+    location?: string
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_EVENT, params)
   },
   wpsCliQueryFreebusy: (params: { users: string[]; from: string; to: string }) => {
@@ -3169,19 +3192,42 @@ const electronAPI: ElectronAPI = {
   wpsCliCreateChat: (params: { name: string; members?: string[] }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_CHAT, params)
   },
-  wpsCliListFiles: (params: { drive_id: string; parent_id: string; pageSize?: number; pageToken?: string }) => {
+  wpsCliListFiles: (params: {
+    drive_id: string
+    parent_id: string
+    pageSize?: number
+    pageToken?: string
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_FILES, params)
   },
-  wpsCliSearchFiles: (params: { keyword: string; driveIds?: string; fileType?: string; pageSize?: number }) => {
+  wpsCliSearchFiles: (params: {
+    keyword: string
+    driveIds?: string
+    fileType?: string
+    pageSize?: number
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_SEARCH_FILES, params)
   },
-  wpsCliCreateShareLink: (params: { file_id: string; link_type?: string; expire_time?: string }) => {
+  wpsCliCreateShareLink: (params: {
+    file_id: string
+    link_type?: string
+    expire_time?: string
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_SHARE_LINK, params)
   },
-  wpsCliListRecords: (params: { file_id: string; sheet_id: string; pageSize?: number; pageToken?: string }) => {
+  wpsCliListRecords: (params: {
+    file_id: string
+    sheet_id: string
+    pageSize?: number
+    pageToken?: string
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_LIST_RECORDS, params)
   },
-  wpsCliCreateRecord: (params: { file_id: string; sheet_id: string; fields: Record<string, any> }) => {
+  wpsCliCreateRecord: (params: {
+    file_id: string
+    sheet_id: string
+    fields: Record<string, any>
+  }) => {
     return ipcRenderer.invoke(WPS_IPC_CHANNELS.CLI_CREATE_RECORD, params)
   },
   wpsCliApiGet: (endpoint: string) => {
@@ -3742,9 +3788,7 @@ const electronAPI: ElectronAPI = {
         ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.BOARD_COMPLETED, listener)
       }
     },
-    onTaskProgress: (
-      callback: (payload: import('@tagent/shared').TaskProgressPayload) => void
-    ) => {
+    onTaskProgress: (callback: (payload: import('@tagent/shared').TaskProgressPayload) => void) => {
       const listener = (
         _event: unknown,
         payload: import('@tagent/shared').TaskProgressPayload

@@ -398,9 +398,7 @@ function BlackboardSection({ task }: { task: KanbanTask }): React.ReactElement {
     <section>
       <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground">
         Blackboard
-        <span className="text-[10px] text-muted-foreground">
-          · 跨任务交接（{comments.length}）
-        </span>
+        <span className="text-[10px] text-muted-foreground">· 跨任务交接（{comments.length}）</span>
       </h3>
       <div className="rounded-glass-popover bg-muted/20 p-3 space-y-2">
         {comments.length === 0 ? (

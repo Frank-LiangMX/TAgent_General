@@ -171,7 +171,9 @@ export function ContextUsageBadge({
     }
   }, [sessionId])
 
-  const lastNudgeFired = sessionId ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none') : 'none'
+  const lastNudgeFired = sessionId
+    ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none')
+    : 'none'
 
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
@@ -215,9 +217,7 @@ export function ContextUsageBadge({
   // 圆环与百分比：优先 SDK 分项（准确）；流式 usage 作加载前兜底
   // 超过 100% 时也显示，用红色警告
   const streamRatio =
-    streamWindow && streamTokens && streamTokens > 0
-      ? streamTokens / streamWindow
-      : undefined
+    streamWindow && streamTokens && streamTokens > 0 ? streamTokens / streamWindow : undefined
   const displayTokens = authoritativeSnapshot?.totalTokens ?? streamTokens
   const displayWindow = authoritativeSnapshot?.maxTokens ?? streamWindow
   const ratio = authoritativeSnapshot ? authoritativeSnapshot.percentage / 100 : (streamRatio ?? 0)

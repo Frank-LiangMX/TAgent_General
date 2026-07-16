@@ -168,7 +168,9 @@ export function BtwPanel({ width }: BtwPanelProps): React.ReactElement {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-sm leading-tight text-foreground">旁注</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">不进入主对话历史</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">
+              不进入主对话历史
+            </span>
           </div>
         </div>
       </div>

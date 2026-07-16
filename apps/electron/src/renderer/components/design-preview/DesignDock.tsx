@@ -38,18 +38,24 @@ import {
 } from '@/atoms/design-preview-atoms'
 import { zoomAtom, resetViewportAtom } from '@/design/canvas-viewport-store'
 import { cn } from '@/lib/utils'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@tagent/ui'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
 
-const TOOLS: Array<{ value: DesignCanvasTool; icon: React.ReactNode; label: string; tip: string }> = [
-  { value: 'interact', icon: <MousePointerClick className="size-4" />, label: '交互', tip: '与原型交互' },
-  { value: 'select', icon: <MousePointer2 className="size-4" />, label: '选择', tip: '选择元素' },
-  { value: 'pan', icon: <Hand className="size-4" />, label: '平移', tip: '平移画布（按住中键或空格临时切换，松开恢复）' },
-]
+const TOOLS: Array<{ value: DesignCanvasTool; icon: React.ReactNode; label: string; tip: string }> =
+  [
+    {
+      value: 'interact',
+      icon: <MousePointerClick className="size-4" />,
+      label: '交互',
+      tip: '与原型交互',
+    },
+    { value: 'select', icon: <MousePointer2 className="size-4" />, label: '选择', tip: '选择元素' },
+    {
+      value: 'pan',
+      icon: <Hand className="size-4" />,
+      label: '平移',
+      tip: '平移画布（按住中键或空格临时切换，松开恢复）',
+    },
+  ]
 
 function DockTooltip({
   label,
@@ -88,7 +94,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
       <div
         className={cn(
           'pointer-events-auto flex items-center gap-0.5 rounded-lg border border-border/50 bg-background/90 px-1.5 py-1 shadow-lg backdrop-blur-sm',
-          className,
+          className
         )}
       >
         {TOOLS.map((tool) => (
@@ -103,7 +109,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
                 'flex size-7 items-center justify-center rounded-md transition-colors',
                 activeTool === tool.value
                   ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
               aria-label={tool.label}
             >
@@ -181,7 +187,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
                 'flex size-7 items-center justify-center rounded-md transition-colors',
                 magnify
                   ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
               aria-label={magnify ? '退出放大' : '放大模式'}
             >
@@ -199,7 +205,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
               'flex size-7 items-center justify-center rounded-md transition-colors',
               immersive
                 ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
             aria-label={immersive ? '退出全屏' : '全屏模式'}
           >
@@ -217,11 +223,15 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
                 'flex size-7 items-center justify-center rounded-md transition-colors',
                 hideChat
                   ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
               aria-label={hideChat ? '显示会话' : '隐藏会话'}
             >
-              {hideChat ? <MessageSquare className="size-3.5" /> : <PanelLeftClose className="size-3.5" />}
+              {hideChat ? (
+                <MessageSquare className="size-3.5" />
+              ) : (
+                <PanelLeftClose className="size-3.5" />
+              )}
             </button>
           </DockTooltip>
         )}
@@ -231,7 +241,13 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
 }
 
 /** 可手输的缩放百分比 */
-function ZoomInput({ zoom, setZoom }: { zoom: number; setZoom: (z: number) => void }): React.ReactElement {
+function ZoomInput({
+  zoom,
+  setZoom,
+}: {
+  zoom: number
+  setZoom: (z: number) => void
+}): React.ReactElement {
   const [editing, setEditing] = React.useState(false)
   const [draft, setDraft] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)

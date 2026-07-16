@@ -20,12 +20,7 @@ import {
   currentDraftRequirementsAtom,
   currentDraftTitleAtom,
 } from '@/atoms/draft-atoms'
-import {
-  btwOpenAtom,
-  btwMessagesAtom,
-  btwStreamingAtom,
-  btwErrorAtom,
-} from '@/atoms/btw-atoms'
+import { btwOpenAtom, btwMessagesAtom, btwStreamingAtom, btwErrorAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { Popover, PopoverContent, PopoverTrigger } from '@tagent/ui'
 import { getModelLogo, DefaultLogo } from '@/lib/model-logo'
@@ -164,10 +159,7 @@ function MiniModelSelector({
           <ChevronDown size={12} className="opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-64 p-2 max-h-64 overflow-y-auto scrollbar-thin"
-      >
+      <PopoverContent align="start" className="w-64 p-2 max-h-64 overflow-y-auto scrollbar-thin">
         {modelOptions.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
             暂无可用渠道，请先在设置中配置
@@ -187,9 +179,7 @@ function MiniModelSelector({
                   }}
                   className={cn(
                     'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
-                    isSelected
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-muted/50 text-foreground'
+                    isSelected ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50 text-foreground'
                   )}
                 >
                   <img src={optLogoSrc} alt="" className="size-3.5 rounded object-cover" />
@@ -355,9 +345,7 @@ export function DraftAssistantPanel(): React.ReactElement {
         {/* 已配置：显示推荐提示 */}
         {isConfigured && (
           <div className="mb-2.5 px-2.5 py-1.5 rounded-lg bg-primary/5 border border-primary/10">
-            <p className="text-[11px] text-primary/80">
-              💡 {suggestion.reason}
-            </p>
+            <p className="text-[11px] text-primary/80">💡 {suggestion.reason}</p>
           </div>
         )}
 

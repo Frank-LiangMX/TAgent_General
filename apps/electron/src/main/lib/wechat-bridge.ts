@@ -572,9 +572,7 @@ export class WeChatBridge {
     }
     const MAX_LEN = 4000
     const chunks =
-      text.length <= MAX_LEN
-        ? [text]
-        : (text.match(new RegExp(`.{1,${MAX_LEN}}`, 'gs')) ?? [text])
+      text.length <= MAX_LEN ? [text] : (text.match(new RegExp(`.{1,${MAX_LEN}}`, 'gs')) ?? [text])
     for (const chunk of chunks) {
       const resp = await this.client.sendText(chatId, chunk, contextToken)
       if (resp.ret !== 0) {

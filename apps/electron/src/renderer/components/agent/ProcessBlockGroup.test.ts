@@ -143,13 +143,10 @@ describe('Agent 过程块折叠分组', () => {
 
 describe('流式文本块合并', () => {
   test('given tools then streaming text when merging then appends text after tools', () => {
-    const merged = mergeStreamingContentIntoBlocks(
-      [tool('tool-1'), tool('tool-2')],
-      {
-        streamingText: '正在输出最终结论',
-        parseStreamingText: (value) => [text(value)],
-      }
-    )
+    const merged = mergeStreamingContentIntoBlocks([tool('tool-1'), tool('tool-2')], {
+      streamingText: '正在输出最终结论',
+      parseStreamingText: (value) => [text(value)],
+    })
 
     expect(merged.map((block) => block.type)).toEqual(['tool_use', 'tool_use', 'text'])
     expect((merged[2] as { text: string }).text).toBe('正在输出最终结论')
@@ -170,43 +167,30 @@ describe('流式文本块合并', () => {
   })
 
   test('given stale trailing text when merging then replaces only trailing text blocks', () => {
-    const merged = mergeStreamingContentIntoBlocks(
-      [tool('tool-1'), text('旧 lag 文本')],
-      {
-        streamingText: '实时更新',
-        parseStreamingText: (value) => [text(value)],
-      }
-    )
+    const merged = mergeStreamingContentIntoBlocks([tool('tool-1'), text('旧 lag 文本')], {
+      streamingText: '实时更新',
+      parseStreamingText: (value) => [text(value)],
+    })
 
     expect(merged.map((block) => block.type)).toEqual(['tool_use', 'text'])
     expect((merged[1] as { text: string }).text).toBe('实时更新')
   })
 
   test('given committed thinking when text streaming starts then preserves thinking block', () => {
-    const merged = mergeStreamingContentIntoBlocks(
-      [thinking('已落盘思考'), tool('tool-1')],
-      {
-        streamingText: '最终回答',
-        parseStreamingText: (value) => [text(value)],
-      }
-    )
+    const merged = mergeStreamingContentIntoBlocks([thinking('已落盘思考'), tool('tool-1')], {
+      streamingText: '最终回答',
+      parseStreamingText: (value) => [text(value)],
+    })
 
-    expect(merged.map((block) => block.type)).toEqual([
-      'thinking',
-      'tool_use',
-      'text',
-    ])
+    expect(merged.map((block) => block.type)).toEqual(['thinking', 'tool_use', 'text'])
     expect((merged[0] as { thinking: string }).thinking).toBe('已落盘思考')
   })
 
   test('given streaming thinking when merging then updates trailing thinking block', () => {
-    const merged = mergeStreamingContentIntoBlocks(
-      [tool('tool-1')],
-      {
-        streamingThinking: '正在分析…',
-        parseStreamingText: () => [],
-      }
-    )
+    const merged = mergeStreamingContentIntoBlocks([tool('tool-1')], {
+      streamingThinking: '正在分析…',
+      parseStreamingText: () => [],
+    })
 
     expect(merged.map((block) => block.type)).toEqual(['tool_use', 'thinking'])
     expect((merged[1] as { thinking: string }).thinking).toBe('正在分析…')

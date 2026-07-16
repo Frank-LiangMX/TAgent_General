@@ -54,29 +54,60 @@ describe('automation-intent-detector', () => {
 
   describe('formatScheduleHuman', () => {
     it('should format interval schedule', () => {
-      const s1 = { scheduleType: 'interval' as const, intervalMinutes: 30, confidence: 'high' as const, rawExpression: '每30分钟' }
+      const s1 = {
+        scheduleType: 'interval' as const,
+        intervalMinutes: 30,
+        confidence: 'high' as const,
+        rawExpression: '每30分钟',
+      }
       expect(formatScheduleHuman(s1)).toBe('每 30 分钟')
-      
-      const s2 = { scheduleType: 'interval' as const, intervalMinutes: 60, confidence: 'high' as const, rawExpression: '每小时' }
+
+      const s2 = {
+        scheduleType: 'interval' as const,
+        intervalMinutes: 60,
+        confidence: 'high' as const,
+        rawExpression: '每小时',
+      }
       expect(formatScheduleHuman(s2)).toBe('每小时')
-      
-      const s3 = { scheduleType: 'interval' as const, intervalMinutes: 120, confidence: 'high' as const, rawExpression: '每2小时' }
+
+      const s3 = {
+        scheduleType: 'interval' as const,
+        intervalMinutes: 120,
+        confidence: 'high' as const,
+        rawExpression: '每2小时',
+      }
       expect(formatScheduleHuman(s3)).toBe('每 2 小时')
     })
 
     it('should format daily schedule', () => {
-      const s = { scheduleType: 'daily' as const, timeOfDay: '20:00', confidence: 'high' as const, rawExpression: '每天' }
+      const s = {
+        scheduleType: 'daily' as const,
+        timeOfDay: '20:00',
+        confidence: 'high' as const,
+        rawExpression: '每天',
+      }
       expect(formatScheduleHuman(s)).toBe('每天 20:00')
     })
 
     it('should format weekly schedule', () => {
-      const s = { scheduleType: 'weekly' as const, dayOfWeek: 1, timeOfDay: '09:00', confidence: 'high' as const, rawExpression: '每周一' }
+      const s = {
+        scheduleType: 'weekly' as const,
+        dayOfWeek: 1,
+        timeOfDay: '09:00',
+        confidence: 'high' as const,
+        rawExpression: '每周一',
+      }
       expect(formatScheduleHuman(s)).toBe('每周一 09:00')
     })
 
     it('should format once schedule', () => {
       const scheduledAt = Date.now() + 86400000 // 明天
-      const s = { scheduleType: 'once' as const, scheduledAt, confidence: 'high' as const, rawExpression: '明天' }
+      const s = {
+        scheduleType: 'once' as const,
+        scheduledAt,
+        confidence: 'high' as const,
+        rawExpression: '明天',
+      }
       const result = formatScheduleHuman(s)
       expect(result).toContain('月')
     })

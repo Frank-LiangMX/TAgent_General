@@ -19,7 +19,10 @@ interface StageQueueCardProps {
   onChanged: () => void
 }
 
-export function StageQueueCard({ mode, onChanged }: StageQueueCardProps): React.ReactElement | null {
+export function StageQueueCard({
+  mode,
+  onChanged,
+}: StageQueueCardProps): React.ReactElement | null {
   const [entries, setEntries] = React.useState<StageEntry[]>([])
   const [loading, setLoading] = React.useState(true)
   const [acting, setActing] = React.useState<string | null>(null)

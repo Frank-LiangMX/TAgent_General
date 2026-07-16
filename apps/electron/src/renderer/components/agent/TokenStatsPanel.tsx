@@ -7,10 +7,17 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { Database, TrendingDown, TrendingUp } from 'lucide-react'
+import { Database, Hash, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 import { ContextUsageBadge } from './ContextUsageBadge'
 import {
   agentContextStatusAtom,
@@ -55,6 +62,8 @@ export function TokenStatsPanel({
   const stats = useAtomValue(currentSessionTokenStatsAtom)
   const contextStatus = useAtomValue(agentContextStatusAtom)
   const cacheHitRate = useAtomValue(cacheHitRateAtom)
+  const callStats = stats.lastCallStats
+  const modelCallCount = callStats ? callStats.modelCalls + callStats.subagentCalls : 0
 
   const cacheSavedTokens = stats.totalCacheReadTokens
   const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
@@ -78,7 +87,7 @@ export function TokenStatsPanel({
   const hasContextData = (contextStatus.inputTokens ?? 0) > 0
   const showContextUsage = hasContextData && onCompact != null
 
-  if (!hasTokenStats && !showContextUsage) return null
+  if (!hasTokenStats && !showContextUsage && !callStats) return null
 
   return (
     <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-3 px-1 py-1 text-[10px] text-muted-foreground/50">
@@ -144,6 +153,49 @@ export function TokenStatsPanel({
           )}
         </>
       )}
+
+      {callStats && (
+        <>
+          {(hasTokenStats || showContextUsage) && <div className="h-2.5 w-px bg-border/30" />}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 whitespace-nowrap text-muted-foreground/80 transition-colors hover:text-foreground"
+                aria-label="查看上一轮调用次数详情"
+              >
+                <Hash size={10} className="opacity-70" />
+                <span>调用 {modelCallCount}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="end" className="w-64 p-3 text-xs">
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">上一轮调用详情</p>
+                <div className="space-y-1.5 text-muted-foreground">
+                  <CallStatRow label="主 Agent 模型响应" value={callStats.modelCalls} />
+                  <CallStatRow label="SubAgent 模型响应" value={callStats.subagentCalls} />
+                  <CallStatRow label="Query 尝试（含重试）" value={callStats.queryAttempts} />
+                  <CallStatRow
+                    label="Context Usage 控制请求"
+                    value={callStats.contextUsageRequests}
+                  />
+                  <CallStatRow label="标题生成请求" value={callStats.titleRequests} />
+                  <CallStatRow label="自动重试 / 恢复" value={callStats.retryAttempts} />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </>
+      )}
+    </div>
+  )
+}
+
+function CallStatRow({ label, value }: { label: string; value: number }): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span>{label}</span>
+      <span className="font-medium tabular-nums text-foreground">{value}</span>
     </div>
   )
 }

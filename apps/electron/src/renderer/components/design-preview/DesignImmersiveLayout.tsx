@@ -20,8 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 
 /** macOS 红绿灯组大约占用的水平宽度（相对窗口左缘） */
-const MAC_TRAFFIC_LIGHT_RESERVE_X =
-  SHELL_EDGE_PADDING + NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET + 68
+const MAC_TRAFFIC_LIGHT_RESERVE_X = SHELL_EDGE_PADDING + NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET + 68
 
 export interface DesignImmersiveLayoutProps {
   /** 是否处于打开态（用于进场/退场动画） */
@@ -61,7 +60,7 @@ export function DesignImmersiveLayout({
         <div
           className={cn(
             'design-theater-chat flex h-full shrink-0 flex-col border-r border-border/40 bg-background',
-            hideChat && 'design-theater-chat--hidden',
+            hideChat && 'design-theater-chat--hidden'
           )}
         >
           <div className="design-theater-chat-inner min-h-0 flex-1">

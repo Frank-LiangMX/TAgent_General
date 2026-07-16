@@ -57,11 +57,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
-import {
-  Message,
-  MessageContent,
-  BasePathsProvider,
-} from '@/components/ai-elements/message'
+import { Message, MessageContent, BasePathsProvider } from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
@@ -457,10 +453,7 @@ export function AgentStatusBadge({
 
   const badge = (
     <div
-      className={cn(
-        'agent-running-badge select-none',
-        !isRunning && 'agent-running-badge--done'
-      )}
+      className={cn('agent-running-badge select-none', !isRunning && 'agent-running-badge--done')}
       role="status"
       aria-live={isRunning ? 'polite' : 'off'}
       aria-label={ariaLabel}
@@ -512,7 +505,6 @@ export function DurationBadge({
 function AgentRunningIndicator({ startedAt }: { startedAt?: number }): React.ReactElement {
   return <AgentStatusBadge status="running" startedAt={startedAt} />
 }
-
 
 function AgentMessagesImpl({
   sessionId,
@@ -607,7 +599,8 @@ function AgentMessagesImpl({
   const streamingThinkingContent = streamState?.thinkingContent ?? ''
   const agentStreamingModel = streamState?.model
   const agentStreamingModelLabel = React.useMemo(
-    () => (agentStreamingModel ? resolveModelDisplayName(agentStreamingModel, channels) : undefined),
+    () =>
+      agentStreamingModel ? resolveModelDisplayName(agentStreamingModel, channels) : undefined,
     [agentStreamingModel, channels]
   )
     ? resolveModelDisplayName(streamState!.model!, channels)

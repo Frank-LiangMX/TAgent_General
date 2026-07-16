@@ -80,10 +80,6 @@ import {
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import {
-  bumpContextUsageRefreshNonce,
-  contextUsageRefreshNonceBySessionAtom,
-} from '@/atoms/context-usage-atoms'
 import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
 import {
   setDesignHtmlAtom,
@@ -174,6 +170,7 @@ function buildUsageUpdateFromAssistant(aMsg: SDKAssistantMessage): AgentEvent | 
 }
 
 function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
+  if (payload.kind === 'call_stats') return []
   if (payload.kind === 'stream_text_delta') {
     // 流式 partial 文本：转成 text_delta 喂给 applyAgentEvent 累积到 state.content，
     // useSmoothStream 会消费 state.content 做打字机渲染。
@@ -484,20 +481,6 @@ function payloadToLegacyEvents(payload: AgentStreamPayload): AgentEvent[] {
   }
 }
 
-/** 流式 usage 与 SDK 分项刷新防抖（避免每 token 都打 getContextUsage） */
-const CONTEXT_USAGE_REFRESH_DEBOUNCE_MS = 1_200
-const contextUsageRefreshTimers = new Map<string, number>()
-
-function scheduleContextUsageRefresh(sessionId: string, bump: () => void): void {
-  const existing = contextUsageRefreshTimers.get(sessionId)
-  if (existing != null) window.clearTimeout(existing)
-  const timer = window.setTimeout(() => {
-    contextUsageRefreshTimers.delete(sessionId)
-    bump()
-  }, CONTEXT_USAGE_REFRESH_DEBOUNCE_MS)
-  contextUsageRefreshTimers.set(sessionId, timer)
-}
-
 export function useGlobalAgentListeners(): void {
   const store = useStore()
 
@@ -743,10 +726,7 @@ export function useGlobalAgentListeners(): void {
 
         // Design Preview 更新事件：Agent 调用 design_preview_update 工具后推送设计
         // v3：支持 shapeOps（节点树）和 html（向后兼容）
-        if (
-          payload.kind === 'tagent_event' &&
-          payload.event.type === 'design_preview_update'
-        ) {
+        if (payload.kind === 'tagent_event' && payload.event.type === 'design_preview_update') {
           const evt = payload.event as {
             html?: string
             css?: string
@@ -854,6 +834,21 @@ export function useGlobalAgentListeners(): void {
         }
 
         // Phase 1 兼容：将新 AgentStreamPayload 转换为旧 AgentEvent[]
+        if (payload.kind === 'call_stats') {
+          store.set(sessionTokenStatsAtom, (prev) => {
+            const map = new Map(prev)
+            const current = map.get(sessionId) ?? {
+              totalInputTokens: 0,
+              totalOutputTokens: 0,
+              totalCacheReadTokens: 0,
+              totalCacheCreationTokens: 0,
+              totalCostUsd: 0,
+              turnCount: 0,
+            }
+            map.set(sessionId, { ...current, lastCallStats: payload.stats })
+            return map
+          })
+        }
         const legacyEvents = payloadToLegacyEvents(payload)
 
         for (const event of legacyEvents) {
@@ -1209,20 +1204,14 @@ export function useGlobalAgentListeners(): void {
                     current.totalCacheCreationTokens + (usage.cacheCreationTokens ?? 0),
                   totalCostUsd: current.totalCostUsd + (usage.costUsd ?? 0),
                   turnCount: current.turnCount + 1,
+                  // 保留 call_stats 事件设置的调用次数明细
+                  lastCallStats: current.lastCallStats,
                 })
                 return map
               })
             }
-            store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
-              bumpContextUsageRefreshNonce(prev, sessionId)
-            )
           } else if (event.type === 'usage_update') {
-            // 流式 usage_update 仅作计费参考；圆环改拉 SDK getContextUsage（防抖）
-            scheduleContextUsageRefresh(sessionId, () => {
-              store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
-                bumpContextUsageRefreshNonce(prev, sessionId)
-              )
-            })
+            // 流式 usage_update 仅作计费参考
           }
         }
       }) // unstable_batchedUpdates
@@ -1536,14 +1525,6 @@ export function useGlobalAgentListeners(): void {
         .catch(console.error)
     })
 
-    // ===== 5.7 Context 分项后台刷新完成通知（stale-while-revalidate） =====
-    // 后台缓存已更新 → bump nonce → useContextUsageBreakdown 重新获取（命中刚更新的缓存）
-    const cleanupContextUsageUpdated = window.electronAPI.onContextUsageUpdated((data) => {
-      store.set(contextUsageRefreshNonceBySessionAtom, (prev) =>
-        bumpContextUsageRefreshNonce(prev, data.sessionId)
-      )
-    })
-
     // 定期清理 60s 前的「最近修改」标记，避免 atom 无限增长
     const pruneTimer = setInterval(() => {
       const cutoff = Date.now() - RECENTLY_MODIFIED_TTL_MS
@@ -1718,7 +1699,6 @@ export function useGlobalAgentListeners(): void {
       cleanupNudge()
       cleanupTAIntent()
       cleanupBtw()
-      cleanupContextUsageUpdated()
       cleanupKanbanChanged()
       cleanupBoardCompleted()
       clearInterval(pruneTimer)

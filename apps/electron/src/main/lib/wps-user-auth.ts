@@ -50,7 +50,11 @@ async function freePort(port: number): Promise<void> {
           const parts = line.trim().split(/\s+/)
           const pid = parts[parts.length - 1]
           if (pid && pid !== '0') {
-            try { execFileSync('taskkill', ['/PID', pid, '/F'], { stdio: 'ignore' }) } catch { /* 忽略 */ }
+            try {
+              execFileSync('taskkill', ['/PID', pid, '/F'], { stdio: 'ignore' })
+            } catch {
+              /* 忽略 */
+            }
           }
         }
       }
@@ -59,9 +63,13 @@ async function freePort(port: number): Promise<void> {
       try {
         const pid = execFileSync('lsof', ['-ti', `:${port}`], { encoding: 'utf-8' }).trim()
         if (pid) execFileSync('kill', ['-9', pid], { stdio: 'ignore' })
-      } catch { /* 忽略 */ }
+      } catch {
+        /* 忽略 */
+      }
     }
-  } catch { /* 杀进程失败不影响主流程，CLI 会报端口占用 */ }
+  } catch {
+    /* 杀进程失败不影响主流程，CLI 会报端口占用 */
+  }
 }
 
 /** 登录状态类型 */
@@ -105,7 +113,14 @@ class WpsUserAuthManager {
   /**
    * 获取已登录的用户信息（从存储读取）
    */
-  getStoredUserAuth(): { loggedIn: boolean; loading?: boolean; userName?: string; userEmail?: string; expiresAt?: number; errorMessage?: string } {
+  getStoredUserAuth(): {
+    loggedIn: boolean
+    loading?: boolean
+    userName?: string
+    userEmail?: string
+    expiresAt?: number
+    errorMessage?: string
+  } {
     // 如果有正在进行的登录，返回 loading 状态
     if (this.state === 'starting' || this.state === 'authorizing') {
       return { loggedIn: false, loading: true }
@@ -255,7 +270,11 @@ class WpsUserAuthManager {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (response.ok) {
-        const data = await response.json() as { data?: { name?: string; email?: string }; name?: string; email?: string }
+        const data = (await response.json()) as {
+          data?: { name?: string; email?: string }
+          name?: string
+          email?: string
+        }
         const userData = data.data || data
         return {
           name: userData.name || '用户',

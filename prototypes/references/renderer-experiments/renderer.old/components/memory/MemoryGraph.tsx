@@ -153,11 +153,7 @@ export function MemoryGraph({
     const simulation = forceSimulation<SimNode>(simNodes)
       .force(
         'radial',
-        forceRadial(
-          (d) => timeScale((d as SimNode).timestamp),
-          centerX,
-          centerY
-        ).strength(0.8)
+        forceRadial((d) => timeScale((d as SimNode).timestamp), centerX, centerY).strength(0.8)
       )
       .force('collide', forceCollide<SimNode>(20).strength(0.5))
       .force(
@@ -182,35 +178,39 @@ export function MemoryGraph({
   // 重绘（hover/selection 变化时）
   React.useEffect(() => {
     if (!canvasRef.current) return
-    drawCanvas(canvasRef.current, nodesRef.current, edgesRef.current, hoveredNode, selectedNode, transformRef.current)
+    drawCanvas(
+      canvasRef.current,
+      nodesRef.current,
+      edgesRef.current,
+      hoveredNode,
+      selectedNode,
+      transformRef.current
+    )
   }, [hoveredNode, selectedNode])
 
   // 事件处理
-  const getNodeAtPoint = React.useCallback(
-    (clientX: number, clientY: number): SimNode | null => {
-      const canvas = canvasRef.current
-      if (!canvas) return null
-      const rect = canvas.getBoundingClientRect()
-      const t = transformRef.current
+  const getNodeAtPoint = React.useCallback((clientX: number, clientY: number): SimNode | null => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    const rect = canvas.getBoundingClientRect()
+    const t = transformRef.current
 
-      // CSS 尺寸 → canvas 像素坐标（考虑 CSS 尺寸和 canvas.width/height 不一致）
-      const canvasX = ((clientX - rect.left) / rect.width) * canvas.width
-      const canvasY = ((clientY - rect.top) / rect.height) * canvas.height
+    // CSS 尺寸 → canvas 像素坐标（考虑 CSS 尺寸和 canvas.width/height 不一致）
+    const canvasX = ((clientX - rect.left) / rect.width) * canvas.width
+    const canvasY = ((clientY - rect.top) / rect.height) * canvas.height
 
-      // 逆 transform：canvas 像素 → 逻辑坐标
-      const x = (canvasX - t.x) / t.scale
-      const y = (canvasY - t.y) / t.scale
+    // 逆 transform：canvas 像素 → 逻辑坐标
+    const x = (canvasX - t.x) / t.scale
+    const y = (canvasY - t.y) / t.scale
 
-      for (const node of nodesRef.current) {
-        const nx = node.x ?? 0
-        const ny = node.y ?? 0
-        const dist = Math.sqrt((x - nx) ** 2 + (y - ny) ** 2)
-        if (dist < 15 / t.scale) return node // hit test 半径随缩放调整
-      }
-      return null
-    },
-    []
-  )
+    for (const node of nodesRef.current) {
+      const nx = node.x ?? 0
+      const ny = node.y ?? 0
+      const dist = Math.sqrt((x - nx) ** 2 + (y - ny) ** 2)
+      if (dist < 15 / t.scale) return node // hit test 半径随缩放调整
+    }
+    return null
+  }, [])
 
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent) => {
@@ -282,7 +282,10 @@ export function MemoryGraph({
 
   if (!canvasSize) {
     return (
-      <div ref={containerRef} className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+      <div
+        ref={containerRef}
+        className="flex h-full w-full items-center justify-center text-xs text-muted-foreground"
+      >
         初始化图表...
       </div>
     )
@@ -298,9 +301,7 @@ export function MemoryGraph({
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-red-500">
-        {error}
-      </div>
+      <div className="flex h-full items-center justify-center text-xs text-red-500">{error}</div>
     )
   }
 
@@ -376,7 +377,8 @@ export function MemoryGraph({
 
       {/* 统计 */}
       <div className="absolute right-3 top-3 rounded-md bg-background/70 px-2 py-1.5 text-[10px] text-muted-foreground backdrop-blur-sm">
-        {payload.stats.memoryNodes} 记忆 · {payload.stats.skillNodes} 技能 · {payload.stats.edges} 连接
+        {payload.stats.memoryNodes} 记忆 · {payload.stats.skillNodes} 技能 · {payload.stats.edges}{' '}
+        连接
       </div>
     </div>
   )
@@ -426,8 +428,7 @@ function drawCanvas(
     const isHovered = hovered?.id === node.id
     const isSelected = selected?.id === node.id
 
-    const color =
-      node.kind === 'memory' ? COLORS.memory[node.source ?? 'L2'] : COLORS.skill
+    const color = node.kind === 'memory' ? COLORS.memory[node.source ?? 'L2'] : COLORS.skill
 
     if (node.shape === 'diamond') {
       // 菱形（memory 节点）

@@ -18,7 +18,7 @@ export const selectShapeAtom = atom(null, (_get, set, id: string) => {
 /** 加选/反选 */
 export const toggleShapeSelectionAtom = atom(null, (_get, set, id: string) => {
   set(selectedShapeIdsAtom, (prev) =>
-    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
   )
 })
 

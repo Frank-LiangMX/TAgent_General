@@ -17,7 +17,11 @@ import { isAgentSessionActive } from './lib/agent-service'
 import { listAgentSessions } from './lib/agent-session-manager'
 import { listAgentWorkspaces } from './lib/agent-workspace-manager'
 import { createTrayMenuModel, type TrayRecentSessionItem } from './lib/tray-menu-model'
-import { getThemeIconCandidatePaths, getThemeIconPath, resolveLogoKey } from './lib/theme-icon-resolver'
+import {
+  getThemeIconCandidatePaths,
+  getThemeIconPath,
+  resolveLogoKey,
+} from './lib/theme-icon-resolver'
 import { getSettings } from './lib/settings-service'
 
 let tray: Tray | null = null

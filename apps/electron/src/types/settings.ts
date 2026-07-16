@@ -246,6 +246,8 @@ export interface AppSettings {
   tabState?: PersistedTabSettings
   /** Agent 思考模式 */
   agentThinking?: ThinkingConfig
+  /** Whether the Agent SDK emits partial streaming events (enabled by default). */
+  agentStreaming?: boolean
   /** Agent 推理深度 */
   agentEffort?: AgentEffort
   /** Agent 最大预算（美元/次） */

@@ -20,7 +20,6 @@ import { BrowserWindow, Notification, powerSaveBlocker } from 'electron'
 import {
   AUTOMATION_IPC_CHANNELS,
   AUTOMATION_DEFAULT_SESSION_MODE,
-  DAILY_CONTEXT_ROLLOVER_THRESHOLD,
   type Automation,
   type AutomationRun,
 } from '@tagent/shared'
@@ -39,7 +38,6 @@ import {
   updateAgentSessionMeta,
   getAgentSessionMeta,
 } from './agent-session-manager'
-import { getContextUsageCache } from './context-usage-cache'
 import { runAgentHeadless, isAgentSessionActive } from './agent-service'
 import { notifyAutomationRunFinished } from './automation-notification-service'
 import { scanAutomationPrompt, type BlockedLogEntry } from './automation-prompt-scanner'
@@ -210,15 +208,8 @@ export async function runAutomation(automation: Automation, manual = false): Pro
         automation.lastRunAt &&
         isSameLocalDay(automation.lastRunAt, runAt)
       ) {
-        const usageSnapshot = getContextUsageCache(automation.lastSessionId)
-        const usageRatio = usageSnapshot ? usageSnapshot.percentage / 100 : undefined
-        if (usageRatio === undefined || usageRatio < DAILY_CONTEXT_ROLLOVER_THRESHOLD) {
-          reuseSessionId = automation.lastSessionId
-        } else {
-          console.log(
-            `[定时任务] ${automation.name} 上下文占用 ${(usageRatio * 100).toFixed(1)}% 已达阈值 ${DAILY_CONTEXT_ROLLOVER_THRESHOLD * 100}%，本次自动开新会话`
-          )
-        }
+        // 无 Context 分项缓存时，直接复用上次会话
+        reuseSessionId = automation.lastSessionId
       }
     }
 

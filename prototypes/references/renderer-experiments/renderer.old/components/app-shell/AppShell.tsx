@@ -20,7 +20,12 @@ import {
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, topLevelModeAtom, activeRailItemAtom, rightRailItemAtom } from '@/atoms/app-mode'
+import {
+  appModeAtom,
+  topLevelModeAtom,
+  activeRailItemAtom,
+  rightRailItemAtom,
+} from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
@@ -154,16 +159,24 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         }}
       >
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
-          <NavIsland showSidebar={showLeftSidebar} sidebarWidth={navSidebarWidth} railWidth={navRailWidth}>
+          <NavIsland
+            showSidebar={showLeftSidebar}
+            sidebarWidth={navSidebarWidth}
+            railWidth={navRailWidth}
+          >
             <FunctionalRail />
-            {showLeftSidebar && <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />}
+            {showLeftSidebar && (
+              <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
+            )}
           </NavIsland>
         </div>
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
         {/* 右侧 rail 存在时由浮岛承担窗口右缘，隐藏全局 rim 避免与底板右缘叠出竖线 */}
-        {(!showRightPanel || !isPanelOpen) && <div className="app-content-boundary-rim" aria-hidden />}
+        {(!showRightPanel || !isPanelOpen) && (
+          <div className="app-content-boundary-rim" aria-hidden />
+        )}
 
         <div
           className={cn(
@@ -182,13 +195,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               ['--content-base-inset-right' as string]: `${contentBaseInsetRight}px`,
               ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
               ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
-              ['--content-chrome-bleed-right' as string]: showRightPanel && isPanelOpen
-                ? `${SHELL_EDGE_PADDING}px`
-                : '0px',
+              ['--content-chrome-bleed-right' as string]:
+                showRightPanel && isPanelOpen ? `${SHELL_EDGE_PADDING}px` : '0px',
               ['--content-foreground-safe-right' as string]:
-                showRightPanel && !isPanelOpen
-                  ? `${RIGHT_PANEL_RAIL_WIDTH}px`
-                  : '0px',
+                showRightPanel && !isPanelOpen ? `${RIGHT_PANEL_RAIL_WIDTH}px` : '0px',
             }}
           >
             <div className="content-base-plate content-base-plate--body" aria-hidden />

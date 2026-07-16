@@ -410,7 +410,7 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         channelModelsGetter: {
-          getModels: (ch) => ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o'],
+          getModels: (ch) => (ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o']),
           isKsccChannel: (ch) => ch === 'kscc-internal',
           getExternalChannels: () => ['openai'],
         },
@@ -447,7 +447,7 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         channelModelsGetter: {
-          getModels: (ch) => ch === 'openai' ? ['gpt-4o'] : ['deepseek-chat'],
+          getModels: (ch) => (ch === 'openai' ? ['gpt-4o'] : ['deepseek-chat']),
           isKsccChannel: () => false, // 外部渠道
           getExternalChannels: () => ['openai', 'deepseek'],
         },
@@ -459,11 +459,11 @@ describe('KanbanDispatcher', () => {
 
       // 验证：3 个任务应该用不同渠道模型（轮询）
       const tasks = db.listTasksByBoard(board.id)
-      const modelIds = tasks.filter(t => t.status === 'running').map(t => t.modelId)
+      const modelIds = tasks.filter((t) => t.status === 'running').map((t) => t.modelId)
 
       // 应该有 gpt-4o 和 deepseek-chat 两种模型（轮询分配）
-      expect(modelIds.some(m => m === 'gpt-4o')).toBe(true)
-      expect(modelIds.some(m => m === 'deepseek-chat')).toBe(true)
+      expect(modelIds.some((m) => m === 'gpt-4o')).toBe(true)
+      expect(modelIds.some((m) => m === 'deepseek-chat')).toBe(true)
 
       await releaseAllUntilDone(db, board.id, pendingResolvers)
     })
@@ -489,11 +489,11 @@ describe('KanbanDispatcher', () => {
         runner: mockRunner,
         db,
         channelModelsGetter: {
-          getModels: (ch) => ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o'],
+          getModels: (ch) => (ch === 'kscc-internal' ? ['glm-5.1'] : ['gpt-4o']),
           isKsccChannel: (ch) => ch === 'kscc-internal',
           getExternalChannels: () => ['openai'],
         },
-        findModelChannel: (modelId) => modelId === 'gpt-4o' ? 'openai' : 'kscc-internal',
+        findModelChannel: (modelId) => (modelId === 'gpt-4o' ? 'openai' : 'kscc-internal'),
         maxConcurrentPerModel: 2,
       })
 

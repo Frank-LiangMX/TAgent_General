@@ -21,9 +21,7 @@ import {
 } from '../../types'
 
 /** 高级材质开关状态（false = 磨砂玻璃，true = 可选 glass/soft） */
-export const advancedMaterialEnabledAtom = atom<boolean>(
-  DEFAULT_ADVANCED_MATERIAL_ENABLED
-)
+export const advancedMaterialEnabledAtom = atom<boolean>(DEFAULT_ADVANCED_MATERIAL_ENABLED)
 
 /** 高级材质开关打开时的材质选择（glass 或 soft） */
 export const advancedMaterialOnModeAtom = atom<AdvancedMaterialOnMode>(
@@ -165,4 +163,3 @@ export async function updateAdvancedMaterialOnMode(onMode: AdvancedMaterialOnMod
     console.error('[高级材质] 持久化失败', error)
   }
 }
-

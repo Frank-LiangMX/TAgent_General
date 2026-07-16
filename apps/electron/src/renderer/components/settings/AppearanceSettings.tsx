@@ -73,17 +73,7 @@ interface SpecialStyle {
   variant: 'light' | 'dark'
   tag: string
   previewClass: string
-  deco:
-    | 'cloud'
-    | 'wave'
-    | 'leaf'
-    | 'star'
-    | 'moon'
-    | 'gem'
-    | 'sun'
-    | 'flame'
-    | 'flower'
-    | 'orb'
+  deco: 'cloud' | 'wave' | 'leaf' | 'star' | 'moon' | 'gem' | 'sun' | 'flame' | 'flower' | 'orb'
 }
 
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
@@ -299,11 +289,11 @@ export function AppearanceSettings(): React.ReactElement {
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">高级材质</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {advancedMaterialEnabled ? (
-                  advancedMaterialOnMode === 'glass'
+                {advancedMaterialEnabled
+                  ? advancedMaterialOnMode === 'glass'
                     ? '高透玻璃：强调通透、折射和悬浮感'
                     : '轻拟态：柔和玻璃质感，边缘高光与阴影'
-                ) : '磨砂玻璃：更内敛、更稳的玻璃层次'}
+                  : '磨砂玻璃：更内敛、更稳的玻璃层次'}
               </div>
             </div>
             <MaterialToggle
@@ -640,10 +630,7 @@ function MaterialToggle({
             role="switch"
             aria-checked={enabled}
             onClick={() => onEnabledChange(!enabled)}
-            className={cn(
-              'tagent-material-switch',
-              enabled && 'tagent-material-switch--on'
-            )}
+            className={cn('tagent-material-switch', enabled && 'tagent-material-switch--on')}
           >
             <span className="tagent-material-switch-thumb" />
           </button>

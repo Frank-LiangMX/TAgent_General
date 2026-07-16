@@ -15,9 +15,7 @@ import {
   type AppSettings,
 } from '../../types'
 
-export const advancedMaterialModeAtom = atom<AdvancedMaterialMode>(
-  DEFAULT_ADVANCED_MATERIAL_MODE
-)
+export const advancedMaterialModeAtom = atom<AdvancedMaterialMode>(DEFAULT_ADVANCED_MATERIAL_MODE)
 
 function isAdvancedMaterialMode(value: unknown): value is AdvancedMaterialMode {
   return value === 'glass' || value === 'frosted' || value === 'neumorph'
@@ -45,7 +43,9 @@ function syncNeumorphThemeClass(mode: AdvancedMaterialMode): void {
 
   if (mode !== 'neumorph') return
 
-  html.classList.add(html.classList.contains('dark') ? 'theme-neumorph-dark' : 'theme-neumorph-light')
+  html.classList.add(
+    html.classList.contains('dark') ? 'theme-neumorph-dark' : 'theme-neumorph-light'
+  )
 }
 
 export function applyAdvancedMaterialToDOM(mode: AdvancedMaterialMode): void {

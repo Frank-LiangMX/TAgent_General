@@ -41,7 +41,7 @@ export const addCanvasSnapshotAtom = atom(
       const next = [...prev, snap]
       return next.length > MAX_SNAPSHOTS ? next.slice(-MAX_SNAPSHOTS) : next
     })
-  },
+  }
 )
 
 /** 清空快照 */

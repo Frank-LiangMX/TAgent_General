@@ -5,7 +5,15 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { Check, ChevronRight, Circle, CheckCircle2, Rocket, ShieldCheck, Loader2 } from 'lucide-react'
+import {
+  Check,
+  ChevronRight,
+  Circle,
+  CheckCircle2,
+  Rocket,
+  ShieldCheck,
+  Loader2,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -50,7 +58,12 @@ function getNextAction(
   upgradeToReady: () => Promise<unknown>,
   upgradeToAgent: () => Promise<unknown>,
   markVerified: () => Promise<unknown>
-): { label: string; icon: React.ReactNode; action: () => Promise<unknown>; description: string } | null {
+): {
+  label: string
+  icon: React.ReactNode
+  action: () => Promise<unknown>
+  description: string
+} | null {
   switch (status) {
     case 'draft':
       return {

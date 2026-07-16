@@ -55,10 +55,7 @@ export function buildPromptFromSelection(elements: CanvasElement[]): string {
  * 派生每个元素的语义路径（page > hero > form > submit 按钮）
  * 用于"把 page 里的 form 里的提交按钮"这种更精确的指代。
  */
-export function describeElementWithPath(
-  el: CanvasElement,
-  allElements: CanvasElement[],
-): string {
+export function describeElementWithPath(el: CanvasElement, allElements: CanvasElement[]): string {
   const chain: CanvasElement[] = []
   let cur: CanvasElement | undefined = el
   while (cur) {

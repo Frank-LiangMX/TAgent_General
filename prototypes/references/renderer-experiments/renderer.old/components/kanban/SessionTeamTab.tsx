@@ -14,8 +14,25 @@ import { useAtom } from 'jotai'
 
 import type { KanbanBoard, KanbanTask, KanbanTaskStatus } from '@tagent/shared'
 
-import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input } from '@tagent/ui'
-import { ArrowLeftRight, Gauge, KanbanSquare, Loader2, Pause, Play, RefreshCw, Unlink } from 'lucide-react'
+import {
+  Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+} from '@tagent/ui'
+import {
+  ArrowLeftRight,
+  Gauge,
+  KanbanSquare,
+  Loader2,
+  Pause,
+  Play,
+  RefreshCw,
+  Unlink,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { KanbanTaskListItem } from './KanbanTaskListItem'
@@ -283,11 +300,7 @@ export function SessionTeamTab({ sessionId, boardId }: SessionTeamTabProps): Rea
                   </div>
                   <div className="space-y-1.5">
                     {groupTasks.map((task) => (
-                      <KanbanTaskListItem
-                        key={task.id}
-                        task={task}
-                        showDetailDialog={false}
-                      />
+                      <KanbanTaskListItem key={task.id} task={task} showDetailDialog={false} />
                     ))}
                   </div>
                 </div>
