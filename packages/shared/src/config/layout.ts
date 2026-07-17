@@ -14,11 +14,16 @@ export const RIGHT_PANEL_RAIL_WIDTH = 38
 /** 导航浮岛外轮廓圆角（Soft UI pill；与 content 底板左缘对齐） */
 export const NAV_ISLAND_OUTER_RADIUS = 24
 
-/** macOS 导航浮岛左上角圆角（避让红绿灯） */
-export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = 14
+/** macOS 导航浮岛左上角圆角（历史：灯嵌 pill 时削角；灯在外后可与外圆角一致） */
+export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = NAV_ISLAND_OUTER_RADIUS
 
-/** macOS 导航岛顶栏 chrome 行高度（避让红绿灯；与底部分隔线间距） */
-export const NAV_MAC_CHROME_HEIGHT = 32
+/**
+ * macOS 顶栏安全带高度（红绿灯 + 拖拽）
+ *
+ * Soft UI：灯落在 shell 底色上，不进 rail pill；
+ * 整窗内容（rail / 侧栏 / 主区）从该带下方开始。
+ */
+export const NAV_MAC_CHROME_HEIGHT = 28
 
 /** TabBar 内容区高度 */
 export const TAB_BAR_HEIGHT = 28
@@ -39,25 +44,27 @@ export const NAV_SIDEBAR_WIDTH = 240
 export const NAV_SIDEBAR_INSPECTOR_WIDTH = NAV_SIDEBAR_WIDTH
 
 /**
- * macOS 红绿灯在 Rail 内的水平内边距（相对导航岛左缘，非窗口左缘）
- * 需避开 nav-island 20px 圆角，且整组按钮(~52px)须落在 60px Rail 内
+ * macOS 红绿灯相对窗口左缘的水平 inset
+ * Soft UI：灯在 shell 上、不进 pill，略贴左即可
  */
-export const NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET = 8
+export const NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET = 12
 
 /** macOS 系统红绿灯控件近似高度（用于垂直居中） */
 export const NAV_MAC_TRAFFIC_LIGHT_HEIGHT = 12
 
-/** macOS 红绿灯相对 chrome 行垂直居中的额外下移（像素） */
-export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 8
+/** macOS 红绿灯相对 chrome 带垂直微调（像素） */
+export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 0
 
 /**
  * Electron trafficLightPosition（相对窗口内容区左上角）
- * 窗口左缘 + shell 边距 + rail 内边距
+ * 落在顶栏安全带内，不压独立 rail pill
  */
 export function getMacTrafficLightPosition(): { x: number; y: number } {
-  const x = SHELL_EDGE_PADDING + NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
-  const y =
-    Math.max(6, Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2)) +
-    NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
+  const x = NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
+  const y = Math.max(
+    6,
+    Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2) +
+      NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
+  )
   return { x, y }
 }

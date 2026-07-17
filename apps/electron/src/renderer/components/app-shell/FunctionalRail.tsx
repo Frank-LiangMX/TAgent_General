@@ -132,7 +132,6 @@ import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { hasUpdateAtom, updateDownloadedAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
-import { detectIsMac } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 /** 通用模式功能区配置（文件功能已迁移至右侧边栏） */
@@ -235,7 +234,6 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   const [activeRailItem, setActiveRailItem] = useAtom(activeRailItemAtom)
   const setAppMode = useSetAtom(appModeAtom)
   const store = useStore()
-  const isMac = React.useMemo(() => detectIsMac(), [])
 
   const hasUpdate = useAtomValue(hasUpdateAtom)
   const updateReadyVersion = useAtomValue(updateDownloadedAtom)
@@ -349,11 +347,9 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   ]
 
   return (
-    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pb-3 shrink-0">
-      {!isMac ? <div className="w-full shrink-0 h-2" aria-hidden /> : null}
-
-      <div className="nav-island-body-start w-full flex flex-col items-center">
-        {/* 上区：功能图标，参考 Soft UI 圆钮竖排 */}
+    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pt-2.5 pb-3 shrink-0">
+      {/* Soft UI：顶上不再为 mac 红绿灯留大块 chrome，图标紧贴 pill 顶 */}
+      <div className="w-full flex flex-col items-center">
         <div className="relative flex flex-col items-center gap-2 w-full">
           {COMMON_TOP_RAIL_ITEMS.map((item) => {
             const isActive = activeRailItem === item.id

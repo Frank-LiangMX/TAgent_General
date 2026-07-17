@@ -49,6 +49,7 @@ import {
   detectIsMac,
   NAV_ISLAND_MAC_TOP_LEFT_RADIUS,
   NAV_ISLAND_OUTER_RADIUS,
+  NAV_MAC_CHROME_HEIGHT,
   NAV_RAIL_WIDTH,
   NAV_SIDEBAR_WIDTH,
   RIGHT_PANEL_RAIL_WIDTH,
@@ -267,14 +268,28 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
       <div
         className={cn(
-          'shell-glass shell-bg relative flex h-screen w-screen overflow-hidden',
+          'shell-glass shell-bg relative flex h-screen w-screen flex-col overflow-hidden',
           isMac ? 'shell-glass--mac' : 'shell-glass--win'
         )}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
+          ['--mac-chrome-height' as string]: `${NAV_MAC_CHROME_HEIGHT}px`,
         }}
       >
+        {/*
+          macOS 顶栏安全带：红绿灯 + 全宽拖拽
+          Soft UI — 灯在 shell 底色上，不进独立 rail pill；下方才是浮岛/主区
+        */}
+        {isMac ? (
+          <div
+            className="relative z-[90] w-full shrink-0 titlebar-drag-region"
+            style={{ height: NAV_MAC_CHROME_HEIGHT }}
+            aria-hidden
+          />
+        ) : null}
+
+        <div className="relative flex min-h-0 flex-1 flex-row overflow-hidden">
         <div className="relative z-[70] flex shrink-0 items-stretch self-stretch gap-2 p-2 pr-0">
           <NavRailIsland width={navRailWidth}>
             <FunctionalRail />
@@ -414,6 +429,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             </div>
           </div>
         )}
+        </div>
       </div>
     </AppShellProvider>
   )
