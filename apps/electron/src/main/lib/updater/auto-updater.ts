@@ -2,13 +2,14 @@
  * 自动更新核心模块
  *
  * 检测新版本 → 自动后台下载 → 用户确认后重启安装。
- * 仅在打包后的生产环境中工作。
+ * 仅在打包后的生产环境中工作；Windows Portable 构建跳过自动更新。
  */
 
 import { BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
 import { setQuitting } from '../app-lifecycle'
+import { isPortableBuild } from './is-portable-build'
 import { shouldUseSilentInstall } from './updater-install-policy'
 import { UPDATER_IPC_CHANNELS } from './updater-types'
 
@@ -44,6 +45,12 @@ export function getUpdateStatus(): UpdateStatus {
 
 /** 手动触发检查更新 */
 export async function checkForUpdates(): Promise<void> {
+  if (isPortableBuild() || currentStatus.status === 'portable') {
+    console.log('[更新] Portable 构建不支持自动更新，跳过检查')
+    setStatus({ status: 'portable' })
+    return
+  }
+
   // 已在下载中或已下载完成，不重复检查
   if (currentStatus.status === 'downloading' || currentStatus.status === 'downloaded') {
     console.log('[更新] 跳过检查：已在下载中或已下载完成')
@@ -64,6 +71,11 @@ export async function checkForUpdates(): Promise<void> {
 
 /** 退出并安装已下载的更新 */
 export function quitAndInstall(): void {
+  if (isPortableBuild() || currentStatus.status === 'portable') {
+    console.warn('[更新] Portable 构建不支持 quitAndInstall')
+    return
+  }
+
   quittingForUpdate = true
   setQuitting()
 
@@ -96,6 +108,16 @@ export function cleanupUpdater(): void {
  */
 export function initAutoUpdater(mainWindow: BrowserWindow): void {
   win = mainWindow
+
+  // Windows Portable：无稳定安装目录，electron-updater 无法应用更新
+  if (isPortableBuild()) {
+    console.log('[更新] 检测到 Portable 构建，禁用自动更新')
+    setStatus({ status: 'portable' })
+    mainWindow.on('closed', () => {
+      win = null
+    })
+    return
+  }
 
   autoUpdater.logger = {
     info: (...args: unknown[]) => console.log('[更新-updater]', ...args),

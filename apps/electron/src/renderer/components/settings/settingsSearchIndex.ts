@@ -216,8 +216,8 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
     tabLabel: '关于/更新',
     tabDescription: '版本信息、更新检查、教程',
     items: [
-      { id: 'about-version', title: '版本', description: '应用版本号' },
-      { id: 'about-check-update', title: '检查更新', description: '检查并安装更新' },
+      { id: 'about-version', title: '版本', description: '应用版本号与 Portable 标识' },
+      { id: 'about-check-update', title: '检查更新', description: '检查并安装更新；Portable 需手动下载' },
       { id: 'about-tutorial', title: '打开教程', description: '在浏览器中打开使用教程' },
       { id: 'about-environment', title: '运行环境', description: 'Node.js / Git / Shell 状态' },
       { id: 'about-github', title: 'GitHub 仓库', description: '项目源代码' },
