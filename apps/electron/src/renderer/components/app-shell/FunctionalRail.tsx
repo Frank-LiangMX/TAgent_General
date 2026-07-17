@@ -9,7 +9,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { Settings, Loader2, Sparkles, PencilRuler } from 'lucide-react'
+import { Settings, Loader2, Sparkles, PencilRuler, Building2 } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -125,6 +125,7 @@ import {
   type TARailItem,
   type TopLevelMode,
 } from '@/atoms/app-mode'
+import { globalOfficeModeAtom } from '@/atoms/session-presentation-atoms'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { activeTabIdAtom, tabsAtom } from '@/atoms/tab-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
@@ -241,6 +242,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const userProfile = useAtomValue(userProfileAtom)
+  const [globalOfficeMode, setGlobalOfficeMode] = useAtom(globalOfficeModeAtom)
 
   const [modeStatus, setModeStatus] = React.useState<ModeStatusSummary | null>(null)
   const [isSwitching, setIsSwitching] = React.useState(false)
@@ -457,6 +459,34 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
             </Tooltip>
           )
         })}
+      </div>
+
+      <div className="glass-divider my-2 w-8 shrink-0" />
+
+      {/* Office 全局模式切换 */}
+      <div className="flex flex-col items-center gap-1.5 w-full">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setGlobalOfficeMode(!globalOfficeMode)}
+              className={cn(
+                'rail-island-btn size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag',
+                globalOfficeMode && 'rail-island-btn--active'
+              )}
+            >
+              <Building2 size={18} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <div className="text-xs">
+              <div className="font-medium">AI Office</div>
+              <div className="text-muted-foreground">
+                {globalOfficeMode ? '返回经典工作台' : '进入沉浸式办公室'}
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">

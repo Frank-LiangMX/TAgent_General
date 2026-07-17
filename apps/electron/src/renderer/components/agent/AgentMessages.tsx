@@ -176,6 +176,8 @@ interface AgentMessagesProps {
   onCompact?: () => void
   /** 底部悬浮输入框模式：为消息列表预留底部空间 */
   floatingInput?: boolean
+  /** 是否显示置顶用户消息（Office 模式下隐藏） */
+  showStickyUserMessage?: boolean
 }
 
 /** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
@@ -561,6 +563,7 @@ function AgentMessagesImpl({
   onRewind,
   onCompact,
   floatingInput,
+  showStickyUserMessage = true,
 }: AgentMessagesProps): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
@@ -984,7 +987,9 @@ function AgentMessagesImpl({
         </ConversationContent>
         <ScrollMinimap items={minimapItems} />
         <ConversationScrollButton />
-        {allUserMessagesData.length > 0 && <StickyUserMessage userMessages={allUserMessagesData} />}
+        {showStickyUserMessage && allUserMessagesData.length > 0 && (
+          <StickyUserMessage userMessages={allUserMessagesData} />
+        )}
       </Conversation>
     </BasePathsProvider>
   )

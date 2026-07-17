@@ -3171,6 +3171,7 @@ export function AgentView({
                 onRewind={handleRewindRequest}
                 onCompact={handleCompact}
                 floatingInput
+                showStickyUserMessage={!isOfficeDock}
               />
             </SessionFloatingLayout>
 

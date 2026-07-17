@@ -1,4 +1,4 @@
-import { useAtomValue, useStore } from 'jotai'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import {
   Building2,
   Check,
@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Layers3,
   Plus,
+  ArrowLeft,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -25,6 +26,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@tagent/ui'
 
 import { OfficeSessionView } from './OfficeSessionView'
@@ -41,7 +45,10 @@ import {
   type SessionIndicatorStatus,
 } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
-import { sessionPresentationAtomFamily } from '@/atoms/session-presentation-atoms'
+import {
+  sessionPresentationAtomFamily,
+  globalOfficeModeAtom,
+} from '@/atoms/session-presentation-atoms'
 import { useCreateSession } from '@/hooks/useCreateSession'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
@@ -65,6 +72,7 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
   const sessions = useAtomValue(agentSessionsAtom)
   const indicatorMap = useAtomValue(agentSessionIndicatorMapAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
+  const setGlobalOfficeMode = useSetAtom(globalOfficeModeAtom)
   const openSession = useOpenSession()
   const { createAgent } = useCreateSession()
   const { workspaces, currentWorkspaceId, selectWorkspace, createWorkspace } = useWorkspaceActions()
@@ -75,6 +83,15 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
   const [floorName, setFloorName] = React.useState('')
   const [creatingFloor, setCreatingFloor] = React.useState(false)
   const [creatingRoom, setCreatingRoom] = React.useState(false)
+
+  // 等待会话数据加载完成
+  const [dataLoaded, setDataLoaded] = React.useState(false)
+  React.useEffect(() => {
+    // sessions 初始为空数组，第一次非空时标记为已加载
+    if (sessions.length > 0 || workspaces.length > 0) {
+      setDataLoaded(true)
+    }
+  }, [sessions, workspaces])
 
   const defaultFloorId = React.useMemo(
     () => resolveDefaultOfficeFloorId(workspaces, currentWorkspaceId),
@@ -110,10 +127,9 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
     (roomId: string) => {
       const room = sessions.find((item) => item.id === roomId)
       if (!room) return
-      store.set(sessionPresentationAtomFamily(room.id), 'office')
       openSession('agent', room.id, room.title, room.mode)
     },
-    [openSession, sessions, store]
+    [openSession, sessions]
   )
 
   const switchRoom = React.useCallback(
@@ -155,16 +171,14 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
     const room = await createAgent({
       mode: topLevelMode,
       workspaceId: selectedFloorId,
-      beforeOpen: (createdRoom) =>
-        store.set(sessionPresentationAtomFamily(createdRoom.id), 'office'),
     })
     setCreatingRoom(false)
     if (!room) return
-  }, [createAgent, creatingRoom, selectedFloorId, store, topLevelMode])
+  }, [createAgent, creatingRoom, selectedFloorId, topLevelMode])
 
   const returnToClassic = React.useCallback(() => {
-    store.set(sessionPresentationAtomFamily(sessionId), 'classic')
-  }, [sessionId, store])
+    setGlobalOfficeMode(false)
+  }, [setGlobalOfficeMode])
 
   const moveRooms = React.useCallback((direction: -1 | 1) => {
     roomListRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' })
@@ -201,6 +215,18 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
     focusSwitchedRoomRef.current = false
     activeRoom?.focus()
   }, [sessionId])
+
+  // 数据加载中显示 loading（必须在所有 hooks 之后）
+  if (!dataLoaded) {
+    return (
+      <main className="office-immersive-shell h-screen w-screen overflow-hidden flex items-center justify-center">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span className="size-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          正在加载办公室数据…
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="office-immersive-shell h-screen w-screen overflow-hidden">
@@ -309,7 +335,6 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
                 }}
                 className={cn('office-room-tab', active && 'office-room-tab--active')}
                 onClick={() => switchRoom(room.id)}
-                title={room.title || '未命名办公室'}
               >
                 <span className={cn('office-room-status', roomStatusTone(status))} aria-hidden />
                 <span className="office-room-name">{room.title || '未命名办公室'}</span>
@@ -328,28 +353,36 @@ export function OfficeImmersiveShell({ sessionId }: OfficeImmersiveShellProps): 
           <ChevronRight className="size-4" aria-hidden />
         </button>
 
-        <button
-          type="button"
-          className="office-room-add-button"
-          onClick={() => void createRoom()}
-          disabled={!selectedFloorId || creatingRoom}
-          aria-label="在当前楼层新建办公室"
-          title="新建办公室"
-        >
-          <Plus className="size-4" aria-hidden />
-          <span>办公室</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="office-room-add-button"
+              onClick={() => void createRoom()}
+              disabled={!selectedFloorId || creatingRoom}
+              aria-label="在当前楼层新建办公室"
+            >
+              <Plus className="size-4" aria-hidden />
+              <span>办公室</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>新建办公室</TooltipContent>
+        </Tooltip>
 
-        <button
-          type="button"
-          className="office-room-classic-button"
-          onClick={returnToClassic}
-          aria-label="返回经典工作台"
-          title="返回经典工作台"
-        >
-          <LayoutDashboard className="size-4" aria-hidden />
-          <span>经典工作台</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="office-room-classic-button"
+              onClick={returnToClassic}
+              aria-label="返回经典工作台"
+            >
+              <LayoutDashboard className="size-4" aria-hidden />
+              <span>经典工作台</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>返回经典工作台</TooltipContent>
+        </Tooltip>
       </nav>
 
       <Dialog open={floorDialogOpen} onOpenChange={setFloorDialogOpen}>

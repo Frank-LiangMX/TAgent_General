@@ -20,6 +20,7 @@ import {
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
+import { globalOfficeModeAtom } from '@/atoms/session-presentation-atoms'
 import {
   appModeAtom,
   topLevelModeAtom,
@@ -109,6 +110,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const sessionPresentation = useAtomValue(
     sessionPresentationAtomFamily(activeTab?.type === 'agent' ? activeTab.sessionId : '__none__')
   )
+  const globalOfficeMode = useAtomValue(globalOfficeModeAtom)
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
   const designImmersive = useAtomValue(designImmersiveAtom)
@@ -120,7 +122,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     activeTab?.type === 'agent' &&
     !!currentSessionId &&
     activeRailItem === 'sessions' &&
-    sessionPresentation === 'classic'
+    !globalOfficeMode
 
   const showLeftSidebar =
     topLevelMode === 'general'
@@ -197,7 +199,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const magnify = useDelayedMount(wantMagnify)
   const immersive = useDelayedMount(wantImmersive)
   const officeShellSessionId =
-    activeTab?.type === 'agent' && sessionPresentation === 'office' ? activeTab.sessionId : null
+    activeTab?.type === 'agent' && globalOfficeMode ? activeTab.sessionId : null
+
+  // Office 模式但 activeTab 还没恢复时，显示 loading
+  const officeLoading = globalOfficeMode && !officeShellSessionId
 
   // Esc 退出沉浸全屏
   React.useEffect(() => {
@@ -211,6 +216,23 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [wantImmersive, setDesignImmersive])
+
+  if (officeLoading) {
+    return (
+      <AppShellProvider value={contextValue}>
+        <WindowControls />
+        <div
+          className="flex h-screen w-screen items-center justify-center bg-background text-sm text-muted-foreground"
+          role="status"
+        >
+          <div className="flex items-center gap-3">
+            <span className="size-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+            正在恢复办公室…
+          </div>
+        </div>
+      </AppShellProvider>
+    )
+  }
 
   if (officeShellSessionId) {
     return (
