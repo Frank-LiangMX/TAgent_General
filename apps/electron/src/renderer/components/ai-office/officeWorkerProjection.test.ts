@@ -7,10 +7,14 @@ import {
   projectKanbanWorkers,
   resolveOfficeWorkerState,
 } from './officeWorkerProjection'
-import { DESKS, getWorkerStatePosition } from './scene/layout/officeLayout'
+import { DESKS, getWorkerStatePosition, OFFICE_WALKABLE_BOUNDS } from './scene/layout/officeLayout'
+import { planWalkTo } from './scene/navigation/officeNavigation'
 import {
+  DIRECTOR_SPINE_SKIN,
+  getWorkerSpineSkin,
   OFFICE_CHARACTER_SCALE,
   OFFICE_CHARACTER_TARGET_HEIGHT,
+  resolveDirectorAnimation,
   resolveWorkerAnimation,
 } from './scene/characters/workerSpineAppearance'
 import type { AgentEntity } from './scene/entities/AgentEntity'
@@ -442,6 +446,40 @@ describe('Spine worker animation policy', () => {
       name: 'emotes/just-right',
       loop: false,
       settleTo: 'movement/idle-front',
+    })
+  })
+
+  it('gives the director a stable professional skin and restrained conversational motion', () => {
+    expect(getWorkerSpineSkin('director:session-1')).toBe(DIRECTOR_SPINE_SKIN)
+    expect(getWorkerSpineSkin('director:session-2')).toBe(DIRECTOR_SPINE_SKIN)
+    expect(resolveDirectorAnimation('talking', 'front')).toEqual({
+      name: 'movement/idle-front',
+      loop: true,
+    })
+  })
+
+  it('keeps terminal workers and free-walk destinations inside the visible floor', () => {
+    const states = ['waiting', 'blocked', 'completed', 'failed', 'cancelled'] as const
+    const agents = projectKanbanWorkers(
+      Array.from({ length: DESKS.length }, (_, index) =>
+        task(`t-bound-${index}`, 'done', { assigneeSessionId: `worker-bound-${index}` })
+      ),
+      new Map()
+    ).agents
+
+    for (const agent of agents) {
+      for (const state of states) {
+        const point = getWorkerStatePosition({ ...agent, state })
+        expect(point.x).toBeGreaterThanOrEqual(OFFICE_WALKABLE_BOUNDS.minX)
+        expect(point.x).toBeLessThanOrEqual(OFFICE_WALKABLE_BOUNDS.maxX)
+        expect(point.y).toBeGreaterThanOrEqual(OFFICE_WALKABLE_BOUNDS.minY)
+        expect(point.y).toBeLessThanOrEqual(OFFICE_WALKABLE_BOUNDS.maxY)
+      }
+    }
+
+    expect(planWalkTo(480, 520, 920, 610).at(-1)).toEqual({
+      x: OFFICE_WALKABLE_BOUNDS.maxX,
+      y: OFFICE_WALKABLE_BOUNDS.maxY,
     })
   })
 })

@@ -59,7 +59,7 @@ export class AgentEntity extends Container {
     this.bubble = new Bubble()
 
     if (isSpineReady()) {
-      this.spineChar = new SpineCharacter(agent.appearanceKey, agent.color)
+      this.spineChar = new SpineCharacter(agent.appearanceKey, agent.color, agent.kind ?? 'worker')
       if (this.spineChar.isReady) {
         this.useSpine = true
         this.spineChar.setAgentColor(agent.color)

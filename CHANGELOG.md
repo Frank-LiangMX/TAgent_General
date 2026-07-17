@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **每会话 AI Office 展示模式** — 经典 TAgent 工作台保持默认；主会话可独立切换到全屏办公室，保留会话导航并用可收起悬浮窗复用同一套 Agent 对话运行时；没有看板时也会显示由真实会话状态驱动的主 Agent 总监，不生成虚假 worker
+- **AI Office 沉浸式房间壳层** — Office 模式锁定全窗口 Canvas，不挂载经典 sidebar、标签栏和右侧栏；主会话以会话名组成顶部横向房间条，文字沟通与任务详情继续作为场景浮层呈现
 - **AI Office 稳定员工与协作编排** — worker 以真实子会话作为稳定 actor、任务作为可替换 assignment；新员工从入口到总监处 briefing 后再去工位，review / delivery / rework 均沿路径连续移动，并通过单通道交接队列避免多人重叠
 - **AI Office 状态与恢复控制** — 增加可访问员工名单、语义状态标签、任务详情入口、看板手动刷新、场景重试 / 返回经典工作台，以及按会话恢复摄像机和沟通窗布局
 - **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Office 动效策略** — 办公室空间迁移和交卷后生活循环不再受系统 `prefers-reduced-motion` 影响，避免 Windows 动画设置关闭时所有角色被永久固定在状态区域
 - **AI Office 产品动效档位** — 设置页提供“完整 / 精简”动效；精简模式保留必要行走和交接连续性、提高路径速度并关闭低频装饰行为，普通界面过渡仍尊重系统 reduced-motion
 - **AI Office 角色工牌** — 移除角色头顶常驻的完整任务描述，只保留带状态点的紧凑姓名工牌，并使用角色完整视觉高度作为稳定锚点，避免文字遮住角色形象
+- **AI Office 总监与活动边界** — 总监固定使用专业形象、深蓝身份色和更克制的动作节奏；角色漫游目标统一限制在可行走地面，修复员工停在右侧墙体的问题
 - **前台记忆写入改为本地证据收集** — `recordSessionToMemory` 不再触发 `backfillKeyFacts` LLM 调用；改为写 L4 + `memoryEvidenceSink.writeSessionEvidence()` + dirty 标记，辅助 LLM 整理统一在空闲窗口执行
 - **Nudge 候选写入改为本地暂存** — `onTurnStart` 检测到候选后写入 `memory-evidence-sink`（`writeNudgeEvidence`），不再在前台发起 auxiliary LLM call
 - **Reflection 合并到空闲批量整理** — 当 `TAGENT_IDLE_MEMORY_CONSOLIDATION=1` 时，insights/contradictions 由 `MemoryConsolidationService` 的一次批量请求产出，不再独立调用 LLM；legacy Reflection 调度仅在 flag 关闭时保留

@@ -18,10 +18,11 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 4. Office 复用同一个 `AgentView(sessionId)` 作为悬浮沟通窗；切换展示只会卸载一种展示并挂载另一种，不创建会话、不创建看板、不重发消息。
 5. Office 场景是现有主会话与 Kanban 数据的只读投影。主 Agent 总监状态来自真实 streaming / tool / indicator 信号；没有看板时只显示总监，不生成虚假 worker。
 6. 经典展示不静态加载 Pixi Office 场景；全屏 Office 和右栏 Office 均按需加载。
-7. Office 展示时仅隐藏右侧伴生面板，保留左侧会话导航；切回经典展示后恢复原有面板状态。
+7. Office 展示使用独立的沉浸壳层，不挂载经典 Functional Rail、左侧会话栏、标签栏和右侧伴生面板；主会话通过顶部横向房间条切换，切回经典展示后原有面板状态保持不变。
 8. worker actor 使用 `assigneeSessionId` 作为稳定身份，任务只作为可替换的 assignment；未领取任务不生成角色。
 9. Office 业务状态、角色语义状态与 Pixi / Spine 动画状态分层；交接由可中断的单通道队列串行化，完成后进入低频环境行为。
 10. 动效偏好由 TAgent 产品设置控制：精简动效保留空间连续性并加速必要移动，只关闭装饰性行为；系统 reduced-motion 只约束普通 UI 过渡。
+11. Office 的主表面始终是 Canvas；会话沟通、任务详情和后续功能通过场景浮层呈现。完整文件、Diff 等高密度能力通过明确入口返回经典工作台。
 
 ## Consequences
 
@@ -33,11 +34,13 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 - worker 换任务不会换脸或创建新员工，同时避免未领取任务形成幽灵角色。
 - 高频 progress 合并到动画帧，隐藏页面暂停 ticker，场景加载和资源失败均有明确恢复入口。
 - 展示偏好与 general / TA 能力模式正交，不破坏模式隔离。
+- Office 获得完整可视面积，房间切换不再受 sidebar 和标签页布局约束。
 
 ### Negative
 
 - renderer 本地偏好暂不跨设备同步；若未来需要同步，必须另行评审 schema。
 - 在经典与 Office 之间切换会重新挂载展示组件，局部滚动位置不会自动共享。
+- Office 不直接展示经典侧栏中的全部功能；这些能力需要场景浮层或返回经典工作台。
 - 当前办公室地图只有 6 个工位；保留总监后最多同时显示 5 名 worker，更多员工以摘要表示。
 
 ### Neutral

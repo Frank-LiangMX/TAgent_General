@@ -91,7 +91,8 @@ export class MovementSystem {
         continue
       }
 
-      const step = Math.min(WALK_SPEED * this.speedMultiplier * dt, dist)
+      const characterPace = agent.kind === 'director' ? 0.78 : 1
+      const step = Math.min(WALK_SPEED * characterPace * this.speedMultiplier * dt, dist)
       const nx = agent.x + (dx / dist) * step
       const ny = agent.y + (dy / dist) * step
       const viewFacing = resolveWalkViewFacing(dx, dy)

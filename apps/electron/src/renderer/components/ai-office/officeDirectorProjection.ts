@@ -155,7 +155,7 @@ export function projectOfficeDirector(
     roleId: 'director',
     appearanceKey: actor.appearanceKey,
     name: actor.displayName,
-    color: 0x0d9488,
+    color: 0x17324d,
     x: desk.seatX,
     y: desk.seatY,
     state: activity.state,

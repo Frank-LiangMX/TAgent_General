@@ -25,7 +25,6 @@ import {
   sessionPresentationAtomFamily,
 } from '@/atoms/session-presentation-atoms'
 import { AgentView } from '@/components/agent'
-import { SessionPresentationToggle } from '@/components/agent/SessionPresentationToggle'
 import { KanbanTaskDetailDialog } from '@/components/kanban/KanbanTaskDetailDialog'
 import { cn } from '@/lib/utils'
 
@@ -157,7 +156,7 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
         />
       </div>
 
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4">
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start p-4">
         <div className="office-session-hud pointer-events-auto min-w-0 max-w-[min(540px,60vw)] rounded-2xl border border-border/55 bg-background/78 px-4 py-3 shadow-lg backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <span className={cn('size-2 rounded-full', statusTone(status))} aria-hidden />
@@ -193,8 +192,6 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
             {loading ? <span role="status">正在同步看板…</span> : null}
           </div>
         </div>
-
-        <SessionPresentationToggle sessionId={sessionId} className="pointer-events-auto" />
       </header>
 
       {officeViewState.chatCollapsed ? (

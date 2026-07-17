@@ -4,6 +4,21 @@ import type { OfficeAgent, OfficeAgentState, OfficeDesk } from '../../types/offi
 export const SCENE_WIDTH = 960
 export const SCENE_HEIGHT = 640
 
+/** Character-centre bounds for the visible floor; the right-side wall starts beyond this area. */
+export const OFFICE_WALKABLE_BOUNDS = {
+  minX: 120,
+  maxX: 800,
+  minY: 220,
+  maxY: 585,
+} as const
+
+export function clampOfficeWalkablePoint(x: number, y: number): { x: number; y: number } {
+  return {
+    x: Math.max(OFFICE_WALKABLE_BOUNDS.minX, Math.min(OFFICE_WALKABLE_BOUNDS.maxX, x)),
+    y: Math.max(OFFICE_WALKABLE_BOUNDS.minY, Math.min(OFFICE_WALKABLE_BOUNDS.maxY, y)),
+  }
+}
+
 export const COLORS = {
   floor: 0xffffff,
   wall: 0xe8e6e1,
@@ -102,11 +117,11 @@ export function getWorkerStatePosition(agent: OfficeAgent): { x: number; y: numb
     case 'blocked':
       return { x: 145 + col * 48, y: 290 + row * 72 }
     case 'completed':
-      return { x: 700 + col * 58, y: 520 - row * 64 }
+      return { x: 680 + col * 42, y: 520 - row * 64 }
     case 'failed':
-      return { x: 710 + col * 58, y: 275 + row * 70 }
+      return { x: 690 + col * 42, y: 275 + row * 70 }
     case 'cancelled':
-      return { x: 845 + col * 28, y: 575 - row * 48 }
+      return { x: 760 + col * 16, y: 575 - row * 48 }
     case 'walking':
       return { x: agent.x, y: agent.y }
   }

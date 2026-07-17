@@ -3,10 +3,10 @@ import { createNavContext, planWalkFrom } from '../navigation/officeNavigation'
 import { MovementSystem } from '../systems/MovementSystem'
 
 const DIRECTOR_SPOTS = [
-  { label: '在白板前整理思路', x: 190, y: 315, animation: 'emotes/dramatic-stare', duration: 6 },
-  { label: '到窗边观察进度', x: 835, y: 390, animation: 'movement/idle-right', duration: 7 },
-  { label: '顺手整理公共资料', x: 315, y: 235, animation: 'emotes/determined', duration: 5 },
-  { label: '在沟通区等待消息', x: 480, y: 520, animation: 'movement/idle-front', duration: 6 },
+  { label: '在白板前梳理计划', x: 190, y: 315, animation: 'emotes/thinking', duration: 9 },
+  { label: '到窗边观察进度', x: 780, y: 390, animation: 'movement/idle-right', duration: 10 },
+  { label: '检查公共资料', x: 315, y: 235, animation: 'movement/idle-back', duration: 8 },
+  { label: '在沟通区等待消息', x: 480, y: 520, animation: 'movement/idle-front', duration: 10 },
 ] as const
 
 function stableHash(value: string): number {
@@ -21,7 +21,7 @@ function stableHash(value: string): number {
 function waiting(agent: OfficeAgent, cycle: number): OfficeAmbientActivity {
   return {
     phase: 'delay',
-    remaining: 5 + (stableHash(`${agent.appearanceKey}:${cycle}:director-delay`) % 45) / 10,
+    remaining: 10 + (stableHash(`${agent.appearanceKey}:${cycle}:director-delay`) % 81) / 10,
     cycle,
   }
 }

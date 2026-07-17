@@ -51,6 +51,12 @@ import {
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
+const OfficeImmersiveShell = React.lazy(() =>
+  import('@/components/ai-office/OfficeImmersiveShell').then((module) => ({
+    default: module.OfficeImmersiveShell,
+  }))
+)
+
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
 /** 覆盖层退场动画时长，需与 CSS transition 对齐 */
@@ -190,6 +196,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const magnify = useDelayedMount(wantMagnify)
   const immersive = useDelayedMount(wantImmersive)
+  const officeShellSessionId =
+    activeTab?.type === 'agent' && sessionPresentation === 'office' ? activeTab.sessionId : null
 
   // Esc 退出沉浸全屏
   React.useEffect(() => {
@@ -203,6 +211,26 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [wantImmersive, setDesignImmersive])
+
+  if (officeShellSessionId) {
+    return (
+      <AppShellProvider value={contextValue}>
+        <WindowControls />
+        <React.Suspense
+          fallback={
+            <div
+              className="flex h-screen w-screen items-center justify-center bg-background text-sm text-muted-foreground"
+              role="status"
+            >
+              正在进入办公室…
+            </div>
+          }
+        >
+          <OfficeImmersiveShell sessionId={officeShellSessionId} />
+        </React.Suspense>
+      </AppShellProvider>
+    )
+  }
 
   return (
     <AppShellProvider value={contextValue}>

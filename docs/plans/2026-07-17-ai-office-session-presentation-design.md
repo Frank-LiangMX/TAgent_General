@@ -6,7 +6,7 @@
 >
 > 关联：`2026-07-16-kanban-digital-crew-ux.md`、ADR-0001、ADR-0005、ADR-0007
 
-> 实现摘要（2026-07-17）：已完成按会话的 `classic | office` 展示偏好、经典默认、Office 按需加载、无看板总监投影、稳定 actor / assignment、召集与交接队列、连续 delivery / rework、低频环境行为、完整 / 精简动效、场景恢复与可访问性入口。业务真值仍由 Session 与 Kanban 提供，Office 只负责投影和连续表现。
+> 实现摘要（2026-07-17）：已完成按会话的 `classic | office` 展示偏好、经典默认、独立沉浸壳层与横向房间切换、Office 按需加载、无看板总监投影、稳定 actor / assignment、召集与交接队列、连续 delivery / rework、低频环境行为、完整 / 精简动效、场景恢复与可访问性入口。业务真值仍由 Session 与 Kanban 提供，Office 只负责投影和连续表现。
 
 ## 1. 背景
 
@@ -125,15 +125,15 @@ Classic 和 Office 不允许各自维护一套消息、任务或 worker 状态�
 
 ### 4.2 渲染入口
 
-`TabContent` 是按 session 选择展示器的自然边界：
+`AppShell` 是选择产品壳层的边界；经典展示继续进入原有导航、标签和内容区，Office 展示直接进入独立沉浸壳层：
 
 ```tsx
 sessionPresentation === 'office'
-  ? <LazyOfficeSessionView sessionId={sessionId} />
-  : <ClassicAgentSessionView sessionId={sessionId} />
+  ? <LazyOfficeImmersiveShell sessionId={sessionId} />
+  : <ClassicAppShell />
 ```
 
-实现时不应在 `AgentView` 内叠加全屏 Canvas，也不应把全屏 Office 放进 `RightSidePanel`。右栏 `KanbanCrewPanel` 保留为经典工作台的轻量团队视图。
+Office 壳层不挂载 Functional Rail、左侧栏、标签栏和右侧伴生面板。实现时不应在 `AgentView` 内叠加全屏 Canvas，也不应把全屏 Office 放进 `RightSidePanel`。右栏 `KanbanCrewPanel` 保留为经典工作台的轻量团队视图。
 
 ### 4.3 会话展示偏好
 
@@ -149,7 +149,7 @@ type SessionPresentation = 'classic' | 'office'
 
 ### 5.1 空间层级
 
-Office 是主内容区的 full-bleed 视图，不是整个产品唯一界面。
+Office 是占满应用窗口的 full-bleed 场景，但不是整个产品唯一界面；用户可明确返回经典工作台。
 
 1. 场景层：办公室、角色、家具、路径和空间状态。
 2. 信息层：会话标题、展示切换、团队摘要和关键告警。
@@ -166,11 +166,12 @@ Office 是主内容区的 full-bleed 视图，不是整个产品唯一界面。
 | Detail sheet | 30 | worker / task 详情 |
 | System overlay | 50 | 权限、错误、全局 Dialog |
 
-### 5.2 导航保留
+### 5.2 房间导航
 
-- Office 进入时可收起左右辅助面板，为场景让出空间，但不得销毁其用户状态。
+- Office 进入时不挂载经典 sidebar、标签栏和伴生面板，但不得清除其用户状态。
 - 保留明确的“返回经典工作台”按钮和键盘可达入口。
-- 会话切换能力必须始终可达；Office 不建立第二套办公室列表。
+- 顶部横向房间条直接投影当前能力模式下的主会话；房间名就是会话名，不创建第二份房间数据。
+- 左右方向键切换相邻房间，横向溢出可滚动；切换仍调用统一会话打开链路。
 - 切换会话时保留各自摄像机、聊天窗尺寸和展示模式。
 - `Esc` 只关闭最上层浮窗或详情，不直接退出 Office，避免不可预测导航。
 
@@ -184,6 +185,7 @@ Office 是主内容区的 full-bleed 视图，不是整个产品唯一界面。
 - 复杂 Diff、长工具输出和批量文件操作可引导到经典工作台，第一阶段不强行塞入浮窗。
 - 权限确认不得藏在角色气泡中，必须作为可访问的系统层操作出现。
 - 所有图标按钮具有文本标签或 `aria-label`，交互热区不小于 44px。
+- Office 内新增的文件、Diff、设置等功能必须作为 Canvas 上的浮层 / 弹窗打开，不能把主界面切回经典布局；需要完整生产力表面时使用明确的“返回经典工作台”。
 
 ## 6. 事件与状态机
 
@@ -393,6 +395,13 @@ sequenceDiagram
 - [x] 完成键盘导航、44px 关键热区、状态名单、手动刷新、重试和返回经典工作台。
 - [x] 可见容量固定为当前地图的“1 名总监 + 5 名 worker”，超出容量使用摘要；默认仍为经典工作台。
 
+### Phase 6：沉浸式产品壳层
+
+- [x] Office 模式直接锁定全窗口 Canvas，不挂载 sidebar、标签栏与右侧栏。
+- [x] 使用主会话真值生成横向房间条，支持键盘与滚动切换房间。
+- [x] 总监使用稳定专业形象、较慢行走和更长动画混合，环境动作保持低频克制。
+- [x] 场景导航目标统一限制在可行走地面内，避免角色进入右侧墙体。
+
 ## 13. 验收标准
 
 ### 产品边界
@@ -413,6 +422,7 @@ sequenceDiagram
 ### 交互
 
 - [x] Office 内始终可以发送消息、查看运行状态并返回经典工作台。
+- [x] Office 主界面始终为 Canvas；会话与任务交互以房间导航或场景浮层完成。
 - [x] 会话切换不丢失消息、草稿、摄像机和浮窗状态。
 - [x] 复杂内容有明确路径进入经典工作台，不在浮窗里失真。
 - [x] 键盘用户可以操作展示切换、浮窗、角色详情和错误恢复。
@@ -429,5 +439,5 @@ sequenceDiagram
 1. 展示偏好使用 renderer 独立、版本化的 UI preference store，不修改共享 `AgentSessionMeta` schema。
 2. 稳定 actor identity 使用真实 `assigneeSessionId`；role 只定义职能和显示名，task 只定义当前 assignment。
 3. Office 首版不复制 Diff / 文件预览系统；复杂内容通过沟通窗标题栏进入经典工作台。
-4. full-bleed Office 保留左侧会话导航、隐藏右侧伴生面板，并记忆每个会话的摄像机与沟通窗状态。
+4. full-bleed Office 使用独立壳层，隐藏经典 sidebar、标签栏和右侧伴生面板；会话通过顶部横向房间条切换，并记忆每个会话的摄像机与沟通窗状态。
 5. 当前 6 工位地图保留 1 个总监工位，最多显示 5 名 worker；更多员工和未领取任务使用摘要，不制造幽灵角色。
