@@ -24,6 +24,14 @@
 
 ## 当前变更（2026-07-17）
 
+**AI Office 会话展示模式设计**（分支 `docs/ai-office-session-view-design`）：
+
+- 明确经典工作台继续作为默认体验，AI Office 作为 per-session 可选展示器，不新增第三种顶层模式
+- 定义“一套 Session / Kanban 真值，两套展示器”，并规划主 Agent 总监角色、worker 稳定身份、任务交接、悬浮沟通窗和懒加载隔离
+- 设计文档：`docs/plans/2026-07-17-ai-office-session-presentation-design.md`
+
+---
+
 **AI Office worker 状态真值接入**（分支 `feature/ai-office-worker-state-binding`）：
 
 - 办公室实体改由 Kanban task 动态投影：`task.id` 绑定实体、`roleId` 绑定角色身份、`assigneeSessionId` 绑定真实 worker 会话与形象 seed
