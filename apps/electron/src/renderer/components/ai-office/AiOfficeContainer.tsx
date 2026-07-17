@@ -10,6 +10,8 @@ import type { KanbanTask, ProgressLogEntry, TaskProgressPayload } from '@tagent/
 
 import { AiOfficeCanvas } from './AiOfficeCanvas'
 import { projectKanbanWorkers } from './officeWorkerProjection'
+import { DESKS } from './scene/layout/officeLayout'
+import type { OfficeAgent } from './types/office-agent'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
 import { cn } from '@/lib/utils'
@@ -21,6 +23,10 @@ interface AiOfficeContainerProps {
   className?: string
   width?: number
   onTaskSelect?: (taskId: string) => void
+  /** Stable non-worker actors, currently the main-session director. */
+  leadingAgents?: OfficeAgent[]
+  /** Desk slots reserved by leading actors. */
+  reservedDeskCount?: number
 }
 
 export function AiOfficeContainer({
@@ -28,6 +34,8 @@ export function AiOfficeContainer({
   className,
   width,
   onTaskSelect,
+  leadingAgents = [],
+  reservedDeskCount = 0,
 }: AiOfficeContainerProps) {
   const roleMap = useAgentRoleMap()
   const [liveProgressByTaskId, setLiveProgressByTaskId] = React.useState<
@@ -62,15 +70,38 @@ export function AiOfficeContainer({
     [tasks, roleLabels, liveProgressByTaskId]
   )
 
+  const sceneProjection = React.useMemo(() => {
+    const reserved = Math.max(0, Math.min(reservedDeskCount, DESKS.length))
+    const workerCapacity = Math.max(0, DESKS.length - reserved)
+    const visibleWorkers = projection.agents.slice(0, workerCapacity).map((agent, index) => {
+      const desk = DESKS[index + reserved]!
+      return {
+        ...agent,
+        assignedDeskId: desk.id,
+        x: desk.seatX,
+        y: desk.seatY,
+      }
+    })
+
+    return {
+      agents: [...leadingAgents, ...visibleWorkers],
+      hiddenCount:
+        projection.hiddenCount + Math.max(0, projection.agents.length - visibleWorkers.length),
+    }
+  }, [leadingAgents, projection, reservedDeskCount])
+
   return (
     <div
       className={cn('relative h-full flex flex-col bg-background/40', className)}
       style={width ? { width } : undefined}
     >
-      <AiOfficeCanvas externalAgents={projection.agents} onAgentSelect={onTaskSelect} />
-      {projection.hiddenCount > 0 ? (
-        <div className="ai-office-overflow" aria-label={`${projection.hiddenCount} 个任务未显示`}>
-          +{projection.hiddenCount} 个任务
+      <AiOfficeCanvas externalAgents={sceneProjection.agents} onAgentSelect={onTaskSelect} />
+      {sceneProjection.hiddenCount > 0 ? (
+        <div
+          className="ai-office-overflow"
+          aria-label={`${sceneProjection.hiddenCount} 个任务未显示`}
+        >
+          +{sceneProjection.hiddenCount} 个任务
         </div>
       ) : null}
     </div>

@@ -2,9 +2,11 @@
 
 > 日期：2026-07-17
 >
-> 状态：Draft，进入实现前需完成交互原型与 ADR 评审
+> 状态：Accepted，Phase 1 实现中（ADR-0007）
 >
-> 关联：`2026-07-16-kanban-digital-crew-ux.md`、ADR-0001、ADR-0005
+> 关联：`2026-07-16-kanban-digital-crew-ux.md`、ADR-0001、ADR-0005、ADR-0007
+
+> Phase 1（2026-07-17）：已实现按会话的 `classic | office` 展示偏好、经典默认、Office 按需加载、无看板总监投影、全屏场景和复用同一 `AgentView` 的可收起沟通窗。员工稳定身份、召集 / briefing / handoff / 验收编排仍按后续阶段推进。
 
 ## 1. 背景
 

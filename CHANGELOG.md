@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **每会话 AI Office 展示模式** — 经典 TAgent 工作台保持默认；主会话可独立切换到全屏办公室，保留会话导航并用可收起悬浮窗复用同一套 Agent 对话运行时；没有看板时也会显示由真实会话状态驱动的主 Agent 总监，不生成虚假 worker
 - **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
 - **Kanban worker → Office 真值映射** — `task.id` / `roleId` / `assigneeSessionId` 分别绑定场景实体、角色身份与真实 worker 会话/形象 seed；任务状态和实时 progress 映射为待命 / 分析 / 忙碌 / 验收 / 求助 / 已交卷 / 需复盘 / 已撤岗，不再生成固定花名册或默认工作中的幽灵员工
 - **Pixi.js / Spine 动画运行时** — 使用 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`；恢复 Chibi Spine 骨骼资源加载与 0.24s 动画混合，矢量角色仅作为资源失败降级
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **AI Office 按需加载** — 全屏 Office 与经典模式右栏 Office 都只在用户主动进入时加载 Pixi 场景，经典路径不承担办公室运行时成本
 - **AI Office 状态动画** — worker 状态变化改为 `当前状态 → walking 路径迁移 → 目标状态`；稳定保留工位，交卷使用一次性 `just-right` 动作后回到安静完成姿势，不再瞬移或无限举手跳
 - **AI Office 角色比例** — Spine 角色按 682.5px setup bounds 推导到约 102px 场景高度（scale ≈ 0.15），并同步缩小阴影和点击热区，使角色与 101px 桌面宽度匹配
 - **AI Office 交卷后生活循环** — 已完成 worker 不再长期站在交付区；在保持看板 `done` 真值的同时，错峰前往茶水间、窗边、打印机、植物角或空地摸鱼，沿导航路径移动、停留并循环选择下一项活动

@@ -27,6 +27,7 @@ import {
   rightRailItemAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
+import { sessionPresentationAtomFamily } from '@/atoms/session-presentation-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
   designFullscreenAtom,
@@ -99,6 +100,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
+  const sessionPresentation = useAtomValue(
+    sessionPresentationAtomFamily(activeTab?.type === 'agent' ? activeTab.sessionId : '__none__')
+  )
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
   const designImmersive = useAtomValue(designImmersiveAtom)
@@ -109,7 +113,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     appMode === 'agent' &&
     activeTab?.type === 'agent' &&
     !!currentSessionId &&
-    activeRailItem === 'sessions'
+    activeRailItem === 'sessions' &&
+    sessionPresentation === 'classic'
 
   const showLeftSidebar =
     topLevelMode === 'general'

@@ -71,6 +71,23 @@ export function getWorkerStatePosition(agent: OfficeAgent): { x: number; y: numb
   const row = Math.floor(slot / 3)
   const desk = DESKS[slot] ?? DESKS[0]!
 
+  if (agent.kind === 'director') {
+    switch (agent.state) {
+      case 'working':
+      case 'thinking':
+      case 'reviewing':
+        return { x: desk.seatX, y: desk.seatY }
+      case 'blocked':
+        return { x: 190, y: 315 }
+      case 'talking':
+        return { x: 480, y: 545 }
+      case 'walking':
+        return { x: agent.x, y: agent.y }
+      default:
+        return { x: 480, y: 520 }
+    }
+  }
+
   if (isDeskWorkerState(agent.state) || agent.state === 'talking') {
     return { x: desk.seatX, y: desk.seatY }
   }

@@ -17,7 +17,6 @@ import { KanbanBoardToolbar, KanbanToolbarIconButton } from './KanbanBoardToolba
 import { KanbanCrewTaskList } from './KanbanCrewTaskList'
 import { KanbanSwitcherDialog } from './KanbanSwitcherDialog'
 import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
-import { AiOfficeContainer } from '@/components/ai-office/AiOfficeContainer'
 
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
@@ -30,6 +29,12 @@ import {
 import { CREW_STATUS_BADGE } from '@/lib/kanban-crew-status'
 import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
 import { cn } from '@/lib/utils'
+
+const AiOfficeContainer = React.lazy(() =>
+  import('@/components/ai-office/AiOfficeContainer').then((module) => ({
+    default: module.AiOfficeContainer,
+  }))
+)
 
 function CrewTaskDetail({
   task,
@@ -315,7 +320,18 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
         </div>
       ) : (
         <div className="flex-1 min-h-0">
-          <AiOfficeContainer tasks={tasks} onTaskSelect={handleOfficeTaskSelect} />
+          <React.Suspense
+            fallback={
+              <div
+                className="flex h-full items-center justify-center text-xs text-muted-foreground"
+                role="status"
+              >
+                正在布置办公室…
+              </div>
+            }
+          >
+            <AiOfficeContainer tasks={tasks} onTaskSelect={handleOfficeTaskSelect} />
+          </React.Suspense>
         </div>
       )}
 

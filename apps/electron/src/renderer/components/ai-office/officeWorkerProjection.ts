@@ -160,6 +160,7 @@ export function projectKanbanWorkers(
     const color = ROLE_COLORS[stableHash(roleId) % ROLE_COLORS.length]!
 
     return {
+      kind: 'worker',
       id: task.id,
       taskId: task.id,
       roleId: task.roleId,

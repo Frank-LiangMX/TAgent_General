@@ -490,7 +490,19 @@ function DisplayOptionsPopover({
   )
 }
 
-export function AgentView({ sessionId }: { sessionId: string }): React.ReactElement {
+export interface AgentViewProps {
+  sessionId: string
+  /** Classic full workspace or the single conversation surface embedded in AI Office. */
+  surface?: 'classic' | 'office-dock'
+  /** Extra controls shown in the classic Agent header. */
+  headerActions?: React.ReactNode
+}
+
+export function AgentView({
+  sessionId,
+  surface = 'classic',
+  headerActions,
+}: AgentViewProps): React.ReactElement {
   const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
   const [persistedSDKMessages, setPersistedSDKMessages] = React.useState<SDKMessage[]>([])
   const persistedSDKMessagesRef = React.useRef<SDKMessage[]>([])
@@ -568,12 +580,12 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
 
   React.useEffect(() => {
     const previousBoardId = previousBoardIdRef.current
-    if (!isNestedWorker && !previousBoardId && boardId) {
+    if (surface === 'classic' && !isNestedWorker && !previousBoardId && boardId) {
       setRightRailItem('crew')
       setSidePanelOpen(true)
     }
     previousBoardIdRef.current = boardId
-  }, [boardId, isNestedWorker, setRightRailItem, setSidePanelOpen])
+  }, [boardId, isNestedWorker, setRightRailItem, setSidePanelOpen, surface])
 
   const toggleCrewPanel = React.useCallback(() => {
     if (isCrewPanelActive) {
@@ -2888,64 +2900,79 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   return (
     <>
       <AgentSessionProvider sessionId={sessionId}>
-        <div className="relative flex flex-col h-full flex-1 min-w-0">
+        <div
+          className={cn(
+            'relative flex h-full min-w-0 flex-1 flex-col',
+            surface === 'office-dock' && 'agent-view--office-dock'
+          )}
+          data-agent-surface={surface}
+        >
           {/* Agent Header（右侧看板进度 + 切换） — 嵌套工人会话隐藏 */}
-          {!isNestedWorker && (
+          {!isNestedWorker && surface === 'classic' && (
             <AgentHeader
               sessionId={sessionId}
               rightSlot={
-                showKanbanCrewChip && kanbanBoard.tasks.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={toggleCrewPanel}
-                    title={isCrewPanelActive ? '收起班组面板' : '打开班组面板'}
-                    className={cn(
-                      'flex items-center gap-2 rounded-full px-2.5 py-1 text-left transition-all hover:shadow-sm',
-                      isCrewPanelActive
-                        ? 'bg-primary/10 hover:bg-primary/15'
-                        : 'bg-muted/50 hover:bg-muted'
-                    )}
-                  >
-                    <Users
-                      className={cn(
-                        'size-3.5',
-                        isCrewPanelActive ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
-                      )}
-                    />
-                    <span className="text-[11px] font-medium tabular-nums">
-                      {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
-                      {kanbanBoard.tasks.length}
-                    </span>
-                    {(() => {
-                      const running = kanbanBoard.tasks.filter((t) => t.status === 'running').length
-                      const blocked = kanbanBoard.tasks.filter((t) => t.status === 'blocked').length
-                      return (
-                        <>
-                          {running > 0 && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-                              ·{running}
-                            </span>
+                showKanbanCrewChip || headerActions ? (
+                  <>
+                    {showKanbanCrewChip && kanbanBoard.tasks.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={toggleCrewPanel}
+                        title={isCrewPanelActive ? '收起班组面板' : '打开班组面板'}
+                        className={cn(
+                          'flex items-center gap-2 rounded-full px-2.5 py-1 text-left transition-all hover:shadow-sm',
+                          isCrewPanelActive
+                            ? 'bg-primary/10 hover:bg-primary/15'
+                            : 'bg-muted/50 hover:bg-muted'
+                        )}
+                      >
+                        <Users
+                          className={cn(
+                            'size-3.5',
+                            isCrewPanelActive ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
                           )}
-                          {blocked > 0 && (
-                            <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
-                              ·{blocked}
-                            </span>
-                          )}
-                          <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className={cn(
-                                'h-full rounded-full bg-blue-500 transition-all duration-300',
-                                blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+                        />
+                        <span className="text-[11px] font-medium tabular-nums">
+                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
+                          {kanbanBoard.tasks.length}
+                        </span>
+                        {(() => {
+                          const running = kanbanBoard.tasks.filter(
+                            (t) => t.status === 'running'
+                          ).length
+                          const blocked = kanbanBoard.tasks.filter(
+                            (t) => t.status === 'blocked'
+                          ).length
+                          return (
+                            <>
+                              {running > 0 && (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+                                  ·{running}
+                                </span>
                               )}
-                              style={{
-                                width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </button>
+                              {blocked > 0 && (
+                                <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
+                                  ·{blocked}
+                                </span>
+                              )}
+                              <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className={cn(
+                                    'h-full rounded-full bg-blue-500 transition-all duration-300',
+                                    blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+                                  )}
+                                  style={{
+                                    width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
+                                  }}
+                                />
+                              </div>
+                            </>
+                          )
+                        })()}
+                      </button>
+                    ) : null}
+                    {headerActions}
+                  </>
                 ) : null
               }
             />
@@ -3135,7 +3162,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
             </SessionFloatingLayout>
 
             {/* 底栏：Context 占用 + 累计 Token 统计 — 嵌套工人会话隐藏 */}
-            {!isNestedWorker && (
+            {!isNestedWorker && surface === 'classic' && (
               <TokenStatsPanel
                 isProcessing={streaming}
                 onCompact={handleCompact}

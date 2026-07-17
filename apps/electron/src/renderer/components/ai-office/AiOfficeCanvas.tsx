@@ -103,7 +103,7 @@ export function AiOfficeCanvas({ externalAgents, onAgentSelect }: AiOfficeCanvas
   }, [])
 
   const openTask = () => {
-    if (!menu) return
+    if (!menu?.agent.taskId) return
     onAgentSelect?.(menu.agent.taskId)
     setMenu(null)
   }
@@ -142,7 +142,9 @@ export function AiOfficeCanvas({ externalAgents, onAgentSelect }: AiOfficeCanvas
           </div>
 
           <div className="ai-office-menu-group">
-            <div className="ai-office-menu-label">当前任务</div>
+            <div className="ai-office-menu-label">
+              {menu.agent.kind === 'director' ? '当前活动' : '当前任务'}
+            </div>
             <p className="ai-office-menu-copy">{menu.agent.currentTask}</p>
             {menu.agent.lastToolName ? (
               <p className="ai-office-menu-meta">工具：{menu.agent.lastToolName}</p>
@@ -150,16 +152,20 @@ export function AiOfficeCanvas({ externalAgents, onAgentSelect }: AiOfficeCanvas
             {menu.agent.ambientActivity?.label ? (
               <p className="ai-office-menu-meta">场景：{menu.agent.ambientActivity.label}</p>
             ) : null}
-            {menu.agent.workerSessionId ? (
+            {menu.agent.kind === 'director' ? (
+              <p className="ai-office-menu-meta">身份：主会话总监</p>
+            ) : menu.agent.workerSessionId ? (
               <p className="ai-office-menu-meta">会话：{menu.agent.workerSessionId}</p>
             ) : (
               <p className="ai-office-menu-meta">尚未领取 worker 会话</p>
             )}
           </div>
 
-          <button type="button" className="ai-office-menu-btn" onClick={openTask}>
-            查看 worker 任务
-          </button>
+          {menu.agent.taskId ? (
+            <button type="button" className="ai-office-menu-btn" onClick={openTask}>
+              查看 worker 任务
+            </button>
+          ) : null}
         </div>
       )}
 
