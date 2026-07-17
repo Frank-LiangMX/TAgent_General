@@ -1,90 +1,79 @@
 // @ts-nocheck
 import { Spine } from '@esotericsoftware/spine-pixi-v8'
 import { Container, Graphics } from 'pixi.js'
-import type { OfficeAgentState } from '../../types/office-agent'
+import type { ChibiFacing, OfficeAgentState } from '../../types/office-agent'
 import {
   createSpineFromCache,
   getSpineCharacterPack,
   type SpineCharacterPack,
 } from '../assets/loadSpineAssets'
-import { type ChibiFacing, resolveChibiPresetAnim } from './chibiAgentPresets'
-import { getChibiSkinName } from './chibiStickerSkins'
-
-type AnimMap = Record<OfficeAgentState, string>
+import {
+  getWorkerSpineSkin,
+  OFFICE_CHARACTER_SCALE,
+  OFFICE_CHARACTER_TARGET_HEIGHT,
+  resolveWorkerAnimation,
+  type WorkerAnimationSpec,
+} from './workerSpineAppearance'
 
 type PackConfig = {
   scale: number
   y: number
   shadow: { w: number; h: number; y: number }
-  anim: AnimMap
-  directional?: boolean
   timeScale?: Partial<Record<OfficeAgentState, number>>
-  animLR?: Partial<Record<OfficeAgentState, { left: string; right: string }>>
-}
-
-const CHIBI_DIR_ANIM: Record<'idle' | 'walking', Record<ChibiFacing, string>> = {
-  idle: { front: 'movement/idle-front', back: 'movement/idle-back', left: 'movement/idle-right', right: 'movement/idle-left' },
-  walking: { front: 'movement/trot-front', back: 'movement/trot-back', left: 'movement/trot-right', right: 'movement/trot-left' },
 }
 
 const PACK_CONFIG: Record<SpineCharacterPack, PackConfig> = {
   'chibi-stickers': {
-    scale: 0.3, y: 2,
-    shadow: { w: 24, h: 7, y: 4 },
-    directional: true,
-    anim: { idle: 'movement/idle-front', walking: 'movement/trot-front', working: 'movement/idle-front', thinking: 'emotes/thinking', talking: 'emotes/wave' },
-    animLR: {
-      idle: { left: 'movement/idle-left', right: 'movement/idle-right' },
-      walking: { left: 'movement/trot-left', right: 'movement/trot-right' },
-      working: { left: 'movement/idle-left', right: 'movement/idle-right' },
+    scale: OFFICE_CHARACTER_SCALE,
+    y: 2,
+    shadow: { w: 12, h: 3.5, y: 3 },
+    timeScale: {
+      thinking: 0.85,
+      talking: 1.05,
+      reviewing: 0.8,
+      blocked: 0.9,
     },
-    timeScale: { thinking: 0.85, talking: 1.1 },
   },
 }
 
+const STATE_MIX_SECONDS = 0.24
+
 export class SpineCharacter extends Container {
-  private readonly agentId: string
-  private readonly agentColor: number
+  private readonly appearanceKey: string
   private spine: Spine | null = null
   private shadow: Graphics
-  private currentAnim = ''
+  private currentAnimationKey = ''
   private ready = false
   private pack: SpineCharacterPack | null = null
-  private agentState: OfficeAgentState = 'idle'
+  private agentState: OfficeAgentState = 'waiting'
   private customAnimation: string | undefined
-  private facing: 1 | -1 = 1
   private viewFacing: ChibiFacing = 'front'
 
-  constructor(agentId: string, agentColor: number) {
+  constructor(appearanceKey: string, _agentColor: number) {
     super()
-    this.agentId = agentId
-    this.agentColor = agentColor
+    this.appearanceKey = appearanceKey
     this.shadow = new Graphics()
     this.addChild(this.shadow)
     this.createSpine()
   }
 
-  get isReady() { return this.ready }
+  get isReady() {
+    return this.ready
+  }
 
-  setAgentColor(color: number) {
+  setAgentColor(_color: number) {
     if (!this.spine) return
     this.spine.skeleton.color.set(1, 1, 1, 1)
   }
 
-  setFacing(dir: 1 | -1) {
-    if (!this.spine || !this.pack) return
-    this.facing = dir
-    const cfg = PACK_CONFIG[this.pack]
-    if (cfg.directional) return
-    this.spine.scale.x = (Math.abs(this.spine.scale.x) || cfg.scale) * dir
+  setFacing(_dir: 1 | -1) {
+    // Chibi pack has real four-direction animations, so it is never mirrored.
   }
 
   setViewFacing(facing: ChibiFacing) {
-    if (!this.spine || !this.pack) return
-    const changed = this.viewFacing !== facing
+    if (this.viewFacing === facing) return
     this.viewFacing = facing
-    if (!PACK_CONFIG[this.pack].directional) return
-    if (changed) this.currentAnim = ''
+    this.currentAnimationKey = ''
     this.applyAnimation()
   }
 
@@ -93,7 +82,7 @@ export class SpineCharacter extends Container {
     this.agentState = state
     if (this.customAnimation !== customAnimation) {
       this.customAnimation = customAnimation
-      this.currentAnim = ''
+      this.currentAnimationKey = ''
     }
     this.applyAnimation()
   }
@@ -106,66 +95,50 @@ export class SpineCharacter extends Container {
     }
     this.customAnimation = animation
     this.agentState = 'talking'
-    this.currentAnim = animation
-    const entry = this.spine.state.setAnimation(0, animation, true)
-    this.spine.state.timeScale = 1
-    if (entry) entry.mixDuration = 0.12
+    this.currentAnimationKey = ''
+    this.applyAnimation()
   }
 
   getHeadOffsetY(): number {
     if (!this.spine || !this.pack) return -52
-    const sy = Math.abs(this.spine.scale.y)
-    const head = this.spine.skeleton.findBone('head-base')
-    if (!head) return this.spine.y - 84
-    const headCenter = this.spine.y + head.worldY * sy
-    if (headCenter > this.spine.y + 2) return this.spine.y - 84
-    return headCenter - 50 * sy - 5
+    // 使用角色完整视觉高度作为稳定锚点，避免抬手、转身等骨骼动作带动工牌压到脸上。
+    return this.spine.y - OFFICE_CHARACTER_TARGET_HEIGHT
   }
 
-  private resolveAnimationName(): string {
-    if (!this.pack) return 'idle'
-    if (this.customAnimation && this.agentState !== 'walking') return this.customAnimation
-    if (this.pack === 'chibi-stickers') {
-      if (this.agentState === 'walking') return CHIBI_DIR_ANIM.walking[this.viewFacing]
-      if (this.agentState === 'idle' || this.agentState === 'working' || this.agentState === 'thinking') {
-        return CHIBI_DIR_ANIM.idle[this.viewFacing]
-      }
-      if (this.agentState === 'talking' && (this.viewFacing === 'left' || this.viewFacing === 'right')) {
-        return CHIBI_DIR_ANIM.idle[this.viewFacing]
-      }
-      const presetAnim = resolveChibiPresetAnim(this.agentId, this.agentState)
-      if (presetAnim) return presetAnim
+  private animationSpec(): WorkerAnimationSpec {
+    if (this.customAnimation && this.agentState !== 'walking') {
+      return { name: this.customAnimation, loop: true }
     }
-    const cfg = PACK_CONFIG[this.pack]
-    const lr = cfg.animLR?.[this.agentState]
-    if (cfg.directional && lr) return this.facing >= 0 ? lr.right : lr.left
-    return cfg.anim[this.agentState] ?? cfg.anim.idle
+    return resolveWorkerAnimation(this.agentState, this.viewFacing)
   }
 
   private applyAnimation() {
     if (!this.spine || !this.pack) return
-    const cfg = PACK_CONFIG[this.pack]
-    const animName = this.resolveAnimationName()
-    if (cfg.directional) {
-      this.spine.scale.x = cfg.scale
-      this.spine.scale.y = cfg.scale
-    }
-    const walkKey = this.pack === 'chibi-stickers' && this.agentState === 'walking'
-      ? `${animName}@${this.viewFacing}` : animName
-    if (walkKey === this.currentAnim) {
-      this.spine.state.timeScale = cfg.timeScale?.[this.agentState] ?? 1
+    const config = PACK_CONFIG[this.pack]
+    const spec = this.animationSpec()
+    const animation = this.spine.skeleton.data.findAnimation(spec.name)
+    const fallback = resolveWorkerAnimation('waiting', this.viewFacing).name
+    const name = animation ? spec.name : fallback
+    const animationKey = `${this.agentState}:${this.viewFacing}:${name}:${spec.loop}`
+
+    if (animationKey === this.currentAnimationKey) {
+      this.spine.state.timeScale = config.timeScale?.[this.agentState] ?? 1
       return
     }
-    if (!this.spine.skeleton.data.findAnimation(animName)) {
-      const fallback = cfg.anim.idle
-      this.spine.state.setAnimation(0, fallback, true)
-      this.currentAnim = fallback
-      return
+
+    this.currentAnimationKey = animationKey
+    const entry = this.spine.state.setAnimation(0, name, animation ? spec.loop : true)
+    this.spine.state.timeScale = config.timeScale?.[this.agentState] ?? 1
+    if (entry) entry.mixDuration = STATE_MIX_SECONDS
+
+    if (
+      animation &&
+      !spec.loop &&
+      spec.settleTo &&
+      this.spine.skeleton.data.findAnimation(spec.settleTo)
+    ) {
+      this.spine.state.addAnimation(0, spec.settleTo, true, 0)
     }
-    this.currentAnim = walkKey
-    const entry = this.spine.state.setAnimation(0, animName, true)
-    this.spine.state.timeScale = cfg.timeScale?.[this.agentState] ?? 1
-    if (entry) entry.mixDuration = 0.22
   }
 
   private createSpine() {
@@ -174,30 +147,26 @@ export class SpineCharacter extends Container {
     this.pack = pack
 
     try {
-      const cfg = PACK_CONFIG[pack]
+      const config = PACK_CONFIG[pack]
       const spine = createSpineFromCache()
-      if (!spine) {
-        console.warn('[SpineCharacter] No cached data available')
-        return
-      }
+      if (!spine) return
 
-      // Set skin
-      const skinName = getChibiSkinName(this.agentId)
+      const skinName = getWorkerSpineSkin(this.appearanceKey)
       if (spine.skeleton.data.findSkin(skinName)) {
         spine.skeleton.setSkinByName(skinName)
         spine.skeleton.setSlotsToSetupPose()
       }
 
-      spine.state.data.defaultMix = 0.22
-      spine.position.set(0, cfg.y)
+      spine.state.data.defaultMix = STATE_MIX_SECONDS
+      spine.scale.set(config.scale)
+      spine.position.set(0, config.y)
       this.spine = spine
       this.ready = true
       this.addChild(spine)
-      this.drawShadow(cfg.shadow)
-      this.setAgentColor(this.agentColor)
+      this.drawShadow(config.shadow)
       this.applyAnimation()
-    } catch (err) {
-      console.error('[SpineCharacter] Create failed (' + pack + '):', err)
+    } catch (error) {
+      console.error(`[SpineCharacter] create failed (${pack}):`, error)
       this.ready = false
     }
   }

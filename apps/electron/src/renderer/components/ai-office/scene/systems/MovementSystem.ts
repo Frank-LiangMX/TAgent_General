@@ -1,11 +1,8 @@
 // @ts-nocheck
-import type { OfficeAgent } from '../../types/office-agent'
+import type { OfficeAgent, OfficeAgentState } from '../../types/office-agent'
 import type { AgentEntity } from '../entities/AgentEntity'
-import { DESKS } from '../layout/officeLayout'
-import {
-  resolveWalkViewFacing,
-  viewFacingToLR,
-} from './movementFacing'
+import { DESKS, isDeskWorkerState } from '../layout/officeLayout'
+import { resolveWalkViewFacing, viewFacingToLR } from './movementFacing'
 
 const ARRIVE_THRESHOLD = 6
 const WALK_SPEED = 90
@@ -60,7 +57,15 @@ export class MovementSystem {
         }
 
         const atHome = isHomeDeskSeat(agent.assignedDeskId, tx, ty)
-        const viewFacing = atHome ? 'back' : resolveWalkViewFacing(dx, dy)
+        const arrivalState: OfficeAgentState =
+          agent.transition?.targetState ?? (atHome ? 'working' : 'waiting')
+        const ambientActivity =
+          agent.transition?.kind === 'ambient' && agent.ambientActivity
+            ? { ...agent.ambientActivity, phase: 'acting' as const }
+            : agent.ambientActivity
+        const customAnimation =
+          agent.transition?.kind === 'ambient' ? ambientActivity?.animation : agent.customAnimation
+        const viewFacing = isDeskWorkerState(arrivalState) ? 'back' : resolveWalkViewFacing(dx, dy)
         entity.apply({
           x: tx,
           y: ty,
@@ -68,10 +73,13 @@ export class MovementSystem {
           targetY: undefined,
           walkPath: undefined,
           walkPathIndex: undefined,
-          state: atHome ? 'working' : 'idle',
+          state: arrivalState,
           viewFacing,
           facing: viewFacingToLR(viewFacing),
-          currentTask: atHome ? agent.currentTask : undefined,
+          currentTask: agent.transition?.targetTask ?? agent.currentTask,
+          ambientActivity,
+          customAnimation,
+          transition: undefined,
         })
         entity.setPosition(tx, ty)
         continue
@@ -94,10 +102,7 @@ export class MovementSystem {
     return anyMoving
   }
 
-  static assignWalkPath(
-    agent: OfficeAgent,
-    points: { x: number; y: number }[],
-  ): OfficeAgent {
+  static assignWalkPath(agent: OfficeAgent, points: { x: number; y: number }[]): OfficeAgent {
     if (points.length === 0) return agent
     const first = points[0]
     const dx = first.x - agent.x

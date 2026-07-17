@@ -5,41 +5,24 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { OfficeScene, type OfficeAgentClick } from './scene/OfficeScene'
-import type { OfficeAgent, OfficeAgentState } from './types/office-agent'
+import { OFFICE_STATE_LABELS } from './officeWorkerProjection'
+import type { OfficeAgent } from './types/office-agent'
 
 type AgentMenuState = {
   agent: OfficeAgent
   rosterNo: number
   x: number
   y: number
-  agents: OfficeAgent[]
 }
-
-const STATE_ACTIONS: Array<{
-  label: string
-  state: OfficeAgentState
-  task?: string
-}> = [
-  { label: '开始工作', state: 'working', task: '处理当前任务…' },
-  { label: '进入思考', state: 'thinking', task: '思考下一步…' },
-  { label: '暂时空闲', state: 'idle' },
-]
-
-const EMOTE_ACTIONS = [
-  { label: '挥手', animation: 'emotes/wave' },
-  { label: '兴奋', animation: 'emotes/excited' },
-  { label: '思考', animation: 'emotes/thinking' },
-  { label: '灵感', animation: 'emotes/idea' },
-  { label: '坚定', animation: 'emotes/determined' },
-  { label: '大笑', animation: 'emotes/laugh' },
-] as const
 
 interface AiOfficeCanvasProps {
   /** External agents to sync (from Kanban tasks) */
-  externalAgents?: OfficeAgent[]
+  externalAgents: OfficeAgent[]
+  /** 打开与 worker 绑定的看板任务 */
+  onAgentSelect?: (taskId: string) => void
 }
 
-export function AiOfficeCanvas({ externalAgents }: AiOfficeCanvasProps) {
+export function AiOfficeCanvas({ externalAgents, onAgentSelect }: AiOfficeCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<OfficeScene | null>(null)
   const readyRef = useRef(false)
@@ -58,7 +41,6 @@ export function AiOfficeCanvas({ externalAgents }: AiOfficeCanvasProps) {
         rosterNo: event.rosterNo,
         x: Math.max(12, Math.min(event.clientX - rect.left, rect.width - menuWidth - 12)),
         y: Math.max(12, Math.min(event.clientY - rect.top, rect.height - 200)),
-        agents: sceneRef.current?.getAgents() ?? [],
       })
     }
 
@@ -91,8 +73,12 @@ export function AiOfficeCanvas({ externalAgents }: AiOfficeCanvasProps) {
 
   // Sync external agents (from Kanban) to scene
   useEffect(() => {
-    if (!externalAgents || externalAgents.length === 0) return
     sceneRef.current?.setAgents(externalAgents)
+    setMenu((current) => {
+      if (!current) return null
+      const agent = externalAgents.find((item) => item.id === current.agent.id)
+      return agent ? { ...current, agent } : null
+    })
   }, [externalAgents])
 
   // Close menu on click outside
@@ -116,15 +102,9 @@ export function AiOfficeCanvas({ externalAgents }: AiOfficeCanvasProps) {
     }
   }, [])
 
-  const applyState = (state: OfficeAgentState, task?: string) => {
+  const openTask = () => {
     if (!menu) return
-    sceneRef.current?.setAgentState(menu.agent.id, state, task)
-    setMenu(null)
-  }
-
-  const playEmote = (animation: string) => {
-    if (!menu) return
-    sceneRef.current?.playAgentAnimation(menu.agent.id, animation)
+    onAgentSelect?.(menu.agent.taskId)
     setMenu(null)
   }
 
@@ -138,54 +118,54 @@ export function AiOfficeCanvas({ externalAgents }: AiOfficeCanvasProps) {
           onClick={() => sceneRef.current?.resetView()}
           title="重置视图 (双击画布)"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
           </svg>
         </button>
         <span className="ai-office-toolbar-hint">滚轮缩放 · 拖拽移动 · 双击重置</span>
       </div>
 
       {menu && (
-        <div
-          className="ai-office-menu"
-          style={{ left: menu.x, top: menu.y }}
-        >
+        <div className="ai-office-menu" style={{ left: menu.x, top: menu.y }}>
           <div className="ai-office-menu-header">
             <span className="ai-office-menu-name">{menu.agent.name}</span>
-            <span className="ai-office-menu-state">{menu.agent.state}</span>
+            <span className="ai-office-menu-state">{OFFICE_STATE_LABELS[menu.agent.state]}</span>
           </div>
 
           <div className="ai-office-menu-group">
-            <div className="ai-office-menu-label">状态</div>
-            {STATE_ACTIONS.map((action) => (
-              <button
-                key={action.label}
-                type="button"
-                className="ai-office-menu-btn"
-                onClick={() => applyState(action.state, action.task)}
-              >
-                {action.label}
-              </button>
-            ))}
+            <div className="ai-office-menu-label">当前任务</div>
+            <p className="ai-office-menu-copy">{menu.agent.currentTask}</p>
+            {menu.agent.lastToolName ? (
+              <p className="ai-office-menu-meta">工具：{menu.agent.lastToolName}</p>
+            ) : null}
+            {menu.agent.ambientActivity?.label ? (
+              <p className="ai-office-menu-meta">场景：{menu.agent.ambientActivity.label}</p>
+            ) : null}
+            {menu.agent.workerSessionId ? (
+              <p className="ai-office-menu-meta">会话：{menu.agent.workerSessionId}</p>
+            ) : (
+              <p className="ai-office-menu-meta">尚未领取 worker 会话</p>
+            )}
           </div>
 
-          <div className="ai-office-menu-group">
-            <div className="ai-office-menu-label">表情</div>
-            <div className="ai-office-emote-grid">
-              {EMOTE_ACTIONS.map((action) => (
-                <button
-                  key={action.animation}
-                  type="button"
-                  className="ai-office-emote-btn"
-                  onClick={() => playEmote(action.animation)}
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button type="button" className="ai-office-menu-btn" onClick={openTask}>
+            查看 worker 任务
+          </button>
         </div>
       )}
+
+      {externalAgents.length === 0 ? (
+        <div className="ai-office-empty">当前看板还没有 worker 任务</div>
+      ) : null}
     </div>
   )
 }

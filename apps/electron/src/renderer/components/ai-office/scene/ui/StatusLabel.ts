@@ -8,80 +8,56 @@ const NAME_STYLE = {
   fill: 0x333333,
 }
 
-const TASK_STYLE = {
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: 10,
-  fill: 0x666666,
-  fontStyle: 'italic' as const,
-}
-
 const STATE_COLORS: Record<string, number> = {
-  idle: 0xaaaaaa,
+  waiting: 0x94a3b8,
   walking: 0x4a90d9,
   working: 0x50b86c,
   talking: 0xe8a838,
   thinking: 0x9b6dd7,
+  reviewing: 0x3b82f6,
+  blocked: 0xf97316,
+  completed: 0x16a34a,
+  failed: 0xdc2626,
+  cancelled: 0x64748b,
 }
 
-const NAME_TASK_GAP = 2
-const CROWN_GAP = 8
+const CROWN_GAP = 14
+const CHIP_PAD_X = 8
+const CHIP_PAD_Y = 4
+const DOT_GAP = 7
 
 export class StatusLabel extends Container {
   private nameText: Text
-  private taskText: Text
+  private nameBg: Graphics
   private stateDot: Graphics
-  private taskBg: Graphics
   private currentState = 'idle'
 
   constructor(name: string) {
     super()
     this.nameText = new Text({ text: name, style: NAME_STYLE })
-    this.nameText.anchor.set(0.5, 1)
-    this.nameText.position.set(0, 0)
+    this.nameText.anchor.set(0.5)
 
-    this.taskBg = new Graphics()
-    this.taskText = new Text({ text: '', style: TASK_STYLE })
-    this.taskText.anchor.set(0.5, 0)
-
+    this.nameBg = new Graphics()
     this.stateDot = new Graphics()
-    this.addChild(this.taskBg, this.nameText, this.taskText, this.stateDot)
-    this.taskBg.visible = false
-    this.paintStateDot()
+    this.addChild(this.nameBg, this.nameText, this.stateDot)
+    this.layoutNameChip()
   }
 
   setName(name: string) {
+    if (this.nameText.text === name) return
     this.nameText.text = name
-    this.paintStateDot()
+    this.layoutNameChip()
   }
 
-  setTask(task?: string) {
-    if (!task) {
-      this.taskText.text = ''
-      this.taskBg.visible = false
-      return
-    }
-    this.taskText.text = task
-    this.taskBg.visible = true
-    this.layoutTaskAboveName()
-  }
-
-  private layoutTaskAboveName() {
-    const padX = 5
-    const padY = 3
-    const w = this.taskText.width + padX * 2
-    const h = this.taskText.height + padY * 2
-    const nameH = this.nameText.height
-    const taskTop = -(nameH + NAME_TASK_GAP + h)
-
-    this.taskBg.clear()
-    this.taskBg.roundRect(-w / 2, taskTop, w, h, 3)
-    this.taskBg.fill({ color: 0xffffff, alpha: 0.9 })
-    this.taskText.position.set(0, taskTop + padY)
+  /** 任务描述属于详情信息，不常驻角色头顶，避免遮挡角色和相邻 worker。 */
+  setTask(_task?: string) {
+    // 保留接口供场景实体调用；头顶只展示姓名和状态。
   }
 
   setState(state: string) {
+    if (this.currentState === state) return
     this.currentState = state
-    this.paintStateDot()
+    this.layoutNameChip()
   }
 
   layout(crownTopY: number) {
@@ -89,22 +65,24 @@ export class StatusLabel extends Container {
   }
 
   getLabelTopY(crownTopY: number): number {
-    const baselineY = crownTopY - CROWN_GAP
-    if (!this.taskBg.visible) {
-      return baselineY - this.nameText.height
-    }
-    const taskBoxH = this.taskText.height + 6
-    return baselineY - this.nameText.height - NAME_TASK_GAP - taskBoxH
+    return crownTopY - CROWN_GAP - this.nameText.height - CHIP_PAD_Y * 2
   }
 
-  private paintStateDot() {
+  private layoutNameChip() {
+    const chipHeight = this.nameText.height + CHIP_PAD_Y * 2
+    const chipWidth = this.nameText.width + CHIP_PAD_X * 2 + DOT_GAP
+    const chipTop = -chipHeight
+
+    this.nameBg.clear()
+    this.nameBg.roundRect(-chipWidth / 2, chipTop, chipWidth, chipHeight, 5)
+    this.nameBg.fill({ color: 0xffffff, alpha: 0.92 })
+    this.nameBg.stroke({ color: 0xffffff, alpha: 0.72, width: 1 })
+
+    this.nameText.position.set(DOT_GAP / 2, chipTop + chipHeight / 2)
+
     const color = STATE_COLORS[this.currentState] ?? 0xaaaaaa
     this.stateDot.clear()
-    this.stateDot.circle(
-      this.nameText.width * 0.5 + 6,
-      -this.nameText.height * 0.5,
-      3.5,
-    )
+    this.stateDot.circle(-chipWidth / 2 + CHIP_PAD_X, chipTop + chipHeight / 2, 3.5)
     this.stateDot.fill(color)
   }
 }

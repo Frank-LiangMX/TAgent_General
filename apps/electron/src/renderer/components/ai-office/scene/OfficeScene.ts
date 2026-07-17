@@ -8,17 +8,16 @@ import {
   INITIAL_AGENTS,
   SCENE_HEIGHT,
   SCENE_WIDTH,
+  isDeskWorkerState,
 } from './layout/officeLayout'
 import { AgentEntity } from './entities/AgentEntity'
 import { DeskEntity } from './entities/DeskEntity'
 import { MovementSystem } from './systems/MovementSystem'
 import { AnimationSystem } from './systems/AnimationSystem'
 import { OfficeSimulator } from './simulation/OfficeSimulator'
+import { transitionWorkerRoster } from './simulation/workerStateTransition'
 import { bindOfficeScene } from './officeSceneBridge'
-import {
-  getOfficeBackgroundTexture,
-  loadOfficeAssets,
-} from './assets/loadOfficeAssets'
+import { getOfficeBackgroundTexture, loadOfficeAssets } from './assets/loadOfficeAssets'
 import { loadSpineAssets } from './assets/loadSpineAssets'
 
 export type OfficeAgentClick = {
@@ -62,6 +61,7 @@ export class OfficeScene {
   private dragStartOffsetY = 0
   private containerWidth = 0
   private containerHeight = 0
+  private reduceMotion = false
 
   constructor(options: { onAgentClick?: (event: OfficeAgentClick) => void } = {}) {
     this.options = options
@@ -70,6 +70,10 @@ export class OfficeScene {
   async init(container: HTMLElement, width: number, height: number) {
     this.containerWidth = width
     this.containerHeight = height
+    // AI Office 的空间迁移和环境生活行为属于核心状态表达，不继承系统减少动画设置。
+    // 若未来需要精简动效，应提供产品内显式开关并只影响装饰性动作。
+    this.reduceMotion = false
+    this.simulator.setReduceMotion(this.reduceMotion)
 
     const app = new Application()
     await app.init({
@@ -99,7 +103,7 @@ export class OfficeScene {
     this.applyTransform()
 
     // Pan/zoom event handlers
-    this.setupInteraction(container)
+    this.setupInteraction()
 
     app.ticker.add(this.onTick)
     bindOfficeScene(this)
@@ -110,8 +114,17 @@ export class OfficeScene {
     this.pushDataToEntities()
   }
 
-  requestDeskVisitTour(visitorRosterNo: number, hostRosterNos: number[], messageFn?: (hostRosterNo: number, hostName: string) => string) {
-    this.agents = this.simulator.startDeskVisitTour(this.agents, visitorRosterNo, hostRosterNos, messageFn)
+  requestDeskVisitTour(
+    visitorRosterNo: number,
+    hostRosterNos: number[],
+    messageFn?: (hostRosterNo: number, hostName: string) => string
+  ) {
+    this.agents = this.simulator.startDeskVisitTour(
+      this.agents,
+      visitorRosterNo,
+      hostRosterNos,
+      messageFn
+    )
     this.pushDataToEntities()
   }
 
@@ -120,19 +133,29 @@ export class OfficeScene {
   }
 
   setAgents(newAgents: OfficeAgent[]) {
-    this.agents = newAgents.map((a) => ({ ...a }))
-    this.pushDataToEntities()
+    this.agents = transitionWorkerRoster(
+      newAgents.map((agent) => ({ ...agent })),
+      this.agents,
+      this.reduceMotion
+    )
+    this.reconcileAgentEntities()
   }
 
   setAgentState(id: string, state: OfficeAgentState, task?: string) {
     this.agents = this.agents.map((agent) => {
       if (agent.id !== id) return agent
       return {
-        ...agent, state, currentTask: task,
-        targetX: undefined, targetY: undefined,
-        walkPath: undefined, walkPathIndex: undefined,
-        mission: undefined, bubbleText: undefined, customAnimation: undefined,
-        viewFacing: state === 'working' || state === 'thinking' ? ('back' as const) : agent.viewFacing,
+        ...agent,
+        state,
+        currentTask: task,
+        targetX: undefined,
+        targetY: undefined,
+        walkPath: undefined,
+        walkPathIndex: undefined,
+        mission: undefined,
+        bubbleText: undefined,
+        customAnimation: undefined,
+        viewFacing: isDeskWorkerState(state) ? ('back' as const) : agent.viewFacing,
       }
     })
     this.pushDataToEntities()
@@ -142,11 +165,18 @@ export class OfficeScene {
     this.agents = this.agents.map((agent) => {
       if (agent.id !== id) return agent
       return {
-        ...agent, state: 'talking' as const, currentTask: task,
-        targetX: undefined, targetY: undefined,
-        walkPath: undefined, walkPathIndex: undefined,
-        mission: undefined, bubbleText: undefined, customAnimation: animation,
-        viewFacing: 'front' as const, facing: 1 as const,
+        ...agent,
+        state: 'talking' as const,
+        currentTask: task,
+        targetX: undefined,
+        targetY: undefined,
+        walkPath: undefined,
+        walkPathIndex: undefined,
+        mission: undefined,
+        bubbleText: undefined,
+        customAnimation: animation,
+        viewFacing: 'front' as const,
+        facing: 1 as const,
       }
     })
     this.pushDataToEntities()
@@ -186,7 +216,7 @@ export class OfficeScene {
   private computeBaseTransform() {
     this.baseScale = Math.min(
       this.containerWidth / SCENE_WIDTH,
-      this.containerHeight / SCENE_HEIGHT,
+      this.containerHeight / SCENE_HEIGHT
     )
     this.baseOffsetX = (this.containerWidth - SCENE_WIDTH * this.baseScale) / 2
     this.baseOffsetY = (this.containerHeight - SCENE_HEIGHT * this.baseScale) / 2
@@ -201,27 +231,31 @@ export class OfficeScene {
     this.world.position.set(x, y)
   }
 
-  private setupInteraction(container: HTMLElement) {
+  private setupInteraction() {
     const canvas = this.app?.canvas as HTMLCanvasElement | undefined
     if (!canvas) return
 
     // Mouse wheel zoom
-    canvas.addEventListener('wheel', (e: WheelEvent) => {
-      e.preventDefault()
-      const delta = -e.deltaY * ZOOM_SPEED
-      const oldScale = this.userScale
-      this.userScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.userScale * (1 + delta)))
+    canvas.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault()
+        const delta = -e.deltaY * ZOOM_SPEED
+        const oldScale = this.userScale
+        this.userScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.userScale * (1 + delta)))
 
-      // Zoom toward cursor position
-      const rect = canvas.getBoundingClientRect()
-      const mouseX = e.clientX - rect.left
-      const mouseY = e.clientY - rect.top
-      const scaleRatio = this.userScale / oldScale
-      this.userOffsetX = mouseX - scaleRatio * (mouseX - this.userOffsetX)
-      this.userOffsetY = mouseY - scaleRatio * (mouseY - this.userOffsetY)
+        // Zoom toward cursor position
+        const rect = canvas.getBoundingClientRect()
+        const mouseX = e.clientX - rect.left
+        const mouseY = e.clientY - rect.top
+        const scaleRatio = this.userScale / oldScale
+        this.userOffsetX = mouseX - scaleRatio * (mouseX - this.userOffsetX)
+        this.userOffsetY = mouseY - scaleRatio * (mouseY - this.userOffsetY)
 
-      this.applyTransform()
-    }, { passive: false })
+        this.applyTransform()
+      },
+      { passive: false }
+    )
 
     // Mouse drag pan
     canvas.addEventListener('mousedown', (e: MouseEvent) => {
@@ -276,7 +310,8 @@ export class OfficeScene {
   private sortOfficeDepth() {
     if (!this.officeLayer) return
     const agentPositions = [...this.agentEntities.values()].map((e) => ({
-      x: e.position.x, y: e.position.y,
+      x: e.position.x,
+      y: e.position.y,
     }))
     for (const e of this.agentEntities.values()) {
       e.zIndex = e.position.y
@@ -299,6 +334,32 @@ export class OfficeScene {
     }
   }
 
+  /** Kanban task 列表变化时同步创建、更新和销毁场景实体。 */
+  private reconcileAgentEntities() {
+    if (!this.officeLayer) return
+
+    const nextIds = new Set(this.agents.map((agent) => agent.id))
+    for (const [id, entity] of this.agentEntities) {
+      if (nextIds.has(id)) continue
+      this.officeLayer.removeChild(entity)
+      entity.destroy({ children: true })
+      this.agentEntities.delete(id)
+    }
+
+    for (const agent of this.agents) {
+      const existing = this.agentEntities.get(agent.id)
+      if (existing) {
+        existing.apply(agent)
+        existing.setPosition(agent.x, agent.y)
+        continue
+      }
+      this.mountAgentEntity(agent)
+    }
+
+    this.sortOfficeDepth()
+    this.syncDeskOccupancy()
+  }
+
   private pullDataFromEntities() {
     this.agents = this.agents.map((agent) => {
       const entity = this.agentEntities.get(agent.id)
@@ -308,7 +369,9 @@ export class OfficeScene {
 
   private syncDeskOccupancy() {
     const occupied = new Set(
-      this.agents.filter((a) => a.state === 'working' && a.assignedDeskId).map((a) => a.assignedDeskId!),
+      this.agents
+        .filter((agent) => isDeskWorkerState(agent.state) && agent.assignedDeskId)
+        .map((agent) => agent.assignedDeskId!)
     )
     for (const desk of this.deskEntities.values()) {
       desk.setOccupied(occupied.has(desk.deskId))
@@ -324,27 +387,35 @@ export class OfficeScene {
     for (const desk of DESKS) {
       const entity = new DeskEntity(desk)
       this.deskEntities.set(desk.id, entity)
-      layer.addChild(entity.shadowGfx, entity.deskLayer, entity.chairLayer, entity.occupiedIndicator)
+      layer.addChild(
+        entity.shadowGfx,
+        entity.deskLayer,
+        entity.chairLayer,
+        entity.occupiedIndicator
+      )
     }
 
-    for (const agent of this.agents) {
-      const entity = new AgentEntity(agent)
-      this.agentEntities.set(agent.id, entity)
-      entity.zIndex = agent.y
-      entity.on('pointertap', (event: FederatedPointerEvent) => {
-        event.stopPropagation()
-        this.options.onAgentClick?.({
-          agent: { ...entity.data },
-          rosterNo: this.agents.findIndex((a) => a.id === agent.id) + 1,
-          clientX: event.clientX,
-          clientY: event.clientY,
-        })
-      })
-      layer.addChild(entity)
-    }
+    this.reconcileAgentEntities()
 
     this.sortOfficeDepth()
     parent.addChild(layer)
+  }
+
+  private mountAgentEntity(agent: OfficeAgent) {
+    if (!this.officeLayer) return
+    const entity = new AgentEntity(agent, { reduceMotion: this.reduceMotion })
+    this.agentEntities.set(agent.id, entity)
+    entity.zIndex = agent.y
+    entity.on('pointertap', (event: FederatedPointerEvent) => {
+      event.stopPropagation()
+      this.options.onAgentClick?.({
+        agent: { ...entity.data },
+        rosterNo: this.agents.findIndex((item) => item.id === agent.id) + 1,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      })
+    })
+    this.officeLayer.addChild(entity)
   }
 
   private drawMap(parent: Container) {
@@ -363,7 +434,7 @@ export class OfficeScene {
       bg.scale.set(scale)
       bg.position.set(
         (SCENE_WIDTH - bgTex.width * scale) / 2,
-        (SCENE_HEIGHT - bgTex.height * scale) / 2,
+        (SCENE_HEIGHT - bgTex.height * scale) / 2
       )
       map.addChild(bg)
     }

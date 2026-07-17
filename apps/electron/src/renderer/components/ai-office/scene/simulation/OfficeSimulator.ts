@@ -1,10 +1,9 @@
 // @ts-nocheck
 import type { OfficeAgent } from '../../types/office-agent'
-import {
-  AGENT_ROSTER,
-  DESKS,
-  HANDOFF_STATUS,
-} from '../layout/officeLayout'
+import type { AgentEntity } from '../entities/AgentEntity'
+import { getWorkerStatePosition, HANDOFF_STATUS, isDeskWorkerState } from '../layout/officeLayout'
+import { talkFacingToward } from '../systems/movementFacing'
+import { advanceCompletedAmbient } from './completedAmbient'
 import {
   agentHasActiveMission,
   processDeskVisitMissions,
@@ -12,13 +11,17 @@ import {
   startDeskVisitTour,
   type DeskVisitMessageFn,
 } from './deskVisit'
-import type { AgentEntity } from '../entities/AgentEntity'
-import { talkFacingToward } from '../systems/movementFacing'
 
 export class OfficeSimulator {
-  tick(_dt: number, agents: OfficeAgent[]): OfficeAgent[] {
+  private reduceMotion = false
+
+  setReduceMotion(value: boolean): void {
+    this.reduceMotion = value
+  }
+
+  tick(dt: number, agents: OfficeAgent[]): OfficeAgent[] {
     const next = agents.map((a) => ({ ...a }))
-    return this.pinAmbientAgents(next)
+    return this.pinAmbientAgents(advanceCompletedAmbient(dt, next, this.reduceMotion))
   }
 
   private pinAmbientAgents(agents: OfficeAgent[]): OfficeAgent[] {
@@ -32,37 +35,33 @@ export class OfficeSimulator {
 
     return agents.map((agent) => {
       if (agentHasActiveMission(agent)) return agent
+      if (agent.state === 'walking' && agent.transition) return agent
+      if (agent.state === 'completed' && agent.ambientActivity) return agent
 
-      const desk = this.deskFor(agent)
-      const roster = AGENT_ROSTER.find((r) => r.id === agent.id)
       const visitor = visitorByHost.get(agent.id)
       const toward = visitor
         ? talkFacingToward(agent.x, agent.y, visitor.x, visitor.y)
         : agent.customAnimation
           ? { viewFacing: 'front' as const, facing: 1 as const }
-        : { viewFacing: 'back' as const, facing: 1 as const }
+          : {
+              viewFacing: isDeskWorkerState(agent.state) ? ('back' as const) : ('front' as const),
+              facing: agent.facing,
+            }
 
       const state =
-        visitor
+        visitor || (agent.customAnimation && !agent.ambientActivity)
           ? ('talking' as const)
-          : agent.customAnimation
-            ? ('talking' as const)
-          : agent.state === 'thinking' || agent.state === 'idle'
-            ? agent.state
-            : ('working' as const)
+          : agent.state
+      const position = getWorkerStatePosition({ ...agent, state })
 
       return {
         ...agent,
-        x: desk.seatX,
-        y: desk.seatY,
+        x: position.x,
+        y: position.y,
         state,
         viewFacing: toward.viewFacing,
         facing: toward.facing,
-        currentTask: visitor
-          ? HANDOFF_STATUS.receiving
-          : state === 'idle'
-            ? undefined
-            : (agent.currentTask ?? roster?.task),
+        currentTask: visitor ? HANDOFF_STATUS.receiving : agent.currentTask,
         targetX: undefined,
         targetY: undefined,
         walkPath: undefined,
@@ -76,7 +75,7 @@ export class OfficeSimulator {
     agents: OfficeAgent[],
     visitorRosterNo: number,
     hostRosterNo: number,
-    message: string,
+    message: string
   ): OfficeAgent[] {
     return startDeskVisit(agents, visitorRosterNo, hostRosterNo, message)
   }
@@ -85,7 +84,7 @@ export class OfficeSimulator {
     agents: OfficeAgent[],
     visitorRosterNo: number,
     hostRosterNos: number[],
-    messageFn?: DeskVisitMessageFn,
+    messageFn?: DeskVisitMessageFn
   ): OfficeAgent[] {
     return startDeskVisitTour(agents, visitorRosterNo, hostRosterNos, messageFn)
   }
@@ -93,13 +92,8 @@ export class OfficeSimulator {
   afterMovement(
     dt: number,
     agents: OfficeAgent[],
-    entities: Map<string, AgentEntity>,
+    entities: Map<string, AgentEntity>
   ): OfficeAgent[] {
     return processDeskVisitMissions(dt, agents, entities)
-  }
-
-  private deskFor(agent: OfficeAgent) {
-    const id = agent.assignedDeskId
-    return DESKS.find((d) => d.id === id) ?? DESKS[0]
   }
 }

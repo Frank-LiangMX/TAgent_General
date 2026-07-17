@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室，6 个矢量角色各有独特外观（发型/衬衫/肤色），支持工作/行走/思考/说话动画，工位拜访交互，滚轮缩放 + 拖拽移动 + 双击重置视图
-- **Kanban → Office 状态映射** — 看板任务状态实时映射为办公室 Agent 状态（running→working, blocked→thinking, pending→idle）
-- **Pixi.js 依赖** — 新增 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`（Spine 暂未启用，使用矢量回退）
+- **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
+- **Kanban worker → Office 真值映射** — `task.id` / `roleId` / `assigneeSessionId` 分别绑定场景实体、角色身份与真实 worker 会话/形象 seed；任务状态和实时 progress 映射为待命 / 分析 / 忙碌 / 验收 / 求助 / 已交卷 / 需复盘 / 已撤岗，不再生成固定花名册或默认工作中的幽灵员工
+- **Pixi.js / Spine 动画运行时** — 使用 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`；恢复 Chibi Spine 骨骼资源加载与 0.24s 动画混合，矢量角色仅作为资源失败降级
 
 - **空闲批量记忆整理调度器** — `idle-memory-consolidation-scheduler.ts`：60s tick 周期，general/ta 串行执行，真实前台活跃检测，rollout flag 控制（`TAGENT_IDLE_MEMORY_CONSOLIDATION`，dev 默认 on、packaged 默认 off）
 - **记忆证据暂存层** — `memory-evidence-sink.ts`（ADR-0006 Phase 1）：前台本地写入 Nudge 候选和 session 证据到 `pending_evidence.jsonl`，标记 dirty，不调用辅助 LLM
@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **AI Office 状态动画** — worker 状态变化改为 `当前状态 → walking 路径迁移 → 目标状态`；稳定保留工位，交卷使用一次性 `just-right` 动作后回到安静完成姿势，不再瞬移或无限举手跳
+- **AI Office 角色比例** — Spine 角色按 682.5px setup bounds 推导到约 102px 场景高度（scale ≈ 0.15），并同步缩小阴影和点击热区，使角色与 101px 桌面宽度匹配
+- **AI Office 交卷后生活循环** — 已完成 worker 不再长期站在交付区；在保持看板 `done` 真值的同时，错峰前往茶水间、窗边、打印机、植物角或空地摸鱼，沿导航路径移动、停留并循环选择下一项活动
+- **AI Office 动效策略** — 办公室空间迁移和交卷后生活循环不再受系统 `prefers-reduced-motion` 影响，避免 Windows 动画设置关闭时所有角色被永久固定在状态区域
+- **AI Office 角色工牌** — 移除角色头顶常驻的完整任务描述，只保留带状态点的紧凑姓名工牌，并使用角色完整视觉高度作为稳定锚点，避免文字遮住角色形象
 - **前台记忆写入改为本地证据收集** — `recordSessionToMemory` 不再触发 `backfillKeyFacts` LLM 调用；改为写 L4 + `memoryEvidenceSink.writeSessionEvidence()` + dirty 标记，辅助 LLM 整理统一在空闲窗口执行
 - **Nudge 候选写入改为本地暂存** — `onTurnStart` 检测到候选后写入 `memory-evidence-sink`（`writeNudgeEvidence`），不再在前台发起 auxiliary LLM call
 - **Reflection 合并到空闲批量整理** — 当 `TAGENT_IDLE_MEMORY_CONSOLIDATION=1` 时，insights/contradictions 由 `MemoryConsolidationService` 的一次批量请求产出，不再独立调用 LLM；legacy Reflection 调度仅在 flag 关闭时保留

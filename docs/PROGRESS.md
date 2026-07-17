@@ -22,6 +22,22 @@
 
 ---
 
+## 当前变更（2026-07-17）
+
+**AI Office worker 状态真值接入**（分支 `feature/ai-office-worker-state-binding`）：
+
+- 办公室实体改由 Kanban task 动态投影：`task.id` 绑定实体、`roleId` 绑定角色身份、`assigneeSessionId` 绑定真实 worker 会话与形象 seed
+- 移除固定 6 人开机花名册与全员默认 `working`，空看板不再出现幽灵员工
+- 接入 `kanban.onTaskProgress`，在 running 内进一步显示分析中 / 忙碌 / 验收中；完整覆盖待命、求助、已交卷、需复盘、已撤岗
+- 不同状态进入工位、待命区、求助区和交付区；点击角色复用原有 `KanbanTaskDetailDialog`
+- 恢复仓库已有 Chibi Spine 4.2 骨骼资源加载与 0.24s 动画混合；矢量小人降级为加载失败 fallback
+- 新增 `sourceState → walking → targetState` 迁移状态机，状态换区沿导航路径行走并稳定保留原工位
+- 交卷改为一次性 `just-right` 动作，随后保持看板 `done` 真值并进入场景生活循环：错峰前往茶水间、窗边、打印机、植物角或空地摸鱼；AI Office 核心动效不继承系统 `prefers-reduced-motion`
+- Spine 角色从固定 `0.3` 改为按 setup bounds 推导的约 `0.15`，目标高度 102px，并同步校准阴影与点击热区
+- 角色头顶移除完整任务描述，只保留姓名和状态点，并以角色完整视觉高度设置稳定安全间距；任务详情仅在点击信息卡展示
+- 新增 `officeWorkerProjection.test.ts`，覆盖状态映射、实时进度优先级、worker 会话绑定和 6 工位活跃任务优先规则
+- 验证：AI Office 投影 / 迁移 / 动画 / 环境行为测试 24/24 通过；全仓 TypeScript typecheck 与 renderer production build 通过
+
 ## 已完成（2026-06-14）
 
 **Ask 档位统一 Composer**（全部阶段已完成）

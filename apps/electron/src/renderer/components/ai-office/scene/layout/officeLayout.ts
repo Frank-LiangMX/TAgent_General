@@ -51,24 +51,45 @@ export const AGENT_ROSTER: AgentRosterEntry[] = [
   { id: 'data-agent', name: '赵审', color: 0x4ecdc4, task: '审核：合规待审队列' },
 ]
 
-const BOOT_STATES: OfficeAgentState[] = ['working', 'working', 'working', 'working', 'working', 'working']
+/** 场景启动时不创建假员工，worker 只由 KanbanTask 投影产生。 */
+export const INITIAL_AGENTS: OfficeAgent[] = []
 
-function buildInitialAgents(): OfficeAgent[] {
-  return AGENT_ROSTER.map((entry, i) => {
-    const desk = DESKS[i]!
-    const state = BOOT_STATES[i] ?? 'idle'
-    return {
-      id: entry.id, name: entry.name, color: entry.color,
-      x: desk.seatX, y: desk.seatY, state,
-      currentTask: state === 'idle' ? undefined : entry.task,
-      assignedDeskId: desk.id,
-      facing: i % 2 === 0 ? 1 : -1,
-      viewFacing: state === 'working' || state === 'thinking' ? ('back' as const) : ('front' as const),
-    }
-  })
+export function isDeskWorkerState(state: OfficeAgentState): boolean {
+  return state === 'working' || state === 'thinking' || state === 'reviewing'
 }
 
-export const INITIAL_AGENTS: OfficeAgent[] = buildInitialAgents()
+/**
+ * 非工作态有自己的活动区域，避免所有 worker 永远钉在办公桌前。
+ * 位置按 desk slot 稳定错开，最多覆盖当前场景的 6 个 worker。
+ */
+export function getWorkerStatePosition(agent: OfficeAgent): { x: number; y: number } {
+  const slot = Math.max(
+    0,
+    DESKS.findIndex((desk) => desk.id === agent.assignedDeskId)
+  )
+  const col = slot % 3
+  const row = Math.floor(slot / 3)
+  const desk = DESKS[slot] ?? DESKS[0]!
+
+  if (isDeskWorkerState(agent.state) || agent.state === 'talking') {
+    return { x: desk.seatX, y: desk.seatY }
+  }
+
+  switch (agent.state) {
+    case 'waiting':
+      return { x: 300 + col * 130, y: 570 - row * 54 }
+    case 'blocked':
+      return { x: 145 + col * 48, y: 290 + row * 72 }
+    case 'completed':
+      return { x: 700 + col * 58, y: 520 - row * 64 }
+    case 'failed':
+      return { x: 710 + col * 58, y: 275 + row * 70 }
+    case 'cancelled':
+      return { x: 845 + col * 28, y: 575 - row * 48 }
+    case 'walking':
+      return { x: agent.x, y: agent.y }
+  }
+}
 
 export const HANDOFF_STATUS = {
   delivering: '交接递送中…',

@@ -54,7 +54,9 @@ function CrewTaskDetail({
           {roleLabel ? (
             <p className="text-[10px] text-muted-foreground truncate mb-0.5">{roleLabel}</p>
           ) : null}
-          <span className="text-[11px] font-medium text-foreground truncate block">{task.title}</span>
+          <span className="text-[11px] font-medium text-foreground truncate block">
+            {task.title}
+          </span>
         </div>
         <span
           className={cn(
@@ -111,12 +113,7 @@ function CrewTaskDetail({
             解除阻塞
           </Button>
         )}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 text-[10px] flex-1"
-          onClick={onShowDetail}
-        >
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] flex-1" onClick={onShowDetail}>
           查看详情
         </Button>
       </div>
@@ -137,9 +134,7 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
     () => buildKanbanRoleInstanceLabels(tasks, roleMap),
     [tasks, roleMap]
   )
-  const [selectedTaskId, setSelectedTaskId] = useAtom(
-    selectedKanbanTaskIdAtomFamily(boardId ?? '')
-  )
+  const [selectedTaskId, setSelectedTaskId] = useAtom(selectedKanbanTaskIdAtomFamily(boardId ?? ''))
   const [switcherOpen, setSwitcherOpen] = React.useState(false)
   const [detailTask, setDetailTask] = React.useState<KanbanTask | null>(null)
   const resolvedDetailTask = React.useMemo(() => {
@@ -180,6 +175,14 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
   const handleShowDetail = React.useCallback((task: KanbanTask) => {
     setDetailTask(task)
   }, [])
+
+  const handleOfficeTaskSelect = React.useCallback(
+    (taskId: string) => {
+      const task = tasks.find((item) => item.id === taskId)
+      if (task) handleShowDetail(task)
+    },
+    [tasks, handleShowDetail]
+  )
 
   const handleSwitchBoard = React.useCallback(
     async (targetBoardId: string) => {
@@ -312,7 +315,7 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
         </div>
       ) : (
         <div className="flex-1 min-h-0">
-          <AiOfficeContainer tasks={tasks} />
+          <AiOfficeContainer tasks={tasks} onTaskSelect={handleOfficeTaskSelect} />
         </div>
       )}
 
