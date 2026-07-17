@@ -33,8 +33,8 @@ import type { KanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
 import { notifyTaskDone, notifyBoardCompleted } from './kanban-notification-service'
 
-/** 工人执行器：领取 running 任务后调用，返回摘要或错误 */
-export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string }>
+/** 工人执行器：领取 running 任务后调用，返回摘要或错误（含来源标记） */
+export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string; errorSource?: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' }>
 
 /**
  * 渠道可用模型查询器（旧版，已废弃）
@@ -494,7 +494,7 @@ async function runWorker(
   try {
     const result = await runner(task)
     if (result.error) {
-      db.updateTaskStatus(task.id, { status: 'failed', error: result.error })
+      db.updateTaskStatus(task.id, { status: 'failed', error: result.error, errorSource: result.errorSource })
       onTaskStatusChanged?.(task.id, 'failed')
       console.warn(`[看板] 任务失败: ${task.id} (${task.title}) — ${result.error}`)
     } else {

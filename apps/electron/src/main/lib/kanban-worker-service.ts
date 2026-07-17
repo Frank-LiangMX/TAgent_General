@@ -38,6 +38,56 @@ import { getRoleById } from './agent-role-service'
 import type { KanbanWorkerRunner } from './kanban-dispatcher'
 
 /**
+ * D+3：错误来源分类（导出给 dispatcher 调用）
+ *
+ * 按错误消息内容判断来源层，用于写 task.error_source。
+ * 分类逻辑（优先级从高到低）：
+ *
+ * 1. 'kanban'：超时 / dispatcher 派工失败（调用方直接标记，不走此函数）
+ * 2. 'kscc'：错误消息含 kscc 关键词或网络瞬时错误
+ * 3. 'worker-sdk'：SDK 子会话内部错误（session not found / Query closed 等）
+ * 4. 'tagent'：兜底（主进程 IPC / JSONL 读写等非网络错误）
+ *
+ * 调用场景：
+ * - runRegisteredHeadlessAgent().catch() 的错误
+ * - onError(error: string) 回调的错误
+ */
+function classifyErrorSource(error: string): 'worker-sdk' | 'kscc' | 'tagent' {
+  const msg = error.toLowerCase()
+
+  // kscc / 网络瞬时错误（复用 error-patterns 的 KSCC 关键词 + 网络错误模式）
+  if (
+    /\bkscc\b/i.test(error) ||
+    /\beconnaborted\b/i.test(msg) ||
+    /\bconnection\s*(?:closed|reset|abort|timeout)\b/i.test(msg) ||
+    /\bsocket\s*hang\s*up\b/i.test(msg) ||
+    /\bterminated\b/i.test(msg) ||
+    /\beconnreset\b/i.test(msg) ||
+    /\bepipe\b/i.test(msg) ||
+    /\btimeout\b/i.test(msg) ||
+    /\bnetwork\s*error\b/i.test(msg) ||
+    /\bfetch\s*failed\b/i.test(msg)
+  ) {
+    return 'kscc'
+  }
+
+  // worker-sdk：SDK 子会话自己的错误（session not found / Query closed / stream closed / jsonl not found）
+  if (
+    /\bsession\s*not\s*found\b/i.test(msg) ||
+    /\bquery\s*closed\b/i.test(msg) ||
+    /\bstream\s*closed\b/i.test(msg) ||
+    /\bsdk\s*session\b/i.test(msg) ||
+    /\bjsonl\s*not\s*found\b/i.test(msg) ||
+    /\bno\s*such\s*file\b.*jsonl/i.test(msg)
+  ) {
+    return 'worker-sdk'
+  }
+
+  // 兜底：主进程其他错误（文件读写 / IPC / JSON parse 等）
+  return 'tagent'
+}
+
+/**
  * 看板工人任务契约
  *
  * 仅声明 runKanbanTaskHeadless 实际读取的字段，避免与 kanban-db 完整 KanbanTask 类型耦合。
@@ -124,8 +174,8 @@ export interface KanbanTaskUpdater {
   markTaskRunning(taskId: string, sessionId: string, startedAt: number): void
   /** 标记任务完成，可选携带工人摘要 */
   markTaskDone(taskId: string, summary?: string): void
-  /** 标记任务失败，携带错误信息 */
-  markTaskFailed(taskId: string, error: string): void
+  /** 标记任务失败，携带错误信息 + 来源（D+3） */
+  markTaskFailed(taskId: string, error: string, errorSource?: string): void
 }
 
 /**
@@ -151,10 +201,11 @@ export function createKanbanDbUpdater(): KanbanTaskUpdater {
         resultSummary: summary,
       })
     },
-    markTaskFailed: (taskId, error) => {
+    markTaskFailed: (taskId, error, errorSource) => {
       kanbanDbService.updateTaskStatus(taskId, {
         status: 'failed',
         error,
+        errorSource: errorSource as 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' | undefined,
       })
     },
   }
@@ -400,7 +451,9 @@ export async function runKanbanTaskHeadless(
           // 此处 markTaskDone 在 createRunningOnlyUpdater 是 no-op
           updater.markTaskDone(task.id)
         } else {
-          updater.markTaskFailed(task.id, error ?? '未知错误')
+          // D+3：失败时按错误内容分类来源，写入 errorSource
+          const source = classifyErrorSource(error ?? '未知错误')
+          updater.markTaskFailed(task.id, error ?? '未知错误', source)
         }
         options.onTaskCompleted?.(task.id, status, undefined, error)
         resolve()
@@ -422,6 +475,7 @@ export async function runKanbanTaskHeadless(
         kanbanDbService.updateTaskStatus(task.id, {
           status: 'failed',
           error: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
+          errorSource: 'kanban',
         })
         // 通过 finish 回流 onTaskCompleted('failed')，让 dispatcher 推进状态机
         finish('failed', `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`)
@@ -474,7 +528,7 @@ function createRunningOnlyUpdater(): KanbanTaskUpdater {
     markTaskDone: () => {
       // no-op：done + summary 由 dispatcher 根据 runner 返回值写
     },
-    markTaskFailed: () => {
+    markTaskFailed: (_taskId, _error, _errorSource) => {
       // no-op：failed + error 由 dispatcher 根据 runner 返回值写
     },
   }
@@ -495,7 +549,7 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
   return async (task) => {
     const board = kanbanDbService.getBoard(task.boardId)
     if (!board) {
-      return { error: `看板不存在: ${task.boardId}` }
+      return { error: `看板不存在: ${task.boardId}`, errorSource: 'kanban' }
     }
     const boardContext: KanbanWorkerBoardContext = {
       id: board.id,
@@ -505,6 +559,7 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
       workspaceId: board.workspaceId,
     }
     let capturedError: string | undefined
+    let capturedErrorSource: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' | undefined
     let workerSessionId: string | undefined
     await runKanbanTaskHeadless(task, boardContext, {
       updater: createRunningOnlyUpdater(),
@@ -514,6 +569,7 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
       onTaskCompleted: (_taskId, status, _summary, error) => {
         if (status === 'failed') {
           capturedError = error ?? '未知错误'
+          capturedErrorSource = classifyErrorSource(capturedError)
         }
       },
     })
@@ -522,6 +578,6 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
       const summary = extractLastAssistantSummary(workerSessionId)
       return { summary }
     }
-    return { error: capturedError }
+    return { error: capturedError, errorSource: capturedErrorSource }
   }
 }

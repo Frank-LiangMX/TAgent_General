@@ -70,6 +70,8 @@ export interface KanbanTask {
   finishedAt?: number
   /** 失败原因（status === 'failed' 时） */
   error?: string
+  /** 错误来源（D+3：kanban=调度层 / worker-sdk=SDK子会话 / kscc=内网渠道 / tagent=主进程） */
+  errorSource?: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent'
   /** 工人完成后的摘要（status === 'done' 时） */
   resultSummary?: string
   /** 阻塞原因（status === 'blocked' 时） */
@@ -287,6 +289,8 @@ export interface UpdateKanbanTaskStatusInput {
   status: KanbanTaskStatus
   /** 失败原因 */
   error?: string
+  /** 错误来源（D+3：kanban=调度层 / worker-sdk=SDK子会话 / kscc=内网渠道 / tagent=主进程） */
+  errorSource?: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent'
   /** 完成摘要 */
   resultSummary?: string
   /** 阻塞原因 */

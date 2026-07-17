@@ -81,6 +81,7 @@ interface KanbanTaskRow {
   started_at: number | null
   finished_at: number | null
   error: string | null
+  error_source: string | null
   result_summary: string | null
   blocked_reason: string | null
   metadata: string | null
@@ -132,6 +133,7 @@ function rowToTask(row: KanbanTaskRow): KanbanTask {
     startedAt: row.started_at ?? undefined,
     finishedAt: row.finished_at ?? undefined,
     error: row.error ?? undefined,
+    errorSource: (row.error_source ?? undefined) as KanbanTask['errorSource'],
     resultSummary: row.result_summary ?? undefined,
     blockedReason: row.blocked_reason ?? undefined,
     metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
@@ -221,6 +223,7 @@ export class KanbanDbService {
         started_at INTEGER,
         finished_at INTEGER,
         error TEXT,
+        error_source TEXT,
         result_summary TEXT,
         blocked_reason TEXT,
         metadata TEXT,
@@ -256,14 +259,15 @@ export class KanbanDbService {
    * - version 4：B9 新增 require_summary 列（事件回流区分是否回调主会话）
    * - version 5：D+1 新增 cwd 列（worker 子会话项目根）
    * - version 6：worker skills 新增 workspace_id 列
+   * - version 7：D+3 新增 error_source 列（错误来源标记）
    *
-   * 新 DB 的 createSchema 已直接包含最新列；旧 DB 检测到 version < 6 时执行对应迁移。
+   * 新 DB 的 createSchema 已直接包含最新列；旧 DB 检测到 version < 7 时执行对应迁移。
    */
   private migrateSchema(): void {
     if (!this.db) return
     const currentVersion = this.db.pragma('user_version', { simple: true }) as number
 
-    if (currentVersion >= 6) return
+    if (currentVersion >= 7) return
 
     // v0 → v1：B4 迁移（parent_session_id 改 NULLABLE + 新增 title/mode 列）
     if (currentVersion < 1) {
@@ -299,6 +303,12 @@ export class KanbanDbService {
     if (currentVersion < 6) {
       this.migrateV5ToV6()
       this.db.pragma('user_version = 6')
+    }
+
+    // v6 → v7：D+3 新增 error_source 列（错误来源标记）
+    if (currentVersion < 7) {
+      this.migrateV6ToV7()
+      this.db.pragma('user_version = 7')
     }
   }
 
@@ -506,6 +516,24 @@ export class KanbanDbService {
       this.db.exec('ALTER TABLE kanban_boards ADD COLUMN workspace_id TEXT')
     }
     console.log('[看板] schema 迁移完成：新增 workspace_id 列（worker skills）')
+  }
+
+  /**
+   * v6 → v7：D+3 新增 error_source 列（错误来源标记）
+   *
+   * 允许 NULL：旧任务无 error_source，UI 显示时按 error 有值但无 source 降级为"未知"
+   */
+  private migrateV6ToV7(): void {
+    if (!this.db) return
+    const tableInfo = this.db.prepare('PRAGMA table_info(kanban_tasks)').all() as Array<{
+      name: string
+    }>
+    const columns = new Set(tableInfo.map((c) => c.name))
+
+    if (!columns.has('error_source')) {
+      this.db.exec('ALTER TABLE kanban_tasks ADD COLUMN error_source TEXT')
+    }
+    console.log('[看板] schema 迁移完成：新增 error_source 列（D+3 错误来源标记）')
   }
 
   /** 关闭数据库连接 */
@@ -935,6 +963,7 @@ export class KanbanDbService {
       `UPDATE kanban_tasks
        SET status = @status,
            error = @error,
+           error_source = @error_source,
            result_summary = @result_summary,
            blocked_reason = @blocked_reason,
            assignee_session_id = COALESCE(@assignee_session_id, assignee_session_id),
@@ -946,6 +975,7 @@ export class KanbanDbService {
       id: taskId,
       status: update.status,
       error: update.error ?? null,
+      error_source: update.errorSource ?? null,
       result_summary: update.resultSummary ?? null,
       blocked_reason: update.blockedReason ?? null,
       assignee_session_id: update.assigneeSessionId ?? null,
