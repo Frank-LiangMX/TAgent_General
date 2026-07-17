@@ -41,11 +41,7 @@ export function bindOfficeScene(instance: OfficeScene | null) {
   if (instance) flushPendingActions()
 }
 
-export function requestDeskVisit(
-  visitorRosterNo: number,
-  hostRosterNo: number,
-  message: string,
-) {
+export function requestDeskVisit(visitorRosterNo: number, hostRosterNo: number, message: string) {
   if (!scene) {
     pendingActions.push({
       kind: 'desk_visit',
@@ -61,7 +57,7 @@ export function requestDeskVisit(
 export function requestDeskVisitTour(
   visitorRosterNo: number,
   hostRosterNos: number[],
-  messageFn?: (hostRosterNo: number, hostName: string) => string,
+  messageFn?: (hostRosterNo: number, hostName: string) => string
 ) {
   if (!scene) {
     return

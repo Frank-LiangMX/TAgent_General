@@ -93,11 +93,7 @@ export function KanbanCrewTaskList({
                 <span className="text-[9px] text-muted-foreground/40">{desc}</span>
               ) : null}
             </div>
-            <div
-              className={cn(
-                layout === 'grid' ? 'grid grid-cols-3 gap-2.5' : 'space-y-1.5'
-              )}
-            >
+            <div className={cn(layout === 'grid' ? 'grid grid-cols-3 gap-2.5' : 'space-y-1.5')}>
               {groupTasks.map((task) => (
                 <div
                   key={task.id}

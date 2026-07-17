@@ -29,6 +29,9 @@ temp-*/
 # default-skills 下的 vendor 资源
 apps/electron/default-skills/**/assets/
 
+# Spine 导出资源由动画工具生成，保留原始 atlas/json 排版
+apps/electron/src/renderer/public/assets/characters/**/*.json
+
 # 归档
 .context/
 

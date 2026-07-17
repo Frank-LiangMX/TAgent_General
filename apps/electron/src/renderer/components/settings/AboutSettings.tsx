@@ -199,9 +199,7 @@ function HeroSection(): React.ReactElement {
               新版本 v{latestVersion} 可用
             </Badge>
             {isPortable && (
-              <span className="text-muted-foreground/70">
-                请下载 Portable 包手动替换
-              </span>
+              <span className="text-muted-foreground/70">请下载 Portable 包手动替换</span>
             )}
           </div>
         ) : latestRelease ? (
@@ -360,8 +358,8 @@ function UpdateSection(): React.ReactElement | null {
         </div>
         <div className="border-t px-4 py-3 space-y-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            当前为免安装 Portable 版本，不支持应用内自动更新。有新版本时请到 GitHub Release
-            下载 <span className="font-mono text-foreground/80">TAgent.Portable.*.exe</span>{' '}
+            当前为免安装 Portable 版本，不支持应用内自动更新。有新版本时请到 GitHub Release 下载{' '}
+            <span className="font-mono text-foreground/80">TAgent.Portable.*.exe</span>{' '}
             ，关闭本程序后用新文件替换即可。
           </p>
           <Button

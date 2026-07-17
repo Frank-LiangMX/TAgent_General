@@ -2,14 +2,8 @@
 import { Container, FillGradient, Graphics, Sprite } from 'pixi.js'
 import type { OfficeDesk } from '../../types/office-agent'
 import { SEAT_OFFSET_Y } from '../layout/officeLayout'
-import {
-  getOfficeChairTexture,
-  getOfficeDeskTexture,
-} from '../assets/loadOfficeAssets'
-import {
-  computeChairLayerZ,
-  computeDeskLayerZ,
-} from '../systems/deskDepthSort'
+import { getOfficeChairTexture, getOfficeDeskTexture } from '../assets/loadOfficeAssets'
+import { computeChairLayerZ, computeDeskLayerZ } from '../systems/deskDepthSort'
 
 const STYLE = {
   shadow: { color: 0x3d4f6e, alpha: 0.1 },
@@ -49,12 +43,7 @@ export class DeskEntity {
     this.deskId = desk.id
     this.desk = desk
 
-    for (const part of [
-      this.shadowGfx,
-      this.deskLayer,
-      this.chairLayer,
-      this.occupiedIndicator,
-    ]) {
+    for (const part of [this.shadowGfx, this.deskLayer, this.chairLayer, this.occupiedIndicator]) {
       part.position.set(desk.x, desk.y)
     }
 
@@ -70,11 +59,7 @@ export class DeskEntity {
 
   updateDepthZ(agentPositions: { x: number; y: number }[]) {
     const deskZ = computeDeskLayerZ(this.desk, agentPositions)
-    const chairZ = computeChairLayerZ(
-      this.desk,
-      agentPositions,
-      CHAIR_DEPTH_AHEAD,
-    )
+    const chairZ = computeChairLayerZ(this.desk, agentPositions, CHAIR_DEPTH_AHEAD)
     this.deskLayer.zIndex = deskZ
     this.shadowGfx.zIndex = deskZ - 0.5
     this.chairLayer.zIndex = chairZ

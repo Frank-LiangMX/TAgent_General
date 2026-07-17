@@ -17,10 +17,7 @@ export type SeatCheckOptions = {
 type NavNodeLike = { id: string; x: number; y: number }
 type Adjacency = Map<string, string[]>
 
-export function createNavContext(
-  agents: OfficeAgent[],
-  selfAgentId?: string,
-): NavPathContext {
+export function createNavContext(agents: OfficeAgent[], selfAgentId?: string): NavPathContext {
   return { agents, selfAgentId }
 }
 
@@ -30,7 +27,7 @@ function distPointToSegment(
   ax: number,
   ay: number,
   bx: number,
-  by: number,
+  by: number
 ): number {
   const dx = bx - ax
   const dy = by - ay
@@ -45,7 +42,7 @@ function distPointToSegment(
 
 function collectSeatObstacles(
   ctx?: NavPathContext,
-  options?: SeatCheckOptions,
+  options?: SeatCheckOptions
 ): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = []
   const exclude = new Set(options?.excludeDeskIds ?? [])
@@ -60,11 +57,7 @@ function collectSeatObstacles(
     if (agent.id === ctx?.selfAgentId) continue
     const desk = DESKS.find((d) => d.id === agent.assignedDeskId)
     if (!desk || exclude.has(desk.id)) continue
-    if (
-      agent.state === 'working' ||
-      agent.state === 'talking' ||
-      agent.state === 'thinking'
-    ) {
+    if (agent.state === 'working' || agent.state === 'talking' || agent.state === 'thinking') {
       if (Math.hypot(agent.x - desk.seatX, agent.y - desk.seatY) < SEAT_DETECT + 6) {
         out.push({ x: agent.x, y: agent.y })
       }
@@ -80,7 +73,7 @@ export function segmentCrossesSeat(
   bx: number,
   by: number,
   ctx?: NavPathContext,
-  options?: SeatCheckOptions,
+  options?: SeatCheckOptions
 ): boolean {
   const obstacles = collectSeatObstacles(ctx, options)
   for (const seat of obstacles) {
@@ -100,7 +93,7 @@ export function shortestPath(
   adj: Adjacency,
   fromId: string,
   toId: string,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): string[] | null {
   if (fromId === toId) return [fromId]
 
@@ -152,7 +145,7 @@ export function shortestPath(
 export function polylineCrossesSeat(
   points: { x: number; y: number }[],
   ctx?: NavPathContext,
-  options?: SeatCheckOptions,
+  options?: SeatCheckOptions
 ): boolean {
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1]!

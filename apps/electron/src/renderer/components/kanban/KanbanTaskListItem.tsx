@@ -19,11 +19,7 @@ import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 import { taskProgressLogsAtomFamily } from '@/atoms/kanban-atoms'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-import {
-  CREW_STATUS_BADGE,
-  parseCrewBadge,
-  roleAvatarTint,
-} from '@/lib/kanban-crew-status'
+import { CREW_STATUS_BADGE, parseCrewBadge, roleAvatarTint } from '@/lib/kanban-crew-status'
 
 /** @deprecated 使用 CREW_STATUS_BADGE；保留导出供详情弹窗兼容 */
 export const STATUS_BADGE = CREW_STATUS_BADGE
@@ -183,7 +179,10 @@ export function KanbanTaskListItem({
                   className={cn('shrink-0 text-[9px] px-1.5 py-0', badge.className)}
                 >
                   <span
-                    className={cn('inline-block size-1.5 rounded-full mr-1 align-middle', badge.dot)}
+                    className={cn(
+                      'inline-block size-1.5 rounded-full mr-1 align-middle',
+                      badge.dot
+                    )}
                   />
                   {badge.label}
                 </Badge>
@@ -191,9 +190,7 @@ export function KanbanTaskListItem({
               {/* Running 时：任务标题 + 实时计时 */}
               {isRunning ? (
                 <div className="mt-1 flex items-center gap-2">
-                  <span className="text-xs text-foreground/80 truncate flex-1">
-                    {task.title}
-                  </span>
+                  <span className="text-xs text-foreground/80 truncate flex-1">{task.title}</span>
                   {task.startedAt && (
                     <span className="shrink-0 text-[11px] tabular-nums text-amber-600 dark:text-amber-400 font-medium">
                       {formatDuration(durationMs)}

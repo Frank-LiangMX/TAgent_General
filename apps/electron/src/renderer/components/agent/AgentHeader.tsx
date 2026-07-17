@@ -92,7 +92,10 @@ function getStatusTone(
   return 'neutral'
 }
 
-export const AgentHeader = React.memo(function AgentHeader({ sessionId, rightSlot }: AgentHeaderProps): React.ReactElement | null {
+export const AgentHeader = React.memo(function AgentHeader({
+  sessionId,
+  rightSlot,
+}: AgentHeaderProps): React.ReactElement | null {
   const sessions = useAtomValue(agentSessionsAtom)
   const session = sessions.find((s) => s.id === sessionId) ?? null
   const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))

@@ -16,14 +16,8 @@ export function getChairDepthSplitY(desk: OfficeDesk): number {
   return desk.y + CHAIR_DEPTH_SPLIT_OFFSET
 }
 
-export function isAgentNearDesk(
-  desk: OfficeDesk,
-  ax: number,
-  ay: number,
-): boolean {
-  return (
-    Math.abs(ax - desk.x) < NEAR_X && Math.abs(ay - desk.y) < NEAR_Y
-  )
+export function isAgentNearDesk(desk: OfficeDesk, ax: number, ay: number): boolean {
+  return Math.abs(ax - desk.x) < NEAR_X && Math.abs(ay - desk.y) < NEAR_Y
 }
 
 type AgentPos = { x: number; y: number }
@@ -34,7 +28,7 @@ function applySplitDepthZ(
   agents: AgentPos[],
   desk: OfficeDesk,
   agentAhead: number,
-  agentBehind: number,
+  agentBehind: number
 ): number {
   let z = baseZ
 
@@ -51,27 +45,16 @@ function applySplitDepthZ(
 }
 
 export function computeDeskLayerZ(desk: OfficeDesk, agents: AgentPos[]): number {
-  return applySplitDepthZ(
-    desk.y,
-    getDeskDepthSplitY(desk),
-    agents,
-    desk,
-    0.5,
-    0.5,
-  )
+  return applySplitDepthZ(desk.y, getDeskDepthSplitY(desk), agents, desk, 0.5, 0.5)
 }
 
-export function computeChairLayerZ(
-  desk: OfficeDesk,
-  agents: AgentPos[],
-  chairAhead = 2,
-): number {
+export function computeChairLayerZ(desk: OfficeDesk, agents: AgentPos[], chairAhead = 2): number {
   return applySplitDepthZ(
     desk.seatY + chairAhead,
     getChairDepthSplitY(desk),
     agents,
     desk,
     0.5,
-    1.5,
+    1.5
   )
 }

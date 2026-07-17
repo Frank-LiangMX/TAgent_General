@@ -13,10 +13,18 @@ let backgroundTexture: Texture | null = null
 let deskTexture: Texture | null = null
 let chairTexture: Texture | null = null
 
-export function getOfficeBackgroundTexture(): Texture | null { return backgroundTexture }
-export function getOfficeDeskTexture(): Texture | null { return deskTexture }
-export function getOfficeChairTexture(): Texture | null { return chairTexture }
-export function isOfficeAssetsReady(): boolean { return deskTexture != null && chairTexture != null }
+export function getOfficeBackgroundTexture(): Texture | null {
+  return backgroundTexture
+}
+export function getOfficeDeskTexture(): Texture | null {
+  return deskTexture
+}
+export function getOfficeChairTexture(): Texture | null {
+  return chairTexture
+}
+export function isOfficeAssetsReady(): boolean {
+  return deskTexture != null && chairTexture != null
+}
 
 export async function loadOfficeAssets(): Promise<boolean> {
   let deskOk = false
