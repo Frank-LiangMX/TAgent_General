@@ -12,6 +12,8 @@ export type UpdateStatus =
   | { status: 'downloading'; version: string; progress: DownloadProgress }
   | { status: 'downloaded'; version: string }
   | { status: 'not-available' }
+  /** Windows Portable：不支持自动更新，需手动下载 Portable 包 */
+  | { status: 'portable' }
   | { status: 'error'; error: string }
 
 /** 下载进度 */

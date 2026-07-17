@@ -24,6 +24,7 @@ export interface UpdateStatus {
     | 'downloading'
     | 'downloaded'
     | 'not-available'
+    | 'portable'
     | 'error'
   version?: string
   releaseNotes?: string
@@ -33,6 +34,9 @@ export interface UpdateStatus {
 
 /** 更新状态 atom */
 export const updateStatusAtom = atom<UpdateStatus>({ status: 'idle' })
+
+/** 当前是否为 Windows Portable 构建 */
+export const isPortableBuildAtom = atom((get) => get(updateStatusAtom).status === 'portable')
 
 /** 是否有可用更新（包含已下载完成） */
 export const hasUpdateAtom = atom((get) => {

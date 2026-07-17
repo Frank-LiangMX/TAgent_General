@@ -48,6 +48,7 @@ import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/en
 import {
   updateStatusAtom,
   updaterAvailableAtom,
+  isPortableBuildAtom,
   checkForUpdates,
   type DownloadProgress,
 } from '@/atoms/updater'
@@ -105,6 +106,7 @@ function HeroSection(): React.ReactElement {
     import('@tagent/shared').GitHubRelease | null
   >(null)
   const [loadingLatest, setLoadingLatest] = React.useState(true)
+  const isPortable = useAtomValue(isPortableBuildAtom)
   // 主题切换时自动换 logo（找不到对应变体时回退到默认 icon.png）
   const themeLogoKey = useAtomValue(themeLogoKeyAtom)
   const themedLogo = THEME_LOGOS[themeLogoKey] ?? tagentLogo
@@ -172,8 +174,19 @@ function HeroSection(): React.ReactElement {
         {/* 版本信息 */}
         <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground/60">
           <span className="font-mono">v{APP_VERSION}</span>
-          <span>·</span>
-          <span>Electron + React</span>
+          {isPortable ? (
+            <>
+              <span>·</span>
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                Portable
+              </Badge>
+            </>
+          ) : (
+            <>
+              <span>·</span>
+              <span>Electron + React</span>
+            </>
+          )}
         </div>
 
         {/* 最新版本提示 */}
@@ -185,6 +198,11 @@ function HeroSection(): React.ReactElement {
               <ExternalLink size={10} />
               新版本 v{latestVersion} 可用
             </Badge>
+            {isPortable && (
+              <span className="text-muted-foreground/70">
+                请下载 Portable 包手动替换
+              </span>
+            )}
           </div>
         ) : latestRelease ? (
           <div className="mt-2 text-xs text-muted-foreground/50">当前已是最新版本</div>
@@ -230,9 +248,24 @@ function HeroSection(): React.ReactElement {
 function CheckUpdateButton(): React.ReactElement | null {
   const available = useAtomValue(updaterAvailableAtom)
   const status = useAtomValue(updateStatusAtom)
+  const isPortable = useAtomValue(isPortableBuildAtom)
   const [checking, setChecking] = React.useState(false)
 
   if (!available) return null
+
+  const handleGoToDownload = (): void => {
+    window.electronAPI.openExternal(GITHUB_RELEASES_URL)
+  }
+
+  // Portable：引导去 Release 下载 Portable 包，不触发自动更新检查
+  if (isPortable || status.status === 'portable') {
+    return (
+      <Button size="sm" className="gap-1.5" onClick={handleGoToDownload}>
+        <ExternalLink size={14} />
+        下载 Portable 包
+      </Button>
+    )
+  }
 
   const handleCheck = async (): Promise<void> => {
     setChecking(true)
@@ -241,10 +274,6 @@ function CheckUpdateButton(): React.ReactElement | null {
     } finally {
       setTimeout(() => setChecking(false), 1000)
     }
-  }
-
-  const handleGoToDownload = (): void => {
-    window.electronAPI.openExternal(GITHUB_RELEASES_URL)
   }
 
   const handleQuitAndInstall = (): void => {
@@ -290,18 +319,16 @@ function CheckUpdateButton(): React.ReactElement | null {
 function UpdateSection(): React.ReactElement | null {
   const available = useAtomValue(updaterAvailableAtom)
   const status = useAtomValue(updateStatusAtom)
+  const isPortable = useAtomValue(isPortableBuildAtom)
   const [showReleaseNotes, setShowReleaseNotes] = React.useState(false)
   const [release, setRelease] = React.useState<import('@tagent/shared').GitHubRelease | null>(null)
 
-  // 进入关于页时自动检查更新（仅在 idle 状态时触发，避免重复检查）
+  // 进入关于页时自动检查更新（Portable / 非 idle 时跳过）
   React.useEffect(() => {
-    if (available && status.status === 'idle') {
+    if (available && !isPortable && status.status === 'idle') {
       checkForUpdates()
     }
-  }, [available, status.status])
-
-  // updater 不可用时不渲染
-  if (!available) return null
+  }, [available, isPortable, status.status])
 
   // 获取 release 信息
   React.useEffect(() => {
@@ -314,6 +341,42 @@ function UpdateSection(): React.ReactElement | null {
         .catch(console.error)
     }
   }, [status.status, status.version, release])
+
+  // updater 不可用时不渲染
+  if (!available) return null
+
+  // Portable：说明无法自动更新，引导手动下载同名 Portable 包
+  if (isPortable || status.status === 'portable') {
+    return (
+      <SettingsCard className="overflow-hidden">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <RefreshCw size={16} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">软件更新</span>
+          </div>
+          <Badge variant="secondary" className="text-xs">
+            Portable
+          </Badge>
+        </div>
+        <div className="border-t px-4 py-3 space-y-3">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            当前为免安装 Portable 版本，不支持应用内自动更新。有新版本时请到 GitHub Release
+            下载 <span className="font-mono text-foreground/80">TAgent.Portable.*.exe</span>{' '}
+            ，关闭本程序后用新文件替换即可。
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => window.electronAPI.openExternal(GITHUB_RELEASES_URL)}
+          >
+            <ExternalLink size={12} />
+            打开 Releases
+          </Button>
+        </div>
+      </SettingsCard>
+    )
+  }
 
   const hasReleaseNotes = status.releaseNotes || release?.body
 

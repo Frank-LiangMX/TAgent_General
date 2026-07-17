@@ -145,6 +145,6 @@ python scripts/release.py status v1.0.1
 
 尽量做安装包 smoke test：
 
-- Windows `.exe`
+- Windows `.Setup.exe`（NSIS，可自动更新）与 `.Portable.exe`（免安装，需手动换包）
 - macOS `.dmg` 或 `.zip`
 - Linux `.AppImage`、`.deb` 或 `.tar.gz`
