@@ -18,12 +18,18 @@ export const NAV_ISLAND_OUTER_RADIUS = 24
 export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = NAV_ISLAND_OUTER_RADIUS
 
 /**
- * macOS 顶栏安全带高度（红绿灯 + 拖拽）
+ * 跨端顶栏安全带高度（Win / Mac 共用）
  *
- * Soft UI：灯落在 shell 底色上，不进 rail pill；
- * 整窗内容（rail / 侧栏 / 主区）从该带下方开始。
+ * Soft UI：rail / 侧栏 / 主区浮岛都绕开窗顶，不从 y=0 起排。
+ * - Mac：系统红绿灯 + 拖拽
+ * - Win：拖拽 + 右侧自定义窗口按钮区
  */
-export const NAV_MAC_CHROME_HEIGHT = 28
+export const SHELL_TOP_SAFE_HEIGHT = 32
+
+/**
+ * @deprecated 请用 SHELL_TOP_SAFE_HEIGHT；保留别名兼容旧引用
+ */
+export const NAV_MAC_CHROME_HEIGHT = SHELL_TOP_SAFE_HEIGHT
 
 /** TabBar 内容区高度 */
 export const TAB_BAR_HEIGHT = 28
@@ -57,13 +63,13 @@ export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 0
 
 /**
  * Electron trafficLightPosition（相对窗口内容区左上角）
- * 落在顶栏安全带内，不压独立 rail pill
+ * 落在跨端顶栏安全带内，不压独立 rail pill
  */
 export function getMacTrafficLightPosition(): { x: number; y: number } {
   const x = NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
   const y = Math.max(
     6,
-    Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2) +
+    Math.round((SHELL_TOP_SAFE_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2) +
       NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
   )
   return { x, y }

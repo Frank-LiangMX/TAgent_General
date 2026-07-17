@@ -8,6 +8,7 @@ import {
   NAV_SIDEBAR_WIDTH,
   RIGHT_PANEL_RAIL_WIDTH,
   SHELL_EDGE_PADDING,
+  SHELL_TOP_SAFE_HEIGHT,
   TAB_BAR_HEIGHT,
 } from '@tagent/shared'
 
@@ -59,8 +60,9 @@ export {
   NAV_SIDEBAR_WIDTH,
   RIGHT_PANEL_RAIL_WIDTH,
   SHELL_EDGE_PADDING,
+  SHELL_TOP_SAFE_HEIGHT,
   TAB_BAR_HEIGHT,
 }
 
-/** macOS 主区 TabBar 上方留白，与导航岛 chrome 底边对齐 */
-export const NAV_MAC_TABBAR_TOP_INSET = NAV_MAC_CHROME_HEIGHT - TAB_BAR_HEIGHT
+/** 主区 TabBar 上方留白（顶栏安全带与 TabBar 高差；两端共用） */
+export const NAV_MAC_TABBAR_TOP_INSET = Math.max(0, SHELL_TOP_SAFE_HEIGHT - TAB_BAR_HEIGHT)

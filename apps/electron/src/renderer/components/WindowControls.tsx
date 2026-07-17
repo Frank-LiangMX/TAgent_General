@@ -5,7 +5,7 @@
 
 import * as React from 'react'
 
-import { detectIsWindows } from '@/lib/platform'
+import { SHELL_TOP_SAFE_HEIGHT, detectIsWindows } from '@/lib/platform'
 
 export function WindowControls(): React.ReactElement | null {
   const isWindows = React.useMemo(() => detectIsWindows(), [])
@@ -28,8 +28,14 @@ export function WindowControls(): React.ReactElement | null {
 
   if (!isWindows) return null
 
+  // 垂直居中于跨端顶栏安全带，与 Soft UI 浮岛下沉对齐
+  const topPx = Math.max(4, Math.round((SHELL_TOP_SAFE_HEIGHT - 28) / 2))
+
   return (
-    <div className="window-controls fixed top-[8px] right-[8px] z-[200] flex select-none titlebar-no-drag">
+    <div
+      className="window-controls fixed right-[8px] z-[200] flex select-none titlebar-no-drag"
+      style={{ top: topPx }}
+    >
       {/* 最小化 */}
       <button
         type="button"
