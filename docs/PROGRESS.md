@@ -76,12 +76,11 @@
 
 ---
 
-**看板 goal_mode + worker judge**（文档重校准 2026-07-18，待实现）：
+**看板 goal_mode + worker judge**（分支 `feature/kanban-goal-mode-judge`）：
 
-- 对齐 hermes 0.18：**goal loop（同 session 多轮 + 每轮 judge）** + **`kanban_complete` 闸门**；fail-open；worker 工具白名单
-- 对 TAgent 有用的 hermes 增量主要是 worker goal/judge；0.18.x 后 gateway/MCP 等不跟
-- 权威描述：`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.6（v1.1）
-- 分期：A complete 闸门+白名单（2–3d）→ B goal loop（2–3d）→ C UI（1d）
+- 文档重校准 2026-07-18：`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.6
+- **阶段 A 进行中**：字段 + `kanban-judge-service` + `kanban_complete` + worker 白名单注入 + worker prompt
+- 待做：阶段 B goal loop 多轮；阶段 C UI
 
 ---
 

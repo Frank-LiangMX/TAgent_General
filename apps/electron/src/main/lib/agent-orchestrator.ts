@@ -1907,20 +1907,24 @@ export class AgentOrchestrator {
       markPhase('injectAutomation')
 
       // 注入看板工具集
-      // B4 起支持 general / TA 双模式，仅防递归（triggeredBy !== 'kanban'）。
-      // TA 模式也可创建看板做批量资产编排。
-      if (triggeredBy !== 'kanban') {
-        try {
-          await injectKanbanMcpServer(sdk, mcpServers, {
-            sessionId,
-            channelId,
-            triggeredBy: triggeredBy === 'automation' ? 'automation' : 'user',
-            agentCwd,
-            workspaceId,
-          })
-        } catch (err) {
-          console.error('[Agent 编排] 注入看板工具集失败:', err)
-        }
+      // - 主会话 full：建板/加任务/complete...
+      // - kanban worker：白名单 complete/block/comment/list_tasks（goal 闸门，禁止递归建板）
+      try {
+        await injectKanbanMcpServer(sdk, mcpServers, {
+          sessionId,
+          channelId,
+          triggeredBy:
+            triggeredBy === 'kanban'
+              ? 'kanban'
+              : triggeredBy === 'automation'
+                ? 'automation'
+                : 'user',
+          toolMode: triggeredBy === 'kanban' ? 'worker' : 'full',
+          agentCwd,
+          workspaceId,
+        })
+      } catch (err) {
+        console.error('[Agent 编排] 注入看板工具集失败:', err)
       }
       markPhase('injectKanban')
 

@@ -116,6 +116,9 @@ function rowToBoard(row: KanbanBoardRow): KanbanBoard {
 
 /** 行 → 任务对象 */
 function rowToTask(row: KanbanTaskRow): KanbanTask {
+  const metadata = row.metadata
+    ? (JSON.parse(row.metadata) as KanbanTaskMetadata)
+    : undefined
   return {
     id: row.id,
     boardId: row.board_id,
@@ -136,7 +139,21 @@ function rowToTask(row: KanbanTaskRow): KanbanTask {
     errorSource: (row.error_source ?? undefined) as KanbanTask['errorSource'],
     resultSummary: row.result_summary ?? undefined,
     blockedReason: row.blocked_reason ?? undefined,
-    metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
+    // goal 字段持久化在 metadata，读取时提升到顶层
+    goalMode: metadata?.goalMode === true ? true : undefined,
+    acceptanceCriteria:
+      typeof metadata?.acceptanceCriteria === 'string' && metadata.acceptanceCriteria.trim()
+        ? metadata.acceptanceCriteria
+        : undefined,
+    goalMaxTurns:
+      typeof metadata?.goalMaxTurns === 'number' && Number.isFinite(metadata.goalMaxTurns)
+        ? metadata.goalMaxTurns
+        : undefined,
+    judgeModel:
+      typeof metadata?.judgeModel === 'string' && metadata.judgeModel.trim()
+        ? metadata.judgeModel
+        : undefined,
+    metadata,
   }
 }
 
@@ -710,6 +727,19 @@ export class KanbanDbService {
     const now = Date.now()
     // 未指定 roleId 时落到通用执行者，保证每个 worker 都有角色定义
     const roleId = input.roleId?.trim() || DEFAULT_KANBAN_ROLE_ID
+    // goal 字段写入 metadata（零 schema 迁移）
+    const metadata: KanbanTaskMetadata = {
+      ...(input.metadata as KanbanTaskMetadata | undefined),
+    }
+    if (input.goalMode === true) metadata.goalMode = true
+    if (input.acceptanceCriteria?.trim()) {
+      metadata.acceptanceCriteria = input.acceptanceCriteria.trim()
+    }
+    if (typeof input.goalMaxTurns === 'number' && Number.isFinite(input.goalMaxTurns)) {
+      metadata.goalMaxTurns = Math.max(1, Math.floor(input.goalMaxTurns))
+    }
+    if (input.judgeModel?.trim()) metadata.judgeModel = input.judgeModel.trim()
+
     const task: KanbanTask = {
       id: generateTaskId(),
       boardId: input.boardId,
@@ -723,7 +753,11 @@ export class KanbanDbService {
       priority: input.priority ?? 0,
       createdAt: now,
       updatedAt: now,
-      metadata: input.metadata,
+      goalMode: metadata.goalMode,
+      acceptanceCriteria: metadata.acceptanceCriteria,
+      goalMaxTurns: metadata.goalMaxTurns,
+      judgeModel: metadata.judgeModel,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     }
     db.prepare(
       `INSERT INTO kanban_tasks
@@ -765,6 +799,31 @@ export class KanbanDbService {
       | KanbanTaskRow
       | undefined
     return row ? rowToTask(row) : null
+  }
+
+  /**
+   * 合并写入 task.metadata（浅合并顶层键）
+   *
+   * 用于 judgeResult 等 goal 字段持久化，不触发状态机副作用。
+   */
+  mergeTaskMetadata(taskId: string, patch: Partial<KanbanTaskMetadata>): KanbanTaskMetadata {
+    const db = this.requireDb()
+    const row = db.prepare('SELECT metadata FROM kanban_tasks WHERE id = ?').get(taskId) as
+      | { metadata: string | null }
+      | undefined
+    if (!row) {
+      throw new Error(`任务不存在: ${taskId}`)
+    }
+    const existing: KanbanTaskMetadata = row.metadata
+      ? (JSON.parse(row.metadata) as KanbanTaskMetadata)
+      : {}
+    const next: KanbanTaskMetadata = { ...existing, ...patch }
+    db.prepare(`UPDATE kanban_tasks SET metadata = ?, updated_at = ? WHERE id = ?`).run(
+      JSON.stringify(next),
+      Date.now(),
+      taskId
+    )
+    return next
   }
 
   /** 列出某看板下所有任务（按优先级降序、创建时间升序） */

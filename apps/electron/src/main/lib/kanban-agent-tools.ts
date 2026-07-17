@@ -29,6 +29,11 @@ import { kanbanDbService } from './kanban-db'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { broadcastKanbanChanged } from './kanban-ipc'
 import { getSettings } from './settings-service'
+import {
+  buildAcceptanceText,
+  judgeGoal,
+  taskNeedsJudge,
+} from './kanban-judge-service'
 
 /** MCP 工具结果格式（与 automation-agent-tools 的 AutomationToolResult 一致） */
 export interface KanbanToolResult extends Record<string, unknown> {
@@ -65,6 +70,17 @@ export interface KanbanAddTaskArgs {
   modelId?: string
   priority?: number
   parentTaskId?: string
+  goalMode?: boolean
+  acceptanceCriteria?: string
+  goalMaxTurns?: number
+  judgeModel?: string
+}
+
+export interface KanbanCompleteArgs {
+  taskId: string
+  summary?: string
+  result?: string
+  evidence?: string
 }
 
 export interface KanbanListTasksArgs {
@@ -259,6 +275,22 @@ const kanbanAddTaskSchema: Record<string, unknown> = {
       description: '可选：优先级（数字越大越优先；默认 0）',
     },
     parentTaskId: { type: 'string', description: '可选：父任务 ID（构建分解树）' },
+    goalMode: {
+      type: 'boolean',
+      description: '可选：goal 模式，complete 前 aux judge 验收（默认 false）',
+    },
+    acceptanceCriteria: {
+      type: 'string',
+      description: '可选：验收标准（goalMode 推荐填写）',
+    },
+    goalMaxTurns: {
+      type: 'number',
+      description: '可选：goal 最大轮次（默认 20）',
+    },
+    judgeModel: {
+      type: 'string',
+      description: '可选：验收模型 ID',
+    },
   },
   required: ['boardId', 'title', 'channelId'],
   additionalProperties: false,
@@ -369,10 +401,21 @@ export async function handleAddTask(args: Record<string, unknown>): Promise<Kanb
         ? args.priority
         : undefined,
     parentTaskId: optionalString(args.parentTaskId),
+    goalMode: args.goalMode === true,
+    acceptanceCriteria: optionalString(args.acceptanceCriteria),
+    goalMaxTurns:
+      typeof args.goalMaxTurns === 'number' && Number.isFinite(args.goalMaxTurns)
+        ? args.goalMaxTurns
+        : undefined,
+    judgeModel: optionalString(args.judgeModel),
   }
   const task: KanbanTask = kanbanDbService.createTask(input)
   broadcastKanbanChanged()
-  return jsonResult({ taskId: task.id, created: true })
+  return jsonResult({
+    taskId: task.id,
+    created: true,
+    goalMode: task.goalMode === true,
+  })
 }
 
 export async function handleListTasks(args: Record<string, unknown>): Promise<KanbanToolResult> {
@@ -413,6 +456,84 @@ export async function handleComment(
   })
 }
 
+/**
+ * 工人完成任务（goal complete 闸门）
+ *
+ * - 非 goalMode：直接 done
+ * - goalMode：aux judge；continue → tool 错误 JSON（任务保持 running）
+ * - judge 不可达 / failOpen：放行 done
+ */
+export async function handleComplete(
+  args: Record<string, unknown>,
+  opts?: { sessionId?: string }
+): Promise<KanbanToolResult> {
+  const taskId = assertNonBlank(args.taskId, 'taskId')
+  const summary =
+    optionalString(args.summary) ??
+    optionalString(args.result) ??
+    optionalString(args.evidence) ??
+    ''
+  if (!summary) {
+    throw new Error('kanban_complete 需要 summary / result / evidence 之一')
+  }
+
+  const task = kanbanDbService.getTask(taskId)
+  if (!task) {
+    throw new Error(`任务不存在: ${taskId}`)
+  }
+  if (task.status === 'done' || task.status === 'cancelled' || task.status === 'failed') {
+    throw new Error(`任务已终态 (${task.status})，无法 complete`)
+  }
+
+  // worker 仅能 complete 自己领取的任务
+  if (opts?.sessionId && task.assigneeSessionId && task.assigneeSessionId !== opts.sessionId) {
+    throw new Error(
+      `无权 complete 任务 ${taskId}（assignee=${task.assigneeSessionId}，当前会话=${opts.sessionId}）`
+    )
+  }
+
+  if (taskNeedsJudge(task)) {
+    const criteria = buildAcceptanceText(task)
+    const judge = await judgeGoal({
+      title: task.title,
+      body: task.body,
+      acceptanceCriteria: criteria,
+      summary,
+      modelId: task.judgeModel,
+      channelId: task.channelId,
+    })
+    try {
+      kanbanDbService.mergeTaskMetadata(taskId, { judgeResult: judge })
+    } catch (err) {
+      console.warn('[看板工具] 写入 judgeResult 失败:', err)
+    }
+
+    if (judge.verdict !== 'done' && !judge.failOpen) {
+      // 不改 status，让 worker 补证据重试
+      return jsonResult({
+        ok: false,
+        error: true,
+        taskId,
+        status: task.status,
+        judge,
+        message: `Goal completion rejected by judge: ${judge.reason}. Provide stronger evidence in summary and call kanban_complete again, or kanban_block if stuck.`,
+      })
+    }
+  }
+
+  kanbanDbService.updateTaskStatus(taskId, {
+    status: 'done',
+    resultSummary: summary,
+  })
+  broadcastKanbanChanged()
+  return jsonResult({
+    ok: true,
+    taskId,
+    status: 'done',
+    resultSummary: summary.slice(0, 500),
+  })
+}
+
 // ===== 构建工具表 =====
 
 /**
@@ -421,6 +542,16 @@ export async function handleComment(
  * 返回 `Record<toolName, KanbanAgentTool>`，供后续 orchestrator 注入 MCP 时遍历包装为
  * `sdk.tool(...)` 调用（参考 automation-agent-tools.ts 的 injectAutomationMcpServer 实现）。
  */
+/** worker 白名单：禁止建板/加任务，防止递归 */
+export const KANBAN_WORKER_TOOL_NAMES = [
+  'kanban_complete',
+  'kanban_block',
+  'kanban_comment',
+  'kanban_list_tasks',
+] as const
+
+export type KanbanToolMode = 'full' | 'worker'
+
 export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
   return {
     kanban_create_board: {
@@ -440,7 +571,7 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
     kanban_add_task: {
       name: 'kanban_add_task',
       description:
-        '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务。',
+        '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务 / goalMode。',
       inputSchema: kanbanAddTaskSchema,
       handler: handleAddTask,
     },
@@ -450,6 +581,22 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
         '列出看板下的任务，支持按状态过滤（pending/ready/running/blocked/review/done/failed/cancelled）。',
       inputSchema: kanbanListTasksSchema,
       handler: handleListTasks,
+    },
+    kanban_complete: {
+      name: 'kanban_complete',
+      description:
+        '工人完成任务并提交摘要。goalMode 任务会经 aux judge 验收：不通过则拒绝 done，请补证据后重试或 kanban_block。',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          taskId: { type: 'string', description: '任务 ID' },
+          summary: { type: 'string', description: '完成摘要与验收证据（推荐）' },
+          result: { type: 'string', description: '同 summary 别名' },
+          evidence: { type: 'string', description: '补充证据' },
+        },
+        required: ['taskId'],
+      },
+      handler: (args) => handleComplete(args),
     },
     kanban_block: {
       name: 'kanban_block',
@@ -475,8 +622,13 @@ export interface KanbanAgentToolContext {
   sessionId: string
   /** 当前会话渠道 ID（kanban_add_task 未显式传 channelId 时作为兜底） */
   channelId?: string
-  /** 触发来源（防递归：'kanban' 时不应注入，由 orchestrator 提前判断） */
+  /** 触发来源 */
   triggeredBy?: 'user' | 'automation' | 'delegation' | 'kanban'
+  /**
+   * full：主编排（含 create_board / add_task）
+   * worker：白名单 complete/block/comment/list_tasks，防递归建板
+   */
+  toolMode?: KanbanToolMode
   /**
    * 当前会话工作目录（worker 子会话项目根）
    *
@@ -495,14 +647,8 @@ export interface KanbanAgentToolContext {
 /**
  * 注入看板 MCP 工具集到 SDK
  *
- * 参考 injectAutomationMcpServer 模式：用 zod 定义 schema + sdk.tool() 注册 + sdk.createSdkMcpServer 打包。
- * 复用 buildKanbanAgentTools() 的 handler（调 kanbanDbService CRUD）。
- *
- * 注入条件（由调用方 orchestrator 判断）：
- * - 会话 mode === 'general'（TA 模式禁用）
- * - triggeredBy !== 'kanban'（防工人子会话递归建板）
- *
- * kanban_add_task 的 channelId 若未传，用 ctx.channelId 兜底（v1 任务继承当前会话渠道）。
+ * toolMode=full：主编排全量工具
+ * toolMode=worker：仅 complete/block/comment/list_tasks（goal 闸门 + 阻塞，不可建板）
  */
 export async function injectKanbanMcpServer(
   sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
@@ -510,6 +656,7 @@ export async function injectKanbanMcpServer(
   ctx: KanbanAgentToolContext
 ): Promise<void> {
   const { z } = await import('zod')
+  const toolMode: KanbanToolMode = ctx.toolMode ?? 'full'
 
   const createBoardSchema = {
     rootGoal: z.string().describe('用户原始目标（看板根任务标题）'),
@@ -554,6 +701,16 @@ export async function injectKanbanMcpServer(
     modelId: z.string().optional().describe('指定模型 ID（否则由 roleId 解析）'),
     priority: z.number().optional().describe('优先级（数字越大越优先；默认 0）'),
     parentTaskId: z.string().optional().describe('父任务 ID（构建分解树）'),
+    goalMode: z
+      .boolean()
+      .optional()
+      .describe('是否 goal 模式：complete 前 aux judge 验收；默认 false'),
+    acceptanceCriteria: z
+      .string()
+      .optional()
+      .describe('验收标准（goalMode 推荐填写；空则用 title+body）'),
+    goalMaxTurns: z.number().optional().describe('goal 最大轮次（默认 20，阶段 B）'),
+    judgeModel: z.string().optional().describe('验收模型 ID（便宜模型）'),
   }
 
   const listTasksSchema = {
@@ -562,6 +719,13 @@ export async function injectKanbanMcpServer(
       .enum(['pending', 'ready', 'running', 'blocked', 'review', 'done', 'failed', 'cancelled'])
       .optional()
       .describe('按状态过滤（不传则列出全部）'),
+  }
+
+  const completeSchema = {
+    taskId: z.string().describe('要完成的任务 ID'),
+    summary: z.string().optional().describe('完成摘要与验收证据（推荐）'),
+    result: z.string().optional().describe('同 summary'),
+    evidence: z.string().optional().describe('补充证据'),
   }
 
   const blockSchema = {
@@ -574,19 +738,16 @@ export async function injectKanbanMcpServer(
     comment: z.string().describe('注释内容（写入任务 metadata.blackboard）'),
   }
 
-  const server = sdk.createSdkMcpServer({
-    name: 'kanban',
-    version: '1.0.0',
-    tools: [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tools: any[] = []
+
+  if (toolMode === 'full') {
+    tools.push(
       sdk.tool(
         'kanban_create_board',
         '创建 TAgent 看板（长任务多 Agent 编排容器）。传入 rootGoal，调度器会自动 tick 派工。支持 general / TA 双模式。',
         createBoardSchema,
         async (args: Record<string, unknown>) => {
-          // parentSessionId 未传时用当前会话 ID 兜底，确保建板后自动绑定到当前会话
-          // 否则团队 Tab 拿不到 boardId，无法显示任务进度
-          // D+1: cwd 未传时用 ctx.agentCwd 兜底，让 kanban_add_task 能注入项目根到 body
-          // worker skills: workspaceId 未传时用 ctx.workspaceId 兜底
           const enriched = {
             ...args,
             parentSessionId: args.parentSessionId ?? ctx.sessionId,
@@ -605,10 +766,9 @@ export async function injectKanbanMcpServer(
       ),
       sdk.tool(
         'kanban_add_task',
-        '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务。',
+        '向看板追加任务。可指定角色/模型/优先级/父任务/goalMode/acceptanceCriteria。',
         addTaskSchema,
         async (args: Record<string, unknown>) => {
-          // D+1: 透传 ctx.agentCwd 作为 __projectCwd 兜底（board.cwd 优先）
           const enriched = {
             ...args,
             channelId: args.channelId ?? ctx.channelId,
@@ -616,29 +776,47 @@ export async function injectKanbanMcpServer(
           }
           return handleAddTask(enriched)
         }
-      ),
-      sdk.tool(
-        'kanban_list_tasks',
-        '列出看板下的任务，支持按状态过滤（pending/ready/running/blocked/review/done/failed/cancelled）。',
-        listTasksSchema,
-        async (args: Record<string, unknown>) => handleListTasks(args),
-        { annotations: { readOnlyHint: true } }
-      ),
-      sdk.tool(
-        'kanban_block',
-        '工人标记当前任务阻塞（缺信息 / 等待外部输入 / 权限不足）。阻塞后会触发 IM 通知，等待用户回复 unblock。',
-        blockSchema,
-        async (args: Record<string, unknown>) => handleBlock(args)
-      ),
-      sdk.tool(
-        'kanban_comment',
-        '向任务的 blackboard 写入注释（任意方可调用，用于跨任务共享上下文 / 备注）。',
-        commentSchema,
-        async (args: Record<string, unknown>) => handleComment(args)
-      ),
-    ],
+      )
+    )
+  }
+
+  // full + worker 共有
+  tools.push(
+    sdk.tool(
+      'kanban_list_tasks',
+      '列出看板下的任务，支持按状态过滤（pending/ready/running/blocked/review/done/failed/cancelled）。',
+      listTasksSchema,
+      async (args: Record<string, unknown>) => handleListTasks(args),
+      { annotations: { readOnlyHint: true } }
+    ),
+    sdk.tool(
+      'kanban_complete',
+      '完成任务并提交摘要。goalMode 任务会经 aux judge 验收：不通过则拒绝 done，请补证据后重试或 kanban_block。',
+      completeSchema,
+      async (args: Record<string, unknown>) =>
+        handleComplete(args, { sessionId: ctx.sessionId })
+    ),
+    sdk.tool(
+      'kanban_block',
+      '工人标记当前任务阻塞（缺信息 / 等待外部输入 / 权限不足）。阻塞后会触发 IM 通知，等待用户回复 unblock。',
+      blockSchema,
+      async (args: Record<string, unknown>) => handleBlock(args)
+    ),
+    sdk.tool(
+      'kanban_comment',
+      '向任务的 blackboard 写入注释（任意方可调用，用于跨任务共享上下文 / 备注）。',
+      commentSchema,
+      async (args: Record<string, unknown>) =>
+        handleComment(args, toolMode === 'worker' ? 'worker' : 'main')
+    )
+  )
+
+  const server = sdk.createSdkMcpServer({
+    name: 'kanban',
+    version: '1.1.0',
+    tools,
   })
 
   mcpServers.kanban = server as unknown as Record<string, unknown>
-  console.log('[Agent 编排] 已注入看板工具集 (kanban)')
+  console.log(`[Agent 编排] 已注入看板工具集 (kanban, mode=${toolMode})`)
 }

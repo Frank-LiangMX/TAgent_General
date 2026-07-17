@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { injectProjectRootHeader } from './kanban-agent-tools'
+import { injectProjectRootHeader, KANBAN_WORKER_TOOL_NAMES } from './kanban-agent-tools'
 
 describe('injectProjectRootHeader', () => {
   test('空 body 注入完整 header', () => {
@@ -37,5 +37,14 @@ describe('injectProjectRootHeader', () => {
   test('路径含中文正常处理', () => {
     const result = injectProjectRootHeader('body', 'F:/我的项目')
     expect(result).toContain('项目根目录: F:/我的项目')
+  })
+})
+
+describe('KANBAN_WORKER_TOOL_NAMES', () => {
+  test('白名单含 complete 且不含 create_board / add_task', () => {
+    expect(KANBAN_WORKER_TOOL_NAMES).toContain('kanban_complete')
+    expect(KANBAN_WORKER_TOOL_NAMES).toContain('kanban_block')
+    expect([...KANBAN_WORKER_TOOL_NAMES]).not.toContain('kanban_create_board')
+    expect([...KANBAN_WORKER_TOOL_NAMES]).not.toContain('kanban_add_task')
   })
 })

@@ -317,6 +317,38 @@ describe('KanbanDbService', () => {
       expect(docTask.roleId).toBe('doc-writer')
     })
 
+    test('createTask 支持 goalMode / acceptanceCriteria 并 round-trip', () => {
+      const board = db.createBoard({ rootGoal: 'G', parentSessionId: 's1' })
+      const task = db.createTask({
+        boardId: board.id,
+        title: '修登录',
+        channelId: 'c1',
+        goalMode: true,
+        acceptanceCriteria: '相关测试通过',
+        goalMaxTurns: 12,
+        judgeModel: 'glm-flash',
+      })
+      expect(task.goalMode).toBe(true)
+      expect(task.acceptanceCriteria).toBe('相关测试通过')
+      expect(task.goalMaxTurns).toBe(12)
+      expect(task.judgeModel).toBe('glm-flash')
+      expect(task.metadata?.goalMode).toBe(true)
+
+      const reloaded = db.getTask(task.id)
+      expect(reloaded?.goalMode).toBe(true)
+      expect(reloaded?.acceptanceCriteria).toBe('相关测试通过')
+      expect(reloaded?.goalMaxTurns).toBe(12)
+
+      db.mergeTaskMetadata(task.id, {
+        judgeResult: {
+          verdict: 'continue',
+          reason: 'no tests',
+          judgedAt: Date.now(),
+        },
+      })
+      expect(db.getTask(task.id)?.metadata?.judgeResult?.verdict).toBe('continue')
+    })
+
     test('updateTaskStatus 维护 startedAt / finishedAt 时间戳', () => {
       const board = db.createBoard({ rootGoal: 'G', parentSessionId: 's1' })
       const task = db.createTask({ boardId: board.id, title: 'T', channelId: 'c1' })

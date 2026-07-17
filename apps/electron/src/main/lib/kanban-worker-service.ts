@@ -112,6 +112,10 @@ export interface KanbanWorkerTask {
   workspaceId?: string
   /** 权限模式覆盖（默认 bypassPermissions，与 automation 一致；role.permissionMode 优先） */
   permissionMode?: 'auto' | 'bypassPermissions'
+  /** goal 模式：complete 闸门 + 验收标准提示 */
+  goalMode?: boolean
+  /** 验收标准 */
+  acceptanceCriteria?: string
 }
 
 /** 看板上下文契约 */
@@ -264,10 +268,24 @@ function buildKanbanWorkerContext(
 
   lines.push(
     `这是看板「${board.id}」任务「${task.title}」(${task.id}) 的自动执行。`,
-    '本任务由看板调度器派工，请直接执行任务内容,不要建议用户再创建看板或定时任务。',
-    '完成后请在回复中给出完整的结论摘要（无长度限制，系统会自动提取最后一条 assistant 回复作为任务结果存储）。',
-    '不要尝试调用 kanban_comment / kanban_complete 等工具，工人子会话不注入看板工具集（防递归）。'
+    '本任务由看板调度器派工，请直接执行任务内容，不要建议用户再创建看板或定时任务。',
+    '你已注入受限看板工具：kanban_complete / kanban_block / kanban_comment / kanban_list_tasks。',
+    '禁止创建看板或追加任务（无 kanban_create_board / kanban_add_task）。',
+    `完成后必须调用 kanban_complete(taskId="${task.id}", summary="...充分证据...") 结案。`,
+    '若缺信息或无法继续，调用 kanban_block 说明原因。'
   )
+
+  if (task.goalMode === true) {
+    const criteria =
+      task.acceptanceCriteria?.trim() ||
+      `${task.title}\n${task.body ?? ''}`.trim()
+    lines.push(
+      '',
+      '【Goal 模式】本任务启用验收闸门。',
+      'kanban_complete 前会用辅助模型对照验收标准裁判；证据不足会被拒绝，请在 summary 中写明验证步骤与结果。',
+      `验收标准：\n${criteria.slice(0, 2000)}`
+    )
+  }
 
   // 已安装 skills：orchestrator 通过 workspace plugin 挂载，引导工人主动复用
   if (workspaceId) {

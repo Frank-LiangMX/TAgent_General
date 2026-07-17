@@ -76,8 +76,33 @@ export interface KanbanTask {
   resultSummary?: string
   /** 阻塞原因（status === 'blocked' 时） */
   blockedReason?: string
+  /**
+   * 是否启用 goal 模式（worker 多轮 + complete 闸门）
+   * 持久化在 metadata.goalMode，读取时提升到顶层便于调用方使用
+   */
+  goalMode?: boolean
+  /** 验收标准（空则 goal 任务用 title+body） */
+  acceptanceCriteria?: string
+  /** goal 最大轮次（默认 20；阶段 B 使用） */
+  goalMaxTurns?: number
+  /** 验收用便宜模型 ID（可选） */
+  judgeModel?: string
   /** blackboard 共享上下文（Phase D） */
   metadata?: KanbanTaskMetadata
+}
+
+/** goal complete 闸门 / 回合 judge 的裁决结果 */
+export type KanbanJudgeVerdict = 'done' | 'continue' | 'skipped'
+
+export interface KanbanJudgeResult {
+  verdict: KanbanJudgeVerdict
+  reason: string
+  /** 是否因 judge 不可达而 fail-open */
+  failOpen?: boolean
+  /** 裁决时间 */
+  judgedAt?: number
+  /** 使用的模型（若有） */
+  modelId?: string
 }
 
 /**
@@ -110,6 +135,13 @@ export interface KanbanTaskMetadata extends Record<string, unknown> {
    * 任务终态后不再追加新条目。
    */
   progressLogs?: ProgressLogEntry[]
+  /** goal 模式开关（与 KanbanTask.goalMode 同步） */
+  goalMode?: boolean
+  acceptanceCriteria?: string
+  goalMaxTurns?: number
+  judgeModel?: string
+  /** 最近一次 judge 结果 */
+  judgeResult?: KanbanJudgeResult
 }
 
 /** 单条 blackboard 评论（跨任务交接通道） */
@@ -279,6 +311,14 @@ export interface CreateKanbanTaskInput {
   modelId?: string
   /** 优先级（默认 0） */
   priority?: number
+  /** 是否 goal 模式 */
+  goalMode?: boolean
+  /** 验收标准 */
+  acceptanceCriteria?: string
+  /** goal 最大轮次 */
+  goalMaxTurns?: number
+  /** 验收模型 */
+  judgeModel?: string
   /** blackboard 元数据 */
   metadata?: Record<string, unknown>
 }
