@@ -648,6 +648,15 @@ async function bootstrap(): Promise<void> {
       // 旧机制：Reflect 每日 03:00 调度 + 启动时检查
       reflectService.initialize()
     }
+
+    // Skill Curator：启动后延迟后台扫描昨日会话工具序列（静默固化，不打扰 UI）
+    try {
+      const { scheduleSkillCurationScan } =
+        require('./lib/skill-curation-runner') as typeof import('./lib/skill-curation-runner')
+      scheduleSkillCurationScan(12_000)
+    } catch (err) {
+      console.warn('[启动] Skill 固化扫描调度失败:', err)
+    }
   })
 
   // 启动空闲记忆整理调度器（flag 开启时，异步启动，首次扫描延迟 60s）

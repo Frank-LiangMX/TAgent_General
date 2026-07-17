@@ -5,7 +5,15 @@
  * 所有用户配置存储在 ~/.tagent/ 目录下。
  */
 
-import { mkdirSync, existsSync, cpSync, rmSync, readdirSync, readFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  existsSync,
+  cpSync,
+  rmSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join, basename } from 'node:path'
 
@@ -392,6 +400,88 @@ export function getInactiveSkillsDir(slug: string): string {
   }
 
   return dir
+}
+
+/**
+ * 全局 Skill 插件根目录（SDK local plugin）
+ *
+ * 布局：
+ *   ~/.tagent/global-skills-plugin/
+ *     .claude-plugin/plugin.json
+ *     skills/{slug}/SKILL.md
+ *
+ * 自动固化的 skill 默认写入此处，跨工作区复用。
+ */
+export function getGlobalSkillsPluginPath(): string {
+  const dir = join(getConfigDir(), 'global-skills-plugin')
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+  const manifestDir = join(dir, '.claude-plugin')
+  if (!existsSync(manifestDir)) {
+    mkdirSync(manifestDir, { recursive: true })
+  }
+  const manifestPath = join(manifestDir, 'plugin.json')
+  if (!existsSync(manifestPath)) {
+    writeFileSync(
+      manifestPath,
+      JSON.stringify(
+        {
+          name: 'tagent-global-skills',
+          version: '1.0.0',
+          description: 'TAgent 全局共享 Skills（含 agent 静默固化结果）',
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    )
+  }
+  return dir
+}
+
+/**
+ * 全局活跃 Skills 目录：~/.tagent/global-skills-plugin/skills/
+ */
+export function getGlobalSkillsDir(): string {
+  const dir = join(getGlobalSkillsPluginPath(), 'skills')
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+  return dir
+}
+
+/**
+ * 全局归档 Skills 目录（不进入 SDK 扫描）：~/.tagent/global-skills-plugin/skills-archived/
+ */
+export function getGlobalSkillsArchivedDir(): string {
+  const dir = join(getGlobalSkillsPluginPath(), 'skills-archived')
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+  return dir
+}
+
+/**
+ * Skill 使用埋点文件（按作用域）
+ * - 全局：~/.tagent/global-skills-plugin/skills/.usage.json
+ * - 工作区：~/.tagent/agent-workspaces/{slug}/skills/.usage.json
+ */
+export function getSkillUsagePath(scope: 'global' | 'workspace', workspaceSlug?: string): string {
+  if (scope === 'global') {
+    return join(getGlobalSkillsDir(), '.usage.json')
+  }
+  if (!workspaceSlug) {
+    throw new Error('workspace scope 需要 workspaceSlug')
+  }
+  return join(getWorkspaceSkillsDir(workspaceSlug), '.usage.json')
+}
+
+/**
+ * Skill 固化候选列表：~/.tagent/skill-suggestions.json
+ */
+export function getSkillSuggestionsPath(): string {
+  return join(getConfigDir(), 'skill-suggestions.json')
 }
 
 /**

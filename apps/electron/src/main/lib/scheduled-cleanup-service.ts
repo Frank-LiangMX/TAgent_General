@@ -197,6 +197,19 @@ class ScheduledCleanupService {
         `[ScheduledCleanupService] ${mode} 模式 Cleanup 完成: L4归档=${result.l4Archived}, L3压缩=${result.l3Compressed}`
       )
 
+      // Skill Curator：仅 general 模式接力跑一轮（全局 + 全工作区，避免 ta 重复）
+      if (mode === 'general') {
+        try {
+          const { runSkillCurator } = await import('./skill-curator-service')
+          const curator = runSkillCurator()
+          console.log(
+            `[ScheduledCleanupService] SkillCurator 完成: 扫描=${curator.scanned}, 转换=${curator.transitions.length}`
+          )
+        } catch (curatorErr) {
+          console.error('[ScheduledCleanupService] SkillCurator 失败:', curatorErr)
+        }
+      }
+
       // 更新状态
       const state = this.states.get(mode) || { lastRunTime: null }
       state.lastRunTime = Date.now()

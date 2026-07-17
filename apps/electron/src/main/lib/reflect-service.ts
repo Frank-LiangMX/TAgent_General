@@ -349,6 +349,21 @@ class ReflectService {
       state.lastInsights = insightsToWrite
       this.states.set(mode, state)
       this.saveState(mode)
+
+      // Skill Curator：general 模式 Reflect 后异步扫描重复工作流并静默固化
+      // （不阻塞 Reflect 返回；ta 模式跳过避免双跑）
+      if (mode === 'general') {
+        setTimeout(() => {
+          void import('./skill-curation-runner')
+            .then(({ runSkillCurationScan }) => {
+              const scan = runSkillCurationScan({ autoCreate: true })
+              console.log(
+                `[ReflectService] Skill 固化扫描: 模式=${scan.patterns}, 新建=${scan.skillsCreated.length}`
+              )
+            })
+            .catch((err) => console.error('[ReflectService] Skill 固化扫描失败:', err))
+        }, 0)
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       const errorCode =

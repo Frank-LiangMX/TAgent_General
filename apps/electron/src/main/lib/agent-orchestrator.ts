@@ -112,7 +112,9 @@ import {
   getSdkConfigDir,
   getWorkspaceFilesDir,
   getConfigDirName,
+  getGlobalSkillsPluginPath,
 } from './config-paths'
+import { injectSkillManageMcpServer } from './skill-manage-tool'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 
@@ -1917,6 +1919,21 @@ export class AgentOrchestrator {
       }
       markPhase('injectKanban')
 
+      // 注入 skill_manage（Skill Curator 自进化：静默创建/归档 skill）
+      // 防递归：kanban worker 不注入，避免工人子会话写全局 skill 膨胀
+      if (triggeredBy !== 'kanban') {
+        try {
+          await injectSkillManageMcpServer(sdk, mcpServers, {
+            sessionId,
+            workspaceSlug,
+            triggeredBy,
+          })
+        } catch (err) {
+          console.error('[Agent 编排] 注入 skill_manage 失败:', err)
+        }
+      }
+      markPhase('injectSkillManage')
+
       // 注入 WPS CLI 工具集
       try {
         await injectWpsCliMcpServer(sdk, mcpServers, sessionId)
@@ -2445,9 +2462,19 @@ export class AgentOrchestrator {
         // 回退后 resume：从指定消息处继续（SDK 在同一 JSONL 内创建分支）
         ...(rewindResumeAt && { resumeSessionAt: rewindResumeAt }),
         ...(Object.keys(mcpServers).length > 0 && { mcpServers }),
-        ...(workspaceSlug && {
-          plugins: [{ type: 'local' as const, path: getAgentWorkspacePath(workspaceSlug) }],
-        }),
+        // 工作区 plugin + 全局 skills plugin（自动固化 skill 默认在全局）
+        ...(() => {
+          const plugins: Array<{ type: 'local'; path: string }> = []
+          if (workspaceSlug) {
+            plugins.push({ type: 'local' as const, path: getAgentWorkspacePath(workspaceSlug) })
+          }
+          try {
+            plugins.push({ type: 'local' as const, path: getGlobalSkillsPluginPath() })
+          } catch (err) {
+            console.warn('[Agent 编排] 全局 skills plugin 路径失败:', err)
+          }
+          return plugins.length > 0 ? { plugins } : {}
+        })(),
         // PostToolUse 钩子（按全局 settings.hooks.autoCheck 决定是否注入，默认开启）
         // 非 TS 项目工作区由 hook 内部 resolveCheckCommand 自动跳过，无需用户配置
         // 语言级精细配置（启用/超时）通过 buildPostToolUseHooks 传入
