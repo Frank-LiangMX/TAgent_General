@@ -1,15 +1,18 @@
 # Hermes-Agent 机制借鉴落地规划
 
-> **状态**：Draft v1.0 — 待逐条评审
-> **日期**：2026-07-03
-> **背景**：TAgent v1.4.0 已合入看板多 Agent 协作 + 上游 v0.13.4 对齐主线。Hermes-Agent（Nous Research）最近大更新中有多项机制值得借鉴。本文为评审与落地规划文档。
-> **对比基准**：`F:/hermes-agent` 0.18.0（tag v2026.7.1 / v2026.6.19），TAgent v1.4.0
-> **参考来源**：hermes `AGENTS.md` + `agent/curator.py` + `agent/learning_graph.py` + `agent/context_engine.py` + `tools/delegate_tool.py` + `cron/scheduler.py` + `tools/kanban_tools.py` + `gateway/kanban_watchers.py` + `hermes_state.py` + `agent/moa_loop.py` + `agent/verification_evidence.py`
+> **状态**：Draft v1.1 — §3.6 已按 hermes 0.18.x / main 重校准（2026-07-18）
+> **日期**：2026-07-03（初稿）/ 2026-07-18（§3.6 重校准）
+> **背景**：TAgent v1.4.0 已合入看板多 Agent 协作 + 上游 v0.13.4 对齐主线。Hermes-Agent（Nous Research）有多项机制值得借鉴。本文为评审与落地规划文档。
+> **对比基准（初稿）**：hermes 0.18.0（tag v2026.7.1），TAgent v1.4.0
+> **对比基准（§3.6 重校准）**：上游 [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) `main` + tag **v0.18.0 / v0.18.1 / v0.18.2**（2026-07-01～07-08）；文档 `website/docs/user-guide/features/kanban.md`；源码 `tools/kanban_tools.py`、`hermes_cli/goals.py`
+> **参考来源**：hermes `AGENTS.md` + kanban 文档 + `tools/kanban_tools.py` + `hermes_cli/goals.py` +（初稿）`agent/curator.py` / `context_engine` / `delegate_tool` 等
 > **关联**：
 > - 调研笔记：`~/.tagent/agent-workspaces/tagent-general/workspace-files/.context/note.md`（2026-07-03 条目）
 > - 上游借鉴清单：[`2026-06-24-proma-upstream-borrow-list.md`](2026-06-24-proma-upstream-borrow-list.md)
 > - 看板 v1 产品设计：[`2026-06-30-kanban-v1-product-design.md`](2026-06-30-kanban-v1-product-design.md)
 > - Automation 设计：[`2026-06-24-automation-design.md`](2026-06-24-automation-design.md)
+>
+> **2026-07-18 范围结论（看板）**：对 TAgent 有用的 hermes 增量主要是 **worker 的 goal_mode + judge**；0.18.0 之后 gateway/MCP/WhatsApp/secrets 等运维向更新与看板验收无关，不跟。
 
 ---
 
@@ -126,7 +129,7 @@ hermes 的核心优势在四个方向：
 | 安全意识 | Cron Injection 防护、Subagent Approval 防死锁 | 缺失 |
 | 架构宪章 | Prompt Cache 不可侵犯、Footprint Ladder | 缺失 |
 | 自进化深度 | Skill Curator 生命周期、Memory Graph | 静态 skill |
-| 多模型决策 | MoA、goal_mode judge gate | 无 |
+| 多模型决策 / 任务验收 | MoA；看板 **goal_mode + worker judge**（0.18 定型） | 无 goal loop；任务完成靠 worker 自报 done |
 
 ---
 
@@ -861,147 +864,176 @@ TAgent 用 Claude Agent SDK 的 plugin 机制（`agent-orchestrator.ts:2222`）�
 
 ---
 
-#### 3.6 看板 goal_mode judge gate
+#### 3.6 看板 goal_mode + worker judge（2026-07-18 重校准）
 
-**来源**：hermes 看板 `goal_mode judge gate`（辅助模型裁判）
+**来源**：hermes Kanban `goal_mode` + 辅助模型 `judge_goal`（`/goal` 同源 Ralph 式引擎）  
+**上游现状（2026-07-18）**：行为在 **v0.18.0 Judgment Release** 定型；0.18.1/0.18.2 与其后 main 增量主要是 gateway/MCP/渠道运维，**与 goal/judge 关系很小**。对 TAgent 有用的就是 **worker 的 goal + judge**，其余不跟。
 
-**问题**：TAgent 看板任务完成时仅靠 worker 自报 `done`，没有客观验收。worker 可能误报完成（如测试没跑就说 done）。`requireSummary` 是主会话主观汇总，不是客观验收。
+**问题（TAgent 现状）**：
 
-**hermes 做法**：
-1. 任务状态 running → done 前，加一步辅助模型 judge gate
-2. 辅助模型（便宜模型）读 task 描述 + worker 输出 + 验收标准
-3. 验收通过才标 done，否则标 blocked 等人工干预
+- 看板任务完成路径是 worker 会话 `onComplete` → `markTaskDone` → **直接 `done`**，没有客观验收。
+- worker **整包不注入** kanban 工具（`triggeredBy === 'kanban'` 防递归），无法走 `kanban_complete`。
+- 状态机已有 `review`，主路径几乎未用。
+- `requireSummary` 是 **board 全部终态后** 主会话主观汇总，**不是**任务级验收。
 
-**TAgent 落地方案**：
+**hermes 现行做法（对齐文档 + 源码，勿只记「complete 前拦一下」）**：
 
-在 `kanban-dispatcher.ts` 任务状态转换前加验收步骤：
+| 层 | 行为 |
+|----|------|
+| **默认任务** | worker 一枪：干活 → `kanban_complete` / `kanban_block` → 退出 |
+| **`goal_mode=True` / `--goal`** | **goal loop**：同 session 多轮；**每轮后** aux judge 用卡片 **title+body** 当验收标准；未达标且仍有 **`goal_max_turns`（默认 20）** 则继续；预算尽 → **block 给人**（非静默成功） |
+| **`kanban_complete` 闸门** | 第二道保险：`goal_mode` 且 judge 可达时，complete 前再 judge；`verdict != done` → **tool_error**，任务不终态 |
+| **fail-open** | judge 不可达时 **先探测再强制**（`_goal_judge_available`）；不可达则不楔死 worker |
+| **拒绝后** | tool_error 提示：补证据重试 / 建 continuation children / 或 block |
+| **验收文本** | hermes 默认 **title + body**，无独立 criteria 字段 |
+| **`judge_goal` API** | 现返回 **4 元组** `(verdict, reason, parse_failed, wait_directive)`；verdict ∈ `done \| continue \| wait \| skipped` |
 
-```typescript
-async function judgeTaskCompletion(task: KanbanTask, workerOutput: string): Promise<JudgeResult> {
-  const judgeModel = task.judgeModel ?? 'glm-flash' // 便宜模型
-  const prompt = buildJudgePrompt(task.description, task.acceptanceCriteria, workerOutput)
-  const result = await runAuxModel(judgeModel, prompt)
-  return parseJudgeResult(result)
-}
+**已知上游坑（实现时勿抄）**：
 
-// running → done 前调用
-if (task.status === 'running' && workerDone) {
-  const judge = await judgeTaskCompletion(task, workerOutput)
-  if (judge.passed) {
-    task.status = 'done'
-  } else {
-    task.status = 'blocked'
-    task.metadata.judgeFailure = judge.reason
-  }
-}
+- complete 闸门处曾按 **3 元组** 解包 4 返回值 → `ValueError` 被 fail-open 吃掉 → gate **实际上拒不了**（issues [#59762](https://github.com/NousResearch/hermes-agent/issues/59762)、[#61490](https://github.com/NousResearch/hermes-agent/issues/61490)）。
+- TAgent 的 `judgeGoal()` 契约必须固定清晰（建议 `{ verdict, reason }` 或完整 4 字段 struct），**禁止模糊解包**。
+
+**与 hermes 0.18.x 之后更新的关系**：
+
+| 跟 | 不跟 |
+|----|------|
+| goal loop、complete 闸门、fail-open、worker 工具协议 | gateway multiplex、MCP 生命周期、WhatsApp、secrets、cron 运维、MoA、桌面 Projects、scale-to-zero |
+| 可选：完成时带 verification 证据字符串（提高 judge 质量） | multi-board / tenant / auto_decompose 等 hermes 产品形态 |
+
+**TAgent 落地方案（更新后）**：
+
+```text
+默认任务：
+  worker 干活 → kanban_complete →（无 goalMode）→ done
+
+goalMode 任务：
+  同 session 多轮
+    → 每轮/阶段结束 judgeGoal(criteria, output)
+    → continue：注入续跑提示
+    → done：允许结案
+    → turns 耗尽：blocked + 原因给人
+  worker 调 kanban_complete
+    → 再过一道 complete 闸门 judge
+    → pass → done；fail → tool_error，状态不终态
+  judge 不可达 → fail-open
 ```
 
-任务结构新增字段：
-- `acceptanceCriteria?: string` — 验收标准（创建任务时填写）
-- `judgeModel?: string` — 验收模型（默认便宜模型）
-- `metadata.judgeResult?: JudgeResult` — 最近一次验收结果
+**任务字段（建议）**：
 
-与 `requireSummary` 互补：
-- `goal_mode` 是 worker → done 前的客观验收
-- `requireSummary` 是 board 全部 done 后的主观汇总
+| 字段 | 说明 |
+|------|------|
+| `goalMode?: boolean` | 是否进入 goal loop + complete 闸门 |
+| `acceptanceCriteria?: string` | **独立验收标准**（TAgent 改进；空则 fallback `title + body`） |
+| `goalMaxTurns?: number` | 默认 20，耗尽 → blocked |
+| `judgeModel?: string` | 便宜 aux 模型；缺省走设置 |
+| `metadata.judgeResult?` | 最近一次裁决 |
+| `metadata.failureCount?` | complete/judge 连续失败计数（二期） |
 
-**成本**：中等（2-3 天） | **风险**：中（需处理验收失败的回流）
+**与 `requireSummary` 互补（不变）**：
 
-**BDD 验收标准**：
+- **goal + judge**：任务级客观验收  
+- **requireSummary**：board 级主观汇总  
 
-```gherkin
-Feature: 看板 goal_mode judge gate
-
-  Scenario: 验收通过标 done
-    Given 一个 worker 报告完成的任务
-    And acceptanceCriteria 为"输出包含测试结果"
-    When worker 输出包含"测试通过"
-    Then judge gate 验收通过
-    And 任务状态转为 done
-
-  Scenario: 验收失败标 blocked
-    Given 一个 worker 报告完成的任务
-    And acceptanceCriteria 为"输出包含测试结果"
-    When worker 输出不含测试结果
-    Then judge gate 验收失败
-    And 任务状态转为 blocked
-    And metadata.judgeFailure 记录原因
-    And 用户收到通知
-
-  Scenario: 无 acceptanceCriteria 时跳过验收
-    Given 一个未填 acceptanceCriteria 的任务
-    When worker 报告完成
-    Then 跳过 judge gate
-    And 任务直接标 done
-
-  Scenario: 验收模型可配置
-    Given 任务配置 judgeModel="glm-flash"
-    When 验收触发
-    Then 使用 glm-flash 而非主模型
-    And 成本仅为便宜模型
-
-  Scenario: 与 requireSummary 互补
-    Given 一个 board 全部任务 done
-    And requireSummary=true
-    When board 完成时
-    Then 触发主会话汇总
-    And 汇总时各任务已有 judge gate 验收记录
-```
-
-**评审决策（2026-07-03 通过，完全对齐 hermes）**：
+**评审决策（2026-07-03 通过 + 2026-07-18 修订）**：
 
 | 决策点 | 选定方案 | 理由 |
 |--------|---------|------|
-| 对齐程度 | **完全对齐 hermes 完整版** | 看板系统刚落地无历史包袱，避免后期返工 |
-| judge gate 位置 | **`kanban_complete` 工具调用前拦截**（hermes 方式） | worker 自报完成时触发，dispatcher 不主动调 |
-| 失败后行为 | **返回 tool_error 让 worker 自主决策**（hermes 方式） | worker 可补证据重试或创建子任务接力，比直接 blocked 高效 |
-| fail-open | **judge 不可达时放行**（hermes 方式） | 避免 wedge worker |
-| 失败后 worker 选项 | (1) 补证据重试 / (2) 创建 continuation tasks / (3) kanban_block | hermes 方式，worker 自主 |
-| 新增 `review` 状态 | **保留**（TAgent 已有，比 hermes 多一层） | worker 自报完成 → review → judge 通过 → done |
-| `acceptance_criteria` 独立字段 | **是**（比 hermes 用 title+body 更清晰） | TAgent 改进 |
-| `kanban_heartbeat` | **新增** | 防长任务被误判 stale |
-| `kanban_unblock` | **新增** | worker 显式解阻塞 |
-| `kanban_link` | **不做** | parentTaskId 已隐式表达依赖 |
-| `failure_limit` auto-block | **对齐 hermes（默认 2 次）** | 防 thrashing |
-| `tenant` 命名空间 | **不做** | TAgent 用 boardId 硬隔离 |
-| `requireSummary` | **保留**（TAgent 独创） | 与 goal_mode 互补，不冲突 |
+| 对齐范围 | **只对齐 worker goal + judge** | 其余 hermes 0.18 后更新与 TAgent 无关 |
+| 完整形态 | **goal loop（每轮 judge）+ complete 闸门** | 仅 complete 闸门 ≠ hermes 现行 goal_mode |
+| complete 位置 | **`kanban_complete` 工具内**，非 dispatcher 轮询 | 与 hermes 一致；证据在调用参数 |
+| worker 工具 | **白名单**注入 complete / block / comment（+ 可选 heartbeat） | 当前整包禁用 kanban MCP 则无法 complete；**禁止** create_board / add_task |
+| 失败后 | **tool_error + 不终态**；worker 可重试 / 拆子任务 / block | 勿一失败立刻永久 blocked |
+| fail-open | **judge 不可达则放行** | 避免 kscc/无渠道楔死 |
+| 验收标准字段 | **独立 `acceptanceCriteria`** | 比 hermes 仅 title+body 清晰 |
+| `review` 状态 | **可选用**（类型已有） | 可选：complete 后先 review 再 judge→done；MVP 可跳过 |
+| heartbeat / failure_limit | **二期** | 现有 worker 超时 abort 可先顶；完整 goal 不依赖 |
+| `kanban_link` / tenant | **不做** | parentTaskId / boardId 已够 |
+| MoA / GoalContract / wait PID | **不做（v1）** | 进阶；非 TAgent 主路径 |
 
-**对齐后看板完整机制**：
+**TAgent 现状约束（落地必改）**：
 
-1. **状态机 9 状态**：pending → ready → running → review → done（多 review 比 hermes 多一层）
-2. **任务字段新增**：`goalMode` / `acceptanceCriteria` / `judgeModel` / `heartbeatAt` / `failureCount` / `judgeResult`
-3. **Agent 工具集 8 个**：kanban_create_board / kanban_add_task / kanban_list_tasks / **kanban_complete**（新增）/ kanban_block / **kanban_unblock**（新增）/ **kanban_heartbeat**（新增）/ kanban_comment
-4. **核心流程**：
-   - worker 调 kanban_complete → 检查 goalMode → 调 judge_goal → verdict="done" 标 done / verdict="continue" 返回 tool_error
-   - fail-open：judge 不可达直接放行
-   - worker 自主决策：补证据重试 / 创建子任务接力 / kanban_block
-5. **stale claim 回收**：dispatcher 扫描 heartbeatAt 超时（默认 5min）→ 标回 ready 重派
-6. **failure_limit auto-block**：连续失败 ≥2 次 → 自动 blocked + 通知用户
+1. `agent-orchestrator`：`triggeredBy === 'kanban'` 时改为 **白名单** 注入，而非整包跳过。  
+2. `kanban-worker-service`：prompt 要求 goal 任务结束必须 `kanban_complete`；会话自然结束时 **兜底策略** 需显式（建议：非 goal 仍 mark done；goal 未 complete → 日志 + blocked 或 fail-open 可配置，MVP 可兜底 done + warn）。  
+3. Judge 走 **独立 aux 调用**（可抄 `nudge-llm-review.ts`），**不改主会话 system prompt**（保 Prompt Cache）。
 
-**与 requireSummary 互补关系**：
-- `goal_mode` judge gate：任务级客观验收（worker 调 kanban_complete 时）
-- `requireSummary`：board 级主观汇总（board 全部 done 后）
-- 两者独立，互不冲突
+**落地分期**：
 
-**落地范围**：
+| 阶段 | 工期 | 内容 |
+|------|------|------|
+| **A — complete 闸门 + 白名单** | 2–3 天 | 字段 + `kanban-judge-service` + `kanban_complete` + worker 白名单 + 单测 |
+| **B — goal loop** | 2–3 天 | 同 session 多轮 / 每轮 judge / `goalMaxTurns` 耗尽 blocked + 续跑注入 |
+| **C — UI / 可选加固** | 1 天 | 建任务 goal 开关 + criteria、卡片徽章/judge 结果；可选 heartbeat、failure_limit |
 
-阶段一：judge gate 核心（2-3 天）
-1. `packages/shared/src/types/kanban.ts` KanbanTask 加 `goalMode` / `acceptanceCriteria` / `judgeModel` / `judgeResult` 字段
-2. 新建 `apps/electron/src/main/lib/kanban-judge-service.ts` — `judgeGoal()` 函数 + fail-open 逻辑
-3. `kanban-agent-tools.ts` 新增 `kanban_complete` 工具 + handler（调 judge gate）
-4. `kanban-worker-service.ts` worker 完成路径改走 `kanban_complete`（替代现有 markTaskDone 自报）
+**总成本**：约 **5–7 天**（完整 A+B+C）；仅验证假完成拦截可先做 A（~2–3 天），但产品叙事「goal_mode」应对齐 A+B。
 
-阶段二：补充工具 + stale 回收（1-2 天）
-5. `kanban-agent-tools.ts` 新增 `kanban_heartbeat` / `kanban_unblock` 工具
-6. `kanban-dispatcher.ts` 加 heartbeat 超时扫描（默认 5min）→ 标回 ready
-7. `kanban-dispatcher.ts` 加 failure_count 跟踪 + auto-block（默认 2 次）
+**BDD 验收标准（更新）**：
 
-阶段三：UI + 状态机（1 天）
-8. `packages/shared/src/types/kanban.ts` KanbanTaskStatus 加 `review`（如未有）
-9. 任务卡片显示 goalMode 徽章 + judge 结果 + 心跳时间
-10. 创建任务表单加 goal_mode 选项 + 验收标准输入
+```gherkin
+Feature: 看板 goal_mode + worker judge
 
-**状态**：✅ 评审通过，待排期（v1.5，4-6 天，与看板 v1 产品化并行）
+  Scenario: 非 goal 任务保持一枪完成
+    Given goalMode 未开启
+    When worker 调用 kanban_complete 且提供 summary
+    Then 任务标 done
+    And 不调用 judge
+
+  Scenario: complete 闸门通过
+    Given goalMode=true 且 acceptanceCriteria 已填
+    And judge 可达
+    When worker 调用 kanban_complete 且产出满足标准
+    Then judge verdict=done
+    And 任务标 done
+
+  Scenario: complete 闸门拒绝
+    Given goalMode=true 且 acceptanceCriteria 已填
+    When worker 调用 kanban_complete 但产出不满足标准
+    Then 返回 tool_error
+    And 任务不进入 done
+    And metadata 记录 judge 原因
+
+  Scenario: judge 不可达 fail-open
+    Given goalMode=true
+    And 无可用 aux 渠道
+    When worker 调用 kanban_complete
+    Then 允许 done
+    And 日志标记 fail-open
+
+  Scenario: goal loop 多轮续跑
+    Given goalMode=true 且 goalMaxTurns=5
+    When 中途 judge 返回 continue
+    Then worker 同 session 继续
+    And 不标 done
+
+  Scenario: turn 预算耗尽
+    Given goalMode=true 且 turns 已用尽
+    When 最后一次 judge 仍非 done
+    Then 任务 blocked
+    And 原因可见给人
+
+  Scenario: worker 不能建板
+    Given kanban 子会话
+    Then 不注入 kanban_create_board / kanban_add_task
+    And 注入 kanban_complete
+
+  Scenario: 与 requireSummary 互补
+    Given board 全部任务 done 且 requireSummary=true
+    When board 完成
+    Then 仍触发主会话汇总
+```
+
+**主要落点文件**：
+
+```
+packages/shared/src/types/kanban.ts
+apps/electron/src/main/lib/kanban-judge-service.ts   # 新建
+apps/electron/src/main/lib/kanban-agent-tools.ts     # kanban_complete + 白名单表
+apps/electron/src/main/lib/kanban-worker-service.ts  # prompt + 完成策略
+apps/electron/src/main/lib/agent-orchestrator.ts     # 子会话注入策略
+apps/electron/src/main/lib/kanban-dispatcher.ts      # 二期 heartbeat / failure
+renderer kanban UI                                  # 阶段 C
+```
+
+**状态**：✅ 评审通过（2026-07-03）+ ✅ 上游重校准（2026-07-18）— **待排期实现**（建议分支 `feature/kanban-goal-mode-judge`）
 
 ---
 
@@ -1451,7 +1483,7 @@ hermes 的 Verification Evidence 是把这些验证结果**额外**存独立表 
 | 项 | 优先级 | 成本 | 价值 |
 | --- | --- | --- | --- |
 | 3.5 Skill 自进化（方案 D 完整闭环） | P2 | 高（7-8 天） | 自进化深度 |
-| 3.6 看板 goal_mode judge gate | P2 | 中（4-6 天） | 看板产品化 |
+| 3.6 看板 goal_mode + worker judge | P2 | 中高（5-7 天：A 闸门 2–3 + B loop 2–3 + C UI 1） | 看板产品化；仅对齐 worker goal/judge |
 | 3.8 Memory Graph 阶段一 | P3 | 中（3-4 天） | 重度场景 UX |
 | 3.5 Nudge 写入升级 | P2 | 中（1-2 天） | 记忆质量 |
 | 孤儿引用修复（前置 Memory Graph） | P1 | 1 天 | bug 修复 |

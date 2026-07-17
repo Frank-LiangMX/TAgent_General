@@ -64,23 +64,24 @@
 - Proma 今天（2026-07-17）刚合入 Pi-agent runtime（#1170），引入第二个 Agent runtime
 - Pi 是开源轻量 Agent 框架（MIT），非 Proma 自研；TAgent 目标框架
 - 三条路对比：Claude SDK（当前）→ Pi（目标）→ Kun（自研，仅参考）
-- 上游对齐剩余任务：Skill Curator、goal_mode judge gate、Monthly 调度待定；协作子会话已废弃（看板+SubAgent 替代）
-- 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`
+- 上游对齐剩余任务：~~Skill Curator~~（已合 main）、**goal_mode + worker judge**（文档已重校准，待实现）、Monthly 调度待定；协作子会话已废弃（看板+SubAgent 替代）
+- 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`（若存在）
 
 ---
 
-**Skill Curator 自进化（方案 D）**（分支 `feature/skill-curator-self-evolution`，进行中）：
+**Skill Curator 自进化（方案 D）**（已合 `main`，2026-07-18）：
 
-- 新增 `skill_manage` MCP 工具 + `skill-manage-core` 落盘（create/patch/delete/archive/restore，路径白名单）
-- 全局 skills 目录 `~/.tagent/global-skills-plugin/`，query 时与工作区 plugin 双加载
-- 工具序列模式识别（层次 A，≥5 次 + 相似度 >0.8）+ 启动/Reflect 后静默 `createSkill`（draft/background）
-- 静态状态机 Curator：draft→active→stale→archived（仅 background；pinned 跳过）；挂 ScheduledCleanup
-- usage 埋点 `.usage.json` + `skill-suggestions.json` 候选；`SkillMeta` 扩展 provenance/status/pinned/usage
-- 单元测试 13/13 通过；shared + electron typecheck 通过
-- ✅ Skills 已安装列表/详情：生命周期、来源、全局、使用次数徽章
-- ✅ skill 调用埋点：`Skill` / `skill_manage` tool_use + mention 写入 `.usage.json`
-- ✅ 全局 skill 可读 SKILL.md；tagent-coach 软弃用说明并优先 skill_manage
-- 可选后续：默认 skill 物理迁 `~/.tagent/global-skills-plugin/`、彻底移除 tagent-coach
+- `skill_manage` + 全局 skills 目录 + 静默识别固化 + Curator 状态机 + UI 徽章 + 调用埋点
+- 可选后续：默认 skill 物理迁 `global-skills-plugin/`、彻底移除 tagent-coach
+
+---
+
+**看板 goal_mode + worker judge**（文档重校准 2026-07-18，待实现）：
+
+- 对齐 hermes 0.18：**goal loop（同 session 多轮 + 每轮 judge）** + **`kanban_complete` 闸门**；fail-open；worker 工具白名单
+- 对 TAgent 有用的 hermes 增量主要是 worker goal/judge；0.18.x 后 gateway/MCP 等不跟
+- 权威描述：`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.6（v1.1）
+- 分期：A complete 闸门+白名单（2–3d）→ B goal loop（2–3d）→ C UI（1d）
 
 ---
 
