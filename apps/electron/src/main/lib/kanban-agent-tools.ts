@@ -277,19 +277,21 @@ const kanbanAddTaskSchema: Record<string, unknown> = {
     parentTaskId: { type: 'string', description: '可选：父任务 ID（构建分解树）' },
     goalMode: {
       type: 'boolean',
-      description: '可选：goal 模式，complete 前 aux judge 验收（默认 false）',
+      description:
+        '重要：是否 goal 模式。coder/reviewer 交付任务应 true：多轮 + complete 前 aux judge 防假完成。轻量探路可 false',
     },
     acceptanceCriteria: {
       type: 'string',
-      description: '可选：验收标准（goalMode 推荐填写）',
+      description:
+        'goalMode=true 时强烈建议填写：可验证的验收条款（条列）。空则用 title+body',
     },
     goalMaxTurns: {
       type: 'number',
-      description: '可选：goal 最大轮次（默认 20）',
+      description: 'goal 最大轮次（默认 20；耗尽 → blocked）',
     },
     judgeModel: {
       type: 'string',
-      description: '可选：验收模型 ID',
+      description: '可选：验收用便宜模型 ID',
     },
   },
   required: ['boardId', 'title', 'channelId'],
@@ -415,6 +417,8 @@ export async function handleAddTask(args: Record<string, unknown>): Promise<Kanb
     taskId: task.id,
     created: true,
     goalMode: task.goalMode === true,
+    acceptanceCriteria: task.acceptanceCriteria,
+    goalMaxTurns: task.goalMaxTurns,
   })
 }
 
@@ -571,7 +575,7 @@ export function buildKanbanAgentTools(): Record<string, KanbanAgentTool> {
     kanban_add_task: {
       name: 'kanban_add_task',
       description:
-        '向看板追加任务。每个任务由调度器派给一个 headless 工人子会话执行。可指定角色 / 模型 / 优先级 / 父任务 / goalMode。',
+        '向看板追加任务（主 Agent 点将主路径）。调度器派 headless 工人执行。coder/reviewer 等交付任务请 goalMode=true 并填 acceptanceCriteria，防假完成。',
       inputSchema: kanbanAddTaskSchema,
       handler: handleAddTask,
     },
@@ -704,12 +708,14 @@ export async function injectKanbanMcpServer(
     goalMode: z
       .boolean()
       .optional()
-      .describe('是否 goal 模式：complete 前 aux judge 验收；默认 false'),
+      .describe(
+        '是否 goal 模式。coder/reviewer 交付任务应 true（多轮+complete 闸门防假完成）；轻量探路可 false'
+      ),
     acceptanceCriteria: z
       .string()
       .optional()
-      .describe('验收标准（goalMode 推荐填写；空则用 title+body）'),
-    goalMaxTurns: z.number().optional().describe('goal 最大轮次（默认 20，阶段 B）'),
+      .describe('goalMode=true 时强烈建议：可验证验收条款；空则用 title+body'),
+    goalMaxTurns: z.number().optional().describe('goal 最大轮次（默认 20；耗尽 blocked）'),
     judgeModel: z.string().optional().describe('验收模型 ID（便宜模型）'),
   }
 
@@ -766,7 +772,7 @@ export async function injectKanbanMcpServer(
       ),
       sdk.tool(
         'kanban_add_task',
-        '向看板追加任务。可指定角色/模型/优先级/父任务/goalMode/acceptanceCriteria。',
+        '主 Agent 点将：追加看板任务。coder/reviewer 交付请 goalMode=true + acceptanceCriteria；轻量探路可关。',
         addTaskSchema,
         async (args: Record<string, unknown>) => {
           const enriched = {

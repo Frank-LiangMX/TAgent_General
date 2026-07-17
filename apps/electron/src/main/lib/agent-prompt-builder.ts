@@ -326,6 +326,34 @@ const KANBAN_ORCHESTRATION_GUIDE = `## 看板多 Agent 编排指南（数字员�
    - body：**完整的员工 prompt**——员工是独立子会话，看不到当前对话上下文，body 必须自包含（包含目标、路径、输出格式）
    - roleId：**必填（推荐）**，按任务类型选角色（见下表）；不传则系统自动落到 \`generalist\`
    - priority：数字越大越优先；有依赖的下游任务 priority 调低
+   - **goalMode / acceptanceCriteria**（见下「Goal 验收」）：关键交付任务请打开，防假完成
+
+### Goal 验收（kanban_add_task 主路径，不是用户手建任务）
+
+看板任务几乎都由**你**用 \`kanban_add_task\` 派发。重要交付必须带 Goal，否则员工可空口 complete：
+
+| 场景 | 是否 goalMode | acceptanceCriteria 示例 |
+|------|---------------|-------------------------|
+| 写代码 / 修 bug / 改实现（coder） | **必须 true** | 「typecheck 通过；相关单测绿；改动文件列表」 |
+| 代码审查 / 安全检查（reviewer） | **必须 true** | 「列出 P0/P1 问题；无阻塞则明确写无」 |
+| 架构分析 / 调研报告（analyst） | 建议 true | 「覆盖入口/依赖/风险三点；结论可执行」 |
+| 文档撰写（writer / doc-writer） | 建议 true | 「含目录与用法；路径可打开」 |
+| 轻量扫目录 / 读文件 / 列清单 | 可 false | —（一枪即可） |
+
+调用约定：
+
+\`\`\`text
+kanban_add_task({
+  boardId, title, body, roleId, channelId, priority,
+  goalMode: true,
+  acceptanceCriteria: "可验证的验收条款（条列）",
+  // goalMaxTurns 可选，默认 20；耗尽会 blocked 等人处理
+})
+\`\`\`
+
+- Goal 任务：员工多轮推进 → 必须 \`kanban_complete(summary=充分证据)\` → 辅助模型对照 acceptanceCriteria 裁判；不过则拒绝 done，员工补证据或 block
+- 未开 goalMode：员工会话结束即可 done（适合探路、清单类）
+- **你点将时默认对 coder/reviewer 开 goalMode**；对「只读探索、列清单」才关
 
 ### 角色选用（roleId）
 
@@ -361,19 +389,20 @@ const KANBAN_ORCHESTRATION_GUIDE = `## 看板多 Agent 编排指南（数字员�
 
 \`\`\`text
 1. kanban_create_board({ rootGoal: "分析 F:/某项目工程", title: "某项目分析" })
-2. kanban_add_task({ boardId, title: "读取 README 与文档", body: "读取 F:/某项目/README.md 与 docs/ 目录所有 .md 文件，输出项目定位、核心功能、技术栈摘要", roleId: "writer", channelId, priority: 10 })
-3. kanban_add_task({ boardId, title: "扫描架构与目录结构", body: "列出 F:/某项目顶层目录树（2 层），识别 src/ tests/ config/ 等约定目录，输出架构模式判断（monorepo / 单应用 / 库）", roleId: "analyst", channelId, priority: 8 })
+2. kanban_add_task({ boardId, title: "读取 README 与文档", body: "读取 F:/某项目/README.md 与 docs/ 目录所有 .md 文件，输出项目定位、核心功能、技术栈摘要", roleId: "writer", channelId, priority: 10, goalMode: true, acceptanceCriteria: "摘要含定位/功能/技术栈三块" })
+3. kanban_add_task({ boardId, title: "扫描架构与目录结构", body: "列出 F:/某项目顶层目录树（2 层），识别 src/ tests/ config/ 等约定目录，输出架构模式判断（monorepo / 单应用 / 库）", roleId: "analyst", channelId, priority: 8, goalMode: true, acceptanceCriteria: "给出架构模式判断 + 关键目录说明" })
 4. kanban_add_task({ boardId, title: "分析依赖与技术栈", body: "读取 F:/某项目/package.json / requirements.txt / go.mod 等依赖清单文件，输出核心依赖列表 + 版本 + 用途判断", roleId: "data-analyst", channelId, priority: 8 })
-5. kanban_add_task({ boardId, title: "识别入口与主流程", body: "找出 F:/某项目的入口文件（main.ts / index.js / __main__.py 等），跟踪顶层调用链 3 层，输出主流程时序描述", roleId: "coder", channelId, priority: 5 })
-6. 回复用户："我安排了 4 位同事来分析这个项目：技术文档工程师读文档、软件架构师扫结构、数据分析师看依赖、软件工程师追入口。他们已开工，完成后我会汇总给你。"
+5. kanban_add_task({ boardId, title: "识别入口与主流程", body: "找出 F:/某项目的入口文件（main.ts / index.js / __main__.py 等），跟踪顶层调用链 3 层，输出主流程时序描述", roleId: "coder", channelId, priority: 5, goalMode: true, acceptanceCriteria: "写出入口路径 + 主流程 3 层调用摘要" })
+6. 回复用户："我安排了 4 位同事来分析这个项目：技术文档工程师读文档、软件架构师扫结构、数据分析师看依赖、软件工程师追入口。关键活已开验收闸门，完成后我会汇总给你。"
 \`\`\`
 
 ### 注意
 
+- 看板任务**由你派发**（kanban_add_task），不是用户在 UI 手建；Goal 开关也是你在点将时设
 - 看板工具在 **general 模式**和 **TA 模式**都可用
 - 数字员工是 headless 子会话，bypassPermissions，能直接读写文件
 - 任务完成后调度器自动推进下游 ready 任务，你不需要手动驱动
-- 若任务失败（status=failed），班组详情会显示 error；你可以读 error 后决定是否补一个修复任务`
+- 若任务 failed 或 Goal 轮次耗尽 blocked，班组详情会显示原因；可补修复任务或调整 acceptanceCriteria 后重派`
 
 // ===== PostToolUse hook 自动验证规则（auto-typecheck 等） =====
 
@@ -989,6 +1018,7 @@ function buildSubagentDispatchStrategy(eagerness: SubagentEagerness): string {
 2. **调研技术方案**：对比 A vs B、选库、评估依赖、架构选型 → 委派 \`researcher\`
 3. **代码改动后审查**：非平凡改动（跨多文件 / 影响行为 / 涉及安全）→ 委派 \`code-reviewer\`
 4. **大目标拆解**：3+ 独立子任务，或项目级分析/重构/审计（文件 > 20）→ 用看板编排（kanban_create_board + kanban_add_task）
+   - 点将时 coder/reviewer 交付任务设 \`goalMode: true\` + \`acceptanceCriteria\`（防假完成）
    - 反模式：主会话串行做"分析依赖 + 扫架构 + 列入口"三个独立任务 → 该用看板并行
 
 ### 主会话直接干的场景
