@@ -9,8 +9,7 @@ export const DESK_DISPLAY_HEIGHT = DESK_DISPLAY_WIDTH * 0.72
 
 export const NAV_AGENT_CLEARANCE = 16
 
-export const SIDE_OFFSET =
-  Math.ceil(DESK_DISPLAY_WIDTH / 2) + NAV_AGENT_CLEARANCE
+export const SIDE_OFFSET = Math.ceil(DESK_DISPLAY_WIDTH / 2) + NAV_AGENT_CLEARANCE
 
 export const COL_AISLE_MARGIN = SIDE_OFFSET + 6
 
@@ -30,9 +29,6 @@ export function getRowCorridorY(desk: OfficeDesk): number {
   return desk.seatY
 }
 
-export function isFrontRowDesk(
-  desk: OfficeDesk,
-  corridorY: number,
-): boolean {
+export function isFrontRowDesk(desk: OfficeDesk, corridorY: number): boolean {
   return Math.abs(corridorY - desk.seatY) < 8
 }

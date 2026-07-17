@@ -25,7 +25,7 @@ export function resolveTalkViewFacing(
   fromX: number,
   fromY: number,
   targetX: number,
-  targetY: number,
+  targetY: number
 ): ChibiFacing {
   const dx = targetX - fromX
   if (dx < -TALK_FACE_DX) return 'left'
@@ -38,7 +38,7 @@ export function talkFacingToward(
   fromX: number,
   fromY: number,
   targetX: number,
-  targetY: number,
+  targetY: number
 ): { viewFacing: ChibiFacing; facing: 1 | -1 } {
   const viewFacing = resolveTalkViewFacing(fromX, fromY, targetX, targetY)
   return { viewFacing, facing: viewFacingToLR(viewFacing) }

@@ -26,6 +26,7 @@ import {
 } from '@/atoms/app-mode'
 import { designImmersiveAtom } from '@/atoms/design-preview-atoms'
 import { previewPanelOpenMapAtom, previewSplitRatioAtom } from '@/atoms/preview-atoms'
+import { sessionPresentationAtomFamily } from '@/atoms/session-presentation-atoms'
 import {
   activeTabIdAtom,
   activeTabAtom,
@@ -199,9 +200,14 @@ function GeneralMainArea(): React.ReactElement {
   const [splitRatio, setSplitRatio] = useAtom(previewSplitRatioAtom)
   const previewDragging = React.useRef(false)
   const designImmersive = useAtomValue(designImmersiveAtom)
+  const sessionPresentation = useAtomValue(
+    sessionPresentationAtomFamily(activeTab?.type === 'agent' ? activeTab.sessionId : '__none__')
+  )
 
   const previewOpen =
-    activeTab?.type === 'agent' && (previewOpenMap.get(activeTab.sessionId) ?? false)
+    activeTab?.type === 'agent' &&
+    sessionPresentation === 'classic' &&
+    (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
   const showSessionWelcome = appMode !== 'draft' && sessionTabs.length === 0
 

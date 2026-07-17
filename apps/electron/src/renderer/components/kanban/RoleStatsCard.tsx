@@ -38,7 +38,10 @@ function MiniBar({
   const pct = total > 0 ? Math.min(value / total, 1) : 0
   return (
     <div className="h-1 w-full overflow-hidden rounded-full bg-foreground/[0.06]">
-      <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct * 100}%` }} />
+      <div
+        className={cn('h-full rounded-full transition-all', color)}
+        style={{ width: `${pct * 100}%` }}
+      />
     </div>
   )
 }
@@ -69,17 +72,18 @@ function PeriodRow({
   )
 }
 
-export function RoleStatsCard({
-  stats,
-}: {
-  stats: RoleWorkStats
-}): React.ReactElement {
+export function RoleStatsCard({ stats }: { stats: RoleWorkStats }): React.ReactElement {
   const [period, setPeriod] = React.useState<Period>('week')
   const periodStats = stats.windows[period]
   const periodLabel = period === 'day' ? '今日' : period === 'week' ? '本周' : '本月'
 
   const maxTasks = React.useMemo(() => {
-    return Math.max(stats.windows.day.taskCount, stats.windows.week.taskCount, stats.windows.month.taskCount, 1)
+    return Math.max(
+      stats.windows.day.taskCount,
+      stats.windows.week.taskCount,
+      stats.windows.month.taskCount,
+      1
+    )
   }, [stats])
 
   return (
@@ -115,11 +119,7 @@ export function RoleStatsCard({
 
       {/* 分段数据 */}
       <div className="space-y-2">
-        <PeriodRow
-          label={periodLabel}
-          stats={periodStats}
-          color="bg-blue-500"
-        />
+        <PeriodRow label={periodLabel} stats={periodStats} color="bg-blue-500" />
         <div className="flex gap-1.5 text-[10px] text-muted-foreground">
           <span>失败 {stats.failedCount} 次</span>
           <span>·</span>

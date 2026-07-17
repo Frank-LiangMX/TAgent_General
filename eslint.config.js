@@ -150,6 +150,15 @@ export default [
     },
   },
 
+  // AI Office 场景运行时来自上游 Pixi / Spine 实现，当前以 @ts-nocheck 作为迁移边界。
+  // 仅对该隔离目录允许此注释；renderer 其余代码继续执行 ban-ts-comment。
+  {
+    files: ['apps/electron/src/renderer/components/ai-office/scene/**/*.ts'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+    },
+  },
+
   // flat config 自己处理 ignorePatterns
   {
     ignores: [

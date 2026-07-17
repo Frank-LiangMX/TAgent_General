@@ -41,7 +41,7 @@ describe('pickResultContextWindow', () => {
   })
 
   test('infers from model id when contextWindow missing', () => {
-    expect(pickResultContextWindow({ 'glm-5.1': {} })).toBe(128_000)
+    expect(pickResultContextWindow({ 'glm-5.1': {} })).toBe(200_000)
   })
 
   test('upgrades MiniMax 200K SDK window to 1M display', () => {
@@ -54,8 +54,8 @@ describe('pickResultContextWindow', () => {
 })
 
 describe('inferContextWindow', () => {
-  test('recognizes glm-5.x as 128k', () => {
-    expect(inferContextWindow('glm-5.1')).toBe(128_000)
+  test('recognizes glm-5.1 as 200k', () => {
+    expect(inferContextWindow('glm-5.1')).toBe(200_000)
   })
 
   test('recognizes minimax-m3 as 1M', () => {

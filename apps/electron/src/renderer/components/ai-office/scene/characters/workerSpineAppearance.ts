@@ -12,6 +12,9 @@ export const WORKER_SPINE_SKINS = [
   'spineboy',
 ] as const
 
+/** The director uses one deliberate, recognisable professional appearance across rooms. */
+export const DIRECTOR_SPINE_SKIN = 'nate'
+
 /** Spine setup pose is 682.5px high; office workers should render near one desk width tall. */
 export const CHIBI_SPINE_SETUP_HEIGHT = 682.5
 export const OFFICE_CHARACTER_TARGET_HEIGHT = 102
@@ -32,6 +35,7 @@ function stableHash(value: string): number {
 }
 
 export function getWorkerSpineSkin(appearanceKey: string): string {
+  if (appearanceKey.startsWith('director:')) return DIRECTOR_SPINE_SKIN
   return WORKER_SPINE_SKINS[stableHash(appearanceKey) % WORKER_SPINE_SKINS.length]!
 }
 
@@ -76,5 +80,29 @@ export function resolveWorkerAnimation(
         loop: false,
         settleTo: directionalAnimation('idle', 'front'),
       }
+  }
+}
+
+/** Director motion is intentionally restrained: posture changes communicate state without cheerleading. */
+export function resolveDirectorAnimation(
+  state: OfficeAgentState,
+  facing: ChibiFacing
+): WorkerAnimationSpec {
+  switch (state) {
+    case 'walking':
+      return { name: directionalAnimation('trot', facing), loop: true }
+    case 'thinking':
+    case 'reviewing':
+      return { name: 'emotes/thinking', loop: true }
+    case 'blocked':
+      return { name: 'emotes/sweat', loop: true }
+    case 'waiting':
+    case 'working':
+      return { name: directionalAnimation('idle', facing), loop: true }
+    case 'talking':
+    case 'completed':
+    case 'failed':
+    case 'cancelled':
+      return { name: directionalAnimation('idle', 'front'), loop: true }
   }
 }

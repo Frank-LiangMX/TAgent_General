@@ -1352,6 +1352,19 @@ export class AgentOrchestrator {
     const streamStartedAt = input.startedAt ?? runGeneration
     this.activeSessions.set(sessionId, runGeneration)
 
+    // 尽早持久化用户消息（在任何 await 之前），缩小「前端乐观气泡已显示、磁盘尚无记录」
+    // 被 bumpRefresh 刷掉的竞态窗口。
+    const userSDKMsg: SDKMessage = {
+      type: 'user',
+      message: {
+        content: [{ type: 'text', text: userMessage }],
+      },
+      parent_tool_use_id: null,
+      _createdAt: Date.now(),
+    } as unknown as SDKMessage
+    appendSDKMessages(sessionId, [userSDKMsg])
+    callbacks.onRunStarted?.({ startedAt: streamStartedAt })
+
     // 阶段级耗时打点（排查"会话发起后很久才回复"问题，定位卡在哪一步）
     const timings: Record<string, number> = {}
     let _phaseStart = Date.now()
@@ -1360,6 +1373,7 @@ export class AgentOrchestrator {
       timings[name] = now - _phaseStart
       _phaseStart = now
     }
+    markPhase('persistUserMsg')
     const releaseActiveRun = (): void => {
       // 在发送 STREAM_COMPLETE 前释放 active slot，避免渲染进程已进入空闲态、
       // 主进程仍在 finally 前短暂拒绝下一条消息。
@@ -1586,18 +1600,7 @@ export class AgentOrchestrator {
       console.log(`[Agent 编排] 定时任务子会话 ${sessionId} 已被用户接管`)
     }
 
-    // 5. 持久化用户消息（SDKMessage 格式）
-    const userSDKMsg: SDKMessage = {
-      type: 'user',
-      message: {
-        content: [{ type: 'text', text: userMessage }],
-      },
-      parent_tool_use_id: null,
-      _createdAt: Date.now(),
-    } as unknown as SDKMessage
-    appendSDKMessages(sessionId, [userSDKMsg])
-    callbacks.onRunStarted?.({ startedAt: streamStartedAt })
-    markPhase('persistUserMsg')
+    // 5. 用户消息已在抢占 active slot 后立刻持久化（见上方 persistUserMsg）
 
     // 5.5 Nudge 检测（每 5 turn 检查记忆模式）
     try {

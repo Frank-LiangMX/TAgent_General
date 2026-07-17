@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { DEFAULT_THEME_MODE, DEFAULT_ADVANCED_MATERIAL_MODE } from '../../types'
 
 import type { AppSettings } from '../../types'
+import { applyAdvancedMaterialReleaseReset } from './advanced-material-release-reset'
 import { getSettingsPath } from './config-paths'
 
 /** Resolve the streaming flag while keeping older settings files compatible. */
@@ -39,56 +40,99 @@ function resolveAdvancedMaterialMode(
   return DEFAULT_ADVANCED_MATERIAL_MODE
 }
 
+function createDefaultSettings(): AppSettings {
+  return {
+    themeMode: DEFAULT_THEME_MODE,
+    advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
+    onboardingCompleted: false,
+    environmentCheckSkipped: false,
+    notificationsEnabled: true,
+    agentStreaming: true,
+    feishuSessionMirror: { mode: 'off' },
+    subagentEagerness: 'conservative',
+    showTokenPlanWarning: true,
+  }
+}
+
+function normalizeSettings(data: Partial<AppSettings>): AppSettings {
+  return {
+    ...data,
+    themeMode: data.themeMode || DEFAULT_THEME_MODE,
+    advancedMaterialMode: resolveAdvancedMaterialMode(data),
+    onboardingCompleted: data.onboardingCompleted ?? false,
+    environmentCheckSkipped: data.environmentCheckSkipped ?? false,
+    notificationsEnabled: data.notificationsEnabled ?? true,
+    agentStreaming: data.agentStreaming ?? true,
+    feishuSessionMirror: data.feishuSessionMirror ?? { mode: 'off' },
+    showTokenPlanWarning: data.showTokenPlanWarning ?? true,
+  }
+}
+
+/** 当前是否为 Electron 打包正式版（测试 / 非 Electron 环境视为非打包） */
+function isPackagedApp(): boolean {
+  try {
+    const { app } = require('electron') as { app: { isPackaged: boolean } }
+    return Boolean(app.isPackaged)
+  } catch {
+    return false
+  }
+}
+
+function writeSettingsFile(settings: AppSettings): void {
+  const filePath = getSettingsPath()
+  writeFileSync(filePath, JSON.stringify(settings, null, 2), 'utf-8')
+}
+
 /**
- * 获取应用设置
- *
- * 如果文件不存在，返回默认设置。
+ * 从磁盘读取并规范化设置（不做一次性迁移，供内部读写复用）
  */
-export function getSettings(): AppSettings {
+function readSettingsFromDisk(): AppSettings {
   const filePath = getSettingsPath()
 
   if (!existsSync(filePath)) {
-    return {
-      themeMode: DEFAULT_THEME_MODE,
-      advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
-      onboardingCompleted: false,
-      environmentCheckSkipped: false,
-      notificationsEnabled: true,
-      agentStreaming: true,
-      feishuSessionMirror: { mode: 'off' },
-      subagentEagerness: 'conservative',
-      showTokenPlanWarning: true,
-    }
+    return createDefaultSettings()
   }
 
   try {
     const raw = readFileSync(filePath, 'utf-8')
     const data = JSON.parse(raw) as Partial<AppSettings>
-    return {
-      ...data,
-      themeMode: data.themeMode || DEFAULT_THEME_MODE,
-      advancedMaterialMode: resolveAdvancedMaterialMode(data),
-      onboardingCompleted: data.onboardingCompleted ?? false,
-      environmentCheckSkipped: data.environmentCheckSkipped ?? false,
-      notificationsEnabled: data.notificationsEnabled ?? true,
-      agentStreaming: data.agentStreaming ?? true,
-      feishuSessionMirror: data.feishuSessionMirror ?? { mode: 'off' },
-      showTokenPlanWarning: data.showTokenPlanWarning ?? true,
-    }
+    return normalizeSettings(data)
   } catch (error) {
     console.error('[设置] 读取失败:', error)
-    return {
-      themeMode: DEFAULT_THEME_MODE,
-      advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
-      onboardingCompleted: false,
-      environmentCheckSkipped: false,
-      notificationsEnabled: true,
-      agentStreaming: true,
-      feishuSessionMirror: { mode: 'off' },
-      subagentEagerness: 'conservative',
-      showTokenPlanWarning: true,
-    }
+    return createDefaultSettings()
   }
+}
+
+/**
+ * 打包版一次性：高级材质用户回退默认材质 + 浅色主题
+ */
+function ensureAdvancedMaterialReleaseReset(settings: AppSettings): AppSettings {
+  const result = applyAdvancedMaterialReleaseReset(settings, isPackagedApp())
+  if (!result.changed) return settings
+
+  try {
+    writeSettingsFile(result.settings)
+    if (result.resetApplied) {
+      console.log('[设置] 打包版高级材质未完成：已回退到默认材质 + 浅色主题')
+    } else {
+      console.log('[设置] 打包版高级材质回退标记已写入（无需改主题）')
+    }
+  } catch (error) {
+    console.error('[设置] 写入高级材质回退标记失败:', error)
+    return settings
+  }
+
+  return result.settings
+}
+
+/**
+ * 获取应用设置
+ *
+ * 如果文件不存在，返回默认设置。
+ * 打包版会执行高级材质一次性回退迁移。
+ */
+export function getSettings(): AppSettings {
+  return ensureAdvancedMaterialReleaseReset(readSettingsFromDisk())
 }
 
 /**
@@ -103,10 +147,8 @@ export function updateSettings(updates: Partial<AppSettings>): AppSettings {
     ...updates,
   }
 
-  const filePath = getSettingsPath()
-
   try {
-    writeFileSync(filePath, JSON.stringify(updated, null, 2), 'utf-8')
+    writeSettingsFile(updated)
     console.log('[设置] 已更新 keys:', Object.keys(updates).join(', '))
   } catch (error) {
     console.error('[设置] 写入失败:', error)

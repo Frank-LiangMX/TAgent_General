@@ -1,11 +1,7 @@
 // @ts-nocheck
 import type { OfficeDesk } from '../../types/office-agent'
-import { DESKS } from '../layout/officeLayout'
-import {
-  COL_AISLE_MARGIN,
-  getRowCorridorY,
-  SIDE_OFFSET,
-} from './deskNavGeometry'
+import { clampOfficeWalkablePoint, DESKS } from '../layout/officeLayout'
+import { COL_AISLE_MARGIN, getRowCorridorY, SIDE_OFFSET } from './deskNavGeometry'
 import {
   createNavContext,
   polylineCrossesSeat,
@@ -77,20 +73,16 @@ export function buildNavGraph(desks: OfficeDesk[]): NavGraph {
 
   const colCentroids = clusterCentroids(
     desks.map((d) => d.x),
-    COL_CLUSTER_THRESH,
+    COL_CLUSTER_THRESH
   )
   const rowSeatYs = clusterCentroids(
     desks.map((d) => d.seatY),
-    ROW_CLUSTER_THRESH,
+    ROW_CLUSTER_THRESH
   )
   const rowCorridorYs: number[] = []
   for (let ri = 0; ri < rowSeatYs.length; ri++) {
-    const sample = desks.find(
-      (d) => Math.abs(d.seatY - rowSeatYs[ri]) < ROW_CLUSTER_THRESH,
-    )
-    rowCorridorYs.push(
-      sample ? getRowCorridorY(sample) : rowSeatYs[ri] - 40,
-    )
+    const sample = desks.find((d) => Math.abs(d.seatY - rowSeatYs[ri]) < ROW_CLUSTER_THRESH)
+    rowCorridorYs.push(sample ? getRowCorridorY(sample) : rowSeatYs[ri] - 40)
   }
 
   const nCols = colCentroids.length
@@ -173,12 +165,7 @@ export function buildNavGraph(desks: OfficeDesk[]): NavGraph {
     const row = nearestRow(desk.seatY)
     const leftAisleId = `aisle-c${col}-r${row}`
     const rightAisleId = `aisle-c${col + 1}-r${row}`
-    const corridorAisleId =
-      col === 0
-        ? leftAisleId
-        : col === nCols - 1
-          ? rightAisleId
-          : leftAisleId
+    const corridorAisleId = col === 0 ? leftAisleId : col === nCols - 1 ? rightAisleId : leftAisleId
     deskMeta.set(desk.id, {
       leftAisleId,
       rightAisleId,
@@ -202,17 +189,12 @@ function ensureGraph(): NavGraph {
 }
 
 export function findDeskAtSeat(x: number, y: number): OfficeDesk | undefined {
-  return DESKS.find(
-    (d) => Math.hypot(d.seatX - x, d.seatY - y) < SEAT_DETECT,
-  )
+  return DESKS.find((d) => Math.hypot(d.seatX - x, d.seatY - y) < SEAT_DETECT)
 }
 
 const SEAT_SIDE_DEADZONE = 10
 
-export function pickDeskApproachSide(
-  desk: OfficeDesk,
-  referenceX: number,
-): DeskApproachSide {
+export function pickDeskApproachSide(desk: OfficeDesk, referenceX: number): DeskApproachSide {
   const dx = referenceX - desk.seatX
   if (dx < -SEAT_SIDE_DEADZONE) return 'left'
   if (dx > SEAT_SIDE_DEADZONE) return 'right'
@@ -230,11 +212,7 @@ export function pickDeskApproachSide(
 
 const SAME_ROW_SEAT_Y_THRESH = 14
 
-function deskIdsForLateralMoveCheck(
-  desk: OfficeDesk,
-  x: number,
-  y: number,
-): string[] {
+function deskIdsForLateralMoveCheck(desk: OfficeDesk, x: number, y: number): string[] {
   const ids = [desk.id]
   if (Math.abs(y - desk.seatY) > SAME_ROW_SEAT_Y_THRESH) return ids
   for (const d of DESKS) {
@@ -255,7 +233,7 @@ function canLateralExitAlongSeatRow(
   desk: OfficeDesk,
   side: DeskApproachSide,
   toX: number,
-  toY: number,
+  toY: number
 ): boolean {
   if (Math.abs(toY - desk.seatY) > SAME_ROW_SEAT_Y_THRESH) return false
   const sidePt = getSideApproachPoint(desk, side)
@@ -263,11 +241,7 @@ function canLateralExitAlongSeatRow(
   return toX >= sidePt.x - 4
 }
 
-function lateralSeatCheck(
-  desk: OfficeDesk,
-  x: number,
-  y: number,
-): SeatCheckOptions {
+function lateralSeatCheck(desk: OfficeDesk, x: number, y: number): SeatCheckOptions {
   return { excludeDeskIds: deskIdsForLateralMoveCheck(desk, x, y) }
 }
 
@@ -276,15 +250,11 @@ function tryLateralExitPath(
   side: DeskApproachSide,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] | null {
   if (!canLateralExitAlongSeatRow(desk, side, toX, toY)) return null
   const sidePt = getSideApproachPoint(desk, side)
-  const steps: NavPoint[] = [
-    { x: desk.seatX, y: desk.seatY },
-    sidePt,
-    { x: toX, y: toY },
-  ]
+  const steps: NavPoint[] = [{ x: desk.seatX, y: desk.seatY }, sidePt, { x: toX, y: toY }]
   if (polylineCrossesSeat(steps, ctx, lateralSeatCheck(desk, toX, toY))) {
     return null
   }
@@ -296,7 +266,7 @@ function lateralExitCost(
   side: DeskApproachSide,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): number | null {
   const steps = tryLateralExitPath(desk, side, toX, toY, ctx)
   if (!steps) return null
@@ -313,7 +283,7 @@ function canLateralEnterAlongSeatRow(
   desk: OfficeDesk,
   side: DeskApproachSide,
   fromX: number,
-  fromY: number,
+  fromY: number
 ): boolean {
   if (Math.abs(fromY - desk.seatY) > SAME_ROW_SEAT_Y_THRESH) return false
   const sidePt = getSideApproachPoint(desk, side)
@@ -326,15 +296,11 @@ function tryLateralEnterPath(
   side: DeskApproachSide,
   fromX: number,
   fromY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] | null {
   if (!canLateralEnterAlongSeatRow(desk, side, fromX, fromY)) return null
   const sidePt = getSideApproachPoint(desk, side)
-  const steps: NavPoint[] = [
-    { x: fromX, y: fromY },
-    sidePt,
-    { x: desk.seatX, y: desk.seatY },
-  ]
+  const steps: NavPoint[] = [{ x: fromX, y: fromY }, sidePt, { x: desk.seatX, y: desk.seatY }]
   if (polylineCrossesSeat(steps, ctx, lateralSeatCheck(desk, fromX, fromY))) {
     return null
   }
@@ -346,7 +312,7 @@ function lateralEnterCost(
   side: DeskApproachSide,
   fromX: number,
   fromY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): number | null {
   const steps = tryLateralEnterPath(desk, side, fromX, fromY, ctx)
   if (!steps) return null
@@ -364,7 +330,7 @@ function estimateExitCost(
   side: DeskApproachSide,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): number {
   const direct = lateralExitCost(desk, side, toX, toY, ctx)
   if (direct != null) return direct
@@ -406,7 +372,7 @@ function estimateEnterCost(
   side: DeskApproachSide,
   fromX: number,
   fromY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): number {
   const direct = lateralEnterCost(desk, side, fromX, fromY, ctx)
   if (direct != null) return direct
@@ -433,12 +399,7 @@ function estimateEnterCost(
     cost += Math.hypot(last.x - approachAisle.x, last.y - approachAisle.y)
   }
 
-  const seg = (
-    ax: number,
-    ay: number,
-    bx: number,
-    by: number,
-  ): number => {
+  const seg = (ax: number, ay: number, bx: number, by: number): number => {
     if (segmentCrossesSeat(ax, ay, bx, by, ctx)) return 800
     return Math.hypot(bx - ax, by - ay)
   }
@@ -452,7 +413,7 @@ export function pickDeskExitSide(
   desk: OfficeDesk,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): DeskApproachSide {
   const leftCost = estimateExitCost(desk, 'left', toX, toY, ctx)
   const rightCost = estimateExitCost(desk, 'right', toX, toY, ctx)
@@ -463,17 +424,14 @@ export function pickDeskEnterSide(
   desk: OfficeDesk,
   fromX: number,
   fromY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): DeskApproachSide {
   const leftCost = estimateEnterCost(desk, 'left', fromX, fromY, ctx)
   const rightCost = estimateEnterCost(desk, 'right', fromX, fromY, ctx)
   return leftCost <= rightCost ? 'left' : 'right'
 }
 
-export function getSideApproachPoint(
-  desk: OfficeDesk,
-  side: DeskApproachSide,
-): NavPoint {
+export function getSideApproachPoint(desk: OfficeDesk, side: DeskApproachSide): NavPoint {
   return {
     x: side === 'left' ? desk.seatX - SIDE_OFFSET : desk.seatX + SIDE_OFFSET,
     y: desk.seatY,
@@ -484,7 +442,7 @@ export function getDeskVisitStandPoint(
   visitorDesk: OfficeDesk,
   hostDesk: OfficeDesk,
   fromX?: number,
-  fromY?: number,
+  fromY?: number
 ): NavPoint {
   const left = getSideApproachPoint(hostDesk, 'left')
   const right = getSideApproachPoint(hostDesk, 'right')
@@ -501,7 +459,7 @@ export function planWalkToDeskVisit(
   fromY: number,
   hostDesk: OfficeDesk,
   visitorDesk: OfficeDesk,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] {
   const stand = getDeskVisitStandPoint(visitorDesk, hostDesk, fromX, fromY)
   if (findDeskAtSeat(fromX, fromY)) {
@@ -555,18 +513,21 @@ export function planWalkTo(
   fromY: number,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] {
+  const destination = clampOfficeWalkablePoint(toX, toY)
+  const safeToX = destination.x
+  const safeToY = destination.y
   const g = ensureGraph()
   const fromId = nearestNodeId(g, fromX, fromY)
-  const toId = nearestNodeId(g, toX, toY)
+  const toId = nearestNodeId(g, safeToX, safeToY)
   const ids = shortestPath(g.nodes, g.adj, fromId, toId, ctx)
-  if (!ids) return [{ x: toX, y: toY }]
+  if (!ids) return [destination]
 
   const points = idsToPoints(g, ids)
   const last = points[points.length - 1]
-  if (Math.hypot(last.x - toX, last.y - toY) > 4) {
-    points.push({ x: toX, y: toY })
+  if (Math.hypot(last.x - safeToX, last.y - safeToY) > 4) {
+    points.push(destination)
   }
   return points
 }
@@ -576,57 +537,46 @@ export function planWalkFrom(
   fromY: number,
   toX: number,
   toY: number,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] {
+  const destination = clampOfficeWalkablePoint(toX, toY)
+  const safeToX = destination.x
+  const safeToY = destination.y
   const desk = findDeskAtSeat(fromX, fromY)
   if (desk) {
     const g = ensureGraph()
     const meta = g.deskMeta.get(desk.id)
     if (!meta) {
-      return dedupePoints([
-        { x: desk.seatX, y: desk.seatY },
-        { x: toX, y: toY },
-      ])
+      return dedupePoints([{ x: desk.seatX, y: desk.seatY }, destination])
     }
-    const exitSide = pickDeskExitSide(desk, toX, toY, ctx)
-    const lateral = tryLateralExitPath(desk, exitSide, toX, toY, ctx)
+    const exitSide = pickDeskExitSide(desk, safeToX, safeToY, ctx)
+    const lateral = tryLateralExitPath(desk, exitSide, safeToX, safeToY, ctx)
     if (lateral) return dedupePoints(lateral)
 
     const side = getSideApproachPoint(desk, exitSide)
-    const exitAisleId =
-      exitSide === 'left' ? meta.leftAisleId : meta.rightAisleId
+    const exitAisleId = exitSide === 'left' ? meta.leftAisleId : meta.rightAisleId
     const exitAisle = g.nodes.get(exitAisleId)!
-    const steps: NavPoint[] = [
-      { x: desk.seatX, y: desk.seatY },
-      side,
-    ]
+    const steps: NavPoint[] = [{ x: desk.seatX, y: desk.seatY }, side]
     const aislePt = { x: exitAisle.x, y: desk.seatY }
-    const seatCheck = lateralSeatCheck(desk, toX, toY)
+    const seatCheck = lateralSeatCheck(desk, safeToX, safeToY)
     if (
       Math.abs(exitAisle.x - side.x) > 4 &&
-      !segmentCrossesSeat(
-        side.x,
-        side.y,
-        aislePt.x,
-        aislePt.y,
-        ctx,
-        seatCheck,
-      )
+      !segmentCrossesSeat(side.x, side.y, aislePt.x, aislePt.y, ctx, seatCheck)
     ) {
       steps.push(aislePt)
     }
     const tail = steps[steps.length - 1]!
-    const corridor = planWalkTo(tail.x, tail.y, toX, toY, ctx)
+    const corridor = planWalkTo(tail.x, tail.y, safeToX, safeToY, ctx)
     return dedupePoints([...steps, ...corridor])
   }
-  return planWalkTo(fromX, fromY, toX, toY, ctx)
+  return planWalkTo(fromX, fromY, safeToX, safeToY, ctx)
 }
 
 export function planWalkToDeskSeat(
   fromX: number,
   fromY: number,
   desk: OfficeDesk,
-  ctx?: NavPathContext,
+  ctx?: NavPathContext
 ): NavPoint[] {
   if (findDeskAtSeat(fromX, fromY)?.id === desk.id) {
     return [{ x: desk.seatX, y: desk.seatY }]
@@ -643,8 +593,7 @@ export function planWalkToDeskSeat(
   if (lateral) return dedupePoints(lateral)
 
   const side = getSideApproachPoint(desk, approachSide)
-  const approachAisleId =
-    approachSide === 'left' ? meta.leftAisleId : meta.rightAisleId
+  const approachAisleId = approachSide === 'left' ? meta.leftAisleId : meta.rightAisleId
   const approachAisle = g.nodes.get(approachAisleId)!
 
   const fromId = nearestNodeId(g, fromX, fromY)
@@ -653,10 +602,7 @@ export function planWalkToDeskSeat(
 
   const approachPt = { x: approachAisle.x, y: desk.seatY }
   const last = points[points.length - 1]
-  if (
-    !last ||
-    Math.hypot(last.x - approachPt.x, last.y - approachPt.y) > 4
-  ) {
+  if (!last || Math.hypot(last.x - approachPt.x, last.y - approachPt.y) > 4) {
     if (
       !segmentCrossesSeat(
         last?.x ?? fromX,
@@ -664,7 +610,7 @@ export function planWalkToDeskSeat(
         approachPt.x,
         approachPt.y,
         ctx,
-        lateralSeatCheck(desk, fromX, fromY),
+        lateralSeatCheck(desk, fromX, fromY)
       )
     ) {
       points.push(approachPt)
@@ -672,15 +618,14 @@ export function planWalkToDeskSeat(
   }
   const beforeSide = points[points.length - 1]
   if (
-    (!beforeSide ||
-      Math.hypot(beforeSide.x - side.x, beforeSide.y - side.y) > 4) &&
+    (!beforeSide || Math.hypot(beforeSide.x - side.x, beforeSide.y - side.y) > 4) &&
     !segmentCrossesSeat(
       beforeSide?.x ?? fromX,
       beforeSide?.y ?? fromY,
       side.x,
       side.y,
       ctx,
-      lateralSeatCheck(desk, fromX, fromY),
+      lateralSeatCheck(desk, fromX, fromY)
     )
   ) {
     points.push(side)

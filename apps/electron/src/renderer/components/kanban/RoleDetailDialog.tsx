@@ -9,18 +9,9 @@
  */
 
 import * as React from 'react'
-import {
-  Save,
-  Plus,
-  X,
-  Users,
-} from 'lucide-react'
+import { Save, Plus, X, Users } from 'lucide-react'
 
-import type {
-  AgentRoleProfile,
-  AgentRolePermissionMode,
-  RoleWorkStats,
-} from '@tagent/shared'
+import type { AgentRoleProfile, AgentRolePermissionMode, RoleWorkStats } from '@tagent/shared'
 import {
   Badge,
   Button,
@@ -41,7 +32,11 @@ import {
 import { RoleStatsCard } from './RoleStatsCard'
 import { cn } from '@/lib/utils'
 
-const PERMISSION_MODE_OPTIONS: Array<{ value: AgentRolePermissionMode; label: string; desc: string }> = [
+const PERMISSION_MODE_OPTIONS: Array<{
+  value: AgentRolePermissionMode
+  label: string
+  desc: string
+}> = [
   { value: 'bypassPermissions', label: '自动放行', desc: '无人值守写操作必备' },
   { value: 'auto', label: '需审批', desc: '写操作走权限弹窗（审核角色用）' },
 ]
@@ -60,14 +55,22 @@ const BUILTIN_IDS = new Set([
 /** 角色 ID → 小圆点颜色（中性简约） */
 function roleDotColor(roleId: string): string {
   switch (roleId) {
-    case 'coder': return 'bg-blue-400'
-    case 'analyst': return 'bg-violet-400'
-    case 'reviewer': return 'bg-amber-400'
-    case 'writer': return 'bg-emerald-400'
-    case 'doc-writer': return 'bg-teal-400'
-    case 'data-analyst': return 'bg-cyan-400'
-    case 'chat': return 'bg-pink-400'
-    default: return 'bg-foreground/40'
+    case 'coder':
+      return 'bg-blue-400'
+    case 'analyst':
+      return 'bg-violet-400'
+    case 'reviewer':
+      return 'bg-amber-400'
+    case 'writer':
+      return 'bg-emerald-400'
+    case 'doc-writer':
+      return 'bg-teal-400'
+    case 'data-analyst':
+      return 'bg-cyan-400'
+    case 'chat':
+      return 'bg-pink-400'
+    default:
+      return 'bg-foreground/40'
   }
 }
 
@@ -92,7 +95,10 @@ export function RoleDetailDialog({
   saving: boolean
   onSave: () => Promise<void>
   onDelete: () => Promise<void>
-  onFieldChange: (field: keyof AgentRoleProfile, value: string | string[] | number | boolean) => void
+  onFieldChange: (
+    field: keyof AgentRoleProfile,
+    value: string | string[] | number | boolean
+  ) => void
   onAddModel: (modelId: string) => void
   onRemoveModel: (modelId: string) => void
 }): React.ReactElement {
@@ -107,7 +113,9 @@ export function RoleDetailDialog({
       >
         <DialogHeader className="sr-only">
           <DialogTitle>{role.displayName}</DialogTitle>
-          <DialogDescription>{role.description || `${role.displayName} 的角色配置与统计`}</DialogDescription>
+          <DialogDescription>
+            {role.description || `${role.displayName} 的角色配置与统计`}
+          </DialogDescription>
         </DialogHeader>
         {/* 顶部：角色名 + 描述（右侧留空给关闭按钮） */}
         <div className="shrink-0 flex items-start gap-3 px-5 py-4 pr-12 border-b border-border/40">
@@ -149,7 +157,9 @@ export function RoleDetailDialog({
                   <div className="text-[11px] font-medium text-foreground mb-2">基本信息</div>
                   <InfoRow label="角色 ID">
                     <div className="flex items-center gap-1.5 justify-end">
-                      <Badge variant="outline" className="text-[10px] font-mono">{role.id}</Badge>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        {role.id}
+                      </Badge>
                       {isBuiltin && (
                         <Badge variant="outline" className="text-[10px] text-muted-foreground">
                           内置
@@ -159,7 +169,8 @@ export function RoleDetailDialog({
                   </InfoRow>
                   <InfoRow label="权限">
                     <span className="text-xs">
-                      {PERMISSION_MODE_OPTIONS.find((o) => o.value === role.permissionMode)?.label ?? role.permissionMode}
+                      {PERMISSION_MODE_OPTIONS.find((o) => o.value === role.permissionMode)
+                        ?.label ?? role.permissionMode}
                     </span>
                   </InfoRow>
                   <InfoRow label="并发">
@@ -247,7 +258,9 @@ export function RoleDetailDialog({
                 <CfgField label="权限模式">
                   <Select
                     value={role.permissionMode}
-                    onValueChange={(v) => onFieldChange('permissionMode', v as AgentRolePermissionMode)}
+                    onValueChange={(v) =>
+                      onFieldChange('permissionMode', v as AgentRolePermissionMode)
+                    }
                   >
                     <SelectTrigger className="h-8 w-full text-xs">
                       <SelectValue />
@@ -317,10 +330,20 @@ export function RoleDetailDialog({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onOpenChange(false)}
+            >
               取消
             </Button>
-            <Button size="sm" className="h-7 text-xs" disabled={saving} onClick={() => void onSave()}>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={saving}
+              onClick={() => void onSave()}
+            >
               <Save className="mr-1 size-3" />
               {saving ? '保存中...' : '保存'}
             </Button>
@@ -331,7 +354,13 @@ export function RoleDetailDialog({
   )
 }
 
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+function InfoRow({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}): React.ReactElement {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
@@ -340,7 +369,13 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
   )
 }
 
-function CfgField({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+function CfgField({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}): React.ReactElement {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-foreground/80">{label}</label>

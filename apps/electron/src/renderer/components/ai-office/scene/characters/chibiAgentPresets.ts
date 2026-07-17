@@ -8,7 +8,7 @@ export type ChibiAgentPreset = {
   stateAnims: Partial<Record<OfficeAgentState, string>>
 }
 
-/** 6 �?Agent 朝向与标志性动�?*/
+/** 6 �?Agent 朝向与标志性动�?*/
 export const CHIBI_AGENT_PRESETS: Record<string, ChibiAgentPreset> = {
   marvis: {
     facing: 'front',
@@ -73,10 +73,7 @@ export function getChibiAgentPreset(agentId: string): ChibiAgentPreset | null {
   return CHIBI_AGENT_PRESETS[agentId] ?? null
 }
 
-export function resolveChibiPresetAnim(
-  agentId: string,
-  state: OfficeAgentState,
-): string | null {
+export function resolveChibiPresetAnim(agentId: string, state: OfficeAgentState): string | null {
   if (state === 'walking') return null
   const preset = getChibiAgentPreset(agentId)
   if (!preset) return null

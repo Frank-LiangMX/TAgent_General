@@ -4,6 +4,8 @@ import type { AgentEntity } from '../entities/AgentEntity'
 import { getWorkerStatePosition, HANDOFF_STATUS, isDeskWorkerState } from '../layout/officeLayout'
 import { talkFacingToward } from '../systems/movementFacing'
 import { advanceCompletedAmbient } from './completedAmbient'
+import { advanceDirectorAmbient } from './directorAmbient'
+import { collaborationPartnerByDirector, processCollaborationMissions } from './collaboration'
 import {
   agentHasActiveMission,
   processDeskVisitMissions,
@@ -21,11 +23,17 @@ export class OfficeSimulator {
 
   tick(dt: number, agents: OfficeAgent[]): OfficeAgent[] {
     const next = agents.map((a) => ({ ...a }))
-    return this.pinAmbientAgents(advanceCompletedAmbient(dt, next, this.reduceMotion))
+    return this.pinAmbientAgents(
+      advanceDirectorAmbient(
+        dt,
+        advanceCompletedAmbient(dt, next, this.reduceMotion),
+        this.reduceMotion
+      )
+    )
   }
 
   private pinAmbientAgents(agents: OfficeAgent[]): OfficeAgent[] {
-    const visitorByHost = new Map<string, OfficeAgent>()
+    const visitorByHost = collaborationPartnerByDirector(agents)
     for (const a of agents) {
       const m = a.mission
       if (m?.kind === 'desk_visit' && m.phase === 'talk') {
@@ -35,23 +43,46 @@ export class OfficeSimulator {
 
     return agents.map((agent) => {
       if (agentHasActiveMission(agent)) return agent
-      if (agent.state === 'walking' && agent.transition) return agent
-      if (agent.state === 'completed' && agent.ambientActivity) return agent
-
       const visitor = visitorByHost.get(agent.id)
-      const toward = visitor
-        ? talkFacingToward(agent.x, agent.y, visitor.x, visitor.y)
-        : agent.customAnimation
-          ? { viewFacing: 'front' as const, facing: 1 as const }
-          : {
-              viewFacing: isDeskWorkerState(agent.state) ? ('back' as const) : ('front' as const),
-              facing: agent.facing,
-            }
+      if (visitor) {
+        const toward = talkFacingToward(agent.x, agent.y, visitor.x, visitor.y)
+        const position = getWorkerStatePosition({ ...agent, state: 'talking' })
+        return {
+          ...agent,
+          ...position,
+          ...toward,
+          state: 'talking' as const,
+          currentTask: HANDOFF_STATUS.receiving,
+          targetX: undefined,
+          targetY: undefined,
+          walkPath: undefined,
+          walkPathIndex: undefined,
+          transition: undefined,
+          ambientActivity: undefined,
+          customAnimation: undefined,
+          bubbleText: undefined,
+        }
+      }
+      if (agent.state === 'walking' && agent.transition) return agent
+      if (agent.ambientActivity) return agent
 
-      const state =
-        visitor || (agent.customAnimation && !agent.ambientActivity)
-          ? ('talking' as const)
+      const toward = agent.customAnimation
+        ? { viewFacing: 'front' as const, facing: 1 as const }
+        : {
+            viewFacing:
+              isDeskWorkerState(agent.state) && agent.semanticState !== 'awaiting_review'
+                ? ('back' as const)
+                : ('front' as const),
+            facing: agent.facing,
+          }
+
+      const resumedDirectorState =
+        agent.kind === 'director' &&
+        (agent.semanticState === 'ambient' || agent.semanticState === 'supervising') &&
+        agent.state === 'talking'
+          ? ('waiting' as const)
           : agent.state
+      const state = agent.customAnimation ? ('talking' as const) : resumedDirectorState
       const position = getWorkerStatePosition({ ...agent, state })
 
       return {
@@ -61,7 +92,12 @@ export class OfficeSimulator {
         state,
         viewFacing: toward.viewFacing,
         facing: toward.facing,
-        currentTask: visitor ? HANDOFF_STATUS.receiving : agent.currentTask,
+        currentTask:
+          agent.kind === 'director' && state === 'waiting'
+            ? agent.semanticState === 'supervising'
+              ? '正在巡视团队进度'
+              : '等待你的指示'
+            : agent.currentTask,
         targetX: undefined,
         targetY: undefined,
         walkPath: undefined,
@@ -94,6 +130,10 @@ export class OfficeSimulator {
     agents: OfficeAgent[],
     entities: Map<string, AgentEntity>
   ): OfficeAgent[] {
-    return processDeskVisitMissions(dt, agents, entities)
+    return processCollaborationMissions(
+      dt,
+      processDeskVisitMissions(dt, agents, entities),
+      entities
+    )
   }
 }

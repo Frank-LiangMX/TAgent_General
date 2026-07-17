@@ -31,12 +31,18 @@ function assistant(): SDKMessage {
 
 describe('sliceCurrentTurnMessages', () => {
   test('截取最近一次真实用户输入之后的消息', () => {
-    const messages = [userText('旧问题'), assistant(), userText('新问题'), assistant(), toolResult()]
+    const messages = [
+      userText('旧问题'),
+      assistant(),
+      userText('新问题'),
+      assistant(),
+      toolResult(),
+    ]
     const sliced = sliceCurrentTurnMessages(messages)
     expect(sliced).toHaveLength(3)
-    expect((sliced[0] as { message: { content: Array<{ text?: string }> } }).message.content[0]?.text).toBe(
-      '新问题'
-    )
+    expect(
+      (sliced[0] as { message: { content: Array<{ text?: string }> } }).message.content[0]?.text
+    ).toBe('新问题')
   })
 
   test('没有真实用户输入时返回空数组', () => {

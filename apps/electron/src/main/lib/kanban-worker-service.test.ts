@@ -245,21 +245,18 @@ describe('runKanbanTaskHeadless', () => {
         { ...baseBoard, workspaceId: 'ws_board' }
       )
     ).toBe('ws_task')
-    expect(
-      resolveWorkerWorkspaceId(baseTask, { ...baseBoard, workspaceId: 'ws_board' })
-    ).toBe('ws_board')
+    expect(resolveWorkerWorkspaceId(baseTask, { ...baseBoard, workspaceId: 'ws_board' })).toBe(
+      'ws_board'
+    )
     mockGetSessionMeta.mockReturnValue({
       workspaceId: 'ws_parent',
     } as ReturnType<typeof agentSessionManager.getAgentSessionMeta>)
-    expect(
-      resolveWorkerWorkspaceId(baseTask, { ...baseBoard, parentSessionId: 's1' })
-    ).toBe('ws_parent')
+    expect(resolveWorkerWorkspaceId(baseTask, { ...baseBoard, parentSessionId: 's1' })).toBe(
+      'ws_parent'
+    )
     mockGetSessionMeta.mockReturnValue(undefined)
     expect(
-      resolveWorkerWorkspaceId(
-        { ...baseTask, metadata: { workspaceId: 'ws_meta' } },
-        baseBoard
-      )
+      resolveWorkerWorkspaceId({ ...baseTask, metadata: { workspaceId: 'ws_meta' } }, baseBoard)
     ).toBe('ws_meta')
   })
 

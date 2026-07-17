@@ -19,6 +19,7 @@ import * as React from 'react'
 import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 import { AskMessageItem } from './AskMessageItem'
 import { buildLiveGroupSet } from './live-group-set'
+import { shouldShowPendingStreamTurn } from './pending-stream-turn'
 import {
   SessionAlertIcon,
   SessionChevronDown,
@@ -54,7 +55,12 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
-import { BasePathsProvider } from '@/components/ai-elements/message'
+import {
+  BasePathsProvider,
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
@@ -178,6 +184,47 @@ function EmptyState(): React.ReactElement {
     <div className="flex h-full items-center justify-center">
       <p className="text-sm text-muted-foreground/60">输入消息开始对话</p>
     </div>
+  )
+}
+
+/**
+ * 首条 assistant SDK 消息到达前的运行占位。
+ * 运行中胶囊与流式 token 都挂在 live assistant-turn 上；若等完整消息才建 turn，
+ * 会出现「侧栏在跑、会话区长时间无反馈，最后一次性倒出」的假静默。
+ */
+function PendingStreamTurn({
+  startedAt,
+  streamingText,
+  streamingThinking,
+  retrying,
+}: {
+  startedAt?: number
+  streamingText?: string
+  streamingThinking?: string
+  retrying?: AgentStreamState['retrying']
+}): React.ReactElement {
+  const hasText = !!(streamingText && streamingText.length > 0)
+  const hasThinking = !!(streamingThinking && streamingThinking.length > 0)
+
+  return (
+    <Message from="assistant">
+      <MessageContent>
+        <div className="agent-turn flex flex-col gap-3">
+          {hasThinking && (
+            <div className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+              {streamingThinking}
+            </div>
+          )}
+          {hasText && <MessageResponse>{streamingText}</MessageResponse>}
+        </div>
+      </MessageContent>
+      <div className="agent-turn-footer">
+        <div className="agent-turn-footer__meta">
+          {retrying && <RetryingNotice retrying={retrying} />}
+          <AgentStatusBadge status="running" startedAt={startedAt} />
+        </div>
+      </div>
+    </Message>
   )
 }
 
@@ -914,6 +961,19 @@ function AgentMessagesImpl({
                   />
                 )
               })}
+
+              {/* 首条 live assistant 到达前：立刻展示运行胶囊 + 已到的流式 token */}
+              {shouldShowPendingStreamTurn({
+                streaming,
+                hasLiveAssistantContent,
+              }) && (
+                <PendingStreamTurn
+                  startedAt={startedAt}
+                  streamingText={smoothContent || undefined}
+                  streamingThinking={smoothThinking || undefined}
+                  retrying={retrying}
+                />
+              )}
 
               {/* SDK status=compacting 到达后会在时间线内联显示；此处仅作事件到达前的兜底 */}
               {streamState?.isCompacting && !hasInlineCompactingIndicator && (

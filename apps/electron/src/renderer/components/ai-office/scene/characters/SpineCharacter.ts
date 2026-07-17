@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Spine } from '@esotericsoftware/spine-pixi-v8'
 import { Container, Graphics } from 'pixi.js'
-import type { ChibiFacing, OfficeAgentState } from '../../types/office-agent'
+import type { ChibiFacing, OfficeAgent, OfficeAgentState } from '../../types/office-agent'
 import {
   createSpineFromCache,
   getSpineCharacterPack,
@@ -11,6 +11,7 @@ import {
   getWorkerSpineSkin,
   OFFICE_CHARACTER_SCALE,
   OFFICE_CHARACTER_TARGET_HEIGHT,
+  resolveDirectorAnimation,
   resolveWorkerAnimation,
   type WorkerAnimationSpec,
 } from './workerSpineAppearance'
@@ -37,9 +38,14 @@ const PACK_CONFIG: Record<SpineCharacterPack, PackConfig> = {
 }
 
 const STATE_MIX_SECONDS = 0.24
+const DIRECTOR_MIX_SECONDS = 0.34
+const DIRECTOR_SCALE_MULTIPLIER = 1.06
+
+type OfficeCharacterKind = NonNullable<OfficeAgent['kind']>
 
 export class SpineCharacter extends Container {
   private readonly appearanceKey: string
+  private readonly kind: OfficeCharacterKind
   private spine: Spine | null = null
   private shadow: Graphics
   private currentAnimationKey = ''
@@ -49,9 +55,10 @@ export class SpineCharacter extends Container {
   private customAnimation: string | undefined
   private viewFacing: ChibiFacing = 'front'
 
-  constructor(appearanceKey: string, _agentColor: number) {
+  constructor(appearanceKey: string, _agentColor: number, kind: OfficeCharacterKind = 'worker') {
     super()
     this.appearanceKey = appearanceKey
+    this.kind = kind
     this.shadow = new Graphics()
     this.addChild(this.shadow)
     this.createSpine()
@@ -102,14 +109,18 @@ export class SpineCharacter extends Container {
   getHeadOffsetY(): number {
     if (!this.spine || !this.pack) return -52
     // 使用角色完整视觉高度作为稳定锚点，避免抬手、转身等骨骼动作带动工牌压到脸上。
-    return this.spine.y - OFFICE_CHARACTER_TARGET_HEIGHT
+    const visualHeight =
+      OFFICE_CHARACTER_TARGET_HEIGHT * (this.kind === 'director' ? DIRECTOR_SCALE_MULTIPLIER : 1)
+    return this.spine.y - visualHeight
   }
 
   private animationSpec(): WorkerAnimationSpec {
     if (this.customAnimation && this.agentState !== 'walking') {
       return { name: this.customAnimation, loop: true }
     }
-    return resolveWorkerAnimation(this.agentState, this.viewFacing)
+    return this.kind === 'director'
+      ? resolveDirectorAnimation(this.agentState, this.viewFacing)
+      : resolveWorkerAnimation(this.agentState, this.viewFacing)
   }
 
   private applyAnimation() {
@@ -117,19 +128,22 @@ export class SpineCharacter extends Container {
     const config = PACK_CONFIG[this.pack]
     const spec = this.animationSpec()
     const animation = this.spine.skeleton.data.findAnimation(spec.name)
-    const fallback = resolveWorkerAnimation('waiting', this.viewFacing).name
+    const fallback =
+      this.kind === 'director'
+        ? resolveDirectorAnimation('waiting', this.viewFacing).name
+        : resolveWorkerAnimation('waiting', this.viewFacing).name
     const name = animation ? spec.name : fallback
     const animationKey = `${this.agentState}:${this.viewFacing}:${name}:${spec.loop}`
 
     if (animationKey === this.currentAnimationKey) {
-      this.spine.state.timeScale = config.timeScale?.[this.agentState] ?? 1
+      this.spine.state.timeScale = this.resolveTimeScale(config)
       return
     }
 
     this.currentAnimationKey = animationKey
     const entry = this.spine.state.setAnimation(0, name, animation ? spec.loop : true)
-    this.spine.state.timeScale = config.timeScale?.[this.agentState] ?? 1
-    if (entry) entry.mixDuration = STATE_MIX_SECONDS
+    this.spine.state.timeScale = this.resolveTimeScale(config)
+    if (entry) entry.mixDuration = this.mixDuration
 
     if (
       animation &&
@@ -139,6 +153,15 @@ export class SpineCharacter extends Container {
     ) {
       this.spine.state.addAnimation(0, spec.settleTo, true, 0)
     }
+  }
+
+  private get mixDuration(): number {
+    return this.kind === 'director' ? DIRECTOR_MIX_SECONDS : STATE_MIX_SECONDS
+  }
+
+  private resolveTimeScale(config: PackConfig): number {
+    const stateScale = config.timeScale?.[this.agentState] ?? 1
+    return this.kind === 'director' ? stateScale * 0.72 : stateScale
   }
 
   private createSpine() {
@@ -157,8 +180,8 @@ export class SpineCharacter extends Container {
         spine.skeleton.setSlotsToSetupPose()
       }
 
-      spine.state.data.defaultMix = STATE_MIX_SECONDS
-      spine.scale.set(config.scale)
+      spine.state.data.defaultMix = this.mixDuration
+      spine.scale.set(config.scale * (this.kind === 'director' ? DIRECTOR_SCALE_MULTIPLIER : 1))
       spine.position.set(0, config.y)
       this.spine = spine
       this.ready = true

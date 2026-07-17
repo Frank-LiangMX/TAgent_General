@@ -48,7 +48,7 @@ export class AgentEntity extends Container {
   private walkPhase = 0
   private stateElapsed = 0
   private useSpine = false
-  private readonly reduceMotion: boolean
+  private reduceMotion: boolean
 
   constructor(agent: OfficeAgent, options: { reduceMotion?: boolean } = {}) {
     super()
@@ -59,7 +59,7 @@ export class AgentEntity extends Container {
     this.bubble = new Bubble()
 
     if (isSpineReady()) {
-      this.spineChar = new SpineCharacter(agent.appearanceKey, agent.color)
+      this.spineChar = new SpineCharacter(agent.appearanceKey, agent.color, agent.kind ?? 'worker')
       if (this.spineChar.isReady) {
         this.useSpine = true
         this.spineChar.setAgentColor(agent.color)
@@ -87,6 +87,10 @@ export class AgentEntity extends Container {
     return this.agent
   }
 
+  setReducedMotion(value: boolean) {
+    this.reduceMotion = value
+  }
+
   apply(patch: Partial<OfficeAgent>) {
     const prevState = this.agent.state
     const prevFacing = this.agent.facing
@@ -96,7 +100,7 @@ export class AgentEntity extends Container {
     this.agent = { ...this.agent, ...patch }
     if (patch.state != null && patch.state !== prevState) this.stateElapsed = 0
     this.statusLabel.setName(this.agent.name)
-    this.statusLabel.setState(this.agent.state)
+    this.statusLabel.setState(this.agent.semanticState ?? this.agent.state)
     this.statusLabel.setTask(undefined)
     this.alpha = this.agent.state === 'cancelled' ? 0.48 : 1
 
@@ -173,7 +177,11 @@ export class AgentEntity extends Container {
         this.agent.facing = viewFacingToLR(vf)
         this.spineChar.setViewFacing(vf)
         this.spineChar.setFacing(this.agent.facing)
-      } else if (state === 'working' || state === 'thinking') {
+      } else if (
+        state === 'working' ||
+        state === 'thinking' ||
+        (state === 'reviewing' && this.agent.semanticState !== 'awaiting_review')
+      ) {
         if (this.agent.viewFacing !== 'back') {
           this.agent.viewFacing = 'back'
           this.spineChar.setViewFacing('back')
@@ -188,7 +196,7 @@ export class AgentEntity extends Container {
       this.drawFallbackBody(state, 0)
     }
     this.bubble.update(dt)
-    this.statusLabel.setState(state)
+    this.statusLabel.setState(this.agent.semanticState ?? state)
     this.statusLabel.setTask(undefined)
     this.updateOverlayPositions()
   }
@@ -202,7 +210,7 @@ export class AgentEntity extends Container {
 
   private syncVisual() {
     this.statusLabel.setName(this.agent.name)
-    this.statusLabel.setState(this.agent.state)
+    this.statusLabel.setState(this.agent.semanticState ?? this.agent.state)
     this.statusLabel.setTask(undefined)
     this.alpha = this.agent.state === 'cancelled' ? 0.48 : 1
     if (this.agent.bubbleText) this.bubble.show(this.agent.bubbleText)

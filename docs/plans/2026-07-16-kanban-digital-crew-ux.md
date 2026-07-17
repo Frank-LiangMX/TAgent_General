@@ -254,3 +254,5 @@ IPC：`kanban:getCrewStats` → `KanbanCrewStats`
 | 办公室（瞬知/马维斯风） | 作为右栏班组墙视图；必须直接消费 Kanban worker 真值，禁止固定角色模拟 |
 | 右栏 vs 团队整页 | 右栏班组为伴生主路径；整页逐步降级 |
 | 工人对话 | 不嵌右栏 AgentView，打开会话 |
+
+> 后续方向：右栏 AI Office 保留为经典工作台的轻量班组概览；全屏、按会话切换的沉浸式 Office 设计见 [2026-07-17-ai-office-session-presentation-design.md](./2026-07-17-ai-office-session-presentation-design.md)。该设计不替代现有 TAgent 经典工作台，也不新增第三种顶层业务模式。

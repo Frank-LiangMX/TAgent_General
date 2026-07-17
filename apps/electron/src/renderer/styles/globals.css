@@ -14,7 +14,7 @@
   :root {
     /* 非颜色 token（颜色变量由 tokens.css 定义） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    /* 代码块背景 - 浅色主题使用浅灰背景 */
+    /* 代码块背景：浅色主题搭配 github-light 高亮 */
     --code-bg: 220 12% 96%;
     /*
      * 强调色一律跟随主题 --primary（已取消独立签名色）。
@@ -903,10 +903,10 @@ html.material-frosted .app-content-boundary-rim {
 }
 
 /* ===== 输入框内代码块：按主题分色 ===== */
-/* 浅色主题：使用深色 code-bg + 浅色文字，与 AI 代码块一致 */
+/* 浅色主题：浅底 + 正常前景色，与 github-light 高亮一致 */
 .tiptap pre {
   background-color: hsl(var(--code-bg));
-  color: hsl(0 0% 90%);
+  color: hsl(var(--foreground));
 }
 .tiptap pre code {
   color: inherit;
@@ -2605,7 +2605,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   padding: 0;
 }
 
-/* 浅色主题代码块是深底，用偏浅的蓝灰选区承托白字，避免 Shiki token 内联色在选中后变黑。 */
+/* 浅色主题代码块使用浅底，选区保持足够的文字对比度。 */
 :root:not(.dark) :is(
   .code-block-wrapper pre.shiki,
   .tiptap pre
@@ -2615,8 +2615,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   .tiptap pre
 ) ::selection {
   background-color: hsl(210 80% 62% / 0.32);
-  color: hsl(0 0% 98%) !important;
-  -webkit-text-fill-color: hsl(0 0% 98%);
+  color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--foreground));
 }
 
 :root:not(.dark) :is(
@@ -2628,7 +2628,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   .tiptap pre
 ) ::-moz-selection {
   background-color: hsl(210 80% 62% / 0.32);
-  color: hsl(0 0% 98%) !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 /* 代码行：限制重排范围，GPU 合成优化 */

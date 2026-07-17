@@ -2,6 +2,7 @@ import type { OfficeAgent } from '../../types/office-agent'
 import { DESKS, getWorkerStatePosition, isDeskWorkerState } from '../layout/officeLayout'
 import { createNavContext, planWalkFrom, planWalkToDeskSeat } from '../navigation/officeNavigation'
 import { MovementSystem } from '../systems/MovementSystem'
+import { startArrivalBriefing, startWorkerHandoff } from './collaboration'
 
 const POSITION_EPSILON = 6
 
@@ -45,7 +46,7 @@ export function transitionWorkerAgent(
 ): OfficeAgent {
   const targetPosition = getWorkerStatePosition(next)
 
-  if (!previous || reduceMotion) {
+  if (!previous) {
     return {
       ...next,
       ...targetPosition,
@@ -55,6 +56,112 @@ export function transitionWorkerAgent(
       walkPath: undefined,
       walkPathIndex: undefined,
     }
+  }
+
+  if (previous.mission?.kind === 'collaboration') {
+    const assignmentChanged = previous.taskId !== next.taskId
+    const mustInterrupt =
+      assignmentChanged ||
+      next.state !== previous.mission.targetState ||
+      next.state === 'blocked' ||
+      next.state === 'failed' ||
+      next.state === 'cancelled'
+    if (!mustInterrupt) {
+      return {
+        ...next,
+        x: previous.x,
+        y: previous.y,
+        state: previous.state,
+        targetX: previous.targetX,
+        targetY: previous.targetY,
+        walkPath: previous.walkPath,
+        walkPathIndex: previous.walkPathIndex,
+        viewFacing: previous.viewFacing,
+        facing: previous.facing,
+        transition: previous.transition,
+        mission: previous.mission,
+        bubbleText: previous.bubbleText,
+      }
+    }
+  }
+
+  if (
+    next.kind === 'director' &&
+    (next.semanticState === 'ambient' || next.semanticState === 'supervising') &&
+    next.semanticState === previous.semanticState &&
+    previous.ambientActivity
+  ) {
+    return {
+      ...next,
+      x: previous.x,
+      y: previous.y,
+      state: previous.state,
+      targetX: previous.targetX,
+      targetY: previous.targetY,
+      walkPath: previous.walkPath,
+      walkPathIndex: previous.walkPathIndex,
+      viewFacing: previous.viewFacing,
+      facing: previous.facing,
+      transition: previous.transition,
+      ambientActivity: previous.ambientActivity,
+      customAnimation: previous.customAnimation,
+    }
+  }
+
+  if (next.kind === 'worker' && previous.taskId !== next.taskId) {
+    return startArrivalBriefing(
+      { ...next, x: previous.x, y: previous.y, facing: previous.facing },
+      sceneAgents,
+      { delay: reduceMotion ? 0 : 0.35, fromEntrance: false }
+    )
+  }
+
+  if (next.kind === 'worker' && previous.taskStatus === 'review' && next.taskStatus === 'running') {
+    const desk = DESKS.find((item) => item.id === next.assignedDeskId) ?? DESKS[0]!
+    const path = planWalkToDeskSeat(
+      previous.x,
+      previous.y,
+      desk,
+      createNavContext(sceneAgents, next.id)
+    )
+    const walking = MovementSystem.assignWalkPath(
+      {
+        ...next,
+        x: previous.x,
+        y: previous.y,
+        semanticState: 'reworking',
+        currentTask: `返工中 · ${next.assignment?.detail ?? next.currentTask ?? ''}`,
+        transition: {
+          kind: 'collaboration',
+          targetState: next.state,
+          targetTask: next.currentTask,
+        },
+      },
+      path
+    )
+    return { ...walking, currentTask: '收到反馈，返回工位返工' }
+  }
+
+  const previousTargetState = desiredState(previous)
+  if (next.kind === 'worker' && next.state === 'reviewing' && previousTargetState !== 'reviewing') {
+    return startWorkerHandoff(
+      { ...next, x: previous.x, y: previous.y, facing: previous.facing },
+      sceneAgents,
+      'review'
+    )
+  }
+
+  if (next.kind === 'worker' && next.state === 'completed' && previousTargetState !== 'completed') {
+    return startWorkerHandoff(
+      {
+        ...next,
+        x: previous.x,
+        y: previous.y,
+        facing: previous.facing,
+      },
+      sceneAgents,
+      'delivery'
+    )
   }
 
   const previousDesiredState = desiredState(previous)
@@ -140,11 +247,29 @@ export function transitionWorkerAgent(
 export function transitionWorkerRoster(
   nextAgents: OfficeAgent[],
   previousAgents: OfficeAgent[],
-  reduceMotion: boolean
+  reduceMotion: boolean,
+  options: { hydrate?: boolean } = {}
 ): OfficeAgent[] {
   const previousById = new Map(previousAgents.map((agent) => [agent.id, agent]))
   const stableAgents = assignStableWorkerDesks(nextAgents, previousAgents)
-  return stableAgents.map((agent) =>
-    transitionWorkerAgent(agent, previousById.get(agent.id), stableAgents, reduceMotion)
-  )
+  const transitioned: OfficeAgent[] = []
+
+  stableAgents.forEach((agent, index) => {
+    const previous = previousById.get(agent.id)
+    const sceneAgents = stableAgents.map(
+      (candidate) => transitioned.find((item) => item.id === candidate.id) ?? candidate
+    )
+    if (!previous && !options.hydrate && agent.kind === 'worker') {
+      transitioned.push(
+        startArrivalBriefing(agent, sceneAgents, {
+          delay: reduceMotion ? 0 : 0.25 + index * 0.38,
+          fromEntrance: true,
+        })
+      )
+      return
+    }
+    transitioned.push(transitionWorkerAgent(agent, previous, sceneAgents, reduceMotion))
+  })
+
+  return transitioned
 }

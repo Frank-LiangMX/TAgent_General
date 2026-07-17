@@ -1399,10 +1399,31 @@ export function useGlobalAgentListeners(): void {
             return map
           })
 
-          // 无条件 bumpRefresh，确保乐观消息被清理
-          // （并发守卫拒绝、IPC 失败等场景都会发送 STREAM_ERROR）
-          // 如果流式仍在运行（running=true），AgentView 的 refreshVersion useEffect 会跳过清理 liveMessages
-          // 只有在 running=false 时才会清理乐观消息并重新加载持久化消息
+          // 并发守卫拒绝（「仍在处理中」）：新 send 从未真正开跑，但前端已乐观设 running。
+          // 若不回滚，会出现 running 动画 + 刷新把乐观气泡刷掉的「吞会话」态。
+          const isBusyReject = data.error.includes('仍在处理中')
+          if (isBusyReject) {
+            store.set(agentStreamingStatesAtom, (prev) => {
+              const current = prev.get(data.sessionId)
+              if (!current?.running) return prev
+              const hasProgress =
+                (current.content?.length ?? 0) > 0 ||
+                (current.thinkingContent?.length ?? 0) > 0 ||
+                current.toolActivities.length > 0
+              if (hasProgress) return prev
+              const map = new Map(prev)
+              map.set(data.sessionId, {
+                ...current,
+                running: false,
+                // 主进程仍占 active slot 的典型原因是后台任务等待
+                backgroundWaiting: true,
+              })
+              return map
+            })
+            toast.warning(data.error)
+          }
+
+          // bumpRefresh：running=false 时会清掉未落盘乐观气泡；仍在跑时由 AgentView 调和保留
           store.set(agentMessageRefreshAtom, (prev) => {
             const map = new Map(prev)
             map.set(data.sessionId, (prev.get(data.sessionId) ?? 0) + 1)

@@ -33,13 +33,12 @@ function monthStart(): number {
 function periodStats(tasks: KanbanTask[], since: number): PeriodStats {
   const relevant = tasks.filter(
     (t) =>
-      t.status === 'done' || t.status === 'failed' ||
+      t.status === 'done' ||
+      t.status === 'failed' ||
       (t.status === 'running' && t.startedAt != null)
   )
   const doneOrFailed = relevant.filter((t) => t.status === 'done' || t.status === 'failed')
-  const inWindow = doneOrFailed.filter(
-    (t) => t.finishedAt != null && t.finishedAt >= since
-  )
+  const inWindow = doneOrFailed.filter((t) => t.finishedAt != null && t.finishedAt >= since)
   const totalDurationMs = inWindow.reduce((sum, t) => {
     if (t.startedAt == null || t.finishedAt == null) return sum
     return sum + (t.finishedAt - t.startedAt)

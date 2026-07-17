@@ -29,7 +29,7 @@ export const COMPLETED_AMBIENT_SPOTS: readonly AmbientSpot[] = [
   {
     kind: 'window_gazing',
     label: '在窗边放空',
-    x: 835,
+    x: 780,
     y: 390,
     animation: 'movement/idle-right',
     duration: 7.5,

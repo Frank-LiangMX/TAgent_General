@@ -3,6 +3,7 @@
  */
 
 import type { KanbanTaskStatus } from '@tagent/shared'
+import type { OfficeActor, OfficeAssignment, OfficeSemanticState } from './office-actor'
 
 /**
  * 办公室表现态。
@@ -42,8 +43,20 @@ export interface OfficeDeskVisitMission {
 
 /** worker 状态变化时的场景迁移，抵达目标区域后再切到真实状态。 */
 export interface OfficeAgentTransition {
-  kind: 'worker_state' | 'ambient'
+  kind: 'worker_state' | 'ambient' | 'collaboration'
   targetState: OfficeAgentState
+  targetTask?: string
+}
+
+export type OfficeCollaborationKind = 'arrival_briefing' | 'delivery' | 'review'
+
+export interface OfficeCollaborationMission {
+  kind: 'collaboration'
+  intent: OfficeCollaborationKind
+  phase: 'delay' | 'walking_to_meet' | 'talking' | 'walking_to_desk'
+  remaining: number
+  targetState: OfficeAgentState
+  targetSemanticState?: OfficeSemanticState
   targetTask?: string
 }
 
@@ -66,16 +79,22 @@ export interface OfficeAmbientActivity {
 }
 
 export interface OfficeAgent {
-  /** 场景实体 ID，当前使用 taskId 保证任务生命周期内稳定 */
+  /** 场景角色类型；主 Agent 与 worker 共用渲染实体，但不共用业务身份。 */
+  kind?: 'director' | 'worker'
+  /** Stable actor and current assignment are deliberately separate. */
+  actor?: OfficeActor
+  assignment?: OfficeAssignment
+  semanticState?: OfficeSemanticState
+  /** 场景实体 ID；director 使用主会话，worker 使用任务或 worker 会话。 */
   id: string
-  /** 对应的看板任务 */
-  taskId: string
+  /** 对应的看板任务；director 没有任务 ID。 */
+  taskId?: string
   /** 对应角色库 ID */
   roleId?: string
   /** 真正执行该任务的 worker 子会话 */
   workerSessionId?: string
   /** Kanban 原始状态，供详情和调试展示 */
-  taskStatus: KanbanTaskStatus
+  taskStatus?: KanbanTaskStatus
   /** 角色外观的稳定 seed；优先使用真实 workerSessionId */
   appearanceKey: string
   /** 当前实时进度 */
@@ -97,7 +116,7 @@ export interface OfficeAgent {
   customAnimation?: string
   facing: 1 | -1
   viewFacing?: ChibiFacing
-  mission?: OfficeDeskVisitMission
+  mission?: OfficeDeskVisitMission | OfficeCollaborationMission
   transition?: OfficeAgentTransition
   /** 已交卷后的场景生活行为，不改变 Kanban 业务状态。 */
   ambientActivity?: OfficeAmbientActivity

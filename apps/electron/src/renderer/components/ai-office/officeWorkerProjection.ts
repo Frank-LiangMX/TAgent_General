@@ -2,6 +2,7 @@ import type { KanbanTask, KanbanTaskStatus, ProgressLogEntry } from '@tagent/sha
 
 import { DESKS } from './scene/layout/officeLayout'
 import type { OfficeAgent, OfficeAgentState } from './types/office-agent'
+import type { OfficeActor, OfficeAssignment, OfficeSemanticState } from './types/office-actor'
 
 export const MAX_OFFICE_WORKERS = DESKS.length
 
@@ -16,6 +17,24 @@ export const OFFICE_STATE_LABELS: Record<OfficeAgentState, string> = {
   completed: '已交卷',
   failed: '需复盘',
   cancelled: '已撤岗',
+}
+
+export const OFFICE_SEMANTIC_LABELS: Record<OfficeSemanticState, string> = {
+  listening: '倾听中',
+  thinking: '分析中',
+  planning: '规划中',
+  summoning: '召集中',
+  briefing: '任务沟通',
+  working: '工作中',
+  supervising: '巡视验收',
+  blocked: '等待协助',
+  awaiting_review: '等待验收',
+  delivering: '正在交付',
+  reworking: '返工中',
+  reporting: '汇报中',
+  ambient: '空闲活动',
+  failed: '需要复盘',
+  off_duty: '已撤岗',
 }
 
 const ROLE_COLORS = [
@@ -36,6 +55,7 @@ const STATUS_PRIORITY: Record<KanbanTaskStatus, number> = {
 export interface OfficeWorkerProjection {
   agents: OfficeAgent[]
   hiddenCount: number
+  unassignedCount: number
 }
 
 function stableHash(value: string): number {
@@ -137,35 +157,91 @@ function compareTasks(a: KanbanTask, b: KanbanTask): number {
   return a.id.localeCompare(b.id)
 }
 
+function semanticStateFor(task: KanbanTask, state: OfficeAgentState): OfficeSemanticState {
+  if (task.status === 'blocked') return 'blocked'
+  if (task.status === 'review') return 'awaiting_review'
+  if (task.status === 'done') return 'ambient'
+  if (task.status === 'failed') return 'failed'
+  if (task.status === 'cancelled') return 'off_duty'
+  if (task.status === 'pending' || task.status === 'ready') return 'briefing'
+  if (state === 'thinking') return 'thinking'
+  if (state === 'reviewing') return 'awaiting_review'
+  return 'working'
+}
+
+function buildAssignment(
+  task: KanbanTask,
+  progress: ProgressLogEntry | undefined
+): OfficeAssignment {
+  return {
+    taskId: task.id,
+    title: task.title,
+    status: task.status,
+    detail: progress?.text || task.blockedReason || task.error || task.resultSummary || task.title,
+    progressText: progress?.text,
+    lastToolName: progress?.lastToolName,
+  }
+}
+
+function staffedTaskGroups(tasks: KanbanTask[]): Map<string, KanbanTask[]> {
+  const groups = new Map<string, KanbanTask[]>()
+  for (const task of tasks) {
+    if (!task.assigneeSessionId) continue
+    const current = groups.get(task.assigneeSessionId) ?? []
+    current.push(task)
+    groups.set(task.assigneeSessionId, current)
+  }
+  return groups
+}
+
 /**
  * 把看板任务投影为办公室 worker。
  *
- * task.id 是稳定场景实体，roleId 决定角色身份，assigneeSessionId 绑定真实 worker 会话和形象。
+ * assigneeSessionId 是稳定员工身份，task.id 只表示当前 assignment。
+ * 尚未领取的任务不会提前创建“幽灵员工”。
  */
 export function projectKanbanWorkers(
   tasks: KanbanTask[],
   roleLabels: Map<string, string>,
   liveProgressByTaskId: ReadonlyMap<string, ProgressLogEntry> = new Map()
 ): OfficeWorkerProjection {
-  const visibleTasks = [...tasks].sort(compareTasks).slice(0, MAX_OFFICE_WORKERS)
-  const agents = visibleTasks.map((task, slotIndex): OfficeAgent => {
+  const groups = staffedTaskGroups(tasks)
+  const staffedWorkers = [...groups.entries()]
+    .map(([sessionId, workerTasks]) => ({
+      sessionId,
+      task: [...workerTasks].sort(compareTasks)[0]!,
+    }))
+    .sort((a, b) => compareTasks(a.task, b.task))
+  const visibleWorkers = staffedWorkers.slice(0, MAX_OFFICE_WORKERS)
+  const agents = visibleWorkers.map(({ sessionId, task }, slotIndex): OfficeAgent => {
     const desk = DESKS[slotIndex]!
     const progress = latestProgress(task, liveProgressByTaskId.get(task.id))
     const state = resolveOfficeWorkerState(task, progress)
     const roleId = task.roleId ?? 'generalist'
     const name = roleLabels.get(task.id) ?? roleId
-    const detail =
-      progress?.text || task.blockedReason || task.error || task.resultSummary || task.title
+    const assignment = buildAssignment(task, progress)
     const stateLabel = OFFICE_STATE_LABELS[state]
     const color = ROLE_COLORS[stableHash(roleId) % ROLE_COLORS.length]!
+    const actor: OfficeActor = {
+      actorId: `worker:${sessionId}`,
+      kind: 'worker',
+      sessionId,
+      roleId: task.roleId,
+      appearanceKey: sessionId,
+      displayName: name,
+    }
 
     return {
-      id: task.id,
+      kind: 'worker',
+      actor,
+      assignment,
+      semanticState: semanticStateFor(task, state),
+      id: actor.actorId,
       taskId: task.id,
       roleId: task.roleId,
-      workerSessionId: task.assigneeSessionId,
+      workerSessionId: sessionId,
       taskStatus: task.status,
-      appearanceKey: task.assigneeSessionId ?? `${roleId}:${task.id}`,
+      appearanceKey: actor.appearanceKey,
       progressText: progress?.text,
       lastToolName: progress?.lastToolName,
       name,
@@ -173,7 +249,7 @@ export function projectKanbanWorkers(
       x: desk.seatX,
       y: desk.seatY,
       state,
-      currentTask: `${stateLabel} · ${compactText(detail)}`,
+      currentTask: `${stateLabel} · ${compactText(assignment.detail)}`,
       assignedDeskId: desk.id,
       facing: slotIndex % 2 === 0 ? 1 : -1,
       viewFacing:
@@ -183,6 +259,7 @@ export function projectKanbanWorkers(
 
   return {
     agents,
-    hiddenCount: Math.max(0, tasks.length - agents.length),
+    hiddenCount: Math.max(0, staffedWorkers.length - agents.length),
+    unassignedCount: tasks.filter((task) => !task.assigneeSessionId).length,
   }
 }

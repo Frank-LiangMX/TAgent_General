@@ -27,6 +27,7 @@ import {
   rightRailItemAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
+import { sessionPresentationAtomFamily } from '@/atoms/session-presentation-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
   designFullscreenAtom,
@@ -49,6 +50,12 @@ import {
   SHELL_EDGE_PADDING,
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
+
+const OfficeImmersiveShell = React.lazy(() =>
+  import('@/components/ai-office/OfficeImmersiveShell').then((module) => ({
+    default: module.OfficeImmersiveShell,
+  }))
+)
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
@@ -99,6 +106,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
+  const sessionPresentation = useAtomValue(
+    sessionPresentationAtomFamily(activeTab?.type === 'agent' ? activeTab.sessionId : '__none__')
+  )
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
   const designImmersive = useAtomValue(designImmersiveAtom)
@@ -109,7 +119,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     appMode === 'agent' &&
     activeTab?.type === 'agent' &&
     !!currentSessionId &&
-    activeRailItem === 'sessions'
+    activeRailItem === 'sessions' &&
+    sessionPresentation === 'classic'
 
   const showLeftSidebar =
     topLevelMode === 'general'
@@ -185,6 +196,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const magnify = useDelayedMount(wantMagnify)
   const immersive = useDelayedMount(wantImmersive)
+  const officeShellSessionId =
+    activeTab?.type === 'agent' && sessionPresentation === 'office' ? activeTab.sessionId : null
 
   // Esc 退出沉浸全屏
   React.useEffect(() => {
@@ -198,6 +211,26 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [wantImmersive, setDesignImmersive])
+
+  if (officeShellSessionId) {
+    return (
+      <AppShellProvider value={contextValue}>
+        <WindowControls />
+        <React.Suspense
+          fallback={
+            <div
+              className="flex h-screen w-screen items-center justify-center bg-background text-sm text-muted-foreground"
+              role="status"
+            >
+              正在进入办公室…
+            </div>
+          }
+        >
+          <OfficeImmersiveShell sessionId={officeShellSessionId} />
+        </React.Suspense>
+      </AppShellProvider>
+    )
+  }
 
   return (
     <AppShellProvider value={contextValue}>

@@ -178,7 +178,12 @@ function syncDeskVisitTalkPartners(agents: OfficeAgent[]): OfficeAgent[] {
         bubbleText: undefined,
       }
     }
-    if (agent.state === 'talking' && !agent.mission && !agent.customAnimation) {
+    if (
+      agent.kind !== 'director' &&
+      agent.state === 'talking' &&
+      !agent.mission &&
+      !agent.customAnimation
+    ) {
       return {
         ...agent,
         state: 'working' as const,

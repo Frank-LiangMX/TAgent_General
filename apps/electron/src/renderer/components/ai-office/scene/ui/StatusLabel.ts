@@ -19,6 +19,17 @@ const STATE_COLORS: Record<string, number> = {
   completed: 0x16a34a,
   failed: 0xdc2626,
   cancelled: 0x64748b,
+  listening: 0x4a90d9,
+  planning: 0x9b6dd7,
+  summoning: 0xe8a838,
+  briefing: 0xe8a838,
+  supervising: 0x3b82f6,
+  awaiting_review: 0x3b82f6,
+  delivering: 0x16a34a,
+  reworking: 0xf97316,
+  reporting: 0xe8a838,
+  ambient: 0x94a3b8,
+  off_duty: 0x64748b,
 }
 
 const CROWN_GAP = 14
@@ -50,7 +61,8 @@ export class StatusLabel extends Container {
   }
 
   /** 任务描述属于详情信息，不常驻角色头顶，避免遮挡角色和相邻 worker。 */
-  setTask(_task?: string) {
+  setTask(task?: string) {
+    void task
     // 保留接口供场景实体调用；头顶只展示姓名和状态。
   }
 
