@@ -5,7 +5,7 @@
  * P3: Chat 模式已退役，不再渲染 ChatView。
  */
 
-import { useAtomValue } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import * as React from 'react'
 
 import { TabErrorBoundary } from './TabErrorBoundary'
@@ -45,7 +45,7 @@ export interface TabContentProps {
 export function TabContent({ tabId }: TabContentProps): React.ReactElement {
   const tabs = useAtomValue(tabsAtom)
   const tab = tabs.find((t) => t.id === tabId)
-  const presentation = useAtomValue(
+  const [presentation, setPresentation] = useAtom(
     sessionPresentationAtomFamily(tab?.type === 'agent' ? tab.sessionId : '__none__')
   )
 
@@ -75,7 +75,14 @@ export function TabContent({ tabId }: TabContentProps): React.ReactElement {
 
   if (presentation === 'office') {
     return (
-      <TabErrorBoundary key={`${tab.sessionId}:office`} sessionId={tab.sessionId}>
+      <TabErrorBoundary
+        key={`${tab.sessionId}:office`}
+        sessionId={tab.sessionId}
+        fallbackAction={{
+          label: '返回经典工作台',
+          onClick: () => setPresentation('classic'),
+        }}
+      >
         <React.Suspense fallback={<OfficeLoadingState />}>
           <OfficeSessionView sessionId={tab.sessionId} />
         </React.Suspense>

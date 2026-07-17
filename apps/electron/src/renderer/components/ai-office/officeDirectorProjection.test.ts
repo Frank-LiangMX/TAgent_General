@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { projectOfficeDirector, resolveOfficeDirectorActivity } from './officeDirectorProjection'
+import { advanceDirectorAmbient } from './scene/simulation/directorAmbient'
 
 describe('Office director projection', () => {
   it('keeps an idle main Agent present without inventing a Kanban task', () => {
@@ -46,5 +47,33 @@ describe('Office director projection', () => {
       state: 'waiting',
       label: '结果已整理，等待下一步',
     })
+  })
+
+  it('shows real team assembly and supervision phases', () => {
+    expect(
+      resolveOfficeDirectorActivity({ unfinishedTaskCount: 3, activeWorkerCount: 0 })
+    ).toMatchObject({ state: 'waiting', semanticState: 'summoning' })
+    expect(
+      resolveOfficeDirectorActivity({ unfinishedTaskCount: 3, activeWorkerCount: 2 })
+    ).toMatchObject({
+      state: 'waiting',
+      semanticState: 'supervising',
+      label: '正在巡视 2 名员工的进度',
+    })
+  })
+
+  it('uses low-frequency interruptible ambient actions only in full motion mode', () => {
+    const director = projectOfficeDirector('session-ambient', {})
+    const [waiting] = advanceDirectorAmbient(0, [director], false)
+    const [walking] = advanceDirectorAmbient(20, [waiting!], false)
+    const [reduced] = advanceDirectorAmbient(20, [director], true)
+
+    expect(waiting?.ambientActivity).toMatchObject({ phase: 'delay', cycle: 0 })
+    expect(walking).toMatchObject({
+      state: 'walking',
+      transition: { kind: 'ambient', targetState: 'waiting' },
+      ambientActivity: { phase: 'walking' },
+    })
+    expect(reduced?.ambientActivity).toBeUndefined()
   })
 })

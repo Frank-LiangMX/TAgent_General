@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   normalizeSessionPresentation,
   normalizeSessionPresentationRecord,
+  normalizeOfficeSessionViewState,
 } from './session-presentation-atoms'
 
 describe('session presentation preference', () => {
@@ -25,6 +26,20 @@ describe('session presentation preference', () => {
       'session-office': 'office',
       'session-classic': 'classic',
       'session-invalid': 'classic',
+    })
+  })
+
+  it('bounds persisted Office layout values before restoring them', () => {
+    expect(
+      normalizeOfficeSessionViewState({
+        chatCollapsed: true,
+        chatWidth: 9_999,
+        camera: { scale: 0, offsetX: 24, offsetY: Number.NaN },
+      })
+    ).toEqual({
+      chatCollapsed: true,
+      chatWidth: 620,
+      camera: { scale: 0.3, offsetX: 24, offsetY: 0 },
     })
   })
 })

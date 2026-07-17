@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **每会话 AI Office 展示模式** — 经典 TAgent 工作台保持默认；主会话可独立切换到全屏办公室，保留会话导航并用可收起悬浮窗复用同一套 Agent 对话运行时；没有看板时也会显示由真实会话状态驱动的主 Agent 总监，不生成虚假 worker
+- **AI Office 稳定员工与协作编排** — worker 以真实子会话作为稳定 actor、任务作为可替换 assignment；新员工从入口到总监处 briefing 后再去工位，review / delivery / rework 均沿路径连续移动，并通过单通道交接队列避免多人重叠
+- **AI Office 状态与恢复控制** — 增加可访问员工名单、语义状态标签、任务详情入口、看板手动刷新、场景重试 / 返回经典工作台，以及按会话恢复摄像机和沟通窗布局
 - **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
 - **Kanban worker → Office 真值映射** — `task.id` / `roleId` / `assigneeSessionId` 分别绑定场景实体、角色身份与真实 worker 会话/形象 seed；任务状态和实时 progress 映射为待命 / 分析 / 忙碌 / 验收 / 求助 / 已交卷 / 需复盘 / 已撤岗，不再生成固定花名册或默认工作中的幽灵员工
 - **Pixi.js / Spine 动画运行时** — 使用 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`；恢复 Chibi Spine 骨骼资源加载与 0.24s 动画混合，矢量角色仅作为资源失败降级
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Office 角色比例** — Spine 角色按 682.5px setup bounds 推导到约 102px 场景高度（scale ≈ 0.15），并同步缩小阴影和点击热区，使角色与 101px 桌面宽度匹配
 - **AI Office 交卷后生活循环** — 已完成 worker 不再长期站在交付区；在保持看板 `done` 真值的同时，错峰前往茶水间、窗边、打印机、植物角或空地摸鱼，沿导航路径移动、停留并循环选择下一项活动
 - **AI Office 动效策略** — 办公室空间迁移和交卷后生活循环不再受系统 `prefers-reduced-motion` 影响，避免 Windows 动画设置关闭时所有角色被永久固定在状态区域
+- **AI Office 产品动效档位** — 设置页提供“完整 / 精简”动效；精简模式保留必要行走和交接连续性、提高路径速度并关闭低频装饰行为，普通界面过渡仍尊重系统 reduced-motion
 - **AI Office 角色工牌** — 移除角色头顶常驻的完整任务描述，只保留带状态点的紧凑姓名工牌，并使用角色完整视觉高度作为稳定锚点，避免文字遮住角色形象
 - **前台记忆写入改为本地证据收集** — `recordSessionToMemory` 不再触发 `backfillKeyFacts` LLM 调用；改为写 L4 + `memoryEvidenceSink.writeSessionEvidence()` + dirty 标记，辅助 LLM 整理统一在空闲窗口执行
 - **Nudge 候选写入改为本地暂存** — `onTurnStart` 检测到候选后写入 `memory-evidence-sink`（`writeNudgeEvidence`），不再在前台发起 auxiliary LLM call

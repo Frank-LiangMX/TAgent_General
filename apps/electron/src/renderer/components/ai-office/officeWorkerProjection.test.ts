@@ -16,6 +16,10 @@ import {
 import type { AgentEntity } from './scene/entities/AgentEntity'
 import { advanceCompletedAmbient } from './scene/simulation/completedAmbient'
 import {
+  DIRECTOR_MEETING_POINT,
+  processCollaborationMissions,
+} from './scene/simulation/collaboration'
+import {
   assignStableWorkerDesks,
   transitionWorkerRoster,
 } from './scene/simulation/workerStateTransition'
@@ -33,6 +37,7 @@ function task(
     body: '',
     status,
     roleId: 'coder',
+    assigneeSessionId: `session-${id}`,
     channelId: 'channel-1',
     priority: 0,
     createdAt: Number(id.replace(/\D/g, '')) || 1,
@@ -79,13 +84,41 @@ describe('projectKanbanWorkers', () => {
     expect(projected.agents).toHaveLength(1)
     expect(projected.hiddenCount).toBe(0)
     expect(projected.agents[0]).toMatchObject({
-      id: 't-1',
+      id: 'worker:session-worker-1',
       taskId: 't-1',
       roleId: 'coder',
       workerSessionId: 'session-worker-1',
       appearanceKey: 'session-worker-1',
       name: '务实工程师 01',
       state: 'working',
+      actor: {
+        actorId: 'worker:session-worker-1',
+        sessionId: 'session-worker-1',
+      },
+      assignment: { taskId: 't-1', status: 'running' },
+    })
+  })
+
+  it('does not create ghost employees for tasks that have not been claimed', () => {
+    const projected = projectKanbanWorkers(
+      [task('t-ready', 'ready', { assigneeSessionId: undefined })],
+      new Map()
+    )
+
+    expect(projected.agents).toEqual([])
+    expect(projected.unassignedCount).toBe(1)
+  })
+
+  it('keeps one stable actor when the same worker continues with another assignment', () => {
+    const first = task('t-1', 'done', { assigneeSessionId: 'worker-session' })
+    const second = task('t-2', 'running', { assigneeSessionId: 'worker-session' })
+    const projected = projectKanbanWorkers([first, second], new Map())
+
+    expect(projected.agents).toHaveLength(1)
+    expect(projected.agents[0]).toMatchObject({
+      id: 'worker:worker-session',
+      taskId: 't-2',
+      appearanceKey: 'worker-session',
     })
   })
 
@@ -133,6 +166,27 @@ describe('projectKanbanWorkers', () => {
 })
 
 describe('worker scene transitions', () => {
+  it('hydrates existing workers quietly but briefs workers who join later', () => {
+    const [worker] = projectKanbanWorkers([task('t-new', 'running')], new Map()).agents
+    const [hydrated] = transitionWorkerRoster([worker!], [], false, { hydrate: true })
+    const [arriving] = transitionWorkerRoster([worker!], [], false)
+
+    expect(hydrated?.mission).toBeUndefined()
+    expect(hydrated?.state).toBe('working')
+    expect(arriving).toMatchObject({
+      state: 'waiting',
+      semanticState: 'briefing',
+      mission: {
+        kind: 'collaboration',
+        intent: 'arrival_briefing',
+        phase: 'delay',
+        targetSemanticState: 'working',
+      },
+      x: 92,
+      y: 570,
+    })
+  })
+
   it('walks from the desk to the delivery zone before becoming completed', () => {
     const labels = new Map([['t-4', '交付工程师']])
     const [working] = projectKanbanWorkers([task('t-4', 'running')], labels).agents
@@ -144,9 +198,12 @@ describe('worker scene transitions', () => {
       state: 'walking',
       x: working!.x,
       y: working!.y,
-      transition: { targetState: 'completed' },
+      semanticState: 'delivering',
+      transition: { kind: 'collaboration', targetState: 'talking' },
+      mission: { kind: 'collaboration', intent: 'delivery', targetState: 'completed' },
     })
-    expect(moving?.walkPath?.at(-1)).toEqual(destination)
+    expect(destination).not.toEqual(DIRECTOR_MEETING_POINT)
+    expect(moving?.walkPath?.at(-1)).toEqual(DIRECTOR_MEETING_POINT)
   })
 
   it('preserves an in-flight transition when another progress render arrives', () => {
@@ -158,7 +215,30 @@ describe('worker scene transitions', () => {
 
     expect(continued?.state).toBe('walking')
     expect(continued?.walkPath).toEqual(moving?.walkPath)
-    expect(continued?.transition?.targetState).toBe('completed')
+    expect(continued?.transition?.targetState).toBe('talking')
+    expect(continued?.mission).toEqual(moving?.mission)
+  })
+
+  it('serializes simultaneous handoffs through one director meeting point', () => {
+    const working = projectKanbanWorkers(
+      [task('t-queue-1', 'running'), task('t-queue-2', 'running')],
+      new Map()
+    ).agents
+    const completed = projectKanbanWorkers(
+      [task('t-queue-1', 'done'), task('t-queue-2', 'done')],
+      new Map()
+    ).agents
+    const transitioned = transitionWorkerRoster(completed, working, true)
+
+    expect(transitioned[0]).toMatchObject({
+      state: 'walking',
+      mission: { intent: 'delivery', phase: 'walking_to_meet' },
+    })
+    expect(transitioned[1]).toMatchObject({
+      state: 'waiting',
+      semanticState: 'delivering',
+      mission: { intent: 'delivery', phase: 'delay', remaining: 0 },
+    })
   })
 
   it('enters the target state only after movement reaches the destination', () => {
@@ -166,7 +246,7 @@ describe('worker scene transitions', () => {
     const [working] = projectKanbanWorkers([task('t-9', 'running')], labels).agents
     const [completed] = projectKanbanWorkers([task('t-9', 'done')], labels).agents
     const [moving] = transitionWorkerRoster([completed!], [working!], false)
-    const destination = getWorkerStatePosition(completed!)
+    const destination = DIRECTOR_MEETING_POINT
     let entityData = {
       ...moving!,
       ...destination,
@@ -183,12 +263,28 @@ describe('worker scene transitions', () => {
         entityData = { ...entityData, ...patch }
       },
       setPosition() {},
+      showBubble() {},
+      hideBubble() {},
     } as unknown as AgentEntity
 
     new MovementSystem().update(new Map([[moving!.id, entity]]), 0.016)
+    const talking = processCollaborationMissions(
+      0.016,
+      [entityData],
+      new Map([[moving!.id, entity]])
+    )[0]!
+    const delivered = processCollaborationMissions(
+      2,
+      [talking],
+      new Map([[moving!.id, entity]])
+    )[0]!
 
-    expect(entityData.state).toBe('completed')
-    expect(entityData.transition).toBeUndefined()
+    expect(talking).toMatchObject({ state: 'talking', mission: { phase: 'talking' } })
+    expect(delivered).toMatchObject({
+      state: 'completed',
+      semanticState: 'ambient',
+      mission: undefined,
+    })
   })
 
   it('keeps desks stable when task priority changes reorder the projection', () => {
@@ -203,25 +299,41 @@ describe('worker scene transitions', () => {
     ).agents
     const stable = assignStableWorkerDesks(reordered, previous)
 
-    expect(stable.find((agent) => agent.id === 't-6')?.assignedDeskId).toBe(
-      previous.find((agent) => agent.id === 't-6')?.assignedDeskId
+    expect(stable.find((agent) => agent.taskId === 't-6')?.assignedDeskId).toBe(
+      previous.find((agent) => agent.taskId === 't-6')?.assignedDeskId
     )
-    expect(stable.find((agent) => agent.id === 't-7')?.assignedDeskId).toBe(
-      previous.find((agent) => agent.id === 't-7')?.assignedDeskId
+    expect(stable.find((agent) => agent.taskId === 't-7')?.assignedDeskId).toBe(
+      previous.find((agent) => agent.taskId === 't-7')?.assignedDeskId
     )
   })
 
-  it('uses instant transitions when reduced motion is requested', () => {
+  it('keeps spatial continuity but removes the delay in reduced motion mode', () => {
     const labels = new Map([['t-8', '交付工程师']])
     const [working] = projectKanbanWorkers([task('t-8', 'running')], labels).agents
     const [completed] = projectKanbanWorkers([task('t-8', 'done')], labels).agents
     const [settled] = transitionWorkerRoster([completed!], [working!], true)
 
     expect(settled).toMatchObject({
-      state: 'completed',
-      ...getWorkerStatePosition(completed!),
-      transition: undefined,
+      state: 'walking',
+      transition: { kind: 'collaboration', targetState: 'talking' },
+      mission: { intent: 'delivery', phase: 'walking_to_meet' },
     })
+  })
+
+  it('walks back to the same desk when review is returned for rework', () => {
+    const [reviewing] = projectKanbanWorkers([task('t-rework', 'review')], new Map()).agents
+    const [running] = projectKanbanWorkers([task('t-rework', 'running')], new Map()).agents
+    const previous = { ...reviewing!, x: 430, y: 520, mission: undefined }
+    const [reworking] = transitionWorkerRoster([running!], [previous], false)
+
+    expect(reworking).toMatchObject({
+      state: 'walking',
+      semanticState: 'reworking',
+      assignedDeskId: previous.assignedDeskId,
+      currentTask: '收到反馈，返回工位返工',
+    })
+    const desk = DESKS.find((item) => item.id === previous.assignedDeskId)!
+    expect(reworking?.walkPath?.at(-1)).toEqual({ x: desk.seatX, y: desk.seatY })
   })
 })
 

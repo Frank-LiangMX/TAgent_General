@@ -27,6 +27,12 @@ export type OfficeAgentClick = {
   clientY: number
 }
 
+export interface OfficeCameraState {
+  scale: number
+  offsetX: number
+  offsetY: number
+}
+
 const MIN_ZOOM = 0.3
 const MAX_ZOOM = 3.0
 const ZOOM_SPEED = 0.001
@@ -45,6 +51,9 @@ export class OfficeScene {
   private agents: OfficeAgent[] = INITIAL_AGENTS.map((a) => ({ ...a }))
   private readonly options: {
     onAgentClick?: (event: OfficeAgentClick) => void
+    onCameraChange?: (state: OfficeCameraState) => void
+    initialCamera?: OfficeCameraState
+    reducedMotion?: boolean
   }
 
   // Pan/zoom state
@@ -62,18 +71,31 @@ export class OfficeScene {
   private containerWidth = 0
   private containerHeight = 0
   private reduceMotion = false
+  private hasProjectedRoster = false
+  private interactionCleanup: (() => void) | null = null
+  private viewStateFrame: number | null = null
+  private destroyed = false
+  private paused = false
 
-  constructor(options: { onAgentClick?: (event: OfficeAgentClick) => void } = {}) {
+  constructor(
+    options: {
+      onAgentClick?: (event: OfficeAgentClick) => void
+      onCameraChange?: (state: OfficeCameraState) => void
+      initialCamera?: OfficeCameraState
+      reducedMotion?: boolean
+    } = {}
+  ) {
     this.options = options
   }
 
   async init(container: HTMLElement, width: number, height: number) {
+    this.destroyed = false
     this.containerWidth = width
     this.containerHeight = height
-    // AI Office 的空间迁移和环境生活行为属于核心状态表达，不继承系统减少动画设置。
-    // 若未来需要精简动效，应提供产品内显式开关并只影响装饰性动作。
-    this.reduceMotion = false
+    // 只读取 TAgent 产品内设置；不让系统 motion preference 改写业务状态。
+    this.reduceMotion = this.options.reducedMotion ?? false
     this.simulator.setReduceMotion(this.reduceMotion)
+    this.movement.setSpeedMultiplier(this.reduceMotion ? 1.8 : 1)
 
     const app = new Application()
     await app.init({
@@ -85,6 +107,11 @@ export class OfficeScene {
       autoDensity: true,
     })
 
+    if (this.destroyed) {
+      app.destroy(true, { children: true })
+      return
+    }
+
     this.app = app
     container.appendChild(app.canvas)
 
@@ -94,18 +121,26 @@ export class OfficeScene {
     await loadSpineAssets()
     await loadOfficeAssets()
 
+    if (this.destroyed || !this.world) return
+
     this.drawMap(this.world)
     this.spawnOffice(this.world)
     this.pushDataToEntities()
 
     // Initial fit
     this.computeBaseTransform()
+    if (this.options.initialCamera) {
+      this.userScale = Math.max(0.3, Math.min(3, this.options.initialCamera.scale))
+      this.userOffsetX = this.options.initialCamera.offsetX
+      this.userOffsetY = this.options.initialCamera.offsetY
+    }
     this.applyTransform()
 
     // Pan/zoom event handlers
     this.setupInteraction()
 
     app.ticker.add(this.onTick)
+    if (this.paused) app.ticker.stop()
     bindOfficeScene(this)
   }
 
@@ -136,9 +171,40 @@ export class OfficeScene {
     this.agents = transitionWorkerRoster(
       newAgents.map((agent) => ({ ...agent })),
       this.agents,
-      this.reduceMotion
+      this.reduceMotion,
+      { hydrate: !this.hasProjectedRoster }
     )
+    this.hasProjectedRoster = true
     this.reconcileAgentEntities()
+  }
+
+  setReducedMotion(value: boolean) {
+    this.reduceMotion = value
+    this.simulator.setReduceMotion(value)
+    this.movement.setSpeedMultiplier(value ? 1.8 : 1)
+    for (const entity of this.agentEntities.values()) entity.setReducedMotion(value)
+  }
+
+  setPaused(value: boolean) {
+    this.paused = value
+    if (!this.app) return
+    if (value) this.app.ticker.stop()
+    else this.app.ticker.start()
+  }
+
+  getCameraState(): OfficeCameraState {
+    return {
+      scale: this.userScale,
+      offsetX: this.userOffsetX,
+      offsetY: this.userOffsetY,
+    }
+  }
+
+  setCameraState(state: OfficeCameraState) {
+    this.userScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, state.scale))
+    this.userOffsetX = state.offsetX
+    this.userOffsetY = state.offsetY
+    this.applyTransform()
   }
 
   setAgentState(id: string, state: OfficeAgentState, task?: string) {
@@ -199,10 +265,16 @@ export class OfficeScene {
     this.userOffsetX = 0
     this.userOffsetY = 0
     this.applyTransform()
+    this.emitCameraChange()
   }
 
   destroy() {
+    this.destroyed = true
     bindOfficeScene(null)
+    this.interactionCleanup?.()
+    this.interactionCleanup = null
+    if (this.viewStateFrame != null) cancelAnimationFrame(this.viewStateFrame)
+    this.viewStateFrame = null
     this.app?.ticker.remove(this.onTick)
     this.app?.destroy(true, { children: true })
     this.app = null
@@ -235,30 +307,24 @@ export class OfficeScene {
     const canvas = this.app?.canvas as HTMLCanvasElement | undefined
     if (!canvas) return
 
-    // Mouse wheel zoom
-    canvas.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault()
-        const delta = -e.deltaY * ZOOM_SPEED
-        const oldScale = this.userScale
-        this.userScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.userScale * (1 + delta)))
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const delta = -e.deltaY * ZOOM_SPEED
+      const oldScale = this.userScale
+      this.userScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.userScale * (1 + delta)))
 
-        // Zoom toward cursor position
-        const rect = canvas.getBoundingClientRect()
-        const mouseX = e.clientX - rect.left
-        const mouseY = e.clientY - rect.top
-        const scaleRatio = this.userScale / oldScale
-        this.userOffsetX = mouseX - scaleRatio * (mouseX - this.userOffsetX)
-        this.userOffsetY = mouseY - scaleRatio * (mouseY - this.userOffsetY)
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
+      const scaleRatio = this.userScale / oldScale
+      this.userOffsetX = mouseX - scaleRatio * (mouseX - this.userOffsetX)
+      this.userOffsetY = mouseY - scaleRatio * (mouseY - this.userOffsetY)
 
-        this.applyTransform()
-      },
-      { passive: false }
-    )
+      this.applyTransform()
+      this.emitCameraChange()
+    }
 
-    // Mouse drag pan
-    canvas.addEventListener('mousedown', (e: MouseEvent) => {
+    const handleMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return // left button only
       this.isDragging = true
       this.dragStartX = e.clientX
@@ -266,25 +332,44 @@ export class OfficeScene {
       this.dragStartOffsetX = this.userOffsetX
       this.dragStartOffsetY = this.userOffsetY
       canvas.style.cursor = 'grabbing'
-    })
+    }
 
-    window.addEventListener('mousemove', (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (!this.isDragging) return
       this.userOffsetX = this.dragStartOffsetX + (e.clientX - this.dragStartX)
       this.userOffsetY = this.dragStartOffsetY + (e.clientY - this.dragStartY)
       this.applyTransform()
-    })
+    }
 
-    window.addEventListener('mouseup', () => {
+    const handleMouseUp = () => {
+      if (this.isDragging) this.emitCameraChange()
       this.isDragging = false
       canvas.style.cursor = 'grab'
-    })
+    }
+
+    const handleDoubleClick = () => this.resetView()
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false })
+    canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('dblclick', handleDoubleClick)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
 
     canvas.style.cursor = 'grab'
+    this.interactionCleanup = () => {
+      canvas.removeEventListener('wheel', handleWheel)
+      canvas.removeEventListener('mousedown', handleMouseDown)
+      canvas.removeEventListener('dblclick', handleDoubleClick)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }
 
-    // Double-click to reset view
-    canvas.addEventListener('dblclick', () => {
-      this.resetView()
+  private emitCameraChange() {
+    if (!this.options.onCameraChange || this.viewStateFrame != null) return
+    this.viewStateFrame = requestAnimationFrame(() => {
+      this.viewStateFrame = null
+      this.options.onCameraChange?.(this.getCameraState())
     })
   }
 
@@ -370,7 +455,12 @@ export class OfficeScene {
   private syncDeskOccupancy() {
     const occupied = new Set(
       this.agents
-        .filter((agent) => isDeskWorkerState(agent.state) && agent.assignedDeskId)
+        .filter(
+          (agent) =>
+            isDeskWorkerState(agent.state) &&
+            agent.semanticState !== 'awaiting_review' &&
+            agent.assignedDeskId
+        )
         .map((agent) => agent.assignedDeskId!)
     )
     for (const desk of this.deskEntities.values()) {

@@ -31,6 +31,12 @@ import {
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
 import {
+  defaultSessionPresentationAtom,
+  officeMotionModeAtom,
+  type OfficeMotionMode,
+  type SessionPresentation,
+} from '@/atoms/session-presentation-atoms'
+import {
   themeModeAtom,
   themeStyleAtom,
   systemIsDarkAtom,
@@ -59,6 +65,16 @@ const READING_FONT_SIZE_OPTIONS = [
 const PREVIEW_MODE_OPTIONS: { value: PreviewModePreference; label: string }[] = [
   { value: 'tab', label: '标签页' },
   { value: 'split', label: '侧边分屏' },
+]
+
+const SESSION_PRESENTATION_OPTIONS: { value: SessionPresentation; label: string }[] = [
+  { value: 'classic', label: '经典' },
+  { value: 'office', label: 'Office' },
+]
+
+const OFFICE_MOTION_OPTIONS: { value: OfficeMotionMode; label: string }[] = [
+  { value: 'full', label: '完整动效' },
+  { value: 'reduced', label: '精简动效' },
 ]
 
 /** 特殊风格 ID（排除 default） */
@@ -173,6 +189,10 @@ export function AppearanceSettings(): React.ReactElement {
   const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
   const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
+  const [defaultSessionPresentation, setDefaultSessionPresentation] = useAtom(
+    defaultSessionPresentationAtom
+  )
+  const [officeMotionMode, setOfficeMotionMode] = useAtom(officeMotionModeAtom)
 
   /** 切换皮肤 */
   const handleThemeChange = React.useCallback(
@@ -256,6 +276,25 @@ export function AppearanceSettings(): React.ReactElement {
               </div>
             </div>
           )}
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="AI Office" description="默认展示与角色动效">
+        <SettingsCard>
+          <SettingsSegmentedControl
+            label="新会话默认展示"
+            description="经典工作台始终可随时切换；Office 只改变呈现，不会自动创建看板或员工"
+            value={defaultSessionPresentation}
+            onValueChange={(value) => setDefaultSessionPresentation(value as SessionPresentation)}
+            options={SESSION_PRESENTATION_OPTIONS}
+          />
+          <SettingsSegmentedControl
+            label="办公室角色动效"
+            description="精简动效保留行走与交接连续性，但加快移动并关闭摸鱼等装饰行为"
+            value={officeMotionMode}
+            onValueChange={(value) => setOfficeMotionMode(value as OfficeMotionMode)}
+            options={OFFICE_MOTION_OPTIONS}
+          />
         </SettingsCard>
       </SettingsSection>
 

@@ -1,9 +1,10 @@
-import { AlertTriangle, RotateCw } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, RotateCw } from 'lucide-react'
 import * as React from 'react'
 
 interface TabErrorBoundaryProps {
   sessionId: string
   children: React.ReactNode
+  fallbackAction?: { label: string; onClick: () => void }
 }
 
 interface TabErrorBoundaryState {
@@ -44,14 +45,26 @@ export class TabErrorBoundary extends React.Component<
               {this.state.errorMessage}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
-          >
-            <RotateCw className="size-3.5" />
-            重新加载
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={this.handleReset}
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            >
+              <RotateCw className="size-3.5" aria-hidden />
+              重新加载
+            </button>
+            {this.props.fallbackAction ? (
+              <button
+                type="button"
+                onClick={this.props.fallbackAction.onClick}
+                className="inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              >
+                <ArrowLeft className="size-3.5" aria-hidden />
+                {this.props.fallbackAction.label}
+              </button>
+            ) : null}
+          </div>
         </div>
       )
     }

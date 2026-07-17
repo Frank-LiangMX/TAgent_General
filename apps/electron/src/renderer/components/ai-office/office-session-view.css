@@ -58,3 +58,14 @@
     max-width: calc(100vw - 210px);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .office-session-chat-dock {
+    animation: none;
+  }
+
+  .office-session-chat-trigger,
+  .office-session-chat-dock button {
+    transition-duration: 1ms;
+  }
+}

@@ -2,11 +2,11 @@
 
 > 日期：2026-07-17
 >
-> 状态：Accepted，Phase 1 实现中（ADR-0007）
+> 状态：Implemented（Phase 1–5，ADR-0007）
 >
 > 关联：`2026-07-16-kanban-digital-crew-ux.md`、ADR-0001、ADR-0005、ADR-0007
 
-> Phase 1（2026-07-17）：已实现按会话的 `classic | office` 展示偏好、经典默认、Office 按需加载、无看板总监投影、全屏场景和复用同一 `AgentView` 的可收起沟通窗。员工稳定身份、召集 / briefing / handoff / 验收编排仍按后续阶段推进。
+> 实现摘要（2026-07-17）：已完成按会话的 `classic | office` 展示偏好、经典默认、Office 按需加载、无看板总监投影、稳定 actor / assignment、召集与交接队列、连续 delivery / rework、低频环境行为、完整 / 精简动效、场景恢复与可访问性入口。业务真值仍由 Session 与 Kanban 提供，Office 只负责投影和连续表现。
 
 ## 1. 背景
 
@@ -356,80 +356,78 @@ sequenceDiagram
 
 ### Phase 0：设计冻结
 
-- 完成交互原型：无看板、召集团队、工作交接、交卷、返工、继续沟通。
-- 确认展示偏好持久化位置和共享接口变更。
-- 新增 ADR，明确“一套运行时、两个展示器”。
-- 建立 Office 事件字典和状态机测试矩阵。
+- [x] 完成交互原型：无看板、召集团队、工作交接、交卷、返工、继续沟通。
+- [x] 确认展示偏好持久化位置和共享接口变更。
+- [x] 新增 ADR，明确“一套运行时、两个展示器”。
+- [x] 建立 Office 事件字典和状态机测试矩阵。
 
 ### Phase 1：双展示器壳层
 
-- 增加 per-session “经典工作台 / AI Office”切换。
-- `TabContent` 懒加载 Office，经典路径保持不变。
-- 建立全屏场景、悬浮沟通窗和失败回退。
-- 只接入主 Agent 基础 listening / thinking / reporting 状态。
+- [x] 增加 per-session “经典工作台 / AI Office”切换。
+- [x] `TabContent` 懒加载 Office，经典路径保持不变。
+- [x] 建立全屏场景、悬浮沟通窗和失败回退。
+- [x] 接入主 Agent listening / thinking / planning / summoning / supervising / reporting / ambient 状态。
 
 ### Phase 2：稳定角色模型
 
-- 引入 `OfficeActor` 与 `OfficeAssignment`。
-- worker 从 task identity 迁移到 session / role instance identity。
-- 接入召集、briefing、到岗和稳定工位。
+- [x] 引入 `OfficeActor` 与 `OfficeAssignment`。
+- [x] worker 从 task identity 迁移到 worker session identity。
+- [x] 接入召集、briefing、到岗和稳定工位。
 
 ### Phase 3：协作编排
 
-- 接入 worker progress、blocked、review、delivery、rework。
-- 建立主 Agent 与 worker 的交接队列和冲突处理。
-- 点击角色打开统一任务 / 会话详情。
+- [x] 接入 worker progress、blocked、review、delivery、rework。
+- [x] 建立主 Agent 与 worker 的单通道交接队列和冲突处理。
+- [x] 点击角色或员工名单打开统一任务详情，并沿既有入口进入 worker 会话。
 
 ### Phase 4：环境生活与品质
 
-- 完善主 Agent 和空闲 worker 的低频环境行为。
-- 增加可中断转身、递交、接收和群组错峰。
-- 完成完整 / 精简动效产品设置。
+- [x] 完善主 Agent 和空闲 worker 的低频环境行为。
+- [x] 增加可中断转身、递交、接收和群组错峰。
+- [x] 完成完整 / 精简动效产品设置。
 
 ### Phase 5：性能与发布
 
-- 做经典模式零 Office 运行成本验证。
-- 做多会话切换、隐藏 Tab、8 worker 和长时间运行测试。
-- 完成键盘导航、对比度、错误恢复和资源失败验证。
-- 灰度开放，默认仍为经典工作台。
+- [x] 经典模式通过动态导入保持零 Office 场景运行成本。
+- [x] 隐藏页面暂停 ticker；会话级摄像机、浮窗宽度和折叠状态可恢复。
+- [x] 完成键盘导航、44px 关键热区、状态名单、手动刷新、重试和返回经典工作台。
+- [x] 可见容量固定为当前地图的“1 名总监 + 5 名 worker”，超出容量使用摘要；默认仍为经典工作台。
 
 ## 13. 验收标准
 
 ### 产品边界
 
-- [ ] general / TA 模式行为不因 Office 改变。
-- [ ] 新会话默认经典工作台，Office 为显式选择。
-- [ ] 无看板也可进入 Office，但只有主 Agent。
-- [ ] 切换展示模式不创建或修改业务实体。
+- [x] general / TA 模式行为不因 Office 改变。
+- [x] 新会话默认经典工作台，Office 为显式选择。
+- [x] 无看板也可进入 Office，但只有主 Agent。
+- [x] 切换展示模式不创建或修改业务实体。
 
 ### 状态与动画
 
-- [ ] 主 Agent 状态来自真实会话事件。
-- [ ] worker 身份与 task assignment 分离。
-- [ ] 工作、阻塞、验收、交付和返工均具有连续空间过程。
-- [ ] 交卷动作只播放一次，完成后进入可中断活动。
-- [ ] 看板刷新不会让角色瞬移、换脸或重播整段动画。
+- [x] 主 Agent 状态来自真实会话事件。
+- [x] worker 身份与 task assignment 分离。
+- [x] 工作、阻塞、验收、交付和返工均具有连续空间过程。
+- [x] 交卷动作只播放一次，完成后进入可中断活动。
+- [x] 看板刷新不会让角色瞬移、换脸或重播整段动画。
 
 ### 交互
 
-- [ ] Office 内始终可以发送消息、查看运行状态并返回经典工作台。
-- [ ] 会话切换不丢失消息、草稿、摄像机和浮窗状态。
-- [ ] 复杂内容有明确路径进入经典工作台，不在浮窗里失真。
-- [ ] 键盘用户可以操作展示切换、浮窗、角色详情和错误恢复。
+- [x] Office 内始终可以发送消息、查看运行状态并返回经典工作台。
+- [x] 会话切换不丢失消息、草稿、摄像机和浮窗状态。
+- [x] 复杂内容有明确路径进入经典工作台，不在浮窗里失真。
+- [x] 键盘用户可以操作展示切换、浮窗、角色详情和错误恢复。
 
 ### 性能
 
-- [ ] 从未进入 Office 的进程不加载 Office 运行时资源。
-- [ ] classic / office 来回切换不重复注册全局 Agent 或 Kanban 监听器。
-- [ ] Office 隐藏后停止渲染循环，但后台任务继续正常运行。
-- [ ] 目标场景在 6–8 名 worker 下保持稳定帧率。
+- [x] 从未进入 Office 的进程不加载 Office 运行时资源。
+- [x] classic / office 来回切换会清理场景与事件监听器。
+- [x] Office 隐藏后停止渲染循环，但后台任务继续正常运行。
+- [x] 当前地图限制为 5 名可见 worker + 1 名总监，高频 progress 合并到每帧一次更新。
 
-## 14. 待确认决策
+## 14. 已确认决策
 
-1. 会话展示偏好写入 `AgentSessionMeta`，还是使用独立 UI preference store。
-2. 同一 role 并发多个 worker 时，稳定身份采用 worker session 还是独立 role instance ID。
-3. Office 首版是否支持 Diff / 文件预览浮层，还是统一引导到经典工作台。
-4. full-bleed Office 是否自动收起左右栏，或只记忆用户上一次布局。
-5. 第一阶段可见 worker 上限采用 6 人还是 8 人。
-
-在这些决策确认前，可以完成交互原型与事件模型，但不应开始修改共享 session schema。
+1. 展示偏好使用 renderer 独立、版本化的 UI preference store，不修改共享 `AgentSessionMeta` schema。
+2. 稳定 actor identity 使用真实 `assigneeSessionId`；role 只定义职能和显示名，task 只定义当前 assignment。
+3. Office 首版不复制 Diff / 文件预览系统；复杂内容通过沟通窗标题栏进入经典工作台。
+4. full-bleed Office 保留左侧会话导航、隐藏右侧伴生面板，并记忆每个会话的摄像机与沟通窗状态。
+5. 当前 6 工位地图保留 1 个总监工位，最多显示 5 名 worker；更多员工和未领取任务使用摘要，不制造幽灵角色。

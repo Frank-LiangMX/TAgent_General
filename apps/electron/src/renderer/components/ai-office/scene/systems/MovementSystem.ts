@@ -15,6 +15,12 @@ function isHomeDeskSeat(deskId: string | undefined, x: number, y: number): boole
 }
 
 export class MovementSystem {
+  private speedMultiplier = 1
+
+  setSpeedMultiplier(value: number): void {
+    this.speedMultiplier = Math.max(0.5, Math.min(3, value))
+  }
+
   update(entities: Map<string, AgentEntity>, dt: number): boolean {
     let anyMoving = false
 
@@ -85,7 +91,7 @@ export class MovementSystem {
         continue
       }
 
-      const step = Math.min(WALK_SPEED * dt, dist)
+      const step = Math.min(WALK_SPEED * this.speedMultiplier * dt, dist)
       const nx = agent.x + (dx / dist) * step
       const ny = agent.y + (dy / dist) * step
       const viewFacing = resolveWalkViewFacing(dx, dy)

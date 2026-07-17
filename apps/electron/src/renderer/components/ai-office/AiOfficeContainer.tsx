@@ -12,6 +12,7 @@ import { AiOfficeCanvas } from './AiOfficeCanvas'
 import { projectKanbanWorkers } from './officeWorkerProjection'
 import { DESKS } from './scene/layout/officeLayout'
 import type { OfficeAgent } from './types/office-agent'
+import type { OfficeCameraState, OfficeMotionMode } from '@/atoms/session-presentation-atoms'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 import { buildKanbanRoleInstanceLabels } from '@/lib/kanban-role-labels'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,10 @@ interface AiOfficeContainerProps {
   leadingAgents?: OfficeAgent[]
   /** Desk slots reserved by leading actors. */
   reservedDeskCount?: number
+  cameraState?: OfficeCameraState
+  onCameraChange?: (state: OfficeCameraState) => void
+  motionMode?: OfficeMotionMode
+  onFallbackClassic?: () => void
 }
 
 export function AiOfficeContainer({
@@ -36,11 +41,17 @@ export function AiOfficeContainer({
   onTaskSelect,
   leadingAgents = [],
   reservedDeskCount = 0,
+  cameraState,
+  onCameraChange,
+  motionMode,
+  onFallbackClassic,
 }: AiOfficeContainerProps) {
   const roleMap = useAgentRoleMap()
   const [liveProgressByTaskId, setLiveProgressByTaskId] = React.useState<
     Map<string, ProgressLogEntry>
   >(new Map())
+  const pendingProgressRef = React.useRef(new Map<string, ProgressLogEntry>())
+  const progressFrameRef = React.useRef<number | null>(null)
   const taskIds = React.useMemo(() => new Set(tasks.map((task) => task.id)), [tasks])
   const roleLabels = React.useMemo(
     () => buildKanbanRoleInstanceLabels(tasks, roleMap),
@@ -48,14 +59,27 @@ export function AiOfficeContainer({
   )
 
   React.useEffect(() => {
-    return window.electronAPI.kanban.onTaskProgress((payload: TaskProgressPayload) => {
+    const unsubscribe = window.electronAPI.kanban.onTaskProgress((payload: TaskProgressPayload) => {
       if (!taskIds.has(payload.taskId)) return
-      setLiveProgressByTaskId((current) => {
-        const next = new Map(current)
-        next.set(payload.taskId, payload.entry)
-        return next
+      pendingProgressRef.current.set(payload.taskId, payload.entry)
+      if (progressFrameRef.current != null) return
+      progressFrameRef.current = requestAnimationFrame(() => {
+        progressFrameRef.current = null
+        const pending = pendingProgressRef.current
+        pendingProgressRef.current = new Map()
+        setLiveProgressByTaskId((current) => {
+          const next = new Map(current)
+          for (const [taskId, entry] of pending) next.set(taskId, entry)
+          return next
+        })
       })
     })
+    return () => {
+      unsubscribe()
+      if (progressFrameRef.current != null) cancelAnimationFrame(progressFrameRef.current)
+      progressFrameRef.current = null
+      pendingProgressRef.current.clear()
+    }
   }, [taskIds])
 
   React.useEffect(() => {
@@ -95,13 +119,22 @@ export function AiOfficeContainer({
       className={cn('relative h-full flex flex-col bg-background/40', className)}
       style={width ? { width } : undefined}
     >
-      <AiOfficeCanvas externalAgents={sceneProjection.agents} onAgentSelect={onTaskSelect} />
-      {sceneProjection.hiddenCount > 0 ? (
+      <AiOfficeCanvas
+        externalAgents={sceneProjection.agents}
+        onAgentSelect={onTaskSelect}
+        cameraState={cameraState}
+        onCameraChange={onCameraChange}
+        motionMode={motionMode}
+        onFallbackClassic={onFallbackClassic}
+      />
+      {sceneProjection.hiddenCount > 0 || projection.unassignedCount > 0 ? (
         <div
           className="ai-office-overflow"
-          aria-label={`${sceneProjection.hiddenCount} 个任务未显示`}
+          aria-label={`${sceneProjection.hiddenCount} 名员工未显示，${projection.unassignedCount} 个任务待分配`}
         >
-          +{sceneProjection.hiddenCount} 个任务
+          {sceneProjection.hiddenCount > 0 ? `+${sceneProjection.hiddenCount} 名员工` : null}
+          {sceneProjection.hiddenCount > 0 && projection.unassignedCount > 0 ? ' · ' : null}
+          {projection.unassignedCount > 0 ? `${projection.unassignedCount} 个任务待分配` : null}
         </div>
       ) : null}
     </div>

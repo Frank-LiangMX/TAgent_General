@@ -1,6 +1,6 @@
 # ADR-0007: AI Office 作为会话展示模式
 
-> **Status**: Accepted（Phase 1）  
+> **Status**: Implemented（Phase 1–5）
 > **Date**: 2026-07-17  
 > **Deciders**: TAgent 产品与桌面端维护者
 
@@ -19,6 +19,9 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 5. Office 场景是现有主会话与 Kanban 数据的只读投影。主 Agent 总监状态来自真实 streaming / tool / indicator 信号；没有看板时只显示总监，不生成虚假 worker。
 6. 经典展示不静态加载 Pixi Office 场景；全屏 Office 和右栏 Office 均按需加载。
 7. Office 展示时仅隐藏右侧伴生面板，保留左侧会话导航；切回经典展示后恢复原有面板状态。
+8. worker actor 使用 `assigneeSessionId` 作为稳定身份，任务只作为可替换的 assignment；未领取任务不生成角色。
+9. Office 业务状态、角色语义状态与 Pixi / Spine 动画状态分层；交接由可中断的单通道队列串行化，完成后进入低频环境行为。
+10. 动效偏好由 TAgent 产品设置控制：精简动效保留空间连续性并加速必要移动，只关闭装饰性行为；系统 reduced-motion 只约束普通 UI 过渡。
 
 ## Consequences
 
@@ -26,20 +29,22 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 
 - 一个会话仍只有一套 Agent 运行时和一份消息真值。
 - 经典工作流保持默认、零强制动画，并避免承担 Pixi 首屏成本。
-- 无看板会话也有完整的 Office 入口，后续可渐进加入召集、交接和验收编排。
+- 无看板会话也有完整的 Office 入口；有看板时按真实 worker 会话渐进召集、交接和验收。
+- worker 换任务不会换脸或创建新员工，同时避免未领取任务形成幽灵角色。
+- 高频 progress 合并到动画帧，隐藏页面暂停 ticker，场景加载和资源失败均有明确恢复入口。
 - 展示偏好与 general / TA 能力模式正交，不破坏模式隔离。
 
 ### Negative
 
-- Phase 1 的总监状态只能使用现有会话信号推断，尚无完整的团队交互事件协议。
 - renderer 本地偏好暂不跨设备同步；若未来需要同步，必须另行评审 schema。
 - 在经典与 Office 之间切换会重新挂载展示组件，局部滚动位置不会自动共享。
+- 当前办公室地图只有 6 个工位；保留总监后最多同时显示 5 名 worker，更多员工以摘要表示。
 
 ### Neutral
 
 - Kanban、worker session、任务状态和权限模型均不变。
 - 右栏 Office 继续存在，作为经典模式中的轻量班组视图。
-- 后续 actor identity、handoff timeline 和空间编排属于独立阶段，不在本 ADR 中扩张业务真值。
+- actor identity、handoff timeline 和空间编排均属于 renderer 投影，不扩张或回写业务真值。
 
 ## Alternatives Considered
 
@@ -60,4 +65,3 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 - 设计文档：`docs/plans/2026-07-17-ai-office-session-presentation-design.md`
 - 融合架构：`docs/decisions/0001-fusion-architecture.md`
 - 材质架构：`docs/decisions/0005-material-surface-token-architecture.md`
-

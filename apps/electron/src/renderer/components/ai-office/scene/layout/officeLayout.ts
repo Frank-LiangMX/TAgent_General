@@ -88,6 +88,10 @@ export function getWorkerStatePosition(agent: OfficeAgent): { x: number; y: numb
     }
   }
 
+  if (agent.semanticState === 'awaiting_review' || agent.semanticState === 'delivering') {
+    return { x: 430, y: 520 }
+  }
+
   if (isDeskWorkerState(agent.state) || agent.state === 'talking') {
     return { x: desk.seatX, y: desk.seatY }
   }

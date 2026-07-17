@@ -24,6 +24,16 @@
 
 ## 当前变更（2026-07-17）
 
+**AI Office 会话展示模式 Phase 1–5**（分支 `feature/ai-office-session-view`）：
+
+- 保持经典工作台默认，按会话切换全屏 Office；复用同一 `AgentView` 沟通链路，场景按需加载且无看板也能显示主 Agent 总监
+- 完成 `OfficeActor` / `OfficeAssignment` 拆分：worker 绑定真实子会话，未领取任务不生成幽灵员工，同一员工换任务保持形象与工位
+- 完成到岗 briefing、单通道交接队列、review / delivery / rework 连续转场；完成后不驻留交付区，进入可中断低频环境行为
+- 主 Agent 接入 listening / thinking / planning / summoning / supervising / reporting / ambient，并可被真实协作事件打断
+- 增加完整 / 精简产品动效、员工状态名单、任务详情、手动刷新、资源失败重试、返回经典工作台、隐藏页面暂停和会话级摄像机 / 沟通窗恢复
+- 当前地图容量为 1 名总监 + 5 名可见 worker，超出容量和未领取任务使用摘要
+- 验证：Office 投影 / 状态机 / 动效 / 偏好测试 38/38 通过；全仓 TypeScript typecheck 通过
+
 **AI Office 会话展示模式设计**（分支 `docs/ai-office-session-view-design`）：
 
 - 明确经典工作台继续作为默认体验，AI Office 作为 per-session 可选展示器，不新增第三种顶层模式
@@ -32,9 +42,9 @@
 
 ---
 
-**AI Office worker 状态真值接入**（分支 `feature/ai-office-worker-state-binding`）：
+**AI Office worker 状态真值接入**（早期阶段，已由 `feature/ai-office-session-view` 的稳定 actor 模型演进）：
 
-- 办公室实体改由 Kanban task 动态投影：`task.id` 绑定实体、`roleId` 绑定角色身份、`assigneeSessionId` 绑定真实 worker 会话与形象 seed
+- 办公室实体由 Kanban 动态投影；当前模型以 `assigneeSessionId` 绑定稳定 actor 与形象 seed，`task.id` 只绑定当前 assignment，`roleId` 表示职能
 - 移除固定 6 人开机花名册与全员默认 `working`，空看板不再出现幽灵员工
 - 接入 `kanban.onTaskProgress`，在 running 内进一步显示分析中 / 忙碌 / 验收中；完整覆盖待命、求助、已交卷、需复盘、已撤岗
 - 不同状态进入工位、待命区、求助区和交付区；点击角色复用原有 `KanbanTaskDetailDialog`
