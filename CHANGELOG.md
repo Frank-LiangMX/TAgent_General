@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **每会话 AI Office 展示模式** — 经典 TAgent 工作台保持默认；主会话可独立切换到全屏办公室，保留会话导航并用可收起悬浮窗复用同一套 Agent 对话运行时；没有看板时也会显示由真实会话状态驱动的主 Agent 总监，不生成虚假 worker
 - **AI Office 沉浸式房间壳层** — Office 模式锁定全窗口 Canvas，不挂载经典 sidebar、标签栏和右侧栏；主会话以会话名组成顶部横向房间条，文字沟通与任务详情继续作为场景浮层呈现
+- **AI Office 楼层与办公室导航** — 现有 Workspace 在 Office 中作为楼层、其中的顶层 Agent 会话作为办公室；顶部增加楼层菜单、办公室数量、新建楼层、新建办公室和空楼层入口，创建与切换继续复用统一 Workspace / Session 链路
 - **AI Office 稳定员工与协作编排** — worker 以真实子会话作为稳定 actor、任务作为可替换 assignment；新员工从入口到总监处 briefing 后再去工位，review / delivery / rework 均沿路径连续移动，并通过单通道交接队列避免多人重叠
 - **AI Office 状态与恢复控制** — 增加可访问员工名单、语义状态标签、任务详情入口、看板手动刷新、场景重试 / 返回经典工作台，以及按会话恢复摄像机和沟通窗布局
 - **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **AI Office 材质与沟通窗** — Office HUD、导航和会话浮窗改为消费统一 Material 3 / Surface token，默认不再强制玻璃模糊；窄窗使用专用紧凑消息、过程卡、输入框与工具栏编排，而不是压缩经典会话布局
 - **AI Office 按需加载** — 全屏 Office 与经典模式右栏 Office 都只在用户主动进入时加载 Pixi 场景，经典路径不承担办公室运行时成本
 - **AI Office 状态动画** — worker 状态变化改为 `当前状态 → walking 路径迁移 → 目标状态`；稳定保留工位，交卷使用一次性 `just-right` 动作后回到安静完成姿势，不再瞬移或无限举手跳
 - **AI Office 角色比例** — Spine 角色按 682.5px setup bounds 推导到约 102px 场景高度（scale ≈ 0.15），并同步缩小阴影和点击热区，使角色与 101px 桌面宽度匹配

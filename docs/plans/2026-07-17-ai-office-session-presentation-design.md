@@ -2,11 +2,11 @@
 
 > 日期：2026-07-17
 >
-> 状态：Implemented（Phase 1–5，ADR-0007）
+> 状态：Implemented（Phase 1–7，ADR-0007）
 >
 > 关联：`2026-07-16-kanban-digital-crew-ux.md`、ADR-0001、ADR-0005、ADR-0007
 
-> 实现摘要（2026-07-17）：已完成按会话的 `classic | office` 展示偏好、经典默认、独立沉浸壳层与横向房间切换、Office 按需加载、无看板总监投影、稳定 actor / assignment、召集与交接队列、连续 delivery / rework、低频环境行为、完整 / 精简动效、场景恢复与可访问性入口。业务真值仍由 Session 与 Kanban 提供，Office 只负责投影和连续表现。
+> 实现摘要（2026-07-17）：已完成按会话的 `classic | office` 展示偏好、经典默认、独立沉浸壳层、工作区楼层与横向办公室导航、Office 按需加载、无看板总监投影、稳定 actor / assignment、召集与交接队列、连续 delivery / rework、低频环境行为、完整 / 精简动效、场景恢复与可访问性入口。业务真值仍由 Workspace、Session 与 Kanban 提供，Office 只负责交互编排、投影和连续表现。
 
 ## 1. 背景
 
@@ -28,11 +28,11 @@
 
 ### 2.2 三个正交维度
 
-| 维度 | 现有 / 新增选项 | 约束 |
-|---|---|---|
-| 顶层能力模式 | `general` / `ta` | 保持现有隔离，不增加第三种模式 |
-| Composer 档位 | `ask` / `agent` | 决定 Agent 是否可执行，不影响场景选择 |
-| 会话展示模式 | `classic` / `office` | 新增；只改变呈现，不改变业务真值 |
+| 维度          | 现有 / 新增选项      | 约束                                  |
+| ------------- | -------------------- | ------------------------------------- |
+| 顶层能力模式  | `general` / `ta`     | 保持现有隔离，不增加第三种模式        |
+| Composer 档位 | `ask` / `agent`      | 决定 Agent 是否可执行，不影响场景选择 |
+| 会话展示模式  | `classic` / `office` | 新增；只改变呈现，不改变业务真值      |
 
 禁止把 AI Office 写入 `topLevelModeAtom`，也禁止让 Office 绕过 general / TA 的 Provider、Skill、MCP、Memory 和权限边界。
 
@@ -60,16 +60,16 @@
 
 主 Agent 必须是办公室中的稳定角色，而不是不可见的系统进程。
 
-| Agent 阶段 | Office 表达 |
-|---|---|
-| 等待用户 | 阅读资料、查看白板、短距离走动或安静休息 |
-| 用户输入 | 转向沟通区，进入倾听状态 |
-| 分析问题 | 思考、查阅资料、在白板前整理计划 |
-| 创建看板 | 前往会议区，发起团队召集 |
-| 分配任务 | 与员工依次完成 briefing / handoff |
-| 等待 worker | 巡视、处理自己的工作或回到沟通区 |
-| worker 交卷 | 在交付区接收结果，触发验收反馈 |
-| 回复用户 | 回到沟通区，将结果汇总给用户 |
+| Agent 阶段  | Office 表达                              |
+| ----------- | ---------------------------------------- |
+| 等待用户    | 阅读资料、查看白板、短距离走动或安静休息 |
+| 用户输入    | 转向沟通区，进入倾听状态                 |
+| 分析问题    | 思考、查阅资料、在白板前整理计划         |
+| 创建看板    | 前往会议区，发起团队召集                 |
+| 分配任务    | 与员工依次完成 briefing / handoff        |
+| 等待 worker | 巡视、处理自己的工作或回到沟通区         |
+| worker 交卷 | 在交付区接收结果，触发验收反馈           |
+| 回复用户    | 回到沟通区，将结果汇总给用户             |
 
 主 Agent 的动作必须来自真实会话事件。没有事件时只运行低频环境行为，不能用持续夸张动作伪装“智能”。
 
@@ -128,9 +128,11 @@ Classic 和 Office 不允许各自维护一套消息、任务或 worker 状态�
 `AppShell` 是选择产品壳层的边界；经典展示继续进入原有导航、标签和内容区，Office 展示直接进入独立沉浸壳层：
 
 ```tsx
-sessionPresentation === 'office'
-  ? <LazyOfficeImmersiveShell sessionId={sessionId} />
-  : <ClassicAppShell />
+sessionPresentation === 'office' ? (
+  <LazyOfficeImmersiveShell sessionId={sessionId} />
+) : (
+  <ClassicAppShell />
+)
 ```
 
 Office 壳层不挂载 Functional Rail、左侧栏、标签栏和右侧伴生面板。实现时不应在 `AgentView` 内叠加全屏 Canvas，也不应把全屏 Office 放进 `RightSidePanel`。右栏 `KanbanCrewPanel` 保留为经典工作台的轻量团队视图。
@@ -158,19 +160,22 @@ Office 是占满应用窗口的 full-bleed 场景，但不是整个产品唯一�
 
 采用固定 z-index token，禁止场景组件使用任意超大 z-index：
 
-| 层 | token | 用途 |
-|---|---:|---|
-| Scene | 0 | Pixi / Spine Canvas |
-| HUD | 10 | 会话标题、状态摘要 |
-| Floating chat | 20 | 主 Agent 沟通窗 |
-| Detail sheet | 30 | worker / task 详情 |
-| System overlay | 50 | 权限、错误、全局 Dialog |
+| 层             | token | 用途                    |
+| -------------- | ----: | ----------------------- |
+| Scene          |     0 | Pixi / Spine Canvas     |
+| HUD            |    10 | 会话标题、状态摘要      |
+| Floating chat  |    20 | 主 Agent 沟通窗         |
+| Detail sheet   |    30 | worker / task 详情      |
+| System overlay |    50 | 权限、错误、全局 Dialog |
 
 ### 5.2 房间导航
 
 - Office 进入时不挂载经典 sidebar、标签栏和伴生面板，但不得清除其用户状态。
 - 保留明确的“返回经典工作台”按钮和键盘可达入口。
-- 顶部横向房间条直接投影当前能力模式下的主会话；房间名就是会话名，不创建第二份房间数据。
+- 顶部导航采用两级空间隐喻：现有 Workspace 是“楼层”，该 Workspace 内当前能力模式的主会话是“办公室”。
+- 楼层菜单必须展示各层办公室数量，并提供“新建楼层”；横向办公室条必须提供“新建办公室”。两种创建操作分别复用既有 Workspace 和 Session 创建链路。
+- 横向办公室条直接投影所选楼层的主会话；办公室名就是会话名，不创建第二份房间数据。worker 子会话不得进入办公室导航。
+- 切到空楼层时保留 Office 壳层，显示明确空状态和新建办公室入口，不生成虚假会话、总监或看板。
 - 左右方向键切换相邻房间，横向溢出可滚动；切换仍调用统一会话打开链路。
 - 切换会话时保留各自摄像机、聊天窗尺寸和展示模式。
 - `Esc` 只关闭最上层浮窗或详情，不直接退出 Office，避免不可预测导航。
@@ -187,15 +192,22 @@ Office 是占满应用窗口的 full-bleed 场景，但不是整个产品唯一�
 - 所有图标按钮具有文本标签或 `aria-label`，交互热区不小于 44px。
 - Office 内新增的文件、Diff、设置等功能必须作为 Canvas 上的浮层 / 弹窗打开，不能把主界面切回经典布局；需要完整生产力表面时使用明确的“返回经典工作台”。
 
+### 5.4 材质与紧凑会话编排
+
+- Office 是另一套 Agent 交互外壳，不是另一套视觉主题；它必须消费全局 Material Surface token，默认 `frosted` 对应不透明 Material 3 表面。
+- Office 不得写死高透明背景、固定 blur 或独立玻璃色。用户主动选择 `glass` / `soft` 时，仅由统一 `--surface-*` 材质桥接改变表面表现。
+- 悬浮沟通窗不得把经典会话布局等比例缩小。Office surface 使用更小消息间距、头像、过程卡和输入工具栏，并隐藏不适合窄窗的设计建议横幅。
+- 权限、Ask/Agent 档位、附件、消息发送和任务进度仍复用同一功能链路，紧凑化不得删减关键控制或另建发送实现。
+
 ## 6. 事件与状态机
 
 ### 6.1 三层状态禁止混用
 
-| 层 | 示例 | 负责人 |
-|---|---|---|
-| 业务状态 | task `running`、`review`、`done` | Agent / Kanban runtime |
-| 角色语义状态 | briefing、working、delivering、ambient | Office Projection |
-| 动画状态 | walk-left、turn、hand-over、idle-front | Office State Machine / renderer |
+| 层           | 示例                                   | 负责人                          |
+| ------------ | -------------------------------------- | ------------------------------- |
+| 业务状态     | task `running`、`review`、`done`       | Agent / Kanban runtime          |
+| 角色语义状态 | briefing、working、delivering、ambient | Office Projection               |
+| 动画状态     | walk-left、turn、hand-over、idle-front | Office State Machine / renderer |
 
 业务状态变化不能直接设置角色坐标或动画名。它只产生语义意图，再由状态机生成可中断的动作序列。
 
@@ -283,13 +295,13 @@ sequenceDiagram
 
 ### 8.2 节奏分层
 
-| 类型 | 建议时长 | 说明 |
-|---|---:|---|
-| UI 按压 / hover | 80–160ms | 快速反馈，不改变布局 |
-| 浮窗 / 详情进入 | 180–280ms | transform + opacity |
-| 角色转身 / 接物 | 180–400ms | 可由 Spine mix 和一次性动作组合 |
-| 空间行走 | 按距离计算 | 恒定速度 + 平滑转向，不固定 duration |
-| 环境行为 | 4–12s | 低频、错峰、随时可中断 |
+| 类型            |   建议时长 | 说明                                 |
+| --------------- | ---------: | ------------------------------------ |
+| UI 按压 / hover |   80–160ms | 快速反馈，不改变布局                 |
+| 浮窗 / 详情进入 |  180–280ms | transform + opacity                  |
+| 角色转身 / 接物 |  180–400ms | 可由 Spine mix 和一次性动作组合      |
+| 空间行走        | 按距离计算 | 恒定速度 + 平滑转向，不固定 duration |
+| 环境行为        |      4–12s | 低频、错峰、随时可中断               |
 
 禁止：0ms 状态跳变、线性长距离移动、无限庆祝、全员同步动作，以及用持续 bounce 表示工作。
 
@@ -317,14 +329,14 @@ sequenceDiagram
 
 ## 10. 错误与降级
 
-| 异常 | 恢复策略 |
-|---|---|
-| Office chunk 加载失败 | 显示原因与重试，保留“回到经典工作台” |
-| Spine 资源失败 | 单角色降级到统一 fallback，不阻塞其他角色 |
-| 看板事件断流 | 标记状态可能过期并主动刷新，不伪造进度 |
-| worker 会话不存在 | 保留任务卡，不生成员工实体，提供诊断入口 |
-| 场景帧率持续过低 | 降低环境行为和特效密度，不改变业务状态 |
-| 用户切回 classic | 立即停止 Office ticker，消息和任务继续运行 |
+| 异常                  | 恢复策略                                   |
+| --------------------- | ------------------------------------------ |
+| Office chunk 加载失败 | 显示原因与重试，保留“回到经典工作台”       |
+| Spine 资源失败        | 单角色降级到统一 fallback，不阻塞其他角色  |
+| 看板事件断流          | 标记状态可能过期并主动刷新，不伪造进度     |
+| worker 会话不存在     | 保留任务卡，不生成员工实体，提供诊断入口   |
+| 场景帧率持续过低      | 降低环境行为和特效密度，不改变业务状态     |
+| 用户切回 classic      | 立即停止 Office ticker，消息和任务继续运行 |
 
 ## 11. 与现有实现的关系
 
@@ -402,6 +414,13 @@ sequenceDiagram
 - [x] 总监使用稳定专业形象、较慢行走和更长动画混合，环境动作保持低频克制。
 - [x] 场景导航目标统一限制在可行走地面内，避免角色进入右侧墙体。
 
+### Phase 7：Office 交互体系
+
+- [x] 使用 Workspace → 楼层、主 Session → 办公室的两级导航模型，保持 general / TA 会话隔离。
+- [x] 增加楼层菜单、楼层办公室计数、新建楼层与新建办公室入口，空楼层不制造业务实体。
+- [x] Office 表面改为消费 Material 3 / `--surface-*` token，不再强制玻璃材质。
+- [x] `AgentView` 增加紧凑 Office conversation surface，保留消息、权限、附件、Composer 与发送真值。
+
 ## 13. 验收标准
 
 ### 产品边界
@@ -441,3 +460,5 @@ sequenceDiagram
 3. Office 首版不复制 Diff / 文件预览系统；复杂内容通过沟通窗标题栏进入经典工作台。
 4. full-bleed Office 使用独立壳层，隐藏经典 sidebar、标签栏和右侧伴生面板；会话通过顶部横向房间条切换，并记忆每个会话的摄像机与沟通窗状态。
 5. 当前 6 工位地图保留 1 个总监工位，最多显示 5 名 worker；更多员工和未领取任务使用摘要，不制造幽灵角色。
+6. Workspace 在 Office 中称为“楼层”，Workspace 内的顶层 Agent Session 称为“办公室”；这是导航投影，不增加新的持久化 schema。
+7. Office 使用应用统一材质轴；默认 Material 3，不拥有独立的玻璃主题。悬浮沟通窗采用专用紧凑布局，而不是经典会话页的缩放版。

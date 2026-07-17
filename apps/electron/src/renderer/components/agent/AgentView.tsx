@@ -503,6 +503,7 @@ export function AgentView({
   surface = 'classic',
   headerActions,
 }: AgentViewProps): React.ReactElement {
+  const isOfficeDock = surface === 'office-dock'
   const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
   const [persistedSDKMessages, setPersistedSDKMessages] = React.useState<SDKMessage[]>([])
   const persistedSDKMessagesRef = React.useRef<SDKMessage[]>([])
@@ -2980,6 +2981,7 @@ export function AgentView({
 
           <>
             <SessionFloatingLayout
+              className={cn(isOfficeDock && 'office-conversation-layout')}
               bottom={
                 <>
                   <PermissionBanner sessionId={sessionId} />
@@ -2992,12 +2994,16 @@ export function AgentView({
                   )}
                   {!hasBannerOverlay && !isNestedWorker && (
                     <div
-                      className="session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1"
+                      className={cn(
+                        'session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1',
+                        isOfficeDock && 'office-conversation-composer'
+                      )}
                       data-input-mode="agent"
                     >
                       <div
                         className={cn(
-                          'session-glass chat-input-glass transition-colors duration-200',
+                          'chat-input-glass transition-colors duration-200',
+                          isOfficeDock ? 'office-conversation-input' : 'session-glass',
                           (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
                           isDragOver &&
                             'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
@@ -3057,7 +3063,7 @@ export function AgentView({
                         )}
 
                         {/* Design Preview 建议横幅 */}
-                        <DesignSuggestionBanner />
+                        {!isOfficeDock && <DesignSuggestionBanner />}
 
                         {/* Agent 建议提示 */}
                         {suggestion && !streaming && (
@@ -3107,10 +3113,16 @@ export function AgentView({
                           placeholder={
                             agentChannelId && hasAvailableModel
                               ? composerMode === 'ask'
-                                ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
+                                ? isOfficeDock
+                                  ? '和总监讨论，不执行操作…'
+                                  : 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
                                 : sendWithCmdEnter
-                                  ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                                  : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                  ? isOfficeDock
+                                    ? '给总监发消息…（⌘/Ctrl+Enter 发送）'
+                                    : '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                  : isOfficeDock
+                                    ? '给总监发消息…'
+                                    : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
                               : !agentChannelId
                                 ? '请先在设置中选择 Agent 供应商'
                                 : '暂无可用模型，请先在设置中启用渠道'
@@ -3132,6 +3144,7 @@ export function AgentView({
                         <InputToolbarOverflow
                           items={inputToolbarItems}
                           trailing={inputTrailingNode}
+                          className={cn(isOfficeDock && 'office-conversation-toolbar')}
                         />
                       </div>
                     </div>

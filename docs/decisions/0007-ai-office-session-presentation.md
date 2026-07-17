@@ -1,6 +1,6 @@
 # ADR-0007: AI Office 作为会话展示模式
 
-> **Status**: Implemented（Phase 1–5）
+> **Status**: Implemented（Phase 1–7）
 > **Date**: 2026-07-17  
 > **Deciders**: TAgent 产品与桌面端维护者
 
@@ -23,6 +23,9 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 9. Office 业务状态、角色语义状态与 Pixi / Spine 动画状态分层；交接由可中断的单通道队列串行化，完成后进入低频环境行为。
 10. 动效偏好由 TAgent 产品设置控制：精简动效保留空间连续性并加速必要移动，只关闭装饰性行为；系统 reduced-motion 只约束普通 UI 过渡。
 11. Office 的主表面始终是 Canvas；会话沟通、任务详情和后续功能通过场景浮层呈现。完整文件、Diff 等高密度能力通过明确入口返回经典工作台。
+12. Office 导航把现有 Workspace 投影为“楼层”，把其中同一顶层能力模式的主 Agent Session 投影为“办公室”。楼层与办公室创建必须复用既有 Workspace / Session 链路，不增加 Office 专用业务实体。
+13. Office 是独立交互外壳但不是独立主题。所有 HUD、导航和沟通窗消费统一 Material 3 / Surface token；默认材质保持不透明 Material 表面，仅在用户全局选择高级材质时跟随变化。
+14. Office 沟通窗复用同一 `AgentView` 运行时，但通过 `office-dock` surface 使用专用紧凑消息与 Composer 编排，避免把经典会话布局直接压缩到窄窗。
 
 ## Consequences
 
@@ -35,12 +38,15 @@ AI Office 原先只存在于 Kanban 右侧班组面板中。它能表达 worker 
 - 高频 progress 合并到动画帧，隐藏页面暂停 ticker，场景加载和资源失败均有明确恢复入口。
 - 展示偏好与 general / TA 能力模式正交，不破坏模式隔离。
 - Office 获得完整可视面积，房间切换不再受 sidebar 和标签页布局约束。
+- 工作区与会话在 Office 中获得稳定的“楼层 / 办公室”空间导航，同时不复制数据模型。
+- 默认材质与经典界面一致，Office 不再隐式改变用户的全局视觉偏好。
 
 ### Negative
 
 - renderer 本地偏好暂不跨设备同步；若未来需要同步，必须另行评审 schema。
 - 在经典与 Office 之间切换会重新挂载展示组件，局部滚动位置不会自动共享。
 - Office 不直接展示经典侧栏中的全部功能；这些能力需要场景浮层或返回经典工作台。
+- 同一套会话组件需要维护 classic 与紧凑 office-dock 两种布局约束。
 - 当前办公室地图只有 6 个工位；保留总监后最多同时显示 5 名 worker，更多员工以摘要表示。
 
 ### Neutral

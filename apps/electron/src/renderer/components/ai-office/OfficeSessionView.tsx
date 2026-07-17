@@ -114,7 +114,7 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
     let frame: number | null = null
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return
-      const nextWidth = Math.max(360, Math.min(620, Math.round(entry.contentRect.width)))
+      const nextWidth = Math.max(328, Math.min(540, Math.round(entry.contentRect.width)))
       if (frame != null) cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         frame = null
@@ -157,7 +157,7 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
       </div>
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start p-4">
-        <div className="office-session-hud pointer-events-auto min-w-0 max-w-[min(540px,60vw)] rounded-2xl border border-border/55 bg-background/78 px-4 py-3 shadow-lg backdrop-blur-xl">
+        <div className="office-session-hud pointer-events-auto min-w-0 max-w-[min(540px,60vw)] px-4 py-3">
           <div className="flex items-center gap-2">
             <span className={cn('size-2 rounded-full', statusTone(status))} aria-hidden />
             <h1 className="truncate text-sm font-semibold text-foreground">
@@ -198,7 +198,7 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
         <button
           type="button"
           onClick={() => setOfficeViewState((current) => ({ ...current, chatCollapsed: false }))}
-          className="office-session-chat-trigger absolute bottom-5 right-5 z-20 flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/88 text-foreground shadow-xl backdrop-blur-xl transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="office-session-chat-trigger absolute bottom-5 right-5 z-20 flex size-12 items-center justify-center rounded-full text-foreground transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           aria-label="展开主 Agent 沟通窗"
           title="展开主 Agent 沟通窗"
         >
@@ -208,11 +208,11 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
       ) : (
         <section
           ref={chatDockRef}
-          className="office-session-chat-dock absolute bottom-4 right-4 top-[88px] z-20 flex w-[440px] min-w-[360px] max-w-[min(48vw,620px)] resize-x flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/86 shadow-2xl backdrop-blur-2xl"
+          className="office-session-chat-dock absolute bottom-4 right-4 top-[88px] z-20 flex w-[420px] min-w-[328px] max-w-[min(46vw,540px)] resize-x flex-col overflow-hidden"
           aria-label="与主 Agent 沟通"
           style={{ width: officeViewState.chatWidth }}
         >
-          <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/45 px-3">
+          <div className="office-session-chat-dock__header flex h-11 shrink-0 items-center justify-between px-3">
             <div className="flex min-w-0 items-center gap-2">
               <MessageSquareText className="size-4 shrink-0 text-primary" aria-hidden />
               <div className="min-w-0">
