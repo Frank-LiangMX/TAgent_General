@@ -65,7 +65,7 @@
 - Pi 是开源轻量 Agent 框架（MIT），非 Proma 自研；TAgent 目标框架
 - 三条路对比：Claude SDK（当前）→ Pi（目标）→ Kun（自研，仅参考）
 - 上游对齐剩余任务：~~Skill Curator~~（已合 main）、**goal_mode + worker judge**（文档已重校准，待实现）、Monthly 调度待定；协作子会话已废弃（看板+SubAgent 替代）
-- 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`（若存在）
+- 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`
 
 ---
 
@@ -76,7 +76,16 @@
 
 ---
 
-**看板 goal_mode + worker judge**（文档重校准 2026-07-18，待实现）：
+**记忆系统 §5.2 收口状态**（2026-07-18 校准）：
+
+- **Nudge 写入升级已完成**：ADR-0006 空闲批量整理负责 LLM 提炼候选；正式写入具备结构化元数据、去重、patch-only invariant、drift 备份、L1 行数限制与易变状态过滤
+- **Memory Graph 阶段一已完成**：数据装配、d3-force Canvas、交互与入口均已落地
+- **孤儿引用修复已完成**：删除会话时对关联记忆行添加 `deleted:1`，commit `0017fde`
+- 上述三项不得再从 `hermes-borrow-plan.md` 的历史成本表中重复列为待办；当前状态以本节、`docs/memory-system.md` 和 ADR-0006 为准
+
+---
+
+**看板 goal_mode + worker judge**（分支 `feature/kanban-goal-mode-judge`）：
 
 - 对齐 hermes 0.18：**goal loop（同 session 多轮 + 每轮 judge）** + **`kanban_complete` 闸门**；fail-open；worker 工具白名单
 - 对 TAgent 有用的 hermes 增量主要是 worker goal/judge；0.18.x 后 gateway/MCP 等不跟

@@ -468,12 +468,12 @@ React UI 更新
 **活跃待办**：
 
 - **看板 v1 产品化**（下一主线）— `docs/plans/2026-06-30-kanban-v1-product-design.md`（B1–B10 内核已落地，UI/体验打磨 + 真实任务跑通中）
-- **hermes-borrow-plan §5.2 v1.5 主线**：~~Skill Curator 自进化~~（已合 main）+ 看板 **goal_mode + worker judge**（§3.6 已按 hermes 0.18 重校准：goal loop + complete 闸门，待实现）+ Nudge 写入升级 + Memory Graph 阶段一 + 孤儿引用修复
+- **hermes-borrow-plan §5.2 v1.5 主线**：仅看板 **goal_mode + worker judge** 仍在开发（分支 `feature/kanban-goal-mode-judge`）；Skill Curator、Nudge 写入升级（ADR-0006）、Memory Graph 阶段一、孤儿引用修复均已完成
 - **上游 v0.13.4 对齐收尾** — `docs/plans/2026-06-24-upstream-feature-roadmap.md`（Issue A/E 部分完成）
 - 协作子会话 v1 — `docs/plans/2026-06-24-collaboration-design.md`
 - Automation M4 扩展（MCP 工具、自然语言创建、custom cron）
 - WPS 协作远程连通完善：媒体附件、绑定持久化、公网回调 URL、富文本 / 卡片
-- 小修：`project_repeat` Nudge、TaskOutput 获取、真实模型成本、飞书教程视频 URL
+- 小修：TaskOutput 获取、真实模型成本、飞书教程视频 URL（`project_repeat` Nudge 已完成）
 
 **最近完成**（2026-07-06 v1.5.0 记忆系统全面改造，未正式 release）：
 
