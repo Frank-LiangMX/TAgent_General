@@ -27,6 +27,7 @@ import type {
   AgentCallStats,
 } from '@tagent/shared'
 
+import type { AgentQueuedMessage } from '@/lib/agent-message-queue'
 import { calculateDockBadgeCount, countPendingRequests } from '@/lib/dock-badge-count'
 
 /** 活动状态 */
@@ -1277,3 +1278,38 @@ export const sessionReadFilesAtom = atom<Map<string, string[]>>(new Map())
 
 /** 会话级已改文件路径（sessionId → paths） */
 export const sessionChangedFilesAtom = atom<Map<string, string[]>>(new Map())
+
+// ===== 消息排队队列 =====
+
+/**
+ * Agent 运行中待发送消息队列 Map — 以 sessionId 为 key。
+ * 队列只保存在渲染进程内存中，避免跨重启恢复时误把过期上下文继续发送。
+ */
+export const agentSessionMessageQueueAtom = atom<Map<string, AgentQueuedMessage[]>>(new Map())
+
+/**
+ * 单个 session 的队列派生 atom（读写）。
+ * 空队列写回时删除 Map entry，避免长时间使用后残留空数组。
+ */
+export const agentMessageQueueAtomFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => get(agentSessionMessageQueueAtom).get(sessionId) ?? [],
+    (
+      _get,
+      set,
+      update: AgentQueuedMessage[] | ((prev: AgentQueuedMessage[]) => AgentQueuedMessage[])
+    ) => {
+      set(agentSessionMessageQueueAtom, (prev) => {
+        const current = prev.get(sessionId) ?? []
+        const next = typeof update === 'function' ? update(current) : update
+        const map = new Map(prev)
+        if (next.length === 0) {
+          map.delete(sessionId)
+        } else {
+          map.set(sessionId, next)
+        }
+        return map
+      })
+    }
+  )
+)

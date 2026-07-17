@@ -66,6 +66,7 @@ import {
 } from '@tagent/ui'
 import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
+import { AgentMessageQueue } from './AgentMessageQueue'
 import { reconcilePersistedMessagesOnReload } from './reconcile-persisted-messages'
 import { AgentModelSelector } from './AgentModelSelector'
 import { AgentSwitchBanner } from './AgentSwitchBanner'
@@ -124,6 +125,7 @@ import {
   agentProcessGroupsKeepExpandedAtom,
   sessionTokenStatsAtom,
   agentSidePanelOpenAtom,
+  agentMessageQueueAtomFamily,
 } from '@/atoms/agent-atoms'
 import { askMessagesMapAtom, askStreamingStatesAtom } from '@/atoms/ask-atoms'
 import {
@@ -185,6 +187,14 @@ import {
   registerShortcut,
 } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
+import {
+  createAgentQueuedMessage,
+  removeQueuedMessage,
+  restoreQueuedMessageToFront,
+  moveQueuedMessage,
+  buildQueuedMessageSendPayload,
+  type QueueDropPlacement,
+} from '@/lib/agent-message-queue'
 
 /** 稳定的空 SDKMessage 数组引用，避免 ?? [] 每次创建新引用 */
 const EMPTY_SDK_MESSAGES: SDKMessage[] = []
@@ -514,8 +524,6 @@ export function AgentView({
   // atom 输出引用未变，订阅者跳过通知。
   const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))
   const streaming = streamState?.running ?? false
-  /** 主进程仍占着 active slot（含后台任务等待），前端必须走 queue 而不是 send */
-  const sessionBusy = streaming || !!streamState?.backgroundWaiting
   const stoppedByUserSessions = useAtomValue(stoppedByUserSessionsAtom)
   const sendWithCmdEnter = useAtomValue(sendWithCmdEnterAtom)
   const stoppedByUser = stoppedByUserSessions.has(sessionId)
@@ -719,6 +727,12 @@ export function AgentView({
     ? (wsAttachedFilesMap.get(currentWorkspaceId) ?? [])
     : []
 
+  // ===== 消息排队队列状态（定义在 handleSend 之前，供其引用）=====
+  const queuedMessages = useAtomValue(agentMessageQueueAtomFamily(sessionId))
+  const setQueuedMessages = useSetAtom(agentMessageQueueAtomFamily(sessionId))
+  const queuedMessagesRef = React.useRef(queuedMessages)
+  queuedMessagesRef.current = queuedMessages
+
   // 性能优化（2026-07-05）：AgentView 不再订阅 inputContent / inputHtmlContent，
   // 改用 hasDraft（boolean）—— 只在 empty↔non-empty 切换时变化一次，打字时不触发 re-render。
   // 之前每次按键都让 AgentView re-render，3000+ 行组件树（含 AgentMessages / TokenStatsPanel /
@@ -778,6 +792,57 @@ export function AgentView({
         c.models.some((m) => m.enabled)
     )
   }, [globalChannels, agentChannelIds])
+
+  // ===== 队列消息操作回调（依赖 hasAvailableModel / setInputContent）=====
+  /** 构建引用选中文本块（XML） */
+  const buildQuotedSelectionBlock = React.useCallback(
+    (selection: NonNullable<typeof currentQuotedSelection>): string => {
+      const safePath = selection.filePath
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+      const safeText = selection.text.replace(/<\/quoted_file>/gi, '</quoted_file_>')
+      return `<quoted_file path="${safePath}">\n${safeText}\n</quoted_file>\n\n`
+    },
+    [currentQuotedSelection]
+  )
+
+  /** 撤回队列消息到输入框 */
+  const recallQueuedMessage = React.useCallback(
+    (messageId: string): void => {
+      const message = queuedMessagesRef.current.find((m) => m.id === messageId)
+      if (!message) return
+      setQueuedMessages((prev) => removeQueuedMessage(prev, messageId))
+      // 直接操作 drafts atom：追加到现有草稿
+      store.set(agentSessionDraftsAtom, (prev) => {
+        const map = new Map(prev)
+        const recall = message.text.trim()
+        if (!recall) return map
+        const base = (map.get(sessionId) ?? '').trim()
+        map.set(sessionId, base ? `${base}\n${recall}` : recall)
+        return map
+      })
+    },
+    [setQueuedMessages]
+  )
+
+  /** 移除队列消息（不撤回） */
+  const removeQueuedMessageFromQueue = React.useCallback(
+    (messageId: string): void => {
+      setQueuedMessages((prev) => removeQueuedMessage(prev, messageId))
+    },
+    [setQueuedMessages]
+  )
+
+  /** 拖拽重排队列消息 */
+  const moveQueuedMessageItem = React.useCallback(
+    (sourceId: string, targetId: string, placement: QueueDropPlacement): void => {
+      setQueuedMessages((prev) => moveQueuedMessage(prev, sourceId, targetId, placement))
+    },
+    [setQueuedMessages]
+  )
+
   React.useEffect(() => {
     if (!agentChannelId) return
 
@@ -925,6 +990,212 @@ export function AgentView({
       setMessagesCache((prev) => setSessionMessagesCache(prev, sessionId, next))
     },
     [sessionId, setMessagesCache]
+  )
+
+  const appendLiveUserMessage = React.useCallback(
+    (message: SDKMessage): void => {
+      store.set(liveMessagesMapAtom, (prev) => {
+        const map = new Map(prev)
+        const current = map.get(sessionId) ?? []
+        map.set(sessionId, [...current, message])
+        return map
+      })
+    },
+    [sessionId, store]
+  )
+
+  const removeLiveUserMessage = React.useCallback(
+    (messageId: string): void => {
+      store.set(liveMessagesMapAtom, (prev) => {
+        const map = new Map(prev)
+        const current = (map.get(sessionId) ?? []).filter(
+          (message) => (message as unknown as { uuid?: string }).uuid !== messageId
+        )
+        map.set(sessionId, current)
+        return map
+      })
+    },
+    [sessionId, store]
+  )
+
+  const createQueuedUserMessage = React.useCallback(
+    (text: string, uuid: string, createdAt: number): SDKMessage =>
+      ({
+        type: 'user',
+        uuid,
+        message: { content: [{ type: 'text', text }] },
+        parent_tool_use_id: null,
+        _createdAt: createdAt,
+        _optimistic: true,
+      }) as unknown as SDKMessage,
+    []
+  )
+
+  /** 当前 turn 已结束时，为队列消息启动一个新的 Agent 运行。 */
+  const startQueuedMessageRun = React.useCallback(
+    async (
+      message: import('@/lib/agent-message-queue').AgentQueuedMessage,
+      payload: ReturnType<typeof buildQueuedMessageSendPayload>
+    ): Promise<void> => {
+      if (!agentChannelId) return
+
+      const startedAt = Date.now()
+      const additionalDirectories = new Set(attachedDirs)
+      for (const dir of attachedFileDirectories) additionalDirectories.add(dir)
+      for (const dir of message.additionalDirectories ?? []) additionalDirectories.add(dir)
+
+      store.set(stoppedByUserSessionsAtom, (prev: Set<string>) => {
+        if (!prev.has(sessionId)) return prev
+        const next = new Set(prev)
+        next.delete(sessionId)
+        return next
+      })
+      setAgentStreamErrors((prev) => {
+        if (!prev.has(sessionId)) return prev
+        const map = new Map(prev)
+        map.delete(sessionId)
+        return map
+      })
+      setStreamingStates((prev) => {
+        const map = new Map(prev)
+        const existing = prev.get(sessionId)
+        map.set(sessionId, {
+          running: true,
+          content: '',
+          toolActivities: [],
+          model: agentModelId || undefined,
+          startedAt,
+          inputTokens: existing?.inputTokens,
+          contextWindow: existing?.contextWindow,
+        })
+        return map
+      })
+      appendOptimisticPersistedMessage(
+        createQueuedUserMessage(payload.rawText, message.id, startedAt)
+      )
+
+      try {
+        await window.electronAPI.sendAgentMessage({
+          sessionId,
+          userMessage: payload.sdkText,
+          channelId: agentChannelId,
+          modelId: agentModelId || undefined,
+          workspaceId: currentWorkspaceId || undefined,
+          startedAt,
+          permissionModeOverride: permissionMode,
+          ...(additionalDirectories.size > 0 && {
+            additionalDirectories: Array.from(additionalDirectories),
+          }),
+          ...(payload.mentions.mentionedSkills.length > 0 && {
+            mentionedSkills: payload.mentions.mentionedSkills,
+          }),
+          ...(payload.mentions.mentionedMcpServers.length > 0 && {
+            mentionedMcpServers: payload.mentions.mentionedMcpServers,
+          }),
+          ...(payload.mentions.mentionedSessionIds.length > 0 && {
+            mentionedSessionIds: payload.mentions.mentionedSessionIds,
+          }),
+        })
+      } catch (error) {
+        setStreamingStates((prev) => {
+          const current = prev.get(sessionId)
+          if (!current) return prev
+          const map = new Map(prev)
+          map.set(sessionId, { ...current, running: false })
+          return map
+        })
+        throw error
+      }
+    },
+    [
+      agentChannelId,
+      agentModelId,
+      appendOptimisticPersistedMessage,
+      attachedDirs,
+      attachedFileDirectories,
+      createQueuedUserMessage,
+      currentWorkspaceId,
+      permissionMode,
+      sessionId,
+      setAgentStreamErrors,
+      setStreamingStates,
+      store,
+    ]
+  )
+
+  /**
+   * 发送一条队列消息：
+   * - 当前仍有活跃通道：追加到通道；运行中时软中断，后台等待时直接注入。
+   * - 当前 turn 已结束：启动新的 Agent 运行。
+   */
+  const sendQueuedMessage = React.useCallback(
+    async (message: import('@/lib/agent-message-queue').AgentQueuedMessage): Promise<void> => {
+      const quotedSelectionBlock = message.quotedSelection
+        ? buildQuotedSelectionBlock(message.quotedSelection)
+        : ''
+      const payload = buildQueuedMessageSendPayload(message, quotedSelectionBlock)
+      if (!payload.rawText || !agentChannelId || !hasAvailableModel) return
+
+      const activeState = store.get(agentStreamingStatesAtom).get(sessionId)
+      const isRunning = activeState?.running ?? false
+      const isBackgroundWaiting = activeState?.backgroundWaiting ?? false
+      if (!isRunning && !isBackgroundWaiting) {
+        await startQueuedMessageRun(message, payload)
+        return
+      }
+
+      const liveMessage = createQueuedUserMessage(payload.rawText, message.id, Date.now())
+      appendLiveUserMessage(liveMessage)
+      try {
+        await window.electronAPI.queueAgentMessage({
+          sessionId,
+          userMessage: payload.sdkText,
+          uuid: message.id,
+          interrupt: isRunning,
+        })
+      } catch (error) {
+        removeLiveUserMessage(message.id)
+        throw error
+      }
+    },
+    [
+      agentChannelId,
+      appendLiveUserMessage,
+      buildQuotedSelectionBlock,
+      createQueuedUserMessage,
+      hasAvailableModel,
+      removeLiveUserMessage,
+      sessionId,
+      startQueuedMessageRun,
+      store,
+    ]
+  )
+
+  const queuedSendInFlightRef = React.useRef(false)
+  const sendingQueuedMessageIdsRef = React.useRef<Set<string>>(new Set())
+
+  /** 用户点击“立即发送”：运行中软中断，已结束则直接启动下一轮。 */
+  const sendQueuedMessageNow = React.useCallback(
+    (messageId: string): void => {
+      if (queuedSendInFlightRef.current || sendingQueuedMessageIdsRef.current.has(messageId)) return
+      const message = queuedMessagesRef.current.find((item) => item.id === messageId)
+      if (!message) return
+
+      queuedSendInFlightRef.current = true
+      sendingQueuedMessageIdsRef.current.add(messageId)
+      setQueuedMessages((prev) => removeQueuedMessage(prev, messageId))
+      sendQueuedMessage(message)
+        .catch((error) => {
+          console.error('[AgentView] 队列消息发送失败:', error)
+          toast.error('队列消息发送失败', { description: String(error) })
+          setQueuedMessages((prev) => restoreQueuedMessageToFront(prev, message))
+        })
+        .finally(() => {
+          sendingQueuedMessageIdsRef.current.delete(messageId)
+          queuedSendInFlightRef.current = false
+        })
+    },
+    [sendQueuedMessage, setQueuedMessages]
   )
 
   // 消息是否已完成首次加载（用于 auto-send 等待）
@@ -1796,8 +2067,8 @@ export function AgentView({
         additionalDirectoriesForRun.add(dir)
       }
 
-      // 上一条仍在处理中（含后台任务等待）：走 queue，避免撞并发守卫把乐观气泡刷掉
-      if (sessionBusy) {
+      // Agent 正在输出：默认只加入渲染层队列，不进入消息流，也不打断当前 turn。
+      if (streaming) {
         // 流式追加时不处理附件（仅支持纯文本）
         if (pendingFilesSnapshot.length > 0) {
           toast.info('Agent 运行中暂不支持追加发送附件', {
@@ -1807,43 +2078,22 @@ export function AgentView({
         }
 
         const localUuid = crypto.randomUUID()
-
-        // 1. 立即注入 liveMessages（作为普通用户消息显示）
-        const syntheticMsg: import('@tagent/shared').SDKMessage = {
-          type: 'user',
-          uuid: localUuid,
-          message: {
-            content: [{ type: 'text', text: effectiveText }],
-          },
-          parent_tool_use_id: null,
-          _createdAt: Date.now(),
-          _optimistic: true,
-        } as unknown as import('@tagent/shared').SDKMessage
-
-        store.set(liveMessagesMapAtom, (prev) => {
-          const map = new Map(prev)
-          const current = map.get(sessionId) ?? []
-          map.set(sessionId, [...current, syntheticMsg])
-          return map
-        })
-
-        // 后台等待 → 用户续发：切回 running，让侧栏/标签动画与队列注入对齐
-        if (streamState?.backgroundWaiting) {
-          setStreamingStates((prev) => {
-            const current = prev.get(sessionId)
-            if (!current) return prev
+        const quotedSelection = store.get(quotedSelectionMapAtom).get(sessionId)
+        if (quotedSelection) {
+          store.set(quotedSelectionMapAtom, (prev) => {
             const map = new Map(prev)
-            map.set(sessionId, {
-              ...current,
-              running: true,
-              backgroundWaiting: false,
-              startedAt: current.startedAt ?? Date.now(),
-            })
+            map.delete(sessionId)
             return map
           })
         }
+        const queuedMessage = createAgentQueuedMessage(
+          effectiveText,
+          localUuid,
+          Date.now(),
+          quotedSelection
+        )
 
-        // 2. 清空输入框（仅发送用户自己输入的内容，点推荐条时保留草稿）
+        // 清空输入框（仅发送用户自己输入的内容，点推荐条时保留草稿）
         if (overrideText === undefined) {
           setInputContent('')
           setInputHtmlContent('')
@@ -1855,29 +2105,50 @@ export function AgentView({
           return map
         })
 
-        // 3. 异步发送到后端
-        //    - 纯 Enter（wantsInterrupt=false）：排队等当前 turn 完成后处理
-        //    - Shift+Enter（wantsInterrupt=true）：立即软中断当前 turn 并注入
-        window.electronAPI
-          .queueAgentMessage({
-            sessionId,
-            userMessage: effectiveText,
-            uuid: localUuid,
-            interrupt: wantsInterrupt,
+        if (wantsInterrupt) {
+          // 若上层显式要求立即发送，直接走活跃通道，不依赖队列 state 查找。
+          void sendQueuedMessage(queuedMessage).catch((error) => {
+            console.error('[AgentView] 立即发送失败:', error)
+            toast.error('立即发送失败', { description: String(error) })
+            setQueuedMessages((prev) => restoreQueuedMessageToFront(prev, queuedMessage))
           })
-          .catch((error) => {
-            console.error('[AgentView] 追加消息失败:', error)
-            toast.error('追加消息失败', { description: String(error) })
-            // 回滚：从 liveMessages 移除
-            store.set(liveMessagesMapAtom, (prev) => {
-              const map = new Map(prev)
-              const current = (map.get(sessionId) ?? []).filter(
-                (m) => (m as unknown as { uuid?: string }).uuid !== localUuid
-              )
-              map.set(sessionId, current)
-              return map
-            })
+        } else {
+          setQueuedMessages((prev) => [...prev, queuedMessage])
+        }
+        return
+      }
+
+      // 后台等待属于软空闲：通道仍在，但没有当前输出，直接注入且不软中断。
+      if (streamState?.backgroundWaiting) {
+        if (pendingFilesSnapshot.length > 0) {
+          toast.info('Agent 后台等待时暂不支持追加发送附件', {
+            description: '请先撤除附件仅发送文本，或停止当前会话后重新发送',
           })
+          return
+        }
+        const quotedSelection = store.get(quotedSelectionMapAtom).get(sessionId)
+        if (quotedSelection) {
+          store.set(quotedSelectionMapAtom, (prev) => {
+            const map = new Map(prev)
+            map.delete(sessionId)
+            return map
+          })
+        }
+        const queuedMessage = createAgentQueuedMessage(
+          effectiveText,
+          crypto.randomUUID(),
+          Date.now(),
+          quotedSelection
+        )
+        if (overrideText === undefined) {
+          setInputContent('')
+          setInputHtmlContent('')
+        }
+        void sendQueuedMessage(queuedMessage).catch((error) => {
+          console.error('[AgentView] 后台续发失败:', error)
+          toast.error('追加消息失败', { description: String(error) })
+          setQueuedMessages((prev) => restoreQueuedMessageToFront(prev, queuedMessage))
+        })
         return
       }
 
@@ -2140,7 +2411,6 @@ export function AgentView({
       currentWorkspaceId,
       workspaces,
       streaming,
-      sessionBusy,
       streamState?.backgroundWaiting,
       suggestion,
       hasAvailableModel,
@@ -2153,11 +2423,30 @@ export function AgentView({
       setLiveMessagesMap,
       permissionMode,
       messagesLoaded,
+      sendQueuedMessage,
+      setQueuedMessages,
       // Design Preview 上下文增强：augment 内部用 store.get 读最新 design state，
       // 引用变化时让 handleSend 重建以拿到新的 augment 函数
       augmentWithDesignContext,
     ]
   )
+
+  /** 当前 turn 正常结束后，自动消费队首消息并启动下一轮。 */
+  React.useEffect(() => {
+    if (streaming || stoppedByUser) return
+    if (!messagesLoaded || !agentChannelId || !hasAvailableModel) return
+    const message = queuedMessages[0]
+    if (!message) return
+    sendQueuedMessageNow(message.id)
+  }, [
+    agentChannelId,
+    hasAvailableModel,
+    messagesLoaded,
+    queuedMessages,
+    sendQueuedMessageNow,
+    stoppedByUser,
+    streaming,
+  ])
 
   /** 停止生成 */
   const handleStop = React.useCallback((): void => {
@@ -2992,6 +3281,14 @@ export function AgentView({
                       <span>Ask 档位：仅对话，不修改文件或执行命令</span>
                     </div>
                   )}
+                  <AgentMessageQueue
+                    items={queuedMessages}
+                    canSendNow={messagesLoaded && !!agentChannelId && hasAvailableModel}
+                    onSendNow={sendQueuedMessageNow}
+                    onRecall={recallQueuedMessage}
+                    onRemove={removeQueuedMessageFromQueue}
+                    onMove={moveQueuedMessageItem}
+                  />
                   {!hasBannerOverlay && !isNestedWorker && (
                     <div
                       className={cn(
