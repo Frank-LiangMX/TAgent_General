@@ -1856,73 +1856,73 @@ function SessionsRailContent({
           </div>
         )}
 
-        {/* 项目分组 */}
-        {agentProjectGroups.length === 0 && pinnedAgentSessions.length === 0 ? (
-          <div className="session-group">
-            <div className="group-label">
-              <span>项目</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="ghost-plus opacity-100"
-                    onClick={() => void onCreateProject()}
-                    aria-label="新建项目"
-                  >
-                    +
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">新建项目</TooltipContent>
-              </Tooltip>
-            </div>
+        {/* 项目分区：标题始终带「新建项目」，避免有项目后入口消失 */}
+        <div className="session-group">
+          <div className="group-label">
+            <span>项目</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="ghost-plus opacity-100"
+                  onClick={() => void onCreateProject()}
+                  aria-label="新建项目"
+                >
+                  +
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">选择目录新建项目</TooltipContent>
+            </Tooltip>
+          </div>
+          {agentProjectGroups.length === 0 ? (
             <div className="px-2 py-2 text-[11px] text-foreground/30 text-center select-none">
               暂无项目
             </div>
-          </div>
-        ) : (
-          /* 与置顶分区同级，统一吃 .session-scroll 的 gap，避免工作区之间再叠 gap-3 */
-          agentProjectGroups.map((group) => (
-            <AgentProjectGroupItem
-              key={group.workspace.id}
-              group={group}
-              currentWorkspaceId={currentWorkspaceId}
-              collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
-              activeSessionId={activeSessionId}
-              agentIndicatorMap={agentIndicatorMap}
-              workspaceNameMap={workspaceNameMap}
-              onSelectProject={(id) => {
-                selectWorkspace(id)
-                toggleCollapsed(id)
-              }}
-              onNewSession={handleNewSessionInWorkspace}
-              onRenameWorkspace={handleRenameWorkspace}
-              onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
-              onConfigureProject={handleConfigureProject}
-              onSelectSession={handleSelectAgentSession}
-              handleRequestDelete={handleRequestDelete}
-              handleAgentRename={handleAgentRename}
-              handleTogglePinAgent={handleTogglePinAgent}
-              handleToggleArchiveAgent={handleToggleArchiveAgent}
-              handleRequestMove={handleRequestMove}
-              dragProjectId={dragProjectId}
-              projectDropIndicator={projectDropIndicator}
-              onProjectDragStart={onProjectDragStart}
-              onProjectDragOver={onProjectDragOver}
-              onProjectDragLeave={onProjectDragLeave}
-              onProjectDrop={onProjectDrop}
-              onProjectDragEnd={onProjectDragEnd}
-              batchSelectWorkspaceId={batchSelectWorkspaceId}
-              batchSelectedSessionIds={batchSelectedSessionIds}
-              onEnterBatchSelect={onEnterBatchSelect}
-              onExitBatchSelect={onExitBatchSelect}
-              onToggleBatchSelect={onToggleBatchSelect}
-              onBatchUpdateSelected={onBatchUpdateSelected}
-              onRequestBatchDelete={onRequestBatchDelete}
-              onConfirmBatchDelete={onConfirmBatchDelete}
-              onCreateProject={onCreateProject}
-            />
-          ))
-        )}
+          ) : null}
+        </div>
+
+        {agentProjectGroups.length > 0
+          ? agentProjectGroups.map((group) => (
+              <AgentProjectGroupItem
+                key={group.workspace.id}
+                group={group}
+                currentWorkspaceId={currentWorkspaceId}
+                collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
+                activeSessionId={activeSessionId}
+                agentIndicatorMap={agentIndicatorMap}
+                workspaceNameMap={workspaceNameMap}
+                onSelectProject={(id) => {
+                  selectWorkspace(id)
+                  toggleCollapsed(id)
+                }}
+                onNewSession={handleNewSessionInWorkspace}
+                onRenameWorkspace={handleRenameWorkspace}
+                onRequestDeleteWorkspace={handleRequestDeleteWorkspace}
+                onConfigureProject={handleConfigureProject}
+                onSelectSession={handleSelectAgentSession}
+                handleRequestDelete={handleRequestDelete}
+                handleAgentRename={handleAgentRename}
+                handleTogglePinAgent={handleTogglePinAgent}
+                handleToggleArchiveAgent={handleToggleArchiveAgent}
+                handleRequestMove={handleRequestMove}
+                dragProjectId={dragProjectId}
+                projectDropIndicator={projectDropIndicator}
+                onProjectDragStart={onProjectDragStart}
+                onProjectDragOver={onProjectDragOver}
+                onProjectDragLeave={onProjectDragLeave}
+                onProjectDrop={onProjectDrop}
+                onProjectDragEnd={onProjectDragEnd}
+                batchSelectWorkspaceId={batchSelectWorkspaceId}
+                batchSelectedSessionIds={batchSelectedSessionIds}
+                onEnterBatchSelect={onEnterBatchSelect}
+                onExitBatchSelect={onExitBatchSelect}
+                onToggleBatchSelect={onToggleBatchSelect}
+                onBatchUpdateSelected={onBatchUpdateSelected}
+                onRequestBatchDelete={onRequestBatchDelete}
+                onConfirmBatchDelete={onConfirmBatchDelete}
+              />
+            ))
+          : null}
       </div>
     </div>
   )
@@ -2472,7 +2472,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onBatchUpdateSelected,
   onRequestBatchDelete,
   onConfirmBatchDelete,
-  onCreateProject,
 }: {
   group: AgentProjectGroup
   currentWorkspaceId: string | null
@@ -2506,7 +2505,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   onBatchUpdateSelected: React.Dispatch<React.SetStateAction<Set<string>>>
   onRequestBatchDelete: () => void
   onConfirmBatchDelete: () => Promise<void>
-  onCreateProject: () => Promise<AgentWorkspace | null>
 }): React.ReactElement {
   const isCurrent = group.workspace.id === currentWorkspaceId
   const [renaming, setRenaming] = React.useState(false)
