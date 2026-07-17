@@ -53,6 +53,7 @@ import {
   getInactiveSkillsDir,
   getDefaultSkillsDir,
   getBundledSkillsDir,
+  getGlobalSkillsDir,
   parseSkillVersion,
   stripBom,
 } from './config-paths'
@@ -785,6 +786,12 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
     'metadata',
     'category',
     'compatibility',
+    // Skill Curator 扩展
+    'provenance',
+    'created_by',
+    'created-by',
+    'status',
+    'pinned',
   ])
   // 列表类型字段（值是 - item 数组）——用于判断是否进入 list 模式
   const _listKeys = new Set(['allowed-tools', 'allowed_tools'])
@@ -915,6 +922,37 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
     meta.metadata = mapEntries.metadata
   }
 
+  // Skill Curator 扩展字段
+  const provenance = entries.provenance?.trim()
+  if (provenance === 'foreground' || provenance === 'background') {
+    meta.provenance = provenance
+  }
+  const createdBy = (entries.created_by ?? entries['created-by'])?.trim()
+  if (
+    createdBy === 'official' ||
+    createdBy === 'market' ||
+    createdBy === 'user' ||
+    createdBy === 'agent'
+  ) {
+    meta.createdBy = createdBy
+    if (!meta.provenance && createdBy === 'agent') {
+      meta.provenance = 'background'
+    }
+  }
+  const status = entries.status?.trim()
+  if (
+    status === 'draft' ||
+    status === 'active' ||
+    status === 'stale' ||
+    status === 'archived'
+  ) {
+    meta.status = status
+  }
+  if (entries.pinned !== undefined) {
+    const p = entries.pinned.trim().toLowerCase()
+    meta.pinned = p === 'true' || p === 'yes' || p === '1'
+  }
+
   return meta
 }
 
@@ -992,11 +1030,50 @@ function scanSkillsInDir(dir: string, enabled: boolean): SkillMeta[] {
   return skills
 }
 
-/** 获取工作区所有 Skills（含活跃和不活跃），用于设置页 UI */
+/** 获取工作区所有 Skills（含活跃和不活跃 + 全局），用于设置页 UI */
 export function getAllWorkspaceSkills(workspaceSlug: string): SkillMeta[] {
-  const activeSkills = scanSkillsInDir(getWorkspaceSkillsDir(workspaceSlug), true)
-  const inactiveSkills = scanSkillsInDir(getInactiveSkillsDir(workspaceSlug), false)
-  return [...activeSkills, ...inactiveSkills]
+  const activeSkills = scanSkillsInDir(getWorkspaceSkillsDir(workspaceSlug), true).map((s) => ({
+    ...s,
+    scope: 'workspace' as const,
+  }))
+  const inactiveSkills = scanSkillsInDir(getInactiveSkillsDir(workspaceSlug), false).map((s) => ({
+    ...s,
+    scope: 'workspace' as const,
+  }))
+
+  // 全局 skill（跨工作区），不覆盖同 slug 的工作区 skill
+  const workspaceSlugs = new Set([...activeSkills, ...inactiveSkills].map((s) => s.slug))
+  let globalSkills: SkillMeta[] = []
+  try {
+    globalSkills = scanSkillsInDir(getGlobalSkillsDir(), true)
+      .filter((s) => !workspaceSlugs.has(s.slug))
+      .map((s) => ({ ...s, scope: 'global' as const }))
+  } catch (err) {
+    console.warn('[Agent 工作区] 扫描全局 skills 失败:', err)
+  }
+
+  const merged = [...activeSkills, ...inactiveSkills, ...globalSkills]
+
+  // 合并 usage 埋点
+  try {
+    const { readSkillUsage, mergeSkillUsage } =
+      require('./skill-usage-tracker') as typeof import('./skill-usage-tracker')
+    const usage = mergeSkillUsage(
+      readSkillUsage('global'),
+      readSkillUsage('workspace', workspaceSlug)
+    )
+    for (const skill of merged) {
+      const entry = usage[skill.slug]
+      if (entry) {
+        skill.useCount = entry.useCount
+        skill.lastUsedAt = entry.lastUsedAt
+      }
+    }
+  } catch {
+    // usage 可选
+  }
+
+  return merged
 }
 
 /** 在 skills/ 和 skills-inactive/ 之间移动来切换启用/禁用 */
@@ -1040,12 +1117,19 @@ function readSkillImportSource(skillDir: string): SkillImportSource | undefined 
   }
 }
 
-/** 解析 Skill 所在目录（active 或 inactive），不存在则返回 null */
+/** 解析 Skill 所在目录（active / inactive / 全局），不存在则返回 null */
 function resolveSkillDir(workspaceSlug: string, skillSlug: string): string | null {
   const active = join(getWorkspaceSkillsDir(workspaceSlug), skillSlug)
   if (existsSync(active)) return active
   const inactive = join(getInactiveSkillsDir(workspaceSlug), skillSlug)
   if (existsSync(inactive)) return inactive
+  // 全局 skill（自动固化默认落全局）
+  try {
+    const globalDir = join(getGlobalSkillsDir(), skillSlug)
+    if (existsSync(globalDir)) return globalDir
+  } catch {
+    // ignore
+  }
   return null
 }
 

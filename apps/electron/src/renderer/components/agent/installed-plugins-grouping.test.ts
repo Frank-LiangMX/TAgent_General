@@ -2,7 +2,11 @@ import { describe, expect, test } from 'bun:test'
 
 import type { PluginStoreCatalog, WorkspaceCapabilities } from '@tagent/shared'
 
-import { groupInstalledPlugins } from './installed-plugins-grouping'
+import {
+  groupInstalledPlugins,
+  skillOriginLabel,
+  skillStatusLabel,
+} from './installed-plugins-grouping'
 
 const mockCatalog: PluginStoreCatalog = {
   bundles: [
@@ -43,6 +47,15 @@ function makeCapabilities(partial: Partial<WorkspaceCapabilities>): WorkspaceCap
     ...partial,
   } as WorkspaceCapabilities
 }
+
+describe('skill curator labels', () => {
+  test('status / origin 文案', () => {
+    expect(skillStatusLabel('draft')).toBe('草稿')
+    expect(skillStatusLabel('stale')).toBe('闲置')
+    expect(skillOriginLabel('agent', 'background')).toBe('自动固化')
+    expect(skillOriginLabel('user')).toBe('用户')
+  })
+})
 
 describe('groupInstalledPlugins', () => {
   test('无 manifest 时按整合包定义推断分组', () => {

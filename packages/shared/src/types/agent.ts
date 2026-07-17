@@ -1079,6 +1079,18 @@ export interface SkillImportSource {
   sourceVersion: string // 导入时源 Skill 的 version，无则 '0.0.0'
 }
 
+/** Skill 来源域（Curator 只自动治理 background / agent 创建的 skill） */
+export type SkillProvenance = 'foreground' | 'background'
+
+/** Skill 创建主体 */
+export type SkillCreatedBy = 'official' | 'market' | 'user' | 'agent'
+
+/** Skill 生命周期（方案 D 静态状态机） */
+export type SkillLifecycleStatus = 'draft' | 'active' | 'stale' | 'archived'
+
+/** Skill 作用域：全局共享 vs 工作区专属 */
+export type SkillScope = 'global' | 'workspace'
+
 /** 工作区 Skill 元数据 */
 export interface SkillMeta {
   slug: string
@@ -1101,6 +1113,23 @@ export interface SkillMeta {
   category?: string
   /** 兼容性声明（如 requires-claude-code: ">=1.0"） */
   compatibility?: string
+  /**
+   * 来源域：foreground=用户/官方/商店；background=agent 静默自创。
+   * Curator 只自动升降 background。
+   */
+  provenance?: SkillProvenance
+  /** 创建主体（统计与 UI 徽章） */
+  createdBy?: SkillCreatedBy
+  /** 生命周期状态 */
+  status?: SkillLifecycleStatus
+  /** 钉住后跳过自动状态转换 */
+  pinned?: boolean
+  /** 作用域 */
+  scope?: SkillScope
+  /** 使用次数（来自 .usage.json 埋点） */
+  useCount?: number
+  /** 上次使用时间（epoch ms） */
+  lastUsedAt?: number
 }
 
 /** Skill 目录下的文件/子目录节点（递归树） */

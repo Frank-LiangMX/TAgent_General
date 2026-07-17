@@ -7,6 +7,10 @@
 
 import type {
   PluginStoreCatalog,
+  SkillCreatedBy,
+  SkillLifecycleStatus,
+  SkillProvenance,
+  SkillScope,
   StorePluginBundle,
   WorkspaceCapabilities,
   WorkspacePluginBundleRecord,
@@ -22,6 +26,13 @@ export interface PluginListItem {
   subtitle?: string
   enabled: boolean
   hasUpdate?: boolean
+  /** Skill Curator 元数据（仅 kind=skill） */
+  skillStatus?: SkillLifecycleStatus
+  skillProvenance?: SkillProvenance
+  skillCreatedBy?: SkillCreatedBy
+  skillScope?: SkillScope
+  skillUseCount?: number
+  skillPinned?: boolean
 }
 
 export interface InstalledBundleGroup {
@@ -63,10 +74,45 @@ export function buildPluginListItems(capabilities: WorkspaceCapabilities): {
       subtitle: skill.description ?? skill.slug,
       enabled: skill.enabled,
       hasUpdate: skill.hasUpdate,
+      skillStatus: skill.status,
+      skillProvenance: skill.provenance,
+      skillCreatedBy: skill.createdBy,
+      skillScope: skill.scope,
+      skillUseCount: skill.useCount,
+      skillPinned: skill.pinned,
     }))
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 
   return { mcpItems, skillItems }
+}
+
+/** Skill 生命周期徽章文案 */
+export function skillStatusLabel(status?: SkillLifecycleStatus): string | null {
+  if (!status) return null
+  switch (status) {
+    case 'draft':
+      return '草稿'
+    case 'active':
+      return '活跃'
+    case 'stale':
+      return '闲置'
+    case 'archived':
+      return '已归档'
+    default:
+      return null
+  }
+}
+
+/** Skill 来源徽章文案 */
+export function skillOriginLabel(
+  createdBy?: SkillCreatedBy,
+  provenance?: SkillProvenance
+): string | null {
+  if (createdBy === 'agent' || provenance === 'background') return '自动固化'
+  if (createdBy === 'user') return '用户'
+  if (createdBy === 'market') return '商店'
+  if (createdBy === 'official') return '官方'
+  return null
 }
 
 function resolveBundleMeta(

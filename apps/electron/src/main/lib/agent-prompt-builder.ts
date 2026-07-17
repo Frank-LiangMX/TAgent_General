@@ -444,6 +444,28 @@ TAgent 自研了 5 层记忆系统（L0 用户画像 / L1 项目画像 / L2 稳�
 
 这些规则是系统级约束，不需要你主动执行——系统会自动维护。你只需要知道这些规则存在，以便在被问到时正确回答。`
 
+/**
+ * Skill Curator / skill_manage 使用规则（固定段，保 Prompt Cache）
+ * 自动固化由后台 Reflect/启动扫描完成；本工具供 Agent 主动创建或修补 skill。
+ */
+const SKILL_MANAGE_RULES = `## Skill 管理（skill_manage）
+
+你可以使用 \`skill_manage\` 工具维护可复用 Skills（写入 TAgent 全局或当前工作区 skills 目录）。
+
+**何时用：**
+- 用户明确要求「做成 skill / 固化流程 / 保存工作流」
+- 同一工具链在多轮任务中反复出现，且用户同意固化（或后台已自动创建 draft，你只需 patch 改进）
+
+**规则：**
+- create 默认 \`scope=global\`、\`status=draft\`、\`provenance=background\`
+- description 写清触发场景（建议 ≤1024 字符）；body 写可执行步骤
+- 不要为一次性任务创建 skill；不要创建恶意或误导性 skill
+- 不要用 Write 工具直接往 memory/ 写 skill；用 \`skill_manage\`
+- 新 skill 通常在**下一轮**会话由 SDK plugin 加载，不必期望当前对话立即触发
+
+**生命周期（系统自动，无需你手动）：**
+draft（使用≥5→active）→ active（30 天不用→stale）→ stale（90 天→archived）。pinned 与用户手写 skill 不自动归档。`
+
 const DESIGN_PREVIEW_INSTRUCTIONS = `## Design Preview 功能
 
 系统内置了 **Design Preview** 功能，用于预览你生成的 HTML/CSS 前端 UI 原型。
@@ -587,6 +609,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // 记忆系统管理规则（屏蔽 SDK auto-memory 入侵，LLM 不主动写记忆文件）
   sections.push(MEMORY_MANAGEMENT_RULES)
+
+  // Skill 管理规则（skill_manage + Curator 生命周期）
+  sections.push(SKILL_MANAGE_RULES)
 
   // Design Preview 功能说明（当 Agent 生成前端 UI 时自动推送画布预览）
   sections.push(DESIGN_PREVIEW_INSTRUCTIONS)

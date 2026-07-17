@@ -15,6 +15,8 @@ import { InstalledBundleDetail } from './InstalledBundleDetail'
 import { InstalledPluginDetail } from './InstalledPluginDetail'
 import {
   groupInstalledPlugins,
+  skillOriginLabel,
+  skillStatusLabel,
   type InstalledBundleGroup,
   type PluginListItem,
 } from './installed-plugins-grouping'
@@ -288,6 +290,9 @@ function InstalledItemCard({
   onSelect: () => void
 }): React.ReactElement {
   const Icon = item.kind === 'mcp' ? Plug : Sparkles
+  const statusLabel = item.kind === 'skill' ? skillStatusLabel(item.skillStatus) : null
+  const originLabel =
+    item.kind === 'skill' ? skillOriginLabel(item.skillCreatedBy, item.skillProvenance) : null
 
   return (
     <article
@@ -321,13 +326,14 @@ function InstalledItemCard({
           <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
           <p className="mt-0.5 text-[10px] text-muted-foreground">
             {item.kind === 'mcp' ? 'MCP' : 'Skill'}
+            {item.skillScope === 'global' ? ' · 全局' : ''}
             {item.subtitle
               ? ` · ${item.subtitle.slice(0, 24)}${item.subtitle.length > 24 ? '…' : ''}`
               : ''}
           </p>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
             'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium',
@@ -338,6 +344,37 @@ function InstalledItemCard({
         >
           {item.enabled ? '已启用' : '已禁用'}
         </span>
+        {statusLabel ? (
+          <span
+            className={cn(
+              'inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium',
+              item.skillStatus === 'draft' &&
+                'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+              item.skillStatus === 'active' &&
+                'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+              item.skillStatus === 'stale' &&
+                'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+              item.skillStatus === 'archived' && 'bg-muted text-muted-foreground'
+            )}
+          >
+            {statusLabel}
+          </span>
+        ) : null}
+        {originLabel ? (
+          <span className="inline-flex rounded-md bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
+            {originLabel}
+          </span>
+        ) : null}
+        {item.skillPinned ? (
+          <span className="inline-flex rounded-md bg-foreground/5 px-2 py-0.5 text-[10px] text-muted-foreground">
+            钉住
+          </span>
+        ) : null}
+        {typeof item.skillUseCount === 'number' && item.skillUseCount > 0 ? (
+          <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+            用过 {item.skillUseCount} 次
+          </span>
+        ) : null}
         {item.hasUpdate ? (
           <span className="text-[10px] text-amber-600 dark:text-amber-400">有更新</span>
         ) : null}

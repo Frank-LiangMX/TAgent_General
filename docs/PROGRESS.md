@@ -18,6 +18,7 @@
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 > **WPS CLI 集成**：`docs/plans/2026-07-08-wps-cli-integration.md`（主动调用 WPS API，与 Bridge 互补）
+> **Agent Runtime 探索**：`docs/plans/2026-07-17-agent-runtime-exploration.md`（Pi-agent 双 runtime 研究 + 上游 v0.13.4→v0.14.23 对齐 + 自研框架对比）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
 
 ---
@@ -55,6 +56,33 @@
 - 角色头顶移除完整任务描述，只保留姓名和状态点，并以角色完整视觉高度设置稳定安全间距；任务详情仅在点击信息卡展示
 - 新增 `officeWorkerProjection.test.ts`，覆盖状态映射、实时进度优先级、worker 会话绑定和 6 工位活跃任务优先规则
 - 验证：AI Office 投影 / 迁移 / 动画 / 环境行为测试 24/24 通过；全仓 TypeScript typecheck 与 renderer production build 通过
+
+---
+
+**上游 v0.13.4 → v0.14.23 对齐研究**（同期 2026-07-17）：
+
+- Proma 今天（2026-07-17）刚合入 Pi-agent runtime（#1170），引入第二个 Agent runtime
+- Pi 是开源轻量 Agent 框架（MIT），非 Proma 自研；TAgent 目标框架
+- 三条路对比：Claude SDK（当前）→ Pi（目标）→ Kun（自研，仅参考）
+- 上游对齐剩余任务：Skill Curator、goal_mode judge gate、Monthly 调度待定；协作子会话已废弃（看板+SubAgent 替代）
+- 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`
+
+---
+
+**Skill Curator 自进化（方案 D）**（分支 `feature/skill-curator-self-evolution`，进行中）：
+
+- 新增 `skill_manage` MCP 工具 + `skill-manage-core` 落盘（create/patch/delete/archive/restore，路径白名单）
+- 全局 skills 目录 `~/.tagent/global-skills-plugin/`，query 时与工作区 plugin 双加载
+- 工具序列模式识别（层次 A，≥5 次 + 相似度 >0.8）+ 启动/Reflect 后静默 `createSkill`（draft/background）
+- 静态状态机 Curator：draft→active→stale→archived（仅 background；pinned 跳过）；挂 ScheduledCleanup
+- usage 埋点 `.usage.json` + `skill-suggestions.json` 候选；`SkillMeta` 扩展 provenance/status/pinned/usage
+- 单元测试 13/13 通过；shared + electron typecheck 通过
+- ✅ Skills 已安装列表/详情：生命周期、来源、全局、使用次数徽章
+- ✅ skill 调用埋点：`Skill` / `skill_manage` tool_use + mention 写入 `.usage.json`
+- ✅ 全局 skill 可读 SKILL.md；tagent-coach 软弃用说明并优先 skill_manage
+- 可选后续：默认 skill 物理迁 `~/.tagent/global-skills-plugin/`、彻底移除 tagent-coach
+
+---
 
 ## 已完成（2026-06-14）
 
