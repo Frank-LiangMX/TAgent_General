@@ -349,11 +349,12 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   ]
 
   return (
-    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-2 pb-2 shrink-0">
+    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pb-3 shrink-0">
       {!isMac ? <div className="w-full shrink-0 h-2" aria-hidden /> : null}
 
       <div className="nav-island-body-start w-full flex flex-col items-center">
-        <div className="relative flex flex-col items-center gap-1.5 w-full">
+        {/* 上区：功能图标，参考 Soft UI 圆钮竖排 */}
+        <div className="relative flex flex-col items-center gap-2 w-full">
           {COMMON_TOP_RAIL_ITEMS.map((item) => {
             const isActive = activeRailItem === item.id
             return (
@@ -364,7 +365,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     data-rail-id={item.id}
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag relative z-[2]',
+                      'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag relative z-[2]',
                       isActive && 'rail-island-btn--active'
                     )}
                   >
@@ -381,7 +382,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
             )
           })}
 
-          <div className="glass-divider my-0.5 w-8 shrink-0 relative z-[2]" />
+          <div className="glass-divider my-1 w-6 shrink-0 relative z-[2] opacity-60" />
 
           {railItems.map((item) => {
             const isActive = activeRailItem === item.id
@@ -393,7 +394,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     data-rail-id={item.id}
                     onClick={() => handleRailItemClick(item)}
                     className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag relative z-[2]',
+                      'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag relative z-[2]',
                       isActive && 'rail-island-btn--active'
                     )}
                   >
@@ -414,9 +415,9 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
 
       <div className="flex-1 min-h-0" />
 
-      <div className="glass-divider my-2 w-8 shrink-0" />
+      <div className="glass-divider my-2 w-6 shrink-0 opacity-60" />
 
-      <div className="flex flex-col items-center gap-1.5 w-full">
+      <div className="flex flex-col items-center gap-2 w-full">
         {modeButtons.map(({ value, label, icon, description }) => {
           const isActive = topLevelMode === value
           const taskCount =
@@ -434,7 +435,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                   onClick={() => handleModeSwitch(value)}
                   disabled={isSwitching}
                   className={cn(
-                    'rail-island-btn relative size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag',
+                    'rail-island-btn relative size-10 flex items-center justify-center rounded-full titlebar-no-drag',
                     isActive && 'rail-island-btn--active',
                     isSwitching && 'opacity-50 cursor-not-allowed'
                   )}
@@ -446,7 +447,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
                     </span>
                   )}
                   {isPaused && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 ring-2 ring-background" />
                   )}
                 </button>
               </TooltipTrigger>
@@ -461,17 +462,17 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         })}
       </div>
 
-      <div className="glass-divider my-2 w-8 shrink-0" />
+      <div className="glass-divider my-2 w-6 shrink-0 opacity-60" />
 
       {/* Office 全局模式切换 */}
-      <div className="flex flex-col items-center gap-1.5 w-full">
+      <div className="flex flex-col items-center gap-2 w-full">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               onClick={() => setGlobalOfficeMode(!globalOfficeMode)}
               className={cn(
-                'rail-island-btn size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag',
+                'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag',
                 globalOfficeMode && 'rail-island-btn--active'
               )}
             >
@@ -489,7 +490,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         </Tooltip>
       </div>
 
-      <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">
+      <div className="pt-3 pb-0.5 flex flex-col items-center gap-2">
         {/* 更新就绪按钮：下载完成后显示 */}
         {updateReadyVersion && (
           <Tooltip>
@@ -497,7 +498,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
               <button
                 type="button"
                 onClick={() => window.electronAPI.updater?.quitAndInstall()}
-                className="flex items-center justify-center rounded-[10px] bg-primary/15 text-primary px-2 py-1 text-[10px] font-semibold leading-none hover:bg-primary/25 transition-colors titlebar-no-drag"
+                className="flex items-center justify-center rounded-full bg-primary/15 text-primary px-2.5 py-1 text-[10px] font-semibold leading-none hover:bg-primary/25 transition-colors titlebar-no-drag"
               >
                 更新
               </button>
@@ -513,13 +514,13 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
               type="button"
               aria-label="打开设置"
               onClick={() => setSettingsOpen(true)}
-              className="rail-avatar-btn relative size-10 flex items-center justify-center rounded-[16px] titlebar-no-drag"
+              className="rail-avatar-btn relative size-10 flex items-center justify-center rounded-full titlebar-no-drag"
             >
               <span className="rail-avatar-letter">
                 {userProfile.userName?.charAt(0)?.toUpperCase() || 'U'}
               </span>
               {(hasUpdate || hasEnvironmentIssues) && (
-                <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500" />
+                <span className="absolute top-0.5 right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-background" />
               )}
             </button>
           </TooltipTrigger>

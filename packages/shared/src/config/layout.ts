@@ -11,8 +11,8 @@ export const NAV_RAIL_WIDTH = 60
 /** Agent 右侧面板 Rail 宽度（展开/折叠一致） */
 export const RIGHT_PANEL_RAIL_WIDTH = 38
 
-/** 导航浮岛外轮廓圆角（与 content 底板左缘对齐） */
-export const NAV_ISLAND_OUTER_RADIUS = 20
+/** 导航浮岛外轮廓圆角（Soft UI pill；与 content 底板左缘对齐） */
+export const NAV_ISLAND_OUTER_RADIUS = 24
 
 /** macOS 导航浮岛左上角圆角（避让红绿灯） */
 export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = 14

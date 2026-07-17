@@ -4263,6 +4263,12 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   box-sizing: border-box;
 }
 
+/* 仅 rail（未展开侧栏）：更窄更「pill」的内边距节奏 */
+.nav-island-glass:not(.nav-island-glass--expanded) .nav-island-rail {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .nav-island-header-row {
   display: flex;
   align-items: center;
@@ -5481,9 +5487,15 @@ html.material-frosted .content-main-shell .content-glass {
     saturate(var(--surface-saturate, 1));
   backdrop-filter: blur(var(--surface-blur-elevated, 0px))
     saturate(var(--surface-saturate, 1));
-  background: hsl(var(--background) / var(--surface-opacity-elevated, 1));
-  border-color: var(--surface-rim, hsl(var(--border) / 0.55));
-  box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.06));
+  /* Soft UI：近白卡片 + 柔和外阴影（参考左侧 pill rail） */
+  background: hsl(var(--card) / var(--surface-opacity-elevated, 0.96));
+  border-color: var(--surface-rim, hsl(var(--border) / 0.35));
+  box-shadow: var(
+    --surface-shadow-elevated,
+    0 1px 2px hsl(var(--foreground) / 0.04),
+    0 8px 24px -6px hsl(var(--foreground) / 0.1),
+    0 20px 48px -16px hsl(var(--foreground) / 0.08)
+  );
 }
 
 .nav-island-glass.nav-island-glass--float::before {
@@ -5863,24 +5875,29 @@ html.material-frosted .content-main-shell .content-glass {
     background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Rail 功能区按钮：默认扁平，选中浮岛 + 主题描边 */
+/*
+ * Rail 功能区按钮 — Soft UI 圆形选中（参考 Be.run 类健康仪表盘左侧 rail）
+ * - 默认：无底，弱图标
+ * - hover：浅底圆形
+ * - active：实心深色圆 + 亮色图标（dark 反相）
+ */
 .rail-island-btn {
-  color: hsl(var(--foreground) / 0.5);
+  color: hsl(var(--foreground) / 0.42);
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
+  border-radius: 9999px;
   box-shadow: none;
   transition:
-    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    background 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .rail-island-btn svg {
   width: 18px;
   height: 18px;
-  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* 右侧 rail：图标比左侧更精巧（组件 size=13 曾被上面 18px 盖掉） */
@@ -5891,61 +5908,63 @@ html.material-frosted .content-main-shell .content-glass {
 }
 
 .rail-island-btn:hover {
-  color: hsl(var(--foreground) / 0.85);
-  background: var(--rail-glass-soft, hsl(var(--foreground) / 0.06));
-  border-color: var(--rail-rim-soft, transparent);
-  transform: translateY(-1px);
+  color: hsl(var(--foreground) / 0.78);
+  background: hsl(var(--foreground) / 0.06);
+  transform: none;
 }
 
 .rail-island-btn:hover svg {
-  transform: scale(1.06);
+  transform: scale(1.04);
 }
 
 .rail-island-btn:active {
-  transform: scale(0.97);
-  box-shadow: inset 2px 2px 6px hsl(var(--foreground) / 0.12), inset -2px -2px 6px hsl(0 0% 100% / 0.08);
+  transform: scale(0.96);
+  box-shadow: none;
 }
 
-.rail-island-btn--active {
-  color: var(--rail-accent, hsl(var(--primary)));
-}
-
-/* 轻拟态激活态 */
+/* 选中：实心圆（浅色 = 近黑底 + 白图标） */
+.rail-island-btn--active,
 html:not(.dark) .rail-island-btn--active {
-  color: var(--rail-accent, hsl(var(--primary)));
-  border-color: var(--rail-rim, hsl(var(--glass-rim) / 0.45));
-  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.55));
-  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.45));
-  background: var(--rail-glass-strong, hsl(var(--card) / 0.72));
+  color: hsl(var(--background));
+  background: hsl(var(--foreground) / 0.92);
+  border: none;
   box-shadow:
-    0 1px 0 var(--rail-inset-hi, hsl(var(--glass-shine) / 0.4)) inset,
-    3px 3px 8px var(--rail-elev-dark, hsl(220 10% 50% / 0.22)),
-    -2px -2px 6px var(--rail-elev-light, hsl(var(--glass-shine) / 0.5));
+    0 1px 2px hsl(var(--foreground) / 0.12),
+    0 6px 16px -4px hsl(var(--foreground) / 0.22);
+}
+
+.rail-island-btn--active:hover,
+html:not(.dark) .rail-island-btn--active:hover {
+  color: hsl(var(--background));
+  background: hsl(var(--foreground) / 0.88);
+  transform: none;
 }
 
 .dark .rail-island-btn {
-  color: hsl(var(--foreground) / 0.5);
+  color: hsl(var(--foreground) / 0.48);
 }
 
 .dark .rail-island-btn:hover {
-  color: hsl(var(--foreground) / 0.9);
-  background: var(--rail-glass-soft, hsl(var(--foreground) / 0.07));
-  border-color: var(--rail-rim-soft, transparent);
+  color: hsl(var(--foreground) / 0.88);
+  background: hsl(var(--foreground) / 0.1);
 }
 
+/* 深色选中：浅色实心圆 + 深色图标 */
 .dark .rail-island-btn--active {
-  color: var(--rail-accent, hsl(var(--primary)));
-  border-color: var(--rail-rim, rgba(255, 255, 255, 0.16));
-  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.2));
-  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.14));
-  background: var(--rail-glass-strong, rgba(62, 72, 90, 0.68));
+  color: hsl(var(--background));
+  background: hsl(var(--foreground) / 0.94);
+  border: none;
   box-shadow:
-    0 1px 0 var(--rail-inset-hi, rgba(255, 255, 255, 0.2)) inset,
-    3px 3px 8px var(--rail-elev-dark, rgba(8, 12, 20, 0.42)),
-    -2px -2px 6px var(--rail-elev-light, rgba(255, 255, 255, 0.1));
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 8px 20px -6px rgba(0, 0, 0, 0.45);
 }
 
-/* 用户头像按钮（首字母 + 渐变背景，跟随主题 primary） */
+.dark .rail-island-btn--active:hover {
+  color: hsl(var(--background));
+  background: hsl(var(--foreground) / 0.9);
+}
+
+/* 用户头像按钮：圆形 + 主题渐变（对齐参考图底栏 avatar） */
 .rail-avatar-btn {
   color: hsl(var(--primary-foreground)) !important;
   background: linear-gradient(
@@ -5953,45 +5972,33 @@ html:not(.dark) .rail-island-btn--active {
     var(--rail-avatar-a, color-mix(in srgb, hsl(var(--primary)) 55%, white)),
     var(--rail-avatar-b, color-mix(in srgb, hsl(var(--primary)) 40%, hsl(var(--secondary))))
   ) !important;
-  border: 1px solid transparent !important;
-  box-shadow: 0 2px 8px var(--well-ambient, rgba(145, 158, 175, 0.16)) !important;
+  border: 2px solid hsl(var(--background) / 0.9) !important;
+  border-radius: 9999px !important;
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.08),
+    0 4px 12px -2px hsl(var(--foreground) / 0.12) !important;
   transition:
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .rail-avatar-btn:hover {
-  transform: translateY(-1px);
+  transform: scale(1.04);
   box-shadow:
-    0 2px 8px var(--well-ambient, rgba(145, 158, 175, 0.16)),
-    0 4px 12px var(--well-ambient, rgba(145, 158, 175, 0.16)) !important;
+    0 2px 6px hsl(var(--foreground) / 0.1),
+    0 8px 18px -4px hsl(var(--foreground) / 0.16) !important;
 }
 
 .rail-avatar-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .rail-avatar-letter {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   user-select: none;
-}
-
-/* 深色 rail 选中：图标走 primary，背景轻 tint（覆盖上方 soft 拟态块） */
-.dark .rail-island-btn--active {
-  color: var(--rail-accent, hsl(var(--primary)));
-  border-color: hsl(var(--primary) / 0.45);
-  background: linear-gradient(
-    168deg,
-    hsl(var(--primary) / 0.22) 0%,
-    hsl(var(--background) / 0.56) 52%,
-    hsl(var(--background) / 0.48) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 0 hsl(var(--primary) / 0.26),
-    0 4px 16px -6px hsl(var(--primary) / 0.32),
-    0 2px 10px -4px rgba(0, 0, 0, 0.35);
+  letter-spacing: -0.02em;
 }
 
 
@@ -6965,8 +6972,7 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"] .material-cta,
 [data-material="soft"] .material-secondary-btn,
 [data-material="soft"] .ui-switch,
-[data-material="soft"] .session-list-item-active,
-[data-material="soft"] .rail-island-btn--active {
+[data-material="soft"] .session-list-item-active {
   border-top-color: rgba(255, 255, 255, 0.6);
   border-right-color: rgba(255, 255, 255, 0.45);
 }
@@ -6987,8 +6993,7 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material="soft"].dark .material-cta,
 [data-material="soft"].dark .material-secondary-btn,
 [data-material="soft"].dark .ui-switch,
-[data-material="soft"].dark .session-list-item-active,
-[data-material="soft"].dark .rail-island-btn--active {
+[data-material="soft"].dark .session-list-item-active {
   border-top-color: rgba(255, 255, 255, 0.2);
   border-right-color: rgba(255, 255, 255, 0.14);
 }
@@ -7071,29 +7076,13 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   box-shadow: none;
 }
 
-/* Rail 选中态：扁平化，仅保留背景色和边框 */
-[data-material="frosted"]:not(.dark) .rail-island-btn--active {
-  color: hsl(var(--primary));
-  background: hsl(var(--muted) / 0.42);
-  border: 1px solid hsl(var(--border) / 0.38);
-  box-shadow: none;
-}
-
-[data-material="frosted"].dark .rail-island-btn--active {
-  color: hsl(var(--primary));
-  background: hsl(var(--muted) / 0.36);
-  border: 1px solid hsl(var(--border) / 0.32);
-  box-shadow: none;
-}
-
-/* Rail 按下态：移除 inset shadow */
-[data-material="frosted"] .rail-island-btn:active {
-  box-shadow: none;
-}
-
-/* Rail hover 态：移除 translateY，保持扁平 */
+/* frosted：沿用全局圆形实心选中，仅去掉多余位移 */
 [data-material="frosted"] .rail-island-btn:hover {
   transform: none;
+}
+
+[data-material="frosted"] .rail-island-btn:active {
+  box-shadow: none;
 }
 
 /* 已归档按钮：扁平化，移除所有立体效果 */
