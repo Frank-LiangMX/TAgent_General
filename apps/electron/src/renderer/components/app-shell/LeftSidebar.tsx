@@ -310,9 +310,10 @@ function SidebarTopControlsRow({
 }
 
 export function LeftSidebar({
-  width,
+  width: _width,
   activeRailItem = 'sessions',
 }: LeftSidebarProps): React.ReactElement | null {
+  // 宽度由外层 NavSidebarIsland 控制；_width 仅保留 API 兼容
   const [activeView, setActiveView] = useAtom(activeViewAtom)
   const setSettingsTab = useSetAtom(settingsTabAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
@@ -1562,13 +1563,9 @@ export function LeftSidebar({
   return (
     <div
       className={cn(
-        'nav-island-sidebar relative z-[1] h-full flex flex-col overflow-hidden shrink-0',
-        'transition-[width,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'nav-island-sidebar relative z-[1] h-full w-full flex flex-col overflow-hidden min-w-0',
         !isMac && 'pt-[16px]'
       )}
-      style={{
-        width: width ?? 240,
-      }}
     >
       {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 SidePanel / RailInspectorHeader 一致） */}
       {!isMac && (

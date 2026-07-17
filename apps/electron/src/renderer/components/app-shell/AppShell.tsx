@@ -11,7 +11,11 @@ import * as React from 'react'
 
 import { FunctionalRail } from './FunctionalRail'
 import { LeftSidebar } from './LeftSidebar'
-import { NavIsland } from './NavIsland'
+import {
+  NAV_RAIL_SIDEBAR_GAP,
+  NavRailIsland,
+  NavSidebarIsland,
+} from './NavIsland'
 import { RightPanelRail } from './RightPanelRail'
 import { RightSidePanel } from './RightSidePanel'
 
@@ -136,8 +140,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const navRailWidth = NAV_RAIL_WIDTH
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
-  const navIslandWidth = showLeftSidebar ? navRailWidth + navSidebarWidth : navRailWidth
-  const contentBaseInsetLeft = navIslandWidth + SHELL_EDGE_PADDING
+  // rail 独立浮岛 + 可选侧栏浮岛 + 间距
+  const navClusterWidth = showLeftSidebar
+    ? navRailWidth + NAV_RAIL_SIDEBAR_GAP + navSidebarWidth
+    : navRailWidth
+  const contentBaseInsetLeft = navClusterWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
   const [rightPanelWidth, setRightPanelWidth] = useAtom(agentSidePanelWidthAtom)
@@ -268,17 +275,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
         }}
       >
-        <div className="relative z-[70] flex shrink-0 items-stretch self-stretch p-2 pr-0">
-          <NavIsland
-            showSidebar={showLeftSidebar}
-            sidebarWidth={navSidebarWidth}
-            railWidth={navRailWidth}
-          >
+        <div className="relative z-[70] flex shrink-0 items-stretch self-stretch gap-2 p-2 pr-0">
+          <NavRailIsland width={navRailWidth}>
             <FunctionalRail />
-            {showLeftSidebar && (
+          </NavRailIsland>
+          {showLeftSidebar ? (
+            <NavSidebarIsland width={navSidebarWidth}>
               <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
-            )}
-          </NavIsland>
+            </NavSidebarIsland>
+          ) : null}
         </div>
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
