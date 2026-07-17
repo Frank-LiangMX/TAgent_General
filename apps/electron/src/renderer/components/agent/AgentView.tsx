@@ -66,6 +66,7 @@ import {
 } from '@tagent/ui'
 import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
+import { reconcilePersistedMessagesOnReload } from './reconcile-persisted-messages'
 import { AgentModelSelector } from './AgentModelSelector'
 import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
@@ -500,6 +501,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
   // atom 输出引用未变，订阅者跳过通知。
   const streamState = useAtomValue(agentSessionStreamingStateAtomFamily(sessionId))
   const streaming = streamState?.running ?? false
+  /** 主进程仍占着 active slot（含后台任务等待），前端必须走 queue 而不是 send */
+  const sessionBusy = streaming || !!streamState?.backgroundWaiting
   const stoppedByUserSessions = useAtomValue(stoppedByUserSessionsAtom)
   const sendWithCmdEnter = useAtomValue(sendWithCmdEnterAtom)
   const stoppedByUser = stoppedByUserSessions.has(sessionId)
@@ -940,10 +943,21 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       .getAgentSessionSDKMessages(sessionId)
       .then((sdkMsgs) => {
         if (cancelled) return
-        // 写入缓存（含 LRU 淘汰，防止会话数增长导致内存无限膨胀）
-        setMessagesCache((prev) => setSessionMessagesCache(prev, sessionId, sdkMsgs))
         unstable_batchedUpdates(() => {
-          setPersistedSDKMessages(sdkMsgs)
+          const streamingState = store.get(agentStreamingStatesAtom).get(sessionId)
+          // running / backgroundWaiting 期间保留尚未落盘的乐观用户气泡，避免被磁盘快照刷掉
+          const preserveOptimistic = !!(
+            streamingState?.running || streamingState?.backgroundWaiting
+          )
+          const reconciled = reconcilePersistedMessagesOnReload({
+            diskMessages: sdkMsgs,
+            localMessages: persistedSDKMessagesRef.current,
+            preserveOptimistic,
+          })
+          persistedSDKMessagesRef.current = reconciled
+          setPersistedSDKMessages(reconciled)
+          // 写入缓存（含 LRU 淘汰，防止会话数增长导致内存无限膨胀）
+          setMessagesCache((prev) => setSessionMessagesCache(prev, sessionId, reconciled))
           setMessagesLoaded(true)
 
           // 消息加载完成后，同步清除流式展示状态和实时消息，
@@ -952,7 +966,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           // 注意：保留 inputTokens/contextWindow 以维持上下文用量圆环显示
           setStreamingStates((prev) => {
             const state = prev.get(sessionId)
-            if (!state || state.running) return prev // 仍在运行中，不清除
+            if (!state || state.running || state.backgroundWaiting) return prev
             const map = new Map(prev)
             if (state.inputTokens !== undefined) {
               // 保留 usage 数据，仅清除流式展示字段
@@ -974,9 +988,11 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           })
           setLiveMessagesMap((prev) => {
             if (!prev.has(sessionId)) return prev
-            // 仍在运行中，不清除实时消息（与 streamingStates 保护逻辑一致）
-            const streamingState = store.get(agentStreamingStatesAtom).get(sessionId)
-            if (streamingState?.running) return prev
+            // 仍在运行/后台等待中，不清除实时消息（与 streamingStates 保护逻辑一致）
+            const latestStreamingState = store.get(agentStreamingStatesAtom).get(sessionId)
+            if (latestStreamingState?.running || latestStreamingState?.backgroundWaiting) {
+              return prev
+            }
             const map = new Map(prev)
             map.delete(sessionId)
             return map
@@ -1119,11 +1135,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       // 乐观更新：SDKMessage 格式（Phase 4）
       const tempUserSDKMsg: SDKMessage = {
         type: 'user',
+        uuid: crypto.randomUUID(),
         message: {
           content: [{ type: 'text', text: snapshot.message }],
         },
         parent_tool_use_id: null,
         _createdAt: Date.now(),
+        _optimistic: true,
       } as unknown as SDKMessage
       appendOptimisticPersistedMessage(tempUserSDKMsg)
 
@@ -1765,8 +1783,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
         additionalDirectoriesForRun.add(dir)
       }
 
-      // 上一条消息仍在处理中，直接追加发送
-      if (streaming) {
+      // 上一条仍在处理中（含后台任务等待）：走 queue，避免撞并发守卫把乐观气泡刷掉
+      if (sessionBusy) {
         // 流式追加时不处理附件（仅支持纯文本）
         if (pendingFilesSnapshot.length > 0) {
           toast.info('Agent 运行中暂不支持追加发送附件', {
@@ -1786,6 +1804,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           },
           parent_tool_use_id: null,
           _createdAt: Date.now(),
+          _optimistic: true,
         } as unknown as import('@tagent/shared').SDKMessage
 
         store.set(liveMessagesMapAtom, (prev) => {
@@ -1794,6 +1813,22 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           map.set(sessionId, [...current, syntheticMsg])
           return map
         })
+
+        // 后台等待 → 用户续发：切回 running，让侧栏/标签动画与队列注入对齐
+        if (streamState?.backgroundWaiting) {
+          setStreamingStates((prev) => {
+            const current = prev.get(sessionId)
+            if (!current) return prev
+            const map = new Map(prev)
+            map.set(sessionId, {
+              ...current,
+              running: true,
+              backgroundWaiting: false,
+              startedAt: current.startedAt ?? Date.now(),
+            })
+            return map
+          })
+        }
 
         // 2. 清空输入框（仅发送用户自己输入的内容，点推荐条时保留草稿）
         if (overrideText === undefined) {
@@ -2026,11 +2061,13 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       // 乐观更新：气泡只显示用户原文，不含 design-context
       const tempUserSDKMsg: SDKMessage = {
         type: 'user',
+        uuid: crypto.randomUUID(),
         message: {
           content: [{ type: 'text', text: displayText }],
         },
         parent_tool_use_id: null,
         _createdAt: Date.now(),
+        _optimistic: true,
       } as unknown as SDKMessage
       appendOptimisticPersistedMessage(tempUserSDKMsg)
 
@@ -2090,6 +2127,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
       currentWorkspaceId,
       workspaces,
       streaming,
+      sessionBusy,
+      streamState?.backgroundWaiting,
       suggestion,
       hasAvailableModel,
       store,
@@ -2870,9 +2909,7 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                     <Users
                       className={cn(
                         'size-3.5',
-                        isCrewPanelActive
-                          ? 'text-primary'
-                          : 'text-blue-600 dark:text-blue-400'
+                        isCrewPanelActive ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
                       )}
                     />
                     <span className="text-[11px] font-medium tabular-nums">
@@ -2880,12 +2917,8 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
                       {kanbanBoard.tasks.length}
                     </span>
                     {(() => {
-                      const running = kanbanBoard.tasks.filter(
-                        (t) => t.status === 'running'
-                      ).length
-                      const blocked = kanbanBoard.tasks.filter(
-                        (t) => t.status === 'blocked'
-                      ).length
+                      const running = kanbanBoard.tasks.filter((t) => t.status === 'running').length
+                      const blocked = kanbanBoard.tasks.filter((t) => t.status === 'blocked').length
                       return (
                         <>
                           {running > 0 && (
@@ -2919,199 +2952,197 @@ export function AgentView({ sessionId }: { sessionId: string }): React.ReactElem
           )}
 
           <>
-              <SessionFloatingLayout
-                bottom={
-                  <>
-                    <PermissionBanner sessionId={sessionId} />
-                    <AgentSwitchBanner />
-                    {composerMode === 'ask' && !hasBannerOverlay && (
-                      <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
-                        <MessageSquareText className="size-3.5" />
-                        <span>Ask 档位：仅对话，不修改文件或执行命令</span>
-                      </div>
-                    )}
-                    {!hasBannerOverlay && !isNestedWorker && (
+            <SessionFloatingLayout
+              bottom={
+                <>
+                  <PermissionBanner sessionId={sessionId} />
+                  <AgentSwitchBanner />
+                  {composerMode === 'ask' && !hasBannerOverlay && (
+                    <div className="mx-4 mb-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 px-1">
+                      <MessageSquareText className="size-3.5" />
+                      <span>Ask 档位：仅对话，不修改文件或执行命令</span>
+                    </div>
+                  )}
+                  {!hasBannerOverlay && !isNestedWorker && (
+                    <div
+                      className="session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1"
+                      data-input-mode="agent"
+                    >
                       <div
-                        className="session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1"
-                        data-input-mode="agent"
+                        className={cn(
+                          'session-glass chat-input-glass transition-colors duration-200',
+                          (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
+                          isDragOver &&
+                            'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                        )}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
                       >
-                        <div
-                          className={cn(
-                            'session-glass chat-input-glass transition-colors duration-200',
-                            (isPlanMode || isPermissionPlanMode) &&
-                              !isDragOver &&
-                              'plan-mode-border',
-                            isDragOver &&
-                              'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
-                          )}
-                          onDragOver={handleDragOver}
-                          onDragLeave={handleDragLeave}
-                          onDrop={handleDrop}
-                        >
-                          {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
-                            <PlanModeDashedBorder />
-                          )}
+                        {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
+                          <PlanModeDashedBorder />
+                        )}
 
-                          {/* 无 Agent 渠道或无可用模型提示 */}
-                          {(!agentChannelId || !hasAvailableModel) && (
-                            <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
-                              <Settings size={14} />
-                              <span>
-                                {!agentChannelId
-                                  ? '请在设置中选择 Agent 供应商'
-                                  : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
+                        {/* 无 Agent 渠道或无可用模型提示 */}
+                        {(!agentChannelId || !hasAvailableModel) && (
+                          <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
+                            <Settings size={14} />
+                            <span>
+                              {!agentChannelId
+                                ? '请在设置中选择 Agent 供应商'
+                                : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
+                            </span>
+                            <button
+                              type="button"
+                              className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+                              onClick={() => setSettingsOpen(true)}
+                            >
+                              前往设置
+                            </button>
+                          </div>
+                        )}
+
+                        {/* 待发送附件 + 引用选中文本 Chip */}
+                        {(pendingFiles.length > 0 || currentQuotedSelection) && (
+                          <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
+                            {pendingFiles.map((file) => (
+                              <AttachmentPreviewItem
+                                key={file.id}
+                                filename={file.filename}
+                                mediaType={file.mediaType}
+                                previewUrl={file.previewUrl}
+                                onRemove={() => handleRemoveFile(file.id)}
+                                onClick={
+                                  file.filename.startsWith('clipboard-')
+                                    ? () => handleClipboardPreview(file)
+                                    : undefined
+                                }
+                              />
+                            ))}
+                            {currentQuotedSelection && (
+                              <QuotedSelectionChip
+                                text={currentQuotedSelection.text}
+                                filePath={currentQuotedSelection.filePath}
+                                onRemove={handleRemoveQuotedSelection}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Design Preview 建议横幅 */}
+                        <DesignSuggestionBanner />
+
+                        {/* Agent 建议提示 */}
+                        {suggestion && !streaming && (
+                          <div className="px-3 pt-2.5 pb-1.5">
+                            <button
+                              type="button"
+                              className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
+                              onClick={() => void handleSend({ overrideText: suggestion })}
+                            >
+                              <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
+                              <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
+                                {suggestion}
                               </span>
-                              <button
-                                type="button"
-                                className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
-                                onClick={() => setSettingsOpen(true)}
-                              >
-                                前往设置
-                              </button>
-                            </div>
-                          )}
+                              <X
+                                className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setPromptSuggestions((prev) => {
+                                    if (!prev.has(sessionId)) return prev
+                                    const map = new Map(prev)
+                                    map.delete(sessionId)
+                                    return map
+                                  })
+                                }}
+                              />
+                            </button>
+                          </div>
+                        )}
 
-                          {/* 待发送附件 + 引用选中文本 Chip */}
-                          {(pendingFiles.length > 0 || currentQuotedSelection) && (
-                            <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
-                              {pendingFiles.map((file) => (
-                                <AttachmentPreviewItem
-                                  key={file.id}
-                                  filename={file.filename}
-                                  mediaType={file.mediaType}
-                                  previewUrl={file.previewUrl}
-                                  onRemove={() => handleRemoveFile(file.id)}
-                                  onClick={
-                                    file.filename.startsWith('clipboard-')
-                                      ? () => handleClipboardPreview(file)
-                                      : undefined
-                                  }
-                                />
-                              ))}
-                              {currentQuotedSelection && (
-                                <QuotedSelectionChip
-                                  text={currentQuotedSelection.text}
-                                  filePath={currentQuotedSelection.filePath}
-                                  onRemove={handleRemoveQuotedSelection}
-                                />
-                              )}
-                            </div>
-                          )}
+                        {/* 任务进度预览条：仅当前流式回合有进行中任务时显示 */}
+                        <TaskProgressDock
+                          allMessages={
+                            liveMessages.length > 0
+                              ? [...persistedSDKMessages, ...liveMessages]
+                              : persistedSDKMessages
+                          }
+                          streaming={streaming}
+                        />
 
-                          {/* Design Preview 建议横幅 */}
-                          <DesignSuggestionBanner />
+                        <AgentRichTextInputBridge
+                          onChange={setInputContent}
+                          onHtmlChange={setInputHtmlContent}
+                          onSubmit={handleSend}
+                          onPasteFiles={handlePasteFiles}
+                          onPasteLongText={handlePasteLongText}
+                          longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
+                          placeholder={
+                            agentChannelId && hasAvailableModel
+                              ? composerMode === 'ask'
+                                ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
+                                : sendWithCmdEnter
+                                  ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                  : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                              : !agentChannelId
+                                ? '请先在设置中选择 Agent 供应商'
+                                : '暂无可用模型，请先在设置中启用渠道'
+                          }
+                          disabled={!agentChannelId || !hasAvailableModel}
+                          autoFocusTrigger={sessionId}
+                          collapsible
+                          enableMentions
+                          workspacePath={sessionPath}
+                          workspaceId={currentWorkspaceId}
+                          workspaceSlug={workspaceSlug}
+                          sessionId={sessionId}
+                          attachedDirs={workspaceMentionPaths}
+                          sessionAttachedDirs={sessionMentionPaths}
+                          sendWithCmdEnter={sendWithCmdEnter}
+                        />
 
-                          {/* Agent 建议提示 */}
-                          {suggestion && !streaming && (
-                            <div className="px-3 pt-2.5 pb-1.5">
-                              <button
-                                type="button"
-                                className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
-                                onClick={() => void handleSend({ overrideText: suggestion })}
-                              >
-                                <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
-                                <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
-                                  {suggestion}
-                                </span>
-                                <X
-                                  className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setPromptSuggestions((prev) => {
-                                      if (!prev.has(sessionId)) return prev
-                                      const map = new Map(prev)
-                                      map.delete(sessionId)
-                                      return map
-                                    })
-                                  }}
-                                />
-                              </button>
-                            </div>
-                          )}
-
-                          {/* 任务进度预览条：仅当前流式回合有进行中任务时显示 */}
-                          <TaskProgressDock
-                            allMessages={
-                              liveMessages.length > 0
-                                ? [...persistedSDKMessages, ...liveMessages]
-                                : persistedSDKMessages
-                            }
-                            streaming={streaming}
-                          />
-
-                          <AgentRichTextInputBridge
-                            onChange={setInputContent}
-                            onHtmlChange={setInputHtmlContent}
-                            onSubmit={handleSend}
-                            onPasteFiles={handlePasteFiles}
-                            onPasteLongText={handlePasteLongText}
-                            longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
-                            placeholder={
-                              agentChannelId && hasAvailableModel
-                                ? composerMode === 'ask'
-                                  ? 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
-                                  : sendWithCmdEnter
-                                    ? '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                                    : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                                : !agentChannelId
-                                  ? '请先在设置中选择 Agent 供应商'
-                                  : '暂无可用模型，请先在设置中启用渠道'
-                            }
-                            disabled={!agentChannelId || !hasAvailableModel}
-                            autoFocusTrigger={sessionId}
-                            collapsible
-                            enableMentions
-                            workspacePath={sessionPath}
-                            workspaceId={currentWorkspaceId}
-                            workspaceSlug={workspaceSlug}
-                            sessionId={sessionId}
-                            attachedDirs={workspaceMentionPaths}
-                            sessionAttachedDirs={sessionMentionPaths}
-                            sendWithCmdEnter={sendWithCmdEnter}
-                          />
-
-                          {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
-                          <InputToolbarOverflow
-                            items={inputToolbarItems}
-                            trailing={inputTrailingNode}
-                          />
-                        </div>
+                        {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
+                        <InputToolbarOverflow
+                          items={inputToolbarItems}
+                          trailing={inputTrailingNode}
+                        />
                       </div>
-                    )}
-                    <AskUserBanner sessionId={sessionId} />
-                    <ExitPlanModeBanner sessionId={sessionId} />
-                  </>
-                }
-              >
-                <AgentMessages
-                  sessionId={sessionId}
-                  sessionModelId={agentModelId || undefined}
-                  messagesLoaded={messagesLoaded}
-                  persistedSDKMessages={persistedSDKMessages}
-                  streaming={streaming}
-                  streamState={streamState}
-                  liveMessages={liveMessages}
-                  sessionPath={sessionPath}
-                  attachedDirs={allAttachedDirs}
-                  stoppedByUser={stoppedByUser}
-                  onRetry={handleRetry}
-                  onRetryInNewSession={handleRetryInNewSession}
-                  onFork={handleFork}
-                  onRewind={handleRewindRequest}
-                  onCompact={handleCompact}
-                  floatingInput
-                />
-              </SessionFloatingLayout>
+                    </div>
+                  )}
+                  <AskUserBanner sessionId={sessionId} />
+                  <ExitPlanModeBanner sessionId={sessionId} />
+                </>
+              }
+            >
+              <AgentMessages
+                sessionId={sessionId}
+                sessionModelId={agentModelId || undefined}
+                messagesLoaded={messagesLoaded}
+                persistedSDKMessages={persistedSDKMessages}
+                streaming={streaming}
+                streamState={streamState}
+                liveMessages={liveMessages}
+                sessionPath={sessionPath}
+                attachedDirs={allAttachedDirs}
+                stoppedByUser={stoppedByUser}
+                onRetry={handleRetry}
+                onRetryInNewSession={handleRetryInNewSession}
+                onFork={handleFork}
+                onRewind={handleRewindRequest}
+                onCompact={handleCompact}
+                floatingInput
+              />
+            </SessionFloatingLayout>
 
-              {/* 底栏：Context 占用 + 累计 Token 统计 — 嵌套工人会话隐藏 */}
-              {!isNestedWorker && (
-                <TokenStatsPanel
-                  isProcessing={streaming}
-                  onCompact={handleCompact}
-                  onClientCompact={handleClientCompact}
-                />
-              )}
-            </>
+            {/* 底栏：Context 占用 + 累计 Token 统计 — 嵌套工人会话隐藏 */}
+            {!isNestedWorker && (
+              <TokenStatsPanel
+                isProcessing={streaming}
+                onCompact={handleCompact}
+                onClientCompact={handleClientCompact}
+              />
+            )}
+          </>
         </div>
       </AgentSessionProvider>
 
