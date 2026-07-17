@@ -38,6 +38,8 @@ interface CodeBlockProps {
 /** 节流间隔（ms）：流式输出时限制高亮更新频率 */
 const THROTTLE_MS = 80
 const PLAIN_TEXT_LANGUAGES = new Set(['', 'text', 'plaintext', 'txt'])
+const LIGHT_SHIKI_THEME = 'github-light'
+const DARK_SHIKI_THEME = 'github-dark'
 
 // ===== 工具函数 =====
 
@@ -83,6 +85,28 @@ function extractCodeInfo(children: React.ReactNode): { language: string; code: s
 /** Plain-text fences (including ASCII diagrams) should inherit the active theme foreground. */
 export function shouldUsePlainTextColors(language: string): boolean {
   return PLAIN_TEXT_LANGUAGES.has(language.toLowerCase())
+}
+
+/** 代码高亮主题必须与应用明暗模式一致。 */
+export function resolveShikiTheme(isDark: boolean): string {
+  return isDark ? DARK_SHIKI_THEME : LIGHT_SHIKI_THEME
+}
+
+function getIsDarkMode(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+}
+
+function useShikiTheme(): string {
+  const [theme, setTheme] = React.useState(() => resolveShikiTheme(getIsDarkMode()))
+
+  React.useEffect(() => {
+    const updateTheme = (): void => setTheme(resolveShikiTheme(getIsDarkMode()))
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  return theme
 }
 
 // ===== SVG 图标路径常量 =====
@@ -151,6 +175,7 @@ const CodeLine = React.memo(function CodeLine({
 export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
   const { language, code } = React.useMemo(() => extractCodeInfo(children), [children])
   const [copied, setCopied] = React.useState(false)
+  const shikiTheme = useShikiTheme()
 
   const trimmedCode = code.replace(/\n$/, '')
   const langOrText = language || 'text'
@@ -159,7 +184,7 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
 
   // ---- 节流 token 高亮 ----
   const [tokenResult, setTokenResult] = React.useState<HighlightTokensResult | null>(() =>
-    highlightToTokens({ code: trimmedCode, language: langOrText })
+    highlightToTokens({ code: trimmedCode, language: langOrText, theme: shikiTheme })
   )
   const pendingCodeRef = React.useRef(trimmedCode)
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -173,7 +198,11 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
 
     const doHighlight = () => {
       const currentCode = pendingCodeRef.current
-      const result = highlightToTokens({ code: currentCode, language: langOrText })
+      const result = highlightToTokens({
+        code: currentCode,
+        language: langOrText,
+        theme: shikiTheme,
+      })
       if (result) {
         lastUpdateRef.current = Date.now()
         setTokenResult(result)
@@ -181,7 +210,11 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
     }
 
     // 同步路径可用时
-    const syncResult = highlightToTokens({ code: trimmedCode, language: langOrText })
+    const syncResult = highlightToTokens({
+      code: trimmedCode,
+      language: langOrText,
+      theme: shikiTheme,
+    })
     if (syncResult) {
       if (elapsed >= THROTTLE_MS) {
         // 距上次更新已超过节流间隔，立即执行
@@ -200,7 +233,7 @@ export function CodeBlock({ children }: CodeBlockProps): React.ReactElement {
     // 兜底：高亮器尚未初始化，订阅就绪事件，初始化完成后用同步路径上色
     const unsubscribe = onHighlighterReady(() => doHighlight())
     return () => unsubscribe()
-  }, [trimmedCode, langOrText])
+  }, [trimmedCode, langOrText, shikiTheme])
 
   // 清理节流定时器
   React.useEffect(() => {
