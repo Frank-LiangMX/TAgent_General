@@ -223,18 +223,19 @@ agent-orchestrator.sendMessage()
 | Phase 4：Memory Monitor UI（每模式状态/输入输出/预算/跳过原因 + 手动入口） | ⏳ 待实现 |
 | Scheduled Cleanup（L4 归档 + L3 压缩 + FTS5 重建 + LRU） | ✅ |
 | Self-Repair（4 子任务 + 月度报告） | ✅ |
+| Nudge 正式写入（结构化元数据 + 去重 + patch-only + drift 检测） | ✅ |
+| Memory Graph 可视化 | ✅ |
+| 会话删除后的孤儿引用标记 | ✅（commit `0017fde`） |
 
 **未做的**（非核心，v1.6+ 可选）：
 - Phase 4 Memory Monitor UI + 手动"立即整理"入口
 - L0 双视图（global_view + peer_view，当前只有单视图）
-- Memory Graph 可视化（`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.8）
-- Skill Curator 自进化（`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.5）
 - L0 跨模式"共享"开关 UI（设计 §6.5.8，当前两套完全独立）
 
 ## 关联文档
 
 - `docs/plans/2026-06-05-tagent-fusion-design.md` §6.5 — 设计意图（1160 行设计细节）
 - `docs/decisions/0006-idle-memory-consolidation-and-reflection-reliability.md` — 空闲批量整理 + Reflection 可靠性 ADR
-- `docs/plans/2026-07-03-hermes-borrow-plan.md` §5.2 — v1.5 主线（Nudge 写入升级 / Memory Graph / Skill Curator）
+- `docs/plans/2026-07-03-hermes-borrow-plan.md` §5.2 — v1.5 主线状态（Nudge 写入升级 / Memory Graph / Skill Curator 均已完成，仅 goal_mode + worker judge 仍在开发）
 - `docs/plans/2026-07-05-agent-stability-issues-diagnosis.md` §8 — Nudge toast 不弹根因修复记录
 - `packages/ui/DESIGN.md` — `session-glass-toast` 玻璃类样式规范

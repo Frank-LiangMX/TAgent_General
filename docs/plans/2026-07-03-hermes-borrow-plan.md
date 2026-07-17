@@ -54,10 +54,11 @@ TAgent 端的 5 层记忆系统是**只读监控层**，从未实现写入路径
    - 缺 `GET_STATS` / `INIT_LAYERS` / `GET_MD_CONTENT` / `GET_CORRECTIONS` / `SEARCH_SESSIONS` / `LIST_RECENT_SESSIONS` 6 个通道
    - 前端 `MemoryMonitorPanel` 调用 `getMemoryStats` / `initMemoryLayers` silent reject，面板显示"加载失败"或一片灰
 
-3. **Nudge 写入是裸 appendFile**
-   - `nudge-service.ts:443-464` 写 L0/L2 时只是 `fs.appendFile` 追加一行
-   - 没有 LLM 改写、没有去重、没有 schema，写入格式不达标
-   - 触发条件苛刻（≥3 次/5turn + 正则匹配），普通使用难命中
+3. **Nudge 写入曾是裸 appendFile（发现时现状，现已修复）**
+   - 2026-07-03 发现时，`nudge-service.ts` 写 L0/L2 只是 `fs.appendFile` 追加一行
+   - 当时没有去重、结构化元数据与格式约束，触发条件也较苛刻
+   - **当前实现**：空闲批量 LLM 整理生成候选；正式写入具备结构化元数据、去重、patch-only invariant、drift 备份、L1 行数限制与易变状态过滤
+   - 权威结论见 ADR-0006 与 `docs/memory-system.md`，不得再将该项列为待办
 
 **连锁影响**：
 
@@ -89,20 +90,20 @@ Nudge 触发条件苛刻，L0/L2 也几乎没数据
 - 写入 sessions.db：session_slug / title / summary / key_facts / tools_used / created_at
 - Reflect 有数据可提炼 → L5 不再空
 
-修复 3：Nudge 写入升级（1-2 天，v1.5）
-- 把 `nudge-service.ts:443-464` 的裸 `appendFile` 升级为带 LLM 改写的正式写入
-- 去重 + schema + 格式化
-- L0/L2 不再是简陋裸文本
+修复 3：Nudge 写入升级（✅ 已完成）
+- ADR-0006 将逐 turn LLM review 改为空闲批量整理，由批次生成结构化候选
+- `appendMdFileWithDedup` 完成去重、结构化元数据、patch-only、drift 检测与格式约束
+- L0/L2 正式写入不再是无约束裸文本；底层对“新增单行”继续使用 `appendFile` 是刻意的 patch 语义，不代表功能未完成
 
 **不做的部分**：
 - 不挂载 ta_agent MCP Server 到 general 模式（TAgent 自己维护更可控，符合"本地存储优先"原则）
 
 **工作量**：
 - 修复 1+2（最小可用）：半天
-- 修复 3（Nudge 升级）：v1.5，1-2 天
-- **总计**：v1.4.2 之前完成修复 1+2，v1.5 完成修复 3
+- 修复 3（Nudge 升级）：✅ 已由 v1.5 记忆改造 + ADR-0006 完成
+- **总计**：修复 1–3 均已完成
 
-**状态**：✅ 已落地（v1.4.2，修复 1+2 完成；修复 3 Nudge 写入升级推到 v1.5）
+**状态**：✅ 已全部落地。修复 1+2 于 v1.4.2 完成；修复 3 于 v1.5 记忆改造与 ADR-0006 空闲批量整理中完成。**截至 2026-07-18，Nudge 写入升级不是待办。**
 
 **对其他条目的影响**：
 - 第五条方案 D（跨会话工作流识别）：依赖 L4 数据，修复 2 完成后才能跑
@@ -1482,13 +1483,13 @@ hermes 的 Verification Evidence 是把这些验证结果**额外**存独立表 
 
 | 项 | 优先级 | 成本 | 价值 |
 | --- | --- | --- | --- |
-| 3.5 Skill 自进化（方案 D 完整闭环） | P2 | 高（7-8 天） | 自进化深度 |
-| 3.6 看板 goal_mode + worker judge | P2 | 中高（5-7 天：A 闸门 2–3 + B loop 2–3 + C UI 1） | 看板产品化；仅对齐 worker goal/judge |
-| 3.8 Memory Graph 阶段一 | P3 | 中（3-4 天） | 重度场景 UX |
-| 3.5 Nudge 写入升级 | P2 | 中（1-2 天） | 记忆质量 |
-| 孤儿引用修复（前置 Memory Graph） | P1 | 1 天 | bug 修复 |
+| 3.5 Skill 自进化（方案 D 完整闭环） | P2 | ✅ 已完成并合入 main | 自进化深度 |
+| 3.6 看板 goal_mode + worker judge | P2 | 🚧 开发中（分支 `feature/kanban-goal-mode-judge`） | 看板产品化；仅对齐 worker goal/judge |
+| 3.8 Memory Graph 阶段一 | P3 | ✅ 已完成 | 重度场景 UX |
+| Nudge 写入升级 | P2 | ✅ 已完成（ADR-0006） | 记忆质量 |
+| 孤儿引用修复（前置 Memory Graph） | P1 | ✅ 已完成（commit `0017fde`） | bug 修复 |
 
-**总成本**：2-3 周 | **建议**：作为 v1.5 主线
+**当前剩余**：本节仅 `3.6 看板 goal_mode + worker judge` 仍在开发；其余列项均已完成。
 
 ### 5.3 长期规划（v1.6+）
 
