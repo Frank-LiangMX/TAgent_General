@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Office 楼层与办公室导航** — 现有 Workspace 在 Office 中作为楼层、其中的顶层 Agent 会话作为办公室；顶部增加楼层菜单、办公室数量、新建楼层、新建办公室和空楼层入口，创建与切换继续复用统一 Workspace / Session 链路
 - **AI Office 稳定员工与协作编排** — worker 以真实子会话作为稳定 actor、任务作为可替换 assignment；新员工从入口到总监处 briefing 后再去工位，review / delivery / rework 均沿路径连续移动，并通过单通道交接队列避免多人重叠
 - **AI Office 状态与恢复控制** — 增加可访问员工名单、语义状态标签、任务详情入口、看板手动刷新、场景重试 / 返回经典工作台，以及按会话恢复摄像机和沟通窗布局
+- **Windows Portable 免安装包** — 正式发布同时产出 `TAgent.Setup.*.exe`（NSIS，可自动更新）与 `TAgent.Portable.*.exe`（单文件免安装）；关于页标注 Portable，并说明无法应用内更新、需到 Releases 下载新 Portable 包手动替换
 - **AI Office 虚拟办公室面板** — 班组面板新增办公室视图，用 Pixi.js 2D 渲染虚拟办公室；worker 角色由看板任务动态创建，支持状态姿态、状态区域、滚轮缩放、拖拽移动、双击重置和点击打开任务详情
 - **Kanban worker → Office 真值映射** — `task.id` / `roleId` / `assigneeSessionId` 分别绑定场景实体、角色身份与真实 worker 会话/形象 seed；任务状态和实时 progress 映射为待命 / 分析 / 忙碌 / 验收 / 求助 / 已交卷 / 需复盘 / 已撤岗，不再生成固定花名册或默认工作中的幽灵员工
 - **Pixi.js / Spine 动画运行时** — 使用 `pixi.js@^8.18.1` 和 `@esotericsoftware/spine-pixi-v8@~4.2.0`；恢复 Chibi Spine 骨骼资源加载与 0.24s 动画混合，矢量角色仅作为资源失败降级

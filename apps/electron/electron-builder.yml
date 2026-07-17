@@ -128,8 +128,6 @@ dmg:
 # Windows 配置
 # ============================================
 win:
-  # 与 NSIS 实际产出及 latest.yml 保持一致，避免 auto-updater 404
-  artifactName: '${productName}.Setup.${version}.${ext}'
   icon: resources/icon.ico
   fileAssociations:
     - ext: tagent-backup
@@ -138,17 +136,27 @@ win:
     - ext: tagent-share
       name: TAgent Share Package
       icon: resources/icon.ico
+  # 同时产出安装版（NSIS，支持 auto-updater）与免安装 Portable
   target:
     - target: nsis
       arch:
         - x64
+    - target: portable
+      arch:
+        - x64
 
-# NSIS 安装程序配置
+# NSIS 安装程序配置（自动更新走此产物 + latest.yml）
 nsis:
+  # 与 latest.yml 保持一致，避免 auto-updater 404
+  artifactName: '${productName}.Setup.${version}.${ext}'
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+
+# Windows 免安装包（单 exe，不支持自动更新）
+portable:
+  artifactName: '${productName}.Portable.${version}.${ext}'
 
 # ============================================
 # Linux configuration

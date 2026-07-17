@@ -1303,6 +1303,7 @@ export interface ElectronAPI {
         | 'downloading'
         | 'downloaded'
         | 'not-available'
+        | 'portable'
         | 'error'
       version?: string
       releaseNotes?: string
@@ -1318,6 +1319,7 @@ export interface ElectronAPI {
           | 'downloading'
           | 'downloaded'
           | 'not-available'
+          | 'portable'
           | 'error'
         version?: string
         releaseNotes?: string
