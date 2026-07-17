@@ -142,6 +142,16 @@
   margin-inline: 8px;
 }
 
+/* ===== 浮窗 UI 大小：小（紧凑，看更多内容） ===== */
+.agent-view--office-dock .office-dock-size-small {
+  --md-preview-font-size: 12px;
+}
+
+/* ===== 浮窗 UI 大小：大（宽松，阅读舒适） ===== */
+.agent-view--office-dock .office-dock-size-large {
+  --md-preview-font-size: 17px;
+}
+
 @keyframes office-chat-enter {
   from {
     opacity: 0;

@@ -1,5 +1,8 @@
 /**
- * Session presentation atoms — per-session classic / AI Office display preference.
+ * Session presentation atoms — classic / AI Office display preference.
+ *
+ * - `globalOfficeModeAtom`: application-level Office mode toggle
+ * - `sessionPresentationAtomFamily`: per-session override (legacy, used for fallback)
  *
  * This is intentionally a renderer-only preference. It does not change AgentSessionMeta,
  * general / TA capability boundaries, Composer mode, or any Kanban business entity.
@@ -17,9 +20,19 @@ export interface OfficeCameraState {
   offsetY: number
 }
 
+export interface OfficeChatPosition {
+  x: number
+  y: number
+}
+
+export type OfficeChatUISize = 'small' | 'medium' | 'large'
+
 export interface OfficeSessionViewState {
   chatCollapsed: boolean
   chatWidth: number
+  chatHeight: number
+  chatPosition: OfficeChatPosition
+  chatUISize: OfficeChatUISize
   camera: OfficeCameraState
 }
 
@@ -29,6 +42,9 @@ const VIEW_STATE_STORAGE_KEY = 'tagent-office-session-view-states-v1'
 const DEFAULT_OFFICE_VIEW_STATE: OfficeSessionViewState = {
   chatCollapsed: false,
   chatWidth: 440,
+  chatHeight: 600,
+  chatPosition: { x: -1, y: -1 },
+  chatUISize: 'medium',
   camera: { scale: 1, offsetX: 0, offsetY: 0 },
 }
 
@@ -42,6 +58,19 @@ export const defaultSessionPresentationAtom = atomWithStorage<SessionPresentatio
 export const officeMotionModeAtom = atomWithStorage<OfficeMotionMode>(
   'tagent-office-motion-mode-v1',
   'full',
+  undefined,
+  { getOnInit: true }
+)
+
+/**
+ * Global Office mode toggle.
+ *
+ * When true, the active session renders in Office immersive shell.
+ * When false, classic workspace is used.
+ */
+export const globalOfficeModeAtom = atomWithStorage<boolean>(
+  'tagent-global-office-mode-v1',
+  false,
   undefined,
   { getOnInit: true }
 )
@@ -70,10 +99,19 @@ function finiteNumber(value: unknown, fallback: number): number {
 
 export function normalizeOfficeSessionViewState(value: unknown): OfficeSessionViewState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { ...DEFAULT_OFFICE_VIEW_STATE, camera: { ...DEFAULT_OFFICE_VIEW_STATE.camera } }
+    return {
+      ...DEFAULT_OFFICE_VIEW_STATE,
+      chatPosition: { ...DEFAULT_OFFICE_VIEW_STATE.chatPosition },
+      camera: { ...DEFAULT_OFFICE_VIEW_STATE.camera },
+    }
   }
   const candidate = value as Partial<OfficeSessionViewState>
   const camera = candidate.camera
+  const chatPosition = candidate.chatPosition
+  const validUISizes: OfficeChatUISize[] = ['small', 'medium', 'large']
+  const chatUISize = validUISizes.includes(candidate.chatUISize as OfficeChatUISize)
+    ? (candidate.chatUISize as OfficeChatUISize)
+    : DEFAULT_OFFICE_VIEW_STATE.chatUISize
   return {
     chatCollapsed:
       typeof candidate.chatCollapsed === 'boolean'
@@ -83,6 +121,15 @@ export function normalizeOfficeSessionViewState(value: unknown): OfficeSessionVi
       360,
       Math.min(620, finiteNumber(candidate.chatWidth, DEFAULT_OFFICE_VIEW_STATE.chatWidth))
     ),
+    chatHeight: Math.max(
+      300,
+      Math.min(900, finiteNumber(candidate.chatHeight, DEFAULT_OFFICE_VIEW_STATE.chatHeight))
+    ),
+    chatPosition: {
+      x: finiteNumber(chatPosition?.x, DEFAULT_OFFICE_VIEW_STATE.chatPosition.x),
+      y: finiteNumber(chatPosition?.y, DEFAULT_OFFICE_VIEW_STATE.chatPosition.y),
+    },
+    chatUISize,
     camera: {
       scale: Math.max(
         0.3,
@@ -98,6 +145,10 @@ function officeViewStatesEqual(a: OfficeSessionViewState, b: OfficeSessionViewSt
   return (
     a.chatCollapsed === b.chatCollapsed &&
     a.chatWidth === b.chatWidth &&
+    a.chatHeight === b.chatHeight &&
+    a.chatPosition.x === b.chatPosition.x &&
+    a.chatPosition.y === b.chatPosition.y &&
+    a.chatUISize === b.chatUISize &&
     a.camera.scale === b.camera.scale &&
     a.camera.offsetX === b.camera.offsetX &&
     a.camera.offsetY === b.camera.offsetY

@@ -9,6 +9,7 @@ import { OfficeScene, type OfficeAgentClick, type OfficeCameraState } from './sc
 import { OFFICE_SEMANTIC_LABELS, OFFICE_STATE_LABELS } from './officeWorkerProjection'
 import type { OfficeAgent } from './types/office-agent'
 import type { OfficeMotionMode } from '@/atoms/session-presentation-atoms'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
 type AgentMenuState = {
   agent: OfficeAgent
@@ -165,25 +166,33 @@ export function AiOfficeCanvas({
     <div ref={hostRef} className="ai-office-canvas">
       {/* Zoom controls */}
       <div className="ai-office-toolbar">
-        <button
-          type="button"
-          className="ai-office-toolbar-btn"
-          onClick={() => sceneRef.current?.resetView()}
-          title="重置视图 (双击画布)"
-          aria-label="重置办公室视图"
-        >
-          <Maximize2 className="size-4" aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="ai-office-toolbar-btn"
-          onClick={() => setRosterOpen((value) => !value)}
-          title="查看办公室成员"
-          aria-label="查看办公室成员及状态"
-          aria-expanded={rosterOpen}
-        >
-          <Users className="size-4" aria-hidden />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="ai-office-toolbar-btn"
+              onClick={() => sceneRef.current?.resetView()}
+              aria-label="重置办公室视图"
+            >
+              <Maximize2 className="size-4" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>重置视图 (双击画布)</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="ai-office-toolbar-btn"
+              onClick={() => setRosterOpen((value) => !value)}
+              aria-label="查看办公室成员及状态"
+              aria-expanded={rosterOpen}
+            >
+              <Users className="size-4" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>查看办公室成员</TooltipContent>
+        </Tooltip>
         <span className="ai-office-toolbar-hint">滚轮缩放 · 拖拽移动 · 双击重置</span>
       </div>
 
