@@ -638,7 +638,10 @@ export async function wpsHttpRequest(params: {
 // -------------------- AirPage 智能文档 --------------------
 
 const AIRPAGE_BASE = 'https://365.kdocs.cn'
-const AIRPAGE_CRED_FILE = path.join(app.getPath('userData'), 'airpage-creds.json')
+const AIRPAGE_CRED_FILE = path.join(
+  app?.getPath?.('userData') || process.env.HOME || process.env.USERPROFILE || process.cwd(),
+  'airpage-creds.json'
+)
 
 interface AirpageCreds {
   cookie: string
