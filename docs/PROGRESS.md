@@ -77,7 +77,10 @@
 - 静态状态机 Curator：draft→active→stale→archived（仅 background；pinned 跳过）；挂 ScheduledCleanup
 - usage 埋点 `.usage.json` + `skill-suggestions.json` 候选；`SkillMeta` 扩展 provenance/status/pinned/usage
 - 单元测试 13/13 通过；shared + electron typecheck 通过
-- 待做：Skills 设置页状态徽章 UI、skill 调用自动埋点（SDK Skill tool 钩子）、默认 skill 迁全局、抛弃 tagent-coach 文档清理
+- ✅ Skills 已安装列表/详情：生命周期、来源、全局、使用次数徽章
+- ✅ skill 调用埋点：`Skill` / `skill_manage` tool_use + mention 写入 `.usage.json`
+- ✅ 全局 skill 可读 SKILL.md；tagent-coach 软弃用说明并优先 skill_manage
+- 可选后续：默认 skill 物理迁 `~/.tagent/global-skills-plugin/`、彻底移除 tagent-coach
 
 ---
 

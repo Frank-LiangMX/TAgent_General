@@ -136,18 +136,54 @@ function InstalledSkillDetail({
 
   const title = skill?.name ?? fallbackTitle
   const description = skill?.description ?? '暂无描述'
+  const isGlobal = skill?.scope === 'global'
+  const statusText =
+    skill?.status === 'draft'
+      ? '草稿'
+      : skill?.status === 'active'
+        ? '活跃'
+        : skill?.status === 'stale'
+          ? '闲置'
+          : skill?.status === 'archived'
+            ? '已归档'
+            : null
+  const originText =
+    skill?.createdBy === 'agent' || skill?.provenance === 'background'
+      ? '自动固化'
+      : skill?.createdBy === 'user'
+        ? '用户创建'
+        : skill?.createdBy === 'market'
+          ? '商店'
+          : skill?.createdBy === 'official'
+            ? '官方'
+            : null
+  const locationLabel = isGlobal
+    ? `global-skills-plugin/skills/${skillSlug}`
+    : `skills/${skillSlug}`
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-6 lg:flex-row lg:gap-10">
       <aside className="w-full shrink-0 space-y-4 lg:w-44">
         <div className="space-y-1 text-[11px]">
-          <p className="text-muted-foreground">已安装 / Skill</p>
+          <p className="text-muted-foreground">已安装 / Skill{isGlobal ? ' / 全局' : ''}</p>
           <p className="text-foreground/80">{skill?.enabled ? '已启用' : '已禁用'}</p>
         </div>
         <dl className="space-y-2.5 text-[11px]">
           <MetaItem label="标识符" value={skillSlug} />
-          <MetaItem label="位置" value={`skills/${skillSlug}`} />
+          <MetaItem label="位置" value={locationLabel} />
           {skill?.version ? <MetaItem label="版本" value={skill.version} /> : null}
+          {statusText ? <MetaItem label="生命周期" value={statusText} /> : null}
+          {originText ? <MetaItem label="来源" value={originText} /> : null}
+          {skill?.pinned ? <MetaItem label="钉住" value="是（不自动归档）" /> : null}
+          {typeof skill?.useCount === 'number' ? (
+            <MetaItem label="使用次数" value={String(skill.useCount)} />
+          ) : null}
+          {skill?.lastUsedAt ? (
+            <MetaItem
+              label="上次使用"
+              value={new Date(skill.lastUsedAt).toLocaleString('zh-CN')}
+            />
+          ) : null}
         </dl>
       </aside>
 
@@ -160,9 +196,26 @@ function InstalledSkillDetail({
             <div className="min-w-0">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
               <p className="mt-0.5 text-[12px] text-muted-foreground">{skillSlug}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {statusText ? (
+                  <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] text-blue-700 dark:text-blue-300">
+                    {statusText}
+                  </span>
+                ) : null}
+                {originText ? (
+                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-700 dark:text-violet-300">
+                    {originText}
+                  </span>
+                ) : null}
+                {isGlobal ? (
+                  <span className="rounded-full bg-foreground/5 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    全局
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
-          {skill ? (
+          {skill && !isGlobal ? (
             <div className="material-panel-card flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2">
               <span className="text-[11px] text-muted-foreground">启用</span>
               <Switch
@@ -184,6 +237,11 @@ function InstalledSkillDetail({
                 className="scale-90"
               />
             </div>
+          ) : null}
+          {skill && isGlobal ? (
+            <p className="max-w-[12rem] text-right text-[10px] leading-4 text-muted-foreground">
+              全局 skill 由 Curator 管理生命周期，启用开关仅适用于工作区 skill
+            </p>
           ) : null}
         </div>
 

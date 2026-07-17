@@ -1117,12 +1117,19 @@ function readSkillImportSource(skillDir: string): SkillImportSource | undefined 
   }
 }
 
-/** 解析 Skill 所在目录（active 或 inactive），不存在则返回 null */
+/** 解析 Skill 所在目录（active / inactive / 全局），不存在则返回 null */
 function resolveSkillDir(workspaceSlug: string, skillSlug: string): string | null {
   const active = join(getWorkspaceSkillsDir(workspaceSlug), skillSlug)
   if (existsSync(active)) return active
   const inactive = join(getInactiveSkillsDir(workspaceSlug), skillSlug)
   if (existsSync(inactive)) return inactive
+  // 全局 skill（自动固化默认落全局）
+  try {
+    const globalDir = join(getGlobalSkillsDir(), skillSlug)
+    if (existsSync(globalDir)) return globalDir
+  } catch {
+    // ignore
+  }
   return null
 }
 

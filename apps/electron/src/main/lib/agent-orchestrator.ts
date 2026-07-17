@@ -115,6 +115,11 @@ import {
   getGlobalSkillsPluginPath,
 } from './config-paths'
 import { injectSkillManageMcpServer } from './skill-manage-tool'
+import {
+  extractSkillSlugFromToolUse,
+  noteMentionedSkills,
+  noteSkillInvocation,
+} from './skill-invocation-tracker'
 import { isTransientNetworkError, isMalformedResponseError } from './error-patterns'
 import { memoryLayerService, type MemoryMode } from './memory-layer-service'
 
@@ -2001,6 +2006,10 @@ export class AgentOrchestrator {
         console.log(
           `[Agent 编排] 注入 mentioned_tools: ${mentionedSkills?.length ?? 0} skills, ${mentionedMcpServers?.length ?? 0} MCP`
         )
+        // Skill Curator：mention 计一次 usage（用户显式引用）
+        if (mentionedSkills?.length) {
+          noteMentionedSkills(mentionedSkills, workspaceSlug)
+        }
       }
 
       const contextualMessage = `${dynamicCtx}\n\n${enrichedMessage}`
@@ -2805,6 +2814,17 @@ export class AgentOrchestrator {
                     typeof block.name === 'string'
                   ) {
                     syncPlanModeFromToolUse(block.name)
+                    // Skill Curator：Skill / skill_manage 调用埋点
+                    try {
+                      const input =
+                        'input' in block ? (block as { input?: unknown }).input : undefined
+                      const skillSlug = extractSkillSlugFromToolUse(block.name, input)
+                      if (skillSlug) {
+                        noteSkillInvocation(skillSlug, workspaceSlug)
+                      }
+                    } catch {
+                      // 埋点失败不阻断主链路
+                    }
                   }
                 }
               }
