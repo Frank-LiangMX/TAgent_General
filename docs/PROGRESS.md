@@ -79,8 +79,9 @@
 **看板 goal_mode + worker judge**（分支 `feature/kanban-goal-mode-judge`）：
 
 - 文档重校准 2026-07-18：`docs/plans/2026-07-03-hermes-borrow-plan.md` §3.6
-- **阶段 A 进行中**：字段 + `kanban-judge-service` + `kanban_complete` + worker 白名单注入 + worker prompt
-- 待做：阶段 B goal loop 多轮；阶段 C UI
+- **阶段 A ✅**：字段 + `kanban-judge-service` + `kanban_complete` 闸门 + worker 白名单 + prompt
+- **阶段 B ✅**：同 session goal loop 多轮 / mid-turn judge / `goalMaxTurns` 耗尽 → blocked；dispatcher 不覆盖已终态
+- **阶段 C ✅**：建任务 Goal 开关 + 验收标准/轮次；卡片 Goal 徽章 + Judge 摘要；详情弹窗 Goal 区
 
 ---
 

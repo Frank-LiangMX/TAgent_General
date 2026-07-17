@@ -246,6 +246,56 @@ export function KanbanTaskDetailDialog({
             </section>
           )}
 
+          {/* Goal / Judge */}
+          {task.goalMode && (
+            <section>
+              <h3 className="mb-1.5 text-xs font-medium text-foreground">Goal 验收</h3>
+              <div className="rounded-glass-popover border border-violet-500/20 bg-violet-500/5 p-3 space-y-2 text-xs">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                  <span>
+                    <span className="text-muted-foreground">模式</span>{' '}
+                    <span className="font-medium text-violet-600 dark:text-violet-400">Goal</span>
+                  </span>
+                  <span>
+                    <span className="text-muted-foreground">轮次</span>{' '}
+                    <span className="font-mono tabular-nums">
+                      {typeof task.metadata?.goalTurnCount === 'number'
+                        ? task.metadata.goalTurnCount
+                        : '—'}
+                      /{task.goalMaxTurns ?? 20}
+                    </span>
+                  </span>
+                  {task.judgeModel && (
+                    <span>
+                      <span className="text-muted-foreground">Judge 模型</span>{' '}
+                      <span className="font-mono">{task.judgeModel}</span>
+                    </span>
+                  )}
+                </div>
+                {task.acceptanceCriteria?.trim() && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">验收标准</p>
+                    <p className="text-foreground/80 whitespace-pre-wrap">
+                      {task.acceptanceCriteria}
+                    </p>
+                  </div>
+                )}
+                {task.metadata?.judgeResult && (
+                  <div className="rounded-md bg-background/40 p-2 border border-border/30">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">最近裁判</p>
+                    <p className="font-medium text-foreground">
+                      {task.metadata.judgeResult.verdict}
+                      {task.metadata.judgeResult.failOpen ? '（fail-open）' : ''}
+                    </p>
+                    <p className="mt-0.5 text-foreground/80 whitespace-pre-wrap">
+                      {task.metadata.judgeResult.reason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* D+2: blackboard 跨任务交接评论 */}
           <BlackboardSection task={task} />
 

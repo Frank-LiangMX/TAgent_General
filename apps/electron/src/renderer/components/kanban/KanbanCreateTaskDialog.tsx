@@ -24,6 +24,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Switch,
   Textarea,
 } from '@tagent/ui'
 
@@ -50,6 +51,9 @@ export function KanbanCreateTaskDialog({
   const [channelId, setChannelId] = React.useState('')
   const [body, setBody] = React.useState('')
   const [priority, setPriority] = React.useState('0')
+  const [goalMode, setGoalMode] = React.useState(false)
+  const [acceptanceCriteria, setAcceptanceCriteria] = React.useState('')
+  const [goalMaxTurns, setGoalMaxTurns] = React.useState('20')
   const [submitting, setSubmitting] = React.useState(false)
 
   // 打开时初始化 channelId（全局选中兜底 → 第一个可用渠道）
@@ -58,6 +62,9 @@ export function KanbanCreateTaskDialog({
     setTitle('')
     setBody('')
     setPriority('0')
+    setGoalMode(false)
+    setAcceptanceCriteria('')
+    setGoalMaxTurns('20')
     if (selectedModel?.channelId) {
       setChannelId(selectedModel.channelId)
     } else if (enabledChannels.length > 0) {
@@ -81,14 +88,20 @@ export function KanbanCreateTaskDialog({
     setSubmitting(true)
     try {
       const priorityNum = Number.parseInt(priority, 10)
+      const turnsNum = Number.parseInt(goalMaxTurns, 10)
       await window.electronAPI.kanban.createTask({
         boardId,
         title: trimmedTitle,
         channelId,
         body: body.trim() || undefined,
         priority: Number.isFinite(priorityNum) ? priorityNum : 0,
+        goalMode: goalMode || undefined,
+        acceptanceCriteria:
+          goalMode && acceptanceCriteria.trim() ? acceptanceCriteria.trim() : undefined,
+        goalMaxTurns:
+          goalMode && Number.isFinite(turnsNum) && turnsNum > 0 ? turnsNum : undefined,
       })
-      toast.success('任务已创建')
+      toast.success(goalMode ? 'Goal 任务已创建' : '任务已创建')
       onOpenChange(false)
       onCreated?.()
     } catch (err) {
@@ -167,6 +180,60 @@ export function KanbanCreateTaskDialog({
                 placeholder="数字越大越优先，默认 0"
               />
             </div>
+
+            {/* Goal 模式：多轮 + complete 闸门 + aux judge */}
+            <div className="rounded-glass-popover border border-border/40 bg-muted/20 p-3 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <Label htmlFor="task-goal-mode" className="text-xs font-medium">
+                    Goal 模式
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    多轮验收 + complete 闸门，防假完成
+                  </p>
+                </div>
+                <Switch
+                  id="task-goal-mode"
+                  checked={goalMode}
+                  onCheckedChange={setGoalMode}
+                />
+              </div>
+              {goalMode && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-criteria" className="text-xs">
+                      验收标准
+                    </Label>
+                    <Textarea
+                      id="task-criteria"
+                      value={acceptanceCriteria}
+                      onChange={(e) => setAcceptanceCriteria(e.target.value)}
+                      placeholder="不填则用标题+描述作为验收标准"
+                      rows={2}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-max-turns" className="text-xs">
+                      最大轮次
+                    </Label>
+                    <Input
+                      id="task-max-turns"
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={goalMaxTurns}
+                      onChange={(e) => setGoalMaxTurns(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      耗尽仍未通过验收则阻塞，默认 20
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"

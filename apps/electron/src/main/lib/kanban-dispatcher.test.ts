@@ -12,7 +12,9 @@ import {
   type KanbanWorkerRunner,
 } from './kanban-dispatcher'
 
-/** 轮询直到所有任务进入终态（done/failed/cancelled），返回最终任务列表 */
+const SETTLED_STATUSES = new Set(['done', 'failed', 'cancelled', 'blocked'])
+
+/** 轮询直到所有任务进入终态（done/failed/cancelled/blocked），返回最终任务列表 */
 async function waitForAllSettled(
   db: KanbanDbService,
   boardId: string,
@@ -21,7 +23,7 @@ async function waitForAllSettled(
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     const tasks = db.listTasksByBoard(boardId)
-    if (tasks.length > 0 && tasks.every((t) => t.status === 'done' || t.status === 'failed')) {
+    if (tasks.length > 0 && tasks.every((t) => SETTLED_STATUSES.has(t.status))) {
       return tasks
     }
     await new Promise((r) => setTimeout(r, 5))
@@ -131,6 +133,59 @@ describe('KanbanDispatcher', () => {
       const task = tasks[0]!
       expect(task.status).toBe('failed')
       expect(task.error).toBe('工人爆炸')
+    })
+
+    test('runner finalStatus=blocked 时任务标记为 blocked', async () => {
+      const board = db.createBoard({ rootGoal: 'G', parentSessionId: 's1' })
+      db.createTask({ boardId: board.id, title: 'Goal', channelId: 'c1', goalMode: true })
+
+      const mockRunner: KanbanWorkerRunner = async () => ({
+        finalStatus: 'blocked',
+        blockedReason: 'Goal 轮次已耗尽（2/2）',
+        error: 'Goal 轮次已耗尽（2/2）',
+        errorSource: 'kanban',
+      })
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
+      startKanbanDispatcher()
+
+      const tasks = await waitForAllSettled(db, board.id)
+      const task = tasks[0]!
+      expect(task.status).toBe('blocked')
+      expect(task.blockedReason).toContain('轮次已耗尽')
+    })
+
+    test('runner 内已写 done 时 dispatcher 不覆盖 resultSummary', async () => {
+      const board = db.createBoard({ rootGoal: 'G', parentSessionId: 's1' })
+      const created = db.createTask({
+        boardId: board.id,
+        title: 'Complete gate',
+        channelId: 'c1',
+        goalMode: true,
+      })
+
+      const mockRunner: KanbanWorkerRunner = async (task) => {
+        // 模拟 kanban_complete 已写 done
+        db.updateTaskStatus(task.id, {
+          status: 'done',
+          resultSummary: 'from-complete-tool',
+        })
+        return { summary: 'from-runner-extract', finalStatus: 'done' }
+      }
+      configureKanbanDispatcher({
+        runner: mockRunner,
+        db,
+        getAvailableModels: () => ['m_test'],
+      })
+      startKanbanDispatcher()
+
+      const tasks = await waitForAllSettled(db, board.id)
+      const task = tasks.find((t) => t.id === created.id)!
+      expect(task.status).toBe('done')
+      expect(task.resultSummary).toBe('from-complete-tool')
     })
 
     test('runner 抛异常时任务标记为 failed', async () => {

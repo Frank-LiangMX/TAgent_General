@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import { useAtomValue } from 'jotai'
-import { Loader2, Square, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { Loader2, Square, CheckCircle2, XCircle, Clock, Target } from 'lucide-react'
 
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -186,6 +186,25 @@ export function KanbanTaskListItem({
                   />
                   {badge.label}
                 </Badge>
+                {task.goalMode && (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[9px] px-1.5 py-0 border-violet-500/40 text-violet-600 dark:text-violet-400"
+                    title={
+                      task.acceptanceCriteria?.trim() ||
+                      'Goal 模式：多轮验收 + complete 闸门'
+                    }
+                  >
+                    <Target className="size-2.5 mr-0.5 inline-block align-middle" />
+                    Goal
+                    {typeof task.metadata?.goalTurnCount === 'number' &&
+                      task.goalMaxTurns != null && (
+                        <span className="ml-0.5 tabular-nums opacity-80">
+                          {task.metadata.goalTurnCount}/{task.goalMaxTurns}
+                        </span>
+                      )}
+                  </Badge>
+                )}
               </div>
               {/* Running 时：任务标题 + 实时计时 */}
               {isRunning ? (
@@ -286,6 +305,21 @@ export function KanbanTaskListItem({
                 <XCircle className="size-3 mt-0.5 shrink-0 text-red-500" />
                 <span className="text-red-600/80 dark:text-red-400/80 line-clamp-3 break-words">
                   {task.error}
+                </span>
+              </div>
+            </div>
+          )}
+          {task.goalMode && task.metadata?.judgeResult && !isDone && (
+            <div className="mb-2 rounded-glass-chip bg-violet-500/5 p-2">
+              <div className="flex items-start gap-1.5 text-[10px] leading-tight">
+                <Target className="size-3 mt-0.5 shrink-0 text-violet-500" />
+                <span className="text-foreground/80 line-clamp-2 break-words">
+                  <span className="font-medium text-violet-600 dark:text-violet-400">
+                    Judge {task.metadata.judgeResult.verdict}
+                    {task.metadata.judgeResult.failOpen ? ' · fail-open' : ''}
+                  </span>
+                  {' — '}
+                  {task.metadata.judgeResult.reason}
                 </span>
               </div>
             </div>

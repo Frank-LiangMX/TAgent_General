@@ -33,8 +33,27 @@ import type { KanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
 import { notifyTaskDone, notifyBoardCompleted } from './kanban-notification-service'
 
+/** 工人执行器返回值 */
+export interface KanbanWorkerRunnerResult {
+  summary?: string
+  error?: string
+  errorSource?: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent'
+  /**
+   * 显式终态（goal loop 用）
+   *
+   * - blocked：goalMaxTurns 耗尽等（非 failed）
+   * - 省略时：有 error → failed，无 error → done
+   * - 若 runner 内工具已写好 DB 终态，dispatcher 会以 DB 为准不覆盖
+   */
+  finalStatus?: 'done' | 'failed' | 'blocked'
+  blockedReason?: string
+}
+
 /** 工人执行器：领取 running 任务后调用，返回摘要或错误（含来源标记） */
-export type KanbanWorkerRunner = (task: KanbanTask) => Promise<{ summary?: string; error?: string; errorSource?: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' }>
+export type KanbanWorkerRunner = (task: KanbanTask) => Promise<KanbanWorkerRunnerResult>
+
+/** 终态集合：runner / 工具已写入后，dispatcher 不得覆盖 */
+const TERMINAL_TASK_STATUSES = new Set(['done', 'failed', 'blocked', 'cancelled'])
 
 /**
  * 渠道可用模型查询器（旧版，已废弃）
@@ -493,8 +512,35 @@ async function runWorker(
   const { onTaskStatusChanged } = dispatcherOptions ?? {}
   try {
     const result = await runner(task)
-    if (result.error) {
-      db.updateTaskStatus(task.id, { status: 'failed', error: result.error, errorSource: result.errorSource })
+    // 工具（kanban_complete / kanban_block）或 goal loop 可能已写终态，以 DB 为准
+    const current = db.getTask(task.id)
+    if (current && TERMINAL_TASK_STATUSES.has(current.status)) {
+      onTaskStatusChanged?.(task.id, current.status)
+      if (current.status === 'done') {
+        console.log(`[看板] 任务完成: ${task.id} (${task.title})`)
+        const board = db.getBoard(boardId)
+        if (board) void notifyTaskDone(board, current)
+      } else if (current.status === 'blocked') {
+        console.warn(
+          `[看板] 任务阻塞: ${task.id} (${task.title}) — ${current.blockedReason ?? ''}`
+        )
+      } else if (current.status === 'failed') {
+        console.warn(`[看板] 任务失败: ${task.id} (${task.title}) — ${current.error ?? ''}`)
+      }
+      return
+    }
+
+    if (result.finalStatus === 'blocked') {
+      const reason = result.blockedReason ?? result.error ?? '任务阻塞'
+      db.updateTaskStatus(task.id, { status: 'blocked', blockedReason: reason })
+      onTaskStatusChanged?.(task.id, 'blocked')
+      console.warn(`[看板] 任务阻塞: ${task.id} (${task.title}) — ${reason}`)
+    } else if (result.error || result.finalStatus === 'failed') {
+      db.updateTaskStatus(task.id, {
+        status: 'failed',
+        error: result.error ?? '未知错误',
+        errorSource: result.errorSource,
+      })
       onTaskStatusChanged?.(task.id, 'failed')
       console.warn(`[看板] 任务失败: ${task.id} (${task.title}) — ${result.error}`)
     } else {
@@ -514,8 +560,14 @@ async function runWorker(
     }
   } catch (err) {
     const error = err instanceof Error ? err.message : '未知错误'
-    db.updateTaskStatus(task.id, { status: 'failed', error })
-    onTaskStatusChanged?.(task.id, 'failed')
+    // 仅非终态时覆盖，避免抹掉 complete/block 已写状态
+    const current = db.getTask(task.id)
+    if (!current || !TERMINAL_TASK_STATUSES.has(current.status)) {
+      db.updateTaskStatus(task.id, { status: 'failed', error })
+      onTaskStatusChanged?.(task.id, 'failed')
+    } else {
+      onTaskStatusChanged?.(task.id, current.status)
+    }
     console.error(`[看板] 任务异常: ${task.id} (${task.title}) —`, err)
   } finally {
     const runningSet = runningTasksByBoard.get(boardId)

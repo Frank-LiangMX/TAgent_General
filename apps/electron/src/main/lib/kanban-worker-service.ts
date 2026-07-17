@@ -24,7 +24,7 @@
 
 import { powerSaveBlocker } from 'electron'
 
-import type { AgentExternalRunSource, SDKMessage } from '@tagent/shared'
+import type { AgentExternalRunSource, KanbanJudgeResult } from '@tagent/shared'
 
 import {
   createAgentSession,
@@ -35,7 +35,13 @@ import {
 import { runRegisteredHeadlessAgent, stopRegisteredAgent } from './agent-headless-runner-registry'
 import { kanbanDbService } from './kanban-db'
 import { getRoleById } from './agent-role-service'
-import type { KanbanWorkerRunner } from './kanban-dispatcher'
+import type { KanbanWorkerRunner, KanbanWorkerRunnerResult } from './kanban-dispatcher'
+import {
+  DEFAULT_GOAL_MAX_TURNS,
+  buildAcceptanceText,
+  judgeGoal,
+  type JudgeGoalInput,
+} from './kanban-judge-service'
 
 /**
  * D+3：错误来源分类（导出给 dispatcher 调用）
@@ -112,10 +118,14 @@ export interface KanbanWorkerTask {
   workspaceId?: string
   /** 权限模式覆盖（默认 bypassPermissions，与 automation 一致；role.permissionMode 优先） */
   permissionMode?: 'auto' | 'bypassPermissions'
-  /** goal 模式：complete 闸门 + 验收标准提示 */
+  /** goal 模式：complete 闸门 + goal loop */
   goalMode?: boolean
   /** 验收标准 */
   acceptanceCriteria?: string
+  /** goal 最大轮次（默认 DEFAULT_GOAL_MAX_TURNS） */
+  goalMaxTurns?: number
+  /** 验收用便宜模型 */
+  judgeModel?: string
 }
 
 /** 看板上下文契约 */
@@ -180,6 +190,8 @@ export interface KanbanTaskUpdater {
   markTaskDone(taskId: string, summary?: string): void
   /** 标记任务失败，携带错误信息 + 来源（D+3） */
   markTaskFailed(taskId: string, error: string, errorSource?: string): void
+  /** 标记任务阻塞（goal 轮次耗尽等） */
+  markTaskBlocked?(taskId: string, reason: string): void
 }
 
 /**
@@ -212,6 +224,12 @@ export function createKanbanDbUpdater(): KanbanTaskUpdater {
         errorSource: errorSource as 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' | undefined,
       })
     },
+    markTaskBlocked: (taskId, reason) => {
+      kanbanDbService.updateTaskStatus(taskId, {
+        status: 'blocked',
+        blockedReason: reason,
+      })
+    },
   }
 }
 
@@ -220,15 +238,42 @@ export interface RunKanbanTaskHeadlessOptions {
   updater?: KanbanTaskUpdater
   /** 任务开始回调（dispatcher 用于并发计数 / IM 通知） */
   onTaskStarted?: (taskId: string, sessionId: string) => void
-  /** 任务结束回调（dispatcher 用于推进 ready / IM 通知；status 区分 done / failed） */
+  /** 任务结束回调（dispatcher 用于推进 ready / IM 通知；含 blocked） */
   onTaskCompleted?: (
     taskId: string,
-    status: 'done' | 'failed',
+    status: 'done' | 'failed' | 'blocked',
     summary?: string,
     error?: string
   ) => void
   /** 触发来源标识，传给 HeadlessAgentRunCallbacks.source（默认 'bridge'，与 automation 一致） */
   source?: AgentExternalRunSource
+}
+
+/** 构建 goal 续跑 user 消息（注入 judge 反馈） */
+export function buildGoalContinuePrompt(input: {
+  taskId: string
+  turn: number
+  maxTurns: number
+  judge: Pick<KanbanJudgeResult, 'verdict' | 'reason' | 'failOpen'>
+}): string {
+  const { taskId, turn, maxTurns, judge } = input
+  const lines = [
+    `【Goal 续跑 · 第 ${turn}/${maxTurns} 轮】`,
+    `辅助裁判裁决：${judge.verdict}${judge.failOpen ? '（fail-open）' : ''} — ${judge.reason}`,
+  ]
+  if (judge.verdict === 'done' || judge.failOpen) {
+    lines.push(
+      '产出可能已接近达标。请立即调用 kanban_complete(taskId="' +
+        taskId +
+        '", summary="充分证据...") 结案；不要只口头说完成。'
+    )
+  } else {
+    lines.push(
+      '验收尚未通过。请根据裁判原因补齐证据与实现，然后调用 kanban_complete；若卡死请 kanban_block。'
+    )
+  }
+  lines.push(`taskId=${taskId}。禁止再创建看板或追加任务。`)
+  return lines.join('\n')
 }
 
 /**
@@ -411,11 +456,13 @@ function extractLastAssistantSummary(sessionId: string): string | undefined {
  * 1. createAgentSession（mode='general'）→ updateAgentSessionMeta 写入 parentBoardId / sourceKanbanTaskId
  * 2. updater.markTaskRunning → onTaskStarted
  * 3. runRegisteredHeadlessAgent（triggeredBy='kanban'、permissionModeOverride 默认 bypassPermissions）
- * 4. onComplete → updater.markTaskDone（summary 留空，由后续工具回调补写）→ onTaskCompleted
- *    onError → updater.markTaskFailed → onTaskCompleted
+ * 4. 非 goal：onComplete → markTaskDone → onTaskCompleted('done')
+ * 5. goalMode：同 session 多轮 goal loop
+ *    - 每轮结束读 DB：done/blocked/failed 即终态退出
+ *    - 未 complete → mid-turn judge → 注入续跑提示再跑一轮
+ *    - goalMaxTurns 耗尽 → blocked
  *
- * 不抛错：所有异常都被捕获并回流到 updater.markTaskFailed / onTaskCompleted('failed')，
- * 调用方（dispatcher）无需 try/catch 即可推进状态机。
+ * 不抛错：异常回流 markTaskFailed / onTaskCompleted('failed')。
  *
  * @param task 看板任务（最小契约）
  * @param boardContext 所属看板上下文
@@ -428,6 +475,13 @@ export async function runKanbanTaskHeadless(
 ): Promise<void> {
   const updater = options.updater ?? createKanbanDbUpdater()
   const startedAt = Date.now()
+  const isGoalMode = task.goalMode === true
+  const maxTurns = Math.max(
+    1,
+    typeof task.goalMaxTurns === 'number' && Number.isFinite(task.goalMaxTurns)
+      ? Math.floor(task.goalMaxTurns)
+      : DEFAULT_GOAL_MAX_TURNS
+  )
 
   // 解析工作区：挂载用户已安装 skills（SDK local plugin）
   const workspaceId = resolveWorkerWorkspaceId(task, boardContext)
@@ -459,7 +513,11 @@ export async function runKanbanTaskHeadless(
   try {
     await new Promise<void>((resolve) => {
       let settled = false
-      const finish = (status: 'done' | 'failed', error?: string): void => {
+      let turnCount = 0
+      let continueHint: string | undefined
+      let timeoutTimer: ReturnType<typeof setTimeout> | undefined
+
+      const finish = (status: 'done' | 'failed' | 'blocked', error?: string): void => {
         if (settled) return
         settled = true
         if (timeoutTimer) clearTimeout(timeoutTimer)
@@ -468,6 +526,15 @@ export async function runKanbanTaskHeadless(
           // （createKanbanHeadlessRunner 的 runner 会从工人会话提取 summary 返回）
           // 此处 markTaskDone 在 createRunningOnlyUpdater 是 no-op
           updater.markTaskDone(task.id)
+        } else if (status === 'blocked') {
+          const reason = error ?? '任务阻塞'
+          if (updater.markTaskBlocked) {
+            updater.markTaskBlocked(task.id, reason)
+          } else {
+            // 兼容仅实现 failed 的 mock updater
+            updater.markTaskFailed(task.id, reason, 'kanban')
+          }
+          // running-only updater 是 no-op：goal loop 已在 DB 写 blocked
         } else {
           // D+3：失败时按错误内容分类来源，写入 errorSource
           const source = classifyErrorSource(error ?? '未知错误')
@@ -477,10 +544,8 @@ export async function runKanbanTaskHeadless(
         resolve()
       }
 
-      // 超时保护：worker 跑超过 30 分钟强制中止 SDK query + 标 failed
-      // 改用真 abort（stopRegisteredAgent），不再只标 blocked 让 worker 僵死后任务卡 running
-      // 参考 hermes interrupt_subagent + automation-scheduler.ts:166 timeoutTimer 模式
-      const timeoutTimer = setTimeout(() => {
+      // 超时保护：整个 goal loop（非单轮）超过 30 分钟强制中止
+      timeoutTimer = setTimeout(() => {
         console.warn(
           `[看板] 任务 ${task.id} 执行超时（${WORKER_TIMEOUT_MS / 60_000} 分钟），主动中止 worker 会话 ${session.id}`
         )
@@ -490,39 +555,163 @@ export async function runKanbanTaskHeadless(
           console.warn(`[看板] 超时 stopRegisteredAgent 失败（worker ${session.id}）:`, err)
         }
         // 直接写 DB 标记 failed（updater 可能是 createRunningOnlyUpdater，done/failed 是 no-op）
-        kanbanDbService.updateTaskStatus(task.id, {
-          status: 'failed',
-          error: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
-          errorSource: 'kanban',
-        })
-        // 通过 finish 回流 onTaskCompleted('failed')，让 dispatcher 推进状态机
+        try {
+          kanbanDbService.updateTaskStatus(task.id, {
+            status: 'failed',
+            error: `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`,
+            errorSource: 'kanban',
+          })
+        } catch {
+          /* ignore */
+        }
         finish('failed', `执行超时（超过 ${WORKER_TIMEOUT_MS / 60_000} 分钟）`)
       }, WORKER_TIMEOUT_MS)
 
-      runRegisteredHeadlessAgent(
-        {
-          sessionId: session.id,
-          userMessage: task.body + '\n<!--TAGENT_KANBAN_WORKER-->',
-          automationContext: buildKanbanWorkerContext(task, boardContext, workspaceId),
-          channelId: task.channelId,
-          modelId: task.modelId,
-          workspaceId,
-          // 权限模式优先级：task.permissionMode > role.permissionMode > 默认 bypassPermissions
-          permissionModeOverride: resolvePermissionMode(task),
-          triggeredBy: 'kanban',
-          startedAt,
-        },
-        {
-          source: options.source ?? 'bridge',
-          onError: (error) => finish('failed', error),
-          onComplete: () => finish('done'),
-          onTitleUpdated: () => {
-            /* 子会话标题不需要特殊处理 */
-          },
+      const automationContext = buildKanbanWorkerContext(task, boardContext, workspaceId)
+      const permissionMode = resolvePermissionMode(task)
+
+      const startTurn = (): void => {
+        if (settled) return
+        turnCount += 1
+        try {
+          kanbanDbService.mergeTaskMetadata(task.id, { goalTurnCount: turnCount })
+        } catch (err) {
+          console.warn(`[看板] 写入 goalTurnCount 失败（task ${task.id}）:`, err)
         }
-      ).catch((err) => {
-        finish('failed', err instanceof Error ? err.message : '未知错误')
-      })
+
+        const userMessage = continueHint
+          ? `${continueHint}\n<!--TAGENT_KANBAN_WORKER-->`
+          : `${task.body}\n<!--TAGENT_KANBAN_WORKER-->`
+
+        console.log(
+          `[看板] worker 启动第 ${turnCount}/${isGoalMode ? maxTurns : 1} 轮: task=${task.id}${
+            isGoalMode ? ' goalMode' : ''
+          }`
+        )
+
+        runRegisteredHeadlessAgent(
+          {
+            sessionId: session.id,
+            userMessage,
+            automationContext,
+            channelId: task.channelId,
+            modelId: task.modelId,
+            workspaceId,
+            permissionModeOverride: permissionMode,
+            triggeredBy: 'kanban',
+            startedAt,
+          },
+          {
+            source: options.source ?? 'bridge',
+            onError: (error) => finish('failed', error),
+            onComplete: () => {
+              void handleTurnComplete()
+            },
+            onTitleUpdated: () => {
+              /* 子会话标题不需要特殊处理 */
+            },
+          }
+        ).catch((err) => {
+          finish('failed', err instanceof Error ? err.message : '未知错误')
+        })
+      }
+
+      const handleTurnComplete = async (): Promise<void> => {
+        if (settled) return
+
+        // 读 DB：工具可能已 complete / block
+        let currentStatus: string | undefined
+        let blockedReason: string | undefined
+        let taskError: string | undefined
+        try {
+          const row = kanbanDbService.getTask(task.id)
+          currentStatus = row?.status
+          blockedReason = row?.blockedReason
+          taskError = row?.error
+        } catch {
+          /* 测试 mock 可能无 getTask */
+        }
+
+        if (currentStatus === 'done') {
+          finish('done')
+          return
+        }
+        if (currentStatus === 'blocked') {
+          finish('blocked', blockedReason ?? '任务阻塞')
+          return
+        }
+        if (currentStatus === 'failed' || currentStatus === 'cancelled') {
+          finish('failed', taskError ?? currentStatus)
+          return
+        }
+
+        // 非 goal：会话自然结束 → done（旧行为）
+        if (!isGoalMode) {
+          finish('done')
+          return
+        }
+
+        // —— goal loop ——
+        const summary = extractLastAssistantSummary(session.id) ?? ''
+        let judge: KanbanJudgeResult
+        try {
+          const judgeInput: JudgeGoalInput = {
+            title: task.title,
+            body: task.body,
+            acceptanceCriteria: buildAcceptanceText(task),
+            summary: summary || '（本轮无 assistant 文本产出）',
+            modelId: task.judgeModel,
+            channelId: task.channelId,
+          }
+          judge = await judgeGoal(judgeInput)
+          try {
+            kanbanDbService.mergeTaskMetadata(task.id, {
+              judgeResult: judge,
+              goalTurnCount: turnCount,
+            })
+          } catch (err) {
+            console.warn(`[看板] 写入 mid-turn judgeResult 失败:`, err)
+          }
+        } catch (err) {
+          console.warn(`[看板] mid-turn judge 异常，按 continue 续跑:`, err)
+          judge = {
+            verdict: 'continue',
+            reason: err instanceof Error ? err.message : 'judge error',
+            failOpen: true,
+            judgedAt: Date.now(),
+          }
+        }
+
+        if (turnCount >= maxTurns) {
+          const reason = `Goal 轮次已耗尽（${turnCount}/${maxTurns}）。最近 judge: ${judge.verdict} — ${judge.reason}`
+          console.warn(`[看板] ${reason} task=${task.id}`)
+          try {
+            kanbanDbService.updateTaskStatus(task.id, {
+              status: 'blocked',
+              blockedReason: reason,
+            })
+            kanbanDbService.mergeTaskMetadata(task.id, {
+              judgeResult: judge,
+              goalTurnCount: turnCount,
+            })
+          } catch (err) {
+            console.warn(`[看板] 写 blocked 失败:`, err)
+          }
+          finish('blocked', reason)
+          return
+        }
+
+        // 续跑同 session
+        continueHint = buildGoalContinuePrompt({
+          taskId: task.id,
+          turn: turnCount,
+          maxTurns,
+          judge,
+        })
+        startTurn()
+      }
+
+      startTurn()
     })
   } finally {
     if (powerSaveBlocker.isStarted(blockerId)) powerSaveBlocker.stop(blockerId)
@@ -548,6 +737,10 @@ function createRunningOnlyUpdater(): KanbanTaskUpdater {
     },
     markTaskFailed: (_taskId, _error, _errorSource) => {
       // no-op：failed + error 由 dispatcher 根据 runner 返回值写
+      // 超时等路径会直接写 kanbanDbService
+    },
+    markTaskBlocked: () => {
+      // no-op：goal loop 已直接写 DB blocked
     },
   }
 }
@@ -564,10 +757,10 @@ function createRunningOnlyUpdater(): KanbanTaskUpdater {
  * - summary 通过 extractLastAssistantSummary 提取，作为 runner 返回值传给 dispatcher
  */
 export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
-  return async (task) => {
+  return async (task): Promise<KanbanWorkerRunnerResult> => {
     const board = kanbanDbService.getBoard(task.boardId)
     if (!board) {
-      return { error: `看板不存在: ${task.boardId}`, errorSource: 'kanban' }
+      return { error: `看板不存在: ${task.boardId}`, errorSource: 'kanban', finalStatus: 'failed' }
     }
     const boardContext: KanbanWorkerBoardContext = {
       id: board.id,
@@ -576,6 +769,7 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
       originBridge: board.originBridge,
       workspaceId: board.workspaceId,
     }
+    let capturedStatus: 'done' | 'failed' | 'blocked' = 'done'
     let capturedError: string | undefined
     let capturedErrorSource: 'kanban' | 'worker-sdk' | 'kscc' | 'tagent' | undefined
     let workerSessionId: string | undefined
@@ -585,17 +779,64 @@ export function createKanbanHeadlessRunner(): KanbanWorkerRunner {
         workerSessionId = sessionId
       },
       onTaskCompleted: (_taskId, status, _summary, error) => {
+        capturedStatus = status
         if (status === 'failed') {
           capturedError = error ?? '未知错误'
           capturedErrorSource = classifyErrorSource(capturedError)
+        } else if (status === 'blocked') {
+          capturedError = error
+          capturedErrorSource = 'kanban'
         }
       },
     })
-    // 成功时从工人会话提取最后一条 assistant 文本作为 summary 返回给 dispatcher
-    if (!capturedError && workerSessionId) {
-      const summary = extractLastAssistantSummary(workerSessionId)
-      return { summary }
+
+    // 以 DB 终态为准（complete/block 工具可能已写）
+    try {
+      const current = kanbanDbService.getTask(task.id)
+      if (current?.status === 'done') {
+        const summary =
+          current.resultSummary ??
+          (workerSessionId ? extractLastAssistantSummary(workerSessionId) : undefined)
+        return { summary, finalStatus: 'done' }
+      }
+      if (current?.status === 'blocked') {
+        return {
+          finalStatus: 'blocked',
+          blockedReason: current.blockedReason ?? capturedError,
+          error: current.blockedReason ?? capturedError,
+          errorSource: 'kanban',
+        }
+      }
+      if (current?.status === 'failed') {
+        return {
+          finalStatus: 'failed',
+          error: current.error ?? capturedError ?? '未知错误',
+          errorSource: capturedErrorSource ?? 'kanban',
+        }
+      }
+    } catch {
+      /* ignore */
     }
-    return { error: capturedError, errorSource: capturedErrorSource }
+
+    // TS 无法跨回调跟踪 capturedStatus 赋值，需断言
+    const endStatus = capturedStatus as 'done' | 'failed' | 'blocked'
+    if (endStatus === 'blocked') {
+      return {
+        finalStatus: 'blocked',
+        blockedReason: capturedError,
+        error: capturedError,
+        errorSource: 'kanban',
+      }
+    }
+    if (endStatus === 'failed' || capturedError) {
+      return {
+        finalStatus: 'failed',
+        error: capturedError ?? '未知错误',
+        errorSource: capturedErrorSource,
+      }
+    }
+    // 成功时从工人会话提取最后一条 assistant 文本作为 summary 返回给 dispatcher
+    const summary = workerSessionId ? extractLastAssistantSummary(workerSessionId) : undefined
+    return { summary, finalStatus: 'done' }
   }
 }

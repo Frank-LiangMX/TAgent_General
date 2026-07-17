@@ -142,6 +142,12 @@ export interface KanbanTaskMetadata extends Record<string, unknown> {
   judgeModel?: string
   /** 最近一次 judge 结果 */
   judgeResult?: KanbanJudgeResult
+  /**
+   * goal loop 已消耗轮次（阶段 B）
+   *
+   * 每启动一轮 headless agent 递增；达到 goalMaxTurns 且仍未 done → blocked。
+   */
+  goalTurnCount?: number
 }
 
 /** 单条 blackboard 评论（跨任务交接通道） */

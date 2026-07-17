@@ -72,7 +72,27 @@ vi.mock('./kanban-db', () => ({
     listTasksByBoard: vi.fn(() => []),
     addTaskComment: vi.fn(() => ({ id: 't_1' })),
     isInitialized: vi.fn(() => true),
+    getTask: vi.fn(() => undefined),
+    mergeTaskMetadata: vi.fn(() => ({})),
+    getBoard: vi.fn(() => undefined),
   },
+}))
+
+// Mock judge：默认 continue（goal loop 测试可覆盖）
+vi.mock('./kanban-judge-service', () => ({
+  DEFAULT_GOAL_MAX_TURNS: 20,
+  buildAcceptanceText: (task: {
+    title: string
+    body?: string
+    acceptanceCriteria?: string
+  }) => task.acceptanceCriteria?.trim() || `${task.title}\n\n${task.body ?? ''}`.trim(),
+  taskNeedsJudge: (task: { goalMode?: boolean }) => task.goalMode === true,
+  judgeGoal: vi.fn(async () => ({
+    verdict: 'continue' as const,
+    reason: 'mock continue',
+    judgedAt: Date.now(),
+  })),
+  parseJudgeVerdict: vi.fn(),
 }))
 
 // Mock agent-role-service：getRoleById 返回 undefined（测试不测角色注入）
@@ -105,12 +125,17 @@ interface CapturedRun {
 }
 let capturedRuns: CapturedRun[] = []
 
-const { runKanbanTaskHeadless, resolveWorkerWorkspaceId } = await import('./kanban-worker-service')
+const {
+  runKanbanTaskHeadless,
+  resolveWorkerWorkspaceId,
+  buildGoalContinuePrompt,
+} = await import('./kanban-worker-service')
 const { buildKanbanAgentTools } = await import('./kanban-agent-tools')
 const agentSessionManager = await import('./agent-session-manager')
 const headlessRegistry = await import('./agent-headless-runner-registry')
 const roleService = await import('./agent-role-service')
 const kanbanDb = await import('./kanban-db')
+const judgeService = await import('./kanban-judge-service')
 const electron = await import('electron')
 
 const mockCreateSession = vi.mocked(agentSessionManager.createAgentSession)
@@ -119,6 +144,9 @@ const mockGetSessionMeta = vi.mocked(agentSessionManager.getAgentSessionMeta)
 const mockRunHeadless = vi.mocked(headlessRegistry.runRegisteredHeadlessAgent)
 const mockGetRoleById = vi.mocked(roleService.getRoleById)
 const mockUpdateTaskStatus = vi.mocked(kanbanDb.kanbanDbService.updateTaskStatus)
+const mockGetTask = vi.mocked(kanbanDb.kanbanDbService.getTask)
+const mockMergeMeta = vi.mocked(kanbanDb.kanbanDbService.mergeTaskMetadata)
+const mockJudgeGoal = vi.mocked(judgeService.judgeGoal)
 const mockPowerStart = vi.mocked(electron.powerSaveBlocker.start)
 
 beforeEach(() => {
@@ -130,6 +158,15 @@ beforeEach(() => {
   mockPowerStart.mockClear()
   mockGetRoleById.mockReset()
   mockUpdateTaskStatus.mockClear()
+  mockGetTask.mockReset()
+  mockGetTask.mockReturnValue(null)
+  mockMergeMeta.mockClear()
+  mockJudgeGoal.mockClear()
+  mockJudgeGoal.mockResolvedValue({
+    verdict: 'continue',
+    reason: 'mock continue',
+    judgedAt: Date.now(),
+  })
   capturedRuns = []
 })
 
@@ -306,7 +343,7 @@ describe('runKanbanTaskHeadless', () => {
     failLatestRun('boom')
     await promise
 
-    expect(updater.markTaskFailed).toHaveBeenCalledWith('t_test1', 'boom')
+    expect(updater.markTaskFailed).toHaveBeenCalledWith('t_test1', 'boom', expect.any(String))
     expect(updater.markTaskDone).not.toHaveBeenCalled()
     expect(onTaskCompleted).toHaveBeenCalledWith('t_test1', 'failed', undefined, 'boom')
   })
@@ -332,7 +369,11 @@ describe('runKanbanTaskHeadless', () => {
       onTaskCompleted,
     })
 
-    expect(updater.markTaskFailed).toHaveBeenCalledWith('t_test1', 'runner 崩溃')
+    expect(updater.markTaskFailed).toHaveBeenCalledWith(
+      't_test1',
+      'runner 崩溃',
+      expect.any(String)
+    )
     expect(onTaskCompleted).toHaveBeenCalledWith('t_test1', 'failed', undefined, 'runner 崩溃')
   })
 
@@ -401,6 +442,121 @@ describe('runKanbanTaskHeadless', () => {
     await promise
   })
 
+  test('goalMode：会话结束且 DB 已 done 时不再续跑', async () => {
+    mockGetTask.mockReturnValue({
+      id: 't_test1',
+      status: 'done',
+      resultSummary: 'via complete',
+    } as never)
+
+    const onTaskCompleted = vi.fn()
+    const promise = runKanbanTaskHeadless(
+      { ...baseTask, goalMode: true, goalMaxTurns: 5 },
+      baseBoard,
+      { onTaskCompleted }
+    )
+    completeLatestRun()
+    await promise
+
+    expect(capturedRuns).toHaveLength(1)
+    expect(onTaskCompleted).toHaveBeenCalledWith('t_test1', 'done', undefined, undefined)
+    expect(mockJudgeGoal).not.toHaveBeenCalled()
+  })
+
+  test('goalMode：mid-turn judge continue 时同 session 续跑', async () => {
+    mockGetTask.mockReturnValue({ id: 't_test1', status: 'running' } as never)
+    mockJudgeGoal.mockResolvedValue({
+      verdict: 'continue',
+      reason: '缺证据',
+      judgedAt: Date.now(),
+    })
+
+    const onTaskCompleted = vi.fn()
+    const promise = runKanbanTaskHeadless(
+      { ...baseTask, goalMode: true, goalMaxTurns: 5 },
+      baseBoard,
+      {
+        updater: {
+          markTaskRunning: vi.fn(),
+          markTaskDone: vi.fn(),
+          markTaskFailed: vi.fn(),
+          markTaskBlocked: vi.fn(),
+        },
+        onTaskCompleted,
+      }
+    )
+
+    // 第 1 轮结束 → continue → 第 2 轮
+    completeLatestRun()
+    await vi.waitFor(() => expect(capturedRuns.length).toBe(2))
+    expect(String(capturedRuns[1]!.input.userMessage)).toContain('Goal 续跑')
+    expect(String(capturedRuns[1]!.input.userMessage)).toContain('缺证据')
+    // 同 session
+    expect(capturedRuns[1]!.input.sessionId).toBe(capturedRuns[0]!.input.sessionId)
+
+    // 第 2 轮 complete 成功
+    mockGetTask.mockReturnValue({ id: 't_test1', status: 'done' } as never)
+    completeLatestRun()
+    await promise
+
+    expect(onTaskCompleted).toHaveBeenCalledWith('t_test1', 'done', undefined, undefined)
+    expect(mockJudgeGoal).toHaveBeenCalledTimes(1)
+  })
+
+  test('goalMode：goalMaxTurns 耗尽 → blocked', async () => {
+    mockGetTask.mockReturnValue({ id: 't_test1', status: 'running' } as never)
+    mockJudgeGoal.mockResolvedValue({
+      verdict: 'continue',
+      reason: '仍不达标',
+      judgedAt: Date.now(),
+    })
+
+    const markTaskBlocked = vi.fn()
+    const onTaskCompleted = vi.fn()
+    const promise = runKanbanTaskHeadless(
+      { ...baseTask, goalMode: true, goalMaxTurns: 2 },
+      baseBoard,
+      {
+        updater: {
+          markTaskRunning: vi.fn(),
+          markTaskDone: vi.fn(),
+          markTaskFailed: vi.fn(),
+          markTaskBlocked,
+        },
+        onTaskCompleted,
+      }
+    )
+
+    completeLatestRun()
+    await vi.waitFor(() => expect(capturedRuns.length).toBe(2))
+    completeLatestRun()
+    await promise
+
+    expect(onTaskCompleted).toHaveBeenCalledWith(
+      't_test1',
+      'blocked',
+      undefined,
+      expect.stringContaining('轮次已耗尽')
+    )
+    expect(markTaskBlocked).toHaveBeenCalledWith('t_test1', expect.stringContaining('轮次已耗尽'))
+    expect(mockUpdateTaskStatus).toHaveBeenCalledWith(
+      't_test1',
+      expect.objectContaining({ status: 'blocked' })
+    )
+  })
+
+  test('buildGoalContinuePrompt 含 taskId 与 judge 原因', () => {
+    const text = buildGoalContinuePrompt({
+      taskId: 't_abc',
+      turn: 2,
+      maxTurns: 10,
+      judge: { verdict: 'continue', reason: '缺少测试' },
+    })
+    expect(text).toContain('t_abc')
+    expect(text).toContain('缺少测试')
+    expect(text).toContain('2/10')
+  })
+
   test('执行超时 30 分钟后标记任务为 failed 并中止 worker', async () => {
     // 用 fake timer 模拟超时：runRegisteredHeadlessAgent 不回调，setTimeout 触发
     vi.useFakeTimers()
@@ -425,11 +581,13 @@ describe('runKanbanTaskHeadless', () => {
     expect(mockUpdateTaskStatus).toHaveBeenCalledWith('t_test1', {
       status: 'failed',
       error: expect.stringContaining('执行超时'),
+      errorSource: 'kanban',
     })
     // 验证回流 failed + 超时错误
     expect(updater.markTaskFailed).toHaveBeenCalledWith(
       't_test1',
-      expect.stringContaining('执行超时')
+      expect.stringContaining('执行超时'),
+      expect.any(String)
     )
     expect(onTaskCompleted).toHaveBeenCalledWith(
       't_test1',
@@ -445,13 +603,14 @@ describe('runKanbanTaskHeadless', () => {
 })
 
 describe('buildKanbanAgentTools', () => {
-  test('返回 6 个 kanban_* 工具', () => {
+  test('返回 7 个 kanban_* 工具（含 complete）', () => {
     const tools = buildKanbanAgentTools()
     const names = Object.keys(tools).sort()
     expect(names).toEqual([
       'kanban_add_task',
       'kanban_block',
       'kanban_comment',
+      'kanban_complete',
       'kanban_create_board',
       'kanban_list_boards',
       'kanban_list_tasks',
