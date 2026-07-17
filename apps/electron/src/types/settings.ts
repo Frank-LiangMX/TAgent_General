@@ -281,6 +281,11 @@ export interface AppSettings {
   advancedMaterialOnMode?: AdvancedMaterialOnMode
   /** 高级材质模式（实际生效值，由 enabled 和 onMode 计算得出） */
   advancedMaterialMode?: AdvancedMaterialMode
+  /**
+   * 打包版一次性迁移标记：升级后首次启动若曾开启高级材质，
+   * 回退到默认材质 + 浅色主题；之后不再改动用户外观偏好。
+   */
+  advancedMaterialReleaseResetV1?: boolean
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand
   /** 上次是否在草稿页（用于重启恢复） */

@@ -9,12 +9,10 @@
  */
 
 import { useAtom, useAtomValue } from 'jotai'
-import { Check } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type {
-  AdvancedMaterialMode,
   AdvancedMaterialOnMode,
   MarkdownFontSize,
   ThemeMode,
@@ -284,25 +282,27 @@ export function AppearanceSettings(): React.ReactElement {
             <FontSizeSlider value={markdownFontSize} onChange={handleMarkdownFontSizeChange} />
           </div>
 
-          {/* 高级材质 */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex-1 min-w-0 mr-4">
-              <div className="text-sm font-medium text-foreground">高级材质</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {advancedMaterialEnabled
-                  ? advancedMaterialOnMode === 'glass'
-                    ? '高透玻璃：强调通透、折射和悬浮感'
-                    : '轻拟态：柔和玻璃质感，边缘高光与阴影'
-                  : '磨砂玻璃：更内敛、更稳的玻璃层次'}
+          {/* 高级材质：打包版暂未完成，仅开发模式露出入口 */}
+          {import.meta.env.DEV ? (
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex-1 min-w-0 mr-4">
+                <div className="text-sm font-medium text-foreground">高级材质</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {advancedMaterialEnabled
+                    ? advancedMaterialOnMode === 'glass'
+                      ? '高透玻璃：强调通透、折射和悬浮感'
+                      : '轻拟态：柔和玻璃质感，边缘高光与阴影'
+                    : '磨砂玻璃：更内敛、更稳的玻璃层次'}
+                </div>
               </div>
+              <MaterialToggle
+                enabled={advancedMaterialEnabled}
+                onMode={advancedMaterialOnMode}
+                onEnabledChange={handleAdvancedMaterialEnabledChange}
+                onModeChange={handleAdvancedMaterialOnModeChange}
+              />
             </div>
-            <MaterialToggle
-              enabled={advancedMaterialEnabled}
-              onMode={advancedMaterialOnMode}
-              onEnabledChange={handleAdvancedMaterialEnabledChange}
-              onModeChange={handleAdvancedMaterialOnModeChange}
-            />
-          </div>
+          ) : null}
 
           <SettingsSegmentedControl
             label="Agent 预览展开方式"

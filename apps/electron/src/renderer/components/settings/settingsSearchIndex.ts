@@ -244,6 +244,8 @@ export function searchSettings(query: string): SearchResult[] {
   if (!trimmed) return []
 
   const results: SearchResult[] = []
+  // 打包版屏蔽尚未完成的高级材质入口
+  const hideAdvancedMaterial = !import.meta.env.DEV
 
   for (const tab of SETTINGS_SEARCH_INDEX) {
     // 匹配 tab 标题
@@ -258,6 +260,8 @@ export function searchSettings(query: string): SearchResult[] {
 
     // 匹配设置项
     for (const item of tab.items) {
+      if (hideAdvancedMaterial && item.id === 'advanced-material') continue
+
       let score = 0
 
       if (item.title.toLowerCase().includes(trimmed)) {
