@@ -570,6 +570,16 @@ export function deleteAgentSession(id: string): void {
       }
     }
   }
+
+  // 孤儿引用修复（D+3）：标记记忆层中引用此会话的条目
+  ;(async () => {
+    try {
+      const { nudgeService } = await import('./nudge-service')
+      await nudgeService.markSessionDeleted(id)
+    } catch (err) {
+      console.warn(`[Agent 会话] 孤儿引用修复失败 (${id}):`, err)
+    }
+  })()
 }
 
 /**

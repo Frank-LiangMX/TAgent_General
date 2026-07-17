@@ -1212,6 +1212,55 @@ ${userMessages.map((m, i) => `${i + 1}. ${m.slice(0, 200)}`).join('\n')}
     this.pendingNudges.delete(sessionId)
     this.nudgeCallbacks.delete(sessionId)
   }
+
+  private static srcPrefix(sessionId: string): string {
+    return `src:${sessionId}`
+  }
+
+  /**
+   * 标记会话已删除（D+3 孤儿引用修复）
+   *
+   * 会话被永久删除时，遍历 L0/L2/L3/L5 文件，
+   * 把 `src:<sessionId>` 的行加 `deleted:1` 标记（patch-only，不删行）。
+   *
+   * 调用场景：agent-session-manager.ts deleteAgentSession() 末尾。
+   * 为避免循环依赖，此方法不直接 import agent-session-manager，而是由调用方在确定会话 ID 后主动调。
+   */
+  async markSessionDeleted(sessionId: string): Promise<void> {
+    const src = NudgeService.srcPrefix(sessionId)
+    for (const mode of ['general', 'ta'] as const) {
+      const dir = this.getMemoryDir(mode)
+      for (const fileName of ['L0_user.md', 'L2_facts.md', 'L3_corrections.md', 'L5_insights.md']) {
+        const filePath = path.join(dir, fileName)
+        if (!fs.existsSync(filePath)) continue
+
+        let content: string
+        try {
+          content = fs.readFileSync(filePath, 'utf-8')
+        } catch {
+          continue
+        }
+        if (!content.includes(src)) continue
+
+        const lines = content.split('\n')
+        let changed = false
+        const patched = lines.map((line) => {
+          if (!line.startsWith('- ') || !line.includes(src)) return line
+          if (/deleted:\s*1/.test(line)) return line
+          changed = true
+          return `${line.replace(/-->$/, '')} deleted:1 -->`
+        })
+        if (!changed) continue
+        try {
+          fs.writeFileSync(filePath, patched.join('\n'), 'utf-8')
+          this.fileHashes?.delete(filePath)
+          console.log(`[Nudge] 标记会话已删除 ${sessionId}: ${fileName}`)
+        } catch (err) {
+          console.warn(`[Nudge] 标记会话已删除失败 ${filePath}:`, err)
+        }
+      }
+    }
+  }
 }
 
 // 导出类（供测试注入独立实例）+ 单例
