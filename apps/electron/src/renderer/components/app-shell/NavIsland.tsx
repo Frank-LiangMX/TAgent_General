@@ -5,13 +5,14 @@
  * - NavRailIsland：独立 icon rail pill（始终存在）
  * - NavSidebarIsland：会话/功能侧栏独立卡片（按需）
  *
- * macOS：红绿灯不进 pill，由 AppShell 顶栏安全带承载；
- * 浮岛从安全带下方起排，顶上不再塞 32px chrome 行。
+ * 与主区同高贴边（AppShell p-2），不另开整窗空顶带；
+ * mac 红绿灯 / Win 窗控叠在浮岛顶缘，观感与原先顶栏融合一致。
  */
 
 import * as React from 'react'
 
 import {
+  NAV_MAC_CHROME_HEIGHT,
   NAV_RAIL_WIDTH,
   NAV_SIDEBAR_WIDTH,
   detectIsMac,
@@ -40,14 +41,24 @@ export function NavRailIsland({
     <div
       className={cn(
         'nav-island-glass nav-island-glass--float nav-rail-island relative flex h-full flex-col overflow-hidden flex-shrink-0',
-        // mac 不再为灯削左上角：pill 四角统一大圆角
-        isMac && 'nav-rail-island--mac'
+        isMac && 'nav-island-glass--mac nav-rail-island--mac'
       )}
       style={{
         width,
         ['--nav-rail-width' as string]: `${width}px`,
       }}
     >
+      {/*
+        mac：顶缘留出红绿灯叠层安全高（不另开整窗空带）
+        灯视觉上仍「融」在 pill 顶，图标从安全高下方开始
+      */}
+      {isMac ? (
+        <div
+          className="nav-rail-mac-lights-slot shrink-0 titlebar-drag-region"
+          style={{ height: NAV_MAC_CHROME_HEIGHT }}
+          aria-hidden
+        />
+      ) : null}
       <div className="nav-island-body relative flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   )

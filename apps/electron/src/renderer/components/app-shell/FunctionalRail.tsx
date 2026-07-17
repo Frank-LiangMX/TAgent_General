@@ -347,8 +347,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   ]
 
   return (
-    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pt-2.5 pb-3 shrink-0">
-      {/* Soft UI：顶上不再为 mac 红绿灯留大块 chrome，图标紧贴 pill 顶 */}
+    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pt-2 pb-3 shrink-0">
       <div className="w-full flex flex-col items-center">
         <div className="relative flex flex-col items-center gap-2 w-full">
           {COMMON_TOP_RAIL_ITEMS.map((item) => {

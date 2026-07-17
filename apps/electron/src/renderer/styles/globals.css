@@ -4251,13 +4251,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   );
 }
 
-/* 跨端顶栏安全带：壳底色延伸，不画第二层实体条 */
-.shell-top-safe-band {
-  pointer-events: auto;
-  background: transparent;
-}
-
-/* 独立 rail pill：更圆、更「细柱」；两端都绕开窗顶，四角统一大圆角 */
+/* 独立 rail pill：更圆、更「细柱」；与主区同高贴边，不另开空顶带 */
 .nav-rail-island.nav-island-glass {
   border-radius: calc(var(--nav-island-outer-radius, 24px) + 4px);
 }

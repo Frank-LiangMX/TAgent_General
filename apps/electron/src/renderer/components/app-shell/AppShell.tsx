@@ -53,7 +53,6 @@ import {
   NAV_SIDEBAR_WIDTH,
   RIGHT_PANEL_RAIL_WIDTH,
   SHELL_EDGE_PADDING,
-  SHELL_TOP_SAFE_HEIGHT,
 } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -268,28 +267,20 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
       <div
         className={cn(
-          'shell-glass shell-bg relative flex h-screen w-screen flex-col overflow-hidden',
+          'shell-glass shell-bg relative flex h-screen w-screen overflow-hidden',
           isMac ? 'shell-glass--mac' : 'shell-glass--win'
         )}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
-          ['--shell-top-safe-height' as string]: `${SHELL_TOP_SAFE_HEIGHT}px`,
         }}
       >
         {/*
-          跨端顶栏安全带（Win + Mac）：
-          Soft UI — rail / 侧栏 / 主区都绕开窗顶，不从 y=0 起排。
-          Mac：系统红绿灯；Win：拖拽 + 右侧留给 WindowControls。
+          Soft UI：rail / 侧栏独立浮岛，但与主区同高贴边（p-2），
+          不再做整窗下沉顶带——避免窗控/内容之间空出一条「丑顶栏」。
+          系统控件叠在顶缘（Win 自定义按钮 / Mac 红绿灯），浮岛顶与之融合。
         */}
-        <div
-          className="shell-top-safe-band relative z-[90] w-full shrink-0 titlebar-drag-region"
-          style={{ height: SHELL_TOP_SAFE_HEIGHT }}
-          aria-hidden
-        />
-
-        <div className="relative flex min-h-0 flex-1 flex-row overflow-hidden">
-        <div className="relative z-[70] flex shrink-0 items-stretch self-stretch gap-2 px-2 pb-2 pr-0 pt-0">
+        <div className="relative z-[70] flex shrink-0 items-stretch self-stretch gap-2 p-2 pr-0">
           <NavRailIsland width={navRailWidth}>
             <FunctionalRail />
           </NavRailIsland>
@@ -308,7 +299,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <div
           className={cn(
-            'relative z-[60] min-w-0 flex-1 px-2 pb-2 pt-0',
+            'relative z-[60] min-w-0 flex-1 p-2',
             showRightPanel && isPanelOpen && 'pr-0'
           )}
         >
@@ -392,18 +383,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           <div
             className={cn(
               isPanelOpen
-                ? 'relative z-[70] box-border flex shrink-0 items-stretch self-stretch px-2 pb-2 pl-0 pt-0'
-                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch px-2 pb-2 pl-0 pt-0',
+                ? 'relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0'
+                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch p-2 pl-0',
               wantImmersive && 'pointer-events-none opacity-0'
             )}
-            style={
-              !isPanelOpen
-                ? {
-                    // 折叠右 rail 时 absolute 也绕开顶栏安全带
-                    top: SHELL_TOP_SAFE_HEIGHT,
-                  }
-                : undefined
-            }
           >
             {isPanelOpen && (
               <div
@@ -436,7 +419,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             </div>
           </div>
         )}
-        </div>
       </div>
     </AppShellProvider>
   )

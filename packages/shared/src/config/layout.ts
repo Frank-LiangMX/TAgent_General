@@ -14,22 +14,21 @@ export const RIGHT_PANEL_RAIL_WIDTH = 38
 /** 导航浮岛外轮廓圆角（Soft UI pill；与 content 底板左缘对齐） */
 export const NAV_ISLAND_OUTER_RADIUS = 24
 
-/** macOS 导航浮岛左上角圆角（历史：灯嵌 pill 时削角；灯在外后可与外圆角一致） */
-export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = NAV_ISLAND_OUTER_RADIUS
+/**
+ * macOS 浮岛左上角圆角（略小于外圆角，灯叠在 pill 顶缘时更自然）
+ */
+export const NAV_ISLAND_MAC_TOP_LEFT_RADIUS = 16
 
 /**
- * 跨端顶栏安全带高度（Win / Mac 共用）
- *
- * Soft UI：rail / 侧栏 / 主区浮岛都绕开窗顶，不从 y=0 起排。
- * - Mac：系统红绿灯 + 拖拽
- * - Win：拖拽 + 右侧自定义窗口按钮区
+ * macOS 红绿灯垂直参考带高度（不用于整窗下沉）
+ * 灯叠在 rail pill 顶缘附近，与 shell p-2 对齐
  */
-export const SHELL_TOP_SAFE_HEIGHT = 32
+export const NAV_MAC_CHROME_HEIGHT = 28
 
 /**
- * @deprecated 请用 SHELL_TOP_SAFE_HEIGHT；保留别名兼容旧引用
+ * @deprecated 历史别名；勿再做整窗顶带高度
  */
-export const NAV_MAC_CHROME_HEIGHT = SHELL_TOP_SAFE_HEIGHT
+export const SHELL_TOP_SAFE_HEIGHT = 0
 
 /** TabBar 内容区高度 */
 export const TAB_BAR_HEIGHT = 28
@@ -51,26 +50,25 @@ export const NAV_SIDEBAR_INSPECTOR_WIDTH = NAV_SIDEBAR_WIDTH
 
 /**
  * macOS 红绿灯相对窗口左缘的水平 inset
- * Soft UI：灯在 shell 上、不进 pill，略贴左即可
+ * = shell 边距 + rail 内边距，灯叠在独立 rail pill 顶左
  */
-export const NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET = 12
+export const NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET = 8
 
 /** macOS 系统红绿灯控件近似高度（用于垂直居中） */
 export const NAV_MAC_TRAFFIC_LIGHT_HEIGHT = 12
 
-/** macOS 红绿灯相对 chrome 带垂直微调（像素） */
-export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 0
+/** macOS 红绿灯相对 pill 顶缘的垂直微调 */
+export const NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET = 2
 
 /**
  * Electron trafficLightPosition（相对窗口内容区左上角）
- * 落在跨端顶栏安全带内，不压独立 rail pill
+ * 叠在 rail 浮岛顶缘（shell p-2 之内），不另开空顶带
  */
 export function getMacTrafficLightPosition(): { x: number; y: number } {
-  const x = NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
-  const y = Math.max(
-    6,
-    Math.round((SHELL_TOP_SAFE_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2) +
-      NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
-  )
+  const x = SHELL_EDGE_PADDING + NAV_MAC_TRAFFIC_LIGHT_RAIL_INSET
+  const y =
+    SHELL_EDGE_PADDING +
+    Math.max(4, Math.round((NAV_MAC_CHROME_HEIGHT - NAV_MAC_TRAFFIC_LIGHT_HEIGHT) / 2)) +
+    NAV_MAC_TRAFFIC_LIGHT_Y_OFFSET
   return { x, y }
 }

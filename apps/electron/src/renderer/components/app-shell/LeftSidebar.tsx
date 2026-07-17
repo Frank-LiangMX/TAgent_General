@@ -1561,8 +1561,19 @@ export function LeftSidebar({
   }
 
   return (
-    <div className="nav-island-sidebar relative z-[1] h-full w-full flex flex-col overflow-hidden min-w-0">
-      {/* 拖拽改由 AppShell 跨端顶栏安全带承担；侧栏内不再叠一层顶条 */}
+    <div
+      className={cn(
+        'nav-island-sidebar relative z-[1] h-full w-full flex flex-col overflow-hidden min-w-0',
+        !isMac && 'pt-1'
+      )}
+    >
+      {/* Windows：侧栏顶缘可拖（窗控叠在右上角浮岛外） */}
+      {!isMac && (
+        <div
+          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[20px] titlebar-drag-region"
+          aria-hidden
+        />
+      )}
       {/* 会话 / 草稿：对齐 glass-studio .sidebar-inner 结构 */}
       {activeRailItem === 'sessions' ? (
         <div className="sidebar-inner">
