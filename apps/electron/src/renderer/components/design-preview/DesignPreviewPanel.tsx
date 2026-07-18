@@ -24,7 +24,7 @@ export interface DesignPreviewPanelProps {
 /** 面板标题栏 */
 function DesignPanelHeader(): React.ReactElement {
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 bg-background/60 px-4 py-2.5 backdrop-blur">
+    <div className="design-panel-header flex items-center gap-2 border-b border-border/40 bg-background/60 px-4 py-2.5 backdrop-blur">
       <div className="flex size-6 items-center justify-center rounded-md bg-primary/10">
         <Eye className="size-3.5 text-primary" />
       </div>
@@ -44,7 +44,7 @@ export function DesignPreviewPanel({
 
   return (
     <div
-      className={cn('flex h-full flex-col bg-background', className)}
+      className={cn('design-preview-panel flex h-full flex-col bg-background', className)}
       style={width ? { width } : undefined}
     >
       {!immersive && <DesignPanelHeader />}

@@ -103,71 +103,29 @@ export function TabBarItem({
   const previewItems = minimapCache.get(id) ?? []
   // 当前 active Tab 不显示预览面板
   const showPreview = isHovered && !isActive
-  const isAgentSession = type === 'agent'
   // P3: chat 已退役
-
-  // Scratch Pad 显示草稿图标
-  if (isDraft) {
-    return (
-      <div
-        className="relative flex-shrink-0 titlebar-no-drag"
-        data-tab-id={id}
-        onMouseEnter={onHoverEnter}
-        onMouseLeave={onHoverLeave}
-      >
-        <button
-          ref={buttonRef}
-          type="button"
-          className={cn(
-            'group relative flex items-center justify-center gap-1.5 min-w-[72px] px-2.5 h-[28px]',
-            'rounded-t-glass-tab text-xs transition-colors select-none cursor-pointer',
-            'border-t border-l border-r',
-            isActive
-              ? 'tab-item-selected'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-          )}
-          onClick={onActivate}
-          onMouseDown={handleMouseDown}
-          onPointerDown={onDragStart}
-        >
-          <StickyNote className="size-3.5" />
-          <span className="truncate">{title}</span>
-          {/* 关闭按钮 */}
-          <span
-            role="button"
-            tabIndex={-1}
-            className={cn(
-              'size-4 rounded-sm flex items-center justify-center shrink-0',
-              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
-              isActive && 'opacity-60'
-            )}
-            onClick={handleCloseClick}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ')
-                handleCloseClick(e as unknown as React.MouseEvent)
-            }}
-          >
-            <X className="size-2.5" />
-          </span>
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div
-      className="relative min-w-[96px] max-w-[160px] flex-[1_0_96px] titlebar-no-drag"
+      className={cn(
+        'app-workspace-tab-shell relative z-[1] h-8 titlebar-no-drag',
+        isDraft
+          ? 'min-w-[72px] max-w-[120px] flex-[0_1_120px]'
+          : 'min-w-[104px] max-w-[176px] flex-[0_1_176px]'
+      )}
       data-tab-id={id}
+      data-active={isActive || undefined}
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
       <button
         ref={buttonRef}
         type="button"
+        role="tab"
+        aria-selected={isActive}
         className={cn(
-          'group relative flex items-center gap-1.5 px-2.5 h-[28px] w-full',
-          'rounded-t-glass-tab text-xs transition-colors select-none cursor-pointer',
-          'border-t border-l border-r',
+          'app-workspace-tab relative flex h-8 w-full items-center gap-1.5 pl-2.5 pr-8',
+          'select-none cursor-pointer',
           isActive
             ? 'tab-item-selected'
             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -177,50 +135,29 @@ export function TabBarItem({
         onMouseDown={handleMouseDown}
         onPointerDown={onDragStart}
       >
-        {type === 'preview' && !isNarrow && (
-          <FileText className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')} />
-        )}
-
-        {/* 标题（窄状态下隐藏，用 spacer 撑开让关闭按钮靠右） */}
-        {isNarrow ? (
-          <span className="flex-1" />
-        ) : (
-          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-            {isAgentSession && (
-              <MessageSquare
-                className={cn('size-3.5 shrink-0', !isActive && 'text-muted-foreground')}
-              />
-            )}
-            <span className="min-w-0 truncate">{title}</span>
-          </span>
-        )}
-
-        {/* 关闭按钮（draft 类型也显示） */}
-        {!isDraft && (
-          <span
-            role="button"
-            tabIndex={-1}
-            className={cn(
-              'size-4 rounded-sm flex items-center justify-center shrink-0',
-              'opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity',
-              isActive && 'opacity-60'
-            )}
-            onClick={handleCloseClick}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ')
-                handleCloseClick(e as unknown as React.MouseEvent)
-            }}
-          >
-            <X className="size-2.5" />
-          </span>
-        )}
+        <span className="app-workspace-tab__content flex min-w-0 flex-1 items-center gap-1.5 text-left">
+          {type === 'agent' && <MessageSquare className="app-workspace-tab__icon" aria-hidden />}
+          {type === 'preview' && <FileText className="app-workspace-tab__icon" aria-hidden />}
+          {type === 'draft' && <StickyNote className="app-workspace-tab__icon" aria-hidden />}
+          {!isNarrow && <span className="app-workspace-tab__title">{title}</span>}
+        </span>
 
         {statusLineClass && (
           <span
-            className={cn('absolute inset-x-3 bottom-0 h-[2.5px] rounded-full', statusLineClass)}
+            className={cn('app-workspace-tab-status absolute rounded-full', statusLineClass)}
             aria-hidden="true"
           />
         )}
+      </button>
+
+      <button
+        type="button"
+        className="app-workspace-tab-close"
+        aria-label={`关闭标签页：${title}`}
+        tabIndex={isActive ? 0 : -1}
+        onClick={handleCloseClick}
+      >
+        <X aria-hidden />
       </button>
 
       {/* 悬浮预览面板（Portal 渲染到 body） */}

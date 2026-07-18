@@ -1,6 +1,7 @@
 @import '@tagent/ui/src/tokens/__generated__/tokens.css';
 @import '@tagent/ui/styles/md-surface.css';
 @import '@tagent/ui/styles/glass.css';
+@import '@tagent/ui/styles/surface-roles.css';
 @import '@tagent/ui/styles/pressable.css';
 @import '@tagent/ui/styles/search.css';
 @import '@tagent/ui/styles/segmented-tabs.css';
@@ -97,7 +98,7 @@
    * 核心变量：--inset-hi / --rim / --elev-dark / --elev-light / --ambient-shadow
    * 组件通过 ::after 伪元素自动获得高光，无需逐个设置
    */
-  [data-material="soft"] {
+  [data-material='soft'] {
     /* 边缘高光（全局统一） */
     --inset-hi: rgba(255, 255, 255, 0.45);
     --inset-hi-strong: rgba(255, 255, 255, 0.55);
@@ -130,7 +131,7 @@
     --session-elev-light: rgba(255, 255, 255, 0.48);
   }
 
-  [data-material="soft"].dark {
+  [data-material='soft'].dark {
     --inset-hi: rgba(255, 255, 255, 0.14);
     --inset-hi-strong: rgba(255, 255, 255, 0.2);
     --inset-hi-soft: rgba(255, 255, 255, 0.08);
@@ -157,7 +158,7 @@
   }
 
   /* 液态玻璃 Liquid Glass */
-  [data-material="liquid"] {
+  [data-material='liquid'] {
     --inset-hi: rgba(255, 255, 255, 0.35);
     --inset-hi-strong: rgba(255, 255, 255, 0.45);
     --inset-hi-soft: rgba(255, 255, 255, 0.2);
@@ -174,7 +175,7 @@
     --hover-fill: rgba(255, 255, 255, 0.1);
   }
 
-  [data-material="liquid"].dark {
+  [data-material='liquid'].dark {
     --inset-hi: rgba(255, 255, 255, 0.1);
     --inset-hi-strong: rgba(255, 255, 255, 0.14);
     --inset-hi-soft: rgba(255, 255, 255, 0.06);
@@ -196,7 +197,7 @@
    * session-glass-* 表面由 packages/ui/styles/glass.css surface token 负责
    * Session 选中：primary tint（与 glass.css 一致），非纯灰块
    */
-  [data-material="frosted"] {
+  [data-material='frosted'] {
     --inset-hi: transparent;
     --inset-hi-strong: transparent;
     --inset-hi-soft: transparent;
@@ -218,7 +219,7 @@
     --session-elev-light: transparent;
   }
 
-  [data-material="frosted"].dark {
+  [data-material='frosted'].dark {
     --inset-hi: transparent;
     --inset-hi-strong: transparent;
     --inset-hi-soft: transparent;
@@ -241,7 +242,7 @@
   }
 
   /* 高透玻璃 High-Transparent Glass */
-  [data-material="glass"] {
+  [data-material='glass'] {
     --inset-hi: rgba(255, 255, 255, 0.35);
     --inset-hi-strong: rgba(255, 255, 255, 0.45);
     --inset-hi-soft: rgba(255, 255, 255, 0.2);
@@ -264,7 +265,7 @@
     --session-elev-light: rgba(255, 255, 255, 0.15);
   }
 
-  [data-material="glass"].dark {
+  [data-material='glass'].dark {
     --inset-hi: rgba(255, 255, 255, 0.1);
     --inset-hi-strong: rgba(255, 255, 255, 0.14);
     --inset-hi-soft: rgba(255, 255, 255, 0.06);
@@ -405,11 +406,8 @@
   }
 }
 
-/*
- * 主窗口全局内容边界。
- * Electron 窗口不是视觉内容边界；底板圆角矩形才是。裁切 body 能同时约束
- * AppShell 子树以及 Radix / Sonner 等 portal 浮层，避免动画阶段越过底板范围。
- */
+/* 主窗口使用文档层作为真实 Electron 窗口背景；AppShell 面板浮在背景之上，
+ * 不再把 body 裁切成另一张圆角卡片。 */
 html.tagent-app-shell-window,
 html.tagent-app-shell-window body,
 html.tagent-app-shell-window #root {
@@ -418,11 +416,27 @@ html.tagent-app-shell-window #root {
   overflow: hidden;
 }
 
+html.tagent-app-shell-window {
+  background:
+    radial-gradient(circle at 10% 28%, rgb(110 147 211 / 16%), transparent 40%),
+    radial-gradient(circle at 88% 82%, rgb(137 166 218 / 12%), transparent 44%),
+    linear-gradient(135deg, rgb(228 234 243 / 78%), rgb(218 226 238 / 72%)), rgb(204 216 232);
+}
+
+html.tagent-app-shell-window.dark {
+  background:
+    radial-gradient(circle at 10% 28%, rgb(78 112 176 / 13%), transparent 40%),
+    radial-gradient(circle at 88% 82%, rgb(98 119 159 / 9%), transparent 44%),
+    linear-gradient(135deg, rgb(25 31 42 / 96%), rgb(18 24 34 / 94%)), hsl(var(--background));
+}
+
 html.tagent-app-shell-window body {
-  clip-path: inset(
-    var(--app-content-boundary-inset)
-    round var(--app-content-boundary-radius)
-  );
+  clip-path: none;
+  background: transparent;
+}
+
+html.tagent-app-shell-window #root {
+  background: transparent;
 }
 
 .app-content-boundary-rim {
@@ -435,39 +449,36 @@ html.tagent-app-shell-window body {
   pointer-events: none;
   border-top-right-radius: var(--app-content-boundary-radius);
   border-bottom-right-radius: var(--app-content-boundary-radius);
-  background:
-    linear-gradient(
-      to left,
-      hsl(var(--background) / 0.42) 0,
-      hsl(var(--background) / 0.20) 3px,
-      transparent 24px
-    );
+  background: linear-gradient(
+    to left,
+    hsl(var(--background) / 0.42) 0,
+    hsl(var(--background) / 0.2) 3px,
+    transparent 24px
+  );
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.48),
     inset -2px 0 0 hsl(var(--foreground) / 0.045);
 }
 
 .dark .app-content-boundary-rim {
-  background:
-    linear-gradient(
-      to left,
-      rgba(0, 0, 0, 0.22) 0,
-      rgba(0, 0, 0, 0.10) 4px,
-      transparent 24px
-    );
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.22) 0,
+    rgba(0, 0, 0, 0.1) 4px,
+    transparent 24px
+  );
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.14),
     inset -2px 0 0 rgba(0, 0, 0, 0.22);
 }
 
 html.material-frosted .app-content-boundary-rim {
-  background:
-    linear-gradient(
-      to left,
-      hsl(var(--background) / 0.34) 0,
-      hsl(var(--background) / 0.14) 4px,
-      transparent 24px
-    );
+  background: linear-gradient(
+    to left,
+    hsl(var(--background) / 0.34) 0,
+    hsl(var(--background) / 0.14) 4px,
+    transparent 24px
+  );
   box-shadow:
     inset -1px 0 0 var(--material-edge-inset),
     inset -2px 0 0 var(--material-edge-outer);
@@ -486,8 +497,8 @@ html.material-frosted .app-content-boundary-rim {
   /* 输入控件、可编辑区域：保留选中能力 */
   input,
   textarea,
-  [contenteditable="true"],
-  [contenteditable=""] {
+  [contenteditable='true'],
+  [contenteditable=''] {
     -webkit-user-select: text;
     user-select: text;
   }
@@ -552,7 +563,9 @@ html.material-frosted .app-content-boundary-rim {
   background: transparent;
   border: none;
   cursor: default;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
@@ -595,92 +608,74 @@ html.material-frosted .app-content-boundary-rim {
 /* 默认主题：克制的高级渐变（亮度差 8%，单色调） */
 :root .shell-bg,
 .theme-default.shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(var(--background)) 0%,
-      color-mix(in srgb, hsl(var(--primary)) 3%, hsl(var(--background))) 50%,
-      hsl(var(--background) / 0.95) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)) 0%,
+    color-mix(in srgb, hsl(var(--primary)) 3%, hsl(var(--background))) 50%,
+    hsl(var(--background) / 0.95) 100%
+  );
 }
 
 .dark .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(var(--background)) 0%,
-      color-mix(in srgb, hsl(var(--primary)) 4%, hsl(var(--background))) 50%,
-      hsl(var(--background) / 0.98) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)) 0%,
+    color-mix(in srgb, hsl(var(--primary)) 4%, hsl(var(--background))) 50%,
+    hsl(var(--background) / 0.98) 100%
+  );
 }
 
 /* 晴空碧海：轻微蓝调渐变 */
 .theme-ocean-light .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(205 35% 88%) 0%,
-      hsl(205 40% 91%) 50%,
-      hsl(205 32% 90%) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(205 35% 88%) 0%,
+    hsl(205 40% 91%) 50%,
+    hsl(205 32% 90%) 100%
+  );
 }
 
 .theme-ocean-dark .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(210 45% 5%) 0%,
-      hsl(210 50% 7%) 50%,
-      hsl(210 42% 6%) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(210 45% 5%) 0%,
+    hsl(210 50% 7%) 50%,
+    hsl(210 42% 6%) 100%
+  );
 }
 
 /* 森系：轻微绿调渐变 */
 .theme-forest-light .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(140 15% 90%) 0%,
-      hsl(140 18% 92%) 50%,
-      hsl(140 14% 91%) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(140 15% 90%) 0%,
+    hsl(140 18% 92%) 50%,
+    hsl(140 14% 91%) 100%
+  );
 }
 
 .theme-forest-dark .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(150 20% 5%) 0%,
-      hsl(150 22% 7%) 50%,
-      hsl(150 18% 6%) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    hsl(150 20% 5%) 0%,
+    hsl(150 22% 7%) 50%,
+    hsl(150 18% 6%) 100%
+  );
 }
 
 /* 云朵/莫兰迪：轻微暖调渐变 */
 .theme-slate-light .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(40 6% 84%) 0%,
-      hsl(40 8% 87%) 50%,
-      hsl(40 5% 86%) 100%
-    );
+  background: linear-gradient(135deg, hsl(40 6% 84%) 0%, hsl(40 8% 87%) 50%, hsl(40 5% 86%) 100%);
 }
 
 .theme-slate-dark .shell-bg {
-  background:
-    linear-gradient(
-      135deg,
-      hsl(270 10% 7%) 0%,
-      hsl(270 12% 9%) 50%,
-      hsl(270 9% 8%) 100%
-    );
+  background: linear-gradient(135deg, hsl(270 10% 7%) 0%, hsl(270 12% 9%) 50%, hsl(270 9% 8%) 100%);
 }
 
 /* ===== 特殊主题：模式切换器选中状态 ===== */
 /* 晴空碧海：蓝色背景滑块 + 白色文字 */
 .theme-ocean-light .mode-slider {
-  background: hsl(205 50% 50%) !important;  /* #408abf 主色 */
+  background: hsl(205 50% 50%) !important; /* #408abf 主色 */
   box-shadow: 0 2px 4px rgba(64, 138, 191, 0.3);
 }
 .theme-ocean-light .mode-btn-selected {
@@ -689,7 +684,7 @@ html.material-frosted .app-content-boundary-rim {
 
 /* 苍穹暮色：深蓝背景滑块 + 白色文字 */
 .theme-ocean-dark .mode-slider {
-  background: #084672 !important;  /* 深蓝主色 */
+  background: #084672 !important; /* 深蓝主色 */
   box-shadow: 0 2px 4px rgba(8, 70, 114, 0.4);
 }
 .theme-ocean-dark .mode-btn-selected {
@@ -698,7 +693,7 @@ html.material-frosted .app-content-boundary-rim {
 
 /* 森息晨光主题 */
 .theme-forest-light .mode-slider {
-  background: hsl(150 35% 38%) !important;  /* #3f8361 主色 */
+  background: hsl(150 35% 38%) !important; /* #3f8361 主色 */
   box-shadow: 0 2px 4px rgba(63, 131, 97, 0.3);
 }
 .theme-forest-light .mode-btn-selected {
@@ -707,7 +702,7 @@ html.material-frosted .app-content-boundary-rim {
 
 /* 森息夜语主题 */
 .theme-forest-dark .mode-slider {
-  background: hsl(151 55% 21%) !important;  /* #185337 主色 */
+  background: hsl(151 55% 21%) !important; /* #185337 主色 */
   box-shadow: 0 2px 4px rgba(24, 83, 55, 0.3);
 }
 .theme-forest-dark .mode-btn-selected {
@@ -716,7 +711,7 @@ html.material-frosted .app-content-boundary-rim {
 
 /* 云朵舞者主题 */
 .theme-slate-light .mode-slider {
-  background: hsl(18 20% 67%) !important;   /* #bda59b RGB(189,165,155) */
+  background: hsl(18 20% 67%) !important; /* #bda59b RGB(189,165,155) */
   box-shadow: 0 2px 4px rgba(189, 165, 155, 0.4);
 }
 .theme-slate-light .mode-btn-selected {
@@ -726,11 +721,11 @@ html.material-frosted .app-content-boundary-rim {
 /* ===== 莫兰迪主题：模式切换器选中状态 ===== */
 /* 莫兰迪夜：淡杏粉滑块 + 深色文字 */
 .theme-slate-dark .mode-slider {
-  background: hsl(15 25% 68%) !important;   /* #c9a89e 淡杏粉主色 */
+  background: hsl(15 25% 68%) !important; /* #c9a89e 淡杏粉主色 */
   box-shadow: 0 2px 4px rgba(201, 168, 158, 0.3);
 }
 .theme-slate-dark .mode-btn-selected {
-  color: hsl(270 8% 12%) !important;        /* 深色文字 */
+  color: hsl(270 8% 12%) !important; /* 深色文字 */
 }
 
 /* ===== Tab 选中态：普通材质实色；glass 才有玻璃光泽 ===== */
@@ -779,18 +774,28 @@ html.material-frosted .app-content-boundary-rim {
     0 1px 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* ===== 统一选中态：跟随主题 primary ===== */
+/* ===== 统一选中态：中性折射面，状态颜色只留给图标与状态点 ===== */
 .session-item-selected,
 .session-list-item-active,
 .workspace-item-selected {
-  background: var(--session-glass-strong) !important;
-  color: hsl(var(--primary)) !important;
-  border: 1px solid var(--session-rim) !important;
+  --selection-fill: color-mix(
+    in srgb,
+    hsl(var(--foreground)) 4%,
+    var(--surface-role-well-fill, var(--surface-bg-well))
+  );
+  --selection-rim: color-mix(
+    in srgb,
+    hsl(var(--foreground)) 7%,
+    var(--surface-role-well-rim, var(--surface-rim))
+  );
+  --selection-text: hsl(var(--foreground) / 0.9);
+  background: var(--selection-fill) !important;
+  color: var(--selection-text) !important;
+  border: 1px solid var(--selection-rim) !important;
   border-radius: 12px !important;
   box-shadow:
-    0 1px 0 var(--session-inset-hi) inset,
-    3px 3px 9px var(--session-elev-dark),
-    -2px -2px 6px var(--session-elev-light) !important;
+    inset 0 1px 0 var(--surface-highlight, hsl(var(--glass-shine) / 0.12)),
+    0 4px 12px hsl(var(--foreground) / 0.05) !important;
 }
 
 .session-item-selected *,
@@ -816,14 +821,14 @@ html.material-frosted .app-content-boundary-rim {
   color: inherit !important;
 }
 
-/* 选中行/标签标题与副信息：跟随主题 primary */
+/* 选中行保持中性；状态颜色由状态点和细状态线承担。 */
 .session-row-title {
-  color: hsl(var(--primary)) !important;
+  color: hsl(var(--foreground) / 0.9) !important;
   font-weight: 600;
 }
 
 .session-row-meta {
-  color: hsl(var(--primary) / 0.55) !important;
+  color: hsl(var(--muted-foreground) / 0.72) !important;
   font-weight: 500;
 }
 
@@ -970,7 +975,7 @@ html.material-frosted .app-content-boundary-rim {
 }
 
 .dark .settings-content-glass,
-.dark:not([class*="theme-"]) .settings-content-glass {
+.dark:not([class*='theme-']) .settings-content-glass {
   background: transparent;
   border: none;
   box-shadow: none;
@@ -1075,7 +1080,9 @@ html.material-frosted .app-content-boundary-rim {
 }
 
 /* 按钮点击缩放反馈：轻微收缩（tool-cluster / ghost-plus 等自管交互，排除） */
-button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):not(.ghost-plus):not(.sidebar-archive-btn) {
+button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):not(.ghost-plus):not(
+    .sidebar-archive-btn
+  ) {
   transform: scale(0.97);
   transition: transform 0.1s ease;
 }
@@ -1185,7 +1192,8 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
   box-shadow:
     inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.28),
     inset 0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
-  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
+    saturate(var(--surface-saturate, 1.2));
   backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
 }
 
@@ -1334,7 +1342,10 @@ button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):n
 }
 
 .settings-search-result-item--active {
-  background: var(--md-primary-container, color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card))));
+  background: var(
+    --md-primary-container,
+    color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))
+  );
   color: var(--md-on-primary-container, hsl(var(--primary)));
 }
 
@@ -1347,8 +1358,7 @@ html.theme-neumorph-dark {
   --neumorph-shadow-hi: -10px -10px 24px var(--neumorph-light-edge-soft);
   --neumorph-shadow-lo: 12px 12px 28px var(--neumorph-dark-edge-soft);
   --neumorph-inset:
-    inset 1px 1px 0 var(--neumorph-light-edge),
-    inset -1px -1px 0 rgba(255, 255, 255, 0.34);
+    inset 1px 1px 0 var(--neumorph-light-edge), inset -1px -1px 0 rgba(255, 255, 255, 0.34);
 }
 
 html.theme-neumorph-dark {
@@ -1775,7 +1785,8 @@ html.theme-neumorph-dark
 }
 
 /* 轻拟态：右 rail 折叠态 hover 恢复高光+阴影 */
-[data-material="soft"] .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+[data-material='soft']
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
   border-color: hsl(var(--glass-rim) / 0.42);
   box-shadow:
     0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.45)) inset,
@@ -1784,7 +1795,8 @@ html.theme-neumorph-dark
     0 12px 32px rgba(0, 0, 0, 0.06);
 }
 
-[data-material="soft"].dark .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+[data-material='soft'].dark
+  .right-nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
   border-color: hsl(var(--glass-rim) / 0.32);
   box-shadow:
     0 1px 0 var(--inset-hi, rgba(255, 255, 255, 0.14)) inset,
@@ -1805,7 +1817,11 @@ html.theme-neumorph-dark .content-base-plate--body {
 
 html.theme-neumorph-light .content-main-shell .content-glass,
 html.theme-neumorph-dark .content-main-shell .content-glass {
-  background: linear-gradient(145deg, hsl(var(--card) / 0.54) 0%, hsl(var(--background) / 0.3) 100%);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--card) / 0.54) 0%,
+    hsl(var(--background) / 0.3) 100%
+  );
   border-color: hsl(var(--border) / 0.42);
   box-shadow:
     calc(-1 * max(5px, 0.3rem)) calc(-1 * max(5px, 0.3rem)) 14px hsl(var(--background) / 0.7),
@@ -2026,7 +2042,11 @@ html.theme-neumorph-dark .chat-input-glass:focus-within {
 
 html.theme-neumorph-light .tabbar-bg,
 html.theme-neumorph-dark .tabbar-bg {
-  background: linear-gradient(180deg, hsl(var(--background) / 0.34) 0%, hsl(var(--background) / 0.12) 100%);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.34) 0%,
+    hsl(var(--background) / 0.12) 100%
+  );
   box-shadow: inset 0 -1px 0 hsl(var(--foreground) / 0.04);
 }
 
@@ -2067,7 +2087,11 @@ html.theme-neumorph-dark .neumorph-placeholder-shell,
 html.theme-neumorph-light .neumorph-footer-bar,
 html.theme-neumorph-dark .neumorph-footer-bar {
   border: 1px solid hsl(var(--border) / 0.72);
-  background: linear-gradient(145deg, hsl(var(--muted) / 0.72) 0%, hsl(var(--background) / 0.66) 100%);
+  background: linear-gradient(
+    145deg,
+    hsl(var(--muted) / 0.72) 0%,
+    hsl(var(--background) / 0.66) 100%
+  );
   box-shadow:
     inset 3px 3px 8px var(--neumorph-dark-edge-soft),
     inset -3px -3px 8px var(--neumorph-light-edge-soft);
@@ -2200,7 +2224,12 @@ html.theme-neumorph-dark .neumorph-footer-bar {
 
 html.theme-neumorph-light .neumorph-footer-separator,
 html.theme-neumorph-dark .neumorph-footer-separator {
-  background: linear-gradient(180deg, transparent 0%, hsl(var(--foreground) / 0.12) 50%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    hsl(var(--foreground) / 0.12) 50%,
+    transparent 100%
+  );
 }
 
 html.theme-neumorph-light .settings-search-results,
@@ -2209,10 +2238,7 @@ html.theme-neumorph-dark .settings-search-results {
   border-radius: 20px;
   border: 1px solid hsl(var(--border) / 0.9);
   background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  box-shadow:
-    var(--neumorph-shadow-hi),
-    var(--neumorph-shadow-lo),
-    var(--neumorph-inset);
+  box-shadow: var(--neumorph-shadow-hi), var(--neumorph-shadow-lo), var(--neumorph-inset);
 }
 
 html.theme-neumorph-light .settings-search-result-item,
@@ -2322,9 +2348,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
  * 发送主按钮（bg-primary）排除；停止按钮用 --stop-hover-bg
  */
 @media (hover: hover) {
-  .chat-input-glass button.agent-toolbar-icon-btn:hover:not(:disabled):not(
-      .agent-toolbar-icon-btn--active
-    ),
+  .chat-input-glass
+    button.agent-toolbar-icon-btn:hover:not(:disabled):not(.agent-toolbar-icon-btn--active),
   .chat-input-glass button[data-variant='ghost']:hover:not(:disabled),
   button.agent-toolbar-icon-btn:hover:not(:disabled):not(.agent-toolbar-icon-btn--active) {
     background: var(
@@ -2542,13 +2567,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 
 /* 滚动区域上下渐隐遮罩 */
 .mask-fade-y {
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 3%,
-    black 97%,
-    transparent 100%
-  );
+  mask-image: linear-gradient(to bottom, transparent 0%, black 3%, black 97%, transparent 100%);
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
@@ -2558,7 +2577,6 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   );
 }
 
-
 /* Shiki 代码块样式 */
 .code-block-wrapper {
   contain: content;
@@ -2566,7 +2584,9 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 
 .code-block-wrapper pre.shiki {
   /* 与 Tailwind font-mono / @pierre/diffs 默认保持一致，跨平台命中系统等宽字体 */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, 'Cascadia Code', 'JetBrains Mono', 'Fira Code',
+    Consolas, 'Courier New', monospace;
   background-color: hsl(var(--code-bg)) !important;
 }
 
@@ -2606,27 +2626,15 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 /* 浅色主题代码块使用浅底，选区保持足够的文字对比度。 */
-:root:not(.dark) :is(
-  .code-block-wrapper pre.shiki,
-  .tiptap pre
-)::selection,
-:root:not(.dark) :is(
-  .code-block-wrapper pre.shiki,
-  .tiptap pre
-) ::selection {
+:root:not(.dark) :is(.code-block-wrapper pre.shiki, .tiptap pre)::selection,
+:root:not(.dark) :is(.code-block-wrapper pre.shiki, .tiptap pre) ::selection {
   background-color: hsl(210 80% 62% / 0.32);
   color: hsl(var(--foreground)) !important;
   -webkit-text-fill-color: hsl(var(--foreground));
 }
 
-:root:not(.dark) :is(
-  .code-block-wrapper pre.shiki,
-  .tiptap pre
-)::-moz-selection,
-:root:not(.dark) :is(
-  .code-block-wrapper pre.shiki,
-  .tiptap pre
-) ::-moz-selection {
+:root:not(.dark) :is(.code-block-wrapper pre.shiki, .tiptap pre)::-moz-selection,
+:root:not(.dark) :is(.code-block-wrapper pre.shiki, .tiptap pre) ::-moz-selection {
   background-color: hsl(210 80% 62% / 0.32);
   color: hsl(var(--foreground)) !important;
 }
@@ -2640,7 +2648,9 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 /* ===== Spinner 动画（SpinKit Grid）===== */
 
 @keyframes spinner {
-  0%, 70%, 100% {
+  0%,
+  70%,
+  100% {
     transform: scale3D(1, 1, 1);
   }
   35% {
@@ -2663,19 +2673,39 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 /* 9 个 cube 的动画延迟（创建波浪效果） */
-.spinner-cube:nth-child(1) { animation-delay: 0.2s; }
-.spinner-cube:nth-child(2) { animation-delay: 0.3s; }
-.spinner-cube:nth-child(3) { animation-delay: 0.4s; }
-.spinner-cube:nth-child(4) { animation-delay: 0.1s; }
-.spinner-cube:nth-child(5) { animation-delay: 0.2s; }
-.spinner-cube:nth-child(6) { animation-delay: 0.3s; }
-.spinner-cube:nth-child(7) { animation-delay: 0s; }
-.spinner-cube:nth-child(8) { animation-delay: 0.1s; }
-.spinner-cube:nth-child(9) { animation-delay: 0.2s; }
+.spinner-cube:nth-child(1) {
+  animation-delay: 0.2s;
+}
+.spinner-cube:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.spinner-cube:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.spinner-cube:nth-child(4) {
+  animation-delay: 0.1s;
+}
+.spinner-cube:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.spinner-cube:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.spinner-cube:nth-child(7) {
+  animation-delay: 0s;
+}
+.spinner-cube:nth-child(8) {
+  animation-delay: 0.1s;
+}
+.spinner-cube:nth-child(9) {
+  animation-delay: 0.2s;
+}
 
 /* 设计原型转圈加载动画（轻拟态用） */
 @keyframes spin-ring {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tool-spinner-ring {
@@ -2694,13 +2724,13 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-width: 1.5px;
 }
 
-[data-material="soft"] .tool-spinner-ring {
+[data-material='soft'] .tool-spinner-ring {
   border-color: hsl(var(--foreground) / 0.15);
   border-top-color: var(--rail-accent, hsl(var(--primary)));
   border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
 }
 
-[data-material="soft"].dark .tool-spinner-ring {
+[data-material='soft'].dark .tool-spinner-ring {
   border-color: hsl(var(--foreground) / 0.2);
   border-top-color: var(--rail-accent, hsl(var(--primary)));
   border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
@@ -2897,8 +2927,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   background: hsl(var(--card) / var(--surface-opacity, 1));
   -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
     saturate(var(--surface-saturate, 1));
-  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
-    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px)) saturate(var(--surface-saturate, 1));
   border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   border-radius: 20px;
   isolation: isolate;
@@ -2945,11 +2974,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
       transparent 70%
     ),
     /* 右下环境光：冷色微调 */
-    radial-gradient(
-      ellipse 60% 50% at 100% 100%,
-      rgba(100, 150, 255, 0.08) 0%,
-      transparent 60%
-    );
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(100, 150, 255, 0.08) 0%, transparent 60%);
   /* 边缘折射渐隐 — Liquid Glass 核心效果 */
   mask-image: linear-gradient(
     135deg,
@@ -3015,11 +3040,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
       rgba(180, 200, 255, 0.03) 40%,
       transparent 70%
     ),
-    radial-gradient(
-      ellipse 60% 50% at 100% 100%,
-      rgba(100, 120, 200, 0.12) 0%,
-      transparent 60%
-    );
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(100, 120, 200, 0.12) 0%, transparent 60%);
 }
 
 .dark .btw-glass::after,
@@ -3065,16 +3086,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   pointer-events: none;
   z-index: -1;
   background:
-    radial-gradient(
-      ellipse 70% 50% at 15% 0%,
-      rgba(255, 255, 255, 0.25) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 95% 95%,
-      rgba(80, 120, 200, 0.05) 0%,
-      transparent 60%
-    );
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(255, 255, 255, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 95% 95%, rgba(80, 120, 200, 0.05) 0%, transparent 60%);
   mask-image: linear-gradient(
     135deg,
     rgba(0, 0, 0, 0.85) 0%,
@@ -3123,16 +3136,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 
 .dark .btw-glass--light::before {
   background:
-    radial-gradient(
-      ellipse 70% 50% at 15% 0%,
-      rgba(160, 180, 255, 0.12) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 95% 95%,
-      rgba(80, 100, 180, 0.08) 0%,
-      transparent 60%
-    );
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(160, 180, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 95% 95%, rgba(80, 100, 180, 0.08) 0%, transparent 60%);
 }
 
 .dark .btw-glass--light::after {
@@ -3153,8 +3158,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
     saturate(var(--surface-saturate, 1));
-  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
-    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px)) saturate(var(--surface-saturate, 1));
   box-shadow: var(--surface-shadow-elevated, 0 2px 8px rgba(0, 0, 0, 0.06));
 }
 
@@ -3266,7 +3270,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 .theme-forest-dark .btw-panel-glass::before,
 .theme-slate-dark .btw-panel-glass::before {
   background:
-    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.10), transparent 58%),
+    radial-gradient(ellipse 120% 70% at 50% -30%, hsl(var(--foreground) / 0.1), transparent 58%),
     radial-gradient(ellipse 90% 70% at 0% 0%, hsl(var(--foreground) / 0.08), transparent 52%),
     radial-gradient(ellipse 70% 55% at 100% 100%, hsl(var(--primary) / 0.08), transparent 55%);
 }
@@ -3342,9 +3346,15 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
  * 直接呈现选中态，避开此冲突。详见 FileBrowser.tsx 中 reveal 分支的注释。
  */
 @keyframes file-browser-flash {
-  0%   { background-color: hsl(var(--primary) / 0.18); }
-  50%  { background-color: hsl(var(--primary) / 0.22); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: hsl(var(--primary) / 0.18);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 .file-browser-row-flash {
   animation: file-browser-flash 1.2s ease-out;
@@ -3356,7 +3366,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
    - 单棵展开链路：只有最深一层 sticky 子行有阴影（父行的子项容器内含子 sticky，被规则排除）。
    - 多个平行展开（多个根目录同时打开）：每条链路各自一道阴影——这里把每棵独立树视为独立视觉单元。
    要做到全局唯一一道阴影需要 JS 监听滚动 + 展开状态动态打标记，目前不做。 */
-[data-sticky-row="true"]:not(:has(~ * [data-sticky-row="true"])) {
+[data-sticky-row='true']:not(:has(~ * [data-sticky-row='true'])) {
   box-shadow: 0 2px 4px -1px hsl(var(--foreground) / 0.08);
 }
 
@@ -3595,7 +3605,9 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 .ProseMirror pre.markdown-code-block {
   background: hsl(var(--muted) / 0.45) !important;
   color: hsl(var(--foreground)) !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace !important;
   font-size: 13px;
   line-height: 1.6;
   tab-size: 2;
@@ -3752,7 +3764,9 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 
 .ProseMirror .markdown-code-edit-layer {
   background: transparent !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace !important;
   font-size: 13px !important;
   font-variant-ligatures: none;
   font-kerning: none;
@@ -3839,8 +3853,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   border: 1px solid var(--surface-rim, hsl(var(--border) / 0.55));
   color: hsl(var(--foreground));
   backdrop-filter: blur(var(--surface-blur-chip, 0px)) saturate(var(--surface-saturate, 1));
-  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 0px))
-    saturate(var(--surface-saturate, 1));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 0px)) saturate(var(--surface-saturate, 1));
   box-shadow: var(--surface-shadow-chip, none);
   transition:
     background-color 160ms ease,
@@ -3889,7 +3902,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   border-color: hsl(var(--border) / 0.65);
   box-shadow:
     0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.22),
-    0 1px 2px hsl(var(--foreground) / 0.10),
+    0 1px 2px hsl(var(--foreground) / 0.1),
     inset 0 1px 0 hsl(var(--background) / 0.42);
 }
 
@@ -3903,7 +3916,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 .theme-forest-dark .btw-input-glass,
 .theme-slate-dark .btw-input-glass {
   background: hsl(var(--background) / 0.25);
-  border-color: hsl(var(--border) / 0.50);
+  border-color: hsl(var(--border) / 0.5);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 hsl(var(--foreground) / 0.08);
@@ -3918,7 +3931,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   box-shadow:
     0 0 0 1px rgba(var(--glass-primary-r), var(--glass-primary-g), var(--glass-primary-b), 0.34),
     0 1px 2px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 hsl(var(--foreground) / 0.10);
+    inset 0 1px 0 hsl(var(--foreground) / 0.1);
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -4060,7 +4073,9 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   inset: 0;
   border-radius: inherit;
   opacity: var(--surface-shine-opacity, 0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -4151,24 +4166,27 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   border-radius: inherit;
   pointer-events: none;
   opacity: var(--surface-shine-opacity, 0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.3) 20%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  ),
-  linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.3) 20%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.3) 20%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.3) 20%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
 }
 
 [data-material='glass'] .nav-island-glass:not(.nav-island-glass--float) {
@@ -4205,20 +4223,21 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 }
 
 .dark .nav-island-glass::after {
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.06) 20%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(255, 255, 255, 0) 100%
-  ),
-  linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.06) 20%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.06) 20%,
+      rgba(255, 255, 255, 0.02) 50%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.06) 20%,
+      rgba(255, 255, 255, 0.02) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
 }
 
 .nav-island-rail {
@@ -4378,10 +4397,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 @media (hover: hover) {
   .tool-cluster button:hover {
     color: hsl(var(--foreground));
-    background: var(
-      --hover-fill,
-      color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted)))
-    );
+    background: var(--hover-fill, color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted))));
   }
 
   .tool-cluster button.tool-cluster-accent:hover {
@@ -4391,10 +4407,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 
   .tool-cluster button.tool-cluster-icon:hover {
     color: hsl(var(--foreground) / 0.82);
-    background: var(
-      --hover-fill,
-      color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted)))
-    );
+    background: var(--hover-fill, color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--muted))));
   }
 }
 
@@ -4584,8 +4597,8 @@ html.material-frosted .tool-cluster {
   backdrop-filter: none;
 }
 
-[data-material="frosted"].dark :is(.list-well, .session-well) {
-  border: 1px solid hsl(var(--border) / 0.20);
+[data-material='frosted'].dark :is(.list-well, .session-well) {
+  border: 1px solid hsl(var(--border) / 0.2);
   box-shadow: none;
 }
 
@@ -4658,24 +4671,23 @@ html.material-frosted .tool-cluster {
 
 /* 会话状态线改为底部横条后，well 内也显示（不再隐藏） */
 
-/* 选中行：跟随主题 primary */
-:is(.list-well, .session-well) .session-row-shell.session-list-item-active,
-:is(.list-well, .session-well) .session-list-row.session-list-item-active {
+/* Well 内选中行复用统一的中性折射面，不再另造 primary 覆盖。 */
+:is(.list-well, .session-well):not(.app-spatial-session-well)
+  .session-row-shell.session-list-item-active,
+:is(.list-well, .session-well):not(.app-spatial-session-well)
+  .session-list-row.session-list-item-active {
   position: relative;
   z-index: 1;
   isolation: isolate;
   overflow: visible;
-  color: hsl(var(--primary)) !important;
+  color: var(--selection-text) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: var(--session-glass-strong) !important;
-  border: 1px solid var(--session-rim) !important;
-  border-top-color: var(--inset-hi-strong, rgba(255, 255, 255, 0.55)) !important;
-  border-right-color: var(--inset-hi, rgba(255, 255, 255, 0.45)) !important;
+  background: var(--selection-fill) !important;
+  border: 1px solid var(--selection-rim) !important;
   box-shadow:
-    0 1px 0 var(--session-inset-hi) inset,
-    3px 3px 9px var(--session-elev-dark),
-    -2px -2px 6px var(--session-elev-light) !important;
+    inset 0 1px 0 var(--surface-highlight, hsl(var(--glass-shine) / 0.12)),
+    0 4px 12px hsl(var(--foreground) / 0.05) !important;
 }
 
 :is(.list-well, .session-well) .session-list-item-active::before,
@@ -4843,9 +4855,9 @@ html.material-frosted .tool-cluster {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(var(--foreground) / 0.10) 18%,
+    hsl(var(--foreground) / 0.1) 18%,
     hsl(var(--foreground) / 0.16) 50%,
-    hsl(var(--foreground) / 0.10) 82%,
+    hsl(var(--foreground) / 0.1) 82%,
     transparent 100%
   );
 }
@@ -4983,7 +4995,7 @@ html.material-frosted .tool-cluster {
 }
 
 .right-nav-island-glass:not(.nav-island-glass--expanded) .right-panel-rail .rail-island-btn {
-  color: hsl(var(--foreground) / 0.30);
+  color: hsl(var(--foreground) / 0.3);
 }
 
 .right-panel-rail--collapsed .rail-island-btn {
@@ -4994,7 +5006,9 @@ html.material-frosted .tool-cluster {
 }
 
 .right-panel-rail--collapsed .rail-island-btn:hover,
-.right-nav-island-glass:not(.nav-island-glass--expanded):hover .right-panel-rail--collapsed .rail-island-btn:hover {
+.right-nav-island-glass:not(.nav-island-glass--expanded):hover
+  .right-panel-rail--collapsed
+  .rail-island-btn:hover {
   box-shadow: none;
 }
 
@@ -5052,17 +5066,13 @@ html.material-frosted .tool-cluster {
 }
 
 .right-panel-shadow-frame {
-  filter:
-    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))
-    drop-shadow(0 10px 28px rgba(0, 0, 0, 0.12))
-    drop-shadow(0 28px 64px rgba(0, 0, 0, 0.10));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05)) drop-shadow(0 10px 28px rgba(0, 0, 0, 0.12))
+    drop-shadow(0 28px 64px rgba(0, 0, 0, 0.1));
   transition: filter var(--right-panel-collapse-ms, 240ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark .right-panel-shadow-frame {
-  filter:
-    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.18))
-    drop-shadow(0 14px 40px rgba(0, 0, 0, 0.22))
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.18)) drop-shadow(0 14px 40px rgba(0, 0, 0, 0.22))
     drop-shadow(0 32px 76px rgba(0, 0, 0, 0.18));
 }
 
@@ -5115,11 +5125,11 @@ html.material-frosted .tool-cluster {
 }
 
 /* 轻拟态：右 sidebar 展开后左侧边缘高光 */
-[data-material="soft"] .right-panel-expand-body--visible {
+[data-material='soft'] .right-panel-expand-body--visible {
   box-shadow: 2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.35)) inset;
 }
 
-[data-material="soft"].dark .right-panel-expand-body--visible {
+[data-material='soft'].dark .right-panel-expand-body--visible {
   box-shadow: 2px 0 0 var(--inset-hi, rgba(255, 255, 255, 0.1)) inset;
 }
 
@@ -5162,10 +5172,11 @@ html.material-frosted .tool-cluster {
 }
 
 .content-main-body {
-  border-radius:
-    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
-    var(--content-plate-radius)
-    var(--content-plate-radius)
+  border-radius: var(
+      --nav-island-outer-radius-tl,
+      var(--nav-island-outer-radius, var(--content-plate-radius))
+    )
+    var(--content-plate-radius) var(--content-plate-radius)
     var(--nav-island-outer-radius, var(--content-plate-radius));
   overflow: hidden;
   flex: 1 1 auto;
@@ -5222,10 +5233,11 @@ html.material-frosted .tool-cluster {
   left: calc(-1 * var(--content-base-inset-left, 0px));
   right: calc(-1 * var(--content-base-inset-right, 0px));
   --content-plate-radius: 20px;
-  border-radius:
-    var(--nav-island-outer-radius-tl, var(--nav-island-outer-radius, var(--content-plate-radius)))
-    var(--content-plate-radius)
-    var(--content-plate-radius)
+  border-radius: var(
+      --nav-island-outer-radius-tl,
+      var(--nav-island-outer-radius, var(--content-plate-radius))
+    )
+    var(--content-plate-radius) var(--content-plate-radius)
     var(--nav-island-outer-radius, var(--content-plate-radius));
   pointer-events: none;
 }
@@ -5383,7 +5395,7 @@ html.material-frosted .tool-cluster {
 }
 
 .content-base-plate-edge--glint {
-  border-color: rgba(255, 255, 255, 0.30);
+  border-color: rgba(255, 255, 255, 0.3);
   opacity: 0.42;
 }
 
@@ -5392,8 +5404,12 @@ html.material-frosted .tool-cluster {
  */
 .content-base-plate-hairline {
   background-repeat: no-repeat;
-  background-size: 100% 1px, 100% 1px;
-  background-position: top center, bottom center;
+  background-size:
+    100% 1px,
+    100% 1px;
+  background-position:
+    top center,
+    bottom center;
   -webkit-mask-image: linear-gradient(
     90deg,
     transparent 0px,
@@ -5431,7 +5447,9 @@ html.material-frosted .tool-cluster {
     0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.dark .content-main-shell--right-rail:not(.content-main-shell--right-inset) .content-base-plate--body {
+.dark
+  .content-main-shell--right-rail:not(.content-main-shell--right-inset)
+  .content-base-plate--body {
   box-shadow:
     0 2px 10px rgba(0, 0, 0, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -5452,7 +5470,7 @@ html.material-frosted .tool-cluster {
     transparent 0px,
     transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
     hsl(var(--foreground) / 0.05) var(--content-base-inset-left, 0px),
-    hsl(var(--foreground) / 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    hsl(var(--foreground) / 0.1) calc(var(--content-base-inset-left, 0px) + 36px),
     hsl(var(--foreground) / 0.15) calc(var(--content-base-inset-left, 0px) + 64px)
   );
   --content-plate-hairline-glint: linear-gradient(
@@ -5460,7 +5478,7 @@ html.material-frosted .tool-cluster {
     transparent 0px,
     transparent max(0px, calc(var(--content-base-inset-left, 0px) - 10px)),
     rgba(255, 255, 255, 0.05) var(--content-base-inset-left, 0px),
-    rgba(255, 255, 255, 0.10) calc(var(--content-base-inset-left, 0px) + 36px),
+    rgba(255, 255, 255, 0.1) calc(var(--content-base-inset-left, 0px) + 36px),
     rgba(255, 255, 255, 0.14) calc(var(--content-base-inset-left, 0px) + 64px)
   );
 }
@@ -5498,8 +5516,7 @@ html.material-frosted .content-main-shell .content-glass {
 .nav-island-glass.nav-island-glass--float {
   -webkit-backdrop-filter: blur(var(--surface-blur-elevated, 0px))
     saturate(var(--surface-saturate, 1));
-  backdrop-filter: blur(var(--surface-blur-elevated, 0px))
-    saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur-elevated, 0px)) saturate(var(--surface-saturate, 1));
   /* Soft UI：近白卡片 + 柔和外阴影（参考左侧 pill rail） */
   background: hsl(var(--card) / var(--surface-opacity-elevated, 0.96));
   border-color: var(--surface-rim, hsl(var(--border) / 0.35));
@@ -5578,19 +5595,19 @@ html.material-frosted .content-main-shell .content-glass {
 }
 
 /* 轻拟态浮岛：透明化 ::before/::after，用 box-shadow inset 做高光 */
-[data-material="soft"] .nav-island-glass.nav-island-glass--float::before {
+[data-material='soft'] .nav-island-glass.nav-island-glass--float::before {
   background: transparent;
 }
 
-[data-material="soft"] .nav-island-glass.nav-island-glass--float::after {
+[data-material='soft'] .nav-island-glass.nav-island-glass--float::after {
   background: transparent;
 }
 
-[data-material="soft"].dark .nav-island-glass.nav-island-glass--float::before {
+[data-material='soft'].dark .nav-island-glass.nav-island-glass--float::before {
   background: transparent;
 }
 
-[data-material="soft"].dark .nav-island-glass.nav-island-glass--float::after {
+[data-material='soft'].dark .nav-island-glass.nav-island-glass--float::after {
   background: transparent;
 }
 
@@ -5617,7 +5634,7 @@ html.material-frosted .content-main-shell .content-glass {
 }
 
 /* ===== 轻拟态 nav 浮岛高光（必须在 .dark 规则后面，否则被覆盖） ===== */
-[data-material="soft"] .nav-island-glass.nav-island-glass--float {
+[data-material='soft'] .nav-island-glass.nav-island-glass--float {
   border-top: 2px solid rgba(255, 255, 255, 0.7);
   border-right: 2px solid rgba(255, 255, 255, 0.55);
   box-shadow:
@@ -5627,19 +5644,22 @@ html.material-frosted .content-main-shell .content-glass {
     0 14px 40px rgba(0, 0, 0, 0.06);
 }
 
-[data-material="soft"].dark .nav-island-glass.nav-island-glass--float {
+[data-material='soft'].dark .nav-island-glass.nav-island-glass--float {
   border-top: 2px solid rgba(255, 255, 255, 0.25);
   border-right: 2px solid rgba(255, 255, 255, 0.18);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.12),
     inset -2px 0 0 rgba(255, 255, 255, 0.08),
     0 4px 12px rgba(0, 0, 0, 0.18),
-    0 14px 40px rgba(0, 0, 0, 0.20);
+    0 14px 40px rgba(0, 0, 0, 0.2);
 }
 
 /* 右侧 rail 折叠态：覆盖上方 nav-island-glass--float 的全局外阴影（仅 normal 态） */
 .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
-.dark .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+.dark
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(
+    .nav-island-glass--expanded
+  ) {
   box-shadow: none;
 }
 
@@ -5679,7 +5699,9 @@ html.material-frosted .content-main-shell .content-glass {
   inset: 0;
   border-radius: inherit;
   opacity: var(--surface-shine-opacity, 0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -5762,7 +5784,9 @@ html.material-frosted .content-main-shell .content-glass {
   inset: 0;
   border-radius: inherit;
   opacity: var(--surface-shine-opacity, 0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -6014,7 +6038,6 @@ html:not(.dark) .rail-island-btn--active:hover {
   letter-spacing: -0.02em;
 }
 
-
 /* 侧栏状态线：置于玻璃伪元素之上（横/竖兼容） */
 .session-sidebar-accent {
   position: absolute !important;
@@ -6036,11 +6059,7 @@ html:not(.dark) .rail-island-btn--active:hover {
   -webkit-backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
   backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
   background:
-    radial-gradient(
-      ellipse 80% 60% at 18% 0%,
-      hsl(var(--glass-shine) / 0.38),
-      transparent 62%
-    ),
+    radial-gradient(ellipse 80% 60% at 18% 0%, hsl(var(--glass-shine) / 0.38), transparent 62%),
     radial-gradient(
       ellipse 70% 58% at 100% 100%,
       hsl(var(--glass-ambient) / 0.48),
@@ -6059,7 +6078,7 @@ html:not(.dark) .rail-island-btn--active:hover {
     inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.36),
     0 0 0 1px hsl(var(--glass-shine) / 0.34),
     0 12px 34px -12px rgba(0, 0, 0, 0.24),
-    0 28px 70px -24px rgba(0, 0, 0, 0.20);
+    0 28px 70px -24px rgba(0, 0, 0, 0.2);
 }
 
 .agent-model-popover[data-state='open'] {
@@ -6093,11 +6112,7 @@ html:not(.dark) .rail-island-btn--active:hover {
   -webkit-backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
   backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
   background:
-    radial-gradient(
-      ellipse 82% 62% at 18% 0%,
-      hsl(var(--glass-shine) / 0.3),
-      transparent 64%
-    ),
+    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.3), transparent 64%),
     radial-gradient(
       ellipse 68% 58% at 100% 100%,
       hsl(var(--glass-ambient) / 0.34),
@@ -6166,16 +6181,8 @@ html:not(.dark) .rail-island-btn--active:hover {
   -webkit-backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
   backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
   background:
-    radial-gradient(
-      ellipse 82% 62% at 18% 0%,
-      hsl(var(--glass-shine) / 0.12),
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 68% 58% at 100% 100%,
-      hsl(var(--primary) / 0.08),
-      transparent 64%
-    ),
+    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.12), transparent 64%),
+    radial-gradient(ellipse 68% 58% at 100% 100%, hsl(var(--primary) / 0.08), transparent 64%),
     linear-gradient(
       168deg,
       hsl(var(--popover) / 0.48) 0%,
@@ -6226,19 +6233,11 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
   -webkit-backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
   backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
   background:
-    radial-gradient(
-      ellipse 82% 62% at 18% 0%,
-      hsl(var(--glass-shine) / 0.14),
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 70% 58% at 100% 100%,
-      hsl(var(--primary) / 0.10),
-      transparent 64%
-    ),
+    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.14), transparent 62%),
+    radial-gradient(ellipse 70% 58% at 100% 100%, hsl(var(--primary) / 0.1), transparent 64%),
     linear-gradient(
       168deg,
-      hsl(var(--popover) / 0.50) 0%,
+      hsl(var(--popover) / 0.5) 0%,
       hsl(var(--background) / 0.62) 48%,
       hsl(var(--popover) / 0.46) 100%
     );
@@ -6281,7 +6280,7 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
  * button-glass - 按钮精致卡片
  */
 .button-glass {
-  background: hsl(var(--background) / 0.70);
+  background: hsl(var(--background) / 0.7);
   border: 1px solid hsl(var(--border) / 0.35);
   border-top-color: hsl(var(--foreground) / 0.05);
   transition: all 0.15s ease;
@@ -6289,7 +6288,7 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
 }
 
 .button-glass:hover {
-  background: hsl(var(--background) / 0.80);
+  background: hsl(var(--background) / 0.8);
   border-color: hsl(var(--border) / 0.45);
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06);
 }
@@ -6297,7 +6296,7 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
 .button-glass.active {
   background: hsl(var(--primary) / 0.08);
   border-color: hsl(var(--primary) / 0.25);
-  border-top-color: hsl(var(--primary) / 0.30);
+  border-top-color: hsl(var(--primary) / 0.3);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
     0 1px 2px hsl(var(--foreground) / 0.04);
@@ -6309,8 +6308,8 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
   border-color: hsl(var(--foreground) / 0.22);
   border-top-color: hsl(var(--foreground) / 0.15);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.10),
-    0 2px 6px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
@@ -6336,7 +6335,7 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
 .dark .button-glass.active {
   background: hsl(var(--primary) / 0.15);
   border-color: hsl(var(--primary) / 0.35);
-  border-top-color: hsl(var(--primary) / 0.40);
+  border-top-color: hsl(var(--primary) / 0.4);
 }
 
 /**
@@ -6348,7 +6347,7 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
     90deg,
     transparent 0%,
     hsl(var(--border) / 0.55) 20%,
-    hsl(var(--border) / 0.70) 50%,
+    hsl(var(--border) / 0.7) 50%,
     hsl(var(--border) / 0.55) 80%,
     transparent 100%
   );
@@ -6358,9 +6357,9 @@ html.theme-neumorph-dark .agent-model-list-selection--neumorph {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(var(--border) / 0.40) 20%,
+    hsl(var(--border) / 0.4) 20%,
     hsl(var(--border) / 0.55) 50%,
-    hsl(var(--border) / 0.40) 80%,
+    hsl(var(--border) / 0.4) 80%,
     transparent 100%
   );
 }
@@ -6381,7 +6380,7 @@ html.material-frosted {
   --material-blur-chip: 14px;
   --material-blur-saturate: 1.2;
   /* 边缘光泽（克制描边高光，无折射团雾） */
-  --material-edge-inset: rgba(255, 255, 255, 0.30);
+  --material-edge-inset: rgba(255, 255, 255, 0.3);
   --material-edge-ring-mid: rgba(255, 255, 255, 0.18);
   --material-edge-ring-peak: rgba(255, 255, 255, 0.34);
   --material-edge-outer: rgba(255, 255, 255, 0.06);
@@ -6422,7 +6421,9 @@ html.material-frosted .btw-glass::after {
   z-index: 0;
   display: block !important;
   opacity: 0.18;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -6443,7 +6444,9 @@ html.material-frosted .shell-glass {
 html.material-frosted
   .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded),
 html.material-frosted
-  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded):hover {
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(
+    .nav-island-glass--expanded
+  ):hover {
   box-shadow: none;
 }
 
@@ -6587,7 +6590,9 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
 
 /* 顶部高光边描 — 与 panel-glass 同款 */
 .settings-glass::after {
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -6663,7 +6668,9 @@ html.material-frosted.theme-slate-dark .nav-island-glass {
 }
 
 [data-material='glass'] .settings-glass::after {
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -6779,15 +6786,21 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 
 .plugins-panel-card {
   animation: plugins-card-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  background:
-    linear-gradient(168deg, hsl(var(--background) / 0.34) 0%, hsl(var(--card) / 0.42) 100%);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--background) / 0.34) 0%,
+    hsl(var(--card) / 0.42) 100%
+  );
   border: 1px solid hsl(var(--border) / 0.45);
   box-shadow: inset 0 1px 0 hsl(var(--glass-shine) / 0.14);
 }
 
 .plugins-panel-card--selected {
-  background:
-    linear-gradient(168deg, hsl(var(--glass-ambient) / 0.42) 0%, hsl(var(--background) / 0.58) 100%);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--glass-ambient) / 0.42) 0%,
+    hsl(var(--background) / 0.58) 100%
+  );
   border-color: hsl(var(--glass-rim) / 0.72);
   box-shadow:
     inset 0 1px 0 hsl(var(--glass-shine) / 0.34),
@@ -6864,7 +6877,9 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
@@ -6935,14 +6950,14 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
  */
 
 /* 给没有 border 的元素加上完整视觉层次（匹配设计原型 pill 样式） */
-[data-material="soft"] .pill,
-[data-material="soft"] .tab,
-[data-material="soft"] .msg-user,
-[data-material="soft"] .process-group,
-[data-material="soft"] .think-block,
-[data-material="soft"] .sidebar-archive-btn,
-[data-material="soft"] .agent-toolbar-pill-btn,
-[data-material="soft"] .header-status-chip {
+[data-material='soft'] .pill,
+[data-material='soft'] .tab,
+[data-material='soft'] .msg-user,
+[data-material='soft'] .process-group,
+[data-material='soft'] .think-block,
+[data-material='soft'] .sidebar-archive-btn,
+[data-material='soft'] .agent-toolbar-pill-btn,
+[data-material='soft'] .header-status-chip {
   background: var(--glass-soft, rgba(236, 240, 246, 0.4));
   border: 1px solid var(--rim-soft, rgba(255, 255, 255, 0.35));
   box-shadow:
@@ -6950,14 +6965,14 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
     0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-[data-material="soft"].dark .pill,
-[data-material="soft"].dark .tab,
-[data-material="soft"].dark .msg-user,
-[data-material="soft"].dark .process-group,
-[data-material="soft"].dark .think-block,
-[data-material="soft"].dark .sidebar-archive-btn,
-[data-material="soft"].dark .agent-toolbar-pill-btn,
-[data-material="soft"].dark .header-status-chip {
+[data-material='soft'].dark .pill,
+[data-material='soft'].dark .tab,
+[data-material='soft'].dark .msg-user,
+[data-material='soft'].dark .process-group,
+[data-material='soft'].dark .think-block,
+[data-material='soft'].dark .sidebar-archive-btn,
+[data-material='soft'].dark .agent-toolbar-pill-btn,
+[data-material='soft'].dark .header-status-chip {
   background: var(--glass-soft, rgba(54, 62, 78, 0.38));
   border: 1px solid var(--rim-soft, rgba(255, 255, 255, 0.1));
   box-shadow:
@@ -6969,44 +6984,44 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 /* 轻拟态输入框不透明规则统一在 packages/ui/styles/glass.css 维护，
    此处不再重复，避免 !important 冲突覆盖 neumorph 主题凸起阴影 */
 
-[data-material="soft"] :is(.list-well, .session-well),
-[data-material="soft"] .settings-card,
-[data-material="soft"] .settings-glass,
-[data-material="soft"] .app-search-shell,
-[data-material="soft"] .chat-input-glass,
-[data-material="soft"] .content-glass,
-[data-material="soft"] .session-glass-popover,
-[data-material="soft"] .session-glass-surface,
-[data-material="soft"] .session-glass-sidebar,
-[data-material="soft"] .shell-glass,
-[data-material="soft"] .neumorph-chip,
-[data-material="soft"] .neumorph-dialog-shell,
-[data-material="soft"] .neumorph-footer-bar,
-[data-material="soft"] .material-cta,
-[data-material="soft"] .material-secondary-btn,
-[data-material="soft"] .ui-switch,
-[data-material="soft"] .session-list-item-active {
+[data-material='soft'] :is(.list-well, .session-well),
+[data-material='soft'] .settings-card,
+[data-material='soft'] .settings-glass,
+[data-material='soft'] .app-search-shell,
+[data-material='soft'] .chat-input-glass,
+[data-material='soft'] .content-glass,
+[data-material='soft'] .session-glass-popover,
+[data-material='soft'] .session-glass-surface,
+[data-material='soft'] .session-glass-sidebar,
+[data-material='soft'] .shell-glass,
+[data-material='soft'] .neumorph-chip,
+[data-material='soft'] .neumorph-dialog-shell,
+[data-material='soft'] .neumorph-footer-bar,
+[data-material='soft'] .material-cta,
+[data-material='soft'] .material-secondary-btn,
+[data-material='soft'] .ui-switch,
+[data-material='soft'] .session-list-item-active {
   border-top-color: rgba(255, 255, 255, 0.6);
   border-right-color: rgba(255, 255, 255, 0.45);
 }
 
-[data-material="soft"].dark :is(.list-well, .session-well),
-[data-material="soft"].dark .settings-card,
-[data-material="soft"].dark .settings-glass,
-[data-material="soft"].dark .app-search-shell,
-[data-material="soft"].dark .chat-input-glass,
-[data-material="soft"].dark .content-glass,
-[data-material="soft"].dark .session-glass-popover,
-[data-material="soft"].dark .session-glass-surface,
-[data-material="soft"].dark .session-glass-sidebar,
-[data-material="soft"].dark .shell-glass,
-[data-material="soft"].dark .neumorph-chip,
-[data-material="soft"].dark .neumorph-dialog-shell,
-[data-material="soft"].dark .neumorph-footer-bar,
-[data-material="soft"].dark .material-cta,
-[data-material="soft"].dark .material-secondary-btn,
-[data-material="soft"].dark .ui-switch,
-[data-material="soft"].dark .session-list-item-active {
+[data-material='soft'].dark :is(.list-well, .session-well),
+[data-material='soft'].dark .settings-card,
+[data-material='soft'].dark .settings-glass,
+[data-material='soft'].dark .app-search-shell,
+[data-material='soft'].dark .chat-input-glass,
+[data-material='soft'].dark .content-glass,
+[data-material='soft'].dark .session-glass-popover,
+[data-material='soft'].dark .session-glass-surface,
+[data-material='soft'].dark .session-glass-sidebar,
+[data-material='soft'].dark .shell-glass,
+[data-material='soft'].dark .neumorph-chip,
+[data-material='soft'].dark .neumorph-dialog-shell,
+[data-material='soft'].dark .neumorph-footer-bar,
+[data-material='soft'].dark .material-cta,
+[data-material='soft'].dark .material-secondary-btn,
+[data-material='soft'].dark .ui-switch,
+[data-material='soft'].dark .session-list-item-active {
   border-top-color: rgba(255, 255, 255, 0.2);
   border-right-color: rgba(255, 255, 255, 0.14);
 }
@@ -7016,8 +7031,8 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
  * 高级材质的全局 .content-glass 规则会重新加背景/阴影，和左侧 Nav 浮岛叠出实体隔断感；
  * 这里放在材质规则后面，确保主区不重复画第二层 surface。
  */
-[data-material="glass"] .content-main-shell .content-glass,
-[data-material="soft"] .content-main-shell .content-glass {
+[data-material='glass'] .content-main-shell .content-glass,
+[data-material='soft'] .content-main-shell .content-glass {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: transparent;
@@ -7025,104 +7040,113 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   box-shadow: none;
 }
 
-[data-material="glass"] .content-main-shell .content-glass::before,
-[data-material="glass"] .content-main-shell .content-glass::after,
-[data-material="soft"] .content-main-shell .content-glass::before,
-[data-material="soft"] .content-main-shell .content-glass::after {
+[data-material='glass'] .content-main-shell .content-glass::before,
+[data-material='glass'] .content-main-shell .content-glass::after,
+[data-material='soft'] .content-main-shell .content-glass::before,
+[data-material='soft'] .content-main-shell .content-glass::after {
   display: none;
 }
 
 /* ===== 普通材质（磨砂玻璃）扁平化覆盖：移除所有模拟阴影和边缘高光 ===== */
 
-/* Session 选中态：扁平化，保留可见的颜色差异 */
-[data-material="frosted"] .session-item-selected,
-[data-material="frosted"] .session-list-item-active,
-[data-material="frosted"] .workspace-item-selected,
-[data-material="frosted"] .tab-item-selected {
+/* Session / workspace 选中态统一走中性折射面；Tab 保留主题强调。 */
+[data-material='frosted'] .session-item-selected,
+[data-material='frosted'] .session-list-item-active,
+[data-material='frosted'] .workspace-item-selected {
+  background: var(--selection-fill) !important;
+  border: 1px solid var(--selection-rim) !important;
+  box-shadow: none !important;
+}
+
+[data-material='frosted'].dark .session-item-selected,
+[data-material='frosted'].dark .session-list-item-active,
+[data-material='frosted'].dark .workspace-item-selected {
+  background: var(--selection-fill) !important;
+  border: 1px solid var(--selection-rim) !important;
+  box-shadow: none !important;
+}
+
+[data-material='frosted'] .tab-item-selected {
   background: hsl(var(--primary) / 0.08) !important;
   border: 1px solid hsl(var(--primary) / 0.18) !important;
   box-shadow: none !important;
 }
 
-/* 深色模式 Session 选中态 */
-[data-material="frosted"].dark .session-item-selected,
-[data-material="frosted"].dark .session-list-item-active,
-[data-material="frosted"].dark .workspace-item-selected,
-[data-material="frosted"].dark .tab-item-selected {
+[data-material='frosted'].dark .tab-item-selected {
   background: hsl(var(--primary) / 0.12) !important;
   border: 1px solid hsl(var(--primary) / 0.22) !important;
   box-shadow: none !important;
 }
 
 /* frosted 材质覆盖会重设完整 border；最终再次锁定原型的开放底边。 */
-[data-material="frosted"] .tab-item-selected,
-[data-material="frosted"].dark .tab-item-selected {
+[data-material='frosted'] .tab-item-selected,
+[data-material='frosted'].dark .tab-item-selected {
   border-bottom: 0 !important;
   border-radius: var(--radius-glass-tab) var(--radius-glass-tab) 0 0 !important;
 }
 
 /* list-well / session-well 下的选中态：扁平化（覆盖更具体的选择器） */
-[data-material="frosted"]
-  :is(.list-well, .session-well)
+[data-material='frosted']
+  :is(.list-well, .session-well):not(.app-spatial-session-well)
   .session-row-shell.session-list-item-active,
-[data-material="frosted"]
-  :is(.list-well, .session-well)
+[data-material='frosted']
+  :is(.list-well, .session-well):not(.app-spatial-session-well)
   .session-list-row.session-list-item-active {
-  background: hsl(var(--primary) / 0.08) !important;
-  border: 1px solid hsl(var(--primary) / 0.18) !important;
+  background: var(--selection-fill) !important;
+  border: 1px solid var(--selection-rim) !important;
   box-shadow: none !important;
 }
 
-[data-material="frosted"].dark
-  :is(.list-well, .session-well)
+[data-material='frosted'].dark
+  :is(.list-well, .session-well):not(.app-spatial-session-well)
   .session-row-shell.session-list-item-active,
-[data-material="frosted"].dark
-  :is(.list-well, .session-well)
+[data-material='frosted'].dark
+  :is(.list-well, .session-well):not(.app-spatial-session-well)
   .session-list-row.session-list-item-active {
-  background: hsl(var(--primary) / 0.12) !important;
-  border: 1px solid hsl(var(--primary) / 0.22) !important;
+  background: var(--selection-fill) !important;
+  border: 1px solid var(--selection-rim) !important;
   box-shadow: none !important;
 }
 
 /* Session 按下态：移除 inset shadow */
-[data-material="frosted"] .session-list-row:active:not(.session-list-item-active) {
+[data-material='frosted'] .session-list-row:active:not(.session-list-item-active) {
   box-shadow: none;
 }
 
 /* frosted：沿用全局圆形实心选中，仅去掉多余位移 */
-[data-material="frosted"] .rail-island-btn:hover {
+[data-material='frosted'] .rail-island-btn:hover {
   transform: none;
 }
 
-[data-material="frosted"] .rail-island-btn:active {
+[data-material='frosted'] .rail-island-btn:active {
   box-shadow: none;
 }
 
 /* 已归档按钮：扁平化，移除所有立体效果 */
-[data-material="frosted"] .sidebar-archive-btn {
+[data-material='frosted'] .sidebar-archive-btn {
   border: 1px solid hsl(var(--border) / 0.25);
   background: hsl(var(--background) / 0.32);
   box-shadow: none;
 }
 
-[data-material="frosted"] .sidebar-archive-btn:hover {
+[data-material='frosted'] .sidebar-archive-btn:hover {
   background: hsl(var(--background) / 0.48);
   transform: none;
   box-shadow: none;
 }
 
-[data-material="frosted"] .sidebar-archive-btn:active {
+[data-material='frosted'] .sidebar-archive-btn:active {
   transform: scale(0.98);
   box-shadow: none;
 }
 
-[data-material="frosted"].dark .sidebar-archive-btn {
-  border: 1px solid hsl(var(--border) / 0.20);
+[data-material='frosted'].dark .sidebar-archive-btn {
+  border: 1px solid hsl(var(--border) / 0.2);
   background: hsl(var(--background) / 0.28);
   box-shadow: none;
 }
 
-[data-material="frosted"].dark .sidebar-archive-btn:hover {
+[data-material='frosted'].dark .sidebar-archive-btn:hover {
   background: hsl(var(--background) / 0.42);
   box-shadow: none;
 }
@@ -7160,50 +7184,49 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   will-change: transform;
 }
 
-/* ===== 阻塞选中态：橙色背景 ===== */
+/* 状态色不再铺满选择面；阻塞 / 完成只由状态点、状态线与 sweep 表达。 */
 .session-list-item-active--blocked {
-  background: color-mix(in srgb, hsl(30, 80%, 50%) 18%, hsl(var(--card))) !important;
-  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 35%, hsl(var(--border))) !important;
+  background: var(--selection-fill) !important;
+  border-color: var(--selection-rim) !important;
 }
 
 .session-list-item-active--blocked .session-row-title {
-  color: hsl(30, 80%, 45%) !important;
+  color: var(--selection-text) !important;
 }
 
 .session-list-item-active--blocked .session-row-meta {
-  color: hsl(30, 75%, 55%) !important;
+  color: hsl(var(--muted-foreground) / 0.72) !important;
 }
 
 .dark .session-list-item-active--blocked {
-  background: color-mix(in srgb, hsl(30, 80%, 50%) 25%, hsl(var(--card))) !important;
-  border-color: color-mix(in srgb, hsl(30, 80%, 50%) 45%, hsl(var(--border))) !important;
+  background: var(--selection-fill) !important;
+  border-color: var(--selection-rim) !important;
 }
 
 .dark .session-list-item-active--blocked .session-row-title {
-  color: hsl(30, 75%, 65%) !important;
+  color: var(--selection-text) !important;
 }
 
-/* ===== 完成选中态：绿色背景 ===== */
 .session-list-item-active--completed {
-  background: color-mix(in srgb, hsl(142, 70%, 45%) 15%, hsl(var(--card))) !important;
-  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 30%, hsl(var(--border))) !important;
+  background: var(--selection-fill) !important;
+  border-color: var(--selection-rim) !important;
 }
 
 .session-list-item-active--completed .session-row-title {
-  color: hsl(142, 70%, 40%) !important;
+  color: var(--selection-text) !important;
 }
 
 .session-list-item-active--completed .session-row-meta {
-  color: hsl(142, 65%, 50%) !important;
+  color: hsl(var(--muted-foreground) / 0.72) !important;
 }
 
 .dark .session-list-item-active--completed {
-  background: color-mix(in srgb, hsl(142, 70%, 45%) 22%, hsl(var(--card))) !important;
-  border-color: color-mix(in srgb, hsl(142, 70%, 45%) 40%, hsl(var(--border))) !important;
+  background: var(--selection-fill) !important;
+  border-color: var(--selection-rim) !important;
 }
 
 .dark .session-list-item-active--completed .session-row-title {
-  color: hsl(142, 65%, 65%) !important;
+  color: var(--selection-text) !important;
 }
 
 /* ==================== Design Preview 放大 / 沉浸全屏 ==================== */

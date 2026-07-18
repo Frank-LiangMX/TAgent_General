@@ -9,118 +9,31 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
-import { Settings, Loader2, Sparkles, PencilRuler, Building2 } from 'lucide-react'
+import {
+  BadgeCheck,
+  Blocks,
+  BrainCircuit,
+  Building2,
+  Clock3,
+  Columns3,
+  FilePenLine,
+  FolderOpen,
+  Loader2,
+  MessageCircle,
+  Settings,
+  Workflow,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
-/** 设计原型自定义 SVG 图标 */
-const IconChat = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path
-      d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v6A2.5 2.5 0 0 1 16.5 16H10l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 13.5v-6Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
-
-const IconKanban = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <rect x="4" y="5" width="5" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="10.5" y="5" width="5" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="17" y="5" width="3" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-)
-
-const IconClock = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M12 8v4l2.5 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-)
-
-const IconDraft = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path
-      d="M7 19V8.5a1 1 0 0 1 1-1h5.5L18 12v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    />
-    <path d="M13.5 7.5V12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-)
-
-const IconMemory = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path
-      d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-    />
-    <path
-      d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-  </svg>
-)
-
-const IconAssets = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path
-      d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
-
-const IconReview = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M8 12l3 3 5-6"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
-
-const IconPipeline = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="18" cy="6" r="2" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="12" cy="18" r="2" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M6 8v4l6 4M18 8v4l-6 4"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-)
-
-const IconSkills = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <rect x="4" y="4" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="14" y="4" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="4" y="14" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="14" y="14" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-)
+import { deriveRailSelection } from './shell-layout'
 
 import {
   topLevelModeAtom,
   activeRailItemAtom,
   appModeAtom,
+  navigationSidebarOpenAtom,
   type GeneralRailItem,
   type TARailItem,
   type TopLevelMode,
@@ -144,25 +57,25 @@ const GENERAL_RAIL_ITEMS: Array<{
   {
     id: 'sessions',
     label: '会话',
-    icon: <IconChat />,
+    icon: <MessageCircle strokeWidth={1.5} />,
     description: 'Chat / Agent 会话列表',
   },
   {
     id: 'kanban',
     label: '看板',
-    icon: <IconKanban />,
+    icon: <Columns3 strokeWidth={1.5} />,
     description: '多 Agent 任务编排看板（全局视图）',
   },
   {
     id: 'automation',
     label: '自动任务',
-    icon: <IconClock />,
+    icon: <Clock3 strokeWidth={1.5} />,
     description: '定时任务与调度',
   },
   {
     id: 'memory',
     label: '记忆',
-    icon: <IconMemory />,
+    icon: <BrainCircuit strokeWidth={1.5} />,
     description: 'L0-L5 记忆层监控',
   },
 ]
@@ -177,13 +90,13 @@ const COMMON_TOP_RAIL_ITEMS: Array<{
   {
     id: 'draft',
     label: '草稿',
-    icon: <IconDraft />,
+    icon: <FilePenLine strokeWidth={1.5} />,
     description: '需求草稿',
   },
   {
     id: 'skills',
     label: '插件',
-    icon: <IconSkills />,
+    icon: <Blocks strokeWidth={1.5} />,
     description: '工作区插件管理',
   },
 ]
@@ -198,19 +111,39 @@ const TA_RAIL_ITEMS: Array<{
   {
     id: 'sessions',
     label: '会话',
-    icon: <IconChat />,
+    icon: <MessageCircle strokeWidth={1.5} />,
     description: 'TA 会话（与通用模式数据隔离）',
   },
   {
     id: 'kanban',
     label: '看板',
-    icon: <IconKanban />,
+    icon: <Columns3 strokeWidth={1.5} />,
     description: '多 Agent 任务编排看板（批量资产流水线）',
   },
-  { id: 'assets', label: '资产库', icon: <IconAssets />, description: '资产库管理' },
-  { id: 'review', label: '审核', icon: <IconReview />, description: '审核队列' },
-  { id: 'pipeline', label: '流水线', icon: <IconPipeline />, description: '流水线管理' },
-  { id: 'memory', label: '记忆', icon: <IconMemory />, description: '记忆监控' },
+  {
+    id: 'assets',
+    label: '资产库',
+    icon: <FolderOpen strokeWidth={1.5} />,
+    description: '资产库管理',
+  },
+  {
+    id: 'review',
+    label: '审核',
+    icon: <BadgeCheck strokeWidth={1.5} />,
+    description: '审核队列',
+  },
+  {
+    id: 'pipeline',
+    label: '流水线',
+    icon: <Workflow strokeWidth={1.5} />,
+    description: '流水线管理',
+  },
+  {
+    id: 'memory',
+    label: '记忆',
+    icon: <BrainCircuit strokeWidth={1.5} />,
+    description: '记忆监控',
+  },
   { id: 'config', label: '配置', icon: <Settings size={18} />, description: 'TA 配置' },
 ]
 
@@ -229,9 +162,10 @@ export interface FunctionalRailProps {
   children?: never
 }
 
-export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement {
+export function FunctionalRail(): React.ReactElement {
   const [topLevelMode, setTopLevelMode] = useAtom(topLevelModeAtom)
   const [activeRailItem, setActiveRailItem] = useAtom(activeRailItemAtom)
+  const [sidebarOpen, setSidebarOpen] = useAtom(navigationSidebarOpenAtom)
   const setAppMode = useSetAtom(appModeAtom)
   const store = useStore()
 
@@ -306,10 +240,16 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
   /** 处理 Rail 按钮点击：草稿按钮仅切换侧边栏面板，不自动创建草稿 */
   const handleRailItemClick = React.useCallback(
     (item: { id: string }) => {
+      const nextSelection = deriveRailSelection(
+        { activeRailItem, sidebarOpen },
+        item.id as GeneralRailItem | TARailItem
+      )
+      setSidebarOpen(nextSelection.sidebarOpen)
+
       if (item.id === 'draft') {
-        setActiveRailItem('draft')
+        setActiveRailItem(nextSelection.activeRailItem)
       } else {
-        setActiveRailItem(item.id as GeneralRailItem | TARailItem)
+        setActiveRailItem(nextSelection.activeRailItem)
         // 如果当前在草稿模式，切回 agent 并同步 currentAgentSessionId
         if (store.get(appModeAtom) === 'draft') {
           setAppMode('agent')
@@ -326,7 +266,7 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
         }
       }
     },
-    [store, setActiveRailItem, setAppMode]
+    [activeRailItem, sidebarOpen, store, setActiveRailItem, setAppMode, setSidebarOpen]
   )
 
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS
@@ -335,192 +275,211 @@ export function FunctionalRail(_props: FunctionalRailProps): React.ReactElement 
     {
       value: 'general' as TopLevelMode,
       label: '通用',
-      icon: <Sparkles strokeWidth={1.5} style={{ width: 15, height: 15 }} />,
+      icon: <span className="app-rail-mode-label">G</span>,
       description: 'Chat / Agent / 需求草稿',
     },
     {
       value: 'ta' as TopLevelMode,
       label: 'TA',
-      icon: <PencilRuler strokeWidth={1.5} style={{ width: 15, height: 15 }} />,
+      icon: <span className="app-rail-mode-label app-rail-mode-label--ta">TA</span>,
       description: '技术美术工具',
     },
   ]
 
   return (
-    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center px-1.5 pt-2 pb-3 shrink-0">
-      <div className="w-full flex flex-col items-center">
-        <div className="relative flex flex-col items-center gap-2 w-full">
-          {COMMON_TOP_RAIL_ITEMS.map((item) => {
-            const isActive = activeRailItem === item.id
+    <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center shrink-0">
+      <div className="app-rail-island app-rail-island--primary">
+        <div className="app-rail-brand" aria-hidden="true">
+          T
+        </div>
+        <div className="w-full flex flex-col items-center">
+          <div className="relative flex flex-col items-center gap-1.5 w-full">
+            {COMMON_TOP_RAIL_ITEMS.map((item) => {
+              const isActive = activeRailItem === item.id
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-rail-id={item.id}
+                      onClick={() => handleRailItemClick(item)}
+                      aria-label={item.label}
+                      aria-controls="app-navigation-sidebar"
+                      aria-expanded={isActive ? sidebarOpen : undefined}
+                      className={cn(
+                        'rail-island-btn size-9 flex items-center justify-center rounded-xl titlebar-no-drag relative z-[2]',
+                        isActive && 'rail-island-btn--active'
+                      )}
+                    >
+                      {item.icon}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <div className="text-xs">
+                      <div className="font-medium">{item.label}</div>
+                      <div className="text-muted-foreground">{item.description}</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+
+            <div className="glass-divider my-1 w-5 shrink-0 relative z-[2] opacity-60" />
+
+            {railItems.map((item) => {
+              const isActive = activeRailItem === item.id
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-rail-id={item.id}
+                      onClick={() => handleRailItemClick(item)}
+                      aria-label={item.label}
+                      aria-controls="app-navigation-sidebar"
+                      aria-expanded={isActive ? sidebarOpen : undefined}
+                      className={cn(
+                        'rail-island-btn size-9 flex items-center justify-center rounded-xl titlebar-no-drag relative z-[2]',
+                        isActive && 'rail-island-btn--active'
+                      )}
+                    >
+                      {item.icon}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <div className="text-xs">
+                      <div className="font-medium">{item.label}</div>
+                      <div className="text-muted-foreground">{item.description}</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0" />
+
+      <div className="app-rail-island app-rail-island--system">
+        <div className="glass-divider mb-1 w-5 shrink-0 opacity-60" />
+
+        <div className="flex flex-col items-center gap-1.5 w-full">
+          {modeButtons.map(({ value, label, icon, description }) => {
+            const isActive = topLevelMode === value
+            const taskCount =
+              value === 'general' ? (modeStatus?.generalTasks ?? 0) : (modeStatus?.taTasks ?? 0)
+            const isPaused =
+              value === 'general'
+                ? (modeStatus?.generalPaused ?? false)
+                : (modeStatus?.taPaused ?? false)
+
             return (
-              <Tooltip key={item.id}>
+              <Tooltip key={value}>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    data-rail-id={item.id}
-                    onClick={() => handleRailItemClick(item)}
+                    onClick={() => handleModeSwitch(value)}
+                    disabled={isSwitching}
+                    aria-label={label}
                     className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag relative z-[2]',
-                      isActive && 'rail-island-btn--active'
+                      'rail-island-btn relative size-9 flex items-center justify-center rounded-xl titlebar-no-drag',
+                      isActive && 'rail-island-btn--active',
+                      isSwitching && 'opacity-50 cursor-not-allowed'
                     )}
                   >
-                    {item.icon}
+                    {isSwitching && isActive ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      icon
+                    )}
+                    {taskCount > 0 && !isActive && (
+                      <span className="absolute -top-0.5 -right-0.5 px-1 py-0.5 rounded-full bg-amber-500/20 text-amber-600 text-[9px] font-semibold min-w-[14px] text-center">
+                        {taskCount}
+                      </span>
+                    )}
+                    {isPaused && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                    )}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <div className="text-xs">
-                    <div className="font-medium">{item.label}</div>
-                    <div className="text-muted-foreground">{item.description}</div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            )
-          })}
-
-          <div className="glass-divider my-1 w-6 shrink-0 relative z-[2] opacity-60" />
-
-          {railItems.map((item) => {
-            const isActive = activeRailItem === item.id
-            return (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    data-rail-id={item.id}
-                    onClick={() => handleRailItemClick(item)}
-                    className={cn(
-                      'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag relative z-[2]',
-                      isActive && 'rail-island-btn--active'
-                    )}
-                  >
-                    {item.icon}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <div className="text-xs">
-                    <div className="font-medium">{item.label}</div>
-                    <div className="text-muted-foreground">{item.description}</div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-muted-foreground">{description}</div>
                   </div>
                 </TooltipContent>
               </Tooltip>
             )
           })}
         </div>
-      </div>
 
-      <div className="flex-1 min-h-0" />
+        <div className="glass-divider my-1 w-5 shrink-0 opacity-60" />
 
-      <div className="glass-divider my-2 w-6 shrink-0 opacity-60" />
-
-      <div className="flex flex-col items-center gap-2 w-full">
-        {modeButtons.map(({ value, label, icon, description }) => {
-          const isActive = topLevelMode === value
-          const taskCount =
-            value === 'general' ? (modeStatus?.generalTasks ?? 0) : (modeStatus?.taTasks ?? 0)
-          const isPaused =
-            value === 'general'
-              ? (modeStatus?.generalPaused ?? false)
-              : (modeStatus?.taPaused ?? false)
-
-          return (
-            <Tooltip key={value}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => handleModeSwitch(value)}
-                  disabled={isSwitching}
-                  className={cn(
-                    'rail-island-btn relative size-10 flex items-center justify-center rounded-full titlebar-no-drag',
-                    isActive && 'rail-island-btn--active',
-                    isSwitching && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  {isSwitching && isActive ? <Loader2 size={18} className="animate-spin" /> : icon}
-                  {taskCount > 0 && !isActive && (
-                    <span className="absolute -top-0.5 -right-0.5 px-1 py-0.5 rounded-full bg-amber-500/20 text-amber-600 text-[9px] font-semibold min-w-[14px] text-center">
-                      {taskCount}
-                    </span>
-                  )}
-                  {isPaused && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 ring-2 ring-background" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <div className="text-xs">
-                  <div className="font-medium">{label}</div>
-                  <div className="text-muted-foreground">{description}</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          )
-        })}
-      </div>
-
-      <div className="glass-divider my-2 w-6 shrink-0 opacity-60" />
-
-      {/* Office 全局模式切换 */}
-      <div className="flex flex-col items-center gap-2 w-full">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => setGlobalOfficeMode(!globalOfficeMode)}
-              className={cn(
-                'rail-island-btn size-10 flex items-center justify-center rounded-full titlebar-no-drag',
-                globalOfficeMode && 'rail-island-btn--active'
-              )}
-            >
-              <Building2 size={18} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <div className="text-xs">
-              <div className="font-medium">AI Office</div>
-              <div className="text-muted-foreground">
-                {globalOfficeMode ? '返回经典工作台' : '进入沉浸式办公室'}
-              </div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      <div className="pt-3 pb-0.5 flex flex-col items-center gap-2">
-        {/* 更新就绪按钮：下载完成后显示 */}
-        {updateReadyVersion && (
+        {/* Office 全局模式切换 */}
+        <div className="flex flex-col items-center gap-1.5 w-full">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => window.electronAPI.updater?.quitAndInstall()}
-                className="flex items-center justify-center rounded-full bg-primary/15 text-primary px-2.5 py-1 text-[10px] font-semibold leading-none hover:bg-primary/25 transition-colors titlebar-no-drag"
+                onClick={() => setGlobalOfficeMode(!globalOfficeMode)}
+                aria-label="AI Office"
+                className={cn(
+                  'rail-island-btn size-9 flex items-center justify-center rounded-xl titlebar-no-drag',
+                  globalOfficeMode && 'rail-island-btn--active'
+                )}
               >
-                更新
+                <Building2 size={18} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              v{updateReadyVersion} 已下载，重启以应用更新
+              <div className="text-xs">
+                <div className="font-medium">AI Office</div>
+                <div className="text-muted-foreground">
+                  {globalOfficeMode ? '返回经典工作台' : '进入沉浸式办公室'}
+                </div>
+              </div>
             </TooltipContent>
           </Tooltip>
-        )}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="打开设置"
-              onClick={() => setSettingsOpen(true)}
-              className="rail-avatar-btn relative size-10 flex items-center justify-center rounded-full titlebar-no-drag"
-            >
-              <span className="rail-avatar-letter">
-                {userProfile.userName?.charAt(0)?.toUpperCase() || 'U'}
-              </span>
-              {(hasUpdate || hasEnvironmentIssues) && (
-                <span className="absolute top-0.5 right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-background" />
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">设置</TooltipContent>
-        </Tooltip>
+        </div>
+
+        <div className="pt-1.5 flex flex-col items-center gap-1.5">
+          {/* 更新就绪按钮：下载完成后显示 */}
+          {updateReadyVersion && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => window.electronAPI.updater?.quitAndInstall()}
+                  className="flex items-center justify-center rounded-full bg-primary/15 text-primary px-2.5 py-1 text-[10px] font-semibold leading-none hover:bg-primary/25 transition-colors titlebar-no-drag"
+                >
+                  更新
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                v{updateReadyVersion} 已下载，重启以应用更新
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="打开设置"
+                onClick={() => setSettingsOpen(true)}
+                className="rail-avatar-btn relative size-9 flex items-center justify-center rounded-full titlebar-no-drag"
+              >
+                <span className="rail-avatar-letter">
+                  {userProfile.userName?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+                {(hasUpdate || hasEnvironmentIssues) && (
+                  <span className="absolute top-0.5 right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-background" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">设置</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </div>
   )

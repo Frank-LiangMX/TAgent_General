@@ -7,9 +7,11 @@
 declare const __APP_VERSION__: string
 
 import { diffCapabilities, isAgentCompatibleProvider } from '@tagent/shared'
+import { MaterialProvider } from '@tagent/ui'
 import { useSetAtom, useAtomValue, useStore } from 'jotai'
 import React, { useEffect, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
+import { toast } from 'sonner'
 
 import type {
   FeishuBotBridgeState,
@@ -67,7 +69,6 @@ import {
 } from './atoms/theme'
 import { stickyUserMessageEnabledAtom, initializeUiPreferences } from './atoms/ui-preferences'
 import { updateStatusAtom, initializeUpdater } from './atoms/updater'
-import { toast } from 'sonner'
 import { wpsBridgeStateAtom } from './atoms/wps-atoms'
 import { UpdateDialog } from './components/settings/UpdateDialog'
 import { GlobalShortcuts } from './components/shortcuts/GlobalShortcuts'
@@ -80,6 +81,7 @@ import { showCapabilityChangeToasts } from './lib/capabilities-toast'
 import type { TabItem } from './atoms/tab-atoms'
 
 import './styles/globals.css'
+import './components/app-shell/app-shell.css'
 import 'katex/dist/katex.min.css'
 
 // ===== 窗口类型检测 =====
@@ -93,6 +95,16 @@ const isMainWindow = !isQuickTaskWindow && !isVoiceDictationWindow && !isDetache
 document.documentElement.classList.toggle('tagent-app-shell-window', isMainWindow)
 
 /**
+ * 将 Electron 的派生材质状态桥接到共享 UI 包。
+ * DOM 属性仍由 applyAdvancedMaterialToDOM 维护，Provider 只服务 React Renderer。
+ */
+function MaterialRuntimeProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
+  const materialMode = useAtomValue(advancedMaterialModeAtom)
+
+  return <MaterialProvider value={materialMode}>{children}</MaterialProvider>
+}
+
+/**
  * 主题初始化组件
  *
  * 负责从主进程加载主题设置、监听系统主题变化、
@@ -102,7 +114,6 @@ function ThemeInitializer(): null {
   const setThemeMode = useSetAtom(themeModeAtom)
   const setThemeStyle = useSetAtom(themeStyleAtom)
   const setSystemIsDark = useSetAtom(systemIsDarkAtom)
-  const advancedMaterialMode = useAtomValue(advancedMaterialModeAtom)
   const themeMode = useAtomValue(themeModeAtom)
   const themeStyle = useAtomValue(themeStyleAtom)
   const systemIsDark = useAtomValue(systemIsDarkAtom)
@@ -143,8 +154,7 @@ function ThemeInitializer(): null {
 
   useEffect(() => {
     applyThemeToDOM(themeMode, themeStyle, systemIsDark)
-    applyAdvancedMaterialToDOM(advancedMaterialMode)
-  }, [themeSignature, advancedMaterialMode, themeMode, themeStyle, systemIsDark])
+  }, [themeSignature, themeMode, themeStyle, systemIsDark])
 
   return null
 }
@@ -514,11 +524,29 @@ function MarkdownFontSizeInitializer(): null {
 function AdvancedMaterialInitializer(): null {
   const setAdvancedMaterialEnabled = useSetAtom(advancedMaterialEnabledAtom)
   const setAdvancedMaterialOnMode = useSetAtom(advancedMaterialOnModeAtom)
+  const advancedMaterialMode = useAtomValue(advancedMaterialModeAtom)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
     // mode 由 enabled + onMode 派生 atom 计算，无需 setMode
-    void initializeAdvancedMaterial(setAdvancedMaterialEnabled, setAdvancedMaterialOnMode)
+    let active = true
+    void initializeAdvancedMaterial(setAdvancedMaterialEnabled, setAdvancedMaterialOnMode).then(
+      () => {
+        if (active) initializedRef.current = true
+      }
+    )
+
+    return () => {
+      active = false
+    }
   }, [setAdvancedMaterialEnabled, setAdvancedMaterialOnMode])
+
+  // 初始化函数负责第一次写入；之后 atom 变化由这里保持 DOM 同步。
+  useEffect(() => {
+    if (initializedRef.current) {
+      applyAdvancedMaterialToDOM(advancedMaterialMode)
+    }
+  }, [advancedMaterialMode])
 
   return null
 }
@@ -872,8 +900,11 @@ if (isQuickTaskWindow) {
   import('./components/quick-task/QuickTaskApp').then(({ QuickTaskApp }) => {
     ReactDOM.createRoot(document.getElementById('root')!).render(
       <React.StrictMode>
-        <ThemeInitializer />
-        <QuickTaskApp />
+        <MaterialRuntimeProvider>
+          <ThemeInitializer />
+          <AdvancedMaterialInitializer />
+          <QuickTaskApp />
+        </MaterialRuntimeProvider>
       </React.StrictMode>
     )
   })
@@ -881,9 +912,12 @@ if (isQuickTaskWindow) {
   import('./components/voice-dictation/VoiceDictationApp').then(({ VoiceDictationApp }) => {
     ReactDOM.createRoot(document.getElementById('root')!).render(
       <React.StrictMode>
-        <ThemeInitializer />
-        <VoiceDictationApp />
-        <Toaster position="top-right" />
+        <MaterialRuntimeProvider>
+          <ThemeInitializer />
+          <AdvancedMaterialInitializer />
+          <VoiceDictationApp />
+          <Toaster position="top-right" />
+        </MaterialRuntimeProvider>
       </React.StrictMode>
     )
   })
@@ -891,12 +925,14 @@ if (isQuickTaskWindow) {
   import('./components/diff/DetachedPreviewApp').then(({ DetachedPreviewApp }) => {
     ReactDOM.createRoot(document.getElementById('root')!).render(
       <React.StrictMode>
-        <ThemeInitializer />
-        <MarkdownFontSizeInitializer />
-        <AdvancedMaterialInitializer />
-        <TAgentBrandInitializer />
-        <DetachedPreviewApp />
-        <Toaster position="top-right" />
+        <MaterialRuntimeProvider>
+          <ThemeInitializer />
+          <MarkdownFontSizeInitializer />
+          <AdvancedMaterialInitializer />
+          <TAgentBrandInitializer />
+          <DetachedPreviewApp />
+          <Toaster position="top-right" />
+        </MaterialRuntimeProvider>
       </React.StrictMode>
     )
   })
@@ -904,27 +940,29 @@ if (isQuickTaskWindow) {
   // ===== 主窗口：完整渲染 =====
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <ThemeInitializer />
-      <AgentSettingsInitializer />
-      <NotificationsInitializer />
-      <DockBadgeInitializer />
-      <UiPreferencesInitializer />
-      <MarkdownFontSizeInitializer />
-      <AdvancedMaterialInitializer />
-      <TAgentBrandInitializer />
-      <AgentListenersInitializer />
-      <AskListenersInitializer />
-      <UpdaterInitializer />
-      <FeishuInitializer />
-      <DingTalkInitializer />
-      <WpsInitializer />
-      <TabStatePersistenceInitializer />
-      <DraftPersistence />
-      <GlobalShortcuts />
-      <TabSwitcher />
-      <App />
-      <UpdateDialog />
-      <Toaster position="top-right" />
+      <MaterialRuntimeProvider>
+        <ThemeInitializer />
+        <AgentSettingsInitializer />
+        <NotificationsInitializer />
+        <DockBadgeInitializer />
+        <UiPreferencesInitializer />
+        <MarkdownFontSizeInitializer />
+        <AdvancedMaterialInitializer />
+        <TAgentBrandInitializer />
+        <AgentListenersInitializer />
+        <AskListenersInitializer />
+        <UpdaterInitializer />
+        <FeishuInitializer />
+        <DingTalkInitializer />
+        <WpsInitializer />
+        <TabStatePersistenceInitializer />
+        <DraftPersistence />
+        <GlobalShortcuts />
+        <TabSwitcher />
+        <App />
+        <UpdateDialog />
+        <Toaster position="top-right" />
+      </MaterialRuntimeProvider>
     </React.StrictMode>
   )
 }

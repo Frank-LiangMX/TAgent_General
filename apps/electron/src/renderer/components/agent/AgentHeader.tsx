@@ -6,7 +6,9 @@
 
 import { TAGENT_PERMISSION_MODE_CONFIG } from '@tagent/shared'
 import { useAtomValue } from 'jotai'
+import { Cpu, ShieldCheck } from 'lucide-react'
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { getToolDisplayName } from './tool-utils'
@@ -24,7 +26,7 @@ import {
 import { channelsAtom } from '@/atoms/model-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { resolveModelDisplayName } from '@/lib/model-logo'
-import { cn } from '@/lib/utils'
+import { useWorkspaceHeaderSlot } from '@/components/tabs/workspace-header-slot'
 
 /** AgentHeader 属性接口 */
 interface AgentHeaderProps {
@@ -33,34 +35,34 @@ interface AgentHeaderProps {
   rightSlot?: React.ReactNode
 }
 
-function HeaderStatusChip({
-  children,
-  tone = 'neutral',
+function SessionStatusItem({
+  label,
+  kind,
+  icon,
+  tone,
 }: {
-  children: React.ReactNode
+  label: string
+  kind: 'model' | 'permission' | 'activity'
+  icon?: React.ReactNode
   tone?: 'neutral' | 'running' | 'blocked' | 'completed'
 }): React.ReactElement {
-  const isStringChild = typeof children === 'string'
-  const chipClassName = cn(
-    'header-status-chip inline-flex h-5 max-w-[240px] items-center rounded-md border px-1.5 text-[11px] leading-none truncate',
-    tone === 'neutral' && 'border-border/60 bg-muted/30 text-foreground/50',
-    tone === 'running' && 'border-blue-500/20 bg-blue-500/[0.08] text-blue-600 dark:text-blue-300',
-    tone === 'blocked' &&
-      'border-orange-500/25 bg-orange-500/[0.09] text-orange-600 dark:text-orange-300',
-    tone === 'completed' &&
-      'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300'
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`agent-session-status__segment agent-session-status__${kind}`}
+          data-tone={tone}
+          aria-label={label}
+          aria-live={kind === 'activity' ? 'polite' : undefined}
+        >
+          {kind === 'activity' && <span className="agent-session-status__dot" aria-hidden />}
+          {icon}
+          <span className="agent-session-status__label">{label}</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
-  if (isStringChild) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className={chipClassName}>{children}</span>
-        </TooltipTrigger>
-        <TooltipContent>{children as string}</TooltipContent>
-      </Tooltip>
-    )
-  }
-  return <span className={chipClassName}>{children}</span>
 }
 
 function getLatestRunningTool(toolActivities: ToolActivity[] | undefined): ToolActivity | null {
@@ -105,6 +107,7 @@ export const AgentHeader = React.memo(function AgentHeader({
   const permissionModeMap = useAtomValue(agentPermissionModeMapAtom)
   const persistedPermissionMode = useAtomValue(sessionPersistedPermissionModeAtom(sessionId))
   const defaultPermissionMode = useAtomValue(agentDefaultPermissionModeAtom)
+  const workspaceHeaderSlot = useWorkspaceHeaderSlot()
 
   if (!session) return null
 
@@ -117,18 +120,24 @@ export const AgentHeader = React.memo(function AgentHeader({
   const statusLabel = getStatusLabel(status, runningTool)
   const statusTone = getStatusTone(status)
 
-  return (
-    <div className="relative z-[51] flex h-[36px] items-center gap-2 px-4">
-      <div className="flex flex-1 min-w-0 items-center">
-        <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-          <HeaderStatusChip>{modelLabel}</HeaderStatusChip>
-          <HeaderStatusChip>{permissionLabel}</HeaderStatusChip>
-          <HeaderStatusChip tone={statusTone}>{statusLabel}</HeaderStatusChip>
-        </div>
+  const header = (
+    <div className="agent-session-header">
+      <div className="agent-session-status" role="group" aria-label="当前会话状态">
+        <SessionStatusItem
+          kind="model"
+          label={modelLabel}
+          icon={<Cpu className="agent-session-status__icon" aria-hidden />}
+        />
+        <SessionStatusItem
+          kind="permission"
+          label={permissionLabel}
+          icon={<ShieldCheck className="agent-session-status__icon" aria-hidden />}
+        />
+        <SessionStatusItem kind="activity" label={statusLabel} tone={statusTone} />
+        {rightSlot && <div className="agent-session-status__actions">{rightSlot}</div>}
       </div>
-      {rightSlot && (
-        <div className="relative z-10 flex shrink-0 items-center gap-2">{rightSlot}</div>
-      )}
     </div>
   )
+
+  return workspaceHeaderSlot ? createPortal(header, workspaceHeaderSlot) : header
 })

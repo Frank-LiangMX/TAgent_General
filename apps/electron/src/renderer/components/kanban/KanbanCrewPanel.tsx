@@ -230,10 +230,10 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
 
   return (
     <div
-      className="h-full flex flex-col min-h-0 bg-background/40"
+      className="kanban-crew-panel h-full flex flex-col min-h-0 bg-background/40"
       style={width ? { width } : undefined}
     >
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0">
+      <div className="kanban-crew-panel-header flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0">
         <Users className="size-3.5 text-foreground/60" />
         <span className="text-xs font-medium text-foreground truncate">
           {board.title ?? board.rootGoal.slice(0, 40)}

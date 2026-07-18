@@ -52,23 +52,12 @@ function isAdvancedMaterialOnMode(value: unknown): value is AdvancedMaterialOnMo
  * - 开关关闭 → 强制 frosted
  * - 开关打开 → 使用用户选择的模式（glass 或 soft）
  */
-function resolveAdvancedMaterialState(settings: Partial<AppSettings>): {
+export function resolveAdvancedMaterialState(settings: Partial<AppSettings>): {
   enabled: boolean
   onMode: AdvancedMaterialOnMode
   mode: AdvancedMaterialMode
 } {
-  const enabled =
-    typeof settings.advancedMaterialEnabled === 'boolean'
-      ? settings.advancedMaterialEnabled
-      : DEFAULT_ADVANCED_MATERIAL_ENABLED
-
-  // 开关关闭时，强制磨砂玻璃
-  if (!enabled) {
-    return { enabled: false, onMode: 'glass', mode: 'frosted' }
-  }
-
-  // 开关打开时，解析用户选择的模式
-  let onMode: AdvancedMaterialOnMode = 'glass'
+  let onMode: AdvancedMaterialOnMode = DEFAULT_ADVANCED_MATERIAL_ON_MODE
 
   // 优先使用新的 advancedMaterialOnMode 字段
   if (isAdvancedMaterialOnMode(settings.advancedMaterialOnMode)) {
@@ -85,7 +74,19 @@ function resolveAdvancedMaterialState(settings: Partial<AppSettings>): {
     onMode = 'soft'
   }
 
-  return { enabled: true, onMode, mode: onMode }
+  // 显式开关优先；缺失时才从旧字段推导，确保老设置文件无损迁移。
+  let enabled = DEFAULT_ADVANCED_MATERIAL_ENABLED
+  if (typeof settings.advancedMaterialEnabled === 'boolean') {
+    enabled = settings.advancedMaterialEnabled
+  } else if (isAdvancedMaterialOnMode(settings.advancedMaterialOnMode)) {
+    enabled = true
+  } else if (isAdvancedMaterialMode(settings.advancedMaterialMode)) {
+    enabled = settings.advancedMaterialMode !== 'frosted'
+  } else if (settings.themeStyle === 'neumorph-light' || settings.themeStyle === 'neumorph-dark') {
+    enabled = true
+  }
+
+  return { enabled, onMode, mode: enabled ? onMode : 'frosted' }
 }
 
 const MATERIAL_CACHE_KEY = 'tagent-material-mode'

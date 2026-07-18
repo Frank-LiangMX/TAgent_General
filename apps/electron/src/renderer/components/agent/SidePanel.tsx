@@ -346,7 +346,7 @@ export function SidePanel({
   return (
     <div
       className={cn(
-        'relative z-0 h-full flex-shrink-0 overflow-hidden',
+        'side-panel-root relative z-0 h-full flex-shrink-0 overflow-hidden',
         isWindows ? 'pt-[28px]' : 'pt-0'
       )}
     >

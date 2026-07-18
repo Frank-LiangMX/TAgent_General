@@ -25,7 +25,15 @@ export const fontSize = {}
 
 export const motion = {
   'ease-island': 'var(--motion-ease-island)',
+  'ease-enter': 'var(--motion-ease-enter)',
+  'ease-exit': 'var(--motion-ease-exit)',
+  'ease-spatial': 'var(--motion-ease-spatial)',
+  'spring-soft': 'var(--motion-spring-soft)',
+  'duration-instant': 'var(--motion-duration-instant)',
   'duration-fast': 'var(--motion-duration-fast)',
+  'duration-control': 'var(--motion-duration-control)',
+  'duration-panel': 'var(--motion-duration-panel)',
+  'duration-scene': 'var(--motion-duration-scene)',
   'duration-normal': 'var(--motion-duration-normal)',
   'duration-slow': 'var(--motion-duration-slow)',
 }

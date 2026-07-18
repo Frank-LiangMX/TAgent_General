@@ -19,7 +19,15 @@
 
 :root {
   --motion-ease-island: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-spring-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-duration-instant: 100ms;
   --motion-duration-fast: 160ms;
+  --motion-duration-control: 240ms;
+  --motion-duration-panel: 320ms;
+  --motion-duration-scene: 420ms;
   --motion-duration-normal: 240ms;
   --motion-duration-slow: 420ms;
 }

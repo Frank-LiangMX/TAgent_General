@@ -10,14 +10,13 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
 import { FunctionalRail } from './FunctionalRail'
+import { InertRegion, useInertElement } from './InertRegion'
 import { LeftSidebar } from './LeftSidebar'
-import {
-  NAV_RAIL_SIDEBAR_GAP,
-  NavRailIsland,
-  NavSidebarIsland,
-} from './NavIsland'
+import { getNavClusterWidth, NavIsland } from './NavIsland'
+import { RightInspectorFrame } from './RightInspectorFrame'
 import { RightPanelRail } from './RightPanelRail'
-import { RightSidePanel } from './RightSidePanel'
+import { deriveShellLayout } from './shell-layout'
+import { SpatialTopBar } from './SpatialTopBar'
 
 import {
   agentSidePanelOpenAtom,
@@ -29,10 +28,10 @@ import {
   appModeAtom,
   topLevelModeAtom,
   activeRailItemAtom,
+  navigationSidebarOpenAtom,
   rightRailItemAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
-import { sessionPresentationAtomFamily } from '@/atoms/session-presentation-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
   designFullscreenAtom,
@@ -107,13 +106,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
-  const isPanelOpen = useAtomValue(agentSidePanelOpenAtom)
+  const rightPanelRequestedOpen = useAtomValue(agentSidePanelOpenAtom)
+  const sidebarRequestedOpen = useAtomValue(navigationSidebarOpenAtom)
   const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
-  const sessionPresentation = useAtomValue(
-    sessionPresentationAtomFamily(activeTab?.type === 'agent' ? activeTab.sessionId : '__none__')
-  )
   const globalOfficeMode = useAtomValue(globalOfficeModeAtom)
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
@@ -121,29 +118,34 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const setDesignFullscreen = useSetAtom(designFullscreenAtom)
   const setDesignImmersive = useSetAtom(designImmersiveAtom)
 
-  const showRightPanel =
-    appMode === 'agent' &&
-    activeTab?.type === 'agent' &&
-    !!currentSessionId &&
-    activeRailItem === 'sessions' &&
-    !globalOfficeMode
+  const officeShellSessionId =
+    activeTab?.type === 'agent' && globalOfficeMode ? activeTab.sessionId : null
+  const shellLayout = deriveShellLayout({
+    topLevelMode,
+    appMode,
+    activeRailItem,
+    activeTabType: activeTab?.type ?? null,
+    hasCurrentSession: Boolean(currentSessionId),
+    sidebarRequestedOpen,
+    rightPanelRequestedOpen,
+    rightRailItem,
+    globalOfficeMode,
+    hasOfficeSession: Boolean(officeShellSessionId),
+    designEnabled,
+    designFullscreen,
+    designImmersive,
+  })
 
-  const showLeftSidebar =
-    topLevelMode === 'general'
-      ? activeRailItem === 'sessions' ||
-        activeRailItem === 'skills' ||
-        activeRailItem === 'draft' ||
-        activeRailItem === 'automation' ||
-        activeRailItem === 'kanban' ||
-        activeRailItem === 'memory'
-      : activeRailItem !== 'draft'
+  const showLeftSidebar = shellLayout.sidebar === 'open'
+  const showRightPanel = shellLayout.inspector !== 'hidden'
+  const inspectorOpen = shellLayout.inspector === 'open'
+  const workspaceInactive = shellLayout.canvas !== 'none'
+  const workspaceRef = useInertElement<HTMLElement>(workspaceInactive)
 
   const navRailWidth = NAV_RAIL_WIDTH
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
-  // rail 独立浮岛 + 可选侧栏浮岛 + 间距
-  const navClusterWidth = showLeftSidebar
-    ? navRailWidth + NAV_RAIL_SIDEBAR_GAP + navSidebarWidth
-    : navRailWidth
+  // 单一导航框架：rail 与 sidebar 并列，共享外框且不与主工作区重叠。
+  const navClusterWidth = getNavClusterWidth(showLeftSidebar, navRailWidth, navSidebarWidth)
   const contentBaseInsetLeft = navClusterWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
@@ -151,12 +153,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
-  const rightIslandWidth = isPanelOpen
+  const rightIslandWidth = inspectorOpen
     ? clampedRightPanelWidth + RIGHT_PANEL_RAIL_WIDTH
     : RIGHT_PANEL_RAIL_WIDTH
-
-  const contentBaseInsetRight =
-    showRightPanel && isPanelOpen ? rightIslandWidth + SHELL_EDGE_PADDING : 0
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -195,21 +194,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     [clampedRightPanelWidth, setRightPanelWidth]
   )
 
-  const wantMagnify =
-    designFullscreen &&
-    designEnabled &&
-    rightRailItem === 'design' &&
-    isPanelOpen &&
-    !designImmersive
-  const wantImmersive = designImmersive && designEnabled
+  const wantMagnify = shellLayout.canvas === 'magnify'
+  const wantImmersive = shellLayout.canvas === 'immersive'
 
   const magnify = useDelayedMount(wantMagnify)
   const immersive = useDelayedMount(wantImmersive)
-  const officeShellSessionId =
-    activeTab?.type === 'agent' && globalOfficeMode ? activeTab.sessionId : null
-
   // Office 模式但 activeTab 还没恢复时，显示 loading
-  const officeLoading = globalOfficeMode && !officeShellSessionId
+  const officeLoading = shellLayout.office === 'loading'
 
   // Esc 退出沉浸全屏
   React.useEffect(() => {
@@ -263,87 +254,61 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   return (
     <AppShellProvider value={contextValue}>
-      <WindowControls />
-
       <div
         className={cn(
-          'shell-glass shell-bg relative flex h-screen w-screen overflow-hidden',
-          isMac ? 'shell-glass--mac' : 'shell-glass--win'
+          'app-shell-scene relative flex h-screen w-screen overflow-hidden',
+          isMac ? 'app-shell-scene--mac' : 'app-shell-scene--win'
         )}
+        data-shell-scene={shellLayout.scene}
+        data-canvas-presentation={shellLayout.canvas}
+        data-composer-placement={shellLayout.composer}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
         }}
       >
-        {/*
-          Soft UI：rail / 侧栏独立浮岛，但与主区同高贴边（p-2），
-          不再做整窗下沉顶带——避免窗控/内容之间空出一条「丑顶栏」。
-          系统控件叠在顶缘（Win 自定义按钮 / Mac 红绿灯），浮岛顶与之融合。
-        */}
-        <div className="relative z-[70] flex shrink-0 items-stretch self-stretch gap-2 p-2 pr-0">
-          <NavRailIsland width={navRailWidth}>
+        <SpatialTopBar />
+
+        <InertRegion
+          className="app-shell-nav"
+          data-presence={shellLayout.navigation}
+          inactive={shellLayout.navigation === 'hidden'}
+        >
+          <NavIsland
+            sidebarPresence={shellLayout.sidebar}
+            sidebarWidth={navSidebarWidth}
+            railWidth={navRailWidth}
+          >
             <FunctionalRail />
-          </NavRailIsland>
-          {showLeftSidebar ? (
-            <NavSidebarIsland width={navSidebarWidth}>
-              <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
-            </NavSidebarIsland>
-          ) : null}
-        </div>
+            <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
+          </NavIsland>
+        </InertRegion>
 
         <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
-        {(!showRightPanel || !isPanelOpen) && (
-          <div className="app-content-boundary-rim" aria-hidden />
-        )}
-
-        <div
-          className={cn(
-            'relative z-[60] min-w-0 flex-1 p-2',
-            showRightPanel && isPanelOpen && 'pr-0'
-          )}
+        <main
+          ref={workspaceRef}
+          className="app-shell-main"
+          aria-hidden={workspaceInactive || undefined}
         >
           <div
             className={cn(
-              'content-main-shell relative h-full min-h-0',
-              showRightPanel && 'content-main-shell--right-rail',
-              showRightPanel && isPanelOpen && 'content-main-shell--right-inset'
+              'app-shell-content-stage relative h-full min-h-0',
+              showRightPanel && 'app-shell-content-stage--right-rail',
+              showRightPanel && inspectorOpen && 'app-shell-content-stage--right-open'
             )}
             style={{
-              ['--content-base-inset-left' as string]: `${contentBaseInsetLeft}px`,
-              ['--content-base-inset-right' as string]: `${contentBaseInsetRight}px`,
-              ['--content-base-fade-width' as string]: `${contentBaseInsetLeft + 56}px`,
-              ['--content-chrome-bleed-left' as string]: `${SHELL_EDGE_PADDING}px`,
-              ['--content-chrome-bleed-right' as string]:
-                showRightPanel && isPanelOpen ? `${SHELL_EDGE_PADDING}px` : '0px',
-              // 仅 right rail 时：会话前景区右侧让出 rail 宽度，避免内容钻到 rail 下方
-              // 须与 globals.css 的 --content-foreground-safe-right 对齐
+              ['--content-chrome-bleed-left' as string]: '0px',
+              ['--content-chrome-bleed-right' as string]: '0px',
               ['--content-foreground-safe-right' as string]:
-                showRightPanel && !isPanelOpen ? `${RIGHT_PANEL_RAIL_WIDTH}px` : '0px',
+                shellLayout.inspector === 'collapsed' ? `${RIGHT_PANEL_RAIL_WIDTH}px` : '0px',
             }}
           >
-            <div className="content-base-plate content-base-plate--body" aria-hidden />
-            <div
-              className="content-base-plate-frame content-base-plate-edge content-base-plate-edge--tone"
-              aria-hidden
-            />
-            <div
-              className="content-base-plate-frame content-base-plate-edge content-base-plate-edge--glint"
-              aria-hidden
-            />
-            <div
-              className="content-base-plate-frame content-base-plate-hairline content-base-plate-hairline--tone"
-              aria-hidden
-            />
-            <div
-              className="content-base-plate-frame content-base-plate-hairline content-base-plate-hairline--glint"
-              aria-hidden
-            />
-            <div className="content-main-foreground relative z-[1] h-full min-h-0">
+            <div className="app-content-foreground relative h-full min-h-0">
               <MainArea />
             </div>
           </div>
-        </div>
+        </main>
 
         {/* 放大模式覆盖层 */}
         {magnify.mounted && (
@@ -382,13 +347,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         {showRightPanel && (
           <div
             className={cn(
-              isPanelOpen
-                ? 'relative z-[70] box-border flex shrink-0 items-stretch self-stretch p-2 pl-0'
-                : 'absolute inset-y-0 right-0 z-[70] box-border flex items-stretch self-stretch p-2 pl-0',
+              inspectorOpen
+                ? 'app-shell-right-stack app-shell-right-stack--open'
+                : 'app-shell-right-stack app-shell-right-stack--collapsed',
               wantImmersive && 'pointer-events-none opacity-0'
             )}
           >
-            {isPanelOpen && (
+            {inspectorOpen && (
               <div
                 className="absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
                 onMouseDown={handleMouseDown}
@@ -399,8 +364,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
                 'relative ml-auto flex h-full min-h-0 flex-row justify-end overflow-hidden',
-                'transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                isPanelOpen && 'nav-island-glass--expanded',
+                inspectorOpen && 'nav-island-glass--expanded',
                 isMac && 'right-nav-island-glass--mac'
               )}
               style={{
@@ -409,13 +373,17 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                 ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}
             >
-              {isPanelOpen && (
-                <div className="nav-island-sidebar nav-island-body relative z-[1] flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                  <RightSidePanel width={clampedRightPanelWidth} />
-                </div>
+              {inspectorOpen && (
+                <InertRegion
+                  className="nav-island-sidebar nav-island-body relative z-[1] flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+                  data-presence={shellLayout.inspector}
+                  inactive={false}
+                >
+                  <RightInspectorFrame width={clampedRightPanelWidth} />
+                </InertRegion>
               )}
 
-              <RightPanelRail panelOpen={isPanelOpen} />
+              <RightPanelRail panelOpen={inspectorOpen} />
             </div>
           </div>
         )}

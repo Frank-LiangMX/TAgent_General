@@ -6,7 +6,7 @@
 export const SHELL_EDGE_PADDING = 8
 
 /** 导航 Rail 宽度 */
-export const NAV_RAIL_WIDTH = 60
+export const NAV_RAIL_WIDTH = 54
 
 /** Agent 右侧面板 Rail 宽度（展开/折叠一致） */
 export const RIGHT_PANEL_RAIL_WIDTH = 38
@@ -37,7 +37,7 @@ export const TAB_BAR_HEIGHT = 28
 export const NAV_ISLAND_BODY_PADDING_TOP = 8
 
 /** 导航岛首行 / 工具行标准高度（size-10） */
-export const NAV_ISLAND_ROW_HEIGHT = 40
+export const NAV_ISLAND_ROW_HEIGHT = 36
 
 /** Rail 图标列与下一行之间的间距（Tailwind gap-1.5） */
 export const NAV_ISLAND_STACK_GAP = 6

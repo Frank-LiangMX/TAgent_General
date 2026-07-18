@@ -19,8 +19,10 @@ export const rootMarkers = [electronRoot, repoRoot].map(escapeForPkill)
 /** Windows 命令行匹配用（原始路径） */
 export const winRootPaths = [electronRoot, repoRoot]
 
-function escapePsLike(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/'/g, "''")
+export function escapePsLike(value: string): string {
+  // PowerShell does not use backslash as an escape character. Doubling it
+  // makes a Windows path fail to match the process command line.
+  return value.replace(/'/g, "''")
 }
 
 export function killUnixByPattern(pattern: string): void {

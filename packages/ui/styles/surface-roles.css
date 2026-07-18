@@ -1,0 +1,68 @@
+/**
+ * Surface Role 语义桥接层
+ *
+ * 这里只把稳定的空间职责映射到现有 --surface-* 光学 Token。
+ * Material 表仍由 glass.css 维护；业务组件只消费 --surface-role-*。
+ */
+
+:root {
+  --surface-role-scene-fill: hsl(var(--background));
+  --surface-role-scene-rim: transparent;
+  --surface-role-scene-shadow: none;
+  --surface-role-scene-blur: 0px;
+  --surface-role-scene-z: 0;
+
+  --surface-role-workspace-fill: var(--md-surface);
+  --surface-role-workspace-rim: transparent;
+  --surface-role-workspace-shadow: none;
+  --surface-role-workspace-blur: 0px;
+  --surface-role-workspace-z: 10;
+
+  --surface-role-navigation-fill: var(--surface-bg);
+  --surface-role-navigation-rim: var(--surface-rim);
+  --surface-role-navigation-shadow: var(--surface-shadow);
+  --surface-role-navigation-blur: var(--surface-blur);
+  --surface-role-navigation-z: 10;
+
+  --surface-role-panel-fill: var(--surface-bg);
+  --surface-role-panel-rim: var(--surface-rim);
+  --surface-role-panel-shadow: var(--surface-shadow);
+  --surface-role-panel-blur: var(--surface-blur);
+  --surface-role-panel-z: 10;
+
+  --surface-role-panel-elevated-fill: var(--surface-bg-elevated);
+  --surface-role-panel-elevated-rim: var(--surface-rim);
+  --surface-role-panel-elevated-shadow: var(--surface-shadow-elevated);
+  --surface-role-panel-elevated-blur: var(--surface-blur-elevated);
+  --surface-role-panel-elevated-z: 10;
+
+  --surface-role-well-fill: var(--surface-bg-well);
+  --surface-role-well-rim: var(--surface-rim);
+  --surface-role-well-shadow: var(--surface-shadow-well);
+  --surface-role-well-blur: 0px;
+  --surface-role-well-z: 0;
+
+  --surface-role-control-fill: var(--surface-bg-chip);
+  --surface-role-control-rim: var(--surface-rim);
+  --surface-role-control-shadow: var(--surface-shadow-chip);
+  --surface-role-control-blur: var(--surface-blur-chip);
+  --surface-role-control-z: 0;
+
+  --surface-role-interactive-elevated-fill: var(--surface-bg-elevated);
+  --surface-role-interactive-elevated-rim: var(--surface-rim);
+  --surface-role-interactive-elevated-shadow: var(--surface-shadow-elevated);
+  --surface-role-interactive-elevated-blur: var(--surface-blur-elevated);
+  --surface-role-interactive-elevated-z: 20;
+
+  --surface-role-overlay-fill: var(--surface-bg-popover);
+  --surface-role-overlay-rim: var(--surface-rim);
+  --surface-role-overlay-shadow: var(--surface-shadow-elevated);
+  --surface-role-overlay-blur: var(--surface-blur-overlay);
+  --surface-role-overlay-z: 100;
+
+  --surface-role-modal-fill: var(--surface-bg-dialog);
+  --surface-role-modal-rim: var(--surface-rim);
+  --surface-role-modal-shadow: var(--surface-shadow-elevated);
+  --surface-role-modal-blur: var(--surface-blur-overlay);
+  --surface-role-modal-z: 1000;
+}

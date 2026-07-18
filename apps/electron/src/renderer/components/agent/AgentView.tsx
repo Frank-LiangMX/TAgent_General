@@ -585,6 +585,20 @@ export function AgentView({
   /** 主会话绑定看板后显示顶栏班组进度芯片 */
   const showKanbanCrewChip = !isNestedWorker && !!boardId
   const isCrewPanelActive = sidePanelOpen && rightRailItem === 'crew'
+  const crewTaskSummary = React.useMemo(() => {
+    const total = kanbanBoard.tasks.length
+    const done = kanbanBoard.tasks.filter((task) => task.status === 'done').length
+    const running = kanbanBoard.tasks.filter((task) => task.status === 'running').length
+    const blocked = kanbanBoard.tasks.filter((task) => task.status === 'blocked').length
+
+    return {
+      total,
+      done,
+      running,
+      blocked,
+      progress: total > 0 ? (done / total) * 100 : 0,
+    }
+  }, [kanbanBoard.tasks])
   const previousBoardIdRef = React.useRef<string | undefined>(boardId)
 
   React.useEffect(() => {
@@ -3204,61 +3218,38 @@ export function AgentView({
               rightSlot={
                 showKanbanCrewChip || headerActions ? (
                   <>
-                    {showKanbanCrewChip && kanbanBoard.tasks.length > 0 ? (
+                    {showKanbanCrewChip && crewTaskSummary.total > 0 ? (
                       <button
                         type="button"
                         onClick={toggleCrewPanel}
                         title={isCrewPanelActive ? '收起班组面板' : '打开班组面板'}
-                        className={cn(
-                          'flex items-center gap-2 rounded-full px-2.5 py-1 text-left transition-all hover:shadow-sm',
-                          isCrewPanelActive
-                            ? 'bg-primary/10 hover:bg-primary/15'
-                            : 'bg-muted/50 hover:bg-muted'
-                        )}
+                        aria-label={`班组进度：已完成 ${crewTaskSummary.done}/${crewTaskSummary.total}${crewTaskSummary.running > 0 ? `，运行中 ${crewTaskSummary.running}` : ''}${crewTaskSummary.blocked > 0 ? `，受阻 ${crewTaskSummary.blocked}` : ''}`}
+                        aria-pressed={isCrewPanelActive}
+                        className={cn('agent-session-crew', isCrewPanelActive && 'is-active')}
                       >
-                        <Users
-                          className={cn(
-                            'size-3.5',
-                            isCrewPanelActive ? 'text-primary' : 'text-blue-600 dark:text-blue-400'
-                          )}
-                        />
-                        <span className="text-[11px] font-medium tabular-nums">
-                          {kanbanBoard.tasks.filter((t) => t.status === 'done').length}/
-                          {kanbanBoard.tasks.length}
+                        <Users className="agent-session-crew__icon" aria-hidden />
+                        <span className="agent-session-crew__count">
+                          {crewTaskSummary.done}/{crewTaskSummary.total}
                         </span>
-                        {(() => {
-                          const running = kanbanBoard.tasks.filter(
-                            (t) => t.status === 'running'
-                          ).length
-                          const blocked = kanbanBoard.tasks.filter(
-                            (t) => t.status === 'blocked'
-                          ).length
-                          return (
-                            <>
-                              {running > 0 && (
-                                <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-                                  ·{running}
-                                </span>
-                              )}
-                              {blocked > 0 && (
-                                <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
-                                  ·{blocked}
-                                </span>
-                              )}
-                              <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-                                <div
-                                  className={cn(
-                                    'h-full rounded-full bg-blue-500 transition-all duration-300',
-                                    blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
-                                  )}
-                                  style={{
-                                    width: `${(kanbanBoard.tasks.filter((t) => t.status === 'done').length / kanbanBoard.tasks.length) * 100}%`,
-                                  }}
-                                />
-                              </div>
-                            </>
-                          )
-                        })()}
+                        {crewTaskSummary.running > 0 && (
+                          <span className="agent-session-crew__signal is-running">
+                            +{crewTaskSummary.running}
+                          </span>
+                        )}
+                        {crewTaskSummary.blocked > 0 && (
+                          <span className="agent-session-crew__signal is-blocked">
+                            !{crewTaskSummary.blocked}
+                          </span>
+                        )}
+                        <span className="agent-session-crew__track" aria-hidden>
+                          <span
+                            className={cn(
+                              'agent-session-crew__progress',
+                              crewTaskSummary.blocked > 0 && 'has-blocked'
+                            )}
+                            style={{ width: `${crewTaskSummary.progress}%` }}
+                          />
+                        </span>
                       </button>
                     ) : null}
                     {headerActions}

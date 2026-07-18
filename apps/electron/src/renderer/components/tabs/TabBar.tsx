@@ -12,6 +12,7 @@ import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
 import * as React from 'react'
 
 import { TabBarItem } from './TabBarItem'
+import { setWorkspaceHeaderSlot } from './workspace-header-slot'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
 import type { TabItem } from '@/atoms/tab-atoms'
@@ -26,13 +27,10 @@ import {
 import { tearOffPreviewToSplit } from '@/components/diff/preview-opener'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
-import { useTabSlideIndicator } from '@/hooks/useTabSlideIndicator'
-import { detectIsWindows } from '@/lib/platform'
-import { cn } from '@/lib/utils'
 
 export function TabBar(): React.ReactElement {
   const tabs = useAtomValue(visibleTabsAtom)
-  const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
+  const setActiveTabId = useSetAtom(activeTabIdAtom)
   const [visualActiveTabId, setVisualActiveTabId] = useAtom(visualActiveTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
   const store = useStore()
@@ -113,7 +111,7 @@ export function TabBar(): React.ReactElement {
   )
 
   if (tabs.length === 0) {
-    return <div className="h-[28px] titlebar-drag-region relative z-[10]" />
+    return <div className="app-workspace-tab-strip h-[64px] relative z-[10]" />
   }
 
   return (
@@ -151,15 +149,47 @@ function TabBarInner({
   const enterTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const leaveTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const fadeTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
-  const isWindows = React.useMemo(() => detectIsWindows(), [])
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const barRef = React.useRef<HTMLDivElement>(null)
+  const activePlateRef = React.useRef<HTMLSpanElement>(null)
   const [tearingOff, setTearingOff] = React.useState<string | null>(null)
 
-  const { indicatorStyle } = useTabSlideIndicator(scrollRef, activeTabId)
-  // active tab 运行中时，底部已有蓝色流光条标识，不再渲染 slide indicator 的主题色条，避免视觉冲突
-  const activeTabStreaming = activeTabId ? (streamingMap.get(activeTabId) ?? 'idle') : 'idle'
-  const showIndicatorLine = indicatorStyle && activeTabStreaming === 'idle'
+  const updateActivePlate = React.useCallback(() => {
+    const list = scrollRef.current
+    const plate = activePlateRef.current
+    if (!list || !plate || !activeTabId) {
+      if (plate) plate.style.opacity = '0'
+      return
+    }
+
+    const activeTab = list.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(activeTabId)}"]`)
+    if (!activeTab) {
+      plate.style.opacity = '0'
+      return
+    }
+
+    plate.style.width = `${activeTab.offsetWidth}px`
+    plate.style.setProperty('--app-tab-plate-x', `${activeTab.offsetLeft}px`)
+    plate.style.opacity = '1'
+  }, [activeTabId])
+
+  React.useLayoutEffect(() => {
+    const list = scrollRef.current
+    if (!list) return
+
+    const activeTab = activeTabId
+      ? list.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(activeTabId)}"]`)
+      : null
+    const resizeObserver = new ResizeObserver(updateActivePlate)
+    resizeObserver.observe(list)
+    if (activeTab) resizeObserver.observe(activeTab)
+    const frameId = requestAnimationFrame(updateActivePlate)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+    }
+  }, [activeTabId, tabs, updateActivePlate])
 
   const handleDragStartWithTearOff = React.useCallback(
     (tabId: string, e: React.PointerEvent) => {
@@ -275,14 +305,9 @@ function TabBarInner({
   return (
     <div
       ref={barRef}
-      className="flex items-end h-[28px] tabbar-bg content-shell-chrome-bleed relative shrink-0"
+      className="app-workspace-tab-strip flex h-[64px] items-center content-shell-chrome-bleed relative shrink-0"
     >
-      <div
-        className={cn(
-          'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
-          isWindows && 'right-[126px]'
-        )}
-      />
+      <div className="absolute inset-0 z-[1] titlebar-drag-region pointer-events-none" />
 
       {tearingOff && (
         <div className="pointer-events-none absolute -bottom-px left-0 right-0 h-px bg-primary/60 shadow-[0_0_8px_rgba(0,0,0,0.2)]" />
@@ -290,18 +315,11 @@ function TabBarInner({
 
       <div
         ref={scrollRef}
-        className={cn(
-          'relative z-[2] flex items-end flex-1 min-w-0 overflow-x-auto scrollbar-none',
-          isWindows && 'pr-[126px]'
-        )}
+        role="tablist"
+        aria-label="工作区标签页"
+        className="app-workspace-tab-list relative z-[2] flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-none"
       >
-        {showIndicatorLine && (
-          <span
-            className="tab-indicator-line absolute rounded-full pointer-events-none"
-            style={{ ...indicatorStyle, zIndex: 2 }}
-            aria-hidden="true"
-          />
-        )}
+        <span ref={activePlateRef} className="app-workspace-tab-active-plate" aria-hidden />
         {tabs.map((tab) => (
           <TabBarItem
             key={tab.id}
@@ -324,6 +342,12 @@ function TabBarInner({
           />
         ))}
       </div>
+
+      <div
+        ref={setWorkspaceHeaderSlot}
+        id="workspace-header-status-slot"
+        className="app-workspace-session-status-slot relative z-[2] flex min-w-0 shrink-0 items-center justify-end titlebar-no-drag"
+      />
     </div>
   )
 }

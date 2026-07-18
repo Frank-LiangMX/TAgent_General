@@ -93,7 +93,8 @@
 }
 
 [data-material='glass'] .tagent-agent-thread .agent-turn-process {
-  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
+    saturate(var(--surface-saturate, 1.2));
   backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
   box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.2);
 }
@@ -108,7 +109,7 @@
 .tagent-agent-thread .agent-turn-answer {
   min-width: 0;
   color: hsl(var(--foreground));
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.65;
   background: transparent;
   border: none;
@@ -135,10 +136,7 @@
 }
 
 .tagent-agent-thread .agent-process-group__toggle:hover {
-  background: var(
-    --hover-fill,
-    color-mix(in srgb, hsl(var(--foreground)) 6%, transparent)
-  );
+  background: var(--hover-fill, color-mix(in srgb, hsl(var(--foreground)) 6%, transparent));
 }
 
 /* 去掉旧左边线：内容在卡内平铺 */
@@ -320,9 +318,9 @@
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
   color: var(--agent-surface-on);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1.58;
+  line-height: 1.55;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
   -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);

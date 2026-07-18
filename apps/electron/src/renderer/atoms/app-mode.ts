@@ -14,8 +14,6 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
-import type { TabItem } from './tab-atoms'
-
 import { activeTabIdAtom, activeTabIdByModeAtom, isTabVisibleInMode, tabsAtom } from './tab-atoms'
 
 /** 顶层模式：通用 / TA */
@@ -123,6 +121,9 @@ export const activeRailItemAtom = atom<RailItem, [RailItem], void>(
     }
   }
 )
+
+/** 左侧 Sidebar 展开状态；Rail 始终保留，Sidebar 可回收到当前 Rail 项。 */
+export const navigationSidebarOpenAtom = atom<boolean>(true)
 
 // ===== Right Rail Item Atoms（右侧边栏功能切换，镜像左侧） =====
 

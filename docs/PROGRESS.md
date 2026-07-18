@@ -18,8 +18,24 @@
 > **Context Usage**：`docs/plans/2026-06-13-context-usage-breakdown-design.md`（分项面板）
 > **WPS 协作**：`docs/plans/2026-06-16-wps-bridge-landing.md`（远程连通落地说明）
 > **WPS CLI 集成**：`docs/plans/2026-07-08-wps-cli-integration.md`（主动调用 WPS API，与 Bridge 互补）
-> **Agent Runtime 探索**：`docs/plans/2026-07-17-agent-runtime-exploration.md`（Pi-agent 双 runtime 研究 + 上游 v0.13.4→v0.14.23 对齐 + 自研框架对比）
+> **Agent Runtime 双核与 Pi 迁移（2026-07-18 决策）**：`docs/plans/2026-07-18-agent-runtime-dual-core-pi-migration.md` + ADR [`0008`](./decisions/0008-agent-runtime-dual-core-pi-migration.md)（短期：外网 Pi / kscc 现状；中期分支验证 bare 泵；门禁后全 Pi）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
+
+---
+
+## 当前变更（2026-07-18）
+
+**Agent Runtime 双核与 Pi 迁移路线（文档）**：
+
+- 拍板方向：目标内核为 Pi；kscc 定位为公司额度/推广通道，非 Agent 平台本身
+- **阶段 1（短期）**：双核 — 外部渠道走 Pi，`kscc-internal` **保持** Claude Agent SDK + 完整 kscc（零回归优先）
+- **阶段 2**：独立分支验证 `kscc -p --bare` 模型泵（tool 必须只在 Pi；流式/零工具门禁）
+- **阶段 3–4**：过门禁后 kscc 切 Pi 通道，再考虑全 Pi / 移除 Claude Agent SDK
+- **与 Proma 分道**：外围已大幅自研；换 Pi 内核后不再默认对齐 Proma Agent Runtime，叙事转为 TAgent 自研产品（设计 §1.5 / ADR-0008）
+- 调研摘要写入设计文档：公司 `BASE_API` 直连 `ClientForbidden`；bare 可用但默认仍可能 tool；流式偏块事件
+- 设计：`docs/plans/2026-07-18-agent-runtime-dual-core-pi-migration.md`
+- ADR：`docs/decisions/0008-agent-runtime-dual-core-pi-migration.md`
+- **实现未开始**；阶段 1 建议分支名 `feature/agent-runtime-pi-external`
 
 ---
 

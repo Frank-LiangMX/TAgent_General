@@ -28,6 +28,7 @@ import { getFeishuMultiBotConfig } from './lib/feishu-config'
 import { syncFeishuSyncSleepBlocker } from './lib/feishu-sleep-blocker'
 import { registerGlobalShortcut } from './lib/global-shortcut-service'
 import { handleTAgentFileRequest } from './lib/local-file-protocol'
+import { loadRendererWithRetry } from './lib/renderer-load-retry'
 import { ensureKsccRipgrep } from './lib/ensure-kscc-ripgrep'
 import { createQuickTaskWindow, toggleQuickTaskWindow } from './lib/quick-task-window'
 import { initializeRuntime } from './lib/runtime-init'
@@ -138,6 +139,16 @@ process.stdout?.on?.('error', (err: NodeJS.ErrnoException) => {
 process.stderr?.on?.('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EPIPE') return
   throw err
+})
+
+app.on('child-process-gone', (_event, details) => {
+  console.error('[子进程退出]', {
+    type: details.type,
+    serviceName: details.serviceName,
+    reason: details.reason,
+    exitCode: details.exitCode,
+    name: details.name,
+  })
 })
 
 // 清理本地环境中的 ANTHROPIC_* 变量，防止干扰应用的认证流程
@@ -404,42 +415,88 @@ function createWindow(): void {
     },
     ...titleBarOptions,
   })
-  installWindowsZoomInFallback(mainWindow)
+  const createdWindow = mainWindow
+  installWindowsZoomInFallback(createdWindow)
 
   // 应用当前主题图标（覆盖 BrowserWindow 创建时的默认 icon）
-  if (!mainWindow.isDestroyed()) {
+  if (!createdWindow.isDestroyed()) {
     const initSettings = getSettings()
     updateWindowIcon(
-      mainWindow,
+      createdWindow,
       initSettings.themeMode,
       initSettings.themeStyle,
       nativeTheme.shouldUseDarkColors
     )
   }
 
-  // Load the renderer
   const isDev = !app.isPackaged
-  if (isDev) {
-    mainWindow.loadURL('http://127.0.0.1:5173')
-    mainWindow.webContents.openDevTools()
-  } else {
-    mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'))
-  }
+  let hasRevealedInitialWindow = false
+  let initialShowTimer: ReturnType<typeof setTimeout> | null = null
 
-  // 窗口就绪后，按保存的状态决定是否最大化
-  mainWindow.once('ready-to-show', () => {
+  const revealInitialWindow = (): void => {
+    if (hasRevealedInitialWindow || createdWindow.isDestroyed()) return
+    hasRevealedInitialWindow = true
+    if (initialShowTimer) {
+      clearTimeout(initialShowTimer)
+      initialShowTimer = null
+    }
+
     if (savedState?.isMaximized ?? true) {
-      mainWindow?.maximize()
+      createdWindow.maximize()
     }
     // Windows 任务栏图标在窗口 show 后再设一次，确保图标正确刷新
-    if (mainWindow && !mainWindow.isDestroyed()) {
+    if (!createdWindow.isDestroyed()) {
       const s = getSettings()
-      updateWindowIcon(mainWindow, s.themeMode, s.themeStyle, nativeTheme.shouldUseDarkColors)
+      updateWindowIcon(createdWindow, s.themeMode, s.themeStyle, nativeTheme.shouldUseDarkColors)
     }
     if (process.platform === 'darwin' && app.dock) {
       app.dock.show()
     }
-    mainWindow?.show()
+    createdWindow.show()
+  }
+
+  // 正常路径等待首帧；TUN 切路由导致首载失败时，仍保证窗口可见。
+  createdWindow.once('ready-to-show', revealInitialWindow)
+  initialShowTimer = setTimeout(() => {
+    console.warn('[窗口] renderer 首帧等待超时，显示窗口并继续后台重试')
+    revealInitialWindow()
+  }, 8_000)
+  createdWindow.once('closed', () => {
+    if (initialShowTimer) clearTimeout(initialShowTimer)
+  })
+
+  createdWindow.webContents.on(
+    'did-fail-load',
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (!isMainFrame) return
+      console.error('[窗口] renderer 加载失败', {
+        errorCode,
+        errorDescription,
+        validatedURL,
+      })
+    }
+  )
+
+  void loadRendererWithRetry({
+    isDev,
+    isDestroyed: () => createdWindow.isDestroyed(),
+    load: () =>
+      isDev
+        ? createdWindow.loadURL('http://127.0.0.1:5173')
+        : createdWindow.loadFile(join(__dirname, 'renderer', 'index.html')),
+    onAttemptFailure: (error, attempt) => {
+      console.warn(`[窗口] renderer 第 ${attempt} 次加载失败`, error)
+    },
+  }).then((result) => {
+    if (createdWindow.isDestroyed()) return
+
+    if (result.success) {
+      if (isDev) createdWindow.webContents.openDevTools()
+      return
+    }
+
+    console.error('[窗口] renderer 加载重试耗尽', result.error)
+    revealInitialWindow()
   })
 
   // 持久化窗口大小和位置（防抖 500ms，避免频繁写入）

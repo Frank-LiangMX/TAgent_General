@@ -32,6 +32,7 @@ import {
   Hourglass,
   Settings,
   GripVertical,
+  PanelLeftClose,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -126,6 +127,7 @@ import {
 import {
   appModeAtom,
   activeRailItemAtom,
+  navigationSidebarOpenAtom,
   type AppMode,
   topLevelModeAtom,
   type RailItem,
@@ -408,6 +410,7 @@ export function LeftSidebar({
 
   // 搜索状态（归档会话已从主列表分离，由底部 Popover 独立展示）
   const setSearchDialogOpen = useSetAtom(searchDialogOpenAtom)
+  const setNavigationSidebarOpen = useSetAtom(navigationSidebarOpenAtom)
 
   // 选中会话变化时，自动滚动侧栏使对应项可见
   React.useEffect(() => {
@@ -1563,43 +1566,42 @@ export function LeftSidebar({
   return (
     <div
       className={cn(
-        'nav-island-sidebar relative z-[1] h-full w-full flex flex-col overflow-hidden min-w-0',
-        !isMac && 'pt-1'
+        'nav-island-sidebar relative z-[1] h-full w-full flex flex-col overflow-hidden min-w-0'
       )}
     >
-      {/* Windows：侧栏顶缘可拖（窗控叠在右上角浮岛外） */}
-      {!isMac && (
-        <div
-          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[20px] titlebar-drag-region"
-          aria-hidden
-        />
-      )}
       {/* 会话 / 草稿：对齐 glass-studio .sidebar-inner 结构 */}
       {activeRailItem === 'sessions' ? (
         <div className="sidebar-inner">
           <div className="sidebar-head titlebar-no-drag">
-            <h2 className="sidebar-head-title">会话</h2>
+            <div className="sidebar-head-copy">
+              <span className="sidebar-section-kicker">WORKSPACE</span>
+              <h2 className="sidebar-head-title">会话</h2>
+            </div>
             <div className="tool-cluster" role="group" aria-label="会话操作">
+              <button
+                type="button"
+                className="tool-cluster-icon"
+                onClick={() => setNavigationSidebarOpen(false)}
+                aria-label="折叠侧栏"
+              >
+                <PanelLeftClose size={14} strokeWidth={1.5} />
+              </button>
               <button type="button" className="tool-cluster-accent" onClick={handleNewAgentSession}>
                 新会话
               </button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="tool-cluster-icon"
-                    onClick={() => setSearchDialogOpen(true)}
-                    aria-label="搜索"
-                  >
-                    <Search size={14} strokeWidth={1.5} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  搜索 ({getAcceleratorDisplay(getActiveAccelerator('global-search'))})
-                </TooltipContent>
-              </Tooltip>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="sidebar-search-trigger titlebar-no-drag"
+            onClick={() => setSearchDialogOpen(true)}
+            aria-label="搜索会话与项目"
+          >
+            <Search size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>搜索会话与项目</span>
+            <kbd>{getAcceleratorDisplay(getActiveAccelerator('global-search'))}</kbd>
+          </button>
 
           <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
             {renderRailContent()}
@@ -1670,26 +1672,35 @@ export function LeftSidebar({
       ) : activeRailItem === 'draft' ? (
         <div className="sidebar-inner">
           <div className="sidebar-head titlebar-no-drag">
-            <h2 className="sidebar-head-title">草稿</h2>
+            <div className="sidebar-head-copy">
+              <span className="sidebar-section-kicker">DRAFTS</span>
+              <h2 className="sidebar-head-title">草稿</h2>
+            </div>
             <div className="tool-cluster" role="group" aria-label="草稿操作">
+              <button
+                type="button"
+                className="tool-cluster-icon"
+                onClick={() => setNavigationSidebarOpen(false)}
+                aria-label="折叠侧栏"
+              >
+                <PanelLeftClose size={14} strokeWidth={1.5} />
+              </button>
               <button type="button" className="tool-cluster-accent" onClick={handleNewDraft}>
                 新草稿
               </button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="tool-cluster-icon"
-                    onClick={() => setDraftSearchOpen(true)}
-                    aria-label="搜索草稿"
-                  >
-                    <Search size={14} strokeWidth={1.5} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">搜索草稿</TooltipContent>
-              </Tooltip>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="sidebar-search-trigger titlebar-no-drag"
+            onClick={() => setDraftSearchOpen(true)}
+            aria-label="搜索草稿"
+          >
+            <Search size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>搜索草稿</span>
+            <kbd>{isMac ? '⌘ K' : 'Ctrl K'}</kbd>
+          </button>
 
           <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
             {renderRailContent()}
@@ -1816,7 +1827,7 @@ function SessionsRailContent({
   const listRef = React.useRef<HTMLDivElement>(null)
 
   return (
-    <div className="list-well session-well flex-1 min-h-0 titlebar-no-drag">
+    <div className="app-spatial-session-well list-well session-well flex-1 min-h-0 titlebar-no-drag">
       <div ref={listRef} className="session-scroll scrollbar-thin min-h-0 relative">
         {/* 置顶分区（原型：位于 session-well 最上方） */}
         {pinnedAgentSessions.length > 0 && (
@@ -2294,7 +2305,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
-    surface === 'well' && 'session-row-shell w-full',
+    surface === 'well' && 'session-row-shell app-sidebar-session-row w-full',
     surface === 'compact' && 'w-full py-[7px] px-1',
     childClassName,
     selectionClassName
@@ -2364,23 +2375,40 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             ) : (
               <div
                 className={cn(
-                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
-                  !isBatchMode && 'group-hover:pr-4',
-                  !active && 'text-foreground/80'
+                  'min-w-0 transition-[padding] duration-150',
+                  !isBatchMode && 'group-hover:pr-4'
                 )}
               >
-                <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
-                  {session.title}
-                </span>
+                <div
+                  className={cn(
+                    'truncate text-[13px] leading-[18px] flex items-center gap-1.5',
+                    !active && 'text-foreground/80'
+                  )}
+                >
+                  <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
+                    {session.title}
+                  </span>
+                </div>
                 {!isBatchMode && (
-                  <span
+                  <div
                     className={cn(
-                      'flex-shrink-0 text-[9px] tabular-nums',
+                      'app-sidebar-session-detail mt-0.5 flex min-w-0 items-center justify-between gap-2 text-[9px]',
                       active ? 'session-row-meta' : 'md-text-faint'
                     )}
                   >
-                    {formatSessionTime(session.updatedAt)}
-                  </span>
+                    <span className="truncate">
+                      {indicatorStatus === 'running'
+                        ? '正在执行'
+                        : indicatorStatus === 'blocked'
+                          ? '等待处理'
+                          : indicatorStatus === 'completed'
+                            ? '已完成'
+                            : '最近会话'}
+                    </span>
+                    <span className="flex-shrink-0 tabular-nums">
+                      {formatSessionTime(session.updatedAt)}
+                    </span>
+                  </div>
                 )}
               </div>
             )}
@@ -2596,7 +2624,10 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
 
   return (
     <section
-      className={cn('relative py-0.5 transition-opacity', isDragging && 'opacity-45')}
+      className={cn(
+        'app-sidebar-project-block relative transition-opacity',
+        isDragging && 'opacity-45'
+      )}
       onDragOver={(e) => onProjectDragOver(e, group.workspace.id)}
       onDragLeave={onProjectDragLeave}
       onDrop={(e) => onProjectDrop(e, group.workspace.id)}
@@ -2605,7 +2636,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
       {dropPosition === 'before' && (
         <div className="absolute -top-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
       )}
-      <div className="group/project relative flex items-center">
+      <div className="app-sidebar-project-heading group/project relative flex items-center">
         {/* 拖拽手柄：hover 显示，draggable 触发排序（选择模式下隐藏） */}
         {!isBatchMode && (
           <span
@@ -2650,7 +2681,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                 onSelectProject(group.workspace.id)
               }}
               className={cn(
-                'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11 hover:bg-foreground/[0.025]',
+                'app-sidebar-project-button relative flex-1 min-w-0 flex items-center gap-1 text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11',
                 isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
               )}
             >
@@ -2662,6 +2693,7 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
               <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
                 {group.workspace.name}
               </span>
+              <span className="app-sidebar-project-count">{group.sessions.length}</span>
               {!hasActiveSession && (
                 <ChevronRight
                   size={12}

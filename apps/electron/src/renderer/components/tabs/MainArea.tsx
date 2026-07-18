@@ -135,7 +135,7 @@ function TAMainArea(): React.ReactElement {
   }
 
   return (
-    <Panel variant="grow" className="content-glass">
+    <Panel variant="grow" className="app-main-layout">
       <div className="flex-1 min-h-0 overflow-hidden">{renderContent()}</div>
     </Panel>
   )
@@ -309,7 +309,7 @@ function GeneralMainArea(): React.ReactElement {
       : { flex: '1 1 auto' }
 
   return (
-    <Panel variant="grow" className="content-glass">
+    <Panel variant="grow" className="app-main-layout">
       <div className="flex flex-1 min-h-0 relative" data-split-container>
         {/* 左侧：TabBar + TabContent（始终保持在同一 DOM 位置，避免 Tab 切换时 unmount）
             注：宽度变化不用 transition——文字逐帧 reflow 会导致行末字符抖动，

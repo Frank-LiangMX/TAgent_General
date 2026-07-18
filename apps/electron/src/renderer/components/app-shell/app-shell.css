@@ -1,0 +1,1541 @@
+/**
+ * TAgent application shell
+ *
+ * Primary regions never overlap: navigation, workspace, and inspector share a
+ * single alignment grid. Layering is reserved for controls that are genuinely
+ * transient (composer tools, menus, dialogs, and canvas overlays).
+ */
+
+.app-shell-scene {
+  --app-shell-edge: 8px;
+  --app-shell-gap: 10px;
+  --app-shell-frame-radius: var(--nav-island-outer-radius, 24px);
+  --app-shell-control-radius: 12px;
+  --app-shell-tab-radius: 11px;
+  --app-shell-composer-radius: 20px;
+  --app-shell-motion: cubic-bezier(0.16, 1, 0.3, 1);
+  --spatial-ink: hsl(var(--foreground) / 0.9);
+  --spatial-muted: hsl(var(--muted-foreground) / 0.88);
+  --spatial-faint: hsl(var(--muted-foreground) / 0.62);
+  --spatial-line: rgb(68 78 94 / 12%);
+  --spatial-line-strong: rgb(68 78 94 / 19%);
+  --spatial-accent: hsl(var(--primary));
+  --spatial-accent-soft: hsl(var(--primary) / 0.1);
+  --spatial-accent-line: hsl(var(--primary) / 0.26);
+  --spatial-panel-fill:
+    radial-gradient(circle at 18% 8%, rgb(113 144 205 / 11%), transparent 42%),
+    linear-gradient(145deg, rgb(246 249 253 / 48%), rgb(224 232 243 / 42%));
+  --spatial-panel-rim: rgb(255 255 255 / 52%);
+  --spatial-panel-shadow: inset 0 1px 0 rgb(255 255 255 / 66%), 0 14px 34px rgb(49 59 76 / 8%);
+  isolation: isolate;
+  gap: var(--app-shell-gap);
+  padding: 40px var(--app-shell-edge) var(--app-shell-edge);
+  color: var(--spatial-ink);
+  background: transparent;
+}
+
+.dark .app-shell-scene,
+.app-shell-scene.dark {
+  --spatial-ink: hsl(var(--foreground) / 0.94);
+  --spatial-muted: hsl(var(--muted-foreground) / 0.9);
+  --spatial-faint: hsl(var(--muted-foreground) / 0.64);
+  --spatial-line: rgb(202 213 230 / 10%);
+  --spatial-line-strong: rgb(202 213 230 / 17%);
+  --spatial-accent: hsl(var(--primary));
+  --spatial-accent-soft: hsl(var(--primary) / 0.16);
+  --spatial-accent-line: hsl(var(--primary) / 0.28);
+  --spatial-panel-fill:
+    radial-gradient(circle at 18% 8%, rgb(91 123 182 / 12%), transparent 42%),
+    linear-gradient(145deg, rgb(35 42 54 / 68%), rgb(26 33 44 / 62%));
+  --spatial-panel-rim: rgb(225 235 250 / 11%);
+  --spatial-panel-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 18px 42px rgb(3 7 14 / 24%);
+  background: transparent;
+}
+
+.app-shell-scene::before,
+.app-shell-scene::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Global window chrome is independent from workspace tabs. */
+.app-spatial-topbar {
+  position: absolute;
+  z-index: 100;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: 40px;
+  align-items: center;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--spatial-line);
+  border-radius: 0;
+  background: linear-gradient(180deg, rgb(247 250 254 / 16%), rgb(226 234 245 / 8%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+  backdrop-filter: blur(24px) saturate(1.18);
+  user-select: none;
+}
+
+.app-workspace-switcher {
+  display: flex;
+  height: 30px;
+  max-width: 230px;
+  align-items: center;
+  gap: 8px;
+  margin-left: 7px;
+  padding: 0 10px 0 5px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--spatial-muted);
+  background: transparent;
+  font-size: 11px;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 160ms var(--app-shell-motion);
+}
+
+.app-spatial-topbar--mac .app-workspace-switcher {
+  margin-left: 68px;
+}
+
+.app-workspace-switcher:hover {
+  color: var(--spatial-ink);
+  background: rgb(255 255 255 / 48%);
+}
+
+.app-workspace-glyph {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  place-items: center;
+  border-radius: 8px;
+  color: #edf2ff;
+  background: linear-gradient(145deg, #4a5463, #343c48);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 13%);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.app-workspace-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-spatial-topbar-brand {
+  position: absolute;
+  left: 50%;
+  color: var(--spatial-faint);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  opacity: 0.52;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.app-window-controls {
+  top: 5px;
+  right: 4px;
+  height: 30px;
+}
+
+.app-window-controls .window-control-btn {
+  width: 40px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--spatial-muted);
+}
+
+.app-window-controls .window-control-btn:hover {
+  background: rgb(255 255 255 / 46%);
+}
+
+.app-window-controls .window-control-close:hover {
+  color: #fff;
+  background: #c42b1c;
+}
+
+/* The field is intentionally broad and quiet; surfaces provide the local blur. */
+.app-shell-scene::before,
+.app-shell-scene::after {
+  display: none;
+}
+
+.app-shell-nav,
+.app-shell-right-stack {
+  position: relative;
+  z-index: 10;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Navigation and inspector are floating lenses above the workspace plane. */
+.app-shell-nav,
+.app-shell-right-stack {
+  height: calc(100% - 16px);
+  margin-top: 16px;
+}
+
+.app-shell-nav {
+  flex: 0 0 auto;
+  transform-origin: left center;
+  transition:
+    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
+    transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
+}
+
+.app-shell-nav[data-presence='hidden'] {
+  opacity: 0;
+  transform: translateX(-10px) scale(0.985);
+  pointer-events: none;
+}
+
+/* The cluster is layout-only. Rail islands and the contextual Sidebar own surfaces. */
+.app-nav-stack {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  height: 100%;
+  align-items: stretch;
+  gap: var(--app-nav-cluster-gap);
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: gap var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out);
+}
+
+.app-shell-right-stack .right-nav-island-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-top-color: var(--surface-highlight, hsl(var(--glass-shine) / 0.22));
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--surface-shine-opacity, 0);
+}
+
+.app-nav-rail,
+.app-nav-sidebar {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-nav-rail {
+  z-index: 2;
+  display: flex;
+  flex: 0 0 var(--app-nav-rail-width);
+  flex-direction: column;
+  overflow: visible;
+}
+
+.app-nav-mac-chrome {
+  flex: 0 0 auto;
+}
+
+.app-nav-rail-content,
+.app-nav-sidebar-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.app-nav-sidebar {
+  z-index: 1;
+  flex: 0 0 var(--app-nav-sidebar-width);
+  overflow: hidden;
+  border: 1px solid var(--spatial-panel-rim);
+  border-radius: var(--app-shell-frame-radius);
+  background: var(--spatial-panel-fill);
+  box-shadow: var(--spatial-panel-shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(1.22);
+  backdrop-filter: blur(30px) saturate(1.22);
+  transform-origin: left center;
+  transition:
+    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
+    transform var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
+    width var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
+    flex-basis var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
+    border-color var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
+    box-shadow var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
+}
+
+.app-nav-stack:not(.app-nav-stack--expanded) .app-nav-sidebar {
+  width: 0 !important;
+  flex-basis: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-color: transparent;
+  box-shadow: none;
+  transform: translateX(-14px) scale(0.975, 0.99);
+  pointer-events: none;
+}
+
+.app-nav-stack:not(.app-nav-stack--expanded) {
+  gap: 0;
+}
+
+.app-nav-sidebar-content {
+  width: var(--app-nav-sidebar-width);
+  min-width: var(--app-nav-sidebar-width);
+}
+
+.app-nav-sidebar .sidebar-inner {
+  gap: 0;
+  padding: 0 0 10px;
+}
+
+.app-nav-sidebar .sidebar-inner > .sidebar-head {
+  display: flex;
+  min-height: 64px;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 0;
+}
+
+.app-nav-sidebar .sidebar-head-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app-nav-sidebar .sidebar-section-kicker {
+  color: var(--spatial-faint);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  line-height: 1.3;
+}
+
+.app-nav-sidebar .sidebar-head-title {
+  color: var(--spatial-ink);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.app-nav-sidebar .tool-cluster {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-nav-sidebar :is(.tool-cluster-icon, .tool-cluster-accent) {
+  min-height: 31px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.app-nav-sidebar .tool-cluster-icon {
+  width: 31px;
+  border: 1px solid var(--spatial-line);
+  color: var(--spatial-muted);
+  background: rgb(255 255 255 / 34%);
+}
+
+.app-nav-sidebar .tool-cluster-accent {
+  padding: 0 11px;
+  border: 1px solid var(--spatial-accent-line);
+  color: var(--spatial-accent);
+  background: var(--spatial-accent-soft);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.app-nav-sidebar :is(.tool-cluster-icon, .tool-cluster-accent):hover {
+  border-color: var(--spatial-line-strong);
+  background: rgb(255 255 255 / 48%);
+  transform: translateY(-1px);
+}
+
+.app-nav-sidebar .sidebar-search-trigger {
+  display: grid;
+  height: 36px;
+  flex: 0 0 36px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 10px;
+  padding: 0 9px;
+  border: 1px solid var(--spatial-line);
+  border-radius: 12px;
+  color: var(--spatial-muted);
+  background: rgb(255 255 255 / 42%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 42%);
+  text-align: left;
+  transition:
+    border-color 160ms var(--app-shell-motion),
+    background-color 160ms var(--app-shell-motion),
+    transform 160ms var(--app-shell-motion);
+}
+
+.dark .app-nav-sidebar .sidebar-search-trigger,
+.dark .app-nav-sidebar .tool-cluster-icon {
+  background: rgb(255 255 255 / 5%);
+}
+
+.app-nav-sidebar .sidebar-search-trigger > span {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-nav-sidebar .sidebar-search-trigger kbd {
+  padding: 2px 5px;
+  border: 1px solid var(--spatial-line);
+  border-radius: 6px;
+  color: var(--spatial-faint);
+  background: rgb(255 255 255 / 28%);
+  font-family: inherit;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.app-nav-sidebar .sidebar-search-trigger:hover {
+  border-color: var(--spatial-line-strong);
+  color: var(--spatial-ink);
+  background: rgb(255 255 255 / 54%);
+  transform: translateY(-1px);
+}
+
+.app-nav-sidebar .sidebar-search-trigger:focus-visible {
+  outline: 2px solid var(--spatial-accent-line);
+  outline-offset: 2px;
+}
+
+/* Sidebar wells group content without creating a second stack of surfaces. */
+.app-nav-sidebar :is(.list-well, .session-well) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-nav-sidebar .session-well {
+  padding: 2px 8px 12px;
+}
+
+.app-nav-sidebar .session-scroll {
+  padding: 0;
+}
+
+.app-nav-sidebar .session-group {
+  margin: 0;
+}
+
+.app-nav-sidebar .group-label {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px;
+  color: var(--spatial-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.app-nav-sidebar .ghost-plus {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--spatial-faint);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  transition:
+    color 150ms var(--app-shell-motion),
+    background-color 150ms var(--app-shell-motion);
+}
+
+.app-nav-sidebar .ghost-plus:hover {
+  color: var(--spatial-ink);
+  background: rgb(255 255 255 / 38%);
+}
+
+.app-nav-sidebar .app-sidebar-project-block {
+  padding: 2px 0;
+}
+
+.app-nav-sidebar .app-sidebar-project-heading {
+  min-height: 30px;
+  padding-right: 2px;
+}
+
+.app-nav-sidebar .app-sidebar-project-button {
+  min-height: 32px;
+  padding: 5px 7px;
+  border-radius: 10px;
+}
+
+.app-nav-sidebar .app-sidebar-project-button:hover {
+  background: rgb(255 255 255 / 34%);
+}
+
+.app-nav-sidebar .app-sidebar-project-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 5px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 7px;
+  color: var(--spatial-muted);
+  background: rgb(255 255 255 / 42%);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.app-nav-sidebar .app-sidebar-session-row {
+  min-height: 49px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion),
+    border-color 180ms var(--app-shell-motion),
+    transform 180ms var(--app-shell-motion);
+}
+
+.app-nav-sidebar .app-sidebar-session-row:not(.session-list-item-active):hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 46%);
+  box-shadow: none;
+  transform: translateX(2px);
+}
+
+.app-nav-sidebar .app-sidebar-session-row.session-list-item-active {
+  border-color: var(--spatial-accent-line) !important;
+  color: var(--spatial-ink);
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 62%), rgb(246 249 255 / 46%)),
+    var(--spatial-accent-soft) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 72%),
+    0 5px 14px rgb(72 91 128 / 7%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.12);
+  backdrop-filter: blur(12px) saturate(1.12);
+}
+
+.app-nav-sidebar .app-sidebar-session-detail {
+  color: var(--spatial-faint);
+  letter-spacing: 0.01em;
+}
+
+.app-nav-sidebar :is(.list-well, .session-well)::before,
+.app-nav-sidebar :is(.list-well, .session-well)::after {
+  display: none;
+}
+
+.app-nav-sidebar .sidebar-archive-btn {
+  border: 0;
+  border-top: 1px solid var(--md-outline-variant, hsl(var(--border) / 0.38));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-nav-sidebar .sidebar-archive-btn:hover {
+  background: var(--md-state-hover, hsl(var(--foreground) / 0.04));
+  box-shadow: none;
+  transform: none;
+}
+
+/* Split Rail: two stable capsules on the atmospheric window field. */
+.nav-island-rail {
+  position: relative;
+  width: var(--app-nav-rail-width);
+  padding: 2px 6px 3px;
+  overflow: visible;
+}
+
+.nav-island-rail::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 50%;
+  width: 42px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 34%), rgb(117 151 210 / 14%));
+  filter: blur(13px);
+  opacity: 0.88;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.app-rail-island {
+  position: relative;
+  display: flex;
+  width: 48px;
+  min-height: 0;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 5px;
+  border: 1px solid rgb(255 255 255 / 74%);
+  border-radius: 19px;
+  background:
+    radial-gradient(circle at 30% 0, rgb(115 151 217 / 16%), transparent 44%),
+    linear-gradient(180deg, rgb(252 253 255 / 84%), rgb(225 233 244 / 75%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 92%),
+    inset 0 -1px 0 rgb(83 103 136 / 7%),
+    0 12px 28px rgb(43 54 73 / 16%),
+    0 2px 6px rgb(43 54 73 / 8%);
+  -webkit-backdrop-filter: blur(24px) saturate(1.26);
+  backdrop-filter: blur(24px) saturate(1.26);
+}
+
+.app-rail-island::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-top-color: rgb(255 255 255 / 92%);
+  border-left-color: rgb(255 255 255 / 52%);
+  border-radius: inherit;
+  box-shadow: inset 0 -1px 0 rgb(86 105 135 / 5%);
+  pointer-events: none;
+}
+
+.app-rail-island::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(19px - 1px);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 36%), transparent 38%),
+    radial-gradient(circle at 72% 92%, rgb(118 151 211 / 8%), transparent 44%);
+  pointer-events: none;
+}
+
+.app-rail-island > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .app-rail-island {
+  border-color: rgb(225 235 250 / 13%);
+  background:
+    radial-gradient(circle at 30% 0, rgb(100 139 212 / 15%), transparent 42%),
+    linear-gradient(180deg, rgb(42 50 64 / 74%), rgb(27 35 47 / 68%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 9%),
+    0 12px 28px rgb(3 7 14 / 28%);
+}
+
+.app-rail-island--primary {
+  overflow-x: visible;
+  overflow-y: auto;
+  padding-top: 7px;
+  scrollbar-width: none;
+}
+
+.app-rail-island--primary::-webkit-scrollbar {
+  display: none;
+}
+
+.app-rail-island--system {
+  flex: 0 0 auto;
+}
+
+.app-rail-brand {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  margin-bottom: 8px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 12px;
+  color: #f9fbff;
+  background: linear-gradient(145deg, #303744, #202630);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 7px 14px rgb(28 34 44 / 19%);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.app-rail-mode-label {
+  color: currentColor;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.app-rail-mode-label--ta {
+  font-size: 8px;
+  letter-spacing: -0.06em;
+}
+
+/* Shape hierarchy: frame 24, navigation controls 12, status/avatar remain round. */
+.app-nav-stack .rail-island-btn:not(.rail-avatar-btn),
+.app-shell-right-stack .rail-island-btn {
+  border-radius: var(--app-shell-control-radius);
+}
+
+.app-nav-stack .rail-island-btn:not(.rail-avatar-btn) {
+  color: hsl(var(--foreground) / 0.48);
+  background: transparent;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion),
+    transform 160ms var(--app-shell-motion);
+}
+
+.app-nav-stack .rail-island-btn:not(.rail-avatar-btn):hover {
+  color: hsl(var(--foreground) / 0.84);
+  background: hsl(var(--foreground) / 0.065);
+  transform: translateY(-1px);
+}
+
+.app-nav-stack .rail-island-btn:not(.rail-avatar-btn):active {
+  transform: scale(0.96);
+}
+
+.app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
+.dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn) {
+  border: 1px solid var(--spatial-accent-line);
+  color: var(--spatial-accent);
+  background: linear-gradient(145deg, rgb(255 255 255 / 68%), rgb(242 247 255 / 47%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 78%),
+    0 5px 13px rgb(58 77 112 / 9%);
+}
+
+.app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn)::before {
+  content: none;
+}
+
+.app-shell-main {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.app-shell-content-stage {
+  --app-shell-session-gutter: 18px;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+/* MainArea still mounts its legacy plate for compatibility. In the Spatial
+ * shell it is an atmospheric tint, not another opaque card. */
+.app-shell-content-stage .content-base-plate--body {
+  border: 0;
+  background:
+    radial-gradient(ellipse 46% 38% at 14% 8%, rgb(255 255 255 / 18%), transparent 72%),
+    linear-gradient(135deg, rgb(244 248 253 / 10%), rgb(228 236 247 / 6%));
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.app-shell-content-stage .content-base-plate--body::before,
+.app-shell-content-stage .content-base-plate--body::after {
+  display: none;
+}
+
+.app-shell-content-stage .content-base-plate-frame,
+.app-shell-content-stage .content-base-plate-edge {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.app-content-foreground {
+  z-index: 1;
+  min-width: 0;
+}
+
+/* MainArea is layout-only. The window scene is the single workspace surface. */
+.app-shell-content-stage .app-main-layout {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell-content-stage .content-main-body {
+  border-radius: 0;
+}
+
+.app-shell-content-stage .content-shell-chrome-bleed {
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+/* Workspace tabs are a navigation strip, not a second window title bar. */
+.app-shell-content-stage .app-workspace-tab-strip {
+  height: 64px;
+  min-height: 64px;
+  align-items: center;
+  padding: 0 var(--app-shell-session-gutter);
+  border-bottom: 1px solid var(--spatial-line);
+  background: rgb(244 247 252 / 7%);
+  box-shadow: none;
+}
+
+.app-shell-content-stage .app-workspace-tab-list {
+  align-items: center;
+  gap: 5px;
+}
+
+.app-shell-content-stage .app-workspace-tab-active-plate {
+  --app-tab-plate-x: 0px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  height: 32px;
+  pointer-events: none;
+  border: var(--surface-rim-width, 1px) solid
+    color-mix(in srgb, var(--surface-rim) 76%, transparent);
+  border-radius: var(--app-shell-tab-radius);
+  opacity: 0;
+  background: var(--surface-bg-chip, var(--md-surface-container));
+  box-shadow:
+    inset 0 1px 0 var(--surface-inset-hi, transparent),
+    var(--surface-shadow-chip, none);
+  transform: translate3d(var(--app-tab-plate-x), 0, 0);
+  transition:
+    transform 260ms var(--app-shell-motion),
+    opacity 140ms ease-out;
+}
+
+.app-shell-content-stage .app-workspace-tab-active-plate::after {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  content: '';
+  background: var(--spatial-accent);
+  opacity: 0.48;
+  transform: translateX(-50%);
+}
+
+.app-shell-content-stage .app-workspace-session-status-slot {
+  max-width: min(62%, 620px);
+  margin-left: 12px;
+}
+
+.app-shell-content-stage .agent-session-header {
+  display: flex;
+  height: 32px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+}
+
+.app-shell-content-stage .agent-session-status {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid var(--spatial-line);
+  border-radius: 12px;
+  color: var(--spatial-muted);
+  background:
+    linear-gradient(112deg, rgb(255 255 255 / 38%), rgb(237 242 249 / 22%)),
+    hsl(var(--background) / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 48%),
+    0 5px 16px rgb(49 59 76 / 5%);
+  -webkit-backdrop-filter: blur(14px) saturate(116%);
+  backdrop-filter: blur(14px) saturate(116%);
+}
+
+.dark .app-shell-content-stage .agent-session-status {
+  background:
+    linear-gradient(112deg, rgb(255 255 255 / 7%), rgb(35 43 56 / 16%)),
+    hsl(var(--background) / 20%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 7%),
+    0 7px 18px rgb(3 7 14 / 14%);
+}
+
+.app-shell-content-stage .agent-session-status__segment,
+.app-shell-content-stage .agent-session-status__actions,
+.app-shell-content-stage .agent-session-crew {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.app-shell-content-stage .agent-session-status__segment {
+  height: 100%;
+  gap: 5px;
+  padding: 0 9px;
+  font-size: 10.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.app-shell-content-stage .agent-session-status__segment + .agent-session-status__segment::before,
+.app-shell-content-stage .agent-session-status__actions::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 1px;
+  content: '';
+  background: var(--spatial-line);
+}
+
+.app-shell-content-stage .agent-session-status__model {
+  flex: 1 1 150px;
+  min-width: 84px;
+  max-width: 190px;
+  color: var(--spatial-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.app-shell-content-stage .agent-session-status__permission {
+  flex: none;
+  max-width: 104px;
+}
+
+.app-shell-content-stage .agent-session-status__activity {
+  flex: none;
+  max-width: 154px;
+}
+
+.app-shell-content-stage .agent-session-status__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell-content-stage .agent-session-status__icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  stroke-width: 1.8;
+  color: var(--spatial-faint);
+}
+
+.app-shell-content-stage .agent-session-status__dot {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--spatial-faint);
+  box-shadow: 0 0 0 3px hsl(var(--muted-foreground) / 7%);
+  transition:
+    background-color 180ms var(--app-shell-motion),
+    box-shadow 180ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .agent-session-status__activity[data-tone='running'] {
+  color: hsl(216 74% 48%);
+}
+
+.app-shell-content-stage
+  .agent-session-status__activity[data-tone='running']
+  .agent-session-status__dot {
+  background: hsl(216 78% 55%);
+  box-shadow: 0 0 0 3px hsl(216 78% 55% / 13%);
+  animation: app-session-status-breathe 1.8s ease-in-out infinite;
+}
+
+.app-shell-content-stage .agent-session-status__activity[data-tone='blocked'] {
+  color: hsl(26 75% 46%);
+}
+
+.app-shell-content-stage
+  .agent-session-status__activity[data-tone='blocked']
+  .agent-session-status__dot {
+  background: hsl(26 82% 55%);
+  box-shadow: 0 0 0 3px hsl(26 82% 55% / 13%);
+}
+
+.app-shell-content-stage .agent-session-status__activity[data-tone='completed'] {
+  color: hsl(153 56% 38%);
+}
+
+.app-shell-content-stage
+  .agent-session-status__activity[data-tone='completed']
+  .agent-session-status__dot {
+  background: hsl(153 57% 46%);
+  box-shadow: 0 0 0 3px hsl(153 57% 46% / 12%);
+}
+
+.app-shell-content-stage .agent-session-status__actions {
+  flex: none;
+  height: 100%;
+}
+
+.app-shell-content-stage .agent-session-crew {
+  height: 100%;
+  gap: 5px;
+  border: 0;
+  padding: 0 9px;
+  color: var(--spatial-muted);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .agent-session-crew:hover,
+.app-shell-content-stage .agent-session-crew.is-active {
+  color: var(--spatial-ink);
+  background: var(--spatial-accent-soft);
+}
+
+.app-shell-content-stage .agent-session-crew:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--spatial-accent-line);
+  outline-offset: -3px;
+}
+
+.app-shell-content-stage .agent-session-crew__icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--spatial-accent);
+  stroke-width: 1.8;
+}
+
+.app-shell-content-stage .agent-session-crew__count,
+.app-shell-content-stage .agent-session-crew__signal {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell-content-stage .agent-session-crew__count {
+  color: var(--spatial-ink);
+  font-weight: 600;
+}
+
+.app-shell-content-stage .agent-session-crew__signal.is-running {
+  color: hsl(35 74% 45%);
+}
+
+.app-shell-content-stage .agent-session-crew__signal.is-blocked {
+  color: hsl(8 68% 52%);
+}
+
+.app-shell-content-stage .agent-session-crew__track {
+  width: 42px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--spatial-line-strong);
+}
+
+.app-shell-content-stage .agent-session-crew__progress {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--spatial-accent);
+  transition: width 260ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .agent-session-crew__progress.has-blocked {
+  background: linear-gradient(90deg, var(--spatial-accent), hsl(26 82% 55%));
+}
+
+@keyframes app-session-status-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+[data-material='soft'] .app-shell-content-stage .agent-session-status {
+  background: var(--surface-bg, hsl(var(--background)));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 5%),
+    0 2px 6px rgb(49 59 76 / 6%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 1280px) {
+  .app-shell-content-stage .agent-session-crew__track {
+    display: none;
+  }
+}
+
+.app-shell-content-stage .agent-session-header > div:first-child {
+  min-width: 0;
+}
+
+.app-shell-content-stage .app-workspace-tab {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--app-shell-tab-radius) !important;
+  color: var(--spatial-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: 11.5px;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  transition:
+    color 160ms var(--app-shell-motion),
+    border-color 180ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion),
+    box-shadow 180ms var(--app-shell-motion),
+    transform 160ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .app-workspace-tab:hover {
+  color: var(--spatial-ink);
+  background: var(--hover-fill, var(--md-state-hover));
+}
+
+.app-shell-content-stage .app-workspace-tab:active {
+  transform: scale(0.985);
+}
+
+.app-shell-content-stage .app-workspace-tab.tab-item-selected,
+[data-material='frosted'] .app-shell-content-stage .app-workspace-tab.tab-item-selected,
+[data-material='glass'] .app-shell-content-stage .app-workspace-tab.tab-item-selected,
+[data-material='soft'] .app-shell-content-stage .app-workspace-tab.tab-item-selected {
+  border-color: transparent !important;
+  border-radius: var(--app-shell-tab-radius) !important;
+  color: var(--spatial-ink) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 570;
+}
+
+.app-shell-content-stage .app-workspace-tab__icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--spatial-faint);
+  stroke-width: 1.7;
+  transition: color 160ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .app-workspace-tab.tab-item-selected .app-workspace-tab__icon {
+  color: var(--spatial-accent) !important;
+}
+
+.app-shell-content-stage .app-workspace-tab__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell-content-stage .app-workspace-tab-close {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  z-index: 2;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--spatial-faint);
+  opacity: 0;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+  transform: translateY(-50%);
+  transition:
+    color 150ms var(--app-shell-motion),
+    opacity 150ms var(--app-shell-motion),
+    background-color 150ms var(--app-shell-motion);
+}
+
+.app-shell-content-stage .app-workspace-tab-shell[data-active] .app-workspace-tab-close {
+  opacity: 0.38;
+}
+
+.app-shell-content-stage .app-workspace-tab-shell:hover .app-workspace-tab-close,
+.app-shell-content-stage .app-workspace-tab-close:focus-visible {
+  opacity: 1;
+}
+
+.app-shell-content-stage .app-workspace-tab-close:hover {
+  color: var(--spatial-ink);
+  background: var(--hover-fill, var(--md-state-hover));
+}
+
+.app-shell-content-stage .app-workspace-tab-close:focus-visible,
+.app-shell-content-stage .app-workspace-tab:focus-visible {
+  outline: 2px solid var(--spatial-accent-line);
+  outline-offset: -2px;
+}
+
+.app-shell-content-stage .app-workspace-tab-close svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 1.8;
+}
+
+.app-shell-content-stage .app-workspace-tab-status {
+  top: 5px;
+  left: 7px;
+  width: 4px;
+  height: 4px;
+  box-shadow: 0 0 0 2px var(--surface-bg-chip, var(--md-surface-container));
+}
+
+.dark .app-shell-content-stage .app-workspace-tab.tab-item-selected {
+  border-color: transparent !important;
+  color: var(--spatial-ink) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app-shell-content-stage .app-workspace-tab-strip .tab-indicator-line {
+  display: none;
+}
+
+/* Composer and tabs share the same quiet refraction language. The composer is
+ * one hierarchy level larger, so its radius grows without becoming a pill. */
+.app-shell-content-stage .session-input-dock.content-shell-chrome-bleed {
+  padding-right: var(--app-shell-session-gutter);
+  padding-bottom: 10px;
+  padding-left: var(--app-shell-session-gutter);
+}
+
+/* The token footer belongs to the composer stack and follows its outer edge. */
+.app-shell-content-stage .token-stats-bar.content-shell-chrome-bleed {
+  padding-right: var(--app-shell-session-gutter);
+  padding-left: var(--app-shell-session-gutter);
+}
+
+.app-shell-content-stage .chat-input-glass {
+  border: 1px solid var(--spatial-panel-rim);
+  border-radius: var(--app-shell-composer-radius);
+  background: var(--spatial-panel-fill) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 68%),
+    0 14px 34px rgb(53 63 79 / 10%);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+  transition:
+    border-color 180ms var(--app-shell-motion),
+    box-shadow 220ms var(--app-shell-motion),
+    transform 220ms var(--app-shell-motion);
+}
+
+[data-material='glass'] .app-shell-content-stage .chat-input-glass {
+  background: var(--surface-bg, var(--spatial-panel-fill)) !important;
+}
+
+[data-material='soft'] .app-shell-content-stage .chat-input-glass {
+  background: var(--surface-bg, hsl(var(--background))) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.app-shell-content-stage .chat-input-glass:focus-within {
+  border-color: var(--spatial-accent-line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 76%),
+    0 0 0 2px var(--spatial-accent-soft),
+    0 18px 42px rgb(53 63 79 / 13%);
+  transform: translateY(-2px);
+}
+
+/* One inspector owns chrome, context navigation and panel skin. Child panels
+ * keep their domain content but no longer render competing outer frames. */
+.app-inspector-frame {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-inspector-header {
+  display: flex;
+  height: 64px;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 11px 8px 14px;
+  border-bottom: 1px solid var(--spatial-line);
+}
+
+.app-inspector-heading {
+  min-width: 0;
+}
+
+.app-inspector-kicker {
+  color: var(--spatial-faint);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+}
+
+.app-inspector-title {
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--spatial-ink);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-inspector-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: var(--spatial-muted);
+  background: transparent;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 160ms var(--app-shell-motion),
+    transform 160ms var(--app-shell-motion);
+}
+
+.app-inspector-close:hover {
+  color: var(--spatial-ink);
+  background: rgb(255 255 255 / 42%);
+}
+
+.app-inspector-close:active {
+  transform: scale(0.94);
+}
+
+.app-inspector-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  padding: 0 12px 12px;
+}
+
+.app-inspector-body > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.app-inspector-body .design-preview-panel,
+.app-inspector-body .kanban-crew-panel,
+.app-inspector-body .btw-panel,
+.app-inspector-body .side-panel-root {
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-inspector-body .design-panel-header,
+.app-inspector-body .kanban-crew-panel-header,
+.app-inspector-body .btw-panel-header,
+.app-inspector-body .side-panel-root > .titlebar-drag-region {
+  display: none;
+}
+
+.app-inspector-body .side-panel-root {
+  padding-top: 0 !important;
+}
+
+/* Inspector is a peer region. The collapsed rail reserves its own 38px column. */
+.app-shell-right-stack,
+.app-shell-right-stack--open,
+.app-shell-right-stack--collapsed {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+}
+
+.app-shell-right-stack--collapsed {
+  position: relative;
+  inset: auto;
+}
+
+.app-shell-right-stack .right-nav-island-glass.nav-island-glass {
+  overflow: hidden;
+  border: 1px solid var(--spatial-panel-rim);
+  border-radius: var(--app-shell-frame-radius) !important;
+  background: var(--spatial-panel-fill);
+  box-shadow: var(--spatial-panel-shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(1.22);
+  backdrop-filter: blur(30px) saturate(1.22);
+  transition:
+    width 240ms var(--app-shell-motion),
+    border-color 180ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion),
+    box-shadow 220ms var(--app-shell-motion);
+}
+
+.app-shell-right-stack .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded),
+[data-material='glass']
+  .app-shell-right-stack
+  .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded) {
+  border-color: var(--spatial-panel-rim);
+  background: var(--spatial-panel-fill);
+  box-shadow: var(--spatial-panel-shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(1.22);
+  backdrop-filter: blur(30px) saturate(1.22);
+}
+
+.app-shell-right-stack .nav-island-sidebar[data-presence='collapsed'] {
+  opacity: 0;
+  transform: translateX(8px) scale(0.99);
+  pointer-events: none;
+}
+
+.app-shell-right-stack .nav-island-sidebar {
+  transform-origin: right center;
+  transition:
+    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
+    transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
+}
+
+.app-shell-right-stack .right-panel-rail--collapsed .rail-island-btn {
+  color: hsl(var(--foreground) / 0.42);
+}
+
+.app-shell-right-stack .right-panel-rail {
+  box-sizing: border-box;
+  width: var(--nav-rail-width);
+  padding-top: 16px;
+  padding-right: 3px;
+  padding-left: 3px;
+}
+
+.app-shell-right-stack .right-panel-rail--collapsed .rail-island-btn:hover {
+  color: hsl(var(--foreground) / 0.82);
+  background: hsl(var(--foreground) / 0.065);
+}
+
+.app-shell-right-stack--open .right-panel-rail {
+  width: var(--nav-rail-width);
+  padding-top: 16px;
+  border-left: 1px solid var(--spatial-line);
+  background: rgb(255 255 255 / 8%);
+}
+
+.app-shell-right-stack--open .right-panel-rail .rail-island-btn {
+  color: var(--spatial-muted);
+  background: transparent;
+}
+
+.app-shell-right-stack--open .right-panel-rail .rail-island-btn:hover {
+  color: var(--spatial-ink);
+  background: rgb(255 255 255 / 36%);
+}
+
+.app-shell-right-stack--open .right-panel-rail .rail-island-btn--active {
+  border: 1px solid var(--spatial-accent-line);
+  color: var(--spatial-accent);
+  background: rgb(249 251 254 / 66%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 52%);
+}
+
+.app-shell-right-stack--open .right-panel-rail .rail-island-btn--active::before {
+  content: none;
+}
+
+[data-material='glass'] .app-nav-stack,
+[data-material='glass'] .app-shell-right-stack .right-nav-island-glass.nav-island-glass {
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  background: var(--surface-bg, hsl(var(--background) / 0.22));
+}
+
+[data-material='glass']
+  .app-shell-right-stack
+  .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded) {
+  background: var(--surface-bg, hsl(var(--background) / 0.22));
+  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
+}
+
+[data-material='glass'] .app-nav-stack {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+}
+
+[data-material='soft'] .app-nav-stack,
+[data-material='soft'] .app-shell-right-stack .right-nav-island-glass.nav-island-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-material='soft'] .app-shell-right-stack .right-nav-island-glass.nav-island-glass {
+  background: var(--surface-bg, hsl(var(--background)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-nav,
+  .app-nav-sidebar,
+  .app-shell-right-stack .nav-island-sidebar,
+  .app-nav-stack .rail-island-btn,
+  .app-shell-right-stack .right-nav-island-glass.nav-island-glass,
+  .app-workspace-tab,
+  .app-inspector-close {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-nav-stack,
+  .app-shell-right-stack .right-nav-island-glass.nav-island-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--md-surface-container-low, hsl(var(--background)));
+  }
+}

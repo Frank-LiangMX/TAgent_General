@@ -78,7 +78,7 @@
 
 ### 阴影 / 间距 / 字号 / 动效 Token
 
-当前阶段留空，使用 Tailwind 默认 scale（`shadow-sm/md/lg` / `p-2/p-4` / `text-sm/base/lg` / `animate-in/out`）。后续如需统一自定义，在对应 token 源文件添加，生成器会自动产出。
+动效使用 `packages/ui/src/tokens/motion.ts` 的语义 Token：`duration-instant/fast/control/panel/scene` 与 `ease-enter/exit/spatial`。空间层级使用 `surface-role.ts` 注册的十类 `SurfaceRole`，光学映射统一定义在 `styles/surface-roles.css`。业务组件不要自行发明 z-index 或按材质分支。
 
 ---
 
@@ -345,7 +345,8 @@ Tailwind 通过 `hsl(var(--xxx))` 引用。
 
 - **改** `packages/ui/styles/glass.css` 顶部的 `--surface-*` / `[data-material]` 表
 - 表面类（`session-glass-*` / `settings-card` / toast）只读 token
-- 业务壳（`panel-glass` / `nav-island` / `content-glass` / `btw-*`）已读 surface token；`html.material-frosted` 仅残留 content-base-plate / shell 等兼容
+- 业务壳：`components/app-shell/app-shell.css` 维护 scene / 三个并列主平面 / overlay 布局契约，表面只读 surface token；`panel-glass` / `content-glass` / `btw-*` 继续按各自场景消费 token。禁止恢复 `content-base-plate` 多节点描边或在 `globals.css` 追加 AppShell 覆盖。
+- AppShell 形状层级固定为：主导航 / 工作区 / 检查器 24px，内层输入区与浮动工具条 16–18px，列表行与图标按钮 10–12px；头像、状态点和微型状态切换才使用 full pill。主区域必须并列对齐，禁止用负 margin 制造无语义叠加。
 
 ---
 

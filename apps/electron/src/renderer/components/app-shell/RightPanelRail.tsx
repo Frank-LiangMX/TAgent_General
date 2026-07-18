@@ -18,10 +18,9 @@ import {
 } from '@/atoms/agent-atoms'
 import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import { rightRailItemAtom } from '@/atoms/app-mode'
 import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
-import { detectIsMac } from '@/lib/platform'
 import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +41,6 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)
-  const isMac = React.useMemo(() => detectIsMac(), [])
 
   const unseenChanges = currentSessionId ? (unseenChangesMap.get(currentSessionId) ?? false) : false
   const unseenFilesCount = currentSessionId ? (unseenFilesMap.get(currentSessionId)?.size ?? 0) : 0
@@ -70,7 +68,6 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
     !!crewBoardId &&
     !isCrewActive &&
     crewTasks.some((t) => t.status === 'running' || t.status === 'blocked')
-
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
     if (!channelId) return false
@@ -152,15 +149,14 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   return (
     <div
       className={cn(
-        'nav-island-rail right-panel-rail relative z-[1] h-full flex flex-col items-center px-1.5 pb-2 shrink-0',
+        'nav-island-rail right-panel-rail relative z-[1] flex h-full shrink-0 flex-col items-center pb-2',
         !panelOpen && 'right-panel-rail--collapsed',
         !panelOpen && showBadge && 'right-panel-rail--notify',
         className
       )}
     >
-      {!isMac ? <div className="w-full shrink-0 h-[30px]" aria-hidden /> : null}
-      <div className="nav-island-body-start w-full flex flex-col items-center">
-        <div className="rail-slide-host relative flex flex-col items-center gap-1 w-full">
+      <div className="nav-island-body-start flex w-full flex-col items-center">
+        <div className="rail-slide-host relative flex w-full flex-col items-center gap-1">
           {/* 文件面板按钮 */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -170,7 +166,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                 aria-pressed={isFilesActive}
                 aria-label="文件面板"
                 className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                   isFilesActive && 'rail-island-btn--active'
                 )}
               >
@@ -197,7 +193,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                   aria-pressed={isBtwActive}
                   aria-label="旁注"
                   className={cn(
-                    'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                    'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                     isBtwActive && 'rail-island-btn--active'
                   )}
                 >
@@ -222,7 +218,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                 aria-pressed={isBrowserActive}
                 aria-label="浏览器预览"
                 className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                   isBrowserActive && 'rail-island-btn--active'
                 )}
               >
@@ -246,7 +242,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                 aria-pressed={isDesignActive}
                 aria-label="Design Preview"
                 className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                   isDesignActive && 'rail-island-btn--active'
                 )}
               >
@@ -270,7 +266,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
                 aria-pressed={isCrewActive}
                 aria-label="班组"
                 className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center rounded-[10px] titlebar-no-drag relative z-[2]',
+                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                   isCrewActive && 'rail-island-btn--active'
                 )}
               >
@@ -290,7 +286,7 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
         </div>
       </div>
 
-      <div className="flex-1 min-h-0" />
+      <div className="min-h-0 flex-1" />
     </div>
   )
 }

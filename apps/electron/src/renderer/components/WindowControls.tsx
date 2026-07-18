@@ -30,7 +30,7 @@ export function WindowControls(): React.ReactElement | null {
 
   // 叠在浮岛顶缘（与 shell p-2 对齐），恢复「控件融在顶栏」观感
   return (
-    <div className="window-controls fixed top-[8px] right-[8px] z-[200] flex select-none titlebar-no-drag">
+    <div className="window-controls app-window-controls fixed z-[200] flex select-none titlebar-no-drag">
       {/* 最小化 */}
       <button
         type="button"

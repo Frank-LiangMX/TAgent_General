@@ -11,8 +11,8 @@
  * - **右侧边栏布局**：自适应宽度，样式与文件面板统一
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare, X } from 'lucide-react'
+import { useAtom, useAtomValue } from 'jotai'
+import { Send, Loader2, MessageCircle, ArrowUpRightFromSquare } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -159,9 +159,9 @@ export function BtwPanel({ width }: BtwPanelProps): React.ReactElement {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ width }}>
+    <div className="btw-panel h-full flex flex-col overflow-hidden" style={{ width }}>
       {/* Header */}
-      <div className="flex items-center justify-between pl-4 pr-3 pt-3 pb-2.5 shrink-0 border-b border-border/30">
+      <div className="btw-panel-header flex items-center justify-between pl-4 pr-3 pt-3 pb-2.5 shrink-0 border-b border-border/30">
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center justify-center size-7 rounded-lg bg-foreground/10 text-foreground shrink-0">
             <MessageCircle size={14} />

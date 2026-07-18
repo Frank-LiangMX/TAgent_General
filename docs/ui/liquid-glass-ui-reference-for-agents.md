@@ -19,7 +19,7 @@
 | 颜色 / hue | 主题 token（`colors.ts` / globals theme） | 为 glass 再造一套色板 |
 | 圆角 | `--radius-glass-*` | `rounded-[14px]` |
 | 材质光学 | `packages/ui/styles/glass.css` 的 `[data-material]` 表 | 类级补丁盖不全三种材质 |
-| 布局壳层 | `globals.css` 的 shell / plate / nav-island | 改 glass 时顺手搞坏 soft |
+| 布局壳层 | `components/app-shell/app-shell.css` 的四层契约 | 在 `globals.css` 追加 shell 覆盖 |
 
 ---
 
@@ -103,23 +103,25 @@
 
 ## 5. 布局壳层：侧栏 × 主区（血泪备忘）
 
-生产布局（`AppShell`）与纯 demo 不同：
+生产布局（`AppShell`）与纯 demo 不同。当前结构固定为四层：
 
 ```
-shell（外壳 wash）
-├── NavIsland（z 高，rail + sidebar 同一浮岛）
-├── 缝（padding）
-└── content-main-shell
-    └── content-base-plate（可 left 负 inset 伸进浮岛下方）
+app-shell-scene（z 0，弥散环境光场）
+├── NavIsland（z 10，单一导航外框）
+│   ├── rail（功能导航列）
+│   └── sidebar（会话 / 功能内容列）
+├── app-content-surface（z 10，唯一主内容表面）
+├── right inspector（z 10，独立检查器表面）
+└── feature overlays（z 80+，仅临时交互层）
 ```
 
 | 现象 | 更可能的原因 | 不要先做 |
 |------|----------------|----------|
-| 「侧栏边缘实心」 | 主底板伸进缝里 / 左侧不透明 fade，不是 island 的 box-shadow | 别先把 soft 阴影改没 |
-| 「侧栏和主区隔断」 | 错误地把 plate 的 left/right 置 0 挖断延伸 | 别为了透感拆布局 |
-| rail 选中正常、外缘不对 | 浮岛内部 OK，问题在 plate / 缝 / 外轮廓 | 别重写 list 选中态 |
+| 「侧栏层很多」 | sidebar 内的 well 被误画成第二张卡片 | 不要再包 panel；well 只负责分组 |
+| 「侧栏和主区挤在一起」 | 主区域新增了负 margin，或把结构层当成浮层 | 不要用 z-index 掩盖布局问题 |
+| rail 选中正常、外缘不对 | rail / sidebar 被分别画成了两张表面 | 不要重写 list 选中态；先恢复单一导航外框 |
 
-**正确顺序**：DevTools 点选缝里那一层 → 看 Computed 的 `background` / `box-shadow` 胜出选择器 → 只改那一层。
+**正确顺序**：先确认问题属于 scene / content / nav / overlay 哪一层，再在 `app-shell.css` 调整对应布局 token；光学参数仍只改共享 surface token。
 
 参考站 demo 通常是**独立浮在花纹背景上的单卡片**，没有「plate 伸进侧栏」这层生产约束。
 
@@ -177,9 +179,10 @@ shell（外壳 wash）
 ## 8. PR / 改动检查清单（UI 相关）
 
 - [ ] 是否只动了 **一种材质** 的 surface 表或明确 scoped 的选择器？
-- [ ] soft 的 nav-island / 阴影规则是否仍生效？（对比 `[data-material=soft]` specificity）
+- [ ] soft 的 nav / content 表面是否仍只消费 surface token？
 - [ ] 是否新增硬编码 `blur(Npx)` / `rgba` 阴影到业务组件？
-- [ ] 是否理解 `content-base-inset-left` 再改 plate？
+- [ ] 是否保持一个主内容 surface、一个 nav surface，且主区域之间没有负 margin？
+- [ ] 是否遵守圆角层级：主框 24px、内层工具区 16–18px、行与按钮 10–12px、仅状态 / 头像使用 full pill？
 - [ ] 是否引入了全屏 SVG/WebGL 滤镜？
 - [ ] 是否在用户未授权时执行了 `git checkout` / `restore` / `reset` 覆盖未提交 CSS？
 - [ ] 视觉是否在 **glass + soft + frosted** 三种下都看过侧栏/主区接缝？

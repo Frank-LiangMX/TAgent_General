@@ -48,6 +48,15 @@ export * from './components/attachment-preview-item'
 export { UserAvatar } from './components/user-avatar'
 export type { UserAvatarProps } from './components/user-avatar'
 
+// 材质模式（MaterialMode / MaterialProvider / useMaterial / useMaterialMode）
+export * from './material/index.ts'
+export {
+  surfaceRoles,
+  surfaceRoleZIndex,
+  isSurfaceRole,
+  type SurfaceRole,
+} from './tokens/surface-role'
+
 // 富内容组件
 export { CodeBlock } from './code-block/index.ts'
 export { MermaidBlock } from './mermaid-block/index.ts'
