@@ -151,19 +151,28 @@ export function StickyUserMessage({
           : 'opacity-0 -translate-y-2 pointer-events-none'
       )}
     >
-      <div className="mx-8 px-2.5 pt-0.5 flex justify-center">
+      {/* 边距由 agent-thread.css 控制：左对齐会话 gutter，右额外预留给消息导航刻度 */}
+      <div className="agent-sticky-jump-shell flex justify-center pt-1">
         <div
-          className="session-glass session-glass-sticky w-full cursor-pointer"
+          className="agent-sticky-jump chat-input-glass session-glass w-full cursor-pointer"
           onClick={scrollToOriginal}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              scrollToOriginal()
+            }
+          }}
         >
           <div className="px-3.5 py-2.5">
             {stickyMessage?.text && (
               <div className="flex items-start gap-2">
                 <ChevronUp
-                  className="size-3 text-muted-foreground mt-1.5 shrink-0 cursor-pointer hover:text-foreground/70 transition-colors"
+                  className="md-text-variant mt-1.5 size-3 shrink-0 cursor-pointer transition-colors hover:text-foreground"
                   onClick={scrollToOriginal}
                 />
-                <div className="text-xs text-foreground/80 line-clamp-2 leading-relaxed flex-1 min-w-0">
+                <div className="md-text min-w-0 flex-1 line-clamp-2 text-xs leading-relaxed">
                   <MessageResponse
                     className="prose-p:my-0 prose-p:inline prose-headings:my-0 prose-headings:text-sm prose-pre:hidden prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
                     remarkPlugins={STICKY_REMARK_PLUGINS}
@@ -175,16 +184,16 @@ export function StickyUserMessage({
             )}
 
             {stickyMessage && stickyMessage.attachments.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-1">
                 {stickyMessage.attachments.map((att) => {
                   const Icon = att.isImage ? FileImage : FileText
                   return (
                     <div
                       key={att.filename}
-                      className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground"
+                      className="md-text-variant inline-flex items-center gap-1 rounded-full bg-background/40 px-2 py-0.5 text-[11px]"
                     >
                       <Icon className="size-3 shrink-0" />
-                      <span className="truncate max-w-[150px]">{att.filename}</span>
+                      <span className="max-w-[150px] truncate">{att.filename}</span>
                     </div>
                   )
                 })}

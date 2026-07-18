@@ -2736,7 +2736,11 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
 }
 
-/* ===== 消息导航刻度（右上角紧凑簇） ===== */
+/* ===== 消息导航刻度（右上角紧凑簇，贴主区右缘靠近 right rail） ===== */
+.message-nav-rail {
+  right: 0;
+}
+
 /* 始终清晰可见；当前视口最亮，用户消息次之，助手略淡 */
 .message-nav-bar {
   background: hsl(var(--primary) / 0.38);

@@ -371,7 +371,7 @@ export function ScrollMinimap({
 
   return (
     <div
-      className="absolute right-1 top-0 bottom-0 z-30 flex w-9 justify-end pointer-events-auto"
+      className="message-nav-rail absolute right-0 top-0 bottom-0 z-30 flex w-7 justify-end pointer-events-auto"
       onMouseEnter={() => setIsColumnHovered(true)}
       onMouseLeave={() => setIsColumnHovered(false)}
     >
@@ -380,7 +380,7 @@ export function ScrollMinimap({
         {hovered && (
           <div
             className={cn(
-              'session-glass-surface session-glass-popover message-nav-popover mr-1.5 w-[300px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
+              'session-glass-surface session-glass-popover message-nav-popover mr-1 w-[300px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
               isLeaving ? 'message-nav-popover-exit' : 'message-nav-popover-enter'
             )}
             style={{ maxHeight: 'min(460px, 64vh)', marginTop: 10 }}
@@ -488,13 +488,13 @@ export function ScrollMinimap({
         </div>
       </div>
 
-      {/* 滚动 thumb：滚动/悬停时显现 */}
+      {/* 滚动 thumb：滚动/悬停时显现；贴右缘，与刻度同列 */}
       <div
         className={cn(
-          'relative ml-1 py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
+          'relative ml-0.5 py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
           thumbVisible ? 'opacity-100' : 'opacity-0'
         )}
-        style={{ width: 6 }}
+        style={{ width: 5 }}
       >
         <div
           ref={trackRef}

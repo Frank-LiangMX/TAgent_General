@@ -1,10 +1,9 @@
 /**
  * Agent 会话线程视觉
  *
- * 设计参考：glass-studio 原型
- * - 过程区 = muted surface 卡；回答区 = 干净 prose（DOM 脱钩）
- * - 用户气泡右对齐、大圆角
- * - 工具行 done / running 状态区分
+ * 与 Spatial Soft UI 壳层对齐：
+ * - 过程区 / 气泡 / 吸顶条 / 回底按钮使用冷灰蓝 surface，避免旧版暖米色卡
+ * - 优先消费 --spatial-*（AppShell 注入）与 --surface-* / --md-* token
  *
  * 挂载点：.tagent-agent-thread（ConversationContent）
  */
@@ -14,42 +13,82 @@
   --agent-content-indent: 52px;
   --agent-surface-radius: 14px;
   --agent-bubble-radius: 20px;
-  /* 用户气泡：主色容器 tint，融入主题色 */
-  --agent-surface-bg: var(--md-primary-container, hsl(var(--secondary)));
-  --agent-surface-border: var(--md-primary-outline, hsl(var(--border)));
-  --agent-surface-on: var(--md-on-primary-container, hsl(var(--foreground)));
+
+  /* 用户气泡：主色 soft tint（对齐 shell accent-soft） */
+  --agent-surface-bg: var(
+    --spatial-accent-soft,
+    color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--card)))
+  );
+  --agent-surface-border: var(
+    --spatial-accent-line,
+    color-mix(in srgb, hsl(var(--primary)) 26%, hsl(var(--border)))
+  );
+  --agent-surface-on: var(--spatial-ink, hsl(var(--foreground) / 0.92));
   --agent-bubble-blur: 0px;
-  /* 过程卡：比 secondary 再沉一点，和回答区拉开 */
-  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 58%, hsl(var(--background)));
-  --agent-process-border: color-mix(in srgb, hsl(var(--border)) 48%, transparent);
+
+  /*
+   * 过程卡：极轻 well，几乎融进会话底
+   * 不用实色 card / muted（会跳出成「一块米色条」）
+   */
+  --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 3.2%, transparent);
+  --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 5.5%, transparent);
+  --agent-process-shadow: none;
+  --agent-process-blur: 8px;
+
   /* 轮次间距：避免助手脚注与下一条用户气泡「夹心」 */
   gap: 1.125rem !important;
 }
 
 .dark .tagent-agent-thread {
-  --agent-surface-bg: var(--md-primary-container, hsl(var(--secondary)));
-  --agent-surface-border: var(--md-primary-outline, hsl(var(--border)));
-  --agent-surface-on: var(--md-on-primary-container, hsl(var(--foreground)));
+  --agent-surface-bg: var(
+    --spatial-accent-soft,
+    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
+  );
+  --agent-surface-border: var(
+    --spatial-accent-line,
+    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
+  );
+  --agent-surface-on: var(--spatial-ink, hsl(var(--foreground) / 0.94));
   --agent-bubble-blur: 0px;
-  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
-  --agent-process-border: color-mix(in srgb, hsl(var(--border)) 55%, transparent);
+  --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
 }
 
 [data-material='glass'] .tagent-agent-thread {
-  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--muted) / 0.42));
-  --agent-bubble-blur: 8px;
-  --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 42%, transparent);
-  --agent-process-border: var(--surface-rim, hsl(var(--border) / 0.45));
+  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--background) / 0.42));
+  --agent-bubble-blur: 10px;
+  --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 18%, transparent);
+  --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 7%, transparent);
+  --agent-process-blur: 12px;
 }
 
 .dark[data-material='glass'] .tagent-agent-thread,
 [data-material='glass'].dark .tagent-agent-thread {
-  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--muted) / 0.28));
-  --agent-bubble-blur: 8px;
+  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background) / 0.32));
+  --agent-bubble-blur: 10px;
+  --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 4.5%, transparent);
 }
 
 [data-material='soft'] .tagent-agent-thread {
-  --agent-process-bg: color-mix(in srgb, hsl(var(--muted)) 50%, hsl(var(--background)));
+  --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 2.8%, transparent);
+  --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  --agent-process-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent);
+}
+
+/* Spatial：过程卡用与会话底同色温的极淡 wash，不再抬成第二块浮岛 */
+.app-shell-scene .tagent-agent-thread {
+  --agent-process-bg: color-mix(in srgb, rgb(255 255 255) 22%, transparent);
+  --agent-process-border: var(--spatial-line, rgb(68 78 94 / 10%));
+  --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
+  --agent-process-blur: 10px;
+}
+
+.dark .app-shell-scene .tagent-agent-thread,
+.app-shell-scene.dark .tagent-agent-thread {
+  --agent-process-bg: color-mix(in srgb, rgb(255 255 255) 4.5%, transparent);
+  --agent-process-border: var(--spatial-line, rgb(202 213 230 / 10%));
+  --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
 }
 
 /* ===== Turn：过程 / 回答脱钩 ===== */
@@ -67,48 +106,54 @@
   max-width: 100%;
   min-height: 26px;
   padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, hsl(var(--border)) 70%, transparent);
-  background: color-mix(in srgb, hsl(var(--muted)) 35%, transparent);
+  border-radius: 999px;
+  border: 1px solid var(--agent-process-border);
+  background: color-mix(in srgb, hsl(var(--card)) 55%, transparent);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.3;
-  color: hsl(var(--muted-foreground));
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
   user-select: none;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .dark .tagent-agent-thread .agent-turn-title {
-  border-color: color-mix(in srgb, hsl(var(--border)) 80%, transparent);
-  background: color-mix(in srgb, hsl(var(--muted)) 45%, transparent);
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 12%, transparent);
+  background: color-mix(in srgb, hsl(var(--card)) 48%, transparent);
 }
 
-/* 过程区：轻 surface 卡，包住 thinking + tools */
+/* 过程区：极轻 well，只暗示分组，不抢回答正文 */
 .tagent-agent-thread .agent-turn-process {
-  border-radius: var(--agent-surface-radius);
+  border-radius: calc(var(--agent-surface-radius) + 2px);
   background: var(--agent-process-bg);
   border: 1px solid var(--agent-process-border);
-  padding: 6px 8px 8px;
-  box-shadow: none;
+  padding: 4px 6px 6px;
+  box-shadow: var(--agent-process-shadow, none);
+  -webkit-backdrop-filter: blur(var(--agent-process-blur, 8px)) saturate(1.06);
+  backdrop-filter: blur(var(--agent-process-blur, 8px)) saturate(1.06);
 }
 
 [data-material='glass'] .tagent-agent-thread .agent-turn-process {
-  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
-    saturate(var(--surface-saturate, 1.2));
-  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.2));
-  box-shadow: inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.2);
+  -webkit-backdrop-filter: blur(var(--agent-process-blur, 12px))
+    saturate(var(--surface-saturate, 1.15));
+  backdrop-filter: blur(var(--agent-process-blur, 12px))
+    saturate(var(--surface-saturate, 1.15));
+  box-shadow: var(--agent-process-shadow, inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.12));
 }
 
 [data-material='soft'] .tagent-agent-thread .agent-turn-process {
-  box-shadow:
-    inset 1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 7%, transparent),
-    inset -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 70%, transparent);
+  box-shadow: var(
+    --agent-process-shadow,
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 50%, transparent)
+  );
 }
 
 /* 回答区：裸 prose，无灰底 */
 .tagent-agent-thread .agent-turn-answer {
   min-width: 0;
-  color: hsl(var(--foreground));
+  color: var(--spatial-ink, hsl(var(--foreground)));
   font-size: 13.5px;
   line-height: 1.65;
   background: transparent;
@@ -125,18 +170,23 @@
 .tagent-agent-thread .agent-process-group + .agent-process-group {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid color-mix(in srgb, hsl(var(--border)) 40%, transparent);
+  border-top: 1px solid color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
 }
 
 .tagent-agent-thread .agent-process-group__toggle {
   border-radius: 10px;
   padding: 4px 6px;
   margin: 0;
-  transition: background 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+  color: var(--spatial-faint, hsl(var(--muted-foreground) / 0.78));
+  font-weight: 500;
 }
 
 .tagent-agent-thread .agent-process-group__toggle:hover {
-  background: var(--hover-fill, color-mix(in srgb, hsl(var(--foreground)) 6%, transparent));
+  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
 }
 
 /* 去掉旧左边线：内容在卡内平铺 */
@@ -167,7 +217,7 @@
 .tagent-agent-thread .agent-tool-row > div[role='button']:hover {
   background: var(
     --hover-fill,
-    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
+    color-mix(in srgb, hsl(var(--foreground)) 6%, hsl(var(--background)))
   );
 }
 
@@ -176,10 +226,12 @@
   margin-bottom: 0.5rem;
   margin-left: 0.15rem;
   border-radius: calc(var(--agent-surface-radius) - 2px);
-  border: 1px solid var(--agent-surface-border);
-  background: color-mix(in srgb, hsl(var(--background)) 55%, transparent);
+  border: 1px solid var(--agent-process-border);
+  background: color-mix(in srgb, hsl(var(--background)) 62%, transparent);
   padding: 0.65rem 0.85rem;
   box-shadow: none;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 /* ===== Thinking：对齐原型；在过程卡内要明显抬起一层 ===== */
@@ -189,35 +241,34 @@
 }
 
 /*
- * 过程卡底是 muted 灰；思考块用「更亮的 card + 轻 primary 虚线」
- * 与工具行、过程底拉开对比
+ * 过程卡底是冷灰蓝；思考块用更亮的 elevated surface + 轻 primary 虚线
  */
 .tagent-agent-thread .agent-thinking-body {
   border-radius: calc(var(--agent-surface-radius) - 2px);
   padding: 10px 12px;
-  border: 1px dashed color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
-  background: color-mix(in srgb, hsl(var(--card)) 88%, hsl(var(--primary)) 4%);
+  border: 1px dashed color-mix(in srgb, hsl(var(--primary)) 24%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--card)) 72%, hsl(var(--primary)) 3%);
   box-shadow:
     0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
-    0 1px 3px color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+    0 1px 3px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
 }
 
 .dark .tagent-agent-thread .agent-thinking-body {
-  border-color: color-mix(in srgb, hsl(var(--primary)) 32%, hsl(var(--border)));
-  background: color-mix(in srgb, hsl(var(--card)) 78%, hsl(var(--primary)) 8%);
+  border-color: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--card)) 78%, hsl(var(--primary)) 6%);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
     0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
-/* 过程卡内再抬一层：背景更接近 dialog/lowest */
+/* 过程卡内再抬一层 */
 .tagent-agent-thread .agent-turn-process .agent-thinking-body {
-  background: var(--md-surface-container-lowest, hsl(var(--dialog)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 32%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--card)) 78%, hsl(var(--background)) 22%);
+  border-color: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
 }
 
 .dark .tagent-agent-thread .agent-turn-process .agent-thinking-body {
-  background: color-mix(in srgb, hsl(var(--card)) 92%, hsl(var(--primary)) 6%);
+  background: color-mix(in srgb, hsl(var(--card)) 88%, hsl(var(--primary)) 5%);
 }
 
 .tagent-agent-thread .agent-thinking-body--collapsed {
@@ -242,8 +293,8 @@
   padding: 3px 7px;
   border-radius: 999px;
   color: var(--md-on-primary-container, hsl(var(--primary)));
-  background: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
-  border: 1px solid color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--primary)) 11%, hsl(var(--card)));
+  border: 1px solid color-mix(in srgb, hsl(var(--primary)) 20%, hsl(var(--border)));
 }
 
 .dark .tagent-agent-thread .agent-thinking-badge {
@@ -260,7 +311,7 @@
 .tagent-agent-thread .agent-thinking-content {
   font-size: 12.5px !important;
   line-height: 1.55 !important;
-  color: hsl(var(--muted-foreground));
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
   font-weight: 400;
 }
 
@@ -286,7 +337,7 @@
   padding: 1rem 12px 8px;
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--md-surface-container-lowest, hsl(var(--dialog))) 92%, transparent) 40%,
+    color-mix(in srgb, hsl(var(--card)) 88%, transparent) 40%,
     transparent 100%
   );
 }
@@ -294,13 +345,13 @@
 .tagent-agent-thread .agent-turn-process .agent-thinking-body--collapsed .agent-thinking-fade {
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--md-surface-container-lowest, hsl(var(--dialog))) 95%, transparent) 42%,
+    color-mix(in srgb, hsl(var(--card)) 90%, transparent) 42%,
     transparent 100%
   );
 }
 
 [data-material='glass'] .tagent-agent-thread .agent-thinking-body {
-  background: color-mix(in srgb, hsl(var(--card)) 55%, transparent);
+  background: color-mix(in srgb, hsl(var(--card)) 48%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -308,7 +359,7 @@
 [data-material='soft'] .tagent-agent-thread .agent-thinking-body {
   box-shadow:
     0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent) inset,
-    1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+    1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
 }
 
 /* ===== 用户气泡 ===== */
@@ -321,7 +372,9 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 1.55;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
+    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
   backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
   -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
 }
@@ -334,7 +387,7 @@
 
 .tagent-agent-thread .agent-user-bubble:hover {
   box-shadow:
-    0 1px 0 hsl(var(--glass-shine) / 0.62) inset,
+    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
     0 4px 12px hsl(var(--primary) / 0.12);
 }
 
@@ -426,18 +479,21 @@
   color: var(--md-on-primary-container, hsl(var(--primary)));
   background: var(
     --md-primary-container,
-    color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)))
+    color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))
   );
   border: 1px solid
-    var(--md-primary-outline, color-mix(in srgb, hsl(var(--primary)) 26%, hsl(var(--border))));
-  box-shadow: 0 1px 2px color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
+    var(--md-primary-outline, color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--border))));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
+    0 1px 2px color-mix(in srgb, hsl(var(--primary)) 10%, transparent);
   cursor: default;
 }
 
 /* 完成态：同款胶囊，无扫光；勾替换 spinner */
 .tagent-agent-thread .agent-running-badge--done {
-  /* 与 running 同色，仅去掉动效；略稳一点阴影 */
-  box-shadow: 0 1px 2px color-mix(in srgb, hsl(var(--primary)) 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
+    0 1px 2px color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
 }
 
 .tagent-agent-thread .agent-running-badge__check {
@@ -578,4 +634,149 @@
   100% {
     background-position: -100% 0;
   }
+}
+
+/* ===== 回底圆形按钮（ConversationScrollButton） ===== */
+
+.conversation-scroll-btn,
+[data-conversation-scroll-btn] {
+  color: var(--spatial-muted, hsl(var(--muted-foreground) / 0.85));
+  background: color-mix(in srgb, hsl(var(--card)) 62%, hsl(var(--background)) 38%) !important;
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 72%, transparent),
+    0 6px 18px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.14);
+  backdrop-filter: blur(14px) saturate(1.14);
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 180ms ease,
+    transform 160ms ease;
+}
+
+.conversation-scroll-btn:hover,
+[data-conversation-scroll-btn]:hover {
+  color: var(--spatial-ink, hsl(var(--foreground))) !important;
+  background: color-mix(in srgb, hsl(var(--card)) 78%, hsl(var(--primary)) 4%) !important;
+  border-color: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--border))) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent),
+    0 8px 22px color-mix(in srgb, hsl(var(--primary)) 10%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.dark .conversation-scroll-btn,
+.dark [data-conversation-scroll-btn] {
+  background: color-mix(in srgb, hsl(var(--card)) 55%, hsl(var(--background)) 45%) !important;
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 12%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--foreground)) 8%, transparent),
+    0 8px 22px rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-material='glass'] .conversation-scroll-btn,
+[data-material='glass'] [data-conversation-scroll-btn] {
+  background: color-mix(in srgb, hsl(var(--background)) 35%, transparent) !important;
+  border-color: hsl(var(--glass-rim, var(--border)) / 0.45) !important;
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.35),
+    0 8px 22px rgba(0, 0, 0, 0.14) !important;
+}
+
+/*
+ * 吸顶「上一轮用户消息」跳转条
+ * 表面直接复用 .chat-input-glass（与底部输入框同款）；
+ * Spatial 壳层下由 app-shell.css `.app-shell-content-stage .chat-input-glass` 统一光学。
+ * 这里只补交互态，不另写一套 fill / rim / shadow。
+ */
+.agent-sticky-jump.chat-input-glass {
+  /* 与输入框同圆角 token；Spatial 下再被 composer-radius 覆盖 */
+  border-radius: var(--radius-glass-input, 24px);
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 180ms ease;
+}
+
+.agent-sticky-jump.chat-input-glass:hover {
+  border-color: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent),
+    0 0 0 2px hsl(var(--primary) / 0.1),
+    0 10px 28px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Spatial：hover 对齐输入框 focus-within 的轻抬起，但不抢 primary 强光晕 */
+.app-shell-content-stage .agent-sticky-jump.chat-input-glass:hover {
+  border-color: var(--spatial-accent-line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 76%),
+    0 0 0 2px var(--spatial-accent-soft),
+    0 16px 36px rgb(53 63 79 / 12%);
+  transform: translateY(-1px);
+}
+
+/*
+ * 吸顶条水平边距：
+ * - 左：对齐会话 gutter / ConversationContent
+ * - 右：gutter + 消息导航刻度预留，避免与右上角刻度叠压
+ */
+.agent-sticky-jump-shell {
+  --agent-sticky-nav-reserve: 26px;
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: calc(2rem + var(--agent-sticky-nav-reserve));
+  padding-left: 2rem;
+}
+
+.app-shell-content-stage .agent-sticky-jump-shell {
+  padding-right: calc(
+    var(--app-shell-session-gutter, 18px) + var(--agent-sticky-nav-reserve)
+  );
+  padding-left: var(--app-shell-session-gutter, 18px);
+}
+
+/*
+ * 消息导航刻度：贴主区右缘，更靠近 right rail
+ * content-stage overflow:hidden 不能越界到 shell gap，故 right:0 + 收窄列宽
+ */
+.message-nav-rail {
+  right: 0;
+}
+
+.app-shell-content-stage .message-nav-rail {
+  right: 0;
+  width: 1.375rem; /* ~22px */
+  padding-right: 1px;
+}
+
+.app-shell-scene .conversation-scroll-btn,
+.app-shell-scene [data-conversation-scroll-btn] {
+  color: var(--spatial-muted);
+  background: color-mix(in srgb, rgb(246 249 253) 70%, transparent) !important;
+  border-color: var(--spatial-panel-rim) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 66%),
+    0 8px 20px rgb(49 59 76 / 10%) !important;
+}
+
+.app-shell-scene .conversation-scroll-btn:hover,
+.app-shell-scene [data-conversation-scroll-btn]:hover {
+  color: var(--spatial-ink) !important;
+  background: color-mix(in srgb, rgb(250 252 255) 82%, var(--spatial-accent-soft)) !important;
+  border-color: var(--spatial-accent-line) !important;
+}
+
+.dark .app-shell-scene .conversation-scroll-btn,
+.dark .app-shell-scene [data-conversation-scroll-btn],
+.app-shell-scene.dark .conversation-scroll-btn,
+.app-shell-scene.dark [data-conversation-scroll-btn] {
+  background: color-mix(in srgb, rgb(35 42 54) 72%, transparent) !important;
+  border-color: var(--spatial-panel-rim) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 8%),
+    0 10px 24px rgb(3 7 14 / 28%) !important;
 }

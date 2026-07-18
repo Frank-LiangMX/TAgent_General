@@ -1583,10 +1583,16 @@ export function LeftSidebar({
                 className="tool-cluster-icon"
                 onClick={() => setNavigationSidebarOpen(false)}
                 aria-label="折叠侧栏"
+                title="折叠侧栏"
               >
-                <PanelLeftClose size={14} strokeWidth={1.5} />
+                <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
               </button>
-              <button type="button" className="tool-cluster-accent" onClick={handleNewAgentSession}>
+              <button
+                type="button"
+                className="tool-cluster-accent"
+                onClick={handleNewAgentSession}
+                title="新建会话"
+              >
                 新会话
               </button>
             </div>
@@ -1682,10 +1688,16 @@ export function LeftSidebar({
                 className="tool-cluster-icon"
                 onClick={() => setNavigationSidebarOpen(false)}
                 aria-label="折叠侧栏"
+                title="折叠侧栏"
               >
-                <PanelLeftClose size={14} strokeWidth={1.5} />
+                <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
               </button>
-              <button type="button" className="tool-cluster-accent" onClick={handleNewDraft}>
+              <button
+                type="button"
+                className="tool-cluster-accent"
+                onClick={handleNewDraft}
+                title="新建草稿"
+              >
                 新草稿
               </button>
             </div>
