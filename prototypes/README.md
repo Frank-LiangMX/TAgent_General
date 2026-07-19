@@ -12,6 +12,7 @@
 | [`liquid-glass-demo/`](./liquid-glass-demo/) | Liquid Glass 光学/滤镜参数演示 | `liquid-glass-demo/index.html` |
 | [`style-showcase/`](./style-showcase/) | 风格对照：glassmorphism / neumorphism / production glass | `style-showcase/index.html` |
 | [`layout-direction-study/`](./layout-direction-study/) | AppShell 布局基调对照：一体机身 / 语义浮层 / 横向工作集 | `layout-direction-study/index.html`，顶部可切换三种方向与 Win / Mac 窗口控件 |
+| [`spatial-theme-study/`](./spatial-theme-study/) | 锁定 Spatial Lens 基调的多主题视觉签字原型（6 主题 × 明暗 × 磨砂/高透 × Win/Mac） | `spatial-theme-study/index.html`，顶部实验工具条切换；支持 `?theme=&mode=&material=&platform=&clean=1&selftest=1` |
 | [`references/`](./references/) | 未接入主线逻辑的参考实现、镜像页面、旧版 renderer 备份 | 仅供查阅，不参与产品构建 |
 
 ## 本地预览

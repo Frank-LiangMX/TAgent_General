@@ -72,8 +72,7 @@
 [data-material='soft'] .tagent-agent-thread {
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 2.8%, transparent);
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
-  --agent-process-shadow:
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent);
+  --agent-process-shadow: inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent);
 }
 
 /* Spatial：过程卡用与会话底同色温的极淡 wash，不再抬成第二块浮岛 */
@@ -138,8 +137,7 @@
 [data-material='glass'] .tagent-agent-thread .agent-turn-process {
   -webkit-backdrop-filter: blur(var(--agent-process-blur, 12px))
     saturate(var(--surface-saturate, 1.15));
-  backdrop-filter: blur(var(--agent-process-blur, 12px))
-    saturate(var(--surface-saturate, 1.15));
+  backdrop-filter: blur(var(--agent-process-blur, 12px)) saturate(var(--surface-saturate, 1.15));
   box-shadow: var(--agent-process-shadow, inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.12));
 }
 
@@ -686,37 +684,120 @@
 }
 
 /*
- * 吸顶「上一轮用户消息」跳转条
- * 表面直接复用 .chat-input-glass（与底部输入框同款）；
- * Spatial 壳层下由 app-shell.css `.app-shell-content-stage .chat-input-glass` 统一光学。
- * 这里只补交互态，不另写一套 fill / rim / shadow。
+ * 吸顶「上一轮」定位器（对齐原型 .turn-locator）
+ * fill/rim/shadow/blur 全部走 --surface-role-turn-locator-*（scene-a 随主题）
  */
-.agent-sticky-jump.chat-input-glass {
-  /* 与输入框同圆角 token；Spatial 下再被 composer-radius 覆盖 */
-  border-radius: var(--radius-glass-input, 24px);
+.agent-sticky-jump-slot {
+  transform: translateY(-4px);
+}
+
+.agent-sticky-jump {
+  display: inline-flex;
+  width: auto;
+  max-width: min(360px, calc(100% - 8px));
+  height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 6px;
+  overflow: hidden;
+  border: 1px solid var(--surface-role-turn-locator-rim);
+  border-radius: 12px;
+  color: hsl(var(--muted-foreground));
+  background: var(--surface-role-turn-locator-fill);
+  box-shadow: var(--surface-role-turn-locator-shadow);
+  -webkit-backdrop-filter: var(--surface-role-turn-locator-blur);
+  backdrop-filter: var(--surface-role-turn-locator-blur);
+  font: inherit;
+  font-size: 10px;
+  white-space: nowrap;
+  transform-origin: left center;
   transition:
-    border-color 180ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 240ms ease,
     box-shadow 220ms ease,
-    transform 180ms ease;
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.agent-sticky-jump.chat-input-glass:hover {
-  border-color: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent),
-    0 0 0 2px hsl(var(--primary) / 0.1),
-    0 10px 28px color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+.agent-sticky-jump:hover,
+.agent-sticky-jump:focus-visible {
+  border-color: hsl(var(--primary) / 0.24);
+  color: hsl(var(--foreground));
+  outline: none;
   transform: translateY(-1px);
 }
 
-/* Spatial：hover 对齐输入框 focus-within 的轻抬起，但不抢 primary 强光晕 */
-.app-shell-content-stage .agent-sticky-jump.chat-input-glass:hover {
-  border-color: var(--spatial-accent-line);
+.agent-sticky-jump:focus-visible {
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 76%),
-    0 0 0 2px var(--spatial-accent-soft),
-    0 16px 36px rgb(53 63 79 / 12%);
-  transform: translateY(-1px);
+    var(--surface-role-turn-locator-shadow),
+    0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+.agent-sticky-jump__icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  border-radius: 7px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+}
+
+.agent-sticky-jump__icon svg {
+  width: 11px;
+  height: 11px;
+}
+
+.agent-sticky-jump__label {
+  flex: none;
+  color: hsl(var(--muted-foreground) / 0.72);
+  font-size: 9px;
+  font-weight: 680;
+  letter-spacing: 0.04em;
+}
+
+.agent-sticky-jump__divider {
+  width: 1px;
+  height: 12px;
+  flex: none;
+  background: hsl(var(--border));
+}
+
+.agent-sticky-jump__summary {
+  min-width: 0;
+  overflow: hidden;
+  color: hsl(var(--foreground) / 0.82);
+  font-weight: 560;
+  text-overflow: ellipsis;
+}
+
+.agent-sticky-jump__attachments {
+  flex: none;
+  color: hsl(var(--muted-foreground) / 0.8);
+  font-size: 9px;
+}
+
+.agent-sticky-jump__action {
+  max-width: 0;
+  margin-left: -7px;
+  overflow: hidden;
+  color: hsl(var(--primary));
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    max-width 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    margin-left 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-sticky-jump:hover .agent-sticky-jump__action,
+.agent-sticky-jump:focus-visible .agent-sticky-jump__action {
+  max-width: 64px;
+  margin-left: 2px;
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /*
@@ -728,14 +809,13 @@
   --agent-sticky-nav-reserve: 26px;
   box-sizing: border-box;
   width: 100%;
+  justify-content: flex-start;
   padding-right: calc(2rem + var(--agent-sticky-nav-reserve));
   padding-left: 2rem;
 }
 
 .app-shell-content-stage .agent-sticky-jump-shell {
-  padding-right: calc(
-    var(--app-shell-session-gutter, 18px) + var(--agent-sticky-nav-reserve)
-  );
+  padding-right: calc(var(--app-shell-session-gutter, 18px) + var(--agent-sticky-nav-reserve));
   padding-left: var(--app-shell-session-gutter, 18px);
 }
 

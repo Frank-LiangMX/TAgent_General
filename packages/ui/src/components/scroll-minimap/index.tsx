@@ -95,6 +95,7 @@ export function ScrollMinimap({
   const openTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const scrollActiveTimerRef = React.useRef<ReturnType<typeof setTimeout>>()
   const searchInputRef = React.useRef<HTMLInputElement>(null)
+  const focusSearchOnOpenRef = React.useRef(false)
   const trackRef = React.useRef<HTMLDivElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
 
@@ -161,7 +162,8 @@ export function ScrollMinimap({
   }, [scrollRef])
 
   React.useEffect(() => {
-    if (hovered && searchInputRef.current) {
+    if (hovered && focusSearchOnOpenRef.current && searchInputRef.current) {
+      focusSearchOnOpenRef.current = false
       const timer = setTimeout(() => searchInputRef.current?.focus(), 80)
       return () => clearTimeout(timer)
     }
@@ -187,23 +189,31 @@ export function ScrollMinimap({
     if (!hovered) setSearchQuery('')
   }, [hovered])
 
-  const handleShortcutOpen = React.useCallback(() => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
-    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current)
-      openTimerRef.current = undefined
-    }
-    setIsLeaving(false)
-    setHovered(true)
-  }, [])
+  const handleShortcutOpen = React.useCallback(
+    (focusSearch = false) => {
+      focusSearchOnOpenRef.current = focusSearch
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current)
+        openTimerRef.current = undefined
+      }
+      setIsLeaving(false)
+      setHovered(true)
+      if (focusSearch && hovered) {
+        requestAnimationFrame(() => searchInputRef.current?.focus())
+      }
+    },
+    [hovered]
+  )
 
   React.useEffect(() => {
     if (onShortcutOpen && items.length >= MIN_ITEMS && canScroll) {
       const handler = (e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
           e.preventDefault()
-          handleShortcutOpen()
+          onShortcutOpen()
+          handleShortcutOpen(true)
         }
       }
       document.addEventListener('keydown', handler)
@@ -260,7 +270,11 @@ export function ScrollMinimap({
         targetHeight < viewportHeight
           ? offsetTop - (viewportHeight - targetHeight) / 2
           : offsetTop - 32
-      el.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+      el.scrollTo({
+        top: Math.max(0, scrollTarget),
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
       setHovered(false)
     },
     [scrollRef, stopScroll, stickyState]
@@ -341,7 +355,11 @@ export function ScrollMinimap({
       const clickRatio = (e.clientY - rect.top) / rect.height
       const { scrollHeight, clientHeight } = el
       const targetTop = clickRatio * (scrollHeight - clientHeight)
-      el.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+      el.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
     },
     [scrollRef, stopScroll, stickyState]
   )
@@ -369,11 +387,34 @@ export function ScrollMinimap({
   const thumbTopPct = scrollRange > 0 ? (scrollTop / scrollRange) * (100 - thumbHeightPct) : 0
   const thumbVisible = hovered || isDragging || isScrollActive || isColumnHovered
 
+  const handleTrackKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    const el = scrollRef.current
+    if (!el) return
+    const page = Math.max(40, el.clientHeight * 0.82)
+    let next = el.scrollTop
+    if (event.key === 'ArrowUp') next -= 48
+    else if (event.key === 'ArrowDown') next += 48
+    else if (event.key === 'PageUp') next -= page
+    else if (event.key === 'PageDown') next += page
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = scrollRange
+    else return
+    event.preventDefault()
+    stopScroll()
+    el.scrollTo({ top: Math.max(0, Math.min(scrollRange, next)), behavior: 'auto' })
+  }
+
   return (
     <div
       className="message-nav-rail absolute right-0 top-0 bottom-0 z-30 flex w-7 justify-end pointer-events-auto"
       onMouseEnter={() => setIsColumnHovered(true)}
       onMouseLeave={() => setIsColumnHovered(false)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          setHovered(false)
+          setIsLeaving(false)
+        }
+      }}
     >
       <div className="flex items-start h-full">
         {/* 悬浮消息预览面板 — 轻量时间线，不是侧栏列表 */}
@@ -383,7 +424,7 @@ export function ScrollMinimap({
               'session-glass-surface session-glass-popover message-nav-popover mr-1 w-[300px] origin-top-right flex flex-col overflow-hidden pointer-events-auto',
               isLeaving ? 'message-nav-popover-exit' : 'message-nav-popover-enter'
             )}
-            style={{ maxHeight: 'min(460px, 64vh)', marginTop: 10 }}
+            style={{ maxHeight: 'min(460px, 64vh)', marginTop: 4 }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -459,10 +500,11 @@ export function ScrollMinimap({
 
         {/* 右上角消息刻度簇 — 始终清晰可见 */}
         <div
-          className="message-nav-bars relative mt-3 flex-shrink-0 pointer-events-auto"
+          className="message-nav-bars relative mt-1 flex-shrink-0 pointer-events-auto"
           style={{ width: BAR_WIDTH, height: barCount * BAR_SLOT }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onFocusCapture={() => handleShortcutOpen(false)}
         >
           {bars.map((bar) => (
             <button
@@ -491,7 +533,7 @@ export function ScrollMinimap({
       {/* 滚动 thumb：滚动/悬停时显现；贴右缘，与刻度同列 */}
       <div
         className={cn(
-          'relative ml-0.5 py-3 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
+          'relative ml-0.5 py-1 flex-shrink-0 pointer-events-auto transition-opacity duration-200',
           thumbVisible ? 'opacity-100' : 'opacity-0'
         )}
         style={{ width: 5 }}
@@ -499,7 +541,16 @@ export function ScrollMinimap({
         <div
           ref={trackRef}
           className="relative h-full rounded-full cursor-pointer"
+          role="scrollbar"
+          tabIndex={0}
+          aria-label="会话滚动位置"
+          aria-orientation="vertical"
+          aria-valuemin={0}
+          aria-valuemax={Math.max(0, Math.round(scrollRange))}
+          aria-valuenow={Math.max(0, Math.round(scrollTop))}
           onMouseDown={handleTrackMouseDown}
+          onKeyDown={handleTrackKeyDown}
+          onFocus={() => handleShortcutOpen(false)}
         >
           <div
             className={cn(

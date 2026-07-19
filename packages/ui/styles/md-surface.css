@@ -45,25 +45,20 @@
     hsl(var(--background))
   );
 
-  /* 选中：primary 混 card，色相跟主题 */
-  --md-primary-container: color-mix(
-    in srgb,
-    hsl(var(--primary)) 16%,
-    hsl(var(--card))
-  );
-  --md-on-primary-container: hsl(var(--primary));
-  --md-primary-outline: color-mix(
-    in srgb,
-    hsl(var(--primary)) 28%,
-    hsl(var(--border))
-  );
+  /*
+   * 选中 = 中性玻璃板（对齐 spatial-theme-study）
+   * accent/primary 只给 CTA / focus / 进度，不染 active 面
+   */
+  --md-primary-container: rgb(var(--glass-rgb) / 0.72);
+  --md-on-primary-container: hsl(var(--foreground));
+  --md-primary-outline: rgb(255 255 255 / 0.18);
 
   --md-secondary-container: hsl(var(--secondary));
   --md-on-secondary-container: hsl(var(--secondary-foreground));
 
-  /* hover：轻混 primary，切换主题可感知 */
-  --md-state-hover: color-mix(in srgb, hsl(var(--primary)) 7%, hsl(var(--card)));
-  --md-state-pressed: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
+  /* hover / press：中性墨色轻抬，不跟 primary 染色 */
+  --md-state-hover: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--card)));
+  --md-state-pressed: color-mix(in srgb, hsl(var(--foreground)) 8%, hsl(var(--card)));
   --md-state-focus-ring: hsl(var(--ring));
 
   --md-elevation-1: 0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
@@ -120,27 +115,16 @@
     hsl(var(--background))
   );
 
-  --md-primary-container: color-mix(
-    in srgb,
-    hsl(var(--primary)) 22%,
-    hsl(var(--card))
-  );
-  --md-on-primary-container: color-mix(
-    in srgb,
-    hsl(var(--primary)) 75%,
-    hsl(var(--foreground))
-  );
-  --md-primary-outline: color-mix(
-    in srgb,
-    hsl(var(--primary)) 36%,
-    hsl(var(--border))
-  );
+  /* 深色选中同样中性玻璃，rim 收敛（对齐原型 v4 dark） */
+  --md-primary-container: rgb(var(--glass-rgb) / 0.84);
+  --md-on-primary-container: hsl(var(--foreground));
+  --md-primary-outline: rgb(255 255 255 / 0.055);
 
   --md-secondary-container: hsl(var(--secondary));
   --md-on-secondary-container: hsl(var(--secondary-foreground));
 
-  --md-state-hover: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)));
-  --md-state-pressed: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--card)));
+  --md-state-hover: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
+  --md-state-pressed: color-mix(in srgb, hsl(var(--foreground)) 12%, hsl(var(--card)));
   --md-state-focus-ring: hsl(var(--ring));
 
   --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.28);

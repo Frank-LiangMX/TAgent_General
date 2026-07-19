@@ -22,11 +22,14 @@
   --spatial-accent: hsl(var(--primary));
   --spatial-accent-soft: hsl(var(--primary) / 0.1);
   --spatial-accent-line: hsl(var(--primary) / 0.26);
-  --spatial-panel-fill:
-    radial-gradient(circle at 18% 8%, rgb(113 144 205 / 11%), transparent 42%),
-    linear-gradient(145deg, rgb(246 249 253 / 48%), rgb(224 232 243 / 42%));
-  --spatial-panel-rim: rgb(255 255 255 / 52%);
-  --spatial-panel-shadow: inset 0 1px 0 rgb(255 255 255 / 66%), 0 14px 34px rgb(49 59 76 / 8%);
+  --spatial-panel-fill: var(--surface-role-panel-fill);
+  --spatial-panel-rim: var(--surface-role-panel-rim);
+  --spatial-panel-shadow: var(--surface-role-panel-shadow);
+  /* rail 浮岛：显式桥接 surface-role，便于本文件与调试 */
+  --spatial-rail-fill: var(--surface-role-navigation-fill);
+  --spatial-rail-rim: var(--surface-role-navigation-rim);
+  --spatial-rail-shadow: var(--surface-role-navigation-shadow);
+  --spatial-rail-blur: var(--surface-role-navigation-blur);
   isolation: isolate;
   gap: var(--app-shell-gap);
   padding: 40px var(--app-shell-edge) var(--app-shell-edge);
@@ -44,11 +47,13 @@
   --spatial-accent: hsl(var(--primary));
   --spatial-accent-soft: hsl(var(--primary) / 0.16);
   --spatial-accent-line: hsl(var(--primary) / 0.28);
-  --spatial-panel-fill:
-    radial-gradient(circle at 18% 8%, rgb(91 123 182 / 12%), transparent 42%),
-    linear-gradient(145deg, rgb(35 42 54 / 68%), rgb(26 33 44 / 62%));
-  --spatial-panel-rim: rgb(225 235 250 / 11%);
-  --spatial-panel-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 18px 42px rgb(3 7 14 / 24%);
+  --spatial-panel-fill: var(--surface-role-panel-fill);
+  --spatial-panel-rim: var(--surface-role-panel-rim);
+  --spatial-panel-shadow: var(--surface-role-panel-shadow);
+  --spatial-rail-fill: var(--surface-role-navigation-fill);
+  --spatial-rail-rim: var(--surface-role-navigation-rim);
+  --spatial-rail-shadow: var(--surface-role-navigation-shadow);
+  --spatial-rail-blur: var(--surface-role-navigation-blur);
   background: transparent;
 }
 
@@ -260,8 +265,8 @@
   border-radius: var(--app-shell-frame-radius);
   background: var(--spatial-panel-fill);
   box-shadow: var(--spatial-panel-shadow);
-  -webkit-backdrop-filter: blur(30px) saturate(1.22);
-  backdrop-filter: blur(30px) saturate(1.22);
+  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
+  backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   transform-origin: left center;
   transition:
     opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
@@ -343,7 +348,7 @@
   flex-shrink: 0;
   gap: 2px;
   padding: 3px;
-  border: 1px solid var(--spatial-line);
+  border: 1px solid var(--surface-role-session-status-rim);
   /* 完整胶囊圆角 — 高度约 32px 时 999px 即两端半圆 */
   border-radius: 999px;
   background: rgb(255 255 255 / 42%);
@@ -654,7 +659,7 @@
   transform: none;
 }
 
-/* Split Rail: two stable capsules on the atmospheric window field. */
+/* Split Rail: 浮岛胶囊，fill 跟 scene A/base 走（对齐 spatial-theme-study） */
 .nav-island-rail {
   position: relative;
   width: var(--app-nav-rail-width);
@@ -662,6 +667,7 @@
   overflow: visible;
 }
 
+/* 背后环境光晕：用 scene-a，禁止写死冷蓝 */
 .nav-island-rail::before {
   content: '';
   position: absolute;
@@ -670,7 +676,11 @@
   left: 50%;
   width: 42px;
   border-radius: 50%;
-  background: linear-gradient(180deg, rgb(255 255 255 / 34%), rgb(117 151 210 / 14%));
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 34%),
+    rgb(var(--scene-a-rgb) / 0.16)
+  );
   filter: blur(13px);
   opacity: 0.88;
   pointer-events: none;
@@ -686,18 +696,32 @@
   flex-direction: column;
   align-items: center;
   padding: 6px 5px;
-  border: 1px solid rgb(255 255 255 / 74%);
+  border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim, var(--surface-rim)));
   border-radius: 19px;
+  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
+  box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow));
+  -webkit-backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  transition:
+    background-color 280ms var(--app-shell-motion),
+    border-color 240ms var(--app-shell-motion),
+    box-shadow 240ms var(--app-shell-motion);
+}
+
+/* 光学折射层：拾取 scene A/B，禁止 primary / 冷蓝硬编码 */
+.app-rail-island::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   background:
-    radial-gradient(circle at 30% 0, rgb(115 151 217 / 16%), transparent 44%),
-    linear-gradient(180deg, rgb(252 253 255 / 84%), rgb(225 233 244 / 75%));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 92%),
-    inset 0 -1px 0 rgb(83 103 136 / 7%),
-    0 12px 28px rgb(43 54 73 / 16%),
-    0 2px 6px rgb(43 54 73 / 8%);
-  -webkit-backdrop-filter: blur(24px) saturate(1.26);
-  backdrop-filter: blur(24px) saturate(1.26);
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.1), transparent 60%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.07), transparent 62%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.06), transparent 64%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .app-rail-island::after {
@@ -705,22 +729,12 @@
   position: absolute;
   inset: 0;
   border: 1px solid transparent;
-  border-top-color: rgb(255 255 255 / 92%);
-  border-left-color: rgb(255 255 255 / 52%);
+  border-top-color: rgb(255 255 255 / 0.5);
+  border-left-color: rgb(255 255 255 / 0.22);
   border-radius: inherit;
-  box-shadow: inset 0 -1px 0 rgb(86 105 135 / 5%);
+  box-shadow: inset 0 -1px 0 rgb(23 30 40 / 0.04);
   pointer-events: none;
-}
-
-.app-rail-island::before {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(19px - 1px);
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 36%), transparent 38%),
-    radial-gradient(circle at 72% 92%, rgb(118 151 211 / 8%), transparent 44%);
-  pointer-events: none;
+  z-index: 0;
 }
 
 .app-rail-island > * {
@@ -729,13 +743,23 @@
 }
 
 .dark .app-rail-island {
-  border-color: rgb(225 235 250 / 13%);
-  background:
-    radial-gradient(circle at 30% 0, rgb(100 139 212 / 15%), transparent 42%),
-    linear-gradient(180deg, rgb(42 50 64 / 74%), rgb(27 35 47 / 68%));
+  border-color: rgb(255 255 255 / 0.055);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 9%),
-    0 12px 28px rgb(3 7 14 / 28%);
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 12px 28px rgb(0 0 0 / 0.32);
+}
+
+.dark .app-rail-island::before {
+  background:
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.03), transparent 60%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.08), transparent 62%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.06), transparent 64%);
+}
+
+.dark .app-rail-island::after {
+  border-top-color: rgb(255 255 255 / 0.06);
+  border-left-color: rgb(255 255 255 / 0.03);
+  box-shadow: none;
 }
 
 .app-rail-island--primary {
@@ -753,6 +777,7 @@
   flex: 0 0 auto;
 }
 
+/* brand：中性 ink 板（原型 rail-brand），不绑主题渐变 */
 .app-rail-brand {
   display: grid;
   width: 34px;
@@ -760,13 +785,11 @@
   flex: 0 0 34px;
   place-items: center;
   margin-bottom: 8px;
-  border: 1px solid rgb(255 255 255 / 16%);
+  border: 0;
   border-radius: 12px;
-  color: #f9fbff;
-  background: linear-gradient(145deg, #303744, #202630);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 12%),
-    0 7px 14px rgb(28 34 44 / 19%);
+  color: rgb(255 255 255 / 0.95);
+  background: hsl(var(--foreground) / 0.9);
+  box-shadow: 0 6px 14px hsl(var(--foreground) / 0.14);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -792,17 +815,20 @@
 }
 
 .app-nav-stack .rail-island-btn:not(.rail-avatar-btn) {
-  color: hsl(var(--foreground) / 0.48);
+  color: hsl(var(--muted-foreground));
   background: transparent;
+  border: 0;
+  box-shadow: none;
   transition:
     color 160ms var(--app-shell-motion),
     background-color 180ms var(--app-shell-motion),
+    box-shadow 180ms var(--app-shell-motion),
     transform 160ms var(--app-shell-motion);
 }
 
 .app-nav-stack .rail-island-btn:not(.rail-avatar-btn):hover {
-  color: hsl(var(--foreground) / 0.84);
-  background: hsl(var(--foreground) / 0.065);
+  color: hsl(var(--foreground) / 0.88);
+  background: var(--hover-fill, hsl(var(--foreground) / 0.065));
   transform: translateY(-1px);
 }
 
@@ -810,18 +836,46 @@
   transform: scale(0.96);
 }
 
+/*
+ * active = 中性玻璃板 + 图标用 accent（原型 .rail-button.is-active）
+ * 禁止冷蓝/白卡渐变，禁止整块 accent 染色
+ */
 .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
-.dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn) {
-  border: 1px solid var(--spatial-accent-line);
-  color: var(--spatial-accent);
-  background: linear-gradient(145deg, rgb(255 255 255 / 68%), rgb(242 247 255 / 47%));
+.dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
+html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn) {
+  border: 0;
+  color: hsl(var(--primary));
+  background: rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 1.16));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 78%),
-    0 5px 13px rgb(58 77 112 / 9%);
+    0 7px 18px rgb(23 30 40 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+
+.app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):hover,
+.dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):hover,
+html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):hover {
+  color: hsl(var(--primary));
+  background: rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 1.22));
+  transform: none;
+}
+
+.dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn) {
+  background: rgb(var(--glass-rgb) / 0.92);
+  box-shadow:
+    0 7px 18px rgb(0 0 0 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn)::before {
   content: none;
+}
+
+/* 头像：中性 ink 板（原型 .rail-avatar），禁止蓝紫主题渐变 */
+.app-nav-stack .rail-avatar-btn {
+  color: rgb(255 255 255 / 0.95) !important;
+  background: hsl(var(--foreground) / 0.88) !important;
+  border: 0 !important;
+  box-shadow: 0 6px 14px hsl(var(--foreground) / 0.16) !important;
 }
 
 .app-shell-main {
@@ -886,14 +940,15 @@
   margin-left: 0;
 }
 
-/* Workspace tabs are a navigation strip, not a second window title bar. */
+/* Workspace tabs：透明条 + 中性玻璃 active 板（对齐原型 .workspace-tab） */
 .app-shell-content-stage .app-workspace-tab-strip {
   height: 64px;
   min-height: 64px;
   align-items: center;
   padding: 0 var(--app-shell-session-gutter);
   border-bottom: 1px solid var(--spatial-line);
-  background: rgb(244 247 252 / 7%);
+  /* 禁止写死冷蓝洗；直接坐在 scene 上 */
+  background: transparent;
   box-shadow: none;
 }
 
@@ -911,31 +966,28 @@
   width: 0;
   height: 32px;
   pointer-events: none;
-  border: var(--surface-rim-width, 1px) solid
-    color-mix(in srgb, var(--surface-rim) 76%, transparent);
+  border: 1px solid var(--surface-role-tab-rim, var(--surface-rim));
   border-radius: var(--app-shell-tab-radius);
   opacity: 0;
-  background: var(--surface-bg-chip, var(--md-surface-container));
-  box-shadow:
-    inset 0 1px 0 var(--surface-inset-hi, transparent),
-    var(--surface-shadow-chip, none);
+  /* 中性玻璃板 + 极弱 scene-a，随主题变 */
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
+    var(--surface-role-tab-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-tab-shadow, var(--surface-shadow-chip, none));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.06));
   transform: translate3d(var(--app-tab-plate-x), 0, 0);
   transition:
     transform 260ms var(--app-shell-motion),
-    opacity 140ms ease-out;
+    opacity 140ms ease-out,
+    background-color 240ms var(--app-shell-motion),
+    border-color 200ms var(--app-shell-motion);
 }
 
+/* 原型无 accent 底条；active 身份由中性板 + 图标 accent 承担 */
 .app-shell-content-stage .app-workspace-tab-active-plate::after {
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  width: 22px;
-  height: 2px;
-  border-radius: 999px;
-  content: '';
-  background: var(--spatial-accent);
-  opacity: 0.48;
-  transform: translateX(-50%);
+  display: none;
 }
 
 .app-shell-content-stage .app-workspace-session-status-slot {
@@ -957,26 +1009,16 @@
   max-width: 100%;
   height: 32px;
   overflow: hidden;
-  border: 1px solid var(--spatial-line);
+  border: 1px solid var(--surface-role-session-status-rim, var(--spatial-line));
   border-radius: 12px;
   color: var(--spatial-muted);
-  background:
-    linear-gradient(112deg, rgb(255 255 255 / 38%), rgb(237 242 249 / 22%)),
-    hsl(var(--background) / 18%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 48%),
-    0 5px 16px rgb(49 59 76 / 5%);
-  -webkit-backdrop-filter: blur(14px) saturate(116%);
-  backdrop-filter: blur(14px) saturate(116%);
-}
-
-.dark .app-shell-content-stage .agent-session-status {
-  background:
-    linear-gradient(112deg, rgb(255 255 255 / 7%), rgb(35 43 56 / 16%)),
-    hsl(var(--background) / 20%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 7%),
-    0 7px 18px rgb(3 7 14 / 14%);
+  background: var(--surface-role-session-status-fill);
+  box-shadow: var(--surface-role-session-status-shadow);
+  -webkit-backdrop-filter: var(--surface-role-session-status-blur);
+  backdrop-filter: var(--surface-role-session-status-blur);
+  transition:
+    background-color 240ms var(--app-shell-motion),
+    border-color 200ms var(--app-shell-motion);
 }
 
 .app-shell-content-stage .agent-session-status__segment,
@@ -1176,15 +1218,6 @@
   }
 }
 
-[data-material='soft'] .app-shell-content-stage .agent-session-status {
-  background: var(--surface-bg, hsl(var(--background)));
-  box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 5%),
-    0 2px 6px rgb(49 59 76 / 6%);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
 @media (max-width: 1280px) {
   .app-shell-content-stage .agent-session-crew__track {
     display: none;
@@ -1338,38 +1371,58 @@
   padding-left: var(--app-shell-session-gutter);
 }
 
+/* composer：scene 抬升浮岛（对齐 --role-composer-*），禁止实心 background 洗白 */
 .app-shell-content-stage .chat-input-glass {
-  border: 1px solid var(--spatial-panel-rim);
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--surface-role-composer-rim, var(--spatial-panel-rim));
   border-radius: var(--app-shell-composer-radius);
-  background: var(--spatial-panel-fill) !important;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 68%),
-    0 14px 34px rgb(53 63 79 / 10%);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  backdrop-filter: blur(24px) saturate(1.2);
+  background: var(--surface-role-composer-fill) !important;
+  box-shadow: var(--surface-role-composer-shadow, var(--surface-shadow-elevated));
+  -webkit-backdrop-filter: blur(var(--surface-role-composer-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-composer-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
   transition:
     border-color 180ms var(--app-shell-motion),
     box-shadow 220ms var(--app-shell-motion),
+    background-color 280ms var(--app-shell-motion),
     transform 220ms var(--app-shell-motion);
 }
 
-[data-material='glass'] .app-shell-content-stage .chat-input-glass {
-  background: var(--surface-bg, var(--spatial-panel-fill)) !important;
+/* 光学折射层：拾取 scene A，不盖内容 */
+.app-shell-content-stage .chat-input-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.08), transparent 60%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.06), transparent 62%);
 }
 
-[data-material='soft'] .app-shell-content-stage .chat-input-glass {
-  background: var(--surface-bg, hsl(var(--background))) !important;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+.app-shell-content-stage .chat-input-glass > * {
+  position: relative;
+  z-index: 1;
 }
 
 .app-shell-content-stage .chat-input-glass:focus-within {
   border-color: var(--spatial-accent-line);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 76%),
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
     0 0 0 2px var(--spatial-accent-soft),
-    0 18px 42px rgb(53 63 79 / 13%);
+    var(--surface-role-composer-shadow, 0 18px 42px rgb(23 30 40 / 0.12));
   transform: translateY(-2px);
+}
+
+.dark .app-shell-content-stage .chat-input-glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 2px var(--spatial-accent-soft),
+    0 18px 42px rgb(0 0 0 / 0.36);
 }
 
 /* One inspector owns chrome, context navigation and panel skin. Child panels
@@ -1493,8 +1546,8 @@
   border-radius: var(--app-shell-frame-radius) !important;
   background: var(--spatial-panel-fill);
   box-shadow: var(--spatial-panel-shadow);
-  -webkit-backdrop-filter: blur(30px) saturate(1.22);
-  backdrop-filter: blur(30px) saturate(1.22);
+  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
+  backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   transition:
     width 240ms var(--app-shell-motion),
     border-color 180ms var(--app-shell-motion),
@@ -1502,15 +1555,12 @@
     box-shadow 220ms var(--app-shell-motion);
 }
 
-.app-shell-right-stack .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded),
-[data-material='glass']
-  .app-shell-right-stack
-  .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded) {
+.app-shell-right-stack .right-nav-island-glass.nav-island-glass:not(.nav-island-glass--expanded) {
   border-color: var(--spatial-panel-rim);
   background: var(--spatial-panel-fill);
   box-shadow: var(--spatial-panel-shadow);
-  -webkit-backdrop-filter: blur(30px) saturate(1.22);
-  backdrop-filter: blur(30px) saturate(1.22);
+  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
+  backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
 }
 
 .app-shell-right-stack .nav-island-sidebar[data-presence='collapsed'] {

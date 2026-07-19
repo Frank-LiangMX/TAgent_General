@@ -44,17 +44,16 @@
     --app-content-boundary-inset: 8px;
     --app-content-boundary-radius: 20px;
     /*
-     * Session 选中态 — 默认 frosted（扁平 MD + 轻 tint）
+     * Session 选中态 — 默认 frosted 中性玻璃（不染 primary）
      * 权威 surface 表在 packages/ui/styles/glass.css；此处与 :root 对齐防闪
-     * glass / soft 由 [data-material] 覆盖（glass.css 优先，此处作业务壳兼容）
      */
-    --session-glass-strong: hsl(var(--primary) / 0.06);
-    --session-rim: hsl(var(--border) / 0.5);
+    --session-glass-strong: rgb(var(--glass-rgb) / 0.72);
+    --session-rim: rgb(255 255 255 / 0.18);
     --session-inset-hi: transparent;
     --session-elev-dark: hsl(220 10% 50% / 0.12);
     --session-elev-light: transparent;
     --session-row-accent: hsl(var(--primary));
-    --session-row-meta: hsl(var(--primary) / 0.48);
+    --session-row-meta: hsl(var(--muted-foreground));
     /* 与 md-surface.css --md-state-hover 对齐（md-surface 后加载会覆盖；此处防闪） */
     --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
   }
@@ -78,14 +77,14 @@
     --glass-shine: 220 14% 68%;
     --glass-ambient: 220 12% 26%;
     --glass-rim: 220 10% 30%;
-    /* Session 选中态 — 默认 frosted dark */
-    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)));
-    --session-rim: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+    /* Session 选中态 — 默认 frosted dark 中性玻璃 */
+    --session-glass-strong: rgb(var(--glass-rgb) / 0.84);
+    --session-rim: rgb(255 255 255 / 0.055);
     --session-inset-hi: transparent;
     --session-elev-dark: hsl(var(--foreground) / 0.14);
     --session-elev-light: transparent;
     --session-row-accent: hsl(var(--primary));
-    --session-row-meta: hsl(var(--primary) / 0.52);
+    --session-row-meta: hsl(var(--muted-foreground));
     --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
   }
 
@@ -197,6 +196,7 @@
    * session-glass-* 表面由 packages/ui/styles/glass.css surface token 负责
    * Session 选中：primary tint（与 glass.css 一致），非纯灰块
    */
+  /* active 中性玻璃板：不染 primary（对齐 spatial-theme-study，accent 只给 CTA/focus） */
   [data-material='frosted'] {
     --inset-hi: transparent;
     --inset-hi-strong: transparent;
@@ -212,8 +212,8 @@
     --glass-strong: rgba(255, 255, 255, 1);
     --divider: rgba(0, 0, 0, 0.06);
     --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 4.5%, hsl(var(--dialog)));
-    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--dialog)));
-    --session-rim: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--border)));
+    --session-glass-strong: rgb(var(--glass-rgb) / 0.72);
+    --session-rim: rgb(255 255 255 / 0.18);
     --session-inset-hi: transparent;
     --session-elev-dark: transparent;
     --session-elev-light: transparent;
@@ -234,8 +234,8 @@
     --glass-strong: hsl(var(--card));
     --divider: rgba(255, 255, 255, 0.06);
     --hover-fill: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--card)));
-    --session-glass-strong: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)));
-    --session-rim: color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)));
+    --session-glass-strong: rgb(var(--glass-rgb) / 0.84);
+    --session-rim: rgb(255 255 255 / 0.055);
     --session-inset-hi: transparent;
     --session-elev-dark: transparent;
     --session-elev-light: transparent;
@@ -417,17 +417,8 @@ html.tagent-app-shell-window #root {
 }
 
 html.tagent-app-shell-window {
-  background:
-    radial-gradient(circle at 10% 28%, rgb(110 147 211 / 16%), transparent 40%),
-    radial-gradient(circle at 88% 82%, rgb(137 166 218 / 12%), transparent 44%),
-    linear-gradient(135deg, rgb(228 234 243 / 78%), rgb(218 226 238 / 72%)), rgb(204 216 232);
-}
-
-html.tagent-app-shell-window.dark {
-  background:
-    radial-gradient(circle at 10% 28%, rgb(78 112 176 / 13%), transparent 40%),
-    radial-gradient(circle at 88% 82%, rgb(98 119 159 / 9%), transparent 44%),
-    linear-gradient(135deg, rgb(25 31 42 / 96%), rgb(18 24 34 / 94%)), hsl(var(--background));
+  background: var(--surface-role-scene-fill);
+  background-attachment: fixed;
 }
 
 html.tagent-app-shell-window body {
@@ -2315,32 +2306,30 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-radius: 999px;
 }
 
-/* 会话输入框不透明：只提升原 background token 的不透明度，不改变颜色体系。 */
+/*
+ * 会话输入框：默认走 surface token（glass.css）。
+ * Spatial 壳内由 app-shell.css 的 --surface-role-composer-* 覆盖为 scene 抬升浮岛；
+ * 此处不再强制实心 background，避免盖住主题矿物光。
+ */
 .chat-input-glass {
-  background: linear-gradient(
-    168deg,
-    hsl(var(--background)) 0%,
-    hsl(var(--background)) 52%,
-    hsl(var(--background)) 100%
-  );
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
-/* 会话输入框聚焦发光效果：跟随主题 primary */
+/* 非 shell 场景（若仍有）聚焦：克制 ring，不抢 scene */
 .chat-input-glass:focus-within {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 1px 0 0 rgba(255, 255, 255, 0.2),
-    0 0 0 2px hsl(var(--primary) / 0.15),
-    0 0 16px -4px hsl(var(--primary) / 0.45);
-  transition: box-shadow 0.2s ease;
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 0 2px hsl(var(--primary) / 0.14),
+    var(--surface-shadow-elevated, 0 12px 30px rgb(23 30 40 / 0.1));
 }
 
 .dark .chat-input-glass:focus-within {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 1px 0 0 rgba(255, 255, 255, 0.03),
-    0 0 0 2px hsl(var(--primary) / 0.18),
-    0 0 12px -4px hsl(var(--primary) / 0.4);
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 2px hsl(var(--primary) / 0.16),
+    var(--surface-shadow-elevated, 0 16px 38px rgb(0 0 0 / 0.32));
 }
 
 /*
@@ -2789,6 +2778,11 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 /* ===== 消息导航弹出面板（时间线预览） ===== */
 .message-nav-popover {
   min-height: 168px;
+  border-color: var(--surface-role-message-minimap-rim);
+  background: var(--surface-role-message-minimap-fill);
+  box-shadow: var(--surface-role-message-minimap-shadow);
+  -webkit-backdrop-filter: var(--surface-role-message-minimap-blur);
+  backdrop-filter: var(--surface-role-message-minimap-blur);
   transform-origin: top right;
   will-change: transform, opacity;
 }
@@ -2820,6 +2814,18 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   to {
     opacity: 0;
     transform: translate3d(4px, -2px, 0) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-nav-popover-enter,
+  .message-nav-popover-exit,
+  .agent-sticky-jump-slot,
+  .agent-sticky-jump,
+  .agent-sticky-jump__action {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -4031,8 +4037,12 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
     radial-gradient(ellipse 78% 65% at 88% 88%, hsl(var(--shell-blob) / 0.24) 0%, transparent 58%),
     /* 第5层：顶部居中淡化层 */
     radial-gradient(ellipse 60% 50% at 50% 8%, hsl(var(--shell-blob) / 0.12) 0%, transparent 50%),
-    /* 第6层：底部暖色光斑 - 新增，参考原型 wash-c 偏青绿调 */
-    radial-gradient(ellipse 70% 55% at 42% 92%, hsl(160 25% 75% / 0.15) 0%, transparent 55%),
+    /* 第6层：底部次要光斑 — 消费主题环境光，不再写死跨主题青绿 */
+    radial-gradient(
+        ellipse 70% 55% at 42% 92%,
+        hsl(var(--scene-ambient-b) / 0.15) 0%,
+        transparent 55%
+      ),
     hsl(var(--background));
 }
 

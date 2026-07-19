@@ -76,6 +76,23 @@
 
 **完整列表见 `packages/ui/src/tokens/colors.ts` 的 `tailwindColorTokens`。**
 
+#### Scene 弥散环境色 Token
+
+除语义色外，`ThemeColors` 还定义三个 **scene 弥散环境色** token，由每个 `ThemeName` 自带（`colors.ts` 的 `SCENE` 表），供窗口底层弥散渐变消费：
+
+| Token | CSS 变量 | 用途 |
+|---|---|---|
+| `scene-base` | `--scene-base` | 弥散渐变基底色（窗口底色：浅色瓷白 / 深色深底） |
+| `scene-ambient-a/b/c` | `--scene-ambient-*` | 三组环境光色的 HSL 兼容别名 |
+| `scene-base-rgb` | `--scene-base-rgb` | 最终原型的近中性整窗基底 |
+| `scene-a/b/c-rgb` | `--scene-*-rgb` | 主光、对位补光与空气塑形光的 RGB 三元组 |
+| `scene-a/b/c-pos/size/strength` | `--scene-*-*` | 每套主题独立的光位、覆盖范围与强度 |
+| `glass-rgb` | `--glass-rgb` | 供 frosted / glass / soft 共同消费的近无色瓷玻璃基色 |
+
+窗口底层 `html.tagent-app-shell-window` 只消费 `--surface-role-scene-fill`。该角色在 `styles/surface-roles.css` 中用 A/B/C 三光源构成全屏弥散场，main/workspace 保持透明背景层，不做浮岛。每个主题切换时同时改变整窗基底、三组光场和玻璃基色；材质只改变透明度、模糊、边缘与阴影。生成器自动把这些字段产出到 `:root` / `.dark` / `.theme-*`。
+
+长会话顶部定位器、消息刻度预览与会话状态条分别消费 `--surface-role-turn-locator-*`、`--surface-role-message-minimap-*`、`--surface-role-session-status-*`，不得在业务 CSS 中按主题或材质重定义一套蓝白面板。
+
 ### 阴影 / 间距 / 字号 / 动效 Token
 
 动效使用 `packages/ui/src/tokens/motion.ts` 的语义 Token：`duration-instant/fast/control/panel/scene` 与 `ease-enter/exit/spatial`。空间层级使用 `surface-role.ts` 注册的十类 `SurfaceRole`，光学映射统一定义在 `styles/surface-roles.css`。业务组件不要自行发明 z-index 或按材质分支。
@@ -332,6 +349,13 @@ Tailwind 通过 `hsl(var(--xxx))` 引用。
 业务侧 `globals.css` 仍可放材质装饰变量、shell 光斑等非语义色。
 
 **禁止**：主题选择器修改 `--surface-blur` 或写死某主题的高透/拟态阴影（破坏正交）。
+
+#### 主题轴 × 材质轴职责（scene token 后）
+
+- **主题轴**：负责色相（primary / 语义色）+ **scene 环境光**（`--scene-*` 三元组）。
+- **材质轴**：只负责 frosted / glass / soft 光学（blur / 透明度 / 边缘 / 阴影 / press），不改色相。
+- **glass 色散**：左侧消费 `--primary`，右侧消费 `--scene-ambient-a`（`packages/ui/styles/glass.css`），不再写死跨主题紫 `hsl(260 …)`。
+- **业务组件**：不按主题分支、不加页面级背景覆盖；窗口背景统一由 scene 层 + surface token 提供，AppShell 面板浮在 scene 背景之上。
 
 ---
 

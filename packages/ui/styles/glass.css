@@ -22,34 +22,34 @@
    * 普通材质 · 绑定 md-surface.css 角色（M3 阶梯）
    * 见 packages/ui/styles/md-surface.css
    */
-  --surface-blur: 0px;
-  --surface-blur-elevated: 0px;
-  --surface-blur-chip: 0px;
-  --surface-blur-overlay: 4px;
-  --surface-saturate: 1;
+  --surface-blur: 22px;
+  --surface-blur-elevated: 26px;
+  --surface-blur-chip: 15px;
+  --surface-blur-overlay: 30px;
+  --surface-saturate: 1.06;
   --surface-brightness: 1;
 
-  --surface-opacity: 1;
-  --surface-opacity-elevated: 1;
-  --surface-opacity-chip: 1;
+  --surface-opacity: 0.56;
+  --surface-opacity-elevated: 0.62;
+  --surface-opacity-chip: 0.62;
 
   /*
    * MD 角色已是完整色值 → 直接 var()，禁止 hsl(var(--md-xxx))
    */
-  --surface-bg: var(--md-surface-container-low);
-  --surface-bg-elevated: var(--md-surface-container-lowest);
-  --surface-bg-chip: var(--md-surface-container);
-  --surface-bg-well: var(--md-surface-container-lowest);
+  --surface-bg: rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated: rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
+  --surface-bg-well: rgb(var(--glass-rgb) / 0.38);
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
   --surface-bg-dialog: var(--md-surface-container-lowest);
 
-  --surface-rim: color-mix(in srgb, var(--md-outline) 65%, transparent);
+  --surface-rim: rgb(255 255 255 / 0.18);
   --surface-rim-width: 1px;
-  --surface-shadow: var(--md-elevation-1);
-  --surface-shadow-elevated: var(--md-elevation-2);
-  --surface-shadow-chip: none;
-  --surface-shadow-well: var(--md-elevation-1);
+  --surface-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 12px 30px rgb(23 30 40 / 0.08);
+  --surface-shadow-elevated: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 18px 42px rgb(23 30 40 / 0.1);
+  --surface-shadow-chip: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 7px 18px rgb(23 30 40 / 0.07);
+  --surface-shadow-well: inset 0 1px 4px rgb(23 30 40 / 0.06);
   --surface-inset-hi: transparent;
   --surface-shine-opacity: 0;
   --surface-shine-opacity-soft: 0;
@@ -73,27 +73,27 @@
 .dark,
 .dark[data-material='frosted'],
 [data-material='frosted'].dark {
-  --surface-blur: 0px;
-  --surface-blur-elevated: 0px;
-  --surface-blur-chip: 0px;
+  --surface-blur: 16px;
+  --surface-blur-elevated: 20px;
+  --surface-blur-chip: 12px;
   --surface-saturate: 1;
-  --surface-opacity: 1;
-  --surface-opacity-elevated: 1;
-  --surface-opacity-chip: 1;
+  --surface-opacity: 0.84;
+  --surface-opacity-elevated: 0.86;
+  --surface-opacity-chip: 0.82;
 
-  --surface-bg: var(--md-surface-container-low);
-  --surface-bg-elevated: var(--md-surface-container-lowest);
-  --surface-bg-chip: var(--md-surface-container);
-  --surface-bg-well: var(--md-surface-container-lowest);
+  --surface-bg: rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated: rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
+  --surface-bg-well: rgb(var(--glass-rgb) / 0.68);
   --surface-bg-tooltip: hsl(var(--tooltip));
   --surface-bg-popover: hsl(var(--popover));
   --surface-bg-dialog: var(--md-surface-container-lowest);
 
-  --surface-rim: color-mix(in srgb, var(--md-outline) 55%, transparent);
-  --surface-shadow: var(--md-elevation-1);
-  --surface-shadow-elevated: var(--md-elevation-2);
-  --surface-shadow-chip: none;
-  --surface-shadow-well: var(--md-elevation-1);
+  --surface-rim: rgb(255 255 255 / 0.055);
+  --surface-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 16px 38px rgb(0 0 0 / 0.32);
+  --surface-shadow-elevated: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 20px 46px rgb(0 0 0 / 0.38);
+  --surface-shadow-chip: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 22px rgb(0 0 0 / 0.24);
+  --surface-shadow-well: inset 0 1px 4px rgb(0 0 0 / 0.18);
   --surface-shine-opacity: 0;
 
   --session-glass-strong: var(--md-primary-container);
@@ -114,35 +114,34 @@
 /* ----- glass：液态高级材质 ----- */
 [data-material='glass'] {
   /* 轻blur - 液态玻璃特性 */
-  --surface-blur: 1.5px;
-  --surface-blur-elevated: 2px;
-  --surface-blur-chip: 1px;
-  --surface-blur-overlay: 4px;
-  --surface-saturate: 1.35;
-  --surface-brightness: 1.04;
+  --surface-blur: 48px;
+  --surface-blur-elevated: 52px;
+  --surface-blur-chip: 30px;
+  --surface-blur-overlay: 44px;
+  --surface-saturate: 1.18;
+  --surface-brightness: 1.02;
   /* 极轻填充 - 几乎全透 */
-  --surface-opacity: 0.025;
-  --surface-opacity-elevated: 0.032;
-  --surface-opacity-chip: 0.048;
+  --surface-opacity: 0.08;
+  --surface-opacity-elevated: 0.11;
+  --surface-opacity-chip: 0.14;
   /* 极轻渐变背景 - 液态玻璃 */
-  --surface-bg: linear-gradient(
-    145deg,
-    hsl(var(--background) / 0.025) 0%,
-    hsl(var(--background) / 0.012) 52%,
-    hsl(var(--background) / 0.004) 100%
-  );
-  --surface-bg-elevated: linear-gradient(
-    145deg,
-    hsl(var(--glass-bg, var(--background)) / 0.032) 0%,
-    hsl(var(--glass-bg, var(--background)) / 0.018) 55%,
-    hsl(var(--glass-bg, var(--background)) / 0.006) 100%
-  );
-  --surface-bg-chip: linear-gradient(
-    145deg,
-    hsl(var(--glass-ambient) / 0.048) 0%,
-    hsl(var(--background) / 0.032) 48%,
-    hsl(var(--background) / 0.024) 100%
-  );
+  --surface-bg:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.055),
+      transparent 42%,
+      rgb(var(--scene-b-rgb) / 0.04)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.07),
+      transparent 44%,
+      rgb(var(--scene-b-rgb) / 0.05)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   /* Well：内凹区域(最透) */
   --surface-bg-well: linear-gradient(
     145deg,
@@ -168,29 +167,42 @@
     hsl(var(--dialog) / 0.052) 46%,
     hsl(var(--dialog) / 0.048) 100%
   );
-  --surface-rim: hsl(var(--glass-rim) / 0.52);
+  --surface-rim: rgb(255 255 255 / 0.2);
   --surface-rim-width: 1px;
   /* 色散阴影 + 边缘厚度 - 液态玻璃特征 */
   --surface-shadow:
     /* 色散层 */
-    -4px 8px 18px -8px hsl(var(--primary) / 0.12), 4px 8px 18px -8px hsl(260 55% 60% / 0.12),
+    -4px 8px 18px -8px hsl(var(--primary) / 0.12),
+    4px 8px 18px -8px hsl(var(--scene-ambient-a) / 0.12),
     /* 主阴影 */ 0 16px 36px -18px rgba(0, 0, 0, 0.28), 0 4px 12px -6px rgba(0, 0, 0, 0.16),
     /* 边缘厚度 - 上下强,左右弱 */ inset 0 1.5px 0 0 hsl(var(--glass-shine) / 0.72),
     inset 1px 0 0 0 hsl(var(--glass-shine) / 0.24), inset 0 -1px 0 0 rgba(90, 105, 130, 0.1);
   --surface-shadow-elevated:
     /* 色散层加强 */
-    -5px 10px 22px -9px hsl(var(--primary) / 0.16), 5px 10px 22px -9px hsl(260 55% 60% / 0.16),
+    -5px 10px 22px -9px hsl(var(--primary) / 0.16),
+    5px 10px 22px -9px hsl(var(--scene-ambient-a) / 0.16),
     /* 主阴影 */ 0 20px 44px -18px rgba(0, 0, 0, 0.32), 0 6px 16px -7px rgba(0, 0, 0, 0.2),
     /* 边缘厚度 */ inset 0 1.5px 0 0 hsl(var(--glass-shine) / 0.82),
     inset 1px 0 0 0 hsl(var(--glass-shine) / 0.3), inset 0 -1px 0 0 rgba(90, 105, 130, 0.12);
   --surface-shadow-chip:
     /* 色散层 */
-    -2px 4px 10px -4px hsl(var(--primary) / 0.09), 2px 4px 10px -4px hsl(260 55% 60% / 0.09),
+    -2px 4px 10px -4px hsl(var(--primary) / 0.09),
+    2px 4px 10px -4px hsl(var(--scene-ambient-a) / 0.09),
     /* 主阴影 */ 0 6px 18px -8px rgba(0, 0, 0, 0.12),
     /* 边缘厚度 */ inset 0 1px 0 0 hsl(var(--glass-shine) / 0.45);
   /* Well：极轻的内凹阴影（高透玻璃几乎不需要）*/
   --surface-shadow-well:
     inset 1px 1px 3px rgba(0, 0, 0, 0.05), inset -1px -1px 2px rgba(255, 255, 255, 0.03);
+  /* Final optical edge: one restrained highlight and a broad environmental drop. */
+  --surface-shadow:
+    -5px 10px 24px -14px rgb(var(--scene-a-rgb) / 0.12),
+    5px 10px 24px -14px rgb(var(--scene-b-rgb) / 0.09), 0 16px 36px -20px rgb(0 0 0 / 0.2),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+  --surface-shadow-elevated:
+    -6px 12px 28px -16px rgb(var(--scene-a-rgb) / 0.14),
+    6px 12px 28px -16px rgb(var(--scene-b-rgb) / 0.1), 0 20px 44px -20px rgb(0 0 0 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.24);
+  --surface-shadow-chip: 0 8px 20px -12px rgb(0 0 0 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.18);
   --surface-inset-hi: hsl(var(--glass-shine) / 0.4);
   --surface-shine-opacity: 1;
   --surface-shine-opacity-soft: 0.55;
@@ -209,8 +221,28 @@
 
 .dark[data-material='glass'],
 [data-material='glass'].dark {
-  --surface-saturate: 1.28;
+  --surface-saturate: 1.14;
   --surface-brightness: 0.96;
+  --surface-opacity: 0.14;
+  --surface-opacity-elevated: 0.18;
+  --surface-opacity-chip: 0.2;
+  --surface-bg:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.05),
+      transparent 42%,
+      rgb(var(--scene-b-rgb) / 0.035)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.06),
+      transparent 44%,
+      rgb(var(--scene-b-rgb) / 0.04)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --surface-bg: linear-gradient(
     145deg,
     hsl(var(--background) / 0.025) 0%,
@@ -248,29 +280,54 @@
     hsl(var(--dialog) / 0.052) 46%,
     hsl(var(--dialog) / 0.048) 100%
   );
-  --surface-rim: hsl(var(--foreground) / 0.17);
+  --surface-rim: rgb(255 255 255 / 0.055);
   /* 深色液态色散阴影 */
   --surface-shadow:
     /* 色散层 */
-    -4px 8px 18px -8px hsl(var(--primary) / 0.09), 4px 8px 18px -8px hsl(260 48% 55% / 0.1),
+    -4px 8px 18px -8px hsl(var(--primary) / 0.09),
+    4px 8px 18px -8px hsl(var(--scene-ambient-a) / 0.1),
     /* 主阴影 */ 0 18px 40px -16px rgba(0, 0, 0, 0.55), 0 5px 14px -6px rgba(0, 0, 0, 0.42),
     /* 边缘厚度 */ inset 0 1.5px 0 0 hsl(var(--foreground) / 0.2),
     inset 1px 0 0 0 hsl(var(--foreground) / 0.07), inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
   --surface-shadow-elevated:
     /* 色散层加强 */
-    -5px 10px 22px -9px hsl(var(--primary) / 0.12), 5px 10px 22px -9px hsl(260 48% 55% / 0.12),
+    -5px 10px 22px -9px hsl(var(--primary) / 0.12),
+    5px 10px 22px -9px hsl(var(--scene-ambient-a) / 0.12),
     /* 主阴影 */ 0 22px 48px -18px rgba(0, 0, 0, 0.62), 0 8px 18px -7px rgba(0, 0, 0, 0.48),
     /* 边缘厚度 */ inset 0 2px 0 0 hsl(var(--foreground) / 0.14),
     inset 1px 0 0 0 hsl(var(--foreground) / 0.08), inset 0 -1px 0 0 hsl(var(--foreground) / 0.05),
     inset -1px -1px 0 0 rgba(255, 255, 255, 0.03);
   --surface-shadow-chip:
     /* 色散层 */
-    -2px 4px 10px -4px hsl(var(--primary) / 0.07), 2px 4px 10px -4px hsl(260 48% 55% / 0.08),
+    -2px 4px 10px -4px hsl(var(--primary) / 0.07),
+    2px 4px 10px -4px hsl(var(--scene-ambient-a) / 0.08),
     /* 主阴影 */ 0 8px 20px -8px rgba(0, 0, 0, 0.48),
     /* 边缘厚度 */ inset 0 1px 0 0 hsl(var(--foreground) / 0.09);
   /* Well：深色内凹阴影 */
   --surface-shadow-well:
     inset 1px 1px 4px rgba(0, 0, 0, 0.18), inset -1px -1px 3px rgba(255, 255, 255, 0.04);
+  /* Dark glass keeps separation through depth, not a bright luminous rim. */
+  --surface-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.42), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --surface-shadow-elevated:
+    0 22px 48px -18px rgb(0 0 0 / 0.48), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --surface-shadow-chip: 0 8px 22px -10px rgb(0 0 0 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --surface-bg:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.05),
+      transparent 42%,
+      rgb(var(--scene-b-rgb) / 0.035)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated:
+    linear-gradient(
+      138deg,
+      rgb(var(--scene-a-rgb) / 0.06),
+      transparent 44%,
+      rgb(var(--scene-b-rgb) / 0.04)
+    ),
+    rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --session-glass-strong: hsl(var(--muted) / 0.55);
   --session-rim: hsl(var(--glass-rim) / 0.32);
   --session-inset-hi: hsl(var(--glass-shine) / 0.16);
@@ -279,18 +336,18 @@
 
 /* ----- soft：轻拟态高级材质 ----- */
 [data-material='soft'] {
-  --surface-blur: 0px;
-  --surface-blur-elevated: 0px;
-  --surface-blur-chip: 0px;
+  --surface-blur: 3px;
+  --surface-blur-elevated: 4px;
+  --surface-blur-chip: 2px;
   --surface-blur-overlay: 6px;
-  --surface-saturate: 1;
+  --surface-saturate: 1.02;
   --surface-brightness: 1;
-  --surface-opacity: 1;
-  --surface-opacity-elevated: 0.98;
-  --surface-opacity-chip: 1;
-  --surface-bg: hsl(var(--background));
-  --surface-bg-elevated: hsl(var(--card) / 0.98);
-  --surface-bg-chip: hsl(var(--card));
+  --surface-opacity: 0.9;
+  --surface-opacity-elevated: 0.92;
+  --surface-opacity-chip: 0.86;
+  --surface-bg: rgb(var(--glass-rgb) / var(--surface-opacity));
+  --surface-bg-elevated: rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
+  --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --surface-bg-tooltip: hsl(var(--tooltip) / 0.98);
   --surface-bg-popover: hsl(var(--popover) / 0.98);
   --surface-bg-dialog: hsl(var(--dialog) / 0.98);
@@ -321,10 +378,10 @@
 
 .dark[data-material='soft'],
 [data-material='soft'].dark {
-  --surface-bg: hsl(var(--background));
-  --surface-bg-elevated: hsl(var(--card) / 0.96);
-  --surface-bg-chip: hsl(var(--card));
-  --surface-rim: hsl(var(--border) / 0.5);
+  --surface-bg: rgb(var(--glass-rgb) / 0.9);
+  --surface-bg-elevated: rgb(var(--glass-rgb) / 0.92);
+  --surface-bg-chip: rgb(var(--glass-rgb) / 0.86);
+  --surface-rim: rgb(255 255 255 / 0.055);
   --press-scale: 0.97;
   --press-shadow:
     inset 2px 2px 6px rgba(0, 0, 0, 0.28), inset -2px -2px 4px rgba(255, 255, 255, 0.06);
@@ -891,7 +948,8 @@
   /* neoNav .navbar 原始参数 */
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.1) 0%,
     rgba(255, 255, 255, 0.08) 50%,
     rgba(255, 255, 255, 0.1) 100%
@@ -908,7 +966,8 @@
 [data-material='glass'] .session-glass.session-glass-sticky:hover,
 [data-material='glass'] .session-glass-sticky:hover {
   transform: translateY(-2px);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.1) 0%,
     rgba(255, 255, 255, 0.08) 50%,
     rgba(255, 255, 255, 0.1) 100%
@@ -931,11 +990,7 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   pointer-events: none;
   z-index: 0;
   opacity: 1;
@@ -974,7 +1029,8 @@
 [data-material='glass'].dark .session-glass-sticky,
 .dark[data-material='glass'] .chat-input-glass,
 [data-material='glass'].dark .chat-input-glass {
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.1) 0%,
     rgba(0, 0, 0, 0.08) 50%,
     rgba(0, 0, 0, 0.1) 100%
@@ -997,11 +1053,7 @@
 [data-material='glass'].dark .session-glass.session-glass-sticky::before,
 .dark[data-material='glass'] .session-glass-sticky::before,
 [data-material='glass'].dark .session-glass-sticky::before {
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(255, 255, 255, 0.08),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }
 
 /* ============================================================================

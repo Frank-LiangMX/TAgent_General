@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TAgent 多主题视觉原型 · Spatial Theme Study</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
+    />
+    <link rel="stylesheet" href="./theme-tokens.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <!--
+    token 挂载点：data-theme / data-mode / data-material 在 <body>，
+    data-platform / spatial-state-* 在壳上。swatch-preview 自带 data-theme/data-mode
+    局部 scope 出各主题 scene 预览。URL: ?theme=...&mode=...&material=...&platform=...&clean=1&selftest=1
+  -->
+  <body data-theme="default" data-mode="light" data-material="frosted">
+    <!--
+      Design read: TAgent 桌面 Agent 工作台，唯一 Spatial Lens 基调。
+      主题身份来自 Scene（scene-base + 三束弥散光），不是只换 accent。
+      active 态是中性玻璃板；accent 只留给 CTA / focus / 关键进度。
+      半径层级：chassis 28 / drawer 22 / tool 16 / control 11。
+      Motion：180-320ms transform/opacity/filter。
+    -->
+
+    <!-- ===== 实验工具条（app shell 外，不假装产品 UI） ===== -->
+    <header class="study-bar" aria-label="主题实验工具">
+      <div class="study-title">
+        <span class="study-mark">T</span>
+        <div>
+          <strong>Spatial Theme Study</strong>
+          <span id="theme-note">长会话交互演示：滚动正文查看定位器，悬停右侧刻度打开消息导航</span>
+        </div>
+      </div>
+
+      <nav class="theme-swatches" aria-label="主题">
+        <button class="theme-swatch is-active" data-theme="default" type="button" aria-pressed="true">
+          <span class="swatch-preview" data-theme="default" data-mode="light"></span>
+          <span class="swatch-name">矿物灰</span>
+        </button>
+        <button class="theme-swatch" data-theme="ocean" type="button" aria-pressed="false">
+          <span class="swatch-preview" data-theme="ocean" data-mode="light"></span>
+          <span class="swatch-name">青瓷</span>
+        </button>
+        <button class="theme-swatch" data-theme="forest" type="button" aria-pressed="false">
+          <span class="swatch-preview" data-theme="forest" data-mode="light"></span>
+          <span class="swatch-name">茶烟</span>
+        </button>
+        <button class="theme-swatch" data-theme="slate" type="button" aria-pressed="false">
+          <span class="swatch-preview" data-theme="slate" data-mode="light"></span>
+          <span class="swatch-name">玄武</span>
+        </button>
+        <button class="theme-swatch" data-theme="orange" type="button" aria-pressed="false">
+          <span class="swatch-preview" data-theme="orange" data-mode="light"></span>
+          <span class="swatch-name">琥珀纸</span>
+        </button>
+        <button class="theme-swatch" data-theme="purple" type="button" aria-pressed="false">
+          <span class="swatch-preview" data-theme="purple" data-mode="light"></span>
+          <span class="swatch-name">鸢尾灰</span>
+        </button>
+      </nav>
+
+      <div class="study-controls">
+        <div class="seg" role="group" aria-label="明暗">
+          <span>明暗</span>
+          <button class="is-active" data-mode="light" type="button" aria-pressed="true">浅</button>
+          <button data-mode="dark" type="button" aria-pressed="false">深</button>
+        </div>
+        <div class="seg" role="group" aria-label="材质">
+          <span>材质</span>
+          <button class="is-active" data-material="frosted" type="button" aria-pressed="true">磨砂</button>
+          <button data-material="soft" type="button" aria-pressed="false">轻拟态</button>
+          <button data-material="glass" type="button" aria-pressed="false">高透</button>
+        </div>
+        <div class="seg" role="group" aria-label="窗口平台">
+          <span>平台</span>
+          <button class="is-active" data-platform="windows" type="button" aria-pressed="true">Win</button>
+          <button data-platform="mac" type="button" aria-pressed="false">Mac</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== 舞台 + 窗口壳 ===== -->
+    <main class="preview-stage">
+      <section
+        id="prototype-shell"
+        class="prototype-shell spatial-state-standard"
+        data-platform="windows"
+        aria-label="TAgent 桌面端布局原型"
+      >
+        <div class="ambient-field" aria-hidden="true"></div>
+
+        <!-- 窗口顶栏 -->
+        <header class="window-chrome">
+          <div class="mac-controls" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <button class="workspace-switcher" type="button">
+            <span class="workspace-glyph">TG</span>
+            <span>默认工作区</span>
+            <i class="ph ph-caret-down chevron" aria-hidden="true"></i>
+          </button>
+          <nav class="spatial-mode-switch" aria-label="Spatial 场景状态">
+            <button class="is-active" data-spatial-state="standard" type="button">
+              <i class="ph ph-layout"></i><span>标准</span>
+            </button>
+            <button data-spatial-state="focus" type="button">
+              <i class="ph ph-corners-out"></i><span>聚焦</span>
+            </button>
+            <button data-spatial-state="canvas" type="button">
+              <i class="ph ph-selection-background"></i><span>画布</span>
+            </button>
+            <button data-spatial-state="office" type="button">
+              <i class="ph ph-buildings"></i><span>Office</span>
+            </button>
+          </nav>
+          <div class="chrome-center">TAgent</div>
+          <div class="window-controls" aria-label="窗口控制">
+            <button type="button" aria-label="最小化"><i class="ph ph-minus"></i></button>
+            <button type="button" aria-label="最大化"><i class="ph ph-square"></i></button>
+            <button class="close-window" type="button" aria-label="关闭"><i class="ph ph-x"></i></button>
+          </div>
+        </header>
+
+        <!-- 功能 Rail（分体胶囊） -->
+        <aside class="function-rail" aria-label="功能导航">
+          <div class="rail-island rail-island-primary">
+            <div class="rail-brand">T</div>
+            <div class="rail-group rail-primary">
+              <button class="rail-button" type="button" data-section="draft" data-label="草稿">
+                <i class="ph ph-pencil-simple-line" aria-hidden="true"></i>
+              </button>
+              <button class="rail-button" type="button" data-section="skills" data-label="插件">
+                <i class="ph ph-puzzle-piece" aria-hidden="true"></i>
+              </button>
+              <div class="rail-rule"></div>
+              <button
+                class="rail-button is-active"
+                type="button"
+                data-section="sessions"
+                data-label="会话"
+              >
+                <i class="ph ph-chats-circle" aria-hidden="true"></i>
+              </button>
+              <button class="rail-button" type="button" data-section="kanban" data-label="看板">
+                <i class="ph ph-kanban" aria-hidden="true"></i>
+              </button>
+              <button
+                class="rail-button"
+                type="button"
+                data-section="automation"
+                data-label="自动任务"
+              >
+                <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>
+              </button>
+              <button class="rail-button" type="button" data-section="memory" data-label="记忆">
+                <i class="ph ph-brain" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="rail-spacer"></div>
+
+          <div class="rail-island rail-island-system">
+            <div class="rail-group rail-secondary">
+              <button class="rail-button compact-label" type="button" data-section="general" data-label="通用模式">
+                G
+              </button>
+              <button class="rail-button compact-label" type="button" data-section="ta" data-label="TA 模式">
+                TA
+              </button>
+              <button class="rail-button" type="button" data-section="office" data-label="AI Office">
+                <i class="ph ph-buildings" aria-hidden="true"></i>
+              </button>
+              <button class="rail-avatar" type="button" data-label="设置">L</button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 侧栏 -->
+        <aside class="sidebar" aria-label="功能内容侧栏">
+          <header class="sidebar-header">
+            <div>
+              <span class="section-kicker">WORKSPACE</span>
+              <h1 id="sidebar-title">会话</h1>
+            </div>
+            <div class="sidebar-header-actions">
+              <button id="close-sidebar" class="panel-collapse-button" type="button" aria-label="折叠侧栏">
+                <i class="ph ph-sidebar-simple"></i>
+              </button>
+              <button class="soft-button new-session" type="button">新会话</button>
+            </div>
+          </header>
+
+          <label class="search-field">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            <input id="sidebar-search" type="search" placeholder="搜索会话与项目" />
+            <kbd>⌘K</kbd>
+          </label>
+
+          <div id="sidebar-main" class="sidebar-main">
+            <section class="project-block">
+              <button class="project-heading" type="button">
+                <i class="ph ph-caret-down" aria-hidden="true"></i>
+                <strong>默认工作区</strong>
+                <small>5</small>
+              </button>
+              <div class="session-list">
+                <button class="session-row is-active" type="button">
+                  <span class="session-title">你好</span>
+                  <time>16:19</time>
+                  <small>Agent 任务已完成，等待下一步</small>
+                </button>
+                <button class="session-row" type="button">
+                  <span class="session-title">页面样式可见吗</span>
+                  <time>周四</time>
+                  <small>设计预览与布局讨论</small>
+                </button>
+                <button class="session-row" type="button">
+                  <span class="session-title">看板测试任务</span>
+                  <time>周三</time>
+                  <small>3 个 Worker 已结束</small>
+                </button>
+              </div>
+            </section>
+
+            <section class="project-block">
+              <button class="project-heading" type="button">
+                <i class="ph ph-caret-down" aria-hidden="true"></i>
+                <strong>TAgent General</strong>
+                <small>2</small>
+              </button>
+              <div class="session-list">
+                <button class="session-row" type="button">
+                  <span class="session-title">UI layout refactor</span>
+                  <time>今天</time>
+                  <small>feature/ui-polish</small>
+                </button>
+                <button class="session-row" type="button">
+                  <span class="session-title">TUN 启动诊断</span>
+                  <time>今天</time>
+                  <small>开发服务运行中</small>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <footer class="sidebar-footer">
+            <button type="button">已归档 <span>2</span></button>
+            <button type="button" aria-label="侧栏设置"><i class="ph ph-dots-three"></i></button>
+          </footer>
+        </aside>
+
+        <!-- 工作区 -->
+        <section class="workspace" aria-label="Agent 主工作区">
+          <header class="workspace-header">
+            <div class="tab-list">
+              <button class="workspace-tab is-active" type="button">
+                <i class="ph ph-chats-circle" aria-hidden="true"></i>你好<span class="tab-close" aria-hidden="true"><i class="ph ph-x"></i></span>
+              </button>
+              <button class="workspace-tab" type="button"><i class="ph ph-monitor" aria-hidden="true"></i>Design Preview</button>
+            </div>
+            <div class="workspace-meta">
+              <div class="session-status" role="group" aria-label="当前会话状态">
+                <span class="session-status-segment session-status-model" title="当前模型">
+                  <i class="ph ph-cpu" aria-hidden="true"></i>
+                  <span>DeepSeek V4 Flash</span>
+                </span>
+                <button
+                  class="session-status-segment session-status-permission approval-switch is-on"
+                  id="approval-switch"
+                  type="button"
+                  role="switch"
+                  aria-checked="true"
+                  aria-label="自动审批"
+                  title="切换审批模式"
+                >
+                  <i class="ph ph-shield-check" aria-hidden="true"></i>
+                  <span class="switch-copy">自动审批</span>
+                </button>
+                <span class="session-status-segment session-status-activity" data-tone="idle">
+                  <span class="session-status-dot" aria-hidden="true"></span>
+                  <span>空闲</span>
+                </span>
+                <button class="session-status-crew" type="button" aria-label="协作成员 1 人，共 1 人">
+                  <i class="ph ph-users-three" aria-hidden="true"></i>
+                  <strong>1/1</strong>
+                  <span class="session-status-track" aria-hidden="true"><i style="width: 100%"></i></span>
+                </button>
+              </div>
+              <button class="workspace-inspector-trigger" id="toggle-inspector" type="button" aria-label="切换检查器" title="检查器">
+                <i class="ph ph-sidebar-simple" aria-hidden="true"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="conversation has-turn-locator" id="conversation">
+            <div class="turn-locator-slot" aria-live="polite">
+              <button
+                class="turn-locator"
+                id="turn-locator"
+                type="button"
+                aria-label="返回上一轮用户消息"
+                aria-hidden="true"
+              >
+                <span class="turn-locator-icon" aria-hidden="true"><i class="ph ph-arrow-up"></i></span>
+                <span class="turn-locator-label">上一轮</span>
+                <span class="turn-locator-divider" aria-hidden="true"></span>
+                <span class="turn-locator-summary"></span>
+                <span class="turn-locator-action" aria-hidden="true">回到原文 <i class="ph ph-arrow-up-right"></i></span>
+              </button>
+            </div>
+            <div class="context-line">
+              <span>正在处理</span>
+              <strong>建立 TAgent 的多主题视觉系统</strong>
+              <time>16:20</time>
+            </div>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>我会把多主题做成独立原型。生产界面保持不动，主题身份来自 Scene，active 态是中性玻璃板，accent 只留给 CTA 与关键进度。</p>
+              <div class="agent-process">
+                <div><span>研究</span><strong>梳理 Scene / Chassis / Ink / Accent 四层 token</strong></div>
+                <div><span>设计</span><strong>为六套主题各配三束弥散光与冷暖 ink</strong></div>
+                <div><span>验证</span><strong>在 Win 与 Mac 窗口控件下检查对齐</strong></div>
+              </div>
+            </article>
+
+            <article class="message message-user" data-turn-summary="主题要克制，有冷暖辨识">
+              <p>主题要克制、有冷暖辨识，不要 AI 紫粉和冰青粉。大圆角保留，但半径要有层级。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>收到。先固定四层结构：Scene 负责环境光，Surface 负责面板融合，Ink 负责文字层级，Accent 只用于交互反馈。这样换主题时不会把组件逐个重新染色。</p>
+              <div class="agent-process">
+                <div><span>结构</span><strong>统一六套主题的弥散光分布</strong></div>
+                <div><span>材质</span><strong>磨砂、轻拟态和高透玻璃共用语义角色</strong></div>
+                <div><span>检查</span><strong>分别验证明暗模式的边缘光强度</strong></div>
+              </div>
+            </article>
+
+            <article class="message message-user" data-turn-summary="背景渐变应该覆盖整个窗口">
+              <p>背景不要只有左上角一团光。渐变应该覆盖整个窗口，视角中心不能被锁死，而且侧栏折叠后也要保持完整。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>我把局部光斑改成全窗口光场。主光从左上进入，冷色补光落在右下，底部增加一层低饱和塑形光。面板只折射这些环境色，不再自己制造白色底板。</p>
+              <div class="message-actions">
+                <button type="button">查看光场</button>
+                <button type="button">比较主题</button>
+              </div>
+            </article>
+
+            <article class="message message-user" data-turn-summary="面板和背景的色差还是太大">
+              <p>面板和背景的色差还是太大，看起来像几张白卡盖在渐变上，不像同一个空间里的材质。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>问题在面板填充只读取了 glass 色，没有读取 Scene。现在主要表面会混入少量主光和底色，边缘只保留一条光学高光，阴影也改为随主题偏色。</p>
+            </article>
+
+            <article class="message message-user" data-turn-summary="轻拟态和高透玻璃要有不同控件">
+              <p>不同材质不能只是透明度不同。轻拟态和高透玻璃里的胶囊开关、标签页、输入框应该有不同的触感。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>同意。轻拟态使用内凹轨道和轻微抬升的拇指，高透玻璃使用透明光学轨道和清晰折射边缘。组件结构保持一致，材质通过 role token 替换，不在组件里堆覆盖规则。</p>
+              <div class="agent-process">
+                <div><span>轻拟态</span><strong>按压时从抬升过渡到内凹</strong></div>
+                <div><span>高透</span><strong>悬停时提高折射边缘，不增加外发光</strong></div>
+              </div>
+            </article>
+
+            <article class="message message-user" data-turn-summary="深色模式的边缘光太强了">
+              <p>深色模式下边缘光太强了，尤其是 sidebar 和 composer，像套了一圈银白色描边。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>深色表面的顶高光已经收敛，外部阴影改用各主题的深色前景，不再使用白色环境影。交互控件仍有可读边界，但不会像发光描边。</p>
+            </article>
+
+            <article class="message message-user" data-turn-summary="标签页和会话状态需要重新对齐">
+              <p>标签页和右侧会话状态还是有些歪。状态卡不应该跟标签抢视觉中心，标签也要和 sidebar 内容起点对齐。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>标签区只承担多工作场切换，会话状态退到同一行右侧的次级控制组。两侧都使用 32px 控件高度，基线由同一个 header grid 管理。</p>
+            </article>
+
+            <article class="message message-user" data-turn-summary="输入框聚焦后再展开高级选项">
+              <p>默认状态不要把所有选项平铺出来。输入框聚焦后可以露出下面叠着的一层，把不常用的选项放在那里。</p>
+            </article>
+
+            <article class="message message-agent">
+              <div class="message-label">TAgent</div>
+              <p>输入框保持核心操作常驻，高级层只在 focus 时向下展开。展开会推动 token 底栏一起移动，收回时恢复为单层，不改变正文可用宽度。</p>
+            </article>
+
+            <article class="message message-user" data-turn-summary="滚动定位器不要形成第三条顶栏">
+              <p>会话顶部的上一轮吸附浮窗太占空间了。它和标签栏、执行过程条连续堆在一起，像第三条顶栏。</p>
+            </article>
+
+            <article class="message message-agent compact-message">
+              <div class="message-label">TAgent</div>
+              <p>我把它降级为正文滚动定位器。只有用户消息完全越过阅读区上缘后才出现，显示最近离开的那一轮摘要；点击后平滑返回原文，再更新为更早一轮，没有更早消息时才收回。</p>
+              <div class="message-actions">
+                <button type="button">回到顶部</button>
+                <button type="button">继续滚动</button>
+              </div>
+            </article>
+          </div>
+
+          <aside class="message-minimap" id="message-minimap" aria-label="消息导航与滚动进度">
+            <section class="message-minimap-popover" aria-label="消息导航预览">
+              <header>
+                <strong>消息导航</strong>
+                <span id="message-minimap-count">0 / 0</span>
+              </header>
+              <label class="message-minimap-search">
+                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                <input id="message-minimap-search" type="search" placeholder="搜索消息…" aria-label="搜索会话消息" />
+              </label>
+              <div class="message-minimap-list" id="message-minimap-list"></div>
+              <div class="message-minimap-empty" id="message-minimap-empty" hidden>没有匹配的消息</div>
+            </section>
+            <div class="message-minimap-cluster">
+              <nav class="message-minimap-bars" id="message-minimap-bars" aria-label="消息刻度"></nav>
+              <div
+                class="message-scroll-track"
+                id="message-scroll-track"
+                role="scrollbar"
+                tabindex="0"
+                aria-controls="conversation"
+                aria-orientation="vertical"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-label="会话滚动位置"
+              >
+                <span class="message-scroll-thumb" id="message-scroll-thumb"></span>
+              </div>
+            </div>
+          </aside>
+
+          <form class="composer" id="composer-form">
+            <textarea id="composer-input" rows="2" placeholder="告诉 TAgent 接下来怎么调整..."></textarea>
+            <div class="composer-tools">
+              <div>
+                <button type="button" aria-label="添加附件"><i class="ph ph-paperclip"></i></button>
+                <button type="button"><i class="ph ph-shield-check"></i> 权限 <i class="ph ph-caret-down"></i></button>
+                <button type="button"><i class="ph ph-at"></i> 上下文</button>
+              </div>
+              <div>
+                <button type="button">DeepSeek V4 Flash <i class="ph ph-caret-down"></i></button>
+                <button class="send-button" type="submit" aria-label="发送"><i class="ph ph-arrow-up"></i></button>
+              </div>
+            </div>
+          </form>
+
+          <div class="composer-underlay" id="composer-underlay" aria-label="高级输入选项">
+            <button type="button"><i class="ph ph-sliders-horizontal"></i><span>推理强度</span><strong>标准</strong></button>
+            <button type="button"><i class="ph ph-shield-check"></i><span>工具权限</span><strong>自动</strong></button>
+            <button type="button"><i class="ph ph-brain"></i><span>记忆写入</span><strong>会话</strong></button>
+            <button type="button"><i class="ph ph-database"></i><span>上下文范围</span><strong>项目</strong></button>
+          </div>
+
+          <footer class="status-bar">
+            <span>输入 215.5k</span><span>输出 1.1k</span><span>缓存读取 80%</span><span>4 轮</span>
+          </footer>
+
+          <!-- 画布全屏 -->
+          <section class="fullscreen-scene canvas-fullscreen" aria-label="画布全屏场景">
+            <header class="scene-toolbar">
+              <div>
+                <button class="is-active" type="button"><i class="ph ph-selection"></i>选择</button>
+                <button type="button"><i class="ph ph-stack"></i>分层</button>
+                <button type="button"><i class="ph ph-upload-simple"></i>导入</button>
+              </div>
+              <div>
+                <button type="button">Desktop</button><button type="button">100%</button>
+              </div>
+            </header>
+            <div class="fullscreen-canvas-grid">
+              <div class="device-sheet">
+                <div class="device-sheet-bar"><span></span><strong>Agent Workspace Concept</strong></div>
+                <div class="device-sheet-body">
+                  <span><i class="ph ph-sparkle"></i></span>
+                  <strong>画布获得完整空间</strong>
+                  <small>分层、版本与元素选择按需从边缘唤出</small>
+                </div>
+              </div>
+            </div>
+            <button class="canvas-layer-handle" type="button"><i class="ph ph-stack"></i><span>Layers</span></button>
+          </section>
+
+          <!-- Office 全屏 -->
+          <section class="fullscreen-scene office-fullscreen" aria-label="AI Office 全屏场景">
+            <header class="office-heading">
+              <div><span class="section-kicker">AI OFFICE</span><h2>协作空间</h2></div>
+              <div class="office-summary"><span>3 位成员工作中</span><span>2 项等待确认</span></div>
+            </header>
+            <div class="office-floor">
+              <article class="office-focus">
+                <header>
+                  <i class="ph ph-magnifying-glass"></i>
+                  <div><strong>研究员</strong><span>整理布局与交互基调</span></div>
+                  <small>当前焦点</small>
+                </header>
+                <div class="office-progress">
+                  <span><i></i><strong>正在比较 Spatial 的折叠状态</strong><small>12 个界面样本</small></span>
+                  <span><i></i><strong>检查全屏场景的退出路径</strong><small>画布 / Office</small></span>
+                  <span class="is-muted"><i></i><strong>等待设计基调确认</strong><small>需要你的反馈</small></span>
+                </div>
+              </article>
+              <aside class="office-stack" aria-label="其他协作者">
+                <article><i class="ph ph-tree-structure"></i><div><strong>架构师</strong><span>检查主区域和浮层边界</span></div><small>工作中</small></article>
+                <article><i class="ph ph-paint-brush-broad"></i><div><strong>设计师</strong><span>统一图标与选择状态</span></div><small>工作中</small></article>
+                <button type="button"><i class="ph ph-users-three"></i><span>展开全部协作者</span><small>3</small></button>
+              </aside>
+            </div>
+            <form class="office-command"><input placeholder="向整个 Office 下达任务..." /><button type="button"><i class="ph ph-arrow-up"></i></button></form>
+          </section>
+        </section>
+
+        <!-- 检查器 -->
+        <aside class="inspector" aria-label="上下文检查器">
+          <header class="inspector-header">
+            <div>
+              <span class="section-kicker">CONTEXT</span>
+              <h2 id="inspector-title">Design Preview</h2>
+            </div>
+            <button id="close-inspector" type="button" aria-label="折叠检查器"><i class="ph ph-x"></i></button>
+          </header>
+
+          <nav class="inspector-tabs" aria-label="检查器功能">
+            <button class="inspector-tab" data-panel="files" type="button"><i class="ph ph-files"></i><span>文件</span></button>
+            <button class="inspector-tab" data-panel="btw" type="button"><i class="ph ph-note-pencil"></i><span>旁注</span></button>
+            <button class="inspector-tab" data-panel="browser" type="button"><i class="ph ph-browser"></i><span>预览</span></button>
+            <button class="inspector-tab is-active" data-panel="design" type="button"><i class="ph ph-paint-brush-broad"></i><span>设计</span></button>
+            <button class="inspector-tab" data-panel="crew" type="button"><i class="ph ph-users-three"></i><span>班组</span></button>
+          </nav>
+
+          <div class="inspector-body" id="inspector-body">
+            <div class="canvas-toolbar">
+              <button type="button">分层</button>
+              <button type="button">导入</button>
+              <span>100%</span>
+            </div>
+            <div class="design-canvas">
+              <div class="canvas-grid" aria-hidden="true"></div>
+              <div class="canvas-empty">
+                <span><i class="ph ph-sparkle" aria-hidden="true"></i></span>
+                <strong>等待 Agent 生成 UI 原型</strong>
+                <small>选中元素后可直接告诉 Agent 修改这里</small>
+              </div>
+            </div>
+            <div class="version-strip">
+              <button type="button">v1</button><button type="button">v2</button
+              ><button class="is-active" type="button">v3</button>
+            </div>
+          </div>
+        </aside>
+
+        <button class="panel-peek inspector-peek" type="button" aria-label="展开检查器">
+          <i class="ph ph-selection"></i><span>检查器</span>
+        </button>
+
+        <button class="scene-exit" type="button">
+          <span class="scene-exit-mark">T</span>
+          <span class="scene-exit-copy"><strong>退出全屏</strong><small id="scene-exit-label">返回对话工作区</small></span>
+          <i class="ph ph-arrow-square-out"></i>
+        </button>
+      </section>
+
+      <!-- 全局浮层（tooltip / morph） -->
+      <div class="rail-overlay-layer" aria-live="polite">
+        <div class="sidebar-morph-tether" id="sidebar-morph-tether" aria-hidden="true"></div>
+        <div class="sidebar-morph-surface" id="sidebar-morph-surface" aria-hidden="true"></div>
+        <div class="rail-tooltip" id="rail-tooltip" role="tooltip"></div>
+      </div>
+    </main>
+
+    <div class="selftest-banner" id="selftest-banner" aria-live="polite"></div>
+
+    <script src="./prototype.js"></script>
+  </body>
+</html>

@@ -1,0 +1,912 @@
+/* ============================================================================
+ * TAgent Spatial Theme Study — theme-tokens.css
+ * ----------------------------------------------------------------------------
+ * 本文件是本原型唯一的「裸颜色」权威源。
+ * 四层 token：
+ *   L1 Scene      —— scene-base + 三束弥散环境光（位置/面积/强度），主题身份来源
+ *   L2 Chassis    —— frosted/soft/glass 材质表：blur / 透明度 / 饱和 / rim / shadow / 高光
+ *                    （只改光学参数，不改 hue；hue 由 --glass-rgb 承载）
+ *   L3 Ink        —— 主/次/弱字色，随主题冷暖变化
+ *   L4 Accent     —— 仅 CTA / focus / 关键进度使用；active 态是中性玻璃板，不走 accent
+ * 叠加：Surface Role token（rail/sidebar/workspace/inspector/tab/list/
+ *       message-agent/message-user/composer/status/control/tooltip）
+ *       组件 CSS 只消费 var(--role-*)，禁止在 styles.css 出现裸颜色。
+ *
+ * DOM：data-theme=default|ocean|forest|slate|orange|purple
+ *       data-mode=light|dark
+ *       data-material=frosted|soft|glass
+ *       data-platform=windows|mac
+ * （data-theme 命名与生产 .theme-xxx 对齐，便于迁移）
+ *
+ * v4 修订（2026-07-19：浅色加强 Scene 矿物光、深色收敛边缘光）：
+ *   - 视觉模型 = 约 65% 近中性空间 + A/B 两束可辨矿物光 + C 近中性塑形光，
+ *     不是整窗单色滤镜。主题身份只靠 A/B，不靠 base 染色。
+ *   - 浅色 scene-base 略降到 L≈0.92-0.94（不再贴死近白瓷，给 scene 一层极淡底色，
+ *     三材质不再都像白色）；A/B 矿物光强度上调（A 0.42-0.46、B 0.26-0.30），
+ *     C 塑形 0.13-0.14，强度严格 A>B>C。glass / ink / accent 不变。
+ *   - 渐变羽化终点 68% → 72%（光斑铺得更开，矿物光更可辨）。
+ *   - .ambient-field 收紧为 inset:-8% / blur(28px) / opacity:0.92，让 A/B 矿物光浮现。
+ *   - 深色：base 略降到更饱和的近中性深灰，A/B 矿物光 0.44-0.48 / 0.28-0.32，C 0.15-0.16；
+ *     glass / ink / accent 不变。
+ *   - 深色边缘光收敛：新增 chassis role token（--role-chassis-rim / --role-chassis-shadow），
+ *     dark 外框 rim≈.10、顶部 inset≈.07-.09，不再一圈银白光；三材质 dark rim/highlight 收敛，
+ *     glass dark 顶部白高光降到≈.03、A/B 折射保持 .04-.05，soft dark 瓷釉 wash 降至 .03。
+ *   - active 仍是中性玻璃板；accent 只给 CTA / focus / 关键进度。禁蓝紫粉、薄荷绿、
+ *     日落橙、整窗同色滤镜。main/workspace 继续 transparent。
+ * ========================================================================== */
+
+/* ============================================================================
+ * 0. 结构 token —— 圆角层级 / 动效 / 间距（非颜色）
+ *    半径层级：chassis 28 > drawer 22 > tool 16 > control 11
+ * ========================================================================== */
+:root {
+  --radius-chassis: 28px;
+  --radius-drawer: 22px;
+  --radius-tool: 16px;
+  --radius-control: 11px;
+
+  --gutter: 16px;
+  --panel-header: 64px;
+  --rail-w: 58px;
+  --sidebar-w: 254px;
+  --inspector-w: 302px;
+
+  --motion-fast: 180ms;
+  --motion: 240ms;
+  --motion-slow: 320ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
+ * 1. Scene + Ink + Accent —— 六主题 × 明暗
+ *    所有颜色以 `r g b` 三元组存放，便于在 styles.css 用 rgb(var(--x) / a%) 合成。
+ *    浅色：scene-base L≈0.92-0.94 极淡底色（不再贴死近白瓷，让三材质不再都像白色）；
+ *          A = 左上可辨矿物主光（主题身份）、B = 对位矿物补光、C = 底部近中性塑形光。
+ *          glass / ink / accent 不变。强度 A(0.42-0.46) > B(0.26-0.30) > C(0.13-0.14)。
+ *          模型 = 约 65% 近中性空间 + A/B 矿物光，不是整窗单色滤镜。
+ *    深色：base 略降到更饱和的近中性深灰，A/B 矿物光 0.44-0.48 / 0.28-0.32、C 0.15-0.16，
+ *          A>B；glass / ink / accent 不变。purple 禁霓虹紫。
+ * ========================================================================== */
+
+/* ---- default · Porcelain Daylight 矿物瓷光（冷灰，石墨蓝灰 accent，禁亮矿蓝） ---- */
+[data-theme='default'][data-mode='light'] {
+  --scene-base-rgb: 236 236 233;          /* #ECECE9 极淡底色，不再贴死近白瓷 */
+  --scene-a-rgb: 148 180 214;            /* 矿物主光 A：冷蓝灰（主题身份），左上 */
+  --scene-a-pos: 18% 10%;
+  --scene-a-size: 46% 40%;
+  --scene-a-strength: 0.46;
+  --scene-b-rgb: 228 208 184;            /* 矿物补光 B：暖对位，右下 */
+  --scene-b-pos: 86% 86%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.28;
+  --scene-c-rgb: 172 176 182;           /* 塑形 C：近中性，底部 */
+  --scene-c-pos: 52% 100%;
+  --scene-c-size: 78% 40%;
+  --scene-c-strength: 0.13;
+  --glass-rgb: 252 252 250;             /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 42 46 52;           /* #2A2E34 */
+  --ink-rgb: 70 74 82;
+  --ink-muted-rgb: 112 118 128;
+  --ink-faint-rgb: 154 158 166;
+  --accent-rgb: 72 86 108;              /* #48566C 石墨蓝灰 */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='default'][data-mode='dark'] {
+  --scene-base-rgb: 36 38 42;            /* 更饱和的近中性冷深灰 */
+  --scene-a-rgb: 68 94 122;             /* 冷蓝灰矿物主光，左上（A>B） */
+  --scene-a-pos: 18% 10%;
+  --scene-a-size: 46% 40%;
+  --scene-a-strength: 0.48;
+  --scene-b-rgb: 80 68 54;             /* 暖对位矿物补光，右下 */
+  --scene-b-pos: 86% 86%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.30;
+  --scene-c-rgb: 44 46 50;            /* 近中性塑形，底部 */
+  --scene-c-pos: 52% 100%;
+  --scene-c-size: 78% 40%;
+  --scene-c-strength: 0.15;
+  --glass-rgb: 50 52 56;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 230 232 236;
+  --ink-rgb: 204 208 214;
+  --ink-muted-rgb: 138 144 156;
+  --ink-faint-rgb: 96 102 114;
+  --accent-rgb: 138 152 176;           /* 浅石墨蓝灰，深底可读 */
+  --accent-foreground-rgb: 24 28 34;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ---- ocean · Mineral Water 青瓷水光（微青冷，深青瓷 accent，禁亮 teal） ---- */
+[data-theme='ocean'][data-mode='light'] {
+  --scene-base-rgb: 232 238 240;         /* #E8EEF0 极淡底色，不再贴死近白瓷 */
+  --scene-a-rgb: 120 176 196;          /* 矿物主光 A：青冷（主题身份），左上 */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 46% 40%;
+  --scene-a-strength: 0.45;
+  --scene-b-rgb: 226 210 188;         /* 矿物补光 B：暖砂对位，右下 */
+  --scene-b-pos: 86% 84%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.28;
+  --scene-c-rgb: 164 174 180;         /* 塑形 C：近中性，底部 */
+  --scene-c-pos: 50% 100%;
+  --scene-c-size: 76% 38%;
+  --scene-c-strength: 0.13;
+  --glass-rgb: 250 252 252;           /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 38 50 54;         /* #263236 */
+  --ink-rgb: 62 78 82;
+  --ink-muted-rgb: 100 116 120;
+  --ink-faint-rgb: 146 156 158;
+  --accent-rgb: 48 96 104;           /* #306068 深青瓷 */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='ocean'][data-mode='dark'] {
+  --scene-base-rgb: 32 40 42;           /* 更饱和的近中性冷深灰 */
+  --scene-a-rgb: 44 92 104;            /* 青冷矿物主光，左上（A>B） */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 46% 40%;
+  --scene-a-strength: 0.47;
+  --scene-b-rgb: 78 66 52;            /* 暖砂对位矿物补光，右下 */
+  --scene-b-pos: 86% 84%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.30;
+  --scene-c-rgb: 40 46 48;            /* 近中性塑形，底部 */
+  --scene-c-pos: 50% 100%;
+  --scene-c-size: 76% 38%;
+  --scene-c-strength: 0.15;
+  --glass-rgb: 48 54 56;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 226 234 234;
+  --ink-rgb: 200 212 210;
+  --ink-muted-rgb: 132 146 144;
+  --ink-faint-rgb: 90 104 102;
+  --accent-rgb: 104 156 162;          /* 浅青瓷，深底可读 */
+  --accent-foreground-rgb: 22 30 30;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ---- forest · Tea Olive 茶烟橄榄（灰绿，深茶绿 accent） ---- */
+[data-theme='forest'][data-mode='light'] {
+  --scene-base-rgb: 234 236 228;        /* #EAECE4 极淡底色，不再贴死近白瓷 */
+  --scene-a-rgb: 148 184 142;         /* 矿物主光 A：茶绿（主题身份），左上 */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.44;
+  --scene-b-rgb: 218 196 162;         /* 矿物补光 B：暖褐对位，右上 */
+  --scene-b-pos: 84% 16%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.28;
+  --scene-c-rgb: 168 174 162;         /* 塑形 C：近中性，右下 */
+  --scene-c-pos: 78% 96%;
+  --scene-c-size: 42% 34%;
+  --scene-c-strength: 0.14;
+  --glass-rgb: 250 250 246;           /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 46 52 44;         /* #2E342C */
+  --ink-rgb: 72 80 68;
+  --ink-muted-rgb: 110 120 108;
+  --ink-faint-rgb: 150 158 146;
+  --accent-rgb: 68 100 78;           /* #44644E 深茶绿 */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='forest'][data-mode='dark'] {
+  --scene-base-rgb: 36 40 34;          /* 更饱和的近中性暖深灰 */
+  --scene-a-rgb: 58 92 64;           /* 茶绿矿物主光，左上（A>B） */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.46;
+  --scene-b-rgb: 84 70 50;            /* 暖褐对位矿物补光，右上 */
+  --scene-b-pos: 84% 16%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.30;
+  --scene-c-rgb: 44 48 42;            /* 近中性塑形，右下 */
+  --scene-c-pos: 78% 96%;
+  --scene-c-size: 42% 34%;
+  --scene-c-strength: 0.16;
+  --glass-rgb: 52 54 50;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 228 232 226;
+  --ink-rgb: 202 210 200;
+  --ink-muted-rgb: 134 144 130;
+  --ink-faint-rgb: 90 102 86;
+  --accent-rgb: 124 156 130;          /* 浅茶绿，深底可读 */
+  --accent-foreground-rgb: 22 30 22;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ---- slate · Warm Basalt 玄武暖灰（暖灰，铜锈棕 accent） ---- */
+[data-theme='slate'][data-mode='light'] {
+  --scene-base-rgb: 236 232 224;        /* #ECE8E0 极淡底色，不再贴死近白瓷 */
+  --scene-a-rgb: 210 190 158;         /* 矿物主光 A：暖天光（主题身份），左上 */
+  --scene-a-pos: 22% 8%;
+  --scene-a-size: 46% 38%;
+  --scene-a-strength: 0.44;
+  --scene-b-rgb: 162 182 204;         /* 矿物补光 B：冷石对位，右下 */
+  --scene-b-pos: 88% 86%;
+  --scene-b-size: 36% 32%;
+  --scene-b-strength: 0.30;
+  --scene-c-rgb: 172 168 160;         /* 塑形 C：近中性，左下 */
+  --scene-c-pos: 12% 92%;
+  --scene-c-size: 38% 36%;
+  --scene-c-strength: 0.14;
+  --glass-rgb: 251 248 244;           /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 48 46 42;         /* #302E2A */
+  --ink-rgb: 76 72 66;
+  --ink-muted-rgb: 120 116 108;
+  --ink-faint-rgb: 158 154 146;
+  --accent-rgb: 148 96 68;          /* #946044 铜锈棕 */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='slate'][data-mode='dark'] {
+  --scene-base-rgb: 38 36 32;          /* 更饱和的近中性暖深灰 */
+  --scene-a-rgb: 98 80 56;           /* 暖天光矿物主光，左上（A>B） */
+  --scene-a-pos: 22% 8%;
+  --scene-a-size: 46% 38%;
+  --scene-a-strength: 0.46;
+  --scene-b-rgb: 58 70 86;            /* 冷石对位矿物补光，右下 */
+  --scene-b-pos: 88% 86%;
+  --scene-b-size: 36% 32%;
+  --scene-b-strength: 0.32;
+  --scene-c-rgb: 46 44 40;            /* 近中性塑形，左下 */
+  --scene-c-pos: 12% 92%;
+  --scene-c-size: 38% 36%;
+  --scene-c-strength: 0.16;
+  --glass-rgb: 54 51 48;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 230 228 224;
+  --ink-rgb: 206 202 196;
+  --ink-muted-rgb: 142 138 130;
+  --ink-faint-rgb: 96 92 84;
+  --accent-rgb: 188 140 104;          /* 浅铜锈棕，深底可读 */
+  --accent-foreground-rgb: 30 22 16;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ---- orange · Dry Amber 琥珀干光（暖奶油，金褐 accent，禁日落橙红） ---- */
+[data-theme='orange'][data-mode='light'] {
+  --scene-base-rgb: 238 234 224;        /* #EEEAE0 极淡底色，不再贴死近白瓷 */
+  --scene-a-rgb: 216 176 118;         /* 矿物主光 A：琥珀窗光（主题身份），左上 */
+  --scene-a-pos: 18% 10%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.42;
+  --scene-b-rgb: 168 186 210;        /* 矿物补光 B：冷对位，右下 */
+  --scene-b-pos: 86% 82%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.30;
+  --scene-c-rgb: 176 170 156;         /* 塑形 C：近中性，底部 */
+  --scene-c-pos: 55% 100%;
+  --scene-c-size: 74% 38%;
+  --scene-c-strength: 0.13;
+  --glass-rgb: 252 249 244;           /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 54 48 40;         /* #363028 */
+  --ink-rgb: 82 74 62;
+  --ink-muted-rgb: 124 114 98;
+  --ink-faint-rgb: 164 154 138;
+  --accent-rgb: 160 112 56;          /* #A07038 金褐 */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='orange'][data-mode='dark'] {
+  --scene-base-rgb: 40 36 30;          /* 更饱和的近中性暖深灰 */
+  --scene-a-rgb: 108 80 42;           /* 琥珀矿物主光，左上（A>B） */
+  --scene-a-pos: 18% 10%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.44;
+  --scene-b-rgb: 56 68 86;            /* 冷对位矿物补光，右下 */
+  --scene-b-pos: 86% 82%;
+  --scene-b-size: 34% 30%;
+  --scene-b-strength: 0.32;
+  --scene-c-rgb: 46 44 38;            /* 近中性塑形，底部 */
+  --scene-c-pos: 55% 100%;
+  --scene-c-size: 74% 38%;
+  --scene-c-strength: 0.15;
+  --glass-rgb: 54 52 48;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 232 228 220;
+  --ink-rgb: 208 202 192;
+  --ink-muted-rgb: 146 138 124;
+  --ink-faint-rgb: 100 92 78;
+  --accent-rgb: 200 152 96;          /* 浅金褐，深底可读 */
+  --accent-foreground-rgb: 34 24 16;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ---- purple · Iris Smoke 鸢尾烟光（烟灰紫，禁粉紫；深鸢尾灰 accent chroma≤0.08） ---- */
+[data-theme='purple'][data-mode='light'] {
+  --scene-base-rgb: 234 233 238;        /* #EAE9EE 极淡底色，非粉紫 */
+  --scene-a-rgb: 168 160 204;         /* 矿物主光 A：鸢尾雾（主题身份），左上 */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.42;
+  --scene-b-rgb: 218 204 180;         /* 矿物补光 B：暖对位，右上 */
+  --scene-b-pos: 88% 28%;
+  --scene-b-size: 34% 32%;
+  --scene-b-strength: 0.26;
+  --scene-c-rgb: 172 172 182;         /* 塑形 C：近中性，底部 */
+  --scene-c-pos: 50% 100%;
+  --scene-c-size: 76% 38%;
+  --scene-c-strength: 0.13;
+  --glass-rgb: 251 250 253;           /* 近无色白瓷玻璃（不变） */
+  --ink-strong-rgb: 48 46 56;         /* 深石墨紫 */
+  --ink-rgb: 74 70 84;
+  --ink-muted-rgb: 116 112 128;
+  --ink-faint-rgb: 156 152 166;
+  --accent-rgb: 92 84 118;          /* #5C5476 深鸢尾灰，低 chroma */
+  --accent-foreground-rgb: 255 255 255;
+  --optical-highlight-rgb: 255 255 255;
+}
+[data-theme='purple'][data-mode='dark'] {
+  --scene-base-rgb: 36 34 42;          /* 更饱和的近中性深灰，微紫但不霓虹 */
+  --scene-a-rgb: 74 66 104;           /* 鸢尾矿物主光，低 chroma，左上（A>B） */
+  --scene-a-pos: 16% 12%;
+  --scene-a-size: 44% 38%;
+  --scene-a-strength: 0.44;
+  --scene-b-rgb: 76 66 52;            /* 暖对位矿物补光，右上 */
+  --scene-b-pos: 88% 28%;
+  --scene-b-size: 34% 32%;
+  --scene-b-strength: 0.28;
+  --scene-c-rgb: 44 44 50;            /* 近中性塑形，底部 */
+  --scene-c-pos: 50% 100%;
+  --scene-c-size: 76% 38%;
+  --scene-c-strength: 0.15;
+  --glass-rgb: 52 51 56;             /* 近中性深玻璃（不变） */
+  --ink-strong-rgb: 228 226 232;
+  --ink-rgb: 204 202 212;
+  --ink-muted-rgb: 136 134 148;
+  --ink-faint-rgb: 92 90 104;
+  --accent-rgb: 152 144 176;          /* 浅鸢尾灰，低 chroma，禁霓虹 */
+  --accent-foreground-rgb: 26 24 32;
+  --optical-highlight-rgb: 255 255 255;
+}
+
+/* ============================================================================
+ * 1a. 全窗口环境光场 —— 必须挂 [data-theme][data-mode] 通用 scope：
+ *     body 与每个 .swatch-preview（自身带 data-theme/data-mode）都用各自
+ *     scope 的 --scene-*-rgb / strength 本地求值，互不串扰。
+ *     不能放 :root——:root 是 body 祖先，读不到 body 上挂的主题变量，
+ *     会导致 --scene-lights computed-value invalid，页面回退成白色。
+ *
+ *     v5：主题不再由左上角单个光斑承担。A 从左上跨过视角中心，B 从右下
+ *     反向铺开，C 在中央形成近中性空气层，再用一条低强度对角 wash 连接两端。
+ *     四层都以整个窗口为坐标系，中心没有明确光斑边界，主题色会影响整张 Scene。
+ * ========================================================================== */
+[data-theme][data-mode] {
+  --scene-lights:
+    radial-gradient(
+      ellipse 58% 70% at 4% 2%,
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.72)),
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 54% 66% at 96% 98%,
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.9)),
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 78% 54% at 56% 104%,
+      rgb(var(--scene-c-rgb) / calc(var(--scene-c-strength) * 0.78)),
+      transparent 80%
+    ),
+    linear-gradient(
+      132deg,
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.18)) 0%,
+      transparent 42%,
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.18)) 100%
+    );
+}
+
+/* ============================================================================
+ * 2. Chassis / Material —— frosted（基准：中高不透明、轻 blur、单向轻影，克制）
+ *                            / soft（软瓷轻拟态：near-opaque、blur 0~4，
+ *                                   外软影 + 内顶高光 + 下缘暗）
+ *                            / glass（高透光学玻璃：低 fill、高 blur、轻 saturation、
+ *                                    细中性 rim、单一环境 drop）
+ *    三材质只改光学参数（blur / 透明度 / 饱和 / rim / shadow / 高光 / inset-edge / 光学折射层），
+ *    不改 hue —— 主题 hue 由 --glass-rgb 承载，fill = rgb(var(--glass-rgb) / 透明度)。
+ *    --material-inset-edge：完整 shadow token。frosted/glass = 0 0 0 transparent（透明 no-op，
+ *      不用 rgb(/0) 脆弱写法）；soft = 真实 inset 0 -1px 0 下缘暗（内凹瓷感）。由 role token
+ *      统一拼进 shadow，三材质共用一套 role 结构，正交不互盖。
+ *    --material-optical-wash：纯光学折射/高光层（无文字），颜色只引用 scene-a/b / optical-highlight /
+ *      ink。frosted 接近 none，soft 极弱瓷釉高光，glass 拾取 A/B 光 + 顶高光。由组件 ::before 应用。
+ *    glass 大面 blur 46~52px / chip 28~32px；frosted 基准 blur 22 / chip 15；
+ *    soft blur 2~3（近不透明瓷面，blur 仅做极轻柔化）。
+ *    历史 `clear` 材质已重命名为 `glass`（URL/localStorage 旧值在 prototype.js 自动迁移）。
+ * ========================================================================== */
+[data-material='frosted'] {
+  --glass-blur: 22px;
+  --glass-blur-chip: 15px;
+  --glass-saturation: 1.06;
+  --glass-opacity: 0.56;          /* 让全窗口 Scene 穿过大面板，接近第一版的半透层次 */
+  --glass-opacity-chip: 0.62;
+  --rim-strength: 0.18;
+  --rim-strength-chip: 0.16;
+  --shadow-strength: 0.08;
+  --highlight-strength: 0.16;
+  --material-inset-edge: 0 0 0 transparent;   /* 磨砂无下缘暗：完整透明 no-op，替代 rgb(/0) 脆弱写法 */
+  --material-optical-wash: none;               /* frosted 折射层接近 none，保持中位磨砂身份 */
+}
+[data-material='frosted'][data-mode='dark'] {
+  --glass-blur: 16px;
+  --glass-blur-chip: 12px;
+  --glass-saturation: 1.06;
+  --glass-opacity: 0.84;          /* 深色更实，保字色对比 */
+  --glass-opacity-chip: 0.82;
+  --rim-strength: 0.055;         /* v4：dark rim 收敛为弱分层线，不发光 */
+  --rim-strength-chip: 0.045;
+  --shadow-strength: 0.32;
+  --highlight-strength: 0.04;    /* v4：dark 顶高光收敛 */
+  --material-inset-edge: 0 0 0 transparent;   /* 磨砂无下缘暗（深色同 frosted 规则） */
+  --material-optical-wash: none;
+}
+
+/* soft · 软瓷轻拟态：near-opaque 瓷面，克制近距接触影 + 窄顶高光 + 下缘暗；
+   blur 2~3 仅极轻柔化；避免左右对称肥皂阴影，避免每个控件浮起。 */
+[data-material='soft'] {
+  --glass-blur: 3px;
+  --glass-blur-chip: 2px;
+  --glass-saturation: 1.02;
+  --glass-opacity: 0.9;           /* near-opaque 软瓷面（0.88~0.92） */
+  --glass-opacity-chip: 0.86;     /* chip 0.84~0.88 */
+  --rim-strength: 0.14;          /* 细瓷缘 */
+  --rim-strength-chip: 0.12;
+  --shadow-strength: 0.1;        /* 克制外软影 */
+  --highlight-strength: 0.42;    /* 内顶高光（瓷面受光） */
+  --material-inset-edge: inset 0 -1px 0 rgb(var(--ink-rgb) / 0.05);  /* 下缘暗：软瓷内凹感 */
+  --material-optical-wash: radial-gradient(140% 90% at 24% 10%, rgb(var(--optical-highlight-rgb) / 0.08), transparent 56%);  /* 极弱瓷釉高光 */
+}
+[data-material='soft'][data-mode='dark'] {
+  --glass-blur: 3px;
+  --glass-blur-chip: 2px;
+  --glass-saturation: 1.02;
+  --glass-opacity: 0.92;          /* 深底 near-opaque 软瓷面，对比受控 */
+  --glass-opacity-chip: 0.88;
+  --rim-strength: 0.045;         /* v4：dark rim 收敛 */
+  --rim-strength-chip: 0.04;
+  --shadow-strength: 0.28;
+  --highlight-strength: 0.045;   /* v4：dark 顶高光收敛 */
+  --material-inset-edge: inset 0 -1px 0 rgb(var(--accent-foreground-rgb) / 0.24);  /* 深底使用真实暗边，不拿浅色 ink 冒充阴影 */
+  --material-optical-wash: radial-gradient(140% 90% at 24% 10%, rgb(var(--optical-highlight-rgb) / 0.03), transparent 56%);  /* v4：深底瓷釉高光降至 .03 */
+}
+
+/* glass · 高透光学玻璃：低 fill、高 blur、轻 saturation、细中性 rim、单一环境 drop；
+   active = 局部密度提高而非白卡（见 role 分表）。 */
+[data-material='glass'] {
+  --glass-blur: 48px;             /* 高透光学：大面 46~52px */
+  --glass-blur-chip: 30px;       /* chip 28~32px */
+  --glass-saturation: 1.1;       /* 轻 saturation */
+  --glass-opacity: 0.08;         /* 低 fill 0.07~0.09 */
+  --glass-opacity-chip: 0.11;    /* chip 0.10~0.12 */
+  --rim-strength: 0.38;          /* 细中性 rim 0.36~0.42 */
+  --rim-strength-chip: 0.34;
+  --shadow-strength: 0.07;      /* 单一环境 drop 0.06~0.08 */
+  --highlight-strength: 0.55;   /* 顶缘光学高光 0.52~0.58 */
+  --material-inset-edge: 0 0 0 transparent;   /* 玻璃无厚度 inset：透明 no-op */
+  --material-optical-wash:
+    radial-gradient(120% 80% at 22% 12%, rgb(var(--optical-highlight-rgb) / 0.10), transparent 60%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.09), transparent 64%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.07), transparent 62%);  /* v4：浅色 A/B 折射小幅提到 .07/.09，rim 始终中性 */
+}
+[data-material='glass'][data-mode='dark'] {
+  --glass-blur: 42px;             /* 深底略收 blur，控制对比 */
+  --glass-blur-chip: 28px;
+  --glass-opacity: 0.07;          /* 深底低 fill */
+  --glass-opacity-chip: 0.1;
+  --rim-strength: 0.055;         /* v4：dark rim 收敛（不发光） */
+  --rim-strength-chip: 0.045;
+  --shadow-strength: 0.34;      /* 深底环境影略收 */
+  --highlight-strength: 0.045;  /* v4：dark 顶高光收敛 */
+  --material-inset-edge: 0 0 0 transparent;
+  --material-optical-wash:
+    radial-gradient(120% 80% at 22% 12%, rgb(var(--optical-highlight-rgb) / 0.03), transparent 60%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.05), transparent 64%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.04), transparent 62%);  /* v4：深底顶白高光降至 .03，A/B 折射保持 .04~.05 */
+}
+
+/* ============================================================================
+ * 3. Surface Role token —— 组件唯一消费点
+ *    每个角色 = fill + rim + shadow（+ 可选 blur），由 theme×material 合成。
+ *    active 态一律中性玻璃板，不走 accent；accent 只在 CTA / focus / 进度。
+ *    倍率配合低透明度：rest 浮岛/抽屉半透折射 scene，active 板更高保可读。
+ * ========================================================================== */
+body {
+  /* 浅色环境影取 ink；暗色分表切换为真正的深色，避免把浅色文字值画成外发光。 */
+  --surface-shadow-rgb: var(--ink-rgb);
+  /* 浮岛：rail（分体胶囊）/ sidebar / inspector
+     大面 island 的 shadow 统一拼入「外软影 + 内顶高光 + 下缘暗」三段：
+     第三段是 --material-inset-edge（完整 shadow token）。frosted/glass = 0 0 0 transparent
+     （透明 no-op，不用 rgb(/0) 脆弱写法），soft 才显形为真实下缘暗，
+     这样三材质共用一套 role 结构，正交不互盖。 */
+  /* chassis：窗口外框（prototype-shell）。浅色保持精致亮边（rim .40 / 顶 inset .50）；
+     深色见 body[data-mode='dark'] 收敛为 rim≈.10、顶 inset≈.08，外环境影改用深色
+     accent-foreground 不发白。styles.css 只消费这两个 token，不再硬编码 .4/.5。 */
+  --role-chassis-rim: rgb(var(--optical-highlight-rgb) / 0.40);
+  --role-chassis-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.50),
+    0 2px 4px rgb(var(--ink-rgb) / 0.06),
+    0 28px 70px rgb(var(--ink-rgb) / 0.18);
+
+  --role-rail-fill:
+    radial-gradient(120% 86% at 12% 0%, rgb(var(--scene-a-rgb) / 0.05), transparent 66%),
+    linear-gradient(
+      155deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.68)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity-chip) * 0.48))
+    );
+  --role-rail-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1.15));
+  --role-rail-shadow:
+    0 12px 28px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.5)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-rail-blur: blur(var(--glass-blur-chip)) saturate(var(--glass-saturation));
+
+  --role-sidebar-fill:
+    radial-gradient(120% 92% at 8% 0%, rgb(var(--scene-a-rgb) / 0.055), transparent 64%),
+    radial-gradient(110% 90% at 100% 100%, rgb(var(--scene-b-rgb) / 0.045), transparent 68%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity) * 0.68)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity) * 0.46))
+    );
+  --role-sidebar-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength) * 0.98));
+  --role-sidebar-shadow:
+    0 16px 38px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.7)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-sidebar-blur: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
+  --role-inspector-fill:
+    radial-gradient(120% 92% at 8% 0%, rgb(var(--scene-a-rgb) / 0.05), transparent 64%),
+    radial-gradient(110% 90% at 100% 100%, rgb(var(--scene-b-rgb) / 0.05), transparent 68%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity) * 0.68)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity) * 0.46))
+    );
+  --role-inspector-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength) * 0.98));
+  --role-inspector-shadow:
+    0 16px 38px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.7)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-inspector-blur: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
+  /* workspace：窗口背景上的工作场，不是浮岛 —— 透明，直接坐在 scene 上 */
+  --role-workspace-fill: transparent;
+  --role-workspace-rim: transparent;
+  --role-workspace-shadow: none;
+
+  /* tab：control 级浮起（soft 在分表覆盖为内凹选择态） */
+  --role-tab-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.78));
+  --role-tab-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.8));
+  --role-tab-shadow:
+    0 5px 13px rgb(var(--ink-rgb) / calc(var(--shadow-strength) * 0.9)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.8)),
+    var(--material-inset-edge);
+
+  /* list 行：静息近透明；active = 中性密度板（更实，保可读） */
+  --role-list-fill: transparent;
+  --role-list-rim: transparent;
+  --role-list-shadow: none;
+  --role-list-active-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 1.16));
+  --role-list-active-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1.2));
+  --role-list-active-shadow:
+    0 7px 18px rgb(var(--ink-rgb) / calc(var(--shadow-strength) * 1.1)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+
+  /* 消息 */
+  --role-message-agent-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.4));
+  --role-message-agent-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.4));
+  --role-message-agent-shadow: var(--material-inset-edge);
+  --role-message-user-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 1));
+  --role-message-user-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1));
+  --role-message-user-shadow:
+    0 5px 13px rgb(var(--ink-rgb) / calc(var(--shadow-strength) * 0.8)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.7)),
+    var(--material-inset-edge);
+
+  /* composer：抬升浮岛 */
+  --role-composer-fill:
+    radial-gradient(120% 100% at 8% 0%, rgb(var(--scene-a-rgb) / 0.04), transparent 66%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity) * 0.8)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity) * 0.58))
+    );
+  --role-composer-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength) * 1.18));
+  --role-composer-shadow:
+    0 18px 42px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.8)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-composer-blur: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
+  /* composer-underlay：独立 role，不复用 control。
+     默认（frosted/glass）= 抬升浅井 + 顶高光；soft 在分表覆盖为 inset well。 */
+  --role-composer-underlay-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.58));
+  --role-composer-underlay-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.8));
+  --role-composer-underlay-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.4),
+    0 10px 26px rgb(var(--ink-rgb) / 0.1),
+    var(--material-inset-edge);
+  --role-composer-underlay-blur: none;
+
+  /* search：独立 role；soft 在分表覆盖为 inset well。 */
+  --role-search-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.62));
+  --role-search-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.7));
+  --role-search-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.6)),
+    var(--material-inset-edge);
+  --role-search-blur: none;
+
+  /* status：扁平透明，不浮起 */
+  --role-status-fill: transparent;
+  --role-status-rim: transparent;
+  --role-status-shadow: none;
+
+  /* turn locator：滚动上下文定位器。比 composer 更轻，只表达“可返回”，不形成第三条顶栏。 */
+  --role-turn-locator-fill:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--scene-a-rgb) / 0.08), transparent 62%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.7)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity-chip) * 0.48))
+    );
+  --role-turn-locator-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.74));
+  --role-turn-locator-shadow:
+    0 8px 22px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 0.78)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.7)),
+    var(--material-inset-edge);
+  --role-turn-locator-blur: blur(var(--glass-blur-chip)) saturate(var(--glass-saturation));
+
+  /* session status：和标签同一顶栏，但作为一个连续的状态读数容器。 */
+  --role-session-status-fill:
+    linear-gradient(112deg, rgb(var(--glass-rgb) / 0.38), rgb(var(--scene-base-rgb) / 0.22)),
+    rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.44));
+  --role-session-status-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.7));
+  --role-session-status-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.54)),
+    0 5px 16px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 0.46));
+  --role-session-status-blur: blur(var(--glass-blur-chip)) saturate(var(--glass-saturation));
+
+  /* minimap popover：只在刻度悬停时出现的轻量时间线预览。 */
+  --role-minimap-fill:
+    radial-gradient(120% 100% at 100% 0%, rgb(var(--scene-b-rgb) / 0.08), transparent 64%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--glass-opacity) * 0.9)),
+      rgb(var(--scene-base-rgb) / calc(var(--glass-opacity) * 0.68))
+    );
+  --role-minimap-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength) * 0.82));
+  --role-minimap-shadow:
+    0 14px 34px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.16)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.7)),
+    var(--material-inset-edge);
+  --role-minimap-blur: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
+  /* control：按钮 / chip 静息，扁平不浮起（soft 按压在组件层用 --role-press-inset） */
+  --role-control-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.62));
+  --role-control-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.7));
+  --role-control-shadow: none;
+  --role-press-inset: none;
+
+  /* switch：材质感知开关。默认 = frosted 扁平；soft/glass 在分表覆盖。
+     .is-on 由组件层控制拇指右滑 + accent 填充。 */
+  --role-switch-track-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.62));
+  --role-switch-track-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.7));
+  --role-switch-track-shadow: inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / 0);
+  --role-switch-thumb-fill: rgb(var(--ink-strong-rgb) / 0.92);
+  --role-switch-thumb-shadow: 0 2px 5px rgb(var(--ink-rgb) / 0.18);
+  --role-switch-on-thumb: var(--accent);
+
+  /* tooltip：不透明 ink 板 */
+  --role-tooltip-fill: rgb(var(--ink-strong-rgb) / 0.92);
+  --role-tooltip-rim: rgb(var(--optical-highlight-rgb) / 0.08);
+  --role-tooltip-shadow: 0 8px 18px rgb(var(--ink-rgb) / 0.22);
+  --role-tooltip-fg: rgb(var(--optical-highlight-rgb) / 0.92);
+}
+
+/* ---- chassis 深色：外框收敛，rim≈.10 / 顶 inset≈.08；外环境影改用深色
+     accent-foreground（各主题近黑）不发白，去掉一圈银白光。 ---- */
+body[data-mode='dark'] {
+  --surface-shadow-rgb: var(--accent-foreground-rgb);
+  --role-chassis-rim: rgb(var(--optical-highlight-rgb) / 0.06);
+  --role-chassis-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.04),
+    0 2px 4px rgb(var(--accent-foreground-rgb) / 0.22),
+    0 28px 70px rgb(var(--accent-foreground-rgb) / 0.36);
+}
+
+/* ---- soft 分表：软瓷轻拟态覆盖（大面近距接触影 / 井 / active 内凹 / switch 内凹瓷轨 + 抬升拇指） ---- */
+body[data-material='soft'] {
+  /* 大表面 = 克制近距接触影（y8~16 / blur18~28）+ 窄顶高光 + 下缘暗；不远飘白卡。
+     普通控件不在此浮起（control 仍 none），只有大面浮岛坐回台面。 */
+  --role-rail-shadow:
+    0 8px 20px rgb(var(--surface-shadow-rgb) / 0.14),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.46),
+    var(--material-inset-edge);
+  --role-sidebar-shadow:
+    0 10px 24px rgb(var(--surface-shadow-rgb) / 0.15),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.46),
+    var(--material-inset-edge);
+  --role-inspector-shadow:
+    0 10px 24px rgb(var(--surface-shadow-rgb) / 0.15),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.46),
+    var(--material-inset-edge);
+  --role-composer-shadow:
+    0 14px 28px rgb(var(--surface-shadow-rgb) / 0.16),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.5),
+    var(--material-inset-edge);
+
+  /* search & composer-underlay = inset well（内凹井，非抬升） */
+  --role-search-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.5));
+  --role-search-shadow:
+    inset 0 2px 6px rgb(var(--ink-rgb) / 0.22),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.18),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.16);
+  --role-composer-underlay-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.5));
+  --role-composer-underlay-shadow:
+    inset 0 3px 7px rgb(var(--ink-rgb) / 0.2),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.16),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.14);
+
+  /* tab / list active = 内凹选择态（按下井），内凹对比明显增强；不抬升 */
+  --role-list-active-shadow:
+    inset 0 2px 6px rgb(var(--ink-rgb) / 0.2),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.14),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.16);
+  --role-tab-shadow:
+    inset 0 2px 6px rgb(var(--ink-rgb) / 0.2),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.14),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.16);
+
+  /* 按钮按压 inset（raised → inset 过渡，组件层 :active 读取） */
+  --role-press-inset:
+    inset 0 2px 5px rgb(var(--ink-rgb) / 0.16),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.1);
+
+  /* switch = 内凹瓷轨 + 抬升拇指 */
+  --role-switch-track-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.5));
+  --role-switch-track-shadow:
+    inset 0 2px 4px rgb(var(--ink-rgb) / 0.16),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.1),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.16);
+  --role-switch-thumb-fill: rgb(var(--glass-rgb) / 0.96);
+  --role-switch-thumb-shadow:
+    0 4px 9px rgb(var(--ink-rgb) / 0.22),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.5),
+    inset 0 -1px 0 rgb(var(--ink-rgb) / 0.06);
+}
+
+/* ---- soft 深色分表：同结构、对比受控（接触影略强可读，顶高光收弱） ---- */
+body[data-material='soft'][data-mode='dark'] {
+  /* v4：大面顶高光收敛到 .05~.06，去掉银白光圈；外接触影保留层级 */
+  --role-rail-shadow:
+    0 8px 20px rgb(var(--surface-shadow-rgb) / 0.22),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.05),
+    var(--material-inset-edge);
+  --role-sidebar-shadow:
+    0 10px 24px rgb(var(--surface-shadow-rgb) / 0.24),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.05),
+    var(--material-inset-edge);
+  --role-inspector-shadow:
+    0 10px 24px rgb(var(--surface-shadow-rgb) / 0.24),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.05),
+    var(--material-inset-edge);
+  --role-composer-shadow:
+    0 14px 28px rgb(var(--surface-shadow-rgb) / 0.26),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.06),
+    var(--material-inset-edge);
+
+  /* v4：active tab/session 在 dark 下内凹选择态的白底缘收敛到 .10，避免银白描边 */
+  --role-list-active-shadow:
+    inset 0 2px 6px rgb(var(--ink-rgb) / 0.16),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.10),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.055);
+  --role-tab-shadow:
+    inset 0 2px 6px rgb(var(--ink-rgb) / 0.16),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.10),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.055);
+
+  /* v4：switch 在 dark 下收敛亮 rim / 白高光，避免银白发光描边 */
+  --role-switch-track-shadow:
+    inset 0 2px 4px rgb(var(--ink-rgb) / 0.14),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.08),
+    inset 0 -1px 0 rgb(var(--optical-highlight-rgb) / 0.055);
+  --role-switch-thumb-shadow:
+    0 4px 9px rgb(var(--ink-rgb) / 0.18),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.14),
+    inset 0 -1px 0 rgb(var(--ink-rgb) / 0.06);
+}
+
+/* ---- glass 分表：高透光学覆盖（active 密度提高 / switch 透明光学轨 + 亮 rim 拇指） ---- */
+body[data-material='glass'] {
+  /* 大表面 = 单一环境影（无 soft 厚度 inset；--material-inset-edge 已为透明 no-op） */
+  --role-rail-shadow:
+    0 14px 32px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.5)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-sidebar-shadow:
+    0 20px 48px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.6)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-inspector-shadow:
+    0 20px 48px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.6)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+  --role-composer-shadow:
+    0 22px 52px rgb(var(--surface-shadow-rgb) / calc(var(--shadow-strength) * 1.7)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / var(--highlight-strength)),
+    var(--material-inset-edge);
+
+  /* active = 局部密度提高，不是白卡：fill 倍率升到 ~0.22（仍是玻璃），shadow 维持单一环境 drop */
+  --role-list-active-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 2));
+  --role-list-active-rim: rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1.5));
+  --role-list-active-shadow:
+    0 8px 20px rgb(var(--ink-rgb) / calc(var(--shadow-strength) * 1.3)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.9));
+  --role-tab-shadow:
+    0 6px 16px rgb(var(--ink-rgb) / calc(var(--shadow-strength) * 1.1)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / calc(var(--highlight-strength) * 0.9));
+
+  /* composer-underlay / search 维持光学浅井（非内凹），并启用折射 blur */
+  --role-composer-underlay-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.4));
+  --role-composer-underlay-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.4),
+    0 12px 30px rgb(var(--ink-rgb) / 0.08);
+  --role-composer-underlay-blur: blur(var(--glass-blur-chip)) saturate(var(--glass-saturation));
+  --role-search-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.42));
+  --role-search-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.3),
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 0.8));
+  --role-search-blur: blur(var(--glass-blur-chip)) saturate(var(--glass-saturation));
+
+  /* switch = 透明光学轨 + 亮 rim 拇指 */
+  --role-switch-track-fill: rgb(var(--glass-rgb) / calc(var(--glass-opacity-chip) * 0.5));
+  --role-switch-track-shadow:
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1.1)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.18);
+  --role-switch-thumb-fill: rgb(var(--glass-rgb) / 0.5);
+  --role-switch-thumb-shadow:
+    0 4px 12px rgb(var(--ink-rgb) / 0.14),
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / 0.5),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.5);
+}
+
+/* ---- glass 深色：switch 拇指亮 rim / 顶白高光收敛，避免银白发光描边；保留可辨层级 ----
+   light glass 拇指 .5 亮 rim 是玻璃高透身份，dark 下收到 .28/.22 仍可辨、不银白。 */
+body[data-material='glass'][data-mode='dark'] {
+  --role-search-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.05),
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / 0.05);
+  --role-composer-underlay-shadow:
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.06),
+    0 12px 30px rgb(var(--ink-rgb) / 0.08);
+  --role-switch-track-shadow:
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / calc(var(--rim-strength-chip) * 1.1)),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.05);
+  --role-switch-thumb-fill: rgb(var(--glass-rgb) / 0.5);
+  --role-switch-thumb-shadow:
+    0 4px 12px rgb(var(--ink-rgb) / 0.12),
+    inset 0 0 0 1px rgb(var(--optical-highlight-rgb) / 0.14),
+    inset 0 1px 0 rgb(var(--optical-highlight-rgb) / 0.12);
+}
+
+/* ============================================================================
+ * 4. 语义 fallback —— 给 selftest / 极少数无法走 role 的边角兜底
+ *    仍只引用 token，无裸颜色。
+ * ========================================================================== */
+body {
+  --scene-base: rgb(var(--scene-base-rgb));
+  --ink-strong: rgb(var(--ink-strong-rgb));
+  --ink: rgb(var(--ink-rgb));
+  --ink-muted: rgb(var(--ink-muted-rgb));
+  --ink-faint: rgb(var(--ink-faint-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-foreground: rgb(var(--accent-foreground-rgb));
+  --optical-highlight: rgb(var(--optical-highlight-rgb) / var(--highlight-strength));
+  --line: rgb(var(--ink-rgb) / 0.1);
+  --line-strong: rgb(var(--ink-rgb) / 0.16);
+  --hover-fill: rgb(var(--optical-highlight-rgb) / 0.42);
+
+  /* 平台窗口控件语义色：OS 约定，不随主题变（非主题 hue） */
+  --win-close-rgb: 198 43 28;
+  --mac-traffic-red-rgb: 217 106 112;
+  --mac-traffic-amber-rgb: 212 160 87;
+  --mac-traffic-green-rgb: 104 173 123;
+}

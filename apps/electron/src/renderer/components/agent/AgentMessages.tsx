@@ -178,6 +178,8 @@ interface AgentMessagesProps {
   floatingInput?: boolean
   /** 是否显示置顶用户消息（Office 模式下隐藏） */
   showStickyUserMessage?: boolean
+  /** 是否显示正文刻度与滚动定位器（Office dock 使用精简滚动层） */
+  showMinimap?: boolean
 }
 
 /** 会话内空状态 — 轻量提示（创建前引导在 MainArea 层） */
@@ -564,6 +566,7 @@ function AgentMessagesImpl({
   onCompact,
   floatingInput,
   showStickyUserMessage = true,
+  showMinimap = true,
 }: AgentMessagesProps): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const setMinimapCache = useSetAtom(tabMinimapCacheAtom)
@@ -985,7 +988,7 @@ function AgentMessagesImpl({
             </>
           )}
         </ConversationContent>
-        <ScrollMinimap items={minimapItems} />
+        {showMinimap && <ScrollMinimap items={minimapItems} />}
         <ConversationScrollButton />
         {showStickyUserMessage && allUserMessagesData.length > 0 && (
           <StickyUserMessage userMessages={allUserMessagesData} />

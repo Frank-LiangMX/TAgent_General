@@ -6,25 +6,67 @@
  */
 
 :root {
-  --surface-role-scene-fill: hsl(var(--background));
+  --surface-role-scene-fill:
+    radial-gradient(
+      ellipse 58% 70% at 4% 2%,
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.72)),
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 54% 66% at 96% 98%,
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.9)),
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 78% 54% at 56% 104%,
+      rgb(var(--scene-c-rgb) / calc(var(--scene-c-strength) * 0.78)),
+      transparent 80%
+    ),
+    linear-gradient(
+      132deg,
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.18)) 0%,
+      transparent 42%,
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.18)) 100%
+    ),
+    rgb(var(--scene-base-rgb));
   --surface-role-scene-rim: transparent;
   --surface-role-scene-shadow: none;
   --surface-role-scene-blur: 0px;
   --surface-role-scene-z: 0;
 
-  --surface-role-workspace-fill: var(--md-surface);
+  --surface-role-workspace-fill: transparent;
   --surface-role-workspace-rim: transparent;
   --surface-role-workspace-shadow: none;
   --surface-role-workspace-blur: 0px;
   --surface-role-workspace-z: 10;
 
-  --surface-role-navigation-fill: var(--surface-bg);
+  /*
+   * navigation / rail：对齐 spatial-theme-study --role-rail-*
+   * 主题身份来自 scene-a 顶光 + scene-base 底，而不是写死冷蓝
+   */
+  --surface-role-navigation-fill:
+    radial-gradient(120% 86% at 12% 0%, rgb(var(--scene-a-rgb) / 0.05), transparent 66%),
+    linear-gradient(
+      155deg,
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.68)),
+      rgb(var(--scene-base-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.48))
+    );
   --surface-role-navigation-rim: var(--surface-rim);
-  --surface-role-navigation-shadow: var(--surface-shadow);
-  --surface-role-navigation-blur: var(--surface-blur);
+  --surface-role-navigation-shadow:
+    0 12px 28px rgb(23 30 40 / calc(var(--surface-opacity, 0.56) * 0.22)),
+    inset 0 1px 0 rgb(255 255 255 / 0.16);
+  --surface-role-navigation-blur: var(--surface-blur-chip, 15px);
   --surface-role-navigation-z: 10;
 
-  --surface-role-panel-fill: var(--surface-bg);
+  /* sidebar / panel：对齐 --role-sidebar-*，拾取 A/B 矿物光 */
+  --surface-role-panel-fill:
+    radial-gradient(120% 92% at 8% 0%, rgb(var(--scene-a-rgb) / 0.055), transparent 64%),
+    radial-gradient(110% 90% at 100% 100%, rgb(var(--scene-b-rgb) / 0.045), transparent 68%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity, 0.56) * 0.68)),
+      rgb(var(--scene-base-rgb) / calc(var(--surface-opacity, 0.56) * 0.46))
+    );
   --surface-role-panel-rim: var(--surface-rim);
   --surface-role-panel-shadow: var(--surface-shadow);
   --surface-role-panel-blur: var(--surface-blur);
@@ -48,10 +90,26 @@
   --surface-role-control-blur: var(--surface-blur-chip);
   --surface-role-control-z: 0;
 
-  --surface-role-interactive-elevated-fill: var(--surface-bg-elevated);
-  --surface-role-interactive-elevated-rim: var(--surface-rim);
-  --surface-role-interactive-elevated-shadow: var(--surface-shadow-elevated);
-  --surface-role-interactive-elevated-blur: var(--surface-blur-elevated);
+  /*
+   * composer：抬升浮岛（对齐 --role-composer-*）
+   * 主题身份来自 scene-a 顶光 + glass/scene-base 混合，非写死 background
+   */
+  --surface-role-composer-fill:
+    radial-gradient(120% 100% at 8% 0%, rgb(var(--scene-a-rgb) / 0.04), transparent 66%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity, 0.56) * 0.8)),
+      rgb(var(--scene-base-rgb) / calc(var(--surface-opacity, 0.56) * 0.58))
+    );
+  --surface-role-composer-rim: var(--surface-rim);
+  --surface-role-composer-shadow: var(--surface-shadow-elevated);
+  --surface-role-composer-blur: var(--surface-blur);
+
+  /* 兼容旧名：交互抬升面 = composer */
+  --surface-role-interactive-elevated-fill: var(--surface-role-composer-fill);
+  --surface-role-interactive-elevated-rim: var(--surface-role-composer-rim);
+  --surface-role-interactive-elevated-shadow: var(--surface-role-composer-shadow);
+  --surface-role-interactive-elevated-blur: var(--surface-role-composer-blur);
   --surface-role-interactive-elevated-z: 20;
 
   --surface-role-overlay-fill: var(--surface-bg-popover);
@@ -65,4 +123,42 @@
   --surface-role-modal-shadow: var(--surface-shadow-elevated);
   --surface-role-modal-blur: var(--surface-blur-overlay);
   --surface-role-modal-z: 1000;
+
+  /*
+   * tab：control 级中性玻璃板（对齐 --role-tab-*）
+   * active 不染 accent；图标可走 primary
+   */
+  --surface-role-tab-fill: rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.78));
+  --surface-role-tab-rim: var(--surface-rim);
+  --surface-role-tab-shadow: var(--surface-shadow-chip);
+  --surface-role-tab-blur: 0px;
+
+  /* turn locator：比 composer 更轻，拾取 scene-a（对齐 --role-turn-locator-*） */
+  --surface-role-turn-locator-fill:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--scene-a-rgb) / 0.08), transparent 62%),
+    linear-gradient(
+      145deg,
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.7)),
+      rgb(var(--scene-base-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.48))
+    );
+  --surface-role-turn-locator-rim: var(--surface-rim);
+  --surface-role-turn-locator-shadow: var(--surface-shadow-chip);
+  --surface-role-turn-locator-blur: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate));
+
+  --surface-role-message-minimap-fill: var(--surface-bg-popover);
+  --surface-role-message-minimap-rim: var(--surface-rim);
+  --surface-role-message-minimap-shadow: var(--surface-shadow-elevated);
+  --surface-role-message-minimap-blur: blur(var(--surface-blur-overlay))
+    saturate(var(--surface-saturate));
+
+  /* session status：轻量连续读数容器（对齐 --role-session-status-*） */
+  --surface-role-session-status-fill:
+    linear-gradient(112deg, rgb(var(--glass-rgb) / 0.38), rgb(var(--scene-base-rgb) / 0.22)),
+    rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.44));
+  --surface-role-session-status-rim: var(--surface-rim);
+  --surface-role-session-status-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 5px 16px rgb(23 30 40 / 0.06);
+  --surface-role-session-status-blur: blur(var(--surface-blur-chip))
+    saturate(var(--surface-saturate));
 }

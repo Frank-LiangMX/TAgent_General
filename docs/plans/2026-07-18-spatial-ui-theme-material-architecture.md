@@ -3,7 +3,7 @@
 > 状态：Accepted，实施中（Phase 1 已完成；Phase 2 实现完成）
 > 日期：2026-07-18
 > 目标分支：`feature/ui-polish`
-> 原型入口：`prototypes/layout-direction-study/index.html`
+> 原型入口：`prototypes/spatial-theme-study/index.html`
 > 关联规范：`packages/ui/DESIGN.md`
 > 关联 ADR：`docs/decisions/0005-material-surface-token-architecture.md`
 > 关联画布设计：`docs/plans/2026-07-14-design-canvas-v2.md`

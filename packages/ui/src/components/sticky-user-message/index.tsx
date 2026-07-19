@@ -6,17 +6,11 @@
  * 必须放在 StickToBottom（Conversation）内部使用。
  */
 
-import { FileText, FileImage, ChevronUp } from 'lucide-react'
+import { ChevronUp } from 'lucide-react'
 import * as React from 'react'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
 
-import { MessageResponse } from '../message'
-import { remarkMentions } from '../message'
-import type { RemarkPluginFn } from '../message'
 import { cn } from '../../lib/utils'
-
-/** 悬浮条专用 remark 插件（仅 mention，不保留换行） */
-const STICKY_REMARK_PLUGINS: RemarkPluginFn[] = [remarkMentions]
 
 /** 去除 fenced code block，替换为 [code] 占位符 */
 function stripCodeBlocks(text: string): string {
@@ -133,74 +127,53 @@ export function StickyUserMessage({
     const containerRect = el.getBoundingClientRect()
     const targetRect = target.getBoundingClientRect()
     const targetScrollTop = el.scrollTop + (targetRect.top - containerRect.top)
-    el.scrollTo({ top: Math.max(0, targetScrollTop - 24), behavior: 'smooth' })
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    el.scrollTo({
+      top: Math.max(0, targetScrollTop - 24),
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    })
   }, [scrollRef, stopScroll, stickyState, stickyMessage])
 
   const isSticky = stickyMessage !== null
   const hasContent = stickyMessage && (stickyMessage.text || stickyMessage.attachments.length > 0)
+  const summary = stickyMessage
+    ? stripCodeBlocks(stickyMessage.text).replace(/\s+/g, ' ').trim() || '附件消息'
+    : ''
 
   if (!enabled) return <></>
   if (!hasContent && !isSticky) return <></>
 
   return (
     <div
+      aria-live="polite"
       className={cn(
-        'absolute left-0 right-0 top-0 z-20 transition-all duration-150 ease-out',
+        'agent-sticky-jump-slot absolute left-0 right-0 top-0 z-20 transition-all duration-150 ease-out',
         isSticky
           ? 'opacity-100 translate-y-0 pointer-events-auto'
           : 'opacity-0 -translate-y-2 pointer-events-none'
       )}
     >
       {/* 边距由 agent-thread.css 控制：左对齐会话 gutter，右额外预留给消息导航刻度 */}
-      <div className="agent-sticky-jump-shell flex justify-center pt-1">
-        <div
-          className="agent-sticky-jump chat-input-glass session-glass w-full cursor-pointer"
+      <div className="agent-sticky-jump-shell flex items-start">
+        <button
+          type="button"
+          aria-label={`上一轮用户消息：${summary}。回到原文`}
+          className="agent-sticky-jump cursor-pointer"
           onClick={scrollToOriginal}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              scrollToOriginal()
-            }
-          }}
         >
-          <div className="px-3.5 py-2.5">
-            {stickyMessage?.text && (
-              <div className="flex items-start gap-2">
-                <ChevronUp
-                  className="md-text-variant mt-1.5 size-3 shrink-0 cursor-pointer transition-colors hover:text-foreground"
-                  onClick={scrollToOriginal}
-                />
-                <div className="md-text min-w-0 flex-1 line-clamp-2 text-xs leading-relaxed">
-                  <MessageResponse
-                    className="prose-p:my-0 prose-p:inline prose-headings:my-0 prose-headings:text-sm prose-pre:hidden prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
-                    remarkPlugins={STICKY_REMARK_PLUGINS}
-                  >
-                    {stripCodeBlocks(stickyMessage.text)}
-                  </MessageResponse>
-                </div>
-              </div>
-            )}
-
-            {stickyMessage && stickyMessage.attachments.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {stickyMessage.attachments.map((att) => {
-                  const Icon = att.isImage ? FileImage : FileText
-                  return (
-                    <div
-                      key={att.filename}
-                      className="md-text-variant inline-flex items-center gap-1 rounded-full bg-background/40 px-2 py-0.5 text-[11px]"
-                    >
-                      <Icon className="size-3 shrink-0" />
-                      <span className="max-w-[150px] truncate">{att.filename}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+          <span className="agent-sticky-jump__icon" aria-hidden="true">
+            <ChevronUp />
+          </span>
+          <span className="agent-sticky-jump__label">上一轮</span>
+          <span className="agent-sticky-jump__divider" aria-hidden="true" />
+          <span className="agent-sticky-jump__summary">{summary}</span>
+          {stickyMessage && stickyMessage.attachments.length > 0 && (
+            <span className="agent-sticky-jump__attachments">
+              附件 {stickyMessage.attachments.length}
+            </span>
+          )}
+          <span className="agent-sticky-jump__action">回到原文</span>
+        </button>
       </div>
     </div>
   )

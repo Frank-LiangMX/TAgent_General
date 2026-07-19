@@ -3460,6 +3460,7 @@ export function AgentView({
                 onCompact={handleCompact}
                 floatingInput
                 showStickyUserMessage={!isOfficeDock}
+                showMinimap={!isOfficeDock}
               />
             </SessionFloatingLayout>
 
