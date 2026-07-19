@@ -1,8 +1,10 @@
 /**
- * RightPanelRail — 右侧竖向按钮列（镜像左侧 FunctionalRail）
+ * RightPanelRail — 右侧上下文入口
  *
- * 包含文件面板按钮和旁注（btw）按钮。
- * 点击按钮切换 rightRailItemAtom，右侧边栏根据状态显示对应面板。
+ * - 折叠：右上角 rail 胶囊内的图标列（不占主区全高列宽）
+ * - 展开：贴在 inspector 右缘的全高按钮列
+ *
+ * 点击切换 rightRailItemAtom + 打开/折叠 inspector。
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -149,13 +151,14 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   return (
     <div
       className={cn(
-        'nav-island-rail right-panel-rail relative z-[1] flex h-full shrink-0 flex-col items-center pb-2',
+        'right-panel-rail relative z-[1] flex shrink-0 flex-col items-center',
+        panelOpen ? 'h-full' : 'h-auto',
         !panelOpen && 'right-panel-rail--collapsed',
         !panelOpen && showBadge && 'right-panel-rail--notify',
         className
       )}
     >
-      <div className="nav-island-body-start flex w-full flex-col items-center">
+      <div className="flex w-full flex-col items-center">
         <div className="rail-slide-host relative flex w-full flex-col items-center gap-1">
           {/* 文件面板按钮 */}
           <Tooltip>
@@ -285,8 +288,6 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
           </Tooltip>
         </div>
       </div>
-
-      <div className="min-h-0 flex-1" />
     </div>
   )
 }

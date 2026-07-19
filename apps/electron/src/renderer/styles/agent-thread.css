@@ -77,10 +77,20 @@
 
 /* Spatial：过程卡用与会话底同色温的极淡 wash，不再抬成第二块浮岛 */
 .app-shell-scene .tagent-agent-thread {
+  --agent-avatar-size: 32px;
+  --agent-content-indent: 52px;
+  --agent-surface-radius: 14px;
+  --agent-bubble-radius: 18px;
   --agent-process-bg: color-mix(in srgb, rgb(255 255 255) 22%, transparent);
   --agent-process-border: var(--spatial-line, rgb(68 78 94 / 10%));
   --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
   --agent-process-blur: 10px;
+  /*
+   * 正文跟随用户 Markdown 字号（:root --md-preview-font-size）
+   * 禁止在此硬盖 14px——否则设置「最小」无效
+   */
+  --agent-body-size: var(--md-preview-font-size, 12px);
+  --agent-body-leading: 1.72;
 }
 
 .dark .app-shell-scene .tagent-agent-thread,
@@ -108,7 +118,7 @@
   border-radius: 999px;
   border: 1px solid var(--agent-process-border);
   background: color-mix(in srgb, hsl(var(--card)) 55%, transparent);
-  font-size: 12px;
+  font-size: var(--app-shell-chrome-sm, 9px);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.3;
@@ -148,15 +158,22 @@
   );
 }
 
-/* 回答区：裸 prose，无灰底 */
+/* 回答区：裸 prose；字号 = 用户 Markdown 档（原型正文 12px） */
 .tagent-agent-thread .agent-turn-answer {
   min-width: 0;
   color: var(--spatial-ink, hsl(var(--foreground)));
-  font-size: 13.5px;
-  line-height: 1.65;
+  font-size: var(--md-preview-font-size, 12px);
+  line-height: var(--agent-body-leading, 1.72);
   background: transparent;
   border: none;
   padding: 0;
+}
+
+.app-shell-scene .tagent-agent-thread .agent-turn-answer,
+.app-shell-scene .tagent-agent-thread .agent-turn-answer .prose,
+.app-shell-scene .tagent-agent-thread .agent-turn-answer [class*='markdown'] {
+  font-size: var(--md-preview-font-size, 12px);
+  line-height: var(--agent-body-leading, 1.72);
 }
 
 /* ===== 过程组（卡内 header + 内容） ===== */
@@ -169,6 +186,13 @@
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+}
+
+/* 过程区 chrome：对齐原型 ~10px */
+.app-shell-scene .tagent-agent-thread .agent-process-group__toggle,
+.app-shell-scene .tagent-agent-thread .agent-turn-footer__stopped,
+.app-shell-scene .tagent-agent-thread .agent-turn-footer {
+  font-size: var(--app-shell-chrome-md, 10px);
 }
 
 .tagent-agent-thread .agent-process-group__toggle {
@@ -363,13 +387,14 @@
 /* ===== 用户气泡 ===== */
 
 .tagent-agent-thread .agent-user-bubble {
-  border-radius: 20px 20px 10px 20px;
+  border-radius: 18px 18px 10px 18px;
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
   color: var(--agent-surface-on);
-  font-size: 13px;
+  font-size: var(--md-preview-font-size, 12px);
   font-weight: 500;
-  line-height: 1.55;
+  line-height: var(--agent-body-leading, 1.72);
+  padding: 12px 14px;
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
     0 1px 3px color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
@@ -701,14 +726,14 @@
   padding: 0 8px 0 6px;
   overflow: hidden;
   border: 1px solid var(--surface-role-turn-locator-rim);
-  border-radius: 12px;
+  border-radius: var(--app-shell-control-radius, 12px);
   color: hsl(var(--muted-foreground));
   background: var(--surface-role-turn-locator-fill);
   box-shadow: var(--surface-role-turn-locator-shadow);
   -webkit-backdrop-filter: var(--surface-role-turn-locator-blur);
   backdrop-filter: var(--surface-role-turn-locator-blur);
   font: inherit;
-  font-size: 10px;
+  font-size: var(--app-shell-chrome-sm, 9px);
   white-space: nowrap;
   transform-origin: left center;
   transition:
@@ -752,7 +777,7 @@
 .agent-sticky-jump__label {
   flex: none;
   color: hsl(var(--muted-foreground) / 0.72);
-  font-size: 9px;
+  font-size: var(--app-shell-chrome-xs, 8px);
   font-weight: 680;
   letter-spacing: 0.04em;
 }
@@ -814,10 +839,7 @@
   padding-left: 2rem;
 }
 
-.app-shell-content-stage .agent-sticky-jump-shell {
-  padding-right: calc(var(--app-shell-session-gutter, 18px) + var(--agent-sticky-nav-reserve));
-  padding-left: var(--app-shell-session-gutter, 18px);
-}
+/* Spatial 壳：与阅读栏 680 同轴（padding/宽度由 app-shell.css 统一） */
 
 /*
  * 消息导航刻度：贴主区右缘，更靠近 right rail

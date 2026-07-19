@@ -73,10 +73,10 @@ import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
 import { ComposerModeSelector } from './ComposerModeSelector'
+import { ComposerUnderlay } from './ComposerUnderlay'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
 import { PermissionBanner } from './PermissionBanner'
-import { PermissionModeSelector } from './PermissionModeSelector'
 import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
@@ -3072,6 +3072,10 @@ export function AgentView({
   /** 当前 Composer 档位（per-session，从本地缓存读） */
   const composerMode = useAtomValue(currentComposerModeAtom)
 
+  /**
+   * 主工具栏：常驻操作（对齐原型 composer-tools）
+   * 权限 / 推理 / 记忆 / 上下文 → focus 时 ComposerUnderlay
+   */
   const inputToolbarItems = React.useMemo<ToolbarItem[]>(
     () => [
       {
@@ -3084,10 +3088,6 @@ export function AgentView({
             disableAttachments={composerMode === 'ask'}
           />
         ),
-      },
-      {
-        key: 'permission-mode',
-        node: <PermissionModeSelector sessionId={sessionId} disabled={composerMode === 'ask'} />,
       },
       { key: 'composer-mode', node: <ComposerModeSelector /> },
       {
@@ -3115,16 +3115,42 @@ export function AgentView({
       },
     ],
     [
-      sessionId,
       handleOpenFileDialog,
       handleAttachFolder,
       handleSpeech,
+      composerMode,
+      subagentEagerness,
+      setSubagentEagerness,
       autoPreviewEnabled,
       processGroupsKeepExpanded,
       setAutoPreviewEnabled,
       setProcessGroupsKeepExpanded,
     ]
   )
+
+  /** 原型 is-composer-expanded：focus 展开 underlay */
+  const [composerExpanded, setComposerExpanded] = React.useState(false)
+  const composerClusterRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!composerExpanded) return
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (composerClusterRef.current?.contains(target)) return
+      // Radix / 浮层 portaled 内容不收起
+      if (
+        target.closest(
+          '[data-radix-popper-content-wrapper], [data-radix-menu-content], [role="dialog"], [data-sonner-toaster]'
+        )
+      ) {
+        return
+      }
+      setComposerExpanded(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [composerExpanded])
 
   const inputTrailingNode = (
     <>
@@ -3282,8 +3308,18 @@ export function AgentView({
                   />
                   {!hasBannerOverlay && !isNestedWorker && (
                     <div
+                      ref={composerClusterRef}
                       className={cn(
-                        'session-input-dock content-shell-chrome-bleed relative pb-0 md:pb-1',
+                        'session-composer-cluster',
+                        !isOfficeDock && composerExpanded && 'is-composer-expanded'
+                      )}
+                      onFocusCapture={() => {
+                        if (!isOfficeDock) setComposerExpanded(true)
+                      }}
+                    >
+                    <div
+                      className={cn(
+                        'session-input-dock content-shell-chrome-bleed relative pb-0',
                         isOfficeDock && 'office-conversation-composer'
                       )}
                       data-input-mode="agent"
@@ -3436,9 +3472,28 @@ export function AgentView({
                         />
                       </div>
                     </div>
+                    {/* 原型 composer-underlay：仅 classic 壳 focus 展开 */}
+                    {!isOfficeDock && (
+                      <ComposerUnderlay
+                        sessionId={sessionId}
+                        askMode={composerMode === 'ask'}
+                      />
+                    )}
+                    </div>
                   )}
                   <AskUserBanner sessionId={sessionId} />
                   <ExitPlanModeBanner sessionId={sessionId} />
+                  {/*
+                    原型 status-bar：absolute bottom:7，不占文档流。
+                    放进 session-bottom-stack 末尾，由 CSS bottom:7 定位。
+                  */}
+                  {!isNestedWorker && surface === 'classic' && (
+                    <TokenStatsPanel
+                      isProcessing={streaming}
+                      onCompact={handleCompact}
+                      onClientCompact={handleClientCompact}
+                    />
+                  )}
                 </>
               }
             >
@@ -3463,15 +3518,6 @@ export function AgentView({
                 showMinimap={!isOfficeDock}
               />
             </SessionFloatingLayout>
-
-            {/* 底栏：Context 占用 + 累计 Token 统计 — 嵌套工人会话隐藏 */}
-            {!isNestedWorker && surface === 'classic' && (
-              <TokenStatsPanel
-                isProcessing={streaming}
-                onCompact={handleCompact}
-                onClientCompact={handleClientCompact}
-              />
-            )}
           </>
         </div>
       </AgentSessionProvider>

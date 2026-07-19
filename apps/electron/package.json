@@ -55,6 +55,7 @@
     "@anthropic-ai/sdk": "^0.93.0",
     "@esotericsoftware/spine-pixi-v8": "~4.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@phosphor-icons/react": "2.1.10",
     "@pierre/diffs": "^1.1.20",
     "@types/better-sqlite3": "^7.6.13",
     "@xmldom/xmldom": "^0.8.11",

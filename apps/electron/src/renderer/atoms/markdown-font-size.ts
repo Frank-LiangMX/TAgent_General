@@ -12,11 +12,14 @@ import { DEFAULT_MARKDOWN_FONT_SIZE } from '../../types'
 
 import type { MarkdownFontSize } from '../../types'
 
-/** 各档位对应的根字号（px） */
+/**
+ * 各档位对应的根字号（px）
+ * 对齐 spatial-theme-study 正文 12px：small=原型，medium 略抬，large 仍克制
+ */
 const FONT_SIZE_PX: Record<MarkdownFontSize, number> = {
-  small: 13,
-  medium: 15,
-  large: 17,
+  small: 12,
+  medium: 13,
+  large: 15,
 }
 
 /** Markdown 字号档位 */

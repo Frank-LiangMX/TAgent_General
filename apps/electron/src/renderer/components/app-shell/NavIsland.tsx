@@ -22,15 +22,20 @@ import {
 import { cn } from '@/lib/utils'
 
 export const NAV_SIDEBAR_DEFAULT_WIDTH = NAV_SIDEBAR_WIDTH
-export const NAV_CLUSTER_GAP = 8
+/** rail 与 sidebar 间距：略小于 gutter，视觉上更贴侧栏 */
+export const NAV_CLUSTER_GAP = 10
+/** 左轨相对窗口左缘外距（与 app-shell.css --spatial-rail-edge-left 一致） */
+export const NAV_RAIL_EDGE_LEFT = 5
 
 export function getNavClusterWidth(
   showSidebar: boolean,
   railWidth = NAV_RAIL_WIDTH,
   sidebarWidth = NAV_SIDEBAR_DEFAULT_WIDTH,
-  clusterGap = NAV_CLUSTER_GAP
+  clusterGap = NAV_CLUSTER_GAP,
+  railEdgeLeft = NAV_RAIL_EDGE_LEFT
 ): number {
-  return showSidebar ? railWidth + clusterGap + sidebarWidth : railWidth
+  const core = showSidebar ? railWidth + clusterGap + sidebarWidth : railWidth
+  return core + railEdgeLeft
 }
 
 export interface NavIslandProps {
@@ -65,7 +70,12 @@ export function NavIsland({
     >
       <div
         className={cn('app-nav-rail', isMac && 'app-nav-rail--mac')}
-        style={{ width: railWidth }}
+        style={
+          {
+            width: railWidth,
+            ['--nav-mac-chrome-height' as string]: `${NAV_MAC_CHROME_HEIGHT}px`,
+          } as React.CSSProperties
+        }
       >
         {isMac ? (
           <div

@@ -32,8 +32,8 @@
     /* 虚线边框：HSL 分量 + alpha，供 hsl(var(--dashed-border)) */
     --dashed-border: var(--primary) / 0.35;
     --dashed-border-hover: var(--primary) / 0.5;
-    /* Markdown 预览正文字号 */
-    --md-preview-font-size: 15px;
+    /* Markdown 预览正文字号（默认对齐原型 12；用户档位会覆盖 :root） */
+    --md-preview-font-size: 12px;
     /* 浅色玻璃装饰色 */
     --glass-shine: 0 0% 100%;
     --glass-ambient: 220 14% 94%;
@@ -4359,8 +4359,8 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 
 .sidebar-head-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
   letter-spacing: -0.02em;
   color: hsl(var(--foreground));
 }
@@ -5880,12 +5880,24 @@ html.material-frosted .content-main-shell .content-glass {
   pointer-events: auto;
 }
 
+.session-bottom-stack {
+  bottom: 0;
+}
+
+/*
+ * Spatial 壳：stack 锚在窗边 status(7)；token 填 band 底(24)↔窗边；
+ * 输入框底对齐 band 底（sidebar/rail 下缘）。底 inset 见 --shell-band-inset-bottom。
+ */
+.app-shell-content-stage .session-bottom-stack {
+  bottom: var(--spatial-status-bottom, 7px);
+}
+
 .conversation-floating-input {
-  padding-bottom: max(1rem, var(--session-bottom-reserve, 140px));
+  padding-bottom: max(8px, var(--session-bottom-reserve, 120px));
 }
 
 .session-body [data-conversation-scroll-btn] {
-  bottom: calc(var(--session-bottom-reserve, 140px) + 12px);
+  bottom: calc(var(--session-bottom-reserve, 120px) + 8px);
 }
 
 /* 与玻璃底板同步滑动的指示器（兼容旧名） */

@@ -9,20 +9,24 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+/**
+ * Rail 主区图标用 Phosphor，与 prototypes/spatial-theme-study 同源（ph-chats-circle 等）
+ * 不再用 Lucide 近似「另画一版」
+ */
 import {
-  BadgeCheck,
-  Blocks,
-  BrainCircuit,
-  Building2,
-  Clock3,
-  Columns3,
-  FilePenLine,
+  Brain,
+  Buildings,
+  ChatsCircle,
+  CircleNotch,
+  ClockCounterClockwise,
   FolderOpen,
-  Loader2,
-  MessageCircle,
-  Settings,
-  Workflow,
-} from 'lucide-react'
+  GearSix,
+  Kanban,
+  PencilSimpleLine,
+  PuzzlePiece,
+  SealCheck,
+  TreeStructure,
+} from '@phosphor-icons/react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -47,6 +51,9 @@ import { hasUpdateAtom, updateDownloadedAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { cn } from '@/lib/utils'
 
+/** 与原型 rail-button 一致：18px Regular */
+const RAIL_ICON = { size: 18 as const, weight: 'regular' as const }
+
 /** 通用模式功能区配置（文件功能已迁移至右侧边栏） */
 const GENERAL_RAIL_ITEMS: Array<{
   id: GeneralRailItem
@@ -57,30 +64,30 @@ const GENERAL_RAIL_ITEMS: Array<{
   {
     id: 'sessions',
     label: '会话',
-    icon: <MessageCircle strokeWidth={1.5} />,
+    icon: <ChatsCircle {...RAIL_ICON} />,
     description: 'Chat / Agent 会话列表',
   },
   {
     id: 'kanban',
     label: '看板',
-    icon: <Columns3 strokeWidth={1.5} />,
+    icon: <Kanban {...RAIL_ICON} />,
     description: '多 Agent 任务编排看板（全局视图）',
   },
   {
     id: 'automation',
     label: '自动任务',
-    icon: <Clock3 strokeWidth={1.5} />,
+    icon: <ClockCounterClockwise {...RAIL_ICON} />,
     description: '定时任务与调度',
   },
   {
     id: 'memory',
     label: '记忆',
-    icon: <BrainCircuit strokeWidth={1.5} />,
+    icon: <Brain {...RAIL_ICON} />,
     description: 'L0-L5 记忆层监控',
   },
 ]
 
-/** 双模式常驻功能区（Rail 顶端） */
+/** 双模式常驻功能区（Rail 顶端）— 原型 draft / skills */
 const COMMON_TOP_RAIL_ITEMS: Array<{
   id: 'draft' | 'skills'
   label: string
@@ -90,13 +97,13 @@ const COMMON_TOP_RAIL_ITEMS: Array<{
   {
     id: 'draft',
     label: '草稿',
-    icon: <FilePenLine strokeWidth={1.5} />,
+    icon: <PencilSimpleLine {...RAIL_ICON} />,
     description: '需求草稿',
   },
   {
     id: 'skills',
     label: '插件',
-    icon: <Blocks strokeWidth={1.5} />,
+    icon: <PuzzlePiece {...RAIL_ICON} />,
     description: '工作区插件管理',
   },
 ]
@@ -111,40 +118,40 @@ const TA_RAIL_ITEMS: Array<{
   {
     id: 'sessions',
     label: '会话',
-    icon: <MessageCircle strokeWidth={1.5} />,
+    icon: <ChatsCircle {...RAIL_ICON} />,
     description: 'TA 会话（与通用模式数据隔离）',
   },
   {
     id: 'kanban',
     label: '看板',
-    icon: <Columns3 strokeWidth={1.5} />,
+    icon: <Kanban {...RAIL_ICON} />,
     description: '多 Agent 任务编排看板（批量资产流水线）',
   },
   {
     id: 'assets',
     label: '资产库',
-    icon: <FolderOpen strokeWidth={1.5} />,
+    icon: <FolderOpen {...RAIL_ICON} />,
     description: '资产库管理',
   },
   {
     id: 'review',
     label: '审核',
-    icon: <BadgeCheck strokeWidth={1.5} />,
+    icon: <SealCheck {...RAIL_ICON} />,
     description: '审核队列',
   },
   {
     id: 'pipeline',
     label: '流水线',
-    icon: <Workflow strokeWidth={1.5} />,
+    icon: <TreeStructure {...RAIL_ICON} />,
     description: '流水线管理',
   },
   {
     id: 'memory',
     label: '记忆',
-    icon: <BrainCircuit strokeWidth={1.5} />,
+    icon: <Brain {...RAIL_ICON} />,
     description: '记忆监控',
   },
-  { id: 'config', label: '配置', icon: <Settings size={18} />, description: 'TA 配置' },
+  { id: 'config', label: '配置', icon: <GearSix {...RAIL_ICON} />, description: 'TA 配置' },
 ]
 
 /** ModeManager 状态摘要 */
@@ -324,7 +331,8 @@ export function FunctionalRail(): React.ReactElement {
               )
             })}
 
-            <div className="glass-divider my-1 w-5 shrink-0 relative z-[2] opacity-60" />
+            {/* 原型 .rail-rule：草稿/插件 与 会话区 之间的细分割线 */}
+            <div className="app-rail-rule" aria-hidden="true" />
 
             {railItems.map((item) => {
               const isActive = activeRailItem === item.id
@@ -362,8 +370,6 @@ export function FunctionalRail(): React.ReactElement {
       <div className="flex-1 min-h-0" />
 
       <div className="app-rail-island app-rail-island--system">
-        <div className="glass-divider mb-1 w-5 shrink-0 opacity-60" />
-
         <div className="flex flex-col items-center gap-1.5 w-full">
           {modeButtons.map(({ value, label, icon, description }) => {
             const isActive = topLevelMode === value
@@ -389,7 +395,7 @@ export function FunctionalRail(): React.ReactElement {
                     )}
                   >
                     {isSwitching && isActive ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <CircleNotch size={18} className="animate-spin" />
                     ) : (
                       icon
                     )}
@@ -414,9 +420,7 @@ export function FunctionalRail(): React.ReactElement {
           })}
         </div>
 
-        <div className="glass-divider my-1 w-5 shrink-0 opacity-60" />
-
-        {/* Office 全局模式切换 */}
+        {/* Office 全局模式切换 — 原型无额外分割线，与 G/TA 同组 */}
         <div className="flex flex-col items-center gap-1.5 w-full">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -429,7 +433,7 @@ export function FunctionalRail(): React.ReactElement {
                   globalOfficeMode && 'rail-island-btn--active'
                 )}
               >
-                <Building2 size={18} />
+                <Buildings {...RAIL_ICON} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">

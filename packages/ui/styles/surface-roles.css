@@ -105,6 +105,19 @@
   --surface-role-composer-shadow: var(--surface-shadow-elevated);
   --surface-role-composer-blur: var(--surface-blur);
 
+  /*
+   * composer-underlay：比 composer 低一级（原型 --role-composer-underlay-*）
+   * chip 密度浅井，弱阴影；勿复用 composer 抬升 fill
+   */
+  --surface-role-composer-underlay-fill: rgb(
+    var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.58)
+  );
+  --surface-role-composer-underlay-rim: rgb(255 255 255 / 0.28);
+  --surface-role-composer-underlay-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 10px 26px rgb(23 30 40 / 0.1);
+  --surface-role-composer-underlay-blur: none;
+
   /* 兼容旧名：交互抬升面 = composer */
   --surface-role-interactive-elevated-fill: var(--surface-role-composer-fill);
   --surface-role-interactive-elevated-rim: var(--surface-role-composer-rim);

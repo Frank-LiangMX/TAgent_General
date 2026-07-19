@@ -90,7 +90,7 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
   if (!hasTokenStats && !showContextUsage && !callStats) return null
 
   return (
-    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-3 px-1 py-1 text-[10px] text-muted-foreground/50">
+    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-2.5 px-1 py-0 text-[8px] leading-none text-muted-foreground/50">
       {showContextUsage && (
         <>
           <ContextUsageBadge
@@ -108,29 +108,29 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
             onCompact={onCompact}
             onClientCompact={onClientCompact}
           />
-          {hasTokenStats && <div className="h-2.5 w-px bg-border/30" />}
+          {hasTokenStats && <div className="h-2 w-px bg-border/30" />}
         </>
       )}
 
       {hasTokenStats && (
         <>
           <StatItem
-            icon={<TrendingDown size={10} />}
+            icon={<TrendingDown size={9} />}
             label="输入"
             value={formatTokens(stats.totalInputTokens)}
             tooltip={getContextUsageDescription('累计输入')}
           />
           <StatItem
-            icon={<TrendingUp size={10} />}
+            icon={<TrendingUp size={9} />}
             label="输出"
             value={formatTokens(stats.totalOutputTokens)}
             tooltip={getContextUsageDescription('累计输出')}
           />
           {hasCacheData && (
             <>
-              <div className="h-2.5 w-px bg-border/30" />
+              <div className="h-2 w-px bg-border/30" />
               <StatItem
-                icon={<Database size={10} />}
+                icon={<Database size={9} />}
                 label="缓存读取"
                 value={formatHitRate(cacheHitRate)}
                 highlight={cacheHitRate !== null && cacheHitRate > 0.5}
@@ -140,7 +140,7 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
           )}
           {stats.turnCount > 0 && (
             <>
-              <div className="h-2.5 w-px bg-border/30" />
+              <div className="h-2 w-px bg-border/30" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="cursor-help text-muted-foreground/60">{stats.turnCount} 轮</span>
@@ -156,15 +156,15 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
 
       {callStats && (
         <>
-          {(hasTokenStats || showContextUsage) && <div className="h-2.5 w-px bg-border/30" />}
+          {(hasTokenStats || showContextUsage) && <div className="h-2 w-px bg-border/30" />}
           <Popover>
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-1.5 whitespace-nowrap text-muted-foreground/80 transition-colors hover:text-foreground"
+                className="flex items-center gap-1 whitespace-nowrap text-muted-foreground/80 transition-colors hover:text-foreground"
                 aria-label="查看上一轮调用次数详情"
               >
-                <Hash size={10} className="opacity-70" />
+                <Hash size={9} className="opacity-70" />
                 <span>调用 {modelCallCount}</span>
               </button>
             </PopoverTrigger>
@@ -212,7 +212,7 @@ function StatItem({ icon, label, value, highlight, tooltip }: StatItemProps): Re
   const content = (
     <div
       className={cn(
-        'flex items-center gap-1.5',
+        'flex items-center gap-1 leading-none',
         highlight && 'text-emerald-600 dark:text-emerald-400'
       )}
     >

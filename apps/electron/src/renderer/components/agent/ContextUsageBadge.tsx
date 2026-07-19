@@ -65,13 +65,20 @@ function formatTokens(tokens: number): string {
   return `${tokens}`
 }
 
-/** 圆环进度指示器 — 16×16 SVG，描边 2px */
+/** 圆环进度指示器 — toolbar 16 / inline 底栏 12（原型 status 细读数） */
 interface UsageRingProps {
   ratio: number
   isWarning: boolean
   isDanger: boolean
+  /** 像素边长，inline 用 12 压低 token 栏高度 */
+  size?: number
 }
-function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactElement {
+function UsageRing({
+  ratio,
+  isWarning,
+  isDanger,
+  size = 16,
+}: UsageRingProps): React.ReactElement {
   const radius = 8
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(1, ratio))
@@ -79,11 +86,11 @@ function UsageRing({ ratio, isWarning, isDanger }: UsageRingProps): React.ReactE
 
   return (
     <svg
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 20 20"
       className={cn(
-        'shrink-0 transition-colors',
+        'token-stats-ring shrink-0 transition-colors',
         isDanger
           ? 'text-red-500 dark:text-red-400'
           : isWarning
@@ -459,17 +466,22 @@ export function ContextUsageBadge({
                 <button
                   type="button"
                   className={cn(
-                    'flex items-center gap-1 rounded-md px-0.5 py-0.5 transition-colors',
+                    'flex h-4 items-center gap-0.5 rounded-sm px-0 py-0 transition-colors',
                     toneClass
                   )}
                 >
-                  <UsageRing ratio={effectiveRatio} isWarning={isWarning} isDanger={isDanger} />
+                  <UsageRing
+                    ratio={effectiveRatio}
+                    isWarning={isWarning}
+                    isDanger={isDanger}
+                    size={12}
+                  />
                   {effectivePercent != null ? (
-                    <span className={cn('text-xs tabular-nums font-medium', toneClass)}>
+                    <span className={cn('text-[8px] tabular-nums font-medium leading-none', toneClass)}>
                       {effectivePercent}%
                     </span>
                   ) : showPercentPlaceholder ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <Loader2 className="size-3 animate-spin" />
                   ) : null}
                 </button>
               </TooltipTrigger>

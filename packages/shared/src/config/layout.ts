@@ -2,17 +2,33 @@
  * 跨端 UI 布局常量（主进程窗口 chrome 与渲染进程须保持一致）
  */
 
-/** AppShell 外边距（Tailwind p-2） */
-export const SHELL_EDGE_PADDING = 8
+/**
+ * 布局常数 — 权威源：prototypes/spatial-theme-study/theme-tokens.css
+ * 禁止凭「手感」改这些数；改间距先改原型再回写这里。
+ */
+/** 原型 --gutter */
+export const SPATIAL_GUTTER = 16
+/** 原型 window-chrome 高 */
+export const SPATIAL_CHROME_H = 40
+/** 原型 .composer { bottom } */
+export const SPATIAL_COMPOSER_BOTTOM = 26
+/** 原型 .status-bar { bottom } */
+export const SPATIAL_STATUS_BOTTOM = 7
 
-/** 导航 Rail 宽度 */
-export const NAV_RAIL_WIDTH = 54
+/**
+ * 红绿灯 / 壳边：生产窗贴齐 chassis 左缘（原型 shell padding 0）
+ * rail 水平内边距由 CSS --spatial-rail-pad-x:6 承担
+ */
+export const SHELL_EDGE_PADDING = 0
+
+/** 原型 --rail-w */
+export const NAV_RAIL_WIDTH = 58
 
 /** Agent 右侧面板 Rail 宽度（展开/折叠一致） */
 export const RIGHT_PANEL_RAIL_WIDTH = 38
 
-/** 导航浮岛外轮廓圆角（Soft UI pill；与 content 底板左缘对齐） */
-export const NAV_ISLAND_OUTER_RADIUS = 24
+/** 原型 --radius-chassis */
+export const NAV_ISLAND_OUTER_RADIUS = 28
 
 /**
  * macOS 浮岛左上角圆角（略小于外圆角，灯叠在 pill 顶缘时更自然）
@@ -42,8 +58,8 @@ export const NAV_ISLAND_ROW_HEIGHT = 36
 /** Rail 图标列与下一行之间的间距（Tailwind gap-1.5） */
 export const NAV_ISLAND_STACK_GAP = 6
 
-/** 会话侧栏翼默认宽度 */
-export const NAV_SIDEBAR_WIDTH = 240
+/** 原型 --sidebar-w */
+export const NAV_SIDEBAR_WIDTH = 254
 
 /** 文件 / Skills 侧栏宽度（与会话侧栏统一） */
 export const NAV_SIDEBAR_INSPECTOR_WIDTH = NAV_SIDEBAR_WIDTH

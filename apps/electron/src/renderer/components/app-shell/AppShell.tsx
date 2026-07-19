@@ -294,14 +294,16 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           <div
             className={cn(
               'app-shell-content-stage relative h-full min-h-0',
-              showRightPanel && 'app-shell-content-stage--right-rail',
+              /* 折叠右轨是 overlay 胶囊，不再占列；仅展开时主区让出 inspector 宽 */
+              showRightPanel && inspectorOpen && 'app-shell-content-stage--right-rail',
               showRightPanel && inspectorOpen && 'app-shell-content-stage--right-open'
             )}
             style={{
               ['--content-chrome-bleed-left' as string]: '0px',
               ['--content-chrome-bleed-right' as string]: '0px',
+              /* 折叠 peek 浮在右上角，给顶栏状态条留一点安全距，避免压住模型 chip */
               ['--content-foreground-safe-right' as string]:
-                shellLayout.inspector === 'collapsed' ? `${RIGHT_PANEL_RAIL_WIDTH}px` : '0px',
+                shellLayout.inspector === 'collapsed' ? '52px' : '0px',
             }}
           >
             <div className="app-content-foreground relative h-full min-h-0">
@@ -347,11 +349,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         {showRightPanel && (
           <div
             className={cn(
+              'app-shell-right-stack',
               inspectorOpen
-                ? 'app-shell-right-stack app-shell-right-stack--open'
-                : 'app-shell-right-stack app-shell-right-stack--collapsed',
+                ? 'app-shell-right-stack--open'
+                : 'app-shell-right-stack--collapsed',
               wantImmersive && 'pointer-events-none opacity-0'
             )}
+            aria-label={inspectorOpen ? '上下文检查器' : '上下文快捷入口'}
           >
             {inspectorOpen && (
               <div
@@ -363,12 +367,14 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
-                'relative ml-auto flex h-full min-h-0 flex-row justify-end overflow-hidden',
+                'relative ml-auto flex min-h-0 flex-row justify-end',
+                inspectorOpen ? 'h-full overflow-hidden' : 'h-auto overflow-visible',
                 inspectorOpen && 'nav-island-glass--expanded',
-                isMac && 'right-nav-island-glass--mac'
+                isMac && inspectorOpen && 'right-nav-island-glass--mac'
               )}
               style={{
-                width: rightIslandWidth,
+                /* 折叠 hug 胶囊；展开 = 面板宽 + rail 宽 */
+                width: inspectorOpen ? rightIslandWidth : undefined,
                 ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
                 ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}

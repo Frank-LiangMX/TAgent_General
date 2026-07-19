@@ -7,7 +7,8 @@
  */
 
 import { useAtomValue } from 'jotai'
-import { FileText, MessageSquare, StickyNote, X } from 'lucide-react'
+import { ChatsCircle, Monitor, Note } from '@phosphor-icons/react'
+import { X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
@@ -72,7 +73,7 @@ export function TabBarItem({
     if (!el) return
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0]
-      if (entry) setIsNarrow(entry.contentRect.width < 60)
+      if (entry) setIsNarrow(entry.contentRect.width < 52)
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -109,9 +110,10 @@ export function TabBarItem({
     <div
       className={cn(
         'app-workspace-tab-shell relative z-[1] h-8 titlebar-no-drag',
+        /* 原型标签更紧：max ~128，非 176 宽条 */
         isDraft
-          ? 'min-w-[72px] max-w-[120px] flex-[0_1_120px]'
-          : 'min-w-[104px] max-w-[176px] flex-[0_1_176px]'
+          ? 'min-w-[64px] max-w-[100px] flex-[0_1_100px]'
+          : 'min-w-[72px] max-w-[128px] flex-[0_1_128px]'
       )}
       data-tab-id={id}
       data-active={isActive || undefined}
@@ -124,7 +126,7 @@ export function TabBarItem({
         role="tab"
         aria-selected={isActive}
         className={cn(
-          'app-workspace-tab relative flex h-8 w-full items-center gap-1.5 pl-2.5 pr-8',
+          'app-workspace-tab relative flex h-8 w-full items-center gap-1.5 pl-2.5 pr-6',
           'select-none cursor-pointer',
           isActive
             ? 'tab-item-selected'
@@ -136,9 +138,15 @@ export function TabBarItem({
         onPointerDown={onDragStart}
       >
         <span className="app-workspace-tab__content flex min-w-0 flex-1 items-center gap-1.5 text-left">
-          {type === 'agent' && <MessageSquare className="app-workspace-tab__icon" aria-hidden />}
-          {type === 'preview' && <FileText className="app-workspace-tab__icon" aria-hidden />}
-          {type === 'draft' && <StickyNote className="app-workspace-tab__icon" aria-hidden />}
+          {type === 'agent' && (
+            <ChatsCircle className="app-workspace-tab__icon" aria-hidden size={14} weight="regular" />
+          )}
+          {type === 'preview' && (
+            <Monitor className="app-workspace-tab__icon" aria-hidden size={14} weight="regular" />
+          )}
+          {type === 'draft' && (
+            <Note className="app-workspace-tab__icon" aria-hidden size={14} weight="regular" />
+          )}
           {!isNarrow && <span className="app-workspace-tab__title">{title}</span>}
         </span>
 

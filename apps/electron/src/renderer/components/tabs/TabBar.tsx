@@ -111,7 +111,7 @@ export function TabBar(): React.ReactElement {
   )
 
   if (tabs.length === 0) {
-    return <div className="app-workspace-tab-strip h-[64px] relative z-[10]" />
+    return <div className="app-workspace-tab-strip relative z-[10]" />
   }
 
   return (
@@ -305,7 +305,7 @@ function TabBarInner({
   return (
     <div
       ref={barRef}
-      className="app-workspace-tab-strip flex h-[64px] items-center content-shell-chrome-bleed relative shrink-0"
+      className="app-workspace-tab-strip flex items-center content-shell-chrome-bleed relative shrink-0"
     >
       <div className="absolute inset-0 z-[1] titlebar-drag-region pointer-events-none" />
 
