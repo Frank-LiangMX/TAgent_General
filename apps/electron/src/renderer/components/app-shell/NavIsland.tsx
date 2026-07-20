@@ -92,7 +92,7 @@ export function NavIsland({
           id="app-navigation-sidebar"
           className="app-nav-sidebar"
           data-surface-role="panel-elevated"
-          style={{ width: sidebarWidth }}
+          style={{ width: sidebarOpen ? sidebarWidth : 0 }}
           inactive={!sidebarOpen}
         >
           <div className="app-nav-sidebar-content">{sidebar}</div>

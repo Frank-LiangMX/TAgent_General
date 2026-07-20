@@ -65,6 +65,7 @@ import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
 import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
 import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
+import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'
 
 function stableStringify(value: unknown): string {
@@ -766,23 +767,47 @@ function AgentMessagesImpl({
     })
   }, [allGroups, liveMessages, streaming])
 
-  // 迷你地图数据 — 直接使用统一的 allGroups（无需去重）
-  const minimapItems: MinimapItem[] = React.useMemo(
-    () =>
-      allGroups.map((group) => ({
+  // 迷你地图：一刻度 = 一轮（以用户消息为锚），预览含用户 + 助手摘要
+  const minimapItems: MinimapItem[] = React.useMemo(() => {
+    const items: MinimapItem[] = []
+    for (let i = 0; i < allGroups.length; i += 1) {
+      const group = allGroups[i]
+      if (!group || group.type !== 'user') continue
+
+      const rawText = extractUserText(group.message) ?? ''
+      const cleaned = stripDesignContextFromUserMessage(rawText).displayText
+      const { files, text } = sdkParseAttachedFiles(cleaned)
+      const userPreview = (text || cleaned).trim().slice(0, 160)
+
+      let replyPreview: string | undefined
+      let replyModel: string | undefined
+      for (let j = i + 1; j < allGroups.length; j += 1) {
+        const next = allGroups[j]
+        if (!next) continue
+        if (next.type === 'user') break
+        if (next.type === 'assistant-turn') {
+          const preview = getGroupPreview(next).trim()
+          if (preview) {
+            // peep 卡只展示纯文本，避免 # ** ` 等 markdown 占位
+            replyPreview = markdownToPlainText(preview).replace(/\s+/g, ' ').trim().slice(0, 180)
+          }
+          replyModel = next.model
+          break
+        }
+      }
+
+      items.push({
         id: getGroupId(group),
-        role:
-          group.type === 'user'
-            ? ('user' as const)
-            : group.type === 'system'
-              ? ('status' as const)
-              : ('assistant' as const),
-        preview: getGroupPreview(group),
-        avatar: group.type === 'user' ? userProfile.avatar : undefined,
-        model: group.type === 'assistant-turn' ? group.model : undefined,
-      })),
-    [allGroups, userProfile.avatar]
-  )
+        role: 'user',
+        preview: userPreview || '(空消息)',
+        replyPreview,
+        attachments: files.map((f) => ({ name: f.filename || f.path })),
+        avatar: userProfile.avatar,
+        model: replyModel,
+      })
+    }
+    return items
+  }, [allGroups, userProfile.avatar])
 
   // 同步 minimap 缓存到 Tab 级别（供 Tab hover 预览使用）
   React.useEffect(() => {

@@ -91,7 +91,7 @@
 
 窗口底层 `html.tagent-app-shell-window` 只消费 `--surface-role-scene-fill`。该角色在 `styles/surface-roles.css` 中用 A/B/C 三光源构成全屏弥散场，main/workspace 保持透明背景层，不做浮岛。每个主题切换时同时改变整窗基底、三组光场和玻璃基色；材质只改变透明度、模糊、边缘与阴影。生成器自动把这些字段产出到 `:root` / `.dark` / `.theme-*`。
 
-长会话顶部定位器、消息刻度预览与会话状态条分别消费 `--surface-role-turn-locator-*`、`--surface-role-message-minimap-*`、`--surface-role-session-status-*`，不得在业务 CSS 中按主题或材质重定义一套蓝白面板。
+长会话顶部定位器、用户消息气泡、消息刻度预览与会话状态条分别消费 `--surface-role-turn-locator-*`、`--surface-role-message-user-*`、`--surface-role-message-minimap-*`、`--surface-role-session-status-*`，不得在业务 CSS 中按主题或材质重定义一套蓝白 / accent 面板。用户气泡是中性玻璃板（对齐原型 `--role-message-user-*`），禁止染 primary。
 
 ### 阴影 / 间距 / 字号 / 动效 Token
 

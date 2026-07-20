@@ -77,7 +77,8 @@
 }
 
 .agent-view--office-dock .tagent-agent-thread .agent-user-bubble {
-  border-radius: 15px 15px 7px 15px;
+  border-radius: var(--agent-bubble-radius);
+  border-bottom-right-radius: 6px;
 }
 
 .agent-view--office-dock .tagent-agent-thread .agent-turn-footer {

@@ -14,7 +14,7 @@
   --radius-glass-modal-lg: 24px;
   --radius-glass-popover: 18px;
   --radius-glass-sticky: 20px;
-  --radius-glass-tooltip: 20px;
+  --radius-glass-tooltip: 16px;
 }
 
 :root {

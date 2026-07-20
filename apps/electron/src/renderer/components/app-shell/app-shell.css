@@ -17,6 +17,13 @@
   --spatial-rail-pad-bottom: 11px;
   /* 左轨相对窗口左缘的外距 */
   --spatial-rail-edge-left: 5px;
+  /*
+   * nav | main 结构缝：必须为 0。
+   * 光学缝靠 main 内 --app-shell-session-gutter（16）=
+   *   左轨 pad-x(6) + --app-nav-cluster-gap(10)，与 rail↔sidebar 玻璃边距一致。
+   * 禁止再叠一层 scene gap，否则会变成 26。
+   */
+  --shell-island-gap: 0px;
   --spatial-conversation-max: 680px;
   /*
    * float band：仅 nav（rail+sidebar）与 right(--open)
@@ -68,7 +75,8 @@
   --spatial-rail-shadow: var(--surface-role-navigation-shadow);
   --spatial-rail-blur: var(--surface-role-navigation-blur);
   isolation: isolate;
-  gap: 0;
+  /* nav 贴 main；内容与侧栏的光学缝由 session-gutter 承担 */
+  gap: var(--shell-island-gap, 0px);
   /*
    * 生产窗 = 原型 .prototype-shell（padding:0 的 grid chassis）
    * 顶栏 absolute 40px 盖住；内容从 40px 下开始，底边 0
@@ -220,15 +228,17 @@
  *
  *  float band（top/bottom = gutter）
  *    · .app-shell-nav          左轨 + sidebar
- *    · .app-shell-right-stack--open
+ *
+ *  右侧：折叠/展开均 absolute
+ *    · float：抬升悬空（更深阴影 + translateY），main 不让宽
+ *    · dock：贴 band 同 left sidebar；main 用 --right-inspector-reserve 动画 margin-right
+ *      reserve = 面板宽 + 窗右 gutter（与左 nav↔main 结构缝 0 一致；光学缝靠 session-gutter）
  *
  *  工作场（chrome 以下拉满到窗底）
  *    · .app-shell-main
  *      - 标签顶：padding/margin = band 顶
  *      - 输入框底：对齐 band 底
  *      - token：占 band 底 ↔ 窗边（bottom: status）
- *
- *  右轨折叠：absolute 胶囊，不进 flex
  */
 .app-shell-nav {
   position: relative;
@@ -249,7 +259,7 @@
     transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
 }
 
-/* main = 工作场：不与 sidebar 共 height box */
+/* main = 工作场：不与 sidebar 共 height box；dock 时用 margin-right 动画让宽 */
 .app-shell-main {
   position: relative;
   z-index: 1;
@@ -259,25 +269,60 @@
   flex: 1 1 auto;
   align-self: stretch;
   margin: 0;
+  margin-right: var(--right-inspector-reserve, 0px);
   height: 100%;
+  max-height: none;
+  transition: margin-right 300ms cubic-bezier(0.16, 0.72, 0.18, 1);
+}
+
+/* 右侧 inspector：折叠/展开均 absolute；float=抬升浮层，dock=贴 band 占位（靠 main margin） */
+.app-shell-right-stack {
+  display: flex;
+  width: auto;
+  padding: 0;
+  align-items: flex-start;
+  transform-origin: top right;
+}
+
+.app-shell-right-stack--collapsed,
+.app-shell-right-stack--open {
+  position: absolute;
+  z-index: 20;
+  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
+  right: var(--spatial-gutter);
+  left: auto;
+  margin: 0 !important;
+  flex: none;
+  align-self: auto;
+  pointer-events: none;
+}
+
+/* 展开：顶/底对齐 left sidebar / 输入框 band 基线 */
+.app-shell-right-stack--open {
+  bottom: var(--shell-band-inset-bottom, 24px);
+  height: auto;
+  max-height: none;
+  align-items: stretch;
+}
+
+.app-shell-right-stack--collapsed {
+  bottom: auto;
+  height: auto;
   max-height: none;
 }
 
-/* 展开态 inspector：与 nav 同 band（禁止和 main 绑同一规则） */
-.app-shell-right-stack--open {
-  position: relative;
+/* 浮层：略抬离 band，强调悬空 */
+.app-shell-right-stack--open.app-shell-right-stack--float {
+  top: calc(
+    var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)) - 4px
+  );
+  bottom: calc(var(--shell-band-inset-bottom, 24px) + 4px);
+  z-index: 30;
+}
+
+/* 占位：与左栏同 band 贴齐（不额外抬升） */
+.app-shell-right-stack--open.app-shell-right-stack--dock {
   z-index: 10;
-  box-sizing: border-box;
-  min-height: 0;
-  align-self: flex-start;
-  margin-top: var(--shell-band-inset-top);
-  margin-bottom: 0;
-  height: var(--shell-band-height);
-  max-height: var(--shell-band-height);
-  flex: 0 0 auto;
-  padding: 0;
-  display: flex;
-  align-items: stretch;
 }
 
 .app-shell-nav[data-presence='hidden'] {
@@ -364,7 +409,8 @@
 
 .app-nav-sidebar {
   z-index: 1;
-  flex: 0 0 var(--app-nav-sidebar-width);
+  flex: 0 0 auto;
+  width: var(--app-nav-sidebar-width);
   /* 高度/顶底完全交给 band（.app-shell-nav），此处禁止再 inset */
   overflow: hidden;
   border: 1px solid var(--spatial-panel-rim);
@@ -374,24 +420,32 @@
   -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   transform-origin: left center;
+  /* 只动画可插值的几何/透明度；不动画 flex-basis（与 width 双轨会抖）/ backdrop-filter */
   transition:
+    width var(--motion-duration-panel, 320ms) var(--motion-ease-spatial, ease-out),
     opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
-    transform var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
-    width var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
-    flex-basis var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out),
-    border-color var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
-    box-shadow var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
+    transform var(--motion-duration-panel, 320ms) var(--motion-ease-spatial, ease-out),
+    border-color var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
+  contain: layout style;
 }
 
 .app-nav-stack:not(.app-nav-stack--expanded) .app-nav-sidebar {
-  width: 0 !important;
-  flex-basis: 0;
+  width: 0;
+  min-width: 0; /* 覆盖 flex 默认 min-width:auto，否则子项 254 会撑开占位 */
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   opacity: 0;
+  border-width: 0;
   border-color: transparent;
   box-shadow: none;
-  transform: translateX(-14px) scale(0.975, 0.99);
+  transform: translate3d(-10px, 0, 0);
   pointer-events: none;
+}
+
+.app-nav-stack:not(.app-nav-stack--expanded) .app-nav-sidebar-content {
+  width: 0;
+  min-width: 0;
 }
 
 .app-nav-stack:not(.app-nav-stack--expanded) {
@@ -1022,10 +1076,6 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   box-shadow: 0 6px 14px hsl(var(--foreground) / 0.16) !important;
 }
 
-.app-shell-right-stack--open .right-nav-island-glass {
-  height: 100%;
-  margin: 0;
-}
 
 .app-shell-content-stage {
   isolation: isolate;
@@ -1058,13 +1108,10 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 /* MainArea still mounts its legacy plate for compatibility. In the Spatial
- * shell it is an atmospheric tint, not another opaque card. */
+ * shell main 必须透出 scene，禁止再铺 ambient / 实色底板。 */
 .app-shell-content-stage .content-base-plate--body {
   border: 0;
-  /* 近透明 ambient，禁止写死冷蓝洗；让 scene 主导 */
-  background:
-    radial-gradient(ellipse 46% 38% at 14% 8%, rgb(255 255 255 / 12%), transparent 72%),
-    radial-gradient(ellipse 40% 34% at 86% 12%, rgb(var(--scene-a-rgb) / 0.04), transparent 70%);
+  background: transparent;
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -1097,6 +1144,26 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 
 .app-shell-content-stage .content-main-body {
   border-radius: 0;
+  background: transparent;
+}
+
+/*
+ * 全主区（会话 + 看板/记忆/插件/自动化/…）：content-glass 只做布局。
+ * 非会话页直接挂 content-glass，不经 content-main-shell，会吃到全局实底；
+ * 这里与会话页对齐，一律透出 scene。
+ */
+.app-shell-content-stage .content-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.app-shell-content-stage .content-glass::before,
+.app-shell-content-stage .content-glass::after {
+  display: none;
 }
 
 .app-shell-content-stage .content-shell-chrome-bleed {
@@ -1870,6 +1937,13 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   min-width: 0;
 }
 
+.app-inspector-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
 .app-inspector-kicker {
   color: var(--spatial-faint);
   font-size: 8px;
@@ -1915,6 +1989,56 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   transform: scale(0.94);
 }
 
+/* 展开态：原折叠 rail 选项迁到 sidebar 顶栏（对齐 layout-direction-study inspector-tabs） */
+.app-inspector-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+  margin: 0 12px 10px;
+  padding: 3px;
+  border-radius: var(--app-shell-control-radius, 11px);
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.42);
+  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.45));
+}
+
+.dark .app-inspector-tabs {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.app-inspector-tab {
+  display: grid;
+  flex: 1;
+  height: 29px;
+  min-width: 0;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
+  background: transparent;
+  place-items: center;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 180ms var(--app-shell-motion),
+    box-shadow 180ms var(--app-shell-motion);
+}
+
+.app-inspector-tab:hover {
+  color: var(--spatial-ink, hsl(var(--foreground) / 0.88));
+  background: rgb(255 255 255 / 0.36);
+}
+
+.app-inspector-tab--active {
+  color: hsl(var(--primary));
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.72);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.52),
+    0 1px 0 rgb(23 30 40 / 0.04);
+}
+
+.dark .app-inspector-tab--active {
+  background: rgb(255 255 255 / 0.1);
+}
+
 .app-inspector-body {
   min-height: 0;
   flex: 1 1 auto;
@@ -1947,89 +2071,118 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 /* --------------------------------------------------------------------------
- * 右侧 inspector（与 nav/main band 解耦）
- * - 展开：.app-shell-right-stack--open 见文件前部 band 规则
- * - 折叠：absolute 胶囊，禁止参与 flex 高度计算
+ * 右侧 inspector：折叠胶囊 → 展开
+ * 动画策略：只过渡 width / radius / shadow / opacity / transform
+ * 禁止过渡 backdrop-filter / filter / height:auto（会卡）
  * -------------------------------------------------------------------------- */
-.app-shell-right-stack--collapsed {
-  position: absolute;
-  z-index: 20;
-  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
-  right: var(--spatial-gutter);
-  bottom: auto;
-  left: auto;
-  display: flex;
-  width: auto;
-  height: auto;
-  max-height: none;
-  margin: 0 !important;
-  padding: 0;
-  flex: none;
-  align-self: auto;
-  align-items: flex-start;
-  pointer-events: none;
-}
-
-.app-shell-right-stack--collapsed .right-nav-island-glass {
+.app-shell-right-stack .right-nav-island-glass {
   pointer-events: auto;
-}
-
-/* 展开：全高 panel 材质 */
-.app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
-  overflow: hidden;
-  height: 100%;
-  border: 1px solid var(--spatial-panel-rim);
-  border-radius: var(--app-shell-frame-radius) !important;
-  background: var(--spatial-panel-fill);
-  box-shadow: var(--spatial-panel-shadow);
-  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
-  backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
+  transform-origin: top right;
   transition:
-    width 240ms var(--app-shell-motion),
-    border-color 180ms var(--app-shell-motion),
-    background-color 180ms var(--app-shell-motion),
-    box-shadow 220ms var(--app-shell-motion);
+    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/*
- * 折叠：左轨同款 rail 胶囊（content-hug），禁止全高 panel 壳
- * 覆盖 globals 里 float/collapsed 的透明条样式
- */
+/* 折叠：rail 胶囊（content-hug）；width 由 inline px 驱动以便与展开插值 */
 .app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass,
 .app-shell-right-stack--collapsed
   .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
   position: relative;
   display: flex;
-  width: auto !important;
-  height: auto !important;
+  height: auto;
   min-height: 0;
   overflow: visible;
-  flex-direction: row;
-  justify-content: center;
-  border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim)) !important;
-  border-radius: var(--app-shell-composer-radius, 16px) !important;
-  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill)) !important;
-  box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow)) !important;
+  flex-direction: column;
+  justify-content: flex-start;
+  border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim));
+  border-radius: var(--app-shell-composer-radius, 16px);
+  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
+  box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow));
   -webkit-backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
-    saturate(var(--surface-saturate, 1.06)) !important;
+    saturate(var(--surface-saturate, 1.06));
   backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
-    saturate(var(--surface-saturate, 1.06)) !important;
+    saturate(var(--surface-saturate, 1.06));
+  transform: none;
+}
+
+/* 展开基线：与 left sidebar 同 panel；高度由 stack top/bottom 撑满，不动画 height */
+.app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
+  display: flex;
+  overflow: hidden;
+  height: 100%;
+  flex-direction: column;
+  border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
+  border-radius: var(--app-shell-drawer-radius, 22px);
+  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow));
+  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
+  transform: none;
+}
+
+/* 浮层：抬升只用 transform + box-shadow（不用 filter:drop-shadow，动画时很卡） */
+.app-shell-right-stack--open.app-shell-right-stack--float .right-nav-island-glass.nav-island-glass {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 8px 20px rgb(23 30 40 / 0.08),
+    0 28px 56px rgb(23 30 40 / 0.18);
+  transform: translate3d(0, -6px, 0);
+}
+
+.dark
+  .app-shell-right-stack--open.app-shell-right-stack--float
+  .right-nav-island-glass.nav-island-glass {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 24px rgb(0 0 0 / 0.28),
+    0 32px 64px rgb(0 0 0 / 0.42);
+}
+
+.app-shell-right-stack--open.app-shell-right-stack--dock .right-nav-island-glass.nav-island-glass {
+  box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow));
+  transform: none;
 }
 
 .app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass::before,
-.app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass::after {
+.app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass::after,
+.app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::before,
+.app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::after {
   border-radius: inherit;
   opacity: 1;
 }
 
 .app-shell-right-stack .nav-island-sidebar {
-  transform-origin: right center;
-  transition:
-    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
-    transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
+  transform-origin: top right;
+  transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 折叠胶囊内：图标列 hug，与左轨 island 内边距一致 */
+.app-shell-right-stack--open .nav-island-sidebar:not(.nav-island-sidebar--closing) {
+  opacity: 1;
+}
+
+.app-shell-right-stack--inspector-closing .nav-island-sidebar,
+.nav-island-sidebar--closing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* 折叠图标列：展开过程中交叉淡出 */
+.app-shell-right-stack .right-panel-rail--peek {
+  transition: opacity 140ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.app-shell-right-stack--open .right-panel-rail--peek {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 折叠胶囊内：竖向图标列 */
 .app-shell-right-stack--collapsed .right-panel-rail {
   box-sizing: border-box;
   width: 46px;
@@ -2047,59 +2200,16 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   background: var(--hover-fill, hsl(var(--foreground) / 0.065));
 }
 
-/* 展开：rail 贴 panel 右缘全高 */
-.app-shell-right-stack--open .right-panel-rail {
-  box-sizing: border-box;
-  width: var(--nav-rail-width);
-  height: 100%;
-  padding: 6px 3px;
-  border-left: 1px solid var(--spatial-line);
-  background: rgb(255 255 255 / 8%);
-}
-
-.app-shell-right-stack--open .right-panel-rail .rail-island-btn {
-  color: var(--spatial-muted);
-  background: transparent;
-}
-
-.app-shell-right-stack--open .right-panel-rail .rail-island-btn:hover {
-  color: var(--spatial-ink);
-  background: rgb(255 255 255 / 36%);
-}
-
-.app-shell-right-stack--open .right-panel-rail .rail-island-btn--active {
-  border: 1px solid var(--spatial-accent-line);
-  color: var(--spatial-accent);
-  background: rgb(249 251 254 / 66%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 52%);
-}
-
-.app-shell-right-stack--open .right-panel-rail .rail-island-btn--active::before {
-  content: none;
-}
-
-/* material 覆盖只作用于展开 drawer；折叠胶囊走 rail 材质，勿被洗成 solid surface */
-[data-material='glass'] .app-nav-stack,
-[data-material='glass'] .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
-  -webkit-backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
-  backdrop-filter: blur(var(--surface-blur, 0px)) saturate(var(--surface-saturate, 1));
-  background: var(--surface-bg, hsl(var(--background) / 0.22));
-}
-
+/* material：折叠胶囊仍走 rail；展开 drawer 跟 left sidebar 一样吃 panel token，勿再洗成实底 */
 [data-material='glass'] .app-nav-stack {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: transparent;
 }
 
-[data-material='soft'] .app-nav-stack,
-[data-material='soft'] .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
+[data-material='soft'] .app-nav-stack {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-}
-
-[data-material='soft'] .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
-  background: var(--surface-bg, hsl(var(--background)));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2108,10 +2218,15 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   .app-shell-right-stack .nav-island-sidebar,
   .app-nav-stack .rail-island-btn,
   .app-shell-right-stack .right-nav-island-glass.nav-island-glass,
+  .app-shell-main,
   .app-workspace-tab,
   .app-inspector-close {
     animation: none;
     transition-duration: 0.01ms;
+  }
+
+  .app-shell-right-stack--open.app-shell-right-stack--float .right-nav-island-glass.nav-island-glass {
+    transform: none;
   }
 }
 

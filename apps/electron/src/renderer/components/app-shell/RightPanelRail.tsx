@@ -1,46 +1,29 @@
 /**
- * RightPanelRail — 右侧上下文入口
+ * RightPanelRail — 折叠态右上角上下文胶囊内的竖向图标列
  *
- * - 折叠：右上角 rail 胶囊内的图标列（不占主区全高列宽）
- * - 展开：贴在 inspector 右缘的全高按钮列
- *
- * 点击切换 rightRailItemAtom + 打开/折叠 inspector。
+ * 展开态入口迁至 RightInspectorFrame 顶栏 tabs（见 RightRailItems orientation="tabs"）。
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageCircle, Globe2, Palette, Users, type LucideIcon } from 'lucide-react'
+import { useAtomValue } from 'jotai'
 import * as React from 'react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { RightRailItems } from './RightRailItems'
+
 import {
   agentDiffUnseenChangesAtom,
   agentDiffUnseenFilesAtom,
-  agentSidePanelOpenAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
-import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
-import { channelsAtom } from '@/atoms/model-atoms'
-import { rightRailItemAtom } from '@/atoms/app-mode'
-import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
-import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
-import { registerShortcut } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
 
 interface RightPanelRailProps {
-  /** 面板当前是否展开（控制 active 高亮） */
+  /** 面板当前是否展开（控制 active 高亮；折叠态通常为 false） */
   panelOpen: boolean
   className?: string
 }
 
-const RAIL_ICON: LucideIcon = FolderOpen
-const BTW_ICON: LucideIcon = MessageCircle
-const BROWSER_ICON: LucideIcon = Globe2
-const DESIGN_ICON: LucideIcon = Palette
-const CREW_ICON: LucideIcon = Users
-
 export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
-  const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)
 
@@ -48,266 +31,16 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const unseenFilesCount = currentSessionId ? (unseenFilesMap.get(currentSessionId)?.size ?? 0) : 0
   const showBadge = !panelOpen && (unseenChanges || unseenFilesCount > 0)
 
-  // 右侧 Rail 切换逻辑（镜像左侧）
-  const [rightRailItem, setRightRailItem] = useAtom(rightRailItemAtom)
-  const setBtwChannelId = useSetAtom(btwChannelIdAtom)
-  const setBtwModelId = useSetAtom(btwModelIdAtom)
-  const setBtwSourceSessionId = useSetAtom(btwSourceSessionIdAtom)
-  const channels = useAtomValue(channelsAtom)
-
-  // 获取当前会话的渠道和模型
-  const { channelId, modelId } = useAgentSessionChannelModel(currentSessionId ?? '')
-  const isFilesActive = panelOpen && rightRailItem === 'files'
-  const isBtwActive = panelOpen && rightRailItem === 'btw'
-  const isBrowserActive = panelOpen && rightRailItem === 'browser'
-  const isDesignActive = panelOpen && rightRailItem === 'design'
-  const isCrewActive = panelOpen && rightRailItem === 'crew'
-
-  // 班组进度：承接原顶栏 4/4 chip；面板已打开时由面板本身展示，角标隐藏
-  const crewBoardId = useAtomValue(sessionCrewBoardIdAtomFamily(currentSessionId ?? ''))
-  const { tasks: crewTasks } = useKanbanBoardById(crewBoardId)
-  const crewSummary = React.useMemo(() => {
-    const total = crewTasks.length
-    const done = crewTasks.filter((t) => t.status === 'done').length
-    const running = crewTasks.filter((t) => t.status === 'running').length
-    const blocked = crewTasks.filter((t) => t.status === 'blocked').length
-    return { total, done, running, blocked }
-  }, [crewTasks])
-  const showCrewCount = !!crewBoardId && !isCrewActive && crewSummary.total > 0
-  const crewBusy = crewSummary.running > 0 || crewSummary.blocked > 0
-  const crewAriaLabel = showCrewCount
-    ? `班组 ${crewSummary.done}/${crewSummary.total}${crewSummary.running > 0 ? `，运行中 ${crewSummary.running}` : ''}${crewSummary.blocked > 0 ? `，受阻 ${crewSummary.blocked}` : ''}`
-    : '班组'
-  // 检查是否有可用的渠道
-  const hasChannel = React.useMemo(() => {
-    if (!channelId) return false
-    const ch = channels.find((c) => c.id === channelId)
-    return ch?.enabled && ch.models.some((m) => m.enabled)
-  }, [channels, channelId])
-
-  const togglePanel = React.useCallback(() => {
-    if (panelOpen && rightRailItem === 'files') {
-      // 文件面板已打开且当前是文件 → 折叠
-      setPanelOpen(false)
-    } else {
-      // 其他情况 → 切换到文件面板并打开
-      setRightRailItem('files')
-      setPanelOpen(true)
-    }
-  }, [setPanelOpen, panelOpen, rightRailItem, setRightRailItem])
-
-  React.useEffect(() => {
-    return registerShortcut('toggle-right-panel', togglePanel)
-  }, [togglePanel])
-
-  const handleBtwClick = React.useCallback(() => {
-    if (panelOpen && rightRailItem === 'btw') {
-      // btw 面板已打开且当前是 btw → 折叠
-      setPanelOpen(false)
-    } else {
-      // 其他情况 → 切换到 btw 面板并打开
-      setRightRailItem('btw')
-      if (channelId) setBtwChannelId(channelId)
-      if (modelId) setBtwModelId(modelId)
-      if (currentSessionId) setBtwSourceSessionId(currentSessionId)
-      setPanelOpen(true)
-    }
-  }, [
-    panelOpen,
-    rightRailItem,
-    channelId,
-    modelId,
-    currentSessionId,
-    setRightRailItem,
-    setBtwChannelId,
-    setBtwModelId,
-    setBtwSourceSessionId,
-    setPanelOpen,
-  ])
-
-  const handleBrowserClick = React.useCallback(() => {
-    if (panelOpen && rightRailItem === 'browser') {
-      // 浏览器面板已打开且当前是浏览器 → 折叠
-      setPanelOpen(false)
-    } else {
-      // 其他情况 → 切换到浏览器面板并打开
-      setRightRailItem('browser')
-      setPanelOpen(true)
-    }
-  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
-
-  const handleDesignClick = React.useCallback(() => {
-    if (panelOpen && rightRailItem === 'design') {
-      // Design 面板已打开且当前是 Design → 折叠
-      setPanelOpen(false)
-    } else {
-      // 其他情况 → 切换到 Design 面板并打开
-      setRightRailItem('design')
-      setPanelOpen(true)
-    }
-  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
-
-  const handleCrewClick = React.useCallback(() => {
-    if (panelOpen && rightRailItem === 'crew') {
-      setPanelOpen(false)
-    } else {
-      setRightRailItem('crew')
-      setPanelOpen(true)
-    }
-  }, [panelOpen, rightRailItem, setRightRailItem, setPanelOpen])
-
   return (
     <div
       className={cn(
-        'right-panel-rail relative z-[1] flex shrink-0 flex-col items-center',
-        panelOpen ? 'h-full' : 'h-auto',
-        !panelOpen && 'right-panel-rail--collapsed',
-        !panelOpen && showBadge && 'right-panel-rail--notify',
+        'right-panel-rail right-panel-rail--collapsed relative z-[1] flex h-auto shrink-0 flex-col items-center',
+        showBadge && 'right-panel-rail--notify',
         className
       )}
     >
       <div className="flex w-full flex-col items-center">
-        <div className="rail-slide-host relative flex w-full flex-col items-center gap-1">
-          {/* 文件面板按钮 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={togglePanel}
-                aria-pressed={isFilesActive}
-                aria-label="文件面板"
-                className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
-                  isFilesActive && 'rail-island-btn--active'
-                )}
-              >
-                <RAIL_ICON size={14} strokeWidth={1.75} />
-                {showBadge && (
-                  <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-primary ring-1 ring-background" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <div className="text-xs">
-                <div className="font-medium">文件面板</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* 旁注（btw）按钮 */}
-          {hasChannel && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleBtwClick}
-                  aria-pressed={isBtwActive}
-                  aria-label="旁注"
-                  className={cn(
-                    'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
-                    isBtwActive && 'rail-island-btn--active'
-                  )}
-                >
-                  <BTW_ICON size={14} strokeWidth={1.75} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                <div className="text-xs">
-                  <div className="font-medium">旁注</div>
-                  <div className="text-muted-foreground">快速提问，不进入主对话历史</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* 浏览器预览按钮 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleBrowserClick}
-                aria-pressed={isBrowserActive}
-                aria-label="浏览器预览"
-                className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
-                  isBrowserActive && 'rail-island-btn--active'
-                )}
-              >
-                <BROWSER_ICON size={14} strokeWidth={1.75} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <div className="text-xs">
-                <div className="font-medium">预览</div>
-                <div className="text-muted-foreground">预览 WPS 文档或网页</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Design Preview 按钮 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleDesignClick}
-                aria-pressed={isDesignActive}
-                aria-label="Design Preview"
-                className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
-                  isDesignActive && 'rail-island-btn--active'
-                )}
-              >
-                <DESIGN_ICON size={14} strokeWidth={1.75} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <div className="text-xs">
-                <div className="font-medium">Design Preview</div>
-                <div className="text-muted-foreground">AI 生成 UI 原型的即时预览</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* 班组墙（数字员工队列）— 进度角标承接原顶栏 4/4 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleCrewClick}
-                aria-pressed={isCrewActive}
-                aria-label={crewAriaLabel}
-                className={cn(
-                  'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
-                  isCrewActive && 'rail-island-btn--active'
-                )}
-              >
-                <CREW_ICON size={14} strokeWidth={1.75} />
-                {showCrewCount && (
-                  <span
-                    className={cn(
-                      'absolute -right-1 -top-1 z-[3] min-w-[18px] rounded-full px-0.5 text-center text-[8px] font-semibold leading-[12px] tabular-nums ring-1 ring-background',
-                      crewBusy
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-primary text-primary-foreground'
-                    )}
-                  >
-                    {crewSummary.done}/{crewSummary.total}
-                  </span>
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <div className="text-xs">
-                <div className="font-medium">班组</div>
-                <div className="text-muted-foreground">
-                  {showCrewCount
-                    ? `进度 ${crewSummary.done}/${crewSummary.total}${crewSummary.running > 0 ? ` · 运行 ${crewSummary.running}` : ''}${crewSummary.blocked > 0 ? ` · 受阻 ${crewSummary.blocked}` : ''}`
-                    : '本会话数字员工与派活进度'}
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <RightRailItems panelOpen={panelOpen} orientation="vertical" />
       </div>
     </div>
   )

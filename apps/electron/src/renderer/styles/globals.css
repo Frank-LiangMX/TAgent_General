@@ -1820,6 +1820,14 @@ html.theme-neumorph-dark .content-main-shell .content-glass {
     inset 1px 1px 0 hsl(var(--background) / 0.46);
 }
 
+/* Spatial shell：主区透 scene，覆盖上方 neumorph content-glass 实底 */
+html.theme-neumorph-light .app-shell-content-stage .content-glass,
+html.theme-neumorph-dark .app-shell-content-stage .content-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
 html.theme-neumorph-light .nav-island-header-row > *,
 html.theme-neumorph-dark .nav-island-header-row > * {
   border: 1px solid hsl(var(--border) / 0.86);
@@ -2725,18 +2733,23 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   border-right-color: var(--rail-accent, hsl(var(--primary) / 0.6));
 }
 
-/* ===== 消息导航刻度（右上角紧凑簇，贴主区右缘靠近 right rail） ===== */
+/* ===== 消息导航刻度（主区左缘内侧，Codex 式鱼眼胶囊） ===== */
 .message-nav-rail {
-  right: 0;
+  left: 10px;
+  right: auto;
 }
 
 /* 始终清晰可见；当前视口最亮，用户消息次之，助手略淡 */
 .message-nav-bar {
   background: hsl(var(--primary) / 0.38);
+  transform-origin: left center;
+  will-change: width, height;
 }
 
-.message-nav-bar:hover {
-  background: hsl(var(--primary) / 0.58);
+.message-nav-bar:hover,
+.message-nav-bar-focused {
+  background: hsl(var(--primary) / 0.72);
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.18);
 }
 
 .message-nav-bar-user {
@@ -2759,8 +2772,10 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   background: hsl(var(--primary) / 0.42);
 }
 
-.dark .message-nav-bar:hover {
-  background: hsl(var(--primary) / 0.62);
+.dark .message-nav-bar:hover,
+.dark .message-nav-bar-focused {
+  background: hsl(var(--primary) / 0.78);
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.28);
 }
 
 .dark .message-nav-bar-user {
@@ -2775,15 +2790,53 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   background: hsl(var(--primary) / 0.82);
 }
 
-/* ===== 消息导航弹出面板（时间线预览） ===== */
+/* peep / 完整 minimap：对齐折叠右轨胶囊（spatial-rail），不是展开 inspector panel */
+.message-nav-float {
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim));
+  border-radius: var(--app-shell-composer-radius, 16px);
+  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
+  box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow));
+  -webkit-backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  color: var(--spatial-ink, hsl(var(--foreground)));
+}
+
+.message-nav-peek-chip {
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.42);
+  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.55));
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
+}
+
+.message-nav-open-btn {
+  background: transparent;
+}
+
+.message-nav-open-btn--active {
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.22);
+}
+
+.message-nav-peek-enter {
+  animation: message-nav-peek-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes message-nav-peek-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-4px, 0, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 .message-nav-popover {
   min-height: 168px;
-  border-color: var(--surface-role-message-minimap-rim);
-  background: var(--surface-role-message-minimap-fill);
-  box-shadow: var(--surface-role-message-minimap-shadow);
-  -webkit-backdrop-filter: var(--surface-role-message-minimap-blur);
-  backdrop-filter: var(--surface-role-message-minimap-blur);
-  transform-origin: top right;
+  transform-origin: top left;
   will-change: transform, opacity;
 }
 
@@ -2798,7 +2851,7 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 @keyframes message-nav-popover-in {
   from {
     opacity: 0;
-    transform: translate3d(6px, -4px, 0) scale(0.97);
+    transform: translate3d(-6px, -4px, 0) scale(0.97);
   }
   to {
     opacity: 1;
@@ -2813,13 +2866,14 @@ html.theme-neumorph-dark .settings-profile-action-btn {
   }
   to {
     opacity: 0;
-    transform: translate3d(4px, -2px, 0) scale(0.985);
+    transform: translate3d(-4px, -2px, 0) scale(0.985);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .message-nav-popover-enter,
   .message-nav-popover-exit,
+  .message-nav-peek-enter,
   .agent-sticky-jump-slot,
   .agent-sticky-jump,
   .agent-sticky-jump__action {
@@ -2830,12 +2884,12 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 .message-nav-popover-header {
-  /* 头区融入面板，不用硬边分隔 */
-  background: color-mix(in srgb, hsl(var(--foreground)) 2.5%, transparent);
+  border-bottom: 1px solid var(--spatial-line, hsl(var(--border) / 0.55));
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.28);
 }
 
 .dark .message-nav-popover-header {
-  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+  background: rgb(255 255 255 / 0.04);
 }
 
 /* 聊天气泡：用户右 / 助手左；选中态落在气泡本身 */
@@ -2844,7 +2898,9 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 .message-nav-bubble-user {
-  background: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--background)));
+  background: var(--surface-role-message-user-fill);
+  border: 1px solid var(--surface-role-message-user-rim);
+  box-shadow: var(--surface-role-message-user-shadow);
   color: hsl(var(--foreground));
   border-radius: 12px 12px 4px 12px;
 }
@@ -2862,7 +2918,8 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 .dark .message-nav-bubble-user {
-  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--background)));
+  /* fill/rim 随材质表自动切换，不再染 primary */
+  background: var(--surface-role-message-user-fill);
 }
 
 .dark .message-nav-bubble-assistant {
@@ -2897,7 +2954,10 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 .message-nav-bubble-user.message-nav-bubble-anchor {
-  background: color-mix(in srgb, hsl(var(--primary)) 18%, hsl(var(--background)));
+  background: var(--surface-role-message-user-fill);
+  box-shadow:
+    0 0 0 1.5px hsl(var(--primary) / 0.45),
+    var(--surface-role-message-user-shadow);
 }
 
 .message-nav-bubble-assistant.message-nav-bubble-anchor {
@@ -2911,12 +2971,16 @@ html.theme-neumorph-dark .settings-profile-action-btn {
 }
 
 .dark .message-nav-bubble-user.message-nav-bubble-anchor {
-  background: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--background)));
+  background: var(--surface-role-message-user-fill);
+  box-shadow:
+    0 0 0 1.5px hsl(var(--primary) / 0.55),
+    var(--surface-role-message-user-shadow);
 }
 
 .dark .message-nav-bubble-assistant.message-nav-bubble-anchor {
   background: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background)));
 }
+
 
 /* ===== 液态玻璃（Btw 面板） — Liquid Glass (macOS Sonoma 风格) ===== */
 /*
@@ -5501,8 +5565,9 @@ html.material-frosted .tool-cluster {
   opacity: 0.34;
 }
 
-/* 主区内容层透明，视觉由底板承担；允许圆角露出（勿用 overflow:hidden 裁切子层圆角） */
-.content-main-shell .content-glass {
+/* 主区内容层透明，视觉由窗口 scene 承担；允许圆角露出（勿用 overflow:hidden 裁切子层圆角） */
+.content-main-shell .content-glass,
+.app-shell-content-stage .content-glass {
   background: transparent;
   border: none;
   box-shadow: none;
@@ -5511,11 +5576,14 @@ html.material-frosted .tool-cluster {
 }
 
 .content-main-shell .content-glass::before,
-.content-main-shell .content-glass::after {
+.content-main-shell .content-glass::after,
+.app-shell-content-stage .content-glass::before,
+.app-shell-content-stage .content-glass::after {
   display: none;
 }
 
-html.material-frosted .content-main-shell .content-glass {
+html.material-frosted .content-main-shell .content-glass,
+html.material-frosted .app-shell-content-stage .content-glass {
   background: transparent;
   border: none;
   box-shadow: none;
@@ -5866,6 +5934,13 @@ html.material-frosted .content-main-shell .content-glass {
 [data-material='glass'].theme-forest-light .content-glass,
 .theme-forest-light[data-material='glass'] .content-glass {
   background: hsl(140 25% 98% / 0.22);
+}
+
+[data-material='glass'].theme-ocean-light .app-shell-content-stage .content-glass,
+.theme-ocean-light[data-material='glass'] .app-shell-content-stage .content-glass,
+[data-material='glass'].theme-forest-light .app-shell-content-stage .content-glass,
+.theme-forest-light[data-material='glass'] .app-shell-content-stage .content-glass {
+  background: transparent;
 }
 
 /**
@@ -6564,6 +6639,22 @@ html.material-frosted.theme-slate-dark .content-glass {
   background: hsl(var(--content-area) / var(--material-opacity-surface));
 }
 
+/* Spatial shell 主区仍透出 scene，不受上方主题 content-glass 实底覆盖 */
+html.material-frosted.theme-ocean-light .app-shell-content-stage .content-glass,
+html.material-frosted.theme-forest-light .app-shell-content-stage .content-glass,
+html.material-frosted.theme-slate-light .app-shell-content-stage .content-glass,
+html.material-frosted.theme-ocean-dark .app-shell-content-stage .content-glass,
+html.material-frosted.theme-forest-dark .app-shell-content-stage .content-glass,
+html.material-frosted.theme-slate-dark .app-shell-content-stage .content-glass,
+html.material-frosted.theme-ocean-light .content-main-shell .content-glass,
+html.material-frosted.theme-forest-light .content-main-shell .content-glass,
+html.material-frosted.theme-slate-light .content-main-shell .content-glass,
+html.material-frosted.theme-ocean-dark .content-main-shell .content-glass,
+html.material-frosted.theme-forest-dark .content-main-shell .content-glass,
+html.material-frosted.theme-slate-dark .content-main-shell .content-glass {
+  background: transparent;
+}
+
 html.material-frosted.theme-ocean-light .panel-glass,
 html.material-frosted.theme-forest-light .panel-glass,
 html.material-frosted.theme-slate-light .panel-glass,
@@ -7053,12 +7144,14 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 }
 
 /*
- * 主区 content-glass 只作为布局容器，视觉由 content-base-plate 承担。
+ * 主区 content-glass 只作为布局容器，视觉由窗口 scene 承担。
  * 高级材质的全局 .content-glass 规则会重新加背景/阴影，和左侧 Nav 浮岛叠出实体隔断感；
- * 这里放在材质规则后面，确保主区不重复画第二层 surface。
+ * 这里放在材质规则后面，确保会话（content-main-shell）与其它 rail 页（直接挂 content-glass）都不重复画第二层 surface。
  */
 [data-material='glass'] .content-main-shell .content-glass,
-[data-material='soft'] .content-main-shell .content-glass {
+[data-material='soft'] .content-main-shell .content-glass,
+[data-material='glass'] .app-shell-content-stage .content-glass,
+[data-material='soft'] .app-shell-content-stage .content-glass {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: transparent;
@@ -7069,7 +7162,11 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material='glass'] .content-main-shell .content-glass::before,
 [data-material='glass'] .content-main-shell .content-glass::after,
 [data-material='soft'] .content-main-shell .content-glass::before,
-[data-material='soft'] .content-main-shell .content-glass::after {
+[data-material='soft'] .content-main-shell .content-glass::after,
+[data-material='glass'] .app-shell-content-stage .content-glass::before,
+[data-material='glass'] .app-shell-content-stage .content-glass::after,
+[data-material='soft'] .app-shell-content-stage .content-glass::before,
+[data-material='soft'] .app-shell-content-stage .content-glass::after {
   display: none;
 }
 

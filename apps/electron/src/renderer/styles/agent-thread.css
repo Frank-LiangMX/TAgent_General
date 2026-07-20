@@ -12,17 +12,13 @@
   --agent-avatar-size: 32px;
   --agent-content-indent: 52px;
   --agent-surface-radius: 14px;
-  --agent-bubble-radius: 20px;
+  /* 对齐原型 --radius-tool；右下角尖角见 .agent-user-bubble */
+  --agent-bubble-radius: 16px;
 
-  /* 用户气泡：主色 soft tint（对齐 shell accent-soft） */
-  --agent-surface-bg: var(
-    --spatial-accent-soft,
-    color-mix(in srgb, hsl(var(--primary)) 10%, hsl(var(--card)))
-  );
-  --agent-surface-border: var(
-    --spatial-accent-line,
-    color-mix(in srgb, hsl(var(--primary)) 26%, hsl(var(--border)))
-  );
+  /* 用户气泡：中性板（--surface-role-message-user-*），不是 accent */
+  --agent-surface-bg: var(--surface-role-message-user-fill);
+  --agent-surface-border: var(--surface-role-message-user-rim);
+  --agent-surface-shadow: var(--surface-role-message-user-shadow);
   --agent-surface-on: var(--spatial-ink, hsl(var(--foreground) / 0.92));
   --agent-bubble-blur: 0px;
 
@@ -40,22 +36,12 @@
 }
 
 .dark .tagent-agent-thread {
-  --agent-surface-bg: var(
-    --spatial-accent-soft,
-    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
-  );
-  --agent-surface-border: var(
-    --spatial-accent-line,
-    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
-  );
   --agent-surface-on: var(--spatial-ink, hsl(var(--foreground) / 0.94));
-  --agent-bubble-blur: 0px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
 }
 
 [data-material='glass'] .tagent-agent-thread {
-  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--background) / 0.42));
   --agent-bubble-blur: 10px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 18%, transparent);
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 7%, transparent);
@@ -64,7 +50,6 @@
 
 .dark[data-material='glass'] .tagent-agent-thread,
 [data-material='glass'].dark .tagent-agent-thread {
-  --agent-surface-bg: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background) / 0.32));
   --agent-bubble-blur: 10px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 4.5%, transparent);
 }
@@ -80,7 +65,7 @@
   --agent-avatar-size: 32px;
   --agent-content-indent: 52px;
   --agent-surface-radius: 14px;
-  --agent-bubble-radius: 18px;
+  --agent-bubble-radius: var(--app-shell-composer-radius, 16px);
   --agent-process-bg: color-mix(in srgb, rgb(255 255 255) 22%, transparent);
   --agent-process-border: var(--spatial-line, rgb(68 78 94 / 10%));
   --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
@@ -384,10 +369,11 @@
     1px 1px 3px color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
 }
 
-/* ===== 用户气泡 ===== */
+/* ===== 用户气泡（原型 .message-user：中性板 + 光学 rim，非 accent） ===== */
 
 .tagent-agent-thread .agent-user-bubble {
-  border-radius: 18px 18px 10px 18px;
+  border-radius: var(--agent-bubble-radius);
+  border-bottom-right-radius: 6px;
   border: 1px solid var(--agent-surface-border);
   background: var(--agent-surface-bg);
   color: var(--agent-surface-on);
@@ -395,28 +381,15 @@
   font-weight: 500;
   line-height: var(--agent-body-leading, 1.72);
   padding: 12px 14px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
-    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
-  backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
-  -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(1.1);
-}
-
-[data-material='glass'] .tagent-agent-thread .agent-user-bubble {
-  box-shadow:
-    0 1px 0 hsl(var(--glass-shine) / 0.52) inset,
-    0 2px 8px hsl(var(--primary) / 0.08);
-}
-
-.tagent-agent-thread .agent-user-bubble:hover {
-  box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
-    0 4px 12px hsl(var(--primary) / 0.12);
+  box-shadow: var(--agent-surface-shadow);
+  backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(var(--surface-saturate, 1.06));
+  -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px))
+    saturate(var(--surface-saturate, 1.06));
 }
 
 .tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade {
   border-bottom-left-radius: var(--agent-bubble-radius);
-  border-bottom-right-radius: 10px;
+  border-bottom-right-radius: 6px;
   background: linear-gradient(to top, var(--agent-surface-bg) 0%, transparent 100%);
 }
 
@@ -827,32 +800,35 @@
 
 /*
  * 吸顶条水平边距：
- * - 左：对齐会话 gutter / ConversationContent
- * - 右：gutter + 消息导航刻度预留，避免与右上角刻度叠压
+ * - 左：gutter + 左侧消息刻度预留
+ * - 右：会话 gutter（刻度已迁左，不再为右上角刻度留位）
  */
 .agent-sticky-jump-shell {
   --agent-sticky-nav-reserve: 26px;
   box-sizing: border-box;
   width: 100%;
   justify-content: flex-start;
-  padding-right: calc(2rem + var(--agent-sticky-nav-reserve));
-  padding-left: 2rem;
+  padding-right: 2rem;
+  padding-left: calc(2rem + var(--agent-sticky-nav-reserve));
 }
 
 /* Spatial 壳：与阅读栏 680 同轴（padding/宽度由 app-shell.css 统一） */
 
 /*
- * 消息导航刻度：贴主区右缘，更靠近 right rail
- * content-stage overflow:hidden 不能越界到 shell gap，故 right:0 + 收窄列宽
+ * 消息导航刻度：贴主区左缘内侧（Codex 式），避开右侧右轨胶囊；
+ * 与 sidebar 之间留一点空隙，不贴死浮岛右缘。
  */
 .message-nav-rail {
-  right: 0;
+  left: 10px;
+  right: auto;
 }
 
 .app-shell-content-stage .message-nav-rail {
-  right: 0;
-  width: 1.375rem; /* ~22px */
-  padding-right: 1px;
+  left: 10px;
+  right: auto;
+  width: 1.75rem; /* ~28px，容纳更宽的细刻度 */
+  padding-left: 2px;
+  padding-right: 0;
 }
 
 .app-shell-scene .conversation-scroll-btn,

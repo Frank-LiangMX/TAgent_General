@@ -700,24 +700,33 @@
 }
 
 /* ============================================================================
- * 5. Tooltip
+ * 5. Tooltip — 对齐折叠右轨胶囊（navigation / spatial-rail）
  * ========================================================================== */
 
 .session-glass-tooltip {
   position: relative;
   isolation: isolate;
-  color: hsl(var(--tooltip-foreground));
-  border-radius: var(--radius-glass-tooltip);
-  -webkit-backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
-  backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
-  background: var(--surface-bg-tooltip);
-  /* 跟 popover 同款 rim，避免深字/浅字反相导致 rim 过重 */
-  border: var(--surface-rim-width) solid var(--surface-rim, hsl(var(--border) / 0.55));
-  box-shadow: var(--surface-shadow-elevated, var(--md-elevation-2));
+  /* 圆角跟折叠右轨 / composer 胶囊同一源；壳外 fallback 到 glass-tooltip token */
+  border-radius: var(--app-shell-composer-radius, var(--radius-glass-tooltip, 16px));
+  color: hsl(var(--tooltip-foreground, var(--foreground)));
+  border: 1px solid var(--surface-role-tooltip-rim, var(--surface-role-navigation-rim, var(--surface-rim)));
+  background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));
+  box-shadow: var(
+    --surface-role-tooltip-shadow,
+    var(--surface-role-navigation-shadow, var(--surface-shadow-chip))
+  );
+  -webkit-backdrop-filter: blur(var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
+  /* 尺寸对齐轨旁浮层：紧凑内边距 + 11px 字重 */
+  padding: 6px 9px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
 }
 
+/* 轻折射：与 .app-rail-island 同款，不用旧 elevated 高光 xor 边 */
 .session-glass-tooltip::before {
   content: '';
   position: absolute;
@@ -725,43 +734,40 @@
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  opacity: calc(var(--surface-shine-opacity) * 0.5);
   background:
-    radial-gradient(
-      ellipse 85% 65% at 16% 0%,
-      hsl(var(--glass-shine, 0 0% 100%) / 0.35) 0%,
-      transparent 58%
-    ),
-    linear-gradient(to bottom, hsl(var(--glass-shine, 0 0% 100%) / 0.18) 0%, transparent 42%);
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.1), transparent 60%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 42%);
 }
 
 .session-glass-tooltip::after {
   content: '';
   position: absolute;
   inset: 0;
+  border: 1px solid transparent;
+  border-top-color: var(--surface-highlight, hsl(var(--glass-shine, 0 0% 100%) / 0.22));
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  opacity: calc(var(--surface-shine-opacity) * 0.42);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.3) 28%,
-    rgba(255, 255, 255, 0.48) 50%,
-    rgba(255, 255, 255, 0.26) 72%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  opacity: var(--surface-shine-opacity, 0);
 }
 
 .session-glass-tooltip > * {
   position: relative;
   z-index: 1;
+}
+
+[data-material='soft'] .session-glass-tooltip {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: hsl(var(--tooltip, var(--background)) / 0.98);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .session-glass-tooltip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--md-surface-container-low, hsl(var(--background)));
+  }
 }
 
 /* ============================================================================

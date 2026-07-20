@@ -158,11 +158,31 @@
   --surface-role-turn-locator-shadow: var(--surface-shadow-chip);
   --surface-role-turn-locator-blur: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate));
 
-  --surface-role-message-minimap-fill: var(--surface-bg-popover);
-  --surface-role-message-minimap-rim: var(--surface-rim);
-  --surface-role-message-minimap-shadow: var(--surface-shadow-elevated);
-  --surface-role-message-minimap-blur: blur(var(--surface-blur-overlay))
-    saturate(var(--surface-saturate));
+  /*
+   * message-user：中性玻璃板（对齐 spatial-theme-study --role-message-user-*）
+   * chip 满密度 + 光学描边；禁止染 primary / accent
+   */
+  --surface-role-message-user-fill: rgb(var(--glass-rgb) / var(--surface-opacity-chip, 0.62));
+  --surface-role-message-user-rim: var(--surface-rim);
+  --surface-role-message-user-shadow: var(--surface-shadow-chip);
+
+  /*
+   * message minimap / peep：对齐折叠右轨（navigation / spatial-rail），非展开 panel
+   */
+  --surface-role-message-minimap-fill: var(--surface-role-navigation-fill);
+  --surface-role-message-minimap-rim: var(--surface-role-navigation-rim);
+  --surface-role-message-minimap-shadow: var(--surface-role-navigation-shadow);
+  --surface-role-message-minimap-blur: blur(var(--surface-role-navigation-blur, 15px))
+    saturate(var(--surface-saturate, 1.06));
+
+  /*
+   * tooltip：对齐折叠右轨胶囊（navigation），非旧 elevated / popover 反相气泡
+   * 不进 SurfaceRole 枚举（浮层职责仍走 overlay/modal）；仅光学别名
+   */
+  --surface-role-tooltip-fill: var(--surface-role-navigation-fill);
+  --surface-role-tooltip-rim: var(--surface-role-navigation-rim);
+  --surface-role-tooltip-shadow: var(--surface-role-navigation-shadow);
+  --surface-role-tooltip-blur: var(--surface-role-navigation-blur, 15px);
 
   /* session status：轻量连续读数容器（对齐 --role-session-status-*） */
   --surface-role-session-status-fill:

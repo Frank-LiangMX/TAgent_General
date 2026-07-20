@@ -20,6 +20,7 @@ import { SpatialTopBar } from './SpatialTopBar'
 
 import {
   agentSidePanelOpenAtom,
+  agentSidePanelPlacementAtom,
   agentSidePanelWidthAtom,
   currentAgentSessionIdAtom,
 } from '@/atoms/agent-atoms'
@@ -63,8 +64,11 @@ const OfficeImmersiveShell = React.lazy(() =>
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
-/** 覆盖层退场动画时长，需与 CSS transition 对齐 */
+/** 覆盖层 / inspector 退场动画时长，需与 CSS transition 对齐 */
 const DESIGN_MODE_EXIT_MS = 260
+/** 右栏退场：先淡出内容再卸，需 ≥ width 过渡 */
+const INSPECTOR_EXIT_MS = 300
+const RIGHT_RAIL_COLLAPSED_WIDTH = 46
 
 function clampRightPanelWidth(width: number): number {
   return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, width))
@@ -107,6 +111,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const rightPanelRequestedOpen = useAtomValue(agentSidePanelOpenAtom)
+  const rightPanelPlacement = useAtomValue(agentSidePanelPlacementAtom)
   const sidebarRequestedOpen = useAtomValue(navigationSidebarOpenAtom)
   const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
@@ -139,6 +144,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const showLeftSidebar = shellLayout.sidebar === 'open'
   const showRightPanel = shellLayout.inspector !== 'hidden'
   const inspectorOpen = shellLayout.inspector === 'open'
+  /** 真实占列：仅展开 + dock；折叠胶囊与 float 展开仍走 overlay */
+  const inspectorDocked = inspectorOpen && rightPanelPlacement === 'dock'
   const workspaceInactive = shellLayout.canvas !== 'none'
   const workspaceRef = useInertElement<HTMLElement>(workspaceInactive)
 
@@ -146,6 +153,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const navSidebarWidth = NAV_SIDEBAR_WIDTH
   // 单一导航框架：rail 与 sidebar 并列，共享外框且不与主工作区重叠。
   const navClusterWidth = getNavClusterWidth(showLeftSidebar, navRailWidth, navSidebarWidth)
+  /* nav 贴 main（shell-island-gap=0）；光学左缝在 content 内 session-gutter */
   const contentBaseInsetLeft = navClusterWidth + SHELL_EDGE_PADDING
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
@@ -153,9 +161,40 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
-  const rightIslandWidth = inspectorOpen
-    ? clampedRightPanelWidth + RIGHT_PANEL_RAIL_WIDTH
-    : RIGHT_PANEL_RAIL_WIDTH
+  const inspectorMount = useDelayedMount(showRightPanel && inspectorOpen, INSPECTOR_EXIT_MS)
+  /** 退场期间仍保持展开壳，避免立刻切 --collapsed 把 width/height 掐断 */
+  const inspectorShellExpanded = inspectorOpen || inspectorMount.mounted
+  /**
+   * 宽度始终用 px，才能和折叠 46 插值。
+   * 打开：先 46 → rAF 后到面板宽；关闭 / 未展开：46。
+   */
+  const [animatedIslandWidth, setAnimatedIslandWidth] = React.useState(
+    inspectorOpen ? clampedRightPanelWidth : RIGHT_RAIL_COLLAPSED_WIDTH
+  )
+  const wasInspectorOpenRef = React.useRef(inspectorOpen)
+
+  React.useEffect(() => {
+    const opening = inspectorOpen && !wasInspectorOpenRef.current
+    wasInspectorOpenRef.current = inspectorOpen
+
+    if (!inspectorOpen) {
+      // 关闭：退场期内保持面板宽（只淡内容），卸载后再回到 46，避免瘦高条中间态
+      if (!inspectorMount.mounted) {
+        setAnimatedIslandWidth(RIGHT_RAIL_COLLAPSED_WIDTH)
+      }
+      return
+    }
+
+    if (opening) {
+      setAnimatedIslandWidth(RIGHT_RAIL_COLLAPSED_WIDTH)
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimatedIslandWidth(clampedRightPanelWidth))
+      })
+      return () => cancelAnimationFrame(id)
+    }
+
+    setAnimatedIslandWidth(clampedRightPanelWidth)
+  }, [inspectorOpen, inspectorMount.mounted, clampedRightPanelWidth])
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -262,9 +301,17 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         data-shell-scene={shellLayout.scene}
         data-canvas-presentation={shellLayout.canvas}
         data-composer-placement={shellLayout.composer}
+        data-right-placement={
+          inspectorOpen ? rightPanelPlacement : showRightPanel ? 'collapsed' : 'hidden'
+        }
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
+          /* dock 占位：面板宽 + 窗右 gutter；与左栏一样结构缝 0，光学缝靠 session-gutter */
+          ['--right-inspector-width' as string]: `${clampedRightPanelWidth}px`,
+          ['--right-inspector-reserve' as string]: inspectorDocked
+            ? `calc(${clampedRightPanelWidth}px + var(--spatial-gutter))`
+            : '0px',
         }}
       >
         <SpatialTopBar />
@@ -292,18 +339,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           aria-hidden={workspaceInactive || undefined}
         >
           <div
-            className={cn(
-              'app-shell-content-stage relative h-full min-h-0',
-              /* 折叠右轨是 overlay 胶囊，不再占列；仅展开时主区让出 inspector 宽 */
-              showRightPanel && inspectorOpen && 'app-shell-content-stage--right-rail',
-              showRightPanel && inspectorOpen && 'app-shell-content-stage--right-open'
-            )}
+            className="app-shell-content-stage relative h-full min-h-0"
             style={{
               ['--content-chrome-bleed-left' as string]: '0px',
               ['--content-chrome-bleed-right' as string]: '0px',
-              /* 折叠 peek 浮在右上角，给顶栏状态条留一点安全距，避免压住模型 chip */
+              /* 折叠避开胶囊；float 可重叠；dock 由 main margin-right 动画占位 */
               ['--content-foreground-safe-right' as string]:
-                shellLayout.inspector === 'collapsed' ? '52px' : '0px',
+                shellLayout.inspector === 'collapsed' ? '56px' : '0px',
             }}
           >
             <div className="app-content-foreground relative h-full min-h-0">
@@ -350,16 +392,24 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           <div
             className={cn(
               'app-shell-right-stack',
-              inspectorOpen
+              inspectorShellExpanded
                 ? 'app-shell-right-stack--open'
                 : 'app-shell-right-stack--collapsed',
+              inspectorShellExpanded &&
+                (rightPanelPlacement === 'dock'
+                  ? 'app-shell-right-stack--dock'
+                  : 'app-shell-right-stack--float'),
+              inspectorMount.mounted &&
+                !inspectorOpen &&
+                'app-shell-right-stack--inspector-closing',
               wantImmersive && 'pointer-events-none opacity-0'
             )}
+            data-placement={inspectorOpen ? rightPanelPlacement : 'collapsed'}
             aria-label={inspectorOpen ? '上下文检查器' : '上下文快捷入口'}
           >
             {inspectorOpen && (
               <div
-                className="absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
+                className="app-shell-right-resize-handle absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
                 onMouseDown={handleMouseDown}
               />
             )}
@@ -367,29 +417,38 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             <div
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
-                'relative ml-auto flex min-h-0 flex-row justify-end',
-                inspectorOpen ? 'h-full overflow-hidden' : 'h-auto overflow-visible',
-                inspectorOpen && 'nav-island-glass--expanded',
-                isMac && inspectorOpen && 'right-nav-island-glass--mac'
+                'relative ml-auto flex min-h-0 flex-col justify-start',
+                inspectorShellExpanded ? 'h-full overflow-hidden' : 'h-auto overflow-visible',
+                inspectorShellExpanded && 'nav-island-glass--expanded',
+                isMac && inspectorShellExpanded && 'right-nav-island-glass--mac'
               )}
               style={{
-                /* 折叠 hug 胶囊；展开 = 面板宽 + rail 宽 */
-                width: inspectorOpen ? rightIslandWidth : undefined,
+                width: animatedIslandWidth,
                 ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
                 ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}
             >
-              {inspectorOpen && (
+              {inspectorMount.mounted && (
                 <InertRegion
-                  className="nav-island-sidebar nav-island-body relative z-[1] flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+                  className={cn(
+                    'nav-island-sidebar nav-island-body relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden',
+                    (!inspectorOpen || !inspectorMount.open) && 'nav-island-sidebar--closing'
+                  )}
                   data-presence={shellLayout.inspector}
-                  inactive={false}
+                  inactive={!inspectorOpen}
                 >
                   <RightInspectorFrame width={clampedRightPanelWidth} />
                 </InertRegion>
               )}
 
-              <RightPanelRail panelOpen={inspectorOpen} />
+              {/* 折叠图标列常挂：展开时交叉淡出，避免硬切 */}
+              <RightPanelRail
+                panelOpen={inspectorOpen}
+                className={cn(
+                  'right-panel-rail--peek',
+                  inspectorShellExpanded && 'pointer-events-none'
+                )}
+              />
             </div>
           </div>
         )}

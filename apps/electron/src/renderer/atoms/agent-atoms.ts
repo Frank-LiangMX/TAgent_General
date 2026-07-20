@@ -327,6 +327,17 @@ export const agentSidePanelOpenAtom = atomWithStorage<boolean>('tagent-agent-sid
 /** 侧面板宽度（全局共享，用户拖拽后持久化） */
 export const agentSidePanelWidthAtom = atomWithStorage<number>('tagent-agent-sidepanel-width', 280)
 
+/**
+ * 展开态占位方式（全局共享，持久化）：
+ * - float：浮在 main 上（可重叠）
+ * - dock：真实占列，main 让宽、不重叠
+ */
+export type AgentSidePanelPlacement = 'float' | 'dock'
+export const agentSidePanelPlacementAtom = atomWithStorage<AgentSidePanelPlacement>(
+  'tagent-agent-sidepanel-placement',
+  'float'
+)
+
 /** @deprecated 保留以兼容旧代码，但实际所有 session 都读全局 atom */
 export const agentSidePanelOpenMapAtom = atom<Map<string, boolean>>(new Map())
 
