@@ -162,7 +162,6 @@ import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
 import { KanbanRailContent } from '@/components/kanban/KanbanRailContent'
-import { MemoryRailContent } from '@/components/memory/MemoryRailContent'
 import {
   SessionMiniMapPopover,
   useSessionMiniMapHover,
@@ -170,7 +169,6 @@ import {
 } from '@/components/session-preview/SessionMiniMapPopover'
 import { TASidebar } from '@/components/ta/TASidebar'
 import { automationsAtom } from '@/atoms/automation-atoms'
-import { AutomationRailList } from '@/components/automation/AutomationRailList'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
@@ -1505,6 +1503,10 @@ export function LeftSidebar({
       if (activeRailItem === 'kanban') {
         return <KanbanRailContent />
       }
+      if (activeRailItem === 'memory') {
+        // rail-only：不占 sidebar
+        return null
+      }
       return <TASidebar activeRailItem={activeRailItem as TARailItem} />
     }
 
@@ -1512,14 +1514,14 @@ export function LeftSidebar({
     switch (activeRailItem) {
       case 'skills':
         return <SkillsRailContent capabilities={capabilities} />
-      case 'automation':
-        return <AutomationRailList />
       case 'draft':
         return <DraftListPanel />
       case 'kanban':
         return <KanbanRailContent />
       case 'memory':
-        return <MemoryRailContent />
+      case 'automation':
+        // rail-only：不占 sidebar（壳层已折叠）；兜底避免误渲染旧列表
+        return null
       case 'sessions':
       default:
         return (

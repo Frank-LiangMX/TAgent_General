@@ -1,22 +1,17 @@
 /**
- * TASidebar — TA 模式 LeftSidebar 主内容容器（仅 5 个模块面板）
+ * TASidebar — TA 模式 LeftSidebar 主内容容器
  *
- * 根据 activeRailItem（来自 FunctionalRail 图标点击）渲染对应模块的概览面板：
- * - assets   → TASidebarAssets（资产库概览）
- * - review   → TASidebarReview（审核队列概览）
- * - pipeline → TASidebarPipeline（流水线概览）
- * - memory   → TASidebarMemory（记忆 5 层概览）
- * - config   → TASidebarConfig（配置概览）
+ * 根据 activeRailItem 渲染对应模块概览：
+ * - assets / review / pipeline / config
  *
- * 选中『会话』由 LeftSidebar 路由到 SessionsRailContent（沿用通用模式完整布局，
- *  数据通过 filteredAgentSessions 按 mode='ta' 过滤实现隔离）。
+ * 选中『会话』由 LeftSidebar 路由到 SessionsRailContent。
+ * memory 为 rail-only，不经过本组件。
  */
 
 import * as React from 'react'
 
 import { TASidebarAssets } from './TASidebar.Assets'
 import { TASidebarConfig } from './TASidebar.Config'
-import { TASidebarMemory } from './TASidebar.Memory'
 import { TASidebarPipeline } from './TASidebar.Pipeline'
 import { TASidebarReview } from './TASidebar.Review'
 
@@ -43,18 +38,14 @@ export function TASidebar({ activeRailItem }: TASidebarProps): React.ReactElemen
 
   return (
     <div className="flex flex-col h-full">
-      {/* 标题区：与通用模式 LeftSidebar 一致 */}
       <div className="titlebar-drag-region flex items-center px-3 h-8 flex-shrink-0">
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
       </div>
 
-      {/* 内容区：选中『会话』由 LeftSidebar 直接渲染 SessionsRailContent，
-          此处只渲染 5 个模块概览面板。 */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {activeRailItem === 'assets' && <TASidebarAssets />}
         {activeRailItem === 'review' && <TASidebarReview />}
         {activeRailItem === 'pipeline' && <TASidebarPipeline />}
-        {activeRailItem === 'memory' && <TASidebarMemory />}
         {activeRailItem === 'config' && <TASidebarConfig />}
       </div>
     </div>

@@ -123,11 +123,16 @@ describe('deriveShellLayout', () => {
     expect(derive({ topLevelMode, activeRailItem }).sidebar).toBe('open')
   })
 
-  test('automation is rail-only (no sidebar)', () => {
-    expect(railItemSupportsSidebar('general', 'automation')).toBe(false)
-    expect(derive({ activeRailItem: 'automation', sidebarRequestedOpen: true }).sidebar).toBe(
-      'collapsed'
-    )
+  test.each(['automation', 'memory'] as const)('%s is rail-only in general (no sidebar)', (item) => {
+    expect(railItemSupportsSidebar('general', item)).toBe(false)
+    expect(derive({ activeRailItem: item, sidebarRequestedOpen: true }).sidebar).toBe('collapsed')
+  })
+
+  test('memory is rail-only in TA mode (no sidebar)', () => {
+    expect(railItemSupportsSidebar('ta', 'memory')).toBe(false)
+    expect(
+      derive({ topLevelMode: 'ta', activeRailItem: 'memory', sidebarRequestedOpen: true }).sidebar
+    ).toBe('collapsed')
   })
 
   test('collapses sidebar when the user requests it', () => {
@@ -170,11 +175,17 @@ describe('deriveRailSelection', () => {
     expect(
       deriveRailSelection({ activeRailItem: 'sessions', sidebarOpen: true }, 'automation')
     ).toEqual({ activeRailItem: 'automation', sidebarOpen: false })
+    expect(
+      deriveRailSelection({ activeRailItem: 'sessions', sidebarOpen: true }, 'memory')
+    ).toEqual({ activeRailItem: 'memory', sidebarOpen: false })
   })
 
   test('re-clicking a rail-only item does not toggle sidebar open', () => {
     expect(
       deriveRailSelection({ activeRailItem: 'automation', sidebarOpen: false }, 'automation')
     ).toEqual({ activeRailItem: 'automation', sidebarOpen: false })
+    expect(
+      deriveRailSelection({ activeRailItem: 'memory', sidebarOpen: false }, 'memory', 'ta')
+    ).toEqual({ activeRailItem: 'memory', sidebarOpen: false })
   })
 })

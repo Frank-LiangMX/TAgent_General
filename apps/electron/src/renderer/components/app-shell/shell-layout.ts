@@ -43,27 +43,31 @@ const GENERAL_SIDEBAR_ITEMS = new Set<RailItem>([
   'skills',
   'draft',
   'kanban',
-  'memory',
 ])
 
 /** 仅 rail + main 的功能页（不占左侧 sidebar） */
-const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation'])
+const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation', 'memory'])
 
 const TA_SIDEBAR_ITEMS = new Set<RailItem>([
   'sessions',
   'assets',
   'review',
   'pipeline',
-  'memory',
   'config',
   'kanban',
 ])
+
+/** TA 模式同样走 rail-only 的页 */
+const TA_RAIL_ONLY_ITEMS = new Set<RailItem>(['memory'])
 
 export function railItemSupportsSidebar(
   topLevelMode: TopLevelMode,
   activeRailItem: RailItem
 ): boolean {
   if (topLevelMode === 'general' && GENERAL_RAIL_ONLY_ITEMS.has(activeRailItem)) {
+    return false
+  }
+  if (topLevelMode === 'ta' && TA_RAIL_ONLY_ITEMS.has(activeRailItem)) {
     return false
   }
   return topLevelMode === 'general'

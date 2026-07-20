@@ -1,18 +1,15 @@
 /**
- * StageQueueCard - 待审批记忆卡片（P2.2 写入门控三态）
+ * StageQueueCard — 待审批记忆队列
  *
- * 展示 pending_approval.jsonl 队列，支持单条/批量 accept/reject。
- * 借鉴 Hermes 写入门控三态（allow/blocked/stage）。
- *
- * 详见 docs/plans/2026-07-06-silent-memory-research/TAgent_Memory_Master_Design.md §3.3
+ * 紧凑列表：单条/批量 accept/reject。嵌入记忆页待审条带，非独立任务卡场。
  */
 
 import * as React from 'react'
 
-import { Button } from '@tagent/ui'
-import { Check, X, Loader2 } from 'lucide-react'
+import { Check, Loader2, X } from 'lucide-react'
 
 import type { StageEntry } from '@tagent/shared'
+import { cn } from '@/lib/utils'
 
 interface StageQueueCardProps {
   mode: 'general' | 'ta'
@@ -45,49 +42,10 @@ export function StageQueueCard({
     void load()
   }, [load])
 
-  const handleAcceptOne = async (id: string): Promise<void> => {
-    setActing(`accept-${id}`)
+  const run = async (key: string, fn: () => Promise<unknown>): Promise<void> => {
+    setActing(key)
     try {
-      await window.electronAPI.acceptStageOne(mode, id)
-      await load()
-      onChanged()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setActing(null)
-    }
-  }
-
-  const handleRejectOne = async (id: string): Promise<void> => {
-    setActing(`reject-${id}`)
-    try {
-      await window.electronAPI.rejectStageOne(mode, id)
-      await load()
-      onChanged()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setActing(null)
-    }
-  }
-
-  const handleAcceptAll = async (): Promise<void> => {
-    setActing('accept-all')
-    try {
-      await window.electronAPI.acceptStageAll(mode)
-      await load()
-      onChanged()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setActing(null)
-    }
-  }
-
-  const handleRejectAll = async (): Promise<void> => {
-    setActing('reject-all')
-    try {
-      await window.electronAPI.rejectStageAll(mode)
+      await fn()
       await load()
       onChanged()
     } catch (e) {
@@ -99,119 +57,124 @@ export function StageQueueCard({
 
   if (loading) {
     return (
-      <div className="session-list-row flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
-        <Loader2 className="size-3 animate-spin" />
-        加载待审批记忆...
+      <div className="flex items-center gap-2 px-1 py-3">
+        <Loader2 className="size-3.5 animate-spin md-text-faint" />
+        <span className="md-text-faint text-[11px]">加载待审批…</span>
       </div>
     )
   }
 
-  if (entries.length === 0 && !error) {
-    // 空状态不渲染（避免记忆页面出现空卡片）
-    return null
-  }
+  if (entries.length === 0 && !error) return null
 
   return (
-    <div className="session-list-row p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-foreground">待审批记忆</h3>
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-500 dark:text-amber-400">
-            {entries.length}
-          </span>
+    <div>
+      {entries.length > 1 ? (
+        <div className="mb-1.5 flex items-center justify-end gap-1">
+          <button
+            type="button"
+            disabled={acting !== null}
+            onClick={() =>
+              void run('accept-all', () => window.electronAPI.acceptStageAll(mode))
+            }
+            className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-40 dark:text-emerald-400"
+          >
+            {acting === 'accept-all' ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Check className="size-3" strokeWidth={1.75} />
+            )}
+            全部接受
+          </button>
+          <button
+            type="button"
+            disabled={acting !== null}
+            onClick={() =>
+              void run('reject-all', () => window.electronAPI.rejectStageAll(mode))
+            }
+            className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] md-text-variant hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-40"
+          >
+            {acting === 'reject-all' ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <X className="size-3" strokeWidth={1.75} />
+            )}
+            全部拒绝
+          </button>
         </div>
-        {entries.length > 1 && (
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleAcceptAll}
-              disabled={acting !== null}
-              className="h-7 gap-1 px-2 text-[11px]"
-            >
-              {acting === 'accept-all' ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Check className="size-3" />
-              )}
-              全部接受
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleRejectAll}
-              disabled={acting !== null}
-              className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              {acting === 'reject-all' ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <X className="size-3" />
-              )}
-              全部拒绝
-            </Button>
-          </div>
-        )}
-      </div>
+      ) : null}
 
-      {error !== null && (
-        <div className="mb-2 rounded-md bg-red-500/10 px-2 py-1 text-[11px] text-red-500">
+      {error !== null ? (
+        <div className="mb-1.5 rounded-glass-popover bg-red-500/10 px-2.5 py-1.5 text-[11px] text-red-500">
           {error}
         </div>
-      )}
+      ) : null}
 
-      <div className="space-y-1.5">
+      <ul className="flex flex-col">
         {entries.map((entry) => (
-          <div
+          <li
             key={entry.id}
-            className="flex items-start gap-2 rounded-md bg-background/30 px-2.5 py-1.5"
+            className="flex items-start gap-2 border-b border-foreground/[0.05] py-2 last:border-b-0"
           >
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <span className="rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-amber-600 dark:text-amber-400">
+              <div className="md-text-faint flex flex-wrap items-center gap-1.5 text-[10px]">
+                <span className="rounded-full bg-amber-500/12 px-1.5 py-0.5 text-amber-700 dark:text-amber-300">
                   {entry.targetLayer}
                 </span>
                 <span>{entry.type}</span>
                 <span>·</span>
                 <span>{new Date(entry.enqueuedAt).toLocaleDateString('zh-CN')}</span>
               </div>
-              <div className="mt-1 truncate text-xs text-foreground" title={entry.pattern}>
+              <p
+                className="md-text mt-1 line-clamp-2 text-[12px] leading-relaxed"
+                title={entry.pattern}
+              >
                 {entry.pattern}
-              </div>
+              </p>
             </div>
             <div className="flex shrink-0 gap-0.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleAcceptOne(entry.id)}
+              <button
+                type="button"
                 disabled={acting !== null}
-                className="size-6 p-0 text-emerald-500 hover:text-emerald-600"
+                onClick={() =>
+                  void run(`accept-${entry.id}`, () =>
+                    window.electronAPI.acceptStageOne(mode, entry.id)
+                  )
+                }
+                className={cn(
+                  'inline-flex size-7 items-center justify-center rounded-full',
+                  'text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-35 dark:text-emerald-400'
+                )}
                 title="接受"
+                aria-label="接受"
               >
                 {acting === `accept-${entry.id}` ? (
                   <Loader2 className="size-3 animate-spin" />
                 ) : (
-                  <Check className="size-3" />
+                  <Check className="size-3.5" strokeWidth={1.75} />
                 )}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleRejectOne(entry.id)}
+              </button>
+              <button
+                type="button"
                 disabled={acting !== null}
-                className="size-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  void run(`reject-${entry.id}`, () =>
+                    window.electronAPI.rejectStageOne(mode, entry.id)
+                  )
+                }
+                className="inline-flex size-7 items-center justify-center rounded-full md-text-variant hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-35"
                 title="拒绝"
+                aria-label="拒绝"
               >
                 {acting === `reject-${entry.id}` ? (
                   <Loader2 className="size-3 animate-spin" />
                 ) : (
-                  <X className="size-3" />
+                  <X className="size-3.5" strokeWidth={1.75} />
                 )}
-              </Button>
+              </button>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
