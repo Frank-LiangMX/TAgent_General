@@ -114,36 +114,37 @@ function scene(
 }
 
 const SCENE: Record<ThemeName, SceneField> = {
-  // Mist 鐡风櫧闆鹃潰锛氬喎闆捐摑鍏夋枒 + 鏋佸急鏆栭浘
-  'default-light': scene('60 7% 92%', '211 39% 71%', '34 36% 81%', '221 6% 69%', '252 252 250', {
-    baseRgb: '236 236 233',
-    aRgb: '148 180 214',
-    aPos: '18% 10%',
-    aSize: '40% 44%',
-    aStrength: '0.38',
-    bRgb: '228 208 184',
-    bPos: '86% 86%',
-    bSize: '36% 40%',
-    bStrength: '0.14',
-    cRgb: '172 176 182',
-    cPos: '52% 100%',
-    cSize: '78% 40%',
-    cStrength: '0.13',
+  // 默认浅色：对齐 layout-direction-study 冷灰蓝底 + 高透淡蓝光斑（禁止暖瓷白平板）
+  'default-light': scene('218 16% 88%', '211 28% 78%', '8 24% 78%', '152 22% 72%', '248 250 253', {
+    baseRgb: '217 222 231', // #d9dee7 冷灰底
+    // A：淡冷蓝雾（强度克制，勿压成色斑）
+    aRgb: '168 196 224',
+    aPos: '36% 10%',
+    aSize: '42% 48%',
+    aStrength: '0.22',
+    bRgb: '216 184 180', // 右下：灰玫瑰
+    bPos: '82% 78%',
+    bSize: '52% 58%',
+    bStrength: '0.22',
+    cRgb: '168 200 186', // 下中：薄荷（离开左缘，避免与 A 叠亮）
+    cPos: '48% 88%',
+    cSize: '40% 46%',
+    cStrength: '0.22',
   }),
-  'default-dark': scene('220 8% 15%', '211 28% 37%', '33 19% 26%', '220 6% 18%', '50 52 56', {
+  'default-dark': scene('220 8% 15%', '211 28% 37%', '8 16% 28%', '152 14% 22%', '50 52 56', {
     baseRgb: '36 38 42',
     aRgb: '68 94 122',
-    aPos: '18% 10%',
-    aSize: '40% 44%',
-    aStrength: '0.38',
-    bRgb: '80 68 54',
-    bPos: '86% 86%',
-    bSize: '36% 40%',
-    bStrength: '0.16',
-    cRgb: '44 46 50',
-    cPos: '52% 100%',
-    cSize: '78% 40%',
-    cStrength: '0.15',
+    aPos: '36% 10%',
+    aSize: '42% 48%',
+    aStrength: '0.34',
+    bRgb: '88 64 62',
+    bPos: '82% 78%',
+    bSize: '52% 58%',
+    bStrength: '0.18',
+    cRgb: '48 68 58',
+    cPos: '48% 88%',
+    cSize: '40% 46%',
+    cStrength: '0.2',
   }),
   // Ocean 澶╅潚锛氶潚/teal 鍏夋枒
   'ocean-light': scene('195 21% 93%', '196 42% 62%', '35 40% 81%', '203 9% 67%', '250 252 252', {
@@ -326,11 +327,13 @@ interface ThemeInkAccent {
  */
 const INK_ACCENT: Record<ThemeName, ThemeInkAccent> = {
   'default-light': {
-    hue: 60,
+    // 冷灰蓝壳层（对齐 layout-direction-study --ink / body 底），不用暖黄瓷白
+    hue: 218,
     primary: '217 20% 35%',
     'primary-foreground': '0 0% 100%',
     foreground: '216 11% 18%',
-    // 鍘熷瀷 ink-muted L鈮?7% 鍦ㄦ祬搴曚笂 < AA锛涘帇鍒?L42% 淇濇瑕佹枃瀛楀姣?    'muted-foreground': '218 8% 42%',
+    // 原型 ink-muted 在浅底上 < AA；压到 L42% 保次要文字对比
+    'muted-foreground': '218 8% 42%',
     ink: '220 8% 30%',
     faint: '220 6% 63%',
   },

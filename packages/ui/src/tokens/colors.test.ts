@@ -104,11 +104,13 @@ describe('scene 弥散环境色', () => {
     }
   })
 
-  test('浅色主题 scene-base 为高亮度瓷白/近中性（≥ 90%）', () => {
+  test('浅色主题 scene-base 为高亮度冷灰底（≥ 86%，对齐 layout-direction-study）', () => {
     const lightThemes = THEME_NAMES.filter((n) => n.endsWith('-light'))
     for (const name of lightThemes) {
       const { l } = parseHsl(colors[name]['scene-base'])
-      expect(l, `${name} scene-base 应 ≥ 90% 亮度`).toBeGreaterThanOrEqual(0.9)
+      // 原型 #d9dee7 ≈ L88%；禁止再压成近纯白瓷板（≥96%）
+      expect(l, `${name} scene-base 应 ≥ 86% 亮度`).toBeGreaterThanOrEqual(0.86)
+      expect(l, `${name} scene-base 应 < 96%（保留弥散可见）`).toBeLessThan(0.96)
     }
   })
 
@@ -128,10 +130,34 @@ describe('scene 弥散环境色', () => {
     }
   })
 
-  test('默认浅色 scene-ambient-b 是受控暖雾（饱和 ≤ 40%，强度 ≤ 0.3）', () => {
-    const { s } = parseHsl(colors['default-light']['scene-ambient-b'])
-    expect(s).toBeLessThanOrEqual(0.4)
+  test('默认浅色 scene-ambient-b 是受控灰玫瑰雾（饱和 ≤ 35%，强度 ≤ 0.3）', () => {
+    const { s, h } = parseHsl(colors['default-light']['scene-ambient-b'])
+    expect(s).toBeLessThanOrEqual(0.35)
     expect(Number(colors['default-light']['scene-b-strength'])).toBeLessThanOrEqual(0.3)
+    // 与冷蓝真正撞色：玫瑰/珊瑚轴，禁止近蓝的紫
+    expect(h).toBeGreaterThanOrEqual(0)
+    expect(h).toBeLessThanOrEqual(25)
+  })
+
+  test('默认浅色 scene-base 为冷灰蓝（hue ∈ [210, 230]）', () => {
+    const { h } = parseHsl(colors['default-light']['scene-base'])
+    expect(h).toBeGreaterThanOrEqual(210)
+    expect(h).toBeLessThanOrEqual(230)
+  })
+
+  test('默认浅色 A/B/C 三色撞色（冷蓝 × 灰玫瑰 × 薄荷）', () => {
+    const aH = parseHsl(colors['default-light']['scene-ambient-a']).h
+    const bH = parseHsl(colors['default-light']['scene-ambient-b']).h
+    const cH = parseHsl(colors['default-light']['scene-ambient-c']).h
+    // A 冷蓝
+    expect(aH).toBeGreaterThanOrEqual(200)
+    expect(aH).toBeLessThanOrEqual(230)
+    // B 灰玫瑰（远离蓝紫相近色）
+    expect(bH).toBeGreaterThanOrEqual(0)
+    expect(bH).toBeLessThanOrEqual(25)
+    // C 薄荷/灰绿
+    expect(cH).toBeGreaterThanOrEqual(130)
+    expect(cH).toBeLessThanOrEqual(170)
   })
 })
 

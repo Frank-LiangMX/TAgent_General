@@ -378,15 +378,62 @@
   transition: gap var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out);
 }
 
+/*
+ * 右轨光学层：与左侧 .app-rail-island 同构（顶强 / 左弱 / 底微暗）。
+ * 禁止沿用 .nav-island-glass::after 的 mask 双渐变（左+顶均亮，且会叠成更重的一圈）。
+ */
+.app-shell-right-stack .right-nav-island-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  -webkit-mask: none;
+  mask: none;
+  padding: 0;
+  background:
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.16), transparent 60%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.07), transparent 62%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.06), transparent 64%);
+}
+
 .app-shell-right-stack .right-nav-island-glass::after {
   content: '';
   position: absolute;
   inset: 0;
-  border: 1px solid transparent;
-  border-top-color: var(--surface-highlight, hsl(var(--glass-shine) / 0.22));
   border-radius: inherit;
   pointer-events: none;
-  opacity: var(--surface-shine-opacity, 0);
+  z-index: 0;
+  opacity: 1;
+  -webkit-mask: none;
+  mask: none;
+  padding: 0;
+  /* 清掉 nav-island-glass 的 L 形渐变底 */
+  background: transparent;
+  border: 1px solid transparent;
+  border-top-color: rgb(255 255 255 / 0.62);
+  border-left-color: rgb(255 255 255 / 0.26);
+  box-shadow: inset 0 -1px 0 rgb(23 30 40 / 0.04);
+}
+
+.dark .app-shell-right-stack .right-nav-island-glass::before {
+  background:
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.03), transparent 60%),
+    radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.08), transparent 62%),
+    radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.06), transparent 64%);
+}
+
+.dark .app-shell-right-stack .right-nav-island-glass::after {
+  border-top-color: rgb(255 255 255 / 0.06);
+  border-left-color: rgb(255 255 255 / 0.03);
+  box-shadow: none;
+}
+
+.app-shell-right-stack .right-nav-island-glass > * {
+  position: relative;
+  z-index: 1;
 }
 
 /*
@@ -932,7 +979,7 @@
   inset: 0;
   border-radius: inherit;
   background:
-    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.1), transparent 60%),
+    radial-gradient(120% 80% at 22% 12%, rgb(255 255 255 / 0.16), transparent 60%),
     radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.07), transparent 62%),
     radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.06), transparent 64%);
   pointer-events: none;
@@ -944,8 +991,8 @@
   position: absolute;
   inset: 0;
   border: 1px solid transparent;
-  border-top-color: rgb(255 255 255 / 0.5);
-  border-left-color: rgb(255 255 255 / 0.22);
+  border-top-color: rgb(255 255 255 / 0.62);
+  border-left-color: rgb(255 255 255 / 0.26);
   border-radius: inherit;
   box-shadow: inset 0 -1px 0 rgb(23 30 40 / 0.04);
   pointer-events: none;
@@ -2217,7 +2264,8 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   flex-direction: column;
   justify-content: flex-start;
   border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim));
-  border-radius: var(--app-shell-composer-radius, 16px);
+  /* 与左侧 .app-rail-island 一致；!important 压过 globals 旧 20px */
+  border-radius: var(--app-shell-composer-radius, 16px) !important;
   background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
   box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow));
   -webkit-backdrop-filter: blur(var(--spatial-rail-blur, var(--surface-role-navigation-blur, 15px)))
@@ -2370,6 +2418,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::before,
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::after {
   border-radius: inherit;
+  /* 与左轨一致：光学层常开，不再用 shine-opacity / opacity:1 另起一套 */
   opacity: 1;
 }
 

@@ -4960,11 +4960,16 @@ html.material-frosted .tool-cluster {
 }
 
 /**
- * RightNavIsland - 右侧文件面板浮岛容器
- * 四个角都是圆角
+ * RightNavIsland 圆角：
+ * - 折叠 rail 胶囊：与左侧 .app-rail-island 同为 tool 半径 16px
+ * - 展开面板：仍用更大 drawer 半径（由 app-shell --open 规则覆盖）
  */
 .right-nav-island-glass.nav-island-glass {
-  border-radius: var(--nav-island-outer-radius, 20px) !important;
+  border-radius: var(--app-shell-composer-radius, 16px) !important;
+}
+
+.right-nav-island-glass.nav-island-glass.nav-island-glass--expanded {
+  border-radius: var(--app-shell-drawer-radius, var(--nav-island-outer-radius, 22px)) !important;
 }
 
 /* macOS 左上角略减小圆角 */

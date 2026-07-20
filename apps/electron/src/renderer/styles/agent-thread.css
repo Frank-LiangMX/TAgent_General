@@ -39,31 +39,32 @@
   --agent-surface-on: var(--spatial-ink, hsl(var(--foreground) / 0.94));
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
-  /* 用户气泡：向下柔影，无左右硬角 */
+  /* 用户气泡：轻量向下柔影（负 spread），禁止高不透明度黑影糊角 */
   --agent-surface-shadow:
-    0 6px 16px rgb(0 0 0 / 0.28),
-    0 1px 3px rgb(0 0 0 / 0.14),
+    0 6px 16px -10px rgb(0 0 0 / 0.22),
+    0 1px 2px -1px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.07);
 }
 
 [data-material='glass'] .tagent-agent-thread {
-  --agent-bubble-blur: 10px;
+  /* blur 仅给过程卡用；用户气泡禁止 backdrop-filter（见 .agent-user-bubble） */
+  --agent-bubble-blur: 0px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--background)) 18%, transparent);
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 7%, transparent);
   --agent-process-blur: 12px;
   --agent-surface-shadow:
-    0 8px 20px -6px rgb(0 0 0 / 0.1),
-    0 2px 6px -2px rgb(0 0 0 / 0.05),
+    0 8px 18px -10px rgb(0 0 0 / 0.08),
+    0 2px 4px -2px rgb(0 0 0 / 0.04),
     inset 0 1px 0 rgb(255 255 255 / 0.42);
 }
 
 .dark[data-material='glass'] .tagent-agent-thread,
 [data-material='glass'].dark .tagent-agent-thread {
-  --agent-bubble-blur: 10px;
+  --agent-bubble-blur: 0px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 4.5%, transparent);
   --agent-surface-shadow:
-    0 8px 22px -6px rgb(0 0 0 / 0.36),
-    0 2px 6px -2px rgb(0 0 0 / 0.2),
+    0 8px 18px -10px rgb(0 0 0 / 0.22),
+    0 2px 4px -2px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
@@ -72,16 +73,16 @@
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
   --agent-process-shadow: inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent);
   --agent-surface-shadow:
-    0 3px 10px rgb(145 158 175 / 0.16),
-    0 1px 2px rgb(145 158 175 / 0.08),
+    0 4px 12px -6px rgb(145 158 175 / 0.14),
+    0 1px 2px -1px rgb(145 158 175 / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.55);
 }
 
 .dark[data-material='soft'] .tagent-agent-thread,
 [data-material='soft'].dark .tagent-agent-thread {
   --agent-surface-shadow:
-    0 4px 12px rgb(0 0 0 / 0.28),
-    0 1px 3px rgb(0 0 0 / 0.16),
+    0 5px 14px -8px rgb(0 0 0 / 0.18),
+    0 1px 2px -1px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
@@ -406,12 +407,14 @@
   font-weight: 500;
   line-height: var(--agent-body-leading, 1.72);
   padding: 12px 14px;
-  /* 向下柔和环境影；禁止左右 offset / 硬 inset 侧边（会在左上下角成实心黑） */
+  /*
+   * 向下柔和环境影（负 spread）。
+   * 禁止同节点挂 backdrop-filter：Chromium 下 blur + box-shadow + 圆角会在四角合成出实心黑块。
+   */
   box-shadow: var(--agent-surface-shadow);
   filter: none;
-  backdrop-filter: blur(var(--agent-bubble-blur, 0px)) saturate(var(--surface-saturate, 1.06));
-  -webkit-backdrop-filter: blur(var(--agent-bubble-blur, 0px))
-    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .tagent-agent-thread .agent-user-bubble .agent-user-bubble-fade {

@@ -51,7 +51,7 @@
    */
   --md-primary-container: rgb(var(--glass-rgb) / 0.72);
   --md-on-primary-container: hsl(var(--foreground));
-  --md-primary-outline: rgb(255 255 255 / 0.18);
+  --md-primary-outline: rgb(255 255 255 / 0.5);
 
   --md-secondary-container: hsl(var(--secondary));
   --md-on-secondary-container: hsl(var(--secondary-foreground));
