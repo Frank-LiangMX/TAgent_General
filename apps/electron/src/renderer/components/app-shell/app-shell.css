@@ -36,9 +36,7 @@
   --shell-band-inset-bottom: 24px;
   /* 兼容旧引用：默认当顶 inset */
   --shell-band-inset-y: var(--shell-band-inset-top);
-  --shell-band-height: calc(
-    100% - var(--shell-band-inset-top) - var(--shell-band-inset-bottom)
-  );
+  --shell-band-height: calc(100% - var(--shell-band-inset-top) - var(--shell-band-inset-bottom));
   /* 底缝 24 - status 7 = 17 → token 12 + 与输入框间距 5 */
   --shell-token-h: 12px;
 
@@ -338,9 +336,7 @@
 
 /* 浮层：略抬离 band（±4），高度仍固定，不靠 bottom 拉伸 */
 .app-shell-right-stack--open.app-shell-right-stack--float {
-  top: calc(
-    var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)) - 4px
-  );
+  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)) - 4px);
   height: calc(
     100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
       var(--shell-band-inset-bottom, 24px) + 8px
@@ -899,11 +895,7 @@
   left: 50%;
   width: 42px;
   border-radius: 50%;
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 34%),
-    rgb(var(--scene-a-rgb) / 0.16)
-  );
+  background: linear-gradient(180deg, rgb(255 255 255 / 34%), rgb(var(--scene-a-rgb) / 0.16));
   filter: blur(13px);
   opacity: 0.88;
   pointer-events: none;
@@ -1127,7 +1119,6 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   border: 0 !important;
   box-shadow: 0 6px 14px hsl(var(--foreground) / 0.16) !important;
 }
-
 
 .app-shell-content-stage {
   isolation: isolate;
@@ -1772,8 +1763,8 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
     rgb(var(--scene-base-rgb) / 0.16) 36%,
     rgb(var(--scene-base-rgb) / 0.42) 62%,
     rgb(var(--scene-base-rgb) / 0.72) 78%,
-    /* token 高度附近开始贴 scene，透字消失但仍是地板不是色条 */
-    rgb(var(--scene-base-rgb) / 0.92) 90%,
+    /* token 高度附近开始贴 scene，透字消失但仍是地板不是色条 */ rgb(var(--scene-base-rgb) / 0.92)
+      90%,
     rgb(var(--scene-base-rgb) / 0.98) 100%
   );
 }
@@ -1840,10 +1831,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   border-color: var(--surface-role-composer-underlay-rim, rgb(255 255 255 / 0.55));
   background: var(--surface-role-composer-underlay-fill) !important;
   box-shadow: var(--surface-role-composer-underlay-shadow);
-  -webkit-backdrop-filter: var(
-    --surface-role-composer-underlay-blur,
-    blur(15px) saturate(1.06)
-  );
+  -webkit-backdrop-filter: var(--surface-role-composer-underlay-blur, blur(15px) saturate(1.06));
   backdrop-filter: var(--surface-role-composer-underlay-blur, blur(15px) saturate(1.06));
   transform: translateY(0) scale(1);
 }
@@ -2206,21 +2194,21 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
  * 高度布局（硬约束，动画不得改）：
  *  - 展开：stack top/bottom 定 band + island height:100%
  *  - 折叠：island height:auto 贴胶囊
- * 动画只动：width / opacity / radius / shadow / transform
+ * 动画只动代理层的 transform / opacity；真实玻璃表面不参与逐帧重排。
  * -------------------------------------------------------------------------- */
 .app-shell-right-stack .right-nav-island-glass {
   pointer-events: auto;
   transform-origin: top right;
-  /* 几何 morph 由独立 surface WAAPI 负责；真面板只切静置态，不 transition width/height */
-  transition:
-    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* 几何 morph 由独立 surface WAAPI 负责；真面板只切静置态。 */
+  transition: none;
 }
 
 /* 折叠：rail 胶囊（content-hug）；width 由 inline px 驱动以便与展开插值 */
 .app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass,
 .app-shell-right-stack--collapsed
-  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(.nav-island-glass--expanded) {
+  .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(
+    .nav-island-glass--expanded
+  ) {
   position: relative;
   display: flex;
   height: auto;
@@ -2277,7 +2265,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
     inset 0 1px 0 rgb(255 255 255 / 0.28),
     0 8px 20px rgb(23 30 40 / 0.08),
     0 28px 56px rgb(23 30 40 / 0.18);
-  transform: translate3d(0, -6px, 0);
+  transform: none;
 }
 
 .dark
@@ -2309,14 +2297,14 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   opacity: 0;
   transform: translateX(8px);
   transition:
-    opacity 120ms ease,
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 42ms ease-out,
+    transform 80ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-shell-right-stack--content-revealing
   .nav-island-sidebar
   :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
-  animation: right-inspector-content-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: right-inspector-content-reveal 130ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes right-inspector-content-reveal {
@@ -2345,15 +2333,16 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   overflow: hidden;
   border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
   border-radius: var(--app-shell-drawer-radius, 22px);
-  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
   box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow));
   opacity: 0;
-  contain: layout paint style;
-  will-change: left, top, width, height, opacity, border-radius;
-  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
-    saturate(var(--surface-saturate, 1.06));
-  backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
-    saturate(var(--surface-saturate, 1.06));
+  contain: strict;
+  isolation: isolate;
+  transform-origin: top right;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .right-inspector-morph-surface.is-active {
@@ -2363,13 +2352,12 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 .right-inspector-morph-surface::before {
   content: '';
   position: absolute;
-  inset: -28%;
+  inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 12% 46%, rgb(255 255 255 / 0.55), transparent 24%),
-    radial-gradient(circle at 66% 22%, rgb(var(--scene-a-rgb, 122 154 214) / 0.14), transparent 42%);
-  filter: blur(18px);
-  opacity: 0.65;
+  border-radius: inherit;
+  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  filter: none;
+  opacity: 0.72;
 }
 
 .app-shell-right-stack--open.app-shell-right-stack--dock .right-nav-island-glass.nav-island-glass {
@@ -2434,7 +2422,8 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
     transition-duration: 0.01ms;
   }
 
-  .app-shell-right-stack--open.app-shell-right-stack--float .right-nav-island-glass.nav-island-glass {
+  .app-shell-right-stack--open.app-shell-right-stack--float
+    .right-nav-island-glass.nav-island-glass {
     transform: none;
   }
 }

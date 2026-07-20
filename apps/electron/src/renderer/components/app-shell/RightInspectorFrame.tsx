@@ -14,10 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { RightRailItems } from './RightRailItems'
 import { RightSidePanel } from './RightSidePanel'
 
-import {
-  agentSidePanelOpenAtom,
-  agentSidePanelPlacementAtom,
-} from '@/atoms/agent-atoms'
+import { agentSidePanelOpenAtom, agentSidePanelPlacementAtom } from '@/atoms/agent-atoms'
 import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 
 const INSPECTOR_TITLES: Record<RightRailItem, string> = {
@@ -28,7 +25,11 @@ const INSPECTOR_TITLES: Record<RightRailItem, string> = {
   crew: '班组',
 }
 
-export function RightInspectorFrame({ width }: { width: number }): React.ReactElement {
+export const RightInspectorFrame = React.memo(function RightInspectorFrame({
+  width,
+}: {
+  width: number
+}): React.ReactElement {
   const activeItem = useAtomValue(rightRailItemAtom)
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const [placement, setPlacement] = useAtom(agentSidePanelPlacementAtom)
@@ -85,4 +86,4 @@ export function RightInspectorFrame({ width }: { width: number }): React.ReactEl
       </div>
     </div>
   )
-}
+})

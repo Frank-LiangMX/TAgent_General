@@ -177,10 +177,16 @@
   /*
    * message-user：中性玻璃板（对齐 spatial-theme-study --role-message-user-*）
    * chip 满密度 + 光学描边；禁止染 primary / accent
+   *
+   * 阴影：只用「向下柔和环境影 + 顶高光」，禁止左右 offset 色散层。
+   * 复用 --surface-shadow-chip 时 glass 的 ±x 色散会在圆角左侧上下角糊成实心黑块。
    */
   --surface-role-message-user-fill: rgb(var(--glass-rgb) / var(--surface-opacity-chip, 0.62));
   --surface-role-message-user-rim: var(--surface-rim);
-  --surface-role-message-user-shadow: var(--surface-shadow-chip);
+  --surface-role-message-user-shadow:
+    0 5px 14px rgb(23 30 40 / 0.09),
+    0 1px 3px rgb(23 30 40 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.48);
 
   /*
    * message minimap / peep：对齐折叠右轨（navigation / spatial-rail），非展开 panel
