@@ -68,6 +68,8 @@ import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
 import { ComposerUnderlay } from './ComposerUnderlay'
+import { ComposerAssistantPresence } from './ComposerAssistantPresence'
+import { dispatchAssistantTyping } from './assistant-microcopy'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
 import { PermissionBanner } from './PermissionBanner'
@@ -113,6 +115,7 @@ import {
   agentSessionPathMapAtom,
   allPendingAskUserRequestsAtom,
   allPendingExitPlanRequestsAtom,
+  allPendingPermissionRequestsAtom,
   finalizeStreamingActivities,
   sessionTokenStatsAtom,
   agentSidePanelOpenAtom,
@@ -142,10 +145,7 @@ import {
 } from '@/atoms/preview-atoms'
 import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
-import {
-  sessionBoardIdAtomFamily,
-  sessionSourceKanbanTaskIdAtomFamily,
-} from '@/atoms/kanban-atoms'
+import { sessionBoardIdAtomFamily, sessionSourceKanbanTaskIdAtomFamily } from '@/atoms/kanban-atoms'
 import { rightRailItemAtom } from '@/atoms/app-mode'
 import {
   InputToolbarOverflow,
@@ -162,6 +162,7 @@ import { useDesignContextAugment } from '@/hooks/useDesignContextAugment'
 import { detectUIIntent, isNewDesignRequest } from '@/lib/detect-ui-intent'
 import { designSuggestionAtom, designEnabledAtom } from '@/atoms/design-preview-atoms'
 import { DesignSuggestionBanner } from '@/components/design-preview/DesignSuggestionBanner'
+import { resolveAssistantPresenceState } from '@/components/welcome/assistant-presence/assistant-motion'
 import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
 import { isLikelyAgentIntent } from '@/lib/ask-heuristic'
 import {
@@ -318,10 +319,7 @@ export interface AgentViewProps {
   surface?: 'classic' | 'office-dock'
 }
 
-export function AgentView({
-  sessionId,
-  surface = 'classic',
-}: AgentViewProps): React.ReactElement {
+export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): React.ReactElement {
   const isOfficeDock = surface === 'office-dock'
   const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
   const [persistedSDKMessages, setPersistedSDKMessages] = React.useState<SDKMessage[]>([])
@@ -410,15 +408,7 @@ export function AgentView({
       setSidePanelOpen(true)
     }
     previousBoardIdRef.current = boardId
-  }, [
-    boardId,
-    isNestedWorker,
-    sessionId,
-    sessions,
-    setRightRailItem,
-    setSidePanelOpen,
-    surface,
-  ])
+  }, [boardId, isNestedWorker, sessionId, sessions, setRightRailItem, setSidePanelOpen, surface])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
@@ -2838,9 +2828,12 @@ export function AgentView({
 
   const allAskUserRequests = useAtomValue(allPendingAskUserRequestsAtom)
   const allExitPlanRequests = useAtomValue(allPendingExitPlanRequestsAtom)
+  const allPermissionRequests = useAtomValue(allPendingPermissionRequestsAtom)
   const hasBannerOverlay =
     (allAskUserRequests.get(sessionId)?.length ?? 0) > 0 ||
     (allExitPlanRequests.get(sessionId)?.length ?? 0) > 0
+  const assistantNeedsInput =
+    hasBannerOverlay || (allPermissionRequests.get(sessionId)?.length ?? 0) > 0
 
   // ===== 预览面板状态（toggle 快捷键，分屏布局在 MainArea） =====
   const setPreviewOpenMap = useSetAtom(previewPanelOpenMapAtom)
@@ -2893,6 +2886,68 @@ export function AgentView({
   /** 原型 is-composer-expanded：focus 展开 underlay */
   const [composerExpanded, setComposerExpanded] = React.useState(false)
   const composerClusterRef = React.useRef<HTMLDivElement>(null)
+  const previousRunRef = React.useRef({ sessionId, streaming })
+  const completionTimerRef = React.useRef<number | null>(null)
+  const [assistantCompleted, setAssistantCompleted] = React.useState(false)
+
+  React.useEffect(() => {
+    const previous = previousRunRef.current
+    const completedThisSession =
+      previous.sessionId === sessionId && previous.streaming && !streaming && !_agentError
+
+    if (streaming || _agentError) setAssistantCompleted(false)
+    if (completedThisSession) {
+      setAssistantCompleted(true)
+      if (completionTimerRef.current !== null) window.clearTimeout(completionTimerRef.current)
+      completionTimerRef.current = window.setTimeout(() => {
+        setAssistantCompleted(false)
+        completionTimerRef.current = null
+      }, 1800)
+    }
+    previousRunRef.current = { sessionId, streaming }
+  }, [_agentError, sessionId, streaming])
+
+  React.useEffect(
+    () => () => {
+      if (completionTimerRef.current !== null) window.clearTimeout(completionTimerRef.current)
+    },
+    []
+  )
+
+  const assistantPresenceState = resolveAssistantPresenceState({
+    acting: streamState?.toolActivities.some((activity) => !activity.done) ?? false,
+    completed: assistantCompleted,
+    engaged: composerExpanded || hasTextInput,
+    hasError: Boolean(_agentError),
+    needsInput: assistantNeedsInput,
+    running: streaming,
+  })
+  let assistantActiveToolName: string | undefined
+  const assistantToolActivities = streamState?.toolActivities ?? []
+  for (let index = assistantToolActivities.length - 1; index >= 0; index -= 1) {
+    const activity = assistantToolActivities[index]
+    if (activity && !activity.done) {
+      assistantActiveToolName = activity.toolName
+      break
+    }
+  }
+
+  const handleAssistantPresenceActivate = React.useCallback(() => {
+    if (assistantNeedsInput) {
+      window.requestAnimationFrame(() => {
+        const sessionRoot = document.querySelector<HTMLElement>(
+          `[data-agent-session-id="${CSS.escape(sessionId)}"]`
+        )
+        const attentionTarget = sessionRoot?.querySelector<HTMLElement>(
+          '.session-glass-modal input, .session-glass-modal textarea, .session-glass-modal button:not([disabled])'
+        )
+        attentionTarget?.focus()
+        attentionTarget?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      })
+      return
+    }
+    window.dispatchEvent(new CustomEvent('tagent:focus-input'))
+  }, [assistantNeedsInput, sessionId])
 
   React.useEffect(() => {
     if (!composerExpanded) return
@@ -2998,6 +3053,7 @@ export function AgentView({
             surface === 'office-dock' && 'agent-view--office-dock'
           )}
           data-agent-surface={surface}
+          data-agent-session-id={sessionId}
         >
           {/* 会话状态条已移除：模型/权限在 Composer，班组进度在右轨 */}
 
@@ -3035,175 +3091,191 @@ export function AgentView({
                         if (!(target instanceof Element)) return
                         // 只在编辑器本体获焦时展开 underlay。
                         // 工具栏/底栏控件获焦若也展开，margin 动画会挪走点击目标，吞掉 Popover/按钮交互。
-                        if (
-                          target.closest('.ProseMirror, .tiptap, [contenteditable="true"]')
-                        ) {
+                        if (target.closest('.ProseMirror, .tiptap, [contenteditable="true"]')) {
                           setComposerExpanded(true)
                         }
                       }}
                     >
-                    <div
-                      className={cn(
-                        'session-input-dock content-shell-chrome-bleed relative pb-0',
-                        isOfficeDock && 'office-conversation-composer'
-                      )}
-                      data-input-mode="agent"
-                    >
                       <div
                         className={cn(
-                          'chat-input-glass transition-colors duration-200',
-                          isOfficeDock ? 'office-conversation-input' : 'session-glass',
-                          (isPlanMode || isPermissionPlanMode) && !isDragOver && 'plan-mode-border',
-                          isDragOver &&
-                            'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                          'session-input-dock content-shell-chrome-bleed relative pb-0',
+                          isOfficeDock && 'office-conversation-composer'
                         )}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
+                        data-input-mode="agent"
                       >
-                        {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
-                          <PlanModeDashedBorder />
-                        )}
+                        <div
+                          className={cn(
+                            'chat-input-glass transition-colors duration-200',
+                            isOfficeDock ? 'office-conversation-input' : 'session-glass',
+                            (isPlanMode || isPermissionPlanMode) &&
+                              !isDragOver &&
+                              'plan-mode-border',
+                            isDragOver &&
+                              'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
+                          )}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
+                            <PlanModeDashedBorder />
+                          )}
 
-                        {/* 无 Agent 渠道或无可用模型提示 */}
-                        {(!agentChannelId || !hasAvailableModel) && (
-                          <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
-                            <Settings size={14} />
-                            <span>
-                              {!agentChannelId
-                                ? '请在设置中选择 Agent 供应商'
-                                : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
-                            </span>
-                            <button
-                              type="button"
-                              className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
-                              onClick={() => setSettingsOpen(true)}
-                            >
-                              前往设置
-                            </button>
-                          </div>
-                        )}
-
-                        {/* 待发送附件 + 引用选中文本 Chip */}
-                        {(pendingFiles.length > 0 || currentQuotedSelection) && (
-                          <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
-                            {pendingFiles.map((file) => (
-                              <AttachmentPreviewItem
-                                key={file.id}
-                                filename={file.filename}
-                                mediaType={file.mediaType}
-                                previewUrl={file.previewUrl}
-                                onRemove={() => handleRemoveFile(file.id)}
-                                onClick={
-                                  file.filename.startsWith('clipboard-')
-                                    ? () => handleClipboardPreview(file)
-                                    : undefined
-                                }
-                              />
-                            ))}
-                            {currentQuotedSelection && (
-                              <QuotedSelectionChip
-                                text={currentQuotedSelection.text}
-                                filePath={currentQuotedSelection.filePath}
-                                onRemove={handleRemoveQuotedSelection}
-                              />
-                            )}
-                          </div>
-                        )}
-
-                        {/* Design Preview 建议横幅 */}
-                        {!isOfficeDock && <DesignSuggestionBanner />}
-
-                        {/* Agent 建议提示 */}
-                        {suggestion && !streaming && (
-                          <div className="px-3 pt-2.5 pb-1.5">
-                            <button
-                              type="button"
-                              className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
-                              onClick={() => void handleSend({ overrideText: suggestion })}
-                            >
-                              <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
-                              <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
-                                {suggestion}
+                          {/* 无 Agent 渠道或无可用模型提示 */}
+                          {(!agentChannelId || !hasAvailableModel) && (
+                            <div className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
+                              <Settings size={14} />
+                              <span>
+                                {!agentChannelId
+                                  ? '请在设置中选择 Agent 供应商'
+                                  : '暂无可用模型，请在设置中启用 Agent 渠道并配置模型'}
                               </span>
-                              <X
-                                className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setPromptSuggestions((prev) => {
-                                    if (!prev.has(sessionId)) return prev
-                                    const map = new Map(prev)
-                                    map.delete(sessionId)
-                                    return map
-                                  })
-                                }}
+                              <button
+                                type="button"
+                                className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+                                onClick={() => setSettingsOpen(true)}
+                              >
+                                前往设置
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 待发送附件 + 引用选中文本 Chip */}
+                          {(pendingFiles.length > 0 || currentQuotedSelection) && (
+                            <div className="flex flex-wrap gap-2 px-3 pt-2.5 pb-1.5">
+                              {pendingFiles.map((file) => (
+                                <AttachmentPreviewItem
+                                  key={file.id}
+                                  filename={file.filename}
+                                  mediaType={file.mediaType}
+                                  previewUrl={file.previewUrl}
+                                  onRemove={() => handleRemoveFile(file.id)}
+                                  onClick={
+                                    file.filename.startsWith('clipboard-')
+                                      ? () => handleClipboardPreview(file)
+                                      : undefined
+                                  }
+                                />
+                              ))}
+                              {currentQuotedSelection && (
+                                <QuotedSelectionChip
+                                  text={currentQuotedSelection.text}
+                                  filePath={currentQuotedSelection.filePath}
+                                  onRemove={handleRemoveQuotedSelection}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Design Preview 建议横幅 */}
+                          {!isOfficeDock && <DesignSuggestionBanner />}
+
+                          {/* Agent 建议提示 */}
+                          {suggestion && !streaming && (
+                            <div className="px-3 pt-2.5 pb-1.5">
+                              <button
+                                type="button"
+                                className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
+                                onClick={() => void handleSend({ overrideText: suggestion })}
+                              >
+                                <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />
+                                <span className="flex-1 min-w-0 text-foreground/80 group-hover:text-foreground line-clamp-3">
+                                  {suggestion}
+                                </span>
+                                <X
+                                  className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setPromptSuggestions((prev) => {
+                                      if (!prev.has(sessionId)) return prev
+                                      const map = new Map(prev)
+                                      map.delete(sessionId)
+                                      return map
+                                    })
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 任务进度预览条：仅当前流式回合有进行中任务时显示 */}
+                          <TaskProgressDock
+                            allMessages={
+                              liveMessages.length > 0
+                                ? [...persistedSDKMessages, ...liveMessages]
+                                : persistedSDKMessages
+                            }
+                            streaming={streaming}
+                          />
+
+                          <div className="composer-assistant-input-row">
+                            <ComposerAssistantPresence
+                              activeToolName={assistantActiveToolName}
+                              onActivate={handleAssistantPresenceActivate}
+                              sessionId={sessionId}
+                              state={assistantPresenceState}
+                            />
+                            <div className="composer-assistant-input-field">
+                              <AgentRichTextInputBridge
+                                onChange={setInputContent}
+                                onHtmlChange={setInputHtmlContent}
+                                onSubmit={handleSend}
+                                onPasteFiles={handlePasteFiles}
+                                onPasteLongText={handlePasteLongText}
+                                longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
+                                placeholder={
+                                  agentChannelId && hasAvailableModel
+                                    ? composerMode === 'ask'
+                                      ? isOfficeDock
+                                        ? '和总监讨论，不执行操作…'
+                                        : 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
+                                      : sendWithCmdEnter
+                                        ? isOfficeDock
+                                          ? '给总监发消息…（⌘/Ctrl+Enter 发送）'
+                                          : '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                        : isOfficeDock
+                                          ? '给总监发消息…'
+                                          : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
+                                    : !agentChannelId
+                                      ? '请先在设置中选择 Agent 供应商'
+                                      : '暂无可用模型，请先在设置中启用渠道'
+                                }
+                                disabled={!agentChannelId || !hasAvailableModel}
+                                collapsible
+                                enableMentions
+                                workspacePath={sessionPath}
+                                workspaceId={currentWorkspaceId}
+                                workspaceSlug={workspaceSlug}
+                                sessionId={sessionId}
+                                attachedDirs={workspaceMentionPaths}
+                                sessionAttachedDirs={sessionMentionPaths}
+                                sendWithCmdEnter={sendWithCmdEnter}
                               />
-                            </button>
+                            </div>
                           </div>
-                        )}
 
-                        {/* 任务进度预览条：仅当前流式回合有进行中任务时显示 */}
-                        <TaskProgressDock
-                          allMessages={
-                            liveMessages.length > 0
-                              ? [...persistedSDKMessages, ...liveMessages]
-                              : persistedSDKMessages
-                          }
-                          streaming={streaming}
-                        />
-
-                        <AgentRichTextInputBridge
-                          onChange={setInputContent}
-                          onHtmlChange={setInputHtmlContent}
-                          onSubmit={handleSend}
-                          onPasteFiles={handlePasteFiles}
-                          onPasteLongText={handlePasteLongText}
-                          longTextPasteThreshold={LONG_TEXT_ATTACHMENT_THRESHOLD}
-                          placeholder={
-                            agentChannelId && hasAvailableModel
-                              ? composerMode === 'ask'
-                                ? isOfficeDock
-                                  ? '和总监讨论，不执行操作…'
-                                  : 'Ask 档位：提问或讨论问题（不修改文件，不执行命令）'
-                                : sendWithCmdEnter
-                                  ? isOfficeDock
-                                    ? '给总监发消息…（⌘/Ctrl+Enter 发送）'
-                                    : '输入消息... (⌘/Ctrl+Enter 发送 · Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                                  : isOfficeDock
-                                    ? '给总监发消息…'
-                                    : '输入消息... (Enter 发送 · Shift+Enter 换行 · @ 文件 · / Skill · # MCP · & 会话)'
-                              : !agentChannelId
-                                ? '请先在设置中选择 Agent 供应商'
-                                : '暂无可用模型，请先在设置中启用渠道'
-                          }
-                          disabled={!agentChannelId || !hasAvailableModel}
-                          collapsible
-                          enableMentions
-                          workspacePath={sessionPath}
-                          workspaceId={currentWorkspaceId}
-                          workspaceSlug={workspaceSlug}
-                          sessionId={sessionId}
-                          attachedDirs={workspaceMentionPaths}
-                          sessionAttachedDirs={sessionMentionPaths}
-                          sendWithCmdEnter={sendWithCmdEnter}
-                        />
-
-                        {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
-                        <InputToolbarOverflow
-                          items={inputToolbarItems}
-                          trailing={inputTrailingNode}
-                          className={cn(isOfficeDock && 'office-conversation-toolbar')}
-                        />
+                          {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}
+                          <InputToolbarOverflow
+                            items={inputToolbarItems}
+                            trailing={inputTrailingNode}
+                            className={cn(isOfficeDock && 'office-conversation-toolbar')}
+                          />
+                        </div>
                       </div>
+                      {/* 原型 composer-underlay：仅 classic 壳 focus 展开 */}
+                      {!isOfficeDock && (
+                        <ComposerUnderlay sessionId={sessionId} askMode={composerMode === 'ask'} />
+                      )}
                     </div>
-                    {/* 原型 composer-underlay：仅 classic 壳 focus 展开 */}
-                    {!isOfficeDock && (
-                      <ComposerUnderlay
-                        sessionId={sessionId}
-                        askMode={composerMode === 'ask'}
-                      />
-                    )}
-                    </div>
+                  )}
+                  {hasBannerOverlay && !isNestedWorker && (
+                    <ComposerAssistantPresence
+                      activeToolName={assistantActiveToolName}
+                      location="attention"
+                      onActivate={handleAssistantPresenceActivate}
+                      sessionId={sessionId}
+                      state={assistantPresenceState}
+                    />
                   )}
                   <AskUserBanner sessionId={sessionId} />
                   <ExitPlanModeBanner sessionId={sessionId} />
@@ -3310,9 +3382,16 @@ function AgentRichTextInputBridgeImpl(
     sessionId: string
   }
 ): React.ReactElement {
-  const { sessionId, ...rest } = props
+  const { onChange, sessionId, ...rest } = props
   const value = useAtomValue(agentSessionDraftAtomFamily(sessionId))
   const htmlValue = useAtomValue(agentSessionDraftHtmlAtomFamily(sessionId))
-  return <RichTextInput {...rest} value={value} htmlValue={htmlValue} />
+  const handleChange = React.useCallback(
+    (nextValue: string) => {
+      onChange(nextValue)
+      dispatchAssistantTyping(sessionId, nextValue)
+    },
+    [onChange, sessionId]
+  )
+  return <RichTextInput {...rest} value={value} htmlValue={htmlValue} onChange={handleChange} />
 }
 const AgentRichTextInputBridge = React.memo(AgentRichTextInputBridgeImpl)

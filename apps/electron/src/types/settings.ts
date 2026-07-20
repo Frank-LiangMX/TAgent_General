@@ -216,6 +216,17 @@ export type TAgentBrand = 'cyan' | 'violet' | 'amber' | 'forest' | 'slate'
 /** 默认 TAgent 品牌色 */
 export const DEFAULT_TAGENT_BRAND: TAgentBrand = 'cyan'
 
+/** 欢迎页 Agent 拟人形象的实时渲染风格 */
+export type AssistantPresenceStyle = 'ribbon' | 'fluid'
+
+/** 默认保留现有流光形态，避免升级后改变用户已经熟悉的视觉 */
+export const DEFAULT_ASSISTANT_PRESENCE_STYLE: AssistantPresenceStyle = 'ribbon'
+
+/** 将旧设置或无效值安全回退到默认形态 */
+export function normalizeAssistantPresenceStyle(value: unknown): AssistantPresenceStyle {
+  return value === 'fluid' ? 'fluid' : DEFAULT_ASSISTANT_PRESENCE_STYLE
+}
+
 /** 应用设置 */
 export interface AppSettings {
   /** 主题模式 */
@@ -288,6 +299,8 @@ export interface AppSettings {
   advancedMaterialReleaseResetV1?: boolean
   /** TAgent 品牌色（仅影响品牌签名/装饰元素） */
   tagentBrand?: TAgentBrand
+  /** 欢迎页 Agent 拟人形象：现有流光形态或更柔和的液态形态 */
+  assistantPresenceStyle?: AssistantPresenceStyle
   /** 上次是否在草稿页（用于重启恢复） */
   draftActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */

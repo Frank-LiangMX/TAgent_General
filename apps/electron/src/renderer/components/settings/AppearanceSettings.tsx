@@ -14,6 +14,7 @@ import * as React from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type {
   AdvancedMaterialOnMode,
+  AssistantPresenceStyle,
   MarkdownFontSize,
   ThemeMode,
   ThemeStyle,
@@ -28,12 +29,13 @@ import {
   updateAdvancedMaterialEnabled,
   updateAdvancedMaterialOnMode,
 } from '@/atoms/advanced-material'
+import {
+  assistantPresenceStyleAtom,
+  updateAssistantPresenceStyle,
+} from '@/atoms/assistant-presence'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
-import {
-  officeMotionModeAtom,
-  type OfficeMotionMode,
-} from '@/atoms/session-presentation-atoms'
+import { officeMotionModeAtom, type OfficeMotionMode } from '@/atoms/session-presentation-atoms'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -68,6 +70,14 @@ const PREVIEW_MODE_OPTIONS: { value: PreviewModePreference; label: string }[] = 
 const OFFICE_MOTION_OPTIONS: { value: OfficeMotionMode; label: string }[] = [
   { value: 'full', label: '完整动效' },
   { value: 'reduced', label: '精简动效' },
+]
+
+const ASSISTANT_PRESENCE_STYLE_OPTIONS: {
+  value: AssistantPresenceStyle
+  label: string
+}[] = [
+  { value: 'ribbon', label: '流光' },
+  { value: 'fluid', label: '柔液' },
 ]
 
 /** 特殊风格 ID（排除 default） */
@@ -183,6 +193,7 @@ export function AppearanceSettings(): React.ReactElement {
   const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
   const [officeMotionMode, setOfficeMotionMode] = useAtom(officeMotionModeAtom)
+  const [assistantPresenceStyle, setAssistantPresenceStyle] = useAtom(assistantPresenceStyleAtom)
 
   /** 切换皮肤 */
   const handleThemeChange = React.useCallback(
@@ -240,6 +251,15 @@ export function AppearanceSettings(): React.ReactElement {
     [setAdvancedMaterialOnMode]
   )
 
+  const handleAssistantPresenceStyleChange = React.useCallback(
+    (value: string) => {
+      const style = value as AssistantPresenceStyle
+      setAssistantPresenceStyle(style)
+      void updateAssistantPresenceStyle(style)
+    },
+    [setAssistantPresenceStyle]
+  )
+
   return (
     <div className="space-y-4">
       <SettingsSection title="主题皮肤" description="浅色 / 深色 / 跟随系统 / 风格库">
@@ -266,6 +286,18 @@ export function AppearanceSettings(): React.ReactElement {
               </div>
             </div>
           )}
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="Agent 形象" description="欢迎页实时角色的视觉形态">
+        <SettingsCard>
+          <SettingsSegmentedControl
+            label="角色形态"
+            description="流光保留现有光带与粒子；柔液使用更圆润的液态轮廓和柔和切面"
+            value={assistantPresenceStyle}
+            onValueChange={handleAssistantPresenceStyleChange}
+            options={ASSISTANT_PRESENCE_STYLE_OPTIONS}
+          />
         </SettingsCard>
       </SettingsSection>
 
