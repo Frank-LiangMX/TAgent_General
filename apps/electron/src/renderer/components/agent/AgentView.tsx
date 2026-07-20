@@ -575,17 +575,36 @@ export function AgentView({
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
   const setRightRailItem = useSetAtom(rightRailItemAtom)
   const setSidePanelOpen = useSetAtom(agentSidePanelOpenAtom)
-  const previousBoardIdRef = React.useRef<string | undefined>(boardId)
+  const previousBoardIdRef = React.useRef<string | undefined>(undefined)
+  const boardIdTrackingReadyRef = React.useRef(false)
 
-  // 主会话首次绑定看板时自动打开右轨班组面板（进度入口已迁到右轨）
+  // 主会话「运行中」首次绑定看板时打开右轨班组面板。
+  // 刷新/重挂载时 boardId 常走 undefined→有值，不能当首次绑定，否则每次都强制打开班组。
   React.useEffect(() => {
+    const metaReady = sessions.some((s) => s.id === sessionId)
+    if (!metaReady) return
+
+    if (!boardIdTrackingReadyRef.current) {
+      boardIdTrackingReadyRef.current = true
+      previousBoardIdRef.current = boardId
+      return
+    }
+
     const previousBoardId = previousBoardIdRef.current
     if (surface === 'classic' && !isNestedWorker && !previousBoardId && boardId) {
       setRightRailItem('crew')
       setSidePanelOpen(true)
     }
     previousBoardIdRef.current = boardId
-  }, [boardId, isNestedWorker, setRightRailItem, setSidePanelOpen, surface])
+  }, [
+    boardId,
+    isNestedWorker,
+    sessionId,
+    sessions,
+    setRightRailItem,
+    setSidePanelOpen,
+    surface,
+  ])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)

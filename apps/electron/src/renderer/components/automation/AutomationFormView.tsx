@@ -49,7 +49,6 @@ import {
   currentAgentWorkspaceIdAtom,
 } from '@/atoms/agent-atoms'
 import { useOpenSession } from '@/hooks/useOpenSession'
-import { cn } from '@/lib/utils'
 
 export type AutomationSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 
@@ -300,32 +299,38 @@ export function AutomationFormView({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <ScrollProgressContainer className="min-h-0 flex-1" contentClassName="px-5 py-5">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-          <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+          <section className="rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
             <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-foreground/80">任务名称</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+                  任务名称
+                </Label>
                 <Input
                   value={draft.name}
                   onChange={(e) => patchDraft({ name: e.target.value })}
                   placeholder="例如：每天整理今日会话"
-                  className="h-9"
+                  className="h-8 border-foreground/[0.08] bg-foreground/[0.04] text-xs shadow-none"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-foreground/80">任务指令</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+                  任务指令
+                </Label>
                 <Textarea
                   value={draft.prompt}
                   onChange={(e) => patchDraft({ prompt: e.target.value })}
                   placeholder="触发时发送给 Agent 的指令（支持 Markdown）"
-                  className="min-h-[140px] resize-y text-sm leading-relaxed"
+                  className="min-h-[140px] resize-y border-foreground/[0.08] bg-foreground/[0.04] text-xs leading-relaxed shadow-none"
                 />
               </div>
             </div>
           </section>
 
-          <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
-            <h3 className="mb-3 text-xs font-medium text-foreground/80">调度</h3>
+          <section className="rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
+            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+              调度
+            </h3>
             <ScheduleEditor
               value={draft.schedule}
               onChange={(schedule) => {
@@ -333,14 +338,16 @@ export function AutomationFormView({
                 markDirty()
               }}
             />
-            <p className="mt-3 text-[10px] text-muted-foreground">
+            <p className="mt-3 text-[10px] text-foreground/40">
               预览下次运行：{previewNextRunAt}（
               {formatScheduleLabel({ ...draft.schedule, enabled: true })}）
             </p>
           </section>
 
-          <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
-            <h3 className="mb-3 text-xs font-medium text-foreground/80">执行环境</h3>
+          <section className="rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
+            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+              执行环境
+            </h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <FieldSelect
                 label="AI 渠道"
@@ -390,22 +397,24 @@ export function AutomationFormView({
               <div className="space-y-2">
                 <Label className="text-xs text-foreground/80">最大运行次数（可选）</Label>
                 <Input
-                  type="number"
-                  min={1}
+                  type="text"
+                  inputMode="numeric"
                   value={draft.maxRuns ?? ''}
                   placeholder="不限"
-                  className="h-9 text-xs"
+                  className="h-8 border-foreground/[0.08] bg-foreground/[0.04] text-xs shadow-none"
                   onChange={(e) => {
-                    const raw = e.target.value
-                    patchDraft({ maxRuns: raw ? Number(raw) : undefined })
+                    const digits = e.target.value.replace(/[^\d]/g, '')
+                    patchDraft({ maxRuns: digits ? Number(digits) : undefined })
                   }}
                 />
               </div>
             </div>
           </section>
 
-          <section className="space-y-3 rounded-2xl bg-card/50 p-4 shadow-sm">
-            <p className="text-xs font-medium text-foreground/80">运行通知</p>
+          <section className="space-y-3 rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
+            <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+              运行通知
+            </p>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-foreground/80">系统通知</p>
@@ -433,7 +442,7 @@ export function AutomationFormView({
                   value={draft.notificationFeishuChatId}
                   onChange={(e) => patchDraft({ notificationFeishuChatId: e.target.value })}
                   placeholder="oc_xxx 或群聊 ID"
-                  className="h-9 text-xs"
+                  className="h-8 border-foreground/[0.08] bg-foreground/[0.04] text-xs shadow-none"
                 />
               </div>
             ) : null}
@@ -452,8 +461,10 @@ export function AutomationFormView({
           </section>
 
           {mode === 'edit' && automation ? (
-            <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
-              <h3 className="mb-3 text-xs font-medium text-foreground/80">运行历史</h3>
+            <section className="rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
+              <h3 className="mb-3 text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
+                运行历史
+              </h3>
               <RunHistoryPanel
                 runs={automation.runHistory}
                 onOpenSession={(sessionId) => {
@@ -464,10 +475,10 @@ export function AutomationFormView({
           ) : null}
 
           {blockedLogs.length > 0 ? (
-            <section className="rounded-2xl bg-card/50 p-4 shadow-sm">
+            <section className="rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03] p-4">
               <div className="mb-3 flex items-center gap-2">
                 <ShieldAlert size={14} className="text-red-500" />
-                <h3 className="text-xs font-medium text-foreground/80">
+                <h3 className="text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/45">
                   指令拦截历史（{blockedLogs.length}）
                 </h3>
               </div>
@@ -477,9 +488,9 @@ export function AutomationFormView({
         </div>
       </ScrollProgressContainer>
 
-      <div className="shrink-0 border-t border-border/40 bg-background/80 px-5 py-3 backdrop-blur-sm">
+      <div className="shrink-0 border-t border-foreground/[0.06] px-5 py-3">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
-          <div className="min-w-0 text-[10px] text-muted-foreground">
+          <div className="min-w-0 text-[10px] text-foreground/40">
             {errorMessage ? <span className="text-destructive">{errorMessage}</span> : null}
             {!errorMessage && saveState === 'saved' ? (
               <span className="text-emerald-600">已保存</span>
@@ -488,7 +499,13 @@ export function AutomationFormView({
           </div>
           <div className="flex items-center gap-2">
             {mode === 'create' && onCancelCreate ? (
-              <Button type="button" variant="ghost" size="sm" onClick={onCancelCreate}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full px-3 text-xs"
+                onClick={onCancelCreate}
+              >
                 取消
               </Button>
             ) : null}
@@ -497,7 +514,7 @@ export function AutomationFormView({
               size="sm"
               disabled={saveState === 'saving'}
               onClick={() => void handleSave()}
-              className={cn(saveState === 'dirty' && 'shadow-sm')}
+              className="h-8 rounded-full px-3.5 text-xs"
             >
               {saveState === 'saving' ? (
                 <Loader2 size={14} className="mr-1.5 animate-spin" />
@@ -530,7 +547,7 @@ function FieldSelect({
     <div className="space-y-2">
       <Label className="text-xs text-foreground/80">{label}</Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-9 text-xs">
+        <SelectTrigger className="h-8 border-foreground/[0.08] bg-foreground/[0.04] text-xs shadow-none">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

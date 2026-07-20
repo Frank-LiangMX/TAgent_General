@@ -47,7 +47,7 @@ function CrewTaskDetail({
   const progressText = latestLog?.text || latestMetaLog?.text || ''
 
   return (
-    <div className="shrink-0 border-t border-border/40 p-3 space-y-1.5 bg-background/60">
+    <div className="shrink-0 border-t border-transparent p-3 space-y-1.5 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.06)]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           {roleLabel ? (
@@ -230,10 +230,10 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
 
   return (
     <div
-      className="kanban-crew-panel h-full flex flex-col min-h-0 bg-background/40"
+      className="kanban-crew-panel h-full flex flex-col min-h-0 bg-transparent"
       style={width ? { width } : undefined}
     >
-      <div className="kanban-crew-panel-header flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0">
+      <div className="kanban-crew-panel-header flex items-center gap-2 px-3 py-2 shrink-0 shadow-[inset_0_-1px_0_hsl(var(--foreground)/0.06)]">
         <Users className="size-3.5 text-foreground/60" />
         <span className="text-xs font-medium text-foreground truncate">
           {board.title ?? board.rootGoal.slice(0, 40)}

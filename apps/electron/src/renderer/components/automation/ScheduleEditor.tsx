@@ -59,6 +59,10 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: '周六' },
 ]
 
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
+const CONTROL_CLASS = 'h-8 border-foreground/[0.08] bg-foreground/[0.04] text-xs shadow-none'
+
 export function ScheduleEditor({
   value,
   onChange,
@@ -67,6 +71,15 @@ export function ScheduleEditor({
   const patch = (partial: Partial<ScheduleEditorValue>): void => {
     onChange({ ...value, ...partial })
   }
+
+  const timeParts = React.useMemo(() => {
+    const raw = value.timeOfDay ?? '09:00'
+    const [h = '09', m = '00'] = raw.split(':')
+    return {
+      hour: HOURS.includes(h) ? h : '09',
+      minute: MINUTES.includes(m) ? m : '00',
+    }
+  }, [value.timeOfDay])
 
   return (
     <div className="space-y-4">
@@ -97,7 +110,7 @@ export function ScheduleEditor({
             onValueChange={(v) => patch({ intervalMinutes: Number(v) })}
             disabled={disabled}
           >
-            <SelectTrigger className="h-9 text-xs">
+            <SelectTrigger className={CONTROL_CLASS}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -123,7 +136,7 @@ export function ScheduleEditor({
                 onValueChange={(v) => patch({ dayOfWeek: Number(v) })}
                 disabled={disabled}
               >
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger className={CONTROL_CLASS}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,26 +154,57 @@ export function ScheduleEditor({
             <div className="space-y-2">
               <Label className="text-xs text-foreground/80">日期（1-31）</Label>
               <Input
-                type="number"
-                min={1}
-                max={31}
+                type="text"
+                inputMode="numeric"
                 value={value.dayOfMonth ?? 1}
                 disabled={disabled}
-                className="h-9 text-xs"
-                onChange={(e) => patch({ dayOfMonth: Number(e.target.value) || 1 })}
+                className={CONTROL_CLASS}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^\d]/g, '')
+                  const n = Number(digits)
+                  const clamped = Number.isFinite(n) ? Math.min(31, Math.max(1, n)) : 1
+                  patch({ dayOfMonth: clamped })
+                }}
               />
             </div>
           ) : null}
 
           <div className="space-y-2">
             <Label className="text-xs text-foreground/80">时刻</Label>
-            <Input
-              type="time"
-              value={value.timeOfDay ?? '09:00'}
-              disabled={disabled}
-              className="h-9 text-xs"
-              onChange={(e) => patch({ timeOfDay: e.target.value })}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={timeParts.hour}
+                onValueChange={(hour) => patch({ timeOfDay: `${hour}:${timeParts.minute}` })}
+                disabled={disabled}
+              >
+                <SelectTrigger className={CONTROL_CLASS}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {HOURS.map((hour) => (
+                    <SelectItem key={hour} value={hour} className="text-xs">
+                      {hour} 时
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={timeParts.minute}
+                onValueChange={(minute) => patch({ timeOfDay: `${timeParts.hour}:${minute}` })}
+                disabled={disabled}
+              >
+                <SelectTrigger className={CONTROL_CLASS}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MINUTES.map((minute) => (
+                    <SelectItem key={minute} value={minute} className="text-xs">
+                      {minute} 分
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       ) : null}
@@ -171,7 +215,7 @@ export function ScheduleEditor({
           <Input
             type="datetime-local"
             disabled={disabled}
-            className="h-9 text-xs"
+            className={CONTROL_CLASS}
             value={toDatetimeLocalValue(value.scheduledAt)}
             onChange={(e) => {
               const ts = e.target.value ? new Date(e.target.value).getTime() : undefined

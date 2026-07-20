@@ -4,6 +4,18 @@
  * 技术 status 仍用 KanbanTaskStatus；对用户展示用人态语言。
  */
 
+import type { LucideIcon } from 'lucide-react'
+import {
+  BarChart3,
+  Bot,
+  Boxes,
+  Code2,
+  Eye,
+  FileText,
+  Search,
+  Sparkles,
+} from 'lucide-react'
+
 import type { KanbanTaskStatus } from '@tagent/shared'
 
 /** 状态 → 人态徽章 */
@@ -69,53 +81,37 @@ export const CREW_STATUS_GROUPS: Array<{
   { status: 'cancelled', label: '已撤岗', desc: '被手动停止' },
 ]
 
-/** 角色头像语义色（透明度叠在 surface 上，适配三材质） */
-export function roleAvatarTint(roleId: string | undefined): {
+/**
+ * 角色头像：中性玻璃底 + lucide 图标（禁止饱和色字圆）
+ */
+export function roleAvatarSpec(roleId: string | undefined): {
   wrap: string
-  text: string
+  Icon: LucideIcon
 } {
+  const wrap =
+    'bg-foreground/[0.06] text-foreground/80 ring-1 ring-inset ring-foreground/[0.08]'
   switch (roleId) {
     case 'coder':
-      return {
-        wrap: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-        text: 'text-blue-600 dark:text-blue-400',
-      }
+      return { wrap, Icon: Code2 }
     case 'analyst':
-      return {
-        wrap: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-        text: 'text-violet-600 dark:text-violet-400',
-      }
-    case 'reviewer':
-      return {
-        wrap: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-        text: 'text-amber-600 dark:text-amber-400',
-      }
-    case 'writer':
-      return {
-        wrap: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-        text: 'text-emerald-600 dark:text-emerald-400',
-      }
-    case 'doc-writer':
-      return {
-        wrap: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
-        text: 'text-teal-600 dark:text-teal-400',
-      }
     case 'data-analyst':
-      return {
-        wrap: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
-        text: 'text-cyan-600 dark:text-cyan-400',
-      }
+      return { wrap, Icon: BarChart3 }
+    case 'reviewer':
+      return { wrap, Icon: Eye }
+    case 'writer':
+    case 'doc-writer':
+      return { wrap, Icon: FileText }
+    case 'architect':
+    case 'software-architect':
+      return { wrap, Icon: Boxes }
+    case 'explorer':
+    case 'researcher':
+      return { wrap, Icon: Search }
     case 'chat':
-      return {
-        wrap: 'bg-pink-500/15 text-pink-600 dark:text-pink-400',
-        text: 'text-pink-600 dark:text-pink-400',
-      }
+      return { wrap, Icon: Sparkles }
     case 'generalist':
     default:
-      return {
-        wrap: 'bg-primary/15 text-primary',
-        text: 'text-primary',
-      }
+      return { wrap, Icon: Bot }
   }
 }
 

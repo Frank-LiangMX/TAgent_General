@@ -272,10 +272,16 @@
   margin-right: var(--right-inspector-reserve, 0px);
   height: 100%;
   max-height: none;
-  transition: margin-right 300ms cubic-bezier(0.16, 0.72, 0.18, 1);
+  /* 与右栏 morph 同拍，避免 dock 让宽与面板 width 错拍卡顿 */
+  transition: margin-right 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 右侧 inspector：折叠/展开均 absolute；float=抬升浮层，dock=贴 band 占位（靠 main margin） */
+/*
+ * 右侧 inspector
+ * - 折叠/展开均 absolute 贴窗右
+ * - 展开高度与左栏同一套 band：显式 height，禁止 height:auto 内容撑矮
+ * - 动画只动 width / opacity / shadow，禁止动 height
+ */
 .app-shell-right-stack {
   display: flex;
   width: auto;
@@ -288,7 +294,6 @@
 .app-shell-right-stack--open {
   position: absolute;
   z-index: 20;
-  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
   right: var(--spatial-gutter);
   left: auto;
   margin: 0 !important;
@@ -297,26 +302,57 @@
   pointer-events: none;
 }
 
-/* 展开：顶/底对齐 left sidebar / 输入框 band 基线 */
+/*
+ * 展开：与 .app-shell-nav 同 band 高度。
+ * scene 有 padding-top: chrome，abs 的 100% 相对 padding box（含 chrome），
+ * 所以 height = 100% - chrome - topInset - bottomInset
+ * （左栏在 content 流里，用 --shell-band-height = 100% - insets，不减 chrome）
+ */
 .app-shell-right-stack--open {
-  bottom: var(--shell-band-inset-bottom, 24px);
-  height: auto;
-  max-height: none;
+  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
+  bottom: auto;
+  height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px)
+  );
+  max-height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px)
+  );
+  min-height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px)
+  );
   align-items: stretch;
 }
 
+/* 折叠：顶对齐，高度随胶囊内容 */
 .app-shell-right-stack--collapsed {
+  top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
   bottom: auto;
   height: auto;
   max-height: none;
+  min-height: 0;
+  align-items: flex-start;
 }
 
-/* 浮层：略抬离 band，强调悬空 */
+/* 浮层：略抬离 band（±4），高度仍固定，不靠 bottom 拉伸 */
 .app-shell-right-stack--open.app-shell-right-stack--float {
   top: calc(
     var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)) - 4px
   );
-  bottom: calc(var(--shell-band-inset-bottom, 24px) + 4px);
+  height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px) + 8px
+  );
+  max-height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px) + 8px
+  );
+  min-height: calc(
+    100% - var(--spatial-chrome-h) - var(--shell-band-inset-top, var(--spatial-gutter)) -
+      var(--shell-band-inset-bottom, 24px) + 8px
+  );
   z-index: 30;
 }
 
@@ -480,12 +516,14 @@
   gap: 1px;
 }
 
+/* letter-spacing 会把首字挤出裁切区；补一点起笔内边距 */
 .app-nav-sidebar .sidebar-section-kicker {
   color: var(--spatial-faint);
   font-size: var(--app-shell-chrome-xs, 8px);
   font-weight: 750;
   letter-spacing: 0.14em;
   line-height: 1.3;
+  padding-inline-start: 0.08em;
 }
 
 .app-nav-sidebar .sidebar-head-title {
@@ -497,7 +535,7 @@
 }
 
 /*
- * 会话头工具簇：圆角胶囊容器（禁止直角）
+ * 会话头工具簇：软圆角容器（禁止直角 / 也不要全胶囊）
  * 折叠 + 新会话嵌在同一 soft chip 里，按钮本身透明/轻底，无第二层方框
  */
 .app-nav-sidebar .tool-cluster,
@@ -509,8 +547,8 @@
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--surface-role-session-status-rim);
-  /* 完整胶囊圆角 — 高度约 32px 时 999px 即两端半圆 */
-  border-radius: 999px;
+  /* 略小于全胶囊，贴近 glass-popover */
+  border-radius: var(--radius-glass-popover, 12px);
   background: rgb(255 255 255 / 42%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
   -webkit-backdrop-filter: blur(10px) saturate(1.1);
@@ -527,8 +565,8 @@
   height: 26px;
   margin: 0;
   border: 0;
-  /* 内钮同样全圆角，贴合胶囊两端 */
-  border-radius: 999px;
+  /* 内钮略小于容器，嵌套不顶边 */
+  border-radius: calc(var(--radius-glass-popover, 12px) - 2px);
   font-size: 11px;
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -581,6 +619,20 @@
 .app-nav-sidebar .tool-cluster .tool-cluster-icon:active,
 .app-nav-sidebar .tool-cluster .tool-cluster-accent:active {
   transform: scale(0.97);
+}
+
+/* 角色库选中：与「在角色库页」态对齐，避免入口被忽略 */
+.app-nav-sidebar .tool-cluster .tool-cluster-accent.is-active,
+.app-nav-sidebar .tool-cluster .tool-cluster-accent[aria-pressed='true'] {
+  color: var(--spatial-ink);
+  background: color-mix(in srgb, var(--spatial-accent) 22%, rgb(255 255 255 / 42%));
+}
+
+.app-nav-sidebar .tool-cluster .tool-cluster-accent.is-active,
+.app-nav-sidebar .tool-cluster .tool-cluster-accent[aria-pressed='true'] {
+  background: rgb(255 255 255 / 72%);
+  color: var(--spatial-ink);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
 }
 
 .app-nav-sidebar .tool-cluster button.tool-cluster-icon svg {
@@ -1166,6 +1218,47 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   display: none;
 }
 
+/*
+ * 看板工牌浮岛 — 仅忙碌/求助等 live 密度
+ */
+.kanban-crew-badge {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-glass-popover, 18px);
+  border: 1px solid var(--surface-role-control-rim, var(--surface-rim));
+  background: var(--surface-role-control-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-control-shadow, var(--surface-shadow-chip));
+  -webkit-backdrop-filter: blur(var(--surface-role-control-blur, var(--surface-blur-chip, 0px)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-control-blur, var(--surface-blur-chip, 0px)))
+    saturate(var(--surface-saturate, 1.06));
+  color: var(--spatial-ink, hsl(var(--foreground) / 0.92));
+  transition:
+    transform 180ms var(--motion-ease-spatial, ease-out),
+    box-shadow 220ms var(--motion-ease-spatial, ease-out),
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.kanban-crew-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--surface-shadow-elevated, var(--surface-shadow-chip));
+}
+
+.kanban-crew-badge--live,
+.kanban-crew-badge--open {
+  border-color: hsl(38 92% 50% / 0.22);
+  background: var(--surface-role-navigation-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-navigation-shadow, var(--surface-shadow-chip));
+}
+
+/* 班组工牌场：全宽；列宽固定，多出来的空间用来多排列（把卡片往上提），不把单卡拉宽 */
+.kanban-crew-field {
+  width: 100%;
+  max-width: none;
+}
+
 .app-shell-content-stage .content-shell-chrome-bleed {
   width: 100%;
   margin-right: 0;
@@ -1659,10 +1752,37 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 /*
+ * 会话底区 fade：消息滚入底 chrome 前溶进 scene。
+ * 放在内容与 bottom-stack 之间。
+ * 上半（输入/控制栏一带）保持柔和，让玻璃仍有景深；
+ * 最底 token/status 带拉实到接近 scene，避免透明读数区透字。
+ */
+.app-shell-content-stage .session-body::after {
+  content: '';
+  position: absolute;
+  z-index: 15; /* 内容之上、bottom-stack(z-20) 之下 */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: calc(var(--session-bottom-reserve, 140px) + 20px);
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--scene-base-rgb) / 0) 0%,
+    rgb(var(--scene-base-rgb) / 0.16) 36%,
+    rgb(var(--scene-base-rgb) / 0.42) 62%,
+    rgb(var(--scene-base-rgb) / 0.72) 78%,
+    /* token 高度附近开始贴 scene，透字消失但仍是地板不是色条 */
+    rgb(var(--scene-base-rgb) / 0.92) 90%,
+    rgb(var(--scene-base-rgb) / 0.98) 100%
+  );
+}
+
+/*
  * 原型 .composer-underlay：
- * - 比 composer 左右各多缩 10px（left +10 / right +10）→ 视觉更窄、垫在下层
- * - 材质独立：chip 浅井 + 弱阴影，勿复用 composer 抬升 fill
- * collapsed: height 0；expanded: 42px（比原型 52 略矮，不抢主输入）
+ * - 比 composer 左右各多缩 10px → 更窄、垫在下层
+ * - chip 玻璃 + 轻 blur + 弱外影（对齐 spatial / layout-direction）
+ * collapsed: height 0；expanded: 42px
  */
 .app-shell-content-stage .composer-underlay {
   --composer-underlay-inset-x: calc(var(--app-shell-session-gutter, 16px) + 10px);
@@ -1703,7 +1823,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 .app-shell-content-stage .session-composer-cluster.is-composer-expanded .composer-underlay {
   height: var(--composer-underlay-h, 42px);
   min-height: var(--composer-underlay-h, 42px);
-  /* 略压进输入卡下沿，形成「主卡盖在托盘上」的层级 */
+  /* 略压进输入卡下沿，形成「主卡盖在托盘上」 */
   margin-top: -2px;
   margin-bottom: max(
     0px,
@@ -1715,37 +1835,30 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   padding: 4px;
   opacity: 1;
   pointer-events: auto;
-  z-index: 0;
-  border-color: var(
-    --surface-role-composer-underlay-rim,
-    rgb(255 255 255 / 0.28)
+  position: relative;
+  z-index: 1;
+  border-color: var(--surface-role-composer-underlay-rim, rgb(255 255 255 / 0.55));
+  background: var(--surface-role-composer-underlay-fill) !important;
+  box-shadow: var(--surface-role-composer-underlay-shadow);
+  -webkit-backdrop-filter: var(
+    --surface-role-composer-underlay-blur,
+    blur(15px) saturate(1.06)
   );
-  background: var(
-    --surface-role-composer-underlay-fill,
-    rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.58))
-  );
-  box-shadow: var(
-    --surface-role-composer-underlay-shadow,
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    0 10px 26px rgb(23 30 40 / 0.1)
-  );
-  -webkit-backdrop-filter: var(--surface-role-composer-underlay-blur, none);
-  backdrop-filter: var(--surface-role-composer-underlay-blur, none);
+  backdrop-filter: var(--surface-role-composer-underlay-blur, blur(15px) saturate(1.06));
   transform: translateY(0) scale(1);
 }
 
-/* 输入卡必须盖过 underlay，体现上一级 */
+/* 输入卡盖过 underlay → 上一级 */
 .app-shell-content-stage .session-composer-cluster.is-composer-expanded .session-input-dock {
   position: relative;
   z-index: 2;
 }
 
 .dark .app-shell-content-stage .session-composer-cluster.is-composer-expanded .composer-underlay {
-  border-color: rgb(255 255 255 / 0.08);
-  background: rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.2) * 0.9));
+  border-color: rgb(255 255 255 / 0.1);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 10px 26px rgb(0 0 0 / 0.28);
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 24px rgb(0 0 0 / 0.28);
 }
 
 .app-shell-content-stage .composer-underlay-cell {
@@ -1796,9 +1909,9 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 7px;
+  font-size: 8px;
   line-height: 1.15;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .app-shell-content-stage .composer-underlay-cell__value {
@@ -1812,22 +1925,38 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   line-height: 1.15;
 }
 
+/*
+ * token 栏：status 背景层（对齐 --role-status-*）
+ * - 透明、无面板、无 scrim
+ * - 读数淡色印在 scene / 底区 fade 上
+ * - 常驻占位高度
+ */
 .app-shell-content-stage .token-stats-bar.content-shell-chrome-bleed {
+  position: relative;
   box-sizing: border-box;
   display: flex;
+  flex: 0 0 var(--shell-token-h, 12px);
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
   height: var(--shell-token-h, 12px);
   min-height: var(--shell-token-h, 12px);
+  max-height: var(--shell-token-h, 12px);
   margin: 0;
   padding: 0 var(--app-shell-session-gutter, 16px);
+  overflow: visible;
   font-size: 8px;
   line-height: 1;
-  color: var(--spatial-faint, hsl(var(--muted-foreground) / 0.62));
+  color: var(--spatial-faint, hsl(var(--muted-foreground) / 0.55));
   background: transparent;
   border: 0;
   box-shadow: none;
+  z-index: 0;
+}
+
+.app-shell-content-stage .token-stats-bar--empty {
+  pointer-events: none;
+  color: transparent;
 }
 
 .app-shell-content-stage .token-stats-bar svg {
@@ -1919,6 +2048,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   width: 100%;
   height: 100%;
   min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   overflow: hidden;
 }
@@ -2071,18 +2201,20 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 /* --------------------------------------------------------------------------
- * 右侧 inspector：折叠胶囊 → 展开
- * 动画策略：只过渡 width / radius / shadow / opacity / transform
- * 禁止过渡 backdrop-filter / filter / height:auto（会卡）
+ * 右侧 inspector：折叠胶囊 ↔ 展开面板
+ *
+ * 高度布局（硬约束，动画不得改）：
+ *  - 展开：stack top/bottom 定 band + island height:100%
+ *  - 折叠：island height:auto 贴胶囊
+ * 动画只动：width / opacity / radius / shadow / transform
  * -------------------------------------------------------------------------- */
 .app-shell-right-stack .right-nav-island-glass {
   pointer-events: auto;
   transform-origin: top right;
+  /* 几何 morph 由独立 surface WAAPI 负责；真面板只切静置态，不 transition width/height */
   transition:
-    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-radius 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* 折叠：rail 胶囊（content-hug）；width 由 inline px 驱动以便与展开插值 */
@@ -2107,11 +2239,15 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   transform: none;
 }
 
-/* 展开基线：与 left sidebar 同 panel；高度由 stack top/bottom 撑满，不动画 height */
+/* 展开：吃满 stack band（几何不由 transition 插值；morph 走独立 surface） */
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
   display: flex;
   overflow: hidden;
-  height: 100%;
+  align-self: stretch;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  flex: 1 1 auto;
   flex-direction: column;
   border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
   border-radius: var(--app-shell-drawer-radius, 22px);
@@ -2124,8 +2260,19 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   transform: none;
 }
 
-/* 浮层：抬升只用 transform + box-shadow（不用 filter:drop-shadow，动画时很卡） */
-.app-shell-right-stack--open.app-shell-right-stack--float .right-nav-island-glass.nav-island-glass {
+.app-shell-right-stack--open .nav-island-sidebar,
+.app-shell-right-stack--open .app-inspector-frame,
+.app-shell-right-stack--open .app-inspector-body {
+  min-height: 0;
+  height: auto;
+  flex: 1 1 auto;
+}
+
+/* 浮层抬升：仅非 morph 时；morph 中真面板隐藏，视觉由 surface 承担 */
+.app-shell-right-stack--open.app-shell-right-stack--float:not(
+    .app-shell-right-stack--inspector-morphing
+  )
+  .right-nav-island-glass.nav-island-glass {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.28),
     0 8px 20px rgb(23 30 40 / 0.08),
@@ -2134,12 +2281,95 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 .dark
-  .app-shell-right-stack--open.app-shell-right-stack--float
+  .app-shell-right-stack--open.app-shell-right-stack--float:not(
+    .app-shell-right-stack--inspector-morphing
+  )
   .right-nav-island-glass.nav-island-glass {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.08),
     0 10px 24px rgb(0 0 0 / 0.28),
     0 32px 64px rgb(0 0 0 / 0.42);
+}
+
+/*
+ * morph 中：真面板隐形（对齐原型 is-sidebar-morphing）
+ * 几何由 .right-inspector-morph-surface WAAPI 负责
+ */
+.app-shell-right-stack--inspector-morphing .right-nav-island-glass {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 内容先离场 / 后入场（对齐原型 content-leaving / revealing） */
+.app-shell-right-stack--content-leaving
+  .nav-island-sidebar
+  :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
+  opacity: 0;
+  transform: translateX(8px);
+  transition:
+    opacity 120ms ease,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-shell-right-stack--content-revealing
+  .nav-island-sidebar
+  :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
+  animation: right-inspector-content-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes right-inspector-content-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 独立 morph 层（对齐原型 .rail-overlay-layer + .sidebar-morph-surface） */
+.right-inspector-morph-layer {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  pointer-events: none;
+}
+
+.right-inspector-morph-surface {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  overflow: hidden;
+  border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
+  border-radius: var(--app-shell-drawer-radius, 22px);
+  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow));
+  opacity: 0;
+  contain: layout paint style;
+  will-change: left, top, width, height, opacity, border-radius;
+  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-panel-blur, var(--surface-blur)))
+    saturate(var(--surface-saturate, 1.06));
+}
+
+.right-inspector-morph-surface.is-active {
+  display: block;
+}
+
+.right-inspector-morph-surface::before {
+  content: '';
+  position: absolute;
+  inset: -28%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 46%, rgb(255 255 255 / 0.55), transparent 24%),
+    radial-gradient(circle at 66% 22%, rgb(var(--scene-a-rgb, 122 154 214) / 0.14), transparent 42%);
+  filter: blur(18px);
+  opacity: 0.65;
 }
 
 .app-shell-right-stack--open.app-shell-right-stack--dock .right-nav-island-glass.nav-island-glass {
@@ -2155,31 +2385,10 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   opacity: 1;
 }
 
-.app-shell-right-stack .nav-island-sidebar {
-  transform-origin: top right;
-  transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.app-shell-right-stack--open .nav-island-sidebar:not(.nav-island-sidebar--closing) {
-  opacity: 1;
-}
-
-.app-shell-right-stack--inspector-closing .nav-island-sidebar,
-.nav-island-sidebar--closing {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms cubic-bezier(0.4, 0, 1, 1);
-}
-
-/* 折叠图标列：展开过程中交叉淡出 */
-.app-shell-right-stack .right-panel-rail--peek {
-  transition: opacity 140ms cubic-bezier(0.4, 0, 1, 1);
-}
-
+/* 展开态不应再出现竖向 rail（双保险：JS 已不挂载） */
+.app-shell-right-stack--open .right-panel-rail,
 .app-shell-right-stack--open .right-panel-rail--peek {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  display: none !important;
 }
 
 /* 折叠胶囊内：竖向图标列 */

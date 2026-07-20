@@ -6,27 +6,36 @@
  */
 
 :root {
+  /*
+   * scene 弥散场 — 结构抄 layout-direction-study 的均匀场：
+   *   小光斑 A/B 对置 + 全屏 linear 底洗（底主导，光斑是淡纱）
+   * 色相/强度仍走主题 --scene-* token，换主题会变色。
+   *
+   * 禁止：
+   * - 大椭圆贴角（58%@4%）→ 左上/右下结块
+   * - 用 strength 原值当 opacity → 中饱和色会成「色斑」
+   * 原型是高不透明度的浅色洗，生产用「低倍率 × 主题色」叠在 base 上等价。
+   */
   --surface-role-scene-fill:
+    /* A：左上内嵌小纱（尺寸固定偏原型 38×45，色/位姿走 token） */
     radial-gradient(
-      ellipse 58% 70% at 4% 2%,
-      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.72)),
+      ellipse 38% 45% at var(--scene-a-pos, 12% 10%),
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength, 0.46) * 0.38)),
+      transparent 72%
+    ),
+    /* B：右下小纱，倍率更低，避免暖斑抢戏 */
+    radial-gradient(
+      ellipse 34% 44% at var(--scene-b-pos, 90% 92%),
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength, 0.28) * 0.32)),
       transparent 76%
     ),
-    radial-gradient(
-      ellipse 54% 66% at 96% 98%,
-      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.9)),
-      transparent 78%
-    ),
-    radial-gradient(
-      ellipse 78% 54% at 56% 104%,
-      rgb(var(--scene-c-rgb) / calc(var(--scene-c-strength) * 0.78)),
-      transparent 80%
-    ),
+    /* 全屏均匀底洗：base 为主，对角极淡 A→B（主题身份，但不结块） */
     linear-gradient(
-      132deg,
-      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength) * 0.18)) 0%,
-      transparent 42%,
-      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength) * 0.18)) 100%
+      135deg,
+      rgb(var(--scene-a-rgb) / calc(var(--scene-a-strength, 0.46) * 0.14)) 0%,
+      rgb(var(--scene-base-rgb)) 36%,
+      rgb(var(--scene-base-rgb)) 64%,
+      rgb(var(--scene-b-rgb) / calc(var(--scene-b-strength, 0.28) * 0.12)) 100%
     ),
     rgb(var(--scene-base-rgb));
   --surface-role-scene-rim: transparent;
@@ -106,17 +115,24 @@
   --surface-role-composer-blur: var(--surface-blur);
 
   /*
-   * composer-underlay：比 composer 低一级（原型 --role-composer-underlay-*）
-   * chip 密度浅井，弱阴影；勿复用 composer 抬升 fill
+   * composer-underlay：对齐 spatial-theme-study --role-composer-underlay-*
+   * - chip 玻璃（低于 composer 抬升浮岛），窄一圈垫在主卡下
+   * - 轻 blur + 顶高光 / 弱外影；不是实色板、不是 inset 深井
+   * 滚字溶化交给 conversation 底区 fade，不靠 underlay 刷不透明
    */
-  --surface-role-composer-underlay-fill: rgb(
-    var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.58)
-  );
-  --surface-role-composer-underlay-rim: rgb(255 255 255 / 0.28);
+  --surface-role-composer-underlay-fill:
+    radial-gradient(circle at 18% 0%, rgb(var(--scene-a-rgb) / 0.1), transparent 44%),
+    linear-gradient(
+      180deg,
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.88)),
+      rgb(var(--glass-rgb) / calc(var(--surface-opacity-chip, 0.62) * 0.58))
+    );
+  --surface-role-composer-underlay-rim: rgb(255 255 255 / 0.55);
   --surface-role-composer-underlay-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    0 10px 26px rgb(23 30 40 / 0.1);
-  --surface-role-composer-underlay-blur: none;
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 10px 26px rgb(23 30 40 / 0.08);
+  --surface-role-composer-underlay-blur: blur(var(--surface-blur-chip, 15px))
+    saturate(var(--surface-saturate, 1.06));
 
   /* 兼容旧名：交互抬升面 = composer */
   --surface-role-interactive-elevated-fill: var(--surface-role-composer-fill);

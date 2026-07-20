@@ -249,7 +249,8 @@ export function FunctionalRail(): React.ReactElement {
     (item: { id: string }) => {
       const nextSelection = deriveRailSelection(
         { activeRailItem, sidebarOpen },
-        item.id as GeneralRailItem | TARailItem
+        item.id as GeneralRailItem | TARailItem,
+        topLevelMode
       )
       setSidebarOpen(nextSelection.sidebarOpen)
 
@@ -273,7 +274,7 @@ export function FunctionalRail(): React.ReactElement {
         }
       }
     },
-    [activeRailItem, sidebarOpen, store, setActiveRailItem, setAppMode, setSidebarOpen]
+    [activeRailItem, sidebarOpen, store, setActiveRailItem, setAppMode, setSidebarOpen, topLevelMode]
   )
 
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS

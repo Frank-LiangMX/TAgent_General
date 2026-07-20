@@ -64,14 +64,118 @@ const OfficeImmersiveShell = React.lazy(() =>
 
 const MIN_RIGHT_PANEL_WIDTH = 300
 const MAX_RIGHT_PANEL_WIDTH = 420
-/** 覆盖层 / inspector 退场动画时长，需与 CSS transition 对齐 */
+/** 覆盖层 / design 退场时长 */
 const DESIGN_MODE_EXIT_MS = 260
-/** 右栏退场：先淡出内容再卸，需 ≥ width 过渡 */
-const INSPECTOR_EXIT_MS = 300
+/**
+ * 右栏 morph：对齐 layout-direction-study 左侧边栏手法
+ * - 真面板在 morph 中隐藏，由独立 surface 用 WAAPI 多关键帧做几何插值
+ * - 内容先离场 / 后入场，不与面板几何抢同一条 transition
+ */
+const INSPECTOR_OPEN_MS = 500
+const INSPECTOR_CLOSE_MS = 460
+const INSPECTOR_CONTENT_LEAVE_MS = 70
+const INSPECTOR_MORPH_MS = INSPECTOR_CLOSE_MS + INSPECTOR_CONTENT_LEAVE_MS + 40
 const RIGHT_RAIL_COLLAPSED_WIDTH = 46
+const RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK = 188
+
+const MORPH_EASE_OUT = 'cubic-bezier(0.18, 0.72, 0.14, 1)'
+const MORPH_EASE_IN_KEY = 'cubic-bezier(0.34, 0, 0.56, 0.42)'
+const MORPH_EASE_MID = 'cubic-bezier(0.18, 0.72, 0.14, 1)'
 
 function clampRightPanelWidth(width: number): number {
   return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, width))
+}
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+interface MorphRect {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+function waitForLayout(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
+}
+
+function measureCollapsedRailHeight(island: HTMLElement | null): number {
+  if (!island) return RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK
+  const peek = island.querySelector<HTMLElement>('.right-panel-rail--peek')
+  if (peek) {
+    const h = Math.max(peek.scrollHeight, peek.offsetHeight)
+    if (h > 40) return Math.ceil(h)
+  }
+  return RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK
+}
+
+function localMorphRect(rect: DOMRect | MorphRect, overlay: DOMRect): MorphRect {
+  return {
+    left: rect.left - overlay.left,
+    top: rect.top - overlay.top,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+function morphGeometry(
+  rect: MorphRect,
+  opacity: number,
+  borderRadius: string,
+  easing?: string
+): Keyframe {
+  const frame: Keyframe = {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    opacity,
+    borderRadius,
+  }
+  if (easing) frame.easing = easing
+  return frame
+}
+
+/** 右缘对齐的胶囊↔面板路径（原型 droplet→stream→gathered 的简化版） */
+function rightInspectorMorphPath(capsule: MorphRect, panel: MorphRect) {
+  const right = panel.left + panel.width
+  const midW = capsule.width + (panel.width - capsule.width) * 0.42
+  const midH = capsule.height + (panel.height - capsule.height) * 0.48
+  const gatherW = panel.width * 0.78
+  const gatherH = panel.height * 0.82
+  return {
+    capsule,
+    panel,
+    droplet: {
+      left: right - midW * 0.72,
+      top: capsule.top + 6,
+      width: midW * 0.72,
+      height: Math.max(capsule.height + 28, midH * 0.55),
+    },
+    stream: {
+      left: right - midW,
+      top: capsule.top + (panel.top - capsule.top) * 0.35,
+      width: midW,
+      height: midH,
+    },
+    gathered: {
+      left: right - gatherW,
+      top: panel.top + (panel.height - gatherH) * 0.08,
+      width: gatherW,
+      height: gatherH,
+    },
+  }
 }
 
 /** 延迟卸载：先播退场动画再 unmount */
@@ -161,40 +265,214 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
-  const inspectorMount = useDelayedMount(showRightPanel && inspectorOpen, INSPECTOR_EXIT_MS)
-  /** 退场期间仍保持展开壳，避免立刻切 --collapsed 把 width/height 掐断 */
+  const inspectorMount = useDelayedMount(showRightPanel && inspectorOpen, INSPECTOR_MORPH_MS)
+  /** 退场期间仍保持展开壳，等 morph surface 播完再切 --collapsed */
   const inspectorShellExpanded = inspectorOpen || inspectorMount.mounted
-  /**
-   * 宽度始终用 px，才能和折叠 46 插值。
-   * 打开：先 46 → rAF 后到面板宽；关闭 / 未展开：46。
-   */
+  const inspectorClosing = inspectorMount.mounted && !inspectorOpen
+
+  const islandRef = React.useRef<HTMLDivElement>(null)
+  const morphLayerRef = React.useRef<HTMLDivElement>(null)
+  const morphSurfaceRef = React.useRef<HTMLDivElement>(null)
+  const morphAnimRef = React.useRef<Animation | null>(null)
+  const morphVersionRef = React.useRef(0)
+  const wasInspectorOpenRef = React.useRef(inspectorOpen)
+  /** morph 中隐藏真面板，由 surface 承担视觉（对齐原型 is-sidebar-morphing） */
+  const [isInspectorMorphing, setIsInspectorMorphing] = React.useState(false)
+  const [isContentLeaving, setIsContentLeaving] = React.useState(false)
+  const [isContentRevealing, setIsContentRevealing] = React.useState(false)
   const [animatedIslandWidth, setAnimatedIslandWidth] = React.useState(
     inspectorOpen ? clampedRightPanelWidth : RIGHT_RAIL_COLLAPSED_WIDTH
   )
-  const wasInspectorOpenRef = React.useRef(inspectorOpen)
 
+  const resetMorphSurface = React.useCallback(() => {
+    morphAnimRef.current?.cancel()
+    morphAnimRef.current = null
+    const surface = morphSurfaceRef.current
+    if (!surface) return
+    surface.classList.remove('is-active', 'is-opening', 'is-closing')
+    surface.removeAttribute('style')
+  }, [])
+
+  // 原型手法：真面板隐藏 + WAAPI surface 多关键帧几何 morph
   React.useEffect(() => {
-    const opening = inspectorOpen && !wasInspectorOpenRef.current
+    const openingEdge = inspectorOpen && !wasInspectorOpenRef.current
+    const closingEdge = !inspectorOpen && wasInspectorOpenRef.current
     wasInspectorOpenRef.current = inspectorOpen
 
-    if (!inspectorOpen) {
-      // 关闭：退场期内保持面板宽（只淡内容），卸载后再回到 46，避免瘦高条中间态
-      if (!inspectorMount.mounted) {
+    if (!openingEdge && !closingEdge) {
+      if (inspectorOpen && !isInspectorMorphing) {
+        setAnimatedIslandWidth(clampedRightPanelWidth)
+      }
+      if (!inspectorOpen && !inspectorMount.mounted) {
         setAnimatedIslandWidth(RIGHT_RAIL_COLLAPSED_WIDTH)
+        setIsInspectorMorphing(false)
+        setIsContentLeaving(false)
+        setIsContentRevealing(false)
+        resetMorphSurface()
       }
       return
     }
 
-    if (opening) {
-      setAnimatedIslandWidth(RIGHT_RAIL_COLLAPSED_WIDTH)
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => setAnimatedIslandWidth(clampedRightPanelWidth))
+    const version = ++morphVersionRef.current
+    let cancelled = false
+
+    const run = async () => {
+      if (prefersReducedMotion()) {
+        setAnimatedIslandWidth(inspectorOpen ? clampedRightPanelWidth : RIGHT_RAIL_COLLAPSED_WIDTH)
+        setIsInspectorMorphing(false)
+        setIsContentLeaving(false)
+        setIsContentRevealing(false)
+        resetMorphSurface()
+        return
+      }
+
+      const layer = morphLayerRef.current
+      const surface = morphSurfaceRef.current
+      const island = islandRef.current
+      if (!layer || !surface || !island) {
+        setAnimatedIslandWidth(inspectorOpen ? clampedRightPanelWidth : RIGHT_RAIL_COLLAPSED_WIDTH)
+        return
+      }
+
+      if (closingEdge) {
+        // 1) 内容先离场（原型 70ms）
+        setIsContentLeaving(true)
+        await waitMs(INSPECTOR_CONTENT_LEAVE_MS)
+        if (cancelled || version !== morphVersionRef.current) return
+
+        const overlay = layer.getBoundingClientRect()
+        const panelRect = localMorphRect(island.getBoundingClientRect(), overlay)
+        const capH = measureCollapsedRailHeight(island)
+        const capsuleRect: MorphRect = {
+          left: panelRect.left + panelRect.width - RIGHT_RAIL_COLLAPSED_WIDTH,
+          top: panelRect.top,
+          width: RIGHT_RAIL_COLLAPSED_WIDTH,
+          height: capH,
+        }
+        const path = rightInspectorMorphPath(capsuleRect, panelRect)
+
+        morphAnimRef.current?.cancel()
+        Object.assign(surface.style, {
+          left: `${path.panel.left}px`,
+          top: `${path.panel.top}px`,
+          width: `${path.panel.width}px`,
+          height: `${path.panel.height}px`,
+          opacity: '1',
+          borderRadius: '22px',
+        })
+        surface.classList.add('is-active', 'is-closing')
+        // 真面板隐藏；surface 演面板→胶囊（布局可先收成胶囊，视觉由 surface 接管）
+        setIsInspectorMorphing(true)
+        setIsContentLeaving(false)
+        setAnimatedIslandWidth(RIGHT_RAIL_COLLAPSED_WIDTH)
+
+        const anim = surface.animate(
+          [
+            { ...morphGeometry(path.panel, 1, '22px'), easing: MORPH_EASE_IN_KEY },
+            {
+              ...morphGeometry(path.gathered, 0.97, '26px'),
+              offset: 0.3,
+              easing: MORPH_EASE_MID,
+            },
+            { ...morphGeometry(path.stream, 0.94, '20px 28px 28px 20px'), offset: 0.6 },
+            { ...morphGeometry(path.droplet, 0.86, '18px 24px 24px 18px'), offset: 0.82 },
+            morphGeometry(path.capsule, 0, '16px'),
+          ],
+          { duration: INSPECTOR_CLOSE_MS, easing: 'linear', fill: 'forwards' }
+        )
+        morphAnimRef.current = anim
+        await anim.finished.catch(() => undefined)
+        if (cancelled || version !== morphVersionRef.current) return
+
+        surface.classList.remove('is-active', 'is-closing')
+        surface.removeAttribute('style')
+        morphAnimRef.current = null
+        setIsInspectorMorphing(false)
+        return
+      }
+
+      // openingEdge：先展开布局（真面板隐藏），surface 从胶囊演到满面板，再 reveal 内容
+      setAnimatedIslandWidth(clampedRightPanelWidth)
+      setIsInspectorMorphing(true)
+      setIsContentRevealing(false)
+      await waitForLayout()
+      if (cancelled || version !== morphVersionRef.current) return
+
+      const overlay = layer.getBoundingClientRect()
+      const panelBox = island.getBoundingClientRect()
+      // 若尚未铺满，用 stack 几何兜底
+      const stackBox = island.parentElement?.getBoundingClientRect()
+      const panelDom =
+        panelBox.width > RIGHT_RAIL_COLLAPSED_WIDTH + 20
+          ? panelBox
+          : stackBox && stackBox.width > 0
+            ? stackBox
+            : panelBox
+      const panelRect = localMorphRect(panelDom, overlay)
+      // 强制目标为当前面板宽 × stack 高（右缘对齐）
+      panelRect.width = clampedRightPanelWidth
+      panelRect.left = panelRect.left + panelDom.width - clampedRightPanelWidth
+      panelRect.height = stackBox?.height || panelRect.height
+
+      const capH = measureCollapsedRailHeight(island)
+      const capsuleRect: MorphRect = {
+        left: panelRect.left + panelRect.width - RIGHT_RAIL_COLLAPSED_WIDTH,
+        top: panelRect.top,
+        width: RIGHT_RAIL_COLLAPSED_WIDTH,
+        height: capH,
+      }
+      const path = rightInspectorMorphPath(capsuleRect, panelRect)
+
+      morphAnimRef.current?.cancel()
+      Object.assign(surface.style, {
+        left: `${path.capsule.left}px`,
+        top: `${path.capsule.top}px`,
+        width: `${path.capsule.width}px`,
+        height: `${path.capsule.height}px`,
+        opacity: '0',
+        borderRadius: '16px',
       })
-      return () => cancelAnimationFrame(id)
+      surface.classList.add('is-active', 'is-opening')
+
+      const anim = surface.animate(
+        [
+          { ...morphGeometry(path.capsule, 0, '16px'), easing: MORPH_EASE_OUT },
+          { ...morphGeometry(path.droplet, 0.9, '18px 24px 24px 18px'), offset: 0.22 },
+          { ...morphGeometry(path.stream, 0.94, '20px 28px 28px 20px'), offset: 0.46 },
+          { ...morphGeometry(path.gathered, 0.98, '26px'), offset: 0.74 },
+          morphGeometry(path.panel, 1, '22px'),
+        ],
+        { duration: INSPECTOR_OPEN_MS, easing: MORPH_EASE_OUT, fill: 'forwards' }
+      )
+      morphAnimRef.current = anim
+      await anim.finished.catch(() => undefined)
+      if (cancelled || version !== morphVersionRef.current) return
+
+      surface.classList.remove('is-active', 'is-opening')
+      surface.removeAttribute('style')
+      morphAnimRef.current = null
+      setIsInspectorMorphing(false)
+      setIsContentRevealing(true)
+      window.setTimeout(() => {
+        if (version === morphVersionRef.current) setIsContentRevealing(false)
+      }, 190)
     }
 
-    setAnimatedIslandWidth(clampedRightPanelWidth)
-  }, [inspectorOpen, inspectorMount.mounted, clampedRightPanelWidth])
+    void run()
+    return () => {
+      cancelled = true
+      morphAnimRef.current?.cancel()
+      morphAnimRef.current = null
+    }
+  }, [inspectorOpen, inspectorMount.mounted, clampedRightPanelWidth, resetMorphSurface])
+
+  React.useEffect(() => {
+    return () => {
+      morphVersionRef.current += 1
+      morphAnimRef.current?.cancel()
+      morphAnimRef.current = null
+    }
+  }, [])
 
   React.useEffect(() => {
     if (clampedRightPanelWidth !== rightPanelWidth) {
@@ -388,6 +666,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         {/* 沉浸全屏覆盖层（盖住整个壳层；操作在 Dock） */}
         {immersive.mounted && <DesignImmersiveLayout open={immersive.open} />}
 
+        {/* 右栏 morph 层：对齐原型 sidebar-morph-surface（真面板 morph 时隐藏） */}
+        <div
+          ref={morphLayerRef}
+          className="right-inspector-morph-layer"
+          aria-hidden
+        >
+          <div ref={morphSurfaceRef} className="right-inspector-morph-surface" />
+        </div>
+
         {showRightPanel && (
           <div
             className={cn(
@@ -399,15 +686,22 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                 (rightPanelPlacement === 'dock'
                   ? 'app-shell-right-stack--dock'
                   : 'app-shell-right-stack--float'),
-              inspectorMount.mounted &&
-                !inspectorOpen &&
-                'app-shell-right-stack--inspector-closing',
+              inspectorClosing && 'app-shell-right-stack--inspector-closing',
+              isInspectorMorphing && 'app-shell-right-stack--inspector-morphing',
+              isContentLeaving && 'app-shell-right-stack--content-leaving',
+              isContentRevealing && 'app-shell-right-stack--content-revealing',
               wantImmersive && 'pointer-events-none opacity-0'
             )}
-            data-placement={inspectorOpen ? rightPanelPlacement : 'collapsed'}
+            data-placement={
+              inspectorClosing
+                ? 'closing'
+                : inspectorOpen
+                  ? rightPanelPlacement
+                  : 'collapsed'
+            }
             aria-label={inspectorOpen ? '上下文检查器' : '上下文快捷入口'}
           >
-            {inspectorOpen && (
+            {inspectorOpen && !isInspectorMorphing && (
               <div
                 className="app-shell-right-resize-handle absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
                 onMouseDown={handleMouseDown}
@@ -415,10 +709,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             )}
 
             <div
+              ref={islandRef}
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
-                'relative ml-auto flex min-h-0 flex-col justify-start',
-                inspectorShellExpanded ? 'h-full overflow-hidden' : 'h-auto overflow-visible',
+                'relative ml-auto flex min-h-0 flex-col',
+                inspectorShellExpanded
+                  ? 'h-full min-h-full flex-1 overflow-hidden self-stretch'
+                  : 'h-auto overflow-visible justify-start',
                 inspectorShellExpanded && 'nav-island-glass--expanded',
                 isMac && inspectorShellExpanded && 'right-nav-island-glass--mac'
               )}
@@ -430,25 +727,22 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             >
               {inspectorMount.mounted && (
                 <InertRegion
-                  className={cn(
-                    'nav-island-sidebar nav-island-body relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden',
-                    (!inspectorOpen || !inspectorMount.open) && 'nav-island-sidebar--closing'
-                  )}
+                  className="nav-island-sidebar nav-island-body relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden"
                   data-presence={shellLayout.inspector}
-                  inactive={!inspectorOpen}
+                  inactive={!inspectorOpen || isInspectorMorphing}
                 >
                   <RightInspectorFrame width={clampedRightPanelWidth} />
                 </InertRegion>
               )}
 
-              {/* 折叠图标列常挂：展开时交叉淡出，避免硬切 */}
-              <RightPanelRail
-                panelOpen={inspectorOpen}
-                className={cn(
-                  'right-panel-rail--peek',
-                  inspectorShellExpanded && 'pointer-events-none'
-                )}
-              />
+              {/*
+                竖向 rail 只属于折叠胶囊。
+                展开态入口在顶栏 tabs，禁止再挂 peek（会叠在面板右侧）。
+                morph 时也不挂：胶囊高度用 fallback，避免展开后还露一列图标。
+              */}
+              {!inspectorShellExpanded && (
+                <RightPanelRail panelOpen={false} className="right-panel-rail--peek" />
+              )}
             </div>
           </div>
         )}

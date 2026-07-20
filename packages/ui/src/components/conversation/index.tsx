@@ -108,6 +108,7 @@ export function ConversationScrollButton({
   return (
     <Button
       className={cn(
+        /* left-1/2 + -translate-x-1/2 居中；hover 的 transform 必须保留 -50% */
         'conversation-scroll-btn absolute bottom-[26px] left-1/2 z-10 size-9 -translate-x-1/2 rounded-full',
         'border shadow-none',
         className

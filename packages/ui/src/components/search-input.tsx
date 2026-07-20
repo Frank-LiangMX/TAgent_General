@@ -12,15 +12,17 @@ const searchInputVariants = cva(
   {
     variants: {
       variant: {
-        /** 设置页 / 表单内标准搜索框 */
+        /** 设置页 / 表单内标准搜索框 — 干净白底，避免 muted 灰泥 */
         default: cn(
           SEARCH_INPUT_RADIUS,
-          'border border-border/60 bg-muted/40 focus-within:border-primary/40 focus-within:bg-background focus-within:ring-1 focus-within:ring-primary/20'
+          'border border-foreground/[0.08] bg-card shadow-[0_1px_0_hsl(var(--foreground)/0.03)]',
+          'focus-within:border-foreground/20 focus-within:shadow-[0_0_0_3px_hsl(var(--foreground)/0.04)]'
         ),
         /** 侧栏 / 列表面板紧凑搜索 */
         muted: cn(
           SEARCH_INPUT_RADIUS,
-          'border border-transparent bg-muted/40 focus-within:border-primary/40 focus-within:bg-muted/70'
+          'border border-foreground/[0.06] bg-card/80',
+          'focus-within:border-foreground/16 focus-within:bg-card'
         ),
         /** 插件面板 / 模型选择器等玻璃浮层 */
         glass: cn(SEARCH_INPUT_RADIUS, 'ui-search-input--glass border border-transparent'),
@@ -41,7 +43,7 @@ const searchInputVariants = cva(
 )
 
 const searchInputFieldVariants = cva(
-  'min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-50',
+  'min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-foreground/35 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       size: {
@@ -112,7 +114,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         ) : (
           <Search
             size={iconSize}
-            className="shrink-0 text-muted-foreground/65"
+            className="shrink-0 text-foreground/40"
             strokeWidth={2}
             aria-hidden
           />

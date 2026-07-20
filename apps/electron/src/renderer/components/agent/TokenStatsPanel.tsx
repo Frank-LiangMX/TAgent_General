@@ -81,17 +81,23 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
     return lines
   }, [cacheSavedTokens, hasCacheData, stats.turnCount])
 
+  // TA 模式整栏不挂；通用模式即使无数据也要常驻占位，避免底栏高度跳变打乱 main 基线
   if (topLevelMode === 'ta') return null
 
   const hasTokenStats = stats.totalInputTokens > 0 || stats.totalOutputTokens > 0
   const hasContextData = (contextStatus.inputTokens ?? 0) > 0
   const showContextUsage = hasContextData && onCompact != null
-
-  if (!hasTokenStats && !showContextUsage && !callStats) return null
+  const empty = !hasTokenStats && !showContextUsage && !callStats
 
   return (
-    <div className="token-stats-bar content-shell-chrome-bleed flex items-center gap-2.5 px-1 py-0 text-[8px] leading-none text-muted-foreground/50">
-      {showContextUsage && (
+    <div
+      className={cn(
+        'token-stats-bar content-shell-chrome-bleed flex items-center justify-end gap-2.5 px-1 py-0 text-[8px] leading-none text-muted-foreground/50',
+        empty && 'token-stats-bar--empty'
+      )}
+      aria-hidden={empty || undefined}
+    >
+      {!empty && showContextUsage && (
         <>
           <ContextUsageBadge
             sessionId={sessionId}
@@ -112,7 +118,7 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
         </>
       )}
 
-      {hasTokenStats && (
+      {!empty && hasTokenStats && (
         <>
           <StatItem
             icon={<TrendingDown size={9} />}
@@ -154,7 +160,7 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
         </>
       )}
 
-      {callStats && (
+      {!empty && callStats && (
         <>
           {(hasTokenStats || showContextUsage) && <div className="h-2 w-px bg-border/30" />}
           <Popover>

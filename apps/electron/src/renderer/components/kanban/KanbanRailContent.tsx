@@ -1,15 +1,14 @@
 /**
- * KanbanRailContent — 侧栏看板列表 + 角色库入口
+ * KanbanRailContent — 对齐会话侧栏结构
  *
- * 2026-07-07 改动：
- * - 添加角色库入口按钮（在标题栏下方）
- * - 移除模式筛选 Tab，根据 topLevelMode 自动过滤
- * - 点击角色库按钮切换主区到角色库 Tab
+ * - sidebar-head + kicker + title（与「会话」同款）
+ * - 角色库 = tool-cluster-accent（与「新会话」同级，不可忽略）
+ * - 列表行 = session-row-shell + DropdownMenu 三点（与会话一致）
  */
 
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { KanbanSquare, MoreHorizontal, Trash2, Pencil, Users } from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -21,7 +20,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Button,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@tagent/ui'
 import type { KanbanBoardMode } from '@tagent/shared'
 
@@ -34,7 +45,22 @@ import {
 } from '@/atoms/kanban-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { cn } from '@/lib/utils'
-/** 看板列表项 */
+
+function formatBoardTime(updatedAt: number): string {
+  const date = new Date(updatedAt)
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 86_400_000
+  const pad = (n: number): string => n.toString().padStart(2, '0')
+  if (updatedAt >= todayStart) {
+    return `今天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  if (updatedAt >= yesterdayStart) {
+    return `昨天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+  return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}`
+}
+
 function KanbanBoardItem({
   board,
   selected,
@@ -59,12 +85,30 @@ function KanbanBoardItem({
   const displayName = board.title ?? board.rootGoal.slice(0, 40)
   const isCancelled = board.status === 'cancelled'
 
-  return (
+  const menuItems = (
+    MenuItem: typeof ContextMenuItem | typeof DropdownMenuItem,
+    MenuSeparator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
+  ) => (
+    <>
+      <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={() => onRename()}>
+        重命名
+      </MenuItem>
+      <MenuSeparator className="my-0.5" />
+      <MenuItem
+        className="text-xs py-1 [&>svg]:size-3.5 text-destructive"
+        onSelect={() => onDelete()}
+      >
+        删除看板
+      </MenuItem>
+    </>
+  )
+
+  const row = (
     <div
       role="button"
       tabIndex={0}
       className={cn(
-        'session-list-row group relative cursor-pointer titlebar-no-drag',
+        'session-list-row session-row-shell app-sidebar-session-row group relative w-full min-w-0 titlebar-no-drag text-left',
         selected && 'session-list-item-active',
         isCancelled && 'opacity-50'
       )}
@@ -76,88 +120,72 @@ function KanbanBoardItem({
         }
       }}
     >
-      <div
-        className={cn(
-          'flex size-7 shrink-0 items-center justify-center rounded-md',
-          selected ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary/80'
-        )}
-      >
-        <KanbanSquare className="size-3.5" />
-      </div>
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div
           className={cn(
-            'text-xs font-medium truncate',
-            selected ? 'session-row-title' : 'text-foreground'
+            'min-w-0 transition-[padding] duration-150',
+            'group-hover:pr-4'
           )}
         >
-          {displayName}
-        </div>
-        <div
-          className={cn(
-            'text-[10px] flex items-center gap-1.5',
-            selected ? 'session-row-meta' : 'text-muted-foreground'
-          )}
-        >
-          <span>{board.mode === 'ta' ? 'TA' : '通用'}</span>
-          <span>·</span>
-          <span>
-            {new Date(board.updatedAt).toLocaleDateString('zh-CN', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-          {isCancelled && (
-            <>
-              <span>·</span>
-              <span className="text-red-500">已取消</span>
-            </>
-          )}
-        </div>
-      </div>
-      <div
-        className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center"
-        onClick={(e) => {
-          e.stopPropagation()
-          setMenuOpen((v) => !v)
-        }}
-      >
-        {menuOpen ? (
-          <div className="flex items-center gap-0.5">
-            <button
-              className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-              onClick={(e) => {
-                e.stopPropagation()
-                setMenuOpen(false)
-                onRename()
-              }}
-              title="重命名"
-            >
-              <Pencil className="size-3" />
-            </button>
-            <button
-              className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-red-500 hover:bg-muted"
-              onClick={(e) => {
-                e.stopPropagation()
-                setMenuOpen(false)
-                onDelete()
-              }}
-              title="删除"
-            >
-              <Trash2 className="size-3" />
-            </button>
+          <div
+            className={cn(
+              'flex items-center gap-1.5 truncate text-[13px] leading-[18px]',
+              !selected && 'text-foreground/80'
+            )}
+          >
+            <span className={cn('min-w-0 flex-1 truncate', selected && 'session-row-title')}>
+              {displayName}
+            </span>
           </div>
-        ) : (
-          <button className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground">
-            <MoreHorizontal className="size-3.5" />
-          </button>
-        )}
+          <div
+            className={cn(
+              'app-sidebar-session-detail mt-0.5 flex min-w-0 items-center justify-between gap-2 text-[9px]',
+              selected ? 'session-row-meta' : 'md-text-faint'
+            )}
+          >
+            <span className="truncate">
+              {isCancelled ? '已取消' : board.mode === 'ta' ? 'TA 看板' : '通用看板'}
+            </span>
+            <span className="flex-shrink-0 tabular-nums">{formatBoardTime(board.updatedAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div
+        className="absolute right-0 top-1/2 -translate-y-1/2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenu onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'rounded-md p-1 text-foreground/30 transition-colors hover:bg-foreground/[0.08] hover:text-foreground/60',
+                'pointer-events-none opacity-0',
+                'group-hover:pointer-events-auto group-hover:opacity-100',
+                'data-[state=open]:pointer-events-auto data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100',
+                menuOpen && 'pointer-events-auto opacity-100'
+              )}
+            >
+              <MoreVertical size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="z-[9999] min-w-0 w-40 p-0.5">
+            {menuItems(DropdownMenuItem, DropdownMenuSeparator)}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )
-}
 
-// 局部 cn 实现已移除，改用 @/lib/utils 标准实现
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
+      <ContextMenuContent className="z-[9999] min-w-0 w-40 p-0.5">
+        {menuItems(ContextMenuItem, ContextMenuSeparator)}
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
 
 export function KanbanRailContent(): React.ReactElement {
   const { boards, loading, filter, setFilter, refresh } = useKanbanBoards()
@@ -165,9 +193,10 @@ export function KanbanRailContent(): React.ReactElement {
   const setStoredFilter = useSetAtom(kanbanBoardsFilterAtom)
   const selectedBoardId = useAtomValue(selectedKanbanBoardIdAtom)
   const setSelectedBoardId = useSetAtom(selectedKanbanBoardIdAtom)
+  const activeTab = useAtomValue(kanbanActiveTabAtom)
   const setActiveTab = useSetAtom(kanbanActiveTabAtom)
+  const rolesSelected = activeTab === 'roles'
 
-  // 根据顶层模式自动过滤看板（无手动筛选）
   React.useEffect(() => {
     const modeFilter: KanbanBoardMode = topLevelMode === 'ta' ? 'ta' : 'general'
     if (filter.mode !== modeFilter) {
@@ -177,7 +206,6 @@ export function KanbanRailContent(): React.ReactElement {
     }
   }, [topLevelMode, filter, setFilter, setStoredFilter])
 
-  // Dialog 状态：重命名 / 删除
   const [renameTarget, setRenameTarget] = React.useState<{ boardId: string; title: string } | null>(
     null
   )
@@ -187,16 +215,12 @@ export function KanbanRailContent(): React.ReactElement {
 
   const handleOpen = (boardId: string): void => {
     setSelectedBoardId(boardId)
-    setActiveTab('tasks') // 打开看板时切换到任务 Tab
+    setActiveTab('tasks')
   }
 
   const handleOpenRoles = (): void => {
-    setSelectedBoardId(null) // 清空选中看板
-    setActiveTab('roles') // 切换到角色库 Tab
-  }
-
-  const handleRenameClick = (boardId: string, currentTitle: string): void => {
-    setRenameTarget({ boardId, title: currentTitle })
+    setSelectedBoardId(null)
+    setActiveTab('roles')
   }
 
   const handleRenameSubmit = async (values: { title: string }): Promise<void> => {
@@ -207,10 +231,6 @@ export function KanbanRailContent(): React.ReactElement {
     })
     toast.success('已重命名')
     void refresh()
-  }
-
-  const handleDeleteClick = (boardId: string, title: string): void => {
-    setDeleteTarget({ boardId, title })
   }
 
   const handleDeleteConfirm = async (): Promise<void> => {
@@ -233,46 +253,41 @@ export function KanbanRailContent(): React.ReactElement {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2.5">
-      {/* 标题栏（左右 inset 由 sidebar-inner 负责） */}
-      <div className="flex shrink-0 items-center justify-between titlebar-no-drag">
-        <div className="flex items-center gap-1.5">
-          <KanbanSquare className="size-3.5 text-foreground/60" />
-          <span className="text-xs font-medium text-foreground">看板</span>
-          {boards.length > 0 && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">{boards.length}</span>
-          )}
+    <>
+      <div className="sidebar-head titlebar-no-drag">
+        <div className="sidebar-head-copy">
+          <span className="sidebar-section-kicker">BOARDS</span>
+          <h2 className="sidebar-head-title">看板</h2>
+        </div>
+        <div className="tool-cluster" role="group" aria-label="看板操作">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className={cn('tool-cluster-accent', rolesSelected && 'is-active')}
+                onClick={handleOpenRoles}
+                aria-label="角色库 — 定义数字员工能力"
+                aria-pressed={rolesSelected}
+              >
+                角色库
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">角色库 — 定义数字员工能力</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
-      {/* 角色库入口 */}
-      <div className="shrink-0 titlebar-no-drag">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full h-8 text-xs justify-start gap-2"
-          onClick={handleOpenRoles}
-        >
-          <Users className="size-3.5" />
-          <span>角色库</span>
-        </Button>
-      </div>
-
-      {/* 看板列表井（inset 由 LeftSidebar .sidebar-inner 统一提供） */}
-      <div className="list-well flex-1 min-h-0">
+      <div className="app-spatial-session-well list-well min-h-0 flex-1">
         <div className="session-scroll scrollbar-thin min-h-0">
           {loading && boards.length === 0 ? (
             <div className="flex items-center justify-center py-8">
-              <span className="size-4 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+              <span className="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
             </div>
           ) : boards.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-              <KanbanSquare className="size-8 text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground mb-1">
-                {topLevelMode === 'ta' ? 'TA 模式暂无看板' : '通用模式暂无看板'}
-              </p>
-              <p className="text-[10px] text-muted-foreground/70 max-w-[200px] leading-relaxed">
-                在会话里告诉 Agent 你的目标让其自动拆解，或在草稿页拆解需求后升级建板。
+            <div className="px-2 py-10 text-center">
+              <p className="text-xs text-muted-foreground">还没有看板</p>
+              <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/70">
+                在会话里让 Agent 拆目标，或从草稿升级建板
               </p>
             </div>
           ) : (
@@ -281,10 +296,20 @@ export function KanbanRailContent(): React.ReactElement {
                 <KanbanBoardItem
                   key={board.id}
                   board={board}
-                  selected={selectedBoardId === board.id}
+                  selected={!rolesSelected && selectedBoardId === board.id}
                   onOpen={() => handleOpen(board.id)}
-                  onRename={() => handleRenameClick(board.id, board.title ?? board.rootGoal)}
-                  onDelete={() => handleDeleteClick(board.id, board.title ?? board.rootGoal)}
+                  onRename={() =>
+                    setRenameTarget({
+                      boardId: board.id,
+                      title: board.title ?? board.rootGoal,
+                    })
+                  }
+                  onDelete={() =>
+                    setDeleteTarget({
+                      boardId: board.id,
+                      title: board.title ?? board.rootGoal,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -292,7 +317,6 @@ export function KanbanRailContent(): React.ReactElement {
         </div>
       </div>
 
-      {/* 重命名看板 Dialog */}
       <KanbanCreateBoardDialog
         open={renameTarget !== null}
         onOpenChange={(open) => {
@@ -303,7 +327,6 @@ export function KanbanRailContent(): React.ReactElement {
         onSubmit={handleRenameSubmit}
       />
 
-      {/* 删除看板确认 */}
       <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
@@ -319,10 +342,12 @@ export function KanbanRailContent(): React.ReactElement {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>确认删除</AlertDialogAction>
+            <AlertDialogAction onClick={() => void handleDeleteConfirm()}>
+              确认删除
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }

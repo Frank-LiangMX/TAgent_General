@@ -43,6 +43,7 @@ export {
   resolveAgentSessionModelId,
   resolveChannelDefaultModelId,
 } from './channel-default-model'
+export { estimateTokenCount, isCjkCodePoint } from './token-estimate'
 export {
   THINKING_SIGNATURE_ERROR_CODE,
   THINKING_SIGNATURE_ERROR_TITLE,

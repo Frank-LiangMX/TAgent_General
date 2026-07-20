@@ -16,7 +16,7 @@ import type { AgentRoleProfile, RoleStoreCatalogEntry } from '@tagent/shared'
 export const agentRolesAtom = atom<AgentRoleProfile[]>([])
 
 /** 角色加载状态 */
-const agentRolesLoadingAtom = atom<boolean>(false)
+export const agentRolesLoadingAtom = atom<boolean>(false)
 
 /** 是否已加载过（避免重复请求） */
 let loaded = false
@@ -49,6 +49,22 @@ export function useRefreshAgentRoles(): () => void {
       .then((roles) => setRoles(roles))
       .catch((err) => console.error('[角色库] 刷新角色列表失败:', err))
   }
+}
+
+/**
+ * 确保角色列表已加载（角色库面板用）
+ */
+export function useEnsureAgentRoles(): {
+  roles: AgentRoleProfile[]
+  loading: boolean
+} {
+  const roles = useAtomValue(agentRolesAtom)
+  const loading = useAtomValue(agentRolesLoadingAtom)
+  const load = useSetAtom(loadAgentRolesAtom)
+  useEffect(() => {
+    load()
+  }, [load])
+  return { roles, loading: loading || (!loaded && roles.length === 0) }
 }
 
 /**

@@ -51,9 +51,9 @@
 | `glass-chip` | `--radius-glass-chip` | 6px | `.session-glass-chip` 芯片 |
 | `glass-modal` | `--radius-glass-modal` | 20px | `.session-glass-modal` 模态框 |
 | `glass-modal-lg` | `--radius-glass-modal-lg` | 24px | `.session-glass-modal-lg` 大模态框 |
-| `glass-popover` | `--radius-glass-popover` | 18px | `.session-glass-popover` 弹出层 / Select·Dropdown |
+| `glass-popover` | `--radius-glass-popover` | 12px | `.session-glass-popover` 弹出层 / Select·Dropdown |
 | `glass-sticky` | `--radius-glass-sticky` | 12px | `.session-glass-sticky` 吸顶元素 |
-| `glass-tooltip` | `--radius-glass-tooltip` | 16px | `.session-glass-tooltip` Tooltip |
+| `glass-tooltip` | `--radius-glass-tooltip` | 10px | `.session-glass-tooltip` Tooltip |
 
 **Tailwind 类映射**：`rounded-glass-tooltip` → `border-radius: var(--radius-glass-tooltip)`
 
@@ -89,7 +89,7 @@
 | `scene-a/b/c-pos/size/strength` | `--scene-*-*` | 每套主题独立的光位、覆盖范围与强度 |
 | `glass-rgb` | `--glass-rgb` | 供 frosted / glass / soft 共同消费的近无色瓷玻璃基色 |
 
-窗口底层 `html.tagent-app-shell-window` 只消费 `--surface-role-scene-fill`。该角色在 `styles/surface-roles.css` 中用 A/B/C 三光源构成全屏弥散场，main/workspace 保持透明背景层，不做浮岛。每个主题切换时同时改变整窗基底、三组光场和玻璃基色；材质只改变透明度、模糊、边缘与阴影。生成器自动把这些字段产出到 `:root` / `.dark` / `.theme-*`。
+窗口底层 `html.tagent-app-shell-window` 只消费 `--surface-role-scene-fill`。该角色在 `styles/surface-roles.css` 中用 **主题 token**（`--scene-*-pos/size/strength/rgb`）驱动 A/B/C 对置光 + 全屏 base 线性洗，结构对齐 layout-direction-study 的均匀场（禁止硬编码贴角大光斑）。main/workspace 保持透明背景层，不做浮岛。换主题只改 hue/强度，不改分布公式；材质只改变透明度、模糊、边缘与阴影。生成器自动把 scene 字段产出到 `:root` / `.dark` / `.theme-*`。
 
 长会话顶部定位器、用户消息气泡、消息刻度预览与会话状态条分别消费 `--surface-role-turn-locator-*`、`--surface-role-message-user-*`、`--surface-role-message-minimap-*`、`--surface-role-session-status-*`，不得在业务 CSS 中按主题或材质重定义一套蓝白 / accent 面板。用户气泡是中性玻璃板（对齐原型 `--role-message-user-*`），禁止染 primary。
 

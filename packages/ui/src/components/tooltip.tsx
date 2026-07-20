@@ -25,7 +25,7 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        // 材质/圆角/尺寸由 .session-glass-tooltip 统一对齐折叠右轨胶囊
+        // 材质/圆角由 .session-glass-tooltip → --radius-glass-tooltip
         'session-glass-tooltip z-[10050] overflow-hidden',
         'text-tooltip-foreground',
         'animate-in fade-in-0 zoom-in-95',

@@ -15,10 +15,10 @@
   overflow: hidden;
   padding: var(--ui-segmented-pad);
   border-radius: 999px;
-  /* 轨道再沉一点，和选中胶囊拉开对比 */
-  background: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
-  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 42%, transparent);
-  box-shadow: inset 0 1px 1px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+  /* 干净浅轨：避免 muted 灰泥感 */
+  background: hsl(var(--background));
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  box-shadow: none;
 }
 
 /* glass：液态玻璃轨道（多层 inset shadow + SVG filter）*/
@@ -73,7 +73,7 @@
     inset -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 45%, transparent);
 }
 
-/* 滑动指示器（选中胶囊）— primary-container，和轨道灰底拉开 */
+/* 滑动指示器：干净白胶囊浮起，不用 primary 灰泥混色 */
 .ui-segmented-tabs-indicator {
   position: absolute;
   top: var(--ui-segmented-pad);
@@ -83,30 +83,22 @@
   width: calc((100% - var(--ui-segmented-pad) * 2) / var(--ui-segmented-count));
   border-radius: 999px;
   pointer-events: none;
-  background: var(
-    --md-primary-container,
-    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
-  );
-  border: 1px solid var(
-    --md-primary-outline,
-    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
-  );
+  background: hsl(var(--card));
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
   box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
-    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent),
-    0 2px 8px -3px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
+    0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent),
+    0 0 0 0.5px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .ui-segmented-tabs-indicator,
 .dark[data-material='frosted'] .ui-segmented-tabs-indicator,
 [data-material='frosted'].dark .ui-segmented-tabs-indicator {
-  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 36%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--foreground)) 10%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 1px 4px color-mix(in srgb, hsl(var(--primary)) 28%, transparent),
-    0 3px 10px -4px rgba(0, 0, 0, 0.35);
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
 /* frosted：实色选中，无 blur */
@@ -175,7 +167,8 @@
   border: 0;
   background: transparent;
   padding: 6px 12px;
-  color: hsl(var(--muted-foreground));
+  /* 未选中：清晰可读，不靠 muted 发脏 */
+  color: hsl(var(--foreground) / 0.55);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -187,7 +180,7 @@
 }
 
 .ui-segmented-tabs-item:hover:not(:disabled):not(.ui-segmented-tabs-item--active) {
-  color: hsl(var(--foreground) / 0.78);
+  color: hsl(var(--foreground) / 0.82);
 }
 
 .ui-segmented-tabs-item:focus-visible {
@@ -200,17 +193,17 @@
   opacity: 0.45;
 }
 
-/* 选中文字：主题 primary，对比未选中 muted 更清晰 */
+/* 选中文字：实色前景，干净 */
 .ui-segmented-tabs-item--active {
-  color: var(--md-on-primary-container, hsl(var(--primary)));
+  color: hsl(var(--foreground));
   font-weight: 600;
 }
 
-/* ===== 基础 Tabs（Radix TabsList / TabsTrigger）— 同款胶囊语言 ===== */
+/* ===== 基础 Tabs（Radix TabsList / TabsTrigger）— 同款干净胶囊 ===== */
 .ui-tabs-list {
-  background: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
-  border: 1px solid color-mix(in srgb, var(--md-outline, hsl(var(--border))) 42%, transparent);
-  box-shadow: inset 0 1px 1px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+  background: hsl(var(--background));
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  box-shadow: none;
 }
 
 [data-material='glass'] .ui-tabs-list {
@@ -254,27 +247,20 @@
 }
 
 .ui-tabs-trigger[data-state='active'] {
-  color: var(--md-on-primary-container, hsl(var(--primary)));
+  color: hsl(var(--foreground));
   font-weight: 600;
-  background: var(
-    --md-primary-container,
-    color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--card)))
-  );
-  border: 1px solid var(
-    --md-primary-outline,
-    color-mix(in srgb, hsl(var(--primary)) 28%, hsl(var(--border)))
-  );
+  background: hsl(var(--card));
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
   box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 70%, transparent) inset,
-    0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent);
+    0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
 }
 
 .dark .ui-tabs-trigger[data-state='active'] {
-  background: color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 36%, hsl(var(--border)));
+  background: color-mix(in srgb, hsl(var(--foreground)) 10%, hsl(var(--card)));
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 1px 4px color-mix(in srgb, hsl(var(--primary)) 28%, transparent);
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
 [data-material='soft'] .ui-tabs-trigger[data-state='active'] {

@@ -41,11 +41,13 @@ export interface RailSelectionState {
 const GENERAL_SIDEBAR_ITEMS = new Set<RailItem>([
   'sessions',
   'skills',
-  'automation',
   'draft',
   'kanban',
   'memory',
 ])
+
+/** 仅 rail + main 的功能页（不占左侧 sidebar） */
+const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation'])
 
 const TA_SIDEBAR_ITEMS = new Set<RailItem>([
   'sessions',
@@ -61,6 +63,9 @@ export function railItemSupportsSidebar(
   topLevelMode: TopLevelMode,
   activeRailItem: RailItem
 ): boolean {
+  if (topLevelMode === 'general' && GENERAL_RAIL_ONLY_ITEMS.has(activeRailItem)) {
+    return false
+  }
   return topLevelMode === 'general'
     ? GENERAL_SIDEBAR_ITEMS.has(activeRailItem)
     : TA_SIDEBAR_ITEMS.has(activeRailItem)
@@ -69,13 +74,20 @@ export function railItemSupportsSidebar(
 /** 再次点击当前 Rail 项折叠 Sidebar；切换项目时展开并保留同一面板位置。 */
 export function deriveRailSelection(
   current: RailSelectionState,
-  nextRailItem: RailItem
+  nextRailItem: RailItem,
+  topLevelMode: TopLevelMode = 'general'
 ): RailSelectionState {
+  const supportsSidebar = railItemSupportsSidebar(topLevelMode, nextRailItem)
+
   if (current.activeRailItem === nextRailItem) {
+    // rail-only 页没有 sidebar，再点不切换侧栏状态
+    if (!supportsSidebar) {
+      return { activeRailItem: nextRailItem, sidebarOpen: false }
+    }
     return { activeRailItem: nextRailItem, sidebarOpen: !current.sidebarOpen }
   }
 
-  return { activeRailItem: nextRailItem, sidebarOpen: true }
+  return { activeRailItem: nextRailItem, sidebarOpen: supportsSidebar }
 }
 
 export function deriveShellLayout(input: ShellLayoutInput): ShellLayout {

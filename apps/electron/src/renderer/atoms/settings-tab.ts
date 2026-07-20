@@ -19,7 +19,6 @@ export type SettingsTab =
   | 'about'
   | 'prompts'
   | 'agent-preferences'
-  | 'agent-roles'
   | 'bots'
   | 'shortcuts'
   | 'voice-input'

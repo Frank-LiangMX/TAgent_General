@@ -1,39 +1,28 @@
 /**
- * AgentRoleSettings - 角色库（看板页子功能）
+ * RoleLibraryPanel — 看板主区「角色库」
  *
- * 两个 Tab：
- * - 我的角色：卡片网格铺满，点击弹出 Dialog 详情
- * - 角色商店：浏览 250+ 个可安装角色
- *
- * 2026-07-07 重构：从左右两栏改为卡片网格 + 弹窗详情，布局更清爽。
- * 存储：~/.tagent/agent-roles.json
+ * 两个分段：我的角色 / 角色商店。
+ * 视觉对齐工牌浮岛（kanban-crew-badge），不再用设置页边框工具条。
  */
 
 import * as React from 'react'
+import { useAtomValue } from 'jotai'
 import {
-  RotateCcw,
-  Save,
-  Users,
-  Lock,
-  Plus,
-  X,
-  Store,
   Check,
   Download,
-  Search,
   FileUp,
-  Pencil,
-  Trash2,
+  RotateCcw,
+  Search,
+  Store,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type {
   AgentRoleProfile,
-  AgentRolePermissionMode,
-  RoleStoreCatalogEntry,
-  RoleStoreCategory,
   Channel,
   KanbanCrewStats,
+  RoleStoreCatalogEntry,
   RoleWorkStats,
 } from '@tagent/shared'
 import {
@@ -44,45 +33,30 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  Input,
+  ScrollArea,
   SearchInput,
   SegmentedTabs,
   SegmentedTabsItem,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
-  ScrollArea,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@tagent/ui'
+
 import {
-  useRefreshAgentRoles,
-  useLoadRoleStoreCatalog,
+  agentRolesAtom,
   roleStoreCatalogAtom,
   roleStoreLoadingAtom,
   roleStoreSourceAtom,
-  agentRolesAtom,
+  useEnsureAgentRoles,
+  useLoadRoleStoreCatalog,
+  useRefreshAgentRoles,
 } from '@/atoms/agent-role-atoms'
-import { useAtomValue } from 'jotai'
-import { cn } from '@/lib/utils'
-import { markdownToHtml } from '@/lib/markdown-rich-text'
 import { RoleCard } from '@/components/kanban/RoleCard'
 import { RoleDetailDialog } from '@/components/kanban/RoleDetailDialog'
+import { roleAvatarSpec } from '@/lib/kanban-crew-status'
+import { markdownToHtml } from '@/lib/markdown-rich-text'
+import { cn } from '@/lib/utils'
 
-const PERMISSION_MODE_OPTIONS: Array<{
-  value: AgentRolePermissionMode
-  label: string
-  desc: string
-}> = [
-  { value: 'bypassPermissions', label: '自动放行', desc: '无人值守写操作必备' },
-  { value: 'auto', label: '需审批', desc: '写操作走权限弹窗（审核角色用）' },
-]
-
-const MAX_CONCURRENT_OPTIONS = [1, 2, 3, 4, 5]
 const BUILTIN_IDS = new Set([
   'analyst',
   'coder',
@@ -110,14 +84,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   general: '通用',
 }
 
-export function AgentRoleSettings(): React.ReactElement {
+export function RoleLibraryPanel(): React.ReactElement {
   const [activeTab, setActiveTab] = React.useState<'mine' | 'store'>('mine')
 
   return (
     <div className="flex h-full flex-col">
-      {/* Tab 切换器 */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
-        <SegmentedTabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'mine' | 'store')}>
+      <div className="flex shrink-0 items-center gap-3 px-5 pb-2 titlebar-no-drag">
+        <SegmentedTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'mine' | 'store')}
+        >
           <SegmentedTabsItem value="mine">
             <span className="flex items-center gap-1.5">
               <Users className="size-3.5" />
@@ -131,35 +107,33 @@ export function AgentRoleSettings(): React.ReactElement {
             </span>
           </SegmentedTabsItem>
         </SegmentedTabs>
+        <p className="hidden text-[11px] text-foreground/50 sm:block">
+          {activeTab === 'mine' ? '本地数字员工档案' : '从商店安装更多角色'}
+        </p>
       </div>
 
-      {/* Tab 内容 */}
-      <div className="flex-1 min-h-0">
+      <div className="min-h-0 flex-1">
         {activeTab === 'mine' ? <MyRolesTab /> : <RoleStoreTab />}
       </div>
     </div>
   )
 }
 
-// ─── 我的角色 Tab ────────────────────────────────────────────────
-
 function MyRolesTab(): React.ReactElement {
-  const [roles, setRoles] = React.useState<AgentRoleProfile[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const { roles, loading } = useEnsureAgentRoles()
+  const refreshAgentRoles = useRefreshAgentRoles()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [editingRole, setEditingRole] = React.useState<AgentRoleProfile | null>(null)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [channels, setChannels] = React.useState<Channel[]>([])
   const [crewStats, setCrewStats] = React.useState<KanbanCrewStats | null>(null)
-  const refreshAgentRoles = useRefreshAgentRoles()
 
   const loadCrewStats = React.useCallback(async () => {
     try {
-      const stats = await window.electronAPI.kanban.getCrewStats()
-      setCrewStats(stats)
+      setCrewStats(await window.electronAPI.kanban.getCrewStats())
     } catch {
-      // stats 是辅助信息，加载失败不阻塞主流程
+      // stats 辅助信息，失败不阻塞
     }
   }, [])
 
@@ -167,14 +141,12 @@ function MyRolesTab(): React.ReactElement {
     void loadCrewStats()
   }, [loadCrewStats])
 
-  // 看板数据变更时刷新统计
   React.useEffect(() => {
     return window.electronAPI.kanban.onChanged(() => {
       void loadCrewStats()
     })
   }, [loadCrewStats])
 
-  // 加载渠道列表（模型池下拉用）
   React.useEffect(() => {
     window.electronAPI
       .listChannels()
@@ -200,23 +172,6 @@ function MyRolesTab(): React.ReactElement {
     return result
   }, [channels])
 
-  const loadRoles = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      const list = await window.electronAPI.agentRole.list()
-      setRoles(list)
-    } catch (err) {
-      toast.error('加载角色库失败', { description: err instanceof Error ? err.message : undefined })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    void loadRoles()
-  }, [loadRoles])
-
-  // 搜索过滤
   const filteredRoles = React.useMemo(() => {
     if (!searchQuery.trim()) return roles
     const q = searchQuery.toLowerCase().trim()
@@ -228,19 +183,16 @@ function MyRolesTab(): React.ReactElement {
     )
   }, [roles, searchQuery])
 
-  // 点击卡片：打开详情弹窗
   const handleCardClick = (role: AgentRoleProfile): void => {
     setEditingRole({ ...role, modelPool: [...role.modelPool] })
     setDialogOpen(true)
   }
 
-  // 关闭弹窗
   const handleCloseDialog = (): void => {
     setDialogOpen(false)
     setEditingRole(null)
   }
 
-  // 字段修改
   const handleFieldChange = (
     field: keyof AgentRoleProfile,
     value: string | string[] | number | boolean
@@ -249,7 +201,6 @@ function MyRolesTab(): React.ReactElement {
     setEditingRole({ ...editingRole, [field]: value })
   }
 
-  // 添加模型
   const handleAddModel = (modelId: string): void => {
     if (!modelId || !editingRole) return
     if (editingRole.modelPool.includes(modelId)) {
@@ -259,7 +210,6 @@ function MyRolesTab(): React.ReactElement {
     setEditingRole({ ...editingRole, modelPool: [...editingRole.modelPool, modelId] })
   }
 
-  // 移除模型
   const handleRemoveModel = (modelId: string): void => {
     if (!editingRole) return
     setEditingRole({
@@ -268,13 +218,11 @@ function MyRolesTab(): React.ReactElement {
     })
   }
 
-  // 保存角色
   const handleSave = async (): Promise<void> => {
     if (!editingRole) return
     setSaving(true)
     try {
-      const updated = await window.electronAPI.agentRole.save({ role: editingRole })
-      setRoles(updated)
+      await window.electronAPI.agentRole.save({ role: editingRole })
       refreshAgentRoles()
       toast.success(`已保存角色：${editingRole.displayName}`)
       handleCloseDialog()
@@ -285,7 +233,6 @@ function MyRolesTab(): React.ReactElement {
     }
   }
 
-  // 删除角色
   const handleDelete = async (): Promise<void> => {
     if (!editingRole) return
     if (BUILTIN_IDS.has(editingRole.id)) {
@@ -294,8 +241,7 @@ function MyRolesTab(): React.ReactElement {
     }
     if (!confirm(`确定删除角色「${editingRole.displayName}」？此操作不可恢复。`)) return
     try {
-      const result = await window.electronAPI.agentRole.deleteBatch([editingRole.id])
-      setRoles(result.roles)
+      await window.electronAPI.agentRole.deleteBatch([editingRole.id])
       refreshAgentRoles()
       toast.success(`已删除角色：${editingRole.displayName}`)
       handleCloseDialog()
@@ -304,12 +250,10 @@ function MyRolesTab(): React.ReactElement {
     }
   }
 
-  // 重置为默认
   const handleReset = async (): Promise<void> => {
     if (!confirm('确定重置所有角色为内置默认值？自定义角色将丢失。')) return
     try {
-      const reset = await window.electronAPI.agentRole.resetDefault()
-      setRoles(reset)
+      await window.electronAPI.agentRole.resetDefault()
       refreshAgentRoles()
       toast.success('已重置为默认角色')
     } catch (err) {
@@ -317,13 +261,11 @@ function MyRolesTab(): React.ReactElement {
     }
   }
 
-  // 导入 .md
   const handleImportMd = async (): Promise<void> => {
     try {
       const result = await window.electronAPI.agentRole.importMd()
       if (result.imported && result.role) {
         toast.success(`已导入角色：${result.role.displayName}`)
-        await loadRoles()
         refreshAgentRoles()
       } else if (result.reason !== '已取消') {
         toast.warning(result.reason || '导入失败')
@@ -336,62 +278,72 @@ function MyRolesTab(): React.ReactElement {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="size-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+        <span className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 工具栏 */}
-      <div className="flex items-center gap-2 px-4 py-3">
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 items-center gap-2 px-5 pb-3">
         <SearchInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onClear={() => setSearchQuery('')}
           placeholder="搜索角色..."
-          className="h-8 w-[200px]"
+          containerClassName="h-8 w-[220px]"
           showClear={searchQuery.length > 0}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => void handleImportMd()}
-        >
-          <FileUp className="mr-1 size-3" />
-          导入
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => void handleReset()}
-        >
-          <RotateCcw className="mr-1 size-3" />
-          重置
-        </Button>
-        {searchQuery && (
-          <Badge variant="outline" className="text-[10px]">
-            {filteredRoles.length} / {roles.length}
-          </Badge>
-        )}
+        <div className="ml-auto flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-[36px] rounded-full p-0 text-foreground/75 hover:text-foreground"
+                onClick={() => void handleImportMd()}
+                aria-label="导入"
+              >
+                <FileUp className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">从 .md 导入角色</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-[36px] rounded-full p-0 text-foreground/75 hover:text-foreground"
+                onClick={() => void handleReset()}
+                aria-label="重置"
+              >
+                <RotateCcw className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">重置为内置默认</TooltipContent>
+          </Tooltip>
+        </div>
+        {searchQuery ? (
+          <span className="text-[10px] tabular-nums text-muted-foreground">
+            {filteredRoles.length}/{roles.length}
+          </span>
+        ) : null}
       </div>
 
-      {/* 卡片网格 */}
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="min-h-0 flex-1">
         {filteredRoles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Users className="size-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground mb-1">
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <Users className="mb-3 size-10 text-muted-foreground/30" />
+            <p className="mb-1 text-sm text-muted-foreground">
               {searchQuery ? '未找到匹配角色' : '暂无角色'}
             </p>
-            <p className="text-xs text-muted-foreground/70 max-w-sm">
-              点击「导入」从 .md 文件添加角色，或点击「重置」恢复内置角色。
+            <p className="max-w-sm text-xs text-muted-foreground/70">
+              导入 .md，或从角色商店安装；也可重置恢复内置角色。
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+          <div className="grid grid-cols-[repeat(auto-fill,280px)] items-stretch gap-3 px-5 pb-8">
             {filteredRoles.map((role) => (
               <RoleCard
                 key={role.id}
@@ -404,8 +356,7 @@ function MyRolesTab(): React.ReactElement {
         )}
       </ScrollArea>
 
-      {/* 详情弹窗 */}
-      {editingRole && (
+      {editingRole ? (
         <RoleDetailDialog
           role={editingRole}
           stats={statsByRole.get(editingRole.id)}
@@ -419,14 +370,10 @@ function MyRolesTab(): React.ReactElement {
           onAddModel={handleAddModel}
           onRemoveModel={handleRemoveModel}
         />
-      )}
+      ) : null}
     </div>
   )
 }
-
-// ─── 角色卡片 / 详情弹窗已迁移到 @/components/kanban/ ───
-
-// ─── 角色商店 Tab ────────────────────────────────────────────────
 
 function RoleStoreTab(): React.ReactElement {
   useLoadRoleStoreCatalog()
@@ -493,48 +440,38 @@ function RoleStoreTab(): React.ReactElement {
     }
   }
 
-  // 点击卡片查看详情
-  const handleCardClick = (entry: RoleStoreCatalogEntry): void => {
-    setSelectedEntry(entry)
-    setDetailOpen(true)
-  }
-
   if (loading && entries.length === 0) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="size-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+        <span className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 工具栏 */}
-      <div className="flex items-center gap-2 px-4 py-3">
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 items-center gap-2 px-5 pb-2">
         <SearchInput
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onClear={() => setSearch('')}
-          placeholder="搜索角色..."
-          className="h-8 w-[200px]"
+          placeholder="搜索商店..."
+          containerClassName="h-8 w-[220px]"
           showClear={search.length > 0}
         />
-        <Badge
-          variant="outline"
+        <span
           className={cn(
-            'text-[10px]',
-            source === 'remote' && 'text-green-600 dark:text-green-400',
+            'text-[11px] tabular-nums',
+            source === 'remote' && 'text-emerald-600 dark:text-emerald-400',
             source === 'cached' && 'text-amber-600 dark:text-amber-400',
-            source === 'builtin' && 'text-muted-foreground'
+            source === 'builtin' && 'text-foreground/55'
           )}
         >
-          {source === 'remote' ? '在线' : source === 'cached' ? '缓存' : '内置'} · {filtered.length}{' '}
-          个
-        </Badge>
+          {source === 'remote' ? '在线' : source === 'cached' ? '缓存' : '内置'} · {filtered.length}
+        </span>
       </div>
 
-      {/* 分类标签 */}
-      <div className="flex flex-wrap gap-1 px-4 pb-2">
+      <div className="flex flex-wrap gap-1.5 px-5 pb-3">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -543,8 +480,8 @@ function RoleStoreTab(): React.ReactElement {
             className={cn(
               'rounded-full px-2.5 py-1 text-[11px] transition-colors',
               category === cat
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                ? 'bg-foreground/[0.1] font-medium text-foreground ring-1 ring-inset ring-foreground/10'
+                : 'bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.07] hover:text-foreground'
             )}
           >
             {CATEGORY_LABELS[cat] ?? cat}
@@ -552,34 +489,32 @@ function RoleStoreTab(): React.ReactElement {
         ))}
       </div>
 
-      {/* 卡片网格 */}
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="min-h-0 flex-1">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search className="size-10 text-muted-foreground/30 mb-3" />
+            <Search className="mb-3 size-10 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">未找到匹配角色</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 px-4 pb-4">
-            {filtered.map((entry) => {
-              const isInstalled = installedIds.has(entry.id)
-              return (
-                <StoreRoleCard
-                  key={entry.id}
-                  entry={entry}
-                  isInstalled={isInstalled}
-                  installing={installing === entry.id}
-                  onClick={() => handleCardClick(entry)}
-                  onInstall={() => void handleInstall(entry.id)}
-                />
-              )
-            })}
+          <div className="grid grid-cols-[repeat(auto-fill,280px)] items-stretch gap-3 px-5 pb-8">
+            {filtered.map((entry) => (
+              <StoreRoleCard
+                key={entry.id}
+                entry={entry}
+                isInstalled={installedIds.has(entry.id)}
+                installing={installing === entry.id}
+                onClick={() => {
+                  setSelectedEntry(entry)
+                  setDetailOpen(true)
+                }}
+                onInstall={() => void handleInstall(entry.id)}
+              />
+            ))}
           </div>
         )}
       </ScrollArea>
 
-      {/* 详情弹窗 */}
-      {selectedEntry && (
+      {selectedEntry ? (
         <StoreRoleDetailDialog
           entry={selectedEntry}
           open={detailOpen}
@@ -588,12 +523,10 @@ function RoleStoreTab(): React.ReactElement {
           installing={installing === selectedEntry.id}
           onInstall={() => void handleInstall(selectedEntry.id)}
         />
-      )}
+      ) : null}
     </div>
   )
 }
-
-// ─── 商店角色卡片 ────────────────────────────────────────────────
 
 function StoreRoleCard({
   entry,
@@ -608,6 +541,8 @@ function StoreRoleCard({
   onClick: () => void
   onInstall: () => void
 }): React.ReactElement {
+  const { wrap, Icon } = roleAvatarSpec(entry.id)
+
   return (
     <div
       role="button"
@@ -616,58 +551,68 @@ function StoreRoleCard({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onClick()
       }}
-      className="session-list-item-active flex flex-col gap-2 p-3 text-left transition-colors hover:bg-primary/5 cursor-pointer"
+      className="kanban-crew-badge group flex h-full cursor-pointer flex-col text-left titlebar-no-drag ui-pressable"
     >
-      {/* 标题行：名称 + 推荐标记 */}
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-sm font-medium text-foreground truncate flex-1">
-          {entry.displayName}
-        </span>
-        {entry.tier === 'recommended' && (
-          <Badge className="text-[9px] px-1 py-0 bg-primary/10 text-primary border-primary/20 shrink-0">
-            荐
-          </Badge>
-        )}
-      </div>
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-2.5 p-3.5">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'flex size-9 shrink-0 items-center justify-center rounded-[12px]',
+              wrap
+            )}
+          >
+            <Icon className="size-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+                {entry.displayName}
+              </span>
+              {entry.tier === 'recommended' ? (
+                <span className="shrink-0 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] font-medium text-foreground/70">
+                  荐
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">{entry.id}</p>
+          </div>
+        </div>
 
-      {/* 描述 */}
-      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">{entry.description}</p>
+        <p className="line-clamp-3 flex-1 text-[11px] leading-relaxed text-muted-foreground">
+          {entry.description}
+        </p>
 
-      {/* 底部：ID + 安装按钮 */}
-      <div className="flex items-center gap-1.5 mt-auto pt-1">
-        <Badge variant="outline" className="text-[10px] font-mono">
-          {entry.id}
-        </Badge>
-        <div className="ml-auto">
+        <div className="mt-auto flex items-center gap-2 pt-0.5">
           {isInstalled ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] text-green-600 dark:text-green-400 border-green-500/30"
-            >
-              <Check className="mr-0.5 size-2.5" />
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+              <Check className="size-2.5" />
               已安装
-            </Badge>
+            </span>
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 px-1.5 text-[10px]"
-              disabled={installing}
-              onClick={(e) => {
-                e.stopPropagation()
-                onInstall()
-              }}
-            >
-              <Download className="size-3" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto size-7 rounded-full p-0 text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground"
+                  disabled={installing}
+                  aria-label="安装"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onInstall()
+                  }}
+                >
+                  <Download className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">安装到本地</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
     </div>
   )
 }
-
-// ─── 商店角色详情弹窗 ────────────────────────────────────────────────
 
 function StoreRoleDetailDialog({
   entry,
@@ -684,50 +629,64 @@ function StoreRoleDetailDialog({
   installing: boolean
   onInstall: () => void
 }): React.ReactElement {
+  const { wrap, Icon } = roleAvatarSpec(entry.id)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span>{entry.displayName}</span>
-            <Badge variant="outline" className="text-[10px] font-mono">
-              {entry.id}
-            </Badge>
-            {entry.tier === 'recommended' && (
-              <Badge className="text-[9px] px-1 py-0 bg-primary/10 text-primary border-primary/20">
-                推荐
-              </Badge>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            查看角色来源、定位和系统提示词预览，并决定是否安装到本地角色库。
-          </DialogDescription>
+      <DialogContent className="max-w-[500px] gap-0 overflow-hidden p-0">
+        <DialogHeader className="space-y-3 border-b border-border/40 px-5 py-4 pr-12">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                'flex size-10 shrink-0 items-center justify-center rounded-[12px]',
+                wrap
+              )}
+            >
+              <Icon className="size-4.5" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="flex flex-wrap items-center gap-2 text-[15px]">
+                <span>{entry.displayName}</span>
+                {entry.tier === 'recommended' ? (
+                  <Badge className="border-transparent bg-foreground/[0.06] px-1.5 py-0 text-[9px] text-foreground/70">
+                    推荐
+                  </Badge>
+                ) : null}
+              </DialogTitle>
+              <DialogDescription className="mt-0.5 font-mono text-[11px]">
+                {entry.id}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
-          {/* 分类 */}
+        <div className="space-y-4 px-5 py-4">
           <div>
-            <label className="text-xs font-medium text-foreground/80">分类</label>
-            <Badge variant="outline" className="mt-1 text-xs">
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              分类
+            </p>
+            <Badge variant="outline" className="text-xs">
               {CATEGORY_LABELS[entry.category] ?? entry.category}
             </Badge>
           </div>
 
-          {/* 完整描述 */}
           <div>
-            <label className="text-xs font-medium text-foreground/80">描述</label>
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              描述
+            </p>
             <div
-              className="mt-1 text-sm text-muted-foreground leading-relaxed"
+              className="text-sm leading-relaxed text-muted-foreground"
               dangerouslySetInnerHTML={{ __html: markdownToHtml(entry.description) }}
             />
           </div>
 
-          {/* 系统提示词预览 */}
           <div>
-            <label className="text-xs font-medium text-foreground/80">系统提示词预览</label>
-            <ScrollArea className="mt-1 h-[200px] rounded-md border border-border/40 bg-muted/10">
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              系统提示词预览
+            </p>
+            <ScrollArea className="h-[180px] rounded-glass-popover bg-foreground/[0.03]">
               <div
-                className="p-3 text-xs text-muted-foreground leading-relaxed"
+                className="p-3 text-xs leading-relaxed text-muted-foreground"
                 dangerouslySetInnerHTML={{
                   __html: markdownToHtml(entry.role.systemPrompt.substring(0, 800)),
                 }}
@@ -735,12 +694,13 @@ function StoreRoleDetailDialog({
             </ScrollArea>
           </div>
 
-          {/* 来源 */}
           <div>
-            <label className="text-xs font-medium text-foreground/80">来源</label>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              来源
+            </p>
+            <p className="text-xs text-muted-foreground">
               {entry.source}
-              {entry.sourceUrl && (
+              {entry.sourceUrl ? (
                 <a
                   href={entry.sourceUrl}
                   target="_blank"
@@ -749,84 +709,25 @@ function StoreRoleDetailDialog({
                 >
                   查看源
                 </a>
-              )}
+              ) : null}
             </p>
           </div>
         </div>
 
-        {/* 底部操作栏 */}
-        <div className="flex items-center justify-end border-t border-border/40 pt-3">
+        <div className="flex items-center justify-end gap-2 border-t border-border/40 px-5 py-3">
           {isInstalled ? (
-            <Badge
-              variant="outline"
-              className="text-xs text-green-600 dark:text-green-400 border-green-500/30"
-            >
-              <Check className="mr-1 size-3" />
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+              <Check className="size-3" />
               已安装
-            </Badge>
+            </span>
           ) : (
             <Button size="sm" className="h-8 text-xs" disabled={installing} onClick={onInstall}>
               <Download className="mr-1 size-3" />
-              {installing ? '安装中...' : '安装此角色'}
+              {installing ? '安装中…' : '安装此角色'}
             </Button>
           )}
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-// ─── 辅助组件 ────────────────────────────────────────────────────
-
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}): React.ReactElement {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-foreground/80">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function ModelPoolAddSelect({
-  availableModels,
-  currentPool,
-  onAdd,
-}: {
-  availableModels: Array<{ id: string; label: string }>
-  currentPool: string[]
-  onAdd: (modelId: string) => void
-}): React.ReactElement {
-  const options = React.useMemo(
-    () => availableModels.filter((m) => !currentPool.includes(m.id)),
-    [availableModels, currentPool]
-  )
-  return (
-    <div className="mt-1.5 flex items-center gap-1.5">
-      <Plus className="size-3 text-muted-foreground" />
-      <Select value="" onValueChange={(v) => v && onAdd(v)}>
-        <SelectTrigger className="h-7 flex-1 text-xs text-muted-foreground hover:text-foreground">
-          <SelectValue placeholder="添加模型到池..." />
-        </SelectTrigger>
-        <SelectContent>
-          {options.length === 0 ? (
-            <SelectItem value="__none__" disabled>
-              （无可用模型）
-            </SelectItem>
-          ) : (
-            options.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.label} ({m.id})
-              </SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-    </div>
   )
 }

@@ -15,8 +15,8 @@
   :root {
     /* 非颜色 token（颜色变量由 tokens.css 定义） */
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    /* 代码块背景：浅色主题搭配 github-light 高亮 */
-    --code-bg: 220 12% 96%;
+    /* 代码块背景：浅色略沉，避免在灰底弹窗里发白刺眼 */
+    --code-bg: 220 10% 91%;
     /*
      * 强调色一律跟随主题 --primary（已取消独立签名色）。
      * --tagent-brand* 仅作兼容别名，供存量 CSS/内联 style 使用。
@@ -294,7 +294,7 @@
   .theme-ocean-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
     --session-row-accent: hsl(var(--primary));
-    --code-bg: 210 20% 96%;
+    --code-bg: 210 14% 91%;
     --glass-ambient: 205 18% 93%;
     --glass-rim: 205 14% 85%;
     --shell-blob: 205 30% 82%;
@@ -313,7 +313,7 @@
 
   .theme-forest-light {
     --stop-hover-bg: hsla(0, 70%, 50%, 0.12);
-    --code-bg: 145 12% 95%;
+    --code-bg: 145 10% 91%;
     --glass-ambient: 140 14% 93%;
     --glass-rim: 140 10% 85%;
     --shell-blob: 140 18% 84%;
@@ -332,7 +332,7 @@
 
   .theme-slate-light {
     --stop-hover-bg: hsla(0, 60%, 50%, 0.12);
-    --code-bg: 40 10% 96%;
+    --code-bg: 40 8% 91%;
     --glass-ambient: 40 10% 94%;
     --glass-rim: 40 8% 83%;
     --shell-blob: 40 12% 85%;
@@ -351,7 +351,7 @@
 
   .theme-orange-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --code-bg: 20 35% 95%;
+    --code-bg: 20 22% 91%;
     --glass-ambient: 30 30% 92%;
     --glass-rim: 28 25% 84%;
     --shell-blob: 22 45% 78%;
@@ -370,7 +370,7 @@
 
   .theme-purple-light {
     --stop-hover-bg: hsla(0, 80%, 60%, 0.12);
-    --code-bg: 280 30% 96%;
+    --code-bg: 280 16% 91%;
     --glass-ambient: 285 25% 92%;
     --glass-rim: 280 20% 84%;
     --shell-blob: 280 45% 80%;
@@ -387,7 +387,7 @@
   /* ===== Soft UI / Neumorph ===== */
 
   .theme-neumorph-light {
-    --code-bg: 220 16% 94%;
+    --code-bg: 220 12% 90%;
     --glass-ambient: 220 18% 94%;
     --glass-rim: 220 16% 82%;
     --shell-blob: 220 20% 84%;
@@ -417,8 +417,11 @@ html.tagent-app-shell-window #root {
 }
 
 html.tagent-app-shell-window {
+  /* scene 弥散场：结构均匀 + 主题 token 上色 */
   background: var(--surface-role-scene-fill);
   background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
 html.tagent-app-shell-window body {
@@ -4977,15 +4980,13 @@ html.material-frosted .tool-cluster {
 
 /**
  * 右侧 rail 折叠态（无 nav-island-glass--expanded）：降低视觉权重，hover 恢复 affordance
+ * 过渡只交给 app-shell.css 单段规则；此处禁止再绑 backdrop-filter（会顿）
  */
 .right-nav-island-glass.nav-island-glass--float {
+  /* width/radius/shadow 由 .app-shell-right-stack .right-nav-island-glass 统一 280ms */
   transition:
-    width 300ms cubic-bezier(0.16, 1, 0.3, 1),
-    background 280ms ease,
-    border-color 280ms ease,
-    box-shadow 280ms ease,
-    -webkit-backdrop-filter 280ms ease,
-    backdrop-filter 280ms ease;
+    background-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 右 rail 折叠：普通材质实色窄条；glass 才半透 */
@@ -5971,8 +5972,9 @@ html.material-frosted .app-shell-content-stage .content-glass {
   padding-bottom: max(8px, var(--session-bottom-reserve, 120px));
 }
 
+/* 回底按钮：略高于输入区（+14），避免贴死 composer */
 .session-body [data-conversation-scroll-btn] {
-  bottom: calc(var(--session-bottom-reserve, 120px) + 8px);
+  bottom: calc(var(--session-bottom-reserve, 120px) + 14px);
 }
 
 /* 与玻璃底板同步滑动的指示器（兼容旧名） */

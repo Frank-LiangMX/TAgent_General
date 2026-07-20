@@ -11,6 +11,7 @@ import type { KanbanTask } from '@tagent/shared'
 
 import { Users } from 'lucide-react'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { cn } from '@/lib/utils'
 
 export interface KanbanBoardSummaryProps {
@@ -29,35 +30,40 @@ export function KanbanBoardSummary({
   const progress = total > 0 ? (done / total) * 100 : 0
 
   return (
-    <button
-      type="button"
-      onClick={onOpenTeam}
-      className="ml-auto flex items-center gap-2 rounded-full bg-muted/50 px-2.5 py-1 text-left transition-all hover:bg-muted hover:shadow-sm"
-      title="查看看板团队详情"
-    >
-      <Users className="size-3.5 text-blue-600 dark:text-blue-400" />
-      <span className="text-[11px] font-medium text-foreground tabular-nums">
-        {done}/{total}
-      </span>
-      {running > 0 && (
-        <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-          ·{running} 执行
-        </span>
-      )}
-      {blocked > 0 && (
-        <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
-          ·{blocked} 阻塞
-        </span>
-      )}
-      <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            'h-full rounded-full bg-blue-500 transition-all duration-300',
-            blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onOpenTeam}
+          className="ml-auto flex items-center gap-2 rounded-full bg-muted/50 px-2.5 py-1 text-left transition-all hover:bg-muted hover:shadow-sm"
+          aria-label="查看看板团队详情"
+        >
+          <Users className="size-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="text-[11px] font-medium text-foreground tabular-nums">
+            {done}/{total}
+          </span>
+          {running > 0 && (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+              ·{running} 执行
+            </span>
           )}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </button>
+          {blocked > 0 && (
+            <span className="text-[10px] text-red-600 dark:text-red-400 tabular-nums">
+              ·{blocked} 阻塞
+            </span>
+          )}
+          <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                'h-full rounded-full bg-blue-500 transition-all duration-300',
+                blocked > 0 && 'bg-gradient-to-r from-blue-500 to-amber-500'
+              )}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">查看看板团队详情</TooltipContent>
+    </Tooltip>
   )
 }

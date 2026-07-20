@@ -706,8 +706,8 @@
 .session-glass-tooltip {
   position: relative;
   isolation: isolate;
-  /* 圆角跟折叠右轨 / composer 胶囊同一源；壳外 fallback 到 glass-tooltip token */
-  border-radius: var(--app-shell-composer-radius, var(--radius-glass-tooltip, 16px));
+  /* 独立 token：菜单/tooltip 比 composer 胶囊更紧，不复用 --app-shell-composer-radius */
+  border-radius: var(--radius-glass-tooltip, 10px);
   color: hsl(var(--tooltip-foreground, var(--foreground)));
   border: 1px solid var(--surface-role-tooltip-rim, var(--surface-role-navigation-rim, var(--surface-rim)));
   background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));

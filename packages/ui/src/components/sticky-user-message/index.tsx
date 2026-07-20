@@ -147,10 +147,11 @@ export function StickyUserMessage({
     <div
       aria-live="polite"
       className={cn(
-        'agent-sticky-jump-slot absolute left-0 right-0 top-0 z-20 transition-all duration-150 ease-out',
+        /* 贴顶：1px 缝避免与上边线重叠 */
+        'agent-sticky-jump-slot absolute left-0 right-0 top-px z-20 transition-all duration-150 ease-out',
         isSticky
           ? 'opacity-100 translate-y-0 pointer-events-auto'
-          : 'opacity-0 -translate-y-2 pointer-events-none'
+          : 'opacity-0 -translate-y-1 pointer-events-none'
       )}
     >
       {/* 边距由 agent-thread.css 控制：左对齐会话 gutter，右额外预留给消息导航刻度 */}

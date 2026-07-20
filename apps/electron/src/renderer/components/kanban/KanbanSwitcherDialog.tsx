@@ -105,11 +105,9 @@ export function KanbanSwitcherDialog({
                   disabled={isCancelled || isSwitching}
                   onClick={() => void handleSelect(board)}
                   className={cn(
-                    'session-glass w-full rounded-glass-popover px-3 py-2.5 text-left transition-all',
-                    'hover:bg-background/60 hover:shadow-md',
-                    isCurrent && 'ring-2 ring-blue-500/50 bg-background/70',
-                    isCancelled &&
-                      'opacity-50 cursor-not-allowed hover:bg-transparent hover:shadow-none'
+                    'session-list-row w-full rounded-glass-popover px-3 py-2.5 text-left transition-colors',
+                    isCurrent && 'session-list-item-active',
+                    isCancelled && 'opacity-50 cursor-not-allowed'
                   )}
                 >
                   <div className="flex items-start gap-2">
@@ -141,7 +139,7 @@ export function KanbanSwitcherDialog({
                       {isSwitching ? (
                         <Loader2 className="size-3.5 animate-spin text-foreground/60" />
                       ) : isCurrent ? (
-                        <Check className="size-3.5 text-blue-500" />
+                        <Check className="size-3.5 text-primary" />
                       ) : null}
                     </div>
                   </div>

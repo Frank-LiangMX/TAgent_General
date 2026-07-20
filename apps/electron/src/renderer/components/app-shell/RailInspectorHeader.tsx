@@ -40,7 +40,9 @@ export function RailInspectorHeader({
   return (
     <div
       className={cn(
-        'relative shrink-0 border-b border-border/50 px-5 py-4',
+        'relative shrink-0 px-5 py-4',
+        /* spatial：软分隔，不用文档页硬 border */
+        'shadow-[inset_0_-1px_0_hsl(var(--foreground)/0.06)]',
         reserveControls && 'pr-[134px]',
         className
       )}

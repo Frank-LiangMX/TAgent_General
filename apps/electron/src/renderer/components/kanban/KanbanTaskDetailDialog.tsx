@@ -1,43 +1,53 @@
 /**
- * KanbanTaskDetailDialog — 看板任务详情弹窗
+ * KanbanTaskDetailDialog — Worker 工牌详情
  *
- * 点击 KanbanTaskListItem 卡片后弹出，展示完整任务信息：
- * 标题、状态、任务内容、摘要、工人会话链接、模型/角色/渠道、耗时、时间戳、错误/阻塞原因。
- *
- * 如果任务有 assigneeSessionId（工人子会话），加载并渲染该会话的 SDK 消息，
- * 让用户看到工人的执行过程和对话。
- *
- * running 任务的耗时每秒刷新（setInterval）。
+ * 工人对话只在本弹窗「执行过程」里看（消息流），不跳会话 Tab。
+ * 左栏：元信息；主区：概览 · 执行过程 · 交接。
  */
 
 import * as React from 'react'
-import { Loader2, ExternalLink, RotateCw, ArrowUpRight } from 'lucide-react'
+import {
+  Loader2,
+  RotateCw,
+  Target,
+} from 'lucide-react'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
-import type { KanbanTask, KanbanTaskStatus, SDKMessage } from '@tagent/shared'
+import type { KanbanTask, SDKMessage } from '@tagent/shared'
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  Badge,
   Button,
+  Dialog,
+  Input,
+  SegmentedTabs,
+  SegmentedTabsItem,
 } from '@tagent/ui'
-import { STATUS_BADGE } from './KanbanTaskListItem'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-
-import { cn } from '@/lib/utils'
-import { useOpenSession } from '@/hooks/useOpenSession'
-
 import {
   groupIntoTurns,
   MessageGroupRenderer,
   getGroupId,
   buildHistoricalTaskSubjects,
 } from '@/components/agent/SDKMessageRenderer'
+import { CREW_STATUS_BADGE, roleAvatarSpec } from '@/lib/kanban-crew-status'
+import { cn } from '@/lib/utils'
+
+import {
+  KanbanDetailA11yTitle,
+  KanbanDetailBody,
+  KanbanDetailContent,
+  KanbanDetailHeader,
+  KanbanDetailMain,
+  KanbanDetailMetaItem,
+  KanbanDetailSection,
+} from './kanban-detail-shell'
+
+/** @deprecated */
+export const STATUS_BADGE = CREW_STATUS_BADGE
+
+type DetailTab = 'overview' | 'transcript' | 'handoff'
 
 function formatDuration(ms: number): string {
   const seconds = Math.round(ms / 1000)
@@ -45,10 +55,10 @@ function formatDuration(ms: number): string {
   if (seconds < 60) return `${seconds}s`
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
-  if (m < 60) return `${m}m ${s}s`
+  if (m < 60) return s > 0 ? `${m}m ${s}s` : `${m}m`
   const h = Math.floor(m / 60)
   const remainingM = m % 60
-  return `${h}h ${remainingM}m`
+  return remainingM > 0 ? `${h}h ${remainingM}m` : `${h}h`
 }
 
 function formatDateTime(timestamp: number): string {
@@ -61,11 +71,69 @@ function formatDateTime(timestamp: number): string {
   })
 }
 
+const mdHeading = (size: string) =>
+  function MdHeading({ children }: { children?: React.ReactNode }): React.ReactElement {
+    return (
+      <h3 className={cn(size, 'mb-1.5 mt-3 font-semibold tracking-tight text-foreground first:mt-0')}>
+        {children}
+      </h3>
+    )
+  }
+
+/** 概览 / 摘要用紧凑 Markdown，避免浏览器默认 h1/表格字号撑爆弹窗 */
+const mdCompact = {
+  h1: mdHeading('text-[13px]'),
+  h2: mdHeading('text-[12.5px]'),
+  h3: mdHeading('text-[12px]'),
+  h4: mdHeading('text-[12px]'),
+  h5: mdHeading('text-[11.5px]'),
+  h6: mdHeading('text-[11.5px]'),
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="m-0 mb-2 last:mb-0 text-[12px] leading-relaxed text-foreground/85">{children}</p>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold text-foreground">{children}</strong>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[11px]">{children}</code>
+  ),
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="mb-2 overflow-x-auto rounded-[10px] bg-foreground/[0.06] p-2.5 font-mono text-[11px] leading-relaxed text-foreground/80 last:mb-0">
+      {children}
+    </pre>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="mb-2 list-disc space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="mb-2 list-decimal space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-[12px] leading-relaxed text-foreground/85">{children}</li>
+  ),
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="mb-2 overflow-x-auto last:mb-0">
+      <table className="w-full border-collapse text-[12px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead className="border-b border-foreground/[0.08]">{children}</thead>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="px-2 py-1.5 text-left text-[11px] font-medium text-foreground/55">{children}</th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="border-t border-foreground/[0.05] px-2 py-1.5 align-top text-[12px] leading-relaxed text-foreground/85">
+      {children}
+    </td>
+  ),
+  hr: () => <hr className="my-3 border-foreground/[0.08]" />,
+}
+
 export interface KanbanTaskDetailDialogProps {
   task: KanbanTask
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** 角色显示标签（含同角色多实例编号，如「通用执行者 01」） */
   roleLabel?: string
 }
 
@@ -75,13 +143,15 @@ export function KanbanTaskDetailDialog({
   onOpenChange,
   roleLabel,
 }: KanbanTaskDetailDialogProps): React.ReactElement {
-  const badge = STATUS_BADGE[task.status]
+  const badge = CREW_STATUS_BADGE[task.status]
   const isRunning = task.status === 'running'
   const isFailed = task.status === 'failed'
   const [retrying, setRetrying] = React.useState(false)
+  const [tab, setTab] = React.useState<DetailTab>('overview')
 
   const roleMap = useAgentRoleMap()
   const roleDisplayName = roleLabel ?? (task.roleId ? roleMap.get(task.roleId) : undefined)
+  const { wrap: avatarWrap, Icon: RoleIcon } = roleAvatarSpec(task.roleId)
 
   const handleRetry = async (): Promise<void> => {
     setRetrying(true)
@@ -98,7 +168,6 @@ export function KanbanTaskDetailDialog({
     }
   }
 
-  // 耗时实时刷新：running 时每秒 re-render
   const [, setTick] = React.useState(0)
   React.useEffect(() => {
     if (!open || !isRunning) return
@@ -106,20 +175,13 @@ export function KanbanTaskDetailDialog({
     return () => clearInterval(timer)
   }, [open, isRunning])
 
-  const openSession = useOpenSession()
+  // 有工人会话时默认进「执行过程」（消息流）；未派工才看概览
+  React.useEffect(() => {
+    if (!open) return
+    setTab(task.assigneeSessionId ? 'transcript' : 'overview')
+  }, [open, task.assigneeSessionId, task.id])
 
-  const handleOpenWorkerSession = (): void => {
-    if (!assigneeSessionId) return
-    try {
-      openSession('agent', assigneeSessionId, `工人会话 ${task.title}`)
-      onOpenChange(false)
-    } catch (err) {
-      console.error('[看板] 打开工人会话失败:', err)
-      toast.error('打开工人会话失败', {
-        description: err instanceof Error ? err.message : undefined,
-      })
-    }
-  }
+  const assigneeSessionId = task.assigneeSessionId
 
   const durationMs =
     task.startedAt && task.finishedAt
@@ -128,10 +190,8 @@ export function KanbanTaskDetailDialog({
         ? Date.now() - task.startedAt
         : 0
 
-  // 加载工人子会话的 SDK 消息（assigneeSessionId 存在时）
   const [workerMessages, setWorkerMessages] = React.useState<SDKMessage[]>([])
   const [loadingMessages, setLoadingMessages] = React.useState(false)
-  const assigneeSessionId = task.assigneeSessionId
 
   React.useEffect(() => {
     if (!open || !assigneeSessionId) {
@@ -146,9 +206,7 @@ export function KanbanTaskDetailDialog({
       if (firstLoad) setLoadingMessages(true)
       try {
         const msgs = await window.electronAPI.getAgentSessionSDKMessages(assigneeSessionId)
-        if (!cancelled) {
-          setWorkerMessages(msgs)
-        }
+        if (!cancelled) setWorkerMessages(msgs)
       } catch (err) {
         if (!cancelled) {
           console.error('[看板] 加载工人子会话消息失败:', err)
@@ -175,7 +233,6 @@ export function KanbanTaskDetailDialog({
     }
   }, [open, assigneeSessionId, task.status])
 
-  // 把 SDK 消息分组为 turns（复用 AgentMessages 的渲染逻辑）
   const groups = React.useMemo(() => {
     if (workerMessages.length === 0) return []
     return groupIntoTurns(workerMessages)
@@ -186,245 +243,237 @@ export function KanbanTaskDetailDialog({
     [workerMessages]
   )
 
+  const aside = (
+    <>
+      <div className="space-y-3">
+        <KanbanDetailMetaItem label="角色" value={roleDisplayName ?? task.roleId} />
+        <KanbanDetailMetaItem label="模型" value={task.modelId} mono />
+        <KanbanDetailMetaItem label="渠道" value={task.channelId} mono />
+        <KanbanDetailMetaItem label="优先级" value={String(task.priority)} mono />
+        <KanbanDetailMetaItem
+          label="耗时"
+          value={durationMs > 0 ? formatDuration(durationMs) : isRunning ? '进行中' : undefined}
+        />
+        <KanbanDetailMetaItem
+          label="开始"
+          value={task.startedAt ? formatDateTime(task.startedAt) : undefined}
+        />
+        <KanbanDetailMetaItem
+          label="完成"
+          value={task.finishedAt ? formatDateTime(task.finishedAt) : undefined}
+        />
+      </div>
+    </>
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            {isRunning && <Loader2 className="size-4 animate-spin text-amber-500" />}
-            <DialogTitle className="text-base">{task.title}</DialogTitle>
-            <Badge variant="outline" className={cn('text-[10px]', badge.className)}>
+      <KanbanDetailContent className="max-w-[920px]">
+        <KanbanDetailA11yTitle title={task.title} description={task.id} />
+        <KanbanDetailHeader
+          icon={
+            <div
+              className={cn(
+                'relative flex size-10 items-center justify-center rounded-[12px]',
+                avatarWrap
+              )}
+            >
+              <RoleIcon className="size-4" strokeWidth={1.75} />
+              {isRunning ? (
+                <span className="absolute -right-0.5 -top-0.5 size-2 animate-pulse rounded-full bg-amber-500" />
+              ) : null}
+            </div>
+          }
+          title={task.title}
+          description={
+            <span className="font-mono text-[11px] text-foreground/40">{task.id}</span>
+          }
+          meta={
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium',
+                badge.className
+              )}
+            >
+              <span className={cn('size-1 rounded-full', badge.dot)} />
               {badge.label}
-            </Badge>
-            {isFailed && (
+            </span>
+          }
+          actions={
+            isFailed ? (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="ml-auto h-7 text-[11px]"
+                className="h-8 gap-1 rounded-full px-3 text-xs"
                 disabled={retrying}
                 onClick={() => void handleRetry()}
               >
-                <RotateCw className={cn('size-3 mr-1', retrying && 'animate-spin')} />
+                <RotateCw className={cn('size-3', retrying && 'animate-spin')} />
                 {retrying ? '重试中' : '重试'}
               </Button>
-            )}
-          </div>
-          <DialogDescription className="font-mono text-[10px]">{task.id}</DialogDescription>
-        </DialogHeader>
+            ) : isRunning ? (
+              <Loader2 className="size-4 animate-spin text-amber-500" />
+            ) : null
+          }
+        />
 
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 scrollbar-thin">
-          {/* 任务内容 */}
-          <section>
-            <h3 className="mb-1.5 text-xs font-medium text-foreground">任务内容</h3>
-            <div className="session-glass rounded-glass-popover p-3">
-              <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/80">
-                <Markdown>{task.body || '（无内容）'}</Markdown>
-              </div>
-            </div>
-          </section>
-
-          {/* 完成摘要 / 阻塞原因 / 错误信息 */}
-          {task.resultSummary && (
-            <section>
-              <h3 className="mb-1.5 text-xs font-medium text-foreground">完成摘要</h3>
-              <div className="rounded-glass-popover bg-emerald-500/5 p-3 border border-emerald-500/20">
-                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/80">
-                  <Markdown>{task.resultSummary}</Markdown>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {task.blockedReason && (
-            <section>
-              <h3 className="mb-1.5 text-xs font-medium text-foreground">阻塞原因</h3>
-              <div className="rounded-glass-popover bg-red-500/5 p-3 border border-red-500/20">
-                <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                  {task.blockedReason}
-                </p>
-              </div>
-            </section>
-          )}
-
-          {/* Goal / Judge */}
-          {task.goalMode && (
-            <section>
-              <h3 className="mb-1.5 text-xs font-medium text-foreground">Goal 验收</h3>
-              <div className="rounded-glass-popover border border-violet-500/20 bg-violet-500/5 p-3 space-y-2 text-xs">
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                  <span>
-                    <span className="text-muted-foreground">模式</span>{' '}
-                    <span className="font-medium text-violet-600 dark:text-violet-400">Goal</span>
-                  </span>
-                  <span>
-                    <span className="text-muted-foreground">轮次</span>{' '}
-                    <span className="font-mono tabular-nums">
-                      {typeof task.metadata?.goalTurnCount === 'number'
-                        ? task.metadata.goalTurnCount
-                        : '—'}
-                      /{task.goalMaxTurns ?? 20}
-                    </span>
-                  </span>
-                  {task.judgeModel && (
-                    <span>
-                      <span className="text-muted-foreground">Judge 模型</span>{' '}
-                      <span className="font-mono">{task.judgeModel}</span>
-                    </span>
-                  )}
-                </div>
-                {task.acceptanceCriteria?.trim() && (
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">验收标准</p>
-                    <p className="text-foreground/80 whitespace-pre-wrap">
-                      {task.acceptanceCriteria}
-                    </p>
-                  </div>
-                )}
-                {task.metadata?.judgeResult && (
-                  <div className="rounded-md bg-background/40 p-2 border border-border/30">
-                    <p className="text-[10px] text-muted-foreground mb-0.5">最近裁判</p>
-                    <p className="font-medium text-foreground">
-                      {task.metadata.judgeResult.verdict}
-                      {task.metadata.judgeResult.failOpen ? '（fail-open）' : ''}
-                    </p>
-                    <p className="mt-0.5 text-foreground/80 whitespace-pre-wrap">
-                      {task.metadata.judgeResult.reason}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* D+2: blackboard 跨任务交接评论 */}
-          <BlackboardSection task={task} />
-
-          {task.error && (
-            <section>
-              <h3 className="mb-1.5 text-xs font-medium text-foreground">错误信息</h3>
-              <div className="rounded-glass-popover bg-red-500/5 p-3 border border-red-500/20">
-                <p className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono">
-                  {task.error}
-                </p>
-              </div>
-            </section>
-          )}
-
-          {/* 工人执行过程（SDK 消息渲染） */}
-          {assigneeSessionId && (
-            <section>
-              <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground">
+        <KanbanDetailBody aside={aside}>
+          <div className="flex shrink-0 items-center gap-3 px-5 pt-3">
+            <SegmentedTabs value={tab} onValueChange={(v) => setTab(v as DetailTab)}>
+              <SegmentedTabsItem value="transcript" disabled={!assigneeSessionId}>
                 执行过程
-                <span className="text-[10px] text-muted-foreground">
-                  · 工人会话 {assigneeSessionId}
-                </span>
-              </h3>
-              <div className="session-glass rounded-glass-popover p-2 max-h-[300px] overflow-y-auto scrollbar-thin">
-                {loadingMessages ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : groups.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted-foreground">工人尚未产出消息</p>
-                ) : (
-                  <div className="space-y-2">
-                    {groups.map((group) => (
-                      <MessageGroupRenderer
-                        key={getGroupId(group)}
-                        group={group}
-                        allMessages={workerMessages}
-                        historicalTaskSubjects={historicalTaskSubjects}
-                        isStreaming={isRunning || undefined}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
+              </SegmentedTabsItem>
+              <SegmentedTabsItem value="overview">概览</SegmentedTabsItem>
+              <SegmentedTabsItem value="handoff">交接</SegmentedTabsItem>
+            </SegmentedTabs>
+          </div>
 
-          {/* 元信息网格 */}
-          <section className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-glass-popover bg-muted/30 p-3 text-xs">
-            <InfoRow label="模型" value={task.modelId} mono />
-            <InfoRow label="角色" value={roleDisplayName ?? task.roleId} mono />
-            <InfoRow label="渠道" value={task.channelId} mono />
-            <InfoRow label="优先级" value={String(task.priority)} mono />
-            <InfoRow
-              label="工人会话"
-              value={task.assigneeSessionId}
-              mono
-              actionIcon={
-                task.assigneeSessionId ? (
-                  <button
-                    type="button"
-                    onClick={handleOpenWorkerSession}
-                    className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
-                    title="在新 Tab 打开工人会话"
-                  >
-                    打开
-                    <ArrowUpRight className="size-2.5" />
-                  </button>
-                ) : undefined
-              }
-            />
-            <InfoRow
-              label="耗时"
-              value={durationMs > 0 ? formatDuration(durationMs) : isRunning ? '进行中' : '—'}
-            />
-            <InfoRow
-              label="开始时间"
-              value={task.startedAt ? formatDateTime(task.startedAt) : '—'}
-            />
-            <InfoRow
-              label="完成时间"
-              value={task.finishedAt ? formatDateTime(task.finishedAt) : '—'}
-            />
-          </section>
-        </div>
-      </DialogContent>
+          <KanbanDetailMain>
+            {tab === 'overview' ? (
+              <OverviewPanel task={task} />
+            ) : tab === 'transcript' ? (
+              <TranscriptPanel
+                loading={loadingMessages}
+                groups={groups}
+                workerMessages={workerMessages}
+                historicalTaskSubjects={historicalTaskSubjects}
+                isRunning={isRunning}
+              />
+            ) : (
+              <BlackboardSection task={task} />
+            )}
+          </KanbanDetailMain>
+        </KanbanDetailBody>
+      </KanbanDetailContent>
     </Dialog>
   )
 }
 
-function InfoRow({
-  label,
-  value,
-  mono,
-  actionIcon,
-}: {
-  label: string
-  value?: string
-  mono?: boolean
-  actionIcon?: React.ReactNode
-}): React.ReactElement {
+function OverviewPanel({ task }: { task: KanbanTask }): React.ReactElement {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
-      <span
-        className={cn(
-          'flex items-center gap-1 text-foreground/80',
-          mono && 'font-mono text-[11px]'
-        )}
-      >
-        {value ? (
-          <>
-            <span className="truncate">{value}</span>
-            {actionIcon}
-          </>
-        ) : (
-          <span className="text-muted-foreground/50">—</span>
-        )}
-      </span>
+    <>
+      <KanbanDetailSection kicker="任务内容">
+        <div className="kanban-crew-md">
+          <Markdown remarkPlugins={[remarkGfm]} components={mdCompact}>
+            {task.body || '（无内容）'}
+          </Markdown>
+        </div>
+      </KanbanDetailSection>
+
+      {task.resultSummary ? (
+        <KanbanDetailSection kicker="交卷摘要" tone="success">
+          <Markdown remarkPlugins={[remarkGfm]} components={mdCompact}>
+            {task.resultSummary}
+          </Markdown>
+        </KanbanDetailSection>
+      ) : null}
+
+      {task.blockedReason ? (
+        <KanbanDetailSection kicker="阻塞原因" tone="danger">
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/85">
+            {task.blockedReason}
+          </p>
+        </KanbanDetailSection>
+      ) : null}
+
+      {task.error ? (
+        <KanbanDetailSection kicker="错误信息" tone="danger">
+          <p className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-red-600/90 dark:text-red-400/90">
+            {task.error}
+          </p>
+        </KanbanDetailSection>
+      ) : null}
+
+      {task.goalMode ? (
+        <KanbanDetailSection
+          kicker="Goal 验收"
+          tone="violet"
+          trailing={
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-violet-600 dark:text-violet-400">
+              <Target className="size-2.5" />
+              Goal
+            </span>
+          }
+        >
+          <div className="space-y-2 text-[12px]">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-foreground/70">
+              <span>
+                轮次{' '}
+                <span className="font-mono tabular-nums text-foreground">
+                  {typeof task.metadata?.goalTurnCount === 'number'
+                    ? task.metadata.goalTurnCount
+                    : '—'}
+                  /{task.goalMaxTurns ?? 20}
+                </span>
+              </span>
+              {task.judgeModel ? (
+                <span>
+                  Judge{' '}
+                  <span className="font-mono text-foreground">{task.judgeModel}</span>
+                </span>
+              ) : null}
+            </div>
+            {task.acceptanceCriteria?.trim() ? (
+              <p className="whitespace-pre-wrap text-foreground/80">{task.acceptanceCriteria}</p>
+            ) : null}
+            {task.metadata?.judgeResult ? (
+              <div className="rounded-[10px] bg-background/50 px-2.5 py-2">
+                <p className="text-[11px] font-medium text-foreground">
+                  {task.metadata.judgeResult.verdict}
+                  {task.metadata.judgeResult.failOpen ? ' · fail-open' : ''}
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap text-[12px] text-foreground/75">
+                  {task.metadata.judgeResult.reason}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </KanbanDetailSection>
+      ) : null}
+    </>
+  )
+}
+
+function TranscriptPanel({
+  loading,
+  groups,
+  workerMessages,
+  historicalTaskSubjects,
+  isRunning,
+}: {
+  loading: boolean
+  groups: ReturnType<typeof groupIntoTurns>
+  workerMessages: SDKMessage[]
+  historicalTaskSubjects: ReturnType<typeof buildHistoricalTaskSubjects>
+  isRunning: boolean
+}): React.ReactElement {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="size-5 animate-spin text-foreground/40" />
+      </div>
+    )
+  }
+  if (groups.length === 0) {
+    return (
+      <p className="py-16 text-center text-[13px] text-foreground/45">工人尚未产出消息</p>
+    )
+  }
+  return (
+    <div className="space-y-2">
+      {groups.map((group) => (
+        <MessageGroupRenderer
+          key={getGroupId(group)}
+          group={group}
+          allMessages={workerMessages}
+          historicalTaskSubjects={historicalTaskSubjects}
+          isStreaming={isRunning || undefined}
+        />
+      ))}
     </div>
   )
 }
 
-/**
- * D+2: blackboard 跨任务交接评论区
- *
- * 显示 task.metadata.blackboard 评论列表（按 ts 升序）+ 输入框让用户主动添加评论。
- * 评论会被下一个 worker 启动时注入 body，作为跨任务上下文交接。
- */
 function BlackboardSection({ task }: { task: KanbanTask }): React.ReactElement {
   const comments = task.metadata?.blackboard ?? []
   const [newComment, setNewComment] = React.useState('')
@@ -435,7 +484,6 @@ function BlackboardSection({ task }: { task: KanbanTask }): React.ReactElement {
     if (!trimmed) return
     setSubmitting(true)
     try {
-      // author='main'：UI 提交的评论来源是主会话用户
       await window.electronAPI.kanban.commentTask({
         taskId: task.id,
         comment: trimmed,
@@ -453,56 +501,54 @@ function BlackboardSection({ task }: { task: KanbanTask }): React.ReactElement {
   }
 
   return (
-    <section>
-      <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground">
-        Blackboard
-        <span className="text-[10px] text-muted-foreground">· 跨任务交接（{comments.length}）</span>
-      </h3>
-      <div className="rounded-glass-popover bg-muted/20 p-3 space-y-2">
-        {comments.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            暂无评论。主会话调 kanban_comment 或在此输入，下一个 worker 启动时会注入 body。
-          </p>
-        ) : (
-          <ul className="space-y-1.5">
-            {comments.map((c, idx) => (
-              <li key={`${c.ts}-${idx}`} className="text-xs">
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <span className="font-medium text-foreground/70">{c.author}</span>
-                  <span>·</span>
-                  <span>{new Date(c.ts).toLocaleString()}</span>
-                </div>
-                <p className="mt-0.5 text-foreground/80 whitespace-pre-wrap">{c.comment}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex gap-1.5 pt-1.5 border-t border-border/30">
-          <input
-            type="text"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="补充上下文 / 给下一个 worker 的发现..."
-            className="flex-1 rounded-glass-popover bg-background/50 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-            disabled={submitting}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !submitting) {
-                e.preventDefault()
-                void handleSubmit()
-              }
-            }}
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleSubmit}
-            disabled={submitting || !newComment.trim()}
-            className="h-7 px-2 text-xs"
-          >
-            发送
-          </Button>
-        </div>
+    <KanbanDetailSection
+      kicker="Blackboard"
+      trailing={
+        <span className="text-[10px] tabular-nums text-foreground/40">{comments.length}</span>
+      }
+    >
+      {comments.length === 0 ? (
+        <p className="py-3 text-center text-[12px] text-foreground/45">
+          暂无评论。写下发现，下一个 worker 启动时会注入 body。
+        </p>
+      ) : (
+        <ul className="mb-3 space-y-2.5">
+          {comments.map((c, idx) => (
+            <li key={`${c.ts}-${idx}`} className="text-[12px]">
+              <div className="flex items-center gap-1.5 text-[10px] text-foreground/40">
+                <span className="font-medium text-foreground/65">{c.author}</span>
+                <span>·</span>
+                <span>{new Date(c.ts).toLocaleString()}</span>
+              </div>
+              <p className="mt-0.5 whitespace-pre-wrap text-foreground/80">{c.comment}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2 border-t border-foreground/[0.06] pt-3">
+        <Input
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="补充上下文 / 给下一个 worker…"
+          className="h-8 flex-1 text-xs"
+          disabled={submitting}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !submitting) {
+              e.preventDefault()
+              void handleSubmit()
+            }
+          }}
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => void handleSubmit()}
+          disabled={submitting || !newComment.trim()}
+          className="h-8 rounded-full px-3 text-xs"
+        >
+          发送
+        </Button>
       </div>
-    </section>
+    </KanbanDetailSection>
   )
 }

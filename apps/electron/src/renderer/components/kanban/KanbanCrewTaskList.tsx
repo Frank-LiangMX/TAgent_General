@@ -1,9 +1,8 @@
 /**
- * KanbanCrewTaskList — 按人态分组的数字员工列表
+ * KanbanCrewTaskList — 完整工牌网格（按人态分组，无砍内容）
  */
 
 import * as React from 'react'
-import { KanbanSquare } from 'lucide-react'
 
 import type { KanbanTask } from '@tagent/shared'
 
@@ -15,9 +14,7 @@ import { cn } from '@/lib/utils'
 
 export interface KanbanCrewTaskListProps {
   tasks: KanbanTask[]
-  /** grid：看板主页三列；stack：右栏/团队竖向 */
   layout?: 'grid' | 'stack'
-  /** false 时不弹详情（由 onTaskClick 处理） */
   showDetailDialog?: boolean
   onTaskClick?: (task: KanbanTask) => void
   selectedTaskId?: string | null
@@ -42,21 +39,17 @@ export function KanbanCrewTaskList({
     [tasks, roleMap]
   )
 
-  // 同角色在岗计数（每个 running task 有多少同 roleId 的 running 工友）
   const sameRoleActiveCountMap = React.useMemo(() => {
-    // 统计每个 roleId 有多少 running tasks
     const runningCountByRole = new Map<string, number>()
     for (const task of tasks) {
       if (task.status === 'running' && task.roleId) {
         runningCountByRole.set(task.roleId, (runningCountByRole.get(task.roleId) ?? 0) + 1)
       }
     }
-    // 每个 task 的 sameRoleActiveCount = 其 roleId 的 running 总数（≥2 才传）
     const map = new Map<string, number>()
     for (const task of tasks) {
       if (task.status === 'running' && task.roleId) {
-        const count = runningCountByRole.get(task.roleId) ?? 1
-        map.set(task.id, count)
+        map.set(task.id, runningCountByRole.get(task.roleId) ?? 1)
       }
     }
     return map
@@ -66,39 +59,42 @@ export function KanbanCrewTaskList({
     return (
       <div
         className={cn(
-          'flex flex-col items-center justify-center py-12 text-center px-4',
+          'flex flex-col items-center justify-center px-4 py-20 text-center',
           className
         )}
       >
-        <KanbanSquare className="size-10 text-muted-foreground/30 mb-2" />
-        <p className="text-xs text-muted-foreground mb-1">还没有数字员工上岗</p>
-        <p className="text-[11px] text-muted-foreground/70 max-w-[220px]">{emptyHint}</p>
+        <p className="text-sm text-muted-foreground">还没有人上岗</p>
+        <p className="mt-1 max-w-[240px] text-[11px] text-muted-foreground/65">{emptyHint}</p>
       </div>
     )
   }
 
   return (
-    <div className={cn('space-y-4', className, contentClassName)}>
-      {CREW_STATUS_GROUPS.map(({ status, label, desc }) => {
+    <div className={cn('space-y-6', className, contentClassName)}>
+      {CREW_STATUS_GROUPS.map(({ status, label }) => {
         const groupTasks = tasks.filter((t) => t.status === status)
         if (groupTasks.length === 0) return null
         return (
-          <div key={status}>
-            <div className="flex items-center gap-2 mb-1.5 px-0.5">
+          <section key={status}>
+            <div className="mb-2 flex items-baseline gap-2 px-0.5">
               <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
-              <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+              <span className="text-[10px] tabular-nums text-muted-foreground/55">
                 {groupTasks.length}
               </span>
-              {layout === 'grid' && desc ? (
-                <span className="text-[9px] text-muted-foreground/40">{desc}</span>
-              ) : null}
             </div>
-            <div className={cn(layout === 'grid' ? 'grid grid-cols-3 gap-2.5' : 'space-y-1.5')}>
+            <div
+              className={cn(
+                layout === 'grid'
+                  ? 'grid grid-cols-[repeat(auto-fill,280px)] items-stretch gap-3'
+                  : 'space-y-2'
+              )}
+            >
               {groupTasks.map((task) => (
                 <div
                   key={task.id}
                   className={cn(
-                    selectedTaskId === task.id && 'ring-1 ring-primary/40 rounded-glass-popover'
+                    'h-full min-h-0',
+                    selectedTaskId === task.id && 'ring-1 ring-foreground/15 rounded-[18px]'
                   )}
                   onClick={onTaskClick ? () => onTaskClick(task) : undefined}
                   onKeyDown={
@@ -123,7 +119,7 @@ export function KanbanCrewTaskList({
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )
       })}
     </div>

@@ -341,7 +341,13 @@ export const MessageResponse = React.memo(
       <div
         className={cn(
           'prose dark:prose-invert max-w-none text-[length:var(--md-preview-font-size,12px)]',
-          'prose-p:my-1.5 prose-p:leading-[1.6] prose-li:leading-[1.6] prose-pre:my-0 prose-headings:my-2 prose-hr:my-3',
+          'prose-p:my-1.5 prose-p:leading-[1.6] prose-li:leading-[1.6] prose-pre:my-0 prose-hr:my-3',
+          // 标题压到接近正文，避免信息流里 h1/h2 像海报标题
+          'prose-headings:my-2 prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground',
+          'prose-h1:text-[14px] prose-h1:leading-snug',
+          'prose-h2:text-[13px] prose-h2:leading-snug',
+          'prose-h3:text-[12.5px] prose-h3:leading-snug',
+          'prose-h4:text-[12px] prose-h4:leading-snug',
           '[&_.code-block-wrapper+.code-block-wrapper]:mt-4',
           '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
           className

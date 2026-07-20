@@ -91,7 +91,7 @@
 }
 
 .agent-view--office-dock [data-conversation-scroll-btn] {
-  bottom: calc(var(--session-bottom-reserve, 118px) + 8px);
+  bottom: calc(var(--session-bottom-reserve, 118px) + 14px);
 }
 
 .agent-view--office-dock .office-conversation-composer {

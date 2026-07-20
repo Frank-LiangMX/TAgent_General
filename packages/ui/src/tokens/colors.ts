@@ -1,28 +1,21 @@
-/**
- * 颜色 Token 源
+﻿/**
+ * 棰滆壊 Token 婧? *
+ * 鏉冨▉瑙嗚婧愶細`prototypes/spatial-theme-study/theme-tokens.css`锛坴4 Spatial Lens锛夈€? *
+ * 璁捐鍘熷垯锛? * 1. **绾?65% 杩戜腑鎬х┖闂?+ A/B 鐭跨墿鍏?*锛歴cene-base / glass 杩戞棤鑹诧紝韬唤鍙潬 scene A/B 鍏? * 2. **accent 鍙粰 CTA / focus / 鍏抽敭杩涘害**锛氭槧灏勪负 Tailwind `primary`锛沘ctive 涓€х幓鐠冧笉鏌?accent
+ * 3. **ink 鍥涚骇瀛楄壊**锛歠oreground 鈮?ink-strong锛屾鏂?娆¤鐢ㄤ綆 chroma 鍐锋殩瀛楄壊锛屼笉鏁撮〉鏌撹壊
+ * 4. **鍏富棰樺喎鏆?*锛歞efault 鐭跨墿鐡峰厜 / ocean 闈掔摲姘村厜 / forest 鑼剁儫姗勬 /
+ *    slate 鐜勬鏆栫伆 / orange 鐞ョ弨骞插厜 / purple 楦㈠熬鐑熷厜锛堢闇撹櫣绱級
+ * 5. **scene 涓庢潗璐ㄦ浜?*锛氫富棰樺彧瀹?hue / primary / ink / scene锛涙潗璐ㄥ彧鏀?blur/opacity/rim
  *
- * 权威视觉源：`prototypes/spatial-theme-study/theme-tokens.css`（v4 Spatial Lens）。
- *
- * 设计原则：
- * 1. **约 65% 近中性空间 + A/B 矿物光**：scene-base / glass 近无色，身份只靠 scene A/B 光
- * 2. **accent 只给 CTA / focus / 关键进度**：映射为 Tailwind `primary`；active 中性玻璃不染 accent
- * 3. **ink 四级字色**：foreground ≈ ink-strong，正文/次要用低 chroma 冷暖字色，不整页染色
- * 4. **六主题冷暖**：default 矿物瓷光 / ocean 青瓷水光 / forest 茶烟橄榄 /
- *    slate 玄武暖灰 / orange 琥珀干光 / purple 鸢尾烟光（禁霓虹紫）
- * 5. **scene 与材质正交**：主题只定 hue / primary / ink / scene；材质只改 blur/opacity/rim
- *
- * 值格式：HSL 三元组字符串（如 "220 14% 96%"），不含 hsl()；
- * scene-*-rgb / glass-rgb 为 `r g b` 空格三元组。
- * 生成器把每个 key 产出 `--{key}` CSS 变量。
- */
+ * 鍊兼牸寮忥細HSL 涓夊厓缁勫瓧绗︿覆锛堝 "220 14% 96%"锛夛紝涓嶅惈 hsl()锛? * scene-*-rgb / glass-rgb 涓?`r g b` 绌烘牸涓夊厓缁勩€? * 鐢熸垚鍣ㄦ妸姣忎釜 key 浜у嚭 `--{key}` CSS 鍙橀噺銆? */
 
-/** 弥散渐变环境色三元组（由每个 ThemeName 定义） */
+/** 寮ユ暎娓愬彉鐜鑹蹭笁鍏冪粍锛堢敱姣忎釜 ThemeName 瀹氫箟锛?*/
 export interface SceneField {
-  /** 弥散渐变基底色（窗口底色：浅色瓷白 / 深色深底） */
+  /** 寮ユ暎娓愬彉鍩哄簳鑹诧紙绐楀彛搴曡壊锛氭祬鑹茬摲鐧?/ 娣辫壊娣卞簳锛?*/
   base: string
-  /** 主环境光斑色（左上光斑 + glass 色散右侧；中饱和，保证光斑与色散可见） */
+  /** 涓荤幆澧冨厜鏂戣壊锛堝乏涓婂厜鏂?+ glass 鑹叉暎鍙充晶锛涗腑楗卞拰锛屼繚璇佸厜鏂戜笌鑹叉暎鍙锛?*/
   a: string
-  /** 次环境光斑色（右下光斑；极淡。default-light 为极弱暖雾，不泛黄） */
+  /** 娆＄幆澧冨厜鏂戣壊锛堝彸涓嬪厜鏂戯紱鏋佹贰銆俤efault-light 涓烘瀬寮辨殩闆撅紝涓嶆硾榛勶級 */
   b: string
   c: string
   glass: string
@@ -42,7 +35,7 @@ export interface SceneField {
 }
 
 export interface ThemeColors {
-  /** 背景色 */
+  /** 鑳屾櫙鑹?*/
   background: string
   foreground: string
   muted: string
@@ -68,11 +61,11 @@ export interface ThemeColors {
   'tooltip-foreground': string
   'tooltip-muted': string
   'content-area': string
-  /** 弥散渐变基底色（窗口底层 scene 背景） */
+  /** 寮ユ暎娓愬彉鍩哄簳鑹诧紙绐楀彛搴曞眰 scene 鑳屾櫙锛?*/
   'scene-base': string
-  /** 主环境光斑色 */
+  /** 涓荤幆澧冨厜鏂戣壊 */
   'scene-ambient-a': string
-  /** 次环境光斑色 */
+  /** 娆＄幆澧冨厜鏂戣壊 */
   'scene-ambient-b': string
   'scene-ambient-c': string
   'scene-base-rgb': string
@@ -106,15 +99,9 @@ export type ThemeName =
   | 'purple-dark'
 
 /**
- * 每个主题的 scene 弥散环境色三元组。
- *
- * 设计约束：
- * - 浅色：base 高 lightness（94-96%）瓷白/近中性，a 中饱和中 lightness 做可见光斑，
- *   b 极淡做次要光斑（default-light 的 b 是极弱暖雾，sat ≤ 22% 不泛黄）。
- * - 深色：base 低 lightness（13-15%）深底，a/b 为低 lightness（19-26%）主题色光斑，
- *   深色背景需要更亮的主题光斑才能让弥散渐变可见。
- * - a 同时承担 glass 色散右侧色，故 lightness 不能过高（否则色散不可见）。
- */
+ * 姣忎釜涓婚鐨?scene 寮ユ暎鐜鑹蹭笁鍏冪粍銆? *
+ * 璁捐绾︽潫锛? * - 娴呰壊锛歜ase 楂?lightness锛?4-96%锛夌摲鐧?杩戜腑鎬э紝a 涓ケ鍜屼腑 lightness 鍋氬彲瑙佸厜鏂戯紝
+ *   b 鏋佹贰鍋氭瑕佸厜鏂戯紙default-light 鐨?b 鏄瀬寮辨殩闆撅紝sat 鈮?22% 涓嶆硾榛勶級銆? * - 娣辫壊锛歜ase 浣?lightness锛?3-15%锛夋繁搴曪紝a/b 涓轰綆 lightness锛?9-26%锛変富棰樿壊鍏夋枒锛? *   娣辫壊鑳屾櫙闇€瑕佹洿浜殑涓婚鍏夋枒鎵嶈兘璁╁讥鏁ｆ笎鍙樺彲瑙併€? * - a 鍚屾椂鎵挎媴 glass 鑹叉暎鍙充晶鑹诧紝鏁?lightness 涓嶈兘杩囬珮锛堝惁鍒欒壊鏁ｄ笉鍙锛夈€? */
 function scene(
   base: string,
   a: string,
@@ -127,17 +114,17 @@ function scene(
 }
 
 const SCENE: Record<ThemeName, SceneField> = {
-  // Mist 瓷白雾面：冷雾蓝光斑 + 极弱暖雾
+  // Mist 鐡风櫧闆鹃潰锛氬喎闆捐摑鍏夋枒 + 鏋佸急鏆栭浘
   'default-light': scene('60 7% 92%', '211 39% 71%', '34 36% 81%', '221 6% 69%', '252 252 250', {
     baseRgb: '236 236 233',
     aRgb: '148 180 214',
     aPos: '18% 10%',
-    aSize: '46% 40%',
-    aStrength: '0.46',
+    aSize: '40% 44%',
+    aStrength: '0.38',
     bRgb: '228 208 184',
     bPos: '86% 86%',
-    bSize: '34% 30%',
-    bStrength: '0.28',
+    bSize: '36% 40%',
+    bStrength: '0.14',
     cRgb: '172 176 182',
     cPos: '52% 100%',
     cSize: '78% 40%',
@@ -147,28 +134,28 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '36 38 42',
     aRgb: '68 94 122',
     aPos: '18% 10%',
-    aSize: '46% 40%',
-    aStrength: '0.48',
+    aSize: '40% 44%',
+    aStrength: '0.38',
     bRgb: '80 68 54',
     bPos: '86% 86%',
-    bSize: '34% 30%',
-    bStrength: '0.30',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '44 46 50',
     cPos: '52% 100%',
     cSize: '78% 40%',
     cStrength: '0.15',
   }),
-  // Ocean 天青：青/teal 光斑
+  // Ocean 澶╅潚锛氶潚/teal 鍏夋枒
   'ocean-light': scene('195 21% 93%', '196 42% 62%', '35 40% 81%', '203 9% 67%', '250 252 252', {
     baseRgb: '232 238 240',
     aRgb: '120 176 196',
     aPos: '16% 12%',
-    aSize: '46% 40%',
-    aStrength: '0.45',
+    aSize: '40% 44%',
+    aStrength: '0.38',
     bRgb: '226 210 188',
     bPos: '86% 84%',
-    bSize: '34% 30%',
-    bStrength: '0.28',
+    bSize: '36% 40%',
+    bStrength: '0.14',
     cRgb: '164 174 180',
     cPos: '50% 100%',
     cSize: '76% 38%',
@@ -178,28 +165,28 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '32 40 42',
     aRgb: '44 92 104',
     aPos: '16% 12%',
-    aSize: '46% 40%',
-    aStrength: '0.47',
+    aSize: '40% 44%',
+    aStrength: '0.38',
     bRgb: '78 66 52',
     bPos: '86% 84%',
-    bSize: '34% 30%',
-    bStrength: '0.30',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '40 46 48',
     cPos: '50% 100%',
     cSize: '76% 38%',
     cStrength: '0.15',
   }),
-  // Moss 青苔：绿光斑
+  // Moss 闈掕嫈锛氱豢鍏夋枒
   'forest-light': scene('75 17% 91%', '116 25% 64%', '36 36% 75%', '90 7% 66%', '250 250 246', {
     baseRgb: '234 236 228',
     aRgb: '148 184 142',
     aPos: '16% 12%',
-    aSize: '44% 38%',
-    aStrength: '0.44',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '218 196 162',
     bPos: '84% 16%',
-    bSize: '34% 30%',
-    bStrength: '0.28',
+    bSize: '36% 40%',
+    bStrength: '0.14',
     cRgb: '168 174 162',
     cPos: '78% 96%',
     cSize: '42% 34%',
@@ -209,28 +196,28 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '36 40 34',
     aRgb: '58 92 64',
     aPos: '16% 12%',
-    aSize: '44% 38%',
-    aStrength: '0.46',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '84 70 50',
     bPos: '84% 16%',
-    bSize: '34% 30%',
-    bStrength: '0.30',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '44 48 42',
     cPos: '78% 96%',
     cSize: '42% 34%',
     cStrength: '0.16',
   }),
-  // Dusk 暖砂
+  // Dusk 鏆栫爞
   'slate-light': scene('40 24% 90%', '37 35% 72%', '212 31% 72%', '40 7% 65%', '251 248 244', {
     baseRgb: '236 232 224',
     aRgb: '210 190 158',
     aPos: '22% 8%',
-    aSize: '46% 38%',
-    aStrength: '0.44',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '162 182 204',
     bPos: '88% 86%',
-    bSize: '36% 32%',
-    bStrength: '0.30',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '172 168 160',
     cPos: '12% 92%',
     cSize: '38% 36%',
@@ -240,28 +227,28 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '38 36 32',
     aRgb: '98 80 56',
     aPos: '22% 8%',
-    aSize: '46% 38%',
-    aStrength: '0.46',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '58 70 86',
     bPos: '88% 86%',
-    bSize: '36% 32%',
-    bStrength: '0.32',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '46 44 40',
     cPos: '12% 92%',
     cSize: '38% 36%',
     cStrength: '0.16',
   }),
-  // 琥珀
+  // 鐞ョ弨
   'orange-light': scene('43 29% 91%', '36 55% 65%', '214 29% 74%', '39 11% 65%', '252 249 244', {
     baseRgb: '238 234 224',
     aRgb: '216 176 118',
     aPos: '18% 10%',
-    aSize: '44% 38%',
-    aStrength: '0.42',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '168 186 210',
     bPos: '86% 82%',
-    bSize: '34% 30%',
-    bStrength: '0.30',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '176 170 156',
     cPos: '55% 100%',
     cSize: '74% 38%',
@@ -271,28 +258,28 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '40 36 30',
     aRgb: '108 80 42',
     aPos: '18% 10%',
-    aSize: '44% 38%',
-    aStrength: '0.44',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '56 68 86',
     bPos: '86% 82%',
-    bSize: '34% 30%',
-    bStrength: '0.32',
+    bSize: '36% 40%',
+    bStrength: '0.16',
     cRgb: '46 44 38',
     cPos: '55% 100%',
     cSize: '74% 38%',
     cStrength: '0.15',
   }),
-  // 紫藤
+  // 绱棨
   'purple-light': scene('252 12% 92%', '249 28% 71%', '38 34% 78%', '240 6% 69%', '251 250 253', {
     baseRgb: '234 233 238',
     aRgb: '168 160 204',
     aPos: '16% 12%',
-    aSize: '44% 38%',
-    aStrength: '0.42',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '218 204 180',
     bPos: '88% 28%',
     bSize: '34% 32%',
-    bStrength: '0.26',
+    bStrength: '0.14',
     cRgb: '172 172 182',
     cPos: '50% 100%',
     cSize: '76% 38%',
@@ -302,12 +289,12 @@ const SCENE: Record<ThemeName, SceneField> = {
     baseRgb: '36 34 42',
     aRgb: '74 66 104',
     aPos: '16% 12%',
-    aSize: '44% 38%',
-    aStrength: '0.44',
+    aSize: '38% 42%',
+    aStrength: '0.38',
     bRgb: '76 66 52',
     bPos: '88% 28%',
     bSize: '34% 32%',
-    bStrength: '0.28',
+    bStrength: '0.14',
     cRgb: '44 44 50',
     cPos: '50% 100%',
     cSize: '76% 38%',
@@ -316,28 +303,25 @@ const SCENE: Record<ThemeName, SceneField> = {
 }
 
 /**
- * Ink + Accent 语义色（对齐 spatial-theme-study theme-tokens.css v4）。
- * RGB 源见原型注释；此处为 HSL 三元组供 shadcn / Tailwind 消费。
- */
+ * Ink + Accent 璇箟鑹诧紙瀵归綈 spatial-theme-study theme-tokens.css v4锛夈€? * RGB 婧愯鍘熷瀷娉ㄩ噴锛涙澶勪负 HSL 涓夊厓缁勪緵 shadcn / Tailwind 娑堣垂銆? */
 interface ThemeInkAccent {
-  /** 表面族 hue（极低 sat，不承载主题身份） */
+  /** 琛ㄩ潰鏃?hue锛堟瀬浣?sat锛屼笉鎵胯浇涓婚韬唤锛?*/
   hue: number
-  /** CTA / focus / ring —— 原型 --accent-rgb */
+  /** CTA / focus / ring 鈥斺€?鍘熷瀷 --accent-rgb */
   primary: string
   'primary-foreground': string
-  /** 正文主色 —— 原型 --ink-strong-rgb */
+  /** 姝ｆ枃涓昏壊 鈥斺€?鍘熷瀷 --ink-strong-rgb */
   foreground: string
-  /** 次要说明 —— 原型 --ink-muted-rgb */
+  /** 娆¤璇存槑 鈥斺€?鍘熷瀷 --ink-muted-rgb */
   'muted-foreground': string
-  /** 正文次级 / card 字色 —— 原型 --ink-rgb */
+  /** 姝ｆ枃娆＄骇 / card 瀛楄壊 鈥斺€?鍘熷瀷 --ink-rgb */
   ink: string
-  /** 弱标签 —— 原型 --ink-faint-rgb */
+  /** 寮辨爣绛?鈥斺€?鍘熷瀷 --ink-faint-rgb */
   faint: string
 }
 
 /**
- * 六主题 × 明暗 ink/accent，直接由原型 RGB 换算：
- * default #48566C / ocean #306068 / forest #44644E /
+ * 鍏富棰?脳 鏄庢殫 ink/accent锛岀洿鎺ョ敱鍘熷瀷 RGB 鎹㈢畻锛? * default #48566C / ocean #306068 / forest #44644E /
  * slate #946044 / orange #A07038 / purple #5C5476
  */
 const INK_ACCENT: Record<ThemeName, ThemeInkAccent> = {
@@ -346,8 +330,7 @@ const INK_ACCENT: Record<ThemeName, ThemeInkAccent> = {
     primary: '217 20% 35%',
     'primary-foreground': '0 0% 100%',
     foreground: '216 11% 18%',
-    // 原型 ink-muted L≈47% 在浅底上 < AA；压到 L42% 保次要文字对比
-    'muted-foreground': '218 8% 42%',
+    // 鍘熷瀷 ink-muted L鈮?7% 鍦ㄦ祬搴曚笂 < AA锛涘帇鍒?L42% 淇濇瑕佹枃瀛楀姣?    'muted-foreground': '218 8% 42%',
     ink: '220 8% 30%',
     faint: '220 6% 63%',
   },
@@ -498,14 +481,11 @@ function sceneTokens(
 }
 
 /**
- * 浅色近中性表面。
- * 表面 chroma 极低（6–10%），不整页染色；primary/ink 来自原型。
- * Tailwind `accent` 仍是 hover 浅底（非 solid CTA）—— 与原型「active 中性」一致。
- */
+ * 娴呰壊杩戜腑鎬ц〃闈€? * 琛ㄩ潰 chroma 鏋佷綆锛?鈥?0%锛夛紝涓嶆暣椤垫煋鑹诧紱primary/ink 鏉ヨ嚜鍘熷瀷銆? * Tailwind `accent` 浠嶆槸 hover 娴呭簳锛堥潪 solid CTA锛夆€斺€?涓庡師鍨嬨€宎ctive 涓€с€嶄竴鑷淬€? */
 function lightPalette(ink: ThemeInkAccent, scene: SceneField): ThemeColors {
   const h = String(ink.hue)
   return {
-    // 贴近 scene-base 的极淡底，避免盖住弥散场
+    // 璐磋繎 scene-base 鐨勬瀬娣″簳锛岄伩鍏嶇洊浣忓讥鏁ｅ満
     background: `${h} 8% 93%`,
     foreground: ink.foreground,
     muted: `${h} 6% 90%`,
@@ -517,12 +497,12 @@ function lightPalette(ink: ThemeInkAccent, scene: SceneField): ThemeColors {
     'primary-foreground': ink['primary-foreground'],
     secondary: `${h} 6% 92%`,
     'secondary-foreground': ink.ink,
-    // hover/选中浅底，禁止绑 solid primary（ghost 会整块染色）
+    // hover/閫変腑娴呭簳锛岀姝㈢粦 solid primary锛坓host 浼氭暣鍧楁煋鑹诧級
     accent: `${h} 8% 90%`,
     'accent-foreground': ink.ink,
     destructive: '0 50% 52%',
     'destructive-foreground': '0 0% 98%',
-    // 近无色瓷面，对齐原型 glass-rgb
+    // 杩戞棤鑹茬摲闈紝瀵归綈鍘熷瀷 glass-rgb
     card: `${h} 10% 97%`,
     'card-foreground': ink.foreground,
     popover: `${h} 10% 97%`,
@@ -537,7 +517,7 @@ function lightPalette(ink: ThemeInkAccent, scene: SceneField): ThemeColors {
   }
 }
 
-/** 暗色近中性表面（对齐原型深底 ink + 提亮 accent） */
+/** 鏆楄壊杩戜腑鎬ц〃闈紙瀵归綈鍘熷瀷娣卞簳 ink + 鎻愪寒 accent锛?*/
 function darkPalette(ink: ThemeInkAccent, scene: SceneField): ThemeColors {
   const h = String(ink.hue)
   return {
@@ -571,16 +551,13 @@ function darkPalette(ink: ThemeInkAccent, scene: SceneField): ThemeColors {
 }
 
 /**
- * Spatial Lens 色表（对齐 prototypes/spatial-theme-study）
- *
- * primary = 原型 accent（低 chroma 矿物色，非亮矿蓝/霓虹紫）：
- * - default 石墨蓝灰 #48566C
- * - ocean 深青瓷 #306068
- * - forest 深茶绿 #44644E
- * - slate 铜锈棕 #946044
- * - orange 金褐 #A07038
- * - purple 深鸢尾灰 #5C5476（chroma≤0.08）
- */
+ * Spatial Lens 鑹茶〃锛堝榻?prototypes/spatial-theme-study锛? *
+ * primary = 鍘熷瀷 accent锛堜綆 chroma 鐭跨墿鑹诧紝闈炰寒鐭胯摑/闇撹櫣绱級锛? * - default 鐭冲ⅷ钃濈伆 #48566C
+ * - ocean 娣遍潚鐡?#306068
+ * - forest 娣辫尪缁?#44644E
+ * - slate 閾滈攬妫?#946044
+ * - orange 閲戣 #A07038
+ * - purple 娣遍涪灏剧伆 #5C5476锛坈hroma鈮?.08锛? */
 export const colors: Record<ThemeName, ThemeColors> = {
   'default-light': lightPalette(INK_ACCENT['default-light'], SCENE['default-light']),
   'default-dark': darkPalette(INK_ACCENT['default-dark'], SCENE['default-dark']),
@@ -602,11 +579,9 @@ export const colors: Record<ThemeName, ThemeColors> = {
 }
 
 /**
- * Tailwind 颜色 token 映射
+ * Tailwind 棰滆壊 token 鏄犲皠
  *
- * 把 CSS 变量桥接到 Tailwind colors 配置，让组件用 `bg-background` / `text-foreground` 等类。
- * 这里集中定义，避免散落在 tailwind.config.js。
- */
+ * 鎶?CSS 鍙橀噺妗ユ帴鍒?Tailwind colors 閰嶇疆锛岃缁勪欢鐢?`bg-background` / `text-foreground` 绛夌被銆? * 杩欓噷闆嗕腑瀹氫箟锛岄伩鍏嶆暎钀藉湪 tailwind.config.js銆? */
 export const tailwindColorTokens = {
   border: 'hsl(var(--border) / <alpha-value>)',
   input: 'hsl(var(--input))',

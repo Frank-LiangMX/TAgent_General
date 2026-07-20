@@ -123,6 +123,13 @@ describe('deriveShellLayout', () => {
     expect(derive({ topLevelMode, activeRailItem }).sidebar).toBe('open')
   })
 
+  test('automation is rail-only (no sidebar)', () => {
+    expect(railItemSupportsSidebar('general', 'automation')).toBe(false)
+    expect(derive({ activeRailItem: 'automation', sidebarRequestedOpen: true }).sidebar).toBe(
+      'collapsed'
+    )
+  })
+
   test('collapses sidebar when the user requests it', () => {
     expect(derive({ sidebarRequestedOpen: false }).sidebar).toBe('collapsed')
   })
@@ -153,9 +160,21 @@ describe('deriveRailSelection', () => {
     ).toEqual({ activeRailItem: 'sessions', sidebarOpen: true })
   })
 
-  test('opens the sidebar when switching to another item', () => {
+  test('opens the sidebar when switching to another item that supports it', () => {
     expect(
       deriveRailSelection({ activeRailItem: 'sessions', sidebarOpen: false }, 'skills')
     ).toEqual({ activeRailItem: 'skills', sidebarOpen: true })
+  })
+
+  test('keeps sidebar closed when switching to a rail-only item', () => {
+    expect(
+      deriveRailSelection({ activeRailItem: 'sessions', sidebarOpen: true }, 'automation')
+    ).toEqual({ activeRailItem: 'automation', sidebarOpen: false })
+  })
+
+  test('re-clicking a rail-only item does not toggle sidebar open', () => {
+    expect(
+      deriveRailSelection({ activeRailItem: 'automation', sidebarOpen: false }, 'automation')
+    ).toEqual({ activeRailItem: 'automation', sidebarOpen: false })
   })
 })

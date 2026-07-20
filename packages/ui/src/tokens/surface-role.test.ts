@@ -29,7 +29,8 @@ describe('surface roles', () => {
     const css = readFileSync(resolve(currentDir, '../../styles/surface-roles.css'), 'utf8')
 
     expect(css).toContain('--surface-role-scene-fill:')
-    expect(css).toContain('var(--scene-c-rgb)')
+    expect(css).toContain('var(--scene-a-pos')
+    expect(css).toContain('var(--scene-base-rgb)')
     expect(css).toContain('--surface-role-workspace-fill: transparent')
     expect(css).toContain('--surface-role-turn-locator-fill:')
     expect(css).toContain('--surface-role-message-user-fill:')
