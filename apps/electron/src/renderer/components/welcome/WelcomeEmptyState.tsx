@@ -21,7 +21,13 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 
-import { agentSessionDraftHtmlAtom, agentSessionDraftsAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
+import { AssistantPresence } from './assistant-presence/AssistantPresence'
+
+import {
+  agentSessionDraftHtmlAtom,
+  agentSessionDraftsAtom,
+  agentSessionsAtom,
+} from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
@@ -43,7 +49,7 @@ interface QuickStartItem {
   title: string
   description: string
   prompt: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: string | number }>
   iconClass: string
 }
 
@@ -51,7 +57,7 @@ interface GuideItem {
   id: string
   title: string
   description: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: string | number }>
   iconClass: string
   action: 'channels' | 'attach-hint' | 'tutorial'
 }
@@ -189,7 +195,7 @@ function GuideCard({
 }: {
   title: string
   description: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: string | number }>
   iconClass: string
   onClick: () => void
   disabled?: boolean
@@ -317,6 +323,7 @@ export function WelcomeEmptyState(): React.ReactElement {
   return (
     <div className="flex h-full min-h-0 flex-col items-center overflow-y-auto px-6 py-10 scrollbar-thin">
       <div className="my-auto w-full max-w-[720px] animate-in fade-in-0 duration-300">
+        <AssistantPresence />
         {/* 头栏：对齐侧栏 sidebar-head（kicker + 标题 + accent 胶囊），不用实心主按钮 */}
         <header className="kanban-crew-badge mb-7 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
           <div className="min-w-0">

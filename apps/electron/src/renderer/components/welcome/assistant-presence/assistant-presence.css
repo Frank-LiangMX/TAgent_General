@@ -1,0 +1,142 @@
+.assistant-presence {
+  position: relative;
+  width: 9rem;
+  height: 9rem;
+  margin: 0 auto 0.25rem;
+  flex: none;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.assistant-presence__canvas,
+.assistant-presence__fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.assistant-presence__canvas {
+  display: block;
+  opacity: 0;
+  transition: opacity var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
+}
+
+.assistant-presence__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  transform: scale(0.55);
+  opacity: 0.82;
+  background:
+    radial-gradient(circle at 46% 42%, hsl(var(--card) / 0.3), transparent 34%),
+    conic-gradient(
+      from 35deg,
+      hsl(var(--scene-ambient-a) / 0.48),
+      hsl(var(--scene-ambient-c) / 0.32),
+      hsl(var(--scene-ambient-b) / 0.36),
+      hsl(var(--scene-ambient-a) / 0.48)
+    );
+  box-shadow: 0 0 1.5rem hsl(var(--primary) / 0.16);
+  transition: opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
+}
+
+.assistant-presence[data-ready='false'] .assistant-presence__fallback {
+  animation: assistant-presence-fallback-float 2.8s ease-in-out infinite;
+}
+
+.assistant-presence[data-theme='dark'] .assistant-presence__fallback {
+  opacity: 0.92;
+  background:
+    radial-gradient(circle at 46% 42%, hsl(var(--foreground) / 0.16), transparent 34%),
+    conic-gradient(
+      from 35deg,
+      hsl(var(--scene-ambient-a) / 0.68),
+      hsl(var(--scene-ambient-c) / 0.52),
+      hsl(var(--scene-ambient-b) / 0.56),
+      hsl(var(--scene-ambient-a) / 0.68)
+    );
+  box-shadow: 0 0 1.75rem hsl(var(--primary) / 0.22);
+}
+
+.assistant-presence__fallback-eye {
+  width: 0.3rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  box-shadow: 0 0 0.5rem hsl(var(--card) / 0.8);
+  animation: assistant-presence-fallback-blink 4.2s ease-in-out infinite;
+}
+
+.assistant-presence[data-theme='dark'] .assistant-presence__fallback-eye {
+  background: hsl(var(--foreground));
+  box-shadow: 0 0 0.5rem hsl(var(--foreground) / 0.76);
+}
+
+.assistant-presence[data-ready='true'] .assistant-presence__canvas {
+  opacity: 1;
+}
+
+.assistant-presence[data-ready='true'] .assistant-presence__fallback {
+  opacity: 0;
+}
+
+@media (max-height: 780px) {
+  .assistant-presence {
+    width: 7rem;
+    height: 7rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-presence__canvas,
+  .assistant-presence__fallback {
+    transition: none;
+  }
+
+  .assistant-presence[data-ready='false'] .assistant-presence__fallback {
+    animation: assistant-presence-fallback-quiet 8s ease-in-out infinite;
+  }
+
+  .assistant-presence__fallback-eye {
+    animation-duration: 7s;
+  }
+}
+
+@keyframes assistant-presence-fallback-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.55);
+  }
+  50% {
+    transform: translateY(-0.25rem) scale(0.57, 0.53);
+  }
+}
+
+@keyframes assistant-presence-fallback-blink {
+  0%,
+  44%,
+  49%,
+  100% {
+    transform: scaleY(1);
+  }
+  46%,
+  47% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes assistant-presence-fallback-quiet {
+  0%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(0.562);
+    opacity: 0.9;
+  }
+}
